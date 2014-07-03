@@ -1,0 +1,18 @@
+# This is the official list of people who have contributed code to
+# tsuru-client.
+# The AUTHORS file lists the copyright holders; this file lists people.
+# For example, Globo.com employees are listed here but not in AUTHORS,
+# because Globo.com holds the copyright.
+#
+# You can update this list using the following command:
+#
+#   % git shortlog -se | awk '{$1=""; print $0}' | sed -e 's/^ //'
+#
+# Please keep this file sorted, and group users with multiple emails.
+
+Alessandro Corbelli <alessandro.corbelli@guest.it>
+Andrews Medina <andrewsmedina@gmail.com>
+Cezar Sa Espinola <cezar.sa@corp.globo.com>
+Flavia Missi <flaviamissi@gmail.com>
+Francisco Souza <fss@corp.globo.com> <f@souza.cc>
+Tarsis Azevedo <tarsis.azevedo@gmail.com>
