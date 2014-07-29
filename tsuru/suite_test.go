@@ -18,11 +18,11 @@ type S struct {
 }
 
 func (s *S) SetUpSuite(c *gocheck.C) {
-	s.recover = tTesting.SetTargetFile(c)
+	s.recover = tTesting.SetTargetFile(c, []byte("http://localhost:8080"))
 }
 
 func (s *S) TearDownSuite(c *gocheck.C) {
-	tTesting.RollbackTargetFile(s.recover)
+	tTesting.RollbackFile(s.recover)
 }
 
 var _ = gocheck.Suite(&S{})
