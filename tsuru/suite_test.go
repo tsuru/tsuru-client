@@ -14,15 +14,18 @@ import (
 )
 
 type S struct {
-	recover []string
+	target []string
+	token  []string
 }
 
 func (s *S) SetUpSuite(c *gocheck.C) {
-	s.recover = tTesting.SetTargetFile(c, []byte("http://localhost:8080"))
+	s.target = tTesting.SetTargetFile(c, []byte("http://localhost:8080"))
+	s.token = tTesting.SetTokenFile(c, []byte("sometoken"))
 }
 
 func (s *S) TearDownSuite(c *gocheck.C) {
-	tTesting.RollbackFile(s.recover)
+	tTesting.RollbackFile(s.target)
+	tTesting.RollbackFile(s.token)
 }
 
 var _ = gocheck.Suite(&S{})

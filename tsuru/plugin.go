@@ -72,17 +72,26 @@ func (plugin) Info() *cmd.Info {
 func (c *plugin) Run(context *cmd.Context, client *cmd.Client) error {
 	pluginName := context.Args[0]
 	pluginPath := cmd.JoinWithUserDir(".tsuru", "plugins", pluginName)
+	target, err := cmd.ReadTarget()
+	if err != nil {
+		return err
+	}
+	token, err := cmd.ReadToken()
+	if err != nil {
+		return err
+	}
+	envs := []string{
+		fmt.Sprintf("TSURU_TARGET=%s", target),
+		fmt.Sprintf("TSURU_TOKEN=%s", token),
+	}
 	opts := exec.ExecuteOptions{
 		Cmd:    pluginPath,
 		Args:   context.Args[1:],
 		Stdout: context.Stdout,
 		Stderr: context.Stderr,
+		Envs:   envs,
 	}
-	err := executor().Execute(opts)
-	if err != nil {
-		return err
-	}
-	return nil
+	return executor().Execute(opts)
 }
 
 type pluginRemove struct{}

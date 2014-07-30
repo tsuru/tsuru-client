@@ -97,6 +97,17 @@ func (s *S) TestPlugin(c *gocheck.C) {
 	pluginPath := cmd.JoinWithUserDir(".tsuru", "plugins", "myplugin")
 	c.Assert(fexec.ExecutedCmd(pluginPath, []string{"a", "b"}), gocheck.Equals, true)
 	c.Assert(buf.String(), gocheck.Equals, "hello world")
+	commands := fexec.GetCommands(pluginPath)
+	c.Assert(commands, gocheck.HasLen, 1)
+	target, err := cmd.ReadTarget()
+	c.Assert(err, gocheck.IsNil)
+	token, err := cmd.ReadToken()
+	c.Assert(err, gocheck.IsNil)
+	envs := []string{
+		fmt.Sprintf("TSURU_TARGET=%s", target),
+		fmt.Sprintf("TSURU_TOKEN=%s", token),
+	}
+	c.Assert(commands[0].GetEnvs(), gocheck.DeepEquals, envs)
 }
 
 func (s *S) TestPluginWithArgs(c *gocheck.C) {
