@@ -8,6 +8,7 @@ import (
 	"errors"
 	"fmt"
 	"github.com/tsuru/tsuru/cmd"
+	"github.com/tsuru/tsuru/exec"
 	"io/ioutil"
 	"net/http"
 	"os"
@@ -71,7 +72,13 @@ func (plugin) Info() *cmd.Info {
 func (c *plugin) Run(context *cmd.Context, client *cmd.Client) error {
 	pluginName := context.Args[0]
 	pluginPath := cmd.JoinWithUserDir(".tsuru", "plugins", pluginName)
-	err := executor().Execute(pluginPath, context.Args[1:], nil, context.Stdout, context.Stderr)
+	opts := exec.ExecuteOptions{
+		Cmd:    pluginPath,
+		Args:   context.Args[1:],
+		Stdout: context.Stdout,
+		Stderr: context.Stderr,
+	}
+	err := executor().Execute(opts)
 	if err != nil {
 		return err
 	}
