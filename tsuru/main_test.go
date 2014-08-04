@@ -123,14 +123,14 @@ func (s *S) TestServiceAddIsRegistered(c *gocheck.C) {
 	manager := buildManager("tsuru")
 	add, ok := manager.Commands["service-add"]
 	c.Assert(ok, gocheck.Equals, true)
-	c.Assert(add, gocheck.FitsTypeOf, tsuru.ServiceAdd{})
+	c.Assert(add, gocheck.FitsTypeOf, &tsuru.ServiceAdd{})
 }
 
 func (s *S) TestServiceRemoveIsRegistered(c *gocheck.C) {
 	manager := buildManager("tsuru")
 	remove, ok := manager.Commands["service-remove"]
 	c.Assert(ok, gocheck.Equals, true)
-	c.Assert(remove, gocheck.FitsTypeOf, tsuru.ServiceRemove{})
+	c.Assert(remove, gocheck.FitsTypeOf, &tsuru.ServiceRemove{})
 }
 
 func (s *S) TestServiceBindIsRegistered(c *gocheck.C) {
