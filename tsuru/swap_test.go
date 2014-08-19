@@ -15,11 +15,12 @@ import (
 func (s *S) TestSwapInfo(c *gocheck.C) {
 	expected := &cmd.Info{
 		Name:    "swap",
-		Usage:   "swap app1-name app2-name",
-		Desc:    "Swap router between two apps.",
+		Usage:   "swap app1-name app2-name [--force]",
+		Desc:    "Swap router between two apps. Use force if you want to Swap apps with different numbers of units or diferent platform.",
 		MinArgs: 2,
 	}
-	c.Assert(swap{}.Info(), gocheck.DeepEquals, expected)
+	command := Swap{}
+	c.Assert(command.Info(), gocheck.DeepEquals, expected)
 }
 
 func (s *S) TestSwap(c *gocheck.C) {
@@ -37,13 +38,57 @@ func (s *S) TestSwap(c *gocheck.C) {
 		Stdout: &buf,
 	}
 	client := cmd.NewClient(&http.Client{Transport: &transport}, nil, manager)
-	err := swap{}.Run(&context, client)
+	command := Swap{}
+	err := command.Run(&context, client)
 	c.Assert(err, gocheck.IsNil)
 	c.Assert(called, gocheck.Equals, true)
 	expected := "Apps successfully swapped!\n"
 	c.Assert(buf.String(), gocheck.Equals, expected)
 }
 
+func (s *S) TestSwapWhenAppsAreNotEqual(c *gocheck.C) {
+	var buf bytes.Buffer
+	var called int
+	stdin := bytes.NewBufferString("yes")
+	transportError := testing.ConditionalTransport{
+		Transport: testing.Transport{Status: http.StatusUnauthorized, Message: "Apps are not equal."},
+		CondFunc: func(r *http.Request) bool {
+			called += 1
+			println(r.URL.RawQuery)
+			return r.URL.RawQuery == "app1=app1&app2=app2&force=false"
+		},
+	}
+	transportOk := testing.ConditionalTransport{
+		Transport: testing.Transport{Status: http.StatusOK, Message: ""},
+		CondFunc: func(r *http.Request) bool {
+			called += 1
+			println(r.URL.RawQuery)
+			return r.URL.RawQuery == "app1=app1&app2=app2&force=true"
+		},
+	}
+	multiTransport := testing.MultiConditionalTransport{
+		ConditionalTransports: []testing.ConditionalTransport{transportError, transportOk},
+	}
+	context := cmd.Context{
+		Args:   []string{"app1", "app2"},
+		Stdout: &buf,
+		Stdin:  stdin,
+	}
+	client := cmd.NewClient(&http.Client{Transport: &multiTransport}, nil, manager)
+	command := Swap{}
+	err := command.Run(&context, client)
+	c.Assert(err, gocheck.IsNil)
+	c.Assert(called, gocheck.Equals, 2)
+}
+
+func (s *S) TestAnswerAcceptable(c *gocheck.C) {
+	answersOptions := []string{"y", "yes"}
+	isAcceptable := answerAcceptable("y", answersOptions)
+	c.Assert(isAcceptable, gocheck.Equals, true)
+	isAcceptable = answerAcceptable("no", answersOptions)
+	c.Assert(isAcceptable, gocheck.Equals, false)
+}
+
 func (s *S) TestSwapIsACommand(c *gocheck.C) {
-	var _ cmd.Command = swap{}
+	var _ cmd.Command = &Swap{}
 }
