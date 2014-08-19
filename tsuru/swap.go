@@ -10,6 +10,7 @@ import (
 	"github.com/tsuru/tsuru/cmd"
 	"launchpad.net/gnuflag"
 	"net/http"
+	"strings"
 )
 
 type Swap struct {
@@ -42,10 +43,11 @@ func (s *Swap) Run(context *cmd.Context, client *cmd.Client) error {
 	}
 	err = makeSwap(client, url)
 	if err != nil {
-		if err.Error() == app.ErrAppNotEqual.Error() {
+		errMsg := strings.Trim(err.Error(), "\n")
+		if errMsg == app.ErrAppNotEqual.Error() {
 			var answer string
 			answersOptions := []string{"y", "yes"}
-			fmt.Fprint(context.Stdout, "We can't Swap your apps because they are not compatible. Do you want to do it anyway? (y/n)")
+			fmt.Fprint(context.Stdout, "We can't Swap your apps because they are not compatible. Do you want to do it anyway? (y/n) ")
 			fmt.Fscanf(context.Stdin, "%s", &answer)
 			if answerAcceptable(answer, answersOptions) {
 				url, _ = cmd.GetURL(fmt.Sprintf("/swap?app1=%s&app2=%s&force=%t", context.Args[0], context.Args[1], true))
@@ -53,6 +55,9 @@ func (s *Swap) Run(context *cmd.Context, client *cmd.Client) error {
 				if err != nil {
 					return err
 				}
+			} else {
+				fmt.Fprintln(context.Stdout, "Apps not swapped.")
+				return nil
 			}
 		} else {
 			return err
