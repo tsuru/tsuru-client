@@ -214,7 +214,7 @@ func (s *S) TestSwapIsRegistered(c *gocheck.C) {
 	manager := buildManager("tsuru")
 	cmd, ok := manager.Commands["swap"]
 	c.Assert(ok, gocheck.Equals, true)
-	c.Assert(cmd, gocheck.FitsTypeOf, swap{})
+	c.Assert(cmd, gocheck.FitsTypeOf, &Swap{})
 }
 
 func (s *S) TestAppStartIsRegistered(c *gocheck.C) {
