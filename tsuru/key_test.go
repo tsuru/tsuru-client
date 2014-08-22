@@ -8,13 +8,14 @@ import (
 	"bytes"
 	"errors"
 	"fmt"
+	"net/http"
+	"os/user"
+	"path"
+
 	"github.com/tsuru/tsuru/cmd"
 	"github.com/tsuru/tsuru/cmd/testing"
 	fs_test "github.com/tsuru/tsuru/fs/testing"
 	"launchpad.net/gocheck"
-	"net/http"
-	"os/user"
-	"path"
 )
 
 func (s *S) TestKeyAdd(c *gocheck.C) {

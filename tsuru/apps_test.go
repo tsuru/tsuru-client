@@ -7,13 +7,14 @@ package main
 import (
 	"bytes"
 	"encoding/json"
+	"io/ioutil"
+	"net/http"
+	"strings"
+
 	"github.com/tsuru/tsuru/cmd"
 	"github.com/tsuru/tsuru/cmd/testing"
 	"github.com/tsuru/tsuru/cmd/tsuru-base"
-	"io/ioutil"
 	"launchpad.net/gocheck"
-	"net/http"
-	"strings"
 )
 
 func (s *S) TestAppCreateInfo(c *gocheck.C) {

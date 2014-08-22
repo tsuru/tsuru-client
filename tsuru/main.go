@@ -5,9 +5,10 @@
 package main
 
 import (
+	"os"
+
 	"github.com/tsuru/tsuru/cmd"
 	"github.com/tsuru/tsuru/cmd/tsuru-base"
-	"os"
 )
 
 const (

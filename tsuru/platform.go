@@ -7,8 +7,9 @@ package main
 import (
 	"encoding/json"
 	"fmt"
-	"github.com/tsuru/tsuru/cmd"
 	"net/http"
+
+	"github.com/tsuru/tsuru/cmd"
 )
 
 type platform struct {

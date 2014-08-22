@@ -8,12 +8,13 @@ import (
 	"bytes"
 	"errors"
 	"fmt"
-	"github.com/tsuru/tsuru/cmd"
-	"github.com/tsuru/tsuru/fs"
 	"io/ioutil"
 	"net/http"
 	"os"
 	"strings"
+
+	"github.com/tsuru/tsuru/cmd"
+	"github.com/tsuru/tsuru/fs"
 )
 
 type keyReader struct {

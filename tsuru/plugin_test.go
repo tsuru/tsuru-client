@@ -7,13 +7,14 @@ package main
 import (
 	"bytes"
 	"fmt"
+	"io/ioutil"
+	"net/http"
+	"net/http/httptest"
+
 	"github.com/tsuru/tsuru/cmd"
 	etesting "github.com/tsuru/tsuru/exec/testing"
 	ftesting "github.com/tsuru/tsuru/fs/testing"
-	"io/ioutil"
 	"launchpad.net/gocheck"
-	"net/http"
-	"net/http/httptest"
 )
 
 func (s *S) TestPluginInstallInfo(c *gocheck.C) {

@@ -8,12 +8,13 @@ import (
 	"bytes"
 	"encoding/json"
 	"fmt"
-	"github.com/tsuru/tsuru/cmd"
-	"github.com/tsuru/tsuru/cmd/tsuru-base"
 	"io/ioutil"
-	"launchpad.net/gnuflag"
 	"net/http"
 	"strconv"
+
+	"github.com/tsuru/tsuru/cmd"
+	"github.com/tsuru/tsuru/cmd/tsuru-base"
+	"launchpad.net/gnuflag"
 )
 
 type AppCreate struct {

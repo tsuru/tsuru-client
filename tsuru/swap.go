@@ -6,11 +6,12 @@ package main
 
 import (
 	"fmt"
+	"net/http"
+	"strings"
+
 	"github.com/tsuru/tsuru/app"
 	"github.com/tsuru/tsuru/cmd"
 	"launchpad.net/gnuflag"
-	"net/http"
-	"strings"
 )
 
 type Swap struct {

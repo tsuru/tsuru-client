@@ -7,11 +7,12 @@ package main
 import (
 	"errors"
 	"fmt"
-	"github.com/tsuru/tsuru/cmd"
-	"github.com/tsuru/tsuru/exec"
 	"io/ioutil"
 	"net/http"
 	"os"
+
+	"github.com/tsuru/tsuru/cmd"
+	"github.com/tsuru/tsuru/exec"
 )
 
 type pluginInstall struct{}
