@@ -95,8 +95,8 @@ func (c *AppCreate) Run(context *cmd.Context, client *cmd.Client) error {
 
 type AppRemove struct {
 	tsuru.GuessingCommand
-	yes bool
-	fs  *gnuflag.FlagSet
+	tsuru.ConfirmationCommand
+	fs *gnuflag.FlagSet
 }
 
 func (c *AppRemove) Info() *cmd.Info {
@@ -115,14 +115,8 @@ func (c *AppRemove) Run(context *cmd.Context, client *cmd.Client) error {
 	if err != nil {
 		return err
 	}
-	var answer string
-	if !c.yes {
-		fmt.Fprintf(context.Stdout, `Are you sure you want to remove app "%s"? (y/n) `, appName)
-		fmt.Fscanf(context.Stdin, "%s", &answer)
-		if answer != "y" {
-			fmt.Fprintln(context.Stdout, "Abort.")
-			return nil
-		}
+	if !c.Confirm(context, fmt.Sprintf(`Are you sure you want to remove app "%s"?`, appName)) {
+		return nil
 	}
 	url, err := cmd.GetURL(fmt.Sprintf("/apps/%s", appName))
 	if err != nil {
@@ -142,9 +136,10 @@ func (c *AppRemove) Run(context *cmd.Context, client *cmd.Client) error {
 
 func (c *AppRemove) Flags() *gnuflag.FlagSet {
 	if c.fs == nil {
-		c.fs = c.GuessingCommand.Flags()
-		c.fs.BoolVar(&c.yes, "assume-yes", false, "Don't ask for confirmation, just remove the app.")
-		c.fs.BoolVar(&c.yes, "y", false, "Don't ask for confirmation, just remove the app.")
+		c.fs = cmd.MergeFlagSet(
+			c.GuessingCommand.Flags(),
+			c.ConfirmationCommand.Flags(),
+		)
 	}
 	return c.fs
 }

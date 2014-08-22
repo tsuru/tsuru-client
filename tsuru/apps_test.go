@@ -218,16 +218,15 @@ func (s *S) TestAppRemoveFlags(c *gocheck.C) {
 	assume := flagset.Lookup("assume-yes")
 	c.Check(assume, gocheck.NotNil)
 	c.Check(assume.Name, gocheck.Equals, "assume-yes")
-	c.Check(assume.Usage, gocheck.Equals, "Don't ask for confirmation, just remove the app.")
+	c.Check(assume.Usage, gocheck.Equals, "Don't ask for confirmation.")
 	c.Check(assume.Value.String(), gocheck.Equals, "true")
 	c.Check(assume.DefValue, gocheck.Equals, "false")
 	sassume := flagset.Lookup("y")
 	c.Check(sassume, gocheck.NotNil)
 	c.Check(sassume.Name, gocheck.Equals, "y")
-	c.Check(sassume.Usage, gocheck.Equals, "Don't ask for confirmation, just remove the app.")
+	c.Check(sassume.Usage, gocheck.Equals, "Don't ask for confirmation.")
 	c.Check(sassume.Value.String(), gocheck.Equals, "true")
 	c.Check(sassume.DefValue, gocheck.Equals, "false")
-	c.Check(command.yes, gocheck.Equals, true)
 }
 
 type FakeGuesser struct {
