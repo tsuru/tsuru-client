@@ -18,7 +18,6 @@ import (
 )
 
 type AppCreate struct {
-	cmd.Command
 	memory    int
 	teamOwner string
 	fs        *gnuflag.FlagSet
