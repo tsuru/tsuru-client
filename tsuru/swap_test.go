@@ -55,7 +55,6 @@ func (s *S) TestSwapWhenAppsAreNotEqual(c *gocheck.C) {
 		Transport: testing.Transport{Status: http.StatusUnauthorized, Message: "Apps are not equal."},
 		CondFunc: func(r *http.Request) bool {
 			called += 1
-			println(r.URL.RawQuery)
 			return r.URL.RawQuery == "app1=app1&app2=app2&force=false"
 		},
 	}
@@ -63,7 +62,6 @@ func (s *S) TestSwapWhenAppsAreNotEqual(c *gocheck.C) {
 		Transport: testing.Transport{Status: http.StatusOK, Message: ""},
 		CondFunc: func(r *http.Request) bool {
 			called += 1
-			println(r.URL.RawQuery)
 			return r.URL.RawQuery == "app1=app1&app2=app2&force=true"
 		},
 	}
