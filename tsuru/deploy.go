@@ -15,6 +15,8 @@ import (
 	"os"
 	"path/filepath"
 	"strings"
+	"sync"
+	"time"
 
 	"github.com/tsuru/tsuru/cmd"
 	"github.com/tsuru/tsuru/cmd/tsuru-base"
@@ -63,17 +65,25 @@ func (c *deploy) Run(context *cmd.Context, client *cmd.Client) error {
 		return err
 	}
 	request.Header.Set("Content-Type", "multipart/form-data; boundary="+writer.Boundary())
+	var buf bytes.Buffer
+	respBody := firstWriter{Writer: io.MultiWriter(context.Stdout, &buf)}
+	go func() {
+		fmt.Fprint(context.Stdout, "Uploading files...")
+		for buf.Len() == 0 {
+			fmt.Fprint(context.Stdout, ".")
+			time.Sleep(2e9)
+		}
+	}()
 	resp, err := client.Do(request)
 	if err != nil {
 		return err
 	}
 	defer resp.Body.Close()
-	var respBody bytes.Buffer
-	_, err = io.Copy(io.MultiWriter(&respBody, context.Stdout), resp.Body)
+	_, err = io.Copy(&respBody, resp.Body)
 	if err != nil {
 		return err
 	}
-	if strings.HasSuffix(respBody.String(), "\nOK\n") {
+	if strings.HasSuffix(buf.String(), "\nOK\n") {
 		return nil
 	}
 	return cmd.ErrAbortCommand
@@ -173,4 +183,16 @@ func addFile(writer *tar.Writer, path string) error {
 		return io.ErrShortWrite
 	}
 	return nil
+}
+
+type firstWriter struct {
+	io.Writer
+	once sync.Once
+}
+
+func (w *firstWriter) Write(p []byte) (int, error) {
+	w.once.Do(func() {
+		w.Writer.Write([]byte{'\n'})
+	})
+	return w.Writer.Write(p)
 }
