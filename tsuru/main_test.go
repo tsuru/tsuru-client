@@ -263,3 +263,10 @@ func (s *S) TestAppStopIsRegistered(c *gocheck.C) {
 	c.Assert(ok, gocheck.Equals, true)
 	c.Assert(stop, gocheck.FitsTypeOf, &tsuru.AppStop{})
 }
+
+func (s *S) TestDeployIsRegistered(c *gocheck.C) {
+	manager := buildManager("tsuru")
+	deployCmd, ok := manager.Commands["deploy"]
+	c.Assert(ok, gocheck.Equals, true)
+	c.Assert(deployCmd, gocheck.FitsTypeOf, &deploy{})
+}
