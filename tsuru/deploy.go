@@ -68,7 +68,7 @@ func (c *deploy) Run(context *cmd.Context, client *cmd.Client) error {
 	var buf bytes.Buffer
 	respBody := firstWriter{Writer: io.MultiWriter(context.Stdout, &buf)}
 	go func() {
-		fmt.Fprint(context.Stdout, "Uploading files...")
+		fmt.Fprint(context.Stdout, "Uploading files..")
 		for buf.Len() == 0 {
 			fmt.Fprint(context.Stdout, ".")
 			time.Sleep(2e9)
@@ -192,7 +192,7 @@ type firstWriter struct {
 
 func (w *firstWriter) Write(p []byte) (int, error) {
 	w.once.Do(func() {
-		w.Writer.Write([]byte{'\n'})
+		w.Writer.Write([]byte(" ok\n"))
 	})
 	return w.Writer.Write(p)
 }
