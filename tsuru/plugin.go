@@ -73,7 +73,7 @@ func (plugin) Info() *cmd.Info {
 func (c *plugin) Run(context *cmd.Context, client *cmd.Client) error {
 	pluginName := context.Args[0]
 	pluginPath := cmd.JoinWithUserDir(".tsuru", "plugins", pluginName)
-	target, err := cmd.ReadTarget()
+	target, err := cmd.GetURL("/")
 	if err != nil {
 		return err
 	}

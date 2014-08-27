@@ -105,7 +105,7 @@ func (s *S) TestPlugin(c *gocheck.C) {
 	token, err := cmd.ReadToken()
 	c.Assert(err, gocheck.IsNil)
 	envs := []string{
-		fmt.Sprintf("TSURU_TARGET=%s", target),
+		fmt.Sprintf("TSURU_TARGET=%s/", target),
 		fmt.Sprintf("TSURU_TOKEN=%s", token),
 	}
 	c.Assert(commands[0].GetEnvs(), gocheck.DeepEquals, envs)
