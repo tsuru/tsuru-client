@@ -16,8 +16,8 @@ import (
 func (s *S) TestSwapInfo(c *gocheck.C) {
 	expected := &cmd.Info{
 		Name:    "swap",
-		Usage:   "swap app1-name app2-name [--force]",
-		Desc:    "Swap router between two apps. Use force if you want to Swap apps with different numbers of units or diferent platform.",
+		Usage:   "swap app1-name app2-name [-f/--force]",
+		Desc:    "Swap routes between two apps. Use force if you want to swap apps with different numbers of units or diferent platform without confirmation",
 		MinArgs: 2,
 	}
 	command := Swap{}

@@ -23,8 +23,8 @@ type Swap struct {
 func (s *Swap) Info() *cmd.Info {
 	return &cmd.Info{
 		Name:    "swap",
-		Usage:   "swap app1-name app2-name [--force]",
-		Desc:    "Swap router between two apps. Use force if you want to Swap apps with different numbers of units or diferent platform.",
+		Usage:   "swap app1-name app2-name [-f/--force]",
+		Desc:    "Swap routes between two apps. Use force if you want to swap apps with different numbers of units or diferent platform without confirmation",
 		MinArgs: 2,
 	}
 }
@@ -33,6 +33,7 @@ func (s *Swap) Flags() *gnuflag.FlagSet {
 	if s.fs == nil {
 		s.fs = gnuflag.NewFlagSet("", gnuflag.ExitOnError)
 		s.fs.BoolVar(&s.force, "force", false, "Force Swap among apps with different number of units or different platform.")
+		s.fs.BoolVar(&s.force, "f", false, "Force Swap among apps with different number of units or different platform.")
 	}
 	return s.fs
 }
