@@ -11,6 +11,7 @@ import (
 	"io"
 	"io/ioutil"
 	"net/http"
+	"sort"
 
 	"github.com/tsuru/tsuru/cmd"
 	"github.com/tsuru/tsuru/cmd/testing"
@@ -139,8 +140,12 @@ func (s *S) TestTargz(c *gocheck.C) {
 		"testdata", "testdata/directory", "testdata/directory/file.txt",
 		"testdata/file1.txt", "testdata/file2.txt",
 	}
+	sort.Strings(expected)
+	sort.Strings(headers)
 	c.Assert(headers, gocheck.DeepEquals, expected)
 	expectedContents := []string{"wat\n", "something happened\n", "twice\n"}
+	sort.Strings(expectedContents)
+	sort.Strings(contents)
 	c.Assert(contents, gocheck.DeepEquals, expectedContents)
 	c.Assert(buf.String(), gocheck.Equals, `Warning: skipping ".."`)
 }
