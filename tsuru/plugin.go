@@ -82,8 +82,9 @@ func (c *plugin) Run(context *cmd.Context, client *cmd.Client) error {
 		return err
 	}
 	envs := []string{
-		fmt.Sprintf("TSURU_TARGET=%s", target),
-		fmt.Sprintf("TSURU_TOKEN=%s", token),
+		"TSURU_TARGET=" + target,
+		"TSURU_TOKEN=" + token,
+		"TSURU_PLUGIN_NAME=" + pluginName,
 	}
 	opts := exec.ExecuteOptions{
 		Cmd:    pluginPath,
