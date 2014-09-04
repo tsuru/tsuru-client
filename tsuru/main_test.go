@@ -189,18 +189,18 @@ func (s *S) TestUnitRemoveIsRegistered(c *gocheck.C) {
 	c.Assert(rmunit, gocheck.FitsTypeOf, &UnitRemove{})
 }
 
-func (s *S) TestSetCNameIsRegistered(c *gocheck.C) {
+func (s *S) TestAddCNameIsRegistered(c *gocheck.C) {
 	manager := buildManager("tsuru")
-	cname, ok := manager.Commands["set-cname"]
+	cname, ok := manager.Commands["add-cname"]
 	c.Assert(ok, gocheck.Equals, true)
-	c.Assert(cname, gocheck.FitsTypeOf, &tsuru.SetCName{})
+	c.Assert(cname, gocheck.FitsTypeOf, &tsuru.AddCName{})
 }
 
-func (s *S) TestUnsetCNameIsRegistered(c *gocheck.C) {
+func (s *S) TestRemoveCNameIsRegistered(c *gocheck.C) {
 	manager := buildManager("tsuru")
-	cname, ok := manager.Commands["unset-cname"]
+	cname, ok := manager.Commands["remove-cname"]
 	c.Assert(ok, gocheck.Equals, true)
-	c.Assert(cname, gocheck.FitsTypeOf, &tsuru.UnsetCName{})
+	c.Assert(cname, gocheck.FitsTypeOf, &tsuru.RemoveCName{})
 }
 
 func (s *S) TestPlatformListIsRegistered(c *gocheck.C) {
