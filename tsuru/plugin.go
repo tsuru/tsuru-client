@@ -91,6 +91,7 @@ func (c *plugin) Run(context *cmd.Context, client *cmd.Client) error {
 		Args:   context.Args[1:],
 		Stdout: context.Stdout,
 		Stderr: context.Stderr,
+		Stdin:  context.Stdin,
 		Envs:   envs,
 	}
 	return executor().Execute(opts)
