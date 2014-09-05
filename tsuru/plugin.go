@@ -80,10 +80,13 @@ func (c *plugin) Run(context *cmd.Context, client *cmd.Client) error {
 	if err != nil {
 		return err
 	}
-	envs := []string{
-		fmt.Sprintf("TSURU_TARGET=%s", target),
-		fmt.Sprintf("TSURU_TOKEN=%s", token),
+	envs := os.Environ()
+	tsuruEnvs := []string{
+		"TSURU_TARGET=" + target,
+		"TSURU_TOKEN=" + token,
+		"TSURU_PLUGIN_NAME=" + pluginName,
 	}
+	envs = append(envs, tsuruEnvs...)
 	opts := exec.ExecuteOptions{
 		Cmd:    pluginPath,
 		Args:   context.Args[1:],

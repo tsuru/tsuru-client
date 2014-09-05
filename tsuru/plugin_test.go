@@ -14,6 +14,7 @@ import (
 	"launchpad.net/gocheck"
 	"net/http"
 	"net/http/httptest"
+	"os"
 )
 
 func (s *S) TestPluginInstallInfo(c *gocheck.C) {
@@ -103,10 +104,13 @@ func (s *S) TestPlugin(c *gocheck.C) {
 	c.Assert(err, gocheck.IsNil)
 	token, err := cmd.ReadToken()
 	c.Assert(err, gocheck.IsNil)
-	envs := []string{
+	envs := os.Environ()
+	tsuruEnvs := []string{
 		fmt.Sprintf("TSURU_TARGET=%s", target),
 		fmt.Sprintf("TSURU_TOKEN=%s", token),
+		"TSURU_PLUGIN_NAME=myplugin",
 	}
+	envs = append(envs, tsuruEnvs...)
 	c.Assert(commands[0].GetEnvs(), gocheck.DeepEquals, envs)
 }
 
