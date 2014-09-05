@@ -10,6 +10,7 @@ import (
 	"io/ioutil"
 	"net/http"
 	"net/http/httptest"
+	"os"
 
 	"github.com/tsuru/tsuru/cmd"
 	etesting "github.com/tsuru/tsuru/exec/testing"
@@ -109,6 +110,7 @@ func (s *S) TestPlugin(c *gocheck.C) {
 		fmt.Sprintf("TSURU_TOKEN=%s", token),
 		"TSURU_PLUGIN_NAME=myplugin",
 	}
+	envs = append(envs, os.Environ()...)
 	c.Assert(commands[0].GetEnvs(), gocheck.DeepEquals, envs)
 }
 

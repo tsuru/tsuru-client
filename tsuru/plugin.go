@@ -86,6 +86,7 @@ func (c *plugin) Run(context *cmd.Context, client *cmd.Client) error {
 		"TSURU_TOKEN=" + token,
 		"TSURU_PLUGIN_NAME=" + pluginName,
 	}
+	envs = append(envs, os.Environ()...)
 	opts := exec.ExecuteOptions{
 		Cmd:    pluginPath,
 		Args:   context.Args[1:],
