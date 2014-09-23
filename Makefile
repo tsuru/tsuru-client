@@ -3,6 +3,11 @@
 # license that can be found in the LICENSE file.
 
 release:
+	@if [ ! $(version) ]; then \
+		echo "version parameter is required... use: make release version=<value>"; \
+		exit 1; \
+	fi
+
 	@echo "Releasing tsuru $(version) version."
 
 	@echo "Replacing version string."
