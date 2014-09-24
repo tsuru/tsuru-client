@@ -13,7 +13,7 @@ release:
 	@echo "Replacing version string."
 	@sed -i "" "s/version = \".*\"/version = \"$(version)\"/g" tsuru/main.go
 
-	@git add .
+	@git add tsuru/main.go
 	@git commit -m "bump to $(version)"
 
 	@echo "Creating $(version) tag."
