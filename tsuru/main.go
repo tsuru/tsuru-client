@@ -56,6 +56,7 @@ func buildManager(name string) *cmd.Manager {
 	m.Register(&pluginList{})
 	m.Register(&Swap{})
 	m.Register(&deploy{})
+	m.Register(&tsuru.PlanList{})
 	return m
 }
 
