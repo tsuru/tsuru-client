@@ -20,7 +20,7 @@ import (
 func (s *S) TestAppCreateInfo(c *gocheck.C) {
 	expected := &cmd.Info{
 		Name:    "app-create",
-		Usage:   "app-create <appname> <platform> [--memory/-m memory_in_mb] [--swap/-s swap_in_mb] [--team/-t (team owner)]",
+		Usage:   "app-create <appname> <platform> [--plan/-p plan_name] [--team/-t (team owner)]",
 		Desc:    "create a new app.",
 		MinArgs: 2,
 	}
@@ -44,14 +44,13 @@ Your repository for "ble" project is "git@tsuru.plataformas.glb.com:ble.git"` + 
 			defer req.Body.Close()
 			body, err := ioutil.ReadAll(req.Body)
 			c.Assert(err, gocheck.IsNil)
-			expected := map[string]string{
+			expected := map[string]interface{}{
 				"name":      "ble",
 				"platform":  "django",
-				"memory":    "0",
 				"teamOwner": "",
-				"swap":      "0",
+				"plan":      map[string]interface{}{"name": ""},
 			}
-			result := map[string]string{}
+			result := map[string]interface{}{}
 			err = json.Unmarshal(body, &result)
 			c.Assert(expected, gocheck.DeepEquals, result)
 			return req.Method == "POST" && req.URL.Path == "/apps"
@@ -81,14 +80,13 @@ Your repository for "ble" project is "git@tsuru.plataformas.glb.com:ble.git"` + 
 			defer req.Body.Close()
 			body, err := ioutil.ReadAll(req.Body)
 			c.Assert(err, gocheck.IsNil)
-			expected := map[string]string{
+			expected := map[string]interface{}{
 				"name":      "ble",
 				"platform":  "django",
-				"memory":    "0",
 				"teamOwner": "team",
-				"swap":      "0",
+				"plan":      map[string]interface{}{"name": ""},
 			}
-			result := map[string]string{}
+			result := map[string]interface{}{}
 			err = json.Unmarshal(body, &result)
 			c.Assert(expected, gocheck.DeepEquals, result)
 			return req.Method == "POST" && req.URL.Path == "/apps"
@@ -97,6 +95,43 @@ Your repository for "ble" project is "git@tsuru.plataformas.glb.com:ble.git"` + 
 	client := cmd.NewClient(&http.Client{Transport: &trans}, nil, manager)
 	command := AppCreate{}
 	command.Flags().Parse(true, []string{"-t", "team"})
+	err := command.Run(&context, client)
+	c.Assert(err, gocheck.IsNil)
+	c.Assert(stdout.String(), gocheck.Equals, expected)
+}
+
+func (s *S) TestAppCreatePlan(c *gocheck.C) {
+	var stdout, stderr bytes.Buffer
+	result := `{"status":"success", "repository_url":"git@tsuru.plataformas.glb.com:ble.git"}`
+	expected := `App "ble" is being created!
+Use app-info to check the status of the app and its units.
+Your repository for "ble" project is "git@tsuru.plataformas.glb.com:ble.git"` + "\n"
+	context := cmd.Context{
+		Args:   []string{"ble", "django"},
+		Stdout: &stdout,
+		Stderr: &stderr,
+	}
+	trans := testing.ConditionalTransport{
+		Transport: testing.Transport{Message: result, Status: http.StatusOK},
+		CondFunc: func(req *http.Request) bool {
+			defer req.Body.Close()
+			body, err := ioutil.ReadAll(req.Body)
+			c.Assert(err, gocheck.IsNil)
+			expected := map[string]interface{}{
+				"name":      "ble",
+				"platform":  "django",
+				"teamOwner": "",
+				"plan":      map[string]interface{}{"name": "myplan"},
+			}
+			result := map[string]interface{}{}
+			err = json.Unmarshal(body, &result)
+			c.Assert(expected, gocheck.DeepEquals, result)
+			return req.Method == "POST" && req.URL.Path == "/apps"
+		},
+	}
+	client := cmd.NewClient(&http.Client{Transport: &trans}, nil, manager)
+	command := AppCreate{}
+	command.Flags().Parse(true, []string{"-p", "myplan"})
 	err := command.Run(&context, client)
 	c.Assert(err, gocheck.IsNil)
 	c.Assert(stdout.String(), gocheck.Equals, expected)
@@ -120,20 +155,20 @@ func (s *S) TestAppCreateFlags(c *gocheck.C) {
 	command := AppCreate{}
 	flagset := command.Flags()
 	c.Assert(flagset, gocheck.NotNil)
-	flagset.Parse(true, []string{"-m", "10"})
-	memory := flagset.Lookup("memory")
-	usage := "The maximum amount of memory reserved to each container for this app"
-	c.Check(memory, gocheck.NotNil)
-	c.Check(memory.Name, gocheck.Equals, "memory")
-	c.Check(memory.Usage, gocheck.Equals, usage)
-	c.Check(memory.Value.String(), gocheck.Equals, "10")
-	c.Check(memory.DefValue, gocheck.Equals, "0")
-	smemory := flagset.Lookup("m")
-	c.Check(smemory, gocheck.NotNil)
-	c.Check(smemory.Name, gocheck.Equals, "m")
-	c.Check(smemory.Usage, gocheck.Equals, usage)
-	c.Check(smemory.Value.String(), gocheck.Equals, "10")
-	c.Check(smemory.DefValue, gocheck.Equals, "0")
+	flagset.Parse(true, []string{"-p", "myplan"})
+	plan := flagset.Lookup("plan")
+	usage := "The plan used to create the app"
+	c.Check(plan, gocheck.NotNil)
+	c.Check(plan.Name, gocheck.Equals, "plan")
+	c.Check(plan.Usage, gocheck.Equals, usage)
+	c.Check(plan.Value.String(), gocheck.Equals, "myplan")
+	c.Check(plan.DefValue, gocheck.Equals, "")
+	splan := flagset.Lookup("p")
+	c.Check(splan, gocheck.NotNil)
+	c.Check(splan.Name, gocheck.Equals, "p")
+	c.Check(splan.Usage, gocheck.Equals, usage)
+	c.Check(splan.Value.String(), gocheck.Equals, "myplan")
+	c.Check(splan.DefValue, gocheck.Equals, "")
 	flagset.Parse(true, []string{"-t", "team"})
 	usage = "Team owner app"
 	teamOwner := flagset.Lookup("team")
@@ -148,20 +183,6 @@ func (s *S) TestAppCreateFlags(c *gocheck.C) {
 	c.Check(teamOwner.Usage, gocheck.Equals, usage)
 	c.Check(teamOwner.Value.String(), gocheck.Equals, "team")
 	c.Check(teamOwner.DefValue, gocheck.Equals, "")
-	flagset.Parse(true, []string{"-s", "10"})
-	swap := flagset.Lookup("swap")
-	usage = "The maximum amount of swap reserved to each container for this app"
-	c.Check(swap, gocheck.NotNil)
-	c.Check(swap.Name, gocheck.Equals, "swap")
-	c.Check(swap.Usage, gocheck.Equals, usage)
-	c.Check(swap.Value.String(), gocheck.Equals, "10")
-	c.Check(swap.DefValue, gocheck.Equals, "0")
-	sswap := flagset.Lookup("s")
-	c.Check(sswap, gocheck.NotNil)
-	c.Check(sswap.Name, gocheck.Equals, "s")
-	c.Check(sswap.Usage, gocheck.Equals, usage)
-	c.Check(sswap.Value.String(), gocheck.Equals, "10")
-	c.Check(sswap.DefValue, gocheck.Equals, "0")
 }
 
 func (s *S) TestAppRemove(c *gocheck.C) {
