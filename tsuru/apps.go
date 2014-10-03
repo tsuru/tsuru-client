@@ -8,11 +8,13 @@ import (
 	"bytes"
 	"encoding/json"
 	"fmt"
+	"io"
 	"io/ioutil"
 	"net/http"
 
 	"github.com/tsuru/tsuru/cmd"
 	"github.com/tsuru/tsuru/cmd/tsuru-base"
+	tsuruIo "github.com/tsuru/tsuru/io"
 	"launchpad.net/gnuflag"
 )
 
@@ -163,11 +165,21 @@ func (c *UnitAdd) Run(context *cmd.Context, client *cmd.Client) error {
 	if err != nil {
 		return err
 	}
-	_, err = client.Do(request)
+	response, err := client.Do(request)
 	if err != nil {
 		return err
 	}
-	fmt.Fprintln(context.Stdout, "Units successfully added!")
+	defer response.Body.Close()
+	w := tsuruIo.NewStreamWriter(context.Stdout, nil)
+	for n := int64(1); n > 0 && err == nil; n, err = io.Copy(w, response.Body) {
+	}
+	if err != nil {
+		return err
+	}
+	unparsed := w.Remaining()
+	if len(unparsed) > 0 {
+		return fmt.Errorf("unparsed message error: %s", string(unparsed))
+	}
 	return nil
 }
 

@@ -14,6 +14,7 @@ import (
 	"github.com/tsuru/tsuru/cmd"
 	"github.com/tsuru/tsuru/cmd/testing"
 	"github.com/tsuru/tsuru/cmd/tsuru-base"
+	tsuruIo "github.com/tsuru/tsuru/io"
 	"launchpad.net/gocheck"
 )
 
@@ -328,8 +329,12 @@ func (s *S) TestUnitAdd(c *gocheck.C) {
 		Stdout: &stdout,
 		Stderr: &stderr,
 	}
+	expectedOut := "-- added unit --"
+	msg := tsuruIo.SimpleJsonMessage{Message: expectedOut}
+	result, err := json.Marshal(msg)
+	c.Assert(err, gocheck.IsNil)
 	trans := &testing.ConditionalTransport{
-		Transport: testing.Transport{Message: "", Status: http.StatusOK},
+		Transport: testing.Transport{Message: string(result), Status: http.StatusOK},
 		CondFunc: func(req *http.Request) bool {
 			called = true
 			b, err := ioutil.ReadAll(req.Body)
@@ -341,11 +346,10 @@ func (s *S) TestUnitAdd(c *gocheck.C) {
 	client := cmd.NewClient(&http.Client{Transport: trans}, nil, manager)
 	command := UnitAdd{}
 	command.Flags().Parse(true, []string{"-a", "radio"})
-	err := command.Run(&context, client)
+	err = command.Run(&context, client)
 	c.Assert(err, gocheck.IsNil)
 	c.Assert(called, gocheck.Equals, true)
-	expected := "Units successfully added!\n"
-	c.Assert(stdout.String(), gocheck.Equals, expected)
+	c.Assert(stdout.String(), gocheck.Equals, expectedOut)
 }
 
 func (s *S) TestUnitAddFailure(c *gocheck.C) {
@@ -355,12 +359,15 @@ func (s *S) TestUnitAddFailure(c *gocheck.C) {
 		Stdout: &stdout,
 		Stderr: &stderr,
 	}
-	client := cmd.NewClient(&http.Client{Transport: &testing.Transport{Message: "Failed to add.", Status: 500}}, nil, manager)
+	msg := tsuruIo.SimpleJsonMessage{Error: "errored msg"}
+	result, err := json.Marshal(msg)
+	c.Assert(err, gocheck.IsNil)
+	client := cmd.NewClient(&http.Client{Transport: &testing.Transport{Message: string(result), Status: 200}}, nil, manager)
 	command := UnitAdd{}
 	command.Flags().Parse(true, []string{"-a", "radio"})
-	err := command.Run(&context, client)
+	err = command.Run(&context, client)
 	c.Assert(err, gocheck.NotNil)
-	c.Assert(err.Error(), gocheck.Equals, "Failed to add.")
+	c.Assert(err.Error(), gocheck.Equals, "errored msg")
 }
 
 func (s *S) TestUnitAddInfo(c *gocheck.C) {
