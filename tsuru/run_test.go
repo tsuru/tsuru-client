@@ -99,7 +99,7 @@ func (s *S) TestAppRunWithoutTheFlag(c *gocheck.C) {
 	}
 	client := cmd.NewClient(&http.Client{Transport: trans}, nil, manager)
 	fake := &FakeGuesser{name: "bla"}
-	command := AppRun{GuessingCommand: GuessingCommand{G: fake}}
+	command := AppRun{GuessingCommand: cmd.GuessingCommand{G: fake}}
 	command.Flags().Parse(true, nil)
 	err = command.Run(&context, client)
 	c.Assert(err, gocheck.IsNil)
@@ -127,7 +127,7 @@ func (s *S) TestAppRunShouldReturnErrorWhenCommandGoWrong(c *gocheck.C) {
 	}
 	client := cmd.NewClient(&http.Client{Transport: trans}, nil, manager)
 	fake := &FakeGuesser{name: "bla"}
-	command := AppRun{GuessingCommand: GuessingCommand{G: fake}}
+	command := AppRun{GuessingCommand: cmd.GuessingCommand{G: fake}}
 	command.Flags().Parse(true, nil)
 	err = command.Run(&context, client)
 	c.Assert(err, gocheck.ErrorMatches, "command doesn't exist.")

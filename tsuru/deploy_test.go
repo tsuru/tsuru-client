@@ -60,7 +60,7 @@ func (s *S) TestDeployRun(c *gocheck.C) {
 		Args:   []string{"testdata", ".."},
 	}
 	fake := FakeGuesser{name: "secret"}
-	guessCommand := GuessingCommand{G: &fake}
+	guessCommand := cmd.GuessingCommand{G: &fake}
 	cmd := deploy{GuessingCommand: guessCommand}
 	err = cmd.Run(&context, client)
 	c.Assert(err, gocheck.IsNil)
@@ -77,7 +77,7 @@ func (s *S) TestDeployRunNotOK(c *gocheck.C) {
 		Args:   []string{"testdata", ".."},
 	}
 	fake := FakeGuesser{name: "secret"}
-	guessCommand := GuessingCommand{G: &fake}
+	guessCommand := cmd.GuessingCommand{G: &fake}
 	command := deploy{GuessingCommand: guessCommand}
 	err := command.Run(&context, client)
 	c.Assert(err, gocheck.Equals, cmd.ErrAbortCommand)
@@ -91,7 +91,7 @@ func (s *S) TestDeployRunFileNotFound(c *gocheck.C) {
 		Args:   []string{"/tmp/something/that/doesnt/really/exist/im/sure"},
 	}
 	fake := FakeGuesser{name: "secret"}
-	guessCommand := GuessingCommand{G: &fake}
+	guessCommand := cmd.GuessingCommand{G: &fake}
 	command := deploy{GuessingCommand: guessCommand}
 	err := command.Run(&context, nil)
 	c.Assert(err, gocheck.NotNil)
@@ -107,7 +107,7 @@ func (s *S) TestDeployRunRequestFailure(c *gocheck.C) {
 		Args:   []string{"testdata", ".."},
 	}
 	fake := FakeGuesser{name: "secret"}
-	guessCommand := GuessingCommand{G: &fake}
+	guessCommand := cmd.GuessingCommand{G: &fake}
 	command := deploy{GuessingCommand: guessCommand}
 	err := command.Run(&context, client)
 	c.Assert(err, gocheck.NotNil)
@@ -118,7 +118,7 @@ func (s *S) TestTargz(c *gocheck.C) {
 	var buf bytes.Buffer
 	ctx := cmd.Context{Stderr: &buf}
 	var gzipBuf, tarBuf bytes.Buffer
-	err := targz(&ctx, &gzipBuf, "testdata/deploy", "..")
+	err := targz(&ctx, &gzipBuf, "testdata", "..")
 	c.Assert(err, gocheck.IsNil)
 	gzipReader, err := gzip.NewReader(&gzipBuf)
 	c.Assert(err, gocheck.IsNil)
@@ -136,9 +136,8 @@ func (s *S) TestTargz(c *gocheck.C) {
 		}
 	}
 	expected := []string{
-		"testdata/deploy", "testdata/deploy/directory",
-		"testdata/deploy/directory/file.txt",
-		"testdata/deploy/file1.txt", "testdata/deploy/file2.txt",
+		"testdata", "testdata/directory", "testdata/directory/file.txt",
+		"testdata/file1.txt", "testdata/file2.txt",
 	}
 	sort.Strings(expected)
 	sort.Strings(headers)

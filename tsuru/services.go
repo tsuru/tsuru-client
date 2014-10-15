@@ -124,7 +124,7 @@ func (c *ServiceAdd) Flags() *gnuflag.FlagSet {
 }
 
 type ServiceBind struct {
-	GuessingCommand
+	cmd.GuessingCommand
 }
 
 func (sb *ServiceBind) Run(ctx *cmd.Context, client *cmd.Client) error {
@@ -180,7 +180,7 @@ If you don't provide the app name, tsuru will try to guess it.`,
 }
 
 type ServiceUnbind struct {
-	GuessingCommand
+	cmd.GuessingCommand
 }
 
 func (su *ServiceUnbind) Run(ctx *cmd.Context, client *cmd.Client) error {

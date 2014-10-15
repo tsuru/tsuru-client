@@ -16,7 +16,8 @@ import (
 )
 
 type AppRun struct {
-	GuessingCommand
+	cmd.GuessingCommand
+	fs   *gnuflag.FlagSet
 	once bool
 }
 

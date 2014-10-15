@@ -154,7 +154,7 @@ func (s *S) TestServiceBindWithoutFlag(c *gocheck.C) {
 	}
 	client := cmd.NewClient(&http.Client{Transport: trans}, nil, manager)
 	fake := &FakeGuesser{name: "ge"}
-	err := (&ServiceBind{GuessingCommand{G: fake}}).Run(&ctx, client)
+	err := (&ServiceBind{cmd.GuessingCommand{G: fake}}).Run(&ctx, client)
 	c.Assert(err, gocheck.IsNil)
 	c.Assert(called, gocheck.Equals, true)
 	expected := `Instance "my-mysql" is now bound to the app "ge".
@@ -266,7 +266,7 @@ func (s *S) TestServiceUnbindWithoutFlag(c *gocheck.C) {
 	}
 	client := cmd.NewClient(&http.Client{Transport: trans}, nil, manager)
 	fake := &FakeGuesser{name: "sleeve"}
-	err := (&ServiceUnbind{GuessingCommand{G: fake}}).Run(&ctx, client)
+	err := (&ServiceUnbind{cmd.GuessingCommand{G: fake}}).Run(&ctx, client)
 	c.Assert(err, gocheck.IsNil)
 	c.Assert(called, gocheck.Equals, true)
 	c.Assert(stdout.String(), gocheck.Equals, "Instance \"hand\" is not bound to the app \"sleeve\" anymore.\n")

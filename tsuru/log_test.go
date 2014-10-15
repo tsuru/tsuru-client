@@ -115,7 +115,7 @@ func (s *S) TestAppLogWithoutTheFlag(c *gocheck.C) {
 		Stderr: &stderr,
 	}
 	fake := &FakeGuesser{name: "hitthelights"}
-	command := AppLog{GuessingCommand: GuessingCommand{G: fake}}
+	command := AppLog{GuessingCommand: cmd.GuessingCommand{G: fake}}
 	command.Flags().Parse(true, nil)
 	trans := &testing.ConditionalTransport{
 		Transport: testing.Transport{Message: string(result), Status: http.StatusOK},
@@ -174,7 +174,7 @@ func (s *S) TestAppLogBySource(c *gocheck.C) {
 		Stderr: &stderr,
 	}
 	fake := &FakeGuesser{name: "hitthelights"}
-	command := AppLog{GuessingCommand: GuessingCommand{G: fake}}
+	command := AppLog{GuessingCommand: cmd.GuessingCommand{G: fake}}
 	command.Flags().Parse(true, []string{"--source", "mysource"})
 	trans := &testing.ConditionalTransport{
 		Transport: testing.Transport{Message: string(result), Status: http.StatusOK},
@@ -206,7 +206,7 @@ func (s *S) TestAppLogByUnit(c *gocheck.C) {
 		Stderr: &stderr,
 	}
 	fake := &FakeGuesser{name: "hitthelights"}
-	command := AppLog{GuessingCommand: GuessingCommand{G: fake}}
+	command := AppLog{GuessingCommand: cmd.GuessingCommand{G: fake}}
 	command.Flags().Parse(true, []string{"--unit", "api"})
 	trans := &testing.ConditionalTransport{
 		Transport: testing.Transport{Message: string(result), Status: http.StatusOK},
@@ -238,7 +238,7 @@ func (s *S) TestAppLogWithLines(c *gocheck.C) {
 		Stderr: &stderr,
 	}
 	fake := &FakeGuesser{name: "hitthelights"}
-	command := AppLog{GuessingCommand: GuessingCommand{G: fake}}
+	command := AppLog{GuessingCommand: cmd.GuessingCommand{G: fake}}
 	command.Flags().Parse(true, []string{"--lines", "12"})
 	trans := &testing.ConditionalTransport{
 		Transport: testing.Transport{Message: string(result), Status: http.StatusOK},
@@ -270,7 +270,7 @@ func (s *S) TestAppLogWithFollow(c *gocheck.C) {
 		Stderr: &stderr,
 	}
 	fake := &FakeGuesser{name: "hitthelights"}
-	command := AppLog{GuessingCommand: GuessingCommand{G: fake}}
+	command := AppLog{GuessingCommand: cmd.GuessingCommand{G: fake}}
 	command.Flags().Parse(true, []string{"--lines", "12", "-f"})
 	trans := &testing.ConditionalTransport{
 		Transport: testing.Transport{Message: string(result), Status: http.StatusOK},

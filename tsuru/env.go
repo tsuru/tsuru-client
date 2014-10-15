@@ -27,7 +27,7 @@ Example:
   tsuru env-set NAME=value OTHER_NAME="value with spaces" ANOTHER_NAME='using single quotes'`
 
 type EnvGet struct {
-	GuessingCommand
+	cmd.GuessingCommand
 }
 
 func (c *EnvGet) Info() *cmd.Info {
@@ -65,7 +65,7 @@ func (c *EnvGet) Run(context *cmd.Context, client *cmd.Client) error {
 }
 
 type EnvSet struct {
-	GuessingCommand
+	cmd.GuessingCommand
 }
 
 func (c *EnvSet) Info() *cmd.Info {
@@ -123,7 +123,7 @@ func (c *EnvSet) Run(context *cmd.Context, client *cmd.Client) error {
 }
 
 type EnvUnset struct {
-	GuessingCommand
+	cmd.GuessingCommand
 }
 
 func (c *EnvUnset) Info() *cmd.Info {
@@ -169,7 +169,7 @@ func (c *EnvUnset) Run(context *cmd.Context, client *cmd.Client) error {
 	return nil
 }
 
-func requestEnvURL(method string, g GuessingCommand, args []string, client *cmd.Client) ([]byte, error) {
+func requestEnvURL(method string, g cmd.GuessingCommand, args []string, client *cmd.Client) ([]byte, error) {
 	appName, err := g.Guess()
 	if err != nil {
 		return nil, err

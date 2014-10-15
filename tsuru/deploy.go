@@ -22,7 +22,7 @@ import (
 )
 
 type deploy struct {
-	GuessingCommand
+	cmd.GuessingCommand
 }
 
 func (c *deploy) Info() *cmd.Info {

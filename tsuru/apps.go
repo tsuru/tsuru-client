@@ -91,7 +91,7 @@ func (c *AppCreate) Run(context *cmd.Context, client *cmd.Client) error {
 }
 
 type AppRemove struct {
-	GuessingCommand
+	cmd.GuessingCommand
 	cmd.ConfirmationCommand
 	fs *gnuflag.FlagSet
 }
@@ -142,7 +142,7 @@ func (c *AppRemove) Flags() *gnuflag.FlagSet {
 }
 
 type AppInfo struct {
-	GuessingCommand
+	cmd.GuessingCommand
 }
 
 func (c *AppInfo) Info() *cmd.Info {
@@ -356,7 +356,7 @@ func (c *AppInfo) Show(result []byte, adminResult []byte, servicesResult []byte,
 }
 
 type AppGrant struct {
-	GuessingCommand
+	cmd.GuessingCommand
 }
 
 func (c *AppGrant) Info() *cmd.Info {
@@ -393,7 +393,7 @@ func (c *AppGrant) Run(context *cmd.Context, client *cmd.Client) error {
 }
 
 type AppRevoke struct {
-	GuessingCommand
+	cmd.GuessingCommand
 }
 
 func (c *AppRevoke) Info() *cmd.Info {
@@ -493,7 +493,7 @@ func (c AppList) Info() *cmd.Info {
 }
 
 type AppStop struct {
-	GuessingCommand
+	cmd.GuessingCommand
 }
 
 func (c *AppStop) Info() *cmd.Info {
@@ -533,7 +533,7 @@ func (c *AppStop) Run(context *cmd.Context, client *cmd.Client) error {
 }
 
 type AppStart struct {
-	GuessingCommand
+	cmd.GuessingCommand
 }
 
 func (c *AppStart) Info() *cmd.Info {
@@ -573,7 +573,7 @@ func (c *AppStart) Run(context *cmd.Context, client *cmd.Client) error {
 }
 
 type AppRestart struct {
-	GuessingCommand
+	cmd.GuessingCommand
 }
 
 func (c *AppRestart) Run(context *cmd.Context, client *cmd.Client) error {
@@ -619,7 +619,7 @@ If you don't provide the app name, tsuru will try to guess it.`,
 }
 
 type AddCName struct {
-	GuessingCommand
+	cmd.GuessingCommand
 }
 
 func (c *AddCName) Run(context *cmd.Context, client *cmd.Client) error {
@@ -641,7 +641,7 @@ func (c *AddCName) Info() *cmd.Info {
 }
 
 type RemoveCName struct {
-	GuessingCommand
+	cmd.GuessingCommand
 }
 
 func (c *RemoveCName) Run(context *cmd.Context, client *cmd.Client) error {
@@ -662,7 +662,7 @@ func (c *RemoveCName) Info() *cmd.Info {
 	}
 }
 
-func unsetCName(v []string, g GuessingCommand, client *cmd.Client) error {
+func unsetCName(v []string, g cmd.GuessingCommand, client *cmd.Client) error {
 	appName, err := g.Guess()
 	if err != nil {
 		return err
@@ -689,7 +689,7 @@ func unsetCName(v []string, g GuessingCommand, client *cmd.Client) error {
 	return nil
 }
 
-func addCName(v []string, g GuessingCommand, client *cmd.Client) error {
+func addCName(v []string, g cmd.GuessingCommand, client *cmd.Client) error {
 	appName, err := g.Guess()
 	if err != nil {
 		return err
@@ -717,7 +717,7 @@ func addCName(v []string, g GuessingCommand, client *cmd.Client) error {
 }
 
 type SetTeamOwner struct {
-	GuessingCommand
+	cmd.GuessingCommand
 }
 
 func (c *SetTeamOwner) Run(context *cmd.Context, client *cmd.Client) error {
@@ -752,7 +752,7 @@ func (c *SetTeamOwner) Info() *cmd.Info {
 }
 
 type UnitAdd struct {
-	GuessingCommand
+	cmd.GuessingCommand
 }
 
 func (c *UnitAdd) Info() *cmd.Info {
@@ -796,7 +796,7 @@ func (c *UnitAdd) Run(context *cmd.Context, client *cmd.Client) error {
 }
 
 type UnitRemove struct {
-	GuessingCommand
+	cmd.GuessingCommand
 }
 
 func (c *UnitRemove) Info() *cmd.Info {

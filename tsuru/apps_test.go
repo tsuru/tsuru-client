@@ -282,7 +282,7 @@ func (s *S) TestAppRemoveWithoutArgs(c *gocheck.C) {
 	}
 	client := cmd.NewClient(&http.Client{Transport: trans}, nil, manager)
 	fake := FakeGuesser{name: "secret"}
-	guessCommand := GuessingCommand{G: &fake}
+	guessCommand := cmd.GuessingCommand{G: &fake}
 	command := AppRemove{GuessingCommand: guessCommand}
 	err := command.Run(&context, client)
 	c.Assert(err, gocheck.IsNil)
@@ -431,7 +431,7 @@ Units: 2
 	}
 	client := cmd.NewClient(&http.Client{Transport: trans}, nil, manager)
 	fake := FakeGuesser{name: "secret"}
-	guessCommand := GuessingCommand{G: &fake}
+	guessCommand := cmd.GuessingCommand{G: &fake}
 	command := AppInfo{GuessingCommand: guessCommand}
 	command.Flags().Parse(true, nil)
 	err := command.Run(&context, client)
@@ -575,7 +575,7 @@ func (s *S) TestAppGrantWithoutFlag(c *gocheck.C) {
 		Stderr: &stderr,
 	}
 	fake := &FakeGuesser{name: "fights"}
-	command := AppGrant{GuessingCommand: GuessingCommand{G: fake}}
+	command := AppGrant{GuessingCommand: cmd.GuessingCommand{G: fake}}
 	command.Flags().Parse(true, nil)
 	client := cmd.NewClient(&http.Client{Transport: &testing.Transport{Message: "", Status: http.StatusOK}}, nil, manager)
 	err := command.Run(&context, client)
@@ -620,7 +620,7 @@ func (s *S) TestAppRevokeWithoutFlag(c *gocheck.C) {
 		Stderr: &stderr,
 	}
 	fake := &FakeGuesser{name: "fights"}
-	command := AppRevoke{GuessingCommand: GuessingCommand{G: fake}}
+	command := AppRevoke{GuessingCommand: cmd.GuessingCommand{G: fake}}
 	command.Flags().Parse(true, nil)
 	client := cmd.NewClient(&http.Client{Transport: &testing.Transport{Message: "", Status: http.StatusOK}}, nil, manager)
 	err := command.Run(&context, client)
@@ -855,7 +855,7 @@ func (s *S) TestAppRestartWithoutTheFlag(c *gocheck.C) {
 	}
 	client := cmd.NewClient(&http.Client{Transport: trans}, nil, manager)
 	fake := &FakeGuesser{name: "motorbreath"}
-	command := AppRestart{GuessingCommand: GuessingCommand{G: fake}}
+	command := AppRestart{GuessingCommand: cmd.GuessingCommand{G: fake}}
 	command.Flags().Parse(true, nil)
 	err = command.Run(&context, client)
 	c.Assert(err, gocheck.IsNil)
@@ -934,7 +934,7 @@ func (s *S) TestAddCNameWithoutTheFlag(c *gocheck.C) {
 		},
 	}
 	client := cmd.NewClient(&http.Client{Transport: trans}, nil, manager)
-	err := (&AddCName{GuessingCommand{G: fake}}).Run(&context, client)
+	err := (&AddCName{cmd.GuessingCommand{G: fake}}).Run(&context, client)
 	c.Assert(err, gocheck.IsNil)
 	c.Assert(called, gocheck.Equals, true)
 	c.Assert(stdout.String(), gocheck.Equals, "cname successfully defined.\n")
@@ -1013,7 +1013,7 @@ func (s *S) TestRemoveCNameWithoutTheFlag(c *gocheck.C) {
 		},
 	}
 	client := cmd.NewClient(&http.Client{Transport: trans}, nil, manager)
-	err := (&RemoveCName{GuessingCommand{G: fake}}).Run(&context, client)
+	err := (&RemoveCName{cmd.GuessingCommand{G: fake}}).Run(&context, client)
 	c.Assert(err, gocheck.IsNil)
 	c.Assert(called, gocheck.Equals, true)
 	c.Assert(stdout.String(), gocheck.Equals, "cname successfully undefined.\n")
@@ -1124,7 +1124,7 @@ func (s *S) TestAppStartWithoutTheFlag(c *gocheck.C) {
 	}
 	client := cmd.NewClient(&http.Client{Transport: trans}, nil, manager)
 	fake := &FakeGuesser{name: "motorbreath"}
-	command := AppStart{GuessingCommand: GuessingCommand{G: fake}}
+	command := AppStart{GuessingCommand: cmd.GuessingCommand{G: fake}}
 	command.Flags().Parse(true, nil)
 	err := command.Run(&context, client)
 	c.Assert(err, gocheck.IsNil)
@@ -1200,7 +1200,7 @@ func (s *S) TestAppStopWithoutTheFlag(c *gocheck.C) {
 	}
 	client := cmd.NewClient(&http.Client{Transport: trans}, nil, manager)
 	fake := &FakeGuesser{name: "motorbreath"}
-	command := AppStop{GuessingCommand: GuessingCommand{G: fake}}
+	command := AppStop{GuessingCommand: cmd.GuessingCommand{G: fake}}
 	command.Flags().Parse(true, nil)
 	err := command.Run(&context, client)
 	c.Assert(err, gocheck.IsNil)
@@ -1332,4 +1332,23 @@ func (s *S) TestUnitRemoveInfo(c *gocheck.C) {
 
 func (s *S) TestUnitRemoveIsACommand(c *gocheck.C) {
 	var _ cmd.Command = &UnitRemove{}
+}
+
+type FakeGuesser struct {
+	guesses []string
+	name    string
+}
+
+func (f *FakeGuesser) HasGuess(path string) bool {
+	for _, g := range f.guesses {
+		if g == path {
+			return true
+		}
+	}
+	return false
+}
+
+func (f *FakeGuesser) GuessName(path string) (string, error) {
+	f.guesses = append(f.guesses, path)
+	return f.name, nil
 }

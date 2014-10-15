@@ -17,7 +17,7 @@ import (
 )
 
 type AppLog struct {
-	GuessingCommand
+	cmd.GuessingCommand
 	fs     *gnuflag.FlagSet
 	source string
 	unit   string
