@@ -6,7 +6,6 @@ package main
 
 import (
 	"github.com/tsuru/tsuru/cmd"
-	"github.com/tsuru/tsuru/cmd/tsuru-base"
 	etesting "github.com/tsuru/tsuru/exec/testing"
 	"launchpad.net/gocheck"
 )
@@ -39,63 +38,63 @@ func (s *S) TestAppListIsRegistered(c *gocheck.C) {
 	manager := buildManager("tsuru")
 	list, ok := manager.Commands["app-list"]
 	c.Assert(ok, gocheck.Equals, true)
-	c.Assert(list, gocheck.FitsTypeOf, tsuru.AppList{})
+	c.Assert(list, gocheck.FitsTypeOf, AppList{})
 }
 
 func (s *S) TestAppGrantIsRegistered(c *gocheck.C) {
 	manager := buildManager("tsuru")
 	grant, ok := manager.Commands["app-grant"]
 	c.Assert(ok, gocheck.Equals, true)
-	c.Assert(grant, gocheck.FitsTypeOf, &tsuru.AppGrant{})
+	c.Assert(grant, gocheck.FitsTypeOf, &AppGrant{})
 }
 
 func (s *S) TestAppRevokeIsRegistered(c *gocheck.C) {
 	manager := buildManager("tsuru")
 	grant, ok := manager.Commands["app-revoke"]
 	c.Assert(ok, gocheck.Equals, true)
-	c.Assert(grant, gocheck.FitsTypeOf, &tsuru.AppRevoke{})
+	c.Assert(grant, gocheck.FitsTypeOf, &AppRevoke{})
 }
 
 func (s *S) TestAppLogIsRegistered(c *gocheck.C) {
 	manager := buildManager("tsuru")
 	log, ok := manager.Commands["log"]
 	c.Assert(ok, gocheck.Equals, true)
-	c.Assert(log, gocheck.FitsTypeOf, &tsuru.AppLog{})
+	c.Assert(log, gocheck.FitsTypeOf, &AppLog{})
 }
 
 func (s *S) TestAppRunIsRegistered(c *gocheck.C) {
 	manager := buildManager("tsuru")
 	run, ok := manager.Commands["run"]
 	c.Assert(ok, gocheck.Equals, true)
-	c.Assert(run, gocheck.FitsTypeOf, &tsuru.AppRun{})
+	c.Assert(run, gocheck.FitsTypeOf, &AppRun{})
 }
 
 func (s *S) TestAppRestartIsRegistered(c *gocheck.C) {
 	manager := buildManager("tsuru")
 	restart, ok := manager.Commands["restart"]
 	c.Assert(ok, gocheck.Equals, true)
-	c.Assert(restart, gocheck.FitsTypeOf, &tsuru.AppRestart{})
+	c.Assert(restart, gocheck.FitsTypeOf, &AppRestart{})
 }
 
 func (s *S) TestEnvGetIsRegistered(c *gocheck.C) {
 	manager := buildManager("tsuru")
 	get, ok := manager.Commands["env-get"]
 	c.Assert(ok, gocheck.Equals, true)
-	c.Assert(get, gocheck.FitsTypeOf, &tsuru.EnvGet{})
+	c.Assert(get, gocheck.FitsTypeOf, &EnvGet{})
 }
 
 func (s *S) TestEnvSetIsRegistered(c *gocheck.C) {
 	manager := buildManager("tsuru")
 	set, ok := manager.Commands["env-set"]
 	c.Assert(ok, gocheck.Equals, true)
-	c.Assert(set, gocheck.FitsTypeOf, &tsuru.EnvSet{})
+	c.Assert(set, gocheck.FitsTypeOf, &EnvSet{})
 }
 
 func (s *S) TestEnvUnsetIsRegistered(c *gocheck.C) {
 	manager := buildManager("tsuru")
 	unset, ok := manager.Commands["env-unset"]
 	c.Assert(ok, gocheck.Equals, true)
-	c.Assert(unset, gocheck.FitsTypeOf, &tsuru.EnvUnset{})
+	c.Assert(unset, gocheck.FitsTypeOf, &EnvUnset{})
 }
 
 func (s *S) TestKeyAddIsRegistered(c *gocheck.C) {
@@ -116,63 +115,63 @@ func (s *S) TestServiceListIsRegistered(c *gocheck.C) {
 	manager := buildManager("tsuru")
 	list, ok := manager.Commands["service-list"]
 	c.Assert(ok, gocheck.Equals, true)
-	c.Assert(list, gocheck.FitsTypeOf, tsuru.ServiceList{})
+	c.Assert(list, gocheck.FitsTypeOf, ServiceList{})
 }
 
 func (s *S) TestServiceAddIsRegistered(c *gocheck.C) {
 	manager := buildManager("tsuru")
 	add, ok := manager.Commands["service-add"]
 	c.Assert(ok, gocheck.Equals, true)
-	c.Assert(add, gocheck.FitsTypeOf, &tsuru.ServiceAdd{})
+	c.Assert(add, gocheck.FitsTypeOf, &ServiceAdd{})
 }
 
 func (s *S) TestServiceRemoveIsRegistered(c *gocheck.C) {
 	manager := buildManager("tsuru")
 	remove, ok := manager.Commands["service-remove"]
 	c.Assert(ok, gocheck.Equals, true)
-	c.Assert(remove, gocheck.FitsTypeOf, &tsuru.ServiceRemove{})
+	c.Assert(remove, gocheck.FitsTypeOf, &ServiceRemove{})
 }
 
 func (s *S) TestServiceBindIsRegistered(c *gocheck.C) {
 	manager := buildManager("tsuru")
 	bind, ok := manager.Commands["bind"]
 	c.Assert(ok, gocheck.Equals, true)
-	c.Assert(bind, gocheck.FitsTypeOf, &tsuru.ServiceBind{})
+	c.Assert(bind, gocheck.FitsTypeOf, &ServiceBind{})
 }
 
 func (s *S) TestServiceUnbindIsRegistered(c *gocheck.C) {
 	manager := buildManager("tsuru")
 	unbind, ok := manager.Commands["unbind"]
 	c.Assert(ok, gocheck.Equals, true)
-	c.Assert(unbind, gocheck.FitsTypeOf, &tsuru.ServiceUnbind{})
+	c.Assert(unbind, gocheck.FitsTypeOf, &ServiceUnbind{})
 }
 
 func (s *S) TestServiceDocIsRegistered(c *gocheck.C) {
 	manager := buildManager("tsuru")
 	doc, ok := manager.Commands["service-doc"]
 	c.Assert(ok, gocheck.Equals, true)
-	c.Assert(doc, gocheck.FitsTypeOf, tsuru.ServiceDoc{})
+	c.Assert(doc, gocheck.FitsTypeOf, ServiceDoc{})
 }
 
 func (s *S) TestServiceInfoIsRegistered(c *gocheck.C) {
 	manager := buildManager("tsuru")
 	info, ok := manager.Commands["service-info"]
 	c.Assert(ok, gocheck.Equals, true)
-	c.Assert(info, gocheck.FitsTypeOf, tsuru.ServiceInfo{})
+	c.Assert(info, gocheck.FitsTypeOf, ServiceInfo{})
 }
 
 func (s *S) TestServiceInstanceStatusIsRegistered(c *gocheck.C) {
 	manager := buildManager("tsuru")
 	status, ok := manager.Commands["service-status"]
 	c.Assert(ok, gocheck.Equals, true)
-	c.Assert(status, gocheck.FitsTypeOf, tsuru.ServiceInstanceStatus{})
+	c.Assert(status, gocheck.FitsTypeOf, ServiceInstanceStatus{})
 }
 
 func (s *S) TestAppInfoIsRegistered(c *gocheck.C) {
 	manager := buildManager("tsuru")
 	list, ok := manager.Commands["app-info"]
 	c.Assert(ok, gocheck.Equals, true)
-	c.Assert(list, gocheck.FitsTypeOf, &tsuru.AppInfo{})
+	c.Assert(list, gocheck.FitsTypeOf, &AppInfo{})
 }
 
 func (s *S) TestUnitAddIsRegistered(c *gocheck.C) {
@@ -193,14 +192,14 @@ func (s *S) TestAddCNameIsRegistered(c *gocheck.C) {
 	manager := buildManager("tsuru")
 	cname, ok := manager.Commands["add-cname"]
 	c.Assert(ok, gocheck.Equals, true)
-	c.Assert(cname, gocheck.FitsTypeOf, &tsuru.AddCName{})
+	c.Assert(cname, gocheck.FitsTypeOf, &AddCName{})
 }
 
 func (s *S) TestRemoveCNameIsRegistered(c *gocheck.C) {
 	manager := buildManager("tsuru")
 	cname, ok := manager.Commands["remove-cname"]
 	c.Assert(ok, gocheck.Equals, true)
-	c.Assert(cname, gocheck.FitsTypeOf, &tsuru.RemoveCName{})
+	c.Assert(cname, gocheck.FitsTypeOf, &RemoveCName{})
 }
 
 func (s *S) TestPlatformListIsRegistered(c *gocheck.C) {
@@ -221,7 +220,7 @@ func (s *S) TestAppStartIsRegistered(c *gocheck.C) {
 	manager := buildManager("tsuru")
 	start, ok := manager.Commands["start"]
 	c.Assert(ok, gocheck.Equals, true)
-	c.Assert(start, gocheck.FitsTypeOf, &tsuru.AppStart{})
+	c.Assert(start, gocheck.FitsTypeOf, &AppStart{})
 }
 
 func (s *S) TestPluginInstallIsRegistered(c *gocheck.C) {
@@ -261,7 +260,7 @@ func (s *S) TestAppStopIsRegistered(c *gocheck.C) {
 	manager := buildManager("tsuru")
 	stop, ok := manager.Commands["stop"]
 	c.Assert(ok, gocheck.Equals, true)
-	c.Assert(stop, gocheck.FitsTypeOf, &tsuru.AppStop{})
+	c.Assert(stop, gocheck.FitsTypeOf, &AppStop{})
 }
 
 func (s *S) TestDeployIsRegistered(c *gocheck.C) {

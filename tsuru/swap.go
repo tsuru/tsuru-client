@@ -9,7 +9,6 @@ import (
 	"net/http"
 	"strings"
 
-	"github.com/tsuru/tsuru/app"
 	"github.com/tsuru/tsuru/cmd"
 	"launchpad.net/gnuflag"
 )
@@ -46,7 +45,7 @@ func (s *Swap) Run(context *cmd.Context, client *cmd.Client) error {
 	err = makeSwap(client, url)
 	if err != nil {
 		errMsg := strings.Trim(err.Error(), "\n")
-		if errMsg == app.ErrAppNotEqual.Error() {
+		if errMsg == "Apps are not equal." {
 			var answer string
 			answersOptions := []string{"y", "yes"}
 			fmt.Fprint(context.Stdout, "We can't Swap your apps because they are not compatible. Do you want to do it anyway? (y/n) ")

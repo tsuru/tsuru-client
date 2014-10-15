@@ -19,11 +19,10 @@ import (
 	"time"
 
 	"github.com/tsuru/tsuru/cmd"
-	"github.com/tsuru/tsuru/cmd/tsuru-base"
 )
 
 type deploy struct {
-	tsuru.GuessingCommand
+	GuessingCommand
 }
 
 func (c *deploy) Info() *cmd.Info {
