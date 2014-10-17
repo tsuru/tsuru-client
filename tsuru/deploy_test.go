@@ -59,7 +59,7 @@ func (s *S) TestDeployRun(c *gocheck.C) {
 		Stderr: &stderr,
 		Args:   []string{"testdata", ".."},
 	}
-	fake := FakeGuesser{name: "secret"}
+	fake := testing.FakeGuesser{Name: "secret"}
 	guessCommand := cmd.GuessingCommand{G: &fake}
 	cmd := deploy{GuessingCommand: guessCommand}
 	err = cmd.Run(&context, client)
@@ -76,7 +76,7 @@ func (s *S) TestDeployRunNotOK(c *gocheck.C) {
 		Stderr: &stderr,
 		Args:   []string{"testdata", ".."},
 	}
-	fake := FakeGuesser{name: "secret"}
+	fake := testing.FakeGuesser{Name: "secret"}
 	guessCommand := cmd.GuessingCommand{G: &fake}
 	command := deploy{GuessingCommand: guessCommand}
 	err := command.Run(&context, client)
@@ -90,7 +90,7 @@ func (s *S) TestDeployRunFileNotFound(c *gocheck.C) {
 		Stderr: &stderr,
 		Args:   []string{"/tmp/something/that/doesnt/really/exist/im/sure"},
 	}
-	fake := FakeGuesser{name: "secret"}
+	fake := testing.FakeGuesser{Name: "secret"}
 	guessCommand := cmd.GuessingCommand{G: &fake}
 	command := deploy{GuessingCommand: guessCommand}
 	err := command.Run(&context, nil)
@@ -106,7 +106,7 @@ func (s *S) TestDeployRunRequestFailure(c *gocheck.C) {
 		Stderr: &stderr,
 		Args:   []string{"testdata", ".."},
 	}
-	fake := FakeGuesser{name: "secret"}
+	fake := testing.FakeGuesser{Name: "secret"}
 	guessCommand := cmd.GuessingCommand{G: &fake}
 	command := deploy{GuessingCommand: guessCommand}
 	err := command.Run(&context, client)

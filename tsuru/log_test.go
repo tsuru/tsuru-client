@@ -114,7 +114,7 @@ func (s *S) TestAppLogWithoutTheFlag(c *gocheck.C) {
 		Stdout: &stdout,
 		Stderr: &stderr,
 	}
-	fake := &FakeGuesser{name: "hitthelights"}
+	fake := &testing.FakeGuesser{Name: "hitthelights"}
 	command := AppLog{GuessingCommand: cmd.GuessingCommand{G: fake}}
 	command.Flags().Parse(true, nil)
 	trans := &testing.ConditionalTransport{
@@ -173,7 +173,7 @@ func (s *S) TestAppLogBySource(c *gocheck.C) {
 		Stdout: &stdout,
 		Stderr: &stderr,
 	}
-	fake := &FakeGuesser{name: "hitthelights"}
+	fake := &testing.FakeGuesser{Name: "hitthelights"}
 	command := AppLog{GuessingCommand: cmd.GuessingCommand{G: fake}}
 	command.Flags().Parse(true, []string{"--source", "mysource"})
 	trans := &testing.ConditionalTransport{
@@ -205,7 +205,7 @@ func (s *S) TestAppLogByUnit(c *gocheck.C) {
 		Stdout: &stdout,
 		Stderr: &stderr,
 	}
-	fake := &FakeGuesser{name: "hitthelights"}
+	fake := &testing.FakeGuesser{Name: "hitthelights"}
 	command := AppLog{GuessingCommand: cmd.GuessingCommand{G: fake}}
 	command.Flags().Parse(true, []string{"--unit", "api"})
 	trans := &testing.ConditionalTransport{
@@ -237,7 +237,7 @@ func (s *S) TestAppLogWithLines(c *gocheck.C) {
 		Stdout: &stdout,
 		Stderr: &stderr,
 	}
-	fake := &FakeGuesser{name: "hitthelights"}
+	fake := &testing.FakeGuesser{Name: "hitthelights"}
 	command := AppLog{GuessingCommand: cmd.GuessingCommand{G: fake}}
 	command.Flags().Parse(true, []string{"--lines", "12"})
 	trans := &testing.ConditionalTransport{
@@ -269,7 +269,7 @@ func (s *S) TestAppLogWithFollow(c *gocheck.C) {
 		Stdout: &stdout,
 		Stderr: &stderr,
 	}
-	fake := &FakeGuesser{name: "hitthelights"}
+	fake := &testing.FakeGuesser{Name: "hitthelights"}
 	command := AppLog{GuessingCommand: cmd.GuessingCommand{G: fake}}
 	command.Flags().Parse(true, []string{"--lines", "12", "-f"})
 	trans := &testing.ConditionalTransport{

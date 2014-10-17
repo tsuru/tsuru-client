@@ -126,7 +126,7 @@ func (s *S) TestEnvGetWithoutTheFlag(c *gocheck.C) {
 		},
 	}
 	client := cmd.NewClient(&http.Client{Transport: trans}, nil, manager)
-	fake := &FakeGuesser{name: "seek"}
+	fake := &testing.FakeGuesser{Name: "seek"}
 	err := (&EnvGet{cmd.GuessingCommand{G: fake}}).Run(&context, client)
 	c.Assert(err, gocheck.IsNil)
 	c.Assert(stdout.String(), gocheck.Equals, result)
@@ -255,7 +255,7 @@ func (s *S) TestEnvSetWithoutFlag(c *gocheck.C) {
 		},
 	}
 	client := cmd.NewClient(&http.Client{Transport: trans}, nil, manager)
-	fake := &FakeGuesser{name: "otherapp"}
+	fake := &testing.FakeGuesser{Name: "otherapp"}
 	err = (&EnvSet{cmd.GuessingCommand{G: fake}}).Run(&context, client)
 	c.Assert(err, gocheck.IsNil)
 	c.Assert(stdout.String(), gocheck.Equals, expectedOut)
@@ -333,7 +333,7 @@ func (s *S) TestEnvUnsetWithoutFlag(c *gocheck.C) {
 		},
 	}
 	client := cmd.NewClient(&http.Client{Transport: trans}, nil, manager)
-	fake := &FakeGuesser{name: "otherapp"}
+	fake := &testing.FakeGuesser{Name: "otherapp"}
 	err = (&EnvUnset{cmd.GuessingCommand{G: fake}}).Run(&context, client)
 	c.Assert(err, gocheck.IsNil)
 	c.Assert(stdout.String(), gocheck.Equals, expectedOut)
@@ -343,7 +343,7 @@ func (s *S) TestRequestEnvURL(c *gocheck.C) {
 	result := "DATABASE_HOST=somehost"
 	client := cmd.NewClient(&http.Client{Transport: &testing.Transport{Message: result, Status: http.StatusOK}}, nil, manager)
 	args := []string{"DATABASE_HOST"}
-	g := cmd.GuessingCommand{G: &FakeGuesser{name: "someapp"}}
+	g := cmd.GuessingCommand{G: &testing.FakeGuesser{Name: "someapp"}}
 	b, err := requestEnvURL("GET", g, args, client)
 	c.Assert(err, gocheck.IsNil)
 	c.Assert(b, gocheck.DeepEquals, []byte(result))

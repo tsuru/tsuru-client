@@ -153,7 +153,7 @@ func (s *S) TestServiceBindWithoutFlag(c *gocheck.C) {
 		},
 	}
 	client := cmd.NewClient(&http.Client{Transport: trans}, nil, manager)
-	fake := &FakeGuesser{name: "ge"}
+	fake := &testing.FakeGuesser{Name: "ge"}
 	err := (&ServiceBind{cmd.GuessingCommand{G: fake}}).Run(&ctx, client)
 	c.Assert(err, gocheck.IsNil)
 	c.Assert(called, gocheck.Equals, true)
@@ -265,7 +265,7 @@ func (s *S) TestServiceUnbindWithoutFlag(c *gocheck.C) {
 		},
 	}
 	client := cmd.NewClient(&http.Client{Transport: trans}, nil, manager)
-	fake := &FakeGuesser{name: "sleeve"}
+	fake := &testing.FakeGuesser{Name: "sleeve"}
 	err := (&ServiceUnbind{cmd.GuessingCommand{G: fake}}).Run(&ctx, client)
 	c.Assert(err, gocheck.IsNil)
 	c.Assert(called, gocheck.Equals, true)
