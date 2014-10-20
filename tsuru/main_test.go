@@ -188,18 +188,38 @@ func (s *S) TestUnitRemoveIsRegistered(c *gocheck.C) {
 	c.Assert(rmunit, gocheck.FitsTypeOf, &UnitRemove{})
 }
 
-func (s *S) TestAddCNameIsRegistered(c *gocheck.C) {
+func (s *S) TestCNameAddIsRegistered(c *gocheck.C) {
 	manager := buildManager("tsuru")
-	cname, ok := manager.Commands["add-cname"]
+	cname, ok := manager.Commands["cname-add"]
 	c.Assert(ok, gocheck.Equals, true)
 	c.Assert(cname, gocheck.FitsTypeOf, &AddCName{})
 }
 
-func (s *S) TestRemoveCNameIsRegistered(c *gocheck.C) {
+func (s *S) TestAddCnameIsDeprecated(c *gocheck.C) {
 	manager := buildManager("tsuru")
-	cname, ok := manager.Commands["remove-cname"]
+	original := manager.Commands["cname-add"]
+	deprecated, ok := manager.Commands["add-cname"]
+	c.Assert(ok, gocheck.Equals, true)
+	command, ok := deprecated.(*cmd.DeprecatedCommand)
+	c.Assert(ok, gocheck.Equals, true)
+	c.Assert(command.Command, gocheck.Equals, original)
+}
+
+func (s *S) TestCNameRemoveIsRegistered(c *gocheck.C) {
+	manager := buildManager("tsuru")
+	cname, ok := manager.Commands["cname-remove"]
 	c.Assert(ok, gocheck.Equals, true)
 	c.Assert(cname, gocheck.FitsTypeOf, &RemoveCName{})
+}
+
+func (s *S) TestRemoveCNameIsDeprecated(c *gocheck.C) {
+	manager := buildManager("tsuru")
+	original := manager.Commands["cname-remove"]
+	deprecated, ok := manager.Commands["remove-cname"]
+	c.Assert(ok, gocheck.Equals, true)
+	command, ok := deprecated.(*cmd.DeprecatedCommand)
+	c.Assert(ok, gocheck.Equals, true)
+	c.Assert(command.Command, gocheck.Equals, original)
 }
 
 func (s *S) TestPlatformListIsRegistered(c *gocheck.C) {
