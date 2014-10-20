@@ -212,7 +212,7 @@ func (s *S) TestServiceBindWithRequestFailure(c *gocheck.C) {
 func (s *S) TestServiceBindInfo(c *gocheck.C) {
 	expected := &cmd.Info{
 		Name:  "service-bind",
-		Usage: "service-bind <instancename> [--app appname]",
+		Usage: "service-bind <instancename> [-a/--app appname]",
 		Desc: `bind a service instance to an app
 
 If you don't provide the app name, tsuru will try to guess it.`,
@@ -292,7 +292,7 @@ func (s *S) TestServiceUnbindWithRequestFailure(c *gocheck.C) {
 func (s *S) TestServiceUnbindInfo(c *gocheck.C) {
 	expected := &cmd.Info{
 		Name:  "service-unbind",
-		Usage: "service-unbind <instancename> [--app appname]",
+		Usage: "service-unbind <instancename> [-a/--app appname]",
 		Desc: `unbind a service instance from an app
 
 If you don't provide the app name, tsuru will try to guess it.`,

@@ -307,7 +307,7 @@ func (s *S) TestAppRemoveWithoutConfirmation(c *gocheck.C) {
 func (s *S) TestAppRemoveInfo(c *gocheck.C) {
 	expected := &cmd.Info{
 		Name:  "app-remove",
-		Usage: "app-remove [--app appname] [--assume-yes]",
+		Usage: "app-remove [-a/--app appname] [-y/--assume-yes]",
 		Desc: `removes an app.
 
 If you don't provide the app name, tsuru will try to guess it.`,
@@ -343,7 +343,7 @@ Units: 3
 	}
 	client := cmd.NewClient(&http.Client{Transport: &testing.Transport{Message: result, Status: http.StatusOK}}, nil, manager)
 	command := AppInfo{}
-	command.Flags().Parse(true, []string{"--app", "app1"})
+	command.Flags().Parse(true, []string{"-a/--app", "app1"})
 	err := command.Run(&context, client)
 	c.Assert(err, gocheck.IsNil)
 	c.Assert(stdout.String(), gocheck.Equals, expected)
@@ -368,7 +368,7 @@ Deploys: 7
 	}
 	client := cmd.NewClient(&http.Client{Transport: &testing.Transport{Message: result, Status: http.StatusOK}}, nil, manager)
 	command := AppInfo{}
-	command.Flags().Parse(true, []string{"--app", "app1"})
+	command.Flags().Parse(true, []string{"-a/--app", "app1"})
 	err := command.Run(&context, client)
 	c.Assert(err, gocheck.IsNil)
 	c.Assert(stdout.String(), gocheck.Equals, expected)
@@ -393,7 +393,7 @@ Deploys: 7
 	}
 	client := cmd.NewClient(&http.Client{Transport: &testing.Transport{Message: result, Status: http.StatusOK}}, nil, manager)
 	command := AppInfo{}
-	command.Flags().Parse(true, []string{"--app", "app1"})
+	command.Flags().Parse(true, []string{"-a/--app", "app1"})
 	err := command.Run(&context, client)
 	c.Assert(err, gocheck.IsNil)
 	c.Assert(stdout.String(), gocheck.Equals, expected)
@@ -466,7 +466,7 @@ Units: 3
 	}
 	client := cmd.NewClient(&http.Client{Transport: &testing.Transport{Message: result, Status: http.StatusOK}}, nil, manager)
 	command := AppInfo{}
-	command.Flags().Parse(true, []string{"--app", "app1"})
+	command.Flags().Parse(true, []string{"-a/--app", "app1"})
 	err := command.Run(&context, client)
 	c.Assert(err, gocheck.IsNil)
 	c.Assert(stdout.String(), gocheck.Equals, expected)
@@ -533,7 +533,7 @@ Service instances: 1
 func (s *S) TestAppInfoInfo(c *gocheck.C) {
 	expected := &cmd.Info{
 		Name:  "app-info",
-		Usage: "app-info [--app appname]",
+		Usage: "app-info [-a/--app appname]",
 		Desc: `show information about your app.
 
 If you don't provide the app name, tsuru will try to guess it.`,
@@ -586,7 +586,7 @@ func (s *S) TestAppGrantWithoutFlag(c *gocheck.C) {
 func (s *S) TestAppGrantInfo(c *gocheck.C) {
 	expected := &cmd.Info{
 		Name:  "app-grant",
-		Usage: "app-grant <teamname> [--app appname]",
+		Usage: "app-grant <teamname> [-a/--app appname]",
 		Desc: `grants access to an app to a team.
 
 If you don't provide the app name, tsuru will try to guess it.`,
@@ -631,7 +631,7 @@ func (s *S) TestAppRevokeWithoutFlag(c *gocheck.C) {
 func (s *S) TestAppRevokeInfo(c *gocheck.C) {
 	expected := &cmd.Info{
 		Name:  "app-revoke",
-		Usage: "app-revoke <teamname> [--app appname]",
+		Usage: "app-revoke <teamname> [-a/--app appname]",
 		Desc: `revokes access to an app from a team.
 
 If you don't provide the app name, tsuru will try to guess it.`,
@@ -866,7 +866,7 @@ func (s *S) TestAppRestartWithoutTheFlag(c *gocheck.C) {
 func (s *S) TestAppRestartInfo(c *gocheck.C) {
 	expected := &cmd.Info{
 		Name:  "app-restart",
-		Usage: "app-restart [--app appname]",
+		Usage: "app-restart [-a/--app appname]",
 		Desc: `restarts an app.
 
 If you don't provide the app name, tsuru will try to guess it.`,
@@ -959,7 +959,7 @@ func (s *S) TestAddCNameFailure(c *gocheck.C) {
 func (s *S) TestAddCNameInfo(c *gocheck.C) {
 	expected := &cmd.Info{
 		Name:    "cname-add",
-		Usage:   "cname-add <cname> [<cname> ...] [--app appname]",
+		Usage:   "cname-add <cname> [<cname> ...] [-a/--app appname]",
 		Desc:    `adds a cname for your app.`,
 		MinArgs: 1,
 	}
@@ -1022,7 +1022,7 @@ func (s *S) TestRemoveCNameWithoutTheFlag(c *gocheck.C) {
 func (s *S) TestRemoveCNameInfo(c *gocheck.C) {
 	expected := &cmd.Info{
 		Name:    "cname-remove",
-		Usage:   "cname-remove <cname> [<cname> ...] [--app appname]",
+		Usage:   "cname-remove <cname> [<cname> ...] [-a/--app appname]",
 		Desc:    `removes cnames of your app.`,
 		MinArgs: 1,
 	}
@@ -1036,7 +1036,7 @@ func (s *S) TestRemoveCNameIsAFlaggedCommand(c *gocheck.C) {
 func (s *S) TestAppStartInfo(c *gocheck.C) {
 	expected := &cmd.Info{
 		Name:  "app-start",
-		Usage: "app-start [--app appname]",
+		Usage: "app-start [-a/--app appname]",
 		Desc: `starts an app.
 
 If you don't provide the app name, tsuru will try to guess it.`,
@@ -1048,7 +1048,7 @@ If you don't provide the app name, tsuru will try to guess it.`,
 func (s *S) TestSetTeamOwnerInfo(c *gocheck.C) {
 	expected := &cmd.Info{
 		Name:    "app-set-team-owner",
-		Usage:   "app-set-team-owner <new-team-owner> [--app appname]",
+		Usage:   "app-set-team-owner <new-team-owner> [-a/--app appname]",
 		Desc:    "set app's owner team",
 		MinArgs: 1,
 	}
@@ -1148,7 +1148,7 @@ func (s *S) TestUnitAvailable(c *gocheck.C) {
 func (s *S) TestAppStopInfo(c *gocheck.C) {
 	expected := &cmd.Info{
 		Name:  "app-stop",
-		Usage: "app-stop [--app appname]",
+		Usage: "app-stop [-a/--app appname]",
 		Desc: `stops an app.
 
 If you don't provide the app name, tsuru will try to guess it.`,
@@ -1264,7 +1264,7 @@ func (s *S) TestUnitAddFailure(c *gocheck.C) {
 func (s *S) TestUnitAddInfo(c *gocheck.C) {
 	expected := &cmd.Info{
 		Name:    "unit-add",
-		Usage:   "unit-add <# of units> [--app appname]",
+		Usage:   "unit-add <# of units> [-a/--app appname]",
 		Desc:    "add new units to an app.",
 		MinArgs: 1,
 	}
@@ -1323,7 +1323,7 @@ func (s *S) TestUnitRemoveFailure(c *gocheck.C) {
 func (s *S) TestUnitRemoveInfo(c *gocheck.C) {
 	expected := cmd.Info{
 		Name:    "unit-remove",
-		Usage:   "unit-remove <# of units> [--app appname]",
+		Usage:   "unit-remove <# of units> [-a/--app appname]",
 		Desc:    "remove units from an app.",
 		MinArgs: 1,
 	}

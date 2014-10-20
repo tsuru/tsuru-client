@@ -23,7 +23,7 @@ func (s *S) TestEnvGetInfo(c *gocheck.C) {
 
 If you don't provide the app name, tsuru will try to guess it.`
 	c.Assert(i.Name, gocheck.Equals, "env-get")
-	c.Assert(i.Usage, gocheck.Equals, "env-get [--app appname] [ENVIRONMENT_VARIABLE1] [ENVIRONMENT_VARIABLE2] ...")
+	c.Assert(i.Usage, gocheck.Equals, "env-get [-a/--app appname] [ENVIRONMENT_VARIABLE1] [ENVIRONMENT_VARIABLE2] ...")
 	c.Assert(i.Desc, gocheck.Equals, desc)
 	c.Assert(i.MinArgs, gocheck.Equals, 0)
 }
@@ -139,7 +139,7 @@ func (s *S) TestEnvSetInfo(c *gocheck.C) {
 
 If you don't provide the app name, tsuru will try to guess it.`
 	c.Assert(i.Name, gocheck.Equals, "env-set")
-	c.Assert(i.Usage, gocheck.Equals, "env-set <NAME=value> [NAME=value] ... [--app appname]")
+	c.Assert(i.Usage, gocheck.Equals, "env-set <NAME=value> [NAME=value] ... [-a/--app appname]")
 	c.Assert(i.Desc, gocheck.Equals, desc)
 	c.Assert(i.MinArgs, gocheck.Equals, 1)
 }
@@ -282,7 +282,7 @@ func (s *S) TestEnvUnsetInfo(c *gocheck.C) {
 
 If you don't provide the app name, tsuru will try to guess it.`
 	c.Assert(i.Name, gocheck.Equals, "env-unset")
-	c.Assert(i.Usage, gocheck.Equals, "env-unset <ENVIRONMENT_VARIABLE1> [ENVIRONMENT_VARIABLE2] ... [ENVIRONMENT_VARIABLEN] [--app appname]")
+	c.Assert(i.Usage, gocheck.Equals, "env-unset <ENVIRONMENT_VARIABLE1> [ENVIRONMENT_VARIABLE2] ... [ENVIRONMENT_VARIABLEN] [-a/--app appname]")
 	c.Assert(i.Desc, gocheck.Equals, desc)
 	c.Assert(i.MinArgs, gocheck.Equals, 1)
 }

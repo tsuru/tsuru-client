@@ -33,7 +33,7 @@ type EnvGet struct {
 func (c *EnvGet) Info() *cmd.Info {
 	return &cmd.Info{
 		Name:  "env-get",
-		Usage: "env-get [--app appname] [ENVIRONMENT_VARIABLE1] [ENVIRONMENT_VARIABLE2] ...",
+		Usage: "env-get [-a/--app appname] [ENVIRONMENT_VARIABLE1] [ENVIRONMENT_VARIABLE2] ...",
 		Desc: `retrieve environment variables for an app.
 
 If you don't provide the app name, tsuru will try to guess it.`,
@@ -71,7 +71,7 @@ type EnvSet struct {
 func (c *EnvSet) Info() *cmd.Info {
 	return &cmd.Info{
 		Name:  "env-set",
-		Usage: "env-set <NAME=value> [NAME=value] ... [--app appname]",
+		Usage: "env-set <NAME=value> [NAME=value] ... [-a/--app appname]",
 		Desc: `set environment variables for an app.
 
 If you don't provide the app name, tsuru will try to guess it.`,
@@ -129,7 +129,7 @@ type EnvUnset struct {
 func (c *EnvUnset) Info() *cmd.Info {
 	return &cmd.Info{
 		Name:  "env-unset",
-		Usage: "env-unset <ENVIRONMENT_VARIABLE1> [ENVIRONMENT_VARIABLE2] ... [ENVIRONMENT_VARIABLEN] [--app appname]",
+		Usage: "env-unset <ENVIRONMENT_VARIABLE1> [ENVIRONMENT_VARIABLE2] ... [ENVIRONMENT_VARIABLEN] [-a/--app appname]",
 		Desc: `unset environment variables for an app.
 
 If you don't provide the app name, tsuru will try to guess it.`,

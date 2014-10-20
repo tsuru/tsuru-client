@@ -99,7 +99,7 @@ type AppRemove struct {
 func (c *AppRemove) Info() *cmd.Info {
 	return &cmd.Info{
 		Name:  "app-remove",
-		Usage: "app-remove [--app appname] [--assume-yes]",
+		Usage: "app-remove [-a/--app appname] [-y/--assume-yes]",
 		Desc: `removes an app.
 
 If you don't provide the app name, tsuru will try to guess it.`,
@@ -148,7 +148,7 @@ type AppInfo struct {
 func (c *AppInfo) Info() *cmd.Info {
 	return &cmd.Info{
 		Name:  "app-info",
-		Usage: "app-info [--app appname]",
+		Usage: "app-info [-a/--app appname]",
 		Desc: `show information about your app.
 
 If you don't provide the app name, tsuru will try to guess it.`,
@@ -362,7 +362,7 @@ type AppGrant struct {
 func (c *AppGrant) Info() *cmd.Info {
 	return &cmd.Info{
 		Name:  "app-grant",
-		Usage: "app-grant <teamname> [--app appname]",
+		Usage: "app-grant <teamname> [-a/--app appname]",
 		Desc: `grants access to an app to a team.
 
 If you don't provide the app name, tsuru will try to guess it.`,
@@ -399,7 +399,7 @@ type AppRevoke struct {
 func (c *AppRevoke) Info() *cmd.Info {
 	return &cmd.Info{
 		Name:  "app-revoke",
-		Usage: "app-revoke <teamname> [--app appname]",
+		Usage: "app-revoke <teamname> [-a/--app appname]",
 		Desc: `revokes access to an app from a team.
 
 If you don't provide the app name, tsuru will try to guess it.`,
@@ -499,7 +499,7 @@ type AppStop struct {
 func (c *AppStop) Info() *cmd.Info {
 	return &cmd.Info{
 		Name:  "app-stop",
-		Usage: "app-stop [--app appname]",
+		Usage: "app-stop [-a/--app appname]",
 		Desc: `stops an app.
 
 If you don't provide the app name, tsuru will try to guess it.`,
@@ -539,7 +539,7 @@ type AppStart struct {
 func (c *AppStart) Info() *cmd.Info {
 	return &cmd.Info{
 		Name:  "app-start",
-		Usage: "app-start [--app appname]",
+		Usage: "app-start [-a/--app appname]",
 		Desc: `starts an app.
 
 If you don't provide the app name, tsuru will try to guess it.`,
@@ -610,7 +610,7 @@ func (c *AppRestart) Run(context *cmd.Context, client *cmd.Client) error {
 func (c *AppRestart) Info() *cmd.Info {
 	return &cmd.Info{
 		Name:  "app-restart",
-		Usage: "app-restart [--app appname]",
+		Usage: "app-restart [-a/--app appname]",
 		Desc: `restarts an app.
 
 If you don't provide the app name, tsuru will try to guess it.`,
@@ -634,7 +634,7 @@ func (c *AddCName) Run(context *cmd.Context, client *cmd.Client) error {
 func (c *AddCName) Info() *cmd.Info {
 	return &cmd.Info{
 		Name:    "cname-add",
-		Usage:   "cname-add <cname> [<cname> ...] [--app appname]",
+		Usage:   "cname-add <cname> [<cname> ...] [-a/--app appname]",
 		Desc:    `adds a cname for your app.`,
 		MinArgs: 1,
 	}
@@ -656,7 +656,7 @@ func (c *RemoveCName) Run(context *cmd.Context, client *cmd.Client) error {
 func (c *RemoveCName) Info() *cmd.Info {
 	return &cmd.Info{
 		Name:    "cname-remove",
-		Usage:   "cname-remove <cname> [<cname> ...] [--app appname]",
+		Usage:   "cname-remove <cname> [<cname> ...] [-a/--app appname]",
 		Desc:    `removes cnames of your app.`,
 		MinArgs: 1,
 	}
@@ -745,7 +745,7 @@ func (c *SetTeamOwner) Run(context *cmd.Context, client *cmd.Client) error {
 func (c *SetTeamOwner) Info() *cmd.Info {
 	return &cmd.Info{
 		Name:    "app-set-team-owner",
-		Usage:   "app-set-team-owner <new-team-owner> [--app appname]",
+		Usage:   "app-set-team-owner <new-team-owner> [-a/--app appname]",
 		Desc:    "set app's owner team",
 		MinArgs: 1,
 	}
@@ -758,7 +758,7 @@ type UnitAdd struct {
 func (c *UnitAdd) Info() *cmd.Info {
 	return &cmd.Info{
 		Name:    "unit-add",
-		Usage:   "unit-add <# of units> [--app appname]",
+		Usage:   "unit-add <# of units> [-a/--app appname]",
 		Desc:    "add new units to an app.",
 		MinArgs: 1,
 	}
@@ -802,7 +802,7 @@ type UnitRemove struct {
 func (c *UnitRemove) Info() *cmd.Info {
 	return &cmd.Info{
 		Name:    "unit-remove",
-		Usage:   "unit-remove <# of units> [--app appname]",
+		Usage:   "unit-remove <# of units> [-a/--app appname]",
 		Desc:    "remove units from an app.",
 		MinArgs: 1,
 	}

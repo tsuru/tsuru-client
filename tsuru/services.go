@@ -171,7 +171,7 @@ For more details, please check the documentation for the service, using service-
 func (sb *ServiceBind) Info() *cmd.Info {
 	return &cmd.Info{
 		Name:  "service-bind",
-		Usage: "service-bind <instancename> [--app appname]",
+		Usage: "service-bind <instancename> [-a/--app appname]",
 		Desc: `bind a service instance to an app
 
 If you don't provide the app name, tsuru will try to guess it.`,
@@ -215,7 +215,7 @@ func (su *ServiceUnbind) Run(ctx *cmd.Context, client *cmd.Client) error {
 func (su *ServiceUnbind) Info() *cmd.Info {
 	return &cmd.Info{
 		Name:  "service-unbind",
-		Usage: "service-unbind <instancename> [--app appname]",
+		Usage: "service-unbind <instancename> [-a/--app appname]",
 		Desc: `unbind a service instance from an app
 
 If you don't provide the app name, tsuru will try to guess it.`,
