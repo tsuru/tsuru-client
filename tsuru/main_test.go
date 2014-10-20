@@ -148,16 +148,24 @@ func (s *S) TestServiceRemoveIsRegistered(c *gocheck.C) {
 
 func (s *S) TestServiceBindIsRegistered(c *gocheck.C) {
 	manager := buildManager("tsuru")
-	bind, ok := manager.Commands["bind"]
+	bind, ok := manager.Commands["service-bind"]
 	c.Assert(ok, gocheck.Equals, true)
 	c.Assert(bind, gocheck.FitsTypeOf, &ServiceBind{})
 }
 
+func (s *S) TestBindIsDeprecated(c *gocheck.C) {
+	c.Assert("service-bind", deprecates, "bind")
+}
+
 func (s *S) TestServiceUnbindIsRegistered(c *gocheck.C) {
 	manager := buildManager("tsuru")
-	unbind, ok := manager.Commands["unbind"]
+	unbind, ok := manager.Commands["service-unbind"]
 	c.Assert(ok, gocheck.Equals, true)
 	c.Assert(unbind, gocheck.FitsTypeOf, &ServiceUnbind{})
+}
+
+func (s *S) TestUnbindIsDeprecated(c *gocheck.C) {
+	c.Assert("service-unbind", deprecates, "unbind")
 }
 
 func (s *S) TestServiceDocIsRegistered(c *gocheck.C) {
