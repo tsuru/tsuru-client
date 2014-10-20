@@ -21,7 +21,7 @@ func buildManager(name string) *cmd.Manager {
 		return command.Run(context, nil)
 	}
 	m := cmd.BuildBaseManager(name, version, header, lookup)
-	m.Register(&AppRun{})
+	m.RegisterDeprecated(&AppRun{}, "run")
 	m.Register(&AppInfo{})
 	m.Register(&AppCreate{})
 	m.Register(&AppRemove{})
