@@ -865,8 +865,8 @@ func (s *S) TestAppRestartWithoutTheFlag(c *gocheck.C) {
 
 func (s *S) TestAppRestartInfo(c *gocheck.C) {
 	expected := &cmd.Info{
-		Name:  "restart",
-		Usage: "restart [--app appname]",
+		Name:  "app-restart",
+		Usage: "app-restart [--app appname]",
 		Desc: `restarts an app.
 
 If you don't provide the app name, tsuru will try to guess it.`,

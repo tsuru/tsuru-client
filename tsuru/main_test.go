@@ -77,9 +77,13 @@ func (s *S) TestAppRunIsRegistered(c *gocheck.C) {
 
 func (s *S) TestAppRestartIsRegistered(c *gocheck.C) {
 	manager := buildManager("tsuru")
-	restart, ok := manager.Commands["restart"]
+	restart, ok := manager.Commands["app-restart"]
 	c.Assert(ok, gocheck.Equals, true)
 	c.Assert(restart, gocheck.FitsTypeOf, &AppRestart{})
+}
+
+func (s *S) TestRestartIsDeprecated(c *gocheck.C) {
+	c.Assert("app-restart", deprecates, "restart")
 }
 
 func (s *S) TestEnvGetIsRegistered(c *gocheck.C) {

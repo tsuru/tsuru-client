@@ -609,8 +609,8 @@ func (c *AppRestart) Run(context *cmd.Context, client *cmd.Client) error {
 
 func (c *AppRestart) Info() *cmd.Info {
 	return &cmd.Info{
-		Name:  "restart",
-		Usage: "restart [--app appname]",
+		Name:  "app-restart",
+		Usage: "app-restart [--app appname]",
 		Desc: `restarts an app.
 
 If you don't provide the app name, tsuru will try to guess it.`,
