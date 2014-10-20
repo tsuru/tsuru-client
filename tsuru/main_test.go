@@ -284,9 +284,13 @@ func (s *S) TestPluginLookup(c *gocheck.C) {
 
 func (s *S) TestAppStopIsRegistered(c *gocheck.C) {
 	manager := buildManager("tsuru")
-	stop, ok := manager.Commands["stop"]
+	stop, ok := manager.Commands["app-stop"]
 	c.Assert(ok, gocheck.Equals, true)
 	c.Assert(stop, gocheck.FitsTypeOf, &AppStop{})
+}
+
+func (s *S) TestStopIsDeprecated(c *gocheck.C) {
+	c.Assert("app-stop", deprecates, "stop")
 }
 
 func (s *S) TestAppDeployIsRegistered(c *gocheck.C) {
