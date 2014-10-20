@@ -263,9 +263,19 @@ func (s *S) TestAppStopIsRegistered(c *gocheck.C) {
 	c.Assert(stop, gocheck.FitsTypeOf, &AppStop{})
 }
 
-func (s *S) TestDeployIsRegistered(c *gocheck.C) {
+func (s *S) TestAppDeployIsRegistered(c *gocheck.C) {
 	manager := buildManager("tsuru")
-	deployCmd, ok := manager.Commands["deploy"]
+	deployCmd, ok := manager.Commands["app-deploy"]
 	c.Assert(ok, gocheck.Equals, true)
 	c.Assert(deployCmd, gocheck.FitsTypeOf, &deploy{})
+}
+
+func (s *S) TestDeployIsDeprecated(c *gocheck.C) {
+	manager := buildManager("tsuru")
+	original := manager.Commands["app-deploy"]
+	deprecated, ok := manager.Commands["deploy"]
+	c.Assert(ok, gocheck.Equals, true)
+	command, ok := deprecated.(*cmd.DeprecatedCommand)
+	c.Assert(ok, gocheck.Equals, true)
+	c.Assert(command.Command, gocheck.Equals, original)
 }

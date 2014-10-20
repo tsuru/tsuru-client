@@ -25,8 +25,8 @@ tsuru deploy .
 tsuru deploy myfile.jar Procfile
 `
 	expected := &cmd.Info{
-		Name:    "deploy",
-		Usage:   "deploy [-a/--app <appname>] <file-or-dir-1> [file-or-dir-2] ... [file-or-dir-n]",
+		Name:    "app-deploy",
+		Usage:   "app-deploy [-a/--app <appname>] <file-or-dir-1> [file-or-dir-2] ... [file-or-dir-n]",
 		Desc:    desc,
 		MinArgs: 1,
 	}
