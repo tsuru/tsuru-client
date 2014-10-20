@@ -240,9 +240,13 @@ func (s *S) TestSwapIsRegistered(c *gocheck.C) {
 
 func (s *S) TestAppStartIsRegistered(c *gocheck.C) {
 	manager := buildManager("tsuru")
-	start, ok := manager.Commands["start"]
+	start, ok := manager.Commands["app-start"]
 	c.Assert(ok, gocheck.Equals, true)
 	c.Assert(start, gocheck.FitsTypeOf, &AppStart{})
+}
+
+func (s *S) TestStartIsDeprecated(c *gocheck.C) {
+	c.Assert("app-start", deprecates, "start")
 }
 
 func (s *S) TestPluginInstallIsRegistered(c *gocheck.C) {

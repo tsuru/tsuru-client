@@ -538,8 +538,8 @@ type AppStart struct {
 
 func (c *AppStart) Info() *cmd.Info {
 	return &cmd.Info{
-		Name:  "start",
-		Usage: "start [--app appname]",
+		Name:  "app-start",
+		Usage: "app-start [--app appname]",
 		Desc: `starts an app.
 
 If you don't provide the app name, tsuru will try to guess it.`,

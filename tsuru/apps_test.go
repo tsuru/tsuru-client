@@ -1035,8 +1035,8 @@ func (s *S) TestRemoveCNameIsAFlaggedCommand(c *gocheck.C) {
 
 func (s *S) TestAppStartInfo(c *gocheck.C) {
 	expected := &cmd.Info{
-		Name:  "start",
-		Usage: "start [--app appname]",
+		Name:  "app-start",
+		Usage: "app-start [--app appname]",
 		Desc: `starts an app.
 
 If you don't provide the app name, tsuru will try to guess it.`,
