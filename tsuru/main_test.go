@@ -6,9 +6,11 @@ package main
 
 import (
 	"github.com/tsuru/tsuru/cmd"
-	etesting "github.com/tsuru/tsuru/exec/testing"
+	"github.com/tsuru/tsuru/exec/testing"
 	"launchpad.net/gocheck"
 )
+
+var deprecates gocheck.Checker = deprecationChecker{}
 
 func (s *S) TestCommandsFromBaseManagerAreRegistered(c *gocheck.C) {
 	baseManager := cmd.BuildBaseManager("tsuru", version, header, nil)
@@ -57,9 +59,13 @@ func (s *S) TestAppRevokeIsRegistered(c *gocheck.C) {
 
 func (s *S) TestAppLogIsRegistered(c *gocheck.C) {
 	manager := buildManager("tsuru")
-	log, ok := manager.Commands["log"]
+	log, ok := manager.Commands["app-log"]
 	c.Assert(ok, gocheck.Equals, true)
 	c.Assert(log, gocheck.FitsTypeOf, &AppLog{})
+}
+
+func (s *S) TestLogIsDeprecated(c *gocheck.C) {
+	c.Assert("app-log", deprecates, "log")
 }
 
 func (s *S) TestAppRunIsRegistered(c *gocheck.C) {
@@ -196,13 +202,7 @@ func (s *S) TestCNameAddIsRegistered(c *gocheck.C) {
 }
 
 func (s *S) TestAddCnameIsDeprecated(c *gocheck.C) {
-	manager := buildManager("tsuru")
-	original := manager.Commands["cname-add"]
-	deprecated, ok := manager.Commands["add-cname"]
-	c.Assert(ok, gocheck.Equals, true)
-	command, ok := deprecated.(*cmd.DeprecatedCommand)
-	c.Assert(ok, gocheck.Equals, true)
-	c.Assert(command.Command, gocheck.Equals, original)
+	c.Assert("cname-add", deprecates, "add-cname")
 }
 
 func (s *S) TestCNameRemoveIsRegistered(c *gocheck.C) {
@@ -213,13 +213,7 @@ func (s *S) TestCNameRemoveIsRegistered(c *gocheck.C) {
 }
 
 func (s *S) TestRemoveCNameIsDeprecated(c *gocheck.C) {
-	manager := buildManager("tsuru")
-	original := manager.Commands["cname-remove"]
-	deprecated, ok := manager.Commands["remove-cname"]
-	c.Assert(ok, gocheck.Equals, true)
-	command, ok := deprecated.(*cmd.DeprecatedCommand)
-	c.Assert(ok, gocheck.Equals, true)
-	c.Assert(command.Command, gocheck.Equals, original)
+	c.Assert("cname-remove", deprecates, "remove-cname")
 }
 
 func (s *S) TestPlatformListIsRegistered(c *gocheck.C) {
@@ -265,7 +259,7 @@ func (s *S) TestPluginListIsRegistered(c *gocheck.C) {
 }
 
 func (s *S) TestPluginLookup(c *gocheck.C) {
-	fexec := etesting.FakeExecutor{}
+	fexec := testing.FakeExecutor{}
 	execut = &fexec
 	defer func() {
 		execut = nil
@@ -291,11 +285,5 @@ func (s *S) TestAppDeployIsRegistered(c *gocheck.C) {
 }
 
 func (s *S) TestDeployIsDeprecated(c *gocheck.C) {
-	manager := buildManager("tsuru")
-	original := manager.Commands["app-deploy"]
-	deprecated, ok := manager.Commands["deploy"]
-	c.Assert(ok, gocheck.Equals, true)
-	command, ok := deprecated.(*cmd.DeprecatedCommand)
-	c.Assert(ok, gocheck.Equals, true)
-	c.Assert(command.Command, gocheck.Equals, original)
+	c.Assert("app-deploy", deprecates, "deploy")
 }
