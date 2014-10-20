@@ -231,11 +231,15 @@ func (s *S) TestPlatformListIsRegistered(c *gocheck.C) {
 	c.Assert(plat, gocheck.FitsTypeOf, platformList{})
 }
 
-func (s *S) TestSwapIsRegistered(c *gocheck.C) {
+func (s *S) TestAppSwapIsRegistered(c *gocheck.C) {
 	manager := buildManager("tsuru")
-	cmd, ok := manager.Commands["swap"]
+	cmd, ok := manager.Commands["app-swap"]
 	c.Assert(ok, gocheck.Equals, true)
 	c.Assert(cmd, gocheck.FitsTypeOf, &Swap{})
+}
+
+func (s *S) TestSwapIsDeprecated(c *gocheck.C) {
+	c.Assert("app-swap", deprecates, "swap")
 }
 
 func (s *S) TestAppStartIsRegistered(c *gocheck.C) {
