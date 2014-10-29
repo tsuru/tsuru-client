@@ -342,7 +342,7 @@ Units: 3
 		Stderr: &stderr,
 	}
 	client := cmd.NewClient(&http.Client{Transport: &testing.Transport{Message: result, Status: http.StatusOK}}, nil, manager)
-	command := AppInfo{}
+	command := appInfo{}
 	command.Flags().Parse(true, []string{"-a/--app", "app1"})
 	err := command.Run(&context, client)
 	c.Assert(err, gocheck.IsNil)
@@ -367,7 +367,7 @@ Deploys: 7
 		Stderr: &stderr,
 	}
 	client := cmd.NewClient(&http.Client{Transport: &testing.Transport{Message: result, Status: http.StatusOK}}, nil, manager)
-	command := AppInfo{}
+	command := appInfo{}
 	command.Flags().Parse(true, []string{"-a/--app", "app1"})
 	err := command.Run(&context, client)
 	c.Assert(err, gocheck.IsNil)
@@ -392,7 +392,7 @@ Deploys: 7
 		Stderr: &stderr,
 	}
 	client := cmd.NewClient(&http.Client{Transport: &testing.Transport{Message: result, Status: http.StatusOK}}, nil, manager)
-	command := AppInfo{}
+	command := appInfo{}
 	command.Flags().Parse(true, []string{"-a/--app", "app1"})
 	err := command.Run(&context, client)
 	c.Assert(err, gocheck.IsNil)
@@ -432,7 +432,7 @@ Units: 2
 	client := cmd.NewClient(&http.Client{Transport: trans}, nil, manager)
 	fake := testing.FakeGuesser{Name: "secret"}
 	guessCommand := cmd.GuessingCommand{G: &fake}
-	command := AppInfo{GuessingCommand: guessCommand}
+	command := appInfo{GuessingCommand: guessCommand}
 	command.Flags().Parse(true, nil)
 	err := command.Run(&context, client)
 	c.Assert(err, gocheck.IsNil)
@@ -465,7 +465,7 @@ Units: 3
 		Stderr: &stderr,
 	}
 	client := cmd.NewClient(&http.Client{Transport: &testing.Transport{Message: result, Status: http.StatusOK}}, nil, manager)
-	command := AppInfo{}
+	command := appInfo{}
 	command.Flags().Parse(true, []string{"-a/--app", "app1"})
 	err := command.Run(&context, client)
 	c.Assert(err, gocheck.IsNil)
@@ -523,7 +523,7 @@ Service instances: 1
 		}, nil
 	})
 	client := cmd.NewClient(&http.Client{Transport: transport}, nil, manager)
-	command := AppInfo{}
+	command := appInfo{}
 	command.Flags().Parse(true, []string{"--app", "app1"})
 	err := command.Run(&context, client)
 	c.Assert(err, gocheck.IsNil)
@@ -539,11 +539,11 @@ func (s *S) TestAppInfoInfo(c *gocheck.C) {
 If you don't provide the app name, tsuru will try to guess it.`,
 		MinArgs: 0,
 	}
-	c.Assert((&AppInfo{}).Info(), gocheck.DeepEquals, expected)
+	c.Assert((&appInfo{}).Info(), gocheck.DeepEquals, expected)
 }
 
 func (s *S) TestAppInfoFlags(c *gocheck.C) {
-	command := AppInfo{}
+	command := appInfo{}
 	flagset := command.Flags()
 	flag := flagset.Lookup("app")
 	flag.Value = nil

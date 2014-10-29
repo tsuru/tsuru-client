@@ -141,11 +141,11 @@ func (c *AppRemove) Flags() *gnuflag.FlagSet {
 	return c.fs
 }
 
-type AppInfo struct {
+type appInfo struct {
 	cmd.GuessingCommand
 }
 
-func (c *AppInfo) Info() *cmd.Info {
+func (c *appInfo) Info() *cmd.Info {
 	return &cmd.Info{
 		Name:  "app-info",
 		Usage: "app-info [-a/--app appname]",
@@ -156,7 +156,7 @@ If you don't provide the app name, tsuru will try to guess it.`,
 	}
 }
 
-func (c *AppInfo) Run(context *cmd.Context, client *cmd.Client) error {
+func (c *appInfo) Run(context *cmd.Context, client *cmd.Client) error {
 	appName, err := c.Guess()
 	if err != nil {
 		return err
@@ -343,7 +343,7 @@ Deploys: {{.Deploys}}
 	return buf.String() + suffix
 }
 
-func (c *AppInfo) Show(result []byte, adminResult []byte, servicesResult []byte, context *cmd.Context) error {
+func (c *appInfo) Show(result []byte, adminResult []byte, servicesResult []byte, context *cmd.Context) error {
 	var a app
 	err := json.Unmarshal(result, &a)
 	if err != nil {

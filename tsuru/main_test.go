@@ -200,7 +200,7 @@ func (s *S) TestAppInfoIsRegistered(c *gocheck.C) {
 	manager := buildManager("tsuru")
 	list, ok := manager.Commands["app-info"]
 	c.Assert(ok, gocheck.Equals, true)
-	c.Assert(list, gocheck.FitsTypeOf, &AppInfo{})
+	c.Assert(list, gocheck.FitsTypeOf, &appInfo{})
 }
 
 func (s *S) TestUnitAddIsRegistered(c *gocheck.C) {
