@@ -7,6 +7,7 @@ package main
 import (
 	"bytes"
 	"fmt"
+	"io"
 	"io/ioutil"
 	"net/http"
 	"os"
@@ -27,13 +28,20 @@ func (r *keyReader) fs() fs.Fs {
 	return r.fsystem
 }
 
-func (r *keyReader) readKey(keyPath string) (string, error) {
-	f, err := r.fs().Open(keyPath)
-	if err != nil {
-		return "", err
+func (r *keyReader) readKey(context *cmd.Context) (string, error) {
+	keyPath := context.Args[1]
+	var input io.Reader
+	if keyPath == "-" {
+		input = context.Stdin
+	} else {
+		f, err := r.fs().Open(keyPath)
+		if err != nil {
+			return "", err
+		}
+		defer f.Close()
+		input = f
 	}
-	defer f.Close()
-	output, err := ioutil.ReadAll(f)
+	output, err := ioutil.ReadAll(input)
 	return string(output), err
 }
 
@@ -82,7 +90,7 @@ func (c *KeyAdd) Info() *cmd.Info {
 func (c *KeyAdd) Run(context *cmd.Context, client *cmd.Client) error {
 	keyName := context.Args[0]
 	keyPath := context.Args[1]
-	key, err := c.readKey(keyPath)
+	key, err := c.readKey(context)
 	if os.IsNotExist(err) {
 		return fmt.Errorf("file %q doesn't exist", keyPath)
 	} else if err != nil {

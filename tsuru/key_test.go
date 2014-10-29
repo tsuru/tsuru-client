@@ -48,6 +48,33 @@ func (s *S) TestKeyAdd(c *gocheck.C) {
 	c.Assert(stdout.String(), gocheck.Equals, expected)
 }
 
+func (s *S) TestKeyAddStdin(c *gocheck.C) {
+	var stdout, stderr bytes.Buffer
+	stdin := bytes.NewBufferString("my powerful key")
+	name := "my-key"
+	expected := fmt.Sprintf("Key %q successfully added!\n", name)
+	context := cmd.Context{
+		Args:   []string{name, "-"},
+		Stdout: &stdout,
+		Stderr: &stderr,
+		Stdin:  stdin,
+	}
+	transport := testing.ConditionalTransport{
+		Transport: testing.Transport{Message: "success", Status: http.StatusOK},
+		CondFunc: func(r *http.Request) bool {
+			expectedBody := `{"key":"my powerful key","name":"my-key"}`
+			body, err := ioutil.ReadAll(r.Body)
+			c.Assert(err, gocheck.IsNil)
+			return r.Method == "POST" && r.URL.Path == "/users/keys" && string(body) == expectedBody
+		},
+	}
+	client := cmd.NewClient(&http.Client{Transport: &transport}, nil, manager)
+	command := KeyAdd{}
+	err := command.Run(&context, client)
+	c.Assert(err, gocheck.IsNil)
+	c.Assert(stdout.String(), gocheck.Equals, expected)
+}
+
 func (s *S) TestKeyAddReturnsProperErrorIfTheGivenKeyFileDoesNotExist(c *gocheck.C) {
 	var stdout, stderr bytes.Buffer
 	context := cmd.Context{
