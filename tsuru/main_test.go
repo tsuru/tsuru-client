@@ -316,7 +316,7 @@ func (s *S) TestAppDeployIsRegistered(c *gocheck.C) {
 	manager := buildManager("tsuru")
 	deployCmd, ok := manager.Commands["app-deploy"]
 	c.Assert(ok, gocheck.Equals, true)
-	c.Assert(deployCmd, gocheck.FitsTypeOf, &deploy{})
+	c.Assert(deployCmd, gocheck.FitsTypeOf, &appDeploy{})
 }
 
 func (s *S) TestDeployIsDeprecated(c *gocheck.C) {

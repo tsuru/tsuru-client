@@ -21,11 +21,11 @@ import (
 	"github.com/tsuru/tsuru/cmd"
 )
 
-type deploy struct {
+type appDeploy struct {
 	cmd.GuessingCommand
 }
 
-func (c *deploy) Info() *cmd.Info {
+func (c *appDeploy) Info() *cmd.Info {
 	desc := `Deploys set of files and/or directories to tsuru server. Some examples of calls are:
 
 tsuru deploy .
@@ -39,7 +39,7 @@ tsuru deploy myfile.jar Procfile
 	}
 }
 
-func (c *deploy) Run(context *cmd.Context, client *cmd.Client) error {
+func (c *appDeploy) Run(context *cmd.Context, client *cmd.Client) error {
 	var body bytes.Buffer
 	writer := multipart.NewWriter(&body)
 	file, err := writer.CreateFormFile("file", "archive.tar.gz")

@@ -30,7 +30,7 @@ tsuru deploy myfile.jar Procfile
 		Desc:    desc,
 		MinArgs: 1,
 	}
-	cmd := deploy{}
+	var cmd appDeploy
 	c.Assert(cmd.Info(), gocheck.DeepEquals, expected)
 }
 
@@ -61,7 +61,7 @@ func (s *S) TestDeployRun(c *gocheck.C) {
 	}
 	fake := testing.FakeGuesser{Name: "secret"}
 	guessCommand := cmd.GuessingCommand{G: &fake}
-	cmd := deploy{GuessingCommand: guessCommand}
+	cmd := appDeploy{GuessingCommand: guessCommand}
 	err = cmd.Run(&context, client)
 	c.Assert(err, gocheck.IsNil)
 	c.Assert(called, gocheck.Equals, true)
@@ -78,7 +78,7 @@ func (s *S) TestDeployRunNotOK(c *gocheck.C) {
 	}
 	fake := testing.FakeGuesser{Name: "secret"}
 	guessCommand := cmd.GuessingCommand{G: &fake}
-	command := deploy{GuessingCommand: guessCommand}
+	command := appDeploy{GuessingCommand: guessCommand}
 	err := command.Run(&context, client)
 	c.Assert(err, gocheck.Equals, cmd.ErrAbortCommand)
 }
@@ -92,7 +92,7 @@ func (s *S) TestDeployRunFileNotFound(c *gocheck.C) {
 	}
 	fake := testing.FakeGuesser{Name: "secret"}
 	guessCommand := cmd.GuessingCommand{G: &fake}
-	command := deploy{GuessingCommand: guessCommand}
+	command := appDeploy{GuessingCommand: guessCommand}
 	err := command.Run(&context, nil)
 	c.Assert(err, gocheck.NotNil)
 }
@@ -108,7 +108,7 @@ func (s *S) TestDeployRunRequestFailure(c *gocheck.C) {
 	}
 	fake := testing.FakeGuesser{Name: "secret"}
 	guessCommand := cmd.GuessingCommand{G: &fake}
-	command := deploy{GuessingCommand: guessCommand}
+	command := appDeploy{GuessingCommand: guessCommand}
 	err := command.Run(&context, client)
 	c.Assert(err, gocheck.NotNil)
 	c.Assert(err.Error(), gocheck.Equals, "app not found\n")
