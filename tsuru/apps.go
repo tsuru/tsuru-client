@@ -751,11 +751,11 @@ func (c *SetTeamOwner) Info() *cmd.Info {
 	}
 }
 
-type UnitAdd struct {
+type unitAdd struct {
 	cmd.GuessingCommand
 }
 
-func (c *UnitAdd) Info() *cmd.Info {
+func (c *unitAdd) Info() *cmd.Info {
 	return &cmd.Info{
 		Name:    "unit-add",
 		Usage:   "unit-add <# of units> [-a/--app appname]",
@@ -764,7 +764,7 @@ func (c *UnitAdd) Info() *cmd.Info {
 	}
 }
 
-func (c *UnitAdd) Run(context *cmd.Context, client *cmd.Client) error {
+func (c *unitAdd) Run(context *cmd.Context, client *cmd.Client) error {
 	appName, err := c.Guess()
 	if err != nil {
 		return err

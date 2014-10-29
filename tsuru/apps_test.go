@@ -1235,7 +1235,7 @@ func (s *S) TestUnitAdd(c *gocheck.C) {
 		},
 	}
 	client := cmd.NewClient(&http.Client{Transport: trans}, nil, manager)
-	command := UnitAdd{}
+	command := unitAdd{}
 	command.Flags().Parse(true, []string{"-a", "radio"})
 	err = command.Run(&context, client)
 	c.Assert(err, gocheck.IsNil)
@@ -1254,7 +1254,7 @@ func (s *S) TestUnitAddFailure(c *gocheck.C) {
 	result, err := json.Marshal(msg)
 	c.Assert(err, gocheck.IsNil)
 	client := cmd.NewClient(&http.Client{Transport: &testing.Transport{Message: string(result), Status: 200}}, nil, manager)
-	command := UnitAdd{}
+	command := unitAdd{}
 	command.Flags().Parse(true, []string{"-a", "radio"})
 	err = command.Run(&context, client)
 	c.Assert(err, gocheck.NotNil)
@@ -1268,11 +1268,11 @@ func (s *S) TestUnitAddInfo(c *gocheck.C) {
 		Desc:    "add new units to an app.",
 		MinArgs: 1,
 	}
-	c.Assert((&UnitAdd{}).Info(), gocheck.DeepEquals, expected)
+	c.Assert((&unitAdd{}).Info(), gocheck.DeepEquals, expected)
 }
 
 func (s *S) TestUnitAddIsFlaggedACommand(c *gocheck.C) {
-	var _ cmd.FlaggedCommand = &UnitAdd{}
+	var _ cmd.FlaggedCommand = &unitAdd{}
 }
 
 func (s *S) TestUnitRemove(c *gocheck.C) {
