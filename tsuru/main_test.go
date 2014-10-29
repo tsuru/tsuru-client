@@ -33,7 +33,7 @@ func (s *S) TestAppRemoveIsRegistered(c *gocheck.C) {
 	manager := buildManager("tsuru")
 	remove, ok := manager.Commands["app-remove"]
 	c.Assert(ok, gocheck.Equals, true)
-	c.Assert(remove, gocheck.FitsTypeOf, &AppRemove{})
+	c.Assert(remove, gocheck.FitsTypeOf, &appRemove{})
 }
 
 func (s *S) TestAppListIsRegistered(c *gocheck.C) {

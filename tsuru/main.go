@@ -24,7 +24,7 @@ func buildManager(name string) *cmd.Manager {
 	m.RegisterDeprecated(&AppRun{}, "run")
 	m.Register(&appInfo{})
 	m.Register(&appCreate{})
-	m.Register(&AppRemove{})
+	m.Register(&appRemove{})
 	m.Register(&UnitAdd{})
 	m.Register(&UnitRemove{})
 	m.Register(AppList{})

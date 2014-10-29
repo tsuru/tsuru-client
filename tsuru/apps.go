@@ -90,13 +90,13 @@ func (c *appCreate) Run(context *cmd.Context, client *cmd.Client) error {
 	return nil
 }
 
-type AppRemove struct {
+type appRemove struct {
 	cmd.GuessingCommand
 	cmd.ConfirmationCommand
 	fs *gnuflag.FlagSet
 }
 
-func (c *AppRemove) Info() *cmd.Info {
+func (c *appRemove) Info() *cmd.Info {
 	return &cmd.Info{
 		Name:  "app-remove",
 		Usage: "app-remove [-a/--app appname] [-y/--assume-yes]",
@@ -107,7 +107,7 @@ If you don't provide the app name, tsuru will try to guess it.`,
 	}
 }
 
-func (c *AppRemove) Run(context *cmd.Context, client *cmd.Client) error {
+func (c *appRemove) Run(context *cmd.Context, client *cmd.Client) error {
 	appName, err := c.Guess()
 	if err != nil {
 		return err
@@ -131,7 +131,7 @@ func (c *AppRemove) Run(context *cmd.Context, client *cmd.Client) error {
 	return nil
 }
 
-func (c *AppRemove) Flags() *gnuflag.FlagSet {
+func (c *appRemove) Flags() *gnuflag.FlagSet {
 	if c.fs == nil {
 		c.fs = cmd.MergeFlagSet(
 			c.GuessingCommand.Flags(),

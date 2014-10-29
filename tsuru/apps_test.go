@@ -210,7 +210,7 @@ func (s *S) TestAppRemove(c *gocheck.C) {
 		Stdin:  strings.NewReader("y\n"),
 	}
 	client := cmd.NewClient(&http.Client{Transport: &testing.Transport{Message: "", Status: http.StatusOK}}, nil, manager)
-	command := AppRemove{}
+	command := appRemove{}
 	command.Flags().Parse(true, []string{"-a", "ble"})
 	err := command.Run(&context, client)
 	c.Assert(err, gocheck.IsNil)
@@ -227,7 +227,7 @@ func (s *S) TestAppRemoveWithoutAsking(c *gocheck.C) {
 		Stdin:  strings.NewReader("y\n"),
 	}
 	client := cmd.NewClient(&http.Client{Transport: &testing.Transport{Message: "", Status: http.StatusOK}}, nil, manager)
-	command := AppRemove{}
+	command := appRemove{}
 	command.Flags().Parse(true, []string{"-a", "ble", "-y"})
 	err := command.Run(&context, client)
 	c.Assert(err, gocheck.IsNil)
@@ -235,7 +235,7 @@ func (s *S) TestAppRemoveWithoutAsking(c *gocheck.C) {
 }
 
 func (s *S) TestAppRemoveFlags(c *gocheck.C) {
-	command := AppRemove{}
+	command := appRemove{}
 	flagset := command.Flags()
 	c.Assert(flagset, gocheck.NotNil)
 	flagset.Parse(true, []string{"-a", "ashamed", "-y"})
@@ -283,7 +283,7 @@ func (s *S) TestAppRemoveWithoutArgs(c *gocheck.C) {
 	client := cmd.NewClient(&http.Client{Transport: trans}, nil, manager)
 	fake := testing.FakeGuesser{Name: "secret"}
 	guessCommand := cmd.GuessingCommand{G: &fake}
-	command := AppRemove{GuessingCommand: guessCommand}
+	command := appRemove{GuessingCommand: guessCommand}
 	err := command.Run(&context, client)
 	c.Assert(err, gocheck.IsNil)
 	c.Assert(stdout.String(), gocheck.Equals, expected)
@@ -297,7 +297,7 @@ func (s *S) TestAppRemoveWithoutConfirmation(c *gocheck.C) {
 		Stderr: &stderr,
 		Stdin:  strings.NewReader("n\n"),
 	}
-	command := AppRemove{}
+	command := appRemove{}
 	command.Flags().Parse(true, []string{"--app", "ble"})
 	err := command.Run(&context, nil)
 	c.Assert(err, gocheck.IsNil)
@@ -313,7 +313,7 @@ func (s *S) TestAppRemoveInfo(c *gocheck.C) {
 If you don't provide the app name, tsuru will try to guess it.`,
 		MinArgs: 0,
 	}
-	c.Assert((&AppRemove{}).Info(), gocheck.DeepEquals, expected)
+	c.Assert((&appRemove{}).Info(), gocheck.DeepEquals, expected)
 }
 
 func (s *S) TestAppInfo(c *gocheck.C) {
