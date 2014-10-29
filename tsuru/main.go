@@ -41,6 +41,7 @@ func buildManager(name string) *cmd.Manager {
 	m.Register(&EnvUnset{})
 	m.Register(&keyAdd{})
 	m.Register(&keyRemove{})
+	m.Register(&keyList{})
 	m.Register(ServiceList{})
 	m.Register(&ServiceAdd{})
 	m.Register(&ServiceRemove{})

@@ -125,6 +125,13 @@ func (s *S) TestKeyRemoveIsRegistered(c *gocheck.C) {
 	c.Assert(remove, gocheck.FitsTypeOf, &keyRemove{})
 }
 
+func (s *S) TestKeyListIsRegistered(c *gocheck.C) {
+	manager := buildManager("tsuru")
+	list, ok := manager.Commands["key-list"]
+	c.Assert(ok, gocheck.Equals, true)
+	c.Assert(list, gocheck.FitsTypeOf, &keyList{})
+}
+
 func (s *S) TestServiceListIsRegistered(c *gocheck.C) {
 	manager := buildManager("tsuru")
 	list, ok := manager.Commands["service-list"]
