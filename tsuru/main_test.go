@@ -261,7 +261,7 @@ func (s *S) TestAppStartIsRegistered(c *gocheck.C) {
 	manager := buildManager("tsuru")
 	start, ok := manager.Commands["app-start"]
 	c.Assert(ok, gocheck.Equals, true)
-	c.Assert(start, gocheck.FitsTypeOf, &AppStart{})
+	c.Assert(start, gocheck.FitsTypeOf, &appStart{})
 }
 
 func (s *S) TestStartIsDeprecated(c *gocheck.C) {
@@ -305,7 +305,7 @@ func (s *S) TestAppStopIsRegistered(c *gocheck.C) {
 	manager := buildManager("tsuru")
 	stop, ok := manager.Commands["app-stop"]
 	c.Assert(ok, gocheck.Equals, true)
-	c.Assert(stop, gocheck.FitsTypeOf, &AppStop{})
+	c.Assert(stop, gocheck.FitsTypeOf, &appStop{})
 }
 
 func (s *S) TestStopIsDeprecated(c *gocheck.C) {

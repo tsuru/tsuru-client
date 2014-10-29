@@ -1042,7 +1042,7 @@ func (s *S) TestAppStartInfo(c *gocheck.C) {
 If you don't provide the app name, tsuru will try to guess it.`,
 		MinArgs: 0,
 	}
-	c.Assert((&AppStart{}).Info(), gocheck.DeepEquals, expected)
+	c.Assert((&appStart{}).Info(), gocheck.DeepEquals, expected)
 }
 
 func (s *S) TestSetTeamOwnerInfo(c *gocheck.C) {
@@ -1098,7 +1098,7 @@ func (s *S) TestAppStart(c *gocheck.C) {
 		},
 	}
 	client := cmd.NewClient(&http.Client{Transport: trans}, nil, manager)
-	command := AppStart{}
+	command := appStart{}
 	command.Flags().Parse(true, []string{"--app", "handful_of_nothing"})
 	err := command.Run(&context, client)
 	c.Assert(err, gocheck.IsNil)
@@ -1124,7 +1124,7 @@ func (s *S) TestAppStartWithoutTheFlag(c *gocheck.C) {
 	}
 	client := cmd.NewClient(&http.Client{Transport: trans}, nil, manager)
 	fake := &testing.FakeGuesser{Name: "motorbreath"}
-	command := AppStart{GuessingCommand: cmd.GuessingCommand{G: fake}}
+	command := appStart{GuessingCommand: cmd.GuessingCommand{G: fake}}
 	command.Flags().Parse(true, nil)
 	err := command.Run(&context, client)
 	c.Assert(err, gocheck.IsNil)
@@ -1133,7 +1133,7 @@ func (s *S) TestAppStartWithoutTheFlag(c *gocheck.C) {
 }
 
 func (s *S) TestAppStartIsAFlaggedCommand(c *gocheck.C) {
-	var _ cmd.FlaggedCommand = &AppStart{}
+	var _ cmd.FlaggedCommand = &appStart{}
 }
 
 func (s *S) TestUnitAvailable(c *gocheck.C) {
@@ -1154,7 +1154,7 @@ func (s *S) TestAppStopInfo(c *gocheck.C) {
 If you don't provide the app name, tsuru will try to guess it.`,
 		MinArgs: 0,
 	}
-	c.Assert((&AppStop{}).Info(), gocheck.DeepEquals, expected)
+	c.Assert((&appStop{}).Info(), gocheck.DeepEquals, expected)
 }
 
 func (s *S) TestAppStop(c *gocheck.C) {
@@ -1174,7 +1174,7 @@ func (s *S) TestAppStop(c *gocheck.C) {
 		},
 	}
 	client := cmd.NewClient(&http.Client{Transport: trans}, nil, manager)
-	command := AppStop{}
+	command := appStop{}
 	command.Flags().Parse(true, []string{"--app", "handful_of_nothing"})
 	err := command.Run(&context, client)
 	c.Assert(err, gocheck.IsNil)
@@ -1200,7 +1200,7 @@ func (s *S) TestAppStopWithoutTheFlag(c *gocheck.C) {
 	}
 	client := cmd.NewClient(&http.Client{Transport: trans}, nil, manager)
 	fake := &testing.FakeGuesser{Name: "motorbreath"}
-	command := AppStop{GuessingCommand: cmd.GuessingCommand{G: fake}}
+	command := appStop{GuessingCommand: cmd.GuessingCommand{G: fake}}
 	command.Flags().Parse(true, nil)
 	err := command.Run(&context, client)
 	c.Assert(err, gocheck.IsNil)
@@ -1209,7 +1209,7 @@ func (s *S) TestAppStopWithoutTheFlag(c *gocheck.C) {
 }
 
 func (s *S) TestAppStopIsAFlaggedCommand(c *gocheck.C) {
-	var _ cmd.FlaggedCommand = &AppStop{}
+	var _ cmd.FlaggedCommand = &appStop{}
 }
 
 func (s *S) TestUnitAdd(c *gocheck.C) {

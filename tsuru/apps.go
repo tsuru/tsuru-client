@@ -492,11 +492,11 @@ func (c appList) Info() *cmd.Info {
 	}
 }
 
-type AppStop struct {
+type appStop struct {
 	cmd.GuessingCommand
 }
 
-func (c *AppStop) Info() *cmd.Info {
+func (c *appStop) Info() *cmd.Info {
 	return &cmd.Info{
 		Name:  "app-stop",
 		Usage: "app-stop [-a/--app appname]",
@@ -507,7 +507,7 @@ If you don't provide the app name, tsuru will try to guess it.`,
 	}
 }
 
-func (c *AppStop) Run(context *cmd.Context, client *cmd.Client) error {
+func (c *appStop) Run(context *cmd.Context, client *cmd.Client) error {
 	appName, err := c.Guess()
 	if err != nil {
 		return err
@@ -532,11 +532,11 @@ func (c *AppStop) Run(context *cmd.Context, client *cmd.Client) error {
 	return nil
 }
 
-type AppStart struct {
+type appStart struct {
 	cmd.GuessingCommand
 }
 
-func (c *AppStart) Info() *cmd.Info {
+func (c *appStart) Info() *cmd.Info {
 	return &cmd.Info{
 		Name:  "app-start",
 		Usage: "app-start [-a/--app appname]",
@@ -547,7 +547,7 @@ If you don't provide the app name, tsuru will try to guess it.`,
 	}
 }
 
-func (c *AppStart) Run(context *cmd.Context, client *cmd.Client) error {
+func (c *appStart) Run(context *cmd.Context, client *cmd.Client) error {
 	appName, err := c.Guess()
 	if err != nil {
 		return err
