@@ -322,3 +322,10 @@ func (s *S) TestAppDeployIsRegistered(c *gocheck.C) {
 func (s *S) TestDeployIsDeprecated(c *gocheck.C) {
 	c.Assert("app-deploy", deprecates, "deploy")
 }
+
+func (s *S) TestPlanListRegistered(c *gocheck.C) {
+	manager := buildManager("tsuru")
+	list, ok := manager.Commands["plan-list"]
+	c.Assert(ok, gocheck.Equals, true)
+	c.Assert(list, gocheck.FitsTypeOf, &planList{})
+}

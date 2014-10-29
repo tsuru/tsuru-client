@@ -16,12 +16,12 @@ import (
 	"github.com/tsuru/tsuru/cmd"
 )
 
-type PlanList struct {
+type planList struct {
 	human bool
 	fs    *gnuflag.FlagSet
 }
 
-func (c *PlanList) Flags() *gnuflag.FlagSet {
+func (c *planList) Flags() *gnuflag.FlagSet {
 	if c.fs == nil {
 		c.fs = gnuflag.NewFlagSet("plan-List", gnuflag.ExitOnError)
 		human := "Humanized units for memory and swap."
@@ -31,7 +31,7 @@ func (c *PlanList) Flags() *gnuflag.FlagSet {
 	return c.fs
 }
 
-func (c *PlanList) Info() *cmd.Info {
+func (c *planList) Info() *cmd.Info {
 	return &cmd.Info{
 		Name:    "plan-list",
 		Usage:   "plan-list [--human]",
@@ -40,7 +40,7 @@ func (c *PlanList) Info() *cmd.Info {
 	}
 }
 
-func (c *PlanList) Run(context *cmd.Context, client *cmd.Client) error {
+func (c *planList) Run(context *cmd.Context, client *cmd.Client) error {
 	url, err := cmd.GetURL("/plans")
 	if err != nil {
 		return err

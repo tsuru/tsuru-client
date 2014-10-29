@@ -20,7 +20,7 @@ func (s *S) TestPlanListInfo(c *gocheck.C) {
 		Desc:    "List available plans that can be used when creating an app.",
 		MinArgs: 0,
 	}
-	c.Assert((&PlanList{}).Info(), gocheck.DeepEquals, expected)
+	c.Assert((&planList{}).Info(), gocheck.DeepEquals, expected)
 }
 
 func (s *S) TestPlanList(c *gocheck.C) {
@@ -48,7 +48,7 @@ func (s *S) TestPlanList(c *gocheck.C) {
 		},
 	}
 	client := cmd.NewClient(&http.Client{Transport: trans}, nil, manager)
-	command := PlanList{}
+	command := planList{}
 	err := command.Run(&context, client)
 	c.Assert(err, gocheck.IsNil)
 	c.Assert(stdout.String(), gocheck.Equals, expected)
@@ -79,7 +79,7 @@ func (s *S) TestPlanListHuman(c *gocheck.C) {
 		},
 	}
 	client := cmd.NewClient(&http.Client{Transport: trans}, nil, manager)
-	command := PlanList{}
+	command := planList{}
 	command.Flags().Parse(true, []string{"-h"})
 	err := command.Run(&context, client)
 	c.Assert(err, gocheck.IsNil)

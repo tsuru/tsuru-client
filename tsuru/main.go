@@ -56,7 +56,7 @@ func buildManager(name string) *cmd.Manager {
 	m.Register(&pluginList{})
 	m.RegisterDeprecated(&appSwap{}, "swap")
 	m.RegisterDeprecated(&appDeploy{}, "deploy")
-	m.Register(&PlanList{})
+	m.Register(&planList{})
 	return m
 }
 
