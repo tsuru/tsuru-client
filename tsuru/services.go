@@ -19,9 +19,9 @@ import (
 	"launchpad.net/gnuflag"
 )
 
-type ServiceList struct{}
+type serviceList struct{}
 
-func (s ServiceList) Info() *cmd.Info {
+func (s serviceList) Info() *cmd.Info {
 	return &cmd.Info{
 		Name:  "service-list",
 		Usage: "service-list",
@@ -29,7 +29,7 @@ func (s ServiceList) Info() *cmd.Info {
 	}
 }
 
-func (s ServiceList) Run(ctx *cmd.Context, client *cmd.Client) error {
+func (s serviceList) Run(ctx *cmd.Context, client *cmd.Client) error {
 	url, err := cmd.GetURL("/services/instances")
 	if err != nil {
 		return err
@@ -58,12 +58,12 @@ func (s ServiceList) Run(ctx *cmd.Context, client *cmd.Client) error {
 	return nil
 }
 
-type ServiceAdd struct {
+type serviceAdd struct {
 	fs        *gnuflag.FlagSet
 	teamOwner string
 }
 
-func (c *ServiceAdd) Info() *cmd.Info {
+func (c *serviceAdd) Info() *cmd.Info {
 	usage := `service-add <servicename> <serviceinstancename> [plan] [-t/--owner-team <team>]
 e.g.:
 
@@ -79,7 +79,7 @@ Will add a new instance of the "mongodb" service, named "tsuru_mongodb" with the
 	}
 }
 
-func (c *ServiceAdd) Run(ctx *cmd.Context, client *cmd.Client) error {
+func (c *serviceAdd) Run(ctx *cmd.Context, client *cmd.Client) error {
 	serviceName, instanceName := ctx.Args[0], ctx.Args[1]
 	var plan string
 	if len(ctx.Args) > 2 {
@@ -113,7 +113,7 @@ func (c *ServiceAdd) Run(ctx *cmd.Context, client *cmd.Client) error {
 	return nil
 }
 
-func (c *ServiceAdd) Flags() *gnuflag.FlagSet {
+func (c *serviceAdd) Flags() *gnuflag.FlagSet {
 	if c.fs == nil {
 		flagDesc := "the team that owns te service (mandatory if the user is member of more than one team)"
 		c.fs = gnuflag.NewFlagSet("service-add", gnuflag.ExitOnError)
@@ -123,11 +123,11 @@ func (c *ServiceAdd) Flags() *gnuflag.FlagSet {
 	return c.fs
 }
 
-type ServiceBind struct {
+type serviceBind struct {
 	cmd.GuessingCommand
 }
 
-func (sb *ServiceBind) Run(ctx *cmd.Context, client *cmd.Client) error {
+func (sb *serviceBind) Run(ctx *cmd.Context, client *cmd.Client) error {
 	appName, err := sb.Guess()
 	if err != nil {
 		return err
@@ -168,7 +168,7 @@ For more details, please check the documentation for the service, using service-
 	return nil
 }
 
-func (sb *ServiceBind) Info() *cmd.Info {
+func (sb *serviceBind) Info() *cmd.Info {
 	return &cmd.Info{
 		Name:  "service-bind",
 		Usage: "service-bind <instancename> [-a/--app appname]",
@@ -179,11 +179,11 @@ If you don't provide the app name, tsuru will try to guess it.`,
 	}
 }
 
-type ServiceUnbind struct {
+type serviceUnbind struct {
 	cmd.GuessingCommand
 }
 
-func (su *ServiceUnbind) Run(ctx *cmd.Context, client *cmd.Client) error {
+func (su *serviceUnbind) Run(ctx *cmd.Context, client *cmd.Client) error {
 	appName, err := su.Guess()
 	if err != nil {
 		return err
@@ -212,7 +212,7 @@ func (su *ServiceUnbind) Run(ctx *cmd.Context, client *cmd.Client) error {
 	return nil
 }
 
-func (su *ServiceUnbind) Info() *cmd.Info {
+func (su *serviceUnbind) Info() *cmd.Info {
 	return &cmd.Info{
 		Name:  "service-unbind",
 		Usage: "service-unbind <instancename> [-a/--app appname]",
@@ -223,9 +223,9 @@ If you don't provide the app name, tsuru will try to guess it.`,
 	}
 }
 
-type ServiceInstanceStatus struct{}
+type serviceInstanceStatus struct{}
 
-func (c ServiceInstanceStatus) Info() *cmd.Info {
+func (c serviceInstanceStatus) Info() *cmd.Info {
 	usg := `service-status <serviceinstancename>
 e.g.:
 
@@ -239,7 +239,7 @@ e.g.:
 	}
 }
 
-func (c ServiceInstanceStatus) Run(ctx *cmd.Context, client *cmd.Client) error {
+func (c serviceInstanceStatus) Run(ctx *cmd.Context, client *cmd.Client) error {
 	instName := ctx.Args[0]
 	url, err := cmd.GetURL("/services/instances/" + instName + "/status")
 	if err != nil {
@@ -269,9 +269,9 @@ func (c ServiceInstanceStatus) Run(ctx *cmd.Context, client *cmd.Client) error {
 	return nil
 }
 
-type ServiceInfo struct{}
+type serviceInfo struct{}
 
-func (c ServiceInfo) Info() *cmd.Info {
+func (c serviceInfo) Info() *cmd.Info {
 	usg := `service-info <service>
 e.g.:
 
@@ -301,7 +301,7 @@ func in(value string, list []string) bool {
 	return false
 }
 
-func (ServiceInfo) ExtraHeaders(instances []ServiceInstanceModel) []string {
+func (serviceInfo) ExtraHeaders(instances []ServiceInstanceModel) []string {
 	var headers []string
 	for _, instance := range instances {
 		for key := range instance.Info {
@@ -314,7 +314,7 @@ func (ServiceInfo) ExtraHeaders(instances []ServiceInstanceModel) []string {
 	return headers
 }
 
-func (c ServiceInfo) BuildInstancesTable(serviceName string, ctx *cmd.Context, client *cmd.Client) error {
+func (c serviceInfo) BuildInstancesTable(serviceName string, ctx *cmd.Context, client *cmd.Client) error {
 	url, err := cmd.GetURL("/services/" + serviceName)
 	if err != nil {
 		return err
@@ -358,7 +358,7 @@ func (c ServiceInfo) BuildInstancesTable(serviceName string, ctx *cmd.Context, c
 	return nil
 }
 
-func (c ServiceInfo) BuildPlansTable(serviceName string, ctx *cmd.Context, client *cmd.Client) error {
+func (c serviceInfo) BuildPlansTable(serviceName string, ctx *cmd.Context, client *cmd.Client) error {
 	ctx.Stdout.Write([]byte("\nPlans\n"))
 	url, err := cmd.GetURL(fmt.Sprintf("/services/%s/plans", serviceName))
 	if err != nil {
@@ -394,7 +394,7 @@ func (c ServiceInfo) BuildPlansTable(serviceName string, ctx *cmd.Context, clien
 	return nil
 }
 
-func (c ServiceInfo) Run(ctx *cmd.Context, client *cmd.Client) error {
+func (c serviceInfo) Run(ctx *cmd.Context, client *cmd.Client) error {
 	serviceName := ctx.Args[0]
 	err := c.BuildInstancesTable(serviceName, ctx, client)
 	if err != nil {
@@ -403,9 +403,9 @@ func (c ServiceInfo) Run(ctx *cmd.Context, client *cmd.Client) error {
 	return c.BuildPlansTable(serviceName, ctx, client)
 }
 
-type ServiceDoc struct{}
+type serviceDoc struct{}
 
-func (ServiceDoc) Info() *cmd.Info {
+func (serviceDoc) Info() *cmd.Info {
 	return &cmd.Info{
 		Name:    "service-doc",
 		Usage:   "service-doc <servicename>",
@@ -414,7 +414,7 @@ func (ServiceDoc) Info() *cmd.Info {
 	}
 }
 
-func (ServiceDoc) Run(ctx *cmd.Context, client *cmd.Client) error {
+func (serviceDoc) Run(ctx *cmd.Context, client *cmd.Client) error {
 	sName := ctx.Args[0]
 	url := fmt.Sprintf("/services/%s/doc", sName)
 	url, err := cmd.GetURL(url)
@@ -438,12 +438,12 @@ func (ServiceDoc) Run(ctx *cmd.Context, client *cmd.Client) error {
 	return nil
 }
 
-type ServiceRemove struct {
+type serviceRemove struct {
 	yes bool
 	fs  *gnuflag.FlagSet
 }
 
-func (c *ServiceRemove) Info() *cmd.Info {
+func (c *serviceRemove) Info() *cmd.Info {
 	return &cmd.Info{
 		Name:    "service-remove",
 		Usage:   "service-remove <serviceinstancename> [--assume-yes]",
@@ -452,7 +452,7 @@ func (c *ServiceRemove) Info() *cmd.Info {
 	}
 }
 
-func (c *ServiceRemove) Run(ctx *cmd.Context, client *cmd.Client) error {
+func (c *serviceRemove) Run(ctx *cmd.Context, client *cmd.Client) error {
 	name := ctx.Args[0]
 	var answer string
 	if !c.yes {
@@ -480,7 +480,7 @@ func (c *ServiceRemove) Run(ctx *cmd.Context, client *cmd.Client) error {
 	return nil
 }
 
-func (c *ServiceRemove) Flags() *gnuflag.FlagSet {
+func (c *serviceRemove) Flags() *gnuflag.FlagSet {
 	if c.fs == nil {
 		c.fs = gnuflag.NewFlagSet("service-remove", gnuflag.ExitOnError)
 		c.fs.BoolVar(&c.yes, "assume-yes", false, "Don't ask for confirmation, just remove the service.")

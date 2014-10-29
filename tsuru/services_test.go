@@ -52,7 +52,7 @@ func (s *S) TestServiceList(c *gocheck.C) {
 		},
 	}
 	client := cmd.NewClient(&http.Client{Transport: trans}, nil, manager)
-	err := (&ServiceList{}).Run(&ctx, client)
+	err := (&serviceList{}).Run(&ctx, client)
 	c.Assert(err, gocheck.IsNil)
 	table := stdout.String()
 	c.Assert(table, gocheck.Matches, "^"+expectedPrefix+".*")
@@ -76,7 +76,7 @@ func (s *S) TestServiceListWithEmptyResponse(c *gocheck.C) {
 		},
 	}
 	client := cmd.NewClient(&http.Client{Transport: trans}, nil, manager)
-	err := (&ServiceList{}).Run(&ctx, client)
+	err := (&serviceList{}).Run(&ctx, client)
 	c.Assert(err, gocheck.IsNil)
 	c.Assert(stdout.String(), gocheck.Equals, expected)
 }
@@ -88,12 +88,12 @@ func (s *S) TestInfoServiceList(c *gocheck.C) {
 		Desc:    "Get all available services, and user's instances for this services",
 		MinArgs: 0,
 	}
-	command := &ServiceList{}
+	command := &serviceList{}
 	c.Assert(command.Info(), gocheck.DeepEquals, expected)
 }
 
 func (s *S) TestServiceListShouldBeCommand(c *gocheck.C) {
-	var _ cmd.Command = &ServiceList{}
+	var _ cmd.Command = &serviceList{}
 }
 
 func (s *S) TestServiceBind(c *gocheck.C) {
@@ -114,7 +114,7 @@ func (s *S) TestServiceBind(c *gocheck.C) {
 		},
 	}
 	client := cmd.NewClient(&http.Client{Transport: trans}, nil, manager)
-	command := ServiceBind{}
+	command := serviceBind{}
 	command.Flags().Parse(true, []string{"-a", "g1"})
 	err := command.Run(&ctx, client)
 	c.Assert(err, gocheck.IsNil)
@@ -154,7 +154,7 @@ func (s *S) TestServiceBindWithoutFlag(c *gocheck.C) {
 	}
 	client := cmd.NewClient(&http.Client{Transport: trans}, nil, manager)
 	fake := &testing.FakeGuesser{Name: "ge"}
-	err := (&ServiceBind{cmd.GuessingCommand{G: fake}}).Run(&ctx, client)
+	err := (&serviceBind{cmd.GuessingCommand{G: fake}}).Run(&ctx, client)
 	c.Assert(err, gocheck.IsNil)
 	c.Assert(called, gocheck.Equals, true)
 	expected := `Instance "my-mysql" is now bound to the app "ge".
@@ -184,7 +184,7 @@ func (s *S) TestServiceBindWithoutEnvironmentVariables(c *gocheck.C) {
 		},
 	}
 	client := cmd.NewClient(&http.Client{Transport: trans}, nil, manager)
-	command := ServiceBind{}
+	command := serviceBind{}
 	command.Flags().Parse(true, []string{"-a", "g1"})
 	err := command.Run(&ctx, client)
 	c.Assert(err, gocheck.IsNil)
@@ -202,7 +202,7 @@ func (s *S) TestServiceBindWithRequestFailure(c *gocheck.C) {
 	trans := &testing.Transport{Message: "This user does not have access to this app.", Status: http.StatusForbidden}
 
 	client := cmd.NewClient(&http.Client{Transport: trans}, nil, manager)
-	command := ServiceBind{}
+	command := serviceBind{}
 	command.Flags().Parse(true, []string{"-a", "g1"})
 	err := command.Run(&ctx, client)
 	c.Assert(err, gocheck.NotNil)
@@ -218,11 +218,11 @@ func (s *S) TestServiceBindInfo(c *gocheck.C) {
 If you don't provide the app name, tsuru will try to guess it.`,
 		MinArgs: 1,
 	}
-	c.Assert((&ServiceBind{}).Info(), gocheck.DeepEquals, expected)
+	c.Assert((&serviceBind{}).Info(), gocheck.DeepEquals, expected)
 }
 
 func (s *S) TestServiceBindIsAFlaggedCommand(c *gocheck.C) {
-	var _ cmd.FlaggedCommand = &ServiceBind{}
+	var _ cmd.FlaggedCommand = &serviceBind{}
 }
 
 func (s *S) TestServiceUnbind(c *gocheck.C) {
@@ -241,7 +241,7 @@ func (s *S) TestServiceUnbind(c *gocheck.C) {
 		},
 	}
 	client := cmd.NewClient(&http.Client{Transport: trans}, nil, manager)
-	command := ServiceUnbind{}
+	command := serviceUnbind{}
 	command.Flags().Parse(true, []string{"-a", "pocket"})
 	err := command.Run(&ctx, client)
 	c.Assert(err, gocheck.IsNil)
@@ -266,7 +266,7 @@ func (s *S) TestServiceUnbindWithoutFlag(c *gocheck.C) {
 	}
 	client := cmd.NewClient(&http.Client{Transport: trans}, nil, manager)
 	fake := &testing.FakeGuesser{Name: "sleeve"}
-	err := (&ServiceUnbind{cmd.GuessingCommand{G: fake}}).Run(&ctx, client)
+	err := (&serviceUnbind{cmd.GuessingCommand{G: fake}}).Run(&ctx, client)
 	c.Assert(err, gocheck.IsNil)
 	c.Assert(called, gocheck.Equals, true)
 	c.Assert(stdout.String(), gocheck.Equals, "Instance \"hand\" is not bound to the app \"sleeve\" anymore.\n")
@@ -282,7 +282,7 @@ func (s *S) TestServiceUnbindWithRequestFailure(c *gocheck.C) {
 	trans := &testing.Transport{Message: "This app is not bound to this service.", Status: http.StatusPreconditionFailed}
 
 	client := cmd.NewClient(&http.Client{Transport: trans}, nil, manager)
-	command := ServiceUnbind{}
+	command := serviceUnbind{}
 	command.Flags().Parse(true, []string{"-a", "pocket"})
 	err := command.Run(&ctx, client)
 	c.Assert(err, gocheck.NotNil)
@@ -298,11 +298,11 @@ func (s *S) TestServiceUnbindInfo(c *gocheck.C) {
 If you don't provide the app name, tsuru will try to guess it.`,
 		MinArgs: 1,
 	}
-	c.Assert((&ServiceUnbind{}).Info(), gocheck.DeepEquals, expected)
+	c.Assert((&serviceUnbind{}).Info(), gocheck.DeepEquals, expected)
 }
 
 func (s *S) TestServiceUnbindIsAFlaggedComand(c *gocheck.C) {
-	var _ cmd.FlaggedCommand = &ServiceUnbind{}
+	var _ cmd.FlaggedCommand = &serviceUnbind{}
 }
 
 func (s *S) TestServiceAddInfo(c *gocheck.C) {
@@ -319,7 +319,7 @@ Will add a new instance of the "mongodb" service, named "tsuru_mongodb" with the
 		MinArgs: 2,
 		MaxArgs: 3,
 	}
-	command := &ServiceAdd{}
+	command := &serviceAdd{}
 	c.Assert(command.Info(), gocheck.DeepEquals, expected)
 }
 
@@ -337,7 +337,7 @@ func (s *S) TestServiceAddRun(c *gocheck.C) {
 		Stderr: &stderr,
 	}
 	client := cmd.NewClient(&http.Client{Transport: &testing.Transport{Message: result, Status: http.StatusOK}}, nil, manager)
-	err := (&ServiceAdd{}).Run(&context, client)
+	err := (&serviceAdd{}).Run(&context, client)
 	c.Assert(err, gocheck.IsNil)
 	obtained := stdout.String()
 	c.Assert(obtained, gocheck.Equals, result)
@@ -345,7 +345,7 @@ func (s *S) TestServiceAddRun(c *gocheck.C) {
 
 func (s *S) TestServiceAddFlags(c *gocheck.C) {
 	flagDesc := "the team that owns te service (mandatory if the user is member of more than one team)"
-	command := ServiceAdd{}
+	command := serviceAdd{}
 	flagset := command.Flags()
 	c.Assert(flagset, gocheck.NotNil)
 	flagset.Parse(true, []string{"-t", "wat"})
@@ -376,7 +376,7 @@ e.g.:
 		Desc:    "Check status of a given service instance.",
 		MinArgs: 1,
 	}
-	got := (&ServiceInstanceStatus{}).Info()
+	got := (&serviceInstanceStatus{}).Info()
 	c.Assert(got, gocheck.DeepEquals, expected)
 }
 
@@ -390,7 +390,7 @@ func (s *S) TestServiceInstanceStatusRun(c *gocheck.C) {
 		Stderr: &stderr,
 	}
 	client := cmd.NewClient(&http.Client{Transport: &testing.Transport{Message: result, Status: http.StatusOK}}, nil, manager)
-	err := (&ServiceInstanceStatus{}).Run(&context, client)
+	err := (&serviceInstanceStatus{}).Run(&context, client)
 	c.Assert(err, gocheck.IsNil)
 	obtained := stdout.String()
 	obtained = strings.Replace(obtained, "\n", "", -1)
@@ -409,7 +409,7 @@ e.g.:
 		Desc:    "List all instances of a service",
 		MinArgs: 1,
 	}
-	got := (&ServiceInfo{}).Info()
+	got := (&serviceInfo{}).Info()
 	c.Assert(got, gocheck.DeepEquals, expected)
 }
 
@@ -418,7 +418,7 @@ func (s *S) TestServiceInfoExtraHeaders(c *gocheck.C) {
 	var instances []ServiceInstanceModel
 	json.Unmarshal(result, &instances)
 	expected := []string{"key", "key2"}
-	headers := (&ServiceInfo{}).ExtraHeaders(instances)
+	headers := (&serviceInfo{}).ExtraHeaders(instances)
 	c.Assert(headers, gocheck.DeepEquals, expected)
 }
 
@@ -447,14 +447,14 @@ Plans
 		Stderr: &stderr,
 	}
 	client := cmd.NewClient(&http.Client{Transport: &infoTransport{}}, nil, manager)
-	err := (&ServiceInfo{}).Run(&context, client)
+	err := (&serviceInfo{}).Run(&context, client)
 	c.Assert(err, gocheck.IsNil)
 	obtained := stdout.String()
 	c.Assert(obtained, gocheck.Equals, expected)
 }
 
 func (s *S) TestServiceDocInfo(c *gocheck.C) {
-	i := (&ServiceDoc{}).Info()
+	i := (&serviceDoc{}).Info()
 	expected := &cmd.Info{
 		Name:    "service-doc",
 		Usage:   "service-doc <servicename>",
@@ -485,14 +485,14 @@ Service test is foo bar.
 		},
 	}
 	client := cmd.NewClient(&http.Client{Transport: &transport}, nil, manager)
-	err := (&ServiceDoc{}).Run(&ctx, client)
+	err := (&serviceDoc{}).Run(&ctx, client)
 	c.Assert(err, gocheck.IsNil)
 	obtained := stdout.String()
 	c.Assert(obtained, gocheck.Equals, expected)
 }
 
 func (s *S) TestServiceRemoveInfo(c *gocheck.C) {
-	i := (&ServiceRemove{}).Info()
+	i := (&serviceRemove{}).Info()
 	expected := &cmd.Info{
 		Name:    "service-remove",
 		Usage:   "service-remove <serviceinstancename> [--assume-yes]",
@@ -523,7 +523,7 @@ func (s *S) TestServiceRemoveRun(c *gocheck.C) {
 		},
 	}
 	client := cmd.NewClient(&http.Client{Transport: &transport}, nil, manager)
-	err := (&ServiceRemove{}).Run(&ctx, client)
+	err := (&serviceRemove{}).Run(&ctx, client)
 	c.Assert(err, gocheck.IsNil)
 	obtained := stdout.String()
 	c.Assert(obtained, gocheck.Equals, expected)
@@ -539,7 +539,7 @@ func (s *S) TestServiceRemoveWithoutAsking(c *gocheck.C) {
 		Stdin:  strings.NewReader("y\n"),
 	}
 	client := cmd.NewClient(&http.Client{Transport: &testing.Transport{Message: "", Status: http.StatusOK}}, nil, manager)
-	command := ServiceRemove{}
+	command := serviceRemove{}
 	command.Flags().Parse(true, []string{"ble", "-y"})
 	err := command.Run(&context, client)
 	c.Assert(err, gocheck.IsNil)
@@ -547,7 +547,7 @@ func (s *S) TestServiceRemoveWithoutAsking(c *gocheck.C) {
 }
 
 func (s *S) TestServiceRemoveFlags(c *gocheck.C) {
-	command := ServiceRemove{}
+	command := serviceRemove{}
 	flagset := command.Flags()
 	c.Assert(flagset, gocheck.NotNil)
 	flagset.Parse(true, []string{"-y"})

@@ -136,28 +136,28 @@ func (s *S) TestServiceListIsRegistered(c *gocheck.C) {
 	manager := buildManager("tsuru")
 	list, ok := manager.Commands["service-list"]
 	c.Assert(ok, gocheck.Equals, true)
-	c.Assert(list, gocheck.FitsTypeOf, ServiceList{})
+	c.Assert(list, gocheck.FitsTypeOf, serviceList{})
 }
 
 func (s *S) TestServiceAddIsRegistered(c *gocheck.C) {
 	manager := buildManager("tsuru")
 	add, ok := manager.Commands["service-add"]
 	c.Assert(ok, gocheck.Equals, true)
-	c.Assert(add, gocheck.FitsTypeOf, &ServiceAdd{})
+	c.Assert(add, gocheck.FitsTypeOf, &serviceAdd{})
 }
 
 func (s *S) TestServiceRemoveIsRegistered(c *gocheck.C) {
 	manager := buildManager("tsuru")
 	remove, ok := manager.Commands["service-remove"]
 	c.Assert(ok, gocheck.Equals, true)
-	c.Assert(remove, gocheck.FitsTypeOf, &ServiceRemove{})
+	c.Assert(remove, gocheck.FitsTypeOf, &serviceRemove{})
 }
 
 func (s *S) TestServiceBindIsRegistered(c *gocheck.C) {
 	manager := buildManager("tsuru")
 	bind, ok := manager.Commands["service-bind"]
 	c.Assert(ok, gocheck.Equals, true)
-	c.Assert(bind, gocheck.FitsTypeOf, &ServiceBind{})
+	c.Assert(bind, gocheck.FitsTypeOf, &serviceBind{})
 }
 
 func (s *S) TestBindIsDeprecated(c *gocheck.C) {
@@ -168,7 +168,7 @@ func (s *S) TestServiceUnbindIsRegistered(c *gocheck.C) {
 	manager := buildManager("tsuru")
 	unbind, ok := manager.Commands["service-unbind"]
 	c.Assert(ok, gocheck.Equals, true)
-	c.Assert(unbind, gocheck.FitsTypeOf, &ServiceUnbind{})
+	c.Assert(unbind, gocheck.FitsTypeOf, &serviceUnbind{})
 }
 
 func (s *S) TestUnbindIsDeprecated(c *gocheck.C) {
@@ -179,21 +179,21 @@ func (s *S) TestServiceDocIsRegistered(c *gocheck.C) {
 	manager := buildManager("tsuru")
 	doc, ok := manager.Commands["service-doc"]
 	c.Assert(ok, gocheck.Equals, true)
-	c.Assert(doc, gocheck.FitsTypeOf, ServiceDoc{})
+	c.Assert(doc, gocheck.FitsTypeOf, serviceDoc{})
 }
 
 func (s *S) TestServiceInfoIsRegistered(c *gocheck.C) {
 	manager := buildManager("tsuru")
 	info, ok := manager.Commands["service-info"]
 	c.Assert(ok, gocheck.Equals, true)
-	c.Assert(info, gocheck.FitsTypeOf, ServiceInfo{})
+	c.Assert(info, gocheck.FitsTypeOf, serviceInfo{})
 }
 
 func (s *S) TestServiceInstanceStatusIsRegistered(c *gocheck.C) {
 	manager := buildManager("tsuru")
 	status, ok := manager.Commands["service-status"]
 	c.Assert(ok, gocheck.Equals, true)
-	c.Assert(status, gocheck.FitsTypeOf, ServiceInstanceStatus{})
+	c.Assert(status, gocheck.FitsTypeOf, serviceInstanceStatus{})
 }
 
 func (s *S) TestAppInfoIsRegistered(c *gocheck.C) {
