@@ -45,35 +45,6 @@ func (r *keyReader) readKey(context *cmd.Context) (string, error) {
 	return string(output), err
 }
 
-type KeyRemove struct{}
-
-func (c *KeyRemove) Info() *cmd.Info {
-	return &cmd.Info{
-		Name:    "key-remove",
-		Usage:   "key-remove <key-name>",
-		Desc:    "removes the given public key from your account",
-		MinArgs: 1,
-	}
-}
-
-func (c *KeyRemove) Run(context *cmd.Context, client *cmd.Client) error {
-	b := bytes.NewBufferString(fmt.Sprintf(`{"name":%q}`, context.Args[0]))
-	url, err := cmd.GetURL("/users/keys")
-	if err != nil {
-		return err
-	}
-	request, err := http.NewRequest("DELETE", url, b)
-	if err != nil {
-		return err
-	}
-	_, err = client.Do(request)
-	if err != nil {
-		return err
-	}
-	fmt.Fprintf(context.Stdout, "Key %q successfully removed!\n", context.Args[0])
-	return nil
-}
-
 type KeyAdd struct {
 	keyReader
 }
@@ -110,5 +81,34 @@ func (c *KeyAdd) Run(context *cmd.Context, client *cmd.Client) error {
 		return err
 	}
 	fmt.Fprintf(context.Stdout, "Key %q successfully added!\n", keyName)
+	return nil
+}
+
+type KeyRemove struct{}
+
+func (c *KeyRemove) Info() *cmd.Info {
+	return &cmd.Info{
+		Name:    "key-remove",
+		Usage:   "key-remove <key-name>",
+		Desc:    "removes the given public key from your account",
+		MinArgs: 1,
+	}
+}
+
+func (c *KeyRemove) Run(context *cmd.Context, client *cmd.Client) error {
+	b := bytes.NewBufferString(fmt.Sprintf(`{"name":%q}`, context.Args[0]))
+	url, err := cmd.GetURL("/users/keys")
+	if err != nil {
+		return err
+	}
+	request, err := http.NewRequest("DELETE", url, b)
+	if err != nil {
+		return err
+	}
+	_, err = client.Do(request)
+	if err != nil {
+		return err
+	}
+	fmt.Fprintf(context.Stdout, "Key %q successfully removed!\n", context.Args[0])
 	return nil
 }
