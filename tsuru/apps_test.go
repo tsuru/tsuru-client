@@ -902,7 +902,7 @@ func (s *S) TestAddCName(c *gocheck.C) {
 		},
 	}
 	client := cmd.NewClient(&http.Client{Transport: trans}, nil, manager)
-	command := AddCName{}
+	command := cnameAdd{}
 	command.Flags().Parse(true, []string{"-a", "death"})
 	err := command.Run(&context, client)
 	c.Assert(err, gocheck.IsNil)
@@ -934,7 +934,7 @@ func (s *S) TestAddCNameWithoutTheFlag(c *gocheck.C) {
 		},
 	}
 	client := cmd.NewClient(&http.Client{Transport: trans}, nil, manager)
-	err := (&AddCName{cmd.GuessingCommand{G: fake}}).Run(&context, client)
+	err := (&cnameAdd{cmd.GuessingCommand{G: fake}}).Run(&context, client)
 	c.Assert(err, gocheck.IsNil)
 	c.Assert(called, gocheck.Equals, true)
 	c.Assert(stdout.String(), gocheck.Equals, "cname successfully defined.\n")
@@ -949,7 +949,7 @@ func (s *S) TestAddCNameFailure(c *gocheck.C) {
 	}
 	trans := &testing.Transport{Message: "Invalid cname", Status: http.StatusPreconditionFailed}
 	client := cmd.NewClient(&http.Client{Transport: trans}, nil, manager)
-	command := AddCName{}
+	command := cnameAdd{}
 	command.Flags().Parse(true, []string{"-a", "masterplan"})
 	err := command.Run(&context, client)
 	c.Assert(err, gocheck.NotNil)
@@ -963,11 +963,11 @@ func (s *S) TestAddCNameInfo(c *gocheck.C) {
 		Desc:    `adds a cname for your app.`,
 		MinArgs: 1,
 	}
-	c.Assert((&AddCName{}).Info(), gocheck.DeepEquals, expected)
+	c.Assert((&cnameAdd{}).Info(), gocheck.DeepEquals, expected)
 }
 
 func (s *S) TestAddCNameIsAFlaggedCommand(c *gocheck.C) {
-	var _ cmd.FlaggedCommand = &AddCName{}
+	var _ cmd.FlaggedCommand = &cnameAdd{}
 }
 
 func (s *S) TestRemoveCName(c *gocheck.C) {
@@ -987,7 +987,7 @@ func (s *S) TestRemoveCName(c *gocheck.C) {
 		},
 	}
 	client := cmd.NewClient(&http.Client{Transport: trans}, nil, manager)
-	command := RemoveCName{}
+	command := cnameRemove{}
 	command.Flags().Parse(true, []string{"--app", "death"})
 	err := command.Run(&context, client)
 	c.Assert(err, gocheck.IsNil)
@@ -1013,7 +1013,7 @@ func (s *S) TestRemoveCNameWithoutTheFlag(c *gocheck.C) {
 		},
 	}
 	client := cmd.NewClient(&http.Client{Transport: trans}, nil, manager)
-	err := (&RemoveCName{cmd.GuessingCommand{G: fake}}).Run(&context, client)
+	err := (&cnameRemove{cmd.GuessingCommand{G: fake}}).Run(&context, client)
 	c.Assert(err, gocheck.IsNil)
 	c.Assert(called, gocheck.Equals, true)
 	c.Assert(stdout.String(), gocheck.Equals, "cname successfully undefined.\n")
@@ -1026,11 +1026,11 @@ func (s *S) TestRemoveCNameInfo(c *gocheck.C) {
 		Desc:    `removes cnames of your app.`,
 		MinArgs: 1,
 	}
-	c.Assert((&RemoveCName{}).Info(), gocheck.DeepEquals, expected)
+	c.Assert((&cnameRemove{}).Info(), gocheck.DeepEquals, expected)
 }
 
 func (s *S) TestRemoveCNameIsAFlaggedCommand(c *gocheck.C) {
-	var _ cmd.FlaggedCommand = &RemoveCName{}
+	var _ cmd.FlaggedCommand = &cnameRemove{}
 }
 
 func (s *S) TestAppStartInfo(c *gocheck.C) {

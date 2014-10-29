@@ -618,11 +618,11 @@ If you don't provide the app name, tsuru will try to guess it.`,
 	}
 }
 
-type AddCName struct {
+type cnameAdd struct {
 	cmd.GuessingCommand
 }
 
-func (c *AddCName) Run(context *cmd.Context, client *cmd.Client) error {
+func (c *cnameAdd) Run(context *cmd.Context, client *cmd.Client) error {
 	err := addCName(context.Args, c.GuessingCommand, client)
 	if err != nil {
 		return err
@@ -631,7 +631,7 @@ func (c *AddCName) Run(context *cmd.Context, client *cmd.Client) error {
 	return nil
 }
 
-func (c *AddCName) Info() *cmd.Info {
+func (c *cnameAdd) Info() *cmd.Info {
 	return &cmd.Info{
 		Name:    "cname-add",
 		Usage:   "cname-add <cname> [<cname> ...] [-a/--app appname]",
@@ -640,11 +640,11 @@ func (c *AddCName) Info() *cmd.Info {
 	}
 }
 
-type RemoveCName struct {
+type cnameRemove struct {
 	cmd.GuessingCommand
 }
 
-func (c *RemoveCName) Run(context *cmd.Context, client *cmd.Client) error {
+func (c *cnameRemove) Run(context *cmd.Context, client *cmd.Client) error {
 	err := unsetCName(context.Args, c.GuessingCommand, client)
 	if err != nil {
 		return err
@@ -653,7 +653,7 @@ func (c *RemoveCName) Run(context *cmd.Context, client *cmd.Client) error {
 	return nil
 }
 
-func (c *RemoveCName) Info() *cmd.Info {
+func (c *cnameRemove) Info() *cmd.Info {
 	return &cmd.Info{
 		Name:    "cname-remove",
 		Usage:   "cname-remove <cname> [<cname> ...] [-a/--app appname]",

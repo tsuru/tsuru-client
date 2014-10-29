@@ -221,7 +221,7 @@ func (s *S) TestCNameAddIsRegistered(c *gocheck.C) {
 	manager := buildManager("tsuru")
 	cname, ok := manager.Commands["cname-add"]
 	c.Assert(ok, gocheck.Equals, true)
-	c.Assert(cname, gocheck.FitsTypeOf, &AddCName{})
+	c.Assert(cname, gocheck.FitsTypeOf, &cnameAdd{})
 }
 
 func (s *S) TestAddCnameIsDeprecated(c *gocheck.C) {
@@ -232,7 +232,7 @@ func (s *S) TestCNameRemoveIsRegistered(c *gocheck.C) {
 	manager := buildManager("tsuru")
 	cname, ok := manager.Commands["cname-remove"]
 	c.Assert(ok, gocheck.Equals, true)
-	c.Assert(cname, gocheck.FitsTypeOf, &RemoveCName{})
+	c.Assert(cname, gocheck.FitsTypeOf, &cnameRemove{})
 }
 
 func (s *S) TestRemoveCNameIsDeprecated(c *gocheck.C) {
