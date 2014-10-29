@@ -47,7 +47,7 @@ func (s *S) TestAppGrantIsRegistered(c *gocheck.C) {
 	manager := buildManager("tsuru")
 	grant, ok := manager.Commands["app-grant"]
 	c.Assert(ok, gocheck.Equals, true)
-	c.Assert(grant, gocheck.FitsTypeOf, &AppGrant{})
+	c.Assert(grant, gocheck.FitsTypeOf, &appGrant{})
 }
 
 func (s *S) TestAppRevokeIsRegistered(c *gocheck.C) {

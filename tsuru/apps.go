@@ -355,11 +355,11 @@ func (c *appInfo) Show(result []byte, adminResult []byte, servicesResult []byte,
 	return nil
 }
 
-type AppGrant struct {
+type appGrant struct {
 	cmd.GuessingCommand
 }
 
-func (c *AppGrant) Info() *cmd.Info {
+func (c *appGrant) Info() *cmd.Info {
 	return &cmd.Info{
 		Name:  "app-grant",
 		Usage: "app-grant <teamname> [-a/--app appname]",
@@ -370,7 +370,7 @@ If you don't provide the app name, tsuru will try to guess it.`,
 	}
 }
 
-func (c *AppGrant) Run(context *cmd.Context, client *cmd.Client) error {
+func (c *appGrant) Run(context *cmd.Context, client *cmd.Client) error {
 	appName, err := c.Guess()
 	if err != nil {
 		return err
