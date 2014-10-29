@@ -214,7 +214,7 @@ func (s *S) TestUnitRemoveIsRegistered(c *gocheck.C) {
 	manager := buildManager("tsuru")
 	rmunit, ok := manager.Commands["unit-remove"]
 	c.Assert(ok, gocheck.Equals, true)
-	c.Assert(rmunit, gocheck.FitsTypeOf, &UnitRemove{})
+	c.Assert(rmunit, gocheck.FitsTypeOf, &unitRemove{})
 }
 
 func (s *S) TestCNameAddIsRegistered(c *gocheck.C) {

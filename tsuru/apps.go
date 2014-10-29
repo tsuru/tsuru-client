@@ -795,11 +795,11 @@ func (c *unitAdd) Run(context *cmd.Context, client *cmd.Client) error {
 	return nil
 }
 
-type UnitRemove struct {
+type unitRemove struct {
 	cmd.GuessingCommand
 }
 
-func (c *UnitRemove) Info() *cmd.Info {
+func (c *unitRemove) Info() *cmd.Info {
 	return &cmd.Info{
 		Name:    "unit-remove",
 		Usage:   "unit-remove <# of units> [-a/--app appname]",
@@ -808,7 +808,7 @@ func (c *UnitRemove) Info() *cmd.Info {
 	}
 }
 
-func (c *UnitRemove) Run(context *cmd.Context, client *cmd.Client) error {
+func (c *unitRemove) Run(context *cmd.Context, client *cmd.Client) error {
 	appName, err := c.Guess()
 	if err != nil {
 		return err

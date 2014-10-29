@@ -1294,7 +1294,7 @@ func (s *S) TestUnitRemove(c *gocheck.C) {
 		},
 	}
 	client := cmd.NewClient(&http.Client{Transport: trans}, nil, manager)
-	command := UnitRemove{}
+	command := unitRemove{}
 	command.Flags().Parse(true, []string{"-a", "vapor"})
 	err := command.Run(&context, client)
 	c.Assert(err, gocheck.IsNil)
@@ -1313,7 +1313,7 @@ func (s *S) TestUnitRemoveFailure(c *gocheck.C) {
 	client := cmd.NewClient(&http.Client{
 		Transport: &testing.Transport{Message: "Failed to remove.", Status: 500},
 	}, nil, manager)
-	command := UnitRemove{}
+	command := unitRemove{}
 	command.Flags().Parse(true, []string{"-a", "vapor"})
 	err := command.Run(&context, client)
 	c.Assert(err, gocheck.NotNil)
@@ -1327,9 +1327,9 @@ func (s *S) TestUnitRemoveInfo(c *gocheck.C) {
 		Desc:    "remove units from an app.",
 		MinArgs: 1,
 	}
-	c.Assert((&UnitRemove{}).Info(), gocheck.DeepEquals, &expected)
+	c.Assert((&unitRemove{}).Info(), gocheck.DeepEquals, &expected)
 }
 
 func (s *S) TestUnitRemoveIsACommand(c *gocheck.C) {
-	var _ cmd.Command = &UnitRemove{}
+	var _ cmd.Command = &unitRemove{}
 }
