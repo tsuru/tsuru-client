@@ -6,6 +6,7 @@ package main
 
 import (
 	"bytes"
+	"encoding/json"
 	"fmt"
 	"io"
 	"io/ioutil"
@@ -15,7 +16,10 @@ import (
 
 	"github.com/tsuru/tsuru/cmd"
 	"github.com/tsuru/tsuru/fs"
+	"launchpad.net/gnuflag"
 )
+
+const keyTruncate = 60
 
 type keyReader struct {
 	fsystem fs.Fs
@@ -111,4 +115,60 @@ func (c *keyRemove) Run(context *cmd.Context, client *cmd.Client) error {
 	}
 	fmt.Fprintf(context.Stdout, "Key %q successfully removed!\n", context.Args[0])
 	return nil
+}
+
+type keyList struct {
+	notrunc bool
+	fs      *gnuflag.FlagSet
+}
+
+func (c *keyList) Info() *cmd.Info {
+	return &cmd.Info{
+		Name:  "key-list",
+		Usage: "key-list [-n/--no-truncate]",
+		Desc:  "lists public keys registered in your account",
+	}
+}
+
+func (c *keyList) Run(context *cmd.Context, client *cmd.Client) error {
+	url, err := cmd.GetURL("/users/keys")
+	if err != nil {
+		return err
+	}
+	request, err := http.NewRequest("GET", url, nil)
+	if err != nil {
+		return err
+	}
+	resp, err := client.Do(request)
+	if err != nil {
+		return err
+	}
+	defer resp.Body.Close()
+	var keys map[string]string
+	err = json.NewDecoder(resp.Body).Decode(&keys)
+	if err != nil {
+		return err
+	}
+	var table cmd.Table
+	table.Headers = cmd.Row{"Name", "Content"}
+	table.LineSeparator = !c.notrunc
+	for name, content := range keys {
+		row := []string{name, content}
+		if !c.notrunc && len(row[1]) > keyTruncate {
+			row[1] = row[1][:keyTruncate] + "..."
+		}
+		table.AddRow(cmd.Row(row))
+	}
+	table.SortByColumn(0)
+	context.Stdout.Write(table.Bytes())
+	return nil
+}
+
+func (c *keyList) Flags() *gnuflag.FlagSet {
+	if c.fs == nil {
+		c.fs = gnuflag.NewFlagSet("key-list", gnuflag.ExitOnError)
+		c.fs.BoolVar(&c.notrunc, "n", false, "disable truncation of key content")
+		c.fs.BoolVar(&c.notrunc, "no-truncate", false, "disable truncation of key content")
+	}
+	return c.fs
 }

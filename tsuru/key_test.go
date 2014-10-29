@@ -12,6 +12,7 @@ import (
 	"net/http"
 	"os/user"
 	"path"
+	"strings"
 
 	"github.com/tsuru/tsuru/cmd"
 	"github.com/tsuru/tsuru/cmd/testing"
@@ -175,4 +176,62 @@ func (s *S) TestInfoKeyRemove(c *gocheck.C) {
 		MinArgs: 1,
 	}
 	c.Assert((&keyRemove{}).Info(), gocheck.DeepEquals, expected)
+}
+
+func (s *S) TestKeyList(c *gocheck.C) {
+	var stdout, stderr bytes.Buffer
+	expected := `+------+-----------------------------------------------------------------+
+| Name | Content                                                         |
++------+-----------------------------------------------------------------+
+| key1 | key1 content                                                    |
+| key2 | key2 key2 key2 key2 key2 key2 key2 key2 key2 key2 key2 key2 ... |
++------+-----------------------------------------------------------------+` + "\n"
+	context := cmd.Context{Stdout: &stdout, Stderr: &stderr}
+	key2Content := strings.Repeat("key2 ", 16)
+	body := fmt.Sprintf(`{"key1":"key1 content","key2":%q}`, key2Content)
+	transport := testing.ConditionalTransport{
+		Transport: testing.Transport{Message: body, Status: http.StatusOK},
+		CondFunc: func(r *http.Request) bool {
+			return r.Method == "GET" && r.URL.Path == "/users/keys"
+		},
+	}
+	client := cmd.NewClient(&http.Client{Transport: &transport}, nil, manager)
+	var command keyList
+	err := command.Run(&context, client)
+	c.Assert(err, gocheck.IsNil)
+	c.Assert(stdout.String(), gocheck.Equals, expected)
+}
+
+func (s *S) TestKeyListNoTruncate(c *gocheck.C) {
+	var stdout, stderr bytes.Buffer
+	expected := `+------+----------------------------------------------------------------------------------+
+| Name | Content                                                                          |
++------+----------------------------------------------------------------------------------+
+| key1 | key1 content                                                                     |
+| key2 | key2 key2 key2 key2 key2 key2 key2 key2 key2 key2 key2 key2 key2 key2 key2 key2  |
++------+----------------------------------------------------------------------------------+` + "\n"
+	context := cmd.Context{Stdout: &stdout, Stderr: &stderr}
+	key2Content := strings.Repeat("key2 ", 16)
+	body := fmt.Sprintf(`{"key1":"key1 content","key2":%q}`, key2Content)
+	transport := testing.ConditionalTransport{
+		Transport: testing.Transport{Message: body, Status: http.StatusOK},
+		CondFunc: func(r *http.Request) bool {
+			return r.Method == "GET" && r.URL.Path == "/users/keys"
+		},
+	}
+	client := cmd.NewClient(&http.Client{Transport: &transport}, nil, manager)
+	var command keyList
+	command.Flags().Parse(true, []string{"--no-truncate"})
+	err := command.Run(&context, client)
+	c.Assert(err, gocheck.IsNil)
+	c.Assert(stdout.String(), gocheck.Equals, expected)
+}
+
+func (s *S) TestInfoKeyList(c *gocheck.C) {
+	expected := &cmd.Info{
+		Name:  "key-list",
+		Usage: "key-list [-n/--no-truncate]",
+		Desc:  "lists public keys registered in your account",
+	}
+	c.Assert((&keyList{}).Info(), gocheck.DeepEquals, expected)
 }
