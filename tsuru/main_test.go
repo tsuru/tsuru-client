@@ -94,21 +94,21 @@ func (s *S) TestEnvGetIsRegistered(c *gocheck.C) {
 	manager := buildManager("tsuru")
 	get, ok := manager.Commands["env-get"]
 	c.Assert(ok, gocheck.Equals, true)
-	c.Assert(get, gocheck.FitsTypeOf, &EnvGet{})
+	c.Assert(get, gocheck.FitsTypeOf, &envGet{})
 }
 
 func (s *S) TestEnvSetIsRegistered(c *gocheck.C) {
 	manager := buildManager("tsuru")
 	set, ok := manager.Commands["env-set"]
 	c.Assert(ok, gocheck.Equals, true)
-	c.Assert(set, gocheck.FitsTypeOf, &EnvSet{})
+	c.Assert(set, gocheck.FitsTypeOf, &envSet{})
 }
 
 func (s *S) TestEnvUnsetIsRegistered(c *gocheck.C) {
 	manager := buildManager("tsuru")
 	unset, ok := manager.Commands["env-unset"]
 	c.Assert(ok, gocheck.Equals, true)
-	c.Assert(unset, gocheck.FitsTypeOf, &EnvUnset{})
+	c.Assert(unset, gocheck.FitsTypeOf, &envUnset{})
 }
 
 func (s *S) TestKeyAddIsRegistered(c *gocheck.C) {

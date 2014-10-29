@@ -17,7 +17,7 @@ import (
 )
 
 func (s *S) TestEnvGetInfo(c *gocheck.C) {
-	e := EnvGet{}
+	e := envGet{}
 	i := e.Info()
 	desc := `retrieve environment variables for an app.
 
@@ -38,7 +38,7 @@ func (s *S) TestEnvGetRun(c *gocheck.C) {
 		Stderr: &stderr,
 	}
 	client := cmd.NewClient(&http.Client{Transport: &testing.Transport{Message: jsonResult, Status: http.StatusOK}}, nil, manager)
-	command := EnvGet{}
+	command := envGet{}
 	command.Flags().Parse(true, []string{"-a", "someapp"})
 	err := command.Run(&context, client)
 	c.Assert(err, gocheck.IsNil)
@@ -66,7 +66,7 @@ func (s *S) TestEnvGetRunWithMultipleParams(c *gocheck.C) {
 		},
 	}
 	client := cmd.NewClient(&http.Client{Transport: trans}, nil, manager)
-	command := EnvGet{}
+	command := envGet{}
 	command.Flags().Parse(true, []string{"-a", "someapp"})
 	err := command.Run(&context, client)
 	c.Assert(err, gocheck.IsNil)
@@ -84,7 +84,7 @@ func (s *S) TestEnvGetAlwaysPrintInAlphabeticalOrder(c *gocheck.C) {
 		Stderr: &stderr,
 	}
 	client := cmd.NewClient(&http.Client{Transport: &testing.Transport{Message: jsonResult, Status: http.StatusOK}}, nil, manager)
-	command := EnvGet{}
+	command := envGet{}
 	command.Flags().Parse(true, []string{"-a", "someapp"})
 	err := command.Run(&context, client)
 	c.Assert(err, gocheck.IsNil)
@@ -102,7 +102,7 @@ func (s *S) TestEnvGetPrivateVariables(c *gocheck.C) {
 		Stderr: &stderr,
 	}
 	client := cmd.NewClient(&http.Client{Transport: &testing.Transport{Message: jsonResult, Status: http.StatusOK}}, nil, manager)
-	command := EnvGet{}
+	command := envGet{}
 	command.Flags().Parse(true, []string{"-a", "someapp"})
 	err := command.Run(&context, client)
 	c.Assert(err, gocheck.IsNil)
@@ -127,13 +127,13 @@ func (s *S) TestEnvGetWithoutTheFlag(c *gocheck.C) {
 	}
 	client := cmd.NewClient(&http.Client{Transport: trans}, nil, manager)
 	fake := &testing.FakeGuesser{Name: "seek"}
-	err := (&EnvGet{cmd.GuessingCommand{G: fake}}).Run(&context, client)
+	err := (&envGet{cmd.GuessingCommand{G: fake}}).Run(&context, client)
 	c.Assert(err, gocheck.IsNil)
 	c.Assert(stdout.String(), gocheck.Equals, result)
 }
 
 func (s *S) TestEnvSetInfo(c *gocheck.C) {
-	e := EnvSet{}
+	e := envSet{}
 	i := e.Info()
 	desc := `set environment variables for an app.
 
@@ -166,7 +166,7 @@ func (s *S) TestEnvSetRun(c *gocheck.C) {
 		},
 	}
 	client := cmd.NewClient(&http.Client{Transport: trans}, nil, manager)
-	command := EnvSet{}
+	command := envSet{}
 	command.Flags().Parse(true, []string{"-a", "someapp"})
 	err = command.Run(&context, client)
 	c.Assert(err, gocheck.IsNil)
@@ -185,7 +185,7 @@ func (s *S) TestEnvSetRunWithMultipleParams(c *gocheck.C) {
 	result, err := json.Marshal(msg)
 	c.Assert(err, gocheck.IsNil)
 	client := cmd.NewClient(&http.Client{Transport: &testing.Transport{Message: string(result), Status: http.StatusOK}}, nil, manager)
-	command := EnvSet{}
+	command := envSet{}
 	command.Flags().Parse(true, []string{"-a", "someapp"})
 	err = command.Run(&context, client)
 	c.Assert(err, gocheck.IsNil)
@@ -230,7 +230,7 @@ func (s *S) TestEnvSetValues(c *gocheck.C) {
 		},
 	}
 	client := cmd.NewClient(&http.Client{Transport: trans}, nil, manager)
-	command := EnvSet{}
+	command := envSet{}
 	command.Flags().Parse(true, []string{"-a", "someapp"})
 	err = command.Run(&context, client)
 	c.Assert(err, gocheck.IsNil)
@@ -256,7 +256,7 @@ func (s *S) TestEnvSetWithoutFlag(c *gocheck.C) {
 	}
 	client := cmd.NewClient(&http.Client{Transport: trans}, nil, manager)
 	fake := &testing.FakeGuesser{Name: "otherapp"}
-	err = (&EnvSet{cmd.GuessingCommand{G: fake}}).Run(&context, client)
+	err = (&envSet{cmd.GuessingCommand{G: fake}}).Run(&context, client)
 	c.Assert(err, gocheck.IsNil)
 	c.Assert(stdout.String(), gocheck.Equals, expectedOut)
 }
@@ -268,7 +268,7 @@ func (s *S) TestEnvSetInvalidParameters(c *gocheck.C) {
 		Stdout: &stdout,
 		Stderr: &stderr,
 	}
-	command := EnvSet{}
+	command := envSet{}
 	command.Flags().Parse(true, []string{"-a", "someapp"})
 	err := command.Run(&context, nil)
 	c.Assert(err, gocheck.NotNil)
@@ -276,7 +276,7 @@ func (s *S) TestEnvSetInvalidParameters(c *gocheck.C) {
 }
 
 func (s *S) TestEnvUnsetInfo(c *gocheck.C) {
-	e := EnvUnset{}
+	e := envUnset{}
 	i := e.Info()
 	desc := `unset environment variables for an app.
 
@@ -309,7 +309,7 @@ func (s *S) TestEnvUnsetRun(c *gocheck.C) {
 		},
 	}
 	client := cmd.NewClient(&http.Client{Transport: trans}, nil, manager)
-	command := EnvUnset{}
+	command := envUnset{}
 	command.Flags().Parse(true, []string{"-a", "someapp"})
 	err = command.Run(&context, client)
 	c.Assert(err, gocheck.IsNil)
@@ -334,7 +334,7 @@ func (s *S) TestEnvUnsetWithoutFlag(c *gocheck.C) {
 	}
 	client := cmd.NewClient(&http.Client{Transport: trans}, nil, manager)
 	fake := &testing.FakeGuesser{Name: "otherapp"}
-	err = (&EnvUnset{cmd.GuessingCommand{G: fake}}).Run(&context, client)
+	err = (&envUnset{cmd.GuessingCommand{G: fake}}).Run(&context, client)
 	c.Assert(err, gocheck.IsNil)
 	c.Assert(stdout.String(), gocheck.Equals, expectedOut)
 }

@@ -26,11 +26,11 @@ Example:
 
   tsuru env-set NAME=value OTHER_NAME="value with spaces" ANOTHER_NAME='using single quotes'`
 
-type EnvGet struct {
+type envGet struct {
 	cmd.GuessingCommand
 }
 
-func (c *EnvGet) Info() *cmd.Info {
+func (c *envGet) Info() *cmd.Info {
 	return &cmd.Info{
 		Name:  "env-get",
 		Usage: "env-get [-a/--app appname] [ENVIRONMENT_VARIABLE1] [ENVIRONMENT_VARIABLE2] ...",
@@ -41,7 +41,7 @@ If you don't provide the app name, tsuru will try to guess it.`,
 	}
 }
 
-func (c *EnvGet) Run(context *cmd.Context, client *cmd.Client) error {
+func (c *envGet) Run(context *cmd.Context, client *cmd.Client) error {
 	b, err := requestEnvURL("GET", c.GuessingCommand, context.Args, client)
 	if err != nil {
 		return err
@@ -64,11 +64,11 @@ func (c *EnvGet) Run(context *cmd.Context, client *cmd.Client) error {
 	return nil
 }
 
-type EnvSet struct {
+type envSet struct {
 	cmd.GuessingCommand
 }
 
-func (c *EnvSet) Info() *cmd.Info {
+func (c *envSet) Info() *cmd.Info {
 	return &cmd.Info{
 		Name:  "env-set",
 		Usage: "env-set <NAME=value> [NAME=value] ... [-a/--app appname]",
@@ -79,7 +79,7 @@ If you don't provide the app name, tsuru will try to guess it.`,
 	}
 }
 
-func (c *EnvSet) Run(context *cmd.Context, client *cmd.Client) error {
+func (c *envSet) Run(context *cmd.Context, client *cmd.Client) error {
 	appName, err := c.Guess()
 	if err != nil {
 		return err
@@ -122,11 +122,11 @@ func (c *EnvSet) Run(context *cmd.Context, client *cmd.Client) error {
 	return nil
 }
 
-type EnvUnset struct {
+type envUnset struct {
 	cmd.GuessingCommand
 }
 
-func (c *EnvUnset) Info() *cmd.Info {
+func (c *envUnset) Info() *cmd.Info {
 	return &cmd.Info{
 		Name:  "env-unset",
 		Usage: "env-unset <ENVIRONMENT_VARIABLE1> [ENVIRONMENT_VARIABLE2] ... [ENVIRONMENT_VARIABLEN] [-a/--app appname]",
@@ -137,7 +137,7 @@ If you don't provide the app name, tsuru will try to guess it.`,
 	}
 }
 
-func (c *EnvUnset) Run(context *cmd.Context, client *cmd.Client) error {
+func (c *envUnset) Run(context *cmd.Context, client *cmd.Client) error {
 	appName, err := c.Guess()
 	if err != nil {
 		return err
