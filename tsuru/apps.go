@@ -20,13 +20,13 @@ import (
 	"launchpad.net/gnuflag"
 )
 
-type AppCreate struct {
+type appCreate struct {
 	teamOwner string
 	plan      string
 	fs        *gnuflag.FlagSet
 }
 
-func (c *AppCreate) Info() *cmd.Info {
+func (c *appCreate) Info() *cmd.Info {
 	return &cmd.Info{
 		Name:    "app-create",
 		Usage:   "app-create <appname> <platform> [--plan/-p plan_name] [--team/-t (team owner)]",
@@ -35,7 +35,7 @@ func (c *AppCreate) Info() *cmd.Info {
 	}
 }
 
-func (c *AppCreate) Flags() *gnuflag.FlagSet {
+func (c *appCreate) Flags() *gnuflag.FlagSet {
 	if c.fs == nil {
 		infoMessage := "The plan used to create the app"
 		c.fs = gnuflag.NewFlagSet("", gnuflag.ExitOnError)
@@ -48,7 +48,7 @@ func (c *AppCreate) Flags() *gnuflag.FlagSet {
 	return c.fs
 }
 
-func (c *AppCreate) Run(context *cmd.Context, client *cmd.Client) error {
+func (c *appCreate) Run(context *cmd.Context, client *cmd.Client) error {
 	appName := context.Args[0]
 	platform := context.Args[1]
 	params := map[string]interface{}{

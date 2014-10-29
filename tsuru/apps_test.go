@@ -39,7 +39,7 @@ func (s *S) TestAppCreateInfo(c *gocheck.C) {
 		Desc:    "create a new app.",
 		MinArgs: 2,
 	}
-	c.Assert((&AppCreate{}).Info(), gocheck.DeepEquals, expected)
+	c.Assert((&appCreate{}).Info(), gocheck.DeepEquals, expected)
 }
 
 func (s *S) TestAppCreate(c *gocheck.C) {
@@ -72,7 +72,7 @@ Your repository for "ble" project is "git@tsuru.plataformas.glb.com:ble.git"` + 
 		},
 	}
 	client := cmd.NewClient(&http.Client{Transport: &trans}, nil, manager)
-	command := AppCreate{}
+	command := appCreate{}
 	err := command.Run(&context, client)
 	c.Assert(err, gocheck.IsNil)
 	c.Assert(stdout.String(), gocheck.Equals, expected)
@@ -108,7 +108,7 @@ Your repository for "ble" project is "git@tsuru.plataformas.glb.com:ble.git"` + 
 		},
 	}
 	client := cmd.NewClient(&http.Client{Transport: &trans}, nil, manager)
-	command := AppCreate{}
+	command := appCreate{}
 	command.Flags().Parse(true, []string{"-t", "team"})
 	err := command.Run(&context, client)
 	c.Assert(err, gocheck.IsNil)
@@ -145,7 +145,7 @@ Your repository for "ble" project is "git@tsuru.plataformas.glb.com:ble.git"` + 
 		},
 	}
 	client := cmd.NewClient(&http.Client{Transport: &trans}, nil, manager)
-	command := AppCreate{}
+	command := appCreate{}
 	command.Flags().Parse(true, []string{"-p", "myplan"})
 	err := command.Run(&context, client)
 	c.Assert(err, gocheck.IsNil)
@@ -160,14 +160,14 @@ func (s *S) TestAppCreateWithInvalidFramework(c *gocheck.C) {
 		Stderr: &stderr,
 	}
 	client := cmd.NewClient(&http.Client{Transport: &testing.Transport{Message: "", Status: http.StatusInternalServerError}}, nil, manager)
-	command := AppCreate{}
+	command := appCreate{}
 	err := command.Run(&context, client)
 	c.Assert(err, gocheck.NotNil)
 	c.Assert(stdout.String(), gocheck.Equals, "")
 }
 
 func (s *S) TestAppCreateFlags(c *gocheck.C) {
-	command := AppCreate{}
+	command := appCreate{}
 	flagset := command.Flags()
 	c.Assert(flagset, gocheck.NotNil)
 	flagset.Parse(true, []string{"-p", "myplan"})
