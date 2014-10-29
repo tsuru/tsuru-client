@@ -7,9 +7,9 @@ package main
 import (
 	"fmt"
 	"net/http"
-	"strings"
 
 	"github.com/tsuru/tsuru/cmd"
+	"github.com/tsuru/tsuru/errors"
 	"launchpad.net/gnuflag"
 )
 
@@ -44,25 +44,18 @@ func (s *appSwap) Run(context *cmd.Context, client *cmd.Client) error {
 	}
 	err = makeSwap(client, url)
 	if err != nil {
-		errMsg := strings.Trim(err.Error(), "\n")
-		if errMsg == "Apps are not equal." {
+		if e, ok := err.(*errors.HTTP); ok && e.Code == http.StatusPreconditionFailed {
 			var answer string
-			answersOptions := []string{"y", "yes"}
-			fmt.Fprint(context.Stdout, "We can't Swap your apps because they are not compatible. Do you want to do it anyway? (y/n) ")
+			fmt.Fprintf(context.Stdout, "WARNING: %s. Swap anyway? (y/n)", e.Message)
 			fmt.Fscanf(context.Stdin, "%s", &answer)
-			if answerAcceptable(answer, answersOptions) {
+			if answer == "y" || answer == "yes" {
 				url, _ = cmd.GetURL(fmt.Sprintf("/swap?app1=%s&app2=%s&force=%t", context.Args[0], context.Args[1], true))
-				err = makeSwap(client, url)
-				if err != nil {
-					return err
-				}
-			} else {
-				fmt.Fprintln(context.Stdout, "Apps not swapped.")
-				return nil
+				return makeSwap(client, url)
 			}
-		} else {
-			return err
+			fmt.Fprintln(context.Stdout, "swap aborted.")
+			return nil
 		}
+		return err
 	}
 	fmt.Fprintln(context.Stdout, "Apps successfully swapped!")
 	return err
@@ -75,13 +68,4 @@ func makeSwap(client *cmd.Client, url string) error {
 	}
 	_, err = client.Do(request)
 	return err
-}
-
-func answerAcceptable(answer string, answersOptions []string) bool {
-	for _, answerOption := range answersOptions {
-		if answer == answerOption {
-			return true
-		}
-	}
-	return false
 }

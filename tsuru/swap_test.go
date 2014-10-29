@@ -52,7 +52,7 @@ func (s *S) TestSwapWhenAppsAreNotEqual(c *gocheck.C) {
 	var called int
 	stdin := bytes.NewBufferString("yes")
 	transportError := testing.ConditionalTransport{
-		Transport: testing.Transport{Status: http.StatusUnauthorized, Message: "Apps are not equal."},
+		Transport: testing.Transport{Status: http.StatusPreconditionFailed, Message: "Apps are not equal."},
 		CondFunc: func(r *http.Request) bool {
 			called += 1
 			return r.URL.RawQuery == "app1=app1&app2=app2&force=false"
@@ -78,14 +78,6 @@ func (s *S) TestSwapWhenAppsAreNotEqual(c *gocheck.C) {
 	err := command.Run(&context, client)
 	c.Assert(err, gocheck.IsNil)
 	c.Assert(called, gocheck.Equals, 2)
-}
-
-func (s *S) TestAnswerAcceptable(c *gocheck.C) {
-	answersOptions := []string{"y", "yes"}
-	isAcceptable := answerAcceptable("y", answersOptions)
-	c.Assert(isAcceptable, gocheck.Equals, true)
-	isAcceptable = answerAcceptable("no", answersOptions)
-	c.Assert(isAcceptable, gocheck.Equals, false)
 }
 
 func (s *S) TestSwapIsACommand(c *gocheck.C) {
