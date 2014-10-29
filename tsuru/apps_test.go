@@ -603,7 +603,7 @@ func (s *S) TestAppRevoke(c *gocheck.C) {
 		Stdout: &stdout,
 		Stderr: &stderr,
 	}
-	command := AppRevoke{}
+	command := appRevoke{}
 	command.Flags().Parse(true, []string{"--app", "games"})
 	client := cmd.NewClient(&http.Client{Transport: &testing.Transport{Message: "", Status: http.StatusOK}}, nil, manager)
 	err := command.Run(&context, client)
@@ -620,7 +620,7 @@ func (s *S) TestAppRevokeWithoutFlag(c *gocheck.C) {
 		Stderr: &stderr,
 	}
 	fake := &testing.FakeGuesser{Name: "fights"}
-	command := AppRevoke{GuessingCommand: cmd.GuessingCommand{G: fake}}
+	command := appRevoke{GuessingCommand: cmd.GuessingCommand{G: fake}}
 	command.Flags().Parse(true, nil)
 	client := cmd.NewClient(&http.Client{Transport: &testing.Transport{Message: "", Status: http.StatusOK}}, nil, manager)
 	err := command.Run(&context, client)
@@ -637,7 +637,7 @@ func (s *S) TestAppRevokeInfo(c *gocheck.C) {
 If you don't provide the app name, tsuru will try to guess it.`,
 		MinArgs: 1,
 	}
-	c.Assert((&AppRevoke{}).Info(), gocheck.DeepEquals, expected)
+	c.Assert((&appRevoke{}).Info(), gocheck.DeepEquals, expected)
 }
 
 func (s *S) TestAppList(c *gocheck.C) {

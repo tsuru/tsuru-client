@@ -392,11 +392,11 @@ func (c *appGrant) Run(context *cmd.Context, client *cmd.Client) error {
 	return nil
 }
 
-type AppRevoke struct {
+type appRevoke struct {
 	cmd.GuessingCommand
 }
 
-func (c *AppRevoke) Info() *cmd.Info {
+func (c *appRevoke) Info() *cmd.Info {
 	return &cmd.Info{
 		Name:  "app-revoke",
 		Usage: "app-revoke <teamname> [-a/--app appname]",
@@ -407,7 +407,7 @@ If you don't provide the app name, tsuru will try to guess it.`,
 	}
 }
 
-func (c *AppRevoke) Run(context *cmd.Context, client *cmd.Client) error {
+func (c *appRevoke) Run(context *cmd.Context, client *cmd.Client) error {
 	appName, err := c.Guess()
 	if err != nil {
 		return err
