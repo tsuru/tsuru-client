@@ -13,13 +13,13 @@ import (
 	"launchpad.net/gnuflag"
 )
 
-type Swap struct {
+type appSwap struct {
 	cmd.Command
 	force bool
 	fs    *gnuflag.FlagSet
 }
 
-func (s *Swap) Info() *cmd.Info {
+func (s *appSwap) Info() *cmd.Info {
 	return &cmd.Info{
 		Name:    "app-swap",
 		Usage:   "app-swap <app1-name> <app2-name> [-f/--force]",
@@ -28,7 +28,7 @@ func (s *Swap) Info() *cmd.Info {
 	}
 }
 
-func (s *Swap) Flags() *gnuflag.FlagSet {
+func (s *appSwap) Flags() *gnuflag.FlagSet {
 	if s.fs == nil {
 		s.fs = gnuflag.NewFlagSet("", gnuflag.ExitOnError)
 		s.fs.BoolVar(&s.force, "force", false, "Force Swap among apps with different number of units or different platform.")
@@ -37,7 +37,7 @@ func (s *Swap) Flags() *gnuflag.FlagSet {
 	return s.fs
 }
 
-func (s *Swap) Run(context *cmd.Context, client *cmd.Client) error {
+func (s *appSwap) Run(context *cmd.Context, client *cmd.Client) error {
 	url, err := cmd.GetURL(fmt.Sprintf("/swap?app1=%s&app2=%s&force=%t", context.Args[0], context.Args[1], s.force))
 	if err != nil {
 		return err

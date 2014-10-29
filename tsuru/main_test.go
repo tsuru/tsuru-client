@@ -250,7 +250,7 @@ func (s *S) TestAppSwapIsRegistered(c *gocheck.C) {
 	manager := buildManager("tsuru")
 	cmd, ok := manager.Commands["app-swap"]
 	c.Assert(ok, gocheck.Equals, true)
-	c.Assert(cmd, gocheck.FitsTypeOf, &Swap{})
+	c.Assert(cmd, gocheck.FitsTypeOf, &appSwap{})
 }
 
 func (s *S) TestSwapIsDeprecated(c *gocheck.C) {

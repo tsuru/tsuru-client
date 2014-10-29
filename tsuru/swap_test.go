@@ -20,7 +20,7 @@ func (s *S) TestSwapInfo(c *gocheck.C) {
 		Desc:    "Swap routes between two apps. Use force if you want to swap apps with different numbers of units or diferent platform without confirmation",
 		MinArgs: 2,
 	}
-	command := Swap{}
+	command := appSwap{}
 	c.Assert(command.Info(), gocheck.DeepEquals, expected)
 }
 
@@ -39,7 +39,7 @@ func (s *S) TestSwap(c *gocheck.C) {
 		Stdout: &buf,
 	}
 	client := cmd.NewClient(&http.Client{Transport: &transport}, nil, manager)
-	command := Swap{}
+	command := appSwap{}
 	err := command.Run(&context, client)
 	c.Assert(err, gocheck.IsNil)
 	c.Assert(called, gocheck.Equals, true)
@@ -74,7 +74,7 @@ func (s *S) TestSwapWhenAppsAreNotEqual(c *gocheck.C) {
 		Stdin:  stdin,
 	}
 	client := cmd.NewClient(&http.Client{Transport: &multiTransport}, nil, manager)
-	command := Swap{}
+	command := appSwap{}
 	err := command.Run(&context, client)
 	c.Assert(err, gocheck.IsNil)
 	c.Assert(called, gocheck.Equals, 2)
@@ -89,5 +89,5 @@ func (s *S) TestAnswerAcceptable(c *gocheck.C) {
 }
 
 func (s *S) TestSwapIsACommand(c *gocheck.C) {
-	var _ cmd.Command = &Swap{}
+	var _ cmd.Command = &appSwap{}
 }
