@@ -72,7 +72,7 @@ func (s *S) TestAppRunIsRegistered(c *gocheck.C) {
 	manager := buildManager("tsuru")
 	run, ok := manager.Commands["app-run"]
 	c.Assert(ok, gocheck.Equals, true)
-	c.Assert(run, gocheck.FitsTypeOf, &AppRun{})
+	c.Assert(run, gocheck.FitsTypeOf, &appRun{})
 }
 
 func (s *S) TestRunIsDeprecated(c *gocheck.C) {

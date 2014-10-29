@@ -38,7 +38,7 @@ func (s *S) TestAppRun(c *gocheck.C) {
 		},
 	}
 	client := cmd.NewClient(&http.Client{Transport: trans}, nil, manager)
-	command := AppRun{}
+	command := appRun{}
 	command.Flags().Parse(true, []string{"--app", "ble"})
 	err = command.Run(&context, client)
 	c.Assert(err, gocheck.IsNil)
@@ -68,7 +68,7 @@ func (s *S) TestAppRunShouldUseAllSubsequentArgumentsAsArgumentsToTheGivenComman
 		},
 	}
 	client := cmd.NewClient(&http.Client{Transport: trans}, nil, manager)
-	command := AppRun{}
+	command := appRun{}
 	command.Flags().Parse(true, []string{"--app", "ble"})
 	err = command.Run(&context, client)
 	c.Assert(err, gocheck.IsNil)
@@ -99,7 +99,7 @@ func (s *S) TestAppRunWithoutTheFlag(c *gocheck.C) {
 	}
 	client := cmd.NewClient(&http.Client{Transport: trans}, nil, manager)
 	fake := &testing.FakeGuesser{Name: "bla"}
-	command := AppRun{GuessingCommand: cmd.GuessingCommand{G: fake}}
+	command := appRun{GuessingCommand: cmd.GuessingCommand{G: fake}}
 	command.Flags().Parse(true, nil)
 	err = command.Run(&context, client)
 	c.Assert(err, gocheck.IsNil)
@@ -127,7 +127,7 @@ func (s *S) TestAppRunShouldReturnErrorWhenCommandGoWrong(c *gocheck.C) {
 	}
 	client := cmd.NewClient(&http.Client{Transport: trans}, nil, manager)
 	fake := &testing.FakeGuesser{Name: "bla"}
-	command := AppRun{GuessingCommand: cmd.GuessingCommand{G: fake}}
+	command := appRun{GuessingCommand: cmd.GuessingCommand{G: fake}}
 	command.Flags().Parse(true, nil)
 	err = command.Run(&context, client)
 	c.Assert(err, gocheck.ErrorMatches, "command doesn't exist.")
@@ -146,6 +146,6 @@ If you don't provide the app name, tsuru will try to guess it.
 		Desc:    desc,
 		MinArgs: 1,
 	}
-	command := AppRun{}
+	command := appRun{}
 	c.Assert(command.Info(), gocheck.DeepEquals, expected)
 }

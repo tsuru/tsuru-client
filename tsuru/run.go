@@ -15,13 +15,13 @@ import (
 	"launchpad.net/gnuflag"
 )
 
-type AppRun struct {
+type appRun struct {
 	cmd.GuessingCommand
 	fs   *gnuflag.FlagSet
 	once bool
 }
 
-func (c *AppRun) Info() *cmd.Info {
+func (c *appRun) Info() *cmd.Info {
 	desc := `run a command in all instances of the app, and prints the output.
 
 If you use the '--once' flag tsuru will run the command only in one unit.
@@ -36,7 +36,7 @@ If you don't provide the app name, tsuru will try to guess it.
 	}
 }
 
-func (c *AppRun) Run(context *cmd.Context, client *cmd.Client) error {
+func (c *appRun) Run(context *cmd.Context, client *cmd.Client) error {
 	appName, err := c.Guess()
 	if err != nil {
 		return err
@@ -68,7 +68,7 @@ func (c *AppRun) Run(context *cmd.Context, client *cmd.Client) error {
 	return nil
 }
 
-func (c *AppRun) Flags() *gnuflag.FlagSet {
+func (c *appRun) Flags() *gnuflag.FlagSet {
 	if c.fs == nil {
 		c.fs = c.GuessingCommand.Flags()
 		c.fs.BoolVar(&c.once, "once", false, "Running only one unit")
