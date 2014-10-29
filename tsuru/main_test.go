@@ -115,7 +115,7 @@ func (s *S) TestKeyAddIsRegistered(c *gocheck.C) {
 	manager := buildManager("tsuru")
 	add, ok := manager.Commands["key-add"]
 	c.Assert(ok, gocheck.Equals, true)
-	c.Assert(add, gocheck.FitsTypeOf, &KeyAdd{})
+	c.Assert(add, gocheck.FitsTypeOf, &keyAdd{})
 }
 
 func (s *S) TestKeyRemoveIsRegistered(c *gocheck.C) {

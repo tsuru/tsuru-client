@@ -39,7 +39,7 @@ func buildManager(name string) *cmd.Manager {
 	m.Register(&EnvGet{})
 	m.Register(&EnvSet{})
 	m.Register(&EnvUnset{})
-	m.Register(&KeyAdd{})
+	m.Register(&keyAdd{})
 	m.Register(&KeyRemove{})
 	m.Register(ServiceList{})
 	m.Register(&ServiceAdd{})

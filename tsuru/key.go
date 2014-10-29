@@ -45,11 +45,11 @@ func (r *keyReader) readKey(context *cmd.Context) (string, error) {
 	return string(output), err
 }
 
-type KeyAdd struct {
+type keyAdd struct {
 	keyReader
 }
 
-func (c *KeyAdd) Info() *cmd.Info {
+func (c *keyAdd) Info() *cmd.Info {
 	return &cmd.Info{
 		Name:    "key-add",
 		Usage:   "key-add <key-name> <path/to/key/file.pub>",
@@ -58,7 +58,7 @@ func (c *KeyAdd) Info() *cmd.Info {
 	}
 }
 
-func (c *KeyAdd) Run(context *cmd.Context, client *cmd.Client) error {
+func (c *keyAdd) Run(context *cmd.Context, client *cmd.Client) error {
 	keyName := context.Args[0]
 	keyPath := context.Args[1]
 	key, err := c.readKey(context)

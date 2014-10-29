@@ -42,7 +42,7 @@ func (s *S) TestKeyAdd(c *gocheck.C) {
 	}
 	client := cmd.NewClient(&http.Client{Transport: &transport}, nil, manager)
 	fs := fstesting.RecordingFs{FileContent: "user-key"}
-	command := KeyAdd{keyReader{fsystem: &fs}}
+	command := keyAdd{keyReader{fsystem: &fs}}
 	err = command.Run(&context, client)
 	c.Assert(err, gocheck.IsNil)
 	c.Assert(stdout.String(), gocheck.Equals, expected)
@@ -69,7 +69,7 @@ func (s *S) TestKeyAddStdin(c *gocheck.C) {
 		},
 	}
 	client := cmd.NewClient(&http.Client{Transport: &transport}, nil, manager)
-	command := KeyAdd{}
+	command := keyAdd{}
 	err := command.Run(&context, client)
 	c.Assert(err, gocheck.IsNil)
 	c.Assert(stdout.String(), gocheck.Equals, expected)
@@ -83,7 +83,7 @@ func (s *S) TestKeyAddReturnsProperErrorIfTheGivenKeyFileDoesNotExist(c *gocheck
 		Stderr: &stderr,
 	}
 	fs := fstesting.FileNotFoundFs{RecordingFs: fstesting.RecordingFs{}}
-	command := KeyAdd{keyReader{fsystem: &fs}}
+	command := keyAdd{keyReader{fsystem: &fs}}
 	err := command.Run(&context, nil)
 	c.Assert(err, gocheck.NotNil)
 	c.Assert(err.Error(), gocheck.Equals, `file "/unknown/key.pub" doesn't exist`)
@@ -100,7 +100,7 @@ func (s *S) TestKeyAddFileSystemError(c *gocheck.C) {
 		RecordingFs: fstesting.RecordingFs{},
 		Err:         errors.New("what happened?"),
 	}
-	command := KeyAdd{keyReader{fsystem: &fs}}
+	command := keyAdd{keyReader{fsystem: &fs}}
 	err := command.Run(&context, nil)
 	c.Assert(err, gocheck.NotNil)
 	c.Assert(err.Error(), gocheck.Equals, "what happened?")
@@ -115,7 +115,7 @@ func (s *S) TestKeyAddError(c *gocheck.C) {
 	}
 	client := cmd.NewClient(&http.Client{Transport: &transport}, nil, manager)
 	fs := fstesting.RecordingFs{FileContent: "user-key"}
-	command := KeyAdd{keyReader{fsystem: &fs}}
+	command := keyAdd{keyReader{fsystem: &fs}}
 	err := command.Run(&context, client)
 	c.Assert(err, gocheck.NotNil)
 	c.Assert(err.Error(), gocheck.Equals, "something went wrong")
@@ -128,7 +128,7 @@ func (s *S) TestInfoKeyAdd(c *gocheck.C) {
 		Desc:    "adds a public key to your account",
 		MinArgs: 2,
 	}
-	c.Assert((&KeyAdd{}).Info(), gocheck.DeepEquals, expected)
+	c.Assert((&keyAdd{}).Info(), gocheck.DeepEquals, expected)
 }
 
 func (s *S) TestKeyRemove(c *gocheck.C) {
