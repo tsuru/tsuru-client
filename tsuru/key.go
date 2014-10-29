@@ -84,9 +84,9 @@ func (c *keyAdd) Run(context *cmd.Context, client *cmd.Client) error {
 	return nil
 }
 
-type KeyRemove struct{}
+type keyRemove struct{}
 
-func (c *KeyRemove) Info() *cmd.Info {
+func (c *keyRemove) Info() *cmd.Info {
 	return &cmd.Info{
 		Name:    "key-remove",
 		Usage:   "key-remove <key-name>",
@@ -95,7 +95,7 @@ func (c *KeyRemove) Info() *cmd.Info {
 	}
 }
 
-func (c *KeyRemove) Run(context *cmd.Context, client *cmd.Client) error {
+func (c *keyRemove) Run(context *cmd.Context, client *cmd.Client) error {
 	b := bytes.NewBufferString(fmt.Sprintf(`{"name":%q}`, context.Args[0]))
 	url, err := cmd.GetURL("/users/keys")
 	if err != nil {

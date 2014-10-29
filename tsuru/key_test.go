@@ -146,7 +146,7 @@ func (s *S) TestKeyRemove(c *gocheck.C) {
 		},
 	}
 	client := cmd.NewClient(&http.Client{Transport: &transport}, nil, manager)
-	command := KeyRemove{}
+	command := keyRemove{}
 	err := command.Run(&context, client)
 	c.Assert(err, gocheck.IsNil)
 	c.Assert(stdout.String(), gocheck.Equals, expected)
@@ -161,7 +161,7 @@ func (s *S) TestKeyRemoveError(c *gocheck.C) {
 		Status:  http.StatusInternalServerError,
 	}
 	client := cmd.NewClient(&http.Client{Transport: &transport}, nil, manager)
-	command := KeyRemove{}
+	command := keyRemove{}
 	err := command.Run(&context, client)
 	c.Assert(err, gocheck.NotNil)
 	c.Assert(err.Error(), gocheck.Equals, "something went wrong")
@@ -174,5 +174,5 @@ func (s *S) TestInfoKeyRemove(c *gocheck.C) {
 		Desc:    "removes the given public key from your account",
 		MinArgs: 1,
 	}
-	c.Assert((&KeyRemove{}).Info(), gocheck.DeepEquals, expected)
+	c.Assert((&keyRemove{}).Info(), gocheck.DeepEquals, expected)
 }
