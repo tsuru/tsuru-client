@@ -6,7 +6,6 @@ package main
 
 import (
 	"bytes"
-	"errors"
 	"fmt"
 	"io/ioutil"
 	"net/http"
@@ -28,14 +27,6 @@ func (r *keyReader) fs() fs.Fs {
 	return r.fsystem
 }
 
-func getKeyPath(args []string) (string, error) {
-	if len(args) > 0 {
-		return args[0], nil
-	}
-	home := os.ExpandEnv("$HOME")
-	return home + "/.ssh/id_rsa.pub", nil
-}
-
 func (r *keyReader) readKey(keyPath string) (string, error) {
 	f, err := r.fs().Open(keyPath)
 	if err != nil {
@@ -46,41 +37,19 @@ func (r *keyReader) readKey(keyPath string) (string, error) {
 	return string(output), err
 }
 
-func (r *keyReader) fileNotFound(context *cmd.Context) error {
-	if len(context.Args) > 0 {
-		msg := fmt.Sprintf("File %s does not exist!", context.Args[0])
-		fmt.Fprint(context.Stderr, msg+"\n")
-		return errors.New(msg)
-	}
-	msg := "You don't have a public key\nTo generate a key use 'ssh-keygen' command\n"
-	fmt.Fprint(context.Stderr, msg)
-	return errors.New("You need to have a public rsa key")
-}
-
-type KeyRemove struct {
-	keyReader
-}
+type KeyRemove struct{}
 
 func (c *KeyRemove) Info() *cmd.Info {
 	return &cmd.Info{
-		Name:  "key-remove",
-		Usage: "key-remove [path/to/key/file.pub]",
-		Desc:  "remove your public key ($HOME/.id_rsa.pub by default).",
+		Name:    "key-remove",
+		Usage:   "key-remove <key-name>",
+		Desc:    "removes the given public key from your account",
+		MinArgs: 1,
 	}
 }
 
 func (c *KeyRemove) Run(context *cmd.Context, client *cmd.Client) error {
-	keyPath, err := getKeyPath(context.Args)
-	if err != nil {
-		return err
-	}
-	key, err := c.readKey(keyPath)
-	if os.IsNotExist(err) {
-		return c.fileNotFound(context)
-	} else if err != nil {
-		return err
-	}
-	b := bytes.NewBufferString(fmt.Sprintf(`{"key":"%s"}`, strings.Replace(key, "\n", "", -1)))
+	b := bytes.NewBufferString(fmt.Sprintf(`{"name":%q}`, context.Args[0]))
 	url, err := cmd.GetURL("/users/keys")
 	if err != nil {
 		return err
@@ -93,7 +62,7 @@ func (c *KeyRemove) Run(context *cmd.Context, client *cmd.Client) error {
 	if err != nil {
 		return err
 	}
-	fmt.Fprintf(context.Stdout, "Key %q successfully removed!\n", keyPath)
+	fmt.Fprintf(context.Stdout, "Key %q successfully removed!\n", context.Args[0])
 	return nil
 }
 
@@ -103,29 +72,28 @@ type KeyAdd struct {
 
 func (c *KeyAdd) Info() *cmd.Info {
 	return &cmd.Info{
-		Name:  "key-add",
-		Usage: "key-add [path/to/key/file.pub]",
-		Desc:  "add your public key ($HOME/.ssh/id_rsa.pub by default).",
+		Name:    "key-add",
+		Usage:   "key-add <key-name> <path/to/key/file.pub>",
+		Desc:    "adds a public key to your account",
+		MinArgs: 2,
 	}
 }
 
 func (c *KeyAdd) Run(context *cmd.Context, client *cmd.Client) error {
-	keyPath, err := getKeyPath(context.Args)
-	if err != nil {
-		return err
-	}
+	keyName := context.Args[0]
+	keyPath := context.Args[1]
 	key, err := c.readKey(keyPath)
 	if os.IsNotExist(err) {
-		return c.fileNotFound(context)
+		return fmt.Errorf("file %q doesn't exist", keyPath)
 	} else if err != nil {
 		return err
 	}
-	b := bytes.NewBufferString(fmt.Sprintf(`{"key":"%s"}`, strings.Replace(key, "\n", "", -1)))
+	jsonBody := fmt.Sprintf(`{"key":%q,"name":%q}`, strings.Replace(key, "\n", "", -1), keyName)
 	url, err := cmd.GetURL("/users/keys")
 	if err != nil {
 		return err
 	}
-	request, err := http.NewRequest("POST", url, b)
+	request, err := http.NewRequest("POST", url, bytes.NewBufferString(jsonBody))
 	if err != nil {
 		return err
 	}
@@ -133,6 +101,6 @@ func (c *KeyAdd) Run(context *cmd.Context, client *cmd.Client) error {
 	if err != nil {
 		return err
 	}
-	fmt.Fprintf(context.Stdout, "Key %q successfully added!\n", keyPath)
+	fmt.Fprintf(context.Stdout, "Key %q successfully added!\n", keyName)
 	return nil
 }

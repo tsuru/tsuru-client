@@ -8,13 +8,14 @@ import (
 	"bytes"
 	"errors"
 	"fmt"
+	"io/ioutil"
 	"net/http"
 	"os/user"
 	"path"
 
 	"github.com/tsuru/tsuru/cmd"
 	"github.com/tsuru/tsuru/cmd/testing"
-	fs_test "github.com/tsuru/tsuru/fs/testing"
+	fstesting "github.com/tsuru/tsuru/fs/testing"
 	"launchpad.net/gocheck"
 )
 
@@ -23,79 +24,53 @@ func (s *S) TestKeyAdd(c *gocheck.C) {
 	u, err := user.Current()
 	c.Assert(err, gocheck.IsNil)
 	p := path.Join(u.HomeDir, ".ssh", "id_rsa.pub")
-	expected := fmt.Sprintf("Key %q successfully added!\n", p)
+	name := "my-key"
+	expected := fmt.Sprintf("Key %q successfully added!\n", name)
 	context := cmd.Context{
-		Args:   []string{},
+		Args:   []string{name, p},
 		Stdout: &stdout,
 		Stderr: &stderr,
 	}
-	client := cmd.NewClient(&http.Client{Transport: &testing.Transport{Message: "success", Status: http.StatusOK}}, nil, manager)
-	fs := fs_test.RecordingFs{FileContent: "user-key"}
+	transport := testing.ConditionalTransport{
+		Transport: testing.Transport{Message: "success", Status: http.StatusOK},
+		CondFunc: func(r *http.Request) bool {
+			expectedBody := `{"key":"user-key","name":"my-key"}`
+			body, err := ioutil.ReadAll(r.Body)
+			c.Assert(err, gocheck.IsNil)
+			return r.Method == "POST" && r.URL.Path == "/users/keys" && string(body) == expectedBody
+		},
+	}
+	client := cmd.NewClient(&http.Client{Transport: &transport}, nil, manager)
+	fs := fstesting.RecordingFs{FileContent: "user-key"}
 	command := KeyAdd{keyReader{fsystem: &fs}}
 	err = command.Run(&context, client)
 	c.Assert(err, gocheck.IsNil)
 	c.Assert(stdout.String(), gocheck.Equals, expected)
-	c.Assert(fs.HasAction("open "+p), gocheck.Equals, true)
-}
-
-func (s *S) TestKeyAddSpecifyingKeyFile(c *gocheck.C) {
-	var stdout, stderr bytes.Buffer
-	u, err := user.Current()
-	c.Assert(err, gocheck.IsNil)
-	p := path.Join(u.HomeDir, ".ssh", "id_dsa.pub")
-	expected := fmt.Sprintf("Key %q successfully added!\n", p)
-	context := cmd.Context{
-		Args:   []string{p},
-		Stdout: &stdout,
-		Stderr: &stderr,
-	}
-	client := cmd.NewClient(&http.Client{Transport: &testing.Transport{Message: "success", Status: http.StatusOK}}, nil, manager)
-	fs := fs_test.RecordingFs{FileContent: "user-key"}
-	command := KeyAdd{keyReader{fsystem: &fs}}
-	err = command.Run(&context, client)
-	c.Assert(err, gocheck.IsNil)
-	c.Assert(stdout.String(), gocheck.Equals, expected)
-	c.Assert(fs.HasAction("open "+p), gocheck.Equals, true)
-}
-
-func (s *S) TestKeyAddReturnErrorIfTheKeyDoesNotExist(c *gocheck.C) {
-	var stdout, stderr bytes.Buffer
-	context := cmd.Context{
-		Args:   []string{},
-		Stdout: &stdout,
-		Stderr: &stderr,
-	}
-	fs := fs_test.FileNotFoundFs{RecordingFs: fs_test.RecordingFs{}}
-	command := KeyAdd{keyReader{fsystem: &fs}}
-	err := command.Run(&context, nil)
-	c.Assert(err, gocheck.NotNil)
-	c.Assert(err.Error(), gocheck.Equals, "You need to have a public rsa key")
 }
 
 func (s *S) TestKeyAddReturnsProperErrorIfTheGivenKeyFileDoesNotExist(c *gocheck.C) {
 	var stdout, stderr bytes.Buffer
 	context := cmd.Context{
-		Args:   []string{"/unknown/key.pub"},
+		Args:   []string{"my-key", "/unknown/key.pub"},
 		Stdout: &stdout,
 		Stderr: &stderr,
 	}
-	fs := fs_test.FileNotFoundFs{RecordingFs: fs_test.RecordingFs{}}
+	fs := fstesting.FileNotFoundFs{RecordingFs: fstesting.RecordingFs{}}
 	command := KeyAdd{keyReader{fsystem: &fs}}
 	err := command.Run(&context, nil)
 	c.Assert(err, gocheck.NotNil)
-	c.Assert(err.Error(), gocheck.Equals, "File /unknown/key.pub does not exist!")
-	c.Assert(context.Stderr.(*bytes.Buffer).String(), gocheck.Equals, "File /unknown/key.pub does not exist!\n")
+	c.Assert(err.Error(), gocheck.Equals, `file "/unknown/key.pub" doesn't exist`)
 }
 
-func (s *S) TestKeyAddError(c *gocheck.C) {
+func (s *S) TestKeyAddFileSystemError(c *gocheck.C) {
 	var stdout, stderr bytes.Buffer
 	context := cmd.Context{
-		Args:   []string{"/unknown/key.pub"},
+		Args:   []string{"my-key", "/unknown/key.pub"},
 		Stdout: &stdout,
 		Stderr: &stderr,
 	}
-	fs := fs_test.FailureFs{
-		RecordingFs: fs_test.RecordingFs{},
+	fs := fstesting.FailureFs{
+		RecordingFs: fstesting.RecordingFs{},
 		Err:         errors.New("what happened?"),
 	}
 	command := KeyAdd{keyReader{fsystem: &fs}}
@@ -104,108 +79,73 @@ func (s *S) TestKeyAddError(c *gocheck.C) {
 	c.Assert(err.Error(), gocheck.Equals, "what happened?")
 }
 
+func (s *S) TestKeyAddError(c *gocheck.C) {
+	var stdout, stderr bytes.Buffer
+	context := cmd.Context{Args: []string{"my-key", "/tmp/id_rsa.pub"}, Stdout: &stdout, Stderr: &stderr}
+	transport := testing.Transport{
+		Message: "something went wrong",
+		Status:  http.StatusInternalServerError,
+	}
+	client := cmd.NewClient(&http.Client{Transport: &transport}, nil, manager)
+	fs := fstesting.RecordingFs{FileContent: "user-key"}
+	command := KeyAdd{keyReader{fsystem: &fs}}
+	err := command.Run(&context, client)
+	c.Assert(err, gocheck.NotNil)
+	c.Assert(err.Error(), gocheck.Equals, "something went wrong")
+}
+
 func (s *S) TestInfoKeyAdd(c *gocheck.C) {
 	expected := &cmd.Info{
 		Name:    "key-add",
-		Usage:   "key-add [path/to/key/file.pub]",
-		Desc:    "add your public key ($HOME/.ssh/id_rsa.pub by default).",
-		MinArgs: 0,
+		Usage:   "key-add <key-name> <path/to/key/file.pub>",
+		Desc:    "adds a public key to your account",
+		MinArgs: 2,
 	}
 	c.Assert((&KeyAdd{}).Info(), gocheck.DeepEquals, expected)
 }
 
 func (s *S) TestKeyRemove(c *gocheck.C) {
 	var stdout, stderr bytes.Buffer
-	u, err := user.Current()
-	c.Assert(err, gocheck.IsNil)
-	p := path.Join(u.HomeDir, ".ssh", "id_rsa.pub")
-	expected := fmt.Sprintf("Key %q successfully removed!\n", p)
-	context := cmd.Context{
-		Args:   []string{},
-		Stdout: &stdout,
-		Stderr: &stderr,
+	keyName := "my-key"
+	expected := fmt.Sprintf("Key %q successfully removed!\n", keyName)
+	context := cmd.Context{Args: []string{keyName}, Stdout: &stdout, Stderr: &stderr}
+	transport := testing.ConditionalTransport{
+		Transport: testing.Transport{Message: "success", Status: http.StatusOK},
+		CondFunc: func(r *http.Request) bool {
+			expectedBody := `{"name":"my-key"}`
+			body, err := ioutil.ReadAll(r.Body)
+			c.Assert(err, gocheck.IsNil)
+			return r.Method == "DELETE" && r.URL.Path == "/users/keys" && string(body) == expectedBody
+		},
 	}
-	client := cmd.NewClient(&http.Client{Transport: &testing.Transport{Message: "success", Status: http.StatusOK}}, nil, manager)
-	fs := fs_test.RecordingFs{FileContent: "user-key"}
-	command := KeyRemove{keyReader{fsystem: &fs}}
-	err = command.Run(&context, client)
-	c.Assert(err, gocheck.IsNil)
-	c.Assert(stdout.String(), gocheck.Equals, expected)
-	c.Assert(fs.HasAction("open "+p), gocheck.Equals, true)
-}
-
-func (s *S) TestKeyRemoveSpecifyingKeyFile(c *gocheck.C) {
-	var stdout, stderr bytes.Buffer
-	u, err := user.Current()
-	c.Assert(err, gocheck.IsNil)
-	p := path.Join(u.HomeDir, ".ssh", "id_dsa.pub")
-	expected := fmt.Sprintf("Key %q successfully removed!\n", p)
-	context := cmd.Context{
-		Args:   []string{p},
-		Stdout: &stdout,
-		Stderr: &stderr,
-	}
-	client := cmd.NewClient(&http.Client{Transport: &testing.Transport{Message: "success", Status: http.StatusOK}}, nil, manager)
-	fs := fs_test.RecordingFs{FileContent: "user-key"}
-	command := KeyRemove{keyReader{fsystem: &fs}}
-	err = command.Run(&context, client)
+	client := cmd.NewClient(&http.Client{Transport: &transport}, nil, manager)
+	command := KeyRemove{}
+	err := command.Run(&context, client)
 	c.Assert(err, gocheck.IsNil)
 	c.Assert(stdout.String(), gocheck.Equals, expected)
-	c.Assert(fs.HasAction("open "+p), gocheck.Equals, true)
-}
-
-func (s *S) TestKeyRemoveReturnErrorIfTheKeyDoesNotExist(c *gocheck.C) {
-	var stdout, stderr bytes.Buffer
-	context := cmd.Context{
-		Args:   []string{},
-		Stdout: &stdout,
-		Stderr: &stderr,
-	}
-	fs := fs_test.FileNotFoundFs{RecordingFs: fs_test.RecordingFs{}}
-	command := KeyRemove{keyReader{fsystem: &fs}}
-	err := command.Run(&context, nil)
-	c.Assert(err, gocheck.NotNil)
-	c.Assert(err.Error(), gocheck.Equals, "You need to have a public rsa key")
-}
-
-func (s *S) TestKeyRemoveReturnProperErrorIfTheGivenKeyFileDoesNotExist(c *gocheck.C) {
-	var stdout, stderr bytes.Buffer
-	context := cmd.Context{
-		Args:   []string{"/unknown/key.pub"},
-		Stdout: &stdout,
-		Stderr: &stderr,
-	}
-	fs := fs_test.FileNotFoundFs{RecordingFs: fs_test.RecordingFs{}}
-	command := KeyRemove{keyReader{fsystem: &fs}}
-	err := command.Run(&context, nil)
-	c.Assert(err, gocheck.NotNil)
-	c.Assert(err.Error(), gocheck.Equals, "File /unknown/key.pub does not exist!")
-	c.Assert(context.Stderr.(*bytes.Buffer).String(), gocheck.Equals, err.Error()+"\n")
 }
 
 func (s *S) TestKeyRemoveError(c *gocheck.C) {
 	var stdout, stderr bytes.Buffer
-	context := cmd.Context{
-		Args:   []string{"/unknown/key.pub"},
-		Stdout: &stdout,
-		Stderr: &stderr,
+	keyName := "my-key"
+	context := cmd.Context{Args: []string{keyName}, Stdout: &stdout, Stderr: &stderr}
+	transport := testing.Transport{
+		Message: "something went wrong",
+		Status:  http.StatusInternalServerError,
 	}
-	fs := fs_test.FailureFs{
-		RecordingFs: fs_test.RecordingFs{},
-		Err:         errors.New("what happened?"),
-	}
-	command := KeyRemove{keyReader{fsystem: &fs}}
-	err := command.Run(&context, nil)
+	client := cmd.NewClient(&http.Client{Transport: &transport}, nil, manager)
+	command := KeyRemove{}
+	err := command.Run(&context, client)
 	c.Assert(err, gocheck.NotNil)
-	c.Assert(err.Error(), gocheck.Equals, "what happened?")
+	c.Assert(err.Error(), gocheck.Equals, "something went wrong")
 }
 
 func (s *S) TestInfoKeyRemove(c *gocheck.C) {
 	expected := &cmd.Info{
 		Name:    "key-remove",
-		Usage:   "key-remove [path/to/key/file.pub]",
-		Desc:    "remove your public key ($HOME/.id_rsa.pub by default).",
-		MinArgs: 0,
+		Usage:   "key-remove <key-name>",
+		Desc:    "removes the given public key from your account",
+		MinArgs: 1,
 	}
 	c.Assert((&KeyRemove{}).Info(), gocheck.DeepEquals, expected)
 }
