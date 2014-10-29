@@ -40,7 +40,7 @@ func (s *S) TestAppListIsRegistered(c *gocheck.C) {
 	manager := buildManager("tsuru")
 	list, ok := manager.Commands["app-list"]
 	c.Assert(ok, gocheck.Equals, true)
-	c.Assert(list, gocheck.FitsTypeOf, AppList{})
+	c.Assert(list, gocheck.FitsTypeOf, appList{})
 }
 
 func (s *S) TestAppGrantIsRegistered(c *gocheck.C) {

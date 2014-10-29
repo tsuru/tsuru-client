@@ -429,9 +429,9 @@ func (c *AppRevoke) Run(context *cmd.Context, client *cmd.Client) error {
 	return nil
 }
 
-type AppList struct{}
+type appList struct{}
 
-func (c AppList) Run(context *cmd.Context, client *cmd.Client) error {
+func (c appList) Run(context *cmd.Context, client *cmd.Client) error {
 	url, err := cmd.GetURL("/apps")
 	if err != nil {
 		return err
@@ -455,7 +455,7 @@ func (c AppList) Run(context *cmd.Context, client *cmd.Client) error {
 	return c.Show(result, context)
 }
 
-func (c AppList) Show(result []byte, context *cmd.Context) error {
+func (c appList) Show(result []byte, context *cmd.Context) error {
 	var apps []app
 	err := json.Unmarshal(result, &apps)
 	if err != nil {
@@ -484,7 +484,7 @@ func (c AppList) Show(result []byte, context *cmd.Context) error {
 	return nil
 }
 
-func (c AppList) Info() *cmd.Info {
+func (c appList) Info() *cmd.Info {
 	return &cmd.Info{
 		Name:  "app-list",
 		Usage: "app-list",

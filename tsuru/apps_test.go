@@ -655,7 +655,7 @@ func (s *S) TestAppList(c *gocheck.C) {
 		Stderr: &stderr,
 	}
 	client := cmd.NewClient(&http.Client{Transport: &testing.Transport{Message: result, Status: http.StatusOK}}, nil, manager)
-	command := AppList{}
+	command := appList{}
 	err := command.Run(&context, client)
 	c.Assert(err, gocheck.IsNil)
 	c.Assert(stdout.String(), gocheck.Equals, expected)
@@ -678,7 +678,7 @@ func (s *S) TestAppListDisplayAppsInAlphabeticalOrder(c *gocheck.C) {
 		Stderr: &stderr,
 	}
 	client := cmd.NewClient(&http.Client{Transport: &testing.Transport{Message: result, Status: http.StatusOK}}, nil, manager)
-	command := AppList{}
+	command := appList{}
 	err := command.Run(&context, client)
 	c.Assert(err, gocheck.IsNil)
 	c.Assert(stdout.String(), gocheck.Equals, expected)
@@ -699,7 +699,7 @@ func (s *S) TestAppListUnitIsntAvailable(c *gocheck.C) {
 		Stderr: &stderr,
 	}
 	client := cmd.NewClient(&http.Client{Transport: &testing.Transport{Message: result, Status: http.StatusOK}}, nil, manager)
-	command := AppList{}
+	command := appList{}
 	err := command.Run(&context, client)
 	c.Assert(err, gocheck.IsNil)
 	c.Assert(stdout.String(), gocheck.Equals, expected)
@@ -720,7 +720,7 @@ func (s *S) TestAppListUnitIsAvailable(c *gocheck.C) {
 		Stderr: &stderr,
 	}
 	client := cmd.NewClient(&http.Client{Transport: &testing.Transport{Message: result, Status: http.StatusOK}}, nil, manager)
-	command := AppList{}
+	command := appList{}
 	err := command.Run(&context, client)
 	c.Assert(err, gocheck.IsNil)
 	c.Assert(stdout.String(), gocheck.Equals, expected)
@@ -741,7 +741,7 @@ func (s *S) TestAppListUnitWithoutName(c *gocheck.C) {
 		Stderr: &stderr,
 	}
 	client := cmd.NewClient(&http.Client{Transport: &testing.Transport{Message: result, Status: http.StatusOK}}, nil, manager)
-	command := AppList{}
+	command := appList{}
 	err := command.Run(&context, client)
 	c.Assert(err, gocheck.IsNil)
 	c.Assert(stdout.String(), gocheck.Equals, expected)
@@ -762,7 +762,7 @@ func (s *S) TestAppListNotReady(c *gocheck.C) {
 		Stderr: &stderr,
 	}
 	client := cmd.NewClient(&http.Client{Transport: &testing.Transport{Message: result, Status: http.StatusOK}}, nil, manager)
-	command := AppList{}
+	command := appList{}
 	err := command.Run(&context, client)
 	c.Assert(err, gocheck.IsNil)
 	c.Assert(stdout.String(), gocheck.Equals, expected)
@@ -784,7 +784,7 @@ func (s *S) TestAppListCName(c *gocheck.C) {
 		Stderr: &stderr,
 	}
 	client := cmd.NewClient(&http.Client{Transport: &testing.Transport{Message: result, Status: http.StatusOK}}, nil, manager)
-	command := AppList{}
+	command := appList{}
 	err := command.Run(&context, client)
 	c.Assert(err, gocheck.IsNil)
 	c.Assert(stdout.String(), gocheck.Equals, expected)
@@ -797,11 +797,11 @@ func (s *S) TestAppListInfo(c *gocheck.C) {
 		Desc:    "list all your apps.",
 		MinArgs: 0,
 	}
-	c.Assert(AppList{}.Info(), gocheck.DeepEquals, expected)
+	c.Assert(appList{}.Info(), gocheck.DeepEquals, expected)
 }
 
 func (s *S) TestAppListIsACommand(c *gocheck.C) {
-	var _ cmd.Command = AppList{}
+	var _ cmd.Command = appList{}
 }
 
 func (s *S) TestAppRestart(c *gocheck.C) {
