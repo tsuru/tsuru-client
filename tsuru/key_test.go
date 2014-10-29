@@ -208,6 +208,7 @@ func (s *S) TestKeyListNoTruncate(c *gocheck.C) {
 | Name | Content                                                                          |
 +------+----------------------------------------------------------------------------------+
 | key1 | key1 content                                                                     |
++------+----------------------------------------------------------------------------------+
 | key2 | key2 key2 key2 key2 key2 key2 key2 key2 key2 key2 key2 key2 key2 key2 key2 key2  |
 +------+----------------------------------------------------------------------------------+` + "\n"
 	context := cmd.Context{Stdout: &stdout, Stderr: &stderr}

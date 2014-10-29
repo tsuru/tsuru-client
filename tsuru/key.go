@@ -151,7 +151,7 @@ func (c *keyList) Run(context *cmd.Context, client *cmd.Client) error {
 	}
 	var table cmd.Table
 	table.Headers = cmd.Row{"Name", "Content"}
-	table.LineSeparator = !c.notrunc
+	table.LineSeparator = c.notrunc
 	for name, content := range keys {
 		row := []string{name, content}
 		if !c.notrunc && len(row[1]) > keyTruncate {
