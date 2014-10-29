@@ -572,11 +572,11 @@ func (c *AppStart) Run(context *cmd.Context, client *cmd.Client) error {
 	return nil
 }
 
-type AppRestart struct {
+type appRestart struct {
 	cmd.GuessingCommand
 }
 
-func (c *AppRestart) Run(context *cmd.Context, client *cmd.Client) error {
+func (c *appRestart) Run(context *cmd.Context, client *cmd.Client) error {
 	appName, err := c.Guess()
 	if err != nil {
 		return err
@@ -607,7 +607,7 @@ func (c *AppRestart) Run(context *cmd.Context, client *cmd.Client) error {
 	return nil
 }
 
-func (c *AppRestart) Info() *cmd.Info {
+func (c *appRestart) Info() *cmd.Info {
 	return &cmd.Info{
 		Name:  "app-restart",
 		Usage: "app-restart [-a/--app appname]",

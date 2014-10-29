@@ -31,7 +31,7 @@ func buildManager(name string) *cmd.Manager {
 	m.RegisterDeprecated(&appLog{}, "log")
 	m.Register(&appGrant{})
 	m.Register(&appRevoke{})
-	m.RegisterDeprecated(&AppRestart{}, "restart")
+	m.RegisterDeprecated(&appRestart{}, "restart")
 	m.RegisterDeprecated(&AppStart{}, "start")
 	m.RegisterDeprecated(&AppStop{}, "stop")
 	m.RegisterDeprecated(&AddCName{}, "add-cname")

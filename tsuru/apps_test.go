@@ -825,7 +825,7 @@ func (s *S) TestAppRestart(c *gocheck.C) {
 		},
 	}
 	client := cmd.NewClient(&http.Client{Transport: trans}, nil, manager)
-	command := AppRestart{}
+	command := appRestart{}
 	command.Flags().Parse(true, []string{"--app", "handful_of_nothing"})
 	err = command.Run(&context, client)
 	c.Assert(err, gocheck.IsNil)
@@ -855,7 +855,7 @@ func (s *S) TestAppRestartWithoutTheFlag(c *gocheck.C) {
 	}
 	client := cmd.NewClient(&http.Client{Transport: trans}, nil, manager)
 	fake := &testing.FakeGuesser{Name: "motorbreath"}
-	command := AppRestart{GuessingCommand: cmd.GuessingCommand{G: fake}}
+	command := appRestart{GuessingCommand: cmd.GuessingCommand{G: fake}}
 	command.Flags().Parse(true, nil)
 	err = command.Run(&context, client)
 	c.Assert(err, gocheck.IsNil)
@@ -872,11 +872,11 @@ func (s *S) TestAppRestartInfo(c *gocheck.C) {
 If you don't provide the app name, tsuru will try to guess it.`,
 		MinArgs: 0,
 	}
-	c.Assert((&AppRestart{}).Info(), gocheck.DeepEquals, expected)
+	c.Assert((&appRestart{}).Info(), gocheck.DeepEquals, expected)
 }
 
 func (s *S) TestAppRestartIsAFlaggedCommand(c *gocheck.C) {
-	var _ cmd.FlaggedCommand = &AppRestart{}
+	var _ cmd.FlaggedCommand = &appRestart{}
 }
 
 func (s *S) TestAddCName(c *gocheck.C) {
