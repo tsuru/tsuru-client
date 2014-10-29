@@ -61,7 +61,7 @@ func (s *S) TestAppLogIsRegistered(c *gocheck.C) {
 	manager := buildManager("tsuru")
 	log, ok := manager.Commands["app-log"]
 	c.Assert(ok, gocheck.Equals, true)
-	c.Assert(log, gocheck.FitsTypeOf, &AppLog{})
+	c.Assert(log, gocheck.FitsTypeOf, &appLog{})
 }
 
 func (s *S) TestLogIsDeprecated(c *gocheck.C) {

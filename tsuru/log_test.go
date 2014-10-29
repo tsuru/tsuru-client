@@ -56,7 +56,7 @@ func (s *S) TestAppLog(c *gocheck.C) {
 		Stdout: &stdout,
 		Stderr: &stderr,
 	}
-	command := AppLog{}
+	command := appLog{}
 	transport := testing.Transport{
 		Message: string(result),
 		Status:  http.StatusOK,
@@ -83,7 +83,7 @@ func (s *S) TestAppLogWithUnparsableData(c *gocheck.C) {
 		Stdout: &stdout,
 		Stderr: &stderr,
 	}
-	command := AppLog{}
+	command := appLog{}
 	transport := testing.Transport{
 		Message: string(result) + "\nunparseable data",
 		Status:  http.StatusOK,
@@ -115,7 +115,7 @@ func (s *S) TestAppLogWithoutTheFlag(c *gocheck.C) {
 		Stderr: &stderr,
 	}
 	fake := &testing.FakeGuesser{Name: "hitthelights"}
-	command := AppLog{GuessingCommand: cmd.GuessingCommand{G: fake}}
+	command := appLog{GuessingCommand: cmd.GuessingCommand{G: fake}}
 	command.Flags().Parse(true, nil)
 	trans := &testing.ConditionalTransport{
 		Transport: testing.Transport{Message: string(result), Status: http.StatusOK},
@@ -136,7 +136,7 @@ func (s *S) TestAppLogShouldReturnNilIfHasNoContent(c *gocheck.C) {
 		Stdout: &stdout,
 		Stderr: &stderr,
 	}
-	command := AppLog{}
+	command := appLog{}
 	client := cmd.NewClient(&http.Client{Transport: &testing.Transport{Message: "", Status: http.StatusNoContent}}, nil, manager)
 	command.Flags().Parse(true, []string{"--app", "appName"})
 	err := command.Run(&context, client)
@@ -153,7 +153,7 @@ func (s *S) TestAppLogInfo(c *gocheck.C) {
 If you don't provide the app name, tsuru will try to guess it. The default number of lines is 10.`,
 		MinArgs: 0,
 	}
-	c.Assert((&AppLog{}).Info(), gocheck.DeepEquals, expected)
+	c.Assert((&appLog{}).Info(), gocheck.DeepEquals, expected)
 }
 
 func (s *S) TestAppLogBySource(c *gocheck.C) {
@@ -174,7 +174,7 @@ func (s *S) TestAppLogBySource(c *gocheck.C) {
 		Stderr: &stderr,
 	}
 	fake := &testing.FakeGuesser{Name: "hitthelights"}
-	command := AppLog{GuessingCommand: cmd.GuessingCommand{G: fake}}
+	command := appLog{GuessingCommand: cmd.GuessingCommand{G: fake}}
 	command.Flags().Parse(true, []string{"--source", "mysource"})
 	trans := &testing.ConditionalTransport{
 		Transport: testing.Transport{Message: string(result), Status: http.StatusOK},
@@ -206,7 +206,7 @@ func (s *S) TestAppLogByUnit(c *gocheck.C) {
 		Stderr: &stderr,
 	}
 	fake := &testing.FakeGuesser{Name: "hitthelights"}
-	command := AppLog{GuessingCommand: cmd.GuessingCommand{G: fake}}
+	command := appLog{GuessingCommand: cmd.GuessingCommand{G: fake}}
 	command.Flags().Parse(true, []string{"--unit", "api"})
 	trans := &testing.ConditionalTransport{
 		Transport: testing.Transport{Message: string(result), Status: http.StatusOK},
@@ -238,7 +238,7 @@ func (s *S) TestAppLogWithLines(c *gocheck.C) {
 		Stderr: &stderr,
 	}
 	fake := &testing.FakeGuesser{Name: "hitthelights"}
-	command := AppLog{GuessingCommand: cmd.GuessingCommand{G: fake}}
+	command := appLog{GuessingCommand: cmd.GuessingCommand{G: fake}}
 	command.Flags().Parse(true, []string{"--lines", "12"})
 	trans := &testing.ConditionalTransport{
 		Transport: testing.Transport{Message: string(result), Status: http.StatusOK},
@@ -270,7 +270,7 @@ func (s *S) TestAppLogWithFollow(c *gocheck.C) {
 		Stderr: &stderr,
 	}
 	fake := &testing.FakeGuesser{Name: "hitthelights"}
-	command := AppLog{GuessingCommand: cmd.GuessingCommand{G: fake}}
+	command := appLog{GuessingCommand: cmd.GuessingCommand{G: fake}}
 	command.Flags().Parse(true, []string{"--lines", "12", "-f"})
 	trans := &testing.ConditionalTransport{
 		Transport: testing.Transport{Message: string(result), Status: http.StatusOK},
@@ -285,7 +285,7 @@ func (s *S) TestAppLogWithFollow(c *gocheck.C) {
 }
 
 func (s *S) TestAppLogFlagSet(c *gocheck.C) {
-	command := AppLog{}
+	command := appLog{}
 	flagset := command.Flags()
 	flagset.Parse(true, []string{"--source", "tsuru", "--unit", "abcdef", "--lines", "12", "--app", "ashamed", "--follow"})
 	source := flagset.Lookup("source")

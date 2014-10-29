@@ -16,7 +16,7 @@ import (
 	"launchpad.net/gnuflag"
 )
 
-type AppLog struct {
+type appLog struct {
 	cmd.GuessingCommand
 	fs     *gnuflag.FlagSet
 	source string
@@ -25,7 +25,7 @@ type AppLog struct {
 	follow bool
 }
 
-func (c *AppLog) Info() *cmd.Info {
+func (c *appLog) Info() *cmd.Info {
 	return &cmd.Info{
 		Name:  "app-log",
 		Usage: "app-log [-a/--app appname] [-l/--lines numberOfLines] [-s/--source source] [-u/--unit unit] [-f/--follow]",
@@ -64,7 +64,7 @@ type log struct {
 	Unit    string
 }
 
-func (c *AppLog) Run(context *cmd.Context, client *cmd.Client) error {
+func (c *appLog) Run(context *cmd.Context, client *cmd.Client) error {
 	appName, err := c.Guess()
 	if err != nil {
 		return err
@@ -104,7 +104,7 @@ func (c *AppLog) Run(context *cmd.Context, client *cmd.Client) error {
 	return nil
 }
 
-func (c *AppLog) Flags() *gnuflag.FlagSet {
+func (c *appLog) Flags() *gnuflag.FlagSet {
 	if c.fs == nil {
 		c.fs = c.GuessingCommand.Flags()
 		c.fs.IntVar(&c.lines, "lines", 10, "The number of log lines to display")
