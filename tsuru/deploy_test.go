@@ -21,8 +21,8 @@ import (
 func (s *S) TestDeployInfo(c *gocheck.C) {
 	desc := `Deploys set of files and/or directories to tsuru server. Some examples of calls are:
 
-tsuru deploy .
-tsuru deploy myfile.jar Procfile
+tsuru app-deploy .
+tsuru app-deploy myfile.jar Procfile
 `
 	expected := &cmd.Info{
 		Name:    "app-deploy",
