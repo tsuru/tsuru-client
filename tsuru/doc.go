@@ -28,6 +28,7 @@ The currently available commands are (grouped by subject):
 	reset-password    redefines your password
 	key-add           adds a public key to tsuru deploy server
 	key-remove        removes a public key from tsuru deploy server
+	ley-list          lists the public keys registered in the user account
 
 	team-create       creates a new team (adding the current user to it automatically)
 	team-remove       removes a team from tsuru
@@ -44,19 +45,17 @@ The currently available commands are (grouped by subject):
 	app-revoke        revokes access to an app from a team
 	unit-add          adds new units to an app
 	unit-remove       remove units from an app
-	log               shows log for an app
-	run               runs a command in all units of an app
-	restart           restarts the app's application server
-	set-cname         defines a cname for an app
-	unset-cname       unsets the cname from an app
-	swap              swaps the router between two apps
+	app-log           shows log for an app
+	app-run           runs a command in all units of an app
+	app-restart       restarts the app's application server
+	app-swap          swaps the router between two apps
+
+	cname-add         adds a cname to the app
+	cname-remove      removes a cname from the app
 
 	env-get           display environment variables for an app
 	env-set           set environment variable(s) to an app
 	env-unset         unset environment variable(s) from an app
-
-	bind              binds an app to a service instance
-	unbind            unbinds an app from a service instance
 
 	service-list      list all services, and instances of each service
 	service-add       creates a new instance of a service
@@ -64,6 +63,8 @@ The currently available commands are (grouped by subject):
 	service-status    checks the status of a service instance
 	service-info      list instances of a service, and apps bound to each instance
 	service-doc       displays documentation for a service
+	service-bind      binds an app to a service instance
+	service-unbind    unbinds an app from a service instance
 
 Use "tsuru help <command>" for more information about a command.
 
@@ -191,31 +192,29 @@ Add SSH public key to tsuru's git server
 
 Usage:
 
-	% tsuru key-add [${HOME}/.ssh/id_rsa.pub]
+	% tsuru key-add <key-name> <key-file>
 
-key-add sends your public key to tsuru's git server. By default, it will try
-send a public RSA key, located at ${HOME}/.ssh/id_rsa.pub. If you want to send
-other file, you can call it with the path to the file. For example:
-
-	% tsuru key-add /etc/my-keys/id_dsa.pub
-
-The key will be added to the current logged in user.
+key-add sends your public key to tsuru's git server. The key will be added to
+the current logged in user.
 
 
 Remove SSH public key from tsuru's git server
 
 Usage:
 
-	% tsuru key-remove [${HOME}/.ssh/id_rsa.pub]
+	% tsuru key-remove <key-name>
 
-key-remove removes your public key from tsuru's git server. By default, it will
-try to remove a key that match you public RSA key located at
-${HOME}/.ssh/id_rsa.pub. If you want to remove a key located somewhere else,
-you can pass it as parameter to key-remove:
+key-remove removes your public key from tsuru's git server. The key will be
+removed from the current logged in user.
 
-	% tsuru key-remove /etc/my-keys/id_dsa.pub
 
-The key will be removed from the current logged in user.
+List SSH public keys
+
+Usage:
+
+	% tsuru key-list
+
+key-list lists the public keys registered in the current user account.
 
 
 Create a new team for the user
@@ -303,7 +302,7 @@ Remove an app
 
 Usage:
 
-	% tsuru app-remove [--app appname]
+	% tsuru app-remove [-a/--app appname]
 
 app-remove removes an app. If the app is bound to any service instance, all
 binds will be removed before the app gets deleted (see "tsuru unbind"). You
@@ -327,7 +326,7 @@ Display information about an app
 
 Usage:
 
-	% tsuru app-info [--app name]
+	% tsuru app-info [-a/--app name]
 
 app-info will display some informations about an specific app (its state,
 platform, git repository, etc.). You need to be a member of a team that access
@@ -340,7 +339,7 @@ Allow a team to access an app
 
 Usage:
 
-	% tsuru app-grant <team-name> [--app appname]
+	% tsuru app-grant <team-name> [-a/--app appname]
 
 app-grant will allow a team to access an app. You need to be a member of a team
 that has access to the app to allow another team to access it.
@@ -352,7 +351,7 @@ Revoke from a team access to an app
 
 Usage:
 
-	% tsuru app-revoke <team-name> [--app appname]
+	% tsuru app-revoke <team-name> [-a/--app appname]
 
 app-revoke will revoke the permission to access an app from a team. You need to
 have access to the app to revoke access from a team.
@@ -366,7 +365,7 @@ Add new units to the app
 
 Usage:
 
-	% tsuru unit-add <# of units> [--app appname]
+	% tsuru unit-add <# of units> [-a/--app appname]
 
 unit-add will add new units (instances) to an app. You need to have access to
 the app to be able to add new units to it.
@@ -378,7 +377,7 @@ Remove units from the app
 
 Usage:
 
-	% tsuru unit-remove <# of units> [--app appname]
+	% tsuru unit-remove <# of units> [-a/--app appname]
 
 unit-remove will remove units (instances) from an app. You need to have access
 to the app to be able to remove units from it.
@@ -390,7 +389,7 @@ See app's logs
 
 Usage:
 
-	% tsuru log [--app|-a appname] [--lines|-l numberOfLines] [--source|-s source] [--follow|-f]
+	% tsuru app-log [-a/--app appname] [-l/--lines numberOfLines] [-s/--source source] [-f/--follow]
 
 Log will show log entries for an app. These logs are not related to the code of
 the app itself, but to actions of the app in tsuru server (deployments,
@@ -405,7 +404,7 @@ Run an arbitrary command in the app machine
 
 Usage:
 
-	% tsuru run <command> [commandarg1] [commandarg2] ... [commandargn] [--app appname]
+	% tsuru app-run <command> [commandarg1] [commandarg2] ... [commandargn] [-a/--app appname]
 
 Run will run an arbitrary command in the app machine. Base directory for all
 commands is the root of the app. For example, in a Django app, "tsuru run" may
@@ -429,26 +428,26 @@ show the following output:
 The --app flag is optional, see "Guessing app names" section for more details.
 
 
-Define a CNAME for the app
+Add a CNAME to the app
 
 Usage:
 
-	% tsuru set-cname <cname> [--app appname]
+	% tsuru cname-add <cname> [-a/--app appname]
 
-set-cname will define a CNAME for the app. It will not manage any DNS register,
+cname-add will add a CNAME to the app. It will not manage any DNS register,
 it's up to the user to create the DNS register. Once the app contains a custom
 CNAME, it will be displayed by "app-list" and "app-info".
 
 The --app flag is optional, see "Guessing app names" section for more details.
 
 
-Undefine the CNAME from the app
+Remove a CNAME from the app
 
 Usage:
 
-	% tsuru unset-cname [--app appname]
+	% tsuru cname-remove [-a/--app appname]
 
-unset-cname undoes the change that set-cname does. After unsetting the CNAME
+cname-remove undoes the change that cname-add does. After unsetting the CNAME
 from the app, "app-list" and "app-info" will display the internal, unfriendly
 address that tsuru uses.
 
@@ -459,9 +458,9 @@ Restart the app's application server
 
 Usage:
 
-	% tsuru restart [--app appname]
+	% tsuru app-restart [-a/--app appname]
 
-Restart will restart the application server (as defined in Procfile) of the
+app-restart will restart the application server (as defined in Procfile) of the
 application.
 
 The --app flag is optional, see "Guessing app names" section for more details.
@@ -471,7 +470,7 @@ Display environment variables of an application
 
 Usage:
 
-	% tsuru env-get [--app appname] [variable-names]
+	% tsuru env-get [-a/--app appname] [variable-names]
 
 env-get will display the name and the value of environment variables exported
 in the application's environment. If none name is given, it will display the
@@ -501,7 +500,7 @@ Define the value of one or more environment variables
 
 Usage:
 
-	% tsuru env-set <NAME_1=VALUE_1> [NAME_2=VALUE_2] ... [NAME_N=VALUE_N] [--app appname]
+	% tsuru env-set <NAME_1=VALUE_1> [NAME_2=VALUE_2] ... [NAME_N=VALUE_N] [-a/--app appname]
 
 env-set will (re)define environment variables for your app.  You can specify
 one or more environment variables to (re)define. env-set cannot redefine
@@ -524,7 +523,7 @@ Undefine an environment variable
 
 Usage:
 
-	% tsuru env-unset <NAME_1> [NAME_2] ... [NAME_N] [--app appname]
+	% tsuru env-unset <NAME_1> [NAME_2] ... [NAME_N] [-a/--app appname]
 
 env-unset will undefine environments variables in your app.  You can specify
 one or more environment variables to undefine.  env-unset cannot remove private
@@ -543,9 +542,9 @@ Bind an application to a service instance
 
 Usage:
 
-	% tsuru bind <instance-name> [--app appname]
+	% tsuru service-bind <instance-name> [-a/--app appname]
 
-Bind will bind an application to a service instance (see service-add for more
+service-bind will bind an application to a service instance (see service-add for more
 details on how to create a service instance).
 
 When binding an application to a service instance, tsuru will add new
@@ -559,11 +558,12 @@ Unbind an application from a service instance
 
 Usage:
 
-	% tsuru unbind <instance-name> [--app appname]
+	% tsuru service-unbind <instance-name> [-a/--app appname]
 
-Unbind will unbind an application from a service instance.  After unbinding,
-the instance will not be available anymore.  For example, when unbinding an
-application from a MySQL service, the app would lose access to the database.
+service-unbind will unbind an application from a service instance.  After
+unbinding, the instance will not be available anymore.  For example, when
+unbinding an application from a MySQL service, the app would lose access to the
+database.
 
 The --app flag is optional, see "Guessing app names" section for more details.
 
@@ -583,9 +583,10 @@ Swap the routing between two apps
 
 Usage:
 
-	% tsuru swap <app1> <app2>
+	% tsuru app-swap <app1> <app2>
 
-swap will swap the routing between two apps enabling blue/green deploy, zero downtime and make the rollbacks easier.
+app-swap will swap the routing between two apps enabling blue/green deploy,
+zero downtime and make the rollbacks easier.
 
 Create a new service instance
 
