@@ -28,7 +28,7 @@ The currently available commands are (grouped by subject):
 	reset-password    redefines your password
 	key-add           adds a public key to tsuru deploy server
 	key-remove        removes a public key from tsuru deploy server
-	ley-list          lists the public keys registered in the user account
+	key-list          lists the public keys registered in the user account
 
 	team-create       creates a new team (adding the current user to it automatically)
 	team-remove       removes a team from tsuru
