@@ -57,6 +57,7 @@ func buildManager(name string) *cmd.Manager {
 	m.RegisterDeprecated(&appSwap{}, "swap")
 	m.RegisterDeprecated(&appDeploy{}, "deploy")
 	m.Register(&planList{})
+	m.Register(&SetTeamOwner{})
 	return m
 }
 
