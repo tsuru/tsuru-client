@@ -58,6 +58,7 @@ func buildManager(name string) *cmd.Manager {
 	m.RegisterDeprecated(&appDeploy{}, "deploy")
 	m.Register(&planList{})
 	m.Register(&SetTeamOwner{})
+	m.Register(&autoScaleEnable{})
 	return m
 }
 

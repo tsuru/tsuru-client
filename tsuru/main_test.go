@@ -329,3 +329,10 @@ func (s *S) TestPlanListRegistered(c *gocheck.C) {
 	c.Assert(ok, gocheck.Equals, true)
 	c.Assert(list, gocheck.FitsTypeOf, &planList{})
 }
+
+func (s *S) TestAutoScaleEnableIsRegistered(c *gocheck.C) {
+	manager := buildManager("tsuru")
+	list, ok := manager.Commands["autoscale-enable"]
+	c.Assert(ok, gocheck.Equals, true)
+	c.Assert(list, gocheck.FitsTypeOf, &autoScaleEnable{})
+}
