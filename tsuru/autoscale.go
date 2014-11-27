@@ -113,7 +113,7 @@ func (c *autoScaleConfig) Flags() *gnuflag.FlagSet {
 func (c *autoScaleConfig) Info() *cmd.Info {
 	return &cmd.Info{
 		Name:  "autoscale-config",
-		Usage: "autoscale-config [-a/--app appname] --max-units unitsnumber --min-units unitsnumber --increase-step unitsnumber --increase-wait-time seconds --increase-expression expression --decrease-wait-time seoncds --decrease-expression expression --enabled",
+		Usage: "autoscale-config [-a/--app appname] --max-units unitsnumber --min-units unitsnumber --increase-step unitsnumber --increase-wait-time seconds --increase-expression expression --decrease-wait-time seconds --decrease-expression expression --enabled",
 		Desc:  "config app autoscale.",
 	}
 }
