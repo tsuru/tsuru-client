@@ -31,3 +31,22 @@ func (s *S) TestAutoScaleEnable(c *gocheck.C) {
 	err := command.Run(&context, client)
 	c.Assert(err, gocheck.IsNil)
 }
+
+func (s *S) TestAutoScaleDisable(c *gocheck.C) {
+	var stdout, stderr bytes.Buffer
+	context := cmd.Context{
+		Stdout: &stdout,
+		Stderr: &stderr,
+	}
+	trans := testing.ConditionalTransport{
+		Transport: testing.Transport{Message: "", Status: http.StatusOK},
+		CondFunc: func(req *http.Request) bool {
+			return req.Method == "PUT" && req.URL.Path == "/autoscale/ble/disable"
+		},
+	}
+	client := cmd.NewClient(&http.Client{Transport: &trans}, nil, manager)
+	command := autoScaleDisable{}
+	command.Flags().Parse(true, []string{"-a", "ble"})
+	err := command.Run(&context, client)
+	c.Assert(err, gocheck.IsNil)
+}
