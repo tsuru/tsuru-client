@@ -60,6 +60,7 @@ func buildManager(name string) *cmd.Manager {
 	m.Register(&SetTeamOwner{})
 	m.Register(&autoScaleEnable{})
 	m.Register(&autoScaleDisable{})
+	m.Register(&autoScaleConfig{})
 	return m
 }
 
