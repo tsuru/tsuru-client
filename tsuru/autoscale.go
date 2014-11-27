@@ -9,6 +9,7 @@ import (
 	"encoding/json"
 	"fmt"
 	"net/http"
+	"time"
 
 	"github.com/tsuru/tsuru/cmd"
 	"launchpad.net/gnuflag"
@@ -143,12 +144,12 @@ func (c *autoScaleConfig) Run(context *cmd.Context, client *cmd.Client) error {
 		MaxUnits: c.maxUnits,
 		Enabled:  c.enabled,
 		Increase: Action{
-			Wait:       c.increaseWaitTime,
+			Wait:       int(time.Duration(c.increaseWaitTime) * time.Second),
 			Expression: c.increaseExpression,
 			Units:      c.increaseStep,
 		},
 		Decrease: Action{
-			Wait:       c.decreaseWaitTime,
+			Wait:       int(time.Duration(c.decreaseWaitTime) * time.Second),
 			Expression: c.decreaseExpression,
 			Units:      c.decreaseStep,
 		},
