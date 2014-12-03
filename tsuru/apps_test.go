@@ -530,6 +530,105 @@ Service instances: 1
 	c.Assert(stdout.String(), gocheck.Equals, expected)
 }
 
+func (s *S) TestAppInfoWithPlan(c *gocheck.C) {
+	var stdout, stderr bytes.Buffer
+	result := `{"name":"app1","teamowner":"myteam","cname":[""],"ip":"myapp.tsuru.io","platform":"php","repository":"git@git.com:php.git","state":"dead", "units":[{"Ip":"10.10.10.10","Name":"app1/0","Status":"started"}, {"Ip":"9.9.9.9","Name":"app1/1","Status":"started"}, {"Ip":"","Name":"app1/2","Status":"pending"}],"teams":["tsuruteam","crane"], "owner": "myapp_owner", "deploys": 7, "plan":{"name": "test",  "memory": 536870912, "swap": 268435456, "cpushare": 100, "default": false}}`
+	expected := `Application: app1
+Repository: git@git.com:php.git
+Platform: php
+Teams: tsuruteam, crane
+Address: myapp.tsuru.io
+Owner: myapp_owner
+Team owner: myteam
+Deploys: 7
+Units: 3
++--------+---------+
+| Unit   | State   |
++--------+---------+
+| app1/0 | started |
+| app1/1 | started |
+| app1/2 | pending |
++--------+---------+
+
+App Plan:
++------+--------+--------+-----------+
+| Name | Memory | Swap   | Cpu Share |
++------+--------+--------+-----------+
+| test | 512 MB | 256 MB | 100       |
++------+--------+--------+-----------+
+
+`
+	context := cmd.Context{
+		Stdout: &stdout,
+		Stderr: &stderr,
+	}
+	client := cmd.NewClient(&http.Client{Transport: &testing.Transport{Message: result, Status: http.StatusOK}}, nil, manager)
+	command := appInfo{}
+	command.Flags().Parse(true, []string{"-a/--app", "app1"})
+	err := command.Run(&context, client)
+	c.Assert(err, gocheck.IsNil)
+	c.Assert(stdout.String(), gocheck.Equals, expected)
+}
+
+func (s *S) TestAppInfoWithServicesAndPlan(c *gocheck.C) {
+	var stdout, stderr bytes.Buffer
+	expected := `Application: app1
+Repository: git@git.com:php.git
+Platform: php
+Teams: tsuruteam, crane
+Address: myapp.tsuru.io
+Owner: myapp_owner
+Team owner: myteam
+Deploys: 7
+Units: 3
++--------+---------+
+| Unit   | State   |
++--------+---------+
+| app1/0 | started |
+| app1/1 | started |
+| app1/2 | pending |
++--------+---------+
+
+Service instances: 1
++----------+------------+
+| Service  | Instance   |
++----------+------------+
+| redisapi | myredisapi |
++----------+------------+
+
+App Plan:
++------+--------+--------+-----------+
+| Name | Memory | Swap   | Cpu Share |
++------+--------+--------+-----------+
+| test | 512 MB | 256 MB | 100       |
++------+--------+--------+-----------+
+
+`
+	context := cmd.Context{
+		Stdout: &stdout,
+		Stderr: &stderr,
+	}
+	transport := transportFunc(func(req *http.Request) (resp *http.Response, err error) {
+		var body string
+		if req.URL.Path == "/apps/app1" {
+			body = `{"name":"app1","teamowner":"myteam","ip":"myapp.tsuru.io","platform":"php","repository":"git@git.com:php.git","state":"dead","units":[{"Ip":"10.10.10.10","Name":"app1/0","Status":"started"}, {"Ip":"9.9.9.9","Name":"app1/1","Status":"started"}, {"Ip":"","Name":"app1/2","Status":"pending"}],"Teams":["tsuruteam","crane"], "owner": "myapp_owner", "deploys": 7,"plan":{"name": "test",  "memory": 536870912, "swap": 268435456, "cpushare": 100, "default": false}}`
+		} else if req.URL.Path == "/services/instances" && req.URL.RawQuery == "app=app1" {
+			body = `[{"service":"redisapi","instances":["myredisapi"]},
+					 {"service":"mongodb", "instances":[]}]`
+		}
+		return &http.Response{
+			Body:       ioutil.NopCloser(bytes.NewBufferString(body)),
+			StatusCode: http.StatusOK,
+		}, nil
+	})
+	client := cmd.NewClient(&http.Client{Transport: transport}, nil, manager)
+	command := appInfo{}
+	command.Flags().Parse(true, []string{"--app", "app1"})
+	err := command.Run(&context, client)
+	c.Assert(err, gocheck.IsNil)
+	c.Assert(stdout.String(), gocheck.Equals, expected)
+}
+
 func (s *S) TestAppInfoInfo(c *gocheck.C) {
 	expected := &cmd.Info{
 		Name:  "app-info",

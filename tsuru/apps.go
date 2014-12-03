@@ -14,6 +14,7 @@ import (
 	"strings"
 	"text/template"
 	"time"
+	"strconv"
 
 	"github.com/tsuru/tsuru/cmd"
 	tsuruIo "github.com/tsuru/tsuru/io"
@@ -242,6 +243,7 @@ type app struct {
 	Deploys    uint
 	containers []container
 	services   []serviceData
+	Plan       appPlan
 }
 
 type serviceData struct {
@@ -260,6 +262,14 @@ type container struct {
 	Version          string
 	Image            string
 	LastStatusUpdate time.Time
+}
+
+type appPlan struct {
+	Name     string
+	Memory   int64
+	Swap     int64
+	CpuShare int
+	Default  bool
 }
 
 func (a *app) Addr() string {
@@ -331,6 +341,17 @@ Deploys: {{.Deploys}}
 		}
 		servicesTable.AddRow([]string{service.Service, strings.Join(service.Instances, ", ")})
 	}
+	if len(a.containers) > 0 {
+		units.SortByColumn(2)
+	}
+	planTable := cmd.NewTable()
+	planTable.Headers = []string{"Name", "Memory", "Swap", "Cpu Share"}
+	if a.Plan.Name != "" {
+		planTable.AddRow([]string{a.Plan.Name,
+								  fmt.Sprintf("%d MB", a.Plan.Memory/1024/1024),
+								  fmt.Sprintf("%d MB", a.Plan.Swap/1024/1024),
+								  strconv.Itoa(a.Plan.CpuShare)})	
+	}
 	var buf bytes.Buffer
 	tmpl.Execute(&buf, a)
 	var suffix string
@@ -339,6 +360,9 @@ Deploys: {{.Deploys}}
 	}
 	if servicesTable.Rows() > 0 {
 		suffix = fmt.Sprintf("%s\nService instances: %d\n%s", suffix, servicesTable.Rows(), servicesTable)
+	}
+	if planTable.Rows() > 0 {
+		suffix = fmt.Sprintf("%s\nApp Plan:\n%s", suffix, planTable)
 	}
 	return buf.String() + suffix
 }
