@@ -532,7 +532,7 @@ Service instances: 1
 
 func (s *S) TestAppInfoWithPlan(c *gocheck.C) {
 	var stdout, stderr bytes.Buffer
-	result := `{"name":"app1","teamowner":"myteam","cname":[""],"ip":"myapp.tsuru.io","platform":"php","repository":"git@git.com:php.git","state":"dead", "units":[{"Ip":"10.10.10.10","Name":"app1/0","Status":"started"}, {"Ip":"9.9.9.9","Name":"app1/1","Status":"started"}, {"Ip":"","Name":"app1/2","Status":"pending"}],"teams":["tsuruteam","crane"], "owner": "myapp_owner", "deploys": 7, "plan":{"name": "test",  "memory": 536870912, "swap": 268435456, "cpushare": 100, "default": false}}`
+	result := `{"name":"app1","teamowner":"myteam","cname":[""],"ip":"myapp.tsuru.io","platform":"php","repository":"git@git.com:php.git","state":"dead", "units":[{"Ip":"10.10.10.10","Name":"app1/0","Status":"started"}, {"Ip":"9.9.9.9","Name":"app1/1","Status":"started"}, {"Ip":"","Name":"app1/2","Status":"pending"}],"teams":["tsuruteam","crane"], "owner": "myapp_owner", "deploys": 7, "plan":{"name": "test",  "memory": 536870912, "swap": 268435456, "cpushare": 100, "router": "imemine", "default": false}}`
 	expected := `Application: app1
 Repository: git@git.com:php.git
 Platform: php
@@ -551,11 +551,11 @@ Units: 3
 +--------+---------+
 
 App Plan:
-+------+--------+--------+-----------+
-| Name | Memory | Swap   | Cpu Share |
-+------+--------+--------+-----------+
-| test | 512 MB | 256 MB | 100       |
-+------+--------+--------+-----------+
++------+--------+--------+-----------+---------+---------+
+| Name | Memory | Swap   | Cpu Share | Router  | Default |
++------+--------+--------+-----------+---------+---------+
+| test | 512 MB | 256 MB | 100       | imemine | false   |
++------+--------+--------+-----------+---------+---------+
 
 `
 	context := cmd.Context{
@@ -597,11 +597,11 @@ Service instances: 1
 +----------+------------+
 
 App Plan:
-+------+--------+--------+-----------+
-| Name | Memory | Swap   | Cpu Share |
-+------+--------+--------+-----------+
-| test | 512 MB | 256 MB | 100       |
-+------+--------+--------+-----------+
++------+--------+--------+-----------+---------+---------+
+| Name | Memory | Swap   | Cpu Share | Router  | Default |
++------+--------+--------+-----------+---------+---------+
+| test | 512 MB | 256 MB | 100       | freeeee | false   |
++------+--------+--------+-----------+---------+---------+
 
 `
 	context := cmd.Context{
@@ -611,7 +611,7 @@ App Plan:
 	transport := transportFunc(func(req *http.Request) (resp *http.Response, err error) {
 		var body string
 		if req.URL.Path == "/apps/app1" {
-			body = `{"name":"app1","teamowner":"myteam","ip":"myapp.tsuru.io","platform":"php","repository":"git@git.com:php.git","state":"dead","units":[{"Ip":"10.10.10.10","Name":"app1/0","Status":"started"}, {"Ip":"9.9.9.9","Name":"app1/1","Status":"started"}, {"Ip":"","Name":"app1/2","Status":"pending"}],"Teams":["tsuruteam","crane"], "owner": "myapp_owner", "deploys": 7,"plan":{"name": "test",  "memory": 536870912, "swap": 268435456, "cpushare": 100, "default": false}}`
+			body = `{"name":"app1","teamowner":"myteam","ip":"myapp.tsuru.io","platform":"php","repository":"git@git.com:php.git","state":"dead","units":[{"Ip":"10.10.10.10","Name":"app1/0","Status":"started"}, {"Ip":"9.9.9.9","Name":"app1/1","Status":"started"}, {"Ip":"","Name":"app1/2","Status":"pending"}],"Teams":["tsuruteam","crane"], "owner": "myapp_owner", "deploys": 7,"plan":{"name": "test",  "memory": 536870912, "swap": 268435456, "cpushare": 100, "router": "freeeee", "default": false}}`
 		} else if req.URL.Path == "/services/instances" && req.URL.RawQuery == "app=app1" {
 			body = `[{"service":"redisapi","instances":["myredisapi"]},
 					 {"service":"mongodb", "instances":[]}]`
