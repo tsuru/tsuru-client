@@ -10,10 +10,9 @@ import (
 	"net/http"
 	"strconv"
 
-	"launchpad.net/gnuflag"
-
 	tsuruapp "github.com/tsuru/tsuru/app"
 	"github.com/tsuru/tsuru/cmd"
+	"launchpad.net/gnuflag"
 )
 
 type planList struct {
@@ -40,6 +39,28 @@ func (c *planList) Info() *cmd.Info {
 	}
 }
 
+func renderPlans(plans []tsuruapp.Plan, isHuman bool) string {
+	table := cmd.NewTable()
+	table.Headers = []string{"Name", "Memory", "Swap", "Cpu Share", "Router", "Default"}
+	for _, p := range plans {
+		var memory, swap string
+		if isHuman {
+			memory = fmt.Sprintf("%d MB", p.Memory/1024/1024)
+			swap = fmt.Sprintf("%d MB", p.Swap/1024/1024)
+		} else {
+			memory = fmt.Sprintf("%d", p.Memory)
+			swap = fmt.Sprintf("%d", p.Swap)
+		}
+		table.AddRow([]string{
+			p.Name, memory, swap,
+			strconv.Itoa(p.CpuShare),
+			p.Router,
+			strconv.FormatBool(p.Default),
+		})
+	}
+	return table.String()
+}
+
 func (c *planList) Run(context *cmd.Context, client *cmd.Client) error {
 	url, err := cmd.GetURL("/plans")
 	if err != nil {
@@ -63,19 +84,6 @@ func (c *planList) Run(context *cmd.Context, client *cmd.Client) error {
 		fmt.Fprintln(context.Stdout, "No plans available.")
 		return nil
 	}
-	table := cmd.NewTable()
-	table.Headers = []string{"Name", "Memory", "Swap", "Cpu Share", "Default"}
-	for _, p := range plans {
-		var memory, swap string
-		if c.human {
-			memory = fmt.Sprintf("%d MB", p.Memory/1024/1024)
-			swap = fmt.Sprintf("%d MB", p.Swap/1024/1024)
-		} else {
-			memory = fmt.Sprintf("%d", p.Memory)
-			swap = fmt.Sprintf("%d", p.Swap)
-		}
-		table.AddRow([]string{p.Name, memory, swap, strconv.Itoa(p.CpuShare), strconv.FormatBool(p.Default)})
-	}
-	fmt.Fprintf(context.Stdout, "%s", table.String())
+	fmt.Fprintf(context.Stdout, "%s", renderPlans(plans, c.human))
 	return nil
 }
