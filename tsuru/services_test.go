@@ -13,6 +13,7 @@ import (
 
 	"github.com/tsuru/tsuru/cmd"
 	"github.com/tsuru/tsuru/cmd/testing"
+	tsuruIo "github.com/tsuru/tsuru/io"
 	"launchpad.net/gocheck"
 )
 
@@ -106,8 +107,12 @@ func (s *S) TestServiceBind(c *gocheck.C) {
 		Stdout: &stdout,
 		Stderr: &stderr,
 	}
+	expectedOut := `["DATABASE_HOST","DATABASE_USER","DATABASE_PASSWORD"]`
+	msg := tsuruIo.SimpleJsonMessage{Message: expectedOut}
+	result, err := json.Marshal(msg)
+	c.Assert(err, gocheck.IsNil)
 	trans := &testing.ConditionalTransport{
-		Transport: testing.Transport{Message: `["DATABASE_HOST","DATABASE_USER","DATABASE_PASSWORD"]`, Status: http.StatusOK},
+		Transport: testing.Transport{Message: string(result), Status: http.StatusOK},
 		CondFunc: func(req *http.Request) bool {
 			called = true
 			return req.Method == "PUT" && req.URL.Path == "/services/instances/my-mysql/g1"
@@ -116,20 +121,10 @@ func (s *S) TestServiceBind(c *gocheck.C) {
 	client := cmd.NewClient(&http.Client{Transport: trans}, nil, manager)
 	command := serviceBind{}
 	command.Flags().Parse(true, []string{"-a", "g1"})
-	err := command.Run(&ctx, client)
+	err = command.Run(&ctx, client)
 	c.Assert(err, gocheck.IsNil)
 	c.Assert(called, gocheck.Equals, true)
-	expected := `Instance "my-mysql" is now bound to the app "g1".
-
-The following environment variables are now available for use in your app:
-
-- DATABASE_HOST
-- DATABASE_USER
-- DATABASE_PASSWORD
-
-For more details, please check the documentation for the service, using service-doc command.
-`
-	c.Assert(stdout.String(), gocheck.Equals, expected)
+	c.Assert(stdout.String(), gocheck.Equals, expectedOut)
 }
 
 func (s *S) TestServiceBindWithoutFlag(c *gocheck.C) {
@@ -142,9 +137,13 @@ func (s *S) TestServiceBindWithoutFlag(c *gocheck.C) {
 		Stdout: &stdout,
 		Stderr: &stderr,
 	}
+	expectedOut := `["DATABASE_HOST","DATABASE_USER","DATABASE_PASSWORD"]`
+	msg := tsuruIo.SimpleJsonMessage{Message: expectedOut}
+	result, err := json.Marshal(msg)
+	c.Assert(err, gocheck.IsNil)
 	trans := &testing.ConditionalTransport{
 		Transport: testing.Transport{
-			Message: `["DATABASE_HOST","DATABASE_USER","DATABASE_PASSWORD"]`,
+			Message: string(result),
 			Status:  http.StatusOK,
 		},
 		CondFunc: func(req *http.Request) bool {
@@ -154,20 +153,10 @@ func (s *S) TestServiceBindWithoutFlag(c *gocheck.C) {
 	}
 	client := cmd.NewClient(&http.Client{Transport: trans}, nil, manager)
 	fake := &testing.FakeGuesser{Name: "ge"}
-	err := (&serviceBind{cmd.GuessingCommand{G: fake}}).Run(&ctx, client)
+	err = (&serviceBind{cmd.GuessingCommand{G: fake}}).Run(&ctx, client)
 	c.Assert(err, gocheck.IsNil)
 	c.Assert(called, gocheck.Equals, true)
-	expected := `Instance "my-mysql" is now bound to the app "ge".
-
-The following environment variables are now available for use in your app:
-
-- DATABASE_HOST
-- DATABASE_USER
-- DATABASE_PASSWORD
-
-For more details, please check the documentation for the service, using service-doc command.
-`
-	c.Assert(stdout.String(), gocheck.Equals, expected)
+	c.Assert(stdout.String(), gocheck.Equals, expectedOut)
 }
 
 func (s *S) TestServiceBindWithoutEnvironmentVariables(c *gocheck.C) {
@@ -177,8 +166,12 @@ func (s *S) TestServiceBindWithoutEnvironmentVariables(c *gocheck.C) {
 		Stdout: &stdout,
 		Stderr: &stderr,
 	}
+	expectedOut := `something`
+	msg := tsuruIo.SimpleJsonMessage{Message: expectedOut}
+	result, err := json.Marshal(msg)
+	c.Assert(err, gocheck.IsNil)
 	trans := &testing.ConditionalTransport{
-		Transport: testing.Transport{Message: `null`, Status: http.StatusOK},
+		Transport: testing.Transport{Message: string(result), Status: http.StatusOK},
 		CondFunc: func(req *http.Request) bool {
 			return req.Method == "PUT" && req.URL.Path == "/services/instances/my-mysql/g1"
 		},
@@ -186,10 +179,9 @@ func (s *S) TestServiceBindWithoutEnvironmentVariables(c *gocheck.C) {
 	client := cmd.NewClient(&http.Client{Transport: trans}, nil, manager)
 	command := serviceBind{}
 	command.Flags().Parse(true, []string{"-a", "g1"})
-	err := command.Run(&ctx, client)
+	err = command.Run(&ctx, client)
 	c.Assert(err, gocheck.IsNil)
-	expected := `Instance "my-mysql" is now bound to the app "g1".` + "\n"
-	c.Assert(stdout.String(), gocheck.Equals, expected)
+	c.Assert(stdout.String(), gocheck.Equals, expectedOut)
 }
 
 func (s *S) TestServiceBindWithRequestFailure(c *gocheck.C) {
@@ -233,8 +225,12 @@ func (s *S) TestServiceUnbind(c *gocheck.C) {
 		Stdout: &stdout,
 		Stderr: &stderr,
 	}
+	expectedOut := `something`
+	msg := tsuruIo.SimpleJsonMessage{Message: expectedOut}
+	result, err := json.Marshal(msg)
+	c.Assert(err, gocheck.IsNil)
 	trans := &testing.ConditionalTransport{
-		Transport: testing.Transport{Message: "", Status: http.StatusOK},
+		Transport: testing.Transport{Message: string(result), Status: http.StatusOK},
 		CondFunc: func(req *http.Request) bool {
 			called = true
 			return req.Method == "DELETE" && req.URL.Path == "/services/instances/hand/pocket"
@@ -243,10 +239,10 @@ func (s *S) TestServiceUnbind(c *gocheck.C) {
 	client := cmd.NewClient(&http.Client{Transport: trans}, nil, manager)
 	command := serviceUnbind{}
 	command.Flags().Parse(true, []string{"-a", "pocket"})
-	err := command.Run(&ctx, client)
+	err = command.Run(&ctx, client)
 	c.Assert(err, gocheck.IsNil)
 	c.Assert(called, gocheck.Equals, true)
-	c.Assert(stdout.String(), gocheck.Equals, "Instance \"hand\" is not bound to the app \"pocket\" anymore.\n")
+	c.Assert(stdout.String(), gocheck.Equals, expectedOut)
 }
 
 func (s *S) TestServiceUnbindWithoutFlag(c *gocheck.C) {
@@ -257,8 +253,12 @@ func (s *S) TestServiceUnbindWithoutFlag(c *gocheck.C) {
 		Stdout: &stdout,
 		Stderr: &stderr,
 	}
+	expectedOut := `something`
+	msg := tsuruIo.SimpleJsonMessage{Message: expectedOut}
+	result, err := json.Marshal(msg)
+	c.Assert(err, gocheck.IsNil)
 	trans := &testing.ConditionalTransport{
-		Transport: testing.Transport{Message: "", Status: http.StatusOK},
+		Transport: testing.Transport{Message: string(result), Status: http.StatusOK},
 		CondFunc: func(req *http.Request) bool {
 			called = true
 			return req.Method == "DELETE" && req.URL.Path == "/services/instances/hand/sleeve"
@@ -266,10 +266,10 @@ func (s *S) TestServiceUnbindWithoutFlag(c *gocheck.C) {
 	}
 	client := cmd.NewClient(&http.Client{Transport: trans}, nil, manager)
 	fake := &testing.FakeGuesser{Name: "sleeve"}
-	err := (&serviceUnbind{cmd.GuessingCommand{G: fake}}).Run(&ctx, client)
+	err = (&serviceUnbind{cmd.GuessingCommand{G: fake}}).Run(&ctx, client)
 	c.Assert(err, gocheck.IsNil)
 	c.Assert(called, gocheck.Equals, true)
-	c.Assert(stdout.String(), gocheck.Equals, "Instance \"hand\" is not bound to the app \"sleeve\" anymore.\n")
+	c.Assert(stdout.String(), gocheck.Equals, expectedOut)
 }
 
 func (s *S) TestServiceUnbindWithRequestFailure(c *gocheck.C) {

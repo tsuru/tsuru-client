@@ -16,6 +16,7 @@ import (
 	"strings"
 
 	"github.com/tsuru/tsuru/cmd"
+	tsuruIo "github.com/tsuru/tsuru/io"
 	"launchpad.net/gnuflag"
 )
 
@@ -146,24 +147,15 @@ func (sb *serviceBind) Run(ctx *cmd.Context, client *cmd.Client) error {
 		return err
 	}
 	defer resp.Body.Close()
-	var variables []string
-	dec := json.NewDecoder(resp.Body)
-	msg := fmt.Sprintf("Instance %q is now bound to the app %q.\n", instanceName, appName)
-	if err = dec.Decode(&variables); err == nil && len(variables) > 0 {
-		msg += fmt.Sprintf(`
-The following environment variables are now available for use in your app:
-
-- %s
-
-For more details, please check the documentation for the service, using service-doc command.
-`, strings.Join(variables, "\n- "))
+	w := tsuruIo.NewStreamWriter(ctx.Stdout, nil)
+	for n := int64(1); n > 0 && err == nil; n, err = io.Copy(w, resp.Body) {
 	}
-	n, err := fmt.Fprint(ctx.Stdout, msg)
 	if err != nil {
 		return err
 	}
-	if n != len(msg) {
-		return io.ErrShortWrite
+	unparsed := w.Remaining()
+	if len(unparsed) > 0 {
+		return fmt.Errorf("unparsed message error: %s", string(unparsed))
 	}
 	return nil
 }
@@ -197,17 +189,20 @@ func (su *serviceUnbind) Run(ctx *cmd.Context, client *cmd.Client) error {
 	if err != nil {
 		return err
 	}
-	_, err = client.Do(request)
+	resp, err := client.Do(request)
 	if err != nil {
 		return err
 	}
-	msg := fmt.Sprintf("Instance %q is not bound to the app %q anymore.\n", instanceName, appName)
-	n, err := fmt.Fprint(ctx.Stdout, msg)
+	defer resp.Body.Close()
+	w := tsuruIo.NewStreamWriter(ctx.Stdout, nil)
+	for n := int64(1); n > 0 && err == nil; n, err = io.Copy(w, resp.Body) {
+	}
 	if err != nil {
 		return err
 	}
-	if n != len(msg) {
-		return errors.New("Failed to write to standard output.\n")
+	unparsed := w.Remaining()
+	if len(unparsed) > 0 {
+		return fmt.Errorf("unparsed message error: %s", string(unparsed))
 	}
 	return nil
 }
