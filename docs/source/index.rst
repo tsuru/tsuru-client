@@ -386,3 +386,28 @@ command:
 For more details on the ``--app`` flag, see `"Guessing app names"
 <http://godoc.org/github.com/tsuru/tsuru-client/tsuru#hdr-Guessing_app_names>`_
 section of tsuru command documentation.
+
+Guessing app names
+==================
+
+In some app-related commands (app-remove, app-info, app-grant, app-revoke,
+log, run, restart, env-get, env-set, env-unset, bind and unbind), there is an
+optional parameter --app, used to specify the name of the app.
+
+The --app parameter is optional, if omitted, tsuru will try to "guess" the
+name of the app based in the configuration of the git repository. It will try
+to find a remove labeled "tsuru", and parse its url.
+
+For example, if the file ".git/config" in you git repository contains the
+following remote declaration:
+
+.. highlight:: bash
+
+::
+
+    [remote "tsuru"]
+    url = git@tsuruhost.com:gopher.git
+    fetch = +refs/heads/*:refs/remotes/tsuru/*
+
+When you run "tsuru app-info" without specifying the app, tsuru would display
+information for the app "gopher".
