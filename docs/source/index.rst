@@ -315,6 +315,17 @@ more details, see `"Guessing app names"
 <http://godoc.org/github.com/tsuru/tsuru-client/tsuru#hdr-Guessing_app_names>`_
 section of tsuru command documentation.
 
+Swap the routing between two apps
+---------------------------------
+
+.. highlight:: bash
+
+::
+
+    $ tsuru app-swap <app1> <app2>
+
+app-swap will swap the routing between two apps enabling blue/green deploy, zero downtime and make the rollbacks easier.
+
 Public Keys
 ===========
 
