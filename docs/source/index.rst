@@ -354,42 +354,94 @@ a single command, you should use the command `run
 Services
 ========
 
-You can manage your services using the tsuru client.
-
-To list all services avaliable you can use, you can use the `service-list
-<http://godoc.org/github.com/tsuru/tsuru-client/tsuru#hdr-List_available_services_and_instances>`_
-command:
+List available services and instances
+-------------------------------------
 
 .. highlight:: bash
 
 ::
 
     $ tsuru service-list
+    +----------+-----------+
+    | Services | Instances |
+    +----------+-----------+
+    | mysql    |           |
+    +----------+-----------+
 
-To add a new instance of a service, use the `service-add
-<http://godoc.org/github.com/tsuru/tsuru-client/tsuru#hdr-Create_a_new_service_instance>`_
-command:
+service-list will retrieve and display a list of services that the user has access to. If the user has any instance of services, it will be displayed by this command too.
 
-.. highlight:: bash
-
-::
-
-    $ tsuru service-add <service_name> <service_instance_name>
-
-To remove an instance of a service, use the `service-remove
-<http://godoc.org/github.com/tsuru/tsuru-client/tsuru#hdr-Remove_a_service_instance>`_
-command:
+Create a new service instance
+-----------------------------
 
 .. highlight:: bash
 
 ::
 
-    $ tsuru service-remove <service_instance_name>
+    $ tsuru service-add <servicename> <serviceinstancename> [plan] [-t/--owner-team <team>]
 
-To bind a service instance with an app you can use the `service-bind
-<http://godoc.org/github.com/tsuru/tsuru-client/tsuru#hdr-Bind_an_application_to_a_service_instance>`_
-command.  If this service has any variable to be used by your app, tsuru will
-inject this variables in the app's environment.
+service-add creates a new service instance.
+
+Remove a service instance
+-------------------------
+
+.. highlight:: bash
+
+::
+
+    $ tsuru service-remove <serviceinstancename> [--assume-yes]
+
+service-remove will destroy a service instance. It can't remove a service instance that is bound to an app, so before remove a service instance, make sure there is no apps bound to it (see "service-info" command).
+
+Display information about a service
+-----------------------------------
+
+    $ tsuru service-info <service-name>
+
+service-info will display a list of all instances of a given service (that the user has access to), and apps bound to these instances.
+
+.. highlight:: bash
+
+    $ tsuru service-info mysql
+    Info for "mysql"
+    +-----------+-------+
+    | Instances | Apps  |
+    +-----------+-------+
+    | newmysql  |       |
+    +-----------+-------+
+    $ tsuru bind newmysql myapp
+    ...
+    $ tsuru service-info mysql
+    Info for "mysql"
+    +-----------+-------+
+    | Instances | Apps  |
+    +-----------+-------+
+    | newmysql  | myapp |
+    +-----------+-------+
+
+Check if a service instance is up
+---------------------------------
+
+.. highlight:: bash
+
+::
+
+    $ tsuru service-status <instance-name>
+
+service-status will display the status of the given service instance. For now, it checks only if the instance is "up" (receiving connections) or "down" (refusing connections).
+
+Display the documentation of a service
+--------------------------------------
+
+.. highlight:: bash
+
+::
+
+    $ tsuru service-doc <service-name>
+
+service-doc will display the documentation of a service.
+
+Bind an application to a service instance
+-----------------------------------------
 
 .. highlight:: bash
 
@@ -397,9 +449,12 @@ inject this variables in the app's environment.
 
     $ tsuru service-bind <service_instance_name> [--app appname]
 
-And to unbind, use `service-unbind
-<http://godoc.org/github.com/tsuru/tsuru-client/tsuru#hdr-Unbind_an_application_from_a_service_instance>`_
-command:
+service-bind will bind an application to a service instance (see service-add for more details on how to create a service instance).
+
+When binding an application to a service instance, tsuru will add new environment variables to the app. All environment variables exported by bind will be private (not accessible via env-get).
+
+Unbind an application from a service instance
+---------------------------------------------
 
 .. highlight:: bash
 
@@ -407,9 +462,7 @@ command:
 
     $ tsuru service-unbind <service_instance_name> [--app appname]
 
-For more details on the ``--app`` flag, see `"Guessing app names"
-<http://godoc.org/github.com/tsuru/tsuru-client/tsuru#hdr-Guessing_app_names>`_
-section of tsuru command documentation.
+service-unbind will unbind an application from a service instance. After unbinding, the instance will not be available anymore. For example, when unbinding an application from a MySQL service, the app would lose access to the database.
 
 Guessing app names
 ==================
