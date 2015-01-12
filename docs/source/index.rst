@@ -118,18 +118,34 @@ tsuru's clients:
 
     $ go get github.com/tsuru/tsuru-client/tsuru
 
-After installing, you must set the target with the tsuru server URL,
-something like:
+Managing remote tsuru server endpoints
+======================================
 
-Setting a target
-================
+The target is the **tsuru** server to which all operations will be directed to.
 
 .. highlight:: bash
 
 ::
 
-    $ tsuru target-add default https://cloud.tsuru.io
-    $ tsuru target-set default
+    $ tsuru target-add <label> <address> [--set-current|-s]
+    $ tsuru target-list
+    $ tsuru target-set <label>
+    $ tsuru target-remove <label>
+
+With this set of commands you are be able to add a new labeled target,
+set a target for usage, list the added targets and remove a target, respectively.
+
+Check current version
+=====================
+
+To see the current version of **tsuru** you should use the `version` command:
+
+.. highlight:: bash
+
+::
+
+    $ tsuru version
+    tsuru version 0.14.0.
 
 Authentication
 ==============
