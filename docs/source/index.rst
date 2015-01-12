@@ -331,6 +331,19 @@ more details, see `"Guessing app names"
 <http://godoc.org/github.com/tsuru/tsuru-client/tsuru#hdr-Guessing_app_names>`_
 section of tsuru command documentation.
 
+See app's logs
+--------------
+
+.. highlight:: bash
+
+::
+
+    $ tsuru app-log [-a/--app appname] [-l/--lines numberOfLines] [-s/--source source] [-f/--follow]
+
+Log will show log entries for an app. These logs are not related to the code of the app itself, but to actions of the app in tsuru server (deployments, restarts, etc.).
+
+The --app flag is optional, see "Guessing app names" section for more details. The --lines flag is optional and by default its value is 10. The --source flag is optional.
+
 Stop the app's application
 --------------------------
 
