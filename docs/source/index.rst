@@ -331,6 +331,39 @@ more details, see `"Guessing app names"
 <http://godoc.org/github.com/tsuru/tsuru-client/tsuru#hdr-Guessing_app_names>`_
 section of tsuru command documentation.
 
+Stop the app's application
+--------------------------
+
+.. highlight:: bash
+
+::
+
+    $ tsuru app-stop [-a/--app appname]
+
+app-stop will stop the application.
+
+Start the app's application
+---------------------------
+
+.. highlight:: bash
+
+::
+
+    $ tsuru app-start [-a/--app appname]
+
+app-start will start the application.
+
+Restart the app's application
+-----------------------------
+
+.. highlight:: bash
+
+::
+
+    $ tsuru app-restart [-a/--app appname]
+
+app-restart will restart the application (as defined in Procfile) of the application.
+
 Add new units to the app
 ------------------------
 
