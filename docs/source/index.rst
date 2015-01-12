@@ -572,3 +572,61 @@ env-unset
     $ tsuru env-unset <ENVIRONMENT_VARIABLE1> [ENVIRONMENT_VARIABLE2] ... [ENVIRONMENT_VARIABLEN] [-a/--app appname]
 
 This command unsets environment variables for an app.
+
+Plugin management
+=================
+
+Installing a plugin
+-------------------
+
+Let's install a plugin. There are two ways to install.  The first way is to
+move your plugin to ``$HOME/.tsuru/plugins``.  The other way is to use ``tsuru
+plugin-install`` command.
+
+
+.. highlight:: bash
+
+::
+
+    $ tsuru plugin-install <plugin-name> <plugin-url>
+
+``tsuru plugin-install`` will download the plugin file to
+``$HOME/.tsuru/plugins``.  The syntax for this command is:
+
+Listing installed plugins
+-------------------------
+
+.. highlight:: bash
+
+::
+
+    $ tsuru plugin-list
+    plugin1
+    plugin2
+
+``plugin-list`` lists all installed plugins.
+
+Executing a plugin
+------------------
+
+To execute a plugin just follow this pattern ``tsuru <plugin-name> <args>``:
+
+.. highlight:: bash
+
+::
+
+    $ tsuru <plugin-name>
+    <plugin-output>
+
+Removing a plugin
+-----------------
+
+To remove a plugin just use the ``tsuru plugin-remove`` command passing the
+name of the plugin as argument:
+
+.. highlight:: bash
+
+::
+
+    $ tsuru plugin-remove <plugin-name>
+    Plugin "<plugin-name>" successfully removed!
