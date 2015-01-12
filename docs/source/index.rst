@@ -37,13 +37,13 @@ use a custom tap to install ``tsuru``. First you need to add the tap:
 
     $ brew tap tsuru/homebrew-tsuru
 
-    Now you can install tsuru:
+Now you can install tsuru:
 
-    .. highlight:: bash
+.. highlight:: bash
 
- ::
+::
 
-     $ brew install tsuru
+    $ brew install tsuru
 
 Whenever a new version of any of tsuru's clients is out, you can just run:
 
@@ -102,8 +102,8 @@ Build from source (Linux and Mac OS X)
 
 .. note::
 
-If you're feeling adventurous, you can try it on other systems, like
-FreeBSD, OpenBSD or even Windows. Please let us know about your progress!
+    If you're feeling adventurous, you can try it on other systems, like
+    FreeBSD, OpenBSD or even Windows. Please let us know about your progress!
 
 `tsuru client source <https://github.com/tsuru/tsuru-client>`_ is written in `Go
 <http://golang.org>`_, so before installing tsuru from source, please make sure
@@ -116,7 +116,7 @@ tsuru's clients:
 
 ::
 
-$ go get github.com/tsuru/tsuru-client/tsuru
+    $ go get github.com/tsuru/tsuru-client/tsuru
 
 After installing, you must set the target with the tsuru server URL,
 something like:
