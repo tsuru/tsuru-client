@@ -738,3 +738,28 @@ name of the plugin as argument:
 
     $ tsuru plugin-remove <plugin-name>
     Plugin "<plugin-name>" successfully removed!
+
+CNAME management
+================
+
+Add a CNAME to the app
+----------------------
+
+.. highlight:: bash
+
+::
+
+    $ tsuru cname-add <cname> [-a/--app appname]
+
+cname-add will add a CNAME to the app. It will not manage any DNS register, it's up to the user to create the DNS register. Once the app contains a custom CNAME, it will be displayed by "app-list" and "app-info".
+
+Remove a CNAME from the app
+---------------------------
+
+.. highlight:: bash
+
+::
+
+    $ tsuru cname-remove [-a/--app appname]
+
+cname-remove undoes the change that cname-add does. After unsetting the CNAME from the app, "app-list" and "app-info" will display the internal, unfriendly address that tsuru uses.
