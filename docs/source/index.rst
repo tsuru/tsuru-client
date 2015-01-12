@@ -331,6 +331,28 @@ more details, see `"Guessing app names"
 <http://godoc.org/github.com/tsuru/tsuru-client/tsuru#hdr-Guessing_app_names>`_
 section of tsuru command documentation.
 
+Add new units to the app
+------------------------
+
+.. highlight:: bash
+
+::
+
+    $ tsuru unit-add <# of units> [-a/--app appname]
+
+unit-add will add new units (instances) to an app. You need to have access to the app to be able to add new units to it.
+
+Remove units from the app
+-------------------------
+
+.. highlight:: bash
+
+::
+
+    $ tsuru unit-remove <# of units> [-a/--app appname]
+
+unit-remove will remove units (instances) from an app. You need to have access to the app to be able to remove units from it.
+
 Swap the routing between two apps
 ---------------------------------
 
