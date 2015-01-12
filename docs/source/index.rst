@@ -410,6 +410,30 @@ Swap the routing between two apps
 
 app-swap will swap the routing between two apps enabling blue/green deploy, zero downtime and make the rollbacks easier.
 
+Allow a team to access an app
+-----------------------------
+
+.. highlight:: bash
+
+::
+
+    $ tsuru app-grant <team-name> [-a/--app appname]
+
+app-grant will allow a team to access an app. You need to be a member of a team that has access to the app to allow another team to access it.
+
+Revoke from a team access to an app
+-----------------------------------
+
+.. highlight:: bash
+
+::
+
+    $ tsuru app-revoke <team-name> [-a/--app appname]
+
+app-revoke will revoke the permission to access an app from a team. You need to have access to the app to revoke access from a team.
+
+An app cannot be orphaned, so it will always have at least one authorized team.
+
 Public Keys
 ===========
 
