@@ -415,3 +415,44 @@ To view the current key just use the command ``token-show``.
 
     $ tsuru token-show
 
+Environment variables
+=====================
+
+All configurations in tsuru are handled by the use of environment variables.
+If you need to connect with a third party service, e.g. twitter’s API,
+you are probably going to need some extra configurations, like client_id.
+In tsuru, you can export those as environment variables,
+visible only by your application’s processes.
+
+env-set
+-------
+
+.. highlight:: bash
+
+::
+
+    $ tsuru env-set <NAME=value> [NAME=value] ... [-a/--app appname]
+
+This command sets environment variables for an app.
+
+env-get
+-------
+
+.. highlight:: bash
+
+::
+
+    $ tsuru env-get [-a/--app appname] [ENVIRONMENT_VARIABLE1] [ENVIRONMENT_VARIABLE2] ...
+
+This command retrieves environment variables for an app.
+
+env-unset
+---------
+
+.. highlight:: bash
+
+::
+
+    $ tsuru env-unset <ENVIRONMENT_VARIABLE1> [ENVIRONMENT_VARIABLE2] ... [ENVIRONMENT_VARIABLEN] [-a/--app appname]
+
+This command unsets environment variables for an app.
