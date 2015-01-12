@@ -215,6 +215,22 @@ Display the list of available platforms
 
 platform-list lists the available platforms. All platforms displayed in this list may be used to create new apps (see app-create).
 
+Display the list of available plans
+-----------------------------------
+
+.. highlight:: bash
+
+::
+
+    $ tsuru  plan-list --human
+    +-------------+---------+---------+-----------+---------+
+    | Name        | Memory  | Swap    | Cpu Share | Default |
+    +-------------+---------+---------+-----------+---------+
+    | default     | 512 MB  | 1024 MB | 1024      | true    |
+    +-------------+---------+---------+-----------+---------+
+
+plan-list lists available plans that can be used when creating an app.
+
 Creating an app
 ---------------
 
