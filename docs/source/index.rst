@@ -147,23 +147,6 @@ apps and pushing code to them. Use `create-user
     $ tsuru user-create youremail@gmail.com
     $ tsuru login youremail@gmail.com
 
-tsuru users have a API key that enables authentication that don't required interaction.
-The key never expires, to regenerate the API key you should use the command ``token-regenerate``.
-
-.. highlight:: bash
-
-::
-
-    $ tsuru token-regenerate
-
-To view the current key just use the command ``token-show``.
-
-.. highlight:: bash
-
-::
-
-    $ tsuru token-show
-
 Apps
 ====
 
@@ -411,3 +394,24 @@ following remote declaration:
 
 When you run "tsuru app-info" without specifying the app, tsuru would display
 information for the app "gopher".
+
+Token
+=====
+
+tsuru users have a API key that enables authentication that don't required interaction.
+The key never expires, to regenerate the API key you should use the command ``token-regenerate``.
+
+.. highlight:: bash
+
+::
+
+    $ tsuru token-regenerate
+
+To view the current key just use the command ``token-show``.
+
+.. highlight:: bash
+
+::
+
+    $ tsuru token-show
+
