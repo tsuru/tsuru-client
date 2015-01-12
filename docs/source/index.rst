@@ -204,6 +204,17 @@ You need to be member of a team to create an app. To create a new team, use
 
     $ tsuru team-create teamname
 
+Display the list of available platforms
+---------------------------------------
+
+.. highlight:: bash
+
+::
+
+    $ tsuru platform-list
+
+platform-list lists the available platforms. All platforms displayed in this list may be used to create new apps (see app-create).
+
 Creating an app
 ---------------
 
