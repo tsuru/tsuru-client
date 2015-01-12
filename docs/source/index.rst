@@ -188,6 +188,73 @@ logout
 
 Logout will delete the token file and terminate the session within tsuru server.
 
+Team management
+===============
+
+Create a new team
+-----------------
+
+.. highlight:: bash
+
+::
+
+    $ tsuru team-create <team-name>
+
+team-create will create a team for the user. tsuru requires a user to be a member of at least one team in order to create an app or a service instance.
+
+.. note::
+
+    When you create a team, you're automatically member of this team.
+
+Remove a team from tsuru
+------------------------
+
+.. highlight:: bash
+
+::
+
+    $ tsuru team-remove <team-name>
+
+team-remove will remove a team from tsuru server. You're able to remove teams that you're member of. A team that has access to any app cannot be removed. Before removing a team, make sure it does not have access to any app (see "app-grant" and "app-revoke" commands for details).
+
+List teams that the user is member of
+-------------------------------------
+
+.. highlight:: bash
+
+::
+
+    $ tsuru team-list
+
+team-list will list all teams that you are member of.
+
+Add a user to a team
+--------------------
+
+.. highlight:: bash
+
+::
+
+    $ tsuru team-user-add <team-name> <user@email>
+
+team-user-add adds a user to a team. You need to be a member of the team to be able to add another user to it.
+
+Remove a user from a team
+-------------------------
+
+.. highlight:: bash
+
+::
+
+
+    $ tsuru team-user-remove <team-name> <user@email>
+
+team-user-remove removes a user from a team. You need to be a member of the team to be able to remove a user from it.
+
+.. note::
+
+    A team can never have 0 users. If you are the last member of a team, you can't remove yourself from it.
+
 Apps
 ====
 
