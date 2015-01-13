@@ -534,35 +534,40 @@ Run will run an arbitrary command in the app machine. Base directory for all com
 Public Keys
 ===========
 
-You can try to push now, but you'll get a permission error, because you haven't
-pushed your key yet.
+Add SSH public key to tsuru's git server
+----------------------------------------
 
 .. highlight:: bash
 
 ::
 
-    $ tsuru key-add
+    $ tsuru key-add <key-name> <key-file>
 
-This will search for a `id_rsa.pub` file in ~/.ssh/, if you don't have a
-generated key yet, you should generate one before running this command.
+key-add sends your public key to tsuru's git server.
+The key will be added to the current logged in user.
 
-If you have a public key in other format (for example, DSA), you can also give
-the public key file to `key-add
-<http://godoc.org/github.com/tsuru/tsuru-client/tsuru#hdr-Add_SSH_public_key_to_tsuru_s_git_server>`_:
-
-.. highlight:: bash
-
-::
-
-    $ tsuru key-add $HOME/.ssh/id_dsa.pub
-
-After your key is added, you can push your application to your cloud:
+Remove SSH public key from tsuru's git server
+---------------------------------------------
 
 .. highlight:: bash
 
 ::
 
-    $ git push tsuru master
+    $ tsuru key-remove <key-name>
+
+key-remove removes your public key from tsuru's git server.
+The key will be removed from the current logged in user.
+
+List SSH public keys
+--------------------
+
+.. highlight:: bash
+
+::
+
+    $ tsuru key-list
+
+key-list lists the public keys registered in the current user account.
 
 Services
 ========
