@@ -501,6 +501,36 @@ app-revoke will revoke the permission to access an app from a team. You need to 
 
 An app cannot be orphaned, so it will always have at least one authorized team.
 
+Run an arbitrary command in the app machine
+-------------------------------------------
+
+.. highlight:: bash
+
+::
+
+    $ tsuru app-run <command> [commandarg1] [commandarg2] ... [commandargn] [-a/--app appname]
+
+Run will run an arbitrary command in the app machine. Base directory for all commands is the root of the app. For example, in a Django app, "tsuru run" may show the following output:
+
+.. highlight:: bash
+
+::
+
+    $ tsuru run polls ls
+    app.yaml
+    brogui
+    deploy
+    foo
+    __init__.py
+    __init__.pyc
+    main.go
+    manage.py
+    settings.py
+    settings.pyc
+    templates
+    urls.py
+    urls.pyc
+
 Public Keys
 ===========
 
@@ -533,20 +563,6 @@ After your key is added, you can push your application to your cloud:
 ::
 
     $ git push tsuru master
-
-Running commands
-================
-
-After that, you can check your app's url in the browser and see your app there.
-You'll probably need to run migrations or other deploy related commands. To run
-a single command, you should use the command `run
-<http://godoc.org/github.com/tsuru/tsuru-client/tsuru#hdr-Run_an_arbitrary_command_in_the_app_machine>`_:
-
-.. highlight:: bash
-
-::
-
-    $ tsuru run "python manage.py syncdb && python manage.py migrate"
 
 Services
 ========
