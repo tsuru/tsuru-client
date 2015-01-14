@@ -25,7 +25,7 @@
 		},
 		{
 			"ImportPath": "github.com/tsuru/config",
-			"Rev": "96579b79a0a66b9b6c95a8ff7c344aa512b41288"
+			"Rev": "a2b4aec819a60c646dad55cba9c76ddfed4b6ed1"
 		},
 		{
 			"ImportPath": "github.com/tsuru/gandalf/testing",
