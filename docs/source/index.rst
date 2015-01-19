@@ -198,6 +198,39 @@ logout
 
 Logout will delete the token file and terminate the session within tsuru server.
 
+Change user's password
+----------------------
+
+.. highlight:: bash
+
+::
+
+    $ tsuru change-password
+
+`change-password` will change the password of the logged in user.
+It will ask for the current password, the new and the confirmation.
+
+Redefine user's password
+------------------------
+
+.. highlight:: bash
+
+::
+
+    $ tsuru reset-password <email> [--token|-k <token>]
+
+`reset-password` will redefine the user password.
+This process is composed by two steps:
+
+- Token generation
+- Password generation
+
+In order to generate the token, users should run this command without the --token flag.
+The token will be mailed to the user.
+
+With the token in hand, the user can finally reset the password using the --token flag.
+The new password will also be mailed to the user.
+
 Team management
 ===============
 
@@ -627,7 +660,10 @@ Display information about a service
 
 service-info will display a list of all instances of a given service (that the user has access to), and apps bound to these instances.
 
+
 .. highlight:: bash
+
+::
 
     $ tsuru service-info mysql
     Info for "mysql"
