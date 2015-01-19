@@ -150,17 +150,27 @@ To see the current version of **tsuru** you should use the `version` command:
 Authentication
 ==============
 
-After that, all you need is to create a user and authenticate to start creating
-apps and pushing code to them. Use `create-user
-<http://godoc.org/github.com/tsuru/tsuru-client/tsuru#hdr-Create_a_user>`_.
-
+Create a user
+-------------
 
 .. highlight:: bash
 
 ::
 
-    $ tsuru user-create youremail@gmail.com
-    $ tsuru login youremail@gmail.com
+    $ tsuru user-create <email>
+
+`user-create` creates a user within tsuru remote server. It will ask for the password before issue the request.
+
+Remove your user from tsuru server
+----------------------------------
+
+.. highlight:: bash
+
+::
+
+    $ tsuru user-remove
+
+`user-remove` will remove currently authenticated user from remote tsuru server. since there cannot exist any orphan teams, tsuru will refuse to remove a user that is the last member of some team. if this is your case, make sure you remove the team using `team-remove` before removing the user.
 
 login
 -----
