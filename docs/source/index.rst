@@ -298,21 +298,17 @@ team-user-remove removes a user from a team. You need to be a member of the team
 
     A team can never have 0 users. If you are the last member of a team, you can't remove yourself from it.
 
-Apps
-====
-
-Associating your user to a team
--------------------------------
-
-You need to be member of a team to create an app. To create a new team, use
-`create-team
-<http://godoc.org/github.com/tsuru/tsuru-client/tsuru#hdr-Create_a_new_team_for_the_user>`_:
+List members of a team
+----------------------
 
 .. highlight:: bash
 
 ::
 
-    $ tsuru team-create teamname
+    $ tsuru team-user-list <teamname>
+
+Apps
+====
 
 Display the list of available platforms
 ---------------------------------------
