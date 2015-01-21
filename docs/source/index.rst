@@ -485,6 +485,15 @@ Swap the routing between two apps
 
 app-swap will swap the routing between two apps enabling blue/green deploy, zero downtime and make the rollbacks easier.
 
+Change the app team owner
+-------------------------
+
+.. highlight:: bash
+
+::
+
+    $ tsuru app-set-team-owner <new-team-owner> [-a/--app appname]
+
 Allow a team to access an app
 -----------------------------
 
