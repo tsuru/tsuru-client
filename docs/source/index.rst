@@ -337,18 +337,18 @@ Display the list of available plans
 
 plan-list lists available plans that can be used when creating an app.
 
-Creating an app
----------------
-
-To create an app, use `app-create
-<http://godoc.org/github.com/tsuru/tsuru-client/tsuru#hdr-Create_an_app>`_:
+Create an app
+-------------
 
 .. highlight:: bash
 
 ::
 
-    $ tsuru app-create myblog <platform> [--plan/-p plan_name] [--team/-t team_owner]
+    $ tsuru app-create <appname> <platform> [--plan/-p plan_name] [--team/-t team_owner]
 
+`app-create` will create a new app using the given name and platform. For tsuru, a platform is provisioner dependent. To check the available platforms, use the command "platform-list" and to add a platform use the command "platform-add".
+
+In order to create an app, you need to be member of at least one team. All teams that you are member (see "tsuru team-list") will be able to access the app.
 
 The ``platform`` parameter is the name of the platform to be used when creating
 the app. This will definer how tsuru understands and executes your app. The list
@@ -366,76 +366,45 @@ The ``team`` parameter describes which team is responsible for the created app,
 this is only needed if the current user belongs to more than one team, in which
 case this parameter will be mandatory.
 
-After running successfully the command will return your app's remote url, you
-should add it to your git repository:
+Remove an app
+-------------
 
 .. highlight:: bash
 
 ::
 
-    $ git remote add tsuru git@tsuru.myhost.com:myblog.git
+    $ tsuru app-remove [-a/--app appname]
 
+`app-remove` removes an app. If the app is bound to any service instance, all binds will be removed before the app gets deleted (see "tsuru unbind"). You need to be a member of a team that has access to the app to be able to remove it (you are able to remove any app that you see in "tsuru app-list").
 
 Listing your apps
 -----------------
-
-When your app is ready, you can push to it. To check whether it is ready or
-not, you can use `app-list
-<http://godoc.org/github.com/tsuru/tsuru-client/tsuru#hdr-List_apps_that_you_have_access_to>`_:
 
 .. highlight:: bash
 
 ::
 
     $ tsuru app-list
-
-This will return something like:
-
-.. highlight:: bash
-
-::
-
     +-------------+-------------------------+-------------------------------------------+
     | Application | Units State Summary     | Ip                                        |
     +-------------+-------------------------+-------------------------------------------+
     | myblog      | 1 of 1 units in-service | myblog-838381.us-east-1-elb.amazonaws.com |
     +-------------+-------------------------+-------------------------------------------+
 
-Showing app info
-----------------
+`app-list` will list all apps that you have access to.
+App access is controlled by teams.
+If your team has access to an app, then you have access to it.
 
-You can also use the `app-info
-<http://godoc.org/github.com/tsuru/tsuru-client/tsuru#hdr-Display_information_about_an_app>`_
-command to view information of an app. Including the status of the app:
-
-.. highlight:: bash
-
-::
-
-    $ tsuru app-info
-
-This will return something like:
+Display information about an app
+--------------------------------
 
 .. highlight:: bash
 
 ::
 
-    Application: myblog
-    Platform: gunicorn
-    Repository: git@githost.com:myblog.git
-    Teams: team1, team2
-    Units:
-    +----------+---------+
-    | Unit     | State   |
-    +----------+---------+
-    | myblog/0 | started |
-    | myblog/1 | started |
-    +----------+---------+
+    $ tsuru app-info [-a/--app name]
 
-tsuru uses information from git configuration to guess the name of the app, for
-more details, see `"Guessing app names"
-<http://godoc.org/github.com/tsuru/tsuru-client/tsuru#hdr-Guessing_app_names>`_
-section of tsuru command documentation.
+`app-info` will display some informations about an specific app (its state, platform, git repository, etc.). You need to be a member of a team that access to the app to be able to see informations about it.
 
 See app's logs
 --------------
