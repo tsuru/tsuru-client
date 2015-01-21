@@ -539,6 +539,24 @@ Run will run an arbitrary command in the app machine. Base directory for all com
     urls.py
     urls.pyc
 
+Deploy
+------
+
+.. highlight:: bash
+
+::
+
+    $ tsuru app-deploy [-a/--app <appname>] <file-or-dir-1> [file-or-dir-2] ... [file-or-dir-n]
+
+`app-deploy` deploys set of files and/or directories to tsuru server. Some examples of calls are:
+
+.. highlight:: bash
+
+::
+
+    $ tsuru app-deploy .
+    $ tsuru app-deploy myfile.jar Procfile
+
 Public Keys
 ===========
 
