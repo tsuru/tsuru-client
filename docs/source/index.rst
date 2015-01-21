@@ -862,3 +862,33 @@ Remove a CNAME from the app
     $ tsuru cname-remove [-a/--app appname]
 
 cname-remove undoes the change that cname-add does. After unsetting the CNAME from the app, "app-list" and "app-info" will display the internal, unfriendly address that tsuru uses.
+
+Auto Scale
+==========
+
+Configure auto scale
+--------------------
+
+.. highlight:: bash
+
+::
+
+    $ tsuru autoscale-config [-a/--app appname] [--max-units unitsnumber] [--min-units unitsnumber] [--increase-step unitsnumber] [--increase-wait-time seconds] [--increase-expression expression] [--decrease-wait-time seconds] [--decrease-expression expression] [--enabled]
+
+Enable auto scale
+-----------------
+
+.. highlight:: bash
+
+::
+
+    $ tsuru autoscale-enable [-a/--app appname]
+
+Disable auto scale
+------------------
+
+.. highlight:: bash
+
+::
+
+    $ tsuru autoscale-disable [-a/--app appname]
