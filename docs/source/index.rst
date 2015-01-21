@@ -5,6 +5,11 @@
 **tsuru** is the command line utility used by application developers, that
 will allow users to create, list, bind and manage apps.
 
+.. note::
+
+    This documentation is a reference of **tsuru** command line interface.
+    If you want know about how to use tsuru, you should see the `tsuru documentation <http://docs.tsuru.io>`_.
+
 Installing
 ==========
 
@@ -172,7 +177,7 @@ Remove your user from tsuru server
 
 `user-remove` will remove currently authenticated user from remote tsuru server. since there cannot exist any orphan teams, tsuru will refuse to remove a user that is the last member of some team. if this is your case, make sure you remove the team using `team-remove` before removing the user.
 
-login
+Login
 -----
 
 .. highlight:: bash
@@ -187,7 +192,7 @@ in ${HOME}/.tsuru_token.
 
 All tsuru actions require the user to be authenticated (except `login` and `version`).
 
-logout
+Logout
 ------
 
 .. highlight:: bash
@@ -774,8 +779,8 @@ you are probably going to need some extra configurations, like client_id.
 In tsuru, you can export those as environment variables,
 visible only by your application’s processes.
 
-env-set
--------
+Define environment variables
+----------------------------
 
 .. highlight:: bash
 
@@ -785,8 +790,8 @@ env-set
 
 This command sets environment variables for an app.
 
-env-get
--------
+Display environment variables of an application
+-----------------------------------------------
 
 .. highlight:: bash
 
@@ -796,8 +801,8 @@ env-get
 
 This command retrieves environment variables for an app.
 
-env-unset
----------
+Undefine an environment variable
+--------------------------------
 
 .. highlight:: bash
 
