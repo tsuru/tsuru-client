@@ -8,6 +8,7 @@ import (
 	"encoding/json"
 	"fmt"
 	"net/http"
+	"sort"
 
 	"github.com/tsuru/tsuru/cmd"
 )
@@ -41,8 +42,13 @@ func (platformList) Run(context *cmd.Context, client *cmd.Client) error {
 		fmt.Fprintln(context.Stdout, "No platforms available.")
 		return nil
 	}
-	for _, p := range platforms {
-		fmt.Fprintf(context.Stdout, "- %s\n", p.Name)
+	platformNames := make([]string, len(platforms))
+	for i, p := range platforms {
+		platformNames[i] = p.Name
+	}
+	sort.Strings(platformNames)
+	for _, p := range platformNames {
+		fmt.Fprintf(context.Stdout, "- %s\n", p)
 	}
 	return nil
 }

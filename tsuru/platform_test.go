@@ -19,7 +19,7 @@ func (s *S) TestPlatformList(c *gocheck.C) {
 	transport := testing.ConditionalTransport{
 		Transport: testing.Transport{
 			Status:  http.StatusOK,
-			Message: `[{"Name":"python"},{"Name":"ruby"}]`,
+			Message: `[{"Name":"ruby"},{"Name":"python"}]`,
 		},
 		CondFunc: func(r *http.Request) bool {
 			called = true
