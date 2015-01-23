@@ -61,6 +61,18 @@ func buildManager(name string) *cmd.Manager {
 	m.Register(&autoScaleEnable{})
 	m.Register(&autoScaleDisable{})
 	m.Register(&autoScaleConfig{})
+	m.Register(&userCreate{})
+	m.Register(&resetPassword{})
+	m.Register(&userRemove{})
+	m.Register(&teamCreate{})
+	m.Register(&teamRemove{})
+	m.Register(&teamList{})
+	m.Register(&teamUserAdd{})
+	m.Register(&teamUserRemove{})
+	m.Register(teamUserList{})
+	m.Register(&changePassword{})
+	m.Register(&showAPIToken{})
+	m.Register(&regenerateAPIToken{})
 	return m
 }
 

@@ -1,4 +1,4 @@
-// Copyright 2014 tsuru-client authors. All rights reserved.
+// Copyright 2015 tsuru-client authors. All rights reserved.
 // Use of this source code is governed by a BSD-style
 // license that can be found in the LICENSE file.
 
@@ -349,4 +349,74 @@ func (s *S) TestAutoScaleConfigIsRegistered(c *gocheck.C) {
 	list, ok := manager.Commands["autoscale-config"]
 	c.Assert(ok, gocheck.Equals, true)
 	c.Assert(list, gocheck.FitsTypeOf, &autoScaleConfig{})
+}
+
+func (s *S) TestChangePasswordIsRegistered(c *gocheck.C) {
+	manager := buildManager("tsuru")
+	chpass, ok := manager.Commands["change-password"]
+	c.Assert(ok, gocheck.Equals, true)
+	c.Assert(chpass, gocheck.FitsTypeOf, &changePassword{})
+}
+
+func (s *S) TestResetPasswordIsRegistered(c *gocheck.C) {
+	manager := buildManager("tsuru")
+	reset, ok := manager.Commands["reset-password"]
+	c.Assert(ok, gocheck.Equals, true)
+	c.Assert(reset, gocheck.FitsTypeOf, &resetPassword{})
+}
+
+func (s *S) TestUserRemoveIsRegistered(c *gocheck.C) {
+	manager := buildManager("tsuru")
+	rmUser, ok := manager.Commands["user-remove"]
+	c.Assert(ok, gocheck.Equals, true)
+	c.Assert(rmUser, gocheck.FitsTypeOf, &userRemove{})
+}
+
+func (s *S) TestTeamRemoveIsRegistered(c *gocheck.C) {
+	manager := buildManager("tsuru")
+	rmTeam, ok := manager.Commands["team-remove"]
+	c.Assert(ok, gocheck.Equals, true)
+	c.Assert(rmTeam, gocheck.FitsTypeOf, &teamRemove{})
+}
+
+func (s *S) TestTeamAddUserIsRegistered(c *gocheck.C) {
+	manager := buildManager("tsuru")
+	adduser, ok := manager.Commands["team-user-add"]
+	c.Assert(ok, gocheck.Equals, true)
+	c.Assert(adduser, gocheck.FitsTypeOf, &teamUserAdd{})
+}
+
+func (s *S) TestTeamRemoveUserIsRegistered(c *gocheck.C) {
+	manager := buildManager("tsuru")
+	removeuser, ok := manager.Commands["team-user-remove"]
+	c.Assert(ok, gocheck.Equals, true)
+	c.Assert(removeuser, gocheck.FitsTypeOf, &teamUserRemove{})
+}
+
+func (s *S) TestTeamUserListIsRegistered(c *gocheck.C) {
+	manager := buildManager("tsuru")
+	listuser, ok := manager.Commands["team-user-list"]
+	c.Assert(ok, gocheck.Equals, true)
+	c.Assert(listuser, gocheck.FitsTypeOf, teamUserList{})
+}
+
+func (s *S) TestUserCreateIsRegistered(c *gocheck.C) {
+	manager := buildManager("tsuru")
+	user, ok := manager.Commands["user-create"]
+	c.Assert(ok, gocheck.Equals, true)
+	c.Assert(user, gocheck.FitsTypeOf, &userCreate{})
+}
+
+func (s *S) TestTeamCreateIsRegistered(c *gocheck.C) {
+	manager := buildManager("tsuru")
+	create, ok := manager.Commands["team-create"]
+	c.Assert(ok, gocheck.Equals, true)
+	c.Assert(create, gocheck.FitsTypeOf, &teamCreate{})
+}
+
+func (s *S) TestTeamListIsRegistered(c *gocheck.C) {
+	manager := buildManager("tsuru")
+	list, ok := manager.Commands["team-list"]
+	c.Assert(ok, gocheck.Equals, true)
+	c.Assert(list, gocheck.FitsTypeOf, &teamList{})
 }
