@@ -23,7 +23,12 @@ import (
 func (s *S) TestTeamAddUser(c *gocheck.C) {
 	var stdout, stderr bytes.Buffer
 	expected := `User "andorito" was added to the "cobrateam" team` + "\n"
-	context := cmd.Context{[]string{"cobrateam", "andorito"}, &stdout, &stderr, nil}
+	context := cmd.Context{
+		Args:   []string{"cobrateam", "andorito"},
+		Stdout: &stdout,
+		Stderr: &stderr,
+		Stdin:  nil,
+	}
 	command := teamUserAdd{}
 	client := cmd.NewClient(&http.Client{Transport: &ttesting.Transport{Message: "", Status: http.StatusOK}}, nil, manager)
 	err := command.Run(&context, client)
@@ -44,7 +49,12 @@ func (s *S) TestTeamAddUserInfo(c *gocheck.C) {
 func (s *S) TestTeamRemoveUser(c *gocheck.C) {
 	var stdout, stderr bytes.Buffer
 	expected := `User "andorito" was removed from the "cobrateam" team` + "\n"
-	context := cmd.Context{[]string{"cobrateam", "andorito"}, &stdout, &stderr, nil}
+	context := cmd.Context{
+		Args:   []string{"cobrateam", "andorito"},
+		Stdout: &stdout,
+		Stderr: &stderr,
+		Stdin:  nil,
+	}
 	command := teamUserRemove{}
 	client := cmd.NewClient(&http.Client{Transport: &ttesting.Transport{Message: "", Status: http.StatusOK}}, nil, manager)
 	err := command.Run(&context, client)
@@ -65,7 +75,12 @@ func (s *S) TestTeamRemoveUserInfo(c *gocheck.C) {
 func (s *S) TestTeamCreate(c *gocheck.C) {
 	var stdout, stderr bytes.Buffer
 	expected := `Team "core" successfully created!` + "\n"
-	context := cmd.Context{[]string{"core"}, &stdout, &stderr, nil}
+	context := cmd.Context{
+		Args:   []string{"core"},
+		Stdout: &stdout,
+		Stderr: &stderr,
+		Stdin:  nil,
+	}
 	client := cmd.NewClient(&http.Client{Transport: &ttesting.Transport{Message: "", Status: http.StatusCreated}}, nil, manager)
 	command := teamCreate{}
 	err := command.Run(&context, client)
@@ -214,7 +229,12 @@ func (s *S) TestTeamListRun(c *gocheck.C) {
 `
 	client := cmd.NewClient(&http.Client{Transport: trans}, nil, manager)
 	var stdout, stderr bytes.Buffer
-	err := (&teamList{}).Run(&cmd.Context{[]string{}, &stdout, &stderr, nil}, client)
+	err := (&teamList{}).Run(&cmd.Context{
+		Args:   []string{},
+		Stdout: &stdout,
+		Stderr: &stderr,
+		Stdin:  nil,
+	}, client)
 	c.Assert(err, gocheck.IsNil)
 	c.Assert(called, gocheck.Equals, true)
 	c.Assert(stdout.String(), gocheck.Equals, expected)
@@ -223,7 +243,12 @@ func (s *S) TestTeamListRun(c *gocheck.C) {
 func (s *S) TestTeamListRunWithNoContent(c *gocheck.C) {
 	client := cmd.NewClient(&http.Client{Transport: &ttesting.Transport{Message: "", Status: http.StatusNoContent}}, nil, manager)
 	var stdout, stderr bytes.Buffer
-	err := (&teamList{}).Run(&cmd.Context{[]string{}, &stdout, &stderr, nil}, client)
+	err := (&teamList{}).Run(&cmd.Context{
+		Args:   []string{},
+		Stdout: &stdout,
+		Stderr: &stderr,
+		Stdin:  nil,
+	}, client)
 	c.Assert(err, gocheck.IsNil)
 	c.Assert(stdout.String(), gocheck.Equals, "")
 }
@@ -254,7 +279,12 @@ func (s *S) TestUserCreateShouldNotDependOnTsuruTokenFile(c *gocheck.C) {
 	expected := "Password: \nConfirm: \n" + `User "foo@foo.com" successfully created!` + "\n"
 	reader := strings.NewReader("foo123\nfoo123\n")
 	var stdout, stderr bytes.Buffer
-	context := cmd.Context{[]string{"foo@foo.com"}, &stdout, &stderr, reader}
+	context := cmd.Context{
+		Args:   []string{"foo@foo.com"},
+		Stdout: &stdout,
+		Stderr: &stderr,
+		Stdin:  reader,
+	}
 	client := cmd.NewClient(&http.Client{Transport: &ttesting.Transport{Message: "", Status: http.StatusCreated}}, nil, manager)
 	command := userCreate{}
 	err := command.Run(&context, client)
@@ -265,7 +295,12 @@ func (s *S) TestUserCreateShouldNotDependOnTsuruTokenFile(c *gocheck.C) {
 func (s *S) TestUserCreateReturnErrorIfPasswordsDontMatch(c *gocheck.C) {
 	reader := strings.NewReader("foo123\nfoo1234\n")
 	var stdout, stderr bytes.Buffer
-	context := cmd.Context{[]string{"foo@foo.com"}, &stdout, &stderr, reader}
+	context := cmd.Context{
+		Args:   []string{"foo@foo.com"},
+		Stdout: &stdout,
+		Stderr: &stderr,
+		Stdin:  reader,
+	}
 	client := cmd.NewClient(&http.Client{Transport: &ttesting.Transport{Message: "", Status: http.StatusCreated}}, nil, manager)
 	command := userCreate{}
 	err := command.Run(&context, client)
@@ -276,7 +311,12 @@ func (s *S) TestUserCreateReturnErrorIfPasswordsDontMatch(c *gocheck.C) {
 func (s *S) TestUserCreate(c *gocheck.C) {
 	expected := "Password: \nConfirm: \n" + `User "foo@foo.com" successfully created!` + "\n"
 	var stdout, stderr bytes.Buffer
-	context := cmd.Context{[]string{"foo@foo.com"}, &stdout, &stderr, strings.NewReader("foo123\nfoo123\n")}
+	context := cmd.Context{
+		Args:   []string{"foo@foo.com"},
+		Stdout: &stdout,
+		Stderr: &stderr,
+		Stdin:  strings.NewReader("foo123\nfoo123\n"),
+	}
 	client := cmd.NewClient(&http.Client{Transport: &ttesting.Transport{Message: "", Status: http.StatusCreated}}, nil, manager)
 	command := userCreate{}
 	err := command.Run(&context, client)
@@ -286,7 +326,12 @@ func (s *S) TestUserCreate(c *gocheck.C) {
 
 func (s *S) TestUserCreateShouldReturnErrorIfThePasswordIsNotGiven(c *gocheck.C) {
 	var stdout, stderr bytes.Buffer
-	context := cmd.Context{[]string{"foo@foo.com"}, &stdout, &stderr, strings.NewReader("")}
+	context := cmd.Context{
+		Args:   []string{"foo@foo.com"},
+		Stdout: &stdout,
+		Stderr: &stderr,
+		Stdin:  strings.NewReader(""),
+	}
 	command := userCreate{}
 	err := command.Run(&context, nil)
 	c.Assert(err, gocheck.NotNil)
@@ -300,7 +345,12 @@ func (s *S) TestUserCreateNotFound(c *gocheck.C) {
 	}
 	reader := strings.NewReader("foo123\nfoo123\n")
 	var stdout, stderr bytes.Buffer
-	context := cmd.Context{[]string{"foo@foo.com"}, &stdout, &stderr, reader}
+	context := cmd.Context{
+		Args:   []string{"foo@foo.com"},
+		Stdout: &stdout,
+		Stderr: &stderr,
+		Stdin:  reader,
+	}
 	client := cmd.NewClient(&http.Client{Transport: &transport}, nil, manager)
 	command := userCreate{}
 	err := command.Run(&context, client)
@@ -315,7 +365,12 @@ func (s *S) TestUserCreateMethodNotAllowed(c *gocheck.C) {
 	}
 	reader := strings.NewReader("foo123\nfoo123\n")
 	var stdout, stderr bytes.Buffer
-	context := cmd.Context{[]string{"foo@foo.com"}, &stdout, &stderr, reader}
+	context := cmd.Context{
+		Args:   []string{"foo@foo.com"},
+		Stdout: &stdout,
+		Stderr: &stderr,
+		Stdin:  reader,
+	}
 	client := cmd.NewClient(&http.Client{Transport: &transport}, nil, manager)
 	command := userCreate{}
 	err := command.Run(&context, client)
@@ -597,7 +652,12 @@ func (s *S) TestShowAPITokenRun(c *gocheck.C) {
 `
 	client := cmd.NewClient(&http.Client{Transport: trans}, nil, manager)
 	var stdout, stderr bytes.Buffer
-	err := (&showAPIToken{}).Run(&cmd.Context{[]string{}, &stdout, &stderr, nil}, client)
+	err := (&showAPIToken{}).Run(&cmd.Context{
+		Args:   []string{},
+		Stdout: &stdout,
+		Stderr: &stderr,
+		Stdin:  nil,
+	}, client)
 	c.Assert(err, gocheck.IsNil)
 	c.Assert(called, gocheck.Equals, true)
 	c.Assert(stdout.String(), gocheck.Equals, expected)
@@ -606,7 +666,12 @@ func (s *S) TestShowAPITokenRun(c *gocheck.C) {
 func (s *S) TestShowAPITokenRunWithNoContent(c *gocheck.C) {
 	client := cmd.NewClient(&http.Client{Transport: &ttesting.Transport{Message: "", Status: http.StatusNoContent}}, nil, manager)
 	var stdout, stderr bytes.Buffer
-	err := (&showAPIToken{}).Run(&cmd.Context{[]string{}, &stdout, &stderr, nil}, client)
+	err := (&showAPIToken{}).Run(&cmd.Context{
+		Args:   []string{},
+		Stdout: &stdout,
+		Stderr: &stderr,
+		Stdin:  nil,
+	}, client)
 	c.Assert(err, gocheck.IsNil)
 	c.Assert(stdout.String(), gocheck.Equals, "")
 }
@@ -638,7 +703,12 @@ func (s *S) TestRegenerateAPITokenRun(c *gocheck.C) {
 `
 	client := cmd.NewClient(&http.Client{Transport: trans}, nil, manager)
 	var stdout, stderr bytes.Buffer
-	err := (&regenerateAPIToken{}).Run(&cmd.Context{[]string{}, &stdout, &stderr, nil}, client)
+	err := (&regenerateAPIToken{}).Run(&cmd.Context{
+		Args:   []string{},
+		Stdout: &stdout,
+		Stderr: &stderr,
+		Stdin:  nil,
+	}, client)
 	c.Assert(err, gocheck.IsNil)
 	c.Assert(called, gocheck.Equals, true)
 	c.Assert(stdout.String(), gocheck.Equals, expected)
@@ -647,7 +717,12 @@ func (s *S) TestRegenerateAPITokenRun(c *gocheck.C) {
 func (s *S) TestRegenerateAPITokenRunWithNoContent(c *gocheck.C) {
 	client := cmd.NewClient(&http.Client{Transport: &ttesting.Transport{Message: "", Status: http.StatusNoContent}}, nil, manager)
 	var stdout, stderr bytes.Buffer
-	err := (&regenerateAPIToken{}).Run(&cmd.Context{[]string{}, &stdout, &stderr, nil}, client)
+	err := (&regenerateAPIToken{}).Run(&cmd.Context{
+		Args:   []string{},
+		Stdout: &stdout,
+		Stderr: &stderr,
+		Stdin:  nil,
+	}, client)
 	c.Assert(err, gocheck.IsNil)
 	c.Assert(stdout.String(), gocheck.Equals, "")
 }
