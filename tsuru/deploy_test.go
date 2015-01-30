@@ -8,6 +8,7 @@ import (
 	"archive/tar"
 	"bytes"
 	"compress/gzip"
+	"encoding/json"
 	"io"
 	"io/ioutil"
 	"net/http"
@@ -15,6 +16,7 @@ import (
 
 	"github.com/tsuru/tsuru/cmd"
 	"github.com/tsuru/tsuru/cmd/testing"
+	tsuruIo "github.com/tsuru/tsuru/io"
 	"launchpad.net/gocheck"
 )
 
@@ -232,4 +234,46 @@ func (s *S) TestAppDeployList(c *gocheck.C) {
 	err := command.Run(&context, client)
 	c.Assert(err, gocheck.IsNil)
 	c.Assert(stdout.String(), gocheck.Equals, expected)
+}
+
+func (s *S) TestAppDeployRollbackInfo(c *gocheck.C) {
+	expected := &cmd.Info{
+		Name:    "app-deploy-rollback",
+		Usage:   "app-deploy-rollback [-a/--app appname] [-y/--assume-yes] <image-name>",
+		Desc:    "Deploys an existing image for an app. You can list available images with `tsuru app-deploy-list`.",
+		MinArgs: 1,
+	}
+	c.Assert((&appDeployRollback{}).Info(), gocheck.DeepEquals, expected)
+}
+
+func (s *S) TestAppDeployRollback(c *gocheck.C) {
+	var (
+		called         bool
+		stdout, stderr bytes.Buffer
+	)
+	context := cmd.Context{
+		Stdout: &stdout,
+		Stderr: &stderr,
+		Args:   []string{"my-image"},
+	}
+	expectedOut := "-- deployed --"
+	msg := tsuruIo.SimpleJsonMessage{Message: expectedOut}
+	result, err := json.Marshal(msg)
+	c.Assert(err, gocheck.IsNil)
+	trans := &testing.ConditionalTransport{
+		Transport: testing.Transport{Message: string(result), Status: http.StatusOK},
+		CondFunc: func(req *http.Request) bool {
+			called = true
+			body, _ := ioutil.ReadAll(req.Body)
+			return req.URL.Path == "/apps/arrakis/deploy/rollback" &&
+				req.Method == "POST" && string(body) == "image=my-image"
+		},
+	}
+	client := cmd.NewClient(&http.Client{Transport: trans}, nil, manager)
+	command := appDeployRollback{}
+	command.Flags().Parse(true, []string{"--app", "arrakis", "-y"})
+	err = command.Run(&context, client)
+	c.Assert(err, gocheck.IsNil)
+	c.Assert(called, gocheck.Equals, true)
+	c.Assert(stdout.String(), gocheck.Equals, expectedOut)
 }

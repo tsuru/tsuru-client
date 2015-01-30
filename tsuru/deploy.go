@@ -22,6 +22,8 @@ import (
 
 	tsuruapp "github.com/tsuru/tsuru/app"
 	"github.com/tsuru/tsuru/cmd"
+	tsuruIo "github.com/tsuru/tsuru/io"
+	"launchpad.net/gnuflag"
 )
 
 type appDeployList struct {
@@ -271,4 +273,67 @@ func (w *firstWriter) Write(p []byte) (int, error) {
 		w.Writer.Write([]byte(" ok\n"))
 	})
 	return w.Writer.Write(p)
+}
+
+type appDeployRollback struct {
+	cmd.GuessingCommand
+	cmd.ConfirmationCommand
+	fs *gnuflag.FlagSet
+}
+
+func (c *appDeployRollback) Flags() *gnuflag.FlagSet {
+	if c.fs == nil {
+		c.fs = cmd.MergeFlagSet(
+			c.GuessingCommand.Flags(),
+			c.ConfirmationCommand.Flags(),
+		)
+	}
+	return c.fs
+}
+
+func (c *appDeployRollback) Info() *cmd.Info {
+	desc := "Deploys an existing image for an app. You can list available images with `tsuru app-deploy-list`."
+	return &cmd.Info{
+		Name:    "app-deploy-rollback",
+		Usage:   "app-deploy-rollback [-a/--app appname] [-y/--assume-yes] <image-name>",
+		Desc:    desc,
+		MinArgs: 1,
+	}
+}
+
+func (c *appDeployRollback) Run(context *cmd.Context, client *cmd.Client) error {
+	appName, err := c.Guess()
+	if err != nil {
+		return err
+	}
+	imgName := context.Args[0]
+	if !c.Confirm(context, fmt.Sprintf("Are you sure you want to rollback app %q to image %q?", appName, imgName)) {
+		return nil
+	}
+	url, err := cmd.GetURL(fmt.Sprintf("/apps/%s/deploy/rollback", appName))
+	if err != nil {
+		return err
+	}
+	body := strings.NewReader("image=" + imgName)
+	request, err := http.NewRequest("POST", url, body)
+	if err != nil {
+		return err
+	}
+	request.Header.Add("Content-Type", "application/x-www-form-urlencoded")
+	response, err := client.Do(request)
+	if err != nil {
+		return err
+	}
+	defer response.Body.Close()
+	w := tsuruIo.NewStreamWriter(context.Stdout, nil)
+	for n := int64(1); n > 0 && err == nil; n, err = io.Copy(w, response.Body) {
+	}
+	if err != nil {
+		return err
+	}
+	unparsed := w.Remaining()
+	if len(unparsed) > 0 {
+		return fmt.Errorf("unparsed message error: %s", string(unparsed))
+	}
+	return nil
 }
