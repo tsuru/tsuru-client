@@ -13,6 +13,7 @@ import (
 	"io/ioutil"
 	"net/http"
 	"sort"
+	"time"
 
 	"github.com/tsuru/tsuru/cmd"
 	"github.com/tsuru/tsuru/cmd/testing"
@@ -213,16 +214,26 @@ func (s *S) TestAppDeployList(c *gocheck.C) {
   }
 ]
 `
+	timestamps := []string{
+		"2015-01-28T18:42:25.725Z",
+		"2015-01-28T17:56:32.583Z",
+		"2015-01-28T17:13:11.498Z",
+	}
+	var formatted []string
+	for _, t := range timestamps {
+		parsed, _ := time.Parse(time.RFC3339, t)
+		formatted = append(formatted, parsed.Local().Format(time.Stamp))
+	}
 	red := "\x1b[0;31;10m"
 	reset := "\x1b[0m"
 	expected := `+-----------------------+---------------+-------------------+-------------------------+----------+
 | Image (Rollback)      | Origin        | User              | Date (Duration)         | Error    |
 +-----------------------+---------------+-------------------+-------------------------+----------+
-| tsuru/app-test:v3 (*) | git (54c92d9) | admin@example.com | Jan 28 16:42:25 (00:18) |          |
+| tsuru/app-test:v3 (*) | git (54c92d9) | admin@example.com | ` + formatted[0] + ` (00:18) |          |
 +-----------------------+---------------+-------------------+-------------------------+----------+
-| tsuru/app-test:v2 (*) | app-deploy    | admin@example.com | Jan 28 15:56:32 (00:18) |          |
+| tsuru/app-test:v2 (*) | app-deploy    | admin@example.com | ` + formatted[1] + ` (00:18) |          |
 +-----------------------+---------------+-------------------+-------------------------+----------+
-| ` + red + `tsuru/app-test:v1` + reset + `     | ` + red + `rollback` + reset + `      |                   | ` + red + `Jan 28 15:13:11 (00:26)` + reset + ` | ` + red + `my-error` + reset + ` |
+| ` + red + `tsuru/app-test:v1` + reset + `     | ` + red + `rollback` + reset + `      |                   | ` + red + formatted[2] + ` (00:26)` + reset + ` | ` + red + `my-error` + reset + ` |
 +-----------------------+---------------+-------------------+-------------------------+----------+
 `
 	context := cmd.Context{
