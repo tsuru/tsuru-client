@@ -182,6 +182,7 @@ func (s *S) TestAppDeployList(c *gocheck.C) {
     "Error": "",
     "Image": "tsuru/app-test:v3",
     "User": "admin@example.com",
+    "Origin": "git",
     "CanRollback": true
   },
   {
@@ -193,6 +194,7 @@ func (s *S) TestAppDeployList(c *gocheck.C) {
     "Error": "",
     "Image": "tsuru/app-test:v2",
     "User": "admin@example.com",
+    "Origin": "app-deploy",
     "CanRollback": true
   },
   {
@@ -204,21 +206,22 @@ func (s *S) TestAppDeployList(c *gocheck.C) {
     "Error": "my-error",
     "Image": "tsuru/app-test:v1",
     "User": "",
+    "Origin": "rollback",
     "CanRollback": false
   }
 ]
 `
 	red := "\x1b[0;31;10m"
 	reset := "\x1b[0m"
-	expected := `+-----------------------+------------------+-------------------+-------------------------+----------+
-| Image (Rollback)      | Commit           | User              | Date (Duration)         | Error    |
-+-----------------------+------------------+-------------------+-------------------------+----------+
-| tsuru/app-test:v3 (*) | 54c92d9          | admin@example.com | Jan 28 16:42:25 (00:18) |          |
-+-----------------------+------------------+-------------------+-------------------------+----------+
-| tsuru/app-test:v2 (*) | not a git deploy | admin@example.com | Jan 28 15:56:32 (00:18) |          |
-+-----------------------+------------------+-------------------+-------------------------+----------+
-| ` + red + `tsuru/app-test:v1` + reset + `     | ` + red + `not a git deploy` + reset + ` |                   | ` + red + `Jan 28 15:13:11 (00:26)` + reset + ` | ` + red + `my-error` + reset + ` |
-+-----------------------+------------------+-------------------+-------------------------+----------+
+	expected := `+-----------------------+---------------+-------------------+-------------------------+----------+
+| Image (Rollback)      | Origin        | User              | Date (Duration)         | Error    |
++-----------------------+---------------+-------------------+-------------------------+----------+
+| tsuru/app-test:v3 (*) | git (54c92d9) | admin@example.com | Jan 28 16:42:25 (00:18) |          |
++-----------------------+---------------+-------------------+-------------------------+----------+
+| tsuru/app-test:v2 (*) | app-deploy    | admin@example.com | Jan 28 15:56:32 (00:18) |          |
++-----------------------+---------------+-------------------+-------------------------+----------+
+| ` + red + `tsuru/app-test:v1` + reset + `     | ` + red + `rollback` + reset + `      |                   | ` + red + `Jan 28 15:13:11 (00:26)` + reset + ` | ` + red + `my-error` + reset + ` |
++-----------------------+---------------+-------------------+-------------------------+----------+
 `
 	context := cmd.Context{
 		Stdout: &stdout,

@@ -67,23 +67,23 @@ func (c *appDeployList) Run(context *cmd.Context, client *cmd.Client) error {
 		return err
 	}
 	table := cmd.NewTable()
-	table.Headers = cmd.Row([]string{"Image (Rollback)", "Commit", "User", "Date (Duration)", "Error"})
+	table.Headers = cmd.Row([]string{"Image (Rollback)", "Origin", "User", "Date (Duration)", "Error"})
 	for _, deploy := range deploys {
 		timestamp := deploy.Timestamp.Local().Format(time.Stamp)
 		seconds := deploy.Duration / time.Second
 		minutes := seconds / 60
 		seconds = seconds % 60
-		if len(deploy.Commit) > 7 {
-			deploy.Commit = deploy.Commit[:7]
-		}
-		if deploy.Commit == "" {
-			deploy.Commit = "not a git deploy"
+		if deploy.Origin == "git" {
+			if len(deploy.Commit) > 7 {
+				deploy.Commit = deploy.Commit[:7]
+			}
+			deploy.Origin = fmt.Sprintf("git (%s)", deploy.Commit)
 		}
 		timestamp = fmt.Sprintf("%s (%02d:%02d)", timestamp, minutes, seconds)
 		if deploy.CanRollback {
 			deploy.Image += " (*)"
 		}
-		rowData := []string{deploy.Image, deploy.Commit, deploy.User, timestamp, deploy.Error}
+		rowData := []string{deploy.Image, deploy.Origin, deploy.User, timestamp, deploy.Error}
 		if deploy.Error != "" {
 			for i, el := range rowData {
 				if el != "" {
