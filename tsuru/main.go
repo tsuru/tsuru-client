@@ -73,6 +73,7 @@ func buildManager(name string) *cmd.Manager {
 	m.Register(&changePassword{})
 	m.Register(&showAPIToken{})
 	m.Register(&regenerateAPIToken{})
+	m.Register(&appDeployList{})
 	return m
 }
 

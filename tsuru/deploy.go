@@ -8,8 +8,10 @@ import (
 	"archive/tar"
 	"bytes"
 	"compress/gzip"
+	"encoding/json"
 	"fmt"
 	"io"
+	"io/ioutil"
 	"mime/multipart"
 	"net/http"
 	"os"
@@ -18,8 +20,83 @@ import (
 	"sync"
 	"time"
 
+	tsuruapp "github.com/tsuru/tsuru/app"
 	"github.com/tsuru/tsuru/cmd"
 )
+
+type appDeployList struct {
+	cmd.GuessingCommand
+}
+
+func (c *appDeployList) Info() *cmd.Info {
+	return &cmd.Info{
+		Name:  "app-deploy-list",
+		Usage: "app-deploy-list [-a/--app <appname>]",
+		Desc:  "List information about deploys for an application.",
+	}
+}
+
+func (c *appDeployList) Run(context *cmd.Context, client *cmd.Client) error {
+	appName, err := c.Guess()
+	if err != nil {
+		return err
+	}
+	url, err := cmd.GetURL(fmt.Sprintf("/deploys?app=%s&limit=10", appName))
+	if err != nil {
+		return err
+	}
+	request, err := http.NewRequest("GET", url, nil)
+	if err != nil {
+		return err
+	}
+	response, err := client.Do(request)
+	if err != nil {
+		return err
+	}
+	if response.StatusCode == http.StatusNoContent {
+		return nil
+	}
+	defer response.Body.Close()
+	result, err := ioutil.ReadAll(response.Body)
+	if err != nil {
+		return err
+	}
+	var deploys []tsuruapp.DeployData
+	err = json.Unmarshal(result, &deploys)
+	if err != nil {
+		return err
+	}
+	table := cmd.NewTable()
+	table.Headers = cmd.Row([]string{"Image (Rollback)", "Commit", "User", "Date (Duration)", "Error"})
+	for _, deploy := range deploys {
+		timestamp := deploy.Timestamp.Local().Format(time.Stamp)
+		seconds := deploy.Duration / time.Second
+		minutes := seconds / 60
+		seconds = seconds % 60
+		if len(deploy.Commit) > 7 {
+			deploy.Commit = deploy.Commit[:7]
+		}
+		if deploy.Commit == "" {
+			deploy.Commit = "not a git deploy"
+		}
+		timestamp = fmt.Sprintf("%s (%02d:%02d)", timestamp, minutes, seconds)
+		if deploy.CanRollback {
+			deploy.Image += " (*)"
+		}
+		rowData := []string{deploy.Image, deploy.Commit, deploy.User, timestamp, deploy.Error}
+		if deploy.Error != "" {
+			for i, el := range rowData {
+				if el != "" {
+					rowData[i] = cmd.Colorfy(el, "red", "", "")
+				}
+			}
+		}
+		table.LineSeparator = true
+		table.AddRow(cmd.Row(rowData))
+	}
+	context.Stdout.Write(table.Bytes())
+	return nil
+}
 
 type appDeploy struct {
 	cmd.GuessingCommand

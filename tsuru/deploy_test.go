@@ -157,3 +157,76 @@ func (s *S) TestTargzFailure(c *gocheck.C) {
 	c.Assert(err, gocheck.NotNil)
 	c.Assert(err.Error(), gocheck.Equals, "stat /tmp/something/that/definitely/doesnt/exist/right: no such file or directory")
 }
+
+func (s *S) TestDeployListInfo(c *gocheck.C) {
+	expected := &cmd.Info{
+		Name:    "app-deploy-list",
+		Usage:   "app-deploy-list [-a/--app <appname>]",
+		Desc:    "List information about deploys for an application.",
+		MinArgs: 0,
+	}
+	var cmd appDeployList
+	c.Assert(cmd.Info(), gocheck.DeepEquals, expected)
+}
+
+func (s *S) TestAppDeployList(c *gocheck.C) {
+	var stdout, stderr bytes.Buffer
+	result := `
+[
+  {
+    "ID": "54c92d91a46ec0e78501d86b",
+    "App": "test",
+    "Timestamp": "2015-01-28T18:42:25.725Z",
+    "Duration": 18709653486,
+    "Commit": "54c92d91a46ec0e78501d86b54c92d91a46ec0e78501d86b",
+    "Error": "",
+    "Image": "tsuru/app-test:v3",
+    "User": "admin@example.com",
+    "CanRollback": true
+  },
+  {
+    "ID": "54c922d0a46ec0e78501d84e",
+    "App": "test",
+    "Timestamp": "2015-01-28T17:56:32.583Z",
+    "Duration": 18781564759,
+    "Commit": "",
+    "Error": "",
+    "Image": "tsuru/app-test:v2",
+    "User": "admin@example.com",
+    "CanRollback": true
+  },
+  {
+    "ID": "54c918a7a46ec0e78501d831",
+    "App": "test",
+    "Timestamp": "2015-01-28T17:13:11.498Z",
+    "Duration": 26064205176,
+    "Commit": "",
+    "Error": "my-error",
+    "Image": "tsuru/app-test:v1",
+    "User": "",
+    "CanRollback": false
+  }
+]
+`
+	red := "\x1b[0;31;10m"
+	reset := "\x1b[0m"
+	expected := `+-----------------------+------------------+-------------------+-------------------------+----------+
+| Image (Rollback)      | Commit           | User              | Date (Duration)         | Error    |
++-----------------------+------------------+-------------------+-------------------------+----------+
+| tsuru/app-test:v3 (*) | 54c92d9          | admin@example.com | Jan 28 16:42:25 (00:18) |          |
++-----------------------+------------------+-------------------+-------------------------+----------+
+| tsuru/app-test:v2 (*) | not a git deploy | admin@example.com | Jan 28 15:56:32 (00:18) |          |
++-----------------------+------------------+-------------------+-------------------------+----------+
+| ` + red + `tsuru/app-test:v1` + reset + `     | ` + red + `not a git deploy` + reset + ` |                   | ` + red + `Jan 28 15:13:11 (00:26)` + reset + ` | ` + red + `my-error` + reset + ` |
++-----------------------+------------------+-------------------+-------------------------+----------+
+`
+	context := cmd.Context{
+		Stdout: &stdout,
+		Stderr: &stderr,
+	}
+	client := cmd.NewClient(&http.Client{Transport: &testing.Transport{Message: result, Status: http.StatusOK}}, nil, manager)
+	command := appDeployList{}
+	err := command.Run(&context, client)
+	c.Assert(err, gocheck.IsNil)
+	c.Assert(stdout.String(), gocheck.Equals, expected)
+}
