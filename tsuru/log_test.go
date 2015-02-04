@@ -1,4 +1,4 @@
-// Copyright 2014 tsuru authors. All rights reserved.
+// Copyright 2015 tsuru authors. All rights reserved.
 // Use of this source code is governed by a BSD-style
 // license that can be found in the LICENSE file.
 
@@ -11,7 +11,7 @@ import (
 	"time"
 
 	"github.com/tsuru/tsuru/cmd"
-	"github.com/tsuru/tsuru/cmd/testing"
+	"github.com/tsuru/tsuru/cmd/cmdtest"
 	"launchpad.net/gocheck"
 )
 
@@ -57,7 +57,7 @@ func (s *S) TestAppLog(c *gocheck.C) {
 		Stderr: &stderr,
 	}
 	command := appLog{}
-	transport := testing.Transport{
+	transport := cmdtest.Transport{
 		Message: string(result),
 		Status:  http.StatusOK,
 	}
@@ -84,7 +84,7 @@ func (s *S) TestAppLogWithUnparsableData(c *gocheck.C) {
 		Stderr: &stderr,
 	}
 	command := appLog{}
-	transport := testing.Transport{
+	transport := cmdtest.Transport{
 		Message: string(result) + "\nunparseable data",
 		Status:  http.StatusOK,
 	}
@@ -114,11 +114,11 @@ func (s *S) TestAppLogWithoutTheFlag(c *gocheck.C) {
 		Stdout: &stdout,
 		Stderr: &stderr,
 	}
-	fake := &testing.FakeGuesser{Name: "hitthelights"}
+	fake := &cmdtest.FakeGuesser{Name: "hitthelights"}
 	command := appLog{GuessingCommand: cmd.GuessingCommand{G: fake}}
 	command.Flags().Parse(true, nil)
-	trans := &testing.ConditionalTransport{
-		Transport: testing.Transport{Message: string(result), Status: http.StatusOK},
+	trans := &cmdtest.ConditionalTransport{
+		Transport: cmdtest.Transport{Message: string(result), Status: http.StatusOK},
 		CondFunc: func(req *http.Request) bool {
 			return req.URL.Path == "/apps/hitthelights/log" && req.Method == "GET" &&
 				req.URL.Query().Get("lines") == "10"
@@ -137,7 +137,7 @@ func (s *S) TestAppLogShouldReturnNilIfHasNoContent(c *gocheck.C) {
 		Stderr: &stderr,
 	}
 	command := appLog{}
-	client := cmd.NewClient(&http.Client{Transport: &testing.Transport{Message: "", Status: http.StatusNoContent}}, nil, manager)
+	client := cmd.NewClient(&http.Client{Transport: &cmdtest.Transport{Message: "", Status: http.StatusNoContent}}, nil, manager)
 	command.Flags().Parse(true, []string{"--app", "appName"})
 	err := command.Run(&context, client)
 	c.Assert(err, gocheck.IsNil)
@@ -173,11 +173,11 @@ func (s *S) TestAppLogBySource(c *gocheck.C) {
 		Stdout: &stdout,
 		Stderr: &stderr,
 	}
-	fake := &testing.FakeGuesser{Name: "hitthelights"}
+	fake := &cmdtest.FakeGuesser{Name: "hitthelights"}
 	command := appLog{GuessingCommand: cmd.GuessingCommand{G: fake}}
 	command.Flags().Parse(true, []string{"--source", "mysource"})
-	trans := &testing.ConditionalTransport{
-		Transport: testing.Transport{Message: string(result), Status: http.StatusOK},
+	trans := &cmdtest.ConditionalTransport{
+		Transport: cmdtest.Transport{Message: string(result), Status: http.StatusOK},
 		CondFunc: func(req *http.Request) bool {
 			return req.URL.Query().Get("source") == "mysource"
 		},
@@ -205,11 +205,11 @@ func (s *S) TestAppLogByUnit(c *gocheck.C) {
 		Stdout: &stdout,
 		Stderr: &stderr,
 	}
-	fake := &testing.FakeGuesser{Name: "hitthelights"}
+	fake := &cmdtest.FakeGuesser{Name: "hitthelights"}
 	command := appLog{GuessingCommand: cmd.GuessingCommand{G: fake}}
 	command.Flags().Parse(true, []string{"--unit", "api"})
-	trans := &testing.ConditionalTransport{
-		Transport: testing.Transport{Message: string(result), Status: http.StatusOK},
+	trans := &cmdtest.ConditionalTransport{
+		Transport: cmdtest.Transport{Message: string(result), Status: http.StatusOK},
 		CondFunc: func(req *http.Request) bool {
 			return req.URL.Query().Get("unit") == "api"
 		},
@@ -237,11 +237,11 @@ func (s *S) TestAppLogWithLines(c *gocheck.C) {
 		Stdout: &stdout,
 		Stderr: &stderr,
 	}
-	fake := &testing.FakeGuesser{Name: "hitthelights"}
+	fake := &cmdtest.FakeGuesser{Name: "hitthelights"}
 	command := appLog{GuessingCommand: cmd.GuessingCommand{G: fake}}
 	command.Flags().Parse(true, []string{"--lines", "12"})
-	trans := &testing.ConditionalTransport{
-		Transport: testing.Transport{Message: string(result), Status: http.StatusOK},
+	trans := &cmdtest.ConditionalTransport{
+		Transport: cmdtest.Transport{Message: string(result), Status: http.StatusOK},
 		CondFunc: func(req *http.Request) bool {
 			return req.URL.Query().Get("lines") == "12"
 		},
@@ -269,11 +269,11 @@ func (s *S) TestAppLogWithFollow(c *gocheck.C) {
 		Stdout: &stdout,
 		Stderr: &stderr,
 	}
-	fake := &testing.FakeGuesser{Name: "hitthelights"}
+	fake := &cmdtest.FakeGuesser{Name: "hitthelights"}
 	command := appLog{GuessingCommand: cmd.GuessingCommand{G: fake}}
 	command.Flags().Parse(true, []string{"--lines", "12", "-f"})
-	trans := &testing.ConditionalTransport{
-		Transport: testing.Transport{Message: string(result), Status: http.StatusOK},
+	trans := &cmdtest.ConditionalTransport{
+		Transport: cmdtest.Transport{Message: string(result), Status: http.StatusOK},
 		CondFunc: func(req *http.Request) bool {
 			return req.URL.Query().Get("lines") == "12" && req.URL.Query().Get("follow") == "1"
 		},

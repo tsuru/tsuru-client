@@ -9,15 +9,15 @@ import (
 	"net/http"
 
 	"github.com/tsuru/tsuru/cmd"
-	"github.com/tsuru/tsuru/cmd/testing"
+	"github.com/tsuru/tsuru/cmd/cmdtest"
 	"launchpad.net/gocheck"
 )
 
 func (s *S) TestPlatformList(c *gocheck.C) {
 	var buf bytes.Buffer
 	var called bool
-	transport := testing.ConditionalTransport{
-		Transport: testing.Transport{
+	transport := cmdtest.ConditionalTransport{
+		Transport: cmdtest.Transport{
 			Status:  http.StatusOK,
 			Message: `[{"Name":"ruby"},{"Name":"python"}]`,
 		},
@@ -38,7 +38,7 @@ func (s *S) TestPlatformList(c *gocheck.C) {
 
 func (s *S) TestPlatformListEmpty(c *gocheck.C) {
 	var buf bytes.Buffer
-	transport := testing.Transport{
+	transport := cmdtest.Transport{
 		Status:  http.StatusOK,
 		Message: `[]`,
 	}

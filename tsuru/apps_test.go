@@ -1,4 +1,4 @@
-// Copyright 2014 tsuru-client authors. All rights reserved.
+// Copyright 2015 tsuru-client authors. All rights reserved.
 // Use of this source code is governed by a BSD-style
 // license that can be found in the LICENSE file.
 
@@ -12,8 +12,8 @@ import (
 	"strings"
 
 	"github.com/tsuru/tsuru/cmd"
-	"github.com/tsuru/tsuru/cmd/testing"
-	tsuruIo "github.com/tsuru/tsuru/io"
+	"github.com/tsuru/tsuru/cmd/cmdtest"
+	"github.com/tsuru/tsuru/io"
 	"launchpad.net/gnuflag"
 	"launchpad.net/gocheck"
 )
@@ -53,8 +53,8 @@ Your repository for "ble" project is "git@tsuru.plataformas.glb.com:ble.git"` + 
 		Stdout: &stdout,
 		Stderr: &stderr,
 	}
-	trans := testing.ConditionalTransport{
-		Transport: testing.Transport{Message: result, Status: http.StatusOK},
+	trans := cmdtest.ConditionalTransport{
+		Transport: cmdtest.Transport{Message: result, Status: http.StatusOK},
 		CondFunc: func(req *http.Request) bool {
 			defer req.Body.Close()
 			body, err := ioutil.ReadAll(req.Body)
@@ -89,8 +89,8 @@ Your repository for "ble" project is "git@tsuru.plataformas.glb.com:ble.git"` + 
 		Stdout: &stdout,
 		Stderr: &stderr,
 	}
-	trans := testing.ConditionalTransport{
-		Transport: testing.Transport{Message: result, Status: http.StatusOK},
+	trans := cmdtest.ConditionalTransport{
+		Transport: cmdtest.Transport{Message: result, Status: http.StatusOK},
 		CondFunc: func(req *http.Request) bool {
 			defer req.Body.Close()
 			body, err := ioutil.ReadAll(req.Body)
@@ -126,8 +126,8 @@ Your repository for "ble" project is "git@tsuru.plataformas.glb.com:ble.git"` + 
 		Stdout: &stdout,
 		Stderr: &stderr,
 	}
-	trans := testing.ConditionalTransport{
-		Transport: testing.Transport{Message: result, Status: http.StatusOK},
+	trans := cmdtest.ConditionalTransport{
+		Transport: cmdtest.Transport{Message: result, Status: http.StatusOK},
 		CondFunc: func(req *http.Request) bool {
 			defer req.Body.Close()
 			body, err := ioutil.ReadAll(req.Body)
@@ -159,7 +159,7 @@ func (s *S) TestAppCreateWithInvalidFramework(c *gocheck.C) {
 		Stdout: &stdout,
 		Stderr: &stderr,
 	}
-	client := cmd.NewClient(&http.Client{Transport: &testing.Transport{Message: "", Status: http.StatusInternalServerError}}, nil, manager)
+	client := cmd.NewClient(&http.Client{Transport: &cmdtest.Transport{Message: "", Status: http.StatusInternalServerError}}, nil, manager)
 	command := appCreate{}
 	err := command.Run(&context, client)
 	c.Assert(err, gocheck.NotNil)
@@ -209,7 +209,7 @@ func (s *S) TestAppRemove(c *gocheck.C) {
 		Stderr: &stderr,
 		Stdin:  strings.NewReader("y\n"),
 	}
-	client := cmd.NewClient(&http.Client{Transport: &testing.Transport{Message: "", Status: http.StatusOK}}, nil, manager)
+	client := cmd.NewClient(&http.Client{Transport: &cmdtest.Transport{Message: "", Status: http.StatusOK}}, nil, manager)
 	command := appRemove{}
 	command.Flags().Parse(true, []string{"-a", "ble"})
 	err := command.Run(&context, client)
@@ -226,7 +226,7 @@ func (s *S) TestAppRemoveWithoutAsking(c *gocheck.C) {
 		Stderr: &stderr,
 		Stdin:  strings.NewReader("y\n"),
 	}
-	client := cmd.NewClient(&http.Client{Transport: &testing.Transport{Message: "", Status: http.StatusOK}}, nil, manager)
+	client := cmd.NewClient(&http.Client{Transport: &cmdtest.Transport{Message: "", Status: http.StatusOK}}, nil, manager)
 	command := appRemove{}
 	command.Flags().Parse(true, []string{"-a", "ble", "-y"})
 	err := command.Run(&context, client)
@@ -274,14 +274,14 @@ func (s *S) TestAppRemoveWithoutArgs(c *gocheck.C) {
 		Stdin:  strings.NewReader("y\n"),
 	}
 	expected := `Are you sure you want to remove app "secret"? (y/n) App "secret" successfully removed!` + "\n"
-	trans := &testing.ConditionalTransport{
-		Transport: testing.Transport{Message: "", Status: http.StatusOK},
+	trans := &cmdtest.ConditionalTransport{
+		Transport: cmdtest.Transport{Message: "", Status: http.StatusOK},
 		CondFunc: func(req *http.Request) bool {
 			return req.URL.Path == "/apps/secret" && req.Method == "DELETE"
 		},
 	}
 	client := cmd.NewClient(&http.Client{Transport: trans}, nil, manager)
-	fake := testing.FakeGuesser{Name: "secret"}
+	fake := cmdtest.FakeGuesser{Name: "secret"}
 	guessCommand := cmd.GuessingCommand{G: &fake}
 	command := appRemove{GuessingCommand: guessCommand}
 	err := command.Run(&context, client)
@@ -341,7 +341,7 @@ Units: 3
 		Stdout: &stdout,
 		Stderr: &stderr,
 	}
-	client := cmd.NewClient(&http.Client{Transport: &testing.Transport{Message: result, Status: http.StatusOK}}, nil, manager)
+	client := cmd.NewClient(&http.Client{Transport: &cmdtest.Transport{Message: result, Status: http.StatusOK}}, nil, manager)
 	command := appInfo{}
 	command.Flags().Parse(true, []string{"-a/--app", "app1"})
 	err := command.Run(&context, client)
@@ -366,7 +366,7 @@ Deploys: 7
 		Stdout: &stdout,
 		Stderr: &stderr,
 	}
-	client := cmd.NewClient(&http.Client{Transport: &testing.Transport{Message: result, Status: http.StatusOK}}, nil, manager)
+	client := cmd.NewClient(&http.Client{Transport: &cmdtest.Transport{Message: result, Status: http.StatusOK}}, nil, manager)
 	command := appInfo{}
 	command.Flags().Parse(true, []string{"-a/--app", "app1"})
 	err := command.Run(&context, client)
@@ -391,7 +391,7 @@ Deploys: 7
 		Stdout: &stdout,
 		Stderr: &stderr,
 	}
-	client := cmd.NewClient(&http.Client{Transport: &testing.Transport{Message: result, Status: http.StatusOK}}, nil, manager)
+	client := cmd.NewClient(&http.Client{Transport: &cmdtest.Transport{Message: result, Status: http.StatusOK}}, nil, manager)
 	command := appInfo{}
 	command.Flags().Parse(true, []string{"-a/--app", "app1"})
 	err := command.Run(&context, client)
@@ -423,14 +423,14 @@ Units: 2
 		Stdout: &stdout,
 		Stderr: &stderr,
 	}
-	trans := &testing.ConditionalTransport{
-		Transport: testing.Transport{Message: result, Status: http.StatusOK},
+	trans := &cmdtest.ConditionalTransport{
+		Transport: cmdtest.Transport{Message: result, Status: http.StatusOK},
 		CondFunc: func(req *http.Request) bool {
 			return req.URL.Path == "/apps/secret" && req.Method == "GET"
 		},
 	}
 	client := cmd.NewClient(&http.Client{Transport: trans}, nil, manager)
-	fake := testing.FakeGuesser{Name: "secret"}
+	fake := cmdtest.FakeGuesser{Name: "secret"}
 	guessCommand := cmd.GuessingCommand{G: &fake}
 	command := appInfo{GuessingCommand: guessCommand}
 	command.Flags().Parse(true, nil)
@@ -464,7 +464,7 @@ Units: 3
 		Stdout: &stdout,
 		Stderr: &stderr,
 	}
-	client := cmd.NewClient(&http.Client{Transport: &testing.Transport{Message: result, Status: http.StatusOK}}, nil, manager)
+	client := cmd.NewClient(&http.Client{Transport: &cmdtest.Transport{Message: result, Status: http.StatusOK}}, nil, manager)
 	command := appInfo{}
 	command.Flags().Parse(true, []string{"-a/--app", "app1"})
 	err := command.Run(&context, client)
@@ -562,7 +562,7 @@ App Plan:
 		Stdout: &stdout,
 		Stderr: &stderr,
 	}
-	client := cmd.NewClient(&http.Client{Transport: &testing.Transport{Message: result, Status: http.StatusOK}}, nil, manager)
+	client := cmd.NewClient(&http.Client{Transport: &cmdtest.Transport{Message: result, Status: http.StatusOK}}, nil, manager)
 	command := appInfo{}
 	command.Flags().Parse(true, []string{"-a/--app", "app1"})
 	err := command.Run(&context, client)
@@ -659,7 +659,7 @@ func (s *S) TestAppGrant(c *gocheck.C) {
 	}
 	command := appGrant{}
 	command.Flags().Parse(true, []string{"--app", "games"})
-	client := cmd.NewClient(&http.Client{Transport: &testing.Transport{Message: "", Status: http.StatusOK}}, nil, manager)
+	client := cmd.NewClient(&http.Client{Transport: &cmdtest.Transport{Message: "", Status: http.StatusOK}}, nil, manager)
 	err := command.Run(&context, client)
 	c.Assert(err, gocheck.IsNil)
 	c.Assert(stdout.String(), gocheck.Equals, expected)
@@ -673,10 +673,10 @@ func (s *S) TestAppGrantWithoutFlag(c *gocheck.C) {
 		Stdout: &stdout,
 		Stderr: &stderr,
 	}
-	fake := &testing.FakeGuesser{Name: "fights"}
+	fake := &cmdtest.FakeGuesser{Name: "fights"}
 	command := appGrant{GuessingCommand: cmd.GuessingCommand{G: fake}}
 	command.Flags().Parse(true, nil)
-	client := cmd.NewClient(&http.Client{Transport: &testing.Transport{Message: "", Status: http.StatusOK}}, nil, manager)
+	client := cmd.NewClient(&http.Client{Transport: &cmdtest.Transport{Message: "", Status: http.StatusOK}}, nil, manager)
 	err := command.Run(&context, client)
 	c.Assert(err, gocheck.IsNil)
 	c.Assert(stdout.String(), gocheck.Equals, expected)
@@ -704,7 +704,7 @@ func (s *S) TestAppRevoke(c *gocheck.C) {
 	}
 	command := appRevoke{}
 	command.Flags().Parse(true, []string{"--app", "games"})
-	client := cmd.NewClient(&http.Client{Transport: &testing.Transport{Message: "", Status: http.StatusOK}}, nil, manager)
+	client := cmd.NewClient(&http.Client{Transport: &cmdtest.Transport{Message: "", Status: http.StatusOK}}, nil, manager)
 	err := command.Run(&context, client)
 	c.Assert(err, gocheck.IsNil)
 	c.Assert(stdout.String(), gocheck.Equals, expected)
@@ -718,10 +718,10 @@ func (s *S) TestAppRevokeWithoutFlag(c *gocheck.C) {
 		Stdout: &stdout,
 		Stderr: &stderr,
 	}
-	fake := &testing.FakeGuesser{Name: "fights"}
+	fake := &cmdtest.FakeGuesser{Name: "fights"}
 	command := appRevoke{GuessingCommand: cmd.GuessingCommand{G: fake}}
 	command.Flags().Parse(true, nil)
-	client := cmd.NewClient(&http.Client{Transport: &testing.Transport{Message: "", Status: http.StatusOK}}, nil, manager)
+	client := cmd.NewClient(&http.Client{Transport: &cmdtest.Transport{Message: "", Status: http.StatusOK}}, nil, manager)
 	err := command.Run(&context, client)
 	c.Assert(err, gocheck.IsNil)
 	c.Assert(stdout.String(), gocheck.Equals, expected)
@@ -753,7 +753,7 @@ func (s *S) TestAppList(c *gocheck.C) {
 		Stdout: &stdout,
 		Stderr: &stderr,
 	}
-	client := cmd.NewClient(&http.Client{Transport: &testing.Transport{Message: result, Status: http.StatusOK}}, nil, manager)
+	client := cmd.NewClient(&http.Client{Transport: &cmdtest.Transport{Message: result, Status: http.StatusOK}}, nil, manager)
 	command := appList{}
 	err := command.Run(&context, client)
 	c.Assert(err, gocheck.IsNil)
@@ -776,7 +776,7 @@ func (s *S) TestAppListDisplayAppsInAlphabeticalOrder(c *gocheck.C) {
 		Stdout: &stdout,
 		Stderr: &stderr,
 	}
-	client := cmd.NewClient(&http.Client{Transport: &testing.Transport{Message: result, Status: http.StatusOK}}, nil, manager)
+	client := cmd.NewClient(&http.Client{Transport: &cmdtest.Transport{Message: result, Status: http.StatusOK}}, nil, manager)
 	command := appList{}
 	err := command.Run(&context, client)
 	c.Assert(err, gocheck.IsNil)
@@ -797,7 +797,7 @@ func (s *S) TestAppListUnitIsntAvailable(c *gocheck.C) {
 		Stdout: &stdout,
 		Stderr: &stderr,
 	}
-	client := cmd.NewClient(&http.Client{Transport: &testing.Transport{Message: result, Status: http.StatusOK}}, nil, manager)
+	client := cmd.NewClient(&http.Client{Transport: &cmdtest.Transport{Message: result, Status: http.StatusOK}}, nil, manager)
 	command := appList{}
 	err := command.Run(&context, client)
 	c.Assert(err, gocheck.IsNil)
@@ -818,7 +818,7 @@ func (s *S) TestAppListUnitIsAvailable(c *gocheck.C) {
 		Stdout: &stdout,
 		Stderr: &stderr,
 	}
-	client := cmd.NewClient(&http.Client{Transport: &testing.Transport{Message: result, Status: http.StatusOK}}, nil, manager)
+	client := cmd.NewClient(&http.Client{Transport: &cmdtest.Transport{Message: result, Status: http.StatusOK}}, nil, manager)
 	command := appList{}
 	err := command.Run(&context, client)
 	c.Assert(err, gocheck.IsNil)
@@ -839,7 +839,7 @@ func (s *S) TestAppListUnitWithoutName(c *gocheck.C) {
 		Stdout: &stdout,
 		Stderr: &stderr,
 	}
-	client := cmd.NewClient(&http.Client{Transport: &testing.Transport{Message: result, Status: http.StatusOK}}, nil, manager)
+	client := cmd.NewClient(&http.Client{Transport: &cmdtest.Transport{Message: result, Status: http.StatusOK}}, nil, manager)
 	command := appList{}
 	err := command.Run(&context, client)
 	c.Assert(err, gocheck.IsNil)
@@ -860,7 +860,7 @@ func (s *S) TestAppListNotReady(c *gocheck.C) {
 		Stdout: &stdout,
 		Stderr: &stderr,
 	}
-	client := cmd.NewClient(&http.Client{Transport: &testing.Transport{Message: result, Status: http.StatusOK}}, nil, manager)
+	client := cmd.NewClient(&http.Client{Transport: &cmdtest.Transport{Message: result, Status: http.StatusOK}}, nil, manager)
 	command := appList{}
 	err := command.Run(&context, client)
 	c.Assert(err, gocheck.IsNil)
@@ -882,7 +882,7 @@ func (s *S) TestAppListCName(c *gocheck.C) {
 		Stdout: &stdout,
 		Stderr: &stderr,
 	}
-	client := cmd.NewClient(&http.Client{Transport: &testing.Transport{Message: result, Status: http.StatusOK}}, nil, manager)
+	client := cmd.NewClient(&http.Client{Transport: &cmdtest.Transport{Message: result, Status: http.StatusOK}}, nil, manager)
 	command := appList{}
 	err := command.Run(&context, client)
 	c.Assert(err, gocheck.IsNil)
@@ -913,11 +913,11 @@ func (s *S) TestAppRestart(c *gocheck.C) {
 		Stderr: &stderr,
 	}
 	expectedOut := "-- restarted --"
-	msg := tsuruIo.SimpleJsonMessage{Message: expectedOut}
+	msg := io.SimpleJsonMessage{Message: expectedOut}
 	result, err := json.Marshal(msg)
 	c.Assert(err, gocheck.IsNil)
-	trans := &testing.ConditionalTransport{
-		Transport: testing.Transport{Message: string(result), Status: http.StatusOK},
+	trans := &cmdtest.ConditionalTransport{
+		Transport: cmdtest.Transport{Message: string(result), Status: http.StatusOK},
 		CondFunc: func(req *http.Request) bool {
 			called = true
 			return req.URL.Path == "/apps/handful_of_nothing/restart" && req.Method == "POST"
@@ -942,18 +942,18 @@ func (s *S) TestAppRestartWithoutTheFlag(c *gocheck.C) {
 		Stderr: &stderr,
 	}
 	expectedOut := "-- restarted --"
-	msg := tsuruIo.SimpleJsonMessage{Message: expectedOut}
+	msg := io.SimpleJsonMessage{Message: expectedOut}
 	result, err := json.Marshal(msg)
 	c.Assert(err, gocheck.IsNil)
-	trans := &testing.ConditionalTransport{
-		Transport: testing.Transport{Message: string(result), Status: http.StatusOK},
+	trans := &cmdtest.ConditionalTransport{
+		Transport: cmdtest.Transport{Message: string(result), Status: http.StatusOK},
 		CondFunc: func(req *http.Request) bool {
 			called = true
 			return req.URL.Path == "/apps/motorbreath/restart" && req.Method == "POST"
 		},
 	}
 	client := cmd.NewClient(&http.Client{Transport: trans}, nil, manager)
-	fake := &testing.FakeGuesser{Name: "motorbreath"}
+	fake := &cmdtest.FakeGuesser{Name: "motorbreath"}
 	command := appRestart{GuessingCommand: cmd.GuessingCommand{G: fake}}
 	command.Flags().Parse(true, nil)
 	err = command.Run(&context, client)
@@ -988,8 +988,8 @@ func (s *S) TestAddCName(c *gocheck.C) {
 		Stderr: &stderr,
 		Args:   []string{"death.evergrey.mycompany.com"},
 	}
-	trans := &testing.ConditionalTransport{
-		Transport: testing.Transport{Message: "Restarted", Status: http.StatusOK},
+	trans := &cmdtest.ConditionalTransport{
+		Transport: cmdtest.Transport{Message: "Restarted", Status: http.StatusOK},
 		CondFunc: func(req *http.Request) bool {
 			called = true
 			var m map[string][]string
@@ -1019,9 +1019,9 @@ func (s *S) TestAddCNameWithoutTheFlag(c *gocheck.C) {
 		Stderr: &stderr,
 		Args:   []string{"corey.evergrey.mycompany.com"},
 	}
-	fake := &testing.FakeGuesser{Name: "corey"}
-	trans := &testing.ConditionalTransport{
-		Transport: testing.Transport{Message: "Restarted", Status: http.StatusOK},
+	fake := &cmdtest.FakeGuesser{Name: "corey"}
+	trans := &cmdtest.ConditionalTransport{
+		Transport: cmdtest.Transport{Message: "Restarted", Status: http.StatusOK},
 		CondFunc: func(req *http.Request) bool {
 			called = true
 			var m map[string][]string
@@ -1046,7 +1046,7 @@ func (s *S) TestAddCNameFailure(c *gocheck.C) {
 		Stderr: &stderr,
 		Args:   []string{"masterplan.evergrey.mycompany.com"},
 	}
-	trans := &testing.Transport{Message: "Invalid cname", Status: http.StatusPreconditionFailed}
+	trans := &cmdtest.Transport{Message: "Invalid cname", Status: http.StatusPreconditionFailed}
 	client := cmd.NewClient(&http.Client{Transport: trans}, nil, manager)
 	command := cnameAdd{}
 	command.Flags().Parse(true, []string{"-a", "masterplan"})
@@ -1078,8 +1078,8 @@ func (s *S) TestRemoveCName(c *gocheck.C) {
 		Stdout: &stdout,
 		Stderr: &stderr,
 	}
-	trans := &testing.ConditionalTransport{
-		Transport: testing.Transport{Message: "Restarted", Status: http.StatusOK},
+	trans := &cmdtest.ConditionalTransport{
+		Transport: cmdtest.Transport{Message: "Restarted", Status: http.StatusOK},
 		CondFunc: func(req *http.Request) bool {
 			called = true
 			return req.URL.Path == "/apps/death/cname" && req.Method == "DELETE"
@@ -1103,9 +1103,9 @@ func (s *S) TestRemoveCNameWithoutTheFlag(c *gocheck.C) {
 		Stdout: &stdout,
 		Stderr: &stderr,
 	}
-	fake := &testing.FakeGuesser{Name: "corey"}
-	trans := &testing.ConditionalTransport{
-		Transport: testing.Transport{Message: "Restarted", Status: http.StatusOK},
+	fake := &cmdtest.FakeGuesser{Name: "corey"}
+	trans := &cmdtest.ConditionalTransport{
+		Transport: cmdtest.Transport{Message: "Restarted", Status: http.StatusOK},
 		CondFunc: func(req *http.Request) bool {
 			called = true
 			return req.URL.Path == "/apps/corey/cname" && req.Method == "DELETE"
@@ -1164,8 +1164,8 @@ func (s *S) TestSetTeamOwner(c *gocheck.C) {
 		Stderr: &stderr,
 		Args:   []string{"test"},
 	}
-	trans := &testing.ConditionalTransport{
-		Transport: testing.Transport{Message: "app's owner team successfully changed.", Status: http.StatusOK},
+	trans := &cmdtest.ConditionalTransport{
+		Transport: cmdtest.Transport{Message: "app's owner team successfully changed.", Status: http.StatusOK},
 		CondFunc: func(req *http.Request) bool {
 			called = true
 			return req.URL.Path == "/apps/app-fake/team-owner" && req.Method == "POST"
@@ -1189,8 +1189,8 @@ func (s *S) TestAppStart(c *gocheck.C) {
 		Stdout: &stdout,
 		Stderr: &stderr,
 	}
-	trans := &testing.ConditionalTransport{
-		Transport: testing.Transport{Message: "Started", Status: http.StatusOK},
+	trans := &cmdtest.ConditionalTransport{
+		Transport: cmdtest.Transport{Message: "Started", Status: http.StatusOK},
 		CondFunc: func(req *http.Request) bool {
 			called = true
 			return req.URL.Path == "/apps/handful_of_nothing/start" && req.Method == "POST"
@@ -1214,15 +1214,15 @@ func (s *S) TestAppStartWithoutTheFlag(c *gocheck.C) {
 		Stdout: &stdout,
 		Stderr: &stderr,
 	}
-	trans := &testing.ConditionalTransport{
-		Transport: testing.Transport{Message: "Started", Status: http.StatusOK},
+	trans := &cmdtest.ConditionalTransport{
+		Transport: cmdtest.Transport{Message: "Started", Status: http.StatusOK},
 		CondFunc: func(req *http.Request) bool {
 			called = true
 			return req.URL.Path == "/apps/motorbreath/start" && req.Method == "POST"
 		},
 	}
 	client := cmd.NewClient(&http.Client{Transport: trans}, nil, manager)
-	fake := &testing.FakeGuesser{Name: "motorbreath"}
+	fake := &cmdtest.FakeGuesser{Name: "motorbreath"}
 	command := appStart{GuessingCommand: cmd.GuessingCommand{G: fake}}
 	command.Flags().Parse(true, nil)
 	err := command.Run(&context, client)
@@ -1265,8 +1265,8 @@ func (s *S) TestAppStop(c *gocheck.C) {
 		Stdout: &stdout,
 		Stderr: &stderr,
 	}
-	trans := &testing.ConditionalTransport{
-		Transport: testing.Transport{Message: "Stopped", Status: http.StatusOK},
+	trans := &cmdtest.ConditionalTransport{
+		Transport: cmdtest.Transport{Message: "Stopped", Status: http.StatusOK},
 		CondFunc: func(req *http.Request) bool {
 			called = true
 			return req.URL.Path == "/apps/handful_of_nothing/stop" && req.Method == "POST"
@@ -1290,15 +1290,15 @@ func (s *S) TestAppStopWithoutTheFlag(c *gocheck.C) {
 		Stdout: &stdout,
 		Stderr: &stderr,
 	}
-	trans := &testing.ConditionalTransport{
-		Transport: testing.Transport{Message: "Stopped", Status: http.StatusOK},
+	trans := &cmdtest.ConditionalTransport{
+		Transport: cmdtest.Transport{Message: "Stopped", Status: http.StatusOK},
 		CondFunc: func(req *http.Request) bool {
 			called = true
 			return req.URL.Path == "/apps/motorbreath/stop" && req.Method == "POST"
 		},
 	}
 	client := cmd.NewClient(&http.Client{Transport: trans}, nil, manager)
-	fake := &testing.FakeGuesser{Name: "motorbreath"}
+	fake := &cmdtest.FakeGuesser{Name: "motorbreath"}
 	command := appStop{GuessingCommand: cmd.GuessingCommand{G: fake}}
 	command.Flags().Parse(true, nil)
 	err := command.Run(&context, client)
@@ -1320,11 +1320,11 @@ func (s *S) TestUnitAdd(c *gocheck.C) {
 		Stderr: &stderr,
 	}
 	expectedOut := "-- added unit --"
-	msg := tsuruIo.SimpleJsonMessage{Message: expectedOut}
+	msg := io.SimpleJsonMessage{Message: expectedOut}
 	result, err := json.Marshal(msg)
 	c.Assert(err, gocheck.IsNil)
-	trans := &testing.ConditionalTransport{
-		Transport: testing.Transport{Message: string(result), Status: http.StatusOK},
+	trans := &cmdtest.ConditionalTransport{
+		Transport: cmdtest.Transport{Message: string(result), Status: http.StatusOK},
 		CondFunc: func(req *http.Request) bool {
 			called = true
 			b, err := ioutil.ReadAll(req.Body)
@@ -1349,10 +1349,10 @@ func (s *S) TestUnitAddFailure(c *gocheck.C) {
 		Stdout: &stdout,
 		Stderr: &stderr,
 	}
-	msg := tsuruIo.SimpleJsonMessage{Error: "errored msg"}
+	msg := io.SimpleJsonMessage{Error: "errored msg"}
 	result, err := json.Marshal(msg)
 	c.Assert(err, gocheck.IsNil)
-	client := cmd.NewClient(&http.Client{Transport: &testing.Transport{Message: string(result), Status: 200}}, nil, manager)
+	client := cmd.NewClient(&http.Client{Transport: &cmdtest.Transport{Message: string(result), Status: 200}}, nil, manager)
 	command := unitAdd{}
 	command.Flags().Parse(true, []string{"-a", "radio"})
 	err = command.Run(&context, client)
@@ -1382,8 +1382,8 @@ func (s *S) TestUnitRemove(c *gocheck.C) {
 		Stdout: &stdout,
 		Stderr: &stderr,
 	}
-	trans := &testing.ConditionalTransport{
-		Transport: testing.Transport{Message: "", Status: http.StatusOK},
+	trans := &cmdtest.ConditionalTransport{
+		Transport: cmdtest.Transport{Message: "", Status: http.StatusOK},
 		CondFunc: func(req *http.Request) bool {
 			called = true
 			b, err := ioutil.ReadAll(req.Body)
@@ -1410,7 +1410,7 @@ func (s *S) TestUnitRemoveFailure(c *gocheck.C) {
 		Stderr: &stderr,
 	}
 	client := cmd.NewClient(&http.Client{
-		Transport: &testing.Transport{Message: "Failed to remove.", Status: 500},
+		Transport: &cmdtest.Transport{Message: "Failed to remove.", Status: 500},
 	}, nil, manager)
 	command := unitRemove{}
 	command.Flags().Parse(true, []string{"-a", "vapor"})

@@ -1,4 +1,4 @@
-// Copyright 2014 tsuru authors. All rights reserved.
+// Copyright 2015 tsuru authors. All rights reserved.
 // Use of this source code is governed by a BSD-style
 // license that can be found in the LICENSE file.
 
@@ -12,8 +12,8 @@ import (
 	"strings"
 
 	"github.com/tsuru/tsuru/cmd"
-	"github.com/tsuru/tsuru/cmd/testing"
-	tsuruIo "github.com/tsuru/tsuru/io"
+	"github.com/tsuru/tsuru/cmd/cmdtest"
+	"github.com/tsuru/tsuru/io"
 	"launchpad.net/gocheck"
 )
 
@@ -46,8 +46,8 @@ func (s *S) TestServiceList(c *gocheck.C) {
 		Stdout: &stdout,
 		Stderr: &stderr,
 	}
-	trans := &testing.ConditionalTransport{
-		Transport: testing.Transport{Message: output, Status: http.StatusOK},
+	trans := &cmdtest.ConditionalTransport{
+		Transport: cmdtest.Transport{Message: output, Status: http.StatusOK},
 		CondFunc: func(req *http.Request) bool {
 			return req.URL.Path == "/services/instances"
 		},
@@ -70,8 +70,8 @@ func (s *S) TestServiceListWithEmptyResponse(c *gocheck.C) {
 		Stdout: &stdout,
 		Stderr: &stderr,
 	}
-	trans := &testing.ConditionalTransport{
-		Transport: testing.Transport{Message: output, Status: http.StatusOK},
+	trans := &cmdtest.ConditionalTransport{
+		Transport: cmdtest.Transport{Message: output, Status: http.StatusOK},
 		CondFunc: func(req *http.Request) bool {
 			return req.URL.Path == "/services/instances"
 		},
@@ -108,11 +108,11 @@ func (s *S) TestServiceBind(c *gocheck.C) {
 		Stderr: &stderr,
 	}
 	expectedOut := `["DATABASE_HOST","DATABASE_USER","DATABASE_PASSWORD"]`
-	msg := tsuruIo.SimpleJsonMessage{Message: expectedOut}
+	msg := io.SimpleJsonMessage{Message: expectedOut}
 	result, err := json.Marshal(msg)
 	c.Assert(err, gocheck.IsNil)
-	trans := &testing.ConditionalTransport{
-		Transport: testing.Transport{Message: string(result), Status: http.StatusOK},
+	trans := &cmdtest.ConditionalTransport{
+		Transport: cmdtest.Transport{Message: string(result), Status: http.StatusOK},
 		CondFunc: func(req *http.Request) bool {
 			called = true
 			return req.Method == "PUT" && req.URL.Path == "/services/instances/my-mysql/g1"
@@ -138,11 +138,11 @@ func (s *S) TestServiceBindWithoutFlag(c *gocheck.C) {
 		Stderr: &stderr,
 	}
 	expectedOut := `["DATABASE_HOST","DATABASE_USER","DATABASE_PASSWORD"]`
-	msg := tsuruIo.SimpleJsonMessage{Message: expectedOut}
+	msg := io.SimpleJsonMessage{Message: expectedOut}
 	result, err := json.Marshal(msg)
 	c.Assert(err, gocheck.IsNil)
-	trans := &testing.ConditionalTransport{
-		Transport: testing.Transport{
+	trans := &cmdtest.ConditionalTransport{
+		Transport: cmdtest.Transport{
 			Message: string(result),
 			Status:  http.StatusOK,
 		},
@@ -152,7 +152,7 @@ func (s *S) TestServiceBindWithoutFlag(c *gocheck.C) {
 		},
 	}
 	client := cmd.NewClient(&http.Client{Transport: trans}, nil, manager)
-	fake := &testing.FakeGuesser{Name: "ge"}
+	fake := &cmdtest.FakeGuesser{Name: "ge"}
 	err = (&serviceBind{cmd.GuessingCommand{G: fake}}).Run(&ctx, client)
 	c.Assert(err, gocheck.IsNil)
 	c.Assert(called, gocheck.Equals, true)
@@ -167,11 +167,11 @@ func (s *S) TestServiceBindWithoutEnvironmentVariables(c *gocheck.C) {
 		Stderr: &stderr,
 	}
 	expectedOut := `something`
-	msg := tsuruIo.SimpleJsonMessage{Message: expectedOut}
+	msg := io.SimpleJsonMessage{Message: expectedOut}
 	result, err := json.Marshal(msg)
 	c.Assert(err, gocheck.IsNil)
-	trans := &testing.ConditionalTransport{
-		Transport: testing.Transport{Message: string(result), Status: http.StatusOK},
+	trans := &cmdtest.ConditionalTransport{
+		Transport: cmdtest.Transport{Message: string(result), Status: http.StatusOK},
 		CondFunc: func(req *http.Request) bool {
 			return req.Method == "PUT" && req.URL.Path == "/services/instances/my-mysql/g1"
 		},
@@ -191,7 +191,7 @@ func (s *S) TestServiceBindWithRequestFailure(c *gocheck.C) {
 		Stdout: &stdout,
 		Stderr: &stderr,
 	}
-	trans := &testing.Transport{Message: "This user does not have access to this app.", Status: http.StatusForbidden}
+	trans := &cmdtest.Transport{Message: "This user does not have access to this app.", Status: http.StatusForbidden}
 
 	client := cmd.NewClient(&http.Client{Transport: trans}, nil, manager)
 	command := serviceBind{}
@@ -226,11 +226,11 @@ func (s *S) TestServiceUnbind(c *gocheck.C) {
 		Stderr: &stderr,
 	}
 	expectedOut := `something`
-	msg := tsuruIo.SimpleJsonMessage{Message: expectedOut}
+	msg := io.SimpleJsonMessage{Message: expectedOut}
 	result, err := json.Marshal(msg)
 	c.Assert(err, gocheck.IsNil)
-	trans := &testing.ConditionalTransport{
-		Transport: testing.Transport{Message: string(result), Status: http.StatusOK},
+	trans := &cmdtest.ConditionalTransport{
+		Transport: cmdtest.Transport{Message: string(result), Status: http.StatusOK},
 		CondFunc: func(req *http.Request) bool {
 			called = true
 			return req.Method == "DELETE" && req.URL.Path == "/services/instances/hand/pocket"
@@ -254,18 +254,18 @@ func (s *S) TestServiceUnbindWithoutFlag(c *gocheck.C) {
 		Stderr: &stderr,
 	}
 	expectedOut := `something`
-	msg := tsuruIo.SimpleJsonMessage{Message: expectedOut}
+	msg := io.SimpleJsonMessage{Message: expectedOut}
 	result, err := json.Marshal(msg)
 	c.Assert(err, gocheck.IsNil)
-	trans := &testing.ConditionalTransport{
-		Transport: testing.Transport{Message: string(result), Status: http.StatusOK},
+	trans := &cmdtest.ConditionalTransport{
+		Transport: cmdtest.Transport{Message: string(result), Status: http.StatusOK},
 		CondFunc: func(req *http.Request) bool {
 			called = true
 			return req.Method == "DELETE" && req.URL.Path == "/services/instances/hand/sleeve"
 		},
 	}
 	client := cmd.NewClient(&http.Client{Transport: trans}, nil, manager)
-	fake := &testing.FakeGuesser{Name: "sleeve"}
+	fake := &cmdtest.FakeGuesser{Name: "sleeve"}
 	err = (&serviceUnbind{cmd.GuessingCommand{G: fake}}).Run(&ctx, client)
 	c.Assert(err, gocheck.IsNil)
 	c.Assert(called, gocheck.Equals, true)
@@ -279,7 +279,7 @@ func (s *S) TestServiceUnbindWithRequestFailure(c *gocheck.C) {
 		Stdout: &stdout,
 		Stderr: &stderr,
 	}
-	trans := &testing.Transport{Message: "This app is not bound to this service.", Status: http.StatusPreconditionFailed}
+	trans := &cmdtest.Transport{Message: "This app is not bound to this service.", Status: http.StatusPreconditionFailed}
 
 	client := cmd.NewClient(&http.Client{Transport: trans}, nil, manager)
 	command := serviceUnbind{}
@@ -336,7 +336,7 @@ func (s *S) TestServiceAddRun(c *gocheck.C) {
 		Stdout: &stdout,
 		Stderr: &stderr,
 	}
-	client := cmd.NewClient(&http.Client{Transport: &testing.Transport{Message: result, Status: http.StatusOK}}, nil, manager)
+	client := cmd.NewClient(&http.Client{Transport: &cmdtest.Transport{Message: result, Status: http.StatusOK}}, nil, manager)
 	err := (&serviceAdd{}).Run(&context, client)
 	c.Assert(err, gocheck.IsNil)
 	obtained := stdout.String()
@@ -389,7 +389,7 @@ func (s *S) TestServiceInstanceStatusRun(c *gocheck.C) {
 		Stdout: &stdout,
 		Stderr: &stderr,
 	}
-	client := cmd.NewClient(&http.Client{Transport: &testing.Transport{Message: result, Status: http.StatusOK}}, nil, manager)
+	client := cmd.NewClient(&http.Client{Transport: &cmdtest.Transport{Message: result, Status: http.StatusOK}}, nil, manager)
 	err := (&serviceInstanceStatus{}).Run(&context, client)
 	c.Assert(err, gocheck.IsNil)
 	obtained := stdout.String()
@@ -475,8 +475,8 @@ Service test is foo bar.
 		Stdout: &stdout,
 		Stderr: &stderr,
 	}
-	transport := testing.ConditionalTransport{
-		Transport: testing.Transport{
+	transport := cmdtest.ConditionalTransport{
+		Transport: cmdtest.Transport{
 			Message: result,
 			Status:  http.StatusOK,
 		},
@@ -512,8 +512,8 @@ func (s *S) TestServiceRemoveRun(c *gocheck.C) {
 	}
 	expected := `Are you sure you want to remove service "some-service-instance"? (y/n) `
 	expected += `Service "some-service-instance" successfully removed!` + "\n"
-	transport := testing.ConditionalTransport{
-		Transport: testing.Transport{
+	transport := cmdtest.ConditionalTransport{
+		Transport: cmdtest.Transport{
 			Message: "",
 			Status:  http.StatusOK,
 		},
@@ -538,7 +538,7 @@ func (s *S) TestServiceRemoveWithoutAsking(c *gocheck.C) {
 		Stderr: &stderr,
 		Stdin:  strings.NewReader("y\n"),
 	}
-	client := cmd.NewClient(&http.Client{Transport: &testing.Transport{Message: "", Status: http.StatusOK}}, nil, manager)
+	client := cmd.NewClient(&http.Client{Transport: &cmdtest.Transport{Message: "", Status: http.StatusOK}}, nil, manager)
 	command := serviceRemove{}
 	command.Flags().Parse(true, []string{"ble", "-y"})
 	err := command.Run(&context, client)

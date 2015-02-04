@@ -15,7 +15,7 @@ import (
 	"strings"
 
 	"github.com/tsuru/tsuru/cmd"
-	ttesting "github.com/tsuru/tsuru/cmd/testing"
+	"github.com/tsuru/tsuru/cmd/cmdtest"
 	"github.com/tsuru/tsuru/fs/testing"
 	"launchpad.net/gocheck"
 )
@@ -30,7 +30,7 @@ func (s *S) TestTeamAddUser(c *gocheck.C) {
 		Stdin:  nil,
 	}
 	command := teamUserAdd{}
-	client := cmd.NewClient(&http.Client{Transport: &ttesting.Transport{Message: "", Status: http.StatusOK}}, nil, manager)
+	client := cmd.NewClient(&http.Client{Transport: &cmdtest.Transport{Message: "", Status: http.StatusOK}}, nil, manager)
 	err := command.Run(&context, client)
 	c.Assert(err, gocheck.IsNil)
 	c.Assert(stdout.String(), gocheck.Equals, expected)
@@ -56,7 +56,7 @@ func (s *S) TestTeamRemoveUser(c *gocheck.C) {
 		Stdin:  nil,
 	}
 	command := teamUserRemove{}
-	client := cmd.NewClient(&http.Client{Transport: &ttesting.Transport{Message: "", Status: http.StatusOK}}, nil, manager)
+	client := cmd.NewClient(&http.Client{Transport: &cmdtest.Transport{Message: "", Status: http.StatusOK}}, nil, manager)
 	err := command.Run(&context, client)
 	c.Assert(err, gocheck.IsNil)
 	c.Assert(stdout.String(), gocheck.Equals, expected)
@@ -81,7 +81,7 @@ func (s *S) TestTeamCreate(c *gocheck.C) {
 		Stderr: &stderr,
 		Stdin:  nil,
 	}
-	client := cmd.NewClient(&http.Client{Transport: &ttesting.Transport{Message: "", Status: http.StatusCreated}}, nil, manager)
+	client := cmd.NewClient(&http.Client{Transport: &cmdtest.Transport{Message: "", Status: http.StatusCreated}}, nil, manager)
 	command := teamCreate{}
 	err := command.Run(&context, client)
 	c.Assert(err, gocheck.IsNil)
@@ -108,8 +108,8 @@ func (s *S) TestTeamRemove(c *gocheck.C) {
 		Stdout: &buf,
 		Stdin:  strings.NewReader("y\n"),
 	}
-	trans := ttesting.ConditionalTransport{
-		Transport: ttesting.Transport{Message: "", Status: http.StatusOK},
+	trans := cmdtest.ConditionalTransport{
+		Transport: cmdtest.Transport{Message: "", Status: http.StatusOK},
 		CondFunc: func(req *http.Request) bool {
 			called = true
 			return req.URL.Path == "/teams/evergrey" && req.Method == "DELETE"
@@ -142,7 +142,7 @@ func (s *S) TestTeamRemoveFailingRequest(c *gocheck.C) {
 		Stdout: new(bytes.Buffer),
 		Stdin:  strings.NewReader("y\n"),
 	}
-	client := cmd.NewClient(&http.Client{Transport: &ttesting.Transport{Message: "Team evergrey not found.", Status: http.StatusNotFound}}, nil, manager)
+	client := cmd.NewClient(&http.Client{Transport: &cmdtest.Transport{Message: "Team evergrey not found.", Status: http.StatusNotFound}}, nil, manager)
 	command := teamRemove{}
 	err := command.Run(&context, client)
 	c.Assert(err, gocheck.NotNil)
@@ -168,8 +168,8 @@ func (s *S) TestTeamUserList(c *gocheck.C) {
 	var buf bytes.Buffer
 	context := cmd.Context{Args: []string{"symfonia"}, Stdout: &buf}
 	command := teamUserList{}
-	transport := ttesting.ConditionalTransport{
-		Transport: ttesting.Transport{
+	transport := cmdtest.ConditionalTransport{
+		Transport: cmdtest.Transport{
 			Status:  http.StatusOK,
 			Message: `{"name":"symfonia","users":["somebody@tsuru.io","otherbody@tsuru.io","me@tsuru.io"]}`,
 		},
@@ -191,7 +191,7 @@ func (s *S) TestTeamUserList(c *gocheck.C) {
 func (s *S) TestTeamUserListError(c *gocheck.C) {
 	var buf bytes.Buffer
 	context := cmd.Context{Args: []string{"symfonia"}, Stdout: &buf}
-	transport := ttesting.Transport{Status: http.StatusNotFound, Message: "Team not found"}
+	transport := cmdtest.Transport{Status: http.StatusNotFound, Message: "Team not found"}
 	client := cmd.NewClient(&http.Client{Transport: &transport}, nil, manager)
 	command := teamUserList{}
 	err := command.Run(&context, client)
@@ -215,8 +215,8 @@ func (s *S) TestTeamUserListIsACommand(c *gocheck.C) {
 
 func (s *S) TestTeamListRun(c *gocheck.C) {
 	var called bool
-	trans := &ttesting.ConditionalTransport{
-		Transport: ttesting.Transport{Message: `[{"name":"timeredbull"},{"name":"cobrateam"}]`, Status: http.StatusOK},
+	trans := &cmdtest.ConditionalTransport{
+		Transport: cmdtest.Transport{Message: `[{"name":"timeredbull"},{"name":"cobrateam"}]`, Status: http.StatusOK},
 		CondFunc: func(req *http.Request) bool {
 			called = true
 			return req.Method == "GET" && req.URL.Path == "/teams"
@@ -241,7 +241,7 @@ func (s *S) TestTeamListRun(c *gocheck.C) {
 }
 
 func (s *S) TestTeamListRunWithNoContent(c *gocheck.C) {
-	client := cmd.NewClient(&http.Client{Transport: &ttesting.Transport{Message: "", Status: http.StatusNoContent}}, nil, manager)
+	client := cmd.NewClient(&http.Client{Transport: &cmdtest.Transport{Message: "", Status: http.StatusNoContent}}, nil, manager)
 	var stdout, stderr bytes.Buffer
 	err := (&teamList{}).Run(&cmd.Context{
 		Args:   []string{},
@@ -285,7 +285,7 @@ func (s *S) TestUserCreateShouldNotDependOnTsuruTokenFile(c *gocheck.C) {
 		Stderr: &stderr,
 		Stdin:  reader,
 	}
-	client := cmd.NewClient(&http.Client{Transport: &ttesting.Transport{Message: "", Status: http.StatusCreated}}, nil, manager)
+	client := cmd.NewClient(&http.Client{Transport: &cmdtest.Transport{Message: "", Status: http.StatusCreated}}, nil, manager)
 	command := userCreate{}
 	err := command.Run(&context, client)
 	c.Assert(err, gocheck.IsNil)
@@ -301,7 +301,7 @@ func (s *S) TestUserCreateReturnErrorIfPasswordsDontMatch(c *gocheck.C) {
 		Stderr: &stderr,
 		Stdin:  reader,
 	}
-	client := cmd.NewClient(&http.Client{Transport: &ttesting.Transport{Message: "", Status: http.StatusCreated}}, nil, manager)
+	client := cmd.NewClient(&http.Client{Transport: &cmdtest.Transport{Message: "", Status: http.StatusCreated}}, nil, manager)
 	command := userCreate{}
 	err := command.Run(&context, client)
 	c.Assert(err, gocheck.NotNil)
@@ -317,7 +317,7 @@ func (s *S) TestUserCreate(c *gocheck.C) {
 		Stderr: &stderr,
 		Stdin:  strings.NewReader("foo123\nfoo123\n"),
 	}
-	client := cmd.NewClient(&http.Client{Transport: &ttesting.Transport{Message: "", Status: http.StatusCreated}}, nil, manager)
+	client := cmd.NewClient(&http.Client{Transport: &cmdtest.Transport{Message: "", Status: http.StatusCreated}}, nil, manager)
 	command := userCreate{}
 	err := command.Run(&context, client)
 	c.Assert(err, gocheck.IsNil)
@@ -339,7 +339,7 @@ func (s *S) TestUserCreateShouldReturnErrorIfThePasswordIsNotGiven(c *gocheck.C)
 }
 
 func (s *S) TestUserCreateNotFound(c *gocheck.C) {
-	transport := ttesting.Transport{
+	transport := cmdtest.Transport{
 		Message: "Not found",
 		Status:  http.StatusNotFound,
 	}
@@ -359,7 +359,7 @@ func (s *S) TestUserCreateNotFound(c *gocheck.C) {
 }
 
 func (s *S) TestUserCreateMethodNotAllowed(c *gocheck.C) {
-	transport := ttesting.Transport{
+	transport := cmdtest.Transport{
 		Message: "Not found",
 		Status:  http.StatusMethodNotAllowed,
 	}
@@ -405,8 +405,8 @@ func (s *S) TestUserRemove(c *gocheck.C) {
 		Stdout: &buf,
 		Stdin:  strings.NewReader("y\n"),
 	}
-	trans := ttesting.ConditionalTransport{
-		Transport: ttesting.Transport{Message: "", Status: http.StatusOK},
+	trans := cmdtest.ConditionalTransport{
+		Transport: cmdtest.Transport{Message: "", Status: http.StatusOK},
 		CondFunc: func(req *http.Request) bool {
 			called = true
 			return req.Method == "DELETE" && req.URL.Path == "/users"
@@ -434,7 +434,7 @@ func (s *S) TestUserRemoveWithoutConfirmation(c *gocheck.C) {
 }
 
 func (s *S) TestUserRemoveWithRequestError(c *gocheck.C) {
-	client := cmd.NewClient(&http.Client{Transport: &ttesting.Transport{Message: "User not found.", Status: http.StatusNotFound}}, nil, manager)
+	client := cmd.NewClient(&http.Client{Transport: &cmdtest.Transport{Message: "User not found.", Status: http.StatusNotFound}}, nil, manager)
 	command := userRemove{}
 	err := command.Run(&cmd.Context{Stdout: new(bytes.Buffer), Stdin: strings.NewReader("y\n")}, client)
 	c.Assert(err, gocheck.NotNil)
@@ -466,8 +466,8 @@ func (s *S) TestChangePassword(c *gocheck.C) {
 		Stdout: &buf,
 		Stdin:  stdin,
 	}
-	trans := ttesting.ConditionalTransport{
-		Transport: ttesting.Transport{Message: "", Status: http.StatusOK},
+	trans := cmdtest.ConditionalTransport{
+		Transport: cmdtest.Transport{Message: "", Status: http.StatusOK},
 		CondFunc: func(req *http.Request) bool {
 			var got map[string]string
 			called = true
@@ -542,8 +542,8 @@ func (s *S) TestResetPassword(c *gocheck.C) {
 		called bool
 	)
 	context := cmd.Context{Args: []string{"user@tsuru.io"}, Stdout: &buf}
-	trans := ttesting.ConditionalTransport{
-		Transport: ttesting.Transport{
+	trans := cmdtest.ConditionalTransport{
+		Transport: cmdtest.Transport{
 			Status:  http.StatusOK,
 			Message: "",
 		},
@@ -570,8 +570,8 @@ func (s *S) TestResetPasswordStepTwo(c *gocheck.C) {
 		called bool
 	)
 	context := cmd.Context{Args: []string{"user@tsuru.io"}, Stdout: &buf}
-	trans := ttesting.ConditionalTransport{
-		Transport: ttesting.Transport{
+	trans := cmdtest.ConditionalTransport{
+		Transport: cmdtest.Transport{
 			Status:  http.StatusOK,
 			Message: "",
 		},
@@ -641,8 +641,8 @@ func (s *S) TestResetPasswordIsAFlaggedCommand(c *gocheck.C) {
 
 func (s *S) TestShowAPITokenRun(c *gocheck.C) {
 	var called bool
-	trans := &ttesting.ConditionalTransport{
-		Transport: ttesting.Transport{Message: `"23iou32nd3i2udnu23jd"`, Status: http.StatusOK},
+	trans := &cmdtest.ConditionalTransport{
+		Transport: cmdtest.Transport{Message: `"23iou32nd3i2udnu23jd"`, Status: http.StatusOK},
 		CondFunc: func(req *http.Request) bool {
 			called = true
 			return req.Method == "GET" && req.URL.Path == "/users/api-key"
@@ -664,7 +664,7 @@ func (s *S) TestShowAPITokenRun(c *gocheck.C) {
 }
 
 func (s *S) TestShowAPITokenRunWithNoContent(c *gocheck.C) {
-	client := cmd.NewClient(&http.Client{Transport: &ttesting.Transport{Message: "", Status: http.StatusNoContent}}, nil, manager)
+	client := cmd.NewClient(&http.Client{Transport: &cmdtest.Transport{Message: "", Status: http.StatusNoContent}}, nil, manager)
 	var stdout, stderr bytes.Buffer
 	err := (&showAPIToken{}).Run(&cmd.Context{
 		Args:   []string{},
@@ -692,8 +692,8 @@ func (s *S) TestTShowAPITokenIsACommand(c *gocheck.C) {
 
 func (s *S) TestRegenerateAPITokenRun(c *gocheck.C) {
 	var called bool
-	trans := &ttesting.ConditionalTransport{
-		Transport: ttesting.Transport{Message: `"23iou32nd3i2udnu23jd"`, Status: http.StatusOK},
+	trans := &cmdtest.ConditionalTransport{
+		Transport: cmdtest.Transport{Message: `"23iou32nd3i2udnu23jd"`, Status: http.StatusOK},
 		CondFunc: func(req *http.Request) bool {
 			called = true
 			return req.Method == "POST" && req.URL.Path == "/users/api-key"
@@ -715,7 +715,7 @@ func (s *S) TestRegenerateAPITokenRun(c *gocheck.C) {
 }
 
 func (s *S) TestRegenerateAPITokenRunWithNoContent(c *gocheck.C) {
-	client := cmd.NewClient(&http.Client{Transport: &ttesting.Transport{Message: "", Status: http.StatusNoContent}}, nil, manager)
+	client := cmd.NewClient(&http.Client{Transport: &cmdtest.Transport{Message: "", Status: http.StatusNoContent}}, nil, manager)
 	var stdout, stderr bytes.Buffer
 	err := (&regenerateAPIToken{}).Run(&cmd.Context{
 		Args:   []string{},

@@ -1,4 +1,4 @@
-// Copyright 2014 tsuru-client authors. All rights reserved.
+// Copyright 2015 tsuru-client authors. All rights reserved.
 // Use of this source code is governed by a BSD-style
 // license that can be found in the LICENSE file.
 
@@ -16,7 +16,7 @@ import (
 	"time"
 
 	"github.com/tsuru/tsuru/cmd"
-	"github.com/tsuru/tsuru/cmd/testing"
+	"github.com/tsuru/tsuru/cmd/cmdtest"
 	tsuruIo "github.com/tsuru/tsuru/io"
 	"launchpad.net/gocheck"
 )
@@ -42,8 +42,8 @@ func (s *S) TestDeployRun(c *gocheck.C) {
 	var buf bytes.Buffer
 	err := targz(nil, &buf, "testdata")
 	c.Assert(err, gocheck.IsNil)
-	trans := testing.ConditionalTransport{
-		Transport: testing.Transport{Message: "deploy worked\nOK\n", Status: http.StatusOK},
+	trans := cmdtest.ConditionalTransport{
+		Transport: cmdtest.Transport{Message: "deploy worked\nOK\n", Status: http.StatusOK},
 		CondFunc: func(req *http.Request) bool {
 			defer req.Body.Close()
 			called = true
@@ -62,7 +62,7 @@ func (s *S) TestDeployRun(c *gocheck.C) {
 		Stderr: &stderr,
 		Args:   []string{"testdata", ".."},
 	}
-	fake := testing.FakeGuesser{Name: "secret"}
+	fake := cmdtest.FakeGuesser{Name: "secret"}
 	guessCommand := cmd.GuessingCommand{G: &fake}
 	cmd := appDeploy{GuessingCommand: guessCommand}
 	err = cmd.Run(&context, client)
@@ -71,7 +71,7 @@ func (s *S) TestDeployRun(c *gocheck.C) {
 }
 
 func (s *S) TestDeployRunNotOK(c *gocheck.C) {
-	trans := testing.Transport{Message: "deploy worked\n", Status: http.StatusOK}
+	trans := cmdtest.Transport{Message: "deploy worked\n", Status: http.StatusOK}
 	client := cmd.NewClient(&http.Client{Transport: &trans}, nil, manager)
 	var stdout, stderr bytes.Buffer
 	context := cmd.Context{
@@ -79,7 +79,7 @@ func (s *S) TestDeployRunNotOK(c *gocheck.C) {
 		Stderr: &stderr,
 		Args:   []string{"testdata", ".."},
 	}
-	fake := testing.FakeGuesser{Name: "secret"}
+	fake := cmdtest.FakeGuesser{Name: "secret"}
 	guessCommand := cmd.GuessingCommand{G: &fake}
 	command := appDeploy{GuessingCommand: guessCommand}
 	err := command.Run(&context, client)
@@ -93,7 +93,7 @@ func (s *S) TestDeployRunFileNotFound(c *gocheck.C) {
 		Stderr: &stderr,
 		Args:   []string{"/tmp/something/that/doesnt/really/exist/im/sure"},
 	}
-	fake := testing.FakeGuesser{Name: "secret"}
+	fake := cmdtest.FakeGuesser{Name: "secret"}
 	guessCommand := cmd.GuessingCommand{G: &fake}
 	command := appDeploy{GuessingCommand: guessCommand}
 	err := command.Run(&context, nil)
@@ -101,7 +101,7 @@ func (s *S) TestDeployRunFileNotFound(c *gocheck.C) {
 }
 
 func (s *S) TestDeployRunRequestFailure(c *gocheck.C) {
-	trans := testing.Transport{Message: "app not found\n", Status: http.StatusNotFound}
+	trans := cmdtest.Transport{Message: "app not found\n", Status: http.StatusNotFound}
 	client := cmd.NewClient(&http.Client{Transport: &trans}, nil, manager)
 	var stdout, stderr bytes.Buffer
 	context := cmd.Context{
@@ -109,7 +109,7 @@ func (s *S) TestDeployRunRequestFailure(c *gocheck.C) {
 		Stderr: &stderr,
 		Args:   []string{"testdata", ".."},
 	}
-	fake := testing.FakeGuesser{Name: "secret"}
+	fake := cmdtest.FakeGuesser{Name: "secret"}
 	guessCommand := cmd.GuessingCommand{G: &fake}
 	command := appDeploy{GuessingCommand: guessCommand}
 	err := command.Run(&context, client)
@@ -240,7 +240,7 @@ func (s *S) TestAppDeployList(c *gocheck.C) {
 		Stdout: &stdout,
 		Stderr: &stderr,
 	}
-	client := cmd.NewClient(&http.Client{Transport: &testing.Transport{Message: result, Status: http.StatusOK}}, nil, manager)
+	client := cmd.NewClient(&http.Client{Transport: &cmdtest.Transport{Message: result, Status: http.StatusOK}}, nil, manager)
 	command := appDeployList{}
 	err := command.Run(&context, client)
 	c.Assert(err, gocheck.IsNil)
@@ -271,8 +271,8 @@ func (s *S) TestAppDeployRollback(c *gocheck.C) {
 	msg := tsuruIo.SimpleJsonMessage{Message: expectedOut}
 	result, err := json.Marshal(msg)
 	c.Assert(err, gocheck.IsNil)
-	trans := &testing.ConditionalTransport{
-		Transport: testing.Transport{Message: string(result), Status: http.StatusOK},
+	trans := &cmdtest.ConditionalTransport{
+		Transport: cmdtest.Transport{Message: string(result), Status: http.StatusOK},
 		CondFunc: func(req *http.Request) bool {
 			called = true
 			body, _ := ioutil.ReadAll(req.Body)

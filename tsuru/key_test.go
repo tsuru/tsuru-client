@@ -1,4 +1,4 @@
-// Copyright 2014 tsuru-client authors. All rights reserved.
+// Copyright 2015 tsuru-client authors. All rights reserved.
 // Use of this source code is governed by a BSD-style
 // license that can be found in the LICENSE file.
 
@@ -15,7 +15,7 @@ import (
 	"strings"
 
 	"github.com/tsuru/tsuru/cmd"
-	"github.com/tsuru/tsuru/cmd/testing"
+	"github.com/tsuru/tsuru/cmd/cmdtest"
 	fstesting "github.com/tsuru/tsuru/fs/testing"
 	"launchpad.net/gocheck"
 )
@@ -32,8 +32,8 @@ func (s *S) TestKeyAdd(c *gocheck.C) {
 		Stdout: &stdout,
 		Stderr: &stderr,
 	}
-	transport := testing.ConditionalTransport{
-		Transport: testing.Transport{Message: "success", Status: http.StatusOK},
+	transport := cmdtest.ConditionalTransport{
+		Transport: cmdtest.Transport{Message: "success", Status: http.StatusOK},
 		CondFunc: func(r *http.Request) bool {
 			expectedBody := `{"key":"user-key","name":"my-key"}`
 			body, err := ioutil.ReadAll(r.Body)
@@ -60,8 +60,8 @@ func (s *S) TestKeyAddStdin(c *gocheck.C) {
 		Stderr: &stderr,
 		Stdin:  stdin,
 	}
-	transport := testing.ConditionalTransport{
-		Transport: testing.Transport{Message: "success", Status: http.StatusOK},
+	transport := cmdtest.ConditionalTransport{
+		Transport: cmdtest.Transport{Message: "success", Status: http.StatusOK},
 		CondFunc: func(r *http.Request) bool {
 			expectedBody := `{"key":"my powerful key","name":"my-key"}`
 			body, err := ioutil.ReadAll(r.Body)
@@ -110,7 +110,7 @@ func (s *S) TestKeyAddFileSystemError(c *gocheck.C) {
 func (s *S) TestKeyAddError(c *gocheck.C) {
 	var stdout, stderr bytes.Buffer
 	context := cmd.Context{Args: []string{"my-key", "/tmp/id_rsa.pub"}, Stdout: &stdout, Stderr: &stderr}
-	transport := testing.Transport{
+	transport := cmdtest.Transport{
 		Message: "something went wrong",
 		Status:  http.StatusInternalServerError,
 	}
@@ -137,8 +137,8 @@ func (s *S) TestKeyRemove(c *gocheck.C) {
 	keyName := "my-key"
 	expected := fmt.Sprintf("Key %q successfully removed!\n", keyName)
 	context := cmd.Context{Args: []string{keyName}, Stdout: &stdout, Stderr: &stderr}
-	transport := testing.ConditionalTransport{
-		Transport: testing.Transport{Message: "success", Status: http.StatusOK},
+	transport := cmdtest.ConditionalTransport{
+		Transport: cmdtest.Transport{Message: "success", Status: http.StatusOK},
 		CondFunc: func(r *http.Request) bool {
 			expectedBody := `{"name":"my-key"}`
 			body, err := ioutil.ReadAll(r.Body)
@@ -157,7 +157,7 @@ func (s *S) TestKeyRemoveError(c *gocheck.C) {
 	var stdout, stderr bytes.Buffer
 	keyName := "my-key"
 	context := cmd.Context{Args: []string{keyName}, Stdout: &stdout, Stderr: &stderr}
-	transport := testing.Transport{
+	transport := cmdtest.Transport{
 		Message: "something went wrong",
 		Status:  http.StatusInternalServerError,
 	}
@@ -189,8 +189,8 @@ func (s *S) TestKeyList(c *gocheck.C) {
 	context := cmd.Context{Stdout: &stdout, Stderr: &stderr}
 	key2Content := strings.Repeat("key2 ", 16)
 	body := fmt.Sprintf(`{"key1":"key1 content","key2":%q}`, key2Content)
-	transport := testing.ConditionalTransport{
-		Transport: testing.Transport{Message: body, Status: http.StatusOK},
+	transport := cmdtest.ConditionalTransport{
+		Transport: cmdtest.Transport{Message: body, Status: http.StatusOK},
 		CondFunc: func(r *http.Request) bool {
 			return r.Method == "GET" && r.URL.Path == "/users/keys"
 		},
@@ -214,8 +214,8 @@ func (s *S) TestKeyListNoTruncate(c *gocheck.C) {
 	context := cmd.Context{Stdout: &stdout, Stderr: &stderr}
 	key2Content := strings.Repeat("key2 ", 16)
 	body := fmt.Sprintf(`{"key1":"key1 content","key2":%q}`, key2Content)
-	transport := testing.ConditionalTransport{
-		Transport: testing.Transport{Message: body, Status: http.StatusOK},
+	transport := cmdtest.ConditionalTransport{
+		Transport: cmdtest.Transport{Message: body, Status: http.StatusOK},
 		CondFunc: func(r *http.Request) bool {
 			return r.Method == "GET" && r.URL.Path == "/users/keys"
 		},

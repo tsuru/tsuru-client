@@ -10,8 +10,8 @@ import (
 	"net/http"
 
 	"github.com/tsuru/tsuru/cmd"
-	"github.com/tsuru/tsuru/cmd/testing"
-	tsuruIo "github.com/tsuru/tsuru/io"
+	"github.com/tsuru/tsuru/cmd/cmdtest"
+	"github.com/tsuru/tsuru/io"
 	"launchpad.net/gocheck"
 )
 
@@ -23,11 +23,11 @@ func (s *S) TestAppRun(c *gocheck.C) {
 		Stdout: &stdout,
 		Stderr: &stderr,
 	}
-	msg := tsuruIo.SimpleJsonMessage{Message: expected}
+	msg := io.SimpleJsonMessage{Message: expected}
 	result, err := json.Marshal(msg)
 	c.Assert(err, gocheck.IsNil)
-	trans := &testing.ConditionalTransport{
-		Transport: testing.Transport{
+	trans := &cmdtest.ConditionalTransport{
+		Transport: cmdtest.Transport{
 			Message: string(result),
 			Status:  http.StatusOK,
 		},
@@ -53,11 +53,11 @@ func (s *S) TestAppRunShouldUseAllSubsequentArgumentsAsArgumentsToTheGivenComman
 		Stdout: &stdout,
 		Stderr: &stderr,
 	}
-	msg := tsuruIo.SimpleJsonMessage{Message: expected}
+	msg := io.SimpleJsonMessage{Message: expected}
 	result, err := json.Marshal(msg)
 	c.Assert(err, gocheck.IsNil)
-	trans := &testing.ConditionalTransport{
-		Transport: testing.Transport{
+	trans := &cmdtest.ConditionalTransport{
+		Transport: cmdtest.Transport{
 			Message: string(result) + "\n" + string(result),
 			Status:  http.StatusOK,
 		},
@@ -83,11 +83,11 @@ func (s *S) TestAppRunWithoutTheFlag(c *gocheck.C) {
 		Stdout: &stdout,
 		Stderr: &stderr,
 	}
-	msg := tsuruIo.SimpleJsonMessage{Message: expected}
+	msg := io.SimpleJsonMessage{Message: expected}
 	result, err := json.Marshal(msg)
 	c.Assert(err, gocheck.IsNil)
-	trans := &testing.ConditionalTransport{
-		Transport: testing.Transport{
+	trans := &cmdtest.ConditionalTransport{
+		Transport: cmdtest.Transport{
 			Message: string(result),
 			Status:  http.StatusOK,
 		},
@@ -98,7 +98,7 @@ func (s *S) TestAppRunWithoutTheFlag(c *gocheck.C) {
 		},
 	}
 	client := cmd.NewClient(&http.Client{Transport: trans}, nil, manager)
-	fake := &testing.FakeGuesser{Name: "bla"}
+	fake := &cmdtest.FakeGuesser{Name: "bla"}
 	command := appRun{GuessingCommand: cmd.GuessingCommand{G: fake}}
 	command.Flags().Parse(true, nil)
 	err = command.Run(&context, client)
@@ -113,11 +113,11 @@ func (s *S) TestAppRunShouldReturnErrorWhenCommandGoWrong(c *gocheck.C) {
 		Stdout: &stdout,
 		Stderr: &stderr,
 	}
-	msg := tsuruIo.SimpleJsonMessage{Error: "command doesn't exist."}
+	msg := io.SimpleJsonMessage{Error: "command doesn't exist."}
 	result, err := json.Marshal(msg)
 	c.Assert(err, gocheck.IsNil)
-	trans := &testing.ConditionalTransport{
-		Transport: testing.Transport{
+	trans := &cmdtest.ConditionalTransport{
+		Transport: cmdtest.Transport{
 			Message: string(result),
 			Status:  http.StatusOK,
 		},
@@ -126,7 +126,7 @@ func (s *S) TestAppRunShouldReturnErrorWhenCommandGoWrong(c *gocheck.C) {
 		},
 	}
 	client := cmd.NewClient(&http.Client{Transport: trans}, nil, manager)
-	fake := &testing.FakeGuesser{Name: "bla"}
+	fake := &cmdtest.FakeGuesser{Name: "bla"}
 	command := appRun{GuessingCommand: cmd.GuessingCommand{G: fake}}
 	command.Flags().Parse(true, nil)
 	err = command.Run(&context, client)
