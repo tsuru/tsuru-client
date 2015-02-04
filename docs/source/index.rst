@@ -457,6 +457,41 @@ Restart the app's application
 
 app-restart will restart the application (as defined in Procfile) of the application.
 
+Access app's shell
+------------------
+
+.. highlight:: bash
+
+::
+
+    $ tsuru-admin app-shell [container-id] -a app
+
+This command opens a remote shell inside container, using the API server as a proxy.
+You can access an app container just giving app name. Also, you can access a specific container from this app too.
+The user may specify part of the ID of the container. For example:
+
+.. highlight:: bash
+
+::
+
+    $ tsuru app-info -a myapp
+    Application: tsuru-dashboard
+    Repository: git@54.94.9.232:tsuru-dashboard.git
+    Platform: python
+    Teams: admin
+    Address: tsuru-dashboard.54.94.9.232.xip.io
+    Owner: admin@example.com
+    Deploys: 1
+    Units:
+    +------------------------------------------------------------------+---------+
+    | Unit                                                             | State   |
+    +------------------------------------------------------------------+---------+
+    | 39f82550514af3bbbec1fd204eba000546217a2fe6049e80eb28899db0419b2f | started |
+    +------------------------------------------------------------------+---------+
+    $ tsuru app-shell 39f8 -a myapp
+    Welcome to Ubuntu 14.04 LTS (GNU/Linux 3.13.0-24-generic x86_64)
+    ubuntu@ip-10-253-6-84:~$
+
 Add new units to the app
 ------------------------
 
