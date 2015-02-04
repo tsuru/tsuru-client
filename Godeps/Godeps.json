@@ -41,83 +41,103 @@
 		},
 		{
 			"ImportPath": "github.com/tsuru/tsuru/action",
-			"Rev": "b2995251635ba73dfe31f9c640a1bf258cd29875"
+			"Comment": "0.9.0-381-g3241b5d",
+			"Rev": "3241b5d4172777c437d262a48af8ebeccc4408bf"
 		},
 		{
 			"ImportPath": "github.com/tsuru/tsuru/app",
-			"Rev": "b2995251635ba73dfe31f9c640a1bf258cd29875"
+			"Comment": "0.9.0-381-g3241b5d",
+			"Rev": "3241b5d4172777c437d262a48af8ebeccc4408bf"
 		},
 		{
 			"ImportPath": "github.com/tsuru/tsuru/auth",
-			"Rev": "b2995251635ba73dfe31f9c640a1bf258cd29875"
+			"Comment": "0.9.0-381-g3241b5d",
+			"Rev": "3241b5d4172777c437d262a48af8ebeccc4408bf"
 		},
 		{
 			"ImportPath": "github.com/tsuru/tsuru/cmd",
-			"Rev": "b2995251635ba73dfe31f9c640a1bf258cd29875"
+			"Comment": "0.9.0-381-g3241b5d",
+			"Rev": "3241b5d4172777c437d262a48af8ebeccc4408bf"
 		},
 		{
 			"ImportPath": "github.com/tsuru/tsuru/db",
-			"Rev": "b2995251635ba73dfe31f9c640a1bf258cd29875"
+			"Comment": "0.9.0-381-g3241b5d",
+			"Rev": "3241b5d4172777c437d262a48af8ebeccc4408bf"
 		},
 		{
 			"ImportPath": "github.com/tsuru/tsuru/errors",
-			"Rev": "b2995251635ba73dfe31f9c640a1bf258cd29875"
+			"Comment": "0.9.0-381-g3241b5d",
+			"Rev": "3241b5d4172777c437d262a48af8ebeccc4408bf"
 		},
 		{
 			"ImportPath": "github.com/tsuru/tsuru/exec",
-			"Rev": "b2995251635ba73dfe31f9c640a1bf258cd29875"
+			"Comment": "0.9.0-381-g3241b5d",
+			"Rev": "3241b5d4172777c437d262a48af8ebeccc4408bf"
 		},
 		{
 			"ImportPath": "github.com/tsuru/tsuru/fs",
-			"Rev": "b2995251635ba73dfe31f9c640a1bf258cd29875"
+			"Comment": "0.9.0-381-g3241b5d",
+			"Rev": "3241b5d4172777c437d262a48af8ebeccc4408bf"
 		},
 		{
 			"ImportPath": "github.com/tsuru/tsuru/git",
-			"Rev": "b2995251635ba73dfe31f9c640a1bf258cd29875"
+			"Comment": "0.9.0-381-g3241b5d",
+			"Rev": "3241b5d4172777c437d262a48af8ebeccc4408bf"
 		},
 		{
 			"ImportPath": "github.com/tsuru/tsuru/io",
-			"Rev": "b2995251635ba73dfe31f9c640a1bf258cd29875"
+			"Comment": "0.9.0-381-g3241b5d",
+			"Rev": "3241b5d4172777c437d262a48af8ebeccc4408bf"
 		},
 		{
 			"ImportPath": "github.com/tsuru/tsuru/log",
-			"Rev": "b2995251635ba73dfe31f9c640a1bf258cd29875"
+			"Comment": "0.9.0-381-g3241b5d",
+			"Rev": "3241b5d4172777c437d262a48af8ebeccc4408bf"
 		},
 		{
 			"ImportPath": "github.com/tsuru/tsuru/provision",
-			"Rev": "b2995251635ba73dfe31f9c640a1bf258cd29875"
+			"Comment": "0.9.0-381-g3241b5d",
+			"Rev": "3241b5d4172777c437d262a48af8ebeccc4408bf"
 		},
 		{
 			"ImportPath": "github.com/tsuru/tsuru/queue",
-			"Rev": "b2995251635ba73dfe31f9c640a1bf258cd29875"
+			"Comment": "0.9.0-381-g3241b5d",
+			"Rev": "3241b5d4172777c437d262a48af8ebeccc4408bf"
 		},
 		{
 			"ImportPath": "github.com/tsuru/tsuru/quota",
-			"Rev": "b2995251635ba73dfe31f9c640a1bf258cd29875"
+			"Comment": "0.9.0-381-g3241b5d",
+			"Rev": "3241b5d4172777c437d262a48af8ebeccc4408bf"
 		},
 		{
 			"ImportPath": "github.com/tsuru/tsuru/rec",
-			"Rev": "b2995251635ba73dfe31f9c640a1bf258cd29875"
+			"Comment": "0.9.0-381-g3241b5d",
+			"Rev": "3241b5d4172777c437d262a48af8ebeccc4408bf"
 		},
 		{
 			"ImportPath": "github.com/tsuru/tsuru/repository",
-			"Rev": "b2995251635ba73dfe31f9c640a1bf258cd29875"
+			"Comment": "0.9.0-381-g3241b5d",
+			"Rev": "3241b5d4172777c437d262a48af8ebeccc4408bf"
 		},
 		{
 			"ImportPath": "github.com/tsuru/tsuru/safe",
-			"Rev": "b2995251635ba73dfe31f9c640a1bf258cd29875"
+			"Comment": "0.9.0-381-g3241b5d",
+			"Rev": "3241b5d4172777c437d262a48af8ebeccc4408bf"
 		},
 		{
 			"ImportPath": "github.com/tsuru/tsuru/service",
-			"Rev": "b2995251635ba73dfe31f9c640a1bf258cd29875"
+			"Comment": "0.9.0-381-g3241b5d",
+			"Rev": "3241b5d4172777c437d262a48af8ebeccc4408bf"
 		},
 		{
 			"ImportPath": "github.com/tsuru/tsuru/testing",
-			"Rev": "b2995251635ba73dfe31f9c640a1bf258cd29875"
+			"Comment": "0.9.0-381-g3241b5d",
+			"Rev": "3241b5d4172777c437d262a48af8ebeccc4408bf"
 		},
 		{
 			"ImportPath": "github.com/tsuru/tsuru/validation",
-			"Rev": "b2995251635ba73dfe31f9c640a1bf258cd29875"
+			"Comment": "0.9.0-381-g3241b5d",
+			"Rev": "3241b5d4172777c437d262a48af8ebeccc4408bf"
 		},
 		{
 			"ImportPath": "gopkg.in/mgo.v2",
