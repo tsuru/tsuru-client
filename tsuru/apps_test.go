@@ -1057,9 +1057,10 @@ func (s *S) TestAddCNameFailure(c *gocheck.C) {
 
 func (s *S) TestAddCNameInfo(c *gocheck.C) {
 	expected := &cmd.Info{
-		Name:    "cname-add",
-		Usage:   "cname-add <cname> [<cname> ...] [-a/--app appname]",
-		Desc:    `adds a cname for your app.`,
+		Name:  "cname-add",
+		Usage: "cname-add <cname> [<cname> ...] [-a/--app appname]",
+		Desc: `cname-add will add a CNAME to the app.
+It will not manage any DNS register, it's up to the user to create the DNS register. Once the app contains a custom CNAME, it will be displayed by "app-list" and "app-info".`,
 		MinArgs: 1,
 	}
 	c.Assert((&cnameAdd{}).Info(), gocheck.DeepEquals, expected)
@@ -1120,9 +1121,10 @@ func (s *S) TestRemoveCNameWithoutTheFlag(c *gocheck.C) {
 
 func (s *S) TestRemoveCNameInfo(c *gocheck.C) {
 	expected := &cmd.Info{
-		Name:    "cname-remove",
-		Usage:   "cname-remove <cname> [<cname> ...] [-a/--app appname]",
-		Desc:    `removes cnames of your app.`,
+		Name:  "cname-remove",
+		Usage: "cname-remove <cname> [<cname> ...] [-a/--app appname]",
+		Desc: `cname-remove undoes the change that cname-add does.
+After unsetting the CNAME from the app, "app-list" and "app-info" will display the internal, unfriendly address that tsuru uses.`,
 		MinArgs: 1,
 	}
 	c.Assert((&cnameRemove{}).Info(), gocheck.DeepEquals, expected)

@@ -23,3 +23,10 @@ release:
 	@git push origin master
 
 	@echo "$(version) released!"
+
+doc:
+	@python docs/source/exts/tsuru_cmd.py && cd docs && make html SPHINXOPTS="-N -W"
+
+docs: doc
+
+.PHONY: doc docs release

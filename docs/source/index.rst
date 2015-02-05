@@ -606,6 +606,13 @@ Deploy
     $ tsuru app-deploy .
     $ tsuru app-deploy myfile.jar Procfile
 
+
+.. tsuru-command:: app-deploy-list
+   :title: List deploys
+.. tsuru-command:: app-deploy-rollback
+   :title: Rollback deploy
+
+
 Public Keys
 ===========
 
@@ -908,54 +915,18 @@ name of the plugin as argument:
 CNAME management
 ================
 
-Add a CNAME to the app
-----------------------
+.. tsuru-command:: cname-add
+   :title: Add a CNAME to the app
+.. tsuru-command:: cname-remove
+   :title: Remove a CNAME from the app
 
-.. highlight:: bash
-
-::
-
-    $ tsuru cname-add <cname> [-a/--app appname]
-
-cname-add will add a CNAME to the app. It will not manage any DNS register, it's up to the user to create the DNS register. Once the app contains a custom CNAME, it will be displayed by "app-list" and "app-info".
-
-Remove a CNAME from the app
----------------------------
-
-.. highlight:: bash
-
-::
-
-    $ tsuru cname-remove [-a/--app appname]
-
-cname-remove undoes the change that cname-add does. After unsetting the CNAME from the app, "app-list" and "app-info" will display the internal, unfriendly address that tsuru uses.
 
 Auto Scale
 ==========
 
-Configure auto scale
---------------------
-
-.. highlight:: bash
-
-::
-
-    $ tsuru autoscale-config [-a/--app appname] [--max-units unitsnumber] [--min-units unitsnumber] [--increase-step unitsnumber] [--increase-wait-time seconds] [--increase-expression expression] [--decrease-wait-time seconds] [--decrease-expression expression] [--enabled]
-
-Enable auto scale
------------------
-
-.. highlight:: bash
-
-::
-
-    $ tsuru autoscale-enable [-a/--app appname]
-
-Disable auto scale
-------------------
-
-.. highlight:: bash
-
-::
-
-    $ tsuru autoscale-disable [-a/--app appname]
+.. tsuru-command:: autoscale-config
+   :title: Configure auto scale
+.. tsuru-command:: autoscale-enable
+   :title: Enable auto scale
+.. tsuru-command:: autoscale-disable
+   :title: Disable auto scale
