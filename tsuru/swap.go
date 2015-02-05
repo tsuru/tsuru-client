@@ -1,4 +1,4 @@
-// Copyright 2014 tsuru-client authors. All rights reserved.
+// Copyright 2015 tsuru-client authors. All rights reserved.
 // Use of this source code is governed by a BSD-style
 // license that can be found in the LICENSE file.
 
@@ -7,6 +7,7 @@ package main
 import (
 	"fmt"
 	"net/http"
+	"strings"
 
 	"github.com/tsuru/tsuru/cmd"
 	"github.com/tsuru/tsuru/errors"
@@ -46,7 +47,7 @@ func (s *appSwap) Run(context *cmd.Context, client *cmd.Client) error {
 	if err != nil {
 		if e, ok := err.(*errors.HTTP); ok && e.Code == http.StatusPreconditionFailed {
 			var answer string
-			fmt.Fprintf(context.Stdout, "WARNING: %s. Swap anyway? (y/n)", e.Message)
+			fmt.Fprintf(context.Stdout, "WARNING: %s.\nSwap anyway? (y/n) ", strings.TrimRight(e.Message, "\n"))
 			fmt.Fscanf(context.Stdin, "%s", &answer)
 			if answer == "y" || answer == "yes" {
 				url, _ = cmd.GetURL(fmt.Sprintf("/swap?app1=%s&app2=%s&force=%t", context.Args[0], context.Args[1], true))
