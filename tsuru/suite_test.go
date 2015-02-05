@@ -1,4 +1,4 @@
-// Copyright 2014 tsuru-client authors. All rights reserved.
+// Copyright 2015 tsuru-client authors. All rights reserved.
 // Use of this source code is governed by a BSD-style
 // license that can be found in the LICENSE file.
 
@@ -10,7 +10,7 @@ import (
 	"testing"
 
 	"github.com/tsuru/tsuru/cmd"
-	tTesting "github.com/tsuru/tsuru/testing"
+	"github.com/tsuru/tsuru/cmd/cmdtest"
 	"launchpad.net/gocheck"
 )
 
@@ -20,13 +20,13 @@ type S struct {
 }
 
 func (s *S) SetUpSuite(c *gocheck.C) {
-	s.target = tTesting.SetTargetFile(c, []byte("http://localhost:8080"))
-	s.token = tTesting.SetTokenFile(c, []byte("sometoken"))
+	s.target = cmdtest.SetTargetFile(c, []byte("http://localhost:8080"))
+	s.token = cmdtest.SetTokenFile(c, []byte("sometoken"))
 }
 
 func (s *S) TearDownSuite(c *gocheck.C) {
-	tTesting.RollbackFile(s.target)
-	tTesting.RollbackFile(s.token)
+	cmdtest.RollbackFile(s.target)
+	cmdtest.RollbackFile(s.token)
 }
 
 var _ = gocheck.Suite(&S{})

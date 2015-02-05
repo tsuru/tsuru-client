@@ -16,7 +16,7 @@ import (
 
 	"github.com/tsuru/tsuru/cmd"
 	"github.com/tsuru/tsuru/cmd/cmdtest"
-	"github.com/tsuru/tsuru/fs/testing"
+	"github.com/tsuru/tsuru/fs/fstest"
 	"launchpad.net/gocheck"
 )
 
@@ -268,7 +268,7 @@ func (s *S) TestTeamListIsACommand(c *gocheck.C) {
 }
 
 func (s *S) TestUserCreateShouldNotDependOnTsuruTokenFile(c *gocheck.C) {
-	rfs := &testing.RecordingFs{}
+	rfs := &fstest.RecordingFs{}
 	f, _ := rfs.Create(cmd.JoinWithUserDir(".tsuru_target"))
 	f.Write([]byte("http://localhost"))
 	f.Close()
@@ -389,7 +389,7 @@ func (s *S) TestUserCreateInfo(c *gocheck.C) {
 }
 
 func (s *S) TestUserRemove(c *gocheck.C) {
-	rfs := &testing.RecordingFs{}
+	rfs := &fstest.RecordingFs{}
 	f, _ := rfs.Create(cmd.JoinWithUserDir(".tsuru_target"))
 	f.Write([]byte("http://tsuru.io"))
 	f.Close()

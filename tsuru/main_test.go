@@ -6,7 +6,7 @@ package main
 
 import (
 	"github.com/tsuru/tsuru/cmd"
-	"github.com/tsuru/tsuru/exec/testing"
+	"github.com/tsuru/tsuru/exec/exectest"
 	"launchpad.net/gocheck"
 )
 
@@ -290,7 +290,7 @@ func (s *S) TestPluginListIsRegistered(c *gocheck.C) {
 }
 
 func (s *S) TestPluginLookup(c *gocheck.C) {
-	fexec := testing.FakeExecutor{}
+	fexec := exectest.FakeExecutor{}
 	execut = &fexec
 	defer func() {
 		execut = nil

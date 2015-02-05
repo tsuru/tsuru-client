@@ -1,4 +1,4 @@
-// Copyright 2014 tsuru-client authors. All rights reserved.
+// Copyright 2015 tsuru-client authors. All rights reserved.
 // Use of this source code is governed by a BSD-style
 // license that can be found in the LICENSE file.
 
@@ -13,8 +13,8 @@ import (
 	"os"
 
 	"github.com/tsuru/tsuru/cmd"
-	etesting "github.com/tsuru/tsuru/exec/testing"
-	ftesting "github.com/tsuru/tsuru/fs/testing"
+	"github.com/tsuru/tsuru/exec/exectest"
+	"github.com/tsuru/tsuru/fs/fstest"
 	"launchpad.net/gocheck"
 )
 
@@ -33,7 +33,7 @@ func (s *S) TestPluginInstall(c *gocheck.C) {
 		fmt.Fprintln(w, "fakeplugin")
 	}))
 	defer ts.Close()
-	rfs := ftesting.RecordingFs{}
+	rfs := fstest.RecordingFs{}
 	fsystem = &rfs
 	defer func() {
 		fsystem = nil
@@ -77,7 +77,7 @@ func (s *S) TestPluginInfo(c *gocheck.C) {
 }
 
 func (s *S) TestPlugin(c *gocheck.C) {
-	fexec := etesting.FakeExecutor{
+	fexec := exectest.FakeExecutor{
 		Output: map[string][][]byte{
 			"a b": {[]byte("hello world")},
 		},
@@ -116,7 +116,7 @@ func (s *S) TestPlugin(c *gocheck.C) {
 }
 
 func (s *S) TestPluginWithArgs(c *gocheck.C) {
-	fexec := etesting.FakeExecutor{}
+	fexec := exectest.FakeExecutor{}
 	execut = &fexec
 	defer func() {
 		execut = nil
@@ -147,7 +147,7 @@ func (s *S) TestPluginRemoveInfo(c *gocheck.C) {
 }
 
 func (s *S) TestPluginRemove(c *gocheck.C) {
-	rfs := ftesting.RecordingFs{}
+	rfs := fstest.RecordingFs{}
 	fsystem = &rfs
 	defer func() {
 		fsystem = nil

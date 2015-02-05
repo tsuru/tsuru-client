@@ -16,7 +16,7 @@ import (
 
 	"github.com/tsuru/tsuru/cmd"
 	"github.com/tsuru/tsuru/cmd/cmdtest"
-	fstesting "github.com/tsuru/tsuru/fs/testing"
+	"github.com/tsuru/tsuru/fs/fstest"
 	"launchpad.net/gocheck"
 )
 
@@ -42,7 +42,7 @@ func (s *S) TestKeyAdd(c *gocheck.C) {
 		},
 	}
 	client := cmd.NewClient(&http.Client{Transport: &transport}, nil, manager)
-	fs := fstesting.RecordingFs{FileContent: "user-key"}
+	fs := fstest.RecordingFs{FileContent: "user-key"}
 	command := keyAdd{keyReader{fsystem: &fs}}
 	err = command.Run(&context, client)
 	c.Assert(err, gocheck.IsNil)
@@ -83,7 +83,7 @@ func (s *S) TestKeyAddReturnsProperErrorIfTheGivenKeyFileDoesNotExist(c *gocheck
 		Stdout: &stdout,
 		Stderr: &stderr,
 	}
-	fs := fstesting.FileNotFoundFs{RecordingFs: fstesting.RecordingFs{}}
+	fs := fstest.FileNotFoundFs{RecordingFs: fstest.RecordingFs{}}
 	command := keyAdd{keyReader{fsystem: &fs}}
 	err := command.Run(&context, nil)
 	c.Assert(err, gocheck.NotNil)
@@ -97,8 +97,8 @@ func (s *S) TestKeyAddFileSystemError(c *gocheck.C) {
 		Stdout: &stdout,
 		Stderr: &stderr,
 	}
-	fs := fstesting.FailureFs{
-		RecordingFs: fstesting.RecordingFs{},
+	fs := fstest.FailureFs{
+		RecordingFs: fstest.RecordingFs{},
 		Err:         errors.New("what happened?"),
 	}
 	command := keyAdd{keyReader{fsystem: &fs}}
@@ -115,7 +115,7 @@ func (s *S) TestKeyAddError(c *gocheck.C) {
 		Status:  http.StatusInternalServerError,
 	}
 	client := cmd.NewClient(&http.Client{Transport: &transport}, nil, manager)
-	fs := fstesting.RecordingFs{FileContent: "user-key"}
+	fs := fstest.RecordingFs{FileContent: "user-key"}
 	command := keyAdd{keyReader{fsystem: &fs}}
 	err := command.Run(&context, client)
 	c.Assert(err, gocheck.NotNil)
