@@ -123,8 +123,8 @@ func (c *appRemove) Info() *cmd.Info {
 	return &cmd.Info{
 		Name:  "app-remove",
 		Usage: "app-remove [-a/--app appname] [-y/--assume-yes]",
-		Desc: `Removes an app. If the app is bound to any service instance, all binds will be
-removed before the app gets deleted (see [[tsuru service-unbind]]).
+		Desc: `Removes an application. If the app is bound to any service instance, all binds
+will be removed before the app gets deleted (see [[tsuru service-unbind]]).
 
 You need to be a member of a team that has access to the app to be able to
 remove it (you are able to remove any app that you see in [[tsuru app-list]]).`,
@@ -174,8 +174,8 @@ func (c *appInfo) Info() *cmd.Info {
 	return &cmd.Info{
 		Name:  "app-info",
 		Usage: "app-info [-a/--app appname]",
-		Desc: `Shows information about an specific app (its state, platform, git repository,
-etc.). You need to be a member of a team that access to the app to be able to
+		Desc: `Shows information about an specific app. Its state, platform, git repository,
+etc. You need to be a member of a team that access to the app to be able to
 see informations about it.`,
 		MinArgs: 0,
 	}
@@ -664,8 +664,11 @@ func (c *cnameAdd) Info() *cmd.Info {
 	return &cmd.Info{
 		Name:  "cname-add",
 		Usage: "cname-add <cname> [<cname> ...] [-a/--app appname]",
-		Desc: `cname-add will add a CNAME to the app.
-It will not manage any DNS register, it's up to the user to create the DNS register. Once the app contains a custom CNAME, it will be displayed by "app-list" and "app-info".`,
+		Desc: `Adds a new CNAME to the application.
+
+It will not manage any DNS register, it's up to the user to create the DNS
+register. Once the app contains a custom CNAME, it will be displayed by "app-
+list" and "app-info".`,
 		MinArgs: 1,
 	}
 }
@@ -687,8 +690,11 @@ func (c *cnameRemove) Info() *cmd.Info {
 	return &cmd.Info{
 		Name:  "cname-remove",
 		Usage: "cname-remove <cname> [<cname> ...] [-a/--app appname]",
-		Desc: `cname-remove undoes the change that cname-add does.
-After unsetting the CNAME from the app, "app-list" and "app-info" will display the internal, unfriendly address that tsuru uses.`,
+		Desc: `Removes a CNAME from the application. This undoes the change that cname-add
+does.
+
+After unsetting the CNAME from the app, [[tsuru app-list]] and [[tsuru app-
+info]] will display the internal, unfriendly address that tsuru uses.`,
 		MinArgs: 1,
 	}
 }
@@ -777,7 +783,7 @@ func (c *SetTeamOwner) Info() *cmd.Info {
 	return &cmd.Info{
 		Name:    "app-set-team-owner",
 		Usage:   "app-set-team-owner <new-team-owner> [-a/--app appname]",
-		Desc:    "set app's owner team",
+		Desc:    "Sets owner team for an application.",
 		MinArgs: 1,
 	}
 }

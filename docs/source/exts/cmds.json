@@ -9,7 +9,7 @@
   }, 
   "app-info": {
     "usage": "tsuru app-info [-a/--app appname]", 
-    "desc": "Shows information about an specific app (its state, platform, git repository,\netc.). You need to be a member of a team that access to the app to be able to\nsee informations about it.\n\n"
+    "desc": "Shows information about an specific app. Its state, platform, git repository,\netc. You need to be a member of a team that access to the app to be able to\nsee informations about it.\n\n"
   }, 
   "target-list": {
     "usage": "tsuru target-list", 
@@ -53,7 +53,7 @@
   }, 
   "autoscale-enable": {
     "usage": "tsuru autoscale-enable [-a/--app appname]", 
-    "desc": "enable the app autoscale.\n\n"
+    "desc": "Enables application autoscale.\n\n"
   }, 
   "unit-add": {
     "usage": "tsuru unit-add <# of units> [-a/--app appname]", 
@@ -61,7 +61,7 @@
   }, 
   "autoscale-disable": {
     "usage": "tsuru autoscale-disable [-a/--app appname]", 
-    "desc": "disable the app autoscale.\n\n"
+    "desc": "Disablse application autoscale.\n\n"
   }, 
   "platform-list": {
     "usage": "tsuru platform-list", 
@@ -81,7 +81,7 @@
   }, 
   "plugin-install": {
     "usage": "tsuru plugin-install <plugin-name> <plugin-url>", 
-    "desc": "Downloads the plugin file to [[$HOME/.tsuru/plugins]].\n\nMinimum # of arguments: 2\n"
+    "desc": "Downloads the plugin file. It will be copied to [[$HOME/.tsuru/plugins]].\n\nMinimum # of arguments: 2\n"
   }, 
   "user-create": {
     "usage": "tsuru user-create <email>", 
@@ -117,7 +117,7 @@
   }, 
   "service-bind": {
     "usage": "tsuru service-bind <service-instance-name> [-a/--app appname]", 
-    "desc": "Binds an application to a service instance (see [[tsuru service-add]] for more\ndetails on how to create a service instance).\n\nWhen binding an application to a service instance, tsuru will add new\nenvironment variables to the application. All environment variables exported\nby bind will be private (not accessible via [[tsuru env-get]]).\n\nMinimum # of arguments: 1\n"
+    "desc": "Binds an application to a previously created service instance. See [[tsuru\nservice-add]] for more details on how to create a service instance.\n\nWhen binding an application to a service instance, tsuru will add new\nenvironment variables to the application. All environment variables exported\nby bind will be private (not accessible via [[tsuru env-get]]).\n\nMinimum # of arguments: 1\n"
   }, 
   "key-add": {
     "usage": "tsuru key-add <key-name> <path/to/key/file.pub>", 
@@ -165,7 +165,7 @@
   }, 
   "app-remove": {
     "usage": "tsuru app-remove [-a/--app appname] [-y/--assume-yes]", 
-    "desc": "Removes an app. If the app is bound to any service instance, all binds will be\nremoved before the app gets deleted (see [[tsuru service-unbind]]).\n\nYou need to be a member of a team that has access to the app to be able to\nremove it (you are able to remove any app that you see in [[tsuru app-list]]).\n\n"
+    "desc": "Removes an application. If the app is bound to any service instance, all binds\nwill be removed before the app gets deleted (see [[tsuru service-unbind]]).\n\nYou need to be a member of a team that has access to the app to be able to\nremove it (you are able to remove any app that you see in [[tsuru app-list]]).\n\n"
   }, 
   "version": {
     "usage": "tsuru version", 
@@ -173,7 +173,7 @@
   }, 
   "service-add": {
     "usage": "tsuru service-add <servicename> <serviceinstancename> [plan] [-t/--owner-team <team>]", 
-    "desc": "Creates a service instance of a service which can later be binded to\napplications with [[tsuru service-bind]].\n\nThis example shows how to add a new instance of **mongodb** service, named\n**tsuru_mongodb** with the plan **small**:\n\n::\n\n    $ tsuru service-add mongodb tsuru_mongodb small -t myteam\n\n\nMinimum # of arguments: 2\nMaximum # of arguments: 3\n"
+    "desc": "Creates a service instance of a service. There can later be binded to\napplications with [[tsuru service-bind]].\n\nThis example shows how to add a new instance of **mongodb** service, named\n**tsuru_mongodb** with the plan **small**:\n\n::\n\n    $ tsuru service-add mongodb tsuru_mongodb small -t myteam\n\n\nMinimum # of arguments: 2\nMaximum # of arguments: 3\n"
   }, 
   "user-remove": {
     "usage": "tsuru user-remove", 
@@ -200,11 +200,11 @@
   }, 
   "cname-remove": {
     "usage": "tsuru cname-remove <cname> [<cname> ...] [-a/--app appname]", 
-    "desc": "cname-remove undoes the change that cname-add does.\nAfter unsetting the CNAME from the app, \"app-list\" and \"app-info\" will display the internal, unfriendly address that tsuru uses.\n\nMinimum # of arguments: 1\n"
+    "desc": "Removes a CNAME from the application. This undoes the change that cname-add\ndoes.\n\nAfter unsetting the CNAME from the app, [[tsuru app-list]] and [[tsuru app-\ninfo]] will display the internal, unfriendly address that tsuru uses.\n\nMinimum # of arguments: 1\n"
   }, 
   "cname-add": {
     "usage": "tsuru cname-add <cname> [<cname> ...] [-a/--app appname]", 
-    "desc": "cname-add will add a CNAME to the app.\nIt will not manage any DNS register, it's up to the user to create the DNS register. Once the app contains a custom CNAME, it will be displayed by \"app-list\" and \"app-info\".\n\nMinimum # of arguments: 1\n"
+    "desc": "Adds a new CNAME to the application.\n\nIt will not manage any DNS register, it's up to the user to create the DNS\nregister. Once the app contains a custom CNAME, it will be displayed by \"app-\nlist\" and \"app-info\".\n\nMinimum # of arguments: 1\n"
   }, 
   "key-list": {
     "usage": "tsuru key-list [-n/--no-truncate]", 
@@ -224,11 +224,11 @@
   }, 
   "app-shell": {
     "usage": "tsuru app-shell [container-id] -a/--app <appname>", 
-    "desc": "This command opens a remote shell inside container, using the API server as a\nproxy. You can access an app container just giving app name.\n\nAlso, you can access a specific container from this app. In this case, you\nhave to specify part of the container's ID. You can list current container's\nIDs using [[tsuru app-info]].\n\n\nOpen a remote shell to the given container, or to one of the containers of the given app.\n\n"
+    "desc": "Opens a remote shell inside container, using the API server as a proxy. You\ncan access an app container just giving app name.\n\nAlso, you can access a specific container from this app. In this case, you\nhave to specify part of the container's ID. You can list current container's\nIDs using [[tsuru app-info]].\n\n\nOpen a remote shell to the given container, or to one of the containers of the given app.\n\n"
   }, 
   "app-set-team-owner": {
     "usage": "tsuru app-set-team-owner <new-team-owner> [-a/--app appname]", 
-    "desc": "set app's owner team\n\nMinimum # of arguments: 1\n"
+    "desc": "Sets owner team for an application.\n\nMinimum # of arguments: 1\n"
   }, 
   "app-grant": {
     "usage": "tsuru app-grant <teamname> [-a/--app appname]", 
@@ -236,7 +236,7 @@
   }, 
   "login": {
     "usage": "tsuru login", 
-    "desc": "Login will ask for the password and check if the user is successfully\nauthenticated. If so, the token generated by the **tsuru** server will be\nstored in ${HOME}/.tsuru_token.\n\nAll tsuru actions require the user to be authenticated (except `login` and `version`).\n\n"
+    "desc": "Initiates a new tsuru session for a user. If using tsuru native authentication\nscheme, it will ask for the password and check if the user is successfully\nauthenticated. If using OAuth, it will open a web browser for the user to\ncomplete the login.\n\nAfter that, the token generated by the tsuru server will be stored in\n[[${HOME}/.tsuru_token]].\n\nAll tsuru actions require the user to be authenticated (except [[tsuru login]]\nand [[tsuru version]]).\n\n"
   }, 
   "team-remove": {
     "usage": "tsuru team-remove <team-name>", 

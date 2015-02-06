@@ -69,7 +69,7 @@ func (c *serviceAdd) Info() *cmd.Info {
 	return &cmd.Info{
 		Name:  "service-add",
 		Usage: "service-add <servicename> <serviceinstancename> [plan] [-t/--owner-team <team>]",
-		Desc: `Creates a service instance of a service which can later be binded to
+		Desc: `Creates a service instance of a service. There can later be binded to
 applications with [[tsuru service-bind]].
 
 This example shows how to add a new instance of **mongodb** service, named
@@ -168,8 +168,8 @@ func (sb *serviceBind) Info() *cmd.Info {
 	return &cmd.Info{
 		Name:  "service-bind",
 		Usage: "service-bind <service-instance-name> [-a/--app appname]",
-		Desc: `Binds an application to a service instance (see [[tsuru service-add]] for more
-details on how to create a service instance).
+		Desc: `Binds an application to a previously created service instance. See [[tsuru
+service-add]] for more details on how to create a service instance.
 
 When binding an application to a service instance, tsuru will add new
 environment variables to the application. All environment variables exported

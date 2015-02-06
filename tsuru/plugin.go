@@ -21,7 +21,7 @@ func (pluginInstall) Info() *cmd.Info {
 	return &cmd.Info{
 		Name:    "plugin-install",
 		Usage:   "plugin-install <plugin-name> <plugin-url>",
-		Desc:    `Downloads the plugin file to [[$HOME/.tsuru/plugins]].`,
+		Desc:    `Downloads the plugin file. It will be copied to [[$HOME/.tsuru/plugins]].`,
 		MinArgs: 2,
 	}
 }

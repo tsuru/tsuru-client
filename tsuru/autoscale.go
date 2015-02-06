@@ -23,7 +23,7 @@ func (c *autoScaleEnable) Info() *cmd.Info {
 	return &cmd.Info{
 		Name:  "autoscale-enable",
 		Usage: "autoscale-enable [-a/--app appname]",
-		Desc:  "enable the app autoscale.",
+		Desc:  "Enables application autoscale.",
 	}
 }
 
@@ -56,7 +56,7 @@ func (c *autoScaleDisable) Info() *cmd.Info {
 	return &cmd.Info{
 		Name:  "autoscale-disable",
 		Usage: "autoscale-disable [-a/--app appname]",
-		Desc:  "disable the app autoscale.",
+		Desc:  "Disablse application autoscale.",
 	}
 }
 
