@@ -22,9 +22,13 @@ type appSwap struct {
 
 func (s *appSwap) Info() *cmd.Info {
 	return &cmd.Info{
-		Name:    "app-swap",
-		Usage:   "app-swap <app1-name> <app2-name> [-f/--force]",
-		Desc:    "Swap routes between two apps. Use force if you want to swap apps with different numbers of units or diferent platform without confirmation",
+		Name:  "app-swap",
+		Usage: "app-swap <app1-name> <app2-name> [-f/--force]",
+		Desc: `Swaps routing between two apps. This allows zero downtime and makes rollback
+as simple as swapping the applications back.
+
+Use [[--force]] if you want to swap applications with a different numbers of
+units or diferent platform without confirmation.`,
 		MinArgs: 2,
 	}
 }

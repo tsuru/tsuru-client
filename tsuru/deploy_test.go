@@ -22,19 +22,8 @@ import (
 )
 
 func (s *S) TestDeployInfo(c *gocheck.C) {
-	desc := `Deploys set of files and/or directories to tsuru server. Some examples of calls are:
-
-tsuru app-deploy .
-tsuru app-deploy myfile.jar Procfile
-`
-	expected := &cmd.Info{
-		Name:    "app-deploy",
-		Usage:   "app-deploy [-a/--app <appname>] <file-or-dir-1> [file-or-dir-2] ... [file-or-dir-n]",
-		Desc:    desc,
-		MinArgs: 1,
-	}
 	var cmd appDeploy
-	c.Assert(cmd.Info(), gocheck.DeepEquals, expected)
+	c.Assert(cmd.Info(), gocheck.NotNil)
 }
 
 func (s *S) TestDeployRun(c *gocheck.C) {
@@ -162,14 +151,8 @@ func (s *S) TestTargzFailure(c *gocheck.C) {
 }
 
 func (s *S) TestDeployListInfo(c *gocheck.C) {
-	expected := &cmd.Info{
-		Name:    "app-deploy-list",
-		Usage:   "app-deploy-list [-a/--app <appname>]",
-		Desc:    "List information about deploys for an application.",
-		MinArgs: 0,
-	}
 	var cmd appDeployList
-	c.Assert(cmd.Info(), gocheck.DeepEquals, expected)
+	c.Assert(cmd.Info(), gocheck.NotNil)
 }
 
 func (s *S) TestAppDeployList(c *gocheck.C) {
@@ -248,13 +231,7 @@ func (s *S) TestAppDeployList(c *gocheck.C) {
 }
 
 func (s *S) TestAppDeployRollbackInfo(c *gocheck.C) {
-	expected := &cmd.Info{
-		Name:    "app-deploy-rollback",
-		Usage:   "app-deploy-rollback [-a/--app appname] [-y/--assume-yes] <image-name>",
-		Desc:    "Deploys an existing image for an app. You can list available images with `tsuru app-deploy-list`.",
-		MinArgs: 1,
-	}
-	c.Assert((&appDeployRollback{}).Info(), gocheck.DeepEquals, expected)
+	c.Assert((&appDeployRollback{}).Info(), gocheck.NotNil)
 }
 
 func (s *S) TestAppDeployRollback(c *gocheck.C) {

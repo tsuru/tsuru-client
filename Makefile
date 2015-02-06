@@ -24,7 +24,10 @@ release:
 
 	@echo "$(version) released!"
 
-doc:
+docs-clean:
+	@rm -rf ./docs/build
+
+doc: docs-clean
 	@python docs/source/exts/tsuru_cmd.py && cd docs && make html SPHINXOPTS="-N -W"
 
 docs: doc

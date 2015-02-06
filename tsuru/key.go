@@ -55,9 +55,10 @@ type keyAdd struct {
 
 func (c *keyAdd) Info() *cmd.Info {
 	return &cmd.Info{
-		Name:    "key-add",
-		Usage:   "key-add <key-name> <path/to/key/file.pub>",
-		Desc:    "adds a public key to your account",
+		Name:  "key-add",
+		Usage: "key-add <key-name> <path/to/key/file.pub>",
+		Desc: `Sends your public key to the git server used by tsuru. The key will be added
+to the current logged in user.`,
 		MinArgs: 2,
 	}
 }
@@ -92,9 +93,10 @@ type keyRemove struct{}
 
 func (c *keyRemove) Info() *cmd.Info {
 	return &cmd.Info{
-		Name:    "key-remove",
-		Usage:   "key-remove <key-name>",
-		Desc:    "removes the given public key from your account",
+		Name:  "key-remove",
+		Usage: "key-remove <key-name>",
+		Desc: `Removes your public key from the git server used by tsuru. The key will be
+removed from the current logged in user.`,
 		MinArgs: 1,
 	}
 }
@@ -126,7 +128,7 @@ func (c *keyList) Info() *cmd.Info {
 	return &cmd.Info{
 		Name:  "key-list",
 		Usage: "key-list [-n/--no-truncate]",
-		Desc:  "lists public keys registered in your account",
+		Desc:  `Lists the public keys registered in the current user account.`,
 	}
 }
 

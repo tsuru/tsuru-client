@@ -26,7 +26,8 @@ func (s serviceList) Info() *cmd.Info {
 	return &cmd.Info{
 		Name:  "service-list",
 		Usage: "service-list",
-		Desc:  "Get all available services, and user's instances for this services",
+		Desc: `Retrieves and shows a list of services the user has access. If the are
+instances created for any service they will also be shown.`,
 	}
 }
 
@@ -65,16 +66,19 @@ type serviceAdd struct {
 }
 
 func (c *serviceAdd) Info() *cmd.Info {
-	usage := `service-add <servicename> <serviceinstancename> [plan] [-t/--owner-team <team>]
-e.g.:
+	return &cmd.Info{
+		Name:  "service-add",
+		Usage: "service-add <servicename> <serviceinstancename> [plan] [-t/--owner-team <team>]",
+		Desc: `Creates a service instance of a service which can later be binded to
+applications with [[tsuru service-bind]].
+
+This example shows how to add a new instance of **mongodb** service, named
+**tsuru_mongodb** with the plan **small**:
+
+::
 
     $ tsuru service-add mongodb tsuru_mongodb small -t myteam
-
-Will add a new instance of the "mongodb" service, named "tsuru_mongodb" with the plan "small".`
-	return &cmd.Info{
-		Name:    "service-add",
-		Usage:   usage,
-		Desc:    "Create a service instance to one or more apps make use of.",
+`,
 		MinArgs: 2,
 		MaxArgs: 3,
 	}
@@ -163,10 +167,13 @@ func (sb *serviceBind) Run(ctx *cmd.Context, client *cmd.Client) error {
 func (sb *serviceBind) Info() *cmd.Info {
 	return &cmd.Info{
 		Name:  "service-bind",
-		Usage: "service-bind <instancename> [-a/--app appname]",
-		Desc: `bind a service instance to an app
+		Usage: "service-bind <service-instance-name> [-a/--app appname]",
+		Desc: `Binds an application to a service instance (see [[tsuru service-add]] for more
+details on how to create a service instance).
 
-If you don't provide the app name, tsuru will try to guess it.`,
+When binding an application to a service instance, tsuru will add new
+environment variables to the application. All environment variables exported
+by bind will be private (not accessible via [[tsuru env-get]]).`,
 		MinArgs: 1,
 	}
 }
@@ -211,9 +218,9 @@ func (su *serviceUnbind) Info() *cmd.Info {
 	return &cmd.Info{
 		Name:  "service-unbind",
 		Usage: "service-unbind <instancename> [-a/--app appname]",
-		Desc: `unbind a service instance from an app
-
-If you don't provide the app name, tsuru will try to guess it.`,
+		Desc: `Unbinds an application from a service instance. After unbinding, the instance
+will not be available anymore. For example, when unbinding an application from
+a MySQL service, the application would lose access to the database.`,
 		MinArgs: 1,
 	}
 }
@@ -221,15 +228,11 @@ If you don't provide the app name, tsuru will try to guess it.`,
 type serviceInstanceStatus struct{}
 
 func (c serviceInstanceStatus) Info() *cmd.Info {
-	usg := `service-status <serviceinstancename>
-e.g.:
-
-    $ tsuru service-status my_mongodb
-`
 	return &cmd.Info{
-		Name:    "service-status",
-		Usage:   usg,
-		Desc:    "Check status of a given service instance.",
+		Name:  "service-status",
+		Usage: "service-status <service-instance-name>",
+		Desc: `Displays the status of the given service instance. For now, it checks only if
+the instance is "up" (receiving connections) or "down" (refusing connections).`,
 		MinArgs: 1,
 	}
 }
@@ -267,15 +270,11 @@ func (c serviceInstanceStatus) Run(ctx *cmd.Context, client *cmd.Client) error {
 type serviceInfo struct{}
 
 func (c serviceInfo) Info() *cmd.Info {
-	usg := `service-info <service>
-e.g.:
-
-    $ tsuru service-info mongodb
-`
 	return &cmd.Info{
-		Name:    "service-info",
-		Usage:   usg,
-		Desc:    "List all instances of a service",
+		Name:  "service-info",
+		Usage: "service-info <service-name>",
+		Desc: `Displays a list of all instances of a given service (that the user has access
+to), and apps bound to these instances.`,
 		MinArgs: 1,
 	}
 }
@@ -403,8 +402,8 @@ type serviceDoc struct{}
 func (serviceDoc) Info() *cmd.Info {
 	return &cmd.Info{
 		Name:    "service-doc",
-		Usage:   "service-doc <servicename>",
-		Desc:    "Show documentation of a service",
+		Usage:   "service-doc <service-name>",
+		Desc:    `Shows the documentation of a service.`,
 		MinArgs: 1,
 	}
 }
@@ -440,9 +439,11 @@ type serviceRemove struct {
 
 func (c *serviceRemove) Info() *cmd.Info {
 	return &cmd.Info{
-		Name:    "service-remove",
-		Usage:   "service-remove <serviceinstancename> [--assume-yes]",
-		Desc:    "Removes a service instance",
+		Name:  "service-remove",
+		Usage: "service-remove <serviceinstancename> [--assume-yes]",
+		Desc: `Destroys a service instance. It can't remove a service instance that is bound
+to an app, so before remove a service instance, make sure there is no apps
+bound to it (see [[tsuru service-info]] command).`,
 		MinArgs: 1,
 	}
 }

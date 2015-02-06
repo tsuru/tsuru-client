@@ -83,14 +83,8 @@ func (s *S) TestServiceListWithEmptyResponse(c *gocheck.C) {
 }
 
 func (s *S) TestInfoServiceList(c *gocheck.C) {
-	expected := &cmd.Info{
-		Name:    "service-list",
-		Usage:   "service-list",
-		Desc:    "Get all available services, and user's instances for this services",
-		MinArgs: 0,
-	}
 	command := &serviceList{}
-	c.Assert(command.Info(), gocheck.DeepEquals, expected)
+	c.Assert(command.Info(), gocheck.NotNil)
 }
 
 func (s *S) TestServiceListShouldBeCommand(c *gocheck.C) {
@@ -202,15 +196,7 @@ func (s *S) TestServiceBindWithRequestFailure(c *gocheck.C) {
 }
 
 func (s *S) TestServiceBindInfo(c *gocheck.C) {
-	expected := &cmd.Info{
-		Name:  "service-bind",
-		Usage: "service-bind <instancename> [-a/--app appname]",
-		Desc: `bind a service instance to an app
-
-If you don't provide the app name, tsuru will try to guess it.`,
-		MinArgs: 1,
-	}
-	c.Assert((&serviceBind{}).Info(), gocheck.DeepEquals, expected)
+	c.Assert((&serviceBind{}).Info(), gocheck.NotNil)
 }
 
 func (s *S) TestServiceBindIsAFlaggedCommand(c *gocheck.C) {
@@ -290,15 +276,7 @@ func (s *S) TestServiceUnbindWithRequestFailure(c *gocheck.C) {
 }
 
 func (s *S) TestServiceUnbindInfo(c *gocheck.C) {
-	expected := &cmd.Info{
-		Name:  "service-unbind",
-		Usage: "service-unbind <instancename> [-a/--app appname]",
-		Desc: `unbind a service instance from an app
-
-If you don't provide the app name, tsuru will try to guess it.`,
-		MinArgs: 1,
-	}
-	c.Assert((&serviceUnbind{}).Info(), gocheck.DeepEquals, expected)
+	c.Assert((&serviceUnbind{}).Info(), gocheck.NotNil)
 }
 
 func (s *S) TestServiceUnbindIsAFlaggedComand(c *gocheck.C) {
@@ -306,21 +284,8 @@ func (s *S) TestServiceUnbindIsAFlaggedComand(c *gocheck.C) {
 }
 
 func (s *S) TestServiceAddInfo(c *gocheck.C) {
-	usage := `service-add <servicename> <serviceinstancename> [plan] [-t/--owner-team <team>]
-e.g.:
-
-    $ tsuru service-add mongodb tsuru_mongodb small -t myteam
-
-Will add a new instance of the "mongodb" service, named "tsuru_mongodb" with the plan "small".`
-	expected := &cmd.Info{
-		Name:    "service-add",
-		Usage:   usage,
-		Desc:    "Create a service instance to one or more apps make use of.",
-		MinArgs: 2,
-		MaxArgs: 3,
-	}
 	command := &serviceAdd{}
-	c.Assert(command.Info(), gocheck.DeepEquals, expected)
+	c.Assert(command.Info(), gocheck.NotNil)
 }
 
 func (s *S) TestServiceAddRun(c *gocheck.C) {
@@ -365,19 +330,8 @@ func (s *S) TestServiceAddFlags(c *gocheck.C) {
 }
 
 func (s *S) TestServiceInstanceStatusInfo(c *gocheck.C) {
-	usg := `service-status <serviceinstancename>
-e.g.:
-
-    $ tsuru service-status my_mongodb
-`
-	expected := &cmd.Info{
-		Name:    "service-status",
-		Usage:   usg,
-		Desc:    "Check status of a given service instance.",
-		MinArgs: 1,
-	}
 	got := (&serviceInstanceStatus{}).Info()
-	c.Assert(got, gocheck.DeepEquals, expected)
+	c.Assert(got, gocheck.NotNil)
 }
 
 func (s *S) TestServiceInstanceStatusRun(c *gocheck.C) {
@@ -398,19 +352,8 @@ func (s *S) TestServiceInstanceStatusRun(c *gocheck.C) {
 }
 
 func (s *S) TestServiceInfoInfo(c *gocheck.C) {
-	usg := `service-info <service>
-e.g.:
-
-    $ tsuru service-info mongodb
-`
-	expected := &cmd.Info{
-		Name:    "service-info",
-		Usage:   usg,
-		Desc:    "List all instances of a service",
-		MinArgs: 1,
-	}
 	got := (&serviceInfo{}).Info()
-	c.Assert(got, gocheck.DeepEquals, expected)
+	c.Assert(got, gocheck.NotNil)
 }
 
 func (s *S) TestServiceInfoExtraHeaders(c *gocheck.C) {
@@ -455,13 +398,7 @@ Plans
 
 func (s *S) TestServiceDocInfo(c *gocheck.C) {
 	i := (&serviceDoc{}).Info()
-	expected := &cmd.Info{
-		Name:    "service-doc",
-		Usage:   "service-doc <servicename>",
-		Desc:    "Show documentation of a service",
-		MinArgs: 1,
-	}
-	c.Assert(i, gocheck.DeepEquals, expected)
+	c.Assert(i, gocheck.NotNil)
 }
 
 func (s *S) TestServiceDocRun(c *gocheck.C) {
@@ -493,13 +430,7 @@ Service test is foo bar.
 
 func (s *S) TestServiceRemoveInfo(c *gocheck.C) {
 	i := (&serviceRemove{}).Info()
-	expected := &cmd.Info{
-		Name:    "service-remove",
-		Usage:   "service-remove <serviceinstancename> [--assume-yes]",
-		Desc:    "Removes a service instance",
-		MinArgs: 1,
-	}
-	c.Assert(i, gocheck.DeepEquals, expected)
+	c.Assert(i, gocheck.NotNil)
 }
 
 func (s *S) TestServiceRemoveRun(c *gocheck.C) {

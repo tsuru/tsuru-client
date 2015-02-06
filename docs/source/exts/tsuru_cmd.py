@@ -3,6 +3,7 @@ import os
 import json
 from subprocess import check_output
 
+import docutils
 from docutils import nodes
 from docutils.parsers import rst
 from docutils.parsers.rst.directives import unchanged
@@ -19,15 +20,10 @@ class CommandDirective(rst.Directive):
     option_spec = dict(title=unchanged)
 
     def run(self):
-        env = self.state.document.settings.env
         node = CommandNode()
         node.line = self.lineno
         node['command'] = self.arguments[0]
         node['title'] = self.options.get('title', '')
-        node['use_shell'] = True
-        node['hide_standard_error'] = False
-        _, cwd = env.relfn2path(self.options.get('cwd', '/'))
-        node['working_directory'] = cwd
         return [node]
 
 
@@ -42,27 +38,47 @@ def run_programs(app, doctree):
             error_node = doctree.reporter.error(error_message, base_node=node)
             node.replace_self(error_node)
             continue
-        output = "$ {}".format(command_data['usage'])
+        topic = command_data.get('topic')
+        if topic:
+            render_topic(app, node, topic)
+        else:
+            render_cmd(app, node, command_data['usage'], command_data['desc'])
 
-        all_nodes = []
 
-        title = node.get('title')
-        if title:
-            all_nodes.append(nodes.subtitle(title, title))
+def render_topic(app, node, topic):
+    paragraph = nodes.paragraph('', topic)
+    node.replace_self(paragraph)
 
-        new_node = nodes.literal_block(output, output)
-        new_node['language'] = 'text'
-        all_nodes.append(new_node)
 
-        remaining_output = command_data['desc']
-        remaining_output = remaining_output.replace("\n", "<br>")
-        paragraph = nodes.paragraph()
-        raw = nodes.raw('', remaining_output, format='html')
-        paragraph.append(raw)
+idregex = re.compile(r'[^a-zA-Z0-9]')
+inline_literal_regex = re.compile(r'\[\[|\]\]')
 
-        all_nodes.append(paragraph)
 
-        node.replace_self(all_nodes)
+def render_cmd(app, node, usage, description):
+    title = node.get('title')
+
+    titleid = idregex.sub('-', title).lower()
+    section = nodes.section('', ids=[titleid])
+
+    if title:
+        section.append(nodes.title(title, title))
+
+    output = "$ {}".format(usage)
+    new_node = nodes.literal_block(output, output)
+    new_node['language'] = 'text'
+    section.append(new_node)
+
+    settings = docutils.frontend.OptionParser(
+        components=(docutils.parsers.rst.Parser,)
+    ).get_default_values()
+    document = docutils.utils.new_document('', settings)
+    parser = docutils.parsers.rst.Parser()
+    description = inline_literal_regex.sub('``', description)
+    parser.parse(description, document)
+    for el in document.children:
+        section.append(el)
+
+    node.replace_self(section)
 
 
 def read_cmds(app):
@@ -81,6 +97,7 @@ def setup(app):
 
 def main():
     parts_regex = re.compile(r'tsuru version.*Usage: (.*?)\n+(.*)', re.DOTALL)
+    topic_regex = re.compile(r'tsuru version.*?\n+(.*)\n\n.*?\n\n  ', re.DOTALL)
 
     result = check_output("tsuru | egrep \"^[  ]\" | awk -F ' ' '{print $1}'", shell=True)
     cmds = result.split('\n')
@@ -91,12 +108,18 @@ def main():
         result = check_output('tsuru help {}'.format(cmd), shell=True)
         matchdata = parts_regex.match(result)
         if matchdata is None:
-            print "Ignored command: {}".format(cmd)
-            continue
-        result = {
-            'usage': matchdata.group(1),
-            'desc': matchdata.group(2),
-        }
+            topicdata = topic_regex.match(result)
+            if topicdata is None:
+                print "Ignored command: {}".format(cmd)
+                continue
+            result = {
+                'topic': topicdata.group(1)
+            }
+        else:
+            result = {
+                'usage': matchdata.group(1),
+                'desc': matchdata.group(2),
+            }
         final_result[cmd] = result
     out = json.dumps(final_result, indent=2)
     destination = os.path.join(os.path.dirname(os.path.abspath(__file__)), 'cmds.json')

@@ -17,15 +17,7 @@ import (
 )
 
 func (s *S) TestEnvGetInfo(c *gocheck.C) {
-	e := envGet{}
-	i := e.Info()
-	desc := `retrieve environment variables for an app.
-
-If you don't provide the app name, tsuru will try to guess it.`
-	c.Assert(i.Name, gocheck.Equals, "env-get")
-	c.Assert(i.Usage, gocheck.Equals, "env-get [-a/--app appname] [ENVIRONMENT_VARIABLE1] [ENVIRONMENT_VARIABLE2] ...")
-	c.Assert(i.Desc, gocheck.Equals, desc)
-	c.Assert(i.MinArgs, gocheck.Equals, 0)
+	c.Assert((&envGet{}).Info(), gocheck.NotNil)
 }
 
 func (s *S) TestEnvGetRun(c *gocheck.C) {
@@ -133,15 +125,7 @@ func (s *S) TestEnvGetWithoutTheFlag(c *gocheck.C) {
 }
 
 func (s *S) TestEnvSetInfo(c *gocheck.C) {
-	e := envSet{}
-	i := e.Info()
-	desc := `set environment variables for an app.
-
-If you don't provide the app name, tsuru will try to guess it.`
-	c.Assert(i.Name, gocheck.Equals, "env-set")
-	c.Assert(i.Usage, gocheck.Equals, "env-set <NAME=value> [NAME=value] ... [-a/--app appname]")
-	c.Assert(i.Desc, gocheck.Equals, desc)
-	c.Assert(i.MinArgs, gocheck.Equals, 1)
+	c.Assert((&envSet{}).Info(), gocheck.NotNil)
 }
 
 func (s *S) TestEnvSetRun(c *gocheck.C) {
@@ -276,15 +260,7 @@ func (s *S) TestEnvSetInvalidParameters(c *gocheck.C) {
 }
 
 func (s *S) TestEnvUnsetInfo(c *gocheck.C) {
-	e := envUnset{}
-	i := e.Info()
-	desc := `unset environment variables for an app.
-
-If you don't provide the app name, tsuru will try to guess it.`
-	c.Assert(i.Name, gocheck.Equals, "env-unset")
-	c.Assert(i.Usage, gocheck.Equals, "env-unset <ENVIRONMENT_VARIABLE1> [ENVIRONMENT_VARIABLE2] ... [ENVIRONMENT_VARIABLEN] [-a/--app appname]")
-	c.Assert(i.Desc, gocheck.Equals, desc)
-	c.Assert(i.MinArgs, gocheck.Equals, 1)
+	c.Assert((&envUnset{}).Info(), gocheck.NotNil)
 }
 
 func (s *S) TestEnvUnsetRun(c *gocheck.C) {

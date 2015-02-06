@@ -105,10 +105,13 @@ type appDeploy struct {
 }
 
 func (c *appDeploy) Info() *cmd.Info {
-	desc := `Deploys set of files and/or directories to tsuru server. Some examples of calls are:
+	desc := `Deploys set of files and/or directories to tsuru server. Some examples of
+calls are:
 
-tsuru app-deploy .
-tsuru app-deploy myfile.jar Procfile
+::
+
+    $ tsuru app-deploy .
+    $ tsuru app-deploy myfile.jar Procfile
 `
 	return &cmd.Info{
 		Name:    "app-deploy",

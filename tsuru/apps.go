@@ -29,9 +29,31 @@ type appCreate struct {
 
 func (c *appCreate) Info() *cmd.Info {
 	return &cmd.Info{
-		Name:    "app-create",
-		Usage:   "app-create <appname> <platform> [--plan/-p plan_name] [--team/-t (team owner)]",
-		Desc:    "create a new app.",
+		Name:  "app-create",
+		Usage: "app-create <appname> <platform> [--plan/-p plan_name] [--team/-t (team owner)]",
+		Desc: `Creates a new app using the given name and platform. For tsuru,
+a platform is provisioner dependent. To check the available platforms, use the
+command [[tsuru platform-list]] and to add a platform use the command [[tsuru-admin platform-add]].
+
+In order to create an app, you need to be member of at least one team. All
+teams that you are member (see [[tsuru team-list]]) will be able to access the
+app.
+
+The [[--platform]] parameter is the name of the platform to be used when
+creating the app. This will definer how tsuru understands and executes your
+app. The list of available platforms can be found running [[tsuru platform-list]].
+
+The [[--plan]] parameter defines the plan to be used. The plan specifies how
+computational resources are allocated to your application. Typically this
+means limits for memory and swap usage, and how much cpu share is allocated.
+The list of available plans can be found running [[tsuru plan-list]].
+
+If this parameter is not informed, tsuru will choose the plan with the
+[[default]] flag set to true.
+
+The [[--team]] parameter describes which team is responsible for the created
+app, this is only needed if the current user belongs to more than one team, in
+which case this parameter will be mandatory.`,
 		MinArgs: 2,
 	}
 }
@@ -101,9 +123,11 @@ func (c *appRemove) Info() *cmd.Info {
 	return &cmd.Info{
 		Name:  "app-remove",
 		Usage: "app-remove [-a/--app appname] [-y/--assume-yes]",
-		Desc: `removes an app.
+		Desc: `Removes an app. If the app is bound to any service instance, all binds will be
+removed before the app gets deleted (see [[tsuru service-unbind]]).
 
-If you don't provide the app name, tsuru will try to guess it.`,
+You need to be a member of a team that has access to the app to be able to
+remove it (you are able to remove any app that you see in [[tsuru app-list]]).`,
 		MinArgs: 0,
 	}
 }
@@ -150,9 +174,9 @@ func (c *appInfo) Info() *cmd.Info {
 	return &cmd.Info{
 		Name:  "app-info",
 		Usage: "app-info [-a/--app appname]",
-		Desc: `show information about your app.
-
-If you don't provide the app name, tsuru will try to guess it.`,
+		Desc: `Shows information about an specific app (its state, platform, git repository,
+etc.). You need to be a member of a team that access to the app to be able to
+see informations about it.`,
 		MinArgs: 0,
 	}
 }
@@ -371,9 +395,9 @@ func (c *appGrant) Info() *cmd.Info {
 	return &cmd.Info{
 		Name:  "app-grant",
 		Usage: "app-grant <teamname> [-a/--app appname]",
-		Desc: `grants access to an app to a team.
-
-If you don't provide the app name, tsuru will try to guess it.`,
+		Desc: `Allows a team to access an application. You need to be a member of a team that
+has access to the app to allow another team to access it. grants access to an
+app to a team.`,
 		MinArgs: 1,
 	}
 }
@@ -408,9 +432,11 @@ func (c *appRevoke) Info() *cmd.Info {
 	return &cmd.Info{
 		Name:  "app-revoke",
 		Usage: "app-revoke <teamname> [-a/--app appname]",
-		Desc: `revokes access to an app from a team.
+		Desc: `Revokes the permission to access an application from a team. You need to have
+access to the application to revoke access from a team.
 
-If you don't provide the app name, tsuru will try to guess it.`,
+An application cannot be orphaned, so it will always have at least one
+authorized team.`,
 		MinArgs: 1,
 	}
 }
@@ -496,7 +522,8 @@ func (c appList) Info() *cmd.Info {
 	return &cmd.Info{
 		Name:  "app-list",
 		Usage: "app-list",
-		Desc:  "list all your apps.",
+		Desc: `Lists all apps that you have access to. App access is controlled by teams. If
+your team has access to an app, then you have access to it.`,
 	}
 }
 
@@ -506,11 +533,9 @@ type appStop struct {
 
 func (c *appStop) Info() *cmd.Info {
 	return &cmd.Info{
-		Name:  "app-stop",
-		Usage: "app-stop [-a/--app appname]",
-		Desc: `stops an app.
-
-If you don't provide the app name, tsuru will try to guess it.`,
+		Name:    "app-stop",
+		Usage:   "app-stop [-a/--app appname]",
+		Desc:    `Stops an application.`,
 		MinArgs: 0,
 	}
 }
@@ -546,11 +571,9 @@ type appStart struct {
 
 func (c *appStart) Info() *cmd.Info {
 	return &cmd.Info{
-		Name:  "app-start",
-		Usage: "app-start [-a/--app appname]",
-		Desc: `starts an app.
-
-If you don't provide the app name, tsuru will try to guess it.`,
+		Name:    "app-start",
+		Usage:   "app-start [-a/--app appname]",
+		Desc:    `Starts an application.`,
 		MinArgs: 0,
 	}
 }
@@ -617,11 +640,9 @@ func (c *appRestart) Run(context *cmd.Context, client *cmd.Client) error {
 
 func (c *appRestart) Info() *cmd.Info {
 	return &cmd.Info{
-		Name:  "app-restart",
-		Usage: "app-restart [-a/--app appname]",
-		Desc: `restarts an app.
-
-If you don't provide the app name, tsuru will try to guess it.`,
+		Name:    "app-restart",
+		Usage:   "app-restart [-a/--app appname]",
+		Desc:    `Restarts an application.`,
 		MinArgs: 0,
 	}
 }
@@ -767,9 +788,10 @@ type unitAdd struct {
 
 func (c *unitAdd) Info() *cmd.Info {
 	return &cmd.Info{
-		Name:    "unit-add",
-		Usage:   "unit-add <# of units> [-a/--app appname]",
-		Desc:    "add new units to an app.",
+		Name:  "unit-add",
+		Usage: "unit-add <# of units> [-a/--app appname]",
+		Desc: `Adds new units (instances) to an application. You need to have access to the
+app to be able to add new units to it.`,
 		MinArgs: 1,
 	}
 }
@@ -811,9 +833,10 @@ type unitRemove struct {
 
 func (c *unitRemove) Info() *cmd.Info {
 	return &cmd.Info{
-		Name:    "unit-remove",
-		Usage:   "unit-remove <# of units> [-a/--app appname]",
-		Desc:    "remove units from an app.",
+		Name:  "unit-remove",
+		Usage: "unit-remove <# of units> [-a/--app appname]",
+		Desc: `Removes units (instances) from an application. You need to have access to the
+app to be able to remove units from it.`,
 		MinArgs: 1,
 	}
 }

@@ -21,7 +21,7 @@ func (pluginInstall) Info() *cmd.Info {
 	return &cmd.Info{
 		Name:    "plugin-install",
 		Usage:   "plugin-install <plugin-name> <plugin-url>",
-		Desc:    "Install tsuru plugins.",
+		Desc:    `Downloads the plugin file to [[$HOME/.tsuru/plugins]].`,
 		MinArgs: 2,
 	}
 }
@@ -105,7 +105,7 @@ func (pluginRemove) Info() *cmd.Info {
 	return &cmd.Info{
 		Name:    "plugin-remove",
 		Usage:   "plugin-remove <plugin-name>",
-		Desc:    "Remove tsuru plugins.",
+		Desc:    "Removes a previously installed tsuru plugin.",
 		MinArgs: 1,
 	}
 }

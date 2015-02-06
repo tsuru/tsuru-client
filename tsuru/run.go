@@ -22,12 +22,11 @@ type appRun struct {
 }
 
 func (c *appRun) Info() *cmd.Info {
-	desc := `run a command in all instances of the app, and prints the output.
+	desc := `Runs an arbitrary command in application's containers. The base directory for
+all commands is the root of the application.
 
-If you use the '--once' flag tsuru will run the command only in one unit.
-
-If you don't provide the app name, tsuru will try to guess it.
-`
+If you use the [[--once]] flag tsuru will run the command only in one unit.
+Otherwise, it will run the command in all units.`
 	return &cmd.Info{
 		Name:    "app-run",
 		Usage:   "app-run <command> [commandarg1] [commandarg2] ... [commandargn] [-a/--app appname] [-o/--once]",

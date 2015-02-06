@@ -29,9 +29,20 @@ func (c *appLog) Info() *cmd.Info {
 	return &cmd.Info{
 		Name:  "app-log",
 		Usage: "app-log [-a/--app appname] [-l/--lines numberOfLines] [-s/--source source] [-u/--unit unit] [-f/--follow]",
-		Desc: `show logs for an app.
+		Desc: `Shows log entries for an application. These logs include everything the
+application send to stdout and stderr, alongside with logs from tsuru server
+(deployments, restarts, etc.)
 
-If you don't provide the app name, tsuru will try to guess it. The default number of lines is 10.`,
+The [[--lines]] flag is optional and by default its value is 10.
+
+The [[--source]] flag is optional and allows filtering logs by log source
+(e.g. application, tsuru api).
+
+The [[--unit]] flag is optional and allows filtering by unit. It's useful if
+your application has multiple units and you want logs from a single one.
+
+The [[--follow]] flag is optional and makes the command wait for additional
+log output`,
 		MinArgs: 0,
 	}
 }

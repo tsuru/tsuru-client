@@ -26,7 +26,7 @@ func (c *userCreate) Info() *cmd.Info {
 	return &cmd.Info{
 		Name:    "user-create",
 		Usage:   "user-create <email>",
-		Desc:    "creates a user.",
+		Desc:    "Creates a user within tsuru remote server. It will ask for the password before issue the request.",
 		MinArgs: 1,
 	}
 }
@@ -99,9 +99,12 @@ func (c *userRemove) Run(context *cmd.Context, client *cmd.Client) error {
 
 func (c *userRemove) Info() *cmd.Info {
 	return &cmd.Info{
-		Name:    "user-remove",
-		Usage:   "user-remove",
-		Desc:    "removes your user from tsuru server.",
+		Name:  "user-remove",
+		Usage: "user-remove",
+		Desc: `Remove currently authenticated user from remote tsuru
+server. Since there cannot exist any orphan teams, tsuru will refuse to remove
+a user that is the last member of some team. If this is your case, make sure
+you remove the team using ` + "`team-remove`" + ` before removing the user.`,
 		MinArgs: 0,
 	}
 }
@@ -110,9 +113,12 @@ type teamCreate struct{}
 
 func (c *teamCreate) Info() *cmd.Info {
 	return &cmd.Info{
-		Name:    "team-create",
-		Usage:   "team-create <teamname>",
-		Desc:    "creates a new team.",
+		Name:  "team-create",
+		Usage: "team-create <teamname>",
+		Desc: `Create a team for the user. tsuru requires a user to be a member of at least
+one team in order to create an app or a service instance.
+
+When you create a team, you're automatically member of this team.`,
 		MinArgs: 1,
 	}
 }
@@ -164,9 +170,12 @@ func (c *teamRemove) Run(context *cmd.Context, client *cmd.Client) error {
 
 func (c *teamRemove) Info() *cmd.Info {
 	return &cmd.Info{
-		Name:    "team-remove",
-		Usage:   "team-remove <team-name>",
-		Desc:    "removes a team from tsuru server.",
+		Name:  "team-remove",
+		Usage: "team-remove <team-name>",
+		Desc: `Removes a team from tsuru server. You're able to remove teams that you're
+member of. A team that has access to any app cannot be removed. Before
+removing a team, make sure it does not have access to any app (see "app-grant"
+and "app-revoke" commands for details).`,
 		MinArgs: 1,
 	}
 }
@@ -177,7 +186,7 @@ func (c *teamUserAdd) Info() *cmd.Info {
 	return &cmd.Info{
 		Name:    "team-user-add",
 		Usage:   "team-user-add <teamname> <useremail>",
-		Desc:    "adds a user to a team.",
+		Desc:    "Adds a user to a team. You need to be a member of the team to be able to add another user to it.",
 		MinArgs: 2,
 	}
 }
@@ -206,7 +215,7 @@ func (c *teamUserRemove) Info() *cmd.Info {
 	return &cmd.Info{
 		Name:    "team-user-remove",
 		Usage:   "team-user-remove <teamname> <useremail>",
-		Desc:    "removes a user from a team.",
+		Desc:    "Removes a user from a team. You need to be a member of the team to be able to remove a user from it.",
 		MinArgs: 2,
 	}
 }
@@ -361,7 +370,8 @@ func (c *changePassword) Info() *cmd.Info {
 	return &cmd.Info{
 		Name:  "change-password",
 		Usage: "change-password",
-		Desc:  "Change your password.",
+		Desc: `Changes the password of the logged in user. It will ask for the current
+password, the new and the confirmation.`,
 	}
 }
 
@@ -380,11 +390,11 @@ This process is composed of two steps:
 1. Generate a new token
 2. Reset the password using the token
 
-In order to generate the token, users should run this command without the --token flag.
-The token will be mailed to the user.
+In order to generate the token, users should run this command without the
+--token flag. The token will be mailed to the user.
 
-With the token in hand, the user can finally reset the password using the --token flag.
-The new password will also be mailed to the user.`,
+With the token in hand, the user can finally reset the password using the
+--token flag. The new password will also be mailed to the user.`,
 		MinArgs: 1,
 	}
 }
@@ -449,9 +459,14 @@ type showAPIToken struct{}
 
 func (c *showAPIToken) Info() *cmd.Info {
 	return &cmd.Info{
-		Name:    "token-show",
-		Usage:   "token-show",
-		Desc:    "Show API token user. If him does not have a key, it is generated.",
+		Name:  "token-show",
+		Usage: "token-show",
+		Desc: `Shows API token for the user. This token allow authenticated API calls to
+tsuru and will never expire. This is useful for integrating CI servers with
+tsuru.
+
+The key will be generated the first time this command is called. See [[tsuru token-regenerate]]
+if you need to invalidate an existing token.`,
 		MinArgs: 0,
 	}
 }
@@ -491,7 +506,7 @@ func (c *regenerateAPIToken) Info() *cmd.Info {
 	return &cmd.Info{
 		Name:    "token-regenerate",
 		Usage:   "token-regenerate",
-		Desc:    "Generates a new API key. If there is already a key, it is replaced.",
+		Desc:    `Generates a new API token. This invalidates previously generated API tokens.`,
 		MinArgs: 0,
 	}
 }

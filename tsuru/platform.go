@@ -57,7 +57,7 @@ func (platformList) Info() *cmd.Info {
 	return &cmd.Info{
 		Name:    "platform-list",
 		Usage:   "platform-list",
-		Desc:    "Display the list of available platforms.",
+		Desc:    "Lists the available platforms. All platforms displayed in this list may be used to create new apps (see app-create).",
 		MinArgs: 0,
 	}
 }

@@ -1,7 +1,7 @@
 {
   "service-status": {
-    "usage": "tsuru service-status <serviceinstancename>", 
-    "desc": "e.g.:\n\n    $ tsuru service-status my_mongodb\n\n\nCheck status of a given service instance.\n\nMinimum # of arguments: 1\n"
+    "usage": "tsuru service-status <service-instance-name>", 
+    "desc": "Displays the status of the given service instance. For now, it checks only if\nthe instance is \"up\" (receiving connections) or \"down\" (refusing connections).\n\nMinimum # of arguments: 1\n"
   }, 
   "help": {
     "usage": "tsuru command [args]", 
@@ -9,7 +9,7 @@
   }, 
   "app-info": {
     "usage": "tsuru app-info [-a/--app appname]", 
-    "desc": "show information about your app.\n\nIf you don't provide the app name, tsuru will try to guess it.\n\n"
+    "desc": "Shows information about an specific app (its state, platform, git repository,\netc.). You need to be a member of a team that access to the app to be able to\nsee informations about it.\n\n"
   }, 
   "target-list": {
     "usage": "tsuru target-list", 
@@ -17,7 +17,7 @@
   }, 
   "app-revoke": {
     "usage": "tsuru app-revoke <teamname> [-a/--app appname]", 
-    "desc": "revokes access to an app from a team.\n\nIf you don't provide the app name, tsuru will try to guess it.\n\nMinimum # of arguments: 1\n"
+    "desc": "Revokes the permission to access an application from a team. You need to have\naccess to the application to revoke access from a team.\n\nAn application cannot be orphaned, so it will always have at least one\nauthorized team.\n\nMinimum # of arguments: 1\n"
   }, 
   "plan-list": {
     "usage": "tsuru plan-list [--human]", 
@@ -25,31 +25,31 @@
   }, 
   "app-create": {
     "usage": "tsuru app-create <appname> <platform> [--plan/-p plan_name] [--team/-t (team owner)]", 
-    "desc": "create a new app.\n\nMinimum # of arguments: 2\n"
+    "desc": "Creates a new app using the given name and platform. For tsuru,\na platform is provisioner dependent. To check the available platforms, use the\ncommand [[tsuru platform-list]] and to add a platform use the command [[tsuru-admin platform-add]].\n\nIn order to create an app, you need to be member of at least one team. All\nteams that you are member (see [[tsuru team-list]]) will be able to access the\napp.\n\nThe [[--platform]] parameter is the name of the platform to be used when\ncreating the app. This will definer how tsuru understands and executes your\napp. The list of available platforms can be found running [[tsuru platform-list]].\n\nThe [[--plan]] parameter defines the plan to be used. The plan specifies how\ncomputational resources are allocated to your application. Typically this\nmeans limits for memory and swap usage, and how much cpu share is allocated.\nThe list of available plans can be found running [[tsuru plan-list]].\n\nIf this parameter is not informed, tsuru will choose the plan with the\n[[default]] flag set to true.\n\nThe [[--team]] parameter describes which team is responsible for the created\napp, this is only needed if the current user belongs to more than one team, in\nwhich case this parameter will be mandatory.\n\nMinimum # of arguments: 2\n"
   }, 
   "app-list": {
     "usage": "tsuru app-list", 
-    "desc": "list all your apps.\n\n"
+    "desc": "Lists all apps that you have access to. App access is controlled by teams. If\nyour team has access to an app, then you have access to it.\n\n"
   }, 
   "team-user-remove": {
     "usage": "tsuru team-user-remove <teamname> <useremail>", 
-    "desc": "removes a user from a team.\n\nMinimum # of arguments: 2\n"
+    "desc": "Removes a user from a team. You need to be a member of the team to be able to remove a user from it.\n\nMinimum # of arguments: 2\n"
   }, 
   "service-unbind": {
     "usage": "tsuru service-unbind <instancename> [-a/--app appname]", 
-    "desc": "unbind a service instance from an app\n\nIf you don't provide the app name, tsuru will try to guess it.\n\nMinimum # of arguments: 1\n"
+    "desc": "Unbinds an application from a service instance. After unbinding, the instance\nwill not be available anymore. For example, when unbinding an application from\na MySQL service, the application would lose access to the database.\n\nMinimum # of arguments: 1\n"
   }, 
   "service-info": {
-    "usage": "tsuru service-info <service>", 
-    "desc": "e.g.:\n\n    $ tsuru service-info mongodb\n\n\nList all instances of a service\n\nMinimum # of arguments: 1\n"
+    "usage": "tsuru service-info <service-name>", 
+    "desc": "Displays a list of all instances of a given service (that the user has access\nto), and apps bound to these instances.\n\nMinimum # of arguments: 1\n"
   }, 
   "change-password": {
     "usage": "tsuru change-password", 
-    "desc": "Change your password.\n\n"
+    "desc": "Changes the password of the logged in user. It will ask for the current\npassword, the new and the confirmation.\n\n"
   }, 
   "token-show": {
     "usage": "tsuru token-show", 
-    "desc": "Show API token user. If him does not have a key, it is generated.\n\n"
+    "desc": "Shows API token for the user. This token allow authenticated API calls to\ntsuru and will never expire. This is useful for integrating CI servers with\ntsuru.\n\nThe key will be generated the first time this command is called. See [[tsuru token-regenerate]]\nif you need to invalidate an existing token.\n\n"
   }, 
   "autoscale-enable": {
     "usage": "tsuru autoscale-enable [-a/--app appname]", 
@@ -57,7 +57,7 @@
   }, 
   "unit-add": {
     "usage": "tsuru unit-add <# of units> [-a/--app appname]", 
-    "desc": "add new units to an app.\n\nMinimum # of arguments: 1\n"
+    "desc": "Adds new units (instances) to an application. You need to have access to the\napp to be able to add new units to it.\n\nMinimum # of arguments: 1\n"
   }, 
   "autoscale-disable": {
     "usage": "tsuru autoscale-disable [-a/--app appname]", 
@@ -65,11 +65,11 @@
   }, 
   "platform-list": {
     "usage": "tsuru platform-list", 
-    "desc": "Display the list of available platforms.\n\n"
+    "desc": "Lists the available platforms. All platforms displayed in this list may be used to create new apps (see app-create).\n\n"
   }, 
   "unit-remove": {
     "usage": "tsuru unit-remove <# of units> [-a/--app appname]", 
-    "desc": "remove units from an app.\n\nMinimum # of arguments: 1\n"
+    "desc": "Removes units (instances) from an application. You need to have access to the\napp to be able to remove units from it.\n\nMinimum # of arguments: 1\n"
   }, 
   "app-deploy-list": {
     "usage": "tsuru app-deploy-list [-a/--app <appname>]", 
@@ -77,15 +77,15 @@
   }, 
   "env-set": {
     "usage": "tsuru env-set <NAME=value> [NAME=value] ... [-a/--app appname]", 
-    "desc": "set environment variables for an app.\n\nIf you don't provide the app name, tsuru will try to guess it.\n\nMinimum # of arguments: 1\n"
+    "desc": "Sets environment variables for an application.\n\nMinimum # of arguments: 1\n"
   }, 
   "plugin-install": {
     "usage": "tsuru plugin-install <plugin-name> <plugin-url>", 
-    "desc": "Install tsuru plugins.\n\nMinimum # of arguments: 2\n"
+    "desc": "Downloads the plugin file to [[$HOME/.tsuru/plugins]].\n\nMinimum # of arguments: 2\n"
   }, 
   "user-create": {
     "usage": "tsuru user-create <email>", 
-    "desc": "creates a user.\n\nMinimum # of arguments: 1\n"
+    "desc": "Creates a user within tsuru remote server. It will ask for the password before issue the request.\n\nMinimum # of arguments: 1\n"
   }, 
   "app-deploy-rollback": {
     "usage": "tsuru app-deploy-rollback [-a/--app appname] [-y/--assume-yes] <image-name>", 
@@ -101,11 +101,11 @@
   }, 
   "app-start": {
     "usage": "tsuru app-start [-a/--app appname]", 
-    "desc": "starts an app.\n\nIf you don't provide the app name, tsuru will try to guess it.\n\n"
+    "desc": "Starts an application.\n\n"
   }, 
   "env-unset": {
     "usage": "tsuru env-unset <ENVIRONMENT_VARIABLE1> [ENVIRONMENT_VARIABLE2] ... [ENVIRONMENT_VARIABLEN] [-a/--app appname]", 
-    "desc": "unset environment variables for an app.\n\nIf you don't provide the app name, tsuru will try to guess it.\n\nMinimum # of arguments: 1\n"
+    "desc": "Unset environment variables for an application.\n\nMinimum # of arguments: 1\n"
   }, 
   "plugin-list": {
     "usage": "tsuru plugin-list", 
@@ -113,19 +113,19 @@
   }, 
   "team-user-add": {
     "usage": "tsuru team-user-add <teamname> <useremail>", 
-    "desc": "adds a user to a team.\n\nMinimum # of arguments: 2\n"
+    "desc": "Adds a user to a team. You need to be a member of the team to be able to add another user to it.\n\nMinimum # of arguments: 2\n"
   }, 
   "service-bind": {
-    "usage": "tsuru service-bind <instancename> [-a/--app appname]", 
-    "desc": "bind a service instance to an app\n\nIf you don't provide the app name, tsuru will try to guess it.\n\nMinimum # of arguments: 1\n"
+    "usage": "tsuru service-bind <service-instance-name> [-a/--app appname]", 
+    "desc": "Binds an application to a service instance (see [[tsuru service-add]] for more\ndetails on how to create a service instance).\n\nWhen binding an application to a service instance, tsuru will add new\nenvironment variables to the application. All environment variables exported\nby bind will be private (not accessible via [[tsuru env-get]]).\n\nMinimum # of arguments: 1\n"
   }, 
   "key-add": {
     "usage": "tsuru key-add <key-name> <path/to/key/file.pub>", 
-    "desc": "adds a public key to your account\n\nMinimum # of arguments: 2\n"
+    "desc": "Sends your public key to the git server used by tsuru. The key will be added\nto the current logged in user.\n\nMinimum # of arguments: 2\n"
   }, 
   "service-doc": {
-    "usage": "tsuru service-doc <servicename>", 
-    "desc": "Show documentation of a service\n\nMinimum # of arguments: 1\n"
+    "usage": "tsuru service-doc <service-name>", 
+    "desc": "Shows the documentation of a service.\n\nMinimum # of arguments: 1\n"
   }, 
   "team-user-list": {
     "usage": "tsuru team-user-list <teamname>", 
@@ -141,31 +141,31 @@
   }, 
   "token-regenerate": {
     "usage": "tsuru token-regenerate", 
-    "desc": "Generates a new API key. If there is already a key, it is replaced.\n\n"
+    "desc": "Generates a new API token. This invalidates previously generated API tokens.\n\n"
   }, 
   "reset-password": {
     "usage": "tsuru reset-password <email> [--token|-t <token>]", 
-    "desc": "Resets the user password.\n\nThis process is composed of two steps:\n\n1. Generate a new token\n2. Reset the password using the token\n\nIn order to generate the token, users should run this command without the --token flag.\nThe token will be mailed to the user.\n\nWith the token in hand, the user can finally reset the password using the --token flag.\nThe new password will also be mailed to the user.\n\nMinimum # of arguments: 1\n"
+    "desc": "Resets the user password.\n\nThis process is composed of two steps:\n\n1. Generate a new token\n2. Reset the password using the token\n\nIn order to generate the token, users should run this command without the\n--token flag. The token will be mailed to the user.\n\nWith the token in hand, the user can finally reset the password using the\n--token flag. The new password will also be mailed to the user.\n\nMinimum # of arguments: 1\n"
   }, 
   "plugin-remove": {
     "usage": "tsuru plugin-remove <plugin-name>", 
-    "desc": "Remove tsuru plugins.\n\nMinimum # of arguments: 1\n"
+    "desc": "Removes a previously installed tsuru plugin.\n\nMinimum # of arguments: 1\n"
   }, 
   "env-get": {
     "usage": "tsuru env-get [-a/--app appname] [ENVIRONMENT_VARIABLE1] [ENVIRONMENT_VARIABLE2] ...", 
-    "desc": "retrieve environment variables for an app.\n\nIf you don't provide the app name, tsuru will try to guess it.\n\n"
+    "desc": "Retrieves environment variables for an application.\n\n"
   }, 
   "logout": {
     "usage": "tsuru logout", 
-    "desc": "clear local authentication credentials.\n\n"
+    "desc": "Logout will delete the token file and terminate the session within tsuru\nserver.\n\n"
   }, 
   "app-stop": {
     "usage": "tsuru app-stop [-a/--app appname]", 
-    "desc": "stops an app.\n\nIf you don't provide the app name, tsuru will try to guess it.\n\n"
+    "desc": "Stops an application.\n\n"
   }, 
   "app-remove": {
     "usage": "tsuru app-remove [-a/--app appname] [-y/--assume-yes]", 
-    "desc": "removes an app.\n\nIf you don't provide the app name, tsuru will try to guess it.\n\n"
+    "desc": "Removes an app. If the app is bound to any service instance, all binds will be\nremoved before the app gets deleted (see [[tsuru service-unbind]]).\n\nYou need to be a member of a team that has access to the app to be able to\nremove it (you are able to remove any app that you see in [[tsuru app-list]]).\n\n"
   }, 
   "version": {
     "usage": "tsuru version", 
@@ -173,19 +173,22 @@
   }, 
   "service-add": {
     "usage": "tsuru service-add <servicename> <serviceinstancename> [plan] [-t/--owner-team <team>]", 
-    "desc": "e.g.:\n\n    $ tsuru service-add mongodb tsuru_mongodb small -t myteam\n\nWill add a new instance of the \"mongodb\" service, named \"tsuru_mongodb\" with the plan \"small\".\n\nCreate a service instance to one or more apps make use of.\n\nMinimum # of arguments: 2\nMaximum # of arguments: 3\n"
+    "desc": "Creates a service instance of a service which can later be binded to\napplications with [[tsuru service-bind]].\n\nThis example shows how to add a new instance of **mongodb** service, named\n**tsuru_mongodb** with the plan **small**:\n\n::\n\n    $ tsuru service-add mongodb tsuru_mongodb small -t myteam\n\n\nMinimum # of arguments: 2\nMaximum # of arguments: 3\n"
   }, 
   "user-remove": {
     "usage": "tsuru user-remove", 
-    "desc": "removes your user from tsuru server.\n\n"
+    "desc": "Remove currently authenticated user from remote tsuru\nserver. Since there cannot exist any orphan teams, tsuru will refuse to remove\na user that is the last member of some team. If this is your case, make sure\nyou remove the team using `team-remove` before removing the user.\n\n"
   }, 
   "service-remove": {
     "usage": "tsuru service-remove <serviceinstancename> [--assume-yes]", 
-    "desc": "Removes a service instance\n\nMinimum # of arguments: 1\n"
+    "desc": "Destroys a service instance. It can't remove a service instance that is bound\nto an app, so before remove a service instance, make sure there is no apps\nbound to it (see [[tsuru service-info]] command).\n\nMinimum # of arguments: 1\n"
+  }, 
+  "target": {
+    "topic": "In tsuru, a target is the address of the remote tsuru server.\n\nEach target is identified by a label and a HTTP/HTTPS address. The client\nrequires at least one target to connect to, there's no default target. A user\nmay have multiple targets, but he/she will be able to use only per session."
   }, 
   "app-run": {
     "usage": "tsuru app-run <command> [commandarg1] [commandarg2] ... [commandargn] [-a/--app appname] [-o/--once]", 
-    "desc": "run a command in all instances of the app, and prints the output.\n\nIf you use the '--once' flag tsuru will run the command only in one unit.\n\nIf you don't provide the app name, tsuru will try to guess it.\n\n\nMinimum # of arguments: 1\n"
+    "desc": "Runs an arbitrary command in application's containers. The base directory for\nall commands is the root of the application.\n\nIf you use the [[--once]] flag tsuru will run the command only in one unit.\nOtherwise, it will run the command in all units.\n\nMinimum # of arguments: 1\n"
   }, 
   "autoscale-config": {
     "usage": "tsuru autoscale-config [-a/--app appname] --max-units unitsnumber --min-units unitsnumber --increase-step unitsnumber --increase-wait-time seconds --increase-expression expression --decrease-wait-time seconds --decrease-expression expression --enabled", 
@@ -193,7 +196,7 @@
   }, 
   "key-remove": {
     "usage": "tsuru key-remove <key-name>", 
-    "desc": "removes the given public key from your account\n\nMinimum # of arguments: 1\n"
+    "desc": "Removes your public key from the git server used by tsuru. The key will be\nremoved from the current logged in user.\n\nMinimum # of arguments: 1\n"
   }, 
   "cname-remove": {
     "usage": "tsuru cname-remove <cname> [<cname> ...] [-a/--app appname]", 
@@ -205,23 +208,23 @@
   }, 
   "key-list": {
     "usage": "tsuru key-list [-n/--no-truncate]", 
-    "desc": "lists public keys registered in your account\n\n"
+    "desc": "Lists the public keys registered in the current user account.\n\n"
   }, 
   "app-log": {
     "usage": "tsuru app-log [-a/--app appname] [-l/--lines numberOfLines] [-s/--source source] [-u/--unit unit] [-f/--follow]", 
-    "desc": "show logs for an app.\n\nIf you don't provide the app name, tsuru will try to guess it. The default number of lines is 10.\n\n"
+    "desc": "Shows log entries for an application. These logs include everything the\napplication send to stdout and stderr, alongside with logs from tsuru server\n(deployments, restarts, etc.)\n\nThe [[--lines]] flag is optional and by default its value is 10.\n\nThe [[--source]] flag is optional and allows filtering logs by log source\n(e.g. application, tsuru api).\n\nThe [[--unit]] flag is optional and allows filtering by unit. It's useful if\nyour application has multiple units and you want logs from a single one.\n\nThe [[--follow]] flag is optional and makes the command wait for additional\nlog output\n\n"
   }, 
   "app-deploy": {
     "usage": "tsuru app-deploy [-a/--app <appname>] <file-or-dir-1> [file-or-dir-2] ... [file-or-dir-n]", 
-    "desc": "Deploys set of files and/or directories to tsuru server. Some examples of calls are:\n\ntsuru app-deploy .\ntsuru app-deploy myfile.jar Procfile\n\n\nMinimum # of arguments: 1\n"
+    "desc": "Deploys set of files and/or directories to tsuru server. Some examples of\ncalls are:\n\n::\n\n    $ tsuru app-deploy .\n    $ tsuru app-deploy myfile.jar Procfile\n\n\nMinimum # of arguments: 1\n"
   }, 
   "team-create": {
     "usage": "tsuru team-create <teamname>", 
-    "desc": "creates a new team.\n\nMinimum # of arguments: 1\n"
+    "desc": "Create a team for the user. tsuru requires a user to be a member of at least\none team in order to create an app or a service instance.\n\nWhen you create a team, you're automatically member of this team.\n\nMinimum # of arguments: 1\n"
   }, 
   "app-shell": {
     "usage": "tsuru app-shell [container-id] -a/--app <appname>", 
-    "desc": "Open a remote shell to the given container, or to one of the containers of the given app.\n\n"
+    "desc": "This command opens a remote shell inside container, using the API server as a\nproxy. You can access an app container just giving app name.\n\nAlso, you can access a specific container from this app. In this case, you\nhave to specify part of the container's ID. You can list current container's\nIDs using [[tsuru app-info]].\n\n\nOpen a remote shell to the given container, or to one of the containers of the given app.\n\n"
   }, 
   "app-set-team-owner": {
     "usage": "tsuru app-set-team-owner <new-team-owner> [-a/--app appname]", 
@@ -229,26 +232,26 @@
   }, 
   "app-grant": {
     "usage": "tsuru app-grant <teamname> [-a/--app appname]", 
-    "desc": "grants access to an app to a team.\n\nIf you don't provide the app name, tsuru will try to guess it.\n\nMinimum # of arguments: 1\n"
+    "desc": "Allows a team to access an application. You need to be a member of a team that\nhas access to the app to allow another team to access it. grants access to an\napp to a team.\n\nMinimum # of arguments: 1\n"
   }, 
   "login": {
     "usage": "tsuru login", 
-    "desc": "log in with your credentials.\n\n"
+    "desc": "Login will ask for the password and check if the user is successfully\nauthenticated. If so, the token generated by the **tsuru** server will be\nstored in ${HOME}/.tsuru_token.\n\nAll tsuru actions require the user to be authenticated (except `login` and `version`).\n\n"
   }, 
   "team-remove": {
     "usage": "tsuru team-remove <team-name>", 
-    "desc": "removes a team from tsuru server.\n\nMinimum # of arguments: 1\n"
+    "desc": "Removes a team from tsuru server. You're able to remove teams that you're\nmember of. A team that has access to any app cannot be removed. Before\nremoving a team, make sure it does not have access to any app (see \"app-grant\"\nand \"app-revoke\" commands for details).\n\nMinimum # of arguments: 1\n"
   }, 
   "app-restart": {
     "usage": "tsuru app-restart [-a/--app appname]", 
-    "desc": "restarts an app.\n\nIf you don't provide the app name, tsuru will try to guess it.\n\n"
+    "desc": "Restarts an application.\n\n"
   }, 
   "service-list": {
     "usage": "tsuru service-list", 
-    "desc": "Get all available services, and user's instances for this services\n\n"
+    "desc": "Retrieves and shows a list of services the user has access. If the are\ninstances created for any service they will also be shown.\n\n"
   }, 
   "app-swap": {
     "usage": "tsuru app-swap <app1-name> <app2-name> [-f/--force]", 
-    "desc": "Swap routes between two apps. Use force if you want to swap apps with different numbers of units or diferent platform without confirmation\n\nMinimum # of arguments: 2\n"
+    "desc": "Swaps routing between two apps. This allows zero downtime and makes rollback\nas simple as swapping the applications back.\n\nUse [[--force]] if you want to swap applications with a different numbers of\nunits or diferent platform without confirmation.\n\nMinimum # of arguments: 2\n"
   }
 }

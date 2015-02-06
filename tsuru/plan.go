@@ -34,7 +34,7 @@ func (c *planList) Info() *cmd.Info {
 	return &cmd.Info{
 		Name:    "plan-list",
 		Usage:   "plan-list [--human]",
-		Desc:    `List available plans that can be used when creating an app.`,
+		Desc:    "List available plans that can be used when creating an app.",
 		MinArgs: 0,
 	}
 }
