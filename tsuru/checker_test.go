@@ -6,13 +6,13 @@ package main
 
 import (
 	"github.com/tsuru/tsuru/cmd"
-	"launchpad.net/gocheck"
+	"gopkg.in/check.v1"
 )
 
 type deprecationChecker struct{}
 
-func (deprecationChecker) Info() *gocheck.CheckerInfo {
-	return &gocheck.CheckerInfo{
+func (deprecationChecker) Info() *check.CheckerInfo {
+	return &check.CheckerInfo{
 		Name:   "deprecates",
 		Params: []string{"new-name", "old-name"},
 	}

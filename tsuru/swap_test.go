@@ -10,15 +10,15 @@ import (
 
 	"github.com/tsuru/tsuru/cmd"
 	"github.com/tsuru/tsuru/cmd/cmdtest"
-	"launchpad.net/gocheck"
+	"gopkg.in/check.v1"
 )
 
-func (s *S) TestSwapInfo(c *gocheck.C) {
+func (s *S) TestSwapInfo(c *check.C) {
 	command := appSwap{}
-	c.Assert(command.Info(), gocheck.NotNil)
+	c.Assert(command.Info(), check.NotNil)
 }
 
-func (s *S) TestSwap(c *gocheck.C) {
+func (s *S) TestSwap(c *check.C) {
 	var buf bytes.Buffer
 	var called bool
 	transport := cmdtest.ConditionalTransport{
@@ -35,13 +35,13 @@ func (s *S) TestSwap(c *gocheck.C) {
 	client := cmd.NewClient(&http.Client{Transport: &transport}, nil, manager)
 	command := appSwap{}
 	err := command.Run(&context, client)
-	c.Assert(err, gocheck.IsNil)
-	c.Assert(called, gocheck.Equals, true)
+	c.Assert(err, check.IsNil)
+	c.Assert(called, check.Equals, true)
 	expected := "Apps successfully swapped!\n"
-	c.Assert(buf.String(), gocheck.Equals, expected)
+	c.Assert(buf.String(), check.Equals, expected)
 }
 
-func (s *S) TestSwapWhenAppsAreNotEqual(c *gocheck.C) {
+func (s *S) TestSwapWhenAppsAreNotEqual(c *check.C) {
 	var buf bytes.Buffer
 	var called int
 	stdin := bytes.NewBufferString("yes")
@@ -70,10 +70,10 @@ func (s *S) TestSwapWhenAppsAreNotEqual(c *gocheck.C) {
 	client := cmd.NewClient(&http.Client{Transport: &multiTransport}, nil, manager)
 	command := appSwap{}
 	err := command.Run(&context, client)
-	c.Assert(err, gocheck.IsNil)
-	c.Assert(called, gocheck.Equals, 2)
+	c.Assert(err, check.IsNil)
+	c.Assert(called, check.Equals, 2)
 }
 
-func (s *S) TestSwapIsACommand(c *gocheck.C) {
+func (s *S) TestSwapIsACommand(c *check.C) {
 	var _ cmd.Command = &appSwap{}
 }

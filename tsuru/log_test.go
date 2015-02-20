@@ -12,17 +12,17 @@ import (
 
 	"github.com/tsuru/tsuru/cmd"
 	"github.com/tsuru/tsuru/cmd/cmdtest"
-	"launchpad.net/gocheck"
+	"gopkg.in/check.v1"
 )
 
-func (s *S) TestFormatterUsesCurrentTimeZone(c *gocheck.C) {
+func (s *S) TestFormatterUsesCurrentTimeZone(c *check.C) {
 	t := time.Now()
 	logs := []log{
 		{Date: t, Message: "Something happened", Source: "tsuru"},
 		{Date: t.Add(2 * time.Hour), Message: "Something happened again", Source: "tsuru"},
 	}
 	data, err := json.Marshal(logs)
-	c.Assert(err, gocheck.IsNil)
+	c.Assert(err, check.IsNil)
 	var writer bytes.Buffer
 	old := time.Local
 	time.Local = time.UTC
@@ -31,15 +31,15 @@ func (s *S) TestFormatterUsesCurrentTimeZone(c *gocheck.C) {
 	}()
 	formatter := logFormatter{}
 	err = formatter.Format(&writer, data)
-	c.Assert(err, gocheck.IsNil)
+	c.Assert(err, check.IsNil)
 	tfmt := "2006-01-02 15:04:05 -0700"
 	t = t.In(time.UTC)
 	expected := cmd.Colorfy(t.Format(tfmt)+" [tsuru]:", "blue", "", "") + " Something happened\n"
 	expected = expected + cmd.Colorfy(t.Add(2*time.Hour).Format(tfmt)+" [tsuru]:", "blue", "", "") + " Something happened again\n"
-	c.Assert(writer.String(), gocheck.Equals, expected)
+	c.Assert(writer.String(), check.Equals, expected)
 }
 
-func (s *S) TestAppLog(c *gocheck.C) {
+func (s *S) TestAppLog(c *check.C) {
 	var stdout, stderr bytes.Buffer
 	t := time.Now()
 	logs := []log{
@@ -47,7 +47,7 @@ func (s *S) TestAppLog(c *gocheck.C) {
 		{Date: t.Add(2 * time.Hour), Message: "app lost successfully created", Source: "app", Unit: "abcdef"},
 	}
 	result, err := json.Marshal(logs)
-	c.Assert(err, gocheck.IsNil)
+	c.Assert(err, check.IsNil)
 	t = t.In(time.Local)
 	tfmt := "2006-01-02 15:04:05 -0700"
 	expected := cmd.Colorfy(t.Format(tfmt)+" [tsuru]:", "blue", "", "") + " creating app lost\n"
@@ -64,18 +64,18 @@ func (s *S) TestAppLog(c *gocheck.C) {
 	client := cmd.NewClient(&http.Client{Transport: &transport}, nil, manager)
 	command.Flags().Parse(true, []string{"--app", "appName"})
 	err = command.Run(&context, client)
-	c.Assert(err, gocheck.IsNil)
-	c.Assert(stdout.String(), gocheck.Equals, expected)
+	c.Assert(err, check.IsNil)
+	c.Assert(stdout.String(), check.Equals, expected)
 }
 
-func (s *S) TestAppLogWithUnparsableData(c *gocheck.C) {
+func (s *S) TestAppLogWithUnparsableData(c *check.C) {
 	var stdout, stderr bytes.Buffer
 	t := time.Now()
 	logs := []log{
 		{Date: t, Message: "creating app lost", Source: "tsuru"},
 	}
 	result, err := json.Marshal(logs)
-	c.Assert(err, gocheck.IsNil)
+	c.Assert(err, check.IsNil)
 	t = t.In(time.Local)
 	tfmt := "2006-01-02 15:04:05 -0700"
 
@@ -91,13 +91,13 @@ func (s *S) TestAppLogWithUnparsableData(c *gocheck.C) {
 	client := cmd.NewClient(&http.Client{Transport: &transport}, nil, manager)
 	command.Flags().Parse(true, []string{"--app", "appName"})
 	err = command.Run(&context, client)
-	c.Assert(err, gocheck.IsNil)
+	c.Assert(err, check.IsNil)
 	expected := cmd.Colorfy(t.Format(tfmt)+" [tsuru]:", "blue", "", "") + " creating app lost\n"
 	expected += "Error: unparseable data"
-	c.Assert(stdout.String(), gocheck.Equals, expected)
+	c.Assert(stdout.String(), check.Equals, expected)
 }
 
-func (s *S) TestAppLogWithoutTheFlag(c *gocheck.C) {
+func (s *S) TestAppLogWithoutTheFlag(c *check.C) {
 	var stdout, stderr bytes.Buffer
 	t := time.Now()
 	logs := []log{
@@ -105,7 +105,7 @@ func (s *S) TestAppLogWithoutTheFlag(c *gocheck.C) {
 		{Date: t.Add(2 * time.Hour), Message: "app lost successfully created", Source: "app"},
 	}
 	result, err := json.Marshal(logs)
-	c.Assert(err, gocheck.IsNil)
+	c.Assert(err, check.IsNil)
 	t = t.In(time.Local)
 	tfmt := "2006-01-02 15:04:05 -0700"
 	expected := cmd.Colorfy(t.Format(tfmt)+" [tsuru]:", "blue", "", "") + " creating app lost\n"
@@ -126,11 +126,11 @@ func (s *S) TestAppLogWithoutTheFlag(c *gocheck.C) {
 	}
 	client := cmd.NewClient(&http.Client{Transport: trans}, nil, manager)
 	err = command.Run(&context, client)
-	c.Assert(err, gocheck.IsNil)
-	c.Assert(stdout.String(), gocheck.Equals, expected)
+	c.Assert(err, check.IsNil)
+	c.Assert(stdout.String(), check.Equals, expected)
 }
 
-func (s *S) TestAppLogShouldReturnNilIfHasNoContent(c *gocheck.C) {
+func (s *S) TestAppLogShouldReturnNilIfHasNoContent(c *check.C) {
 	var stdout, stderr bytes.Buffer
 	context := cmd.Context{
 		Stdout: &stdout,
@@ -140,15 +140,15 @@ func (s *S) TestAppLogShouldReturnNilIfHasNoContent(c *gocheck.C) {
 	client := cmd.NewClient(&http.Client{Transport: &cmdtest.Transport{Message: "", Status: http.StatusNoContent}}, nil, manager)
 	command.Flags().Parse(true, []string{"--app", "appName"})
 	err := command.Run(&context, client)
-	c.Assert(err, gocheck.IsNil)
-	c.Assert(stdout.String(), gocheck.Equals, "")
+	c.Assert(err, check.IsNil)
+	c.Assert(stdout.String(), check.Equals, "")
 }
 
-func (s *S) TestAppLogInfo(c *gocheck.C) {
-	c.Assert((&appLog{}).Info(), gocheck.NotNil)
+func (s *S) TestAppLogInfo(c *check.C) {
+	c.Assert((&appLog{}).Info(), check.NotNil)
 }
 
-func (s *S) TestAppLogBySource(c *gocheck.C) {
+func (s *S) TestAppLogBySource(c *check.C) {
 	var stdout, stderr bytes.Buffer
 	t := time.Now()
 	logs := []log{
@@ -156,7 +156,7 @@ func (s *S) TestAppLogBySource(c *gocheck.C) {
 		{Date: t.Add(2 * time.Hour), Message: "app lost successfully created", Source: "tsuru"},
 	}
 	result, err := json.Marshal(logs)
-	c.Assert(err, gocheck.IsNil)
+	c.Assert(err, check.IsNil)
 	t = t.In(time.Local)
 	tfmt := "2006-01-02 15:04:05 -0700"
 	expected := cmd.Colorfy(t.Format(tfmt)+" [tsuru]:", "blue", "", "") + " creating app lost\n"
@@ -176,11 +176,11 @@ func (s *S) TestAppLogBySource(c *gocheck.C) {
 	}
 	client := cmd.NewClient(&http.Client{Transport: trans}, nil, manager)
 	err = command.Run(&context, client)
-	c.Assert(err, gocheck.IsNil)
-	c.Assert(stdout.String(), gocheck.Equals, expected)
+	c.Assert(err, check.IsNil)
+	c.Assert(stdout.String(), check.Equals, expected)
 }
 
-func (s *S) TestAppLogByUnit(c *gocheck.C) {
+func (s *S) TestAppLogByUnit(c *check.C) {
 	var stdout, stderr bytes.Buffer
 	t := time.Now()
 	logs := []log{
@@ -188,7 +188,7 @@ func (s *S) TestAppLogByUnit(c *gocheck.C) {
 		{Date: t.Add(2 * time.Hour), Message: "app lost successfully created", Source: "tsuru", Unit: "api"},
 	}
 	result, err := json.Marshal(logs)
-	c.Assert(err, gocheck.IsNil)
+	c.Assert(err, check.IsNil)
 	t = t.In(time.Local)
 	tfmt := "2006-01-02 15:04:05 -0700"
 	expected := cmd.Colorfy(t.Format(tfmt)+" [tsuru][api]:", "blue", "", "") + " creating app lost\n"
@@ -208,11 +208,11 @@ func (s *S) TestAppLogByUnit(c *gocheck.C) {
 	}
 	client := cmd.NewClient(&http.Client{Transport: trans}, nil, manager)
 	err = command.Run(&context, client)
-	c.Assert(err, gocheck.IsNil)
-	c.Assert(stdout.String(), gocheck.Equals, expected)
+	c.Assert(err, check.IsNil)
+	c.Assert(stdout.String(), check.Equals, expected)
 }
 
-func (s *S) TestAppLogWithLines(c *gocheck.C) {
+func (s *S) TestAppLogWithLines(c *check.C) {
 	var stdout, stderr bytes.Buffer
 	t := time.Now()
 	logs := []log{
@@ -220,7 +220,7 @@ func (s *S) TestAppLogWithLines(c *gocheck.C) {
 		{Date: t.Add(2 * time.Hour), Message: "app lost successfully created", Source: "tsuru"},
 	}
 	result, err := json.Marshal(logs)
-	c.Assert(err, gocheck.IsNil)
+	c.Assert(err, check.IsNil)
 	t = t.In(time.Local)
 	tfmt := "2006-01-02 15:04:05 -0700"
 	expected := cmd.Colorfy(t.Format(tfmt)+" [tsuru]:", "blue", "", "") + " creating app lost\n"
@@ -240,11 +240,11 @@ func (s *S) TestAppLogWithLines(c *gocheck.C) {
 	}
 	client := cmd.NewClient(&http.Client{Transport: trans}, nil, manager)
 	err = command.Run(&context, client)
-	c.Assert(err, gocheck.IsNil)
-	c.Assert(stdout.String(), gocheck.Equals, expected)
+	c.Assert(err, check.IsNil)
+	c.Assert(stdout.String(), check.Equals, expected)
 }
 
-func (s *S) TestAppLogWithFollow(c *gocheck.C) {
+func (s *S) TestAppLogWithFollow(c *check.C) {
 	var stdout, stderr bytes.Buffer
 	t := time.Now()
 	logs := []log{
@@ -252,7 +252,7 @@ func (s *S) TestAppLogWithFollow(c *gocheck.C) {
 		{Date: t.Add(2 * time.Hour), Message: "app lost successfully created", Source: "tsuru"},
 	}
 	result, err := json.Marshal(logs)
-	c.Assert(err, gocheck.IsNil)
+	c.Assert(err, check.IsNil)
 	t = t.In(time.Local)
 	tfmt := "2006-01-02 15:04:05 -0700"
 	expected := cmd.Colorfy(t.Format(tfmt)+" [tsuru]:", "blue", "", "") + " creating app lost\n"
@@ -272,72 +272,72 @@ func (s *S) TestAppLogWithFollow(c *gocheck.C) {
 	}
 	client := cmd.NewClient(&http.Client{Transport: trans}, nil, manager)
 	err = command.Run(&context, client)
-	c.Assert(err, gocheck.IsNil)
-	c.Assert(stdout.String(), gocheck.Equals, expected)
+	c.Assert(err, check.IsNil)
+	c.Assert(stdout.String(), check.Equals, expected)
 }
 
-func (s *S) TestAppLogFlagSet(c *gocheck.C) {
+func (s *S) TestAppLogFlagSet(c *check.C) {
 	command := appLog{}
 	flagset := command.Flags()
 	flagset.Parse(true, []string{"--source", "tsuru", "--unit", "abcdef", "--lines", "12", "--app", "ashamed", "--follow"})
 	source := flagset.Lookup("source")
-	c.Check(source, gocheck.NotNil)
-	c.Check(source.Name, gocheck.Equals, "source")
-	c.Check(source.Usage, gocheck.Equals, "The log from the given source")
-	c.Check(source.Value.String(), gocheck.Equals, "tsuru")
-	c.Check(source.DefValue, gocheck.Equals, "")
+	c.Check(source, check.NotNil)
+	c.Check(source.Name, check.Equals, "source")
+	c.Check(source.Usage, check.Equals, "The log from the given source")
+	c.Check(source.Value.String(), check.Equals, "tsuru")
+	c.Check(source.DefValue, check.Equals, "")
 	ssource := flagset.Lookup("s")
-	c.Check(ssource, gocheck.NotNil)
-	c.Check(ssource.Name, gocheck.Equals, "s")
-	c.Check(ssource.Usage, gocheck.Equals, "The log from the given source")
-	c.Check(ssource.Value.String(), gocheck.Equals, "tsuru")
-	c.Check(ssource.DefValue, gocheck.Equals, "")
+	c.Check(ssource, check.NotNil)
+	c.Check(ssource.Name, check.Equals, "s")
+	c.Check(ssource.Usage, check.Equals, "The log from the given source")
+	c.Check(ssource.Value.String(), check.Equals, "tsuru")
+	c.Check(ssource.DefValue, check.Equals, "")
 	unit := flagset.Lookup("unit")
-	c.Check(unit, gocheck.NotNil)
-	c.Check(unit.Name, gocheck.Equals, "unit")
-	c.Check(unit.Usage, gocheck.Equals, "The log from the given unit")
-	c.Check(unit.Value.String(), gocheck.Equals, "abcdef")
-	c.Check(unit.DefValue, gocheck.Equals, "")
+	c.Check(unit, check.NotNil)
+	c.Check(unit.Name, check.Equals, "unit")
+	c.Check(unit.Usage, check.Equals, "The log from the given unit")
+	c.Check(unit.Value.String(), check.Equals, "abcdef")
+	c.Check(unit.DefValue, check.Equals, "")
 	sunit := flagset.Lookup("u")
-	c.Check(sunit, gocheck.NotNil)
-	c.Check(sunit.Name, gocheck.Equals, "u")
-	c.Check(sunit.Usage, gocheck.Equals, "The log from the given unit")
-	c.Check(sunit.Value.String(), gocheck.Equals, "abcdef")
-	c.Check(sunit.DefValue, gocheck.Equals, "")
+	c.Check(sunit, check.NotNil)
+	c.Check(sunit.Name, check.Equals, "u")
+	c.Check(sunit.Usage, check.Equals, "The log from the given unit")
+	c.Check(sunit.Value.String(), check.Equals, "abcdef")
+	c.Check(sunit.DefValue, check.Equals, "")
 	lines := flagset.Lookup("lines")
-	c.Check(lines, gocheck.NotNil)
-	c.Check(lines.Name, gocheck.Equals, "lines")
-	c.Check(lines.Usage, gocheck.Equals, "The number of log lines to display")
-	c.Check(lines.Value.String(), gocheck.Equals, "12")
-	c.Check(lines.DefValue, gocheck.Equals, "10")
+	c.Check(lines, check.NotNil)
+	c.Check(lines.Name, check.Equals, "lines")
+	c.Check(lines.Usage, check.Equals, "The number of log lines to display")
+	c.Check(lines.Value.String(), check.Equals, "12")
+	c.Check(lines.DefValue, check.Equals, "10")
 	slines := flagset.Lookup("l")
-	c.Check(slines, gocheck.NotNil)
-	c.Check(slines.Name, gocheck.Equals, "l")
-	c.Check(slines.Usage, gocheck.Equals, "The number of log lines to display")
-	c.Check(slines.Value.String(), gocheck.Equals, "12")
-	c.Check(slines.DefValue, gocheck.Equals, "10")
+	c.Check(slines, check.NotNil)
+	c.Check(slines.Name, check.Equals, "l")
+	c.Check(slines.Usage, check.Equals, "The number of log lines to display")
+	c.Check(slines.Value.String(), check.Equals, "12")
+	c.Check(slines.DefValue, check.Equals, "10")
 	app := flagset.Lookup("app")
-	c.Check(app, gocheck.NotNil)
-	c.Check(app.Name, gocheck.Equals, "app")
-	c.Check(app.Usage, gocheck.Equals, "The name of the app.")
-	c.Check(app.Value.String(), gocheck.Equals, "ashamed")
-	c.Check(app.DefValue, gocheck.Equals, "")
+	c.Check(app, check.NotNil)
+	c.Check(app.Name, check.Equals, "app")
+	c.Check(app.Usage, check.Equals, "The name of the app.")
+	c.Check(app.Value.String(), check.Equals, "ashamed")
+	c.Check(app.DefValue, check.Equals, "")
 	sapp := flagset.Lookup("a")
-	c.Check(sapp, gocheck.NotNil)
-	c.Check(sapp.Name, gocheck.Equals, "a")
-	c.Check(sapp.Usage, gocheck.Equals, "The name of the app.")
-	c.Check(sapp.Value.String(), gocheck.Equals, "ashamed")
-	c.Check(sapp.DefValue, gocheck.Equals, "")
+	c.Check(sapp, check.NotNil)
+	c.Check(sapp.Name, check.Equals, "a")
+	c.Check(sapp.Usage, check.Equals, "The name of the app.")
+	c.Check(sapp.Value.String(), check.Equals, "ashamed")
+	c.Check(sapp.DefValue, check.Equals, "")
 	follow := flagset.Lookup("follow")
-	c.Check(follow, gocheck.NotNil)
-	c.Check(follow.Name, gocheck.Equals, "follow")
-	c.Check(follow.Usage, gocheck.Equals, "Follow logs")
-	c.Check(follow.Value.String(), gocheck.Equals, "true")
-	c.Check(follow.DefValue, gocheck.Equals, "false")
+	c.Check(follow, check.NotNil)
+	c.Check(follow.Name, check.Equals, "follow")
+	c.Check(follow.Usage, check.Equals, "Follow logs")
+	c.Check(follow.Value.String(), check.Equals, "true")
+	c.Check(follow.DefValue, check.Equals, "false")
 	sfollow := flagset.Lookup("f")
-	c.Check(sfollow, gocheck.NotNil)
-	c.Check(sfollow.Name, gocheck.Equals, "f")
-	c.Check(sfollow.Usage, gocheck.Equals, "Follow logs")
-	c.Check(sfollow.Value.String(), gocheck.Equals, "true")
-	c.Check(sfollow.DefValue, gocheck.Equals, "false")
+	c.Check(sfollow, check.NotNil)
+	c.Check(sfollow.Name, check.Equals, "f")
+	c.Check(sfollow.Usage, check.Equals, "Follow logs")
+	c.Check(sfollow.Value.String(), check.Equals, "true")
+	c.Check(sfollow.DefValue, check.Equals, "false")
 }

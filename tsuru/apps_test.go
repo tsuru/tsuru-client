@@ -14,8 +14,8 @@ import (
 	"github.com/tsuru/tsuru/cmd"
 	"github.com/tsuru/tsuru/cmd/cmdtest"
 	"github.com/tsuru/tsuru/io"
+	"gopkg.in/check.v1"
 	"launchpad.net/gnuflag"
-	"launchpad.net/gocheck"
 )
 
 var appflag = &gnuflag.Flag{
@@ -32,11 +32,11 @@ var appshortflag = &gnuflag.Flag{
 	DefValue: "",
 }
 
-func (s *S) TestAppCreateInfo(c *gocheck.C) {
-	c.Assert((&appCreate{}).Info(), gocheck.NotNil)
+func (s *S) TestAppCreateInfo(c *check.C) {
+	c.Assert((&appCreate{}).Info(), check.NotNil)
 }
 
-func (s *S) TestAppCreate(c *gocheck.C) {
+func (s *S) TestAppCreate(c *check.C) {
 	var stdout, stderr bytes.Buffer
 	result := `{"status":"success", "repository_url":"git@tsuru.plataformas.glb.com:ble.git"}`
 	expected := `App "ble" is being created!
@@ -52,7 +52,7 @@ Your repository for "ble" project is "git@tsuru.plataformas.glb.com:ble.git"` + 
 		CondFunc: func(req *http.Request) bool {
 			defer req.Body.Close()
 			body, err := ioutil.ReadAll(req.Body)
-			c.Assert(err, gocheck.IsNil)
+			c.Assert(err, check.IsNil)
 			expected := map[string]interface{}{
 				"name":      "ble",
 				"platform":  "django",
@@ -61,18 +61,18 @@ Your repository for "ble" project is "git@tsuru.plataformas.glb.com:ble.git"` + 
 			}
 			result := map[string]interface{}{}
 			err = json.Unmarshal(body, &result)
-			c.Assert(expected, gocheck.DeepEquals, result)
+			c.Assert(expected, check.DeepEquals, result)
 			return req.Method == "POST" && req.URL.Path == "/apps"
 		},
 	}
 	client := cmd.NewClient(&http.Client{Transport: &trans}, nil, manager)
 	command := appCreate{}
 	err := command.Run(&context, client)
-	c.Assert(err, gocheck.IsNil)
-	c.Assert(stdout.String(), gocheck.Equals, expected)
+	c.Assert(err, check.IsNil)
+	c.Assert(stdout.String(), check.Equals, expected)
 }
 
-func (s *S) TestAppCreateTeamOwner(c *gocheck.C) {
+func (s *S) TestAppCreateTeamOwner(c *check.C) {
 	var stdout, stderr bytes.Buffer
 	result := `{"status":"success", "repository_url":"git@tsuru.plataformas.glb.com:ble.git"}`
 	expected := `App "ble" is being created!
@@ -88,7 +88,7 @@ Your repository for "ble" project is "git@tsuru.plataformas.glb.com:ble.git"` + 
 		CondFunc: func(req *http.Request) bool {
 			defer req.Body.Close()
 			body, err := ioutil.ReadAll(req.Body)
-			c.Assert(err, gocheck.IsNil)
+			c.Assert(err, check.IsNil)
 			expected := map[string]interface{}{
 				"name":      "ble",
 				"platform":  "django",
@@ -97,7 +97,7 @@ Your repository for "ble" project is "git@tsuru.plataformas.glb.com:ble.git"` + 
 			}
 			result := map[string]interface{}{}
 			err = json.Unmarshal(body, &result)
-			c.Assert(expected, gocheck.DeepEquals, result)
+			c.Assert(expected, check.DeepEquals, result)
 			return req.Method == "POST" && req.URL.Path == "/apps"
 		},
 	}
@@ -105,11 +105,11 @@ Your repository for "ble" project is "git@tsuru.plataformas.glb.com:ble.git"` + 
 	command := appCreate{}
 	command.Flags().Parse(true, []string{"-t", "team"})
 	err := command.Run(&context, client)
-	c.Assert(err, gocheck.IsNil)
-	c.Assert(stdout.String(), gocheck.Equals, expected)
+	c.Assert(err, check.IsNil)
+	c.Assert(stdout.String(), check.Equals, expected)
 }
 
-func (s *S) TestAppCreatePlan(c *gocheck.C) {
+func (s *S) TestAppCreatePlan(c *check.C) {
 	var stdout, stderr bytes.Buffer
 	result := `{"status":"success", "repository_url":"git@tsuru.plataformas.glb.com:ble.git"}`
 	expected := `App "ble" is being created!
@@ -125,7 +125,7 @@ Your repository for "ble" project is "git@tsuru.plataformas.glb.com:ble.git"` + 
 		CondFunc: func(req *http.Request) bool {
 			defer req.Body.Close()
 			body, err := ioutil.ReadAll(req.Body)
-			c.Assert(err, gocheck.IsNil)
+			c.Assert(err, check.IsNil)
 			expected := map[string]interface{}{
 				"name":      "ble",
 				"platform":  "django",
@@ -134,7 +134,7 @@ Your repository for "ble" project is "git@tsuru.plataformas.glb.com:ble.git"` + 
 			}
 			result := map[string]interface{}{}
 			err = json.Unmarshal(body, &result)
-			c.Assert(expected, gocheck.DeepEquals, result)
+			c.Assert(expected, check.DeepEquals, result)
 			return req.Method == "POST" && req.URL.Path == "/apps"
 		},
 	}
@@ -142,11 +142,11 @@ Your repository for "ble" project is "git@tsuru.plataformas.glb.com:ble.git"` + 
 	command := appCreate{}
 	command.Flags().Parse(true, []string{"-p", "myplan"})
 	err := command.Run(&context, client)
-	c.Assert(err, gocheck.IsNil)
-	c.Assert(stdout.String(), gocheck.Equals, expected)
+	c.Assert(err, check.IsNil)
+	c.Assert(stdout.String(), check.Equals, expected)
 }
 
-func (s *S) TestAppCreateWithInvalidFramework(c *gocheck.C) {
+func (s *S) TestAppCreateWithInvalidFramework(c *check.C) {
 	var stdout, stderr bytes.Buffer
 	context := cmd.Context{
 		Args:   []string{"invalidapp", "lombra"},
@@ -156,45 +156,45 @@ func (s *S) TestAppCreateWithInvalidFramework(c *gocheck.C) {
 	client := cmd.NewClient(&http.Client{Transport: &cmdtest.Transport{Message: "", Status: http.StatusInternalServerError}}, nil, manager)
 	command := appCreate{}
 	err := command.Run(&context, client)
-	c.Assert(err, gocheck.NotNil)
-	c.Assert(stdout.String(), gocheck.Equals, "")
+	c.Assert(err, check.NotNil)
+	c.Assert(stdout.String(), check.Equals, "")
 }
 
-func (s *S) TestAppCreateFlags(c *gocheck.C) {
+func (s *S) TestAppCreateFlags(c *check.C) {
 	command := appCreate{}
 	flagset := command.Flags()
-	c.Assert(flagset, gocheck.NotNil)
+	c.Assert(flagset, check.NotNil)
 	flagset.Parse(true, []string{"-p", "myplan"})
 	plan := flagset.Lookup("plan")
 	usage := "The plan used to create the app"
-	c.Check(plan, gocheck.NotNil)
-	c.Check(plan.Name, gocheck.Equals, "plan")
-	c.Check(plan.Usage, gocheck.Equals, usage)
-	c.Check(plan.Value.String(), gocheck.Equals, "myplan")
-	c.Check(plan.DefValue, gocheck.Equals, "")
+	c.Check(plan, check.NotNil)
+	c.Check(plan.Name, check.Equals, "plan")
+	c.Check(plan.Usage, check.Equals, usage)
+	c.Check(plan.Value.String(), check.Equals, "myplan")
+	c.Check(plan.DefValue, check.Equals, "")
 	splan := flagset.Lookup("p")
-	c.Check(splan, gocheck.NotNil)
-	c.Check(splan.Name, gocheck.Equals, "p")
-	c.Check(splan.Usage, gocheck.Equals, usage)
-	c.Check(splan.Value.String(), gocheck.Equals, "myplan")
-	c.Check(splan.DefValue, gocheck.Equals, "")
+	c.Check(splan, check.NotNil)
+	c.Check(splan.Name, check.Equals, "p")
+	c.Check(splan.Usage, check.Equals, usage)
+	c.Check(splan.Value.String(), check.Equals, "myplan")
+	c.Check(splan.DefValue, check.Equals, "")
 	flagset.Parse(true, []string{"-t", "team"})
 	usage = "Team owner app"
 	teamOwner := flagset.Lookup("team")
-	c.Check(teamOwner, gocheck.NotNil)
-	c.Check(teamOwner.Name, gocheck.Equals, "team")
-	c.Check(teamOwner.Usage, gocheck.Equals, usage)
-	c.Check(teamOwner.Value.String(), gocheck.Equals, "team")
-	c.Check(teamOwner.DefValue, gocheck.Equals, "")
+	c.Check(teamOwner, check.NotNil)
+	c.Check(teamOwner.Name, check.Equals, "team")
+	c.Check(teamOwner.Usage, check.Equals, usage)
+	c.Check(teamOwner.Value.String(), check.Equals, "team")
+	c.Check(teamOwner.DefValue, check.Equals, "")
 	teamOwner = flagset.Lookup("t")
-	c.Check(teamOwner, gocheck.NotNil)
-	c.Check(teamOwner.Name, gocheck.Equals, "t")
-	c.Check(teamOwner.Usage, gocheck.Equals, usage)
-	c.Check(teamOwner.Value.String(), gocheck.Equals, "team")
-	c.Check(teamOwner.DefValue, gocheck.Equals, "")
+	c.Check(teamOwner, check.NotNil)
+	c.Check(teamOwner.Name, check.Equals, "t")
+	c.Check(teamOwner.Usage, check.Equals, usage)
+	c.Check(teamOwner.Value.String(), check.Equals, "team")
+	c.Check(teamOwner.DefValue, check.Equals, "")
 }
 
-func (s *S) TestAppRemove(c *gocheck.C) {
+func (s *S) TestAppRemove(c *check.C) {
 	var stdout, stderr bytes.Buffer
 	expected := `Are you sure you want to remove app "ble"? (y/n) App "ble" successfully removed!` + "\n"
 	context := cmd.Context{
@@ -207,11 +207,11 @@ func (s *S) TestAppRemove(c *gocheck.C) {
 	command := appRemove{}
 	command.Flags().Parse(true, []string{"-a", "ble"})
 	err := command.Run(&context, client)
-	c.Assert(err, gocheck.IsNil)
-	c.Assert(stdout.String(), gocheck.Equals, expected)
+	c.Assert(err, check.IsNil)
+	c.Assert(stdout.String(), check.Equals, expected)
 }
 
-func (s *S) TestAppRemoveWithoutAsking(c *gocheck.C) {
+func (s *S) TestAppRemoveWithoutAsking(c *check.C) {
 	var stdout, stderr bytes.Buffer
 	expected := `App "ble" successfully removed!` + "\n"
 	context := cmd.Context{
@@ -224,42 +224,42 @@ func (s *S) TestAppRemoveWithoutAsking(c *gocheck.C) {
 	command := appRemove{}
 	command.Flags().Parse(true, []string{"-a", "ble", "-y"})
 	err := command.Run(&context, client)
-	c.Assert(err, gocheck.IsNil)
-	c.Assert(stdout.String(), gocheck.Equals, expected)
+	c.Assert(err, check.IsNil)
+	c.Assert(stdout.String(), check.Equals, expected)
 }
 
-func (s *S) TestAppRemoveFlags(c *gocheck.C) {
+func (s *S) TestAppRemoveFlags(c *check.C) {
 	command := appRemove{}
 	flagset := command.Flags()
-	c.Assert(flagset, gocheck.NotNil)
+	c.Assert(flagset, check.NotNil)
 	flagset.Parse(true, []string{"-a", "ashamed", "-y"})
 	app := flagset.Lookup("app")
-	c.Check(app, gocheck.NotNil)
-	c.Check(app.Name, gocheck.Equals, "app")
-	c.Check(app.Usage, gocheck.Equals, "The name of the app.")
-	c.Check(app.Value.String(), gocheck.Equals, "ashamed")
-	c.Check(app.DefValue, gocheck.Equals, "")
+	c.Check(app, check.NotNil)
+	c.Check(app.Name, check.Equals, "app")
+	c.Check(app.Usage, check.Equals, "The name of the app.")
+	c.Check(app.Value.String(), check.Equals, "ashamed")
+	c.Check(app.DefValue, check.Equals, "")
 	sapp := flagset.Lookup("a")
-	c.Check(sapp, gocheck.NotNil)
-	c.Check(sapp.Name, gocheck.Equals, "a")
-	c.Check(sapp.Usage, gocheck.Equals, "The name of the app.")
-	c.Check(sapp.Value.String(), gocheck.Equals, "ashamed")
-	c.Check(sapp.DefValue, gocheck.Equals, "")
+	c.Check(sapp, check.NotNil)
+	c.Check(sapp.Name, check.Equals, "a")
+	c.Check(sapp.Usage, check.Equals, "The name of the app.")
+	c.Check(sapp.Value.String(), check.Equals, "ashamed")
+	c.Check(sapp.DefValue, check.Equals, "")
 	assume := flagset.Lookup("assume-yes")
-	c.Check(assume, gocheck.NotNil)
-	c.Check(assume.Name, gocheck.Equals, "assume-yes")
-	c.Check(assume.Usage, gocheck.Equals, "Don't ask for confirmation.")
-	c.Check(assume.Value.String(), gocheck.Equals, "true")
-	c.Check(assume.DefValue, gocheck.Equals, "false")
+	c.Check(assume, check.NotNil)
+	c.Check(assume.Name, check.Equals, "assume-yes")
+	c.Check(assume.Usage, check.Equals, "Don't ask for confirmation.")
+	c.Check(assume.Value.String(), check.Equals, "true")
+	c.Check(assume.DefValue, check.Equals, "false")
 	sassume := flagset.Lookup("y")
-	c.Check(sassume, gocheck.NotNil)
-	c.Check(sassume.Name, gocheck.Equals, "y")
-	c.Check(sassume.Usage, gocheck.Equals, "Don't ask for confirmation.")
-	c.Check(sassume.Value.String(), gocheck.Equals, "true")
-	c.Check(sassume.DefValue, gocheck.Equals, "false")
+	c.Check(sassume, check.NotNil)
+	c.Check(sassume.Name, check.Equals, "y")
+	c.Check(sassume.Usage, check.Equals, "Don't ask for confirmation.")
+	c.Check(sassume.Value.String(), check.Equals, "true")
+	c.Check(sassume.DefValue, check.Equals, "false")
 }
 
-func (s *S) TestAppRemoveWithoutArgs(c *gocheck.C) {
+func (s *S) TestAppRemoveWithoutArgs(c *check.C) {
 	var stdout, stderr bytes.Buffer
 	context := cmd.Context{
 		Args:   nil,
@@ -279,11 +279,11 @@ func (s *S) TestAppRemoveWithoutArgs(c *gocheck.C) {
 	guessCommand := cmd.GuessingCommand{G: &fake}
 	command := appRemove{GuessingCommand: guessCommand}
 	err := command.Run(&context, client)
-	c.Assert(err, gocheck.IsNil)
-	c.Assert(stdout.String(), gocheck.Equals, expected)
+	c.Assert(err, check.IsNil)
+	c.Assert(stdout.String(), check.Equals, expected)
 }
 
-func (s *S) TestAppRemoveWithoutConfirmation(c *gocheck.C) {
+func (s *S) TestAppRemoveWithoutConfirmation(c *check.C) {
 	var stdout, stderr bytes.Buffer
 	expected := `Are you sure you want to remove app "ble"? (y/n) Abort.` + "\n"
 	context := cmd.Context{
@@ -294,15 +294,15 @@ func (s *S) TestAppRemoveWithoutConfirmation(c *gocheck.C) {
 	command := appRemove{}
 	command.Flags().Parse(true, []string{"--app", "ble"})
 	err := command.Run(&context, nil)
-	c.Assert(err, gocheck.IsNil)
-	c.Assert(stdout.String(), gocheck.Equals, expected)
+	c.Assert(err, check.IsNil)
+	c.Assert(stdout.String(), check.Equals, expected)
 }
 
-func (s *S) TestAppRemoveInfo(c *gocheck.C) {
-	c.Assert((&appRemove{}).Info(), gocheck.NotNil)
+func (s *S) TestAppRemoveInfo(c *check.C) {
+	c.Assert((&appRemove{}).Info(), check.NotNil)
 }
 
-func (s *S) TestAppInfo(c *gocheck.C) {
+func (s *S) TestAppInfo(c *check.C) {
 	var stdout, stderr bytes.Buffer
 	result := `{"name":"app1","teamowner":"myteam","cname":[""],"ip":"myapp.tsuru.io","platform":"php","repository":"git@git.com:php.git","state":"dead", "units":[{"Ip":"10.10.10.10","Name":"app1/0","Status":"started"}, {"Ip":"9.9.9.9","Name":"app1/1","Status":"started"}, {"Ip":"","Name":"app1/2","Status":"pending"}],"teams":["tsuruteam","crane"], "owner": "myapp_owner", "deploys": 7}`
 	expected := `Application: app1
@@ -331,11 +331,11 @@ Units: 3
 	command := appInfo{}
 	command.Flags().Parse(true, []string{"-a/--app", "app1"})
 	err := command.Run(&context, client)
-	c.Assert(err, gocheck.IsNil)
-	c.Assert(stdout.String(), gocheck.Equals, expected)
+	c.Assert(err, check.IsNil)
+	c.Assert(stdout.String(), check.Equals, expected)
 }
 
-func (s *S) TestAppInfoNoUnits(c *gocheck.C) {
+func (s *S) TestAppInfoNoUnits(c *check.C) {
 	var stdout, stderr bytes.Buffer
 	result := `{"name":"app1","ip":"app1.tsuru.io","teamowner":"myteam","platform":"php","repository":"git@git.com:php.git","state":"dead","units":[],"teams":["tsuruteam","crane"], "owner": "myapp_owner", "deploys": 7}`
 	expected := `Application: app1
@@ -356,11 +356,11 @@ Deploys: 7
 	command := appInfo{}
 	command.Flags().Parse(true, []string{"-a/--app", "app1"})
 	err := command.Run(&context, client)
-	c.Assert(err, gocheck.IsNil)
-	c.Assert(stdout.String(), gocheck.Equals, expected)
+	c.Assert(err, check.IsNil)
+	c.Assert(stdout.String(), check.Equals, expected)
 }
 
-func (s *S) TestAppInfoEmptyUnit(c *gocheck.C) {
+func (s *S) TestAppInfoEmptyUnit(c *check.C) {
 	var stdout, stderr bytes.Buffer
 	result := `{"name":"app1","teamowner":"x","cname":[""],"ip":"myapp.tsuru.io","platform":"php","repository":"git@git.com:php.git","state":"dead", "units":[{"Name":"","Status":""}],"teams":["tsuruteam","crane"], "owner": "myapp_owner", "deploys": 7}`
 	expected := `Application: app1
@@ -381,11 +381,11 @@ Deploys: 7
 	command := appInfo{}
 	command.Flags().Parse(true, []string{"-a/--app", "app1"})
 	err := command.Run(&context, client)
-	c.Assert(err, gocheck.IsNil)
-	c.Assert(stdout.String(), gocheck.Equals, expected)
+	c.Assert(err, check.IsNil)
+	c.Assert(stdout.String(), check.Equals, expected)
 }
 
-func (s *S) TestAppInfoWithoutArgs(c *gocheck.C) {
+func (s *S) TestAppInfoWithoutArgs(c *check.C) {
 	var stdout, stderr bytes.Buffer
 	result := `{"name":"secret","teamowner":"myteam","ip":"secret.tsuru.io","platform":"ruby","repository":"git@git.com:php.git","state":"dead","units":[{"Ip":"10.10.10.10","Name":"secret/0","Status":"started"}, {"Ip":"9.9.9.9","Name":"secret/1","Status":"pending"}],"Teams":["tsuruteam","crane"], "owner": "myapp_owner", "deploys": 7}`
 	expected := `Application: secret
@@ -421,11 +421,11 @@ Units: 2
 	command := appInfo{GuessingCommand: guessCommand}
 	command.Flags().Parse(true, nil)
 	err := command.Run(&context, client)
-	c.Assert(err, gocheck.IsNil)
-	c.Assert(stdout.String(), gocheck.Equals, expected)
+	c.Assert(err, check.IsNil)
+	c.Assert(stdout.String(), check.Equals, expected)
 }
 
-func (s *S) TestAppInfoCName(c *gocheck.C) {
+func (s *S) TestAppInfoCName(c *check.C) {
 	var stdout, stderr bytes.Buffer
 	result := `{"name":"app1","teamowner":"myteam","ip":"myapp.tsuru.io","cname":["yourapp.tsuru.io"],"platform":"php","repository":"git@git.com:php.git","state":"dead","units":[{"Ip":"10.10.10.10","Name":"app1/0","Status":"started"}, {"Ip":"9.9.9.9","Name":"app1/1","Status":"started"}, {"Ip":"","Name":"app1/2","Status":"pending"}],"Teams":["tsuruteam","crane"], "owner": "myapp_owner", "deploys": 7}`
 	expected := `Application: app1
@@ -454,8 +454,8 @@ Units: 3
 	command := appInfo{}
 	command.Flags().Parse(true, []string{"-a/--app", "app1"})
 	err := command.Run(&context, client)
-	c.Assert(err, gocheck.IsNil)
-	c.Assert(stdout.String(), gocheck.Equals, expected)
+	c.Assert(err, check.IsNil)
+	c.Assert(stdout.String(), check.Equals, expected)
 }
 
 type transportFunc func(req *http.Request) (resp *http.Response, err error)
@@ -464,7 +464,7 @@ func (fn transportFunc) RoundTrip(req *http.Request) (resp *http.Response, err e
 	return fn(req)
 }
 
-func (s *S) TestAppInfoWithServices(c *gocheck.C) {
+func (s *S) TestAppInfoWithServices(c *check.C) {
 	var stdout, stderr bytes.Buffer
 	expected := `Application: app1
 Repository: git@git.com:php.git
@@ -512,11 +512,11 @@ Service instances: 1
 	command := appInfo{}
 	command.Flags().Parse(true, []string{"--app", "app1"})
 	err := command.Run(&context, client)
-	c.Assert(err, gocheck.IsNil)
-	c.Assert(stdout.String(), gocheck.Equals, expected)
+	c.Assert(err, check.IsNil)
+	c.Assert(stdout.String(), check.Equals, expected)
 }
 
-func (s *S) TestAppInfoWithPlan(c *gocheck.C) {
+func (s *S) TestAppInfoWithPlan(c *check.C) {
 	var stdout, stderr bytes.Buffer
 	result := `{"name":"app1","teamowner":"myteam","cname":[""],"ip":"myapp.tsuru.io","platform":"php","repository":"git@git.com:php.git","state":"dead", "units":[{"Ip":"10.10.10.10","Name":"app1/0","Status":"started"}, {"Ip":"9.9.9.9","Name":"app1/1","Status":"started"}, {"Ip":"","Name":"app1/2","Status":"pending"}],"teams":["tsuruteam","crane"], "owner": "myapp_owner", "deploys": 7, "plan":{"name": "test",  "memory": 536870912, "swap": 268435456, "cpushare": 100, "router": "imemine", "default": false}}`
 	expected := `Application: app1
@@ -552,11 +552,11 @@ App Plan:
 	command := appInfo{}
 	command.Flags().Parse(true, []string{"-a/--app", "app1"})
 	err := command.Run(&context, client)
-	c.Assert(err, gocheck.IsNil)
-	c.Assert(stdout.String(), gocheck.Equals, expected)
+	c.Assert(err, check.IsNil)
+	c.Assert(stdout.String(), check.Equals, expected)
 }
 
-func (s *S) TestAppInfoWithServicesAndPlan(c *gocheck.C) {
+func (s *S) TestAppInfoWithServicesAndPlan(c *check.C) {
 	var stdout, stderr bytes.Buffer
 	expected := `Application: app1
 Repository: git@git.com:php.git
@@ -611,23 +611,23 @@ App Plan:
 	command := appInfo{}
 	command.Flags().Parse(true, []string{"--app", "app1"})
 	err := command.Run(&context, client)
-	c.Assert(err, gocheck.IsNil)
-	c.Assert(stdout.String(), gocheck.Equals, expected)
+	c.Assert(err, check.IsNil)
+	c.Assert(stdout.String(), check.Equals, expected)
 }
 
-func (s *S) TestAppInfoInfo(c *gocheck.C) {
-	c.Assert((&appInfo{}).Info(), gocheck.NotNil)
+func (s *S) TestAppInfoInfo(c *check.C) {
+	c.Assert((&appInfo{}).Info(), check.NotNil)
 }
 
-func (s *S) TestAppInfoFlags(c *gocheck.C) {
+func (s *S) TestAppInfoFlags(c *check.C) {
 	command := appInfo{}
 	flagset := command.Flags()
 	flag := flagset.Lookup("app")
 	flag.Value = nil
-	c.Assert(flag, gocheck.DeepEquals, appflag)
+	c.Assert(flag, check.DeepEquals, appflag)
 }
 
-func (s *S) TestAppGrant(c *gocheck.C) {
+func (s *S) TestAppGrant(c *check.C) {
 	var stdout, stderr bytes.Buffer
 	expected := `Team "cobrateam" was added to the "games" app` + "\n"
 	context := cmd.Context{
@@ -639,11 +639,11 @@ func (s *S) TestAppGrant(c *gocheck.C) {
 	command.Flags().Parse(true, []string{"--app", "games"})
 	client := cmd.NewClient(&http.Client{Transport: &cmdtest.Transport{Message: "", Status: http.StatusOK}}, nil, manager)
 	err := command.Run(&context, client)
-	c.Assert(err, gocheck.IsNil)
-	c.Assert(stdout.String(), gocheck.Equals, expected)
+	c.Assert(err, check.IsNil)
+	c.Assert(stdout.String(), check.Equals, expected)
 }
 
-func (s *S) TestAppGrantWithoutFlag(c *gocheck.C) {
+func (s *S) TestAppGrantWithoutFlag(c *check.C) {
 	var stdout, stderr bytes.Buffer
 	expected := `Team "cobrateam" was added to the "fights" app` + "\n"
 	context := cmd.Context{
@@ -656,15 +656,15 @@ func (s *S) TestAppGrantWithoutFlag(c *gocheck.C) {
 	command.Flags().Parse(true, nil)
 	client := cmd.NewClient(&http.Client{Transport: &cmdtest.Transport{Message: "", Status: http.StatusOK}}, nil, manager)
 	err := command.Run(&context, client)
-	c.Assert(err, gocheck.IsNil)
-	c.Assert(stdout.String(), gocheck.Equals, expected)
+	c.Assert(err, check.IsNil)
+	c.Assert(stdout.String(), check.Equals, expected)
 }
 
-func (s *S) TestAppGrantInfo(c *gocheck.C) {
-	c.Assert((&appGrant{}).Info(), gocheck.NotNil)
+func (s *S) TestAppGrantInfo(c *check.C) {
+	c.Assert((&appGrant{}).Info(), check.NotNil)
 }
 
-func (s *S) TestAppRevoke(c *gocheck.C) {
+func (s *S) TestAppRevoke(c *check.C) {
 	var stdout, stderr bytes.Buffer
 	expected := `Team "cobrateam" was removed from the "games" app` + "\n"
 	context := cmd.Context{
@@ -676,11 +676,11 @@ func (s *S) TestAppRevoke(c *gocheck.C) {
 	command.Flags().Parse(true, []string{"--app", "games"})
 	client := cmd.NewClient(&http.Client{Transport: &cmdtest.Transport{Message: "", Status: http.StatusOK}}, nil, manager)
 	err := command.Run(&context, client)
-	c.Assert(err, gocheck.IsNil)
-	c.Assert(stdout.String(), gocheck.Equals, expected)
+	c.Assert(err, check.IsNil)
+	c.Assert(stdout.String(), check.Equals, expected)
 }
 
-func (s *S) TestAppRevokeWithoutFlag(c *gocheck.C) {
+func (s *S) TestAppRevokeWithoutFlag(c *check.C) {
 	var stdout, stderr bytes.Buffer
 	expected := `Team "cobrateam" was removed from the "fights" app` + "\n"
 	context := cmd.Context{
@@ -693,15 +693,15 @@ func (s *S) TestAppRevokeWithoutFlag(c *gocheck.C) {
 	command.Flags().Parse(true, nil)
 	client := cmd.NewClient(&http.Client{Transport: &cmdtest.Transport{Message: "", Status: http.StatusOK}}, nil, manager)
 	err := command.Run(&context, client)
-	c.Assert(err, gocheck.IsNil)
-	c.Assert(stdout.String(), gocheck.Equals, expected)
+	c.Assert(err, check.IsNil)
+	c.Assert(stdout.String(), check.Equals, expected)
 }
 
-func (s *S) TestAppRevokeInfo(c *gocheck.C) {
-	c.Assert((&appRevoke{}).Info(), gocheck.NotNil)
+func (s *S) TestAppRevokeInfo(c *check.C) {
+	c.Assert((&appRevoke{}).Info(), check.NotNil)
 }
 
-func (s *S) TestAppList(c *gocheck.C) {
+func (s *S) TestAppList(c *check.C) {
 	var stdout, stderr bytes.Buffer
 	result := `[{"ip":"10.10.10.10","name":"app1","ready":true,"units":[{"Name":"app1/0","Status":"started"}]}]`
 	expected := `+-------------+-------------------------+-------------+--------+
@@ -718,11 +718,11 @@ func (s *S) TestAppList(c *gocheck.C) {
 	client := cmd.NewClient(&http.Client{Transport: &cmdtest.Transport{Message: result, Status: http.StatusOK}}, nil, manager)
 	command := appList{}
 	err := command.Run(&context, client)
-	c.Assert(err, gocheck.IsNil)
-	c.Assert(stdout.String(), gocheck.Equals, expected)
+	c.Assert(err, check.IsNil)
+	c.Assert(stdout.String(), check.Equals, expected)
 }
 
-func (s *S) TestAppListDisplayAppsInAlphabeticalOrder(c *gocheck.C) {
+func (s *S) TestAppListDisplayAppsInAlphabeticalOrder(c *check.C) {
 	var stdout, stderr bytes.Buffer
 	result := `[{"ip":"10.10.10.11","name":"sapp","ready":true,"units":[{"Name":"sapp1/0","Status":"started"}]},{"ip":"10.10.10.10","name":"app1","ready":true,"units":[{"Name":"app1/0","Status":"started"}]}]`
 	expected := `+-------------+-------------------------+-------------+--------+
@@ -741,11 +741,11 @@ func (s *S) TestAppListDisplayAppsInAlphabeticalOrder(c *gocheck.C) {
 	client := cmd.NewClient(&http.Client{Transport: &cmdtest.Transport{Message: result, Status: http.StatusOK}}, nil, manager)
 	command := appList{}
 	err := command.Run(&context, client)
-	c.Assert(err, gocheck.IsNil)
-	c.Assert(stdout.String(), gocheck.Equals, expected)
+	c.Assert(err, check.IsNil)
+	c.Assert(stdout.String(), check.Equals, expected)
 }
 
-func (s *S) TestAppListUnitIsntAvailable(c *gocheck.C) {
+func (s *S) TestAppListUnitIsntAvailable(c *check.C) {
 	var stdout, stderr bytes.Buffer
 	result := `[{"ip":"10.10.10.10","name":"app1","ready":true,"units":[{"Name":"app1/0","Status":"pending"}]}]`
 	expected := `+-------------+-------------------------+-------------+--------+
@@ -762,11 +762,11 @@ func (s *S) TestAppListUnitIsntAvailable(c *gocheck.C) {
 	client := cmd.NewClient(&http.Client{Transport: &cmdtest.Transport{Message: result, Status: http.StatusOK}}, nil, manager)
 	command := appList{}
 	err := command.Run(&context, client)
-	c.Assert(err, gocheck.IsNil)
-	c.Assert(stdout.String(), gocheck.Equals, expected)
+	c.Assert(err, check.IsNil)
+	c.Assert(stdout.String(), check.Equals, expected)
 }
 
-func (s *S) TestAppListUnitIsAvailable(c *gocheck.C) {
+func (s *S) TestAppListUnitIsAvailable(c *check.C) {
 	var stdout, stderr bytes.Buffer
 	result := `[{"ip":"10.10.10.10","name":"app1","ready":true,"units":[{"Name":"app1/0","Status":"unreachable"}]}]`
 	expected := `+-------------+-------------------------+-------------+--------+
@@ -783,11 +783,11 @@ func (s *S) TestAppListUnitIsAvailable(c *gocheck.C) {
 	client := cmd.NewClient(&http.Client{Transport: &cmdtest.Transport{Message: result, Status: http.StatusOK}}, nil, manager)
 	command := appList{}
 	err := command.Run(&context, client)
-	c.Assert(err, gocheck.IsNil)
-	c.Assert(stdout.String(), gocheck.Equals, expected)
+	c.Assert(err, check.IsNil)
+	c.Assert(stdout.String(), check.Equals, expected)
 }
 
-func (s *S) TestAppListUnitWithoutName(c *gocheck.C) {
+func (s *S) TestAppListUnitWithoutName(c *check.C) {
 	var stdout, stderr bytes.Buffer
 	result := `[{"ip":"10.10.10.10","name":"app1","ready":true,"units":[{"Name":"","Status":"pending"}]}]`
 	expected := `+-------------+-------------------------+-------------+--------+
@@ -804,11 +804,11 @@ func (s *S) TestAppListUnitWithoutName(c *gocheck.C) {
 	client := cmd.NewClient(&http.Client{Transport: &cmdtest.Transport{Message: result, Status: http.StatusOK}}, nil, manager)
 	command := appList{}
 	err := command.Run(&context, client)
-	c.Assert(err, gocheck.IsNil)
-	c.Assert(stdout.String(), gocheck.Equals, expected)
+	c.Assert(err, check.IsNil)
+	c.Assert(stdout.String(), check.Equals, expected)
 }
 
-func (s *S) TestAppListNotReady(c *gocheck.C) {
+func (s *S) TestAppListNotReady(c *check.C) {
 	var stdout, stderr bytes.Buffer
 	result := `[{"ip":"10.10.10.10","name":"app1","ready":false,"units":[{"Name":"","Status":"pending"}]}]`
 	expected := `+-------------+-------------------------+-------------+--------+
@@ -825,11 +825,11 @@ func (s *S) TestAppListNotReady(c *gocheck.C) {
 	client := cmd.NewClient(&http.Client{Transport: &cmdtest.Transport{Message: result, Status: http.StatusOK}}, nil, manager)
 	command := appList{}
 	err := command.Run(&context, client)
-	c.Assert(err, gocheck.IsNil)
-	c.Assert(stdout.String(), gocheck.Equals, expected)
+	c.Assert(err, check.IsNil)
+	c.Assert(stdout.String(), check.Equals, expected)
 }
 
-func (s *S) TestAppListCName(c *gocheck.C) {
+func (s *S) TestAppListCName(c *check.C) {
 	var stdout, stderr bytes.Buffer
 	result := `[{"ip":"10.10.10.10","cname":["app1.tsuru.io"],"name":"app1","ready":true,"units":[{"Name":"app1/0","Status":"started"}]}]`
 	expected := `+-------------+-------------------------+---------------+--------+
@@ -847,19 +847,19 @@ func (s *S) TestAppListCName(c *gocheck.C) {
 	client := cmd.NewClient(&http.Client{Transport: &cmdtest.Transport{Message: result, Status: http.StatusOK}}, nil, manager)
 	command := appList{}
 	err := command.Run(&context, client)
-	c.Assert(err, gocheck.IsNil)
-	c.Assert(stdout.String(), gocheck.Equals, expected)
+	c.Assert(err, check.IsNil)
+	c.Assert(stdout.String(), check.Equals, expected)
 }
 
-func (s *S) TestAppListInfo(c *gocheck.C) {
-	c.Assert(appList{}.Info(), gocheck.NotNil)
+func (s *S) TestAppListInfo(c *check.C) {
+	c.Assert(appList{}.Info(), check.NotNil)
 }
 
-func (s *S) TestAppListIsACommand(c *gocheck.C) {
+func (s *S) TestAppListIsACommand(c *check.C) {
 	var _ cmd.Command = appList{}
 }
 
-func (s *S) TestAppRestart(c *gocheck.C) {
+func (s *S) TestAppRestart(c *check.C) {
 	var (
 		called         bool
 		stdout, stderr bytes.Buffer
@@ -871,7 +871,7 @@ func (s *S) TestAppRestart(c *gocheck.C) {
 	expectedOut := "-- restarted --"
 	msg := io.SimpleJsonMessage{Message: expectedOut}
 	result, err := json.Marshal(msg)
-	c.Assert(err, gocheck.IsNil)
+	c.Assert(err, check.IsNil)
 	trans := &cmdtest.ConditionalTransport{
 		Transport: cmdtest.Transport{Message: string(result), Status: http.StatusOK},
 		CondFunc: func(req *http.Request) bool {
@@ -883,12 +883,12 @@ func (s *S) TestAppRestart(c *gocheck.C) {
 	command := appRestart{}
 	command.Flags().Parse(true, []string{"--app", "handful_of_nothing"})
 	err = command.Run(&context, client)
-	c.Assert(err, gocheck.IsNil)
-	c.Assert(called, gocheck.Equals, true)
-	c.Assert(stdout.String(), gocheck.Equals, expectedOut)
+	c.Assert(err, check.IsNil)
+	c.Assert(called, check.Equals, true)
+	c.Assert(stdout.String(), check.Equals, expectedOut)
 }
 
-func (s *S) TestAppRestartWithoutTheFlag(c *gocheck.C) {
+func (s *S) TestAppRestartWithoutTheFlag(c *check.C) {
 	var (
 		called         bool
 		stdout, stderr bytes.Buffer
@@ -900,7 +900,7 @@ func (s *S) TestAppRestartWithoutTheFlag(c *gocheck.C) {
 	expectedOut := "-- restarted --"
 	msg := io.SimpleJsonMessage{Message: expectedOut}
 	result, err := json.Marshal(msg)
-	c.Assert(err, gocheck.IsNil)
+	c.Assert(err, check.IsNil)
 	trans := &cmdtest.ConditionalTransport{
 		Transport: cmdtest.Transport{Message: string(result), Status: http.StatusOK},
 		CondFunc: func(req *http.Request) bool {
@@ -913,20 +913,20 @@ func (s *S) TestAppRestartWithoutTheFlag(c *gocheck.C) {
 	command := appRestart{GuessingCommand: cmd.GuessingCommand{G: fake}}
 	command.Flags().Parse(true, nil)
 	err = command.Run(&context, client)
-	c.Assert(err, gocheck.IsNil)
-	c.Assert(called, gocheck.Equals, true)
-	c.Assert(stdout.String(), gocheck.Equals, expectedOut)
+	c.Assert(err, check.IsNil)
+	c.Assert(called, check.Equals, true)
+	c.Assert(stdout.String(), check.Equals, expectedOut)
 }
 
-func (s *S) TestAppRestartInfo(c *gocheck.C) {
-	c.Assert((&appRestart{}).Info(), gocheck.NotNil)
+func (s *S) TestAppRestartInfo(c *check.C) {
+	c.Assert((&appRestart{}).Info(), check.NotNil)
 }
 
-func (s *S) TestAppRestartIsAFlaggedCommand(c *gocheck.C) {
+func (s *S) TestAppRestartIsAFlaggedCommand(c *check.C) {
 	var _ cmd.FlaggedCommand = &appRestart{}
 }
 
-func (s *S) TestAddCName(c *gocheck.C) {
+func (s *S) TestAddCName(c *check.C) {
 	var (
 		called         bool
 		stdout, stderr bytes.Buffer
@@ -942,8 +942,8 @@ func (s *S) TestAddCName(c *gocheck.C) {
 			called = true
 			var m map[string][]string
 			err := json.NewDecoder(req.Body).Decode(&m)
-			c.Assert(err, gocheck.IsNil)
-			c.Assert(m["cname"], gocheck.DeepEquals, []string{"death.evergrey.mycompany.com"})
+			c.Assert(err, check.IsNil)
+			c.Assert(m["cname"], check.DeepEquals, []string{"death.evergrey.mycompany.com"})
 			return req.URL.Path == "/apps/death/cname" &&
 				req.Method == "POST"
 		},
@@ -952,12 +952,12 @@ func (s *S) TestAddCName(c *gocheck.C) {
 	command := cnameAdd{}
 	command.Flags().Parse(true, []string{"-a", "death"})
 	err := command.Run(&context, client)
-	c.Assert(err, gocheck.IsNil)
-	c.Assert(called, gocheck.Equals, true)
-	c.Assert(stdout.String(), gocheck.Equals, "cname successfully defined.\n")
+	c.Assert(err, check.IsNil)
+	c.Assert(called, check.Equals, true)
+	c.Assert(stdout.String(), check.Equals, "cname successfully defined.\n")
 }
 
-func (s *S) TestAddCNameWithoutTheFlag(c *gocheck.C) {
+func (s *S) TestAddCNameWithoutTheFlag(c *check.C) {
 	var (
 		called         bool
 		stdout, stderr bytes.Buffer
@@ -974,20 +974,20 @@ func (s *S) TestAddCNameWithoutTheFlag(c *gocheck.C) {
 			called = true
 			var m map[string][]string
 			err := json.NewDecoder(req.Body).Decode(&m)
-			c.Assert(err, gocheck.IsNil)
-			c.Assert(m["cname"], gocheck.DeepEquals, []string{"corey.evergrey.mycompany.com"})
+			c.Assert(err, check.IsNil)
+			c.Assert(m["cname"], check.DeepEquals, []string{"corey.evergrey.mycompany.com"})
 			return req.URL.Path == "/apps/corey/cname" &&
 				req.Method == "POST"
 		},
 	}
 	client := cmd.NewClient(&http.Client{Transport: trans}, nil, manager)
 	err := (&cnameAdd{cmd.GuessingCommand{G: fake}}).Run(&context, client)
-	c.Assert(err, gocheck.IsNil)
-	c.Assert(called, gocheck.Equals, true)
-	c.Assert(stdout.String(), gocheck.Equals, "cname successfully defined.\n")
+	c.Assert(err, check.IsNil)
+	c.Assert(called, check.Equals, true)
+	c.Assert(stdout.String(), check.Equals, "cname successfully defined.\n")
 }
 
-func (s *S) TestAddCNameFailure(c *gocheck.C) {
+func (s *S) TestAddCNameFailure(c *check.C) {
 	var stdout, stderr bytes.Buffer
 	context := cmd.Context{
 		Stdout: &stdout,
@@ -999,19 +999,19 @@ func (s *S) TestAddCNameFailure(c *gocheck.C) {
 	command := cnameAdd{}
 	command.Flags().Parse(true, []string{"-a", "masterplan"})
 	err := command.Run(&context, client)
-	c.Assert(err, gocheck.NotNil)
-	c.Assert(err.Error(), gocheck.Equals, "Invalid cname")
+	c.Assert(err, check.NotNil)
+	c.Assert(err.Error(), check.Equals, "Invalid cname")
 }
 
-func (s *S) TestAddCNameInfo(c *gocheck.C) {
-	c.Assert((&cnameAdd{}).Info(), gocheck.NotNil)
+func (s *S) TestAddCNameInfo(c *check.C) {
+	c.Assert((&cnameAdd{}).Info(), check.NotNil)
 }
 
-func (s *S) TestAddCNameIsAFlaggedCommand(c *gocheck.C) {
+func (s *S) TestAddCNameIsAFlaggedCommand(c *check.C) {
 	var _ cmd.FlaggedCommand = &cnameAdd{}
 }
 
-func (s *S) TestRemoveCName(c *gocheck.C) {
+func (s *S) TestRemoveCName(c *check.C) {
 	var (
 		called         bool
 		stdout, stderr bytes.Buffer
@@ -1031,12 +1031,12 @@ func (s *S) TestRemoveCName(c *gocheck.C) {
 	command := cnameRemove{}
 	command.Flags().Parse(true, []string{"--app", "death"})
 	err := command.Run(&context, client)
-	c.Assert(err, gocheck.IsNil)
-	c.Assert(called, gocheck.Equals, true)
-	c.Assert(stdout.String(), gocheck.Equals, "cname successfully undefined.\n")
+	c.Assert(err, check.IsNil)
+	c.Assert(called, check.Equals, true)
+	c.Assert(stdout.String(), check.Equals, "cname successfully undefined.\n")
 }
 
-func (s *S) TestRemoveCNameWithoutTheFlag(c *gocheck.C) {
+func (s *S) TestRemoveCNameWithoutTheFlag(c *check.C) {
 	var (
 		called         bool
 		stdout, stderr bytes.Buffer
@@ -1055,28 +1055,28 @@ func (s *S) TestRemoveCNameWithoutTheFlag(c *gocheck.C) {
 	}
 	client := cmd.NewClient(&http.Client{Transport: trans}, nil, manager)
 	err := (&cnameRemove{cmd.GuessingCommand{G: fake}}).Run(&context, client)
-	c.Assert(err, gocheck.IsNil)
-	c.Assert(called, gocheck.Equals, true)
-	c.Assert(stdout.String(), gocheck.Equals, "cname successfully undefined.\n")
+	c.Assert(err, check.IsNil)
+	c.Assert(called, check.Equals, true)
+	c.Assert(stdout.String(), check.Equals, "cname successfully undefined.\n")
 }
 
-func (s *S) TestRemoveCNameInfo(c *gocheck.C) {
-	c.Assert((&cnameRemove{}).Info(), gocheck.NotNil)
+func (s *S) TestRemoveCNameInfo(c *check.C) {
+	c.Assert((&cnameRemove{}).Info(), check.NotNil)
 }
 
-func (s *S) TestRemoveCNameIsAFlaggedCommand(c *gocheck.C) {
+func (s *S) TestRemoveCNameIsAFlaggedCommand(c *check.C) {
 	var _ cmd.FlaggedCommand = &cnameRemove{}
 }
 
-func (s *S) TestAppStartInfo(c *gocheck.C) {
-	c.Assert((&appStart{}).Info(), gocheck.NotNil)
+func (s *S) TestAppStartInfo(c *check.C) {
+	c.Assert((&appStart{}).Info(), check.NotNil)
 }
 
-func (s *S) TestSetTeamOwnerInfo(c *gocheck.C) {
-	c.Assert((&SetTeamOwner{}).Info(), gocheck.NotNil)
+func (s *S) TestSetTeamOwnerInfo(c *check.C) {
+	c.Assert((&SetTeamOwner{}).Info(), check.NotNil)
 }
 
-func (s *S) TestSetTeamOwner(c *gocheck.C) {
+func (s *S) TestSetTeamOwner(c *check.C) {
 	var (
 		called         bool
 		stdout, stderr bytes.Buffer
@@ -1097,12 +1097,12 @@ func (s *S) TestSetTeamOwner(c *gocheck.C) {
 	command := SetTeamOwner{}
 	command.Flags().Parse(true, []string{"--app", "app-fake"})
 	err := command.Run(&context, client)
-	c.Assert(err, gocheck.IsNil)
-	c.Assert(called, gocheck.Equals, true)
-	c.Assert(stdout.String(), gocheck.Equals, "app's owner team successfully changed.\n")
+	c.Assert(err, check.IsNil)
+	c.Assert(called, check.Equals, true)
+	c.Assert(stdout.String(), check.Equals, "app's owner team successfully changed.\n")
 }
 
-func (s *S) TestAppStart(c *gocheck.C) {
+func (s *S) TestAppStart(c *check.C) {
 	var (
 		called         bool
 		stdout, stderr bytes.Buffer
@@ -1122,12 +1122,12 @@ func (s *S) TestAppStart(c *gocheck.C) {
 	command := appStart{}
 	command.Flags().Parse(true, []string{"--app", "handful_of_nothing"})
 	err := command.Run(&context, client)
-	c.Assert(err, gocheck.IsNil)
-	c.Assert(called, gocheck.Equals, true)
-	c.Assert(stdout.String(), gocheck.Equals, "Started")
+	c.Assert(err, check.IsNil)
+	c.Assert(called, check.Equals, true)
+	c.Assert(stdout.String(), check.Equals, "Started")
 }
 
-func (s *S) TestAppStartWithoutTheFlag(c *gocheck.C) {
+func (s *S) TestAppStartWithoutTheFlag(c *check.C) {
 	var (
 		called         bool
 		stdout, stderr bytes.Buffer
@@ -1148,29 +1148,29 @@ func (s *S) TestAppStartWithoutTheFlag(c *gocheck.C) {
 	command := appStart{GuessingCommand: cmd.GuessingCommand{G: fake}}
 	command.Flags().Parse(true, nil)
 	err := command.Run(&context, client)
-	c.Assert(err, gocheck.IsNil)
-	c.Assert(called, gocheck.Equals, true)
-	c.Assert(stdout.String(), gocheck.Equals, "Started")
+	c.Assert(err, check.IsNil)
+	c.Assert(called, check.Equals, true)
+	c.Assert(stdout.String(), check.Equals, "Started")
 }
 
-func (s *S) TestAppStartIsAFlaggedCommand(c *gocheck.C) {
+func (s *S) TestAppStartIsAFlaggedCommand(c *check.C) {
 	var _ cmd.FlaggedCommand = &appStart{}
 }
 
-func (s *S) TestUnitAvailable(c *gocheck.C) {
+func (s *S) TestUnitAvailable(c *check.C) {
 	u := &unit{Status: "unreachable"}
-	c.Assert(u.Available(), gocheck.Equals, true)
+	c.Assert(u.Available(), check.Equals, true)
 	u = &unit{Status: "started"}
-	c.Assert(u.Available(), gocheck.Equals, true)
+	c.Assert(u.Available(), check.Equals, true)
 	u = &unit{Status: "down"}
-	c.Assert(u.Available(), gocheck.Equals, false)
+	c.Assert(u.Available(), check.Equals, false)
 }
 
-func (s *S) TestAppStopInfo(c *gocheck.C) {
-	c.Assert((&appStop{}).Info(), gocheck.NotNil)
+func (s *S) TestAppStopInfo(c *check.C) {
+	c.Assert((&appStop{}).Info(), check.NotNil)
 }
 
-func (s *S) TestAppStop(c *gocheck.C) {
+func (s *S) TestAppStop(c *check.C) {
 	var (
 		called         bool
 		stdout, stderr bytes.Buffer
@@ -1190,12 +1190,12 @@ func (s *S) TestAppStop(c *gocheck.C) {
 	command := appStop{}
 	command.Flags().Parse(true, []string{"--app", "handful_of_nothing"})
 	err := command.Run(&context, client)
-	c.Assert(err, gocheck.IsNil)
-	c.Assert(called, gocheck.Equals, true)
-	c.Assert(stdout.String(), gocheck.Equals, "Stopped")
+	c.Assert(err, check.IsNil)
+	c.Assert(called, check.Equals, true)
+	c.Assert(stdout.String(), check.Equals, "Stopped")
 }
 
-func (s *S) TestAppStopWithoutTheFlag(c *gocheck.C) {
+func (s *S) TestAppStopWithoutTheFlag(c *check.C) {
 	var (
 		called         bool
 		stdout, stderr bytes.Buffer
@@ -1216,16 +1216,16 @@ func (s *S) TestAppStopWithoutTheFlag(c *gocheck.C) {
 	command := appStop{GuessingCommand: cmd.GuessingCommand{G: fake}}
 	command.Flags().Parse(true, nil)
 	err := command.Run(&context, client)
-	c.Assert(err, gocheck.IsNil)
-	c.Assert(called, gocheck.Equals, true)
-	c.Assert(stdout.String(), gocheck.Equals, "Stopped")
+	c.Assert(err, check.IsNil)
+	c.Assert(called, check.Equals, true)
+	c.Assert(stdout.String(), check.Equals, "Stopped")
 }
 
-func (s *S) TestAppStopIsAFlaggedCommand(c *gocheck.C) {
+func (s *S) TestAppStopIsAFlaggedCommand(c *check.C) {
 	var _ cmd.FlaggedCommand = &appStop{}
 }
 
-func (s *S) TestUnitAdd(c *gocheck.C) {
+func (s *S) TestUnitAdd(c *check.C) {
 	var stdout, stderr bytes.Buffer
 	var called bool
 	context := cmd.Context{
@@ -1236,14 +1236,14 @@ func (s *S) TestUnitAdd(c *gocheck.C) {
 	expectedOut := "-- added unit --"
 	msg := io.SimpleJsonMessage{Message: expectedOut}
 	result, err := json.Marshal(msg)
-	c.Assert(err, gocheck.IsNil)
+	c.Assert(err, check.IsNil)
 	trans := &cmdtest.ConditionalTransport{
 		Transport: cmdtest.Transport{Message: string(result), Status: http.StatusOK},
 		CondFunc: func(req *http.Request) bool {
 			called = true
 			b, err := ioutil.ReadAll(req.Body)
-			c.Assert(err, gocheck.IsNil)
-			c.Assert(string(b), gocheck.Equals, "3")
+			c.Assert(err, check.IsNil)
+			c.Assert(string(b), check.Equals, "3")
 			return req.URL.Path == "/apps/radio/units" && req.Method == "PUT"
 		},
 	}
@@ -1251,12 +1251,12 @@ func (s *S) TestUnitAdd(c *gocheck.C) {
 	command := unitAdd{}
 	command.Flags().Parse(true, []string{"-a", "radio"})
 	err = command.Run(&context, client)
-	c.Assert(err, gocheck.IsNil)
-	c.Assert(called, gocheck.Equals, true)
-	c.Assert(stdout.String(), gocheck.Equals, expectedOut)
+	c.Assert(err, check.IsNil)
+	c.Assert(called, check.Equals, true)
+	c.Assert(stdout.String(), check.Equals, expectedOut)
 }
 
-func (s *S) TestUnitAddFailure(c *gocheck.C) {
+func (s *S) TestUnitAddFailure(c *check.C) {
 	var stdout, stderr bytes.Buffer
 	context := cmd.Context{
 		Args:   []string{"3"},
@@ -1265,24 +1265,24 @@ func (s *S) TestUnitAddFailure(c *gocheck.C) {
 	}
 	msg := io.SimpleJsonMessage{Error: "errored msg"}
 	result, err := json.Marshal(msg)
-	c.Assert(err, gocheck.IsNil)
+	c.Assert(err, check.IsNil)
 	client := cmd.NewClient(&http.Client{Transport: &cmdtest.Transport{Message: string(result), Status: 200}}, nil, manager)
 	command := unitAdd{}
 	command.Flags().Parse(true, []string{"-a", "radio"})
 	err = command.Run(&context, client)
-	c.Assert(err, gocheck.NotNil)
-	c.Assert(err.Error(), gocheck.Equals, "errored msg")
+	c.Assert(err, check.NotNil)
+	c.Assert(err.Error(), check.Equals, "errored msg")
 }
 
-func (s *S) TestUnitAddInfo(c *gocheck.C) {
-	c.Assert((&unitAdd{}).Info(), gocheck.NotNil)
+func (s *S) TestUnitAddInfo(c *check.C) {
+	c.Assert((&unitAdd{}).Info(), check.NotNil)
 }
 
-func (s *S) TestUnitAddIsFlaggedACommand(c *gocheck.C) {
+func (s *S) TestUnitAddIsFlaggedACommand(c *check.C) {
 	var _ cmd.FlaggedCommand = &unitAdd{}
 }
 
-func (s *S) TestUnitRemove(c *gocheck.C) {
+func (s *S) TestUnitRemove(c *check.C) {
 	var stdout, stderr bytes.Buffer
 	var called bool
 	context := cmd.Context{
@@ -1295,8 +1295,8 @@ func (s *S) TestUnitRemove(c *gocheck.C) {
 		CondFunc: func(req *http.Request) bool {
 			called = true
 			b, err := ioutil.ReadAll(req.Body)
-			c.Assert(err, gocheck.IsNil)
-			c.Assert(string(b), gocheck.Equals, "2")
+			c.Assert(err, check.IsNil)
+			c.Assert(string(b), check.Equals, "2")
 			return req.URL.Path == "/apps/vapor/units" && req.Method == "DELETE"
 		},
 	}
@@ -1304,13 +1304,13 @@ func (s *S) TestUnitRemove(c *gocheck.C) {
 	command := unitRemove{}
 	command.Flags().Parse(true, []string{"-a", "vapor"})
 	err := command.Run(&context, client)
-	c.Assert(err, gocheck.IsNil)
-	c.Assert(called, gocheck.Equals, true)
+	c.Assert(err, check.IsNil)
+	c.Assert(called, check.Equals, true)
 	expected := "Units successfully removed!\n"
-	c.Assert(stdout.String(), gocheck.Equals, expected)
+	c.Assert(stdout.String(), check.Equals, expected)
 }
 
-func (s *S) TestUnitRemoveFailure(c *gocheck.C) {
+func (s *S) TestUnitRemoveFailure(c *check.C) {
 	var stdout, stderr bytes.Buffer
 	context := cmd.Context{
 		Args:   []string{"1"},
@@ -1323,14 +1323,14 @@ func (s *S) TestUnitRemoveFailure(c *gocheck.C) {
 	command := unitRemove{}
 	command.Flags().Parse(true, []string{"-a", "vapor"})
 	err := command.Run(&context, client)
-	c.Assert(err, gocheck.NotNil)
-	c.Assert(err.Error(), gocheck.Equals, "Failed to remove.")
+	c.Assert(err, check.NotNil)
+	c.Assert(err.Error(), check.Equals, "Failed to remove.")
 }
 
-func (s *S) TestUnitRemoveInfo(c *gocheck.C) {
-	c.Assert((&unitRemove{}).Info(), gocheck.NotNil)
+func (s *S) TestUnitRemoveInfo(c *check.C) {
+	c.Assert((&unitRemove{}).Info(), check.NotNil)
 }
 
-func (s *S) TestUnitRemoveIsACommand(c *gocheck.C) {
+func (s *S) TestUnitRemoveIsACommand(c *check.C) {
 	var _ cmd.Command = &unitRemove{}
 }

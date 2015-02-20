@@ -89,12 +89,14 @@ func (c *keyAdd) Run(context *cmd.Context, client *cmd.Client) error {
 	return nil
 }
 
-type keyRemove struct{}
+type keyRemove struct {
+	cmd.ConfirmationCommand
+}
 
 func (c *keyRemove) Info() *cmd.Info {
 	return &cmd.Info{
 		Name:  "key-remove",
-		Usage: "key-remove <key-name>",
+		Usage: "key-remove <key-name> [-y/--assume-yes]",
 		Desc: `Removes your public key from the git server used by tsuru. The key will be
 removed from the current logged in user.`,
 		MinArgs: 1,
@@ -102,7 +104,11 @@ removed from the current logged in user.`,
 }
 
 func (c *keyRemove) Run(context *cmd.Context, client *cmd.Client) error {
-	b := bytes.NewBufferString(fmt.Sprintf(`{"name":%q}`, context.Args[0]))
+	name := context.Args[0]
+	if !c.Confirm(context, fmt.Sprintf("Are you sure you want to remove key %q?", name)) {
+		return nil
+	}
+	b := bytes.NewBufferString(fmt.Sprintf(`{"name":%q}`, name))
 	url, err := cmd.GetURL("/users/keys")
 	if err != nil {
 		return err

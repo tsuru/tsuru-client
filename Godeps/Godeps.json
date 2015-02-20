@@ -1,6 +1,6 @@
 {
 	"ImportPath": "github.com/tsuru/tsuru-client",
-	"GoVersion": "devel +c768a84 Wed Feb 4 10:16:38 2015 +0000",
+	"GoVersion": "devel +5868ce3 Fri Feb 20 07:35:57 2015 +0000",
 	"Packages": [
 		"./..."
 	],
@@ -21,10 +21,6 @@
 		{
 			"ImportPath": "github.com/tsuru/config",
 			"Rev": "a2b4aec819a60c646dad55cba9c76ddfed4b6ed1"
-		},
-		{
-			"ImportPath": "github.com/tsuru/go-gandalfclient",
-			"Rev": "6c584ec2d07ce59927096b72fbe0121a40ebd5f1"
 		},
 		{
 			"ImportPath": "github.com/tsuru/tsuru/action",
@@ -141,6 +137,10 @@
 			"Rev": "1fbbd62cfec66bd39d91e97749579579d4d3037e"
 		},
 		{
+			"ImportPath": "gopkg.in/check.v1",
+			"Rev": "64131543e7896d5bcc6bd5a76287eb75ea96c673"
+		},
+		{
 			"ImportPath": "gopkg.in/mgo.v2",
 			"Rev": "dc255bb679efa273b6544a03261c4053505498a4"
 		},
@@ -152,11 +152,6 @@
 			"ImportPath": "launchpad.net/gnuflag",
 			"Comment": "12",
 			"Rev": "roger.peppe@canonical.com-20121003093437-zcyyw0lpvj2nifpk"
-		},
-		{
-			"ImportPath": "launchpad.net/gocheck",
-			"Comment": "87",
-			"Rev": "gustavo@niemeyer.net-20130302024745-6ikofwq2c03h7giu"
 		}
 	]
 }

@@ -7,12 +7,12 @@ package main
 import (
 	"github.com/tsuru/tsuru/fs"
 	"github.com/tsuru/tsuru/fs/fstest"
-	"launchpad.net/gocheck"
+	"gopkg.in/check.v1"
 )
 
-func (s *S) TestFileSystem(c *gocheck.C) {
+func (s *S) TestFileSystem(c *check.C) {
 	fsystem = &fstest.RecordingFs{}
-	c.Assert(filesystem(), gocheck.DeepEquals, fsystem)
+	c.Assert(filesystem(), check.DeepEquals, fsystem)
 	fsystem = nil
-	c.Assert(filesystem(), gocheck.DeepEquals, fs.OsFs{})
+	c.Assert(filesystem(), check.DeepEquals, fs.OsFs{})
 }

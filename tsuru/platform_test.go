@@ -10,10 +10,10 @@ import (
 
 	"github.com/tsuru/tsuru/cmd"
 	"github.com/tsuru/tsuru/cmd/cmdtest"
-	"launchpad.net/gocheck"
+	"gopkg.in/check.v1"
 )
 
-func (s *S) TestPlatformList(c *gocheck.C) {
+func (s *S) TestPlatformList(c *check.C) {
 	var buf bytes.Buffer
 	var called bool
 	transport := cmdtest.ConditionalTransport{
@@ -29,14 +29,14 @@ func (s *S) TestPlatformList(c *gocheck.C) {
 	context := cmd.Context{Stdout: &buf}
 	client := cmd.NewClient(&http.Client{Transport: &transport}, nil, manager)
 	err := platformList{}.Run(&context, client)
-	c.Assert(err, gocheck.IsNil)
-	c.Assert(called, gocheck.Equals, true)
+	c.Assert(err, check.IsNil)
+	c.Assert(called, check.Equals, true)
 	expected := `- python
 - ruby` + "\n"
-	c.Assert(buf.String(), gocheck.Equals, expected)
+	c.Assert(buf.String(), check.Equals, expected)
 }
 
-func (s *S) TestPlatformListEmpty(c *gocheck.C) {
+func (s *S) TestPlatformListEmpty(c *check.C) {
 	var buf bytes.Buffer
 	transport := cmdtest.Transport{
 		Status:  http.StatusOK,
@@ -45,14 +45,14 @@ func (s *S) TestPlatformListEmpty(c *gocheck.C) {
 	context := cmd.Context{Stdout: &buf}
 	client := cmd.NewClient(&http.Client{Transport: &transport}, nil, manager)
 	err := platformList{}.Run(&context, client)
-	c.Assert(err, gocheck.IsNil)
-	c.Assert(buf.String(), gocheck.Equals, "No platforms available.\n")
+	c.Assert(err, check.IsNil)
+	c.Assert(buf.String(), check.Equals, "No platforms available.\n")
 }
 
-func (s *S) TestPlatformListInfo(c *gocheck.C) {
-	c.Assert(platformList{}.Info(), gocheck.NotNil)
+func (s *S) TestPlatformListInfo(c *check.C) {
+	c.Assert(platformList{}.Info(), check.NotNil)
 }
 
-func (s *S) TestPlatformListIsACommand(c *gocheck.C) {
+func (s *S) TestPlatformListIsACommand(c *check.C) {
 	var _ cmd.Command = platformList{}
 }

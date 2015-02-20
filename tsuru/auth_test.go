@@ -17,10 +17,10 @@ import (
 	"github.com/tsuru/tsuru/cmd"
 	"github.com/tsuru/tsuru/cmd/cmdtest"
 	"github.com/tsuru/tsuru/fs/fstest"
-	"launchpad.net/gocheck"
+	"gopkg.in/check.v1"
 )
 
-func (s *S) TestTeamAddUser(c *gocheck.C) {
+func (s *S) TestTeamAddUser(c *check.C) {
 	var stdout, stderr bytes.Buffer
 	expected := `User "andorito" was added to the "cobrateam" team` + "\n"
 	context := cmd.Context{
@@ -32,15 +32,15 @@ func (s *S) TestTeamAddUser(c *gocheck.C) {
 	command := teamUserAdd{}
 	client := cmd.NewClient(&http.Client{Transport: &cmdtest.Transport{Message: "", Status: http.StatusOK}}, nil, manager)
 	err := command.Run(&context, client)
-	c.Assert(err, gocheck.IsNil)
-	c.Assert(stdout.String(), gocheck.Equals, expected)
+	c.Assert(err, check.IsNil)
+	c.Assert(stdout.String(), check.Equals, expected)
 }
 
-func (s *S) TestTeamAddUserInfo(c *gocheck.C) {
-	c.Assert((&teamUserAdd{}).Info(), gocheck.NotNil)
+func (s *S) TestTeamAddUserInfo(c *check.C) {
+	c.Assert((&teamUserAdd{}).Info(), check.NotNil)
 }
 
-func (s *S) TestTeamRemoveUser(c *gocheck.C) {
+func (s *S) TestTeamRemoveUser(c *check.C) {
 	var stdout, stderr bytes.Buffer
 	expected := `User "andorito" was removed from the "cobrateam" team` + "\n"
 	context := cmd.Context{
@@ -52,15 +52,15 @@ func (s *S) TestTeamRemoveUser(c *gocheck.C) {
 	command := teamUserRemove{}
 	client := cmd.NewClient(&http.Client{Transport: &cmdtest.Transport{Message: "", Status: http.StatusOK}}, nil, manager)
 	err := command.Run(&context, client)
-	c.Assert(err, gocheck.IsNil)
-	c.Assert(stdout.String(), gocheck.Equals, expected)
+	c.Assert(err, check.IsNil)
+	c.Assert(stdout.String(), check.Equals, expected)
 }
 
-func (s *S) TestTeamRemoveUserInfo(c *gocheck.C) {
-	c.Assert((&teamUserRemove{}).Info(), gocheck.NotNil)
+func (s *S) TestTeamRemoveUserInfo(c *check.C) {
+	c.Assert((&teamUserRemove{}).Info(), check.NotNil)
 }
 
-func (s *S) TestTeamCreate(c *gocheck.C) {
+func (s *S) TestTeamCreate(c *check.C) {
 	var stdout, stderr bytes.Buffer
 	expected := `Team "core" successfully created!` + "\n"
 	context := cmd.Context{
@@ -72,15 +72,15 @@ func (s *S) TestTeamCreate(c *gocheck.C) {
 	client := cmd.NewClient(&http.Client{Transport: &cmdtest.Transport{Message: "", Status: http.StatusCreated}}, nil, manager)
 	command := teamCreate{}
 	err := command.Run(&context, client)
-	c.Assert(err, gocheck.IsNil)
-	c.Assert(stdout.String(), gocheck.Equals, expected)
+	c.Assert(err, check.IsNil)
+	c.Assert(stdout.String(), check.Equals, expected)
 }
 
-func (s *S) TestTeamCreateInfo(c *gocheck.C) {
-	c.Assert((&teamCreate{}).Info(), gocheck.NotNil)
+func (s *S) TestTeamCreateInfo(c *check.C) {
+	c.Assert((&teamCreate{}).Info(), check.NotNil)
 }
 
-func (s *S) TestTeamRemove(c *gocheck.C) {
+func (s *S) TestTeamRemove(c *check.C) {
 	var (
 		buf    bytes.Buffer
 		called bool
@@ -100,12 +100,12 @@ func (s *S) TestTeamRemove(c *gocheck.C) {
 	client := cmd.NewClient(&http.Client{Transport: &trans}, nil, manager)
 	command := teamRemove{}
 	err := command.Run(&context, client)
-	c.Assert(err, gocheck.IsNil)
-	c.Assert(called, gocheck.Equals, true)
-	c.Assert(buf.String(), gocheck.Equals, `Are you sure you want to remove team "evergrey"? (y/n) Team "evergrey" successfully removed!`+"\n")
+	c.Assert(err, check.IsNil)
+	c.Assert(called, check.Equals, true)
+	c.Assert(buf.String(), check.Equals, `Are you sure you want to remove team "evergrey"? (y/n) Team "evergrey" successfully removed!`+"\n")
 }
 
-func (s *S) TestTeamRemoveWithouConfirmation(c *gocheck.C) {
+func (s *S) TestTeamRemoveWithouConfirmation(c *check.C) {
 	var buf bytes.Buffer
 	context := cmd.Context{
 		Args:   []string{"dream-theater"},
@@ -114,11 +114,11 @@ func (s *S) TestTeamRemoveWithouConfirmation(c *gocheck.C) {
 	}
 	command := teamRemove{}
 	err := command.Run(&context, nil)
-	c.Assert(err, gocheck.IsNil)
-	c.Assert(buf.String(), gocheck.Equals, `Are you sure you want to remove team "dream-theater"? (y/n) Abort.`+"\n")
+	c.Assert(err, check.IsNil)
+	c.Assert(buf.String(), check.Equals, `Are you sure you want to remove team "dream-theater"? (y/n) Abort.`+"\n")
 }
 
-func (s *S) TestTeamRemoveFailingRequest(c *gocheck.C) {
+func (s *S) TestTeamRemoveFailingRequest(c *check.C) {
 	context := cmd.Context{
 		Args:   []string{"evergrey"},
 		Stdout: new(bytes.Buffer),
@@ -127,19 +127,19 @@ func (s *S) TestTeamRemoveFailingRequest(c *gocheck.C) {
 	client := cmd.NewClient(&http.Client{Transport: &cmdtest.Transport{Message: "Team evergrey not found.", Status: http.StatusNotFound}}, nil, manager)
 	command := teamRemove{}
 	err := command.Run(&context, client)
-	c.Assert(err, gocheck.NotNil)
-	c.Assert(err, gocheck.ErrorMatches, "^Team evergrey not found.$")
+	c.Assert(err, check.NotNil)
+	c.Assert(err, check.ErrorMatches, "^Team evergrey not found.$")
 }
 
-func (s *S) TestTeamRemoveInfo(c *gocheck.C) {
-	c.Assert((&teamRemove{}).Info(), gocheck.NotNil)
+func (s *S) TestTeamRemoveInfo(c *check.C) {
+	c.Assert((&teamRemove{}).Info(), check.NotNil)
 }
 
-func (s *S) TestTeamRemoveIsACommand(c *gocheck.C) {
+func (s *S) TestTeamRemoveIsACommand(c *check.C) {
 	var _ cmd.Command = &teamRemove{}
 }
 
-func (s *S) TestTeamUserList(c *gocheck.C) {
+func (s *S) TestTeamUserList(c *check.C) {
 	var called bool
 	var buf bytes.Buffer
 	context := cmd.Context{Args: []string{"symfonia"}, Stdout: &buf}
@@ -156,34 +156,34 @@ func (s *S) TestTeamUserList(c *gocheck.C) {
 	}
 	client := cmd.NewClient(&http.Client{Transport: &transport}, nil, manager)
 	err := command.Run(&context, client)
-	c.Assert(err, gocheck.IsNil)
-	c.Assert(called, gocheck.Equals, true)
+	c.Assert(err, check.IsNil)
+	c.Assert(called, check.Equals, true)
 	expected := `- me@tsuru.io
 - otherbody@tsuru.io
 - somebody@tsuru.io` + "\n"
-	c.Assert(buf.String(), gocheck.Equals, expected)
+	c.Assert(buf.String(), check.Equals, expected)
 }
 
-func (s *S) TestTeamUserListError(c *gocheck.C) {
+func (s *S) TestTeamUserListError(c *check.C) {
 	var buf bytes.Buffer
 	context := cmd.Context{Args: []string{"symfonia"}, Stdout: &buf}
 	transport := cmdtest.Transport{Status: http.StatusNotFound, Message: "Team not found"}
 	client := cmd.NewClient(&http.Client{Transport: &transport}, nil, manager)
 	command := teamUserList{}
 	err := command.Run(&context, client)
-	c.Assert(err, gocheck.NotNil)
-	c.Assert(err.Error(), gocheck.Equals, "Team not found")
+	c.Assert(err, check.NotNil)
+	c.Assert(err.Error(), check.Equals, "Team not found")
 }
 
-func (s *S) TestTeamUserListInfo(c *gocheck.C) {
-	c.Assert(teamUserList{}.Info(), gocheck.NotNil)
+func (s *S) TestTeamUserListInfo(c *check.C) {
+	c.Assert(teamUserList{}.Info(), check.NotNil)
 }
 
-func (s *S) TestTeamUserListIsACommand(c *gocheck.C) {
+func (s *S) TestTeamUserListIsACommand(c *check.C) {
 	var _ cmd.Command = teamUserList{}
 }
 
-func (s *S) TestTeamListRun(c *gocheck.C) {
+func (s *S) TestTeamListRun(c *check.C) {
 	var called bool
 	trans := &cmdtest.ConditionalTransport{
 		Transport: cmdtest.Transport{Message: `[{"name":"timeredbull"},{"name":"cobrateam"}]`, Status: http.StatusOK},
@@ -205,12 +205,12 @@ func (s *S) TestTeamListRun(c *gocheck.C) {
 		Stderr: &stderr,
 		Stdin:  nil,
 	}, client)
-	c.Assert(err, gocheck.IsNil)
-	c.Assert(called, gocheck.Equals, true)
-	c.Assert(stdout.String(), gocheck.Equals, expected)
+	c.Assert(err, check.IsNil)
+	c.Assert(called, check.Equals, true)
+	c.Assert(stdout.String(), check.Equals, expected)
 }
 
-func (s *S) TestTeamListRunWithNoContent(c *gocheck.C) {
+func (s *S) TestTeamListRunWithNoContent(c *check.C) {
 	client := cmd.NewClient(&http.Client{Transport: &cmdtest.Transport{Message: "", Status: http.StatusNoContent}}, nil, manager)
 	var stdout, stderr bytes.Buffer
 	err := (&teamList{}).Run(&cmd.Context{
@@ -219,19 +219,19 @@ func (s *S) TestTeamListRunWithNoContent(c *gocheck.C) {
 		Stderr: &stderr,
 		Stdin:  nil,
 	}, client)
-	c.Assert(err, gocheck.IsNil)
-	c.Assert(stdout.String(), gocheck.Equals, "")
+	c.Assert(err, check.IsNil)
+	c.Assert(stdout.String(), check.Equals, "")
 }
 
-func (s *S) TestTeamListInfo(c *gocheck.C) {
-	c.Assert((&teamList{}).Info(), gocheck.NotNil)
+func (s *S) TestTeamListInfo(c *check.C) {
+	c.Assert((&teamList{}).Info(), check.NotNil)
 }
 
-func (s *S) TestTeamListIsACommand(c *gocheck.C) {
+func (s *S) TestTeamListIsACommand(c *check.C) {
 	var _ cmd.Command = &teamList{}
 }
 
-func (s *S) TestUserCreateShouldNotDependOnTsuruTokenFile(c *gocheck.C) {
+func (s *S) TestUserCreateShouldNotDependOnTsuruTokenFile(c *check.C) {
 	rfs := &fstest.RecordingFs{}
 	f, _ := rfs.Create(cmd.JoinWithUserDir(".tsuru_target"))
 	f.Write([]byte("http://localhost"))
@@ -252,11 +252,11 @@ func (s *S) TestUserCreateShouldNotDependOnTsuruTokenFile(c *gocheck.C) {
 	client := cmd.NewClient(&http.Client{Transport: &cmdtest.Transport{Message: "", Status: http.StatusCreated}}, nil, manager)
 	command := userCreate{}
 	err := command.Run(&context, client)
-	c.Assert(err, gocheck.IsNil)
-	c.Assert(stdout.String(), gocheck.Equals, expected)
+	c.Assert(err, check.IsNil)
+	c.Assert(stdout.String(), check.Equals, expected)
 }
 
-func (s *S) TestUserCreateReturnErrorIfPasswordsDontMatch(c *gocheck.C) {
+func (s *S) TestUserCreateReturnErrorIfPasswordsDontMatch(c *check.C) {
 	reader := strings.NewReader("foo123\nfoo1234\n")
 	var stdout, stderr bytes.Buffer
 	context := cmd.Context{
@@ -268,11 +268,11 @@ func (s *S) TestUserCreateReturnErrorIfPasswordsDontMatch(c *gocheck.C) {
 	client := cmd.NewClient(&http.Client{Transport: &cmdtest.Transport{Message: "", Status: http.StatusCreated}}, nil, manager)
 	command := userCreate{}
 	err := command.Run(&context, client)
-	c.Assert(err, gocheck.NotNil)
-	c.Assert(err, gocheck.ErrorMatches, "^Passwords didn't match.$")
+	c.Assert(err, check.NotNil)
+	c.Assert(err, check.ErrorMatches, "^Passwords didn't match.$")
 }
 
-func (s *S) TestUserCreate(c *gocheck.C) {
+func (s *S) TestUserCreate(c *check.C) {
 	expected := "Password: \nConfirm: \n" + `User "foo@foo.com" successfully created!` + "\n"
 	var stdout, stderr bytes.Buffer
 	context := cmd.Context{
@@ -284,11 +284,11 @@ func (s *S) TestUserCreate(c *gocheck.C) {
 	client := cmd.NewClient(&http.Client{Transport: &cmdtest.Transport{Message: "", Status: http.StatusCreated}}, nil, manager)
 	command := userCreate{}
 	err := command.Run(&context, client)
-	c.Assert(err, gocheck.IsNil)
-	c.Assert(stdout.String(), gocheck.Equals, expected)
+	c.Assert(err, check.IsNil)
+	c.Assert(stdout.String(), check.Equals, expected)
 }
 
-func (s *S) TestUserCreateShouldReturnErrorIfThePasswordIsNotGiven(c *gocheck.C) {
+func (s *S) TestUserCreateShouldReturnErrorIfThePasswordIsNotGiven(c *check.C) {
 	var stdout, stderr bytes.Buffer
 	context := cmd.Context{
 		Args:   []string{"foo@foo.com"},
@@ -298,11 +298,11 @@ func (s *S) TestUserCreateShouldReturnErrorIfThePasswordIsNotGiven(c *gocheck.C)
 	}
 	command := userCreate{}
 	err := command.Run(&context, nil)
-	c.Assert(err, gocheck.NotNil)
-	c.Assert(err, gocheck.ErrorMatches, "^You must provide the password!$")
+	c.Assert(err, check.NotNil)
+	c.Assert(err, check.ErrorMatches, "^You must provide the password!$")
 }
 
-func (s *S) TestUserCreateNotFound(c *gocheck.C) {
+func (s *S) TestUserCreateNotFound(c *check.C) {
 	transport := cmdtest.Transport{
 		Message: "Not found",
 		Status:  http.StatusNotFound,
@@ -318,11 +318,11 @@ func (s *S) TestUserCreateNotFound(c *gocheck.C) {
 	client := cmd.NewClient(&http.Client{Transport: &transport}, nil, manager)
 	command := userCreate{}
 	err := command.Run(&context, client)
-	c.Assert(err, gocheck.NotNil)
-	c.Assert(err.Error(), gocheck.Equals, "User creation is disabled.")
+	c.Assert(err, check.NotNil)
+	c.Assert(err.Error(), check.Equals, "User creation is disabled.")
 }
 
-func (s *S) TestUserCreateMethodNotAllowed(c *gocheck.C) {
+func (s *S) TestUserCreateMethodNotAllowed(c *check.C) {
 	transport := cmdtest.Transport{
 		Message: "Not found",
 		Status:  http.StatusMethodNotAllowed,
@@ -338,15 +338,15 @@ func (s *S) TestUserCreateMethodNotAllowed(c *gocheck.C) {
 	client := cmd.NewClient(&http.Client{Transport: &transport}, nil, manager)
 	command := userCreate{}
 	err := command.Run(&context, client)
-	c.Assert(err, gocheck.NotNil)
-	c.Assert(err.Error(), gocheck.Equals, "User creation is disabled.")
+	c.Assert(err, check.NotNil)
+	c.Assert(err.Error(), check.Equals, "User creation is disabled.")
 }
 
-func (s *S) TestUserCreateInfo(c *gocheck.C) {
-	c.Assert((&userCreate{}).Info(), gocheck.NotNil)
+func (s *S) TestUserCreateInfo(c *check.C) {
+	c.Assert((&userCreate{}).Info(), check.NotNil)
 }
 
-func (s *S) TestUserRemove(c *gocheck.C) {
+func (s *S) TestUserRemove(c *check.C) {
 	rfs := &fstest.RecordingFs{}
 	f, _ := rfs.Create(cmd.JoinWithUserDir(".tsuru_target"))
 	f.Write([]byte("http://tsuru.io"))
@@ -373,13 +373,13 @@ func (s *S) TestUserRemove(c *gocheck.C) {
 	client := cmd.NewClient(&http.Client{Transport: &trans}, nil, manager)
 	command := userRemove{}
 	err := command.Run(&context, client)
-	c.Assert(err, gocheck.IsNil)
-	c.Assert(called, gocheck.Equals, true)
-	c.Assert(buf.String(), gocheck.Equals, "Are you sure you want to remove your user from tsuru? (y/n) User successfully removed.\n")
-	c.Assert(rfs.HasAction("remove "+cmd.JoinWithUserDir(".tsuru_token")), gocheck.Equals, true)
+	c.Assert(err, check.IsNil)
+	c.Assert(called, check.Equals, true)
+	c.Assert(buf.String(), check.Equals, "Are you sure you want to remove your user from tsuru? (y/n) User successfully removed.\n")
+	c.Assert(rfs.HasAction("remove "+cmd.JoinWithUserDir(".tsuru_token")), check.Equals, true)
 }
 
-func (s *S) TestUserRemoveWithoutConfirmation(c *gocheck.C) {
+func (s *S) TestUserRemoveWithoutConfirmation(c *check.C) {
 	var buf bytes.Buffer
 	context := cmd.Context{
 		Stdout: &buf,
@@ -387,27 +387,27 @@ func (s *S) TestUserRemoveWithoutConfirmation(c *gocheck.C) {
 	}
 	command := userRemove{}
 	err := command.Run(&context, nil)
-	c.Assert(err, gocheck.IsNil)
-	c.Assert(buf.String(), gocheck.Equals, "Are you sure you want to remove your user from tsuru? (y/n) Abort.\n")
+	c.Assert(err, check.IsNil)
+	c.Assert(buf.String(), check.Equals, "Are you sure you want to remove your user from tsuru? (y/n) Abort.\n")
 }
 
-func (s *S) TestUserRemoveWithRequestError(c *gocheck.C) {
+func (s *S) TestUserRemoveWithRequestError(c *check.C) {
 	client := cmd.NewClient(&http.Client{Transport: &cmdtest.Transport{Message: "User not found.", Status: http.StatusNotFound}}, nil, manager)
 	command := userRemove{}
 	err := command.Run(&cmd.Context{Stdout: new(bytes.Buffer), Stdin: strings.NewReader("y\n")}, client)
-	c.Assert(err, gocheck.NotNil)
-	c.Assert(err, gocheck.ErrorMatches, "^User not found.$")
+	c.Assert(err, check.NotNil)
+	c.Assert(err, check.ErrorMatches, "^User not found.$")
 }
 
-func (s *S) TestUserRemoveInfo(c *gocheck.C) {
-	c.Assert((&userRemove{}).Info(), gocheck.NotNil)
+func (s *S) TestUserRemoveInfo(c *check.C) {
+	c.Assert((&userRemove{}).Info(), check.NotNil)
 }
 
-func (s *S) TestUserRemoveIsACommand(c *gocheck.C) {
+func (s *S) TestUserRemoveIsACommand(c *check.C) {
 	var _ cmd.Command = &userRemove{}
 }
 
-func (s *S) TestChangePassword(c *gocheck.C) {
+func (s *S) TestChangePassword(c *check.C) {
 	var (
 		buf    bytes.Buffer
 		called bool
@@ -433,13 +433,13 @@ func (s *S) TestChangePassword(c *gocheck.C) {
 	client := cmd.NewClient(&http.Client{Transport: &trans}, nil, manager)
 	command := changePassword{}
 	err := command.Run(&context, client)
-	c.Assert(err, gocheck.IsNil)
-	c.Assert(called, gocheck.Equals, true)
+	c.Assert(err, check.IsNil)
+	c.Assert(called, check.Equals, true)
 	expected := "Current password: \nNew password: \nConfirm: \nPassword successfully updated!\n"
-	c.Assert(buf.String(), gocheck.Equals, expected)
+	c.Assert(buf.String(), check.Equals, expected)
 }
 
-func (s *S) TestChangePasswordWrongConfirmation(c *gocheck.C) {
+func (s *S) TestChangePasswordWrongConfirmation(c *check.C) {
 	var buf bytes.Buffer
 	stdin := strings.NewReader("gopher\nblood\nsugar\n")
 	context := cmd.Context{
@@ -449,41 +449,41 @@ func (s *S) TestChangePasswordWrongConfirmation(c *gocheck.C) {
 	}
 	command := changePassword{}
 	err := command.Run(&context, nil)
-	c.Assert(err, gocheck.NotNil)
-	c.Assert(err.Error(), gocheck.Equals, "New password and password confirmation didn't match.")
+	c.Assert(err, check.NotNil)
+	c.Assert(err.Error(), check.Equals, "New password and password confirmation didn't match.")
 }
 
-func (s *S) TestChangePasswordInfo(c *gocheck.C) {
+func (s *S) TestChangePasswordInfo(c *check.C) {
 	command := changePassword{}
-	c.Assert(command.Info(), gocheck.NotNil)
+	c.Assert(command.Info(), check.NotNil)
 }
 
-func (s *S) TestChangePasswordIsACommand(c *gocheck.C) {
+func (s *S) TestChangePasswordIsACommand(c *check.C) {
 	var _ cmd.Command = &changePassword{}
 }
 
-func (s *S) TestPasswordFromReaderUsingFile(c *gocheck.C) {
+func (s *S) TestPasswordFromReaderUsingFile(c *check.C) {
 	tmpdir, err := filepath.EvalSymlinks(os.TempDir())
 	filename := path.Join(tmpdir, "password-reader.txt")
-	c.Assert(err, gocheck.IsNil)
+	c.Assert(err, check.IsNil)
 	file, err := os.Create(filename)
-	c.Assert(err, gocheck.IsNil)
+	c.Assert(err, check.IsNil)
 	defer os.Remove(filename)
 	file.WriteString("hello")
 	file.Seek(0, 0)
 	password, err := passwordFromReader(file)
-	c.Assert(err, gocheck.IsNil)
-	c.Assert(password, gocheck.Equals, "hello")
+	c.Assert(err, check.IsNil)
+	c.Assert(password, check.Equals, "hello")
 }
 
-func (s *S) TestPasswordFromReaderUsingStringsReader(c *gocheck.C) {
+func (s *S) TestPasswordFromReaderUsingStringsReader(c *check.C) {
 	reader := strings.NewReader("abcd\n")
 	password, err := passwordFromReader(reader)
-	c.Assert(err, gocheck.IsNil)
-	c.Assert(password, gocheck.Equals, "abcd")
+	c.Assert(err, check.IsNil)
+	c.Assert(password, check.Equals, "abcd")
 }
 
-func (s *S) TestResetPassword(c *gocheck.C) {
+func (s *S) TestResetPassword(c *check.C) {
 	var (
 		buf    bytes.Buffer
 		called bool
@@ -503,15 +503,15 @@ func (s *S) TestResetPassword(c *gocheck.C) {
 	command := resetPassword{}
 	client := cmd.NewClient(&http.Client{Transport: &trans}, nil, manager)
 	err := command.Run(&context, client)
-	c.Assert(err, gocheck.IsNil)
+	c.Assert(err, check.IsNil)
 	expected := `You've successfully started the password reset process.
 
 Please check your email.` + "\n"
-	c.Assert(buf.String(), gocheck.Equals, expected)
-	c.Assert(called, gocheck.Equals, true)
+	c.Assert(buf.String(), check.Equals, expected)
+	c.Assert(called, check.Equals, true)
 }
 
-func (s *S) TestResetPasswordStepTwo(c *gocheck.C) {
+func (s *S) TestResetPasswordStepTwo(c *check.C) {
 	var (
 		buf    bytes.Buffer
 		called bool
@@ -532,44 +532,44 @@ func (s *S) TestResetPasswordStepTwo(c *gocheck.C) {
 	command.Flags().Parse(true, []string{"-t", "secret"})
 	client := cmd.NewClient(&http.Client{Transport: &trans}, nil, manager)
 	err := command.Run(&context, client)
-	c.Assert(err, gocheck.IsNil)
+	c.Assert(err, check.IsNil)
 	expected := `Your password has been reset and mailed to you.
 
 Please check your email.` + "\n"
-	c.Assert(buf.String(), gocheck.Equals, expected)
-	c.Assert(called, gocheck.Equals, true)
+	c.Assert(buf.String(), check.Equals, expected)
+	c.Assert(called, check.Equals, true)
 }
 
-func (s *S) TestResetPasswordInfo(c *gocheck.C) {
-	c.Assert((&resetPassword{}).Info(), gocheck.NotNil)
+func (s *S) TestResetPasswordInfo(c *check.C) {
+	c.Assert((&resetPassword{}).Info(), check.NotNil)
 }
 
-func (s *S) TestResetPasswordFlags(c *gocheck.C) {
+func (s *S) TestResetPasswordFlags(c *check.C) {
 	command := resetPassword{}
 	flagset := command.Flags()
-	c.Assert(flagset, gocheck.NotNil)
+	c.Assert(flagset, check.NotNil)
 	err := flagset.Parse(false, []string{"-t", "token123"})
-	c.Assert(err, gocheck.IsNil)
-	c.Assert(command.token, gocheck.Equals, "token123")
+	c.Assert(err, check.IsNil)
+	c.Assert(command.token, check.Equals, "token123")
 	token := flagset.Lookup("token")
-	c.Assert(token, gocheck.NotNil)
-	c.Check(token.Name, gocheck.Equals, "token")
-	c.Check(token.Usage, gocheck.Equals, "Token to reset the password")
-	c.Check(token.Value.String(), gocheck.Equals, "token123")
-	c.Check(token.DefValue, gocheck.Equals, "")
+	c.Assert(token, check.NotNil)
+	c.Check(token.Name, check.Equals, "token")
+	c.Check(token.Usage, check.Equals, "Token to reset the password")
+	c.Check(token.Value.String(), check.Equals, "token123")
+	c.Check(token.DefValue, check.Equals, "")
 	stoken := flagset.Lookup("t")
-	c.Assert(stoken, gocheck.NotNil)
-	c.Check(stoken.Name, gocheck.Equals, "t")
-	c.Check(stoken.Usage, gocheck.Equals, "Token to reset the password")
-	c.Check(stoken.Value.String(), gocheck.Equals, "token123")
-	c.Check(stoken.DefValue, gocheck.Equals, "")
+	c.Assert(stoken, check.NotNil)
+	c.Check(stoken.Name, check.Equals, "t")
+	c.Check(stoken.Usage, check.Equals, "Token to reset the password")
+	c.Check(stoken.Value.String(), check.Equals, "token123")
+	c.Check(stoken.DefValue, check.Equals, "")
 }
 
-func (s *S) TestResetPasswordIsAFlaggedCommand(c *gocheck.C) {
+func (s *S) TestResetPasswordIsAFlaggedCommand(c *check.C) {
 	var _ cmd.FlaggedCommand = &resetPassword{}
 }
 
-func (s *S) TestShowAPITokenRun(c *gocheck.C) {
+func (s *S) TestShowAPITokenRun(c *check.C) {
 	var called bool
 	trans := &cmdtest.ConditionalTransport{
 		Transport: cmdtest.Transport{Message: `"23iou32nd3i2udnu23jd"`, Status: http.StatusOK},
@@ -588,12 +588,12 @@ func (s *S) TestShowAPITokenRun(c *gocheck.C) {
 		Stderr: &stderr,
 		Stdin:  nil,
 	}, client)
-	c.Assert(err, gocheck.IsNil)
-	c.Assert(called, gocheck.Equals, true)
-	c.Assert(stdout.String(), gocheck.Equals, expected)
+	c.Assert(err, check.IsNil)
+	c.Assert(called, check.Equals, true)
+	c.Assert(stdout.String(), check.Equals, expected)
 }
 
-func (s *S) TestShowAPITokenRunWithNoContent(c *gocheck.C) {
+func (s *S) TestShowAPITokenRunWithNoContent(c *check.C) {
 	client := cmd.NewClient(&http.Client{Transport: &cmdtest.Transport{Message: "", Status: http.StatusNoContent}}, nil, manager)
 	var stdout, stderr bytes.Buffer
 	err := (&showAPIToken{}).Run(&cmd.Context{
@@ -602,19 +602,19 @@ func (s *S) TestShowAPITokenRunWithNoContent(c *gocheck.C) {
 		Stderr: &stderr,
 		Stdin:  nil,
 	}, client)
-	c.Assert(err, gocheck.IsNil)
-	c.Assert(stdout.String(), gocheck.Equals, "")
+	c.Assert(err, check.IsNil)
+	c.Assert(stdout.String(), check.Equals, "")
 }
 
-func (s *S) TestShowAPITokenInfo(c *gocheck.C) {
-	c.Assert((&showAPIToken{}).Info(), gocheck.NotNil)
+func (s *S) TestShowAPITokenInfo(c *check.C) {
+	c.Assert((&showAPIToken{}).Info(), check.NotNil)
 }
 
-func (s *S) TestTShowAPITokenIsACommand(c *gocheck.C) {
+func (s *S) TestTShowAPITokenIsACommand(c *check.C) {
 	var _ cmd.Command = &showAPIToken{}
 }
 
-func (s *S) TestRegenerateAPITokenRun(c *gocheck.C) {
+func (s *S) TestRegenerateAPITokenRun(c *check.C) {
 	var called bool
 	trans := &cmdtest.ConditionalTransport{
 		Transport: cmdtest.Transport{Message: `"23iou32nd3i2udnu23jd"`, Status: http.StatusOK},
@@ -633,12 +633,12 @@ func (s *S) TestRegenerateAPITokenRun(c *gocheck.C) {
 		Stderr: &stderr,
 		Stdin:  nil,
 	}, client)
-	c.Assert(err, gocheck.IsNil)
-	c.Assert(called, gocheck.Equals, true)
-	c.Assert(stdout.String(), gocheck.Equals, expected)
+	c.Assert(err, check.IsNil)
+	c.Assert(called, check.Equals, true)
+	c.Assert(stdout.String(), check.Equals, expected)
 }
 
-func (s *S) TestRegenerateAPITokenRunWithNoContent(c *gocheck.C) {
+func (s *S) TestRegenerateAPITokenRunWithNoContent(c *check.C) {
 	client := cmd.NewClient(&http.Client{Transport: &cmdtest.Transport{Message: "", Status: http.StatusNoContent}}, nil, manager)
 	var stdout, stderr bytes.Buffer
 	err := (&regenerateAPIToken{}).Run(&cmd.Context{
@@ -647,14 +647,14 @@ func (s *S) TestRegenerateAPITokenRunWithNoContent(c *gocheck.C) {
 		Stderr: &stderr,
 		Stdin:  nil,
 	}, client)
-	c.Assert(err, gocheck.IsNil)
-	c.Assert(stdout.String(), gocheck.Equals, "")
+	c.Assert(err, check.IsNil)
+	c.Assert(stdout.String(), check.Equals, "")
 }
 
-func (s *S) TestRegenerateAPITokenInfo(c *gocheck.C) {
-	c.Assert((&regenerateAPIToken{}).Info(), gocheck.NotNil)
+func (s *S) TestRegenerateAPITokenInfo(c *check.C) {
+	c.Assert((&regenerateAPIToken{}).Info(), check.NotNil)
 }
 
-func (s *S) TestTRegenerateAPITokenIsACommand(c *gocheck.C) {
+func (s *S) TestTRegenerateAPITokenIsACommand(c *check.C) {
 	var _ cmd.Command = &regenerateAPIToken{}
 }

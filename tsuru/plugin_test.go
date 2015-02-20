@@ -15,14 +15,14 @@ import (
 	"github.com/tsuru/tsuru/cmd"
 	"github.com/tsuru/tsuru/exec/exectest"
 	"github.com/tsuru/tsuru/fs/fstest"
-	"launchpad.net/gocheck"
+	"gopkg.in/check.v1"
 )
 
-func (s *S) TestPluginInstallInfo(c *gocheck.C) {
-	c.Assert(pluginInstall{}.Info(), gocheck.NotNil)
+func (s *S) TestPluginInstallInfo(c *check.C) {
+	c.Assert(pluginInstall{}.Info(), check.NotNil)
 }
 
-func (s *S) TestPluginInstall(c *gocheck.C) {
+func (s *S) TestPluginInstall(c *check.C) {
 	ts := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		fmt.Fprintln(w, "fakeplugin")
 	}))
@@ -40,31 +40,31 @@ func (s *S) TestPluginInstall(c *gocheck.C) {
 	client := cmd.NewClient(nil, nil, manager)
 	command := pluginInstall{}
 	err := command.Run(&context, client)
-	c.Assert(err, gocheck.IsNil)
+	c.Assert(err, check.IsNil)
 	pluginsPath := cmd.JoinWithUserDir(".tsuru", "plugins")
 	hasAction := rfs.HasAction(fmt.Sprintf("mkdirall %s with mode 0755", pluginsPath))
-	c.Assert(hasAction, gocheck.Equals, true)
+	c.Assert(hasAction, check.Equals, true)
 	pluginPath := cmd.JoinWithUserDir(".tsuru", "plugins", "myplugin")
 	hasAction = rfs.HasAction(fmt.Sprintf("openfile %s with mode 0755", pluginPath))
-	c.Assert(hasAction, gocheck.Equals, true)
+	c.Assert(hasAction, check.Equals, true)
 	f, err := rfs.Open(pluginPath)
-	c.Assert(err, gocheck.IsNil)
+	c.Assert(err, check.IsNil)
 	data, err := ioutil.ReadAll(f)
-	c.Assert(err, gocheck.IsNil)
-	c.Assert("fakeplugin\n", gocheck.Equals, string(data))
+	c.Assert(err, check.IsNil)
+	c.Assert("fakeplugin\n", check.Equals, string(data))
 	expected := `Plugin "myplugin" successfully installed!` + "\n"
-	c.Assert(expected, gocheck.Equals, stdout.String())
+	c.Assert(expected, check.Equals, stdout.String())
 }
 
-func (s *S) TestPluginInstallIsACommand(c *gocheck.C) {
+func (s *S) TestPluginInstallIsACommand(c *check.C) {
 	var _ cmd.Command = &pluginInstall{}
 }
 
-func (s *S) TestPluginInfo(c *gocheck.C) {
-	c.Assert(plugin{}.Info(), gocheck.NotNil)
+func (s *S) TestPluginInfo(c *check.C) {
+	c.Assert(plugin{}.Info(), check.NotNil)
 }
 
-func (s *S) TestPlugin(c *gocheck.C) {
+func (s *S) TestPlugin(c *check.C) {
 	fexec := exectest.FakeExecutor{
 		Output: map[string][][]byte{
 			"a b": {[]byte("hello world")},
@@ -83,16 +83,16 @@ func (s *S) TestPlugin(c *gocheck.C) {
 	client := cmd.NewClient(nil, nil, manager)
 	command := plugin{}
 	err := command.Run(&context, client)
-	c.Assert(err, gocheck.IsNil)
+	c.Assert(err, check.IsNil)
 	pluginPath := cmd.JoinWithUserDir(".tsuru", "plugins", "myplugin")
-	c.Assert(fexec.ExecutedCmd(pluginPath, []string{"a", "b"}), gocheck.Equals, true)
-	c.Assert(buf.String(), gocheck.Equals, "hello world")
+	c.Assert(fexec.ExecutedCmd(pluginPath, []string{"a", "b"}), check.Equals, true)
+	c.Assert(buf.String(), check.Equals, "hello world")
 	commands := fexec.GetCommands(pluginPath)
-	c.Assert(commands, gocheck.HasLen, 1)
+	c.Assert(commands, check.HasLen, 1)
 	target, err := cmd.ReadTarget()
-	c.Assert(err, gocheck.IsNil)
+	c.Assert(err, check.IsNil)
 	token, err := cmd.ReadToken()
-	c.Assert(err, gocheck.IsNil)
+	c.Assert(err, check.IsNil)
 	envs := os.Environ()
 	tsuruEnvs := []string{
 		fmt.Sprintf("TSURU_TARGET=%s/", target),
@@ -100,10 +100,10 @@ func (s *S) TestPlugin(c *gocheck.C) {
 		"TSURU_PLUGIN_NAME=myplugin",
 	}
 	envs = append(envs, tsuruEnvs...)
-	c.Assert(commands[0].GetEnvs(), gocheck.DeepEquals, envs)
+	c.Assert(commands[0].GetEnvs(), check.DeepEquals, envs)
 }
 
-func (s *S) TestPluginWithArgs(c *gocheck.C) {
+func (s *S) TestPluginWithArgs(c *check.C) {
 	fexec := exectest.FakeExecutor{}
 	execut = &fexec
 	defer func() {
@@ -115,20 +115,20 @@ func (s *S) TestPluginWithArgs(c *gocheck.C) {
 	client := cmd.NewClient(nil, nil, manager)
 	command := plugin{}
 	err := command.Run(&context, client)
-	c.Assert(err, gocheck.IsNil)
+	c.Assert(err, check.IsNil)
 	pluginPath := cmd.JoinWithUserDir(".tsuru", "plugins", "myplugin")
-	c.Assert(fexec.ExecutedCmd(pluginPath, []string{"ble", "bla"}), gocheck.Equals, true)
+	c.Assert(fexec.ExecutedCmd(pluginPath, []string{"ble", "bla"}), check.Equals, true)
 }
 
-func (s *S) TestPluginIsACommand(c *gocheck.C) {
+func (s *S) TestPluginIsACommand(c *check.C) {
 	var _ cmd.Command = &plugin{}
 }
 
-func (s *S) TestPluginRemoveInfo(c *gocheck.C) {
-	c.Assert(pluginRemove{}.Info(), gocheck.NotNil)
+func (s *S) TestPluginRemoveInfo(c *check.C) {
+	c.Assert(pluginRemove{}.Info(), check.NotNil)
 }
 
-func (s *S) TestPluginRemove(c *gocheck.C) {
+func (s *S) TestPluginRemove(c *check.C) {
 	rfs := fstest.RecordingFs{}
 	fsystem = &rfs
 	defer func() {
@@ -142,22 +142,22 @@ func (s *S) TestPluginRemove(c *gocheck.C) {
 	client := cmd.NewClient(nil, nil, manager)
 	command := pluginRemove{}
 	err := command.Run(&context, client)
-	c.Assert(err, gocheck.IsNil)
+	c.Assert(err, check.IsNil)
 	pluginPath := cmd.JoinWithUserDir(".tsuru", "plugins", "myplugin")
 	hasAction := rfs.HasAction(fmt.Sprintf("remove %s", pluginPath))
-	c.Assert(hasAction, gocheck.Equals, true)
+	c.Assert(hasAction, check.Equals, true)
 	expected := `Plugin "myplugin" successfully removed!` + "\n"
-	c.Assert(expected, gocheck.Equals, stdout.String())
+	c.Assert(expected, check.Equals, stdout.String())
 }
 
-func (s *S) TestPluginRemoveIsACommand(c *gocheck.C) {
+func (s *S) TestPluginRemoveIsACommand(c *check.C) {
 	var _ cmd.Command = &pluginRemove{}
 }
 
-func (s *S) TestPluginListInfo(c *gocheck.C) {
-	c.Assert(pluginList{}.Info(), gocheck.NotNil)
+func (s *S) TestPluginListInfo(c *check.C) {
+	c.Assert(pluginList{}.Info(), check.NotNil)
 }
 
-func (s *S) TestPluginListIsACommand(c *gocheck.C) {
+func (s *S) TestPluginListIsACommand(c *check.C) {
 	var _ cmd.Command = &pluginList{}
 }

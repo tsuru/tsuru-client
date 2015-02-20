@@ -14,7 +14,7 @@ import (
 	"github.com/tsuru/tsuru/cmd"
 	"github.com/tsuru/tsuru/cmd/cmdtest"
 	"github.com/tsuru/tsuru/io"
-	"launchpad.net/gocheck"
+	"gopkg.in/check.v1"
 )
 
 type infoTransport struct{}
@@ -34,7 +34,7 @@ func (t *infoTransport) RoundTrip(req *http.Request) (resp *http.Response, err e
 	return resp, nil
 }
 
-func (s *S) TestServiceList(c *gocheck.C) {
+func (s *S) TestServiceList(c *check.C) {
 	var stdout, stderr bytes.Buffer
 	output := `[{"service": "mysql", "instances": ["mysql01", "mysql02"]}, {"service": "oracle", "instances": []}]`
 	expectedPrefix := `+---------+------------------+
@@ -54,14 +54,14 @@ func (s *S) TestServiceList(c *gocheck.C) {
 	}
 	client := cmd.NewClient(&http.Client{Transport: trans}, nil, manager)
 	err := (&serviceList{}).Run(&ctx, client)
-	c.Assert(err, gocheck.IsNil)
+	c.Assert(err, check.IsNil)
 	table := stdout.String()
-	c.Assert(table, gocheck.Matches, "^"+expectedPrefix+".*")
-	c.Assert(table, gocheck.Matches, "^.*"+lineMysql+".*")
-	c.Assert(table, gocheck.Matches, "^.*"+lineOracle+".*")
+	c.Assert(table, check.Matches, "^"+expectedPrefix+".*")
+	c.Assert(table, check.Matches, "^.*"+lineMysql+".*")
+	c.Assert(table, check.Matches, "^.*"+lineOracle+".*")
 }
 
-func (s *S) TestServiceListWithEmptyResponse(c *gocheck.C) {
+func (s *S) TestServiceListWithEmptyResponse(c *check.C) {
 	var stdout, stderr bytes.Buffer
 	output := "[]"
 	expected := ""
@@ -78,20 +78,20 @@ func (s *S) TestServiceListWithEmptyResponse(c *gocheck.C) {
 	}
 	client := cmd.NewClient(&http.Client{Transport: trans}, nil, manager)
 	err := (&serviceList{}).Run(&ctx, client)
-	c.Assert(err, gocheck.IsNil)
-	c.Assert(stdout.String(), gocheck.Equals, expected)
+	c.Assert(err, check.IsNil)
+	c.Assert(stdout.String(), check.Equals, expected)
 }
 
-func (s *S) TestInfoServiceList(c *gocheck.C) {
+func (s *S) TestInfoServiceList(c *check.C) {
 	command := &serviceList{}
-	c.Assert(command.Info(), gocheck.NotNil)
+	c.Assert(command.Info(), check.NotNil)
 }
 
-func (s *S) TestServiceListShouldBeCommand(c *gocheck.C) {
+func (s *S) TestServiceListShouldBeCommand(c *check.C) {
 	var _ cmd.Command = &serviceList{}
 }
 
-func (s *S) TestServiceBind(c *gocheck.C) {
+func (s *S) TestServiceBind(c *check.C) {
 	var (
 		called         bool
 		stdout, stderr bytes.Buffer
@@ -104,7 +104,7 @@ func (s *S) TestServiceBind(c *gocheck.C) {
 	expectedOut := `["DATABASE_HOST","DATABASE_USER","DATABASE_PASSWORD"]`
 	msg := io.SimpleJsonMessage{Message: expectedOut}
 	result, err := json.Marshal(msg)
-	c.Assert(err, gocheck.IsNil)
+	c.Assert(err, check.IsNil)
 	trans := &cmdtest.ConditionalTransport{
 		Transport: cmdtest.Transport{Message: string(result), Status: http.StatusOK},
 		CondFunc: func(req *http.Request) bool {
@@ -116,12 +116,12 @@ func (s *S) TestServiceBind(c *gocheck.C) {
 	command := serviceBind{}
 	command.Flags().Parse(true, []string{"-a", "g1"})
 	err = command.Run(&ctx, client)
-	c.Assert(err, gocheck.IsNil)
-	c.Assert(called, gocheck.Equals, true)
-	c.Assert(stdout.String(), gocheck.Equals, expectedOut)
+	c.Assert(err, check.IsNil)
+	c.Assert(called, check.Equals, true)
+	c.Assert(stdout.String(), check.Equals, expectedOut)
 }
 
-func (s *S) TestServiceBindWithoutFlag(c *gocheck.C) {
+func (s *S) TestServiceBindWithoutFlag(c *check.C) {
 	var (
 		called         bool
 		stdout, stderr bytes.Buffer
@@ -134,7 +134,7 @@ func (s *S) TestServiceBindWithoutFlag(c *gocheck.C) {
 	expectedOut := `["DATABASE_HOST","DATABASE_USER","DATABASE_PASSWORD"]`
 	msg := io.SimpleJsonMessage{Message: expectedOut}
 	result, err := json.Marshal(msg)
-	c.Assert(err, gocheck.IsNil)
+	c.Assert(err, check.IsNil)
 	trans := &cmdtest.ConditionalTransport{
 		Transport: cmdtest.Transport{
 			Message: string(result),
@@ -148,12 +148,12 @@ func (s *S) TestServiceBindWithoutFlag(c *gocheck.C) {
 	client := cmd.NewClient(&http.Client{Transport: trans}, nil, manager)
 	fake := &cmdtest.FakeGuesser{Name: "ge"}
 	err = (&serviceBind{cmd.GuessingCommand{G: fake}}).Run(&ctx, client)
-	c.Assert(err, gocheck.IsNil)
-	c.Assert(called, gocheck.Equals, true)
-	c.Assert(stdout.String(), gocheck.Equals, expectedOut)
+	c.Assert(err, check.IsNil)
+	c.Assert(called, check.Equals, true)
+	c.Assert(stdout.String(), check.Equals, expectedOut)
 }
 
-func (s *S) TestServiceBindWithoutEnvironmentVariables(c *gocheck.C) {
+func (s *S) TestServiceBindWithoutEnvironmentVariables(c *check.C) {
 	var stdout, stderr bytes.Buffer
 	ctx := cmd.Context{
 		Args:   []string{"my-mysql"},
@@ -163,7 +163,7 @@ func (s *S) TestServiceBindWithoutEnvironmentVariables(c *gocheck.C) {
 	expectedOut := `something`
 	msg := io.SimpleJsonMessage{Message: expectedOut}
 	result, err := json.Marshal(msg)
-	c.Assert(err, gocheck.IsNil)
+	c.Assert(err, check.IsNil)
 	trans := &cmdtest.ConditionalTransport{
 		Transport: cmdtest.Transport{Message: string(result), Status: http.StatusOK},
 		CondFunc: func(req *http.Request) bool {
@@ -174,11 +174,11 @@ func (s *S) TestServiceBindWithoutEnvironmentVariables(c *gocheck.C) {
 	command := serviceBind{}
 	command.Flags().Parse(true, []string{"-a", "g1"})
 	err = command.Run(&ctx, client)
-	c.Assert(err, gocheck.IsNil)
-	c.Assert(stdout.String(), gocheck.Equals, expectedOut)
+	c.Assert(err, check.IsNil)
+	c.Assert(stdout.String(), check.Equals, expectedOut)
 }
 
-func (s *S) TestServiceBindWithRequestFailure(c *gocheck.C) {
+func (s *S) TestServiceBindWithRequestFailure(c *check.C) {
 	var stdout, stderr bytes.Buffer
 	ctx := cmd.Context{
 		Args:   []string{"my-mysql"},
@@ -191,19 +191,19 @@ func (s *S) TestServiceBindWithRequestFailure(c *gocheck.C) {
 	command := serviceBind{}
 	command.Flags().Parse(true, []string{"-a", "g1"})
 	err := command.Run(&ctx, client)
-	c.Assert(err, gocheck.NotNil)
-	c.Assert(err.Error(), gocheck.Equals, trans.Message)
+	c.Assert(err, check.NotNil)
+	c.Assert(err.Error(), check.Equals, trans.Message)
 }
 
-func (s *S) TestServiceBindInfo(c *gocheck.C) {
-	c.Assert((&serviceBind{}).Info(), gocheck.NotNil)
+func (s *S) TestServiceBindInfo(c *check.C) {
+	c.Assert((&serviceBind{}).Info(), check.NotNil)
 }
 
-func (s *S) TestServiceBindIsAFlaggedCommand(c *gocheck.C) {
+func (s *S) TestServiceBindIsAFlaggedCommand(c *check.C) {
 	var _ cmd.FlaggedCommand = &serviceBind{}
 }
 
-func (s *S) TestServiceUnbind(c *gocheck.C) {
+func (s *S) TestServiceUnbind(c *check.C) {
 	var stdout, stderr bytes.Buffer
 	var called bool
 	ctx := cmd.Context{
@@ -214,7 +214,7 @@ func (s *S) TestServiceUnbind(c *gocheck.C) {
 	expectedOut := `something`
 	msg := io.SimpleJsonMessage{Message: expectedOut}
 	result, err := json.Marshal(msg)
-	c.Assert(err, gocheck.IsNil)
+	c.Assert(err, check.IsNil)
 	trans := &cmdtest.ConditionalTransport{
 		Transport: cmdtest.Transport{Message: string(result), Status: http.StatusOK},
 		CondFunc: func(req *http.Request) bool {
@@ -226,12 +226,12 @@ func (s *S) TestServiceUnbind(c *gocheck.C) {
 	command := serviceUnbind{}
 	command.Flags().Parse(true, []string{"-a", "pocket"})
 	err = command.Run(&ctx, client)
-	c.Assert(err, gocheck.IsNil)
-	c.Assert(called, gocheck.Equals, true)
-	c.Assert(stdout.String(), gocheck.Equals, expectedOut)
+	c.Assert(err, check.IsNil)
+	c.Assert(called, check.Equals, true)
+	c.Assert(stdout.String(), check.Equals, expectedOut)
 }
 
-func (s *S) TestServiceUnbindWithoutFlag(c *gocheck.C) {
+func (s *S) TestServiceUnbindWithoutFlag(c *check.C) {
 	var stdout, stderr bytes.Buffer
 	var called bool
 	ctx := cmd.Context{
@@ -242,7 +242,7 @@ func (s *S) TestServiceUnbindWithoutFlag(c *gocheck.C) {
 	expectedOut := `something`
 	msg := io.SimpleJsonMessage{Message: expectedOut}
 	result, err := json.Marshal(msg)
-	c.Assert(err, gocheck.IsNil)
+	c.Assert(err, check.IsNil)
 	trans := &cmdtest.ConditionalTransport{
 		Transport: cmdtest.Transport{Message: string(result), Status: http.StatusOK},
 		CondFunc: func(req *http.Request) bool {
@@ -253,12 +253,12 @@ func (s *S) TestServiceUnbindWithoutFlag(c *gocheck.C) {
 	client := cmd.NewClient(&http.Client{Transport: trans}, nil, manager)
 	fake := &cmdtest.FakeGuesser{Name: "sleeve"}
 	err = (&serviceUnbind{cmd.GuessingCommand{G: fake}}).Run(&ctx, client)
-	c.Assert(err, gocheck.IsNil)
-	c.Assert(called, gocheck.Equals, true)
-	c.Assert(stdout.String(), gocheck.Equals, expectedOut)
+	c.Assert(err, check.IsNil)
+	c.Assert(called, check.Equals, true)
+	c.Assert(stdout.String(), check.Equals, expectedOut)
 }
 
-func (s *S) TestServiceUnbindWithRequestFailure(c *gocheck.C) {
+func (s *S) TestServiceUnbindWithRequestFailure(c *check.C) {
 	var stdout, stderr bytes.Buffer
 	ctx := cmd.Context{
 		Args:   []string{"hand"},
@@ -271,24 +271,24 @@ func (s *S) TestServiceUnbindWithRequestFailure(c *gocheck.C) {
 	command := serviceUnbind{}
 	command.Flags().Parse(true, []string{"-a", "pocket"})
 	err := command.Run(&ctx, client)
-	c.Assert(err, gocheck.NotNil)
-	c.Assert(err.Error(), gocheck.Equals, trans.Message)
+	c.Assert(err, check.NotNil)
+	c.Assert(err.Error(), check.Equals, trans.Message)
 }
 
-func (s *S) TestServiceUnbindInfo(c *gocheck.C) {
-	c.Assert((&serviceUnbind{}).Info(), gocheck.NotNil)
+func (s *S) TestServiceUnbindInfo(c *check.C) {
+	c.Assert((&serviceUnbind{}).Info(), check.NotNil)
 }
 
-func (s *S) TestServiceUnbindIsAFlaggedComand(c *gocheck.C) {
+func (s *S) TestServiceUnbindIsAFlaggedComand(c *check.C) {
 	var _ cmd.FlaggedCommand = &serviceUnbind{}
 }
 
-func (s *S) TestServiceAddInfo(c *gocheck.C) {
+func (s *S) TestServiceAddInfo(c *check.C) {
 	command := &serviceAdd{}
-	c.Assert(command.Info(), gocheck.NotNil)
+	c.Assert(command.Info(), check.NotNil)
 }
 
-func (s *S) TestServiceAddRun(c *gocheck.C) {
+func (s *S) TestServiceAddRun(c *check.C) {
 	var stdout, stderr bytes.Buffer
 	result := "Service successfully added.\n"
 	args := []string{
@@ -303,38 +303,38 @@ func (s *S) TestServiceAddRun(c *gocheck.C) {
 	}
 	client := cmd.NewClient(&http.Client{Transport: &cmdtest.Transport{Message: result, Status: http.StatusOK}}, nil, manager)
 	err := (&serviceAdd{}).Run(&context, client)
-	c.Assert(err, gocheck.IsNil)
+	c.Assert(err, check.IsNil)
 	obtained := stdout.String()
-	c.Assert(obtained, gocheck.Equals, result)
+	c.Assert(obtained, check.Equals, result)
 }
 
-func (s *S) TestServiceAddFlags(c *gocheck.C) {
+func (s *S) TestServiceAddFlags(c *check.C) {
 	flagDesc := "the team that owns te service (mandatory if the user is member of more than one team)"
 	command := serviceAdd{}
 	flagset := command.Flags()
-	c.Assert(flagset, gocheck.NotNil)
+	c.Assert(flagset, check.NotNil)
 	flagset.Parse(true, []string{"-t", "wat"})
 	assume := flagset.Lookup("team-owner")
-	c.Check(assume, gocheck.NotNil)
-	c.Check(assume.Name, gocheck.Equals, "team-owner")
-	c.Check(assume.Usage, gocheck.Equals, flagDesc)
-	c.Check(assume.Value.String(), gocheck.Equals, "wat")
-	c.Check(assume.DefValue, gocheck.Equals, "")
+	c.Check(assume, check.NotNil)
+	c.Check(assume.Name, check.Equals, "team-owner")
+	c.Check(assume.Usage, check.Equals, flagDesc)
+	c.Check(assume.Value.String(), check.Equals, "wat")
+	c.Check(assume.DefValue, check.Equals, "")
 	sassume := flagset.Lookup("t")
-	c.Check(sassume, gocheck.NotNil)
-	c.Check(sassume.Name, gocheck.Equals, "t")
-	c.Check(sassume.Usage, gocheck.Equals, flagDesc)
-	c.Check(sassume.Value.String(), gocheck.Equals, "wat")
-	c.Check(sassume.DefValue, gocheck.Equals, "")
-	c.Check(command.teamOwner, gocheck.Equals, "wat")
+	c.Check(sassume, check.NotNil)
+	c.Check(sassume.Name, check.Equals, "t")
+	c.Check(sassume.Usage, check.Equals, flagDesc)
+	c.Check(sassume.Value.String(), check.Equals, "wat")
+	c.Check(sassume.DefValue, check.Equals, "")
+	c.Check(command.teamOwner, check.Equals, "wat")
 }
 
-func (s *S) TestServiceInstanceStatusInfo(c *gocheck.C) {
+func (s *S) TestServiceInstanceStatusInfo(c *check.C) {
 	got := (&serviceInstanceStatus{}).Info()
-	c.Assert(got, gocheck.NotNil)
+	c.Assert(got, check.NotNil)
 }
 
-func (s *S) TestServiceInstanceStatusRun(c *gocheck.C) {
+func (s *S) TestServiceInstanceStatusRun(c *check.C) {
 	var stdout, stderr bytes.Buffer
 	result := `Service instance "foo" is up`
 	args := []string{"fooBar"}
@@ -345,27 +345,27 @@ func (s *S) TestServiceInstanceStatusRun(c *gocheck.C) {
 	}
 	client := cmd.NewClient(&http.Client{Transport: &cmdtest.Transport{Message: result, Status: http.StatusOK}}, nil, manager)
 	err := (&serviceInstanceStatus{}).Run(&context, client)
-	c.Assert(err, gocheck.IsNil)
+	c.Assert(err, check.IsNil)
 	obtained := stdout.String()
 	obtained = strings.Replace(obtained, "\n", "", -1)
-	c.Assert(obtained, gocheck.Equals, result)
+	c.Assert(obtained, check.Equals, result)
 }
 
-func (s *S) TestServiceInfoInfo(c *gocheck.C) {
+func (s *S) TestServiceInfoInfo(c *check.C) {
 	got := (&serviceInfo{}).Info()
-	c.Assert(got, gocheck.NotNil)
+	c.Assert(got, check.NotNil)
 }
 
-func (s *S) TestServiceInfoExtraHeaders(c *gocheck.C) {
+func (s *S) TestServiceInfoExtraHeaders(c *check.C) {
 	result := []byte(`[{"Name":"mymongo", "Apps":["myapp"], "Info":{"key": "value", "key2": "value2"}}]`)
 	var instances []ServiceInstanceModel
 	json.Unmarshal(result, &instances)
 	expected := []string{"key", "key2"}
 	headers := (&serviceInfo{}).ExtraHeaders(instances)
-	c.Assert(headers, gocheck.DeepEquals, expected)
+	c.Assert(headers, check.DeepEquals, expected)
 }
 
-func (s *S) TestServiceInfoRun(c *gocheck.C) {
+func (s *S) TestServiceInfoRun(c *check.C) {
 	var stdout, stderr bytes.Buffer
 	expected := `Info for "mongodb"
 
@@ -391,17 +391,17 @@ Plans
 	}
 	client := cmd.NewClient(&http.Client{Transport: &infoTransport{}}, nil, manager)
 	err := (&serviceInfo{}).Run(&context, client)
-	c.Assert(err, gocheck.IsNil)
+	c.Assert(err, check.IsNil)
 	obtained := stdout.String()
-	c.Assert(obtained, gocheck.Equals, expected)
+	c.Assert(obtained, check.Equals, expected)
 }
 
-func (s *S) TestServiceDocInfo(c *gocheck.C) {
+func (s *S) TestServiceDocInfo(c *check.C) {
 	i := (&serviceDoc{}).Info()
-	c.Assert(i, gocheck.NotNil)
+	c.Assert(i, check.NotNil)
 }
 
-func (s *S) TestServiceDocRun(c *gocheck.C) {
+func (s *S) TestServiceDocRun(c *check.C) {
 	var stdout, stderr bytes.Buffer
 	result := `This is a test doc for a test service.
 Service test is foo bar.
@@ -423,17 +423,17 @@ Service test is foo bar.
 	}
 	client := cmd.NewClient(&http.Client{Transport: &transport}, nil, manager)
 	err := (&serviceDoc{}).Run(&ctx, client)
-	c.Assert(err, gocheck.IsNil)
+	c.Assert(err, check.IsNil)
 	obtained := stdout.String()
-	c.Assert(obtained, gocheck.Equals, expected)
+	c.Assert(obtained, check.Equals, expected)
 }
 
-func (s *S) TestServiceRemoveInfo(c *gocheck.C) {
+func (s *S) TestServiceRemoveInfo(c *check.C) {
 	i := (&serviceRemove{}).Info()
-	c.Assert(i, gocheck.NotNil)
+	c.Assert(i, check.NotNil)
 }
 
-func (s *S) TestServiceRemoveRun(c *gocheck.C) {
+func (s *S) TestServiceRemoveRun(c *check.C) {
 	var stdout, stderr bytes.Buffer
 	ctx := cmd.Context{
 		Args:   []string{"some-service-instance"},
@@ -455,12 +455,12 @@ func (s *S) TestServiceRemoveRun(c *gocheck.C) {
 	}
 	client := cmd.NewClient(&http.Client{Transport: &transport}, nil, manager)
 	err := (&serviceRemove{}).Run(&ctx, client)
-	c.Assert(err, gocheck.IsNil)
+	c.Assert(err, check.IsNil)
 	obtained := stdout.String()
-	c.Assert(obtained, gocheck.Equals, expected)
+	c.Assert(obtained, check.Equals, expected)
 }
 
-func (s *S) TestServiceRemoveWithoutAsking(c *gocheck.C) {
+func (s *S) TestServiceRemoveWithoutAsking(c *check.C) {
 	var stdout, stderr bytes.Buffer
 	expected := `Service "ble" successfully removed!` + "\n"
 	context := cmd.Context{
@@ -473,26 +473,26 @@ func (s *S) TestServiceRemoveWithoutAsking(c *gocheck.C) {
 	command := serviceRemove{}
 	command.Flags().Parse(true, []string{"ble", "-y"})
 	err := command.Run(&context, client)
-	c.Assert(err, gocheck.IsNil)
-	c.Assert(stdout.String(), gocheck.Equals, expected)
+	c.Assert(err, check.IsNil)
+	c.Assert(stdout.String(), check.Equals, expected)
 }
 
-func (s *S) TestServiceRemoveFlags(c *gocheck.C) {
+func (s *S) TestServiceRemoveFlags(c *check.C) {
 	command := serviceRemove{}
 	flagset := command.Flags()
-	c.Assert(flagset, gocheck.NotNil)
+	c.Assert(flagset, check.NotNil)
 	flagset.Parse(true, []string{"-y"})
 	assume := flagset.Lookup("assume-yes")
-	c.Check(assume, gocheck.NotNil)
-	c.Check(assume.Name, gocheck.Equals, "assume-yes")
-	c.Check(assume.Usage, gocheck.Equals, "Don't ask for confirmation, just remove the service.")
-	c.Check(assume.Value.String(), gocheck.Equals, "true")
-	c.Check(assume.DefValue, gocheck.Equals, "false")
+	c.Check(assume, check.NotNil)
+	c.Check(assume.Name, check.Equals, "assume-yes")
+	c.Check(assume.Usage, check.Equals, "Don't ask for confirmation, just remove the service.")
+	c.Check(assume.Value.String(), check.Equals, "true")
+	c.Check(assume.DefValue, check.Equals, "false")
 	sassume := flagset.Lookup("y")
-	c.Check(sassume, gocheck.NotNil)
-	c.Check(sassume.Name, gocheck.Equals, "y")
-	c.Check(sassume.Usage, gocheck.Equals, "Don't ask for confirmation, just remove the service.")
-	c.Check(sassume.Value.String(), gocheck.Equals, "true")
-	c.Check(sassume.DefValue, gocheck.Equals, "false")
-	c.Check(command.yes, gocheck.Equals, true)
+	c.Check(sassume, check.NotNil)
+	c.Check(sassume.Name, check.Equals, "y")
+	c.Check(sassume.Usage, check.Equals, "Don't ask for confirmation, just remove the service.")
+	c.Check(sassume.Value.String(), check.Equals, "true")
+	c.Check(sassume.DefValue, check.Equals, "false")
+	c.Check(command.yes, check.Equals, true)
 }

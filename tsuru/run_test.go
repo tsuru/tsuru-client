@@ -12,10 +12,10 @@ import (
 	"github.com/tsuru/tsuru/cmd"
 	"github.com/tsuru/tsuru/cmd/cmdtest"
 	"github.com/tsuru/tsuru/io"
-	"launchpad.net/gocheck"
+	"gopkg.in/check.v1"
 )
 
-func (s *S) TestAppRun(c *gocheck.C) {
+func (s *S) TestAppRun(c *check.C) {
 	var stdout, stderr bytes.Buffer
 	expected := "http.go		http_test.go"
 	context := cmd.Context{
@@ -25,7 +25,7 @@ func (s *S) TestAppRun(c *gocheck.C) {
 	}
 	msg := io.SimpleJsonMessage{Message: expected}
 	result, err := json.Marshal(msg)
-	c.Assert(err, gocheck.IsNil)
+	c.Assert(err, check.IsNil)
 	trans := &cmdtest.ConditionalTransport{
 		Transport: cmdtest.Transport{
 			Message: string(result),
@@ -41,11 +41,11 @@ func (s *S) TestAppRun(c *gocheck.C) {
 	command := appRun{}
 	command.Flags().Parse(true, []string{"--app", "ble"})
 	err = command.Run(&context, client)
-	c.Assert(err, gocheck.IsNil)
-	c.Assert(stdout.String(), gocheck.Equals, expected)
+	c.Assert(err, check.IsNil)
+	c.Assert(stdout.String(), check.Equals, expected)
 }
 
-func (s *S) TestAppRunShouldUseAllSubsequentArgumentsAsArgumentsToTheGivenCommand(c *gocheck.C) {
+func (s *S) TestAppRunShouldUseAllSubsequentArgumentsAsArgumentsToTheGivenCommand(c *check.C) {
 	var stdout, stderr bytes.Buffer
 	expected := "-rw-r--r--  1 f  staff  119 Apr 26 18:23 http.go\n"
 	context := cmd.Context{
@@ -55,7 +55,7 @@ func (s *S) TestAppRunShouldUseAllSubsequentArgumentsAsArgumentsToTheGivenComman
 	}
 	msg := io.SimpleJsonMessage{Message: expected}
 	result, err := json.Marshal(msg)
-	c.Assert(err, gocheck.IsNil)
+	c.Assert(err, check.IsNil)
 	trans := &cmdtest.ConditionalTransport{
 		Transport: cmdtest.Transport{
 			Message: string(result) + "\n" + string(result),
@@ -71,11 +71,11 @@ func (s *S) TestAppRunShouldUseAllSubsequentArgumentsAsArgumentsToTheGivenComman
 	command := appRun{}
 	command.Flags().Parse(true, []string{"--app", "ble"})
 	err = command.Run(&context, client)
-	c.Assert(err, gocheck.IsNil)
-	c.Assert(stdout.String(), gocheck.Equals, expected+expected)
+	c.Assert(err, check.IsNil)
+	c.Assert(stdout.String(), check.Equals, expected+expected)
 }
 
-func (s *S) TestAppRunWithoutTheFlag(c *gocheck.C) {
+func (s *S) TestAppRunWithoutTheFlag(c *check.C) {
 	var stdout, stderr bytes.Buffer
 	expected := "-rw-r--r--  1 f  staff  119 Apr 26 18:23 http.go"
 	context := cmd.Context{
@@ -85,7 +85,7 @@ func (s *S) TestAppRunWithoutTheFlag(c *gocheck.C) {
 	}
 	msg := io.SimpleJsonMessage{Message: expected}
 	result, err := json.Marshal(msg)
-	c.Assert(err, gocheck.IsNil)
+	c.Assert(err, check.IsNil)
 	trans := &cmdtest.ConditionalTransport{
 		Transport: cmdtest.Transport{
 			Message: string(result),
@@ -102,11 +102,11 @@ func (s *S) TestAppRunWithoutTheFlag(c *gocheck.C) {
 	command := appRun{GuessingCommand: cmd.GuessingCommand{G: fake}}
 	command.Flags().Parse(true, nil)
 	err = command.Run(&context, client)
-	c.Assert(err, gocheck.IsNil)
-	c.Assert(stdout.String(), gocheck.Equals, expected)
+	c.Assert(err, check.IsNil)
+	c.Assert(stdout.String(), check.Equals, expected)
 }
 
-func (s *S) TestAppRunShouldReturnErrorWhenCommandGoWrong(c *gocheck.C) {
+func (s *S) TestAppRunShouldReturnErrorWhenCommandGoWrong(c *check.C) {
 	var stdout, stderr bytes.Buffer
 	context := cmd.Context{
 		Args:   []string{"cmd_error"},
@@ -115,7 +115,7 @@ func (s *S) TestAppRunShouldReturnErrorWhenCommandGoWrong(c *gocheck.C) {
 	}
 	msg := io.SimpleJsonMessage{Error: "command doesn't exist."}
 	result, err := json.Marshal(msg)
-	c.Assert(err, gocheck.IsNil)
+	c.Assert(err, check.IsNil)
 	trans := &cmdtest.ConditionalTransport{
 		Transport: cmdtest.Transport{
 			Message: string(result),
@@ -130,10 +130,10 @@ func (s *S) TestAppRunShouldReturnErrorWhenCommandGoWrong(c *gocheck.C) {
 	command := appRun{GuessingCommand: cmd.GuessingCommand{G: fake}}
 	command.Flags().Parse(true, nil)
 	err = command.Run(&context, client)
-	c.Assert(err, gocheck.ErrorMatches, "command doesn't exist.")
+	c.Assert(err, check.ErrorMatches, "command doesn't exist.")
 }
 
-func (s *S) TestAppRunInfo(c *gocheck.C) {
+func (s *S) TestAppRunInfo(c *check.C) {
 	command := appRun{}
-	c.Assert(command.Info(), gocheck.NotNil)
+	c.Assert(command.Info(), check.NotNil)
 }

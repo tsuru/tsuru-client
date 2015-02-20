@@ -17,13 +17,13 @@ import (
 	"github.com/tsuru/tsuru/cmd"
 	"github.com/tsuru/tsuru/cmd/cmdtest"
 	"github.com/tsuru/tsuru/fs/fstest"
-	"launchpad.net/gocheck"
+	"gopkg.in/check.v1"
 )
 
-func (s *S) TestKeyAdd(c *gocheck.C) {
+func (s *S) TestKeyAdd(c *check.C) {
 	var stdout, stderr bytes.Buffer
 	u, err := user.Current()
-	c.Assert(err, gocheck.IsNil)
+	c.Assert(err, check.IsNil)
 	p := path.Join(u.HomeDir, ".ssh", "id_rsa.pub")
 	name := "my-key"
 	expected := fmt.Sprintf("Key %q successfully added!\n", name)
@@ -37,7 +37,7 @@ func (s *S) TestKeyAdd(c *gocheck.C) {
 		CondFunc: func(r *http.Request) bool {
 			expectedBody := `{"key":"user-key","name":"my-key"}`
 			body, err := ioutil.ReadAll(r.Body)
-			c.Assert(err, gocheck.IsNil)
+			c.Assert(err, check.IsNil)
 			return r.Method == "POST" && r.URL.Path == "/users/keys" && string(body) == expectedBody
 		},
 	}
@@ -45,11 +45,11 @@ func (s *S) TestKeyAdd(c *gocheck.C) {
 	fs := fstest.RecordingFs{FileContent: "user-key"}
 	command := keyAdd{keyReader{fsystem: &fs}}
 	err = command.Run(&context, client)
-	c.Assert(err, gocheck.IsNil)
-	c.Assert(stdout.String(), gocheck.Equals, expected)
+	c.Assert(err, check.IsNil)
+	c.Assert(stdout.String(), check.Equals, expected)
 }
 
-func (s *S) TestKeyAddStdin(c *gocheck.C) {
+func (s *S) TestKeyAddStdin(c *check.C) {
 	var stdout, stderr bytes.Buffer
 	stdin := bytes.NewBufferString("my powerful key")
 	name := "my-key"
@@ -65,18 +65,18 @@ func (s *S) TestKeyAddStdin(c *gocheck.C) {
 		CondFunc: func(r *http.Request) bool {
 			expectedBody := `{"key":"my powerful key","name":"my-key"}`
 			body, err := ioutil.ReadAll(r.Body)
-			c.Assert(err, gocheck.IsNil)
+			c.Assert(err, check.IsNil)
 			return r.Method == "POST" && r.URL.Path == "/users/keys" && string(body) == expectedBody
 		},
 	}
 	client := cmd.NewClient(&http.Client{Transport: &transport}, nil, manager)
 	command := keyAdd{}
 	err := command.Run(&context, client)
-	c.Assert(err, gocheck.IsNil)
-	c.Assert(stdout.String(), gocheck.Equals, expected)
+	c.Assert(err, check.IsNil)
+	c.Assert(stdout.String(), check.Equals, expected)
 }
 
-func (s *S) TestKeyAddReturnsProperErrorIfTheGivenKeyFileDoesNotExist(c *gocheck.C) {
+func (s *S) TestKeyAddReturnsProperErrorIfTheGivenKeyFileDoesNotExist(c *check.C) {
 	var stdout, stderr bytes.Buffer
 	context := cmd.Context{
 		Args:   []string{"my-key", "/unknown/key.pub"},
@@ -86,11 +86,11 @@ func (s *S) TestKeyAddReturnsProperErrorIfTheGivenKeyFileDoesNotExist(c *gocheck
 	fs := fstest.FileNotFoundFs{RecordingFs: fstest.RecordingFs{}}
 	command := keyAdd{keyReader{fsystem: &fs}}
 	err := command.Run(&context, nil)
-	c.Assert(err, gocheck.NotNil)
-	c.Assert(err.Error(), gocheck.Equals, `file "/unknown/key.pub" doesn't exist`)
+	c.Assert(err, check.NotNil)
+	c.Assert(err.Error(), check.Equals, `file "/unknown/key.pub" doesn't exist`)
 }
 
-func (s *S) TestKeyAddFileSystemError(c *gocheck.C) {
+func (s *S) TestKeyAddFileSystemError(c *check.C) {
 	var stdout, stderr bytes.Buffer
 	context := cmd.Context{
 		Args:   []string{"my-key", "/unknown/key.pub"},
@@ -103,11 +103,11 @@ func (s *S) TestKeyAddFileSystemError(c *gocheck.C) {
 	}
 	command := keyAdd{keyReader{fsystem: &fs}}
 	err := command.Run(&context, nil)
-	c.Assert(err, gocheck.NotNil)
-	c.Assert(err.Error(), gocheck.Equals, "what happened?")
+	c.Assert(err, check.NotNil)
+	c.Assert(err.Error(), check.Equals, "what happened?")
 }
 
-func (s *S) TestKeyAddError(c *gocheck.C) {
+func (s *S) TestKeyAddError(c *check.C) {
 	var stdout, stderr bytes.Buffer
 	context := cmd.Context{Args: []string{"my-key", "/tmp/id_rsa.pub"}, Stdout: &stdout, Stderr: &stderr}
 	transport := cmdtest.Transport{
@@ -118,39 +118,41 @@ func (s *S) TestKeyAddError(c *gocheck.C) {
 	fs := fstest.RecordingFs{FileContent: "user-key"}
 	command := keyAdd{keyReader{fsystem: &fs}}
 	err := command.Run(&context, client)
-	c.Assert(err, gocheck.NotNil)
-	c.Assert(err.Error(), gocheck.Equals, "something went wrong")
+	c.Assert(err, check.NotNil)
+	c.Assert(err.Error(), check.Equals, "something went wrong")
 }
 
-func (s *S) TestInfoKeyAdd(c *gocheck.C) {
-	c.Assert((&keyAdd{}).Info(), gocheck.NotNil)
+func (s *S) TestInfoKeyAdd(c *check.C) {
+	c.Assert((&keyAdd{}).Info(), check.NotNil)
 }
 
-func (s *S) TestKeyRemove(c *gocheck.C) {
+func (s *S) TestKeyRemove(c *check.C) {
 	var stdout, stderr bytes.Buffer
+	stdin := bytes.NewBufferString("y\n")
 	keyName := "my-key"
-	expected := fmt.Sprintf("Key %q successfully removed!\n", keyName)
-	context := cmd.Context{Args: []string{keyName}, Stdout: &stdout, Stderr: &stderr}
+	expected := fmt.Sprintf("Are you sure you want to remove key %q? (y/n) Key %q successfully removed!\n", keyName, keyName)
+	context := cmd.Context{Args: []string{keyName}, Stdout: &stdout, Stderr: &stderr, Stdin: stdin}
 	transport := cmdtest.ConditionalTransport{
 		Transport: cmdtest.Transport{Message: "success", Status: http.StatusOK},
 		CondFunc: func(r *http.Request) bool {
 			expectedBody := `{"name":"my-key"}`
 			body, err := ioutil.ReadAll(r.Body)
-			c.Assert(err, gocheck.IsNil)
+			c.Assert(err, check.IsNil)
 			return r.Method == "DELETE" && r.URL.Path == "/users/keys" && string(body) == expectedBody
 		},
 	}
 	client := cmd.NewClient(&http.Client{Transport: &transport}, nil, manager)
 	command := keyRemove{}
 	err := command.Run(&context, client)
-	c.Assert(err, gocheck.IsNil)
-	c.Assert(stdout.String(), gocheck.Equals, expected)
+	c.Assert(err, check.IsNil)
+	c.Assert(stdout.String(), check.Equals, expected)
 }
 
-func (s *S) TestKeyRemoveError(c *gocheck.C) {
+func (s *S) TestKeyRemoveError(c *check.C) {
 	var stdout, stderr bytes.Buffer
+	stdin := bytes.NewBufferString("y\n")
 	keyName := "my-key"
-	context := cmd.Context{Args: []string{keyName}, Stdout: &stdout, Stderr: &stderr}
+	context := cmd.Context{Args: []string{keyName}, Stdout: &stdout, Stderr: &stderr, Stdin: stdin}
 	transport := cmdtest.Transport{
 		Message: "something went wrong",
 		Status:  http.StatusInternalServerError,
@@ -158,15 +160,15 @@ func (s *S) TestKeyRemoveError(c *gocheck.C) {
 	client := cmd.NewClient(&http.Client{Transport: &transport}, nil, manager)
 	command := keyRemove{}
 	err := command.Run(&context, client)
-	c.Assert(err, gocheck.NotNil)
-	c.Assert(err.Error(), gocheck.Equals, "something went wrong")
+	c.Assert(err, check.NotNil)
+	c.Assert(err.Error(), check.Equals, "something went wrong")
 }
 
-func (s *S) TestInfoKeyRemove(c *gocheck.C) {
-	c.Assert((&keyRemove{}).Info(), gocheck.NotNil)
+func (s *S) TestInfoKeyRemove(c *check.C) {
+	c.Assert((&keyRemove{}).Info(), check.NotNil)
 }
 
-func (s *S) TestKeyList(c *gocheck.C) {
+func (s *S) TestKeyList(c *check.C) {
 	var stdout, stderr bytes.Buffer
 	expected := `+------+-----------------------------------------------------------------+
 | Name | Content                                                         |
@@ -186,11 +188,11 @@ func (s *S) TestKeyList(c *gocheck.C) {
 	client := cmd.NewClient(&http.Client{Transport: &transport}, nil, manager)
 	var command keyList
 	err := command.Run(&context, client)
-	c.Assert(err, gocheck.IsNil)
-	c.Assert(stdout.String(), gocheck.Equals, expected)
+	c.Assert(err, check.IsNil)
+	c.Assert(stdout.String(), check.Equals, expected)
 }
 
-func (s *S) TestKeyListNoTruncate(c *gocheck.C) {
+func (s *S) TestKeyListNoTruncate(c *check.C) {
 	var stdout, stderr bytes.Buffer
 	expected := `+------+----------------------------------------------------------------------------------+
 | Name | Content                                                                          |
@@ -212,10 +214,10 @@ func (s *S) TestKeyListNoTruncate(c *gocheck.C) {
 	var command keyList
 	command.Flags().Parse(true, []string{"--no-truncate"})
 	err := command.Run(&context, client)
-	c.Assert(err, gocheck.IsNil)
-	c.Assert(stdout.String(), gocheck.Equals, expected)
+	c.Assert(err, check.IsNil)
+	c.Assert(stdout.String(), check.Equals, expected)
 }
 
-func (s *S) TestInfoKeyList(c *gocheck.C) {
-	c.Assert((&keyList{}).Info(), gocheck.NotNil)
+func (s *S) TestInfoKeyList(c *check.C) {
+	c.Assert((&keyList{}).Info(), check.NotNil)
 }

@@ -11,10 +11,10 @@ import (
 
 	"github.com/tsuru/tsuru/cmd"
 	"github.com/tsuru/tsuru/cmd/cmdtest"
-	"launchpad.net/gocheck"
+	"gopkg.in/check.v1"
 )
 
-func (s *S) TestAutoScaleEnable(c *gocheck.C) {
+func (s *S) TestAutoScaleEnable(c *check.C) {
 	var stdout, stderr bytes.Buffer
 	context := cmd.Context{
 		Stdout: &stdout,
@@ -30,10 +30,10 @@ func (s *S) TestAutoScaleEnable(c *gocheck.C) {
 	command := autoScaleEnable{}
 	command.Flags().Parse(true, []string{"-a", "ble"})
 	err := command.Run(&context, client)
-	c.Assert(err, gocheck.IsNil)
+	c.Assert(err, check.IsNil)
 }
 
-func (s *S) TestAutoScaleDisable(c *gocheck.C) {
+func (s *S) TestAutoScaleDisable(c *check.C) {
 	var stdout, stderr bytes.Buffer
 	context := cmd.Context{
 		Stdout: &stdout,
@@ -49,10 +49,10 @@ func (s *S) TestAutoScaleDisable(c *gocheck.C) {
 	command := autoScaleDisable{}
 	command.Flags().Parse(true, []string{"-a", "ble"})
 	err := command.Run(&context, client)
-	c.Assert(err, gocheck.IsNil)
+	c.Assert(err, check.IsNil)
 }
 
-func (s *S) TestAutoScaleConfig(c *gocheck.C) {
+func (s *S) TestAutoScaleConfig(c *check.C) {
 	var stdout, stderr bytes.Buffer
 	context := cmd.Context{
 		Stdout: &stdout,
@@ -63,16 +63,16 @@ func (s *S) TestAutoScaleConfig(c *gocheck.C) {
 		CondFunc: func(req *http.Request) bool {
 			var config AutoScaleConfig
 			err := json.NewDecoder(req.Body).Decode(&config)
-			c.Assert(err, gocheck.IsNil)
-			c.Assert(config.MaxUnits, gocheck.Equals, 10)
-			c.Assert(config.MinUnits, gocheck.Equals, 2)
-			c.Assert(config.Enabled, gocheck.Equals, true)
-			c.Assert(config.Increase.Wait, gocheck.Equals, 300000000000)
-			c.Assert(config.Decrease.Wait, gocheck.Equals, 300000000000)
-			c.Assert(config.Increase.Expression, gocheck.Equals, "{cpu_max} > 90")
-			c.Assert(config.Decrease.Expression, gocheck.Equals, "{cpu_max} < 10")
-			c.Assert(config.Increase.Units, gocheck.Equals, 2)
-			c.Assert(config.Decrease.Units, gocheck.Equals, 1)
+			c.Assert(err, check.IsNil)
+			c.Assert(config.MaxUnits, check.Equals, 10)
+			c.Assert(config.MinUnits, check.Equals, 2)
+			c.Assert(config.Enabled, check.Equals, true)
+			c.Assert(config.Increase.Wait, check.Equals, 300000000000)
+			c.Assert(config.Decrease.Wait, check.Equals, 300000000000)
+			c.Assert(config.Increase.Expression, check.Equals, "{cpu_max} > 90")
+			c.Assert(config.Decrease.Expression, check.Equals, "{cpu_max} < 10")
+			c.Assert(config.Increase.Units, check.Equals, 2)
+			c.Assert(config.Decrease.Units, check.Equals, 1)
 			return req.Method == "PUT" && req.URL.Path == "/autoscale/ble"
 		},
 	}
@@ -80,5 +80,5 @@ func (s *S) TestAutoScaleConfig(c *gocheck.C) {
 	command := autoScaleConfig{}
 	command.Flags().Parse(true, []string{"-a", "ble", "--max-units", "10", "--min-units", "2", "--increase-step", "2", "--increase-wait-time", "300", "--increase-expression", "{cpu_max} > 90", "--decrease-step", "1", "--decrease-wait-time", "300", "--decrease-expression", "{cpu_max} < 10", "--enabled"})
 	err := command.Run(&context, client)
-	c.Assert(err, gocheck.IsNil)
+	c.Assert(err, check.IsNil)
 }

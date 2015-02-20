@@ -7,12 +7,12 @@ package main
 import (
 	"github.com/tsuru/tsuru/exec"
 	"github.com/tsuru/tsuru/exec/exectest"
-	"launchpad.net/gocheck"
+	"gopkg.in/check.v1"
 )
 
-func (s *S) TestExecutor(c *gocheck.C) {
+func (s *S) TestExecutor(c *check.C) {
 	execut = &exectest.FakeExecutor{}
-	c.Assert(executor(), gocheck.DeepEquals, execut)
+	c.Assert(executor(), check.DeepEquals, execut)
 	execut = nil
-	c.Assert(executor(), gocheck.DeepEquals, exec.OsExecutor{})
+	c.Assert(executor(), check.DeepEquals, exec.OsExecutor{})
 }

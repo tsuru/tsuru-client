@@ -11,7 +11,7 @@ import (
 
 	"github.com/tsuru/tsuru/cmd"
 	"github.com/tsuru/tsuru/cmd/cmdtest"
-	"launchpad.net/gocheck"
+	"gopkg.in/check.v1"
 )
 
 type S struct {
@@ -19,22 +19,22 @@ type S struct {
 	token  []string
 }
 
-func (s *S) SetUpSuite(c *gocheck.C) {
+func (s *S) SetUpSuite(c *check.C) {
 	s.target = cmdtest.SetTargetFile(c, []byte("http://localhost:8080"))
 	s.token = cmdtest.SetTokenFile(c, []byte("sometoken"))
 }
 
-func (s *S) TearDownSuite(c *gocheck.C) {
+func (s *S) TearDownSuite(c *check.C) {
 	cmdtest.RollbackFile(s.target)
 	cmdtest.RollbackFile(s.token)
 }
 
-var _ = gocheck.Suite(&S{})
+var _ = check.Suite(&S{})
 var manager *cmd.Manager
 
-func Test(t *testing.T) { gocheck.TestingT(t) }
+func Test(t *testing.T) { check.TestingT(t) }
 
-func (s *S) SetUpTest(c *gocheck.C) {
+func (s *S) SetUpTest(c *check.C) {
 	var stdout, stderr bytes.Buffer
 	manager = cmd.NewManager("glb", version, header, &stdout, &stderr, os.Stdin, nil)
 }

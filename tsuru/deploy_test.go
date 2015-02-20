@@ -18,29 +18,29 @@ import (
 	"github.com/tsuru/tsuru/cmd"
 	"github.com/tsuru/tsuru/cmd/cmdtest"
 	tsuruIo "github.com/tsuru/tsuru/io"
-	"launchpad.net/gocheck"
+	"gopkg.in/check.v1"
 )
 
-func (s *S) TestDeployInfo(c *gocheck.C) {
+func (s *S) TestDeployInfo(c *check.C) {
 	var cmd appDeploy
-	c.Assert(cmd.Info(), gocheck.NotNil)
+	c.Assert(cmd.Info(), check.NotNil)
 }
 
-func (s *S) TestDeployRun(c *gocheck.C) {
+func (s *S) TestDeployRun(c *check.C) {
 	var called bool
 	var buf bytes.Buffer
 	err := targz(nil, &buf, "testdata")
-	c.Assert(err, gocheck.IsNil)
+	c.Assert(err, check.IsNil)
 	trans := cmdtest.ConditionalTransport{
 		Transport: cmdtest.Transport{Message: "deploy worked\nOK\n", Status: http.StatusOK},
 		CondFunc: func(req *http.Request) bool {
 			defer req.Body.Close()
 			called = true
 			file, _, err := req.FormFile("file")
-			c.Assert(err, gocheck.IsNil)
+			c.Assert(err, check.IsNil)
 			content, err := ioutil.ReadAll(file)
-			c.Assert(err, gocheck.IsNil)
-			c.Assert(content, gocheck.DeepEquals, buf.Bytes())
+			c.Assert(err, check.IsNil)
+			c.Assert(content, check.DeepEquals, buf.Bytes())
 			return req.Method == "POST" && req.URL.Path == "/apps/secret/deploy"
 		},
 	}
@@ -55,11 +55,11 @@ func (s *S) TestDeployRun(c *gocheck.C) {
 	guessCommand := cmd.GuessingCommand{G: &fake}
 	cmd := appDeploy{GuessingCommand: guessCommand}
 	err = cmd.Run(&context, client)
-	c.Assert(err, gocheck.IsNil)
-	c.Assert(called, gocheck.Equals, true)
+	c.Assert(err, check.IsNil)
+	c.Assert(called, check.Equals, true)
 }
 
-func (s *S) TestDeployRunNotOK(c *gocheck.C) {
+func (s *S) TestDeployRunNotOK(c *check.C) {
 	trans := cmdtest.Transport{Message: "deploy worked\n", Status: http.StatusOK}
 	client := cmd.NewClient(&http.Client{Transport: &trans}, nil, manager)
 	var stdout, stderr bytes.Buffer
@@ -72,10 +72,10 @@ func (s *S) TestDeployRunNotOK(c *gocheck.C) {
 	guessCommand := cmd.GuessingCommand{G: &fake}
 	command := appDeploy{GuessingCommand: guessCommand}
 	err := command.Run(&context, client)
-	c.Assert(err, gocheck.Equals, cmd.ErrAbortCommand)
+	c.Assert(err, check.Equals, cmd.ErrAbortCommand)
 }
 
-func (s *S) TestDeployRunFileNotFound(c *gocheck.C) {
+func (s *S) TestDeployRunFileNotFound(c *check.C) {
 	var stdout, stderr bytes.Buffer
 	context := cmd.Context{
 		Stdout: &stdout,
@@ -86,10 +86,10 @@ func (s *S) TestDeployRunFileNotFound(c *gocheck.C) {
 	guessCommand := cmd.GuessingCommand{G: &fake}
 	command := appDeploy{GuessingCommand: guessCommand}
 	err := command.Run(&context, nil)
-	c.Assert(err, gocheck.NotNil)
+	c.Assert(err, check.NotNil)
 }
 
-func (s *S) TestDeployRunRequestFailure(c *gocheck.C) {
+func (s *S) TestDeployRunRequestFailure(c *check.C) {
 	trans := cmdtest.Transport{Message: "app not found\n", Status: http.StatusNotFound}
 	client := cmd.NewClient(&http.Client{Transport: &trans}, nil, manager)
 	var stdout, stderr bytes.Buffer
@@ -102,20 +102,20 @@ func (s *S) TestDeployRunRequestFailure(c *gocheck.C) {
 	guessCommand := cmd.GuessingCommand{G: &fake}
 	command := appDeploy{GuessingCommand: guessCommand}
 	err := command.Run(&context, client)
-	c.Assert(err, gocheck.NotNil)
-	c.Assert(err.Error(), gocheck.Equals, "app not found\n")
+	c.Assert(err, check.NotNil)
+	c.Assert(err.Error(), check.Equals, "app not found\n")
 }
 
-func (s *S) TestTargz(c *gocheck.C) {
+func (s *S) TestTargz(c *check.C) {
 	var buf bytes.Buffer
 	ctx := cmd.Context{Stderr: &buf}
 	var gzipBuf, tarBuf bytes.Buffer
 	err := targz(&ctx, &gzipBuf, "testdata", "..")
-	c.Assert(err, gocheck.IsNil)
+	c.Assert(err, check.IsNil)
 	gzipReader, err := gzip.NewReader(&gzipBuf)
-	c.Assert(err, gocheck.IsNil)
+	c.Assert(err, check.IsNil)
 	_, err = io.Copy(&tarBuf, gzipReader)
-	c.Assert(err, gocheck.IsNil)
+	c.Assert(err, check.IsNil)
 	tarReader := tar.NewReader(&tarBuf)
 	var headers []string
 	var contents []string
@@ -123,7 +123,7 @@ func (s *S) TestTargz(c *gocheck.C) {
 		headers = append(headers, header.Name)
 		if !header.FileInfo().IsDir() {
 			content, err := ioutil.ReadAll(tarReader)
-			c.Assert(err, gocheck.IsNil)
+			c.Assert(err, check.IsNil)
 			contents = append(contents, string(content))
 		}
 	}
@@ -133,29 +133,29 @@ func (s *S) TestTargz(c *gocheck.C) {
 	}
 	sort.Strings(expected)
 	sort.Strings(headers)
-	c.Assert(headers, gocheck.DeepEquals, expected)
+	c.Assert(headers, check.DeepEquals, expected)
 	expectedContents := []string{"wat\n", "something happened\n", "twice\n"}
 	sort.Strings(expectedContents)
 	sort.Strings(contents)
-	c.Assert(contents, gocheck.DeepEquals, expectedContents)
-	c.Assert(buf.String(), gocheck.Equals, `Warning: skipping ".."`)
+	c.Assert(contents, check.DeepEquals, expectedContents)
+	c.Assert(buf.String(), check.Equals, `Warning: skipping ".."`)
 }
 
-func (s *S) TestTargzFailure(c *gocheck.C) {
+func (s *S) TestTargzFailure(c *check.C) {
 	var stderr bytes.Buffer
 	ctx := cmd.Context{Stderr: &stderr}
 	var buf bytes.Buffer
 	err := targz(&ctx, &buf, "/tmp/something/that/definitely/doesnt/exist/right", "testdata")
-	c.Assert(err, gocheck.NotNil)
-	c.Assert(err.Error(), gocheck.Equals, "stat /tmp/something/that/definitely/doesnt/exist/right: no such file or directory")
+	c.Assert(err, check.NotNil)
+	c.Assert(err.Error(), check.Equals, "stat /tmp/something/that/definitely/doesnt/exist/right: no such file or directory")
 }
 
-func (s *S) TestDeployListInfo(c *gocheck.C) {
+func (s *S) TestDeployListInfo(c *check.C) {
 	var cmd appDeployList
-	c.Assert(cmd.Info(), gocheck.NotNil)
+	c.Assert(cmd.Info(), check.NotNil)
 }
 
-func (s *S) TestAppDeployList(c *gocheck.C) {
+func (s *S) TestAppDeployList(c *check.C) {
 	var stdout, stderr bytes.Buffer
 	result := `
 [
@@ -226,15 +226,15 @@ func (s *S) TestAppDeployList(c *gocheck.C) {
 	client := cmd.NewClient(&http.Client{Transport: &cmdtest.Transport{Message: result, Status: http.StatusOK}}, nil, manager)
 	command := appDeployList{}
 	err := command.Run(&context, client)
-	c.Assert(err, gocheck.IsNil)
-	c.Assert(stdout.String(), gocheck.Equals, expected)
+	c.Assert(err, check.IsNil)
+	c.Assert(stdout.String(), check.Equals, expected)
 }
 
-func (s *S) TestAppDeployRollbackInfo(c *gocheck.C) {
-	c.Assert((&appDeployRollback{}).Info(), gocheck.NotNil)
+func (s *S) TestAppDeployRollbackInfo(c *check.C) {
+	c.Assert((&appDeployRollback{}).Info(), check.NotNil)
 }
 
-func (s *S) TestAppDeployRollback(c *gocheck.C) {
+func (s *S) TestAppDeployRollback(c *check.C) {
 	var (
 		called         bool
 		stdout, stderr bytes.Buffer
@@ -247,7 +247,7 @@ func (s *S) TestAppDeployRollback(c *gocheck.C) {
 	expectedOut := "-- deployed --"
 	msg := tsuruIo.SimpleJsonMessage{Message: expectedOut}
 	result, err := json.Marshal(msg)
-	c.Assert(err, gocheck.IsNil)
+	c.Assert(err, check.IsNil)
 	trans := &cmdtest.ConditionalTransport{
 		Transport: cmdtest.Transport{Message: string(result), Status: http.StatusOK},
 		CondFunc: func(req *http.Request) bool {
@@ -261,7 +261,7 @@ func (s *S) TestAppDeployRollback(c *gocheck.C) {
 	command := appDeployRollback{}
 	command.Flags().Parse(true, []string{"--app", "arrakis", "-y"})
 	err = command.Run(&context, client)
-	c.Assert(err, gocheck.IsNil)
-	c.Assert(called, gocheck.Equals, true)
-	c.Assert(stdout.String(), gocheck.Equals, expectedOut)
+	c.Assert(err, check.IsNil)
+	c.Assert(called, check.Equals, true)
+	c.Assert(stdout.String(), check.Equals, expectedOut)
 }

@@ -10,14 +10,14 @@ import (
 
 	"github.com/tsuru/tsuru/cmd"
 	"github.com/tsuru/tsuru/cmd/cmdtest"
-	"launchpad.net/gocheck"
+	"gopkg.in/check.v1"
 )
 
-func (s *S) TestPlanListInfo(c *gocheck.C) {
-	c.Assert((&planList{}).Info(), gocheck.NotNil)
+func (s *S) TestPlanListInfo(c *check.C) {
+	c.Assert((&planList{}).Info(), check.NotNil)
 }
 
-func (s *S) TestPlanList(c *gocheck.C) {
+func (s *S) TestPlanList(c *check.C) {
 	var stdout, stderr bytes.Buffer
 	result := `[
     {"name": "test",  "memory": 536870912, "swap": 268435456, "cpushare": 100, "router": "r1", "default": false},
@@ -44,11 +44,11 @@ func (s *S) TestPlanList(c *gocheck.C) {
 	client := cmd.NewClient(&http.Client{Transport: trans}, nil, manager)
 	command := planList{}
 	err := command.Run(&context, client)
-	c.Assert(err, gocheck.IsNil)
-	c.Assert(stdout.String(), gocheck.Equals, expected)
+	c.Assert(err, check.IsNil)
+	c.Assert(stdout.String(), check.Equals, expected)
 }
 
-func (s *S) TestPlanListHuman(c *gocheck.C) {
+func (s *S) TestPlanListHuman(c *check.C) {
 	var stdout, stderr bytes.Buffer
 	result := `[
     {"name": "test",  "memory": 536870912, "swap": 268435456, "cpushare": 100, "default": false},
@@ -76,6 +76,6 @@ func (s *S) TestPlanListHuman(c *gocheck.C) {
 	command := planList{}
 	command.Flags().Parse(true, []string{"-h"})
 	err := command.Run(&context, client)
-	c.Assert(err, gocheck.IsNil)
-	c.Assert(stdout.String(), gocheck.Equals, expected)
+	c.Assert(err, check.IsNil)
+	c.Assert(stdout.String(), check.Equals, expected)
 }
