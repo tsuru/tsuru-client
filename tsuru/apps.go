@@ -1,4 +1,4 @@
-// Copyright 2014 tsuru-client authors. All rights reserved.
+// Copyright 2015 tsuru-client authors. All rights reserved.
 // Use of this source code is governed by a BSD-style
 // license that can be found in the LICENSE file.
 
@@ -107,9 +107,11 @@ func (c *appCreate) Run(context *cmd.Context, client *cmd.Client) error {
 	if err != nil {
 		return err
 	}
-	fmt.Fprintf(context.Stdout, "App %q is being created!\n", appName)
+	fmt.Fprintf(context.Stdout, "App %q has been created!\n", appName)
 	fmt.Fprintln(context.Stdout, "Use app-info to check the status of the app and its units.")
-	fmt.Fprintf(context.Stdout, "Your repository for %q project is %q\n", appName, out["repository_url"])
+	if out["repository_url"] != "" {
+		fmt.Fprintf(context.Stdout, "Your repository for %q project is %q\n", appName, out["repository_url"])
+	}
 	return nil
 }
 

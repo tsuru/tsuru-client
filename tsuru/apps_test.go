@@ -39,7 +39,7 @@ func (s *S) TestAppCreateInfo(c *check.C) {
 func (s *S) TestAppCreate(c *check.C) {
 	var stdout, stderr bytes.Buffer
 	result := `{"status":"success", "repository_url":"git@tsuru.plataformas.glb.com:ble.git"}`
-	expected := `App "ble" is being created!
+	expected := `App "ble" has been created!
 Use app-info to check the status of the app and its units.
 Your repository for "ble" project is "git@tsuru.plataformas.glb.com:ble.git"` + "\n"
 	context := cmd.Context{
@@ -75,7 +75,7 @@ Your repository for "ble" project is "git@tsuru.plataformas.glb.com:ble.git"` + 
 func (s *S) TestAppCreateTeamOwner(c *check.C) {
 	var stdout, stderr bytes.Buffer
 	result := `{"status":"success", "repository_url":"git@tsuru.plataformas.glb.com:ble.git"}`
-	expected := `App "ble" is being created!
+	expected := `App "ble" has been created!
 Use app-info to check the status of the app and its units.
 Your repository for "ble" project is "git@tsuru.plataformas.glb.com:ble.git"` + "\n"
 	context := cmd.Context{
@@ -112,7 +112,7 @@ Your repository for "ble" project is "git@tsuru.plataformas.glb.com:ble.git"` + 
 func (s *S) TestAppCreatePlan(c *check.C) {
 	var stdout, stderr bytes.Buffer
 	result := `{"status":"success", "repository_url":"git@tsuru.plataformas.glb.com:ble.git"}`
-	expected := `App "ble" is being created!
+	expected := `App "ble" has been created!
 Use app-info to check the status of the app and its units.
 Your repository for "ble" project is "git@tsuru.plataformas.glb.com:ble.git"` + "\n"
 	context := cmd.Context{
@@ -141,6 +141,41 @@ Your repository for "ble" project is "git@tsuru.plataformas.glb.com:ble.git"` + 
 	client := cmd.NewClient(&http.Client{Transport: &trans}, nil, manager)
 	command := appCreate{}
 	command.Flags().Parse(true, []string{"-p", "myplan"})
+	err := command.Run(&context, client)
+	c.Assert(err, check.IsNil)
+	c.Assert(stdout.String(), check.Equals, expected)
+}
+
+func (s *S) TestAppCreateNoRepository(c *check.C) {
+	var stdout, stderr bytes.Buffer
+	result := `{"status":"success"}`
+	expected := `App "ble" has been created!
+Use app-info to check the status of the app and its units.` + "\n"
+	context := cmd.Context{
+		Args:   []string{"ble", "django"},
+		Stdout: &stdout,
+		Stderr: &stderr,
+	}
+	trans := cmdtest.ConditionalTransport{
+		Transport: cmdtest.Transport{Message: result, Status: http.StatusOK},
+		CondFunc: func(req *http.Request) bool {
+			defer req.Body.Close()
+			body, err := ioutil.ReadAll(req.Body)
+			c.Assert(err, check.IsNil)
+			expected := map[string]interface{}{
+				"name":      "ble",
+				"platform":  "django",
+				"teamOwner": "",
+				"plan":      map[string]interface{}{"name": ""},
+			}
+			result := map[string]interface{}{}
+			err = json.Unmarshal(body, &result)
+			c.Assert(expected, check.DeepEquals, result)
+			return req.Method == "POST" && req.URL.Path == "/apps"
+		},
+	}
+	client := cmd.NewClient(&http.Client{Transport: &trans}, nil, manager)
+	command := appCreate{}
 	err := command.Run(&context, client)
 	c.Assert(err, check.IsNil)
 	c.Assert(stdout.String(), check.Equals, expected)
