@@ -10,7 +10,7 @@ import (
 	"gopkg.in/check.v1"
 )
 
-var deprecates check.Checker = deprecationChecker{}
+var Deprecates check.Checker = deprecationChecker{}
 
 func (s *S) TestCommandsFromBaseManagerAreRegistered(c *check.C) {
 	baseManager := cmd.BuildBaseManager("tsuru", version, header, nil)
@@ -64,10 +64,6 @@ func (s *S) TestAppLogIsRegistered(c *check.C) {
 	c.Assert(log, check.FitsTypeOf, &appLog{})
 }
 
-func (s *S) TestLogIsDeprecated(c *check.C) {
-	c.Assert("app-log", deprecates, "log")
-}
-
 func (s *S) TestAppRunIsRegistered(c *check.C) {
 	manager := buildManager("tsuru")
 	run, ok := manager.Commands["app-run"]
@@ -75,19 +71,11 @@ func (s *S) TestAppRunIsRegistered(c *check.C) {
 	c.Assert(run, check.FitsTypeOf, &appRun{})
 }
 
-func (s *S) TestRunIsDeprecated(c *check.C) {
-	c.Assert("app-run", deprecates, "run")
-}
-
 func (s *S) TestAppRestartIsRegistered(c *check.C) {
 	manager := buildManager("tsuru")
 	restart, ok := manager.Commands["app-restart"]
 	c.Assert(ok, check.Equals, true)
 	c.Assert(restart, check.FitsTypeOf, &appRestart{})
-}
-
-func (s *S) TestRestartIsDeprecated(c *check.C) {
-	c.Assert("app-restart", deprecates, "restart")
 }
 
 func (s *S) TestEnvGetIsRegistered(c *check.C) {
@@ -160,19 +148,11 @@ func (s *S) TestServiceBindIsRegistered(c *check.C) {
 	c.Assert(bind, check.FitsTypeOf, &serviceBind{})
 }
 
-func (s *S) TestBindIsDeprecated(c *check.C) {
-	c.Assert("service-bind", deprecates, "bind")
-}
-
 func (s *S) TestServiceUnbindIsRegistered(c *check.C) {
 	manager := buildManager("tsuru")
 	unbind, ok := manager.Commands["service-unbind"]
 	c.Assert(ok, check.Equals, true)
 	c.Assert(unbind, check.FitsTypeOf, &serviceUnbind{})
-}
-
-func (s *S) TestUnbindIsDeprecated(c *check.C) {
-	c.Assert("service-unbind", deprecates, "unbind")
 }
 
 func (s *S) TestServiceDocIsRegistered(c *check.C) {
@@ -224,19 +204,11 @@ func (s *S) TestCNameAddIsRegistered(c *check.C) {
 	c.Assert(cname, check.FitsTypeOf, &cnameAdd{})
 }
 
-func (s *S) TestAddCnameIsDeprecated(c *check.C) {
-	c.Assert("cname-add", deprecates, "add-cname")
-}
-
 func (s *S) TestCNameRemoveIsRegistered(c *check.C) {
 	manager := buildManager("tsuru")
 	cname, ok := manager.Commands["cname-remove"]
 	c.Assert(ok, check.Equals, true)
 	c.Assert(cname, check.FitsTypeOf, &cnameRemove{})
-}
-
-func (s *S) TestRemoveCNameIsDeprecated(c *check.C) {
-	c.Assert("cname-remove", deprecates, "remove-cname")
 }
 
 func (s *S) TestPlatformListIsRegistered(c *check.C) {
@@ -253,19 +225,11 @@ func (s *S) TestAppSwapIsRegistered(c *check.C) {
 	c.Assert(cmd, check.FitsTypeOf, &appSwap{})
 }
 
-func (s *S) TestSwapIsDeprecated(c *check.C) {
-	c.Assert("app-swap", deprecates, "swap")
-}
-
 func (s *S) TestAppStartIsRegistered(c *check.C) {
 	manager := buildManager("tsuru")
 	start, ok := manager.Commands["app-start"]
 	c.Assert(ok, check.Equals, true)
 	c.Assert(start, check.FitsTypeOf, &appStart{})
-}
-
-func (s *S) TestStartIsDeprecated(c *check.C) {
-	c.Assert("app-start", deprecates, "start")
 }
 
 func (s *S) TestPluginInstallIsRegistered(c *check.C) {
@@ -308,19 +272,11 @@ func (s *S) TestAppStopIsRegistered(c *check.C) {
 	c.Assert(stop, check.FitsTypeOf, &appStop{})
 }
 
-func (s *S) TestStopIsDeprecated(c *check.C) {
-	c.Assert("app-stop", deprecates, "stop")
-}
-
 func (s *S) TestAppDeployIsRegistered(c *check.C) {
 	manager := buildManager("tsuru")
 	deployCmd, ok := manager.Commands["app-deploy"]
 	c.Assert(ok, check.Equals, true)
 	c.Assert(deployCmd, check.FitsTypeOf, &appDeploy{})
-}
-
-func (s *S) TestDeployIsDeprecated(c *check.C) {
-	c.Assert("app-deploy", deprecates, "deploy")
 }
 
 func (s *S) TestPlanListRegistered(c *check.C) {
