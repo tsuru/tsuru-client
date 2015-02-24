@@ -112,6 +112,7 @@ calls are:
 
     $ tsuru app-deploy .
     $ tsuru app-deploy myfile.jar Procfile
+    $ tsuru app-deploy mysite
 `
 	return &cmd.Info{
 		Name:    "app-deploy",
@@ -183,6 +184,9 @@ func targz(ctx *cmd.Context, destination io.Writer, filepaths ...string) error {
 			return err
 		}
 		if fi.IsDir() {
+			if len(filepaths) == 1 && path != "." {
+				return singleDir(ctx, destination, path)
+			}
 			err = addDir(tarWriter, path)
 		} else {
 			err = addFile(tarWriter, path)
@@ -199,6 +203,19 @@ func targz(ctx *cmd.Context, destination io.Writer, filepaths ...string) error {
 	defer gzipWriter.Close()
 	_, err = io.Copy(gzipWriter, &buf)
 	return err
+}
+
+func singleDir(ctx *cmd.Context, destination io.Writer, path string) error {
+	old, err := os.Getwd()
+	if err != nil {
+		return err
+	}
+	defer os.Chdir(old)
+	err = os.Chdir(path)
+	if err != nil {
+		return err
+	}
+	return targz(ctx, destination, ".")
 }
 
 func addDir(writer *tar.Writer, path string) error {

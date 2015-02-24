@@ -29,7 +29,8 @@ func (s *S) TestDeployInfo(c *check.C) {
 func (s *S) TestDeployRun(c *check.C) {
 	var called bool
 	var buf bytes.Buffer
-	err := targz(nil, &buf, "testdata")
+	ctx := cmd.Context{Stderr: bytes.NewBufferString("")}
+	err := targz(&ctx, &buf, "testdata", "..")
 	c.Assert(err, check.IsNil)
 	trans := cmdtest.ConditionalTransport{
 		Transport: cmdtest.Transport{Message: "deploy worked\nOK\n", Status: http.StatusOK},
@@ -139,6 +140,37 @@ func (s *S) TestTargz(c *check.C) {
 	sort.Strings(contents)
 	c.Assert(contents, check.DeepEquals, expectedContents)
 	c.Assert(buf.String(), check.Equals, `Warning: skipping ".."`)
+}
+
+func (s *S) TestTargzSingleDirectory(c *check.C) {
+	var buf bytes.Buffer
+	ctx := cmd.Context{Stderr: &buf}
+	var gzipBuf, tarBuf bytes.Buffer
+	err := targz(&ctx, &gzipBuf, "testdata")
+	c.Assert(err, check.IsNil)
+	gzipReader, err := gzip.NewReader(&gzipBuf)
+	c.Assert(err, check.IsNil)
+	_, err = io.Copy(&tarBuf, gzipReader)
+	c.Assert(err, check.IsNil)
+	tarReader := tar.NewReader(&tarBuf)
+	var headers []string
+	var contents []string
+	for header, err := tarReader.Next(); err == nil; header, err = tarReader.Next() {
+		headers = append(headers, header.Name)
+		if !header.FileInfo().IsDir() {
+			content, err := ioutil.ReadAll(tarReader)
+			c.Assert(err, check.IsNil)
+			contents = append(contents, string(content))
+		}
+	}
+	expected := []string{".", "directory", "directory/file.txt", "file1.txt", "file2.txt"}
+	sort.Strings(expected)
+	sort.Strings(headers)
+	c.Assert(headers, check.DeepEquals, expected)
+	expectedContents := []string{"wat\n", "something happened\n", "twice\n"}
+	sort.Strings(expectedContents)
+	sort.Strings(contents)
+	c.Assert(contents, check.DeepEquals, expectedContents)
 }
 
 func (s *S) TestTargzFailure(c *check.C) {
