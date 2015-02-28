@@ -296,13 +296,13 @@ func (s *S) TestAppRemoveFlags(c *check.C) {
 
 func (s *S) TestAppRemoveWithoutArgs(c *check.C) {
 	var stdout, stderr bytes.Buffer
+	expected := "Please specify which app you want to remove."
 	context := cmd.Context{
 		Args:   nil,
 		Stdout: &stdout,
 		Stderr: &stderr,
 		Stdin:  strings.NewReader("y\n"),
 	}
-	expected := "Please specify which app you want to remove."
 	client := cmd.NewClient(&http.Client{Transport: &cmdtest.Transport{Message: "", Status: http.StatusOK}}, nil, manager)
 	fake := cmdtest.FakeGuesser{Name: ""}
 	guessCommand := cmd.GuessingCommand{G: &fake}
