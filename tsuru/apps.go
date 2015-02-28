@@ -7,6 +7,7 @@ package main
 import (
 	"bytes"
 	"encoding/json"
+	"errors"
 	"fmt"
 	"io"
 	"io/ioutil"
@@ -137,7 +138,7 @@ remove it (you are able to remove any app that you see in [[tsuru app-list]]).`,
 func (c *appRemove) Run(context *cmd.Context, client *cmd.Client) error {
 	appName := c.Flags().Lookup("app").Value.String()
 	if appName == "" {
-		return fmt.Errorf("Please specify which app you want to remove.")
+		return errors.New("Please use the -a/--app flag to specify which app you want to remove.")
 	}
 	if !c.Confirm(context, fmt.Sprintf(`Are you sure you want to remove app "%s"?`, appName)) {
 		return nil

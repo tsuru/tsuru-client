@@ -296,7 +296,7 @@ func (s *S) TestAppRemoveFlags(c *check.C) {
 
 func (s *S) TestAppRemoveWithoutArgs(c *check.C) {
 	var stdout, stderr bytes.Buffer
-	expected := "Please specify which app you want to remove."
+	expected := "Please use the -a/--app flag to specify which app you want to remove."
 	context := cmd.Context{
 		Args:   nil,
 		Stdout: &stdout,
