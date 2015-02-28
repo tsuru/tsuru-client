@@ -139,6 +139,9 @@ func (c *appRemove) Run(context *cmd.Context, client *cmd.Client) error {
 	if err != nil {
 		return err
 	}
+	if appName == "" {
+		return fmt.Errorf("Please specify which app you want to remove.")
+	}
 	if !c.Confirm(context, fmt.Sprintf(`Are you sure you want to remove app "%s"?`, appName)) {
 		return nil
 	}

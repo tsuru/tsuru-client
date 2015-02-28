@@ -302,20 +302,14 @@ func (s *S) TestAppRemoveWithoutArgs(c *check.C) {
 		Stderr: &stderr,
 		Stdin:  strings.NewReader("y\n"),
 	}
-	expected := `Are you sure you want to remove app "secret"? (y/n) App "secret" successfully removed!` + "\n"
-	trans := &cmdtest.ConditionalTransport{
-		Transport: cmdtest.Transport{Message: "", Status: http.StatusOK},
-		CondFunc: func(req *http.Request) bool {
-			return req.URL.Path == "/apps/secret" && req.Method == "DELETE"
-		},
-	}
-	client := cmd.NewClient(&http.Client{Transport: trans}, nil, manager)
-	fake := cmdtest.FakeGuesser{Name: "secret"}
+	expected := "Please specify which app you want to remove."
+	client := cmd.NewClient(&http.Client{Transport: &cmdtest.Transport{Message: "", Status: http.StatusOK}}, nil, manager)
+	fake := cmdtest.FakeGuesser{Name: ""}
 	guessCommand := cmd.GuessingCommand{G: &fake}
 	command := appRemove{GuessingCommand: guessCommand}
 	err := command.Run(&context, client)
-	c.Assert(err, check.IsNil)
-	c.Assert(stdout.String(), check.Equals, expected)
+	c.Assert(err, check.NotNil)
+	c.Assert(err.Error(), check.Equals, expected)
 }
 
 func (s *S) TestAppRemoveWithoutConfirmation(c *check.C) {
