@@ -1,10 +1,14 @@
-# Copyright 2013 tsuru authors. All rights reserved.
+# Copyright 2015 tsuru-client authors. All rights reserved.
 # Use of this source code is governed by a BSD-style
 # license that can be found in the LICENSE file.
 
 _tsuru() {
+    local tasks=""
+    if [ ${#COMP_WORDS[@]} -lt 3 ]
+    then
+        tasks=`tsuru | egrep "^[  ]" | awk -F ' ' '{print $1}'`
+    fi
     local current=${COMP_WORDS[COMP_CWORD]}
-    local tasks=`tsuru | egrep "^[  ]" | awk -F ' ' '{print $1}'`
     COMPREPLY=( $(compgen -W "$tasks" $current) )
 }
-complete -F _tsuru tsuru
+complete -F _tsuru -o bashdefault -o default tsuru
