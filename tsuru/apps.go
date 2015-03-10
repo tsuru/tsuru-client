@@ -171,6 +171,8 @@ func (c *appRemove) Flags() *gnuflag.FlagSet {
 
 type appInfo struct {
 	cmd.GuessingCommand
+	outputFormat string
+	fs           *gnuflag.FlagSet
 }
 
 func (c *appInfo) Info() *cmd.Info {
@@ -182,6 +184,20 @@ etc. You need to be a member of a team that access to the app to be able to
 see informations about it.`,
 		MinArgs: 0,
 	}
+}
+
+func (c *appInfo) Flags() *gnuflag.FlagSet {
+	if c.fs == nil {
+		fs := gnuflag.NewFlagSet("", gnuflag.ExitOnError)
+		outputFormatMessage := "Output to format (e.g.: \"normal\", \"json\", \"prettyjson\")"
+		fs.StringVar(&c.outputFormat, "output-format", "", outputFormatMessage)
+
+		c.fs = cmd.MergeFlagSet(
+			c.GuessingCommand.Flags(),
+			fs,
+		)
+	}
+	return c.fs
 }
 
 func (c *appInfo) Run(context *cmd.Context, client *cmd.Client) error {
@@ -243,7 +259,7 @@ func (c *appInfo) Run(context *cmd.Context, client *cmd.Client) error {
 			return err
 		}
 	}
-	return c.Show(result, adminResult, servicesResult, context)
+	return c.Show(result, adminResult, servicesResult, context, c.outputFormat)
 }
 
 type unit struct {
@@ -378,7 +394,7 @@ Deploys: {{.Deploys}}
 	return buf.String() + suffix
 }
 
-func (c *appInfo) Show(result []byte, adminResult []byte, servicesResult []byte, context *cmd.Context) error {
+func (c *appInfo) Show(result []byte, adminResult []byte, servicesResult []byte, context *cmd.Context, format string) error {
 	var a app
 	err := json.Unmarshal(result, &a)
 	if err != nil {
@@ -386,7 +402,21 @@ func (c *appInfo) Show(result []byte, adminResult []byte, servicesResult []byte,
 	}
 	json.Unmarshal(adminResult, &a.containers)
 	json.Unmarshal(servicesResult, &a.services)
-	fmt.Fprintln(context.Stdout, &a)
+
+	if strings.ToLower(format) == "prettyjson" {
+		// Pretty-printed (indented) json
+		out, err := json.MarshalIndent(a, "", "    ")
+		if err != nil {
+			return err
+		}
+		fmt.Fprintf(context.Stdout, "%s\n", out)
+	} else if strings.ToLower(format) == "json" {
+		fmt.Fprintln(context.Stdout, string(result))
+	} else {
+		// Normal, human-readable
+		fmt.Fprintln(context.Stdout, &a)
+	}
+
 	return nil
 }
 
