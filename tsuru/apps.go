@@ -171,6 +171,8 @@ func (c *appRemove) Flags() *gnuflag.FlagSet {
 
 type appInfo struct {
 	cmd.GuessingCommand
+	showOnlyField string
+	fs            *gnuflag.FlagSet
 }
 
 func (c *appInfo) Info() *cmd.Info {
@@ -182,6 +184,20 @@ etc. You need to be a member of a team that access to the app to be able to
 see informations about it.`,
 		MinArgs: 0,
 	}
+}
+
+func (c *appInfo) Flags() *gnuflag.FlagSet {
+	if c.fs == nil {
+		fs := gnuflag.NewFlagSet("", gnuflag.ExitOnError)
+		showOnlyFieldMessage := "Show only one field (e.g.: address, repository)"
+		fs.StringVar(&c.showOnlyField, "show-only-field", "", showOnlyFieldMessage)
+
+		c.fs = cmd.MergeFlagSet(
+			c.GuessingCommand.Flags(),
+			fs,
+		)
+	}
+	return c.fs
 }
 
 func (c *appInfo) Run(context *cmd.Context, client *cmd.Client) error {
@@ -243,7 +259,8 @@ func (c *appInfo) Run(context *cmd.Context, client *cmd.Client) error {
 			return err
 		}
 	}
-	return c.Show(result, adminResult, servicesResult, context)
+
+	return c.Show(result, adminResult, servicesResult, context, strings.ToLower(c.showOnlyField))
 }
 
 type unit struct {
@@ -378,11 +395,47 @@ Deploys: {{.Deploys}}
 	return buf.String() + suffix
 }
 
-func (c *appInfo) Show(result []byte, adminResult []byte, servicesResult []byte, context *cmd.Context) error {
+func (c *appInfo) Show(result []byte, adminResult []byte, servicesResult []byte, context *cmd.Context, showOnly string) error {
 	var a app
 	err := json.Unmarshal(result, &a)
 	if err != nil {
 		return err
+	}
+	if strings.HasPrefix(showOnly, "addr") || strings.HasPrefix(showOnly, "ip") {
+		fmt.Fprintln(context.Stdout, a.Ip)
+		return nil
+	}
+	if strings.HasPrefix(showOnly, "app") || strings.HasPrefix(showOnly, "name") {
+		fmt.Fprintln(context.Stdout, a.Name)
+		return nil
+	}
+	if strings.HasPrefix(showOnly, "deploys") {
+		fmt.Fprintln(context.Stdout, a.Deploys)
+		return nil
+	}
+	if strings.HasPrefix(showOnly, "owner") {
+		fmt.Fprintln(context.Stdout, a.Owner)
+		return nil
+	}
+	if strings.HasPrefix(showOnly, "platform") {
+		fmt.Fprintln(context.Stdout, a.Platform)
+		return nil
+	}
+	if strings.HasPrefix(showOnly, "repo") {
+		fmt.Fprintln(context.Stdout, a.Repository)
+		return nil
+	}
+	if strings.HasPrefix(showOnly, "team-owner") {
+		fmt.Fprintln(context.Stdout, a.TeamOwner)
+		return nil
+	}
+	if strings.HasPrefix(showOnly, "teams") {
+		fmt.Fprintln(context.Stdout, strings.Join(a.Teams, "\n"))
+		return nil
+	}
+	if strings.HasPrefix(showOnly, "units") {
+		fmt.Fprintln(context.Stdout, len(a.Units))
+		return nil
 	}
 	json.Unmarshal(adminResult, &a.containers)
 	json.Unmarshal(servicesResult, &a.services)
