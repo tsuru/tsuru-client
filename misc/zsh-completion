@@ -7,5 +7,5 @@ _tsuru() {
     local tasks="$(tsuru 2>/dev/null | egrep "^[ ]" | awk -F ' ' '{print $1}    ')"
     _arguments \
         "1: :($tasks)" \
-        "2:file:_files"
+        "*:file:_files"
 }
