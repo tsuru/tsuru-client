@@ -4,5 +4,8 @@
 # license that can be found in the LICENSE file.
 
 _tsuru() {
-    compadd -- $(tsuru | grep "^[ ]" | awk -F ' ' '{print $1}')
+    local tasks="$(tsuru 2>/dev/null | egrep "^[ ]" | awk -F ' ' '{print $1}    ')"
+    _arguments \
+        "1: :($tasks)" \
+        "2:file:_files"
 }
