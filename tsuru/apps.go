@@ -264,7 +264,6 @@ type app struct {
 	Repository string
 	Teams      []string
 	Units      []unit
-	Ready      bool
 	Owner      string
 	TeamOwner  string
 	Deploys    uint
@@ -297,13 +296,6 @@ func (a *app) Addr() string {
 		return fmt.Sprintf("%s, %s", cnames, a.Ip)
 	}
 	return a.Ip
-}
-
-func (a *app) IsReady() string {
-	if a.Ready {
-		return "Yes"
-	}
-	return "No"
 }
 
 func (a *app) GetTeams() string {
@@ -499,7 +491,7 @@ func (c appList) Show(result []byte, context *cmd.Context) error {
 		return err
 	}
 	table := cmd.NewTable()
-	table.Headers = cmd.Row([]string{"Application", "Units State Summary", "Address", "Ready?"})
+	table.Headers = cmd.Row([]string{"Application", "Units State Summary", "Address"})
 	for _, app := range apps {
 		var available int
 		var total int
@@ -513,7 +505,7 @@ func (c appList) Show(result []byte, context *cmd.Context) error {
 		}
 		summary := fmt.Sprintf("%d of %d units in-service", available, total)
 		addrs := strings.Replace(app.Addr(), ", ", "\n", -1)
-		table.AddRow(cmd.Row([]string{app.Name, summary, addrs, app.IsReady()}))
+		table.AddRow(cmd.Row([]string{app.Name, summary, addrs}))
 	}
 	table.LineSeparator = true
 	table.Sort()
