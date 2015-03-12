@@ -536,6 +536,7 @@ func (c *appStop) Info() *cmd.Info {
 }
 
 func (c *appStop) Run(context *cmd.Context, client *cmd.Client) error {
+	context.RawOutput()
 	appName, err := c.Guess()
 	if err != nil {
 		return err
@@ -574,6 +575,7 @@ func (c *appStart) Info() *cmd.Info {
 }
 
 func (c *appStart) Run(context *cmd.Context, client *cmd.Client) error {
+	context.RawOutput()
 	appName, err := c.Guess()
 	if err != nil {
 		return err
@@ -603,6 +605,7 @@ type appRestart struct {
 }
 
 func (c *appRestart) Run(context *cmd.Context, client *cmd.Client) error {
+	context.RawOutput()
 	appName, err := c.Guess()
 	if err != nil {
 		return err
@@ -798,6 +801,7 @@ app to be able to add new units to it.`,
 }
 
 func (c *unitAdd) Run(context *cmd.Context, client *cmd.Client) error {
+	context.RawOutput()
 	appName, err := c.Guess()
 	if err != nil {
 		return err

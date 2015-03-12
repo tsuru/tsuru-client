@@ -36,6 +36,7 @@ Otherwise, it will run the command in all units.`
 }
 
 func (c *appRun) Run(context *cmd.Context, client *cmd.Client) error {
+	context.RawOutput()
 	appName, err := c.Guess()
 	if err != nil {
 		return err

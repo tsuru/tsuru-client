@@ -76,6 +76,7 @@ type log struct {
 }
 
 func (c *appLog) Run(context *cmd.Context, client *cmd.Client) error {
+	context.RawOutput()
 	appName, err := c.Guess()
 	if err != nil {
 		return err

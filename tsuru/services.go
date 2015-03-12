@@ -133,6 +133,7 @@ type serviceBind struct {
 }
 
 func (sb *serviceBind) Run(ctx *cmd.Context, client *cmd.Client) error {
+	ctx.RawOutput()
 	appName, err := sb.Guess()
 	if err != nil {
 		return err
@@ -183,6 +184,7 @@ type serviceUnbind struct {
 }
 
 func (su *serviceUnbind) Run(ctx *cmd.Context, client *cmd.Client) error {
+	ctx.RawOutput()
 	appName, err := su.Guess()
 	if err != nil {
 		return err

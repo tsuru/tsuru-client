@@ -76,6 +76,7 @@ func (c *envSet) Info() *cmd.Info {
 }
 
 func (c *envSet) Run(context *cmd.Context, client *cmd.Client) error {
+	context.RawOutput()
 	appName, err := c.Guess()
 	if err != nil {
 		return err
@@ -132,6 +133,7 @@ func (c *envUnset) Info() *cmd.Info {
 }
 
 func (c *envUnset) Run(context *cmd.Context, client *cmd.Client) error {
+	context.RawOutput()
 	appName, err := c.Guess()
 	if err != nil {
 		return err

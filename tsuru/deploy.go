@@ -123,6 +123,7 @@ calls are:
 }
 
 func (c *appDeploy) Run(context *cmd.Context, client *cmd.Client) error {
+	context.RawOutput()
 	var body bytes.Buffer
 	writer := multipart.NewWriter(&body)
 	file, err := writer.CreateFormFile("file", "archive.tar.gz")
@@ -322,6 +323,7 @@ func (c *appDeployRollback) Info() *cmd.Info {
 }
 
 func (c *appDeployRollback) Run(context *cmd.Context, client *cmd.Client) error {
+	context.RawOutput()
 	appName, err := c.Guess()
 	if err != nil {
 		return err
