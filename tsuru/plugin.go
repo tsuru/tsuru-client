@@ -27,6 +27,7 @@ func (pluginInstall) Info() *cmd.Info {
 }
 
 func (c *pluginInstall) Run(context *cmd.Context, client *cmd.Client) error {
+	context.RawOutput()
 	pluginsDir := cmd.JoinWithUserDir(".tsuru", "plugins")
 	err := filesystem().MkdirAll(pluginsDir, 0755)
 	if err != nil {
