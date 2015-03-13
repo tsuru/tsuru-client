@@ -32,6 +32,7 @@ func (c *userCreate) Info() *cmd.Info {
 }
 
 func (c *userCreate) Run(context *cmd.Context, client *cmd.Client) error {
+	context.RawOutput()
 	url, err := cmd.GetURL("/users")
 	if err != nil {
 		return err
