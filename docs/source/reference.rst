@@ -27,6 +27,8 @@ Authentication
    :title: Create a user
 .. tsuru-command:: user-remove
    :title: Remove your user from tsuru server
+.. tsuru-command:: user-info
+   :title: Retrieve information about the current user
 .. tsuru-command:: login
    :title: Login
 .. tsuru-command:: logout
