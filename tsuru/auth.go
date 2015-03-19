@@ -12,11 +12,9 @@ import (
 	"io"
 	"io/ioutil"
 	"net/http"
-	"os"
 	"sort"
 
 	"github.com/tsuru/tsuru/cmd"
-	"golang.org/x/crypto/ssh/terminal"
 	"launchpad.net/gnuflag"
 )
 
@@ -39,12 +37,12 @@ func (c *userCreate) Run(context *cmd.Context, client *cmd.Client) error {
 	}
 	email := context.Args[0]
 	fmt.Fprint(context.Stdout, "Password: ")
-	password, err := passwordFromReader(context.Stdin)
+	password, err := cmd.PasswordFromReader(context.Stdin)
 	if err != nil {
 		return err
 	}
 	fmt.Fprint(context.Stdout, "\nConfirm: ")
-	confirm, err := passwordFromReader(context.Stdin)
+	confirm, err := cmd.PasswordFromReader(context.Stdin)
 	if err != nil {
 		return err
 	}
@@ -329,17 +327,17 @@ func (c *changePassword) Run(context *cmd.Context, client *cmd.Client) error {
 	}
 	var body bytes.Buffer
 	fmt.Fprint(context.Stdout, "Current password: ")
-	old, err := passwordFromReader(context.Stdin)
+	old, err := cmd.PasswordFromReader(context.Stdin)
 	if err != nil {
 		return err
 	}
 	fmt.Fprint(context.Stdout, "\nNew password: ")
-	new, err := passwordFromReader(context.Stdin)
+	new, err := cmd.PasswordFromReader(context.Stdin)
 	if err != nil {
 		return err
 	}
 	fmt.Fprint(context.Stdout, "\nConfirm: ")
-	confirm, err := passwordFromReader(context.Stdin)
+	confirm, err := cmd.PasswordFromReader(context.Stdin)
 	if err != nil {
 		return err
 	}
@@ -434,26 +432,6 @@ func (c *resetPassword) Flags() *gnuflag.FlagSet {
 	fs.StringVar(&c.token, "token", "", "Token to reset the password")
 	fs.StringVar(&c.token, "t", "", "Token to reset the password")
 	return fs
-}
-
-func passwordFromReader(reader io.Reader) (string, error) {
-	var (
-		password []byte
-		err      error
-	)
-	if file, ok := reader.(*os.File); ok && terminal.IsTerminal(int(file.Fd())) {
-		password, err = terminal.ReadPassword(int(file.Fd()))
-		if err != nil {
-			return "", err
-		}
-	} else {
-		fmt.Fscanf(reader, "%s\n", &password)
-	}
-	if len(password) == 0 {
-		msg := "You must provide the password!"
-		return "", errors.New(msg)
-	}
-	return string(password), err
 }
 
 type showAPIToken struct{}

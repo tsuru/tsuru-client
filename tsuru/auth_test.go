@@ -9,9 +9,6 @@ import (
 	"encoding/json"
 	"io"
 	"net/http"
-	"os"
-	"path"
-	"path/filepath"
 	"strings"
 
 	"github.com/tsuru/tsuru/cmd"
@@ -460,27 +457,6 @@ func (s *S) TestChangePasswordInfo(c *check.C) {
 
 func (s *S) TestChangePasswordIsACommand(c *check.C) {
 	var _ cmd.Command = &changePassword{}
-}
-
-func (s *S) TestPasswordFromReaderUsingFile(c *check.C) {
-	tmpdir, err := filepath.EvalSymlinks(os.TempDir())
-	filename := path.Join(tmpdir, "password-reader.txt")
-	c.Assert(err, check.IsNil)
-	file, err := os.Create(filename)
-	c.Assert(err, check.IsNil)
-	defer os.Remove(filename)
-	file.WriteString("hello")
-	file.Seek(0, 0)
-	password, err := passwordFromReader(file)
-	c.Assert(err, check.IsNil)
-	c.Assert(password, check.Equals, "hello")
-}
-
-func (s *S) TestPasswordFromReaderUsingStringsReader(c *check.C) {
-	reader := strings.NewReader("abcd\n")
-	password, err := passwordFromReader(reader)
-	c.Assert(err, check.IsNil)
-	c.Assert(password, check.Equals, "abcd")
 }
 
 func (s *S) TestResetPassword(c *check.C) {
