@@ -27,8 +27,8 @@ func (s *appSwap) Info() *cmd.Info {
 		Desc: `Swaps routing between two apps. This allows zero downtime and makes rollback
 as simple as swapping the applications back.
 
-Use [[--force]] if you want to swap applications with a different numbers of
-units or diferent platform without confirmation.`,
+Use [[--force]] if you want to swap applications with a different number of
+units or different platform without confirmation.`,
 		MinArgs: 2,
 	}
 }

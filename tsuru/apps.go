@@ -41,7 +41,7 @@ teams that you are member (see [[tsuru team-list]]) will be able to access the
 app.
 
 The [[--platform]] parameter is the name of the platform to be used when
-creating the app. This will definer how tsuru understands and executes your
+creating the app. This will define how tsuru understands and executes your
 app. The list of available platforms can be found running [[tsuru platform-list]].
 
 The [[--plan]] parameter defines the plan to be used. The plan specifies how
@@ -177,9 +177,9 @@ func (c *appInfo) Info() *cmd.Info {
 	return &cmd.Info{
 		Name:  "app-info",
 		Usage: "app-info [-a/--app appname]",
-		Desc: `Shows information about an specific app. Its state, platform, git repository,
-etc. You need to be a member of a team that access to the app to be able to
-see informations about it.`,
+		Desc: `Shows information about a specific app. Its state, platform, git repository,
+etc. You need to be a member of a team that has access to the app to be able to
+see information about it.`,
 		MinArgs: 0,
 	}
 }

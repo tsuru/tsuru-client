@@ -56,7 +56,7 @@ func (c *autoScaleDisable) Info() *cmd.Info {
 	return &cmd.Info{
 		Name:  "autoscale-disable",
 		Usage: "autoscale-disable [-a/--app appname]",
-		Desc:  "Disablse application autoscale.",
+		Desc:  "Disables application autoscale.",
 	}
 }
 
@@ -105,7 +105,7 @@ func (c *autoScaleConfig) Flags() *gnuflag.FlagSet {
 		c.fs.StringVar(&c.increaseExpression, "increase-expression", "{cpu_max} > 90", "Expression used to scale.")
 		c.fs.StringVar(&c.decreaseExpression, "decrease-expression", "{cpu_max} < 10", "Expression used to scale.")
 		c.fs.IntVar(&c.decreaseWaitTime, "decrease-wait-time", 300, "Seconds before allowing another scaling activity.")
-		c.fs.IntVar(&c.decreaseStep, "decrease-step", 1, "Number of units that will be decrease on scale.")
+		c.fs.IntVar(&c.decreaseStep, "decrease-step", 1, "Number of units that will be decreased on scale.")
 		c.fs.BoolVar(&c.enabled, "enabled", false, "Enable auto scale.")
 	}
 	return c.fs
