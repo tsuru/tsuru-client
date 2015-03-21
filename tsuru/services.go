@@ -26,7 +26,7 @@ func (s serviceList) Info() *cmd.Info {
 	return &cmd.Info{
 		Name:  "service-list",
 		Usage: "service-list",
-		Desc: `Retrieves and shows a list of services the user has access. If the are
+		Desc: `Retrieves and shows a list of services the user has access. If there are
 instances created for any service they will also be shown.`,
 	}
 }
@@ -68,7 +68,7 @@ type serviceAdd struct {
 func (c *serviceAdd) Info() *cmd.Info {
 	return &cmd.Info{
 		Name:  "service-add",
-		Usage: "service-add <servicename> <serviceinstancename> [plan] [-t/--owner-team <team>]",
+		Usage: "service-add <servicename> <serviceinstancename> [plan] [-t/--team-owner <team>]",
 		Desc: `Creates a service instance of a service. There can later be binded to
 applications with [[tsuru service-bind]].
 
@@ -120,7 +120,7 @@ func (c *serviceAdd) Run(ctx *cmd.Context, client *cmd.Client) error {
 
 func (c *serviceAdd) Flags() *gnuflag.FlagSet {
 	if c.fs == nil {
-		flagDesc := "the team that owns te service (mandatory if the user is member of more than one team)"
+		flagDesc := "the team that owns the service (mandatory if the user is member of more than one team)"
 		c.fs = gnuflag.NewFlagSet("service-add", gnuflag.ExitOnError)
 		c.fs.StringVar(&c.teamOwner, "team-owner", "", flagDesc)
 		c.fs.StringVar(&c.teamOwner, "t", "", flagDesc)
