@@ -18,13 +18,20 @@ import (
 
 	"github.com/tsuru/tsuru/cmd"
 	tsuruIo "github.com/tsuru/tsuru/io"
+	"launchpad.net/gnuflag"
 )
 
 const envSetValidationMessage = `You must specify environment variables in the form "NAME=value".
 
 Example:
 
-  tsuru env-set NAME=value OTHER_NAME="value with spaces" ANOTHER_NAME='using single quotes'`
+  tsuru env-set NAME=value OTHER_NAME="value with spaces" ANOTHER_NAME='using single quotes'
+
+For private variables like passwords you can use -p or --private.
+
+Example:
+
+  tsuru env-set NAME=value OTHER_NAME="value with spaces" ANOTHER_NAME='using single quotes' -p`
 
 type envGet struct {
 	cmd.GuessingCommand
@@ -64,12 +71,14 @@ func (c *envGet) Run(context *cmd.Context, client *cmd.Client) error {
 
 type envSet struct {
 	cmd.GuessingCommand
+	fs	*gnuflag.FlagSet
+	private bool
 }
 
 func (c *envSet) Info() *cmd.Info {
 	return &cmd.Info{
 		Name:    "env-set",
-		Usage:   "env-set <NAME=value> [NAME=value] ... [-a/--app appname]",
+		Usage:   "env-set <NAME=value> [NAME=value] ... [-a/--app appname] [-p/--private]",
 		Desc:    `Sets environment variables for an application.`,
 		MinArgs: 1,
 	}
@@ -98,6 +107,9 @@ func (c *envSet) Run(context *cmd.Context, client *cmd.Client) error {
 	if err != nil {
 		return err
 	}
+	if c.private {
+		url += "?private=1"
+	}
 	request, err := http.NewRequest("POST", url, &buf)
 	if err != nil {
 		return err
@@ -117,6 +129,15 @@ func (c *envSet) Run(context *cmd.Context, client *cmd.Client) error {
 		return fmt.Errorf("unparsed message error: %s", string(unparsed))
 	}
 	return nil
+}
+
+func (c *envSet) Flags() *gnuflag.FlagSet {
+	if c.fs == nil {
+		c.fs = c.GuessingCommand.Flags()
+		c.fs.BoolVar(&c.private, "private", false, "Private environment variables")
+		c.fs.BoolVar(&c.private, "p", false, "Private environment variables")
+	}
+	return c.fs
 }
 
 type envUnset struct {
