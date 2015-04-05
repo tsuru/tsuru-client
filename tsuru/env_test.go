@@ -221,6 +221,52 @@ func (s *S) TestEnvSetValues(c *check.C) {
 	c.Assert(stdout.String(), check.Equals, expectedOut)
 }
 
+func (s *S) TestEnvSetValuesAndPrivate(c *check.C) {
+	var stdout, stderr bytes.Buffer
+	context := cmd.Context{
+		Args: []string{
+			"DATABASE_HOST=some host",
+			"DATABASE_USER=root",
+			"DATABASE_PASSWORD=.1234..abc",
+			"http_proxy=http://myproxy.com:3128/",
+			"VALUE_WITH_EQUAL_SIGN=http://wholikesquerystrings.me/?tsuru=awesome",
+			"BASE64_STRING=t5urur0ck5==",
+		},
+		
+		Stdout: &stdout,
+		Stderr: &stderr,
+	}
+	expectedOut := "variable(s) successfully exported\n"
+	msg := io.SimpleJsonMessage{Message: expectedOut}
+	result, err := json.Marshal(msg)
+	c.Assert(err, check.IsNil)
+	trans := &cmdtest.ConditionalTransport{
+		Transport: cmdtest.Transport{Message: string(result), Status: http.StatusOK},
+		CondFunc: func(req *http.Request) bool {
+			want := map[string]string{
+				"DATABASE_HOST":         "some host",
+				"DATABASE_USER":         "root",
+				"DATABASE_PASSWORD":     ".1234..abc",
+				"http_proxy":            "http://myproxy.com:3128/",
+				"VALUE_WITH_EQUAL_SIGN": "http://wholikesquerystrings.me/?tsuru=awesome",
+				"BASE64_STRING":         "t5urur0ck5==",
+			}
+			defer req.Body.Close()
+			var got map[string]string
+			err := json.NewDecoder(req.Body).Decode(&got)
+			c.Assert(err, check.IsNil)
+			c.Assert(req.URL.RawQuery, check.Equals, "private=1")
+			c.Assert(got, check.DeepEquals, want)
+			return req.URL.Path == "/apps/someapp/env" && req.Method == "POST"
+		},
+	}
+	client := cmd.NewClient(&http.Client{Transport: trans}, nil, manager)
+	command := envSet{}
+	command.Flags().Parse(true, []string{"-a", "someapp", "-p", "1"})
+	err = command.Run(&context, client)
+	c.Assert(err, check.IsNil)
+	c.Assert(stdout.String(), check.Equals, expectedOut)
+}
 func (s *S) TestEnvSetWithoutFlag(c *check.C) {
 	var stdout, stderr bytes.Buffer
 	context := cmd.Context{
@@ -240,7 +286,7 @@ func (s *S) TestEnvSetWithoutFlag(c *check.C) {
 	}
 	client := cmd.NewClient(&http.Client{Transport: trans}, nil, manager)
 	fake := &cmdtest.FakeGuesser{Name: "otherapp"}
-	err = (&envSet{cmd.GuessingCommand{G: fake}}).Run(&context, client)
+	err = (&envSet{GuessingCommand: cmd.GuessingCommand{G: fake}}).Run(&context, client)
 	c.Assert(err, check.IsNil)
 	c.Assert(stdout.String(), check.Equals, expectedOut)
 }
