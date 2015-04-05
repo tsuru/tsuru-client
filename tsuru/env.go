@@ -71,7 +71,7 @@ func (c *envGet) Run(context *cmd.Context, client *cmd.Client) error {
 
 type envSet struct {
 	cmd.GuessingCommand
-	fs	*gnuflag.FlagSet
+	fs      *gnuflag.FlagSet
 	private bool
 }
 

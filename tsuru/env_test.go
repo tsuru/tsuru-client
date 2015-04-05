@@ -232,7 +232,7 @@ func (s *S) TestEnvSetValuesAndPrivate(c *check.C) {
 			"VALUE_WITH_EQUAL_SIGN=http://wholikesquerystrings.me/?tsuru=awesome",
 			"BASE64_STRING=t5urur0ck5==",
 		},
-		
+
 		Stdout: &stdout,
 		Stderr: &stderr,
 	}
