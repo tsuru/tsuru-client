@@ -376,6 +376,40 @@ func (s *S) TestUserRemove(c *check.C) {
 	c.Assert(rfs.HasAction("remove "+cmd.JoinWithUserDir(".tsuru_token")), check.Equals, true)
 }
 
+func (s *S) TestUserRemoveWithArgs(c *check.C) {
+	rfs := &fstest.RecordingFs{}
+	f, _ := rfs.Create(cmd.JoinWithUserDir(".tsuru_target"))
+	f.Write([]byte("http://tsuru.io"))
+	f.Close()
+	fsystem = rfs
+	defer func() {
+		fsystem = nil
+	}()
+	var (
+		buf    bytes.Buffer
+		called bool
+	)
+	context := cmd.Context{
+		Stdout: &buf,
+		Stdin:  strings.NewReader("y\n"),
+		Args:   []string{"u@email.com"},
+	}
+	trans := cmdtest.ConditionalTransport{
+		Transport: cmdtest.Transport{Message: "", Status: http.StatusOK},
+		CondFunc: func(req *http.Request) bool {
+			called = true
+			return req.Method == "DELETE" && req.URL.Path == "/users" && req.URL.Query().Get("user") == context.Args[0]
+		},
+	}
+	client := cmd.NewClient(&http.Client{Transport: &trans}, nil, manager)
+	command := userRemove{}
+	err := command.Run(&context, client)
+	c.Assert(err, check.IsNil)
+	c.Assert(called, check.Equals, true)
+	c.Assert(buf.String(), check.Equals, "Are you sure you want to remove your user from tsuru? (y/n) User successfully removed.\n")
+	c.Assert(rfs.HasAction("remove "+cmd.JoinWithUserDir(".tsuru_token")), check.Equals, true)
+}
+
 func (s *S) TestUserRemoveWithoutConfirmation(c *check.C) {
 	var buf bytes.Buffer
 	context := cmd.Context{

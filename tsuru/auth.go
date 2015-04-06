@@ -83,7 +83,11 @@ func (c *userRemove) Run(context *cmd.Context, client *cmd.Client) error {
 	if err != nil {
 		return err
 	}
-	request, err := http.NewRequest("DELETE", url, nil)
+	var qs string
+	if len(context.Args) > 0 {
+		qs = "?user=" + context.Args[0]
+	}
+	request, err := http.NewRequest("DELETE", url+qs, nil)
 	if err != nil {
 		return err
 	}
@@ -99,12 +103,13 @@ func (c *userRemove) Run(context *cmd.Context, client *cmd.Client) error {
 func (c *userRemove) Info() *cmd.Info {
 	return &cmd.Info{
 		Name:  "user-remove",
-		Usage: "user-remove",
+		Usage: "user-remove [email]",
 		Desc: `Remove currently authenticated user from remote tsuru
 server. Since there cannot exist any orphan teams, tsuru will refuse to remove
 a user that is the last member of some team. If this is your case, make sure
 you remove the team using ` + "`team-remove`" + ` before removing the user.`,
 		MinArgs: 0,
+		MaxArgs: 1,
 	}
 }
 
