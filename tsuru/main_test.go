@@ -376,3 +376,10 @@ func (s *S) TestTeamListIsRegistered(c *check.C) {
 	c.Assert(ok, check.Equals, true)
 	c.Assert(list, check.FitsTypeOf, &teamList{})
 }
+
+func (s *S) TestPoolListIsRegistered(c *check.C) {
+	manager := buildManager("tsuru")
+	list, ok := manager.Commands["pool-list"]
+	c.Assert(ok, check.Equals, true)
+	c.Assert(list, check.FitsTypeOf, &poolList{})
+}
