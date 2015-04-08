@@ -58,6 +58,7 @@ Your repository for "ble" project is "git@tsuru.plataformas.glb.com:ble.git"` + 
 				"platform":  "django",
 				"teamOwner": "",
 				"plan":      map[string]interface{}{"name": ""},
+				"pool":      "",
 			}
 			result := map[string]interface{}{}
 			err = json.Unmarshal(body, &result)
@@ -94,6 +95,7 @@ Your repository for "ble" project is "git@tsuru.plataformas.glb.com:ble.git"` + 
 				"platform":  "django",
 				"teamOwner": "team",
 				"plan":      map[string]interface{}{"name": ""},
+				"pool":      "",
 			}
 			result := map[string]interface{}{}
 			err = json.Unmarshal(body, &result)
@@ -131,6 +133,7 @@ Your repository for "ble" project is "git@tsuru.plataformas.glb.com:ble.git"` + 
 				"platform":  "django",
 				"teamOwner": "",
 				"plan":      map[string]interface{}{"name": "myplan"},
+				"pool":      "",
 			}
 			result := map[string]interface{}{}
 			err = json.Unmarshal(body, &result)
@@ -141,6 +144,44 @@ Your repository for "ble" project is "git@tsuru.plataformas.glb.com:ble.git"` + 
 	client := cmd.NewClient(&http.Client{Transport: &trans}, nil, manager)
 	command := appCreate{}
 	command.Flags().Parse(true, []string{"-p", "myplan"})
+	err := command.Run(&context, client)
+	c.Assert(err, check.IsNil)
+	c.Assert(stdout.String(), check.Equals, expected)
+}
+
+func (s *S) TestAppCreatePool(c *check.C) {
+	var stdout, stderr bytes.Buffer
+	result := `{"status":"success", "repository_url":"git@tsuru.plataformas.glb.com:ble.git"}`
+	expected := `App "ble" has been created!
+Use app-info to check the status of the app and its units.
+Your repository for "ble" project is "git@tsuru.plataformas.glb.com:ble.git"` + "\n"
+	context := cmd.Context{
+		Args:   []string{"ble", "django"},
+		Stdout: &stdout,
+		Stderr: &stderr,
+	}
+	trans := cmdtest.ConditionalTransport{
+		Transport: cmdtest.Transport{Message: result, Status: http.StatusOK},
+		CondFunc: func(req *http.Request) bool {
+			defer req.Body.Close()
+			body, err := ioutil.ReadAll(req.Body)
+			c.Assert(err, check.IsNil)
+			expected := map[string]interface{}{
+				"name":      "ble",
+				"platform":  "django",
+				"teamOwner": "",
+				"plan":      map[string]interface{}{"name": ""},
+				"pool":      "mypool",
+			}
+			result := map[string]interface{}{}
+			err = json.Unmarshal(body, &result)
+			c.Assert(expected, check.DeepEquals, result)
+			return req.Method == "POST" && req.URL.Path == "/apps"
+		},
+	}
+	client := cmd.NewClient(&http.Client{Transport: &trans}, nil, manager)
+	command := appCreate{}
+	command.Flags().Parse(true, []string{"-o", "mypool"})
 	err := command.Run(&context, client)
 	c.Assert(err, check.IsNil)
 	c.Assert(stdout.String(), check.Equals, expected)
@@ -167,6 +208,7 @@ Use app-info to check the status of the app and its units.` + "\n"
 				"platform":  "django",
 				"teamOwner": "",
 				"plan":      map[string]interface{}{"name": ""},
+				"pool":      "",
 			}
 			result := map[string]interface{}{}
 			err = json.Unmarshal(body, &result)

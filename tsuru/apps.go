@@ -25,13 +25,14 @@ import (
 type appCreate struct {
 	teamOwner string
 	plan      string
+	pool      string
 	fs        *gnuflag.FlagSet
 }
 
 func (c *appCreate) Info() *cmd.Info {
 	return &cmd.Info{
 		Name:  "app-create",
-		Usage: "app-create <appname> <platform> [--plan/-p plan_name] [--team/-t (team owner)]",
+		Usage: "app-create <appname> <platform> [--plan/-p plan_name] [--team/-t (team owner)] [-o/--pool pool_name]",
 		Desc: `Creates a new app using the given name and platform. For tsuru,
 a platform is provisioner dependent. To check the available platforms, use the
 command [[tsuru platform-list]] and to add a platform use the command [[tsuru-admin platform-add]].
@@ -54,7 +55,10 @@ If this parameter is not informed, tsuru will choose the plan with the
 
 The [[--team]] parameter describes which team is responsible for the created
 app, this is only needed if the current user belongs to more than one team, in
-which case this parameter will be mandatory.`,
+which case this parameter will be mandatory.
+
+The [[--pool]] parameter defines which pool your app will be deployed.
+This is only needed if you have more than one pool associated with your teams.`,
 		MinArgs: 2,
 	}
 }
@@ -68,6 +72,9 @@ func (c *appCreate) Flags() *gnuflag.FlagSet {
 		teamMessage := "Team owner app"
 		c.fs.StringVar(&c.teamOwner, "team", "", teamMessage)
 		c.fs.StringVar(&c.teamOwner, "t", "", teamMessage)
+		poolMessage := "Pool to deploy your app"
+		c.fs.StringVar(&c.pool, "pool", "", poolMessage)
+		c.fs.StringVar(&c.pool, "o", "", poolMessage)
 	}
 	return c.fs
 }
@@ -80,6 +87,7 @@ func (c *appCreate) Run(context *cmd.Context, client *cmd.Client) error {
 		"platform":  platform,
 		"plan":      map[string]interface{}{"name": c.plan},
 		"teamOwner": c.teamOwner,
+		"pool":      c.pool,
 	}
 	b, err := json.Marshal(params)
 	if err != nil {
