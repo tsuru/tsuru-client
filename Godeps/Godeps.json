@@ -1,3 +1,4 @@
+{
 	"ImportPath": "github.com/tsuru/tsuru-client",
 	"GoVersion": "devel +d9859ad Tue Feb 24 17:35:25 2015 +0000",
 	"Packages": [
