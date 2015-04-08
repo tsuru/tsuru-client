@@ -71,9 +71,40 @@ func (c *userCreate) Run(context *cmd.Context, client *cmd.Client) error {
 
 type userRemove struct{}
 
+func (c *userRemove) currentUserEmail(client *cmd.Client) (string, error) {
+	url, err := cmd.GetURL("/users/info")
+	if err != nil {
+		return "", err
+	}
+	request, _ := http.NewRequest("GET", url, nil)
+	resp, err := client.Do(request)
+	if err != nil {
+		return "", err
+	}
+	defer resp.Body.Close()
+	var r struct{ Email string }
+	err = json.NewDecoder(resp.Body).Decode(&r)
+	if err != nil {
+		return "", err
+	}
+	return r.Email, nil
+}
+
 func (c *userRemove) Run(context *cmd.Context, client *cmd.Client) error {
-	var answer string
-	fmt.Fprint(context.Stdout, `Are you sure you want to remove your user from tsuru? (y/n) `)
+	var (
+		answer string
+		email  string
+		err    error
+	)
+	if len(context.Args) > 0 {
+		email = context.Args[0]
+	} else {
+		email, err = c.currentUserEmail(client)
+		if err != nil {
+			return err
+		}
+	}
+	fmt.Fprintf(context.Stdout, `Are you sure you want to remove the user %q from tsuru? (y/n) `, email)
 	fmt.Fscanf(context.Stdin, "%s", &answer)
 	if answer != "y" {
 		fmt.Fprintln(context.Stdout, "Abort.")
@@ -84,8 +115,8 @@ func (c *userRemove) Run(context *cmd.Context, client *cmd.Client) error {
 		return err
 	}
 	var qs string
-	if len(context.Args) > 0 {
-		qs = "?user=" + context.Args[0]
+	if email != "" {
+		qs = "?user=" + email
 	}
 	request, err := http.NewRequest("DELETE", url+qs, nil)
 	if err != nil {
@@ -96,7 +127,7 @@ func (c *userRemove) Run(context *cmd.Context, client *cmd.Client) error {
 		return err
 	}
 	filesystem().Remove(cmd.JoinWithUserDir(".tsuru_token"))
-	fmt.Fprint(context.Stdout, "User successfully removed.\n")
+	fmt.Fprintf(context.Stdout, "User %q successfully removed.\n", email)
 	return nil
 }
 

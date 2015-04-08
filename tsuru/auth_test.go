@@ -8,6 +8,7 @@ import (
 	"bytes"
 	"encoding/json"
 	"io"
+	"io/ioutil"
 	"net/http"
 	"strings"
 
@@ -360,19 +361,24 @@ func (s *S) TestUserRemove(c *check.C) {
 		Stdout: &buf,
 		Stdin:  strings.NewReader("y\n"),
 	}
-	trans := cmdtest.ConditionalTransport{
-		Transport: cmdtest.Transport{Message: "", Status: http.StatusOK},
-		CondFunc: func(req *http.Request) bool {
+	transport := transportFunc(func(req *http.Request) (*http.Response, error) {
+		var body string
+		if req.URL.Path == "/users/info" && req.Method == "GET" {
+			body = `{"Email":"myuser@tsuru.io","Teams":[]}`
+		} else if req.URL.Path == "/users" && req.Method == "DELETE" {
 			called = true
-			return req.Method == "DELETE" && req.URL.Path == "/users"
-		},
-	}
-	client := cmd.NewClient(&http.Client{Transport: &trans}, nil, manager)
+		}
+		return &http.Response{
+			Body:       ioutil.NopCloser(bytes.NewBufferString(body)),
+			StatusCode: http.StatusOK,
+		}, nil
+	})
+	client := cmd.NewClient(&http.Client{Transport: transport}, nil, manager)
 	command := userRemove{}
 	err := command.Run(&context, client)
 	c.Assert(err, check.IsNil)
 	c.Assert(called, check.Equals, true)
-	c.Assert(buf.String(), check.Equals, "Are you sure you want to remove your user from tsuru? (y/n) User successfully removed.\n")
+	c.Assert(buf.String(), check.Equals, "Are you sure you want to remove the user \"myuser@tsuru.io\" from tsuru? (y/n) User \"myuser@tsuru.io\" successfully removed.\n")
 	c.Assert(rfs.HasAction("remove "+cmd.JoinWithUserDir(".tsuru_token")), check.Equals, true)
 }
 
@@ -406,7 +412,7 @@ func (s *S) TestUserRemoveWithArgs(c *check.C) {
 	err := command.Run(&context, client)
 	c.Assert(err, check.IsNil)
 	c.Assert(called, check.Equals, true)
-	c.Assert(buf.String(), check.Equals, "Are you sure you want to remove your user from tsuru? (y/n) User successfully removed.\n")
+	c.Assert(buf.String(), check.Equals, "Are you sure you want to remove the user \"u@email.com\" from tsuru? (y/n) User \"u@email.com\" successfully removed.\n")
 	c.Assert(rfs.HasAction("remove "+cmd.JoinWithUserDir(".tsuru_token")), check.Equals, true)
 }
 
@@ -416,10 +422,12 @@ func (s *S) TestUserRemoveWithoutConfirmation(c *check.C) {
 		Stdout: &buf,
 		Stdin:  strings.NewReader("n\n"),
 	}
+	trans := cmdtest.Transport{Message: `{"Email":"myself@email.com","Teams":["team1"]}`, Status: http.StatusOK}
+	client := cmd.NewClient(&http.Client{Transport: &trans}, nil, manager)
 	command := userRemove{}
-	err := command.Run(&context, nil)
+	err := command.Run(&context, client)
 	c.Assert(err, check.IsNil)
-	c.Assert(buf.String(), check.Equals, "Are you sure you want to remove your user from tsuru? (y/n) Abort.\n")
+	c.Assert(buf.String(), check.Equals, "Are you sure you want to remove the user \"myself@email.com\" from tsuru? (y/n) Abort.\n")
 }
 
 func (s *S) TestUserRemoveWithRequestError(c *check.C) {
