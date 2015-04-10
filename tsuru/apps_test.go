@@ -384,6 +384,7 @@ Address: myapp.tsuru.io
 Owner: myapp_owner
 Team owner: myteam
 Deploys: 7
+Pool: 
 Units: 3
 +--------+---------+
 | Unit   | State   |
@@ -417,6 +418,7 @@ Address: app1.tsuru.io
 Owner: myapp_owner
 Team owner: myteam
 Deploys: 7
+Pool: 
 
 `
 	context := cmd.Context{
@@ -442,6 +444,7 @@ Address: myapp.tsuru.io
 Owner: myapp_owner
 Team owner: x
 Deploys: 7
+Pool: 
 
 `
 	context := cmd.Context{
@@ -467,6 +470,7 @@ Address: secret.tsuru.io
 Owner: myapp_owner
 Team owner: myteam
 Deploys: 7
+Pool: 
 Units: 2
 +----------+---------+
 | Unit     | State   |
@@ -507,6 +511,7 @@ Address: yourapp.tsuru.io, myapp.tsuru.io
 Owner: myapp_owner
 Team owner: myteam
 Deploys: 7
+Pool: 
 Units: 3
 +--------+---------+
 | Unit   | State   |
@@ -545,6 +550,7 @@ Address: myapp.tsuru.io
 Owner: myapp_owner
 Team owner: myteam
 Deploys: 7
+Pool: 
 Units: 3
 +--------+---------+
 | Unit   | State   |
@@ -598,6 +604,7 @@ Address: myapp.tsuru.io
 Owner: myapp_owner
 Team owner: myteam
 Deploys: 7
+Pool: 
 Units: 3
 +--------+---------+
 | Unit   | State   |
@@ -637,6 +644,7 @@ Address: myapp.tsuru.io
 Owner: myapp_owner
 Team owner: myteam
 Deploys: 7
+Pool: 
 Units: 3
 +--------+---------+
 | Unit   | State   |
