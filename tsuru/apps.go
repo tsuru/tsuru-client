@@ -275,6 +275,7 @@ type app struct {
 	Owner      string
 	TeamOwner  string
 	Deploys    uint
+	Pool       string
 	containers []container
 	services   []serviceData
 	Plan       tsuruapp.Plan
@@ -319,6 +320,7 @@ Address: {{.Addr}}
 Owner: {{.Owner}}
 Team owner: {{.TeamOwner}}
 Deploys: {{.Deploys}}
+Pool: {{.Pool}}
 `
 	tmpl := template.Must(template.New("app").Parse(format))
 	units := cmd.NewTable()
