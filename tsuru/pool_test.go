@@ -18,17 +18,17 @@ func (s *S) TestPoolListInfo(c *check.C) {
 
 func (s *S) TestPoolListRun(c *check.C) {
 	var stdout, stderr bytes.Buffer
-	result := `[{"name": "test", "teams": ["test"]}]`
+	result := `[{"team": "test", "pools": ["pool"]}]`
 	context := cmd.Context{
 		Args:   []string{},
 		Stdout: &stdout,
 		Stderr: &stderr,
 	}
-	expected := `+-------+-------+
-| Pools | Teams |
-+-------+-------+
-| test  | test  |
-+-------+-------+
+	expected := `+------+-------+
+| Team | Pools |
++------+-------+
+| test | pool  |
++------+-------+
 `
 	client := cmd.NewClient(&http.Client{Transport: &cmdtest.Transport{Message: result, Status: http.StatusOK}}, nil, manager)
 	command := poolList{}
