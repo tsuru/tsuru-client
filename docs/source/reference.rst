@@ -224,3 +224,10 @@ Auto Scale
    :title: Enable auto scale
 .. tsuru-command:: autoscale-disable
    :title: Disable auto scale
+
+
+Pool
+====
+
+.. tsuru-command:: pool-list
+   :title: List available pool

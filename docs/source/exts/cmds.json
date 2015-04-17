@@ -9,7 +9,7 @@
   }, 
   "app-info": {
     "usage": "tsuru app-info [-a/--app appname]", 
-    "desc": "Shows information about an specific app. Its state, platform, git repository,\netc. You need to be a member of a team that access to the app to be able to\nsee informations about it.\n\nFlags:\n  \n  -a, --app (= \"\")\n      The name of the app.\n  \n"
+    "desc": "Shows information about a specific app. Its state, platform, git repository,\netc. You need to be a member of a team that has access to the app to be able to\nsee information about it.\n\nFlags:\n  \n  -a, --app (= \"\")\n      The name of the app.\n  \n"
   }, 
   "target-list": {
     "usage": "tsuru target-list", 
@@ -24,8 +24,8 @@
     "desc": "List available plans that can be used when creating an app.\n\nFlags:\n  \n  -h, --human  (= false)\n      Humanized units for memory and swap.\n  \n"
   }, 
   "app-create": {
-    "usage": "tsuru app-create <appname> <platform> [--plan/-p plan_name] [--team/-t (team owner)]", 
-    "desc": "Creates a new app using the given name and platform. For tsuru,\na platform is provisioner dependent. To check the available platforms, use the\ncommand [[tsuru platform-list]] and to add a platform use the command [[tsuru-admin platform-add]].\n\nIn order to create an app, you need to be member of at least one team. All\nteams that you are member (see [[tsuru team-list]]) will be able to access the\napp.\n\nThe [[--platform]] parameter is the name of the platform to be used when\ncreating the app. This will definer how tsuru understands and executes your\napp. The list of available platforms can be found running [[tsuru platform-list]].\n\nThe [[--plan]] parameter defines the plan to be used. The plan specifies how\ncomputational resources are allocated to your application. Typically this\nmeans limits for memory and swap usage, and how much cpu share is allocated.\nThe list of available plans can be found running [[tsuru plan-list]].\n\nIf this parameter is not informed, tsuru will choose the plan with the\n[[default]] flag set to true.\n\nThe [[--team]] parameter describes which team is responsible for the created\napp, this is only needed if the current user belongs to more than one team, in\nwhich case this parameter will be mandatory.\n\nFlags:\n  \n  -p, --plan (= \"\")\n      The plan used to create the app\n  -t, --team (= \"\")\n      Team owner app\n  \nMinimum # of arguments: 2\n"
+    "usage": "tsuru app-create <appname> <platform> [--plan/-p plan_name] [--team/-t (team owner)] [-o/--pool pool_name]", 
+    "desc": "Creates a new app using the given name and platform. For tsuru,\na platform is provisioner dependent. To check the available platforms, use the\ncommand [[tsuru platform-list]] and to add a platform use the command [[tsuru-admin platform-add]].\n\nIn order to create an app, you need to be member of at least one team. All\nteams that you are member (see [[tsuru team-list]]) will be able to access the\napp.\n\nThe [[--platform]] parameter is the name of the platform to be used when\ncreating the app. This will define how tsuru understands and executes your\napp. The list of available platforms can be found running [[tsuru platform-list]].\n\nThe [[--plan]] parameter defines the plan to be used. The plan specifies how\ncomputational resources are allocated to your application. Typically this\nmeans limits for memory and swap usage, and how much cpu share is allocated.\nThe list of available plans can be found running [[tsuru plan-list]].\n\nIf this parameter is not informed, tsuru will choose the plan with the\n[[default]] flag set to true.\n\nThe [[--team]] parameter describes which team is responsible for the created\napp, this is only needed if the current user belongs to more than one team, in\nwhich case this parameter will be mandatory.\n\nThe [[--pool]] parameter defines which pool your app will be deployed.\nThis is only needed if you have more than one pool associated with your teams.\n\nFlags:\n  \n  -o, --pool (= \"\")\n      Pool to deploy your app\n  -p, --plan (= \"\")\n      The plan used to create the app\n  -t, --team (= \"\")\n      Team owner app\n  \nMinimum # of arguments: 2\n"
   }, 
   "app-list": {
     "usage": "tsuru app-list", 
@@ -65,7 +65,7 @@
   }, 
   "autoscale-disable": {
     "usage": "tsuru autoscale-disable [-a/--app appname]", 
-    "desc": "Disablse application autoscale.\n\nFlags:\n  \n  -a, --app (= \"\")\n      The name of the app.\n  \n"
+    "desc": "Disables application autoscale.\n\nFlags:\n  \n  -a, --app (= \"\")\n      The name of the app.\n  \n"
   }, 
   "platform-list": {
     "usage": "tsuru platform-list", 
@@ -80,8 +80,8 @@
     "desc": "List information about deploys for an application.\n\nFlags:\n  \n  -a, --app (= \"\")\n      The name of the app.\n  \n"
   }, 
   "env-set": {
-    "usage": "tsuru env-set <NAME=value> [NAME=value] ... [-a/--app appname]", 
-    "desc": "Sets environment variables for an application.\n\nFlags:\n  \n  -a, --app (= \"\")\n      The name of the app.\n  \nMinimum # of arguments: 1\n"
+    "usage": "tsuru env-set <NAME=value> [NAME=value] ... [-a/--app appname] [-p/--private]", 
+    "desc": "Sets environment variables for an application.\n\nFlags:\n  \n  -a, --app (= \"\")\n      The name of the app.\n  -p, --private  (= false)\n      Private environment variables\n  \nMinimum # of arguments: 1\n"
   }, 
   "plugin-install": {
     "usage": "tsuru plugin-install <plugin-name> <plugin-url>", 
@@ -139,9 +139,9 @@
     "usage": "tsuru target-add <label> <target> [--set-current|-s]", 
     "desc": "Adds a new entry to the list of available targets\n\nFlags:\n  \n  -s, --set-current  (= false)\n      Add and define the target as the current target\n  \nMinimum # of arguments: 2\n"
   }, 
-  "target-remove": {
-    "usage": "tsuru target-remove", 
-    "desc": "Remove a target from target-list (tsuru server)\n\n\nMinimum # of arguments: 1\n"
+  "service-list": {
+    "usage": "tsuru service-list", 
+    "desc": "Retrieves and shows a list of services the user has access. If there are\ninstances created for any service they will also be shown.\n\n"
   }, 
   "token-regenerate": {
     "usage": "tsuru token-regenerate", 
@@ -176,12 +176,12 @@
     "desc": "display the current version\n\n"
   }, 
   "service-add": {
-    "usage": "tsuru service-add <servicename> <serviceinstancename> [plan] [-t/--owner-team <team>]", 
-    "desc": "Creates a service instance of a service. There can later be binded to\napplications with [[tsuru service-bind]].\n\nThis example shows how to add a new instance of **mongodb** service, named\n**tsuru_mongodb** with the plan **small**:\n\n::\n\n    $ tsuru service-add mongodb tsuru_mongodb small -t myteam\n\n\nFlags:\n  \n  -t, --team-owner (= \"\")\n      the team that owns te service (mandatory if the user is member of more than one team)\n  \nMinimum # of arguments: 2\nMaximum # of arguments: 3\n"
+    "usage": "tsuru service-add <servicename> <serviceinstancename> [plan] [-t/--team-owner <team>]", 
+    "desc": "Creates a service instance of a service. There can later be binded to\napplications with [[tsuru service-bind]].\n\nThis example shows how to add a new instance of **mongodb** service, named\n**tsuru_mongodb** with the plan **small**:\n\n::\n\n    $ tsuru service-add mongodb tsuru_mongodb small -t myteam\n\n\nFlags:\n  \n  -t, --team-owner (= \"\")\n      the team that owns the service (mandatory if the user is member of more than one team)\n  \nMinimum # of arguments: 2\nMaximum # of arguments: 3\n"
   }, 
   "user-remove": {
-    "usage": "tsuru user-remove", 
-    "desc": "Remove currently authenticated user from remote tsuru\nserver. Since there cannot exist any orphan teams, tsuru will refuse to remove\na user that is the last member of some team. If this is your case, make sure\nyou remove the team using `team-remove` before removing the user.\n\n"
+    "usage": "tsuru user-remove [email]", 
+    "desc": "Remove currently authenticated user from remote tsuru\nserver. Since there cannot exist any orphan teams, tsuru will refuse to remove\na user that is the last member of some team. If this is your case, make sure\nyou remove the team using `team-remove` before removing the user.\n\nMaximum # of arguments: 1\n"
   }, 
   "service-remove": {
     "usage": "tsuru service-remove <serviceinstancename> [--assume-yes]", 
@@ -196,7 +196,7 @@
   }, 
   "autoscale-config": {
     "usage": "tsuru autoscale-config [-a/--app appname] --max-units unitsnumber --min-units unitsnumber --increase-step unitsnumber --increase-wait-time seconds --increase-expression expression --decrease-wait-time seconds --decrease-expression expression --enabled", 
-    "desc": "config app autoscale.\n\nFlags:\n  \n  -a, --app (= \"\")\n      The name of the app.\n  --decrease-expression (= \"{cpu_max} < 10\")\n      Expression used to scale.\n  --decrease-step  (= 1)\n      Number of units that will be decrease on scale.\n  --decrease-wait-time  (= 300)\n      Seconds before allowing another scaling activity.\n  --enabled  (= false)\n      Enable auto scale.\n  --increase-expression (= \"{cpu_max} > 90\")\n      Expression used to scale.\n  --increase-step  (= 1)\n      Number of units that will be increased on scale.\n  --increase-wait-time  (= 300)\n      Seconds before allowing another scaling activity.\n  --max-units  (= 10)\n      Maximum number of units.\n  --min-units  (= 1)\n      Minimum number of units.\n  \n"
+    "desc": "config app autoscale.\n\nFlags:\n  \n  -a, --app (= \"\")\n      The name of the app.\n  --decrease-expression (= \"{cpu_max} < 10\")\n      Expression used to scale.\n  --decrease-step  (= 1)\n      Number of units that will be decreased on scale.\n  --decrease-wait-time  (= 300)\n      Seconds before allowing another scaling activity.\n  --enabled  (= false)\n      Enable auto scale.\n  --increase-expression (= \"{cpu_max} > 90\")\n      Expression used to scale.\n  --increase-step  (= 1)\n      Number of units that will be increased on scale.\n  --increase-wait-time  (= 300)\n      Seconds before allowing another scaling activity.\n  --max-units  (= 10)\n      Maximum number of units.\n  --min-units  (= 1)\n      Minimum number of units.\n  \n"
   }, 
   "key-remove": {
     "usage": "tsuru key-remove <key-name> [-y/--assume-yes]", 
@@ -221,6 +221,10 @@
   "app-deploy": {
     "usage": "tsuru app-deploy [-a/--app <appname>] <file-or-dir-1> [file-or-dir-2] ... [file-or-dir-n]", 
     "desc": "Deploys set of files and/or directories to tsuru server. Some examples of\ncalls are:\n\n::\n\n    $ tsuru app-deploy .\n    $ tsuru app-deploy myfile.jar Procfile\n    $ tsuru app-deploy mysite\n\n\nFlags:\n  \n  -a, --app (= \"\")\n      The name of the app.\n  \nMinimum # of arguments: 1\n"
+  }, 
+  "target-remove": {
+    "usage": "tsuru target-remove", 
+    "desc": "Remove a target from target-list (tsuru server)\n\n\nMinimum # of arguments: 1\n"
   }, 
   "team-create": {
     "usage": "tsuru team-create <teamname>", 
@@ -250,12 +254,12 @@
     "usage": "tsuru app-restart [-a/--app appname]", 
     "desc": "Restarts an application.\n\nFlags:\n  \n  -a, --app (= \"\")\n      The name of the app.\n  \n"
   }, 
-  "service-list": {
-    "usage": "tsuru service-list", 
-    "desc": "Retrieves and shows a list of services the user has access. If the are\ninstances created for any service they will also be shown.\n\n"
+  "pool-list": {
+    "usage": "tsuru pool-list", 
+    "desc": "List all pools available for deploy.\n\n"
   }, 
   "app-swap": {
     "usage": "tsuru app-swap <app1-name> <app2-name> [-f/--force]", 
-    "desc": "Swaps routing between two apps. This allows zero downtime and makes rollback\nas simple as swapping the applications back.\n\nUse [[--force]] if you want to swap applications with a different numbers of\nunits or diferent platform without confirmation.\n\nFlags:\n  \n  -f, --force  (= false)\n      Force Swap among apps with different number of units or different platform.\n  \nMinimum # of arguments: 2\n"
+    "desc": "Swaps routing between two apps. This allows zero downtime and makes rollback\nas simple as swapping the applications back.\n\nUse [[--force]] if you want to swap applications with a different number of\nunits or different platform without confirmation.\n\nFlags:\n  \n  -f, --force  (= false)\n      Force Swap among apps with different number of units or different platform.\n  \nMinimum # of arguments: 2\n"
   }
 }
