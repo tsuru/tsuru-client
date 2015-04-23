@@ -24,6 +24,9 @@ release:
 
 	@echo "$(version) released!"
 
+requirements: requirements.txt
+	@pip install -r $<
+
 docs-clean:
 	@rm -rf ./docs/build
 
