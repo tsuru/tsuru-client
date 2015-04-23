@@ -41,9 +41,9 @@ tsuru cname-remove <cname> [<cname> ...] [-a/--app appname]
 tsuru command [args]
 .TP
 .B app-info
-Shows information about an specific app. Its state, platform, git repository,
-etc. You need to be a member of a team that access to the app to be able to
-see informations about it.
+Shows information about a specific app. Its state, platform, git repository,
+etc. You need to be a member of a team that has access to the app to be able to
+see information about it.
 
 Flags:
   
@@ -189,7 +189,7 @@ Minimum # of arguments: 1
 tsuru app-set-team-owner <new-team-owner> [-a/--app appname]
 .TP
 .B autoscale-disable
-Disablse application autoscale.
+Disables application autoscale.
 
 Flags:
   
@@ -236,17 +236,18 @@ Flags:
   
   -a, --app (= "")
       The name of the app.
+  -p, --private  (= false)
+      Private environment variables
   
 Minimum # of arguments: 1
 
-tsuru env-set <NAME=value> [NAME=value] ... [-a/--app appname]
+tsuru env-set <NAME=value> [NAME=value] ... [-a/--app appname] [-p/--private]
 .TP
-.B change-password
-Changes the password of the logged in user. It will ask for the current
-password, the new and the confirmation.
+.B user-info
+Displays information about the current user.
 
 
-tsuru change-password
+tsuru user-info
 .TP
 .B user-create
 Creates a user within tsuru remote server. It will ask for the password before issue the request.
@@ -423,8 +424,7 @@ Flags:
 tsuru env-get [-a/--app appname] [ENVIRONMENT_VARIABLE1] [ENVIRONMENT_VARIABLE2] ...
 .TP
 .B logout
-Logout will delete the token file and terminate the session within tsuru
-server.
+Logout will terminate the session with the tsuru server.
 
 
 tsuru logout
@@ -450,7 +450,7 @@ teams that you are member (see [[tsuru team-list]]) will be able to access the
 app.
 
 The [[--platform]] parameter is the name of the platform to be used when
-creating the app. This will definer how tsuru understands and executes your
+creating the app. This will define how tsuru understands and executes your
 app. The list of available platforms can be found running [[tsuru platform-list]].
 
 The [[--plan]] parameter defines the plan to be used. The plan specifies how
@@ -465,8 +465,13 @@ The [[--team]] parameter describes which team is responsible for the created
 app, this is only needed if the current user belongs to more than one team, in
 which case this parameter will be mandatory.
 
+The [[--pool]] parameter defines which pool your app will be deployed.
+This is only needed if you have more than one pool associated with your teams.
+
 Flags:
   
+  -o, --pool (= "")
+      Pool to deploy your app
   -p, --plan (= "")
       The plan used to create the app
   -t, --team (= "")
@@ -474,7 +479,13 @@ Flags:
   
 Minimum # of arguments: 2
 
-tsuru app-create <appname> <platform> [--plan/-p plan_name] [--team/-t (team owner)]
+tsuru app-create <appname> <platform> [--plan/-p plan_name] [--team/-t (team owner)] [-o/--pool pool_name]
+.TP
+.B pool-list
+List all pools available for deploy.
+
+
+tsuru pool-list
 .TP
 .B service-add
 Creates a service instance of a service. There can later be binded to
@@ -491,12 +502,12 @@ This example shows how to add a new instance of **mongodb** service, named
 Flags:
   
   -t, --team-owner (= "")
-      the team that owns te service (mandatory if the user is member of more than one team)
+      the team that owns the service (mandatory if the user is member of more than one team)
   
 Minimum # of arguments: 2
 Maximum # of arguments: 3
 
-tsuru service-add <servicename> <serviceinstancename> [plan] [-t/--owner-team <team>]
+tsuru service-add <servicename> <serviceinstancename> [plan] [-t/--team-owner <team>]
 .TP
 .B version
 display the current version
@@ -550,7 +561,7 @@ Flags:
   --decrease-expression (= "{cpu_max} < 10")
       Expression used to scale.
   --decrease-step  (= 1)
-      Number of units that will be decrease on scale.
+      Number of units that will be decreased on scale.
   --decrease-wait-time  (= 300)
       Seconds before allowing another scaling activity.
   --enabled  (= false)
@@ -586,6 +597,13 @@ Shows the documentation of a service.
 Minimum # of arguments: 1
 
 tsuru service-doc <service-name>
+.TP
+.B change-password
+Changes the password of the logged in user. It will ask for the current
+password, the new and the confirmation.
+
+
+tsuru change-password
 .TP
 .B cname-add
 Adds a new CNAME to the application.
@@ -729,8 +747,8 @@ tsuru login [email]
 Swaps routing between two apps. This allows zero downtime and makes rollback
 as simple as swapping the applications back.
 
-Use [[--force]] if you want to swap applications with a different numbers of
-units or diferent platform without confirmation.
+Use [[--force]] if you want to swap applications with a different number of
+units or different platform without confirmation.
 
 Flags:
   
@@ -760,11 +778,12 @@ server. Since there cannot exist any orphan teams, tsuru will refuse to remove
 a user that is the last member of some team. If this is your case, make sure
 you remove the team using `team-remove` before removing the user.
 
+Maximum # of arguments: 1
 
-tsuru user-remove
+tsuru user-remove [email]
 .TP
 .B service-list
-Retrieves and shows a list of services the user has access. If the are
+Retrieves and shows a list of services the user has access. If there are
 instances created for any service they will also be shown.
 
 

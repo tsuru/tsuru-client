@@ -4,12 +4,14 @@ from json import load
 from sys import stdout
 from subprocess import Popen
 from subprocess import PIPE
+from os import path
 
 
 # Tries to load command line options from file
 data = None
+filedir = path.abspath(path.dirname(__file__))
 try:
-    with open("cmds.json", mode="r") as cmdsfile:
+    with open("%s/cmds.json" % (filedir), mode="r") as cmdsfile:
         data = load(cmdsfile)
 except IOError:
     print >> stdout, "Error during file open. Try to run 'make docs' " \
@@ -70,7 +72,7 @@ bugs = '.SH BUGS\nComments and bug reports concerning tsuru project ' \
        'should be refered on %s\n' % (issues)
 
 # man page file
-with open("tsuru.8", mode="w") as manfile:
+with open("%s/tsuru.8" % (filedir), mode="w") as manfile:
     manfile.write("%s%s%s%s%s%s%s" % (header, title, name,
         synopsis, description, options_str, bugs))
     print >> stdout, "tsuru man pages saved to %s" % (manfile.name)
