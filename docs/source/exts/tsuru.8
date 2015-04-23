@@ -1,0 +1,788 @@
+./" Manpage for tsuru project
+./" Refer to github.com/tsuru/tsuru-client to correct errors
+.TH man 8 "23 April 2015" "0.15.3." "tsuru man page"
+.SH NAME
+tsuru \- open source Platform as a Service (PaaS)
+.SH SYNOPSIS
+tsuru command [args]
+.SH DESCRIPTION
+tsuru is an extensible and open source Platform as a Service(PaaS) that makes application deployments faster and easier.tsuru is an open source polyglot cloud application platform(PaaS). With tsuru, you don’t need to think about servers at all.As an application developer, you can:
+	Write apps in the programming language of your choice,
+	Back apps with add-on resources such as SQL and NoSQL databases, including memcached, redis, and many others.
+	Manage apps using the tsuru command-line tool
+	Deploy apps using the Git revision control system.SH OPTIONS
+.TP
+.B service-status
+Displays the status of the given service instance. For now, it checks only if
+the instance is "up" (receiving connections) or "down" (refusing connections).
+
+Minimum # of arguments: 1
+
+tsuru service-status <service-instance-name>
+.TP
+.B cname-remove
+Removes a CNAME from the application. This undoes the change that cname-add
+does.
+
+After unsetting the CNAME from the app, [[tsuru app-list]] and [[tsuru app-
+info]] will display the internal, unfriendly address that tsuru uses.
+
+Flags:
+  
+  -a, --app (= "")
+      The name of the app.
+  
+Minimum # of arguments: 1
+
+tsuru cname-remove <cname> [<cname> ...] [-a/--app appname]
+.TP
+.B help
+
+tsuru command [args]
+.TP
+.B app-info
+Shows information about an specific app. Its state, platform, git repository,
+etc. You need to be a member of a team that access to the app to be able to
+see informations about it.
+
+Flags:
+  
+  -a, --app (= "")
+      The name of the app.
+  
+
+tsuru app-info [-a/--app appname]
+.TP
+.B target-list
+Displays the list of targets, marking the current.
+
+Other commands related to target:
+
+  - target-add: adds a new target to the list of targets
+  - target-set: defines one of the targets in the list as the current target
+  - target-remove: removes one target from the list
+
+
+tsuru target-list
+.TP
+.B app-revoke
+Revokes the permission to access an application from a team. You need to have
+access to the application to revoke access from a team.
+
+An application cannot be orphaned, so it will always have at least one
+authorized team.
+
+Flags:
+  
+  -a, --app (= "")
+      The name of the app.
+  
+Minimum # of arguments: 1
+
+tsuru app-revoke <teamname> [-a/--app appname]
+.TP
+.B plan-list
+List available plans that can be used when creating an app.
+
+Flags:
+  
+  -h, --human  (= false)
+      Humanized units for memory and swap.
+  
+
+tsuru plan-list [--human]
+.TP
+.B service-unbind
+Unbinds an application from a service instance. After unbinding, the instance
+will not be available anymore. For example, when unbinding an application from
+a MySQL service, the application would lose access to the database.
+
+Flags:
+  
+  -a, --app (= "")
+      The name of the app.
+  
+Minimum # of arguments: 1
+
+tsuru service-unbind <instancename> [-a/--app appname]
+.TP
+.B app-list
+Lists all apps that you have access to. App access is controlled by teams. If
+your team has access to an app, then you have access to it.
+
+
+tsuru app-list
+.TP
+.B app-remove
+Removes an application. If the app is bound to any service instance, all binds
+will be removed before the app gets deleted (see [[tsuru service-unbind]]).
+
+You need to be a member of a team that has access to the app to be able to
+remove it (you are able to remove any app that you see in [[tsuru app-list]]).
+
+Flags:
+  
+  -a, --app (= "")
+      The name of the app.
+  -y, --assume-yes  (= false)
+      Don't ask for confirmation.
+  
+
+tsuru app-remove [-a/--app appname] [-y/--assume-yes]
+.TP
+.B team-user-remove
+Removes a user from a team. You need to be a member of the team to be able to remove a user from it.
+
+Minimum # of arguments: 2
+
+tsuru team-user-remove <teamname> <useremail>
+.TP
+.B unit-add
+Adds new units (instances) to an application. You need to have access to the
+app to be able to add new units to it.
+
+Flags:
+  
+  -a, --app (= "")
+      The name of the app.
+  
+Minimum # of arguments: 1
+
+tsuru unit-add <# of units> [-a/--app appname]
+.TP
+.B service-info
+Displays a list of all instances of a given service (that the user has access
+to), and apps bound to these instances.
+
+Minimum # of arguments: 1
+
+tsuru service-info <service-name>
+.TP
+.B plugin-install
+Downloads the plugin file. It will be copied to [[$HOME/.tsuru/plugins]].
+
+Minimum # of arguments: 2
+
+tsuru plugin-install <plugin-name> <plugin-url>
+.TP
+.B autoscale-enable
+Enables application autoscale.
+
+Flags:
+  
+  -a, --app (= "")
+      The name of the app.
+  
+
+tsuru autoscale-enable [-a/--app appname]
+.TP
+.B app-set-team-owner
+Sets owner team for an application.
+
+Flags:
+  
+  -a, --app (= "")
+      The name of the app.
+  
+Minimum # of arguments: 1
+
+tsuru app-set-team-owner <new-team-owner> [-a/--app appname]
+.TP
+.B autoscale-disable
+Disablse application autoscale.
+
+Flags:
+  
+  -a, --app (= "")
+      The name of the app.
+  
+
+tsuru autoscale-disable [-a/--app appname]
+.TP
+.B platform-list
+Lists the available platforms. All platforms displayed in this list may be used to create new apps (see app-create).
+
+
+tsuru platform-list
+.TP
+.B unit-remove
+Removes units (instances) from an application. You need to have access to the
+app to be able to remove units from it.
+
+Flags:
+  
+  -a, --app (= "")
+      The name of the app.
+  
+Minimum # of arguments: 1
+
+tsuru unit-remove <# of units> [-a/--app appname]
+.TP
+.B app-deploy-list
+List information about deploys for an application.
+
+Flags:
+  
+  -a, --app (= "")
+      The name of the app.
+  
+
+tsuru app-deploy-list [-a/--app <appname>]
+.TP
+.B env-set
+Sets environment variables for an application.
+
+Flags:
+  
+  -a, --app (= "")
+      The name of the app.
+  
+Minimum # of arguments: 1
+
+tsuru env-set <NAME=value> [NAME=value] ... [-a/--app appname]
+.TP
+.B change-password
+Changes the password of the logged in user. It will ask for the current
+password, the new and the confirmation.
+
+
+tsuru change-password
+.TP
+.B user-create
+Creates a user within tsuru remote server. It will ask for the password before issue the request.
+
+Minimum # of arguments: 1
+
+tsuru user-create <email>
+.TP
+.B app-deploy-rollback
+Deploys an existing image for an app. You can list available images with `tsuru app-deploy-list`.
+
+Flags:
+  
+  -a, --app (= "")
+      The name of the app.
+  -y, --assume-yes  (= false)
+      Don't ask for confirmation.
+  
+Minimum # of arguments: 1
+
+tsuru app-deploy-rollback [-a/--app appname] [-y/--assume-yes] <image-name>
+.TP
+.B team-list
+List all teams that you are member.
+
+
+tsuru team-list
+.TP
+.B target-set
+Change current target (tsuru server)
+
+
+Minimum # of arguments: 1
+
+tsuru target-set <label>
+.TP
+.B app-start
+Starts an application.
+
+Flags:
+  
+  -a, --app (= "")
+      The name of the app.
+  
+
+tsuru app-start [-a/--app appname]
+.TP
+.B env-unset
+Unset environment variables for an application.
+
+Flags:
+  
+  -a, --app (= "")
+      The name of the app.
+  
+Minimum # of arguments: 1
+
+tsuru env-unset <ENVIRONMENT_VARIABLE1> [ENVIRONMENT_VARIABLE2] ... [ENVIRONMENT_VARIABLEN] [-a/--app appname]
+.TP
+.B plugin-list
+List installed tsuru plugins.
+
+
+tsuru plugin-list
+.TP
+.B team-user-add
+Adds a user to a team. You need to be a member of the team to be able to add another user to it.
+
+Minimum # of arguments: 2
+
+tsuru team-user-add <teamname> <useremail>
+.TP
+.B service-bind
+Binds an application to a previously created service instance. See [[tsuru
+service-add]] for more details on how to create a service instance.
+
+When binding an application to a service instance, tsuru will add new
+environment variables to the application. All environment variables exported
+by bind will be private (not accessible via [[tsuru env-get]]).
+
+Flags:
+  
+  -a, --app (= "")
+      The name of the app.
+  
+Minimum # of arguments: 1
+
+tsuru service-bind <service-instance-name> [-a/--app appname]
+.TP
+.B key-add
+Sends your public key to the git server used by tsuru. The key will be added
+to the current logged in user.
+
+Minimum # of arguments: 2
+
+tsuru key-add <key-name> <path/to/key/file.pub>
+.TP
+.B token-show
+Shows API token for the user. This token allow authenticated API calls to
+tsuru and will never expire. This is useful for integrating CI servers with
+tsuru.
+
+The key will be generated the first time this command is called. See [[tsuru token-regenerate]]
+if you need to invalidate an existing token.
+
+
+tsuru token-show
+.TP
+.B target-add
+Adds a new entry to the list of available targets
+
+Flags:
+  
+  -s, --set-current  (= false)
+      Add and define the target as the current target
+  
+Minimum # of arguments: 2
+
+tsuru target-add <label> <target> [--set-current|-s]
+.TP
+.B target-remove
+Remove a target from target-list (tsuru server)
+
+
+Minimum # of arguments: 1
+
+tsuru target-remove
+.TP
+.B token-regenerate
+Generates a new API token. This invalidates previously generated API tokens.
+
+
+tsuru token-regenerate
+.TP
+.B reset-password
+Resets the user password.
+
+This process is composed of two steps:
+
+1. Generate a new token
+2. Reset the password using the token
+
+In order to generate the token, users should run this command without the
+--token flag. The token will be mailed to the user.
+
+With the token in hand, the user can finally reset the password using the
+--token flag. The new password will also be mailed to the user.
+
+Flags:
+  
+  -t, --token (= "")
+      Token to reset the password
+  
+Minimum # of arguments: 1
+
+tsuru reset-password <email> [--token|-t <token>]
+.TP
+.B plugin-remove
+Removes a previously installed tsuru plugin.
+
+Minimum # of arguments: 1
+
+tsuru plugin-remove <plugin-name>
+.TP
+.B env-get
+Retrieves environment variables for an application.
+
+Flags:
+  
+  -a, --app (= "")
+      The name of the app.
+  
+
+tsuru env-get [-a/--app appname] [ENVIRONMENT_VARIABLE1] [ENVIRONMENT_VARIABLE2] ...
+.TP
+.B logout
+Logout will delete the token file and terminate the session within tsuru
+server.
+
+
+tsuru logout
+.TP
+.B app-stop
+Stops an application.
+
+Flags:
+  
+  -a, --app (= "")
+      The name of the app.
+  
+
+tsuru app-stop [-a/--app appname]
+.TP
+.B app-create
+Creates a new app using the given name and platform. For tsuru,
+a platform is provisioner dependent. To check the available platforms, use the
+command [[tsuru platform-list]] and to add a platform use the command [[tsuru-admin platform-add]].
+
+In order to create an app, you need to be member of at least one team. All
+teams that you are member (see [[tsuru team-list]]) will be able to access the
+app.
+
+The [[--platform]] parameter is the name of the platform to be used when
+creating the app. This will definer how tsuru understands and executes your
+app. The list of available platforms can be found running [[tsuru platform-list]].
+
+The [[--plan]] parameter defines the plan to be used. The plan specifies how
+computational resources are allocated to your application. Typically this
+means limits for memory and swap usage, and how much cpu share is allocated.
+The list of available plans can be found running [[tsuru plan-list]].
+
+If this parameter is not informed, tsuru will choose the plan with the
+[[default]] flag set to true.
+
+The [[--team]] parameter describes which team is responsible for the created
+app, this is only needed if the current user belongs to more than one team, in
+which case this parameter will be mandatory.
+
+Flags:
+  
+  -p, --plan (= "")
+      The plan used to create the app
+  -t, --team (= "")
+      Team owner app
+  
+Minimum # of arguments: 2
+
+tsuru app-create <appname> <platform> [--plan/-p plan_name] [--team/-t (team owner)]
+.TP
+.B service-add
+Creates a service instance of a service. There can later be binded to
+applications with [[tsuru service-bind]].
+
+This example shows how to add a new instance of **mongodb** service, named
+**tsuru_mongodb** with the plan **small**:
+
+::
+
+    $ tsuru service-add mongodb tsuru_mongodb small -t myteam
+
+
+Flags:
+  
+  -t, --team-owner (= "")
+      the team that owns te service (mandatory if the user is member of more than one team)
+  
+Minimum # of arguments: 2
+Maximum # of arguments: 3
+
+tsuru service-add <servicename> <serviceinstancename> [plan] [-t/--owner-team <team>]
+.TP
+.B version
+display the current version
+
+
+tsuru version
+.TP
+.B service-remove
+Destroys a service instance. It can't remove a service instance that is bound
+to an app, so before remove a service instance, make sure there is no apps
+bound to it (see [[tsuru service-info]] command).
+
+Flags:
+  
+  -y, --assume-yes  (= false)
+      Don't ask for confirmation, just remove the service.
+  
+Minimum # of arguments: 1
+
+tsuru service-remove <serviceinstancename> [--assume-yes]
+.TP
+.B target
+
+
+.TP
+.B app-run
+Runs an arbitrary command in application's containers. The base directory for
+all commands is the root of the application.
+
+If you use the [[--once]] flag tsuru will run the command only in one unit.
+Otherwise, it will run the command in all units.
+
+Flags:
+  
+  -a, --app (= "")
+      The name of the app.
+  -o, --once  (= false)
+      Running only one unit
+  
+Minimum # of arguments: 1
+
+tsuru app-run <command> [commandarg1] [commandarg2] ... [commandargn] [-a/--app appname] [-o/--once]
+.TP
+.B autoscale-config
+config app autoscale.
+
+Flags:
+  
+  -a, --app (= "")
+      The name of the app.
+  --decrease-expression (= "{cpu_max} < 10")
+      Expression used to scale.
+  --decrease-step  (= 1)
+      Number of units that will be decrease on scale.
+  --decrease-wait-time  (= 300)
+      Seconds before allowing another scaling activity.
+  --enabled  (= false)
+      Enable auto scale.
+  --increase-expression (= "{cpu_max} > 90")
+      Expression used to scale.
+  --increase-step  (= 1)
+      Number of units that will be increased on scale.
+  --increase-wait-time  (= 300)
+      Seconds before allowing another scaling activity.
+  --max-units  (= 10)
+      Maximum number of units.
+  --min-units  (= 1)
+      Minimum number of units.
+  
+
+tsuru autoscale-config [-a/--app appname] --max-units unitsnumber --min-units unitsnumber --increase-step unitsnumber --increase-wait-time seconds --increase-expression expression --decrease-wait-time seconds --decrease-expression expression --enabled
+.TP
+.B app-restart
+Restarts an application.
+
+Flags:
+  
+  -a, --app (= "")
+      The name of the app.
+  
+
+tsuru app-restart [-a/--app appname]
+.TP
+.B service-doc
+Shows the documentation of a service.
+
+Minimum # of arguments: 1
+
+tsuru service-doc <service-name>
+.TP
+.B cname-add
+Adds a new CNAME to the application.
+
+It will not manage any DNS register, it's up to the user to create the DNS
+register. Once the app contains a custom CNAME, it will be displayed by "app-
+list" and "app-info".
+
+Flags:
+  
+  -a, --app (= "")
+      The name of the app.
+  
+Minimum # of arguments: 1
+
+tsuru cname-add <cname> [<cname> ...] [-a/--app appname]
+.TP
+.B key-list
+Lists the public keys registered in the current user account.
+
+Flags:
+  
+  -n, --no-truncate  (= false)
+      disable truncation of key content
+  
+
+tsuru key-list [-n/--no-truncate]
+.TP
+.B app-log
+Shows log entries for an application. These logs include everything the
+application send to stdout and stderr, alongside with logs from tsuru server
+(deployments, restarts, etc.)
+
+The [[--lines]] flag is optional and by default its value is 10.
+
+The [[--source]] flag is optional and allows filtering logs by log source
+(e.g. application, tsuru api).
+
+The [[--unit]] flag is optional and allows filtering by unit. It's useful if
+your application has multiple units and you want logs from a single one.
+
+The [[--follow]] flag is optional and makes the command wait for additional
+log output
+
+Flags:
+  
+  -a, --app (= "")
+      The name of the app.
+  -f, --follow  (= false)
+      Follow logs
+  -l, --lines  (= 10)
+      The number of log lines to display
+  -s, --source (= "")
+      The log from the given source
+  -u, --unit (= "")
+      The log from the given unit
+  
+
+tsuru app-log [-a/--app appname] [-l/--lines numberOfLines] [-s/--source source] [-u/--unit unit] [-f/--follow]
+.TP
+.B app-deploy
+Deploys set of files and/or directories to tsuru server. Some examples of
+calls are:
+
+::
+
+    $ tsuru app-deploy .
+    $ tsuru app-deploy myfile.jar Procfile
+    $ tsuru app-deploy mysite
+
+
+Flags:
+  
+  -a, --app (= "")
+      The name of the app.
+  
+Minimum # of arguments: 1
+
+tsuru app-deploy [-a/--app <appname>] <file-or-dir-1> [file-or-dir-2] ... [file-or-dir-n]
+.TP
+.B team-create
+Create a team for the user. tsuru requires a user to be a member of at least
+one team in order to create an app or a service instance.
+
+When you create a team, you're automatically member of this team.
+
+Minimum # of arguments: 1
+
+tsuru team-create <teamname>
+.TP
+.B app-shell
+Opens a remote shell inside unit, using the API server as a proxy. You
+can access an app unit just giving app name, or specifying the id of the unit.
+You can get the ID of the unit using the app-info command.
+
+Flags:
+  
+  -a, --app (= "")
+      The name of the app.
+  
+
+tsuru app-shell [unit-id] -a/--app <appname>
+.TP
+.B team-user-list
+List members of a team.
+
+Minimum # of arguments: 1
+
+tsuru team-user-list <teamname>
+.TP
+.B app-grant
+Allows a team to access an application. You need to be a member of a team that
+has access to the app to allow another team to access it. grants access to an
+app to a team.
+
+Flags:
+  
+  -a, --app (= "")
+      The name of the app.
+  
+Minimum # of arguments: 1
+
+tsuru app-grant <teamname> [-a/--app appname]
+.TP
+.B login
+Initiates a new tsuru session for a user. If using tsuru native authentication
+scheme, it will ask for the email and the password and check if the user is
+successfully authenticated. If using OAuth, it will open a web browser for the
+user to complete the login.
+
+After that, the token generated by the tsuru server will be stored in
+[[${HOME}/.tsuru_token]].
+
+All tsuru actions require the user to be authenticated (except [[tsuru login]]
+and [[tsuru version]]).
+
+
+tsuru login [email]
+.TP
+.B app-swap
+Swaps routing between two apps. This allows zero downtime and makes rollback
+as simple as swapping the applications back.
+
+Use [[--force]] if you want to swap applications with a different numbers of
+units or diferent platform without confirmation.
+
+Flags:
+  
+  -f, --force  (= false)
+      Force Swap among apps with different number of units or different platform.
+  
+Minimum # of arguments: 2
+
+tsuru app-swap <app1-name> <app2-name> [-f/--force]
+.TP
+.B key-remove
+Removes your public key from the git server used by tsuru. The key will be
+removed from the current logged in user.
+
+Flags:
+  
+  -y, --assume-yes  (= false)
+      Don't ask for confirmation.
+  
+Minimum # of arguments: 1
+
+tsuru key-remove <key-name> [-y/--assume-yes]
+.TP
+.B user-remove
+Remove currently authenticated user from remote tsuru
+server. Since there cannot exist any orphan teams, tsuru will refuse to remove
+a user that is the last member of some team. If this is your case, make sure
+you remove the team using `team-remove` before removing the user.
+
+
+tsuru user-remove
+.TP
+.B service-list
+Retrieves and shows a list of services the user has access. If the are
+instances created for any service they will also be shown.
+
+
+tsuru service-list
+.TP
+.B team-remove
+Removes a team from tsuru server. You're able to remove teams that you're
+member of. A team that has access to any app cannot be removed. Before
+removing a team, make sure it does not have access to any app (see "app-grant"
+and "app-revoke" commands for details).
+
+Flags:
+  
+  -y, --assume-yes  (= false)
+      Don't ask for confirmation.
+  
+Minimum # of arguments: 1
+
+tsuru team-remove <team-name>
+.SH BUGS
+Comments and bug reports concerning tsuru project should be refered on https://github.com/tsuru/tsuru/issues
