@@ -1,6 +1,6 @@
 {
 	"ImportPath": "github.com/tsuru/tsuru-client",
-	"GoVersion": "devel +d9859ad Tue Feb 24 17:35:25 2015 +0000",
+	"GoVersion": "devel +1b4025f Fri Apr 24 20:10:14 2015 +0000",
 	"Packages": [
 		"./..."
 	],
@@ -23,7 +23,16 @@
 			"Rev": "cedd0ae4817d94ddda2b1320f3a8c9154c4d0d57"
 		},
 		{
+			"ImportPath": "github.com/tsuru/monsterqueue",
+			"Rev": "5ad8312d02854c94b6b31f6af84279b3434cc59f"
+		},
+		{
 			"ImportPath": "github.com/tsuru/tsuru/action",
+			"Comment": "0.10.0-412-gdb01d5d",
+			"Rev": "db01d5d96bfcbe869a53e49d3288919efd6c8513"
+		},
+		{
+			"ImportPath": "github.com/tsuru/tsuru/api/shutdown",
 			"Comment": "0.10.0-412-gdb01d5d",
 			"Rev": "db01d5d96bfcbe869a53e49d3288919efd6c8513"
 		},
