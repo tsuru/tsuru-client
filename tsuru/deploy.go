@@ -15,7 +15,7 @@ import (
 	"mime/multipart"
 	"net/http"
 	"os"
-	"path/filepath"
+	"path"
 	"strings"
 	"sync"
 	"time"
@@ -219,8 +219,8 @@ func singleDir(ctx *cmd.Context, destination io.Writer, path string) error {
 	return targz(ctx, destination, ".")
 }
 
-func addDir(writer *tar.Writer, path string) error {
-	dir, err := os.Open(path)
+func addDir(writer *tar.Writer, dirpath string) error {
+	dir, err := os.Open(dirpath)
 	if err != nil {
 		return err
 	}
@@ -233,7 +233,7 @@ func addDir(writer *tar.Writer, path string) error {
 	if err != nil {
 		return err
 	}
-	header.Name = path
+	header.Name = dirpath
 	err = writer.WriteHeader(header)
 	if err != nil {
 		return err
@@ -244,9 +244,9 @@ func addDir(writer *tar.Writer, path string) error {
 	}
 	for _, fi := range fis {
 		if fi.IsDir() {
-			err = addDir(writer, filepath.Join(path, fi.Name()))
+			err = addDir(writer, path.Join(dirpath, fi.Name()))
 		} else {
-			err = addFile(writer, filepath.Join(path, fi.Name()))
+			err = addFile(writer, path.Join(dirpath, fi.Name()))
 		}
 		if err != nil {
 			return err
@@ -255,8 +255,8 @@ func addDir(writer *tar.Writer, path string) error {
 	return nil
 }
 
-func addFile(writer *tar.Writer, path string) error {
-	f, err := os.Open(path)
+func addFile(writer *tar.Writer, filepath string) error {
+	f, err := os.Open(filepath)
 	if err != nil {
 		return err
 	}
@@ -269,7 +269,7 @@ func addFile(writer *tar.Writer, path string) error {
 	if err != nil {
 		return err
 	}
-	header.Name = path
+	header.Name = filepath
 	err = writer.WriteHeader(header)
 	if err != nil {
 		return err
