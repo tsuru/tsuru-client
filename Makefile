@@ -2,6 +2,10 @@
 # Use of this source code is governed by a BSD-style
 # license that can be found in the LICENSE file.
 
+# Python interpreter path
+PYTHON := $(shell which python)
+
+
 release:
 	@if [ ! $(version) ]; then \
 		echo "version parameter is required... use: make release version=<value>"; \
@@ -24,6 +28,9 @@ release:
 
 	@echo "$(version) released!"
 
+requirements: requirements.txt
+	@pip install -r $<
+
 docs-clean:
 	@rm -rf ./docs/build
 
@@ -32,4 +39,7 @@ doc: docs-clean
 
 docs: doc
 
-.PHONY: doc docs release
+manpage: docs docs/source/exts/man_pages.py
+	$(PYTHON) $(word 2, $^)
+
+.PHONY: doc docs release manpage
