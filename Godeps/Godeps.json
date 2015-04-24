@@ -83,11 +83,6 @@
 			"Rev": "358dc7bdeeb7e39d64fade5945f31bdddc455bdc"
 		},
 		{
-			"ImportPath": "github.com/tsuru/tsuru/metrics",
-			"Comment": "0.10.0-326-g873dd8b",
-			"Rev": "358dc7bdeeb7e39d64fade5945f31bdddc455bdc"
-		},
-		{
 			"ImportPath": "github.com/tsuru/tsuru/provision",
 			"Comment": "0.10.0-326-g873dd8b",
 			"Rev": "358dc7bdeeb7e39d64fade5945f31bdddc455bdc"
