@@ -55,17 +55,13 @@
     "usage": "tsuru token-show", 
     "desc": "Shows API token for the user. This token allow authenticated API calls to\ntsuru and will never expire. This is useful for integrating CI servers with\ntsuru.\n\nThe key will be generated the first time this command is called. See [[tsuru token-regenerate]]\nif you need to invalidate an existing token.\n\n"
   }, 
-  "autoscale-enable": {
-    "usage": "tsuru autoscale-enable [-a/--app appname]", 
-    "desc": "Enables application autoscale.\n\nFlags:\n  \n  -a, --app (= \"\")\n      The name of the app.\n  \n"
+  "service-bind": {
+    "usage": "tsuru service-bind <service-instance-name> [-a/--app appname]", 
+    "desc": "Binds an application to a previously created service instance. See [[tsuru\nservice-add]] for more details on how to create a service instance.\n\nWhen binding an application to a service instance, tsuru will add new\nenvironment variables to the application. All environment variables exported\nby bind will be private (not accessible via [[tsuru env-get]]).\n\nFlags:\n  \n  -a, --app (= \"\")\n      The name of the app.\n  \nMinimum # of arguments: 1\n"
   }, 
   "unit-add": {
     "usage": "tsuru unit-add <# of units> [-a/--app appname]", 
     "desc": "Adds new units (instances) to an application. You need to have access to the\napp to be able to add new units to it.\n\nFlags:\n  \n  -a, --app (= \"\")\n      The name of the app.\n  \nMinimum # of arguments: 1\n"
-  }, 
-  "autoscale-disable": {
-    "usage": "tsuru autoscale-disable [-a/--app appname]", 
-    "desc": "Disables application autoscale.\n\nFlags:\n  \n  -a, --app (= \"\")\n      The name of the app.\n  \n"
   }, 
   "platform-list": {
     "usage": "tsuru platform-list", 
@@ -118,10 +114,6 @@
   "team-user-add": {
     "usage": "tsuru team-user-add <teamname> <useremail>", 
     "desc": "Adds a user to a team. You need to be a member of the team to be able to add another user to it.\n\nMinimum # of arguments: 2\n"
-  }, 
-  "service-bind": {
-    "usage": "tsuru service-bind <service-instance-name> [-a/--app appname]", 
-    "desc": "Binds an application to a previously created service instance. See [[tsuru\nservice-add]] for more details on how to create a service instance.\n\nWhen binding an application to a service instance, tsuru will add new\nenvironment variables to the application. All environment variables exported\nby bind will be private (not accessible via [[tsuru env-get]]).\n\nFlags:\n  \n  -a, --app (= \"\")\n      The name of the app.\n  \nMinimum # of arguments: 1\n"
   }, 
   "key-add": {
     "usage": "tsuru key-add <key-name> <path/to/key/file.pub>", 
@@ -197,10 +189,6 @@
   "app-run": {
     "usage": "tsuru app-run <command> [commandarg1] [commandarg2] ... [commandargn] [-a/--app appname] [-o/--once]", 
     "desc": "Runs an arbitrary command in application's containers. The base directory for\nall commands is the root of the application.\n\nIf you use the [[--once]] flag tsuru will run the command only in one unit.\nOtherwise, it will run the command in all units.\n\nFlags:\n  \n  -a, --app (= \"\")\n      The name of the app.\n  -o, --once  (= false)\n      Running only one unit\n  \nMinimum # of arguments: 1\n"
-  }, 
-  "autoscale-config": {
-    "usage": "tsuru autoscale-config [-a/--app appname] --max-units unitsnumber --min-units unitsnumber --increase-step unitsnumber --increase-wait-time seconds --increase-expression expression --decrease-wait-time seconds --decrease-expression expression --enabled", 
-    "desc": "config app autoscale.\n\nFlags:\n  \n  -a, --app (= \"\")\n      The name of the app.\n  --decrease-expression (= \"{cpu_max} < 10\")\n      Expression used to scale.\n  --decrease-step  (= 1)\n      Number of units that will be decreased on scale.\n  --decrease-wait-time  (= 300)\n      Seconds before allowing another scaling activity.\n  --enabled  (= false)\n      Enable auto scale.\n  --increase-expression (= \"{cpu_max} > 90\")\n      Expression used to scale.\n  --increase-step  (= 1)\n      Number of units that will be increased on scale.\n  --increase-wait-time  (= 300)\n      Seconds before allowing another scaling activity.\n  --max-units  (= 10)\n      Maximum number of units.\n  --min-units  (= 1)\n      Minimum number of units.\n  \n"
   }, 
   "key-remove": {
     "usage": "tsuru key-remove <key-name> [-y/--assume-yes]", 

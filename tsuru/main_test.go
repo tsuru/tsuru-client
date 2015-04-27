@@ -286,27 +286,6 @@ func (s *S) TestPlanListRegistered(c *check.C) {
 	c.Assert(list, check.FitsTypeOf, &planList{})
 }
 
-func (s *S) TestAutoScaleEnableIsRegistered(c *check.C) {
-	manager := buildManager("tsuru")
-	list, ok := manager.Commands["autoscale-enable"]
-	c.Assert(ok, check.Equals, true)
-	c.Assert(list, check.FitsTypeOf, &autoScaleEnable{})
-}
-
-func (s *S) TestAutoScaleDisableIsRegistered(c *check.C) {
-	manager := buildManager("tsuru")
-	list, ok := manager.Commands["autoscale-disable"]
-	c.Assert(ok, check.Equals, true)
-	c.Assert(list, check.FitsTypeOf, &autoScaleDisable{})
-}
-
-func (s *S) TestAutoScaleConfigIsRegistered(c *check.C) {
-	manager := buildManager("tsuru")
-	list, ok := manager.Commands["autoscale-config"]
-	c.Assert(ok, check.Equals, true)
-	c.Assert(list, check.FitsTypeOf, &autoScaleConfig{})
-}
-
 func (s *S) TestChangePasswordIsRegistered(c *check.C) {
 	manager := buildManager("tsuru")
 	chpass, ok := manager.Commands["change-password"]

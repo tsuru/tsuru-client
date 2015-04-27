@@ -214,18 +214,6 @@ CNAME management
 .. tsuru-command:: cname-remove
    :title: Remove a CNAME from the app
 
-
-Auto Scale
-==========
-
-.. tsuru-command:: autoscale-config
-   :title: Configure auto scale
-.. tsuru-command:: autoscale-enable
-   :title: Enable auto scale
-.. tsuru-command:: autoscale-disable
-   :title: Disable auto scale
-
-
 Pool
 ====
 
