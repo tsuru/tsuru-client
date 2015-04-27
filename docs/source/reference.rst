@@ -231,3 +231,6 @@ Pool
 
 .. tsuru-command:: pool-list
    :title: List available pool
+
+.. tsuru-command:: app-change-pool
+   :title: Change an app's pool
