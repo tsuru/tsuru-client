@@ -34,6 +34,7 @@ func buildManager(name string) *cmd.Manager {
 	m.Register(&appRestart{})
 	m.Register(&appStart{})
 	m.Register(&appStop{})
+	m.Register(&appChangePool{})
 	m.Register(&cnameAdd{})
 	m.Register(&cnameRemove{})
 	m.Register(&envGet{})

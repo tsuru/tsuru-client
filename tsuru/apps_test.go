@@ -1392,3 +1392,35 @@ func (s *S) TestUnitRemoveInfo(c *check.C) {
 func (s *S) TestUnitRemoveIsACommand(c *check.C) {
 	var _ cmd.Command = &unitRemove{}
 }
+
+func (s *S) TestAppChangePoolRun(c *check.C) {
+	var stdout, stderr bytes.Buffer
+	var called bool
+	context := cmd.Context{
+		Args:   []string{"new-pool"},
+		Stdout: &stdout,
+		Stderr: &stderr,
+	}
+	trans := &cmdtest.ConditionalTransport{
+		Transport: cmdtest.Transport{Message: "", Status: http.StatusOK},
+		CondFunc: func(req *http.Request) bool {
+			called = true
+			b, err := ioutil.ReadAll(req.Body)
+			c.Assert(err, check.IsNil)
+			c.Assert(string(b), check.Equals, "new-pool")
+			return req.URL.Path == "/apps/radio/pool" && req.Method == "POST"
+		},
+	}
+	client := cmd.NewClient(&http.Client{Transport: trans}, nil, manager)
+	command := appChangePool{}
+	command.Flags().Parse(true, []string{"-a", "radio"})
+	err := command.Run(&context, client)
+	c.Assert(err, check.IsNil)
+	c.Assert(called, check.Equals, true)
+	expected := "Pool successfully changed!\n"
+	c.Assert(stdout.String(), check.Equals, expected)
+}
+
+func (s *S) TestAppChangePoolInfo(c *check.C) {
+	c.Assert((&appChangePool{}).Info(), check.NotNil)
+}

@@ -877,3 +877,38 @@ func (c *unitRemove) Run(context *cmd.Context, client *cmd.Client) error {
 	fmt.Fprintln(context.Stdout, "Units successfully removed!")
 	return nil
 }
+
+type appChangePool struct {
+	cmd.GuessingCommand
+}
+
+func (a *appChangePool) Info() *cmd.Info {
+	return &cmd.Info{
+		Name:    "app-change-pool",
+		Usage:   "app-change-pool <pool_name> [-a/--app appname]",
+		Desc:    `Change app pool. You need to have access to the pool to be able to do it.`,
+		MinArgs: 1,
+	}
+}
+
+func (a *appChangePool) Run(context *cmd.Context, client *cmd.Client) error {
+	appName, err := a.Guess()
+	if err != nil {
+		return err
+	}
+	url, err := cmd.GetURL(fmt.Sprintf("/apps/%s/pool", appName))
+	if err != nil {
+		return err
+	}
+	body := bytes.NewBufferString(context.Args[0])
+	request, err := http.NewRequest("POST", url, body)
+	if err != nil {
+		return err
+	}
+	_, err = client.Do(request)
+	if err != nil {
+		return err
+	}
+	fmt.Fprintln(context.Stdout, "Pool successfully changed!")
+	return nil
+}
