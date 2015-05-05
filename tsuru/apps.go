@@ -509,7 +509,7 @@ func (c appList) Show(result []byte, context *cmd.Context) error {
 			if unit.Name != "" {
 				total++
 				if unit.Available() {
-					available += 1
+					available++
 				}
 			}
 		}
