@@ -492,7 +492,7 @@ type serviceInstanceGrant struct{}
 func (c *serviceInstanceGrant) Info() *cmd.Info {
 	return &cmd.Info{
 		Name:    "service-instance-grant",
-		Usage:   "tsuru service-instance-grant <service_instance_name> <team_name>",
+		Usage:   "service-instance-grant <service_instance_name> <team_name>",
 		Desc:    `Grant access to team in a service instance.`,
 		MinArgs: 2,
 	}
@@ -523,7 +523,7 @@ type serviceInstanceRevoke struct{}
 func (c *serviceInstanceRevoke) Info() *cmd.Info {
 	return &cmd.Info{
 		Name:    "service-instance-revoke",
-		Usage:   "tsuru service-instance-revoke <service_instance_name> <team_name>",
+		Usage:   "service-instance-revoke <service_instance_name> <team_name>",
 		Desc:    `Revoke access to team in a service instance.`,
 		MinArgs: 2,
 	}

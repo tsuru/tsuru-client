@@ -47,6 +47,10 @@
     "usage": "tsuru user-info", 
     "desc": "Displays information about the current user.\n\n"
   }, 
+  "service-instance-grant": {
+    "usage": "tsuru service-instance-grant <service_instance_name> <team_name>", 
+    "desc": "Grant access to team in a service instance.\n\nMinimum # of arguments: 2\n"
+  }, 
   "change-password": {
     "usage": "tsuru change-password", 
     "desc": "Changes the password of the logged in user. It will ask for the current\npassword, the new and the confirmation.\n\n"
@@ -114,6 +118,10 @@
   "team-user-add": {
     "usage": "tsuru team-user-add <teamname> <useremail>", 
     "desc": "Adds a user to a team. You need to be a member of the team to be able to add another user to it.\n\nMinimum # of arguments: 2\n"
+  }, 
+  "service-instance-revoke": {
+    "usage": "tsuru service-instance-revoke <service_instance_name> <team_name>", 
+    "desc": "Revoke access to team in a service instance.\n\nMinimum # of arguments: 2\n"
   }, 
   "key-add": {
     "usage": "tsuru key-add <key-name> <path/to/key/file.pub>", 

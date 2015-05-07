@@ -152,6 +152,10 @@ Services
    :title: Bind an application to a service instance
 .. tsuru-command:: service-unbind
    :title: Unbind an application from a service instance
+.. tsuru-command:: service-instance-grant
+   :title: Grant access to a team in service instance
+.. tsuru-command:: service-instance-revoke
+   :title: Revoke access to a team in service instance
 
 
 Environment variables
