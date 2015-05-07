@@ -496,3 +496,57 @@ func (s *S) TestServiceRemoveFlags(c *check.C) {
 	c.Check(sassume.DefValue, check.Equals, "false")
 	c.Check(command.yes, check.Equals, true)
 }
+
+func (s *S) TestServiceInstanceGrantInfo(c *check.C) {
+	info := (&serviceInstanceGrant{}).Info()
+	c.Assert(info, check.NotNil)
+}
+
+func (s *S) TestServiceInstanceGrantRun(c *check.C) {
+	var stdout, stderr bytes.Buffer
+	command := serviceInstanceGrant{}
+	ctx := cmd.Context{
+		Args:   []string{"test-service-instance", "team"},
+		Stdout: &stdout,
+		Stderr: &stderr,
+	}
+	transp := cmdtest.ConditionalTransport{
+		Transport: cmdtest.Transport{
+			Message: "",
+			Status:  http.StatusOK},
+		CondFunc: func(r *http.Request) bool {
+			return "/services/instances/permission/test-service-instance/team" == r.URL.Path &&
+				"PUT" == r.Method
+		},
+	}
+	client := cmd.NewClient(&http.Client{Transport: &transp}, nil, manager)
+	err := command.Run(&ctx, client)
+	c.Assert(err, check.IsNil)
+}
+
+func (s *S) TestServiceInstanceRevokeInfo(c *check.C) {
+	info := (&serviceInstanceRevoke{}).Info()
+	c.Assert(info, check.NotNil)
+}
+
+func (s *S) TestServiceInstanceRevokeRun(c *check.C) {
+	var stdout, stderr bytes.Buffer
+	command := serviceInstanceRevoke{}
+	ctx := cmd.Context{
+		Args:   []string{"test-service-instance", "team"},
+		Stdout: &stdout,
+		Stderr: &stderr,
+	}
+	transp := cmdtest.ConditionalTransport{
+		Transport: cmdtest.Transport{
+			Message: "",
+			Status:  http.StatusOK},
+		CondFunc: func(r *http.Request) bool {
+			return "/services/instances/permission/test-service-instance/team" == r.URL.Path &&
+				"DELETE" == r.Method
+		},
+	}
+	client := cmd.NewClient(&http.Client{Transport: &transp}, nil, manager)
+	err := command.Run(&ctx, client)
+	c.Assert(err, check.IsNil)
+}

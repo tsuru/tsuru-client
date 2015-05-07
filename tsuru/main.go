@@ -49,6 +49,8 @@ func buildManager(name string) *cmd.Manager {
 	m.Register(serviceDoc{})
 	m.Register(serviceInfo{})
 	m.Register(serviceInstanceStatus{})
+	m.Register(&serviceInstanceGrant{})
+	m.Register(&serviceInstanceRevoke{})
 	m.Register(&serviceBind{})
 	m.Register(&serviceUnbind{})
 	m.Register(platformList{})

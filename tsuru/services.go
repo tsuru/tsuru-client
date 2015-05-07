@@ -486,3 +486,65 @@ func (c *serviceRemove) Flags() *gnuflag.FlagSet {
 	}
 	return c.fs
 }
+
+type serviceInstanceGrant struct{}
+
+func (c *serviceInstanceGrant) Info() *cmd.Info {
+	return &cmd.Info{
+		Name:    "service-instance-grant",
+		Usage:   "tsuru service-instance-grant <service_instance_name> <team_name>",
+		Desc:    `Grant access to team in a service instance.`,
+		MinArgs: 2,
+	}
+}
+
+func (c *serviceInstanceGrant) Run(ctx *cmd.Context, client *cmd.Client) error {
+	siName := ctx.Args[0]
+	teamName := ctx.Args[1]
+	url := fmt.Sprintf("/services/instances/permission/%s/%s", siName, teamName)
+	url, err := cmd.GetURL(url)
+	if err != nil {
+		return err
+	}
+	request, err := http.NewRequest("PUT", url, nil)
+	if err != nil {
+		return err
+	}
+	_, err = client.Do(request)
+	if err != nil {
+		return err
+	}
+	fmt.Fprintf(ctx.Stdout, `Granted access to team %s in %s service instance.`+"\n", teamName, siName)
+	return nil
+}
+
+type serviceInstanceRevoke struct{}
+
+func (c *serviceInstanceRevoke) Info() *cmd.Info {
+	return &cmd.Info{
+		Name:    "service-instance-revoke",
+		Usage:   "tsuru service-instance-revoke <service_instance_name> <team_name>",
+		Desc:    `Revoke access to team in a service instance.`,
+		MinArgs: 2,
+	}
+}
+
+func (c *serviceInstanceRevoke) Run(ctx *cmd.Context, client *cmd.Client) error {
+	siName := ctx.Args[0]
+	teamName := ctx.Args[1]
+	url := fmt.Sprintf("/services/instances/permission/%s/%s", siName, teamName)
+	url, err := cmd.GetURL(url)
+	if err != nil {
+		return err
+	}
+	request, err := http.NewRequest("DELETE", url, nil)
+	if err != nil {
+		return err
+	}
+	_, err = client.Do(request)
+	if err != nil {
+		return err
+	}
+	fmt.Fprintf(ctx.Stdout, `Revoked access to team %s in %s service instance.`+"\n", teamName, siName)
+	return nil
+}
