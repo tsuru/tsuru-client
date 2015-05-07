@@ -1,10 +1,14 @@
 # -*- coding: utf-8 -*-
+import os
+
 from datetime import datetime
 from json import load
 from sys import stdout
 from subprocess import Popen
 from subprocess import PIPE
 from os import path
+
+TSURU = os.environ.get("TSURU_PATH", "tsuru")
 
 
 # Tries to load command line options from file
@@ -29,7 +33,7 @@ header = './" Manpage for tsuru project\n' \
          './" Refer to github.com/tsuru/tsuru-client to correct errors\n'
 
 # Current Version
-version_data = Popen(['tsuru', 'version'], stdout=PIPE)
+version_data = Popen([TSURU, 'version'], stdout=PIPE)
 version = version_data.communicate()[0].split()[-1]
 
 # Manpage title
