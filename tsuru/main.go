@@ -11,7 +11,7 @@ import (
 )
 
 const (
-	version = "0.15.3"
+	version = "0.16.0"
 	header  = "Supported-Tsuru"
 )
 
