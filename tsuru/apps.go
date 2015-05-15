@@ -12,6 +12,7 @@ import (
 	"io"
 	"io/ioutil"
 	"net/http"
+	"net/url"
 	"strings"
 	"text/template"
 	"time"
@@ -798,16 +799,27 @@ func (c *SetTeamOwner) Info() *cmd.Info {
 
 type unitAdd struct {
 	cmd.GuessingCommand
+	fs      *gnuflag.FlagSet
+	process string
 }
 
 func (c *unitAdd) Info() *cmd.Info {
 	return &cmd.Info{
 		Name:  "unit-add",
-		Usage: "unit-add <# of units> [-a/--app appname]",
-		Desc: `Adds new units (instances) to an application. You need to have access to the
+		Usage: "unit-add <# of units> [-a/--app appname] [-p/--process processname]",
+		Desc: `Adds new units to a process of an application. You need to have access to the
 app to be able to add new units to it.`,
 		MinArgs: 1,
 	}
+}
+
+func (c *unitAdd) Flags() *gnuflag.FlagSet {
+	if c.fs == nil {
+		c.fs = c.GuessingCommand.Flags()
+		c.fs.StringVar(&c.process, "process", "", "Process name")
+		c.fs.StringVar(&c.process, "p", "", "Process name")
+	}
+	return c.fs
 }
 
 func (c *unitAdd) Run(context *cmd.Context, client *cmd.Client) error {
@@ -816,14 +828,18 @@ func (c *unitAdd) Run(context *cmd.Context, client *cmd.Client) error {
 	if err != nil {
 		return err
 	}
-	url, err := cmd.GetURL(fmt.Sprintf("/apps/%s/units", appName))
+	u, err := cmd.GetURL(fmt.Sprintf("/apps/%s/units", appName))
 	if err != nil {
 		return err
 	}
-	request, err := http.NewRequest("PUT", url, bytes.NewBufferString(context.Args[0]))
+	val := url.Values{}
+	val.Add("units", context.Args[0])
+	val.Add("process", c.process)
+	request, err := http.NewRequest("PUT", u, bytes.NewBufferString(val.Encode()))
 	if err != nil {
 		return err
 	}
+	request.Header.Add("Content-Type", "application/x-www-form-urlencoded")
 	response, err := client.Do(request)
 	if err != nil {
 		return err
@@ -844,16 +860,27 @@ func (c *unitAdd) Run(context *cmd.Context, client *cmd.Client) error {
 
 type unitRemove struct {
 	cmd.GuessingCommand
+	fs      *gnuflag.FlagSet
+	process string
 }
 
 func (c *unitRemove) Info() *cmd.Info {
 	return &cmd.Info{
 		Name:  "unit-remove",
-		Usage: "unit-remove <# of units> [-a/--app appname]",
-		Desc: `Removes units (instances) from an application. You need to have access to the
+		Usage: "unit-remove <# of units> [-a/--app appname] [-p/-process processname]",
+		Desc: `Removes units from a process of an application. You need to have access to the
 app to be able to remove units from it.`,
 		MinArgs: 1,
 	}
+}
+
+func (c *unitRemove) Flags() *gnuflag.FlagSet {
+	if c.fs == nil {
+		c.fs = c.GuessingCommand.Flags()
+		c.fs.StringVar(&c.process, "process", "", "Process name")
+		c.fs.StringVar(&c.process, "p", "", "Process name")
+	}
+	return c.fs
 }
 
 func (c *unitRemove) Run(context *cmd.Context, client *cmd.Client) error {
@@ -861,12 +888,14 @@ func (c *unitRemove) Run(context *cmd.Context, client *cmd.Client) error {
 	if err != nil {
 		return err
 	}
-	url, err := cmd.GetURL(fmt.Sprintf("/apps/%s/units", appName))
+	val := url.Values{}
+	val.Add("units", context.Args[0])
+	val.Add("process", c.process)
+	url, err := cmd.GetURL(fmt.Sprintf("/apps/%s/units?%s", appName, val.Encode()))
 	if err != nil {
 		return err
 	}
-	body := bytes.NewBufferString(context.Args[0])
-	request, err := http.NewRequest("DELETE", url, body)
+	request, err := http.NewRequest("DELETE", url, nil)
 	if err != nil {
 		return err
 	}

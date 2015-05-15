@@ -1299,15 +1299,14 @@ func (s *S) TestUnitAdd(c *check.C) {
 		Transport: cmdtest.Transport{Message: string(result), Status: http.StatusOK},
 		CondFunc: func(req *http.Request) bool {
 			called = true
-			b, err := ioutil.ReadAll(req.Body)
-			c.Assert(err, check.IsNil)
-			c.Assert(string(b), check.Equals, "3")
+			c.Assert(req.FormValue("process"), check.Equals, "p1")
+			c.Assert(req.FormValue("units"), check.Equals, "3")
 			return req.URL.Path == "/apps/radio/units" && req.Method == "PUT"
 		},
 	}
 	client := cmd.NewClient(&http.Client{Transport: trans}, nil, manager)
 	command := unitAdd{}
-	command.Flags().Parse(true, []string{"-a", "radio"})
+	command.Flags().Parse(true, []string{"-a", "radio", "-p", "p1"})
 	err = command.Run(&context, client)
 	c.Assert(err, check.IsNil)
 	c.Assert(called, check.Equals, true)
@@ -1352,15 +1351,14 @@ func (s *S) TestUnitRemove(c *check.C) {
 		Transport: cmdtest.Transport{Message: "", Status: http.StatusOK},
 		CondFunc: func(req *http.Request) bool {
 			called = true
-			b, err := ioutil.ReadAll(req.Body)
-			c.Assert(err, check.IsNil)
-			c.Assert(string(b), check.Equals, "2")
+			c.Assert(req.FormValue("process"), check.Equals, "web1")
+			c.Assert(req.FormValue("units"), check.Equals, "2")
 			return req.URL.Path == "/apps/vapor/units" && req.Method == "DELETE"
 		},
 	}
 	client := cmd.NewClient(&http.Client{Transport: trans}, nil, manager)
 	command := unitRemove{}
-	command.Flags().Parse(true, []string{"-a", "vapor"})
+	command.Flags().Parse(true, []string{"-a", "vapor", "-p", "web1"})
 	err := command.Run(&context, client)
 	c.Assert(err, check.IsNil)
 	c.Assert(called, check.Equals, true)
