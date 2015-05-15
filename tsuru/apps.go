@@ -256,13 +256,14 @@ func (c *appInfo) Run(context *cmd.Context, client *cmd.Client) error {
 }
 
 type unit struct {
-	Name   string
-	Ip     string
-	Status string
+	Name        string
+	Ip          string
+	Status      string
+	ProcessName string
 }
 
 func (u *unit) Available() bool {
-	return u.Status == "started" || u.Status == "unreachable"
+	return u.Status == "started"
 }
 
 type app struct {
@@ -323,8 +324,13 @@ Team owner: {{.TeamOwner}}
 Deploys: {{.Deploys}}
 Pool: {{.Pool}}
 `
+	var buf bytes.Buffer
 	tmpl := template.Must(template.New("app").Parse(format))
-	units := cmd.NewTable()
+	unitsByProcess := map[string][]unit{}
+	for _, u := range a.Units {
+		units := unitsByProcess[u.ProcessName]
+		unitsByProcess[u.ProcessName] = append(units, u)
+	}
 	titles := []string{"Unit", "State"}
 	contMap := map[string]container{}
 	if len(a.containers) > 0 {
@@ -337,9 +343,13 @@ Pool: {{.Pool}}
 		}
 		titles = append(titles, []string{"Host", "Port", "IP"}...)
 	}
-	units.Headers = cmd.Row(titles)
-	for _, unit := range a.Units {
-		if unit.Name != "" {
+	for process, units := range unitsByProcess {
+		unitsTable := cmd.NewTable()
+		unitsTable.Headers = cmd.Row(titles)
+		for _, unit := range units {
+			if unit.Name == "" {
+				continue
+			}
 			id := unit.Name
 			if len(unit.Name) > 10 {
 				id = id[:10]
@@ -349,11 +359,20 @@ Pool: {{.Pool}}
 			if ok {
 				row = append(row, []string{cont.HostAddr, cont.HostPort, cont.IP}...)
 			}
-			units.AddRow(cmd.Row(row))
+			unitsTable.AddRow(cmd.Row(row))
 		}
-	}
-	if len(a.containers) > 0 {
-		units.SortByColumn(2)
+		if unitsTable.Rows() > 0 {
+			if len(a.containers) > 0 {
+				unitsTable.SortByColumn(2)
+			}
+			buf.WriteString("\n")
+			processStr := ""
+			if process != "" {
+				processStr = fmt.Sprintf(" [%s]", process)
+			}
+			buf.WriteString(fmt.Sprintf("Units%s: %d\n", processStr, unitsTable.Rows()))
+			buf.WriteString(unitsTable.String())
+		}
 	}
 	servicesTable := cmd.NewTable()
 	servicesTable.Headers = []string{"Service", "Instance"}
@@ -363,22 +382,19 @@ Pool: {{.Pool}}
 		}
 		servicesTable.AddRow([]string{service.Service, strings.Join(service.Instances, ", ")})
 	}
-	if len(a.containers) > 0 {
-		units.SortByColumn(2)
-	}
-	var buf bytes.Buffer
-	tmpl.Execute(&buf, a)
-	var suffix string
-	if units.Rows() > 0 {
-		suffix = fmt.Sprintf("Units: %d\n%s", units.Rows(), units)
-	}
 	if servicesTable.Rows() > 0 {
-		suffix = fmt.Sprintf("%s\nService instances: %d\n%s", suffix, servicesTable.Rows(), servicesTable)
+		buf.WriteString("\n")
+		buf.WriteString(fmt.Sprintf("Service instances: %d\n", servicesTable.Rows()))
+		buf.WriteString(servicesTable.String())
 	}
 	if a.Plan.Name != "" {
-		suffix = fmt.Sprintf("%s\nApp Plan:\n%s", suffix, renderPlans([]tsuruapp.Plan{a.Plan}, true))
+		buf.WriteString("\n")
+		buf.WriteString("App Plan:\n")
+		buf.WriteString(renderPlans([]tsuruapp.Plan{a.Plan}, true))
 	}
-	return buf.String() + suffix
+	var tplBuffer bytes.Buffer
+	tmpl.Execute(&tplBuffer, a)
+	return tplBuffer.String() + buf.String()
 }
 
 func (c *appInfo) Show(result []byte, adminResult []byte, servicesResult []byte, context *cmd.Context) error {

@@ -385,11 +385,89 @@ Owner: myapp_owner
 Team owner: myteam
 Deploys: 7
 Pool: 
+
 Units: 3
 +--------+---------+
 | Unit   | State   |
 +--------+---------+
 | app1/0 | started |
+| app1/1 | started |
+| app1/2 | pending |
++--------+---------+
+
+`
+	context := cmd.Context{
+		Stdout: &stdout,
+		Stderr: &stderr,
+	}
+	client := cmd.NewClient(&http.Client{Transport: &cmdtest.Transport{Message: result, Status: http.StatusOK}}, nil, manager)
+	command := appInfo{}
+	command.Flags().Parse(true, []string{"-a/--app", "app1"})
+	err := command.Run(&context, client)
+	c.Assert(err, check.IsNil)
+	c.Assert(stdout.String(), check.Equals, expected)
+}
+
+func (s *S) TestAppInfoManyProcesses(c *check.C) {
+	var stdout, stderr bytes.Buffer
+	result := `{
+  "name": "app1",
+  "teamowner": "myteam",
+  "cname": [
+    ""
+  ],
+  "ip": "myapp.tsuru.io",
+  "platform": "php",
+  "repository": "git@git.com:php.git",
+  "state": "dead",
+  "units": [
+    {
+      "Ip": "10.10.10.10",
+      "Name": "app1/0",
+      "Status": "started",
+      "ProcessName": "web"
+    },
+    {
+      "Ip": "9.9.9.9",
+      "Name": "app1/1",
+      "Status": "started",
+      "ProcessName": "worker"
+    },
+    {
+      "Ip": "",
+      "Name": "app1/2",
+      "Status": "pending",
+      "ProcessName": "worker"
+    }
+  ],
+  "teams": [
+    "tsuruteam",
+    "crane"
+  ],
+  "owner": "myapp_owner",
+  "deploys": 7
+}`
+	expected := `Application: app1
+Repository: git@git.com:php.git
+Platform: php
+Teams: tsuruteam, crane
+Address: myapp.tsuru.io
+Owner: myapp_owner
+Team owner: myteam
+Deploys: 7
+Pool: 
+
+Units [web]: 1
++--------+---------+
+| Unit   | State   |
++--------+---------+
+| app1/0 | started |
++--------+---------+
+
+Units [worker]: 2
++--------+---------+
+| Unit   | State   |
++--------+---------+
 | app1/1 | started |
 | app1/2 | pending |
 +--------+---------+
@@ -471,6 +549,7 @@ Owner: myapp_owner
 Team owner: myteam
 Deploys: 7
 Pool: 
+
 Units: 2
 +----------+---------+
 | Unit     | State   |
@@ -512,6 +591,7 @@ Owner: myapp_owner
 Team owner: myteam
 Deploys: 7
 Pool: 
+
 Units: 3
 +--------+---------+
 | Unit   | State   |
@@ -551,6 +631,7 @@ Owner: myapp_owner
 Team owner: myteam
 Deploys: 7
 Pool: 
+
 Units: 3
 +--------+---------+
 | Unit   | State   |
@@ -605,6 +686,7 @@ Owner: myapp_owner
 Team owner: myteam
 Deploys: 7
 Pool: 
+
 Units: 3
 +--------+---------+
 | Unit   | State   |
@@ -645,6 +727,7 @@ Owner: myapp_owner
 Team owner: myteam
 Deploys: 7
 Pool: 
+
 Units: 3
 +--------+---------+
 | Unit   | State   |
@@ -831,27 +914,6 @@ func (s *S) TestAppListUnitIsntAvailable(c *check.C) {
 | Application | Units State Summary     | Address     |
 +-------------+-------------------------+-------------+
 | app1        | 0 of 1 units in-service | 10.10.10.10 |
-+-------------+-------------------------+-------------+
-`
-	context := cmd.Context{
-		Args:   []string{},
-		Stdout: &stdout,
-		Stderr: &stderr,
-	}
-	client := cmd.NewClient(&http.Client{Transport: &cmdtest.Transport{Message: result, Status: http.StatusOK}}, nil, manager)
-	command := appList{}
-	err := command.Run(&context, client)
-	c.Assert(err, check.IsNil)
-	c.Assert(stdout.String(), check.Equals, expected)
-}
-
-func (s *S) TestAppListUnitIsAvailable(c *check.C) {
-	var stdout, stderr bytes.Buffer
-	result := `[{"ip":"10.10.10.10","name":"app1","units":[{"Name":"app1/0","Status":"unreachable"}]}]`
-	expected := `+-------------+-------------------------+-------------+
-| Application | Units State Summary     | Address     |
-+-------------+-------------------------+-------------+
-| app1        | 1 of 1 units in-service | 10.10.10.10 |
 +-------------+-------------------------+-------------+
 `
 	context := cmd.Context{
@@ -1216,9 +1278,7 @@ func (s *S) TestAppStartIsAFlaggedCommand(c *check.C) {
 }
 
 func (s *S) TestUnitAvailable(c *check.C) {
-	u := &unit{Status: "unreachable"}
-	c.Assert(u.Available(), check.Equals, true)
-	u = &unit{Status: "started"}
+	u := &unit{Status: "started"}
 	c.Assert(u.Available(), check.Equals, true)
 	u = &unit{Status: "down"}
 	c.Assert(u.Available(), check.Equals, false)
