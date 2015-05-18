@@ -551,13 +551,15 @@ your team has access to an app, then you have access to it.`,
 
 type appStop struct {
 	cmd.GuessingCommand
+	process string
+	fs      *gnuflag.FlagSet
 }
 
 func (c *appStop) Info() *cmd.Info {
 	return &cmd.Info{
 		Name:    "app-stop",
-		Usage:   "app-stop [-a/--app appname]",
-		Desc:    `Stops an application.`,
+		Usage:   "app-stop [-a/--app appname] [-p/--process processname]",
+		Desc:    "Stops an application, or one of the processes of the application.",
 		MinArgs: 0,
 	}
 }
@@ -568,7 +570,7 @@ func (c *appStop) Run(context *cmd.Context, client *cmd.Client) error {
 	if err != nil {
 		return err
 	}
-	url, err := cmd.GetURL(fmt.Sprintf("/apps/%s/stop", appName))
+	url, err := cmd.GetURL(fmt.Sprintf("/apps/%s/stop?process=%s", appName, c.process))
 	if err != nil {
 		return err
 	}
@@ -586,6 +588,15 @@ func (c *appStop) Run(context *cmd.Context, client *cmd.Client) error {
 		return err
 	}
 	return nil
+}
+
+func (c *appStop) Flags() *gnuflag.FlagSet {
+	if c.fs == nil {
+		c.fs = c.GuessingCommand.Flags()
+		c.fs.StringVar(&c.process, "process", "", "Process name")
+		c.fs.StringVar(&c.process, "p", "", "Process name")
+	}
+	return c.fs
 }
 
 type appStart struct {
