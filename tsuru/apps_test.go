@@ -1236,12 +1236,13 @@ func (s *S) TestAppStart(c *check.C) {
 		Transport: cmdtest.Transport{Message: "Started", Status: http.StatusOK},
 		CondFunc: func(req *http.Request) bool {
 			called = true
+			c.Assert(req.URL.Query().Get("process"), check.Equals, "worker")
 			return req.URL.Path == "/apps/handful_of_nothing/start" && req.Method == "POST"
 		},
 	}
 	client := cmd.NewClient(&http.Client{Transport: trans}, nil, manager)
 	command := appStart{}
-	command.Flags().Parse(true, []string{"--app", "handful_of_nothing"})
+	command.Flags().Parse(true, []string{"--app", "handful_of_nothing", "--process", "worker"})
 	err := command.Run(&context, client)
 	c.Assert(err, check.IsNil)
 	c.Assert(called, check.Equals, true)

@@ -590,13 +590,15 @@ func (c *appStop) Run(context *cmd.Context, client *cmd.Client) error {
 
 type appStart struct {
 	cmd.GuessingCommand
+	process string
+	fs      *gnuflag.FlagSet
 }
 
 func (c *appStart) Info() *cmd.Info {
 	return &cmd.Info{
 		Name:    "app-start",
-		Usage:   "app-start [-a/--app appname]",
-		Desc:    `Starts an application.`,
+		Usage:   "app-start [-a/--app appname] [-p/--process processname]",
+		Desc:    "Starts an application, or one of the processes of the application.",
 		MinArgs: 0,
 	}
 }
@@ -607,7 +609,7 @@ func (c *appStart) Run(context *cmd.Context, client *cmd.Client) error {
 	if err != nil {
 		return err
 	}
-	url, err := cmd.GetURL(fmt.Sprintf("/apps/%s/start", appName))
+	url, err := cmd.GetURL(fmt.Sprintf("/apps/%s/start?process=%s", appName, c.process))
 	if err != nil {
 		return err
 	}
@@ -625,6 +627,15 @@ func (c *appStart) Run(context *cmd.Context, client *cmd.Client) error {
 		return err
 	}
 	return nil
+}
+
+func (c *appStart) Flags() *gnuflag.FlagSet {
+	if c.fs == nil {
+		c.fs = c.GuessingCommand.Flags()
+		c.fs.StringVar(&c.process, "process", "", "Process name")
+		c.fs.StringVar(&c.process, "p", "", "Process name")
+	}
+	return c.fs
 }
 
 type appRestart struct {
