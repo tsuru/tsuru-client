@@ -629,6 +629,8 @@ func (c *appStart) Run(context *cmd.Context, client *cmd.Client) error {
 
 type appRestart struct {
 	cmd.GuessingCommand
+	process string
+	fs      *gnuflag.FlagSet
 }
 
 func (c *appRestart) Run(context *cmd.Context, client *cmd.Client) error {
@@ -637,7 +639,7 @@ func (c *appRestart) Run(context *cmd.Context, client *cmd.Client) error {
 	if err != nil {
 		return err
 	}
-	url, err := cmd.GetURL(fmt.Sprintf("/apps/%s/restart", appName))
+	url, err := cmd.GetURL(fmt.Sprintf("/apps/%s/restart?process=%s", appName, c.process))
 	if err != nil {
 		return err
 	}
@@ -666,10 +668,19 @@ func (c *appRestart) Run(context *cmd.Context, client *cmd.Client) error {
 func (c *appRestart) Info() *cmd.Info {
 	return &cmd.Info{
 		Name:    "app-restart",
-		Usage:   "app-restart [-a/--app appname]",
-		Desc:    `Restarts an application.`,
+		Usage:   "app-restart [-a/--app appname] [-p/--process processname]",
+		Desc:    `Restarts an application, or one of the processes of the application.`,
 		MinArgs: 0,
 	}
+}
+
+func (c *appRestart) Flags() *gnuflag.FlagSet {
+	if c.fs == nil {
+		c.fs = c.GuessingCommand.Flags()
+		c.fs.StringVar(&c.process, "process", "", "Process name")
+		c.fs.StringVar(&c.process, "p", "", "Process name")
+	}
+	return c.fs
 }
 
 type cnameAdd struct {
