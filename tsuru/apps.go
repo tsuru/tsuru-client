@@ -13,6 +13,7 @@ import (
 	"io/ioutil"
 	"net/http"
 	"net/url"
+	"sort"
 	"strings"
 	"text/template"
 	"time"
@@ -331,6 +332,11 @@ Pool: {{.Pool}}
 		units := unitsByProcess[u.ProcessName]
 		unitsByProcess[u.ProcessName] = append(units, u)
 	}
+	processes := make([]string, 0, len(unitsByProcess))
+	for process := range unitsByProcess {
+		processes = append(processes, process)
+	}
+	sort.Strings(processes)
 	titles := []string{"Unit", "State"}
 	contMap := map[string]container{}
 	if len(a.containers) > 0 {
@@ -343,7 +349,8 @@ Pool: {{.Pool}}
 		}
 		titles = append(titles, []string{"Host", "Port", "IP"}...)
 	}
-	for process, units := range unitsByProcess {
+	for _, process := range processes {
+		units := unitsByProcess[process]
 		unitsTable := cmd.NewTable()
 		unitsTable.Headers = cmd.Row(titles)
 		for _, unit := range units {
