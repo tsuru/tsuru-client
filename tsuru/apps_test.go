@@ -1410,8 +1410,12 @@ func (s *S) TestUnitRemove(c *check.C) {
 		Stdout: &stdout,
 		Stderr: &stderr,
 	}
+	expectedOut := "-- removed unit --"
+	msg := io.SimpleJsonMessage{Message: expectedOut}
+	result, err := json.Marshal(msg)
+	c.Assert(err, check.IsNil)
 	trans := &cmdtest.ConditionalTransport{
-		Transport: cmdtest.Transport{Message: "", Status: http.StatusOK},
+		Transport: cmdtest.Transport{Message: string(result), Status: http.StatusOK},
 		CondFunc: func(req *http.Request) bool {
 			called = true
 			c.Assert(req.FormValue("process"), check.Equals, "web1")
@@ -1422,11 +1426,10 @@ func (s *S) TestUnitRemove(c *check.C) {
 	client := cmd.NewClient(&http.Client{Transport: trans}, nil, manager)
 	command := unitRemove{}
 	command.Flags().Parse(true, []string{"-a", "vapor", "-p", "web1"})
-	err := command.Run(&context, client)
+	err = command.Run(&context, client)
 	c.Assert(err, check.IsNil)
 	c.Assert(called, check.Equals, true)
-	expected := "Units successfully removed!\n"
-	c.Assert(stdout.String(), check.Equals, expected)
+	c.Assert(stdout.String(), check.Equals, "-- removed unit --")
 }
 
 func (s *S) TestUnitRemoveFailure(c *check.C) {
