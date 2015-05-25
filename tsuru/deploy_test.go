@@ -27,7 +27,7 @@ func (s *S) TestDeployInfo(c *check.C) {
 }
 
 func (s *S) TestDeployRun(c *check.C) {
-	var called bool
+	calledTimes := 0
 	var buf bytes.Buffer
 	ctx := cmd.Context{Stderr: bytes.NewBufferString("")}
 	err := targz(&ctx, &buf, "testdata", "..")
@@ -35,8 +35,13 @@ func (s *S) TestDeployRun(c *check.C) {
 	trans := cmdtest.ConditionalTransport{
 		Transport: cmdtest.Transport{Message: "deploy worked\nOK\n", Status: http.StatusOK},
 		CondFunc: func(req *http.Request) bool {
-			defer req.Body.Close()
-			called = true
+			calledTimes++
+			if req.Body != nil {
+				defer req.Body.Close()
+			}
+			if calledTimes == 1 {
+				return req.Method == "GET" && req.URL.Path == "/apps/secret"
+			}
 			file, _, err := req.FormFile("file")
 			c.Assert(err, check.IsNil)
 			content, err := ioutil.ReadAll(file)
@@ -57,7 +62,31 @@ func (s *S) TestDeployRun(c *check.C) {
 	cmd := appDeploy{GuessingCommand: guessCommand}
 	err = cmd.Run(&context, client)
 	c.Assert(err, check.IsNil)
-	c.Assert(called, check.Equals, true)
+	c.Assert(calledTimes, check.Equals, 2)
+}
+
+func (s *S) TestDeployAuthNotOK(c *check.C) {
+	calledTimes := 0
+	trans := cmdtest.ConditionalTransport{
+		Transport: cmdtest.Transport{Message: "Forbidden", Status: http.StatusForbidden},
+		CondFunc: func(req *http.Request) bool {
+			calledTimes++
+			return req.Method == "GET" && req.URL.Path == "/apps/secret"
+		},
+	}
+	client := cmd.NewClient(&http.Client{Transport: &trans}, nil, manager)
+	var stdout, stderr bytes.Buffer
+	context := cmd.Context{
+		Stdout: &stdout,
+		Stderr: &stderr,
+		Args:   []string{"testdata", ".."},
+	}
+	fake := cmdtest.FakeGuesser{Name: "secret"}
+	guessCommand := cmd.GuessingCommand{G: &fake}
+	command := appDeploy{GuessingCommand: guessCommand}
+	err := command.Run(&context, client)
+	c.Assert(err, check.ErrorMatches, "Forbidden")
+	c.Assert(calledTimes, check.Equals, 1)
 }
 
 func (s *S) TestDeployRunNotOK(c *check.C) {
@@ -83,10 +112,12 @@ func (s *S) TestDeployRunFileNotFound(c *check.C) {
 		Stderr: &stderr,
 		Args:   []string{"/tmp/something/that/doesnt/really/exist/im/sure"},
 	}
+	trans := cmdtest.Transport{Message: "OK\n", Status: http.StatusOK}
+	client := cmd.NewClient(&http.Client{Transport: &trans}, nil, manager)
 	fake := cmdtest.FakeGuesser{Name: "secret"}
 	guessCommand := cmd.GuessingCommand{G: &fake}
 	command := appDeploy{GuessingCommand: guessCommand}
-	err := command.Run(&context, nil)
+	err := command.Run(&context, client)
 	c.Assert(err, check.NotNil)
 }
 

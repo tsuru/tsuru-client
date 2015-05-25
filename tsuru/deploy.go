@@ -124,6 +124,22 @@ calls are:
 
 func (c *appDeploy) Run(context *cmd.Context, client *cmd.Client) error {
 	context.RawOutput()
+	appName, err := c.Guess()
+	if err != nil {
+		return err
+	}
+	url, err := cmd.GetURL("/apps/" + appName)
+	if err != nil {
+		return err
+	}
+	request, err := http.NewRequest("GET", url, nil)
+	if err != nil {
+		return err
+	}
+	_, err = client.Do(request)
+	if err != nil {
+		return err
+	}
 	var body bytes.Buffer
 	writer := multipart.NewWriter(&body)
 	file, err := writer.CreateFormFile("file", "archive.tar.gz")
@@ -135,15 +151,12 @@ func (c *appDeploy) Run(context *cmd.Context, client *cmd.Client) error {
 		return err
 	}
 	writer.Close()
-	appName, err := c.Guess()
+
+	url, err = cmd.GetURL("/apps/" + appName + "/deploy")
 	if err != nil {
 		return err
 	}
-	url, err := cmd.GetURL("/apps/" + appName + "/deploy")
-	if err != nil {
-		return err
-	}
-	request, err := http.NewRequest("POST", url, &body)
+	request, err = http.NewRequest("POST", url, &body)
 	if err != nil {
 		return err
 	}
