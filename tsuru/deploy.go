@@ -56,6 +56,7 @@ func (c *appDeployList) Run(context *cmd.Context, client *cmd.Client) error {
 		return err
 	}
 	if response.StatusCode == http.StatusNoContent {
+		fmt.Fprintf(context.Stdout, "App %s has no deploy.\n", appName)
 		return nil
 	}
 	defer response.Body.Close()

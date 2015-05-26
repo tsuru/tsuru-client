@@ -293,6 +293,22 @@ func (s *S) TestAppDeployList(c *check.C) {
 	c.Assert(stdout.String(), check.Equals, expected)
 }
 
+func (s *S) TestDeployRunAppWithouDeploy(c *check.C) {
+	trans := cmdtest.Transport{Message: "", Status: http.StatusNoContent}
+	client := cmd.NewClient(&http.Client{Transport: &trans}, nil, manager)
+	var stdout, stderr bytes.Buffer
+	context := cmd.Context{
+		Stdout: &stdout,
+		Stderr: &stderr,
+	}
+	fake := cmdtest.FakeGuesser{Name: "secret"}
+	guessCommand := cmd.GuessingCommand{G: &fake}
+	command := appDeployList{GuessingCommand: guessCommand}
+	err := command.Run(&context, client)
+	c.Assert(err, check.IsNil)
+	c.Assert(stdout.String(), check.Equals, "App secret has no deploy.\n")
+}
+
 func (s *S) TestAppDeployRollbackInfo(c *check.C) {
 	c.Assert((&appDeployRollback{}).Info(), check.NotNil)
 }
