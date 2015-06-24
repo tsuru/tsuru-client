@@ -14,6 +14,15 @@ type PoolsByTeam struct {
 	Pools []string
 }
 
+type Pool struct {
+	Name string
+}
+
+type ListPoolResponse struct {
+	PoolsByTeam []PoolsByTeam `json:"pools_by_team"`
+	PublicPools []Pool        `json:"public_pools"`
+}
+
 func (poolList) Run(context *cmd.Context, client *cmd.Client) error {
 	url, err := cmd.GetURL("/pools")
 	if err != nil {
@@ -28,17 +37,24 @@ func (poolList) Run(context *cmd.Context, client *cmd.Client) error {
 		return err
 	}
 	defer resp.Body.Close()
-	var poolsByTeam []PoolsByTeam
-	err = json.NewDecoder(resp.Body).Decode(&poolsByTeam)
+	var pools ListPoolResponse
+	err = json.NewDecoder(resp.Body).Decode(&pools)
 	if err != nil {
 		return err
 	}
 	t := cmd.Table{Headers: cmd.Row([]string{"Team", "Pools"})}
-	for _, p := range poolsByTeam {
-		t.AddRow(cmd.Row([]string{p.Team, strings.Join(p.Pools, ", ")}))
+	for _, pool := range pools.PoolsByTeam {
+		t.AddRow(cmd.Row([]string{pool.Team, strings.Join(pool.Pools, ", ")}))
 	}
 	t.Sort()
 	context.Stdout.Write(t.Bytes())
+	tp := cmd.Table{Headers: cmd.Row([]string{"Public Pools"})}
+	for _, pool := range pools.PublicPools {
+		tp.AddRow(cmd.Row([]string{pool.Name}))
+	}
+	tp.Sort()
+	context.Stdout.Write([]byte("\n"))
+	context.Stdout.Write(tp.Bytes())
 	return nil
 }
 
