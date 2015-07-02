@@ -29,7 +29,7 @@
   }, 
   "app-list": {
     "usage": "tsuru app-list", 
-    "desc": "Lists all apps that you have access to. App access is controlled by teams. If\nyour team has access to an app, then you have access to it.\n\n"
+    "desc": "Lists all apps that you have access to. App access is controlled by teams. If\nyour team has access to an app, then you have access to it.\n\nFlags can be used to filter the list of applications.\n\nFlags:\n  \n  -l, --locked  (= false)\n      Display only applications that are locked\n  -n, --name (= \"\")\n      Filter applications by name\n  -p, --platform (= \"\")\n      Display only applications that use the given platform\n  -t, --team (= \"\")\n      Display only applications owned by the given team\n  -u, --user (= \"\")\n      Display only applications owner by the given user\n  \n"
   }, 
   "team-user-remove": {
     "usage": "tsuru team-user-remove <teamname> <useremail>", 
@@ -64,16 +64,16 @@
     "desc": "Binds an application to a previously created service instance. See [[tsuru\nservice-add]] for more details on how to create a service instance.\n\nWhen binding an application to a service instance, tsuru will add new\nenvironment variables to the application. All environment variables exported\nby bind will be private (not accessible via [[tsuru env-get]]).\n\nFlags:\n  \n  -a, --app (= \"\")\n      The name of the app.\n  \nMinimum # of arguments: 1\n"
   }, 
   "unit-add": {
-    "usage": "tsuru unit-add <# of units> [-a/--app appname]", 
-    "desc": "Adds new units (instances) to an application. You need to have access to the\napp to be able to add new units to it.\n\nFlags:\n  \n  -a, --app (= \"\")\n      The name of the app.\n  \nMinimum # of arguments: 1\n"
+    "usage": "tsuru unit-add <# of units> [-a/--app appname] [-p/--process processname]", 
+    "desc": "Adds new units to a process of an application. You need to have access to the\napp to be able to add new units to it.\n\nFlags:\n  \n  -a, --app (= \"\")\n      The name of the app.\n  -p, --process (= \"\")\n      Process name\n  \nMinimum # of arguments: 1\n"
   }, 
   "platform-list": {
     "usage": "tsuru platform-list", 
     "desc": "Lists the available platforms. All platforms displayed in this list may be used to create new apps (see app-create).\n\n"
   }, 
   "unit-remove": {
-    "usage": "tsuru unit-remove <# of units> [-a/--app appname]", 
-    "desc": "Removes units (instances) from an application. You need to have access to the\napp to be able to remove units from it.\n\nFlags:\n  \n  -a, --app (= \"\")\n      The name of the app.\n  \nMinimum # of arguments: 1\n"
+    "usage": "tsuru unit-remove <# of units> [-a/--app appname] [-p/-process processname]", 
+    "desc": "Removes units from a process of an application. You need to have access to the\napp to be able to remove units from it.\n\nFlags:\n  \n  -a, --app (= \"\")\n      The name of the app.\n  -p, --process (= \"\")\n      Process name\n  \nMinimum # of arguments: 1\n"
   }, 
   "app-deploy-list": {
     "usage": "tsuru app-deploy-list [-a/--app <appname>]", 
@@ -104,8 +104,8 @@
     "desc": "Change current target (tsuru server)\n\n\nMinimum # of arguments: 1\n"
   }, 
   "app-start": {
-    "usage": "tsuru app-start [-a/--app appname]", 
-    "desc": "Starts an application.\n\nFlags:\n  \n  -a, --app (= \"\")\n      The name of the app.\n  \n"
+    "usage": "tsuru app-start [-a/--app appname] [-p/--process processname]", 
+    "desc": "Starts an application, or one of the processes of the application.\n\nFlags:\n  \n  -a, --app (= \"\")\n      The name of the app.\n  -p, --process (= \"\")\n      Process name\n  \n"
   }, 
   "env-unset": {
     "usage": "tsuru env-unset <ENVIRONMENT_VARIABLE1> [ENVIRONMENT_VARIABLE2] ... [ENVIRONMENT_VARIABLEN] [-a/--app appname]", 
@@ -168,8 +168,8 @@
     "desc": "Logout will terminate the session with the tsuru server.\n\n"
   }, 
   "app-stop": {
-    "usage": "tsuru app-stop [-a/--app appname]", 
-    "desc": "Stops an application.\n\nFlags:\n  \n  -a, --app (= \"\")\n      The name of the app.\n  \n"
+    "usage": "tsuru app-stop [-a/--app appname] [-p/--process processname]", 
+    "desc": "Stops an application, or one of the processes of the application.\n\nFlags:\n  \n  -a, --app (= \"\")\n      The name of the app.\n  -p, --process (= \"\")\n      Process name\n  \n"
   }, 
   "app-remove": {
     "usage": "tsuru app-remove [-a/--app appname] [-y/--assume-yes]", 
@@ -251,8 +251,8 @@
     "desc": "Removes a team from tsuru server. You're able to remove teams that you're\nmember of. A team that has access to any app cannot be removed. Before\nremoving a team, make sure it does not have access to any app (see \"app-grant\"\nand \"app-revoke\" commands for details).\n\nFlags:\n  \n  -y, --assume-yes  (= false)\n      Don't ask for confirmation.\n  \nMinimum # of arguments: 1\n"
   }, 
   "app-restart": {
-    "usage": "tsuru app-restart [-a/--app appname]", 
-    "desc": "Restarts an application.\n\nFlags:\n  \n  -a, --app (= \"\")\n      The name of the app.\n  \n"
+    "usage": "tsuru app-restart [-a/--app appname] [-p/--process processname]", 
+    "desc": "Restarts an application, or one of the processes of the application.\n\nFlags:\n  \n  -a, --app (= \"\")\n      The name of the app.\n  -p, --process (= \"\")\n      Process name\n  \n"
   }, 
   "pool-list": {
     "usage": "tsuru pool-list", 

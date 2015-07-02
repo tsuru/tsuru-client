@@ -492,10 +492,53 @@ func (c *appRevoke) Run(context *cmd.Context, client *cmd.Client) error {
 	return nil
 }
 
-type appList struct{}
+type appFilter struct {
+	name      string
+	platform  string
+	teamOwner string
+	owner     string
+	locked    bool
+}
 
-func (c appList) Run(context *cmd.Context, client *cmd.Client) error {
-	url, err := cmd.GetURL("/apps")
+func (f *appFilter) queryString(client *cmd.Client) (url.Values, error) {
+	result := make(url.Values)
+	if f.name != "" {
+		result.Set("name", f.name)
+	}
+	if f.platform != "" {
+		result.Set("platform", f.platform)
+	}
+	if f.teamOwner != "" {
+		result.Set("teamowner", f.teamOwner)
+	}
+	if f.owner != "" {
+		owner := f.owner
+		if owner == "me" {
+			user, err := cmd.GetUser(client)
+			if err != nil {
+				return nil, err
+			}
+			owner = user.Email
+		}
+		result.Set("owner", owner)
+	}
+	if f.locked {
+		result.Set("locked", "true")
+	}
+	return result, nil
+}
+
+type appList struct {
+	fs     *gnuflag.FlagSet
+	filter appFilter
+}
+
+func (c *appList) Run(context *cmd.Context, client *cmd.Client) error {
+	qs, err := c.filter.queryString(client)
+	if err != nil {
+		return err
+	}
+	url, err := cmd.GetURL(fmt.Sprintf("/apps?%s", qs.Encode()))
 	if err != nil {
 		return err
 	}
@@ -518,7 +561,7 @@ func (c appList) Run(context *cmd.Context, client *cmd.Client) error {
 	return c.Show(result, context)
 }
 
-func (c appList) Show(result []byte, context *cmd.Context) error {
+func (c *appList) Show(result []byte, context *cmd.Context) error {
 	var apps []app
 	err := json.Unmarshal(result, &apps)
 	if err != nil {
@@ -547,12 +590,31 @@ func (c appList) Show(result []byte, context *cmd.Context) error {
 	return nil
 }
 
-func (c appList) Info() *cmd.Info {
+func (c *appList) Flags() *gnuflag.FlagSet {
+	if c.fs == nil {
+		c.fs = gnuflag.NewFlagSet("app-list", gnuflag.ExitOnError)
+		c.fs.StringVar(&c.filter.name, "name", "", "Filter applications by name")
+		c.fs.StringVar(&c.filter.name, "n", "", "Filter applications by name")
+		c.fs.StringVar(&c.filter.platform, "platform", "", "Display only applications that use the given platform")
+		c.fs.StringVar(&c.filter.platform, "p", "", "Display only applications that use the given platform")
+		c.fs.StringVar(&c.filter.teamOwner, "team", "", "Display only applications owned by the given team")
+		c.fs.StringVar(&c.filter.teamOwner, "t", "", "Display only applications owned by the given team")
+		c.fs.StringVar(&c.filter.owner, "user", "", "Display only applications owner by the given user")
+		c.fs.StringVar(&c.filter.owner, "u", "", "Display only applications owner by the given user")
+		c.fs.BoolVar(&c.filter.locked, "locked", false, "Display only applications that are locked")
+		c.fs.BoolVar(&c.filter.locked, "l", false, "Display only applications that are locked")
+	}
+	return c.fs
+}
+
+func (c *appList) Info() *cmd.Info {
 	return &cmd.Info{
 		Name:  "app-list",
 		Usage: "app-list",
 		Desc: `Lists all apps that you have access to. App access is controlled by teams. If
-your team has access to an app, then you have access to it.`,
+your team has access to an app, then you have access to it.
+
+Flags can be used to filter the list of applications.`,
 	}
 }
 
