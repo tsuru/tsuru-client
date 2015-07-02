@@ -7,10 +7,12 @@ package main
 import (
 	"bytes"
 	"encoding/json"
+	"fmt"
 	"io/ioutil"
 	"net/http"
 	"net/url"
 	"strings"
+	"time"
 
 	"github.com/tsuru/tsuru/cmd"
 	"github.com/tsuru/tsuru/cmd/cmdtest"
@@ -411,7 +413,7 @@ Units: 3
 
 func (s *S) TestAppInfoLock(c *check.C) {
 	var stdout, stderr bytes.Buffer
-	result := `{"name":"app1","teamowner":"myteam","cname":[""],"ip":"myapp.tsuru.io","platform":"php","repository":"git@git.com:php.git","state":"dead", "units":[{"Ip":"10.10.10.10","Name":"app1/0","Status":"started"}, {"Ip":"9.9.9.9","Name":"app1/1","Status":"started"}, {"Ip":"","Name":"app1/2","Status":"pending"}],"teams":["tsuruteam","crane"], "owner": "myapp_owner", "deploys": 7, "lock": {"locked": true, "owner": "admin@example.com", "reason": "DELETE /apps/rbsample/units", "acquiredate": "2012-04-01T10:32:00-03:00"}}`
+	result := `{"name":"app1","teamowner":"myteam","cname":[""],"ip":"myapp.tsuru.io","platform":"php","repository":"git@git.com:php.git","state":"dead", "units":[{"Ip":"10.10.10.10","Name":"app1/0","Status":"started"}, {"Ip":"9.9.9.9","Name":"app1/1","Status":"started"}, {"Ip":"","Name":"app1/2","Status":"pending"}],"teams":["tsuruteam","crane"], "owner": "myapp_owner", "deploys": 7, "lock": {"locked": true, "owner": "admin@example.com", "reason": "DELETE /apps/rbsample/units", "acquiredate": "2012-04-01T10:32:00Z"}}`
 	expected := `Application: app1
 Repository: git@git.com:php.git
 Platform: php
@@ -422,7 +424,7 @@ Team owner: myteam
 Deploys: 7
 Pool: 
 Lock:
- Acquired in: 2012-04-01 10:32:00 -0300 BRT
+ Acquired in: %s
  Owner: admin@example.com
  Running: DELETE /apps/rbsample/units
 
@@ -436,6 +438,7 @@ Units: 3
 +--------+---------+
 
 `
+	expected = fmt.Sprintf(expected, time.Date(2012, time.April, 1, 10, 32, 0, 0, time.UTC))
 	context := cmd.Context{
 		Stdout: &stdout,
 		Stderr: &stderr,
