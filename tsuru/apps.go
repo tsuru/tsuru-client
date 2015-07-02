@@ -267,6 +267,21 @@ func (u *unit) Available() bool {
 	return u.Status == "started"
 }
 
+type lock struct {
+	Locked      bool
+	Reason      string
+	Owner       string
+	AcquireDate time.Time
+}
+
+func (l *lock) String() string {
+	format := `Lock:
+ Acquired in: %s
+ Owner: %s
+ Running: %s`
+	return fmt.Sprintf(format, l.AcquireDate, l.Owner, l.Reason)
+}
+
 type app struct {
 	Ip         string
 	CName      []string
@@ -279,6 +294,7 @@ type app struct {
 	TeamOwner  string
 	Deploys    uint
 	Pool       string
+	Lock       lock
 	containers []container
 	services   []serviceData
 	Plan       tsuruapp.Plan
@@ -323,7 +339,8 @@ Address: {{.Addr}}
 Owner: {{.Owner}}
 Team owner: {{.TeamOwner}}
 Deploys: {{.Deploys}}
-Pool: {{.Pool}}
+Pool: {{.Pool}}{{if .Lock.Locked}}
+{{.Lock.String}}{{end}}
 `
 	var buf bytes.Buffer
 	tmpl := template.Must(template.New("app").Parse(format))
