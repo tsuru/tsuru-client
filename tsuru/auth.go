@@ -126,7 +126,6 @@ func (c *userRemove) Run(context *cmd.Context, client *cmd.Client) error {
 	if err != nil {
 		return err
 	}
-	filesystem().Remove(cmd.JoinWithUserDir(".tsuru_token"))
 	fmt.Fprintf(context.Stdout, "User %q successfully removed.\n", email)
 	return nil
 }

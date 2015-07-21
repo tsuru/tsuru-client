@@ -379,7 +379,6 @@ func (s *S) TestUserRemove(c *check.C) {
 	c.Assert(err, check.IsNil)
 	c.Assert(called, check.Equals, true)
 	c.Assert(buf.String(), check.Equals, "Are you sure you want to remove the user \"myuser@tsuru.io\" from tsuru? (y/n) User \"myuser@tsuru.io\" successfully removed.\n")
-	c.Assert(rfs.HasAction("remove "+cmd.JoinWithUserDir(".tsuru_token")), check.Equals, true)
 }
 
 func (s *S) TestUserRemoveWithArgs(c *check.C) {
@@ -413,7 +412,6 @@ func (s *S) TestUserRemoveWithArgs(c *check.C) {
 	c.Assert(err, check.IsNil)
 	c.Assert(called, check.Equals, true)
 	c.Assert(buf.String(), check.Equals, "Are you sure you want to remove the user \"u@email.com\" from tsuru? (y/n) User \"u@email.com\" successfully removed.\n")
-	c.Assert(rfs.HasAction("remove "+cmd.JoinWithUserDir(".tsuru_token")), check.Equals, true)
 }
 
 func (s *S) TestUserRemoveWithoutConfirmation(c *check.C) {
