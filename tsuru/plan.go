@@ -130,7 +130,7 @@ func (c *appPlanChange) Run(context *cmd.Context, client *cmd.Client) error {
 	if err != nil {
 		return err
 	}
-	return streamResponse(context, response)
+	return cmd.StreamJSONResponse(context.Stdout, response)
 }
 
 func (c *appPlanChange) Flags() *gnuflag.FlagSet {

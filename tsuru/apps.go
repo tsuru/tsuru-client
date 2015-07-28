@@ -20,7 +20,6 @@ import (
 
 	tsuruapp "github.com/tsuru/tsuru/app"
 	"github.com/tsuru/tsuru/cmd"
-	tsuruIo "github.com/tsuru/tsuru/io"
 	"launchpad.net/gnuflag"
 )
 
@@ -759,7 +758,7 @@ func (c *appRestart) Run(context *cmd.Context, client *cmd.Client) error {
 	if err != nil {
 		return err
 	}
-	return streamResponse(context, response)
+	return cmd.StreamJSONResponse(context.Stdout, response)
 }
 
 func (c *appRestart) Info() *cmd.Info {
@@ -969,7 +968,7 @@ func (c *unitAdd) Run(context *cmd.Context, client *cmd.Client) error {
 		return err
 	}
 	defer response.Body.Close()
-	return streamResponse(context, response)
+	return cmd.StreamJSONResponse(context.Stdout, response)
 }
 
 type unitRemove struct {
@@ -1018,7 +1017,7 @@ func (c *unitRemove) Run(context *cmd.Context, client *cmd.Client) error {
 	if err != nil {
 		return err
 	}
-	return streamResponse(context, response)
+	return cmd.StreamJSONResponse(context.Stdout, response)
 }
 
 type appPoolChange struct {
@@ -1053,22 +1052,5 @@ func (a *appPoolChange) Run(context *cmd.Context, client *cmd.Client) error {
 		return err
 	}
 	fmt.Fprintln(context.Stdout, "Pool successfully changed!")
-	return nil
-}
-
-// streamResponse assumes that Response is not nil.
-func streamResponse(context *cmd.Context, response *http.Response) error {
-	defer response.Body.Close()
-	var err error
-	w := tsuruIo.NewStreamWriter(context.Stdout, nil)
-	for n := int64(1); n > 0 && err == nil; n, err = io.Copy(w, response.Body) {
-	}
-	if err != nil {
-		return err
-	}
-	unparsed := w.Remaining()
-	if len(unparsed) > 0 {
-		return fmt.Errorf("unparsed message error: %s", string(unparsed))
-	}
 	return nil
 }
