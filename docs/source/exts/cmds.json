@@ -3,6 +3,10 @@
     "usage": "tsuru service-status <service-instance-name>", 
     "desc": "Displays the status of the given service instance. For now, it checks only if\nthe instance is \"up\" (receiving connections) or \"down\" (refusing connections).\n\nMinimum # of arguments: 1\n"
   }, 
+  "cname-remove": {
+    "usage": "tsuru cname-remove <cname> [<cname> ...] [-a/--app appname]", 
+    "desc": "Removes a CNAME from the application. This undoes the change that cname-add\ndoes.\n\nAfter unsetting the CNAME from the app, [[tsuru app-list]] and [[tsuru app-\ninfo]] will display the internal, unfriendly address that tsuru uses.\n\nFlags:\n  \n  -a, --app (= \"\")\n      The name of the app.\n  \nMinimum # of arguments: 1\n"
+  }, 
   "help": {
     "usage": "tsuru command [args]", 
     "desc": ""
@@ -202,9 +206,9 @@
     "usage": "tsuru key-remove <key-name> [-y/--assume-yes]", 
     "desc": "Removes your public key from the git server used by tsuru. The key will be\nremoved from the current logged in user.\n\nFlags:\n  \n  -y, --assume-yes  (= false)\n      Don't ask for confirmation.\n  \nMinimum # of arguments: 1\n"
   }, 
-  "cname-remove": {
-    "usage": "tsuru cname-remove <cname> [<cname> ...] [-a/--app appname]", 
-    "desc": "Removes a CNAME from the application. This undoes the change that cname-add\ndoes.\n\nAfter unsetting the CNAME from the app, [[tsuru app-list]] and [[tsuru app-\ninfo]] will display the internal, unfriendly address that tsuru uses.\n\nFlags:\n  \n  -a, --app (= \"\")\n      The name of the app.\n  \nMinimum # of arguments: 1\n"
+  "app-plan-change": {
+    "usage": "tsuru app-plan-change <plan_name> [-a/--app appname] [-y/--assume-yes]", 
+    "desc": "Change the plan of the application.\n\nFlags:\n  \n  -a, --app (= \"\")\n      The name of the app.\n  -y, --assume-yes  (= false)\n      Don't ask for confirmation.\n  \nMinimum # of arguments: 1\n"
   }, 
   "cname-add": {
     "usage": "tsuru cname-add <cname> [<cname> ...] [-a/--app appname]", 
