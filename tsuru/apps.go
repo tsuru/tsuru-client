@@ -1021,11 +1021,11 @@ func (c *unitRemove) Run(context *cmd.Context, client *cmd.Client) error {
 	return streamResponse(context, response)
 }
 
-type appChangePool struct {
+type appPoolChange struct {
 	cmd.GuessingCommand
 }
 
-func (a *appChangePool) Info() *cmd.Info {
+func (a *appPoolChange) Info() *cmd.Info {
 	return &cmd.Info{
 		Name:    "app-pool-change",
 		Usage:   "app-pool-change <pool_name> [-a/--app appname]",
@@ -1034,7 +1034,7 @@ func (a *appChangePool) Info() *cmd.Info {
 	}
 }
 
-func (a *appChangePool) Run(context *cmd.Context, client *cmd.Client) error {
+func (a *appPoolChange) Run(context *cmd.Context, client *cmd.Client) error {
 	appName, err := a.Guess()
 	if err != nil {
 		return err

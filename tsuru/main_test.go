@@ -363,6 +363,13 @@ func (s *S) TestPoolListIsRegistered(c *check.C) {
 	c.Assert(list, check.FitsTypeOf, &poolList{})
 }
 
+func (s *S) TestAppPoolChangeIsRegistered(c *check.C) {
+	manager := buildManager("tsuru")
+	change, ok := manager.Commands["app-pool-change"]
+	c.Assert(ok, check.Equals, true)
+	c.Assert(change, check.FitsTypeOf, &appPoolChange{})
+}
+
 func (s *S) TestAppPlanChangeIsRegistered(c *check.C) {
 	manager := buildManager("tsuru")
 	change, ok := manager.Commands["app-plan-change"]

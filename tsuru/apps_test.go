@@ -1601,7 +1601,7 @@ func (s *S) TestAppChangePoolRun(c *check.C) {
 		},
 	}
 	client := cmd.NewClient(&http.Client{Transport: trans}, nil, manager)
-	command := appChangePool{}
+	command := appPoolChange{}
 	command.Flags().Parse(true, []string{"-a", "radio"})
 	err := command.Run(&context, client)
 	c.Assert(err, check.IsNil)
@@ -1611,5 +1611,5 @@ func (s *S) TestAppChangePoolRun(c *check.C) {
 }
 
 func (s *S) TestAppChangePoolInfo(c *check.C) {
-	c.Assert((&appChangePool{}).Info(), check.NotNil)
+	c.Assert((&appPoolChange{}).Info(), check.NotNil)
 }
