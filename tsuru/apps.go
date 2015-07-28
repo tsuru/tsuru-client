@@ -1059,8 +1059,8 @@ type appChangePool struct {
 
 func (a *appChangePool) Info() *cmd.Info {
 	return &cmd.Info{
-		Name:    "app-change-pool",
-		Usage:   "app-change-pool <pool_name> [-a/--app appname]",
+		Name:    "app-pool-change",
+		Usage:   "app-pool-change <pool_name> [-a/--app appname]",
 		Desc:    `Change app pool. You need to have access to the pool to be able to do it.`,
 		MinArgs: 1,
 	}

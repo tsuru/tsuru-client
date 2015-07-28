@@ -123,6 +123,10 @@
     "usage": "tsuru service-instance-revoke <service_instance_name> <team_name>", 
     "desc": "Revoke access to team in a service instance.\n\nMinimum # of arguments: 2\n"
   }, 
+  "app-pool-change": {
+    "usage": "tsuru app-pool-change <pool_name> [-a/--app appname]", 
+    "desc": "Change app pool. You need to have access to the pool to be able to do it.\n\nFlags:\n  \n  -a, --app (= \"\")\n      The name of the app.\n  \nMinimum # of arguments: 1\n"
+  }, 
   "key-add": {
     "usage": "tsuru key-add <key-name> <path/to/key/file.pub>", 
     "desc": "Sends your public key to the git server used by tsuru. The key will be added\nto the current logged in user.\n\nMinimum # of arguments: 2\n"
@@ -130,10 +134,6 @@
   "service-doc": {
     "usage": "tsuru service-doc <service-name>", 
     "desc": "Shows the documentation of a service.\n\nMinimum # of arguments: 1\n"
-  }, 
-  "target-remove": {
-    "usage": "tsuru target-remove", 
-    "desc": "Remove a target from target-list (tsuru server)\n\n\nMinimum # of arguments: 1\n"
   }, 
   "team-user-list": {
     "usage": "tsuru team-user-list <teamname>", 
@@ -222,9 +222,9 @@
     "usage": "tsuru app-deploy [-a/--app <appname>] <file-or-dir-1> [file-or-dir-2] ... [file-or-dir-n]", 
     "desc": "Deploys set of files and/or directories to tsuru server. Some examples of\ncalls are:\n\n::\n\n    $ tsuru app-deploy .\n    $ tsuru app-deploy myfile.jar Procfile\n    $ tsuru app-deploy mysite\n\n\nFlags:\n  \n  -a, --app (= \"\")\n      The name of the app.\n  \nMinimum # of arguments: 1\n"
   }, 
-  "app-change-pool": {
-    "usage": "tsuru app-change-pool <pool_name> [-a/--app appname]", 
-    "desc": "Change app pool. You need to have access to the pool to be able to do it.\n\nFlags:\n  \n  -a, --app (= \"\")\n      The name of the app.\n  \nMinimum # of arguments: 1\n"
+  "target-remove": {
+    "usage": "tsuru target-remove", 
+    "desc": "Remove a target from target-list (tsuru server)\n\n\nMinimum # of arguments: 1\n"
   }, 
   "team-create": {
     "usage": "tsuru team-create <teamname>", 
