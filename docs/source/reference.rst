@@ -84,6 +84,8 @@ name as the application's name.
 
 .. tsuru-command:: app-create
    :title: Create an application
+.. tsuru-command:: app-plan-change
+   :title: Change the application plan
 .. tsuru-command:: app-remove
    :title: Remove an application
 .. tsuru-command:: app-list
