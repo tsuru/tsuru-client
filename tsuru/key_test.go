@@ -35,7 +35,7 @@ func (s *S) TestKeyAdd(c *check.C) {
 	transport := cmdtest.ConditionalTransport{
 		Transport: cmdtest.Transport{Message: "success", Status: http.StatusOK},
 		CondFunc: func(r *http.Request) bool {
-			expectedBody := `{"key":"user-key","name":"my-key"}`
+			expectedBody := `{"key":"user-key","name":"my-key","force":false}`
 			body, err := ioutil.ReadAll(r.Body)
 			c.Assert(err, check.IsNil)
 			return r.Method == "POST" && r.URL.Path == "/users/keys" && string(body) == expectedBody
@@ -43,7 +43,7 @@ func (s *S) TestKeyAdd(c *check.C) {
 	}
 	client := cmd.NewClient(&http.Client{Transport: &transport}, nil, manager)
 	fs := fstest.RecordingFs{FileContent: "user-key"}
-	command := keyAdd{keyReader{fsystem: &fs}}
+	command := keyAdd{keyReader: keyReader{fsystem: &fs}}
 	err = command.Run(&context, client)
 	c.Assert(err, check.IsNil)
 	c.Assert(stdout.String(), check.Equals, expected)
@@ -63,7 +63,7 @@ func (s *S) TestKeyAddStdin(c *check.C) {
 	transport := cmdtest.ConditionalTransport{
 		Transport: cmdtest.Transport{Message: "success", Status: http.StatusOK},
 		CondFunc: func(r *http.Request) bool {
-			expectedBody := `{"key":"my powerful key","name":"my-key"}`
+			expectedBody := `{"key":"my powerful key","name":"my-key","force":false}`
 			body, err := ioutil.ReadAll(r.Body)
 			c.Assert(err, check.IsNil)
 			return r.Method == "POST" && r.URL.Path == "/users/keys" && string(body) == expectedBody
@@ -76,6 +76,84 @@ func (s *S) TestKeyAddStdin(c *check.C) {
 	c.Assert(stdout.String(), check.Equals, expected)
 }
 
+func (s *S) TestAddKeyConfirmation(c *check.C) {
+	var stdout, stderr bytes.Buffer
+	u, err := user.Current()
+	c.Assert(err, check.IsNil)
+	p := path.Join(u.HomeDir, ".ssh", "id_rsa.pub")
+	name := "my-key"
+	context := cmd.Context{
+		Args:   []string{name, p},
+		Stdout: &stdout,
+		Stderr: &stderr,
+		Stdin:  strings.NewReader("y\n"),
+	}
+	var calls int
+	transport := cmdtest.MultiConditionalTransport{
+		ConditionalTransports: []cmdtest.ConditionalTransport{
+			{
+				Transport: cmdtest.Transport{Message: "failed", Status: http.StatusConflict},
+				CondFunc: func(r *http.Request) bool {
+					calls++
+					expectedBody := `{"key":"user-key","name":"my-key","force":false}`
+					body, err := ioutil.ReadAll(r.Body)
+					c.Assert(err, check.IsNil)
+					return r.Method == "POST" && r.URL.Path == "/users/keys" && string(body) == expectedBody
+				},
+			},
+			{
+				Transport: cmdtest.Transport{Message: "success", Status: http.StatusOK},
+				CondFunc: func(r *http.Request) bool {
+					calls++
+					expectedBody := `{"key":"user-key","name":"my-key","force":true}`
+					body, err := ioutil.ReadAll(r.Body)
+					c.Assert(err, check.IsNil)
+					return r.Method == "POST" && r.URL.Path == "/users/keys" && string(body) == expectedBody
+				},
+			},
+		},
+	}
+	client := cmd.NewClient(&http.Client{Transport: &transport}, nil, manager)
+	fs := fstest.RecordingFs{FileContent: "user-key"}
+	command := keyAdd{keyReader: keyReader{fsystem: &fs}}
+	err = command.Run(&context, client)
+	c.Assert(err, check.IsNil)
+	expected := `WARNING: key "my-key" already exists.
+Do you want to replace it? (y/n) Key "my-key" successfully replaced!` + "\n"
+	c.Assert(stdout.String(), check.Equals, expected)
+	c.Assert(calls, check.Equals, 2)
+}
+
+func (s *S) TestAddKeyForceFlag(c *check.C) {
+	var stdout, stderr bytes.Buffer
+	u, err := user.Current()
+	c.Assert(err, check.IsNil)
+	p := path.Join(u.HomeDir, ".ssh", "id_rsa.pub")
+	name := "my-key"
+	expected := fmt.Sprintf("Key %q successfully added!\n", name)
+	context := cmd.Context{
+		Args:   []string{name, p},
+		Stdout: &stdout,
+		Stderr: &stderr,
+	}
+	transport := cmdtest.ConditionalTransport{
+		Transport: cmdtest.Transport{Message: "success", Status: http.StatusOK},
+		CondFunc: func(r *http.Request) bool {
+			expectedBody := `{"key":"user-key","name":"my-key","force":true}`
+			body, err := ioutil.ReadAll(r.Body)
+			c.Assert(err, check.IsNil)
+			return r.Method == "POST" && r.URL.Path == "/users/keys" && string(body) == expectedBody
+		},
+	}
+	client := cmd.NewClient(&http.Client{Transport: &transport}, nil, manager)
+	fs := fstest.RecordingFs{FileContent: "user-key"}
+	command := keyAdd{keyReader: keyReader{fsystem: &fs}}
+	command.Flags().Parse(true, []string{"-f"})
+	err = command.Run(&context, client)
+	c.Assert(err, check.IsNil)
+	c.Assert(stdout.String(), check.Equals, expected)
+}
+
 func (s *S) TestKeyAddReturnsProperErrorIfTheGivenKeyFileDoesNotExist(c *check.C) {
 	var stdout, stderr bytes.Buffer
 	context := cmd.Context{
@@ -84,7 +162,7 @@ func (s *S) TestKeyAddReturnsProperErrorIfTheGivenKeyFileDoesNotExist(c *check.C
 		Stderr: &stderr,
 	}
 	fs := fstest.FileNotFoundFs{RecordingFs: fstest.RecordingFs{}}
-	command := keyAdd{keyReader{fsystem: &fs}}
+	command := keyAdd{keyReader: keyReader{fsystem: &fs}}
 	err := command.Run(&context, nil)
 	c.Assert(err, check.NotNil)
 	c.Assert(err.Error(), check.Equals, `file "/unknown/key.pub" doesn't exist`)
@@ -101,7 +179,7 @@ func (s *S) TestKeyAddFileSystemError(c *check.C) {
 		RecordingFs: fstest.RecordingFs{},
 		Err:         errors.New("what happened?"),
 	}
-	command := keyAdd{keyReader{fsystem: &fs}}
+	command := keyAdd{keyReader: keyReader{fsystem: &fs}}
 	err := command.Run(&context, nil)
 	c.Assert(err, check.NotNil)
 	c.Assert(err.Error(), check.Equals, "what happened?")
@@ -116,7 +194,7 @@ func (s *S) TestKeyAddError(c *check.C) {
 	}
 	client := cmd.NewClient(&http.Client{Transport: &transport}, nil, manager)
 	fs := fstest.RecordingFs{FileContent: "user-key"}
-	command := keyAdd{keyReader{fsystem: &fs}}
+	command := keyAdd{keyReader: keyReader{fsystem: &fs}}
 	err := command.Run(&context, client)
 	c.Assert(err, check.NotNil)
 	c.Assert(err.Error(), check.Equals, "something went wrong")

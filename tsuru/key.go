@@ -15,6 +15,7 @@ import (
 	"strings"
 
 	"github.com/tsuru/tsuru/cmd"
+	"github.com/tsuru/tsuru/errors"
 	"github.com/tsuru/tsuru/fs"
 	"launchpad.net/gnuflag"
 )
@@ -50,15 +51,16 @@ func (r *keyReader) readKey(context *cmd.Context) (string, error) {
 }
 
 type keyAdd struct {
+	fs    *gnuflag.FlagSet
+	force bool
 	keyReader
 }
 
 func (c *keyAdd) Info() *cmd.Info {
 	return &cmd.Info{
-		Name:  "key-add",
-		Usage: "key-add <key-name> <path/to/key/file.pub>",
-		Desc: `Sends your public key to the git server used by tsuru. The key will be added
-to the current logged in user.`,
+		Name:    "key-add",
+		Usage:   "key-add <key-name> <path/to/key/file.pub> [-f/--force]",
+		Desc:    `Sends your public key to the git server used by tsuru.`,
 		MinArgs: 2,
 	}
 }
@@ -72,7 +74,28 @@ func (c *keyAdd) Run(context *cmd.Context, client *cmd.Client) error {
 	} else if err != nil {
 		return err
 	}
-	jsonBody := fmt.Sprintf(`{"key":%q,"name":%q}`, strings.Replace(key, "\n", "", -1), keyName)
+	body := strings.Replace(key, "\n", "", -1)
+	err = c.sendRequest(client, keyName, body, c.force)
+	if err != nil {
+		if e, ok := err.(*errors.HTTP); ok && e.Code == http.StatusConflict && !c.force {
+			var answer string
+			fmt.Fprintf(context.Stdout, "WARNING: key %q already exists.\nDo you want to replace it? (y/n) ", keyName)
+			fmt.Fscan(context.Stdin, &answer)
+			if answer == "y" || answer == "yes" {
+				if err = c.sendRequest(client, keyName, body, true); err == nil {
+					fmt.Fprintf(context.Stdout, "Key %q successfully replaced!\n", keyName)
+					return nil
+				}
+			}
+		}
+		return err
+	}
+	fmt.Fprintf(context.Stdout, "Key %q successfully added!\n", keyName)
+	return nil
+}
+
+func (c *keyAdd) sendRequest(client *cmd.Client, keyName, keyBody string, force bool) error {
+	jsonBody := fmt.Sprintf(`{"key":%q,"name":%q,"force":%v}`, keyBody, keyName, force)
 	url, err := cmd.GetURL("/users/keys")
 	if err != nil {
 		return err
@@ -82,11 +105,16 @@ func (c *keyAdd) Run(context *cmd.Context, client *cmd.Client) error {
 		return err
 	}
 	_, err = client.Do(request)
-	if err != nil {
-		return err
+	return err
+}
+
+func (c *keyAdd) Flags() *gnuflag.FlagSet {
+	if c.fs == nil {
+		c.fs = gnuflag.NewFlagSet("key-add", gnuflag.ExitOnError)
+		c.fs.BoolVar(&c.force, "force", false, "Force overriding the key if it already exists")
+		c.fs.BoolVar(&c.force, "f", false, "Force overriding the key if it already exists")
 	}
-	fmt.Fprintf(context.Stdout, "Key %q successfully added!\n", keyName)
-	return nil
+	return c.fs
 }
 
 type keyRemove struct {
