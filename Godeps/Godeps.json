@@ -1,6 +1,6 @@
 {
 	"ImportPath": "github.com/tsuru/tsuru-client",
-	"GoVersion": "devel +1b4025f Fri Apr 24 20:10:14 2015 +0000",
+	"GoVersion": "go1.4.2",
 	"Packages": [
 		"./..."
 	],
@@ -139,6 +139,10 @@
 		{
 			"ImportPath": "golang.org/x/crypto/ssh/terminal",
 			"Rev": "1fbbd62cfec66bd39d91e97749579579d4d3037e"
+		},
+		{
+			"ImportPath": "golang.org/x/net/websocket",
+			"Rev": "ff8eb9a34a5cbb9941ffc6f84a19a8014c2646ad"
 		},
 		{
 			"ImportPath": "gopkg.in/check.v1",
