@@ -132,8 +132,8 @@
     "desc": "Change app pool. You need to have access to the pool to be able to do it.\n\nFlags:\n  \n  -a, --app (= \"\")\n      The name of the app.\n  \nMinimum # of arguments: 1\n"
   }, 
   "key-add": {
-    "usage": "tsuru key-add <key-name> <path/to/key/file.pub>", 
-    "desc": "Sends your public key to the git server used by tsuru. The key will be added\nto the current logged in user.\n\nMinimum # of arguments: 2\n"
+    "usage": "tsuru key-add <key-name> <path/to/key/file.pub> [-f/--force]", 
+    "desc": "Sends your public key to the git server used by tsuru.\n\nFlags:\n  \n  -f, --force  (= false)\n      Force overriding the key if it already exists\n  \nMinimum # of arguments: 2\n"
   }, 
   "service-doc": {
     "usage": "tsuru service-doc <service-name>", 
