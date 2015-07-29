@@ -340,13 +340,23 @@ func (c *teamList) Run(context *cmd.Context, client *cmd.Client) error {
 		if err != nil {
 			return err
 		}
-		var teams []map[string]string
+		var teams, notMember []map[string]interface{}
 		err = json.Unmarshal(b, &teams)
 		if err != nil {
 			return err
 		}
-		io.WriteString(context.Stdout, "Teams:\n\n")
+		io.WriteString(context.Stdout, "My teams:\n")
 		for _, team := range teams {
+			if isMember, hasKey := team["member"]; hasKey && !(isMember.(bool)) {
+				notMember = append(notMember, team)
+				continue
+			}
+			fmt.Fprintf(context.Stdout, "  - %s\n", team["name"])
+		}
+		if len(notMember) > 0 {
+			io.WriteString(context.Stdout, "\nOther teams:\n")
+		}
+		for _, team := range notMember {
 			fmt.Fprintf(context.Stdout, "  - %s\n", team["name"])
 		}
 	}

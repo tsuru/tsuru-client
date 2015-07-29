@@ -190,9 +190,36 @@ func (s *S) TestTeamListRun(c *check.C) {
 			return req.Method == "GET" && req.URL.Path == "/teams"
 		},
 	}
-	expected := `Teams:
-
+	expected := `My teams:
   - timeredbull
+  - cobrateam
+`
+	client := cmd.NewClient(&http.Client{Transport: trans}, nil, manager)
+	var stdout, stderr bytes.Buffer
+	err := (&teamList{}).Run(&cmd.Context{
+		Args:   []string{},
+		Stdout: &stdout,
+		Stderr: &stderr,
+		Stdin:  nil,
+	}, client)
+	c.Assert(err, check.IsNil)
+	c.Assert(called, check.Equals, true)
+	c.Assert(stdout.String(), check.Equals, expected)
+}
+
+func (s *S) TestTeamListRunWithNonMemberTeams(c *check.C) {
+	var called bool
+	trans := &cmdtest.ConditionalTransport{
+		Transport: cmdtest.Transport{Message: `[{"name":"timeredbull", "member": true},{"name":"cobrateam", "member": false}]`, Status: http.StatusOK},
+		CondFunc: func(req *http.Request) bool {
+			called = true
+			return req.Method == "GET" && req.URL.Path == "/teams"
+		},
+	}
+	expected := `My teams:
+  - timeredbull
+
+Other teams:
   - cobrateam
 `
 	client := cmd.NewClient(&http.Client{Transport: trans}, nil, manager)
