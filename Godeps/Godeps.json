@@ -24,7 +24,7 @@
 		},
 		{
 			"ImportPath": "github.com/tsuru/monsterqueue",
-			"Rev": "5ad8312d02854c94b6b31f6af84279b3434cc59f"
+			"Rev": "c2240c7d35e400a0ba96b1c634089e39f5705db5"
 		},
 		{
 			"ImportPath": "github.com/tsuru/tsuru/action",
