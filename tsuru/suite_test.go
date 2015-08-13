@@ -10,23 +10,19 @@ import (
 	"testing"
 
 	"github.com/tsuru/tsuru/cmd"
-	"github.com/tsuru/tsuru/cmd/cmdtest"
 	"gopkg.in/check.v1"
 )
 
-type S struct {
-	target []string
-	token  []string
-}
+type S struct{}
 
 func (s *S) SetUpSuite(c *check.C) {
-	s.target = cmdtest.SetTargetFile(c, []byte("http://localhost:8080"))
-	s.token = cmdtest.SetTokenFile(c, []byte("sometoken"))
+	os.Setenv("TSURU_TARGET", "http://localhost:8080")
+	os.Setenv("TSURU_TOKEN", "sometoken")
 }
 
 func (s *S) TearDownSuite(c *check.C) {
-	cmdtest.RollbackFile(s.target)
-	cmdtest.RollbackFile(s.token)
+	os.Unsetenv("TSURU_TARGET")
+	os.Unsetenv("TSURU_TOKEN")
 }
 
 var _ = check.Suite(&S{})
