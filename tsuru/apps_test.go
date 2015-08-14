@@ -276,36 +276,43 @@ func (s *S) TestAppCreateFlags(c *check.C) {
 
 func (s *S) TestAppRemove(c *check.C) {
 	var stdout, stderr bytes.Buffer
-	expected := `Are you sure you want to remove app "ble"? (y/n) App "ble" successfully removed!` + "\n"
+	expectedOut := "-- removed --"
+	msg := io.SimpleJsonMessage{Message: expectedOut}
+	result, err := json.Marshal(msg)
+	c.Assert(err, check.IsNil)
+	expected := `Are you sure you want to remove app "ble"? (y/n) `
 	context := cmd.Context{
 		Args:   []string{"ble"},
 		Stdout: &stdout,
 		Stderr: &stderr,
 		Stdin:  strings.NewReader("y\n"),
 	}
-	client := cmd.NewClient(&http.Client{Transport: &cmdtest.Transport{Message: "", Status: http.StatusOK}}, nil, manager)
+	client := cmd.NewClient(&http.Client{Transport: &cmdtest.Transport{Message: string(result), Status: http.StatusOK}}, nil, manager)
 	command := appRemove{}
 	command.Flags().Parse(true, []string{"-a", "ble"})
-	err := command.Run(&context, client)
+	err = command.Run(&context, client)
 	c.Assert(err, check.IsNil)
-	c.Assert(stdout.String(), check.Equals, expected)
+	c.Assert(stdout.String(), check.Equals, expected+expectedOut)
 }
 
 func (s *S) TestAppRemoveWithoutAsking(c *check.C) {
 	var stdout, stderr bytes.Buffer
-	expected := `App "ble" successfully removed!` + "\n"
+	expectedOut := "-- removed --"
+	msg := io.SimpleJsonMessage{Message: expectedOut}
+	result, err := json.Marshal(msg)
+	c.Assert(err, check.IsNil)
 	context := cmd.Context{
 		Args:   []string{"ble"},
 		Stdout: &stdout,
 		Stderr: &stderr,
 		Stdin:  strings.NewReader("y\n"),
 	}
-	client := cmd.NewClient(&http.Client{Transport: &cmdtest.Transport{Message: "", Status: http.StatusOK}}, nil, manager)
+	client := cmd.NewClient(&http.Client{Transport: &cmdtest.Transport{Message: string(result), Status: http.StatusOK}}, nil, manager)
 	command := appRemove{}
 	command.Flags().Parse(true, []string{"-a", "ble", "-y"})
-	err := command.Run(&context, client)
+	err = command.Run(&context, client)
 	c.Assert(err, check.IsNil)
-	c.Assert(stdout.String(), check.Equals, expected)
+	c.Assert(stdout.String(), check.Equals, expectedOut)
 }
 
 func (s *S) TestAppRemoveFlags(c *check.C) {

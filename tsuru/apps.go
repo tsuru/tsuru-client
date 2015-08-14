@@ -145,6 +145,7 @@ remove it (you are able to remove any app that you see in [[tsuru app-list]]).`,
 }
 
 func (c *appRemove) Run(context *cmd.Context, client *cmd.Client) error {
+	context.RawOutput()
 	appName := c.Flags().Lookup("app").Value.String()
 	if appName == "" {
 		return errors.New("Please use the -a/--app flag to specify which app you want to remove.")
@@ -160,12 +161,11 @@ func (c *appRemove) Run(context *cmd.Context, client *cmd.Client) error {
 	if err != nil {
 		return err
 	}
-	_, err = client.Do(request)
+	response, err := client.Do(request)
 	if err != nil {
 		return err
 	}
-	fmt.Fprintf(context.Stdout, `App "%s" successfully removed!`+"\n", appName)
-	return nil
+	return cmd.StreamJSONResponse(context.Stdout, response)
 }
 
 func (c *appRemove) Flags() *gnuflag.FlagSet {
