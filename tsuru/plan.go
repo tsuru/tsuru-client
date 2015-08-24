@@ -105,6 +105,7 @@ func (c *appPlanChange) Info() *cmd.Info {
 }
 
 func (c *appPlanChange) Run(context *cmd.Context, client *cmd.Client) error {
+	context.RawOutput()
 	appName, err := c.Guess()
 	if err != nil {
 		return err
