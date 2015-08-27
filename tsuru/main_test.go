@@ -368,6 +368,7 @@ func (s *S) TestAppPoolChangeIsRegistered(c *check.C) {
 	change, ok := manager.Commands["app-pool-change"]
 	c.Assert(ok, check.Equals, true)
 	c.Assert(change, check.FitsTypeOf, &appPoolChange{})
+	c.Assert("app-pool-change", Deprecates, "app-change-pool")
 }
 
 func (s *S) TestAppPlanChangeIsRegistered(c *check.C) {

@@ -34,7 +34,7 @@ func buildManager(name string) *cmd.Manager {
 	m.Register(&appRestart{})
 	m.Register(&appStart{})
 	m.Register(&appStop{})
-	m.Register(&appPoolChange{})
+	m.RegisterDeprecated(&appPoolChange{}, "app-change-pool")
 	m.Register(&appPlanChange{})
 	m.Register(&cnameAdd{})
 	m.Register(&cnameRemove{})
