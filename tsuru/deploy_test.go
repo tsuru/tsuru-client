@@ -208,7 +208,7 @@ func (s *S) TestTargzSymlink(c *check.C) {
 	var buf bytes.Buffer
 	ctx := cmd.Context{Stderr: &buf}
 	var gzipBuf, tarBuf bytes.Buffer
-	err := targz(&ctx, &gzipBuf, "testdata/symlink", "..")
+	err := targz(&ctx, &gzipBuf, "testdata-symlink", "..")
 	c.Assert(err, check.IsNil)
 	gzipReader, err := gzip.NewReader(&gzipBuf)
 	c.Assert(err, check.IsNil)
@@ -221,7 +221,7 @@ func (s *S) TestTargzSymlink(c *check.C) {
 			headers = append(headers, []string{header.Name, header.Linkname})
 		}
 	}
-	expected := [][]string{{"testdata/symlink/link", "test"}}
+	expected := [][]string{{"testdata-symlink/link", "test"}}
 	c.Assert(headers, check.DeepEquals, expected)
 }
 
@@ -231,7 +231,7 @@ func (s *S) TestTargzFailure(c *check.C) {
 	var buf bytes.Buffer
 	err := targz(&ctx, &buf, "/tmp/something/that/definitely/doesnt/exist/right", "testdata")
 	c.Assert(err, check.NotNil)
-	c.Assert(err.Error(), check.Equals, "stat /tmp/something/that/definitely/doesnt/exist/right: no such file or directory")
+	c.Assert(err.Error(), check.Equals, "lstat /tmp/something/that/definitely/doesnt/exist/right: no such file or directory")
 }
 
 func (s *S) TestDeployListInfo(c *check.C) {
