@@ -204,6 +204,27 @@ func (s *S) TestTargzSingleDirectory(c *check.C) {
 	c.Assert(contents, check.DeepEquals, expectedContents)
 }
 
+func (s *S) TestTargzSymlink(c *check.C) {
+	var buf bytes.Buffer
+	ctx := cmd.Context{Stderr: &buf}
+	var gzipBuf, tarBuf bytes.Buffer
+	err := targz(&ctx, &gzipBuf, "testdata/symlink", "..")
+	c.Assert(err, check.IsNil)
+	gzipReader, err := gzip.NewReader(&gzipBuf)
+	c.Assert(err, check.IsNil)
+	_, err = io.Copy(&tarBuf, gzipReader)
+	c.Assert(err, check.IsNil)
+	tarReader := tar.NewReader(&tarBuf)
+	var headers [][]string
+	for header, err := tarReader.Next(); err == nil; header, err = tarReader.Next() {
+		if header.Linkname != "" {
+			headers = append(headers, []string{header.Name, header.Linkname})
+		}
+	}
+	expected := [][]string{{"testdata/symlink/link", "test"}}
+	c.Assert(headers, check.DeepEquals, expected)
+}
+
 func (s *S) TestTargzFailure(c *check.C) {
 	var stderr bytes.Buffer
 	ctx := cmd.Context{Stderr: &stderr}

@@ -194,7 +194,7 @@ func targz(ctx *cmd.Context, destination io.Writer, filepaths ...string) error {
 			fmt.Fprintf(ctx.Stderr, "Warning: skipping %q", path)
 			continue
 		}
-		fi, err := os.Stat(path)
+		fi, err := os.Lstat(path)
 		if err != nil {
 			return err
 		}
@@ -275,9 +275,16 @@ func addFile(writer *tar.Writer, filepath string) error {
 		return err
 	}
 	defer f.Close()
-	fi, err := f.Stat()
+	fi, err := os.Lstat(filepath)
 	if err != nil {
 		return err
+	}
+	if fi.Mode()&os.ModeSymlink == os.ModeSymlink {
+		target, err := os.Readlink(filepath)
+		if err != nil {
+			return err
+		}
+		return addSymlink(writer, filepath, target)
 	}
 	header, err := tar.FileInfoHeader(fi, "")
 	if err != nil {
@@ -294,6 +301,24 @@ func addFile(writer *tar.Writer, filepath string) error {
 	}
 	if n != fi.Size() {
 		return io.ErrShortWrite
+	}
+	return nil
+}
+
+func addSymlink(writer *tar.Writer, symlink, target string) error {
+	fi, err := os.Lstat(symlink)
+	if err != nil {
+		return err
+	}
+	header, err := tar.FileInfoHeader(fi, "")
+	if err != nil {
+		return err
+	}
+	header.Name = symlink
+	header.Linkname = target
+	err = writer.WriteHeader(header)
+	if err != nil {
+		return err
 	}
 	return nil
 }
