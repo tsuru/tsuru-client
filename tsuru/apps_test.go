@@ -385,7 +385,7 @@ func (s *S) TestAppRemoveInfo(c *check.C) {
 
 func (s *S) TestAppInfo(c *check.C) {
 	var stdout, stderr bytes.Buffer
-	result := `{"name":"app1","teamowner":"myteam","cname":[""],"ip":"myapp.tsuru.io","platform":"php","repository":"git@git.com:php.git","state":"dead", "units":[{"Ip":"10.10.10.10","Name":"app1/0","Status":"started"}, {"Ip":"9.9.9.9","Name":"app1/1","Status":"started"}, {"Ip":"","Name":"app1/2","Status":"pending"}],"teams":["tsuruteam","crane"], "owner": "myapp_owner", "deploys": 7}`
+	result := `{"name":"app1","teamowner":"myteam","cname":[""],"ip":"myapp.tsuru.io","platform":"php","repository":"git@git.com:php.git","state":"dead", "units":[{"Ip":"10.10.10.10","ID":"app1/0","Status":"started"}, {"Ip":"9.9.9.9","ID":"app1/1","Status":"started"}, {"Ip":"","ID":"app1/2","Status":"pending"}],"teams":["tsuruteam","crane"], "owner": "myapp_owner", "deploys": 7}`
 	expected := `Application: app1
 Repository: git@git.com:php.git
 Platform: php
@@ -420,7 +420,7 @@ Units: 3
 
 func (s *S) TestAppInfoLock(c *check.C) {
 	var stdout, stderr bytes.Buffer
-	result := `{"name":"app1","teamowner":"myteam","cname":[""],"ip":"myapp.tsuru.io","platform":"php","repository":"git@git.com:php.git","state":"dead", "units":[{"Ip":"10.10.10.10","Name":"app1/0","Status":"started"}, {"Ip":"9.9.9.9","Name":"app1/1","Status":"started"}, {"Ip":"","Name":"app1/2","Status":"pending"}],"teams":["tsuruteam","crane"], "owner": "myapp_owner", "deploys": 7, "lock": {"locked": true, "owner": "admin@example.com", "reason": "DELETE /apps/rbsample/units", "acquiredate": "2012-04-01T10:32:00Z"}}`
+	result := `{"name":"app1","teamowner":"myteam","cname":[""],"ip":"myapp.tsuru.io","platform":"php","repository":"git@git.com:php.git","state":"dead", "units":[{"Ip":"10.10.10.10","ID":"app1/0","Status":"started"}, {"Ip":"9.9.9.9","ID":"app1/1","Status":"started"}, {"Ip":"","ID":"app1/2","Status":"pending"}],"teams":["tsuruteam","crane"], "owner": "myapp_owner", "deploys": 7, "lock": {"locked": true, "owner": "admin@example.com", "reason": "DELETE /apps/rbsample/units", "acquiredate": "2012-04-01T10:32:00Z"}}`
 	expected := `Application: app1
 Repository: git@git.com:php.git
 Platform: php
@@ -473,19 +473,19 @@ func (s *S) TestAppInfoManyProcesses(c *check.C) {
   "units": [
     {
       "Ip": "10.10.10.10",
-      "Name": "app1/0",
+      "ID": "app1/0",
       "Status": "started",
       "ProcessName": "web"
     },
     {
       "Ip": "9.9.9.9",
-      "Name": "app1/1",
+      "ID": "app1/1",
       "Status": "started",
       "ProcessName": "worker"
     },
     {
       "Ip": "",
-      "Name": "app1/2",
+      "ID": "app1/2",
       "Status": "pending",
       "ProcessName": "worker"
     }
@@ -589,7 +589,7 @@ Pool:
 
 func (s *S) TestAppInfoWithoutArgs(c *check.C) {
 	var stdout, stderr bytes.Buffer
-	result := `{"name":"secret","teamowner":"myteam","ip":"secret.tsuru.io","platform":"ruby","repository":"git@git.com:php.git","state":"dead","units":[{"Ip":"10.10.10.10","Name":"secret/0","Status":"started"}, {"Ip":"9.9.9.9","Name":"secret/1","Status":"pending"}],"Teams":["tsuruteam","crane"], "owner": "myapp_owner", "deploys": 7}`
+	result := `{"name":"secret","teamowner":"myteam","ip":"secret.tsuru.io","platform":"ruby","repository":"git@git.com:php.git","state":"dead","units":[{"Ip":"10.10.10.10","ID":"secret/0","Status":"started"}, {"Ip":"9.9.9.9","ID":"secret/1","Status":"pending"}],"Teams":["tsuruteam","crane"], "owner": "myapp_owner", "deploys": 7}`
 	expected := `Application: secret
 Repository: git@git.com:php.git
 Platform: ruby
@@ -631,7 +631,7 @@ Units: 2
 
 func (s *S) TestAppInfoCName(c *check.C) {
 	var stdout, stderr bytes.Buffer
-	result := `{"name":"app1","teamowner":"myteam","ip":"myapp.tsuru.io","cname":["yourapp.tsuru.io"],"platform":"php","repository":"git@git.com:php.git","state":"dead","units":[{"Ip":"10.10.10.10","Name":"app1/0","Status":"started"}, {"Ip":"9.9.9.9","Name":"app1/1","Status":"started"}, {"Ip":"","Name":"app1/2","Status":"pending"}],"Teams":["tsuruteam","crane"], "owner": "myapp_owner", "deploys": 7}`
+	result := `{"name":"app1","teamowner":"myteam","ip":"myapp.tsuru.io","cname":["yourapp.tsuru.io"],"platform":"php","repository":"git@git.com:php.git","state":"dead","units":[{"Ip":"10.10.10.10","ID":"app1/0","Status":"started"}, {"Ip":"9.9.9.9","ID":"app1/1","Status":"started"}, {"Ip":"","ID":"app1/2","Status":"pending"}],"Teams":["tsuruteam","crane"], "owner": "myapp_owner", "deploys": 7}`
 	expected := `Application: app1
 Repository: git@git.com:php.git
 Platform: php
@@ -706,7 +706,7 @@ Service instances: 1
 	transport := transportFunc(func(req *http.Request) (resp *http.Response, err error) {
 		var body string
 		if req.URL.Path == "/apps/app1" {
-			body = `{"name":"app1","teamowner":"myteam","ip":"myapp.tsuru.io","platform":"php","repository":"git@git.com:php.git","state":"dead","units":[{"Ip":"10.10.10.10","Name":"app1/0","Status":"started"}, {"Ip":"9.9.9.9","Name":"app1/1","Status":"started"}, {"Ip":"","Name":"app1/2","Status":"pending"}],"Teams":["tsuruteam","crane"], "owner": "myapp_owner", "deploys": 7}`
+			body = `{"name":"app1","teamowner":"myteam","ip":"myapp.tsuru.io","platform":"php","repository":"git@git.com:php.git","state":"dead","units":[{"Ip":"10.10.10.10","ID":"app1/0","Status":"started"}, {"Ip":"9.9.9.9","ID":"app1/1","Status":"started"}, {"Ip":"","ID":"app1/2","Status":"pending"}],"Teams":["tsuruteam","crane"], "owner": "myapp_owner", "deploys": 7}`
 		} else if req.URL.Path == "/services/instances" && req.URL.RawQuery == "app=app1" {
 			body = `[{"service":"redisapi","instances":["myredisapi"]},
 					 {"service":"mongodb", "instances":[]}]`
@@ -726,7 +726,7 @@ Service instances: 1
 
 func (s *S) TestAppInfoWithPlan(c *check.C) {
 	var stdout, stderr bytes.Buffer
-	result := `{"name":"app1","teamowner":"myteam","cname":[""],"ip":"myapp.tsuru.io","platform":"php","repository":"git@git.com:php.git","state":"dead", "units":[{"Ip":"10.10.10.10","Name":"app1/0","Status":"started"}, {"Ip":"9.9.9.9","Name":"app1/1","Status":"started"}, {"Ip":"","Name":"app1/2","Status":"pending"}],"teams":["tsuruteam","crane"], "owner": "myapp_owner", "deploys": 7, "plan":{"name": "test",  "memory": 536870912, "swap": 268435456, "cpushare": 100, "router": "imemine", "default": false}}`
+	result := `{"name":"app1","teamowner":"myteam","cname":[""],"ip":"myapp.tsuru.io","platform":"php","repository":"git@git.com:php.git","state":"dead", "units":[{"Ip":"10.10.10.10","ID":"app1/0","Status":"started"}, {"Ip":"9.9.9.9","ID":"app1/1","Status":"started"}, {"Ip":"","ID":"app1/2","Status":"pending"}],"teams":["tsuruteam","crane"], "owner": "myapp_owner", "deploys": 7, "plan":{"name": "test",  "memory": 536870912, "swap": 268435456, "cpushare": 100, "router": "imemine", "default": false}}`
 	expected := `Application: app1
 Repository: git@git.com:php.git
 Platform: php
@@ -809,7 +809,7 @@ App Plan:
 	transport := transportFunc(func(req *http.Request) (resp *http.Response, err error) {
 		var body string
 		if req.URL.Path == "/apps/app1" {
-			body = `{"name":"app1","teamowner":"myteam","ip":"myapp.tsuru.io","platform":"php","repository":"git@git.com:php.git","state":"dead","units":[{"Ip":"10.10.10.10","Name":"app1/0","Status":"started"}, {"Ip":"9.9.9.9","Name":"app1/1","Status":"started"}, {"Ip":"","Name":"app1/2","Status":"pending"}],"Teams":["tsuruteam","crane"], "owner": "myapp_owner", "deploys": 7,"plan":{"name": "test",  "memory": 536870912, "swap": 268435456, "cpushare": 100, "router": "freeeee", "default": false}}`
+			body = `{"name":"app1","teamowner":"myteam","ip":"myapp.tsuru.io","platform":"php","repository":"git@git.com:php.git","state":"dead","units":[{"Ip":"10.10.10.10","ID":"app1/0","Status":"started"}, {"Ip":"9.9.9.9","ID":"app1/1","Status":"started"}, {"Ip":"","ID":"app1/2","Status":"pending"}],"Teams":["tsuruteam","crane"], "owner": "myapp_owner", "deploys": 7,"plan":{"name": "test",  "memory": 536870912, "swap": 268435456, "cpushare": 100, "router": "freeeee", "default": false}}`
 		} else if req.URL.Path == "/services/instances" && req.URL.RawQuery == "app=app1" {
 			body = `[{"service":"redisapi","instances":["myredisapi"]},
 					 {"service":"mongodb", "instances":[]}]`
@@ -915,7 +915,7 @@ func (s *S) TestAppRevokeInfo(c *check.C) {
 
 func (s *S) TestAppList(c *check.C) {
 	var stdout, stderr bytes.Buffer
-	result := `[{"ip":"10.10.10.10","name":"app1","units":[{"Name":"app1/0","Status":"started"}]}]`
+	result := `[{"ip":"10.10.10.10","name":"app1","units":[{"ID":"app1/0","Status":"started"}]}]`
 	expected := `+-------------+-------------------------+-------------+
 | Application | Units State Summary     | Address     |
 +-------------+-------------------------+-------------+
@@ -936,7 +936,7 @@ func (s *S) TestAppList(c *check.C) {
 
 func (s *S) TestAppListDisplayAppsInAlphabeticalOrder(c *check.C) {
 	var stdout, stderr bytes.Buffer
-	result := `[{"ip":"10.10.10.11","name":"sapp","units":[{"Name":"sapp1/0","Status":"started"}]},{"ip":"10.10.10.10","name":"app1","units":[{"Name":"app1/0","Status":"started"}]}]`
+	result := `[{"ip":"10.10.10.11","name":"sapp","units":[{"ID":"sapp1/0","Status":"started"}]},{"ip":"10.10.10.10","name":"app1","units":[{"ID":"app1/0","Status":"started"}]}]`
 	expected := `+-------------+-------------------------+-------------+
 | Application | Units State Summary     | Address     |
 +-------------+-------------------------+-------------+
@@ -959,7 +959,7 @@ func (s *S) TestAppListDisplayAppsInAlphabeticalOrder(c *check.C) {
 
 func (s *S) TestAppListUnitIsntAvailable(c *check.C) {
 	var stdout, stderr bytes.Buffer
-	result := `[{"ip":"10.10.10.10","name":"app1","units":[{"Name":"app1/0","Status":"pending"}]}]`
+	result := `[{"ip":"10.10.10.10","name":"app1","units":[{"ID":"app1/0","Status":"pending"}]}]`
 	expected := `+-------------+-------------------------+-------------+
 | Application | Units State Summary     | Address     |
 +-------------+-------------------------+-------------+
@@ -1001,7 +1001,7 @@ func (s *S) TestAppListUnitWithoutName(c *check.C) {
 
 func (s *S) TestAppListCName(c *check.C) {
 	var stdout, stderr bytes.Buffer
-	result := `[{"ip":"10.10.10.10","cname":["app1.tsuru.io"],"name":"app1","units":[{"Name":"app1/0","Status":"started"}]}]`
+	result := `[{"ip":"10.10.10.10","cname":["app1.tsuru.io"],"name":"app1","units":[{"ID":"app1/0","Status":"started"}]}]`
 	expected := `+-------------+-------------------------+---------------+
 | Application | Units State Summary     | Address       |
 +-------------+-------------------------+---------------+
@@ -1023,7 +1023,7 @@ func (s *S) TestAppListCName(c *check.C) {
 
 func (s *S) TestAppListFiltering(c *check.C) {
 	var stdout, stderr bytes.Buffer
-	result := `[{"ip":"10.10.10.10","cname":["app1.tsuru.io"],"name":"app1","units":[{"Name":"app1/0","Status":"started"}]}]`
+	result := `[{"ip":"10.10.10.10","cname":["app1.tsuru.io"],"name":"app1","units":[{"ID":"app1/0","Status":"started"}]}]`
 	expected := `+-------------+-------------------------+---------------+
 | Application | Units State Summary     | Address       |
 +-------------+-------------------------+---------------+
@@ -1062,7 +1062,7 @@ func (s *S) TestAppListFiltering(c *check.C) {
 
 func (s *S) TestAppListFilteringMe(c *check.C) {
 	var stdout, stderr bytes.Buffer
-	result := `[{"ip":"10.10.10.10","cname":["app1.tsuru.io"],"name":"app1","units":[{"Name":"app1/0","Status":"started"}]}]`
+	result := `[{"ip":"10.10.10.10","cname":["app1.tsuru.io"],"name":"app1","units":[{"ID":"app1/0","Status":"started"}]}]`
 	expected := `+-------------+-------------------------+---------------+
 | Application | Units State Summary     | Address       |
 +-------------+-------------------------+---------------+

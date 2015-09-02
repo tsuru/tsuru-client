@@ -256,7 +256,7 @@ func (c *appInfo) Run(context *cmd.Context, client *cmd.Client) error {
 }
 
 type unit struct {
-	Name        string
+	ID          string
 	Ip          string
 	Status      string
 	ProcessName string
@@ -370,11 +370,11 @@ Pool: {{.Pool}}{{if .Lock.Locked}}
 		unitsTable := cmd.NewTable()
 		unitsTable.Headers = cmd.Row(titles)
 		for _, unit := range units {
-			if unit.Name == "" {
+			if unit.ID == "" {
 				continue
 			}
-			id := unit.Name
-			if len(unit.Name) > 10 {
+			id := unit.ID
+			if len(unit.ID) > 10 {
 				id = id[:10]
 			}
 			row := []string{id, unit.Status}
@@ -589,7 +589,7 @@ func (c *appList) Show(result []byte, context *cmd.Context) error {
 		var available int
 		var total int
 		for _, unit := range app.Units {
-			if unit.Name != "" {
+			if unit.ID != "" {
 				total++
 				if unit.Available() {
 					available++
