@@ -371,6 +371,14 @@ func (s *S) TestAppPoolChangeIsRegistered(c *check.C) {
 	c.Assert("app-pool-change", Deprecates, "app-change-pool")
 }
 
+func (s *S) TestTeamOwnerSetIsRegistered(c *check.C) {
+	manager := buildManager("tsuru")
+	setOwner, ok := manager.Commands["app-team-owner-set"]
+	c.Assert(ok, check.Equals, true)
+	c.Assert(setOwner, check.FitsTypeOf, &TeamOwnerSet{})
+	c.Assert("app-team-owner-set", Deprecates, "app-set-team-owner")
+}
+
 func (s *S) TestAppPlanChangeIsRegistered(c *check.C) {
 	manager := buildManager("tsuru")
 	change, ok := manager.Commands["app-plan-change"]

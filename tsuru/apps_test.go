@@ -1326,7 +1326,7 @@ func (s *S) TestAppStartInfo(c *check.C) {
 }
 
 func (s *S) TestSetTeamOwnerInfo(c *check.C) {
-	c.Assert((&SetTeamOwner{}).Info(), check.NotNil)
+	c.Assert((&TeamOwnerSet{}).Info(), check.NotNil)
 }
 
 func (s *S) TestSetTeamOwner(c *check.C) {
@@ -1347,7 +1347,7 @@ func (s *S) TestSetTeamOwner(c *check.C) {
 		},
 	}
 	client := cmd.NewClient(&http.Client{Transport: trans}, nil, manager)
-	command := SetTeamOwner{}
+	command := TeamOwnerSet{}
 	command.Flags().Parse(true, []string{"--app", "app-fake"})
 	err := command.Run(&context, client)
 	c.Assert(err, check.IsNil)

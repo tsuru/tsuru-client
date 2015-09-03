@@ -61,7 +61,7 @@ func buildManager(name string) *cmd.Manager {
 	m.Register(&appSwap{})
 	m.Register(&appDeploy{})
 	m.Register(&planList{})
-	m.Register(&SetTeamOwner{})
+	m.RegisterDeprecated(&TeamOwnerSet{}, "app-set-team-owner")
 	m.Register(&userCreate{})
 	m.Register(&resetPassword{})
 	m.Register(&userRemove{})

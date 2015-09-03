@@ -885,11 +885,11 @@ func addCName(v []string, g cmd.GuessingCommand, client *cmd.Client) error {
 	return nil
 }
 
-type SetTeamOwner struct {
+type TeamOwnerSet struct {
 	cmd.GuessingCommand
 }
 
-func (c *SetTeamOwner) Run(context *cmd.Context, client *cmd.Client) error {
+func (c *TeamOwnerSet) Run(context *cmd.Context, client *cmd.Client) error {
 	appName, err := c.GuessingCommand.Guess()
 	if err != nil {
 		return err
@@ -911,10 +911,10 @@ func (c *SetTeamOwner) Run(context *cmd.Context, client *cmd.Client) error {
 	return nil
 }
 
-func (c *SetTeamOwner) Info() *cmd.Info {
+func (c *TeamOwnerSet) Info() *cmd.Info {
 	return &cmd.Info{
-		Name:    "app-set-team-owner",
-		Usage:   "app-set-team-owner <new-team-owner> [-a/--app appname]",
+		Name:    "app-team-owner-set",
+		Usage:   "app-team-owner-set <new-team-owner> [-a/--app appname]",
 		Desc:    "Sets owner team for an application.",
 		MinArgs: 1,
 	}
