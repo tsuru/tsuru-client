@@ -7,9 +7,9 @@ package main
 import (
 	"archive/tar"
 	"bytes"
+	"fmt"
 	"compress/gzip"
 	"encoding/json"
-	"fmt"
 	"io"
 	"io/ioutil"
 	"mime/multipart"
@@ -19,12 +19,25 @@ import (
 	"strings"
 	"sync"
 	"time"
+	"sort"
 
 	tsuruapp "github.com/tsuru/tsuru/app"
 	"github.com/tsuru/tsuru/cmd"
 	tsuruIo "github.com/tsuru/tsuru/io"
 	"launchpad.net/gnuflag"
 )
+
+type deployList []tsuruapp.DeployData
+
+func (dl deployList) Len() int { 
+	return len(dl) 
+}
+func (dl deployList) Swap(i, j int) { 
+	dl[i], dl[j] = dl[j], dl[i] 
+}
+func (dl deployList) Less(i, j int) bool { 
+	return dl[i].Timestamp.Before(dl[j].Timestamp)
+}
 
 type appDeployList struct {
 	cmd.GuessingCommand
@@ -69,6 +82,7 @@ func (c *appDeployList) Run(context *cmd.Context, client *cmd.Client) error {
 	if err != nil {
 		return err
 	}
+	sort.Sort(sort.Reverse(deployList(deploys)))
 	table := cmd.NewTable()
 	table.Headers = cmd.Row([]string{"Image (Rollback)", "Origin", "User", "Date (Duration)", "Error"})
 	for _, deploy := range deploys {

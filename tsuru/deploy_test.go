@@ -246,7 +246,7 @@ func (s *S) TestAppDeployList(c *check.C) {
   {
     "ID": "54c92d91a46ec0e78501d86b",
     "App": "test",
-    "Timestamp": "2015-01-28T18:42:25.725Z",
+    "Timestamp": "2015-01-27T18:42:25.725Z",
     "Duration": 18709653486,
     "Commit": "54c92d91a46ec0e78501d86b54c92d91a46ec0e78501d86b",
     "Error": "",
@@ -258,7 +258,7 @@ func (s *S) TestAppDeployList(c *check.C) {
   {
     "ID": "54c922d0a46ec0e78501d84e",
     "App": "test",
-    "Timestamp": "2015-01-28T17:56:32.583Z",
+    "Timestamp": "2015-01-28T18:56:32.583Z",
     "Duration": 18781564759,
     "Commit": "",
     "Error": "",
@@ -270,7 +270,7 @@ func (s *S) TestAppDeployList(c *check.C) {
   {
     "ID": "54c918a7a46ec0e78501d831",
     "App": "test",
-    "Timestamp": "2015-01-28T17:13:11.498Z",
+    "Timestamp": "2015-01-28T19:13:11.498Z",
     "Duration": 26064205176,
     "Commit": "",
     "Error": "my-error",
@@ -282,9 +282,9 @@ func (s *S) TestAppDeployList(c *check.C) {
 ]
 `
 	timestamps := []string{
-		"2015-01-28T18:42:25.725Z",
-		"2015-01-28T17:56:32.583Z",
-		"2015-01-28T17:13:11.498Z",
+		"2015-01-27T18:42:25.725Z",
+		"2015-01-28T18:56:32.583Z",
+		"2015-01-28T19:13:11.498Z",
 	}
 	var formatted []string
 	for _, t := range timestamps {
@@ -296,11 +296,11 @@ func (s *S) TestAppDeployList(c *check.C) {
 	expected := `+-----------------------+---------------+-------------------+-------------------------+----------+
 | Image (Rollback)      | Origin        | User              | Date (Duration)         | Error    |
 +-----------------------+---------------+-------------------+-------------------------+----------+
-| tsuru/app-test:v3 (*) | git (54c92d9) | admin@example.com | ` + formatted[0] + ` (00:18) |          |
+| ` + red + `tsuru/app-test:v1` + reset + `     | ` + red + `rollback` + reset + `      |                   | ` + red + formatted[2] + ` (00:26)` + reset + ` | ` + red + `my-error` + reset + ` |
 +-----------------------+---------------+-------------------+-------------------------+----------+
 | tsuru/app-test:v2 (*) | app-deploy    | admin@example.com | ` + formatted[1] + ` (00:18) |          |
 +-----------------------+---------------+-------------------+-------------------------+----------+
-| ` + red + `tsuru/app-test:v1` + reset + `     | ` + red + `rollback` + reset + `      |                   | ` + red + formatted[2] + ` (00:26)` + reset + ` | ` + red + `my-error` + reset + ` |
+| tsuru/app-test:v3 (*) | git (54c92d9) | admin@example.com | ` + formatted[0] + ` (00:18) |          |
 +-----------------------+---------------+-------------------+-------------------------+----------+
 `
 	context := cmd.Context{
