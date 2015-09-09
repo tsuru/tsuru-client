@@ -547,6 +547,7 @@ func (f *appFilter) queryString(client *cmd.Client) (url.Values, error) {
 type appList struct {
 	fs     *gnuflag.FlagSet
 	filter appFilter
+	simplified	bool
 }
 
 func (c *appList) Run(context *cmd.Context, client *cmd.Client) error {
@@ -584,6 +585,12 @@ func (c *appList) Show(result []byte, context *cmd.Context) error {
 		return err
 	}
 	table := cmd.NewTable()
+	if c.simplified {
+		for _, app := range apps {
+			fmt.Fprintln(context.Stdout, app.Name)
+		}
+		return nil
+	}
 	table.Headers = cmd.Row([]string{"Application", "Units State Summary", "Address"})
 	for _, app := range apps {
 		var available int
@@ -619,6 +626,7 @@ func (c *appList) Flags() *gnuflag.FlagSet {
 		c.fs.StringVar(&c.filter.owner, "u", "", "Display only applications owner by the given user")
 		c.fs.BoolVar(&c.filter.locked, "locked", false, "Display only applications that are locked")
 		c.fs.BoolVar(&c.filter.locked, "l", false, "Display only applications that are locked")
+		c.fs.BoolVar(&c.simplified, "q", false, "Display only applications name")
 	}
 	return c.fs
 }

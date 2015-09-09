@@ -1103,6 +1103,34 @@ func (s *S) TestAppListFilteringMe(c *check.C) {
 	c.Assert(request.URL.Query(), check.DeepEquals, queryString)
 }
 
+func (s *S) TestAppListWithFlagQ(c *check.C) {
+	var stdout, stderr bytes.Buffer
+	result := `[{"ip":"10.10.10.10","name":"app1","units":[{"ID":"app1/0","Status":"started"}]},{"ip":"10.10.10.11","name":"app2","units":[{"ID":"app2/0","Status":"started"}]},{"ip":"10.10.10.12","cname":["app3.tsuru.io"],"name":"app3","units":[{"ID":"app3/0","Status":"started"}]}]`
+	expected := `app1
+app2
+app3
+`
+	context := cmd.Context{
+		Args:   []string{},
+		Stdout: &stdout,
+		Stderr: &stderr,
+	}
+	var request *http.Request
+	transport := cmdtest.ConditionalTransport{
+		CondFunc: func(r *http.Request) bool {
+			request = r
+			return true
+		},
+		Transport: cmdtest.Transport{Message: result, Status: http.StatusOK},
+	}
+	client := cmd.NewClient(&http.Client{Transport: &transport}, nil, manager)
+	command := appList{}
+	command.Flags().Parse(true, []string{"-q"})
+	err := command.Run(&context, client)
+	c.Assert(err, check.IsNil)
+	c.Assert(stdout.String(), check.Equals, expected)
+}
+
 func (s *S) TestAppListInfo(c *check.C) {
 	c.Assert((&appList{}).Info(), check.NotNil)
 }
