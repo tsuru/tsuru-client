@@ -435,19 +435,40 @@ func (serviceDoc) Run(ctx *cmd.Context, client *cmd.Client) error {
 }
 
 type serviceRemove struct {
-	yes bool
-	fs  *gnuflag.FlagSet
+	yes       bool
+	yesUnbind bool
+	fs        *gnuflag.FlagSet
 }
 
 func (c *serviceRemove) Info() *cmd.Info {
 	return &cmd.Info{
 		Name:  "service-remove",
-		Usage: "service-remove <serviceinstancename> [--assume-yes]",
+		Usage: "service-remove <serviceinstancename> [--assume-yes] [--unbind]",
 		Desc: `Destroys a service instance. It can't remove a service instance that is bound
 to an app, so before remove a service instance, make sure there is no apps
 bound to it (see [[tsuru service-info]] command).`,
 		MinArgs: 1,
 	}
+}
+
+func removeServiceInstanceWithUnbind(ctx *cmd.Context, client *cmd.Client) error {
+	name := ctx.Args[0]
+	url := fmt.Sprintf("/services/instances/%s?unbindall=%s", name, "true")
+	url, err := cmd.GetURL(url)
+	if err != nil {
+		return err
+	}
+	request, err := http.NewRequest("DELETE", url, nil)
+	if err != nil {
+		return err
+	}
+	resp, err := client.Do(request)
+	defer resp.Body.Close()
+	if err != nil {
+		return err
+	}
+	fmt.Fprintf(ctx.Stdout, `Service "%s" successfully removed!`+"\n", name)
+	return nil
 }
 
 func (c *serviceRemove) Run(ctx *cmd.Context, client *cmd.Client) error {
@@ -461,7 +482,15 @@ func (c *serviceRemove) Run(ctx *cmd.Context, client *cmd.Client) error {
 			return nil
 		}
 	}
-	url := fmt.Sprintf("/services/instances/%s", name)
+	var url string
+	if c.yesUnbind {
+		err := removeServiceInstanceWithUnbind(ctx, client)
+		if err != nil {
+			fmt.Fprintf(ctx.Stdout, err.Error())
+		}
+		return err
+	}
+	url = fmt.Sprintf("/services/instances/%s", name)
 	url, err := cmd.GetURL(url)
 	if err != nil {
 		return err
@@ -470,12 +499,22 @@ func (c *serviceRemove) Run(ctx *cmd.Context, client *cmd.Client) error {
 	if err != nil {
 		return err
 	}
-	_, err = client.Do(request)
+	resp, err := client.Do(request)
 	if err != nil {
+		if resp.StatusCode == http.StatusConflict {
+			fmt.Fprintf(ctx.Stdout, `Do you want unbind all apps? (y/n) `)
+			fmt.Fscanf(ctx.Stdin, "%s", &answer)
+			if answer != "y" {
+				fmt.Fprintln(ctx.Stdout, err.Error())
+				return err
+			}
+			err = removeServiceInstanceWithUnbind(ctx, client)
+		}
 		return err
 	}
 	fmt.Fprintf(ctx.Stdout, `Service "%s" successfully removed!`+"\n", name)
 	return nil
+
 }
 
 func (c *serviceRemove) Flags() *gnuflag.FlagSet {
@@ -483,6 +522,8 @@ func (c *serviceRemove) Flags() *gnuflag.FlagSet {
 		c.fs = gnuflag.NewFlagSet("service-remove", gnuflag.ExitOnError)
 		c.fs.BoolVar(&c.yes, "assume-yes", false, "Don't ask for confirmation, just remove the service.")
 		c.fs.BoolVar(&c.yes, "y", false, "Don't ask for confirmation, just remove the service.")
+		c.fs.BoolVar(&c.yesUnbind, "unbind", false, "Don't ask for confirmation, just remove all applications bound.")
+		c.fs.BoolVar(&c.yesUnbind, "u", false, "Don't ask for confirmation, just remove all applications bound.")
 	}
 	return c.fs
 }

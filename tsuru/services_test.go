@@ -10,6 +10,7 @@ import (
 	"io/ioutil"
 	"net/http"
 	"strings"
+	//"fmt"
 
 	"github.com/tsuru/tsuru/cmd"
 	"github.com/tsuru/tsuru/cmd/cmdtest"
@@ -495,6 +496,90 @@ func (s *S) TestServiceRemoveFlags(c *check.C) {
 	c.Check(sassume.Value.String(), check.Equals, "true")
 	c.Check(sassume.DefValue, check.Equals, "false")
 	c.Check(command.yes, check.Equals, true)
+}
+
+func (s *S) TestServiceRemoveWithAppBindNoUnbind(c *check.C) {
+	var stdout, stderr bytes.Buffer
+	expected := `Are you sure you want to remove service "mongodb"? (y/n) `
+	expected += `Do you want unbind all apps? (y/n) `
+	expected += `This service instance is bound to at least one app. Unbind them before removing it` + "\n"
+	ctx := cmd.Context{
+		Args:   []string{"mongodb"},
+		Stdout: &stdout,
+		Stderr: &stderr,
+		Stdin:  strings.NewReader("y\tn\n"),
+	}
+	msg := "This service instance is bound to at least one app. Unbind them before removing it"
+	trans := &cmdtest.ConditionalTransport{
+		Transport: cmdtest.Transport{Message: msg, Status: http.StatusConflict},
+		CondFunc: func(req *http.Request) bool {
+			return req.URL.Path == "/services/instances/mongodb" && req.Method == "DELETE"
+		},
+	}
+	client := cmd.NewClient(&http.Client{Transport: trans}, nil, manager)
+	err := (&serviceRemove{}).Run(&ctx, client)
+	c.Assert(err, check.NotNil)
+	obtained := stdout.String()
+	c.Assert(obtained, check.Equals, expected)
+}
+
+func (s *S) TestServiceRemoveWithAppBindYesUnbind(c *check.C) {
+	var stdout, stderr bytes.Buffer
+	expected := `Are you sure you want to remove service "mongodb"? (y/n) `
+	expected += `Do you want unbind all apps? (y/n) `
+	expected += `Service "mongodb" successfully removed!` + "\n"
+	ctx := cmd.Context{
+		Args:   []string{"mongodb"},
+		Stdout: &stdout,
+		Stderr: &stderr,
+		Stdin:  strings.NewReader("y\ty\n"),
+	}
+	msg := "This service instance is bound to at least one app. Unbind them before removing it"
+	instanceTransport := cmdtest.ConditionalTransport{
+		Transport: cmdtest.Transport{Message: msg, Status: http.StatusConflict},
+		CondFunc: func(req *http.Request) bool {
+			return req.URL.Path == "/services/instances/mongodb" && req.Method == "DELETE"
+		},
+	}
+	msg1 := `Service "mongodb" successfully removed!` + "\n"
+	appTransport := cmdtest.ConditionalTransport{
+		Transport: cmdtest.Transport{Message: msg1, Status: http.StatusOK},
+		CondFunc: func(req *http.Request) bool {
+			return req.Method == "DELETE" && req.URL.Path == "/services/instances/mongodb"
+		},
+	}
+	trans := &cmdtest.MultiConditionalTransport{
+		ConditionalTransports: []cmdtest.ConditionalTransport{instanceTransport, appTransport},
+	}
+	client := cmd.NewClient(&http.Client{Transport: trans}, nil, manager)
+	err := (&serviceRemove{}).Run(&ctx, client)
+	c.Assert(err, check.IsNil)
+	obtained := stdout.String()
+	c.Assert(obtained, check.Equals, expected)
+}
+
+func (s *S) TestServiceRemoveWithAppBindWithFlags(c *check.C) {
+	var stdout, stderr bytes.Buffer
+	expected := `Service "mongodb" successfully removed!` + "\n"
+	ctx := cmd.Context{
+		Args:   []string{"mongodb"},
+		Stdout: &stdout,
+		Stderr: &stderr,
+	}
+	msg := "Service mongodb successfully removed!"
+	trans := &cmdtest.ConditionalTransport{
+		Transport: cmdtest.Transport{Message: msg, Status: http.StatusOK},
+		CondFunc: func(req *http.Request) bool {
+			return req.URL.Path == "/services/instances/mongodb" && req.Method == "DELETE"
+		},
+	}
+	client := cmd.NewClient(&http.Client{Transport: trans}, nil, manager)
+	command := serviceRemove{}
+	command.Flags().Parse(true, []string{"-y", "-u"})
+	err := command.Run(&ctx, client)
+	c.Assert(err, check.IsNil)
+	obtained := stdout.String()
+	c.Assert(obtained, check.Equals, expected)
 }
 
 func (s *S) TestServiceInstanceGrantInfo(c *check.C) {
