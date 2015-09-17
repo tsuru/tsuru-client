@@ -518,7 +518,7 @@ func (c *serviceRemove) Run(ctx *cmd.Context, client *cmd.Client) error {
 			fmt.Fprintf(ctx.Stdout, `Do you want unbind all apps? (y/n) `)
 			fmt.Fscanf(ctx.Stdin, "%s", &answer)
 			if answer != "y" {
-				fmt.Fprintln(ctx.Stdout, msgError.Error())
+				fmt.Fprintln(ctx.Stdout, "Abort.")
 				return nil
 			}
 			msgError = removeServiceInstanceWithUnbind(ctx, client)
