@@ -522,7 +522,7 @@ func (s *S) TestServiceRemoveWithAppBindNoUnbind(c *check.C) {
 	expected := `Are you sure you want to remove service "mongodb"? (y/n) `
 	expected += `Applications bound to the service "mongodb": "app1,app2"` + "\n"
 	expected += `Do you want unbind all apps? (y/n) `
-	expected += `This service instance is bound to at least one app. Unbind them before removing it` + "\n"
+	expected += `Abort.` + "\n"
 	ctx := cmd.Context{
 		Args:   []string{"mongodb"},
 		Stdout: &stdout,
