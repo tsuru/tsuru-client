@@ -17,7 +17,7 @@ import (
 
 	"github.com/tsuru/tsuru/cmd"
 	tsuruIo "github.com/tsuru/tsuru/io"
-	//"github.com/tsuru/tsuru/service"
+	"github.com/tsuru/tsuru/service"
 	"launchpad.net/gnuflag"
 )
 
@@ -506,14 +506,15 @@ func (c *serviceRemove) Run(ctx *cmd.Context, client *cmd.Client) error {
 	if err != nil {
 		return err
 	}
-	var msgJson tsuruIo.SimpleJsonMessage
-	json.Unmarshal(result, &msgJson)
+	var jsonMsg tsuruIo.SimpleJsonMessage
+	json.Unmarshal(result, &jsonMsg)
 	var msgError error
-	if msgJson.Error != "" {
-		msgError = errors.New(msgJson.Error)
+	if jsonMsg.Error != "" {
+		msgError = errors.New(jsonMsg.Error)
 	}
 	if  msgError != nil {
-		if msgError.Error() == "This service instance is bound to at least one app. Unbind them before removing it" {//service.ErrServiceInstanceBound {
+		if msgError.Error() == service.ErrServiceInstanceBound.Error() {
+			fmt.Fprintf(ctx.Stdout, `Applications bound to the service "%s": "%s"` + "\n", name, jsonMsg.Message)
 			fmt.Fprintf(ctx.Stdout, `Do you want unbind all apps? (y/n) `)
 			fmt.Fscanf(ctx.Stdin, "%s", &answer)
 			if answer != "y" {
