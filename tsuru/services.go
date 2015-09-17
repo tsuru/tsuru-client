@@ -17,6 +17,7 @@ import (
 
 	"github.com/tsuru/tsuru/cmd"
 	tsuruIo "github.com/tsuru/tsuru/io"
+	//"github.com/tsuru/tsuru/service"
 	"launchpad.net/gnuflag"
 )
 
@@ -467,6 +468,10 @@ func removeServiceInstanceWithUnbind(ctx *cmd.Context, client *cmd.Client) error
 	if err != nil {
 		return err
 	}
+	err = cmd.StreamJSONResponse(ctx.Stdout, resp)
+	if err != nil {
+		return err
+	}
 	fmt.Fprintf(ctx.Stdout, `Service "%s" successfully removed!`+"\n", name)
 	return nil
 }
@@ -484,11 +489,7 @@ func (c *serviceRemove) Run(ctx *cmd.Context, client *cmd.Client) error {
 	}
 	var url string
 	if c.yesUnbind {
-		err := removeServiceInstanceWithUnbind(ctx, client)
-		if err != nil {
-			fmt.Fprintf(ctx.Stdout, err.Error())
-		}
-		return err
+		return removeServiceInstanceWithUnbind(ctx, client)
 	}
 	url = fmt.Sprintf("/services/instances/%s", name)
 	url, err := cmd.GetURL(url)
@@ -499,22 +500,32 @@ func (c *serviceRemove) Run(ctx *cmd.Context, client *cmd.Client) error {
 	if err != nil {
 		return err
 	}
-	resp, err := client.Do(request)
+	resp, _ := client.Do(request)
+	defer resp.Body.Close()
+	result, err := ioutil.ReadAll(resp.Body)
 	if err != nil {
-		if resp.StatusCode == http.StatusConflict {
+		return err
+	}
+	var msgJson tsuruIo.SimpleJsonMessage
+	json.Unmarshal(result, &msgJson)
+	var msgError error
+	if msgJson.Error != "" {
+		msgError = errors.New(msgJson.Error)
+	}
+	if  msgError != nil {
+		if msgError.Error() == "This service instance is bound to at least one app. Unbind them before removing it" {//service.ErrServiceInstanceBound {
 			fmt.Fprintf(ctx.Stdout, `Do you want unbind all apps? (y/n) `)
 			fmt.Fscanf(ctx.Stdin, "%s", &answer)
 			if answer != "y" {
-				fmt.Fprintln(ctx.Stdout, err.Error())
-				return err
+				fmt.Fprintln(ctx.Stdout, msgError.Error())
+				return msgError
 			}
-			err = removeServiceInstanceWithUnbind(ctx, client)
+			msgError = removeServiceInstanceWithUnbind(ctx, client)
 		}
-		return err
-	}
+		return msgError
+	}	
 	fmt.Fprintf(ctx.Stdout, `Service "%s" successfully removed!`+"\n", name)
 	return nil
-
 }
 
 func (c *serviceRemove) Flags() *gnuflag.FlagSet {
