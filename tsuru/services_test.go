@@ -497,6 +497,26 @@ func (s *S) TestServiceRemoveFlags(c *check.C) {
 	c.Check(command.yes, check.Equals, true)
 }
 
+func (s *S) TestServiceUnbindFlag(c *check.C) {
+	command := serviceRemove{}
+	flagset := command.Flags()
+	c.Assert(flagset, check.NotNil)
+	flagset.Parse(true, []string{"-u"})
+	assume := flagset.Lookup("unbind")
+	c.Check(assume, check.NotNil)
+	c.Check(assume.Name, check.Equals, "unbind")
+	c.Check(assume.Usage, check.Equals, "Don't ask for confirmation, just remove all applications bound.")
+	c.Check(assume.Value.String(), check.Equals, "true")
+	c.Check(assume.DefValue, check.Equals, "false")
+	sassume := flagset.Lookup("u")
+	c.Check(sassume, check.NotNil)
+	c.Check(sassume.Name, check.Equals, "u")
+	c.Check(sassume.Usage, check.Equals, "Don't ask for confirmation, just remove all applications bound.")
+	c.Check(sassume.Value.String(), check.Equals, "true")
+	c.Check(sassume.DefValue, check.Equals, "false")
+	c.Check(command.yesUnbind, check.Equals, true)
+}
+
 func (s *S) TestServiceRemoveWithAppBindNoUnbind(c *check.C) {
 	var stdout, stderr bytes.Buffer
 	expected := `Are you sure you want to remove service "mongodb"? (y/n) `
@@ -523,7 +543,7 @@ func (s *S) TestServiceRemoveWithAppBindNoUnbind(c *check.C) {
 	}
 	client := cmd.NewClient(&http.Client{Transport: trans}, nil, manager)
 	err = (&serviceRemove{}).Run(&ctx, client)
-	c.Assert(err, check.NotNil)
+	c.Assert(err, check.IsNil)
 	obtained := stdout.String()
 	c.Assert(obtained, check.Equals, expected)
 }

@@ -519,7 +519,7 @@ func (c *serviceRemove) Run(ctx *cmd.Context, client *cmd.Client) error {
 			fmt.Fscanf(ctx.Stdin, "%s", &answer)
 			if answer != "y" {
 				fmt.Fprintln(ctx.Stdout, msgError.Error())
-				return msgError
+				return nil
 			}
 			msgError = removeServiceInstanceWithUnbind(ctx, client)
 		}
