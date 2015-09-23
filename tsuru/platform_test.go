@@ -36,6 +36,30 @@ func (s *S) TestPlatformList(c *check.C) {
 	c.Assert(buf.String(), check.Equals, expected)
 }
 
+func (s *S) TestPlatformListWithDisabledPlatforms(c *check.C) {
+	var buf bytes.Buffer
+	var called bool
+	transport := cmdtest.ConditionalTransport{
+		Transport: cmdtest.Transport{
+			Status:  http.StatusOK,
+			Message: `[{"Name":"ruby"},{"Name":"python"},{"Name":"ruby20", "Disabled":true}]`,
+		},
+		CondFunc: func(r *http.Request) bool {
+			called = true
+			return r.Method == "GET" && r.URL.Path == "/platforms"
+		},
+	}
+	context := cmd.Context{Stdout: &buf}
+	client := cmd.NewClient(&http.Client{Transport: &transport}, nil, manager)
+	err := platformList{}.Run(&context, client)
+	c.Assert(err, check.IsNil)
+	c.Assert(called, check.Equals, true)
+	expected := `- python
+- ruby
+- ruby20 (disabled)` + "\n"
+	c.Assert(buf.String(), check.Equals, expected)
+}
+
 func (s *S) TestPlatformListEmpty(c *check.C) {
 	var buf bytes.Buffer
 	transport := cmdtest.Transport{

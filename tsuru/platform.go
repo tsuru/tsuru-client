@@ -14,7 +14,8 @@ import (
 )
 
 type platform struct {
-	Name string
+	Name     string
+	Disabled bool
 }
 
 type platformList struct{}
@@ -45,6 +46,9 @@ func (platformList) Run(context *cmd.Context, client *cmd.Client) error {
 	platformNames := make([]string, len(platforms))
 	for i, p := range platforms {
 		platformNames[i] = p.Name
+		if p.Disabled {
+			platformNames[i] += " (disabled)"
+		}
 	}
 	sort.Strings(platformNames)
 	for _, p := range platformNames {
