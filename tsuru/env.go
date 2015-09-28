@@ -98,8 +98,8 @@ func (c *envSet) Run(context *cmd.Context, client *cmd.Client) error {
 	}
 	variables := make(map[string]string, len(decls))
 	for _, v := range decls {
-		parts := strings.Split(v[1], "=")
-		variables[parts[0]] = strings.Join(parts[1:], "=")
+		parts := strings.SplitN(v[1], "=", 2)
+		variables[parts[0]] = parts[1]
 	}
 	var buf bytes.Buffer
 	json.NewEncoder(&buf).Encode(variables)
