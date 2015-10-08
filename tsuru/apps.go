@@ -545,9 +545,9 @@ func (f *appFilter) queryString(client *cmd.Client) (url.Values, error) {
 }
 
 type appList struct {
-	fs     *gnuflag.FlagSet
-	filter appFilter
-	simplified	bool
+	fs         *gnuflag.FlagSet
+	filter     appFilter
+	simplified bool
 }
 
 func (c *appList) Run(context *cmd.Context, client *cmd.Client) error {

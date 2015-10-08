@@ -7,19 +7,19 @@ package main
 import (
 	"archive/tar"
 	"bytes"
-	"fmt"
 	"compress/gzip"
 	"encoding/json"
+	"fmt"
 	"io"
 	"io/ioutil"
 	"mime/multipart"
 	"net/http"
 	"os"
 	"path"
+	"sort"
 	"strings"
 	"sync"
 	"time"
-	"sort"
 
 	tsuruapp "github.com/tsuru/tsuru/app"
 	"github.com/tsuru/tsuru/cmd"
@@ -29,13 +29,13 @@ import (
 
 type deployList []tsuruapp.DeployData
 
-func (dl deployList) Len() int { 
-	return len(dl) 
+func (dl deployList) Len() int {
+	return len(dl)
 }
-func (dl deployList) Swap(i, j int) { 
-	dl[i], dl[j] = dl[j], dl[i] 
+func (dl deployList) Swap(i, j int) {
+	dl[i], dl[j] = dl[j], dl[i]
 }
-func (dl deployList) Less(i, j int) bool { 
+func (dl deployList) Less(i, j int) bool {
 	return dl[i].Timestamp.Before(dl[j].Timestamp)
 }
 
