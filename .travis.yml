@@ -13,3 +13,4 @@ install:
   - godep restore ./...
 script:
   - go test -x ./tsuru
+  - [ -n "`gofmt -s -l ./tsuru`" ] && echo "gofmt -s -w required for:" && echo && gofmt -s -l ./tsuru && exit 1
