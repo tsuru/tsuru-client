@@ -10,14 +10,16 @@ import (
 	"io/ioutil"
 	"net/http"
 	"strings"
-	
+
 	"github.com/tsuru/tsuru/cmd"
 	"github.com/tsuru/tsuru/cmd/cmdtest"
 	"github.com/tsuru/tsuru/io"
 	"gopkg.in/check.v1"
 )
 
-type infoTransport struct{}
+type infoTransport struct {
+	includePlans bool
+}
 
 func (t *infoTransport) RoundTrip(req *http.Request) (resp *http.Response, err error) {
 	var message string
@@ -25,7 +27,11 @@ func (t *infoTransport) RoundTrip(req *http.Request) (resp *http.Response, err e
 		message = `[{"Name":"mymongo", "Apps":["myapp"], "Info":{"key": "value", "key2": "value2"}}]`
 	}
 	if req.URL.Path == "/services/mongodb/plans" {
-		message = `[{"Name": "small", "Description": "another plan"}]`
+		if t.includePlans {
+			message = `[{"Name": "small", "Description": "another plan"}]`
+		} else {
+			message = `[]`
+		}
 	}
 	resp = &http.Response{
 		Body:       ioutil.NopCloser(bytes.NewBufferString(message)),
@@ -389,7 +395,31 @@ Plans
 		Stdout: &stdout,
 		Stderr: &stderr,
 	}
-	client := cmd.NewClient(&http.Client{Transport: &infoTransport{}}, nil, manager)
+	client := cmd.NewClient(&http.Client{Transport: &infoTransport{includePlans: true}}, nil, manager)
+	err := (&serviceInfo{}).Run(&context, client)
+	c.Assert(err, check.IsNil)
+	obtained := stdout.String()
+	c.Assert(obtained, check.Equals, expected)
+}
+
+func (s *S) TestServiceInfoNoPlans(c *check.C) {
+	var stdout, stderr bytes.Buffer
+	expected := `Info for "mongodb"
+
+Instances
++-----------+-------+-------+--------+
+| Instances | Apps  | key   | key2   |
++-----------+-------+-------+--------+
+| mymongo   | myapp | value | value2 |
++-----------+-------+-------+--------+
+`
+	args := []string{"mongodb"}
+	context := cmd.Context{
+		Args:   args,
+		Stdout: &stdout,
+		Stderr: &stderr,
+	}
+	client := cmd.NewClient(&http.Client{Transport: &infoTransport{includePlans: false}}, nil, manager)
 	err := (&serviceInfo{}).Run(&context, client)
 	c.Assert(err, check.IsNil)
 	obtained := stdout.String()
@@ -614,7 +644,7 @@ func (s *S) TestServiceRemoveWithAppBindWithFlags(c *check.C) {
 	err = command.Run(&ctx, client)
 	c.Assert(err, check.IsNil)
 	obtained := stdout.String()
-	c.Assert(obtained, check.Equals, expectedOut + expected)
+	c.Assert(obtained, check.Equals, expectedOut+expected)
 }
 
 func (s *S) TestServiceRemoveWithAppBindShowAppsBound(c *check.C) {
@@ -631,7 +661,7 @@ func (s *S) TestServiceRemoveWithAppBindShowAppsBound(c *check.C) {
 	}
 	expectedError := "This service instance is bound to at least one app. Unbind them before removing it"
 	expectedMsg := "app1,app2"
-	msg := io.SimpleJsonMessage{Message: expectedMsg,Error: expectedError}
+	msg := io.SimpleJsonMessage{Message: expectedMsg, Error: expectedError}
 	result, err := json.Marshal(msg)
 	c.Assert(err, check.IsNil)
 	instanceTransport := cmdtest.ConditionalTransport{

@@ -356,7 +356,6 @@ func (c serviceInfo) BuildInstancesTable(serviceName string, ctx *cmd.Context, c
 }
 
 func (c serviceInfo) BuildPlansTable(serviceName string, ctx *cmd.Context, client *cmd.Client) error {
-	ctx.Stdout.Write([]byte("\nPlans\n"))
 	url, err := cmd.GetURL(fmt.Sprintf("/services/%s/plans", serviceName))
 	if err != nil {
 		return err
@@ -380,6 +379,7 @@ func (c serviceInfo) BuildPlansTable(serviceName string, ctx *cmd.Context, clien
 		return err
 	}
 	if len(plans) > 0 {
+		fmt.Fprint(ctx.Stdout, "\nPlans\n")
 		table := cmd.NewTable()
 		for _, plan := range plans {
 			data := []string{plan["Name"], plan["Description"]}
@@ -512,9 +512,9 @@ func (c *serviceRemove) Run(ctx *cmd.Context, client *cmd.Client) error {
 	if jsonMsg.Error != "" {
 		msgError = errors.New(jsonMsg.Error)
 	}
-	if  msgError != nil {
+	if msgError != nil {
 		if msgError.Error() == service.ErrServiceInstanceBound.Error() {
-			fmt.Fprintf(ctx.Stdout, `Applications bound to the service "%s": "%s"` + "\n", name, jsonMsg.Message)
+			fmt.Fprintf(ctx.Stdout, `Applications bound to the service "%s": "%s"`+"\n", name, jsonMsg.Message)
 			fmt.Fprintf(ctx.Stdout, `Do you want unbind all apps? (y/n) `)
 			fmt.Fscanf(ctx.Stdin, "%s", &answer)
 			if answer != "y" {
@@ -524,7 +524,7 @@ func (c *serviceRemove) Run(ctx *cmd.Context, client *cmd.Client) error {
 			msgError = removeServiceInstanceWithUnbind(ctx, client)
 		}
 		return msgError
-	}	
+	}
 	fmt.Fprintf(ctx.Stdout, `Service "%s" successfully removed!`+"\n", name)
 	return nil
 }
