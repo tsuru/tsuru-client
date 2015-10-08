@@ -1,8 +1,8 @@
 language: go
 sudo: false
 go:
-  - 1.4
-  - 1.5
+  - 1.4.2
+  - 1.5.1
   - tip
 env:
   - GOARCH=amd64
