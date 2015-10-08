@@ -10,7 +10,6 @@ env:
 install:
   - export PATH="$HOME/gopath/bin:$PATH"
   - go get github.com/tools/godep
-  - go get -x -t -d ./...
   - godep restore ./...
 script:
   - go test -x ./tsuru
