@@ -2,9 +2,10 @@ package main
 
 import (
 	"encoding/json"
-	"github.com/tsuru/tsuru/cmd"
 	"net/http"
 	"strings"
+
+	"github.com/tsuru/tsuru/cmd"
 )
 
 type poolList struct{}

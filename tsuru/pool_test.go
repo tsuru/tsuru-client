@@ -6,10 +6,11 @@ package main
 
 import (
 	"bytes"
+	"net/http"
+
 	"github.com/tsuru/tsuru/cmd"
 	"github.com/tsuru/tsuru/cmd/cmdtest"
 	"gopkg.in/check.v1"
-	"net/http"
 )
 
 func (s *S) TestPoolListInfo(c *check.C) {
