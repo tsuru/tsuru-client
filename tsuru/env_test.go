@@ -186,6 +186,7 @@ func (s *S) TestEnvSetValues(c *check.C) {
 			"http_proxy=http://myproxy.com:3128/",
 			"VALUE_WITH_EQUAL_SIGN=http://wholikesquerystrings.me/?tsuru=awesome",
 			"BASE64_STRING=t5urur0ck5==",
+			"SOME_PASSWORD=js87$%32??",
 		},
 		Stdout: &stdout,
 		Stderr: &stderr,
@@ -204,6 +205,7 @@ func (s *S) TestEnvSetValues(c *check.C) {
 				"http_proxy":            "http://myproxy.com:3128/",
 				"VALUE_WITH_EQUAL_SIGN": "http://wholikesquerystrings.me/?tsuru=awesome",
 				"BASE64_STRING":         "t5urur0ck5==",
+				"SOME_PASSWORD":         "js87$%32??",
 			}
 			defer req.Body.Close()
 			var got map[string]string
