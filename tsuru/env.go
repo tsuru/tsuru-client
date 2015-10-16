@@ -91,7 +91,7 @@ func (c *envSet) Run(context *cmd.Context, client *cmd.Client) error {
 		return err
 	}
 	raw := strings.Join(context.Args, "\n")
-	regex := regexp.MustCompile(`(\w+=[^\n$]+)(\n|$)`)
+	regex := regexp.MustCompile(`(\w+=[^\n]+)(\n|$)`)
 	decls := regex.FindAllStringSubmatch(raw, -1)
 	if len(decls) < 1 || len(decls) != len(context.Args) {
 		return errors.New(envSetValidationMessage)
