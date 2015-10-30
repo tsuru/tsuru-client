@@ -338,7 +338,7 @@ Address: {{.Addr}}
 Owner: {{.Owner}}
 Team owner: {{.TeamOwner}}
 Deploys: {{.Deploys}}
-Pool: {{.Pool}}{{if .Lock.Locked}}
+Pool:{{if .Pool}} {{.Pool}}{{end}}{{if .Lock.Locked}}
 {{.Lock.String}}{{end}}
 `
 	var buf bytes.Buffer

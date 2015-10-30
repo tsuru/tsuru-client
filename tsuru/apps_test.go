@@ -394,7 +394,7 @@ Address: myapp.tsuru.io
 Owner: myapp_owner
 Team owner: myteam
 Deploys: 7
-Pool: 
+Pool:
 
 Units: 3
 +--------+---------+
@@ -429,7 +429,7 @@ Address: myapp.tsuru.io
 Owner: myapp_owner
 Team owner: myteam
 Deploys: 7
-Pool: 
+Pool:
 Lock:
  Acquired in: %s
  Owner: admin@example.com
@@ -505,7 +505,7 @@ Address: myapp.tsuru.io
 Owner: myapp_owner
 Team owner: myteam
 Deploys: 7
-Pool: 
+Pool:
 
 Units [web]: 1
 +--------+---------+
@@ -546,7 +546,7 @@ Address: app1.tsuru.io
 Owner: myapp_owner
 Team owner: myteam
 Deploys: 7
-Pool: 
+Pool:
 
 `
 	context := cmd.Context{
@@ -572,7 +572,7 @@ Address: myapp.tsuru.io
 Owner: myapp_owner
 Team owner: x
 Deploys: 7
-Pool: 
+Pool:
 
 `
 	context := cmd.Context{
@@ -598,7 +598,7 @@ Address: secret.tsuru.io
 Owner: myapp_owner
 Team owner: myteam
 Deploys: 7
-Pool: 
+Pool:
 
 Units: 2
 +----------+---------+
@@ -640,7 +640,7 @@ Address: yourapp.tsuru.io, myapp.tsuru.io
 Owner: myapp_owner
 Team owner: myteam
 Deploys: 7
-Pool: 
+Pool:
 
 Units: 3
 +--------+---------+
@@ -680,7 +680,7 @@ Address: myapp.tsuru.io
 Owner: myapp_owner
 Team owner: myteam
 Deploys: 7
-Pool: 
+Pool:
 
 Units: 3
 +--------+---------+
@@ -735,7 +735,7 @@ Address: myapp.tsuru.io
 Owner: myapp_owner
 Team owner: myteam
 Deploys: 7
-Pool: 
+Pool:
 
 Units: 3
 +--------+---------+
@@ -747,11 +747,11 @@ Units: 3
 +--------+---------+
 
 App Plan:
-+------+--------+--------+-----------+---------+---------+
-| Name | Memory | Swap   | Cpu Share | Router  | Default |
-+------+--------+--------+-----------+---------+---------+
-| test | 512 MB | 256 MB | 100       | imemine | false   |
-+------+--------+--------+-----------+---------+---------+
++------+-----------+-----------+-----------+---------+---------+
+| Name | Memory    | Swap      | Cpu Share | Router  | Default |
++------+-----------+-----------+-----------+---------+---------+
+| test | 536870912 | 268435456 | 100       | imemine | false   |
++------+-----------+-----------+-----------+---------+---------+
 
 `
 	context := cmd.Context{
@@ -776,7 +776,7 @@ Address: myapp.tsuru.io
 Owner: myapp_owner
 Team owner: myteam
 Deploys: 7
-Pool: 
+Pool:
 
 Units: 3
 +--------+---------+
@@ -795,11 +795,11 @@ Service instances: 1
 +----------+------------+
 
 App Plan:
-+------+--------+--------+-----------+---------+---------+
-| Name | Memory | Swap   | Cpu Share | Router  | Default |
-+------+--------+--------+-----------+---------+---------+
-| test | 512 MB | 256 MB | 100       | freeeee | false   |
-+------+--------+--------+-----------+---------+---------+
++------+-----------+-----------+-----------+---------+---------+
+| Name | Memory    | Swap      | Cpu Share | Router  | Default |
++------+-----------+-----------+-----------+---------+---------+
+| test | 536870912 | 268435456 | 100       | freeeee | false   |
++------+-----------+-----------+-----------+---------+---------+
 
 `
 	context := cmd.Context{
