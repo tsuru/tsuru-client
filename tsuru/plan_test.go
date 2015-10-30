@@ -21,7 +21,7 @@ func (s *S) TestPlanListInfo(c *check.C) {
 	c.Assert((&planList{}).Info(), check.NotNil)
 }
 
-func (s *S) TestPlanList(c *check.C) {
+func (s *S) TestPlanListBytes(c *check.C) {
 	var stdout, stderr bytes.Buffer
 	result := `[
     {"name": "test",  "memory": 536870912, "swap": 268435456, "cpushare": 100, "router": "r1", "default": false},
@@ -47,6 +47,7 @@ func (s *S) TestPlanList(c *check.C) {
 	}
 	client := cmd.NewClient(&http.Client{Transport: trans}, nil, manager)
 	command := planList{}
+	command.Flags().Parse(true, []string{"-b"})
 	err := command.Run(&context, client)
 	c.Assert(err, check.IsNil)
 	c.Assert(stdout.String(), check.Equals, expected)
@@ -78,7 +79,7 @@ func (s *S) TestPlanListHuman(c *check.C) {
 	}
 	client := cmd.NewClient(&http.Client{Transport: trans}, nil, manager)
 	command := planList{}
-	command.Flags().Parse(true, []string{"-h"})
+	// command.Flags().Parse(true, []string{"-h"})
 	err := command.Run(&context, client)
 	c.Assert(err, check.IsNil)
 	c.Assert(stdout.String(), check.Equals, expected)
