@@ -69,7 +69,7 @@ type serviceAdd struct {
 func (c *serviceAdd) Info() *cmd.Info {
 	return &cmd.Info{
 		Name:  "service-add",
-		Usage: "service-add <servicename> <serviceinstancename> [plan] [-t/--team-owner <team>]",
+		Usage: "service-add <service-name> <service-instance-name> [plan] [-t/--team-owner <team>]",
 		Desc: `Creates a service instance of a service. There can later be binded to
 applications with [[tsuru service-bind]].
 
@@ -139,8 +139,9 @@ func (sb *serviceBind) Run(ctx *cmd.Context, client *cmd.Client) error {
 	if err != nil {
 		return err
 	}
-	instanceName := ctx.Args[0]
-	url, err := cmd.GetURL("/services/instances/" + instanceName + "/" + appName)
+	serviceName := ctx.Args[0]
+	instanceName := ctx.Args[1]
+	url, err := cmd.GetURL("/services/" + serviceName + "/instances/" + instanceName + "/" + appName)
 	if err != nil {
 		return err
 	}
@@ -169,14 +170,14 @@ func (sb *serviceBind) Run(ctx *cmd.Context, client *cmd.Client) error {
 func (sb *serviceBind) Info() *cmd.Info {
 	return &cmd.Info{
 		Name:  "service-bind",
-		Usage: "service-bind <service-instance-name> [-a/--app appname]",
+		Usage: "service-bind <service-name> <service-instance-name> [-a/--app appname]",
 		Desc: `Binds an application to a previously created service instance. See [[tsuru
 service-add]] for more details on how to create a service instance.
 
 When binding an application to a service instance, tsuru will add new
 environment variables to the application. All environment variables exported
 by bind will be private (not accessible via [[tsuru env-get]]).`,
-		MinArgs: 1,
+		MinArgs: 2,
 	}
 }
 
@@ -190,8 +191,9 @@ func (su *serviceUnbind) Run(ctx *cmd.Context, client *cmd.Client) error {
 	if err != nil {
 		return err
 	}
-	instanceName := ctx.Args[0]
-	url, err := cmd.GetURL("/services/instances/" + instanceName + "/" + appName)
+	serviceName := ctx.Args[0]
+	instanceName := ctx.Args[1]
+	url, err := cmd.GetURL("/services/" + serviceName + "/instances/" + instanceName + "/" + appName)
 	if err != nil {
 		return err
 	}
@@ -220,11 +222,11 @@ func (su *serviceUnbind) Run(ctx *cmd.Context, client *cmd.Client) error {
 func (su *serviceUnbind) Info() *cmd.Info {
 	return &cmd.Info{
 		Name:  "service-unbind",
-		Usage: "service-unbind <instancename> [-a/--app appname]",
+		Usage: "service-unbind <service-name> <service-instance-name> [-a/--app appname]",
 		Desc: `Unbinds an application from a service instance. After unbinding, the instance
 will not be available anymore. For example, when unbinding an application from
 a MySQL service, the application would lose access to the database.`,
-		MinArgs: 1,
+		MinArgs: 2,
 	}
 }
 
@@ -233,16 +235,17 @@ type serviceInstanceStatus struct{}
 func (c serviceInstanceStatus) Info() *cmd.Info {
 	return &cmd.Info{
 		Name:  "service-status",
-		Usage: "service-status <service-instance-name>",
+		Usage: "service-status <service-name> <service-instance-name>",
 		Desc: `Displays the status of the given service instance. For now, it checks only if
 the instance is "up" (receiving connections) or "down" (refusing connections).`,
-		MinArgs: 1,
+		MinArgs: 2,
 	}
 }
 
 func (c serviceInstanceStatus) Run(ctx *cmd.Context, client *cmd.Client) error {
-	instName := ctx.Args[0]
-	url, err := cmd.GetURL("/services/instances/" + instName + "/status")
+	servName := ctx.Args[0]
+	instName := ctx.Args[1]
+	url, err := cmd.GetURL("/services/" + servName + "/instances/" + instName + "/status")
 	if err != nil {
 		return err
 	}
@@ -444,17 +447,18 @@ type serviceRemove struct {
 func (c *serviceRemove) Info() *cmd.Info {
 	return &cmd.Info{
 		Name:  "service-remove",
-		Usage: "service-remove <serviceinstancename> [--assume-yes] [--unbind]",
+		Usage: "service-remove <service-name> <service-instance-name> [--assume-yes] [--unbind]",
 		Desc: `Destroys a service instance. It can't remove a service instance that is bound
 to an app, so before remove a service instance, make sure there is no apps
 bound to it (see [[tsuru service-info]] command).`,
-		MinArgs: 1,
+		MinArgs: 2,
 	}
 }
 
 func removeServiceInstanceWithUnbind(ctx *cmd.Context, client *cmd.Client) error {
-	name := ctx.Args[0]
-	url := fmt.Sprintf("/services/instances/%s?unbindall=%s", name, "true")
+	serviceName := ctx.Args[0]
+	instanceName := ctx.Args[1]
+	url := fmt.Sprintf("/services/%s/instances/%s?unbindall=%s", serviceName, instanceName, "true")
 	url, err := cmd.GetURL(url)
 	if err != nil {
 		return err
@@ -472,15 +476,17 @@ func removeServiceInstanceWithUnbind(ctx *cmd.Context, client *cmd.Client) error
 	if err != nil {
 		return err
 	}
-	fmt.Fprintf(ctx.Stdout, `Service "%s" successfully removed!`+"\n", name)
+	fmt.Fprintf(ctx.Stdout, `Service "%s" successfully removed!`+"\n", instanceName)
+
 	return nil
 }
 
 func (c *serviceRemove) Run(ctx *cmd.Context, client *cmd.Client) error {
-	name := ctx.Args[0]
+	serviceName := ctx.Args[0]
+	instanceName := ctx.Args[1]
 	var answer string
 	if !c.yes {
-		fmt.Fprintf(ctx.Stdout, `Are you sure you want to remove service "%s"? (y/n) `, name)
+		fmt.Fprintf(ctx.Stdout, `Are you sure you want to remove service "%s"? (y/n) `, instanceName)
 		fmt.Fscanf(ctx.Stdin, "%s", &answer)
 		if answer != "y" {
 			fmt.Fprintln(ctx.Stdout, "Abort.")
@@ -491,7 +497,7 @@ func (c *serviceRemove) Run(ctx *cmd.Context, client *cmd.Client) error {
 	if c.yesUnbind {
 		return removeServiceInstanceWithUnbind(ctx, client)
 	}
-	url = fmt.Sprintf("/services/instances/%s", name)
+	url = fmt.Sprintf("/services/%s/instances/%s", serviceName, instanceName)
 	url, err := cmd.GetURL(url)
 	if err != nil {
 		return err
@@ -514,7 +520,7 @@ func (c *serviceRemove) Run(ctx *cmd.Context, client *cmd.Client) error {
 	}
 	if msgError != nil {
 		if msgError.Error() == service.ErrServiceInstanceBound.Error() {
-			fmt.Fprintf(ctx.Stdout, `Applications bound to the service "%s": "%s"`+"\n", name, jsonMsg.Message)
+			fmt.Fprintf(ctx.Stdout, `Applications bound to the service "%s": "%s"`+"\n", instanceName, jsonMsg.Message)
 			fmt.Fprintf(ctx.Stdout, `Do you want unbind all apps? (y/n) `)
 			fmt.Fscanf(ctx.Stdin, "%s", &answer)
 			if answer != "y" {
@@ -525,7 +531,7 @@ func (c *serviceRemove) Run(ctx *cmd.Context, client *cmd.Client) error {
 		}
 		return msgError
 	}
-	fmt.Fprintf(ctx.Stdout, `Service "%s" successfully removed!`+"\n", name)
+	fmt.Fprintf(ctx.Stdout, `Service "%s" successfully removed!`+"\n", instanceName)
 	return nil
 }
 
@@ -545,16 +551,17 @@ type serviceInstanceGrant struct{}
 func (c *serviceInstanceGrant) Info() *cmd.Info {
 	return &cmd.Info{
 		Name:    "service-instance-grant",
-		Usage:   "service-instance-grant <service_instance_name> <team_name>",
+		Usage:   "service-instance-grant <service-name> <service-instance-name> <team-name>",
 		Desc:    `Grant access to team in a service instance.`,
-		MinArgs: 2,
+		MinArgs: 3,
 	}
 }
 
 func (c *serviceInstanceGrant) Run(ctx *cmd.Context, client *cmd.Client) error {
-	siName := ctx.Args[0]
-	teamName := ctx.Args[1]
-	url := fmt.Sprintf("/services/instances/permission/%s/%s", siName, teamName)
+	sName := ctx.Args[0]
+	siName := ctx.Args[1]
+	teamName := ctx.Args[2]
+	url := fmt.Sprintf("/services/%s/instances/permission/%s/%s", sName, siName, teamName)
 	url, err := cmd.GetURL(url)
 	if err != nil {
 		return err
@@ -576,16 +583,17 @@ type serviceInstanceRevoke struct{}
 func (c *serviceInstanceRevoke) Info() *cmd.Info {
 	return &cmd.Info{
 		Name:    "service-instance-revoke",
-		Usage:   "service-instance-revoke <service_instance_name> <team_name>",
+		Usage:   "service-instance-revoke <service-name> <service-instance-name> <team-name>",
 		Desc:    `Revoke access to team in a service instance.`,
-		MinArgs: 2,
+		MinArgs: 3,
 	}
 }
 
 func (c *serviceInstanceRevoke) Run(ctx *cmd.Context, client *cmd.Client) error {
-	siName := ctx.Args[0]
-	teamName := ctx.Args[1]
-	url := fmt.Sprintf("/services/instances/permission/%s/%s", siName, teamName)
+	sName := ctx.Args[0]
+	siName := ctx.Args[1]
+	teamName := ctx.Args[2]
+	url := fmt.Sprintf("/services/%s/instances/permission/%s/%s", sName, siName, teamName)
 	url, err := cmd.GetURL(url)
 	if err != nil {
 		return err

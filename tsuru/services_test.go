@@ -103,7 +103,7 @@ func (s *S) TestServiceBind(c *check.C) {
 		stdout, stderr bytes.Buffer
 	)
 	ctx := cmd.Context{
-		Args:   []string{"my-mysql"},
+		Args:   []string{"mysql", "my-mysql"},
 		Stdout: &stdout,
 		Stderr: &stderr,
 	}
@@ -115,7 +115,7 @@ func (s *S) TestServiceBind(c *check.C) {
 		Transport: cmdtest.Transport{Message: string(result), Status: http.StatusOK},
 		CondFunc: func(req *http.Request) bool {
 			called = true
-			return req.Method == "PUT" && req.URL.Path == "/services/instances/my-mysql/g1"
+			return req.Method == "PUT" && req.URL.Path == "/services/mysql/instances/my-mysql/g1"
 		},
 	}
 	client := cmd.NewClient(&http.Client{Transport: trans}, nil, manager)
@@ -133,7 +133,7 @@ func (s *S) TestServiceBindWithoutFlag(c *check.C) {
 		stdout, stderr bytes.Buffer
 	)
 	ctx := cmd.Context{
-		Args:   []string{"my-mysql"},
+		Args:   []string{"mysql", "my-mysql"},
 		Stdout: &stdout,
 		Stderr: &stderr,
 	}
@@ -148,7 +148,7 @@ func (s *S) TestServiceBindWithoutFlag(c *check.C) {
 		},
 		CondFunc: func(req *http.Request) bool {
 			called = true
-			return req.Method == "PUT" && req.URL.Path == "/services/instances/my-mysql/ge"
+			return req.Method == "PUT" && req.URL.Path == "/services/mysql/instances/my-mysql/ge"
 		},
 	}
 	client := cmd.NewClient(&http.Client{Transport: trans}, nil, manager)
@@ -162,7 +162,7 @@ func (s *S) TestServiceBindWithoutFlag(c *check.C) {
 func (s *S) TestServiceBindWithoutEnvironmentVariables(c *check.C) {
 	var stdout, stderr bytes.Buffer
 	ctx := cmd.Context{
-		Args:   []string{"my-mysql"},
+		Args:   []string{"mysql", "my-mysql"},
 		Stdout: &stdout,
 		Stderr: &stderr,
 	}
@@ -173,7 +173,7 @@ func (s *S) TestServiceBindWithoutEnvironmentVariables(c *check.C) {
 	trans := &cmdtest.ConditionalTransport{
 		Transport: cmdtest.Transport{Message: string(result), Status: http.StatusOK},
 		CondFunc: func(req *http.Request) bool {
-			return req.Method == "PUT" && req.URL.Path == "/services/instances/my-mysql/g1"
+			return req.Method == "PUT" && req.URL.Path == "/services/mysql/instances/my-mysql/g1"
 		},
 	}
 	client := cmd.NewClient(&http.Client{Transport: trans}, nil, manager)
@@ -187,7 +187,7 @@ func (s *S) TestServiceBindWithoutEnvironmentVariables(c *check.C) {
 func (s *S) TestServiceBindWithRequestFailure(c *check.C) {
 	var stdout, stderr bytes.Buffer
 	ctx := cmd.Context{
-		Args:   []string{"my-mysql"},
+		Args:   []string{"mysql", "my-mysql"},
 		Stdout: &stdout,
 		Stderr: &stderr,
 	}
@@ -213,7 +213,7 @@ func (s *S) TestServiceUnbind(c *check.C) {
 	var stdout, stderr bytes.Buffer
 	var called bool
 	ctx := cmd.Context{
-		Args:   []string{"hand"},
+		Args:   []string{"service", "hand"},
 		Stdout: &stdout,
 		Stderr: &stderr,
 	}
@@ -225,7 +225,7 @@ func (s *S) TestServiceUnbind(c *check.C) {
 		Transport: cmdtest.Transport{Message: string(result), Status: http.StatusOK},
 		CondFunc: func(req *http.Request) bool {
 			called = true
-			return req.Method == "DELETE" && req.URL.Path == "/services/instances/hand/pocket"
+			return req.Method == "DELETE" && req.URL.Path == "/services/service/instances/hand/pocket"
 		},
 	}
 	client := cmd.NewClient(&http.Client{Transport: trans}, nil, manager)
@@ -241,7 +241,7 @@ func (s *S) TestServiceUnbindWithoutFlag(c *check.C) {
 	var stdout, stderr bytes.Buffer
 	var called bool
 	ctx := cmd.Context{
-		Args:   []string{"hand"},
+		Args:   []string{"service", "hand"},
 		Stdout: &stdout,
 		Stderr: &stderr,
 	}
@@ -253,7 +253,7 @@ func (s *S) TestServiceUnbindWithoutFlag(c *check.C) {
 		Transport: cmdtest.Transport{Message: string(result), Status: http.StatusOK},
 		CondFunc: func(req *http.Request) bool {
 			called = true
-			return req.Method == "DELETE" && req.URL.Path == "/services/instances/hand/sleeve"
+			return req.Method == "DELETE" && req.URL.Path == "/services/service/instances/hand/sleeve"
 		},
 	}
 	client := cmd.NewClient(&http.Client{Transport: trans}, nil, manager)
@@ -267,7 +267,7 @@ func (s *S) TestServiceUnbindWithoutFlag(c *check.C) {
 func (s *S) TestServiceUnbindWithRequestFailure(c *check.C) {
 	var stdout, stderr bytes.Buffer
 	ctx := cmd.Context{
-		Args:   []string{"hand"},
+		Args:   []string{"service", "hand"},
 		Stdout: &stdout,
 		Stderr: &stderr,
 	}
@@ -343,7 +343,7 @@ func (s *S) TestServiceInstanceStatusInfo(c *check.C) {
 func (s *S) TestServiceInstanceStatusRun(c *check.C) {
 	var stdout, stderr bytes.Buffer
 	result := `Service instance "foo" is up`
-	args := []string{"fooBar"}
+	args := []string{"foo", "fooBar"}
 	context := cmd.Context{
 		Args:   args,
 		Stdout: &stdout,
@@ -466,7 +466,7 @@ func (s *S) TestServiceRemoveInfo(c *check.C) {
 func (s *S) TestServiceRemoveRun(c *check.C) {
 	var stdout, stderr bytes.Buffer
 	ctx := cmd.Context{
-		Args:   []string{"some-service-instance"},
+		Args:   []string{"some-service-name", "some-service-instance"},
 		Stdout: &stdout,
 		Stderr: &stderr,
 		Stdin:  strings.NewReader("y\n"),
@@ -479,7 +479,7 @@ func (s *S) TestServiceRemoveRun(c *check.C) {
 			Status:  http.StatusOK,
 		},
 		CondFunc: func(r *http.Request) bool {
-			return r.URL.Path == "/services/instances/some-service-instance" &&
+			return r.URL.Path == "/services/some-service-name/instances/some-service-instance" &&
 				r.Method == "DELETE"
 		},
 	}
@@ -494,14 +494,14 @@ func (s *S) TestServiceRemoveWithoutAsking(c *check.C) {
 	var stdout, stderr bytes.Buffer
 	expected := `Service "ble" successfully removed!` + "\n"
 	context := cmd.Context{
-		Args:   []string{"ble"},
+		Args:   []string{"service", "ble"},
 		Stdout: &stdout,
 		Stderr: &stderr,
 		Stdin:  strings.NewReader("y\n"),
 	}
 	client := cmd.NewClient(&http.Client{Transport: &cmdtest.Transport{Message: "", Status: http.StatusOK}}, nil, manager)
 	command := serviceRemove{}
-	command.Flags().Parse(true, []string{"ble", "-y"})
+	command.Flags().Parse(true, []string{"-y"})
 	err := command.Run(&context, client)
 	c.Assert(err, check.IsNil)
 	c.Assert(stdout.String(), check.Equals, expected)
@@ -554,7 +554,7 @@ func (s *S) TestServiceRemoveWithAppBindNoUnbind(c *check.C) {
 	expected += `Do you want unbind all apps? (y/n) `
 	expected += `Abort.` + "\n"
 	ctx := cmd.Context{
-		Args:   []string{"mongodb"},
+		Args:   []string{"some-service-name", "mongodb"},
 		Stdout: &stdout,
 		Stderr: &stderr,
 		Stdin:  strings.NewReader("y\tn\n"),
@@ -568,7 +568,8 @@ func (s *S) TestServiceRemoveWithAppBindNoUnbind(c *check.C) {
 	trans := &cmdtest.ConditionalTransport{
 		Transport: cmdtest.Transport{Message: string(result), Status: http.StatusOK},
 		CondFunc: func(req *http.Request) bool {
-			return req.URL.Path == "/services/instances/mongodb" && req.Method == "DELETE"
+			return req.URL.Path == "/services/some-service-name/instances/mongodb" &&
+				req.Method == "DELETE"
 		},
 	}
 	client := cmd.NewClient(&http.Client{Transport: trans}, nil, manager)
@@ -585,7 +586,7 @@ func (s *S) TestServiceRemoveWithAppBindYesUnbind(c *check.C) {
 	expected += `Do you want unbind all apps? (y/n) `
 	expected2 := `Service "mongodb" successfully removed!` + "\n"
 	ctx := cmd.Context{
-		Args:   []string{"mongodb"},
+		Args:   []string{"some-service-name", "mongodb"},
 		Stdout: &stdout,
 		Stderr: &stderr,
 		Stdin:  strings.NewReader("y\ty\n"),
@@ -598,7 +599,8 @@ func (s *S) TestServiceRemoveWithAppBindYesUnbind(c *check.C) {
 	instanceTransport := cmdtest.ConditionalTransport{
 		Transport: cmdtest.Transport{Message: string(result), Status: http.StatusOK},
 		CondFunc: func(req *http.Request) bool {
-			return req.URL.Path == "/services/instances/mongodb" && req.Method == "DELETE"
+			return req.URL.Path == "/services/some-service-name/instances/mongodb" &&
+				req.Method == "DELETE"
 		},
 	}
 	expectedOut1 := "-- mongodb removed --"
@@ -608,7 +610,9 @@ func (s *S) TestServiceRemoveWithAppBindYesUnbind(c *check.C) {
 	appTransport := cmdtest.ConditionalTransport{
 		Transport: cmdtest.Transport{Message: string(result), Status: http.StatusOK},
 		CondFunc: func(req *http.Request) bool {
-			return req.Method == "DELETE" && req.URL.Path == "/services/instances/mongodb" && req.URL.RawQuery == "unbindall=true"
+			return req.Method == "DELETE" &&
+				req.URL.Path == "/services/some-service-name/instances/mongodb" &&
+				req.URL.RawQuery == "unbindall=true"
 		},
 	}
 	trans := &cmdtest.MultiConditionalTransport{
@@ -628,14 +632,14 @@ func (s *S) TestServiceRemoveWithAppBindWithFlags(c *check.C) {
 	msg := io.SimpleJsonMessage{Message: expectedOut}
 	result, err := json.Marshal(msg)
 	ctx := cmd.Context{
-		Args:   []string{"mongodb"},
+		Args:   []string{"service-name", "mongodb"},
 		Stdout: &stdout,
 		Stderr: &stderr,
 	}
 	trans := &cmdtest.ConditionalTransport{
 		Transport: cmdtest.Transport{Message: string(result), Status: http.StatusOK},
 		CondFunc: func(req *http.Request) bool {
-			return req.URL.Path == "/services/instances/mongodb" && req.Method == "DELETE" && req.URL.RawQuery == "unbindall=true"
+			return req.URL.Path == "/services/service-name/instances/mongodb" && req.Method == "DELETE" && req.URL.RawQuery == "unbindall=true"
 		},
 	}
 	client := cmd.NewClient(&http.Client{Transport: trans}, nil, manager)
@@ -654,7 +658,7 @@ func (s *S) TestServiceRemoveWithAppBindShowAppsBound(c *check.C) {
 	expected += `Do you want unbind all apps? (y/n) `
 	expected2 := `Service "mongodb" successfully removed!` + "\n"
 	ctx := cmd.Context{
-		Args:   []string{"mongodb"},
+		Args:   []string{"service-name", "mongodb"},
 		Stdout: &stdout,
 		Stderr: &stderr,
 		Stdin:  strings.NewReader("y\ty\n"),
@@ -667,7 +671,7 @@ func (s *S) TestServiceRemoveWithAppBindShowAppsBound(c *check.C) {
 	instanceTransport := cmdtest.ConditionalTransport{
 		Transport: cmdtest.Transport{Message: string(result), Status: http.StatusOK},
 		CondFunc: func(req *http.Request) bool {
-			return req.URL.Path == "/services/instances/mongodb" && req.Method == "DELETE"
+			return req.URL.Path == "/services/service-name/instances/mongodb" && req.Method == "DELETE"
 		},
 	}
 	expectedOut1 := "-- mongodb removed --"
@@ -677,7 +681,7 @@ func (s *S) TestServiceRemoveWithAppBindShowAppsBound(c *check.C) {
 	appTransport := cmdtest.ConditionalTransport{
 		Transport: cmdtest.Transport{Message: string(result), Status: http.StatusOK},
 		CondFunc: func(req *http.Request) bool {
-			return req.Method == "DELETE" && req.URL.Path == "/services/instances/mongodb" && req.URL.RawQuery == "unbindall=true"
+			return req.Method == "DELETE" && req.URL.Path == "/services/service-name/instances/mongodb" && req.URL.RawQuery == "unbindall=true"
 		},
 	}
 	trans := &cmdtest.MultiConditionalTransport{
@@ -699,7 +703,7 @@ func (s *S) TestServiceInstanceGrantRun(c *check.C) {
 	var stdout, stderr bytes.Buffer
 	command := serviceInstanceGrant{}
 	ctx := cmd.Context{
-		Args:   []string{"test-service-instance", "team"},
+		Args:   []string{"test-service", "test-service-instance", "team"},
 		Stdout: &stdout,
 		Stderr: &stderr,
 	}
@@ -708,7 +712,7 @@ func (s *S) TestServiceInstanceGrantRun(c *check.C) {
 			Message: "",
 			Status:  http.StatusOK},
 		CondFunc: func(r *http.Request) bool {
-			return "/services/instances/permission/test-service-instance/team" == r.URL.Path &&
+			return "/services/test-service/instances/permission/test-service-instance/team" == r.URL.Path &&
 				"PUT" == r.Method
 		},
 	}
@@ -726,7 +730,7 @@ func (s *S) TestServiceInstanceRevokeRun(c *check.C) {
 	var stdout, stderr bytes.Buffer
 	command := serviceInstanceRevoke{}
 	ctx := cmd.Context{
-		Args:   []string{"test-service-instance", "team"},
+		Args:   []string{"test-service", "test-service-instance", "team"},
 		Stdout: &stdout,
 		Stderr: &stderr,
 	}
@@ -735,7 +739,7 @@ func (s *S) TestServiceInstanceRevokeRun(c *check.C) {
 			Message: "",
 			Status:  http.StatusOK},
 		CondFunc: func(r *http.Request) bool {
-			return "/services/instances/permission/test-service-instance/team" == r.URL.Path &&
+			return "/services/test-service/instances/permission/test-service-instance/team" == r.URL.Path &&
 				"DELETE" == r.Method
 		},
 	}
