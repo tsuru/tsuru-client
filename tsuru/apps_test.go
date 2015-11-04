@@ -1046,7 +1046,7 @@ func (s *S) TestAppListFiltering(c *check.C) {
 	}
 	client := cmd.NewClient(&http.Client{Transport: &transport}, nil, manager)
 	command := appList{}
-	command.Flags().Parse(true, []string{"-p", "python", "--locked", "--user", "glenda@tsuru.io", "-t", "tsuru", "--name", "myapp"})
+	command.Flags().Parse(true, []string{"-p", "python", "--locked", "--user", "glenda@tsuru.io", "-t", "tsuru", "--name", "myapp", "--pool", "pool"})
 	err := command.Run(&context, client)
 	c.Assert(err, check.IsNil)
 	c.Assert(stdout.String(), check.Equals, expected)
@@ -1056,6 +1056,7 @@ func (s *S) TestAppListFiltering(c *check.C) {
 		"owner":     {"glenda@tsuru.io"},
 		"teamowner": {"tsuru"},
 		"name":      {"myapp"},
+		"pool":      {"pool"},
 	})
 	c.Assert(request.URL.Query(), check.DeepEquals, queryString)
 }

@@ -513,6 +513,7 @@ type appFilter struct {
 	platform  string
 	teamOwner string
 	owner     string
+	pool      string
 	locked    bool
 }
 
@@ -540,6 +541,9 @@ func (f *appFilter) queryString(client *cmd.Client) (url.Values, error) {
 	}
 	if f.locked {
 		result.Set("locked", "true")
+	}
+	if f.pool != "" {
+		result.Set("pool", f.pool)
 	}
 	return result, nil
 }
@@ -618,6 +622,8 @@ func (c *appList) Flags() *gnuflag.FlagSet {
 		c.fs = gnuflag.NewFlagSet("app-list", gnuflag.ExitOnError)
 		c.fs.StringVar(&c.filter.name, "name", "", "Filter applications by name")
 		c.fs.StringVar(&c.filter.name, "n", "", "Filter applications by name")
+		c.fs.StringVar(&c.filter.pool, "pool", "", "Filter applications by pool")
+		c.fs.StringVar(&c.filter.pool, "o", "", "Filter applications by pool")
 		c.fs.StringVar(&c.filter.platform, "platform", "", "Display only applications that use the given platform")
 		c.fs.StringVar(&c.filter.platform, "p", "", "Display only applications that use the given platform")
 		c.fs.StringVar(&c.filter.teamOwner, "team", "", "Display only applications owned by the given team")
