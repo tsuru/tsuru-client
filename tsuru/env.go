@@ -71,14 +71,15 @@ func (c *envGet) Run(context *cmd.Context, client *cmd.Client) error {
 
 type envSet struct {
 	cmd.GuessingCommand
-	fs      *gnuflag.FlagSet
-	private bool
+	fs        *gnuflag.FlagSet
+	private   bool
+	noRestart bool
 }
 
 func (c *envSet) Info() *cmd.Info {
 	return &cmd.Info{
 		Name:    "env-set",
-		Usage:   "env-set <NAME=value> [NAME=value] ... [-a/--app appname] [-p/--private]",
+		Usage:   "env-set <NAME=value> [NAME=value] ... [-a/--app appname] [-p/--private] [--no-restart]",
 		Desc:    `Sets environment variables for an application.`,
 		MinArgs: 1,
 	}
@@ -110,6 +111,13 @@ func (c *envSet) Run(context *cmd.Context, client *cmd.Client) error {
 	if c.private {
 		url += "?private=1"
 	}
+	if c.noRestart {
+		if c.private {
+			url += "&noRestart=true"
+		} else {
+			url += "?noRestart=true"
+		}
+	}
 	request, err := http.NewRequest("POST", url, &buf)
 	if err != nil {
 		return err
@@ -136,18 +144,29 @@ func (c *envSet) Flags() *gnuflag.FlagSet {
 		c.fs = c.GuessingCommand.Flags()
 		c.fs.BoolVar(&c.private, "private", false, "Private environment variables")
 		c.fs.BoolVar(&c.private, "p", false, "Private environment variables")
+		c.fs.BoolVar(&c.noRestart, "no-restart", false, "Sets environment varibles without restart the application")
 	}
 	return c.fs
 }
 
 type envUnset struct {
 	cmd.GuessingCommand
+	fs        *gnuflag.FlagSet
+	noRestart bool
+}
+
+func (c *envUnset) Flags() *gnuflag.FlagSet {
+	if c.fs == nil {
+		c.fs = c.GuessingCommand.Flags()
+		c.fs.BoolVar(&c.noRestart, "no-restart", false, "Unset environment variables without restart the application")
+	}
+	return c.fs
 }
 
 func (c *envUnset) Info() *cmd.Info {
 	return &cmd.Info{
 		Name:    "env-unset",
-		Usage:   "env-unset <ENVIRONMENT_VARIABLE1> [ENVIRONMENT_VARIABLE2] ... [ENVIRONMENT_VARIABLEN] [-a/--app appname]",
+		Usage:   "env-unset <ENVIRONMENT_VARIABLE1> [ENVIRONMENT_VARIABLE2] ... [ENVIRONMENT_VARIABLEN] [-a/--app appname] [--no-restart]",
 		Desc:    `Unset environment variables for an application.`,
 		MinArgs: 1,
 	}
@@ -162,6 +181,9 @@ func (c *envUnset) Run(context *cmd.Context, client *cmd.Client) error {
 	url, err := cmd.GetURL(fmt.Sprintf("/apps/%s/env", appName))
 	if err != nil {
 		return err
+	}
+	if c.noRestart {
+		url += "?noRestart=true"
 	}
 	var buf bytes.Buffer
 	json.NewEncoder(&buf).Encode(context.Args)

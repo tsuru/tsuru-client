@@ -223,7 +223,7 @@ func (s *S) TestEnvSetValues(c *check.C) {
 	c.Assert(stdout.String(), check.Equals, expectedOut)
 }
 
-func (s *S) TestEnvSetValuesAndPrivate(c *check.C) {
+func (s *S) TestEnvSetValuesAndPrivateAndNoRestart(c *check.C) {
 	var stdout, stderr bytes.Buffer
 	context := cmd.Context{
 		Args: []string{
@@ -257,14 +257,14 @@ func (s *S) TestEnvSetValuesAndPrivate(c *check.C) {
 			var got map[string]string
 			err := json.NewDecoder(req.Body).Decode(&got)
 			c.Assert(err, check.IsNil)
-			c.Assert(req.URL.RawQuery, check.Equals, "private=1")
+			c.Assert(req.URL.RawQuery, check.Equals, "private=1&noRestart=true")
 			c.Assert(got, check.DeepEquals, want)
 			return req.URL.Path == "/apps/someapp/env" && req.Method == "POST"
 		},
 	}
 	client := cmd.NewClient(&http.Client{Transport: trans}, nil, manager)
 	command := envSet{}
-	command.Flags().Parse(true, []string{"-a", "someapp", "-p", "1"})
+	command.Flags().Parse(true, []string{"-a", "someapp", "-p", "1", "--no-restart"})
 	err = command.Run(&context, client)
 	c.Assert(err, check.IsNil)
 	c.Assert(stdout.String(), check.Equals, expectedOut)
@@ -339,6 +339,37 @@ func (s *S) TestEnvUnsetRun(c *check.C) {
 	c.Assert(err, check.IsNil)
 	c.Assert(stdout.String(), check.Equals, expectedOut)
 }
+
+func (s *S) TestEnvUnsetWithNoRestartFlag(c *check.C) {
+	var stdout, stderr bytes.Buffer
+	context := cmd.Context{
+		Args:   []string{"DATABASE_HOST"},
+		Stdout: &stdout,
+		Stderr: &stderr,
+	}
+	expectedOut := "variable(s) successfully unset\n"
+	msg := io.SimpleJsonMessage{Message: expectedOut}
+	result, err := json.Marshal(msg)
+	c.Assert(err, check.IsNil)
+	trans := &cmdtest.ConditionalTransport{
+		Transport: cmdtest.Transport{Message: string(result), Status: http.StatusOK},
+		CondFunc: func(req *http.Request) bool {
+			want := `["DATABASE_HOST"]` + "\n"
+			defer req.Body.Close()
+			got, err := ioutil.ReadAll(req.Body)
+			c.Assert(err, check.IsNil)
+			c.Assert(req.URL.RawQuery, check.Equals, "noRestart=true")
+			return req.URL.Path == "/apps/someapp/env" && req.Method == "DELETE" && string(got) == want
+		},
+	}
+	client := cmd.NewClient(&http.Client{Transport: trans}, nil, manager)
+	command := envUnset{}
+	command.Flags().Parse(true, []string{"-a", "someapp", "--no-restart"})
+	err = command.Run(&context, client)
+	c.Assert(err, check.IsNil)
+	c.Assert(stdout.String(), check.Equals, expectedOut)
+}
+
 func (s *S) TestEnvUnsetWithoutFlag(c *check.C) {
 	var stdout, stderr bytes.Buffer
 	context := cmd.Context{
@@ -358,7 +389,7 @@ func (s *S) TestEnvUnsetWithoutFlag(c *check.C) {
 	}
 	client := cmd.NewClient(&http.Client{Transport: trans}, nil, manager)
 	fake := &cmdtest.FakeGuesser{Name: "otherapp"}
-	err = (&envUnset{cmd.GuessingCommand{G: fake}}).Run(&context, client)
+	err = (&envUnset{GuessingCommand: cmd.GuessingCommand{G: fake}}).Run(&context, client)
 	c.Assert(err, check.IsNil)
 	c.Assert(stdout.String(), check.Equals, expectedOut)
 }
