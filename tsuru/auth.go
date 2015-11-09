@@ -479,12 +479,15 @@ func (c *resetPassword) Flags() *gnuflag.FlagSet {
 	return fs
 }
 
-type showAPIToken struct{}
+type showAPIToken struct {
+	user string
+	fs   *gnuflag.FlagSet
+}
 
 func (c *showAPIToken) Info() *cmd.Info {
 	return &cmd.Info{
 		Name:  "token-show",
-		Usage: "token-show",
+		Usage: "token-show [--user/-u useremail]",
 		Desc: `Shows API token for the user. This token allow authenticated API calls to
 tsuru and will never expire. This is useful for integrating CI servers with
 tsuru.
@@ -499,6 +502,9 @@ func (c *showAPIToken) Run(context *cmd.Context, client *cmd.Client) error {
 	url, err := cmd.GetURL("/users/api-key")
 	if err != nil {
 		return err
+	}
+	if c.user != "" {
+		url += fmt.Sprintf("?user=%s", c.user)
 	}
 	request, err := http.NewRequest("GET", url, nil)
 	if err != nil {
@@ -524,12 +530,24 @@ func (c *showAPIToken) Run(context *cmd.Context, client *cmd.Client) error {
 	return nil
 }
 
-type regenerateAPIToken struct{}
+func (c *showAPIToken) Flags() *gnuflag.FlagSet {
+	if c.fs == nil {
+		c.fs = gnuflag.NewFlagSet("", gnuflag.ExitOnError)
+		c.fs.StringVar(&c.user, "user", "", "Shows API token for the given user email")
+		c.fs.StringVar(&c.user, "u", "", "Shows API token for the given user email")
+	}
+	return c.fs
+}
+
+type regenerateAPIToken struct {
+	user string
+	fs   *gnuflag.FlagSet
+}
 
 func (c *regenerateAPIToken) Info() *cmd.Info {
 	return &cmd.Info{
 		Name:    "token-regenerate",
-		Usage:   "token-regenerate",
+		Usage:   "token-regenerate [--user/-u useremail]",
 		Desc:    `Generates a new API token. This invalidates previously generated API tokens.`,
 		MinArgs: 0,
 	}
@@ -539,6 +557,9 @@ func (c *regenerateAPIToken) Run(context *cmd.Context, client *cmd.Client) error
 	url, err := cmd.GetURL("/users/api-key")
 	if err != nil {
 		return err
+	}
+	if c.user != "" {
+		url += fmt.Sprintf("?user=%s", c.user)
 	}
 	request, err := http.NewRequest("POST", url, nil)
 	if err != nil {
@@ -562,4 +583,13 @@ func (c *regenerateAPIToken) Run(context *cmd.Context, client *cmd.Client) error
 		fmt.Fprintf(context.Stdout, "Your new API key is: %s\n", APIKey)
 	}
 	return nil
+}
+
+func (c *regenerateAPIToken) Flags() *gnuflag.FlagSet {
+	if c.fs == nil {
+		c.fs = gnuflag.NewFlagSet("", gnuflag.ExitOnError)
+		c.fs.StringVar(&c.user, "user", "", "Generates a new API token for the given user email")
+		c.fs.StringVar(&c.user, "u", "", "Generates a new API token for the given user email")
+	}
+	return c.fs
 }

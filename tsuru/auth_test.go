@@ -636,6 +636,36 @@ func (s *S) TestShowAPITokenRun(c *check.C) {
 	c.Assert(stdout.String(), check.Equals, expected)
 }
 
+func (s *S) TestShowAPITokenRunWithFlag(c *check.C) {
+	var called bool
+	var stdout, stderr bytes.Buffer
+	trans := &cmdtest.ConditionalTransport{
+		Transport: cmdtest.Transport{
+			Message: `"23iou32nd3i2udnu23jd"`,
+			Status:  http.StatusOK},
+		CondFunc: func(req *http.Request) bool {
+			called = true
+			return req.Method == "GET" && req.URL.Path == "/users/api-key" &&
+				req.URL.RawQuery == "user=admin@example.com"
+		},
+	}
+	expected := `API key: 23iou32nd3i2udnu23jd
+`
+	context := cmd.Context{
+		Args:   []string{},
+		Stdout: &stdout,
+		Stderr: &stderr,
+		Stdin:  nil,
+	}
+	command := showAPIToken{}
+	command.Flags().Parse(true, []string{"-u", "admin@example.com"})
+	client := cmd.NewClient(&http.Client{Transport: trans}, nil, manager)
+	err := command.Run(&context, client)
+	c.Assert(err, check.IsNil)
+	c.Assert(called, check.Equals, true)
+	c.Assert(stdout.String(), check.Equals, expected)
+}
+
 func (s *S) TestShowAPITokenRunWithNoContent(c *check.C) {
 	client := cmd.NewClient(&http.Client{Transport: &cmdtest.Transport{Message: "", Status: http.StatusNoContent}}, nil, manager)
 	var stdout, stderr bytes.Buffer
@@ -676,6 +706,34 @@ func (s *S) TestRegenerateAPITokenRun(c *check.C) {
 		Stderr: &stderr,
 		Stdin:  nil,
 	}, client)
+	c.Assert(err, check.IsNil)
+	c.Assert(called, check.Equals, true)
+	c.Assert(stdout.String(), check.Equals, expected)
+}
+
+func (s *S) TestRegenerateAPITokenRunWithFlag(c *check.C) {
+	var called bool
+	trans := &cmdtest.ConditionalTransport{
+		Transport: cmdtest.Transport{Message: `"23iou32nd3i2udnu23jd"`, Status: http.StatusOK},
+		CondFunc: func(req *http.Request) bool {
+			called = true
+			return req.Method == "POST" && req.URL.Path == "/users/api-key" &&
+				req.URL.RawQuery == "user=admin@example.com"
+		},
+	}
+	expected := `Your new API key is: 23iou32nd3i2udnu23jd
+`
+	var stdout, stderr bytes.Buffer
+	context := cmd.Context{
+		Args:   []string{},
+		Stdout: &stdout,
+		Stderr: &stderr,
+		Stdin:  nil,
+	}
+	command := regenerateAPIToken{}
+	command.Flags().Parse(true, []string{"-u", "admin@example.com"})
+	client := cmd.NewClient(&http.Client{Transport: trans}, nil, manager)
+	err := command.Run(&context, client)
 	c.Assert(err, check.IsNil)
 	c.Assert(called, check.Equals, true)
 	c.Assert(stdout.String(), check.Equals, expected)
