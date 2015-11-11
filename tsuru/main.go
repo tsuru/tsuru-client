@@ -78,6 +78,9 @@ func buildManager(name string) *cmd.Manager {
 	m.Register(&appDeployRollback{})
 	m.Register(&cmd.ShellToContainerCmd{})
 	m.Register(&poolList{})
+	m.Register(&permissionList{})
+	m.Register(&roleAdd{})
+	m.Register(&roleList{})
 	return m
 }
 
