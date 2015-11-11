@@ -104,19 +104,9 @@ func (c *envSet) Run(context *cmd.Context, client *cmd.Client) error {
 	}
 	var buf bytes.Buffer
 	json.NewEncoder(&buf).Encode(variables)
-	url, err := cmd.GetURL(fmt.Sprintf("/apps/%s/env", appName))
+	url, err := cmd.GetURL(fmt.Sprintf("/apps/%s/env?private=%t&noRestart=%t", appName, c.private, c.noRestart))
 	if err != nil {
 		return err
-	}
-	if c.private {
-		url += "?private=1"
-	}
-	if c.noRestart {
-		if c.private {
-			url += "&noRestart=true"
-		} else {
-			url += "?noRestart=true"
-		}
 	}
 	request, err := http.NewRequest("POST", url, &buf)
 	if err != nil {
@@ -178,12 +168,9 @@ func (c *envUnset) Run(context *cmd.Context, client *cmd.Client) error {
 	if err != nil {
 		return err
 	}
-	url, err := cmd.GetURL(fmt.Sprintf("/apps/%s/env", appName))
+	url, err := cmd.GetURL(fmt.Sprintf("/apps/%s/env?noRestart=%t", appName, c.noRestart))
 	if err != nil {
 		return err
-	}
-	if c.noRestart {
-		url += "?noRestart=true"
 	}
 	var buf bytes.Buffer
 	json.NewEncoder(&buf).Encode(context.Args)
