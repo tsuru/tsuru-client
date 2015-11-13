@@ -115,12 +115,13 @@ func (s *S) TestServiceBind(c *check.C) {
 		Transport: cmdtest.Transport{Message: string(result), Status: http.StatusOK},
 		CondFunc: func(req *http.Request) bool {
 			called = true
-			return req.Method == "PUT" && req.URL.Path == "/services/mysql/instances/my-mysql/g1"
+			return req.Method == "PUT" && req.URL.Path == "/services/mysql/instances/my-mysql/g1" &&
+				req.URL.RawQuery == "noRestart=true"
 		},
 	}
 	client := cmd.NewClient(&http.Client{Transport: trans}, nil, manager)
 	command := serviceBind{}
-	command.Flags().Parse(true, []string{"-a", "g1"})
+	command.Flags().Parse(true, []string{"-a", "g1", "--no-restart"})
 	err = command.Run(&ctx, client)
 	c.Assert(err, check.IsNil)
 	c.Assert(called, check.Equals, true)
@@ -148,12 +149,13 @@ func (s *S) TestServiceBindWithoutFlag(c *check.C) {
 		},
 		CondFunc: func(req *http.Request) bool {
 			called = true
-			return req.Method == "PUT" && req.URL.Path == "/services/mysql/instances/my-mysql/ge"
+			return req.Method == "PUT" && req.URL.Path == "/services/mysql/instances/my-mysql/ge" &&
+				req.URL.RawQuery == "noRestart=false"
 		},
 	}
 	client := cmd.NewClient(&http.Client{Transport: trans}, nil, manager)
 	fake := &cmdtest.FakeGuesser{Name: "ge"}
-	err = (&serviceBind{cmd.GuessingCommand{G: fake}}).Run(&ctx, client)
+	err = (&serviceBind{GuessingCommand: cmd.GuessingCommand{G: fake}}).Run(&ctx, client)
 	c.Assert(err, check.IsNil)
 	c.Assert(called, check.Equals, true)
 	c.Assert(stdout.String(), check.Equals, expectedOut)
@@ -173,7 +175,8 @@ func (s *S) TestServiceBindWithoutEnvironmentVariables(c *check.C) {
 	trans := &cmdtest.ConditionalTransport{
 		Transport: cmdtest.Transport{Message: string(result), Status: http.StatusOK},
 		CondFunc: func(req *http.Request) bool {
-			return req.Method == "PUT" && req.URL.Path == "/services/mysql/instances/my-mysql/g1"
+			return req.Method == "PUT" && req.URL.Path == "/services/mysql/instances/my-mysql/g1" &&
+				req.URL.RawQuery == "noRestart=false"
 		},
 	}
 	client := cmd.NewClient(&http.Client{Transport: trans}, nil, manager)
@@ -225,12 +228,13 @@ func (s *S) TestServiceUnbind(c *check.C) {
 		Transport: cmdtest.Transport{Message: string(result), Status: http.StatusOK},
 		CondFunc: func(req *http.Request) bool {
 			called = true
-			return req.Method == "DELETE" && req.URL.Path == "/services/service/instances/hand/pocket"
+			return req.Method == "DELETE" && req.URL.Path == "/services/service/instances/hand/pocket" &&
+				req.URL.RawQuery == "noRestart=true"
 		},
 	}
 	client := cmd.NewClient(&http.Client{Transport: trans}, nil, manager)
 	command := serviceUnbind{}
-	command.Flags().Parse(true, []string{"-a", "pocket"})
+	command.Flags().Parse(true, []string{"-a", "pocket", "--no-restart"})
 	err = command.Run(&ctx, client)
 	c.Assert(err, check.IsNil)
 	c.Assert(called, check.Equals, true)
@@ -253,12 +257,13 @@ func (s *S) TestServiceUnbindWithoutFlag(c *check.C) {
 		Transport: cmdtest.Transport{Message: string(result), Status: http.StatusOK},
 		CondFunc: func(req *http.Request) bool {
 			called = true
-			return req.Method == "DELETE" && req.URL.Path == "/services/service/instances/hand/sleeve"
+			return req.Method == "DELETE" && req.URL.Path == "/services/service/instances/hand/sleeve" &&
+				req.URL.RawQuery == "noRestart=false"
 		},
 	}
 	client := cmd.NewClient(&http.Client{Transport: trans}, nil, manager)
 	fake := &cmdtest.FakeGuesser{Name: "sleeve"}
-	err = (&serviceUnbind{cmd.GuessingCommand{G: fake}}).Run(&ctx, client)
+	err = (&serviceUnbind{GuessingCommand: cmd.GuessingCommand{G: fake}}).Run(&ctx, client)
 	c.Assert(err, check.IsNil)
 	c.Assert(called, check.Equals, true)
 	c.Assert(stdout.String(), check.Equals, expectedOut)

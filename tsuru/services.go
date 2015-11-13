@@ -131,6 +131,8 @@ func (c *serviceAdd) Flags() *gnuflag.FlagSet {
 
 type serviceBind struct {
 	cmd.GuessingCommand
+	fs        *gnuflag.FlagSet
+	noRestart bool
 }
 
 func (sb *serviceBind) Run(ctx *cmd.Context, client *cmd.Client) error {
@@ -145,6 +147,7 @@ func (sb *serviceBind) Run(ctx *cmd.Context, client *cmd.Client) error {
 	if err != nil {
 		return err
 	}
+	url += fmt.Sprintf("?noRestart=%t", sb.noRestart)
 	request, err := http.NewRequest("PUT", url, nil)
 	if err != nil {
 		return err
@@ -170,7 +173,7 @@ func (sb *serviceBind) Run(ctx *cmd.Context, client *cmd.Client) error {
 func (sb *serviceBind) Info() *cmd.Info {
 	return &cmd.Info{
 		Name:  "service-bind",
-		Usage: "service-bind <service-name> <service-instance-name> [-a/--app appname]",
+		Usage: "service-bind <service-name> <service-instance-name> [-a/--app appname] [--no-restart]",
 		Desc: `Binds an application to a previously created service instance. See [[tsuru
 service-add]] for more details on how to create a service instance.
 
@@ -181,8 +184,18 @@ by bind will be private (not accessible via [[tsuru env-get]]).`,
 	}
 }
 
+func (sb *serviceBind) Flags() *gnuflag.FlagSet {
+	if sb.fs == nil {
+		sb.fs = sb.GuessingCommand.Flags()
+		sb.fs.BoolVar(&sb.noRestart, "no-restart", false, "Binds an application to a service instance without restart the application")
+	}
+	return sb.fs
+}
+
 type serviceUnbind struct {
 	cmd.GuessingCommand
+	fs        *gnuflag.FlagSet
+	noRestart bool
 }
 
 func (su *serviceUnbind) Run(ctx *cmd.Context, client *cmd.Client) error {
@@ -197,6 +210,7 @@ func (su *serviceUnbind) Run(ctx *cmd.Context, client *cmd.Client) error {
 	if err != nil {
 		return err
 	}
+	url += fmt.Sprintf("?noRestart=%t", su.noRestart)
 	request, err := http.NewRequest("DELETE", url, nil)
 	if err != nil {
 		return err
@@ -222,12 +236,20 @@ func (su *serviceUnbind) Run(ctx *cmd.Context, client *cmd.Client) error {
 func (su *serviceUnbind) Info() *cmd.Info {
 	return &cmd.Info{
 		Name:  "service-unbind",
-		Usage: "service-unbind <service-name> <service-instance-name> [-a/--app appname]",
+		Usage: "service-unbind <service-name> <service-instance-name> [-a/--app appname] [--no-restart]",
 		Desc: `Unbinds an application from a service instance. After unbinding, the instance
 will not be available anymore. For example, when unbinding an application from
 a MySQL service, the application would lose access to the database.`,
 		MinArgs: 2,
 	}
+}
+
+func (su *serviceUnbind) Flags() *gnuflag.FlagSet {
+	if su.fs == nil {
+		su.fs = su.GuessingCommand.Flags()
+		su.fs.BoolVar(&su.noRestart, "no-restart", false, "Unbinds an application from a service instance without restart the application")
+	}
+	return su.fs
 }
 
 type serviceInstanceStatus struct{}
