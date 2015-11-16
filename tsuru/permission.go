@@ -226,3 +226,143 @@ func (c *roleList) Run(context *cmd.Context, client *cmd.Client) error {
 	fmt.Fprint(context.Stdout, table.String())
 	return nil
 }
+
+type rolePermissionAdd struct{}
+
+func (c *rolePermissionAdd) Info() *cmd.Info {
+	return &cmd.Info{
+		Name:    "role-permission-add",
+		Usage:   "role-permission-add <role-name> <permission-name>",
+		Desc:    `Add a new permission to an existing role.`,
+		MinArgs: 2,
+	}
+}
+
+func (c *rolePermissionAdd) Run(context *cmd.Context, client *cmd.Client) error {
+	roleName := context.Args[0]
+	permissionName := context.Args[1]
+	params := url.Values{}
+	params.Set("name", permissionName)
+	addr, err := cmd.GetURL(fmt.Sprintf("/roles/%s/permissions", roleName))
+	if err != nil {
+		return err
+	}
+	request, err := http.NewRequest("POST", addr, strings.NewReader(params.Encode()))
+	if err != nil {
+		return err
+	}
+	request.Header.Add("Content-Type", "application/x-www-form-urlencoded")
+	_, err = client.Do(request)
+	if err != nil {
+		return err
+	}
+	fmt.Fprintf(context.Stdout, "Permission successfully added!\n")
+	return nil
+}
+
+type rolePermissionRemove struct{}
+
+func (c *rolePermissionRemove) Info() *cmd.Info {
+	return &cmd.Info{
+		Name:    "role-permission-add",
+		Usage:   "role-permission-add <role-name> <permission-name>",
+		Desc:    `Remove a permission from an existing role.`,
+		MinArgs: 2,
+	}
+}
+
+func (c *rolePermissionRemove) Run(context *cmd.Context, client *cmd.Client) error {
+	roleName := context.Args[0]
+	permissionName := context.Args[1]
+	params := url.Values{}
+	params.Set("name", permissionName)
+	addr, err := cmd.GetURL(fmt.Sprintf("/roles/%s/permissions/%s", roleName, permissionName))
+	if err != nil {
+		return err
+	}
+	request, err := http.NewRequest("DELETE", addr, nil)
+	if err != nil {
+		return err
+	}
+	_, err = client.Do(request)
+	if err != nil {
+		return err
+	}
+	fmt.Fprintf(context.Stdout, "Permission successfully removed!\n")
+	return nil
+}
+
+type roleAssign struct{}
+
+func (c *roleAssign) Info() *cmd.Info {
+	return &cmd.Info{
+		Name:    "role-assign",
+		Usage:   "role-assign <role-name> <user-email> [<context-value>]",
+		Desc:    `Assign an existing role to a user with some context value.`,
+		MinArgs: 2,
+	}
+}
+
+func (c *roleAssign) Run(context *cmd.Context, client *cmd.Client) error {
+	roleName := context.Args[0]
+	userEmail := context.Args[1]
+	var contextValue string
+	if len(context.Args) > 2 {
+		contextValue = context.Args[2]
+	}
+	params := url.Values{}
+	params.Set("email", userEmail)
+	params.Set("context", contextValue)
+	addr, err := cmd.GetURL(fmt.Sprintf("/roles/%s/user", roleName))
+	if err != nil {
+		return err
+	}
+	request, err := http.NewRequest("POST", addr, strings.NewReader(params.Encode()))
+	if err != nil {
+		return err
+	}
+	request.Header.Add("Content-Type", "application/x-www-form-urlencoded")
+	_, err = client.Do(request)
+	if err != nil {
+		return err
+	}
+	fmt.Fprintf(context.Stdout, "Role successfully assigned!\n")
+	return nil
+}
+
+type roleDissociate struct{}
+
+func (c *roleDissociate) Info() *cmd.Info {
+	return &cmd.Info{
+		Name:    "role-dissociate",
+		Usage:   "role-dissociate <role-name> <user-email> [<context-value>]",
+		Desc:    `Dissociate an existing role from a user for some context value.`,
+		MinArgs: 2,
+	}
+}
+
+func (c *roleDissociate) Run(context *cmd.Context, client *cmd.Client) error {
+	roleName := context.Args[0]
+	userEmail := context.Args[1]
+	var contextValue string
+	if len(context.Args) > 2 {
+		contextValue = context.Args[2]
+	}
+	params := url.Values{}
+	params.Set("context", contextValue)
+	addr, err := cmd.GetURL(fmt.Sprintf("/roles/%s/user/%s?%s", roleName, userEmail, params.Encode()))
+	if err != nil {
+		return err
+	}
+	request, err := http.NewRequest("DELETE", addr, nil)
+	if err != nil {
+		return err
+	}
+	request.Header.Add("Content-Type", "application/x-www-form-urlencoded")
+	_, err = client.Do(request)
+	if err != nil {
+		return err
+	}
+	fmt.Fprintf(context.Stdout, "Role successfully dissociated!\n")
+	return nil
+}
