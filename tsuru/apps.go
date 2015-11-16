@@ -252,7 +252,23 @@ func (c *appInfo) Run(context *cmd.Context, client *cmd.Client) error {
 			return err
 		}
 	}
-	return c.Show(result, adminResult, servicesResult, context)
+	var quota []byte
+	url, err = cmd.GetURL("/apps/" + appName + "/quota")
+	if err != nil {
+		return err
+	}
+	request, _ = http.NewRequest("GET", url, nil)
+	response, err = client.Do(request)
+	if err != nil {
+		return err
+	}
+	defer response.Body.Close()
+	quota, err = ioutil.ReadAll(response.Body)
+	if err != nil {
+		return err
+	}
+
+	return c.Show(result, adminResult, servicesResult, quota, context)
 }
 
 type unit struct {
@@ -296,6 +312,7 @@ type app struct {
 	Lock       lock
 	containers []container
 	services   []serviceData
+	Quota      quota
 	Plan       tsuruapp.Plan
 }
 
@@ -315,6 +332,11 @@ type container struct {
 	Version          string
 	Image            string
 	LastStatusUpdate time.Time
+}
+
+type quota struct {
+	Limit int
+	InUse int
 }
 
 func (a *app) Addr() string {
@@ -340,6 +362,7 @@ Team owner: {{.TeamOwner}}
 Deploys: {{.Deploys}}
 Pool:{{if .Pool}} {{.Pool}}{{end}}{{if .Lock.Locked}}
 {{.Lock.String}}{{end}}
+Quota: {{.Quota.InUse}}/{{if .Quota.Limit}}{{.Quota.Limit}} units{{else}}unlimited{{end}}
 `
 	var buf bytes.Buffer
 	tmpl := template.Must(template.New("app").Parse(format))
@@ -420,7 +443,7 @@ Pool:{{if .Pool}} {{.Pool}}{{end}}{{if .Lock.Locked}}
 	return tplBuffer.String() + buf.String()
 }
 
-func (c *appInfo) Show(result []byte, adminResult []byte, servicesResult []byte, context *cmd.Context) error {
+func (c *appInfo) Show(result []byte, adminResult []byte, servicesResult []byte, quota []byte, context *cmd.Context) error {
 	var a app
 	err := json.Unmarshal(result, &a)
 	if err != nil {
@@ -428,6 +451,7 @@ func (c *appInfo) Show(result []byte, adminResult []byte, servicesResult []byte,
 	}
 	json.Unmarshal(adminResult, &a.containers)
 	json.Unmarshal(servicesResult, &a.services)
+	json.Unmarshal(quota, &a.Quota)
 	fmt.Fprintln(context.Stdout, &a)
 	return nil
 }

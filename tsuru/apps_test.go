@@ -395,6 +395,7 @@ Owner: myapp_owner
 Team owner: myteam
 Deploys: 7
 Pool:
+Quota: 0/unlimited
 
 Units: 3
 +--------+---------+
@@ -418,6 +419,59 @@ Units: 3
 	c.Assert(stdout.String(), check.Equals, expected)
 }
 
+type transportFunc func(req *http.Request) (resp *http.Response, err error)
+
+func (fn transportFunc) RoundTrip(req *http.Request) (resp *http.Response, err error) {
+	return fn(req)
+}
+
+func (s *S) TestAppInfoWithQuota(c *check.C) {
+	var stdout, stderr bytes.Buffer
+	expected := `Application: app1
+Repository: git@git.com:php.git
+Platform: php
+Teams: tsuruteam, crane
+Address: myapp.tsuru.io
+Owner: myapp_owner
+Team owner: myteam
+Deploys: 7
+Pool:
+Quota: 3/40 units
+
+Units: 3
++--------+---------+
+| Unit   | State   |
++--------+---------+
+| app1/0 | started |
+| app1/1 | started |
+| app1/2 | pending |
++--------+---------+
+
+`
+	context := cmd.Context{
+		Stdout: &stdout,
+		Stderr: &stderr,
+	}
+	transport := transportFunc(func(req *http.Request) (resp *http.Response, err error) {
+		var body string
+		if req.URL.Path == "/apps/app1/quota" {
+			body = `{"Limit":40,"InUse":3}`
+		} else if req.URL.Path == "/apps/app1" {
+			body = `{"name":"app1","teamowner":"myteam","cname":[""],"ip":"myapp.tsuru.io","platform":"php","repository":"git@git.com:php.git","state":"dead", "units":[{"Ip":"10.10.10.10","ID":"app1/0","Status":"started"}, {"Ip":"9.9.9.9","ID":"app1/1","Status":"started"}, {"Ip":"","ID":"app1/2","Status":"pending"}],"teams":["tsuruteam","crane"], "owner": "myapp_owner", "deploys": 7}`
+		}
+		return &http.Response{
+			Body:       ioutil.NopCloser(bytes.NewBufferString(body)),
+			StatusCode: http.StatusOK,
+		}, nil
+	})
+	client := cmd.NewClient(&http.Client{Transport: transport}, nil, manager)
+	command := appInfo{}
+	command.Flags().Parse(true, []string{"--app", "app1"})
+	err := command.Run(&context, client)
+	c.Assert(err, check.IsNil)
+	c.Assert(stdout.String(), check.Equals, expected)
+}
+
 func (s *S) TestAppInfoLock(c *check.C) {
 	var stdout, stderr bytes.Buffer
 	result := `{"name":"app1","teamowner":"myteam","cname":[""],"ip":"myapp.tsuru.io","platform":"php","repository":"git@git.com:php.git","state":"dead", "units":[{"Ip":"10.10.10.10","ID":"app1/0","Status":"started"}, {"Ip":"9.9.9.9","ID":"app1/1","Status":"started"}, {"Ip":"","ID":"app1/2","Status":"pending"}],"teams":["tsuruteam","crane"], "owner": "myapp_owner", "deploys": 7, "lock": {"locked": true, "owner": "admin@example.com", "reason": "DELETE /apps/rbsample/units", "acquiredate": "2012-04-01T10:32:00Z"}}`
@@ -434,6 +488,7 @@ Lock:
  Acquired in: %s
  Owner: admin@example.com
  Running: DELETE /apps/rbsample/units
+Quota: 0/unlimited
 
 Units: 3
 +--------+---------+
@@ -506,6 +561,7 @@ Owner: myapp_owner
 Team owner: myteam
 Deploys: 7
 Pool:
+Quota: 0/unlimited
 
 Units [web]: 1
 +--------+---------+
@@ -547,6 +603,7 @@ Owner: myapp_owner
 Team owner: myteam
 Deploys: 7
 Pool:
+Quota: 0/unlimited
 
 `
 	context := cmd.Context{
@@ -573,6 +630,7 @@ Owner: myapp_owner
 Team owner: x
 Deploys: 7
 Pool:
+Quota: 0/unlimited
 
 `
 	context := cmd.Context{
@@ -599,6 +657,7 @@ Owner: myapp_owner
 Team owner: myteam
 Deploys: 7
 Pool:
+Quota: 0/unlimited
 
 Units: 2
 +----------+---------+
@@ -616,7 +675,7 @@ Units: 2
 	trans := &cmdtest.ConditionalTransport{
 		Transport: cmdtest.Transport{Message: result, Status: http.StatusOK},
 		CondFunc: func(req *http.Request) bool {
-			return req.URL.Path == "/apps/secret" && req.Method == "GET"
+			return req.URL.Path == "/apps/secret" && req.Method == "GET" || req.URL.Path == "/apps/secret/quota" && req.Method == "GET"
 		},
 	}
 	client := cmd.NewClient(&http.Client{Transport: trans}, nil, manager)
@@ -641,6 +700,7 @@ Owner: myapp_owner
 Team owner: myteam
 Deploys: 7
 Pool:
+Quota: 0/unlimited
 
 Units: 3
 +--------+---------+
@@ -664,12 +724,6 @@ Units: 3
 	c.Assert(stdout.String(), check.Equals, expected)
 }
 
-type transportFunc func(req *http.Request) (resp *http.Response, err error)
-
-func (fn transportFunc) RoundTrip(req *http.Request) (resp *http.Response, err error) {
-	return fn(req)
-}
-
 func (s *S) TestAppInfoWithServices(c *check.C) {
 	var stdout, stderr bytes.Buffer
 	expected := `Application: app1
@@ -681,6 +735,7 @@ Owner: myapp_owner
 Team owner: myteam
 Deploys: 7
 Pool:
+Quota: 0/unlimited
 
 Units: 3
 +--------+---------+
@@ -736,6 +791,7 @@ Owner: myapp_owner
 Team owner: myteam
 Deploys: 7
 Pool:
+Quota: 0/unlimited
 
 Units: 3
 +--------+---------+
@@ -777,6 +833,7 @@ Owner: myapp_owner
 Team owner: myteam
 Deploys: 7
 Pool:
+Quota: 0/unlimited
 
 Units: 3
 +--------+---------+
