@@ -232,7 +232,7 @@ type rolePermissionAdd struct{}
 func (c *rolePermissionAdd) Info() *cmd.Info {
 	return &cmd.Info{
 		Name:    "role-permission-add",
-		Usage:   "role-permission-add <role-name> <permission-name>",
+		Usage:   "role-permission-add <role-name> <permission-name>...",
 		Desc:    `Add a new permission to an existing role.`,
 		MinArgs: 2,
 	}
@@ -240,9 +240,10 @@ func (c *rolePermissionAdd) Info() *cmd.Info {
 
 func (c *rolePermissionAdd) Run(context *cmd.Context, client *cmd.Client) error {
 	roleName := context.Args[0]
-	permissionName := context.Args[1]
 	params := url.Values{}
-	params.Set("name", permissionName)
+	for _, p := range context.Args[1:] {
+		params.Add("permission", p)
+	}
 	addr, err := cmd.GetURL(fmt.Sprintf("/roles/%s/permissions", roleName))
 	if err != nil {
 		return err

@@ -7,6 +7,8 @@ package main
 import (
 	"bytes"
 	"net/http"
+	"reflect"
+	"sort"
 
 	"github.com/tsuru/tsuru/cmd"
 	"github.com/tsuru/tsuru/cmd/cmdtest"
@@ -171,15 +173,17 @@ func (s *S) TestRolePermissionAddInfo(c *check.C) {
 func (s *S) TestRolePermissionAddRun(c *check.C) {
 	var stdout, stderr bytes.Buffer
 	context := cmd.Context{
-		Args:   []string{"myrole", "app.create"},
+		Args:   []string{"myrole", "app.create", "app.deploy"},
 		Stdout: &stdout,
 		Stderr: &stderr,
 	}
 	trans := &cmdtest.ConditionalTransport{
 		Transport: cmdtest.Transport{Message: string(""), Status: http.StatusCreated},
 		CondFunc: func(req *http.Request) bool {
+			req.ParseForm()
+			sort.Strings(req.Form["permission"])
 			return req.URL.Path == "/roles/myrole/permissions" && req.Method == "POST" &&
-				req.FormValue("name") == "app.create"
+				reflect.DeepEqual(req.Form["permission"], []string{"app.create", "app.deploy"})
 		},
 	}
 	client := cmd.NewClient(&http.Client{Transport: trans}, nil, manager)
