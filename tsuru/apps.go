@@ -381,8 +381,8 @@ Quota: {{.Quota.InUse}}/{{if .Quota.Limit}}{{.Quota.Limit}} units{{else}}unlimit
 	if len(a.containers) > 0 {
 		for _, cont := range a.containers {
 			id := cont.ID
-			if len(cont.ID) > 10 {
-				id = id[:10]
+			if len(cont.ID) > 12 {
+				id = id[:12]
 			}
 			contMap[id] = cont
 		}
@@ -397,8 +397,8 @@ Quota: {{.Quota.InUse}}/{{if .Quota.Limit}}{{.Quota.Limit}} units{{else}}unlimit
 				continue
 			}
 			id := unit.ID
-			if len(unit.ID) > 10 {
-				id = id[:10]
+			if len(unit.ID) > 12 {
+				id = id[:12]
 			}
 			row := []string{id, unit.Status}
 			cont, ok := contMap[id]
