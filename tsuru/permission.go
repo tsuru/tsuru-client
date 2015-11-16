@@ -264,8 +264,8 @@ type rolePermissionRemove struct{}
 
 func (c *rolePermissionRemove) Info() *cmd.Info {
 	return &cmd.Info{
-		Name:    "role-permission-add",
-		Usage:   "role-permission-add <role-name> <permission-name>",
+		Name:    "role-permission-remove",
+		Usage:   "role-permission-remove <role-name> <permission-name>",
 		Desc:    `Remove a permission from an existing role.`,
 		MinArgs: 2,
 	}
@@ -274,8 +274,6 @@ func (c *rolePermissionRemove) Info() *cmd.Info {
 func (c *rolePermissionRemove) Run(context *cmd.Context, client *cmd.Client) error {
 	roleName := context.Args[0]
 	permissionName := context.Args[1]
-	params := url.Values{}
-	params.Set("name", permissionName)
 	addr, err := cmd.GetURL(fmt.Sprintf("/roles/%s/permissions/%s", roleName, permissionName))
 	if err != nil {
 		return err
@@ -364,5 +362,34 @@ func (c *roleDissociate) Run(context *cmd.Context, client *cmd.Client) error {
 		return err
 	}
 	fmt.Fprintf(context.Stdout, "Role successfully dissociated!\n")
+	return nil
+}
+
+type roleRemove struct{}
+
+func (c *roleRemove) Info() *cmd.Info {
+	return &cmd.Info{
+		Name:    "role-remove",
+		Usage:   "role-remove <role-name>",
+		Desc:    `Remove an existing role.`,
+		MinArgs: 1,
+	}
+}
+
+func (c *roleRemove) Run(context *cmd.Context, client *cmd.Client) error {
+	roleName := context.Args[0]
+	addr, err := cmd.GetURL(fmt.Sprintf("/roles/%s", roleName))
+	if err != nil {
+		return err
+	}
+	request, err := http.NewRequest("DELETE", addr, nil)
+	if err != nil {
+		return err
+	}
+	_, err = client.Do(request)
+	if err != nil {
+		return err
+	}
+	fmt.Fprintf(context.Stdout, "Role successfully removed!\n")
 	return nil
 }

@@ -80,7 +80,12 @@ func buildManager(name string) *cmd.Manager {
 	m.Register(&poolList{})
 	m.Register(&permissionList{})
 	m.Register(&roleAdd{})
+	m.Register(&roleRemove{})
 	m.Register(&roleList{})
+	m.Register(&rolePermissionAdd{})
+	m.Register(&rolePermissionRemove{})
+	m.Register(&roleAssign{})
+	m.Register(&roleDissociate{})
 	return m
 }
 

@@ -212,3 +212,27 @@ func (s *S) TestRolePermissionRemoveRun(c *check.C) {
 	c.Assert(err, check.IsNil)
 	c.Assert(stdout.String(), check.Equals, "Permission successfully removed!\n")
 }
+
+func (s *S) TestRoleRemoveInfo(c *check.C) {
+	c.Assert((&roleRemove{}).Info(), check.NotNil)
+}
+
+func (s *S) TestRoleRemoveRun(c *check.C) {
+	var stdout, stderr bytes.Buffer
+	context := cmd.Context{
+		Args:   []string{"myrole"},
+		Stdout: &stdout,
+		Stderr: &stderr,
+	}
+	trans := &cmdtest.ConditionalTransport{
+		Transport: cmdtest.Transport{Message: string(""), Status: http.StatusCreated},
+		CondFunc: func(req *http.Request) bool {
+			return req.URL.Path == "/roles/myrole" && req.Method == "DELETE"
+		},
+	}
+	client := cmd.NewClient(&http.Client{Transport: trans}, nil, manager)
+	command := roleRemove{}
+	err := command.Run(&context, client)
+	c.Assert(err, check.IsNil)
+	c.Assert(stdout.String(), check.Equals, "Role successfully removed!\n")
+}
