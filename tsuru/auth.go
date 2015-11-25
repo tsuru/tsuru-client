@@ -9,10 +9,10 @@ import (
 	"encoding/json"
 	"errors"
 	"fmt"
-	"io"
 	"io/ioutil"
 	"net/http"
 	"sort"
+	"strings"
 
 	"github.com/tsuru/tsuru/cmd"
 	"launchpad.net/gnuflag"
@@ -321,6 +321,11 @@ func (c *teamList) Info() *cmd.Info {
 	}
 }
 
+type teamItem struct {
+	Name        string
+	Permissions []string
+}
+
 func (c *teamList) Run(context *cmd.Context, client *cmd.Client) error {
 	url, err := cmd.GetURL("/teams")
 	if err != nil {
@@ -340,25 +345,18 @@ func (c *teamList) Run(context *cmd.Context, client *cmd.Client) error {
 		if err != nil {
 			return err
 		}
-		var teams, notMember []map[string]interface{}
+		var teams []teamItem
 		err = json.Unmarshal(b, &teams)
 		if err != nil {
 			return err
 		}
-		io.WriteString(context.Stdout, "My teams:\n")
+		table := cmd.NewTable()
+		table.Headers = cmd.Row{"Team", "Permissions"}
+		table.LineSeparator = true
 		for _, team := range teams {
-			if isMember, hasKey := team["member"]; hasKey && !(isMember.(bool)) {
-				notMember = append(notMember, team)
-				continue
-			}
-			fmt.Fprintf(context.Stdout, "  - %s\n", team["name"])
+			table.AddRow(cmd.Row{team.Name, strings.Join(team.Permissions, "\n")})
 		}
-		if len(notMember) > 0 {
-			io.WriteString(context.Stdout, "\nOther teams:\n")
-		}
-		for _, team := range notMember {
-			fmt.Fprintf(context.Stdout, "  - %s\n", team["name"])
-		}
+		fmt.Fprint(context.Stdout, table.String())
 	}
 	return nil
 }
