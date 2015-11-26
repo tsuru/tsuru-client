@@ -1173,10 +1173,8 @@ app3
 		Stdout: &stdout,
 		Stderr: &stderr,
 	}
-	var request *http.Request
 	transport := cmdtest.ConditionalTransport{
 		CondFunc: func(r *http.Request) bool {
-			request = r
 			return true
 		},
 		Transport: cmdtest.Transport{Message: result, Status: http.StatusOK},

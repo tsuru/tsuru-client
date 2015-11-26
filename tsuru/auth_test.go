@@ -184,15 +184,24 @@ func (s *S) TestTeamUserListIsACommand(c *check.C) {
 func (s *S) TestTeamListRun(c *check.C) {
 	var called bool
 	trans := &cmdtest.ConditionalTransport{
-		Transport: cmdtest.Transport{Message: `[{"name":"timeredbull"},{"name":"cobrateam"}]`, Status: http.StatusOK},
+		Transport: cmdtest.Transport{Message: `[
+{"name":"timeredbull", "permissions": ["app.deploy", "app.abc"]},
+{"name":"cobrateam", "permissions": ["a", "b"]}
+]`, Status: http.StatusOK},
 		CondFunc: func(req *http.Request) bool {
 			called = true
 			return req.Method == "GET" && req.URL.Path == "/teams"
 		},
 	}
-	expected := `My teams:
-  - timeredbull
-  - cobrateam
+	expected := `+-------------+-------------+
+| Team        | Permissions |
++-------------+-------------+
+| timeredbull | app.deploy  |
+|             | app.abc     |
++-------------+-------------+
+| cobrateam   | a           |
+|             | b           |
++-------------+-------------+
 `
 	client := cmd.NewClient(&http.Client{Transport: trans}, nil, manager)
 	var stdout, stderr bytes.Buffer
@@ -207,20 +216,22 @@ func (s *S) TestTeamListRun(c *check.C) {
 	c.Assert(stdout.String(), check.Equals, expected)
 }
 
-func (s *S) TestTeamListRunWithNonMemberTeams(c *check.C) {
+func (s *S) TestTeamListRunNoPermissions(c *check.C) {
 	var called bool
 	trans := &cmdtest.ConditionalTransport{
-		Transport: cmdtest.Transport{Message: `[{"name":"timeredbull", "member": true},{"name":"cobrateam", "member": false}]`, Status: http.StatusOK},
+		Transport: cmdtest.Transport{Message: `[{"name":"timeredbull"},{"name":"cobrateam"}]`, Status: http.StatusOK},
 		CondFunc: func(req *http.Request) bool {
 			called = true
 			return req.Method == "GET" && req.URL.Path == "/teams"
 		},
 	}
-	expected := `My teams:
-  - timeredbull
-
-Other teams:
-  - cobrateam
+	expected := `+-------------+-------------+
+| Team        | Permissions |
++-------------+-------------+
+| timeredbull |             |
++-------------+-------------+
+| cobrateam   |             |
++-------------+-------------+
 `
 	client := cmd.NewClient(&http.Client{Transport: trans}, nil, manager)
 	var stdout, stderr bytes.Buffer
