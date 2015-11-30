@@ -307,6 +307,13 @@ func (s *S) TestUserRemoveIsRegistered(c *check.C) {
 	c.Assert(rmUser, check.FitsTypeOf, &userRemove{})
 }
 
+func (s *S) TestUserListIsRegistered(c *check.C) {
+	manager := buildManager("tsuru")
+	rmUser, ok := manager.Commands["user-list"]
+	c.Assert(ok, check.Equals, true)
+	c.Assert(rmUser, check.FitsTypeOf, &listUsers{})
+}
+
 func (s *S) TestTeamRemoveIsRegistered(c *check.C) {
 	manager := buildManager("tsuru")
 	rmTeam, ok := manager.Commands["team-remove"]
