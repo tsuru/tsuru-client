@@ -318,21 +318,21 @@ func (s *S) TestTeamAddUserIsRegistered(c *check.C) {
 	manager := buildManager("tsuru")
 	adduser, ok := manager.Commands["team-user-add"]
 	c.Assert(ok, check.Equals, true)
-	c.Assert(adduser, check.FitsTypeOf, &teamUserAdd{})
+	c.Assert(adduser, check.FitsTypeOf, &cmd.RemovedCommand{})
 }
 
 func (s *S) TestTeamRemoveUserIsRegistered(c *check.C) {
 	manager := buildManager("tsuru")
 	removeuser, ok := manager.Commands["team-user-remove"]
 	c.Assert(ok, check.Equals, true)
-	c.Assert(removeuser, check.FitsTypeOf, &teamUserRemove{})
+	c.Assert(removeuser, check.FitsTypeOf, &cmd.RemovedCommand{})
 }
 
 func (s *S) TestTeamUserListIsRegistered(c *check.C) {
 	manager := buildManager("tsuru")
 	listuser, ok := manager.Commands["team-user-list"]
 	c.Assert(ok, check.Equals, true)
-	c.Assert(listuser, check.FitsTypeOf, teamUserList{})
+	c.Assert(listuser, check.FitsTypeOf, &cmd.RemovedCommand{})
 }
 
 func (s *S) TestUserCreateIsRegistered(c *check.C) {

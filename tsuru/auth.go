@@ -11,7 +11,6 @@ import (
 	"fmt"
 	"io/ioutil"
 	"net/http"
-	"sort"
 	"strings"
 
 	"github.com/tsuru/tsuru/cmd"
@@ -210,102 +209,6 @@ func (c *teamRemove) Info() *cmd.Info {
 member of. A team that has access to any app cannot be removed. Before
 removing a team, make sure it does not have access to any app (see "app-grant"
 and "app-revoke" commands for details).`,
-		MinArgs: 1,
-	}
-}
-
-type teamUserAdd struct{}
-
-func (c *teamUserAdd) Info() *cmd.Info {
-	return &cmd.Info{
-		Name:    "team-user-add",
-		Usage:   "team-user-add <teamname> <useremail>",
-		Desc:    "Adds a user to a team. You need to be a member of the team to be able to add another user to it.",
-		MinArgs: 2,
-	}
-}
-
-func (c *teamUserAdd) Run(context *cmd.Context, client *cmd.Client) error {
-	teamName, userName := context.Args[0], context.Args[1]
-	url, err := cmd.GetURL(fmt.Sprintf("/teams/%s/%s", teamName, userName))
-	if err != nil {
-		return err
-	}
-	request, err := http.NewRequest("PUT", url, nil)
-	if err != nil {
-		return err
-	}
-	_, err = client.Do(request)
-	if err != nil {
-		return err
-	}
-	fmt.Fprintf(context.Stdout, `User "%s" was added to the "%s" team`+"\n", userName, teamName)
-	return nil
-}
-
-type teamUserRemove struct{}
-
-func (c *teamUserRemove) Info() *cmd.Info {
-	return &cmd.Info{
-		Name:    "team-user-remove",
-		Usage:   "team-user-remove <teamname> <useremail>",
-		Desc:    "Removes a user from a team. You need to be a member of the team to be able to remove a user from it.",
-		MinArgs: 2,
-	}
-}
-
-func (c *teamUserRemove) Run(context *cmd.Context, client *cmd.Client) error {
-	teamName, userName := context.Args[0], context.Args[1]
-	url, err := cmd.GetURL(fmt.Sprintf("/teams/%s/%s", teamName, userName))
-	if err != nil {
-		return err
-	}
-	request, err := http.NewRequest("DELETE", url, nil)
-	if err != nil {
-		return err
-	}
-	_, err = client.Do(request)
-	if err != nil {
-		return err
-	}
-	fmt.Fprintf(context.Stdout, `User "%s" was removed from the "%s" team`+"\n", userName, teamName)
-	return nil
-}
-
-type teamUserList struct{}
-
-func (teamUserList) Run(context *cmd.Context, client *cmd.Client) error {
-	teamName := context.Args[0]
-	url, err := cmd.GetURL("/teams/" + teamName)
-	if err != nil {
-		return err
-	}
-	request, err := http.NewRequest("GET", url, nil)
-	if err != nil {
-		return err
-	}
-	resp, err := client.Do(request)
-	if err != nil {
-		return err
-	}
-	defer resp.Body.Close()
-	var t struct{ Users []string }
-	err = json.NewDecoder(resp.Body).Decode(&t)
-	if err != nil {
-		return err
-	}
-	sort.Strings(t.Users)
-	for _, user := range t.Users {
-		fmt.Fprintf(context.Stdout, "- %s\n", user)
-	}
-	return nil
-}
-
-func (teamUserList) Info() *cmd.Info {
-	return &cmd.Info{
-		Name:    "team-user-list",
-		Usage:   "team-user-list <teamname>",
-		Desc:    "List members of a team.",
 		MinArgs: 1,
 	}
 }

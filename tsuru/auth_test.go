@@ -18,46 +18,6 @@ import (
 	"gopkg.in/check.v1"
 )
 
-func (s *S) TestTeamAddUser(c *check.C) {
-	var stdout, stderr bytes.Buffer
-	expected := `User "andorito" was added to the "cobrateam" team` + "\n"
-	context := cmd.Context{
-		Args:   []string{"cobrateam", "andorito"},
-		Stdout: &stdout,
-		Stderr: &stderr,
-		Stdin:  nil,
-	}
-	command := teamUserAdd{}
-	client := cmd.NewClient(&http.Client{Transport: &cmdtest.Transport{Message: "", Status: http.StatusOK}}, nil, manager)
-	err := command.Run(&context, client)
-	c.Assert(err, check.IsNil)
-	c.Assert(stdout.String(), check.Equals, expected)
-}
-
-func (s *S) TestTeamAddUserInfo(c *check.C) {
-	c.Assert((&teamUserAdd{}).Info(), check.NotNil)
-}
-
-func (s *S) TestTeamRemoveUser(c *check.C) {
-	var stdout, stderr bytes.Buffer
-	expected := `User "andorito" was removed from the "cobrateam" team` + "\n"
-	context := cmd.Context{
-		Args:   []string{"cobrateam", "andorito"},
-		Stdout: &stdout,
-		Stderr: &stderr,
-		Stdin:  nil,
-	}
-	command := teamUserRemove{}
-	client := cmd.NewClient(&http.Client{Transport: &cmdtest.Transport{Message: "", Status: http.StatusOK}}, nil, manager)
-	err := command.Run(&context, client)
-	c.Assert(err, check.IsNil)
-	c.Assert(stdout.String(), check.Equals, expected)
-}
-
-func (s *S) TestTeamRemoveUserInfo(c *check.C) {
-	c.Assert((&teamUserRemove{}).Info(), check.NotNil)
-}
-
 func (s *S) TestTeamCreate(c *check.C) {
 	var stdout, stderr bytes.Buffer
 	expected := `Team "core" successfully created!` + "\n"
@@ -135,50 +95,6 @@ func (s *S) TestTeamRemoveInfo(c *check.C) {
 
 func (s *S) TestTeamRemoveIsACommand(c *check.C) {
 	var _ cmd.Command = &teamRemove{}
-}
-
-func (s *S) TestTeamUserList(c *check.C) {
-	var called bool
-	var buf bytes.Buffer
-	context := cmd.Context{Args: []string{"symfonia"}, Stdout: &buf}
-	command := teamUserList{}
-	transport := cmdtest.ConditionalTransport{
-		Transport: cmdtest.Transport{
-			Status:  http.StatusOK,
-			Message: `{"name":"symfonia","users":["somebody@tsuru.io","otherbody@tsuru.io","me@tsuru.io"]}`,
-		},
-		CondFunc: func(r *http.Request) bool {
-			called = true
-			return r.Method == "GET" && r.URL.Path == "/teams/symfonia"
-		},
-	}
-	client := cmd.NewClient(&http.Client{Transport: &transport}, nil, manager)
-	err := command.Run(&context, client)
-	c.Assert(err, check.IsNil)
-	c.Assert(called, check.Equals, true)
-	expected := `- me@tsuru.io
-- otherbody@tsuru.io
-- somebody@tsuru.io` + "\n"
-	c.Assert(buf.String(), check.Equals, expected)
-}
-
-func (s *S) TestTeamUserListError(c *check.C) {
-	var buf bytes.Buffer
-	context := cmd.Context{Args: []string{"symfonia"}, Stdout: &buf}
-	transport := cmdtest.Transport{Status: http.StatusNotFound, Message: "Team not found"}
-	client := cmd.NewClient(&http.Client{Transport: &transport}, nil, manager)
-	command := teamUserList{}
-	err := command.Run(&context, client)
-	c.Assert(err, check.NotNil)
-	c.Assert(err.Error(), check.Equals, "Team not found")
-}
-
-func (s *S) TestTeamUserListInfo(c *check.C) {
-	c.Assert(teamUserList{}.Info(), check.NotNil)
-}
-
-func (s *S) TestTeamUserListIsACommand(c *check.C) {
-	var _ cmd.Command = teamUserList{}
 }
 
 func (s *S) TestTeamListRun(c *check.C) {
