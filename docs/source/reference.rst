@@ -51,13 +51,24 @@ Team management
    :title: Remove a team from tsuru
 .. tsuru-command:: team-list
    :title: List teams current user is member
-.. tsuru-command:: team-user-add
-   :title: Add a user to a team
-.. tsuru-command:: team-user-remove
-   :title: Remove a user from a team
-.. tsuru-command:: team-user-list
-   :title: List members of a team
 
+Authorization
+=============
+
+.. tsuru-command:: permission-list
+   :title: List all available permissions
+.. tsuru-command:: role-add
+   :title: Create a new role
+.. tsuru-command:: role-list
+   :title: List all created roles
+.. tsuru-command:: role-permission-add
+   :title: Add a permission to a role
+.. tsuru-command:: role-permission-remove
+   :title: Remove a permission from a role
+.. tsuru-command:: role-assign
+   :title: Assign a role to a user
+.. tsuru-command:: role-dissociate
+   :title: Dissociate a role from a user
 
 Applications
 ============
@@ -106,7 +117,7 @@ name as the application's name.
    :title: Add new units to an application
 .. tsuru-command:: unit-remove
    :title: Remove units from an application
-.. tsuru-command:: app-set-team-owner
+.. tsuru-command:: app-team-owner-set
    :title: Change an application team owner
 .. tsuru-command:: app-grant
    :title: Allow a team to access an application

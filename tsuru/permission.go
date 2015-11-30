@@ -40,7 +40,7 @@ func (c *permissionList) Info() *cmd.Info {
 func (c *permissionList) Flags() *gnuflag.FlagSet {
 	if c.fs == nil {
 		c.fs = gnuflag.NewFlagSet("plan-List", gnuflag.ExitOnError)
-		tree := "Show permissions tree."
+		tree := "Show permissions in tree format."
 		c.fs.BoolVar(&c.tree, "tree", false, tree)
 		c.fs.BoolVar(&c.tree, "t", false, tree)
 	}
@@ -155,9 +155,9 @@ func (c *roleAdd) Info() *cmd.Info {
 	}
 	allTypes := make([]string, len(permission.ContextTypes))
 	for i := range permission.ContextTypes {
-		allTypes[i] = "  " + string(permission.ContextTypes[i])
+		allTypes[i] = "* " + string(permission.ContextTypes[i])
 	}
-	info.Desc = fmt.Sprintf("%s\n%s", info.Desc, strings.Join(allTypes, "\n"))
+	info.Desc = fmt.Sprintf("%s\n\n%s", info.Desc, strings.Join(allTypes, "\n"))
 	return info
 }
 
@@ -190,7 +190,7 @@ func (c *roleList) Info() *cmd.Info {
 	return &cmd.Info{
 		Name:    "role-list",
 		Usage:   "role-list",
-		Desc:    `List all existing roles`,
+		Desc:    `List all existing roles.`,
 		MinArgs: 0,
 	}
 }
