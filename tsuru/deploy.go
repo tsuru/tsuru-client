@@ -166,8 +166,7 @@ func (c *appDeploy) Run(context *cmd.Context, client *cmd.Client) error {
 		return err
 	}
 	writer.Close()
-
-	url, err = cmd.GetURL("/apps/" + appName + "/deploy")
+	url, err = cmd.GetURL(fmt.Sprintf("/apps/%s/deploy?origin=%s", appName, "app-deploy"))
 	if err != nil {
 		return err
 	}
@@ -385,7 +384,7 @@ func (c *appDeployRollback) Run(context *cmd.Context, client *cmd.Client) error 
 	if !c.Confirm(context, fmt.Sprintf("Are you sure you want to rollback app %q to image %q?", appName, imgName)) {
 		return nil
 	}
-	url, err := cmd.GetURL(fmt.Sprintf("/apps/%s/deploy/rollback", appName))
+	url, err := cmd.GetURL(fmt.Sprintf("/apps/%s/deploy/rollback?origin=%s", appName, "rollback"))
 	if err != nil {
 		return err
 	}

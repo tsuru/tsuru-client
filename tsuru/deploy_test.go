@@ -47,7 +47,7 @@ func (s *S) TestDeployRun(c *check.C) {
 			content, err := ioutil.ReadAll(file)
 			c.Assert(err, check.IsNil)
 			c.Assert(content, check.DeepEquals, buf.Bytes())
-			return req.Method == "POST" && req.URL.Path == "/apps/secret/deploy"
+			return req.Method == "POST" && req.URL.Path == "/apps/secret/deploy" && req.URL.RawQuery == "origin=app-deploy"
 		},
 	}
 	client := cmd.NewClient(&http.Client{Transport: &trans}, nil, manager)
@@ -354,7 +354,7 @@ func (s *S) TestAppDeployRollback(c *check.C) {
 			called = true
 			body, _ := ioutil.ReadAll(req.Body)
 			return req.URL.Path == "/apps/arrakis/deploy/rollback" &&
-				req.Method == "POST" && string(body) == "image=my-image"
+				req.Method == "POST" && string(body) == "image=my-image" && req.URL.RawQuery == "origin=rollback"
 		},
 	}
 	client := cmd.NewClient(&http.Client{Transport: trans}, nil, manager)
