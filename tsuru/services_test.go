@@ -24,7 +24,7 @@ type infoTransport struct {
 func (t *infoTransport) RoundTrip(req *http.Request) (resp *http.Response, err error) {
 	var message string
 	if req.URL.Path == "/services/mongodb" {
-		message = `[{"Name":"mymongo", "Apps":["myapp"], "Info":{"key": "value", "key2": "value2"}}]`
+		message = `[{"Name":"mymongo", "Apps":["myapp"], "Id":0, "Info":{"key": "value", "key2": "value2"}, "PlanName":"small", "ServiceName":"mongoservice", "Teams":["mongoteam"]}]`
 	}
 	if req.URL.Path == "/services/mongodb/plans" {
 		if t.includePlans {
@@ -33,6 +33,18 @@ func (t *infoTransport) RoundTrip(req *http.Request) (resp *http.Response, err e
 			message = `[]`
 		}
 	}
+
+	if req.URL.Path == "/services/mongodbnoplan" {
+		message = `[{"Name":"mymongo", "Apps":["myapp"], "Id":0, "Info":{"key": "value", "key2": "value2"}, "PlanName":"", "ServiceName":"noplanservice", "Teams":["noplanteam"]}]`
+	}
+	if req.URL.Path == "/services/mongodbnoplan/plans" {
+		if t.includePlans {
+			message = `[{"Name": "small", "Description": "another plan"}]`
+		} else {
+			message = `[]`
+		}
+	}
+
 	resp = &http.Response{
 		Body:       ioutil.NopCloser(bytes.NewBufferString(message)),
 		StatusCode: http.StatusOK,
@@ -381,11 +393,11 @@ func (s *S) TestServiceInfoRun(c *check.C) {
 	expected := `Info for "mongodb"
 
 Instances
-+-----------+-------+-------+--------+
-| Instances | Apps  | key   | key2   |
-+-----------+-------+-------+--------+
-| mymongo   | myapp | value | value2 |
-+-----------+-------+-------+--------+
++-----------+-------+-------+-------+--------+
+| Instances | Plan  | Apps  | key   | key2   |
++-----------+-------+-------+-------+--------+
+| mymongo   | small | myapp | value | value2 |
++-----------+-------+-------+-------+--------+
 
 Plans
 +-------+--------------+
@@ -409,7 +421,7 @@ Plans
 
 func (s *S) TestServiceInfoNoPlans(c *check.C) {
 	var stdout, stderr bytes.Buffer
-	expected := `Info for "mongodb"
+	expected := `Info for "mongodbnoplan"
 
 Instances
 +-----------+-------+-------+--------+
@@ -418,7 +430,7 @@ Instances
 | mymongo   | myapp | value | value2 |
 +-----------+-------+-------+--------+
 `
-	args := []string{"mongodb"}
+	args := []string{"mongodbnoplan"}
 	context := cmd.Context{
 		Args:   args,
 		Stdout: &stdout,

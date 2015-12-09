@@ -308,9 +308,10 @@ to), and apps bound to these instances.`,
 }
 
 type ServiceInstanceModel struct {
-	Name string
-	Apps []string
-	Info map[string]string
+	Name     string
+	PlanName string
+	Apps     []string
+	Info     map[string]string
 }
 
 // in returns true if the list contains the value
@@ -364,15 +365,31 @@ func (c serviceInfo) BuildInstancesTable(serviceName string, ctx *cmd.Context, c
 		ctx.Stdout.Write([]byte("Instances\n"))
 		table := cmd.NewTable()
 		extraHeaders := c.ExtraHeaders(instances)
+		hasPlan := false
+		var data []string
+		var headers []string
+		for _, instance := range instances {
+			if instance.PlanName != "" {
+				hasPlan = true
+			}
+		}
 		for _, instance := range instances {
 			apps := strings.Join(instance.Apps, ", ")
-			data := []string{instance.Name, apps}
+			if hasPlan {
+				data = []string{instance.Name, instance.PlanName, apps}
+			} else {
+				data = []string{instance.Name, apps}
+			}
 			for _, h := range extraHeaders {
 				data = append(data, instance.Info[h])
 			}
 			table.AddRow(cmd.Row(data))
 		}
-		headers := []string{"Instances", "Apps"}
+		if hasPlan {
+			headers = []string{"Instances", "Plan", "Apps"}
+		} else {
+			headers = []string{"Instances", "Apps"}
+		}
 		headers = append(headers, extraHeaders...)
 		table.Headers = cmd.Row(headers)
 		ctx.Stdout.Write(table.Bytes())
