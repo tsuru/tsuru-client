@@ -117,6 +117,18 @@ func (c *appDeployList) Run(context *cmd.Context, client *cmd.Client) error {
 
 type appDeploy struct {
 	cmd.GuessingCommand
+	image string
+	fs    *gnuflag.FlagSet
+}
+
+func (c *appDeploy) Flags() *gnuflag.FlagSet {
+	if c.fs == nil {
+		c.fs = c.GuessingCommand.Flags()
+		image := "The image to deploy in app"
+		c.fs.StringVar(&c.image, "image", "", image)
+		c.fs.StringVar(&c.image, "i", "", image)
+	}
+	return c.fs
 }
 
 func (c *appDeploy) Info() *cmd.Info {
@@ -128,12 +140,13 @@ calls are:
     $ tsuru app-deploy .
     $ tsuru app-deploy myfile.jar Procfile
     $ tsuru app-deploy mysite
+    $ tsuru app-deploy -i http://registry.mysite.com:5000/image-name
 `
 	return &cmd.Info{
 		Name:    "app-deploy",
-		Usage:   "app-deploy [-a/--app <appname>] <file-or-dir-1> [file-or-dir-2] ... [file-or-dir-n]",
+		Usage:   "app-deploy [-a/--app <appname>] [-i/--image <image_url>] <file-or-dir-1> [file-or-dir-2] ... [file-or-dir-n]",
 		Desc:    desc,
-		MinArgs: 1,
+		MinArgs: 0,
 	}
 }
 
@@ -166,7 +179,11 @@ func (c *appDeploy) Run(context *cmd.Context, client *cmd.Client) error {
 		return err
 	}
 	writer.Close()
-	url, err = cmd.GetURL(fmt.Sprintf("/apps/%s/deploy?origin=%s", appName, "app-deploy"))
+	origin := "app-deploy"
+	if c.image != "" {
+		origin = "docker image"
+	}
+	url, err = cmd.GetURL(fmt.Sprintf("/apps/%s/deploy?origin=%s", appName, origin))
 	if err != nil {
 		return err
 	}
@@ -174,7 +191,25 @@ func (c *appDeploy) Run(context *cmd.Context, client *cmd.Client) error {
 	if err != nil {
 		return err
 	}
-	request.Header.Set("Content-Type", "multipart/form-data; boundary="+writer.Boundary())
+	if c.image != "" {
+		request.Header.Set("Content-Type", "application/x-www-form-urlencoded")
+		body.WriteString(fmt.Sprintf("image=%s", c.image))
+		if err != nil {
+			return err
+		}
+	} else {
+		writer := multipart.NewWriter(&body)
+		file, err := writer.CreateFormFile("file", "archive.tar.gz")
+		if err != nil {
+			return err
+		}
+		err = targz(context, file, context.Args...)
+		if err != nil {
+			return err
+		}
+		writer.Close()
+		request.Header.Set("Content-Type", "multipart/form-data; boundary="+writer.Boundary())
+	}
 	var buf bytes.Buffer
 	respBody := firstWriter{Writer: io.MultiWriter(context.Stdout, &buf)}
 	go func() {

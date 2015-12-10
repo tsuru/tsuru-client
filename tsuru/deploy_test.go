@@ -47,7 +47,12 @@ func (s *S) TestDeployRun(c *check.C) {
 			content, err := ioutil.ReadAll(file)
 			c.Assert(err, check.IsNil)
 			c.Assert(content, check.DeepEquals, buf.Bytes())
+<<<<<<< HEAD
 			return req.Method == "POST" && req.URL.Path == "/apps/secret/deploy" && req.URL.RawQuery == "origin=app-deploy"
+=======
+			c.Assert(req.Header.Get("Content-Type"), check.Matches, "multipart/form-data; boundary=.*")
+			return req.Method == "POST" && req.URL.Path == "/apps/secret/deploy"
+>>>>>>> deploy: deploy docker image
 		},
 	}
 	client := cmd.NewClient(&http.Client{Transport: &trans}, nil, manager)
@@ -61,6 +66,39 @@ func (s *S) TestDeployRun(c *check.C) {
 	guessCommand := cmd.GuessingCommand{G: &fake}
 	cmd := appDeploy{GuessingCommand: guessCommand}
 	err = cmd.Run(&context, client)
+	c.Assert(err, check.IsNil)
+	c.Assert(calledTimes, check.Equals, 2)
+}
+
+func (s *S) TestDeployImage(c *check.C) {
+	calledTimes := 0
+	trans := cmdtest.ConditionalTransport{
+		Transport: cmdtest.Transport{Message: "deploy worked\nOK\n", Status: http.StatusOK},
+		CondFunc: func(req *http.Request) bool {
+			calledTimes++
+			if req.Body != nil {
+				defer req.Body.Close()
+			}
+			if calledTimes == 1 {
+				return req.Method == "GET" && req.URL.Path == "/apps/secret"
+			}
+			image := req.FormValue("image")
+			c.Assert(image, check.Equals, "registr.com/image-to-deploy")
+			c.Assert(req.Header.Get("Content-Type"), check.Equals, "application/x-www-form-urlencoded")
+			return req.Method == "POST" && req.URL.Path == "/apps/secret/deploy"
+		},
+	}
+	client := cmd.NewClient(&http.Client{Transport: &trans}, nil, manager)
+	var stdout, stderr bytes.Buffer
+	context := cmd.Context{
+		Stdout: &stdout,
+		Stderr: &stderr,
+	}
+	fake := cmdtest.FakeGuesser{Name: "secret"}
+	guessCommand := cmd.GuessingCommand{G: &fake}
+	cmd := appDeploy{GuessingCommand: guessCommand}
+	cmd.Flags().Parse(true, []string{"-i", "registr.com/image-to-deploy"})
+	err := cmd.Run(&context, client)
 	c.Assert(err, check.IsNil)
 	c.Assert(calledTimes, check.Equals, 2)
 }
