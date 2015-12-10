@@ -168,17 +168,6 @@ func (c *appDeploy) Run(context *cmd.Context, client *cmd.Client) error {
 	if err != nil {
 		return err
 	}
-	var body bytes.Buffer
-	writer := multipart.NewWriter(&body)
-	file, err := writer.CreateFormFile("file", "archive.tar.gz")
-	if err != nil {
-		return err
-	}
-	err = targz(context, file, context.Args...)
-	if err != nil {
-		return err
-	}
-	writer.Close()
 	origin := "app-deploy"
 	if c.image != "" {
 		origin = "docker image"
@@ -187,6 +176,7 @@ func (c *appDeploy) Run(context *cmd.Context, client *cmd.Client) error {
 	if err != nil {
 		return err
 	}
+	var body bytes.Buffer
 	request, err = http.NewRequest("POST", url, &body)
 	if err != nil {
 		return err
