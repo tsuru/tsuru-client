@@ -394,3 +394,177 @@ func (c *roleRemove) Run(context *cmd.Context, client *cmd.Client) error {
 	fmt.Fprintf(context.Stdout, "Role successfully removed!\n")
 	return nil
 }
+
+type roleDefaultAdd struct {
+	fs    *gnuflag.FlagSet
+	roles map[string]*cmd.StringSliceFlag
+}
+
+func (c *roleDefaultAdd) Flags() *gnuflag.FlagSet {
+	if c.fs == nil {
+		c.fs = gnuflag.NewFlagSet("", gnuflag.ExitOnError)
+		c.roles = map[string]*cmd.StringSliceFlag{}
+		for eventName, event := range permission.RoleEventMap {
+			flag := &cmd.StringSliceFlag{}
+			c.roles[eventName] = flag
+			c.fs.Var(flag, eventName, event.Description)
+		}
+	}
+	return c.fs
+}
+
+func (c *roleDefaultAdd) Info() *cmd.Info {
+	info := &cmd.Info{
+		Name:  "role-default-add",
+		Usage: "role-default-add",
+		Desc:  `Add a new default role on a specific event.`,
+	}
+	var usage []string
+	for eventName := range permission.RoleEventMap {
+		usage = append(usage, fmt.Sprintf("[--%s <role name>]...", eventName))
+	}
+	info.Usage = fmt.Sprintf("%s %s", info.Usage, strings.Join(usage, " "))
+	return info
+}
+
+func (c *roleDefaultAdd) Run(context *cmd.Context, client *cmd.Client) error {
+	params := url.Values{}
+	for name, values := range c.roles {
+		for _, val := range []string(*values) {
+			params.Add(name, val)
+		}
+	}
+	encodedParams := params.Encode()
+	if encodedParams == "" {
+		return fmt.Errorf("You must choose which event to add default roles.")
+	}
+	addr, err := cmd.GetURL("/role/default")
+	if err != nil {
+		return err
+	}
+	request, err := http.NewRequest("POST", addr, strings.NewReader(encodedParams))
+	if err != nil {
+		return err
+	}
+	request.Header.Set("Content-Type", "application/x-www-form-urlencoded")
+	_, err = client.Do(request)
+	if err != nil {
+		return err
+	}
+	fmt.Fprintf(context.Stdout, "Roles successfully added as default!\n")
+	return nil
+}
+
+type roleDefaultRemove struct {
+	fs    *gnuflag.FlagSet
+	roles map[string]*cmd.StringSliceFlag
+}
+
+func (c *roleDefaultRemove) Flags() *gnuflag.FlagSet {
+	if c.fs == nil {
+		c.fs = gnuflag.NewFlagSet("", gnuflag.ExitOnError)
+		c.roles = map[string]*cmd.StringSliceFlag{}
+		for eventName, event := range permission.RoleEventMap {
+			flag := &cmd.StringSliceFlag{}
+			c.roles[eventName] = flag
+			c.fs.Var(flag, eventName, event.Description)
+		}
+	}
+	return c.fs
+}
+
+func (c *roleDefaultRemove) Info() *cmd.Info {
+	info := &cmd.Info{
+		Name:  "role-default-remove",
+		Usage: "role-default-remove",
+		Desc:  `Remove a default role from a specific event.`,
+	}
+	var usage []string
+	for eventName := range permission.RoleEventMap {
+		usage = append(usage, fmt.Sprintf("[--%s <role name>]...", eventName))
+	}
+	info.Usage = fmt.Sprintf("%s %s", info.Usage, strings.Join(usage, " "))
+	return info
+}
+
+func (c *roleDefaultRemove) Run(context *cmd.Context, client *cmd.Client) error {
+	params := url.Values{}
+	for name, values := range c.roles {
+		for _, val := range []string(*values) {
+			params.Add(name, val)
+		}
+	}
+	encodedParams := params.Encode()
+	if encodedParams == "" {
+		return fmt.Errorf("You must choose which event to remove default roles.")
+	}
+	addr, err := cmd.GetURL(fmt.Sprintf("/role/default?%s", encodedParams))
+	if err != nil {
+		return err
+	}
+	request, err := http.NewRequest("DELETE", addr, nil)
+	if err != nil {
+		return err
+	}
+	_, err = client.Do(request)
+	if err != nil {
+		return err
+	}
+	fmt.Fprintf(context.Stdout, "Roles successfully removed as default!\n")
+	return nil
+}
+
+type roleDefaultList struct{}
+
+func (c *roleDefaultList) Info() *cmd.Info {
+	return &cmd.Info{
+		Name:  "role-default-list",
+		Usage: "role-default-list",
+		Desc:  `List all roles set as default on any event.`,
+	}
+}
+
+func (c *roleDefaultList) Run(context *cmd.Context, client *cmd.Client) error {
+	addr, err := cmd.GetURL("/role/default")
+	if err != nil {
+		return err
+	}
+	request, err := http.NewRequest("GET", addr, nil)
+	if err != nil {
+		return err
+	}
+	response, err := client.Do(request)
+	if err != nil {
+		return err
+	}
+	defer response.Body.Close()
+	result, err := ioutil.ReadAll(response.Body)
+	if err != nil {
+		return err
+	}
+	var roles []permission.Role
+	err = json.Unmarshal(result, &roles)
+	if err != nil {
+		return err
+	}
+	rolesByEvent := map[string][]permission.Role{}
+	for _, r := range roles {
+		for _, evt := range r.Events {
+			rolesByEvent[evt] = append(rolesByEvent[evt], r)
+		}
+	}
+	tbl := cmd.NewTable()
+	tbl.LineSeparator = true
+	tbl.Headers = cmd.Row{"Event", "Description", "Roles"}
+	for _, event := range permission.RoleEventMap {
+		roles := rolesByEvent[event.String()]
+		roleNames := make([]string, len(roles))
+		for i := range roles {
+			roleNames[i] = roles[i].Name
+		}
+		tbl.AddRow(cmd.Row{event.String(), event.Description, strings.Join(roleNames, "\n")})
+	}
+	tbl.Sort()
+	fmt.Fprint(context.Stdout, tbl.String())
+	return nil
+}
