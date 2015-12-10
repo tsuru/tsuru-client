@@ -240,3 +240,85 @@ func (s *S) TestRoleRemoveRun(c *check.C) {
 	c.Assert(err, check.IsNil)
 	c.Assert(stdout.String(), check.Equals, "Role successfully removed!\n")
 }
+
+func (s *S) TestRoleDefaultAdd(c *check.C) {
+	var stdout, stderr bytes.Buffer
+	context := cmd.Context{
+		Args:   []string{},
+		Stdout: &stdout,
+		Stderr: &stderr,
+	}
+	trans := &cmdtest.ConditionalTransport{
+		Transport: cmdtest.Transport{Message: string(""), Status: http.StatusCreated},
+		CondFunc: func(req *http.Request) bool {
+			req.ParseForm()
+			sort.Strings(req.Form["user-create"])
+			return req.URL.Path == "/role/default" && req.Method == "POST" &&
+				reflect.DeepEqual(req.Form["user-create"], []string{"r1", "r2"}) &&
+				reflect.DeepEqual(req.Form["team-create"], []string{"r3"})
+		},
+	}
+	client := cmd.NewClient(&http.Client{Transport: trans}, nil, manager)
+	command := roleDefaultAdd{}
+	command.Flags().Parse(true, []string{"--user-create", "r1", "--user-create", "r2", "--team-create", "r3"})
+	err := command.Run(&context, client)
+	c.Assert(err, check.IsNil)
+	c.Assert(stdout.String(), check.Equals, "Roles successfully added as default!\n")
+}
+
+func (s *S) TestRoleDefaultRemove(c *check.C) {
+	var stdout, stderr bytes.Buffer
+	context := cmd.Context{
+		Args:   []string{},
+		Stdout: &stdout,
+		Stderr: &stderr,
+	}
+	trans := &cmdtest.ConditionalTransport{
+		Transport: cmdtest.Transport{Message: string(""), Status: http.StatusCreated},
+		CondFunc: func(req *http.Request) bool {
+			req.ParseForm()
+			sort.Strings(req.Form["user-create"])
+			return req.URL.Path == "/role/default" && req.Method == "DELETE" &&
+				reflect.DeepEqual(req.Form["user-create"], []string{"r1", "r2"}) &&
+				reflect.DeepEqual(req.Form["team-create"], []string{"r3"})
+		},
+	}
+	client := cmd.NewClient(&http.Client{Transport: trans}, nil, manager)
+	command := roleDefaultRemove{}
+	command.Flags().Parse(true, []string{"--user-create", "r1", "--user-create", "r2", "--team-create", "r3"})
+	err := command.Run(&context, client)
+	c.Assert(err, check.IsNil)
+	c.Assert(stdout.String(), check.Equals, "Roles successfully removed as default!\n")
+}
+
+func (s *S) TestRoleDefaultList(c *check.C) {
+	var stdout, stderr bytes.Buffer
+	context := cmd.Context{
+		Args:   []string{},
+		Stdout: &stdout,
+		Stderr: &stderr,
+	}
+	result := `[
+	    {"name": "role1",  "context": "a", "events": ["team-create"]},
+	    {"name": "role2",  "context": "b", "events": ["user-create"]}
+	]`
+	expected := `+-------------+-----------------------------------------------+-------+
+| Event       | Description                                   | Roles |
++-------------+-----------------------------------------------+-------+
+| team-create | role added to user when a new team is created | role1 |
++-------------+-----------------------------------------------+-------+
+| user-create | role added to user when user is created       | role2 |
++-------------+-----------------------------------------------+-------+
+`
+	trans := &cmdtest.ConditionalTransport{
+		Transport: cmdtest.Transport{Message: result, Status: http.StatusCreated},
+		CondFunc: func(req *http.Request) bool {
+			return req.URL.Path == "/role/default" && req.Method == "GET"
+		},
+	}
+	client := cmd.NewClient(&http.Client{Transport: trans}, nil, manager)
+	command := roleDefaultList{}
+	err := command.Run(&context, client)
+	c.Assert(err, check.IsNil)
+	c.Assert(stdout.String(), check.Equals, expected)
+}

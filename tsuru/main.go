@@ -87,6 +87,9 @@ func buildManager(name string) *cmd.Manager {
 	m.Register(&rolePermissionRemove{})
 	m.Register(&roleAssign{})
 	m.Register(&roleDissociate{})
+	m.Register(&roleDefaultAdd{})
+	m.Register(&roleDefaultList{})
+	m.Register(&roleDefaultRemove{})
 	return m
 }
 
