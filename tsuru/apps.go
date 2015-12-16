@@ -319,6 +319,7 @@ type app struct {
 type serviceData struct {
 	Service   string
 	Instances []string
+	Plans     []string
 }
 
 type container struct {
@@ -421,12 +422,26 @@ Quota: {{.Quota.InUse}}/{{if .Quota.Limit}}{{.Quota.Limit}} units{{else}}unlimit
 		}
 	}
 	servicesTable := cmd.NewTable()
-	servicesTable.Headers = []string{"Service", "Instance"}
+	servicesTable.Headers = []string{"Service", "Instance/Plan"}
+	instancePlan := make([]string, 0)
+	var instancePlanString string
 	for _, service := range a.services {
 		if len(service.Instances) == 0 {
 			continue
 		}
-		servicesTable.AddRow([]string{service.Service, strings.Join(service.Instances, ", ")})
+		for i, instance := range service.Instances {
+			if service.Plans[i] != "" {
+				instancePlan = append(instancePlan, "(", instance, ", ")
+				instancePlan = append(instancePlan, service.Plans[i], ")")
+			} else {
+				instancePlan = append(instancePlan, instance)
+			}
+			if i < (len(service.Instances) - 1) {
+				instancePlan = append(instancePlan, "\n")
+			}
+		}
+		instancePlanString = strings.Join(instancePlan, "")
+		servicesTable.AddRow([]string{service.Service, instancePlanString})
 	}
 	if servicesTable.Rows() > 0 {
 		buf.WriteString("\n")
