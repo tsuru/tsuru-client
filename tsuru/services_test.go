@@ -45,6 +45,22 @@ func (t *infoTransport) RoundTrip(req *http.Request) (resp *http.Response, err e
 		}
 	}
 
+	if req.URL.Path == "/services/mongo" {
+		message = `[{"Name":"mymongo", "Apps":["myapp"], "Id":0, "Info":{"key": "value", "key2": "value2"}, "PlanName":"small", "ServiceName":"mongoservice", "Teams":["mongoteam"]}]`
+	}
+	if req.URL.Path == "/services/mongo/plans" {
+		if t.includePlans {
+			message = `[{"Name": "small", "Description": "another plan"}]`
+		} else {
+			message = `[]`
+		}
+	}
+	if req.URL.Path == "/services/mongo/doc" {
+		message = `This is a test doc for a test service.
+Service test is foo bar.
+`
+	}
+
 	resp = &http.Response{
 		Body:       ioutil.NopCloser(bytes.NewBufferString(message)),
 		StatusCode: http.StatusOK,
@@ -443,33 +459,36 @@ Instances
 	c.Assert(obtained, check.Equals, expected)
 }
 
-func (s *S) TestServiceDocInfo(c *check.C) {
-	i := (&serviceDoc{}).Info()
-	c.Assert(i, check.NotNil)
-}
-
-func (s *S) TestServiceDocRun(c *check.C) {
+func (s *S) TestServiceInfoWithDoc(c *check.C) {
 	var stdout, stderr bytes.Buffer
-	result := `This is a test doc for a test service.
+	expected := `Info for "mongo"
+
+Instances
++-----------+-------+-------+-------+--------+
+| Instances | Plan  | Apps  | key   | key2   |
++-----------+-------+-------+-------+--------+
+| mymongo   | small | myapp | value | value2 |
++-----------+-------+-------+-------+--------+
+
+Plans
++-------+--------------+
+| Name  | Description  |
++-------+--------------+
+| small | another plan |
++-------+--------------+
+
+Documentation:
+This is a test doc for a test service.
 Service test is foo bar.
 `
-	expected := result
-	ctx := cmd.Context{
-		Args:   []string{"foo"},
+	args := []string{"mongo"}
+	context := cmd.Context{
+		Args:   args,
 		Stdout: &stdout,
 		Stderr: &stderr,
 	}
-	transport := cmdtest.ConditionalTransport{
-		Transport: cmdtest.Transport{
-			Message: result,
-			Status:  http.StatusOK,
-		},
-		CondFunc: func(r *http.Request) bool {
-			return r.Method == "GET" && r.URL.Path == "/services/foo/doc"
-		},
-	}
-	client := cmd.NewClient(&http.Client{Transport: &transport}, nil, manager)
-	err := (&serviceDoc{}).Run(&ctx, client)
+	client := cmd.NewClient(&http.Client{Transport: &infoTransport{includePlans: true}}, nil, manager)
+	err := (&serviceInfo{}).Run(&context, client)
 	c.Assert(err, check.IsNil)
 	obtained := stdout.String()
 	c.Assert(obtained, check.Equals, expected)

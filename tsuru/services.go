@@ -433,27 +433,7 @@ func (c serviceInfo) BuildPlansTable(serviceName string, ctx *cmd.Context, clien
 	return nil
 }
 
-func (c serviceInfo) Run(ctx *cmd.Context, client *cmd.Client) error {
-	serviceName := ctx.Args[0]
-	err := c.BuildInstancesTable(serviceName, ctx, client)
-	if err != nil {
-		return err
-	}
-	return c.BuildPlansTable(serviceName, ctx, client)
-}
-
-type serviceDoc struct{}
-
-func (serviceDoc) Info() *cmd.Info {
-	return &cmd.Info{
-		Name:    "service-doc",
-		Usage:   "service-doc <service-name>",
-		Desc:    `Shows the documentation of a service.`,
-		MinArgs: 1,
-	}
-}
-
-func (serviceDoc) Run(ctx *cmd.Context, client *cmd.Client) error {
+func (c serviceInfo) WriteDoc(ctx *cmd.Context, client *cmd.Client) error {
 	sName := ctx.Args[0]
 	url := fmt.Sprintf("/services/%s/doc", sName)
 	url, err := cmd.GetURL(url)
@@ -473,8 +453,24 @@ func (serviceDoc) Run(ctx *cmd.Context, client *cmd.Client) error {
 	if err != nil {
 		return err
 	}
-	ctx.Stdout.Write(result)
+	if len(result) != 0 {
+		fmt.Fprint(ctx.Stdout, "\nDocumentation:\n")
+		ctx.Stdout.Write(result)
+	}
 	return nil
+}
+
+func (c serviceInfo) Run(ctx *cmd.Context, client *cmd.Client) error {
+	serviceName := ctx.Args[0]
+	err := c.BuildInstancesTable(serviceName, ctx, client)
+	if err != nil {
+		return err
+	}
+	err = c.BuildPlansTable(serviceName, ctx, client)
+	if err != nil {
+		return err
+	}
+	return c.WriteDoc(ctx, client)
 }
 
 type serviceRemove struct {
