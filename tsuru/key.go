@@ -14,10 +14,10 @@ import (
 	"os"
 	"strings"
 
+	"github.com/tsuru/gnuflag"
 	"github.com/tsuru/tsuru/cmd"
 	"github.com/tsuru/tsuru/errors"
 	"github.com/tsuru/tsuru/fs"
-	"launchpad.net/gnuflag"
 )
 
 const keyTruncate = 60

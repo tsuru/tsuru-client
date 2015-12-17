@@ -11,9 +11,9 @@ import (
 	"net/http"
 	"time"
 
+	"github.com/tsuru/gnuflag"
 	"github.com/tsuru/tsuru/cmd"
 	tsuruIo "github.com/tsuru/tsuru/io"
-	"launchpad.net/gnuflag"
 )
 
 type appLog struct {

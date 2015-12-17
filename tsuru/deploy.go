@@ -21,10 +21,10 @@ import (
 	"sync"
 	"time"
 
+	"github.com/tsuru/gnuflag"
 	tsuruapp "github.com/tsuru/tsuru/app"
 	"github.com/tsuru/tsuru/cmd"
 	tsuruIo "github.com/tsuru/tsuru/io"
-	"launchpad.net/gnuflag"
 )
 
 type deployList []tsuruapp.DeployData

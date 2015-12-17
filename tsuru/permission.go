@@ -13,9 +13,9 @@ import (
 	"net/url"
 	"strings"
 
+	"github.com/tsuru/gnuflag"
 	"github.com/tsuru/tsuru/cmd"
 	"github.com/tsuru/tsuru/permission"
-	"launchpad.net/gnuflag"
 )
 
 type permissionList struct {

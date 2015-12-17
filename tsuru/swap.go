@@ -9,9 +9,9 @@ import (
 	"net/http"
 	"strings"
 
+	"github.com/tsuru/gnuflag"
 	"github.com/tsuru/tsuru/cmd"
 	"github.com/tsuru/tsuru/errors"
-	"launchpad.net/gnuflag"
 )
 
 type appSwap struct {

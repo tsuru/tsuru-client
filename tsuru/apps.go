@@ -18,9 +18,9 @@ import (
 	"text/template"
 	"time"
 
+	"github.com/tsuru/gnuflag"
 	tsuruapp "github.com/tsuru/tsuru/app"
 	"github.com/tsuru/tsuru/cmd"
-	"launchpad.net/gnuflag"
 )
 
 type appCreate struct {

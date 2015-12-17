@@ -16,9 +16,9 @@ import (
 	"sort"
 	"strings"
 
+	"github.com/tsuru/gnuflag"
 	"github.com/tsuru/tsuru/cmd"
 	tsuruIo "github.com/tsuru/tsuru/io"
-	"launchpad.net/gnuflag"
 )
 
 const envSetValidationMessage = `You must specify environment variables in the form "NAME=value".

@@ -15,10 +15,10 @@ import (
 	"sort"
 	"strings"
 
+	"github.com/tsuru/gnuflag"
 	"github.com/tsuru/tsuru/cmd"
 	tsuruIo "github.com/tsuru/tsuru/io"
 	"github.com/tsuru/tsuru/service"
-	"launchpad.net/gnuflag"
 )
 
 type serviceList struct{}
