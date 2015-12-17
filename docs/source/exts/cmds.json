@@ -71,6 +71,10 @@
     "usage": "tsuru unit-add <# of units> [-a/--app appname] [-p/--process processname]", 
     "desc": "Adds new units to a process of an application. You need to have access to the\napp to be able to add new units to it.\n\nFlags:\n  \n  -a, --app (= \"\")\n      The name of the app.\n  -p, --process (= \"\")\n      Process name\n  \nMinimum # of arguments: 1\n"
   }, 
+  "role-default-list": {
+    "usage": "tsuru role-default-list", 
+    "desc": "List all roles set as default on any event.\n\n"
+  }, 
   "platform-list": {
     "usage": "tsuru platform-list", 
     "desc": "Lists the available platforms. All platforms displayed in this list may be used to create new apps (see app-create).\n\n"
@@ -191,6 +195,10 @@
     "usage": "tsuru service-remove <service-name> <service-instance-name> [--assume-yes] [--unbind]", 
     "desc": "Destroys a service instance. It can't remove a service instance that is bound\nto an app, so before remove a service instance, make sure there is no apps\nbound to it (see [[tsuru service-info]] command).\n\nFlags:\n  \n  -u, --unbind  (= false)\n      Don't ask for confirmation, just remove all applications bound.\n  -y, --assume-yes  (= false)\n      Don't ask for confirmation, just remove the service.\n  \nMinimum # of arguments: 2\n"
   }, 
+  "role-default-remove": {
+    "usage": "tsuru role-default-remove [--user-create <role name>]... [--team-create <role name>]...", 
+    "desc": "Remove a default role from a specific event.\n\nFlags:\n  \n  --team-create  (= &cmd.StringSliceFlag{})\n      role added to user when a new team is created\n  --user-create  (= &cmd.StringSliceFlag{})\n      role added to user when user is created\n  \n"
+  }, 
   "version": {
     "usage": "tsuru version", 
     "desc": "display the current version\n\n"
@@ -265,6 +273,10 @@
   "team-create": {
     "usage": "tsuru team-create <teamname>", 
     "desc": "Create a team for the user. tsuru requires a user to be a member of at least\none team in order to create an app or a service instance.\n\nWhen you create a team, you're automatically member of this team.\n\nMinimum # of arguments: 1\n"
+  }, 
+  "role-default-add": {
+    "usage": "tsuru role-default-add [--user-create <role name>]... [--team-create <role name>]...", 
+    "desc": "Add a new default role on a specific event.\n\nFlags:\n  \n  --team-create  (= &cmd.StringSliceFlag{})\n      role added to user when a new team is created\n  --user-create  (= &cmd.StringSliceFlag{})\n      role added to user when user is created\n  \n"
   }, 
   "app-shell": {
     "usage": "tsuru app-shell [unit-id] -a/--app <appname>", 
