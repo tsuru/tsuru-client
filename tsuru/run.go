@@ -10,9 +10,9 @@ import (
 	"net/http"
 	"strings"
 
+	"github.com/tsuru/gnuflag"
 	"github.com/tsuru/tsuru/cmd"
 	tsuruIo "github.com/tsuru/tsuru/io"
-	"launchpad.net/gnuflag"
 )
 
 type appRun struct {

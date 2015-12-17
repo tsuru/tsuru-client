@@ -14,11 +14,11 @@ import (
 	"strings"
 	"time"
 
+	"github.com/tsuru/gnuflag"
 	"github.com/tsuru/tsuru/cmd"
 	"github.com/tsuru/tsuru/cmd/cmdtest"
 	"github.com/tsuru/tsuru/io"
 	"gopkg.in/check.v1"
-	"launchpad.net/gnuflag"
 )
 
 var appflag = &gnuflag.Flag{
