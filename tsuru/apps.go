@@ -24,16 +24,17 @@ import (
 )
 
 type appCreate struct {
-	teamOwner string
-	plan      string
-	pool      string
-	fs        *gnuflag.FlagSet
+	teamOwner   string
+	plan        string
+	pool        string
+	description string
+	fs          *gnuflag.FlagSet
 }
 
 func (c *appCreate) Info() *cmd.Info {
 	return &cmd.Info{
 		Name:  "app-create",
-		Usage: "app-create <appname> <platform> [--plan/-p plan_name] [--team/-t (team owner)] [-o/--pool pool_name]",
+		Usage: "app-create <appname> <platform> [--plan/-p plan_name] [--team/-t (team owner)] [--pool/-o pool_name] [--description/-d description]",
 		Desc: `Creates a new app using the given name and platform. For tsuru,
 a platform is provisioner dependent. To check the available platforms, use the
 command [[tsuru platform-list]] and to add a platform use the command [[tsuru-admin platform-add]].
@@ -59,7 +60,11 @@ app, this is only needed if the current user belongs to more than one team, in
 which case this parameter will be mandatory.
 
 The [[--pool]] parameter defines which pool your app will be deployed.
-This is only needed if you have more than one pool associated with your teams.`,
+This is only needed if you have more than one pool associated with your teams.
+
+The [[--description]] parameter sets a description for your app.
+It is an optional parameter, and if its not set the app only will not have a
+description associated.`,
 		MinArgs: 2,
 	}
 }
@@ -76,6 +81,9 @@ func (c *appCreate) Flags() *gnuflag.FlagSet {
 		poolMessage := "Pool to deploy your app"
 		c.fs.StringVar(&c.pool, "pool", "", poolMessage)
 		c.fs.StringVar(&c.pool, "o", "", poolMessage)
+		descriptionMessage := "App description"
+		c.fs.StringVar(&c.description, "description", "", descriptionMessage)
+		c.fs.StringVar(&c.description, "d", "", descriptionMessage)
 	}
 	return c.fs
 }
@@ -84,11 +92,12 @@ func (c *appCreate) Run(context *cmd.Context, client *cmd.Client) error {
 	appName := context.Args[0]
 	platform := context.Args[1]
 	params := map[string]interface{}{
-		"name":      appName,
-		"platform":  platform,
-		"plan":      map[string]interface{}{"name": c.plan},
-		"teamOwner": c.teamOwner,
-		"pool":      c.pool,
+		"name":        appName,
+		"platform":    platform,
+		"plan":        map[string]interface{}{"name": c.plan},
+		"teamOwner":   c.teamOwner,
+		"pool":        c.pool,
+		"description": c.description,
 	}
 	b, err := json.Marshal(params)
 	if err != nil {
@@ -298,22 +307,23 @@ func (l *lock) String() string {
 }
 
 type app struct {
-	Ip         string
-	CName      []string
-	Name       string
-	Platform   string
-	Repository string
-	Teams      []string
-	Units      []unit
-	Owner      string
-	TeamOwner  string
-	Deploys    uint
-	Pool       string
-	Lock       lock
-	containers []container
-	services   []serviceData
-	Quota      quota
-	Plan       tsuruapp.Plan
+	Ip          string
+	CName       []string
+	Name        string
+	Platform    string
+	Repository  string
+	Teams       []string
+	Units       []unit
+	Owner       string
+	TeamOwner   string
+	Deploys     uint
+	Pool        string
+	Description string
+	Lock        lock
+	containers  []container
+	services    []serviceData
+	Quota       quota
+	Plan        tsuruapp.Plan
 }
 
 type serviceData struct {
@@ -354,6 +364,7 @@ func (a *app) GetTeams() string {
 
 func (a *app) String() string {
 	format := `Application: {{.Name}}
+Description:{{if .Description}} {{.Description}}{{end}}
 Repository: {{.Repository}}
 Platform: {{.Platform}}
 Teams: {{.GetTeams}}

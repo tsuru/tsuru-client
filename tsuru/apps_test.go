@@ -57,11 +57,12 @@ Your repository for "ble" project is "git@tsuru.plataformas.glb.com:ble.git"` + 
 			body, err := ioutil.ReadAll(req.Body)
 			c.Assert(err, check.IsNil)
 			expected := map[string]interface{}{
-				"name":      "ble",
-				"platform":  "django",
-				"teamOwner": "",
-				"plan":      map[string]interface{}{"name": ""},
-				"pool":      "",
+				"name":        "ble",
+				"platform":    "django",
+				"teamOwner":   "",
+				"plan":        map[string]interface{}{"name": ""},
+				"pool":        "",
+				"description": "",
 			}
 			result := map[string]interface{}{}
 			err = json.Unmarshal(body, &result)
@@ -94,11 +95,12 @@ Your repository for "ble" project is "git@tsuru.plataformas.glb.com:ble.git"` + 
 			body, err := ioutil.ReadAll(req.Body)
 			c.Assert(err, check.IsNil)
 			expected := map[string]interface{}{
-				"name":      "ble",
-				"platform":  "django",
-				"teamOwner": "team",
-				"plan":      map[string]interface{}{"name": ""},
-				"pool":      "",
+				"name":        "ble",
+				"platform":    "django",
+				"teamOwner":   "team",
+				"plan":        map[string]interface{}{"name": ""},
+				"pool":        "",
+				"description": "",
 			}
 			result := map[string]interface{}{}
 			err = json.Unmarshal(body, &result)
@@ -132,11 +134,12 @@ Your repository for "ble" project is "git@tsuru.plataformas.glb.com:ble.git"` + 
 			body, err := ioutil.ReadAll(req.Body)
 			c.Assert(err, check.IsNil)
 			expected := map[string]interface{}{
-				"name":      "ble",
-				"platform":  "django",
-				"teamOwner": "",
-				"plan":      map[string]interface{}{"name": "myplan"},
-				"pool":      "",
+				"name":        "ble",
+				"platform":    "django",
+				"teamOwner":   "",
+				"plan":        map[string]interface{}{"name": "myplan"},
+				"pool":        "",
+				"description": "",
 			}
 			result := map[string]interface{}{}
 			err = json.Unmarshal(body, &result)
@@ -170,11 +173,12 @@ Your repository for "ble" project is "git@tsuru.plataformas.glb.com:ble.git"` + 
 			body, err := ioutil.ReadAll(req.Body)
 			c.Assert(err, check.IsNil)
 			expected := map[string]interface{}{
-				"name":      "ble",
-				"platform":  "django",
-				"teamOwner": "",
-				"plan":      map[string]interface{}{"name": ""},
-				"pool":      "mypool",
+				"name":        "ble",
+				"platform":    "django",
+				"teamOwner":   "",
+				"plan":        map[string]interface{}{"name": ""},
+				"pool":        "mypool",
+				"description": "",
 			}
 			result := map[string]interface{}{}
 			err = json.Unmarshal(body, &result)
@@ -207,11 +211,12 @@ Use app-info to check the status of the app and its units.` + "\n"
 			body, err := ioutil.ReadAll(req.Body)
 			c.Assert(err, check.IsNil)
 			expected := map[string]interface{}{
-				"name":      "ble",
-				"platform":  "django",
-				"teamOwner": "",
-				"plan":      map[string]interface{}{"name": ""},
-				"pool":      "",
+				"name":        "ble",
+				"platform":    "django",
+				"teamOwner":   "",
+				"plan":        map[string]interface{}{"name": ""},
+				"pool":        "",
+				"description": "",
 			}
 			result := map[string]interface{}{}
 			err = json.Unmarshal(body, &result)
@@ -387,6 +392,44 @@ func (s *S) TestAppInfo(c *check.C) {
 	var stdout, stderr bytes.Buffer
 	result := `{"name":"app1","teamowner":"myteam","cname":[""],"ip":"myapp.tsuru.io","platform":"php","repository":"git@git.com:php.git","state":"dead", "units":[{"Ip":"10.10.10.10","ID":"app1/0","Status":"started"}, {"Ip":"9.9.9.9","ID":"app1/1","Status":"started"}, {"Ip":"","ID":"app1/2","Status":"pending"}],"teams":["tsuruteam","crane"], "owner": "myapp_owner", "deploys": 7}`
 	expected := `Application: app1
+Description:
+Repository: git@git.com:php.git
+Platform: php
+Teams: tsuruteam, crane
+Address: myapp.tsuru.io
+Owner: myapp_owner
+Team owner: myteam
+Deploys: 7
+Pool:
+Quota: 0/unlimited
+
+Units: 3
++--------+---------+
+| Unit   | State   |
++--------+---------+
+| app1/0 | started |
+| app1/1 | started |
+| app1/2 | pending |
++--------+---------+
+
+`
+	context := cmd.Context{
+		Stdout: &stdout,
+		Stderr: &stderr,
+	}
+	client := cmd.NewClient(&http.Client{Transport: &cmdtest.Transport{Message: result, Status: http.StatusOK}}, nil, manager)
+	command := appInfo{}
+	command.Flags().Parse(true, []string{"-a/--app", "app1"})
+	err := command.Run(&context, client)
+	c.Assert(err, check.IsNil)
+	c.Assert(stdout.String(), check.Equals, expected)
+}
+
+func (s *S) TestAppInfoWithDescription(c *check.C) {
+	var stdout, stderr bytes.Buffer
+	result := `{"name":"app1","teamowner":"myteam","cname":[""],"ip":"myapp.tsuru.io","platform":"php","repository":"git@git.com:php.git","state":"dead", "units":[{"Ip":"10.10.10.10","ID":"app1/0","Status":"started"}, {"Ip":"9.9.9.9","ID":"app1/1","Status":"started"}, {"Ip":"","ID":"app1/2","Status":"pending"}],"teams":["tsuruteam","crane"], "owner": "myapp_owner", "deploys": 7, "description": "My app"}`
+	expected := `Application: app1
+Description: My app
 Repository: git@git.com:php.git
 Platform: php
 Teams: tsuruteam, crane
@@ -428,6 +471,7 @@ func (fn transportFunc) RoundTrip(req *http.Request) (resp *http.Response, err e
 func (s *S) TestAppInfoWithQuota(c *check.C) {
 	var stdout, stderr bytes.Buffer
 	expected := `Application: app1
+Description:
 Repository: git@git.com:php.git
 Platform: php
 Teams: tsuruteam, crane
@@ -476,6 +520,7 @@ func (s *S) TestAppInfoLock(c *check.C) {
 	var stdout, stderr bytes.Buffer
 	result := `{"name":"app1","teamowner":"myteam","cname":[""],"ip":"myapp.tsuru.io","platform":"php","repository":"git@git.com:php.git","state":"dead", "units":[{"Ip":"10.10.10.10","ID":"app1/0","Status":"started"}, {"Ip":"9.9.9.9","ID":"app1/1","Status":"started"}, {"Ip":"","ID":"app1/2","Status":"pending"}],"teams":["tsuruteam","crane"], "owner": "myapp_owner", "deploys": 7, "lock": {"locked": true, "owner": "admin@example.com", "reason": "DELETE /apps/rbsample/units", "acquiredate": "2012-04-01T10:32:00Z"}}`
 	expected := `Application: app1
+Description:
 Repository: git@git.com:php.git
 Platform: php
 Teams: tsuruteam, crane
@@ -553,6 +598,7 @@ func (s *S) TestAppInfoManyProcesses(c *check.C) {
   "deploys": 7
 }`
 	expected := `Application: app1
+Description:
 Repository: git@git.com:php.git
 Platform: php
 Teams: tsuruteam, crane
@@ -595,6 +641,7 @@ func (s *S) TestAppInfoNoUnits(c *check.C) {
 	var stdout, stderr bytes.Buffer
 	result := `{"name":"app1","ip":"app1.tsuru.io","teamowner":"myteam","platform":"php","repository":"git@git.com:php.git","state":"dead","units":[],"teams":["tsuruteam","crane"], "owner": "myapp_owner", "deploys": 7}`
 	expected := `Application: app1
+Description:
 Repository: git@git.com:php.git
 Platform: php
 Teams: tsuruteam, crane
@@ -622,6 +669,7 @@ func (s *S) TestAppInfoEmptyUnit(c *check.C) {
 	var stdout, stderr bytes.Buffer
 	result := `{"name":"app1","teamowner":"x","cname":[""],"ip":"myapp.tsuru.io","platform":"php","repository":"git@git.com:php.git","state":"dead", "units":[{"Name":"","Status":""}],"teams":["tsuruteam","crane"], "owner": "myapp_owner", "deploys": 7}`
 	expected := `Application: app1
+Description:
 Repository: git@git.com:php.git
 Platform: php
 Teams: tsuruteam, crane
@@ -649,6 +697,7 @@ func (s *S) TestAppInfoWithoutArgs(c *check.C) {
 	var stdout, stderr bytes.Buffer
 	result := `{"name":"secret","teamowner":"myteam","ip":"secret.tsuru.io","platform":"ruby","repository":"git@git.com:php.git","state":"dead","units":[{"Ip":"10.10.10.10","ID":"secret/0","Status":"started"}, {"Ip":"9.9.9.9","ID":"secret/1","Status":"pending"}],"Teams":["tsuruteam","crane"], "owner": "myapp_owner", "deploys": 7}`
 	expected := `Application: secret
+Description:
 Repository: git@git.com:php.git
 Platform: ruby
 Teams: tsuruteam, crane
@@ -692,6 +741,7 @@ func (s *S) TestAppInfoCName(c *check.C) {
 	var stdout, stderr bytes.Buffer
 	result := `{"name":"app1","teamowner":"myteam","ip":"myapp.tsuru.io","cname":["yourapp.tsuru.io"],"platform":"php","repository":"git@git.com:php.git","state":"dead","units":[{"Ip":"10.10.10.10","ID":"app1/0","Status":"started"}, {"Ip":"9.9.9.9","ID":"app1/1","Status":"started"}, {"Ip":"","ID":"app1/2","Status":"pending"}],"Teams":["tsuruteam","crane"], "owner": "myapp_owner", "deploys": 7}`
 	expected := `Application: app1
+Description:
 Repository: git@git.com:php.git
 Platform: php
 Teams: tsuruteam, crane
@@ -727,6 +777,7 @@ Units: 3
 func (s *S) TestAppInfoWithServices(c *check.C) {
 	var stdout, stderr bytes.Buffer
 	expected := `Application: app1
+Description:
 Repository: git@git.com:php.git
 Platform: php
 Teams: tsuruteam, crane
@@ -783,6 +834,7 @@ func (s *S) TestAppInfoWithPlan(c *check.C) {
 	var stdout, stderr bytes.Buffer
 	result := `{"name":"app1","teamowner":"myteam","cname":[""],"ip":"myapp.tsuru.io","platform":"php","repository":"git@git.com:php.git","state":"dead", "units":[{"Ip":"10.10.10.10","ID":"app1/0","Status":"started"}, {"Ip":"9.9.9.9","ID":"app1/1","Status":"started"}, {"Ip":"","ID":"app1/2","Status":"pending"}],"teams":["tsuruteam","crane"], "owner": "myapp_owner", "deploys": 7, "plan":{"name": "test",  "memory": 536870912, "swap": 268435456, "cpushare": 100, "router": "imemine", "default": false}}`
 	expected := `Application: app1
+Description:
 Repository: git@git.com:php.git
 Platform: php
 Teams: tsuruteam, crane
@@ -825,6 +877,7 @@ App Plan:
 func (s *S) TestAppInfoWithServicesAndPlan(c *check.C) {
 	var stdout, stderr bytes.Buffer
 	expected := `Application: app1
+Description:
 Repository: git@git.com:php.git
 Platform: php
 Teams: tsuruteam, crane
@@ -887,6 +940,7 @@ App Plan:
 func (s *S) TestAppInfoWithServicesAndPlanAssociated(c *check.C) {
 	var stdout, stderr bytes.Buffer
 	expected := `Application: app1
+Description:
 Repository: git@git.com:php.git
 Platform: php
 Teams: tsuruteam, crane
