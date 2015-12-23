@@ -442,7 +442,7 @@ Quota: {{.Quota.InUse}}/{{if .Quota.Limit}}{{.Quota.Limit}} units{{else}}unlimit
 		}
 		for i, instance := range service.Instances {
 			value := instance
-			if service.Plans[i] != "" {
+			if i < len(service.Plans) && service.Plans[i] != "" {
 				value = fmt.Sprintf("%s (%s)", instance, service.Plans[i])
 			}
 			instancePlan = append(instancePlan, value)
