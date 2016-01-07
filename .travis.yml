@@ -1,17 +1,15 @@
 language: go
 sudo: false
 go:
-  - 1.4.2
   - 1.5.2
   - 1.6beta1
   - tip
 env:
-  - GOARCH=amd64
-  - GOARCH=386
-install:
-  - export PATH="$HOME/gopath/bin:$PATH"
-  - go get github.com/tools/godep
-  - godep restore ./...
+  global:
+    - GO15VENDOREXPERIMENT=1
+  matrix:
+    - GOARCH=amd64
+    - GOARCH=386
 script:
   - go test -x ./tsuru
   - "[ -n \"`gofmt -s -l ./tsuru`\" ] && echo \"gofmt -s -w required for:\" && echo && gofmt -s -l ./tsuru && exit 1 || exit 0"
