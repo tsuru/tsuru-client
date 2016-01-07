@@ -1,0 +1,292 @@
+{
+	"comment": "",
+	"ignore": "test",
+	"package": [
+		{
+			"origin": "github.com/tsuru/tsuru/vendor/github.com/RobotsAndPencils/go-saml/util",
+			"path": "github.com/RobotsAndPencils/go-saml/util",
+			"revision": "010d540999c2b246d3777cc0c1550f6575787a0f",
+			"revisionTime": "2016-01-07T11:26:52-02:00"
+		},
+		{
+			"origin": "github.com/tsuru/tsuru/vendor/github.com/diego-araujo/go-saml",
+			"path": "github.com/diego-araujo/go-saml",
+			"revision": "010d540999c2b246d3777cc0c1550f6575787a0f",
+			"revisionTime": "2016-01-07T11:26:52-02:00"
+		},
+		{
+			"origin": "github.com/tsuru/tsuru/vendor/github.com/diego-araujo/go-saml/util",
+			"path": "github.com/diego-araujo/go-saml/util",
+			"revision": "010d540999c2b246d3777cc0c1550f6575787a0f",
+			"revisionTime": "2016-01-07T11:26:52-02:00"
+		},
+		{
+			"origin": "github.com/tsuru/tsuru/vendor/github.com/garyburd/redigo/redis",
+			"path": "github.com/garyburd/redigo/redis",
+			"revision": "010d540999c2b246d3777cc0c1550f6575787a0f",
+			"revisionTime": "2016-01-07T11:26:52-02:00"
+		},
+		{
+			"origin": "github.com/tsuru/tsuru/vendor/github.com/howeyc/fsnotify",
+			"path": "github.com/howeyc/fsnotify",
+			"revision": "010d540999c2b246d3777cc0c1550f6575787a0f",
+			"revisionTime": "2016-01-07T11:26:52-02:00"
+		},
+		{
+			"origin": "github.com/tsuru/tsuru/vendor/github.com/kardianos/osext",
+			"path": "github.com/kardianos/osext",
+			"revision": "010d540999c2b246d3777cc0c1550f6575787a0f",
+			"revisionTime": "2016-01-07T11:26:52-02:00"
+		},
+		{
+			"origin": "github.com/tsuru/tsuru/vendor/github.com/nu7hatch/gouuid",
+			"path": "github.com/nu7hatch/gouuid",
+			"revision": "010d540999c2b246d3777cc0c1550f6575787a0f",
+			"revisionTime": "2016-01-07T11:26:52-02:00"
+		},
+		{
+			"origin": "github.com/tsuru/tsuru/vendor/github.com/sajari/fuzzy",
+			"path": "github.com/sajari/fuzzy",
+			"revision": "010d540999c2b246d3777cc0c1550f6575787a0f",
+			"revisionTime": "2016-01-07T11:26:52-02:00"
+		},
+		{
+			"origin": "github.com/tsuru/tsuru/vendor/github.com/tsuru/config",
+			"path": "github.com/tsuru/config",
+			"revision": "010d540999c2b246d3777cc0c1550f6575787a0f",
+			"revisionTime": "2016-01-07T11:26:52-02:00"
+		},
+		{
+			"path": "github.com/tsuru/gnuflag",
+			"revision": "86b8c1b864aadcf9c94d67bc607ce3f19cbb9aa2",
+			"revisionTime": "2015-12-17T14:20:21-02:00"
+		},
+		{
+			"origin": "github.com/tsuru/tsuru/vendor/github.com/tsuru/monsterqueue",
+			"path": "github.com/tsuru/monsterqueue",
+			"revision": "010d540999c2b246d3777cc0c1550f6575787a0f",
+			"revisionTime": "2016-01-07T11:26:52-02:00"
+		},
+		{
+			"origin": "github.com/tsuru/tsuru/vendor/github.com/tsuru/monsterqueue/log",
+			"path": "github.com/tsuru/monsterqueue/log",
+			"revision": "010d540999c2b246d3777cc0c1550f6575787a0f",
+			"revisionTime": "2016-01-07T11:26:52-02:00"
+		},
+		{
+			"origin": "github.com/tsuru/tsuru/vendor/github.com/tsuru/monsterqueue/mongodb",
+			"path": "github.com/tsuru/monsterqueue/mongodb",
+			"revision": "010d540999c2b246d3777cc0c1550f6575787a0f",
+			"revisionTime": "2016-01-07T11:26:52-02:00"
+		},
+		{
+			"path": "github.com/tsuru/tsuru/action",
+			"revision": "010d540999c2b246d3777cc0c1550f6575787a0f",
+			"revisionTime": "2016-01-07T11:26:52-02:00"
+		},
+		{
+			"path": "github.com/tsuru/tsuru/api/shutdown",
+			"revision": "010d540999c2b246d3777cc0c1550f6575787a0f",
+			"revisionTime": "2016-01-07T11:26:52-02:00"
+		},
+		{
+			"path": "github.com/tsuru/tsuru/app",
+			"revision": "010d540999c2b246d3777cc0c1550f6575787a0f",
+			"revisionTime": "2016-01-07T11:26:52-02:00"
+		},
+		{
+			"path": "github.com/tsuru/tsuru/app/bind",
+			"revision": "010d540999c2b246d3777cc0c1550f6575787a0f",
+			"revisionTime": "2016-01-07T11:26:52-02:00"
+		},
+		{
+			"path": "github.com/tsuru/tsuru/auth",
+			"revision": "010d540999c2b246d3777cc0c1550f6575787a0f",
+			"revisionTime": "2016-01-07T11:26:52-02:00"
+		},
+		{
+			"path": "github.com/tsuru/tsuru/auth/native",
+			"revision": "010d540999c2b246d3777cc0c1550f6575787a0f",
+			"revisionTime": "2016-01-07T11:26:52-02:00"
+		},
+		{
+			"path": "github.com/tsuru/tsuru/auth/saml",
+			"revision": "010d540999c2b246d3777cc0c1550f6575787a0f",
+			"revisionTime": "2016-01-07T11:26:52-02:00"
+		},
+		{
+			"path": "github.com/tsuru/tsuru/cmd",
+			"revision": "010d540999c2b246d3777cc0c1550f6575787a0f",
+			"revisionTime": "2016-01-07T11:26:52-02:00"
+		},
+		{
+			"path": "github.com/tsuru/tsuru/cmd/cmdtest",
+			"revision": "010d540999c2b246d3777cc0c1550f6575787a0f",
+			"revisionTime": "2016-01-07T11:26:52-02:00"
+		},
+		{
+			"path": "github.com/tsuru/tsuru/db",
+			"revision": "010d540999c2b246d3777cc0c1550f6575787a0f",
+			"revisionTime": "2016-01-07T11:26:52-02:00"
+		},
+		{
+			"path": "github.com/tsuru/tsuru/db/storage",
+			"revision": "010d540999c2b246d3777cc0c1550f6575787a0f",
+			"revisionTime": "2016-01-07T11:26:52-02:00"
+		},
+		{
+			"path": "github.com/tsuru/tsuru/errors",
+			"revision": "010d540999c2b246d3777cc0c1550f6575787a0f",
+			"revisionTime": "2016-01-07T11:26:52-02:00"
+		},
+		{
+			"path": "github.com/tsuru/tsuru/exec",
+			"revision": "010d540999c2b246d3777cc0c1550f6575787a0f",
+			"revisionTime": "2016-01-07T11:26:52-02:00"
+		},
+		{
+			"path": "github.com/tsuru/tsuru/exec/exectest",
+			"revision": "010d540999c2b246d3777cc0c1550f6575787a0f",
+			"revisionTime": "2016-01-07T11:26:52-02:00"
+		},
+		{
+			"path": "github.com/tsuru/tsuru/fs",
+			"revision": "010d540999c2b246d3777cc0c1550f6575787a0f",
+			"revisionTime": "2016-01-07T11:26:52-02:00"
+		},
+		{
+			"path": "github.com/tsuru/tsuru/fs/fstest",
+			"revision": "010d540999c2b246d3777cc0c1550f6575787a0f",
+			"revisionTime": "2016-01-07T11:26:52-02:00"
+		},
+		{
+			"path": "github.com/tsuru/tsuru/git",
+			"revision": "010d540999c2b246d3777cc0c1550f6575787a0f",
+			"revisionTime": "2016-01-07T11:26:52-02:00"
+		},
+		{
+			"path": "github.com/tsuru/tsuru/hc",
+			"revision": "010d540999c2b246d3777cc0c1550f6575787a0f",
+			"revisionTime": "2016-01-07T11:26:52-02:00"
+		},
+		{
+			"path": "github.com/tsuru/tsuru/io",
+			"revision": "010d540999c2b246d3777cc0c1550f6575787a0f",
+			"revisionTime": "2016-01-07T11:26:52-02:00"
+		},
+		{
+			"path": "github.com/tsuru/tsuru/log",
+			"revision": "010d540999c2b246d3777cc0c1550f6575787a0f",
+			"revisionTime": "2016-01-07T11:26:52-02:00"
+		},
+		{
+			"path": "github.com/tsuru/tsuru/net",
+			"revision": "010d540999c2b246d3777cc0c1550f6575787a0f",
+			"revisionTime": "2016-01-07T11:26:52-02:00"
+		},
+		{
+			"path": "github.com/tsuru/tsuru/permission",
+			"revision": "010d540999c2b246d3777cc0c1550f6575787a0f",
+			"revisionTime": "2016-01-07T11:26:52-02:00"
+		},
+		{
+			"path": "github.com/tsuru/tsuru/provision",
+			"revision": "010d540999c2b246d3777cc0c1550f6575787a0f",
+			"revisionTime": "2016-01-07T11:26:52-02:00"
+		},
+		{
+			"path": "github.com/tsuru/tsuru/queue",
+			"revision": "010d540999c2b246d3777cc0c1550f6575787a0f",
+			"revisionTime": "2016-01-07T11:26:52-02:00"
+		},
+		{
+			"path": "github.com/tsuru/tsuru/quota",
+			"revision": "010d540999c2b246d3777cc0c1550f6575787a0f",
+			"revisionTime": "2016-01-07T11:26:52-02:00"
+		},
+		{
+			"path": "github.com/tsuru/tsuru/repository",
+			"revision": "010d540999c2b246d3777cc0c1550f6575787a0f",
+			"revisionTime": "2016-01-07T11:26:52-02:00"
+		},
+		{
+			"path": "github.com/tsuru/tsuru/router",
+			"revision": "010d540999c2b246d3777cc0c1550f6575787a0f",
+			"revisionTime": "2016-01-07T11:26:52-02:00"
+		},
+		{
+			"path": "github.com/tsuru/tsuru/safe",
+			"revision": "010d540999c2b246d3777cc0c1550f6575787a0f",
+			"revisionTime": "2016-01-07T11:26:52-02:00"
+		},
+		{
+			"path": "github.com/tsuru/tsuru/service",
+			"revision": "010d540999c2b246d3777cc0c1550f6575787a0f",
+			"revisionTime": "2016-01-07T11:26:52-02:00"
+		},
+		{
+			"path": "github.com/tsuru/tsuru/validation",
+			"revision": "010d540999c2b246d3777cc0c1550f6575787a0f",
+			"revisionTime": "2016-01-07T11:26:52-02:00"
+		},
+		{
+			"origin": "github.com/tsuru/tsuru/vendor/golang.org/x/crypto/bcrypt",
+			"path": "golang.org/x/crypto/bcrypt",
+			"revision": "010d540999c2b246d3777cc0c1550f6575787a0f",
+			"revisionTime": "2016-01-07T11:26:52-02:00"
+		},
+		{
+			"origin": "github.com/tsuru/tsuru/vendor/golang.org/x/crypto/blowfish",
+			"path": "golang.org/x/crypto/blowfish",
+			"revision": "010d540999c2b246d3777cc0c1550f6575787a0f",
+			"revisionTime": "2016-01-07T11:26:52-02:00"
+		},
+		{
+			"origin": "github.com/tsuru/tsuru/vendor/golang.org/x/crypto/ssh/terminal",
+			"path": "golang.org/x/crypto/ssh/terminal",
+			"revision": "010d540999c2b246d3777cc0c1550f6575787a0f",
+			"revisionTime": "2016-01-07T11:26:52-02:00"
+		},
+		{
+			"origin": "github.com/tsuru/tsuru/vendor/golang.org/x/net/websocket",
+			"path": "golang.org/x/net/websocket",
+			"revision": "010d540999c2b246d3777cc0c1550f6575787a0f",
+			"revisionTime": "2016-01-07T11:26:52-02:00"
+		},
+		{
+			"path": "gopkg.in/check.v1",
+			"revision": "64131543e7896d5bcc6bd5a76287eb75ea96c673",
+			"revisionTime": "2014-10-24T11:38:53-02:00"
+		},
+		{
+			"origin": "github.com/tsuru/tsuru/vendor/gopkg.in/mgo.v2",
+			"path": "gopkg.in/mgo.v2",
+			"revision": "010d540999c2b246d3777cc0c1550f6575787a0f",
+			"revisionTime": "2016-01-07T11:26:52-02:00"
+		},
+		{
+			"origin": "github.com/tsuru/tsuru/vendor/gopkg.in/mgo.v2/bson",
+			"path": "gopkg.in/mgo.v2/bson",
+			"revision": "010d540999c2b246d3777cc0c1550f6575787a0f",
+			"revisionTime": "2016-01-07T11:26:52-02:00"
+		},
+		{
+			"origin": "github.com/tsuru/tsuru/vendor/gopkg.in/mgo.v2/internal/sasl",
+			"path": "gopkg.in/mgo.v2/internal/sasl",
+			"revision": "010d540999c2b246d3777cc0c1550f6575787a0f",
+			"revisionTime": "2016-01-07T11:26:52-02:00"
+		},
+		{
+			"origin": "github.com/tsuru/tsuru/vendor/gopkg.in/mgo.v2/internal/scram",
+			"path": "gopkg.in/mgo.v2/internal/scram",
+			"revision": "010d540999c2b246d3777cc0c1550f6575787a0f",
+			"revisionTime": "2016-01-07T11:26:52-02:00"
+		},
+		{
+			"origin": "github.com/tsuru/tsuru/vendor/gopkg.in/yaml.v1",
+			"path": "gopkg.in/yaml.v1",
+			"revision": "010d540999c2b246d3777cc0c1550f6575787a0f",
+			"revisionTime": "2016-01-07T11:26:52-02:00"
+		}
+	]
+}
