@@ -1,5 +1,3 @@
-Godeps/_workspace
-Godeps/Readme
 tsuru/tsuru
 docs/build
 *.pyc
