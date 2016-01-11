@@ -155,6 +155,13 @@ func (s *S) TestServiceUnbindIsRegistered(c *check.C) {
 	c.Assert(unbind, check.FitsTypeOf, &serviceUnbind{})
 }
 
+func (s *S) TestServiceInstanceInfoIsRegistered(c *check.C) {
+	manager := buildManager("tsuru")
+	info, ok := manager.Commands["service-instance-info"]
+	c.Assert(ok, check.Equals, true)
+	c.Assert(info, check.FitsTypeOf, serviceInstanceInfo{})
+}
+
 func (s *S) TestServiceInfoIsRegistered(c *check.C) {
 	manager := buildManager("tsuru")
 	info, ok := manager.Commands["service-info"]

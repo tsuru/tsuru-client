@@ -295,6 +295,130 @@ func (c serviceInstanceStatus) Run(ctx *cmd.Context, client *cmd.Client) error {
 	return nil
 }
 
+type serviceInstanceInfo struct{}
+
+func (c serviceInstanceInfo) Info() *cmd.Info {
+	return &cmd.Info{
+		Name:    "service-instance-info",
+		Usage:   "service-instance-info <service-name> <instance-name>",
+		Desc:    `Displays the information of the given service instance.`,
+		MinArgs: 2,
+	}
+}
+
+func (c serviceInstanceInfo) Run(ctx *cmd.Context, client *cmd.Client) error {
+	serviceName := ctx.Args[0]
+	instanceName := ctx.Args[1]
+	err := c.BuildInfoTable(instanceName, serviceName, ctx, client)
+	if err != nil {
+		return err
+	}
+	err = c.BuildInfoPlansTable(serviceName, ctx, client)
+	if err != nil {
+		return err
+	}
+	return nil
+}
+
+type serviceInstanceInfoModel struct {
+	Apps       []string
+	Teams      []string
+	TeamOwner  string
+	CustomInfo map[string]string
+}
+
+func (c serviceInstanceInfo) BuildInfoTable(instanceName, serviceName string, ctx *cmd.Context, client *cmd.Client) error {
+	url, err := cmd.GetURL("/services/" + serviceName + "/instances/" + instanceName + "/info")
+	if err != nil {
+		return err
+	}
+	request, err := http.NewRequest("GET", url, nil)
+	if err != nil {
+		return err
+	}
+	resp, err := client.Do(request)
+	if err != nil {
+		return err
+	}
+	defer resp.Body.Close()
+	result, err := ioutil.ReadAll(resp.Body)
+	if err != nil {
+		return err
+	}
+	var instance serviceInstanceInfoModel
+	err = json.Unmarshal(result, &instance)
+	if err != nil {
+		return err
+	}
+	ctx.Stdout.Write([]byte(fmt.Sprintf("Info for \"%s\"\n", instanceName)))
+	table := cmd.NewTable()
+	var data []string
+	var headers []string
+	apps := strings.Join(instance.Apps, ", ")
+	teams := strings.Join(instance.Teams, ", ")
+	data = []string{serviceName, instanceName, apps, teams, instance.TeamOwner}
+	table.AddRow(cmd.Row(data))
+	headers = []string{"Service", "Instance", "Apps", "Teams", "TeamOwner"}
+	table.Headers = cmd.Row(headers)
+	ctx.Stdout.Write(table.Bytes())
+	return buildCustomInfoTable(instance, instanceName, ctx)
+}
+
+func buildCustomInfoTable(instance serviceInstanceInfoModel, instanceName string, ctx *cmd.Context) error {
+	if len(instance.CustomInfo) != 0 {
+		ctx.Stdout.Write([]byte(fmt.Sprintf("\nCustom Info for \"%s\"\n", instanceName)))
+		keyList := make([]string, 0)
+		for key, _ := range instance.CustomInfo {
+			keyList = append(keyList, key)
+		}
+		sort.Strings(keyList)
+		for ind, key := range keyList {
+			ctx.Stdout.Write([]byte(key + ":" + "\n"))
+			ctx.Stdout.Write([]byte(instance.CustomInfo[key] + "\n"))
+			if ind != len(keyList)-1 {
+				ctx.Stdout.Write([]byte("\n"))
+			}
+		}
+	}
+	return nil
+}
+
+func (c serviceInstanceInfo) BuildInfoPlansTable(serviceName string, ctx *cmd.Context, client *cmd.Client) error {
+	url, err := cmd.GetURL(fmt.Sprintf("/services/%s/plans", serviceName))
+	if err != nil {
+		return err
+	}
+	request, err := http.NewRequest("GET", url, nil)
+	if err != nil {
+		return err
+	}
+	resp, err := client.Do(request)
+	if err != nil {
+		return err
+	}
+	defer resp.Body.Close()
+	result, err := ioutil.ReadAll(resp.Body)
+	if err != nil {
+		return err
+	}
+	var plans []map[string]string
+	err = json.Unmarshal(result, &plans)
+	if err != nil {
+		return err
+	}
+	if len(plans) > 0 {
+		fmt.Fprint(ctx.Stdout, "\nPlans\n")
+		table := cmd.NewTable()
+		for _, plan := range plans {
+			data := []string{plan["Name"], plan["Description"]}
+			table.AddRow(cmd.Row(data))
+		}
+		table.Headers = cmd.Row([]string{"Name", "Description"})
+		ctx.Stdout.Write(table.Bytes())
+	}
+	return nil
+}
+
 type serviceInfo struct{}
 
 func (c serviceInfo) Info() *cmd.Info {

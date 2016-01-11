@@ -48,6 +48,7 @@ func buildManager(name string) *cmd.Manager {
 	m.Register(&serviceAdd{})
 	m.Register(&serviceRemove{})
 	m.Register(serviceInfo{})
+	m.Register(serviceInstanceInfo{})
 	m.Register(serviceInstanceStatus{})
 	m.Register(&serviceInstanceGrant{})
 	m.Register(&serviceInstanceRevoke{})

@@ -18,7 +18,8 @@ import (
 )
 
 type infoTransport struct {
-	includePlans bool
+	includePlans      bool
+	includeCustomInfo bool
 }
 
 func (t *infoTransport) RoundTrip(req *http.Request) (resp *http.Response, err error) {
@@ -33,7 +34,6 @@ func (t *infoTransport) RoundTrip(req *http.Request) (resp *http.Response, err e
 			message = `[]`
 		}
 	}
-
 	if req.URL.Path == "/services/mongodbnoplan" {
 		message = `[{"Name":"mymongo", "Apps":["myapp"], "Id":0, "Info":{"key": "value", "key2": "value2"}, "PlanName":"", "ServiceName":"noplanservice", "Teams":["noplanteam"]}]`
 	}
@@ -60,7 +60,21 @@ func (t *infoTransport) RoundTrip(req *http.Request) (resp *http.Response, err e
 Service test is foo bar.
 `
 	}
+	if req.URL.Path == "/services/mymongo/plans" {
+		if t.includePlans {
+			message = `[{"Name": "small", "Description": "another plan"}]`
+		} else {
+			message = `[]`
+		}
+	}
+	if req.URL.Path == "/services/mymongo/instances/mongo/info" {
+		if t.includeCustomInfo {
+			message = `{"Apps": ["app"], "Teams": ["admin"], "TeamOwner": "admin", "CustomInfo" : {"key4": "value8", "key2": "value9", "key3":"value3"}}`
+		} else {
+			message = `{"Apps": ["app"], "Teams": ["admin"], "TeamOwner": "admin", "CustomInfo" : {}}`
+		}
 
+	}
 	resp = &http.Response{
 		Body:       ioutil.NopCloser(bytes.NewBufferString(message)),
 		StatusCode: http.StatusOK,
@@ -402,6 +416,128 @@ func (s *S) TestServiceInfoExtraHeaders(c *check.C) {
 	expected := []string{"key", "key2"}
 	headers := (&serviceInfo{}).ExtraHeaders(instances)
 	c.Assert(headers, check.DeepEquals, expected)
+}
+
+func (s *S) TestServiceInstanceInfoRun(c *check.C) {
+	var stdout, stderr bytes.Buffer
+	expected := `Info for "mongo"
++---------+----------+------+-------+-----------+
+| Service | Instance | Apps | Teams | TeamOwner |
++---------+----------+------+-------+-----------+
+| mymongo | mongo    | app  | admin | admin     |
++---------+----------+------+-------+-----------+
+
+Custom Info for "mongo"
+key2:
+value9
+
+key3:
+value3
+
+key4:
+value8
+
+Plans
++-------+--------------+
+| Name  | Description  |
++-------+--------------+
+| small | another plan |
++-------+--------------+
+`
+	args := []string{"mymongo", "mongo"}
+	context := cmd.Context{
+		Args:   args,
+		Stdout: &stdout,
+		Stderr: &stderr,
+	}
+	client := cmd.NewClient(&http.Client{Transport: &infoTransport{includePlans: true, includeCustomInfo: true}}, nil, manager)
+	err := (&serviceInstanceInfo{}).Run(&context, client)
+	c.Assert(err, check.IsNil)
+	obtained := stdout.String()
+	c.Assert(obtained, check.Equals, expected)
+}
+
+func (s *S) TestServiceInstanceInfoRunWithoutPlansAndCustomInfo(c *check.C) {
+	var stdout, stderr bytes.Buffer
+	expected := `Info for "mongo"
++---------+----------+------+-------+-----------+
+| Service | Instance | Apps | Teams | TeamOwner |
++---------+----------+------+-------+-----------+
+| mymongo | mongo    | app  | admin | admin     |
++---------+----------+------+-------+-----------+
+`
+	args := []string{"mymongo", "mongo"}
+	context := cmd.Context{
+		Args:   args,
+		Stdout: &stdout,
+		Stderr: &stderr,
+	}
+	client := cmd.NewClient(&http.Client{Transport: &infoTransport{includePlans: false, includeCustomInfo: false}}, nil, manager)
+	err := (&serviceInstanceInfo{}).Run(&context, client)
+	c.Assert(err, check.IsNil)
+	obtained := stdout.String()
+	c.Assert(obtained, check.Equals, expected)
+}
+
+func (s *S) TestServiceInstanceInfoRunWithoutPlansWithCustumInfo(c *check.C) {
+	var stdout, stderr bytes.Buffer
+	expected := `Info for "mongo"
++---------+----------+------+-------+-----------+
+| Service | Instance | Apps | Teams | TeamOwner |
++---------+----------+------+-------+-----------+
+| mymongo | mongo    | app  | admin | admin     |
++---------+----------+------+-------+-----------+
+
+Custom Info for "mongo"
+key2:
+value9
+
+key3:
+value3
+
+key4:
+value8
+`
+	args := []string{"mymongo", "mongo"}
+	context := cmd.Context{
+		Args:   args,
+		Stdout: &stdout,
+		Stderr: &stderr,
+	}
+	client := cmd.NewClient(&http.Client{Transport: &infoTransport{includePlans: false, includeCustomInfo: true}}, nil, manager)
+	err := (&serviceInstanceInfo{}).Run(&context, client)
+	c.Assert(err, check.IsNil)
+	obtained := stdout.String()
+	c.Assert(obtained, check.Equals, expected)
+}
+
+func (s *S) TestServiceInstanceInfoRunWithoutCustumInfoWithPlans(c *check.C) {
+	var stdout, stderr bytes.Buffer
+	expected := `Info for "mongo"
++---------+----------+------+-------+-----------+
+| Service | Instance | Apps | Teams | TeamOwner |
++---------+----------+------+-------+-----------+
+| mymongo | mongo    | app  | admin | admin     |
++---------+----------+------+-------+-----------+
+
+Plans
++-------+--------------+
+| Name  | Description  |
++-------+--------------+
+| small | another plan |
++-------+--------------+
+`
+	args := []string{"mymongo", "mongo"}
+	context := cmd.Context{
+		Args:   args,
+		Stdout: &stdout,
+		Stderr: &stderr,
+	}
+	client := cmd.NewClient(&http.Client{Transport: &infoTransport{includePlans: true, includeCustomInfo: false}}, nil, manager)
+	err := (&serviceInstanceInfo{}).Run(&context, client)
+	c.Assert(err, check.IsNil)
+	obtained := stdout.String()
+	c.Assert(obtained, check.Equals, expected)
 }
 
 func (s *S) TestServiceInfoRun(c *check.C) {
