@@ -368,7 +368,7 @@ func buildCustomInfoTable(instance serviceInstanceInfoModel, instanceName string
 	if len(instance.CustomInfo) != 0 {
 		ctx.Stdout.Write([]byte(fmt.Sprintf("\nCustom Info for \"%s\"\n", instanceName)))
 		keyList := make([]string, 0)
-		for key, _ := range instance.CustomInfo {
+		for key := range instance.CustomInfo {
 			keyList = append(keyList, key)
 		}
 		sort.Strings(keyList)
