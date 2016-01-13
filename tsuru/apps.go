@@ -134,6 +134,63 @@ func (c *appCreate) Run(context *cmd.Context, client *cmd.Client) error {
 	return nil
 }
 
+type appUpdate struct {
+	description string
+	fs          *gnuflag.FlagSet
+}
+
+func (c *appUpdate) Info() *cmd.Info {
+	return &cmd.Info{
+		Name:  "app-update",
+		Usage: "app-update <appname> --description/-d description",
+		Desc: `Updates an app, changing or adding a description.
+
+The --description parameter sets a description for your app.`,
+		MinArgs: 1,
+	}
+}
+
+func (c *appUpdate) Flags() *gnuflag.FlagSet {
+	if c.fs == nil {
+		c.fs = gnuflag.NewFlagSet("", gnuflag.ExitOnError)
+		descriptionMessage := "App description"
+		c.fs.StringVar(&c.description, "description", "", descriptionMessage)
+		c.fs.StringVar(&c.description, "d", "", descriptionMessage)
+	}
+	return c.fs
+}
+
+func (c *appUpdate) Run(context *cmd.Context, client *cmd.Client) error {
+	appName := context.Args[0]
+	if c.description == "" {
+		fmt.Fprintf(context.Stdout, "Usage: app-update <appname> --description/-d description\n")
+		return nil
+	}
+	param := app{
+		Description: c.description,
+	}
+	b, err := json.Marshal(param)
+	if err != nil {
+		return err
+	}
+	url, err := cmd.GetURL(fmt.Sprintf("/apps/%s", appName))
+	if err != nil {
+		return err
+	}
+	request, err := http.NewRequest("POST", url, bytes.NewBuffer(b))
+	if err != nil {
+		return err
+	}
+	request.Header.Set("Content-Type", "application/json")
+	_, err = client.Do(request)
+	if err != nil {
+		return err
+	}
+	fmt.Fprintf(context.Stdout, "App %q has been updated!\n", appName)
+	fmt.Fprintln(context.Stdout, "Use app-info to check the status of the app and its units.")
+	return nil
+}
+
 type appRemove struct {
 	cmd.GuessingCommand
 	cmd.ConfirmationCommand

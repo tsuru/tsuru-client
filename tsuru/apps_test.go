@@ -279,6 +279,67 @@ func (s *S) TestAppCreateFlags(c *check.C) {
 	c.Check(teamOwner.DefValue, check.Equals, "")
 }
 
+func (s *S) TestAppUpdateInfo(c *check.C) {
+	c.Assert((&appUpdate{}).Info(), check.NotNil)
+}
+
+func (s *S) TestAppUpdate(c *check.C) {
+	var stdout, stderr bytes.Buffer
+	expected := `App "ble" has been updated!
+Use app-info to check the status of the app and its units.
+`
+	context := cmd.Context{
+		Args:   []string{"ble"},
+		Stdout: &stdout,
+		Stderr: &stderr,
+	}
+	trans := cmdtest.Transport{Status: http.StatusOK}
+	client := cmd.NewClient(&http.Client{Transport: &trans}, nil, manager)
+	command := appUpdate{}
+	command.Flags().Parse(true, []string{"-d", "description of my app"})
+	err := command.Run(&context, client)
+	c.Assert(err, check.IsNil)
+	c.Assert(stdout.String(), check.Equals, expected)
+}
+
+func (s *S) TestAppUpdateWithoutFlag(c *check.C) {
+	var stdout, stderr bytes.Buffer
+	expected := `Usage: app-update <appname> --description/-d description
+`
+	context := cmd.Context{
+		Args:   []string{"ble"},
+		Stdout: &stdout,
+		Stderr: &stderr,
+	}
+	trans := cmdtest.Transport{Status: http.StatusOK}
+	client := cmd.NewClient(&http.Client{Transport: &trans}, nil, manager)
+	command := appUpdate{}
+	command.Flags().Parse(true, []string{"description of my app"})
+	err := command.Run(&context, client)
+	c.Assert(err, check.IsNil)
+	c.Assert(stdout.String(), check.Equals, expected)
+}
+
+func (s *S) TestAppUpdateFlags(c *check.C) {
+	command := appUpdate{}
+	flagset := command.Flags()
+	c.Assert(flagset, check.NotNil)
+	flagset.Parse(true, []string{"-d", "description of my app"})
+	description := flagset.Lookup("description")
+	usage := "App description"
+	c.Check(description, check.NotNil)
+	c.Check(description.Name, check.Equals, "description")
+	c.Check(description.Usage, check.Equals, usage)
+	c.Check(description.Value.String(), check.Equals, "description of my app")
+	c.Check(description.DefValue, check.Equals, "")
+	sdescription := flagset.Lookup("d")
+	c.Check(sdescription, check.NotNil)
+	c.Check(sdescription.Name, check.Equals, "d")
+	c.Check(sdescription.Usage, check.Equals, usage)
+	c.Check(sdescription.Value.String(), check.Equals, "description of my app")
+	c.Check(sdescription.DefValue, check.Equals, "")
+}
+
 func (s *S) TestAppRemove(c *check.C) {
 	var stdout, stderr bytes.Buffer
 	expectedOut := "-- removed --"
