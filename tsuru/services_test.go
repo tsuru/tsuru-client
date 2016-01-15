@@ -20,6 +20,7 @@ import (
 type infoTransport struct {
 	includePlans      bool
 	includeCustomInfo bool
+	noDescription     bool
 }
 
 func (t *infoTransport) RoundTrip(req *http.Request) (resp *http.Response, err error) {
@@ -68,10 +69,12 @@ Service test is foo bar.
 		}
 	}
 	if req.URL.Path == "/services/mymongo/instances/mongo/info" {
-		if t.includeCustomInfo {
-			message = `{"Apps": ["app"], "Teams": ["admin"], "TeamOwner": "admin", "CustomInfo" : {"key4": "value8", "key2": "value9", "key3":"value3"}}`
+		if t.noDescription {
+			message = `{"Apps": ["app"], "Teams": ["admin"], "TeamOwner": "admin", "CustomInfo" : {"key4": "value8", "key2": "value9", "key3":"value3"},"Description": ""}`
+		} else if t.includeCustomInfo {
+			message = `{"Apps": ["app"], "Teams": ["admin"], "TeamOwner": "admin", "CustomInfo" : {"key4": "value8", "key2": "value9", "key3":"value3"},"Description": "desc"}`
 		} else {
-			message = `{"Apps": ["app"], "Teams": ["admin"], "TeamOwner": "admin", "CustomInfo" : {}}`
+			message = `{"Apps": ["app"], "Teams": ["admin"], "TeamOwner": "admin", "CustomInfo" : {}, "Description": "desc"}`
 		}
 
 	}
@@ -380,6 +383,21 @@ func (s *S) TestServiceAddFlags(c *check.C) {
 	c.Check(sassume.Value.String(), check.Equals, "wat")
 	c.Check(sassume.DefValue, check.Equals, "")
 	c.Check(command.teamOwner, check.Equals, "wat")
+	flagDesc = "service instance description"
+	flagset.Parse(true, []string{"-d", "description"})
+	assume = flagset.Lookup("description")
+	c.Check(assume, check.NotNil)
+	c.Check(assume.Name, check.Equals, "description")
+	c.Check(assume.Usage, check.Equals, flagDesc)
+	c.Check(assume.Value.String(), check.Equals, "description")
+	c.Check(assume.DefValue, check.Equals, "")
+	sassume = flagset.Lookup("d")
+	c.Check(sassume, check.NotNil)
+	c.Check(sassume.Name, check.Equals, "d")
+	c.Check(sassume.Usage, check.Equals, flagDesc)
+	c.Check(sassume.Value.String(), check.Equals, "description")
+	c.Check(sassume.DefValue, check.Equals, "")
+	c.Check(command.description, check.Equals, "description")
 }
 
 func (s *S) TestServiceInstanceStatusInfo(c *check.C) {
@@ -421,11 +439,11 @@ func (s *S) TestServiceInfoExtraHeaders(c *check.C) {
 func (s *S) TestServiceInstanceInfoRun(c *check.C) {
 	var stdout, stderr bytes.Buffer
 	expected := `Info for "mongo"
-+---------+----------+------+-------+-----------+
-| Service | Instance | Apps | Teams | TeamOwner |
-+---------+----------+------+-------+-----------+
-| mymongo | mongo    | app  | admin | admin     |
-+---------+----------+------+-------+-----------+
++---------+----------+------+-------+-----------+-------------+
+| Service | Instance | Apps | Teams | TeamOwner | Description |
++---------+----------+------+-------+-----------+-------------+
+| mymongo | mongo    | app  | admin | admin     | desc        |
++---------+----------+------+-------+-----------+-------------+
 
 Custom Info for "mongo"
 key2:
@@ -457,7 +475,7 @@ Plans
 	c.Assert(obtained, check.Equals, expected)
 }
 
-func (s *S) TestServiceInstanceInfoRunWithoutPlansAndCustomInfo(c *check.C) {
+func (s *S) TestServiceInstanceInfoRunNoDescription(c *check.C) {
 	var stdout, stderr bytes.Buffer
 	expected := `Info for "mongo"
 +---------+----------+------+-------+-----------+
@@ -465,6 +483,45 @@ func (s *S) TestServiceInstanceInfoRunWithoutPlansAndCustomInfo(c *check.C) {
 +---------+----------+------+-------+-----------+
 | mymongo | mongo    | app  | admin | admin     |
 +---------+----------+------+-------+-----------+
+
+Custom Info for "mongo"
+key2:
+value9
+
+key3:
+value3
+
+key4:
+value8
+
+Plans
++-------+--------------+
+| Name  | Description  |
++-------+--------------+
+| small | another plan |
++-------+--------------+
+`
+	args := []string{"mymongo", "mongo"}
+	context := cmd.Context{
+		Args:   args,
+		Stdout: &stdout,
+		Stderr: &stderr,
+	}
+	client := cmd.NewClient(&http.Client{Transport: &infoTransport{includePlans: true, noDescription: true}}, nil, manager)
+	err := (&serviceInstanceInfo{}).Run(&context, client)
+	c.Assert(err, check.IsNil)
+	obtained := stdout.String()
+	c.Assert(obtained, check.Equals, expected)
+}
+
+func (s *S) TestServiceInstanceInfoRunWithoutPlansAndCustomInfo(c *check.C) {
+	var stdout, stderr bytes.Buffer
+	expected := `Info for "mongo"
++---------+----------+------+-------+-----------+-------------+
+| Service | Instance | Apps | Teams | TeamOwner | Description |
++---------+----------+------+-------+-----------+-------------+
+| mymongo | mongo    | app  | admin | admin     | desc        |
++---------+----------+------+-------+-----------+-------------+
 `
 	args := []string{"mymongo", "mongo"}
 	context := cmd.Context{
@@ -482,11 +539,11 @@ func (s *S) TestServiceInstanceInfoRunWithoutPlansAndCustomInfo(c *check.C) {
 func (s *S) TestServiceInstanceInfoRunWithoutPlansWithCustumInfo(c *check.C) {
 	var stdout, stderr bytes.Buffer
 	expected := `Info for "mongo"
-+---------+----------+------+-------+-----------+
-| Service | Instance | Apps | Teams | TeamOwner |
-+---------+----------+------+-------+-----------+
-| mymongo | mongo    | app  | admin | admin     |
-+---------+----------+------+-------+-----------+
++---------+----------+------+-------+-----------+-------------+
+| Service | Instance | Apps | Teams | TeamOwner | Description |
++---------+----------+------+-------+-----------+-------------+
+| mymongo | mongo    | app  | admin | admin     | desc        |
++---------+----------+------+-------+-----------+-------------+
 
 Custom Info for "mongo"
 key2:
@@ -514,11 +571,11 @@ value8
 func (s *S) TestServiceInstanceInfoRunWithoutCustumInfoWithPlans(c *check.C) {
 	var stdout, stderr bytes.Buffer
 	expected := `Info for "mongo"
-+---------+----------+------+-------+-----------+
-| Service | Instance | Apps | Teams | TeamOwner |
-+---------+----------+------+-------+-----------+
-| mymongo | mongo    | app  | admin | admin     |
-+---------+----------+------+-------+-----------+
++---------+----------+------+-------+-----------+-------------+
+| Service | Instance | Apps | Teams | TeamOwner | Description |
++---------+----------+------+-------+-----------+-------------+
+| mymongo | mongo    | app  | admin | admin     | desc        |
++---------+----------+------+-------+-----------+-------------+
 
 Plans
 +-------+--------------+

@@ -62,14 +62,15 @@ func (s serviceList) Run(ctx *cmd.Context, client *cmd.Client) error {
 }
 
 type serviceAdd struct {
-	fs        *gnuflag.FlagSet
-	teamOwner string
+	fs          *gnuflag.FlagSet
+	teamOwner   string
+	description string
 }
 
 func (c *serviceAdd) Info() *cmd.Info {
 	return &cmd.Info{
 		Name:  "service-add",
-		Usage: "service-add <service-name> <service-instance-name> [plan] [-t/--team-owner <team>]",
+		Usage: "service-add <service-name> <service-instance-name> [plan] [-t/--team-owner <team>] [-d/--description description]",
 		Desc: `Creates a service instance of a service. There can later be binded to
 applications with [[tsuru service-bind]].
 
@@ -97,6 +98,7 @@ func (c *serviceAdd) Run(ctx *cmd.Context, client *cmd.Client) error {
 		"service_name": serviceName,
 		"plan":         plan,
 		"owner":        c.teamOwner,
+		"description":  c.description,
 	}
 	err := json.NewEncoder(&b).Encode(params)
 	if err != nil {
@@ -125,6 +127,9 @@ func (c *serviceAdd) Flags() *gnuflag.FlagSet {
 		c.fs = gnuflag.NewFlagSet("service-add", gnuflag.ExitOnError)
 		c.fs.StringVar(&c.teamOwner, "team-owner", "", flagDesc)
 		c.fs.StringVar(&c.teamOwner, "t", "", flagDesc)
+		descriptionMessage := "service instance description"
+		c.fs.StringVar(&c.description, "description", "", descriptionMessage)
+		c.fs.StringVar(&c.description, "d", "", descriptionMessage)
 	}
 	return c.fs
 }
@@ -321,10 +326,11 @@ func (c serviceInstanceInfo) Run(ctx *cmd.Context, client *cmd.Client) error {
 }
 
 type serviceInstanceInfoModel struct {
-	Apps       []string
-	Teams      []string
-	TeamOwner  string
-	CustomInfo map[string]string
+	Apps        []string
+	Teams       []string
+	TeamOwner   string
+	Description string
+	CustomInfo  map[string]string
 }
 
 func (c serviceInstanceInfo) BuildInfoTable(instanceName, serviceName string, ctx *cmd.Context, client *cmd.Client) error {
@@ -357,8 +363,12 @@ func (c serviceInstanceInfo) BuildInfoTable(instanceName, serviceName string, ct
 	apps := strings.Join(instance.Apps, ", ")
 	teams := strings.Join(instance.Teams, ", ")
 	data = []string{serviceName, instanceName, apps, teams, instance.TeamOwner}
-	table.AddRow(cmd.Row(data))
 	headers = []string{"Service", "Instance", "Apps", "Teams", "TeamOwner"}
+	if instance.Description != "" {
+		data = append(data, instance.Description)
+		headers = append(headers, "Description")
+	}
+	table.AddRow(cmd.Row(data))
 	table.Headers = cmd.Row(headers)
 	ctx.Stdout.Write(table.Bytes())
 	return buildCustomInfoTable(instance, instanceName, ctx)
