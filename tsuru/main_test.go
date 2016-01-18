@@ -127,6 +127,13 @@ func (s *S) TestServiceListIsRegistered(c *check.C) {
 	c.Assert(list, check.FitsTypeOf, serviceList{})
 }
 
+func (s *S) TestServiceUpdateIsRegistered(c *check.C) {
+	manager := buildManager("tsuru")
+	add, ok := manager.Commands["service-update"]
+	c.Assert(ok, check.Equals, true)
+	c.Assert(add, check.FitsTypeOf, &serviceUpdate{})
+}
+
 func (s *S) TestServiceAddIsRegistered(c *check.C) {
 	manager := buildManager("tsuru")
 	add, ok := manager.Commands["service-add"]

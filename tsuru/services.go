@@ -134,6 +134,61 @@ func (c *serviceAdd) Flags() *gnuflag.FlagSet {
 	return c.fs
 }
 
+type serviceUpdate struct {
+	fs          *gnuflag.FlagSet
+	description string
+}
+
+func (c *serviceUpdate) Info() *cmd.Info {
+	return &cmd.Info{
+		Name:  "service-update",
+		Usage: "service-update <service-name> <service-instance-name> [-d/--description description]",
+		Desc: `Updates a service instance of a service.
+
+The --description parameter sets a description for your service instance.`,
+		MinArgs: 2,
+	}
+}
+
+func (c *serviceUpdate) Run(ctx *cmd.Context, client *cmd.Client) error {
+	serviceName, instanceName := ctx.Args[0], ctx.Args[1]
+	var b bytes.Buffer
+	params := map[string]string{
+		"name":         instanceName,
+		"service_name": serviceName,
+		"description":  c.description,
+	}
+	err := json.NewEncoder(&b).Encode(params)
+	if err != nil {
+		return err
+	}
+	url, err := cmd.GetURL("/services/instances/update")
+	if err != nil {
+		return err
+	}
+	request, err := http.NewRequest("POST", url, &b)
+	if err != nil {
+		return err
+	}
+	request.Header.Set("Content-Type", "application/json")
+	_, err = client.Do(request)
+	if err != nil {
+		return err
+	}
+	fmt.Fprint(ctx.Stdout, "Service successfully updated.\n")
+	return nil
+}
+
+func (c *serviceUpdate) Flags() *gnuflag.FlagSet {
+	if c.fs == nil {
+		c.fs = gnuflag.NewFlagSet("service-update", gnuflag.ExitOnError)
+		descriptionMessage := "service instance description"
+		c.fs.StringVar(&c.description, "description", "", descriptionMessage)
+		c.fs.StringVar(&c.description, "d", "", descriptionMessage)
+	}
+	return c.fs
+}
+
 type serviceBind struct {
 	cmd.GuessingCommand
 	fs        *gnuflag.FlagSet
@@ -311,29 +366,21 @@ func (c serviceInstanceInfo) Info() *cmd.Info {
 	}
 }
 
+type serviceInstanceInfoModel struct {
+	ServiceName     string
+	InstanceName    string
+	Apps            []string
+	Teams           []string
+	TeamOwner       string
+	Description     string
+	PlanName        string
+	PlanDescription string
+	CustomInfo      map[string]string
+}
+
 func (c serviceInstanceInfo) Run(ctx *cmd.Context, client *cmd.Client) error {
 	serviceName := ctx.Args[0]
 	instanceName := ctx.Args[1]
-	err := c.BuildInfoTable(instanceName, serviceName, ctx, client)
-	if err != nil {
-		return err
-	}
-	err = c.BuildInfoPlansTable(serviceName, ctx, client)
-	if err != nil {
-		return err
-	}
-	return nil
-}
-
-type serviceInstanceInfoModel struct {
-	Apps        []string
-	Teams       []string
-	TeamOwner   string
-	Description string
-	CustomInfo  map[string]string
-}
-
-func (c serviceInstanceInfo) BuildInfoTable(instanceName, serviceName string, ctx *cmd.Context, client *cmd.Client) error {
 	url, err := cmd.GetURL("/services/" + serviceName + "/instances/" + instanceName + "/info")
 	if err != nil {
 		return err
@@ -351,80 +398,33 @@ func (c serviceInstanceInfo) BuildInfoTable(instanceName, serviceName string, ct
 	if err != nil {
 		return err
 	}
-	var instance serviceInstanceInfoModel
-	err = json.Unmarshal(result, &instance)
+	var si serviceInstanceInfoModel
+	err = json.Unmarshal(result, &si)
 	if err != nil {
 		return err
 	}
-	ctx.Stdout.Write([]byte(fmt.Sprintf("Info for \"%s\"\n", instanceName)))
-	table := cmd.NewTable()
-	var data []string
-	var headers []string
-	apps := strings.Join(instance.Apps, ", ")
-	teams := strings.Join(instance.Teams, ", ")
-	data = []string{serviceName, instanceName, apps, teams, instance.TeamOwner}
-	headers = []string{"Service", "Instance", "Apps", "Teams", "TeamOwner"}
-	if instance.Description != "" {
-		data = append(data, instance.Description)
-		headers = append(headers, "Description")
-	}
-	table.AddRow(cmd.Row(data))
-	table.Headers = cmd.Row(headers)
-	ctx.Stdout.Write(table.Bytes())
-	return buildCustomInfoTable(instance, instanceName, ctx)
-}
-
-func buildCustomInfoTable(instance serviceInstanceInfoModel, instanceName string, ctx *cmd.Context) error {
-	if len(instance.CustomInfo) != 0 {
+	fmt.Fprintf(ctx.Stdout, "Service: %s\n", serviceName)
+	fmt.Fprintf(ctx.Stdout, "Instance: %s\n", instanceName)
+	fmt.Fprintf(ctx.Stdout, "Apps: %s\n", strings.Join(si.Apps, ", "))
+	fmt.Fprintf(ctx.Stdout, "Teams: %s\n", strings.Join(si.Teams, ", "))
+	fmt.Fprintf(ctx.Stdout, "Team Owner: %s\n", si.TeamOwner)
+	fmt.Fprintf(ctx.Stdout, "Description: %s\n", si.Description)
+	fmt.Fprintf(ctx.Stdout, "Plan: %s\n", si.PlanName)
+	fmt.Fprintf(ctx.Stdout, "Plan description: %s\n", si.PlanDescription)
+	if len(si.CustomInfo) != 0 {
 		ctx.Stdout.Write([]byte(fmt.Sprintf("\nCustom Info for \"%s\"\n", instanceName)))
 		keyList := make([]string, 0)
-		for key := range instance.CustomInfo {
+		for key := range si.CustomInfo {
 			keyList = append(keyList, key)
 		}
 		sort.Strings(keyList)
 		for ind, key := range keyList {
 			ctx.Stdout.Write([]byte(key + ":" + "\n"))
-			ctx.Stdout.Write([]byte(instance.CustomInfo[key] + "\n"))
+			ctx.Stdout.Write([]byte(si.CustomInfo[key] + "\n"))
 			if ind != len(keyList)-1 {
 				ctx.Stdout.Write([]byte("\n"))
 			}
 		}
-	}
-	return nil
-}
-
-func (c serviceInstanceInfo) BuildInfoPlansTable(serviceName string, ctx *cmd.Context, client *cmd.Client) error {
-	url, err := cmd.GetURL(fmt.Sprintf("/services/%s/plans", serviceName))
-	if err != nil {
-		return err
-	}
-	request, err := http.NewRequest("GET", url, nil)
-	if err != nil {
-		return err
-	}
-	resp, err := client.Do(request)
-	if err != nil {
-		return err
-	}
-	defer resp.Body.Close()
-	result, err := ioutil.ReadAll(resp.Body)
-	if err != nil {
-		return err
-	}
-	var plans []map[string]string
-	err = json.Unmarshal(result, &plans)
-	if err != nil {
-		return err
-	}
-	if len(plans) > 0 {
-		fmt.Fprint(ctx.Stdout, "\nPlans\n")
-		table := cmd.NewTable()
-		for _, plan := range plans {
-			data := []string{plan["Name"], plan["Description"]}
-			table.AddRow(cmd.Row(data))
-		}
-		table.Headers = cmd.Row([]string{"Name", "Description"})
-		ctx.Stdout.Write(table.Bytes())
 	}
 	return nil
 }
