@@ -20,8 +20,9 @@ type Pool struct {
 }
 
 type ListPoolResponse struct {
-	PoolsByTeam []PoolsByTeam `json:"pools_by_team"`
-	PublicPools []Pool        `json:"public_pools"`
+	PoolsByTeam  []PoolsByTeam `json:"pools_by_team"`
+	PublicPools  []Pool        `json:"public_pools"`
+	DefaultPools []Pool        `json:"default_pool"`
 }
 
 func (poolList) Run(context *cmd.Context, client *cmd.Client) error {
@@ -56,6 +57,12 @@ func (poolList) Run(context *cmd.Context, client *cmd.Client) error {
 	tp.Sort()
 	context.Stdout.Write([]byte("\n"))
 	context.Stdout.Write(tp.Bytes())
+	if len(pools.DefaultPools) > 0 {
+		td := cmd.Table{Headers: cmd.Row([]string{"Default Pool"})}
+		td.AddRow(cmd.Row([]string{pools.DefaultPools[0].Name}))
+		context.Stdout.Write([]byte("\n"))
+		context.Stdout.Write(td.Bytes())
+	}
 	return nil
 }
 

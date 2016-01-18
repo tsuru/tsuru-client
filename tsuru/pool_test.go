@@ -19,7 +19,7 @@ func (s *S) TestPoolListInfo(c *check.C) {
 
 func (s *S) TestPoolListRun(c *check.C) {
 	var stdout, stderr bytes.Buffer
-	result := `{"pools_by_team": [{"team": "test", "pools": ["pool"]}], "public_pools": [{"name": "public"}]}}`
+	result := `{"pools_by_team": [{"team": "test", "pools": ["pool"]}], "public_pools": [{"name": "public"}],"default_pool": [{"name": "default"}]}}`
 	context := cmd.Context{
 		Args:   []string{},
 		Stdout: &stdout,
@@ -35,6 +35,12 @@ func (s *S) TestPoolListRun(c *check.C) {
 | Public Pools |
 +--------------+
 | public       |
++--------------+
+
++--------------+
+| Default Pool |
++--------------+
+| default      |
 +--------------+
 `
 	client := cmd.NewClient(&http.Client{Transport: &cmdtest.Transport{Message: result, Status: http.StatusOK}}, nil, manager)
