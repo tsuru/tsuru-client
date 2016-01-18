@@ -154,15 +154,13 @@ func (c *serviceUpdate) Run(ctx *cmd.Context, client *cmd.Client) error {
 	serviceName, instanceName := ctx.Args[0], ctx.Args[1]
 	var b bytes.Buffer
 	params := map[string]string{
-		"name":         instanceName,
-		"service_name": serviceName,
-		"description":  c.description,
+		"description": c.description,
 	}
 	err := json.NewEncoder(&b).Encode(params)
 	if err != nil {
 		return err
 	}
-	url, err := cmd.GetURL("/services/instances/update")
+	url, err := cmd.GetURL(fmt.Sprintf("/services/%s/instances/%s/update", serviceName, instanceName))
 	if err != nil {
 		return err
 	}
