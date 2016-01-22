@@ -491,12 +491,11 @@ Quota: {{.Quota.InUse}}/{{if .Quota.Limit}}{{.Quota.Limit}} units{{else}}unlimit
 	}
 	servicesTable := cmd.NewTable()
 	servicesTable.Headers = []string{"Service", "Instance (Plan)"}
-	instancePlan := make([]string, 0)
-	var instancePlanString string
 	for _, service := range a.services {
 		if len(service.Instances) == 0 {
 			continue
 		}
+		instancePlan := make([]string, 0)
 		for i, instance := range service.Instances {
 			value := instance
 			if i < len(service.Plans) && service.Plans[i] != "" {
@@ -504,7 +503,7 @@ Quota: {{.Quota.InUse}}/{{if .Quota.Limit}}{{.Quota.Limit}} units{{else}}unlimit
 			}
 			instancePlan = append(instancePlan, value)
 		}
-		instancePlanString = strings.Join(instancePlan, "\n")
+		instancePlanString := strings.Join(instancePlan, "\n")
 		servicesTable.AddRow([]string{service.Service, instancePlanString})
 	}
 	if servicesTable.Rows() > 0 {
