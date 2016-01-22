@@ -9,6 +9,7 @@ import (
 	"net/http"
 	"reflect"
 	"sort"
+	"strings"
 
 	"github.com/tsuru/tsuru/cmd"
 	"github.com/tsuru/tsuru/cmd/cmdtest"
@@ -227,6 +228,7 @@ func (s *S) TestRoleRemoveRun(c *check.C) {
 		Args:   []string{"myrole"},
 		Stdout: &stdout,
 		Stderr: &stderr,
+		Stdin:  strings.NewReader("y\n"),
 	}
 	trans := &cmdtest.ConditionalTransport{
 		Transport: cmdtest.Transport{Message: string(""), Status: http.StatusCreated},
@@ -238,7 +240,43 @@ func (s *S) TestRoleRemoveRun(c *check.C) {
 	command := roleRemove{}
 	err := command.Run(&context, client)
 	c.Assert(err, check.IsNil)
+	c.Assert(stdout.String(), check.Equals, "Are you sure you want to remove role \"myrole\"? (y/n) Role successfully removed!\n")
+}
+
+func (s *S) TestRoleRemoveWithConfirmation(c *check.C) {
+	var stdout, stderr bytes.Buffer
+	context := cmd.Context{
+		Args:   []string{"myrole"},
+		Stdout: &stdout,
+		Stderr: &stderr,
+	}
+	trans := &cmdtest.ConditionalTransport{
+		Transport: cmdtest.Transport{Message: string(""), Status: http.StatusCreated},
+		CondFunc: func(req *http.Request) bool {
+			return req.URL.Path == "/roles/myrole" && req.Method == "DELETE"
+		},
+	}
+	client := cmd.NewClient(&http.Client{Transport: trans}, nil, manager)
+	command := roleRemove{}
+	command.Flags().Parse(true, []string{"-y"})
+	err := command.Run(&context, client)
+	c.Assert(err, check.IsNil)
 	c.Assert(stdout.String(), check.Equals, "Role successfully removed!\n")
+}
+
+func (s *S) TestRoleRemoveWithoutConfirmation(c *check.C) {
+	var stdout, stderr bytes.Buffer
+	expected := `Are you sure you want to remove role "myrole"? (y/n) Abort.` + "\n"
+	context := cmd.Context{
+		Args:   []string{"myrole"},
+		Stdout: &stdout,
+		Stderr: &stderr,
+		Stdin:  strings.NewReader("n\n"),
+	}
+	command := roleRemove{}
+	err := command.Run(&context, nil)
+	c.Assert(err, check.IsNil)
+	c.Assert(stdout.String(), check.Equals, expected)
 }
 
 func (s *S) TestRoleDefaultAdd(c *check.C) {

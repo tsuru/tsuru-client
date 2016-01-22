@@ -366,12 +366,14 @@ func (c *roleDissociate) Run(context *cmd.Context, client *cmd.Client) error {
 	return nil
 }
 
-type roleRemove struct{}
+type roleRemove struct {
+	cmd.ConfirmationCommand
+}
 
 func (c *roleRemove) Info() *cmd.Info {
 	return &cmd.Info{
 		Name:    "role-remove",
-		Usage:   "role-remove <role-name>",
+		Usage:   "role-remove <role-name> [-y/--assume-yes]",
 		Desc:    `Remove an existing role.`,
 		MinArgs: 1,
 	}
@@ -379,6 +381,9 @@ func (c *roleRemove) Info() *cmd.Info {
 
 func (c *roleRemove) Run(context *cmd.Context, client *cmd.Client) error {
 	roleName := context.Args[0]
+	if !c.Confirm(context, fmt.Sprintf(`Are you sure you want to remove role "%s"?`, roleName)) {
+		return nil
+	}
 	addr, err := cmd.GetURL(fmt.Sprintf("/roles/%s", roleName))
 	if err != nil {
 		return err
