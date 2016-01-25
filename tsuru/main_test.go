@@ -377,14 +377,6 @@ func (s *S) TestPoolListIsRegistered(c *check.C) {
 	c.Assert(list, check.FitsTypeOf, &poolList{})
 }
 
-func (s *S) TestAppPoolChangeIsRegistered(c *check.C) {
-	manager := buildManager("tsuru")
-	change, ok := manager.Commands["app-pool-change"]
-	c.Assert(ok, check.Equals, true)
-	c.Assert(change, check.FitsTypeOf, &appPoolChange{})
-	c.Assert("app-pool-change", Deprecates, "app-change-pool")
-}
-
 func (s *S) TestTeamOwnerSetIsRegistered(c *check.C) {
 	manager := buildManager("tsuru")
 	setOwner, ok := manager.Commands["app-team-owner-set"]
@@ -393,9 +385,9 @@ func (s *S) TestTeamOwnerSetIsRegistered(c *check.C) {
 	c.Assert("app-team-owner-set", Deprecates, "app-set-team-owner")
 }
 
-func (s *S) TestAppPlanChangeIsRegistered(c *check.C) {
+func (s *S) TestAppUpdateIsRegistered(c *check.C) {
 	manager := buildManager("tsuru")
-	change, ok := manager.Commands["app-plan-change"]
+	change, ok := manager.Commands["app-update"]
 	c.Assert(ok, check.Equals, true)
-	c.Assert(change, check.FitsTypeOf, &appPlanChange{})
+	c.Assert(change, check.FitsTypeOf, &appUpdate{})
 }

@@ -5,7 +5,6 @@
 package main
 
 import (
-	"bytes"
 	"encoding/json"
 	"fmt"
 	"net/http"
@@ -87,56 +86,4 @@ func (c *planList) Run(context *cmd.Context, client *cmd.Client) error {
 	}
 	fmt.Fprintf(context.Stdout, "%s", renderPlans(plans, c.bytes))
 	return nil
-}
-
-type appPlanChange struct {
-	fs *gnuflag.FlagSet
-	cmd.GuessingCommand
-	cmd.ConfirmationCommand
-}
-
-func (c *appPlanChange) Info() *cmd.Info {
-	return &cmd.Info{
-		Name:    "app-plan-change",
-		Usage:   "app-plan-change <plan_name> [-a/--app appname] [-y/--assume-yes]",
-		Desc:    "Change the plan of the application.",
-		MinArgs: 1,
-	}
-}
-
-func (c *appPlanChange) Run(context *cmd.Context, client *cmd.Client) error {
-	context.RawOutput()
-	appName, err := c.Guess()
-	if err != nil {
-		return err
-	}
-	plan := tsuruapp.Plan{Name: context.Args[0]}
-	question := fmt.Sprintf("Are you sure you want to change the plan of the application %q to %q?", appName, plan.Name)
-	if !c.Confirm(context, question) {
-		return nil
-	}
-	url, err := cmd.GetURL(fmt.Sprintf("/apps/%s/plan", appName))
-	if err != nil {
-		return err
-	}
-	b, err := json.Marshal(plan)
-	if err != nil {
-		return err
-	}
-	request, err := http.NewRequest("POST", url, bytes.NewReader(b))
-	if err != nil {
-		return err
-	}
-	response, err := client.Do(request)
-	if err != nil {
-		return err
-	}
-	return cmd.StreamJSONResponse(context.Stdout, response)
-}
-
-func (c *appPlanChange) Flags() *gnuflag.FlagSet {
-	if c.fs == nil {
-		c.fs = cmd.MergeFlagSet(c.ConfirmationCommand.Flags(), c.GuessingCommand.Flags())
-	}
-	return c.fs
 }

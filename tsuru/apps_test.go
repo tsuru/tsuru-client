@@ -302,24 +302,6 @@ Use app-info to check the status of the app and its units.
 	c.Assert(stdout.String(), check.Equals, expected)
 }
 
-func (s *S) TestAppUpdateWithoutFlag(c *check.C) {
-	var stdout, stderr bytes.Buffer
-	expected := `Usage: app-update <appname> --description/-d description
-`
-	context := cmd.Context{
-		Args:   []string{"ble"},
-		Stdout: &stdout,
-		Stderr: &stderr,
-	}
-	trans := cmdtest.Transport{Status: http.StatusOK}
-	client := cmd.NewClient(&http.Client{Transport: &trans}, nil, manager)
-	command := appUpdate{}
-	command.Flags().Parse(true, []string{"description of my app"})
-	err := command.Run(&context, client)
-	c.Assert(err, check.IsNil)
-	c.Assert(stdout.String(), check.Equals, expected)
-}
-
 func (s *S) TestAppUpdateFlags(c *check.C) {
 	command := appUpdate{}
 	flagset := command.Flags()
@@ -1906,36 +1888,4 @@ func (s *S) TestUnitRemoveInfo(c *check.C) {
 
 func (s *S) TestUnitRemoveIsACommand(c *check.C) {
 	var _ cmd.Command = &unitRemove{}
-}
-
-func (s *S) TestAppChangePoolRun(c *check.C) {
-	var stdout, stderr bytes.Buffer
-	var called bool
-	context := cmd.Context{
-		Args:   []string{"new-pool"},
-		Stdout: &stdout,
-		Stderr: &stderr,
-	}
-	trans := &cmdtest.ConditionalTransport{
-		Transport: cmdtest.Transport{Message: "", Status: http.StatusOK},
-		CondFunc: func(req *http.Request) bool {
-			called = true
-			b, err := ioutil.ReadAll(req.Body)
-			c.Assert(err, check.IsNil)
-			c.Assert(string(b), check.Equals, "new-pool")
-			return req.URL.Path == "/apps/radio/pool" && req.Method == "POST"
-		},
-	}
-	client := cmd.NewClient(&http.Client{Transport: trans}, nil, manager)
-	command := appPoolChange{}
-	command.Flags().Parse(true, []string{"-a", "radio"})
-	err := command.Run(&context, client)
-	c.Assert(err, check.IsNil)
-	c.Assert(called, check.Equals, true)
-	expected := "Pool successfully changed!\n"
-	c.Assert(stdout.String(), check.Equals, expected)
-}
-
-func (s *S) TestAppChangePoolInfo(c *check.C) {
-	c.Assert((&appPoolChange{}).Info(), check.NotNil)
 }

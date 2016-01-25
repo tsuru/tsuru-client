@@ -6,14 +6,10 @@ package main
 
 import (
 	"bytes"
-	"encoding/json"
 	"net/http"
-	"strings"
 
-	tsuruapp "github.com/tsuru/tsuru/app"
 	"github.com/tsuru/tsuru/cmd"
 	"github.com/tsuru/tsuru/cmd/cmdtest"
-	"github.com/tsuru/tsuru/io"
 	"gopkg.in/check.v1"
 )
 
@@ -83,72 +79,4 @@ func (s *S) TestPlanListHuman(c *check.C) {
 	err := command.Run(&context, client)
 	c.Assert(err, check.IsNil)
 	c.Assert(stdout.String(), check.Equals, expected)
-}
-
-func (s *S) TestAppPlanChange(c *check.C) {
-	var (
-		called         bool
-		stdout, stderr bytes.Buffer
-	)
-	context := cmd.Context{
-		Stdout: &stdout,
-		Stderr: &stderr,
-		Args:   []string{"hiperplan"},
-	}
-	expectedOut := "-- plan changed --"
-	msg := io.SimpleJsonMessage{Message: expectedOut}
-	result, err := json.Marshal(msg)
-	c.Assert(err, check.IsNil)
-	trans := &cmdtest.ConditionalTransport{
-		Transport: cmdtest.Transport{Message: string(result), Status: http.StatusOK},
-		CondFunc: func(req *http.Request) bool {
-			called = true
-			var plan tsuruapp.Plan
-			json.NewDecoder(req.Body).Decode(&plan)
-			c.Assert(plan.Name, check.Equals, "hiperplan")
-			return req.URL.Path == "/apps/handful_of_nothing/plan" && req.Method == "POST"
-		},
-	}
-	client := cmd.NewClient(&http.Client{Transport: trans}, nil, manager)
-	var command appPlanChange
-	command.Flags().Parse(true, []string{"--app", "handful_of_nothing", "-y"})
-	err = command.Run(&context, client)
-	c.Assert(err, check.IsNil)
-	c.Assert(called, check.Equals, true)
-	c.Assert(stdout.String(), check.Equals, expectedOut)
-}
-
-func (s *S) TestAppPlanChangeAsk(c *check.C) {
-	var (
-		called         bool
-		stdout, stderr bytes.Buffer
-	)
-	context := cmd.Context{
-		Stdout: &stdout,
-		Stderr: &stderr,
-		Stdin:  strings.NewReader("y\n"),
-		Args:   []string{"hiperplan"},
-	}
-	expectedOut := "-- plan changed --"
-	msg := io.SimpleJsonMessage{Message: expectedOut}
-	result, err := json.Marshal(msg)
-	c.Assert(err, check.IsNil)
-	trans := &cmdtest.ConditionalTransport{
-		Transport: cmdtest.Transport{Message: string(result), Status: http.StatusOK},
-		CondFunc: func(req *http.Request) bool {
-			called = true
-			var plan tsuruapp.Plan
-			json.NewDecoder(req.Body).Decode(&plan)
-			c.Assert(plan.Name, check.Equals, "hiperplan")
-			return req.URL.Path == "/apps/handful_of_nothing/plan" && req.Method == "POST"
-		},
-	}
-	client := cmd.NewClient(&http.Client{Transport: trans}, nil, manager)
-	var command appPlanChange
-	command.Flags().Parse(true, []string{"--app", "handful_of_nothing"})
-	err = command.Run(&context, client)
-	c.Assert(err, check.IsNil)
-	c.Assert(called, check.Equals, true)
-	expectedOut = `Are you sure you want to change the plan of the application "handful_of_nothing" to "hiperplan"? (y/n) -- plan changed --`
-	c.Assert(stdout.String(), check.Equals, expectedOut)
 }

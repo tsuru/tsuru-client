@@ -136,17 +136,26 @@ func (c *appCreate) Run(context *cmd.Context, client *cmd.Client) error {
 
 type appUpdate struct {
 	description string
+	plan        string
+	pool        string
 	fs          *gnuflag.FlagSet
+	cmd.GuessingCommand
+	cmd.ConfirmationCommand
 }
 
 func (c *appUpdate) Info() *cmd.Info {
 	return &cmd.Info{
 		Name:  "app-update",
-		Usage: "app-update <appname> --description/-d description",
-		Desc: `Updates an app, changing or adding a description.
+		Usage: "app-update <appname> [--description/-d description] [--plan/-p plan_name] [--pool/-o pool] ",
+		Desc: `Updates an app, changing its description, plan or pool information.
 
-The --description parameter sets a description for your app.`,
+The [[--description]] parameter sets a description for your app.
+
+The [[--plan]] parameter changes the plan of your app.
+
+The [[--pool]] parameters changes the pool of your app.`,
 		MinArgs: 1,
+		MaxArgs: 1,
 	}
 }
 
@@ -154,21 +163,32 @@ func (c *appUpdate) Flags() *gnuflag.FlagSet {
 	if c.fs == nil {
 		c.fs = gnuflag.NewFlagSet("", gnuflag.ExitOnError)
 		descriptionMessage := "App description"
+		planMessage := "App plan"
+		poolMessage := "App pool"
 		c.fs.StringVar(&c.description, "description", "", descriptionMessage)
 		c.fs.StringVar(&c.description, "d", "", descriptionMessage)
+		c.fs.StringVar(&c.plan, "plan", "", planMessage)
+		c.fs.StringVar(&c.plan, "p", "", planMessage)
+		c.fs.StringVar(&c.pool, "o", "", poolMessage)
+		c.fs.StringVar(&c.pool, "pool", "", poolMessage)
 	}
 	return c.fs
 }
 
 func (c *appUpdate) Run(context *cmd.Context, client *cmd.Client) error {
+	context.RawOutput()
 	appName := context.Args[0]
-	if c.description == "" {
-		fmt.Fprintf(context.Stdout, "Usage: app-update <appname> --description/-d description\n")
-		return nil
+	var param app
+	if c.plan != "" {
+		plan := tsuruapp.Plan{Name: c.plan}
+		question := fmt.Sprintf("Are you sure you want to change the plan of the application %q to %q?", appName, plan.Name)
+		if !c.Confirm(context, question) {
+			return nil
+		}
+		param.Plan = plan
 	}
-	param := app{
-		Description: c.description,
-	}
+	param.Description = c.description
+	param.Pool = c.pool
 	b, err := json.Marshal(param)
 	if err != nil {
 		return err
@@ -182,7 +202,11 @@ func (c *appUpdate) Run(context *cmd.Context, client *cmd.Client) error {
 		return err
 	}
 	request.Header.Set("Content-Type", "application/json")
-	_, err = client.Do(request)
+	response, err := client.Do(request)
+	if err != nil {
+		return err
+	}
+	err = cmd.StreamJSONResponse(context.Stdout, response)
 	if err != nil {
 		return err
 	}
@@ -1134,39 +1158,4 @@ func (c *unitRemove) Run(context *cmd.Context, client *cmd.Client) error {
 		return err
 	}
 	return cmd.StreamJSONResponse(context.Stdout, response)
-}
-
-type appPoolChange struct {
-	cmd.GuessingCommand
-}
-
-func (a *appPoolChange) Info() *cmd.Info {
-	return &cmd.Info{
-		Name:    "app-pool-change",
-		Usage:   "app-pool-change <pool_name> [-a/--app appname]",
-		Desc:    `Change app pool. You need to have access to the pool to be able to do it.`,
-		MinArgs: 1,
-	}
-}
-
-func (a *appPoolChange) Run(context *cmd.Context, client *cmd.Client) error {
-	appName, err := a.Guess()
-	if err != nil {
-		return err
-	}
-	url, err := cmd.GetURL(fmt.Sprintf("/apps/%s/pool", appName))
-	if err != nil {
-		return err
-	}
-	body := bytes.NewBufferString(context.Args[0])
-	request, err := http.NewRequest("POST", url, body)
-	if err != nil {
-		return err
-	}
-	_, err = client.Do(request)
-	if err != nil {
-		return err
-	}
-	fmt.Fprintln(context.Stdout, "Pool successfully changed!")
-	return nil
 }
