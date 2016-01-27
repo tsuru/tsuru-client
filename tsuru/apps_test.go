@@ -307,19 +307,61 @@ func (s *S) TestAppUpdateFlags(c *check.C) {
 	flagset := command.Flags()
 	c.Assert(flagset, check.NotNil)
 	flagset.Parse(true, []string{"-d", "description of my app"})
-	description := flagset.Lookup("description")
+	appdescription := flagset.Lookup("description")
 	usage := "App description"
-	c.Check(description, check.NotNil)
-	c.Check(description.Name, check.Equals, "description")
-	c.Check(description.Usage, check.Equals, usage)
-	c.Check(description.Value.String(), check.Equals, "description of my app")
-	c.Check(description.DefValue, check.Equals, "")
+	c.Check(appdescription, check.NotNil)
+	c.Check(appdescription.Name, check.Equals, "description")
+	c.Check(appdescription.Usage, check.Equals, usage)
+	c.Check(appdescription.Value.String(), check.Equals, "description of my app")
+	c.Check(appdescription.DefValue, check.Equals, "")
 	sdescription := flagset.Lookup("d")
 	c.Check(sdescription, check.NotNil)
 	c.Check(sdescription.Name, check.Equals, "d")
 	c.Check(sdescription.Usage, check.Equals, usage)
 	c.Check(sdescription.Value.String(), check.Equals, "description of my app")
 	c.Check(sdescription.DefValue, check.Equals, "")
+	flagset.Parse(true, []string{"-p", "my plan"})
+	plan := flagset.Lookup("plan")
+	description := "App plan"
+	c.Check(plan, check.NotNil)
+	c.Check(plan.Name, check.Equals, "plan")
+	c.Check(plan.Usage, check.Equals, description)
+	c.Check(plan.Value.String(), check.Equals, "my plan")
+	c.Check(plan.DefValue, check.Equals, "")
+	splan := flagset.Lookup("p")
+	c.Check(splan, check.NotNil)
+	c.Check(splan.Name, check.Equals, "p")
+	c.Check(splan.Usage, check.Equals, description)
+	c.Check(splan.Value.String(), check.Equals, "my plan")
+	c.Check(splan.DefValue, check.Equals, "")
+	flagset.Parse(true, []string{"-o", "myPool"})
+	pool := flagset.Lookup("pool")
+	description = "App pool"
+	c.Check(pool, check.NotNil)
+	c.Check(pool.Name, check.Equals, "pool")
+	c.Check(pool.Usage, check.Equals, description)
+	c.Check(pool.Value.String(), check.Equals, "myPool")
+	c.Check(pool.DefValue, check.Equals, "")
+	spool := flagset.Lookup("o")
+	c.Check(spool, check.NotNil)
+	c.Check(spool.Name, check.Equals, "o")
+	c.Check(spool.Usage, check.Equals, description)
+	c.Check(spool.Value.String(), check.Equals, "myPool")
+	c.Check(spool.DefValue, check.Equals, "")
+	flagset.Parse(true, []string{"-t", "newowner"})
+	teamOwner := flagset.Lookup("team-owner")
+	description = "App team owner"
+	c.Check(teamOwner, check.NotNil)
+	c.Check(teamOwner.Name, check.Equals, "team-owner")
+	c.Check(teamOwner.Usage, check.Equals, description)
+	c.Check(teamOwner.Value.String(), check.Equals, "newowner")
+	c.Check(teamOwner.DefValue, check.Equals, "")
+	steamOwner := flagset.Lookup("t")
+	c.Check(steamOwner, check.NotNil)
+	c.Check(steamOwner.Name, check.Equals, "t")
+	c.Check(steamOwner.Usage, check.Equals, description)
+	c.Check(steamOwner.Value.String(), check.Equals, "newowner")
+	c.Check(steamOwner.DefValue, check.Equals, "")
 }
 
 func (s *S) TestAppRemove(c *check.C) {
@@ -1624,36 +1666,6 @@ func (s *S) TestRemoveCNameIsAFlaggedCommand(c *check.C) {
 
 func (s *S) TestAppStartInfo(c *check.C) {
 	c.Assert((&appStart{}).Info(), check.NotNil)
-}
-
-func (s *S) TestSetTeamOwnerInfo(c *check.C) {
-	c.Assert((&TeamOwnerSet{}).Info(), check.NotNil)
-}
-
-func (s *S) TestSetTeamOwner(c *check.C) {
-	var (
-		called         bool
-		stdout, stderr bytes.Buffer
-	)
-	context := cmd.Context{
-		Stdout: &stdout,
-		Stderr: &stderr,
-		Args:   []string{"test"},
-	}
-	trans := &cmdtest.ConditionalTransport{
-		Transport: cmdtest.Transport{Message: "app's owner team successfully changed.", Status: http.StatusOK},
-		CondFunc: func(req *http.Request) bool {
-			called = true
-			return req.URL.Path == "/apps/app-fake/team-owner" && req.Method == "POST"
-		},
-	}
-	client := cmd.NewClient(&http.Client{Transport: trans}, nil, manager)
-	command := TeamOwnerSet{}
-	command.Flags().Parse(true, []string{"--app", "app-fake"})
-	err := command.Run(&context, client)
-	c.Assert(err, check.IsNil)
-	c.Assert(called, check.Equals, true)
-	c.Assert(stdout.String(), check.Equals, "app's owner team successfully changed.\n")
 }
 
 func (s *S) TestAppStart(c *check.C) {

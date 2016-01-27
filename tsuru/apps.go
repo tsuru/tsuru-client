@@ -138,6 +138,7 @@ type appUpdate struct {
 	description string
 	plan        string
 	pool        string
+	teamOwner   string
 	fs          *gnuflag.FlagSet
 	cmd.GuessingCommand
 	cmd.ConfirmationCommand
@@ -146,14 +147,17 @@ type appUpdate struct {
 func (c *appUpdate) Info() *cmd.Info {
 	return &cmd.Info{
 		Name:  "app-update",
-		Usage: "app-update <appname> [--description/-d description] [--plan/-p plan_name] [--pool/-o pool] ",
+		Usage: "app-update <appname> [--description/-d description] [--plan/-p plan_name] [--pool/-o pool] [--team-owner/-t team-owner]",
 		Desc: `Updates an app, changing its description, plan or pool information.
 
 The [[--description]] parameter sets a description for your app.
 
 The [[--plan]] parameter changes the plan of your app.
 
-The [[--pool]] parameters changes the pool of your app.`,
+The [[--pool]] parameter changes the pool of your app.
+
+The [[--team-owner]] parameter sets owner team for an application.`,
+
 		MinArgs: 1,
 		MaxArgs: 1,
 	}
@@ -165,12 +169,15 @@ func (c *appUpdate) Flags() *gnuflag.FlagSet {
 		descriptionMessage := "App description"
 		planMessage := "App plan"
 		poolMessage := "App pool"
+		teamOwnerMessage := "App team owner"
 		c.fs.StringVar(&c.description, "description", "", descriptionMessage)
 		c.fs.StringVar(&c.description, "d", "", descriptionMessage)
 		c.fs.StringVar(&c.plan, "plan", "", planMessage)
 		c.fs.StringVar(&c.plan, "p", "", planMessage)
 		c.fs.StringVar(&c.pool, "o", "", poolMessage)
 		c.fs.StringVar(&c.pool, "pool", "", poolMessage)
+		c.fs.StringVar(&c.teamOwner, "t", "", teamOwnerMessage)
+		c.fs.StringVar(&c.teamOwner, "team-owner", "", teamOwnerMessage)
 	}
 	return c.fs
 }
@@ -189,6 +196,7 @@ func (c *appUpdate) Run(context *cmd.Context, client *cmd.Client) error {
 	}
 	param.Description = c.description
 	param.Pool = c.pool
+	param.TeamOwner = c.teamOwner
 	b, err := json.Marshal(param)
 	if err != nil {
 		return err
@@ -1023,41 +1031,6 @@ func addCName(v []string, g cmd.GuessingCommand, client *cmd.Client) error {
 		return err
 	}
 	return nil
-}
-
-type TeamOwnerSet struct {
-	cmd.GuessingCommand
-}
-
-func (c *TeamOwnerSet) Run(context *cmd.Context, client *cmd.Client) error {
-	appName, err := c.GuessingCommand.Guess()
-	if err != nil {
-		return err
-	}
-	url, err := cmd.GetURL(fmt.Sprintf("/apps/%s/team-owner", appName))
-	if err != nil {
-		return err
-	}
-	body := strings.NewReader(context.Args[0])
-	request, err := http.NewRequest("POST", url, body)
-	if err != nil {
-		return err
-	}
-	_, err = client.Do(request)
-	if err != nil {
-		return err
-	}
-	fmt.Fprintln(context.Stdout, "app's owner team successfully changed.")
-	return nil
-}
-
-func (c *TeamOwnerSet) Info() *cmd.Info {
-	return &cmd.Info{
-		Name:    "app-team-owner-set",
-		Usage:   "app-team-owner-set <new-team-owner> [-a/--app appname]",
-		Desc:    "Sets owner team for an application.",
-		MinArgs: 1,
-	}
 }
 
 type unitAdd struct {

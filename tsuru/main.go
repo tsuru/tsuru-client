@@ -63,7 +63,7 @@ func buildManager(name string) *cmd.Manager {
 	m.Register(&appSwap{})
 	m.Register(&appDeploy{})
 	m.Register(&planList{})
-	m.RegisterDeprecated(&TeamOwnerSet{}, "app-set-team-owner")
+	m.RegisterRemoved("app-team-owner-set", "You should use `tsuru service-info` instead.")
 	m.Register(&userCreate{})
 	m.Register(&resetPassword{})
 	m.Register(&userRemove{})
