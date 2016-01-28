@@ -5,7 +5,7 @@ os:
   - osx
 go:
   - 1.5.3
-  - 1.6beta2
+  - 1.6rc1
   - tip
 env:
   global:
