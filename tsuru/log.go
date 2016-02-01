@@ -9,6 +9,7 @@ import (
 	"fmt"
 	"io"
 	"net/http"
+	"strings"
 	"time"
 
 	"github.com/tsuru/gnuflag"
@@ -18,11 +19,13 @@ import (
 
 type appLog struct {
 	cmd.GuessingCommand
-	fs     *gnuflag.FlagSet
-	source string
-	unit   string
-	lines  int
-	follow bool
+	fs       *gnuflag.FlagSet
+	source   string
+	unit     string
+	lines    int
+	follow   bool
+	noDate   bool
+	noSource bool
 }
 
 func (c *appLog) Info() *cmd.Info {
@@ -42,30 +45,57 @@ The [[--unit]] flag is optional and allows filtering by unit. It's useful if
 your application has multiple units and you want logs from a single one.
 
 The [[--follow]] flag is optional and makes the command wait for additional
-log output`,
+log output
+
+The [[--no-date]] flag is optional and makes the log output without date.
+
+The [[--no-source]] flag is optional and makes the log output without source
+information, useful to very dense logs.
+`,
 		MinArgs: 0,
 	}
 }
 
-type logFormatter struct{}
+type logFormatter struct {
+	noDate   bool
+	noSource bool
+}
 
-func (logFormatter) Format(out io.Writer, data []byte) error {
+func (f logFormatter) Format(out io.Writer, data []byte) error {
 	var logs []log
 	err := json.Unmarshal(data, &logs)
 	if err != nil {
 		return tsuruIo.ErrInvalidStreamChunk
 	}
 	for _, l := range logs {
-		date := l.Date.In(time.Local).Format("2006-01-02 15:04:05 -0700")
-		var prefix string
-		if l.Unit != "" {
-			prefix = fmt.Sprintf("%s [%s][%s]:", date, l.Source, l.Unit)
+		prefix := f.prefix(l)
+
+		if prefix == "" {
+			fmt.Fprintf(out, "%s\n", l.Message)
 		} else {
-			prefix = fmt.Sprintf("%s [%s]:", date, l.Source)
+			fmt.Fprintf(out, "%s %s\n", cmd.Colorfy(prefix, "blue", "", ""), l.Message)
 		}
-		fmt.Fprintf(out, "%s %s\n", cmd.Colorfy(prefix, "blue", "", ""), l.Message)
 	}
 	return nil
+}
+
+func (f logFormatter) prefix(l log) string {
+	parts := make([]string, 0, 2)
+	if !f.noDate {
+		parts = append(parts, l.Date.In(time.Local).Format("2006-01-02 15:04:05 -0700"))
+	}
+	if !f.noSource {
+		if l.Unit != "" {
+			parts = append(parts, fmt.Sprintf("[%s][%s]", l.Source, l.Unit))
+		} else {
+			parts = append(parts, fmt.Sprintf("[%s]", l.Source))
+		}
+	}
+	prefix := strings.Join(parts, " ")
+	if prefix != "" {
+		prefix = prefix + ":"
+	}
+	return prefix
 }
 
 type log struct {
@@ -106,7 +136,10 @@ func (c *appLog) Run(context *cmd.Context, client *cmd.Client) error {
 		return nil
 	}
 	defer response.Body.Close()
-	w := tsuruIo.NewStreamWriter(context.Stdout, logFormatter{})
+	w := tsuruIo.NewStreamWriter(context.Stdout, logFormatter{
+		noDate:   c.noDate,
+		noSource: c.noSource,
+	})
 	for n := int64(1); n > 0 && err == nil; n, err = io.Copy(w, response.Body) {
 	}
 	unparsed := w.Remaining()
@@ -127,6 +160,8 @@ func (c *appLog) Flags() *gnuflag.FlagSet {
 		c.fs.StringVar(&c.unit, "u", "", "The log from the given unit")
 		c.fs.BoolVar(&c.follow, "follow", false, "Follow logs")
 		c.fs.BoolVar(&c.follow, "f", false, "Follow logs")
+		c.fs.BoolVar(&c.noDate, "no-date", false, "No date information")
+		c.fs.BoolVar(&c.noSource, "no-source", false, "No source information")
 	}
 	return c.fs
 }
