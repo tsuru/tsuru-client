@@ -276,10 +276,73 @@ func (s *S) TestAppLogWithFollow(c *check.C) {
 	c.Assert(stdout.String(), check.Equals, expected)
 }
 
+func (s *S) TestAppLogWithNoDateAndNoSource(c *check.C) {
+	var stdout, stderr bytes.Buffer
+	t := time.Now()
+	logs := []log{
+		{Date: t, Message: "GET /", Source: "web"},
+		{Date: t.Add(2 * time.Hour), Message: "POST /", Source: "web"},
+	}
+	result, err := json.Marshal(logs)
+	c.Assert(err, check.IsNil)
+	t = t.In(time.Local)
+	expected := "GET /\n"
+	expected = expected + "POST /\n"
+	context := cmd.Context{
+		Stdout: &stdout,
+		Stderr: &stderr,
+	}
+	fake := &cmdtest.FakeGuesser{Name: "hitthelights"}
+	command := appLog{GuessingCommand: cmd.GuessingCommand{G: fake}}
+	command.Flags().Parse(true, []string{"--lines", "12", "-f", "--no-date", "--no-source"})
+	trans := &cmdtest.ConditionalTransport{
+		Transport: cmdtest.Transport{Message: string(result), Status: http.StatusOK},
+		CondFunc: func(req *http.Request) bool {
+			return req.URL.Query().Get("lines") == "12" && req.URL.Query().Get("follow") == "1"
+		},
+	}
+	client := cmd.NewClient(&http.Client{Transport: trans}, nil, manager)
+	err = command.Run(&context, client)
+	c.Assert(err, check.IsNil)
+	c.Assert(stdout.String(), check.Equals, expected)
+}
+
+func (s *S) TestAppLogWithNoSource(c *check.C) {
+	var stdout, stderr bytes.Buffer
+	t := time.Now()
+	logs := []log{
+		{Date: t, Message: "GET /", Source: "web"},
+		{Date: t.Add(2 * time.Hour), Message: "POST /", Source: "web"},
+	}
+	result, err := json.Marshal(logs)
+	c.Assert(err, check.IsNil)
+	t = t.In(time.Local)
+	tfmt := "2006-01-02 15:04:05 -0700"
+	expected := cmd.Colorfy(t.Format(tfmt)+":", "blue", "", "") + " GET /\n"
+	expected = expected + cmd.Colorfy(t.Add(2*time.Hour).Format(tfmt)+":", "blue", "", "") + " POST /\n"
+	context := cmd.Context{
+		Stdout: &stdout,
+		Stderr: &stderr,
+	}
+	fake := &cmdtest.FakeGuesser{Name: "hitthelights"}
+	command := appLog{GuessingCommand: cmd.GuessingCommand{G: fake}}
+	command.Flags().Parse(true, []string{"--lines", "12", "-f", "--no-source"})
+	trans := &cmdtest.ConditionalTransport{
+		Transport: cmdtest.Transport{Message: string(result), Status: http.StatusOK},
+		CondFunc: func(req *http.Request) bool {
+			return req.URL.Query().Get("lines") == "12" && req.URL.Query().Get("follow") == "1"
+		},
+	}
+	client := cmd.NewClient(&http.Client{Transport: trans}, nil, manager)
+	err = command.Run(&context, client)
+	c.Assert(err, check.IsNil)
+	c.Assert(stdout.String(), check.Equals, expected)
+}
+
 func (s *S) TestAppLogFlagSet(c *check.C) {
 	command := appLog{}
 	flagset := command.Flags()
-	flagset.Parse(true, []string{"--source", "tsuru", "--unit", "abcdef", "--lines", "12", "--app", "ashamed", "--follow"})
+	flagset.Parse(true, []string{"--source", "tsuru", "--unit", "abcdef", "--lines", "12", "--app", "ashamed", "--follow", "--no-date", "--no-source"})
 	source := flagset.Lookup("source")
 	c.Check(source, check.NotNil)
 	c.Check(source.Name, check.Equals, "source")
@@ -340,4 +403,16 @@ func (s *S) TestAppLogFlagSet(c *check.C) {
 	c.Check(sfollow.Usage, check.Equals, "Follow logs")
 	c.Check(sfollow.Value.String(), check.Equals, "true")
 	c.Check(sfollow.DefValue, check.Equals, "false")
+	noDate := flagset.Lookup("no-date")
+	c.Check(noDate, check.NotNil)
+	c.Check(noDate.Name, check.Equals, "no-date")
+	c.Check(noDate.Usage, check.Equals, "No date information")
+	c.Check(noDate.Value.String(), check.Equals, "true")
+	c.Check(noDate.DefValue, check.Equals, "false")
+	noSource := flagset.Lookup("no-source")
+	c.Check(noSource, check.NotNil)
+	c.Check(noSource.Name, check.Equals, "no-source")
+	c.Check(noSource.Usage, check.Equals, "No source information")
+	c.Check(noSource.Value.String(), check.Equals, "true")
+	c.Check(noSource.DefValue, check.Equals, "false")
 }
