@@ -514,12 +514,11 @@ func (c *listUsers) Run(ctx *cmd.Context, client *cmd.Client) error {
 		return err
 	}
 	table := cmd.NewTable()
-	table.Headers = cmd.Row([]string{"User", "Roles", "Permissions"})
+	table.Headers = cmd.Row([]string{"User", "Roles"})
 	for _, u := range users {
 		table.AddRow(cmd.Row([]string{
 			u.Email,
 			strings.Join(u.RoleInstances(), "\n"),
-			strings.Join(u.PermissionInstances(), "\n"),
 		}))
 	}
 	table.LineSeparator = true
