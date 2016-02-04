@@ -144,6 +144,49 @@ func renderTree(w io.Writer, item *permissionData, level int, lastMap map[int]bo
 	}
 }
 
+type roleInfo struct{}
+
+func (c *roleInfo) Info() *cmd.Info {
+	return &cmd.Info{
+		Name:    "role-info",
+		Usage:   "role-info <role-name>",
+		Desc:    "Get information about specific role.",
+		MinArgs: 1,
+	}
+}
+
+func (c *roleInfo) Run(context *cmd.Context, client *cmd.Client) error {
+	roleName := context.Args[0]
+	addr, err := cmd.GetURL(fmt.Sprintf("/roles/%s", roleName))
+	if err != nil {
+		return err
+	}
+	request, err := http.NewRequest("GET", addr, nil)
+	if err != nil {
+		return err
+	}
+	resp, err := client.Do(request)
+	if err != nil {
+		return err
+	}
+	defer resp.Body.Close()
+	result, err := ioutil.ReadAll(resp.Body)
+	if err != nil {
+		return err
+	}
+	var perm permission.Role
+	err = json.Unmarshal(result, &perm)
+	if err != nil {
+		return err
+	}
+	tbl := cmd.NewTable()
+	tbl.LineSeparator = true
+	tbl.Headers = cmd.Row{"Name", "Permissions"}
+	tbl.AddRow(cmd.Row{perm.Name, strings.Join(perm.SchemeNames, "\n")})
+	fmt.Fprintf(context.Stdout, tbl.String())
+	return nil
+}
+
 type roleAdd struct{}
 
 func (c *roleAdd) Info() *cmd.Info {

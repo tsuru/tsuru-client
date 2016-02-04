@@ -117,6 +117,40 @@ func (s *S) TestRoleListRun(c *check.C) {
 	c.Assert(stdout.String(), check.Equals, expected)
 }
 
+func (s *S) TestRoleInfoInfo(c *check.C) {
+	c.Assert((&roleInfo{}).Info(), check.NotNil)
+}
+
+func (s *S) TestRoleInfoRun(c *check.C) {
+	var stdout, stderr bytes.Buffer
+	result := `
+    {"name": "role1",  "context": "a", "scheme_names": ["app", "app.update"]}
+`
+	expected := `+-------+-------------+
+| Name  | Permissions |
++-------+-------------+
+| role1 | app         |
+|       | app.update  |
++-------+-------------+
+`
+	context := cmd.Context{
+		Args:   []string{"role1"},
+		Stdout: &stdout,
+		Stderr: &stderr,
+	}
+	trans := &cmdtest.ConditionalTransport{
+		Transport: cmdtest.Transport{Message: string(result), Status: http.StatusOK},
+		CondFunc: func(req *http.Request) bool {
+			return req.URL.Path == "/roles/role1" && req.Method == "GET"
+		},
+	}
+	client := cmd.NewClient(&http.Client{Transport: trans}, nil, manager)
+	command := roleInfo{}
+	err := command.Run(&context, client)
+	c.Assert(err, check.IsNil)
+	c.Assert(stdout.String(), check.Equals, expected)
+}
+
 func (s *S) TestRoleAssignInfo(c *check.C) {
 	c.Assert((&roleAssign{}).Info(), check.NotNil)
 }
