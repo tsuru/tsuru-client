@@ -691,13 +691,13 @@ func (s *S) TestListUsersInfo(c *check.C) {
 	expected := &cmd.Info{
 		Name:    "user-list",
 		MinArgs: 0,
-		Usage:   "user-list",
-		Desc:    "List all users in tsuru.",
+		Usage:   "user-list [--user/-u useremail] [--role/-r role]",
+		Desc:    "List all users in tsuru. It may also filter users by user email or role name.",
 	}
 	c.Assert((&listUsers{}).Info(), check.DeepEquals, expected)
 }
 
-func (s *S) TestListUsersRun(c *check.C) {
+func (s *S) TestListUsersRunWithoutFlags(c *check.C) {
 	var stdout, stderr bytes.Buffer
 	context := cmd.Context{
 		Stdout: &stdout,
@@ -728,4 +728,149 @@ func (s *S) TestListUsersRun(c *check.C) {
 	err := command.Run(&context, client)
 	c.Assert(err, check.IsNil)
 	c.Assert(stdout.String(), check.Equals, expected)
+}
+
+func (s *S) TestListUsersRunFilterByUserEmail(c *check.C) {
+	var stdout, stderr bytes.Buffer
+	context := cmd.Context{
+		Stdout: &stdout,
+		Stderr: &stderr,
+	}
+	manager := cmd.NewManager("glb", "0.2", "ad-ver", &stdout, &stderr, nil, nil)
+	result := `[{"email": "test@test.com",
+"roles":[
+	{"name": "role1", "contexttype": "team", "contextvalue": "a"},
+	{"name": "role2", "contexttype": "app", "contextvalue": "x"}
+],
+"permissions":[
+	{"name": "app.create", "contexttype": "team", "contextvalue": "a"},
+	{"name": "app.deploy", "contexttype": "app", "contextvalue": "x"}
+]
+}]`
+	trans := cmdtest.ConditionalTransport{
+		Transport: cmdtest.Transport{Message: result, Status: http.StatusOK},
+		CondFunc: func(req *http.Request) bool {
+			return req.Method == "GET" && req.URL.Path == "/users" &&
+				req.URL.RawQuery == "userEmail=test2@test.com&role="
+		},
+	}
+	expected := `+---------------+---------------+--------------------+
+| User          | Roles         | Permissions        |
++---------------+---------------+--------------------+
+| test@test.com | role1(team a) | app.create(team a) |
+|               | role2(app x)  | app.deploy(app x)  |
++---------------+---------------+--------------------+
+`
+	client := cmd.NewClient(&http.Client{Transport: &trans}, nil, manager)
+	command := listUsers{}
+	command.Flags().Parse(true, []string{"-u", "test2@test.com"})
+	err := command.Run(&context, client)
+	c.Assert(err, check.IsNil)
+	c.Assert(stdout.String(), check.Equals, expected)
+}
+
+func (s *S) TestListUsersRunFilterByRole(c *check.C) {
+	var stdout, stderr bytes.Buffer
+	context := cmd.Context{
+		Stdout: &stdout,
+		Stderr: &stderr,
+	}
+	manager := cmd.NewManager("glb", "0.2", "ad-ver", &stdout, &stderr, nil, nil)
+	result := `[{"email": "test@test.com",
+	"roles":[
+		{"name": "role1", "contexttype": "team", "contextvalue": "a"},
+		{"name": "role2", "contexttype": "app", "contextvalue": "x"}
+	],
+	"permissions":[
+		{"name": "app.create", "contexttype": "team", "contextvalue": "a"},
+		{"name": "app.deploy", "contexttype": "app", "contextvalue": "x"}
+	]
+	}]`
+	trans := cmdtest.ConditionalTransport{
+		Transport: cmdtest.Transport{Message: result, Status: http.StatusOK},
+		CondFunc: func(req *http.Request) bool {
+			return req.Method == "GET" && req.URL.Path == "/users" &&
+				req.URL.RawQuery == "userEmail=&role=role2"
+		},
+	}
+	expected := `+---------------+---------------+--------------------+
+| User          | Roles         | Permissions        |
++---------------+---------------+--------------------+
+| test@test.com | role1(team a) | app.create(team a) |
+|               | role2(app x)  | app.deploy(app x)  |
++---------------+---------------+--------------------+
+`
+	client := cmd.NewClient(&http.Client{Transport: &trans}, nil, manager)
+	command := listUsers{}
+	command.Flags().Parse(true, []string{"-r", "role2"})
+	err := command.Run(&context, client)
+	c.Assert(err, check.IsNil)
+	c.Assert(stdout.String(), check.Equals, expected)
+}
+
+func (s *S) TestListUsersRunWithMoreThanOneFlagReturnsError(c *check.C) {
+	var stdout, stderr bytes.Buffer
+	context := cmd.Context{
+		Stdout: &stdout,
+		Stderr: &stderr,
+	}
+	manager := cmd.NewManager("glb", "0.2", "ad-ver", &stdout, &stderr, nil, nil)
+	result := `[{"email": "test@test.com",
+		"roles":[
+			{"name": "role1", "contexttype": "team", "contextvalue": "a"},
+			{"name": "role2", "contexttype": "app", "contextvalue": "x"}
+		],
+		"permissions":[
+			{"name": "app.create", "contexttype": "team", "contextvalue": "a"},
+			{"name": "app.deploy", "contexttype": "app", "contextvalue": "x"}
+		]
+		}]`
+	trans := cmdtest.ConditionalTransport{
+		Transport: cmdtest.Transport{Message: result, Status: http.StatusOK},
+		CondFunc: func(req *http.Request) bool {
+			return req.Method == "GET" && req.URL.Path == "/users" &&
+				req.URL.RawQuery == "userEmail=test@test.com&role=role2"
+		},
+	}
+	client := cmd.NewClient(&http.Client{Transport: &trans}, nil, manager)
+	command := listUsers{}
+	command.Flags().Parse(true, []string{"-u", "test@test.com", "-r", "role2"})
+	err := command.Run(&context, client)
+	c.Assert(err, check.ErrorMatches, "You cannot set more than one flag. Enter <tsuru user-list --help> for more information.")
+}
+
+func (s *S) TestListUsersFlags(c *check.C) {
+	command := listUsers{}
+	flagset := command.Flags()
+	c.Assert(flagset, check.NotNil)
+	err := flagset.Parse(false, []string{"-u", "test@test.com"})
+	c.Assert(err, check.IsNil)
+	c.Assert(command.userEmail, check.Equals, "test@test.com")
+	user := flagset.Lookup("user")
+	c.Assert(user, check.NotNil)
+	c.Check(user.Name, check.Equals, "user")
+	c.Check(user.Usage, check.Equals, "Filter user by user email")
+	c.Check(user.Value.String(), check.Equals, "test@test.com")
+	c.Check(user.DefValue, check.Equals, "")
+	suser := flagset.Lookup("u")
+	c.Assert(suser, check.NotNil)
+	c.Check(suser.Name, check.Equals, "u")
+	c.Check(suser.Usage, check.Equals, "Filter user by user email")
+	c.Check(suser.Value.String(), check.Equals, "test@test.com")
+	c.Check(suser.DefValue, check.Equals, "")
+	err = flagset.Parse(false, []string{"-r", "role1"})
+	c.Assert(err, check.IsNil)
+	c.Assert(command.role, check.Equals, "role1")
+	role := flagset.Lookup("role")
+	c.Assert(user, check.NotNil)
+	c.Check(role.Name, check.Equals, "role")
+	c.Check(role.Usage, check.Equals, "Filter user by role")
+	c.Check(role.Value.String(), check.Equals, "role1")
+	c.Check(role.DefValue, check.Equals, "")
+	srole := flagset.Lookup("r")
+	c.Assert(srole, check.NotNil)
+	c.Check(srole.Name, check.Equals, "r")
+	c.Check(srole.Usage, check.Equals, "Filter user by role")
+	c.Check(srole.Value.String(), check.Equals, "role1")
+	c.Check(srole.DefValue, check.Equals, "")
 }

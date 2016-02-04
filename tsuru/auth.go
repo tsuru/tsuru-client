@@ -495,10 +495,18 @@ func (c *regenerateAPIToken) Flags() *gnuflag.FlagSet {
 	return c.fs
 }
 
-type listUsers struct{}
+type listUsers struct {
+	userEmail string
+	role      string
+	fs        *gnuflag.FlagSet
+}
 
 func (c *listUsers) Run(ctx *cmd.Context, client *cmd.Client) error {
-	url, err := cmd.GetURL("/users")
+	if c.userEmail != "" && c.role != "" {
+		return errors.New("You cannot set more than one flag. Enter <tsuru user-list --help> for more information.")
+	}
+	url := fmt.Sprintf("/users?userEmail=%s&role=%s", c.userEmail, c.role)
+	url, err := cmd.GetURL(url)
 	if err != nil {
 		return err
 	}
@@ -531,7 +539,18 @@ func (c *listUsers) Info() *cmd.Info {
 	return &cmd.Info{
 		Name:    "user-list",
 		MinArgs: 0,
-		Usage:   "user-list",
-		Desc:    "List all users in tsuru.",
+		Usage:   "user-list [--user/-u useremail] [--role/-r role]",
+		Desc:    "List all users in tsuru. It may also filter users by user email or role name.",
 	}
+}
+
+func (c *listUsers) Flags() *gnuflag.FlagSet {
+	if c.fs == nil {
+		c.fs = gnuflag.NewFlagSet("", gnuflag.ExitOnError)
+		c.fs.StringVar(&c.userEmail, "user", "", "Filter user by user email")
+		c.fs.StringVar(&c.userEmail, "u", "", "Filter user by user email")
+		c.fs.StringVar(&c.role, "r", "", "Filter user by role")
+		c.fs.StringVar(&c.role, "role", "", "Filter user by role")
+	}
+	return c.fs
 }
