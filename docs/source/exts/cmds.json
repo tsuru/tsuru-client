@@ -19,6 +19,10 @@
     "usage": "tsuru target-list", 
     "desc": "Displays the list of targets, marking the current.\n\nOther commands related to target:\n\n  - target-add: adds a new target to the list of targets\n  - target-set: defines one of the targets in the list as the current target\n  - target-remove: removes one target from the list\n\n"
   }, 
+  "role-info": {
+    "usage": "tsuru role-info <role-name>", 
+    "desc": "Get information about specific role.\n\nMinimum # of arguments: 1\n"
+  }, 
   "team-create": {
     "usage": "tsuru team-create <teamname>", 
     "desc": "Create a team for the user. tsuru requires a user to be a member of at least\none team in order to create an app or a service instance.\n\nWhen you create a team, you're automatically member of this team.\n\nMinimum # of arguments: 1\n"
@@ -136,8 +140,8 @@
     "desc": "List installed tsuru plugins.\n\n"
   }, 
   "app-team-owner-set": {
-    "usage": "tsuru app-team-owner-set <new-team-owner> [-a/--app appname]", 
-    "desc": "Sets owner team for an application.\n\nFlags:\n  \n  -a, --app (= \"\")\n      The name of the app.\n  \nMinimum # of arguments: 1\n"
+    "usage": "tsuru app-team-owner-set", 
+    "desc": "This command was removed. You should use `tsuru service-info` instead.\n\n"
   }, 
   "service-instance-revoke": {
     "usage": "tsuru service-instance-revoke <service-name> <service-instance-name> <team-name>", 
@@ -228,8 +232,8 @@
     "desc": "Assign an existing role to a user with some context value.\n\nMinimum # of arguments: 2\n"
   }, 
   "app-update": {
-    "usage": "tsuru app-update <appname> [--description/-d description] [--plan/-p plan_name] [--pool/-o pool] ", 
-    "desc": "Updates an app, changing its description, plan or pool information.\n\nThe [[--description]] parameter sets a description for your app.\n\nThe [[--plan]] parameter changes the plan of your app.\n\nThe [[--pool]] parameters changes the pool of your app.\n\nFlags:\n  \n  -d, --description (= \"\")\n      App description\n  -o, --pool (= \"\")\n      App pool\n  -p, --plan (= \"\")\n      App plan\n  \nMinimum # of arguments: 1\nMaximum # of arguments: 1\n"
+    "usage": "tsuru app-update <appname> [--description/-d description] [--plan/-p plan_name] [--pool/-o pool] [--team-owner/-t team-owner]", 
+    "desc": "Updates an app, changing its description, plan or pool information.\n\nThe [[--description]] parameter sets a description for your app.\n\nThe [[--plan]] parameter changes the plan of your app.\n\nThe [[--pool]] parameter changes the pool of your app.\n\nThe [[--team-owner]] parameter sets owner team for an application.\n\nFlags:\n  \n  -d, --description (= \"\")\n      App description\n  -o, --pool (= \"\")\n      App pool\n  -p, --plan (= \"\")\n      App plan\n  -t, --team-owner (= \"\")\n      App team owner\n  \nMinimum # of arguments: 1\nMaximum # of arguments: 1\n"
   }, 
   "role-dissociate": {
     "usage": "tsuru role-dissociate <role-name> <user-email> [<context-value>]", 
@@ -272,7 +276,7 @@
   }, 
   "app-log": {
     "usage": "tsuru app-log [-a/--app appname] [-l/--lines numberOfLines] [-s/--source source] [-u/--unit unit] [-f/--follow]", 
-    "desc": "Shows log entries for an application. These logs include everything the\napplication send to stdout and stderr, alongside with logs from tsuru server\n(deployments, restarts, etc.)\n\nThe [[--lines]] flag is optional and by default its value is 10.\n\nThe [[--source]] flag is optional and allows filtering logs by log source\n(e.g. application, tsuru api).\n\nThe [[--unit]] flag is optional and allows filtering by unit. It's useful if\nyour application has multiple units and you want logs from a single one.\n\nThe [[--follow]] flag is optional and makes the command wait for additional\nlog output\n\nFlags:\n  \n  -a, --app (= \"\")\n      The name of the app.\n  -f, --follow  (= false)\n      Follow logs\n  -l, --lines  (= 10)\n      The number of log lines to display\n  -s, --source (= \"\")\n      The log from the given source\n  -u, --unit (= \"\")\n      The log from the given unit\n  \n"
+    "desc": "Shows log entries for an application. These logs include everything the\napplication send to stdout and stderr, alongside with logs from tsuru server\n(deployments, restarts, etc.)\n\nThe [[--lines]] flag is optional and by default its value is 10.\n\nThe [[--source]] flag is optional and allows filtering logs by log source\n(e.g. application, tsuru api).\n\nThe [[--unit]] flag is optional and allows filtering by unit. It's useful if\nyour application has multiple units and you want logs from a single one.\n\nThe [[--follow]] flag is optional and makes the command wait for additional\nlog output\n\nThe [[--no-date]] flag is optional and makes the log output without date.\n\nThe [[--no-source]] flag is optional and makes the log output without source\ninformation, useful to very dense logs.\n\n\nFlags:\n  \n  -a, --app (= \"\")\n      The name of the app.\n  -f, --follow  (= false)\n      Follow logs\n  -l, --lines  (= 10)\n      The number of log lines to display\n  --no-date  (= false)\n      No date information\n  --no-source  (= false)\n      No source information\n  -s, --source (= \"\")\n      The log from the given source\n  -u, --unit (= \"\")\n      The log from the given unit\n  \n"
   }, 
   "app-deploy": {
     "usage": "tsuru app-deploy [-a/--app <appname>] [-i/--image <image_url>] <file-or-dir-1> [file-or-dir-2] ... [file-or-dir-n]", 

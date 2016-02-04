@@ -61,6 +61,8 @@ Authorization
    :title: Create a new role
 .. tsuru-command:: role-list
    :title: List all created roles
+.. tsuru-command:: role-info
+   :title: Info about specific role
 .. tsuru-command:: role-permission-add
    :title: Add a permission to a role
 .. tsuru-command:: role-permission-remove
