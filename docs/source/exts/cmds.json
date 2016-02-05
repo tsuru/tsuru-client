@@ -160,8 +160,8 @@
     "desc": "This command was removed. You should use `tsuru service-info` instead.\n\n"
   }, 
   "user-list": {
-    "usage": "tsuru user-list", 
-    "desc": "List all users in tsuru.\n\n"
+    "usage": "tsuru user-list [--user/-u useremail] [--role/-r role]", 
+    "desc": "List all users in tsuru. It may also filter users by user email or role name.\n\nFlags:\n  \n  -r, --role (= \"\")\n      Filter user by role\n  -u, --user (= \"\")\n      Filter user by user email\n  \n"
   }, 
   "target-remove": {
     "usage": "tsuru target-remove", 
