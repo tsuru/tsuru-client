@@ -754,12 +754,12 @@ func (s *S) TestListUsersRunFilterByUserEmail(c *check.C) {
 				req.URL.RawQuery == "userEmail=test2@test.com&role="
 		},
 	}
-	expected := `+---------------+---------------+--------------------+
-| User          | Roles         | Permissions        |
-+---------------+---------------+--------------------+
-| test@test.com | role1(team a) | app.create(team a) |
-|               | role2(app x)  | app.deploy(app x)  |
-+---------------+---------------+--------------------+
+	expected := `+---------------+---------------+
+| User          | Roles         |
++---------------+---------------+
+| test@test.com | role1(team a) |
+|               | role2(app x)  |
++---------------+---------------+
 `
 	client := cmd.NewClient(&http.Client{Transport: &trans}, nil, manager)
 	command := listUsers{}
@@ -793,12 +793,12 @@ func (s *S) TestListUsersRunFilterByRole(c *check.C) {
 				req.URL.RawQuery == "userEmail=&role=role2"
 		},
 	}
-	expected := `+---------------+---------------+--------------------+
-| User          | Roles         | Permissions        |
-+---------------+---------------+--------------------+
-| test@test.com | role1(team a) | app.create(team a) |
-|               | role2(app x)  | app.deploy(app x)  |
-+---------------+---------------+--------------------+
+	expected := `+---------------+---------------+
+| User          | Roles         |
++---------------+---------------+
+| test@test.com | role1(team a) |
+|               | role2(app x)  |
++---------------+---------------+
 `
 	client := cmd.NewClient(&http.Client{Transport: &trans}, nil, manager)
 	command := listUsers{}
