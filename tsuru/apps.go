@@ -654,6 +654,7 @@ type appFilter struct {
 	owner     string
 	pool      string
 	locked    bool
+	status    string
 }
 
 func (f *appFilter) queryString(client *cmd.Client) (url.Values, error) {
@@ -683,6 +684,9 @@ func (f *appFilter) queryString(client *cmd.Client) (url.Values, error) {
 	}
 	if f.pool != "" {
 		result.Set("pool", f.pool)
+	}
+	if f.status != "" {
+		result.Set("status", f.status)
 	}
 	return result, nil
 }
@@ -763,6 +767,8 @@ func (c *appList) Flags() *gnuflag.FlagSet {
 		c.fs.StringVar(&c.filter.name, "n", "", "Filter applications by name")
 		c.fs.StringVar(&c.filter.pool, "pool", "", "Filter applications by pool")
 		c.fs.StringVar(&c.filter.pool, "o", "", "Filter applications by pool")
+		c.fs.StringVar(&c.filter.status, "status", "", "Filter applications by unit status. Accepts multiple values separated by commas")
+		c.fs.StringVar(&c.filter.status, "s", "", "Filter applications by unit status. Accepts multiple values separated by commas")
 		c.fs.StringVar(&c.filter.platform, "platform", "", "Display only applications that use the given platform")
 		c.fs.StringVar(&c.filter.platform, "p", "", "Display only applications that use the given platform")
 		c.fs.StringVar(&c.filter.teamOwner, "team", "", "Display only applications owned by the given team")
