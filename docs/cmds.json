@@ -41,7 +41,7 @@
   }, 
   "app-list": {
     "usage": "tsuru app-list", 
-    "desc": "Lists all apps that you have access to. App access is controlled by teams. If\nyour team has access to an app, then you have access to it.\n\nFlags can be used to filter the list of applications.\n\nFlags:\n  \n  -l, --locked  (= false)\n      Display only applications that are locked\n  -n, --name (= \"\")\n      Filter applications by name\n  -o, --pool (= \"\")\n      Filter applications by pool\n  -p, --platform (= \"\")\n      Display only applications that use the given platform\n  -q  (= false)\n      Display only applications name\n  -t, --team (= \"\")\n      Display only applications owned by the given team\n  -u, --user (= \"\")\n      Display only applications owner by the given user\n  \n"
+    "desc": "Lists all apps that you have access to. App access is controlled by teams. If\nyour team has access to an app, then you have access to it.\n\nFlags can be used to filter the list of applications.\n\nFlags:\n  \n  -l, --locked  (= false)\n      Filter applications by lock status\n  -n, --name (= \"\")\n      Filter applications by name\n  -o, --pool (= \"\")\n      Filter applications by pool\n  -p, --platform (= \"\")\n      Filter applications by platform\n  -q  (= false)\n      Display only applications name\n  -t, --team (= \"\")\n      Filter applications by team owner\n  -u, --user (= \"\")\n      Filter applications by owner\n  -s, --status (= \"\")\n      Filter applications by unit status. Accepts multiple values separated by commas\n  \n"
   }, 
   "team-user-remove": {
     "usage": "tsuru team-user-remove", 
