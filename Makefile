@@ -34,8 +34,11 @@ requirements: requirements.txt
 docs-clean:
 	@rm -rf ./docs/build
 
-doc: docs-clean
-	@python docs/source/exts/tsuru_cmd.py && cd docs && make html SPHINXOPTS="-N -W"
+docs-requirements:
+	@pip install -r docs/requirements.txt
+
+doc: docs-clean docs-requirements
+	@tsuru_sphinx tsuru docs/ && cd docs && make html SPHINXOPTS="-N -W"
 
 docs: doc
 
