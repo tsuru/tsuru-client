@@ -120,6 +120,48 @@ func (s *S) TestPluginWithArgs(c *check.C) {
 	c.Assert(fexec.ExecutedCmd(pluginPath, []string{"ble", "bla"}), check.Equals, true)
 }
 
+func (s *S) TestPluginLoop(c *check.C) {
+	os.Setenv("TSURU_PLUGIN_NAME", "myplugin")
+	defer os.Unsetenv("TSURU_PLUGIN_NAME")
+	fexec := exectest.FakeExecutor{
+		Output: map[string][][]byte{
+			"a b": {[]byte("hello world")},
+		},
+	}
+	execut = &fexec
+	defer func() {
+		execut = nil
+	}()
+	var buf bytes.Buffer
+	context := cmd.Context{
+		Args:   []string{"myplugin", "a", "b"},
+		Stdout: &buf,
+		Stderr: &buf,
+	}
+	client := cmd.NewClient(nil, nil, manager)
+	command := plugin{}
+	err := command.Run(&context, client)
+	c.Assert(err, check.Equals, cmd.ErrLookup)
+}
+
+func (s *S) TestPluginCommandNotFound(c *check.C) {
+	fexec := exectest.ErrorExecutor{Err: os.ErrNotExist}
+	execut = &fexec
+	defer func() {
+		execut = nil
+	}()
+	var buf bytes.Buffer
+	context := cmd.Context{
+		Args:   []string{"myplugin", "a", "b"},
+		Stdout: &buf,
+		Stderr: &buf,
+	}
+	client := cmd.NewClient(nil, nil, manager)
+	command := plugin{}
+	err := command.Run(&context, client)
+	c.Assert(err, check.Equals, cmd.ErrLookup)
+}
+
 func (s *S) TestPluginIsACommand(c *check.C) {
 	var _ cmd.Command = &plugin{}
 }

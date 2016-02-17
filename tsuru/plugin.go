@@ -1,4 +1,4 @@
-// Copyright 2015 tsuru-client authors. All rights reserved.
+// Copyright 2016 tsuru-client authors. All rights reserved.
 // Use of this source code is governed by a BSD-style
 // license that can be found in the LICENSE file.
 
@@ -73,6 +73,9 @@ func (plugin) Info() *cmd.Info {
 func (c *plugin) Run(context *cmd.Context, client *cmd.Client) error {
 	context.RawOutput()
 	pluginName := context.Args[0]
+	if os.Getenv("TSURU_PLUGIN_NAME") == pluginName {
+		return cmd.ErrLookup
+	}
 	pluginPath := cmd.JoinWithUserDir(".tsuru", "plugins", pluginName)
 	target, err := cmd.GetURL("/")
 	if err != nil {
@@ -97,7 +100,11 @@ func (c *plugin) Run(context *cmd.Context, client *cmd.Client) error {
 		Stdin:  context.Stdin,
 		Envs:   envs,
 	}
-	return executor().Execute(opts)
+	err = executor().Execute(opts)
+	if os.IsNotExist(err) {
+		return cmd.ErrLookup
+	}
+	return err
 }
 
 type pluginRemove struct{}
