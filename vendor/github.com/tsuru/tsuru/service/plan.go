@@ -1,4 +1,4 @@
-// Copyright 2014 tsuru authors. All rights reserved.
+// Copyright 2016 tsuru authors. All rights reserved.
 // Use of this source code is governed by a BSD-style
 // license that can be found in the LICENSE file.
 
@@ -25,4 +25,17 @@ func GetPlansByServiceName(serviceName string) ([]Plan, error) {
 		return nil, err
 	}
 	return plans, nil
+}
+
+func GetPlanByServiceNameAndPlanName(serviceName, planName string) (Plan, error) {
+	plans, err := GetPlansByServiceName(serviceName)
+	if err != nil {
+		return Plan{}, err
+	}
+	for _, plan := range plans {
+		if plan.Name == planName {
+			return plan, nil
+		}
+	}
+	return Plan{}, nil
 }

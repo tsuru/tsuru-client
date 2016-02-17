@@ -7,10 +7,12 @@
 package provision
 
 import (
+	"encoding/json"
 	"errors"
 	"fmt"
 	"io"
 	"net/url"
+	"time"
 
 	"github.com/tsuru/tsuru/app/bind"
 	"github.com/tsuru/tsuru/quota"
@@ -58,23 +60,27 @@ func ParseStatus(status string) (Status, error) {
 		return StatusStarting, nil
 	case "stopped":
 		return StatusStopped, nil
+	case "asleep":
+		return StatusAsleep, nil
 	}
 	return Status(""), ErrInvalidStatus
 }
 
 //     Flow:
-//
-//     +----------+                           Start          +---------+
-//     | Building |                   +---------------------+| Stopped |
-//     +----------+                   |                      +---------+
-//           ^                        |                           ^
-//           |                        |                           |
-//      deploy unit                   |                         Stop
-//           |                        |                           |
-//           +                        v       RegisterUnit        +
-//      +---------+  app unit   +----------+  SetUnitStatus  +---------+
-//      | Created | +---------> | Starting | +-------------> | Started |
-//      +---------+             +----------+                 +---------+
+//                                    +----------------------------------------------+
+//                                    |                                              |
+//                                    |            Start                             |
+//     +----------+                   |                      +---------+             |
+//     | Building |                   +---------------------+| Stopped |             |
+//     +----------+                   |                      +---------+             |
+//           ^                        |                           ^                  |
+//           |                        |                           |                  |
+//      deploy unit                   |                         Stop                 |
+//           |                        |                           |                  |
+//           +                        v       RegisterUnit        +                  +
+//      +---------+  app unit   +----------+  SetUnitStatus  +---------+  Sleep  +--------+
+//      | Created | +---------> | Starting | +-------------> | Started |+------->| Asleep |
+//      +---------+             +----------+                 +---------+         +--------+
 //                                    +                         ^ +
 //                                    |                         | |
 //                              SetUnitStatus                   | |
@@ -105,6 +111,9 @@ const (
 
 	// StatusStopped is for cases where the unit has been stopped.
 	StatusStopped = Status("stopped")
+
+	// StatusAsleep is for cases where the unit has been asleep.
+	StatusAsleep = Status("asleep")
 )
 
 // Unit represents a provision unit. Can be a machine, container or anything
@@ -176,6 +185,7 @@ type App interface {
 	GetSwap() int64
 	GetCpuShare() int
 
+	SetUpdatePlatform(bool) error
 	GetUpdatePlatform() bool
 
 	GetRouter() (string, error)
@@ -188,6 +198,24 @@ type App interface {
 
 	GetQuota() quota.Quota
 	SetQuotaInUse(int) error
+
+	GetCname() []string
+
+	GetIp() string
+
+	GetLock() AppLock
+}
+
+type AppLock interface {
+	json.Marshaler
+
+	GetLocked() bool
+
+	GetReason() string
+
+	GetOwner() string
+
+	GetAcquireDate() time.Time
 }
 
 // CNameManager represents a provisioner that supports cname on applications.
@@ -212,16 +240,10 @@ type ArchiveDeployer interface {
 	ArchiveDeploy(app App, archiveURL string, w io.Writer) (string, error)
 }
 
-// GitDeployer is a provisioner that can deploy the application from a Git
-// repository.
-type GitDeployer interface {
-	GitDeploy(app App, version string, w io.Writer) (string, error)
-}
-
 // UploadDeployer is a provisioner that can deploy the application from an
 // uploaded file.
 type UploadDeployer interface {
-	UploadDeploy(app App, file io.ReadCloser, w io.Writer) (string, error)
+	UploadDeploy(app App, file io.ReadCloser, build bool, w io.Writer) (string, error)
 }
 
 // ImageDeployer is a provisioner that can deploy the application from a
@@ -267,14 +289,19 @@ type Provisioner interface {
 	Restart(App, string, io.Writer) error
 
 	// Start starts the units of the application, with an optional string
-	// parameter represeting the name of the process to start. When the
+	// parameter representing the name of the process to start. When the
 	// process is empty, Start will start all units of the application.
 	Start(App, string) error
 
 	// Stop stops the units of the application, with an optional string
-	// parameter represeting the name of the process to start. When the
+	// parameter representing the name of the process to start. When the
 	// process is empty, Stop will stop all units of the application.
 	Stop(App, string) error
+
+	// Sleep puts the units of the application to sleep, with an optional string
+	// parameter representing the name of the process to sleep. When the
+	// process is empty, Sleep will put all units of the application to sleep.
+	Sleep(App, string) error
 
 	// Addr returns the address for an app.
 	//
@@ -307,6 +334,8 @@ type Provisioner interface {
 
 	// Rollback a deploy
 	Rollback(App, string, io.Writer) (string, error)
+
+	FilterAppsByUnitStatus([]App, []string) ([]App, error)
 }
 
 type MessageProvisioner interface {

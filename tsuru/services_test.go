@@ -24,20 +24,20 @@ type infoTransport struct {
 
 func (t *infoTransport) RoundTrip(req *http.Request) (resp *http.Response, err error) {
 	var message string
-	if req.URL.Path == "/services/mongodb" {
+	if strings.HasSuffix(req.URL.Path, "/services/mongodb") {
 		message = `[{"Name":"mymongo", "Apps":["myapp"], "Id":0, "Info":{"key": "value", "key2": "value2"}, "PlanName":"small", "ServiceName":"mongoservice", "Teams":["mongoteam"]}]`
 	}
-	if req.URL.Path == "/services/mongodb/plans" {
+	if strings.HasSuffix(req.URL.Path, "/services/mongodb/plans") {
 		if t.includePlans {
 			message = `[{"Name": "small", "Description": "another plan"}]`
 		} else {
 			message = `[]`
 		}
 	}
-	if req.URL.Path == "/services/mongodbnoplan" {
+	if strings.HasSuffix(req.URL.Path, "/services/mongodbnoplan") {
 		message = `[{"Name":"mymongo", "Apps":["myapp"], "Id":0, "Info":{"key": "value", "key2": "value2"}, "PlanName":"", "ServiceName":"noplanservice", "Teams":["noplanteam"]}]`
 	}
-	if req.URL.Path == "/services/mongodbnoplan/plans" {
+	if strings.HasSuffix(req.URL.Path, "/services/mongodbnoplan/plans") {
 		if t.includePlans {
 			message = `[{"Name": "small", "Description": "another plan"}]`
 		} else {
@@ -45,29 +45,29 @@ func (t *infoTransport) RoundTrip(req *http.Request) (resp *http.Response, err e
 		}
 	}
 
-	if req.URL.Path == "/services/mongo" {
+	if strings.HasSuffix(req.URL.Path, "/services/mongo") {
 		message = `[{"Name":"mymongo", "Apps":["myapp"], "Id":0, "Info":{"key": "value", "key2": "value2"}, "PlanName":"small", "ServiceName":"mongoservice", "Teams":["mongoteam"]}]`
 	}
-	if req.URL.Path == "/services/mongo/plans" {
+	if strings.HasSuffix(req.URL.Path, "/services/mongo/plans") {
 		if t.includePlans {
 			message = `[{"Name": "small", "Description": "another plan"}]`
 		} else {
 			message = `[]`
 		}
 	}
-	if req.URL.Path == "/services/mongo/doc" {
+	if strings.HasSuffix(req.URL.Path, "/services/mongo/doc") {
 		message = `This is a test doc for a test service.
 Service test is foo bar.
 `
 	}
-	if req.URL.Path == "/services/mymongo/plans" {
+	if strings.HasSuffix(req.URL.Path, "/services/mymongo/plans") {
 		if t.includePlans {
 			message = `[{"Name": "small", "Description": "another plan"}]`
 		} else {
 			message = `[]`
 		}
 	}
-	if req.URL.Path == "/services/mymongo/instances/mongo/info" {
+	if strings.HasSuffix(req.URL.Path, "/services/mymongo/instances/mongo/info") {
 		if t.includeAll {
 			message = `{"Apps": ["app", "app2"], "Teams": ["admin", "admin2"], "TeamOwner": "admin", "CustomInfo" : {"key4": "value8", "key2": "value9", "key3":"value3"},"Description": "description", "PlanName": "small", "PlanDescription": "another plan"}`
 		} else {
@@ -96,7 +96,7 @@ func (s *S) TestServiceList(c *check.C) {
 	trans := &cmdtest.ConditionalTransport{
 		Transport: cmdtest.Transport{Message: output, Status: http.StatusOK},
 		CondFunc: func(req *http.Request) bool {
-			return req.URL.Path == "/services/instances"
+			return strings.HasSuffix(req.URL.Path, "/services/instances")
 		},
 	}
 	client := cmd.NewClient(&http.Client{Transport: trans}, nil, manager)
@@ -120,7 +120,7 @@ func (s *S) TestServiceListWithEmptyResponse(c *check.C) {
 	trans := &cmdtest.ConditionalTransport{
 		Transport: cmdtest.Transport{Message: output, Status: http.StatusOK},
 		CondFunc: func(req *http.Request) bool {
-			return req.URL.Path == "/services/instances"
+			return strings.HasSuffix(req.URL.Path, "/services/instances")
 		},
 	}
 	client := cmd.NewClient(&http.Client{Transport: trans}, nil, manager)
@@ -156,7 +156,7 @@ func (s *S) TestServiceBind(c *check.C) {
 		Transport: cmdtest.Transport{Message: string(result), Status: http.StatusOK},
 		CondFunc: func(req *http.Request) bool {
 			called = true
-			return req.Method == "PUT" && req.URL.Path == "/services/mysql/instances/my-mysql/g1" &&
+			return req.Method == "PUT" && strings.HasSuffix(req.URL.Path, "/services/mysql/instances/my-mysql/g1") &&
 				req.URL.RawQuery == "noRestart=true"
 		},
 	}
@@ -190,7 +190,7 @@ func (s *S) TestServiceBindWithoutFlag(c *check.C) {
 		},
 		CondFunc: func(req *http.Request) bool {
 			called = true
-			return req.Method == "PUT" && req.URL.Path == "/services/mysql/instances/my-mysql/ge" &&
+			return req.Method == "PUT" && strings.HasSuffix(req.URL.Path, "/services/mysql/instances/my-mysql/ge") &&
 				req.URL.RawQuery == "noRestart=false"
 		},
 	}
@@ -216,7 +216,7 @@ func (s *S) TestServiceBindWithoutEnvironmentVariables(c *check.C) {
 	trans := &cmdtest.ConditionalTransport{
 		Transport: cmdtest.Transport{Message: string(result), Status: http.StatusOK},
 		CondFunc: func(req *http.Request) bool {
-			return req.Method == "PUT" && req.URL.Path == "/services/mysql/instances/my-mysql/g1" &&
+			return req.Method == "PUT" && strings.HasSuffix(req.URL.Path, "/services/mysql/instances/my-mysql/g1") &&
 				req.URL.RawQuery == "noRestart=false"
 		},
 	}
@@ -269,7 +269,7 @@ func (s *S) TestServiceUnbind(c *check.C) {
 		Transport: cmdtest.Transport{Message: string(result), Status: http.StatusOK},
 		CondFunc: func(req *http.Request) bool {
 			called = true
-			return req.Method == "DELETE" && req.URL.Path == "/services/service/instances/hand/pocket" &&
+			return req.Method == "DELETE" && strings.HasSuffix(req.URL.Path, "/services/service/instances/hand/pocket") &&
 				req.URL.RawQuery == "noRestart=true"
 		},
 	}
@@ -298,7 +298,7 @@ func (s *S) TestServiceUnbindWithoutFlag(c *check.C) {
 		Transport: cmdtest.Transport{Message: string(result), Status: http.StatusOK},
 		CondFunc: func(req *http.Request) bool {
 			called = true
-			return req.Method == "DELETE" && req.URL.Path == "/services/service/instances/hand/sleeve" &&
+			return req.Method == "DELETE" && strings.HasSuffix(req.URL.Path, "/services/service/instances/hand/sleeve") &&
 				req.URL.RawQuery == "noRestart=false"
 		},
 	}
@@ -646,7 +646,7 @@ func (s *S) TestServiceRemoveRun(c *check.C) {
 			Status:  http.StatusOK,
 		},
 		CondFunc: func(r *http.Request) bool {
-			return r.URL.Path == "/services/some-service-name/instances/some-service-instance" &&
+			return strings.HasSuffix(r.URL.Path, "/services/some-service-name/instances/some-service-instance") &&
 				r.Method == "DELETE"
 		},
 	}
@@ -735,7 +735,7 @@ func (s *S) TestServiceRemoveWithAppBindNoUnbind(c *check.C) {
 	trans := &cmdtest.ConditionalTransport{
 		Transport: cmdtest.Transport{Message: string(result), Status: http.StatusOK},
 		CondFunc: func(req *http.Request) bool {
-			return req.URL.Path == "/services/some-service-name/instances/mongodb" &&
+			return strings.HasSuffix(req.URL.Path, "/services/some-service-name/instances/mongodb") &&
 				req.Method == "DELETE"
 		},
 	}
@@ -766,7 +766,7 @@ func (s *S) TestServiceRemoveWithAppBindYesUnbind(c *check.C) {
 	instanceTransport := cmdtest.ConditionalTransport{
 		Transport: cmdtest.Transport{Message: string(result), Status: http.StatusOK},
 		CondFunc: func(req *http.Request) bool {
-			return req.URL.Path == "/services/some-service-name/instances/mongodb" &&
+			return strings.HasSuffix(req.URL.Path, "/services/some-service-name/instances/mongodb") &&
 				req.Method == "DELETE"
 		},
 	}
@@ -778,7 +778,7 @@ func (s *S) TestServiceRemoveWithAppBindYesUnbind(c *check.C) {
 		Transport: cmdtest.Transport{Message: string(result), Status: http.StatusOK},
 		CondFunc: func(req *http.Request) bool {
 			return req.Method == "DELETE" &&
-				req.URL.Path == "/services/some-service-name/instances/mongodb" &&
+				strings.HasSuffix(req.URL.Path, "/services/some-service-name/instances/mongodb") &&
 				req.URL.RawQuery == "unbindall=true"
 		},
 	}
@@ -806,7 +806,7 @@ func (s *S) TestServiceRemoveWithAppBindWithFlags(c *check.C) {
 	trans := &cmdtest.ConditionalTransport{
 		Transport: cmdtest.Transport{Message: string(result), Status: http.StatusOK},
 		CondFunc: func(req *http.Request) bool {
-			return req.URL.Path == "/services/service-name/instances/mongodb" && req.Method == "DELETE" && req.URL.RawQuery == "unbindall=true"
+			return strings.HasSuffix(req.URL.Path, "/services/service-name/instances/mongodb") && req.Method == "DELETE" && req.URL.RawQuery == "unbindall=true"
 		},
 	}
 	client := cmd.NewClient(&http.Client{Transport: trans}, nil, manager)
@@ -838,7 +838,7 @@ func (s *S) TestServiceRemoveWithAppBindShowAppsBound(c *check.C) {
 	instanceTransport := cmdtest.ConditionalTransport{
 		Transport: cmdtest.Transport{Message: string(result), Status: http.StatusOK},
 		CondFunc: func(req *http.Request) bool {
-			return req.URL.Path == "/services/service-name/instances/mongodb" && req.Method == "DELETE"
+			return strings.HasSuffix(req.URL.Path, "/services/service-name/instances/mongodb") && req.Method == "DELETE"
 		},
 	}
 	expectedOut1 := "-- mongodb removed --"
@@ -848,7 +848,7 @@ func (s *S) TestServiceRemoveWithAppBindShowAppsBound(c *check.C) {
 	appTransport := cmdtest.ConditionalTransport{
 		Transport: cmdtest.Transport{Message: string(result), Status: http.StatusOK},
 		CondFunc: func(req *http.Request) bool {
-			return req.Method == "DELETE" && req.URL.Path == "/services/service-name/instances/mongodb" && req.URL.RawQuery == "unbindall=true"
+			return req.Method == "DELETE" && strings.HasSuffix(req.URL.Path, "/services/service-name/instances/mongodb") && req.URL.RawQuery == "unbindall=true"
 		},
 	}
 	trans := &cmdtest.MultiConditionalTransport{
@@ -879,8 +879,8 @@ func (s *S) TestServiceInstanceGrantRun(c *check.C) {
 			Message: "",
 			Status:  http.StatusOK},
 		CondFunc: func(r *http.Request) bool {
-			return "/services/test-service/instances/permission/test-service-instance/team" == r.URL.Path &&
-				"PUT" == r.Method
+			path := "/services/test-service/instances/permission/test-service-instance/team"
+			return strings.HasSuffix(r.URL.Path, path) && "PUT" == r.Method
 		},
 	}
 	client := cmd.NewClient(&http.Client{Transport: &transp}, nil, manager)
@@ -906,8 +906,8 @@ func (s *S) TestServiceInstanceRevokeRun(c *check.C) {
 			Message: "",
 			Status:  http.StatusOK},
 		CondFunc: func(r *http.Request) bool {
-			return "/services/test-service/instances/permission/test-service-instance/team" == r.URL.Path &&
-				"DELETE" == r.Method
+			path := "/services/test-service/instances/permission/test-service-instance/team"
+			return strings.HasSuffix(r.URL.Path, path) && "DELETE" == r.Method
 		},
 	}
 	client := cmd.NewClient(&http.Client{Transport: &transp}, nil, manager)

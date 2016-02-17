@@ -1,4 +1,4 @@
-// Copyright 2015 tsuru authors. All rights reserved.
+// Copyright 2016 tsuru authors. All rights reserved.
 // Use of this source code is governed by a BSD-style
 // license that can be found in the LICENSE file.
 
@@ -8,6 +8,7 @@ import (
 	"bytes"
 	"encoding/json"
 	"net/http"
+	"strings"
 
 	"github.com/tsuru/tsuru/cmd"
 	"github.com/tsuru/tsuru/cmd/cmdtest"
@@ -34,7 +35,7 @@ func (s *S) TestAppRun(c *check.C) {
 		CondFunc: func(req *http.Request) bool {
 			b := make([]byte, 2)
 			req.Body.Read(b)
-			return req.URL.Path == "/apps/ble/run" && string(b) == "ls"
+			return strings.HasSuffix(req.URL.Path, "/apps/ble/run") && string(b) == "ls"
 		},
 	}
 	client := cmd.NewClient(&http.Client{Transport: trans}, nil, manager)
@@ -64,7 +65,7 @@ func (s *S) TestAppRunShouldUseAllSubsequentArgumentsAsArgumentsToTheGivenComman
 		CondFunc: func(req *http.Request) bool {
 			b := make([]byte, 5)
 			req.Body.Read(b)
-			return req.URL.Path == "/apps/ble/run" && string(b) == "ls -l"
+			return strings.HasSuffix(req.URL.Path, "/apps/ble/run") && string(b) == "ls -l"
 		},
 	}
 	client := cmd.NewClient(&http.Client{Transport: trans}, nil, manager)
@@ -94,7 +95,7 @@ func (s *S) TestAppRunWithoutTheFlag(c *check.C) {
 		CondFunc: func(req *http.Request) bool {
 			b := make([]byte, 6)
 			req.Body.Read(b)
-			return req.URL.Path == "/apps/bla/run" && string(b) == "ls -lh"
+			return strings.HasSuffix(req.URL.Path, "/apps/bla/run") && string(b) == "ls -lh"
 		},
 	}
 	client := cmd.NewClient(&http.Client{Transport: trans}, nil, manager)
@@ -122,7 +123,7 @@ func (s *S) TestAppRunShouldReturnErrorWhenCommandGoWrong(c *check.C) {
 			Status:  http.StatusOK,
 		},
 		CondFunc: func(req *http.Request) bool {
-			return req.URL.Path == "/apps/bla/run"
+			return strings.HasSuffix(req.URL.Path, "/apps/bla/run")
 		},
 	}
 	client := cmd.NewClient(&http.Client{Transport: trans}, nil, manager)

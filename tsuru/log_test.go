@@ -8,6 +8,7 @@ import (
 	"bytes"
 	"encoding/json"
 	"net/http"
+	"strings"
 	"time"
 
 	"github.com/tsuru/tsuru/cmd"
@@ -120,7 +121,7 @@ func (s *S) TestAppLogWithoutTheFlag(c *check.C) {
 	trans := &cmdtest.ConditionalTransport{
 		Transport: cmdtest.Transport{Message: string(result), Status: http.StatusOK},
 		CondFunc: func(req *http.Request) bool {
-			return req.URL.Path == "/apps/hitthelights/log" && req.Method == "GET" &&
+			return strings.HasSuffix(req.URL.Path, "/apps/hitthelights/log") && req.Method == "GET" &&
 				req.URL.Query().Get("lines") == "10"
 		},
 	}

@@ -1,4 +1,4 @@
-// Copyright 2015 tsuru authors. All rights reserved.
+// Copyright 2016 tsuru authors. All rights reserved.
 // Use of this source code is governed by a BSD-style
 // license that can be found in the LICENSE file.
 
@@ -47,7 +47,7 @@ func ListDeploys(filter *Filter, skip, limit int) ([]DeployData, error) {
 	}
 	apps := make([]string, len(appsList))
 	for i, a := range appsList {
-		apps[i] = a.Name
+		apps[i] = a.GetName()
 	}
 	var list []DeployData
 	f := bson.M{"app": bson.M{"$in": apps}, "removedate": bson.M{"$exists": false}}
@@ -124,7 +124,6 @@ func GetDeploy(id string) (*DeployData, error) {
 
 type DeployOptions struct {
 	App          *App
-	Version      string
 	Commit       string
 	ArchiveURL   string
 	File         io.ReadCloser
@@ -133,6 +132,7 @@ type DeployOptions struct {
 	Image        string
 	Origin       string
 	Rollback     bool
+	Build        bool
 }
 
 // Deploy runs a deployment of an application. It will first try to run an
@@ -166,6 +166,10 @@ func Deploy(opts DeployOptions) error {
 	if opts.App.UpdatePlatform == true {
 		opts.App.SetUpdatePlatform(false)
 	}
+	_, err = opts.App.RebuildRoutes()
+	if err != nil {
+		return err
+	}
 	return nil
 }
 
@@ -180,15 +184,10 @@ func deployToProvisioner(opts *DeployOptions, writer io.Writer) (string, error) 
 	}
 	if opts.File != nil {
 		if deployer, ok := Provisioner.(provision.UploadDeployer); ok {
-			return deployer.UploadDeploy(opts.App, opts.File, writer)
+			return deployer.UploadDeploy(opts.App, opts.File, opts.Build, writer)
 		}
 	}
-	if opts.ArchiveURL != "" {
-		if deployer, ok := Provisioner.(provision.ArchiveDeployer); ok {
-			return deployer.ArchiveDeploy(opts.App, opts.ArchiveURL, writer)
-		}
-	}
-	return Provisioner.(provision.GitDeployer).GitDeploy(opts.App, opts.Version, writer)
+	return Provisioner.(provision.ArchiveDeployer).ArchiveDeploy(opts.App, opts.ArchiveURL, writer)
 }
 
 func saveDeployData(opts *DeployOptions, imageId, log string, duration time.Duration, deployError error) error {
@@ -225,6 +224,16 @@ func saveDeployData(opts *DeployOptions, imageId, log string, duration time.Dura
 	query := bson.M{"$set": deploy}
 	_, err = conn.Deploys().Upsert(bson.M{"app": deploy.App, "image": "diff"}, query)
 	return err
+}
+
+func ValidateOrigin(origin string) bool {
+	originList := []string{"app-deploy", "git", "rollback", "drag-and-drop", "image"}
+	for _, ol := range originList {
+		if ol == origin {
+			return true
+		}
+	}
+	return false
 }
 
 func SaveDiffData(diff string, appName string) error {

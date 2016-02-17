@@ -1,4 +1,4 @@
-// Copyright 2015 tsuru authors. All rights reserved.
+// Copyright 2016 tsuru authors. All rights reserved.
 // Use of this source code is governed by a BSD-style
 // license that can be found in the LICENSE file.
 
@@ -6,11 +6,12 @@ package cmd
 
 import (
 	"bytes"
-	gerrors "errors"
+	stderrors "errors"
 	"fmt"
 	"io"
 	"net/http"
 	"os"
+	"regexp"
 	"sort"
 	"strconv"
 	"strings"
@@ -22,7 +23,13 @@ import (
 	"github.com/tsuru/tsuru/net"
 )
 
-var ErrAbortCommand = gerrors.New("")
+var (
+	ErrAbortCommand = stderrors.New("")
+
+	// ErrLookup is the error that should be returned by lookup functions when it
+	// cannot find a matching command for the given parameters.
+	ErrLookup = stderrors.New("lookup error - command not found")
+)
 
 type exiter interface {
 	Exit(int)
@@ -166,39 +173,36 @@ func (m *Manager) Run(args []string) {
 	} else if displayVersion {
 		args = []string{"version"}
 	}
+	if m.lookup != nil {
+		context := m.newContext(args, m.stdout, m.stderr, m.stdin)
+		err := m.lookup(context)
+		if err != nil && err != ErrLookup {
+			fmt.Fprint(m.stderr, err)
+			m.finisher().Exit(1)
+			return
+		} else if err == nil {
+			return
+		}
+	}
 	name := args[0]
 	command, ok := m.Commands[name]
 	if !ok {
-		if m.lookup != nil {
-			context := m.newContext(args, m.stdout, m.stderr, m.stdin)
-			err := m.lookup(context)
-			if err != nil {
-				msg := ""
-				if os.IsNotExist(err) {
-					msg = fmt.Sprintf("%s: %q is not a tsuru command. See %q.\n", os.Args[0], args[0], "tsuru help")
-					var keys []string
-					for key := range m.Commands {
-						keys = append(keys, key)
-					}
-					sort.Strings(keys)
-					for _, key := range keys {
-						levenshtein := fuzzy.Levenshtein(&key, &args[0])
-						if levenshtein < 3 || strings.Contains(key, args[0]) {
-							if !strings.Contains(msg, "Did you mean?") {
-								msg += fmt.Sprintf("\nDid you mean?\n")
-							}
-							msg += fmt.Sprintf("\t%s\n", key)
-						}
-					}
-				} else {
-					msg = err.Error()
-				}
-				fmt.Fprint(m.stderr, msg)
-				m.finisher().Exit(1)
-			}
-			return
+		msg := fmt.Sprintf("%s: %q is not a %s command. See %q.\n", m.name, name, m.name, m.name+" help")
+		var keys []string
+		for key := range m.Commands {
+			keys = append(keys, key)
 		}
-		fmt.Fprintf(m.stderr, "Error: command %q does not exist\n", args[0])
+		sort.Strings(keys)
+		for _, key := range keys {
+			levenshtein := fuzzy.Levenshtein(&key, &args[0])
+			if levenshtein < 3 || strings.Contains(key, args[0]) {
+				if !strings.Contains(msg, "Did you mean?") {
+					msg += fmt.Sprintf("\nDid you mean?\n")
+				}
+				msg += fmt.Sprintf("\t%s\n", key)
+			}
+		}
+		fmt.Fprint(m.stderr, msg)
 		m.finisher().Exit(1)
 		return
 	}
@@ -447,6 +451,8 @@ func (c *help) Run(context *Context, client *Client) error {
 	return nil
 }
 
+var flagFormatRegexp = regexp.MustCompile(`(?m)^([^-\s])`)
+
 func (c *help) parseFlags(command Command) string {
 	var output string
 	if cmd, ok := command.(FlaggedCommand); ok {
@@ -455,7 +461,8 @@ func (c *help) parseFlags(command Command) string {
 		flagset.SetOutput(&buf)
 		flagset.PrintDefaults()
 		if buf.String() != "" {
-			output = fmt.Sprintf("Flags:\n\n%s", buf.String())
+			output = flagFormatRegexp.ReplaceAllString(buf.String(), `    $1`)
+			output = fmt.Sprintf("Flags:\n\n%s", output)
 		}
 	}
 	return strings.Replace(output, "\n", "\n  ", -1)

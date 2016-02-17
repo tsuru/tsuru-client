@@ -1,4 +1,4 @@
-// Copyright 2015 tsuru-client authors. All rights reserved.
+// Copyright 2016 tsuru-client authors. All rights reserved.
 // Use of this source code is governed by a BSD-style
 // license that can be found in the LICENSE file.
 
@@ -89,13 +89,13 @@ func (s *S) TestPlugin(c *check.C) {
 	c.Assert(buf.String(), check.Equals, "hello world")
 	commands := fexec.GetCommands(pluginPath)
 	c.Assert(commands, check.HasLen, 1)
-	target, err := cmd.ReadTarget()
+	target, err := cmd.GetURL("/")
 	c.Assert(err, check.IsNil)
 	token, err := cmd.ReadToken()
 	c.Assert(err, check.IsNil)
 	envs := os.Environ()
 	tsuruEnvs := []string{
-		fmt.Sprintf("TSURU_TARGET=%s/", target),
+		fmt.Sprintf("TSURU_TARGET=%s", target),
 		fmt.Sprintf("TSURU_TOKEN=%s", token),
 		"TSURU_PLUGIN_NAME=myplugin",
 	}

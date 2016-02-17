@@ -1,4 +1,4 @@
-// Copyright 2015 tsuru authors. All rights reserved.
+// Copyright 2016 tsuru authors. All rights reserved.
 // Use of this source code is governed by a BSD-style
 // license that can be found in the LICENSE file.
 
@@ -11,6 +11,7 @@ var PermissionRegistry = (&registry{}).addWithCtx(
 ).addWithCtx(
 	"app.create", []contextType{CtxTeam},
 ).add(
+	"app.update.description",
 	"app.update.log",
 	"app.update.pool",
 	"app.update.unit.add",
@@ -20,6 +21,7 @@ var PermissionRegistry = (&registry{}).addWithCtx(
 	"app.update.env.set",
 	"app.update.env.unset",
 	"app.update.restart",
+	"app.update.sleep",
 	"app.update.start",
 	"app.update.stop",
 	"app.update.swap",
@@ -97,6 +99,7 @@ var PermissionRegistry = (&registry{}).addWithCtx(
 	"service-instance.update.unbind",
 	"service-instance.update.grant",
 	"service-instance.update.revoke",
+	"service-instance.update.description",
 ).add(
 	"role.create",
 	"role.delete",
@@ -111,9 +114,12 @@ var PermissionRegistry = (&registry{}).addWithCtx(
 ).add(
 	"plan.create",
 	"plan.delete",
+).addWithCtx(
+	"pool", []contextType{CtxPool},
+).addWithCtx(
+	"pool.create", []contextType{},
 ).add(
-	"pool.create",
-	"pool.update",
+	"pool.update.logs",
 	"pool.delete",
 ).add(
 	"debug",

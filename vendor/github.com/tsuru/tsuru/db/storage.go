@@ -1,4 +1,4 @@
-// Copyright 2015 tsuru authors. All rights reserved.
+// Copyright 2016 tsuru authors. All rights reserved.
 // Use of this source code is governed by a BSD-style
 // license that can be found in the LICENSE file.
 
@@ -206,4 +206,12 @@ func (s *LogStorage) LogsCollections() ([]*storage.Collection, error) {
 
 func (s *Storage) Roles() *storage.Collection {
 	return s.Collection("roles")
+}
+
+func (s *Storage) ScopedConfig() *storage.Collection {
+	// This collection has this name for historical reasons. At first it was
+	// used exclusively by the bs component, later it became a generic
+	// configuration collection. Preserving the old name allow updating tsuru
+	// without the need for data migrations.
+	return s.Collection("bsconfig")
 }

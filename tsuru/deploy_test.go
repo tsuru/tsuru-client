@@ -1,4 +1,4 @@
-// Copyright 2015 tsuru-client authors. All rights reserved.
+// Copyright 2016 tsuru-client authors. All rights reserved.
 // Use of this source code is governed by a BSD-style
 // license that can be found in the LICENSE file.
 
@@ -13,6 +13,7 @@ import (
 	"io/ioutil"
 	"net/http"
 	"sort"
+	"strings"
 	"time"
 
 	"github.com/tsuru/tsuru/cmd"
@@ -40,7 +41,7 @@ func (s *S) TestDeployRun(c *check.C) {
 				defer req.Body.Close()
 			}
 			if calledTimes == 1 {
-				return req.Method == "GET" && req.URL.Path == "/apps/secret"
+				return req.Method == "GET" && strings.HasSuffix(req.URL.Path, "/apps/secret")
 			}
 			file, _, err := req.FormFile("file")
 			c.Assert(err, check.IsNil)
@@ -48,7 +49,7 @@ func (s *S) TestDeployRun(c *check.C) {
 			c.Assert(err, check.IsNil)
 			c.Assert(content, check.DeepEquals, buf.Bytes())
 			c.Assert(req.Header.Get("Content-Type"), check.Matches, "multipart/form-data; boundary=.*")
-			return req.Method == "POST" && req.URL.Path == "/apps/secret/deploy" && req.URL.RawQuery == "origin=app-deploy"
+			return req.Method == "POST" && strings.HasSuffix(req.URL.Path, "/apps/secret/deploy") && req.URL.RawQuery == "origin=app-deploy"
 		},
 	}
 	client := cmd.NewClient(&http.Client{Transport: &trans}, nil, manager)
@@ -76,12 +77,12 @@ func (s *S) TestDeployImage(c *check.C) {
 				defer req.Body.Close()
 			}
 			if calledTimes == 1 {
-				return req.Method == "GET" && req.URL.Path == "/apps/secret"
+				return req.Method == "GET" && strings.HasSuffix(req.URL.Path, "/apps/secret")
 			}
 			image := req.FormValue("image")
 			c.Assert(image, check.Equals, "registr.com/image-to-deploy")
 			c.Assert(req.Header.Get("Content-Type"), check.Equals, "application/x-www-form-urlencoded")
-			return req.Method == "POST" && req.URL.Path == "/apps/secret/deploy" && req.URL.RawQuery == "origin=docker image"
+			return req.Method == "POST" && strings.HasSuffix(req.URL.Path, "/apps/secret/deploy") && req.URL.RawQuery == "origin=docker image"
 		},
 	}
 	client := cmd.NewClient(&http.Client{Transport: &trans}, nil, manager)
@@ -105,7 +106,7 @@ func (s *S) TestDeployAuthNotOK(c *check.C) {
 		Transport: cmdtest.Transport{Message: "Forbidden", Status: http.StatusForbidden},
 		CondFunc: func(req *http.Request) bool {
 			calledTimes++
-			return req.Method == "GET" && req.URL.Path == "/apps/secret"
+			return req.Method == "GET" && strings.HasSuffix(req.URL.Path, "/apps/secret")
 		},
 	}
 	client := cmd.NewClient(&http.Client{Transport: &trans}, nil, manager)
@@ -387,7 +388,7 @@ func (s *S) TestAppDeployRollback(c *check.C) {
 		CondFunc: func(req *http.Request) bool {
 			called = true
 			body, _ := ioutil.ReadAll(req.Body)
-			return req.URL.Path == "/apps/arrakis/deploy/rollback" &&
+			return strings.HasSuffix(req.URL.Path, "/apps/arrakis/deploy/rollback") &&
 				req.Method == "POST" && string(body) == "image=my-image" && req.URL.RawQuery == "origin=rollback"
 		},
 	}

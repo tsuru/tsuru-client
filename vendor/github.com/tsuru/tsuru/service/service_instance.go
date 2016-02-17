@@ -1,4 +1,4 @@
-// Copyright 2015 tsuru authors. All rights reserved.
+// Copyright 2016 tsuru authors. All rights reserved.
 // Use of this source code is governed by a BSD-style
 // license that can be found in the LICENSE file.
 
@@ -43,6 +43,7 @@ type ServiceInstance struct {
 	Units       []string
 	Teams       []string
 	TeamOwner   string
+	Description string
 }
 
 // DeleteInstance deletes the service instance from the database.
@@ -313,6 +314,15 @@ func CreateServiceInstance(instance ServiceInstance, service *Service, user *aut
 	actions := []*action.Action{&createServiceInstance, &insertServiceInstance}
 	pipeline := action.NewPipeline(actions...)
 	return pipeline.Execute(*service, instance, user.Email)
+}
+
+func UpdateService(si *ServiceInstance) error {
+	conn, err := db.Conn()
+	if err != nil {
+		return err
+	}
+	defer conn.Close()
+	return conn.ServiceInstances().Update(bson.M{"name": si.Name, "service_name": si.ServiceName}, si)
 }
 
 func GetServiceInstancesByServices(services []Service) ([]ServiceInstance, error) {

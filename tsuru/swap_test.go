@@ -1,4 +1,4 @@
-// Copyright 2015 tsuru-client authors. All rights reserved.
+// Copyright 2016 tsuru-client authors. All rights reserved.
 // Use of this source code is governed by a BSD-style
 // license that can be found in the LICENSE file.
 
@@ -7,6 +7,7 @@ package main
 import (
 	"bytes"
 	"net/http"
+	"strings"
 
 	"github.com/tsuru/tsuru/cmd"
 	"github.com/tsuru/tsuru/cmd/cmdtest"
@@ -25,7 +26,7 @@ func (s *S) TestSwap(c *check.C) {
 		Transport: cmdtest.Transport{Status: http.StatusOK, Message: ""},
 		CondFunc: func(r *http.Request) bool {
 			called = true
-			return r.Method == "PUT" && r.URL.Path == "/swap"
+			return r.Method == "PUT" && strings.HasSuffix(r.URL.Path, "/swap")
 		},
 	}
 	context := cmd.Context{

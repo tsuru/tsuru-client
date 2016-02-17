@@ -1,4 +1,4 @@
-// Copyright 2015 tsuru authors. All rights reserved.
+// Copyright 2016 tsuru authors. All rights reserved.
 // Use of this source code is governed by a BSD-style
 // license that can be found in the LICENSE file.
 
@@ -9,6 +9,7 @@ import (
 	"encoding/json"
 	"io/ioutil"
 	"net/http"
+	"strings"
 
 	"github.com/tsuru/tsuru/cmd"
 	"github.com/tsuru/tsuru/cmd/cmdtest"
@@ -54,7 +55,7 @@ func (s *S) TestEnvGetRunWithMultipleParams(c *check.C) {
 			defer req.Body.Close()
 			got, err := ioutil.ReadAll(req.Body)
 			c.Assert(err, check.IsNil)
-			return req.URL.Path == "/apps/someapp/env" && req.Method == "GET" && string(got) == want
+			return strings.HasSuffix(req.URL.Path, "/apps/someapp/env") && req.Method == "GET" && string(got) == want
 		},
 	}
 	client := cmd.NewClient(&http.Client{Transport: trans}, nil, manager)
@@ -114,7 +115,7 @@ func (s *S) TestEnvGetWithoutTheFlag(c *check.C) {
 	trans := &cmdtest.ConditionalTransport{
 		Transport: cmdtest.Transport{Message: jsonResult, Status: http.StatusOK},
 		CondFunc: func(req *http.Request) bool {
-			return req.URL.Path == "/apps/seek/env" && req.Method == "GET"
+			return strings.HasSuffix(req.URL.Path, "/apps/seek/env") && req.Method == "GET"
 		},
 	}
 	client := cmd.NewClient(&http.Client{Transport: trans}, nil, manager)
@@ -146,7 +147,7 @@ func (s *S) TestEnvSetRun(c *check.C) {
 			defer req.Body.Close()
 			got, err := ioutil.ReadAll(req.Body)
 			c.Assert(err, check.IsNil)
-			return req.URL.Path == "/apps/someapp/env" && req.Method == "POST" && string(got) == want &&
+			return strings.HasSuffix(req.URL.Path, "/apps/someapp/env") && req.Method == "POST" && string(got) == want &&
 				req.URL.RawQuery == "private=false&noRestart=false"
 		},
 	}
@@ -213,7 +214,7 @@ func (s *S) TestEnvSetValues(c *check.C) {
 			err := json.NewDecoder(req.Body).Decode(&got)
 			c.Assert(err, check.IsNil)
 			c.Assert(got, check.DeepEquals, want)
-			return req.URL.Path == "/apps/someapp/env" && req.Method == "POST" &&
+			return strings.HasSuffix(req.URL.Path, "/apps/someapp/env") && req.Method == "POST" &&
 				req.URL.RawQuery == "private=false&noRestart=false"
 		},
 	}
@@ -261,7 +262,7 @@ func (s *S) TestEnvSetValuesAndPrivateAndNoRestart(c *check.C) {
 			c.Assert(err, check.IsNil)
 			c.Assert(req.URL.RawQuery, check.Equals, "private=true&noRestart=true")
 			c.Assert(got, check.DeepEquals, want)
-			return req.URL.Path == "/apps/someapp/env" && req.Method == "POST"
+			return strings.HasSuffix(req.URL.Path, "/apps/someapp/env") && req.Method == "POST"
 		},
 	}
 	client := cmd.NewClient(&http.Client{Transport: trans}, nil, manager)
@@ -285,7 +286,7 @@ func (s *S) TestEnvSetWithoutFlag(c *check.C) {
 	trans := &cmdtest.ConditionalTransport{
 		Transport: cmdtest.Transport{Message: string(result), Status: http.StatusOK},
 		CondFunc: func(req *http.Request) bool {
-			return req.URL.Path == "/apps/otherapp/env" && req.Method == "POST" &&
+			return strings.HasSuffix(req.URL.Path, "/apps/otherapp/env") && req.Method == "POST" &&
 				req.URL.RawQuery == "private=false&noRestart=false"
 		},
 	}
@@ -332,7 +333,7 @@ func (s *S) TestEnvUnsetRun(c *check.C) {
 			defer req.Body.Close()
 			got, err := ioutil.ReadAll(req.Body)
 			c.Assert(err, check.IsNil)
-			return req.URL.Path == "/apps/someapp/env" && req.Method == "DELETE" && string(got) == want &&
+			return strings.HasSuffix(req.URL.Path, "/apps/someapp/env") && req.Method == "DELETE" && string(got) == want &&
 				req.URL.RawQuery == "noRestart=false"
 		},
 	}
@@ -363,7 +364,7 @@ func (s *S) TestEnvUnsetWithNoRestartFlag(c *check.C) {
 			got, err := ioutil.ReadAll(req.Body)
 			c.Assert(err, check.IsNil)
 			c.Assert(req.URL.RawQuery, check.Equals, "noRestart=true")
-			return req.URL.Path == "/apps/someapp/env" && req.Method == "DELETE" && string(got) == want
+			return strings.HasSuffix(req.URL.Path, "/apps/someapp/env") && req.Method == "DELETE" && string(got) == want
 		},
 	}
 	client := cmd.NewClient(&http.Client{Transport: trans}, nil, manager)
@@ -388,7 +389,7 @@ func (s *S) TestEnvUnsetWithoutFlag(c *check.C) {
 	trans := &cmdtest.ConditionalTransport{
 		Transport: cmdtest.Transport{Message: string(result), Status: http.StatusOK},
 		CondFunc: func(req *http.Request) bool {
-			return req.URL.Path == "/apps/otherapp/env" && req.Method == "DELETE" &&
+			return strings.HasSuffix(req.URL.Path, "/apps/otherapp/env") && req.Method == "DELETE" &&
 				req.URL.RawQuery == "noRestart=false"
 		},
 	}

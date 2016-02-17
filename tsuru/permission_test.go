@@ -45,7 +45,7 @@ func (s *S) TestPermissionListRun(c *check.C) {
 	trans := &cmdtest.ConditionalTransport{
 		Transport: cmdtest.Transport{Message: string(result), Status: http.StatusOK},
 		CondFunc: func(req *http.Request) bool {
-			return req.URL.Path == "/permissions" && req.Method == "GET"
+			return strings.HasSuffix(req.URL.Path, "/permissions") && req.Method == "GET"
 		},
 	}
 	client := cmd.NewClient(&http.Client{Transport: trans}, nil, manager)
@@ -69,7 +69,7 @@ func (s *S) TestRoleAddRun(c *check.C) {
 	trans := &cmdtest.ConditionalTransport{
 		Transport: cmdtest.Transport{Message: string(""), Status: http.StatusCreated},
 		CondFunc: func(req *http.Request) bool {
-			return req.URL.Path == "/roles" && req.Method == "POST" &&
+			return strings.HasSuffix(req.URL.Path, "/roles") && req.Method == "POST" &&
 				req.FormValue("name") == "myrole" && req.FormValue("context") == "app"
 		},
 	}
@@ -107,7 +107,7 @@ func (s *S) TestRoleListRun(c *check.C) {
 	trans := &cmdtest.ConditionalTransport{
 		Transport: cmdtest.Transport{Message: string(result), Status: http.StatusOK},
 		CondFunc: func(req *http.Request) bool {
-			return req.URL.Path == "/roles" && req.Method == "GET"
+			return strings.HasSuffix(req.URL.Path, "/roles") && req.Method == "GET"
 		},
 	}
 	client := cmd.NewClient(&http.Client{Transport: trans}, nil, manager)
@@ -141,7 +141,7 @@ func (s *S) TestRoleInfoRun(c *check.C) {
 	trans := &cmdtest.ConditionalTransport{
 		Transport: cmdtest.Transport{Message: string(result), Status: http.StatusOK},
 		CondFunc: func(req *http.Request) bool {
-			return req.URL.Path == "/roles/role1" && req.Method == "GET"
+			return strings.HasSuffix(req.URL.Path, "/roles/role1") && req.Method == "GET"
 		},
 	}
 	client := cmd.NewClient(&http.Client{Transport: trans}, nil, manager)
@@ -165,7 +165,7 @@ func (s *S) TestRoleAssignRun(c *check.C) {
 	trans := &cmdtest.ConditionalTransport{
 		Transport: cmdtest.Transport{Message: string(""), Status: http.StatusCreated},
 		CondFunc: func(req *http.Request) bool {
-			return req.URL.Path == "/roles/myrole/user" && req.Method == "POST" &&
+			return strings.HasSuffix(req.URL.Path, "/roles/myrole/user") && req.Method == "POST" &&
 				req.FormValue("email") == "me@me.com" && req.FormValue("context") == "myapp"
 		},
 	}
@@ -190,7 +190,7 @@ func (s *S) TestRoleDissociateRun(c *check.C) {
 	trans := &cmdtest.ConditionalTransport{
 		Transport: cmdtest.Transport{Message: string(""), Status: http.StatusCreated},
 		CondFunc: func(req *http.Request) bool {
-			return req.URL.Path == "/roles/myrole/user/me@me.com" && req.Method == "DELETE" &&
+			return strings.HasSuffix(req.URL.Path, "/roles/myrole/user/me@me.com") && req.Method == "DELETE" &&
 				req.URL.Query().Get("context") == "myapp"
 		},
 	}
@@ -217,7 +217,7 @@ func (s *S) TestRolePermissionAddRun(c *check.C) {
 		CondFunc: func(req *http.Request) bool {
 			req.ParseForm()
 			sort.Strings(req.Form["permission"])
-			return req.URL.Path == "/roles/myrole/permissions" && req.Method == "POST" &&
+			return strings.HasSuffix(req.URL.Path, "/roles/myrole/permissions") && req.Method == "POST" &&
 				reflect.DeepEqual(req.Form["permission"], []string{"app.create", "app.deploy"})
 		},
 	}
@@ -242,7 +242,7 @@ func (s *S) TestRolePermissionRemoveRun(c *check.C) {
 	trans := &cmdtest.ConditionalTransport{
 		Transport: cmdtest.Transport{Message: string(""), Status: http.StatusCreated},
 		CondFunc: func(req *http.Request) bool {
-			return req.URL.Path == "/roles/myrole/permissions/app.create" && req.Method == "DELETE"
+			return strings.HasSuffix(req.URL.Path, "/roles/myrole/permissions/app.create") && req.Method == "DELETE"
 		},
 	}
 	client := cmd.NewClient(&http.Client{Transport: trans}, nil, manager)
@@ -267,7 +267,7 @@ func (s *S) TestRoleRemoveRun(c *check.C) {
 	trans := &cmdtest.ConditionalTransport{
 		Transport: cmdtest.Transport{Message: string(""), Status: http.StatusCreated},
 		CondFunc: func(req *http.Request) bool {
-			return req.URL.Path == "/roles/myrole" && req.Method == "DELETE"
+			return strings.HasSuffix(req.URL.Path, "/roles/myrole") && req.Method == "DELETE"
 		},
 	}
 	client := cmd.NewClient(&http.Client{Transport: trans}, nil, manager)
@@ -287,7 +287,7 @@ func (s *S) TestRoleRemoveWithConfirmation(c *check.C) {
 	trans := &cmdtest.ConditionalTransport{
 		Transport: cmdtest.Transport{Message: string(""), Status: http.StatusCreated},
 		CondFunc: func(req *http.Request) bool {
-			return req.URL.Path == "/roles/myrole" && req.Method == "DELETE"
+			return strings.HasSuffix(req.URL.Path, "/roles/myrole") && req.Method == "DELETE"
 		},
 	}
 	client := cmd.NewClient(&http.Client{Transport: trans}, nil, manager)
@@ -325,7 +325,7 @@ func (s *S) TestRoleDefaultAdd(c *check.C) {
 		CondFunc: func(req *http.Request) bool {
 			req.ParseForm()
 			sort.Strings(req.Form["user-create"])
-			return req.URL.Path == "/role/default" && req.Method == "POST" &&
+			return strings.HasSuffix(req.URL.Path, "/role/default") && req.Method == "POST" &&
 				reflect.DeepEqual(req.Form["user-create"], []string{"r1", "r2"}) &&
 				reflect.DeepEqual(req.Form["team-create"], []string{"r3"})
 		},
@@ -350,7 +350,7 @@ func (s *S) TestRoleDefaultRemove(c *check.C) {
 		CondFunc: func(req *http.Request) bool {
 			req.ParseForm()
 			sort.Strings(req.Form["user-create"])
-			return req.URL.Path == "/role/default" && req.Method == "DELETE" &&
+			return strings.HasSuffix(req.URL.Path, "/role/default") && req.Method == "DELETE" &&
 				reflect.DeepEqual(req.Form["user-create"], []string{"r1", "r2"}) &&
 				reflect.DeepEqual(req.Form["team-create"], []string{"r3"})
 		},
@@ -385,7 +385,7 @@ func (s *S) TestRoleDefaultList(c *check.C) {
 	trans := &cmdtest.ConditionalTransport{
 		Transport: cmdtest.Transport{Message: result, Status: http.StatusCreated},
 		CondFunc: func(req *http.Request) bool {
-			return req.URL.Path == "/role/default" && req.Method == "GET"
+			return strings.HasSuffix(req.URL.Path, "/role/default") && req.Method == "GET"
 		},
 	}
 	client := cmd.NewClient(&http.Client{Transport: trans}, nil, manager)

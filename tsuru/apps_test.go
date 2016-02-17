@@ -67,7 +67,7 @@ Your repository for "ble" project is "git@tsuru.plataformas.glb.com:ble.git"` + 
 			result := map[string]interface{}{}
 			err = json.Unmarshal(body, &result)
 			c.Assert(expected, check.DeepEquals, result)
-			return req.Method == "POST" && req.URL.Path == "/apps"
+			return req.Method == "POST" && strings.HasSuffix(req.URL.Path, "/apps")
 		},
 	}
 	client := cmd.NewClient(&http.Client{Transport: &trans}, nil, manager)
@@ -105,7 +105,7 @@ Your repository for "ble" project is "git@tsuru.plataformas.glb.com:ble.git"` + 
 			result := map[string]interface{}{}
 			err = json.Unmarshal(body, &result)
 			c.Assert(expected, check.DeepEquals, result)
-			return req.Method == "POST" && req.URL.Path == "/apps"
+			return req.Method == "POST" && strings.HasSuffix(req.URL.Path, "/apps")
 		},
 	}
 	client := cmd.NewClient(&http.Client{Transport: &trans}, nil, manager)
@@ -144,7 +144,7 @@ Your repository for "ble" project is "git@tsuru.plataformas.glb.com:ble.git"` + 
 			result := map[string]interface{}{}
 			err = json.Unmarshal(body, &result)
 			c.Assert(expected, check.DeepEquals, result)
-			return req.Method == "POST" && req.URL.Path == "/apps"
+			return req.Method == "POST" && strings.HasSuffix(req.URL.Path, "/apps")
 		},
 	}
 	client := cmd.NewClient(&http.Client{Transport: &trans}, nil, manager)
@@ -183,7 +183,7 @@ Your repository for "ble" project is "git@tsuru.plataformas.glb.com:ble.git"` + 
 			result := map[string]interface{}{}
 			err = json.Unmarshal(body, &result)
 			c.Assert(expected, check.DeepEquals, result)
-			return req.Method == "POST" && req.URL.Path == "/apps"
+			return req.Method == "POST" && strings.HasSuffix(req.URL.Path, "/apps")
 		},
 	}
 	client := cmd.NewClient(&http.Client{Transport: &trans}, nil, manager)
@@ -221,7 +221,7 @@ Use app-info to check the status of the app and its units.` + "\n"
 			result := map[string]interface{}{}
 			err = json.Unmarshal(body, &result)
 			c.Assert(expected, check.DeepEquals, result)
-			return req.Method == "POST" && req.URL.Path == "/apps"
+			return req.Method == "POST" && strings.HasSuffix(req.URL.Path, "/apps")
 		},
 	}
 	client := cmd.NewClient(&http.Client{Transport: &trans}, nil, manager)
@@ -596,9 +596,9 @@ Units: 3
 	}
 	transport := transportFunc(func(req *http.Request) (resp *http.Response, err error) {
 		var body string
-		if req.URL.Path == "/apps/app1/quota" {
+		if strings.HasSuffix(req.URL.Path, "/apps/app1/quota") {
 			body = `{"Limit":40,"InUse":3}`
-		} else if req.URL.Path == "/apps/app1" {
+		} else if strings.HasSuffix(req.URL.Path, "/apps/app1") {
 			body = `{"name":"app1","teamowner":"myteam","cname":[""],"ip":"myapp.tsuru.io","platform":"php","repository":"git@git.com:php.git","state":"dead", "units":[{"Ip":"10.10.10.10","ID":"app1/0","Status":"started"}, {"Ip":"9.9.9.9","ID":"app1/1","Status":"started"}, {"Ip":"","ID":"app1/2","Status":"pending"}],"teams":["tsuruteam","crane"], "owner": "myapp_owner", "deploys": 7}`
 		}
 		return &http.Response{
@@ -822,7 +822,7 @@ Units: 2
 	trans := &cmdtest.ConditionalTransport{
 		Transport: cmdtest.Transport{Message: result, Status: http.StatusOK},
 		CondFunc: func(req *http.Request) bool {
-			return req.URL.Path == "/apps/secret" && req.Method == "GET" || req.URL.Path == "/apps/secret/quota" && req.Method == "GET"
+			return strings.HasSuffix(req.URL.Path, "/apps/secret") && req.Method == "GET" || strings.HasSuffix(req.URL.Path, "/apps/secret/quota") && req.Method == "GET"
 		},
 	}
 	client := cmd.NewClient(&http.Client{Transport: trans}, nil, manager)
@@ -909,9 +909,9 @@ Service instances: 1
 	}
 	transport := transportFunc(func(req *http.Request) (resp *http.Response, err error) {
 		var body string
-		if req.URL.Path == "/apps/app1" {
+		if strings.HasSuffix(req.URL.Path, "/apps/app1") {
 			body = `{"name":"app1","teamowner":"myteam","ip":"myapp.tsuru.io","platform":"php","repository":"git@git.com:php.git","state":"dead","units":[{"Ip":"10.10.10.10","ID":"app1/0","Status":"started"}, {"Ip":"9.9.9.9","ID":"app1/1","Status":"started"}, {"Ip":"","ID":"app1/2","Status":"pending"}],"Teams":["tsuruteam","crane"], "owner": "myapp_owner", "deploys": 7}`
-		} else if req.URL.Path == "/services/instances" && req.URL.RawQuery == "app=app1" {
+		} else if strings.HasSuffix(req.URL.Path, "/services/instances") && req.URL.RawQuery == "app=app1" {
 			body = `[{"service":"redisapi","instances":["myredisapi"], "plans":[""]},
 					 {"service":"mongodb", "instances":[], "plans":[""]}]`
 		}
@@ -966,9 +966,9 @@ Service instances: 2
 	}
 	transport := transportFunc(func(req *http.Request) (resp *http.Response, err error) {
 		var body string
-		if req.URL.Path == "/apps/app1" {
+		if strings.HasSuffix(req.URL.Path, "/apps/app1") {
 			body = `{"name":"app1","teamowner":"myteam","ip":"myapp.tsuru.io","platform":"php","repository":"git@git.com:php.git","state":"dead","units":[{"Ip":"10.10.10.10","ID":"app1/0","Status":"started"}, {"Ip":"9.9.9.9","ID":"app1/1","Status":"started"}, {"Ip":"","ID":"app1/2","Status":"pending"}],"Teams":["tsuruteam","crane"], "owner": "myapp_owner", "deploys": 7}`
-		} else if req.URL.Path == "/services/instances" && req.URL.RawQuery == "app=app1" {
+		} else if strings.HasSuffix(req.URL.Path, "/services/instances") && req.URL.RawQuery == "app=app1" {
 			body = `[{"service":"redisapi","instances":["myredisapi"], "plans":[""]},
 					 {"service":"mongodb", "instances":["mongoapi"], "plans":[""]},
 					 {"service":"mysql", "instances":[], "plans":[""]}]`
@@ -1074,9 +1074,9 @@ App Plan:
 	}
 	transport := transportFunc(func(req *http.Request) (resp *http.Response, err error) {
 		var body string
-		if req.URL.Path == "/apps/app1" {
+		if strings.HasSuffix(req.URL.Path, "/apps/app1") {
 			body = `{"name":"app1","teamowner":"myteam","ip":"myapp.tsuru.io","platform":"php","repository":"git@git.com:php.git","state":"dead","units":[{"Ip":"10.10.10.10","ID":"app1/0","Status":"started"}, {"Ip":"9.9.9.9","ID":"app1/1","Status":"started"}, {"Ip":"","ID":"app1/2","Status":"pending"}],"Teams":["tsuruteam","crane"], "owner": "myapp_owner", "deploys": 7,"plan":{"name": "test",  "memory": 536870912, "swap": 268435456, "cpushare": 100, "router": "freeeee", "default": false}}`
-		} else if req.URL.Path == "/services/instances" && req.URL.RawQuery == "app=app1" {
+		} else if strings.HasSuffix(req.URL.Path, "/services/instances") && req.URL.RawQuery == "app=app1" {
 			body = `[{"service":"redisapi","instances":["myredisapi"], "plans": [""]},
 					 {"service":"mongodb", "instances":[], "plans": [""]}]`
 		}
@@ -1137,9 +1137,9 @@ App Plan:
 	}
 	transport := transportFunc(func(req *http.Request) (resp *http.Response, err error) {
 		var body string
-		if req.URL.Path == "/apps/app1" {
+		if strings.HasSuffix(req.URL.Path, "/apps/app1") {
 			body = `{"name":"app1","teamowner":"myteam","ip":"myapp.tsuru.io","platform":"php","repository":"git@git.com:php.git","state":"dead","units":[{"Ip":"10.10.10.10","ID":"app1/0","Status":"started"}, {"Ip":"9.9.9.9","ID":"app1/1","Status":"started"}, {"Ip":"","ID":"app1/2","Status":"pending"}],"Teams":["tsuruteam","crane"], "owner": "myapp_owner", "deploys": 7,"plan":{"name": "test",  "memory": 536870912, "swap": 268435456, "cpushare": 100, "router": "freeeee", "default": false}}`
-		} else if req.URL.Path == "/services/instances" && req.URL.RawQuery == "app=app1" {
+		} else if strings.HasSuffix(req.URL.Path, "/services/instances") && req.URL.RawQuery == "app=app1" {
 			body = `[{"service":"redisapi","instances":["myredisapi"], "plans": ["test"]},
 					 {"service":"mongodb", "instances":[], "plans": [""]}]`
 		}
@@ -1486,7 +1486,7 @@ func (s *S) TestAppRestart(c *check.C) {
 		CondFunc: func(req *http.Request) bool {
 			called = true
 			c.Assert(req.URL.Query().Get("process"), check.Equals, "web")
-			return req.URL.Path == "/apps/handful_of_nothing/restart" && req.Method == "POST"
+			return strings.HasSuffix(req.URL.Path, "/apps/handful_of_nothing/restart") && req.Method == "POST"
 		},
 	}
 	client := cmd.NewClient(&http.Client{Transport: trans}, nil, manager)
@@ -1515,7 +1515,7 @@ func (s *S) TestAppRestartWithoutTheFlag(c *check.C) {
 		Transport: cmdtest.Transport{Message: string(result), Status: http.StatusOK},
 		CondFunc: func(req *http.Request) bool {
 			called = true
-			return req.URL.Path == "/apps/motorbreath/restart" && req.Method == "POST"
+			return strings.HasSuffix(req.URL.Path, "/apps/motorbreath/restart") && req.Method == "POST"
 		},
 	}
 	client := cmd.NewClient(&http.Client{Transport: trans}, nil, manager)
@@ -1554,7 +1554,7 @@ func (s *S) TestAddCName(c *check.C) {
 			err := json.NewDecoder(req.Body).Decode(&m)
 			c.Assert(err, check.IsNil)
 			c.Assert(m["cname"], check.DeepEquals, []string{"death.evergrey.mycompany.com"})
-			return req.URL.Path == "/apps/death/cname" &&
+			return strings.HasSuffix(req.URL.Path, "/apps/death/cname") &&
 				req.Method == "POST"
 		},
 	}
@@ -1586,7 +1586,7 @@ func (s *S) TestAddCNameWithoutTheFlag(c *check.C) {
 			err := json.NewDecoder(req.Body).Decode(&m)
 			c.Assert(err, check.IsNil)
 			c.Assert(m["cname"], check.DeepEquals, []string{"corey.evergrey.mycompany.com"})
-			return req.URL.Path == "/apps/corey/cname" &&
+			return strings.HasSuffix(req.URL.Path, "/apps/corey/cname") &&
 				req.Method == "POST"
 		},
 	}
@@ -1634,7 +1634,7 @@ func (s *S) TestRemoveCName(c *check.C) {
 		Transport: cmdtest.Transport{Message: "Restarted", Status: http.StatusOK},
 		CondFunc: func(req *http.Request) bool {
 			called = true
-			return req.URL.Path == "/apps/death/cname" && req.Method == "DELETE"
+			return strings.HasSuffix(req.URL.Path, "/apps/death/cname") && req.Method == "DELETE"
 		},
 	}
 	client := cmd.NewClient(&http.Client{Transport: trans}, nil, manager)
@@ -1660,7 +1660,7 @@ func (s *S) TestRemoveCNameWithoutTheFlag(c *check.C) {
 		Transport: cmdtest.Transport{Message: "Restarted", Status: http.StatusOK},
 		CondFunc: func(req *http.Request) bool {
 			called = true
-			return req.URL.Path == "/apps/corey/cname" && req.Method == "DELETE"
+			return strings.HasSuffix(req.URL.Path, "/apps/corey/cname") && req.Method == "DELETE"
 		},
 	}
 	client := cmd.NewClient(&http.Client{Transport: trans}, nil, manager)
@@ -1696,7 +1696,7 @@ func (s *S) TestAppStart(c *check.C) {
 		CondFunc: func(req *http.Request) bool {
 			called = true
 			c.Assert(req.URL.Query().Get("process"), check.Equals, "worker")
-			return req.URL.Path == "/apps/handful_of_nothing/start" && req.Method == "POST"
+			return strings.HasSuffix(req.URL.Path, "/apps/handful_of_nothing/start") && req.Method == "POST"
 		},
 	}
 	client := cmd.NewClient(&http.Client{Transport: trans}, nil, manager)
@@ -1721,7 +1721,7 @@ func (s *S) TestAppStartWithoutTheFlag(c *check.C) {
 		Transport: cmdtest.Transport{Message: "Started", Status: http.StatusOK},
 		CondFunc: func(req *http.Request) bool {
 			called = true
-			return req.URL.Path == "/apps/motorbreath/start" && req.Method == "POST"
+			return strings.HasSuffix(req.URL.Path, "/apps/motorbreath/start") && req.Method == "POST"
 		},
 	}
 	client := cmd.NewClient(&http.Client{Transport: trans}, nil, manager)
@@ -1763,7 +1763,7 @@ func (s *S) TestAppStop(c *check.C) {
 		CondFunc: func(req *http.Request) bool {
 			called = true
 			c.Assert(req.URL.Query().Get("process"), check.Equals, "worker")
-			return req.URL.Path == "/apps/handful_of_nothing/stop" && req.Method == "POST"
+			return strings.HasSuffix(req.URL.Path, "/apps/handful_of_nothing/stop") && req.Method == "POST"
 		},
 	}
 	client := cmd.NewClient(&http.Client{Transport: trans}, nil, manager)
@@ -1788,7 +1788,7 @@ func (s *S) TestAppStopWithoutTheFlag(c *check.C) {
 		Transport: cmdtest.Transport{Message: "Stopped", Status: http.StatusOK},
 		CondFunc: func(req *http.Request) bool {
 			called = true
-			return req.URL.Path == "/apps/motorbreath/stop" && req.Method == "POST"
+			return strings.HasSuffix(req.URL.Path, "/apps/motorbreath/stop") && req.Method == "POST"
 		},
 	}
 	client := cmd.NewClient(&http.Client{Transport: trans}, nil, manager)
@@ -1823,7 +1823,7 @@ func (s *S) TestUnitAdd(c *check.C) {
 			called = true
 			c.Assert(req.FormValue("process"), check.Equals, "p1")
 			c.Assert(req.FormValue("units"), check.Equals, "3")
-			return req.URL.Path == "/apps/radio/units" && req.Method == "PUT"
+			return strings.HasSuffix(req.URL.Path, "/apps/radio/units") && req.Method == "PUT"
 		},
 	}
 	client := cmd.NewClient(&http.Client{Transport: trans}, nil, manager)
@@ -1879,7 +1879,7 @@ func (s *S) TestUnitRemove(c *check.C) {
 			called = true
 			c.Assert(req.FormValue("process"), check.Equals, "web1")
 			c.Assert(req.FormValue("units"), check.Equals, "2")
-			return req.URL.Path == "/apps/vapor/units" && req.Method == "DELETE"
+			return strings.HasSuffix(req.URL.Path, "/apps/vapor/units") && req.Method == "DELETE"
 		},
 	}
 	client := cmd.NewClient(&http.Client{Transport: trans}, nil, manager)

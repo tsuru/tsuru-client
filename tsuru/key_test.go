@@ -1,4 +1,4 @@
-// Copyright 2015 tsuru-client authors. All rights reserved.
+// Copyright 2016 tsuru-client authors. All rights reserved.
 // Use of this source code is governed by a BSD-style
 // license that can be found in the LICENSE file.
 
@@ -38,7 +38,7 @@ func (s *S) TestKeyAdd(c *check.C) {
 			expectedBody := `{"key":"user-key","name":"my-key","force":false}`
 			body, err := ioutil.ReadAll(r.Body)
 			c.Assert(err, check.IsNil)
-			return r.Method == "POST" && r.URL.Path == "/users/keys" && string(body) == expectedBody
+			return r.Method == "POST" && strings.HasSuffix(r.URL.Path, "/users/keys") && string(body) == expectedBody
 		},
 	}
 	client := cmd.NewClient(&http.Client{Transport: &transport}, nil, manager)
@@ -66,7 +66,7 @@ func (s *S) TestKeyAddStdin(c *check.C) {
 			expectedBody := `{"key":"my powerful key","name":"my-key","force":false}`
 			body, err := ioutil.ReadAll(r.Body)
 			c.Assert(err, check.IsNil)
-			return r.Method == "POST" && r.URL.Path == "/users/keys" && string(body) == expectedBody
+			return r.Method == "POST" && strings.HasSuffix(r.URL.Path, "/users/keys") && string(body) == expectedBody
 		},
 	}
 	client := cmd.NewClient(&http.Client{Transport: &transport}, nil, manager)
@@ -98,7 +98,7 @@ func (s *S) TestAddKeyConfirmation(c *check.C) {
 					expectedBody := `{"key":"user-key","name":"my-key","force":false}`
 					body, err := ioutil.ReadAll(r.Body)
 					c.Assert(err, check.IsNil)
-					return r.Method == "POST" && r.URL.Path == "/users/keys" && string(body) == expectedBody
+					return r.Method == "POST" && strings.HasSuffix(r.URL.Path, "/users/keys") && string(body) == expectedBody
 				},
 			},
 			{
@@ -108,7 +108,7 @@ func (s *S) TestAddKeyConfirmation(c *check.C) {
 					expectedBody := `{"key":"user-key","name":"my-key","force":true}`
 					body, err := ioutil.ReadAll(r.Body)
 					c.Assert(err, check.IsNil)
-					return r.Method == "POST" && r.URL.Path == "/users/keys" && string(body) == expectedBody
+					return r.Method == "POST" && strings.HasSuffix(r.URL.Path, "/users/keys") && string(body) == expectedBody
 				},
 			},
 		},
@@ -142,7 +142,7 @@ func (s *S) TestAddKeyForceFlag(c *check.C) {
 			expectedBody := `{"key":"user-key","name":"my-key","force":true}`
 			body, err := ioutil.ReadAll(r.Body)
 			c.Assert(err, check.IsNil)
-			return r.Method == "POST" && r.URL.Path == "/users/keys" && string(body) == expectedBody
+			return r.Method == "POST" && strings.HasSuffix(r.URL.Path, "/users/keys") && string(body) == expectedBody
 		},
 	}
 	client := cmd.NewClient(&http.Client{Transport: &transport}, nil, manager)
@@ -216,7 +216,7 @@ func (s *S) TestKeyRemove(c *check.C) {
 			expectedBody := `{"name":"my-key"}`
 			body, err := ioutil.ReadAll(r.Body)
 			c.Assert(err, check.IsNil)
-			return r.Method == "DELETE" && r.URL.Path == "/users/keys" && string(body) == expectedBody
+			return r.Method == "DELETE" && strings.HasSuffix(r.URL.Path, "/users/keys") && string(body) == expectedBody
 		},
 	}
 	client := cmd.NewClient(&http.Client{Transport: &transport}, nil, manager)
@@ -260,7 +260,7 @@ func (s *S) TestKeyList(c *check.C) {
 	transport := cmdtest.ConditionalTransport{
 		Transport: cmdtest.Transport{Message: body, Status: http.StatusOK},
 		CondFunc: func(r *http.Request) bool {
-			return r.Method == "GET" && r.URL.Path == "/users/keys"
+			return r.Method == "GET" && strings.HasSuffix(r.URL.Path, "/users/keys")
 		},
 	}
 	client := cmd.NewClient(&http.Client{Transport: &transport}, nil, manager)
@@ -285,7 +285,7 @@ func (s *S) TestKeyListNoTruncate(c *check.C) {
 	transport := cmdtest.ConditionalTransport{
 		Transport: cmdtest.Transport{Message: body, Status: http.StatusOK},
 		CondFunc: func(r *http.Request) bool {
-			return r.Method == "GET" && r.URL.Path == "/users/keys"
+			return r.Method == "GET" && strings.HasSuffix(r.URL.Path, "/users/keys")
 		},
 	}
 	client := cmd.NewClient(&http.Client{Transport: &transport}, nil, manager)

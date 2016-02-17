@@ -52,7 +52,7 @@ func (s *S) TestTeamRemove(c *check.C) {
 		Transport: cmdtest.Transport{Message: "", Status: http.StatusOK},
 		CondFunc: func(req *http.Request) bool {
 			called = true
-			return req.URL.Path == "/teams/evergrey" && req.Method == "DELETE"
+			return strings.HasSuffix(req.URL.Path, "/teams/evergrey") && req.Method == "DELETE"
 		},
 	}
 	client := cmd.NewClient(&http.Client{Transport: &trans}, nil, manager)
@@ -106,7 +106,7 @@ func (s *S) TestTeamListRun(c *check.C) {
 ]`, Status: http.StatusOK},
 		CondFunc: func(req *http.Request) bool {
 			called = true
-			return req.Method == "GET" && req.URL.Path == "/teams"
+			return req.Method == "GET" && strings.HasSuffix(req.URL.Path, "/teams")
 		},
 	}
 	expected := `+-------------+-------------+
@@ -138,7 +138,7 @@ func (s *S) TestTeamListRunNoPermissions(c *check.C) {
 		Transport: cmdtest.Transport{Message: `[{"name":"timeredbull"},{"name":"cobrateam"}]`, Status: http.StatusOK},
 		CondFunc: func(req *http.Request) bool {
 			called = true
-			return req.Method == "GET" && req.URL.Path == "/teams"
+			return req.Method == "GET" && strings.HasSuffix(req.URL.Path, "/teams")
 		},
 	}
 	expected := `+-------------+-------------+
@@ -317,9 +317,9 @@ func (s *S) TestUserRemove(c *check.C) {
 	}
 	transport := transportFunc(func(req *http.Request) (*http.Response, error) {
 		var body string
-		if req.URL.Path == "/users/info" && req.Method == "GET" {
+		if strings.HasSuffix(req.URL.Path, "/users/info") && req.Method == "GET" {
 			body = `{"Email":"myuser@tsuru.io","Teams":[]}`
-		} else if req.URL.Path == "/users" && req.Method == "DELETE" {
+		} else if strings.HasSuffix(req.URL.Path, "/users") && req.Method == "DELETE" {
 			called = true
 		}
 		return &http.Response{
@@ -357,7 +357,7 @@ func (s *S) TestUserRemoveWithArgs(c *check.C) {
 		Transport: cmdtest.Transport{Message: "", Status: http.StatusOK},
 		CondFunc: func(req *http.Request) bool {
 			called = true
-			return req.Method == "DELETE" && req.URL.Path == "/users" && req.URL.Query().Get("user") == context.Args[0]
+			return req.Method == "DELETE" && strings.HasSuffix(req.URL.Path, "/users") && req.URL.Query().Get("user") == context.Args[0]
 		},
 	}
 	client := cmd.NewClient(&http.Client{Transport: &trans}, nil, manager)
@@ -418,7 +418,7 @@ func (s *S) TestChangePassword(c *check.C) {
 				return false
 			}
 			cond := got["old"] == "gopher" && got["new"] == "bbrothers"
-			return cond && req.Method == "PUT" && req.URL.Path == "/users/password"
+			return cond && req.Method == "PUT" && strings.HasSuffix(req.URL.Path, "/users/password")
 		},
 	}
 	client := cmd.NewClient(&http.Client{Transport: &trans}, nil, manager)
@@ -466,7 +466,7 @@ func (s *S) TestResetPassword(c *check.C) {
 		},
 		CondFunc: func(r *http.Request) bool {
 			called = true
-			return r.Method == "POST" && r.URL.Path == "/users/user@tsuru.io/password" &&
+			return r.Method == "POST" && strings.HasSuffix(r.URL.Path, "/users/user@tsuru.io/password") &&
 				r.URL.Query().Get("token") == ""
 		},
 	}
@@ -494,7 +494,7 @@ func (s *S) TestResetPasswordStepTwo(c *check.C) {
 		},
 		CondFunc: func(r *http.Request) bool {
 			called = true
-			return r.Method == "POST" && r.URL.Path == "/users/user@tsuru.io/password" &&
+			return r.Method == "POST" && strings.HasSuffix(r.URL.Path, "/users/user@tsuru.io/password") &&
 				r.URL.Query().Get("token") == "secret"
 		},
 	}
@@ -545,7 +545,7 @@ func (s *S) TestShowAPITokenRun(c *check.C) {
 		Transport: cmdtest.Transport{Message: `"23iou32nd3i2udnu23jd"`, Status: http.StatusOK},
 		CondFunc: func(req *http.Request) bool {
 			called = true
-			return req.Method == "GET" && req.URL.Path == "/users/api-key"
+			return req.Method == "GET" && strings.HasSuffix(req.URL.Path, "/users/api-key")
 		},
 	}
 	expected := `API key: 23iou32nd3i2udnu23jd
@@ -572,7 +572,7 @@ func (s *S) TestShowAPITokenRunWithFlag(c *check.C) {
 			Status:  http.StatusOK},
 		CondFunc: func(req *http.Request) bool {
 			called = true
-			return req.Method == "GET" && req.URL.Path == "/users/api-key" &&
+			return req.Method == "GET" && strings.HasSuffix(req.URL.Path, "/users/api-key") &&
 				req.URL.RawQuery == "user=admin@example.com"
 		},
 	}
@@ -620,7 +620,7 @@ func (s *S) TestRegenerateAPITokenRun(c *check.C) {
 		Transport: cmdtest.Transport{Message: `"23iou32nd3i2udnu23jd"`, Status: http.StatusOK},
 		CondFunc: func(req *http.Request) bool {
 			called = true
-			return req.Method == "POST" && req.URL.Path == "/users/api-key"
+			return req.Method == "POST" && strings.HasSuffix(req.URL.Path, "/users/api-key")
 		},
 	}
 	expected := `Your new API key is: 23iou32nd3i2udnu23jd
@@ -644,7 +644,7 @@ func (s *S) TestRegenerateAPITokenRunWithFlag(c *check.C) {
 		Transport: cmdtest.Transport{Message: `"23iou32nd3i2udnu23jd"`, Status: http.StatusOK},
 		CondFunc: func(req *http.Request) bool {
 			called = true
-			return req.Method == "POST" && req.URL.Path == "/users/api-key" &&
+			return req.Method == "POST" && strings.HasSuffix(req.URL.Path, "/users/api-key") &&
 				req.URL.RawQuery == "user=admin@example.com"
 		},
 	}
@@ -713,7 +713,7 @@ func (s *S) TestListUsersRunWithoutFlags(c *check.C) {
 	trans := cmdtest.ConditionalTransport{
 		Transport: cmdtest.Transport{Message: result, Status: http.StatusOK},
 		CondFunc: func(req *http.Request) bool {
-			return req.Method == "GET" && req.URL.Path == "/users"
+			return req.Method == "GET" && strings.HasSuffix(req.URL.Path, "/users")
 		},
 	}
 	expected := `+---------------+---------------+
@@ -750,7 +750,7 @@ func (s *S) TestListUsersRunFilterByUserEmail(c *check.C) {
 	trans := cmdtest.ConditionalTransport{
 		Transport: cmdtest.Transport{Message: result, Status: http.StatusOK},
 		CondFunc: func(req *http.Request) bool {
-			return req.Method == "GET" && req.URL.Path == "/users" &&
+			return req.Method == "GET" && strings.HasSuffix(req.URL.Path, "/users") &&
 				req.URL.RawQuery == "userEmail=test2@test.com&role="
 		},
 	}
@@ -789,7 +789,7 @@ func (s *S) TestListUsersRunFilterByRole(c *check.C) {
 	trans := cmdtest.ConditionalTransport{
 		Transport: cmdtest.Transport{Message: result, Status: http.StatusOK},
 		CondFunc: func(req *http.Request) bool {
-			return req.Method == "GET" && req.URL.Path == "/users" &&
+			return req.Method == "GET" && strings.HasSuffix(req.URL.Path, "/users") &&
 				req.URL.RawQuery == "userEmail=&role=role2"
 		},
 	}
@@ -828,7 +828,7 @@ func (s *S) TestListUsersRunWithMoreThanOneFlagReturnsError(c *check.C) {
 	trans := cmdtest.ConditionalTransport{
 		Transport: cmdtest.Transport{Message: result, Status: http.StatusOK},
 		CondFunc: func(req *http.Request) bool {
-			return req.Method == "GET" && req.URL.Path == "/users" &&
+			return req.Method == "GET" && strings.HasSuffix(req.URL.Path, "/users") &&
 				req.URL.RawQuery == "userEmail=test@test.com&role=role2"
 		},
 	}
