@@ -148,7 +148,7 @@ type appUpdate struct {
 func (c *appUpdate) Info() *cmd.Info {
 	return &cmd.Info{
 		Name:  "app-update",
-		Usage: "app-update <appname> [--description/-d description] [--plan/-p plan_name] [--pool/-o pool] [--team-owner/-t team-owner]",
+		Usage: "app-update [-a/--app appname] [--description/-d description] [--plan/-p plan_name] [--pool/-o pool] [--team-owner/-t team-owner]",
 		Desc: `Updates an app, changing its description, plan or pool information.
 
 The [[--description]] parameter sets a description for your app.
@@ -158,34 +158,38 @@ The [[--plan]] parameter changes the plan of your app.
 The [[--pool]] parameter changes the pool of your app.
 
 The [[--team-owner]] parameter sets owner team for an application.`,
-
-		MinArgs: 1,
-		MaxArgs: 1,
 	}
 }
 
 func (c *appUpdate) Flags() *gnuflag.FlagSet {
 	if c.fs == nil {
-		c.fs = gnuflag.NewFlagSet("", gnuflag.ExitOnError)
+		flagSet := gnuflag.NewFlagSet("", gnuflag.ExitOnError)
 		descriptionMessage := "App description"
 		planMessage := "App plan"
 		poolMessage := "App pool"
 		teamOwnerMessage := "App team owner"
-		c.fs.StringVar(&c.description, "description", "", descriptionMessage)
-		c.fs.StringVar(&c.description, "d", "", descriptionMessage)
-		c.fs.StringVar(&c.plan, "plan", "", planMessage)
-		c.fs.StringVar(&c.plan, "p", "", planMessage)
-		c.fs.StringVar(&c.pool, "o", "", poolMessage)
-		c.fs.StringVar(&c.pool, "pool", "", poolMessage)
-		c.fs.StringVar(&c.teamOwner, "t", "", teamOwnerMessage)
-		c.fs.StringVar(&c.teamOwner, "team-owner", "", teamOwnerMessage)
+		flagSet.StringVar(&c.description, "description", "", descriptionMessage)
+		flagSet.StringVar(&c.description, "d", "", descriptionMessage)
+		flagSet.StringVar(&c.plan, "plan", "", planMessage)
+		flagSet.StringVar(&c.plan, "p", "", planMessage)
+		flagSet.StringVar(&c.pool, "o", "", poolMessage)
+		flagSet.StringVar(&c.pool, "pool", "", poolMessage)
+		flagSet.StringVar(&c.teamOwner, "t", "", teamOwnerMessage)
+		flagSet.StringVar(&c.teamOwner, "team-owner", "", teamOwnerMessage)
+		c.fs = cmd.MergeFlagSet(
+			c.GuessingCommand.Flags(),
+			flagSet,
+		)
 	}
 	return c.fs
 }
 
 func (c *appUpdate) Run(context *cmd.Context, client *cmd.Client) error {
 	context.RawOutput()
-	appName := context.Args[0]
+	appName := c.Flags().Lookup("app").Value.String()
+	if appName == "" {
+		return errors.New("Please use the -a/--app flag to specify which app you want to remove.")
+	}
 	var param app
 	if c.plan != "" {
 		plan := tsuruapp.Plan{Name: c.plan}
@@ -224,7 +228,6 @@ func (c *appUpdate) Run(context *cmd.Context, client *cmd.Client) error {
 		return err
 	}
 	fmt.Fprintf(context.Stdout, "App %q has been updated!\n", appName)
-	fmt.Fprintln(context.Stdout, "Use app-info to check the status of the app and its units.")
 	return nil
 }
 

@@ -285,11 +285,24 @@ func (s *S) TestAppUpdateInfo(c *check.C) {
 
 func (s *S) TestAppUpdate(c *check.C) {
 	var stdout, stderr bytes.Buffer
-	expected := `App "ble" has been updated!
-Use app-info to check the status of the app and its units.
-`
+	expected := fmt.Sprintf("App %q has been updated!\n", "ble")
 	context := cmd.Context{
-		Args:   []string{"ble"},
+		Stdout: &stdout,
+		Stderr: &stderr,
+	}
+	trans := cmdtest.Transport{Status: http.StatusOK}
+	client := cmd.NewClient(&http.Client{Transport: &trans}, nil, manager)
+	command := appUpdate{}
+	command.Flags().Parse(true, []string{"-d", "description of my app", "-a", "ble"})
+	err := command.Run(&context, client)
+	c.Assert(err, check.IsNil)
+	c.Assert(stdout.String(), check.Equals, expected)
+}
+
+func (s *S) TestAppUpdateWithoutArgs(c *check.C) {
+	var stdout, stderr bytes.Buffer
+	expected := "Please use the -a/--app flag to specify which app you want to remove."
+	context := cmd.Context{
 		Stdout: &stdout,
 		Stderr: &stderr,
 	}
@@ -298,8 +311,8 @@ Use app-info to check the status of the app and its units.
 	command := appUpdate{}
 	command.Flags().Parse(true, []string{"-d", "description of my app"})
 	err := command.Run(&context, client)
-	c.Assert(err, check.IsNil)
-	c.Assert(stdout.String(), check.Equals, expected)
+	c.Assert(err, check.NotNil)
+	c.Assert(err.Error(), check.Equals, expected)
 }
 
 func (s *S) TestAppUpdateFlags(c *check.C) {
