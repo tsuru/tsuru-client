@@ -82,7 +82,7 @@ func (s *S) TestDeployImage(c *check.C) {
 			image := req.FormValue("image")
 			c.Assert(image, check.Equals, "registr.com/image-to-deploy")
 			c.Assert(req.Header.Get("Content-Type"), check.Equals, "application/x-www-form-urlencoded")
-			return req.Method == "POST" && strings.HasSuffix(req.URL.Path, "/apps/secret/deploy") && req.URL.RawQuery == "origin=docker image"
+			return req.Method == "POST" && strings.HasSuffix(req.URL.Path, "/apps/secret/deploy") && req.URL.RawQuery == "origin=image"
 		},
 	}
 	client := cmd.NewClient(&http.Client{Transport: &trans}, nil, manager)

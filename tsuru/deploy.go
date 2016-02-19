@@ -170,7 +170,7 @@ func (c *appDeploy) Run(context *cmd.Context, client *cmd.Client) error {
 	}
 	origin := "app-deploy"
 	if c.image != "" {
-		origin = "docker image"
+		origin = "image"
 	}
 	url, err = cmd.GetURL(fmt.Sprintf("/apps/%s/deploy?origin=%s", appName, origin))
 	if err != nil {
