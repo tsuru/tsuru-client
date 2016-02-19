@@ -183,13 +183,14 @@ func (c *appDeploy) Run(context *cmd.Context, client *cmd.Client) error {
 	}
 	if c.image != "" {
 		request.Header.Set("Content-Type", "application/x-www-form-urlencoded")
-		body.WriteString(fmt.Sprintf("image=%s", c.image))
+		_, err = body.WriteString(fmt.Sprintf("image=%s", c.image))
 		if err != nil {
 			return err
 		}
 	} else {
 		writer := multipart.NewWriter(&body)
-		file, err := writer.CreateFormFile("file", "archive.tar.gz")
+		var file io.Writer
+		file, err = writer.CreateFormFile("file", "archive.tar.gz")
 		if err != nil {
 			return err
 		}
@@ -318,7 +319,8 @@ func addFile(writer *tar.Writer, filepath string) error {
 		return err
 	}
 	if fi.Mode()&os.ModeSymlink == os.ModeSymlink {
-		target, err := os.Readlink(filepath)
+		var target string
+		target, err = os.Readlink(filepath)
 		if err != nil {
 			return err
 		}
