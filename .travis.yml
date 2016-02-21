@@ -1,5 +1,6 @@
 language: go
 sudo: false
+install: true
 os:
   - linux
   - osx
