@@ -11,6 +11,7 @@ import (
 	"net/http"
 	"net/http/httptest"
 	"os"
+	"path/filepath"
 
 	"github.com/tsuru/tsuru/cmd"
 	"github.com/tsuru/tsuru/exec/exectest"
@@ -65,6 +66,11 @@ func (s *S) TestPluginInfo(c *check.C) {
 }
 
 func (s *S) TestPlugin(c *check.C) {
+	// Kids, do not try this at home
+	defer os.Setenv("HOME", os.Getenv("HOME"))
+	tempHome, _ := filepath.Abs("testdata")
+	os.Setenv("HOME", tempHome)
+
 	fexec := exectest.FakeExecutor{
 		Output: map[string][][]byte{
 			"a b": {[]byte("hello world")},
@@ -104,6 +110,11 @@ func (s *S) TestPlugin(c *check.C) {
 }
 
 func (s *S) TestPluginWithArgs(c *check.C) {
+	// Kids, do not try this at home
+	defer os.Setenv("HOME", os.Getenv("HOME"))
+	tempHome, _ := filepath.Abs("testdata")
+	os.Setenv("HOME", tempHome)
+
 	fexec := exectest.FakeExecutor{}
 	execut = &fexec
 	defer func() {

@@ -177,7 +177,7 @@ func (s *S) TestTargz(c *check.C) {
 	var buf bytes.Buffer
 	ctx := cmd.Context{Stderr: &buf}
 	var gzipBuf, tarBuf bytes.Buffer
-	err := targz(&ctx, &gzipBuf, "testdata", "..")
+	err := targz(&ctx, &gzipBuf, "testdata/deploy", "..")
 	c.Assert(err, check.IsNil)
 	gzipReader, err := gzip.NewReader(&gzipBuf)
 	c.Assert(err, check.IsNil)
@@ -195,8 +195,8 @@ func (s *S) TestTargz(c *check.C) {
 		}
 	}
 	expected := []string{
-		"testdata", "testdata/directory", "testdata/directory/file.txt",
-		"testdata/file1.txt", "testdata/file2.txt",
+		"testdata/deploy", "testdata/deploy/directory", "testdata/deploy/directory/file.txt",
+		"testdata/deploy/file1.txt", "testdata/deploy/file2.txt",
 	}
 	sort.Strings(expected)
 	sort.Strings(headers)
@@ -212,7 +212,7 @@ func (s *S) TestTargzSingleDirectory(c *check.C) {
 	var buf bytes.Buffer
 	ctx := cmd.Context{Stderr: &buf}
 	var gzipBuf, tarBuf bytes.Buffer
-	err := targz(&ctx, &gzipBuf, "testdata")
+	err := targz(&ctx, &gzipBuf, "testdata/deploy")
 	c.Assert(err, check.IsNil)
 	gzipReader, err := gzip.NewReader(&gzipBuf)
 	c.Assert(err, check.IsNil)

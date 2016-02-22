@@ -77,6 +77,9 @@ func (c *plugin) Run(context *cmd.Context, client *cmd.Client) error {
 		return cmd.ErrLookup
 	}
 	pluginPath := cmd.JoinWithUserDir(".tsuru", "plugins", pluginName)
+	if _, err := os.Stat(pluginPath); os.IsNotExist(err) {
+		return cmd.ErrLookup
+	}
 	target, err := cmd.GetURL("/")
 	if err != nil {
 		return err
@@ -100,11 +103,7 @@ func (c *plugin) Run(context *cmd.Context, client *cmd.Client) error {
 		Stdin:  context.Stdin,
 		Envs:   envs,
 	}
-	err = executor().Execute(opts)
-	if os.IsNotExist(err) {
-		return cmd.ErrLookup
-	}
-	return err
+	return executor().Execute(opts)
 }
 
 type pluginRemove struct{}

@@ -5,6 +5,9 @@
 package main
 
 import (
+	"os"
+	"path/filepath"
+
 	"github.com/tsuru/tsuru/cmd"
 	"github.com/tsuru/tsuru/exec/exectest"
 	"gopkg.in/check.v1"
@@ -261,6 +264,11 @@ func (s *S) TestPluginListIsRegistered(c *check.C) {
 }
 
 func (s *S) TestPluginLookup(c *check.C) {
+	// Kids, do not try this at home
+	defer os.Setenv("HOME", os.Getenv("HOME"))
+	tempHome, _ := filepath.Abs("testdata")
+	os.Setenv("HOME", tempHome)
+
 	fexec := exectest.FakeExecutor{}
 	execut = &fexec
 	defer func() {
