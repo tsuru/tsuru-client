@@ -61,16 +61,16 @@ func (s serviceList) Run(ctx *cmd.Context, client *cmd.Client) error {
 	return nil
 }
 
-type serviceAdd struct {
+type serviceInstanceAdd struct {
 	fs          *gnuflag.FlagSet
 	teamOwner   string
 	description string
 }
 
-func (c *serviceAdd) Info() *cmd.Info {
+func (c *serviceInstanceAdd) Info() *cmd.Info {
 	return &cmd.Info{
-		Name:  "service-add",
-		Usage: "service-add <service-name> <service-instance-name> [plan] [-t/--team-owner <team>] [-d/--description description]",
+		Name:  "service-instance-add",
+		Usage: "service-instance-add <service-name> <service-instance-name> [plan] [-t/--team-owner <team>] [-d/--description description]",
 		Desc: `Creates a service instance of a service. There can later be binded to
 applications with [[tsuru service-bind]].
 
@@ -79,14 +79,14 @@ This example shows how to add a new instance of **mongodb** service, named
 
 ::
 
-    $ tsuru service-add mongodb tsuru_mongodb small -t myteam
+    $ tsuru service-instance-add mongodb tsuru_mongodb small -t myteam
 `,
 		MinArgs: 2,
 		MaxArgs: 3,
 	}
 }
 
-func (c *serviceAdd) Run(ctx *cmd.Context, client *cmd.Client) error {
+func (c *serviceInstanceAdd) Run(ctx *cmd.Context, client *cmd.Client) error {
 	serviceName, instanceName := ctx.Args[0], ctx.Args[1]
 	var plan string
 	if len(ctx.Args) > 2 {
@@ -121,10 +121,10 @@ func (c *serviceAdd) Run(ctx *cmd.Context, client *cmd.Client) error {
 	return nil
 }
 
-func (c *serviceAdd) Flags() *gnuflag.FlagSet {
+func (c *serviceInstanceAdd) Flags() *gnuflag.FlagSet {
 	if c.fs == nil {
 		flagDesc := "the team that owns the service (mandatory if the user is member of more than one team)"
-		c.fs = gnuflag.NewFlagSet("service-add", gnuflag.ExitOnError)
+		c.fs = gnuflag.NewFlagSet("service-instance-add", gnuflag.ExitOnError)
 		c.fs.StringVar(&c.teamOwner, "team-owner", "", flagDesc)
 		c.fs.StringVar(&c.teamOwner, "t", "", flagDesc)
 		descriptionMessage := "service instance description"
@@ -134,15 +134,15 @@ func (c *serviceAdd) Flags() *gnuflag.FlagSet {
 	return c.fs
 }
 
-type serviceUpdate struct {
+type serviceInstanceUpdate struct {
 	fs          *gnuflag.FlagSet
 	description string
 }
 
-func (c *serviceUpdate) Info() *cmd.Info {
+func (c *serviceInstanceUpdate) Info() *cmd.Info {
 	return &cmd.Info{
-		Name:  "service-update",
-		Usage: "service-update <service-name> <service-instance-name> [-d/--description description]",
+		Name:  "service-instance-update",
+		Usage: "service-instance-update <service-name> <service-instance-name> [-d/--description description]",
 		Desc: `Updates a service instance of a service.
 
 The --description parameter sets a description for your service instance.`,
@@ -150,7 +150,7 @@ The --description parameter sets a description for your service instance.`,
 	}
 }
 
-func (c *serviceUpdate) Run(ctx *cmd.Context, client *cmd.Client) error {
+func (c *serviceInstanceUpdate) Run(ctx *cmd.Context, client *cmd.Client) error {
 	serviceName, instanceName := ctx.Args[0], ctx.Args[1]
 	var b bytes.Buffer
 	params := map[string]string{
@@ -177,9 +177,9 @@ func (c *serviceUpdate) Run(ctx *cmd.Context, client *cmd.Client) error {
 	return nil
 }
 
-func (c *serviceUpdate) Flags() *gnuflag.FlagSet {
+func (c *serviceInstanceUpdate) Flags() *gnuflag.FlagSet {
 	if c.fs == nil {
-		c.fs = gnuflag.NewFlagSet("service-update", gnuflag.ExitOnError)
+		c.fs = gnuflag.NewFlagSet("service-instance-update", gnuflag.ExitOnError)
 		descriptionMessage := "service instance description"
 		c.fs.StringVar(&c.description, "description", "", descriptionMessage)
 		c.fs.StringVar(&c.description, "d", "", descriptionMessage)
@@ -187,13 +187,13 @@ func (c *serviceUpdate) Flags() *gnuflag.FlagSet {
 	return c.fs
 }
 
-type serviceBind struct {
+type serviceInstanceBind struct {
 	cmd.GuessingCommand
 	fs        *gnuflag.FlagSet
 	noRestart bool
 }
 
-func (sb *serviceBind) Run(ctx *cmd.Context, client *cmd.Client) error {
+func (sb *serviceInstanceBind) Run(ctx *cmd.Context, client *cmd.Client) error {
 	ctx.RawOutput()
 	appName, err := sb.Guess()
 	if err != nil {
@@ -228,10 +228,10 @@ func (sb *serviceBind) Run(ctx *cmd.Context, client *cmd.Client) error {
 	return nil
 }
 
-func (sb *serviceBind) Info() *cmd.Info {
+func (sb *serviceInstanceBind) Info() *cmd.Info {
 	return &cmd.Info{
-		Name:  "service-bind",
-		Usage: "service-bind <service-name> <service-instance-name> [-a/--app appname] [--no-restart]",
+		Name:  "service-instance-bind",
+		Usage: "service-instance-bind <service-name> <service-instance-name> [-a/--app appname] [--no-restart]",
 		Desc: `Binds an application to a previously created service instance. See [[tsuru
 service-add]] for more details on how to create a service instance.
 
@@ -242,7 +242,7 @@ by bind will be private (not accessible via [[tsuru env-get]]).`,
 	}
 }
 
-func (sb *serviceBind) Flags() *gnuflag.FlagSet {
+func (sb *serviceInstanceBind) Flags() *gnuflag.FlagSet {
 	if sb.fs == nil {
 		sb.fs = sb.GuessingCommand.Flags()
 		sb.fs.BoolVar(&sb.noRestart, "no-restart", false, "Binds an application to a service instance without restart the application")
@@ -250,13 +250,13 @@ func (sb *serviceBind) Flags() *gnuflag.FlagSet {
 	return sb.fs
 }
 
-type serviceUnbind struct {
+type serviceInstanceUnbind struct {
 	cmd.GuessingCommand
 	fs        *gnuflag.FlagSet
 	noRestart bool
 }
 
-func (su *serviceUnbind) Run(ctx *cmd.Context, client *cmd.Client) error {
+func (su *serviceInstanceUnbind) Run(ctx *cmd.Context, client *cmd.Client) error {
 	ctx.RawOutput()
 	appName, err := su.Guess()
 	if err != nil {
@@ -291,10 +291,10 @@ func (su *serviceUnbind) Run(ctx *cmd.Context, client *cmd.Client) error {
 	return nil
 }
 
-func (su *serviceUnbind) Info() *cmd.Info {
+func (su *serviceInstanceUnbind) Info() *cmd.Info {
 	return &cmd.Info{
-		Name:  "service-unbind",
-		Usage: "service-unbind <service-name> <service-instance-name> [-a/--app appname] [--no-restart]",
+		Name:  "service-instance-unbind",
+		Usage: "service-instance-unbind <service-name> <service-instance-name> [-a/--app appname] [--no-restart]",
 		Desc: `Unbinds an application from a service instance. After unbinding, the instance
 will not be available anymore. For example, when unbinding an application from
 a MySQL service, the application would lose access to the database.`,
@@ -302,7 +302,7 @@ a MySQL service, the application would lose access to the database.`,
 	}
 }
 
-func (su *serviceUnbind) Flags() *gnuflag.FlagSet {
+func (su *serviceInstanceUnbind) Flags() *gnuflag.FlagSet {
 	if su.fs == nil {
 		su.fs = su.GuessingCommand.Flags()
 		su.fs.BoolVar(&su.noRestart, "no-restart", false, "Unbinds an application from a service instance without restart the application")
@@ -605,19 +605,19 @@ func (c serviceInfo) Run(ctx *cmd.Context, client *cmd.Client) error {
 	return c.WriteDoc(ctx, client)
 }
 
-type serviceRemove struct {
+type serviceInstanceRemove struct {
 	yes       bool
 	yesUnbind bool
 	fs        *gnuflag.FlagSet
 }
 
-func (c *serviceRemove) Info() *cmd.Info {
+func (c *serviceInstanceRemove) Info() *cmd.Info {
 	return &cmd.Info{
-		Name:  "service-remove",
-		Usage: "service-remove <service-name> <service-instance-name> [--assume-yes] [--unbind]",
+		Name:  "service-instance-remove",
+		Usage: "service-instance-remove <service-name> <service-instance-name> [--assume-yes] [--unbind]",
 		Desc: `Destroys a service instance. It can't remove a service instance that is bound
 to an app, so before remove a service instance, make sure there is no apps
-bound to it (see [[tsuru service-info]] command).`,
+bound to it (see [[tsuru service-instance-info]] command).`,
 		MinArgs: 2,
 	}
 }
@@ -648,7 +648,7 @@ func removeServiceInstanceWithUnbind(ctx *cmd.Context, client *cmd.Client) error
 	return nil
 }
 
-func (c *serviceRemove) Run(ctx *cmd.Context, client *cmd.Client) error {
+func (c *serviceInstanceRemove) Run(ctx *cmd.Context, client *cmd.Client) error {
 	serviceName := ctx.Args[0]
 	instanceName := ctx.Args[1]
 	var answer string
@@ -702,9 +702,9 @@ func (c *serviceRemove) Run(ctx *cmd.Context, client *cmd.Client) error {
 	return nil
 }
 
-func (c *serviceRemove) Flags() *gnuflag.FlagSet {
+func (c *serviceInstanceRemove) Flags() *gnuflag.FlagSet {
 	if c.fs == nil {
-		c.fs = gnuflag.NewFlagSet("service-remove", gnuflag.ExitOnError)
+		c.fs = gnuflag.NewFlagSet("service-instance-remove", gnuflag.ExitOnError)
 		c.fs.BoolVar(&c.yes, "assume-yes", false, "Don't ask for confirmation, just remove the service.")
 		c.fs.BoolVar(&c.yes, "y", false, "Don't ask for confirmation, just remove the service.")
 		c.fs.BoolVar(&c.yesUnbind, "unbind", false, "Don't ask for confirmation, just remove all applications bound.")

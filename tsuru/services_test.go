@@ -161,7 +161,7 @@ func (s *S) TestServiceBind(c *check.C) {
 		},
 	}
 	client := cmd.NewClient(&http.Client{Transport: trans}, nil, manager)
-	command := serviceBind{}
+	command := serviceInstanceBind{}
 	command.Flags().Parse(true, []string{"-a", "g1", "--no-restart"})
 	err = command.Run(&ctx, client)
 	c.Assert(err, check.IsNil)
@@ -196,7 +196,7 @@ func (s *S) TestServiceBindWithoutFlag(c *check.C) {
 	}
 	client := cmd.NewClient(&http.Client{Transport: trans}, nil, manager)
 	fake := &cmdtest.FakeGuesser{Name: "ge"}
-	err = (&serviceBind{GuessingCommand: cmd.GuessingCommand{G: fake}}).Run(&ctx, client)
+	err = (&serviceInstanceBind{GuessingCommand: cmd.GuessingCommand{G: fake}}).Run(&ctx, client)
 	c.Assert(err, check.IsNil)
 	c.Assert(called, check.Equals, true)
 	c.Assert(stdout.String(), check.Equals, expectedOut)
@@ -221,7 +221,7 @@ func (s *S) TestServiceBindWithoutEnvironmentVariables(c *check.C) {
 		},
 	}
 	client := cmd.NewClient(&http.Client{Transport: trans}, nil, manager)
-	command := serviceBind{}
+	command := serviceInstanceBind{}
 	command.Flags().Parse(true, []string{"-a", "g1"})
 	err = command.Run(&ctx, client)
 	c.Assert(err, check.IsNil)
@@ -238,7 +238,7 @@ func (s *S) TestServiceBindWithRequestFailure(c *check.C) {
 	trans := &cmdtest.Transport{Message: "This user does not have access to this app.", Status: http.StatusForbidden}
 
 	client := cmd.NewClient(&http.Client{Transport: trans}, nil, manager)
-	command := serviceBind{}
+	command := serviceInstanceBind{}
 	command.Flags().Parse(true, []string{"-a", "g1"})
 	err := command.Run(&ctx, client)
 	c.Assert(err, check.NotNil)
@@ -246,11 +246,11 @@ func (s *S) TestServiceBindWithRequestFailure(c *check.C) {
 }
 
 func (s *S) TestServiceBindInfo(c *check.C) {
-	c.Assert((&serviceBind{}).Info(), check.NotNil)
+	c.Assert((&serviceInstanceBind{}).Info(), check.NotNil)
 }
 
 func (s *S) TestServiceBindIsAFlaggedCommand(c *check.C) {
-	var _ cmd.FlaggedCommand = &serviceBind{}
+	var _ cmd.FlaggedCommand = &serviceInstanceBind{}
 }
 
 func (s *S) TestServiceUnbind(c *check.C) {
@@ -274,7 +274,7 @@ func (s *S) TestServiceUnbind(c *check.C) {
 		},
 	}
 	client := cmd.NewClient(&http.Client{Transport: trans}, nil, manager)
-	command := serviceUnbind{}
+	command := serviceInstanceUnbind{}
 	command.Flags().Parse(true, []string{"-a", "pocket", "--no-restart"})
 	err = command.Run(&ctx, client)
 	c.Assert(err, check.IsNil)
@@ -304,7 +304,7 @@ func (s *S) TestServiceUnbindWithoutFlag(c *check.C) {
 	}
 	client := cmd.NewClient(&http.Client{Transport: trans}, nil, manager)
 	fake := &cmdtest.FakeGuesser{Name: "sleeve"}
-	err = (&serviceUnbind{GuessingCommand: cmd.GuessingCommand{G: fake}}).Run(&ctx, client)
+	err = (&serviceInstanceUnbind{GuessingCommand: cmd.GuessingCommand{G: fake}}).Run(&ctx, client)
 	c.Assert(err, check.IsNil)
 	c.Assert(called, check.Equals, true)
 	c.Assert(stdout.String(), check.Equals, expectedOut)
@@ -320,7 +320,7 @@ func (s *S) TestServiceUnbindWithRequestFailure(c *check.C) {
 	trans := &cmdtest.Transport{Message: "This app is not bound to this service.", Status: http.StatusPreconditionFailed}
 
 	client := cmd.NewClient(&http.Client{Transport: trans}, nil, manager)
-	command := serviceUnbind{}
+	command := serviceInstanceUnbind{}
 	command.Flags().Parse(true, []string{"-a", "pocket"})
 	err := command.Run(&ctx, client)
 	c.Assert(err, check.NotNil)
@@ -328,15 +328,15 @@ func (s *S) TestServiceUnbindWithRequestFailure(c *check.C) {
 }
 
 func (s *S) TestServiceUnbindInfo(c *check.C) {
-	c.Assert((&serviceUnbind{}).Info(), check.NotNil)
+	c.Assert((&serviceInstanceUnbind{}).Info(), check.NotNil)
 }
 
 func (s *S) TestServiceUnbindIsAFlaggedComand(c *check.C) {
-	var _ cmd.FlaggedCommand = &serviceUnbind{}
+	var _ cmd.FlaggedCommand = &serviceInstanceUnbind{}
 }
 
 func (s *S) TestServiceAddInfo(c *check.C) {
-	command := &serviceAdd{}
+	command := &serviceInstanceAdd{}
 	c.Assert(command.Info(), check.NotNil)
 }
 
@@ -354,7 +354,7 @@ func (s *S) TestServiceAddRun(c *check.C) {
 		Stderr: &stderr,
 	}
 	client := cmd.NewClient(&http.Client{Transport: &cmdtest.Transport{Message: result, Status: http.StatusOK}}, nil, manager)
-	err := (&serviceAdd{}).Run(&context, client)
+	err := (&serviceInstanceAdd{}).Run(&context, client)
 	c.Assert(err, check.IsNil)
 	obtained := stdout.String()
 	c.Assert(obtained, check.Equals, result)
@@ -362,7 +362,7 @@ func (s *S) TestServiceAddRun(c *check.C) {
 
 func (s *S) TestServiceAddFlags(c *check.C) {
 	flagDesc := "the team that owns the service (mandatory if the user is member of more than one team)"
-	command := serviceAdd{}
+	command := serviceInstanceAdd{}
 	flagset := command.Flags()
 	c.Assert(flagset, check.NotNil)
 	flagset.Parse(true, []string{"-t", "wat"})
@@ -397,7 +397,7 @@ func (s *S) TestServiceAddFlags(c *check.C) {
 }
 
 func (s *S) TestServiceUpdateInfo(c *check.C) {
-	command := &serviceUpdate{}
+	command := &serviceInstanceUpdate{}
 	c.Assert(command.Info(), check.NotNil)
 }
 
@@ -414,7 +414,7 @@ func (s *S) TestServiceUpdateRun(c *check.C) {
 		Stderr: &stderr,
 	}
 	client := cmd.NewClient(&http.Client{Transport: &cmdtest.Transport{Message: result, Status: http.StatusOK}}, nil, manager)
-	err := (&serviceUpdate{}).Run(&context, client)
+	err := (&serviceInstanceUpdate{}).Run(&context, client)
 	c.Assert(err, check.IsNil)
 	obtained := stdout.String()
 	c.Assert(obtained, check.Equals, result)
@@ -422,7 +422,7 @@ func (s *S) TestServiceUpdateRun(c *check.C) {
 
 func (s *S) TestServiceUpdateFlags(c *check.C) {
 	flagDesc := "service instance description"
-	command := serviceUpdate{}
+	command := serviceInstanceUpdate{}
 	flagset := command.Flags()
 	c.Assert(flagset, check.NotNil)
 	flagset.Parse(true, []string{"-d", "description"})
@@ -518,9 +518,9 @@ Instance: mongo
 Apps: app, app2
 Teams: admin, admin2
 Team Owner: admin
-Description: 
-Plan: 
-Plan description: 
+Description:
+Plan:
+Plan description:
 `
 	args := []string{"mymongo", "mongo"}
 	context := cmd.Context{
@@ -626,7 +626,7 @@ Service test is foo bar.
 }
 
 func (s *S) TestServiceRemoveInfo(c *check.C) {
-	i := (&serviceRemove{}).Info()
+	i := (&serviceInstanceRemove{}).Info()
 	c.Assert(i, check.NotNil)
 }
 
@@ -651,7 +651,7 @@ func (s *S) TestServiceRemoveRun(c *check.C) {
 		},
 	}
 	client := cmd.NewClient(&http.Client{Transport: &transport}, nil, manager)
-	err := (&serviceRemove{}).Run(&ctx, client)
+	err := (&serviceInstanceRemove{}).Run(&ctx, client)
 	c.Assert(err, check.IsNil)
 	obtained := stdout.String()
 	c.Assert(obtained, check.Equals, expected)
@@ -667,7 +667,7 @@ func (s *S) TestServiceRemoveWithoutAsking(c *check.C) {
 		Stdin:  strings.NewReader("y\n"),
 	}
 	client := cmd.NewClient(&http.Client{Transport: &cmdtest.Transport{Message: "", Status: http.StatusOK}}, nil, manager)
-	command := serviceRemove{}
+	command := serviceInstanceRemove{}
 	command.Flags().Parse(true, []string{"-y"})
 	err := command.Run(&context, client)
 	c.Assert(err, check.IsNil)
@@ -675,7 +675,7 @@ func (s *S) TestServiceRemoveWithoutAsking(c *check.C) {
 }
 
 func (s *S) TestServiceRemoveFlags(c *check.C) {
-	command := serviceRemove{}
+	command := serviceInstanceRemove{}
 	flagset := command.Flags()
 	c.Assert(flagset, check.NotNil)
 	flagset.Parse(true, []string{"-y"})
@@ -695,7 +695,7 @@ func (s *S) TestServiceRemoveFlags(c *check.C) {
 }
 
 func (s *S) TestServiceUnbindFlag(c *check.C) {
-	command := serviceRemove{}
+	command := serviceInstanceRemove{}
 	flagset := command.Flags()
 	c.Assert(flagset, check.NotNil)
 	flagset.Parse(true, []string{"-u"})
@@ -740,7 +740,7 @@ func (s *S) TestServiceRemoveWithAppBindNoUnbind(c *check.C) {
 		},
 	}
 	client := cmd.NewClient(&http.Client{Transport: trans}, nil, manager)
-	err = (&serviceRemove{}).Run(&ctx, client)
+	err = (&serviceInstanceRemove{}).Run(&ctx, client)
 	c.Assert(err, check.IsNil)
 	obtained := stdout.String()
 	c.Assert(obtained, check.Equals, expected)
@@ -786,7 +786,7 @@ func (s *S) TestServiceRemoveWithAppBindYesUnbind(c *check.C) {
 		ConditionalTransports: []cmdtest.ConditionalTransport{instanceTransport, appTransport},
 	}
 	client := cmd.NewClient(&http.Client{Transport: trans}, nil, manager)
-	err = (&serviceRemove{}).Run(&ctx, client)
+	err = (&serviceInstanceRemove{}).Run(&ctx, client)
 	c.Assert(err, check.IsNil)
 	obtained := stdout.String()
 	c.Assert(obtained, check.Equals, expected+expectedOut1+expected2)
@@ -810,7 +810,7 @@ func (s *S) TestServiceRemoveWithAppBindWithFlags(c *check.C) {
 		},
 	}
 	client := cmd.NewClient(&http.Client{Transport: trans}, nil, manager)
-	command := serviceRemove{}
+	command := serviceInstanceRemove{}
 	command.Flags().Parse(true, []string{"-y", "-u"})
 	err = command.Run(&ctx, client)
 	c.Assert(err, check.IsNil)
@@ -855,7 +855,7 @@ func (s *S) TestServiceRemoveWithAppBindShowAppsBound(c *check.C) {
 		ConditionalTransports: []cmdtest.ConditionalTransport{instanceTransport, appTransport},
 	}
 	client := cmd.NewClient(&http.Client{Transport: trans}, nil, manager)
-	err = (&serviceRemove{}).Run(&ctx, client)
+	err = (&serviceInstanceRemove{}).Run(&ctx, client)
 	c.Assert(err, check.IsNil)
 	obtained := stdout.String()
 	c.Assert(obtained, check.Equals, expected+expectedOut1+expected2)
