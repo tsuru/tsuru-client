@@ -264,7 +264,7 @@ func (s *S) TestPluginListIsRegistered(c *check.C) {
 }
 
 func (s *S) TestPluginLookup(c *check.C) {
-	// Kids, do not try this at home
+	// Kids, do not try this at $HOME
 	defer os.Setenv("HOME", os.Getenv("HOME"))
 	tempHome, _ := filepath.Abs("testdata")
 	os.Setenv("HOME", tempHome)
