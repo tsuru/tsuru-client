@@ -518,9 +518,9 @@ Instance: mongo
 Apps: app, app2
 Teams: admin, admin2
 Team Owner: admin
-Description:
-Plan:
-Plan description:
+Description: 
+Plan: 
+Plan description: 
 `
 	args := []string{"mymongo", "mongo"}
 	context := cmd.Context{

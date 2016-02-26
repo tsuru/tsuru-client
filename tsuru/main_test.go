@@ -134,7 +134,7 @@ func (s *S) TestServiceUpdateIsRegistered(c *check.C) {
 	manager := buildManager("tsuru")
 	add, ok := manager.Commands["service-update"]
 	c.Assert(ok, check.Equals, true)
-	c.Assert(add, check.FitsTypeOf, &serviceInstanceUpdate{})
+	c.Assert(add, check.FitsTypeOf, &cmd.RemovedCommand{})
 }
 
 func (s *S) TestServiceInstanceUpdateIsRegistered(c *check.C) {
@@ -148,7 +148,7 @@ func (s *S) TestServiceAddIsRegistered(c *check.C) {
 	manager := buildManager("tsuru")
 	add, ok := manager.Commands["service-add"]
 	c.Assert(ok, check.Equals, true)
-	c.Assert(add, check.FitsTypeOf, &serviceInstanceAdd{})
+	c.Assert(add, check.FitsTypeOf, &cmd.RemovedCommand{})
 }
 
 func (s *S) TestServiceInstanceAddIsRegistered(c *check.C) {
@@ -162,7 +162,7 @@ func (s *S) TestServiceRemoveIsRegistered(c *check.C) {
 	manager := buildManager("tsuru")
 	remove, ok := manager.Commands["service-remove"]
 	c.Assert(ok, check.Equals, true)
-	c.Assert(remove, check.FitsTypeOf, &serviceInstanceRemove{})
+	c.Assert(remove, check.FitsTypeOf, &cmd.RemovedCommand{})
 }
 
 func (s *S) TestServiceInstanceRemoveIsRegistered(c *check.C) {
@@ -176,7 +176,7 @@ func (s *S) TestServiceBindIsRegistered(c *check.C) {
 	manager := buildManager("tsuru")
 	bind, ok := manager.Commands["service-bind"]
 	c.Assert(ok, check.Equals, true)
-	c.Assert(bind, check.FitsTypeOf, &serviceInstanceBind{})
+	c.Assert(bind, check.FitsTypeOf, &cmd.RemovedCommand{})
 }
 
 func (s *S) TestServiceInstanceBindIsRegistered(c *check.C) {
@@ -190,7 +190,7 @@ func (s *S) TestServiceUnbindIsRegistered(c *check.C) {
 	manager := buildManager("tsuru")
 	unbind, ok := manager.Commands["service-unbind"]
 	c.Assert(ok, check.Equals, true)
-	c.Assert(unbind, check.FitsTypeOf, &serviceInstanceUnbind{})
+	c.Assert(unbind, check.FitsTypeOf, &cmd.RemovedCommand{})
 }
 
 func (s *S) TestServiceInstanceUnbindIsRegistered(c *check.C) {
