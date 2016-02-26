@@ -181,12 +181,15 @@ func (c *appDeploy) Run(context *cmd.Context, client *cmd.Client) error {
 	if err != nil {
 		return err
 	}
+	var buf bytes.Buffer
+	respBody := firstWriter{Writer: io.MultiWriter(context.Stdout, &buf)}
 	if c.image != "" {
 		request.Header.Set("Content-Type", "application/x-www-form-urlencoded")
 		_, err = body.WriteString(fmt.Sprintf("image=%s", c.image))
 		if err != nil {
 			return err
 		}
+		fmt.Fprint(context.Stdout, "Deploying image...")
 	} else {
 		writer := multipart.NewWriter(&body)
 		var file io.Writer
@@ -200,16 +203,14 @@ func (c *appDeploy) Run(context *cmd.Context, client *cmd.Client) error {
 		}
 		writer.Close()
 		request.Header.Set("Content-Type", "multipart/form-data; boundary="+writer.Boundary())
+		go func() {
+			fmt.Fprint(context.Stdout, "Uploading files..")
+			for buf.Len() == 0 {
+				fmt.Fprint(context.Stdout, ".")
+				time.Sleep(2e9)
+			}
+		}()
 	}
-	var buf bytes.Buffer
-	respBody := firstWriter{Writer: io.MultiWriter(context.Stdout, &buf)}
-	go func() {
-		fmt.Fprint(context.Stdout, "Uploading files..")
-		for buf.Len() == 0 {
-			fmt.Fprint(context.Stdout, ".")
-			time.Sleep(2e9)
-		}
-	}()
 	resp, err := client.Do(request)
 	if err != nil {
 		return err
