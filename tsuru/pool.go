@@ -14,19 +14,21 @@ import (
 
 type poolList struct{}
 
-type PoolsByTeam struct {
-	Team  string
-	Pools []string
-}
-
 type Pool struct {
-	Name string
+	Name    string
+	Teams   []string
+	Public  bool
+	Default bool
 }
 
-type ListPoolResponse struct {
-	PoolsByTeam  []PoolsByTeam `json:"pools_by_team"`
-	PublicPools  []Pool        `json:"public_pools"`
-	DefaultPools []Pool        `json:"default_pool"`
+func (p *Pool) Kind() string {
+	if p.Public {
+		return "public"
+	}
+	if p.Default {
+		return "default"
+	}
+	return ""
 }
 
 func (poolList) Run(context *cmd.Context, client *cmd.Client) error {
@@ -43,30 +45,17 @@ func (poolList) Run(context *cmd.Context, client *cmd.Client) error {
 		return err
 	}
 	defer resp.Body.Close()
-	var pools ListPoolResponse
+	var pools []Pool
 	err = json.NewDecoder(resp.Body).Decode(&pools)
 	if err != nil {
 		return err
 	}
-	t := cmd.Table{Headers: cmd.Row([]string{"Team", "Pools"})}
-	for _, pool := range pools.PoolsByTeam {
-		t.AddRow(cmd.Row([]string{pool.Team, strings.Join(pool.Pools, ", ")}))
+	t := cmd.Table{Headers: cmd.Row([]string{"Pool", "Teams", "Kind"})}
+	for _, pool := range pools {
+		t.AddRow(cmd.Row([]string{pool.Name, strings.Join(pool.Teams, ", "), pool.Kind()}))
 	}
 	t.Sort()
 	context.Stdout.Write(t.Bytes())
-	tp := cmd.Table{Headers: cmd.Row([]string{"Public Pools"})}
-	for _, pool := range pools.PublicPools {
-		tp.AddRow(cmd.Row([]string{pool.Name}))
-	}
-	tp.Sort()
-	context.Stdout.Write([]byte("\n"))
-	context.Stdout.Write(tp.Bytes())
-	if len(pools.DefaultPools) > 0 {
-		td := cmd.Table{Headers: cmd.Row([]string{"Default Pool"})}
-		td.AddRow(cmd.Row([]string{pools.DefaultPools[0].Name}))
-		context.Stdout.Write([]byte("\n"))
-		context.Stdout.Write(td.Bytes())
-	}
 	return nil
 }
 
