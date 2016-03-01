@@ -7,6 +7,7 @@ package main
 import (
 	"encoding/json"
 	"net/http"
+	"sort"
 	"strings"
 
 	"github.com/tsuru/tsuru/cmd"
@@ -31,6 +32,18 @@ func (p *Pool) Kind() string {
 	return ""
 }
 
+type poolEntriesList []Pool
+
+func (l poolEntriesList) Len() int      { return len(l) }
+func (l poolEntriesList) Swap(i, j int) { l[i], l[j] = l[j], l[i] }
+func (l poolEntriesList) Less(i, j int) bool {
+	cmp := strings.Compare(l[i].Kind(), l[j].Kind())
+	if cmp == 0 {
+		return l[i].Name < l[j].Name
+	}
+	return cmp < 0
+}
+
 func (poolList) Run(context *cmd.Context, client *cmd.Client) error {
 	url, err := cmd.GetURL("/pools")
 	if err != nil {
@@ -50,11 +63,11 @@ func (poolList) Run(context *cmd.Context, client *cmd.Client) error {
 	if err != nil {
 		return err
 	}
-	t := cmd.Table{Headers: cmd.Row([]string{"Pool", "Teams", "Kind"})}
+	sort.Sort(poolEntriesList(pools))
+	t := cmd.Table{Headers: cmd.Row([]string{"Pool", "Kind", "Teams"})}
 	for _, pool := range pools {
-		t.AddRow(cmd.Row([]string{pool.Name, strings.Join(pool.Teams, ", "), pool.Kind()}))
+		t.AddRow(cmd.Row([]string{pool.Name, pool.Kind(), strings.Join(pool.Teams, ", ")}))
 	}
-	t.Sort()
 	context.Stdout.Write(t.Bytes())
 	return nil
 }
