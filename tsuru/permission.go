@@ -181,35 +181,58 @@ func (c *roleInfo) Run(context *cmd.Context, client *cmd.Client) error {
 	}
 	tbl := cmd.NewTable()
 	tbl.LineSeparator = true
-	tbl.Headers = cmd.Row{"Name", "Permissions"}
-	tbl.AddRow(cmd.Row{perm.Name, strings.Join(perm.SchemeNames, "\n")})
+	tbl.Headers = cmd.Row{"Name", "Context", "Permissions", "Description"}
+	tbl.AddRow(cmd.Row{perm.Name, string(perm.ContextType), strings.Join(perm.SchemeNames, "\n"), perm.Description})
 	fmt.Fprintf(context.Stdout, tbl.String())
 	return nil
 }
 
-type roleAdd struct{}
+type roleAdd struct {
+	description string
+	fs          *gnuflag.FlagSet
+}
 
 func (c *roleAdd) Info() *cmd.Info {
 	info := &cmd.Info{
-		Name:    "role-add",
-		Usage:   "role-add <role-name> <context-type>",
-		Desc:    `Create a new role for the specified context type. Valid context types are:`,
+		Name:  "role-add",
+		Usage: "role-add <role-name> <context-type> [--description/-d description]",
+		Desc: `Create a new role for the specified context type.
+Valid context types are:
+
+%s
+
+The [[--description]] parameter sets a description for your role.
+It is an optional parameter, and if its not set the role will only not have a
+description associated.
+`,
 		MinArgs: 2,
 	}
 	allTypes := make([]string, len(permission.ContextTypes))
 	for i := range permission.ContextTypes {
 		allTypes[i] = "* " + string(permission.ContextTypes[i])
 	}
-	info.Desc = fmt.Sprintf("%s\n\n%s", info.Desc, strings.Join(allTypes, "\n"))
+	info.Desc = fmt.Sprintf(info.Desc, strings.Join(allTypes, "\n"))
 	return info
+}
+
+func (c *roleAdd) Flags() *gnuflag.FlagSet {
+	if c.fs == nil {
+		descriptionMessage := "Role description"
+		c.fs = gnuflag.NewFlagSet("", gnuflag.ExitOnError)
+		c.fs.StringVar(&c.description, "description", "", descriptionMessage)
+		c.fs.StringVar(&c.description, "d", "", descriptionMessage)
+	}
+	return c.fs
 }
 
 func (c *roleAdd) Run(context *cmd.Context, client *cmd.Client) error {
 	roleName := context.Args[0]
 	contextType := context.Args[1]
+	description := c.description
 	params := url.Values{}
 	params.Set("name", roleName)
 	params.Set("context", contextType)
+	params.Set("description", description)
 	addr, err := cmd.GetURL("/roles")
 	if err != nil {
 		return err

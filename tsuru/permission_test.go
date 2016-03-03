@@ -80,6 +80,26 @@ func (s *S) TestRoleAddRun(c *check.C) {
 	c.Assert(stdout.String(), check.Equals, "Role successfully created!\n")
 }
 
+func (s *S) TestRoleAddFlags(c *check.C) {
+	command := roleAdd{}
+	flagset := command.Flags()
+	c.Assert(flagset, check.NotNil)
+	flagset.Parse(true, []string{"-d", "my description"})
+	description := flagset.Lookup("description")
+	usage := "Role description"
+	c.Check(description, check.NotNil)
+	c.Check(description.Name, check.Equals, "description")
+	c.Check(description.Usage, check.Equals, usage)
+	c.Check(description.Value.String(), check.Equals, "my description")
+	c.Check(description.DefValue, check.Equals, "")
+	sdescription := flagset.Lookup("d")
+	c.Check(sdescription, check.NotNil)
+	c.Check(sdescription.Name, check.Equals, "d")
+	c.Check(sdescription.Usage, check.Equals, usage)
+	c.Check(sdescription.Value.String(), check.Equals, "my description")
+	c.Check(sdescription.DefValue, check.Equals, "")
+}
+
 func (s *S) TestRoleListInfo(c *check.C) {
 	c.Assert((&roleList{}).Info(), check.NotNil)
 }
@@ -124,14 +144,14 @@ func (s *S) TestRoleInfoInfo(c *check.C) {
 func (s *S) TestRoleInfoRun(c *check.C) {
 	var stdout, stderr bytes.Buffer
 	result := `
-    {"name": "role1",  "context": "a", "scheme_names": ["app", "app.update"]}
+    {"name": "role1",  "context": "a", "description":"my description", "scheme_names": ["app", "app.update"]}
 `
-	expected := `+-------+-------------+
-| Name  | Permissions |
-+-------+-------------+
-| role1 | app         |
-|       | app.update  |
-+-------+-------------+
+	expected := `+-------+---------+-------------+----------------+
+| Name  | Context | Permissions | Description    |
++-------+---------+-------------+----------------+
+| role1 | a       | app         | my description |
+|       |         | app.update  |                |
++-------+---------+-------------+----------------+
 `
 	context := cmd.Context{
 		Args:   []string{"role1"},

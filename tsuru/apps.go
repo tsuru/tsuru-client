@@ -64,7 +64,7 @@ The [[--pool]] parameter defines which pool your app will be deployed.
 This is only needed if you have more than one pool associated with your teams.
 
 The [[--description]] parameter sets a description for your app.
-It is an optional parameter, and if its not set the app only will not have a
+It is an optional parameter, and if its not set the app will only not have a
 description associated.`,
 		MinArgs: 2,
 	}

@@ -186,8 +186,8 @@
 		},
 		{
 			"path": "github.com/tsuru/tsuru/permission",
-			"revision": "2fd12f4be639a041a179b6bd906c312f421f399b",
-			"revisionTime": "2016-02-22T10:58:05-03:00"
+			"revision": "10889724ce4c1bbc6f3e879cc6b60f6b096278ed",
+			"revisionTime": "2016-03-02T10:01:12-03:00"
 		},
 		{
 			"path": "github.com/tsuru/tsuru/provision",
