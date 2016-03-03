@@ -54,6 +54,7 @@ func buildManager(name string) *cmd.Manager {
 	m.RegisterRemoved("service-remove", "You should use `tsuru service-instance-remove` instead.")
 	m.Register(serviceInfo{})
 	m.Register(serviceInstanceInfo{})
+	m.RegisterRemoved("service-status", "You should use `tsuru service-instance-status` instead.")
 	m.Register(serviceInstanceStatus{})
 	m.Register(&serviceInstanceGrant{})
 	m.Register(&serviceInstanceRevoke{})

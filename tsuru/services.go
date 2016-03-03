@@ -314,8 +314,8 @@ type serviceInstanceStatus struct{}
 
 func (c serviceInstanceStatus) Info() *cmd.Info {
 	return &cmd.Info{
-		Name:  "service-status",
-		Usage: "service-status <service-name> <service-instance-name>",
+		Name:  "service-instance-status",
+		Usage: "service-instance-status <service-name> <service-instance-name>",
 		Desc: `Displays the status of the given service instance. For now, it checks only if
 the instance is "up" (receiving connections) or "down" (refusing connections).`,
 		MinArgs: 2,

@@ -214,9 +214,16 @@ func (s *S) TestServiceInfoIsRegistered(c *check.C) {
 	c.Assert(info, check.FitsTypeOf, serviceInfo{})
 }
 
+func (s *S) TestServiceStatusIsRegistered(c *check.C) {
+	manager := buildManager("tsuru")
+	bind, ok := manager.Commands["service-status"]
+	c.Assert(ok, check.Equals, true)
+	c.Assert(bind, check.FitsTypeOf, &cmd.RemovedCommand{})
+}
+
 func (s *S) TestServiceInstanceStatusIsRegistered(c *check.C) {
 	manager := buildManager("tsuru")
-	status, ok := manager.Commands["service-status"]
+	status, ok := manager.Commands["service-instance-status"]
 	c.Assert(ok, check.Equals, true)
 	c.Assert(status, check.FitsTypeOf, serviceInstanceStatus{})
 }
