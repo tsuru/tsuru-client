@@ -201,7 +201,20 @@ func (s *S) TestUserCreateShouldNotDependOnTsuruTokenFile(c *check.C) {
 		Stderr: &stderr,
 		Stdin:  reader,
 	}
-	client := cmd.NewClient(&http.Client{Transport: &cmdtest.Transport{Message: "", Status: http.StatusCreated}}, nil, manager)
+	transport := cmdtest.ConditionalTransport{
+		Transport: cmdtest.Transport{
+			Message: "",
+			Status:  http.StatusCreated,
+		},
+		CondFunc: func(r *http.Request) bool {
+			contentType := r.Header.Get("Content-Type") == "application/x-www-form-urlencoded"
+			password := r.FormValue("password") == "foo123"
+			email := r.FormValue("email") == "foo@foo.com"
+			url := r.URL.Path == "/1.0/users"
+			return contentType && password && email && url
+		},
+	}
+	client := cmd.NewClient(&http.Client{Transport: &transport}, nil, manager)
 	command := userCreate{}
 	err := command.Run(&context, client)
 	c.Assert(err, check.IsNil)

@@ -49,11 +49,12 @@ func (c *userCreate) Run(context *cmd.Context, client *cmd.Client) error {
 	if password != confirm {
 		return errors.New("Passwords didn't match.")
 	}
-	b := bytes.NewBufferString(`{"email":"` + email + `", "password":"` + password + `"}`)
+	b := strings.NewReader("email=" + email + "&password=" + password)
 	request, err := http.NewRequest("POST", url, b)
 	if err != nil {
 		return err
 	}
+	request.Header.Set("Content-Type", "application/x-www-form-urlencoded")
 	resp, err := client.Do(request)
 	if resp != nil {
 		if resp.StatusCode == http.StatusNotFound ||
