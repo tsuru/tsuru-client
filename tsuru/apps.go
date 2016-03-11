@@ -92,27 +92,23 @@ func (c *appCreate) Flags() *gnuflag.FlagSet {
 func (c *appCreate) Run(context *cmd.Context, client *cmd.Client) error {
 	appName := context.Args[0]
 	platform := context.Args[1]
-	params := map[string]interface{}{
-		"name":        appName,
-		"platform":    platform,
-		"plan":        map[string]interface{}{"name": c.plan},
-		"teamOwner":   c.teamOwner,
-		"pool":        c.pool,
-		"description": c.description,
-	}
-	b, err := json.Marshal(params)
+	v := url.Values{}
+	v.Set("name", appName)
+	v.Set("platform", platform)
+	v.Set("plan", c.plan)
+	v.Set("teamOwner", c.teamOwner)
+	v.Set("pool", c.pool)
+	v.Set("description", c.description)
+	b := strings.NewReader(v.Encode())
+	u, err := cmd.GetURL("/apps")
 	if err != nil {
 		return err
 	}
-	url, err := cmd.GetURL("/apps")
+	request, err := http.NewRequest("POST", u, b)
 	if err != nil {
 		return err
 	}
-	request, err := http.NewRequest("POST", url, bytes.NewBuffer(b))
-	if err != nil {
-		return err
-	}
-	request.Header.Set("Content-Type", "application/json")
+	request.Header.Set("Content-Type", "application/x-www-form-urlencoded")
 	response, err := client.Do(request)
 	if err != nil {
 		return err

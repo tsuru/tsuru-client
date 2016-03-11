@@ -52,22 +52,17 @@ Your repository for "ble" project is "git@tsuru.plataformas.glb.com:ble.git"` + 
 	}
 	trans := cmdtest.ConditionalTransport{
 		Transport: cmdtest.Transport{Message: result, Status: http.StatusOK},
-		CondFunc: func(req *http.Request) bool {
-			defer req.Body.Close()
-			body, err := ioutil.ReadAll(req.Body)
-			c.Assert(err, check.IsNil)
-			expected := map[string]interface{}{
-				"name":        "ble",
-				"platform":    "django",
-				"teamOwner":   "",
-				"plan":        map[string]interface{}{"name": ""},
-				"pool":        "",
-				"description": "",
-			}
-			result := map[string]interface{}{}
-			err = json.Unmarshal(body, &result)
-			c.Assert(expected, check.DeepEquals, result)
-			return req.Method == "POST" && strings.HasSuffix(req.URL.Path, "/apps")
+		CondFunc: func(r *http.Request) bool {
+			name := r.FormValue("name") == "ble"
+			platform := r.FormValue("platform") == "django"
+			teamOwner := r.FormValue("teamOwner") == ""
+			plan := r.FormValue("plan") == ""
+			pool := r.FormValue("pool") == ""
+			description := r.FormValue("description") == ""
+			method := r.Method == "POST"
+			contentType := r.Header.Get("Content-Type") == "application/x-www-form-urlencoded"
+			url := strings.HasSuffix(r.URL.Path, "/apps")
+			return method && url && name && platform && teamOwner && plan && pool && description && contentType
 		},
 	}
 	client := cmd.NewClient(&http.Client{Transport: &trans}, nil, manager)
@@ -90,22 +85,17 @@ Your repository for "ble" project is "git@tsuru.plataformas.glb.com:ble.git"` + 
 	}
 	trans := cmdtest.ConditionalTransport{
 		Transport: cmdtest.Transport{Message: result, Status: http.StatusOK},
-		CondFunc: func(req *http.Request) bool {
-			defer req.Body.Close()
-			body, err := ioutil.ReadAll(req.Body)
-			c.Assert(err, check.IsNil)
-			expected := map[string]interface{}{
-				"name":        "ble",
-				"platform":    "django",
-				"teamOwner":   "team",
-				"plan":        map[string]interface{}{"name": ""},
-				"pool":        "",
-				"description": "",
-			}
-			result := map[string]interface{}{}
-			err = json.Unmarshal(body, &result)
-			c.Assert(expected, check.DeepEquals, result)
-			return req.Method == "POST" && strings.HasSuffix(req.URL.Path, "/apps")
+		CondFunc: func(r *http.Request) bool {
+			name := r.FormValue("name") == "ble"
+			platform := r.FormValue("platform") == "django"
+			teamOwner := r.FormValue("teamOwner") == "team"
+			plan := r.FormValue("plan") == ""
+			pool := r.FormValue("pool") == ""
+			description := r.FormValue("description") == ""
+			method := r.Method == "POST"
+			url := strings.HasSuffix(r.URL.Path, "/apps")
+			contentType := r.Header.Get("Content-Type") == "application/x-www-form-urlencoded"
+			return method && url && name && platform && teamOwner && plan && pool && description && contentType
 		},
 	}
 	client := cmd.NewClient(&http.Client{Transport: &trans}, nil, manager)
@@ -129,22 +119,17 @@ Your repository for "ble" project is "git@tsuru.plataformas.glb.com:ble.git"` + 
 	}
 	trans := cmdtest.ConditionalTransport{
 		Transport: cmdtest.Transport{Message: result, Status: http.StatusOK},
-		CondFunc: func(req *http.Request) bool {
-			defer req.Body.Close()
-			body, err := ioutil.ReadAll(req.Body)
-			c.Assert(err, check.IsNil)
-			expected := map[string]interface{}{
-				"name":        "ble",
-				"platform":    "django",
-				"teamOwner":   "",
-				"plan":        map[string]interface{}{"name": "myplan"},
-				"pool":        "",
-				"description": "",
-			}
-			result := map[string]interface{}{}
-			err = json.Unmarshal(body, &result)
-			c.Assert(expected, check.DeepEquals, result)
-			return req.Method == "POST" && strings.HasSuffix(req.URL.Path, "/apps")
+		CondFunc: func(r *http.Request) bool {
+			name := r.FormValue("name") == "ble"
+			platform := r.FormValue("platform") == "django"
+			teamOwner := r.FormValue("teamOwner") == ""
+			plan := r.FormValue("plan") == "myplan"
+			pool := r.FormValue("pool") == ""
+			description := r.FormValue("description") == ""
+			method := r.Method == "POST"
+			url := strings.HasSuffix(r.URL.Path, "/apps")
+			contentType := r.Header.Get("Content-Type") == "application/x-www-form-urlencoded"
+			return method && url && name && platform && teamOwner && plan && pool && description && contentType
 		},
 	}
 	client := cmd.NewClient(&http.Client{Transport: &trans}, nil, manager)
@@ -168,22 +153,17 @@ Your repository for "ble" project is "git@tsuru.plataformas.glb.com:ble.git"` + 
 	}
 	trans := cmdtest.ConditionalTransport{
 		Transport: cmdtest.Transport{Message: result, Status: http.StatusOK},
-		CondFunc: func(req *http.Request) bool {
-			defer req.Body.Close()
-			body, err := ioutil.ReadAll(req.Body)
-			c.Assert(err, check.IsNil)
-			expected := map[string]interface{}{
-				"name":        "ble",
-				"platform":    "django",
-				"teamOwner":   "",
-				"plan":        map[string]interface{}{"name": ""},
-				"pool":        "mypool",
-				"description": "",
-			}
-			result := map[string]interface{}{}
-			err = json.Unmarshal(body, &result)
-			c.Assert(expected, check.DeepEquals, result)
-			return req.Method == "POST" && strings.HasSuffix(req.URL.Path, "/apps")
+		CondFunc: func(r *http.Request) bool {
+			name := r.FormValue("name") == "ble"
+			platform := r.FormValue("platform") == "django"
+			teamowner := r.FormValue("teamowner") == ""
+			plan := r.FormValue("plan") == ""
+			pool := r.FormValue("pool") == "mypool"
+			description := r.FormValue("description") == ""
+			method := r.Method == "POST"
+			url := strings.HasSuffix(r.URL.Path, "/apps")
+			contentType := r.Header.Get("Content-Type") == "application/x-www-form-urlencoded"
+			return method && url && name && platform && teamowner && plan && pool && description && contentType
 		},
 	}
 	client := cmd.NewClient(&http.Client{Transport: &trans}, nil, manager)
@@ -206,22 +186,17 @@ Use app-info to check the status of the app and its units.` + "\n"
 	}
 	trans := cmdtest.ConditionalTransport{
 		Transport: cmdtest.Transport{Message: result, Status: http.StatusOK},
-		CondFunc: func(req *http.Request) bool {
-			defer req.Body.Close()
-			body, err := ioutil.ReadAll(req.Body)
-			c.Assert(err, check.IsNil)
-			expected := map[string]interface{}{
-				"name":        "ble",
-				"platform":    "django",
-				"teamOwner":   "",
-				"plan":        map[string]interface{}{"name": ""},
-				"pool":        "",
-				"description": "",
-			}
-			result := map[string]interface{}{}
-			err = json.Unmarshal(body, &result)
-			c.Assert(expected, check.DeepEquals, result)
-			return req.Method == "POST" && strings.HasSuffix(req.URL.Path, "/apps")
+		CondFunc: func(r *http.Request) bool {
+			name := r.FormValue("name") == "ble"
+			platform := r.FormValue("platform") == "django"
+			teamowner := r.FormValue("teamowner") == ""
+			plan := r.FormValue("plan") == ""
+			pool := r.FormValue("pool") == ""
+			description := r.FormValue("description") == ""
+			method := r.Method == "POST"
+			url := strings.HasSuffix(r.URL.Path, "/apps")
+			contentType := r.Header.Get("Content-Type") == "application/x-www-form-urlencoded"
+			return method && url && name && platform && teamowner && plan && pool && description && contentType
 		},
 	}
 	client := cmd.NewClient(&http.Client{Transport: &trans}, nil, manager)
