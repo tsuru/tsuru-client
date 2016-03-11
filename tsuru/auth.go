@@ -11,6 +11,7 @@ import (
 	"fmt"
 	"io/ioutil"
 	"net/http"
+	"net/url"
 	"strings"
 
 	"github.com/tsuru/gnuflag"
@@ -30,7 +31,7 @@ func (c *userCreate) Info() *cmd.Info {
 
 func (c *userCreate) Run(context *cmd.Context, client *cmd.Client) error {
 	context.RawOutput()
-	url, err := cmd.GetURL("/users")
+	u, err := cmd.GetURL("/users")
 	if err != nil {
 		return err
 	}
@@ -49,8 +50,11 @@ func (c *userCreate) Run(context *cmd.Context, client *cmd.Client) error {
 	if password != confirm {
 		return errors.New("Passwords didn't match.")
 	}
-	b := strings.NewReader("email=" + email + "&password=" + password)
-	request, err := http.NewRequest("POST", url, b)
+	v := url.Values{}
+	v.Set("email", email)
+	v.Set("password", password)
+	b := strings.NewReader(v.Encode())
+	request, err := http.NewRequest("POST", u, b)
 	if err != nil {
 		return err
 	}
