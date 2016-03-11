@@ -27,7 +27,19 @@ func (s *S) TestTeamCreate(c *check.C) {
 		Stderr: &stderr,
 		Stdin:  nil,
 	}
-	client := cmd.NewClient(&http.Client{Transport: &cmdtest.Transport{Message: "", Status: http.StatusCreated}}, nil, manager)
+	transport := cmdtest.ConditionalTransport{
+		Transport: cmdtest.Transport{
+			Message: "",
+			Status:  http.StatusCreated,
+		},
+		CondFunc: func(r *http.Request) bool {
+			contentType := r.Header.Get("Content-Type") == "application/x-www-form-urlencoded"
+			team := r.FormValue("name") == "core"
+			url := r.URL.Path == "/1.0/teams"
+			return contentType && team && url
+		},
+	}
+	client := cmd.NewClient(&http.Client{Transport: &transport}, nil, manager)
 	command := teamCreate{}
 	err := command.Run(&context, client)
 	c.Assert(err, check.IsNil)
@@ -193,7 +205,7 @@ func (s *S) TestUserCreateShouldNotDependOnTsuruTokenFile(c *check.C) {
 		fsystem = nil
 	}()
 	expected := "Password: \nConfirm: \n" + `User "foo@foo.com" successfully created!` + "\n"
-	reader := strings.NewReader("foo123=\nfoo123=\n")
+	reader := strings.NewReader("foo123\nfoo123\n")
 	var stdout, stderr bytes.Buffer
 	context := cmd.Context{
 		Args:   []string{"foo@foo.com"},
@@ -208,7 +220,7 @@ func (s *S) TestUserCreateShouldNotDependOnTsuruTokenFile(c *check.C) {
 		},
 		CondFunc: func(r *http.Request) bool {
 			contentType := r.Header.Get("Content-Type") == "application/x-www-form-urlencoded"
-			password := r.FormValue("password") == "foo123="
+			password := r.FormValue("password") == "foo123"
 			email := r.FormValue("email") == "foo@foo.com"
 			url := r.URL.Path == "/1.0/users"
 			return contentType && password && email && url

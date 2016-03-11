@@ -163,15 +163,18 @@ When you create a team, you're automatically member of this team.`,
 
 func (c *teamCreate) Run(context *cmd.Context, client *cmd.Client) error {
 	team := context.Args[0]
-	b := bytes.NewBufferString(fmt.Sprintf(`{"name":"%s"}`, team))
-	url, err := cmd.GetURL("/teams")
+	v := url.Values{}
+	v.Set("name", team)
+	b := strings.NewReader(v.Encode())
+	u, err := cmd.GetURL("/teams")
 	if err != nil {
 		return err
 	}
-	request, err := http.NewRequest("POST", url, b)
+	request, err := http.NewRequest("POST", u, b)
 	if err != nil {
 		return err
 	}
+	request.Header.Set("Content-Type", "application/x-www-form-urlencoded")
 	_, err = client.Do(request)
 	if err != nil {
 		return err
