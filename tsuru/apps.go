@@ -989,23 +989,20 @@ info]] will display the internal, unfriendly address that tsuru uses.`,
 	}
 }
 
-func unsetCName(v []string, g cmd.GuessingCommand, client *cmd.Client) error {
+func unsetCName(cnames []string, g cmd.GuessingCommand, client *cmd.Client) error {
 	appName, err := g.Guess()
 	if err != nil {
 		return err
 	}
-	url, err := cmd.GetURL(fmt.Sprintf("/apps/%s/cname", appName))
+	v := url.Values{}
+	for _, cname := range cnames {
+		v.Add("cname", cname)
+	}
+	u, err := cmd.GetURL(fmt.Sprintf("/apps/%s/cname?%s", appName, v.Encode()))
 	if err != nil {
 		return err
 	}
-	cnames := make(map[string][]string)
-	cnames["cname"] = v
-	c, err := json.Marshal(cnames)
-	if err != nil {
-		return err
-	}
-	body := bytes.NewReader(c)
-	request, err := http.NewRequest("DELETE", url, body)
+	request, err := http.NewRequest("DELETE", u, nil)
 	if err != nil {
 		return err
 	}
