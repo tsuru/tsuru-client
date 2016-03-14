@@ -1016,26 +1016,25 @@ func unsetCName(v []string, g cmd.GuessingCommand, client *cmd.Client) error {
 	return nil
 }
 
-func addCName(v []string, g cmd.GuessingCommand, client *cmd.Client) error {
+func addCName(cnames []string, g cmd.GuessingCommand, client *cmd.Client) error {
 	appName, err := g.Guess()
 	if err != nil {
 		return err
 	}
-	url, err := cmd.GetURL(fmt.Sprintf("/apps/%s/cname", appName))
+	u, err := cmd.GetURL(fmt.Sprintf("/apps/%s/cname", appName))
 	if err != nil {
 		return err
 	}
-	cnames := make(map[string][]string)
-	cnames["cname"] = v
-	c, err := json.Marshal(cnames)
+	v := url.Values{}
+	for _, cname := range cnames {
+		v.Add("cname", cname)
+	}
+	b := strings.NewReader(v.Encode())
+	request, err := http.NewRequest("POST", u, b)
 	if err != nil {
 		return err
 	}
-	body := bytes.NewReader(c)
-	request, err := http.NewRequest("POST", url, body)
-	if err != nil {
-		return err
-	}
+	request.Header.Set("Content-Type", "application/x-www-form-urlencoded")
 	_, err = client.Do(request)
 	if err != nil {
 		return err

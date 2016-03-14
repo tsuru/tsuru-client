@@ -1525,12 +1525,11 @@ func (s *S) TestAddCName(c *check.C) {
 		Transport: cmdtest.Transport{Message: "Restarted", Status: http.StatusOK},
 		CondFunc: func(req *http.Request) bool {
 			called = true
-			var m map[string][]string
-			err := json.NewDecoder(req.Body).Decode(&m)
-			c.Assert(err, check.IsNil)
-			c.Assert(m["cname"], check.DeepEquals, []string{"death.evergrey.mycompany.com"})
-			return strings.HasSuffix(req.URL.Path, "/apps/death/cname") &&
-				req.Method == "POST"
+			cname := req.FormValue("cname") == "death.evergrey.mycompany.com"
+			method := req.Method == "POST"
+			url := strings.HasSuffix(req.URL.Path, "/apps/death/cname")
+			contentType := req.Header.Get("Content-Type") == "application/x-www-form-urlencoded"
+			return method && url && cname && contentType
 		},
 	}
 	client := cmd.NewClient(&http.Client{Transport: trans}, nil, manager)
@@ -1557,12 +1556,11 @@ func (s *S) TestAddCNameWithoutTheFlag(c *check.C) {
 		Transport: cmdtest.Transport{Message: "Restarted", Status: http.StatusOK},
 		CondFunc: func(req *http.Request) bool {
 			called = true
-			var m map[string][]string
-			err := json.NewDecoder(req.Body).Decode(&m)
-			c.Assert(err, check.IsNil)
-			c.Assert(m["cname"], check.DeepEquals, []string{"corey.evergrey.mycompany.com"})
-			return strings.HasSuffix(req.URL.Path, "/apps/corey/cname") &&
-				req.Method == "POST"
+			cname := req.FormValue("cname") == "corey.evergrey.mycompany.com"
+			method := req.Method == "POST"
+			url := strings.HasSuffix(req.URL.Path, "/apps/corey/cname")
+			contentType := req.Header.Get("Content-Type") == "application/x-www-form-urlencoded"
+			return method && url && cname && contentType
 		},
 	}
 	client := cmd.NewClient(&http.Client{Transport: trans}, nil, manager)
