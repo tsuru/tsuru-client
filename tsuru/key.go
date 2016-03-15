@@ -11,7 +11,9 @@ import (
 	"io"
 	"io/ioutil"
 	"net/http"
+	"net/url"
 	"os"
+	"strconv"
 	"strings"
 
 	"github.com/tsuru/gnuflag"
@@ -95,15 +97,19 @@ func (c *keyAdd) Run(context *cmd.Context, client *cmd.Client) error {
 }
 
 func (c *keyAdd) sendRequest(client *cmd.Client, keyName, keyBody string, force bool) error {
-	jsonBody := fmt.Sprintf(`{"key":%q,"name":%q,"force":%v}`, keyBody, keyName, force)
-	url, err := cmd.GetURL("/users/keys")
+	v := url.Values{}
+	v.Set("key", keyBody)
+	v.Set("name", keyName)
+	v.Set("force", strconv.FormatBool(force))
+	u, err := cmd.GetURL("/users/keys")
 	if err != nil {
 		return err
 	}
-	request, err := http.NewRequest("POST", url, bytes.NewBufferString(jsonBody))
+	request, err := http.NewRequest("POST", u, strings.NewReader(v.Encode()))
 	if err != nil {
 		return err
 	}
+	request.Header.Set("Content-Type", "application/x-www-form-urlencoded")
 	_, err = client.Do(request)
 	return err
 }

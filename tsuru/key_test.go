@@ -35,10 +35,12 @@ func (s *S) TestKeyAdd(c *check.C) {
 	transport := cmdtest.ConditionalTransport{
 		Transport: cmdtest.Transport{Message: "success", Status: http.StatusOK},
 		CondFunc: func(r *http.Request) bool {
-			expectedBody := `{"key":"user-key","name":"my-key","force":false}`
-			body, err := ioutil.ReadAll(r.Body)
-			c.Assert(err, check.IsNil)
-			return r.Method == "POST" && strings.HasSuffix(r.URL.Path, "/users/keys") && string(body) == expectedBody
+			method := r.Method == "POST"
+			url := strings.HasSuffix(r.URL.Path, "/users/keys")
+			key := r.FormValue("key") == "user-key"
+			name := r.FormValue("name") == "my-key"
+			force := r.FormValue("force") == "false"
+			return method && url && key && name && force
 		},
 	}
 	client := cmd.NewClient(&http.Client{Transport: &transport}, nil, manager)
@@ -63,10 +65,12 @@ func (s *S) TestKeyAddStdin(c *check.C) {
 	transport := cmdtest.ConditionalTransport{
 		Transport: cmdtest.Transport{Message: "success", Status: http.StatusOK},
 		CondFunc: func(r *http.Request) bool {
-			expectedBody := `{"key":"my powerful key","name":"my-key","force":false}`
-			body, err := ioutil.ReadAll(r.Body)
-			c.Assert(err, check.IsNil)
-			return r.Method == "POST" && strings.HasSuffix(r.URL.Path, "/users/keys") && string(body) == expectedBody
+			method := r.Method == "POST"
+			url := strings.HasSuffix(r.URL.Path, "/users/keys")
+			key := r.FormValue("key") == "my powerful key"
+			name := r.FormValue("name") == "my-key"
+			force := r.FormValue("force") == "false"
+			return method && url && key && name && force
 		},
 	}
 	client := cmd.NewClient(&http.Client{Transport: &transport}, nil, manager)
@@ -95,20 +99,24 @@ func (s *S) TestAddKeyConfirmation(c *check.C) {
 				Transport: cmdtest.Transport{Message: "failed", Status: http.StatusConflict},
 				CondFunc: func(r *http.Request) bool {
 					calls++
-					expectedBody := `{"key":"user-key","name":"my-key","force":false}`
-					body, err := ioutil.ReadAll(r.Body)
-					c.Assert(err, check.IsNil)
-					return r.Method == "POST" && strings.HasSuffix(r.URL.Path, "/users/keys") && string(body) == expectedBody
+					method := r.Method == "POST"
+					url := strings.HasSuffix(r.URL.Path, "/users/keys")
+					key := r.FormValue("key") == "user-key"
+					name := r.FormValue("name") == "my-key"
+					force := r.FormValue("force") == "false"
+					return method && url && key && name && force
 				},
 			},
 			{
 				Transport: cmdtest.Transport{Message: "success", Status: http.StatusOK},
 				CondFunc: func(r *http.Request) bool {
 					calls++
-					expectedBody := `{"key":"user-key","name":"my-key","force":true}`
-					body, err := ioutil.ReadAll(r.Body)
-					c.Assert(err, check.IsNil)
-					return r.Method == "POST" && strings.HasSuffix(r.URL.Path, "/users/keys") && string(body) == expectedBody
+					method := r.Method == "POST"
+					url := strings.HasSuffix(r.URL.Path, "/users/keys")
+					key := r.FormValue("key") == "user-key"
+					name := r.FormValue("name") == "my-key"
+					force := r.FormValue("force") == "true"
+					return method && url && key && name && force
 				},
 			},
 		},
@@ -139,10 +147,11 @@ func (s *S) TestAddKeyForceFlag(c *check.C) {
 	transport := cmdtest.ConditionalTransport{
 		Transport: cmdtest.Transport{Message: "success", Status: http.StatusOK},
 		CondFunc: func(r *http.Request) bool {
-			expectedBody := `{"key":"user-key","name":"my-key","force":true}`
-			body, err := ioutil.ReadAll(r.Body)
-			c.Assert(err, check.IsNil)
-			return r.Method == "POST" && strings.HasSuffix(r.URL.Path, "/users/keys") && string(body) == expectedBody
+			post := r.Method == "POST"
+			url := strings.HasSuffix(r.URL.Path, "/users/keys")
+			key := r.FormValue("key") == "user-key"
+			name := r.FormValue("force") == "true"
+			return post && url && key && name
 		},
 	}
 	client := cmd.NewClient(&http.Client{Transport: &transport}, nil, manager)
