@@ -80,7 +80,7 @@ func (c *plugin) Run(context *cmd.Context, client *cmd.Client) error {
 	if _, err := os.Stat(pluginPath); os.IsNotExist(err) {
 		return cmd.ErrLookup
 	}
-	target, err := cmd.GetURL("/")
+	target, err := cmd.GetTarget()
 	if err != nil {
 		return err
 	}

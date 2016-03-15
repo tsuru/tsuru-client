@@ -95,7 +95,7 @@ func (s *S) TestPlugin(c *check.C) {
 	c.Assert(buf.String(), check.Equals, "hello world")
 	commands := fexec.GetCommands(pluginPath)
 	c.Assert(commands, check.HasLen, 1)
-	target, err := cmd.GetURL("/")
+	target, err := cmd.GetTarget()
 	c.Assert(err, check.IsNil)
 	token, err := cmd.ReadToken()
 	c.Assert(err, check.IsNil)
