@@ -364,7 +364,7 @@ func (c *appInfo) Run(context *cmd.Context, client *cmd.Client) error {
 
 type unit struct {
 	ID          string
-	Ip          string
+	IP          string
 	Status      string
 	ProcessName string
 }
@@ -389,7 +389,7 @@ func (l *lock) String() string {
 }
 
 type app struct {
-	Ip          string
+	IP          string
 	CName       []string
 	Name        string
 	Platform    string
@@ -435,9 +435,9 @@ type quota struct {
 func (a *app) Addr() string {
 	cnames := strings.Join(a.CName, ", ")
 	if cnames != "" {
-		return fmt.Sprintf("%s, %s", cnames, a.Ip)
+		return fmt.Sprintf("%s, %s", cnames, a.IP)
 	}
-	return a.Ip
+	return a.IP
 }
 
 func (a *app) GetTeams() string {
@@ -520,7 +520,7 @@ Quota: {{.Quota.InUse}}/{{if .Quota.Limit}}{{.Quota.Limit}} units{{else}}unlimit
 		if len(service.Instances) == 0 {
 			continue
 		}
-		instancePlan := make([]string, 0)
+		var instancePlan []string
 		for i, instance := range service.Instances {
 			value := instance
 			if i < len(service.Plans) && service.Plans[i] != "" {
