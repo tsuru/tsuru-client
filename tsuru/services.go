@@ -12,6 +12,7 @@ import (
 	"io"
 	"io/ioutil"
 	"net/http"
+	"net/url"
 	"sort"
 	"strings"
 
@@ -92,27 +93,18 @@ func (c *serviceInstanceAdd) Run(ctx *cmd.Context, client *cmd.Client) error {
 	if len(ctx.Args) > 2 {
 		plan = ctx.Args[2]
 	}
-	var b bytes.Buffer
-	params := map[string]string{
-		"name":         instanceName,
-		"service_name": serviceName,
-		"plan":         plan,
-		"owner":        c.teamOwner,
-		"description":  c.description,
-	}
-	err := json.NewEncoder(&b).Encode(params)
+	v := url.Values{}
+	v.Set("name", instanceName)
+	v.Set("service_name", serviceName)
+	v.Set("plan", plan)
+	v.Set("owner", c.teamOwner)
+	v.Set("description", c.description)
+	u, err := cmd.GetURL("/services/instances")
 	if err != nil {
 		return err
 	}
-	url, err := cmd.GetURL("/services/instances")
-	if err != nil {
-		return err
-	}
-	request, err := http.NewRequest("POST", url, &b)
-	if err != nil {
-		return err
-	}
-	request.Header.Set("Content-Type", "application/json")
+	request, err := http.NewRequest("POST", u, strings.NewReader(v.Encode()))
+	request.Header.Set("Content-Type", "application/x-www-form-urlencoded")
 	_, err = client.Do(request)
 	if err != nil {
 		return err

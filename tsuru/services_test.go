@@ -344,8 +344,8 @@ func (s *S) TestServiceAddRun(c *check.C) {
 	var stdout, stderr bytes.Buffer
 	result := "Service successfully added.\n"
 	args := []string{
-		"my_app_db",
 		"mysql",
+		"my_app_db",
 		"small",
 	}
 	context := cmd.Context{
@@ -353,7 +353,21 @@ func (s *S) TestServiceAddRun(c *check.C) {
 		Stdout: &stdout,
 		Stderr: &stderr,
 	}
-	client := cmd.NewClient(&http.Client{Transport: &cmdtest.Transport{Message: result, Status: http.StatusOK}}, nil, manager)
+	trans := cmdtest.ConditionalTransport{
+		Transport: cmdtest.Transport{Message: result, Status: http.StatusOK},
+		CondFunc: func(r *http.Request) bool {
+			name := r.FormValue("name") == "my_app_db"
+			service := r.FormValue("service_name") == "mysql"
+			plan := r.FormValue("plan") == "small"
+			owner := r.FormValue("owner ") == ""
+			description := r.FormValue("description") == ""
+			method := r.Method == "POST"
+			contentType := r.Header.Get("Content-Type") == "application/x-www-form-urlencoded"
+			url := strings.HasSuffix(r.URL.Path, "/services/instances")
+			return method && url && name && service && owner && plan && description && contentType
+		},
+	}
+	client := cmd.NewClient(&http.Client{Transport: &trans}, nil, manager)
 	err := (&serviceInstanceAdd{}).Run(&context, client)
 	c.Assert(err, check.IsNil)
 	obtained := stdout.String()
