@@ -265,8 +265,16 @@ func (s *S) TestAppUpdate(c *check.C) {
 		Stdout: &stdout,
 		Stderr: &stderr,
 	}
-	trans := cmdtest.Transport{Status: http.StatusOK}
-	client := cmd.NewClient(&http.Client{Transport: &trans}, nil, manager)
+	trans := &cmdtest.ConditionalTransport{
+		Transport: cmdtest.Transport{Status: http.StatusOK},
+		CondFunc: func(req *http.Request) bool {
+			url := strings.HasSuffix(req.URL.Path, "/apps/ble")
+			method := req.Method == "POST"
+			description := req.FormValue("description") == "description of my app"
+			return url && method && description
+		},
+	}
+	client := cmd.NewClient(&http.Client{Transport: trans}, nil, manager)
 	command := appUpdate{}
 	command.Flags().Parse(true, []string{"-d", "description of my app", "-a", "ble"})
 	err := command.Run(&context, client)
@@ -281,8 +289,16 @@ func (s *S) TestAppUpdateWithoutArgs(c *check.C) {
 		Stdout: &stdout,
 		Stderr: &stderr,
 	}
-	trans := cmdtest.Transport{Status: http.StatusOK}
-	client := cmd.NewClient(&http.Client{Transport: &trans}, nil, manager)
+	trans := &cmdtest.ConditionalTransport{
+		Transport: cmdtest.Transport{Status: http.StatusOK},
+		CondFunc: func(req *http.Request) bool {
+			url := strings.HasSuffix(req.URL.Path, "/apps/secret")
+			method := req.Method == "POST"
+			description := req.FormValue("description") == "description of my app"
+			return url && method && description
+		},
+	}
+	client := cmd.NewClient(&http.Client{Transport: trans}, nil, manager)
 	command := appUpdate{}
 	command.Flags().Parse(true, []string{"-d", "description of my app"})
 	err := command.Run(&context, client)

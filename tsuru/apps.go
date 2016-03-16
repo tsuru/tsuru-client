@@ -186,31 +186,20 @@ func (c *appUpdate) Run(context *cmd.Context, client *cmd.Client) error {
 	if appName == "" {
 		return errors.New("Please use the -a/--app flag to specify which app you want to remove.")
 	}
-	var param app
-	if c.plan != "" {
-		plan := tsuruapp.Plan{Name: c.plan}
-		question := fmt.Sprintf("Are you sure you want to change the plan of the application %q to %q?", appName, plan.Name)
-		if !c.Confirm(context, question) {
-			return nil
-		}
-		param.Plan = plan
-	}
-	param.Description = c.description
-	param.Pool = c.pool
-	param.TeamOwner = c.teamOwner
-	b, err := json.Marshal(param)
+	u, err := cmd.GetURL(fmt.Sprintf("/apps/%s", appName))
 	if err != nil {
 		return err
 	}
-	url, err := cmd.GetURL(fmt.Sprintf("/apps/%s", appName))
+	v := url.Values{}
+	v.Set("plan", c.plan)
+	v.Set("description", c.description)
+	v.Set("pool", c.pool)
+	v.Set("teamOwner", c.teamOwner)
+	request, err := http.NewRequest("POST", u, strings.NewReader(v.Encode()))
 	if err != nil {
 		return err
 	}
-	request, err := http.NewRequest("POST", url, bytes.NewBuffer(b))
-	if err != nil {
-		return err
-	}
-	request.Header.Set("Content-Type", "application/json")
+	request.Header.Set("Content-Type", "application/x-www-form-urlencoded")
 	response, err := client.Do(request)
 	if err != nil {
 		e := err.(*tsuruerr.HTTP)
