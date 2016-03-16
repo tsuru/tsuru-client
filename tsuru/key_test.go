@@ -8,7 +8,6 @@ import (
 	"bytes"
 	"errors"
 	"fmt"
-	"io/ioutil"
 	"net/http"
 	"os/user"
 	"path"
@@ -222,10 +221,9 @@ func (s *S) TestKeyRemove(c *check.C) {
 	transport := cmdtest.ConditionalTransport{
 		Transport: cmdtest.Transport{Message: "success", Status: http.StatusOK},
 		CondFunc: func(r *http.Request) bool {
-			expectedBody := `{"name":"my-key"}`
-			body, err := ioutil.ReadAll(r.Body)
-			c.Assert(err, check.IsNil)
-			return r.Method == "DELETE" && strings.HasSuffix(r.URL.Path, "/users/keys") && string(body) == expectedBody
+			method := r.Method == "DELETE"
+			url := strings.HasSuffix(r.URL.Path, "/users/keys/my-key")
+			return method && url
 		},
 	}
 	client := cmd.NewClient(&http.Client{Transport: &transport}, nil, manager)

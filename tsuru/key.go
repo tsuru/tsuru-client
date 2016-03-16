@@ -5,7 +5,6 @@
 package main
 
 import (
-	"bytes"
 	"encoding/json"
 	"fmt"
 	"io"
@@ -142,12 +141,11 @@ func (c *keyRemove) Run(context *cmd.Context, client *cmd.Client) error {
 	if !c.Confirm(context, fmt.Sprintf("Are you sure you want to remove key %q?", name)) {
 		return nil
 	}
-	b := bytes.NewBufferString(fmt.Sprintf(`{"name":%q}`, name))
-	url, err := cmd.GetURL("/users/keys")
+	u, err := cmd.GetURL(fmt.Sprintf("/users/keys/%s", name))
 	if err != nil {
 		return err
 	}
-	request, err := http.NewRequest("DELETE", url, b)
+	request, err := http.NewRequest("DELETE", u, nil)
 	if err != nil {
 		return err
 	}
