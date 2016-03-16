@@ -5,7 +5,6 @@
 package main
 
 import (
-	"bytes"
 	"encoding/json"
 	"errors"
 	"fmt"
@@ -144,23 +143,17 @@ The --description parameter sets a description for your service instance.`,
 
 func (c *serviceInstanceUpdate) Run(ctx *cmd.Context, client *cmd.Client) error {
 	serviceName, instanceName := ctx.Args[0], ctx.Args[1]
-	var b bytes.Buffer
-	params := map[string]string{
-		"description": c.description,
-	}
-	err := json.NewEncoder(&b).Encode(params)
+	u, err := cmd.GetURL(fmt.Sprintf("/services/%s/instances/%s/update", serviceName, instanceName))
 	if err != nil {
 		return err
 	}
-	url, err := cmd.GetURL(fmt.Sprintf("/services/%s/instances/%s/update", serviceName, instanceName))
+	v := url.Values{}
+	v.Set("description", c.description)
+	request, err := http.NewRequest("POST", u, strings.NewReader(v.Encode()))
 	if err != nil {
 		return err
 	}
-	request, err := http.NewRequest("POST", url, &b)
-	if err != nil {
-		return err
-	}
-	request.Header.Set("Content-Type", "application/json")
+	request.Header.Set("Content-Type", "application/x-www-form-urlencoded")
 	_, err = client.Do(request)
 	if err != nil {
 		return err

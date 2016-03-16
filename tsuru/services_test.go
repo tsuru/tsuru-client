@@ -427,7 +427,17 @@ func (s *S) TestServiceUpdateRun(c *check.C) {
 		Stdout: &stdout,
 		Stderr: &stderr,
 	}
-	client := cmd.NewClient(&http.Client{Transport: &cmdtest.Transport{Message: result, Status: http.StatusOK}}, nil, manager)
+	trans := cmdtest.ConditionalTransport{
+		Transport: cmdtest.Transport{Message: result, Status: http.StatusOK},
+		CondFunc: func(r *http.Request) bool {
+			description := r.FormValue("description") == ""
+			method := r.Method == "POST"
+			contentType := r.Header.Get("Content-Type") == "application/x-www-form-urlencoded"
+			url := strings.HasSuffix(r.URL.Path, "/services/service/instances/service-instance/update")
+			return method && url && description && contentType
+		},
+	}
+	client := cmd.NewClient(&http.Client{Transport: &trans}, nil, manager)
 	err := (&serviceInstanceUpdate{}).Run(&context, client)
 	c.Assert(err, check.IsNil)
 	obtained := stdout.String()
