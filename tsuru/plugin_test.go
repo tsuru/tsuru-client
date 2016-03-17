@@ -61,10 +61,6 @@ func (s *S) TestPluginInstallIsACommand(c *check.C) {
 	var _ cmd.Command = &pluginInstall{}
 }
 
-func (s *S) TestPluginInfo(c *check.C) {
-	c.Assert(plugin{}.Info(), check.NotNil)
-}
-
 func (s *S) TestPlugin(c *check.C) {
 	// Kids, do not try this at $HOME
 	defer os.Setenv("HOME", os.Getenv("HOME"))
@@ -171,10 +167,6 @@ func (s *S) TestPluginCommandNotFound(c *check.C) {
 	command := plugin{}
 	err := command.Run(&context, client)
 	c.Assert(err, check.Equals, cmd.ErrLookup)
-}
-
-func (s *S) TestPluginIsACommand(c *check.C) {
-	var _ cmd.Command = &plugin{}
 }
 
 func (s *S) TestPluginRemoveInfo(c *check.C) {

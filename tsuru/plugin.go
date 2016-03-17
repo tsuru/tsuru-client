@@ -61,15 +61,6 @@ func (c *pluginInstall) Run(context *cmd.Context, client *cmd.Client) error {
 
 type plugin struct{}
 
-func (plugin) Info() *cmd.Info {
-	return &cmd.Info{
-		Name:    "plugin",
-		Usage:   "plugin <plugin-name> [<args>]",
-		Desc:    "Execute tsuru plugins.",
-		MinArgs: 1,
-	}
-}
-
 func (c *plugin) Run(context *cmd.Context, client *cmd.Client) error {
 	context.RawOutput()
 	pluginName := context.Args[0]
