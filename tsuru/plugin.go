@@ -59,44 +59,6 @@ func (c *pluginInstall) Run(context *cmd.Context, client *cmd.Client) error {
 	return nil
 }
 
-type plugin struct{}
-
-func (c *plugin) Run(context *cmd.Context, client *cmd.Client) error {
-	context.RawOutput()
-	pluginName := context.Args[0]
-	if os.Getenv("TSURU_PLUGIN_NAME") == pluginName {
-		return cmd.ErrLookup
-	}
-	pluginPath := cmd.JoinWithUserDir(".tsuru", "plugins", pluginName)
-	if _, err := os.Stat(pluginPath); os.IsNotExist(err) {
-		return cmd.ErrLookup
-	}
-	target, err := cmd.GetTarget()
-	if err != nil {
-		return err
-	}
-	token, err := cmd.ReadToken()
-	if err != nil {
-		return err
-	}
-	envs := os.Environ()
-	tsuruEnvs := []string{
-		"TSURU_TARGET=" + target,
-		"TSURU_TOKEN=" + token,
-		"TSURU_PLUGIN_NAME=" + pluginName,
-	}
-	envs = append(envs, tsuruEnvs...)
-	opts := exec.ExecuteOptions{
-		Cmd:    pluginPath,
-		Args:   context.Args[1:],
-		Stdout: context.Stdout,
-		Stderr: context.Stderr,
-		Stdin:  context.Stdin,
-		Envs:   envs,
-	}
-	return executor().Execute(opts)
-}
-
 type pluginRemove struct{}
 
 func (pluginRemove) Info() *cmd.Info {
@@ -137,4 +99,40 @@ func (c *pluginList) Run(context *cmd.Context, client *cmd.Client) error {
 		fmt.Println(p.Name())
 	}
 	return nil
+}
+
+func runPlugin(context *cmd.Context) error {
+	context.RawOutput()
+	pluginName := context.Args[0]
+	if os.Getenv("TSURU_PLUGIN_NAME") == pluginName {
+		return cmd.ErrLookup
+	}
+	pluginPath := cmd.JoinWithUserDir(".tsuru", "plugins", pluginName)
+	if _, err := os.Stat(pluginPath); os.IsNotExist(err) {
+		return cmd.ErrLookup
+	}
+	target, err := cmd.GetTarget()
+	if err != nil {
+		return err
+	}
+	token, err := cmd.ReadToken()
+	if err != nil {
+		return err
+	}
+	envs := os.Environ()
+	tsuruEnvs := []string{
+		"TSURU_TARGET=" + target,
+		"TSURU_TOKEN=" + token,
+		"TSURU_PLUGIN_NAME=" + pluginName,
+	}
+	envs = append(envs, tsuruEnvs...)
+	opts := exec.ExecuteOptions{
+		Cmd:    pluginPath,
+		Args:   context.Args[1:],
+		Stdout: context.Stdout,
+		Stderr: context.Stderr,
+		Stdin:  context.Stdin,
+		Envs:   envs,
+	}
+	return executor().Execute(opts)
 }

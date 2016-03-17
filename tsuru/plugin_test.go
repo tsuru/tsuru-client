@@ -82,9 +82,7 @@ func (s *S) TestPlugin(c *check.C) {
 		Stdout: &buf,
 		Stderr: &buf,
 	}
-	client := cmd.NewClient(nil, nil, manager)
-	command := plugin{}
-	err := command.Run(&context, client)
+	err := runPlugin(&context)
 	c.Assert(err, check.IsNil)
 	pluginPath := cmd.JoinWithUserDir(".tsuru", "plugins", "myplugin")
 	c.Assert(fexec.ExecutedCmd(pluginPath, []string{"a", "b"}), check.Equals, true)
@@ -116,12 +114,8 @@ func (s *S) TestPluginWithArgs(c *check.C) {
 	defer func() {
 		execut = nil
 	}()
-	context := cmd.Context{
-		Args: []string{"myplugin", "ble", "bla"},
-	}
-	client := cmd.NewClient(nil, nil, manager)
-	command := plugin{}
-	err := command.Run(&context, client)
+	context := cmd.Context{Args: []string{"myplugin", "ble", "bla"}}
+	err := runPlugin(&context)
 	c.Assert(err, check.IsNil)
 	pluginPath := cmd.JoinWithUserDir(".tsuru", "plugins", "myplugin")
 	c.Assert(fexec.ExecutedCmd(pluginPath, []string{"ble", "bla"}), check.Equals, true)
@@ -145,9 +139,7 @@ func (s *S) TestPluginLoop(c *check.C) {
 		Stdout: &buf,
 		Stderr: &buf,
 	}
-	client := cmd.NewClient(nil, nil, manager)
-	command := plugin{}
-	err := command.Run(&context, client)
+	err := runPlugin(&context)
 	c.Assert(err, check.Equals, cmd.ErrLookup)
 }
 
@@ -163,9 +155,7 @@ func (s *S) TestPluginCommandNotFound(c *check.C) {
 		Stdout: &buf,
 		Stderr: &buf,
 	}
-	client := cmd.NewClient(nil, nil, manager)
-	command := plugin{}
-	err := command.Run(&context, client)
+	err := runPlugin(&context)
 	c.Assert(err, check.Equals, cmd.ErrLookup)
 }
 

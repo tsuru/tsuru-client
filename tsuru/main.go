@@ -17,8 +17,7 @@ const (
 
 func buildManager(name string) *cmd.Manager {
 	lookup := func(context *cmd.Context) error {
-		command := plugin{}
-		return command.Run(context, nil)
+		return runPlugin(context)
 	}
 	m := cmd.BuildBaseManager(name, version, header, lookup)
 	m.Register(&appRun{})
