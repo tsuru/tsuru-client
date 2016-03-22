@@ -143,13 +143,13 @@ The --description parameter sets a description for your service instance.`,
 
 func (c *serviceInstanceUpdate) Run(ctx *cmd.Context, client *cmd.Client) error {
 	serviceName, instanceName := ctx.Args[0], ctx.Args[1]
-	u, err := cmd.GetURL(fmt.Sprintf("/services/%s/instances/%s/update", serviceName, instanceName))
+	u, err := cmd.GetURL(fmt.Sprintf("/services/%s/instances/%s", serviceName, instanceName))
 	if err != nil {
 		return err
 	}
 	v := url.Values{}
 	v.Set("description", c.description)
-	request, err := http.NewRequest("POST", u, strings.NewReader(v.Encode()))
+	request, err := http.NewRequest("PUT", u, strings.NewReader(v.Encode()))
 	if err != nil {
 		return err
 	}

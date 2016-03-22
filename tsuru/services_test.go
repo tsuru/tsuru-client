@@ -431,9 +431,9 @@ func (s *S) TestServiceUpdateRun(c *check.C) {
 		Transport: cmdtest.Transport{Message: result, Status: http.StatusOK},
 		CondFunc: func(r *http.Request) bool {
 			description := r.FormValue("description") == ""
-			method := r.Method == "POST"
+			method := r.Method == "PUT"
 			contentType := r.Header.Get("Content-Type") == "application/x-www-form-urlencoded"
-			url := strings.HasSuffix(r.URL.Path, "/services/service/instances/service-instance/update")
+			url := strings.HasSuffix(r.URL.Path, "/services/service/instances/service-instance")
 			return method && url && description && contentType
 		},
 	}
