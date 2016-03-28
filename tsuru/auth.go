@@ -5,7 +5,6 @@
 package main
 
 import (
-	"bytes"
 	"encoding/json"
 	"errors"
 	"fmt"
@@ -275,11 +274,10 @@ func (c *teamList) Run(context *cmd.Context, client *cmd.Client) error {
 type changePassword struct{}
 
 func (c *changePassword) Run(context *cmd.Context, client *cmd.Client) error {
-	url, err := cmd.GetURL("/users/password")
+	u, err := cmd.GetURL("/users/password")
 	if err != nil {
 		return err
 	}
-	var body bytes.Buffer
 	fmt.Fprint(context.Stdout, "Current password: ")
 	old, err := cmd.PasswordFromReader(context.Stdin)
 	if err != nil {
@@ -296,21 +294,15 @@ func (c *changePassword) Run(context *cmd.Context, client *cmd.Client) error {
 		return err
 	}
 	fmt.Fprintln(context.Stdout)
-	if new != confirm {
-		return errors.New("New password and password confirmation didn't match.")
-	}
-	jsonBody := map[string]string{
-		"old": old,
-		"new": new,
-	}
-	err = json.NewEncoder(&body).Encode(jsonBody)
+	v := url.Values{}
+	v.Set("old", old)
+	v.Set("new", new)
+	v.Set("confirm", confirm)
+	request, err := http.NewRequest("PUT", u, strings.NewReader(v.Encode()))
 	if err != nil {
 		return err
 	}
-	request, err := http.NewRequest("PUT", url, &body)
-	if err != nil {
-		return err
-	}
+	request.Header.Set("Content-Type", "application/x-www-form-urlencoded")
 	_, err = client.Do(request)
 	if err != nil {
 		return err

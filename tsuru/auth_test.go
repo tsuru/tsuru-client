@@ -6,7 +6,6 @@ package main
 
 import (
 	"bytes"
-	"encoding/json"
 	"io"
 	"io/ioutil"
 	"net/http"
@@ -436,14 +435,15 @@ func (s *S) TestChangePassword(c *check.C) {
 	}
 	trans := cmdtest.ConditionalTransport{
 		Transport: cmdtest.Transport{Message: "", Status: http.StatusOK},
-		CondFunc: func(req *http.Request) bool {
-			var got map[string]string
+		CondFunc: func(r *http.Request) bool {
+			old := r.FormValue("old") == "gopher"
+			new := r.FormValue("new") == "bbrothers"
+			confirm := r.FormValue("confirm") == "bbrothers"
+			method := r.Method == "PUT"
+			contentType := r.Header.Get("Content-Type") == "application/x-www-form-urlencoded"
+			url := strings.HasSuffix(r.URL.Path, "/users/password")
 			called = true
-			if err := json.NewDecoder(req.Body).Decode(&got); err != nil {
-				return false
-			}
-			cond := got["old"] == "gopher" && got["new"] == "bbrothers"
-			return cond && req.Method == "PUT" && strings.HasSuffix(req.URL.Path, "/users/password")
+			return method && url && contentType && old && new && confirm
 		},
 	}
 	client := cmd.NewClient(&http.Client{Transport: &trans}, nil, manager)
@@ -456,15 +456,30 @@ func (s *S) TestChangePassword(c *check.C) {
 }
 
 func (s *S) TestChangePasswordWrongConfirmation(c *check.C) {
-	var buf bytes.Buffer
-	stdin := strings.NewReader("gopher\nblood\nsugar\n")
+	var (
+		buf   bytes.Buffer
+		stdin io.Reader
+	)
+	stdin = strings.NewReader("gopher\nbbrothers\nbrothers\n")
 	context := cmd.Context{
-		Stdin:  stdin,
 		Stdout: &buf,
-		Stderr: &buf,
+		Stdin:  stdin,
 	}
+	trans := cmdtest.ConditionalTransport{
+		Transport: cmdtest.Transport{Message: "New password and password confirmation didn't match.", Status: http.StatusBadRequest},
+		CondFunc: func(r *http.Request) bool {
+			old := r.FormValue("old") == "gopher"
+			new := r.FormValue("new") == "bbrothers"
+			confirm := r.FormValue("confirm") == "brothers"
+			method := r.Method == "PUT"
+			contentType := r.Header.Get("Content-Type") == "application/x-www-form-urlencoded"
+			url := strings.HasSuffix(r.URL.Path, "/users/password")
+			return method && url && contentType && old && new && confirm
+		},
+	}
+	client := cmd.NewClient(&http.Client{Transport: &trans}, nil, manager)
 	command := changePassword{}
-	err := command.Run(&context, nil)
+	err := command.Run(&context, client)
 	c.Assert(err, check.NotNil)
 	c.Assert(err.Error(), check.Equals, "New password and password confirmation didn't match.")
 }
