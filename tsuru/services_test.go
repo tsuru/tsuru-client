@@ -67,7 +67,7 @@ Service test is foo bar.
 			message = `[]`
 		}
 	}
-	if strings.HasSuffix(req.URL.Path, "/services/mymongo/instances/mongo/info") {
+	if strings.HasSuffix(req.URL.Path, "/services/mymongo/instances/mongo") {
 		if t.includeAll {
 			message = `{"Apps": ["app", "app2"], "Teams": ["admin", "admin2"], "TeamOwner": "admin", "CustomInfo" : {"key4": "value8", "key2": "value9", "key3":"value3"},"Description": "description", "PlanName": "small", "PlanDescription": "another plan"}`
 		} else {
@@ -357,14 +357,13 @@ func (s *S) TestServiceAddRun(c *check.C) {
 		Transport: cmdtest.Transport{Message: result, Status: http.StatusOK},
 		CondFunc: func(r *http.Request) bool {
 			name := r.FormValue("name") == "my_app_db"
-			service := r.FormValue("service_name") == "mysql"
 			plan := r.FormValue("plan") == "small"
 			owner := r.FormValue("owner ") == ""
 			description := r.FormValue("description") == ""
 			method := r.Method == "POST"
 			contentType := r.Header.Get("Content-Type") == "application/x-www-form-urlencoded"
-			url := strings.HasSuffix(r.URL.Path, "/services/instances")
-			return method && url && name && service && owner && plan && description && contentType
+			url := strings.HasSuffix(r.URL.Path, "/services/mysql/instances")
+			return method && url && name && owner && plan && description && contentType
 		},
 	}
 	client := cmd.NewClient(&http.Client{Transport: &trans}, nil, manager)

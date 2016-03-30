@@ -94,11 +94,10 @@ func (c *serviceInstanceAdd) Run(ctx *cmd.Context, client *cmd.Client) error {
 	}
 	v := url.Values{}
 	v.Set("name", instanceName)
-	v.Set("service_name", serviceName)
 	v.Set("plan", plan)
 	v.Set("owner", c.teamOwner)
 	v.Set("description", c.description)
-	u, err := cmd.GetURL("/services/instances")
+	u, err := cmd.GetURL(fmt.Sprintf("/services/%s/instances", serviceName))
 	if err != nil {
 		return err
 	}
@@ -364,7 +363,7 @@ type serviceInstanceInfoModel struct {
 func (c serviceInstanceInfo) Run(ctx *cmd.Context, client *cmd.Client) error {
 	serviceName := ctx.Args[0]
 	instanceName := ctx.Args[1]
-	url, err := cmd.GetURL("/services/" + serviceName + "/instances/" + instanceName + "/info")
+	url, err := cmd.GetURL("/services/" + serviceName + "/instances/" + instanceName)
 	if err != nil {
 		return err
 	}
