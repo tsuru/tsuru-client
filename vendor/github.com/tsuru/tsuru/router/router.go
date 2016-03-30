@@ -1,4 +1,4 @@
-// Copyright 2015 tsuru authors. All rights reserved.
+// Copyright 2016 tsuru authors. All rights reserved.
 // Use of this source code is governed by a BSD-style
 // license that can be found in the LICENSE file.
 
@@ -71,7 +71,9 @@ type Router interface {
 	AddBackend(name string) error
 	RemoveBackend(name string) error
 	AddRoute(name string, address *url.URL) error
+	AddRoutes(name string, address []*url.URL) error
 	RemoveRoute(name string, address *url.URL) error
+	RemoveRoutes(name string, addresses []*url.URL) error
 	SetCName(cname, name string) error
 	UnsetCName(cname, name string) error
 	Addr(name string) (string, error)
@@ -204,25 +206,21 @@ func Swap(r Router, backend1, backend2 string) error {
 	if err != nil {
 		return err
 	}
-	for _, route := range routes1 {
-		err = r.AddRoute(backend2, route)
-		if err != nil {
-			return err
-		}
-		err = r.RemoveRoute(backend1, route)
-		if err != nil {
-			return err
-		}
+	err = r.AddRoutes(backend1, routes2)
+	if err != nil {
+		return err
 	}
-	for _, route := range routes2 {
-		err = r.AddRoute(backend1, route)
-		if err != nil {
-			return err
-		}
-		err = r.RemoveRoute(backend2, route)
-		if err != nil {
-			return err
-		}
+	err = r.AddRoutes(backend2, routes1)
+	if err != nil {
+		return err
+	}
+	err = r.RemoveRoutes(backend1, routes1)
+	if err != nil {
+		return err
+	}
+	err = r.RemoveRoutes(backend2, routes2)
+	if err != nil {
+		return err
 	}
 	return swapBackendName(backend1, backend2)
 }

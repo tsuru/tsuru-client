@@ -537,22 +537,16 @@ func (app *App) SetUnitStatus(unitName string, status provision.Status) error {
 	return &provision.UnitNotFoundError{ID: unitName}
 }
 
-type UpdateUnitsData struct {
-	ID     string
-	Name   string
-	Status provision.Status
-}
-
 type UpdateUnitsResult struct {
 	ID    string
 	Found bool
 }
 
-// UpdateUnitsStatus updates the status of the given units, returning a map
-// which units were found during the update.
-func UpdateUnitsStatus(units []UpdateUnitsData) ([]UpdateUnitsResult, error) {
-	result := make([]UpdateUnitsResult, len(units))
-	for i, unitData := range units {
+// UpdateNodeStatus updates the status of the given node and its units,
+// returning a map which units were found during the update.
+func UpdateNodeStatus(node provision.NodeStatusData) ([]UpdateUnitsResult, error) {
+	result := make([]UpdateUnitsResult, len(node.Units))
+	for i, unitData := range node.Units {
 		unit := provision.Unit{ID: unitData.ID, Name: unitData.Name}
 		err := Provisioner.SetUnitStatus(unit, unitData.Status)
 		_, ok := err.(*provision.UnitNotFoundError)
@@ -561,11 +555,17 @@ func UpdateUnitsStatus(units []UpdateUnitsData) ([]UpdateUnitsResult, error) {
 			return nil, err
 		}
 	}
+	if nodeProvisioner, ok := Provisioner.(provision.NodeStatusProvisioner); ok {
+		err := nodeProvisioner.SetNodeStatus(node)
+		if err != nil {
+			log.Errorf("unable to set node status: %s", err)
+		}
+	}
 	return result, nil
 }
 
-// Available returns true if at least one of N units is started or unreachable.
-func (app *App) Available() bool {
+// available returns true if at least one of N units is started or unreachable.
+func (app *App) available() bool {
 	units, err := app.Units()
 	if err != nil {
 		return false
@@ -736,7 +736,7 @@ func (app *App) GetPoolForApp(poolName string) (string, error) {
 		}
 	}
 	if !pools[0].Public && !poolTeam {
-		return "", stderr.New(fmt.Sprintf("You don't have access to pool %s", poolName))
+		return "", fmt.Errorf("App team owner %q has no access to pool %q", app.TeamOwner, poolName)
 	}
 	return pools[0].Name, nil
 }
@@ -803,7 +803,7 @@ func (app *App) InstanceEnv(name string) map[string]bind.EnvVar {
 // Run executes the command in app units, sourcing apprc before running the
 // command.
 func (app *App) Run(cmd string, w io.Writer, once bool) error {
-	if !app.Available() {
+	if !app.available() {
 		return stderr.New("App must be available to run commands")
 	}
 	app.Log(fmt.Sprintf("running '%s'", cmd), "tsuru", "api")
@@ -841,10 +841,6 @@ func (app *App) Restart(process string, w io.Writer) error {
 	err = Provisioner.Restart(app, process, w)
 	if err != nil {
 		log.Errorf("[restart] error on restart the app %s - %s", app.Name, err)
-		return err
-	}
-	_, err = app.RebuildRoutes()
-	if err != nil {
 		return err
 	}
 	return nil
@@ -908,13 +904,13 @@ func (app *App) Sleep(w io.Writer, process string, proxyURL *url.URL) error {
 
 // GetUnits returns the internal list of units converted to bind.Unit.
 func (app *App) GetUnits() ([]bind.Unit, error) {
-	var units []bind.Unit
 	provUnits, err := app.Units()
 	if err != nil {
 		return nil, err
 	}
-	for _, unit := range provUnits {
-		units = append(units, &unit)
+	units := make([]bind.Unit, len(provUnits))
+	for i := range provUnits {
+		units[i] = &provUnits[i]
 	}
 	return units, nil
 }
@@ -1124,7 +1120,7 @@ func (app *App) unsetEnvsToApp(unsetEnvs bind.UnsetEnvApp, w io.Writer) error {
 // in the database or add the CName on the provisioner.
 func (app *App) AddCName(cnames ...string) error {
 	for _, cname := range cnames {
-		if cname != "" && !cnameRegexp.MatchString(cname) {
+		if !cnameRegexp.MatchString(cname) {
 			return stderr.New("Invalid cname")
 		}
 		if cnameExists(cname) {
@@ -1391,15 +1387,16 @@ func (app *App) LastLogs(lines int, filterLog Applog) ([]Applog, error) {
 }
 
 type Filter struct {
-	Name      string
-	Platform  string
-	TeamOwner string
-	UserOwner string
-	Pool      string
-	Pools     []string
-	Statuses  []string
-	Locked    bool
-	Extra     map[string][]string
+	Name        string
+	NameMatches string
+	Platform    string
+	TeamOwner   string
+	UserOwner   string
+	Pool        string
+	Pools       []string
+	Statuses    []string
+	Locked      bool
+	Extra       map[string][]string
 }
 
 func (f *Filter) ExtraIn(name string, value string) {
@@ -1423,8 +1420,11 @@ func (f *Filter) Query() bson.M {
 		}
 		query["$or"] = orBlock
 	}
+	if f.NameMatches != "" {
+		query["name"] = bson.M{"$regex": f.NameMatches}
+	}
 	if f.Name != "" {
-		query["name"] = bson.M{"$regex": f.Name}
+		query["name"] = f.Name
 	}
 	if f.TeamOwner != "" {
 		query["teamowner"] = f.TeamOwner
@@ -1478,10 +1478,12 @@ func List(filter *Filter) ([]App, error) {
 
 // Swap calls the Provisioner.Swap.
 // And updates the app.CName in the database.
-func Swap(app1, app2 *App) error {
-	err := Provisioner.Swap(app1, app2)
-	if err != nil {
-		return err
+func Swap(app1, app2 *App, cnameOnly bool) error {
+	if !cnameOnly {
+		err := Provisioner.Swap(app1, app2)
+		if err != nil {
+			return err
+		}
 	}
 	conn, err := db.Conn()
 	if err != nil {
@@ -1606,9 +1608,10 @@ func (app *App) RebuildRoutes() (*RebuildRoutesResult, error) {
 		if err != nil {
 			return nil, err
 		}
+		app.Ip = newAddr
 	}
 	for _, cname := range app.CName {
-		err := r.SetCName(cname, app.Name)
+		err = r.SetCName(cname, app.Name)
 		if err != nil && err != router.ErrCNameExists {
 			return nil, err
 		}

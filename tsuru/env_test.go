@@ -11,6 +11,8 @@ import (
 	"net/http"
 	"strings"
 
+	"github.com/cezarsa/form"
+	"github.com/tsuru/tsuru/api"
 	"github.com/tsuru/tsuru/cmd"
 	"github.com/tsuru/tsuru/cmd/cmdtest"
 	"github.com/tsuru/tsuru/io"
@@ -143,12 +145,19 @@ func (s *S) TestEnvSetRun(c *check.C) {
 	trans := &cmdtest.ConditionalTransport{
 		Transport: cmdtest.Transport{Message: string(result), Status: http.StatusOK},
 		CondFunc: func(req *http.Request) bool {
-			want := `{"DATABASE_HOST":"somehost"}` + "\n"
-			defer req.Body.Close()
-			got, err := ioutil.ReadAll(req.Body)
+			err := req.ParseForm()
 			c.Assert(err, check.IsNil)
-			return strings.HasSuffix(req.URL.Path, "/apps/someapp/env") && req.Method == "POST" && string(got) == want &&
-				req.URL.RawQuery == "private=false&noRestart=false"
+			var e api.Envs
+			dec := form.NewDecoder(nil)
+			dec.IgnoreUnknownKeys(true)
+			err = dec.DecodeValues(&e, req.Form)
+			c.Assert(err, check.IsNil)
+			path := strings.HasSuffix(req.URL.Path, "/apps/someapp/env")
+			method := req.Method == "POST"
+			contentType := req.Header.Get("Content-Type") == "application/x-www-form-urlencoded"
+			name := e.Envs[0].Name == "DATABASE_HOST"
+			value := e.Envs[0].Value == "somehost"
+			return path && method && contentType && name && value
 		},
 	}
 	client := cmd.NewClient(&http.Client{Transport: trans}, nil, manager)
@@ -200,22 +209,29 @@ func (s *S) TestEnvSetValues(c *check.C) {
 	trans := &cmdtest.ConditionalTransport{
 		Transport: cmdtest.Transport{Message: string(result), Status: http.StatusOK},
 		CondFunc: func(req *http.Request) bool {
-			want := map[string]string{
-				"DATABASE_HOST":         "some host",
-				"DATABASE_USER":         "root",
-				"DATABASE_PASSWORD":     ".1234..abc",
-				"http_proxy":            "http://myproxy.com:3128/",
-				"VALUE_WITH_EQUAL_SIGN": "http://wholikesquerystrings.me/?tsuru=awesome",
-				"BASE64_STRING":         "t5urur0ck5==",
-				"SOME_PASSWORD":         "js87$%32??",
+			want := []struct{ Name, Value string }{
+				{Name: "DATABASE_HOST", Value: "some host"},
+				{Name: "DATABASE_USER", Value: "root"},
+				{Name: "DATABASE_PASSWORD", Value: ".1234..abc"},
+				{Name: "http_proxy", Value: "http://myproxy.com:3128/"},
+				{Name: "VALUE_WITH_EQUAL_SIGN", Value: "http://wholikesquerystrings.me/?tsuru=awesome"},
+				{Name: "BASE64_STRING", Value: "t5urur0ck5=="},
+				{Name: "SOME_PASSWORD", Value: "js87$%32??"},
 			}
-			defer req.Body.Close()
-			var got map[string]string
-			err := json.NewDecoder(req.Body).Decode(&got)
+			err := req.ParseForm()
 			c.Assert(err, check.IsNil)
-			c.Assert(got, check.DeepEquals, want)
-			return strings.HasSuffix(req.URL.Path, "/apps/someapp/env") && req.Method == "POST" &&
-				req.URL.RawQuery == "private=false&noRestart=false"
+			var e api.Envs
+			dec := form.NewDecoder(nil)
+			dec.IgnoreUnknownKeys(true)
+			err = dec.DecodeValues(&e, req.Form)
+			c.Assert(err, check.IsNil)
+			c.Assert(e.Envs, check.DeepEquals, want)
+			private := !e.Private
+			noRestart := !e.NoRestart
+			path := strings.HasSuffix(req.URL.Path, "/apps/someapp/env")
+			method := req.Method == "POST"
+			contentType := req.Header.Get("Content-Type") == "application/x-www-form-urlencoded"
+			return path && contentType && method && private && noRestart
 		},
 	}
 	client := cmd.NewClient(&http.Client{Transport: trans}, nil, manager)
@@ -248,21 +264,28 @@ func (s *S) TestEnvSetValuesAndPrivateAndNoRestart(c *check.C) {
 	trans := &cmdtest.ConditionalTransport{
 		Transport: cmdtest.Transport{Message: string(result), Status: http.StatusOK},
 		CondFunc: func(req *http.Request) bool {
-			want := map[string]string{
-				"DATABASE_HOST":         "some host",
-				"DATABASE_USER":         "root",
-				"DATABASE_PASSWORD":     ".1234..abc",
-				"http_proxy":            "http://myproxy.com:3128/",
-				"VALUE_WITH_EQUAL_SIGN": "http://wholikesquerystrings.me/?tsuru=awesome",
-				"BASE64_STRING":         "t5urur0ck5==",
+			want := []struct{ Name, Value string }{
+				{Name: "DATABASE_HOST", Value: "some host"},
+				{Name: "DATABASE_USER", Value: "root"},
+				{Name: "DATABASE_PASSWORD", Value: ".1234..abc"},
+				{Name: "http_proxy", Value: "http://myproxy.com:3128/"},
+				{Name: "VALUE_WITH_EQUAL_SIGN", Value: "http://wholikesquerystrings.me/?tsuru=awesome"},
+				{Name: "BASE64_STRING", Value: "t5urur0ck5=="},
 			}
-			defer req.Body.Close()
-			var got map[string]string
-			err := json.NewDecoder(req.Body).Decode(&got)
+			err := req.ParseForm()
 			c.Assert(err, check.IsNil)
-			c.Assert(req.URL.RawQuery, check.Equals, "private=true&noRestart=true")
-			c.Assert(got, check.DeepEquals, want)
-			return strings.HasSuffix(req.URL.Path, "/apps/someapp/env") && req.Method == "POST"
+			var e api.Envs
+			dec := form.NewDecoder(nil)
+			dec.IgnoreUnknownKeys(true)
+			err = dec.DecodeValues(&e, req.Form)
+			c.Assert(err, check.IsNil)
+			c.Assert(e.Envs, check.DeepEquals, want)
+			private := e.Private
+			noRestart := e.NoRestart
+			path := strings.HasSuffix(req.URL.Path, "/apps/someapp/env")
+			method := req.Method == "POST"
+			contentType := req.Header.Get("Content-Type") == "application/x-www-form-urlencoded"
+			return path && contentType && method && private && noRestart
 		},
 	}
 	client := cmd.NewClient(&http.Client{Transport: trans}, nil, manager)
@@ -272,6 +295,7 @@ func (s *S) TestEnvSetValuesAndPrivateAndNoRestart(c *check.C) {
 	c.Assert(err, check.IsNil)
 	c.Assert(stdout.String(), check.Equals, expectedOut)
 }
+
 func (s *S) TestEnvSetWithoutFlag(c *check.C) {
 	var stdout, stderr bytes.Buffer
 	context := cmd.Context{
@@ -286,8 +310,19 @@ func (s *S) TestEnvSetWithoutFlag(c *check.C) {
 	trans := &cmdtest.ConditionalTransport{
 		Transport: cmdtest.Transport{Message: string(result), Status: http.StatusOK},
 		CondFunc: func(req *http.Request) bool {
-			return strings.HasSuffix(req.URL.Path, "/apps/otherapp/env") && req.Method == "POST" &&
-				req.URL.RawQuery == "private=false&noRestart=false"
+			err := req.ParseForm()
+			c.Assert(err, check.IsNil)
+			var e api.Envs
+			dec := form.NewDecoder(nil)
+			dec.IgnoreUnknownKeys(true)
+			err = dec.DecodeValues(&e, req.Form)
+			c.Assert(err, check.IsNil)
+			private := !e.Private
+			noRestart := !e.NoRestart
+			path := strings.HasSuffix(req.URL.Path, "/apps/otherapp/env")
+			method := req.Method == "POST"
+			contentType := req.Header.Get("Content-Type") == "application/x-www-form-urlencoded"
+			return path && contentType && method && private && noRestart
 		},
 	}
 	client := cmd.NewClient(&http.Client{Transport: trans}, nil, manager)

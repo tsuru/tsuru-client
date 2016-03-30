@@ -1,4 +1,4 @@
-// Copyright 2015 tsuru authors. All rights reserved.
+// Copyright 2016 tsuru authors. All rights reserved.
 // Use of this source code is governed by a BSD-style
 // license that can be found in the LICENSE file.
 
@@ -18,10 +18,11 @@ type Pool struct {
 	Default bool
 }
 
-var ErrPublicDefaultPollCantHaveTeams = errors.New("Public/Default pool can't have teams.")
-var ErrDefaultPoolAlreadyExists = errors.New("Default pool already exists.")
-
-const poolCollection = "pool"
+var (
+	ErrPublicDefaultPollCantHaveTeams = errors.New("Public/Default pool can't have teams.")
+	ErrDefaultPoolAlreadyExists       = errors.New("Default pool already exists.")
+	ErrPoolNameIsRequired             = errors.New("Pool name is required.")
+)
 
 type AddPoolOptions struct {
 	Name    string
@@ -32,7 +33,7 @@ type AddPoolOptions struct {
 
 func AddPool(opts AddPoolOptions) error {
 	if opts.Name == "" {
-		return errors.New("Pool name is required.")
+		return ErrPoolNameIsRequired
 	}
 	conn, err := db.Conn()
 	if err != nil {
@@ -46,7 +47,7 @@ func AddPool(opts AddPoolOptions) error {
 		}
 	}
 	pool := Pool{Name: opts.Name, Public: opts.Public, Default: opts.Default}
-	return conn.Collection(poolCollection).Insert(pool)
+	return conn.Pools().Insert(pool)
 }
 
 func changeDefaultPool(force bool) error {
@@ -63,7 +64,7 @@ func changeDefaultPool(force bool) error {
 		if !force {
 			return ErrDefaultPoolAlreadyExists
 		}
-		return conn.Collection(poolCollection).UpdateId(p[0].Name, bson.M{"$set": bson.M{"default": false}})
+		return conn.Pools().UpdateId(p[0].Name, bson.M{"$set": bson.M{"default": false}})
 	}
 	return nil
 }
@@ -74,7 +75,7 @@ func RemovePool(poolName string) error {
 		return err
 	}
 	defer conn.Close()
-	return conn.Collection(poolCollection).Remove(bson.M{"_id": poolName})
+	return conn.Pools().Remove(bson.M{"_id": poolName})
 }
 
 func AddTeamsToPool(poolName string, teams []string) error {
@@ -84,7 +85,7 @@ func AddTeamsToPool(poolName string, teams []string) error {
 	}
 	defer conn.Close()
 	var pool Pool
-	err = conn.Collection(poolCollection).Find(bson.M{"_id": poolName}).One(&pool)
+	err = conn.Pools().Find(bson.M{"_id": poolName}).One(&pool)
 	if err != nil {
 		return err
 	}
@@ -98,7 +99,7 @@ func AddTeamsToPool(poolName string, teams []string) error {
 			}
 		}
 	}
-	return conn.Collection(poolCollection).UpdateId(poolName, bson.M{"$push": bson.M{"teams": bson.M{"$each": teams}}})
+	return conn.Pools().UpdateId(poolName, bson.M{"$push": bson.M{"teams": bson.M{"$each": teams}}})
 }
 
 func RemoveTeamsFromPool(poolName string, teams []string) error {
@@ -107,7 +108,7 @@ func RemoveTeamsFromPool(poolName string, teams []string) error {
 		return err
 	}
 	defer conn.Close()
-	return conn.Collection(poolCollection).UpdateId(poolName, bson.M{"$pullAll": bson.M{"teams": teams}})
+	return conn.Pools().UpdateId(poolName, bson.M{"$pullAll": bson.M{"teams": teams}})
 }
 
 func ListPools(query bson.M) ([]Pool, error) {
@@ -117,7 +118,7 @@ func ListPools(query bson.M) ([]Pool, error) {
 	}
 	defer conn.Close()
 	pools := []Pool{}
-	err = conn.Collection(poolCollection).Find(query).All(&pools)
+	err = conn.Pools().Find(query).All(&pools)
 	if err != nil {
 		return nil, err
 	}
@@ -136,14 +137,5 @@ func PoolUpdate(poolName string, query bson.M, forceDefault bool) error {
 			return err
 		}
 	}
-	return conn.Collection(poolCollection).UpdateId(poolName, bson.M{"$set": query})
-}
-
-// GetPoolsNames find teams by a list of team names.
-func GetPoolsNames(pools []Pool) []string {
-	pn := make([]string, len(pools))
-	for i, p := range pools {
-		pn[i] = p.Name
-	}
-	return pn
+	return conn.Pools().UpdateId(poolName, bson.M{"$set": query})
 }

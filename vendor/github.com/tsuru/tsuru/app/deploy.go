@@ -18,6 +18,17 @@ import (
 	"gopkg.in/mgo.v2/bson"
 )
 
+type DeployKind string
+
+const (
+	DeployArchiveURL  DeployKind = "archive-url"
+	DeployGit         DeployKind = "git"
+	DeployImage       DeployKind = "image"
+	DeployRollback    DeployKind = "rollback"
+	DeployUpload      DeployKind = "upload"
+	DeployUploadBuild DeployKind = "uploadbuild"
+)
+
 type DeployData struct {
 	ID          bson.ObjectId `bson:"_id,omitempty"`
 	App         string
@@ -126,6 +137,7 @@ type DeployOptions struct {
 	App          *App
 	Commit       string
 	ArchiveURL   string
+	FileSize     int64
 	File         io.ReadCloser
 	OutputStream io.Writer
 	User         string
@@ -133,6 +145,25 @@ type DeployOptions struct {
 	Origin       string
 	Rollback     bool
 	Build        bool
+}
+
+func (o *DeployOptions) Kind() DeployKind {
+	if o.Rollback {
+		return DeployRollback
+	}
+	if o.Image != "" {
+		return DeployImage
+	}
+	if o.File != nil {
+		if o.Build {
+			return DeployUploadBuild
+		}
+		return DeployUpload
+	}
+	if o.Commit != "" {
+		return DeployGit
+	}
+	return DeployArchiveURL
 }
 
 // Deploy runs a deployment of an application. It will first try to run an
@@ -174,20 +205,22 @@ func Deploy(opts DeployOptions) error {
 }
 
 func deployToProvisioner(opts *DeployOptions, writer io.Writer) (string, error) {
-	if opts.Rollback {
+	switch opts.Kind() {
+	case DeployRollback:
 		return Provisioner.Rollback(opts.App, opts.Image, writer)
-	}
-	if opts.Image != "" {
+	case DeployImage:
 		if deployer, ok := Provisioner.(provision.ImageDeployer); ok {
 			return deployer.ImageDeploy(opts.App, opts.Image, writer)
 		}
-	}
-	if opts.File != nil {
+		fallthrough
+	case DeployUpload, DeployUploadBuild:
 		if deployer, ok := Provisioner.(provision.UploadDeployer); ok {
-			return deployer.UploadDeploy(opts.App, opts.File, opts.Build, writer)
+			return deployer.UploadDeploy(opts.App, opts.File, opts.FileSize, opts.Build, writer)
 		}
+		fallthrough
+	default:
+		return Provisioner.(provision.ArchiveDeployer).ArchiveDeploy(opts.App, opts.ArchiveURL, writer)
 	}
-	return Provisioner.(provision.ArchiveDeployer).ArchiveDeploy(opts.App, opts.ArchiveURL, writer)
 }
 
 func saveDeployData(opts *DeployOptions, imageId, log string, duration time.Duration, deployError error) error {

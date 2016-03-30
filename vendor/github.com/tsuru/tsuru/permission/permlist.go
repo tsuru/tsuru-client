@@ -34,7 +34,12 @@ var PermissionRegistry = (&registry{}).addWithCtx(
 	"app.update.bind",
 	"app.update.unbind",
 	"app.deploy",
+	"app.deploy.archive-url",
+	"app.deploy.build",
+	"app.deploy.git",
+	"app.deploy.image",
 	"app.deploy.rollback",
+	"app.deploy.upload",
 	"app.read",
 	"app.read.deploy",
 	"app.read.env",
@@ -124,5 +129,10 @@ var PermissionRegistry = (&registry{}).addWithCtx(
 ).add(
 	"debug",
 ).add(
-	"healing",
+	"healing.read",
+).addWithCtx(
+	"healing", []contextType{CtxPool},
+).add(
+	"healing.read",
+	"healing.update",
 )

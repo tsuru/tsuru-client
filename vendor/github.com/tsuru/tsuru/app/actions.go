@@ -1,4 +1,4 @@
-// Copyright 2015 tsuru authors. All rights reserved.
+// Copyright 2016 tsuru authors. All rights reserved.
 // Use of this source code is governed by a BSD-style
 // license that can be found in the LICENSE file.
 
@@ -460,13 +460,9 @@ var restartApp = action.Action{
 		if !ok {
 			return nil, errors.New("invalid previous result, should be changePlanPipelineResult")
 		}
-		app := result.app
-		oldPlan := result.oldPlan
-		if app.GetCpuShare() != oldPlan.CpuShare || app.GetMemory() != oldPlan.Memory || app.GetSwap() != oldPlan.Swap {
-			err := app.Restart("", w)
-			if err != nil {
-				return nil, err
-			}
+		err := result.app.Restart("", w)
+		if err != nil {
+			return nil, err
 		}
 		return result, nil
 	},

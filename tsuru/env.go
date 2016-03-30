@@ -16,7 +16,9 @@ import (
 	"sort"
 	"strings"
 
+	"github.com/cezarsa/form"
 	"github.com/tsuru/gnuflag"
+	"github.com/tsuru/tsuru/api"
 	"github.com/tsuru/tsuru/cmd"
 	tsuruIo "github.com/tsuru/tsuru/io"
 )
@@ -85,6 +87,11 @@ func (c *envSet) Info() *cmd.Info {
 	}
 }
 
+type env struct {
+	Name  string
+	Value string
+}
+
 func (c *envSet) Run(context *cmd.Context, client *cmd.Client) error {
 	context.RawOutput()
 	appName, err := c.Guess()
@@ -97,21 +104,29 @@ func (c *envSet) Run(context *cmd.Context, client *cmd.Client) error {
 	if len(decls) < 1 || len(decls) != len(context.Args) {
 		return errors.New(envSetValidationMessage)
 	}
-	variables := make(map[string]string, len(decls))
-	for _, v := range decls {
-		parts := strings.SplitN(v[1], "=", 2)
-		variables[parts[0]] = parts[1]
+	envs := make([]struct{ Name, Value string }, len(decls))
+	for i := range decls {
+		parts := strings.SplitN(decls[i][1], "=", 2)
+		envs[i] = struct{ Name, Value string }{Name: parts[0], Value: parts[1]}
 	}
-	var buf bytes.Buffer
-	json.NewEncoder(&buf).Encode(variables)
-	url, err := cmd.GetURL(fmt.Sprintf("/apps/%s/env?private=%t&noRestart=%t", appName, c.private, c.noRestart))
+	e := api.Envs{
+		Envs:      envs,
+		NoRestart: c.noRestart,
+		Private:   c.private,
+	}
+	url, err := cmd.GetURL(fmt.Sprintf("/apps/%s/env", appName))
 	if err != nil {
 		return err
 	}
-	request, err := http.NewRequest("POST", url, &buf)
+	v, err := form.EncodeToValues(&e)
 	if err != nil {
 		return err
 	}
+	request, err := http.NewRequest("POST", url, strings.NewReader(v.Encode()))
+	if err != nil {
+		return err
+	}
+	request.Header.Set("Content-Type", "application/x-www-form-urlencoded")
 	response, err := client.Do(request)
 	if err != nil {
 		return err

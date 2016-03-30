@@ -123,6 +123,11 @@ func (s *Storage) Plans() *storage.Collection {
 	return s.Collection("plans")
 }
 
+// Pools returns the pool collection.
+func (s *Storage) Pools() *storage.Collection {
+	return s.Collection("pool")
+}
+
 // Users returns the users collection from MongoDB.
 func (s *Storage) Users() *storage.Collection {
 	emailIndex := mgo.Index{Key: []string{"email"}, Unique: true}
@@ -206,12 +211,4 @@ func (s *LogStorage) LogsCollections() ([]*storage.Collection, error) {
 
 func (s *Storage) Roles() *storage.Collection {
 	return s.Collection("roles")
-}
-
-func (s *Storage) ScopedConfig() *storage.Collection {
-	// This collection has this name for historical reasons. At first it was
-	// used exclusively by the bs component, later it became a generic
-	// configuration collection. Preserving the old name allow updating tsuru
-	// without the need for data migrations.
-	return s.Collection("bsconfig")
 }

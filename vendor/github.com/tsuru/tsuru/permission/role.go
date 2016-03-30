@@ -17,9 +17,11 @@ import (
 )
 
 var (
-	ErrRoleNotFound      = errors.New("role not found")
-	ErrRoleAlreadyExists = errors.New("role already exists")
-	ErrRoleEventNotFound = errors.New("role event not found")
+	ErrRoleNotFound          = errors.New("role not found")
+	ErrRoleAlreadyExists     = errors.New("role already exists")
+	ErrRoleEventNotFound     = errors.New("role event not found")
+	ErrInvalidRoleName       = errors.New("invalid role name")
+	ErrInvalidPermissionName = errors.New("invalid permission name")
 
 	RoleEventUserCreate = &RoleEvent{
 		name:        "user-create",
@@ -47,6 +49,23 @@ func (e ErrRoleEventWrongContext) Error() string {
 	return fmt.Sprintf("wrong context type for role event, expected %q role has %q", e.expected, e.role)
 }
 
+type ErrPermissionNotFound struct {
+	permission string
+}
+
+func (e ErrPermissionNotFound) Error() string {
+	return fmt.Sprintf("permission named %q not found", e.permission)
+}
+
+type ErrPermissionNotAllowed struct {
+	permission  string
+	contextType contextType
+}
+
+func (e ErrPermissionNotAllowed) Error() string {
+	return fmt.Sprintf("permission %q not allowed with context of type %q", e.permission, e.contextType)
+}
+
 type RoleEvent struct {
 	name        string
 	context     contextType
@@ -72,7 +91,7 @@ func NewRole(name string, ctx string, description string) (Role, error) {
 	}
 	name = strings.TrimSpace(name)
 	if len(name) == 0 {
-		return Role{}, fmt.Errorf("invalid role name %q", name)
+		return Role{}, ErrInvalidRoleName
 	}
 	coll, err := rolesCollection()
 	if err != nil {
@@ -175,14 +194,14 @@ func DestroyRole(name string) error {
 func (r *Role) AddPermissions(permNames ...string) error {
 	for _, permName := range permNames {
 		if permName == "" {
-			return fmt.Errorf("empty permission name")
+			return ErrInvalidPermissionName
 		}
 		if permName == "*" {
 			permName = ""
 		}
 		reg := PermissionRegistry.getSubRegistry(permName)
 		if reg == nil {
-			return fmt.Errorf("permission named %q not found", permName)
+			return &ErrPermissionNotFound{permission: permName}
 		}
 		var found bool
 		for _, ctxType := range reg.AllowedContexts() {
@@ -192,7 +211,10 @@ func (r *Role) AddPermissions(permNames ...string) error {
 			}
 		}
 		if !found {
-			return fmt.Errorf("permission %q not allowed with context of type %q", permName, r.ContextType)
+			return &ErrPermissionNotAllowed{
+				permission:  permName,
+				contextType: r.ContextType,
+			}
 		}
 	}
 	coll, err := rolesCollection()
