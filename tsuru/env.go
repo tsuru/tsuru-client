@@ -5,7 +5,6 @@
 package main
 
 import (
-	"bytes"
 	"encoding/json"
 	"errors"
 	"fmt"
@@ -51,7 +50,7 @@ func (c *envGet) Info() *cmd.Info {
 }
 
 func (c *envGet) Run(context *cmd.Context, client *cmd.Client) error {
-	b, err := requestEnvURL("GET", c.GuessingCommand, context.Args, client)
+	b, err := requestEnvGetURL(c.GuessingCommand, context.Args, client)
 	if err != nil {
 		return err
 	}
@@ -215,18 +214,20 @@ func (c *envUnset) Run(context *cmd.Context, client *cmd.Client) error {
 	return nil
 }
 
-func requestEnvURL(method string, g cmd.GuessingCommand, args []string, client *cmd.Client) ([]byte, error) {
+func requestEnvGetURL(g cmd.GuessingCommand, args []string, client *cmd.Client) ([]byte, error) {
 	appName, err := g.Guess()
 	if err != nil {
 		return nil, err
 	}
-	url, err := cmd.GetURL(fmt.Sprintf("/apps/%s/env", appName))
+	v := url.Values{}
+	for _, e := range args {
+		v.Add("env", e)
+	}
+	url, err := cmd.GetURL(fmt.Sprintf("/apps/%s/env?%s", appName, v.Encode()))
 	if err != nil {
 		return nil, err
 	}
-	var buf bytes.Buffer
-	json.NewEncoder(&buf).Encode(args)
-	request, err := http.NewRequest(method, url, &buf)
+	request, err := http.NewRequest("GET", url, nil)
 	if err != nil {
 		return nil, err
 	}

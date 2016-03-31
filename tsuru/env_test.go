@@ -7,7 +7,6 @@ package main
 import (
 	"bytes"
 	"encoding/json"
-	"io/ioutil"
 	"net/http"
 	"strings"
 
@@ -53,11 +52,11 @@ func (s *S) TestEnvGetRunWithMultipleParams(c *check.C) {
 	trans := &cmdtest.ConditionalTransport{
 		Transport: cmdtest.Transport{Message: jsonResult, Status: http.StatusOK},
 		CondFunc: func(req *http.Request) bool {
-			want := `["DATABASE_HOST","DATABASE_USER"]` + "\n"
-			defer req.Body.Close()
-			got, err := ioutil.ReadAll(req.Body)
-			c.Assert(err, check.IsNil)
-			return strings.HasSuffix(req.URL.Path, "/apps/someapp/env") && req.Method == "GET" && string(got) == want
+			path := strings.HasSuffix(req.URL.Path, "/apps/someapp/env")
+			method := req.Method == "GET"
+			envs := req.URL.Query()["env"]
+			c.Assert(envs, check.DeepEquals, []string{"DATABASE_HOST", "DATABASE_USER"})
+			return path && method
 		},
 	}
 	client := cmd.NewClient(&http.Client{Transport: trans}, nil, manager)
@@ -441,7 +440,7 @@ func (s *S) TestRequestEnvURL(c *check.C) {
 	client := cmd.NewClient(&http.Client{Transport: &cmdtest.Transport{Message: result, Status: http.StatusOK}}, nil, manager)
 	args := []string{"DATABASE_HOST"}
 	g := cmd.GuessingCommand{G: &cmdtest.FakeGuesser{Name: "someapp"}}
-	b, err := requestEnvURL("GET", g, args, client)
+	b, err := requestEnvGetURL(g, args, client)
 	c.Assert(err, check.IsNil)
 	c.Assert(b, check.DeepEquals, []byte(result))
 }
