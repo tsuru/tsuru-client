@@ -12,8 +12,10 @@ import (
 	"io"
 	"io/ioutil"
 	"net/http"
+	"net/url"
 	"regexp"
 	"sort"
+	"strconv"
 	"strings"
 
 	"github.com/cezarsa/form"
@@ -183,13 +185,16 @@ func (c *envUnset) Run(context *cmd.Context, client *cmd.Client) error {
 	if err != nil {
 		return err
 	}
-	url, err := cmd.GetURL(fmt.Sprintf("/apps/%s/env?noRestart=%t", appName, c.noRestart))
+	v := url.Values{}
+	for _, e := range context.Args {
+		v.Add("env", e)
+	}
+	v.Set("noRestart", strconv.FormatBool(c.noRestart))
+	u, err := cmd.GetURL(fmt.Sprintf("/apps/%s/env?%s", appName, v.Encode()))
 	if err != nil {
 		return err
 	}
-	var buf bytes.Buffer
-	json.NewEncoder(&buf).Encode(context.Args)
-	request, err := http.NewRequest("DELETE", url, &buf)
+	request, err := http.NewRequest("DELETE", u, nil)
 	if err != nil {
 		return err
 	}

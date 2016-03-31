@@ -364,12 +364,11 @@ func (s *S) TestEnvUnsetRun(c *check.C) {
 	trans := &cmdtest.ConditionalTransport{
 		Transport: cmdtest.Transport{Message: string(result), Status: http.StatusOK},
 		CondFunc: func(req *http.Request) bool {
-			want := `["DATABASE_HOST"]` + "\n"
-			defer req.Body.Close()
-			got, err := ioutil.ReadAll(req.Body)
-			c.Assert(err, check.IsNil)
-			return strings.HasSuffix(req.URL.Path, "/apps/someapp/env") && req.Method == "DELETE" && string(got) == want &&
-				req.URL.RawQuery == "noRestart=false"
+			path := strings.HasSuffix(req.URL.Path, "/apps/someapp/env")
+			method := req.Method == "DELETE"
+			noRestart := req.URL.Query().Get("noRestart") == "false"
+			env := req.URL.Query().Get("env") == "DATABASE_HOST"
+			return path && method && noRestart && env
 		},
 	}
 	client := cmd.NewClient(&http.Client{Transport: trans}, nil, manager)
@@ -394,12 +393,11 @@ func (s *S) TestEnvUnsetWithNoRestartFlag(c *check.C) {
 	trans := &cmdtest.ConditionalTransport{
 		Transport: cmdtest.Transport{Message: string(result), Status: http.StatusOK},
 		CondFunc: func(req *http.Request) bool {
-			want := `["DATABASE_HOST"]` + "\n"
-			defer req.Body.Close()
-			got, err := ioutil.ReadAll(req.Body)
-			c.Assert(err, check.IsNil)
-			c.Assert(req.URL.RawQuery, check.Equals, "noRestart=true")
-			return strings.HasSuffix(req.URL.Path, "/apps/someapp/env") && req.Method == "DELETE" && string(got) == want
+			path := strings.HasSuffix(req.URL.Path, "/apps/someapp/env")
+			method := req.Method == "DELETE"
+			noRestart := req.URL.Query().Get("noRestart") == "true"
+			env := req.URL.Query().Get("env") == "DATABASE_HOST"
+			return path && method && noRestart && env
 		},
 	}
 	client := cmd.NewClient(&http.Client{Transport: trans}, nil, manager)
@@ -424,8 +422,11 @@ func (s *S) TestEnvUnsetWithoutFlag(c *check.C) {
 	trans := &cmdtest.ConditionalTransport{
 		Transport: cmdtest.Transport{Message: string(result), Status: http.StatusOK},
 		CondFunc: func(req *http.Request) bool {
-			return strings.HasSuffix(req.URL.Path, "/apps/otherapp/env") && req.Method == "DELETE" &&
-				req.URL.RawQuery == "noRestart=false"
+			path := strings.HasSuffix(req.URL.Path, "/apps/otherapp/env")
+			method := req.Method == "DELETE"
+			noRestart := req.URL.Query().Get("noRestart") == "false"
+			env := req.URL.Query().Get("env") == "DATABASE_HOST"
+			return path && method && noRestart && env
 		},
 	}
 	client := cmd.NewClient(&http.Client{Transport: trans}, nil, manager)
