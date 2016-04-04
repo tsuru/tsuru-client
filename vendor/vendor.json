@@ -14,6 +14,11 @@
 			"revisionTime": "2016-03-24T17:59:19-03:00"
 		},
 		{
+			"path": "github.com/codegangsta/negroni",
+			"revision": "c7477ad8e330bef55bf1ebe300cf8aa67c492d1b",
+			"revisionTime": "2015-03-19T10:13:04-07:00"
+		},
+		{
 			"origin": "github.com/tsuru/tsuru/vendor/github.com/diego-araujo/go-saml",
 			"path": "github.com/diego-araujo/go-saml",
 			"revision": "010d540999c2b246d3777cc0c1550f6575787a0f",
@@ -30,6 +35,16 @@
 			"path": "github.com/garyburd/redigo/redis",
 			"revision": "010d540999c2b246d3777cc0c1550f6575787a0f",
 			"revisionTime": "2016-01-07T11:26:52-02:00"
+		},
+		{
+			"path": "github.com/gorilla/context",
+			"revision": "1ea25387ff6f684839d82767c1733ff4d4d15d0a",
+			"revisionTime": "2016-02-26T13:46:23-08:00"
+		},
+		{
+			"path": "github.com/gorilla/mux",
+			"revision": "0eeaf8392f5b04950925b8a69fe70f110fa7cbfc",
+			"revisionTime": "2016-03-17T14:34:30-07:00"
 		},
 		{
 			"origin": "github.com/tsuru/tsuru/vendor/github.com/howeyc/fsnotify",
@@ -286,6 +301,16 @@
 			"path": "golang.org/x/crypto/ssh/terminal",
 			"revision": "010d540999c2b246d3777cc0c1550f6575787a0f",
 			"revisionTime": "2016-01-07T11:26:52-02:00"
+		},
+		{
+			"path": "golang.org/x/net/context",
+			"revision": "024ed629fd292398cfd43c9678a5bf004f7defdc",
+			"revisionTime": "2016-04-03T12:24:15-07:00"
+		},
+		{
+			"path": "golang.org/x/net/netutil",
+			"revision": "024ed629fd292398cfd43c9678a5bf004f7defdc",
+			"revisionTime": "2016-04-03T12:24:15-07:00"
 		},
 		{
 			"origin": "github.com/tsuru/tsuru/vendor/golang.org/x/net/websocket",
