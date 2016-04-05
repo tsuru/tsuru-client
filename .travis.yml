@@ -16,7 +16,7 @@ env:
     - GOARCH=386
 script:
   - go test -x ./tsuru
-  - "[ -n \"`gofmt -s -l ./tsuru`\" ] && echo \"gofmt -s -w required for:\" && echo && gofmt -s -l ./tsuru && exit 1 || exit 0"
+  - ./check-fmt.sh
 matrix:
   allow_failures:
     - go: tip
