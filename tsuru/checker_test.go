@@ -30,7 +30,7 @@ func (deprecationChecker) Check(params []interface{}, names []string) (bool, str
 	if !ok {
 		return false, "old-name should be a string"
 	}
-	manager := buildManager("tsuru")
+	manager = buildManager("tsuru")
 	newCommand, ok := manager.Commands[newName]
 	if !ok {
 		return false, newName + " is not registered"

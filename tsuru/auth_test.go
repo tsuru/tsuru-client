@@ -11,10 +11,11 @@ import (
 	"net/http"
 	"strings"
 
+	"gopkg.in/check.v1"
+
 	"github.com/tsuru/tsuru/cmd"
 	"github.com/tsuru/tsuru/cmd/cmdtest"
 	"github.com/tsuru/tsuru/fs/fstest"
-	"gopkg.in/check.v1"
 )
 
 func (s *S) TestTeamCreate(c *check.C) {
@@ -743,7 +744,7 @@ func (s *S) TestListUsersRunWithoutFlags(c *check.C) {
 		Stdout: &stdout,
 		Stderr: &stderr,
 	}
-	manager := cmd.NewManager("glb", "0.2", "ad-ver", &stdout, &stderr, nil, nil)
+	manager = cmd.NewManager("glb", "0.2", "ad-ver", &stdout, &stderr, nil, nil)
 	result := `[{"email": "test@test.com",
 "roles":[
 	{"name": "role1", "contexttype": "team", "contextvalue": "a"},
@@ -776,7 +777,7 @@ func (s *S) TestListUsersRunFilterByUserEmail(c *check.C) {
 		Stdout: &stdout,
 		Stderr: &stderr,
 	}
-	manager := cmd.NewManager("glb", "0.2", "ad-ver", &stdout, &stderr, nil, nil)
+	manager = cmd.NewManager("glb", "0.2", "ad-ver", &stdout, &stderr, nil, nil)
 	result := `[{"email": "test@test.com",
 "roles":[
 	{"name": "role1", "contexttype": "team", "contextvalue": "a"},
@@ -815,7 +816,7 @@ func (s *S) TestListUsersRunFilterByRole(c *check.C) {
 		Stdout: &stdout,
 		Stderr: &stderr,
 	}
-	manager := cmd.NewManager("glb", "0.2", "ad-ver", &stdout, &stderr, nil, nil)
+	manager = cmd.NewManager("glb", "0.2", "ad-ver", &stdout, &stderr, nil, nil)
 	result := `[{"email": "test@test.com",
 	"roles":[
 		{"name": "role1", "contexttype": "team", "contextvalue": "a"},
@@ -854,7 +855,7 @@ func (s *S) TestListUsersRunWithMoreThanOneFlagReturnsError(c *check.C) {
 		Stdout: &stdout,
 		Stderr: &stderr,
 	}
-	manager := cmd.NewManager("glb", "0.2", "ad-ver", &stdout, &stderr, nil, nil)
+	manager = cmd.NewManager("glb", "0.2", "ad-ver", &stdout, &stderr, nil, nil)
 	result := `[{"email": "test@test.com",
 		"roles":[
 			{"name": "role1", "contexttype": "team", "contextvalue": "a"},
