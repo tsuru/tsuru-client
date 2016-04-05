@@ -75,11 +75,11 @@ func (c *userCreate) Run(context *cmd.Context, client *cmd.Client) error {
 type userRemove struct{}
 
 func (c *userRemove) currentUserEmail(client *cmd.Client) (string, error) {
-	url, err := cmd.GetURL("/users/info")
+	u, err := cmd.GetURL("/users/info")
 	if err != nil {
 		return "", err
 	}
-	request, _ := http.NewRequest("GET", url, nil)
+	request, _ := http.NewRequest("GET", u, nil)
 	resp, err := client.Do(request)
 	if err != nil {
 		return "", err
@@ -113,7 +113,7 @@ func (c *userRemove) Run(context *cmd.Context, client *cmd.Client) error {
 		fmt.Fprintln(context.Stdout, "Abort.")
 		return nil
 	}
-	url, err := cmd.GetURL("/users")
+	u, err := cmd.GetURL("/users")
 	if err != nil {
 		return err
 	}
@@ -121,7 +121,7 @@ func (c *userRemove) Run(context *cmd.Context, client *cmd.Client) error {
 	if email != "" {
 		qs = "?user=" + email
 	}
-	request, err := http.NewRequest("DELETE", url+qs, nil)
+	request, err := http.NewRequest("DELETE", u+qs, nil)
 	if err != nil {
 		return err
 	}
@@ -192,11 +192,11 @@ func (c *teamRemove) Run(context *cmd.Context, client *cmd.Client) error {
 	if !c.Confirm(context, question) {
 		return nil
 	}
-	url, err := cmd.GetURL(fmt.Sprintf("/teams/%s", team))
+	u, err := cmd.GetURL(fmt.Sprintf("/teams/%s", team))
 	if err != nil {
 		return err
 	}
-	request, err := http.NewRequest("DELETE", url, nil)
+	request, err := http.NewRequest("DELETE", u, nil)
 	if err != nil {
 		return err
 	}
@@ -237,11 +237,11 @@ type teamItem struct {
 }
 
 func (c *teamList) Run(context *cmd.Context, client *cmd.Client) error {
-	url, err := cmd.GetURL("/teams")
+	u, err := cmd.GetURL("/teams")
 	if err != nil {
 		return err
 	}
-	request, err := http.NewRequest("GET", url, nil)
+	request, err := http.NewRequest("GET", u, nil)
 	if err != nil {
 		return err
 	}

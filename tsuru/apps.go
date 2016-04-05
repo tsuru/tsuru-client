@@ -244,11 +244,11 @@ func (c *appRemove) Run(context *cmd.Context, client *cmd.Client) error {
 	if !c.Confirm(context, fmt.Sprintf(`Are you sure you want to remove app "%s"?`, appName)) {
 		return nil
 	}
-	url, err := cmd.GetURL(fmt.Sprintf("/apps/%s", appName))
+	u, err := cmd.GetURL(fmt.Sprintf("/apps/%s", appName))
 	if err != nil {
 		return err
 	}
-	request, err := http.NewRequest("DELETE", url, nil)
+	request, err := http.NewRequest("DELETE", u, nil)
 	if err != nil {
 		return err
 	}
@@ -289,11 +289,11 @@ func (c *appInfo) Run(context *cmd.Context, client *cmd.Client) error {
 	if err != nil {
 		return err
 	}
-	url, err := cmd.GetURL(fmt.Sprintf("/apps/%s", appName))
+	u, err := cmd.GetURL(fmt.Sprintf("/apps/%s", appName))
 	if err != nil {
 		return err
 	}
-	request, err := http.NewRequest("GET", url, nil)
+	request, err := http.NewRequest("GET", u, nil)
 	if err != nil {
 		return err
 	}
@@ -309,11 +309,11 @@ func (c *appInfo) Run(context *cmd.Context, client *cmd.Client) error {
 	if err != nil {
 		return err
 	}
-	url, err = cmd.GetURL(fmt.Sprintf("/docker/node/apps/%s/containers", appName))
+	u, err = cmd.GetURL(fmt.Sprintf("/docker/node/apps/%s/containers", appName))
 	if err != nil {
 		return err
 	}
-	request, err = http.NewRequest("GET", url, nil)
+	request, err = http.NewRequest("GET", u, nil)
 	if err != nil {
 		return err
 	}
@@ -326,11 +326,11 @@ func (c *appInfo) Run(context *cmd.Context, client *cmd.Client) error {
 			return err
 		}
 	}
-	url, err = cmd.GetURL(fmt.Sprintf("/services/instances?app=%s", appName))
+	u, err = cmd.GetURL(fmt.Sprintf("/services/instances?app=%s", appName))
 	if err != nil {
 		return err
 	}
-	request, err = http.NewRequest("GET", url, nil)
+	request, err = http.NewRequest("GET", u, nil)
 	if err != nil {
 		return err
 	}
@@ -344,11 +344,11 @@ func (c *appInfo) Run(context *cmd.Context, client *cmd.Client) error {
 		}
 	}
 	var quota []byte
-	url, err = cmd.GetURL("/apps/" + appName + "/quota")
+	u, err = cmd.GetURL("/apps/" + appName + "/quota")
 	if err != nil {
 		return err
 	}
-	request, _ = http.NewRequest("GET", url, nil)
+	request, _ = http.NewRequest("GET", u, nil)
 	response, err = client.Do(request)
 	if err != nil {
 		return err
@@ -580,11 +580,11 @@ func (c *appGrant) Run(context *cmd.Context, client *cmd.Client) error {
 		return err
 	}
 	teamName := context.Args[0]
-	url, err := cmd.GetURL(fmt.Sprintf("/apps/%s/teams/%s", appName, teamName))
+	u, err := cmd.GetURL(fmt.Sprintf("/apps/%s/teams/%s", appName, teamName))
 	if err != nil {
 		return err
 	}
-	request, err := http.NewRequest("PUT", url, nil)
+	request, err := http.NewRequest("PUT", u, nil)
 	if err != nil {
 		return err
 	}
@@ -619,11 +619,11 @@ func (c *appRevoke) Run(context *cmd.Context, client *cmd.Client) error {
 		return err
 	}
 	teamName := context.Args[0]
-	url, err := cmd.GetURL(fmt.Sprintf("/apps/%s/teams/%s", appName, teamName))
+	u, err := cmd.GetURL(fmt.Sprintf("/apps/%s/teams/%s", appName, teamName))
 	if err != nil {
 		return err
 	}
-	request, err := http.NewRequest("DELETE", url, nil)
+	request, err := http.NewRequest("DELETE", u, nil)
 	if err != nil {
 		return err
 	}
@@ -690,11 +690,11 @@ func (c *appList) Run(context *cmd.Context, client *cmd.Client) error {
 	if err != nil {
 		return err
 	}
-	url, err := cmd.GetURL(fmt.Sprintf("/apps?%s", qs.Encode()))
+	u, err := cmd.GetURL(fmt.Sprintf("/apps?%s", qs.Encode()))
 	if err != nil {
 		return err
 	}
-	request, err := http.NewRequest("GET", url, nil)
+	request, err := http.NewRequest("GET", u, nil)
 	if err != nil {
 		return err
 	}
@@ -802,11 +802,11 @@ func (c *appStop) Run(context *cmd.Context, client *cmd.Client) error {
 	if err != nil {
 		return err
 	}
-	url, err := cmd.GetURL(fmt.Sprintf("/apps/%s/stop?process=%s", appName, c.process))
+	u, err := cmd.GetURL(fmt.Sprintf("/apps/%s/stop?process=%s", appName, c.process))
 	if err != nil {
 		return err
 	}
-	request, err := http.NewRequest("POST", url, nil)
+	request, err := http.NewRequest("POST", u, nil)
 	if err != nil {
 		return err
 	}
@@ -852,11 +852,11 @@ func (c *appStart) Run(context *cmd.Context, client *cmd.Client) error {
 	if err != nil {
 		return err
 	}
-	url, err := cmd.GetURL(fmt.Sprintf("/apps/%s/start?process=%s", appName, c.process))
+	u, err := cmd.GetURL(fmt.Sprintf("/apps/%s/start?process=%s", appName, c.process))
 	if err != nil {
 		return err
 	}
-	request, err := http.NewRequest("POST", url, nil)
+	request, err := http.NewRequest("POST", u, nil)
 	if err != nil {
 		return err
 	}
@@ -893,11 +893,11 @@ func (c *appRestart) Run(context *cmd.Context, client *cmd.Client) error {
 	if err != nil {
 		return err
 	}
-	url, err := cmd.GetURL(fmt.Sprintf("/apps/%s/restart?process=%s", appName, c.process))
+	u, err := cmd.GetURL(fmt.Sprintf("/apps/%s/restart?process=%s", appName, c.process))
 	if err != nil {
 		return err
 	}
-	request, err := http.NewRequest("POST", url, nil)
+	request, err := http.NewRequest("POST", u, nil)
 	if err != nil {
 		return err
 	}
