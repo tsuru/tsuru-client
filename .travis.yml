@@ -5,8 +5,8 @@ os:
   - linux
   - osx
 go:
-  - 1.5.3
-  - 1.6
+  - 1.5.4
+  - 1.6.1
   - tip
 env:
   global:
