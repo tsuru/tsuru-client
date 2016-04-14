@@ -195,7 +195,7 @@ func (c *appUpdate) Run(context *cmd.Context, client *cmd.Client) error {
 	v.Set("description", c.description)
 	v.Set("pool", c.pool)
 	v.Set("teamOwner", c.teamOwner)
-	request, err := http.NewRequest("POST", u, strings.NewReader(v.Encode()))
+	request, err := http.NewRequest("PUT", u, strings.NewReader(v.Encode()))
 	if err != nil {
 		return err
 	}

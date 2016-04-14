@@ -269,7 +269,7 @@ func (s *S) TestAppUpdate(c *check.C) {
 		Transport: cmdtest.Transport{Status: http.StatusOK},
 		CondFunc: func(req *http.Request) bool {
 			url := strings.HasSuffix(req.URL.Path, "/apps/ble")
-			method := req.Method == "POST"
+			method := req.Method == "PUT"
 			description := req.FormValue("description") == "description of my app"
 			return url && method && description
 		},
@@ -293,7 +293,7 @@ func (s *S) TestAppUpdateWithoutArgs(c *check.C) {
 		Transport: cmdtest.Transport{Status: http.StatusOK},
 		CondFunc: func(req *http.Request) bool {
 			url := strings.HasSuffix(req.URL.Path, "/apps/secret")
-			method := req.Method == "POST"
+			method := req.Method == "PUT"
 			description := req.FormValue("description") == "description of my app"
 			return url && method && description
 		},
