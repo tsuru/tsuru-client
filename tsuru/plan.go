@@ -76,13 +76,13 @@ func (c *planList) Run(context *cmd.Context, client *cmd.Client) error {
 		return err
 	}
 	defer resp.Body.Close()
+	if resp.StatusCode == http.StatusNoContent {
+		fmt.Fprintln(context.Stdout, "No plans available.")
+		return nil
+	}
 	err = json.NewDecoder(resp.Body).Decode(&plans)
 	if err != nil {
 		return err
-	}
-	if len(plans) == 0 {
-		fmt.Fprintln(context.Stdout, "No plans available.")
-		return nil
 	}
 	fmt.Fprintf(context.Stdout, "%s", renderPlans(plans, c.bytes))
 	return nil
