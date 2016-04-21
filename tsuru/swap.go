@@ -6,7 +6,10 @@ package main
 
 import (
 	"fmt"
+	"io"
 	"net/http"
+	"net/url"
+	"strconv"
 	"strings"
 
 	"github.com/tsuru/gnuflag"
@@ -31,7 +34,7 @@ as simple as swapping the applications back.
 Use [[--force]] if you want to swap applications with a different number of
 units or different platform without confirmation.
 
-Use [[--cname-only]] if you want to swap all cnames except the default 
+Use [[--cname-only]] if you want to swap all cnames except the default
 cname of application`,
 		MinArgs: 2,
 	}
@@ -49,19 +52,32 @@ func (s *appSwap) Flags() *gnuflag.FlagSet {
 }
 
 func (s *appSwap) Run(context *cmd.Context, client *cmd.Client) error {
-	url, err := cmd.GetURL(fmt.Sprintf("/swap?app1=%s&app2=%s&force=%t&cnameOnly=%t", context.Args[0], context.Args[1], s.force, s.cnameOnly))
+	v := url.Values{}
+	v.Set("app1", context.Args[0])
+	v.Set("app2", context.Args[1])
+	v.Set("force", strconv.FormatBool(s.force))
+	v.Set("cnameOnly", strconv.FormatBool(s.cnameOnly))
+	u, err := cmd.GetURL("/swap")
 	if err != nil {
 		return err
 	}
-	err = makeSwap(client, url)
+	err = makeSwap(client, u, strings.NewReader(v.Encode()))
 	if err != nil {
 		if e, ok := err.(*errors.HTTP); ok && e.Code == http.StatusPreconditionFailed {
 			var answer string
 			fmt.Fprintf(context.Stdout, "WARNING: %s.\nSwap anyway? (y/n) ", strings.TrimRight(e.Message, "\n"))
 			fmt.Fscanf(context.Stdin, "%s", &answer)
 			if answer == "y" || answer == "yes" {
-				url, _ = cmd.GetURL(fmt.Sprintf("/swap?app1=%s&app2=%s&force=%t&cnameOnly=%t", context.Args[0], context.Args[1], true, s.cnameOnly))
-				return makeSwap(client, url)
+				v = url.Values{}
+				v.Set("app1", context.Args[0])
+				v.Set("app2", context.Args[1])
+				v.Set("force", "true")
+				v.Set("cnameOnly", strconv.FormatBool(s.cnameOnly))
+				u, err = cmd.GetURL("/swap")
+				if err != nil {
+					return err
+				}
+				return makeSwap(client, u, strings.NewReader(v.Encode()))
 			}
 			fmt.Fprintln(context.Stdout, "swap aborted.")
 			return nil
@@ -72,11 +88,12 @@ func (s *appSwap) Run(context *cmd.Context, client *cmd.Client) error {
 	return err
 }
 
-func makeSwap(client *cmd.Client, url string) error {
-	request, err := http.NewRequest("PUT", url, nil)
+func makeSwap(client *cmd.Client, url string, body io.Reader) error {
+	request, err := http.NewRequest("POST", url, body)
 	if err != nil {
 		return err
 	}
+	request.Header.Set("Content-Type", "application/x-www-form-urlencoded")
 	_, err = client.Do(request)
 	return err
 }

@@ -26,7 +26,13 @@ func (s *S) TestSwap(c *check.C) {
 		Transport: cmdtest.Transport{Status: http.StatusOK, Message: ""},
 		CondFunc: func(r *http.Request) bool {
 			called = true
-			return r.Method == "PUT" && strings.HasSuffix(r.URL.Path, "/swap")
+			app1Name := r.FormValue("app1") == "app1"
+			app2Name := r.FormValue("app2") == "app2"
+			forceSwap := r.FormValue("force") == "false"
+			cnameOnly := r.FormValue("cnameOnly") == "false"
+			method := r.Method == "POST"
+			url := strings.HasSuffix(r.URL.Path, "/swap")
+			return url && method && cnameOnly && forceSwap && app2Name && app1Name
 		},
 	}
 	context := cmd.Context{
@@ -68,7 +74,13 @@ func (s *S) TestSwapCnameOnlyFlag(c *check.C) {
 		Transport: cmdtest.Transport{Status: http.StatusOK, Message: ""},
 		CondFunc: func(r *http.Request) bool {
 			called = true
-			return r.Method == "PUT" && strings.HasSuffix(r.URL.Path, "/swap") && r.URL.RawQuery == "app1=app1&app2=app2&force=false&cnameOnly=true"
+			app1Name := r.FormValue("app1") == "app1"
+			app2Name := r.FormValue("app2") == "app2"
+			forceSwap := r.FormValue("force") == "false"
+			cnameOnly := r.FormValue("cnameOnly") == "true"
+			method := r.Method == "POST"
+			url := strings.HasSuffix(r.URL.Path, "/swap")
+			return url && method && cnameOnly && forceSwap && app2Name && app1Name
 		},
 	}
 	context := cmd.Context{
@@ -93,14 +105,26 @@ func (s *S) TestSwapWhenAppsAreNotEqual(c *check.C) {
 		Transport: cmdtest.Transport{Status: http.StatusPreconditionFailed, Message: "Apps are not equal."},
 		CondFunc: func(r *http.Request) bool {
 			called += 1
-			return r.URL.RawQuery == "app1=app1&app2=app2&force=false&cnameOnly=false"
+			app1Name := r.FormValue("app1") == "app1"
+			app2Name := r.FormValue("app2") == "app2"
+			forceSwap := r.FormValue("force") == "false"
+			cnameOnly := r.FormValue("cnameOnly") == "false"
+			method := r.Method == "POST"
+			url := strings.HasSuffix(r.URL.Path, "/swap")
+			return url && method && cnameOnly && forceSwap && app2Name && app1Name
 		},
 	}
 	transportOk := cmdtest.ConditionalTransport{
 		Transport: cmdtest.Transport{Status: http.StatusOK, Message: ""},
 		CondFunc: func(r *http.Request) bool {
 			called += 1
-			return r.URL.RawQuery == "app1=app1&app2=app2&force=true&cnameOnly=false"
+			app1Name := r.FormValue("app1") == "app1"
+			app2Name := r.FormValue("app2") == "app2"
+			forceSwap := r.FormValue("force") == "true"
+			cnameOnly := r.FormValue("cnameOnly") == "false"
+			method := r.Method == "POST"
+			url := strings.HasSuffix(r.URL.Path, "/swap")
+			return url && method && cnameOnly && forceSwap && app2Name && app1Name
 		},
 	}
 	multiTransport := cmdtest.MultiConditionalTransport{
