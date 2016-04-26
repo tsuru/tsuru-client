@@ -9,6 +9,7 @@ import (
 	"bytes"
 	"compress/gzip"
 	"encoding/json"
+	"errors"
 	"fmt"
 	"io"
 	"io/ioutil"
@@ -152,6 +153,12 @@ calls are:
 
 func (c *appDeploy) Run(context *cmd.Context, client *cmd.Client) error {
 	context.RawOutput()
+	if c.image == "" && len(context.Args) == 0 {
+		return errors.New("You should provide at least one file or a docker image to deploy.\n")
+	}
+	if c.image != "" && len(context.Args) > 0 {
+		return errors.New("You can't deploy files and docker image at the same time.\n")
+	}
 	appName, err := c.Guess()
 	if err != nil {
 		return err

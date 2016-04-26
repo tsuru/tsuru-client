@@ -156,6 +156,41 @@ func (s *S) TestDeployRunFileNotFound(c *check.C) {
 	c.Assert(err, check.NotNil)
 }
 
+func (s *S) TestDeployRunWithoutArgsAndImage(c *check.C) {
+	var stdout, stderr bytes.Buffer
+	ctx := cmd.Context{
+		Stdout: &stdout,
+		Stderr: &stderr,
+		Args:   []string{},
+	}
+	trans := cmdtest.Transport{Message: "OK\n", Status: http.StatusOK}
+	client := cmd.NewClient(&http.Client{Transport: &trans}, nil, manager)
+	fake := cmdtest.FakeGuesser{Name: "secret"}
+	guessCommand := cmd.GuessingCommand{G: &fake}
+	command := appDeploy{GuessingCommand: guessCommand}
+	err := command.Run(&ctx, client)
+	c.Assert(err, check.NotNil)
+	c.Assert(err.Error(), check.Equals, "You should provide at least one file or a docker image to deploy.\n")
+}
+
+func (s *S) TestDeployRunWithArgsAndImage(c *check.C) {
+	var stdout, stderr bytes.Buffer
+	ctx := cmd.Context{
+		Stdout: &stdout,
+		Stderr: &stderr,
+		Args:   []string{"testdata", ".."},
+	}
+	trans := cmdtest.Transport{Message: "OK\n", Status: http.StatusOK}
+	client := cmd.NewClient(&http.Client{Transport: &trans}, nil, manager)
+	fake := cmdtest.FakeGuesser{Name: "secret"}
+	guessCommand := cmd.GuessingCommand{G: &fake}
+	command := appDeploy{GuessingCommand: guessCommand}
+	command.Flags().Parse(true, []string{"-i", "registr.com/image-to-deploy"})
+	err := command.Run(&ctx, client)
+	c.Assert(err, check.NotNil)
+	c.Assert(err.Error(), check.Equals, "You can't deploy files and docker image at the same time.\n")
+}
+
 func (s *S) TestDeployRunRequestFailure(c *check.C) {
 	trans := cmdtest.Transport{Message: "app not found\n", Status: http.StatusNotFound}
 	client := cmd.NewClient(&http.Client{Transport: &trans}, nil, manager)
