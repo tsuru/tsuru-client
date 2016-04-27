@@ -732,8 +732,8 @@ func (s *S) TestListUsersInfo(c *check.C) {
 	expected := &cmd.Info{
 		Name:    "user-list",
 		MinArgs: 0,
-		Usage:   "user-list [--user/-u useremail] [--role/-r role]",
-		Desc:    "List all users in tsuru. It may also filter users by user email or role name.",
+		Usage:   "user-list [--user/-u useremail] [--role/-r role [-c/--context-value value]]",
+		Desc:    "List all users in tsuru. It may also filter users by user email or role name with context value.",
 	}
 	c.Assert((&listUsers{}).Info(), check.DeepEquals, expected)
 }
@@ -791,8 +791,9 @@ func (s *S) TestListUsersRunFilterByUserEmail(c *check.C) {
 	trans := cmdtest.ConditionalTransport{
 		Transport: cmdtest.Transport{Message: result, Status: http.StatusOK},
 		CondFunc: func(req *http.Request) bool {
+			println(req.URL.RawQuery)
 			return req.Method == "GET" && strings.HasSuffix(req.URL.Path, "/users") &&
-				req.URL.RawQuery == "userEmail=test2@test.com&role="
+				req.URL.RawQuery == "userEmail=test2@test.com&role=&context="
 		},
 	}
 	expected := `+---------------+---------------+
@@ -831,7 +832,7 @@ func (s *S) TestListUsersRunFilterByRole(c *check.C) {
 		Transport: cmdtest.Transport{Message: result, Status: http.StatusOK},
 		CondFunc: func(req *http.Request) bool {
 			return req.Method == "GET" && strings.HasSuffix(req.URL.Path, "/users") &&
-				req.URL.RawQuery == "userEmail=&role=role2"
+				req.URL.RawQuery == "userEmail=&role=role2&context="
 		},
 	}
 	expected := `+---------------+---------------+
@@ -844,6 +845,45 @@ func (s *S) TestListUsersRunFilterByRole(c *check.C) {
 	client := cmd.NewClient(&http.Client{Transport: &trans}, nil, manager)
 	command := listUsers{}
 	command.Flags().Parse(true, []string{"-r", "role2"})
+	err := command.Run(&context, client)
+	c.Assert(err, check.IsNil)
+	c.Assert(stdout.String(), check.Equals, expected)
+}
+
+func (s *S) TestListUsersRunFilterByRoleWithContext(c *check.C) {
+	var stdout, stderr bytes.Buffer
+	context := cmd.Context{
+		Stdout: &stdout,
+		Stderr: &stderr,
+	}
+	manager = cmd.NewManager("glb", "0.2", "ad-ver", &stdout, &stderr, nil, nil)
+	result := `[{"email": "test@test.com",
+	"roles":[
+		{"name": "role1", "contexttype": "team", "contextvalue": "a"},
+		{"name": "role2", "contexttype": "app", "contextvalue": "x"}
+	],
+	"permissions":[
+		{"name": "app.create", "contexttype": "team", "contextvalue": "a"},
+		{"name": "app.deploy", "contexttype": "app", "contextvalue": "x"}
+	]
+	}]`
+	trans := cmdtest.ConditionalTransport{
+		Transport: cmdtest.Transport{Message: result, Status: http.StatusOK},
+		CondFunc: func(req *http.Request) bool {
+			return req.Method == "GET" && strings.HasSuffix(req.URL.Path, "/users") &&
+				req.URL.RawQuery == "userEmail=&role=role2&context=x"
+		},
+	}
+	expected := `+---------------+---------------+
+| User          | Roles         |
++---------------+---------------+
+| test@test.com | role1(team a) |
+|               | role2(app x)  |
++---------------+---------------+
+`
+	client := cmd.NewClient(&http.Client{Transport: &trans}, nil, manager)
+	command := listUsers{}
+	command.Flags().Parse(true, []string{"-r", "role2", "-c", "x"})
 	err := command.Run(&context, client)
 	c.Assert(err, check.IsNil)
 	c.Assert(stdout.String(), check.Equals, expected)
@@ -877,7 +917,28 @@ func (s *S) TestListUsersRunWithMoreThanOneFlagReturnsError(c *check.C) {
 	command := listUsers{}
 	command.Flags().Parse(true, []string{"-u", "test@test.com", "-r", "role2"})
 	err := command.Run(&context, client)
-	c.Assert(err, check.ErrorMatches, "You cannot set more than one flag. Enter <tsuru user-list --help> for more information.")
+	c.Assert(err, check.ErrorMatches, "You cannot filter by user email and role at same time. Enter <tsuru user-list --help> for more information.")
+}
+
+func (s *S) TestListUsersRunWithContextFlagAndNotRolaFlagError(c *check.C) {
+	var stdout, stderr bytes.Buffer
+	context := cmd.Context{
+		Stdout: &stdout,
+		Stderr: &stderr,
+	}
+	manager = cmd.NewManager("glb", "0.2", "ad-ver", &stdout, &stderr, nil, nil)
+	trans := cmdtest.ConditionalTransport{
+		Transport: cmdtest.Transport{Message: "", Status: http.StatusOK},
+		CondFunc: func(req *http.Request) bool {
+			return req.Method == "GET" && strings.HasSuffix(req.URL.Path, "/users") &&
+				req.URL.RawQuery == "userEmail=test@test.com&role=&context=team"
+		},
+	}
+	client := cmd.NewClient(&http.Client{Transport: &trans}, nil, manager)
+	command := listUsers{}
+	command.Flags().Parse(true, []string{"-c", "team"})
+	err := command.Run(&context, client)
+	c.Assert(err, check.ErrorMatches, "You should provide a role to filter by context value.")
 }
 
 func (s *S) TestListUsersFlags(c *check.C) {
