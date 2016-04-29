@@ -318,10 +318,10 @@ func (c *appInfo) Run(context *cmd.Context, client *cmd.Client) error {
 		return err
 	}
 	response, err = client.Do(request)
-	var adminResult []byte
+	var containersResult []byte
 	if err == nil {
 		defer response.Body.Close()
-		adminResult, err = ioutil.ReadAll(response.Body)
+		containersResult, err = ioutil.ReadAll(response.Body)
 		if err != nil {
 			return err
 		}
@@ -359,7 +359,7 @@ func (c *appInfo) Run(context *cmd.Context, client *cmd.Client) error {
 		return err
 	}
 
-	return c.Show(result, adminResult, servicesResult, quota, context)
+	return c.Show(result, containersResult, servicesResult, quota, context)
 }
 
 type unit struct {
@@ -480,7 +480,7 @@ Quota: {{.Quota.InUse}}/{{if .Quota.Limit}}{{.Quota.Limit}} units{{else}}unlimit
 			}
 			contMap[id] = cont
 		}
-		titles = append(titles, []string{"Host", "Port", "IP"}...)
+		titles = append(titles, []string{"Host", "Port"}...)
 	}
 	for _, process := range processes {
 		units := unitsByProcess[process]
@@ -497,7 +497,7 @@ Quota: {{.Quota.InUse}}/{{if .Quota.Limit}}{{.Quota.Limit}} units{{else}}unlimit
 			row := []string{id, unit.Status}
 			cont, ok := contMap[id]
 			if ok {
-				row = append(row, []string{cont.HostAddr, cont.HostPort, cont.IP}...)
+				row = append(row, []string{cont.HostAddr, cont.HostPort}...)
 			}
 			unitsTable.AddRow(cmd.Row(row))
 		}
@@ -546,13 +546,13 @@ Quota: {{.Quota.InUse}}/{{if .Quota.Limit}}{{.Quota.Limit}} units{{else}}unlimit
 	return tplBuffer.String() + buf.String()
 }
 
-func (c *appInfo) Show(result []byte, adminResult []byte, servicesResult []byte, quota []byte, context *cmd.Context) error {
+func (c *appInfo) Show(result []byte, containersResult []byte, servicesResult []byte, quota []byte, context *cmd.Context) error {
 	var a app
 	err := json.Unmarshal(result, &a)
 	if err != nil {
 		return err
 	}
-	json.Unmarshal(adminResult, &a.containers)
+	json.Unmarshal(containersResult, &a.containers)
 	json.Unmarshal(servicesResult, &a.services)
 	json.Unmarshal(quota, &a.Quota)
 	fmt.Fprintln(context.Stdout, &a)
