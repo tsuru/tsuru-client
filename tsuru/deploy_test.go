@@ -379,6 +379,7 @@ func (s *S) TestAppDeployList(c *check.C) {
 	}
 	client := cmd.NewClient(&http.Client{Transport: &cmdtest.Transport{Message: result, Status: http.StatusOK}}, nil, manager)
 	command := appDeployList{}
+	command.Flags().Parse(true, []string{"--app", "test"})
 	err := command.Run(&context, client)
 	c.Assert(err, check.IsNil)
 	c.Assert(stdout.String(), check.Equals, expected)

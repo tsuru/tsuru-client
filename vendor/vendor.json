@@ -155,9 +155,11 @@
 			"revisionTime": "2016-03-30T14:16:46-03:00"
 		},
 		{
+			"checksumSHA1": "b5JsTLE7TDtx6ZKdWjq1YAD1efA=",
+			"origin": "github.com/tsuru/tsuru-client/vendor/github.com/tsuru/tsuru/cmd",
 			"path": "github.com/tsuru/tsuru/cmd",
-			"revision": "aaf59384ca2c8456da4eb6d94e60d1dc50fe1b34",
-			"revisionTime": "2016-03-30T14:16:46-03:00"
+			"revision": "0951915d56697b0fd9a5c9feceda429278c65083",
+			"revisionTime": "2016-05-04T09:13:09-03:00"
 		},
 		{
 			"path": "github.com/tsuru/tsuru/cmd/cmdtest",
