@@ -33,9 +33,10 @@ func (s *S) TestAppRun(c *check.C) {
 			Status:  http.StatusOK,
 		},
 		CondFunc: func(req *http.Request) bool {
-			b := make([]byte, 2)
-			req.Body.Read(b)
-			return strings.HasSuffix(req.URL.Path, "/apps/ble/run") && string(b) == "ls"
+			contentType := req.Header.Get("Content-Type") == "application/x-www-form-urlencoded"
+			cmd := req.FormValue("command") == "ls"
+			path := strings.HasSuffix(req.URL.Path, "/apps/ble/run")
+			return path && cmd && contentType
 		},
 	}
 	client := cmd.NewClient(&http.Client{Transport: trans}, nil, manager)
@@ -63,9 +64,10 @@ func (s *S) TestAppRunShouldUseAllSubsequentArgumentsAsArgumentsToTheGivenComman
 			Status:  http.StatusOK,
 		},
 		CondFunc: func(req *http.Request) bool {
-			b := make([]byte, 5)
-			req.Body.Read(b)
-			return strings.HasSuffix(req.URL.Path, "/apps/ble/run") && string(b) == "ls -l"
+			cmd := req.FormValue("command") == "ls -l"
+			path := strings.HasSuffix(req.URL.Path, "/apps/ble/run")
+			contentType := req.Header.Get("Content-Type") == "application/x-www-form-urlencoded"
+			return cmd && path && contentType
 		},
 	}
 	client := cmd.NewClient(&http.Client{Transport: trans}, nil, manager)
@@ -93,9 +95,10 @@ func (s *S) TestAppRunWithoutTheFlag(c *check.C) {
 			Status:  http.StatusOK,
 		},
 		CondFunc: func(req *http.Request) bool {
-			b := make([]byte, 6)
-			req.Body.Read(b)
-			return strings.HasSuffix(req.URL.Path, "/apps/bla/run") && string(b) == "ls -lh"
+			path := strings.HasSuffix(req.URL.Path, "/apps/bla/run")
+			cmd := req.FormValue("command") == "ls -lh"
+			contentType := req.Header.Get("Content-Type") == "application/x-www-form-urlencoded"
+			return path && cmd && contentType
 		},
 	}
 	client := cmd.NewClient(&http.Client{Transport: trans}, nil, manager)

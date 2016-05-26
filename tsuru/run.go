@@ -8,6 +8,8 @@ import (
 	"fmt"
 	"io"
 	"net/http"
+	"net/url"
+	"strconv"
 	"strings"
 
 	"github.com/tsuru/gnuflag"
@@ -41,15 +43,19 @@ func (c *appRun) Run(context *cmd.Context, client *cmd.Client) error {
 	if err != nil {
 		return err
 	}
-	url, err := cmd.GetURL(fmt.Sprintf("/apps/%s/run?once=%t", appName, c.once))
+	u, err := cmd.GetURL(fmt.Sprintf("/apps/%s/run", appName))
 	if err != nil {
 		return err
 	}
-	b := strings.NewReader(strings.Join(context.Args, " "))
-	request, err := http.NewRequest("POST", url, b)
+	v := url.Values{}
+	v.Set("command", strings.Join(context.Args, " "))
+	v.Set("once", strconv.FormatBool(c.once))
+	b := strings.NewReader(v.Encode())
+	request, err := http.NewRequest("POST", u, b)
 	if err != nil {
 		return err
 	}
+	request.Header.Set("Content-Type", "application/x-www-form-urlencoded")
 	r, err := client.Do(request)
 	if err != nil {
 		return err
