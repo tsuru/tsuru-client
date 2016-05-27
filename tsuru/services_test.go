@@ -110,7 +110,6 @@ func (s *S) TestServiceList(c *check.C) {
 
 func (s *S) TestServiceListWithEmptyResponse(c *check.C) {
 	var stdout, stderr bytes.Buffer
-	output := "[]"
 	expected := ""
 	ctx := cmd.Context{
 		Args:   []string{},
@@ -118,7 +117,7 @@ func (s *S) TestServiceListWithEmptyResponse(c *check.C) {
 		Stderr: &stderr,
 	}
 	trans := &cmdtest.ConditionalTransport{
-		Transport: cmdtest.Transport{Message: output, Status: http.StatusOK},
+		Transport: cmdtest.Transport{Message: "", Status: http.StatusNoContent},
 		CondFunc: func(req *http.Request) bool {
 			return strings.HasSuffix(req.URL.Path, "/services/instances")
 		},

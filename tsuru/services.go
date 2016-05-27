@@ -45,6 +45,9 @@ func (s serviceList) Run(ctx *cmd.Context, client *cmd.Client) error {
 	if err != nil {
 		return err
 	}
+	if resp.StatusCode != 200 {
+		return nil
+	}
 	defer resp.Body.Close()
 	b, err := ioutil.ReadAll(resp.Body)
 	if err != nil {
