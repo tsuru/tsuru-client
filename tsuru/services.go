@@ -45,7 +45,7 @@ func (s serviceList) Run(ctx *cmd.Context, client *cmd.Client) error {
 	if err != nil {
 		return err
 	}
-	if resp.StatusCode != 200 {
+	if resp.StatusCode != http.StatusOK {
 		return nil
 	}
 	defer resp.Body.Close()
