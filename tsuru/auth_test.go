@@ -791,7 +791,6 @@ func (s *S) TestListUsersRunFilterByUserEmail(c *check.C) {
 	trans := cmdtest.ConditionalTransport{
 		Transport: cmdtest.Transport{Message: result, Status: http.StatusOK},
 		CondFunc: func(req *http.Request) bool {
-			println(req.URL.RawQuery)
 			return req.Method == "GET" && strings.HasSuffix(req.URL.Path, "/users") &&
 				req.URL.RawQuery == "userEmail=test2@test.com&role=&context="
 		},
