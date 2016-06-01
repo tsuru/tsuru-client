@@ -29,7 +29,7 @@ import (
 	"gopkg.in/tylerb/graceful.v1"
 )
 
-const Version = "1.0.0-rc6"
+const Version = "1.0.0-rc7"
 
 func getProvisioner() (string, error) {
 	provisioner, err := config.GetString("provisioner")
@@ -134,7 +134,7 @@ func RunServer(dry bool) http.Handler {
 	m.Add("1.0", "Post", "/apps/{app}/sleep", AuthorizationRequiredHandler(sleep))
 	m.Add("1.0", "Get", "/apps/{appname}/quota", AuthorizationRequiredHandler(getAppQuota))
 	m.Add("1.0", "Put", "/apps/{appname}/quota", AuthorizationRequiredHandler(changeAppQuota))
-	m.Add("1.0", "Post", "/apps/{appname}", AuthorizationRequiredHandler(updateApp))
+	m.Add("1.0", "Put", "/apps/{appname}", AuthorizationRequiredHandler(updateApp))
 	m.Add("1.0", "Get", "/apps/{app}/env", AuthorizationRequiredHandler(getEnv))
 	m.Add("1.0", "Post", "/apps/{app}/env", AuthorizationRequiredHandler(setEnv))
 	m.Add("1.0", "Delete", "/apps/{app}/env", AuthorizationRequiredHandler(unsetEnv))
@@ -157,7 +157,6 @@ func RunServer(dry bool) http.Handler {
 	m.Add("1.0", "Get", "/apps/{app}/metric/envs", AuthorizationRequiredHandler(appMetricEnvs))
 	m.Add("1.0", "Post", "/apps/{app}/routes", AuthorizationRequiredHandler(appRebuildRoutes))
 
-	m.Add("1.0", "Post", "/units/status", AuthorizationRequiredHandler(setUnitsStatus))
 	m.Add("1.0", "Post", "/node/status", AuthorizationRequiredHandler(setNodeStatus))
 
 	m.Add("1.0", "Get", "/deploys", AuthorizationRequiredHandler(deploysList))
@@ -208,9 +207,10 @@ func RunServer(dry bool) http.Handler {
 	m.Add("1.0", "Post", "/teams", AuthorizationRequiredHandler(createTeam))
 	m.Add("1.0", "Delete", "/teams/{name}", AuthorizationRequiredHandler(removeTeam))
 
-	m.Add("1.0", "Put", "/swap", AuthorizationRequiredHandler(swap))
+	m.Add("1.0", "Post", "/swap", AuthorizationRequiredHandler(swap))
 
 	m.Add("1.0", "Get", "/healthcheck/", http.HandlerFunc(healthcheck))
+	m.Add("1.0", "Get", "/healthcheck", http.HandlerFunc(healthcheck))
 
 	m.Add("1.0", "Get", "/iaas/machines", AuthorizationRequiredHandler(machinesList))
 	m.Add("1.0", "Delete", "/iaas/machines/{machine_id}", AuthorizationRequiredHandler(machineDestroy))
@@ -256,12 +256,13 @@ func RunServer(dry bool) http.Handler {
 
 	n := negroni.New()
 	n.Use(negroni.NewRecovery())
+	n.Use(negroni.HandlerFunc(contextClearerMiddleware))
 	if !dry {
 		n.Use(newLoggerMiddleware())
 	}
 	n.UseHandler(m)
-	n.Use(negroni.HandlerFunc(contextClearerMiddleware))
 	n.Use(negroni.HandlerFunc(flushingWriterMiddleware))
+	n.Use(negroni.HandlerFunc(setRequestIDHeaderMiddleware))
 	n.Use(negroni.HandlerFunc(errorHandlingMiddleware))
 	n.Use(negroni.HandlerFunc(setVersionHeadersMiddleware))
 	n.Use(negroni.HandlerFunc(authTokenMiddleware))

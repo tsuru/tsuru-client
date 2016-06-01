@@ -103,7 +103,6 @@ func DialConfig(config *Config) (ws *Conn, err error) {
 
 	ws, err = NewClient(config, client)
 	if err != nil {
-		client.Close()
 		goto Error
 	}
 	return

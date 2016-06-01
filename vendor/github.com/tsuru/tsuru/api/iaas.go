@@ -8,6 +8,7 @@ import (
 	"encoding/json"
 	"net/http"
 
+	"github.com/cezarsa/form"
 	"github.com/tsuru/tsuru/auth"
 	"github.com/tsuru/tsuru/errors"
 	"github.com/tsuru/tsuru/iaas"
@@ -15,6 +16,13 @@ import (
 	"gopkg.in/mgo.v2"
 )
 
+// title: machine list
+// path: /iaas/machines
+// method: GET
+// produce: application/json
+// responses:
+//   200: OK
+//   401: Unauthorized
 func machinesList(w http.ResponseWriter, r *http.Request, token auth.Token) error {
 	machines, err := iaas.ListMachines()
 	if err != nil {
@@ -37,13 +45,18 @@ func machinesList(w http.ResponseWriter, r *http.Request, token auth.Token) erro
 			i--
 		}
 	}
-	err = json.NewEncoder(w).Encode(machines)
-	if err != nil {
-		return err
-	}
-	return nil
+	w.Header().Add("Content-Type", "application/json")
+	return json.NewEncoder(w).Encode(machines)
 }
 
+// title: machine destroy
+// path: /iaas/machines/{machine_id}
+// method: DELETE
+// responses:
+//   200: OK
+//   400: Invalid data
+//   401: Unauthorized
+//   404: Not found
 func machineDestroy(w http.ResponseWriter, r *http.Request, token auth.Token) error {
 	machineId := r.URL.Query().Get(":machine_id")
 	if machineId == "" {
@@ -65,6 +78,13 @@ func machineDestroy(w http.ResponseWriter, r *http.Request, token auth.Token) er
 	return m.Destroy()
 }
 
+// title: machine template list
+// path: /iaas/templates
+// method: GET
+// produce: application/json
+// responses:
+//   200: OK
+//   401: Unauthorized
 func templatesList(w http.ResponseWriter, r *http.Request, token auth.Token) error {
 	templates, err := iaas.ListTemplates()
 	if err != nil {
@@ -87,12 +107,27 @@ func templatesList(w http.ResponseWriter, r *http.Request, token auth.Token) err
 			i--
 		}
 	}
+	w.Header().Add("Content-Type", "application/json")
 	return json.NewEncoder(w).Encode(templates)
 }
 
+// title: template create
+// path: /iaas/templates
+// method: POST
+// consume: application/x-www-form-urlencoded
+// responses:
+//   201: Template created
+//   400: Invalid data
+//   401: Unauthorized
 func templateCreate(w http.ResponseWriter, r *http.Request, token auth.Token) error {
+	err := r.ParseForm()
+	if err != nil {
+		return &errors.HTTP{Code: http.StatusBadRequest, Message: err.Error()}
+	}
 	var paramTemplate iaas.Template
-	err := json.NewDecoder(r.Body).Decode(&paramTemplate)
+	dec := form.NewDecoder(nil)
+	dec.IgnoreUnknownKeys(true)
+	err = dec.DecodeValues(&paramTemplate, r.Form)
 	if err != nil {
 		return &errors.HTTP{Code: http.StatusBadRequest, Message: err.Error()}
 	}
@@ -110,6 +145,13 @@ func templateCreate(w http.ResponseWriter, r *http.Request, token auth.Token) er
 	return nil
 }
 
+// title: template destroy
+// path: /iaas/templates/{template_name}
+// method: DELETE
+// responses:
+//   200: OK
+//   401: Unauthorized
+//   404: Not found
 func templateDestroy(w http.ResponseWriter, r *http.Request, token auth.Token) error {
 	templateName := r.URL.Query().Get(":template_name")
 	t, err := iaas.FindTemplate(templateName)
@@ -125,16 +167,27 @@ func templateDestroy(w http.ResponseWriter, r *http.Request, token auth.Token) e
 	if !allowed {
 		return permission.ErrUnauthorized
 	}
-	err = iaas.DestroyTemplate(templateName)
-	if err != nil {
-		return err
-	}
-	return nil
+	return iaas.DestroyTemplate(templateName)
 }
 
+// title: template update
+// path: /iaas/templates/{template_name}
+// method: PUT
+// consume: application/x-www-form-urlencoded
+// responses:
+//   200: OK
+//   400: Invalid data
+//   401: Unauthorized
+//	 404: Not found
 func templateUpdate(w http.ResponseWriter, r *http.Request, token auth.Token) error {
+	err := r.ParseForm()
+	if err != nil {
+		return &errors.HTTP{Code: http.StatusBadRequest, Message: err.Error()}
+	}
 	var paramTemplate iaas.Template
-	err := json.NewDecoder(r.Body).Decode(&paramTemplate)
+	dec := form.NewDecoder(nil)
+	dec.IgnoreUnknownKeys(true)
+	err = dec.DecodeValues(&paramTemplate, r.Form)
 	if err != nil {
 		return &errors.HTTP{Code: http.StatusBadRequest, Message: err.Error()}
 	}

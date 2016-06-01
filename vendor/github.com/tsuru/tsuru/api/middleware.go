@@ -13,6 +13,8 @@ import (
 	"time"
 
 	"github.com/codegangsta/negroni"
+	"github.com/nu7hatch/gouuid"
+	"github.com/tsuru/config"
 	"github.com/tsuru/tsuru/api/context"
 	"github.com/tsuru/tsuru/app"
 	"github.com/tsuru/tsuru/auth"
@@ -66,6 +68,26 @@ func flushingWriterMiddleware(w http.ResponseWriter, r *http.Request, next http.
 	}()
 	fw := io.FlushingWriter{ResponseWriter: w}
 	next(&fw, r)
+}
+
+func setRequestIDHeaderMiddleware(w http.ResponseWriter, r *http.Request, next http.HandlerFunc) {
+	requestIDHeader, _ := config.GetString("request-id-header")
+	if requestIDHeader == "" {
+		next(w, r)
+		return
+	}
+	requestID := r.Header.Get(requestIDHeader)
+	if requestID == "" {
+		unparsedID, err := uuid.NewV4()
+		if err != nil {
+			log.Errorf("unable to generate request id: %s", err)
+			next(w, r)
+			return
+		}
+		requestID = unparsedID.String()
+	}
+	context.SetRequestID(r, requestIDHeader, requestID)
+	next(w, r)
 }
 
 func setVersionHeadersMiddleware(w http.ResponseWriter, r *http.Request, next http.HandlerFunc) {
@@ -213,5 +235,13 @@ func (l *loggerMiddleware) ServeHTTP(rw http.ResponseWriter, r *http.Request, ne
 		statusCode = 200
 	}
 	nowFormatted := time.Now().Format(time.RFC3339Nano)
-	l.logger.Printf("%s %s %s %d in %0.6fms", nowFormatted, r.Method, r.URL.Path, statusCode, float64(duration)/float64(time.Millisecond))
+	requestIDHeader, _ := config.GetString("request-id-header")
+	var requestID string
+	if requestIDHeader != "" {
+		requestID = context.GetRequestID(r, requestIDHeader)
+		if requestID != "" {
+			requestID = fmt.Sprintf(" [%s: %s]", requestIDHeader, requestID)
+		}
+	}
+	l.logger.Printf("%s %s %s %d in %0.6fms%s", nowFormatted, r.Method, r.URL.Path, statusCode, float64(duration)/float64(time.Millisecond), requestID)
 }

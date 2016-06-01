@@ -1,4 +1,4 @@
-graceful [![GoDoc](https://godoc.org/github.com/tylerb/graceful?status.png)](http://godoc.org/github.com/tylerb/graceful) [![Build Status](https://drone.io/github.com/tylerb/graceful/status.png)](https://drone.io/github.com/tylerb/graceful/latest) [![Coverage Status](https://coveralls.io/repos/tylerb/graceful/badge.svg?branch=dronedebug)](https://coveralls.io/r/tylerb/graceful?branch=dronedebug) [![Gitter](https://badges.gitter.im/Join%20Chat.svg)](https://gitter.im/tylerb/graceful?utm_source=badge&utm_medium=badge&utm_campaign=pr-badge)
+graceful [![GoDoc](https://godoc.org/github.com/tylerb/graceful?status.png)](http://godoc.org/github.com/tylerb/graceful) [![wercker status](https://app.wercker.com/status/2729ba763abf87695a17547e0f7af4a4/s "wercker status")](https://app.wercker.com/project/bykey/2729ba763abf87695a17547e0f7af4a4)
 ========
 
 Graceful is a Go 1.3+ package enabling graceful shutdown of http.Handler servers.
@@ -11,17 +11,17 @@ To install, simply execute:
 go get gopkg.in/tylerb/graceful.v1
 ```
 
-I am using [gopkg.in](http://labix.org/gopkg.in) to control releases.
+I am using [gopkg.in](http://http://labix.org/gopkg.in) to control releases.
 
 ## Usage
 
-Using Graceful is easy. Simply create your http.Handler and pass it to the `Run` function:
+Using Graceful is esay. Simply create your http.Handler and pass it to the `Run` function:
 
 ```go
 package main
 
 import (
-  "gopkg.in/tylerb/graceful.v1"
+  "github.com/tylerb/graceful"
   "net/http"
   "fmt"
   "time"
@@ -44,7 +44,7 @@ package main
 
 import (
   "github.com/codegangsta/negroni"
-  "gopkg.in/tylerb/graceful.v1"
+  "github.com/tylerb/graceful"
   "net/http"
   "fmt"
   "time"

@@ -1,4 +1,4 @@
-// Copyright 2015 tsuru authors. All rights reserved.
+// Copyright 2016 tsuru authors. All rights reserved.
 // Use of this source code is governed by a BSD-style
 // license that can be found in the LICENSE file.
 
@@ -12,6 +12,12 @@ import (
 	"github.com/tsuru/tsuru/hc"
 )
 
+// title: healthcheck
+// path: /healthcheck
+// method: GET
+// responses:
+//   200: OK
+//   500: Internal server error
 func healthcheck(w http.ResponseWriter, r *http.Request) {
 	if r.URL.Query().Get("check") == "all" {
 		fullHealthcheck(w, r)

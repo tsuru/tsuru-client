@@ -1,4 +1,4 @@
-// Copyright 2015 tsuru authors. All rights reserved.
+// Copyright 2016 tsuru authors. All rights reserved.
 // Use of this source code is governed by a BSD-style
 // license that can be found in the LICENSE file.
 
@@ -41,7 +41,11 @@ var createServiceInstance = action.Action{
 		if !ok {
 			return nil, errors.New("Third parameter must be a string.")
 		}
-		err = endpoint.Create(&instance, user)
+		requestID, ok := ctx.Params[3].(string)
+		if !ok {
+			return nil, errors.New("RequestID should be a string")
+		}
+		err = endpoint.Create(&instance, user, requestID)
 		if err != nil {
 			return nil, err
 		}
@@ -60,7 +64,8 @@ var createServiceInstance = action.Action{
 		if !ok {
 			return
 		}
-		endpoint.Destroy(&instance)
+		requestID, ok := ctx.Params[3].(string)
+		endpoint.Destroy(&instance, requestID)
 	},
 	MinParams: 2,
 }

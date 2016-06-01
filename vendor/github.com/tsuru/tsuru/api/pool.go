@@ -74,7 +74,7 @@ func poolList(w http.ResponseWriter, r *http.Request, t auth.Token) error {
 // method: POST
 // consume: application/x-www-form-urlencoded
 // responses:
-//   201: Pool create
+//   201: Pool created
 //   400: Invalid data
 //   401: Unauthorized
 //   409: Pool already exists
@@ -123,31 +123,68 @@ func removePoolHandler(w http.ResponseWriter, r *http.Request, t auth.Token) err
 	if !allowed {
 		return permission.ErrUnauthorized
 	}
-	return provision.RemovePool(r.URL.Query().Get(":name"))
+	err := provision.RemovePool(r.URL.Query().Get(":name"))
+	if err == provision.ErrPoolNotFound {
+		return &terrors.HTTP{Code: http.StatusNotFound, Message: err.Error()}
+	}
+	return err
 }
 
+// title: add team too pool
+// path: /pools/{name}/team
+// method: POST
+// consume: application/x-www-form-urlencoded
+// responses:
+//   200: Pool updated
+//   401: Unauthorized
+//   400: Invalid data
+//   404: Pool not found
 func addTeamToPoolHandler(w http.ResponseWriter, r *http.Request, t auth.Token) error {
 	allowed := permission.Check(t, permission.PermPoolUpdate)
 	if !allowed {
 		return permission.ErrUnauthorized
 	}
 	err := r.ParseForm()
+	msg := "You must provide the team."
 	if err != nil {
-		msg := "You must provide the team."
 		return &terrors.HTTP{Code: http.StatusBadRequest, Message: msg}
 	}
-	pool := r.URL.Query().Get(":name")
-	return provision.AddTeamsToPool(pool, r.Form["team"])
+	if teams, ok := r.Form["team"]; ok {
+		pool := r.URL.Query().Get(":name")
+		err := provision.AddTeamsToPool(pool, teams)
+		if err == provision.ErrPoolNotFound {
+			return &terrors.HTTP{Code: http.StatusNotFound, Message: err.Error()}
+		}
+		return err
+	}
+	return &terrors.HTTP{Code: http.StatusBadRequest, Message: msg}
 }
 
+// title: remove team from pool
+// path: /pools/{name}/team
+// method: DELETE
+// responses:
+//   200: Pool updated
+//   401: Unauthorized
+//   400: Invalid data
+//   404: Pool not found
 func removeTeamToPoolHandler(w http.ResponseWriter, r *http.Request, t auth.Token) error {
 	allowed := permission.Check(t, permission.PermPoolUpdate)
 	if !allowed {
 		return permission.ErrUnauthorized
 	}
 	pool := r.URL.Query().Get(":name")
-	teams := r.URL.Query()["teams"]
-	return provision.RemoveTeamsFromPool(pool, teams)
+	if teams, ok := r.URL.Query()["team"]; ok {
+		err := provision.RemoveTeamsFromPool(pool, teams)
+		if err == provision.ErrPoolNotFound {
+			return &terrors.HTTP{Code: http.StatusNotFound, Message: err.Error()}
+		}
+		return err
+	}
+	return &terrors.HTTP{
+		Code:    http.StatusBadRequest,
+		Message: "You must provide the team",
+	}
 }
 
 // title: pool update
@@ -176,6 +213,9 @@ func poolUpdateHandler(w http.ResponseWriter, r *http.Request, t auth.Token) err
 	poolName := r.URL.Query().Get(":name")
 	forceDefault, _ := strconv.ParseBool(r.FormValue("force"))
 	err := provision.PoolUpdate(poolName, query, forceDefault)
+	if err == provision.ErrPoolNotFound {
+		return &terrors.HTTP{Code: http.StatusNotFound, Message: err.Error()}
+	}
 	if err == provision.ErrDefaultPoolAlreadyExists {
 		return &terrors.HTTP{
 			Code:    http.StatusConflict,

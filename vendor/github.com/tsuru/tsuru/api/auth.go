@@ -44,6 +44,16 @@ func handleAuthError(err error) error {
 	}
 }
 
+// title: user create
+// path: /users
+// method: POST
+// consume: application/x-www-form-urlencoded
+// responses:
+//   201: User created
+//   400: Invalid data
+//   401: Unauthorized
+//   403: Forbidden
+//   409: User already exists
 func createUser(w http.ResponseWriter, r *http.Request) error {
 	registrationEnabled, _ := config.GetBool("auth:user-registration")
 	if !registrationEnabled {
@@ -69,6 +79,17 @@ func createUser(w http.ResponseWriter, r *http.Request) error {
 	return nil
 }
 
+// title: login
+// path: /auth/login
+// method: POST
+// consume: application/x-www-form-urlencoded
+// produce: application/json
+// responses:
+//   200: Ok
+//   400: Invalid data
+//   401: Unauthorized
+//   403: Forbidden
+//   404: Not found
 func login(w http.ResponseWriter, r *http.Request) error {
 	params := map[string]string{
 		"email": r.URL.Query().Get(":email"),
@@ -92,10 +113,25 @@ func login(w http.ResponseWriter, r *http.Request) error {
 	return json.NewEncoder(w).Encode(map[string]string{"token": token.GetValue()})
 }
 
+// title: logout
+// path: /users/tokens
+// method: DELETE
+// responses:
+//   200: Ok
 func logout(w http.ResponseWriter, r *http.Request, t auth.Token) error {
 	return app.AuthScheme.Logout(t.GetValue())
 }
 
+// title: change password
+// path: /users/password
+// method: PUT
+// consume: application/x-www-form-urlencoded
+// responses:
+//   200: Ok
+//   400: Invalid data
+//   401: Unauthorized
+//   403: Forbidden
+//   404: Not found
 func changePassword(w http.ResponseWriter, r *http.Request, t auth.Token) error {
 	managed, ok := app.AuthScheme.(auth.ManagedScheme)
 	if !ok {
@@ -124,6 +160,15 @@ func changePassword(w http.ResponseWriter, r *http.Request, t auth.Token) error 
 	return nil
 }
 
+// title: reset password
+// path: /users/{email}/password
+// method: POST
+// responses:
+//   200: Ok
+//   400: Invalid data
+//   401: Unauthorized
+//   403: Forbidden
+//   404: Not found
 func resetPassword(w http.ResponseWriter, r *http.Request) error {
 	managed, ok := app.AuthScheme.(auth.ManagedScheme)
 	if !ok {
@@ -148,6 +193,15 @@ func resetPassword(w http.ResponseWriter, r *http.Request) error {
 	return managed.ResetPassword(u, token)
 }
 
+// title: team create
+// path: /teams
+// method: POST
+// consume: application/x-www-form-urlencoded
+// responses:
+//   201: Team created
+//   400: Invalid data
+//   401: Unauthorized
+//   409: Team already exists
 func createTeam(w http.ResponseWriter, r *http.Request, t auth.Token) error {
 	allowed := permission.Check(t, permission.PermTeamCreate)
 	if !allowed {
@@ -172,6 +226,14 @@ func createTeam(w http.ResponseWriter, r *http.Request, t auth.Token) error {
 	return err
 }
 
+// title: remove team
+// path: /teams/{name}
+// method: DELETE
+// responses:
+//   200: Team removed
+//   401: Unauthorized
+//   403: Forbidden
+//   404: Not found
 func removeTeam(w http.ResponseWriter, r *http.Request, t auth.Token) error {
 	name := r.URL.Query().Get(":name")
 	allowed := permission.Check(t, permission.PermTeamDelete,
@@ -195,6 +257,14 @@ func removeTeam(w http.ResponseWriter, r *http.Request, t auth.Token) error {
 	return nil
 }
 
+// title: team list
+// path: /teams
+// method: GET
+// produce: application/json
+// responses:
+//   200: List teams
+//   204: No content
+//   401: Unauthorized
 func teamList(w http.ResponseWriter, r *http.Request, t auth.Token) error {
 	rec.Log(t.GetUserName(), "list-teams")
 	permsForTeam := permission.PermissionRegistry.PermissionsWithContextType(permission.CtxTeam)
@@ -232,25 +302,18 @@ func teamList(w http.ResponseWriter, r *http.Request, t auth.Token) error {
 		})
 	}
 	w.Header().Set("Content-Type", "application/json")
-	b, err := json.Marshal(result)
-	if err != nil {
-		return err
-	}
-	n, err := w.Write(b)
-	if err != nil {
-		return err
-	}
-	if n != len(b) {
-		return &errors.HTTP{Code: http.StatusInternalServerError, Message: "Failed to write response body."}
-	}
-	return nil
+	return json.NewEncoder(w).Encode(result)
 }
 
-// AddKeyToUser adds a key to a user.
-//
-// This function is just an http wrapper around addKeyToUser. The latter function
-// exists to be used in other places in the package without the http stuff (request and
-// response).
+// title: add key
+// path: /users/keys
+// method: POST
+// consume: application/x-www-form-urlencoded
+// responses:
+//   200: Ok
+//   400: Invalid data
+//   401: Unauthorized
+//   409: Key already exists
 func addKeyToUser(w http.ResponseWriter, r *http.Request, t auth.Token) error {
 	key := repository.Key{
 		Body: r.FormValue("key"),
@@ -278,11 +341,14 @@ func addKeyToUser(w http.ResponseWriter, r *http.Request, t auth.Token) error {
 	return err
 }
 
-// RemoveKeyFromUser removes a key from a user.
-//
-// This function is just an http wrapper around removeKeyFromUser. The latter function
-// exists to be used in other places in the package without the http stuff (request and
-// response).
+// title: remove key
+// path: /users/keys/{key}
+// method: DELETE
+// responses:
+//   200: Ok
+//   400: Invalid data
+//   401: Unauthorized
+//   404: Not found
 func removeKeyFromUser(w http.ResponseWriter, r *http.Request, t auth.Token) error {
 	key := repository.Key{
 		Name: r.URL.Query().Get(":key"),
@@ -305,7 +371,14 @@ func removeKeyFromUser(w http.ResponseWriter, r *http.Request, t auth.Token) err
 	return err
 }
 
-// listKeys list user's keys
+// title: list keys
+// path: /users/keys
+// method: GET
+// produce: application/json
+// responses:
+//   200: OK
+//   400: Invalid data
+//   401: Unauthorized
 func listKeys(w http.ResponseWriter, r *http.Request, t auth.Token) error {
 	u, err := t.User()
 	if err != nil {
@@ -318,12 +391,17 @@ func listKeys(w http.ResponseWriter, r *http.Request, t auth.Token) error {
 	if err != nil {
 		return err
 	}
+	w.Header().Add("Content-Type", "application/json")
 	return json.NewEncoder(w).Encode(keys)
 }
 
-// removeUser removes the user from the database and from repository server
-//
-// If the user is the only one in a team an error will be returned.
+// title: remove user
+// path: /users
+// method: DELETE
+// responses:
+//   200: User removed
+//   401: Unauthorized
+//   404: Not found
 func removeUser(w http.ResponseWriter, r *http.Request, t auth.Token) error {
 	u, err := t.User()
 	if err != nil {
@@ -359,15 +437,30 @@ type schemeData struct {
 	Data auth.SchemeInfo `json:"data"`
 }
 
+// title: get auth scheme
+// path: /auth/scheme
+// method: GET
+// produce: application/json
+// responses:
+//   200: OK
 func authScheme(w http.ResponseWriter, r *http.Request) error {
 	info, err := app.AuthScheme.Info()
 	if err != nil {
 		return err
 	}
 	data := schemeData{Name: app.AuthScheme.Name(), Data: info}
+	w.Header().Add("Content-Type", "application/json")
 	return json.NewEncoder(w).Encode(data)
 }
 
+// title: regenerate token
+// path: /users/api-key
+// method: POST
+// produce: application/json
+// responses:
+//   200: OK
+//   401: Unauthorized
+//   404: User not found
 func regenerateAPIToken(w http.ResponseWriter, r *http.Request, t auth.Token) error {
 	u, err := t.User()
 	if err != nil {
@@ -387,9 +480,18 @@ func regenerateAPIToken(w http.ResponseWriter, r *http.Request, t auth.Token) er
 	if err != nil {
 		return err
 	}
+	w.Header().Add("Content-Type", "application/json")
 	return json.NewEncoder(w).Encode(apiKey)
 }
 
+// title: show token
+// path: /users/api-key
+// method: GET
+// produce: application/json
+// responses:
+//   200: OK
+//   401: Unauthorized
+//   404: User not found
 func showAPIToken(w http.ResponseWriter, r *http.Request, t auth.Token) error {
 	u, err := t.User()
 	if err != nil {
@@ -409,6 +511,7 @@ func showAPIToken(w http.ResponseWriter, r *http.Request, t auth.Token) error {
 	if err != nil {
 		return err
 	}
+	w.Header().Add("Content-Type", "application/json")
 	return json.NewEncoder(w).Encode(apiKey)
 }
 
@@ -481,9 +584,17 @@ func createApiUser(perms []permission.Permission, user *auth.User, roleMap map[s
 	}, nil
 }
 
+// title: user list
+// path: /users
+// method: GET
+// produce: application/json
+// responses:
+//   200: OK
+//   401: Unauthorized
 func listUsers(w http.ResponseWriter, r *http.Request, t auth.Token) error {
 	userEmail := r.URL.Query().Get("userEmail")
 	roleName := r.URL.Query().Get("role")
+	contextValue := r.URL.Query().Get("context")
 	users, err := auth.ListUsers()
 	if err != nil {
 		return err
@@ -512,15 +623,29 @@ func listUsers(w http.ResponseWriter, r *http.Request, t auth.Token) error {
 		if roleName != "" {
 			for _, role := range usrData.Roles {
 				if role.Name == roleName {
-					apiUsers = append(apiUsers, *usrData)
-					break
+					if contextValue != "" && role.ContextValue == contextValue {
+						apiUsers = append(apiUsers, *usrData)
+						break
+					}
+					if contextValue == "" {
+						apiUsers = append(apiUsers, *usrData)
+						break
+					}
 				}
 			}
 		}
 	}
+	w.Header().Add("Content-Type", "application/json")
 	return json.NewEncoder(w).Encode(apiUsers)
 }
 
+// title: user info
+// path: /users/info
+// method: GET
+// produce: application/json
+// responses:
+//   200: OK
+//   401: Unauthorized
 func userInfo(w http.ResponseWriter, r *http.Request, t auth.Token) error {
 	user, err := t.User()
 	if err != nil {

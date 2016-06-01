@@ -1,4 +1,4 @@
-// Copyright 2015 tsuru authors. All rights reserved.
+// Copyright 2016 tsuru authors. All rights reserved.
 // Use of this source code is governed by a BSD-style
 // license that can be found in the LICENSE file.
 
@@ -15,6 +15,13 @@ import (
 	"github.com/tsuru/tsuru/errors"
 )
 
+// title: saml metadata
+// path: /auth/saml
+// method: GET
+// produce: application/xml
+// responses:
+//   200: Ok
+//   400: Invalid data
 func samlMetadata(w http.ResponseWriter, r *http.Request) error {
 	if app.AuthScheme.Name() != "saml" {
 		return &errors.HTTP{
@@ -31,6 +38,12 @@ func samlMetadata(w http.ResponseWriter, r *http.Request) error {
 	return nil
 }
 
+// title: saml callback
+// path: /auth/saml
+// method: POST
+// responses:
+//   200: Ok
+//   400: Invalid data
 func samlCallbackLogin(w http.ResponseWriter, r *http.Request) error {
 	if app.AuthScheme.Name() != "saml" {
 		return &errors.HTTP{

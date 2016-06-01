@@ -1,4 +1,4 @@
-// Copyright 2015 tsuru authors. All rights reserved.
+// Copyright 2016 tsuru authors. All rights reserved.
 // Use of this source code is governed by a BSD-style
 // license that can be found in the LICENSE file.
 
@@ -86,4 +86,16 @@ func IsPreventUnlock(r *http.Request) bool {
 		return v.(bool)
 	}
 	return false
+}
+
+func SetRequestID(r *http.Request, requestIDHeader, requestID string) {
+	context.Set(r, requestIDHeader, requestID)
+}
+
+func GetRequestID(r *http.Request, requestIDHeader string) string {
+	requestID := context.Get(r, requestIDHeader)
+	if requestID == nil {
+		return ""
+	}
+	return requestID.(string)
 }

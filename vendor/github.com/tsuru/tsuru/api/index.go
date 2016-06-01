@@ -1,4 +1,4 @@
-// Copyright 2015 tsuru authors. All rights reserved.
+// Copyright 2016 tsuru authors. All rights reserved.
 // Use of this source code is governed by a BSD-style
 // license that can be found in the LICENSE file.
 
@@ -12,6 +12,11 @@ import (
 	"github.com/tsuru/config"
 )
 
+// title: index
+// path: /
+// method: GET
+// responses:
+//   200: OK
 func index(w http.ResponseWriter, r *http.Request) error {
 	host, _ := config.GetString("host")
 	userCreate, _ := config.GetBool("auth:user-registration")

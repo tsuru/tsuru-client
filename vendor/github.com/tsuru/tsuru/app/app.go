@@ -35,8 +35,7 @@ var Provisioner provision.Provisioner
 var AuthScheme auth.Scheme
 
 var (
-	nameRegexp  = regexp.MustCompile(`^[a-z][a-z0-9-]{0,62}$`)
-	cnameRegexp = regexp.MustCompile(`^(\*\.)?[a-zA-Z0-9][\w-.]+$`)
+	nameRegexp = regexp.MustCompile(`^[a-z][a-z0-9-]{0,62}$`)
 
 	ErrAlreadyHaveAccess = stderr.New("team already have access to this app")
 	ErrNoAccess          = stderr.New("team does not have access to this app")
@@ -443,13 +442,25 @@ func (app *App) BindUnit(unit *provision.Unit) error {
 	if err != nil {
 		return err
 	}
-	for _, instance := range instances {
+	var i int
+	var instance service.ServiceInstance
+	for i, instance = range instances {
 		err = instance.BindUnit(app, unit)
 		if err != nil {
 			log.Errorf("Error binding the unit %s with the service instance %s: %s", unit.ID, instance.Name, err)
+			break
 		}
 	}
-	return nil
+	if err != nil {
+		for j := i - 1; j >= 0; j-- {
+			instance = instances[j]
+			rollbackErr := instance.UnbindUnit(app, unit)
+			if rollbackErr != nil {
+				log.Errorf("Error unbinding unit %s with the service instance %s during rollback: %s", unit.ID, instance.Name, rollbackErr)
+			}
+		}
+	}
+	return err
 }
 
 func (app *App) UnbindUnit(unit *provision.Unit) error {
@@ -1114,80 +1125,51 @@ func (app *App) unsetEnvsToApp(unsetEnvs bind.UnsetEnvApp, w io.Writer) error {
 	return Provisioner.Restart(app, "", w)
 }
 
+type rollbackFunc func(provision.App, string) error
+
+func (app *App) rollbackCNames(r rollbackFunc, cnames []string, mongoCommand string) {
+	conn, _ := db.Conn()
+	defer conn.Close()
+	for _, c := range cnames {
+		r(app, c)
+		conn.Apps().Update(
+			bson.M{"name": app.Name},
+			bson.M{mongoCommand: bson.M{"cname": c}},
+		)
+	}
+
+}
+
 // AddCName adds a CName to app. It updates the attribute,
 // calls the SetCName function on the provisioner and saves
 // the app in the database, returning an error when it cannot save the change
 // in the database or add the CName on the provisioner.
 func (app *App) AddCName(cnames ...string) error {
-	for _, cname := range cnames {
-		if !cnameRegexp.MatchString(cname) {
-			return stderr.New("Invalid cname")
-		}
-		if cnameExists(cname) {
-			return stderr.New("cname already exists!")
-		}
-		if s, ok := Provisioner.(provision.CNameManager); ok {
-			if err := s.SetCName(app, cname); err != nil {
-				return err
-			}
-		}
-		conn, err := db.Conn()
-		if err != nil {
-			return err
-		}
-		defer conn.Close()
-		app.CName = append(app.CName, cname)
-		err = conn.Apps().Update(
-			bson.M{"name": app.Name},
-			bson.M{"$push": bson.M{"cname": cname}},
-		)
-		if err != nil {
-			return err
-		}
+	actions := []*action.Action{
+		&validateNewCNames,
+		&setNewCNamesToProvisioner,
+		&saveCNames,
+		&updateApp,
+	}
+	err := action.NewPipeline(actions...).Execute(app, cnames)
+	if err != nil {
+		return err
 	}
 	return nil
 }
 
 func (app *App) RemoveCName(cnames ...string) error {
-	for _, cname := range cnames {
-		count := 0
-		for _, appCname := range app.CName {
-			if cname == appCname {
-				count += 1
-			}
-		}
-		if count == 0 {
-			return stderr.New("cname not exists!")
-		}
-		if s, ok := Provisioner.(provision.CNameManager); ok {
-			if err := s.UnsetCName(app, cname); err != nil {
-				return err
-			}
-		}
-		conn, err := db.Conn()
-		if err != nil {
-			return err
-		}
-		defer conn.Close()
-		err = conn.Apps().Update(
-			bson.M{"name": app.Name},
-			bson.M{"$pull": bson.M{"cname": cname}},
-		)
-		if err != nil {
-			return err
-		}
+	actions := []*action.Action{
+		&checkCNameExists,
+		&unsetCNameFromProvisioner,
+		&removeCNameFromDatabase,
+		&removeCNameFromApp,
+	}
+	err := action.NewPipeline(actions...).Execute(app, cnames)
+	if err != nil {
+		return err
 	}
 	return nil
-}
-
-func cnameExists(cname string) bool {
-	conn, _ := db.Conn()
-	defer conn.Close()
-	cnames, _ := conn.Apps().Find(bson.M{"cname": cname}).Count()
-	if cnames > 0 {
-		return true
-	}
-	return false
 }
 
 func (app *App) parsedTsuruServices() map[string][]bind.ServiceInstance {
@@ -1203,8 +1185,7 @@ func (app *App) parsedTsuruServices() map[string][]bind.ServiceInstance {
 //func (app *App) AddInstance(serviceName string, instance bind.ServiceInstance, shouldRestart bool, writer io.Writer) error {
 func (app *App) AddInstance(instanceApp bind.InstanceApp, writer io.Writer) error {
 	tsuruServices := app.parsedTsuruServices()
-	serviceInstances := tsuruServices[instanceApp.ServiceName]
-	serviceInstances = append(serviceInstances, instanceApp.Instance)
+	serviceInstances := appendOrUpdateServiceInstance(tsuruServices[instanceApp.ServiceName], instanceApp.Instance)
 	tsuruServices[instanceApp.ServiceName] = serviceInstances
 	servicesJson, err := json.Marshal(tsuruServices)
 	if err != nil {
@@ -1233,6 +1214,21 @@ func (app *App) AddInstance(instanceApp bind.InstanceApp, writer io.Writer) erro
 			PublicOnly:    false,
 			ShouldRestart: instanceApp.ShouldRestart,
 		}, writer)
+}
+
+func appendOrUpdateServiceInstance(services []bind.ServiceInstance, service bind.ServiceInstance) []bind.ServiceInstance {
+	serviceInstanceFound := false
+	for i, serviceInstance := range services {
+		if serviceInstance.Name == service.Name {
+			serviceInstanceFound = true
+			services[i] = service
+			break
+		}
+	}
+	if !serviceInstanceFound {
+		services = append(services, service)
+	}
+	return services
 }
 
 func findServiceEnv(tsuruServices map[string][]bind.ServiceInstance, name string) (string, string) {

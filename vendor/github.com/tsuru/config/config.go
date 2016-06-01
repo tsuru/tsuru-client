@@ -177,6 +177,9 @@ func Get(key string) (interface{}, error) {
 			return nil, fmt.Errorf("key %q not found", key)
 		}
 	}
+	if v, ok := conf.(func() interface{}); ok {
+		conf = v()
+	}
 	if v, ok := conf.(string); ok {
 		return os.ExpandEnv(v), nil
 	}

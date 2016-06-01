@@ -3,6 +3,9 @@ package redis
 import (
 	"errors"
 	"fmt"
+
+	"gopkg.in/redis.v3/internal"
+	"gopkg.in/redis.v3/internal/pool"
 )
 
 var errDiscard = errors.New("redis: Discard can be used only inside Exec")
@@ -38,7 +41,7 @@ func (c *Client) Multi() *Multi {
 	multi := &Multi{
 		base: &baseClient{
 			opt:      c.opt,
-			connPool: newStickyConnPool(c.connPool, true),
+			connPool: pool.NewStickyConnPool(c.connPool.(*pool.ConnPool), true),
 		},
 	}
 	multi.commandable.process = multi.process
@@ -57,7 +60,7 @@ func (c *Multi) process(cmd Cmder) {
 func (c *Multi) Close() error {
 	c.closed = true
 	if err := c.Unwatch().Err(); err != nil {
-		Logger.Printf("Unwatch failed: %s", err)
+		internal.Logf("Unwatch failed: %s", err)
 	}
 	return c.base.Close()
 }
@@ -107,7 +110,7 @@ func (c *Multi) Discard() error {
 // failed command or nil.
 func (c *Multi) Exec(f func() error) ([]Cmder, error) {
 	if c.closed {
-		return nil, errClosed
+		return nil, pool.ErrClosed
 	}
 
 	c.cmds = []Cmder{NewStatusCmd("MULTI")}
@@ -126,7 +129,7 @@ func (c *Multi) Exec(f func() error) ([]Cmder, error) {
 	// Strip MULTI and EXEC commands.
 	retCmds := cmds[1 : len(cmds)-1]
 
-	cn, _, err := c.base.conn()
+	cn, err := c.base.conn()
 	if err != nil {
 		setCmdsErr(retCmds, err)
 		return retCmds, err
@@ -137,8 +140,8 @@ func (c *Multi) Exec(f func() error) ([]Cmder, error) {
 	return retCmds, err
 }
 
-func (c *Multi) execCmds(cn *conn, cmds []Cmder) error {
-	err := cn.writeCmds(cmds...)
+func (c *Multi) execCmds(cn *pool.Conn, cmds []Cmder) error {
+	err := writeCmd(cn, cmds...)
 	if err != nil {
 		setCmdsErr(cmds[1:len(cmds)-1], err)
 		return err

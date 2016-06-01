@@ -8,6 +8,7 @@ import (
 	"errors"
 
 	"github.com/tsuru/tsuru/db"
+	"gopkg.in/mgo.v2"
 	"gopkg.in/mgo.v2/bson"
 )
 
@@ -22,6 +23,7 @@ var (
 	ErrPublicDefaultPollCantHaveTeams = errors.New("Public/Default pool can't have teams.")
 	ErrDefaultPoolAlreadyExists       = errors.New("Default pool already exists.")
 	ErrPoolNameIsRequired             = errors.New("Pool name is required.")
+	ErrPoolNotFound                   = errors.New("Pool does not exist.")
 )
 
 type AddPoolOptions struct {
@@ -75,7 +77,11 @@ func RemovePool(poolName string) error {
 		return err
 	}
 	defer conn.Close()
-	return conn.Pools().Remove(bson.M{"_id": poolName})
+	err = conn.Pools().Remove(bson.M{"_id": poolName})
+	if err == mgo.ErrNotFound {
+		return ErrPoolNotFound
+	}
+	return err
 }
 
 func AddTeamsToPool(poolName string, teams []string) error {
@@ -86,6 +92,9 @@ func AddTeamsToPool(poolName string, teams []string) error {
 	defer conn.Close()
 	var pool Pool
 	err = conn.Pools().Find(bson.M{"_id": poolName}).One(&pool)
+	if err == mgo.ErrNotFound {
+		return ErrPoolNotFound
+	}
 	if err != nil {
 		return err
 	}
@@ -108,7 +117,11 @@ func RemoveTeamsFromPool(poolName string, teams []string) error {
 		return err
 	}
 	defer conn.Close()
-	return conn.Pools().UpdateId(poolName, bson.M{"$pullAll": bson.M{"teams": teams}})
+	err = conn.Pools().UpdateId(poolName, bson.M{"$pullAll": bson.M{"teams": teams}})
+	if err == mgo.ErrNotFound {
+		return ErrPoolNotFound
+	}
+	return err
 }
 
 func ListPools(query bson.M) ([]Pool, error) {
@@ -137,5 +150,9 @@ func PoolUpdate(poolName string, query bson.M, forceDefault bool) error {
 			return err
 		}
 	}
-	return conn.Pools().UpdateId(poolName, bson.M{"$set": query})
+	err = conn.Pools().UpdateId(poolName, bson.M{"$set": query})
+	if err == mgo.ErrNotFound {
+		return ErrPoolNotFound
+	}
+	return err
 }

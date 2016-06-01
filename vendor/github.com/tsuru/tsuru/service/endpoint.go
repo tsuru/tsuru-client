@@ -16,6 +16,7 @@ import (
 	"regexp"
 	"strings"
 
+	"github.com/tsuru/config"
 	"github.com/tsuru/tsuru/app/bind"
 	"github.com/tsuru/tsuru/log"
 )
@@ -44,6 +45,15 @@ func (c *Client) buildErrorMessage(err error, resp *http.Response) string {
 }
 
 func (c *Client) issueRequest(path, method string, params map[string][]string) (*http.Response, error) {
+	var requestID string
+	requestIDs, ok := params["requestID"]
+	if ok {
+		requestID = ""
+		if len(requestIDs) > 0 {
+			requestID = requestIDs[0]
+		}
+		delete(params, "requestID")
+	}
 	v := url.Values(params)
 	var suffix string
 	var body io.Reader
@@ -60,6 +70,10 @@ func (c *Client) issueRequest(path, method string, params map[string][]string) (
 	}
 	req.Header.Add("Content-Type", "application/x-www-form-urlencoded")
 	req.Header.Add("Accept", "application/json")
+	requestIDHeader, err := config.GetString("request-id-header")
+	if err == nil && requestIDHeader != "" {
+		req.Header.Add(requestIDHeader, requestID)
+	}
 	req.SetBasicAuth(c.username, c.password)
 	req.Close = true
 	return http.DefaultClient.Do(req)
@@ -75,13 +89,14 @@ func (c *Client) jsonFromResponse(resp *http.Response, v interface{}) error {
 	return json.Unmarshal(body, &v)
 }
 
-func (c *Client) Create(instance *ServiceInstance, user string) error {
+func (c *Client) Create(instance *ServiceInstance, user, requestID string) error {
 	var err error
 	var resp *http.Response
 	params := map[string][]string{
-		"name": {instance.Name},
-		"user": {user},
-		"team": {instance.TeamOwner},
+		"name":      {instance.Name},
+		"user":      {user},
+		"team":      {instance.TeamOwner},
+		"requestID": {requestID},
 	}
 	if instance.PlanName != "" {
 		params["plan"] = []string{instance.PlanName}
@@ -101,9 +116,12 @@ func (c *Client) Create(instance *ServiceInstance, user string) error {
 	return errors.New(msg)
 }
 
-func (c *Client) Destroy(instance *ServiceInstance) error {
+func (c *Client) Destroy(instance *ServiceInstance, requestID string) error {
 	log.Debugf("Attempting to call destroy of service instance %q at %q api", instance.Name, instance.ServiceName)
-	resp, err := c.issueRequest("/resources/"+instance.GetIdentifier(), "DELETE", nil)
+	params := map[string][]string{
+		"requestID": {requestID},
+	}
+	resp, err := c.issueRequest("/resources/"+instance.GetIdentifier(), "DELETE", params)
 	if err == nil && resp.StatusCode > 299 {
 		if resp.StatusCode == http.StatusNotFound {
 			return ErrInstanceNotFoundInAPI
@@ -217,14 +235,17 @@ func (c *Client) UnbindUnit(instance *ServiceInstance, app bind.App, unit bind.U
 	return err
 }
 
-func (c *Client) Status(instance *ServiceInstance) (string, error) {
+func (c *Client) Status(instance *ServiceInstance, requestID string) (string, error) {
 	log.Debugf("Attempting to call status of service instance %q at %q api", instance.Name, instance.ServiceName)
 	var (
 		resp *http.Response
 		err  error
 	)
 	url := "/resources/" + instance.GetIdentifier() + "/status"
-	if resp, err = c.issueRequest(url, "GET", nil); err == nil {
+	params := map[string][]string{
+		"requestID": {requestID},
+	}
+	if resp, err = c.issueRequest(url, "GET", params); err == nil {
 		defer resp.Body.Close()
 		switch resp.StatusCode {
 		case http.StatusOK:
@@ -250,11 +271,14 @@ func (c *Client) Status(instance *ServiceInstance) (string, error) {
 // The api should be prepared to receive the request,
 // like below:
 // GET /resources/<name>
-func (c *Client) Info(instance *ServiceInstance) ([]map[string]string, error) {
+func (c *Client) Info(instance *ServiceInstance, requestID string) ([]map[string]string, error) {
 	log.Debugf("Attempting to call info of service instance %q at %q api", instance.Name, instance.ServiceName)
 	url := "/resources/" + instance.GetIdentifier()
-	resp, err := c.issueRequest(url, "GET", nil)
-	if err != nil || resp.StatusCode != 200 {
+	params := map[string][]string{
+		"requestID": {requestID},
+	}
+	resp, err := c.issueRequest(url, "GET", params)
+	if err != nil || resp.StatusCode != http.StatusOK {
 		return nil, err
 	}
 	result := []map[string]string{}
@@ -269,10 +293,13 @@ func (c *Client) Info(instance *ServiceInstance) ([]map[string]string, error) {
 // The api should be prepared to receive the request,
 // like below:
 // GET /resources/plans
-func (c *Client) Plans() ([]Plan, error) {
+func (c *Client) Plans(requestID string) ([]Plan, error) {
 	url := "/resources/plans"
-	resp, err := c.issueRequest(url, "GET", nil)
-	if err != nil || resp.StatusCode != 200 {
+	params := map[string][]string{
+		"requestID": {requestID},
+	}
+	resp, err := c.issueRequest(url, "GET", params)
+	if err != nil || resp.StatusCode != http.StatusOK {
 		return nil, err
 	}
 	result := []Plan{}
