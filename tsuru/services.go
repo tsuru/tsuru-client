@@ -13,6 +13,7 @@ import (
 	"net/http"
 	"net/url"
 	"sort"
+	"strconv"
 	"strings"
 
 	"github.com/tsuru/gnuflag"
@@ -188,15 +189,17 @@ func (sb *serviceInstanceBind) Run(ctx *cmd.Context, client *cmd.Client) error {
 	}
 	serviceName := ctx.Args[0]
 	instanceName := ctx.Args[1]
-	url, err := cmd.GetURL("/services/" + serviceName + "/instances/" + instanceName + "/" + appName)
+	u, err := cmd.GetURL("/services/" + serviceName + "/instances/" + instanceName + "/" + appName)
 	if err != nil {
 		return err
 	}
-	url += fmt.Sprintf("?noRestart=%t", sb.noRestart)
-	request, err := http.NewRequest("PUT", url, nil)
+	v := url.Values{}
+	v.Set("noRestart", strconv.FormatBool(sb.noRestart))
+	request, err := http.NewRequest("PUT", u, strings.NewReader(v.Encode()))
 	if err != nil {
 		return err
 	}
+	request.Header.Set("Content-Type", "application/x-www-form-urlencoded")
 	resp, err := client.Do(request)
 	if err != nil {
 		return err

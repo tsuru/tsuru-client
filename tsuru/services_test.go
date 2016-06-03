@@ -155,8 +155,10 @@ func (s *S) TestServiceBind(c *check.C) {
 		Transport: cmdtest.Transport{Message: string(result), Status: http.StatusOK},
 		CondFunc: func(req *http.Request) bool {
 			called = true
-			return req.Method == "PUT" && strings.HasSuffix(req.URL.Path, "/services/mysql/instances/my-mysql/g1") &&
-				req.URL.RawQuery == "noRestart=true"
+			method := req.Method == "PUT"
+			path := strings.HasSuffix(req.URL.Path, "/services/mysql/instances/my-mysql/g1")
+			noRestart := req.FormValue("noRestart") == "true"
+			return method && path && noRestart
 		},
 	}
 	client := cmd.NewClient(&http.Client{Transport: trans}, nil, manager)
@@ -189,8 +191,10 @@ func (s *S) TestServiceBindWithoutFlag(c *check.C) {
 		},
 		CondFunc: func(req *http.Request) bool {
 			called = true
-			return req.Method == "PUT" && strings.HasSuffix(req.URL.Path, "/services/mysql/instances/my-mysql/ge") &&
-				req.URL.RawQuery == "noRestart=false"
+			method := req.Method == "PUT"
+			path := strings.HasSuffix(req.URL.Path, "/services/mysql/instances/my-mysql/ge")
+			noRestart := req.FormValue("noRestart") == "false"
+			return method && path && noRestart
 		},
 	}
 	client := cmd.NewClient(&http.Client{Transport: trans}, nil, manager)
@@ -215,8 +219,10 @@ func (s *S) TestServiceBindWithoutEnvironmentVariables(c *check.C) {
 	trans := &cmdtest.ConditionalTransport{
 		Transport: cmdtest.Transport{Message: string(result), Status: http.StatusOK},
 		CondFunc: func(req *http.Request) bool {
-			return req.Method == "PUT" && strings.HasSuffix(req.URL.Path, "/services/mysql/instances/my-mysql/g1") &&
-				req.URL.RawQuery == "noRestart=false"
+			method := req.Method == "PUT"
+			path := strings.HasSuffix(req.URL.Path, "/services/mysql/instances/my-mysql/g1")
+			noRestart := req.FormValue("noRestart") == "false"
+			return method && path && noRestart
 		},
 	}
 	client := cmd.NewClient(&http.Client{Transport: trans}, nil, manager)
