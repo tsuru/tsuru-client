@@ -15,6 +15,7 @@ import (
 	"io/ioutil"
 	"mime/multipart"
 	"net/http"
+	"net/url"
 	"os"
 	"path"
 	"sort"
@@ -419,12 +420,14 @@ func (c *appDeployRollback) Run(context *cmd.Context, client *cmd.Client) error 
 	if !c.Confirm(context, fmt.Sprintf("Are you sure you want to rollback app %q to image %q?", appName, imgName)) {
 		return nil
 	}
-	url, err := cmd.GetURL(fmt.Sprintf("/apps/%s/deploy/rollback?origin=%s", appName, "rollback"))
+	u, err := cmd.GetURL(fmt.Sprintf("/apps/%s/deploy/rollback", appName))
 	if err != nil {
 		return err
 	}
-	body := strings.NewReader("image=" + imgName)
-	request, err := http.NewRequest("POST", url, body)
+	v := url.Values{}
+	v.Set("origin", "rollback")
+	v.Set("image", imgName)
+	request, err := http.NewRequest("POST", u, strings.NewReader(v.Encode()))
 	if err != nil {
 		return err
 	}

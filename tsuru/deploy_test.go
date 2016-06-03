@@ -423,9 +423,11 @@ func (s *S) TestAppDeployRollback(c *check.C) {
 		Transport: cmdtest.Transport{Message: string(result), Status: http.StatusOK},
 		CondFunc: func(req *http.Request) bool {
 			called = true
-			body, _ := ioutil.ReadAll(req.Body)
-			return strings.HasSuffix(req.URL.Path, "/apps/arrakis/deploy/rollback") &&
-				req.Method == "POST" && string(body) == "image=my-image" && req.URL.RawQuery == "origin=rollback"
+			method := req.Method == "POST"
+			path := strings.HasSuffix(req.URL.Path, "/apps/arrakis/deploy/rollback")
+			image := req.FormValue("image") == "my-image"
+			rollback := req.FormValue("origin") == "rollback"
+			return method && path && image && rollback
 		},
 	}
 	client := cmd.NewClient(&http.Client{Transport: trans}, nil, manager)
