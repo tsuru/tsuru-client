@@ -284,7 +284,7 @@ func (s *S) TestAppUpdate(c *check.C) {
 
 func (s *S) TestAppUpdateWithoutArgs(c *check.C) {
 	var stdout, stderr bytes.Buffer
-	expected := "Please use the -a/--app flag to specify which app you want to remove."
+	expected := "Please use the -a/--app flag to specify which app you want to update."
 	context := cmd.Context{
 		Stdout: &stdout,
 		Stderr: &stderr,

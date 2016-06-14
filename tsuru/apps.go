@@ -184,7 +184,7 @@ func (c *appUpdate) Run(context *cmd.Context, client *cmd.Client) error {
 	context.RawOutput()
 	appName := c.Flags().Lookup("app").Value.String()
 	if appName == "" {
-		return errors.New("Please use the -a/--app flag to specify which app you want to remove.")
+		return errors.New("Please use the -a/--app flag to specify which app you want to update.")
 	}
 	u, err := cmd.GetURL(fmt.Sprintf("/apps/%s", appName))
 	if err != nil {
