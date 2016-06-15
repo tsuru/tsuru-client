@@ -11,6 +11,7 @@ import (
 	"fmt"
 	"io"
 	"io/ioutil"
+	"net"
 	"net/http"
 	"net/url"
 	"sort"
@@ -309,23 +310,6 @@ func (c *appInfo) Run(context *cmd.Context, client *cmd.Client) error {
 	if err != nil {
 		return err
 	}
-	u, err = cmd.GetURL(fmt.Sprintf("/docker/node/apps/%s/containers", appName))
-	if err != nil {
-		return err
-	}
-	request, err = http.NewRequest("GET", u, nil)
-	if err != nil {
-		return err
-	}
-	response, err = client.Do(request)
-	var containersResult []byte
-	if err == nil {
-		defer response.Body.Close()
-		containersResult, err = ioutil.ReadAll(response.Body)
-		if err != nil {
-			return err
-		}
-	}
 	u, err = cmd.GetURL(fmt.Sprintf("/services/instances?app=%s", appName))
 	if err != nil {
 		return err
@@ -358,8 +342,7 @@ func (c *appInfo) Run(context *cmd.Context, client *cmd.Client) error {
 	if err != nil {
 		return err
 	}
-
-	return c.Show(result, containersResult, servicesResult, quota, context)
+	return c.Show(result, servicesResult, quota, context)
 }
 
 type unit struct {
@@ -367,6 +350,23 @@ type unit struct {
 	IP          string
 	Status      string
 	ProcessName string
+	Address     *url.URL
+}
+
+func (u *unit) Host() string {
+	if u.Address == nil {
+		return ""
+	}
+	host, _, _ := net.SplitHostPort(u.Address.Host)
+	return host
+}
+
+func (u *unit) Port() string {
+	if u.Address == nil {
+		return ""
+	}
+	_, port, _ := net.SplitHostPort(u.Address.Host)
+	return port
 }
 
 func (u *unit) Available() bool {
@@ -402,7 +402,6 @@ type app struct {
 	Pool        string
 	Description string
 	Lock        lock
-	containers  []container
 	services    []serviceData
 	Quota       quota
 	Plan        tsuruapp.Plan
@@ -412,19 +411,6 @@ type serviceData struct {
 	Service   string
 	Instances []string
 	Plans     []string
-}
-
-type container struct {
-	ID               string
-	Type             string
-	IP               string
-	HostAddr         string
-	HostPort         string
-	SSHHostPort      string
-	Status           string
-	Version          string
-	Image            string
-	LastStatusUpdate time.Time
 }
 
 type quota struct {
@@ -470,18 +456,7 @@ Quota: {{.Quota.InUse}}/{{if .Quota.Limit}}{{.Quota.Limit}} units{{else}}unlimit
 		processes = append(processes, process)
 	}
 	sort.Strings(processes)
-	titles := []string{"Unit", "State"}
-	contMap := map[string]container{}
-	if len(a.containers) > 0 {
-		for _, cont := range a.containers {
-			id := cont.ID
-			if len(cont.ID) > 12 {
-				id = id[:12]
-			}
-			contMap[id] = cont
-		}
-		titles = append(titles, []string{"Host", "Port"}...)
-	}
+	titles := []string{"Unit", "State", "Host", "Port"}
 	for _, process := range processes {
 		units := unitsByProcess[process]
 		unitsTable := cmd.NewTable()
@@ -494,17 +469,11 @@ Quota: {{.Quota.InUse}}/{{if .Quota.Limit}}{{.Quota.Limit}} units{{else}}unlimit
 			if len(unit.ID) > 12 {
 				id = id[:12]
 			}
-			row := []string{id, unit.Status}
-			cont, ok := contMap[id]
-			if ok {
-				row = append(row, []string{cont.HostAddr, cont.HostPort}...)
-			}
+			row := []string{id, unit.Status, unit.Host(), unit.Port()}
 			unitsTable.AddRow(cmd.Row(row))
 		}
 		if unitsTable.Rows() > 0 {
-			if len(a.containers) > 0 {
-				unitsTable.SortByColumn(2)
-			}
+			unitsTable.SortByColumn(2)
 			buf.WriteString("\n")
 			processStr := ""
 			if process != "" {
@@ -546,13 +515,12 @@ Quota: {{.Quota.InUse}}/{{if .Quota.Limit}}{{.Quota.Limit}} units{{else}}unlimit
 	return tplBuffer.String() + buf.String()
 }
 
-func (c *appInfo) Show(result []byte, containersResult []byte, servicesResult []byte, quota []byte, context *cmd.Context) error {
+func (c *appInfo) Show(result []byte, servicesResult []byte, quota []byte, context *cmd.Context) error {
 	var a app
 	err := json.Unmarshal(result, &a)
 	if err != nil {
 		return err
 	}
-	json.Unmarshal(containersResult, &a.containers)
 	json.Unmarshal(servicesResult, &a.services)
 	json.Unmarshal(quota, &a.Quota)
 	fmt.Fprintln(context.Stdout, &a)

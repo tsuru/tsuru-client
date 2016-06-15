@@ -479,7 +479,7 @@ func (s *S) TestAppRemoveInfo(c *check.C) {
 
 func (s *S) TestAppInfo(c *check.C) {
 	var stdout, stderr bytes.Buffer
-	result := `{"name":"app1","teamowner":"myteam","cname":[""],"ip":"myapp.tsuru.io","platform":"php","repository":"git@git.com:php.git","state":"dead", "units":[{"Ip":"10.10.10.10","ID":"app1/0","Status":"started"}, {"Ip":"9.9.9.9","ID":"app1/1","Status":"started"}, {"Ip":"","ID":"app1/2","Status":"pending"}],"teams":["tsuruteam","crane"], "owner": "myapp_owner", "deploys": 7}`
+	result := `{"name":"app1","teamowner":"myteam","cname":[""],"ip":"myapp.tsuru.io","platform":"php","repository":"git@git.com:php.git","state":"dead", "units":[{"Ip":"10.10.10.10","ID":"app1/0","Status":"started","Address":{"Host": "10.8.7.6:3333"}}, {"Ip":"9.9.9.9","ID":"app1/1","Status":"started","Address":{"Host": "10.8.7.6:3323"}}, {"Ip":"","ID":"app1/2","Status":"pending"}],"teams":["tsuruteam","crane"], "owner": "myapp_owner", "deploys": 7}`
 	expected := `Application: app1
 Description:
 Repository: git@git.com:php.git
@@ -493,13 +493,13 @@ Pool:
 Quota: 0/unlimited
 
 Units: 3
-+--------+---------+
-| Unit   | State   |
-+--------+---------+
-| app1/0 | started |
-| app1/1 | started |
-| app1/2 | pending |
-+--------+---------+
++--------+---------+----------+------+
+| Unit   | State   | Host     | Port |
++--------+---------+----------+------+
+| app1/2 | pending |          |      |
+| app1/0 | started | 10.8.7.6 | 3333 |
+| app1/1 | started | 10.8.7.6 | 3323 |
++--------+---------+----------+------+
 
 `
 	context := cmd.Context{
@@ -530,13 +530,13 @@ Pool:
 Quota: 0/unlimited
 
 Units: 3
-+--------+---------+
-| Unit   | State   |
-+--------+---------+
-| app1/0 | started |
-| app1/1 | started |
-| app1/2 | pending |
-+--------+---------+
++--------+---------+------+------+
+| Unit   | State   | Host | Port |
++--------+---------+------+------+
+| app1/0 | started |      |      |
+| app1/1 | started |      |      |
+| app1/2 | pending |      |      |
++--------+---------+------+------+
 
 `
 	context := cmd.Context{
@@ -572,13 +572,13 @@ Pool:
 Quota: 3/40 units
 
 Units: 3
-+--------+---------+
-| Unit   | State   |
-+--------+---------+
-| app1/0 | started |
-| app1/1 | started |
-| app1/2 | pending |
-+--------+---------+
++--------+---------+------+------+
+| Unit   | State   | Host | Port |
++--------+---------+------+------+
+| app1/0 | started |      |      |
+| app1/1 | started |      |      |
+| app1/2 | pending |      |      |
++--------+---------+------+------+
 
 `
 	context := cmd.Context{
@@ -625,13 +625,13 @@ Lock:
 Quota: 0/unlimited
 
 Units: 3
-+--------+---------+
-| Unit   | State   |
-+--------+---------+
-| app1/0 | started |
-| app1/1 | started |
-| app1/2 | pending |
-+--------+---------+
++--------+---------+------+------+
+| Unit   | State   | Host | Port |
++--------+---------+------+------+
+| app1/0 | started |      |      |
+| app1/1 | started |      |      |
+| app1/2 | pending |      |      |
++--------+---------+------+------+
 
 `
 	expected = fmt.Sprintf(expected, time.Date(2012, time.April, 1, 10, 32, 0, 0, time.UTC))
@@ -699,19 +699,19 @@ Pool:
 Quota: 0/unlimited
 
 Units [web]: 1
-+--------+---------+
-| Unit   | State   |
-+--------+---------+
-| app1/0 | started |
-+--------+---------+
++--------+---------+------+------+
+| Unit   | State   | Host | Port |
++--------+---------+------+------+
+| app1/0 | started |      |      |
++--------+---------+------+------+
 
 Units [worker]: 2
-+--------+---------+
-| Unit   | State   |
-+--------+---------+
-| app1/1 | started |
-| app1/2 | pending |
-+--------+---------+
++--------+---------+------+------+
+| Unit   | State   | Host | Port |
++--------+---------+------+------+
+| app1/1 | started |      |      |
+| app1/2 | pending |      |      |
++--------+---------+------+------+
 
 `
 	context := cmd.Context{
@@ -798,12 +798,12 @@ Pool:
 Quota: 0/unlimited
 
 Units: 2
-+----------+---------+
-| Unit     | State   |
-+----------+---------+
-| secret/0 | started |
-| secret/1 | pending |
-+----------+---------+
++----------+---------+------+------+
+| Unit     | State   | Host | Port |
++----------+---------+------+------+
+| secret/0 | started |      |      |
+| secret/1 | pending |      |      |
++----------+---------+------+------+
 
 `
 	context := cmd.Context{
@@ -842,13 +842,13 @@ Pool:
 Quota: 0/unlimited
 
 Units: 3
-+--------+---------+
-| Unit   | State   |
-+--------+---------+
-| app1/0 | started |
-| app1/1 | started |
-| app1/2 | pending |
-+--------+---------+
++--------+---------+------+------+
+| Unit   | State   | Host | Port |
++--------+---------+------+------+
+| app1/0 | started |      |      |
+| app1/1 | started |      |      |
+| app1/2 | pending |      |      |
++--------+---------+------+------+
 
 `
 	context := cmd.Context{
@@ -878,13 +878,13 @@ Pool:
 Quota: 0/unlimited
 
 Units: 3
-+--------+---------+
-| Unit   | State   |
-+--------+---------+
-| app1/0 | started |
-| app1/1 | started |
-| app1/2 | pending |
-+--------+---------+
++--------+---------+------+------+
+| Unit   | State   | Host | Port |
++--------+---------+------+------+
+| app1/0 | started |      |      |
+| app1/1 | started |      |      |
+| app1/2 | pending |      |      |
++--------+---------+------+------+
 
 Service instances: 1
 +----------+-----------------+
@@ -934,13 +934,13 @@ Pool:
 Quota: 0/unlimited
 
 Units: 3
-+--------+---------+
-| Unit   | State   |
-+--------+---------+
-| app1/0 | started |
-| app1/1 | started |
-| app1/2 | pending |
-+--------+---------+
++--------+---------+------+------+
+| Unit   | State   | Host | Port |
++--------+---------+------+------+
+| app1/0 | started |      |      |
+| app1/1 | started |      |      |
+| app1/2 | pending |      |      |
++--------+---------+------+------+
 
 Service instances: 2
 +----------+-----------------+
@@ -993,13 +993,13 @@ Pool:
 Quota: 0/unlimited
 
 Units: 3
-+--------+---------+
-| Unit   | State   |
-+--------+---------+
-| app1/0 | started |
-| app1/1 | started |
-| app1/2 | pending |
-+--------+---------+
++--------+---------+------+------+
+| Unit   | State   | Host | Port |
++--------+---------+------+------+
+| app1/0 | started |      |      |
+| app1/1 | started |      |      |
+| app1/2 | pending |      |      |
++--------+---------+------+------+
 
 App Plan:
 +------+-----------+-----------+-----------+---------+---------+
@@ -1036,13 +1036,13 @@ Pool:
 Quota: 0/unlimited
 
 Units: 3
-+--------+---------+
-| Unit   | State   |
-+--------+---------+
-| app1/0 | started |
-| app1/1 | started |
-| app1/2 | pending |
-+--------+---------+
++--------+---------+------+------+
+| Unit   | State   | Host | Port |
++--------+---------+------+------+
+| app1/0 | started |      |      |
+| app1/1 | started |      |      |
+| app1/2 | pending |      |      |
++--------+---------+------+------+
 
 Service instances: 1
 +----------+-----------------+
@@ -1099,13 +1099,13 @@ Pool:
 Quota: 0/unlimited
 
 Units: 3
-+--------+---------+
-| Unit   | State   |
-+--------+---------+
-| app1/0 | started |
-| app1/1 | started |
-| app1/2 | pending |
-+--------+---------+
++--------+---------+------+------+
+| Unit   | State   | Host | Port |
++--------+---------+------+------+
+| app1/0 | started |      |      |
+| app1/1 | started |      |      |
+| app1/2 | pending |      |      |
++--------+---------+------+------+
 
 Service instances: 1
 +----------+-------------------+
@@ -1729,6 +1729,33 @@ func (s *S) TestAppStartWithoutTheFlag(c *check.C) {
 
 func (s *S) TestAppStartIsAFlaggedCommand(c *check.C) {
 	var _ cmd.FlaggedCommand = &appStart{}
+}
+
+func (s *S) TestUnitPort(c *check.C) {
+	var tests = []struct {
+		unit *unit
+		port string
+	}{
+		{&unit{Address: &url.URL{Host: "localhost:4040"}}, "4040"},
+		{&unit{Address: &url.URL{Host: "localhost"}}, ""},
+		{&unit{}, ""},
+	}
+	for _, t := range tests {
+		c.Check(t.unit.Port(), check.Equals, t.port)
+	}
+}
+
+func (s *S) TestUnitHost(c *check.C) {
+	var tests = []struct {
+		unit *unit
+		host string
+	}{
+		{&unit{Address: &url.URL{Host: "localhost:4040"}}, "localhost"},
+		{&unit{}, ""},
+	}
+	for _, t := range tests {
+		c.Check(t.unit.Host(), check.Equals, t.host)
+	}
 }
 
 func (s *S) TestUnitAvailable(c *check.C) {
