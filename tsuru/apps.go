@@ -9,7 +9,6 @@ import (
 	"encoding/json"
 	"errors"
 	"fmt"
-	"io"
 	"io/ioutil"
 	"net"
 	"net/http"
@@ -770,24 +769,21 @@ func (c *appStop) Run(context *cmd.Context, client *cmd.Client) error {
 	if err != nil {
 		return err
 	}
-	u, err := cmd.GetURL(fmt.Sprintf("/apps/%s/stop?process=%s", appName, c.process))
+	u, err := cmd.GetURL(fmt.Sprintf("/apps/%s/stop", appName))
 	if err != nil {
 		return err
 	}
-	request, err := http.NewRequest("POST", u, nil)
+	body := strings.NewReader("process=" + c.process)
+	request, err := http.NewRequest("POST", u, body)
 	if err != nil {
 		return err
 	}
+	request.Header.Set("Content-Type", "application/x-www-form-urlencoded")
 	response, err := client.Do(request)
 	if err != nil {
 		return err
 	}
-	defer response.Body.Close()
-	_, err = io.Copy(context.Stdout, response.Body)
-	if err != nil {
-		return err
-	}
-	return nil
+	return cmd.StreamJSONResponse(context.Stdout, response)
 }
 
 func (c *appStop) Flags() *gnuflag.FlagSet {
@@ -820,24 +816,21 @@ func (c *appStart) Run(context *cmd.Context, client *cmd.Client) error {
 	if err != nil {
 		return err
 	}
-	u, err := cmd.GetURL(fmt.Sprintf("/apps/%s/start?process=%s", appName, c.process))
+	u, err := cmd.GetURL(fmt.Sprintf("/apps/%s/start", appName))
 	if err != nil {
 		return err
 	}
-	request, err := http.NewRequest("POST", u, nil)
+	body := strings.NewReader("process=" + c.process)
+	request, err := http.NewRequest("POST", u, body)
 	if err != nil {
 		return err
 	}
+	request.Header.Set("Content-Type", "application/x-www-form-urlencoded")
 	response, err := client.Do(request)
 	if err != nil {
 		return err
 	}
-	defer response.Body.Close()
-	_, err = io.Copy(context.Stdout, response.Body)
-	if err != nil {
-		return err
-	}
-	return nil
+	return cmd.StreamJSONResponse(context.Stdout, response)
 }
 
 func (c *appStart) Flags() *gnuflag.FlagSet {
@@ -861,14 +854,16 @@ func (c *appRestart) Run(context *cmd.Context, client *cmd.Client) error {
 	if err != nil {
 		return err
 	}
-	u, err := cmd.GetURL(fmt.Sprintf("/apps/%s/restart?process=%s", appName, c.process))
+	u, err := cmd.GetURL(fmt.Sprintf("/apps/%s/restart", appName))
 	if err != nil {
 		return err
 	}
-	request, err := http.NewRequest("POST", u, nil)
+	body := strings.NewReader("process=" + c.process)
+	request, err := http.NewRequest("POST", u, body)
 	if err != nil {
 		return err
 	}
+	request.Header.Set("Content-Type", "application/x-www-form-urlencoded")
 	response, err := client.Do(request)
 	if err != nil {
 		return err

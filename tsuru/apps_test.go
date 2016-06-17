@@ -1476,7 +1476,7 @@ func (s *S) TestAppRestart(c *check.C) {
 		Transport: cmdtest.Transport{Message: string(result), Status: http.StatusOK},
 		CondFunc: func(req *http.Request) bool {
 			called = true
-			c.Assert(req.URL.Query().Get("process"), check.Equals, "web")
+			c.Assert(req.FormValue("process"), check.Equals, "web")
 			return strings.HasSuffix(req.URL.Path, "/apps/handful_of_nothing/restart") && req.Method == "POST"
 		},
 	}
@@ -1684,21 +1684,25 @@ func (s *S) TestAppStart(c *check.C) {
 		Stdout: &stdout,
 		Stderr: &stderr,
 	}
+	expectedOut := "-- started --"
+	msg := io.SimpleJsonMessage{Message: expectedOut}
+	result, err := json.Marshal(msg)
+	c.Assert(err, check.IsNil)
 	trans := &cmdtest.ConditionalTransport{
-		Transport: cmdtest.Transport{Message: "Started", Status: http.StatusOK},
+		Transport: cmdtest.Transport{Message: string(result), Status: http.StatusOK},
 		CondFunc: func(req *http.Request) bool {
 			called = true
-			c.Assert(req.URL.Query().Get("process"), check.Equals, "worker")
+			c.Assert(req.FormValue("process"), check.Equals, "worker")
 			return strings.HasSuffix(req.URL.Path, "/apps/handful_of_nothing/start") && req.Method == "POST"
 		},
 	}
 	client := cmd.NewClient(&http.Client{Transport: trans}, nil, manager)
 	command := appStart{}
 	command.Flags().Parse(true, []string{"--app", "handful_of_nothing", "--process", "worker"})
-	err := command.Run(&context, client)
+	err = command.Run(&context, client)
 	c.Assert(err, check.IsNil)
 	c.Assert(called, check.Equals, true)
-	c.Assert(stdout.String(), check.Equals, "Started")
+	c.Assert(stdout.String(), check.Equals, expectedOut)
 }
 
 func (s *S) TestAppStartWithoutTheFlag(c *check.C) {
@@ -1710,8 +1714,12 @@ func (s *S) TestAppStartWithoutTheFlag(c *check.C) {
 		Stdout: &stdout,
 		Stderr: &stderr,
 	}
+	expectedOut := "-- started --"
+	msg := io.SimpleJsonMessage{Message: expectedOut}
+	result, err := json.Marshal(msg)
+	c.Assert(err, check.IsNil)
 	trans := &cmdtest.ConditionalTransport{
-		Transport: cmdtest.Transport{Message: "Started", Status: http.StatusOK},
+		Transport: cmdtest.Transport{Message: string(result), Status: http.StatusOK},
 		CondFunc: func(req *http.Request) bool {
 			called = true
 			return strings.HasSuffix(req.URL.Path, "/apps/motorbreath/start") && req.Method == "POST"
@@ -1721,10 +1729,10 @@ func (s *S) TestAppStartWithoutTheFlag(c *check.C) {
 	fake := &cmdtest.FakeGuesser{Name: "motorbreath"}
 	command := appStart{GuessingCommand: cmd.GuessingCommand{G: fake}}
 	command.Flags().Parse(true, nil)
-	err := command.Run(&context, client)
+	err = command.Run(&context, client)
 	c.Assert(err, check.IsNil)
 	c.Assert(called, check.Equals, true)
-	c.Assert(stdout.String(), check.Equals, "Started")
+	c.Assert(stdout.String(), check.Equals, expectedOut)
 }
 
 func (s *S) TestAppStartIsAFlaggedCommand(c *check.C) {
@@ -1778,21 +1786,25 @@ func (s *S) TestAppStop(c *check.C) {
 		Stdout: &stdout,
 		Stderr: &stderr,
 	}
+	expectedOut := "-- stopped --"
+	msg := io.SimpleJsonMessage{Message: expectedOut}
+	result, err := json.Marshal(msg)
+	c.Assert(err, check.IsNil)
 	trans := &cmdtest.ConditionalTransport{
-		Transport: cmdtest.Transport{Message: "Stopped", Status: http.StatusOK},
+		Transport: cmdtest.Transport{Message: string(result), Status: http.StatusOK},
 		CondFunc: func(req *http.Request) bool {
 			called = true
-			c.Assert(req.URL.Query().Get("process"), check.Equals, "worker")
+			c.Assert(req.FormValue("process"), check.Equals, "worker")
 			return strings.HasSuffix(req.URL.Path, "/apps/handful_of_nothing/stop") && req.Method == "POST"
 		},
 	}
 	client := cmd.NewClient(&http.Client{Transport: trans}, nil, manager)
 	command := appStop{}
 	command.Flags().Parse(true, []string{"--app", "handful_of_nothing", "--process", "worker"})
-	err := command.Run(&context, client)
+	err = command.Run(&context, client)
 	c.Assert(err, check.IsNil)
 	c.Assert(called, check.Equals, true)
-	c.Assert(stdout.String(), check.Equals, "Stopped")
+	c.Assert(stdout.String(), check.Equals, expectedOut)
 }
 
 func (s *S) TestAppStopWithoutTheFlag(c *check.C) {
@@ -1804,8 +1816,12 @@ func (s *S) TestAppStopWithoutTheFlag(c *check.C) {
 		Stdout: &stdout,
 		Stderr: &stderr,
 	}
+	expectedOut := "-- stopped --"
+	msg := io.SimpleJsonMessage{Message: expectedOut}
+	result, err := json.Marshal(msg)
+	c.Assert(err, check.IsNil)
 	trans := &cmdtest.ConditionalTransport{
-		Transport: cmdtest.Transport{Message: "Stopped", Status: http.StatusOK},
+		Transport: cmdtest.Transport{Message: string(result), Status: http.StatusOK},
 		CondFunc: func(req *http.Request) bool {
 			called = true
 			return strings.HasSuffix(req.URL.Path, "/apps/motorbreath/stop") && req.Method == "POST"
@@ -1815,10 +1831,10 @@ func (s *S) TestAppStopWithoutTheFlag(c *check.C) {
 	fake := &cmdtest.FakeGuesser{Name: "motorbreath"}
 	command := appStop{GuessingCommand: cmd.GuessingCommand{G: fake}}
 	command.Flags().Parse(true, nil)
-	err := command.Run(&context, client)
+	err = command.Run(&context, client)
 	c.Assert(err, check.IsNil)
 	c.Assert(called, check.Equals, true)
-	c.Assert(stdout.String(), check.Equals, "Stopped")
+	c.Assert(stdout.String(), check.Equals, expectedOut)
 }
 
 func (s *S) TestAppStopIsAFlaggedCommand(c *check.C) {
