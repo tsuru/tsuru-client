@@ -28,14 +28,11 @@ release:
 
 	@echo "$(version) released!"
 
-requirements: requirements.txt
-	@pip install -r $<
+doc-requirements:
+	@pip install -r requirements.txt
 
 docs-clean:
 	@rm -rf ./docs/build
-
-docs-requirements:
-	@pip install -r docs/requirements.txt
 
 doc: docs-clean docs-requirements
 	@tsuru_sphinx tsuru docs/ && cd docs && make html SPHINXOPTS="-N -W"
