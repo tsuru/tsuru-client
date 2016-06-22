@@ -174,6 +174,42 @@ Your repository for "ble" project is "git@tsuru.plataformas.glb.com:ble.git"` + 
 	c.Assert(stdout.String(), check.Equals, expected)
 }
 
+func (s *S) TestAppCreateRouterOpts(c *check.C) {
+	var stdout, stderr bytes.Buffer
+	result := `{"status":"success", "repository_url":"git@tsuru.plataformas.glb.com:ble.git"}`
+	expected := `App "ble" has been created!
+Use app-info to check the status of the app and its units.
+Your repository for "ble" project is "git@tsuru.plataformas.glb.com:ble.git"` + "\n"
+	context := cmd.Context{
+		Args:   []string{"ble", "django"},
+		Stdout: &stdout,
+		Stderr: &stderr,
+	}
+	trans := cmdtest.ConditionalTransport{
+		Transport: cmdtest.Transport{Message: result, Status: http.StatusOK},
+		CondFunc: func(r *http.Request) bool {
+			name := r.FormValue("name") == "ble"
+			platform := r.FormValue("platform") == "django"
+			teamowner := r.FormValue("teamowner") == ""
+			plan := r.FormValue("plan") == ""
+			pool := r.FormValue("pool") == ""
+			description := r.FormValue("description") == ""
+			c.Assert(r.FormValue("routeropts.a"), check.Equals, "1")
+			c.Assert(r.FormValue("routeropts.b"), check.Equals, "2")
+			method := r.Method == "POST"
+			url := strings.HasSuffix(r.URL.Path, "/apps")
+			contentType := r.Header.Get("Content-Type") == "application/x-www-form-urlencoded"
+			return method && url && name && platform && teamowner && plan && pool && description && contentType
+		},
+	}
+	client := cmd.NewClient(&http.Client{Transport: &trans}, nil, manager)
+	command := appCreate{}
+	command.Flags().Parse(true, []string{"--router-opts", "a=1", "--router-opts", "b=2"})
+	err := command.Run(&context, client)
+	c.Assert(err, check.IsNil)
+	c.Assert(stdout.String(), check.Equals, expected)
+}
+
 func (s *S) TestAppCreateNoRepository(c *check.C) {
 	var stdout, stderr bytes.Buffer
 	result := `{"status":"success"}`

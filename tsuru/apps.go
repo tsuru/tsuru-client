@@ -18,6 +18,7 @@ import (
 	"text/template"
 	"time"
 
+	"github.com/cezarsa/form"
 	"github.com/tsuru/gnuflag"
 	tsuruapp "github.com/tsuru/tsuru/app"
 	"github.com/tsuru/tsuru/cmd"
@@ -29,13 +30,14 @@ type appCreate struct {
 	plan        string
 	pool        string
 	description string
+	routerOpts  cmd.MapFlag
 	fs          *gnuflag.FlagSet
 }
 
 func (c *appCreate) Info() *cmd.Info {
 	return &cmd.Info{
 		Name:  "app-create",
-		Usage: "app-create <appname> <platform> [--plan/-p plan_name] [--team/-t (team owner)] [--pool/-o pool_name] [--description/-d description]",
+		Usage: "app-create <appname> <platform> [--plan/-p plan_name] [--team/-t (team owner)] [--pool/-o pool_name] [--description/-d description] [--router-opts key=value]...",
 		Desc: `Creates a new app using the given name and platform. For tsuru,
 a platform is provisioner dependent. To check the available platforms, use the
 command [[tsuru platform-list]] and to add a platform use the command [[tsuru-admin platform-add]].
@@ -65,7 +67,11 @@ This is only needed if you have more than one pool associated with your teams.
 
 The [[--description]] parameter sets a description for your app.
 It is an optional parameter, and if its not set the app will only not have a
-description associated.`,
+description associated.
+
+The [[--router-opts]] parameter allow passing custom parameters to the router
+used by the application's plan. The key and values used depends on the router
+implementation.`,
 		MinArgs: 2,
 	}
 }
@@ -85,6 +91,7 @@ func (c *appCreate) Flags() *gnuflag.FlagSet {
 		descriptionMessage := "App description"
 		c.fs.StringVar(&c.description, "description", "", descriptionMessage)
 		c.fs.StringVar(&c.description, "d", "", descriptionMessage)
+		c.fs.Var(&c.routerOpts, "router-opts", "Router options")
 	}
 	return c.fs
 }
@@ -92,7 +99,10 @@ func (c *appCreate) Flags() *gnuflag.FlagSet {
 func (c *appCreate) Run(context *cmd.Context, client *cmd.Client) error {
 	appName := context.Args[0]
 	platform := context.Args[1]
-	v := url.Values{}
+	v, err := form.EncodeToValues(map[string]interface{}{"routeropts": c.routerOpts})
+	if err != nil {
+		return err
+	}
 	v.Set("name", appName)
 	v.Set("platform", platform)
 	v.Set("plan", c.plan)
