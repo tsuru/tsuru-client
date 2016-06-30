@@ -7,6 +7,7 @@ package main
 import (
 	"os"
 
+	"github.com/tsuru/tsuru-client/tsuru/platform"
 	"github.com/tsuru/tsuru/cmd"
 )
 
@@ -61,7 +62,8 @@ func buildManager(name string) *cmd.Manager {
 	m.RegisterRemoved("service-bind", "You should use `tsuru service-instance-bind` instead.")
 	m.Register(&serviceInstanceUnbind{})
 	m.RegisterRemoved("service-unbind", "You should use `tsuru service-instance-unbind` instead.")
-	m.Register(platformList{})
+	m.Register(&platform.PlatformList{})
+	m.Register(&platform.PlatformAdd{})
 	m.Register(&pluginInstall{})
 	m.Register(&pluginRemove{})
 	m.Register(&pluginList{})
