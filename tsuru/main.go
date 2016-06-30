@@ -99,6 +99,8 @@ func buildManager(name string) *cmd.Manager {
 	m.Register(&roleDefaultAdd{})
 	m.Register(&roleDefaultList{})
 	m.Register(&roleDefaultRemove{})
+	m.Register(&install{})
+	m.Register(&uninstall{})
 	return m
 }
 

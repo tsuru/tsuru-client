@@ -1,3 +1,4 @@
 tsuru/tsuru
 docs/build
 *.pyc
+*.pem
