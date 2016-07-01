@@ -9,6 +9,8 @@ import (
 
 	"github.com/tsuru/tsuru-client/tsuru/platform"
 	"github.com/tsuru/tsuru/cmd"
+	"github.com/tsuru/tsuru/provision"
+	_ "github.com/tsuru/tsuru/provision/docker"
 )
 
 const (
@@ -103,7 +105,20 @@ func buildManager(name string) *cmd.Manager {
 	m.Register(&roleDefaultRemove{})
 	m.Register(&install{})
 	m.Register(&uninstall{})
+	registerProvisionersCommands(m)
 	return m
+}
+
+func registerProvisionersCommands(m *cmd.Manager) {
+	provisioners := provision.Registry()
+	for _, p := range provisioners {
+		if c, ok := p.(cmd.AdminCommandable); ok {
+			commands := c.AdminCommands()
+			for _, cmd := range commands {
+				m.Register(cmd)
+			}
+		}
+	}
 }
 
 func main() {
