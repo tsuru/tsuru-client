@@ -9,13 +9,12 @@ import (
 
 	"github.com/tsuru/gnuflag"
 	"github.com/tsuru/tsuru-client/tsuru/installer"
-	"github.com/tsuru/tsuru-client/tsuru/installer/iaas"
-	_ "github.com/tsuru/tsuru-client/tsuru/installer/iaas/dockermachine"
 	"github.com/tsuru/tsuru/cmd"
 )
 
 type install struct {
-	fs *gnuflag.FlagSet
+	fs         *gnuflag.FlagSet
+	driverName string
 }
 
 func (c *install) Info() *cmd.Info {
@@ -27,9 +26,22 @@ func (c *install) Info() *cmd.Info {
 	}
 }
 
+func (c *install) Flags() *gnuflag.FlagSet {
+	if c.fs == nil {
+		c.fs = gnuflag.NewFlagSet("install", gnuflag.ExitOnError)
+		c.fs.StringVar(&c.driverName, "driver", "virtualbox", "IaaS driver")
+		c.fs.StringVar(&c.driverName, "d", "virtualbox", "IaaS driver")
+	}
+	return c.fs
+}
+
 func (c *install) Run(context *cmd.Context, client *cmd.Client) error {
 	fmt.Println("Creating machine")
-	i := iaas.Get("docker-machine")
+	i, err := installer.NewDockerMachine(c.driverName)
+	if err != nil {
+		fmt.Printf("Failed to create machine: %s\n", err)
+		return err
+	}
 	m, err := i.CreateMachine(nil)
 	if err != nil {
 		fmt.Println("Error creating machine")
@@ -49,7 +61,8 @@ func (c *install) Run(context *cmd.Context, client *cmd.Client) error {
 }
 
 type uninstall struct {
-	fs *gnuflag.FlagSet
+	fs         *gnuflag.FlagSet
+	driverName string
 }
 
 func (c *uninstall) Info() *cmd.Info {
@@ -61,9 +74,22 @@ func (c *uninstall) Info() *cmd.Info {
 	}
 }
 
+func (c *uninstall) Flags() *gnuflag.FlagSet {
+	if c.fs == nil {
+		c.fs = gnuflag.NewFlagSet("uninstall", gnuflag.ExitOnError)
+		c.fs.StringVar(&c.driverName, "driver", "virtualbox", "IaaS driver")
+		c.fs.StringVar(&c.driverName, "d", "virtualbox", "IaaS driver")
+	}
+	return c.fs
+}
+
 func (c *uninstall) Run(context *cmd.Context, client *cmd.Client) error {
-	i := iaas.Get("docker-machine")
-	err := i.DeleteMachine(&iaas.Machine{})
+	d, err := installer.NewDockerMachine(c.driverName)
+	if err != nil {
+		fmt.Printf("Failed to delete machine: %s\n", err)
+		return err
+	}
+	err = d.DeleteMachine(&installer.Machine{})
 	if err != nil {
 		return err
 	}

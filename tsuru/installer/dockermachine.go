@@ -2,32 +2,42 @@
 // Use of this source code is governed by a BSD-style
 // license that can be found in the LICENSE file.
 
-package dockermachine
+package installer
 
 import (
 	"encoding/json"
 	"fmt"
 
-	"github.com/docker/machine/drivers/virtualbox"
 	"github.com/docker/machine/libmachine"
-	"github.com/tsuru/tsuru-client/tsuru/installer/iaas"
+	"github.com/docker/machine/libmachine/drivers"
 )
 
-func init() {
-	iaas.Register("docker-machine", &dmIaas{})
+type DockerMachine struct {
+	rawDriver  []byte
+	driverName string
 }
 
-type dmIaas struct{}
+type Machine struct {
+	Address string
+	IP      string
+	Config  map[string]string
+}
 
-func (i *dmIaas) CreateMachine(params map[string]string) (*iaas.Machine, error) {
+func NewDockerMachine(driverName string) (*DockerMachine, error) {
+	rawDriver, err := json.Marshal(&drivers.BaseDriver{
+		MachineName: "tsuru",
+		StorePath:   "/tmp/automatic",
+	})
+	if err != nil {
+		return nil, fmt.Errorf("Error creating docker-machine driver: %s", err)
+	}
+	return &DockerMachine{rawDriver: rawDriver, driverName: driverName}, nil
+}
+
+func (d *DockerMachine) CreateMachine(params map[string]string) (*Machine, error) {
 	client := libmachine.NewClient("/tmp/automatic", "/tmp/automatic/certs")
 	defer client.Close()
-	driver := virtualbox.NewDriver("tsuru", "/tmp/automatic")
-	data, err := json.Marshal(driver)
-	if err != nil {
-		return nil, err
-	}
-	host, err := client.NewHost("virtualbox", data)
+	host, err := client.NewHost(d.driverName, d.rawDriver)
 	if err != nil {
 		return nil, err
 	}
@@ -41,16 +51,15 @@ func (i *dmIaas) CreateMachine(params map[string]string) (*iaas.Machine, error) 
 		return nil, err
 	}
 	config := map[string]string{}
-	m := iaas.Machine{
+	m := Machine{
 		Address: fmt.Sprintf("http://%s:2375", ip),
-		Iaas:    "docker-machine",
 		IP:      ip,
 		Config:  config,
 	}
 	return &m, nil
 }
 
-func (i *dmIaas) DeleteMachine(m *iaas.Machine) error {
+func (d *DockerMachine) DeleteMachine(m *Machine) error {
 	client := libmachine.NewClient("/tmp/automatic", "/tmp/automatic/certs")
 	defer client.Close()
 	h, err := client.Load("tsuru")

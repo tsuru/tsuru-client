@@ -10,7 +10,6 @@ import (
 	"strings"
 
 	"github.com/fsouza/go-dockerclient"
-	"github.com/tsuru/tsuru-client/tsuru/installer/iaas"
 )
 
 var TsuruComponents = []TsuruComponent{
@@ -23,7 +22,7 @@ var TsuruComponents = []TsuruComponent{
 
 type TsuruComponent interface {
 	Name() string
-	Install(*iaas.Machine) error
+	Install(*Machine) error
 }
 
 type MongoDB struct{}
@@ -32,7 +31,7 @@ func (c *MongoDB) Name() string {
 	return "MongoDB"
 }
 
-func (c *MongoDB) Install(machine *iaas.Machine) error {
+func (c *MongoDB) Install(machine *Machine) error {
 	return createContainer(machine.Address, "mongo", &docker.Config{Image: "mongo"}, nil)
 }
 
@@ -42,7 +41,7 @@ func (c *PlanB) Name() string {
 	return "PlanB"
 }
 
-func (c *PlanB) Install(machine *iaas.Machine) error {
+func (c *PlanB) Install(machine *Machine) error {
 	config := &docker.Config{
 		Image: "tsuru/planb",
 		Cmd:   []string{"--listen", ":80", "--read-redis-host", machine.IP, "--write-redis-host", machine.IP},
@@ -56,7 +55,7 @@ func (c *Redis) Name() string {
 	return "Redis"
 }
 
-func (c *Redis) Install(machine *iaas.Machine) error {
+func (c *Redis) Install(machine *Machine) error {
 	return createContainer(machine.Address, "redis", &docker.Config{Image: "redis"}, nil)
 }
 
@@ -66,7 +65,7 @@ func (c *Registry) Name() string {
 	return "Docker Registry"
 }
 
-func (c *Registry) Install(machine *iaas.Machine) error {
+func (c *Registry) Install(machine *Machine) error {
 	config := &docker.Config{
 		Image: "registry:2",
 		Env:   []string{"REGISTRY_STORAGE_FILESYSTEM_ROOTDIRECTORY=/var/lib/registry"},
@@ -83,7 +82,7 @@ func (c *TsuruAPI) Name() string {
 	return "Tsuru API"
 }
 
-func (c *TsuruAPI) Install(machine *iaas.Machine) error {
+func (c *TsuruAPI) Install(machine *Machine) error {
 	env := []string{fmt.Sprintf("MONGODB_ADDR=%s", machine.IP),
 		"MONGODB_PORT=27017",
 		fmt.Sprintf("REDIS_ADDR=%s", machine.IP),
