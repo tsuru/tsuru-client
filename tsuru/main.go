@@ -8,6 +8,7 @@ import (
 	"os"
 
 	"github.com/tsuru/tsuru-client/tsuru/platform"
+	"github.com/tsuru/tsuru-client/tsuru/pool"
 	"github.com/tsuru/tsuru/cmd"
 	"github.com/tsuru/tsuru/provision"
 	_ "github.com/tsuru/tsuru/provision/docker"
@@ -105,6 +106,7 @@ func buildManager(name string) *cmd.Manager {
 	m.Register(&roleDefaultRemove{})
 	m.Register(&install{})
 	m.Register(&uninstall{})
+	m.Register(&pool.AddPoolToSchedulerCmd{})
 	registerProvisionersCommands(m)
 	return m
 }
