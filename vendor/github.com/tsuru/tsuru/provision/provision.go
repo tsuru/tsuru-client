@@ -16,6 +16,7 @@ import (
 
 	"github.com/tsuru/tsuru/app/bind"
 	"github.com/tsuru/tsuru/quota"
+	"github.com/tsuru/tsuru/router"
 )
 
 var (
@@ -311,7 +312,7 @@ type Provisioner interface {
 	Addr(App) (string, error)
 
 	// Swap change the router between two apps.
-	Swap(App, App) error
+	Swap(app1, app2 App, cnameOnly bool) error
 
 	// Units returns information about units by App.
 	Units(App) ([]Unit, error)
@@ -452,7 +453,22 @@ type TsuruYamlHealthcheck struct {
 	Method          string
 	Status          int
 	Match           string
-	AllowedFailures int `json:"allowed_failures" bson:"allowed_failures"`
+	RouterBody      string
+	UseInRouter     bool `json:"use_in_router" bson:"use_in_router"`
+	AllowedFailures int  `json:"allowed_failures" bson:"allowed_failures"`
+}
+
+func (hc TsuruYamlHealthcheck) ToRouterHC() router.HealthcheckData {
+	if hc.UseInRouter {
+		return router.HealthcheckData{
+			Path:   hc.Path,
+			Status: hc.Status,
+			Body:   hc.RouterBody,
+		}
+	}
+	return router.HealthcheckData{
+		Path: "/",
+	}
 }
 
 type TsuruYamlData struct {
