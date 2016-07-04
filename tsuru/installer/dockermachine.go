@@ -17,6 +17,8 @@ type DockerMachine struct {
 	rawDriver  []byte
 	driverName string
 	driverOpts rpcdriver.RPCFlags
+	storePath  string
+	certsPath  string
 }
 
 type Machine struct {
@@ -26,9 +28,11 @@ type Machine struct {
 }
 
 func NewDockerMachine(driverName string, opts map[string]interface{}) (*DockerMachine, error) {
+	storePath := "/tmp/automatic"
+	certsPath := "/tmp/automatic/certs"
 	rawDriver, err := json.Marshal(&drivers.BaseDriver{
 		MachineName: "tsuru",
-		StorePath:   "/tmp/automatic",
+		StorePath:   storePath,
 	})
 	if err != nil {
 		return nil, fmt.Errorf("Error creating docker-machine driver: %s", err)
@@ -37,11 +41,13 @@ func NewDockerMachine(driverName string, opts map[string]interface{}) (*DockerMa
 		rawDriver:  rawDriver,
 		driverName: driverName,
 		driverOpts: rpcdriver.RPCFlags{Values: opts},
+		storePath:  storePath,
+		certsPath:  certsPath,
 	}, nil
 }
 
 func (d *DockerMachine) CreateMachine(params map[string]interface{}) (*Machine, error) {
-	client := libmachine.NewClient("/tmp/automatic", "/tmp/automatic/certs")
+	client := libmachine.NewClient(d.storePath, d.certsPath)
 	defer client.Close()
 	host, err := client.NewHost(d.driverName, d.rawDriver)
 	if err != nil {
@@ -67,7 +73,7 @@ func (d *DockerMachine) CreateMachine(params map[string]interface{}) (*Machine, 
 }
 
 func (d *DockerMachine) DeleteMachine(m *Machine) error {
-	client := libmachine.NewClient("/tmp/automatic", "/tmp/automatic/certs")
+	client := libmachine.NewClient(d.storePath, d.certsPath)
 	defer client.Close()
 	h, err := client.Load("tsuru")
 	if err != nil {
