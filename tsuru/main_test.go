@@ -10,6 +10,7 @@ import (
 
 	"gopkg.in/check.v1"
 
+	"github.com/tsuru/tsuru-client/tsuru/platform"
 	"github.com/tsuru/tsuru/cmd"
 	"github.com/tsuru/tsuru/exec/exectest"
 )
@@ -268,7 +269,7 @@ func (s *S) TestPlatformListIsRegistered(c *check.C) {
 	manager = buildManager("tsuru")
 	plat, ok := manager.Commands["platform-list"]
 	c.Assert(ok, check.Equals, true)
-	c.Assert(plat, check.FitsTypeOf, platformList{})
+	c.Assert(plat, check.FitsTypeOf, &platform.PlatformList{})
 }
 
 func (s *S) TestAppSwapIsRegistered(c *check.C) {

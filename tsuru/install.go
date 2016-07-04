@@ -6,6 +6,7 @@ package main
 
 import (
 	"fmt"
+	"strings"
 
 	"github.com/tsuru/gnuflag"
 	"github.com/tsuru/tsuru-client/tsuru/installer"
@@ -37,12 +38,19 @@ func (c *install) Flags() *gnuflag.FlagSet {
 
 func (c *install) Run(context *cmd.Context, client *cmd.Client) error {
 	fmt.Fprintln(context.Stdout, "Creating machine")
-	i, err := installer.NewDockerMachine(c.driverName)
+	opts := make(map[string]interface{})
+	for _, arg := range context.Args {
+		s := strings.Split(arg, "=")
+		if len(s) == 2 {
+			opts[s[0]] = s[1]
+		}
+	}
+	i, err := installer.NewDockerMachine(c.driverName, opts)
 	if err != nil {
 		fmt.Fprintf(context.Stderr, "Failed to create machine: %s\n", err)
 		return err
 	}
-	m, err := i.CreateMachine(nil)
+	m, err := i.CreateMachine(opts)
 	if err != nil {
 		fmt.Fprintln(context.Stderr, "Error creating machine")
 		return err
@@ -84,7 +92,7 @@ func (c *uninstall) Flags() *gnuflag.FlagSet {
 }
 
 func (c *uninstall) Run(context *cmd.Context, client *cmd.Client) error {
-	d, err := installer.NewDockerMachine(c.driverName)
+	d, err := installer.NewDockerMachine(c.driverName, nil)
 	if err != nil {
 		fmt.Fprintf(context.Stderr, "Failed to delete machine: %s\n", err)
 		return err

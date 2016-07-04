@@ -32,7 +32,7 @@ func (c *MongoDB) Name() string {
 }
 
 func (c *MongoDB) Install(machine *Machine) error {
-	return createContainer(machine.Address, "mongo", &docker.Config{Image: "mongo"}, nil)
+	return createContainer(machine.Address, "mongo", &docker.Config{Image: "mongo:latest"}, nil)
 }
 
 type PlanB struct{}
@@ -43,7 +43,7 @@ func (c *PlanB) Name() string {
 
 func (c *PlanB) Install(machine *Machine) error {
 	config := &docker.Config{
-		Image: "tsuru/planb",
+		Image: "tsuru/planb:latest",
 		Cmd:   []string{"--listen", ":80", "--read-redis-host", machine.IP, "--write-redis-host", machine.IP},
 	}
 	return createContainer(machine.Address, "planb", config, nil)
@@ -56,7 +56,7 @@ func (c *Redis) Name() string {
 }
 
 func (c *Redis) Install(machine *Machine) error {
-	return createContainer(machine.Address, "redis", &docker.Config{Image: "redis"}, nil)
+	return createContainer(machine.Address, "redis", &docker.Config{Image: "redis:latest"}, nil)
 }
 
 type Registry struct{}
@@ -90,7 +90,7 @@ func (c *TsuruAPI) Install(machine *Machine) error {
 		fmt.Sprintf("HIPACHE_DOMAIN=%s.nip.io", machine.IP),
 	}
 	config := &docker.Config{
-		Image: "tsuru/api",
+		Image: "tsuru/api:latest",
 		Env:   env,
 	}
 	err := createContainer(machine.Address, "tsuru", config, nil)

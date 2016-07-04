@@ -10,11 +10,13 @@ import (
 
 	"github.com/docker/machine/libmachine"
 	"github.com/docker/machine/libmachine/drivers"
+	"github.com/docker/machine/libmachine/drivers/rpc"
 )
 
 type DockerMachine struct {
 	rawDriver  []byte
 	driverName string
+	driverOpts rpcdriver.RPCFlags
 }
 
 type Machine struct {
@@ -23,7 +25,7 @@ type Machine struct {
 	Config  map[string]string
 }
 
-func NewDockerMachine(driverName string) (*DockerMachine, error) {
+func NewDockerMachine(driverName string, opts map[string]interface{}) (*DockerMachine, error) {
 	rawDriver, err := json.Marshal(&drivers.BaseDriver{
 		MachineName: "tsuru",
 		StorePath:   "/tmp/automatic",
@@ -31,10 +33,14 @@ func NewDockerMachine(driverName string) (*DockerMachine, error) {
 	if err != nil {
 		return nil, fmt.Errorf("Error creating docker-machine driver: %s", err)
 	}
-	return &DockerMachine{rawDriver: rawDriver, driverName: driverName}, nil
+	return &DockerMachine{
+		rawDriver:  rawDriver,
+		driverName: driverName,
+		driverOpts: rpcdriver.RPCFlags{Values: opts},
+	}, nil
 }
 
-func (d *DockerMachine) CreateMachine(params map[string]string) (*Machine, error) {
+func (d *DockerMachine) CreateMachine(params map[string]interface{}) (*Machine, error) {
 	client := libmachine.NewClient("/tmp/automatic", "/tmp/automatic/certs")
 	defer client.Close()
 	host, err := client.NewHost(d.driverName, d.rawDriver)
@@ -45,6 +51,7 @@ func (d *DockerMachine) CreateMachine(params map[string]string) (*Machine, error
 		"host=tcp://0.0.0.0:2375",
 	}
 	host.HostOptions.EngineOptions.Env = []string{"DOCKER_TLS=no"}
+	host.Driver.SetConfigFromFlags(d.driverOpts)
 	err = client.Create(host)
 	ip, err := host.Driver.GetIP()
 	if err != nil {
