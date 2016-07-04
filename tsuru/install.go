@@ -36,26 +36,26 @@ func (c *install) Flags() *gnuflag.FlagSet {
 }
 
 func (c *install) Run(context *cmd.Context, client *cmd.Client) error {
-	fmt.Println("Creating machine")
+	fmt.Fprintln(context.Stdout, "Creating machine")
 	i, err := installer.NewDockerMachine(c.driverName)
 	if err != nil {
-		fmt.Printf("Failed to create machine: %s\n", err)
+		fmt.Fprintf(context.Stderr, "Failed to create machine: %s\n", err)
 		return err
 	}
 	m, err := i.CreateMachine(nil)
 	if err != nil {
-		fmt.Println("Error creating machine")
+		fmt.Fprintln(context.Stderr, "Error creating machine")
 		return err
 	}
-	fmt.Printf("Machine %s successfully created!\n", m.Address)
+	fmt.Fprintf(context.Stdout, "Machine %s successfully created!\n", m.Address)
 	for _, component := range installer.TsuruComponents {
-		fmt.Printf("Installing %s\n", component.Name())
+		fmt.Fprintf(context.Stdout, "Installing %s\n", component.Name())
 		err := component.Install(m)
 		if err != nil {
-			fmt.Printf("Error installing %s\n", component.Name())
+			fmt.Fprintf(context.Stderr, "Error installing %s\n", component.Name())
 			return err
 		}
-		fmt.Printf("%s successfully installed!\n", component.Name())
+		fmt.Fprintf(context.Stdout, "%s successfully installed!\n", component.Name())
 	}
 	return nil
 }
@@ -86,13 +86,13 @@ func (c *uninstall) Flags() *gnuflag.FlagSet {
 func (c *uninstall) Run(context *cmd.Context, client *cmd.Client) error {
 	d, err := installer.NewDockerMachine(c.driverName)
 	if err != nil {
-		fmt.Printf("Failed to delete machine: %s\n", err)
+		fmt.Fprintf(context.Stderr, "Failed to delete machine: %s\n", err)
 		return err
 	}
 	err = d.DeleteMachine(&installer.Machine{})
 	if err != nil {
 		return err
 	}
-	fmt.Println("Machine successfully removed!")
+	fmt.Fprintln(context.Stdout, "Machine successfully removed!")
 	return nil
 }

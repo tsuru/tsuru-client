@@ -25,7 +25,8 @@ func (s *S) TestInstall(c *check.C) {
 	client := cmd.NewClient(&http.Client{}, nil, manager)
 	command := install{}
 	command.Run(&context, client)
-	c.Assert(stdout.String(), check.Equals, "")
+	c.Assert(stdout.String(), check.Not(check.Equals), "")
+	c.Assert(stderr.String(), check.Equals, "")
 }
 
 func (s *S) TestUninstallInfo(c *check.C) {
