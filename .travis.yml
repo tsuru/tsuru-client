@@ -14,8 +14,11 @@ env:
   matrix:
     - GOARCH=amd64
     - GOARCH=386
-before_script:
-  - ./misc/install_docker_machine.sh
+install:
+  - curl -L https://github.com/docker/machine/releases/download/v0.8.0-rc1/docker-machine-`uname -s`-`uname -m` > docker-machine
+  - chmod +x ./docker-machine
+  - export PATH=$PATH:$PWD
+
 script:
   - go test -x ./tsuru
   - ./check-fmt.sh
