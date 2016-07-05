@@ -14,8 +14,9 @@ env:
   matrix:
     - GOARCH=amd64
     - GOARCH=386
-script:
+before_script:
   - ./misc/install_docker_machine.sh
+script:
   - go test -x ./tsuru
   - ./check-fmt.sh
 matrix:
