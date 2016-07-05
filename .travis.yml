@@ -1,6 +1,7 @@
 language: go
 sudo: false
 install: true
+services: docker
 os:
   - linux
   - osx
