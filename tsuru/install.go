@@ -99,6 +99,7 @@ func (c *uninstall) Run(context *cmd.Context, client *cmd.Client) error {
 	}
 	err = d.DeleteMachine(&installer.Machine{})
 	if err != nil {
+		fmt.Fprintf(context.Stderr, "Failed to delete machine: %s\n", err)
 		return err
 	}
 	fmt.Fprintln(context.Stdout, "Machine successfully removed!")
