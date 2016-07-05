@@ -1,7 +1,6 @@
 language: go
 sudo: required
 install: true
-services: docker
 os:
   - linux
   - osx
@@ -16,6 +15,7 @@ env:
     - GOARCH=amd64
     - GOARCH=386
 script:
+  - ./misc/install_docker_machine.sh
   - go test -x ./tsuru
   - ./check-fmt.sh
 matrix:
