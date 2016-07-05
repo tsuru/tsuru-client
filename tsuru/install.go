@@ -52,7 +52,7 @@ func (c *install) Run(context *cmd.Context, client *cmd.Client) error {
 	}
 	m, err := i.CreateMachine(opts)
 	if err != nil {
-		fmt.Fprintln(context.Stderr, "Error creating machine")
+		fmt.Fprintf(context.Stderr, "Error creating machine: %s\n", err)
 		return err
 	}
 	fmt.Fprintf(context.Stdout, "Machine %s successfully created!\n", m.Address)
