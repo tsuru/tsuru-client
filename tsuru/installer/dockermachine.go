@@ -5,20 +5,26 @@
 package installer
 
 import (
-	"encoding/json"
 	"fmt"
+	"path/filepath"
 
+	"github.com/docker/machine/drivers/none"
+	"github.com/docker/machine/drivers/virtualbox"
 	"github.com/docker/machine/libmachine"
+	"github.com/docker/machine/libmachine/auth"
 	"github.com/docker/machine/libmachine/drivers"
 	"github.com/docker/machine/libmachine/drivers/rpc"
+	"github.com/docker/machine/libmachine/engine"
+	"github.com/docker/machine/libmachine/host"
+	"github.com/docker/machine/libmachine/persist"
+	"github.com/docker/machine/libmachine/swarm"
+	"github.com/docker/machine/libmachine/version"
 )
 
 type DockerMachine struct {
-	rawDriver  []byte
-	driverName string
 	driverOpts rpcdriver.RPCFlags
-	storePath  string
-	certsPath  string
+	driver     drivers.Driver
+	fileStore  *persist.Filestore
 }
 
 type Machine struct {
@@ -30,35 +36,94 @@ type Machine struct {
 func NewDockerMachine(driverName string, opts map[string]interface{}) (*DockerMachine, error) {
 	storePath := "/tmp/automatic"
 	certsPath := "/tmp/automatic/certs"
-	rawDriver, err := json.Marshal(&drivers.BaseDriver{
-		MachineName: "tsuru",
-		StorePath:   storePath,
-	})
-	if err != nil {
-		return nil, fmt.Errorf("Error creating docker-machine driver: %s", err)
-	}
-	return &DockerMachine{
-		rawDriver:  rawDriver,
-		driverName: driverName,
-		driverOpts: rpcdriver.RPCFlags{Values: opts},
-		storePath:  storePath,
-		certsPath:  certsPath,
-	}, nil
-}
-
-func (d *DockerMachine) CreateMachine(params map[string]interface{}) (*Machine, error) {
-	client := libmachine.NewClient(d.storePath, d.certsPath)
-	defer client.Close()
-	host, err := client.NewHost(d.driverName, d.rawDriver)
+	driver, err := getDriver(driverName, storePath, opts)
 	if err != nil {
 		return nil, err
 	}
-	host.HostOptions.EngineOptions.ArbitraryFlags = []string{
-		"host=tcp://0.0.0.0:2375",
+	dm := &DockerMachine{
+		driverOpts: rpcdriver.RPCFlags{Values: opts},
+		fileStore:  persist.NewFilestore(storePath, certsPath, certsPath),
+		driver:     driver,
 	}
-	host.HostOptions.EngineOptions.Env = []string{"DOCKER_TLS=no"}
-	host.Driver.SetConfigFromFlags(d.driverOpts)
-	err = client.Create(host)
+	if err != nil {
+		return nil, err
+	}
+	return dm, nil
+}
+
+func getDriver(driverName, storePath string, opts map[string]interface{}) (drivers.Driver, error) {
+	driverOpts := rpcdriver.RPCFlags{Values: opts}
+	if driverOpts.Values == nil {
+		driverOpts.Values = make(map[string]interface{})
+	}
+	var driver drivers.Driver
+	switch driverName {
+	case "virtualbox":
+		driver = virtualbox.NewDriver("tsuru", storePath)
+	case "none":
+		driver = none.NewDriver("tsuru", storePath)
+	default:
+		return nil, fmt.Errorf("Unsuported driver %s", driverName)
+	}
+	for _, c := range driver.GetCreateFlags() {
+		_, ok := driverOpts.Values[c.String()]
+		if ok == false {
+			driverOpts.Values[c.String()] = c.Default()
+			if c.Default() == nil {
+				driverOpts.Values[c.String()] = false
+			}
+		}
+	}
+	if err := driver.SetConfigFromFlags(driverOpts); err != nil {
+		return nil, fmt.Errorf("Error setting driver configurations: %s", err)
+	}
+	return driver, nil
+}
+
+func (d *DockerMachine) newHost() *host.Host {
+	return &host.Host{
+		ConfigVersion: version.ConfigVersion,
+		Name:          d.driver.GetMachineName(),
+		Driver:        d.driver,
+		DriverName:    d.driver.DriverName(),
+		HostOptions: &host.Options{
+			AuthOptions: &auth.Options{
+				CertDir:          d.fileStore.CaCertPath,
+				CaCertPath:       filepath.Join(d.fileStore.CaCertPath, "ca.pem"),
+				CaPrivateKeyPath: filepath.Join(d.fileStore.CaCertPath, "ca-key.pem"),
+				ClientCertPath:   filepath.Join(d.fileStore.CaCertPath, "cert.pem"),
+				ClientKeyPath:    filepath.Join(d.fileStore.CaCertPath, "key.pem"),
+				ServerCertPath:   filepath.Join(d.fileStore.GetMachinesDir(), "server.pem"),
+				ServerKeyPath:    filepath.Join(d.fileStore.GetMachinesDir(), "server-key.pem"),
+			},
+			EngineOptions: &engine.Options{
+				InstallURL:     drivers.DefaultEngineInstallURL,
+				StorageDriver:  "aufs",
+				TLSVerify:      true,
+				Env:            []string{"DOCKER_TLS=no"},
+				ArbitraryFlags: []string{"host=tcp://0.0.0.0:2375"},
+			},
+			SwarmOptions: &swarm.Options{
+				Host:     "tcp://0.0.0.0:3376",
+				Image:    "swarm:latest",
+				Strategy: "spread",
+			},
+		},
+	}
+}
+
+func (d *DockerMachine) provisionHost() (*host.Host, error) {
+	host := d.newHost()
+	client := libmachine.NewClient(d.fileStore.Path, d.fileStore.CaCertPath)
+	defer client.Close()
+	return host, client.Create(host)
+}
+
+func (d *DockerMachine) CreateMachine(params map[string]interface{}) (*Machine, error) {
+	host, err := d.provisionHost()
+	if err != nil {
+		fmt.Printf("Ignoring error on machine creation: %s", err)
+	}
 	ip, err := host.Driver.GetIP()
 	if err != nil {
 		return nil, err
@@ -73,11 +138,9 @@ func (d *DockerMachine) CreateMachine(params map[string]interface{}) (*Machine, 
 }
 
 func (d *DockerMachine) DeleteMachine(m *Machine) error {
-	client := libmachine.NewClient(d.storePath, d.certsPath)
-	defer client.Close()
-	h, err := client.Load("tsuru")
+	err := d.driver.Remove()
 	if err != nil {
 		return err
 	}
-	return h.Driver.Remove()
+	return d.fileStore.Remove("tsuru")
 }

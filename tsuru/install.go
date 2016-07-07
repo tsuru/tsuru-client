@@ -38,13 +38,7 @@ func (c *install) Flags() *gnuflag.FlagSet {
 
 func (c *install) Run(context *cmd.Context, client *cmd.Client) error {
 	fmt.Fprintln(context.Stdout, "Creating machine")
-	opts := make(map[string]interface{})
-	for _, arg := range context.Args {
-		s := strings.Split(arg, "=")
-		if len(s) == 2 {
-			opts[s[0]] = s[1]
-		}
-	}
+	opts := parseKeyValue(context.Args)
 	i, err := installer.NewDockerMachine(c.driverName, opts)
 	if err != nil {
 		fmt.Fprintf(context.Stderr, "Failed to create machine: %s\n", err)
@@ -60,7 +54,7 @@ func (c *install) Run(context *cmd.Context, client *cmd.Client) error {
 		fmt.Fprintf(context.Stdout, "Installing %s\n", component.Name())
 		err := component.Install(m)
 		if err != nil {
-			fmt.Fprintf(context.Stderr, "Error installing %s\n", component.Name())
+			fmt.Fprintf(context.Stderr, "Error installing %s: %s\n", component.Name(), err)
 			return err
 		}
 		fmt.Fprintf(context.Stdout, "%s successfully installed!\n", component.Name())
@@ -92,7 +86,7 @@ func (c *uninstall) Flags() *gnuflag.FlagSet {
 }
 
 func (c *uninstall) Run(context *cmd.Context, client *cmd.Client) error {
-	d, err := installer.NewDockerMachine(c.driverName, nil)
+	d, err := installer.NewDockerMachine(c.driverName, parseKeyValue(context.Args))
 	if err != nil {
 		fmt.Fprintf(context.Stderr, "Failed to delete machine: %s\n", err)
 		return err
@@ -104,4 +98,15 @@ func (c *uninstall) Run(context *cmd.Context, client *cmd.Client) error {
 	}
 	fmt.Fprintln(context.Stdout, "Machine successfully removed!")
 	return nil
+}
+
+func parseKeyValue(args []string) map[string]interface{} {
+	opts := make(map[string]interface{})
+	for _, arg := range args {
+		if strings.Contains(arg, "=") {
+			keyValue := strings.SplitN(arg, "=", 2)
+			opts[keyValue[0]] = keyValue[1]
+		}
+	}
+	return opts
 }

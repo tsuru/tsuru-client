@@ -41,9 +41,11 @@ func (s *S) TestUninstall(c *check.C) {
 	context := cmd.Context{
 		Stdout: &stdout,
 		Stderr: &stderr,
+		Args:   []string{"url=http://1.2.3.4"},
 	}
 	client := cmd.NewClient(&http.Client{}, nil, manager)
-	command := uninstall{}
+	command := uninstall{driverName: "none"}
 	command.Run(&context, client)
+	c.Assert(stderr.String(), check.Equals, "")
 	c.Assert(stdout.String(), check.Equals, "Machine successfully removed!\n")
 }
