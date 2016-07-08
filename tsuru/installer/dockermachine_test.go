@@ -5,7 +5,11 @@
 package installer
 
 import (
+	"fmt"
+	"os"
 	"testing"
+
+	"github.com/docker/machine/libmachine/drivers/plugin/localbinary"
 
 	"gopkg.in/check.v1"
 )
@@ -13,6 +17,20 @@ import (
 type S struct{}
 
 var _ = check.Suite(&S{})
+
+func TestMain(m *testing.M) {
+	if os.Getenv(localbinary.PluginEnvKey) == localbinary.PluginEnvVal {
+		driver := os.Getenv(localbinary.PluginEnvDriverName)
+		err := RunDriver(driver)
+		if err != nil {
+			fmt.Printf("Failed to run driver %s in test", driver)
+			os.Exit(1)
+		}
+	} else {
+		localbinary.CurrentBinaryIsDockerMachine = true
+		os.Exit(m.Run())
+	}
+}
 
 func Test(t *testing.T) { check.TestingT(t) }
 

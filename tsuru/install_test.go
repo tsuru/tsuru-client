@@ -6,19 +6,38 @@ package main
 
 import (
 	"bytes"
+	"fmt"
 	"net/http"
+	"os"
+	"testing"
 
-	"github.com/fsouza/go-dockerclient/testing"
+	"github.com/docker/machine/libmachine/drivers/plugin/localbinary"
+	dockertesting "github.com/fsouza/go-dockerclient/testing"
+	"github.com/tsuru/tsuru-client/tsuru/installer"
 	"github.com/tsuru/tsuru/cmd"
 	"gopkg.in/check.v1"
 )
+
+func TestMain(m *testing.M) {
+	if os.Getenv(localbinary.PluginEnvKey) == localbinary.PluginEnvVal {
+		driver := os.Getenv(localbinary.PluginEnvDriverName)
+		err := installer.RunDriver(driver)
+		if err != nil {
+			fmt.Printf("Failed to run driver %s in test", driver)
+			os.Exit(1)
+		}
+	} else {
+		localbinary.CurrentBinaryIsDockerMachine = true
+		os.Exit(m.Run())
+	}
+}
 
 func (s *S) TestInstallInfo(c *check.C) {
 	c.Assert((&install{}).Info(), check.NotNil)
 }
 
 func (s *S) TestInstall(c *check.C) {
-	testing.NewServer("127.0.0.1:2375", nil, nil)
+	dockertesting.NewServer("127.0.0.1:2375", nil, nil)
 	var stdout, stderr bytes.Buffer
 	context := cmd.Context{
 		Stdout: &stdout,
