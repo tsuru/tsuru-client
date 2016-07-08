@@ -20,8 +20,7 @@ func (s *S) TestNewDockerMachine(c *check.C) {
 	dm, err := NewDockerMachine("virtualbox", nil)
 	c.Assert(err, check.IsNil)
 	c.Assert(dm, check.NotNil)
-	c.Assert(dm.driver, check.NotNil)
-	c.Assert(dm.driver.DriverName(), check.Equals, "virtualbox")
+	c.Assert(dm.driverName, check.Equals, "virtualbox")
 }
 
 func (s *S) TestNewDockerMachineDriverOpts(c *check.C) {
@@ -38,10 +37,4 @@ func (s *S) TestCreateMachineNoneDriver(c *check.C) {
 	c.Assert(machine, check.NotNil)
 	c.Assert(machine.IP, check.Equals, "1.2.3.4")
 	c.Assert(machine.Address, check.Equals, "http://1.2.3.4:2375")
-}
-
-func (s *S) TestNewDockerMachineInvalidDriver(c *check.C) {
-	dm, err := NewDockerMachine("invalid", nil)
-	c.Assert(err, check.NotNil)
-	c.Assert(dm, check.IsNil)
 }

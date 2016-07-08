@@ -5,8 +5,11 @@
 package main
 
 import (
+	"fmt"
 	"os"
 
+	"github.com/docker/machine/libmachine/drivers/plugin/localbinary"
+	"github.com/tsuru/tsuru-client/tsuru/installer"
 	"github.com/tsuru/tsuru-client/tsuru/platform"
 	"github.com/tsuru/tsuru-client/tsuru/pool"
 	"github.com/tsuru/tsuru/cmd"
@@ -123,8 +126,21 @@ func registerProvisionersCommands(m *cmd.Manager) {
 	}
 }
 
+func inDockerMachineDriverMode() bool {
+	return os.Getenv(localbinary.PluginEnvKey) == localbinary.PluginEnvVal
+}
+
 func main() {
-	name := cmd.ExtractProgramName(os.Args[0])
-	manager := buildManager(name)
-	manager.Run(os.Args[1:])
+	if inDockerMachineDriverMode() {
+		err := installer.RunDriver(os.Getenv(localbinary.PluginEnvDriverName))
+		if err != nil {
+			fmt.Printf("Error running driver: %s", err)
+			os.Exit(1)
+		}
+		localbinary.CurrentBinaryIsDockerMachine = true
+	} else {
+		name := cmd.ExtractProgramName(os.Args[0])
+		manager := buildManager(name)
+		manager.Run(os.Args[1:])
+	}
 }

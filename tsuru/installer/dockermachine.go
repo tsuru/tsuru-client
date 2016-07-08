@@ -5,26 +5,36 @@
 package installer
 
 import (
+	"encoding/json"
 	"fmt"
-	"path/filepath"
 
+	"github.com/docker/machine/drivers/amazonec2"
+	"github.com/docker/machine/drivers/azure"
+	"github.com/docker/machine/drivers/digitalocean"
+	"github.com/docker/machine/drivers/exoscale"
+	"github.com/docker/machine/drivers/generic"
+	"github.com/docker/machine/drivers/google"
+	"github.com/docker/machine/drivers/hyperv"
 	"github.com/docker/machine/drivers/none"
+	"github.com/docker/machine/drivers/openstack"
+	"github.com/docker/machine/drivers/rackspace"
+	"github.com/docker/machine/drivers/softlayer"
 	"github.com/docker/machine/drivers/virtualbox"
+	"github.com/docker/machine/drivers/vmwarefusion"
+	"github.com/docker/machine/drivers/vmwarevcloudair"
+	"github.com/docker/machine/drivers/vmwarevsphere"
 	"github.com/docker/machine/libmachine"
-	"github.com/docker/machine/libmachine/auth"
 	"github.com/docker/machine/libmachine/drivers"
+	"github.com/docker/machine/libmachine/drivers/plugin"
 	"github.com/docker/machine/libmachine/drivers/rpc"
-	"github.com/docker/machine/libmachine/engine"
-	"github.com/docker/machine/libmachine/host"
-	"github.com/docker/machine/libmachine/persist"
-	"github.com/docker/machine/libmachine/swarm"
-	"github.com/docker/machine/libmachine/version"
 )
 
 type DockerMachine struct {
 	driverOpts rpcdriver.RPCFlags
-	driver     drivers.Driver
-	fileStore  *persist.Filestore
+	rawDriver  []byte
+	driverName string
+	storePath  string
+	certsPath  string
 }
 
 type Machine struct {
@@ -33,38 +43,65 @@ type Machine struct {
 	Config  map[string]string
 }
 
+func RunDriver(driverName string) error {
+	switch driverName {
+	case "amazonec2":
+		plugin.RegisterDriver(amazonec2.NewDriver("", ""))
+	case "azure":
+		plugin.RegisterDriver(azure.NewDriver("", ""))
+	case "digitalocean":
+		plugin.RegisterDriver(digitalocean.NewDriver("", ""))
+	case "exoscale":
+		plugin.RegisterDriver(exoscale.NewDriver("", ""))
+	case "generic":
+		plugin.RegisterDriver(generic.NewDriver("", ""))
+	case "google":
+		plugin.RegisterDriver(google.NewDriver("", ""))
+	case "hyperv":
+		plugin.RegisterDriver(hyperv.NewDriver("", ""))
+	case "none":
+		plugin.RegisterDriver(none.NewDriver("", ""))
+	case "openstack":
+		plugin.RegisterDriver(openstack.NewDriver("", ""))
+	case "rackspace":
+		plugin.RegisterDriver(rackspace.NewDriver("", ""))
+	case "softlayer":
+		plugin.RegisterDriver(softlayer.NewDriver("", ""))
+	case "virtualbox":
+		plugin.RegisterDriver(virtualbox.NewDriver("", ""))
+	case "vmwarefusion":
+		plugin.RegisterDriver(vmwarefusion.NewDriver("", ""))
+	case "vmwarevcloudair":
+		plugin.RegisterDriver(vmwarevcloudair.NewDriver("", ""))
+	case "vmwarevsphere":
+		plugin.RegisterDriver(vmwarevsphere.NewDriver("", ""))
+	default:
+		return fmt.Errorf("Unsupported driver: %s\n", driverName)
+	}
+	return nil
+}
+
 func NewDockerMachine(driverName string, opts map[string]interface{}) (*DockerMachine, error) {
 	storePath := "/tmp/automatic"
 	certsPath := "/tmp/automatic/certs"
-	driver, err := getDriver(driverName, storePath, opts)
+	rawDriver, err := json.Marshal(&drivers.BaseDriver{
+		MachineName: "tsuru",
+		StorePath:   storePath,
+	})
 	if err != nil {
-		return nil, err
+		return nil, fmt.Errorf("Error creating docker-machine driver: %s", err)
 	}
 	dm := &DockerMachine{
 		driverOpts: rpcdriver.RPCFlags{Values: opts},
-		fileStore:  persist.NewFilestore(storePath, certsPath, certsPath),
-		driver:     driver,
-	}
-	if err != nil {
-		return nil, err
+		rawDriver:  rawDriver,
+		driverName: driverName,
+		storePath:  storePath,
+		certsPath:  certsPath,
 	}
 	return dm, nil
 }
 
-func getDriver(driverName, storePath string, opts map[string]interface{}) (drivers.Driver, error) {
-	driverOpts := rpcdriver.RPCFlags{Values: opts}
-	if driverOpts.Values == nil {
-		driverOpts.Values = make(map[string]interface{})
-	}
-	var driver drivers.Driver
-	switch driverName {
-	case "virtualbox":
-		driver = virtualbox.NewDriver("tsuru", storePath)
-	case "none":
-		driver = none.NewDriver("tsuru", storePath)
-	default:
-		return nil, fmt.Errorf("Unsuported driver %s", driverName)
-	}
+func configureDriver(driver drivers.Driver, driverOpts rpcdriver.RPCFlags) error {
 	for _, c := range driver.GetCreateFlags() {
 		_, ok := driverOpts.Values[c.String()]
 		if ok == false {
@@ -75,52 +112,22 @@ func getDriver(driverName, storePath string, opts map[string]interface{}) (drive
 		}
 	}
 	if err := driver.SetConfigFromFlags(driverOpts); err != nil {
-		return nil, fmt.Errorf("Error setting driver configurations: %s", err)
+		return fmt.Errorf("Error setting driver configurations: %s", err)
 	}
-	return driver, nil
-}
-
-func (d *DockerMachine) newHost() *host.Host {
-	return &host.Host{
-		ConfigVersion: version.ConfigVersion,
-		Name:          d.driver.GetMachineName(),
-		Driver:        d.driver,
-		DriverName:    d.driver.DriverName(),
-		HostOptions: &host.Options{
-			AuthOptions: &auth.Options{
-				CertDir:          d.fileStore.CaCertPath,
-				CaCertPath:       filepath.Join(d.fileStore.CaCertPath, "ca.pem"),
-				CaPrivateKeyPath: filepath.Join(d.fileStore.CaCertPath, "ca-key.pem"),
-				ClientCertPath:   filepath.Join(d.fileStore.CaCertPath, "cert.pem"),
-				ClientKeyPath:    filepath.Join(d.fileStore.CaCertPath, "key.pem"),
-				ServerCertPath:   filepath.Join(d.fileStore.GetMachinesDir(), "server.pem"),
-				ServerKeyPath:    filepath.Join(d.fileStore.GetMachinesDir(), "server-key.pem"),
-			},
-			EngineOptions: &engine.Options{
-				InstallURL:     drivers.DefaultEngineInstallURL,
-				StorageDriver:  "aufs",
-				TLSVerify:      true,
-				Env:            []string{"DOCKER_TLS=no"},
-				ArbitraryFlags: []string{"host=tcp://0.0.0.0:2375"},
-			},
-			SwarmOptions: &swarm.Options{
-				Host:     "tcp://0.0.0.0:3376",
-				Image:    "swarm:latest",
-				Strategy: "spread",
-			},
-		},
-	}
-}
-
-func (d *DockerMachine) provisionHost() (*host.Host, error) {
-	host := d.newHost()
-	client := libmachine.NewClient(d.fileStore.Path, d.fileStore.CaCertPath)
-	defer client.Close()
-	return host, client.Create(host)
+	return nil
 }
 
 func (d *DockerMachine) CreateMachine(params map[string]interface{}) (*Machine, error) {
-	host, err := d.provisionHost()
+	client := libmachine.NewClient(d.storePath, d.certsPath)
+	defer client.Close()
+	host, err := client.NewHost(d.driverName, d.rawDriver)
+	if err != nil {
+		return nil, err
+	}
+	host.HostOptions.EngineOptions.Env = []string{"DOCKER_TLS=no"}
+	host.HostOptions.EngineOptions.ArbitraryFlags = []string{"host=tcp://0.0.0.0:2375"}
+	configureDriver(host.Driver, d.driverOpts)
+	err = client.Create(host)
 	if err != nil {
 		fmt.Printf("Ignoring error on machine creation: %s", err)
 	}
@@ -138,9 +145,15 @@ func (d *DockerMachine) CreateMachine(params map[string]interface{}) (*Machine, 
 }
 
 func (d *DockerMachine) DeleteMachine(m *Machine) error {
-	err := d.driver.Remove()
+	client := libmachine.NewClient(d.storePath, d.certsPath)
+	defer client.Close()
+	h, err := client.Load("tsuru")
 	if err != nil {
 		return err
 	}
-	return d.fileStore.Remove("tsuru")
+	err = h.Driver.Remove()
+	if err != nil {
+		return err
+	}
+	return client.Remove("tsuru")
 }
