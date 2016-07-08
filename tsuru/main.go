@@ -137,8 +137,8 @@ func main() {
 			fmt.Printf("Error running driver: %s", err)
 			os.Exit(1)
 		}
-		localbinary.CurrentBinaryIsDockerMachine = true
 	} else {
+		localbinary.CurrentBinaryIsDockerMachine = true
 		name := cmd.ExtractProgramName(os.Args[0])
 		manager := buildManager(name)
 		manager.Run(os.Args[1:])
