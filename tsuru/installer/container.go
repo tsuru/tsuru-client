@@ -10,8 +10,12 @@ import (
 	"github.com/fsouza/go-dockerclient"
 )
 
-func createContainer(machine *Machine, name string, config *docker.Config, hostConfig *docker.HostConfig) error {
-	client, err := machine.dockerClient()
+type dockerEnpoint interface {
+	dockerClient() (*docker.Client, error)
+}
+
+func createContainer(d dockerEnpoint, name string, config *docker.Config, hostConfig *docker.HostConfig) error {
+	client, err := d.dockerClient()
 	if err != nil {
 		return err
 	}

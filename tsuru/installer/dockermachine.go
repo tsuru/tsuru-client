@@ -31,6 +31,25 @@ import (
 	"github.com/fsouza/go-dockerclient"
 )
 
+var (
+	dockerHTTPPort  = 2375
+	dockerHTTPSPort = 2376
+)
+
+type Machine struct {
+	IP      string
+	Config  map[string]string
+	TLS     bool
+	Address string
+}
+
+func (m *Machine) dockerClient() (*docker.Client, error) {
+	if m.TLS {
+		return docker.NewTLSClient(m.Address, "cert.pem", "key.pem", "ca.pem")
+	}
+	return docker.NewClient(m.Address)
+}
+
 type DockerMachine struct {
 	driverOpts rpcdriver.RPCFlags
 	rawDriver  []byte
@@ -40,10 +59,95 @@ type DockerMachine struct {
 	tlsSupport bool
 }
 
-type Machine struct {
-	IP     string
-	Config map[string]string
-	TLS    bool
+func NewDockerMachine(driverName string, opts map[string]interface{}) (*DockerMachine, error) {
+	storePath := "/tmp/automatic"
+	certsPath := "/tmp/automatic/certs"
+	rawDriver, err := json.Marshal(&drivers.BaseDriver{
+		MachineName: "tsuru",
+		StorePath:   storePath,
+	})
+	if err != nil {
+		return nil, fmt.Errorf("Error creating docker-machine driver: %s", err)
+	}
+	dm := &DockerMachine{
+		driverOpts: rpcdriver.RPCFlags{Values: opts},
+		rawDriver:  rawDriver,
+		driverName: driverName,
+		storePath:  storePath,
+		certsPath:  certsPath,
+		tlsSupport: driverName != "virtualbox" && driverName != "none",
+	}
+	return dm, nil
+}
+
+func (d *DockerMachine) CreateMachine(params map[string]interface{}) (*Machine, error) {
+	client := libmachine.NewClient(d.storePath, d.certsPath)
+	defer client.Close()
+	host, err := client.NewHost(d.driverName, d.rawDriver)
+	if err != nil {
+		return nil, err
+	}
+	configureDriver(host.Driver, d.driverOpts)
+	d.configureHost(host)
+	err = client.Create(host)
+	if err != nil {
+		fmt.Printf("Ignoring error on machine creation: %s", err)
+	}
+	ip, err := host.Driver.GetIP()
+	if err != nil {
+		return nil, err
+	}
+	config := map[string]string{}
+	m := Machine{
+		IP:     ip,
+		Config: config,
+		TLS:    d.tlsSupport,
+	}
+	if m.TLS {
+		m.Address = fmt.Sprintf("https://%s:%d", m.IP, dockerHTTPSPort)
+	} else {
+		m.Address = fmt.Sprintf("http://%s:%d", m.IP, dockerHTTPPort)
+	}
+	return &m, nil
+}
+
+func configureDriver(driver drivers.Driver, driverOpts rpcdriver.RPCFlags) error {
+	for _, c := range driver.GetCreateFlags() {
+		_, ok := driverOpts.Values[c.String()]
+		if ok == false {
+			driverOpts.Values[c.String()] = c.Default()
+			if c.Default() == nil {
+				driverOpts.Values[c.String()] = false
+			}
+		}
+	}
+	if err := driver.SetConfigFromFlags(driverOpts); err != nil {
+		return fmt.Errorf("Error setting driver configurations: %s", err)
+	}
+	return nil
+}
+
+func (d *DockerMachine) configureHost(host *host.Host) {
+	if d.tlsSupport == false {
+		host.HostOptions.EngineOptions.Env = []string{"DOCKER_TLS=no"}
+		host.HostOptions.EngineOptions.ArbitraryFlags = []string{
+			fmt.Sprintf("host=tcp://0.0.0.0:%d", dockerHTTPPort),
+		}
+	}
+}
+
+func (d *DockerMachine) DeleteMachine(m *Machine) error {
+	client := libmachine.NewClient(d.storePath, d.certsPath)
+	defer client.Close()
+	h, err := client.Load("tsuru")
+	if err != nil {
+		return err
+	}
+	err = h.Driver.Remove()
+	if err != nil {
+		return err
+	}
+	return client.Remove("tsuru")
 }
 
 func RunDriver(driverName string) error {
@@ -82,95 +186,4 @@ func RunDriver(driverName string) error {
 		return fmt.Errorf("Unsupported driver: %s\n", driverName)
 	}
 	return nil
-}
-
-func NewDockerMachine(driverName string, opts map[string]interface{}) (*DockerMachine, error) {
-	storePath := "/tmp/automatic"
-	certsPath := "/tmp/automatic/certs"
-	rawDriver, err := json.Marshal(&drivers.BaseDriver{
-		MachineName: "tsuru",
-		StorePath:   storePath,
-	})
-	if err != nil {
-		return nil, fmt.Errorf("Error creating docker-machine driver: %s", err)
-	}
-	dm := &DockerMachine{
-		driverOpts: rpcdriver.RPCFlags{Values: opts},
-		rawDriver:  rawDriver,
-		driverName: driverName,
-		storePath:  storePath,
-		certsPath:  certsPath,
-		tlsSupport: driverName != "virtualbox" && driverName != "none",
-	}
-	return dm, nil
-}
-
-func configureDriver(driver drivers.Driver, driverOpts rpcdriver.RPCFlags) error {
-	for _, c := range driver.GetCreateFlags() {
-		_, ok := driverOpts.Values[c.String()]
-		if ok == false {
-			driverOpts.Values[c.String()] = c.Default()
-			if c.Default() == nil {
-				driverOpts.Values[c.String()] = false
-			}
-		}
-	}
-	if err := driver.SetConfigFromFlags(driverOpts); err != nil {
-		return fmt.Errorf("Error setting driver configurations: %s", err)
-	}
-	return nil
-}
-
-func (d *DockerMachine) configureHost(host *host.Host) {
-	if d.tlsSupport == false {
-		host.HostOptions.EngineOptions.Env = []string{"DOCKER_TLS=no"}
-		host.HostOptions.EngineOptions.ArbitraryFlags = []string{"host=tcp://0.0.0.0:2375"}
-	}
-}
-
-func (d *DockerMachine) CreateMachine(params map[string]interface{}) (*Machine, error) {
-	client := libmachine.NewClient(d.storePath, d.certsPath)
-	defer client.Close()
-	host, err := client.NewHost(d.driverName, d.rawDriver)
-	if err != nil {
-		return nil, err
-	}
-	configureDriver(host.Driver, d.driverOpts)
-	d.configureHost(host)
-	err = client.Create(host)
-	if err != nil {
-		fmt.Printf("Ignoring error on machine creation: %s", err)
-	}
-	ip, err := host.Driver.GetIP()
-	if err != nil {
-		return nil, err
-	}
-	config := map[string]string{}
-	m := Machine{
-		IP:     ip,
-		Config: config,
-		TLS:    d.tlsSupport,
-	}
-	return &m, nil
-}
-
-func (d *DockerMachine) DeleteMachine(m *Machine) error {
-	client := libmachine.NewClient(d.storePath, d.certsPath)
-	defer client.Close()
-	h, err := client.Load("tsuru")
-	if err != nil {
-		return err
-	}
-	err = h.Driver.Remove()
-	if err != nil {
-		return err
-	}
-	return client.Remove("tsuru")
-}
-
-func (m *Machine) dockerClient() (*docker.Client, error) {
-	if m.TLS {
-		return docker.NewTLSClient(fmt.Sprintf("https://%s:2376", m.IP), "cert.pem", "key.pem", "ca.pem")
-	}
-	return docker.NewClient(fmt.Sprintf("http://%s:2375", m.IP))
 }
