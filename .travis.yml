@@ -7,7 +7,7 @@ os:
 go:
   - 1.5.4
   - 1.6.2
-  - 1.7beta1
+  - 1.7rc1
   - tip
 env:
   global:
