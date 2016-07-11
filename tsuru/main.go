@@ -9,10 +9,9 @@ import (
 	"os"
 
 	"github.com/docker/machine/libmachine/drivers/plugin/localbinary"
+	"github.com/tsuru/tsuru-client/tsuru/admin"
 	"github.com/tsuru/tsuru-client/tsuru/auth"
 	"github.com/tsuru/tsuru-client/tsuru/installer"
-	"github.com/tsuru/tsuru-client/tsuru/platform"
-	"github.com/tsuru/tsuru-client/tsuru/pool"
 	"github.com/tsuru/tsuru/cmd"
 	"github.com/tsuru/tsuru/provision"
 	_ "github.com/tsuru/tsuru/provision/docker"
@@ -69,8 +68,8 @@ func buildManager(name string) *cmd.Manager {
 	m.RegisterRemoved("service-bind", "You should use `tsuru service-instance-bind` instead.")
 	m.Register(&serviceInstanceUnbind{})
 	m.RegisterRemoved("service-unbind", "You should use `tsuru service-instance-unbind` instead.")
-	m.Register(&platform.PlatformList{})
-	m.Register(&platform.PlatformAdd{})
+	m.Register(&admin.PlatformList{})
+	m.Register(&admin.PlatformAdd{})
 	m.Register(&pluginInstall{})
 	m.Register(&pluginRemove{})
 	m.Register(&pluginList{})
@@ -110,7 +109,7 @@ func buildManager(name string) *cmd.Manager {
 	m.Register(&roleDefaultRemove{})
 	m.Register(&install{})
 	m.Register(&uninstall{})
-	m.Register(&pool.AddPoolToSchedulerCmd{})
+	m.Register(&admin.AddPoolToSchedulerCmd{})
 	registerProvisionersCommands(m)
 	return m
 }
