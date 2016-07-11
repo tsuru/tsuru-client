@@ -32,7 +32,7 @@ func (c *MongoDB) Name() string {
 }
 
 func (c *MongoDB) Install(machine *Machine) error {
-	return createContainer(machine.Address, "mongo", &docker.Config{Image: "mongo:latest"}, nil)
+	return createContainer(machine, "mongo", &docker.Config{Image: "mongo:latest"}, nil)
 }
 
 type PlanB struct{}
@@ -46,7 +46,7 @@ func (c *PlanB) Install(machine *Machine) error {
 		Image: "tsuru/planb:latest",
 		Cmd:   []string{"--listen", ":80", "--read-redis-host", machine.IP, "--write-redis-host", machine.IP},
 	}
-	return createContainer(machine.Address, "planb", config, nil)
+	return createContainer(machine, "planb", config, nil)
 }
 
 type Redis struct{}
@@ -56,7 +56,7 @@ func (c *Redis) Name() string {
 }
 
 func (c *Redis) Install(machine *Machine) error {
-	return createContainer(machine.Address, "redis", &docker.Config{Image: "redis:latest"}, nil)
+	return createContainer(machine, "redis", &docker.Config{Image: "redis:latest"}, nil)
 }
 
 type Registry struct{}
@@ -73,7 +73,7 @@ func (c *Registry) Install(machine *Machine) error {
 	hostConfig := &docker.HostConfig{
 		Binds: []string{"/var/lib/registry:/var/lib/registry"},
 	}
-	return createContainer(machine.Address, "registry", config, hostConfig)
+	return createContainer(machine, "registry", config, hostConfig)
 }
 
 type TsuruAPI struct{}
@@ -93,17 +93,17 @@ func (c *TsuruAPI) Install(machine *Machine) error {
 		Image: "tsuru/api:latest",
 		Env:   env,
 	}
-	err := createContainer(machine.Address, "tsuru", config, nil)
+	err := createContainer(machine, "tsuru", config, nil)
 	if err != nil {
 		return err
 	}
-	return c.setupRootUser(machine.Address)
+	return c.setupRootUser(machine)
 }
 
-func (c *TsuruAPI) setupRootUser(address string) error {
+func (c *TsuruAPI) setupRootUser(machine *Machine) error {
 	cmd := []string{"tsurud", "root-user-create", "admin@example.com"}
 	passwordConfirmation := strings.NewReader("admin123\nadmin123\n")
-	client, err := docker.NewClient(address)
+	client, err := machine.dockerClient()
 	if err != nil {
 		return err
 	}

@@ -49,7 +49,7 @@ func (c *install) Run(context *cmd.Context, client *cmd.Client) error {
 		fmt.Fprintf(context.Stderr, "Error creating machine: %s\n", err)
 		return err
 	}
-	fmt.Fprintf(context.Stdout, "Machine %s successfully created!\n", m.Address)
+	fmt.Fprintf(context.Stdout, "Machine %s successfully created!\n", m.IP)
 	for _, component := range installer.TsuruComponents {
 		fmt.Fprintf(context.Stdout, "Installing %s\n", component.Name())
 		err := component.Install(m)

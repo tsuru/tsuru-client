@@ -10,8 +10,8 @@ import (
 	"github.com/fsouza/go-dockerclient"
 )
 
-func createContainer(address, name string, config *docker.Config, hostConfig *docker.HostConfig) error {
-	client, err := docker.NewClient(address)
+func createContainer(machine *Machine, name string, config *docker.Config, hostConfig *docker.HostConfig) error {
+	client, err := machine.dockerClient()
 	if err != nil {
 		return err
 	}

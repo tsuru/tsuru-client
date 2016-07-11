@@ -27,6 +27,8 @@ import (
 	"github.com/docker/machine/libmachine/drivers"
 	"github.com/docker/machine/libmachine/drivers/plugin"
 	"github.com/docker/machine/libmachine/drivers/rpc"
+	"github.com/docker/machine/libmachine/host"
+	"github.com/fsouza/go-dockerclient"
 )
 
 type DockerMachine struct {
@@ -35,12 +37,13 @@ type DockerMachine struct {
 	driverName string
 	storePath  string
 	certsPath  string
+	tlsSupport bool
 }
 
 type Machine struct {
-	Address string
-	IP      string
-	Config  map[string]string
+	IP     string
+	Config map[string]string
+	TLS    bool
 }
 
 func RunDriver(driverName string) error {
@@ -97,6 +100,7 @@ func NewDockerMachine(driverName string, opts map[string]interface{}) (*DockerMa
 		driverName: driverName,
 		storePath:  storePath,
 		certsPath:  certsPath,
+		tlsSupport: driverName != "virtualbox" && driverName != "none",
 	}
 	return dm, nil
 }
@@ -117,6 +121,13 @@ func configureDriver(driver drivers.Driver, driverOpts rpcdriver.RPCFlags) error
 	return nil
 }
 
+func (d *DockerMachine) configureHost(host *host.Host) {
+	if d.tlsSupport == false {
+		host.HostOptions.EngineOptions.Env = []string{"DOCKER_TLS=no"}
+		host.HostOptions.EngineOptions.ArbitraryFlags = []string{"host=tcp://0.0.0.0:2375"}
+	}
+}
+
 func (d *DockerMachine) CreateMachine(params map[string]interface{}) (*Machine, error) {
 	client := libmachine.NewClient(d.storePath, d.certsPath)
 	defer client.Close()
@@ -124,9 +135,8 @@ func (d *DockerMachine) CreateMachine(params map[string]interface{}) (*Machine, 
 	if err != nil {
 		return nil, err
 	}
-	host.HostOptions.EngineOptions.Env = []string{"DOCKER_TLS=no"}
-	host.HostOptions.EngineOptions.ArbitraryFlags = []string{"host=tcp://0.0.0.0:2375"}
 	configureDriver(host.Driver, d.driverOpts)
+	d.configureHost(host)
 	err = client.Create(host)
 	if err != nil {
 		fmt.Printf("Ignoring error on machine creation: %s", err)
@@ -137,9 +147,9 @@ func (d *DockerMachine) CreateMachine(params map[string]interface{}) (*Machine, 
 	}
 	config := map[string]string{}
 	m := Machine{
-		Address: fmt.Sprintf("http://%s:2375", ip),
-		IP:      ip,
-		Config:  config,
+		IP:     ip,
+		Config: config,
+		TLS:    d.tlsSupport,
 	}
 	return &m, nil
 }
@@ -156,4 +166,11 @@ func (d *DockerMachine) DeleteMachine(m *Machine) error {
 		return err
 	}
 	return client.Remove("tsuru")
+}
+
+func (m *Machine) dockerClient() (*docker.Client, error) {
+	if m.TLS {
+		return docker.NewTLSClient(fmt.Sprintf("https://%s:2376", m.IP), "cert.pem", "key.pem", "ca.pem")
+	}
+	return docker.NewClient(fmt.Sprintf("http://%s:2375", m.IP))
 }

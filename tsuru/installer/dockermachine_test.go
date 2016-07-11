@@ -39,6 +39,15 @@ func (s *S) TestNewDockerMachine(c *check.C) {
 	c.Assert(err, check.IsNil)
 	c.Assert(dm, check.NotNil)
 	c.Assert(dm.driverName, check.Equals, "virtualbox")
+	c.Assert(dm.tlsSupport, check.Equals, false)
+}
+
+func (s *S) TestNewDockerMachineSupportTLS(c *check.C) {
+	dm, err := NewDockerMachine("amazonec2", nil)
+	c.Assert(err, check.IsNil)
+	c.Assert(dm, check.NotNil)
+	c.Assert(dm.driverName, check.Equals, "amazonec2")
+	c.Assert(dm.tlsSupport, check.Equals, true)
 }
 
 func (s *S) TestNewDockerMachineDriverOpts(c *check.C) {
@@ -54,5 +63,5 @@ func (s *S) TestCreateMachineNoneDriver(c *check.C) {
 	c.Assert(err, check.IsNil)
 	c.Assert(machine, check.NotNil)
 	c.Assert(machine.IP, check.Equals, "1.2.3.4")
-	c.Assert(machine.Address, check.Equals, "http://1.2.3.4:2375")
+	c.Assert(machine.TLS, check.Equals, false)
 }
