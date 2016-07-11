@@ -10,6 +10,7 @@ import (
 
 	"gopkg.in/check.v1"
 
+	"github.com/tsuru/tsuru-client/tsuru/auth"
 	"github.com/tsuru/tsuru-client/tsuru/platform"
 	"github.com/tsuru/tsuru/cmd"
 	"github.com/tsuru/tsuru/exec/exectest"
@@ -355,35 +356,35 @@ func (s *S) TestChangePasswordIsRegistered(c *check.C) {
 	manager = buildManager("tsuru")
 	chpass, ok := manager.Commands["change-password"]
 	c.Assert(ok, check.Equals, true)
-	c.Assert(chpass, check.FitsTypeOf, &changePassword{})
+	c.Assert(chpass, check.FitsTypeOf, &auth.ChangePassword{})
 }
 
 func (s *S) TestResetPasswordIsRegistered(c *check.C) {
 	manager = buildManager("tsuru")
 	reset, ok := manager.Commands["reset-password"]
 	c.Assert(ok, check.Equals, true)
-	c.Assert(reset, check.FitsTypeOf, &resetPassword{})
+	c.Assert(reset, check.FitsTypeOf, &auth.ResetPassword{})
 }
 
 func (s *S) TestUserRemoveIsRegistered(c *check.C) {
 	manager = buildManager("tsuru")
 	rmUser, ok := manager.Commands["user-remove"]
 	c.Assert(ok, check.Equals, true)
-	c.Assert(rmUser, check.FitsTypeOf, &userRemove{})
+	c.Assert(rmUser, check.FitsTypeOf, &auth.UserRemove{})
 }
 
 func (s *S) TestUserListIsRegistered(c *check.C) {
 	manager = buildManager("tsuru")
 	rmUser, ok := manager.Commands["user-list"]
 	c.Assert(ok, check.Equals, true)
-	c.Assert(rmUser, check.FitsTypeOf, &listUsers{})
+	c.Assert(rmUser, check.FitsTypeOf, &auth.ListUsers{})
 }
 
 func (s *S) TestTeamRemoveIsRegistered(c *check.C) {
 	manager = buildManager("tsuru")
 	rmTeam, ok := manager.Commands["team-remove"]
 	c.Assert(ok, check.Equals, true)
-	c.Assert(rmTeam, check.FitsTypeOf, &teamRemove{})
+	c.Assert(rmTeam, check.FitsTypeOf, &auth.TeamRemove{})
 }
 
 func (s *S) TestTeamAddUserIsRegistered(c *check.C) {
@@ -411,21 +412,21 @@ func (s *S) TestUserCreateIsRegistered(c *check.C) {
 	manager = buildManager("tsuru")
 	user, ok := manager.Commands["user-create"]
 	c.Assert(ok, check.Equals, true)
-	c.Assert(user, check.FitsTypeOf, &userCreate{})
+	c.Assert(user, check.FitsTypeOf, &auth.UserCreate{})
 }
 
 func (s *S) TestTeamCreateIsRegistered(c *check.C) {
 	manager = buildManager("tsuru")
 	create, ok := manager.Commands["team-create"]
 	c.Assert(ok, check.Equals, true)
-	c.Assert(create, check.FitsTypeOf, &teamCreate{})
+	c.Assert(create, check.FitsTypeOf, &auth.TeamCreate{})
 }
 
 func (s *S) TestTeamListIsRegistered(c *check.C) {
 	manager = buildManager("tsuru")
 	list, ok := manager.Commands["team-list"]
 	c.Assert(ok, check.Equals, true)
-	c.Assert(list, check.FitsTypeOf, &teamList{})
+	c.Assert(list, check.FitsTypeOf, &auth.TeamList{})
 }
 
 func (s *S) TestPoolListIsRegistered(c *check.C) {

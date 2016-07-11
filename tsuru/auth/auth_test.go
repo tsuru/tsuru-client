@@ -2,14 +2,16 @@
 // Use of this source code is governed by a BSD-style
 // license that can be found in the LICENSE file.
 
-package main
+package auth
 
 import (
 	"bytes"
 	"io"
 	"io/ioutil"
 	"net/http"
+	"os"
 	"strings"
+	"testing"
 
 	"gopkg.in/check.v1"
 
@@ -17,6 +19,34 @@ import (
 	"github.com/tsuru/tsuru/cmd/cmdtest"
 	"github.com/tsuru/tsuru/fs/fstest"
 )
+
+type S struct{}
+
+func (s *S) SetUpSuite(c *check.C) {
+	os.Setenv("TSURU_TARGET", "http://localhost:8080")
+	os.Setenv("TSURU_TOKEN", "sometoken")
+}
+
+func (s *S) TearDownSuite(c *check.C) {
+	os.Unsetenv("TSURU_TARGET")
+	os.Unsetenv("TSURU_TOKEN")
+}
+
+var _ = check.Suite(&S{})
+var manager *cmd.Manager
+
+func Test(t *testing.T) { check.TestingT(t) }
+
+type transportFunc func(req *http.Request) (resp *http.Response, err error)
+
+func (fn transportFunc) RoundTrip(req *http.Request) (resp *http.Response, err error) {
+	return fn(req)
+}
+
+func (s *S) SetUpTest(c *check.C) {
+	var stdout, stderr bytes.Buffer
+	manager = cmd.NewManager("glb", "1.0.0", "Supported-Tsuru", &stdout, &stderr, os.Stdin, nil)
+}
 
 func (s *S) TestTeamCreate(c *check.C) {
 	var stdout, stderr bytes.Buffer
@@ -40,14 +70,14 @@ func (s *S) TestTeamCreate(c *check.C) {
 		},
 	}
 	client := cmd.NewClient(&http.Client{Transport: &transport}, nil, manager)
-	command := teamCreate{}
+	command := TeamCreate{}
 	err := command.Run(&context, client)
 	c.Assert(err, check.IsNil)
 	c.Assert(stdout.String(), check.Equals, expected)
 }
 
 func (s *S) TestTeamCreateInfo(c *check.C) {
-	c.Assert((&teamCreate{}).Info(), check.NotNil)
+	c.Assert((&TeamCreate{}).Info(), check.NotNil)
 }
 
 func (s *S) TestTeamRemove(c *check.C) {
@@ -68,7 +98,7 @@ func (s *S) TestTeamRemove(c *check.C) {
 		},
 	}
 	client := cmd.NewClient(&http.Client{Transport: &trans}, nil, manager)
-	command := teamRemove{}
+	command := TeamRemove{}
 	err := command.Run(&context, client)
 	c.Assert(err, check.IsNil)
 	c.Assert(called, check.Equals, true)
@@ -82,7 +112,7 @@ func (s *S) TestTeamRemoveWithouConfirmation(c *check.C) {
 		Stdout: &buf,
 		Stdin:  strings.NewReader("n\n"),
 	}
-	command := teamRemove{}
+	command := TeamRemove{}
 	err := command.Run(&context, nil)
 	c.Assert(err, check.IsNil)
 	c.Assert(buf.String(), check.Equals, `Are you sure you want to remove team "dream-theater"? (y/n) Abort.`+"\n")
@@ -95,18 +125,18 @@ func (s *S) TestTeamRemoveFailingRequest(c *check.C) {
 		Stdin:  strings.NewReader("y\n"),
 	}
 	client := cmd.NewClient(&http.Client{Transport: &cmdtest.Transport{Message: "Team evergrey not found.", Status: http.StatusNotFound}}, nil, manager)
-	command := teamRemove{}
+	command := TeamRemove{}
 	err := command.Run(&context, client)
 	c.Assert(err, check.NotNil)
 	c.Assert(err, check.ErrorMatches, "^Team evergrey not found.$")
 }
 
 func (s *S) TestTeamRemoveInfo(c *check.C) {
-	c.Assert((&teamRemove{}).Info(), check.NotNil)
+	c.Assert((&TeamRemove{}).Info(), check.NotNil)
 }
 
 func (s *S) TestTeamRemoveIsACommand(c *check.C) {
-	var _ cmd.Command = &teamRemove{}
+	var _ cmd.Command = &TeamRemove{}
 }
 
 func (s *S) TestTeamListRun(c *check.C) {
@@ -133,7 +163,7 @@ func (s *S) TestTeamListRun(c *check.C) {
 `
 	client := cmd.NewClient(&http.Client{Transport: trans}, nil, manager)
 	var stdout, stderr bytes.Buffer
-	err := (&teamList{}).Run(&cmd.Context{
+	err := (&TeamList{}).Run(&cmd.Context{
 		Args:   []string{},
 		Stdout: &stdout,
 		Stderr: &stderr,
@@ -163,7 +193,7 @@ func (s *S) TestTeamListRunNoPermissions(c *check.C) {
 `
 	client := cmd.NewClient(&http.Client{Transport: trans}, nil, manager)
 	var stdout, stderr bytes.Buffer
-	err := (&teamList{}).Run(&cmd.Context{
+	err := (&TeamList{}).Run(&cmd.Context{
 		Args:   []string{},
 		Stdout: &stdout,
 		Stderr: &stderr,
@@ -177,7 +207,7 @@ func (s *S) TestTeamListRunNoPermissions(c *check.C) {
 func (s *S) TestTeamListRunWithNoContent(c *check.C) {
 	client := cmd.NewClient(&http.Client{Transport: &cmdtest.Transport{Message: "", Status: http.StatusNoContent}}, nil, manager)
 	var stdout, stderr bytes.Buffer
-	err := (&teamList{}).Run(&cmd.Context{
+	err := (&TeamList{}).Run(&cmd.Context{
 		Args:   []string{},
 		Stdout: &stdout,
 		Stderr: &stderr,
@@ -188,11 +218,11 @@ func (s *S) TestTeamListRunWithNoContent(c *check.C) {
 }
 
 func (s *S) TestTeamListInfo(c *check.C) {
-	c.Assert((&teamList{}).Info(), check.NotNil)
+	c.Assert((&TeamList{}).Info(), check.NotNil)
 }
 
 func (s *S) TestTeamListIsACommand(c *check.C) {
-	var _ cmd.Command = &teamList{}
+	var _ cmd.Command = &TeamList{}
 }
 
 func (s *S) TestUserCreateShouldNotDependOnTsuruTokenFile(c *check.C) {
@@ -200,10 +230,6 @@ func (s *S) TestUserCreateShouldNotDependOnTsuruTokenFile(c *check.C) {
 	f, _ := rfs.Create(cmd.JoinWithUserDir(".tsuru_target"))
 	f.Write([]byte("http://localhost"))
 	f.Close()
-	fsystem = rfs
-	defer func() {
-		fsystem = nil
-	}()
 	expected := "Password: \nConfirm: \n" + `User "foo@foo.com" successfully created!` + "\n"
 	reader := strings.NewReader("foo123\nfoo123\n")
 	var stdout, stderr bytes.Buffer
@@ -227,7 +253,7 @@ func (s *S) TestUserCreateShouldNotDependOnTsuruTokenFile(c *check.C) {
 		},
 	}
 	client := cmd.NewClient(&http.Client{Transport: &transport}, nil, manager)
-	command := userCreate{}
+	command := UserCreate{}
 	err := command.Run(&context, client)
 	c.Assert(err, check.IsNil)
 	c.Assert(stdout.String(), check.Equals, expected)
@@ -243,7 +269,7 @@ func (s *S) TestUserCreateReturnErrorIfPasswordsDontMatch(c *check.C) {
 		Stdin:  reader,
 	}
 	client := cmd.NewClient(&http.Client{Transport: &cmdtest.Transport{Message: "", Status: http.StatusCreated}}, nil, manager)
-	command := userCreate{}
+	command := UserCreate{}
 	err := command.Run(&context, client)
 	c.Assert(err, check.NotNil)
 	c.Assert(err, check.ErrorMatches, "^Passwords didn't match.$")
@@ -259,7 +285,7 @@ func (s *S) TestUserCreate(c *check.C) {
 		Stdin:  strings.NewReader("foo123\nfoo123\n"),
 	}
 	client := cmd.NewClient(&http.Client{Transport: &cmdtest.Transport{Message: "", Status: http.StatusCreated}}, nil, manager)
-	command := userCreate{}
+	command := UserCreate{}
 	err := command.Run(&context, client)
 	c.Assert(err, check.IsNil)
 	c.Assert(stdout.String(), check.Equals, expected)
@@ -273,7 +299,7 @@ func (s *S) TestUserCreateShouldReturnErrorIfThePasswordIsNotGiven(c *check.C) {
 		Stderr: &stderr,
 		Stdin:  strings.NewReader(""),
 	}
-	command := userCreate{}
+	command := UserCreate{}
 	err := command.Run(&context, nil)
 	c.Assert(err, check.NotNil)
 	c.Assert(err, check.ErrorMatches, "^You must provide the password!$")
@@ -293,7 +319,7 @@ func (s *S) TestUserCreateNotFound(c *check.C) {
 		Stdin:  reader,
 	}
 	client := cmd.NewClient(&http.Client{Transport: &transport}, nil, manager)
-	command := userCreate{}
+	command := UserCreate{}
 	err := command.Run(&context, client)
 	c.Assert(err, check.NotNil)
 	c.Assert(err.Error(), check.Equals, "User creation is disabled.")
@@ -313,14 +339,14 @@ func (s *S) TestUserCreateMethodNotAllowed(c *check.C) {
 		Stdin:  reader,
 	}
 	client := cmd.NewClient(&http.Client{Transport: &transport}, nil, manager)
-	command := userCreate{}
+	command := UserCreate{}
 	err := command.Run(&context, client)
 	c.Assert(err, check.NotNil)
 	c.Assert(err.Error(), check.Equals, "User creation is disabled.")
 }
 
 func (s *S) TestUserCreateInfo(c *check.C) {
-	c.Assert((&userCreate{}).Info(), check.NotNil)
+	c.Assert((&UserCreate{}).Info(), check.NotNil)
 }
 
 func (s *S) TestUserRemove(c *check.C) {
@@ -328,10 +354,6 @@ func (s *S) TestUserRemove(c *check.C) {
 	f, _ := rfs.Create(cmd.JoinWithUserDir(".tsuru_target"))
 	f.Write([]byte("http://tsuru.io"))
 	f.Close()
-	fsystem = rfs
-	defer func() {
-		fsystem = nil
-	}()
 	var (
 		buf    bytes.Buffer
 		called bool
@@ -353,7 +375,7 @@ func (s *S) TestUserRemove(c *check.C) {
 		}, nil
 	})
 	client := cmd.NewClient(&http.Client{Transport: transport}, nil, manager)
-	command := userRemove{}
+	command := UserRemove{}
 	err := command.Run(&context, client)
 	c.Assert(err, check.IsNil)
 	c.Assert(called, check.Equals, true)
@@ -365,10 +387,6 @@ func (s *S) TestUserRemoveWithArgs(c *check.C) {
 	f, _ := rfs.Create(cmd.JoinWithUserDir(".tsuru_target"))
 	f.Write([]byte("http://tsuru.io"))
 	f.Close()
-	fsystem = rfs
-	defer func() {
-		fsystem = nil
-	}()
 	var (
 		buf    bytes.Buffer
 		called bool
@@ -386,7 +404,7 @@ func (s *S) TestUserRemoveWithArgs(c *check.C) {
 		},
 	}
 	client := cmd.NewClient(&http.Client{Transport: &trans}, nil, manager)
-	command := userRemove{}
+	command := UserRemove{}
 	err := command.Run(&context, client)
 	c.Assert(err, check.IsNil)
 	c.Assert(called, check.Equals, true)
@@ -401,7 +419,7 @@ func (s *S) TestUserRemoveWithoutConfirmation(c *check.C) {
 	}
 	trans := cmdtest.Transport{Message: `{"Email":"myself@email.com","Teams":["team1"]}`, Status: http.StatusOK}
 	client := cmd.NewClient(&http.Client{Transport: &trans}, nil, manager)
-	command := userRemove{}
+	command := UserRemove{}
 	err := command.Run(&context, client)
 	c.Assert(err, check.IsNil)
 	c.Assert(buf.String(), check.Equals, "Are you sure you want to remove the user \"myself@email.com\" from tsuru? (y/n) Abort.\n")
@@ -409,18 +427,18 @@ func (s *S) TestUserRemoveWithoutConfirmation(c *check.C) {
 
 func (s *S) TestUserRemoveWithRequestError(c *check.C) {
 	client := cmd.NewClient(&http.Client{Transport: &cmdtest.Transport{Message: "User not found.", Status: http.StatusNotFound}}, nil, manager)
-	command := userRemove{}
+	command := UserRemove{}
 	err := command.Run(&cmd.Context{Stdout: new(bytes.Buffer), Stdin: strings.NewReader("y\n")}, client)
 	c.Assert(err, check.NotNil)
 	c.Assert(err, check.ErrorMatches, "^User not found.$")
 }
 
 func (s *S) TestUserRemoveInfo(c *check.C) {
-	c.Assert((&userRemove{}).Info(), check.NotNil)
+	c.Assert((&UserRemove{}).Info(), check.NotNil)
 }
 
 func (s *S) TestUserRemoveIsACommand(c *check.C) {
-	var _ cmd.Command = &userRemove{}
+	var _ cmd.Command = &UserRemove{}
 }
 
 func (s *S) TestChangePassword(c *check.C) {
@@ -448,7 +466,7 @@ func (s *S) TestChangePassword(c *check.C) {
 		},
 	}
 	client := cmd.NewClient(&http.Client{Transport: &trans}, nil, manager)
-	command := changePassword{}
+	command := ChangePassword{}
 	err := command.Run(&context, client)
 	c.Assert(err, check.IsNil)
 	c.Assert(called, check.Equals, true)
@@ -479,19 +497,19 @@ func (s *S) TestChangePasswordWrongConfirmation(c *check.C) {
 		},
 	}
 	client := cmd.NewClient(&http.Client{Transport: &trans}, nil, manager)
-	command := changePassword{}
+	command := ChangePassword{}
 	err := command.Run(&context, client)
 	c.Assert(err, check.NotNil)
 	c.Assert(err.Error(), check.Equals, "New password and password confirmation didn't match.")
 }
 
 func (s *S) TestChangePasswordInfo(c *check.C) {
-	command := changePassword{}
+	command := ChangePassword{}
 	c.Assert(command.Info(), check.NotNil)
 }
 
 func (s *S) TestChangePasswordIsACommand(c *check.C) {
-	var _ cmd.Command = &changePassword{}
+	var _ cmd.Command = &ChangePassword{}
 }
 
 func (s *S) TestResetPassword(c *check.C) {
@@ -511,7 +529,7 @@ func (s *S) TestResetPassword(c *check.C) {
 				r.URL.Query().Get("token") == ""
 		},
 	}
-	command := resetPassword{}
+	command := ResetPassword{}
 	client := cmd.NewClient(&http.Client{Transport: &trans}, nil, manager)
 	err := command.Run(&context, client)
 	c.Assert(err, check.IsNil)
@@ -539,7 +557,7 @@ func (s *S) TestResetPasswordStepTwo(c *check.C) {
 				r.URL.Query().Get("token") == "secret"
 		},
 	}
-	command := resetPassword{}
+	command := ResetPassword{}
 	command.Flags().Parse(true, []string{"-t", "secret"})
 	client := cmd.NewClient(&http.Client{Transport: &trans}, nil, manager)
 	err := command.Run(&context, client)
@@ -552,11 +570,11 @@ Please check your email.` + "\n"
 }
 
 func (s *S) TestResetPasswordInfo(c *check.C) {
-	c.Assert((&resetPassword{}).Info(), check.NotNil)
+	c.Assert((&ResetPassword{}).Info(), check.NotNil)
 }
 
 func (s *S) TestResetPasswordFlags(c *check.C) {
-	command := resetPassword{}
+	command := ResetPassword{}
 	flagset := command.Flags()
 	c.Assert(flagset, check.NotNil)
 	err := flagset.Parse(false, []string{"-t", "token123"})
@@ -577,7 +595,7 @@ func (s *S) TestResetPasswordFlags(c *check.C) {
 }
 
 func (s *S) TestResetPasswordIsAFlaggedCommand(c *check.C) {
-	var _ cmd.FlaggedCommand = &resetPassword{}
+	var _ cmd.FlaggedCommand = &ResetPassword{}
 }
 
 func (s *S) TestShowAPITokenRun(c *check.C) {
@@ -593,7 +611,7 @@ func (s *S) TestShowAPITokenRun(c *check.C) {
 `
 	client := cmd.NewClient(&http.Client{Transport: trans}, nil, manager)
 	var stdout, stderr bytes.Buffer
-	err := (&showAPIToken{}).Run(&cmd.Context{
+	err := (&ShowAPIToken{}).Run(&cmd.Context{
 		Args:   []string{},
 		Stdout: &stdout,
 		Stderr: &stderr,
@@ -625,7 +643,7 @@ func (s *S) TestShowAPITokenRunWithFlag(c *check.C) {
 		Stderr: &stderr,
 		Stdin:  nil,
 	}
-	command := showAPIToken{}
+	command := ShowAPIToken{}
 	command.Flags().Parse(true, []string{"-u", "admin@example.com"})
 	client := cmd.NewClient(&http.Client{Transport: trans}, nil, manager)
 	err := command.Run(&context, client)
@@ -637,7 +655,7 @@ func (s *S) TestShowAPITokenRunWithFlag(c *check.C) {
 func (s *S) TestShowAPITokenRunWithNoContent(c *check.C) {
 	client := cmd.NewClient(&http.Client{Transport: &cmdtest.Transport{Message: "", Status: http.StatusNoContent}}, nil, manager)
 	var stdout, stderr bytes.Buffer
-	err := (&showAPIToken{}).Run(&cmd.Context{
+	err := (&ShowAPIToken{}).Run(&cmd.Context{
 		Args:   []string{},
 		Stdout: &stdout,
 		Stderr: &stderr,
@@ -648,11 +666,11 @@ func (s *S) TestShowAPITokenRunWithNoContent(c *check.C) {
 }
 
 func (s *S) TestShowAPITokenInfo(c *check.C) {
-	c.Assert((&showAPIToken{}).Info(), check.NotNil)
+	c.Assert((&ShowAPIToken{}).Info(), check.NotNil)
 }
 
 func (s *S) TestTShowAPITokenIsACommand(c *check.C) {
-	var _ cmd.Command = &showAPIToken{}
+	var _ cmd.Command = &ShowAPIToken{}
 }
 
 func (s *S) TestRegenerateAPITokenRun(c *check.C) {
@@ -668,7 +686,7 @@ func (s *S) TestRegenerateAPITokenRun(c *check.C) {
 `
 	client := cmd.NewClient(&http.Client{Transport: trans}, nil, manager)
 	var stdout, stderr bytes.Buffer
-	err := (&regenerateAPIToken{}).Run(&cmd.Context{
+	err := (&RegenerateAPIToken{}).Run(&cmd.Context{
 		Args:   []string{},
 		Stdout: &stdout,
 		Stderr: &stderr,
@@ -698,7 +716,7 @@ func (s *S) TestRegenerateAPITokenRunWithFlag(c *check.C) {
 		Stderr: &stderr,
 		Stdin:  nil,
 	}
-	command := regenerateAPIToken{}
+	command := RegenerateAPIToken{}
 	command.Flags().Parse(true, []string{"-u", "admin@example.com"})
 	client := cmd.NewClient(&http.Client{Transport: trans}, nil, manager)
 	err := command.Run(&context, client)
@@ -710,7 +728,7 @@ func (s *S) TestRegenerateAPITokenRunWithFlag(c *check.C) {
 func (s *S) TestRegenerateAPITokenRunWithNoContent(c *check.C) {
 	client := cmd.NewClient(&http.Client{Transport: &cmdtest.Transport{Message: "", Status: http.StatusNoContent}}, nil, manager)
 	var stdout, stderr bytes.Buffer
-	err := (&regenerateAPIToken{}).Run(&cmd.Context{
+	err := (&RegenerateAPIToken{}).Run(&cmd.Context{
 		Args:   []string{},
 		Stdout: &stdout,
 		Stderr: &stderr,
@@ -721,11 +739,11 @@ func (s *S) TestRegenerateAPITokenRunWithNoContent(c *check.C) {
 }
 
 func (s *S) TestRegenerateAPITokenInfo(c *check.C) {
-	c.Assert((&regenerateAPIToken{}).Info(), check.NotNil)
+	c.Assert((&RegenerateAPIToken{}).Info(), check.NotNil)
 }
 
 func (s *S) TestTRegenerateAPITokenIsACommand(c *check.C) {
-	var _ cmd.Command = &regenerateAPIToken{}
+	var _ cmd.Command = &RegenerateAPIToken{}
 }
 
 func (s *S) TestListUsersInfo(c *check.C) {
@@ -735,7 +753,7 @@ func (s *S) TestListUsersInfo(c *check.C) {
 		Usage:   "user-list [--user/-u useremail] [--role/-r role [-c/--context-value value]]",
 		Desc:    "List all users in tsuru. It may also filter users by user email or role name with context value.",
 	}
-	c.Assert((&listUsers{}).Info(), check.DeepEquals, expected)
+	c.Assert((&ListUsers{}).Info(), check.DeepEquals, expected)
 }
 
 func (s *S) TestListUsersRunWithoutFlags(c *check.C) {
@@ -765,7 +783,7 @@ func (s *S) TestListUsersRunWithoutFlags(c *check.C) {
 +---------------+---------------+
 `
 	client := cmd.NewClient(&http.Client{Transport: &trans}, nil, manager)
-	command := listUsers{}
+	command := ListUsers{}
 	err := command.Run(&context, client)
 	c.Assert(err, check.IsNil)
 	c.Assert(stdout.String(), check.Equals, expected)
@@ -803,7 +821,7 @@ func (s *S) TestListUsersRunFilterByUserEmail(c *check.C) {
 +---------------+---------------+
 `
 	client := cmd.NewClient(&http.Client{Transport: &trans}, nil, manager)
-	command := listUsers{}
+	command := ListUsers{}
 	command.Flags().Parse(true, []string{"-u", "test2@test.com"})
 	err := command.Run(&context, client)
 	c.Assert(err, check.IsNil)
@@ -842,7 +860,7 @@ func (s *S) TestListUsersRunFilterByRole(c *check.C) {
 +---------------+---------------+
 `
 	client := cmd.NewClient(&http.Client{Transport: &trans}, nil, manager)
-	command := listUsers{}
+	command := ListUsers{}
 	command.Flags().Parse(true, []string{"-r", "role2"})
 	err := command.Run(&context, client)
 	c.Assert(err, check.IsNil)
@@ -881,7 +899,7 @@ func (s *S) TestListUsersRunFilterByRoleWithContext(c *check.C) {
 +---------------+---------------+
 `
 	client := cmd.NewClient(&http.Client{Transport: &trans}, nil, manager)
-	command := listUsers{}
+	command := ListUsers{}
 	command.Flags().Parse(true, []string{"-r", "role2", "-c", "x"})
 	err := command.Run(&context, client)
 	c.Assert(err, check.IsNil)
@@ -913,7 +931,7 @@ func (s *S) TestListUsersRunWithMoreThanOneFlagReturnsError(c *check.C) {
 		},
 	}
 	client := cmd.NewClient(&http.Client{Transport: &trans}, nil, manager)
-	command := listUsers{}
+	command := ListUsers{}
 	command.Flags().Parse(true, []string{"-u", "test@test.com", "-r", "role2"})
 	err := command.Run(&context, client)
 	c.Assert(err, check.ErrorMatches, "You cannot filter by user email and role at same time. Enter <tsuru user-list --help> for more information.")
@@ -934,14 +952,14 @@ func (s *S) TestListUsersRunWithContextFlagAndNotRolaFlagError(c *check.C) {
 		},
 	}
 	client := cmd.NewClient(&http.Client{Transport: &trans}, nil, manager)
-	command := listUsers{}
+	command := ListUsers{}
 	command.Flags().Parse(true, []string{"-c", "team"})
 	err := command.Run(&context, client)
 	c.Assert(err, check.ErrorMatches, "You should provide a role to filter by context value.")
 }
 
 func (s *S) TestListUsersFlags(c *check.C) {
-	command := listUsers{}
+	command := ListUsers{}
 	flagset := command.Flags()
 	c.Assert(flagset, check.NotNil)
 	err := flagset.Parse(false, []string{"-u", "test@test.com"})

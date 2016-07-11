@@ -2,7 +2,7 @@
 // Use of this source code is governed by a BSD-style
 // license that can be found in the LICENSE file.
 
-package main
+package auth
 
 import (
 	"encoding/json"
@@ -17,9 +17,9 @@ import (
 	"github.com/tsuru/tsuru/cmd"
 )
 
-type userCreate struct{}
+type UserCreate struct{}
 
-func (c *userCreate) Info() *cmd.Info {
+func (c *UserCreate) Info() *cmd.Info {
 	return &cmd.Info{
 		Name:    "user-create",
 		Usage:   "user-create <email>",
@@ -28,7 +28,7 @@ func (c *userCreate) Info() *cmd.Info {
 	}
 }
 
-func (c *userCreate) Run(context *cmd.Context, client *cmd.Client) error {
+func (c *UserCreate) Run(context *cmd.Context, client *cmd.Client) error {
 	context.RawOutput()
 	u, err := cmd.GetURL("/users")
 	if err != nil {
@@ -72,9 +72,9 @@ func (c *userCreate) Run(context *cmd.Context, client *cmd.Client) error {
 	return nil
 }
 
-type userRemove struct{}
+type UserRemove struct{}
 
-func (c *userRemove) currentUserEmail(client *cmd.Client) (string, error) {
+func (c *UserRemove) currentUserEmail(client *cmd.Client) (string, error) {
 	u, err := cmd.GetURL("/users/info")
 	if err != nil {
 		return "", err
@@ -93,7 +93,7 @@ func (c *userRemove) currentUserEmail(client *cmd.Client) (string, error) {
 	return r.Email, nil
 }
 
-func (c *userRemove) Run(context *cmd.Context, client *cmd.Client) error {
+func (c *UserRemove) Run(context *cmd.Context, client *cmd.Client) error {
 	var (
 		answer string
 		email  string
@@ -133,7 +133,7 @@ func (c *userRemove) Run(context *cmd.Context, client *cmd.Client) error {
 	return nil
 }
 
-func (c *userRemove) Info() *cmd.Info {
+func (c *UserRemove) Info() *cmd.Info {
 	return &cmd.Info{
 		Name:  "user-remove",
 		Usage: "user-remove [email]",
@@ -146,9 +146,9 @@ you remove the team using ` + "`team-remove`" + ` before removing the user.`,
 	}
 }
 
-type teamCreate struct{}
+type TeamCreate struct{}
 
-func (c *teamCreate) Info() *cmd.Info {
+func (c *TeamCreate) Info() *cmd.Info {
 	return &cmd.Info{
 		Name:  "team-create",
 		Usage: "team-create <teamname>",
@@ -160,7 +160,7 @@ When you create a team, you're automatically member of this team.`,
 	}
 }
 
-func (c *teamCreate) Run(context *cmd.Context, client *cmd.Client) error {
+func (c *TeamCreate) Run(context *cmd.Context, client *cmd.Client) error {
 	team := context.Args[0]
 	v := url.Values{}
 	v.Set("name", team)
@@ -182,11 +182,11 @@ func (c *teamCreate) Run(context *cmd.Context, client *cmd.Client) error {
 	return nil
 }
 
-type teamRemove struct {
+type TeamRemove struct {
 	cmd.ConfirmationCommand
 }
 
-func (c *teamRemove) Run(context *cmd.Context, client *cmd.Client) error {
+func (c *TeamRemove) Run(context *cmd.Context, client *cmd.Client) error {
 	team := context.Args[0]
 	question := fmt.Sprintf("Are you sure you want to remove team %q?", team)
 	if !c.Confirm(context, question) {
@@ -208,7 +208,7 @@ func (c *teamRemove) Run(context *cmd.Context, client *cmd.Client) error {
 	return nil
 }
 
-func (c *teamRemove) Info() *cmd.Info {
+func (c *TeamRemove) Info() *cmd.Info {
 	return &cmd.Info{
 		Name:  "team-remove",
 		Usage: "team-remove <team-name>",
@@ -220,9 +220,9 @@ and "app-revoke" commands for details).`,
 	}
 }
 
-type teamList struct{}
+type TeamList struct{}
 
-func (c *teamList) Info() *cmd.Info {
+func (c *TeamList) Info() *cmd.Info {
 	return &cmd.Info{
 		Name:    "team-list",
 		Usage:   "team-list",
@@ -236,7 +236,7 @@ type teamItem struct {
 	Permissions []string
 }
 
-func (c *teamList) Run(context *cmd.Context, client *cmd.Client) error {
+func (c *TeamList) Run(context *cmd.Context, client *cmd.Client) error {
 	u, err := cmd.GetURL("/teams")
 	if err != nil {
 		return err
@@ -271,9 +271,9 @@ func (c *teamList) Run(context *cmd.Context, client *cmd.Client) error {
 	return nil
 }
 
-type changePassword struct{}
+type ChangePassword struct{}
 
-func (c *changePassword) Run(context *cmd.Context, client *cmd.Client) error {
+func (c *ChangePassword) Run(context *cmd.Context, client *cmd.Client) error {
 	u, err := cmd.GetURL("/users/password")
 	if err != nil {
 		return err
@@ -311,7 +311,7 @@ func (c *changePassword) Run(context *cmd.Context, client *cmd.Client) error {
 	return nil
 }
 
-func (c *changePassword) Info() *cmd.Info {
+func (c *ChangePassword) Info() *cmd.Info {
 	return &cmd.Info{
 		Name:  "change-password",
 		Usage: "change-password",
@@ -320,11 +320,11 @@ password, the new and the confirmation.`,
 	}
 }
 
-type resetPassword struct {
+type ResetPassword struct {
 	token string
 }
 
-func (c *resetPassword) Info() *cmd.Info {
+func (c *ResetPassword) Info() *cmd.Info {
 	return &cmd.Info{
 		Name:  "reset-password",
 		Usage: "reset-password <email> [--token|-t <token>]",
@@ -344,7 +344,7 @@ With the token in hand, the user can finally reset the password using the
 	}
 }
 
-func (c *resetPassword) msg() string {
+func (c *ResetPassword) msg() string {
 	if c.token == "" {
 		return `You've successfully started the password reset process.
 
@@ -355,7 +355,7 @@ Please check your email.`
 Please check your email.`
 }
 
-func (c *resetPassword) Run(context *cmd.Context, client *cmd.Client) error {
+func (c *ResetPassword) Run(context *cmd.Context, client *cmd.Client) error {
 	url := fmt.Sprintf("/users/%s/password", context.Args[0])
 	if c.token != "" {
 		url += "?token=" + c.token
@@ -373,19 +373,19 @@ func (c *resetPassword) Run(context *cmd.Context, client *cmd.Client) error {
 	return nil
 }
 
-func (c *resetPassword) Flags() *gnuflag.FlagSet {
+func (c *ResetPassword) Flags() *gnuflag.FlagSet {
 	fs := gnuflag.NewFlagSet("reset-password", gnuflag.ExitOnError)
 	fs.StringVar(&c.token, "token", "", "Token to reset the password")
 	fs.StringVar(&c.token, "t", "", "Token to reset the password")
 	return fs
 }
 
-type showAPIToken struct {
+type ShowAPIToken struct {
 	user string
 	fs   *gnuflag.FlagSet
 }
 
-func (c *showAPIToken) Info() *cmd.Info {
+func (c *ShowAPIToken) Info() *cmd.Info {
 	return &cmd.Info{
 		Name:  "token-show",
 		Usage: "token-show [--user/-u useremail]",
@@ -399,7 +399,7 @@ if you need to invalidate an existing token.`,
 	}
 }
 
-func (c *showAPIToken) Run(context *cmd.Context, client *cmd.Client) error {
+func (c *ShowAPIToken) Run(context *cmd.Context, client *cmd.Client) error {
 	url, err := cmd.GetURL("/users/api-key")
 	if err != nil {
 		return err
@@ -431,7 +431,7 @@ func (c *showAPIToken) Run(context *cmd.Context, client *cmd.Client) error {
 	return nil
 }
 
-func (c *showAPIToken) Flags() *gnuflag.FlagSet {
+func (c *ShowAPIToken) Flags() *gnuflag.FlagSet {
 	if c.fs == nil {
 		c.fs = gnuflag.NewFlagSet("", gnuflag.ExitOnError)
 		c.fs.StringVar(&c.user, "user", "", "Shows API token for the given user email")
@@ -440,12 +440,12 @@ func (c *showAPIToken) Flags() *gnuflag.FlagSet {
 	return c.fs
 }
 
-type regenerateAPIToken struct {
+type RegenerateAPIToken struct {
 	user string
 	fs   *gnuflag.FlagSet
 }
 
-func (c *regenerateAPIToken) Info() *cmd.Info {
+func (c *RegenerateAPIToken) Info() *cmd.Info {
 	return &cmd.Info{
 		Name:    "token-regenerate",
 		Usage:   "token-regenerate [--user/-u useremail]",
@@ -454,7 +454,7 @@ func (c *regenerateAPIToken) Info() *cmd.Info {
 	}
 }
 
-func (c *regenerateAPIToken) Run(context *cmd.Context, client *cmd.Client) error {
+func (c *RegenerateAPIToken) Run(context *cmd.Context, client *cmd.Client) error {
 	url, err := cmd.GetURL("/users/api-key")
 	if err != nil {
 		return err
@@ -486,7 +486,7 @@ func (c *regenerateAPIToken) Run(context *cmd.Context, client *cmd.Client) error
 	return nil
 }
 
-func (c *regenerateAPIToken) Flags() *gnuflag.FlagSet {
+func (c *RegenerateAPIToken) Flags() *gnuflag.FlagSet {
 	if c.fs == nil {
 		c.fs = gnuflag.NewFlagSet("", gnuflag.ExitOnError)
 		c.fs.StringVar(&c.user, "user", "", "Generates a new API token for the given user email")
@@ -495,14 +495,14 @@ func (c *regenerateAPIToken) Flags() *gnuflag.FlagSet {
 	return c.fs
 }
 
-type listUsers struct {
+type ListUsers struct {
 	userEmail string
 	role      string
 	context   string
 	fs        *gnuflag.FlagSet
 }
 
-func (c *listUsers) Run(ctx *cmd.Context, client *cmd.Client) error {
+func (c *ListUsers) Run(ctx *cmd.Context, client *cmd.Client) error {
 	if c.userEmail != "" && c.role != "" {
 		return errors.New("You cannot filter by user email and role at same time. Enter <tsuru user-list --help> for more information.")
 	}
@@ -539,7 +539,7 @@ func (c *listUsers) Run(ctx *cmd.Context, client *cmd.Client) error {
 	return nil
 }
 
-func (c *listUsers) Info() *cmd.Info {
+func (c *ListUsers) Info() *cmd.Info {
 	return &cmd.Info{
 		Name:    "user-list",
 		MinArgs: 0,
@@ -548,7 +548,7 @@ func (c *listUsers) Info() *cmd.Info {
 	}
 }
 
-func (c *listUsers) Flags() *gnuflag.FlagSet {
+func (c *ListUsers) Flags() *gnuflag.FlagSet {
 	if c.fs == nil {
 		c.fs = gnuflag.NewFlagSet("", gnuflag.ExitOnError)
 		c.fs.StringVar(&c.userEmail, "user", "", "Filter user by user email")

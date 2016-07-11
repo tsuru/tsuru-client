@@ -9,6 +9,7 @@ import (
 	"os"
 
 	"github.com/docker/machine/libmachine/drivers/plugin/localbinary"
+	"github.com/tsuru/tsuru-client/tsuru/auth"
 	"github.com/tsuru/tsuru-client/tsuru/installer"
 	"github.com/tsuru/tsuru-client/tsuru/platform"
 	"github.com/tsuru/tsuru-client/tsuru/pool"
@@ -77,20 +78,20 @@ func buildManager(name string) *cmd.Manager {
 	m.Register(&appDeploy{})
 	m.Register(&planList{})
 	m.RegisterRemoved("app-team-owner-set", "You should use `tsuru service-info` instead.")
-	m.Register(&userCreate{})
-	m.Register(&resetPassword{})
-	m.Register(&userRemove{})
-	m.Register(&listUsers{})
-	m.Register(&teamCreate{})
-	m.Register(&teamRemove{})
-	m.Register(&teamList{})
+	m.Register(&auth.UserCreate{})
+	m.Register(&auth.ResetPassword{})
+	m.Register(&auth.UserRemove{})
+	m.Register(&auth.ListUsers{})
+	m.Register(&auth.TeamCreate{})
+	m.Register(&auth.TeamRemove{})
+	m.Register(&auth.TeamList{})
 	m.RegisterRemoved("service-doc", "You should use `tsuru service-info` instead.")
 	m.RegisterRemoved("team-user-add", "You should use `tsuru role-assign` instead.")
 	m.RegisterRemoved("team-user-remove", "You should use `tsuru role-dissociate` instead.")
 	m.RegisterRemoved("team-user-list", "You should use `tsuru user-list` instead.")
-	m.Register(&changePassword{})
-	m.Register(&showAPIToken{})
-	m.Register(&regenerateAPIToken{})
+	m.Register(&auth.ChangePassword{})
+	m.Register(&auth.ShowAPIToken{})
+	m.Register(&auth.RegenerateAPIToken{})
 	m.Register(&appDeployList{})
 	m.Register(&appDeployRollback{})
 	m.Register(&cmd.ShellToContainerCmd{})
