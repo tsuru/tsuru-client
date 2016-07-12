@@ -5,11 +5,13 @@
 package installer
 
 import (
+	"bytes"
 	"fmt"
 	"os"
 	"testing"
 
 	"github.com/docker/machine/libmachine/drivers/plugin/localbinary"
+	"github.com/tsuru/tsuru/cmd"
 
 	"gopkg.in/check.v1"
 )
@@ -17,6 +19,11 @@ import (
 type S struct{}
 
 var _ = check.Suite(&S{})
+
+func (s *S) SetUpTest(c *check.C) {
+	var stdout, stderr bytes.Buffer
+	manager = cmd.NewManager("glb", "1.0.0", "Supported-Tsuru", &stdout, &stderr, os.Stdin, nil)
+}
 
 func TestMain(m *testing.M) {
 	if os.Getenv(localbinary.PluginEnvKey) == localbinary.PluginEnvVal {
