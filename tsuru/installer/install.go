@@ -15,6 +15,7 @@ import (
 type Install struct {
 	fs         *gnuflag.FlagSet
 	driverName string
+	registry   string
 }
 
 func (c *Install) Info() *cmd.Info {
@@ -31,6 +32,8 @@ func (c *Install) Flags() *gnuflag.FlagSet {
 		c.fs = gnuflag.NewFlagSet("install", gnuflag.ExitOnError)
 		c.fs.StringVar(&c.driverName, "driver", "virtualbox", "IaaS driver")
 		c.fs.StringVar(&c.driverName, "d", "virtualbox", "IaaS driver")
+		c.fs.StringVar(&c.registry, "registry", "", "Registry")
+		c.fs.StringVar(&c.registry, "r", "", "Registry")
 	}
 	return c.fs
 }
@@ -51,7 +54,7 @@ func (c *Install) Run(context *cmd.Context, client *cmd.Client) error {
 	fmt.Fprintf(context.Stdout, "Machine %s successfully created!\n", m.IP)
 	for _, component := range TsuruComponents {
 		fmt.Fprintf(context.Stdout, "Installing %s\n", component.Name())
-		err := component.Install(m)
+		err := component.Install(m, &InstallConfig{Registry: c.registry})
 		if err != nil {
 			fmt.Fprintf(context.Stderr, "Error Installing %s: %s\n", component.Name(), err)
 			return err
@@ -105,6 +108,8 @@ func parseKeyValue(args []string) map[string]interface{} {
 		if strings.Contains(arg, "=") {
 			keyValue := strings.SplitN(arg, "=", 2)
 			opts[keyValue[0]] = keyValue[1]
+		} else {
+			opts[arg] = true
 		}
 	}
 	return opts

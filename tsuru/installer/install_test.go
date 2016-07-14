@@ -15,12 +15,27 @@ import (
 
 var manager *cmd.Manager
 
+var realTsuruComponents = TsuruComponents
+
+type TestComponent struct {
+	iChan chan<- *InstallConfig
+}
+
+func (c *TestComponent) Name() string {
+	return "test-component"
+}
+
+func (c *TestComponent) Install(m *Machine, i *InstallConfig) error {
+	c.iChan <- i
+	return nil
+}
+
 func (s *S) TestInstallInfo(c *check.C) {
 	c.Assert((&Install{}).Info(), check.NotNil)
 }
 
 func (s *S) TestInstall(c *check.C) {
-	dockertesting.NewServer("127.0.0.1:2375", nil, nil)
+	server, _ := dockertesting.NewServer("127.0.0.1:2375", nil, nil)
 	var stdout, stderr bytes.Buffer
 	context := cmd.Context{
 		Stdout: &stdout,
@@ -32,6 +47,24 @@ func (s *S) TestInstall(c *check.C) {
 	command.Run(&context, client)
 	c.Assert(stdout.String(), check.Not(check.Equals), "")
 	c.Assert(stderr.String(), check.Equals, "")
+	server.Stop()
+}
+
+func (s *S) TestInstallCustomRegistry(c *check.C) {
+	iChan := make(chan *InstallConfig, 1)
+	TsuruComponents = []TsuruComponent{&TestComponent{iChan: iChan}}
+	var stdout, stderr bytes.Buffer
+	context := cmd.Context{
+		Stdout: &stdout,
+		Stderr: &stderr,
+		Args:   []string{"-r", "myregistry.com", "url=http://127.0.0.1"},
+	}
+	client := cmd.NewClient(&http.Client{}, nil, manager)
+	command := Install{driverName: "none", registry: "myregistry.com"}
+	command.Run(&context, client)
+	config := <-iChan
+	c.Assert(config.Registry, check.Equals, "myregistry.com")
+	TsuruComponents = realTsuruComponents
 }
 
 func (s *S) TestUninstallInfo(c *check.C) {
