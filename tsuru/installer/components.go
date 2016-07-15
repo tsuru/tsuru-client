@@ -63,7 +63,11 @@ func (c *PlanB) Install(machine *Machine, i *InstallConfig) error {
 		Image: i.fullImageName("tsuru/planb:latest"),
 		Cmd:   []string{"--listen", ":80", "--read-redis-host", machine.IP, "--write-redis-host", machine.IP},
 	}
-	return createContainer(machine, "planb", config, nil)
+	hostConfig := &docker.HostConfig{
+		PortBindings: make(map[docker.Port][]docker.PortBinding),
+	}
+	hostConfig.PortBindings["80"] = []docker.PortBinding{{HostIP: "0.0.0.0", HostPort: "80"}}
+	return createContainer(machine, "planb", config, hostConfig)
 }
 
 func (c *PlanB) Status(machine *Machine) (*ComponentStatus, error) {
