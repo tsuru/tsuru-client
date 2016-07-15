@@ -5,6 +5,7 @@
 package installer
 
 import (
+	"fmt"
 	"os"
 
 	"github.com/fsouza/go-dockerclient"
@@ -47,4 +48,16 @@ func createContainer(d dockerEnpoint, name string, config *docker.Config, hostCo
 		return err
 	}
 	return client.StartContainer(container.ID, nil)
+}
+
+func inspectContainer(d dockerEnpoint, name string) (*docker.Container, error) {
+	client, err := d.dockerClient()
+	if err != nil {
+		return nil, fmt.Errorf("failed create docker client: %s", err)
+	}
+	container, err := client.InspectContainer(name)
+	if err != nil {
+		return nil, err
+	}
+	return container, nil
 }

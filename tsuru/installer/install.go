@@ -39,7 +39,7 @@ func (c *Install) Flags() *gnuflag.FlagSet {
 }
 
 func (c *Install) Run(context *cmd.Context, client *cmd.Client) error {
-	fmt.Fprintln(context.Stdout, "Creating machine")
+	context.RawOutput()
 	opts := parseKeyValue(context.Args)
 	i, err := NewDockerMachine(c.driverName, opts)
 	if err != nil {
@@ -61,7 +61,24 @@ func (c *Install) Run(context *cmd.Context, client *cmd.Client) error {
 		}
 		fmt.Fprintf(context.Stdout, "%s successfully installed!\n", component.Name())
 	}
+	fmt.Fprint(context.Stdout, c.buildStatusTable(TsuruComponents, m).String())
 	return nil
+}
+
+func (c *Install) buildStatusTable(components []TsuruComponent, m *Machine) *cmd.Table {
+	t := cmd.NewTable()
+	t.Headers = cmd.Row{"Component", "Address", "State"}
+	t.LineSeparator = true
+	for _, component := range components {
+		status, err := component.Status(m)
+		if err != nil {
+			t.AddRow(cmd.Row{component.Name(), "", fmt.Sprintf("%s", err)})
+			continue
+		}
+		addresses := strings.Join(status.addresses, "\n")
+		t.AddRow(cmd.Row{component.Name(), addresses, status.containerState.StateString()})
+	}
+	return t
 }
 
 type Uninstall struct {

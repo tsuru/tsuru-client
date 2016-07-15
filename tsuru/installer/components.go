@@ -34,6 +34,7 @@ func (i *InstallConfig) fullImageName(name string) string {
 type TsuruComponent interface {
 	Name() string
 	Install(*Machine, *InstallConfig) error
+	Status(*Machine) (*ComponentStatus, error)
 }
 
 type MongoDB struct{}
@@ -45,6 +46,10 @@ func (c *MongoDB) Name() string {
 func (c *MongoDB) Install(machine *Machine, i *InstallConfig) error {
 	image := i.fullImageName("mongo:latest")
 	return createContainer(machine, "mongo", &docker.Config{Image: image}, nil)
+}
+
+func (c *MongoDB) Status(machine *Machine) (*ComponentStatus, error) {
+	return containerStatus("mongo", machine)
 }
 
 type PlanB struct{}
@@ -61,6 +66,10 @@ func (c *PlanB) Install(machine *Machine, i *InstallConfig) error {
 	return createContainer(machine, "planb", config, nil)
 }
 
+func (c *PlanB) Status(machine *Machine) (*ComponentStatus, error) {
+	return containerStatus("planb", machine)
+}
+
 type Redis struct{}
 
 func (c *Redis) Name() string {
@@ -70,6 +79,10 @@ func (c *Redis) Name() string {
 func (c *Redis) Install(machine *Machine, i *InstallConfig) error {
 	image := i.fullImageName("redis:latest")
 	return createContainer(machine, "redis", &docker.Config{Image: image}, nil)
+}
+
+func (c *Redis) Status(machine *Machine) (*ComponentStatus, error) {
+	return containerStatus("redis", machine)
 }
 
 type Registry struct{}
@@ -87,6 +100,10 @@ func (c *Registry) Install(machine *Machine, i *InstallConfig) error {
 		Binds: []string{"/var/lib/registry:/var/lib/registry"},
 	}
 	return createContainer(machine, "registry", config, hostConfig)
+}
+
+func (c *Registry) Status(machine *Machine) (*ComponentStatus, error) {
+	return containerStatus("registry", machine)
 }
 
 type TsuruAPI struct{}
@@ -113,6 +130,10 @@ func (c *TsuruAPI) Install(machine *Machine, i *InstallConfig) error {
 	return c.setupRootUser(machine)
 }
 
+func (c *TsuruAPI) Status(machine *Machine) (*ComponentStatus, error) {
+	return containerStatus("tsuru", machine)
+}
+
 func (c *TsuruAPI) setupRootUser(machine *Machine) error {
 	cmd := []string{"tsurud", "root-user-create", "admin@example.com"}
 	passwordConfirmation := strings.NewReader("admin123\nadmin123\n")
@@ -137,4 +158,29 @@ func (c *TsuruAPI) setupRootUser(machine *Machine) error {
 		ErrorStream:  os.Stderr,
 		RawTerminal:  true,
 	})
+}
+
+type ComponentStatus struct {
+	containerState *docker.State
+	addresses      []string
+}
+
+func containerStatus(name string, m *Machine) (*ComponentStatus, error) {
+	client, err := m.dockerClient()
+	if err != nil {
+		return nil, fmt.Errorf("failed create docker client: %s", err)
+	}
+	container, err := client.InspectContainer(name)
+	if err != nil {
+		return nil, err
+	}
+	var addresses []string
+	for p := range container.HostConfig.PortBindings {
+		address := fmt.Sprintf("%s://%s:%s", p.Proto(), m.IP, p.Port())
+		addresses = append(addresses, address)
+	}
+	return &ComponentStatus{
+		containerState: &container.State,
+		addresses:      addresses,
+	}, nil
 }

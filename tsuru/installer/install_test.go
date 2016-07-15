@@ -8,6 +8,7 @@ import (
 	"bytes"
 	"net/http"
 
+	docker "github.com/fsouza/go-dockerclient"
 	dockertesting "github.com/fsouza/go-dockerclient/testing"
 	"github.com/tsuru/tsuru/cmd"
 	"gopkg.in/check.v1"
@@ -28,6 +29,13 @@ func (c *TestComponent) Name() string {
 func (c *TestComponent) Install(m *Machine, i *InstallConfig) error {
 	c.iChan <- i
 	return nil
+}
+
+func (c *TestComponent) Status(m *Machine) (*ComponentStatus, error) {
+	return &ComponentStatus{
+		containerState: &docker.State{Running: true},
+		addresses:      []string{"127.0.0.1:123"},
+	}, nil
 }
 
 func (s *S) TestInstallInfo(c *check.C) {
