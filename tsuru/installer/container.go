@@ -43,11 +43,11 @@ func createContainer(d dockerEnpoint, name string, config *docker.Config, hostCo
 		}
 	}
 	opts := docker.CreateContainerOptions{Config: config, HostConfig: hostConfig, Name: name}
-	container, err := client.CreateContainer(opts)
+	_, err = client.CreateContainer(opts)
 	if err != nil {
 		return err
 	}
-	return client.StartContainer(container.ID, nil)
+	return client.StartContainer(name, nil)
 }
 
 func inspectContainer(d dockerEnpoint, name string) (*docker.Container, error) {
