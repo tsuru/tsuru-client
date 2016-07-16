@@ -5,12 +5,19 @@
 package installer
 
 import (
+	"bytes"
 	"fmt"
+	"net/http"
 	"os"
 	"strings"
+	"time"
 
 	"github.com/fsouza/go-dockerclient"
 	"github.com/tsuru/config"
+	"github.com/tsuru/tsuru-client/tsuru/admin"
+	tclient "github.com/tsuru/tsuru-client/tsuru/client"
+	"github.com/tsuru/tsuru/cmd"
+	"github.com/tsuru/tsuru/provision"
 )
 
 var TsuruComponents = []TsuruComponent{
@@ -131,6 +138,8 @@ func (c *TsuruAPI) Install(machine *Machine, i *InstallConfig) error {
 		fmt.Sprintf("REDIS_ADDR=%s", machine.IP),
 		"REDIS_PORT=6379",
 		fmt.Sprintf("HIPACHE_DOMAIN=%s.nip.io", machine.IP),
+		fmt.Sprintf("REGISTRY_ADDR=%s", machine.IP),
+		"REGISTRY_PORT=5000",
 	}
 	config := &docker.Config{
 		Image: i.fullImageName("tsuru/api:latest"),
@@ -140,7 +149,11 @@ func (c *TsuruAPI) Install(machine *Machine, i *InstallConfig) error {
 	if err != nil {
 		return err
 	}
-	return c.setupRootUser(machine)
+	err = c.setupRootUser(machine)
+	if err != nil {
+		return err
+	}
+	return c.bootstrapEnv("admin@example.com", "admin123", machine.IP, machine.Address)
 }
 
 func (c *TsuruAPI) Status(machine *Machine) (*ComponentStatus, error) {
@@ -196,4 +209,102 @@ func containerStatus(name string, m *Machine) (*ComponentStatus, error) {
 		containerState: &container.State,
 		addresses:      addresses,
 	}, nil
+}
+
+func (c *TsuruAPI) bootstrapEnv(login, password, target, node string) error {
+	var stdout, stderr bytes.Buffer
+	manager := cmd.BuildBaseManager("setup-client", "0.0.0", "", nil)
+	provisioners := provision.Registry()
+	for _, p := range provisioners {
+		if c, ok := p.(cmd.AdminCommandable); ok {
+			commands := c.AdminCommands()
+			for _, cmd := range commands {
+				manager.Register(cmd)
+			}
+		}
+	}
+	client := cmd.NewClient(&http.Client{}, nil, manager)
+	context := cmd.Context{
+		Args:   []string{"test", fmt.Sprintf("%s:8080", target)},
+		Stdout: &stdout,
+		Stderr: &stderr,
+	}
+	context.RawOutput()
+	println("adding target")
+	targetset := manager.Commands["target-add"]
+	t, _ := targetset.(cmd.FlaggedCommand)
+	err := t.Flags().Parse(true, []string{"-s"})
+	if err != nil {
+		return err
+	}
+	err = t.Run(&context, client)
+	if err != nil {
+		return err
+	}
+	println("logging")
+	logincmd := manager.Commands["login"]
+	context.Args = []string{login}
+	context.Stdin = strings.NewReader(fmt.Sprintf("%s\n", password))
+	err = logincmd.Run(&context, client)
+	if err != nil {
+		return err
+	}
+	context.Args = []string{"theonepool"}
+	context.Stdin = nil
+	println("adding pool")
+	poolAdd := admin.AddPoolToSchedulerCmd{}
+	err = poolAdd.Flags().Parse(true, []string{"-d", "-p"})
+	if err != nil {
+		return err
+	}
+	err = poolAdd.Run(&context, client)
+	if err != nil {
+		return err
+	}
+	context.Args = []string{fmt.Sprintf("address=%s", node), "pool=theonepool"}
+	println("adding node")
+	nodeAdd := manager.Commands["docker-node-add"]
+	n, _ := nodeAdd.(cmd.FlaggedCommand)
+	err = n.Flags().Parse(true, []string{"--register"})
+	if err != nil {
+		return err
+	}
+	err = n.Run(&context, client)
+	if err != nil {
+		return err
+	}
+	time.Sleep(15 * time.Second)
+	context.Args = []string{"python"}
+	println("adding platform")
+	platformAdd := admin.PlatformAdd{}
+	err = platformAdd.Run(&context, client)
+	if err != nil {
+		return err
+	}
+	context.Args = []string{"admin"}
+	println("adding team")
+	teamCreate := tclient.TeamCreate{}
+	err = teamCreate.Run(&context, client)
+	if err != nil {
+		return err
+	}
+	context.Args = []string{"tsuru-dashboard", "python"}
+	println("adding dashboard")
+	createDashboard := tclient.AppCreate{}
+	err = createDashboard.Flags().Parse(true, []string{"-t", "admin"})
+	if err != nil {
+		return err
+	}
+	err = createDashboard.Run(&context, client)
+	if err != nil {
+		return err
+	}
+	context.Args = []string{}
+	println("deploying dashboard")
+	deployDashboard := tclient.AppDeploy{}
+	err = deployDashboard.Flags().Parse(true, []string{"-a", "tsuru-dashboard", "-i", "tsuru/dashboard"})
+	if err != nil {
+		return err
+	}
+	return deployDashboard.Run(&context, client)
 }
