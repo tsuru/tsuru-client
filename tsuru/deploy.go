@@ -119,8 +119,9 @@ func (c *appDeployList) Run(context *cmd.Context, client *cmd.Client) error {
 
 type appDeploy struct {
 	cmd.GuessingCommand
-	image string
-	fs    *gnuflag.FlagSet
+	image   string
+	message string
+	fs      *gnuflag.FlagSet
 }
 
 func (c *appDeploy) Flags() *gnuflag.FlagSet {
@@ -129,6 +130,9 @@ func (c *appDeploy) Flags() *gnuflag.FlagSet {
 		image := "The image to deploy in app"
 		c.fs.StringVar(&c.image, "image", "", image)
 		c.fs.StringVar(&c.image, "i", "", image)
+		message := "A message describing this deploy"
+		c.fs.StringVar(&c.message, "message", "", message)
+		c.fs.StringVar(&c.message, "m", "", message)
 	}
 	return c.fs
 }
@@ -164,11 +168,11 @@ func (c *appDeploy) Run(context *cmd.Context, client *cmd.Client) error {
 	if err != nil {
 		return err
 	}
-	url, err := cmd.GetURL("/apps/" + appName)
+	u, err := cmd.GetURL("/apps/" + appName)
 	if err != nil {
 		return err
 	}
-	request, err := http.NewRequest("GET", url, nil)
+	request, err := http.NewRequest("GET", u, nil)
 	if err != nil {
 		return err
 	}
@@ -180,12 +184,14 @@ func (c *appDeploy) Run(context *cmd.Context, client *cmd.Client) error {
 	if c.image != "" {
 		origin = "image"
 	}
-	url, err = cmd.GetURL(fmt.Sprintf("/apps/%s/deploy?origin=%s", appName, origin))
+	values := url.Values{}
+	values.Set("origin", origin)
+	u, err = cmd.GetURL(fmt.Sprintf("/apps/%s/deploy", appName))
 	if err != nil {
 		return err
 	}
 	var body bytes.Buffer
-	request, err = http.NewRequest("POST", url, &body)
+	request, err = http.NewRequest("POST", u, &body)
 	if err != nil {
 		return err
 	}
@@ -193,13 +199,17 @@ func (c *appDeploy) Run(context *cmd.Context, client *cmd.Client) error {
 	respBody := firstWriter{Writer: io.MultiWriter(context.Stdout, &buf)}
 	if c.image != "" {
 		request.Header.Set("Content-Type", "application/x-www-form-urlencoded")
-		_, err = body.WriteString(fmt.Sprintf("image=%s", c.image))
+		values.Set("image", c.image)
+		_, err = body.WriteString(values.Encode())
 		if err != nil {
 			return err
 		}
 		fmt.Fprint(context.Stdout, "Deploying image...")
 	} else {
 		writer := multipart.NewWriter(&body)
+		for k := range values {
+			writer.WriteField(k, values.Get(k))
+		}
 		var file io.Writer
 		file, err = writer.CreateFormFile("file", "archive.tar.gz")
 		if err != nil {

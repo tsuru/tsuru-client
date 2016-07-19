@@ -49,7 +49,8 @@ func (s *S) TestDeployRun(c *check.C) {
 			c.Assert(err, check.IsNil)
 			c.Assert(content, check.DeepEquals, buf.Bytes())
 			c.Assert(req.Header.Get("Content-Type"), check.Matches, "multipart/form-data; boundary=.*")
-			return req.Method == "POST" && strings.HasSuffix(req.URL.Path, "/apps/secret/deploy") && req.URL.RawQuery == "origin=app-deploy"
+			c.Assert(req.FormValue("origin"), check.Equals, "app-deploy")
+			return req.Method == "POST" && strings.HasSuffix(req.URL.Path, "/apps/secret/deploy")
 		},
 	}
 	client := cmd.NewClient(&http.Client{Transport: &trans}, nil, manager)
@@ -82,7 +83,8 @@ func (s *S) TestDeployImage(c *check.C) {
 			image := req.FormValue("image")
 			c.Assert(image, check.Equals, "registr.com/image-to-deploy")
 			c.Assert(req.Header.Get("Content-Type"), check.Equals, "application/x-www-form-urlencoded")
-			return req.Method == "POST" && strings.HasSuffix(req.URL.Path, "/apps/secret/deploy") && req.URL.RawQuery == "origin=image"
+			c.Assert(req.FormValue("origin"), check.Equals, "image")
+			return req.Method == "POST" && strings.HasSuffix(req.URL.Path, "/apps/secret/deploy")
 		},
 	}
 	client := cmd.NewClient(&http.Client{Transport: &trans}, nil, manager)
