@@ -7,6 +7,7 @@ package installer
 import (
 	"encoding/json"
 	"fmt"
+	"os/exec"
 
 	"github.com/docker/machine/drivers/amazonec2"
 	"github.com/docker/machine/drivers/azure"
@@ -92,6 +93,7 @@ func NewDockerMachine() (*DockerMachine, error) {
 		storePath:  storePath,
 		certsPath:  certsPath,
 		tlsSupport: driverName != "virtualbox" && driverName != "none",
+		Name:       "tsuru",
 	}
 	return dm, nil
 }
@@ -127,6 +129,39 @@ func (d *DockerMachine) CreateMachine() (*Machine, error) {
 	return &m, nil
 }
 
+func (d *DockerMachine) CreateRegistryCertificate() error {
+	client := libmachine.NewClient(d.storePath, d.certsPath)
+	defer client.Close()
+	host, err := client.Load(d.Name)
+	if err != nil {
+		return err
+	}
+	ip, err := host.Driver.GetIP()
+	if err != nil {
+		return err
+	}
+	_, err = host.RunSSHCommand("mkdir -p /home/docker/certs")
+	if err != nil {
+		return err
+	}
+	scp := exec.Cmd{
+		Args: []string{
+			"scp",
+			"-i",
+			fmt.Sprintf("%s/machines/%s/id_rsa", d.storePath, d.Name),
+			fmt.Sprintf("%s/*", d.certsPath),
+			fmt.Sprintf("docker@%s:/home/docker/certs/", ip),
+		},
+	}
+	err = scp.Run()
+	if err != nil {
+		return err
+	}
+	// generate keys with http://docker-saigon.github.io/post/Private-Registry-Setup/
+	_, err = host.RunSSHCommand(fmt.Sprintf("openssl req -new -x509 -extensions v3_ca -key /home/docker/.docker/key.pem -out /home/docker/.docker/ca.crt -days 3650 -subj '/CN=%s'", ip))
+	return err
+}
+
 func configureDriver(driver drivers.Driver, driverOpts map[string]interface{}) error {
 	opts := &rpcdriver.RPCFlags{Values: driverOpts}
 	for _, c := range driver.GetCreateFlags() {
@@ -147,9 +182,7 @@ func configureDriver(driver drivers.Driver, driverOpts map[string]interface{}) e
 func (d *DockerMachine) configureHost(host *host.Host) {
 	if d.tlsSupport == false {
 		host.HostOptions.EngineOptions.Env = []string{"DOCKER_TLS=no"}
-		host.HostOptions.EngineOptions.ArbitraryFlags = []string{
-			fmt.Sprintf("host=tcp://0.0.0.0:%d", dockerHTTPPort),
-		}
+		host.HostOptions.EngineOptions.ArbitraryFlags = []string{fmt.Sprintf("host=tcp://0.0.0.0:%d", dockerHTTPPort)}
 	}
 }
 
