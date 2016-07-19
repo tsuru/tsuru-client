@@ -11,6 +11,7 @@ import (
 	"testing"
 
 	"github.com/docker/machine/libmachine/drivers/plugin/localbinary"
+	"github.com/tsuru/config"
 	"github.com/tsuru/tsuru/cmd"
 
 	"gopkg.in/check.v1"
@@ -42,7 +43,9 @@ func TestMain(m *testing.M) {
 func Test(t *testing.T) { check.TestingT(t) }
 
 func (s *S) TestNewDockerMachine(c *check.C) {
-	dm, err := NewDockerMachine("virtualbox", nil)
+	defer config.Unset("driver")
+	config.Set("driver:name", "virtualbox")
+	dm, err := NewDockerMachine()
 	c.Assert(err, check.IsNil)
 	c.Assert(dm, check.NotNil)
 	c.Assert(dm.driverName, check.Equals, "virtualbox")
@@ -50,7 +53,9 @@ func (s *S) TestNewDockerMachine(c *check.C) {
 }
 
 func (s *S) TestNewDockerMachineSupportTLS(c *check.C) {
-	dm, err := NewDockerMachine("amazonec2", nil)
+	defer config.Unset("driver")
+	config.Set("driver:name", "amazonec2")
+	dm, err := NewDockerMachine()
 	c.Assert(err, check.IsNil)
 	c.Assert(dm, check.NotNil)
 	c.Assert(dm.driverName, check.Equals, "amazonec2")
@@ -58,15 +63,21 @@ func (s *S) TestNewDockerMachineSupportTLS(c *check.C) {
 }
 
 func (s *S) TestNewDockerMachineDriverOpts(c *check.C) {
-	dm, err := NewDockerMachine("none", map[string]interface{}{"url": "localhost"})
+	defer config.Unset("driver")
+	config.Set("driver:name", "none")
+	config.Set("driver:options:url", "localhost")
+	dm, err := NewDockerMachine()
 	c.Assert(err, check.IsNil)
 	c.Assert(dm, check.NotNil)
-	c.Assert(dm.driverOpts.String("url"), check.Equals, "localhost")
+	c.Assert(dm.driverOpts["url"].(string), check.Equals, "localhost")
 }
 
 func (s *S) TestCreateMachineNoneDriver(c *check.C) {
-	dm, _ := NewDockerMachine("none", map[string]interface{}{"url": "http://1.2.3.4"})
-	machine, err := dm.CreateMachine(nil)
+	defer config.Unset("driver")
+	config.Set("driver:name", "none")
+	config.Set("driver:options:url", "http://1.2.3.4")
+	dm, _ := NewDockerMachine()
+	machine, err := dm.CreateMachine()
 	c.Assert(err, check.IsNil)
 	c.Assert(machine, check.NotNil)
 	c.Assert(machine.IP, check.Equals, "1.2.3.4")

@@ -8,14 +8,14 @@ import (
 	"fmt"
 	"strings"
 
+	"github.com/tsuru/config"
 	"github.com/tsuru/gnuflag"
 	"github.com/tsuru/tsuru/cmd"
 )
 
 type Install struct {
-	fs         *gnuflag.FlagSet
-	driverName string
-	registry   string
+	fs     *gnuflag.FlagSet
+	config string
 }
 
 func (c *Install) Info() *cmd.Info {
@@ -30,31 +30,34 @@ func (c *Install) Info() *cmd.Info {
 func (c *Install) Flags() *gnuflag.FlagSet {
 	if c.fs == nil {
 		c.fs = gnuflag.NewFlagSet("install", gnuflag.ExitOnError)
-		c.fs.StringVar(&c.driverName, "driver", "virtualbox", "IaaS driver")
-		c.fs.StringVar(&c.driverName, "d", "virtualbox", "IaaS driver")
-		c.fs.StringVar(&c.registry, "registry", "", "Registry")
-		c.fs.StringVar(&c.registry, "r", "", "Registry")
+		c.fs.StringVar(&c.config, "c", "install.yml", "Configuration file")
+		c.fs.StringVar(&c.config, "config", "install.yml", "Configuration file")
 	}
 	return c.fs
 }
 
 func (c *Install) Run(context *cmd.Context, client *cmd.Client) error {
 	context.RawOutput()
-	opts := parseKeyValue(context.Args)
-	i, err := NewDockerMachine(c.driverName, opts)
+	err := config.ReadConfigFile(c.config)
+	if err != nil {
+		fmt.Fprintf(context.Stderr, "Failed to read configuration file: %s\n", err)
+		return err
+	}
+	i, err := NewDockerMachine()
 	if err != nil {
 		fmt.Fprintf(context.Stderr, "Failed to create machine: %s\n", err)
 		return err
 	}
-	m, err := i.CreateMachine(opts)
+	m, err := i.CreateMachine()
 	if err != nil {
 		fmt.Fprintf(context.Stderr, "Error creating machine: %s\n", err)
 		return err
 	}
 	fmt.Fprintf(context.Stdout, "Machine %s successfully created!\n", m.IP)
+	installConfig := NewInstallConfig()
 	for _, component := range TsuruComponents {
 		fmt.Fprintf(context.Stdout, "Installing %s\n", component.Name())
-		err := component.Install(m, &InstallConfig{Registry: c.registry})
+		err := component.Install(m, installConfig)
 		if err != nil {
 			fmt.Fprintf(context.Stderr, "Error Installing %s: %s\n", component.Name(), err)
 			return err
@@ -82,8 +85,8 @@ func (c *Install) buildStatusTable(components []TsuruComponent, m *Machine) *cmd
 }
 
 type Uninstall struct {
-	fs         *gnuflag.FlagSet
-	driverName string
+	fs     *gnuflag.FlagSet
+	config string
 }
 
 func (c *Uninstall) Info() *cmd.Info {
@@ -98,14 +101,19 @@ func (c *Uninstall) Info() *cmd.Info {
 func (c *Uninstall) Flags() *gnuflag.FlagSet {
 	if c.fs == nil {
 		c.fs = gnuflag.NewFlagSet("uninstall", gnuflag.ExitOnError)
-		c.fs.StringVar(&c.driverName, "driver", "virtualbox", "IaaS driver")
-		c.fs.StringVar(&c.driverName, "d", "virtualbox", "IaaS driver")
+		c.fs.StringVar(&c.config, "c", "install.yml", "Configuration file")
+		c.fs.StringVar(&c.config, "config", "install.yml", "Configuration file")
 	}
 	return c.fs
 }
 
 func (c *Uninstall) Run(context *cmd.Context, client *cmd.Client) error {
-	d, err := NewDockerMachine(c.driverName, parseKeyValue(context.Args))
+	err := config.ReadConfigFile(c.config)
+	if err != nil {
+		fmt.Fprintf(context.Stderr, "Failed to read configuration file: %s\n", err)
+		return err
+	}
+	d, err := NewDockerMachine()
 	if err != nil {
 		fmt.Fprintf(context.Stderr, "Failed to delete machine: %s\n", err)
 		return err
@@ -117,17 +125,4 @@ func (c *Uninstall) Run(context *cmd.Context, client *cmd.Client) error {
 	}
 	fmt.Fprintln(context.Stdout, "Machine successfully removed!")
 	return nil
-}
-
-func parseKeyValue(args []string) map[string]interface{} {
-	opts := make(map[string]interface{})
-	for _, arg := range args {
-		if strings.Contains(arg, "=") {
-			keyValue := strings.SplitN(arg, "=", 2)
-			opts[keyValue[0]] = keyValue[1]
-		} else {
-			opts[arg] = true
-		}
-	}
-	return opts
 }

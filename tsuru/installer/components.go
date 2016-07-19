@@ -10,6 +10,7 @@ import (
 	"strings"
 
 	"github.com/fsouza/go-dockerclient"
+	"github.com/tsuru/config"
 )
 
 var TsuruComponents = []TsuruComponent{
@@ -22,6 +23,14 @@ var TsuruComponents = []TsuruComponent{
 
 type InstallConfig struct {
 	Registry string
+}
+
+func NewInstallConfig() *InstallConfig {
+	registry, err := config.GetString("registry")
+	if err != nil {
+		registry = ""
+	}
+	return &InstallConfig{Registry: registry}
 }
 
 func (i *InstallConfig) fullImageName(name string) string {

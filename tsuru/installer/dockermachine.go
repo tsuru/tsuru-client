@@ -29,6 +29,7 @@ import (
 	"github.com/docker/machine/libmachine/drivers/rpc"
 	"github.com/docker/machine/libmachine/host"
 	"github.com/fsouza/go-dockerclient"
+	"github.com/tsuru/config"
 )
 
 var (
@@ -51,7 +52,7 @@ func (m *Machine) dockerClient() (*docker.Client, error) {
 }
 
 type DockerMachine struct {
-	driverOpts rpcdriver.RPCFlags
+	driverOpts map[string]interface{}
 	rawDriver  []byte
 	driverName string
 	storePath  string
@@ -59,7 +60,21 @@ type DockerMachine struct {
 	tlsSupport bool
 }
 
-func NewDockerMachine(driverName string, opts map[string]interface{}) (*DockerMachine, error) {
+func NewDockerMachine() (*DockerMachine, error) {
+	driverName, err := config.GetString("driver:name")
+	if err != nil {
+		return nil, err
+	}
+	driverOpts := make(map[string]interface{})
+	opts, _ := config.Get("driver:options")
+	if opts != nil {
+		for k, v := range opts.(map[interface{}]interface{}) {
+			switch k := k.(type) {
+			case string:
+				driverOpts[k] = v
+			}
+		}
+	}
 	storePath := "/tmp/automatic"
 	certsPath := "/tmp/automatic/certs"
 	rawDriver, err := json.Marshal(&drivers.BaseDriver{
@@ -69,8 +84,9 @@ func NewDockerMachine(driverName string, opts map[string]interface{}) (*DockerMa
 	if err != nil {
 		return nil, fmt.Errorf("Error creating docker-machine driver: %s", err)
 	}
+
 	dm := &DockerMachine{
-		driverOpts: rpcdriver.RPCFlags{Values: opts},
+		driverOpts: driverOpts,
 		rawDriver:  rawDriver,
 		driverName: driverName,
 		storePath:  storePath,
@@ -80,7 +96,7 @@ func NewDockerMachine(driverName string, opts map[string]interface{}) (*DockerMa
 	return dm, nil
 }
 
-func (d *DockerMachine) CreateMachine(params map[string]interface{}) (*Machine, error) {
+func (d *DockerMachine) CreateMachine() (*Machine, error) {
 	client := libmachine.NewClient(d.storePath, d.certsPath)
 	defer client.Close()
 	host, err := client.NewHost(d.driverName, d.rawDriver)
@@ -111,17 +127,18 @@ func (d *DockerMachine) CreateMachine(params map[string]interface{}) (*Machine, 
 	return &m, nil
 }
 
-func configureDriver(driver drivers.Driver, driverOpts rpcdriver.RPCFlags) error {
+func configureDriver(driver drivers.Driver, driverOpts map[string]interface{}) error {
+	opts := &rpcdriver.RPCFlags{Values: driverOpts}
 	for _, c := range driver.GetCreateFlags() {
-		_, ok := driverOpts.Values[c.String()]
+		_, ok := opts.Values[c.String()]
 		if ok == false {
-			driverOpts.Values[c.String()] = c.Default()
+			opts.Values[c.String()] = c.Default()
 			if c.Default() == nil {
-				driverOpts.Values[c.String()] = false
+				opts.Values[c.String()] = false
 			}
 		}
 	}
-	if err := driver.SetConfigFromFlags(driverOpts); err != nil {
+	if err := driver.SetConfigFromFlags(opts); err != nil {
 		return fmt.Errorf("Error setting driver configurations: %s", err)
 	}
 	return nil
