@@ -124,7 +124,7 @@ func (c *eventList) Show(evts []event.Event, context *cmd.Context) error {
 			evt.Target.Value = evt.Target.Value[:12]
 		}
 		fullTarget := fmt.Sprintf("%s: %s", evt.Target.Name, evt.Target.Value)
-		startFmt := evt.StartTime.Format(time.RFC822)
+		startFmt := evt.StartTime.Format(time.RFC822Z)
 		owner := reEmailShort.ReplaceAllString(evt.Owner.Name, "@…")
 		ts := fmt.Sprintf("%s (…)", startFmt)
 		if !evt.EndTime.IsZero() {
@@ -191,12 +191,12 @@ func (c *eventInfo) Show(evt event.Event, context *cmd.Context) error {
 		label string
 		value string
 	}
-	startFmt := evt.StartTime.Format(time.RFC822)
+	startFmt := evt.StartTime.Format(time.RFC822Z)
 	var endFmt string
 	if evt.EndTime.IsZero() {
 		endFmt = fmt.Sprintf("running (%v)", time.Now().Sub(evt.StartTime))
 	} else {
-		endFmt = fmt.Sprintf("%s (%v)", evt.EndTime.Format(time.RFC822), evt.EndTime.Sub(evt.StartTime))
+		endFmt = fmt.Sprintf("%s (%v)", evt.EndTime.Format(time.RFC822Z), evt.EndTime.Sub(evt.StartTime))
 	}
 	items := []item{
 		{"ID", evt.UniqueID.Hex()},
@@ -222,7 +222,7 @@ func (c *eventInfo) Show(evt event.Event, context *cmd.Context) error {
 	if evt.CancelInfo.Canceled {
 		items = append(items, []item{
 			{"  Canceled By", evt.CancelInfo.Owner},
-			{"  Canceled At", evt.CancelInfo.AckTime.Format(time.RFC822)},
+			{"  Canceled At", evt.CancelInfo.AckTime.Format(time.RFC822Z)},
 		}...)
 	}
 	labels := []string{"Start", "End", "Other"}

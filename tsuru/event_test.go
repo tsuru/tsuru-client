@@ -119,6 +119,8 @@ var errEvt = `
 var evtsData = fmt.Sprintf("[%s, %s]", okEvt, errEvt)
 
 func (s *S) TestEventList(c *check.C) {
+	os.Setenv("TSURU_DISABLE_COLORS", "1")
+	defer os.Unsetenv("TSURU_DISABLE_COLORS")
 	var stdout, stderr bytes.Buffer
 	context := cmd.Context{
 		Args:   []string{},
@@ -135,14 +137,12 @@ func (s *S) TestEventList(c *check.C) {
 	command := eventList{}
 	err := command.Run(&context, client)
 	c.Assert(err, check.IsNil)
-	red := "\x1b[0;31;10m"
-	reset := "\x1b[0m"
-	expected := `+--------------------------+-------------------------------+---------+-----------+------------+-------------------------+
-| ID                       | Start (duration)              | Success | Owner     | Kind       | Target                  |
-+--------------------------+-------------------------------+---------+-----------+------------+-------------------------+
-| 578e3908413daf5fd9891aac | 19 Jul 16 11:28 BRT (57.324s) | true    | someone@… | app.deploy | app: myapp              |
-| ` + red + `5787bcc8413daf2aeb040730` + reset + ` | ` + red + `14 Jul 16 13:24 BRT (19.689s)` + reset + ` | ` + red + `false` + reset + `   |           | ` + red + `healer` + reset + `     | ` + red + `container: 94d3140395a8` + reset + ` |
-+--------------------------+-------------------------------+---------+-----------+------------+-------------------------+
+	expected := `+--------------------------+---------------------------------+---------+-----------+------------+-------------------------+
+| ID                       | Start (duration)                | Success | Owner     | Kind       | Target                  |
++--------------------------+---------------------------------+---------+-----------+------------+-------------------------+
+| 578e3908413daf5fd9891aac | 19 Jul 16 11:28 -0300 (57.324s) | true    | someone@… | app.deploy | app: myapp              |
+| 5787bcc8413daf2aeb040730 | 14 Jul 16 13:24 -0300 (19.689s) | false   |           | healer     | container: 94d3140395a8 |
++--------------------------+---------------------------------+---------+-----------+------------+-------------------------+
 `
 	c.Assert(stdout.String(), check.Equals, expected)
 }
@@ -167,8 +167,8 @@ func (s *S) TestEventInfo(c *check.C) {
 	err := command.Run(&context, client)
 	c.Assert(err, check.IsNil)
 	expected := `ID:       578e3908413daf5fd9891aac
-Start:    19 Jul 16 11:28 BRT
-End:      19 Jul 16 11:29 BRT (57.324s)
+Start:    19 Jul 16 11:28 -0300
+End:      19 Jul 16 11:29 -0300 (57.324s)
 Target:   app(myapp)
 Kind:     permission(app.deploy)
 Owner:    user(someone@removed.com)
@@ -296,26 +296,26 @@ func (s *S) TestEventInfoWithError(c *check.C) {
 	err := command.Run(&context, client)
 	c.Assert(err, check.IsNil)
 	expected := `ID:       5787bcc8413daf2aeb040730
-Start:    14 Jul 16 13:24 BRT
-End:      14 Jul 16 13:25 BRT (19.689s)
-Target:   container(94d3140395a85e4a60b06de26f6a51270d7b762c65cc9478e2c544ae4d7fb82f)
-Kind:     internal(healer)
-Owner:    internal()
+Start:    14 Jul 16 13:24 -0300
+End:      14 Jul 16 13:25 -0300 \(19\.689s\)
+Target:   container\(94d3140395a85e4a60b06de26f6a51270d7b762c65cc9478e2c544ae4d7fb82f\)
+Kind:     internal\(healer\)
+Owner:    internal\(\)
 Success:  false
-Error:    "Error healing container \"94d3140395a85e4a60b06de26f6a51270d7b762c65cc9478e2c544ae4d7fb82f\": Error trying to heal containers 94d3140395a85e4a60b06de26f6a51270d7b762c65cc9478e2c544ae4d7fb82f: couldn't move container: Error moving some containers. - Moving unit 94d3140395a85e4a60b06de26f6a51270d7b762c65cc9478e2c544ae4d7fb82f for \"myapp\" from 10.0.0.4...\nError moving container: Error moving unit 94d3140395a85e4a60b06de26f6a51270d7b762c65cc9478e2c544ae4d7fb82f Caused by: Post http://10.0.0.5:8000/services/myapp/destinations: dial tcp 10.0.0.5:8000: getsockopt: no route to host\n"
+Error:    "Error healing container \\"94d3140395a85e4a60b06de26f6a51270d7b762c65cc9478e2c544ae4d7fb82f\\": Error trying to heal containers 94d3140395a85e4a60b06de26f6a51270d7b762c65cc9478e2c544ae4d7fb82f: couldn't move container: Error moving some containers\. - Moving unit 94d3140395a85e4a60b06de26f6a51270d7b762c65cc9478e2c544ae4d7fb82f for \\"myapp\\" from 10\.0\.0\.4\.\.\.\\nError moving container: Error moving unit 94d3140395a85e4a60b06de26f6a51270d7b762c65cc9478e2c544ae4d7fb82f Caused by: Post http://10\.0\.0\.5:8000/services/myapp/destinations: dial tcp 10\.0\.0\.5:8000: getsockopt: no route to host\\n"
 Canceled: false
 Start Custom Data:
     _id: 578e8a78d5771663eed1870d
     appname: myapp
     buildingimage: tsuru/python
     exposedport: ""
-    hostaddr: 127.0.0.1
+    hostaddr: 127\.0\.0\.1
     hostport: ""
     id: 22717c3d7cd8511339edbcc9bf7b931e
     image: tsuru/python
     ip: ""
     laststatusupdate: "0001-01-01T00:00:00Z"
-    lastsuccessstatusupdate: "2016-07-19T17:10:52.473-03:00"
+    lastsuccessstatusupdate: ".*?"
     lockeduntil: "0001-01-01T00:00:00Z"
     name: ""
     privatekey: ""
@@ -346,5 +346,5 @@ End Custom Data:
     version: ""
 
 `
-	c.Assert(stdout.String(), check.Equals, expected)
+	c.Assert(stdout.String(), check.Matches, expected)
 }
