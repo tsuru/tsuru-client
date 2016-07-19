@@ -1,4 +1,4 @@
-// Copyright 2015 tsuru authors. All rights reserved.
+// Copyright 2016 tsuru authors. All rights reserved.
 // Use of this source code is governed by a BSD-style
 // license that can be found in the LICENSE file.
 
@@ -13,8 +13,8 @@ type fileInfo struct {
 	name    string
 	size    int64
 	mode    os.FileMode
-	modTime time.Time
 	isDir   bool
+	modTime time.Time
 	sys     interface{}
 }
 

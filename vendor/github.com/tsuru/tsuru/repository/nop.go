@@ -1,4 +1,4 @@
-// Copyright 2015 tsuru authors. All rights reserved.
+// Copyright 2016 tsuru authors. All rights reserved.
 // Use of this source code is governed by a BSD-style
 // license that can be found in the LICENSE file.
 
@@ -40,4 +40,8 @@ func (nopManager) GetRepository(name string) (Repository, error) {
 
 func (nopManager) Diff(repositoryName, from, to string) (string, error) {
 	return "", nil
+}
+
+func (nopManager) CommitMessages(repository, ref string, limit int) ([]string, error) {
+	return nil, nil
 }

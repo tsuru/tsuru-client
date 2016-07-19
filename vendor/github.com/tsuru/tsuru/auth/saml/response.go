@@ -1,4 +1,4 @@
-// Copyright 2015 tsuru authors. All rights reserved.
+// Copyright 2016 tsuru authors. All rights reserved.
 // Use of this source code is governed by a BSD-style
 // license that can be found in the LICENSE file.
 
@@ -6,7 +6,6 @@ package saml
 
 import (
 	"fmt"
-	"time"
 
 	"github.com/diego-araujo/go-saml"
 	"github.com/tsuru/config"
@@ -17,11 +16,6 @@ var (
 	ErrRequestIdNotFound = &errors.ValidationError{Message: "Field attribute InResponseTo not found in saml response data"}
 	ErrCheckSignature    = &errors.ValidationError{Message: "SAMLResponse signature validation"}
 )
-
-type response struct {
-	ID       string    `json:"id"`
-	Creation time.Time `json:"creation"`
-}
 
 func getRequestIdFromResponse(r *saml.Response) (string, error) {
 	var idRequest string

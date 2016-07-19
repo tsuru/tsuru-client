@@ -17,8 +17,10 @@ import (
 	"github.com/tsuru/tsuru/app"
 	"github.com/tsuru/tsuru/auth"
 	"github.com/tsuru/tsuru/errors"
+	"github.com/tsuru/tsuru/event"
 	"github.com/tsuru/tsuru/io"
 	"github.com/tsuru/tsuru/permission"
+	"github.com/tsuru/tsuru/repository"
 )
 
 // title: app deploy
@@ -30,10 +32,9 @@ import (
 //   400: Invalid data
 //   403: Forbidden
 //   404: Not found
-func deploy(w http.ResponseWriter, r *http.Request, t auth.Token) error {
+func deploy(w http.ResponseWriter, r *http.Request, t auth.Token) (err error) {
 	var file multipart.File
 	var fileSize int64
-	var err error
 	if strings.HasPrefix(r.Header.Get("Content-Type"), "multipart/") {
 		file, _, err = r.FormFile("file")
 		if err != nil {
@@ -56,10 +57,10 @@ func deploy(w http.ResponseWriter, r *http.Request, t auth.Token) error {
 			Message: "you must specify either the archive-url, a image url or upload a file.",
 		}
 	}
-	commit := r.PostFormValue("commit")
+	commit := r.FormValue("commit")
 	w.Header().Set("Content-Type", "text")
 	appName := r.URL.Query().Get(":appname")
-	origin := r.URL.Query().Get("origin")
+	origin := r.FormValue("origin")
 	if image != "" {
 		origin = "image"
 	}
@@ -86,7 +87,7 @@ func deploy(w http.ResponseWriter, r *http.Request, t auth.Token) error {
 		return &errors.HTTP{Code: http.StatusNotFound, Message: err.Error()}
 	}
 	var build bool
-	buildString := r.URL.Query().Get("build")
+	buildString := r.FormValue("build")
 	if buildString != "" {
 		build, err = strconv.ParseBool(buildString)
 		if err != nil {
@@ -94,6 +95,17 @@ func deploy(w http.ResponseWriter, r *http.Request, t auth.Token) error {
 				Code:    http.StatusBadRequest,
 				Message: err.Error(),
 			}
+		}
+	}
+	message := r.FormValue("message")
+	if commit != "" && message == "" {
+		var messages []string
+		messages, err = repository.Manager().CommitMessages(instance.Name, commit, 1)
+		if err != nil {
+			return err
+		}
+		if len(messages) > 0 {
+			message = messages[0]
 		}
 	}
 	opts := app.DeployOptions{
@@ -106,7 +118,9 @@ func deploy(w http.ResponseWriter, r *http.Request, t auth.Token) error {
 		Image:      image,
 		Origin:     origin,
 		Build:      build,
+		Message:    message,
 	}
+	opts.GetKind()
 	if t.GetAppName() != app.InternalAppName {
 		canDeploy := permission.Check(t, permSchemeForDeploy(opts),
 			append(permission.Contexts(permission.CtxTeam, instance.Teams),
@@ -118,10 +132,23 @@ func deploy(w http.ResponseWriter, r *http.Request, t auth.Token) error {
 			return &errors.HTTP{Code: http.StatusForbidden, Message: "User does not have permission to do this action in this app"}
 		}
 	}
+	var imageID string
+	evt, err := event.New(&event.Opts{
+		Target:     appTarget(appName),
+		Kind:       permission.PermAppDeploy,
+		RawOwner:   event.Owner{Type: event.OwnerTypeUser, Name: userName},
+		CustomData: opts,
+		Cancelable: true,
+	})
+	if err != nil {
+		return err
+	}
+	defer func() { evt.DoneCustomData(err, map[string]string{"image": imageID}) }()
+	opts.Event = evt
 	writer := io.NewKeepAliveWriter(w, 30*time.Second, "please wait...")
 	defer writer.Stop()
 	opts.OutputStream = writer
-	err = app.Deploy(opts)
+	imageID, err = app.Deploy(opts)
 	if err == nil {
 		fmt.Fprintln(w, "\nOK")
 	}
@@ -129,7 +156,7 @@ func deploy(w http.ResponseWriter, r *http.Request, t auth.Token) error {
 }
 
 func permSchemeForDeploy(opts app.DeployOptions) *permission.PermissionScheme {
-	switch opts.Kind() {
+	switch opts.GetKind() {
 	case app.DeployGit:
 		return permission.PermAppDeployGit
 	case app.DeployImage:
@@ -140,6 +167,8 @@ func permSchemeForDeploy(opts app.DeployOptions) *permission.PermissionScheme {
 		return permission.PermAppDeployBuild
 	case app.DeployArchiveURL:
 		return permission.PermAppDeployArchiveUrl
+	case app.DeployRollback:
+		return permission.PermAppDeployRollback
 	default:
 		return permission.PermAppDeploy
 	}
@@ -175,12 +204,13 @@ func diffDeploy(w http.ResponseWriter, r *http.Request, t auth.Token) error {
 			return &errors.HTTP{Code: http.StatusForbidden, Message: permission.ErrUnauthorized.Error()}
 		}
 	}
-	err = app.SaveDiffData(diff, instance.Name)
+	evt, err := event.GetRunning(appTarget(appName), permission.PermAppDeploy.FullName())
 	if err != nil {
-		fmt.Fprintln(w, err.Error())
 		return err
 	}
-	return nil
+	return evt.SetOtherCustomData(map[string]string{
+		"diff": diff,
+	})
 }
 
 // title: rollback
@@ -215,7 +245,20 @@ func deployRollback(w http.ResponseWriter, r *http.Request, t auth.Token) error 
 			}
 		}
 	}
-	canRollback := permission.Check(t, permission.PermAppDeployRollback,
+	w.Header().Set("Content-Type", "application/x-json-stream")
+	keepAliveWriter := io.NewKeepAliveWriter(w, 30*time.Second, "")
+	defer keepAliveWriter.Stop()
+	writer := &io.SimpleJsonMessageEncoderWriter{Encoder: json.NewEncoder(keepAliveWriter)}
+	opts := app.DeployOptions{
+		App:          instance,
+		OutputStream: writer,
+		Image:        image,
+		User:         t.GetUserName(),
+		Origin:       origin,
+		Rollback:     true,
+	}
+	opts.GetKind()
+	canRollback := permission.Check(t, permSchemeForDeploy(opts),
 		append(permission.Contexts(permission.CtxTeam, instance.Teams),
 			permission.Context(permission.CtxApp, instance.Name),
 			permission.Context(permission.CtxPool, instance.Pool),
@@ -224,17 +267,20 @@ func deployRollback(w http.ResponseWriter, r *http.Request, t auth.Token) error 
 	if !canRollback {
 		return &errors.HTTP{Code: http.StatusForbidden, Message: permission.ErrUnauthorized.Error()}
 	}
-	w.Header().Set("Content-Type", "application/x-json-stream")
-	keepAliveWriter := io.NewKeepAliveWriter(w, 30*time.Second, "")
-	defer keepAliveWriter.Stop()
-	writer := &io.SimpleJsonMessageEncoderWriter{Encoder: json.NewEncoder(keepAliveWriter)}
-	err = app.Rollback(app.DeployOptions{
-		App:          instance,
-		OutputStream: writer,
-		Image:        image,
-		User:         t.GetUserName(),
-		Origin:       origin,
+	var imageID string
+	evt, err := event.New(&event.Opts{
+		Target:     appTarget(appName),
+		Kind:       permission.PermAppDeploy,
+		Owner:      t,
+		CustomData: opts,
+		Cancelable: true,
 	})
+	if err != nil {
+		return err
+	}
+	defer func() { evt.DoneCustomData(err, map[string]string{"image": imageID}) }()
+	opts.Event = evt
+	imageID, err = app.Deploy(opts)
 	if err != nil {
 		writer.Encode(io.SimpleJsonMessage{Error: err.Error()})
 	}
@@ -284,6 +330,9 @@ func deployInfo(w http.ResponseWriter, r *http.Request, t auth.Token) error {
 	depId := r.URL.Query().Get(":deploy")
 	deploy, err := app.GetDeploy(depId)
 	if err != nil {
+		if err == event.ErrEventNotFound {
+			return &errors.HTTP{Code: http.StatusNotFound, Message: "Deploy not found."}
+		}
 		return err
 	}
 	dbApp, err := app.GetByName(deploy.App)

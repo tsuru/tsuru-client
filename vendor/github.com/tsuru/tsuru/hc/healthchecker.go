@@ -1,4 +1,4 @@
-// Copyright 2015 tsuru authors. All rights reserved.
+// Copyright 2016 tsuru authors. All rights reserved.
 // Use of this source code is governed by a BSD-style
 // license that can be found in the LICENSE file.
 
@@ -50,13 +50,13 @@ func Check() []Result {
 			results = append(results, Result{
 				Name:     checker.name,
 				Status:   "fail - " + err.Error(),
-				Duration: time.Now().Sub(startTime),
+				Duration: time.Since(startTime),
 			})
 		} else if err == nil {
 			results = append(results, Result{
 				Name:     checker.name,
 				Status:   HealthCheckOK,
-				Duration: time.Now().Sub(startTime),
+				Duration: time.Since(startTime),
 			})
 		}
 	}

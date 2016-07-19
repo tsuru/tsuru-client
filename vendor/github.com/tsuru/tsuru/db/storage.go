@@ -96,13 +96,6 @@ func (s *Storage) Apps() *storage.Collection {
 	return c
 }
 
-func (s *Storage) Deploys() *storage.Collection {
-	deployIndex := mgo.Index{Key: []string{"app", "-timestamp"}}
-	c := s.Collection("deploys")
-	c.EnsureIndex(deployIndex)
-	return c
-}
-
 // Platforms returns the platforms collection from MongoDB.
 func (s *Storage) Platforms() *storage.Collection {
 	return s.Collection("platforms")
@@ -215,4 +208,13 @@ func (s *Storage) Roles() *storage.Collection {
 
 func (s *Storage) Limiter() *storage.Collection {
 	return s.Collection("limiter")
+}
+
+func (s *Storage) Events() *storage.Collection {
+	ownerIndex := mgo.Index{Key: []string{"owner"}}
+	kindIndex := mgo.Index{Key: []string{"kind"}}
+	c := s.Collection("events")
+	c.EnsureIndex(ownerIndex)
+	c.EnsureIndex(kindIndex)
+	return c
 }

@@ -505,10 +505,10 @@ var validateNewCNames = action.Action{
 		cnameRegexp := regexp.MustCompile(`^(\*\.)?[a-zA-Z0-9][\w-.]+$`)
 		cnames := ctx.Params[1].([]string)
 		conn, err := db.Conn()
-		defer conn.Close()
 		if err != nil {
 			return nil, err
 		}
+		defer conn.Close()
 		for _, cname := range cnames {
 			if !cnameRegexp.MatchString(cname) {
 				return nil, errors.New("Invalid cname")
@@ -628,10 +628,10 @@ var checkCNameExists = action.Action{
 	Forward: func(ctx action.FWContext) (action.Result, error) {
 		cnames := ctx.Params[1].([]string)
 		conn, err := db.Conn()
-		defer conn.Close()
 		if err != nil {
 			return nil, err
 		}
+		defer conn.Close()
 		for _, cname := range cnames {
 			cs, err := conn.Apps().Find(bson.M{"cname": cname}).Count()
 			if err != nil {
@@ -744,10 +744,6 @@ var removeCNameFromApp = action.Action{
 			return nil, err
 		}
 		defer conn.Close()
-		err = conn.Apps().Find(bson.M{"name": app.Name}).One(app)
-		if err != nil {
-			return nil, err
-		}
-		return nil, nil
+		return nil, conn.Apps().Find(bson.M{"name": app.Name}).One(app)
 	},
 }

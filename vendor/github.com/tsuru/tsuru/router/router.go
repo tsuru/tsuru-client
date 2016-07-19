@@ -34,6 +34,8 @@ var (
 	ErrCNameNotAllowed = errors.New("CName as router subdomain not allowed")
 )
 
+const HttpScheme = "http"
+
 var routers = make(map[string]routerFactory)
 
 // Register registers a new router.
@@ -41,18 +43,25 @@ func Register(name string, r routerFactory) {
 	routers[name] = r
 }
 
-// Get gets the named router from the registry.
-func Get(name string) (Router, error) {
+func Type(name string) (string, string, error) {
 	prefix := "routers:" + name
 	routerType, err := config.GetString(prefix + ":type")
 	if err != nil {
 		msg := fmt.Sprintf("config key '%s:type' not found", prefix)
 		if name != "hipache" {
-			return nil, errors.New(msg)
+			return "", "", errors.New(msg)
 		}
 		log.Errorf("WARNING: %s, fallback to top level '%s:*' router config", msg, name)
-		routerType = name
-		prefix = name
+		return name, name, nil
+	}
+	return routerType, prefix, nil
+}
+
+// Get gets the named router from the registry.
+func Get(name string) (Router, error) {
+	routerType, prefix, err := Type(name)
+	if err != nil {
+		return nil, err
 	}
 	factory, ok := routers[routerType]
 	if !ok {
@@ -74,15 +83,20 @@ type Router interface {
 	AddRoutes(name string, address []*url.URL) error
 	RemoveRoute(name string, address *url.URL) error
 	RemoveRoutes(name string, addresses []*url.URL) error
-	SetCName(cname, name string) error
-	UnsetCName(cname, name string) error
 	Addr(name string) (string, error)
 
 	// Swap change the router between two backends.
-	Swap(string, string) error
+	Swap(backend1, backend2 string, cnameOnly bool) error
 
 	// Routes returns a list of routes of a backend.
 	Routes(name string) ([]*url.URL, error)
+}
+
+type CNameRouter interface {
+	Router
+	SetCName(cname, name string) error
+	UnsetCName(cname, name string) error
+	CNames(name string) ([]*url.URL, error)
 }
 
 type MessageRouter interface {
@@ -95,6 +109,10 @@ type CustomHealthcheckRouter interface {
 
 type HealthChecker interface {
 	HealthCheck() error
+}
+
+type OptsRouter interface {
+	AddBackendOpts(name string, opts map[string]string) error
 }
 
 type HealthcheckData struct {
@@ -195,19 +213,43 @@ func swapBackendName(backend1, backend2 string) error {
 	return coll.Update(bson.M{"app": backend2}, update)
 }
 
-func Swap(r Router, backend1, backend2 string) error {
-	data1, err := retrieveRouterData(backend1)
+func swapCnames(r Router, backend1, backend2 string) error {
+	cnameRouter, ok := r.(CNameRouter)
+	if !ok {
+		return nil
+	}
+	cnames1, err := cnameRouter.CNames(backend1)
 	if err != nil {
 		return err
 	}
-	data2, err := retrieveRouterData(backend2)
+	cnames2, err := cnameRouter.CNames(backend2)
 	if err != nil {
 		return err
 	}
-	if data1["kind"] != data2["kind"] {
-		return fmt.Errorf("swap is only allowed between routers of the same kind. %q uses %q, %q uses %q",
-			backend1, data1["kind"], backend2, data2["kind"])
+	for _, cname := range cnames1 {
+		err = cnameRouter.UnsetCName(cname.Host, backend1)
+		if err != nil {
+			return err
+		}
+		err = cnameRouter.SetCName(cname.Host, backend2)
+		if err != nil {
+			return err
+		}
 	}
+	for _, cname := range cnames2 {
+		err = cnameRouter.UnsetCName(cname.Host, backend2)
+		if err != nil {
+			return err
+		}
+		err = cnameRouter.SetCName(cname.Host, backend1)
+		if err != nil {
+			return err
+		}
+	}
+	return nil
+}
+
+func swapBackends(r Router, backend1, backend2 string) error {
 	routes1, err := r.Routes(backend1)
 	if err != nil {
 		return err
@@ -233,6 +275,26 @@ func Swap(r Router, backend1, backend2 string) error {
 		return err
 	}
 	return swapBackendName(backend1, backend2)
+
+}
+
+func Swap(r Router, backend1, backend2 string, cnameOnly bool) error {
+	data1, err := retrieveRouterData(backend1)
+	if err != nil {
+		return err
+	}
+	data2, err := retrieveRouterData(backend2)
+	if err != nil {
+		return err
+	}
+	if data1["kind"] != data2["kind"] {
+		return fmt.Errorf("swap is only allowed between routers of the same kind. %q uses %q, %q uses %q",
+			backend1, data1["kind"], backend2, data2["kind"])
+	}
+	if cnameOnly {
+		return swapCnames(r, backend1, backend2)
+	}
+	return swapBackends(r, backend1, backend2)
 }
 
 type PlanRouter struct {

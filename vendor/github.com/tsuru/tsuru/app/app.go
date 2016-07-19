@@ -20,6 +20,7 @@ import (
 	"github.com/tsuru/tsuru/auth"
 	"github.com/tsuru/tsuru/db"
 	"github.com/tsuru/tsuru/errors"
+	"github.com/tsuru/tsuru/event"
 	"github.com/tsuru/tsuru/log"
 	"github.com/tsuru/tsuru/permission"
 	"github.com/tsuru/tsuru/provision"
@@ -45,7 +46,7 @@ var (
 
 const (
 	// InternalAppName is a reserved name used for token generation. For
-	// backward compatibilty and historical purpose, the value remained
+	// backward compatibility and historical purpose, the value remained
 	// "tsr" when the name of the daemon changed to "tsurud".
 	InternalAppName = "tsr"
 
@@ -120,6 +121,7 @@ type App struct {
 	Plan           Plan
 	Pool           string
 	Description    string
+	RouterOpts     map[string]string
 
 	quota.Quota
 }
@@ -127,6 +129,10 @@ type App struct {
 // Units returns the list of units.
 func (app *App) Units() ([]provision.Unit, error) {
 	return Provisioner.Units(app)
+}
+
+func (app *App) GetRouterOpts() map[string]string {
+	return app.RouterOpts
 }
 
 // MarshalJSON marshals the app in json format.
@@ -430,9 +436,9 @@ func Delete(app *App, w io.Writer) error {
 	if err != nil {
 		logErr("Unable to remove app from db", err)
 	}
-	err = markDeploysAsRemoved(appName)
+	err = event.MarkAsRemoved(event.Target{Name: "app", Value: appName})
 	if err != nil {
-		logErr("Unable to mark old deploys as removed", err)
+		logErr("Unable to mark old events as removed", err)
 	}
 	return nil
 }
@@ -805,7 +811,7 @@ func (app *App) InstanceEnv(name string) map[string]bind.EnvVar {
 	envs := make(map[string]bind.EnvVar)
 	for k, env := range app.Env {
 		if env.InstanceName == name {
-			envs[k] = bind.EnvVar(env)
+			envs[k] = env
 		}
 	}
 	return envs
@@ -1125,21 +1131,6 @@ func (app *App) unsetEnvsToApp(unsetEnvs bind.UnsetEnvApp, w io.Writer) error {
 	return Provisioner.Restart(app, "", w)
 }
 
-type rollbackFunc func(provision.App, string) error
-
-func (app *App) rollbackCNames(r rollbackFunc, cnames []string, mongoCommand string) {
-	conn, _ := db.Conn()
-	defer conn.Close()
-	for _, c := range cnames {
-		r(app, c)
-		conn.Apps().Update(
-			bson.M{"name": app.Name},
-			bson.M{mongoCommand: bson.M{"cname": c}},
-		)
-	}
-
-}
-
 // AddCName adds a CName to app. It updates the attribute,
 // calls the SetCName function on the provisioner and saves
 // the app in the database, returning an error when it cannot save the change
@@ -1151,11 +1142,7 @@ func (app *App) AddCName(cnames ...string) error {
 		&saveCNames,
 		&updateApp,
 	}
-	err := action.NewPipeline(actions...).Execute(app, cnames)
-	if err != nil {
-		return err
-	}
-	return nil
+	return action.NewPipeline(actions...).Execute(app, cnames)
 }
 
 func (app *App) RemoveCName(cnames ...string) error {
@@ -1165,11 +1152,7 @@ func (app *App) RemoveCName(cnames ...string) error {
 		&removeCNameFromDatabase,
 		&removeCNameFromApp,
 	}
-	err := action.NewPipeline(actions...).Execute(app, cnames)
-	if err != nil {
-		return err
-	}
-	return nil
+	return action.NewPipeline(actions...).Execute(app, cnames)
 }
 
 func (app *App) parsedTsuruServices() map[string][]bind.ServiceInstance {
@@ -1475,11 +1458,9 @@ func List(filter *Filter) ([]App, error) {
 // Swap calls the Provisioner.Swap.
 // And updates the app.CName in the database.
 func Swap(app1, app2 *App, cnameOnly bool) error {
-	if !cnameOnly {
-		err := Provisioner.Swap(app1, app2)
-		if err != nil {
-			return err
-		}
+	err := Provisioner.Swap(app1, app2, cnameOnly)
+	if err != nil {
+		return err
 	}
 	conn, err := db.Conn()
 	if err != nil {
@@ -1518,10 +1499,7 @@ func (app *App) Start(w io.Writer, process string) error {
 		return err
 	}
 	_, err = app.RebuildRoutes()
-	if err != nil {
-		return err
-	}
-	return nil
+	return err
 }
 
 func (app *App) SetUpdatePlatform(check bool) error {
@@ -1588,7 +1566,11 @@ func (app *App) RebuildRoutes() (*RebuildRoutesResult, error) {
 	if err != nil {
 		return nil, err
 	}
-	err = r.AddBackend(app.Name)
+	if optsRouter, ok := r.(router.OptsRouter); ok {
+		err = optsRouter.AddBackendOpts(app.Name, app.RouterOpts)
+	} else {
+		err = r.AddBackend(app.Name)
+	}
 	if err != nil && err != router.ErrBackendExists {
 		return nil, err
 	}
@@ -1606,10 +1588,12 @@ func (app *App) RebuildRoutes() (*RebuildRoutesResult, error) {
 		}
 		app.Ip = newAddr
 	}
-	for _, cname := range app.CName {
-		err = r.SetCName(cname, app.Name)
-		if err != nil && err != router.ErrCNameExists {
-			return nil, err
+	if cnameRouter, ok := r.(router.CNameRouter); ok {
+		for _, cname := range app.CName {
+			err = cnameRouter.SetCName(cname, app.Name)
+			if err != nil && err != router.ErrCNameExists {
+				return nil, err
+			}
 		}
 	}
 	oldRoutes, err := r.Routes(app.GetName())
@@ -1622,12 +1606,12 @@ func (app *App) RebuildRoutes() (*RebuildRoutesResult, error) {
 		return nil, err
 	}
 	for _, unit := range units {
-		expectedMap[unit.Address.String()] = unit.Address
+		expectedMap[unit.Address.Host] = unit.Address
 	}
 	var toRemove []*url.URL
 	for _, url := range oldRoutes {
-		if _, isPresent := expectedMap[url.String()]; isPresent {
-			delete(expectedMap, url.String())
+		if _, isPresent := expectedMap[url.Host]; isPresent {
+			delete(expectedMap, url.Host)
 		} else {
 			toRemove = append(toRemove, url)
 		}

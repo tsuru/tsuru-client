@@ -5,6 +5,7 @@
 package api
 
 import (
+	"encoding/json"
 	"fmt"
 	stdLog "log"
 	"net/http"
@@ -24,9 +25,9 @@ import (
 )
 
 const (
-	tsuruMin      = "1.0.1-rc1"
-	craneMin      = "1.0.0-rc1"
-	tsuruAdminMin = "1.0.0-rc1"
+	tsuruMin      = "1.0.1"
+	craneMin      = "1.0.0"
+	tsuruAdminMin = "1.0.0"
 )
 
 func validate(token string, r *http.Request) (auth.Token, error) {
@@ -107,7 +108,14 @@ func errorHandlingMiddleware(w http.ResponseWriter, r *http.Request, next http.H
 		}
 		flushing, ok := w.(*io.FlushingWriter)
 		if ok && flushing.Wrote() {
-			fmt.Fprintln(w, err)
+			if w.Header().Get("Content-Type") == "application/x-json-stream" {
+				data, marshalErr := json.Marshal(io.SimpleJsonMessage{Error: err.Error()})
+				if marshalErr == nil {
+					w.Write(append(data, "\n"...))
+				}
+			} else {
+				fmt.Fprintln(w, err)
+			}
 		} else {
 			http.Error(w, err.Error(), code)
 		}

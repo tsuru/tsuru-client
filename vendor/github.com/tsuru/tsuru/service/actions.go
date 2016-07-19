@@ -65,6 +65,9 @@ var createServiceInstance = action.Action{
 			return
 		}
 		requestID, ok := ctx.Params[3].(string)
+		if !ok {
+			return
+		}
 		endpoint.Destroy(&instance, requestID)
 	},
 	MinParams: 2,
@@ -85,11 +88,7 @@ var insertServiceInstance = action.Action{
 			return nil, err
 		}
 		defer conn.Close()
-		err = conn.ServiceInstances().Insert(&instance)
-		if err != nil {
-			return nil, err
-		}
-		return nil, nil
+		return nil, conn.ServiceInstances().Insert(&instance)
 	},
 	Backward: func(ctx action.BWContext) {
 		instance, ok := ctx.Params[1].(ServiceInstance)
@@ -113,7 +112,7 @@ type bindPipelineArgs struct {
 	shouldRestart   bool
 }
 
-var bindAppDBAction = action.Action{
+var bindAppDBAction = &action.Action{
 	Name: "bind-app-db",
 	Forward: func(ctx action.FWContext) (action.Result, error) {
 		args, _ := ctx.Params[0].(*bindPipelineArgs)
@@ -145,7 +144,7 @@ var bindAppDBAction = action.Action{
 	MinParams: 1,
 }
 
-var bindAppEndpointAction = action.Action{
+var bindAppEndpointAction = &action.Action{
 	Name: "bind-app-endpoint",
 	Forward: func(ctx action.FWContext) (action.Result, error) {
 		args, _ := ctx.Params[0].(*bindPipelineArgs)
@@ -173,7 +172,7 @@ var bindAppEndpointAction = action.Action{
 	MinParams: 1,
 }
 
-var setBoundEnvsAction = action.Action{
+var setBoundEnvsAction = &action.Action{
 	Name: "set-bound-envs",
 	Forward: func(ctx action.FWContext) (action.Result, error) {
 		args, _ := ctx.Params[0].(*bindPipelineArgs)
@@ -206,7 +205,7 @@ var setBoundEnvsAction = action.Action{
 	},
 }
 
-var bindUnitsAction = action.Action{
+var bindUnitsAction = &action.Action{
 	Name: "bind-units",
 	Forward: func(ctx action.FWContext) (action.Result, error) {
 		args, _ := ctx.Params[0].(*bindPipelineArgs)
@@ -317,11 +316,7 @@ var unbindAppDB = action.Action{
 		if args == nil {
 			return nil, errors.New("invalid arguments for pipeline, expected *bindPipelineArgs")
 		}
-		err := args.serviceInstance.update(bson.M{"$pull": bson.M{"apps": args.app.GetName()}})
-		if err != nil {
-			return nil, err
-		}
-		return nil, err
+		return nil, args.serviceInstance.update(bson.M{"$pull": bson.M{"apps": args.app.GetName()}})
 	},
 	Backward: func(ctx action.BWContext) {
 		args, _ := ctx.Params[0].(*bindPipelineArgs)
