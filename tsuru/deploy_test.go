@@ -102,6 +102,49 @@ func (s *S) TestDeployImage(c *check.C) {
 	c.Assert(calledTimes, check.Equals, 2)
 }
 
+func (s *S) TestDeployRunWithMessage(c *check.C) {
+	calledTimes := 0
+	var buf bytes.Buffer
+	ctx := cmd.Context{Stderr: bytes.NewBufferString("")}
+	err := targz(&ctx, &buf, "testdata", "..")
+	c.Assert(err, check.IsNil)
+	trans := cmdtest.ConditionalTransport{
+		Transport: cmdtest.Transport{Message: "deploy worked\nOK\n", Status: http.StatusOK},
+		CondFunc: func(req *http.Request) bool {
+			calledTimes++
+			if req.Body != nil {
+				defer req.Body.Close()
+			}
+			if calledTimes == 1 {
+				return req.Method == "GET" && strings.HasSuffix(req.URL.Path, "/apps/secret")
+			}
+			file, _, err := req.FormFile("file")
+			c.Assert(err, check.IsNil)
+			content, err := ioutil.ReadAll(file)
+			c.Assert(err, check.IsNil)
+			c.Assert(content, check.DeepEquals, buf.Bytes())
+			c.Assert(req.Header.Get("Content-Type"), check.Matches, "multipart/form-data; boundary=.*")
+			c.Assert(req.FormValue("origin"), check.Equals, "app-deploy")
+			c.Assert(req.FormValue("message"), check.Equals, "my awesome deploy")
+			return req.Method == "POST" && strings.HasSuffix(req.URL.Path, "/apps/secret/deploy")
+		},
+	}
+	client := cmd.NewClient(&http.Client{Transport: &trans}, nil, manager)
+	var stdout, stderr bytes.Buffer
+	context := cmd.Context{
+		Stdout: &stdout,
+		Stderr: &stderr,
+		Args:   []string{"testdata", ".."},
+	}
+	fake := cmdtest.FakeGuesser{Name: "secret"}
+	guessCommand := cmd.GuessingCommand{G: &fake}
+	cmd := appDeploy{GuessingCommand: guessCommand}
+	cmd.Flags().Parse(true, []string{"-m", "my awesome deploy"})
+	err = cmd.Run(&context, client)
+	c.Assert(err, check.IsNil)
+	c.Assert(calledTimes, check.Equals, 2)
+}
+
 func (s *S) TestDeployAuthNotOK(c *check.C) {
 	calledTimes := 0
 	trans := cmdtest.ConditionalTransport{

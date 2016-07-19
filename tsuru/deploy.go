@@ -186,6 +186,9 @@ func (c *appDeploy) Run(context *cmd.Context, client *cmd.Client) error {
 	}
 	values := url.Values{}
 	values.Set("origin", origin)
+	if c.message != "" {
+		values.Set("message", c.message)
+	}
 	u, err = cmd.GetURL(fmt.Sprintf("/apps/%s/deploy", appName))
 	if err != nil {
 		return err
