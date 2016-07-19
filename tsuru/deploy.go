@@ -224,10 +224,16 @@ func (c *appDeploy) Run(context *cmd.Context, client *cmd.Client) error {
 		}
 		writer.Close()
 		request.Header.Set("Content-Type", "multipart/form-data; boundary="+writer.Boundary())
+		fullSize := float64(body.Len())
+		fmt.Fprintf(context.Stdout, "Uploading files (%0.2fMB)... ", fullSize/1024.0/1024.0)
 		go func() {
-			fmt.Fprint(context.Stdout, "Uploading files..")
-			for buf.Len() == 0 {
-				fmt.Fprint(context.Stdout, ".")
+			for {
+				remaining := body.Len()
+				percent := ((fullSize - float64(remaining)) / fullSize) * 100.0
+				fmt.Fprintf(context.Stdout, "\rUploading files (%0.2fMB)... %0.2f%%", fullSize/1024.0/1024.0, percent)
+				if remaining == 0 {
+					break
+				}
 				time.Sleep(2e9)
 			}
 		}()
