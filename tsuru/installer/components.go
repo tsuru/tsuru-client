@@ -114,10 +114,15 @@ func (c *Registry) Name() string {
 func (c *Registry) Install(machine *Machine, i *InstallConfig) error {
 	config := &docker.Config{
 		Image: i.fullImageName("registry:2"),
-		Env:   []string{"REGISTRY_STORAGE_FILESYSTEM_ROOTDIRECTORY=/var/lib/registry"},
+		Env: []string{
+			"REGISTRY_STORAGE_FILESYSTEM_ROOTDIRECTORY=/var/lib/registry",
+			"REGISTRY_HTTP_TLS_CERTIFICATE=/certs/cert.crt",
+			"REGISTRY_HTTP_TLS_KEY=/certs/key.pem",
+			"REGISTRY_HTTP_TLS_CLIENTCAS= - /certs/ca.pem",
+		},
 	}
 	hostConfig := &docker.HostConfig{
-		Binds: []string{"/var/lib/registry:/var/lib/registry"},
+		Binds: []string{"/var/lib/registry:/var/lib/registry", "/home/docker/certs:/certs"},
 	}
 	return createContainer(machine, "registry", config, hostConfig)
 }
