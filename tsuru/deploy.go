@@ -27,6 +27,7 @@ import (
 	tsuruapp "github.com/tsuru/tsuru/app"
 	"github.com/tsuru/tsuru/cmd"
 	tsuruIo "github.com/tsuru/tsuru/io"
+	"github.com/tsuru/tsuru/safe"
 )
 
 type deployList []tsuruapp.DeployData
@@ -156,6 +157,17 @@ calls are:
 	}
 }
 
+type safeWriter struct {
+	mu sync.Mutex
+	w  io.Writer
+}
+
+func (w *safeWriter) Write(p []byte) (int, error) {
+	w.mu.Lock()
+	defer w.mu.Unlock()
+	return w.w.Write(p)
+}
+
 func (c *appDeploy) Run(context *cmd.Context, client *cmd.Client) error {
 	context.RawOutput()
 	if c.image == "" && len(context.Args) == 0 {
@@ -193,13 +205,14 @@ func (c *appDeploy) Run(context *cmd.Context, client *cmd.Client) error {
 	if err != nil {
 		return err
 	}
-	var body bytes.Buffer
-	request, err = http.NewRequest("POST", u, &body)
+	body := safe.NewBuffer(nil)
+	request, err = http.NewRequest("POST", u, body)
 	if err != nil {
 		return err
 	}
 	var buf bytes.Buffer
-	respBody := firstWriter{Writer: io.MultiWriter(context.Stdout, &buf)}
+	safeStdout := &safeWriter{w: context.Stdout}
+	respBody := firstWriter{Writer: io.MultiWriter(safeStdout, &buf)}
 	if c.image != "" {
 		request.Header.Set("Content-Type", "application/x-www-form-urlencoded")
 		values.Set("image", c.image)
@@ -209,7 +222,7 @@ func (c *appDeploy) Run(context *cmd.Context, client *cmd.Client) error {
 		}
 		fmt.Fprint(context.Stdout, "Deploying image...")
 	} else {
-		writer := multipart.NewWriter(&body)
+		writer := multipart.NewWriter(body)
 		for k := range values {
 			writer.WriteField(k, values.Get(k))
 		}
@@ -230,7 +243,7 @@ func (c *appDeploy) Run(context *cmd.Context, client *cmd.Client) error {
 			for {
 				remaining := body.Len()
 				percent := ((fullSize - float64(remaining)) / fullSize) * 100.0
-				fmt.Fprintf(context.Stdout, "\rUploading files (%0.2fMB)... %0.2f%%", fullSize/1024.0/1024.0, percent)
+				fmt.Fprintf(safeStdout, "\rUploading files (%0.2fMB)... %0.2f%%", fullSize/1024.0/1024.0, percent)
 				if remaining == 0 {
 					break
 				}
