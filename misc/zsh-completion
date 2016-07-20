@@ -1,11 +1,22 @@
 #compdef tsuru
+#autoload
 # Copyright 2015 tsuru authors. All rights reserved.
 # Use of this source code is governed by a BSD-style
 # license that can be found in the LICENSE file.
 
-_tsuru() {
-    local tasks="$(tsuru 2>/dev/null | egrep "^[ ]" | awk -F ' ' '{print $1}    ')"
-    _arguments \
-        "1: :($tasks)" \
-        "*:file:_files"
+_tsuru_get_commands() {
+    local -a commands
+    local tasks
+
+    tasks=$(tsuru 2> /dev/null | awk -F ' ' 'match($0, /^[ ]/) { if (!match($0, /(  help  |This command was removed)/)) { printf "%s:",$1; for(i=2; i<=NF; i++) { printf "%s ",$i }; printf "\n" } }')
+    commands=("${(f)tasks}")
+
+    _describe 'Tsuru commands' commands
 }
+
+_tsuru() {
+  _arguments \
+    "1: :_tsuru_get_commands"
+}
+
+_tsuru "$@"
