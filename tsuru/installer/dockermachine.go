@@ -59,6 +59,7 @@ type DockerMachine struct {
 	storePath  string
 	certsPath  string
 	tlsSupport bool
+	Name       string
 }
 
 func NewDockerMachine() (*DockerMachine, error) {
@@ -140,25 +141,57 @@ func (d *DockerMachine) CreateRegistryCertificate() error {
 	if err != nil {
 		return err
 	}
-	_, err = host.RunSSHCommand("mkdir -p /home/docker/certs")
+	args := []string{
+		"-o StrictHostKeyChecking=no",
+		"-i",
+		fmt.Sprintf("%s/machines/%s/id_rsa", d.storePath, d.Name),
+		"-r",
+		fmt.Sprintf("%s/", d.certsPath),
+		fmt.Sprintf("docker@%s:/home/docker/", ip),
+	}
+	comm := exec.Command("scp", args...)
+	stdout, err := comm.CombinedOutput()
+	if err != nil {
+		return fmt.Errorf("Command: %s. Error:%s", string(stdout), err.Error())
+	}
+	registryCAConf := fmt.Sprintf(`
+[req]
+req_extensions = v3_req
+distinguished_name = req_distinguished_name
+[req_distinguished_name]
+[ v3_req ]
+basicConstraints = CA:FALSE
+keyUsage = nonRepudiation, digitalSignature, keyEncipherment
+subjectAltName = @alt_names
+[alt_names]
+DNS.1 = %s.localdomain
+DNS.2 = %s
+IP.1 = %s
+	`, d.Name, d.Name, ip)
+
+	certsBasePath := "/home/docker/certs"
+	_, err = host.RunSSHCommand(fmt.Sprintf("openssl genrsa -out %s/registry-key.pem 2048", certsBasePath))
 	if err != nil {
 		return err
 	}
-	scp := exec.Cmd{
-		Args: []string{
-			"scp",
-			"-i",
-			fmt.Sprintf("%s/machines/%s/id_rsa", d.storePath, d.Name),
-			fmt.Sprintf("%s/*", d.certsPath),
-			fmt.Sprintf("docker@%s:/home/docker/certs/", ip),
-		},
-	}
-	err = scp.Run()
+	registryCAConfPath := "/home/docker/certs/registry_ca.conf"
+	_, err = host.RunSSHCommand(fmt.Sprintf("echo -e '%s' >> %s", registryCAConf, registryCAConfPath))
 	if err != nil {
 		return err
 	}
-	// generate keys with http://docker-saigon.github.io/post/Private-Registry-Setup/
-	_, err = host.RunSSHCommand(fmt.Sprintf("openssl req -new -x509 -extensions v3_ca -key /home/docker/.docker/key.pem -out /home/docker/.docker/ca.crt -days 3650 -subj '/CN=%s'", ip))
+	_, err = host.RunSSHCommand(fmt.Sprintf("openssl req -new -key %s/registry-key.pem -out %s/registry.csr -subj '/CN=%s.localdomain' -config %s", certsBasePath, certsBasePath, d.Name, registryCAConfPath))
+	if err != nil {
+		return err
+	}
+	_, err = host.RunSSHCommand(fmt.Sprintf("openssl x509 -req -in %s/registry.csr -CA '%s/ca.pem' -CAkey '%s/ca-key.pem' -CAcreateserial -out '%s/registry.pem' -days 365 -extensions v3_req -extfile %s", certsBasePath, certsBasePath, certsBasePath, certsBasePath, registryCAConfPath))
+	if err != nil {
+		return err
+	}
+	_, err = host.RunSSHCommand(fmt.Sprintf("sudo mkdir -p /var/lib/boot2docker/certs/"))
+	if err != nil {
+		return err
+	}
+	_, err = host.RunSSHCommand(fmt.Sprintf("sudo cp %s/ca.pem /var/lib/boot2docker/certs/", certsBasePath))
 	return err
 }
 
