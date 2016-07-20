@@ -8,6 +8,7 @@ import (
 	"encoding/json"
 	"fmt"
 	"os/exec"
+	"time"
 
 	"github.com/docker/machine/drivers/amazonec2"
 	"github.com/docker/machine/drivers/azure"
@@ -191,7 +192,12 @@ IP.1 = %s
 	if err != nil {
 		return err
 	}
-	_, err = host.RunSSHCommand(fmt.Sprintf("sudo cp %s/ca.pem /var/lib/boot2docker/certs/", certsBasePath))
+	_, err = host.RunSSHCommand(fmt.Sprintf("sudo ln -s %s /etc/docker/certs.d", certsBasePath))
+	if err != nil {
+		return err
+	}
+	_, err = host.RunSSHCommand("sudo /etc/init.d/docker restart")
+	time.Sleep(10 * time.Second)
 	return err
 }
 
