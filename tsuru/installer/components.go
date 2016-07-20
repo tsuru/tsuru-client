@@ -116,9 +116,8 @@ func (c *Registry) Install(machine *Machine, i *InstallConfig) error {
 		Image: i.fullImageName("registry:2"),
 		Env: []string{
 			"REGISTRY_STORAGE_FILESYSTEM_ROOTDIRECTORY=/var/lib/registry",
-			"REGISTRY_HTTP_TLS_CERTIFICATE=/certs/cert.crt",
-			"REGISTRY_HTTP_TLS_KEY=/certs/key.pem",
-			"REGISTRY_HTTP_TLS_CLIENTCAS= - /certs/ca.pem",
+			"REGISTRY_HTTP_TLS_CERTIFICATE=/certs/registry.pem",
+			"REGISTRY_HTTP_TLS_KEY=/certs/registry-key.pem",
 		},
 	}
 	hostConfig := &docker.HostConfig{
