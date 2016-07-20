@@ -210,9 +210,9 @@ func (c *appDeploy) Run(context *cmd.Context, client *cmd.Client) error {
 	if err != nil {
 		return err
 	}
-	var buf bytes.Buffer
+	buf := safe.NewBuffer(nil)
 	safeStdout := &safeWriter{w: context.Stdout}
-	respBody := firstWriter{Writer: io.MultiWriter(safeStdout, &buf)}
+	respBody := firstWriter{Writer: io.MultiWriter(safeStdout, buf)}
 	if c.image != "" {
 		request.Header.Set("Content-Type", "application/x-www-form-urlencoded")
 		values.Set("image", c.image)
@@ -238,14 +238,26 @@ func (c *appDeploy) Run(context *cmd.Context, client *cmd.Client) error {
 		writer.Close()
 		request.Header.Set("Content-Type", "multipart/form-data; boundary="+writer.Boundary())
 		fullSize := float64(body.Len())
-		fmt.Fprintf(context.Stdout, "Uploading files (%0.2fMB)... ", fullSize/1024.0/1024.0)
+		megabyte := 1024.0 * 1024.0
+		fmt.Fprintf(context.Stdout, "Uploading files (%0.2fMB)... ", fullSize/megabyte)
+		count := 0
 		go func() {
-			for {
+			t0 := time.Now()
+			lastTransfered := 0.0
+			for buf.Len() == 0 {
 				remaining := body.Len()
-				percent := ((fullSize - float64(remaining)) / fullSize) * 100.0
-				fmt.Fprintf(safeStdout, "\rUploading files (%0.2fMB)... %0.2f%%", fullSize/1024.0/1024.0, percent)
-				if remaining == 0 {
-					break
+				transfered := fullSize - float64(remaining)
+				speed := ((transfered - lastTransfered) / megabyte) / (float64(time.Since(t0)) / float64(time.Second))
+				t0 = time.Now()
+				lastTransfered = transfered
+				percent := (transfered / fullSize) * 100.0
+				fmt.Fprintf(safeStdout, "\rUploading files (%0.2fMB)... %0.2f%%", fullSize/megabyte, percent)
+				if remaining > 0 {
+					fmt.Fprintf(safeStdout, " (%0.2fMB/s)", speed)
+				}
+				if remaining == 0 && buf.Len() == 0 {
+					fmt.Fprintf(safeStdout, " Processing%s", strings.Repeat(".", count))
+					count++
 				}
 				time.Sleep(2e9)
 			}
