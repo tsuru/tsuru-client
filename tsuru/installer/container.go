@@ -37,7 +37,9 @@ func createContainer(d dockerEnpoint, name string, config *docker.Config, hostCo
 	}
 	hostConfig.RestartPolicy = docker.AlwaysRestart()
 	if len(imageInspect.Config.ExposedPorts) > 0 {
-		hostConfig.PortBindings = make(map[docker.Port][]docker.PortBinding)
+		if hostConfig.PortBindings == nil {
+			hostConfig.PortBindings = make(map[docker.Port][]docker.PortBinding)
+		}
 		for k := range imageInspect.Config.ExposedPorts {
 			hostConfig.PortBindings[k] = []docker.PortBinding{{HostIP: "0.0.0.0", HostPort: k.Port()}}
 		}
