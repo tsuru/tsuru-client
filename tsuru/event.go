@@ -139,7 +139,9 @@ func (c *eventList) Show(evts []event.Event, context *cmd.Context) error {
 		}
 		row := cmd.Row{evt.UniqueID.Hex(), ts, success, owner, evt.Kind.Name, fullTarget}
 		var color string
-		if evt.CancelInfo.Canceled {
+		if evt.Running {
+			color = "yellow"
+		} else if evt.CancelInfo.Canceled {
 			color = "magenta"
 		} else if evt.Error != "" {
 			color = "red"
