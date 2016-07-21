@@ -8,7 +8,6 @@ import (
 	"encoding/json"
 	"fmt"
 	"os/exec"
-	"time"
 
 	"github.com/docker/machine/drivers/amazonec2"
 	"github.com/docker/machine/drivers/azure"
@@ -170,7 +169,15 @@ DNS.2 = %s
 IP.1 = %s
 	`, d.Name, d.Name, ip)
 
-	certsBasePath := "/home/docker/certs"
+	certsBasePath := fmt.Sprintf("/home/docker/certs/%s:5000", ip)
+	_, err = host.RunSSHCommand(fmt.Sprintf("mkdir -p %s", certsBasePath))
+	if err != nil {
+		return err
+	}
+	_, err = host.RunSSHCommand(fmt.Sprintf("cp /home/docker/certs/*.pem %s/", certsBasePath))
+	if err != nil {
+		return err
+	}
 	_, err = host.RunSSHCommand(fmt.Sprintf("openssl genrsa -out %s/registry-key.pem 2048", certsBasePath))
 	if err != nil {
 		return err
@@ -188,16 +195,14 @@ IP.1 = %s
 	if err != nil {
 		return err
 	}
-	_, err = host.RunSSHCommand(fmt.Sprintf("sudo mkdir -p /var/lib/boot2docker/certs/"))
-	if err != nil {
-		return err
-	}
 	_, err = host.RunSSHCommand(fmt.Sprintf("sudo ln -s %s /etc/docker/certs.d", certsBasePath))
 	if err != nil {
 		return err
 	}
-	_, err = host.RunSSHCommand("sudo /etc/init.d/docker restart")
-	time.Sleep(10 * time.Second)
+	_, err = host.RunSSHCommand(fmt.Sprintf("cat %s/ca.pem | sudo tee -a /etc/ssl/certs/ca-certificates.crt", certsBasePath))
+	if err != nil {
+		return err
+	}
 	return err
 }
 
