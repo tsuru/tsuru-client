@@ -44,6 +44,7 @@ func (s *S) TestInstallComponentsDefaultConfig(c *check.C) {
 	c.Assert(len(tests), check.Equals, len(TsuruComponents))
 	containerChan := make(chan *docker.Container)
 	server, _ := testing.NewServer("127.0.0.1:0", containerChan, nil)
+	defer server.Stop()
 	mockMachine := &Machine{Address: server.URL(), IP: "127.0.0.1"}
 	for _, tt := range tests {
 		go tt.component.Install(mockMachine, &InstallConfig{})
@@ -77,6 +78,7 @@ func (s *S) TestInstallComponentsCustomRegistry(c *check.C) {
 	c.Assert(len(tests), check.Equals, len(TsuruComponents))
 	containerChan := make(chan *docker.Container)
 	server, _ := testing.NewServer("127.0.0.1:0", containerChan, nil)
+	defer server.Stop()
 	mockMachine := &Machine{Address: server.URL()}
 	for _, tt := range tests {
 		config := &InstallConfig{Registry: "myregistry.com"}
@@ -95,6 +97,7 @@ func (s *S) TestInstallComponentsCustomRegistry(c *check.C) {
 func (s *S) TestInstallPlanbHostPortBindings(c *check.C) {
 	containerChan := make(chan *docker.Container)
 	server, _ := testing.NewServer("127.0.0.1:0", containerChan, nil)
+	defer server.Stop()
 	mockMachine := &Machine{Address: server.URL()}
 	planb := &PlanB{}
 	expectedExposed := map[docker.Port]struct{}{

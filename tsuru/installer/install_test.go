@@ -54,6 +54,7 @@ func (s *S) TestInstall(c *check.C) {
 	defer os.Remove("/tmp/config-test.yaml")
 	config.Unset("driver")
 	server, _ := dockertesting.NewServer("127.0.0.1:2375", nil, nil)
+	defer server.Stop()
 	var stdout, stderr bytes.Buffer
 	context := cmd.Context{
 		Stdout: &stdout,
@@ -61,7 +62,8 @@ func (s *S) TestInstall(c *check.C) {
 	}
 	client := cmd.NewClient(&http.Client{}, nil, manager)
 	command := Install{config: "/tmp/config-test.yaml"}
-	command.Run(&context, client)
+	err = command.Run(&context, client)
+	c.Assert(err, check.IsNil)
 	c.Assert(stdout.String(), check.Not(check.Equals), "")
 	c.Assert(stderr.String(), check.Equals, "")
 	server.Stop()
@@ -84,11 +86,11 @@ func (s *S) TestInstallCustomRegistry(c *check.C) {
 	context := cmd.Context{
 		Stdout: &stdout,
 		Stderr: &stderr,
-		Args:   []string{"-r", "myregistry.com", "url=http://127.0.0.1"},
 	}
 	client := cmd.NewClient(&http.Client{}, nil, manager)
 	command := Install{config: "/tmp/config-test.yaml"}
-	command.Run(&context, client)
+	err = command.Run(&context, client)
+	c.Assert(err, check.IsNil)
 	config := <-iChan
 	c.Assert(config.Registry, check.Equals, "myregistry.com")
 	TsuruComponents = realTsuruComponents
@@ -115,7 +117,8 @@ func (s *S) TestUninstall(c *check.C) {
 	}
 	client := cmd.NewClient(&http.Client{}, nil, manager)
 	command := Uninstall{config: "/tmp/config-test.yaml"}
-	command.Run(&context, client)
+	err = command.Run(&context, client)
+	c.Assert(err, check.IsNil)
 	c.Assert(stderr.String(), check.Equals, "")
 	c.Assert(stdout.String(), check.Equals, "Machine successfully removed!\n")
 }
