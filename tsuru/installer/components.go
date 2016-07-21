@@ -78,11 +78,15 @@ func (c *PlanB) Install(machine *Machine, i *InstallConfig) error {
 	config := &docker.Config{
 		Image: i.fullImageName("tsuru/planb:latest"),
 		Cmd:   []string{"--listen", ":80", "--read-redis-host", machine.IP, "--write-redis-host", machine.IP},
+		ExposedPorts: map[docker.Port]struct{}{
+			docker.Port("80/tcp"): {},
+		},
 	}
 	hostConfig := &docker.HostConfig{
-		PortBindings: make(map[docker.Port][]docker.PortBinding),
+		PortBindings: map[docker.Port][]docker.PortBinding{
+			"80/tcp": {{HostIP: "0.0.0.0", HostPort: "80"}},
+		},
 	}
-	hostConfig.PortBindings["80"] = []docker.PortBinding{{HostIP: "0.0.0.0", HostPort: "80"}}
 	return createContainer(machine, "planb", config, hostConfig)
 }
 
@@ -116,8 +120,8 @@ func (c *Registry) Install(machine *Machine, i *InstallConfig) error {
 		Image: i.fullImageName("registry:2"),
 		Env: []string{
 			"REGISTRY_STORAGE_FILESYSTEM_ROOTDIRECTORY=/var/lib/registry",
-			"REGISTRY_HTTP_TLS_CERTIFICATE=/certs/registry.pem",
-			"REGISTRY_HTTP_TLS_KEY=/certs/registry-key.pem",
+			fmt.Sprintf("REGISTRY_HTTP_TLS_CERTIFICATE=/certs/%s:5000/registry.pem", machine.IP),
+			fmt.Sprintf("REGISTRY_HTTP_TLS_KEY=/certs/%s:5000/registry-key.pem", machine.IP),
 		},
 	}
 	hostConfig := &docker.HostConfig{
