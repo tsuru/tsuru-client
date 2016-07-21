@@ -97,10 +97,10 @@ func (c *eventList) Run(context *cmd.Context, client *cmd.Client) error {
 	if err != nil {
 		return err
 	}
+	defer response.Body.Close()
 	if response.StatusCode == http.StatusNoContent {
 		return nil
 	}
-	defer response.Body.Close()
 	result, err := ioutil.ReadAll(response.Body)
 	if err != nil {
 		return err
@@ -181,9 +181,6 @@ func (c *eventInfo) Run(context *cmd.Context, client *cmd.Client) error {
 	response, err := client.Do(request)
 	if err != nil {
 		return err
-	}
-	if response.StatusCode == http.StatusNoContent {
-		return nil
 	}
 	defer response.Body.Close()
 	result, err := ioutil.ReadAll(response.Body)
@@ -282,4 +279,40 @@ var rePadLines = regexp.MustCompile(`(?m)^(.+)`)
 
 func padLines(s string, pad string) string {
 	return rePadLines.ReplaceAllString(s, pad+`$1`)
+}
+
+type eventCancel struct {
+	cmd.ConfirmationCommand
+}
+
+func (c *eventCancel) Info() *cmd.Info {
+	return &cmd.Info{
+		Name:    "event-cancel",
+		Usage:   "event-cancel <event-id> <reason> [-y]",
+		Desc:    `Cancel a running event.`,
+		MinArgs: 2,
+	}
+}
+
+func (c *eventCancel) Run(context *cmd.Context, client *cmd.Client) error {
+	if !c.Confirm(context, "Are you sure you want to cancel this event?") {
+		return nil
+	}
+	u, err := cmd.GetURLVersion("1.1", fmt.Sprintf("/events/%s/cancel", context.Args[0]))
+	if err != nil {
+		return err
+	}
+	v := url.Values{}
+	v.Set("reason", strings.Join(context.Args[1:], " "))
+	request, err := http.NewRequest("POST", u, strings.NewReader(v.Encode()))
+	if err != nil {
+		return err
+	}
+	request.Header.Set("Content-Type", "application/x-www-form-urlencoded")
+	_, err = client.Do(request)
+	if err != nil {
+		return err
+	}
+	fmt.Fprintln(context.Stdout, "Event successfully canceled.")
+	return nil
 }

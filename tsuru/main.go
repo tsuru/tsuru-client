@@ -101,6 +101,7 @@ func buildManager(name string) *cmd.Manager {
 	m.Register(&roleDefaultRemove{})
 	m.Register(&eventList{})
 	m.Register(&eventInfo{})
+	m.Register(&eventCancel{})
 	return m
 }
 

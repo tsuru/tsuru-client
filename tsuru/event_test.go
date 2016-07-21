@@ -497,3 +497,25 @@ Canceled:   true
 `
 	c.Assert(stdout.String(), check.Matches, expected)
 }
+
+func (s *S) TestEventCancel(c *check.C) {
+	var stdout, stderr bytes.Buffer
+	context := cmd.Context{
+		Args:   []string{"998e3908413daf5fd9891aac", "my", "reason"},
+		Stdout: &stdout,
+		Stderr: &stderr,
+	}
+	trans := &cmdtest.ConditionalTransport{
+		Transport: cmdtest.Transport{Message: runningEvt, Status: http.StatusOK},
+		CondFunc: func(req *http.Request) bool {
+			c.Assert(req.FormValue("reason"), check.Equals, "my reason")
+			return req.URL.Path == "/1.1/events/998e3908413daf5fd9891aac/cancel" && req.Method == "POST"
+		},
+	}
+	client := cmd.NewClient(&http.Client{Transport: trans}, nil, manager)
+	command := eventCancel{}
+	command.Flags().Parse(true, []string{"-y"})
+	err := command.Run(&context, client)
+	c.Assert(err, check.IsNil)
+	c.Assert(stdout.String(), check.Matches, "Event successfully canceled.\n")
+}
