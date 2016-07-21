@@ -101,7 +101,7 @@ func (s *S) TestInstallPlanbHostPortBindings(c *check.C) {
 		docker.Port("80/tcp"): {},
 	}
 	expectedBinds := map[docker.Port][]docker.PortBinding{
-		"80/tcp": {{HostIP: "0.0.0.0", HostPort: "8888"}},
+		"80/tcp": {{HostIP: "0.0.0.0", HostPort: "80"}},
 	}
 	go planb.Install(mockMachine, &InstallConfig{})
 	cont := <-containerChan
