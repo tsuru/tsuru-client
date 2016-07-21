@@ -26,7 +26,10 @@ import (
 func eventList(w http.ResponseWriter, r *http.Request, t auth.Token) error {
 	filter := &event.Filter{}
 	if target := r.URL.Query().Get("target"); target != "" {
-		filter.Target = event.Target{Name: target}
+		t, err := event.GetTargetType(target)
+		if err == nil {
+			filter.Target = event.Target{Type: t}
+		}
 	}
 	if running, err := strconv.ParseBool(r.URL.Query().Get("running")); err == nil {
 		filter.Running = &running
@@ -87,4 +90,38 @@ func eventInfo(w http.ResponseWriter, r *http.Request, t auth.Token) error {
 	}
 	w.Header().Add("Content-Type", "application/json")
 	return json.NewEncoder(w).Encode(e)
+}
+
+// title: event cancel
+// path: /events/{uuid}/cancel
+// method: POST
+// produce: application/json
+// responses:
+//   200: OK
+//   400: Invalid uuid or empty reason
+//   404: Not found
+func eventCancel(w http.ResponseWriter, r *http.Request, t auth.Token) error {
+	uuid := r.URL.Query().Get(":uuid")
+	if !bson.IsObjectIdHex(uuid) {
+		msg := fmt.Sprintf("uuid parameter is not ObjectId: %s", uuid)
+		return &errors.HTTP{Code: http.StatusBadRequest, Message: msg}
+	}
+	objID := bson.ObjectIdHex(uuid)
+	e, err := event.GetByID(objID)
+	if err != nil {
+		return &errors.HTTP{Code: http.StatusNotFound, Message: err.Error()}
+	}
+	reason := r.FormValue("reason")
+	if reason == "" {
+		return &errors.HTTP{Code: http.StatusBadRequest, Message: "reason is mandatory"}
+	}
+	err = e.TryCancel(reason, t.GetUserName())
+	if err != nil {
+		if err == event.ErrNotCancelable {
+			return &errors.HTTP{Code: http.StatusBadRequest, Message: err.Error()}
+		}
+		return err
+	}
+	w.WriteHeader(http.StatusNoContent)
+	return nil
 }

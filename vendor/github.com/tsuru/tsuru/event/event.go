@@ -32,15 +32,16 @@ var (
 	}
 	throttlingInfo = map[string]ThrottlingSpec{}
 
-	ErrNotCancelable  = errors.New("event is not cancelable")
-	ErrEventNotFound  = errors.New("event not found")
-	ErrNoTarget       = ErrValidation("event target is mandatory")
-	ErrNoKind         = ErrValidation("event kind is mandatory")
-	ErrNoOwner        = ErrValidation("event owner is mandatory")
-	ErrNoOpts         = ErrValidation("event opts is mandatory")
-	ErrNoInternalKind = ErrValidation("event internal kind is mandatory")
-	ErrInvalidOwner   = ErrValidation("event owner must not be set on internal events")
-	ErrInvalidKind    = ErrValidation("event kind must not be set on internal events")
+	ErrNotCancelable     = errors.New("event is not cancelable")
+	ErrEventNotFound     = errors.New("event not found")
+	ErrNoTarget          = ErrValidation("event target is mandatory")
+	ErrNoKind            = ErrValidation("event kind is mandatory")
+	ErrNoOwner           = ErrValidation("event owner is mandatory")
+	ErrNoOpts            = ErrValidation("event opts is mandatory")
+	ErrNoInternalKind    = ErrValidation("event internal kind is mandatory")
+	ErrInvalidOwner      = ErrValidation("event owner must not be set on internal events")
+	ErrInvalidKind       = ErrValidation("event kind must not be set on internal events")
+	ErrInvalidTargetType = errors.New("invalid event target type")
 
 	OwnerTypeUser     = ownerType("user")
 	OwnerTypeApp      = ownerType("app")
@@ -48,6 +49,15 @@ var (
 
 	KindTypePermission = kindType("permission")
 	KindTypeInternal   = kindType("internal")
+
+	TargetTypeApp             = targetType("app")
+	TargetTypeNode            = targetType("node")
+	TargetTypeContainer       = targetType("container")
+	TargetTypePool            = targetType("pool")
+	TargetTypeService         = targetType("service")
+	TargetTypeServiceInstance = targetType("service-instance")
+	TargetTypeTeam            = targetType("team")
+	TargetTypeUser            = targetType("user")
 )
 
 type ErrThrottled struct {
@@ -60,7 +70,7 @@ func (err ErrThrottled) Error() string {
 	if err.Spec.KindName != "" {
 		extra = fmt.Sprintf(" %s on", err.Spec.KindName)
 	}
-	return fmt.Sprintf("event throttled, limit for%s %s %q is %d every %v", extra, err.Target.Name, err.Target.Value, err.Spec.Max, err.Spec.Time)
+	return fmt.Sprintf("event throttled, limit for%s %s %q is %d every %v", extra, err.Target.Type, err.Target.Value, err.Spec.Max, err.Spec.Time)
 }
 
 type ErrValidation string
@@ -75,14 +85,17 @@ func (err ErrEventLocked) Error() string {
 	return fmt.Sprintf("event locked: %v", err.event)
 }
 
-type Target struct{ Name, Value string }
+type Target struct {
+	Type  targetType
+	Value string
+}
 
 func (id Target) GetBSON() (interface{}, error) {
-	return bson.D{{Name: "name", Value: id.Name}, {Name: "value", Value: id.Value}}, nil
+	return bson.D{{Name: "type", Value: id.Type}, {Name: "value", Value: id.Value}}, nil
 }
 
 func (id Target) IsValid() bool {
-	return id.Name != "" && id.Value != ""
+	return id.Type != "" && id.Value != ""
 }
 
 type eventId struct {
@@ -141,6 +154,30 @@ type ownerType string
 
 type kindType string
 
+type targetType string
+
+func GetTargetType(t string) (targetType, error) {
+	switch t {
+	case "app":
+		return TargetTypeApp, nil
+	case "node":
+		return TargetTypeNode, nil
+	case "container":
+		return TargetTypeContainer, nil
+	case "pool":
+		return TargetTypePool, nil
+	case "service":
+		return TargetTypeService, nil
+	case "service-instance":
+		return TargetTypeServiceInstance, nil
+	case "team":
+		return TargetTypeTeam, nil
+	case "user":
+		return TargetTypeUser, nil
+	}
+	return targetType(""), ErrInvalidTargetType
+}
+
 type Owner struct {
 	Type ownerType
 	Name string
@@ -160,26 +197,26 @@ func (k Kind) String() string {
 }
 
 type ThrottlingSpec struct {
-	TargetName string
+	TargetType targetType
 	KindName   string
 	Max        int
 	Time       time.Duration
 }
 
 func SetThrottling(spec ThrottlingSpec) {
-	key := spec.TargetName
+	key := string(spec.TargetType)
 	if spec.KindName != "" {
-		key = fmt.Sprintf("%s_%s", spec.TargetName, spec.KindName)
+		key = fmt.Sprintf("%s_%s", spec.TargetType, spec.KindName)
 	}
 	throttlingInfo[key] = spec
 }
 
 func getThrottling(t *Target, k *Kind) *ThrottlingSpec {
-	key := fmt.Sprintf("%s_%s", t.Name, k.Name)
+	key := fmt.Sprintf("%s_%s", t.Type, k.Name)
 	if s, ok := throttlingInfo[key]; ok {
 		return &s
 	}
-	if s, ok := throttlingInfo[t.Name]; ok {
+	if s, ok := throttlingInfo[string(t.Type)]; ok {
 		return &s
 	}
 	return nil
@@ -203,7 +240,7 @@ type Opts struct {
 
 func (e *Event) String() string {
 	return fmt.Sprintf("%s(%s) running %q start by %s at %s",
-		e.Target.Name,
+		e.Target.Type,
 		e.Target.Value,
 		e.Kind,
 		e.Owner,
@@ -230,8 +267,8 @@ type Filter struct {
 
 func (f *Filter) toQuery() bson.M {
 	query := bson.M{}
-	if f.Target.Name != "" {
-		query["target.name"] = f.Target.Name
+	if f.Target.Type != "" {
+		query["target.type"] = f.Target.Type
 	}
 	if f.Target.Value != "" {
 		query["target.value"] = f.Target.Value
@@ -488,7 +525,7 @@ func newEvt(opts *Opts) (*Event, error) {
 	tSpec := getThrottling(&opts.Target, &k)
 	if tSpec != nil && tSpec.Max > 0 && tSpec.Time > 0 {
 		query := bson.M{
-			"target.name":  opts.Target.Name,
+			"target.type":  opts.Target.Type,
 			"target.value": opts.Target.Value,
 			"starttime":    bson.M{"$gt": time.Now().UTC().Add(-tSpec.Time)},
 		}
@@ -557,10 +594,6 @@ func (e *Event) SetLogWriter(w io.Writer) {
 	e.logWriter = w
 }
 
-func (e *Event) GetLogWriter() io.Writer {
-	return &e.logBuffer
-}
-
 func (e *Event) SetOtherCustomData(data interface{}) error {
 	conn, err := db.Conn()
 	if err != nil {
@@ -574,12 +607,19 @@ func (e *Event) SetOtherCustomData(data interface{}) error {
 }
 
 func (e *Event) Logf(format string, params ...interface{}) {
-	log.Debugf(fmt.Sprintf("%s(%s)[%s] %s", e.Target.Name, e.Target.Value, e.Kind, format), params...)
+	log.Debugf(fmt.Sprintf("%s(%s)[%s] %s", e.Target.Type, e.Target.Value, e.Kind, format), params...)
 	format += "\n"
 	if e.logWriter != nil {
 		fmt.Fprintf(e.logWriter, format, params...)
 	}
 	fmt.Fprintf(&e.logBuffer, format, params...)
+}
+
+func (e *Event) Write(data []byte) (int, error) {
+	if e.logWriter != nil {
+		e.logWriter.Write(data)
+	}
+	return e.logBuffer.Write(data)
 }
 
 func (e *Event) TryCancel(reason, owner string) error {
@@ -603,20 +643,20 @@ func (e *Event) TryCancel(reason, owner string) error {
 		}},
 		ReturnNew: true,
 	}
-	_, err = coll.FindId(e.ID).Apply(change, &e.eventData)
+	_, err = coll.Find(bson.M{"_id": e.ID, "cancelinfo.asked": false}).Apply(change, &e.eventData)
 	if err == mgo.ErrNotFound {
 		return ErrEventNotFound
 	}
 	return err
 }
 
-func (e *Event) AckCancel() error {
+func (e *Event) AckCancel() (bool, error) {
 	if !e.Cancelable || !e.Running {
-		return ErrNotCancelable
+		return false, nil
 	}
 	conn, err := db.Conn()
 	if err != nil {
-		return err
+		return false, err
 	}
 	defer conn.Close()
 	coll := conn.Events()
@@ -629,9 +669,9 @@ func (e *Event) AckCancel() error {
 	}
 	_, err = coll.Find(bson.M{"_id": e.ID, "cancelinfo.asked": true}).Apply(change, &e.eventData)
 	if err == mgo.ErrNotFound {
-		return ErrEventNotFound
+		return false, nil
 	}
-	return err
+	return err == nil, err
 }
 
 func (e *Event) StartData(value interface{}) error {
