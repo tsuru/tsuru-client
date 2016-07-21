@@ -120,22 +120,34 @@ func (c *eventList) Show(evts []event.Event, context *cmd.Context) error {
 	tbl.Headers = cmd.Row{"ID", "Start (duration)", "Success", "Owner", "Kind", "Target"}
 	for i := range evts {
 		evt := &evts[i]
-		if evt.Target.Name == "container" {
+		if evt.Target.Type == "container" {
 			evt.Target.Value = evt.Target.Value[:12]
 		}
-		fullTarget := fmt.Sprintf("%s: %s", evt.Target.Name, evt.Target.Value)
+		fullTarget := fmt.Sprintf("%s: %s", evt.Target.Type, evt.Target.Value)
 		startFmt := evt.StartTime.Format(time.RFC822Z)
 		owner := reEmailShort.ReplaceAllString(evt.Owner.Name, "@…")
-		ts := fmt.Sprintf("%s (…)", startFmt)
-		if !evt.EndTime.IsZero() {
+		var ts, success string
+		if evt.Running {
+			ts = fmt.Sprintf("%s (…)", startFmt)
+			success = "…"
+		} else {
 			ts = fmt.Sprintf("%s (%v)", startFmt, evt.EndTime.Sub(evt.StartTime))
+			success = fmt.Sprintf("%v", evt.Error == "")
+			if evt.CancelInfo.Canceled {
+				success += " ✗"
+			}
 		}
-		success := fmt.Sprintf("%v", evt.Error == "")
 		row := cmd.Row{evt.UniqueID.Hex(), ts, success, owner, evt.Kind.Name, fullTarget}
-		if evt.Error != "" {
+		var color string
+		if evt.CancelInfo.Canceled {
+			color = "magenta"
+		} else if evt.Error != "" {
+			color = "red"
+		}
+		if color != "" {
 			for i, v := range row {
 				if v != "" {
-					row[i] = cmd.Colorfy(v, "red", "", "")
+					row[i] = cmd.Colorfy(v, color, "", "")
 				}
 			}
 		}
@@ -193,7 +205,7 @@ func (c *eventInfo) Show(evt event.Event, context *cmd.Context) error {
 	}
 	startFmt := evt.StartTime.Format(time.RFC822Z)
 	var endFmt string
-	if evt.EndTime.IsZero() {
+	if evt.Running {
 		endFmt = fmt.Sprintf("running (%v)", time.Now().Sub(evt.StartTime))
 	} else {
 		endFmt = fmt.Sprintf("%s (%v)", evt.EndTime.Format(time.RFC822Z), evt.EndTime.Sub(evt.StartTime))
@@ -202,13 +214,16 @@ func (c *eventInfo) Show(evt event.Event, context *cmd.Context) error {
 		{"ID", evt.UniqueID.Hex()},
 		{"Start", startFmt},
 		{"End", endFmt},
-		{"Target", fmt.Sprintf("%s(%s)", evt.Target.Name, evt.Target.Value)},
+		{"Target", fmt.Sprintf("%s(%s)", evt.Target.Type, evt.Target.Value)},
 		{"Kind", fmt.Sprintf("%s(%s)", evt.Kind.Type, evt.Kind.Name)},
 		{"Owner", fmt.Sprintf("%s(%s)", evt.Owner.Type, evt.Owner.Name)},
 	}
 	sucessful := evt.Error == ""
 	sucessfulStr := strconv.FormatBool(sucessful)
 	if sucessful {
+		if evt.Running {
+			sucessfulStr = "…"
+		}
 		items = append(items, item{"Success", sucessfulStr})
 	} else {
 		redError := cmd.Colorfy(fmt.Sprintf("%q", evt.Error), "red", "", "")
@@ -218,11 +233,15 @@ func (c *eventInfo) Show(evt event.Event, context *cmd.Context) error {
 			{"Error", redError},
 		}...)
 	}
-	items = append(items, item{"Canceled", strconv.FormatBool(evt.CancelInfo.Canceled)})
+	items = append(items, []item{
+		{"Cancelable", strconv.FormatBool(evt.Cancelable)},
+		{"Canceled", strconv.FormatBool(evt.CancelInfo.Canceled)},
+	}...)
 	if evt.CancelInfo.Canceled {
 		items = append(items, []item{
-			{"  Canceled By", evt.CancelInfo.Owner},
-			{"  Canceled At", evt.CancelInfo.AckTime.Format(time.RFC822Z)},
+			{"  Reason", evt.CancelInfo.Reason},
+			{"  By", evt.CancelInfo.Owner},
+			{"  At", evt.CancelInfo.AckTime.Format(time.RFC822Z)},
 		}...)
 	}
 	labels := []string{"Start", "End", "Other"}

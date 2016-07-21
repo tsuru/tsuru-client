@@ -15,7 +15,7 @@ var okEvt = `
 {
   "ID": {
     "Target": {
-      "Name": "",
+      "Type": "",
       "Value": ""
     },
     "ObjId": "578e3908413daf5fd9891aac"
@@ -24,7 +24,7 @@ var okEvt = `
   "StartTime": "2016-07-19T11:28:24.686-03:00",
   "EndTime": "2016-07-19T11:29:22.01-03:00",
   "Target": {
-    "Name": "app",
+    "Type": "app",
     "Value": "myapp"
   },
   "StartCustomData": {
@@ -63,12 +63,89 @@ var okEvt = `
   "Running": false
 }
 `
+var canceledEvt = `
+{
+  "ID": {
+    "Target": {
+      "Type": "",
+      "Value": ""
+    },
+    "ObjId": "888e3908413daf5fd9891aac"
+  },
+  "UniqueID": "888e3908413daf5fd9891aac",
+  "StartTime": "2016-07-19T11:28:24.686-03:00",
+  "EndTime": "2016-07-19T11:29:22.01-03:00",
+  "Target": {
+    "Type": "app",
+    "Value": "myapp"
+  },
+  "Kind": {
+    "Type": "permission",
+    "Name": "app.deploy"
+  },
+  "Owner": {
+    "Type": "user",
+    "Name": "someone@removed.com"
+  },
+  "Error": "canceled by user action",
+  "Log": "",
+  "RemoveDate": "0001-01-01T00:00:00Z",
+  "CancelInfo": {
+    "Owner": "evil@corp",
+    "StartTime": "2016-07-19T11:28:25.686-03:00",
+    "AckTime": "2016-07-19T11:28:26.686-03:00",
+    "Reason": "because yes",
+    "Asked": true,
+    "Canceled": true
+  },
+  "Cancelable": true,
+  "Running": false
+}
+`
+var runningEvt = `
+{
+  "ID": {
+    "Target": {
+      "Type": "app",
+      "Value": "myapp"
+    },
+    "ObjId": ""
+  },
+  "UniqueID": "998e3908413daf5fd9891aac",
+  "StartTime": "2016-07-19T11:27:24.686-03:00",
+  "Target": {
+    "Type": "app",
+    "Value": "myapp"
+  },
+  "Kind": {
+    "Type": "permission",
+    "Name": "app.deploy"
+  },
+  "Owner": {
+    "Type": "user",
+    "Name": "someone@removed.com"
+  },
+  "Error": "",
+  "Log": "",
+  "RemoveDate": "0001-01-01T00:00:00Z",
+  "CancelInfo": {
+    "Owner": "",
+    "StartTime": "0001-01-01T00:00:00Z",
+    "AckTime": "0001-01-01T00:00:00Z",
+    "Reason": "",
+    "Asked": false,
+    "Canceled": false
+  },
+  "Cancelable": true,
+  "Running": true
+}
+`
 
 var errEvt = `
 {
   "ID": {
     "Target": {
-      "Name": "",
+      "Type": "",
       "Value": ""
     },
     "ObjId": "5787bcc8413daf2aeb040730"
@@ -77,7 +154,7 @@ var errEvt = `
   "StartTime": "2016-07-14T13:24:40.66-03:00",
   "EndTime": "2016-07-14T13:25:00.349-03:00",
   "Target": {
-    "Name": "container",
+    "Type": "container",
     "Value": "94d3140395a85e4a60b06de26f6a51270d7b762c65cc9478e2c544ae4d7fb82f"
   },
   "StartCustomData": {
@@ -116,7 +193,7 @@ var errEvt = `
   "Running": false
 }
 `
-var evtsData = fmt.Sprintf("[%s, %s]", okEvt, errEvt)
+var evtsData = fmt.Sprintf("[%s, %s, %s, %s]", okEvt, canceledEvt, runningEvt, errEvt)
 
 func (s *S) TestEventList(c *check.C) {
 	os.Setenv("TSURU_DISABLE_COLORS", "1")
@@ -141,6 +218,8 @@ func (s *S) TestEventList(c *check.C) {
 | ID                       | Start (duration)                | Success | Owner     | Kind       | Target                  |
 +--------------------------+---------------------------------+---------+-----------+------------+-------------------------+
 | 578e3908413daf5fd9891aac | 19 Jul 16 11:28 -0300 (57.324s) | true    | someone@… | app.deploy | app: myapp              |
+| 888e3908413daf5fd9891aac | 19 Jul 16 11:28 -0300 (57.324s) | false ✗ | someone@… | app.deploy | app: myapp              |
+| 998e3908413daf5fd9891aac | 19 Jul 16 11:27 -0300 (…)       | …       | someone@… | app.deploy | app: myapp              |
 | 5787bcc8413daf2aeb040730 | 14 Jul 16 13:24 -0300 (19.689s) | false   |           | healer     | container: 94d3140395a8 |
 +--------------------------+---------------------------------+---------+-----------+------------+-------------------------+
 `
@@ -166,14 +245,15 @@ func (s *S) TestEventInfo(c *check.C) {
 	command := eventInfo{}
 	err := command.Run(&context, client)
 	c.Assert(err, check.IsNil)
-	expected := `ID:       578e3908413daf5fd9891aac
-Start:    19 Jul 16 11:28 -0300
-End:      19 Jul 16 11:29 -0300 \(57\.324s\)
-Target:   app\(myapp\)
-Kind:     permission\(app\.deploy\)
-Owner:    user\(someone@removed\.com\)
-Success:  true
-Canceled: false
+	expected := `ID:         578e3908413daf5fd9891aac
+Start:      19 Jul 16 11:28 -0300
+End:        19 Jul 16 11:29 -0300 \(57\.324s\)
+Target:     app\(myapp\)
+Kind:       permission\(app\.deploy\)
+Owner:      user\(someone@removed\.com\)
+Success:    true
+Cancelable: true
+Canceled:   false
 Start Custom Data:
     app:
       cname: \[\]
@@ -295,15 +375,16 @@ func (s *S) TestEventInfoWithError(c *check.C) {
 	command := eventInfo{}
 	err := command.Run(&context, client)
 	c.Assert(err, check.IsNil)
-	expected := `ID:       5787bcc8413daf2aeb040730
-Start:    14 Jul 16 13:24 -0300
-End:      14 Jul 16 13:25 -0300 \(19\.689s\)
-Target:   container\(94d3140395a85e4a60b06de26f6a51270d7b762c65cc9478e2c544ae4d7fb82f\)
-Kind:     internal\(healer\)
-Owner:    internal\(\)
-Success:  false
-Error:    "Error healing container \\"94d3140395a85e4a60b06de26f6a51270d7b762c65cc9478e2c544ae4d7fb82f\\": Error trying to heal containers 94d3140395a85e4a60b06de26f6a51270d7b762c65cc9478e2c544ae4d7fb82f: couldn't move container: Error moving some containers\. - Moving unit 94d3140395a85e4a60b06de26f6a51270d7b762c65cc9478e2c544ae4d7fb82f for \\"myapp\\" from 10\.0\.0\.4\.\.\.\\nError moving container: Error moving unit 94d3140395a85e4a60b06de26f6a51270d7b762c65cc9478e2c544ae4d7fb82f Caused by: Post http://10\.0\.0\.5:8000/services/myapp/destinations: dial tcp 10\.0\.0\.5:8000: getsockopt: no route to host\\n"
-Canceled: false
+	expected := `ID:         5787bcc8413daf2aeb040730
+Start:      14 Jul 16 13:24 -0300
+End:        14 Jul 16 13:25 -0300 \(19\.689s\)
+Target:     container\(94d3140395a85e4a60b06de26f6a51270d7b762c65cc9478e2c544ae4d7fb82f\)
+Kind:       internal\(healer\)
+Owner:      internal\(\)
+Success:    false
+Error:      "Error healing container \\"94d3140395a85e4a60b06de26f6a51270d7b762c65cc9478e2c544ae4d7fb82f\\": Error trying to heal containers 94d3140395a85e4a60b06de26f6a51270d7b762c65cc9478e2c544ae4d7fb82f: couldn't move container: Error moving some containers\. - Moving unit 94d3140395a85e4a60b06de26f6a51270d7b762c65cc9478e2c544ae4d7fb82f for \\"myapp\\" from 10\.0\.0\.4\.\.\.\\nError moving container: Error moving unit 94d3140395a85e4a60b06de26f6a51270d7b762c65cc9478e2c544ae4d7fb82f Caused by: Post http://10\.0\.0\.5:8000/services/myapp/destinations: dial tcp 10\.0\.0\.5:8000: getsockopt: no route to host\\n"
+Cancelable: false
+Canceled:   false
 Start Custom Data:
     _id: 578e8a78d5771663eed1870d
     appname: myapp
@@ -345,6 +426,74 @@ End Custom Data:
     user: ""
     version: ""
 
+`
+	c.Assert(stdout.String(), check.Matches, expected)
+}
+
+func (s *S) TestEventInfoRunning(c *check.C) {
+	os.Setenv("TSURU_DISABLE_COLORS", "1")
+	defer os.Unsetenv("TSURU_DISABLE_COLORS")
+	var stdout, stderr bytes.Buffer
+	context := cmd.Context{
+		Args:   []string{"998e3908413daf5fd9891aac"},
+		Stdout: &stdout,
+		Stderr: &stderr,
+	}
+	trans := &cmdtest.ConditionalTransport{
+		Transport: cmdtest.Transport{Message: runningEvt, Status: http.StatusOK},
+		CondFunc: func(req *http.Request) bool {
+			return req.URL.Path == "/1.1/events/998e3908413daf5fd9891aac"
+		},
+	}
+	client := cmd.NewClient(&http.Client{Transport: trans}, nil, manager)
+	command := eventInfo{}
+	err := command.Run(&context, client)
+	c.Assert(err, check.IsNil)
+	expected := `ID:         998e3908413daf5fd9891aac
+Start:      19 Jul 16 11:27 -0300
+End:        running \(.+\)
+Target:     app\(myapp\)
+Kind:       permission\(app\.deploy\)
+Owner:      user\(someone@removed\.com\)
+Success:    …
+Cancelable: true
+Canceled:   false
+`
+	c.Assert(stdout.String(), check.Matches, expected)
+}
+
+func (s *S) TestEventInfoCanceled(c *check.C) {
+	os.Setenv("TSURU_DISABLE_COLORS", "1")
+	defer os.Unsetenv("TSURU_DISABLE_COLORS")
+	var stdout, stderr bytes.Buffer
+	context := cmd.Context{
+		Args:   []string{"888e3908413daf5fd9891aac"},
+		Stdout: &stdout,
+		Stderr: &stderr,
+	}
+	trans := &cmdtest.ConditionalTransport{
+		Transport: cmdtest.Transport{Message: canceledEvt, Status: http.StatusOK},
+		CondFunc: func(req *http.Request) bool {
+			return req.URL.Path == "/1.1/events/888e3908413daf5fd9891aac"
+		},
+	}
+	client := cmd.NewClient(&http.Client{Transport: trans}, nil, manager)
+	command := eventInfo{}
+	err := command.Run(&context, client)
+	c.Assert(err, check.IsNil)
+	expected := `ID:         888e3908413daf5fd9891aac
+Start:      19 Jul 16 11:28 -0300
+End:        19 Jul 16 11:29 -0300 \(57\.324s\)
+Target:     app\(myapp\)
+Kind:       permission\(app\.deploy\)
+Owner:      user\(someone@removed\.com\)
+Success:    false
+Error:      "canceled by user action"
+Cancelable: true
+Canceled:   true
+  Reason:   because yes
+  By:       evil@corp
+  At:       19 Jul 16 11:28 -0300
 `
 	c.Assert(stdout.String(), check.Matches, expected)
 }
