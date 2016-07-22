@@ -30,7 +30,6 @@ import (
 	"github.com/docker/machine/libmachine/drivers/rpc"
 	"github.com/docker/machine/libmachine/host"
 	"github.com/fsouza/go-dockerclient"
-	"github.com/tsuru/config"
 )
 
 var (
@@ -62,21 +61,12 @@ type DockerMachine struct {
 	Name       string
 }
 
-func NewDockerMachine() (*DockerMachine, error) {
-	driverName, err := config.GetString("driver:name")
-	if err != nil {
-		return nil, err
-	}
-	driverOpts := make(map[string]interface{})
-	opts, _ := config.Get("driver:options")
-	if opts != nil {
-		for k, v := range opts.(map[interface{}]interface{}) {
-			switch k := k.(type) {
-			case string:
-				driverOpts[k] = v
-			}
-		}
-	}
+type DockerMachineConfig struct {
+	DriverName string
+	DriverOpts map[string]interface{}
+}
+
+func NewDockerMachine(config *DockerMachineConfig) (*DockerMachine, error) {
 	storePath := "/tmp/automatic"
 	certsPath := "/tmp/automatic/certs"
 	rawDriver, err := json.Marshal(&drivers.BaseDriver{
@@ -86,17 +76,15 @@ func NewDockerMachine() (*DockerMachine, error) {
 	if err != nil {
 		return nil, fmt.Errorf("Error creating docker-machine driver: %s", err)
 	}
-
-	dm := &DockerMachine{
-		driverOpts: driverOpts,
+	return &DockerMachine{
+		driverOpts: config.DriverOpts,
 		rawDriver:  rawDriver,
-		driverName: driverName,
+		driverName: config.DriverName,
 		storePath:  storePath,
 		certsPath:  certsPath,
-		tlsSupport: driverName != "virtualbox" && driverName != "none",
+		tlsSupport: config.DriverName != "virtualbox" && config.DriverName != "none",
 		Name:       "tsuru",
-	}
-	return dm, nil
+	}, nil
 }
 
 func (d *DockerMachine) CreateMachine() (*Machine, error) {

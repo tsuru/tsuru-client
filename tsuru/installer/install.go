@@ -38,12 +38,11 @@ func (c *Install) Flags() *gnuflag.FlagSet {
 
 func (c *Install) Run(context *cmd.Context, client *cmd.Client) error {
 	context.RawOutput()
-	err := config.ReadConfigFile(c.config)
+	config, err := parseConfigFile(c.config)
 	if err != nil {
-		fmt.Fprintf(context.Stderr, "Failed to read configuration file: %s\n", err)
 		return err
 	}
-	i, err := NewDockerMachine()
+	i, err := NewDockerMachine(config)
 	if err != nil {
 		fmt.Fprintf(context.Stderr, "Failed to create machine: %s\n", err)
 		return err
@@ -113,12 +112,12 @@ func (c *Uninstall) Flags() *gnuflag.FlagSet {
 }
 
 func (c *Uninstall) Run(context *cmd.Context, client *cmd.Client) error {
-	err := config.ReadConfigFile(c.config)
+	config, err := parseConfigFile(c.config)
 	if err != nil {
 		fmt.Fprintf(context.Stderr, "Failed to read configuration file: %s\n", err)
 		return err
 	}
-	d, err := NewDockerMachine()
+	d, err := NewDockerMachine(config)
 	if err != nil {
 		fmt.Fprintf(context.Stderr, "Failed to delete machine: %s\n", err)
 		return err
@@ -130,4 +129,29 @@ func (c *Uninstall) Run(context *cmd.Context, client *cmd.Client) error {
 	}
 	fmt.Fprintln(context.Stdout, "Machine successfully removed!")
 	return nil
+}
+
+func parseConfigFile(file string) (*DockerMachineConfig, error) {
+	err := config.ReadConfigFile(file)
+	if err != nil {
+		return nil, err
+	}
+	driverName, err := config.GetString("driver:name")
+	if err != nil {
+		return nil, err
+	}
+	driverOpts := make(map[string]interface{})
+	opts, _ := config.Get("driver:options")
+	if opts != nil {
+		for k, v := range opts.(map[interface{}]interface{}) {
+			switch k := k.(type) {
+			case string:
+				driverOpts[k] = v
+			}
+		}
+	}
+	return &DockerMachineConfig{
+		DriverName: driverName,
+		DriverOpts: driverOpts,
+	}, nil
 }

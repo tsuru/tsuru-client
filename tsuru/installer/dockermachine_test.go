@@ -11,7 +11,6 @@ import (
 	"testing"
 
 	"github.com/docker/machine/libmachine/drivers/plugin/localbinary"
-	"github.com/tsuru/config"
 	"github.com/tsuru/tsuru/cmd"
 
 	"gopkg.in/check.v1"
@@ -43,9 +42,10 @@ func TestMain(m *testing.M) {
 func Test(t *testing.T) { check.TestingT(t) }
 
 func (s *S) TestNewDockerMachine(c *check.C) {
-	defer config.Unset("driver")
-	config.Set("driver:name", "virtualbox")
-	dm, err := NewDockerMachine()
+	config := &DockerMachineConfig{
+		DriverName: "virtualbox",
+	}
+	dm, err := NewDockerMachine(config)
 	c.Assert(err, check.IsNil)
 	c.Assert(dm, check.NotNil)
 	c.Assert(dm.driverName, check.Equals, "virtualbox")
@@ -53,9 +53,10 @@ func (s *S) TestNewDockerMachine(c *check.C) {
 }
 
 func (s *S) TestNewDockerMachineSupportTLS(c *check.C) {
-	defer config.Unset("driver")
-	config.Set("driver:name", "amazonec2")
-	dm, err := NewDockerMachine()
+	config := &DockerMachineConfig{
+		DriverName: "amazonec2",
+	}
+	dm, err := NewDockerMachine(config)
 	c.Assert(err, check.IsNil)
 	c.Assert(dm, check.NotNil)
 	c.Assert(dm.driverName, check.Equals, "amazonec2")
@@ -63,20 +64,26 @@ func (s *S) TestNewDockerMachineSupportTLS(c *check.C) {
 }
 
 func (s *S) TestNewDockerMachineDriverOpts(c *check.C) {
-	defer config.Unset("driver")
-	config.Set("driver:name", "none")
-	config.Set("driver:options:url", "localhost")
-	dm, err := NewDockerMachine()
+	config := &DockerMachineConfig{
+		DriverName: "none",
+		DriverOpts: map[string]interface{}{
+			"url": "localhost",
+		},
+	}
+	dm, err := NewDockerMachine(config)
 	c.Assert(err, check.IsNil)
 	c.Assert(dm, check.NotNil)
 	c.Assert(dm.driverOpts["url"].(string), check.Equals, "localhost")
 }
 
 func (s *S) TestCreateMachineNoneDriver(c *check.C) {
-	defer config.Unset("driver")
-	config.Set("driver:name", "none")
-	config.Set("driver:options:url", "http://1.2.3.4")
-	dm, _ := NewDockerMachine()
+	config := &DockerMachineConfig{
+		DriverName: "none",
+		DriverOpts: map[string]interface{}{
+			"url": "http://1.2.3.4",
+		},
+	}
+	dm, _ := NewDockerMachine(config)
 	machine, err := dm.CreateMachine()
 	c.Assert(err, check.IsNil)
 	c.Assert(machine, check.NotNil)
