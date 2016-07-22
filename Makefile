@@ -42,4 +42,7 @@ docs: doc
 manpage: docs docs/source/exts/man_pages.py
 	$(PYTHON) $(word 2, $^)
 
+test:
+	go test ./... -check.vv
+
 .PHONY: doc docs release manpage

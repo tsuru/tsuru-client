@@ -5,10 +5,17 @@
 package event
 
 import (
+<<<<<<< HEAD
 	"errors"
 	"fmt"
 	"io"
 	"reflect"
+=======
+	"encoding/json"
+	"errors"
+	"fmt"
+	"io"
+>>>>>>> origin/installer
 	"sync"
 	"time"
 
@@ -32,6 +39,7 @@ var (
 	}
 	throttlingInfo = map[string]ThrottlingSpec{}
 
+<<<<<<< HEAD
 	ErrNotCancelable     = errors.New("event is not cancelable")
 	ErrEventNotFound     = errors.New("event not found")
 	ErrNoTarget          = ErrValidation("event target is mandatory")
@@ -42,6 +50,17 @@ var (
 	ErrInvalidOwner      = ErrValidation("event owner must not be set on internal events")
 	ErrInvalidKind       = ErrValidation("event kind must not be set on internal events")
 	ErrInvalidTargetType = errors.New("invalid event target type")
+=======
+	ErrNotCancelable  = errors.New("event is not cancelable")
+	ErrEventNotFound  = errors.New("event not found")
+	ErrNoTarget       = ErrValidation("event target is mandatory")
+	ErrNoKind         = ErrValidation("event kind is mandatory")
+	ErrNoOwner        = ErrValidation("event owner is mandatory")
+	ErrNoOpts         = ErrValidation("event opts is mandatory")
+	ErrNoInternalKind = ErrValidation("event internal kind is mandatory")
+	ErrInvalidOwner   = ErrValidation("event owner must not be set on internal events")
+	ErrInvalidKind    = ErrValidation("event kind must not be set on internal events")
+>>>>>>> origin/installer
 
 	OwnerTypeUser     = ownerType("user")
 	OwnerTypeApp      = ownerType("app")
@@ -49,6 +68,7 @@ var (
 
 	KindTypePermission = kindType("permission")
 	KindTypeInternal   = kindType("internal")
+<<<<<<< HEAD
 
 	TargetTypeApp             = targetType("app")
 	TargetTypeNode            = targetType("node")
@@ -58,6 +78,8 @@ var (
 	TargetTypeServiceInstance = targetType("service-instance")
 	TargetTypeTeam            = targetType("team")
 	TargetTypeUser            = targetType("user")
+=======
+>>>>>>> origin/installer
 )
 
 type ErrThrottled struct {
@@ -70,7 +92,11 @@ func (err ErrThrottled) Error() string {
 	if err.Spec.KindName != "" {
 		extra = fmt.Sprintf(" %s on", err.Spec.KindName)
 	}
+<<<<<<< HEAD
 	return fmt.Sprintf("event throttled, limit for%s %s %q is %d every %v", extra, err.Target.Type, err.Target.Value, err.Spec.Max, err.Spec.Time)
+=======
+	return fmt.Sprintf("event throttled, limit for%s %s %q is %d every %v", extra, err.Target.Name, err.Target.Value, err.Spec.Max, err.Spec.Time)
+>>>>>>> origin/installer
 }
 
 type ErrValidation string
@@ -85,6 +111,7 @@ func (err ErrEventLocked) Error() string {
 	return fmt.Sprintf("event locked: %v", err.event)
 }
 
+<<<<<<< HEAD
 type Target struct {
 	Type  targetType
 	Value string
@@ -96,6 +123,16 @@ func (id Target) GetBSON() (interface{}, error) {
 
 func (id Target) IsValid() bool {
 	return id.Type != "" && id.Value != ""
+=======
+type Target struct{ Name, Value string }
+
+func (id Target) GetBSON() (interface{}, error) {
+	return bson.D{{"name", id.Name}, {"value", id.Value}}, nil
+}
+
+func (id Target) IsValid() bool {
+	return id.Name != "" && id.Value != ""
+>>>>>>> origin/installer
 }
 
 type eventId struct {
@@ -123,6 +160,7 @@ func (id eventId) GetBSON() (interface{}, error) {
 // serializing).
 type eventData struct {
 	ID              eventId `bson:"_id"`
+<<<<<<< HEAD
 	UniqueID        bson.ObjectId
 	StartTime       time.Time
 	EndTime         time.Time `bson:",omitempty"`
@@ -139,6 +177,23 @@ type eventData struct {
 	CancelInfo      cancelInfo
 	Cancelable      bool
 	Running         bool
+=======
+	StartTime       time.Time
+	EndTime         time.Time   `bson:",omitempty"`
+	Target          Target      `bson:",omitempty"`
+	StartCustomData interface{} `bson:",omitempty"`
+	EndCustomData   interface{} `bson:",omitempty"`
+	OtherCustomData interface{} `bson:",omitempty"`
+	Kind            kind
+	Owner           Owner
+	Cancelable      bool
+	Running         bool
+	LockUpdateTime  time.Time
+	Error           string
+	Log             string `bson:",omitempty"`
+	CancelInfo      cancelInfo
+	RemoveDate      time.Time `bson:",omitempty"`
+>>>>>>> origin/installer
 }
 
 type cancelInfo struct {
@@ -154,6 +209,7 @@ type ownerType string
 
 type kindType string
 
+<<<<<<< HEAD
 type targetType string
 
 func GetTargetType(t string) (targetType, error) {
@@ -178,12 +234,18 @@ func GetTargetType(t string) (targetType, error) {
 	return targetType(""), ErrInvalidTargetType
 }
 
+=======
+>>>>>>> origin/installer
 type Owner struct {
 	Type ownerType
 	Name string
 }
 
+<<<<<<< HEAD
 type Kind struct {
+=======
+type kind struct {
+>>>>>>> origin/installer
 	Type kindType
 	Name string
 }
@@ -192,31 +254,54 @@ func (o Owner) String() string {
 	return fmt.Sprintf("%s %s", o.Type, o.Name)
 }
 
+<<<<<<< HEAD
 func (k Kind) String() string {
+=======
+func (k kind) String() string {
+>>>>>>> origin/installer
 	return k.Name
 }
 
 type ThrottlingSpec struct {
+<<<<<<< HEAD
 	TargetType targetType
+=======
+	TargetName string
+>>>>>>> origin/installer
 	KindName   string
 	Max        int
 	Time       time.Duration
 }
 
 func SetThrottling(spec ThrottlingSpec) {
+<<<<<<< HEAD
 	key := string(spec.TargetType)
 	if spec.KindName != "" {
 		key = fmt.Sprintf("%s_%s", spec.TargetType, spec.KindName)
+=======
+	key := spec.TargetName
+	if spec.KindName != "" {
+		key = fmt.Sprintf("%s_%s", spec.TargetName, spec.KindName)
+>>>>>>> origin/installer
 	}
 	throttlingInfo[key] = spec
 }
 
+<<<<<<< HEAD
 func getThrottling(t *Target, k *Kind) *ThrottlingSpec {
 	key := fmt.Sprintf("%s_%s", t.Type, k.Name)
 	if s, ok := throttlingInfo[key]; ok {
 		return &s
 	}
 	if s, ok := throttlingInfo[string(t.Type)]; ok {
+=======
+func getThrottling(t *Target, k *kind) *ThrottlingSpec {
+	key := fmt.Sprintf("%s_%s", t.Name, k.Name)
+	if s, ok := throttlingInfo[key]; ok {
+		return &s
+	}
+	if s, ok := throttlingInfo[t.Name]; ok {
+>>>>>>> origin/installer
 		return &s
 	}
 	return nil
@@ -240,7 +325,11 @@ type Opts struct {
 
 func (e *Event) String() string {
 	return fmt.Sprintf("%s(%s) running %q start by %s at %s",
+<<<<<<< HEAD
 		e.Target.Type,
+=======
+		e.Target.Name,
+>>>>>>> origin/installer
 		e.Target.Value,
 		e.Kind,
 		e.Owner,
@@ -258,17 +347,27 @@ type Filter struct {
 	Until          time.Time
 	Running        *bool
 	IncludeRemoved bool
+<<<<<<< HEAD
 	Raw            bson.M
 
 	Limit int
 	Skip  int
+=======
+
+	Limit int
+>>>>>>> origin/installer
 	Sort  string
 }
 
 func (f *Filter) toQuery() bson.M {
 	query := bson.M{}
+<<<<<<< HEAD
 	if f.Target.Type != "" {
 		query["target.type"] = f.Target.Type
+=======
+	if f.Target.Name != "" {
+		query["target.name"] = f.Target.Name
+>>>>>>> origin/installer
 	}
 	if f.Target.Value != "" {
 		query["target.value"] = f.Target.Value
@@ -301,6 +400,7 @@ func (f *Filter) toQuery() bson.M {
 	if !f.IncludeRemoved {
 		query["removedate"] = bson.M{"$exists": false}
 	}
+<<<<<<< HEAD
 	if f.Raw != nil {
 		for k, v := range f.Raw {
 			query[k] = v
@@ -324,6 +424,11 @@ func GetKinds() ([]Kind, error) {
 	return kinds, nil
 }
 
+=======
+	return query
+}
+
+>>>>>>> origin/installer
 func GetRunning(target Target, kind string) (*Event, error) {
 	conn, err := db.Conn()
 	if err != nil {
@@ -346,6 +451,7 @@ func GetRunning(target Target, kind string) (*Event, error) {
 	return &evt, nil
 }
 
+<<<<<<< HEAD
 func GetByID(id bson.ObjectId) (*Event, error) {
 	conn, err := db.Conn()
 	if err != nil {
@@ -366,13 +472,18 @@ func GetByID(id bson.ObjectId) (*Event, error) {
 	return &evt, nil
 }
 
+=======
+>>>>>>> origin/installer
 func All() ([]Event, error) {
 	return List(nil)
 }
 
 func List(filter *Filter) ([]Event, error) {
 	limit := 100
+<<<<<<< HEAD
 	skip := 0
+=======
+>>>>>>> origin/installer
 	var query bson.M
 	sort := "-starttime"
 	if filter != nil {
@@ -382,9 +493,12 @@ func List(filter *Filter) ([]Event, error) {
 		if filter.Sort != "" {
 			sort = filter.Sort
 		}
+<<<<<<< HEAD
 		if filter.Skip > 0 {
 			skip = filter.Skip
 		}
+=======
+>>>>>>> origin/installer
 		query = filter.toQuery()
 	}
 	conn, err := db.Conn()
@@ -397,9 +511,12 @@ func List(filter *Filter) ([]Event, error) {
 	if limit > 0 {
 		find = find.Limit(limit)
 	}
+<<<<<<< HEAD
 	if skip > 0 {
 		find = find.Skip(skip)
 	}
+=======
+>>>>>>> origin/installer
 	var allData []eventData
 	err = find.All(&allData)
 	if err != nil {
@@ -456,6 +573,7 @@ func NewInternal(opts *Opts) (*Event, error) {
 	return newEvt(opts)
 }
 
+<<<<<<< HEAD
 func makeBSONRaw(in interface{}) (bson.Raw, error) {
 	if in == nil {
 		return bson.Raw{}, nil
@@ -483,6 +601,8 @@ func makeBSONRaw(in interface{}) (bson.Raw, error) {
 	}, nil
 }
 
+=======
+>>>>>>> origin/installer
 func newEvt(opts *Opts) (*Event, error) {
 	updater.start()
 	if opts == nil {
@@ -491,7 +611,11 @@ func newEvt(opts *Opts) (*Event, error) {
 	if !opts.Target.IsValid() {
 		return nil, ErrNoTarget
 	}
+<<<<<<< HEAD
 	var k Kind
+=======
+	var k kind
+>>>>>>> origin/installer
 	if opts.Kind == nil {
 		if opts.InternalKind == "" {
 			return nil, ErrNoKind
@@ -525,7 +649,11 @@ func newEvt(opts *Opts) (*Event, error) {
 	tSpec := getThrottling(&opts.Target, &k)
 	if tSpec != nil && tSpec.Max > 0 && tSpec.Time > 0 {
 		query := bson.M{
+<<<<<<< HEAD
 			"target.type":  opts.Target.Type,
+=======
+			"target.name":  opts.Target.Name,
+>>>>>>> origin/installer
 			"target.value": opts.Target.Value,
 			"starttime":    bson.M{"$gt": time.Now().UTC().Add(-tSpec.Time)},
 		}
@@ -542,6 +670,7 @@ func newEvt(opts *Opts) (*Event, error) {
 		}
 	}
 	now := time.Now().UTC()
+<<<<<<< HEAD
 	raw, err := makeBSONRaw(opts.CustomData)
 	if err != nil {
 		return nil, err
@@ -549,11 +678,19 @@ func newEvt(opts *Opts) (*Event, error) {
 	evt := Event{eventData: eventData{
 		ID:              eventId{Target: opts.Target},
 		UniqueID:        bson.NewObjectId(),
+=======
+	evt := Event{eventData: eventData{
+		ID:              eventId{Target: opts.Target},
+>>>>>>> origin/installer
 		Target:          opts.Target,
 		StartTime:       now,
 		Kind:            k,
 		Owner:           o,
+<<<<<<< HEAD
 		StartCustomData: raw,
+=======
+		StartCustomData: opts.CustomData,
+>>>>>>> origin/installer
 		LockUpdateTime:  now,
 		Running:         true,
 		Cancelable:      opts.Cancelable,
@@ -594,6 +731,13 @@ func (e *Event) SetLogWriter(w io.Writer) {
 	e.logWriter = w
 }
 
+<<<<<<< HEAD
+=======
+func (e *Event) GetLogWriter() io.Writer {
+	return &e.logBuffer
+}
+
+>>>>>>> origin/installer
 func (e *Event) SetOtherCustomData(data interface{}) error {
 	conn, err := db.Conn()
 	if err != nil {
@@ -602,12 +746,20 @@ func (e *Event) SetOtherCustomData(data interface{}) error {
 	defer conn.Close()
 	coll := conn.Events()
 	return coll.UpdateId(e.ID, bson.M{
+<<<<<<< HEAD
 		"$set": bson.M{"othercustomdata": data},
+=======
+		"othercustomdata": data,
+>>>>>>> origin/installer
 	})
 }
 
 func (e *Event) Logf(format string, params ...interface{}) {
+<<<<<<< HEAD
 	log.Debugf(fmt.Sprintf("%s(%s)[%s] %s", e.Target.Type, e.Target.Value, e.Kind, format), params...)
+=======
+	log.Debugf(fmt.Sprintf("%s(%s)[%s] %s", e.Target.Name, e.Target.Value, e.Kind, format), params...)
+>>>>>>> origin/installer
 	format += "\n"
 	if e.logWriter != nil {
 		fmt.Fprintf(e.logWriter, format, params...)
@@ -615,6 +767,7 @@ func (e *Event) Logf(format string, params ...interface{}) {
 	fmt.Fprintf(&e.logBuffer, format, params...)
 }
 
+<<<<<<< HEAD
 func (e *Event) Write(data []byte) (int, error) {
 	if e.logWriter != nil {
 		e.logWriter.Write(data)
@@ -622,6 +775,8 @@ func (e *Event) Write(data []byte) (int, error) {
 	return e.logBuffer.Write(data)
 }
 
+=======
+>>>>>>> origin/installer
 func (e *Event) TryCancel(reason, owner string) error {
 	if !e.Cancelable || !e.Running {
 		return ErrNotCancelable
@@ -643,13 +798,18 @@ func (e *Event) TryCancel(reason, owner string) error {
 		}},
 		ReturnNew: true,
 	}
+<<<<<<< HEAD
 	_, err = coll.Find(bson.M{"_id": e.ID, "cancelinfo.asked": false}).Apply(change, &e.eventData)
+=======
+	_, err = coll.FindId(e.ID).Apply(change, &e.eventData)
+>>>>>>> origin/installer
 	if err == mgo.ErrNotFound {
 		return ErrEventNotFound
 	}
 	return err
 }
 
+<<<<<<< HEAD
 func (e *Event) AckCancel() (bool, error) {
 	if !e.Cancelable || !e.Running {
 		return false, nil
@@ -657,6 +817,15 @@ func (e *Event) AckCancel() (bool, error) {
 	conn, err := db.Conn()
 	if err != nil {
 		return false, err
+=======
+func (e *Event) AckCancel() error {
+	if !e.Cancelable || !e.Running {
+		return ErrNotCancelable
+	}
+	conn, err := db.Conn()
+	if err != nil {
+		return err
+>>>>>>> origin/installer
 	}
 	defer conn.Close()
 	coll := conn.Events()
@@ -669,6 +838,7 @@ func (e *Event) AckCancel() (bool, error) {
 	}
 	_, err = coll.Find(bson.M{"_id": e.ID, "cancelinfo.asked": true}).Apply(change, &e.eventData)
 	if err == mgo.ErrNotFound {
+<<<<<<< HEAD
 		return false, nil
 	}
 	return err == nil, err
@@ -693,6 +863,27 @@ func (e *Event) OtherData(value interface{}) error {
 		return nil
 	}
 	return e.OtherCustomData.Unmarshal(value)
+=======
+		return ErrEventNotFound
+	}
+	return err
+}
+
+func (e *Event) StartData(value interface{}) error {
+	data, err := json.Marshal(e.StartCustomData)
+	if err != nil {
+		return err
+	}
+	return json.Unmarshal(data, value)
+}
+
+func (e *Event) EndData(value interface{}) error {
+	data, err := json.Marshal(e.EndCustomData)
+	if err != nil {
+		return err
+	}
+	return json.Unmarshal(data, value)
+>>>>>>> origin/installer
 }
 
 func (e *Event) done(evtErr error, customData interface{}, abort bool) (err error) {
@@ -719,10 +910,14 @@ func (e *Event) done(evtErr error, customData interface{}, abort bool) (err erro
 		e.Error = "canceled by user request"
 	}
 	e.EndTime = time.Now().UTC()
+<<<<<<< HEAD
 	e.EndCustomData, err = makeBSONRaw(customData)
 	if err != nil {
 		return err
 	}
+=======
+	e.EndCustomData = customData
+>>>>>>> origin/installer
 	e.Running = false
 	e.Log = e.logBuffer.String()
 	var dbEvt Event
@@ -731,7 +926,11 @@ func (e *Event) done(evtErr error, customData interface{}, abort bool) (err erro
 		e.OtherCustomData = dbEvt.OtherCustomData
 	}
 	defer coll.RemoveId(e.ID)
+<<<<<<< HEAD
 	e.ID = eventId{ObjId: e.UniqueID}
+=======
+	e.ID = eventId{ObjId: bson.NewObjectId()}
+>>>>>>> origin/installer
 	return coll.Insert(e.eventData)
 }
 
@@ -783,7 +982,11 @@ func (l *lockUpdater) spin() {
 			i++
 		}
 		err = coll.Update(bson.M{"_id": bson.M{"$in": slice}}, bson.M{"$set": bson.M{"lockupdatetime": time.Now().UTC()}})
+<<<<<<< HEAD
 		if err != nil && err != mgo.ErrNotFound {
+=======
+		if err != nil {
+>>>>>>> origin/installer
 			log.Errorf("[events] [lock update] error updating: %s", err)
 		}
 		conn.Close()

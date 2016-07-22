@@ -268,3 +268,33 @@ func incrementDeploy(app *App) error {
 	}
 	return err
 }
+<<<<<<< HEAD
+=======
+
+func GetImage(appName, img string) (string, error) {
+	conn, err := db.Conn()
+	if err != nil {
+		return "", err
+	}
+	defer conn.Close()
+	var deploy DeployData
+	qApp := bson.M{"app": appName}
+	qImage := bson.M{"$or": []bson.M{{"image": img}, {"image": bson.M{"$regex": ".*:" + img + "$"}}}}
+	query := bson.M{"$and": []bson.M{qApp, qImage}}
+	if err := conn.Deploys().Find(query).One(&deploy); err != nil {
+		return "", err
+	}
+	return deploy.Image, nil
+}
+
+func Rollback(opts DeployOptions) error {
+	if !regexp.MustCompile(":v[0-9]+$").MatchString(opts.Image) {
+		img, err := GetImage(opts.App.Name, opts.Image)
+		if err == nil {
+			opts.Image = img
+		}
+	}
+	opts.Rollback = true
+	return Deploy(opts)
+}
+>>>>>>> origin/installer

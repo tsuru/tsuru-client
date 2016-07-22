@@ -83,6 +83,11 @@ var PermissionRegistry = (&registry{}).addWithCtx(
 	"user.update.reset",
 	"user.update.key.add",
 	"user.update.key.remove",
+<<<<<<< HEAD
+=======
+	"user.log.in",
+	"user.log.out",
+>>>>>>> origin/installer
 ).addWithCtx(
 	"service", []contextType{CtxService, CtxTeam},
 ).addWithCtx(
