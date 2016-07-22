@@ -21,6 +21,7 @@ import (
 	"github.com/tsuru/tsuru/log"
 	"github.com/tsuru/tsuru/net"
 	"github.com/tsuru/tsuru/provision"
+	"github.com/tsuru/tsuru/router"
 	"gopkg.in/mgo.v2/bson"
 )
 
@@ -29,6 +30,10 @@ const (
 	portRangeEnd      = 65535
 	portAllocMaxTries = 15
 )
+
+func init() {
+	rand.Seed(time.Now().UTC().UnixNano())
+}
 
 type DockerProvisioner interface {
 	Cluster() *cluster.Cluster
@@ -98,15 +103,14 @@ type CreateArgs struct {
 	ImageID          string
 	Commands         []string
 	App              provision.App
-	Deploy           bool
 	Provisioner      DockerProvisioner
 	DestinationHosts []string
 	ProcessName      string
+	Deploy           bool
 	Building         bool
 }
 
 func (c *Container) Create(args *CreateArgs) error {
-	var err error
 	securityOpts, _ := config.GetList("docker:security-opts")
 	var exposedPorts map[docker.Port]struct{}
 	if !args.Deploy {
@@ -126,6 +130,14 @@ func (c *Container) Create(args *CreateArgs) error {
 	if args.Building {
 		user = c.user()
 	}
+	routerName, err := args.App.GetRouter()
+	if err != nil {
+		return err
+	}
+	routerType, _, err := router.Type(routerName)
+	if err != nil {
+		return err
+	}
 	conf := docker.Config{
 		Image:        args.ImageID,
 		Cmd:          args.Commands,
@@ -139,6 +151,14 @@ func (c *Container) Create(args *CreateArgs) error {
 		CPUShares:    int64(args.App.GetCpuShare()),
 		SecurityOpts: securityOpts,
 		User:         user,
+		Labels: map[string]string{
+			"tsuru.container":    strconv.FormatBool(true),
+			"tsuru.app.name":     args.App.GetName(),
+			"tsuru.app.platform": args.App.GetPlatform(),
+			"tsuru.process.name": c.ProcessName,
+			"tsuru.router.name":  routerName,
+			"tsuru.router.type":  routerType,
+		},
 	}
 	c.addEnvsToConfig(args, strings.TrimSuffix(c.ExposedPort, "/tcp"), &conf)
 	opts := docker.CreateContainerOptions{Name: c.Name, Config: &conf}
@@ -524,7 +544,6 @@ func (c *Container) Start(args *StartArgs) error {
 func (c *Container) startWithPortSearch(p DockerProvisioner, hostConfig *docker.HostConfig) error {
 	var err error
 	retries := 0
-	rand.Seed(time.Now().UTC().UnixNano())
 	for port := portRangeStart; port <= portRangeEnd; {
 		if retries >= portAllocMaxTries {
 			break

@@ -203,7 +203,7 @@ Your repository for "ble" project is "git@tsuru.plataformas.glb.com:ble.git"` + 
 		},
 	}
 	client := cmd.NewClient(&http.Client{Transport: &trans}, nil, manager)
-	command := appCreate{}
+	command := AppCreate{}
 	command.Flags().Parse(true, []string{"--router-opts", "a=1", "--router-opts", "b=2"})
 	err := command.Run(&context, client)
 	c.Assert(err, check.IsNil)

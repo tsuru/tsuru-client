@@ -17,11 +17,7 @@ import (
 )
 
 func serviceTarget(name string) event.Target {
-<<<<<<< HEAD
 	return event.Target{Type: event.TargetTypeService, Value: name}
-=======
-	return event.Target{Name: "service", Value: name}
->>>>>>> origin/installer
 }
 
 func serviceValidate(s service.Service) error {

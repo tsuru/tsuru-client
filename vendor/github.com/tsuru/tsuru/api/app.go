@@ -479,7 +479,6 @@ func addUnits(w http.ResponseWriter, r *http.Request, t auth.Token) (err error) 
 	defer keepAliveWriter.Stop()
 	writer := &tsuruIo.SimpleJsonMessageEncoderWriter{Encoder: json.NewEncoder(keepAliveWriter)}
 	return a.AddUnits(n, processName, writer)
-
 }
 
 // title: remove units
@@ -764,15 +763,7 @@ func runCommand(w http.ResponseWriter, r *http.Request, t auth.Token) (err error
 	defer keepAliveWriter.Stop()
 	writer := &tsuruIo.SimpleJsonMessageEncoderWriter{Encoder: json.NewEncoder(keepAliveWriter)}
 	onceBool, _ := strconv.ParseBool(once)
-<<<<<<< HEAD
 	return a.Run(command, writer, onceBool)
-=======
-	err = a.Run(command, writer, onceBool)
-	if err != nil {
-		return err
-	}
-	return nil
->>>>>>> origin/installer
 }
 
 // title: get envs
@@ -897,16 +888,8 @@ func setEnv(w http.ResponseWriter, r *http.Request, t auth.Token) (err error) {
 			Envs:          variables,
 			PublicOnly:    true,
 			ShouldRestart: !e.NoRestart,
-<<<<<<< HEAD
 		}, writer,
 	)
-=======
-		}, writer)
-	if err != nil {
-		return err
-	}
-	return nil
->>>>>>> origin/installer
 }
 
 // title: unset envs
@@ -958,25 +941,13 @@ func unsetEnv(w http.ResponseWriter, r *http.Request, t auth.Token) (err error) 
 	defer keepAliveWriter.Stop()
 	writer := &tsuruIo.SimpleJsonMessageEncoderWriter{Encoder: json.NewEncoder(keepAliveWriter)}
 	noRestart, _ := strconv.ParseBool(r.FormValue("noRestart"))
-<<<<<<< HEAD
 	return a.UnsetEnvs(
-=======
-	err = a.UnsetEnvs(
->>>>>>> origin/installer
 		bind.UnsetEnvApp{
 			VariableNames: variables,
 			PublicOnly:    true,
 			ShouldRestart: !noRestart,
-<<<<<<< HEAD
 		}, writer,
 	)
-=======
-		}, writer)
-	if err != nil {
-		return err
-	}
-	return nil
->>>>>>> origin/installer
 }
 
 // title: set cname
@@ -1315,11 +1286,7 @@ func unbindServiceInstance(w http.ResponseWriter, r *http.Request, t auth.Token)
 //   200: Ok
 //   401: Unauthorized
 //   404: App not found
-<<<<<<< HEAD
 func restart(w http.ResponseWriter, r *http.Request, t auth.Token) (err error) {
-=======
-func restart(w http.ResponseWriter, r *http.Request, t auth.Token) error {
->>>>>>> origin/installer
 	process := r.FormValue("process")
 	appName := r.URL.Query().Get(":app")
 	a, err := getAppFromContext(appName, r)
@@ -1349,15 +1316,7 @@ func restart(w http.ResponseWriter, r *http.Request, t auth.Token) error {
 	keepAliveWriter := tsuruIo.NewKeepAliveWriter(w, 30*time.Second, "")
 	defer keepAliveWriter.Stop()
 	writer := &tsuruIo.SimpleJsonMessageEncoderWriter{Encoder: json.NewEncoder(keepAliveWriter)}
-<<<<<<< HEAD
 	return a.Restart(process, writer)
-=======
-	err = a.Restart(process, writer)
-	if err != nil {
-		return err
-	}
-	return nil
->>>>>>> origin/installer
 }
 
 // title: app sleep
@@ -1370,11 +1329,7 @@ func restart(w http.ResponseWriter, r *http.Request, t auth.Token) error {
 //   400: Invalid data
 //   401: Unauthorized
 //   404: App not found
-<<<<<<< HEAD
 func sleep(w http.ResponseWriter, r *http.Request, t auth.Token) (err error) {
-=======
-func sleep(w http.ResponseWriter, r *http.Request, t auth.Token) error {
->>>>>>> origin/installer
 	process := r.FormValue("process")
 	appName := r.URL.Query().Get(":app")
 	a, err := getAppFromContext(appName, r)
@@ -1413,15 +1368,7 @@ func sleep(w http.ResponseWriter, r *http.Request, t auth.Token) error {
 	keepAliveWriter := tsuruIo.NewKeepAliveWriter(w, 30*time.Second, "")
 	defer keepAliveWriter.Stop()
 	writer := &tsuruIo.SimpleJsonMessageEncoderWriter{Encoder: json.NewEncoder(keepAliveWriter)}
-<<<<<<< HEAD
 	return a.Sleep(writer, process, proxyURL)
-=======
-	err = a.Sleep(writer, process, proxyURL)
-	if err != nil {
-		return err
-	}
-	return nil
->>>>>>> origin/installer
 }
 
 // title: app log
@@ -1580,11 +1527,7 @@ func swap(w http.ResponseWriter, r *http.Request, t auth.Token) (err error) {
 //   200: Ok
 //   401: Unauthorized
 //   404: App not found
-<<<<<<< HEAD
 func start(w http.ResponseWriter, r *http.Request, t auth.Token) (err error) {
-=======
-func start(w http.ResponseWriter, r *http.Request, t auth.Token) error {
->>>>>>> origin/installer
 	process := r.FormValue("process")
 	appName := r.URL.Query().Get(":app")
 	a, err := getAppFromContext(appName, r)
@@ -1614,15 +1557,7 @@ func start(w http.ResponseWriter, r *http.Request, t auth.Token) error {
 	keepAliveWriter := tsuruIo.NewKeepAliveWriter(w, 30*time.Second, "")
 	defer keepAliveWriter.Stop()
 	writer := &tsuruIo.SimpleJsonMessageEncoderWriter{Encoder: json.NewEncoder(keepAliveWriter)}
-<<<<<<< HEAD
 	return a.Start(writer, process)
-=======
-	err = a.Start(writer, process)
-	if err != nil {
-		return err
-	}
-	return nil
->>>>>>> origin/installer
 }
 
 // title: app stop
@@ -1634,11 +1569,7 @@ func start(w http.ResponseWriter, r *http.Request, t auth.Token) error {
 //   200: Ok
 //   401: Unauthorized
 //   404: App not found
-<<<<<<< HEAD
 func stop(w http.ResponseWriter, r *http.Request, t auth.Token) (err error) {
-=======
-func stop(w http.ResponseWriter, r *http.Request, t auth.Token) error {
->>>>>>> origin/installer
 	process := r.FormValue("process")
 	appName := r.URL.Query().Get(":app")
 	a, err := getAppFromContext(appName, r)
@@ -1668,15 +1599,7 @@ func stop(w http.ResponseWriter, r *http.Request, t auth.Token) error {
 	keepAliveWriter := tsuruIo.NewKeepAliveWriter(w, 30*time.Second, "")
 	defer keepAliveWriter.Stop()
 	writer := &tsuruIo.SimpleJsonMessageEncoderWriter{Encoder: json.NewEncoder(keepAliveWriter)}
-<<<<<<< HEAD
 	return a.Stop(writer, process)
-=======
-	err = a.Stop(writer, process)
-	if err != nil {
-		return err
-	}
-	return nil
->>>>>>> origin/installer
 }
 
 // title: app unlock

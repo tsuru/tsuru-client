@@ -138,7 +138,7 @@ func (s *S) TestDeployRunWithMessage(c *check.C) {
 	}
 	fake := cmdtest.FakeGuesser{Name: "secret"}
 	guessCommand := cmd.GuessingCommand{G: &fake}
-	cmd := appDeploy{GuessingCommand: guessCommand}
+	cmd := AppDeploy{GuessingCommand: guessCommand}
 	cmd.Flags().Parse(true, []string{"-m", "my awesome deploy"})
 	err = cmd.Run(&context, client)
 	c.Assert(err, check.IsNil)

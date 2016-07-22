@@ -7,6 +7,8 @@ package galeb
 import (
 	"fmt"
 	"net/url"
+	"strings"
+	"time"
 
 	"github.com/tsuru/config"
 	"github.com/tsuru/tsuru/hc"
@@ -49,6 +51,10 @@ func createRouter(routerName, configPrefix string) (router.Router, error) {
 	balancePolicy, _ := config.GetString(configPrefix + ":balance-policy")
 	ruleType, _ := config.GetString(configPrefix + ":rule-type")
 	debug, _ := config.GetBool(configPrefix + ":debug")
+	waitTimeoutSec, err := config.GetInt(configPrefix + ":wait-timeout")
+	if err != nil {
+		waitTimeoutSec = 10 * 60
+	}
 	client := galebClient.GalebClient{
 		ApiUrl:        apiUrl,
 		Username:      username,
@@ -59,6 +65,7 @@ func createRouter(routerName, configPrefix string) (router.Router, error) {
 		Project:       project,
 		BalancePolicy: balancePolicy,
 		RuleType:      ruleType,
+		WaitTimeout:   time.Duration(waitTimeoutSec) * time.Second,
 		Debug:         debug,
 	}
 	r := galebRouter{
@@ -110,6 +117,7 @@ func (r *galebRouter) AddRoute(name string, address *url.URL) error {
 	if err != nil {
 		return err
 	}
+	address.Scheme = router.HttpScheme
 	_, err = r.client.AddBackend(address, r.poolName(backendName))
 	if err == galebClient.ErrItemAlreadyExists {
 		return router.ErrRouteExists
@@ -121,6 +129,9 @@ func (r *galebRouter) AddRoutes(name string, addresses []*url.URL) error {
 	backendName, err := router.Retrieve(name)
 	if err != nil {
 		return err
+	}
+	for _, a := range addresses {
+		a.Scheme = router.HttpScheme
 	}
 	return r.client.AddBackends(addresses, r.poolName(backendName))
 }
@@ -136,7 +147,7 @@ func (r *galebRouter) RemoveRoute(name string, address *url.URL) error {
 	}
 	var id string
 	for _, target := range targets {
-		if target.Name == address.String() {
+		if strings.HasSuffix(target.Name, address.Host) {
 			id = target.FullId()
 		}
 	}
@@ -153,7 +164,7 @@ func (r *galebRouter) RemoveRoutes(name string, addresses []*url.URL) error {
 	}
 	addressMap := map[string]struct{}{}
 	for _, addr := range addresses {
-		addressMap[addr.String()] = struct{}{}
+		addressMap[addr.Host] = struct{}{}
 	}
 	targets, err := r.client.FindTargetsByParent(r.poolName(backendName))
 	if err != nil {
@@ -161,7 +172,11 @@ func (r *galebRouter) RemoveRoutes(name string, addresses []*url.URL) error {
 	}
 	var ids []string
 	for _, target := range targets {
-		if _, ok := addressMap[target.Name]; ok {
+		parsedAddr, err := url.Parse(target.Name)
+		if err != nil {
+			return err
+		}
+		if _, ok := addressMap[parsedAddr.Host]; ok {
 			ids = append(ids, target.FullId())
 		}
 	}
@@ -188,11 +203,7 @@ func (r *galebRouter) CNames(name string) ([]*url.URL, error) {
 	}
 	for _, vhost := range virtualhosts {
 		if vhost.Name != address {
-			u, vErr := url.Parse(vhost.Name)
-			if vErr != nil {
-				return nil, vErr
-			}
-			urls = append(urls, u)
+			urls = append(urls, &url.URL{Host: vhost.Name})
 		}
 	}
 	return urls, nil

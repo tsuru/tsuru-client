@@ -45,19 +45,11 @@ func handleAuthError(err error) error {
 }
 
 func userTarget(u string) event.Target {
-<<<<<<< HEAD
 	return event.Target{Type: event.TargetTypeUser, Value: u}
 }
 
 func teamTarget(t string) event.Target {
 	return event.Target{Type: event.TargetTypeTeam, Value: t}
-=======
-	return event.Target{Name: "user", Value: u}
-}
-
-func teamTarget(u string) event.Target {
-	return event.Target{Name: "team", Value: u}
->>>>>>> origin/installer
 }
 
 // title: user create
@@ -70,7 +62,7 @@ func teamTarget(u string) event.Target {
 //   401: Unauthorized
 //   403: Forbidden
 //   409: User already exists
-func createUser(w http.ResponseWriter, r *http.Request) (err error) {
+func createUser(w http.ResponseWriter, r *http.Request) error {
 	registrationEnabled, _ := config.GetBool("auth:user-registration")
 	if !registrationEnabled {
 		token := r.Header.Get("Authorization")
@@ -129,23 +121,10 @@ func login(w http.ResponseWriter, r *http.Request) (err error) {
 	for key := range r.Form {
 		params[key] = r.FormValue(key)
 	}
-	email := params["email"]
-	evt, err := event.New(&event.Opts{
-		Target:   userTarget(email),
-		Kind:     permission.PermUserLogIn,
-		RawOwner: event.Owner{Type: event.OwnerTypeUser, Name: email},
-	})
-	if err != nil {
-		return err
-	}
-<<<<<<< HEAD
-=======
-	defer func() { evt.Done(err) }()
 	token, err := app.AuthScheme.Login(params)
 	if err != nil {
 		return handleAuthError(err)
 	}
->>>>>>> origin/installer
 	return json.NewEncoder(w).Encode(map[string]string{"token": token.GetValue()})
 }
 
@@ -155,18 +134,6 @@ func login(w http.ResponseWriter, r *http.Request) (err error) {
 // responses:
 //   200: Ok
 func logout(w http.ResponseWriter, r *http.Request, t auth.Token) (err error) {
-<<<<<<< HEAD
-=======
-	evt, err := event.New(&event.Opts{
-		Target: userTarget(t.GetUserName()),
-		Kind:   permission.PermUserLogOut,
-		Owner:  t,
-	})
-	if err != nil {
-		return err
-	}
-	defer func() { evt.Done(err) }()
->>>>>>> origin/installer
 	return app.AuthScheme.Logout(t.GetValue())
 }
 

@@ -43,6 +43,7 @@ var PermissionRegistry = (&registry{}).addWithCtx(
 	"app.read",
 	"app.read.deploy",
 	"app.read.env",
+	"app.read.events",
 	"app.read.metric",
 	"app.read.log",
 	"app.delete",
@@ -55,6 +56,7 @@ var PermissionRegistry = (&registry{}).addWithCtx(
 ).add(
 	"node.create",
 	"node.read",
+	"node.read.events",
 	"node.update",
 	"node.delete",
 	"node.autoscale",
@@ -73,21 +75,18 @@ var PermissionRegistry = (&registry{}).addWithCtx(
 ).addWithCtx(
 	"team.create", []contextType{},
 ).add(
+	"team.read.events",
 	"team.delete",
 ).add(
 	"user.create",
 	"user.delete",
+	"user.read.events",
 	"user.update.token",
 	"user.update.quota",
 	"user.update.password",
 	"user.update.reset",
 	"user.update.key.add",
 	"user.update.key.remove",
-<<<<<<< HEAD
-=======
-	"user.log.in",
-	"user.log.out",
->>>>>>> origin/installer
 ).addWithCtx(
 	"service", []contextType{CtxService, CtxTeam},
 ).addWithCtx(
@@ -95,6 +94,7 @@ var PermissionRegistry = (&registry{}).addWithCtx(
 ).add(
 	"service.read.doc",
 	"service.read.plans",
+	"service.read.events",
 	"service.update.proxy",
 	"service.update.revoke-access",
 	"service.update.grant-access",
@@ -105,6 +105,7 @@ var PermissionRegistry = (&registry{}).addWithCtx(
 ).addWithCtx(
 	"service-instance.create", []contextType{CtxTeam},
 ).add(
+	"service-instance.read.events",
 	"service-instance.read.status",
 	"service-instance.delete",
 	"service-instance.update.proxy",
@@ -132,6 +133,7 @@ var PermissionRegistry = (&registry{}).addWithCtx(
 ).addWithCtx(
 	"pool.create", []contextType{},
 ).add(
+	"pool.read.events",
 	"pool.update.logs",
 	"pool.delete",
 ).add(

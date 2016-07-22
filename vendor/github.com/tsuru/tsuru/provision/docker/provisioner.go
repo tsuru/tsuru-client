@@ -27,6 +27,7 @@ import (
 	"github.com/tsuru/tsuru/db"
 	"github.com/tsuru/tsuru/db/storage"
 	"github.com/tsuru/tsuru/errors"
+	"github.com/tsuru/tsuru/event"
 	"github.com/tsuru/tsuru/log"
 	"github.com/tsuru/tsuru/net"
 	"github.com/tsuru/tsuru/provision"
@@ -34,6 +35,7 @@ import (
 	"github.com/tsuru/tsuru/provision/docker/healer"
 	"github.com/tsuru/tsuru/provision/docker/nodecontainer"
 	"github.com/tsuru/tsuru/router"
+	_ "github.com/tsuru/tsuru/router/fusis"
 	_ "github.com/tsuru/tsuru/router/galeb"
 	_ "github.com/tsuru/tsuru/router/hipache"
 	_ "github.com/tsuru/tsuru/router/routertest"
@@ -41,8 +43,12 @@ import (
 	"gopkg.in/mgo.v2/bson"
 )
 
-var mainDockerProvisioner *dockerProvisioner
-var ErrEntrypointOrProcfileNotFound = stderr.New("You should provide a entrypoint in image or a Procfile in the following locations: /home/application/current or /app/user or /.")
+var (
+	mainDockerProvisioner *dockerProvisioner
+
+	ErrEntrypointOrProcfileNotFound = stderr.New("You should provide a entrypoint in image or a Procfile in the following locations: /home/application/current or /app/user or /.")
+	ErrDeployCanceled               = stderr.New("deploy canceled by user action")
+)
 
 func init() {
 	mainDockerProvisioner = &dockerProvisioner{}
@@ -284,6 +290,9 @@ func (p *dockerProvisioner) Provision(app provision.App) error {
 		log.Fatalf("Failed to get router: %s", err)
 		return err
 	}
+	if optsRouter, ok := r.(router.OptsRouter); ok {
+		return optsRouter.AddBackendOpts(app.GetName(), app.GetRouterOpts())
+	}
 	return r.AddBackend(app.GetName())
 }
 
@@ -379,18 +388,30 @@ func (p *dockerProvisioner) Swap(app1, app2 provision.App, cnameOnly bool) error
 	return err
 }
 
-func (p *dockerProvisioner) Rollback(a provision.App, imageId string, w io.Writer) (string, error) {
-	if _, err := app.GetImage(a.GetName(), imageId); err != nil {
-		return "", stderr.New(fmt.Sprintf("Image %q %q", imageId, err.Error()))
+func (p *dockerProvisioner) Rollback(a provision.App, imageId string, evt *event.Event) (string, error) {
+	validImgs, err := p.ValidAppImages(a.GetName())
+	if err != nil {
+		return "", err
 	}
-	return imageId, p.deploy(a, imageId, w)
+	valid := false
+	for _, img := range validImgs {
+		if img == imageId {
+			valid = true
+			break
+		}
+	}
+	if !valid {
+		return "", fmt.Errorf("Image %q not found in app", imageId)
+	}
+	return imageId, p.deploy(a, imageId, evt)
 }
 
-func (p *dockerProvisioner) ImageDeploy(app provision.App, imageId string, w io.Writer) (string, error) {
+func (p *dockerProvisioner) ImageDeploy(app provision.App, imageId string, evt *event.Event) (string, error) {
 	cluster := p.Cluster()
 	if !strings.Contains(imageId, ":") {
 		imageId = fmt.Sprintf("%s:latest", imageId)
 	}
+	w := evt
 	fmt.Fprintln(w, "---- Pulling image to tsuru ----")
 	pullOpts := docker.PullImageOptions{
 		Repository:        imageId,
@@ -468,18 +489,18 @@ func (p *dockerProvisioner) ImageDeploy(app provision.App, imageId string, w io.
 		return "", err
 	}
 	app.SetUpdatePlatform(true)
-	return newImage, p.deploy(app, newImage, w)
+	return newImage, p.deploy(app, newImage, evt)
 }
 
-func (p *dockerProvisioner) ArchiveDeploy(app provision.App, archiveURL string, w io.Writer) (string, error) {
-	imageId, err := p.archiveDeploy(app, p.getBuildImage(app), archiveURL, w)
+func (p *dockerProvisioner) ArchiveDeploy(app provision.App, archiveURL string, evt *event.Event) (string, error) {
+	imageId, err := p.archiveDeploy(app, p.getBuildImage(app), archiveURL, evt)
 	if err != nil {
 		return "", err
 	}
-	return imageId, p.deployAndClean(app, imageId, w)
+	return imageId, p.deployAndClean(app, imageId, evt)
 }
 
-func (p *dockerProvisioner) UploadDeploy(app provision.App, archiveFile io.ReadCloser, fileSize int64, build bool, w io.Writer) (string, error) {
+func (p *dockerProvisioner) UploadDeploy(app provision.App, archiveFile io.ReadCloser, fileSize int64, build bool, evt *event.Event) (string, error) {
 	if build {
 		return "", stderr.New("running UploadDeploy with build=true is not yet supported")
 	}
@@ -576,22 +597,25 @@ func (p *dockerProvisioner) UploadDeploy(app provision.App, archiveFile io.ReadC
 	done = p.ActionLimiter().Start(hostAddr)
 	image, err := cluster.CommitContainer(docker.CommitContainerOptions{Container: cont.ID})
 	done()
-	imageId, err := p.archiveDeploy(app, image.ID, "file://"+filePath, w)
+	imageId, err := p.archiveDeploy(app, image.ID, "file://"+filePath, evt)
 	if err != nil {
 		return "", err
 	}
-	return imageId, p.deployAndClean(app, imageId, w)
+	return imageId, p.deployAndClean(app, imageId, evt)
 }
 
-func (p *dockerProvisioner) deployAndClean(a provision.App, imageId string, w io.Writer) error {
-	err := p.deploy(a, imageId, w)
+func (p *dockerProvisioner) deployAndClean(a provision.App, imageId string, evt *event.Event) error {
+	err := p.deploy(a, imageId, evt)
 	if err != nil {
 		p.cleanImage(a.GetName(), imageId)
 	}
 	return err
 }
 
-func (p *dockerProvisioner) deploy(a provision.App, imageId string, w io.Writer) error {
+func (p *dockerProvisioner) deploy(a provision.App, imageId string, evt *event.Event) error {
+	if err := checkCanceled(evt); err != nil {
+		return err
+	}
 	containers, err := p.listContainersByApp(a.GetName())
 	if err != nil {
 		return err
@@ -613,13 +637,13 @@ func (p *dockerProvisioner) deploy(a provision.App, imageId string, w io.Writer)
 		if err = setQuota(a, toAdd); err != nil {
 			return err
 		}
-		_, err = p.runCreateUnitsPipeline(w, a, toAdd, imageId, imageData.ExposedPort)
+		_, err = p.runCreateUnitsPipeline(evt, a, toAdd, imageId, imageData.ExposedPort)
 	} else {
 		toAdd := getContainersToAdd(imageData, containers)
 		if err = setQuota(a, toAdd); err != nil {
 			return err
 		}
-		_, err = p.runReplaceUnitsPipeline(w, a, toAdd, containers, imageId)
+		_, err = p.runReplaceUnitsPipeline(evt, a, toAdd, containers, imageId)
 	}
 	routesRebuildOrEnqueue(a.GetName())
 	return err
@@ -968,7 +992,11 @@ func (p *dockerProvisioner) SetCName(app provision.App, cname string) error {
 	if err != nil {
 		return err
 	}
-	err = r.SetCName(cname, app.GetName())
+	cnameRouter, ok := r.(router.CNameRouter)
+	if !ok {
+		return fmt.Errorf("router %T does not allow cnames", r)
+	}
+	err = cnameRouter.SetCName(cname, app.GetName())
 	if err != nil {
 		routesRebuildOrEnqueue(app.GetName())
 	}
@@ -980,7 +1008,11 @@ func (p *dockerProvisioner) UnsetCName(app provision.App, cname string) error {
 	if err != nil {
 		return err
 	}
-	err = r.UnsetCName(cname, app.GetName())
+	cnameRouter, ok := r.(router.CNameRouter)
+	if !ok {
+		return fmt.Errorf("router %T does not allow cnames", r)
+	}
+	err = cnameRouter.UnsetCName(cname, app.GetName())
 	if err != nil {
 		routesRebuildOrEnqueue(app.GetName())
 	}

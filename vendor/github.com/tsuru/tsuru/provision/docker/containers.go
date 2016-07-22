@@ -10,7 +10,6 @@ import (
 	"fmt"
 	"io"
 	"io/ioutil"
-	"math"
 	"strings"
 	"sync"
 
@@ -18,6 +17,7 @@ import (
 	"github.com/tsuru/tsuru/action"
 	"github.com/tsuru/tsuru/app"
 	tsuruErrors "github.com/tsuru/tsuru/errors"
+	"github.com/tsuru/tsuru/event"
 	"github.com/tsuru/tsuru/log"
 	"github.com/tsuru/tsuru/net"
 	"github.com/tsuru/tsuru/provision"
@@ -85,6 +85,7 @@ func (p *dockerProvisioner) runReplaceUnitsPipeline(w io.Writer, a provision.App
 	if w == nil {
 		w = ioutil.Discard
 	}
+	evt, _ := w.(*event.Event)
 	args := changeUnitsPipelineArgs{
 		app:         a,
 		toAdd:       toAdd,
@@ -93,6 +94,7 @@ func (p *dockerProvisioner) runReplaceUnitsPipeline(w io.Writer, a provision.App
 		writer:      w,
 		imageId:     imageId,
 		provisioner: p,
+		event:       evt,
 	}
 	var pipeline *action.Pipeline
 	if p.isDryMode {
@@ -123,6 +125,7 @@ func (p *dockerProvisioner) runCreateUnitsPipeline(w io.Writer, a provision.App,
 	if w == nil {
 		w = ioutil.Discard
 	}
+	evt, _ := w.(*event.Event)
 	args := changeUnitsPipelineArgs{
 		app:         a,
 		toAdd:       toAdd,
@@ -130,6 +133,7 @@ func (p *dockerProvisioner) runCreateUnitsPipeline(w io.Writer, a provision.App,
 		imageId:     imageId,
 		provisioner: p,
 		exposedPort: exposedPort,
+		event:       evt,
 	}
 	pipeline := action.NewPipeline(
 		&provisionAddUnitsToHost,
@@ -254,24 +258,6 @@ func (p *dockerProvisioner) moveContainersFromHosts(fromHosts []string, toHost s
 	}
 	fmt.Fprintf(writer, "Moving %d units...\n", len(allContainers))
 	return p.moveContainerList(allContainers, toHost, writer)
-}
-
-type hostWithContainers struct {
-	HostAddr   string `bson:"_id"`
-	Count      int
-	Containers []container.Container
-}
-
-func minCountHost(hosts []hostWithContainers) *hostWithContainers {
-	var minCountHost *hostWithContainers
-	minCount := math.MaxInt32
-	for i, dest := range hosts {
-		if dest.Count < minCount {
-			minCount = dest.Count
-			minCountHost = &hosts[i]
-		}
-	}
-	return minCountHost
 }
 
 func (p *dockerProvisioner) rebalanceContainersByFilter(writer io.Writer, appFilter []string, metadataFilter map[string]string, dryRun bool) (*dockerProvisioner, error) {
