@@ -129,13 +129,14 @@ func (d *DockerMachine) CreateRegistryCertificate() error {
 	if err != nil {
 		return err
 	}
+
 	args := []string{
 		"-o StrictHostKeyChecking=no",
 		"-i",
 		fmt.Sprintf("%s/machines/%s/id_rsa", d.storePath, d.Name),
 		"-r",
 		fmt.Sprintf("%s/", d.certsPath),
-		fmt.Sprintf("docker@%s:/home/docker/", ip),
+		fmt.Sprintf("%s@%s:/home/%s/", host.Driver.GetSSHUsername(), ip, host.Driver.GetSSHUsername()),
 	}
 	comm := exec.Command("scp", args...)
 	stdout, err := comm.CombinedOutput()
@@ -157,12 +158,12 @@ DNS.2 = %s
 IP.1 = %s
 	`, d.Name, d.Name, ip)
 
-	certsBasePath := fmt.Sprintf("/home/docker/certs/%s:5000", ip)
+	certsBasePath := fmt.Sprintf("/home/%s/certs/%s:5000", host.Driver.GetSSHUsername(), ip)
 	_, err = host.RunSSHCommand(fmt.Sprintf("mkdir -p %s", certsBasePath))
 	if err != nil {
 		return err
 	}
-	_, err = host.RunSSHCommand(fmt.Sprintf("cp /home/docker/certs/*.pem %s/", certsBasePath))
+	_, err = host.RunSSHCommand(fmt.Sprintf("cp /home/%s/certs/*.pem %s/", host.Driver.GetSSHUsername(), certsBasePath))
 	if err != nil {
 		return err
 	}
@@ -170,7 +171,7 @@ IP.1 = %s
 	if err != nil {
 		return err
 	}
-	registryCAConfPath := "/home/docker/certs/registry_ca.conf"
+	registryCAConfPath := fmt.Sprintf("/home/%s/certs/registry_ca.conf", host.Driver.GetSSHUsername())
 	_, err = host.RunSSHCommand(fmt.Sprintf("echo -e '%s' >> %s", registryCAConf, registryCAConfPath))
 	if err != nil {
 		return err
@@ -183,7 +184,7 @@ IP.1 = %s
 	if err != nil {
 		return err
 	}
-	_, err = host.RunSSHCommand(fmt.Sprintf("sudo ln -s %s /etc/docker/certs.d", certsBasePath))
+	_, err = host.RunSSHCommand(fmt.Sprintf("sudo mkdir /etc/docker/certs.d && sudo cp -r %s /etc/docker/certs.d/", certsBasePath))
 	if err != nil {
 		return err
 	}
