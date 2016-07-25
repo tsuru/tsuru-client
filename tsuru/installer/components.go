@@ -12,6 +12,7 @@ import (
 	"strings"
 	"time"
 
+	"github.com/docker/machine/libmachine/mcnutils"
 	"github.com/fsouza/go-dockerclient"
 	"github.com/tsuru/config"
 	"github.com/tsuru/tsuru-client/tsuru/admin"
@@ -125,7 +126,7 @@ func (c *Registry) Install(machine *Machine, i *InstallConfig) error {
 		},
 	}
 	hostConfig := &docker.HostConfig{
-		Binds: []string{"/var/lib/registry:/var/lib/registry", "/home/docker/certs:/certs"},
+		Binds: []string{"/var/lib/registry:/var/lib/registry", "/etc/docker/certs.d:/certs:ro"},
 	}
 	return createContainer(machine, "registry", config, hostConfig)
 }
@@ -154,6 +155,17 @@ func (c *TsuruAPI) Install(machine *Machine, i *InstallConfig) error {
 		Env:   env,
 	}
 	err := createContainer(machine, "tsuru", config, nil)
+	if err != nil {
+		return err
+	}
+	fmt.Println("Wating API container to be running...")
+	err = mcnutils.WaitFor(func() bool {
+		status, errSt := c.Status(machine)
+		if errSt != nil {
+			return false
+		}
+		return status.containerState.Running
+	})
 	if err != nil {
 		return err
 	}
