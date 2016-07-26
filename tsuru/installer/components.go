@@ -149,6 +149,8 @@ func (c *TsuruAPI) Install(machine *Machine, i *InstallConfig) error {
 		fmt.Sprintf("HIPACHE_DOMAIN=%s.nip.io", machine.IP),
 		fmt.Sprintf("REGISTRY_ADDR=%s", machine.IP),
 		"REGISTRY_PORT=5000",
+		fmt.Sprintf("TSURU_ADDR=http://%s", machine.IP),
+		fmt.Sprintf("TSURU_PORT=8080"),
 	}
 	config := &docker.Config{
 		Image: i.fullImageName("tsuru/api:latest"),

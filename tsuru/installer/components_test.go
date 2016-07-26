@@ -39,6 +39,8 @@ func (s *S) TestInstallComponentsDefaultConfig(c *check.C) {
 				"HIPACHE_DOMAIN=127.0.0.1.nip.io",
 				"REGISTRY_ADDR=127.0.0.1",
 				"REGISTRY_PORT=5000",
+				"TSURU_ADDR=http://127.0.0.1",
+				"TSURU_PORT=8080",
 			}},
 	}
 	c.Assert(len(tests), check.Equals, len(TsuruComponents))
