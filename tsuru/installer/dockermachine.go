@@ -82,7 +82,7 @@ func NewDockerMachine(config *DockerMachineConfig) (*DockerMachine, error) {
 		driverName: config.DriverName,
 		storePath:  storePath,
 		certsPath:  certsPath,
-		tlsSupport: config.DriverName != "virtualbox" && config.DriverName != "none",
+		tlsSupport: false,
 		Name:       "tsuru",
 	}, nil
 }

@@ -45,17 +45,6 @@ func (s *S) TestNewDockerMachine(c *check.C) {
 	c.Assert(dm.tlsSupport, check.Equals, false)
 }
 
-func (s *S) TestNewDockerMachineSupportTLS(c *check.C) {
-	config := &DockerMachineConfig{
-		DriverName: "amazonec2",
-	}
-	dm, err := NewDockerMachine(config)
-	c.Assert(err, check.IsNil)
-	c.Assert(dm, check.NotNil)
-	c.Assert(dm.driverName, check.Equals, "amazonec2")
-	c.Assert(dm.tlsSupport, check.Equals, true)
-}
-
 func (s *S) TestNewDockerMachineDriverOpts(c *check.C) {
 	config := &DockerMachineConfig{
 		DriverName: "none",
