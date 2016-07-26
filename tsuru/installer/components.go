@@ -30,20 +30,20 @@ var TsuruComponents = []TsuruComponent{
 }
 
 type InstallConfig struct {
-	Registry string
+	DockerHubMirror string
 }
 
 func NewInstallConfig() *InstallConfig {
-	registry, err := config.GetString("registry")
+	hub, err := config.GetString("docker-hub-mirror")
 	if err != nil {
-		registry = ""
+		hub = ""
 	}
-	return &InstallConfig{Registry: registry}
+	return &InstallConfig{DockerHubMirror: hub}
 }
 
 func (i *InstallConfig) fullImageName(name string) string {
-	if i.Registry != "" {
-		return fmt.Sprintf("%s/%s", i.Registry, name)
+	if i.DockerHubMirror != "" {
+		return fmt.Sprintf("%s/%s", i.DockerHubMirror, name)
 	}
 	return name
 }

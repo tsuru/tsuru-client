@@ -81,7 +81,7 @@ func (s *S) TestInstallComponentsCustomRegistry(c *check.C) {
 	defer server.Stop()
 	mockMachine := &Machine{Address: server.URL()}
 	for _, tt := range tests {
-		config := &InstallConfig{Registry: "myregistry.com"}
+		config := &InstallConfig{DockerHubMirror: "myregistry.com"}
 		go tt.component.Install(mockMachine, config)
 
 		cont := <-containerChan
