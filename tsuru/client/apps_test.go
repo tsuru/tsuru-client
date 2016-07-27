@@ -1410,7 +1410,7 @@ func (s *S) TestAppListFiltering(c *check.C) {
 		"platform":  {"python"},
 		"locked":    {"true"},
 		"owner":     {"glenda@tsuru.io"},
-		"teamowner": {"tsuru"},
+		"teamOwner": {"tsuru"},
 		"name":      {"myapp"},
 		"pool":      {"pool"},
 		"status":    {"started"},

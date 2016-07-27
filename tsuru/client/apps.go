@@ -631,7 +631,7 @@ func (f *appFilter) queryString(client *cmd.Client) (url.Values, error) {
 		result.Set("platform", f.platform)
 	}
 	if f.teamOwner != "" {
-		result.Set("teamowner", f.teamOwner)
+		result.Set("teamOwner", f.teamOwner)
 	}
 	if f.owner != "" {
 		owner := f.owner
