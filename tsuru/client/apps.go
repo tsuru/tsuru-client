@@ -969,10 +969,7 @@ func unsetCName(cnames []string, g cmd.GuessingCommand, client *cmd.Client) erro
 		return err
 	}
 	_, err = client.Do(request)
-	if err != nil {
-		return err
-	}
-	return nil
+	return err
 }
 
 func addCName(cnames []string, g cmd.GuessingCommand, client *cmd.Client) error {
@@ -995,10 +992,7 @@ func addCName(cnames []string, g cmd.GuessingCommand, client *cmd.Client) error 
 	}
 	request.Header.Set("Content-Type", "application/x-www-form-urlencoded")
 	_, err = client.Do(request)
-	if err != nil {
-		return err
-	}
-	return nil
+	return err
 }
 
 type UnitAdd struct {
