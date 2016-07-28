@@ -83,10 +83,7 @@ func doRequest(client *cmd.Client, url, method, body string) error {
 	}
 	req.Header.Set("Content-Type", "application/x-www-form-urlencoded")
 	_, err = client.Do(req)
-	if err != nil {
-		return err
-	}
-	return nil
+	return err
 }
 
 func confirmAction(ctx *cmd.Context, client *cmd.Client, url, method, body string, retryMessage, failMessage, successMessage string) error {
