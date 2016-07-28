@@ -409,11 +409,7 @@ func addSymlink(writer *tar.Writer, symlink, target string) error {
 	}
 	header.Name = symlink
 	header.Linkname = target
-	err = writer.WriteHeader(header)
-	if err != nil {
-		return err
-	}
-	return nil
+	return writer.WriteHeader(header)
 }
 
 type firstWriter struct {
