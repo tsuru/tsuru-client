@@ -33,8 +33,12 @@ import (
 )
 
 var (
-	dockerHTTPPort  = 2375
-	dockerHTTPSPort = 2376
+	dockerHTTPPort             = 2375
+	dockerHTTPSPort            = 2376
+	defaultDockerMachineConfig = &DockerMachineConfig{
+		DriverName: "virtualbox",
+		DriverOpts: make(map[string]interface{}),
+	}
 )
 
 type Machine struct {

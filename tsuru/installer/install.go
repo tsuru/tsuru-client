@@ -30,8 +30,8 @@ func (c *Install) Info() *cmd.Info {
 func (c *Install) Flags() *gnuflag.FlagSet {
 	if c.fs == nil {
 		c.fs = gnuflag.NewFlagSet("install", gnuflag.ExitOnError)
-		c.fs.StringVar(&c.config, "c", "install.yml", "Configuration file")
-		c.fs.StringVar(&c.config, "config", "install.yml", "Configuration file")
+		c.fs.StringVar(&c.config, "c", "", "Configuration file")
+		c.fs.StringVar(&c.config, "config", "", "Configuration file")
 	}
 	return c.fs
 }
@@ -105,8 +105,8 @@ func (c *Uninstall) Info() *cmd.Info {
 func (c *Uninstall) Flags() *gnuflag.FlagSet {
 	if c.fs == nil {
 		c.fs = gnuflag.NewFlagSet("uninstall", gnuflag.ExitOnError)
-		c.fs.StringVar(&c.config, "c", "install.yml", "Configuration file")
-		c.fs.StringVar(&c.config, "config", "install.yml", "Configuration file")
+		c.fs.StringVar(&c.config, "c", "", "Configuration file")
+		c.fs.StringVar(&c.config, "config", "", "Configuration file")
 	}
 	return c.fs
 }
@@ -132,6 +132,9 @@ func (c *Uninstall) Run(context *cmd.Context, client *cmd.Client) error {
 }
 
 func parseConfigFile(file string) (*DockerMachineConfig, error) {
+	if file == "" {
+		return defaultDockerMachineConfig, nil
+	}
 	err := config.ReadConfigFile(file)
 	if err != nil {
 		return nil, err
