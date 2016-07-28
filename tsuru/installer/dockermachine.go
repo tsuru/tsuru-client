@@ -8,6 +8,7 @@ import (
 	"encoding/json"
 	"fmt"
 	"os/exec"
+	"path/filepath"
 
 	"github.com/docker/machine/drivers/amazonec2"
 	"github.com/docker/machine/drivers/azure"
@@ -30,14 +31,17 @@ import (
 	"github.com/docker/machine/libmachine/drivers/rpc"
 	"github.com/docker/machine/libmachine/host"
 	"github.com/fsouza/go-dockerclient"
+	"github.com/tsuru/tsuru/cmd"
 )
 
 var (
 	dockerHTTPPort             = 2375
 	dockerHTTPSPort            = 2376
+	storePath                  = cmd.JoinWithUserDir(".tsuru", "installs")
 	defaultDockerMachineConfig = &DockerMachineConfig{
 		DriverName: "virtualbox",
 		DriverOpts: make(map[string]interface{}),
+		CAPath:     filepath.Join(storePath, "certs"),
 	}
 )
 
@@ -68,11 +72,10 @@ type DockerMachine struct {
 type DockerMachineConfig struct {
 	DriverName string
 	DriverOpts map[string]interface{}
+	CAPath     string
 }
 
 func NewDockerMachine(config *DockerMachineConfig) (*DockerMachine, error) {
-	storePath := "/tmp/automatic"
-	certsPath := "/tmp/automatic/certs"
 	rawDriver, err := json.Marshal(&drivers.BaseDriver{
 		MachineName: "tsuru",
 		StorePath:   storePath,
@@ -85,7 +88,7 @@ func NewDockerMachine(config *DockerMachineConfig) (*DockerMachine, error) {
 		rawDriver:  rawDriver,
 		driverName: config.DriverName,
 		storePath:  storePath,
-		certsPath:  certsPath,
+		certsPath:  config.CAPath,
 		tlsSupport: false,
 		Name:       "tsuru",
 	}, nil

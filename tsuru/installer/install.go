@@ -132,16 +132,17 @@ func (c *Uninstall) Run(context *cmd.Context, client *cmd.Client) error {
 }
 
 func parseConfigFile(file string) (*DockerMachineConfig, error) {
+	dmConfig := defaultDockerMachineConfig
 	if file == "" {
-		return defaultDockerMachineConfig, nil
+		return dmConfig, nil
 	}
 	err := config.ReadConfigFile(file)
 	if err != nil {
 		return nil, err
 	}
 	driverName, err := config.GetString("driver:name")
-	if err != nil {
-		return nil, err
+	if err == nil {
+		dmConfig.DriverName = driverName
 	}
 	driverOpts := make(map[string]interface{})
 	opts, _ := config.Get("driver:options")
@@ -152,9 +153,11 @@ func parseConfigFile(file string) (*DockerMachineConfig, error) {
 				driverOpts[k] = v
 			}
 		}
+		dmConfig.DriverOpts = driverOpts
 	}
-	return &DockerMachineConfig{
-		DriverName: driverName,
-		DriverOpts: driverOpts,
-	}, nil
+	caPath, err := config.GetString("ca-path")
+	if err == nil {
+		dmConfig.CAPath = caPath
+	}
+	return dmConfig, nil
 }
