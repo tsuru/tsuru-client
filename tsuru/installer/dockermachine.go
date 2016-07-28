@@ -189,9 +189,6 @@ IP.1 = %s
 		return err
 	}
 	_, err = host.RunSSHCommand(fmt.Sprintf("cat %s/ca.pem | sudo tee -a /etc/ssl/certs/ca-certificates.crt", certsBasePath))
-	if err != nil {
-		return err
-	}
 	return err
 }
 
@@ -199,7 +196,7 @@ func configureDriver(driver drivers.Driver, driverOpts map[string]interface{}) e
 	opts := &rpcdriver.RPCFlags{Values: driverOpts}
 	for _, c := range driver.GetCreateFlags() {
 		_, ok := opts.Values[c.String()]
-		if ok == false {
+		if !ok {
 			opts.Values[c.String()] = c.Default()
 			if c.Default() == nil {
 				opts.Values[c.String()] = false
@@ -213,7 +210,7 @@ func configureDriver(driver drivers.Driver, driverOpts map[string]interface{}) e
 }
 
 func (d *DockerMachine) configureHost(host *host.Host) {
-	if d.tlsSupport == false {
+	if !d.tlsSupport {
 		host.HostOptions.EngineOptions.Env = []string{"DOCKER_TLS=no"}
 		host.HostOptions.EngineOptions.ArbitraryFlags = []string{fmt.Sprintf("host=tcp://0.0.0.0:%d", dockerHTTPPort)}
 	}
