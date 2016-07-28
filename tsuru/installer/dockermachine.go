@@ -40,11 +40,10 @@ import (
 var (
 	dockerHTTPPort             = 2375
 	dockerHTTPSPort            = 2376
-	storePath                  = cmd.JoinWithUserDir(".tsuru", "installs")
+	storeBasePath              = cmd.JoinWithUserDir(".tsuru", "installs")
 	defaultDockerMachineConfig = &DockerMachineConfig{
 		DriverName: "virtualbox",
 		DriverOpts: make(map[string]interface{}),
-		CAPath:     filepath.Join(storePath, "certs"),
 	}
 )
 
@@ -79,6 +78,12 @@ type DockerMachineConfig struct {
 }
 
 func NewDockerMachine(config *DockerMachineConfig) (*DockerMachine, error) {
+	name := "tsuru"
+	storePath := filepath.Join(storeBasePath, name)
+	caPath := config.CAPath
+	if caPath == "" {
+		caPath = filepath.Join(storePath, "certs")
+	}
 	rawDriver, err := json.Marshal(&drivers.BaseDriver{
 		MachineName: "tsuru",
 		StorePath:   storePath,
@@ -91,9 +96,9 @@ func NewDockerMachine(config *DockerMachineConfig) (*DockerMachine, error) {
 		rawDriver:  rawDriver,
 		driverName: config.DriverName,
 		storePath:  storePath,
-		certsPath:  config.CAPath,
+		certsPath:  caPath,
 		tlsSupport: false,
-		Name:       "tsuru",
+		Name:       name,
 	}, nil
 }
 
@@ -139,11 +144,11 @@ func (d *DockerMachine) uploadRegistryCertificate(host *host.Host) error {
 	}
 	if _, err = os.Stat(filepath.Join(d.certsPath, "registry-cert.pem")); os.IsNotExist(err) {
 		errCreate := d.createRegistryCertificate(ip)
-		if err != nil {
+		if errCreate != nil {
 			return errCreate
 		}
 	}
-	fmt.Printf("Uploading registry certificate...")
+	fmt.Printf("Uploading registry certificate...\n")
 	args := []string{
 		"-o StrictHostKeyChecking=no",
 		"-i",
@@ -175,7 +180,7 @@ func (d *DockerMachine) uploadRegistryCertificate(host *host.Host) error {
 }
 
 func (d *DockerMachine) createRegistryCertificate(hosts ...string) error {
-	fmt.Printf("Creating registry certificate...")
+	fmt.Printf("Creating registry certificate...\n")
 	caOrg := mcnutils.GetUsername()
 	org := caOrg + ".<bootstrap>"
 	generator := &cert.X509CertGenerator{}
