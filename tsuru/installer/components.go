@@ -121,7 +121,7 @@ func (c *Registry) Install(machine *Machine, i *InstallConfig) error {
 		Image: i.fullImageName("registry:2"),
 		Env: []string{
 			"REGISTRY_STORAGE_FILESYSTEM_ROOTDIRECTORY=/var/lib/registry",
-			fmt.Sprintf("REGISTRY_HTTP_TLS_CERTIFICATE=/certs/%s:5000/registry.pem", machine.IP),
+			fmt.Sprintf("REGISTRY_HTTP_TLS_CERTIFICATE=/certs/%s:5000/registry-cert.pem", machine.IP),
 			fmt.Sprintf("REGISTRY_HTTP_TLS_KEY=/certs/%s:5000/registry-key.pem", machine.IP),
 		},
 	}
@@ -295,7 +295,7 @@ func (c *TsuruAPI) bootstrapEnv(login, password, target, node string) error {
 	if err != nil {
 		return err
 	}
-	time.Sleep(15 * time.Second)
+	time.Sleep(60 * time.Second)
 	context.Args = []string{"python"}
 	println("adding platform")
 	platformAdd := admin.PlatformAdd{}

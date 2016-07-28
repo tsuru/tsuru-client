@@ -7,6 +7,7 @@ package installer
 import (
 	"encoding/json"
 	"fmt"
+	"os"
 	"os/exec"
 	"path/filepath"
 
@@ -26,10 +27,12 @@ import (
 	"github.com/docker/machine/drivers/vmwarevcloudair"
 	"github.com/docker/machine/drivers/vmwarevsphere"
 	"github.com/docker/machine/libmachine"
+	"github.com/docker/machine/libmachine/cert"
 	"github.com/docker/machine/libmachine/drivers"
 	"github.com/docker/machine/libmachine/drivers/plugin"
 	"github.com/docker/machine/libmachine/drivers/rpc"
 	"github.com/docker/machine/libmachine/host"
+	"github.com/docker/machine/libmachine/mcnutils"
 	"github.com/fsouza/go-dockerclient"
 	"github.com/tsuru/tsuru/cmd"
 )
@@ -111,6 +114,10 @@ func (d *DockerMachine) CreateMachine() (*Machine, error) {
 	if err != nil {
 		return nil, err
 	}
+	err = d.uploadRegistryCertificate(host)
+	if err != nil {
+		return nil, err
+	}
 	config := map[string]string{}
 	m := Machine{
 		IP:     ip,
@@ -125,18 +132,18 @@ func (d *DockerMachine) CreateMachine() (*Machine, error) {
 	return &m, nil
 }
 
-func (d *DockerMachine) CreateRegistryCertificate() error {
-	client := libmachine.NewClient(d.storePath, d.certsPath)
-	defer client.Close()
-	host, err := client.Load(d.Name)
-	if err != nil {
-		return err
-	}
+func (d *DockerMachine) uploadRegistryCertificate(host *host.Host) error {
 	ip, err := host.Driver.GetIP()
 	if err != nil {
 		return err
 	}
-
+	if _, err = os.Stat(filepath.Join(d.certsPath, "registry-cert.pem")); os.IsNotExist(err) {
+		errCreate := d.createRegistryCertificate(ip)
+		if err != nil {
+			return errCreate
+		}
+	}
+	fmt.Printf("Uploading registry certificate...")
 	args := []string{
 		"-o StrictHostKeyChecking=no",
 		"-i",
@@ -150,21 +157,6 @@ func (d *DockerMachine) CreateRegistryCertificate() error {
 	if err != nil {
 		return fmt.Errorf("Command: %s. Error:%s", string(stdout), err.Error())
 	}
-	registryCAConf := fmt.Sprintf(`
-[req]
-req_extensions = v3_req
-distinguished_name = req_distinguished_name
-[req_distinguished_name]
-[ v3_req ]
-basicConstraints = CA:FALSE
-keyUsage = nonRepudiation, digitalSignature, keyEncipherment
-subjectAltName = @alt_names
-[alt_names]
-DNS.1 = %s.localdomain
-DNS.2 = %s
-IP.1 = %s
-	`, d.Name, d.Name, ip)
-
 	certsBasePath := fmt.Sprintf("/home/%s/certs/%s:5000", host.Driver.GetSSHUsername(), ip)
 	_, err = host.RunSSHCommand(fmt.Sprintf("mkdir -p %s", certsBasePath))
 	if err != nil {
@@ -174,29 +166,30 @@ IP.1 = %s
 	if err != nil {
 		return err
 	}
-	_, err = host.RunSSHCommand(fmt.Sprintf("openssl genrsa -out %s/registry-key.pem 2048", certsBasePath))
-	if err != nil {
-		return err
-	}
-	registryCAConfPath := fmt.Sprintf("/home/%s/certs/registry_ca.conf", host.Driver.GetSSHUsername())
-	_, err = host.RunSSHCommand(fmt.Sprintf("echo -e '%s' >> %s", registryCAConf, registryCAConfPath))
-	if err != nil {
-		return err
-	}
-	_, err = host.RunSSHCommand(fmt.Sprintf("openssl req -new -key %s/registry-key.pem -out %s/registry.csr -subj '/CN=%s.localdomain' -config %s", certsBasePath, certsBasePath, d.Name, registryCAConfPath))
-	if err != nil {
-		return err
-	}
-	_, err = host.RunSSHCommand(fmt.Sprintf("openssl x509 -req -in %s/registry.csr -CA '%s/ca.pem' -CAkey '%s/ca-key.pem' -CAcreateserial -out '%s/registry.pem' -days 365 -extensions v3_req -extfile %s", certsBasePath, certsBasePath, certsBasePath, certsBasePath, registryCAConfPath))
-	if err != nil {
-		return err
-	}
 	_, err = host.RunSSHCommand(fmt.Sprintf("sudo mkdir /etc/docker/certs.d && sudo cp -r %s /etc/docker/certs.d/", certsBasePath))
 	if err != nil {
 		return err
 	}
 	_, err = host.RunSSHCommand(fmt.Sprintf("cat %s/ca.pem | sudo tee -a /etc/ssl/certs/ca-certificates.crt", certsBasePath))
 	return err
+}
+
+func (d *DockerMachine) createRegistryCertificate(hosts ...string) error {
+	fmt.Printf("Creating registry certificate...")
+	caOrg := mcnutils.GetUsername()
+	org := caOrg + ".<bootstrap>"
+	generator := &cert.X509CertGenerator{}
+	certOpts := &cert.Options{
+		Hosts:       hosts,
+		CertFile:    filepath.Join(d.certsPath, "registry-cert.pem"),
+		KeyFile:     filepath.Join(d.certsPath, "registry-key.pem"),
+		CAFile:      filepath.Join(d.certsPath, "ca.pem"),
+		CAKeyFile:   filepath.Join(d.certsPath, "ca-key.pem"),
+		Org:         org,
+		Bits:        2048,
+		SwarmMaster: false,
+	}
+	return generator.GenerateCert(certOpts)
 }
 
 func configureDriver(driver drivers.Driver, driverOpts map[string]interface{}) error {
@@ -226,7 +219,7 @@ func (d *DockerMachine) configureHost(host *host.Host) {
 func (d *DockerMachine) DeleteMachine(m *Machine) error {
 	client := libmachine.NewClient(d.storePath, d.certsPath)
 	defer client.Close()
-	h, err := client.Load("tsuru")
+	h, err := client.Load(d.Name)
 	if err != nil {
 		return err
 	}
@@ -234,7 +227,7 @@ func (d *DockerMachine) DeleteMachine(m *Machine) error {
 	if err != nil {
 		return err
 	}
-	return client.Remove("tsuru")
+	return client.Remove(d.Name)
 }
 
 func RunDriver(driverName string) error {

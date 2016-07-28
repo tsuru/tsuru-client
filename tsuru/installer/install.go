@@ -53,11 +53,6 @@ func (c *Install) Run(context *cmd.Context, client *cmd.Client) error {
 		return err
 	}
 	fmt.Fprintf(context.Stdout, "Machine %s successfully created!\n", m.IP)
-	err = i.CreateRegistryCertificate()
-	if err != nil {
-		return err
-	}
-	fmt.Fprint(context.Stdout, "Registry certificates successfully created!\n")
 	installConfig := NewInstallConfig()
 	for _, component := range TsuruComponents {
 		fmt.Fprintf(context.Stdout, "Installing %s\n", component.Name())
