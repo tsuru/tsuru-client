@@ -241,3 +241,15 @@ Pool
 
 .. tsuru-command:: app-pool-change
    :title: Change an app's pool
+
+Events
+======
+
+.. tsuru-command:: event-list
+   :title: List all events
+
+.. tsuru-command:: event-info
+   :title: Show detailed information about an event
+
+.. tsuru-command:: event-cancel
+   :title: Cancel an event

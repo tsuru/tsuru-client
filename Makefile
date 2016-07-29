@@ -34,7 +34,7 @@ doc-requirements:
 docs-clean:
 	@rm -rf ./docs/build
 
-doc: docs-clean docs-requirements
+doc: docs-clean doc-requirements
 	@tsuru_sphinx tsuru docs/ && cd docs && make html SPHINXOPTS="-N -W"
 
 docs: doc
