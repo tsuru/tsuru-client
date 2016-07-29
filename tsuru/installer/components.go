@@ -156,17 +156,17 @@ func (c *TsuruAPI) Install(machine *Machine, i *InstallConfig) error {
 		Image: i.fullImageName("tsuru/api:latest"),
 		Env:   env,
 	}
-	err := createContainer(machine, "tsuru", config, nil)
+	hostConfig := &docker.HostConfig{
+		Binds: []string{"/etc/docker/certs.d:/certs:ro"},
+	}
+	err := createContainer(machine, "tsuru", config, hostConfig)
 	if err != nil {
 		return err
 	}
-	fmt.Println("Wating API container to be running...")
+	fmt.Println("Waiting for Tsuru API to become responsive...")
 	err = mcnutils.WaitFor(func() bool {
-		status, errSt := c.Status(machine)
-		if errSt != nil {
-			return false
-		}
-		return status.containerState.Running
+		_, errReq := http.Get(fmt.Sprintf("http://%s:8080", machine.IP))
+		return errReq == nil
 	})
 	if err != nil {
 		return err

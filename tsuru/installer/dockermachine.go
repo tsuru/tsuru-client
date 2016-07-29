@@ -97,7 +97,7 @@ func NewDockerMachine(config *DockerMachineConfig) (*DockerMachine, error) {
 		driverName: config.DriverName,
 		storePath:  storePath,
 		certsPath:  caPath,
-		tlsSupport: false,
+		tlsSupport: true,
 		Name:       name,
 	}, nil
 }
@@ -171,7 +171,7 @@ func (d *DockerMachine) uploadRegistryCertificate(host *host.Host) error {
 	if err != nil {
 		return err
 	}
-	_, err = host.RunSSHCommand(fmt.Sprintf("sudo mkdir /etc/docker/certs.d && sudo cp -r %s /etc/docker/certs.d/", certsBasePath))
+	_, err = host.RunSSHCommand(fmt.Sprintf("sudo mkdir /etc/docker/certs.d && sudo cp -r /home/%s/certs/* /etc/docker/certs.d/", host.Driver.GetSSHUsername()))
 	if err != nil {
 		return err
 	}
