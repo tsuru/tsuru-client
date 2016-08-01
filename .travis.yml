@@ -16,7 +16,7 @@ env:
     - GOARCH=amd64
     - GOARCH=386
 script:
-  - go test -x ./tsuru
+  - go test ./...
   - ./check-fmt.sh
 matrix:
   allow_failures:
