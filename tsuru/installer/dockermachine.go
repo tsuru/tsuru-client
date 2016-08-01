@@ -50,15 +50,17 @@ var (
 type Machine struct {
 	IP      string
 	Config  map[string]string
-	TLS     bool
 	Address string
+	CAPath  string
 }
 
 func (m *Machine) dockerClient() (*docker.Client, error) {
-	if m.TLS {
-		return docker.NewTLSClient(m.Address, "cert.pem", "key.pem", "ca.pem")
-	}
-	return docker.NewClient(m.Address)
+	return docker.NewTLSClient(
+		m.Address,
+		filepath.Join(m.CAPath, "cert.pem"),
+		filepath.Join(m.CAPath, "key.pem"),
+		filepath.Join(m.CAPath, "ca.pem"),
+	)
 }
 
 type DockerMachine struct {
@@ -67,7 +69,6 @@ type DockerMachine struct {
 	driverName string
 	storePath  string
 	certsPath  string
-	tlsSupport bool
 	Name       string
 }
 
@@ -97,7 +98,6 @@ func NewDockerMachine(config *DockerMachineConfig) (*DockerMachine, error) {
 		driverName: config.DriverName,
 		storePath:  storePath,
 		certsPath:  caPath,
-		tlsSupport: true,
 		Name:       name,
 	}, nil
 }
@@ -127,13 +127,9 @@ func (d *DockerMachine) CreateMachine() (*Machine, error) {
 	m := Machine{
 		IP:     ip,
 		Config: config,
-		TLS:    d.tlsSupport,
+		CAPath: d.certsPath,
 	}
-	if m.TLS {
-		m.Address = fmt.Sprintf("https://%s:%d", m.IP, dockerHTTPSPort)
-	} else {
-		m.Address = fmt.Sprintf("http://%s:%d", m.IP, dockerHTTPPort)
-	}
+	m.Address = fmt.Sprintf("https://%s:%d", m.IP, dockerHTTPSPort)
 	return &m, nil
 }
 
@@ -215,10 +211,7 @@ func configureDriver(driver drivers.Driver, driverOpts map[string]interface{}) e
 }
 
 func (d *DockerMachine) configureHost(host *host.Host) {
-	if !d.tlsSupport {
-		host.HostOptions.EngineOptions.Env = []string{"DOCKER_TLS=no"}
-		host.HostOptions.EngineOptions.ArbitraryFlags = []string{fmt.Sprintf("host=tcp://0.0.0.0:%d", dockerHTTPPort)}
-	}
+	host.HostOptions.EngineOptions.ArbitraryFlags = []string{fmt.Sprintf("host=tcp://0.0.0.0:%d", dockerHTTPPort)}
 }
 
 func (d *DockerMachine) DeleteMachine(m *Machine) error {

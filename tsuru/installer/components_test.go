@@ -29,8 +29,8 @@ func (s *S) TestInstallComponentsDefaultConfig(c *check.C) {
 			}, []string(nil)},
 		{&Registry{}, "registry", "registry:2", []string(nil),
 			[]string{"REGISTRY_STORAGE_FILESYSTEM_ROOTDIRECTORY=/var/lib/registry",
-				"REGISTRY_HTTP_TLS_CERTIFICATE=/certs/127.0.0.1:5000/registry.pem",
-				"REGISTRY_HTTP_TLS_KEY=/certs/127.0.0.1:5000/registry-key.pem"}},
+				"REGISTRY_HTTP_TLS_KEY=/certs/127.0.0.1:5000/registry-key.pem",
+				"REGISTRY_HTTP_TLS_CERTIFICATE=/certs/127.0.0.1:5000/registry-cert.pem"}},
 		{&TsuruAPI{}, "tsuru", "tsuru/api:latest", []string(nil),
 			[]string{"MONGODB_ADDR=127.0.0.1",
 				"MONGODB_PORT=27017",
@@ -45,9 +45,15 @@ func (s *S) TestInstallComponentsDefaultConfig(c *check.C) {
 	}
 	c.Assert(len(tests), check.Equals, len(TsuruComponents))
 	containerChan := make(chan *docker.Container)
-	server, _ := testing.NewServer("127.0.0.1:0", containerChan, nil)
+	tlsConfig := testing.TLSConfig{
+		CertPath:    s.TLSCertsPath.ServerCert,
+		CertKeyPath: s.TLSCertsPath.ServerKey,
+		RootCAPath:  s.TLSCertsPath.RootCert,
+	}
+	server, err := testing.NewTLSServer("127.0.0.1:0", containerChan, nil, tlsConfig)
+	c.Assert(err, check.IsNil)
 	defer server.Stop()
-	mockMachine := &Machine{Address: server.URL(), IP: "127.0.0.1"}
+	mockMachine := &Machine{Address: server.URL(), IP: "127.0.0.1", CAPath: s.TLSCertsPath.RootDir}
 	for _, tt := range tests {
 		go tt.component.Install(mockMachine, &InstallConfig{})
 
@@ -79,9 +85,15 @@ func (s *S) TestInstallComponentsCustomRegistry(c *check.C) {
 	}
 	c.Assert(len(tests), check.Equals, len(TsuruComponents))
 	containerChan := make(chan *docker.Container)
-	server, _ := testing.NewServer("127.0.0.1:0", containerChan, nil)
+	tlsConfig := testing.TLSConfig{
+		CertPath:    s.TLSCertsPath.ServerCert,
+		CertKeyPath: s.TLSCertsPath.ServerKey,
+		RootCAPath:  s.TLSCertsPath.RootCert,
+	}
+	server, err := testing.NewTLSServer("127.0.0.1:0", containerChan, nil, tlsConfig)
+	c.Assert(err, check.IsNil)
 	defer server.Stop()
-	mockMachine := &Machine{Address: server.URL()}
+	mockMachine := &Machine{Address: server.URL(), CAPath: s.TLSCertsPath.RootDir}
 	for _, tt := range tests {
 		config := &InstallConfig{DockerHubMirror: "myregistry.com"}
 		go tt.component.Install(mockMachine, config)
@@ -98,9 +110,15 @@ func (s *S) TestInstallComponentsCustomRegistry(c *check.C) {
 
 func (s *S) TestInstallPlanbHostPortBindings(c *check.C) {
 	containerChan := make(chan *docker.Container)
-	server, _ := testing.NewServer("127.0.0.1:0", containerChan, nil)
+	tlsConfig := testing.TLSConfig{
+		CertPath:    s.TLSCertsPath.ServerCert,
+		CertKeyPath: s.TLSCertsPath.ServerKey,
+		RootCAPath:  s.TLSCertsPath.RootCert,
+	}
+	server, err := testing.NewTLSServer("127.0.0.1:0", containerChan, nil, tlsConfig)
+	c.Assert(err, check.IsNil)
 	defer server.Stop()
-	mockMachine := &Machine{Address: server.URL()}
+	mockMachine := &Machine{Address: server.URL(), CAPath: s.TLSCertsPath.RootDir}
 	planb := &PlanB{}
 	expectedExposed := map[docker.Port]struct{}{
 		docker.Port("80/tcp"): {},

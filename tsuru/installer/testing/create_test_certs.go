@@ -33,7 +33,7 @@ func CertTemplateGenerator() (*x509.Certificate, error) {
 		Subject:               pkix.Name{Organization: []string{"tsuru Inc."}},
 		SignatureAlgorithm:    x509.SHA256WithRSA,
 		NotBefore:             time.Now(),
-		NotAfter:              time.Now().Add(time.Hour),
+		NotAfter:              time.Now().Add(3650 * 24 * time.Hour),
 		BasicConstraintsValid: true,
 	}
 	return &tmpl, nil
@@ -114,6 +114,7 @@ func CreateTestCerts() (CertsPath, error) {
 		Type: "RSA PRIVATE KEY", Bytes: x509.MarshalPKCS1PrivateKey(clientKey),
 	})
 	absPath, err := ioutil.TempDir("", "installer_test_certs")
+	println(absPath)
 	if err != nil {
 		return path, err
 	}
