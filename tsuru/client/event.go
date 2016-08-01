@@ -194,10 +194,10 @@ func (c *EventInfo) Run(context *cmd.Context, client *cmd.Client) error {
 	if err != nil {
 		return fmt.Errorf("unable to unmarshal %q: %s", string(result), err)
 	}
-	return c.Show(evt, context)
+	return c.Show(&evt, context)
 }
 
-func (c *EventInfo) Show(evt event.Event, context *cmd.Context) error {
+func (c *EventInfo) Show(evt *event.Event, context *cmd.Context) error {
 	type item struct {
 		label string
 		value string
