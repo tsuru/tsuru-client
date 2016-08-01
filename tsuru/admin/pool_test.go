@@ -16,9 +16,7 @@ import (
 	"gopkg.in/check.v1"
 )
 
-type S struct {
-	recover []string
-}
+type S struct{}
 
 var manager *cmd.Manager
 

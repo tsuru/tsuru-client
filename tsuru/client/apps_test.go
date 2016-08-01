@@ -28,13 +28,6 @@ var appflag = &gnuflag.Flag{
 	DefValue: "",
 }
 
-var appshortflag = &gnuflag.Flag{
-	Name:     "a",
-	Usage:    "The name of the app.",
-	Value:    nil,
-	DefValue: "",
-}
-
 func (s *S) TestAppCreateInfo(c *check.C) {
 	c.Assert((&AppCreate{}).Info(), check.NotNil)
 }

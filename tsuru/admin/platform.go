@@ -74,7 +74,6 @@ func (PlatformList) Info() *cmd.Info {
 }
 
 type PlatformAdd struct {
-	name       string
 	dockerfile string
 	image      string
 	fs         *gnuflag.FlagSet

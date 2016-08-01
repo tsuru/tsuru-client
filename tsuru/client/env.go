@@ -88,11 +88,6 @@ func (c *EnvSet) Info() *cmd.Info {
 	}
 }
 
-type env struct {
-	Name  string
-	Value string
-}
-
 func (c *EnvSet) Run(context *cmd.Context, client *cmd.Client) error {
 	context.RawOutput()
 	appName, err := c.Guess()

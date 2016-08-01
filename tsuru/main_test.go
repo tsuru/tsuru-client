@@ -41,8 +41,6 @@ func (s *S) SetUpTest(c *check.C) {
 	manager = cmd.NewManager("glb", "1.0.0", "Supported-Tsuru", &stdout, &stderr, os.Stdin, nil)
 }
 
-var Deprecates check.Checker = deprecationChecker{}
-
 func (s *S) TestCommandsFromBaseManagerAreRegistered(c *check.C) {
 	baseManager := cmd.BuildBaseManager("tsuru", version, header, nil)
 	manager = buildManager("tsuru")
