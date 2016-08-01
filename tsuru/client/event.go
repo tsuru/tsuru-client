@@ -217,16 +217,16 @@ func (c *EventInfo) Show(evt event.Event, context *cmd.Context) error {
 		{"Kind", fmt.Sprintf("%s(%s)", evt.Kind.Type, evt.Kind.Name)},
 		{"Owner", fmt.Sprintf("%s(%s)", evt.Owner.Type, evt.Owner.Name)},
 	}
-	sucessful := evt.Error == ""
-	sucessfulStr := strconv.FormatBool(sucessful)
-	if sucessful {
+	successful := evt.Error == ""
+	successfulStr := strconv.FormatBool(successful)
+	if successful {
 		if evt.Running {
-			sucessfulStr = "…"
+			successfulStr = "…"
 		}
-		items = append(items, item{"Success", sucessfulStr})
+		items = append(items, item{"Success", successfulStr})
 	} else {
 		redError := cmd.Colorfy(fmt.Sprintf("%q", evt.Error), "red", "", "")
-		redSuccess := cmd.Colorfy(sucessfulStr, "red", "", "")
+		redSuccess := cmd.Colorfy(successfulStr, "red", "", "")
 		items = append(items, []item{
 			{"Success", redSuccess},
 			{"Error", redError},

@@ -190,7 +190,7 @@ func (s *S) TestDeployRunFileNotFound(c *check.C) {
 	context := cmd.Context{
 		Stdout: &stdout,
 		Stderr: &stderr,
-		Args:   []string{"/tmp/something/that/doesnt/really/exist/im/sure"},
+		Args:   []string{"/tmp/something/that/doesn't/really/exist/im/sure"},
 	}
 	trans := cmdtest.Transport{Message: "OK\n", Status: http.StatusOK}
 	client := cmd.NewClient(&http.Client{Transport: &trans}, nil, manager)
@@ -344,9 +344,9 @@ func (s *S) TestTargzFailure(c *check.C) {
 	var stderr bytes.Buffer
 	ctx := cmd.Context{Stderr: &stderr}
 	var buf bytes.Buffer
-	err := targz(&ctx, &buf, "/tmp/something/that/definitely/doesnt/exist/right", "testdata")
+	err := targz(&ctx, &buf, "/tmp/something/that/definitely/doesn't/exist/right", "testdata")
 	c.Assert(err, check.NotNil)
-	c.Assert(err.Error(), check.Equals, "lstat /tmp/something/that/definitely/doesnt/exist/right: no such file or directory")
+	c.Assert(err.Error(), check.Equals, "lstat /tmp/something/that/definitely/doesn't/exist/right: no such file or directory")
 }
 
 func (s *S) TestDeployListInfo(c *check.C) {

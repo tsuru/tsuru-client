@@ -243,14 +243,14 @@ func (c *AppDeploy) Run(context *cmd.Context, client *cmd.Client) error {
 		count := 0
 		go func() {
 			t0 := time.Now()
-			lastTransfered := 0.0
+			lastTransferred := 0.0
 			for buf.Len() == 0 {
 				remaining := body.Len()
-				transfered := fullSize - float64(remaining)
-				speed := ((transfered - lastTransfered) / megabyte) / (float64(time.Since(t0)) / float64(time.Second))
+				transferred := fullSize - float64(remaining)
+				speed := ((transferred - lastTransferred) / megabyte) / (float64(time.Since(t0)) / float64(time.Second))
 				t0 = time.Now()
-				lastTransfered = transfered
-				percent := (transfered / fullSize) * 100.0
+				lastTransferred = transferred
+				percent := (transferred / fullSize) * 100.0
 				fmt.Fprintf(safeStdout, "\rUploading files (%0.2fMB)... %0.2f%%", fullSize/megabyte, percent)
 				if remaining > 0 {
 					fmt.Fprintf(safeStdout, " (%0.2fMB/s)", speed)
