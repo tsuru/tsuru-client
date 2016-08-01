@@ -205,7 +205,7 @@ func (c *EventInfo) Show(evt *event.Event, context *cmd.Context) error {
 	startFmt := evt.StartTime.Format(time.RFC822Z)
 	var endFmt string
 	if evt.Running {
-		endFmt = fmt.Sprintf("running (%v)", time.Now().Sub(evt.StartTime))
+		endFmt = fmt.Sprintf("running (%v)", time.Since(evt.StartTime))
 	} else {
 		endFmt = fmt.Sprintf("%s (%v)", evt.EndTime.Format(time.RFC822Z), evt.EndTime.Sub(evt.StartTime))
 	}

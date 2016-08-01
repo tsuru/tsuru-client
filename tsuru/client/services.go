@@ -58,7 +58,7 @@ func (s ServiceList) Run(ctx *cmd.Context, client *cmd.Client) error {
 	if err != nil {
 		return err
 	}
-	n, err := ctx.Stdout.Write(rslt)
+	n, _ := ctx.Stdout.Write(rslt)
 	if n != len(rslt) {
 		return errors.New("Failed to write the output of the command")
 	}

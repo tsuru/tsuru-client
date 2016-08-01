@@ -100,15 +100,16 @@ func (s *S) TestPlatformAddRun(c *check.C) {
 	expectedMsg := "--something--\nPlatform successfully updated!\n"
 	msg := io.SimpleJsonMessage{Message: expectedMsg}
 	result, err := json.Marshal(msg)
+	c.Assert(err, check.IsNil)
 	trans := &cmdtest.ConditionalTransport{
 		Transport: cmdtest.Transport{Message: string(result), Status: http.StatusOK},
 		CondFunc: func(req *http.Request) bool {
-			file, header, err := req.FormFile("dockerfile_content")
-			c.Assert(err, check.IsNil)
+			file, header, transErr := req.FormFile("dockerfile_content")
+			c.Assert(transErr, check.IsNil)
 			defer file.Close()
 			c.Assert(header.Filename, check.Equals, "Dockerfile")
-			data, err := ioutil.ReadAll(file)
-			c.Assert(err, check.IsNil)
+			data, transErr := ioutil.ReadAll(file)
+			c.Assert(transErr, check.IsNil)
 			c.Assert(string(data), check.Equals, "FROM tsuru/java")
 			return strings.HasSuffix(req.URL.Path, "/platforms") && req.Method == "POST"
 		},
@@ -131,15 +132,16 @@ func (s *S) TestPlatformAddRunLocalDockerFile(c *check.C) {
 	expectedMsg := "--something--\nPlatform successfully updated!\n"
 	msg := io.SimpleJsonMessage{Message: expectedMsg}
 	result, err := json.Marshal(msg)
+	c.Assert(err, check.IsNil)
 	trans := &cmdtest.ConditionalTransport{
 		Transport: cmdtest.Transport{Message: string(result), Status: http.StatusOK},
 		CondFunc: func(req *http.Request) bool {
-			file, header, err := req.FormFile("dockerfile_content")
-			c.Assert(err, check.IsNil)
+			file, header, transErr := req.FormFile("dockerfile_content")
+			c.Assert(transErr, check.IsNil)
 			defer file.Close()
 			c.Assert(header.Filename, check.Equals, "Dockerfile")
-			data, err := ioutil.ReadAll(file)
-			c.Assert(err, check.IsNil)
+			data, transErr := ioutil.ReadAll(file)
+			c.Assert(transErr, check.IsNil)
 			c.Assert(string(data), check.Equals, "FROM\ttsuru/java\nRUN\ttrue\n")
 			return strings.HasSuffix(req.URL.Path, "/platforms") && req.Method == "POST"
 		},
@@ -162,15 +164,16 @@ func (s *S) TestPlatformAddPrebuiltImage(c *check.C) {
 	expectedMsg := "--something--\nPlatform successfully updated!\n"
 	msg := io.SimpleJsonMessage{Message: expectedMsg}
 	result, err := json.Marshal(msg)
+	c.Assert(err, check.IsNil)
 	trans := &cmdtest.ConditionalTransport{
 		Transport: cmdtest.Transport{Message: string(result), Status: http.StatusOK},
 		CondFunc: func(req *http.Request) bool {
-			file, header, err := req.FormFile("dockerfile_content")
-			c.Assert(err, check.IsNil)
+			file, header, transErr := req.FormFile("dockerfile_content")
+			c.Assert(transErr, check.IsNil)
 			defer file.Close()
 			c.Assert(header.Filename, check.Equals, "Dockerfile")
-			data, err := ioutil.ReadAll(file)
-			c.Assert(err, check.IsNil)
+			data, transErr := ioutil.ReadAll(file)
+			c.Assert(transErr, check.IsNil)
 			c.Assert(string(data), check.Equals, "FROM tsuru/python")
 			return strings.HasSuffix(req.URL.Path, "/platforms") && req.Method == "POST"
 		},
@@ -193,15 +196,16 @@ func (s *S) TestPlatformAddRunImplicitDockerfile(c *check.C) {
 	expectedMsg := "--something--\nPlatform successfully updated!\n"
 	msg := io.SimpleJsonMessage{Message: expectedMsg}
 	result, err := json.Marshal(msg)
+	c.Assert(err, check.IsNil)
 	trans := &cmdtest.ConditionalTransport{
 		Transport: cmdtest.Transport{Message: string(result), Status: http.StatusOK},
 		CondFunc: func(req *http.Request) bool {
-			file, header, err := req.FormFile("dockerfile_content")
-			c.Assert(err, check.IsNil)
+			file, header, transErr := req.FormFile("dockerfile_content")
+			c.Assert(transErr, check.IsNil)
 			defer file.Close()
 			c.Assert(header.Filename, check.Equals, "Dockerfile")
-			data, err := ioutil.ReadAll(file)
-			c.Assert(err, check.IsNil)
+			data, transErr := ioutil.ReadAll(file)
+			c.Assert(transErr, check.IsNil)
 			c.Assert(string(data), check.Equals, "FROM tsuru/teste")
 			return strings.HasSuffix(req.URL.Path, "/platforms") && req.Method == "POST"
 		},

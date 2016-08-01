@@ -144,7 +144,7 @@ func (s *S) TestEnvSetRun(c *check.C) {
 	trans := &cmdtest.ConditionalTransport{
 		Transport: cmdtest.Transport{Message: string(result), Status: http.StatusOK},
 		CondFunc: func(req *http.Request) bool {
-			err := req.ParseForm()
+			err = req.ParseForm()
 			c.Assert(err, check.IsNil)
 			var e api.Envs
 			dec := form.NewDecoder(nil)
@@ -217,7 +217,7 @@ func (s *S) TestEnvSetValues(c *check.C) {
 				{Name: "BASE64_STRING", Value: "t5urur0ck5=="},
 				{Name: "SOME_PASSWORD", Value: "js87$%32??"},
 			}
-			err := req.ParseForm()
+			err = req.ParseForm()
 			c.Assert(err, check.IsNil)
 			var e api.Envs
 			dec := form.NewDecoder(nil)
@@ -271,7 +271,7 @@ func (s *S) TestEnvSetValuesAndPrivateAndNoRestart(c *check.C) {
 				{Name: "VALUE_WITH_EQUAL_SIGN", Value: "http://wholikesquerystrings.me/?tsuru=awesome"},
 				{Name: "BASE64_STRING", Value: "t5urur0ck5=="},
 			}
-			err := req.ParseForm()
+			err = req.ParseForm()
 			c.Assert(err, check.IsNil)
 			var e api.Envs
 			dec := form.NewDecoder(nil)
@@ -309,7 +309,7 @@ func (s *S) TestEnvSetWithoutFlag(c *check.C) {
 	trans := &cmdtest.ConditionalTransport{
 		Transport: cmdtest.Transport{Message: string(result), Status: http.StatusOK},
 		CondFunc: func(req *http.Request) bool {
-			err := req.ParseForm()
+			err = req.ParseForm()
 			c.Assert(err, check.IsNil)
 			var e api.Envs
 			dec := form.NewDecoder(nil)

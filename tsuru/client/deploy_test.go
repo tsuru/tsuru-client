@@ -43,10 +43,10 @@ func (s *S) TestDeployRun(c *check.C) {
 			if calledTimes == 1 {
 				return req.Method == "GET" && strings.HasSuffix(req.URL.Path, "/apps/secret")
 			}
-			file, _, err := req.FormFile("file")
-			c.Assert(err, check.IsNil)
-			content, err := ioutil.ReadAll(file)
-			c.Assert(err, check.IsNil)
+			file, _, transErr := req.FormFile("file")
+			c.Assert(transErr, check.IsNil)
+			content, transErr := ioutil.ReadAll(file)
+			c.Assert(transErr, check.IsNil)
 			c.Assert(content, check.DeepEquals, buf.Bytes())
 			c.Assert(req.Header.Get("Content-Type"), check.Matches, "multipart/form-data; boundary=.*")
 			c.Assert(req.FormValue("origin"), check.Equals, "app-deploy")
@@ -118,10 +118,10 @@ func (s *S) TestDeployRunWithMessage(c *check.C) {
 			if calledTimes == 1 {
 				return req.Method == "GET" && strings.HasSuffix(req.URL.Path, "/apps/secret")
 			}
-			file, _, err := req.FormFile("file")
-			c.Assert(err, check.IsNil)
-			content, err := ioutil.ReadAll(file)
-			c.Assert(err, check.IsNil)
+			file, _, transErr := req.FormFile("file")
+			c.Assert(transErr, check.IsNil)
+			content, transErr := ioutil.ReadAll(file)
+			c.Assert(transErr, check.IsNil)
 			c.Assert(content, check.DeepEquals, buf.Bytes())
 			c.Assert(req.Header.Get("Content-Type"), check.Matches, "multipart/form-data; boundary=.*")
 			c.Assert(req.FormValue("origin"), check.Equals, "app-deploy")
