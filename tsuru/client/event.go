@@ -1,4 +1,4 @@
-package main
+package client
 
 import (
 	"encoding/json"
@@ -18,7 +18,7 @@ import (
 	"github.com/tsuru/tsuru/event"
 )
 
-type eventList struct {
+type EventList struct {
 	fs     *gnuflag.FlagSet
 	filter eventFilter
 }
@@ -64,7 +64,7 @@ func (f *eventFilter) flags(fs *gnuflag.FlagSet) {
 	fs.BoolVar(&f.Running, "r", false, name)
 }
 
-func (c *eventList) Info() *cmd.Info {
+func (c *EventList) Info() *cmd.Info {
 	return &cmd.Info{
 		Name:  "event-list",
 		Usage: "event-list [-k kindName]",
@@ -72,7 +72,7 @@ func (c *eventList) Info() *cmd.Info {
 	}
 }
 
-func (c *eventList) Flags() *gnuflag.FlagSet {
+func (c *EventList) Flags() *gnuflag.FlagSet {
 	if c.fs == nil {
 		c.fs = gnuflag.NewFlagSet("", gnuflag.ExitOnError)
 		c.filter.flags(c.fs)
@@ -80,7 +80,7 @@ func (c *eventList) Flags() *gnuflag.FlagSet {
 	return c.fs
 }
 
-func (c *eventList) Run(context *cmd.Context, client *cmd.Client) error {
+func (c *EventList) Run(context *cmd.Context, client *cmd.Client) error {
 	qs, err := c.filter.queryString(client)
 	if err != nil {
 		return err
@@ -115,7 +115,7 @@ func (c *eventList) Run(context *cmd.Context, client *cmd.Client) error {
 
 var reEmailShort = regexp.MustCompile(`@.*$`)
 
-func (c *eventList) Show(evts []event.Event, context *cmd.Context) error {
+func (c *EventList) Show(evts []event.Event, context *cmd.Context) error {
 	tbl := cmd.NewTable()
 	tbl.Headers = cmd.Row{"ID", "Start (duration)", "Success", "Owner", "Kind", "Target"}
 	for i := range evts {
@@ -159,9 +159,9 @@ func (c *eventList) Show(evts []event.Event, context *cmd.Context) error {
 	return nil
 }
 
-type eventInfo struct{}
+type EventInfo struct{}
 
-func (c *eventInfo) Info() *cmd.Info {
+func (c *EventInfo) Info() *cmd.Info {
 	return &cmd.Info{
 		Name:    "event-info",
 		Usage:   "event-info <event-id>",
@@ -171,7 +171,7 @@ func (c *eventInfo) Info() *cmd.Info {
 	}
 }
 
-func (c *eventInfo) Run(context *cmd.Context, client *cmd.Client) error {
+func (c *EventInfo) Run(context *cmd.Context, client *cmd.Client) error {
 	u, err := cmd.GetURLVersion("1.1", fmt.Sprintf("/events/%s", context.Args[0]))
 	if err != nil {
 		return err
@@ -197,7 +197,7 @@ func (c *eventInfo) Run(context *cmd.Context, client *cmd.Client) error {
 	return c.Show(evt, context)
 }
 
-func (c *eventInfo) Show(evt event.Event, context *cmd.Context) error {
+func (c *EventInfo) Show(evt event.Event, context *cmd.Context) error {
 	type item struct {
 		label string
 		value string
@@ -283,11 +283,11 @@ func padLines(s string, pad string) string {
 	return rePadLines.ReplaceAllString(s, pad+`$1`)
 }
 
-type eventCancel struct {
+type EventCancel struct {
 	cmd.ConfirmationCommand
 }
 
-func (c *eventCancel) Info() *cmd.Info {
+func (c *EventCancel) Info() *cmd.Info {
 	return &cmd.Info{
 		Name:    "event-cancel",
 		Usage:   "event-cancel <event-id> <reason> [-y]",
@@ -296,7 +296,7 @@ func (c *eventCancel) Info() *cmd.Info {
 	}
 }
 
-func (c *eventCancel) Run(context *cmd.Context, client *cmd.Client) error {
+func (c *EventCancel) Run(context *cmd.Context, client *cmd.Client) error {
 	if !c.Confirm(context, "Are you sure you want to cancel this event?") {
 		return nil
 	}

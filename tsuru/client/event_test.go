@@ -1,4 +1,4 @@
-package main
+package client
 
 import (
 	"bytes"
@@ -211,7 +211,7 @@ func (s *S) TestEventList(c *check.C) {
 		},
 	}
 	client := cmd.NewClient(&http.Client{Transport: trans}, nil, manager)
-	command := eventList{}
+	command := EventList{}
 	err := command.Run(&context, client)
 	c.Assert(err, check.IsNil)
 	expected := `+--------------------------+---------------------------------+---------+-----------+------------+-------------------------+
@@ -242,7 +242,7 @@ func (s *S) TestEventInfo(c *check.C) {
 		},
 	}
 	client := cmd.NewClient(&http.Client{Transport: trans}, nil, manager)
-	command := eventInfo{}
+	command := EventInfo{}
 	err := command.Run(&context, client)
 	c.Assert(err, check.IsNil)
 	expected := `ID:         578e3908413daf5fd9891aac
@@ -372,7 +372,7 @@ func (s *S) TestEventInfoWithError(c *check.C) {
 		},
 	}
 	client := cmd.NewClient(&http.Client{Transport: trans}, nil, manager)
-	command := eventInfo{}
+	command := EventInfo{}
 	err := command.Run(&context, client)
 	c.Assert(err, check.IsNil)
 	expected := `ID:         5787bcc8413daf2aeb040730
@@ -446,7 +446,7 @@ func (s *S) TestEventInfoRunning(c *check.C) {
 		},
 	}
 	client := cmd.NewClient(&http.Client{Transport: trans}, nil, manager)
-	command := eventInfo{}
+	command := EventInfo{}
 	err := command.Run(&context, client)
 	c.Assert(err, check.IsNil)
 	expected := `ID:         998e3908413daf5fd9891aac
@@ -478,7 +478,7 @@ func (s *S) TestEventInfoCanceled(c *check.C) {
 		},
 	}
 	client := cmd.NewClient(&http.Client{Transport: trans}, nil, manager)
-	command := eventInfo{}
+	command := EventInfo{}
 	err := command.Run(&context, client)
 	c.Assert(err, check.IsNil)
 	expected := `ID:         888e3908413daf5fd9891aac
@@ -513,7 +513,7 @@ func (s *S) TestEventCancel(c *check.C) {
 		},
 	}
 	client := cmd.NewClient(&http.Client{Transport: trans}, nil, manager)
-	command := eventCancel{}
+	command := EventCancel{}
 	command.Flags().Parse(true, []string{"-y"})
 	err := command.Run(&context, client)
 	c.Assert(err, check.IsNil)

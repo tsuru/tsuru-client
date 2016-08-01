@@ -110,9 +110,9 @@ func buildManager(name string) *cmd.Manager {
 	m.Register(&installer.Install{})
 	m.Register(&installer.Uninstall{})
 	m.Register(&admin.AddPoolToSchedulerCmd{})
-	m.Register(&eventList{})
-	m.Register(&eventInfo{})
-	m.Register(&eventCancel{})
+	m.Register(&client.EventList{})
+	m.Register(&client.EventInfo{})
+	m.Register(&client.EventCancel{})
 	registerProvisionersCommands(m)
 	return m
 }
@@ -143,7 +143,7 @@ func main() {
 	} else {
 		localbinary.CurrentBinaryIsDockerMachine = true
 		name := cmd.ExtractProgramName(os.Args[0])
-		manager := buildManager(name)
-		manager.Run(os.Args[1:])
+		m := buildManager(name)
+		m.Run(os.Args[1:])
 	}
 }
