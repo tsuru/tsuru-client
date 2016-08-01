@@ -51,21 +51,3 @@ func (s *S) TestCreateContainer(c *check.C) {
 	c.Assert(requests[2].URL.Path, check.Equals, "/containers/create")
 	c.Assert(requests[3].URL.Path, check.Equals, "/containers/contName/start")
 }
-
-func (s *S) TestInspectContainer(c *check.C) {
-	var requests []*http.Request
-	tlsConfig := testing.TLSConfig{
-		CertPath:    s.TLSCertsPath.ServerCert,
-		CertKeyPath: s.TLSCertsPath.ServerKey,
-		RootCAPath:  s.TLSCertsPath.RootCert,
-	}
-	server, err := testing.NewTLSServer("127.0.0.1:0", nil, func(r *http.Request) {
-		requests = append(requests, r)
-	}, tlsConfig)
-	c.Assert(err, check.IsNil)
-	defer server.Stop()
-	endpoint := testEndpoint{endpoint: server.URL(), certPath: s.TLSCertsPath.RootDir}
-	inspectContainer(endpoint, "contName")
-	c.Assert(requests, check.HasLen, 1)
-	c.Assert(requests[0].URL.Path, check.Equals, "/containers/contName/json")
-}
