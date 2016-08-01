@@ -24,15 +24,15 @@ type EventList struct {
 }
 
 type eventFilter struct {
-	KindName    string
-	Target      string
-	TargetValue string
-	OwnerName   string
-	Running     bool
+	filter  event.Filter
+	running bool
 }
 
 func (f *eventFilter) queryString(client *cmd.Client) (url.Values, error) {
-	values, err := form.EncodeToValues(f)
+	if f.running {
+		f.filter.Running = &f.running
+	}
+	values, err := form.EncodeToValues(f.filter)
 	if err != nil {
 		return nil, err
 	}
@@ -40,7 +40,7 @@ func (f *eventFilter) queryString(client *cmd.Client) (url.Values, error) {
 		values.Del(k)
 		values[strings.ToLower(k)] = v
 	}
-	if !f.Running {
+	if f.filter.Running == nil {
 		values.Del("running")
 	}
 	return values, nil
@@ -48,20 +48,21 @@ func (f *eventFilter) queryString(client *cmd.Client) (url.Values, error) {
 
 func (f *eventFilter) flags(fs *gnuflag.FlagSet) {
 	name := "Filter events by kind name"
-	fs.StringVar(&f.KindName, "kind", "", name)
-	fs.StringVar(&f.KindName, "k", "", name)
-	name = "Filter events by target name"
-	fs.StringVar(&f.Target, "target", "", name)
-	fs.StringVar(&f.Target, "t", "", name)
+	fs.StringVar(&f.filter.KindName, "kind", "", name)
+	fs.StringVar(&f.filter.KindName, "k", "", name)
+	name = "Filter events by target type"
+	ptr := (*string)(&f.filter.Target.Type)
+	fs.StringVar(ptr, "target", "", name)
+	fs.StringVar(ptr, "t", "", name)
 	name = "Filter events by target value"
-	fs.StringVar(&f.TargetValue, "target-value", "", name)
-	fs.StringVar(&f.TargetValue, "v", "", name)
+	fs.StringVar(&f.filter.Target.Value, "target-value", "", name)
+	fs.StringVar(&f.filter.Target.Value, "v", "", name)
 	name = "Filter events by owner name"
-	fs.StringVar(&f.OwnerName, "owner", "", name)
-	fs.StringVar(&f.OwnerName, "o", "", name)
+	fs.StringVar(&f.filter.OwnerName, "owner", "", name)
+	fs.StringVar(&f.filter.OwnerName, "o", "", name)
 	name = "Shows only currently running events"
-	fs.BoolVar(&f.Running, "running", false, name)
-	fs.BoolVar(&f.Running, "r", false, name)
+	fs.BoolVar(&f.running, "running", false, name)
+	fs.BoolVar(&f.running, "r", false, name)
 }
 
 func (c *EventList) Info() *cmd.Info {
