@@ -38,7 +38,6 @@ import (
 )
 
 var (
-	dockerHTTPPort             = 2375
 	dockerHTTPSPort            = 2376
 	storeBasePath              = cmd.JoinWithUserDir(".tsuru", "installs")
 	defaultDockerMachineConfig = &DockerMachineConfig{
@@ -110,7 +109,6 @@ func (d *DockerMachine) CreateMachine() (*Machine, error) {
 		return nil, err
 	}
 	configureDriver(host.Driver, d.driverOpts)
-	d.configureHost(host)
 	err = client.Create(host)
 	if err != nil {
 		fmt.Printf("Ignoring error on machine creation: %s", err)
@@ -208,10 +206,6 @@ func configureDriver(driver drivers.Driver, driverOpts map[string]interface{}) e
 		return fmt.Errorf("Error setting driver configurations: %s", err)
 	}
 	return nil
-}
-
-func (d *DockerMachine) configureHost(host *host.Host) {
-	host.HostOptions.EngineOptions.ArbitraryFlags = []string{fmt.Sprintf("host=tcp://0.0.0.0:%d", dockerHTTPPort)}
 }
 
 func (d *DockerMachine) DeleteMachine(m *Machine) error {
