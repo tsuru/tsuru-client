@@ -18,7 +18,8 @@ import (
 )
 
 type S struct {
-	TLSCertsPath installertest.CertsPath
+	TLSCertsPath  installertest.CertsPath
+	StoreBasePath string
 }
 
 var _ = check.Suite(&S{})
@@ -40,6 +41,9 @@ func TestMain(m *testing.M) {
 func Test(t *testing.T) { check.TestingT(t) }
 
 func (s *S) SetUpSuite(c *check.C) {
+	storeBasePath, err := ioutil.TempDir("", "tests-store")
+	c.Assert(err, check.IsNil)
+	s.StoreBasePath = storeBasePath
 	tlsCertsPath, err := installertest.CreateTestCerts()
 	c.Assert(err, check.IsNil)
 	s.TLSCertsPath = tlsCertsPath
@@ -47,6 +51,7 @@ func (s *S) SetUpSuite(c *check.C) {
 
 func (s *S) TearDownSuite(c *check.C) {
 	installertest.CleanCerts(s.TLSCertsPath.RootDir)
+	os.Remove(s.StoreBasePath)
 }
 
 func (s *S) TestNewDockerMachine(c *check.C) {
@@ -76,21 +81,21 @@ func (s *S) TestNewDockerMachineCopyProvidedCa(c *check.C) {
 	config := &DockerMachineConfig{
 		CAPath: s.TLSCertsPath.RootDir,
 	}
-	certsPath := filepath.Join(storeBasePath, "tsuru", "certs")
-	defer os.RemoveAll(certsPath)
 	dm, err := NewDockerMachine(config)
 	c.Assert(err, check.IsNil)
 	c.Assert(dm, check.NotNil)
 	expected, err := ioutil.ReadFile(s.TLSCertsPath.RootCert)
 	c.Assert(err, check.IsNil)
-	contents, err := ioutil.ReadFile(filepath.Join(certsPath, "ca.pem"))
+	contents, err := ioutil.ReadFile(filepath.Join(dm.certsPath, "ca.pem"))
 	c.Assert(err, check.IsNil)
 	c.Assert(contents, check.DeepEquals, expected)
 	expected, err = ioutil.ReadFile(s.TLSCertsPath.RootKey)
 	c.Assert(err, check.IsNil)
-	contents, err = ioutil.ReadFile(filepath.Join(certsPath, "ca-key.pem"))
+	contents, err = ioutil.ReadFile(filepath.Join(dm.certsPath, "ca-key.pem"))
 	c.Assert(err, check.IsNil)
 	c.Assert(contents, check.DeepEquals, expected)
+	err = os.Remove(s.StoreBasePath)
+	c.Assert(err, check.IsNil)
 }
 
 //func (s *S) TestCreateMachineNoneDriver(c *check.C) {
