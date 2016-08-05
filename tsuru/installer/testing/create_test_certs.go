@@ -114,7 +114,6 @@ func CreateTestCerts() (CertsPath, error) {
 		Type: "RSA PRIVATE KEY", Bytes: x509.MarshalPKCS1PrivateKey(clientKey),
 	})
 	absPath, err := ioutil.TempDir("", "installer_test_certs")
-	println(absPath)
 	if err != nil {
 		return path, err
 	}
