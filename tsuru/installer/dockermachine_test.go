@@ -81,6 +81,7 @@ func (s *S) TestNewDockerMachineCopyProvidedCa(c *check.C) {
 	config := &DockerMachineConfig{
 		CAPath: s.TLSCertsPath.RootDir,
 	}
+	defer os.Remove(s.StoreBasePath)
 	dm, err := NewDockerMachine(config)
 	c.Assert(err, check.IsNil)
 	c.Assert(dm, check.NotNil)
@@ -94,8 +95,6 @@ func (s *S) TestNewDockerMachineCopyProvidedCa(c *check.C) {
 	contents, err = ioutil.ReadFile(filepath.Join(dm.certsPath, "ca-key.pem"))
 	c.Assert(err, check.IsNil)
 	c.Assert(contents, check.DeepEquals, expected)
-	err = os.Remove(s.StoreBasePath)
-	c.Assert(err, check.IsNil)
 }
 
 //func (s *S) TestCreateMachineNoneDriver(c *check.C) {
