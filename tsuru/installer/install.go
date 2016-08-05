@@ -42,6 +42,11 @@ func (c *Install) Run(context *cmd.Context, client *cmd.Client) error {
 	if err != nil {
 		return err
 	}
+	err = c.PreInstallChecks(context)
+	if err != nil {
+		fmt.Fprintf(context.Stderr, "Pre Install checks failed: %s\n", err)
+		return err
+	}
 	i, err := NewDockerMachine(config)
 	if err != nil {
 		fmt.Fprintf(context.Stderr, "Failed to create machine: %s\n", err)
@@ -64,6 +69,19 @@ func (c *Install) Run(context *cmd.Context, client *cmd.Client) error {
 		fmt.Fprintf(context.Stdout, "%s successfully installed!\n", component.Name())
 	}
 	fmt.Fprint(context.Stdout, c.buildStatusTable(TsuruComponents, m).String())
+	return nil
+}
+
+func (c *Install) PreInstallChecks(context *cmd.Context) error {
+	fmt.Fprintf(context.Stdout, "Running pre install checks...\n")
+	target := "test"
+	exists, err := cmd.CheckIfTargetLabelExists(target)
+	if err != nil {
+		return err
+	}
+	if exists {
+		return fmt.Errorf("tsuru target \"%s\" already exists", target)
+	}
 	return nil
 }
 
