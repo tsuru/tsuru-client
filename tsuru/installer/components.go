@@ -11,7 +11,6 @@ import (
 	"os"
 	"path/filepath"
 	"strings"
-	"time"
 
 	"github.com/docker/machine/libmachine/mcnutils"
 	"github.com/fsouza/go-dockerclient"
@@ -296,14 +295,12 @@ func (c *TsuruAPI) bootstrapEnv(login, password, target, node string) error {
 	if err != nil {
 		return err
 	}
-	time.Sleep(60 * time.Second)
 	context.Args = []string{"python"}
 	println("adding platform")
-	platformAdd := admin.PlatformAdd{}
-	err = platformAdd.Run(&context, client)
-	if err != nil {
-		return err
-	}
+	err = mcnutils.WaitFor(func() bool {
+		platformAdd := admin.PlatformAdd{}
+		return platformAdd.Run(&context, client) == nil
+	})
 	context.Args = []string{"admin"}
 	println("adding team")
 	teamCreate := tclient.TeamCreate{}
