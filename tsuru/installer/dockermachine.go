@@ -87,13 +87,15 @@ func NewDockerMachine(config *DockerMachineConfig) (*DockerMachine, error) {
 		return nil, fmt.Errorf("failed to create certs dir: %s", err)
 	}
 	if config.CAPath != "" {
+		fmt.Printf("Copying CA file from %s to %s", filepath.Join(config.CAPath, "ca.pem"), filepath.Join(certsPath, "ca.pem"))
 		err := copy(filepath.Join(config.CAPath, "ca.pem"), filepath.Join(certsPath, "ca.pem"))
 		if err != nil {
-			return nil, fmt.Errorf("failed to copy root ca file: %s", err)
+			return nil, fmt.Errorf("failed to copy ca file: %s", err)
 		}
+		fmt.Printf("Copying CA key from %s to %s", filepath.Join(config.CAPath, "ca-key.pem"), filepath.Join(certsPath, "ca-key.pem"))
 		err = copy(filepath.Join(config.CAPath, "ca-key.pem"), filepath.Join(certsPath, "ca-key.pem"))
 		if err != nil {
-			return nil, fmt.Errorf("failed to copy ca-key file: %s", err)
+			return nil, fmt.Errorf("failed to copy ca key file: %s", err)
 		}
 	}
 	rawDriver, err := json.Marshal(&drivers.BaseDriver{
