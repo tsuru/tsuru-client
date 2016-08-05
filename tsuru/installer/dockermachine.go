@@ -7,6 +7,7 @@ package installer
 import (
 	"encoding/json"
 	"fmt"
+	"io/ioutil"
 	"os"
 	"os/exec"
 	"path/filepath"
@@ -80,9 +81,20 @@ type DockerMachineConfig struct {
 func NewDockerMachine(config *DockerMachineConfig) (*DockerMachine, error) {
 	name := "tsuru"
 	storePath := filepath.Join(storeBasePath, name)
-	caPath := config.CAPath
-	if caPath == "" {
-		caPath = filepath.Join(storePath, "certs")
+	certsPath := filepath.Join(storePath, "certs")
+	err := os.MkdirAll(certsPath, 0700)
+	if err != nil {
+		return nil, fmt.Errorf("failed to create certs dir: %s", err)
+	}
+	if config.CAPath != "" {
+		err := copy(filepath.Join(config.CAPath, "ca.pem"), filepath.Join(certsPath, "ca.pem"))
+		if err != nil {
+			return nil, fmt.Errorf("failed to copy root ca file: %s", err)
+		}
+		err = copy(filepath.Join(config.CAPath, "ca-key.pem"), filepath.Join(certsPath, "ca-key.pem"))
+		if err != nil {
+			return nil, fmt.Errorf("failed to copy ca-key file: %s", err)
+		}
 	}
 	rawDriver, err := json.Marshal(&drivers.BaseDriver{
 		MachineName: "tsuru",
@@ -96,9 +108,21 @@ func NewDockerMachine(config *DockerMachineConfig) (*DockerMachine, error) {
 		rawDriver:  rawDriver,
 		driverName: config.DriverName,
 		storePath:  storePath,
-		certsPath:  caPath,
+		certsPath:  certsPath,
 		Name:       name,
 	}, nil
+}
+
+func copy(src, dst string) error {
+	fileSrc, err := ioutil.ReadFile(src)
+	if err != nil {
+		return err
+	}
+	err = ioutil.WriteFile(dst, fileSrc, 0644)
+	if err != nil {
+		return err
+	}
+	return nil
 }
 
 func (d *DockerMachine) CreateMachine() (*Machine, error) {

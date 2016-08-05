@@ -6,13 +6,15 @@ package installer
 
 import (
 	"fmt"
+	"io/ioutil"
 	"os"
+	"path/filepath"
 	"testing"
+
+	check "gopkg.in/check.v1"
 
 	"github.com/docker/machine/libmachine/drivers/plugin/localbinary"
 	"github.com/tsuru/tsuru-client/tsuru/installer/testing"
-
-	"gopkg.in/check.v1"
 )
 
 type S struct {
@@ -68,6 +70,27 @@ func (s *S) TestNewDockerMachineDriverOpts(c *check.C) {
 	c.Assert(err, check.IsNil)
 	c.Assert(dm, check.NotNil)
 	c.Assert(dm.driverOpts["url"].(string), check.Equals, "localhost")
+}
+
+func (s *S) TestNewDockerMachineCopyProvidedCa(c *check.C) {
+	config := &DockerMachineConfig{
+		CAPath: s.TLSCertsPath.RootDir,
+	}
+	certsPath := filepath.Join(storeBasePath, "tsuru", "certs")
+	defer os.RemoveAll(certsPath)
+	dm, err := NewDockerMachine(config)
+	c.Assert(err, check.IsNil)
+	c.Assert(dm, check.NotNil)
+	expected, err := ioutil.ReadFile(s.TLSCertsPath.RootCert)
+	c.Assert(err, check.IsNil)
+	contents, err := ioutil.ReadFile(filepath.Join(certsPath, "ca.pem"))
+	c.Assert(err, check.IsNil)
+	c.Assert(contents, check.DeepEquals, expected)
+	expected, err = ioutil.ReadFile(s.TLSCertsPath.RootKey)
+	c.Assert(err, check.IsNil)
+	contents, err = ioutil.ReadFile(filepath.Join(certsPath, "ca-key.pem"))
+	c.Assert(err, check.IsNil)
+	c.Assert(contents, check.DeepEquals, expected)
 }
 
 //func (s *S) TestCreateMachineNoneDriver(c *check.C) {
