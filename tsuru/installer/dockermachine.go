@@ -88,7 +88,7 @@ func NewDockerMachine(config *DockerMachineConfig) (*DockerMachine, error) {
 	}
 	if config.CAPath != "" {
 		fmt.Printf("Copying CA file from %s to %s", filepath.Join(config.CAPath, "ca.pem"), filepath.Join(certsPath, "ca.pem"))
-		err := copy(filepath.Join(config.CAPath, "ca.pem"), filepath.Join(certsPath, "ca.pem"))
+		err = copy(filepath.Join(config.CAPath, "ca.pem"), filepath.Join(certsPath, "ca.pem"))
 		if err != nil {
 			return nil, fmt.Errorf("failed to copy ca file: %s", err)
 		}
