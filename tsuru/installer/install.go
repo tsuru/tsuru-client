@@ -123,7 +123,8 @@ func (c *Uninstall) Run(context *cmd.Context, client *cmd.Client) error {
 		return err
 	}
 	fmt.Fprintln(context.Stdout, "Machine successfully removed!")
-	return nil
+	api := TsuruAPI{}
+	return api.Uninstall("tsuru")
 }
 
 func parseConfigFile(file string) (*DockerMachineConfig, error) {

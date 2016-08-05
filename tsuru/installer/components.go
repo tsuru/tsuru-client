@@ -9,6 +9,7 @@ import (
 	"fmt"
 	"net/http"
 	"os"
+	"path/filepath"
 	"strings"
 	"time"
 
@@ -245,6 +246,7 @@ func (c *TsuruAPI) bootstrapEnv(login, password, target, node string) error {
 			}
 		}
 	}
+	println("adding target")
 	client := cmd.NewClient(&http.Client{}, nil, manager)
 	context := cmd.Context{
 		Args:   []string{"test", fmt.Sprintf("%s:8080", target)},
@@ -252,9 +254,8 @@ func (c *TsuruAPI) bootstrapEnv(login, password, target, node string) error {
 		Stderr: &stderr,
 	}
 	context.RawOutput()
-	println("adding target")
-	targetset := manager.Commands["target-add"]
-	t, _ := targetset.(cmd.FlaggedCommand)
+	targetadd := manager.Commands["target-add"]
+	t, _ := targetadd.(cmd.FlaggedCommand)
 	err := t.Flags().Parse(true, []string{"-s"})
 	if err != nil {
 		return err
@@ -329,4 +330,34 @@ func (c *TsuruAPI) bootstrapEnv(login, password, target, node string) error {
 		return err
 	}
 	return deployDashboard.Run(&context, client)
+}
+
+func (t *TsuruAPI) Uninstall(installation string) error {
+	var stdout, stderr bytes.Buffer
+	manager := cmd.BuildBaseManager("uninstall-client", "0.0.0", "", nil)
+	provisioners := provision.Registry()
+	for _, p := range provisioners {
+		if c, ok := p.(cmd.AdminCommandable); ok {
+			commands := c.AdminCommands()
+			for _, cmd := range commands {
+				manager.Register(cmd)
+			}
+		}
+	}
+	println("removing target")
+	client := cmd.NewClient(&http.Client{}, nil, manager)
+	context := cmd.Context{
+		Args:   []string{"test"},
+		Stdout: &stdout,
+		Stderr: &stderr,
+	}
+	context.RawOutput()
+	targetrm := manager.Commands["target-remove"]
+	err := targetrm.Run(&context, client)
+	if err != nil {
+		return err
+	}
+	basePath := cmd.JoinWithUserDir(".tsuru", "installs")
+	installPath := filepath.Join(basePath, installation)
+	return os.RemoveAll(installPath)
 }
