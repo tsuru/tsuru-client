@@ -43,6 +43,7 @@ var (
 	storeBasePath              = cmd.JoinWithUserDir(".tsuru", "installs")
 	defaultDockerMachineConfig = &DockerMachineConfig{
 		DriverName: "virtualbox",
+		Name:       "tsuru",
 		DriverOpts: make(map[string]interface{}),
 	}
 )
@@ -76,11 +77,11 @@ type DockerMachineConfig struct {
 	DriverName string
 	DriverOpts map[string]interface{}
 	CAPath     string
+	Name       string
 }
 
 func NewDockerMachine(config *DockerMachineConfig) (*DockerMachine, error) {
-	name := "tsuru"
-	storePath := filepath.Join(storeBasePath, name)
+	storePath := filepath.Join(storeBasePath, config.Name)
 	certsPath := filepath.Join(storePath, "certs")
 	err := os.MkdirAll(certsPath, 0700)
 	if err != nil {
@@ -99,7 +100,7 @@ func NewDockerMachine(config *DockerMachineConfig) (*DockerMachine, error) {
 		}
 	}
 	rawDriver, err := json.Marshal(&drivers.BaseDriver{
-		MachineName: "tsuru",
+		MachineName: config.Name,
 		StorePath:   storePath,
 	})
 	if err != nil {
@@ -111,7 +112,7 @@ func NewDockerMachine(config *DockerMachineConfig) (*DockerMachine, error) {
 		driverName: config.DriverName,
 		storePath:  storePath,
 		certsPath:  certsPath,
-		Name:       name,
+		Name:       config.Name,
 	}, nil
 }
 

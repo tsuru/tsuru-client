@@ -42,7 +42,8 @@ func (c *Install) Run(context *cmd.Context, client *cmd.Client) error {
 	if err != nil {
 		return err
 	}
-	err = c.PreInstallChecks(context)
+	fmt.Fprintf(context.Stdout, "Running pre install checks...\n")
+	err = c.PreInstallChecks(config)
 	if err != nil {
 		fmt.Fprintf(context.Stderr, "Pre Install checks failed: %s\n", err)
 		return err
@@ -72,15 +73,13 @@ func (c *Install) Run(context *cmd.Context, client *cmd.Client) error {
 	return nil
 }
 
-func (c *Install) PreInstallChecks(context *cmd.Context) error {
-	fmt.Fprintf(context.Stdout, "Running pre install checks...\n")
-	target := "test"
-	exists, err := cmd.CheckIfTargetLabelExists(target)
+func (c *Install) PreInstallChecks(config *DockerMachineConfig) error {
+	exists, err := cmd.CheckIfTargetLabelExists(config.Name)
 	if err != nil {
 		return err
 	}
 	if exists {
-		return fmt.Errorf("tsuru target \"%s\" already exists", target)
+		return fmt.Errorf("tsuru target \"%s\" already exists", config.Name)
 	}
 	return nil
 }
@@ -142,7 +141,7 @@ func (c *Uninstall) Run(context *cmd.Context, client *cmd.Client) error {
 	}
 	fmt.Fprintln(context.Stdout, "Machine successfully removed!")
 	api := TsuruAPI{}
-	return api.Uninstall("tsuru")
+	return api.Uninstall(config.Name)
 }
 
 func parseConfigFile(file string) (*DockerMachineConfig, error) {
@@ -157,6 +156,10 @@ func parseConfigFile(file string) (*DockerMachineConfig, error) {
 	driverName, err := config.GetString("driver:name")
 	if err == nil {
 		dmConfig.DriverName = driverName
+	}
+	name, err := config.GetString("name")
+	if err == nil {
+		dmConfig.Name = name
 	}
 	driverOpts := make(map[string]interface{})
 	opts, _ := config.Get("driver:options")

@@ -19,6 +19,7 @@ func (s *S) TestParseConfigFileNoFile(c *check.C) {
 
 func (s *S) TestParseConfigFile(c *check.C) {
 	conf := `
+name: tsuru-test
 ca-path: /tmp/certs
 driver:
     name: amazonec2
@@ -36,6 +37,7 @@ driver:
 			"opt1": "option1-value",
 		},
 		CAPath: "/tmp/certs",
+		Name:   "tsuru-test",
 	}
 	dmConfig, err := parseConfigFile("/tmp/config.yml")
 	c.Assert(err, check.IsNil)
