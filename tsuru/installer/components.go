@@ -5,7 +5,6 @@
 package installer
 
 import (
-	"bytes"
 	"fmt"
 	"net/http"
 	"os"
@@ -244,7 +243,6 @@ func containerStatus(name string, m *Machine) (*ComponentStatus, error) {
 }
 
 func (c *TsuruAPI) bootstrapEnv(login, password, target, targetName, node string) error {
-	var stdout, stderr bytes.Buffer
 	manager := cmd.BuildBaseManager("setup-client", "0.0.0", "", nil)
 	provisioners := provision.Registry()
 	for _, p := range provisioners {
@@ -255,12 +253,12 @@ func (c *TsuruAPI) bootstrapEnv(login, password, target, targetName, node string
 			}
 		}
 	}
-	println("adding target")
+	fmt.Fprint(os.Stdout, "adding target")
 	client := cmd.NewClient(&http.Client{}, nil, manager)
 	context := cmd.Context{
 		Args:   []string{targetName, fmt.Sprintf("%s:8080", target)},
-		Stdout: &stdout,
-		Stderr: &stderr,
+		Stdout: os.Stdout,
+		Stderr: os.Stderr,
 	}
 	context.RawOutput()
 	targetadd := manager.Commands["target-add"]
@@ -273,7 +271,7 @@ func (c *TsuruAPI) bootstrapEnv(login, password, target, targetName, node string
 	if err != nil {
 		return err
 	}
-	println("logging")
+	fmt.Fprint(os.Stdout, "log in with default user: admin@example.com")
 	logincmd := manager.Commands["login"]
 	context.Args = []string{login}
 	context.Stdin = strings.NewReader(fmt.Sprintf("%s\n", password))
@@ -283,7 +281,7 @@ func (c *TsuruAPI) bootstrapEnv(login, password, target, targetName, node string
 	}
 	context.Args = []string{"theonepool"}
 	context.Stdin = nil
-	println("adding pool")
+	fmt.Fprint(os.Stdout, "adding pool")
 	poolAdd := admin.AddPoolToSchedulerCmd{}
 	err = poolAdd.Flags().Parse(true, []string{"-d", "-p"})
 	if err != nil {
@@ -294,7 +292,7 @@ func (c *TsuruAPI) bootstrapEnv(login, password, target, targetName, node string
 		return err
 	}
 	context.Args = []string{fmt.Sprintf("address=%s", node), "pool=theonepool"}
-	println("adding node")
+	fmt.Fprint(os.Stdout, "adding node")
 	nodeAdd := manager.Commands["docker-node-add"]
 	n, _ := nodeAdd.(cmd.FlaggedCommand)
 	err = n.Flags().Parse(true, []string{"--register"})
@@ -306,20 +304,23 @@ func (c *TsuruAPI) bootstrapEnv(login, password, target, targetName, node string
 		return err
 	}
 	context.Args = []string{"python"}
-	println("adding platform")
+	fmt.Fprint(os.Stdout, "adding platform")
 	err = mcnutils.WaitFor(func() bool {
 		platformAdd := admin.PlatformAdd{}
 		return platformAdd.Run(&context, client) == nil
 	})
+	if err != nil {
+		return err
+	}
 	context.Args = []string{"admin"}
-	println("adding team")
+	fmt.Fprint(os.Stdout, "adding team")
 	teamCreate := tclient.TeamCreate{}
 	err = teamCreate.Run(&context, client)
 	if err != nil {
 		return err
 	}
 	context.Args = []string{"tsuru-dashboard", "python"}
-	println("adding dashboard")
+	fmt.Fprint(os.Stdout, "adding dashboard")
 	createDashboard := tclient.AppCreate{}
 	err = createDashboard.Flags().Parse(true, []string{"-t", "admin"})
 	if err != nil {
@@ -330,7 +331,7 @@ func (c *TsuruAPI) bootstrapEnv(login, password, target, targetName, node string
 		return err
 	}
 	context.Args = []string{}
-	println("deploying dashboard")
+	fmt.Fprint(os.Stdout, "deploying dashboard")
 	deployDashboard := tclient.AppDeploy{}
 	err = deployDashboard.Flags().Parse(true, []string{"-a", "tsuru-dashboard", "-i", "tsuru/dashboard"})
 	if err != nil {
@@ -340,7 +341,6 @@ func (c *TsuruAPI) bootstrapEnv(login, password, target, targetName, node string
 }
 
 func (t *TsuruAPI) Uninstall(installation string) error {
-	var stdout, stderr bytes.Buffer
 	manager := cmd.BuildBaseManager("uninstall-client", "0.0.0", "", nil)
 	provisioners := provision.Registry()
 	for _, p := range provisioners {
@@ -351,12 +351,12 @@ func (t *TsuruAPI) Uninstall(installation string) error {
 			}
 		}
 	}
-	println("removing target")
+	fmt.Fprint(os.Stdout, "removing target")
 	client := cmd.NewClient(&http.Client{}, nil, manager)
 	context := cmd.Context{
 		Args:   []string{installation},
-		Stdout: &stdout,
-		Stderr: &stderr,
+		Stdout: os.Stdout,
+		Stderr: os.Stderr,
 	}
 	context.RawOutput()
 	targetrm := manager.Commands["target-remove"]
