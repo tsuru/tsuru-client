@@ -41,7 +41,9 @@ func NewInstallConfig(targetName string) *InstallConfig {
 	return &InstallConfig{
 		DockerHubMirror: hub,
 		TsuruAPIConfig: TsuruAPIConfig{
-			TargetName: targetName,
+			TargetName:       targetName,
+			RootUserEmail:    "admin@example.com",
+			RootUserPassword: "admin123",
 		},
 	}
 }
@@ -143,7 +145,9 @@ func (c *Registry) Status(machine *Machine) (*ComponentStatus, error) {
 type TsuruAPI struct{}
 
 type TsuruAPIConfig struct {
-	TargetName string
+	TargetName       string
+	RootUserEmail    string
+	RootUserPassword string
 }
 
 func (c *TsuruAPI) Name() string {
@@ -180,20 +184,20 @@ func (c *TsuruAPI) Install(machine *Machine, i *InstallConfig) error {
 	if err != nil {
 		return err
 	}
-	err = c.setupRootUser(machine)
+	err = c.setupRootUser(machine, i.RootUserEmail, i.RootUserPassword)
 	if err != nil {
 		return err
 	}
-	return c.bootstrapEnv("admin@example.com", "admin123", machine.IP, i.TargetName, machine.Address)
+	return c.bootstrapEnv(i.RootUserEmail, i.RootUserPassword, machine.IP, i.TargetName, machine.Address)
 }
 
 func (c *TsuruAPI) Status(machine *Machine) (*ComponentStatus, error) {
 	return containerStatus("tsuru", machine)
 }
 
-func (c *TsuruAPI) setupRootUser(machine *Machine) error {
-	cmd := []string{"tsurud", "root-user-create", "admin@example.com"}
-	passwordConfirmation := strings.NewReader("admin123\nadmin123\n")
+func (c *TsuruAPI) setupRootUser(machine *Machine, email, password string) error {
+	cmd := []string{"tsurud", "root-user-create", email}
+	passwordConfirmation := strings.NewReader(fmt.Sprintf("%s\n%s\n", password, password))
 	client, err := machine.dockerClient()
 	if err != nil {
 		return err
