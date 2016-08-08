@@ -59,7 +59,7 @@ func (c *Install) Run(context *cmd.Context, client *cmd.Client) error {
 		return err
 	}
 	fmt.Fprintf(context.Stdout, "Machine %s successfully created!\n", m.IP)
-	installConfig := NewInstallConfig()
+	installConfig := NewInstallConfig(config.Name)
 	for _, component := range TsuruComponents {
 		fmt.Fprintf(context.Stdout, "Installing %s\n", component.Name())
 		err := component.Install(m, installConfig)

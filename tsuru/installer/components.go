@@ -31,14 +31,20 @@ var TsuruComponents = []TsuruComponent{
 
 type InstallConfig struct {
 	DockerHubMirror string
+	TsuruAPIConfig
 }
 
-func NewInstallConfig() *InstallConfig {
+func NewInstallConfig(targetName string) *InstallConfig {
 	hub, err := config.GetString("docker-hub-mirror")
 	if err != nil {
 		hub = ""
 	}
-	return &InstallConfig{DockerHubMirror: hub}
+	return &InstallConfig{
+		DockerHubMirror: hub,
+		TsuruAPIConfig: TsuruAPIConfig{
+			TargetName: targetName,
+		},
+	}
 }
 
 func (i *InstallConfig) fullImageName(name string) string {
@@ -137,6 +143,10 @@ func (c *Registry) Status(machine *Machine) (*ComponentStatus, error) {
 
 type TsuruAPI struct{}
 
+type TsuruAPIConfig struct {
+	TargetName string
+}
+
 func (c *TsuruAPI) Name() string {
 	return "Tsuru API"
 }
@@ -175,7 +185,7 @@ func (c *TsuruAPI) Install(machine *Machine, i *InstallConfig) error {
 	if err != nil {
 		return err
 	}
-	return c.bootstrapEnv("admin@example.com", "admin123", machine.IP, machine.Address)
+	return c.bootstrapEnv("admin@example.com", "admin123", machine.IP, i.TargetName, machine.Address)
 }
 
 func (c *TsuruAPI) Status(machine *Machine) (*ComponentStatus, error) {
@@ -233,7 +243,7 @@ func containerStatus(name string, m *Machine) (*ComponentStatus, error) {
 	}, nil
 }
 
-func (c *TsuruAPI) bootstrapEnv(login, password, target, node string) error {
+func (c *TsuruAPI) bootstrapEnv(login, password, target, targetName, node string) error {
 	var stdout, stderr bytes.Buffer
 	manager := cmd.BuildBaseManager("setup-client", "0.0.0", "", nil)
 	provisioners := provision.Registry()
@@ -248,7 +258,7 @@ func (c *TsuruAPI) bootstrapEnv(login, password, target, node string) error {
 	println("adding target")
 	client := cmd.NewClient(&http.Client{}, nil, manager)
 	context := cmd.Context{
-		Args:   []string{"test", fmt.Sprintf("%s:8080", target)},
+		Args:   []string{targetName, fmt.Sprintf("%s:8080", target)},
 		Stdout: &stdout,
 		Stderr: &stderr,
 	}
@@ -344,7 +354,7 @@ func (t *TsuruAPI) Uninstall(installation string) error {
 	println("removing target")
 	client := cmd.NewClient(&http.Client{}, nil, manager)
 	context := cmd.Context{
-		Args:   []string{"test"},
+		Args:   []string{installation},
 		Stdout: &stdout,
 		Stderr: &stderr,
 	}
