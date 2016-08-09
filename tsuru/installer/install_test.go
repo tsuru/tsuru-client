@@ -6,12 +6,12 @@ package installer
 
 import (
 	"bytes"
+	"fmt"
 	"io/ioutil"
 	"net/http"
 	"os"
 
 	"github.com/tsuru/tsuru/cmd"
-	"github.com/tsuru/tsuru/cmd/cmdtest"
 
 	"gopkg.in/check.v1"
 )
@@ -80,22 +80,38 @@ func (s *S) TestInstallCommandFlags(c *check.C) {
 
 func (s *S) TestInstallTargetAlreadyExists(c *check.C) {
 	var stdout, stderr bytes.Buffer
-	manager := cmd.NewManager("test", "1.0.0", "Supported-Tsuru", &stdout, &stderr, os.Stdin, nil)
-	command := Install{}
-	command.Flags().Parse(true, []string{"-c", "./testdata/wrong-conf.yml"})
+	manager := cmd.BuildBaseManager("uninstall-client", "0.0.0", "", nil)
+	client := cmd.NewClient(&http.Client{}, nil, manager)
 	context := cmd.Context{
+		Args:   []string{"test", fmt.Sprintf("%s:8080", "1.2.3.4")},
 		Stdout: &stdout,
 		Stderr: &stderr,
 	}
-	trans := cmdtest.ConditionalTransport{
-		Transport: cmdtest.Transport{Message: "Ok", Status: http.StatusOK},
-		CondFunc: func(r *http.Request) bool {
-			return true
-		},
+	targetadd := manager.Commands["target-add"]
+	t, ok := targetadd.(cmd.FlaggedCommand)
+	c.Assert(ok, check.Equals, true)
+	err := t.Flags().Parse(true, []string{"-s"})
+	c.Assert(err, check.IsNil)
+	err = t.Run(&context, client)
+	c.Assert(err, check.IsNil)
+	defer func(manager *cmd.Manager) {
+		client := cmd.NewClient(&http.Client{}, nil, manager)
+		context := cmd.Context{
+			Args:   []string{"test"},
+			Stdout: os.Stdout,
+			Stderr: os.Stderr,
+		}
+		targetrm := manager.Commands["target-remove"]
+		targetrm.Run(&context, client)
+	}(manager)
+	command := Install{}
+	command.Flags().Parse(true, []string{"-c", "./testdata/wrong-conf.yml"})
+	context = cmd.Context{
+		Stdout: &stdout,
+		Stderr: &stderr,
 	}
-	client := cmd.NewClient(&http.Client{Transport: &trans}, nil, manager)
 	expectedErr := "tsuru target \"test\" already exists"
-	err := command.Run(&context, client)
+	err = command.Run(&context, client)
 	c.Assert(err, check.NotNil)
 	c.Assert(expectedErr, check.Equals, err.Error())
 }
