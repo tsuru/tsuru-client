@@ -95,14 +95,14 @@ func (s *S) TestInstallTargetAlreadyExists(c *check.C) {
 	err = t.Run(&context, client)
 	c.Assert(err, check.IsNil)
 	defer func(manager *cmd.Manager) {
-		client := cmd.NewClient(&http.Client{}, nil, manager)
-		context := cmd.Context{
+		c := cmd.NewClient(&http.Client{}, nil, manager)
+		cont := cmd.Context{
 			Args:   []string{"test"},
 			Stdout: os.Stdout,
 			Stderr: os.Stderr,
 		}
 		targetrm := manager.Commands["target-remove"]
-		targetrm.Run(&context, client)
+		targetrm.Run(&cont, c)
 	}(manager)
 	command := Install{}
 	command.Flags().Parse(true, []string{"-c", "./testdata/wrong-conf.yml"})
