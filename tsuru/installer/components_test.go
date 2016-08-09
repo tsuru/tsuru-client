@@ -9,6 +9,7 @@ import (
 
 	"github.com/fsouza/go-dockerclient"
 	"github.com/fsouza/go-dockerclient/testing"
+	"github.com/tsuru/config"
 	"gopkg.in/check.v1"
 )
 
@@ -54,8 +55,9 @@ func (s *S) TestInstallComponentsDefaultConfig(c *check.C) {
 	c.Assert(err, check.IsNil)
 	defer server.Stop()
 	mockMachine := &Machine{Address: server.URL(), IP: "127.0.0.1", CAPath: s.TLSCertsPath.RootDir}
+	installConfig := NewInstallConfig("test")
 	for _, tt := range tests {
-		go tt.component.Install(mockMachine, &InstallConfig{})
+		go tt.component.Install(mockMachine, installConfig)
 
 		cont := <-containerChan
 		c.Assert(cont.Name, check.Equals, tt.containerName)
@@ -73,6 +75,8 @@ func (s *S) TestInstallComponentsDefaultConfig(c *check.C) {
 }
 
 func (s *S) TestInstallComponentsCustomRegistry(c *check.C) {
+	config.Set("docker-hub-mirror", "myregistry.com")
+	defer config.Unset("docker-hub-mirror")
 	tests := []struct {
 		component TsuruComponent
 		image     string
@@ -95,7 +99,7 @@ func (s *S) TestInstallComponentsCustomRegistry(c *check.C) {
 	defer server.Stop()
 	mockMachine := &Machine{Address: server.URL(), CAPath: s.TLSCertsPath.RootDir}
 	for _, tt := range tests {
-		config := &InstallConfig{DockerHubMirror: "myregistry.com"}
+		config := NewInstallConfig("test")
 		go tt.component.Install(mockMachine, config)
 
 		cont := <-containerChan
@@ -126,7 +130,9 @@ func (s *S) TestInstallPlanbHostPortBindings(c *check.C) {
 	expectedBinds := map[docker.Port][]docker.PortBinding{
 		"80/tcp": {{HostIP: "0.0.0.0", HostPort: "80"}},
 	}
-	go planb.Install(mockMachine, &InstallConfig{})
+	config.Unset("docker-hub-mirror")
+	installConfig := NewInstallConfig("test")
+	go planb.Install(mockMachine, installConfig)
 	cont := <-containerChan
 	c.Assert(cont.HostConfig.PortBindings, check.DeepEquals, expectedBinds)
 	c.Assert(cont.Config.ExposedPorts, check.DeepEquals, expectedExposed)
