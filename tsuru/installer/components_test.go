@@ -5,6 +5,8 @@
 package installer
 
 import (
+	"encoding/json"
+	"net/http"
 	"sort"
 
 	"github.com/fsouza/go-dockerclient"
@@ -136,4 +138,29 @@ func (s *S) TestInstallPlanbHostPortBindings(c *check.C) {
 	cont := <-containerChan
 	c.Assert(cont.HostConfig.PortBindings, check.DeepEquals, expectedBinds)
 	c.Assert(cont.Config.ExposedPorts, check.DeepEquals, expectedExposed)
+}
+
+func (s *S) TestComponentStatusReport(c *check.C) {
+	tlsConfig := testing.TLSConfig{
+		CertPath:    s.TLSCertsPath.ServerCert,
+		CertKeyPath: s.TLSCertsPath.ServerKey,
+		RootCAPath:  s.TLSCertsPath.RootCert,
+	}
+	containerHandler := func(w http.ResponseWriter, r *http.Request) {
+		w.WriteHeader(http.StatusOK)
+		cont := docker.Container{HostConfig: &docker.HostConfig{
+			PortBindings: map[docker.Port][]docker.PortBinding{},
+		}}
+		contBuf, err := json.Marshal(cont)
+		c.Assert(err, check.IsNil)
+		w.Write(contBuf)
+	}
+	server, err := testing.NewTLSServer("127.0.0.1:0", nil, nil, tlsConfig)
+	c.Assert(err, check.IsNil)
+	defer server.Stop()
+	server.CustomHandler("/containers/.*/json", http.HandlerFunc(containerHandler))
+	defer server.CustomHandler("/containers/.*/json", server.DefaultHandler())
+	mockMachine := &Machine{Address: server.URL(), IP: "127.0.0.1", CAPath: s.TLSCertsPath.RootDir}
+	_, err = containerStatus("mongo", mockMachine)
+	c.Assert(err, check.IsNil)
 }
