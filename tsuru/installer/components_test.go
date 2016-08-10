@@ -6,12 +6,18 @@ package installer
 
 import (
 	"encoding/json"
+	"fmt"
+	"io/ioutil"
 	"net/http"
+	"net/http/httptest"
+	"os"
 	"sort"
 
 	"github.com/fsouza/go-dockerclient"
 	"github.com/fsouza/go-dockerclient/testing"
 	"github.com/tsuru/config"
+	"github.com/tsuru/tsuru/cmd"
+	_ "github.com/tsuru/tsuru/provision/docker"
 	"gopkg.in/check.v1"
 )
 
@@ -148,8 +154,11 @@ func (s *S) TestComponentStatusReport(c *check.C) {
 	}
 	containerHandler := func(w http.ResponseWriter, r *http.Request) {
 		w.WriteHeader(http.StatusOK)
+		portBinding := docker.PortBinding{HostIP: "127.0.0.1", HostPort: "8000"}
 		cont := docker.Container{HostConfig: &docker.HostConfig{
-			PortBindings: map[docker.Port][]docker.PortBinding{},
+			PortBindings: map[docker.Port][]docker.PortBinding{
+				docker.Port("8000/tcp"): []docker.PortBinding{portBinding},
+			},
 		}}
 		contBuf, err := json.Marshal(cont)
 		c.Assert(err, check.IsNil)
@@ -161,6 +170,58 @@ func (s *S) TestComponentStatusReport(c *check.C) {
 	server.CustomHandler("/containers/.*/json", http.HandlerFunc(containerHandler))
 	defer server.CustomHandler("/containers/.*/json", server.DefaultHandler())
 	mockMachine := &Machine{Address: server.URL(), IP: "127.0.0.1", CAPath: s.TLSCertsPath.RootDir}
-	_, err = containerStatus("mongo", mockMachine)
+	status, err := containerStatus("mongo", mockMachine)
+	c.Assert(err, check.IsNil)
+	c.Assert(status.addresses, check.DeepEquals, []string{"tcp://127.0.0.1:8000"})
+}
+
+func (s *S) TestTsuruAPIBootstrapLocalEnviroment(c *check.C) {
+	server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		b, err := ioutil.ReadAll(r.Body)
+		defer r.Body.Close()
+		c.Assert(err, check.IsNil)
+		if r.URL.Path == "/1.0/users/test/tokens" {
+			c.Assert(string(b), check.Equals, "password=test")
+			token := map[string]string{"token": "test"}
+			buf, err := json.Marshal(token)
+			c.Assert(err, check.IsNil)
+			w.Write(buf)
+		}
+		if r.URL.Path == "/1.0/pools" {
+			c.Assert(string(b), check.Equals, "default=true&force=false&name=theonepool&public=true")
+		}
+		if r.URL.Path == "/1.0/docker/node" {
+			c.Assert(string(b), check.Matches, "Metadata.address=.*&Metadata.pool=theonepool&Register=true")
+		}
+		if r.URL.Path == "/1.0/team" {
+			c.Assert(string(b), check.Equals, "name=admin")
+		}
+		if r.URL.Path == "/1.0/apps" {
+			c.Assert(string(b), check.Equals, "description=&name=tsuru-dashboard&plan=&platform=python&pool=&routeropts=&teamOwner=admin")
+			buf, err := json.Marshal(map[string]string{})
+			c.Assert(err, check.IsNil)
+			w.Write(buf)
+		}
+		if r.URL.Path == "/1.0/apps/tsuru-dashboard/deploy" {
+			c.Assert(string(b), check.Equals, "image=tsuru%2Fdashboard&origin=image")
+			fmt.Fprintln(w, "\nOK")
+		}
+		w.WriteHeader(http.StatusOK)
+		w.Header().Set("Content-Type", "application/json")
+	}))
+	defer server.Close()
+	defer func() {
+		manager := cmd.BuildBaseManager("uninstall-client", "0.0.0", "", nil)
+		c := cmd.NewClient(&http.Client{}, nil, manager)
+		cont := cmd.Context{
+			Args:   []string{"test"},
+			Stdout: os.Stdout,
+			Stderr: os.Stderr,
+		}
+		targetrm := manager.Commands["target-remove"]
+		targetrm.Run(&cont, c)
+	}()
+	t := TsuruAPI{}
+	err := t.bootstrapEnv("test", "test", server.URL, "test", server.URL)
 	c.Assert(err, check.IsNil)
 }

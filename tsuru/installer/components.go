@@ -177,8 +177,9 @@ func (c *TsuruAPI) Install(machine *Machine, i *InstallConfig) error {
 		return err
 	}
 	fmt.Println("Waiting for Tsuru API to become responsive...")
+	tsuruURL := fmt.Sprintf("http://%s:8080", machine.IP)
 	err = mcnutils.WaitFor(func() bool {
-		_, errReq := http.Get(fmt.Sprintf("http://%s:8080", machine.IP))
+		_, errReq := http.Get(tsuruURL)
 		return errReq == nil
 	})
 	if err != nil {
@@ -188,7 +189,7 @@ func (c *TsuruAPI) Install(machine *Machine, i *InstallConfig) error {
 	if err != nil {
 		return err
 	}
-	return c.bootstrapEnv(i.RootUserEmail, i.RootUserPassword, machine.IP, i.TargetName, machine.Address)
+	return c.bootstrapEnv(i.RootUserEmail, i.RootUserPassword, tsuruURL, i.TargetName, machine.Address)
 }
 
 func (c *TsuruAPI) Status(machine *Machine) (*ComponentStatus, error) {
