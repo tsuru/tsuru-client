@@ -253,15 +253,15 @@ func (c *TsuruAPI) bootstrapEnv(login, password, target, targetName, node string
 	for _, p := range provisioners {
 		if c, ok := p.(cmd.AdminCommandable); ok {
 			commands := c.AdminCommands()
-			for _, cmd := range commands {
-				manager.Register(cmd)
+			for _, comm := range commands {
+				manager.Register(comm)
 			}
 		}
 	}
-	fmt.Fprint(os.Stdout, "adding target")
+	fmt.Fprintln(os.Stdout, "adding target")
 	client := cmd.NewClient(&http.Client{}, nil, manager)
 	context := cmd.Context{
-		Args:   []string{targetName, fmt.Sprintf("%s:8080", target)},
+		Args:   []string{targetName, target},
 		Stdout: os.Stdout,
 		Stderr: os.Stderr,
 	}
@@ -286,7 +286,7 @@ func (c *TsuruAPI) bootstrapEnv(login, password, target, targetName, node string
 	}
 	context.Args = []string{"theonepool"}
 	context.Stdin = nil
-	fmt.Fprint(os.Stdout, "adding pool")
+	fmt.Fprintln(os.Stdout, "adding pool")
 	poolAdd := admin.AddPoolToSchedulerCmd{}
 	err = poolAdd.Flags().Parse(true, []string{"-d", "-p"})
 	if err != nil {
@@ -297,7 +297,7 @@ func (c *TsuruAPI) bootstrapEnv(login, password, target, targetName, node string
 		return err
 	}
 	context.Args = []string{fmt.Sprintf("address=%s", node), "pool=theonepool"}
-	fmt.Fprint(os.Stdout, "adding node")
+	fmt.Fprintln(os.Stdout, "adding node")
 	nodeAdd := manager.Commands["docker-node-add"]
 	n, _ := nodeAdd.(cmd.FlaggedCommand)
 	err = n.Flags().Parse(true, []string{"--register"})
@@ -309,7 +309,7 @@ func (c *TsuruAPI) bootstrapEnv(login, password, target, targetName, node string
 		return err
 	}
 	context.Args = []string{"python"}
-	fmt.Fprint(os.Stdout, "adding platform")
+	fmt.Fprintln(os.Stdout, "adding platform")
 	err = mcnutils.WaitFor(func() bool {
 		platformAdd := admin.PlatformAdd{}
 		return platformAdd.Run(&context, client) == nil
@@ -318,14 +318,14 @@ func (c *TsuruAPI) bootstrapEnv(login, password, target, targetName, node string
 		return err
 	}
 	context.Args = []string{"admin"}
-	fmt.Fprint(os.Stdout, "adding team")
+	fmt.Fprintln(os.Stdout, "adding team")
 	teamCreate := tclient.TeamCreate{}
 	err = teamCreate.Run(&context, client)
 	if err != nil {
 		return err
 	}
 	context.Args = []string{"tsuru-dashboard", "python"}
-	fmt.Fprint(os.Stdout, "adding dashboard")
+	fmt.Fprintln(os.Stdout, "adding dashboard")
 	createDashboard := tclient.AppCreate{}
 	err = createDashboard.Flags().Parse(true, []string{"-t", "admin"})
 	if err != nil {
@@ -336,7 +336,7 @@ func (c *TsuruAPI) bootstrapEnv(login, password, target, targetName, node string
 		return err
 	}
 	context.Args = []string{}
-	fmt.Fprint(os.Stdout, "deploying dashboard")
+	fmt.Fprintln(os.Stdout, "deploying dashboard")
 	deployDashboard := tclient.AppDeploy{}
 	err = deployDashboard.Flags().Parse(true, []string{"-a", "tsuru-dashboard", "-i", "tsuru/dashboard"})
 	if err != nil {
