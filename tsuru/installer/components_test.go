@@ -157,7 +157,7 @@ func (s *S) TestComponentStatusReport(c *check.C) {
 		portBinding := docker.PortBinding{HostIP: "127.0.0.1", HostPort: "8000"}
 		cont := docker.Container{HostConfig: &docker.HostConfig{
 			PortBindings: map[docker.Port][]docker.PortBinding{
-				docker.Port("8000/tcp"): []docker.PortBinding{portBinding},
+				docker.Port("8000/tcp"): {portBinding},
 			},
 		}}
 		contBuf, err := json.Marshal(cont)
