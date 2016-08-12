@@ -5,11 +5,11 @@
 package installer
 
 import (
+	"bytes"
 	"encoding/json"
 	"fmt"
 	"io/ioutil"
 	"os"
-	"os/exec"
 	"path/filepath"
 
 	"github.com/docker/machine/drivers/amazonec2"
@@ -35,7 +35,9 @@ import (
 	"github.com/docker/machine/libmachine/host"
 	"github.com/docker/machine/libmachine/mcnutils"
 	"github.com/fsouza/go-dockerclient"
+	"github.com/tsuru/tsuru-client/tsuru/client"
 	"github.com/tsuru/tsuru/cmd"
+	"github.com/tsuru/tsuru/exec"
 )
 
 var (
@@ -49,6 +51,7 @@ var (
 )
 
 type Machine struct {
+	*host.Host
 	IP      string
 	Config  map[string]string
 	Address string
@@ -62,6 +65,10 @@ func (m *Machine) dockerClient() (*docker.Client, error) {
 		filepath.Join(m.CAPath, "key.pem"),
 		filepath.Join(m.CAPath, "ca.pem"),
 	)
+}
+
+func (m Machine) Driver() drivers.Driver {
+	return m.Host.Driver
 }
 
 type DockerMachine struct {
@@ -144,22 +151,29 @@ func (d *DockerMachine) CreateMachine() (*Machine, error) {
 	if err != nil {
 		return nil, err
 	}
-	err = d.uploadRegistryCertificate(host)
-	if err != nil {
-		return nil, err
-	}
 	config := map[string]string{}
 	m := Machine{
 		IP:     ip,
 		Config: config,
 		CAPath: d.certsPath,
+		Host:   host,
 	}
 	m.Address = fmt.Sprintf("https://%s:%d", m.IP, dockerHTTPSPort)
+	err = d.uploadRegistryCertificate(m)
+	if err != nil {
+		return nil, err
+	}
 	return &m, nil
 }
 
-func (d *DockerMachine) uploadRegistryCertificate(host *host.Host) error {
-	ip, err := host.Driver.GetIP()
+type sshTarget interface {
+	RunSSHCommand(string) (string, error)
+	Driver() drivers.Driver
+}
+
+func (d *DockerMachine) uploadRegistryCertificate(host sshTarget) error {
+	driver := host.Driver()
+	ip, err := driver.GetIP()
 	if err != nil {
 		return err
 	}
@@ -176,23 +190,28 @@ func (d *DockerMachine) uploadRegistryCertificate(host *host.Host) error {
 		fmt.Sprintf("%s/machines/%s/id_rsa", d.storePath, d.Name),
 		"-r",
 		fmt.Sprintf("%s/", d.certsPath),
-		fmt.Sprintf("%s@%s:/home/%s/", host.Driver.GetSSHUsername(), ip, host.Driver.GetSSHUsername()),
+		fmt.Sprintf("%s@%s:/home/%s/", driver.GetSSHUsername(), ip, driver.GetSSHUsername()),
 	}
-	comm := exec.Command("scp", args...)
-	stdout, err := comm.CombinedOutput()
+	stdout := bytes.NewBufferString("")
+	opts := exec.ExecuteOptions{
+		Cmd:    "scp",
+		Args:   args,
+		Stdout: stdout,
+	}
+	err = client.Executor().Execute(opts)
 	if err != nil {
-		return fmt.Errorf("Command: %s. Error:%s", string(stdout), err.Error())
+		return fmt.Errorf("Command: %s. Error:%s", stdout.String(), err.Error())
 	}
-	certsBasePath := fmt.Sprintf("/home/%s/certs/%s:5000", host.Driver.GetSSHUsername(), ip)
+	certsBasePath := fmt.Sprintf("/home/%s/certs/%s:5000", driver.GetSSHUsername(), ip)
 	_, err = host.RunSSHCommand(fmt.Sprintf("mkdir -p %s", certsBasePath))
 	if err != nil {
 		return err
 	}
-	_, err = host.RunSSHCommand(fmt.Sprintf("cp /home/%s/certs/*.pem %s/", host.Driver.GetSSHUsername(), certsBasePath))
+	_, err = host.RunSSHCommand(fmt.Sprintf("cp /home/%s/certs/*.pem %s/", driver.GetSSHUsername(), certsBasePath))
 	if err != nil {
 		return err
 	}
-	_, err = host.RunSSHCommand(fmt.Sprintf("sudo mkdir /etc/docker/certs.d && sudo cp -r /home/%s/certs/* /etc/docker/certs.d/", host.Driver.GetSSHUsername()))
+	_, err = host.RunSSHCommand(fmt.Sprintf("sudo mkdir /etc/docker/certs.d && sudo cp -r /home/%s/certs/* /etc/docker/certs.d/", driver.GetSSHUsername()))
 	if err != nil {
 		return err
 	}
