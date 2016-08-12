@@ -10,7 +10,7 @@ import (
 
 var Execut exec.Executor
 
-func executor() exec.Executor {
+func Executor() exec.Executor {
 	if Execut == nil {
 		Execut = exec.OsExecutor{}
 	}

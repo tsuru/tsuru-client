@@ -134,5 +134,5 @@ func RunPlugin(context *cmd.Context) error {
 		Stdin:  context.Stdin,
 		Envs:   envs,
 	}
-	return executor().Execute(opts)
+	return Executor().Execute(opts)
 }

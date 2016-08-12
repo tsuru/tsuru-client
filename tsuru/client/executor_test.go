@@ -12,7 +12,7 @@ import (
 
 func (s *S) TestExecutor(c *check.C) {
 	Execut = &exectest.FakeExecutor{}
-	c.Assert(executor(), check.DeepEquals, Execut)
+	c.Assert(Executor(), check.DeepEquals, Execut)
 	Execut = nil
-	c.Assert(executor(), check.DeepEquals, exec.OsExecutor{})
+	c.Assert(Executor(), check.DeepEquals, exec.OsExecutor{})
 }
