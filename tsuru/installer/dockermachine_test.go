@@ -13,6 +13,7 @@ import (
 
 	check "gopkg.in/check.v1"
 
+	"github.com/docker/machine/drivers/amazonec2"
 	"github.com/docker/machine/libmachine/drivers/plugin/localbinary"
 	"github.com/tsuru/tsuru-client/tsuru/installer/testing"
 )
@@ -95,6 +96,18 @@ func (s *S) TestNewDockerMachineCopyProvidedCa(c *check.C) {
 	contents, err = ioutil.ReadFile(filepath.Join(dm.certsPath, "ca-key.pem"))
 	c.Assert(err, check.IsNil)
 	c.Assert(contents, check.DeepEquals, expected)
+}
+
+func (s *S) TestConfigureDriver(c *check.C) {
+	driver := amazonec2.NewDriver("", "")
+	opts := map[string]interface{}{
+		"amazonec2-access-key":     "abc",
+		"amazonec2-security-group": []string{"sg-123", "sg-456"},
+	}
+	configureDriver(driver, opts)
+	c.Assert(driver.SecurityGroupNames, check.DeepEquals, []string{"sg-123", "sg-456"})
+	c.Assert(driver.AccessKey, check.Equals, "abc")
+	c.Assert(driver.RetryCount, check.Equals, 5)
 }
 
 //func (s *S) TestCreateMachineNoneDriver(c *check.C) {
