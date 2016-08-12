@@ -14,8 +14,12 @@ import (
 	check "gopkg.in/check.v1"
 
 	"github.com/docker/machine/drivers/amazonec2"
+	"github.com/docker/machine/drivers/fakedriver"
+	"github.com/docker/machine/libmachine/drivers"
 	"github.com/docker/machine/libmachine/drivers/plugin/localbinary"
+	"github.com/tsuru/tsuru-client/tsuru/client"
 	"github.com/tsuru/tsuru-client/tsuru/installer/testing"
+	"github.com/tsuru/tsuru/exec/exectest"
 )
 
 type S struct {
@@ -115,6 +119,57 @@ func (s *S) TestConfigureDriver(c *check.C) {
 	c.Assert(driver.SubnetId, check.Equals, "net")
 	c.Assert(driver.AccessKey, check.Equals, "abc")
 	c.Assert(driver.RetryCount, check.Equals, 5)
+}
+
+type fakeSSHTarget struct {
+	cmds   []string
+	driver drivers.Driver
+}
+
+func (f *fakeSSHTarget) RunSSHCommand(cmd string) (string, error) {
+	f.cmds = append(f.cmds, cmd)
+	return "", nil
+}
+
+func (f *fakeSSHTarget) Driver() drivers.Driver {
+	if f.driver == nil {
+		driver := &fakedriver.Driver{MockIP: "127.0.0.1"}
+		driver.Start()
+		f.driver = driver
+	}
+	return f.driver
+}
+
+func (s *S) TestUploadRegistryCertificate(c *check.C) {
+	fakeSSHTarget := &fakeSSHTarget{}
+	fexec := exectest.FakeExecutor{}
+	client.Execut = &fexec
+	defer func() {
+		client.Execut = nil
+	}()
+	config := &DockerMachineConfig{
+		CAPath: s.TLSCertsPath.RootDir,
+	}
+	defer os.Remove(s.StoreBasePath)
+	dm, err := NewDockerMachine(config)
+	c.Assert(err, check.IsNil)
+	err = dm.uploadRegistryCertificate(fakeSSHTarget)
+	c.Assert(err, check.IsNil)
+	expectedArgs := []string{"-o StrictHostKeyChecking=no",
+		"-i",
+		fmt.Sprintf("%s/machines/%s/id_rsa", dm.storePath, dm.Name),
+		"-r",
+		fmt.Sprintf("%s/", dm.certsPath),
+		fmt.Sprintf("%s@%s:/home/%s/", "", "127.0.0.1", ""),
+	}
+	c.Assert(fexec.ExecutedCmd("scp", expectedArgs), check.Equals, true)
+	expectedCmds := []string{
+		"mkdir -p /home//certs/127.0.0.1:5000",
+		"cp /home//certs/*.pem /home//certs/127.0.0.1:5000/",
+		"sudo mkdir /etc/docker/certs.d && sudo cp -r /home//certs/* /etc/docker/certs.d/",
+		"cat /home//certs/127.0.0.1:5000/ca.pem | sudo tee -a /etc/ssl/certs/ca-certificates.crt",
+	}
+	c.Assert(fakeSSHTarget.cmds, check.DeepEquals, expectedCmds)
 }
 
 //func (s *S) TestCreateMachineNoneDriver(c *check.C) {
