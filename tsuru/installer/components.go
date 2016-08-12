@@ -8,7 +8,6 @@ import (
 	"fmt"
 	"net/http"
 	"os"
-	"path/filepath"
 	"strings"
 
 	"github.com/docker/machine/libmachine/mcnutils"
@@ -356,20 +355,13 @@ func (t *TsuruAPI) Uninstall(installation string) error {
 			}
 		}
 	}
-	fmt.Fprint(os.Stdout, "removing target")
+	fmt.Fprint(os.Stdout, "removing target\n")
 	client := cmd.NewClient(&http.Client{}, nil, manager)
 	context := cmd.Context{
 		Args:   []string{installation},
 		Stdout: os.Stdout,
 		Stderr: os.Stderr,
 	}
-	context.RawOutput()
 	targetrm := manager.Commands["target-remove"]
-	err := targetrm.Run(&context, client)
-	if err != nil {
-		return err
-	}
-	basePath := cmd.JoinWithUserDir(".tsuru", "installs")
-	installPath := filepath.Join(basePath, installation)
-	return os.RemoveAll(installPath)
+	return targetrm.Run(&context, client)
 }

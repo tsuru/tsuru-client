@@ -6,6 +6,8 @@ package installer
 
 import (
 	"fmt"
+	"os"
+	"path/filepath"
 	"strings"
 
 	"github.com/tsuru/config"
@@ -124,6 +126,7 @@ func (c *Uninstall) Flags() *gnuflag.FlagSet {
 }
 
 func (c *Uninstall) Run(context *cmd.Context, client *cmd.Client) error {
+	context.RawOutput()
 	config, err := parseConfigFile(c.config)
 	if err != nil {
 		fmt.Fprintf(context.Stderr, "Failed to read configuration file: %s\n", err)
@@ -141,7 +144,20 @@ func (c *Uninstall) Run(context *cmd.Context, client *cmd.Client) error {
 	}
 	fmt.Fprintln(context.Stdout, "Machine successfully removed!")
 	api := TsuruAPI{}
-	return api.Uninstall(config.Name)
+	err = api.Uninstall(config.Name)
+	if err != nil {
+		fmt.Fprintf(context.Stderr, "Failed to uninstall tsuru API: %s\n", err)
+		return err
+	}
+	basePath := cmd.JoinWithUserDir(".tsuru", "installs")
+	installPath := filepath.Join(basePath, config.Name)
+	err = os.RemoveAll(installPath)
+	if err != nil {
+		fmt.Fprintf(context.Stderr, "Failed to delete installation directory: %s\n", err)
+		return err
+	}
+	fmt.Fprintf(context.Stdout, "Uninstall finished successfully!")
+	return nil
 }
 
 func parseConfigFile(file string) (*DockerMachineConfig, error) {
