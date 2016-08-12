@@ -187,7 +187,6 @@ func (s *S) TestCreateRegistryCertificate(c *check.C) {
 	file, err = os.Stat(filepath.Join(dm.certsPath, "registry-key.pem"))
 	c.Assert(err, check.IsNil)
 	c.Assert(file.Size() > 0, check.Equals, true)
-	ssh
 }
 
 //func (s *S) TestCreateMachineNoneDriver(c *check.C) {
