@@ -80,8 +80,8 @@ func (s *S) TestCreateContainerWithExposedPorts(c *check.C) {
 	}))
 	defer server.CustomHandler("/images/.*/json", server.DefaultHandler())
 	expected := map[docker.Port][]docker.PortBinding{
-		"90/tcp": []docker.PortBinding{
-			docker.PortBinding{HostIP: "0.0.0.0", HostPort: "90"},
+		"90/tcp": {
+			{HostIP: "0.0.0.0", HostPort: "90"},
 		},
 	}
 	endpoint := testEndpoint{endpoint: server.URL(), certPath: s.TLSCertsPath.RootDir}
@@ -120,19 +120,19 @@ func (s *S) TestCreateContainerWithHostConfigAndExposedPorts(c *check.C) {
 	}))
 	defer server.CustomHandler("/images/.*/json", server.DefaultHandler())
 	expected := map[docker.Port][]docker.PortBinding{
-		"90/tcp": []docker.PortBinding{
-			docker.PortBinding{HostIP: "0.0.0.0", HostPort: "90"},
+		"90/tcp": {
+			{HostIP: "0.0.0.0", HostPort: "90"},
 		},
-		"100/tcp": []docker.PortBinding{
-			docker.PortBinding{HostIP: "0.0.0.0", HostPort: "100"},
+		"100/tcp": {
+			{HostIP: "0.0.0.0", HostPort: "100"},
 		},
 	}
 	endpoint := testEndpoint{endpoint: server.URL(), certPath: s.TLSCertsPath.RootDir}
 	config := &docker.Config{Image: "tsuru/api:v1"}
 	hostConfig := &docker.HostConfig{
 		PortBindings: map[docker.Port][]docker.PortBinding{
-			"100/tcp": []docker.PortBinding{
-				docker.PortBinding{HostIP: "0.0.0.0", HostPort: "100"},
+			"100/tcp": {
+				{HostIP: "0.0.0.0", HostPort: "100"},
 			},
 		},
 	}
