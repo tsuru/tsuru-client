@@ -7,7 +7,6 @@ package installer
 import (
 	"fmt"
 	"os"
-	"path/filepath"
 	"strings"
 
 	"github.com/tsuru/config"
@@ -149,9 +148,7 @@ func (c *Uninstall) Run(context *cmd.Context, client *cmd.Client) error {
 		fmt.Fprintf(context.Stderr, "Failed to uninstall tsuru API: %s\n", err)
 		return err
 	}
-	basePath := cmd.JoinWithUserDir(".tsuru", "installs")
-	installPath := filepath.Join(basePath, config.Name)
-	err = os.RemoveAll(installPath)
+	err = os.RemoveAll(d.storePath)
 	if err != nil {
 		fmt.Fprintf(context.Stderr, "Failed to delete installation directory: %s\n", err)
 		return err
