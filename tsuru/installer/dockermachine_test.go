@@ -102,10 +102,17 @@ func (s *S) TestConfigureDriver(c *check.C) {
 	driver := amazonec2.NewDriver("", "")
 	opts := map[string]interface{}{
 		"amazonec2-access-key":     "abc",
+		"amazonec2-subnet-id":      "net",
 		"amazonec2-security-group": []string{"sg-123", "sg-456"},
 	}
-	configureDriver(driver, opts)
+	err := configureDriver(driver, opts)
+	c.Assert(err, check.NotNil)
+	opts["amazonec2-secret-key"] = "cde"
+	err = configureDriver(driver, opts)
+	c.Assert(err, check.IsNil)
 	c.Assert(driver.SecurityGroupNames, check.DeepEquals, []string{"sg-123", "sg-456"})
+	c.Assert(driver.SecretKey, check.Equals, "cde")
+	c.Assert(driver.SubnetId, check.Equals, "net")
 	c.Assert(driver.AccessKey, check.Equals, "abc")
 	c.Assert(driver.RetryCount, check.Equals, 5)
 }
