@@ -5,6 +5,7 @@
 package installer
 
 import (
+	"encoding/json"
 	"net/http"
 	"path/filepath"
 
@@ -50,4 +51,94 @@ func (s *S) TestCreateContainer(c *check.C) {
 	c.Assert(requests[1].URL.Path, check.Equals, "/images/tsuru/api:v1/json")
 	c.Assert(requests[2].URL.Path, check.Equals, "/containers/create")
 	c.Assert(requests[3].URL.Path, check.Equals, "/containers/contName/start")
+}
+
+func (s *S) TestCreateContainerWithExposedPorts(c *check.C) {
+	containerChan := make(chan *docker.Container, 2)
+	tlsConfig := testing.TLSConfig{
+		CertPath:    s.TLSCertsPath.ServerCert,
+		CertKeyPath: s.TLSCertsPath.ServerKey,
+		RootCAPath:  s.TLSCertsPath.RootCert,
+	}
+	server, err := testing.NewTLSServer("127.0.0.1:0", containerChan, nil, tlsConfig)
+	c.Assert(err, check.IsNil)
+	defer server.Stop()
+	server.CustomHandler("/images/.*/json", http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		image := docker.Image{
+			ID: "tsuru/api",
+			Config: &docker.Config{
+				ExposedPorts: map[docker.Port]struct{}{
+					docker.Port("90/tcp"): {},
+				},
+			},
+		}
+		buf, err := json.Marshal(image)
+		c.Assert(err, check.IsNil)
+		w.Header().Set("Content-Type", "application/json")
+		w.Write(buf)
+		w.WriteHeader(http.StatusOK)
+	}))
+	defer server.CustomHandler("/images/.*/json", server.DefaultHandler())
+	expected := map[docker.Port][]docker.PortBinding{
+		"90/tcp": []docker.PortBinding{
+			docker.PortBinding{HostIP: "0.0.0.0", HostPort: "90"},
+		},
+	}
+	endpoint := testEndpoint{endpoint: server.URL(), certPath: s.TLSCertsPath.RootDir}
+	config := &docker.Config{Image: "tsuru/api:v1"}
+	err = createContainer(endpoint, "contName", config, nil)
+	c.Assert(err, check.IsNil)
+	cont := <-containerChan
+	c.Assert(cont, check.NotNil)
+	c.Assert(expected, check.DeepEquals, cont.HostConfig.PortBindings)
+}
+
+func (s *S) TestCreateContainerWithHostConfigAndExposedPorts(c *check.C) {
+	containerChan := make(chan *docker.Container, 2)
+	tlsConfig := testing.TLSConfig{
+		CertPath:    s.TLSCertsPath.ServerCert,
+		CertKeyPath: s.TLSCertsPath.ServerKey,
+		RootCAPath:  s.TLSCertsPath.RootCert,
+	}
+	server, err := testing.NewTLSServer("127.0.0.1:0", containerChan, nil, tlsConfig)
+	c.Assert(err, check.IsNil)
+	defer server.Stop()
+	server.CustomHandler("/images/.*/json", http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		image := docker.Image{
+			ID: "tsuru/api",
+			Config: &docker.Config{
+				ExposedPorts: map[docker.Port]struct{}{
+					docker.Port("90/tcp"): {},
+				},
+			},
+		}
+		buf, err := json.Marshal(image)
+		c.Assert(err, check.IsNil)
+		w.Header().Set("Content-Type", "application/json")
+		w.Write(buf)
+		w.WriteHeader(http.StatusOK)
+	}))
+	defer server.CustomHandler("/images/.*/json", server.DefaultHandler())
+	expected := map[docker.Port][]docker.PortBinding{
+		"90/tcp": []docker.PortBinding{
+			docker.PortBinding{HostIP: "0.0.0.0", HostPort: "90"},
+		},
+		"100/tcp": []docker.PortBinding{
+			docker.PortBinding{HostIP: "0.0.0.0", HostPort: "100"},
+		},
+	}
+	endpoint := testEndpoint{endpoint: server.URL(), certPath: s.TLSCertsPath.RootDir}
+	config := &docker.Config{Image: "tsuru/api:v1"}
+	hostConfig := &docker.HostConfig{
+		PortBindings: map[docker.Port][]docker.PortBinding{
+			"100/tcp": []docker.PortBinding{
+				docker.PortBinding{HostIP: "0.0.0.0", HostPort: "100"},
+			},
+		},
+	}
+	err = createContainer(endpoint, "contName", config, hostConfig)
+	c.Assert(err, check.IsNil)
+	cont := <-containerChan
+	c.Assert(cont, check.NotNil)
+	c.Assert(expected, check.DeepEquals, cont.HostConfig.PortBindings)
 }
