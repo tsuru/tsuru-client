@@ -172,6 +172,24 @@ func (s *S) TestUploadRegistryCertificate(c *check.C) {
 	c.Assert(fakeSSHTarget.cmds, check.DeepEquals, expectedCmds)
 }
 
+func (s *S) TestCreateRegistryCertificate(c *check.C) {
+	config := &DockerMachineConfig{
+		CAPath: s.TLSCertsPath.RootDir,
+	}
+	defer os.Remove(s.StoreBasePath)
+	dm, err := NewDockerMachine(config)
+	c.Assert(err, check.IsNil)
+	err = dm.createRegistryCertificate("127.0.0.1")
+	c.Assert(err, check.IsNil)
+	file, err := os.Stat(filepath.Join(dm.certsPath, "registry-cert.pem"))
+	c.Assert(err, check.IsNil)
+	c.Assert(file.Size() > 0, check.Equals, true)
+	file, err = os.Stat(filepath.Join(dm.certsPath, "registry-key.pem"))
+	c.Assert(err, check.IsNil)
+	c.Assert(file.Size() > 0, check.Equals, true)
+	ssh
+}
+
 //func (s *S) TestCreateMachineNoneDriver(c *check.C) {
 //config := &DockerMachineConfig{
 //DriverName: "none",
