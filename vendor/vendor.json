@@ -417,6 +417,12 @@
 			"revision": ""
 		},
 		{
+			"checksumSHA1": "mY0t6aKsP1BUQF2hbd7BTiD+7u0=",
+			"path": "github.com/docker/machine/drivers/fakedriver",
+			"revision": "6143a3e36838562ae3c82dcc812da2b21cf10413",
+			"revisionTime": "2016-08-10T14:05:52-07:00"
+		},
+		{
 			"checksumSHA1": "ukduIqa+9Q+Ah5eHlOhdQOPF+x8=",
 			"origin": "github.com/tsuru/vendor/github.com/docker/machine/drivers/generic",
 			"path": "github.com/docker/machine/drivers/generic",
