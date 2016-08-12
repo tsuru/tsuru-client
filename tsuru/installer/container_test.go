@@ -72,8 +72,8 @@ func (s *S) TestCreateContainerWithExposedPorts(c *check.C) {
 				},
 			},
 		}
-		buf, err := json.Marshal(image)
-		c.Assert(err, check.IsNil)
+		buf, errMarshal := json.Marshal(image)
+		c.Assert(errMarshal, check.IsNil)
 		w.Header().Set("Content-Type", "application/json")
 		w.Write(buf)
 		w.WriteHeader(http.StatusOK)
@@ -112,8 +112,8 @@ func (s *S) TestCreateContainerWithHostConfigAndExposedPorts(c *check.C) {
 				},
 			},
 		}
-		buf, err := json.Marshal(image)
-		c.Assert(err, check.IsNil)
+		buf, errMarshal := json.Marshal(image)
+		c.Assert(errMarshal, check.IsNil)
 		w.Header().Set("Content-Type", "application/json")
 		w.Write(buf)
 		w.WriteHeader(http.StatusOK)
