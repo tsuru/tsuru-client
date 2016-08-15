@@ -8,6 +8,7 @@ import (
 	"bytes"
 	"encoding/json"
 	"fmt"
+	"io"
 	"io/ioutil"
 	"os"
 	"path/filepath"
@@ -75,13 +76,14 @@ func (m *Machine) GetSSHUsername() string {
 }
 
 type DockerMachine struct {
-	driverOpts    map[string]interface{}
-	rawDriver     []byte
-	driverName    string
-	storePath     string
-	certsPath     string
-	Name          string
-	clientFactory func() libmachine.API
+	io.Closer
+	driverOpts map[string]interface{}
+	rawDriver  []byte
+	driverName string
+	storePath  string
+	certsPath  string
+	Name       string
+	client     libmachine.API
 }
 
 type DockerMachineConfig struct {
@@ -117,17 +119,14 @@ func NewDockerMachine(config *DockerMachineConfig) (*DockerMachine, error) {
 	if err != nil {
 		return nil, fmt.Errorf("Error creating docker-machine driver: %s", err)
 	}
-	clientFactory := func() libmachine.API {
-		return libmachine.NewClient(storePath, certsPath)
-	}
 	return &DockerMachine{
-		driverOpts:    config.DriverOpts,
-		rawDriver:     rawDriver,
-		driverName:    config.DriverName,
-		storePath:     storePath,
-		certsPath:     certsPath,
-		Name:          config.Name,
-		clientFactory: clientFactory,
+		driverOpts: config.DriverOpts,
+		rawDriver:  rawDriver,
+		driverName: config.DriverName,
+		storePath:  storePath,
+		certsPath:  certsPath,
+		Name:       config.Name,
+		client:     libmachine.NewClient(storePath, certsPath),
 	}, nil
 }
 
@@ -144,14 +143,12 @@ func copy(src, dst string) error {
 }
 
 func (d *DockerMachine) CreateMachine() (*Machine, error) {
-	client := d.clientFactory()
-	defer client.Close()
-	host, err := client.NewHost(d.driverName, d.rawDriver)
+	host, err := d.client.NewHost(d.driverName, d.rawDriver)
 	if err != nil {
 		return nil, err
 	}
 	configureDriver(host.Driver, d.driverOpts)
-	err = client.Create(host)
+	err = d.client.Create(host)
 	if err != nil {
 		fmt.Printf("Ignoring error on machine creation: %s", err)
 	}
@@ -251,10 +248,8 @@ func configureDriver(driver drivers.Driver, driverOpts map[string]interface{}) e
 	return nil
 }
 
-func (d *DockerMachine) DeleteMachine(m *Machine) error {
-	client := d.clientFactory()
-	defer client.Close()
-	h, err := client.Load(d.Name)
+func (d *DockerMachine) DeleteMachine(name string) error {
+	h, err := d.client.Load(name)
 	if err != nil {
 		return err
 	}
@@ -262,7 +257,11 @@ func (d *DockerMachine) DeleteMachine(m *Machine) error {
 	if err != nil {
 		return err
 	}
-	return client.Remove(d.Name)
+	return d.client.Remove(name)
+}
+
+func (d *DockerMachine) Close() error {
+	return d.client.Close()
 }
 
 func RunDriver(driverName string) error {

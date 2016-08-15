@@ -15,10 +15,9 @@ import (
 
 	"github.com/docker/machine/drivers/amazonec2"
 	"github.com/docker/machine/drivers/fakedriver"
-	"github.com/docker/machine/libmachine"
 	"github.com/docker/machine/libmachine/drivers/plugin/localbinary"
 	"github.com/docker/machine/libmachine/host"
-	"github.com/docker/machine/libmachine/persist"
+	"github.com/docker/machine/libmachine/persist/persisttest"
 	"github.com/docker/machine/libmachine/state"
 	"github.com/tsuru/tsuru-client/tsuru/client"
 	"github.com/tsuru/tsuru-client/tsuru/installer/testing"
@@ -191,7 +190,7 @@ func (s *S) TestCreateRegistryCertificate(c *check.C) {
 }
 
 type fakeMachineAPI struct {
-	*persist.Filestore
+	*persisttest.FakeStore
 	driverName string
 	hostName   string
 }
@@ -216,13 +215,15 @@ func (f *fakeMachineAPI) Close() error {
 	return nil
 }
 
+func (f *fakeMachineAPI) GetMachinesDir() string {
+	return ""
+}
+
 func (s *S) TestCreateMachine(c *check.C) {
 	dm, err := NewDockerMachine(defaultDockerMachineConfig)
 	c.Assert(err, check.IsNil)
 	fakeAPI := &fakeMachineAPI{}
-	dm.clientFactory = func() libmachine.API {
-		return fakeAPI
-	}
+	dm.client = fakeAPI
 	machine, err := dm.CreateMachine()
 	c.Assert(err, check.IsNil)
 	c.Assert(machine, check.NotNil)
@@ -230,4 +231,35 @@ func (s *S) TestCreateMachine(c *check.C) {
 	c.Assert(machine.Address, check.Equals, "https://1.2.3.4:2376")
 	c.Assert(fakeAPI.driverName, check.Equals, "virtualbox")
 	c.Assert(fakeAPI.hostName, check.Equals, "machine")
+}
+
+func (s *S) TestDeleteMachine(c *check.C) {
+	dm, err := NewDockerMachine(defaultDockerMachineConfig)
+	c.Assert(err, check.IsNil)
+	dm.client = &fakeMachineAPI{
+		FakeStore: &persisttest.FakeStore{
+			Hosts: []*host.Host{&host.Host{
+				Name: "test-machine",
+				Driver: &fakedriver.Driver{
+					MockState: state.Running,
+					MockIP:    "1.2.3.4",
+				},
+			}},
+		},
+	}
+	err = dm.DeleteMachine("test-machine")
+	c.Assert(err, check.IsNil)
+}
+
+func (s *S) TestDeleteMachineLoadError(c *check.C) {
+	dm, err := NewDockerMachine(defaultDockerMachineConfig)
+	c.Assert(err, check.IsNil)
+	expectedErr := fmt.Errorf("failed to load")
+	dm.client = &fakeMachineAPI{
+		FakeStore: &persisttest.FakeStore{
+			LoadErr: expectedErr,
+		},
+	}
+	err = dm.DeleteMachine("test-machine")
+	c.Assert(err, check.Equals, expectedErr)
 }

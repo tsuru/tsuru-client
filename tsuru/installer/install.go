@@ -54,6 +54,7 @@ func (c *Install) Run(context *cmd.Context, client *cmd.Client) error {
 		fmt.Fprintf(context.Stderr, "Failed to create machine: %s\n", err)
 		return err
 	}
+	defer i.Close()
 	m, err := i.CreateMachine()
 	if err != nil {
 		fmt.Fprintf(context.Stderr, "Error creating machine: %s\n", err)
@@ -140,7 +141,8 @@ func (c *Uninstall) Run(context *cmd.Context, client *cmd.Client) error {
 		fmt.Fprintf(context.Stderr, "Failed to delete machine: %s\n", err)
 		return err
 	}
-	err = d.DeleteMachine(&Machine{})
+	defer d.Close()
+	err = d.DeleteMachine(d.Name)
 	if err != nil {
 		fmt.Fprintf(context.Stderr, "Failed to delete machine: %s\n", err)
 		return err
