@@ -14,7 +14,6 @@ import (
 	check "gopkg.in/check.v1"
 
 	"github.com/docker/machine/drivers/amazonec2"
-	"github.com/docker/machine/drivers/fakedriver"
 	"github.com/docker/machine/libmachine/drivers"
 	"github.com/docker/machine/libmachine/drivers/plugin/localbinary"
 	"github.com/tsuru/tsuru-client/tsuru/client"
@@ -131,13 +130,12 @@ func (f *fakeSSHTarget) RunSSHCommand(cmd string) (string, error) {
 	return "", nil
 }
 
-func (f *fakeSSHTarget) Driver() drivers.Driver {
-	if f.driver == nil {
-		driver := &fakedriver.Driver{MockIP: "127.0.0.1"}
-		driver.Start()
-		f.driver = driver
-	}
-	return f.driver
+func (f *fakeSSHTarget) GetIP() string {
+	return "127.0.0.1"
+}
+
+func (f *fakeSSHTarget) GetSSHUsername() string {
+	return "ubuntu"
 }
 
 func (s *S) TestUploadRegistryCertificate(c *check.C) {
@@ -160,14 +158,14 @@ func (s *S) TestUploadRegistryCertificate(c *check.C) {
 		fmt.Sprintf("%s/machines/%s/id_rsa", dm.storePath, dm.Name),
 		"-r",
 		fmt.Sprintf("%s/", dm.certsPath),
-		fmt.Sprintf("%s@%s:/home/%s/", "", "127.0.0.1", ""),
+		fmt.Sprintf("%s@%s:/home/%s/", "ubuntu", "127.0.0.1", "ubuntu"),
 	}
 	c.Assert(fexec.ExecutedCmd("scp", expectedArgs), check.Equals, true)
 	expectedCmds := []string{
-		"mkdir -p /home//certs/127.0.0.1:5000",
-		"cp /home//certs/*.pem /home//certs/127.0.0.1:5000/",
-		"sudo mkdir /etc/docker/certs.d && sudo cp -r /home//certs/* /etc/docker/certs.d/",
-		"cat /home//certs/127.0.0.1:5000/ca.pem | sudo tee -a /etc/ssl/certs/ca-certificates.crt",
+		"mkdir -p /home/ubuntu/certs/127.0.0.1:5000",
+		"cp /home/ubuntu/certs/*.pem /home/ubuntu/certs/127.0.0.1:5000/",
+		"sudo mkdir /etc/docker/certs.d && sudo cp -r /home/ubuntu/certs/* /etc/docker/certs.d/",
+		"cat /home/ubuntu/certs/127.0.0.1:5000/ca.pem | sudo tee -a /etc/ssl/certs/ca-certificates.crt",
 	}
 	c.Assert(fakeSSHTarget.cmds, check.DeepEquals, expectedCmds)
 }
