@@ -14,8 +14,12 @@ import (
 	check "gopkg.in/check.v1"
 
 	"github.com/docker/machine/drivers/amazonec2"
-	"github.com/docker/machine/libmachine/drivers"
+	"github.com/docker/machine/drivers/fakedriver"
+	"github.com/docker/machine/libmachine"
 	"github.com/docker/machine/libmachine/drivers/plugin/localbinary"
+	"github.com/docker/machine/libmachine/host"
+	"github.com/docker/machine/libmachine/persist"
+	"github.com/docker/machine/libmachine/state"
 	"github.com/tsuru/tsuru-client/tsuru/client"
 	"github.com/tsuru/tsuru-client/tsuru/installer/testing"
 	"github.com/tsuru/tsuru/exec/exectest"
@@ -121,8 +125,7 @@ func (s *S) TestConfigureDriver(c *check.C) {
 }
 
 type fakeSSHTarget struct {
-	cmds   []string
-	driver drivers.Driver
+	cmds []string
 }
 
 func (f *fakeSSHTarget) RunSSHCommand(cmd string) (string, error) {
@@ -187,16 +190,44 @@ func (s *S) TestCreateRegistryCertificate(c *check.C) {
 	c.Assert(file.Size() > 0, check.Equals, true)
 }
 
-//func (s *S) TestCreateMachineNoneDriver(c *check.C) {
-//config := &DockerMachineConfig{
-//DriverName: "none",
-//DriverOpts: map[string]interface{}{
-//"url": "http://1.2.3.4",
-//},
-//}
-//dm, _ := NewDockerMachine(config)
-//machine, err := dm.CreateMachine()
-//c.Assert(err, check.IsNil)
-//c.Assert(machine, check.NotNil)
-//c.Assert(machine.IP, check.Equals, "1.2.3.4")
-//}
+type fakeMachineAPI struct {
+	*persist.Filestore
+	driverName string
+	hostName   string
+}
+
+func (f *fakeMachineAPI) NewHost(driverName string, rawDriver []byte) (*host.Host, error) {
+	f.driverName = driverName
+	return &host.Host{
+		Name: "machine",
+		Driver: &fakedriver.Driver{
+			MockState: state.Running,
+			MockIP:    "1.2.3.4",
+		},
+	}, nil
+}
+
+func (f *fakeMachineAPI) Create(h *host.Host) error {
+	f.hostName = h.Name
+	return nil
+}
+
+func (f *fakeMachineAPI) Close() error {
+	return nil
+}
+
+func (s *S) TestCreateMachine(c *check.C) {
+	dm, err := NewDockerMachine(defaultDockerMachineConfig)
+	c.Assert(err, check.IsNil)
+	fakeAPI := &fakeMachineAPI{}
+	dm.clientFactory = func() libmachine.API {
+		return fakeAPI
+	}
+	machine, err := dm.CreateMachine()
+	c.Assert(err, check.IsNil)
+	c.Assert(machine, check.NotNil)
+	c.Assert(machine.IP, check.Equals, "1.2.3.4")
+	c.Assert(machine.Address, check.Equals, "https://1.2.3.4:2376")
+	c.Assert(fakeAPI.driverName, check.Equals, "virtualbox")
+	c.Assert(fakeAPI.hostName, check.Equals, "machine")
+}

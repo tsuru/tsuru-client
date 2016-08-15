@@ -75,12 +75,13 @@ func (m *Machine) GetSSHUsername() string {
 }
 
 type DockerMachine struct {
-	driverOpts map[string]interface{}
-	rawDriver  []byte
-	driverName string
-	storePath  string
-	certsPath  string
-	Name       string
+	driverOpts    map[string]interface{}
+	rawDriver     []byte
+	driverName    string
+	storePath     string
+	certsPath     string
+	Name          string
+	clientFactory func() libmachine.API
 }
 
 type DockerMachineConfig struct {
@@ -116,13 +117,17 @@ func NewDockerMachine(config *DockerMachineConfig) (*DockerMachine, error) {
 	if err != nil {
 		return nil, fmt.Errorf("Error creating docker-machine driver: %s", err)
 	}
+	clientFactory := func() libmachine.API {
+		return libmachine.NewClient(storePath, certsPath)
+	}
 	return &DockerMachine{
-		driverOpts: config.DriverOpts,
-		rawDriver:  rawDriver,
-		driverName: config.DriverName,
-		storePath:  storePath,
-		certsPath:  certsPath,
-		Name:       config.Name,
+		driverOpts:    config.DriverOpts,
+		rawDriver:     rawDriver,
+		driverName:    config.DriverName,
+		storePath:     storePath,
+		certsPath:     certsPath,
+		Name:          config.Name,
+		clientFactory: clientFactory,
 	}, nil
 }
 
@@ -139,7 +144,7 @@ func copy(src, dst string) error {
 }
 
 func (d *DockerMachine) CreateMachine() (*Machine, error) {
-	client := libmachine.NewClient(d.storePath, d.certsPath)
+	client := d.clientFactory()
 	defer client.Close()
 	host, err := client.NewHost(d.driverName, d.rawDriver)
 	if err != nil {
@@ -154,17 +159,12 @@ func (d *DockerMachine) CreateMachine() (*Machine, error) {
 	if err != nil {
 		return nil, err
 	}
-	m := &Machine{
+	return &Machine{
 		IP:      ip,
 		CAPath:  d.certsPath,
 		Host:    host,
 		Address: fmt.Sprintf("https://%s:%d", ip, dockerHTTPSPort),
-	}
-	err = d.uploadRegistryCertificate(m)
-	if err != nil {
-		return nil, err
-	}
-	return m, nil
+	}, nil
 }
 
 type sshTarget interface {
@@ -252,7 +252,7 @@ func configureDriver(driver drivers.Driver, driverOpts map[string]interface{}) e
 }
 
 func (d *DockerMachine) DeleteMachine(m *Machine) error {
-	client := libmachine.NewClient(d.storePath, d.certsPath)
+	client := d.clientFactory()
 	defer client.Close()
 	h, err := client.Load(d.Name)
 	if err != nil {

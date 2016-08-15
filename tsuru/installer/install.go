@@ -59,6 +59,10 @@ func (c *Install) Run(context *cmd.Context, client *cmd.Client) error {
 		fmt.Fprintf(context.Stderr, "Error creating machine: %s\n", err)
 		return err
 	}
+	err = i.uploadRegistryCertificate(m)
+	if err != nil {
+		return err
+	}
 	fmt.Fprintf(context.Stdout, "Machine %s successfully created!\n", m.IP)
 	installConfig := NewInstallConfig(config.Name)
 	for _, component := range TsuruComponents {
