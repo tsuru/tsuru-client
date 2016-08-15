@@ -238,7 +238,7 @@ func (s *S) TestDeleteMachine(c *check.C) {
 	c.Assert(err, check.IsNil)
 	dm.client = &fakeMachineAPI{
 		FakeStore: &persisttest.FakeStore{
-			Hosts: []*host.Host{&host.Host{
+			Hosts: []*host.Host{{
 				Name: "test-machine",
 				Driver: &fakedriver.Driver{
 					MockState: state.Running,
