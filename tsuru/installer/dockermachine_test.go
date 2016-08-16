@@ -193,6 +193,7 @@ type fakeMachineAPI struct {
 	*persisttest.FakeStore
 	driverName string
 	hostName   string
+	closed     bool
 }
 
 func (f *fakeMachineAPI) NewHost(driverName string, rawDriver []byte) (*host.Host, error) {
@@ -212,6 +213,7 @@ func (f *fakeMachineAPI) Create(h *host.Host) error {
 }
 
 func (f *fakeMachineAPI) Close() error {
+	f.closed = true
 	return nil
 }
 
@@ -262,4 +264,17 @@ func (s *S) TestDeleteMachineLoadError(c *check.C) {
 	}
 	err = dm.DeleteMachine("test-machine")
 	c.Assert(err, check.Equals, expectedErr)
+}
+
+func (s *S) TestClose(c *check.C) {
+	dm, err := NewDockerMachine(defaultDockerMachineConfig)
+	c.Assert(err, check.IsNil)
+	fakeAPI := &fakeMachineAPI{
+		FakeStore: &persisttest.FakeStore{},
+	}
+	dm.client = fakeAPI
+	dm.CreateMachine()
+	c.Assert(fakeAPI.closed, check.Equals, false)
+	dm.Close()
+	c.Assert(fakeAPI.closed, check.Equals, true)
 }
