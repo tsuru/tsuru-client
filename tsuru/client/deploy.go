@@ -447,6 +447,7 @@ func (c *AppDeployRollback) Info() *cmd.Info {
 		Usage:   "app-deploy-rollback [-a/--app appname] [-y/--assume-yes] <image-name>",
 		Desc:    desc,
 		MinArgs: 1,
+		MaxArgs: 1,
 	}
 }
 
