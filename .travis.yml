@@ -5,13 +5,10 @@ os:
   - linux
   - osx
 go:
-  - 1.5.4
   - 1.6.3
-  - 1.7rc5
+  - 1.7
   - tip
 env:
-  global:
-    - GO15VENDOREXPERIMENT=1
   matrix:
     - GOARCH=amd64
     - GOARCH=386
