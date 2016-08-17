@@ -253,3 +253,12 @@ Events
 
 .. tsuru-command:: event-cancel
    :title: Cancel an event
+
+Installer
+=========
+
+.. tsuru-command:: install
+   :title: Install Tsuru and it's components
+
+.. tsuru-command:: uninstall
+  :title: Uninstall Tsuru and it's components
