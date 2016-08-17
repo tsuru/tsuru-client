@@ -52,7 +52,7 @@ func WithAppIDOverride(ctx netcontext.Context, appID string) netcontext.Context 
 
 var namespaceKey = "holds the namespace string"
 
-func WithNamespace(ctx netcontext.Context, ns string) netcontext.Context {
+func withNamespace(ctx netcontext.Context, ns string) netcontext.Context {
 	return netcontext.WithValue(ctx, &namespaceKey, ns)
 }
 
@@ -78,4 +78,9 @@ func Logf(ctx netcontext.Context, level int64, format string, args ...interface{
 		return
 	}
 	logf(fromContext(ctx), level, format, args...)
+}
+
+// NamespacedContext wraps a Context to support namespaces.
+func NamespacedContext(ctx netcontext.Context, namespace string) netcontext.Context {
+	return withNamespace(ctx, namespace)
 }

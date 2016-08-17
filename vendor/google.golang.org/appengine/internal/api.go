@@ -39,6 +39,7 @@ var (
 	// Incoming headers.
 	ticketHeader       = http.CanonicalHeaderKey("X-AppEngine-API-Ticket")
 	dapperHeader       = http.CanonicalHeaderKey("X-Google-DapperTraceInfo")
+	traceHeader        = http.CanonicalHeaderKey("X-Cloud-Trace-Context")
 	curNamespaceHeader = http.CanonicalHeaderKey("X-AppEngine-Current-Namespace")
 	userIPHeader       = http.CanonicalHeaderKey("X-AppEngine-User-IP")
 	remoteAddrHeader   = http.CanonicalHeaderKey("X-AppEngine-Remote-Addr")
@@ -230,7 +231,7 @@ func fromContext(ctx netcontext.Context) *context {
 func withContext(parent netcontext.Context, c *context) netcontext.Context {
 	ctx := netcontext.WithValue(parent, &contextKey, c)
 	if ns := c.req.Header.Get(curNamespaceHeader); ns != "" {
-		ctx = WithNamespace(ctx, ns)
+		ctx = withNamespace(ctx, ns)
 	}
 	return ctx
 }
@@ -387,6 +388,9 @@ func (c *context) post(body []byte, timeout time.Duration) (b []byte, err error)
 	if info := c.req.Header.Get(dapperHeader); info != "" {
 		hreq.Header.Set(dapperHeader, info)
 	}
+	if info := c.req.Header.Get(traceHeader); info != "" {
+		hreq.Header.Set(traceHeader, info)
+	}
 
 	tr := apiHTTPClient.Transport.(*http.Transport)
 
@@ -428,8 +432,21 @@ func (c *context) post(body []byte, timeout time.Duration) (b []byte, err error)
 }
 
 func Call(ctx netcontext.Context, service, method string, in, out proto.Message) error {
+	if ns := NamespaceFromContext(ctx); ns != "" {
+		if fn, ok := NamespaceMods[service]; ok {
+			fn(in, ns)
+		}
+	}
+
 	if f, ctx, ok := callOverrideFromContext(ctx); ok {
 		return f(ctx, service, method, in, out)
+	}
+
+	// Handle already-done contexts quickly.
+	select {
+	case <-ctx.Done():
+		return ctx.Err()
+	default:
 	}
 
 	c := fromContext(ctx)

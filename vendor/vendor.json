@@ -1825,14 +1825,15 @@
 		{
 			"checksumSHA1": "xduDNbu9zEufcDc8UNWHoLrip5w=",
 			"path": "google.golang.org/appengine",
-			"revision": "b4728023490a62e70ba739ff62aa65ffcca84210",
-			"revisionTime": "2016-08-08T05:09:58Z"
+			"revision": "e951d3868b377b14f4e60efa3a301532ee3c1ebf",
+			"revisionTime": "2016-08-10T13:11:16-07:00"
 		},
 		{
-			"checksumSHA1": "gsE/AYe//KmaiuMoXwjSxDfHaQU=",
-			"origin": "github.com/tsuru/vendor/google.golang.org/appengine/internal",
+			"checksumSHA1": "4lEP/dEWOMb4r2Aehu0D9iBDgIU=",
+			"origin": "github.com/tsuru/tsuru-client/vendor/google.golang.org/appengine/internal",
 			"path": "google.golang.org/appengine/internal",
-			"revision": ""
+			"revision": "e951d3868b377b14f4e60efa3a301532ee3c1ebf",
+			"revisionTime": "2016-08-10T13:11:16-07:00"
 		},
 		{
 			"checksumSHA1": "x6Thdfyasqd68dWZWqzWWeIfAfI=",
