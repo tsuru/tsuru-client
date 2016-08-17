@@ -7,6 +7,7 @@ package installer
 import (
 	"fmt"
 	"os"
+	"strconv"
 	"strings"
 
 	"github.com/tsuru/config"
@@ -55,7 +56,7 @@ func (c *Install) Run(context *cmd.Context, client *cmd.Client) error {
 		return err
 	}
 	defer i.Close()
-	m, err := i.CreateMachine()
+	m, err := i.CreateMachine([]string{strconv.Itoa(defaultTsuruAPIPort)})
 	if err != nil {
 		fmt.Fprintf(context.Stderr, "Error creating machine: %s\n", err)
 		return err

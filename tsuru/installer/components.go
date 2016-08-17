@@ -19,13 +19,17 @@ import (
 	"github.com/tsuru/tsuru/provision"
 )
 
-var TsuruComponents = []TsuruComponent{
-	&MongoDB{},
-	&Redis{},
-	&PlanB{},
-	&Registry{},
-	&TsuruAPI{},
-}
+var (
+	TsuruComponents = []TsuruComponent{
+		&MongoDB{},
+		&Redis{},
+		&PlanB{},
+		&Registry{},
+		&TsuruAPI{},
+	}
+
+	defaultTsuruAPIPort = 8080
+)
 
 type InstallConfig struct {
 	DockerHubMirror string
@@ -162,7 +166,7 @@ func (c *TsuruAPI) Install(machine *Machine, i *InstallConfig) error {
 		fmt.Sprintf("REGISTRY_ADDR=%s", machine.IP),
 		"REGISTRY_PORT=5000",
 		fmt.Sprintf("TSURU_ADDR=http://%s", machine.IP),
-		fmt.Sprintf("TSURU_PORT=8080"),
+		fmt.Sprintf("TSURU_PORT=%d", defaultTsuruAPIPort),
 	}
 	config := &docker.Config{
 		Image: i.fullImageName("tsuru/api:latest"),
@@ -176,13 +180,13 @@ func (c *TsuruAPI) Install(machine *Machine, i *InstallConfig) error {
 		return err
 	}
 	fmt.Println("Waiting for Tsuru API to become responsive...")
-	tsuruURL := fmt.Sprintf("http://%s:8080", machine.IP)
+	tsuruURL := fmt.Sprintf("http://%s:%d", machine.IP, defaultTsuruAPIPort)
 	err = mcnutils.WaitFor(func() bool {
 		_, errReq := http.Get(tsuruURL)
 		return errReq == nil
 	})
 	if err != nil {
-		return err
+		return fmt.Errorf("failed to connect to %s: %s", tsuruURL, err)
 	}
 	err = c.setupRootUser(machine, i.RootUserEmail, i.RootUserPassword)
 	if err != nil {

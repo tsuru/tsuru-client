@@ -53,9 +53,10 @@ var (
 
 type Machine struct {
 	*host.Host
-	IP      string
-	Address string
-	CAPath  string
+	IP        string
+	Address   string
+	CAPath    string
+	OpenPorts []string
 }
 
 func (m *Machine) dockerClient() (*docker.Client, error) {
@@ -142,12 +143,12 @@ func copy(src, dst string) error {
 	return nil
 }
 
-func (d *DockerMachine) CreateMachine() (*Machine, error) {
+func (d *DockerMachine) CreateMachine(openPorts []string) (*Machine, error) {
 	host, err := d.client.NewHost(d.driverName, d.rawDriver)
 	if err != nil {
 		return nil, err
 	}
-	configureDriver(host.Driver, d.driverOpts)
+	configureDriver(host.Driver, d.driverOpts, openPorts)
 	err = d.client.Create(host)
 	if err != nil {
 		fmt.Printf("Ignoring error on machine creation: %s", err)
@@ -157,10 +158,11 @@ func (d *DockerMachine) CreateMachine() (*Machine, error) {
 		return nil, err
 	}
 	return &Machine{
-		IP:      ip,
-		CAPath:  d.certsPath,
-		Host:    host,
-		Address: fmt.Sprintf("https://%s:%d", ip, dockerHTTPSPort),
+		IP:        ip,
+		CAPath:    d.certsPath,
+		Host:      host,
+		Address:   fmt.Sprintf("https://%s:%d", ip, dockerHTTPSPort),
+		OpenPorts: openPorts,
 	}, nil
 }
 
@@ -231,7 +233,8 @@ func (d *DockerMachine) createRegistryCertificate(hosts ...string) error {
 	return generator.GenerateCert(certOpts)
 }
 
-func configureDriver(driver drivers.Driver, driverOpts map[string]interface{}) error {
+func configureDriver(driver drivers.Driver, driverOpts map[string]interface{}, openPorts []string) error {
+	openPortFlag := driver.DriverName() + "-open-port"
 	opts := &rpcdriver.RPCFlags{Values: driverOpts}
 	for _, c := range driver.GetCreateFlags() {
 		_, ok := opts.Values[c.String()]
@@ -240,8 +243,12 @@ func configureDriver(driver drivers.Driver, driverOpts map[string]interface{}) e
 			if c.Default() == nil {
 				opts.Values[c.String()] = false
 			}
+			if c.String() == openPortFlag {
+				opts.Values[c.String()] = openPorts
+			}
 		}
 	}
+
 	if err := driver.SetConfigFromFlags(opts); err != nil {
 		return fmt.Errorf("Error setting driver configurations: %s", err)
 	}

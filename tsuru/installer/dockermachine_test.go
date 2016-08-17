@@ -14,6 +14,7 @@ import (
 	check "gopkg.in/check.v1"
 
 	"github.com/docker/machine/drivers/amazonec2"
+	"github.com/docker/machine/drivers/azure"
 	"github.com/docker/machine/drivers/fakedriver"
 	"github.com/docker/machine/libmachine/drivers/plugin/localbinary"
 	"github.com/docker/machine/libmachine/host"
@@ -111,16 +112,26 @@ func (s *S) TestConfigureDriver(c *check.C) {
 		"amazonec2-subnet-id":      "net",
 		"amazonec2-security-group": []string{"sg-123", "sg-456"},
 	}
-	err := configureDriver(driver, opts)
+	err := configureDriver(driver, opts, []string{})
 	c.Assert(err, check.NotNil)
 	opts["amazonec2-secret-key"] = "cde"
-	err = configureDriver(driver, opts)
+	err = configureDriver(driver, opts, []string{})
 	c.Assert(err, check.IsNil)
 	c.Assert(driver.SecurityGroupNames, check.DeepEquals, []string{"sg-123", "sg-456"})
 	c.Assert(driver.SecretKey, check.Equals, "cde")
 	c.Assert(driver.SubnetId, check.Equals, "net")
 	c.Assert(driver.AccessKey, check.Equals, "abc")
 	c.Assert(driver.RetryCount, check.Equals, 5)
+}
+
+func (s *S) TestConfigureDriverOpenPorts(c *check.C) {
+	driver := azure.NewDriver("", "")
+	opts := map[string]interface{}{
+		"azure-subscription-id": "abc",
+	}
+	err := configureDriver(driver, opts, []string{"8080"})
+	c.Assert(err, check.IsNil)
+	c.Assert(driver.(*azure.Driver).OpenPorts, check.DeepEquals, []string{"8080"})
 }
 
 type fakeSSHTarget struct {
@@ -226,11 +237,12 @@ func (s *S) TestCreateMachine(c *check.C) {
 	c.Assert(err, check.IsNil)
 	fakeAPI := &fakeMachineAPI{}
 	dm.client = fakeAPI
-	machine, err := dm.CreateMachine()
+	machine, err := dm.CreateMachine([]string{"8080"})
 	c.Assert(err, check.IsNil)
 	c.Assert(machine, check.NotNil)
 	c.Assert(machine.IP, check.Equals, "1.2.3.4")
 	c.Assert(machine.Address, check.Equals, "https://1.2.3.4:2376")
+	c.Assert(machine.OpenPorts, check.DeepEquals, []string{"8080"})
 	c.Assert(fakeAPI.driverName, check.Equals, "virtualbox")
 	c.Assert(fakeAPI.hostName, check.Equals, "machine")
 }
@@ -273,7 +285,7 @@ func (s *S) TestClose(c *check.C) {
 		FakeStore: &persisttest.FakeStore{},
 	}
 	dm.client = fakeAPI
-	dm.CreateMachine()
+	dm.CreateMachine([]string{})
 	c.Assert(fakeAPI.closed, check.Equals, false)
 	dm.Close()
 	c.Assert(fakeAPI.closed, check.Equals, true)
