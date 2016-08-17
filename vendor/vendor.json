@@ -351,6 +351,18 @@
 			"revision": ""
 		},
 		{
+			"checksumSHA1": "d5BuQrBPAQwmU/WjUSfYBZTKnFA=",
+			"path": "github.com/docker/engine-api/types/mount",
+			"revision": "c9fd33c91008b9c558a6ed1cb11a68dbe4db0493",
+			"revisionTime": "2016-08-16T22:55:04Z"
+		},
+		{
+			"checksumSHA1": "xUuiv97suyn7SdxSR9XCYcn+Y+Q=",
+			"path": "github.com/docker/engine-api/types/swarm",
+			"revision": "c9fd33c91008b9c558a6ed1cb11a68dbe4db0493",
+			"revisionTime": "2016-08-16T22:55:04Z"
+		},
+		{
 			"checksumSHA1": "AE3TTpPWvv9ic71FiF0HnRr46mE=",
 			"origin": "github.com/tsuru/vendor/github.com/docker/engine-api/types/versions",
 			"path": "github.com/docker/engine-api/types/versions",
@@ -640,14 +652,12 @@
 		},
 		{
 			"checksumSHA1": "MLtqxyg4QD7OpHupJRGxou0mYEA=",
-			"origin": "github.com/tsuru/tsuru-client/vendor/github.com/fsouza/go-dockerclient",
 			"path": "github.com/fsouza/go-dockerclient",
 			"revision": "62ed6e8cea56943672db12ef3427ba6af2adaf55",
 			"revisionTime": "2016-08-11T15:27:15-03:00"
 		},
 		{
 			"checksumSHA1": "/R1RDnH+A7oa3neEoNg8eJplF/Q=",
-			"origin": "github.com/tsuru/tsuru-client/vendor/github.com/fsouza/go-dockerclient/testing",
 			"path": "github.com/fsouza/go-dockerclient/testing",
 			"revision": "62ed6e8cea56943672db12ef3427ba6af2adaf55",
 			"revisionTime": "2016-08-11T15:27:15-03:00"
@@ -1049,7 +1059,6 @@
 		},
 		{
 			"checksumSHA1": "62NgBi3bX31q+HH4UUmXqK5NgTI=",
-			"origin": "github.com/tsuru/tsuru-client/vendor/github.com/tsuru/tsuru/cmd",
 			"path": "github.com/tsuru/tsuru/cmd",
 			"revision": "4b50e5bf1dc0a61bdbbf8ee1950a64cf4e84c01c",
 			"revisionTime": "2016-08-05T17:18:15-03:00"
@@ -1814,10 +1823,22 @@
 			"revision": ""
 		},
 		{
+			"checksumSHA1": "xduDNbu9zEufcDc8UNWHoLrip5w=",
+			"path": "google.golang.org/appengine",
+			"revision": "b4728023490a62e70ba739ff62aa65ffcca84210",
+			"revisionTime": "2016-08-08T05:09:58Z"
+		},
+		{
 			"checksumSHA1": "gsE/AYe//KmaiuMoXwjSxDfHaQU=",
 			"origin": "github.com/tsuru/vendor/google.golang.org/appengine/internal",
 			"path": "google.golang.org/appengine/internal",
 			"revision": ""
+		},
+		{
+			"checksumSHA1": "x6Thdfyasqd68dWZWqzWWeIfAfI=",
+			"path": "google.golang.org/appengine/internal/app_identity",
+			"revision": "b4728023490a62e70ba739ff62aa65ffcca84210",
+			"revisionTime": "2016-08-08T05:09:58Z"
 		},
 		{
 			"checksumSHA1": "TsNO8P0xUlLNyh3Ic/tzSp/fDWM=",
@@ -1836,6 +1857,12 @@
 			"origin": "github.com/tsuru/vendor/google.golang.org/appengine/internal/log",
 			"path": "google.golang.org/appengine/internal/log",
 			"revision": ""
+		},
+		{
+			"checksumSHA1": "eLZVX1EHLclFtQnjDIszsdyWRHo=",
+			"path": "google.golang.org/appengine/internal/modules",
+			"revision": "b4728023490a62e70ba739ff62aa65ffcca84210",
+			"revisionTime": "2016-08-08T05:09:58Z"
 		},
 		{
 			"checksumSHA1": "a1XY7rz3BieOVqVI2Et6rKiwQCk=",
