@@ -42,13 +42,13 @@ func (PlatformList) Run(context *cmd.Context, client *cmd.Client) error {
 		return err
 	}
 	defer resp.Body.Close()
+	if resp.StatusCode == http.StatusNoContent {
+		fmt.Fprintln(context.Stdout, "No platforms available.")
+		return nil
+	}
 	err = json.NewDecoder(resp.Body).Decode(&platforms)
 	if err != nil {
 		return err
-	}
-	if len(platforms) == 0 {
-		fmt.Fprintln(context.Stdout, "No platforms available.")
-		return nil
 	}
 	platformNames := make([]string, len(platforms))
 	for i, p := range platforms {

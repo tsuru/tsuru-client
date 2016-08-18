@@ -68,8 +68,7 @@ func (s *S) TestPlatformListWithDisabledPlatforms(c *check.C) {
 func (s *S) TestPlatformListEmpty(c *check.C) {
 	var buf bytes.Buffer
 	transport := cmdtest.Transport{
-		Status:  http.StatusOK,
-		Message: `[]`,
+		Status: http.StatusNoContent,
 	}
 	context := cmd.Context{Stdout: &buf}
 	client := cmd.NewClient(&http.Client{Transport: &transport}, nil, manager)
