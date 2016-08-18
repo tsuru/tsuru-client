@@ -85,9 +85,6 @@ If this parameter is omitted, tsuru will try to *guess* the application's name
 based on the git repository's configuration. It will try to find a remote labeled
 **tsuru**, and parse its URL.
 
-If no remote named **tsuru** is found, tsuru will try to use the current directory
-name as the application's name.
-
 
 .. tsuru-command:: platform-list
    :title: List of available platforms
