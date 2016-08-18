@@ -196,8 +196,8 @@ func (d *DockerMachine) CreateMachine(openPorts []string) (*Machine, error) {
 			Driver: "default",
 			Config: []docker.IPAMConfig{
 				{
-					Subnet:  "172.17.1.0/24",
-					Gateway: "172.17.1.1",
+					Subnet:  "177.10.1.0/24",
+					Gateway: "177.10.1.1",
 				},
 			},
 		},
