@@ -13,6 +13,7 @@ import (
 	"os"
 	"path/filepath"
 
+	"github.com/docker/engine-api/types/swarm"
 	"github.com/docker/machine/drivers/amazonec2"
 	"github.com/docker/machine/drivers/azure"
 	"github.com/docker/machine/drivers/digitalocean"
@@ -57,6 +58,7 @@ type Machine struct {
 	Address   string
 	CAPath    string
 	OpenPorts []string
+	network   *docker.Network
 }
 
 func (m *Machine) dockerClient() (*docker.Client, error) {
@@ -66,6 +68,10 @@ func (m *Machine) dockerClient() (*docker.Client, error) {
 		filepath.Join(m.CAPath, "key.pem"),
 		filepath.Join(m.CAPath, "ca.pem"),
 	)
+}
+
+func (m *Machine) GetNetwork() *docker.Network {
+	return m.network
 }
 
 func (m *Machine) GetIP() string {
@@ -161,13 +167,47 @@ func (d *DockerMachine) CreateMachine(openPorts []string) (*Machine, error) {
 	if err != nil {
 		return nil, err
 	}
-	return &Machine{
+	m := &Machine{
 		IP:        ip,
 		CAPath:    d.certsPath,
 		Host:      host,
 		Address:   fmt.Sprintf("https://%s:%d", ip, dockerHTTPSPort),
 		OpenPorts: openPorts,
-	}, nil
+	}
+	swarmOpts := docker.InitSwarmOptions{
+		InitRequest: swarm.InitRequest{
+			ListenAddr:    "0.0.0.0:2377",
+			AdvertiseAddr: fmt.Sprintf("%s:2377", ip),
+		},
+	}
+	dockerClient, err := m.dockerClient()
+	if err != nil {
+		return nil, err
+	}
+	_, err = dockerClient.InitSwarm(swarmOpts)
+	if err != nil {
+		return nil, err
+	}
+	createNetworkOpts := docker.CreateNetworkOptions{
+		Name:           "tsuru",
+		Driver:         "overlay",
+		CheckDuplicate: true,
+		IPAM: docker.IPAMOptions{
+			Driver: "default",
+			Config: []docker.IPAMConfig{
+				{
+					Subnet:  "172.17.1.0/24",
+					Gateway: "172.17.1.1",
+				},
+			},
+		},
+	}
+	network, err := dockerClient.CreateNetwork(createNetworkOpts)
+	if err != nil {
+		return nil, err
+	}
+	m.network = network
+	return m, nil
 }
 
 type sshTarget interface {
