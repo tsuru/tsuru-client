@@ -527,6 +527,9 @@ type CreateContainerOptions struct {
 // CreateContainer creates a new container, returning the container instance,
 // or an error in case of failure.
 //
+// The returned container instance contains only the container ID. To get more
+// details about the container after creating it, use InspectContainer.
+//
 // See https://goo.gl/WxQzrr for more details.
 func (c *Client) CreateContainer(opts CreateContainerOptions) (*Container, error) {
 	path := "/containers/create?" + queryString(opts)
@@ -1163,6 +1166,12 @@ type CopyFromContainerOptions struct {
 func (c *Client) CopyFromContainer(opts CopyFromContainerOptions) error {
 	if opts.Container == "" {
 		return &NoSuchContainer{ID: opts.Container}
+	}
+	if c.serverAPIVersion == nil {
+		c.checkAPIVersion()
+	}
+	if c.serverAPIVersion != nil && c.serverAPIVersion.GreaterThanOrEqualTo(apiVersion124) {
+		return errors.New("go-dockerclient: CopyFromContainer is no longer available in Docker >= 1.12, use DownloadFromContainer instead")
 	}
 	url := fmt.Sprintf("/containers/%s/copy", opts.Container)
 	resp, err := c.do("POST", url, doOptions{
