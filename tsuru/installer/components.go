@@ -88,7 +88,7 @@ func (c *PlanB) Name() string {
 func (c *PlanB) Install(machine *Machine, i *InstallConfig) error {
 	config := &docker.Config{
 		Image: i.fullImageName("tsuru/planb:latest"),
-		Cmd:   []string{"--listen", ":80", "--read-redis-host", machine.IP, "--write-redis-host", machine.IP},
+		Cmd:   []string{"--listen", ":80", "--read-redis-host", "redis", "--write-redis-host", "redis"},
 		ExposedPorts: map[docker.Port]struct{}{
 			docker.Port("80/tcp"): {},
 		},
@@ -158,11 +158,11 @@ func (c *TsuruAPI) Name() string {
 }
 
 func (c *TsuruAPI) Install(machine *Machine, i *InstallConfig) error {
-	env := []string{fmt.Sprintf("MONGODB_ADDR=%s", machine.IP),
+	env := []string{fmt.Sprintf("MONGODB_ADDR=%s", "mongo"),
 		"MONGODB_PORT=27017",
-		fmt.Sprintf("REDIS_ADDR=%s", machine.IP),
+		fmt.Sprintf("REDIS_ADDR=%s", "redis"),
 		"REDIS_PORT=6379",
-		fmt.Sprintf("HIPACHE_DOMAIN=%s.nip.io", machine.IP),
+		fmt.Sprintf("HIPACHE_DOMAIN=%s.nip.io", "planb"),
 		fmt.Sprintf("REGISTRY_ADDR=%s", machine.IP),
 		"REGISTRY_PORT=5000",
 		fmt.Sprintf("TSURU_ADDR=http://%s", machine.IP),
