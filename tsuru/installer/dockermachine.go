@@ -257,6 +257,10 @@ func (d *DockerMachine) uploadRegistryCertificate(host sshTarget) error {
 		return err
 	}
 	_, err = host.RunSSHCommand(fmt.Sprintf("cat %s/ca.pem | sudo tee -a /etc/ssl/certs/ca-certificates.crt", certsBasePath))
+	if err != nil {
+		return err
+	}
+	_, err = host.RunSSHCommand("mkdir -p /var/lib/registry/")
 	return err
 }
 
