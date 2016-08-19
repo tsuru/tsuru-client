@@ -28,6 +28,10 @@ func (t testEndpoint) dockerClient() (*docker.Client, error) {
 	)
 }
 
+func (t testEndpoint) GetNetwork() *docker.Network {
+	return &docker.Network{}
+}
+
 func (s *S) TestCreateContainer(c *check.C) {
 	var requests []*http.Request
 	tlsConfig := testing.TLSConfig{

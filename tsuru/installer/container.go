@@ -6,12 +6,17 @@ package installer
 
 import (
 	"os"
+	"strconv"
+	"strings"
 
+	"github.com/docker/engine-api/types/mount"
+	"github.com/docker/engine-api/types/swarm"
 	"github.com/fsouza/go-dockerclient"
 )
 
 type dockerEnpoint interface {
 	dockerClient() (*docker.Client, error)
+	GetNetwork() *docker.Network
 }
 
 func createContainer(d dockerEnpoint, name string, config *docker.Config, hostConfig *docker.HostConfig) error {
@@ -43,10 +48,62 @@ func createContainer(d dockerEnpoint, name string, config *docker.Config, hostCo
 			hostConfig.PortBindings[k] = []docker.PortBinding{{HostIP: "0.0.0.0", HostPort: k.Port()}}
 		}
 	}
-	opts := docker.CreateContainerOptions{Config: config, HostConfig: hostConfig, Name: name}
-	_, err = client.CreateContainer(opts)
-	if err != nil {
-		return err
+	ports := []swarm.PortConfig{}
+	for k, p := range hostConfig.PortBindings {
+		targetPort, err := strconv.Atoi(k.Port())
+		if err != nil {
+			return err
+		}
+		publishedPort, err := strconv.Atoi(p[0].HostPort)
+		if err != nil {
+			return err
+		}
+		port := swarm.PortConfig{
+			Protocol:      swarm.PortConfigProtocolTCP,
+			TargetPort:    uint32(targetPort),
+			PublishedPort: uint32(publishedPort),
+		}
+		ports = append(ports, port)
 	}
-	return client.StartContainer(name, nil)
+	mounts := []mount.Mount{}
+	for _, bind := range hostConfig.Binds {
+		bindParts := strings.Split(bind, ":")
+		var ro bool
+		if len(bindParts) > 2 {
+			ro = true
+		}
+		mount := mount.Mount{
+			Type:     mount.TypeBind,
+			Source:   bindParts[0],
+			Target:   bindParts[1],
+			ReadOnly: ro,
+		}
+		mounts = append(mounts, mount)
+	}
+	swarmEndpointSpec := &swarm.EndpointSpec{Ports: ports}
+	serviceCreateOpts := docker.CreateServiceOptions{
+		ServiceSpec: swarm.ServiceSpec{
+			Annotations: swarm.Annotations{
+				Name: name,
+			},
+			TaskTemplate: swarm.TaskSpec{
+				ContainerSpec: swarm.ContainerSpec{
+					Image:  config.Image,
+					Args:   config.Cmd,
+					Env:    config.Env,
+					Labels: config.Labels,
+					Mounts: mounts,
+					User:   config.User,
+					Dir:    config.WorkingDir,
+					TTY:    config.Tty,
+				},
+			},
+			Networks: []swarm.NetworkAttachmentConfig{
+				{Target: "tsuru"},
+			},
+			EndpointSpec: swarmEndpointSpec,
+		},
+	}
+	_, err = client.CreateService(serviceCreateOpts)
+	return err
 }
