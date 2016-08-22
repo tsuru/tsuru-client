@@ -261,6 +261,14 @@ func (d *DockerMachine) uploadRegistryCertificate(host sshTarget) error {
 		return err
 	}
 	_, err = host.RunSSHCommand("mkdir -p /var/lib/registry/")
+	if err != nil {
+		return err
+	}
+	_, err = host.RunSSHCommand("sudo /usr/local/sbin/iptables -D DOCKER-ISOLATION -i docker_gwbridge -o docker0 -j DROP")
+	if err != nil {
+		return err
+	}
+	_, err = host.RunSSHCommand("sudo /usr/local/sbin/iptables -D DOCKER-ISOLATION -i docker0 -o docker_gwbridge -j DROP")
 	return err
 }
 
