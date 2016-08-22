@@ -201,7 +201,7 @@ func (c *Uninstall) Run(context *cmd.Context, client *cmd.Client) error {
 		fmt.Fprintf(context.Stderr, "Failed to delete installation directory: %s\n", err)
 		return err
 	}
-	fmt.Fprintf(context.Stdout, "Uninstall finished successfully!")
+	fmt.Fprintf(context.Stdout, "Uninstall finished successfully!\n")
 	return nil
 }
 
