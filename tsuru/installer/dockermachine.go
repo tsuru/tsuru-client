@@ -76,6 +76,10 @@ func (m *Machine) GetSSHUsername() string {
 	return m.Driver.GetSSHUsername()
 }
 
+func (m *Machine) GetSSHKeyPath() string {
+	return m.Driver.GetSSHKeyPath()
+}
+
 type DockerMachine struct {
 	io.Closer
 	driverOpts map[string]interface{}
@@ -170,6 +174,7 @@ type sshTarget interface {
 	RunSSHCommand(string) (string, error)
 	GetIP() string
 	GetSSHUsername() string
+	GetSSHKeyPath() string
 }
 
 func (d *DockerMachine) uploadRegistryCertificate(host sshTarget) error {
@@ -183,7 +188,7 @@ func (d *DockerMachine) uploadRegistryCertificate(host sshTarget) error {
 	args := []string{
 		"-o StrictHostKeyChecking=no",
 		"-i",
-		fmt.Sprintf("%s/machines/%s/id_rsa", d.storePath, d.Name),
+		host.GetSSHKeyPath(),
 		"-r",
 		fmt.Sprintf("%s/", d.certsPath),
 		fmt.Sprintf("%s@%s:/home/%s/", host.GetSSHUsername(), host.GetIP(), host.GetSSHUsername()),

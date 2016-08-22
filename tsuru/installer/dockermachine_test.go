@@ -151,6 +151,10 @@ func (f *fakeSSHTarget) GetSSHUsername() string {
 	return "ubuntu"
 }
 
+func (f *fakeSSHTarget) GetSSHKeyPath() string {
+	return "/mykey"
+}
+
 func (s *S) TestUploadRegistryCertificate(c *check.C) {
 	fakeSSHTarget := &fakeSSHTarget{}
 	fexec := exectest.FakeExecutor{}
@@ -168,7 +172,7 @@ func (s *S) TestUploadRegistryCertificate(c *check.C) {
 	c.Assert(err, check.IsNil)
 	expectedArgs := []string{"-o StrictHostKeyChecking=no",
 		"-i",
-		fmt.Sprintf("%s/machines/%s/id_rsa", dm.storePath, dm.Name),
+		"/mykey",
 		"-r",
 		fmt.Sprintf("%s/", dm.certsPath),
 		fmt.Sprintf("%s@%s:/home/%s/", "ubuntu", "127.0.0.1", "ubuntu"),
