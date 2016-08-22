@@ -162,7 +162,7 @@ func (c *TsuruAPI) Install(machine *Machine, i *InstallConfig) error {
 		"MONGODB_PORT=27017",
 		fmt.Sprintf("REDIS_ADDR=%s", "redis"),
 		"REDIS_PORT=6379",
-		fmt.Sprintf("HIPACHE_DOMAIN=%s.nip.io", "planb"),
+		fmt.Sprintf("HIPACHE_DOMAIN=%s.nip.io", machine.IP),
 		fmt.Sprintf("REGISTRY_ADDR=%s", machine.IP),
 		"REGISTRY_PORT=5000",
 		fmt.Sprintf("TSURU_ADDR=http://%s", machine.IP),
@@ -206,9 +206,22 @@ func (c *TsuruAPI) setupRootUser(machine *Machine, email, password string) error
 	if err != nil {
 		return err
 	}
+	filterOpts := docker.ListContainersOptions{
+		All: true,
+	}
+	containers, err := client.ListContainers(filterOpts)
+	if err != nil {
+		return err
+	}
+	var tsuruContainer string
+	for _, c := range containers {
+		if strings.Contains(strings.Join(c.Names, ","), "tsuru") {
+			tsuruContainer = c.ID
+		}
+	}
 	exec, err := client.CreateExec(docker.CreateExecOptions{
 		Cmd:          cmd,
-		Container:    "tsuru",
+		Container:    tsuruContainer,
 		AttachStdout: true,
 		AttachStderr: true,
 		AttachStdin:  true,
