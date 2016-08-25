@@ -50,11 +50,10 @@ func (s *S) TestCreateContainer(c *check.C) {
 	config := &docker.Config{Image: "tsuru/api:v1"}
 	err = createContainer(endpoint, "contName", config, nil)
 	c.Assert(err, check.IsNil)
-	c.Assert(requests, check.HasLen, 4)
+	c.Assert(requests, check.HasLen, 3)
 	c.Assert(requests[0].URL.Path, check.Equals, "/images/create")
 	c.Assert(requests[1].URL.Path, check.Equals, "/images/tsuru/api:v1/json")
-	c.Assert(requests[2].URL.Path, check.Equals, "/containers/create")
-	c.Assert(requests[3].URL.Path, check.Equals, "/containers/contName/start")
+	c.Assert(requests[2].URL.Path, check.Equals, "/services/create")
 }
 
 func (s *S) TestCreateContainerWithExposedPorts(c *check.C) {

@@ -33,17 +33,17 @@ func (s *S) TestInstallComponentsDefaultConfig(c *check.C) {
 		{&Redis{}, "redis", "redis:latest", []string(nil), []string(nil)},
 		{&PlanB{}, "planb", "tsuru/planb:latest",
 			[]string{"--listen", ":80",
-				"--read-redis-host", "127.0.0.1",
-				"--write-redis-host", "127.0.0.1",
+				"--read-redis-host", "redis",
+				"--write-redis-host", "redis",
 			}, []string(nil)},
 		{&Registry{}, "registry", "registry:2", []string(nil),
 			[]string{"REGISTRY_STORAGE_FILESYSTEM_ROOTDIRECTORY=/var/lib/registry",
 				"REGISTRY_HTTP_TLS_KEY=/certs/127.0.0.1:5000/registry-key.pem",
 				"REGISTRY_HTTP_TLS_CERTIFICATE=/certs/127.0.0.1:5000/registry-cert.pem"}},
 		{&TsuruAPI{}, "tsuru", "tsuru/api:latest", []string(nil),
-			[]string{"MONGODB_ADDR=127.0.0.1",
+			[]string{"MONGODB_ADDR=mongo",
 				"MONGODB_PORT=27017",
-				"REDIS_ADDR=127.0.0.1",
+				"REDIS_ADDR=redis",
 				"REDIS_PORT=6379",
 				"HIPACHE_DOMAIN=127.0.0.1.nip.io",
 				"REGISTRY_ADDR=127.0.0.1",
@@ -69,16 +69,11 @@ func (s *S) TestInstallComponentsDefaultConfig(c *check.C) {
 
 		cont := <-containerChan
 		c.Assert(cont.Name, check.Equals, tt.containerName)
-		c.Assert(cont.State.Running, check.Equals, false)
 		c.Assert(cont.Image, check.Equals, tt.image)
 		c.Assert(cont.Config.Cmd, check.DeepEquals, tt.cmd)
 		sort.Strings(cont.Config.Env)
 		sort.Strings(tt.env)
 		c.Assert(cont.Config.Env, check.DeepEquals, tt.env)
-
-		cont = <-containerChan
-		c.Assert(cont.State.Running, check.Equals, true)
-
 	}
 }
 
@@ -96,7 +91,7 @@ func (s *S) TestInstallComponentsCustomRegistry(c *check.C) {
 		{&TsuruAPI{}, "myregistry.com/tsuru/api:latest"},
 	}
 	c.Assert(len(tests), check.Equals, len(TsuruComponents))
-	containerChan := make(chan *docker.Container)
+	containerChan := make(chan *docker.Container, 1)
 	tlsConfig := testing.TLSConfig{
 		CertPath:    s.TLSCertsPath.ServerCert,
 		CertKeyPath: s.TLSCertsPath.ServerKey,
@@ -111,11 +106,6 @@ func (s *S) TestInstallComponentsCustomRegistry(c *check.C) {
 		go tt.component.Install(mockMachine, config)
 
 		cont := <-containerChan
-		c.Assert(cont.State.Running, check.Equals, false)
-		c.Assert(cont.Image, check.Equals, tt.image)
-
-		cont = <-containerChan
-		c.Assert(cont.State.Running, check.Equals, true)
 		c.Assert(cont.Image, check.Equals, tt.image)
 	}
 }

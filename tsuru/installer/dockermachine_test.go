@@ -20,6 +20,7 @@ import (
 	"github.com/docker/machine/libmachine/host"
 	"github.com/docker/machine/libmachine/persist/persisttest"
 	"github.com/docker/machine/libmachine/state"
+	dtesting "github.com/fsouza/go-dockerclient/testing"
 	"github.com/tsuru/tsuru-client/tsuru/client"
 	"github.com/tsuru/tsuru-client/tsuru/installer/testing"
 	"github.com/tsuru/tsuru/exec/exectest"
@@ -183,6 +184,9 @@ func (s *S) TestUploadRegistryCertificate(c *check.C) {
 		"cp /home/ubuntu/certs/*.pem /home/ubuntu/certs/127.0.0.1:5000/",
 		"sudo mkdir /etc/docker/certs.d && sudo cp -r /home/ubuntu/certs/* /etc/docker/certs.d/",
 		"cat /home/ubuntu/certs/127.0.0.1:5000/ca.pem | sudo tee -a /etc/ssl/certs/ca-certificates.crt",
+		"mkdir -p /var/lib/registry/",
+		"sudo /usr/local/sbin/iptables -D DOCKER-ISOLATION -i docker_gwbridge -o docker0 -j DROP",
+		"sudo /usr/local/sbin/iptables -D DOCKER-ISOLATION -i docker0 -o docker_gwbridge -j DROP",
 	}
 	c.Assert(fakeSSHTarget.cmds, check.DeepEquals, expectedCmds)
 }
@@ -217,7 +221,7 @@ func (f *fakeMachineAPI) NewHost(driverName string, rawDriver []byte) (*host.Hos
 		Name: "machine",
 		Driver: &fakedriver.Driver{
 			MockState: state.Running,
-			MockIP:    "1.2.3.4",
+			MockIP:    "127.0.0.1",
 		},
 	}, nil
 }
@@ -237,15 +241,25 @@ func (f *fakeMachineAPI) GetMachinesDir() string {
 }
 
 func (s *S) TestCreateMachine(c *check.C) {
+	tlsConfig := dtesting.TLSConfig{
+		CertPath:    s.TLSCertsPath.ServerCert,
+		CertKeyPath: s.TLSCertsPath.ServerKey,
+		RootCAPath:  s.TLSCertsPath.RootCert,
+	}
+	server, err := dtesting.NewTLSServer("127.0.0.1:2376", nil, nil, tlsConfig)
+	c.Assert(err, check.IsNil)
+	defer server.Stop()
+	println(server.URL())
 	dm, err := NewDockerMachine(defaultDockerMachineConfig)
 	c.Assert(err, check.IsNil)
 	fakeAPI := &fakeMachineAPI{}
 	dm.client = fakeAPI
+	dm.certsPath = s.TLSCertsPath.RootDir
 	machine, err := dm.CreateMachine([]string{"8080"})
 	c.Assert(err, check.IsNil)
 	c.Assert(machine, check.NotNil)
-	c.Assert(machine.IP, check.Equals, "1.2.3.4")
-	c.Assert(machine.Address, check.Equals, "https://1.2.3.4:2376")
+	c.Assert(machine.IP, check.Equals, "127.0.0.1")
+	c.Assert(machine.Address, check.Equals, "https://127.0.0.1:2376")
 	c.Assert(machine.OpenPorts, check.DeepEquals, []string{"8080"})
 	c.Assert(fakeAPI.driverName, check.Equals, "virtualbox")
 	c.Assert(fakeAPI.hostName, check.Equals, "machine")
