@@ -651,16 +651,18 @@
 			"revision": ""
 		},
 		{
-			"checksumSHA1": "b5H6oo7mTl3IPQ8qmZyniS51QWE=",
+			"checksumSHA1": "TM2sm/UX6qchOo7Z4tB9ZIRtneA=",
+			"origin": "github.com/tsuru/tsuru-client/vendor/github.com/fsouza/go-dockerclient",
 			"path": "github.com/fsouza/go-dockerclient",
-			"revision": "0436d420da98515cfe6370c9c5cdde868415637b",
-			"revisionTime": "2016-08-19T02:55:40Z"
+			"revision": "1ee0b14e029316258a0439123acf6fef20eb49fd",
+			"revisionTime": "2016-08-25T14:49:50-03:00"
 		},
 		{
 			"checksumSHA1": "uoQ9awK5KCWSj1e/YDda9qftBvc=",
+			"origin": "github.com/tsuru/tsuru-client/vendor/github.com/fsouza/go-dockerclient/testing",
 			"path": "github.com/fsouza/go-dockerclient/testing",
-			"revision": "0436d420da98515cfe6370c9c5cdde868415637b",
-			"revisionTime": "2016-08-19T02:55:40Z"
+			"revision": "1ee0b14e029316258a0439123acf6fef20eb49fd",
+			"revisionTime": "2016-08-25T14:49:50-03:00"
 		},
 		{
 			"checksumSHA1": "l2w6jertyAzSdcdKIXnHm02X8Jk=",
