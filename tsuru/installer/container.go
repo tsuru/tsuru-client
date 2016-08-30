@@ -78,7 +78,6 @@ func createContainer(d dockerEnpoint, name string, config *docker.Config, hostCo
 		}
 		mounts = append(mounts, mount)
 	}
-	swarmEndpointSpec := &swarm.EndpointSpec{Ports: ports}
 	serviceCreateOpts := docker.CreateServiceOptions{
 		ServiceSpec: swarm.ServiceSpec{
 			Annotations: swarm.Annotations{
@@ -97,9 +96,9 @@ func createContainer(d dockerEnpoint, name string, config *docker.Config, hostCo
 				},
 			},
 			Networks: []swarm.NetworkAttachmentConfig{
-				{Target: "tsuru"},
+				{Target: d.GetNetwork().Name},
 			},
-			EndpointSpec: swarmEndpointSpec,
+			EndpointSpec: &swarm.EndpointSpec{Ports: ports},
 		},
 	}
 	_, err = client.CreateService(serviceCreateOpts)
