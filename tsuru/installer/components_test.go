@@ -32,7 +32,7 @@ func (s *S) TestInstallComponentsDefaultConfig(c *check.C) {
 		{&MongoDB{}, "mongo", "mongo:latest", []string(nil), []string(nil)},
 		{&Redis{}, "redis", "redis:latest", []string(nil), []string(nil)},
 		{&PlanB{}, "planb", "tsuru/planb:latest",
-			[]string{"--listen", ":80",
+			[]string{"--listen", ":8080",
 				"--read-redis-host", "redis",
 				"--write-redis-host", "redis",
 			}, []string(nil)},
@@ -123,10 +123,10 @@ func (s *S) TestInstallPlanbHostPortBindings(c *check.C) {
 	mockMachine := &Machine{Address: server.URL(), CAPath: s.TLSCertsPath.RootDir}
 	planb := &PlanB{}
 	expectedExposed := map[docker.Port]struct{}{
-		docker.Port("80/tcp"): {},
+		docker.Port("8080/tcp"): {},
 	}
 	expectedBinds := map[docker.Port][]docker.PortBinding{
-		"80/tcp": {{HostIP: "0.0.0.0", HostPort: "80"}},
+		"8080/tcp": {{HostIP: "0.0.0.0", HostPort: "80"}},
 	}
 	config.Unset("docker-hub-mirror")
 	installConfig := NewInstallConfig("test")

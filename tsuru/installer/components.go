@@ -88,14 +88,11 @@ func (c *PlanB) Name() string {
 func (c *PlanB) Install(machine *Machine, i *InstallConfig) error {
 	config := &docker.Config{
 		Image: i.fullImageName("tsuru/planb:latest"),
-		Cmd:   []string{"--listen", ":80", "--read-redis-host", "redis", "--write-redis-host", "redis"},
-		ExposedPorts: map[docker.Port]struct{}{
-			docker.Port("80/tcp"): {},
-		},
+		Cmd:   []string{"--listen", ":8080", "--read-redis-host", "redis", "--write-redis-host", "redis"},
 	}
 	hostConfig := &docker.HostConfig{
 		PortBindings: map[docker.Port][]docker.PortBinding{
-			"80/tcp": {{HostIP: "0.0.0.0", HostPort: "80"}},
+			"8080/tcp": {{HostIP: "0.0.0.0", HostPort: "80"}},
 		},
 	}
 	return createContainer(machine, "planb", config, hostConfig)
