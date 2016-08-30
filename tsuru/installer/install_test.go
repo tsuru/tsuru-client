@@ -19,7 +19,7 @@ import (
 func (s *S) TestParseConfigDefaultConfig(c *check.C) {
 	dmConfig, err := parseConfigFile("")
 	c.Assert(err, check.IsNil)
-	c.Assert(dmConfig, check.DeepEquals, defaultDockerMachineConfig)
+	c.Assert(dmConfig, check.DeepEquals, defaultTsuruInstallConfig)
 }
 
 func (s *S) TestParseConfigFileNotExists(c *check.C) {
@@ -30,6 +30,7 @@ func (s *S) TestParseConfigFileNotExists(c *check.C) {
 func (s *S) TestParseConfigFile(c *check.C) {
 	conf := `
 name: tsuru-test
+hosts: 2
 ca-path: /tmp/certs
 driver:
     name: amazonec2
@@ -41,13 +42,16 @@ driver:
 		c.Fatal("Failed to write config file for test")
 	}
 	defer os.Remove("/tmp/config.yml")
-	expected := &DockerMachineConfig{
-		DriverName: "amazonec2",
-		DriverOpts: map[string]interface{}{
-			"opt1": "option1-value",
+	expected := &TsuruInstallConfig{
+		DockerMachineConfig: &DockerMachineConfig{
+			DriverName: "amazonec2",
+			DriverOpts: map[string]interface{}{
+				"opt1": "option1-value",
+			},
+			CAPath: "/tmp/certs",
+			Name:   "tsuru-test",
 		},
-		CAPath: "/tmp/certs",
-		Name:   "tsuru-test",
+		NumHosts: 2,
 	}
 	dmConfig, err := parseConfigFile("/tmp/config.yml")
 	c.Assert(err, check.IsNil)

@@ -15,6 +15,16 @@ import (
 	"github.com/tsuru/tsuru/cmd"
 )
 
+var defaultTsuruInstallConfig = &TsuruInstallConfig{
+	DockerMachineConfig: defaultDockerMachineConfig,
+	NumHosts:            1,
+}
+
+type TsuruInstallConfig struct {
+	*DockerMachineConfig
+	NumHosts int
+}
+
 type Install struct {
 	fs     *gnuflag.FlagSet
 	config string
@@ -85,43 +95,63 @@ func (c *Install) Run(context *cmd.Context, client *cmd.Client) error {
 	if err != nil {
 		return err
 	}
-	fmt.Fprintf(context.Stdout, "Running pre install checks...\n")
+	fmt.Fprintf(context.Stdout, "Running pre-install checks...\n")
 	err = c.PreInstallChecks(config)
 	if err != nil {
 		fmt.Fprintf(context.Stderr, "Pre Install checks failed: %s\n", err)
 		return err
 	}
-	i, err := NewDockerMachine(config)
+	dm, err := NewDockerMachine(config.DockerMachineConfig)
 	if err != nil {
 		fmt.Fprintf(context.Stderr, "Failed to create machine: %s\n", err)
 		return err
 	}
-	defer i.Close()
-	m, err := i.CreateMachine([]string{strconv.Itoa(defaultTsuruAPIPort)})
+	defer dm.Close()
+	var machines []*Machine
+	for i := 0; i < config.NumHosts; i++ {
+		m, errCreate := dm.CreateMachine([]string{strconv.Itoa(defaultTsuruAPIPort)})
+		if errCreate != nil {
+			fmt.Fprintf(context.Stderr, "Error creating machine: %s\n", err)
+			return errCreate
+		}
+		errCreate = dm.uploadRegistryCertificate(m)
+		if errCreate != nil {
+			return errCreate
+		}
+		fmt.Fprintf(context.Stdout, "Machine %s successfully created!\n", m.IP)
+		machines = append(machines, m)
+	}
+	cluster, err := NewSwarmCluster(machines)
 	if err != nil {
-		fmt.Fprintf(context.Stderr, "Error creating machine: %s\n", err)
+		fmt.Fprintf(context.Stderr, "Error on Swarm cluster setup: %s\n", err)
 		return err
 	}
-	err = i.uploadRegistryCertificate(m)
-	if err != nil {
-		return err
-	}
-	fmt.Fprintf(context.Stdout, "Machine %s successfully created!\n", m.IP)
 	installConfig := NewInstallConfig(config.Name)
 	for _, component := range TsuruComponents {
 		fmt.Fprintf(context.Stdout, "Installing %s\n", component.Name())
-		err := component.Install(m, installConfig)
-		if err != nil {
+		errInstall := component.Install(cluster, installConfig)
+		if errInstall != nil {
 			fmt.Fprintf(context.Stderr, "Error Installing %s: %s\n", component.Name(), err)
-			return err
+			return errInstall
 		}
 		fmt.Fprintf(context.Stdout, "%s successfully installed!\n", component.Name())
 	}
-	fmt.Fprint(context.Stdout, c.buildStatusTable(TsuruComponents, m).String())
+	fmt.Fprintf(context.Stdout, "Applying iptables workaround for docker 1.12...\n")
+	for _, m := range machines {
+		_, err = m.RunSSHCommand("sudo /usr/local/sbin/iptables -D DOCKER-ISOLATION -i docker_gwbridge -o docker0 -j DROP")
+		if err != nil {
+			fmt.Fprint(context.Stderr, "Failed to apply iptables rule. Maybe it is not needed anymore?")
+		}
+		_, err = m.RunSSHCommand("sudo /usr/local/sbin/iptables -D DOCKER-ISOLATION -i docker0 -o docker_gwbridge -j DROP")
+		if err != nil {
+			fmt.Fprint(context.Stderr, "Failed to apply iptables rule. Maybe it is not needed anymore?")
+		}
+	}
+	fmt.Fprint(context.Stdout, c.buildStatusTable(TsuruComponents, cluster.Manager).String())
 	return nil
 }
 
-func (c *Install) PreInstallChecks(config *DockerMachineConfig) error {
+func (c *Install) PreInstallChecks(config *TsuruInstallConfig) error {
 	exists, err := cmd.CheckIfTargetLabelExists(config.Name)
 	if err != nil {
 		return err
@@ -178,18 +208,18 @@ func (c *Uninstall) Run(context *cmd.Context, client *cmd.Client) error {
 		fmt.Fprintf(context.Stderr, "Failed to read configuration file: %s\n", err)
 		return err
 	}
-	d, err := NewDockerMachine(config)
+	d, err := NewDockerMachine(config.DockerMachineConfig)
 	if err != nil {
 		fmt.Fprintf(context.Stderr, "Failed to delete machine: %s\n", err)
 		return err
 	}
 	defer d.Close()
-	err = d.DeleteMachine(d.Name)
+	err = d.DeleteAll()
 	if err != nil {
-		fmt.Fprintf(context.Stderr, "Failed to delete machine: %s\n", err)
+		fmt.Fprintf(context.Stderr, "Failed to delete machines: %s\n", err)
 		return err
 	}
-	fmt.Fprintln(context.Stdout, "Machine successfully removed!")
+	fmt.Fprintln(context.Stdout, "Machines successfully removed!")
 	api := TsuruAPI{}
 	err = api.Uninstall(config.Name)
 	if err != nil {
@@ -205,10 +235,10 @@ func (c *Uninstall) Run(context *cmd.Context, client *cmd.Client) error {
 	return nil
 }
 
-func parseConfigFile(file string) (*DockerMachineConfig, error) {
-	dmConfig := defaultDockerMachineConfig
+func parseConfigFile(file string) (*TsuruInstallConfig, error) {
+	installConfig := defaultTsuruInstallConfig
 	if file == "" {
-		return dmConfig, nil
+		return installConfig, nil
 	}
 	err := config.ReadConfigFile(file)
 	if err != nil {
@@ -216,11 +246,11 @@ func parseConfigFile(file string) (*DockerMachineConfig, error) {
 	}
 	driverName, err := config.GetString("driver:name")
 	if err == nil {
-		dmConfig.DriverName = driverName
+		installConfig.DriverName = driverName
 	}
 	name, err := config.GetString("name")
 	if err == nil {
-		dmConfig.Name = name
+		installConfig.Name = name
 	}
 	driverOpts := make(map[string]interface{})
 	opts, _ := config.Get("driver:options")
@@ -231,11 +261,15 @@ func parseConfigFile(file string) (*DockerMachineConfig, error) {
 				driverOpts[k] = v
 			}
 		}
-		dmConfig.DriverOpts = driverOpts
+		installConfig.DriverOpts = driverOpts
 	}
 	caPath, err := config.GetString("ca-path")
 	if err == nil {
-		dmConfig.CAPath = caPath
+		installConfig.CAPath = caPath
 	}
-	return dmConfig, nil
+	hosts, err := config.GetInt("hosts")
+	if err == nil {
+		installConfig.NumHosts = hosts
+	}
+	return installConfig, nil
 }
