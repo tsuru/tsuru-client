@@ -60,7 +60,7 @@ func (i *InstallConfig) fullImageName(name string) string {
 
 type TsuruComponent interface {
 	Name() string
-	Install(*Machine, *InstallConfig) error
+	Install(*SwarmCluster, *InstallConfig) error
 	Status(*Machine) (*ComponentStatus, error)
 }
 
@@ -70,9 +70,9 @@ func (c *MongoDB) Name() string {
 	return "MongoDB"
 }
 
-func (c *MongoDB) Install(machine *Machine, i *InstallConfig) error {
+func (c *MongoDB) Install(cluster *SwarmCluster, i *InstallConfig) error {
 	image := i.fullImageName("mongo:latest")
-	return createContainer(machine, "mongo", &docker.Config{Image: image}, nil)
+	return createContainer(cluster, "mongo", &docker.Config{Image: image}, nil)
 }
 
 func (c *MongoDB) Status(machine *Machine) (*ComponentStatus, error) {
@@ -85,7 +85,7 @@ func (c *PlanB) Name() string {
 	return "PlanB"
 }
 
-func (c *PlanB) Install(machine *Machine, i *InstallConfig) error {
+func (c *PlanB) Install(cluster *SwarmCluster, i *InstallConfig) error {
 	config := &docker.Config{
 		Image: i.fullImageName("tsuru/planb:latest"),
 		Cmd:   []string{"--listen", ":8080", "--read-redis-host", "redis", "--write-redis-host", "redis"},
@@ -95,7 +95,7 @@ func (c *PlanB) Install(machine *Machine, i *InstallConfig) error {
 			"8080/tcp": {{HostIP: "0.0.0.0", HostPort: "80"}},
 		},
 	}
-	return createContainer(machine, "planb", config, hostConfig)
+	return createContainer(cluster, "planb", config, hostConfig)
 }
 
 func (c *PlanB) Status(machine *Machine) (*ComponentStatus, error) {
@@ -108,9 +108,9 @@ func (c *Redis) Name() string {
 	return "Redis"
 }
 
-func (c *Redis) Install(machine *Machine, i *InstallConfig) error {
+func (c *Redis) Install(cluster *SwarmCluster, i *InstallConfig) error {
 	image := i.fullImageName("redis:latest")
-	return createContainer(machine, "redis", &docker.Config{Image: image}, nil)
+	return createContainer(cluster, "redis", &docker.Config{Image: image}, nil)
 }
 
 func (c *Redis) Status(machine *Machine) (*ComponentStatus, error) {
@@ -123,19 +123,19 @@ func (c *Registry) Name() string {
 	return "Docker Registry"
 }
 
-func (c *Registry) Install(machine *Machine, i *InstallConfig) error {
+func (c *Registry) Install(cluster *SwarmCluster, i *InstallConfig) error {
 	config := &docker.Config{
 		Image: i.fullImageName("registry:2"),
 		Env: []string{
 			"REGISTRY_STORAGE_FILESYSTEM_ROOTDIRECTORY=/var/lib/registry",
-			fmt.Sprintf("REGISTRY_HTTP_TLS_CERTIFICATE=/certs/%s:5000/registry-cert.pem", machine.IP),
-			fmt.Sprintf("REGISTRY_HTTP_TLS_KEY=/certs/%s:5000/registry-key.pem", machine.IP),
+			fmt.Sprintf("REGISTRY_HTTP_TLS_CERTIFICATE=/certs/%s:5000/registry-cert.pem", cluster.Manager.IP),
+			fmt.Sprintf("REGISTRY_HTTP_TLS_KEY=/certs/%s:5000/registry-key.pem", cluster.Manager.IP),
 		},
 	}
 	hostConfig := &docker.HostConfig{
 		Binds: []string{"/var/lib/registry:/var/lib/registry", "/etc/docker/certs.d:/certs:ro"},
 	}
-	return createContainer(machine, "registry", config, hostConfig)
+	return createContainer(cluster, "registry", config, hostConfig)
 }
 
 func (c *Registry) Status(machine *Machine) (*ComponentStatus, error) {
@@ -154,15 +154,15 @@ func (c *TsuruAPI) Name() string {
 	return "Tsuru API"
 }
 
-func (c *TsuruAPI) Install(machine *Machine, i *InstallConfig) error {
+func (c *TsuruAPI) Install(cluster *SwarmCluster, i *InstallConfig) error {
 	env := []string{fmt.Sprintf("MONGODB_ADDR=%s", "mongo"),
 		"MONGODB_PORT=27017",
 		fmt.Sprintf("REDIS_ADDR=%s", "redis"),
 		"REDIS_PORT=6379",
-		fmt.Sprintf("HIPACHE_DOMAIN=%s.nip.io", machine.IP),
-		fmt.Sprintf("REGISTRY_ADDR=%s", machine.IP),
+		fmt.Sprintf("HIPACHE_DOMAIN=%s.nip.io", cluster.Manager.IP),
+		fmt.Sprintf("REGISTRY_ADDR=%s", cluster.Manager.IP),
 		"REGISTRY_PORT=5000",
-		fmt.Sprintf("TSURU_ADDR=http://%s", machine.IP),
+		fmt.Sprintf("TSURU_ADDR=http://%s", cluster.Manager.IP),
 		fmt.Sprintf("TSURU_PORT=%d", defaultTsuruAPIPort),
 	}
 	config := &docker.Config{
@@ -172,12 +172,12 @@ func (c *TsuruAPI) Install(machine *Machine, i *InstallConfig) error {
 	hostConfig := &docker.HostConfig{
 		Binds: []string{"/etc/docker/certs.d:/certs:ro"},
 	}
-	err := createContainer(machine, "tsuru", config, hostConfig)
+	err := createContainer(cluster, "tsuru", config, hostConfig)
 	if err != nil {
 		return err
 	}
 	fmt.Println("Waiting for Tsuru API to become responsive...")
-	tsuruURL := fmt.Sprintf("http://%s:%d", machine.IP, defaultTsuruAPIPort)
+	tsuruURL := fmt.Sprintf("http://%s:%d", cluster.Manager.IP, defaultTsuruAPIPort)
 	err = mcnutils.WaitFor(func() bool {
 		_, errReq := http.Get(tsuruURL)
 		return errReq == nil
@@ -185,54 +185,28 @@ func (c *TsuruAPI) Install(machine *Machine, i *InstallConfig) error {
 	if err != nil {
 		return fmt.Errorf("failed to connect to %s: %s", tsuruURL, err)
 	}
-	err = c.setupRootUser(machine, i.RootUserEmail, i.RootUserPassword)
+	err = c.setupRootUser(cluster, i.RootUserEmail, i.RootUserPassword)
 	if err != nil {
 		return err
 	}
-	return c.bootstrapEnv(i.RootUserEmail, i.RootUserPassword, tsuruURL, i.TargetName, machine.Address)
+	return c.bootstrapEnv(i.RootUserEmail, i.RootUserPassword, tsuruURL, i.TargetName, cluster.Manager.Address)
 }
 
 func (c *TsuruAPI) Status(machine *Machine) (*ComponentStatus, error) {
 	return containerStatus("tsuru", machine)
 }
 
-func (c *TsuruAPI) setupRootUser(machine *Machine, email, password string) error {
+func (c *TsuruAPI) setupRootUser(cluster *SwarmCluster, email, password string) error {
 	cmd := []string{"tsurud", "root-user-create", email}
 	passwordConfirmation := strings.NewReader(fmt.Sprintf("%s\n%s\n", password, password))
-	client, err := machine.dockerClient()
-	if err != nil {
-		return err
-	}
-	filterOpts := docker.ListContainersOptions{
-		All: true,
-	}
-	containers, err := client.ListContainers(filterOpts)
-	if err != nil {
-		return err
-	}
-	var tsuruContainer string
-	for _, c := range containers {
-		if strings.Contains(strings.Join(c.Names, ","), "tsuru") {
-			tsuruContainer = c.ID
-		}
-	}
-	exec, err := client.CreateExec(docker.CreateExecOptions{
-		Cmd:          cmd,
-		Container:    tsuruContainer,
-		AttachStdout: true,
-		AttachStderr: true,
-		AttachStdin:  true,
-	})
-	if err != nil {
-		return err
-	}
-	return client.StartExec(exec.ID, docker.StartExecOptions{
+	startOpts := docker.StartExecOptions{
 		InputStream:  passwordConfirmation,
 		Detach:       false,
 		OutputStream: os.Stdout,
 		ErrorStream:  os.Stderr,
 		RawTerminal:  true,
-	})
+	}
+	return cluster.ServiceExec("tsuru", cmd, startOpts)
 }
 
 type ComponentStatus struct {
@@ -358,7 +332,7 @@ func (c *TsuruAPI) bootstrapEnv(login, password, target, targetName, node string
 	return deployDashboard.Run(&context, client)
 }
 
-func (t *TsuruAPI) Uninstall(installation string) error {
+func (c *TsuruAPI) Uninstall(installation string) error {
 	manager := cmd.BuildBaseManager("uninstall-client", "0.0.0", "", nil)
 	provisioners := provision.Registry()
 	for _, p := range provisioners {

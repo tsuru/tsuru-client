@@ -62,10 +62,17 @@ func (s *S) TestInstallComponentsDefaultConfig(c *check.C) {
 	server, err := testing.NewTLSServer("127.0.0.1:0", containerChan, nil, tlsConfig)
 	c.Assert(err, check.IsNil)
 	defer server.Stop()
-	mockMachine := &Machine{Address: server.URL(), IP: "127.0.0.1", CAPath: s.TLSCertsPath.RootDir}
+	mockCluster := &SwarmCluster{
+		Manager: &Machine{
+			Address: server.URL(),
+			IP:      "127.0.0.1",
+			CAPath:  s.TLSCertsPath.RootDir,
+			network: &docker.Network{Name: "tsuru"},
+		},
+	}
 	installConfig := NewInstallConfig("test")
 	for _, tt := range tests {
-		go tt.component.Install(mockMachine, installConfig)
+		go tt.component.Install(mockCluster, installConfig)
 
 		cont := <-containerChan
 		c.Assert(cont.Name, check.Equals, tt.containerName)
@@ -100,10 +107,17 @@ func (s *S) TestInstallComponentsCustomRegistry(c *check.C) {
 	server, err := testing.NewTLSServer("127.0.0.1:0", containerChan, nil, tlsConfig)
 	c.Assert(err, check.IsNil)
 	defer server.Stop()
-	mockMachine := &Machine{Address: server.URL(), CAPath: s.TLSCertsPath.RootDir}
+	mockCluster := &SwarmCluster{
+		Manager: &Machine{
+			Address: server.URL(),
+			IP:      "127.0.0.1",
+			CAPath:  s.TLSCertsPath.RootDir,
+			network: &docker.Network{Name: "tsuru"},
+		},
+	}
 	for _, tt := range tests {
 		config := NewInstallConfig("test")
-		go tt.component.Install(mockMachine, config)
+		go tt.component.Install(mockCluster, config)
 
 		cont := <-containerChan
 		c.Assert(cont.Image, check.Equals, tt.image)
@@ -120,7 +134,14 @@ func (s *S) TestInstallPlanbHostPortBindings(c *check.C) {
 	server, err := testing.NewTLSServer("127.0.0.1:0", containerChan, nil, tlsConfig)
 	c.Assert(err, check.IsNil)
 	defer server.Stop()
-	mockMachine := &Machine{Address: server.URL(), CAPath: s.TLSCertsPath.RootDir}
+	mockCluster := &SwarmCluster{
+		Manager: &Machine{
+			Address: server.URL(),
+			IP:      "127.0.0.1",
+			CAPath:  s.TLSCertsPath.RootDir,
+			network: &docker.Network{Name: "tsuru"},
+		},
+	}
 	planb := &PlanB{}
 	expectedExposed := map[docker.Port]struct{}{
 		docker.Port("8080/tcp"): {},
@@ -130,7 +151,7 @@ func (s *S) TestInstallPlanbHostPortBindings(c *check.C) {
 	}
 	config.Unset("docker-hub-mirror")
 	installConfig := NewInstallConfig("test")
-	go planb.Install(mockMachine, installConfig)
+	go planb.Install(mockCluster, installConfig)
 	cont := <-containerChan
 	c.Assert(cont.HostConfig.PortBindings, check.DeepEquals, expectedBinds)
 	c.Assert(cont.Config.ExposedPorts, check.DeepEquals, expectedExposed)
