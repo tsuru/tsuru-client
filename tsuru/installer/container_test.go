@@ -96,7 +96,7 @@ func (s *S) TestCreateContainerWithExposedPorts(c *check.C) {
 	c.Assert(expected, check.DeepEquals, cont.HostConfig.PortBindings)
 }
 
-func (s *S) TestCreateContainerWithHostConfigAndExposedPorts(c *check.C) {
+func (s *S) TestCreateContainerExposedPortsNotOverridesHostConfig(c *check.C) {
 	containerChan := make(chan *docker.Container, 2)
 	tlsConfig := testing.TLSConfig{
 		CertPath:    s.TLSCertsPath.ServerCert,
@@ -123,9 +123,6 @@ func (s *S) TestCreateContainerWithHostConfigAndExposedPorts(c *check.C) {
 	}))
 	defer server.CustomHandler("/images/.*/json", server.DefaultHandler())
 	expected := map[docker.Port][]docker.PortBinding{
-		"90/tcp": {
-			{HostIP: "0.0.0.0", HostPort: "90"},
-		},
 		"100/tcp": {
 			{HostIP: "0.0.0.0", HostPort: "100"},
 		},
