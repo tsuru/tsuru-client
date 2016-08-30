@@ -12,8 +12,8 @@ import (
 	"io/ioutil"
 	"os"
 	"path/filepath"
+	"sync/atomic"
 
-	"github.com/docker/engine-api/types/swarm"
 	"github.com/docker/machine/drivers/amazonec2"
 	"github.com/docker/machine/drivers/azure"
 	"github.com/docker/machine/drivers/digitalocean"
@@ -88,13 +88,13 @@ func (m *Machine) GetSSHKeyPath() string {
 
 type DockerMachine struct {
 	io.Closer
-	driverOpts map[string]interface{}
-	rawDriver  []byte
-	driverName string
-	storePath  string
-	certsPath  string
-	Name       string
-	client     libmachine.API
+	driverOpts    map[string]interface{}
+	driverName    string
+	storePath     string
+	certsPath     string
+	Name          string
+	client        libmachine.API
+	machinesCount uint64
 }
 
 type DockerMachineConfig struct {
@@ -123,16 +123,8 @@ func NewDockerMachine(config *DockerMachineConfig) (*DockerMachine, error) {
 			return nil, fmt.Errorf("failed to copy ca key file: %s", err)
 		}
 	}
-	rawDriver, err := json.Marshal(&drivers.BaseDriver{
-		MachineName: config.Name,
-		StorePath:   storePath,
-	})
-	if err != nil {
-		return nil, fmt.Errorf("Error creating docker-machine driver: %s", err)
-	}
 	return &DockerMachine{
 		driverOpts: config.DriverOpts,
-		rawDriver:  rawDriver,
 		driverName: config.DriverName,
 		storePath:  storePath,
 		certsPath:  certsPath,
@@ -154,7 +146,14 @@ func copy(src, dst string) error {
 }
 
 func (d *DockerMachine) CreateMachine(openPorts []string) (*Machine, error) {
-	host, err := d.client.NewHost(d.driverName, d.rawDriver)
+	rawDriver, err := json.Marshal(&drivers.BaseDriver{
+		MachineName: d.generateMachineName(),
+		StorePath:   d.storePath,
+	})
+	if err != nil {
+		return nil, fmt.Errorf("Error creating docker-machine driver: %s", err)
+	}
+	host, err := d.client.NewHost(d.driverName, rawDriver)
 	if err != nil {
 		return nil, err
 	}
@@ -174,40 +173,12 @@ func (d *DockerMachine) CreateMachine(openPorts []string) (*Machine, error) {
 		Address:   fmt.Sprintf("https://%s:%d", ip, dockerHTTPSPort),
 		OpenPorts: openPorts,
 	}
-	swarmOpts := docker.InitSwarmOptions{
-		InitRequest: swarm.InitRequest{
-			ListenAddr:    "0.0.0.0:2377",
-			AdvertiseAddr: fmt.Sprintf("%s:2377", ip),
-		},
-	}
-	dockerClient, err := m.dockerClient()
-	if err != nil {
-		return nil, err
-	}
-	_, err = dockerClient.InitSwarm(swarmOpts)
-	if err != nil {
-		return nil, err
-	}
-	createNetworkOpts := docker.CreateNetworkOptions{
-		Name:           "tsuru",
-		Driver:         "overlay",
-		CheckDuplicate: true,
-		IPAM: docker.IPAMOptions{
-			Driver: "default",
-			Config: []docker.IPAMConfig{
-				{
-					Subnet:  "177.10.1.0/24",
-					Gateway: "177.10.1.1",
-				},
-			},
-		},
-	}
-	network, err := dockerClient.CreateNetwork(createNetworkOpts)
-	if err != nil {
-		return nil, err
-	}
-	m.network = network
 	return m, nil
+}
+
+func (d *DockerMachine) generateMachineName() string {
+	atomic.AddUint64(&d.machinesCount, 1)
+	return fmt.Sprintf("%s-%d", d.Name, atomic.LoadUint64(&d.machinesCount))
 }
 
 type sshTarget interface {
@@ -261,14 +232,6 @@ func (d *DockerMachine) uploadRegistryCertificate(host sshTarget) error {
 		return err
 	}
 	_, err = host.RunSSHCommand("mkdir -p /var/lib/registry/")
-	if err != nil {
-		return err
-	}
-	_, err = host.RunSSHCommand("sudo /usr/local/sbin/iptables -D DOCKER-ISOLATION -i docker_gwbridge -o docker0 -j DROP")
-	if err != nil {
-		return err
-	}
-	_, err = host.RunSSHCommand("sudo /usr/local/sbin/iptables -D DOCKER-ISOLATION -i docker0 -o docker_gwbridge -j DROP")
 	return err
 }
 
@@ -308,6 +271,20 @@ func configureDriver(driver drivers.Driver, driverOpts map[string]interface{}, o
 
 	if err := driver.SetConfigFromFlags(opts); err != nil {
 		return fmt.Errorf("Error setting driver configurations: %s", err)
+	}
+	return nil
+}
+
+func (d *DockerMachine) DeleteAll() error {
+	hosts, err := d.client.List()
+	if err != nil {
+		return err
+	}
+	for _, h := range hosts {
+		errDel := d.DeleteMachine(h)
+		if errDel != nil {
+			return errDel
+		}
 	}
 	return nil
 }

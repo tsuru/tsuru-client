@@ -185,8 +185,6 @@ func (s *S) TestUploadRegistryCertificate(c *check.C) {
 		"sudo mkdir /etc/docker/certs.d && sudo cp -r /home/ubuntu/certs/* /etc/docker/certs.d/",
 		"cat /home/ubuntu/certs/127.0.0.1:5000/ca.pem | sudo tee -a /etc/ssl/certs/ca-certificates.crt",
 		"mkdir -p /var/lib/registry/",
-		"sudo /usr/local/sbin/iptables -D DOCKER-ISOLATION -i docker_gwbridge -o docker0 -j DROP",
-		"sudo /usr/local/sbin/iptables -D DOCKER-ISOLATION -i docker0 -o docker_gwbridge -j DROP",
 	}
 	c.Assert(fakeSSHTarget.cmds, check.DeepEquals, expectedCmds)
 }
