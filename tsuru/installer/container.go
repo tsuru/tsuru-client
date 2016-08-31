@@ -48,13 +48,13 @@ func createContainer(d dockerEnpoint, name string, config *docker.Config, hostCo
 	}
 	ports := []swarm.PortConfig{}
 	for k, p := range hostConfig.PortBindings {
-		targetPort, err := strconv.Atoi(k.Port())
-		if err != nil {
-			return err
+		targetPort, terr := strconv.Atoi(k.Port())
+		if terr != nil {
+			return terr
 		}
-		publishedPort, err := strconv.Atoi(p[0].HostPort)
-		if err != nil {
-			return err
+		publishedPort, terr := strconv.Atoi(p[0].HostPort)
+		if terr != nil {
+			return terr
 		}
 		port := swarm.PortConfig{
 			Protocol:      swarm.PortConfigProtocolTCP,
