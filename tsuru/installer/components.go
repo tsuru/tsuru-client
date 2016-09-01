@@ -9,7 +9,10 @@ import (
 	"net/http"
 	"os"
 	"strings"
+	"time"
 
+	"github.com/docker/engine-api/types/mount"
+	"github.com/docker/engine-api/types/swarm"
 	"github.com/docker/machine/libmachine/mcnutils"
 	"github.com/fsouza/go-dockerclient"
 	"github.com/tsuru/config"
@@ -71,8 +74,18 @@ func (c *MongoDB) Name() string {
 }
 
 func (c *MongoDB) Install(cluster *SwarmCluster, i *InstallConfig) error {
-	image := i.fullImageName("mongo:latest")
-	return createContainer(cluster, "mongo", &docker.Config{Image: image}, nil)
+	return cluster.CreateService(docker.CreateServiceOptions{
+		ServiceSpec: swarm.ServiceSpec{
+			Annotations: swarm.Annotations{
+				Name: "mongo",
+			},
+			TaskTemplate: swarm.TaskSpec{
+				ContainerSpec: swarm.ContainerSpec{
+					Image: i.fullImageName("mongo:latest"),
+				},
+			},
+		},
+	})
 }
 
 func (c *MongoDB) Status(machine *Machine) (*ComponentStatus, error) {
@@ -86,16 +99,28 @@ func (c *PlanB) Name() string {
 }
 
 func (c *PlanB) Install(cluster *SwarmCluster, i *InstallConfig) error {
-	config := &docker.Config{
-		Image: i.fullImageName("tsuru/planb:latest"),
-		Cmd:   []string{"--listen", ":8080", "--read-redis-host", "redis", "--write-redis-host", "redis"},
-	}
-	hostConfig := &docker.HostConfig{
-		PortBindings: map[docker.Port][]docker.PortBinding{
-			"8080/tcp": {{HostIP: "0.0.0.0", HostPort: "80"}},
+	return cluster.CreateService(docker.CreateServiceOptions{
+		ServiceSpec: swarm.ServiceSpec{
+			Annotations: swarm.Annotations{
+				Name: "planb",
+			},
+			TaskTemplate: swarm.TaskSpec{
+				ContainerSpec: swarm.ContainerSpec{
+					Image: i.fullImageName("tsuru/planb:latest"),
+					Args:  []string{"--listen", ":8080", "--read-redis-host", "redis", "--write-redis-host", "redis"},
+				},
+			},
+			EndpointSpec: &swarm.EndpointSpec{
+				Ports: []swarm.PortConfig{
+					swarm.PortConfig{
+						Protocol:      swarm.PortConfigProtocolTCP,
+						TargetPort:    uint32(8080),
+						PublishedPort: uint32(80),
+					},
+				},
+			},
 		},
-	}
-	return createContainer(cluster, "planb", config, hostConfig)
+	})
 }
 
 func (c *PlanB) Status(machine *Machine) (*ComponentStatus, error) {
@@ -109,8 +134,18 @@ func (c *Redis) Name() string {
 }
 
 func (c *Redis) Install(cluster *SwarmCluster, i *InstallConfig) error {
-	image := i.fullImageName("redis:latest")
-	return createContainer(cluster, "redis", &docker.Config{Image: image}, nil)
+	return cluster.CreateService(docker.CreateServiceOptions{
+		ServiceSpec: swarm.ServiceSpec{
+			Annotations: swarm.Annotations{
+				Name: "redis",
+			},
+			TaskTemplate: swarm.TaskSpec{
+				ContainerSpec: swarm.ContainerSpec{
+					Image: i.fullImageName("redis:latest"),
+				},
+			},
+		},
+	})
 }
 
 func (c *Redis) Status(machine *Machine) (*ComponentStatus, error) {
@@ -124,18 +159,46 @@ func (c *Registry) Name() string {
 }
 
 func (c *Registry) Install(cluster *SwarmCluster, i *InstallConfig) error {
-	config := &docker.Config{
-		Image: i.fullImageName("registry:2"),
-		Env: []string{
-			"REGISTRY_STORAGE_FILESYSTEM_ROOTDIRECTORY=/var/lib/registry",
-			fmt.Sprintf("REGISTRY_HTTP_TLS_CERTIFICATE=/certs/%s:5000/registry-cert.pem", cluster.Manager.IP),
-			fmt.Sprintf("REGISTRY_HTTP_TLS_KEY=/certs/%s:5000/registry-key.pem", cluster.Manager.IP),
+	return cluster.CreateService(docker.CreateServiceOptions{
+		ServiceSpec: swarm.ServiceSpec{
+			Annotations: swarm.Annotations{
+				Name: "registry",
+			},
+			TaskTemplate: swarm.TaskSpec{
+				ContainerSpec: swarm.ContainerSpec{
+					Image: i.fullImageName("registry:2"),
+					Env: []string{
+						"REGISTRY_STORAGE_FILESYSTEM_ROOTDIRECTORY=/var/lib/registry",
+						fmt.Sprintf("REGISTRY_HTTP_TLS_CERTIFICATE=/certs/%s:5000/registry-cert.pem", cluster.Manager.IP),
+						fmt.Sprintf("REGISTRY_HTTP_TLS_KEY=/certs/%s:5000/registry-key.pem", cluster.Manager.IP),
+					},
+					Mounts: []mount.Mount{
+						{
+							Type:     mount.TypeBind,
+							Source:   "/var/lib/registry",
+							Target:   "/var/lib/registry",
+							ReadOnly: false,
+						},
+						{
+							Type:     mount.TypeBind,
+							Source:   "/etc/docker/certs.d",
+							Target:   "/certs",
+							ReadOnly: true,
+						},
+					},
+				},
+			},
+			EndpointSpec: &swarm.EndpointSpec{
+				Ports: []swarm.PortConfig{
+					swarm.PortConfig{
+						Protocol:      swarm.PortConfigProtocolTCP,
+						TargetPort:    uint32(5000),
+						PublishedPort: uint32(5000),
+					},
+				},
+			},
 		},
-	}
-	hostConfig := &docker.HostConfig{
-		Binds: []string{"/var/lib/registry:/var/lib/registry", "/etc/docker/certs.d:/certs:ro"},
-	}
-	return createContainer(cluster, "registry", config, hostConfig)
+	})
 }
 
 func (c *Registry) Status(machine *Machine) (*ComponentStatus, error) {
@@ -155,33 +218,54 @@ func (c *TsuruAPI) Name() string {
 }
 
 func (c *TsuruAPI) Install(cluster *SwarmCluster, i *InstallConfig) error {
-	env := []string{fmt.Sprintf("MONGODB_ADDR=%s", "mongo"),
-		"MONGODB_PORT=27017",
-		fmt.Sprintf("REDIS_ADDR=%s", "redis"),
-		"REDIS_PORT=6379",
-		fmt.Sprintf("HIPACHE_DOMAIN=%s.nip.io", cluster.Manager.IP),
-		fmt.Sprintf("REGISTRY_ADDR=%s", cluster.Manager.IP),
-		"REGISTRY_PORT=5000",
-		fmt.Sprintf("TSURU_ADDR=http://%s", cluster.Manager.IP),
-		fmt.Sprintf("TSURU_PORT=%d", defaultTsuruAPIPort),
-	}
-	config := &docker.Config{
-		Image: i.fullImageName("tsuru/api:latest"),
-		Env:   env,
-	}
-	hostConfig := &docker.HostConfig{
-		Binds: []string{"/etc/docker/certs.d:/certs:ro"},
-	}
-	err := createContainer(cluster, "tsuru", config, hostConfig)
+	err := cluster.CreateService(docker.CreateServiceOptions{
+		ServiceSpec: swarm.ServiceSpec{
+			Annotations: swarm.Annotations{
+				Name: "tsuru",
+			},
+			TaskTemplate: swarm.TaskSpec{
+				ContainerSpec: swarm.ContainerSpec{
+					Image: i.fullImageName("tsuru/api:latest"),
+					Env: []string{fmt.Sprintf("MONGODB_ADDR=%s", "mongo"),
+						"MONGODB_PORT=27017",
+						fmt.Sprintf("REDIS_ADDR=%s", "redis"),
+						"REDIS_PORT=6379",
+						fmt.Sprintf("HIPACHE_DOMAIN=%s.nip.io", cluster.Manager.IP),
+						fmt.Sprintf("REGISTRY_ADDR=%s", cluster.Manager.IP),
+						"REGISTRY_PORT=5000",
+						fmt.Sprintf("TSURU_ADDR=http://%s", cluster.Manager.IP),
+						fmt.Sprintf("TSURU_PORT=%d", defaultTsuruAPIPort),
+					},
+					Mounts: []mount.Mount{
+						{
+							Type:     mount.TypeBind,
+							Source:   "/etc/docker/certs.d",
+							Target:   "/certs",
+							ReadOnly: true,
+						},
+					},
+				},
+			},
+			EndpointSpec: &swarm.EndpointSpec{
+				Ports: []swarm.PortConfig{
+					swarm.PortConfig{
+						Protocol:      swarm.PortConfigProtocolTCP,
+						TargetPort:    uint32(8080),
+						PublishedPort: uint32(8080),
+					},
+				},
+			},
+		},
+	})
 	if err != nil {
 		return err
 	}
 	fmt.Println("Waiting for Tsuru API to become responsive...")
 	tsuruURL := fmt.Sprintf("http://%s:%d", cluster.Manager.IP, defaultTsuruAPIPort)
-	err = mcnutils.WaitFor(func() bool {
+	err = mcnutils.WaitForSpecific(func() bool {
 		_, errReq := http.Get(tsuruURL)
 		return errReq == nil
-	})
+	}, 60, 10*time.Second)
 	if err != nil {
 		return fmt.Errorf("failed to connect to %s: %s", tsuruURL, err)
 	}

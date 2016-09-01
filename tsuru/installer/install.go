@@ -131,7 +131,7 @@ func (c *Install) Run(context *cmd.Context, client *cmd.Client) error {
 		fmt.Fprintf(context.Stdout, "Installing %s\n", component.Name())
 		errInstall := component.Install(cluster, installConfig)
 		if errInstall != nil {
-			fmt.Fprintf(context.Stderr, "Error Installing %s: %s\n", component.Name(), err)
+			fmt.Fprintf(context.Stderr, "Error Installing %s: %s\n", component.Name(), errInstall)
 			return errInstall
 		}
 		fmt.Fprintf(context.Stdout, "%s successfully installed!\n", component.Name())
