@@ -97,7 +97,7 @@ func NewSwarmCluster(machines []*Machine) (*SwarmCluster, error) {
 	}, nil
 }
 
-// ServiceTaskExec finds a container running a service task and runs exec on it
+// ServiceExec finds a container running a service task and runs exec on it
 func (c *SwarmCluster) ServiceExec(service string, cmd []string, startOpts docker.StartExecOptions) error {
 	mClient, err := c.dockerClient()
 	if err != nil {
