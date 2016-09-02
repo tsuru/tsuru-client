@@ -63,8 +63,8 @@ func (i *InstallConfig) fullImageName(name string) string {
 
 type TsuruComponent interface {
 	Name() string
-	Install(*SwarmCluster, *InstallConfig) error
-	Status(*SwarmCluster) (*ServiceInfo, error)
+	Install(ServiceCluster, *InstallConfig) error
+	Status(ServiceCluster) (*ServiceInfo, error)
 }
 
 type MongoDB struct{}
@@ -73,7 +73,7 @@ func (c *MongoDB) Name() string {
 	return "MongoDB"
 }
 
-func (c *MongoDB) Install(cluster *SwarmCluster, i *InstallConfig) error {
+func (c *MongoDB) Install(cluster ServiceCluster, i *InstallConfig) error {
 	return cluster.CreateService(docker.CreateServiceOptions{
 		ServiceSpec: swarm.ServiceSpec{
 			Annotations: swarm.Annotations{
@@ -88,7 +88,7 @@ func (c *MongoDB) Install(cluster *SwarmCluster, i *InstallConfig) error {
 	})
 }
 
-func (c *MongoDB) Status(cluster *SwarmCluster) (*ServiceInfo, error) {
+func (c *MongoDB) Status(cluster ServiceCluster) (*ServiceInfo, error) {
 	return cluster.ServiceInfo("mongo")
 }
 
@@ -98,7 +98,7 @@ func (c *PlanB) Name() string {
 	return "PlanB"
 }
 
-func (c *PlanB) Install(cluster *SwarmCluster, i *InstallConfig) error {
+func (c *PlanB) Install(cluster ServiceCluster, i *InstallConfig) error {
 	return cluster.CreateService(docker.CreateServiceOptions{
 		ServiceSpec: swarm.ServiceSpec{
 			Annotations: swarm.Annotations{
@@ -123,7 +123,7 @@ func (c *PlanB) Install(cluster *SwarmCluster, i *InstallConfig) error {
 	})
 }
 
-func (c *PlanB) Status(cluster *SwarmCluster) (*ServiceInfo, error) {
+func (c *PlanB) Status(cluster ServiceCluster) (*ServiceInfo, error) {
 	return cluster.ServiceInfo("planb")
 }
 
@@ -133,7 +133,7 @@ func (c *Redis) Name() string {
 	return "Redis"
 }
 
-func (c *Redis) Install(cluster *SwarmCluster, i *InstallConfig) error {
+func (c *Redis) Install(cluster ServiceCluster, i *InstallConfig) error {
 	return cluster.CreateService(docker.CreateServiceOptions{
 		ServiceSpec: swarm.ServiceSpec{
 			Annotations: swarm.Annotations{
@@ -148,7 +148,7 @@ func (c *Redis) Install(cluster *SwarmCluster, i *InstallConfig) error {
 	})
 }
 
-func (c *Redis) Status(cluster *SwarmCluster) (*ServiceInfo, error) {
+func (c *Redis) Status(cluster ServiceCluster) (*ServiceInfo, error) {
 	return cluster.ServiceInfo("redis")
 }
 
@@ -158,7 +158,7 @@ func (c *Registry) Name() string {
 	return "Docker Registry"
 }
 
-func (c *Registry) Install(cluster *SwarmCluster, i *InstallConfig) error {
+func (c *Registry) Install(cluster ServiceCluster, i *InstallConfig) error {
 	return cluster.CreateService(docker.CreateServiceOptions{
 		ServiceSpec: swarm.ServiceSpec{
 			Annotations: swarm.Annotations{
@@ -169,8 +169,8 @@ func (c *Registry) Install(cluster *SwarmCluster, i *InstallConfig) error {
 					Image: i.fullImageName("registry:2"),
 					Env: []string{
 						"REGISTRY_STORAGE_FILESYSTEM_ROOTDIRECTORY=/var/lib/registry",
-						fmt.Sprintf("REGISTRY_HTTP_TLS_CERTIFICATE=/certs/%s:5000/registry-cert.pem", cluster.Manager.IP),
-						fmt.Sprintf("REGISTRY_HTTP_TLS_KEY=/certs/%s:5000/registry-key.pem", cluster.Manager.IP),
+						fmt.Sprintf("REGISTRY_HTTP_TLS_CERTIFICATE=/certs/%s:5000/registry-cert.pem", cluster.GetManager().IP),
+						fmt.Sprintf("REGISTRY_HTTP_TLS_KEY=/certs/%s:5000/registry-key.pem", cluster.GetManager().IP),
 					},
 					Mounts: []mount.Mount{
 						{
@@ -201,7 +201,7 @@ func (c *Registry) Install(cluster *SwarmCluster, i *InstallConfig) error {
 	})
 }
 
-func (c *Registry) Status(cluster *SwarmCluster) (*ServiceInfo, error) {
+func (c *Registry) Status(cluster ServiceCluster) (*ServiceInfo, error) {
 	return cluster.ServiceInfo("registry")
 }
 
@@ -217,7 +217,7 @@ func (c *TsuruAPI) Name() string {
 	return "Tsuru API"
 }
 
-func (c *TsuruAPI) Install(cluster *SwarmCluster, i *InstallConfig) error {
+func (c *TsuruAPI) Install(cluster ServiceCluster, i *InstallConfig) error {
 	err := cluster.CreateService(docker.CreateServiceOptions{
 		ServiceSpec: swarm.ServiceSpec{
 			Annotations: swarm.Annotations{
@@ -230,10 +230,10 @@ func (c *TsuruAPI) Install(cluster *SwarmCluster, i *InstallConfig) error {
 						"MONGODB_PORT=27017",
 						fmt.Sprintf("REDIS_ADDR=%s", "redis"),
 						"REDIS_PORT=6379",
-						fmt.Sprintf("HIPACHE_DOMAIN=%s.nip.io", cluster.Manager.IP),
-						fmt.Sprintf("REGISTRY_ADDR=%s", cluster.Manager.IP),
+						fmt.Sprintf("HIPACHE_DOMAIN=%s.nip.io", cluster.GetManager().IP),
+						fmt.Sprintf("REGISTRY_ADDR=%s", cluster.GetManager().IP),
 						"REGISTRY_PORT=5000",
-						fmt.Sprintf("TSURU_ADDR=http://%s", cluster.Manager.IP),
+						fmt.Sprintf("TSURU_ADDR=http://%s", cluster.GetManager().IP),
 						fmt.Sprintf("TSURU_PORT=%d", defaultTsuruAPIPort),
 					},
 					Mounts: []mount.Mount{
@@ -261,7 +261,7 @@ func (c *TsuruAPI) Install(cluster *SwarmCluster, i *InstallConfig) error {
 		return err
 	}
 	fmt.Println("Waiting for Tsuru API to become responsive...")
-	tsuruURL := fmt.Sprintf("http://%s:%d", cluster.Manager.IP, defaultTsuruAPIPort)
+	tsuruURL := fmt.Sprintf("http://%s:%d", cluster.GetManager().IP, defaultTsuruAPIPort)
 	err = mcnutils.WaitForSpecific(func() bool {
 		_, errReq := http.Get(tsuruURL)
 		return errReq == nil
@@ -273,14 +273,14 @@ func (c *TsuruAPI) Install(cluster *SwarmCluster, i *InstallConfig) error {
 	if err != nil {
 		return err
 	}
-	return c.bootstrapEnv(i.RootUserEmail, i.RootUserPassword, tsuruURL, i.TargetName, cluster.Manager.Address)
+	return c.bootstrapEnv(i.RootUserEmail, i.RootUserPassword, tsuruURL, i.TargetName, cluster.GetManager().Address)
 }
 
-func (c *TsuruAPI) Status(cluster *SwarmCluster) (*ServiceInfo, error) {
+func (c *TsuruAPI) Status(cluster ServiceCluster) (*ServiceInfo, error) {
 	return cluster.ServiceInfo("tsuru")
 }
 
-func (c *TsuruAPI) setupRootUser(cluster *SwarmCluster, email, password string) error {
+func (c *TsuruAPI) setupRootUser(cluster ServiceCluster, email, password string) error {
 	cmd := []string{"tsurud", "root-user-create", email}
 	passwordConfirmation := strings.NewReader(fmt.Sprintf("%s\n%s\n", password, password))
 	startOpts := docker.StartExecOptions{

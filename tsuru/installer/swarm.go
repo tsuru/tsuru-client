@@ -14,6 +14,13 @@ import (
 
 var swarmPort = 2377
 
+type ServiceCluster interface {
+	GetManager() *Machine
+	ServiceExec(string, []string, docker.StartExecOptions) error
+	CreateService(docker.CreateServiceOptions) error
+	ServiceInfo(string) (*ServiceInfo, error)
+}
+
 type SwarmCluster struct {
 	Manager *Machine
 	Workers []*Machine
@@ -22,6 +29,10 @@ type SwarmCluster struct {
 
 func (c *SwarmCluster) dockerClient() (*docker.Client, error) {
 	return c.Manager.dockerClient()
+}
+
+func (c *SwarmCluster) GetManager() *Machine {
+	return c.Manager
 }
 
 // NewSwarmCluster creates a Swarm Cluster using the first machine as a manager

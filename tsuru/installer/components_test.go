@@ -13,13 +13,36 @@ import (
 	"os"
 	"sort"
 
+	"github.com/docker/engine-api/types/swarm"
 	"github.com/fsouza/go-dockerclient"
-	"github.com/fsouza/go-dockerclient/testing"
 	"github.com/tsuru/config"
 	"github.com/tsuru/tsuru/cmd"
 	_ "github.com/tsuru/tsuru/provision/docker"
 	"gopkg.in/check.v1"
 )
+
+type FakeServiceCluster struct {
+	Services chan<- docker.CreateServiceOptions
+}
+
+func (c *FakeServiceCluster) GetManager() *Machine {
+	return &Machine{IP: "127.0.0.1", Address: "127.0.0.1:2376"}
+}
+
+func (c *FakeServiceCluster) CreateService(opts docker.CreateServiceOptions) error {
+	if c.Services != nil {
+		c.Services <- opts
+	}
+	return nil
+}
+
+func (c *FakeServiceCluster) ServiceExec(service string, cmd []string, opts docker.StartExecOptions) error {
+	return nil
+}
+
+func (c *FakeServiceCluster) ServiceInfo(service string) (*ServiceInfo, error) {
+	return nil, nil
+}
 
 func (s *S) TestInstallComponentsDefaultConfig(c *check.C) {
 	tests := []struct {
@@ -53,34 +76,19 @@ func (s *S) TestInstallComponentsDefaultConfig(c *check.C) {
 			}},
 	}
 	c.Assert(len(tests), check.Equals, len(TsuruComponents))
-	containerChan := make(chan *docker.Container)
-	tlsConfig := testing.TLSConfig{
-		CertPath:    s.TLSCertsPath.ServerCert,
-		CertKeyPath: s.TLSCertsPath.ServerKey,
-		RootCAPath:  s.TLSCertsPath.RootCert,
-	}
-	server, err := testing.NewTLSServer("127.0.0.1:0", containerChan, nil, tlsConfig)
-	c.Assert(err, check.IsNil)
-	defer server.Stop()
-	mockCluster := &SwarmCluster{
-		Manager: &Machine{
-			Address: server.URL(),
-			IP:      "127.0.0.1",
-			CAPath:  s.TLSCertsPath.RootDir,
-		},
-		network: &docker.Network{Name: "tsuru"},
-	}
+	services := make(chan docker.CreateServiceOptions)
+	fakeCluster := &FakeServiceCluster{Services: services}
 	installConfig := NewInstallConfig("test")
 	for _, tt := range tests {
-		go tt.component.Install(mockCluster, installConfig)
-
-		cont := <-containerChan
-		c.Assert(cont.Name, check.Equals, tt.containerName)
+		go tt.component.Install(fakeCluster, installConfig)
+		opts := <-services
+		cont := opts.ServiceSpec.TaskTemplate.ContainerSpec
+		c.Assert(opts.Annotations.Name, check.Equals, tt.containerName)
 		c.Assert(cont.Image, check.Equals, tt.image)
-		c.Assert(cont.Config.Cmd, check.DeepEquals, tt.cmd)
-		sort.Strings(cont.Config.Env)
+		c.Assert(cont.Args, check.DeepEquals, tt.cmd)
+		sort.Strings(cont.Env)
 		sort.Strings(tt.env)
-		c.Assert(cont.Config.Env, check.DeepEquals, tt.env)
+		c.Assert(cont.Env, check.DeepEquals, tt.env)
 	}
 }
 
@@ -98,63 +106,32 @@ func (s *S) TestInstallComponentsCustomRegistry(c *check.C) {
 		{&TsuruAPI{}, "myregistry.com/tsuru/api:latest"},
 	}
 	c.Assert(len(tests), check.Equals, len(TsuruComponents))
-	containerChan := make(chan *docker.Container, 1)
-	tlsConfig := testing.TLSConfig{
-		CertPath:    s.TLSCertsPath.ServerCert,
-		CertKeyPath: s.TLSCertsPath.ServerKey,
-		RootCAPath:  s.TLSCertsPath.RootCert,
-	}
-	server, err := testing.NewTLSServer("127.0.0.1:0", containerChan, nil, tlsConfig)
-	c.Assert(err, check.IsNil)
-	defer server.Stop()
-	mockCluster := &SwarmCluster{
-		Manager: &Machine{
-			Address: server.URL(),
-			IP:      "127.0.0.1",
-			CAPath:  s.TLSCertsPath.RootDir,
-		},
-		network: &docker.Network{Name: "tsuru"},
-	}
+	services := make(chan docker.CreateServiceOptions)
+	fakeCluster := &FakeServiceCluster{Services: services}
 	for _, tt := range tests {
 		config := NewInstallConfig("test")
-		go tt.component.Install(mockCluster, config)
-
-		cont := <-containerChan
-		c.Assert(cont.Image, check.Equals, tt.image)
+		go tt.component.Install(fakeCluster, config)
+		s := <-services
+		img := s.TaskTemplate.ContainerSpec.Image
+		c.Assert(img, check.Equals, tt.image)
 	}
 }
 
 func (s *S) TestInstallPlanbHostPortBindings(c *check.C) {
-	containerChan := make(chan *docker.Container)
-	tlsConfig := testing.TLSConfig{
-		CertPath:    s.TLSCertsPath.ServerCert,
-		CertKeyPath: s.TLSCertsPath.ServerKey,
-		RootCAPath:  s.TLSCertsPath.RootCert,
-	}
-	server, err := testing.NewTLSServer("127.0.0.1:0", containerChan, nil, tlsConfig)
-	c.Assert(err, check.IsNil)
-	defer server.Stop()
-	mockCluster := &SwarmCluster{
-		Manager: &Machine{
-			Address: server.URL(),
-			IP:      "127.0.0.1",
-			CAPath:  s.TLSCertsPath.RootDir,
-		},
-		network: &docker.Network{Name: "tsuru"},
-	}
+	services := make(chan docker.CreateServiceOptions, 1)
+	fakeCluster := &FakeServiceCluster{Services: services}
 	planb := &PlanB{}
-	expectedExposed := map[docker.Port]struct{}{
-		docker.Port("8080/tcp"): {},
+	expectedConfigs := []swarm.PortConfig{
+		swarm.PortConfig{
+			Protocol:      swarm.PortConfigProtocolTCP,
+			TargetPort:    uint32(8080),
+			PublishedPort: uint32(80),
+		},
 	}
-	expectedBinds := map[docker.Port][]docker.PortBinding{
-		"8080/tcp": {{HostIP: "0.0.0.0", HostPort: "80"}},
-	}
-	config.Unset("docker-hub-mirror")
 	installConfig := NewInstallConfig("test")
-	go planb.Install(mockCluster, installConfig)
-	cont := <-containerChan
-	c.Assert(cont.HostConfig.PortBindings, check.DeepEquals, expectedBinds)
-	c.Assert(cont.Config.ExposedPorts, check.DeepEquals, expectedExposed)
+	planb.Install(fakeCluster, installConfig)
+	config := <-services
+	c.Assert(config.EndpointSpec.Ports, check.DeepEquals, expectedConfigs)
 }
 
 func (s *S) TestTsuruAPIBootstrapLocalEnviroment(c *check.C) {
