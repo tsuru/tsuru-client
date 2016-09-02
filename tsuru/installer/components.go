@@ -112,7 +112,7 @@ func (c *PlanB) Install(cluster ServiceCluster, i *InstallConfig) error {
 			},
 			EndpointSpec: &swarm.EndpointSpec{
 				Ports: []swarm.PortConfig{
-					swarm.PortConfig{
+					{
 						Protocol:      swarm.PortConfigProtocolTCP,
 						TargetPort:    uint32(8080),
 						PublishedPort: uint32(80),
@@ -190,7 +190,7 @@ func (c *Registry) Install(cluster ServiceCluster, i *InstallConfig) error {
 			},
 			EndpointSpec: &swarm.EndpointSpec{
 				Ports: []swarm.PortConfig{
-					swarm.PortConfig{
+					{
 						Protocol:      swarm.PortConfigProtocolTCP,
 						TargetPort:    uint32(5000),
 						PublishedPort: uint32(5000),
@@ -248,7 +248,7 @@ func (c *TsuruAPI) Install(cluster ServiceCluster, i *InstallConfig) error {
 			},
 			EndpointSpec: &swarm.EndpointSpec{
 				Ports: []swarm.PortConfig{
-					swarm.PortConfig{
+					{
 						Protocol:      swarm.PortConfigProtocolTCP,
 						TargetPort:    uint32(8080),
 						PublishedPort: uint32(8080),

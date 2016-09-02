@@ -122,7 +122,7 @@ func (s *S) TestInstallPlanbHostPortBindings(c *check.C) {
 	fakeCluster := &FakeServiceCluster{Services: services}
 	planb := &PlanB{}
 	expectedConfigs := []swarm.PortConfig{
-		swarm.PortConfig{
+		{
 			Protocol:      swarm.PortConfigProtocolTCP,
 			TargetPort:    uint32(8080),
 			PublishedPort: uint32(80),
