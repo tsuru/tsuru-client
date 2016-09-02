@@ -12,6 +12,7 @@ import (
 
 	"github.com/tsuru/config"
 	"github.com/tsuru/gnuflag"
+	"github.com/tsuru/tsuru-client/tsuru/client"
 	"github.com/tsuru/tsuru/cmd"
 )
 
@@ -89,7 +90,7 @@ func (c *Install) Flags() *gnuflag.FlagSet {
 	return c.fs
 }
 
-func (c *Install) Run(context *cmd.Context, client *cmd.Client) error {
+func (c *Install) Run(context *cmd.Context, cli *cmd.Client) error {
 	context.RawOutput()
 	config, err := parseConfigFile(c.config)
 	if err != nil {
@@ -147,7 +148,12 @@ func (c *Install) Run(context *cmd.Context, client *cmd.Client) error {
 			fmt.Fprint(context.Stderr, "Failed to apply iptables rule. Maybe it is not needed anymore?")
 		}
 	}
-	fmt.Fprint(context.Stdout, c.buildStatusTable(TsuruComponents, cluster.Manager).String())
+	fmt.Fprint(context.Stdout, "--- Installation Overview ---")
+	fmt.Fprint(context.Stdout, "Swarm Cluster: \n"+buildClusterTable(cluster).String())
+	fmt.Fprint(context.Stdout, "Components: \n"+buildComponentsTable(TsuruComponents, cluster).String())
+	appList := &client.AppList{}
+	fmt.Fprintln(context.Stdout, "Apps:")
+	appList.Run(context, cli)
 	return nil
 }
 
@@ -162,18 +168,35 @@ func (c *Install) PreInstallChecks(config *TsuruInstallConfig) error {
 	return nil
 }
 
-func (c *Install) buildStatusTable(components []TsuruComponent, m *Machine) *cmd.Table {
+func buildClusterTable(cluster *SwarmCluster) *cmd.Table {
 	t := cmd.NewTable()
-	t.Headers = cmd.Row{"Component", "Address", "State"}
+	t.Headers = cmd.Row{"IP", "State", "Manager"}
+	t.LineSeparator = true
+	nodes, err := cluster.ClusterInfo()
+	if err != nil {
+		t.AddRow(cmd.Row{fmt.Sprintf("failed to retrieve cluster info: %s", err)})
+	}
+	for _, n := range nodes {
+		t.AddRow(cmd.Row{n.IP, n.State, strconv.FormatBool(n.Manager)})
+	}
+	return t
+}
+
+func buildComponentsTable(components []TsuruComponent, cluster *SwarmCluster) *cmd.Table {
+	t := cmd.NewTable()
+	t.Headers = cmd.Row{"Component", "Ports", "Replicas"}
 	t.LineSeparator = true
 	for _, component := range components {
-		status, err := component.Status(m)
+		info, err := component.Status(cluster)
 		if err != nil {
-			t.AddRow(cmd.Row{component.Name(), "", fmt.Sprintf("%s", err)})
+			t.AddRow(cmd.Row{component.Name(), "?", fmt.Sprintf("%s", err)})
 			continue
 		}
-		addresses := strings.Join(status.addresses, "\n")
-		t.AddRow(cmd.Row{component.Name(), addresses, status.containerState.StateString()})
+		row := cmd.Row{component.Name(),
+			strings.Join(info.Ports, ","),
+			strconv.Itoa(info.Replicas),
+		}
+		t.AddRow(row)
 	}
 	return t
 }

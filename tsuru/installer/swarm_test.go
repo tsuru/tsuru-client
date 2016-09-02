@@ -15,6 +15,55 @@ import (
 	"gopkg.in/check.v1"
 )
 
+type testCluster struct {
+	SwarmCluster  *SwarmCluster
+	ManagerServer *testing.DockerServer
+	WorkerServer  *testing.DockerServer
+}
+
+func (c *testCluster) Stop() {
+	c.ManagerServer.Stop()
+	c.WorkerServer.Stop()
+}
+
+func (s *S) createCluster() (*testCluster, error) {
+	tlsConfig := testing.TLSConfig{
+		CertPath:    s.TLSCertsPath.ServerCert,
+		CertKeyPath: s.TLSCertsPath.ServerKey,
+		RootCAPath:  s.TLSCertsPath.RootCert,
+	}
+	managerServer, err := testing.NewTLSServer("127.0.0.1:0", nil, nil, tlsConfig)
+	if err != nil {
+		return nil, err
+	}
+	workerServer, err := testing.NewTLSServer("127.0.0.1:0", nil, nil, tlsConfig)
+	if err != nil {
+		return nil, err
+	}
+	managerMachine := &Machine{
+		Host:    &host.Host{Name: "manager"},
+		IP:      "127.0.0.1",
+		Address: managerServer.URL(),
+		CAPath:  s.TLSCertsPath.RootDir,
+		network: &docker.Network{Name: "tsuru"},
+	}
+	workerMachine := &Machine{
+		Host:    &host.Host{Name: "worker"},
+		IP:      "127.0.0.2",
+		Address: workerServer.URL(),
+		CAPath:  s.TLSCertsPath.RootDir,
+		network: &docker.Network{Name: "tsuru"},
+	}
+	return &testCluster{
+		SwarmCluster: &SwarmCluster{
+			Manager: managerMachine,
+			Workers: []*Machine{managerMachine, workerMachine},
+		},
+		ManagerServer: managerServer,
+		WorkerServer:  workerServer,
+	}, nil
+}
+
 func (s *S) TestNewSwarmCluster(c *check.C) {
 	tlsConfig := testing.TLSConfig{
 		CertPath:    s.TLSCertsPath.ServerCert,
@@ -97,41 +146,11 @@ func (s *S) TestCreateService(c *check.C) {
 }
 
 func (s *S) TestServiceExec(c *check.C) {
-	tlsConfig := testing.TLSConfig{
-		CertPath:    s.TLSCertsPath.ServerCert,
-		CertKeyPath: s.TLSCertsPath.ServerKey,
-		RootCAPath:  s.TLSCertsPath.RootCert,
-	}
+	testCluster, err := s.createCluster()
+	c.Assert(err, check.IsNil)
+	defer testCluster.Stop()
 	execStarted := false
-	managerServer, err := testing.NewTLSServer("127.0.0.1:0", nil, nil, tlsConfig)
-	c.Assert(err, check.IsNil)
-	defer managerServer.Stop()
-	workerServer, err := testing.NewTLSServer("127.0.0.1:0", nil, func(r *http.Request) {
-		if r.URL.Path == "/exec/exec-ID/start" {
-			execStarted = true
-		}
-	}, tlsConfig)
-	c.Assert(err, check.IsNil)
-	defer workerServer.Stop()
-	managerMachine := &Machine{
-		Host:    &host.Host{Name: "manager"},
-		IP:      "127.0.0.1",
-		Address: managerServer.URL(),
-		CAPath:  s.TLSCertsPath.RootDir,
-		network: &docker.Network{Name: "tsuru"},
-	}
-	workerMachine := &Machine{
-		Host:    &host.Host{Name: "worker"},
-		IP:      "127.0.0.1",
-		Address: workerServer.URL(),
-		CAPath:  s.TLSCertsPath.RootDir,
-		network: &docker.Network{Name: "tsuru"},
-	}
-	cluster := &SwarmCluster{
-		Manager: managerMachine,
-		Workers: []*Machine{managerMachine, workerMachine},
-	}
-	managerServer.CustomHandler("/tasks", http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+	testCluster.ManagerServer.CustomHandler("/tasks", http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		var filters map[string][]string
 		errJSON := json.Unmarshal([]byte(r.URL.Query().Get("filters")), &filters)
 		c.Assert(errJSON, check.IsNil)
@@ -153,7 +172,7 @@ func (s *S) TestServiceExec(c *check.C) {
 		w.Write(buf)
 		w.WriteHeader(http.StatusOK)
 	}))
-	managerServer.CustomHandler("/nodes/node-id", http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+	testCluster.ManagerServer.CustomHandler("/nodes/node-id", http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		node := swarm.Node{
 			Description: swarm.NodeDescription{
 				Hostname: "worker",
@@ -165,7 +184,7 @@ func (s *S) TestServiceExec(c *check.C) {
 		w.Write(buf)
 		w.WriteHeader(http.StatusOK)
 	}))
-	workerServer.CustomHandler("/containers/container-id/exec", http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+	testCluster.WorkerServer.CustomHandler("/containers/container-id/exec", http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		var opts docker.CreateExecOptions
 		errJSON := json.NewDecoder(r.Body).Decode(&opts)
 		c.Assert(errJSON, check.IsNil)
@@ -173,7 +192,73 @@ func (s *S) TestServiceExec(c *check.C) {
 		w.WriteHeader(http.StatusOK)
 		json.NewEncoder(w).Encode(map[string]string{"Id": "exec-ID"})
 	}))
-	err = cluster.ServiceExec("tsuru", []string{"exit"}, docker.StartExecOptions{})
+	testCluster.WorkerServer.CustomHandler("/exec/exec-ID/start", http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		execStarted = true
+		w.WriteHeader(http.StatusOK)
+	}))
+	err = testCluster.SwarmCluster.ServiceExec("tsuru", []string{"exit"}, docker.StartExecOptions{})
 	c.Assert(err, check.IsNil)
 	c.Assert(execStarted, check.Equals, true)
+}
+
+func (s *S) TestServiceInfo(c *check.C) {
+	testCluster, err := s.createCluster()
+	c.Assert(err, check.IsNil)
+	testCluster.ManagerServer.CustomHandler("/services/tsuru", http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		service := swarm.Service{
+			Spec: swarm.ServiceSpec{
+				Annotations: swarm.Annotations{
+					Name: "tsuru",
+				},
+				Mode: swarm.ServiceMode{
+					Replicated: &swarm.ReplicatedService{
+						Replicas: &[]uint64{2}[0],
+					},
+				},
+			},
+			Endpoint: swarm.Endpoint{
+				Ports: []swarm.PortConfig{
+					{PublishedPort: uint32(80)},
+				},
+			},
+		}
+		json.NewEncoder(w).Encode(service)
+	}))
+	info, err := testCluster.SwarmCluster.ServiceInfo("tsuru")
+	c.Assert(err, check.IsNil)
+	c.Assert(info, check.DeepEquals, &ServiceInfo{Name: "tsuru", Replicas: 2, Ports: []string{"80"}})
+}
+
+func (s *S) TestClusterInfo(c *check.C) {
+	testCluster, err := s.createCluster()
+	c.Assert(err, check.IsNil)
+	testCluster.ManagerServer.CustomHandler("/nodes", http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		nodes := []swarm.Node{
+			{
+				Description: swarm.NodeDescription{
+					Hostname: "manager",
+				},
+				Status: swarm.NodeStatus{
+					State: swarm.NodeStateReady,
+				},
+				ManagerStatus: &swarm.ManagerStatus{},
+			},
+			{
+				Description: swarm.NodeDescription{
+					Hostname: "worker",
+				},
+				Status: swarm.NodeStatus{
+					State: swarm.NodeStateDown,
+				},
+			},
+		}
+		json.NewEncoder(w).Encode(nodes)
+	}))
+	expected := []NodeInfo{
+		{IP: "127.0.0.1", State: "ready", Manager: true},
+		{IP: "127.0.0.2", State: "down", Manager: false},
+	}
+	info, err := testCluster.SwarmCluster.ClusterInfo()
+	c.Assert(err, check.IsNil)
+	c.Assert(info, check.DeepEquals, expected)
 }

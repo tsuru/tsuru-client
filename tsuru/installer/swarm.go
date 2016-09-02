@@ -6,6 +6,7 @@ package installer
 
 import (
 	"fmt"
+	"strconv"
 
 	"github.com/docker/engine-api/types/swarm"
 	"github.com/fsouza/go-dockerclient"
@@ -161,18 +162,71 @@ func (c *SwarmCluster) CreateService(opts docker.CreateServiceOptions) error {
 	return err
 }
 
-func (c *SwarmCluster) ListNodes() ([]swarm.Node, error) {
-	client, err := c.dockerClient()
-	if err != nil {
-		return nil, err
-	}
-	return client.ListNodes(docker.ListNodesOptions{})
+type NodeInfo struct {
+	IP      string
+	State   string
+	Manager bool
 }
 
-func (c *SwarmCluster) ListServices() ([]swarm.Service, error) {
+func (c *SwarmCluster) ClusterInfo() ([]NodeInfo, error) {
 	client, err := c.dockerClient()
 	if err != nil {
 		return nil, err
 	}
-	return client.ListServices(docker.ListServicesOptions{})
+	nodes, err := client.ListNodes(docker.ListNodesOptions{})
+	if err != nil {
+		return nil, err
+	}
+	var infos []NodeInfo
+	for _, n := range nodes {
+		var ip string
+		m, err := c.GetMachine(n.Description.Hostname)
+		if err != nil {
+			ip = "???"
+		} else {
+			ip = m.IP
+		}
+		infos = append(infos, NodeInfo{
+			IP:      ip,
+			State:   string(n.Status.State),
+			Manager: n.ManagerStatus != nil,
+		})
+	}
+	return infos, nil
+}
+
+// GetMachine retrieves a worker machine by its name
+func (c *SwarmCluster) GetMachine(name string) (*Machine, error) {
+	for _, m := range c.Workers {
+		if m.Name == name {
+			return m, nil
+		}
+	}
+	return nil, fmt.Errorf("machine %s not found", name)
+}
+
+type ServiceInfo struct {
+	Name     string
+	Replicas int
+	Ports    []string
+}
+
+func (c *SwarmCluster) ServiceInfo(name string) (*ServiceInfo, error) {
+	client, err := c.dockerClient()
+	if err != nil {
+		return nil, err
+	}
+	service, err := client.InspectService(name)
+	if err != nil {
+		return nil, err
+	}
+	var ports []string
+	for _, p := range service.Endpoint.Ports {
+		ports = append(ports, strconv.Itoa(int(p.PublishedPort)))
+	}
+	return &ServiceInfo{
+		Name:     name,
+		Replicas: int(*service.Spec.Mode.Replicated.Replicas),
+		Ports:    ports,
+	}, nil
 }

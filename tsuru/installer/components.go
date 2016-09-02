@@ -64,7 +64,7 @@ func (i *InstallConfig) fullImageName(name string) string {
 type TsuruComponent interface {
 	Name() string
 	Install(*SwarmCluster, *InstallConfig) error
-	Status(*Machine) (*ComponentStatus, error)
+	Status(*SwarmCluster) (*ServiceInfo, error)
 }
 
 type MongoDB struct{}
@@ -88,8 +88,8 @@ func (c *MongoDB) Install(cluster *SwarmCluster, i *InstallConfig) error {
 	})
 }
 
-func (c *MongoDB) Status(machine *Machine) (*ComponentStatus, error) {
-	return containerStatus("mongo", machine)
+func (c *MongoDB) Status(cluster *SwarmCluster) (*ServiceInfo, error) {
+	return cluster.ServiceInfo("mongo")
 }
 
 type PlanB struct{}
@@ -123,8 +123,8 @@ func (c *PlanB) Install(cluster *SwarmCluster, i *InstallConfig) error {
 	})
 }
 
-func (c *PlanB) Status(machine *Machine) (*ComponentStatus, error) {
-	return containerStatus("planb", machine)
+func (c *PlanB) Status(cluster *SwarmCluster) (*ServiceInfo, error) {
+	return cluster.ServiceInfo("planb")
 }
 
 type Redis struct{}
@@ -148,8 +148,8 @@ func (c *Redis) Install(cluster *SwarmCluster, i *InstallConfig) error {
 	})
 }
 
-func (c *Redis) Status(machine *Machine) (*ComponentStatus, error) {
-	return containerStatus("redis", machine)
+func (c *Redis) Status(cluster *SwarmCluster) (*ServiceInfo, error) {
+	return cluster.ServiceInfo("redis")
 }
 
 type Registry struct{}
@@ -201,8 +201,8 @@ func (c *Registry) Install(cluster *SwarmCluster, i *InstallConfig) error {
 	})
 }
 
-func (c *Registry) Status(machine *Machine) (*ComponentStatus, error) {
-	return containerStatus("registry", machine)
+func (c *Registry) Status(cluster *SwarmCluster) (*ServiceInfo, error) {
+	return cluster.ServiceInfo("registry")
 }
 
 type TsuruAPI struct{}
@@ -276,8 +276,8 @@ func (c *TsuruAPI) Install(cluster *SwarmCluster, i *InstallConfig) error {
 	return c.bootstrapEnv(i.RootUserEmail, i.RootUserPassword, tsuruURL, i.TargetName, cluster.Manager.Address)
 }
 
-func (c *TsuruAPI) Status(machine *Machine) (*ComponentStatus, error) {
-	return containerStatus("tsuru", machine)
+func (c *TsuruAPI) Status(cluster *SwarmCluster) (*ServiceInfo, error) {
+	return cluster.ServiceInfo("tsuru")
 }
 
 func (c *TsuruAPI) setupRootUser(cluster *SwarmCluster, email, password string) error {
@@ -291,31 +291,6 @@ func (c *TsuruAPI) setupRootUser(cluster *SwarmCluster, email, password string) 
 		RawTerminal:  true,
 	}
 	return cluster.ServiceExec("tsuru", cmd, startOpts)
-}
-
-type ComponentStatus struct {
-	containerState *docker.State
-	addresses      []string
-}
-
-func containerStatus(name string, m *Machine) (*ComponentStatus, error) {
-	client, err := m.dockerClient()
-	if err != nil {
-		return nil, fmt.Errorf("failed create docker client: %s", err)
-	}
-	container, err := client.InspectContainer(name)
-	if err != nil {
-		return nil, err
-	}
-	var addresses []string
-	for p := range container.HostConfig.PortBindings {
-		address := fmt.Sprintf("%s://%s:%s", p.Proto(), m.IP, p.Port())
-		addresses = append(addresses, address)
-	}
-	return &ComponentStatus{
-		containerState: &container.State,
-		addresses:      addresses,
-	}, nil
 }
 
 func (c *TsuruAPI) bootstrapEnv(login, password, target, targetName, node string) error {
