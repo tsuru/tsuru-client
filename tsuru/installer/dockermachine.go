@@ -247,7 +247,10 @@ func configureDriver(driver drivers.Driver, driverOpts map[string]interface{}, o
 			}
 		}
 	}
-
+	opts.Values["swarm-master"] = false
+	opts.Values["swarm-host"] = ""
+	opts.Values["engine-install-url"] = ""
+	opts.Values["swarm-discovery"] = ""
 	if err := driver.SetConfigFromFlags(opts); err != nil {
 		return fmt.Errorf("Error setting driver configurations: %s", err)
 	}
