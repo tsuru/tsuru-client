@@ -45,19 +45,18 @@ func (s *S) createCluster() (*testCluster, error) {
 		IP:      "127.0.0.1",
 		Address: managerServer.URL(),
 		CAPath:  s.TLSCertsPath.RootDir,
-		network: &docker.Network{Name: "tsuru"},
 	}
 	workerMachine := &Machine{
 		Host:    &host.Host{Name: "worker"},
 		IP:      "127.0.0.2",
 		Address: workerServer.URL(),
 		CAPath:  s.TLSCertsPath.RootDir,
-		network: &docker.Network{Name: "tsuru"},
 	}
 	return &testCluster{
 		SwarmCluster: &SwarmCluster{
 			Manager: managerMachine,
 			Workers: []*Machine{managerMachine, workerMachine},
+			network: &docker.Network{Name: "tsuru"},
 		},
 		ManagerServer: managerServer,
 		WorkerServer:  workerServer,
@@ -88,7 +87,6 @@ func (s *S) TestNewSwarmCluster(c *check.C) {
 		IP:      "127.0.0.1",
 		Address: managerServer.URL(),
 		CAPath:  s.TLSCertsPath.RootDir,
-		network: &docker.Network{Name: "tsuru"},
 	}
 	workerServer, err := testing.NewTLSServer("127.0.0.1:0", nil, func(r *http.Request) {
 		workerReqs = append(workerReqs, r)
@@ -108,7 +106,6 @@ func (s *S) TestNewSwarmCluster(c *check.C) {
 		IP:      "127.0.0.2",
 		Address: workerServer.URL(),
 		CAPath:  s.TLSCertsPath.RootDir,
-		network: &docker.Network{Name: "tsuru"},
 	}
 	cluster, err := NewSwarmCluster([]*Machine{managerMachine, workerMachine})
 	c.Assert(err, check.IsNil)
@@ -136,7 +133,6 @@ func (s *S) TestCreateService(c *check.C) {
 		IP:      "127.0.0.2",
 		Address: server.URL(),
 		CAPath:  s.TLSCertsPath.RootDir,
-		network: &docker.Network{Name: "tsuru-net"},
 	}
 	cluster, err := NewSwarmCluster([]*Machine{m})
 	c.Assert(err, check.IsNil)

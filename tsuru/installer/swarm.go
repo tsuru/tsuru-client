@@ -14,22 +14,14 @@ import (
 
 var swarmPort = 2377
 
-type dockerEnpoint interface {
-	dockerClient() (*docker.Client, error)
-	GetNetwork() *docker.Network
-}
-
 type SwarmCluster struct {
 	Manager *Machine
 	Workers []*Machine
+	network *docker.Network
 }
 
 func (c *SwarmCluster) dockerClient() (*docker.Client, error) {
 	return c.Manager.dockerClient()
-}
-
-func (c *SwarmCluster) GetNetwork() *docker.Network {
-	return c.Manager.GetNetwork()
 }
 
 // NewSwarmCluster creates a Swarm Cluster using the first machine as a manager
@@ -71,7 +63,6 @@ func NewSwarmCluster(machines []*Machine) (*SwarmCluster, error) {
 		return nil, fmt.Errorf("failed to create overlay network: %s", err)
 	}
 	for i, m := range machines {
-		m.network = network
 		if i == 0 {
 			continue
 		}
@@ -95,6 +86,7 @@ func NewSwarmCluster(machines []*Machine) (*SwarmCluster, error) {
 	return &SwarmCluster{
 		Manager: machines[0],
 		Workers: machines,
+		network: network,
 	}, nil
 }
 
@@ -156,7 +148,7 @@ func (c *SwarmCluster) CreateService(opts docker.CreateServiceOptions) error {
 		return err
 	}
 	opts.Networks = []swarm.NetworkAttachmentConfig{
-		{Target: c.GetNetwork().Name},
+		{Target: c.network.Name},
 	}
 	_, err = client.CreateService(opts)
 	return err

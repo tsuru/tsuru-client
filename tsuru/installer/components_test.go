@@ -67,8 +67,8 @@ func (s *S) TestInstallComponentsDefaultConfig(c *check.C) {
 			Address: server.URL(),
 			IP:      "127.0.0.1",
 			CAPath:  s.TLSCertsPath.RootDir,
-			network: &docker.Network{Name: "tsuru"},
 		},
+		network: &docker.Network{Name: "tsuru"},
 	}
 	installConfig := NewInstallConfig("test")
 	for _, tt := range tests {
@@ -112,8 +112,8 @@ func (s *S) TestInstallComponentsCustomRegistry(c *check.C) {
 			Address: server.URL(),
 			IP:      "127.0.0.1",
 			CAPath:  s.TLSCertsPath.RootDir,
-			network: &docker.Network{Name: "tsuru"},
 		},
+		network: &docker.Network{Name: "tsuru"},
 	}
 	for _, tt := range tests {
 		config := NewInstallConfig("test")
@@ -139,8 +139,8 @@ func (s *S) TestInstallPlanbHostPortBindings(c *check.C) {
 			Address: server.URL(),
 			IP:      "127.0.0.1",
 			CAPath:  s.TLSCertsPath.RootDir,
-			network: &docker.Network{Name: "tsuru"},
 		},
+		network: &docker.Network{Name: "tsuru"},
 	}
 	planb := &PlanB{}
 	expectedExposed := map[docker.Port]struct{}{

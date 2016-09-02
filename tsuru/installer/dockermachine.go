@@ -58,7 +58,6 @@ type Machine struct {
 	Address   string
 	CAPath    string
 	OpenPorts []string
-	network   *docker.Network
 }
 
 func (m *Machine) dockerClient() (*docker.Client, error) {
@@ -68,10 +67,6 @@ func (m *Machine) dockerClient() (*docker.Client, error) {
 		filepath.Join(m.CAPath, "key.pem"),
 		filepath.Join(m.CAPath, "ca.pem"),
 	)
-}
-
-func (m *Machine) GetNetwork() *docker.Network {
-	return m.network
 }
 
 func (m *Machine) GetIP() string {
