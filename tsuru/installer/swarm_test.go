@@ -258,3 +258,19 @@ func (s *S) TestClusterInfo(c *check.C) {
 	c.Assert(err, check.IsNil)
 	c.Assert(info, check.DeepEquals, expected)
 }
+
+func (s *S) TestGetMachine(c *check.C) {
+	testCluster, err := s.createCluster()
+	c.Assert(err, check.IsNil)
+	m, err := testCluster.SwarmCluster.GetMachine("manager")
+	c.Assert(err, check.IsNil)
+	c.Assert(m.IP, check.DeepEquals, "127.0.0.1")
+}
+
+func (s *S) TestGetMachineNotFound(c *check.C) {
+	testCluster, err := s.createCluster()
+	c.Assert(err, check.IsNil)
+	m, err := testCluster.SwarmCluster.GetMachine("not-found")
+	c.Assert(err, check.NotNil)
+	c.Assert(m, check.IsNil)
+}
