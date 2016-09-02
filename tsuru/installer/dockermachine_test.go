@@ -281,6 +281,32 @@ func (s *S) TestDeleteMachine(c *check.C) {
 	c.Assert(err, check.IsNil)
 }
 
+func (s *S) TestDeleteAll(c *check.C) {
+	dm, err := NewDockerMachine(defaultDockerMachineConfig)
+	c.Assert(err, check.IsNil)
+	dm.client = &fakeMachineAPI{
+		FakeStore: &persisttest.FakeStore{
+			Hosts: []*host.Host{{
+				Name: "test-machine2",
+				Driver: &fakedriver.Driver{
+					MockState: state.Running,
+					MockIP:    "1.2.3.4",
+				},
+			},
+				{
+					Name: "test-machine",
+					Driver: &fakedriver.Driver{
+						MockState: state.Running,
+						MockIP:    "1.2.3.5",
+					},
+				},
+			},
+		},
+	}
+	err = dm.DeleteAll()
+	c.Assert(err, check.IsNil)
+}
+
 func (s *S) TestDeleteMachineLoadError(c *check.C) {
 	dm, err := NewDockerMachine(defaultDockerMachineConfig)
 	c.Assert(err, check.IsNil)
