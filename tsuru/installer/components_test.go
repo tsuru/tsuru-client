@@ -69,7 +69,7 @@ func (s *S) TestInstallComponentsDefaultConfig(c *check.C) {
 				"REDIS_ADDR=redis",
 				"REDIS_PORT=6379",
 				"HIPACHE_DOMAIN=127.0.0.1.nip.io",
-				"REGISTRY_ADDR=127.0.0.1",
+				"REGISTRY_ADDR=registry",
 				"REGISTRY_PORT=5000",
 				"TSURU_ADDR=http://127.0.0.1",
 				"TSURU_PORT=8080",
@@ -93,7 +93,7 @@ func (s *S) TestInstallComponentsDefaultConfig(c *check.C) {
 	c.Assert(installConfig.ComponentAddress["mongo"], check.Equals, "mongo")
 	c.Assert(installConfig.ComponentAddress["redis"], check.Equals, "redis")
 	c.Assert(installConfig.ComponentAddress["registry"], check.Equals, "registry")
-	c.Assert(installConfig.ComponentAddress["planb"], check.Equals, "planb")
+	c.Assert(installConfig.ComponentAddress["planb"], check.Equals, "127.0.0.1")
 }
 
 func (s *S) TestInstallComponentsCustomRegistry(c *check.C) {
@@ -210,4 +210,27 @@ func (s *S) TestPreInstalledComponents(c *check.C) {
 	err = planb.Install(cluster, conf)
 	c.Assert(err, check.IsNil)
 	c.Assert(conf.ComponentAddress["planb"], check.Equals, "192.168.0.100")
+}
+
+func (s *S) TestInstallTsuruApiWithCustomComponentsAddress(c *check.C) {
+	err := config.ReadConfigFile("./testdata/components-conf.yml")
+	c.Assert(err, check.IsNil)
+	conf := NewInstallConfig("testing")
+	services := make(chan docker.CreateServiceOptions, 1)
+	cluster := &FakeServiceCluster{Services: services}
+	api := &TsuruAPI{}
+	go api.Install(cluster, conf)
+	apiConf := <-services
+	expected := []string{
+		"MONGODB_ADDR=192.168.0.100",
+		"MONGODB_PORT=27017",
+		"REDIS_ADDR=192.168.0.100",
+		"REDIS_PORT=6379",
+		"HIPACHE_DOMAIN=192.168.0.100.nip.io",
+		"REGISTRY_ADDR=192.168.0.100",
+		"REGISTRY_PORT=5000",
+		"TSURU_ADDR=http://127.0.0.1",
+		"TSURU_PORT=8080",
+	}
+	c.Assert(apiConf.TaskTemplate.ContainerSpec.Env, check.DeepEquals, expected)
 }

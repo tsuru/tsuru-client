@@ -143,7 +143,7 @@ func (c *PlanB) Install(cluster ServiceCluster, i *InstallConfig) error {
 	if err != nil {
 		return err
 	}
-	i.ComponentAddress["planb"] = "planb"
+	i.ComponentAddress["planb"] = cluster.GetManager().IP
 	return nil
 }
 
@@ -257,7 +257,22 @@ func (c *TsuruAPI) Name() string {
 	return "Tsuru API"
 }
 
+func parseAddress(address, defaultPort string) (addr, port string) {
+	parts := strings.Split(address, ":")
+	if len(parts) == 1 {
+		port = defaultPort
+	} else {
+		port = parts[1]
+	}
+	addr = parts[0]
+	return addr, port
+}
+
 func (c *TsuruAPI) Install(cluster ServiceCluster, i *InstallConfig) error {
+	mongo, mongoPort := parseAddress(i.ComponentAddress["mongo"], "27017")
+	redis, redisPort := parseAddress(i.ComponentAddress["redis"], "6379")
+	registry, registryPort := parseAddress(i.ComponentAddress["registry"], "5000")
+	planb, _ := parseAddress(i.ComponentAddress["planb"], "80")
 	err := cluster.CreateService(docker.CreateServiceOptions{
 		ServiceSpec: swarm.ServiceSpec{
 			Annotations: swarm.Annotations{
@@ -266,13 +281,13 @@ func (c *TsuruAPI) Install(cluster ServiceCluster, i *InstallConfig) error {
 			TaskTemplate: swarm.TaskSpec{
 				ContainerSpec: swarm.ContainerSpec{
 					Image: i.fullImageName("tsuru/api:latest"),
-					Env: []string{fmt.Sprintf("MONGODB_ADDR=%s", "mongo"),
-						"MONGODB_PORT=27017",
-						fmt.Sprintf("REDIS_ADDR=%s", "redis"),
-						"REDIS_PORT=6379",
-						fmt.Sprintf("HIPACHE_DOMAIN=%s.nip.io", cluster.GetManager().IP),
-						fmt.Sprintf("REGISTRY_ADDR=%s", cluster.GetManager().IP),
-						"REGISTRY_PORT=5000",
+					Env: []string{fmt.Sprintf("MONGODB_ADDR=%s", mongo),
+						fmt.Sprintf("MONGODB_PORT=%s", mongoPort),
+						fmt.Sprintf("REDIS_ADDR=%s", redis),
+						fmt.Sprintf("REDIS_PORT=%s", redisPort),
+						fmt.Sprintf("HIPACHE_DOMAIN=%s.nip.io", planb),
+						fmt.Sprintf("REGISTRY_ADDR=%s", registry),
+						fmt.Sprintf("REGISTRY_PORT=%s", registryPort),
 						fmt.Sprintf("TSURU_ADDR=http://%s", cluster.GetManager().IP),
 						fmt.Sprintf("TSURU_PORT=%d", defaultTsuruAPIPort),
 					},
