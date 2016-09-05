@@ -35,21 +35,29 @@ var (
 )
 
 type InstallConfig struct {
-	DockerHubMirror string
+	DockerHubMirror  string
+	ComponentAddress map[string]string
 	TsuruAPIConfig
 }
 
 func NewInstallConfig(targetName string) *InstallConfig {
-	hub, err := config.GetString("docker-hub-mirror")
-	if err != nil {
-		hub = ""
-	}
+	hub, _ := config.GetString("docker-hub-mirror")
+	mongo, _ := config.GetString("components:mongo")
+	redis, _ := config.GetString("components:redis")
+	registry, _ := config.GetString("components:registry")
+	planb, _ := config.GetString("components:planb")
 	return &InstallConfig{
 		DockerHubMirror: hub,
 		TsuruAPIConfig: TsuruAPIConfig{
 			TargetName:       targetName,
 			RootUserEmail:    "admin@example.com",
 			RootUserPassword: "admin123",
+		},
+		ComponentAddress: map[string]string{
+			"mongo":    mongo,
+			"redis":    redis,
+			"registry": registry,
+			"planb":    planb,
 		},
 	}
 }
@@ -74,7 +82,10 @@ func (c *MongoDB) Name() string {
 }
 
 func (c *MongoDB) Install(cluster ServiceCluster, i *InstallConfig) error {
-	return cluster.CreateService(docker.CreateServiceOptions{
+	if i.ComponentAddress["mongo"] != "" {
+		return nil
+	}
+	err := cluster.CreateService(docker.CreateServiceOptions{
 		ServiceSpec: swarm.ServiceSpec{
 			Annotations: swarm.Annotations{
 				Name: "mongo",
@@ -86,6 +97,11 @@ func (c *MongoDB) Install(cluster ServiceCluster, i *InstallConfig) error {
 			},
 		},
 	})
+	if err != nil {
+		return err
+	}
+	i.ComponentAddress["mongo"] = "mongo"
+	return nil
 }
 
 func (c *MongoDB) Status(cluster ServiceCluster) (*ServiceInfo, error) {
@@ -99,7 +115,10 @@ func (c *PlanB) Name() string {
 }
 
 func (c *PlanB) Install(cluster ServiceCluster, i *InstallConfig) error {
-	return cluster.CreateService(docker.CreateServiceOptions{
+	if i.ComponentAddress["planb"] != "" {
+		return nil
+	}
+	err := cluster.CreateService(docker.CreateServiceOptions{
 		ServiceSpec: swarm.ServiceSpec{
 			Annotations: swarm.Annotations{
 				Name: "planb",
@@ -121,6 +140,11 @@ func (c *PlanB) Install(cluster ServiceCluster, i *InstallConfig) error {
 			},
 		},
 	})
+	if err != nil {
+		return err
+	}
+	i.ComponentAddress["planb"] = "planb"
+	return nil
 }
 
 func (c *PlanB) Status(cluster ServiceCluster) (*ServiceInfo, error) {
@@ -134,7 +158,10 @@ func (c *Redis) Name() string {
 }
 
 func (c *Redis) Install(cluster ServiceCluster, i *InstallConfig) error {
-	return cluster.CreateService(docker.CreateServiceOptions{
+	if i.ComponentAddress["redis"] != "" {
+		return nil
+	}
+	err := cluster.CreateService(docker.CreateServiceOptions{
 		ServiceSpec: swarm.ServiceSpec{
 			Annotations: swarm.Annotations{
 				Name: "redis",
@@ -146,6 +173,11 @@ func (c *Redis) Install(cluster ServiceCluster, i *InstallConfig) error {
 			},
 		},
 	})
+	if err != nil {
+		return err
+	}
+	i.ComponentAddress["redis"] = "redis"
+	return nil
 }
 
 func (c *Redis) Status(cluster ServiceCluster) (*ServiceInfo, error) {
@@ -159,7 +191,10 @@ func (c *Registry) Name() string {
 }
 
 func (c *Registry) Install(cluster ServiceCluster, i *InstallConfig) error {
-	return cluster.CreateService(docker.CreateServiceOptions{
+	if i.ComponentAddress["registry"] != "" {
+		return nil
+	}
+	err := cluster.CreateService(docker.CreateServiceOptions{
 		ServiceSpec: swarm.ServiceSpec{
 			Annotations: swarm.Annotations{
 				Name: "registry",
@@ -199,6 +234,11 @@ func (c *Registry) Install(cluster ServiceCluster, i *InstallConfig) error {
 			},
 		},
 	})
+	if err != nil {
+		return err
+	}
+	i.ComponentAddress["registry"] = "registry"
+	return nil
 }
 
 func (c *Registry) Status(cluster ServiceCluster) (*ServiceInfo, error) {

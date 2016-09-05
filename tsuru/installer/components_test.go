@@ -90,6 +90,10 @@ func (s *S) TestInstallComponentsDefaultConfig(c *check.C) {
 		sort.Strings(tt.env)
 		c.Assert(cont.Env, check.DeepEquals, tt.env)
 	}
+	c.Assert(installConfig.ComponentAddress["mongo"], check.Equals, "mongo")
+	c.Assert(installConfig.ComponentAddress["redis"], check.Equals, "redis")
+	c.Assert(installConfig.ComponentAddress["registry"], check.Equals, "registry")
+	c.Assert(installConfig.ComponentAddress["planb"], check.Equals, "planb")
 }
 
 func (s *S) TestInstallComponentsCustomRegistry(c *check.C) {
@@ -183,4 +187,27 @@ func (s *S) TestTsuruAPIBootstrapLocalEnviroment(c *check.C) {
 	t := TsuruAPI{}
 	err := t.bootstrapEnv("test", "test", server.URL, "test", server.URL)
 	c.Assert(err, check.IsNil)
+}
+
+func (s *S) TestPreInstalledComponents(c *check.C) {
+	err := config.ReadConfigFile("./testdata/components-conf.yml")
+	c.Assert(err, check.IsNil)
+	conf := NewInstallConfig("testing")
+	cluster := &FakeServiceCluster{}
+	m := &MongoDB{}
+	err = m.Install(cluster, conf)
+	c.Assert(err, check.IsNil)
+	c.Assert(conf.ComponentAddress["mongo"], check.Equals, "192.168.0.100:27017")
+	r := &Redis{}
+	err = r.Install(cluster, conf)
+	c.Assert(err, check.IsNil)
+	c.Assert(conf.ComponentAddress["redis"], check.Equals, "192.168.0.100:6379")
+	registry := &Registry{}
+	err = registry.Install(cluster, conf)
+	c.Assert(err, check.IsNil)
+	c.Assert(conf.ComponentAddress["registry"], check.Equals, "192.168.0.100:5000")
+	planb := &PlanB{}
+	err = planb.Install(cluster, conf)
+	c.Assert(err, check.IsNil)
+	c.Assert(conf.ComponentAddress["planb"], check.Equals, "192.168.0.100")
 }
