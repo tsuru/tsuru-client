@@ -19,6 +19,7 @@ type ServiceCluster interface {
 	ServiceExec(string, []string, docker.StartExecOptions) error
 	CreateService(docker.CreateServiceOptions) error
 	ServiceInfo(string) (*ServiceInfo, error)
+	ClusterInfo() ([]NodeInfo, error)
 }
 
 type SwarmCluster struct {

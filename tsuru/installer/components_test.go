@@ -42,7 +42,11 @@ func (c *FakeServiceCluster) ServiceExec(service string, cmd []string, opts dock
 }
 
 func (c *FakeServiceCluster) ServiceInfo(service string) (*ServiceInfo, error) {
-	return nil, nil
+	return &ServiceInfo{Name: service, Replicas: 1, Ports: []string{"8080"}}, nil
+}
+
+func (c *FakeServiceCluster) ClusterInfo() ([]NodeInfo, error) {
+	return []NodeInfo{{IP: "127.0.0.1", State: "running", Manager: true}}, nil
 }
 
 func (s *S) TestInstallComponentsDefaultConfig(c *check.C) {

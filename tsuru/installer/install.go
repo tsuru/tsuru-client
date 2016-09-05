@@ -168,7 +168,7 @@ func (c *Install) PreInstallChecks(config *TsuruInstallConfig) error {
 	return nil
 }
 
-func buildClusterTable(cluster *SwarmCluster) *cmd.Table {
+func buildClusterTable(cluster ServiceCluster) *cmd.Table {
 	t := cmd.NewTable()
 	t.Headers = cmd.Row{"IP", "State", "Manager"}
 	t.LineSeparator = true
@@ -182,7 +182,7 @@ func buildClusterTable(cluster *SwarmCluster) *cmd.Table {
 	return t
 }
 
-func buildComponentsTable(components []TsuruComponent, cluster *SwarmCluster) *cmd.Table {
+func buildComponentsTable(components []TsuruComponent, cluster ServiceCluster) *cmd.Table {
 	t := cmd.NewTable()
 	t.Headers = cmd.Row{"Component", "Ports", "Replicas"}
 	t.LineSeparator = true
