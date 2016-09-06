@@ -163,6 +163,10 @@ func (c *PlanB) Status(cluster ServiceCluster) (*ServiceInfo, error) {
 	return cluster.ServiceInfo("planb")
 }
 
+func (c *PlanB) Healthcheck(addr string) error {
+	return nil
+}
+
 type Redis struct{}
 
 func (c *Redis) Name() string {
@@ -194,6 +198,14 @@ func (c *Redis) Install(cluster ServiceCluster, i *InstallConfig) error {
 
 func (c *Redis) Status(cluster ServiceCluster) (*ServiceInfo, error) {
 	return cluster.ServiceInfo("redis")
+}
+
+func (c *Redis) Healthcheck(addr string) error {
+	r := redis.NewClient(&redis.Options{
+		Addr: addr,
+	})
+	_, err := r.Ping().Result()
+	return err
 }
 
 type Registry struct{}
@@ -255,6 +267,10 @@ func (c *Registry) Install(cluster ServiceCluster, i *InstallConfig) error {
 
 func (c *Registry) Status(cluster ServiceCluster) (*ServiceInfo, error) {
 	return cluster.ServiceInfo("registry")
+}
+
+func (c *Registry) Healthcheck(addr string) error {
+	return nil
 }
 
 type TsuruAPI struct{}
@@ -353,6 +369,10 @@ func (c *TsuruAPI) Install(cluster ServiceCluster, i *InstallConfig) error {
 
 func (c *TsuruAPI) Status(cluster ServiceCluster) (*ServiceInfo, error) {
 	return cluster.ServiceInfo("tsuru")
+}
+
+func (c *TsuruAPI) Healthcheck(addr string) error {
+	return nil
 }
 
 func (c *TsuruAPI) setupRootUser(cluster ServiceCluster, email, password string) error {

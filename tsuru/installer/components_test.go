@@ -286,7 +286,7 @@ func (s *S) TestPreInstalledComponents(c *check.C) {
 	r := &Redis{}
 	err = r.Install(cluster, conf)
 	c.Assert(err, check.IsNil)
-	c.Assert(conf.ComponentAddress["redis"], check.Equals, "192.168.0.100:6379")
+	c.Assert(conf.ComponentAddress["redis"], check.Equals, "localhost:6379")
 	registry := &Registry{}
 	err = registry.Install(cluster, conf)
 	c.Assert(err, check.IsNil)
