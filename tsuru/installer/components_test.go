@@ -307,9 +307,9 @@ func (s *S) TestInstallTsuruApiWithCustomComponentsAddress(c *check.C) {
 	go api.Install(cluster, conf)
 	apiConf := <-services
 	expected := []string{
-		"MONGODB_ADDR=192.168.0.100",
+		"MONGODB_ADDR=127.0.0.1",
 		"MONGODB_PORT=27017",
-		"REDIS_ADDR=192.168.0.100",
+		"REDIS_ADDR=localhost",
 		"REDIS_PORT=6379",
 		"HIPACHE_DOMAIN=192.168.0.100.nip.io",
 		"REGISTRY_ADDR=192.168.0.100",
