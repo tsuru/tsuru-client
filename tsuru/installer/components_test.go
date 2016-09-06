@@ -12,6 +12,7 @@ import (
 	"net/http/httptest"
 	"os"
 	"sort"
+	"strings"
 
 	"github.com/docker/engine-api/types/swarm"
 	"github.com/fsouza/go-dockerclient"
@@ -159,6 +160,21 @@ func (s *S) TestTsuruAPIBootstrapLocalEnviroment(c *check.C) {
 		if r.URL.Path == "/1.0/team" {
 			c.Assert(string(b), check.Equals, "name=admin")
 		}
+		if r.URL.Path == "/1.0/platforms" {
+			expected := `--.*
+Content-Disposition: form-data; name="dockerfile_content"; filename="Dockerfile"
+Content-Type: application/octet-stream
+
+FROM tsuru/python
+--.*
+Content-Disposition: form-data; name="name"
+
+python
+--.*--
+`
+			expected = strings.Replace(expected, "\n", "\r\n", -1)
+			c.Assert(string(b), check.Matches, expected)
+		}
 		if r.URL.Path == "/1.0/apps" {
 			c.Assert(string(b), check.Equals, "description=&name=tsuru-dashboard&plan=&platform=python&pool=&routeropts=&teamOwner=admin")
 			buf, err := json.Marshal(map[string]string{})
@@ -191,6 +207,68 @@ func (s *S) TestTsuruAPIBootstrapLocalEnviroment(c *check.C) {
 		Target:     server.URL,
 		TargetName: "test",
 		NodeAddr:   server.URL,
+	}
+	err := t.bootstrapEnv(opts)
+	c.Assert(err, check.IsNil)
+}
+
+func (s *S) TestTsuruAPIBootstrapCustomDockerRegistry(c *check.C) {
+	server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		b, err := ioutil.ReadAll(r.Body)
+		defer r.Body.Close()
+		c.Assert(err, check.IsNil)
+		if r.URL.Path == "/1.0/users/test/tokens" {
+			token := map[string]string{"token": "test"}
+			buf, err := json.Marshal(token)
+			c.Assert(err, check.IsNil)
+			w.Write(buf)
+		}
+		if r.URL.Path == "/1.0/platforms" {
+			expected := `--.*
+Content-Disposition: form-data; name="dockerfile_content"; filename="Dockerfile"
+Content-Type: application/octet-stream
+
+FROM test.com/python
+--.*
+Content-Disposition: form-data; name="name"
+
+python
+--.*--
+`
+			expected = strings.Replace(expected, "\n", "\r\n", -1)
+			c.Assert(string(b), check.Matches, expected)
+		}
+		if r.URL.Path == "/1.0/apps" {
+			buf, err := json.Marshal(map[string]string{})
+			c.Assert(err, check.IsNil)
+			w.Write(buf)
+		}
+		if r.URL.Path == "/1.0/apps/tsuru-dashboard/deploy" {
+			fmt.Fprintln(w, "\nOK")
+		}
+		w.WriteHeader(http.StatusOK)
+		w.Header().Set("Content-Type", "application/json")
+	}))
+	defer server.Close()
+	defer func() {
+		manager := cmd.BuildBaseManager("uninstall-client", "0.0.0", "", nil)
+		c := cmd.NewClient(&http.Client{}, nil, manager)
+		cont := cmd.Context{
+			Args:   []string{"test"},
+			Stdout: os.Stdout,
+			Stderr: os.Stderr,
+		}
+		targetrm := manager.Commands["target-remove"]
+		targetrm.Run(&cont, c)
+	}()
+	t := TsuruAPI{}
+	opts := TsuruSetupOptions{
+		Login:           "test",
+		Password:        "test",
+		Target:          server.URL,
+		TargetName:      "test",
+		NodeAddr:        server.URL,
+		DockerHubMirror: "test.com",
 	}
 	err := t.bootstrapEnv(opts)
 	c.Assert(err, check.IsNil)
