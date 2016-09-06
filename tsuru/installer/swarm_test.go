@@ -95,7 +95,6 @@ func (s *S) TestNewSwarmCluster(c *check.C) {
 			errDec := json.NewDecoder(workerReqs[0].Body).Decode(&joinReq)
 			c.Assert(errDec, check.IsNil)
 			c.Assert(joinReq.RemoteAddrs, check.DeepEquals, []string{"127.0.0.1:2377"})
-			c.Assert(joinReq.AdvertiseAddr, check.Equals, "127.0.0.2:2377")
 			c.Assert(joinReq.ListenAddr, check.Equals, "0.0.0.0:2377")
 		}
 	}, tlsConfig)

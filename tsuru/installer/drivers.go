@@ -5,6 +5,7 @@
 package installer
 
 import (
+	"errors"
 	"fmt"
 
 	"github.com/docker/machine/drivers/amazonec2"
@@ -23,7 +24,10 @@ import (
 	"github.com/docker/machine/drivers/vmwarevcloudair"
 	"github.com/docker/machine/drivers/vmwarevsphere"
 	"github.com/docker/machine/libmachine/drivers/plugin"
+	"github.com/tsuru/config"
 )
+
+var ErrNoPrivateIPInterface = errors.New("no private IP interface")
 
 func RunDriver(driverName string) error {
 	switch driverName {
@@ -61,4 +65,21 @@ func RunDriver(driverName string) error {
 		return fmt.Errorf("Unsupported driver: %s\n", driverName)
 	}
 	return nil
+}
+
+// GetPrivateIPInterface returns the interface name which contains
+// the private IP address of a machine provisioned with the given
+// driver. This is a workaround while the Driver interface does not
+// provide a way to access the instance private IP.
+func GetPrivateIPInterface(driverName string) (string, error) {
+	iface, err := config.GetString("driver:private-ip-interface")
+	if err == nil {
+		return iface, nil
+	}
+	switch driverName {
+	case "amazonec2":
+		return "eth0", nil
+	default:
+		return "", ErrNoPrivateIPInterface
+	}
 }

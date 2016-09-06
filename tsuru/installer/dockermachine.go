@@ -12,6 +12,8 @@ import (
 	"io/ioutil"
 	"os"
 	"path/filepath"
+	"strconv"
+	"strings"
 	"sync/atomic"
 
 	"github.com/docker/machine/libmachine"
@@ -63,6 +65,35 @@ func (m *Machine) GetSSHUsername() string {
 
 func (m *Machine) GetSSHKeyPath() string {
 	return m.Driver.GetSSHKeyPath()
+}
+
+// GetPrivateIP returns the instance private IP; if not available,
+// will fallback to the public IP.
+func (m *Machine) GetPrivateIP() string {
+	iface, err := GetPrivateIPInterface(m.DriverName)
+	if err == ErrNoPrivateIPInterface || iface == "" {
+		return m.GetIP()
+	}
+	return getIp(iface, m)
+}
+
+func (m *Machine) GetPrivateAddress() string {
+	return "https://" + m.GetPrivateIP() + ":" + strconv.Itoa(dockerHTTPSPort)
+}
+
+func getIp(iface string, remote sshTarget) string {
+	output, err := remote.RunSSHCommand(fmt.Sprintf("ip addr show dev %s", iface))
+	if err != nil {
+		return remote.GetIP()
+	}
+	lines := strings.Split(output, "\n")
+	for _, line := range lines {
+		vals := strings.Split(strings.TrimSpace(line), " ")
+		if len(vals) >= 2 && vals[0] == "inet" {
+			return vals[1][:strings.Index(vals[1], "/")]
+		}
+	}
+	return remote.GetIP()
 }
 
 type DockerMachine struct {
@@ -152,6 +183,13 @@ func (d *DockerMachine) CreateMachine(openPorts []string) (*Machine, error) {
 		Address:   fmt.Sprintf("https://%s:%d", ip, dockerHTTPSPort),
 		OpenPorts: openPorts,
 	}
+	if host.AuthOptions() != nil {
+		host.AuthOptions().ServerCertSANs = append(host.AuthOptions().ServerCertSANs, m.GetPrivateIP())
+		err = host.ConfigureAuth()
+		if err != nil {
+			return nil, err
+		}
+	}
 	return m, nil
 }
 
@@ -210,7 +248,7 @@ func (d *DockerMachine) uploadRegistryCertificate(host sshTarget) error {
 	if err != nil {
 		return err
 	}
-	_, err = host.RunSSHCommand("mkdir -p /var/lib/registry/")
+	_, err = host.RunSSHCommand("sudo mkdir -p /var/lib/registry/")
 	return err
 }
 

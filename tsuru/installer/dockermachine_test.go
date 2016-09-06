@@ -5,6 +5,7 @@
 package installer
 
 import (
+	"errors"
 	"fmt"
 	"io/ioutil"
 	"os"
@@ -135,12 +136,21 @@ func (s *S) TestConfigureDriverOpenPorts(c *check.C) {
 	c.Assert(driver.(*azure.Driver).OpenPorts, check.DeepEquals, []string{"8080"})
 }
 
+type cmdOutput struct {
+	output string
+	err    error
+}
+
 type fakeSSHTarget struct {
-	cmds []string
+	cmds      []string
+	runOutput map[string]*cmdOutput
 }
 
 func (f *fakeSSHTarget) RunSSHCommand(cmd string) (string, error) {
 	f.cmds = append(f.cmds, cmd)
+	if f.runOutput != nil && f.runOutput[cmd] != nil {
+		return f.runOutput[cmd].output, f.runOutput[cmd].err
+	}
 	return "", nil
 }
 
@@ -184,7 +194,7 @@ func (s *S) TestUploadRegistryCertificate(c *check.C) {
 		"cp /home/ubuntu/certs/*.pem /home/ubuntu/certs/127.0.0.1:5000/",
 		"sudo mkdir /etc/docker/certs.d && sudo cp -r /home/ubuntu/certs/* /etc/docker/certs.d/",
 		"cat /home/ubuntu/certs/127.0.0.1:5000/ca.pem | sudo tee -a /etc/ssl/certs/ca-certificates.crt",
-		"mkdir -p /var/lib/registry/",
+		"sudo mkdir -p /var/lib/registry/",
 	}
 	c.Assert(fakeSSHTarget.cmds, check.DeepEquals, expectedCmds)
 }
@@ -204,6 +214,25 @@ func (s *S) TestCreateRegistryCertificate(c *check.C) {
 	file, err = os.Stat(filepath.Join(dm.certsPath, "registry-key.pem"))
 	c.Assert(err, check.IsNil)
 	c.Assert(file.Size() > 0, check.Equals, true)
+}
+
+func (s *S) TestGetIP(c *check.C) {
+	target := &fakeSSHTarget{}
+	target.runOutput = map[string]*cmdOutput{
+		"ip addr show dev eth0": &cmdOutput{
+			output: `2: eth0: <BROADCAST,MULTICAST,UP,LOWER_UP> mtu 9001 qdisc pfifo_fast state UP group default qlen 1000
+link/ether 12:d4:8c:93:e1:c5 brd ff:ff:ff:ff:ff:ff
+inet 172.30.0.69/24 brd 172.30.0.255 scope global eth0
+valid_lft forever preferred_lft forever
+inet6 fe80::10d4:8cff:fe93:e1c5/64 scope link
+valid_lft forever preferred_lft forever`},
+		"ip addr show dev eth1": &cmdOutput{output: "", err: errors.New("failed to get ip")}}
+	ip := getIp("eth2", target)
+	c.Assert(ip, check.Equals, "127.0.0.1")
+	ip = getIp("eth0", target)
+	c.Assert(ip, check.Equals, "172.30.0.69")
+	ip = getIp("eth1", target)
+	c.Assert(ip, check.Equals, "127.0.0.1")
 }
 
 type fakeMachineAPI struct {

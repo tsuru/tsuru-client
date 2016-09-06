@@ -42,7 +42,7 @@ func NewSwarmCluster(machines []*Machine) (*SwarmCluster, error) {
 	swarmOpts := docker.InitSwarmOptions{
 		InitRequest: swarm.InitRequest{
 			ListenAddr:    fmt.Sprintf("0.0.0.0:%d", swarmPort),
-			AdvertiseAddr: fmt.Sprintf("%s:%d", machines[0].IP, swarmPort),
+			AdvertiseAddr: fmt.Sprintf("%s:%d", machines[0].GetPrivateIP(), swarmPort),
 		},
 	}
 	dockerClient, err := machines[0].dockerClient()
@@ -84,10 +84,9 @@ func NewSwarmCluster(machines []*Machine) (*SwarmCluster, error) {
 		}
 		opts := docker.JoinSwarmOptions{
 			JoinRequest: swarm.JoinRequest{
-				ListenAddr:    fmt.Sprintf("0.0.0.0:%d", swarmPort),
-				AdvertiseAddr: fmt.Sprintf("%s:%d", m.IP, swarmPort),
-				JoinToken:     swarmInspect.JoinTokens.Worker,
-				RemoteAddrs:   []string{fmt.Sprintf("%s:%d", machines[0].IP, swarmPort)},
+				ListenAddr:  fmt.Sprintf("0.0.0.0:%d", swarmPort),
+				JoinToken:   swarmInspect.JoinTokens.Worker,
+				RemoteAddrs: []string{fmt.Sprintf("%s:%d", machines[0].IP, swarmPort)},
 			},
 		}
 		err = dockerClient.JoinSwarm(opts)

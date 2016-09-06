@@ -361,7 +361,7 @@ func (c *TsuruAPI) Install(cluster ServiceCluster, i *InstallConfig) error {
 		Password:        i.RootUserPassword,
 		Target:          tsuruURL,
 		TargetName:      i.TargetName,
-		NodeAddr:        cluster.GetManager().Address,
+		NodeAddr:        cluster.GetManager().GetPrivateAddress(),
 		DockerHubMirror: i.DockerHubMirror,
 	}
 	return c.bootstrapEnv(opts)

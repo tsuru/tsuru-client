@@ -139,16 +139,16 @@ func (c *Install) Run(context *cmd.Context, cli *cmd.Client) error {
 	}
 	fmt.Fprintf(context.Stdout, "Applying iptables workaround for docker 1.12...\n")
 	for _, m := range machines {
-		_, err = m.RunSSHCommand("sudo /usr/local/sbin/iptables -D DOCKER-ISOLATION -i docker_gwbridge -o docker0 -j DROP")
+		_, err = m.RunSSHCommand("PATH=$PATH:/usr/sbin/:/usr/local/sbin; sudo iptables -D DOCKER-ISOLATION -i docker_gwbridge -o docker0 -j DROP")
 		if err != nil {
-			fmt.Fprint(context.Stderr, "Failed to apply iptables rule. Maybe it is not needed anymore?")
+			fmt.Fprintf(context.Stderr, "Failed to apply iptables rule: %s. Maybe it is not needed anymore?\n", err)
 		}
-		_, err = m.RunSSHCommand("sudo /usr/local/sbin/iptables -D DOCKER-ISOLATION -i docker0 -o docker_gwbridge -j DROP")
+		_, err = m.RunSSHCommand("PATH=$PATH:/usr/sbin/:/usr/local/sbin; sudo iptables -D DOCKER-ISOLATION -i docker0 -o docker_gwbridge -j DROP")
 		if err != nil {
-			fmt.Fprint(context.Stderr, "Failed to apply iptables rule. Maybe it is not needed anymore?")
+			fmt.Fprintf(context.Stderr, "Failed to apply iptables rule: %s. Maybe it is not needed anymore?\n", err)
 		}
 	}
-	fmt.Fprint(context.Stdout, "--- Installation Overview ---")
+	fmt.Fprint(context.Stdout, "--- Installation Overview ---\n")
 	fmt.Fprint(context.Stdout, "Swarm Cluster: \n"+buildClusterTable(cluster).String())
 	fmt.Fprint(context.Stdout, "Components: \n"+buildComponentsTable(TsuruComponents, cluster).String())
 	appList := &client.AppList{}
