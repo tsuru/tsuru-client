@@ -1,6 +1,6 @@
 name: testing
 components:
-    mongo: 192.168.0.100:27017
-    redis: 192.168.0.100:6379
+    mongo: 127.0.0.1:27017
+    redis: localhost:6379
     registry: 192.168.0.100:5000
     planb: 192.168.0.100

@@ -11,6 +11,9 @@ import (
 	"strings"
 	"time"
 
+	"gopkg.in/mgo.v2"
+	redis "gopkg.in/redis.v3"
+
 	"github.com/docker/engine-api/types/mount"
 	"github.com/docker/engine-api/types/swarm"
 	"github.com/docker/machine/libmachine/mcnutils"
@@ -73,6 +76,7 @@ type TsuruComponent interface {
 	Name() string
 	Install(ServiceCluster, *InstallConfig) error
 	Status(ServiceCluster) (*ServiceInfo, error)
+	Healthcheck(string) error
 }
 
 type MongoDB struct{}
@@ -83,7 +87,7 @@ func (c *MongoDB) Name() string {
 
 func (c *MongoDB) Install(cluster ServiceCluster, i *InstallConfig) error {
 	if i.ComponentAddress["mongo"] != "" {
-		return nil
+		return c.Healthcheck(i.ComponentAddress["mongo"])
 	}
 	err := cluster.CreateService(docker.CreateServiceOptions{
 		ServiceSpec: swarm.ServiceSpec{
@@ -106,6 +110,14 @@ func (c *MongoDB) Install(cluster ServiceCluster, i *InstallConfig) error {
 
 func (c *MongoDB) Status(cluster ServiceCluster) (*ServiceInfo, error) {
 	return cluster.ServiceInfo("mongo")
+}
+
+func (c *MongoDB) Healthcheck(addr string) error {
+	s, err := mgo.Dial(addr)
+	if err != nil {
+		return err
+	}
+	return s.Ping()
 }
 
 type PlanB struct{}

@@ -282,7 +282,7 @@ func (s *S) TestPreInstalledComponents(c *check.C) {
 	m := &MongoDB{}
 	err = m.Install(cluster, conf)
 	c.Assert(err, check.IsNil)
-	c.Assert(conf.ComponentAddress["mongo"], check.Equals, "192.168.0.100:27017")
+	c.Assert(conf.ComponentAddress["mongo"], check.Equals, "127.0.0.1:27017")
 	r := &Redis{}
 	err = r.Install(cluster, conf)
 	c.Assert(err, check.IsNil)
