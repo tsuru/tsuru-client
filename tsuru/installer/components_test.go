@@ -185,7 +185,14 @@ func (s *S) TestTsuruAPIBootstrapLocalEnviroment(c *check.C) {
 		targetrm.Run(&cont, c)
 	}()
 	t := TsuruAPI{}
-	err := t.bootstrapEnv("test", "test", server.URL, "test", server.URL)
+	opts := TsuruSetupOptions{
+		Login:      "test",
+		Password:   "test",
+		Target:     server.URL,
+		TargetName: "test",
+		NodeAddr:   server.URL,
+	}
+	err := t.bootstrapEnv(opts)
 	c.Assert(err, check.IsNil)
 }
 

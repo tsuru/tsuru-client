@@ -328,7 +328,15 @@ func (c *TsuruAPI) Install(cluster ServiceCluster, i *InstallConfig) error {
 	if err != nil {
 		return err
 	}
-	return c.bootstrapEnv(i.RootUserEmail, i.RootUserPassword, tsuruURL, i.TargetName, cluster.GetManager().Address)
+	opts := TsuruSetupOptions{
+		Login:           i.RootUserEmail,
+		Password:        i.RootUserPassword,
+		Target:          tsuruURL,
+		TargetName:      i.TargetName,
+		NodeAddr:        cluster.GetManager().Address,
+		DockerHubMirror: i.DockerHubMirror,
+	}
+	return c.bootstrapEnv(opts)
 }
 
 func (c *TsuruAPI) Status(cluster ServiceCluster) (*ServiceInfo, error) {
@@ -348,7 +356,16 @@ func (c *TsuruAPI) setupRootUser(cluster ServiceCluster, email, password string)
 	return cluster.ServiceExec("tsuru", cmd, startOpts)
 }
 
-func (c *TsuruAPI) bootstrapEnv(login, password, target, targetName, node string) error {
+type TsuruSetupOptions struct {
+	Login           string
+	Password        string
+	Target          string
+	TargetName      string
+	NodeAddr        string
+	DockerHubMirror string
+}
+
+func (c *TsuruAPI) bootstrapEnv(opts TsuruSetupOptions) error {
 	manager := cmd.BuildBaseManager("setup-client", "0.0.0", "", nil)
 	provisioners := provision.Registry()
 	for _, p := range provisioners {
@@ -362,7 +379,7 @@ func (c *TsuruAPI) bootstrapEnv(login, password, target, targetName, node string
 	fmt.Fprintln(os.Stdout, "adding target")
 	client := cmd.NewClient(&http.Client{}, nil, manager)
 	context := cmd.Context{
-		Args:   []string{targetName, target},
+		Args:   []string{opts.TargetName, opts.Target},
 		Stdout: os.Stdout,
 		Stderr: os.Stderr,
 	}
@@ -379,8 +396,8 @@ func (c *TsuruAPI) bootstrapEnv(login, password, target, targetName, node string
 	}
 	fmt.Fprint(os.Stdout, "log in with default user: admin@example.com")
 	logincmd := manager.Commands["login"]
-	context.Args = []string{login}
-	context.Stdin = strings.NewReader(fmt.Sprintf("%s\n", password))
+	context.Args = []string{opts.Login}
+	context.Stdin = strings.NewReader(fmt.Sprintf("%s\n", opts.Password))
 	err = logincmd.Run(&context, client)
 	if err != nil {
 		return err
@@ -397,7 +414,7 @@ func (c *TsuruAPI) bootstrapEnv(login, password, target, targetName, node string
 	if err != nil {
 		return err
 	}
-	context.Args = []string{fmt.Sprintf("address=%s", node), "pool=theonepool"}
+	context.Args = []string{fmt.Sprintf("address=%s", opts.NodeAddr), "pool=theonepool"}
 	fmt.Fprintln(os.Stdout, "adding node")
 	nodeAdd := manager.Commands["docker-node-add"]
 	n, _ := nodeAdd.(cmd.FlaggedCommand)
@@ -413,6 +430,9 @@ func (c *TsuruAPI) bootstrapEnv(login, password, target, targetName, node string
 	fmt.Fprintln(os.Stdout, "adding platform")
 	err = mcnutils.WaitFor(func() bool {
 		platformAdd := admin.PlatformAdd{}
+		if opts.DockerHubMirror != "" {
+			platformAdd.Flags().Parse(true, []string{"-i", fmt.Sprintf("%s/python", opts.DockerHubMirror)})
+		}
 		return platformAdd.Run(&context, client) == nil
 	})
 	if err != nil {
