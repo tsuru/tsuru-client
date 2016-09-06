@@ -69,7 +69,7 @@ func (s *S) TestInstallComponentsDefaultConfig(c *check.C) {
 				"REDIS_ADDR=redis",
 				"REDIS_PORT=6379",
 				"HIPACHE_DOMAIN=127.0.0.1.nip.io",
-				"REGISTRY_ADDR=registry",
+				"REGISTRY_ADDR=127.0.0.1",
 				"REGISTRY_PORT=5000",
 				"TSURU_ADDR=http://127.0.0.1",
 				"TSURU_PORT=8080",
@@ -92,7 +92,7 @@ func (s *S) TestInstallComponentsDefaultConfig(c *check.C) {
 	}
 	c.Assert(installConfig.ComponentAddress["mongo"], check.Equals, "mongo")
 	c.Assert(installConfig.ComponentAddress["redis"], check.Equals, "redis")
-	c.Assert(installConfig.ComponentAddress["registry"], check.Equals, "registry")
+	c.Assert(installConfig.ComponentAddress["registry"], check.Equals, "127.0.0.1")
 	c.Assert(installConfig.ComponentAddress["planb"], check.Equals, "127.0.0.1")
 }
 

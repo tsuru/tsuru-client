@@ -237,7 +237,7 @@ func (c *Registry) Install(cluster ServiceCluster, i *InstallConfig) error {
 	if err != nil {
 		return err
 	}
-	i.ComponentAddress["registry"] = "registry"
+	i.ComponentAddress["registry"] = cluster.GetManager().IP
 	return nil
 }
 
