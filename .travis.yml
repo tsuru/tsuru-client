@@ -15,6 +15,9 @@ env:
 script:
   - ./go.test.bash
   - ./check-fmt.sh
+services:
+  - redis
+  - mongodb
 matrix:
   allow_failures:
     - go: tip
