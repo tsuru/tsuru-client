@@ -165,19 +165,8 @@ func (s *S) TestTsuruAPIBootstrapLocalEnviroment(c *check.C) {
 			c.Assert(string(b), check.Equals, "name=admin")
 		}
 		if r.URL.Path == "/1.0/platforms" {
-			expected := `--.*
-Content-Disposition: form-data; name="dockerfile_content"; filename="Dockerfile"
-Content-Type: application/octet-stream
-
-FROM tsuru/python
---.*
-Content-Disposition: form-data; name="name"
-
-python
---.*--
-`
-			expected = strings.Replace(expected, "\n", "\r\n", -1)
-			c.Assert(string(b), check.Matches, expected)
+			expected := "FROM tsuru/python"
+			c.Assert(strings.Contains(string(b), expected), check.Equals, true)
 		}
 		if r.URL.Path == "/1.0/apps" {
 			c.Assert(string(b), check.Equals, "description=&name=tsuru-dashboard&plan=&platform=python&pool=&routeropts=&teamOwner=admin")
@@ -228,19 +217,8 @@ func (s *S) TestTsuruAPIBootstrapCustomDockerRegistry(c *check.C) {
 			w.Write(buf)
 		}
 		if r.URL.Path == "/1.0/platforms" {
-			expected := `--.*
-Content-Disposition: form-data; name="dockerfile_content"; filename="Dockerfile"
-Content-Type: application/octet-stream
-
-FROM test.com/python
---.*
-Content-Disposition: form-data; name="name"
-
-python
---.*--
-`
-			expected = strings.Replace(expected, "\n", "\r\n", -1)
-			c.Assert(string(b), check.Matches, expected)
+			expected := "FROM test.com/python"
+			c.Assert(strings.Contains(string(b), expected), check.Equals, true)
 		}
 		if r.URL.Path == "/1.0/apps" {
 			buf, err := json.Marshal(map[string]string{})
