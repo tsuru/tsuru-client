@@ -219,14 +219,14 @@ func (s *S) TestCreateRegistryCertificate(c *check.C) {
 func (s *S) TestGetIP(c *check.C) {
 	target := &fakeSSHTarget{}
 	target.runOutput = map[string]*cmdOutput{
-		"ip addr show dev eth0": &cmdOutput{
+		"ip addr show dev eth0": {
 			output: `2: eth0: <BROADCAST,MULTICAST,UP,LOWER_UP> mtu 9001 qdisc pfifo_fast state UP group default qlen 1000
 link/ether 12:d4:8c:93:e1:c5 brd ff:ff:ff:ff:ff:ff
 inet 172.30.0.69/24 brd 172.30.0.255 scope global eth0
 valid_lft forever preferred_lft forever
 inet6 fe80::10d4:8cff:fe93:e1c5/64 scope link
 valid_lft forever preferred_lft forever`},
-		"ip addr show dev eth1": &cmdOutput{output: "", err: errors.New("failed to get ip")}}
+		"ip addr show dev eth1": {output: "", err: errors.New("failed to get ip")}}
 	ip := getIp("eth2", target)
 	c.Assert(ip, check.Equals, "127.0.0.1")
 	ip = getIp("eth0", target)
