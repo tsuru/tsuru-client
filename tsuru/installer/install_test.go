@@ -195,11 +195,11 @@ func (s *S) TestProvisionPool(c *check.C) {
 		machines            []*Machine
 		expectedProvisioned int
 	}{
-		{1, false, []*Machine{&Machine{}}, 0},
-		{2, false, []*Machine{&Machine{}}, 1},
-		{1, true, []*Machine{&Machine{}}, 1},
-		{2, true, []*Machine{&Machine{}, &Machine{}}, 2},
-		{3, true, []*Machine{&Machine{}}, 3},
+		{1, false, []*Machine{{}}, 0},
+		{2, false, []*Machine{{}}, 1},
+		{1, true, []*Machine{{}}, 1},
+		{2, true, []*Machine{{}, {}}, 2},
+		{3, true, []*Machine{{}}, 3},
 	}
 	for _, t := range tt {
 		p := &FakeMachineProvisioner{}
