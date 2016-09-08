@@ -5,6 +5,7 @@
 package installer
 
 import (
+	"errors"
 	"fmt"
 	"net/http"
 	"os"
@@ -128,7 +129,7 @@ func (c *PlanB) Name() string {
 
 func (c *PlanB) Install(cluster ServiceCluster, i *InstallConfig) error {
 	if i.ComponentAddress["planb"] != "" {
-		return nil
+		return c.Healthcheck(i.ComponentAddress["planb"])
 	}
 	err := cluster.CreateService(docker.CreateServiceOptions{
 		ServiceSpec: swarm.ServiceSpec{
@@ -164,6 +165,19 @@ func (c *PlanB) Status(cluster ServiceCluster) (*ServiceInfo, error) {
 }
 
 func (c *PlanB) Healthcheck(addr string) error {
+	req, err := http.NewRequest("GET", addr, nil)
+	if err != nil {
+		return err
+	}
+	req.Host = "__ping__"
+	client := http.Client{}
+	resp, err := client.Do(req)
+	if err != nil {
+		return err
+	}
+	if resp.StatusCode != http.StatusOK {
+		return errors.New(fmt.Sprintf("Planb healthcheck error: Want status code 200. Got %s", resp.Status))
+	}
 	return nil
 }
 
