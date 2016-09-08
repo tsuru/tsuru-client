@@ -230,7 +230,7 @@ func (c *Registry) Name() string {
 
 func (c *Registry) Install(cluster ServiceCluster, i *InstallConfig) error {
 	if i.ComponentAddress["registry"] != "" {
-		return nil
+		return c.Healthcheck(i.ComponentAddress["registry"])
 	}
 	err := cluster.CreateService(docker.CreateServiceOptions{
 		ServiceSpec: swarm.ServiceSpec{
@@ -284,6 +284,13 @@ func (c *Registry) Status(cluster ServiceCluster) (*ServiceInfo, error) {
 }
 
 func (c *Registry) Healthcheck(addr string) error {
+	resp, err := http.Get(fmt.Sprintf("%s/v2/", addr))
+	if err != nil {
+		return err
+	}
+	if resp.StatusCode != http.StatusOK {
+		return errors.New(fmt.Sprintf("Registry healthcheck error: Want status code 200. Got %s.", resp.Status))
+	}
 	return nil
 }
 
