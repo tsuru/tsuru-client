@@ -16,14 +16,20 @@ import (
 	"github.com/tsuru/tsuru/cmd"
 )
 
-var defaultTsuruInstallConfig = &TsuruInstallConfig{
-	DockerMachineConfig: defaultDockerMachineConfig,
-	NumHosts:            1,
-}
+var (
+	defaultTsuruInstallConfig = &TsuruInstallConfig{
+		DockerMachineConfig: defaultDockerMachineConfig,
+		ComponentsHosts:     1,
+		PoolHosts:           1,
+		DedicatedPool:       false,
+	}
+)
 
 type TsuruInstallConfig struct {
 	*DockerMachineConfig
-	NumHosts int
+	ComponentsHosts int
+	PoolHosts       int
+	DedicatedPool   bool
 }
 
 type Install struct {
@@ -99,46 +105,53 @@ func (c *Install) Run(context *cmd.Context, cli *cmd.Client) error {
 	fmt.Fprintf(context.Stdout, "Running pre-install checks...\n")
 	err = c.PreInstallChecks(config)
 	if err != nil {
-		fmt.Fprintf(context.Stderr, "Pre Install checks failed: %s\n", err)
-		return err
+		return fmt.Errorf("pre-install checks failed: %s", err)
 	}
 	dm, err := NewDockerMachine(config.DockerMachineConfig)
 	if err != nil {
-		fmt.Fprintf(context.Stderr, "Failed to create machine: %s\n", err)
-		return err
+		return fmt.Errorf("failed to create docker machine: %s", err)
 	}
 	defer dm.Close()
-	var machines []*Machine
-	for i := 0; i < config.NumHosts; i++ {
-		m, errCreate := dm.CreateMachine([]string{strconv.Itoa(defaultTsuruAPIPort)})
-		if errCreate != nil {
-			fmt.Fprintf(context.Stderr, "Error creating machine: %s\n", err)
-			return errCreate
-		}
-		errCreate = dm.uploadRegistryCertificate(m)
-		if errCreate != nil {
-			return errCreate
-		}
-		fmt.Fprintf(context.Stdout, "Machine %s successfully created!\n", m.IP)
-		machines = append(machines, m)
-	}
-	cluster, err := NewSwarmCluster(machines)
+	componentsMachines, err := dm.ProvisionMachines(config.ComponentsHosts, []string{strconv.Itoa(defaultTsuruAPIPort)})
 	if err != nil {
-		fmt.Fprintf(context.Stderr, "Error on Swarm cluster setup: %s\n", err)
-		return err
+		return fmt.Errorf("failed to provision components machines: %s", err)
+	}
+	cluster, err := NewSwarmCluster(componentsMachines)
+	if err != nil {
+		return fmt.Errorf("failed to setup swarm cluster: %s", err)
 	}
 	installConfig := NewInstallConfig(config.Name)
 	for _, component := range TsuruComponents {
 		fmt.Fprintf(context.Stdout, "Installing %s\n", component.Name())
 		errInstall := component.Install(cluster, installConfig)
 		if errInstall != nil {
-			fmt.Fprintf(context.Stderr, "Error Installing %s: %s\n", component.Name(), errInstall)
-			return errInstall
+			return fmt.Errorf("error installing %s: %s", component.Name(), errInstall)
 		}
 		fmt.Fprintf(context.Stdout, "%s successfully installed!\n", component.Name())
 	}
+	poolMachines, err := ProvisionPool(dm, config, componentsMachines)
+	if err != nil {
+		return err
+	}
+	var nodesAddr []string
+	for _, m := range poolMachines {
+		nodesAddr = append(nodesAddr, m.GetPrivateAddress())
+	}
+	fmt.Fprintf(context.Stdout, "Bootstrapping Tsuru API...")
+	opts := TsuruSetupOptions{
+		Login:           installConfig.RootUserEmail,
+		Password:        installConfig.RootUserPassword,
+		Target:          fmt.Sprintf("http://%s:%d", cluster.GetManager().IP, defaultTsuruAPIPort),
+		TargetName:      installConfig.TargetName,
+		NodesAddr:       nodesAddr,
+		DockerHubMirror: installConfig.DockerHubMirror,
+	}
+	err = SetupTsuru(opts)
+	if err != nil {
+		return fmt.Errorf("Error bootstrapping tsuru: %s", err)
+	}
 	fmt.Fprintf(context.Stdout, "Applying iptables workaround for docker 1.12...\n")
-	for _, m := range machines {
+	for _, m := range componentsMachines {
 		_, err = m.RunSSHCommand("PATH=$PATH:/usr/sbin/:/usr/local/sbin; sudo iptables -D DOCKER-ISOLATION -i docker_gwbridge -o docker0 -j DROP")
 		if err != nil {
 			fmt.Fprintf(context.Stderr, "Failed to apply iptables rule: %s. Maybe it is not needed anymore?\n", err)
@@ -155,6 +168,20 @@ func (c *Install) Run(context *cmd.Context, cli *cmd.Client) error {
 	fmt.Fprintln(context.Stdout, "Apps:")
 	appList.Run(context, cli)
 	return nil
+}
+
+func ProvisionPool(p MachineProvisioner, config *TsuruInstallConfig, hosts []*Machine) ([]*Machine, error) {
+	if config.DedicatedPool {
+		return p.ProvisionMachines(config.PoolHosts, []string{})
+	}
+	if config.PoolHosts > len(hosts) {
+		poolMachines, err := p.ProvisionMachines(config.PoolHosts-len(hosts), []string{})
+		if err != nil {
+			return nil, fmt.Errorf("failed to provision pool hosts: %s", err)
+		}
+		return append(poolMachines, hosts...), nil
+	}
+	return hosts[:config.PoolHosts], nil
 }
 
 func (c *Install) PreInstallChecks(config *TsuruInstallConfig) error {
@@ -290,9 +317,17 @@ func parseConfigFile(file string) (*TsuruInstallConfig, error) {
 	if err == nil {
 		installConfig.CAPath = caPath
 	}
-	hosts, err := config.GetInt("hosts")
+	cHosts, err := config.GetInt("hosts:components:quantity")
 	if err == nil {
-		installConfig.NumHosts = hosts
+		installConfig.ComponentsHosts = cHosts
+	}
+	pHosts, err := config.GetInt("hosts:pool:quantity")
+	if err == nil {
+		installConfig.PoolHosts = pHosts
+	}
+	dedicated, err := config.GetBool("hosts:pool:dedicated")
+	if err == nil {
+		installConfig.DedicatedPool = dedicated
 	}
 	return installConfig, nil
 }

@@ -30,7 +30,12 @@ func (s *S) TestParseConfigFileNotExists(c *check.C) {
 func (s *S) TestParseConfigFile(c *check.C) {
 	conf := `
 name: tsuru-test
-hosts: 2
+hosts:
+    components:
+        quantity: 2
+    pool:
+        quantity: 1
+        dedicated: true
 ca-path: /tmp/certs
 driver:
     name: amazonec2
@@ -51,7 +56,9 @@ driver:
 			CAPath: "/tmp/certs",
 			Name:   "tsuru-test",
 		},
-		NumHosts: 2,
+		ComponentsHosts: 2,
+		PoolHosts:       1,
+		DedicatedPool:   true,
 	}
 	dmConfig, err := parseConfigFile("/tmp/config.yml")
 	c.Assert(err, check.IsNil)
@@ -114,7 +121,7 @@ func (s *S) TestInstallTargetAlreadyExists(c *check.C) {
 		Stdout: &stdout,
 		Stderr: &stderr,
 	}
-	expectedErr := "tsuru target \"test\" already exists"
+	expectedErr := "pre-install checks failed: tsuru target \"test\" already exists"
 	err = command.Run(&context, client)
 	c.Assert(err, check.NotNil)
 	c.Assert(expectedErr, check.Equals, err.Error())
@@ -166,4 +173,39 @@ func (s *S) TestBuildComponentsTable(c *check.C) {
 +-----------+-------+----------+
 `
 	c.Assert(table.String(), check.Equals, expected)
+}
+
+type FakeMachineProvisioner struct {
+	hostsProvisioned int
+}
+
+func (p *FakeMachineProvisioner) ProvisionMachines(hosts int, ports []string) ([]*Machine, error) {
+	var machines []*Machine
+	for i := 0; i < hosts; i++ {
+		p.hostsProvisioned = p.hostsProvisioned + 1
+		machines = append(machines, &Machine{})
+	}
+	return machines, nil
+}
+
+func (s *S) TestProvisionPool(c *check.C) {
+	tt := []struct {
+		poolHosts           int
+		dedicatedPool       bool
+		machines            []*Machine
+		expectedProvisioned int
+	}{
+		{1, false, []*Machine{&Machine{}}, 0},
+		{2, false, []*Machine{&Machine{}}, 1},
+		{1, true, []*Machine{&Machine{}}, 1},
+		{2, true, []*Machine{&Machine{}, &Machine{}}, 2},
+		{3, true, []*Machine{&Machine{}}, 3},
+	}
+	for _, t := range tt {
+		p := &FakeMachineProvisioner{}
+		config := &TsuruInstallConfig{PoolHosts: t.poolHosts, DedicatedPool: t.dedicatedPool}
+		_, err := ProvisionPool(p, config, t.machines)
+		c.Assert(err, check.IsNil)
+		c.Assert(p.hostsProvisioned, check.Equals, t.expectedProvisioned)
+	}
 }

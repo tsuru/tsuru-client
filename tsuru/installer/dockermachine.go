@@ -114,6 +114,10 @@ type DockerMachineConfig struct {
 	Name       string
 }
 
+type MachineProvisioner interface {
+	ProvisionMachines(int, []string) ([]*Machine, error)
+}
+
 func NewDockerMachine(config *DockerMachineConfig) (*DockerMachine, error) {
 	storePath := filepath.Join(storeBasePath, config.Name)
 	certsPath := filepath.Join(storePath, "certs")
@@ -153,6 +157,22 @@ func copy(src, dst string) error {
 		return err
 	}
 	return nil
+}
+
+func (d *DockerMachine) ProvisionMachines(numHosts int, openPorts []string) ([]*Machine, error) {
+	var machines []*Machine
+	for i := 0; i < numHosts; i++ {
+		m, err := d.CreateMachine(openPorts)
+		if err != nil {
+			return nil, fmt.Errorf("error creating machine %s", err)
+		}
+		err = d.uploadRegistryCertificate(m)
+		if err != nil {
+			return nil, fmt.Errorf("error uploading registry certificates to %s: %s", m.IP, err)
+		}
+		machines = append(machines, m)
+	}
+	return machines, nil
 }
 
 func (d *DockerMachine) CreateMachine(openPorts []string) (*Machine, error) {

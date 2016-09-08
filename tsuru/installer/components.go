@@ -373,19 +373,7 @@ func (c *TsuruAPI) Install(cluster ServiceCluster, i *InstallConfig) error {
 	if err != nil {
 		return fmt.Errorf("failed to connect to %s: %s", tsuruURL, err)
 	}
-	err = c.setupRootUser(cluster, i.RootUserEmail, i.RootUserPassword)
-	if err != nil {
-		return err
-	}
-	opts := TsuruSetupOptions{
-		Login:           i.RootUserEmail,
-		Password:        i.RootUserPassword,
-		Target:          tsuruURL,
-		TargetName:      i.TargetName,
-		NodeAddr:        cluster.GetManager().GetPrivateAddress(),
-		DockerHubMirror: i.DockerHubMirror,
-	}
-	return c.bootstrapEnv(opts)
+	return c.setupRootUser(cluster, i.RootUserEmail, i.RootUserPassword)
 }
 
 func (c *TsuruAPI) Status(cluster ServiceCluster) (*ServiceInfo, error) {
@@ -414,11 +402,11 @@ type TsuruSetupOptions struct {
 	Password        string
 	Target          string
 	TargetName      string
-	NodeAddr        string
+	NodesAddr       []string
 	DockerHubMirror string
 }
 
-func (c *TsuruAPI) bootstrapEnv(opts TsuruSetupOptions) error {
+func SetupTsuru(opts TsuruSetupOptions) error {
 	manager := cmd.BuildBaseManager("setup-client", "0.0.0", "", nil)
 	provisioners := provision.Registry()
 	for _, p := range provisioners {
@@ -467,17 +455,19 @@ func (c *TsuruAPI) bootstrapEnv(opts TsuruSetupOptions) error {
 	if err != nil {
 		return err
 	}
-	context.Args = []string{fmt.Sprintf("address=%s", opts.NodeAddr), "pool=theonepool"}
-	fmt.Fprintln(os.Stdout, "adding node")
-	nodeAdd := manager.Commands["docker-node-add"]
-	n, _ := nodeAdd.(cmd.FlaggedCommand)
-	err = n.Flags().Parse(true, []string{"--register"})
-	if err != nil {
-		return err
-	}
-	err = n.Run(&context, client)
-	if err != nil {
-		return err
+	for _, n := range opts.NodesAddr {
+		fmt.Printf("adding node %s\n", n)
+		context.Args = []string{fmt.Sprintf("address=%s", n), "pool=theonepool"}
+		nodeAdd := manager.Commands["docker-node-add"]
+		n, _ := nodeAdd.(cmd.FlaggedCommand)
+		err = n.Flags().Parse(true, []string{"--register"})
+		if err != nil {
+			return err
+		}
+		err = n.Run(&context, client)
+		if err != nil {
+			return err
+		}
 	}
 	context.Args = []string{"python"}
 	fmt.Fprintln(os.Stdout, "adding platform")

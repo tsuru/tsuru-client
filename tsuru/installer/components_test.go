@@ -193,15 +193,14 @@ func (s *S) TestTsuruAPIBootstrapLocalEnviroment(c *check.C) {
 		targetrm := manager.Commands["target-remove"]
 		targetrm.Run(&cont, c)
 	}()
-	t := TsuruAPI{}
 	opts := TsuruSetupOptions{
 		Login:      "test",
 		Password:   "test",
 		Target:     server.URL,
 		TargetName: "test",
-		NodeAddr:   server.URL,
+		NodesAddr:  []string{server.URL},
 	}
-	err := t.bootstrapEnv(opts)
+	err := SetupTsuru(opts)
 	c.Assert(err, check.IsNil)
 }
 
@@ -243,16 +242,15 @@ func (s *S) TestTsuruAPIBootstrapCustomDockerRegistry(c *check.C) {
 		targetrm := manager.Commands["target-remove"]
 		targetrm.Run(&cont, c)
 	}()
-	t := TsuruAPI{}
 	opts := TsuruSetupOptions{
 		Login:           "test",
 		Password:        "test",
 		Target:          server.URL,
 		TargetName:      "test",
-		NodeAddr:        server.URL,
+		NodesAddr:       []string{server.URL},
 		DockerHubMirror: "test.com",
 	}
-	err := t.bootstrapEnv(opts)
+	err := SetupTsuru(opts)
 	c.Assert(err, check.IsNil)
 }
 
