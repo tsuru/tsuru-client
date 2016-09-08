@@ -189,7 +189,7 @@ func (c *Redis) Name() string {
 
 func (c *Redis) Install(cluster ServiceCluster, i *InstallConfig) error {
 	if i.ComponentAddress["redis"] != "" {
-		return nil
+		return c.Healthcheck(i.ComponentAddress["redis"])
 	}
 	err := cluster.CreateService(docker.CreateServiceOptions{
 		ServiceSpec: swarm.ServiceSpec{

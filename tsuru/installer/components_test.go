@@ -257,9 +257,24 @@ func (s *S) TestTsuruAPIBootstrapCustomDockerRegistry(c *check.C) {
 }
 
 func (s *S) TestPreInstalledComponents(c *check.C) {
+	server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		w.WriteHeader(http.StatusOK)
+	}))
+	defer server.Close()
+	planbServer := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		if r.Host == "__ping__" {
+			w.WriteHeader(http.StatusOK)
+		} else {
+			w.WriteHeader(http.StatusBadRequest)
+		}
+	}))
+	defer planbServer.Close()
 	err := config.ReadConfigFile("./testdata/components-conf.yml")
 	c.Assert(err, check.IsNil)
 	conf := NewInstallConfig("testing")
+	conf.ComponentAddress["registry"] = server.URL
+	conf.ComponentAddress["planb"] = planbServer.URL
+	println(planbServer.URL)
 	cluster := &FakeServiceCluster{}
 	m := &MongoDB{}
 	err = m.Install(cluster, conf)
@@ -272,11 +287,11 @@ func (s *S) TestPreInstalledComponents(c *check.C) {
 	registry := &Registry{}
 	err = registry.Install(cluster, conf)
 	c.Assert(err, check.IsNil)
-	c.Assert(conf.ComponentAddress["registry"], check.Equals, "192.168.0.100:5000")
+	c.Assert(conf.ComponentAddress["registry"], check.Equals, server.URL)
 	planb := &PlanB{}
 	err = planb.Install(cluster, conf)
 	c.Assert(err, check.IsNil)
-	c.Assert(conf.ComponentAddress["planb"], check.Equals, "192.168.0.100")
+	c.Assert(conf.ComponentAddress["planb"], check.Equals, planbServer.URL)
 }
 
 func (s *S) TestInstallTsuruApiWithCustomComponentsAddress(c *check.C) {
