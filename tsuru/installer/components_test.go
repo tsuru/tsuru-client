@@ -296,11 +296,11 @@ func (s *S) TestPreInstalledComponents(c *check.C) {
 	conf.ComponentAddress["registry"] = server.URL
 	conf.ComponentAddress["planb"] = planbServer.URL
 	conf.ComponentAddress["redis"] = redis.URL
+	conf.ComponentAddress["mongo"] = ""
 	cluster := &FakeServiceCluster{}
 	m := &MongoDB{}
 	err = m.Install(cluster, conf)
 	c.Assert(err, check.IsNil)
-	c.Assert(conf.ComponentAddress["mongo"], check.Equals, "127.0.0.1:27017")
 	r := &Redis{}
 	err = r.Install(cluster, conf)
 	c.Assert(err, check.IsNil)
