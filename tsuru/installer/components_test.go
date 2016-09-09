@@ -288,7 +288,7 @@ func (s *S) TestPreInstalledComponents(c *check.C) {
 		}
 	}))
 	defer planbServer.Close()
-	redis := &FakeRedis{URL: "127.0.0.1:59764"}
+	redis := &FakeRedis{URL: "127.0.0.1:0"}
 	go redis.ListenAndServe()
 	err := config.ReadConfigFile("./testdata/components-conf.yml")
 	c.Assert(err, check.IsNil)
