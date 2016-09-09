@@ -112,7 +112,7 @@ func (c *Install) Run(context *cmd.Context, cli *cmd.Client) error {
 		return fmt.Errorf("failed to create docker machine: %s", err)
 	}
 	defer dm.Close()
-	componentsMachines, err := dm.ProvisionMachines(config.ComponentsHosts, []string{strconv.Itoa(defaultTsuruAPIPort)})
+	componentsMachines, err := ProvisionMachines(dm, config.ComponentsHosts, []string{strconv.Itoa(defaultTsuruAPIPort)})
 	if err != nil {
 		return fmt.Errorf("failed to provision components machines: %s", err)
 	}
@@ -172,16 +172,28 @@ func (c *Install) Run(context *cmd.Context, cli *cmd.Client) error {
 
 func ProvisionPool(p MachineProvisioner, config *TsuruInstallConfig, hosts []*Machine) ([]*Machine, error) {
 	if config.DedicatedPool {
-		return p.ProvisionMachines(config.PoolHosts, []string{})
+		return ProvisionMachines(p, config.PoolHosts, []string{})
 	}
 	if config.PoolHosts > len(hosts) {
-		poolMachines, err := p.ProvisionMachines(config.PoolHosts-len(hosts), []string{})
+		poolMachines, err := ProvisionMachines(p, config.PoolHosts-len(hosts), []string{})
 		if err != nil {
 			return nil, fmt.Errorf("failed to provision pool hosts: %s", err)
 		}
 		return append(poolMachines, hosts...), nil
 	}
 	return hosts[:config.PoolHosts], nil
+}
+
+func ProvisionMachines(p MachineProvisioner, numMachines int, openPorts []string) ([]*Machine, error) {
+	var machines []*Machine
+	for i := 0; i < numMachines; i++ {
+		m, err := p.ProvisionMachine(openPorts)
+		if err != nil {
+			return nil, fmt.Errorf("failed to provision machines: %s", err)
+		}
+		machines = append(machines, m)
+	}
+	return machines, nil
 }
 
 func (c *Install) PreInstallChecks(config *TsuruInstallConfig) error {

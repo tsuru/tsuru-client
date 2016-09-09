@@ -179,13 +179,9 @@ type FakeMachineProvisioner struct {
 	hostsProvisioned int
 }
 
-func (p *FakeMachineProvisioner) ProvisionMachines(hosts int, ports []string) ([]*Machine, error) {
-	var machines []*Machine
-	for i := 0; i < hosts; i++ {
-		p.hostsProvisioned = p.hostsProvisioned + 1
-		machines = append(machines, &Machine{})
-	}
-	return machines, nil
+func (p *FakeMachineProvisioner) ProvisionMachine(ports []string) (*Machine, error) {
+	p.hostsProvisioned = p.hostsProvisioned + 1
+	return &Machine{}, nil
 }
 
 func (s *S) TestProvisionPool(c *check.C) {
