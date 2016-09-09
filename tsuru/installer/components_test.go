@@ -256,16 +256,21 @@ func (s *S) TestTsuruAPIBootstrapCustomDockerRegistry(c *check.C) {
 }
 
 type FakeRedis struct {
-	URL string
+	URL      string
+	listener net.Listener
+}
+
+func (r *FakeRedis) Listen() {
+	l, _ := net.Listen("tcp", r.URL)
+	r.URL = l.Addr().String()
+	r.listener = l
 }
 
 // ListenAndServer starts a fake redis server that listen for a single
 // connection and answers to a PING
 func (r *FakeRedis) ListenAndServe() {
-	l, _ := net.Listen("tcp", r.URL)
-	defer l.Close()
-	r.URL = l.Addr().String()
-	conn, _ := l.Accept()
+	conn, _ := r.listener.Accept()
+	defer r.listener.Close()
 	defer conn.Close()
 	buf := make([]byte, 1024)
 	conn.Read(buf)
@@ -289,6 +294,7 @@ func (s *S) TestPreInstalledComponents(c *check.C) {
 	}))
 	defer planbServer.Close()
 	redis := &FakeRedis{URL: "127.0.0.1:0"}
+	redis.Listen()
 	go redis.ListenAndServe()
 	err := config.ReadConfigFile("./testdata/components-conf.yml")
 	c.Assert(err, check.IsNil)
