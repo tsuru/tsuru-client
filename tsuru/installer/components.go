@@ -408,7 +408,10 @@ type TsuruSetupOptions struct {
 
 func SetupTsuru(opts TsuruSetupOptions) error {
 	manager := cmd.BuildBaseManager("setup-client", "0.0.0", "", nil)
-	provisioners := provision.Registry()
+	provisioners, err := provision.Registry()
+	if err != nil {
+		return err
+	}
 	for _, p := range provisioners {
 		if c, ok := p.(cmd.AdminCommandable); ok {
 			commands := c.AdminCommands()
@@ -427,7 +430,7 @@ func SetupTsuru(opts TsuruSetupOptions) error {
 	context.RawOutput()
 	targetadd := manager.Commands["target-add"]
 	t, _ := targetadd.(cmd.FlaggedCommand)
-	err := t.Flags().Parse(true, []string{"-s"})
+	err = t.Flags().Parse(true, []string{"-s"})
 	if err != nil {
 		return err
 	}
@@ -511,7 +514,10 @@ func SetupTsuru(opts TsuruSetupOptions) error {
 
 func (c *TsuruAPI) Uninstall(installation string) error {
 	manager := cmd.BuildBaseManager("uninstall-client", "0.0.0", "", nil)
-	provisioners := provision.Registry()
+	provisioners, err := provision.Registry()
+	if err != nil {
+		return err
+	}
 	for _, p := range provisioners {
 		if c, ok := p.(cmd.AdminCommandable); ok {
 			commands := c.AdminCommands()

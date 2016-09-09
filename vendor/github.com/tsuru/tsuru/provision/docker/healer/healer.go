@@ -5,12 +5,20 @@
 package healer
 
 import (
+	"encoding/json"
 	"fmt"
 	"time"
 
+	"github.com/tsuru/config"
 	"github.com/tsuru/docker-cluster/cluster"
+	"github.com/tsuru/tsuru/app"
+	"github.com/tsuru/tsuru/db"
+	"github.com/tsuru/tsuru/db/storage"
 	"github.com/tsuru/tsuru/event"
+	"github.com/tsuru/tsuru/permission"
 	"github.com/tsuru/tsuru/provision/docker/container"
+	"gopkg.in/mgo.v2"
+	"gopkg.in/mgo.v2/bson"
 )
 
 var (
@@ -19,7 +27,7 @@ var (
 )
 
 type HealingEvent struct {
-	ID               interface{}
+	ID               interface{} `bson:"_id"`
 	StartTime        time.Time
 	EndTime          time.Time
 	Action           string
@@ -73,7 +81,9 @@ func toHealingEvt(evt *event.Event) (HealingEvent, error) {
 		if err != nil {
 			return healingEvt, err
 		}
-		healingEvt.Extra = data.LastCheck
+		if data.LastCheck != nil {
+			healingEvt.Extra = data.LastCheck
+		}
 		healingEvt.Reason = data.Reason
 		if data.Node != nil {
 			healingEvt.FailingNode = *data.Node
@@ -112,4 +122,84 @@ func ListHealingHistory(filter string) ([]HealingEvent, error) {
 		}
 	}
 	return healingEvts, nil
+}
+
+func oldHealingCollection() (*storage.Collection, error) {
+	name, _ := config.GetString("docker:healing:events_collection")
+	if name == "" {
+		name = "healing_events"
+	}
+	conn, err := db.Conn()
+	if err != nil {
+		return nil, err
+	}
+	return conn.Collection(name), nil
+}
+
+func healingEventToEvent(data *HealingEvent) error {
+	var evt event.Event
+	evt.UniqueID = data.ID.(bson.ObjectId)
+	var startOpts, endOpts interface{}
+	switch data.Action {
+	case "node-healing":
+		evt.Target = event.Target{Type: event.TargetTypeNode, Value: data.FailingNode.Address}
+		var lastCheck *nodeChecks
+		if data.Extra != nil {
+			checkRaw, err := json.Marshal(data.Extra)
+			if err == nil {
+				json.Unmarshal(checkRaw, &lastCheck)
+			}
+		}
+		startOpts = nodeHealerCustomData{
+			Node:      &data.FailingNode,
+			Reason:    data.Reason,
+			LastCheck: lastCheck,
+		}
+		endOpts = data.CreatedNode
+		poolName := data.FailingNode.Metadata[poolMetadataName]
+		evt.Allowed = event.Allowed(permission.PermPoolReadEvents, permission.Context(permission.CtxPool, poolName))
+	case "container-healing":
+		evt.Target = event.Target{Type: event.TargetTypeContainer, Value: data.FailingContainer.ID}
+		startOpts = data.FailingContainer
+		endOpts = data.CreatedContainer
+		a, err := app.GetByName(data.FailingContainer.AppName)
+		if err == nil {
+			evt.Allowed = event.Allowed(permission.PermAppReadEvents, append(permission.Contexts(permission.CtxTeam, a.Teams),
+				permission.Context(permission.CtxApp, a.Name),
+				permission.Context(permission.CtxPool, a.Pool),
+			)...)
+		} else {
+			evt.Allowed = event.Allowed(permission.PermAppReadEvents)
+		}
+	default:
+		return fmt.Errorf("invalid action %q", data.Action)
+	}
+	evt.Owner = event.Owner{Type: event.OwnerTypeInternal}
+	evt.Kind = event.Kind{Type: event.KindTypeInternal, Name: "healer"}
+	evt.StartTime = data.StartTime
+	evt.EndTime = data.EndTime
+	evt.Error = data.Error
+	err := evt.RawInsert(startOpts, nil, endOpts)
+	if mgo.IsDup(err) {
+		return nil
+	}
+	return err
+}
+
+func MigrateHealingToEvents() error {
+	coll, err := oldHealingCollection()
+	if err != nil {
+		return err
+	}
+	defer coll.Close()
+	coll.Find(nil).Iter()
+	iter := coll.Find(nil).Iter()
+	var data HealingEvent
+	for iter.Next(&data) {
+		err = healingEventToEvent(&data)
+		if err != nil {
+			return err
+		}
+	}
+	return iter.Close()
 }

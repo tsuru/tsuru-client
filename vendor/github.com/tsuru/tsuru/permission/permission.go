@@ -1,4 +1,4 @@
-// Copyright 2015 tsuru authors. All rights reserved.
+// Copyright 2016 tsuru authors. All rights reserved.
 // Use of this source code is governed by a BSD-style
 // license that can be found in the LICENSE file.
 
@@ -47,6 +47,7 @@ var (
 	CtxGlobal          = contextType("global")
 	CtxApp             = contextType("app")
 	CtxTeam            = contextType("team")
+	CtxUser            = contextType("user")
 	CtxPool            = contextType("pool")
 	CtxIaaS            = contextType("iaas")
 	CtxService         = contextType("service")
@@ -148,6 +149,21 @@ func (p *Permission) String() string {
 
 type Token interface {
 	Permissions() ([]Permission, error)
+}
+
+func ListContextValues(t Token, scheme *PermissionScheme, failIfEmpty bool) ([]string, error) {
+	contexts := ContextsForPermission(t, scheme)
+	if len(contexts) == 0 && failIfEmpty {
+		return nil, ErrUnauthorized
+	}
+	values := make([]string, 0, len(contexts))
+	for _, ctx := range contexts {
+		if ctx.CtxType == CtxGlobal {
+			return nil, nil
+		}
+		values = append(values, ctx.Value)
+	}
+	return values, nil
 }
 
 func ContextsFromListForPermission(perms []Permission, scheme *PermissionScheme, ctxTypes ...contextType) []PermissionContext {

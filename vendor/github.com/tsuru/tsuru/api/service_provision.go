@@ -25,12 +25,17 @@ func serviceValidate(s service.Service) error {
 		return &errors.HTTP{Code: http.StatusBadRequest, Message: "Service id is required"}
 	}
 	if s.Password == "" {
-		return &errors.HTTP{Code: http.StatusBadRequest, Message: "Service password is requried"}
+		return &errors.HTTP{Code: http.StatusBadRequest, Message: "Service password is required"}
 	}
 	if endpoint, ok := s.Endpoint["production"]; !ok || endpoint == "" {
 		return &errors.HTTP{Code: http.StatusBadRequest, Message: "Service production endpoint is required"}
 	}
 	return nil
+}
+
+func provisionReadableServices(t auth.Token, contexts []permission.PermissionContext) ([]service.Service, error) {
+	teams, serviceNames := filtersForServiceList(t, contexts)
+	return service.GetServicesByOwnerTeamsAndServices(teams, serviceNames)
 }
 
 // title: service list
@@ -42,23 +47,8 @@ func serviceValidate(s service.Service) error {
 //   204: No content
 //   401: Unauthorized
 func serviceList(w http.ResponseWriter, r *http.Request, t auth.Token) error {
-	teams := []string{}
-	serviceNames := []string{}
 	contexts := permission.ContextsForPermission(t, permission.PermServiceRead)
-	for _, c := range contexts {
-		if c.CtxType == permission.CtxGlobal {
-			teams = nil
-			serviceNames = nil
-			break
-		}
-		switch c.CtxType {
-		case permission.CtxService:
-			serviceNames = append(serviceNames, c.Value)
-		case permission.CtxTeam:
-			teams = append(teams, c.Value)
-		}
-	}
-	services, err := service.GetServicesByOwnerTeamsAndServices(teams, serviceNames)
+	services, err := provisionReadableServices(t, contexts)
 	if err != nil {
 		return err
 	}
@@ -136,7 +126,8 @@ func serviceCreate(w http.ResponseWriter, r *http.Request, t auth.Token) (err er
 		Target:     serviceTarget(s.Name),
 		Kind:       permission.PermServiceCreate,
 		Owner:      t,
-		CustomData: formToEvents(r.Form),
+		CustomData: event.FormToCustomData(r.Form),
+		Allowed:    event.Allowed(permission.PermServiceReadEvents, contextsForServiceProvision(&s)...),
 	})
 	if err != nil {
 		return err
@@ -181,9 +172,7 @@ func serviceUpdate(w http.ResponseWriter, r *http.Request, t auth.Token) (err er
 		return err
 	}
 	allowed := permission.Check(t, permission.PermServiceUpdate,
-		append(permission.Contexts(permission.CtxTeam, s.OwnerTeams),
-			permission.Context(permission.CtxService, s.Name),
-		)...,
+		contextsForServiceProvision(&s)...,
 	)
 	if !allowed {
 		return permission.ErrUnauthorized
@@ -193,7 +182,8 @@ func serviceUpdate(w http.ResponseWriter, r *http.Request, t auth.Token) (err er
 		Target:     serviceTarget(s.Name),
 		Kind:       permission.PermServiceUpdate,
 		Owner:      t,
-		CustomData: formToEvents(r.Form),
+		CustomData: event.FormToCustomData(r.Form),
+		Allowed:    event.Allowed(permission.PermServiceReadEvents, contextsForServiceProvision(&s)...),
 	})
 	if err != nil {
 		return err
@@ -220,9 +210,7 @@ func serviceDelete(w http.ResponseWriter, r *http.Request, t auth.Token) (err er
 		return err
 	}
 	allowed := permission.Check(t, permission.PermServiceDelete,
-		append(permission.Contexts(permission.CtxTeam, s.OwnerTeams),
-			permission.Context(permission.CtxService, s.Name),
-		)...,
+		contextsForServiceProvision(&s)...,
 	)
 	if !allowed {
 		return permission.ErrUnauthorized
@@ -231,7 +219,8 @@ func serviceDelete(w http.ResponseWriter, r *http.Request, t auth.Token) (err er
 		Target:     serviceTarget(s.Name),
 		Kind:       permission.PermServiceDelete,
 		Owner:      t,
-		CustomData: formToEvents(r.Form),
+		CustomData: event.FormToCustomData(r.Form),
+		Allowed:    event.Allowed(permission.PermServiceReadEvents, contextsForServiceProvision(&s)...),
 	})
 	if err != nil {
 		return err
@@ -256,30 +245,34 @@ func serviceDelete(w http.ResponseWriter, r *http.Request, t auth.Token) (err er
 //   401: Unauthorized
 //   404: Service not found
 func serviceProxy(w http.ResponseWriter, r *http.Request, t auth.Token) (err error) {
-	r.ParseForm()
+	parseFormPreserveBody(r)
 	serviceName := r.URL.Query().Get(":service")
 	s, err := getService(serviceName)
 	if err != nil {
 		return err
 	}
 	allowed := permission.Check(t, permission.PermServiceUpdateProxy,
-		append(permission.Contexts(permission.CtxTeam, s.OwnerTeams),
-			permission.Context(permission.CtxService, s.Name),
-		)...,
+		contextsForServiceProvision(&s)...,
 	)
 	if !allowed {
 		return permission.ErrUnauthorized
 	}
-	evt, err := event.New(&event.Opts{
-		Target:     serviceTarget(s.Name),
-		Kind:       permission.PermServiceUpdateProxy,
-		Owner:      t,
-		CustomData: formToEvents(r.Form),
-	})
-	if err != nil {
-		return err
+	if r.Method != httpMethodGet && r.Method != httpMethodHead {
+		evt, err := event.New(&event.Opts{
+			Target: serviceTarget(s.Name),
+			Kind:   permission.PermServiceUpdateProxy,
+			Owner:  t,
+			CustomData: append(event.FormToCustomData(r.Form), map[string]interface{}{
+				"name":  "method",
+				"value": r.Method,
+			}),
+			Allowed: event.Allowed(permission.PermServiceReadEvents, contextsForServiceProvision(&s)...),
+		})
+		if err != nil {
+			return err
+		}
+		defer func() { evt.Done(err) }()
 	}
-	defer func() { evt.Done(err) }()
 	path := r.URL.Query().Get("callback")
 	return service.Proxy(&s, path, w, r)
 }
@@ -301,9 +294,7 @@ func grantServiceAccess(w http.ResponseWriter, r *http.Request, t auth.Token) (e
 		return err
 	}
 	allowed := permission.Check(t, permission.PermServiceUpdateGrantAccess,
-		append(permission.Contexts(permission.CtxTeam, s.OwnerTeams),
-			permission.Context(permission.CtxService, s.Name),
-		)...,
+		contextsForServiceProvision(&s)...,
 	)
 	if !allowed {
 		return permission.ErrUnauthorized
@@ -320,7 +311,8 @@ func grantServiceAccess(w http.ResponseWriter, r *http.Request, t auth.Token) (e
 		Target:     serviceTarget(s.Name),
 		Kind:       permission.PermServiceUpdateGrantAccess,
 		Owner:      t,
-		CustomData: formToEvents(r.Form),
+		CustomData: event.FormToCustomData(r.Form),
+		Allowed:    event.Allowed(permission.PermServiceReadEvents, contextsForServiceProvision(&s)...),
 	})
 	if err != nil {
 		return err
@@ -350,9 +342,7 @@ func revokeServiceAccess(w http.ResponseWriter, r *http.Request, t auth.Token) (
 		return err
 	}
 	allowed := permission.Check(t, permission.PermServiceUpdateRevokeAccess,
-		append(permission.Contexts(permission.CtxTeam, s.OwnerTeams),
-			permission.Context(permission.CtxService, s.Name),
-		)...,
+		contextsForServiceProvision(&s)...,
 	)
 	if !allowed {
 		return permission.ErrUnauthorized
@@ -373,7 +363,8 @@ func revokeServiceAccess(w http.ResponseWriter, r *http.Request, t auth.Token) (
 		Target:     serviceTarget(s.Name),
 		Kind:       permission.PermServiceUpdateRevokeAccess,
 		Owner:      t,
-		CustomData: formToEvents(r.Form),
+		CustomData: event.FormToCustomData(r.Form),
+		Allowed:    event.Allowed(permission.PermServiceReadEvents, contextsForServiceProvision(&s)...),
 	})
 	if err != nil {
 		return err
@@ -401,9 +392,7 @@ func serviceAddDoc(w http.ResponseWriter, r *http.Request, t auth.Token) (err er
 		return err
 	}
 	allowed := permission.Check(t, permission.PermServiceUpdateDoc,
-		append(permission.Contexts(permission.CtxTeam, s.OwnerTeams),
-			permission.Context(permission.CtxService, s.Name),
-		)...,
+		contextsForServiceProvision(&s)...,
 	)
 	if !allowed {
 		return permission.ErrUnauthorized
@@ -413,7 +402,8 @@ func serviceAddDoc(w http.ResponseWriter, r *http.Request, t auth.Token) (err er
 		Target:     serviceTarget(s.Name),
 		Kind:       permission.PermServiceUpdateDoc,
 		Owner:      t,
-		CustomData: formToEvents(r.Form),
+		CustomData: event.FormToCustomData(r.Form),
+		Allowed:    event.Allowed(permission.PermServiceReadEvents, contextsForServiceProvision(&s)...),
 	})
 	if err != nil {
 		return err
@@ -429,4 +419,10 @@ func getService(name string) (service.Service, error) {
 		return s, &errors.HTTP{Code: http.StatusNotFound, Message: "Service not found"}
 	}
 	return s, err
+}
+
+func contextsForServiceProvision(s *service.Service) []permission.PermissionContext {
+	return append(permission.Contexts(permission.CtxTeam, s.OwnerTeams),
+		permission.Context(permission.CtxService, s.Name),
+	)
 }

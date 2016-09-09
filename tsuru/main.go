@@ -5,7 +5,7 @@
 package main
 
 import (
-	"fmt"
+	"log"
 	"os"
 
 	"github.com/docker/machine/libmachine/drivers/plugin/localbinary"
@@ -118,7 +118,10 @@ func buildManager(name string) *cmd.Manager {
 }
 
 func registerProvisionersCommands(m *cmd.Manager) {
-	provisioners := provision.Registry()
+	provisioners, err := provision.Registry()
+	if err != nil {
+		log.Fatalf("Unable to list provisioners: %s", err)
+	}
 	for _, p := range provisioners {
 		if c, ok := p.(cmd.AdminCommandable); ok {
 			commands := c.AdminCommands()
@@ -137,8 +140,7 @@ func main() {
 	if inDockerMachineDriverMode() {
 		err := installer.RunDriver(os.Getenv(localbinary.PluginEnvDriverName))
 		if err != nil {
-			fmt.Printf("Error running driver: %s", err)
-			os.Exit(1)
+			log.Fatalf("Error running driver: %s", err)
 		}
 	} else {
 		localbinary.CurrentBinaryIsDockerMachine = true

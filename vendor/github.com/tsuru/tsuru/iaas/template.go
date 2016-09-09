@@ -1,4 +1,4 @@
-// Copyright 2015 tsuru authors. All rights reserved.
+// Copyright 2016 tsuru authors. All rights reserved.
 // Use of this source code is governed by a BSD-style
 // license that can be found in the LICENSE file.
 
@@ -38,12 +38,21 @@ func FindTemplate(name string) (*Template, error) {
 	return &template, err
 }
 
-func ExpandTemplate(name string) (map[string]string, error) {
+func ExpandTemplate(name string, params map[string]string) (map[string]string, error) {
 	template, err := FindTemplate(name)
 	if err != nil {
 		return nil, err
 	}
-	return template.paramsMap(), nil
+	templateParams := template.paramsMap()
+	delete(params, "template")
+	// User params will override template params
+	for k, v := range templateParams {
+		_, isSet := params[k]
+		if !isSet {
+			params[k] = v
+		}
+	}
+	return params, nil
 }
 
 func ListTemplates() ([]Template, error) {

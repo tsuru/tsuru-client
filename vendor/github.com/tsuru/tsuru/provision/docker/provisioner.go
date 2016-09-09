@@ -20,6 +20,8 @@ import (
 	"github.com/tsuru/config"
 	"github.com/tsuru/docker-cluster/cluster"
 	clusterLog "github.com/tsuru/docker-cluster/log"
+	clusterStorage "github.com/tsuru/docker-cluster/storage"
+	"github.com/tsuru/monsterqueue"
 	"github.com/tsuru/tsuru/action"
 	"github.com/tsuru/tsuru/api/shutdown"
 	"github.com/tsuru/tsuru/app"
@@ -34,13 +36,13 @@ import (
 	"github.com/tsuru/tsuru/provision/docker/container"
 	"github.com/tsuru/tsuru/provision/docker/healer"
 	"github.com/tsuru/tsuru/provision/docker/nodecontainer"
+	"github.com/tsuru/tsuru/queue"
 	"github.com/tsuru/tsuru/router"
 	_ "github.com/tsuru/tsuru/router/fusis"
 	_ "github.com/tsuru/tsuru/router/galeb"
 	_ "github.com/tsuru/tsuru/router/hipache"
 	_ "github.com/tsuru/tsuru/router/routertest"
 	_ "github.com/tsuru/tsuru/router/vulcand"
-	"gopkg.in/mgo.v2/bson"
 )
 
 var (
@@ -50,9 +52,13 @@ var (
 	ErrDeployCanceled               = stderr.New("deploy canceled by user action")
 )
 
+const provisionerName = "docker"
+
 func init() {
 	mainDockerProvisioner = &dockerProvisioner{}
-	provision.Register("docker", mainDockerProvisioner)
+	provision.Register(provisionerName, func() (provision.Provisioner, error) {
+		return mainDockerProvisioner, nil
+	})
 }
 
 func getRouterForApp(app provision.App) (router.Router, error) {
@@ -100,7 +106,8 @@ func (p *dockerProvisioner) initDockerCluster() error {
 		TotalMemoryMetadata: TotalMemoryMetadata,
 		provisioner:         p,
 	}
-	p.cluster, err = cluster.New(p.scheduler, p.storage, nodes...)
+	caPath, _ := config.GetString("docker:tls:root-path")
+	p.cluster, err = cluster.New(p.scheduler, p.storage, caPath, nodes...)
 	if err != nil {
 		return err
 	}
@@ -194,7 +201,8 @@ func (p *dockerProvisioner) cloneProvisioner(ignoredContainers []container.Conta
 		provisioner:         &overridenProvisioner,
 		ignoredContainers:   containerIds,
 	}
-	overridenProvisioner.cluster, err = cluster.New(overridenProvisioner.scheduler, p.storage)
+	caPath, _ := config.GetString("docker:tls:root-path")
+	overridenProvisioner.cluster, err = cluster.New(overridenProvisioner.scheduler, p.storage, caPath)
 	if err != nil {
 		return nil, err
 	}
@@ -228,7 +236,8 @@ func (p *dockerProvisioner) dryMode(ignoredContainers []container.Container) (*d
 		provisioner:         overridenProvisioner,
 		ignoredContainers:   containerIds,
 	}
-	overridenProvisioner.cluster, err = cluster.New(overridenProvisioner.scheduler, p.storage)
+	caPath, _ := config.GetString("docker:tls:root-path")
+	overridenProvisioner.cluster, err = cluster.New(overridenProvisioner.scheduler, p.storage, caPath)
 	if err != nil {
 		return nil, err
 	}
@@ -276,10 +285,6 @@ func (p *dockerProvisioner) Initialize() error {
 	if err != nil {
 		return err
 	}
-	err = registerRoutesRebuildTask()
-	if err != nil {
-		return err
-	}
 	return p.initDockerCluster()
 }
 
@@ -318,7 +323,6 @@ func (p *dockerProvisioner) Restart(a provision.App, process string, w io.Writer
 		toAdd[c.ProcessName].Status = provision.StatusStarted
 	}
 	_, err = p.runReplaceUnitsPipeline(writer, a, toAdd, containers, imageId)
-	routesRebuildOrEnqueue(a.GetName())
 	return err
 }
 
@@ -341,7 +345,6 @@ func (p *dockerProvisioner) Start(app provision.App, process string) error {
 		}
 		return nil
 	}, nil, true)
-	routesRebuildOrEnqueue(app.GetName())
 	return err
 }
 
@@ -373,19 +376,6 @@ func (p *dockerProvisioner) Sleep(app provision.App, process string) error {
 		}
 		return err
 	}, nil, true)
-}
-
-func (p *dockerProvisioner) Swap(app1, app2 provision.App, cnameOnly bool) error {
-	r, err := getRouterForApp(app1)
-	if err != nil {
-		return err
-	}
-	err = r.Swap(app1.GetName(), app2.GetName(), cnameOnly)
-	if err != nil {
-		routesRebuildOrEnqueue(app1.GetName())
-		routesRebuildOrEnqueue(app2.GetName())
-	}
-	return err
 }
 
 func (p *dockerProvisioner) Rollback(a provision.App, imageId string, evt *event.Event) (string, error) {
@@ -645,7 +635,6 @@ func (p *dockerProvisioner) deploy(a provision.App, imageId string, evt *event.E
 		}
 		_, err = p.runReplaceUnitsPipeline(evt, a, toAdd, containers, imageId)
 	}
-	routesRebuildOrEnqueue(a.GetName())
 	return err
 }
 
@@ -741,20 +730,6 @@ func (p *dockerProvisioner) Destroy(app provision.App) error {
 		return err
 	}
 	return nil
-}
-
-func (*dockerProvisioner) Addr(app provision.App) (string, error) {
-	r, err := getRouterForApp(app)
-	if err != nil {
-		log.Errorf("Failed to get router: %s", err)
-		return "", err
-	}
-	addr, err := r.Addr(app.GetName())
-	if err != nil {
-		log.Errorf("Failed to obtain app %s address: %s", app.GetName(), err)
-		return "", err
-	}
-	return addr, nil
 }
 
 func (p *dockerProvisioner) runRestartAfterHooks(cont *container.Container, w io.Writer) error {
@@ -857,7 +832,6 @@ func (p *dockerProvisioner) AddUnits(a provision.App, units uint, process string
 		return nil, err
 	}
 	conts, err := p.runCreateUnitsPipeline(writer, a, map[string]*containersToAdd{process: {Quantity: int(units)}}, imageId, imageData.ExposedPort)
-	routesRebuildOrEnqueue(a.GetName())
 	if err != nil {
 		return nil, err
 	}
@@ -945,8 +919,17 @@ func (p *dockerProvisioner) SetUnitStatus(unit provision.Unit, status provision.
 	if cont.Status == provision.StatusBuilding.String() || cont.Status == provision.StatusAsleep.String() {
 		return nil
 	}
-	if status == provision.StatusStopped && cont.Status != provision.StatusStopped.String() {
-		status = provision.StatusError
+	currentStatus := cont.ExpectedStatus()
+	if status == provision.StatusStopped || status == provision.StatusCreated {
+		if currentStatus == provision.StatusStopped {
+			status = provision.StatusStopped
+		} else {
+			status = provision.StatusError
+		}
+	} else if status == provision.StatusStarted {
+		if currentStatus == provision.StatusStopped {
+			status = provision.StatusError
+		}
 	}
 	if unit.AppName != "" && cont.AppName != unit.AppName {
 		return stderr.New("wrong app name")
@@ -987,46 +970,11 @@ func (p *dockerProvisioner) ExecuteCommand(stdout, stderr io.Writer, app provisi
 	return nil
 }
 
-func (p *dockerProvisioner) SetCName(app provision.App, cname string) error {
-	r, err := getRouterForApp(app)
-	if err != nil {
-		return err
-	}
-	cnameRouter, ok := r.(router.CNameRouter)
-	if !ok {
-		return fmt.Errorf("router %T does not allow cnames", r)
-	}
-	err = cnameRouter.SetCName(cname, app.GetName())
-	if err != nil {
-		routesRebuildOrEnqueue(app.GetName())
-	}
-	return err
-}
-
-func (p *dockerProvisioner) UnsetCName(app provision.App, cname string) error {
-	r, err := getRouterForApp(app)
-	if err != nil {
-		return err
-	}
-	cnameRouter, ok := r.(router.CNameRouter)
-	if !ok {
-		return fmt.Errorf("router %T does not allow cnames", r)
-	}
-	err = cnameRouter.UnsetCName(cname, app.GetName())
-	if err != nil {
-		routesRebuildOrEnqueue(app.GetName())
-	}
-	return err
-}
-
 func (p *dockerProvisioner) AdminCommands() []cmd.Command {
 	return []cmd.Command{
 		&moveContainerCmd{},
 		&moveContainersCmd{},
 		&rebalanceContainersCmd{},
-		&addNodeToSchedulerCmd{},
-		&removeNodeFromSchedulerCmd{},
-		&listNodesInTheSchedulerCmd{},
 		&healer.ListHealingHistoryCmd{},
 		&healer.GetNodeHealingConfigCmd{},
 		&healer.SetNodeHealingConfigCmd{},
@@ -1036,7 +984,6 @@ func (p *dockerProvisioner) AdminCommands() []cmd.Command {
 		&autoScaleInfoCmd{},
 		&autoScaleSetRuleCmd{},
 		&autoScaleDeleteRuleCmd{},
-		&updateNodeToSchedulerCmd{},
 		&dockerLogInfo{},
 		&dockerLogUpdate{},
 		&nodecontainer.NodeContainerList{},
@@ -1135,6 +1082,19 @@ func (p *dockerProvisioner) PlatformRemove(name string) error {
 	return err
 }
 
+// GetAppFromUnitID returns app from unit id
+func (p *dockerProvisioner) GetAppFromUnitID(unitID string) (provision.App, error) {
+	cnt, err := p.GetContainer(unitID)
+	if err != nil {
+		return nil, err
+	}
+	a, err := app.GetByName(cnt.AppName)
+	if err != nil {
+		return nil, err
+	}
+	return a, nil
+}
+
 func (p *dockerProvisioner) Units(app provision.App) ([]provision.Unit, error) {
 	containers, err := p.listContainersByApp(app.GetName())
 	if err != nil {
@@ -1208,44 +1168,15 @@ func (p *dockerProvisioner) ValidAppImages(appName string) ([]string, error) {
 }
 
 func (p *dockerProvisioner) Nodes(app provision.App) ([]cluster.Node, error) {
-	pool := app.GetPool()
-	var (
-		pools []provision.Pool
-		err   error
-	)
-	if pool == "" {
-		pools, err = provision.ListPools(bson.M{"$or": []bson.M{{"teams": app.GetTeamOwner()}, {"teams": bson.M{"$in": app.GetTeamsName()}}}})
-	} else {
-		pools, err = provision.ListPools(bson.M{"_id": pool})
-	}
+	poolName := app.GetPool()
+	nodes, err := p.Cluster().NodesForMetadata(map[string]string{"pool": poolName})
 	if err != nil {
 		return nil, err
 	}
-	if len(pools) == 0 {
-		query := bson.M{"default": true}
-		pools, err = provision.ListPools(query)
-		if err != nil {
-			return nil, err
-		}
+	if len(nodes) > 0 {
+		return nodes, nil
 	}
-	if len(pools) == 0 {
-		return nil, errNoDefaultPool
-	}
-	for _, pool := range pools {
-		nodes, err := p.Cluster().NodesForMetadata(map[string]string{"pool": pool.Name})
-		if err != nil {
-			return nil, errNoDefaultPool
-		}
-		if len(nodes) > 0 {
-			return nodes, nil
-		}
-	}
-	var nameList []string
-	for _, pool := range pools {
-		nameList = append(nameList, pool.Name)
-	}
-	poolsStr := strings.Join(nameList, ", pool=")
-	return nil, fmt.Errorf("No nodes found with one of the following metadata: pool=%s", poolsStr)
+	return nil, fmt.Errorf("No nodes found with one of the following metadata: pool=%s", poolName)
 }
 
 func (p *dockerProvisioner) MetricEnvs(app provision.App) map[string]string {
@@ -1349,4 +1280,141 @@ func (p *dockerProvisioner) SetNodeStatus(nodeData provision.NodeStatusData) err
 		return nil
 	}
 	return p.nodeHealer.UpdateNodeData(nodeData)
+}
+
+type clusterNodeWrapper struct {
+	node *cluster.Node
+	prov *dockerProvisioner
+}
+
+func (n *clusterNodeWrapper) Address() string {
+	return n.node.Address
+}
+
+func (n *clusterNodeWrapper) Pool() string {
+	return n.node.Metadata["pool"]
+}
+
+func (n *clusterNodeWrapper) Metadata() map[string]string {
+	return n.node.Metadata
+}
+
+func (n *clusterNodeWrapper) Status() string {
+	return n.node.Metadata["pool"]
+}
+
+func (n *clusterNodeWrapper) Units() ([]provision.Unit, error) {
+	if n.prov == nil {
+		return nil, stderr.New("no provisioner instance in node wrapper")
+	}
+	conts, err := n.prov.listContainersByHost(net.URLToHost(n.Address()))
+	if err != nil {
+		return nil, err
+	}
+	units := make([]provision.Unit, len(conts))
+	for i, c := range conts {
+		a, err := app.GetByName(c.AppName)
+		if err != nil {
+			return nil, err
+		}
+		units[i] = c.AsUnit(a)
+	}
+	return units, nil
+}
+
+func (p *dockerProvisioner) ListNodes(addressFilter []string) ([]provision.Node, error) {
+	nodes, err := p.Cluster().UnfilteredNodes()
+	if err != nil {
+		return nil, err
+	}
+	var (
+		addressSet map[string]struct{}
+		result     []provision.Node
+	)
+	if addressFilter != nil {
+		addressSet = map[string]struct{}{}
+		for _, a := range addressFilter {
+			addressSet[a] = struct{}{}
+		}
+		result = make([]provision.Node, 0, len(addressFilter))
+	} else {
+		result = make([]provision.Node, 0, len(nodes))
+	}
+	for i := range nodes {
+		n := &nodes[i]
+		if addressSet != nil {
+			if _, ok := addressSet[n.Address]; !ok {
+				continue
+			}
+		}
+		result = append(result, &clusterNodeWrapper{node: n, prov: p})
+	}
+	return result, nil
+}
+
+func (p *dockerProvisioner) GetName() string {
+	return provisionerName
+}
+
+func (p *dockerProvisioner) AddNode(opts provision.AddNodeOptions) error {
+	node := cluster.Node{Address: opts.Address, Metadata: opts.Metadata, CreationStatus: cluster.NodeCreationStatusPending}
+	err := p.Cluster().Register(node)
+	if err != nil {
+		return err
+	}
+	q, err := queue.Queue()
+	if err != nil {
+		return err
+	}
+	jobParams := monsterqueue.JobParams{"endpoint": opts.Address, "metadata": opts.Metadata}
+	_, err = q.Enqueue(nodecontainer.QueueTaskName, jobParams)
+	return err
+}
+
+func (p *dockerProvisioner) UpdateNode(opts provision.UpdateNodeOptions) error {
+	node := cluster.Node{Address: opts.Address, Metadata: opts.Metadata}
+	if opts.Disable {
+		node.CreationStatus = cluster.NodeCreationStatusDisabled
+	}
+	if opts.Enable {
+		node.CreationStatus = cluster.NodeCreationStatusCreated
+	}
+	_, err := mainDockerProvisioner.Cluster().UpdateNode(node)
+	if err == clusterStorage.ErrNoSuchNode {
+		return provision.ErrNodeNotFound
+	}
+	return err
+}
+
+func (p *dockerProvisioner) GetNode(address string) (provision.Node, error) {
+	node, err := p.Cluster().GetNode(address)
+	if err != nil {
+		if err == clusterStorage.ErrNoSuchNode {
+			return nil, provision.ErrNodeNotFound
+		}
+		return nil, err
+	}
+	return &clusterNodeWrapper{node: &node, prov: p}, nil
+}
+
+func (p *dockerProvisioner) RemoveNode(opts provision.RemoveNodeOptions) error {
+	node, err := p.Cluster().GetNode(opts.Address)
+	if err != nil {
+		if err == clusterStorage.ErrNoSuchNode {
+			return provision.ErrNodeNotFound
+		}
+		return err
+	}
+	node.CreationStatus = cluster.NodeCreationStatusDisabled
+	_, err = p.Cluster().UpdateNode(node)
+	if err != nil {
+		return err
+	}
+	if opts.Rebalance {
+		err = p.rebalanceContainersByHost(net.URLToHost(opts.Address), opts.Writer)
+		if err != nil {
+			return err
+		}
+	}
+	return p.Cluster().Unregister(opts.Address)
 }

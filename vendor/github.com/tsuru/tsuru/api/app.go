@@ -27,6 +27,7 @@ import (
 	"github.com/tsuru/tsuru/provision"
 	"github.com/tsuru/tsuru/quota"
 	"github.com/tsuru/tsuru/repository"
+	"github.com/tsuru/tsuru/router/rebuild"
 	"github.com/tsuru/tsuru/service"
 	"gopkg.in/mgo.v2/bson"
 )
@@ -65,15 +66,13 @@ func getApp(name string) (*app.App, error) {
 //   401: Unauthorized
 //   404: Not found
 func appDelete(w http.ResponseWriter, r *http.Request, t auth.Token) (err error) {
+	r.ParseForm()
 	a, err := getAppFromContext(r.URL.Query().Get(":app"), r)
 	if err != nil {
 		return err
 	}
 	canDelete := permission.Check(t, permission.PermAppDelete,
-		append(permission.Contexts(permission.CtxTeam, a.Teams),
-			permission.Context(permission.CtxApp, a.Name),
-			permission.Context(permission.CtxPool, a.Pool),
-		)...,
+		contextsForApp(&a)...,
 	)
 	if !canDelete {
 		return permission.ErrUnauthorized
@@ -82,7 +81,8 @@ func appDelete(w http.ResponseWriter, r *http.Request, t auth.Token) (err error)
 		Target:     appTarget(a.Name),
 		Kind:       permission.PermAppDelete,
 		Owner:      t,
-		CustomData: a,
+		CustomData: event.FormToCustomData(r.Form),
+		Allowed:    event.Allowed(permission.PermAppReadEvents, contextsForApp(&a)...),
 	})
 	if err != nil {
 		return err
@@ -210,10 +210,7 @@ func appInfo(w http.ResponseWriter, r *http.Request, t auth.Token) error {
 		return err
 	}
 	canRead := permission.Check(t, permission.PermAppRead,
-		append(permission.Contexts(permission.CtxTeam, a.Teams),
-			permission.Context(permission.CtxApp, a.Name),
-			permission.Context(permission.CtxPool, a.Pool),
-		)...,
+		contextsForApp(&a)...,
 	)
 	if !canRead {
 		return permission.ErrUnauthorized
@@ -293,7 +290,8 @@ func createApp(w http.ResponseWriter, r *http.Request, t auth.Token) (err error)
 		Target:     appTarget(a.Name),
 		Kind:       permission.PermAppCreate,
 		Owner:      t,
-		CustomData: formToEvents(r.Form),
+		CustomData: event.FormToCustomData(r.Form),
+		Allowed:    event.Allowed(permission.PermAppReadEvents, contextsForApp(&a)...),
 	})
 	if err != nil {
 		return err
@@ -386,10 +384,7 @@ func updateApp(w http.ResponseWriter, r *http.Request, t auth.Token) (err error)
 	}
 	for _, perm := range wantedPerms {
 		allowed := permission.Check(t, perm,
-			append(permission.Contexts(permission.CtxTeam, a.Teams),
-				permission.Context(permission.CtxApp, a.Name),
-				permission.Context(permission.CtxPool, a.Pool),
-			)...,
+			contextsForApp(&a)...,
 		)
 		if !allowed {
 			return permission.ErrUnauthorized
@@ -399,7 +394,8 @@ func updateApp(w http.ResponseWriter, r *http.Request, t auth.Token) (err error)
 		Target:     appTarget(appName),
 		Kind:       permission.PermAppUpdate,
 		Owner:      t,
-		CustomData: formToEvents(r.Form),
+		CustomData: event.FormToCustomData(r.Form),
+		Allowed:    event.Allowed(permission.PermAppReadEvents, contextsForApp(&a)...),
 	})
 	if err != nil {
 		return err
@@ -456,10 +452,7 @@ func addUnits(w http.ResponseWriter, r *http.Request, t auth.Token) (err error) 
 		return err
 	}
 	allowed := permission.Check(t, permission.PermAppUpdateUnitAdd,
-		append(permission.Contexts(permission.CtxTeam, a.Teams),
-			permission.Context(permission.CtxApp, a.Name),
-			permission.Context(permission.CtxPool, a.Pool),
-		)...,
+		contextsForApp(&a)...,
 	)
 	if !allowed {
 		return permission.ErrUnauthorized
@@ -468,7 +461,8 @@ func addUnits(w http.ResponseWriter, r *http.Request, t auth.Token) (err error) 
 		Target:     appTarget(appName),
 		Kind:       permission.PermAppUpdateUnitAdd,
 		Owner:      t,
-		CustomData: formToEvents(r.Form),
+		CustomData: event.FormToCustomData(r.Form),
+		Allowed:    event.Allowed(permission.PermAppReadEvents, contextsForApp(&a)...),
 	})
 	if err != nil {
 		return err
@@ -502,10 +496,7 @@ func removeUnits(w http.ResponseWriter, r *http.Request, t auth.Token) (err erro
 		return err
 	}
 	allowed := permission.Check(t, permission.PermAppUpdateUnitRemove,
-		append(permission.Contexts(permission.CtxTeam, a.Teams),
-			permission.Context(permission.CtxApp, a.Name),
-			permission.Context(permission.CtxPool, a.Pool),
-		)...,
+		contextsForApp(&a)...,
 	)
 	if !allowed {
 		return permission.ErrUnauthorized
@@ -514,7 +505,8 @@ func removeUnits(w http.ResponseWriter, r *http.Request, t auth.Token) (err erro
 		Target:     appTarget(appName),
 		Kind:       permission.PermAppUpdateUnitRemove,
 		Owner:      t,
-		CustomData: formToEvents(r.Form),
+		CustomData: event.FormToCustomData(r.Form),
+		Allowed:    event.Allowed(permission.PermAppReadEvents, contextsForApp(&a)...),
 	})
 	if err != nil {
 		return err
@@ -558,10 +550,7 @@ func setUnitStatus(w http.ResponseWriter, r *http.Request, t auth.Token) error {
 		return &errors.HTTP{Code: http.StatusNotFound, Message: err.Error()}
 	}
 	allowed := permission.Check(t, permission.PermAppUpdateUnitStatus,
-		append(permission.Contexts(permission.CtxTeam, a.Teams),
-			permission.Context(permission.CtxApp, a.Name),
-			permission.Context(permission.CtxPool, a.Pool),
-		)...,
+		contextsForApp(a)...,
 	)
 	if !allowed {
 		return permission.ErrUnauthorized
@@ -624,10 +613,7 @@ func grantAppAccess(w http.ResponseWriter, r *http.Request, t auth.Token) (err e
 		return err
 	}
 	allowed := permission.Check(t, permission.PermAppUpdateGrant,
-		append(permission.Contexts(permission.CtxTeam, a.Teams),
-			permission.Context(permission.CtxApp, a.Name),
-			permission.Context(permission.CtxPool, a.Pool),
-		)...,
+		contextsForApp(&a)...,
 	)
 	if !allowed {
 		return permission.ErrUnauthorized
@@ -636,7 +622,8 @@ func grantAppAccess(w http.ResponseWriter, r *http.Request, t auth.Token) (err e
 		Target:     appTarget(appName),
 		Kind:       permission.PermAppUpdateGrant,
 		Owner:      t,
-		CustomData: formToEvents(r.Form),
+		CustomData: event.FormToCustomData(r.Form),
+		Allowed:    event.Allowed(permission.PermAppReadEvents, contextsForApp(&a)...),
 	})
 	if err != nil {
 		return err
@@ -676,10 +663,7 @@ func revokeAppAccess(w http.ResponseWriter, r *http.Request, t auth.Token) (err 
 		return err
 	}
 	allowed := permission.Check(t, permission.PermAppUpdateRevoke,
-		append(permission.Contexts(permission.CtxTeam, a.Teams),
-			permission.Context(permission.CtxApp, a.Name),
-			permission.Context(permission.CtxPool, a.Pool),
-		)...,
+		contextsForApp(&a)...,
 	)
 	if !allowed {
 		return permission.ErrUnauthorized
@@ -688,7 +672,8 @@ func revokeAppAccess(w http.ResponseWriter, r *http.Request, t auth.Token) (err 
 		Target:     appTarget(appName),
 		Kind:       permission.PermAppUpdateRevoke,
 		Owner:      t,
-		CustomData: formToEvents(r.Form),
+		CustomData: event.FormToCustomData(r.Form),
+		Allowed:    event.Allowed(permission.PermAppReadEvents, contextsForApp(&a)...),
 	})
 	if err != nil {
 		return err
@@ -740,10 +725,7 @@ func runCommand(w http.ResponseWriter, r *http.Request, t auth.Token) (err error
 		return err
 	}
 	allowed := permission.Check(t, permission.PermAppRun,
-		append(permission.Contexts(permission.CtxTeam, a.Teams),
-			permission.Context(permission.CtxApp, a.Name),
-			permission.Context(permission.CtxPool, a.Pool),
-		)...,
+		contextsForApp(&a)...,
 	)
 	if !allowed {
 		return permission.ErrUnauthorized
@@ -752,7 +734,8 @@ func runCommand(w http.ResponseWriter, r *http.Request, t auth.Token) (err error
 		Target:     appTarget(appName),
 		Kind:       permission.PermAppRun,
 		Owner:      t,
-		CustomData: formToEvents(r.Form),
+		CustomData: event.FormToCustomData(r.Form),
+		Allowed:    event.Allowed(permission.PermAppReadEvents, contextsForApp(&a)...),
 	})
 	if err != nil {
 		return err
@@ -786,10 +769,7 @@ func getEnv(w http.ResponseWriter, r *http.Request, t auth.Token) error {
 	}
 	if !t.IsAppToken() {
 		allowed := permission.Check(t, permission.PermAppReadEnv,
-			append(permission.Contexts(permission.CtxTeam, a.Teams),
-				permission.Context(permission.CtxApp, a.Name),
-				permission.Context(permission.CtxPool, a.Pool),
-			)...,
+			contextsForApp(&a)...,
 		)
 		if !allowed {
 			return permission.ErrUnauthorized
@@ -855,10 +835,7 @@ func setEnv(w http.ResponseWriter, r *http.Request, t auth.Token) (err error) {
 		return err
 	}
 	allowed := permission.Check(t, permission.PermAppUpdateEnvSet,
-		append(permission.Contexts(permission.CtxTeam, a.Teams),
-			permission.Context(permission.CtxApp, a.Name),
-			permission.Context(permission.CtxPool, a.Pool),
-		)...,
+		contextsForApp(&a)...,
 	)
 	if !allowed {
 		return permission.ErrUnauthorized
@@ -867,7 +844,8 @@ func setEnv(w http.ResponseWriter, r *http.Request, t auth.Token) (err error) {
 		Target:     appTarget(appName),
 		Kind:       permission.PermAppUpdateEnvSet,
 		Owner:      t,
-		CustomData: formToEvents(r.Form),
+		CustomData: event.FormToCustomData(r.Form),
+		Allowed:    event.Allowed(permission.PermAppReadEvents, contextsForApp(&a)...),
 	})
 	if err != nil {
 		return err
@@ -918,10 +896,7 @@ func unsetEnv(w http.ResponseWriter, r *http.Request, t auth.Token) (err error) 
 		return err
 	}
 	allowed := permission.Check(t, permission.PermAppUpdateEnvUnset,
-		append(permission.Contexts(permission.CtxTeam, a.Teams),
-			permission.Context(permission.CtxApp, a.Name),
-			permission.Context(permission.CtxPool, a.Pool),
-		)...,
+		contextsForApp(&a)...,
 	)
 	if !allowed {
 		return permission.ErrUnauthorized
@@ -930,7 +905,8 @@ func unsetEnv(w http.ResponseWriter, r *http.Request, t auth.Token) (err error) 
 		Target:     appTarget(appName),
 		Kind:       permission.PermAppUpdateEnvUnset,
 		Owner:      t,
-		CustomData: formToEvents(r.Form),
+		CustomData: event.FormToCustomData(r.Form),
+		Allowed:    event.Allowed(permission.PermAppReadEvents, contextsForApp(&a)...),
 	})
 	if err != nil {
 		return err
@@ -975,10 +951,7 @@ func setCName(w http.ResponseWriter, r *http.Request, t auth.Token) (err error) 
 		return err
 	}
 	allowed := permission.Check(t, permission.PermAppUpdateCnameAdd,
-		append(permission.Contexts(permission.CtxTeam, a.Teams),
-			permission.Context(permission.CtxApp, a.Name),
-			permission.Context(permission.CtxPool, a.Pool),
-		)...,
+		contextsForApp(&a)...,
 	)
 	if !allowed {
 		return permission.ErrUnauthorized
@@ -987,7 +960,8 @@ func setCName(w http.ResponseWriter, r *http.Request, t auth.Token) (err error) 
 		Target:     appTarget(appName),
 		Kind:       permission.PermAppUpdateCnameAdd,
 		Owner:      t,
-		CustomData: formToEvents(r.Form),
+		CustomData: event.FormToCustomData(r.Form),
+		Allowed:    event.Allowed(permission.PermAppReadEvents, contextsForApp(&a)...),
 	})
 	if err != nil {
 		return err
@@ -1023,10 +997,7 @@ func unsetCName(w http.ResponseWriter, r *http.Request, t auth.Token) (err error
 		return err
 	}
 	allowed := permission.Check(t, permission.PermAppUpdateCnameRemove,
-		append(permission.Contexts(permission.CtxTeam, a.Teams),
-			permission.Context(permission.CtxApp, a.Name),
-			permission.Context(permission.CtxPool, a.Pool),
-		)...,
+		contextsForApp(&a)...,
 	)
 	if !allowed {
 		return permission.ErrUnauthorized
@@ -1035,7 +1006,8 @@ func unsetCName(w http.ResponseWriter, r *http.Request, t auth.Token) (err error
 		Target:     appTarget(appName),
 		Kind:       permission.PermAppUpdateCnameRemove,
 		Owner:      t,
-		CustomData: formToEvents(r.Form),
+		CustomData: event.FormToCustomData(r.Form),
+		Allowed:    event.Allowed(permission.PermAppReadEvents, contextsForApp(&a)...),
 	})
 	if err != nil {
 		return err
@@ -1082,10 +1054,7 @@ func appLog(w http.ResponseWriter, r *http.Request, t auth.Token) error {
 		return err
 	}
 	allowed := permission.Check(t, permission.PermAppReadLog,
-		append(permission.Contexts(permission.CtxTeam, a.Teams),
-			permission.Context(permission.CtxApp, a.Name),
-			permission.Context(permission.CtxPool, a.Pool),
-		)...,
+		contextsForApp(&a)...,
 	)
 	if !allowed {
 		return permission.ErrUnauthorized
@@ -1183,10 +1152,7 @@ func bindServiceInstance(w http.ResponseWriter, r *http.Request, t auth.Token) (
 		return permission.ErrUnauthorized
 	}
 	allowed = permission.Check(t, permission.PermAppUpdateBind,
-		append(permission.Contexts(permission.CtxTeam, a.Teams),
-			permission.Context(permission.CtxApp, a.Name),
-			permission.Context(permission.CtxPool, a.Pool),
-		)...,
+		contextsForApp(a)...,
 	)
 	if !allowed {
 		return permission.ErrUnauthorized
@@ -1195,7 +1161,8 @@ func bindServiceInstance(w http.ResponseWriter, r *http.Request, t auth.Token) (
 		Target:     appTarget(appName),
 		Kind:       permission.PermAppUpdateBind,
 		Owner:      t,
-		CustomData: formToEvents(r.Form),
+		CustomData: event.FormToCustomData(r.Form),
+		Allowed:    event.Allowed(permission.PermAppReadEvents, contextsForApp(a)...),
 	})
 	if err != nil {
 		return err
@@ -1247,10 +1214,7 @@ func unbindServiceInstance(w http.ResponseWriter, r *http.Request, t auth.Token)
 		return permission.ErrUnauthorized
 	}
 	allowed = permission.Check(t, permission.PermAppUpdateUnbind,
-		append(permission.Contexts(permission.CtxTeam, a.Teams),
-			permission.Context(permission.CtxApp, a.Name),
-			permission.Context(permission.CtxPool, a.Pool),
-		)...,
+		contextsForApp(a)...,
 	)
 	if !allowed {
 		return permission.ErrUnauthorized
@@ -1259,7 +1223,8 @@ func unbindServiceInstance(w http.ResponseWriter, r *http.Request, t auth.Token)
 		Target:     appTarget(appName),
 		Kind:       permission.PermAppUpdateUnbind,
 		Owner:      t,
-		CustomData: formToEvents(r.Form),
+		CustomData: event.FormToCustomData(r.Form),
+		Allowed:    event.Allowed(permission.PermAppReadEvents, contextsForApp(a)...),
 	})
 	if err != nil {
 		return err
@@ -1294,10 +1259,7 @@ func restart(w http.ResponseWriter, r *http.Request, t auth.Token) (err error) {
 		return err
 	}
 	allowed := permission.Check(t, permission.PermAppUpdateRestart,
-		append(permission.Contexts(permission.CtxTeam, a.Teams),
-			permission.Context(permission.CtxApp, a.Name),
-			permission.Context(permission.CtxPool, a.Pool),
-		)...,
+		contextsForApp(&a)...,
 	)
 	if !allowed {
 		return permission.ErrUnauthorized
@@ -1306,7 +1268,8 @@ func restart(w http.ResponseWriter, r *http.Request, t auth.Token) (err error) {
 		Target:     appTarget(appName),
 		Kind:       permission.PermAppUpdateRestart,
 		Owner:      t,
-		CustomData: formToEvents(r.Form),
+		CustomData: event.FormToCustomData(r.Form),
+		Allowed:    event.Allowed(permission.PermAppReadEvents, contextsForApp(&a)...),
 	})
 	if err != nil {
 		return err
@@ -1346,10 +1309,7 @@ func sleep(w http.ResponseWriter, r *http.Request, t auth.Token) (err error) {
 		return err
 	}
 	allowed := permission.Check(t, permission.PermAppUpdateSleep,
-		append(permission.Contexts(permission.CtxTeam, a.Teams),
-			permission.Context(permission.CtxApp, a.Name),
-			permission.Context(permission.CtxPool, a.Pool),
-		)...,
+		contextsForApp(&a)...,
 	)
 	if !allowed {
 		return permission.ErrUnauthorized
@@ -1358,7 +1318,8 @@ func sleep(w http.ResponseWriter, r *http.Request, t auth.Token) (err error) {
 		Target:     appTarget(appName),
 		Kind:       permission.PermAppUpdateSleep,
 		Owner:      t,
-		CustomData: formToEvents(r.Form),
+		CustomData: event.FormToCustomData(r.Form),
+		Allowed:    event.Allowed(permission.PermAppReadEvents, contextsForApp(&a)...),
 	})
 	if err != nil {
 		return err
@@ -1391,10 +1352,7 @@ func addLog(w http.ResponseWriter, r *http.Request, t auth.Token) error {
 	}
 	if t.GetAppName() != app.InternalAppName {
 		allowed := permission.Check(t, permission.PermAppUpdateLog,
-			append(permission.Contexts(permission.CtxTeam, a.Teams),
-				permission.Context(permission.CtxApp, a.Name),
-				permission.Context(permission.CtxPool, a.Pool),
-			)...,
+			contextsForApp(a)...,
 		)
 		if !allowed {
 			return permission.ErrUnauthorized
@@ -1459,16 +1417,10 @@ func swap(w http.ResponseWriter, r *http.Request, t auth.Token) (err error) {
 		return &errors.HTTP{Code: http.StatusConflict, Message: fmt.Sprintf("%s: %s", app2.Name, &app2.Lock)}
 	}
 	allowed1 := permission.Check(t, permission.PermAppUpdateSwap,
-		append(permission.Contexts(permission.CtxTeam, app1.Teams),
-			permission.Context(permission.CtxApp, app1.Name),
-			permission.Context(permission.CtxPool, app1.Pool),
-		)...,
+		contextsForApp(app1)...,
 	)
 	allowed2 := permission.Check(t, permission.PermAppUpdateSwap,
-		append(permission.Contexts(permission.CtxTeam, app2.Teams),
-			permission.Context(permission.CtxApp, app2.Name),
-			permission.Context(permission.CtxPool, app2.Pool),
-		)...,
+		contextsForApp(app2)...,
 	)
 	if !allowed1 || !allowed2 {
 		return permission.ErrUnauthorized
@@ -1477,7 +1429,8 @@ func swap(w http.ResponseWriter, r *http.Request, t auth.Token) (err error) {
 		Target:     appTarget(app1Name),
 		Kind:       permission.PermAppUpdateSwap,
 		Owner:      t,
-		CustomData: formToEvents(r.Form),
+		CustomData: event.FormToCustomData(r.Form),
+		Allowed:    event.Allowed(permission.PermAppReadEvents, contextsForApp(app1)...),
 	})
 	if err != nil {
 		return err
@@ -1486,7 +1439,8 @@ func swap(w http.ResponseWriter, r *http.Request, t auth.Token) (err error) {
 		Target:     appTarget(app2Name),
 		Kind:       permission.PermAppUpdateSwap,
 		Owner:      t,
-		CustomData: formToEvents(r.Form),
+		CustomData: event.FormToCustomData(r.Form),
+		Allowed:    event.Allowed(permission.PermAppReadEvents, contextsForApp(app2)...),
 	})
 	if err != nil {
 		return err
@@ -1535,10 +1489,7 @@ func start(w http.ResponseWriter, r *http.Request, t auth.Token) (err error) {
 		return err
 	}
 	allowed := permission.Check(t, permission.PermAppUpdateStart,
-		append(permission.Contexts(permission.CtxTeam, a.Teams),
-			permission.Context(permission.CtxApp, a.Name),
-			permission.Context(permission.CtxPool, a.Pool),
-		)...,
+		contextsForApp(&a)...,
 	)
 	if !allowed {
 		return permission.ErrUnauthorized
@@ -1547,7 +1498,8 @@ func start(w http.ResponseWriter, r *http.Request, t auth.Token) (err error) {
 		Target:     appTarget(appName),
 		Kind:       permission.PermAppUpdateStart,
 		Owner:      t,
-		CustomData: formToEvents(r.Form),
+		CustomData: event.FormToCustomData(r.Form),
+		Allowed:    event.Allowed(permission.PermAppReadEvents, contextsForApp(&a)...),
 	})
 	if err != nil {
 		return err
@@ -1577,10 +1529,7 @@ func stop(w http.ResponseWriter, r *http.Request, t auth.Token) (err error) {
 		return err
 	}
 	allowed := permission.Check(t, permission.PermAppUpdateStop,
-		append(permission.Contexts(permission.CtxTeam, a.Teams),
-			permission.Context(permission.CtxApp, a.Name),
-			permission.Context(permission.CtxPool, a.Pool),
-		)...,
+		contextsForApp(&a)...,
 	)
 	if !allowed {
 		return permission.ErrUnauthorized
@@ -1589,7 +1538,8 @@ func stop(w http.ResponseWriter, r *http.Request, t auth.Token) (err error) {
 		Target:     appTarget(appName),
 		Kind:       permission.PermAppUpdateStop,
 		Owner:      t,
-		CustomData: formToEvents(r.Form),
+		CustomData: event.FormToCustomData(r.Form),
+		Allowed:    event.Allowed(permission.PermAppReadEvents, contextsForApp(&a)...),
 	})
 	if err != nil {
 		return err
@@ -1610,21 +1560,30 @@ func stop(w http.ResponseWriter, r *http.Request, t auth.Token) (err error) {
 //   200: Ok
 //   401: Unauthorized
 //   404: App not found
-func forceDeleteLock(w http.ResponseWriter, r *http.Request, t auth.Token) error {
+func forceDeleteLock(w http.ResponseWriter, r *http.Request, t auth.Token) (err error) {
+	r.ParseForm()
 	appName := r.URL.Query().Get(":app")
 	a, err := getAppFromContext(appName, r)
 	if err != nil {
 		return err
 	}
 	allowed := permission.Check(t, permission.PermAppAdminUnlock,
-		append(permission.Contexts(permission.CtxTeam, a.Teams),
-			permission.Context(permission.CtxApp, a.Name),
-			permission.Context(permission.CtxPool, a.Pool),
-		)...,
+		contextsForApp(&a)...,
 	)
 	if !allowed {
 		return permission.ErrUnauthorized
 	}
+	evt, err := event.New(&event.Opts{
+		Target:     appTarget(appName),
+		Kind:       permission.PermAppAdminUnlock,
+		Owner:      t,
+		CustomData: event.FormToCustomData(r.Form),
+		Allowed:    event.Allowed(permission.PermAppReadEvents, contextsForApp(&a)...),
+	})
+	if err != nil {
+		return err
+	}
+	defer func() { evt.Done(err) }()
 	app.ReleaseApplicationLock(a.Name)
 	return nil
 }
@@ -1645,10 +1604,7 @@ func registerUnit(w http.ResponseWriter, r *http.Request, t auth.Token) error {
 		return err
 	}
 	allowed := permission.Check(t, permission.PermAppUpdateUnitRegister,
-		append(permission.Contexts(permission.CtxTeam, a.Teams),
-			permission.Context(permission.CtxApp, a.Name),
-			permission.Context(permission.CtxPool, a.Pool),
-		)...,
+		contextsForApp(a)...,
 	)
 	if !allowed {
 		return permission.ErrUnauthorized
@@ -1695,16 +1651,17 @@ func appMetricEnvs(w http.ResponseWriter, r *http.Request, t auth.Token) error {
 		return err
 	}
 	allowed := permission.Check(t, permission.PermAppReadMetric,
-		append(permission.Contexts(permission.CtxTeam, a.Teams),
-			permission.Context(permission.CtxApp, a.Name),
-			permission.Context(permission.CtxPool, a.Pool),
-		)...,
+		contextsForApp(&a)...,
 	)
 	if !allowed {
 		return permission.ErrUnauthorized
 	}
 	w.Header().Set("Content-Type", "application/json")
-	return json.NewEncoder(w).Encode(a.MetricEnvs())
+	metricMap, err := a.MetricEnvs()
+	if err != nil {
+		return err
+	}
+	return json.NewEncoder(w).Encode(metricMap)
 }
 
 // title: rebuild routes
@@ -1721,10 +1678,7 @@ func appRebuildRoutes(w http.ResponseWriter, r *http.Request, t auth.Token) (err
 		return err
 	}
 	allowed := permission.Check(t, permission.PermAppAdminRoutes,
-		append(permission.Contexts(permission.CtxTeam, a.Teams),
-			permission.Context(permission.CtxApp, a.Name),
-			permission.Context(permission.CtxPool, a.Pool),
-		)...,
+		contextsForApp(&a)...,
 	)
 	if !allowed {
 		return permission.ErrUnauthorized
@@ -1733,28 +1687,24 @@ func appRebuildRoutes(w http.ResponseWriter, r *http.Request, t auth.Token) (err
 		Target:     appTarget(a.Name),
 		Kind:       permission.PermAppAdminRoutes,
 		Owner:      t,
-		CustomData: formToEvents(r.Form),
+		CustomData: event.FormToCustomData(r.Form),
+		Allowed:    event.Allowed(permission.PermAppReadEvents, contextsForApp(&a)...),
 	})
 	if err != nil {
 		return err
 	}
 	defer func() { evt.Done(err) }()
 	w.Header().Set("Content-Type", "application/json")
-	result, err := a.RebuildRoutes()
+	result, err := rebuild.RebuildRoutes(&a)
 	if err != nil {
 		return err
 	}
 	return json.NewEncoder(w).Encode(&result)
 }
 
-func formToEvents(form url.Values) []map[string]interface{} {
-	ret := make([]map[string]interface{}, 0, len(form))
-	for k, v := range form {
-		var val interface{} = v
-		if len(v) == 1 {
-			val = v[0]
-		}
-		ret = append(ret, map[string]interface{}{"name": k, "value": val})
-	}
-	return ret
+func contextsForApp(a *app.App) []permission.PermissionContext {
+	return append(permission.Contexts(permission.CtxTeam, a.Teams),
+		permission.Context(permission.CtxApp, a.Name),
+		permission.Context(permission.CtxPool, a.Pool),
+	)
 }

@@ -81,7 +81,8 @@ func createUser(w http.ResponseWriter, r *http.Request) error {
 		Target:     userTarget(email),
 		Kind:       permission.PermUserCreate,
 		RawOwner:   event.Owner{Type: event.OwnerTypeUser, Name: email},
-		CustomData: formToEvents(r.Form),
+		CustomData: event.FormToCustomData(r.Form),
+		Allowed:    event.Allowed(permission.PermUserReadEvents, permission.Context(permission.CtxUser, email)),
 	})
 	if err != nil {
 		return err
@@ -153,9 +154,10 @@ func changePassword(w http.ResponseWriter, r *http.Request, t auth.Token) (err e
 		return &errors.HTTP{Code: http.StatusBadRequest, Message: nonManagedSchemeMsg}
 	}
 	evt, err := event.New(&event.Opts{
-		Target: userTarget(t.GetUserName()),
-		Kind:   permission.PermUserUpdatePassword,
-		Owner:  t,
+		Target:  userTarget(t.GetUserName()),
+		Kind:    permission.PermUserUpdatePassword,
+		Owner:   t,
+		Allowed: event.Allowed(permission.PermUserReadEvents, permission.Context(permission.CtxUser, t.GetUserName())),
 	})
 	if err != nil {
 		return err
@@ -204,7 +206,8 @@ func resetPassword(w http.ResponseWriter, r *http.Request) (err error) {
 		Target:     userTarget(email),
 		Kind:       permission.PermUserUpdateReset,
 		RawOwner:   event.Owner{Type: event.OwnerTypeUser, Name: email},
-		CustomData: formToEvents(r.Form),
+		CustomData: event.FormToCustomData(r.Form),
+		Allowed:    event.Allowed(permission.PermUserReadEvents, permission.Context(permission.CtxUser, email)),
 	})
 	if err != nil {
 		return err
@@ -247,7 +250,8 @@ func createTeam(w http.ResponseWriter, r *http.Request, t auth.Token) (err error
 		Target:     teamTarget(name),
 		Kind:       permission.PermTeamCreate,
 		Owner:      t,
-		CustomData: formToEvents(r.Form),
+		CustomData: event.FormToCustomData(r.Form),
+		Allowed:    event.Allowed(permission.PermTeamReadEvents, permission.Context(permission.CtxTeam, name)),
 	})
 	if err != nil {
 		return err
@@ -291,7 +295,8 @@ func removeTeam(w http.ResponseWriter, r *http.Request, t auth.Token) (err error
 		Target:     teamTarget(name),
 		Kind:       permission.PermTeamDelete,
 		Owner:      t,
-		CustomData: formToEvents(r.Form),
+		CustomData: event.FormToCustomData(r.Form),
+		Allowed:    event.Allowed(permission.PermTeamReadEvents, permission.Context(permission.CtxTeam, name)),
 	})
 	if err != nil {
 		return err
@@ -376,11 +381,18 @@ func addKeyToUser(w http.ResponseWriter, r *http.Request, t auth.Token) (err err
 	if r.FormValue("force") == "true" {
 		force = true
 	}
+	allowed := permission.Check(t, permission.PermUserUpdateKeyAdd,
+		permission.Context(permission.CtxUser, t.GetUserName()),
+	)
+	if !allowed {
+		return permission.ErrUnauthorized
+	}
 	evt, err := event.New(&event.Opts{
 		Target:     userTarget(t.GetUserName()),
 		Kind:       permission.PermUserUpdateKeyAdd,
 		Owner:      t,
-		CustomData: formToEvents(r.Form),
+		CustomData: event.FormToCustomData(r.Form),
+		Allowed:    event.Allowed(permission.PermUserReadEvents, permission.Context(permission.CtxUser, t.GetUserName())),
 	})
 	if err != nil {
 		return err
@@ -419,11 +431,18 @@ func removeKeyFromUser(w http.ResponseWriter, r *http.Request, t auth.Token) (er
 	if key.Name == "" {
 		return &errors.HTTP{Code: http.StatusBadRequest, Message: "Either the content or the name of the key must be provided"}
 	}
+	allowed := permission.Check(t, permission.PermUserUpdateKeyRemove,
+		permission.Context(permission.CtxUser, t.GetUserName()),
+	)
+	if !allowed {
+		return permission.ErrUnauthorized
+	}
 	evt, err := event.New(&event.Opts{
 		Target:     userTarget(t.GetUserName()),
 		Kind:       permission.PermUserUpdateKeyRemove,
 		Owner:      t,
-		CustomData: formToEvents(r.Form),
+		CustomData: event.FormToCustomData(r.Form),
+		Allowed:    event.Allowed(permission.PermUserReadEvents, permission.Context(permission.CtxUser, t.GetUserName())),
 	})
 	if err != nil {
 		return err
@@ -476,30 +495,31 @@ func listKeys(w http.ResponseWriter, r *http.Request, t auth.Token) error {
 //   404: Not found
 func removeUser(w http.ResponseWriter, r *http.Request, t auth.Token) (err error) {
 	r.ParseForm()
-	u, err := t.User()
-	if err != nil {
-		return err
-	}
 	email := r.URL.Query().Get("user")
-	if email != "" && u.Email != email {
-		if !permission.Check(t, permission.PermUserDelete) {
-			return permission.ErrUnauthorized
-		}
-		u, err = auth.GetUserByEmail(email)
-		if err != nil {
-			return &errors.HTTP{Code: http.StatusNotFound, Message: err.Error()}
-		}
+	if email == "" {
+		email = t.GetUserName()
+	}
+	allowed := permission.Check(t, permission.PermUserDelete,
+		permission.Context(permission.CtxUser, email),
+	)
+	if !allowed {
+		return permission.ErrUnauthorized
 	}
 	evt, err := event.New(&event.Opts{
-		Target:     userTarget(u.Email),
+		Target:     userTarget(email),
 		Kind:       permission.PermUserDelete,
 		Owner:      t,
-		CustomData: formToEvents(r.Form),
+		CustomData: event.FormToCustomData(r.Form),
+		Allowed:    event.Allowed(permission.PermUserReadEvents, permission.Context(permission.CtxUser, email)),
 	})
 	if err != nil {
 		return err
 	}
 	defer func() { evt.Done(err) }()
+	u, err := auth.GetUserByEmail(email)
+	if err != nil {
+		return &errors.HTTP{Code: http.StatusNotFound, Message: err.Error()}
+	}
 	appNames, err := deployableApps(u, make(map[string]*permission.Role))
 	if err != nil {
 		return err
@@ -543,20 +563,32 @@ func authScheme(w http.ResponseWriter, r *http.Request) error {
 //   200: OK
 //   401: Unauthorized
 //   404: User not found
-func regenerateAPIToken(w http.ResponseWriter, r *http.Request, t auth.Token) error {
-	u, err := t.User()
+func regenerateAPIToken(w http.ResponseWriter, r *http.Request, t auth.Token) (err error) {
+	r.ParseForm()
+	email := r.URL.Query().Get("user")
+	if email == "" {
+		email = t.GetUserName()
+	}
+	allowed := permission.Check(t, permission.PermUserUpdateToken,
+		permission.Context(permission.CtxUser, email),
+	)
+	if !allowed {
+		return permission.ErrUnauthorized
+	}
+	evt, err := event.New(&event.Opts{
+		Target:     userTarget(email),
+		Kind:       permission.PermUserUpdateToken,
+		Owner:      t,
+		CustomData: event.FormToCustomData(r.Form),
+		Allowed:    event.Allowed(permission.PermUserReadEvents, permission.Context(permission.CtxUser, email)),
+	})
 	if err != nil {
 		return err
 	}
-	email := r.URL.Query().Get("user")
-	if email != "" {
-		if !permission.Check(t, permission.PermUserUpdateToken) {
-			return permission.ErrUnauthorized
-		}
-		u, err = auth.GetUserByEmail(email)
-		if err != nil {
-			return &errors.HTTP{Code: http.StatusNotFound, Message: err.Error()}
-		}
+	defer func() { evt.Done(err) }()
+	u, err := auth.GetUserByEmail(email)
+	if err != nil {
+		return &errors.HTTP{Code: http.StatusNotFound, Message: err.Error()}
 	}
 	apiKey, err := u.RegenerateAPIKey()
 	if err != nil {
@@ -609,7 +641,7 @@ type apiUser struct {
 	Permissions []rolePermissionData
 }
 
-func createApiUser(perms []permission.Permission, user *auth.User, roleMap map[string]*permission.Role, includeAll bool) (*apiUser, error) {
+func createAPIUser(perms []permission.Permission, user *auth.User, roleMap map[string]*permission.Role, includeAll bool) (*apiUser, error) {
 	var permData []rolePermissionData
 	roleData := make([]rolePermissionData, 0, len(user.Roles))
 	if roleMap == nil {
@@ -689,7 +721,7 @@ func listUsers(w http.ResponseWriter, r *http.Request, t auth.Token) error {
 		return err
 	}
 	for _, user := range users {
-		usrData, err := createApiUser(perms, &user, roleMap, includeAll)
+		usrData, err := createAPIUser(perms, &user, roleMap, includeAll)
 		if err != nil {
 			return err
 		}
@@ -737,7 +769,7 @@ func userInfo(w http.ResponseWriter, r *http.Request, t auth.Token) error {
 	if err != nil {
 		return err
 	}
-	userData, err := createApiUser(perms, user, nil, true)
+	userData, err := createAPIUser(perms, user, nil, true)
 	if err != nil {
 		return err
 	}

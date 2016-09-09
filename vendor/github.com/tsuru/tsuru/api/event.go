@@ -8,9 +8,8 @@ import (
 	"encoding/json"
 	"fmt"
 	"net/http"
-	"strconv"
-	"strings"
 
+	"github.com/ajg/form"
 	"github.com/tsuru/tsuru/auth"
 	"github.com/tsuru/tsuru/errors"
 	"github.com/tsuru/tsuru/event"
@@ -26,18 +25,19 @@ import (
 //   200: OK
 //   204: No content
 func eventList(w http.ResponseWriter, r *http.Request, t auth.Token) error {
+	r.ParseForm()
 	filter := &event.Filter{}
-	if target := r.URL.Query().Get("target"); target != "" {
-		t, err := event.GetTargetType(target)
-		if err == nil {
-			filter.Target = event.Target{Type: t}
-		}
+	dec := form.NewDecoder(nil)
+	dec.IgnoreUnknownKeys(true)
+	dec.IgnoreCase(true)
+	err := dec.DecodeValues(&filter, r.Form)
+	if err != nil {
+		return &errors.HTTP{Code: http.StatusBadRequest, Message: fmt.Sprintf("unable to parse event filters: %s", err)}
 	}
-	if running, err := strconv.ParseBool(r.URL.Query().Get("running")); err == nil {
-		filter.Running = &running
-	}
-	if kindName := r.URL.Query().Get("kindName"); kindName != "" {
-		filter.KindName = kindName
+	filter.PruneUserValues()
+	filter.Permissions, err = t.Permissions()
+	if err != nil {
+		return err
 	}
 	events, err := event.List(filter)
 	if err != nil {
@@ -91,55 +91,12 @@ func eventInfo(w http.ResponseWriter, r *http.Request, t auth.Token) error {
 	if err != nil {
 		return &errors.HTTP{Code: http.StatusNotFound, Message: err.Error()}
 	}
-	var hasPermission bool
-	if e.Target.Type == event.TargetTypeApp {
-		a, err := getAppFromContext(e.Target.Value, r)
-		if err != nil {
-			return err
-		}
-		hasPermission = permission.Check(t, permission.PermAppReadEvents,
-			append(permission.Contexts(permission.CtxTeam, a.Teams),
-				permission.Context(permission.CtxApp, a.Name),
-				permission.Context(permission.CtxPool, a.Pool),
-			)...,
-		)
+	scheme, err := permission.SafeGet(e.Allowed.Scheme)
+	if err != nil {
+		return err
 	}
-	if e.Target.Type == event.TargetTypeTeam {
-		tm, err := auth.GetTeam(e.Target.Value)
-		if err != nil {
-			return err
-		}
-		hasPermission = permission.Check(
-			t, permission.PermTeamReadEvents,
-			permission.Context(permission.CtxTeam, tm.Name),
-		)
-	}
-	if e.Target.Type == event.TargetTypeService {
-		s, err := getService(e.Target.Value)
-		if err != nil {
-			return err
-		}
-		hasPermission = permission.Check(t, permission.PermServiceReadEvents,
-			append(permission.Contexts(permission.CtxTeam, s.OwnerTeams),
-				permission.Context(permission.CtxService, s.Name),
-			)...,
-		)
-	}
-	if e.Target.Type == event.TargetTypeServiceInstance {
-		if v := strings.SplitN(e.Target.Value, "_", 2); len(v) == 2 {
-			si, err := getServiceInstanceOrError(v[0], v[1])
-			if err != nil {
-				return err
-			}
-			permissionValue := v[0] + "/" + v[1]
-			hasPermission = permission.Check(t, permission.PermServiceInstanceReadEvents,
-				append(permission.Contexts(permission.CtxTeam, si.Teams),
-					permission.Context(permission.CtxServiceInstance, permissionValue),
-				)...,
-			)
-		}
-	}
-	if !hasPermission {
+	allowed := permission.Check(t, scheme, e.Allowed.Contexts...)
+	if !allowed {
 		return permission.ErrUnauthorized
 	}
 	w.Header().Add("Content-Type", "application/json")
@@ -168,6 +125,14 @@ func eventCancel(w http.ResponseWriter, r *http.Request, t auth.Token) error {
 	reason := r.FormValue("reason")
 	if reason == "" {
 		return &errors.HTTP{Code: http.StatusBadRequest, Message: "reason is mandatory"}
+	}
+	scheme, err := permission.SafeGet(e.AllowedCancel.Scheme)
+	if err != nil {
+		return err
+	}
+	allowed := permission.Check(t, scheme, e.AllowedCancel.Contexts...)
+	if !allowed {
+		return permission.ErrUnauthorized
 	}
 	err = e.TryCancel(reason, t.GetUserName())
 	if err != nil {

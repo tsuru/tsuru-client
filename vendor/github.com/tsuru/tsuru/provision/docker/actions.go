@@ -137,13 +137,17 @@ var insertEmptyContainerInDB = action.Action{
 		if err := checkCanceled(args.event); err != nil {
 			return nil, err
 		}
+		initialStatus := provision.StatusCreated
+		if args.isDeploy {
+			initialStatus = provision.StatusBuilding
+		}
 		contName := args.app.GetName() + "-" + randomString()
 		cont := container.Container{
 			AppName:       args.app.GetName(),
 			ProcessName:   args.processName,
 			Type:          args.app.GetPlatform(),
 			Name:          contName,
-			Status:        provision.StatusCreated.String(),
+			Status:        initialStatus.String(),
 			Image:         args.imageID,
 			BuildingImage: args.buildingImage,
 			ExposedPort:   args.exposedPort,
@@ -249,13 +253,18 @@ var setContainerID = action.Action{
 var stopContainer = action.Action{
 	Name: "stop-container",
 	Forward: func(ctx action.FWContext) (action.Result, error) {
+		args := ctx.Params[0].(runContainerActionsArgs)
 		cont := ctx.Previous.(container.Container)
-		cont.Status = provision.StatusStopped.String()
+		err := cont.SetStatus(args.provisioner, provision.StatusStopped, false)
+		if err != nil {
+			return nil, err
+		}
 		return cont, nil
 	},
 	Backward: func(ctx action.BWContext) {
+		args := ctx.Params[0].(runContainerActionsArgs)
 		c := ctx.FWResult.(container.Container)
-		c.Status = provision.StatusCreated.String()
+		c.SetStatus(args.provisioner, provision.StatusCreated, false)
 	},
 }
 
@@ -333,14 +342,15 @@ var provisionAddUnitsToHost = action.Action{
 		}
 		units := len(containers)
 		fmt.Fprintf(w, "\n---- Destroying %d created %s ----\n", units, pluralize("unit", units))
-		for _, cont := range containers {
+		runInContainers(containers, func(cont *container.Container, _ chan *container.Container) error {
 			err := cont.Remove(args.provisioner)
 			if err != nil {
 				log.Errorf("Error removing added container %s: %s", cont.ID, err.Error())
-				continue
+				return nil
 			}
 			fmt.Fprintf(w, " ---> Destroyed unit %s [%s]\n", cont.ShortID(), cont.ProcessName)
-		}
+			return nil
+		}, nil, true)
 	},
 	OnError:   rollbackNotice,
 	MinParams: 1,
@@ -406,15 +416,16 @@ var bindAndHealthcheck = action.Action{
 		}
 		units := len(newContainers)
 		fmt.Fprintf(w, "\n---- Unbinding %d created %s ----\n", units, pluralize("unit", units))
-		for _, c := range newContainers {
+		runInContainers(newContainers, func(c *container.Container, _ chan *container.Container) error {
 			unit := c.AsUnit(args.app)
 			err := args.app.UnbindUnit(&unit)
 			if err != nil {
 				log.Errorf("Removed binding for unit %q: %s", c.ID, err)
-				continue
+				return nil
 			}
 			fmt.Fprintf(w, " ---> Removed bind for unit %s [%s]\n", c.ShortID(), c.ProcessName)
-		}
+			return nil
+		}, nil, true)
 	},
 	OnError: rollbackNotice,
 }

@@ -12,6 +12,7 @@ import (
 	"io/ioutil"
 	"strings"
 	"sync"
+	"time"
 
 	"github.com/fsouza/go-dockerclient"
 	"github.com/tsuru/docker-cluster/cluster"
@@ -254,7 +255,7 @@ func ensureContainersStarted(p DockerProvisioner, w io.Writer, relaunch bool, na
 		}
 		log.Debugf("[node containers] recreating container %q in %s [%s]", confName, node.Address, pool)
 		fmt.Fprintf(w, "relaunching node container %q in the node %s [%s]\n", confName, node.Address, pool)
-		confErr = containerConfig.create(node.Address, pool, p, relaunch)
+		confErr = containerConfig.create(node, pool, p, relaunch)
 		if confErr != nil {
 			msg := fmt.Sprintf("[node containers] failed to create container in %s [%s]: %s", node.Address, pool, confErr)
 			log.Error(msg)
@@ -333,8 +334,8 @@ func (c *NodeContainerConfig) pullImage(client *docker.Client, p DockerProvision
 	return image, err
 }
 
-func (c *NodeContainerConfig) create(dockerEndpoint, poolName string, p DockerProvisioner, relaunch bool) error {
-	client, err := dockerClient(dockerEndpoint)
+func (c *NodeContainerConfig) create(node *cluster.Node, poolName string, p DockerProvisioner, relaunch bool) error {
+	client, err := node.Client()
 	if err != nil {
 		return err
 	}
@@ -342,28 +343,45 @@ func (c *NodeContainerConfig) create(dockerEndpoint, poolName string, p DockerPr
 	if err != nil {
 		return err
 	}
-	c.Config.Env = append([]string{"DOCKER_ENDPOINT=" + dockerEndpoint}, c.Config.Env...)
+	c.Config.Env = append([]string{"DOCKER_ENDPOINT=" + node.Address}, c.Config.Env...)
 	opts := docker.CreateContainerOptions{
 		Name:       c.Name,
 		HostConfig: &c.HostConfig,
 		Config:     &c.Config,
 	}
 	_, err = client.CreateContainer(opts)
-	if relaunch && err == docker.ErrContainerAlreadyExists {
-		err = client.RemoveContainer(docker.RemoveContainerOptions{ID: opts.Name, Force: true})
-		if err != nil {
+	if err != nil {
+		if err != docker.ErrContainerAlreadyExists {
 			return err
 		}
-		_, err = client.CreateContainer(opts)
+		if relaunch {
+			rmErr := tryRemovingOld(client, opts.Name)
+			if rmErr != nil {
+				log.Errorf("unable to remove old node-container: %s", rmErr)
+			}
+			_, err = client.CreateContainer(opts)
+			if err != nil {
+				return fmt.Errorf("unable to create new node-container: %s - previour rm error: %s", err, rmErr)
+			}
+		}
 	}
-	if err != nil && err != docker.ErrContainerAlreadyExists {
-		return err
-	}
-	err = client.StartContainer(c.Name, &c.HostConfig)
+	err = client.StartContainer(c.Name, nil)
 	if _, ok := err.(*docker.ContainerAlreadyRunning); !ok {
 		return err
 	}
 	return nil
+}
+
+func tryRemovingOld(client *docker.Client, id string) error {
+	err := client.StopContainer(id, 10)
+	if err == nil {
+		err = client.RemoveContainer(docker.RemoveContainerOptions{ID: id})
+	}
+	for retries := 2; err != nil && retries > 0; retries-- {
+		time.Sleep(time.Second)
+		err = client.RemoveContainer(docker.RemoveContainerOptions{ID: id, Force: true})
+	}
+	return err
 }
 
 func configFor(name string) *scopedconfig.ScopedConfig {
@@ -379,16 +397,6 @@ func shouldPinImage(image string) bool {
 	lastPart := parts[len(parts)-1]
 	versionParts := strings.SplitN(lastPart, ":", 2)
 	return len(versionParts) < 2 || versionParts[1] == "latest"
-}
-
-func dockerClient(endpoint string) (*docker.Client, error) {
-	client, err := docker.NewClient(endpoint)
-	if err != nil {
-		return nil, err
-	}
-	client.HTTPClient = net.Dial5Full300ClientNoKeepAlive
-	client.Dialer = net.Dial5Dialer
-	return client, nil
 }
 
 func pullWithRetry(client *docker.Client, p DockerProvisioner, image string, maxTries int) (string, error) {

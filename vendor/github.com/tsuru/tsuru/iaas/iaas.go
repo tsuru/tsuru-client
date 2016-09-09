@@ -1,4 +1,4 @@
-// Copyright 2015 tsuru authors. All rights reserved.
+// Copyright 2016 tsuru authors. All rights reserved.
 // Use of this source code is governed by a BSD-style
 // license that can be found in the LICENSE file.
 
@@ -13,6 +13,7 @@ import (
 	"sync"
 
 	"github.com/tsuru/config"
+	tsuruNet "github.com/tsuru/tsuru/net"
 )
 
 const (
@@ -58,7 +59,7 @@ func (i *UserDataIaaS) ReadUserData() (string, error) {
 	if err != nil {
 		userData = defaultUserData
 	} else if userDataURL != "" {
-		resp, err := http.Get(userDataURL)
+		resp, err := tsuruNet.Dial5Full60ClientNoKeepAlive.Get(userDataURL)
 		if err != nil {
 			return "", err
 		}

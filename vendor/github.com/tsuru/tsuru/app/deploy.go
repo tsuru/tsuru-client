@@ -17,6 +17,8 @@ import (
 	"github.com/tsuru/tsuru/log"
 	"github.com/tsuru/tsuru/permission"
 	"github.com/tsuru/tsuru/provision"
+	"github.com/tsuru/tsuru/router/rebuild"
+	"gopkg.in/mgo.v2"
 	"gopkg.in/mgo.v2/bson"
 )
 
@@ -49,15 +51,20 @@ type DeployData struct {
 	Diff        string
 }
 
-func findValidImages(apps ...string) (set, error) {
+func findValidImages(apps ...App) (set, error) {
 	validImages := set{}
-	for _, appName := range apps {
-		var imgs []string
-		imgs, err := Provisioner.ValidAppImages(appName)
+	for _, a := range apps {
+		prov, err := a.getProvisioner()
 		if err != nil {
 			return nil, err
 		}
-		validImages.Add(imgs...)
+		if deployer, ok := prov.(provision.RollbackableDeployer); ok {
+			imgs, err := deployer.ValidAppImages(a.Name)
+			if err != nil {
+				return nil, err
+			}
+			validImages.Add(imgs...)
+		}
 	}
 	return validImages, nil
 }
@@ -88,7 +95,7 @@ func ListDeploys(filter *Filter, skip, limit int) ([]DeployData, error) {
 	if err != nil {
 		return nil, err
 	}
-	validImages, err := findValidImages(apps...)
+	validImages, err := findValidImages(appsList...)
 	if err != nil {
 		return nil, err
 	}
@@ -196,13 +203,17 @@ func Deploy(opts DeployOptions) (string, error) {
 		return "", fmt.Errorf("missing event in deploy opts")
 	}
 	if opts.Rollback && !regexp.MustCompile(":v[0-9]+$").MatchString(opts.Image) {
-		validImages, err := findValidImages(opts.App.Name)
+		validImages, err := findValidImages(*opts.App)
 		if err == nil {
+			inputImage := opts.Image
 			for img := range validImages {
 				if strings.HasSuffix(img, opts.Image) {
 					opts.Image = img
 					break
 				}
+			}
+			if opts.Image == inputImage {
+				return "", fmt.Errorf("invalid version: %q", inputImage)
 			}
 		}
 	}
@@ -211,6 +222,7 @@ func Deploy(opts DeployOptions) (string, error) {
 	defer logWriter.Close()
 	opts.Event.SetLogWriter(io.MultiWriter(&tsuruIo.NoErrorWriter{Writer: opts.OutputStream}, &logWriter))
 	imageId, err := deployToProvisioner(&opts, opts.Event)
+	rebuild.RoutesRebuildOrEnqueue(opts.App.Name)
 	if err != nil {
 		return "", err
 	}
@@ -225,22 +237,29 @@ func Deploy(opts DeployOptions) (string, error) {
 }
 
 func deployToProvisioner(opts *DeployOptions, evt *event.Event) (string, error) {
+	prov, err := opts.App.getProvisioner()
+	if err != nil {
+		return "", err
+	}
 	switch opts.GetKind() {
 	case DeployRollback:
-		return Provisioner.Rollback(opts.App, opts.Image, evt)
+		if deployer, ok := prov.(provision.RollbackableDeployer); ok {
+			return deployer.Rollback(opts.App, opts.Image, evt)
+		}
 	case DeployImage:
-		if deployer, ok := Provisioner.(provision.ImageDeployer); ok {
+		if deployer, ok := prov.(provision.ImageDeployer); ok {
 			return deployer.ImageDeploy(opts.App, opts.Image, evt)
 		}
-		fallthrough
 	case DeployUpload, DeployUploadBuild:
-		if deployer, ok := Provisioner.(provision.UploadDeployer); ok {
+		if deployer, ok := prov.(provision.UploadDeployer); ok {
 			return deployer.UploadDeploy(opts.App, opts.File, opts.FileSize, opts.Build, evt)
 		}
-		fallthrough
 	default:
-		return Provisioner.(provision.ArchiveDeployer).ArchiveDeploy(opts.App, opts.ArchiveURL, evt)
+		if deployer, ok := prov.(provision.ArchiveDeployer); ok {
+			return deployer.ArchiveDeploy(opts.App, opts.ArchiveURL, evt)
+		}
 	}
+	return "", provision.ProvisionerNotSupported{Prov: prov, Action: fmt.Sprintf("%s deploy", opts.GetKind())}
 }
 
 func ValidateOrigin(origin string) bool {
@@ -267,4 +286,58 @@ func incrementDeploy(app *App) error {
 		app.Deploys += 1
 	}
 	return err
+}
+
+func deployDataToEvent(data *DeployData) error {
+	var evt event.Event
+	evt.UniqueID = data.ID
+	evt.Target = event.Target{Type: event.TargetTypeApp, Value: data.App}
+	evt.Owner = event.Owner{Type: event.OwnerTypeUser, Name: data.User}
+	evt.Kind = event.Kind{Type: event.KindTypePermission, Name: permission.PermAppDeploy.FullName()}
+	evt.StartTime = data.Timestamp
+	evt.EndTime = data.Timestamp.Add(data.Duration)
+	evt.Error = data.Error
+	evt.Log = data.Log
+	evt.RemoveDate = data.RemoveDate
+	a, err := GetByName(data.App)
+	if err == nil {
+		evt.Allowed = event.Allowed(permission.PermAppReadEvents, append(permission.Contexts(permission.CtxTeam, a.Teams),
+			permission.Context(permission.CtxApp, a.Name),
+			permission.Context(permission.CtxPool, a.Pool),
+		)...)
+	} else {
+		evt.Allowed = event.Allowed(permission.PermAppReadEvents)
+	}
+	startOpts := DeployOptions{
+		Commit: data.Commit,
+		Origin: data.Origin,
+	}
+	var otherData map[string]string
+	if data.Diff != "" {
+		otherData = map[string]string{"diff": data.Diff}
+	}
+	endData := map[string]string{"image": data.Image}
+	err = evt.RawInsert(startOpts, otherData, endData)
+	if mgo.IsDup(err) {
+		return nil
+	}
+	return err
+}
+
+func MigrateDeploysToEvents() error {
+	conn, err := db.Conn()
+	if err != nil {
+		return err
+	}
+	defer conn.Close()
+	oldDeploysColl := conn.Collection("deploys")
+	iter := oldDeploysColl.Find(nil).Iter()
+	var data DeployData
+	for iter.Next(&data) {
+		err = deployDataToEvent(&data)
+		if err != nil {
+			return err
+		}
+	}
+	return iter.Close()
 }

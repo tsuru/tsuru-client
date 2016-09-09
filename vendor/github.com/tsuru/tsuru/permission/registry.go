@@ -1,12 +1,11 @@
-// Copyright 2015 tsuruWithContextType authors. All rights reserved.
-
-// Copyright 2015 tsuru authors. All rights reserved.}
+// Copyright 2016 tsuru authors. All rights reserved.
 // Use of this source code is governed by a BSD-style
 // license that can be found in the LICENSE file.
 
 package permission
 
 import (
+	"errors"
 	"strings"
 )
 
@@ -96,6 +95,14 @@ func (r *registry) Permissions() PermissionSchemeList {
 		}
 	}
 	return ret
+}
+
+func SafeGet(name string) (*PermissionScheme, error) {
+	subR := PermissionRegistry.getSubRegistry(name)
+	if subR == nil {
+		return nil, errors.New("unregistered permission")
+	}
+	return &subR.PermissionScheme, nil
 }
 
 func (r *registry) get(name string) *PermissionScheme {

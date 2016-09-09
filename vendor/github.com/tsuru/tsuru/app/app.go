@@ -27,12 +27,12 @@ import (
 	"github.com/tsuru/tsuru/quota"
 	"github.com/tsuru/tsuru/repository"
 	"github.com/tsuru/tsuru/router"
+	"github.com/tsuru/tsuru/router/rebuild"
 	"github.com/tsuru/tsuru/service"
 	"gopkg.in/mgo.v2"
 	"gopkg.in/mgo.v2/bson"
 )
 
-var Provisioner provision.Provisioner
 var AuthScheme auth.Scheme
 
 var (
@@ -124,11 +124,33 @@ type App struct {
 	RouterOpts     map[string]string
 
 	quota.Quota
+	provisioner provision.Provisioner
+}
+
+func (app *App) getProvisioner() (provision.Provisioner, error) {
+	if app.provisioner == nil {
+		if app.Pool == "" {
+			return provision.GetDefault()
+		}
+		pool, err := provision.GetPoolByName(app.Pool)
+		if err != nil {
+			return nil, err
+		}
+		app.provisioner, err = pool.GetProvisioner()
+		if err != nil {
+			return nil, err
+		}
+	}
+	return app.provisioner, nil
 }
 
 // Units returns the list of units.
 func (app *App) Units() ([]provision.Unit, error) {
-	return Provisioner.Units(app)
+	prov, err := app.getProvisioner()
+	if err != nil {
+		return nil, err
+	}
+	return prov.Units(app)
 }
 
 func (app *App) GetRouterOpts() map[string]string {
@@ -298,7 +320,7 @@ func (app *App) Update(updateData App, w io.Writer) error {
 	}
 	if poolName != "" {
 		app.Pool = poolName
-		_, err := app.GetPoolForApp(app.Pool)
+		_, err := app.getPoolForApp(app.Pool)
 		if err != nil {
 			return err
 		}
@@ -396,7 +418,11 @@ func Delete(app *App, w io.Writer) error {
 		log.Errorf("[delete-app: %s] %s", appName, msg)
 		hasErrors = true
 	}
-	err = Provisioner.Destroy(app)
+	prov, err := app.getProvisioner()
+	if err != nil {
+		return err
+	}
+	err = prov.Destroy(app)
 	if err != nil {
 		logErr("Unable to destroy app in provisioner", err)
 	}
@@ -508,6 +534,7 @@ func (app *App) AddUnits(n uint, process string, writer io.Writer) error {
 		&reserveUnitsToAdd,
 		&provisionAddUnits,
 	).Execute(app, n, writer, process)
+	rebuild.RoutesRebuildOrEnqueue(app.Name)
 	return err
 }
 
@@ -517,7 +544,12 @@ func (app *App) AddUnits(n uint, process string, writer io.Writer) error {
 //     1. Remove units from the provisioner
 //     2. Update quota
 func (app *App) RemoveUnits(n uint, process string, writer io.Writer) error {
-	err := Provisioner.RemoveUnits(app, n, process, writer)
+	prov, err := app.getProvisioner()
+	if err != nil {
+		return err
+	}
+	err = prov.RemoveUnits(app, n, process, writer)
+	rebuild.RoutesRebuildOrEnqueue(app.Name)
 	if err != nil {
 		return err
 	}
@@ -548,7 +580,11 @@ func (app *App) SetUnitStatus(unitName string, status provision.Status) error {
 	}
 	for _, unit := range units {
 		if strings.HasPrefix(unit.ID, unitName) {
-			return Provisioner.SetUnitStatus(unit, status)
+			prov, err := app.getProvisioner()
+			if err != nil {
+				return err
+			}
+			return prov.SetUnitStatus(unit, status)
 		}
 	}
 	return &provision.UnitNotFoundError{ID: unitName}
@@ -562,21 +598,36 @@ type UpdateUnitsResult struct {
 // UpdateNodeStatus updates the status of the given node and its units,
 // returning a map which units were found during the update.
 func UpdateNodeStatus(node provision.NodeStatusData) ([]UpdateUnitsResult, error) {
+	provisioners, err := provision.Registry()
+	if err != nil {
+		return nil, err
+	}
 	result := make([]UpdateUnitsResult, len(node.Units))
 	for i, unitData := range node.Units {
-		unit := provision.Unit{ID: unitData.ID, Name: unitData.Name}
-		err := Provisioner.SetUnitStatus(unit, unitData.Status)
-		_, ok := err.(*provision.UnitNotFoundError)
-		result[i] = UpdateUnitsResult{ID: unitData.ID, Found: !ok}
-		if err != nil && !ok {
-			return nil, err
+		for _, p := range provisioners {
+			unit := provision.Unit{ID: unitData.ID, Name: unitData.Name}
+			err = p.SetUnitStatus(unit, unitData.Status)
+			_, isNotFound := err.(*provision.UnitNotFoundError)
+			if err != nil && !isNotFound {
+				return nil, err
+			}
+			result[i] = UpdateUnitsResult{ID: unitData.ID, Found: !isNotFound}
+			if result[i].Found {
+				break
+			}
 		}
 	}
-	if nodeProvisioner, ok := Provisioner.(provision.NodeStatusProvisioner); ok {
-		err := nodeProvisioner.SetNodeStatus(node)
-		if err != nil {
-			log.Errorf("unable to set node status: %s", err)
+	// nodeFound := false
+	for _, p := range provisioners {
+		if nodeProvisioner, ok := p.(provision.NodeProvisioner); ok {
+			err = nodeProvisioner.SetNodeStatus(node)
+			if err == nil || err != provision.ErrNodeNotFound {
+				break
+			}
 		}
+	}
+	if err != nil {
+		log.Errorf("unable to set node status: %s", err)
 	}
 	return result, nil
 }
@@ -711,29 +762,35 @@ func (app *App) validateTeamOwner() error {
 }
 
 func (app *App) SetPool() error {
-	pool, err := app.GetPoolForApp(app.Pool)
+	poolName, err := app.getPoolForApp(app.Pool)
 	if err != nil {
 		return err
 	}
-	if pool == "" {
-		pool, err = app.GetDefaultPool()
+	if poolName == "" {
+		var pool *provision.Pool
+		pool, err = provision.GetDefaultPool()
 		if err != nil {
 			return err
 		}
+		poolName = pool.Name
 	}
-	app.Pool = pool
+	app.Pool = poolName
 	return nil
 }
 
-func (app *App) GetPoolForApp(poolName string) (string, error) {
-	var query bson.M
-	var poolTeam bool
+func (app *App) getPoolForApp(poolName string) (string, error) {
+	var pools []provision.Pool
+	var err error
 	if poolName != "" {
-		query = bson.M{"_id": poolName}
+		var pool *provision.Pool
+		pool, err = provision.GetPoolByName(poolName)
+		if err != nil {
+			return "", err
+		}
+		pools = append(pools, *pool)
 	} else {
-		query = bson.M{"teams": app.TeamOwner}
+		pools, err = provision.ListPoolsForTeam(app.TeamOwner)
 	}
-	pools, err := provision.ListPools(query)
 	if err != nil {
 		return "", err
 	}
@@ -741,11 +798,9 @@ func (app *App) GetPoolForApp(poolName string) (string, error) {
 		return "", stderr.New("you have access to more than one pool, please choose one in app creation")
 	}
 	if len(pools) == 0 {
-		if poolName == "" {
-			return "", nil
-		}
-		return "", stderr.New("pool not found")
+		return "", nil
 	}
+	var poolTeam bool
 	for _, team := range pools[0].Teams {
 		if team == app.TeamOwner {
 			poolTeam = true
@@ -754,17 +809,6 @@ func (app *App) GetPoolForApp(poolName string) (string, error) {
 	}
 	if !pools[0].Public && !poolTeam {
 		return "", fmt.Errorf("App team owner %q has no access to pool %q", app.TeamOwner, poolName)
-	}
-	return pools[0].Name, nil
-}
-
-func (app *App) GetDefaultPool() (string, error) {
-	pools, err := provision.ListPools(bson.M{"default": true})
-	if err != nil {
-		return "", err
-	}
-	if len(pools) == 0 {
-		return "", stderr.New("No default pool.")
 	}
 	return pools[0].Name, nil
 }
@@ -838,10 +882,18 @@ func (app *App) sourced(cmd string, w io.Writer, once bool) error {
 }
 
 func (app *App) run(cmd string, w io.Writer, once bool) error {
-	if once {
-		return Provisioner.ExecuteCommandOnce(w, w, app, cmd)
+	prov, err := app.getProvisioner()
+	if err != nil {
+		return err
 	}
-	return Provisioner.ExecuteCommand(w, w, app, cmd)
+	execProv, ok := prov.(provision.ExecutableProvisioner)
+	if !ok {
+		return provision.ProvisionerNotSupported{Prov: prov, Action: "running commands"}
+	}
+	if once {
+		return execProv.ExecuteCommandOnce(w, w, app, cmd)
+	}
+	return execProv.ExecuteCommand(w, w, app, cmd)
 }
 
 // Restart runs the restart hook for the app, writing its output to w.
@@ -855,11 +907,16 @@ func (app *App) Restart(process string, w io.Writer) error {
 		log.Errorf("[restart] error on write app log for the app %s - %s", app.Name, err)
 		return err
 	}
-	err = Provisioner.Restart(app, process, w)
+	prov, err := app.getProvisioner()
+	if err != nil {
+		return err
+	}
+	err = prov.Restart(app, process, w)
 	if err != nil {
 		log.Errorf("[restart] error on restart the app %s - %s", app.Name, err)
 		return err
 	}
+	rebuild.RoutesRebuildOrEnqueue(app.Name)
 	return nil
 }
 
@@ -869,7 +926,11 @@ func (app *App) Stop(w io.Writer, process string) error {
 		msg = fmt.Sprintf("\n ---> Stopping the app %q\n", app.Name)
 	}
 	log.Write(w, []byte(msg))
-	err := Provisioner.Stop(app, process)
+	prov, err := app.getProvisioner()
+	if err != nil {
+		return err
+	}
+	err = prov.Stop(app, process)
 	if err != nil {
 		log.Errorf("[stop] error on stop the app %s - %s", app.Name, err)
 		return err
@@ -878,17 +939,20 @@ func (app *App) Stop(w io.Writer, process string) error {
 }
 
 func (app *App) Sleep(w io.Writer, process string, proxyURL *url.URL) error {
+	prov, err := app.getProvisioner()
+	if err != nil {
+		return err
+	}
+	sleepProv, ok := prov.(provision.SleepableProvisioner)
+	if !ok {
+		return provision.ProvisionerNotSupported{Prov: prov, Action: "sleeping"}
+	}
 	msg := fmt.Sprintf("\n ---> Putting the process %q to sleep\n", process)
 	if process == "" {
 		msg = fmt.Sprintf("\n ---> Putting the app %q to sleep\n", app.Name)
 	}
 	log.Write(w, []byte(msg))
-	routerName, err := app.GetRouter()
-	if err != nil {
-		log.Errorf("[sleep] error on sleep the app %s - %s", app.Name, err)
-		return err
-	}
-	r, err := router.Get(routerName)
+	r, err := app.Router()
 	if err != nil {
 		log.Errorf("[sleep] error on sleep the app %s - %s", app.Name, err)
 		return err
@@ -906,7 +970,7 @@ func (app *App) Sleep(w io.Writer, process string, proxyURL *url.URL) error {
 		log.Errorf("[sleep] error on sleep the app %s - %s", app.Name, err)
 		return err
 	}
-	err = Provisioner.Sleep(app, process)
+	err = sleepProv.Sleep(app, process)
 	if err != nil {
 		log.Errorf("[sleep] error on sleep the app %s - %s", app.Name, err)
 		for _, route := range oldRoutes {
@@ -1078,7 +1142,11 @@ func (app *App) setEnvsToApp(setEnvs bind.SetEnvApp, w io.Writer) error {
 	if !setEnvs.ShouldRestart {
 		return nil
 	}
-	return Provisioner.Restart(app, "", w)
+	prov, err := app.getProvisioner()
+	if err != nil {
+		return err
+	}
+	return prov.Restart(app, "", w)
 }
 
 // UnsetEnvs removes environment variables from an app, serializing the
@@ -1128,7 +1196,11 @@ func (app *App) unsetEnvsToApp(unsetEnvs bind.UnsetEnvApp, w io.Writer) error {
 	if !unsetEnvs.ShouldRestart {
 		return nil
 	}
-	return Provisioner.Restart(app, "", w)
+	prov, err := app.getProvisioner()
+	if err != nil {
+		return err
+	}
+	return prov.Restart(app, "", w)
 }
 
 // AddCName adds a CName to app. It updates the attribute,
@@ -1142,7 +1214,9 @@ func (app *App) AddCName(cnames ...string) error {
 		&saveCNames,
 		&updateApp,
 	}
-	return action.NewPipeline(actions...).Execute(app, cnames)
+	err := action.NewPipeline(actions...).Execute(app, cnames)
+	rebuild.RoutesRebuildOrEnqueue(app.Name)
+	return err
 }
 
 func (app *App) RemoveCName(cnames ...string) error {
@@ -1152,7 +1226,9 @@ func (app *App) RemoveCName(cnames ...string) error {
 		&removeCNameFromDatabase,
 		&removeCNameFromApp,
 	}
-	return action.NewPipeline(actions...).Execute(app, cnames)
+	err := action.NewPipeline(actions...).Execute(app, cnames)
+	rebuild.RoutesRebuildOrEnqueue(app.Name)
+	return err
 }
 
 func (app *App) parsedTsuruServices() map[string][]bind.ServiceInstance {
@@ -1331,9 +1407,15 @@ func (app *App) Log(message, source, unit string) error {
 // LastLogs returns a list of the last `lines` log of the app, matching the
 // fields in the log instance received as an example.
 func (app *App) LastLogs(lines int, filterLog Applog) ([]Applog, error) {
-	logsProvisioner, ok := Provisioner.(provision.OptionalLogsProvisioner)
+	prov, err := app.getProvisioner()
+	if err != nil {
+		return nil, err
+	}
+	logsProvisioner, ok := prov.(provision.OptionalLogsProvisioner)
 	if ok {
-		enabled, doc, err := logsProvisioner.LogsEnabled(app)
+		var enabled bool
+		var doc string
+		enabled, doc, err = logsProvisioner.LogsEnabled(app)
 		if err != nil {
 			return nil, err
 		}
@@ -1439,13 +1521,28 @@ func List(filter *Filter) ([]App, error) {
 		return apps, err
 	}
 	if filter != nil && len(filter.Statuses) > 0 {
-		provisionApps := make([]provision.App, len(apps))
+		appsProvisionerMap := make(map[string][]provision.App)
 		for i := range apps {
-			provisionApps[i] = &apps[i]
+			a := &apps[i]
+			prov, err := a.getProvisioner()
+			if err != nil {
+				return nil, err
+			}
+			appsProvisionerMap[prov.GetName()] = append(appsProvisionerMap[prov.GetName()], a)
 		}
-		provisionApps, err = Provisioner.FilterAppsByUnitStatus(provisionApps, filter.Statuses)
-		if err != nil {
-			return []App{}, err
+		var provisionApps []provision.App
+		for provName, apps := range appsProvisionerMap {
+			prov, err := provision.Get(provName)
+			if err != nil {
+				return nil, err
+			}
+			if filterProv, ok := prov.(provision.AppFilterProvisioner); ok {
+				apps, err = filterProv.FilterAppsByUnitStatus(apps, filter.Statuses)
+				if err != nil {
+					return nil, err
+				}
+			}
+			provisionApps = append(provisionApps, apps...)
 		}
 		for i := range provisionApps {
 			apps[i] = *(provisionApps[i].(*App))
@@ -1455,10 +1552,19 @@ func List(filter *Filter) ([]App, error) {
 	return apps, nil
 }
 
-// Swap calls the Provisioner.Swap.
-// And updates the app.CName in the database.
+// Swap calls the Router.Swap and updates the app.CName in the database.
 func Swap(app1, app2 *App, cnameOnly bool) error {
-	err := Provisioner.Swap(app1, app2, cnameOnly)
+	r1, err := app1.Router()
+	if err != nil {
+		return err
+	}
+	r2, err := app2.Router()
+	if err != nil {
+		return err
+	}
+	defer rebuild.RoutesRebuildOrEnqueue(app1.Name)
+	defer rebuild.RoutesRebuildOrEnqueue(app2.Name)
+	err = r1.Swap(app1.Name, app2.Name, cnameOnly)
 	if err != nil {
 		return err
 	}
@@ -1468,8 +1574,8 @@ func Swap(app1, app2 *App, cnameOnly bool) error {
 	}
 	defer conn.Close()
 	app1.CName, app2.CName = app2.CName, app1.CName
-	updateCName := func(app *App) error {
-		app.Ip, err = Provisioner.Addr(app)
+	updateCName := func(app *App, r router.Router) error {
+		app.Ip, err = r.Addr(app.Name)
 		if err != nil {
 			return err
 		}
@@ -1478,11 +1584,11 @@ func Swap(app1, app2 *App, cnameOnly bool) error {
 			bson.M{"$set": bson.M{"cname": app.CName, "ip": app.Ip}},
 		)
 	}
-	err = updateCName(app1)
+	err = updateCName(app1, r1)
 	if err != nil {
 		return err
 	}
-	return updateCName(app2)
+	return updateCName(app2, r2)
 }
 
 // Start starts the app calling the provisioner.Start method and
@@ -1493,12 +1599,16 @@ func (app *App) Start(w io.Writer, process string) error {
 		msg = fmt.Sprintf("\n ---> Starting the app %q\n", app.Name)
 	}
 	log.Write(w, []byte(msg))
-	err := Provisioner.Start(app, process)
+	prov, err := app.getProvisioner()
+	if err != nil {
+		return err
+	}
+	err = prov.Start(app, process)
 	if err != nil {
 		log.Errorf("[start] error on start the app %s - %s", app.Name, err)
 		return err
 	}
-	_, err = app.RebuildRoutes()
+	rebuild.RoutesRebuildOrEnqueue(app.Name)
 	return err
 }
 
@@ -1525,7 +1635,11 @@ func (app *App) RegisterUnit(unitId string, customData map[string]interface{}) e
 	}
 	for _, unit := range units {
 		if strings.HasPrefix(unit.ID, unitId) {
-			return Provisioner.RegisterUnit(unit, customData)
+			prov, err := app.getProvisioner()
+			if err != nil {
+				return err
+			}
+			return prov.RegisterUnit(unit, customData)
 		}
 	}
 	return &provision.UnitNotFoundError{ID: unitId}
@@ -1535,13 +1649,29 @@ func (app *App) GetRouter() (string, error) {
 	return app.Plan.getRouter()
 }
 
-func (app *App) MetricEnvs() map[string]string {
-	return Provisioner.MetricEnvs(app)
+func (app *App) MetricEnvs() (map[string]string, error) {
+	prov, err := app.getProvisioner()
+	if err != nil {
+		return nil, err
+	}
+	if metricProv, ok := prov.(provision.MetricsProvisioner); ok {
+		return metricProv.MetricEnvs(app), nil
+	} else {
+		return nil, provision.ProvisionerNotSupported{Prov: prov, Action: "metrics"}
+	}
 }
 
 func (app *App) Shell(opts provision.ShellOptions) error {
 	opts.App = app
-	return Provisioner.Shell(opts)
+	prov, err := app.getProvisioner()
+	if err != nil {
+		return err
+	}
+	if shellProv, ok := prov.(provision.ShellProvisioner); ok {
+		return shellProv.Shell(opts)
+	} else {
+		return provision.ProvisionerNotSupported{Prov: prov, Action: "running shell"}
+	}
 }
 
 type ProcfileError struct {
@@ -1552,84 +1682,59 @@ func (e *ProcfileError) Error() string {
 	return fmt.Sprintf("error parsing Procfile: %s", e.yamlErr)
 }
 
-type RebuildRoutesResult struct {
-	Added   []string
-	Removed []string
-}
-
-func (app *App) RebuildRoutes() (*RebuildRoutesResult, error) {
+func (app *App) Router() (router.Router, error) {
 	routerName, err := app.GetRouter()
 	if err != nil {
 		return nil, err
 	}
-	r, err := router.Get(routerName)
+	return router.Get(routerName)
+}
+
+func (app *App) UpdateAddr() error {
+	r, err := app.Router()
+	if err != nil {
+		return err
+	}
+	newAddr, err := r.Addr(app.Name)
+	if err != nil {
+		return err
+	}
+	if newAddr == app.Ip {
+		return nil
+	}
+	conn, err := db.Conn()
+	if err != nil {
+		return err
+	}
+	defer conn.Close()
+	err = conn.Apps().Update(bson.M{"name": app.Name}, bson.M{"$set": bson.M{"ip": newAddr}})
+	if err != nil {
+		return err
+	}
+	app.Ip = newAddr
+	return nil
+}
+
+func (app *App) RoutableUnits() ([]*url.URL, error) {
+	prov, err := app.getProvisioner()
 	if err != nil {
 		return nil, err
 	}
-	if optsRouter, ok := r.(router.OptsRouter); ok {
-		err = optsRouter.AddBackendOpts(app.Name, app.RouterOpts)
-	} else {
-		err = r.AddBackend(app.Name)
-	}
-	if err != nil && err != router.ErrBackendExists {
-		return nil, err
-	}
-	var newAddr string
-	if newAddr, err = r.Addr(app.GetName()); err == nil && newAddr != app.Ip {
-		var conn *db.Storage
-		conn, err = db.Conn()
-		if err != nil {
-			return nil, err
-		}
-		defer conn.Close()
-		err = conn.Apps().Update(bson.M{"name": app.Name}, bson.M{"$set": bson.M{"ip": newAddr}})
-		if err != nil {
-			return nil, err
-		}
-		app.Ip = newAddr
-	}
-	if cnameRouter, ok := r.(router.CNameRouter); ok {
-		for _, cname := range app.CName {
-			err = cnameRouter.SetCName(cname, app.Name)
-			if err != nil && err != router.ErrCNameExists {
-				return nil, err
-			}
-		}
-	}
-	oldRoutes, err := r.Routes(app.GetName())
+	units, err := prov.RoutableUnits(app)
 	if err != nil {
 		return nil, err
 	}
-	expectedMap := make(map[string]*url.URL)
-	units, err := Provisioner.RoutableUnits(app)
-	if err != nil {
-		return nil, err
+	urls := make([]*url.URL, len(units))
+	for i := range units {
+		urls[i] = units[i].Address
 	}
-	for _, unit := range units {
-		expectedMap[unit.Address.Host] = unit.Address
-	}
-	var toRemove []*url.URL
-	for _, url := range oldRoutes {
-		if _, isPresent := expectedMap[url.Host]; isPresent {
-			delete(expectedMap, url.Host)
-		} else {
-			toRemove = append(toRemove, url)
-		}
-	}
-	var result RebuildRoutesResult
-	for _, toAddUrl := range expectedMap {
-		err := r.AddRoute(app.GetName(), toAddUrl)
-		if err != nil {
-			return nil, err
-		}
-		result.Added = append(result.Added, toAddUrl.String())
-	}
-	for _, toRemoveUrl := range toRemove {
-		err := r.RemoveRoute(app.GetName(), toRemoveUrl)
-		if err != nil {
-			return nil, err
-		}
-		result.Removed = append(result.Removed, toRemoveUrl.String())
-	}
-	return &result, nil
+	return urls, nil
+}
+
+func (app *App) InternalLock(reason string) (bool, error) {
+	return AcquireApplicationLock(app.Name, InternalAppName, reason)
+}
+
+func (app *App) Unlock() {
+	ReleaseApplicationLock(app.Name)
 }

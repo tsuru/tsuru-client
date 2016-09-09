@@ -32,6 +32,7 @@ var PermissionRegistry = (&registry{}).addWithCtx(
 	"app.update.cname.remove",
 	"app.update.plan",
 	"app.update.bind",
+	"app.update.events",
 	"app.update.unbind",
 	"app.deploy",
 	"app.deploy.archive-url",
@@ -48,6 +49,7 @@ var PermissionRegistry = (&registry{}).addWithCtx(
 	"app.read.log",
 	"app.delete",
 	"app.run",
+	"app.run.shell",
 	"app.admin.unlock",
 	"app.admin.routes",
 	"app.admin.quota",
@@ -56,16 +58,24 @@ var PermissionRegistry = (&registry{}).addWithCtx(
 ).add(
 	"node.create",
 	"node.read",
-	"node.read.events",
-	"node.update",
+	"node.update.move.container",
+	"node.update.move.containers",
+	"node.update.rebalance",
 	"node.delete",
-	"node.autoscale",
+).addWithCtx(
+	"node.autoscale", []contextType{},
+).add(
+	"node.autoscale.update",
+	"node.autoscale.update.run",
+	"node.autoscale.read",
+	"node.autoscale.delete",
 ).addWithCtx(
 	"machine", []contextType{CtxIaaS},
 ).add(
 	"machine.create",
 	"machine.delete",
 	"machine.read",
+	"machine.read.events",
 	"machine.template.create",
 	"machine.template.delete",
 	"machine.template.update",
@@ -77,8 +87,11 @@ var PermissionRegistry = (&registry{}).addWithCtx(
 ).add(
 	"team.read.events",
 	"team.delete",
+).addWithCtx(
+	"user", []contextType{CtxUser},
+).addWithCtx(
+	"user.create", []contextType{},
 ).add(
-	"user.create",
 	"user.delete",
 	"user.read.events",
 	"user.update.token",
@@ -117,23 +130,30 @@ var PermissionRegistry = (&registry{}).addWithCtx(
 ).add(
 	"role.create",
 	"role.delete",
+	"role.read.events",
 	"role.update.assign",
 	"role.update.dissociate",
+	"role.update.permission.add",
+	"role.update.permission.remove",
 	"role.default.create",
 	"role.default.delete",
 ).add(
 	"platform.create",
 	"platform.delete",
 	"platform.update",
+	"platform.read.events",
 ).add(
 	"plan.create",
 	"plan.delete",
+	"plan.read.events",
 ).addWithCtx(
 	"pool", []contextType{CtxPool},
 ).addWithCtx(
 	"pool.create", []contextType{},
 ).add(
 	"pool.read.events",
+	"pool.update.team.add",
+	"pool.update.team.remove",
 	"pool.update.logs",
 	"pool.delete",
 ).add(
@@ -145,6 +165,7 @@ var PermissionRegistry = (&registry{}).addWithCtx(
 ).add(
 	"healing.read",
 	"healing.update",
+	"healing.delete",
 ).addWithCtx(
 	"nodecontainer", []contextType{CtxPool},
 ).add(

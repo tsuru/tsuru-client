@@ -9,8 +9,10 @@ import (
 	"fmt"
 	"time"
 
+	"github.com/tsuru/tsuru/app"
 	"github.com/tsuru/tsuru/event"
 	"github.com/tsuru/tsuru/log"
+	"github.com/tsuru/tsuru/permission"
 	"github.com/tsuru/tsuru/provision"
 	"github.com/tsuru/tsuru/provision/docker/container"
 	"gopkg.in/mgo.v2/bson"
@@ -70,12 +72,19 @@ func (h *ContainerHealer) healContainer(cont container.Container) (container.Con
 	return createdContainer, err
 }
 
-func (h *ContainerHealer) isRunning(cont container.Container) (bool, error) {
+func (h *ContainerHealer) isAsExpected(cont container.Container) (bool, error) {
 	container, err := h.provisioner.Cluster().InspectContainer(cont.ID)
 	if err != nil {
 		return false, err
 	}
-	return container.State.Running || container.State.Restarting, nil
+	if container.State.Dead || container.State.RemovalInProgress {
+		return false, nil
+	}
+	isRunning := container.State.Running || container.State.Restarting
+	if cont.ExpectedStatus() == provision.StatusStopped {
+		return !isRunning, nil
+	}
+	return isRunning, nil
 }
 
 func (h *ContainerHealer) healContainerIfNeeded(cont container.Container) error {
@@ -84,12 +93,12 @@ func (h *ContainerHealer) healContainerIfNeeded(cont container.Container) error 
 			return nil
 		}
 	}
-	isRunning, err := h.isRunning(cont)
+	isAsExpected, err := h.isAsExpected(cont)
 	if err != nil {
 		log.Errorf("Containers healing: couldn't verify running processes in container %q: %s", cont.ID, err.Error())
 	}
-	if isRunning {
-		cont.SetStatus(h.provisioner, provision.StatusStarted, true)
+	if isAsExpected {
+		cont.SetStatus(h.provisioner, cont.ExpectedStatus(), true)
 		return nil
 	}
 	locked := h.locker.Lock(cont.AppName)
@@ -105,11 +114,19 @@ func (h *ContainerHealer) healContainerIfNeeded(cont container.Container) error 
 		}
 		return fmt.Errorf("Containers healing: unable to heal %q couldn't verify it still exists: %s", cont.ID, err)
 	}
+	a, err := app.GetByName(cont.AppName)
+	if err != nil {
+		return fmt.Errorf("Containers healing: unable to heal %q couldn't get app %q: %s", cont.ID, cont.AppName, err)
+	}
 	log.Errorf("Initiating healing process for container %q, unresponsive since %s.", cont.ID, cont.LastSuccessStatusUpdate)
 	evt, err := event.NewInternal(&event.Opts{
 		Target:       event.Target{Type: event.TargetTypeContainer, Value: cont.ID},
 		InternalKind: "healer",
 		CustomData:   cont,
+		Allowed: event.Allowed(permission.PermAppReadEvents, append(permission.Contexts(permission.CtxTeam, a.Teams),
+			permission.Context(permission.CtxApp, a.Name),
+			permission.Context(permission.CtxPool, a.Pool),
+		)...),
 	})
 	if err != nil {
 		return fmt.Errorf("Error trying to insert container healing event, healing aborted: %s", err.Error())
@@ -149,7 +166,6 @@ func listUnresponsiveContainers(p DockerProvisioner, maxUnresponsiveTime time.Du
 			{"processname": bson.M{"$ne": ""}},
 		},
 		"status": bson.M{"$nin": []string{
-			provision.StatusStopped.String(),
 			provision.StatusBuilding.String(),
 			provision.StatusAsleep.String(),
 		}},

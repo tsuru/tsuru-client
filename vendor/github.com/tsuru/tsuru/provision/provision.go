@@ -11,6 +11,7 @@ import (
 	"errors"
 	"fmt"
 	"io"
+	"net"
 	"net/url"
 	"time"
 
@@ -20,9 +21,14 @@ import (
 	"github.com/tsuru/tsuru/router"
 )
 
+const defaultDockerProvisioner = "docker"
+
 var (
 	ErrInvalidStatus = errors.New("invalid status")
 	ErrEmptyApp      = errors.New("no units for this app")
+	ErrNodeNotFound  = errors.New("node not found")
+
+	DefaultProvisioner = defaultDockerProvisioner
 )
 
 type UnitNotFoundError struct {
@@ -39,6 +45,15 @@ type InvalidProcessError struct {
 
 func (e InvalidProcessError) Error() string {
 	return fmt.Sprintf("process error: %s", e.Msg)
+}
+
+type ProvisionerNotSupported struct {
+	Prov   Provisioner
+	Action string
+}
+
+func (e ProvisionerNotSupported) Error() string {
+	return fmt.Sprintf("provisioner %q does not support %s", e.Prov.GetName(), e.Action)
 }
 
 // Status represents the status of a unit in tsuru.
@@ -141,6 +156,23 @@ func (u *Unit) GetIp() string {
 	return u.Ip
 }
 
+func (u *Unit) MarshalJSON() ([]byte, error) {
+	type UnitForMarshal Unit
+	host, port, _ := net.SplitHostPort(u.Address.Host)
+	// New fields added for compatibility with old routes returning containers.
+	return json.Marshal(&struct {
+		*UnitForMarshal
+		HostAddr string
+		HostPort string
+		IP       string
+	}{
+		UnitForMarshal: (*UnitForMarshal)(u),
+		HostAddr:       host,
+		HostPort:       port,
+		IP:             u.Ip,
+	})
+}
+
 // Available returns true if the unit is available. It will return true
 // whenever the unit itself is available, even when the application process is
 // not.
@@ -222,12 +254,6 @@ type AppLock interface {
 	GetAcquireDate() time.Time
 }
 
-// CNameManager represents a provisioner that supports cname on applications.
-type CNameManager interface {
-	SetCName(app App, cname string) error
-	UnsetCName(app App, cname string) error
-}
-
 // ShellOptions is the set of options that can be used when calling the method
 // Shell in the provisioner.
 type ShellOptions struct {
@@ -256,11 +282,23 @@ type ImageDeployer interface {
 	ImageDeploy(app App, image string, evt *event.Event) (string, error)
 }
 
+// RollbackableDeployer is a provisioner that allows rolling back to a
+// previously deployed version.
+type RollbackableDeployer interface {
+	Rollback(App, string, *event.Event) (string, error)
+
+	// Returns list of valid image names for app, these can be used for
+	// rollback.
+	ValidAppImages(string) ([]string, error)
+}
+
 // Provisioner is the basic interface of this package.
 //
 // Any tsuru provisioner must implement this interface in order to provision
 // tsuru apps.
 type Provisioner interface {
+	Named
+
 	// Provision is called when tsuru is creating the app.
 	Provision(App) error
 
@@ -280,12 +318,6 @@ type Provisioner interface {
 	// SetUnitStatus changes the status of a unit.
 	SetUnitStatus(Unit, Status) error
 
-	// ExecuteCommand runs a command in all units of the app.
-	ExecuteCommand(stdout, stderr io.Writer, app App, cmd string, args ...string) error
-
-	// ExecuteCommandOnce runs a command in one unit of the app.
-	ExecuteCommandOnce(stdout, stderr io.Writer, app App, cmd string, args ...string) error
-
 	// Restart restarts the units of the application, with an optional
 	// string parameter represeting the name of the process to start. When
 	// the process is empty, Restart will restart all units of the
@@ -302,21 +334,6 @@ type Provisioner interface {
 	// process is empty, Stop will stop all units of the application.
 	Stop(App, string) error
 
-	// Sleep puts the units of the application to sleep, with an optional string
-	// parameter representing the name of the process to sleep. When the
-	// process is empty, Sleep will put all units of the application to sleep.
-	Sleep(App, string) error
-
-	// Addr returns the address for an app.
-	//
-	// tsuru will use this method to get the IP (although it might not be
-	// an actual IP, collector calls it "IP") of the app from the
-	// provisioner.
-	Addr(App) (string, error)
-
-	// Swap change the router between two apps.
-	Swap(app1, app2 App, cnameOnly bool) error
-
 	// Units returns information about units by App.
 	Units(App) ([]Unit, error)
 
@@ -325,23 +342,43 @@ type Provisioner interface {
 
 	// Register a unit after the container has been created or restarted.
 	RegisterUnit(Unit, map[string]interface{}) error
-
-	// Open a remote shel in one of the units in the application.
-	Shell(ShellOptions) error
-
-	// Returns list of valid image names for app, these can be used for
-	// rollback.
-	ValidAppImages(string) ([]string, error)
-
-	// Returns the metric backend environs for the app.
-	MetricEnvs(App) map[string]string
-
-	// Rollback a deploy
-	Rollback(App, string, *event.Event) (string, error)
-
-	FilterAppsByUnitStatus([]App, []string) ([]App, error)
 }
 
+// MetricsProvisioner is a provisioner that exposes environment variables
+// related to metrics.
+type MetricsProvisioner interface {
+	// Returns the metric backend environs for the app.
+	MetricEnvs(App) map[string]string
+}
+
+// ShellProvisioner is a provisioner that allows opening a shell to existing
+// units.
+type ShellProvisioner interface {
+	// Open a remote shel in one of the units in the application.
+	Shell(ShellOptions) error
+}
+
+// ExecutableProvisioner is a provisioner that allows executing commands on
+// units.
+type ExecutableProvisioner interface {
+	// ExecuteCommand runs a command in all units of the app.
+	ExecuteCommand(stdout, stderr io.Writer, app App, cmd string, args ...string) error
+
+	// ExecuteCommandOnce runs a command in one unit of the app.
+	ExecuteCommandOnce(stdout, stderr io.Writer, app App, cmd string, args ...string) error
+}
+
+// SleepableProvisioner is a provisioner that allows putting applications to
+// sleep.
+type SleepableProvisioner interface {
+	// Sleep puts the units of the application to sleep, with an optional string
+	// parameter representing the name of the process to sleep. When the
+	// process is empty, Sleep will put all units of the application to sleep.
+	Sleep(App, string) error
+}
+
+// MessageProvisioner is a provisioner that provides a welcome message for
+// logging.
 type MessageProvisioner interface {
 	StartupMessage() (string, error)
 }
@@ -359,9 +396,73 @@ type OptionalLogsProvisioner interface {
 	LogsEnabled(App) (bool, string, error)
 }
 
-type NodeStatusProvisioner interface {
+type AddNodeOptions struct {
+	Address  string
+	Metadata map[string]string
+	Register bool
+}
+
+type RemoveNodeOptions struct {
+	Address   string
+	Rebalance bool
+	Writer    io.Writer
+}
+
+type UpdateNodeOptions struct {
+	Address  string
+	Metadata map[string]string
+	Enable   bool
+	Disable  bool
+}
+
+type NodeProvisioner interface {
 	// SetNodeStatus changes the status of a node and all its units.
 	SetNodeStatus(NodeStatusData) error
+
+	// ListNodes returns a list of all nodes registered in the provisioner.
+	ListNodes(addressFilter []string) ([]Node, error)
+
+	// GetNode retrieves an existing node by its address.
+	GetNode(address string) (Node, error)
+
+	// AddNode adds a new node in the provisioner.
+	AddNode(AddNodeOptions) error
+
+	// RemoveNode removes an existing node.
+	RemoveNode(RemoveNodeOptions) error
+
+	// UpdateNode can be used to enable/disable a node and update its metadata.
+	UpdateNode(UpdateNodeOptions) error
+}
+
+// UnitFinderProvisioner is a provisioner that allows finding a specific unit by
+// its id.
+type UnitFinderProvisioner interface {
+	// GetAppFromUnitID returns an app from unit id
+	GetAppFromUnitID(string) (App, error)
+}
+
+// AppFilterProvisioner is a provisioner that allows filtering apps by the
+// state of its units.
+type AppFilterProvisioner interface {
+	FilterAppsByUnitStatus([]App, []string) ([]App, error)
+}
+
+type Node interface {
+	Pool() string
+	Address() string
+	Status() string
+	Metadata() map[string]string
+	Units() ([]Unit, error)
+}
+
+func NodeToJSON(n Node) ([]byte, error) {
+	return json.Marshal(map[string]interface{}{
+		"Address":  n.Address(),
+		"Metadata": n.Metadata(),
+		"Status":   n.Status(),
+		"Pool":     n.Pool(),
+	})
 }
 
 type NodeStatusData struct {
@@ -399,29 +500,70 @@ type ExtensibleProvisioner interface {
 	PlatformRemove(name string) error
 }
 
-var provisioners = make(map[string]Provisioner)
+type provisionerFactory func() (Provisioner, error)
+
+var provisioners = make(map[string]provisionerFactory)
 
 // Register registers a new provisioner in the Provisioner registry.
-func Register(name string, p Provisioner) {
-	provisioners[name] = p
+func Register(name string, pFunc provisionerFactory) {
+	provisioners[name] = pFunc
+}
+
+// Unregister unregisters a provisioner.
+func Unregister(name string) {
+	delete(provisioners, name)
 }
 
 // Get gets the named provisioner from the registry.
 func Get(name string) (Provisioner, error) {
-	p, ok := provisioners[name]
+	pFunc, ok := provisioners[name]
 	if !ok {
 		return nil, fmt.Errorf("unknown provisioner: %q", name)
 	}
-	return p, nil
+	return pFunc()
+}
+
+func GetDefault() (Provisioner, error) {
+	if DefaultProvisioner == "" {
+		DefaultProvisioner = defaultDockerProvisioner
+	}
+	return Get(DefaultProvisioner)
 }
 
 // Registry returns the list of registered provisioners.
-func Registry() []Provisioner {
+func Registry() ([]Provisioner, error) {
 	registry := make([]Provisioner, 0, len(provisioners))
-	for _, p := range provisioners {
+	for _, pFunc := range provisioners {
+		p, err := pFunc()
+		if err != nil {
+			return nil, err
+		}
 		registry = append(registry, p)
 	}
-	return registry
+	return registry, nil
+}
+
+func InitializeAll() error {
+	provisioners, err := Registry()
+	if err != nil {
+		return err
+	}
+	var startupMessage string
+	for _, p := range provisioners {
+		if initializableProvisioner, ok := p.(InitializableProvisioner); ok {
+			err = initializableProvisioner.Initialize()
+			if err != nil {
+				return err
+			}
+		}
+		if messageProvisioner, ok := p.(MessageProvisioner); ok {
+			startupMessage, err = messageProvisioner.StartupMessage()
+			if err == nil && startupMessage != "" {
+				fmt.Print(startupMessage)
+			}
+		}
+	}
+	return nil
 }
 
 // Error represents a provisioning error. It encapsulates further errors.
