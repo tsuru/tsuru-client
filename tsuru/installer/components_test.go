@@ -8,6 +8,7 @@ import (
 	"encoding/json"
 	"fmt"
 	"io/ioutil"
+	"net"
 	"net/http"
 	"net/http/httptest"
 	"os"
@@ -254,6 +255,26 @@ func (s *S) TestTsuruAPIBootstrapCustomDockerRegistry(c *check.C) {
 	c.Assert(err, check.IsNil)
 }
 
+type FakeRedis struct {
+	URL string
+}
+
+// ListenAndServer starts a fake redis server that listen for a single
+// connection and answers to a PING
+func (r *FakeRedis) ListenAndServe() {
+	l, _ := net.Listen("tcp", r.URL)
+	defer l.Close()
+	r.URL = l.Addr().String()
+	conn, _ := l.Accept()
+	defer conn.Close()
+	buf := make([]byte, 1024)
+	conn.Read(buf)
+	if strings.Contains(string(buf), "PING") {
+		conn.Write([]byte("$2"))
+		conn.Write([]byte("\nPONG"))
+	}
+}
+
 func (s *S) TestPreInstalledComponents(c *check.C) {
 	server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		w.WriteHeader(http.StatusOK)
@@ -267,12 +288,14 @@ func (s *S) TestPreInstalledComponents(c *check.C) {
 		}
 	}))
 	defer planbServer.Close()
+	redis := &FakeRedis{URL: "127.0.0.1:9764"}
+	go redis.ListenAndServe()
 	err := config.ReadConfigFile("./testdata/components-conf.yml")
 	c.Assert(err, check.IsNil)
 	conf := NewInstallConfig("testing")
 	conf.ComponentAddress["registry"] = server.URL
 	conf.ComponentAddress["planb"] = planbServer.URL
-	println(planbServer.URL)
+	conf.ComponentAddress["redis"] = redis.URL
 	cluster := &FakeServiceCluster{}
 	m := &MongoDB{}
 	err = m.Install(cluster, conf)
@@ -281,7 +304,7 @@ func (s *S) TestPreInstalledComponents(c *check.C) {
 	r := &Redis{}
 	err = r.Install(cluster, conf)
 	c.Assert(err, check.IsNil)
-	c.Assert(conf.ComponentAddress["redis"], check.Equals, "localhost:6379")
+	c.Assert(conf.ComponentAddress["redis"], check.Equals, redis.URL)
 	registry := &Registry{}
 	err = registry.Install(cluster, conf)
 	c.Assert(err, check.IsNil)
