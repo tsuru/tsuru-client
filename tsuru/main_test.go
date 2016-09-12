@@ -479,3 +479,43 @@ func (s *S) TestUninstallIsRegistered(c *check.C) {
 	c.Assert(ok, check.Equals, true)
 	c.Assert(change, check.FitsTypeOf, &installer.Uninstall{})
 }
+
+func (s *S) TestNodeAddIsRegistered(c *check.C) {
+	manager = buildManager("tsuru")
+	change, ok := manager.Commands["node-add"]
+	c.Assert(ok, check.Equals, true)
+	c.Assert(change, check.FitsTypeOf, &admin.AddNodeCmd{})
+	change, ok = manager.Commands["docker-node-add"]
+	c.Assert(ok, check.Equals, true)
+	c.Assert(change, check.FitsTypeOf, &admin.CompatibleNodeAlias{})
+}
+
+func (s *S) TestNodeRemoveIsRegistered(c *check.C) {
+	manager = buildManager("tsuru")
+	change, ok := manager.Commands["node-remove"]
+	c.Assert(ok, check.Equals, true)
+	c.Assert(change, check.FitsTypeOf, &admin.RemoveNodeCmd{})
+	change, ok = manager.Commands["docker-node-remove"]
+	c.Assert(ok, check.Equals, true)
+	c.Assert(change, check.FitsTypeOf, &admin.CompatibleNodeAlias{})
+}
+
+func (s *S) TestNodeUpdateIsRegistered(c *check.C) {
+	manager = buildManager("tsuru")
+	change, ok := manager.Commands["node-update"]
+	c.Assert(ok, check.Equals, true)
+	c.Assert(change, check.FitsTypeOf, &admin.UpdateNodeCmd{})
+	change, ok = manager.Commands["docker-node-update"]
+	c.Assert(ok, check.Equals, true)
+	c.Assert(change, check.FitsTypeOf, &admin.CompatibleNodeAlias{})
+}
+
+func (s *S) TestNodeListIsRegistered(c *check.C) {
+	manager = buildManager("tsuru")
+	change, ok := manager.Commands["node-list"]
+	c.Assert(ok, check.Equals, true)
+	c.Assert(change, check.FitsTypeOf, &admin.ListNodesCmd{})
+	change, ok = manager.Commands["docker-node-list"]
+	c.Assert(ok, check.Equals, true)
+	c.Assert(change, check.FitsTypeOf, &admin.CompatibleNodeAlias{})
+}
