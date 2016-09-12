@@ -34,16 +34,16 @@ var (
 	defaultDockerMachineConfig = &DockerMachineConfig{
 		DriverName: "virtualbox",
 		Name:       "tsuru",
-		DriverOpts: make(map[string]interface{}),
+		DriverOpts: make(DriverOpts),
 	}
 )
 
 type Machine struct {
 	*host.Host
-	IP        string
-	Address   string
-	CAPath    string
-	OpenPorts []string
+	IP         string
+	Address    string
+	CAPath     string
+	DriverOpts DriverOpts
 }
 
 func (m *Machine) dockerClient() (*docker.Client, error) {
@@ -98,24 +98,24 @@ func getIp(iface string, remote sshTarget) string {
 
 type DockerMachine struct {
 	io.Closer
-	driverOpts    map[string]interface{}
-	driverName    string
-	storePath     string
-	certsPath     string
-	Name          string
-	client        libmachine.API
-	machinesCount uint64
+	driverName       string
+	storePath        string
+	certsPath        string
+	Name             string
+	client           libmachine.API
+	machinesCount    uint64
+	globalDriverOpts DriverOpts
 }
 
 type DockerMachineConfig struct {
 	DriverName string
-	DriverOpts map[string]interface{}
 	CAPath     string
 	Name       string
+	DriverOpts DriverOpts
 }
 
 type MachineProvisioner interface {
-	ProvisionMachine([]string) (*Machine, error)
+	ProvisionMachine(map[string]interface{}) (*Machine, error)
 }
 
 func NewDockerMachine(config *DockerMachineConfig) (*DockerMachine, error) {
@@ -138,12 +138,12 @@ func NewDockerMachine(config *DockerMachineConfig) (*DockerMachine, error) {
 		}
 	}
 	return &DockerMachine{
-		driverOpts: config.DriverOpts,
-		driverName: config.DriverName,
-		storePath:  storePath,
-		certsPath:  certsPath,
-		Name:       config.Name,
-		client:     libmachine.NewClient(storePath, certsPath),
+		driverName:       config.DriverName,
+		storePath:        storePath,
+		certsPath:        certsPath,
+		Name:             config.Name,
+		client:           libmachine.NewClient(storePath, certsPath),
+		globalDriverOpts: config.DriverOpts,
 	}, nil
 }
 
@@ -159,8 +159,8 @@ func copy(src, dst string) error {
 	return nil
 }
 
-func (d *DockerMachine) ProvisionMachine(openPorts []string) (*Machine, error) {
-	m, err := d.CreateMachine(openPorts)
+func (d *DockerMachine) ProvisionMachine(driverOpts map[string]interface{}) (*Machine, error) {
+	m, err := d.CreateMachine(driverOpts)
 	if err != nil {
 		return nil, fmt.Errorf("error creating machine %s", err)
 	}
@@ -171,7 +171,7 @@ func (d *DockerMachine) ProvisionMachine(openPorts []string) (*Machine, error) {
 	return m, nil
 }
 
-func (d *DockerMachine) CreateMachine(openPorts []string) (*Machine, error) {
+func (d *DockerMachine) CreateMachine(driverOpts map[string]interface{}) (*Machine, error) {
 	rawDriver, err := json.Marshal(&drivers.BaseDriver{
 		MachineName: d.generateMachineName(),
 		StorePath:   d.storePath,
@@ -183,7 +183,7 @@ func (d *DockerMachine) CreateMachine(openPorts []string) (*Machine, error) {
 	if err != nil {
 		return nil, err
 	}
-	configureDriver(host.Driver, d.driverOpts, openPorts)
+	d.configureDriver(host.Driver, driverOpts)
 	err = d.client.Create(host)
 	if err != nil {
 		fmt.Printf("Ignoring error on machine creation: %s", err)
@@ -193,11 +193,11 @@ func (d *DockerMachine) CreateMachine(openPorts []string) (*Machine, error) {
 		return nil, err
 	}
 	m := &Machine{
-		IP:        ip,
-		CAPath:    d.certsPath,
-		Host:      host,
-		Address:   fmt.Sprintf("https://%s:%d", ip, dockerHTTPSPort),
-		OpenPorts: openPorts,
+		IP:         ip,
+		CAPath:     d.certsPath,
+		Host:       host,
+		Address:    fmt.Sprintf("https://%s:%d", ip, dockerHTTPSPort),
+		DriverOpts: DriverOpts(driverOpts),
 	}
 	if host.AuthOptions() != nil {
 		host.AuthOptions().ServerCertSANs = append(host.AuthOptions().ServerCertSANs, m.GetPrivateIP())
@@ -286,18 +286,21 @@ func (d *DockerMachine) createRegistryCertificate(hosts ...string) error {
 	return generator.GenerateCert(certOpts)
 }
 
-func configureDriver(driver drivers.Driver, driverOpts map[string]interface{}, openPorts []string) error {
-	openPortFlag := driver.DriverName() + "-open-port"
-	opts := &rpcdriver.RPCFlags{Values: driverOpts}
+func (d *DockerMachine) configureDriver(driver drivers.Driver, driverOpts DriverOpts) error {
+	mergedOpts := make(DriverOpts)
+	for k, v := range d.globalDriverOpts {
+		mergedOpts[k] = v
+	}
+	for k, v := range driverOpts {
+		mergedOpts[k] = v
+	}
+	opts := &rpcdriver.RPCFlags{Values: mergedOpts}
 	for _, c := range driver.GetCreateFlags() {
 		_, ok := opts.Values[c.String()]
 		if !ok {
 			opts.Values[c.String()] = c.Default()
 			if c.Default() == nil {
 				opts.Values[c.String()] = false
-			}
-			if c.String() == openPortFlag {
-				opts.Values[c.String()] = openPorts
 			}
 		}
 	}

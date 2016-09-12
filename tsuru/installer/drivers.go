@@ -29,6 +29,8 @@ import (
 
 var ErrNoPrivateIPInterface = errors.New("no private IP interface")
 
+type DriverOpts map[string]interface{}
+
 func RunDriver(driverName string) error {
 	switch driverName {
 	case "amazonec2":

@@ -19,17 +19,19 @@ import (
 var (
 	defaultTsuruInstallConfig = &TsuruInstallConfig{
 		DockerMachineConfig: defaultDockerMachineConfig,
-		ComponentsHosts:     1,
-		PoolHosts:           1,
-		DedicatedPool:       false,
+		CoreHosts:           1,
+		AppsHosts:           1,
+		DedicatedAppsHosts:  false,
 	}
 )
 
 type TsuruInstallConfig struct {
 	*DockerMachineConfig
-	ComponentsHosts int
-	PoolHosts       int
-	DedicatedPool   bool
+	CoreHosts          int
+	CoreDriversOpts    map[string][]interface{}
+	AppsHosts          int
+	DedicatedAppsHosts bool
+	AppsDriversOpts    map[string][]interface{}
 }
 
 type Install struct {
@@ -112,7 +114,7 @@ func (c *Install) Run(context *cmd.Context, cli *cmd.Client) error {
 		return fmt.Errorf("failed to create docker machine: %s", err)
 	}
 	defer dm.Close()
-	componentsMachines, err := ProvisionMachines(dm, config.ComponentsHosts, []string{strconv.Itoa(defaultTsuruAPIPort)})
+	componentsMachines, err := ProvisionMachines(dm, config.CoreHosts, config.CoreDriversOpts)
 	if err != nil {
 		return fmt.Errorf("failed to provision components machines: %s", err)
 	}
@@ -171,23 +173,28 @@ func (c *Install) Run(context *cmd.Context, cli *cmd.Client) error {
 }
 
 func ProvisionPool(p MachineProvisioner, config *TsuruInstallConfig, hosts []*Machine) ([]*Machine, error) {
-	if config.DedicatedPool {
-		return ProvisionMachines(p, config.PoolHosts, []string{})
+	if config.DedicatedAppsHosts {
+		return ProvisionMachines(p, config.AppsHosts, config.AppsDriversOpts)
 	}
-	if config.PoolHosts > len(hosts) {
-		poolMachines, err := ProvisionMachines(p, config.PoolHosts-len(hosts), []string{})
+	if config.AppsHosts > len(hosts) {
+		poolMachines, err := ProvisionMachines(p, config.AppsHosts-len(hosts), config.AppsDriversOpts)
 		if err != nil {
 			return nil, fmt.Errorf("failed to provision pool hosts: %s", err)
 		}
 		return append(poolMachines, hosts...), nil
 	}
-	return hosts[:config.PoolHosts], nil
+	return hosts[:config.AppsHosts], nil
 }
 
-func ProvisionMachines(p MachineProvisioner, numMachines int, openPorts []string) ([]*Machine, error) {
+func ProvisionMachines(p MachineProvisioner, numMachines int, configs map[string][]interface{}) ([]*Machine, error) {
 	var machines []*Machine
 	for i := 0; i < numMachines; i++ {
-		m, err := p.ProvisionMachine(openPorts)
+		opts := make(DriverOpts)
+		for k, v := range configs {
+			idx := i % len(v)
+			opts[k] = v[idx]
+		}
+		m, err := p.ProvisionMachine(opts)
 		if err != nil {
 			return nil, fmt.Errorf("failed to provision machines: %s", err)
 		}
@@ -314,7 +321,7 @@ func parseConfigFile(file string) (*TsuruInstallConfig, error) {
 	if err == nil {
 		installConfig.Name = name
 	}
-	driverOpts := make(map[string]interface{})
+	driverOpts := make(DriverOpts)
 	opts, _ := config.Get("driver:options")
 	if opts != nil {
 		for k, v := range opts.(map[interface{}]interface{}) {
@@ -329,17 +336,53 @@ func parseConfigFile(file string) (*TsuruInstallConfig, error) {
 	if err == nil {
 		installConfig.CAPath = caPath
 	}
-	cHosts, err := config.GetInt("hosts:components:quantity")
+	cHosts, err := config.GetInt("hosts:core:size")
 	if err == nil {
-		installConfig.ComponentsHosts = cHosts
+		installConfig.CoreHosts = cHosts
 	}
-	pHosts, err := config.GetInt("hosts:pool:quantity")
+	pHosts, err := config.GetInt("hosts:apps:size")
 	if err == nil {
-		installConfig.PoolHosts = pHosts
+		installConfig.AppsHosts = pHosts
 	}
-	dedicated, err := config.GetBool("hosts:pool:dedicated")
+	dedicated, err := config.GetBool("hosts:apps:dedicated")
 	if err == nil {
-		installConfig.DedicatedPool = dedicated
+		installConfig.DedicatedAppsHosts = dedicated
+	}
+	opts, _ = config.Get("hosts:core:driver:options")
+	if opts != nil {
+		installConfig.CoreDriversOpts, err = parseDriverOptsSlice(opts)
+		if err != nil {
+			return nil, err
+		}
+	}
+	opts, _ = config.Get("hosts:apps:driver:options")
+	if opts != nil {
+		installConfig.AppsDriversOpts, err = parseDriverOptsSlice(opts)
+		if err != nil {
+			return nil, err
+		}
 	}
 	return installConfig, nil
+}
+
+func parseDriverOptsSlice(opts interface{}) (map[string][]interface{}, error) {
+	unparsed, ok := opts.(map[interface{}]interface{})
+	if !ok {
+		return nil, fmt.Errorf("failed to parse opts: %+v", opts)
+	}
+	parsedOpts := make(map[string][]interface{})
+	if opts != nil {
+		for k, v := range unparsed {
+			switch k := k.(type) {
+			case string:
+				l, ok := v.([]interface{})
+				if ok {
+					parsedOpts[k] = l
+				} else {
+					parsedOpts[k] = []interface{}{v}
+				}
+			}
+		}
+	}
+	return parsedOpts, nil
 }

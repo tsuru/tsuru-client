@@ -7,9 +7,9 @@ package installer
 import (
 	"bytes"
 	"fmt"
-	"io/ioutil"
 	"net/http"
 	"os"
+	"reflect"
 
 	"github.com/tsuru/tsuru/cmd"
 
@@ -28,25 +28,6 @@ func (s *S) TestParseConfigFileNotExists(c *check.C) {
 }
 
 func (s *S) TestParseConfigFile(c *check.C) {
-	conf := `
-name: tsuru-test
-hosts:
-    components:
-        quantity: 2
-    pool:
-        quantity: 1
-        dedicated: true
-ca-path: /tmp/certs
-driver:
-    name: amazonec2
-    options:
-        opt1: option1-value
-`
-	err := ioutil.WriteFile("/tmp/config.yml", []byte(conf), 0644)
-	if err != nil {
-		c.Fatal("Failed to write config file for test")
-	}
-	defer os.Remove("/tmp/config.yml")
 	expected := &TsuruInstallConfig{
 		DockerMachineConfig: &DockerMachineConfig{
 			DriverName: "amazonec2",
@@ -56,11 +37,17 @@ driver:
 			CAPath: "/tmp/certs",
 			Name:   "tsuru-test",
 		},
-		ComponentsHosts: 2,
-		PoolHosts:       1,
-		DedicatedPool:   true,
+		CoreHosts: 2,
+		CoreDriversOpts: map[string][]interface{}{
+			"amazonec2-region": []interface{}{"us-east", "us-west"},
+		},
+		AppsHosts: 1,
+		AppsDriversOpts: map[string][]interface{}{
+			"amazonec2-tags": []interface{}{"my-tag"},
+		},
+		DedicatedAppsHosts: true,
 	}
-	dmConfig, err := parseConfigFile("/tmp/config.yml")
+	dmConfig, err := parseConfigFile("./testdata/hosts.yml")
 	c.Assert(err, check.IsNil)
 	c.Assert(dmConfig, check.DeepEquals, expected)
 }
@@ -179,29 +166,43 @@ type FakeMachineProvisioner struct {
 	hostsProvisioned int
 }
 
-func (p *FakeMachineProvisioner) ProvisionMachine(ports []string) (*Machine, error) {
+func (p *FakeMachineProvisioner) ProvisionMachine(opts map[string]interface{}) (*Machine, error) {
 	p.hostsProvisioned = p.hostsProvisioned + 1
-	return &Machine{}, nil
+	return &Machine{DriverOpts: DriverOpts(opts)}, nil
 }
 
 func (s *S) TestProvisionPool(c *check.C) {
+	opt1 := DriverOpts{"variable-opt": "opt1"}
+	opt2 := DriverOpts{"variable-opt": "opt2"}
 	tt := []struct {
 		poolHosts           int
 		dedicatedPool       bool
 		machines            []*Machine
 		expectedProvisioned int
+		expectedDriverOpts  []DriverOpts
 	}{
-		{1, false, []*Machine{{}}, 0},
-		{2, false, []*Machine{{}}, 1},
-		{1, true, []*Machine{{}}, 1},
-		{2, true, []*Machine{{}, {}}, 2},
-		{3, true, []*Machine{{}}, 3},
+		{1, false, []*Machine{{}}, 0, []DriverOpts{}},
+		{2, false, []*Machine{{}}, 1, []DriverOpts{opt1, DriverOpts{}}},
+		{1, true, []*Machine{{}}, 1, []DriverOpts{opt1}},
+		{2, true, []*Machine{{}, {}}, 2, []DriverOpts{opt1, opt2}},
+		{3, true, []*Machine{{}}, 3, []DriverOpts{opt1, opt2, opt1}},
 	}
-	for _, t := range tt {
+	for ti, t := range tt {
 		p := &FakeMachineProvisioner{}
-		config := &TsuruInstallConfig{PoolHosts: t.poolHosts, DedicatedPool: t.dedicatedPool}
-		_, err := ProvisionPool(p, config, t.machines)
+		config := &TsuruInstallConfig{
+			AppsHosts:          t.poolHosts,
+			DedicatedAppsHosts: t.dedicatedPool,
+			AppsDriversOpts: map[string][]interface{}{
+				"variable-opt": []interface{}{"opt1", "opt2"},
+			},
+		}
+		machines, err := ProvisionPool(p, config, t.machines)
 		c.Assert(err, check.IsNil)
 		c.Assert(p.hostsProvisioned, check.Equals, t.expectedProvisioned)
+		for i := 0; i < t.expectedProvisioned; i++ {
+			if !reflect.DeepEqual(machines[i].DriverOpts, t.expectedDriverOpts[i]) {
+				c.Errorf("Test case %d/%d failed. Expected %+v. Got %+v", ti, i, t.expectedDriverOpts[i], machines[i].DriverOpts)
+			}
+		}
 	}
 }

@@ -15,7 +15,6 @@ import (
 	check "gopkg.in/check.v1"
 
 	"github.com/docker/machine/drivers/amazonec2"
-	"github.com/docker/machine/drivers/azure"
 	"github.com/docker/machine/drivers/fakedriver"
 	"github.com/docker/machine/libmachine/drivers/plugin/localbinary"
 	"github.com/docker/machine/libmachine/host"
@@ -84,7 +83,7 @@ func (s *S) TestNewDockerMachineDriverOpts(c *check.C) {
 	dm, err := NewDockerMachine(config)
 	c.Assert(err, check.IsNil)
 	c.Assert(dm, check.NotNil)
-	c.Assert(dm.driverOpts["url"].(string), check.Equals, "localhost")
+	c.Assert(dm.globalDriverOpts["url"].(string), check.Equals, "localhost")
 }
 
 func (s *S) TestNewDockerMachineCopyProvidedCa(c *check.C) {
@@ -108,32 +107,26 @@ func (s *S) TestNewDockerMachineCopyProvidedCa(c *check.C) {
 }
 
 func (s *S) TestConfigureDriver(c *check.C) {
-	driver := amazonec2.NewDriver("", "")
-	opts := map[string]interface{}{
+	dm := &DockerMachine{globalDriverOpts: DriverOpts{
 		"amazonec2-access-key":     "abc",
 		"amazonec2-subnet-id":      "net",
 		"amazonec2-security-group": []string{"sg-123", "sg-456"},
+	}}
+	driver := amazonec2.NewDriver("", "")
+	opts := map[string]interface{}{
+		"amazonec2-tags": "my-tag1",
 	}
-	err := configureDriver(driver, opts, []string{})
+	err := dm.configureDriver(driver, opts)
 	c.Assert(err, check.NotNil)
 	opts["amazonec2-secret-key"] = "cde"
-	err = configureDriver(driver, opts, []string{})
+	err = dm.configureDriver(driver, opts)
 	c.Assert(err, check.IsNil)
 	c.Assert(driver.SecurityGroupNames, check.DeepEquals, []string{"sg-123", "sg-456"})
 	c.Assert(driver.SecretKey, check.Equals, "cde")
 	c.Assert(driver.SubnetId, check.Equals, "net")
 	c.Assert(driver.AccessKey, check.Equals, "abc")
 	c.Assert(driver.RetryCount, check.Equals, 5)
-}
-
-func (s *S) TestConfigureDriverOpenPorts(c *check.C) {
-	driver := azure.NewDriver("", "")
-	opts := map[string]interface{}{
-		"azure-subscription-id": "abc",
-	}
-	err := configureDriver(driver, opts, []string{"8080"})
-	c.Assert(err, check.IsNil)
-	c.Assert(driver.(*azure.Driver).OpenPorts, check.DeepEquals, []string{"8080"})
+	c.Assert(driver.Tags, check.Equals, "my-tag1")
 }
 
 type cmdOutput struct {
@@ -282,12 +275,11 @@ func (s *S) TestCreateMachine(c *check.C) {
 	fakeAPI := &fakeMachineAPI{}
 	dm.client = fakeAPI
 	dm.certsPath = s.TLSCertsPath.RootDir
-	machine, err := dm.CreateMachine([]string{"8080"})
+	machine, err := dm.CreateMachine(map[string]interface{}{})
 	c.Assert(err, check.IsNil)
 	c.Assert(machine, check.NotNil)
 	c.Assert(machine.IP, check.Equals, "127.0.0.1")
 	c.Assert(machine.Address, check.Equals, "https://127.0.0.1:2376")
-	c.Assert(machine.OpenPorts, check.DeepEquals, []string{"8080"})
 	c.Assert(fakeAPI.driverName, check.Equals, "virtualbox")
 	c.Assert(fakeAPI.hostName, check.Equals, "machine")
 }
@@ -356,7 +348,7 @@ func (s *S) TestClose(c *check.C) {
 		FakeStore: &persisttest.FakeStore{},
 	}
 	dm.client = fakeAPI
-	dm.CreateMachine([]string{})
+	dm.CreateMachine(map[string]interface{}{})
 	c.Assert(fakeAPI.closed, check.Equals, false)
 	dm.Close()
 	c.Assert(fakeAPI.closed, check.Equals, true)
