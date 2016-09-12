@@ -113,14 +113,10 @@ func buildManager(name string) *cmd.Manager {
 	m.Register(&client.EventList{})
 	m.Register(&client.EventInfo{})
 	m.Register(&client.EventCancel{})
-	m.Register(&admin.AddNodeCmd{})
-	m.Register(&admin.RemoveNodeCmd{})
-	m.Register(&admin.UpdateNodeCmd{})
-	m.Register(&admin.ListNodesCmd{})
-	m.Register(&admin.CompatibleNodeAlias{Cmd: &admin.AddNodeCmd{}, Prov: "docker"})
-	m.Register(&admin.CompatibleNodeAlias{Cmd: &admin.RemoveNodeCmd{}, Prov: "docker"})
-	m.Register(&admin.CompatibleNodeAlias{Cmd: &admin.UpdateNodeCmd{}, Prov: "docker"})
-	m.Register(&admin.CompatibleNodeAlias{Cmd: &admin.ListNodesCmd{}, Prov: "docker"})
+	m.RegisterDeprecated(&admin.AddNodeCmd{}, "docker-node-add")
+	m.RegisterDeprecated(&admin.RemoveNodeCmd{}, "docker-node-remove")
+	m.RegisterDeprecated(&admin.UpdateNodeCmd{}, "docker-node-update")
+	m.RegisterDeprecated(&admin.ListNodesCmd{}, "docker-node-list")
 	registerProvisionersCommands(m)
 	return m
 }

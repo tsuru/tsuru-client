@@ -18,7 +18,7 @@ import (
 
 func (s *S) TestAddNodeCmdRun(c *check.C) {
 	var buf bytes.Buffer
-	context := cmd.Context{Args: []string{"docker", "pool=poolTest", "address=http://localhost:8080"}, Stdout: &buf}
+	context := cmd.Context{Args: []string{"pool=poolTest", "address=http://localhost:8080"}, Stdout: &buf}
 	trans := &cmdtest.ConditionalTransport{
 		Transport: cmdtest.Transport{Message: "", Status: http.StatusOK},
 		CondFunc: func(req *http.Request) bool {
@@ -29,7 +29,7 @@ func (s *S) TestAddNodeCmdRun(c *check.C) {
 			dec.IgnoreUnknownKeys(true)
 			err = dec.DecodeValues(&params, req.Form)
 			c.Assert(err, check.IsNil)
-			u := strings.HasSuffix(req.URL.Path, "/1.0/docker/node")
+			u := strings.HasSuffix(req.URL.Path, "/1.2/node")
 			method := req.Method == "POST"
 			address := params.Metadata["address"] == "http://localhost:8080"
 			pool := params.Metadata["pool"] == "poolTest"
@@ -48,7 +48,7 @@ func (s *S) TestAddNodeCmdRun(c *check.C) {
 func (s *S) TestAddNodeWithErrorCmdRun(c *check.C) {
 	var buf bytes.Buffer
 	context := cmd.Context{
-		Args:   []string{"docker", "pool=poolTest", "address=http://localhost:8080"},
+		Args:   []string{"pool=poolTest", "address=http://localhost:8080"},
 		Stdout: &buf, Stderr: &buf,
 	}
 	trans := &cmdtest.ConditionalTransport{
@@ -61,7 +61,7 @@ func (s *S) TestAddNodeWithErrorCmdRun(c *check.C) {
 			dec.IgnoreUnknownKeys(true)
 			err = dec.DecodeValues(&params, req.Form)
 			c.Assert(err, check.IsNil)
-			u := strings.HasSuffix(req.URL.Path, "/1.0/docker/node")
+			u := strings.HasSuffix(req.URL.Path, "/1.2/node")
 			method := req.Method == "POST"
 			address := params.Metadata["address"] == "http://localhost:8080"
 			pool := params.Metadata["pool"] == "poolTest"
@@ -78,11 +78,11 @@ func (s *S) TestAddNodeWithErrorCmdRun(c *check.C) {
 
 func (s *S) TestRemoveNodeFromTheSchedulerCmdRun(c *check.C) {
 	var buf bytes.Buffer
-	context := cmd.Context{Args: []string{"docker", "http://localhost:8080"}, Stdout: &buf}
+	context := cmd.Context{Args: []string{"http://localhost:8080"}, Stdout: &buf}
 	trans := &cmdtest.ConditionalTransport{
 		Transport: cmdtest.Transport{Message: "", Status: http.StatusOK},
 		CondFunc: func(req *http.Request) bool {
-			u := strings.HasSuffix(req.URL.Path, "/1.0/docker/node/http://localhost:8080")
+			u := strings.HasSuffix(req.URL.Path, "/1.2/node/http://localhost:8080")
 			raw := req.URL.RawQuery == "no-rebalance=false"
 			method := req.Method == "DELETE"
 			return u && method && raw
@@ -99,11 +99,11 @@ func (s *S) TestRemoveNodeFromTheSchedulerCmdRun(c *check.C) {
 
 func (s *S) TestRemoveNodeFromTheSchedulerWithDestroyCmdRun(c *check.C) {
 	var buf bytes.Buffer
-	context := cmd.Context{Args: []string{"docker", "http://localhost:8080"}, Stdout: &buf}
+	context := cmd.Context{Args: []string{"http://localhost:8080"}, Stdout: &buf}
 	trans := &cmdtest.ConditionalTransport{
 		Transport: cmdtest.Transport{Message: "", Status: http.StatusOK},
 		CondFunc: func(req *http.Request) bool {
-			u := strings.HasSuffix(req.URL.Path, "/1.0/docker/node/http://localhost:8080")
+			u := strings.HasSuffix(req.URL.Path, "/1.2/node/http://localhost:8080")
 			raw := req.URL.RawQuery == "no-rebalance=false&remove-iaas=true"
 			method := req.Method == "DELETE"
 			return u && method && raw
@@ -121,7 +121,7 @@ func (s *S) TestRemoveNodeFromTheSchedulerWithDestroyCmdRun(c *check.C) {
 func (s *S) TestRemoveNodeFromTheSchedulerWithDestroyCmdRunConfirmation(c *check.C) {
 	var stdout bytes.Buffer
 	context := cmd.Context{
-		Args:   []string{"docker", "http://localhost:8080"},
+		Args:   []string{"http://localhost:8080"},
 		Stdout: &stdout,
 		Stdin:  strings.NewReader("n\n"),
 	}
@@ -133,11 +133,11 @@ func (s *S) TestRemoveNodeFromTheSchedulerWithDestroyCmdRunConfirmation(c *check
 
 func (s *S) TestRemoveNodeFromTheSchedulerWithNoRebalanceCmdRun(c *check.C) {
 	var buf bytes.Buffer
-	context := cmd.Context{Args: []string{"docker", "http://localhost:8080"}, Stdout: &buf}
+	context := cmd.Context{Args: []string{"http://localhost:8080"}, Stdout: &buf}
 	trans := &cmdtest.ConditionalTransport{
 		Transport: cmdtest.Transport{Message: "", Status: http.StatusOK},
 		CondFunc: func(req *http.Request) bool {
-			u := strings.HasSuffix(req.URL.Path, "/1.0/docker/node/http://localhost:8080")
+			u := strings.HasSuffix(req.URL.Path, "/1.2/node/http://localhost:8080")
 			raw := req.URL.RawQuery == "no-rebalance=true"
 			method := req.Method == "DELETE"
 			return u && method && raw
@@ -154,7 +154,7 @@ func (s *S) TestRemoveNodeFromTheSchedulerWithNoRebalanceCmdRun(c *check.C) {
 
 func (s *S) TestListNodesCmdRun(c *check.C) {
 	var buf bytes.Buffer
-	context := cmd.Context{Args: []string{"docker"}, Stdout: &buf}
+	context := cmd.Context{Args: []string{}, Stdout: &buf}
 	trans := &cmdtest.ConditionalTransport{
 		Transport: cmdtest.Transport{Message: `{
 	"machines": [{"Id": "m-id-1", "Address": "localhost2"}],
@@ -164,7 +164,7 @@ func (s *S) TestListNodesCmdRun(c *check.C) {
 	]
 }`, Status: http.StatusOK},
 		CondFunc: func(req *http.Request) bool {
-			return req.URL.Path == "/1.0/docker/node"
+			return req.URL.Path == "/1.2/node"
 		},
 	}
 	manager := cmd.Manager{}
@@ -185,7 +185,7 @@ func (s *S) TestListNodesCmdRun(c *check.C) {
 
 func (s *S) TestListNodesCmdRunWithFilters(c *check.C) {
 	var buf bytes.Buffer
-	context := cmd.Context{Args: []string{"docker"}, Stdout: &buf}
+	context := cmd.Context{Args: []string{}, Stdout: &buf}
 	trans := &cmdtest.ConditionalTransport{
 		Transport: cmdtest.Transport{Message: `{
 	"machines": [{"Id": "m-id-1", "Address": "localhost2"}],
@@ -196,7 +196,7 @@ func (s *S) TestListNodesCmdRunWithFilters(c *check.C) {
 	]
 }`, Status: http.StatusOK},
 		CondFunc: func(req *http.Request) bool {
-			return req.URL.Path == "/1.0/docker/node"
+			return req.URL.Path == "/1.2/node"
 		},
 	}
 	manager := cmd.Manager{}
@@ -217,11 +217,11 @@ func (s *S) TestListNodesCmdRunWithFilters(c *check.C) {
 
 func (s *S) TestListNodesCmdRunEmptyAll(c *check.C) {
 	var buf bytes.Buffer
-	context := cmd.Context{Args: []string{"docker"}, Stdout: &buf}
+	context := cmd.Context{Args: []string{}, Stdout: &buf}
 	trans := &cmdtest.ConditionalTransport{
 		Transport: cmdtest.Transport{Message: `{}`, Status: http.StatusOK},
 		CondFunc: func(req *http.Request) bool {
-			return req.URL.Path == "/1.0/docker/node"
+			return req.URL.Path == "/1.2/node"
 		},
 	}
 	manager := cmd.Manager{}
@@ -237,11 +237,11 @@ func (s *S) TestListNodesCmdRunEmptyAll(c *check.C) {
 
 func (s *S) TestListNodesCmdRunNoContent(c *check.C) {
 	var buf bytes.Buffer
-	context := cmd.Context{Args: []string{"docker"}, Stdout: &buf}
+	context := cmd.Context{Args: []string{}, Stdout: &buf}
 	trans := &cmdtest.ConditionalTransport{
 		Transport: cmdtest.Transport{Message: `{}`, Status: http.StatusNoContent},
 		CondFunc: func(req *http.Request) bool {
-			return req.URL.Path == "/1.0/docker/node"
+			return req.URL.Path == "/1.2/node"
 		},
 	}
 	manager := cmd.Manager{}
@@ -257,7 +257,7 @@ func (s *S) TestListNodesCmdRunNoContent(c *check.C) {
 
 func (s *S) TestListNodesCmdRunWithFlagQ(c *check.C) {
 	var buf bytes.Buffer
-	context := cmd.Context{Args: []string{"docker"}, Stdout: &buf}
+	context := cmd.Context{Args: []string{}, Stdout: &buf}
 	trans := &cmdtest.ConditionalTransport{
 		Transport: cmdtest.Transport{Message: `{
 	"machines": [{"Id": "m-id-1", "Address": "localhost2"}],
@@ -268,7 +268,7 @@ func (s *S) TestListNodesCmdRunWithFlagQ(c *check.C) {
 	]
 }`, Status: http.StatusOK},
 		CondFunc: func(req *http.Request) bool {
-			return req.URL.Path == "/1.0/docker/node"
+			return req.URL.Path == "/1.2/node"
 		},
 	}
 	manager := cmd.Manager{}
@@ -283,11 +283,11 @@ func (s *S) TestListNodesCmdRunWithFlagQ(c *check.C) {
 
 func (s *S) TestUpdateNodeCmdRun(c *check.C) {
 	var buf bytes.Buffer
-	context := cmd.Context{Args: []string{"docker", "http://localhost:1111", "x=y", "y=z"}, Stdout: &buf}
+	context := cmd.Context{Args: []string{"http://localhost:1111", "x=y", "y=z"}, Stdout: &buf}
 	trans := &cmdtest.ConditionalTransport{
 		Transport: cmdtest.Transport{Message: "", Status: http.StatusOK},
 		CondFunc: func(req *http.Request) bool {
-			u := strings.HasSuffix(req.URL.Path, "/1.0/docker/node")
+			u := strings.HasSuffix(req.URL.Path, "/1.2/node")
 			method := req.Method == "PUT"
 			var params provision.UpdateNodeOptions
 			err := req.ParseForm()
@@ -313,7 +313,7 @@ func (s *S) TestUpdateNodeCmdRun(c *check.C) {
 
 func (s *S) TestUpdateNodeToDisableCmdRun(c *check.C) {
 	var buf bytes.Buffer
-	context := cmd.Context{Args: []string{"docker", "http://localhost:1111", "x=y", "y=z"}, Stdout: &buf}
+	context := cmd.Context{Args: []string{"http://localhost:1111", "x=y", "y=z"}, Stdout: &buf}
 	trans := &cmdtest.ConditionalTransport{
 		Transport: cmdtest.Transport{Message: "", Status: http.StatusOK},
 		CondFunc: func(req *http.Request) bool {
@@ -338,7 +338,7 @@ func (s *S) TestUpdateNodeToDisableCmdRun(c *check.C) {
 
 func (s *S) TestUpdateNodeToEnabledCmdRun(c *check.C) {
 	var buf bytes.Buffer
-	context := cmd.Context{Args: []string{"docker", "http://localhost:1111", "x=y", "y=z"}, Stdout: &buf}
+	context := cmd.Context{Args: []string{"http://localhost:1111", "x=y", "y=z"}, Stdout: &buf}
 	trans := &cmdtest.ConditionalTransport{
 		Transport: cmdtest.Transport{Message: "", Status: http.StatusOK},
 		CondFunc: func(req *http.Request) bool {
@@ -363,7 +363,7 @@ func (s *S) TestUpdateNodeToEnabledCmdRun(c *check.C) {
 
 func (s *S) TestUpdateNodeToEnabledDisableCmdRun(c *check.C) {
 	var buf bytes.Buffer
-	context := cmd.Context{Args: []string{"docker", "http://localhost:1111", "x=y", "y=z"}, Stdout: &buf}
+	context := cmd.Context{Args: []string{"http://localhost:1111", "x=y", "y=z"}, Stdout: &buf}
 	trans := &cmdtest.ConditionalTransport{
 		Transport: cmdtest.Transport{
 			Message: "You can't make a node enable and disable at the same time.",

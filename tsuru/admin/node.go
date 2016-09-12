@@ -21,26 +21,6 @@ import (
 	"github.com/tsuru/tsuru/provision"
 )
 
-type CompatibleNodeAlias struct {
-	Cmd  cmd.FlaggedCommand
-	Prov string
-}
-
-func (c *CompatibleNodeAlias) Info() *cmd.Info {
-	info := c.Cmd.Info()
-	info.Name = fmt.Sprintf("%s-%s", c.Prov, info.Name)
-	info.MinArgs -= 1
-	return info
-}
-func (c *CompatibleNodeAlias) Run(ctx *cmd.Context, client *cmd.Client) error {
-	ctx.Args = append([]string{c.Prov}, ctx.Args...)
-	return c.Cmd.Run(ctx, client)
-}
-
-func (c *CompatibleNodeAlias) Flags() *gnuflag.FlagSet {
-	return c.Cmd.Flags()
-}
-
 type AddNodeCmd struct {
 	fs       *gnuflag.FlagSet
 	register bool
@@ -49,7 +29,7 @@ type AddNodeCmd struct {
 func (AddNodeCmd) Info() *cmd.Info {
 	return &cmd.Info{
 		Name:  "node-add",
-		Usage: "node-add <provisioner> [param_name=param_value]... [--register]",
+		Usage: "node-add [param_name=param_value]... [--register]",
 		Desc: `Creates or registers a new node in the cluster.
 By default, this command will call the configured IaaS to create a new
 machine. Every param will be sent to the IaaS implementation.
@@ -86,8 +66,7 @@ func (a *AddNodeCmd) Run(ctx *cmd.Context, client *cmd.Client) error {
 		Register: a.register,
 		Metadata: map[string]string{},
 	}
-	provisioner := ctx.Args[0]
-	for _, param := range ctx.Args[1:] {
+	for _, param := range ctx.Args {
 		if strings.Contains(param, "=") {
 			keyValue := strings.SplitN(param, "=", 2)
 			opts.Metadata[keyValue[0]] = keyValue[1]
@@ -97,7 +76,7 @@ func (a *AddNodeCmd) Run(ctx *cmd.Context, client *cmd.Client) error {
 	if err != nil {
 		return err
 	}
-	u, err := cmd.GetURL(fmt.Sprintf("/%s/node", provisioner))
+	u, err := cmd.GetURLVersion("1.2", "/node")
 	if err != nil {
 		return err
 	}
@@ -135,13 +114,13 @@ type UpdateNodeCmd struct {
 func (UpdateNodeCmd) Info() *cmd.Info {
 	return &cmd.Info{
 		Name:  "node-update",
-		Usage: "node-update <provisioner> <address> [param_name=param_value...] [--disable] [--enable]",
+		Usage: "node-update <address> [param_name=param_value...] [--disable] [--enable]",
 		Desc: `Modifies metadata associated to a node. If a parameter is set to an
 empty value, it will be removed from the node's metadata.
 
 If the [[--disable]] flag is used, the node will be marked as disabled and the
 scheduler won't consider it when selecting a node to receive containers.`,
-		MinArgs: 2,
+		MinArgs: 1,
 	}
 }
 
@@ -155,20 +134,19 @@ func (a *UpdateNodeCmd) Flags() *gnuflag.FlagSet {
 }
 
 func (a *UpdateNodeCmd) Run(ctx *cmd.Context, client *cmd.Client) error {
-	provisioner := ctx.Args[0]
 	opts := provision.UpdateNodeOptions{
-		Address:  ctx.Args[1],
+		Address:  ctx.Args[0],
 		Disable:  a.disable,
 		Enable:   a.enable,
 		Metadata: map[string]string{},
 	}
-	for _, param := range ctx.Args[2:] {
+	for _, param := range ctx.Args[1:] {
 		if strings.Contains(param, "=") {
 			keyValue := strings.SplitN(param, "=", 2)
 			opts.Metadata[keyValue[0]] = keyValue[1]
 		}
 	}
-	u, err := cmd.GetURL(fmt.Sprintf("/%s/node", provisioner))
+	u, err := cmd.GetURLVersion("1.2", "/node")
 	if err != nil {
 		return err
 	}
@@ -199,7 +177,7 @@ type RemoveNodeCmd struct {
 func (RemoveNodeCmd) Info() *cmd.Info {
 	return &cmd.Info{
 		Name:  "node-remove",
-		Usage: "node-remove <provisioner> <address> [--no-rebalance] [--destroy] [-y]",
+		Usage: "node-remove <address> [--no-rebalance] [--destroy] [-y]",
 		Desc: `Removes a node from the cluster.
 
 By default tsuru will redistribute all containers present on the removed node
@@ -208,7 +186,7 @@ flag.
 
 If the node being removed was created using a IaaS provider tsuru will NOT
 destroy the machine on the IaaS, unless the [[--destroy]] flag is used.`,
-		MinArgs: 2,
+		MinArgs: 1,
 	}
 }
 
@@ -217,8 +195,7 @@ func (c *RemoveNodeCmd) Run(ctx *cmd.Context, client *cmd.Client) error {
 	if c.destroy {
 		msg += " and DESTROY the machine from IaaS"
 	}
-	provisioner := ctx.Args[0]
-	address := ctx.Args[1]
+	address := ctx.Args[0]
 	if !c.Confirm(ctx, fmt.Sprintf(msg+"?", address)) {
 		return nil
 	}
@@ -227,7 +204,7 @@ func (c *RemoveNodeCmd) Run(ctx *cmd.Context, client *cmd.Client) error {
 		v.Set("remove-iaas", "true")
 	}
 	v.Set("no-rebalance", strconv.FormatBool(c.noRebalance))
-	u, err := cmd.GetURL(fmt.Sprintf("/%s/node/%s?%s", provisioner, address, v.Encode()))
+	u, err := cmd.GetURLVersion("1.2", fmt.Sprintf("/node/%s?%s", address, v.Encode()))
 	if err != nil {
 		return err
 	}
@@ -261,14 +238,14 @@ type ListNodesCmd struct {
 func (c *ListNodesCmd) Info() *cmd.Info {
 	return &cmd.Info{
 		Name:  "node-list",
-		Usage: "node-list <provisioner> [--filter/-f <metadata>=<value>]...",
+		Usage: "node-list [--filter/-f <metadata>=<value>]...",
 		Desc: `Lists nodes in the cluster. It will also show you metadata associated to each
 node and the IaaS ID if the node was added using tsuru IaaS providers.
 
 Using the [[-f/--filter]] flag, the user is able to filter the nodes that
 appear in the list based on the key pairs displayed in the metadata column.
 Users can also combine filters using [[-f]] multiple times.`,
-		MinArgs: 1,
+		MinArgs: 0,
 	}
 }
 
@@ -284,8 +261,7 @@ func (c *ListNodesCmd) Flags() *gnuflag.FlagSet {
 }
 
 func (c *ListNodesCmd) Run(ctx *cmd.Context, client *cmd.Client) error {
-	provisioner := ctx.Args[0]
-	u, err := cmd.GetURL(fmt.Sprintf("/%s/node", provisioner))
+	u, err := cmd.GetURLVersion("1.2", "/node")
 	if err != nil {
 		return err
 	}
