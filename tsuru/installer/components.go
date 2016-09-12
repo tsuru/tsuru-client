@@ -24,6 +24,7 @@ import (
 	tclient "github.com/tsuru/tsuru-client/tsuru/client"
 	"github.com/tsuru/tsuru/cmd"
 	"github.com/tsuru/tsuru/provision"
+	"github.com/tsuru/tsuru/provision/docker/nodecontainer"
 )
 
 var (
@@ -457,6 +458,18 @@ func SetupTsuru(opts TsuruSetupOptions) error {
 	err = poolAdd.Run(&context, client)
 	if err != nil {
 		return err
+	}
+	if opts.DockerHubMirror != "" {
+		nodeConainerUpdate := nodecontainer.NodeContainerUpdate{}
+		err = nodeConainerUpdate.Flags().Parse(true, []string{"--image", fmt.Sprintf("%s/tsuru/bs:v1", opts.DockerHubMirror)})
+		if err != nil {
+			return err
+		}
+		context.Args = []string{"big-sibling"}
+		err = nodeConainerUpdate.Run(&context, client)
+		if err != nil {
+			return err
+		}
 	}
 	nodeAdd := admin.AddNodeCmd{}
 	err = nodeAdd.Flags().Parse(true, []string{"--register"})
