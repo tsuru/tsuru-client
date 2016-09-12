@@ -458,16 +458,15 @@ func SetupTsuru(opts TsuruSetupOptions) error {
 	if err != nil {
 		return err
 	}
+	nodeAdd := admin.AddNodeCmd{}
+	err = nodeAdd.Flags().Parse(true, []string{"--register"})
+	if err != nil {
+		return err
+	}
 	for _, n := range opts.NodesAddr {
 		fmt.Printf("adding node %s\n", n)
-		context.Args = []string{fmt.Sprintf("address=%s", n), "pool=theonepool"}
-		nodeAdd := manager.Commands["docker-node-add"]
-		n, _ := nodeAdd.(cmd.FlaggedCommand)
-		err = n.Flags().Parse(true, []string{"--register"})
-		if err != nil {
-			return err
-		}
-		err = n.Run(&context, client)
+		context.Args = []string{"docker", fmt.Sprintf("address=%s", n), "pool=theonepool"}
+		err = nodeAdd.Run(&context, client)
 		if err != nil {
 			return err
 		}
