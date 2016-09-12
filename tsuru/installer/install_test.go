@@ -12,7 +12,6 @@ import (
 	"reflect"
 
 	"github.com/tsuru/tsuru/cmd"
-
 	"gopkg.in/check.v1"
 )
 
