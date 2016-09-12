@@ -22,6 +22,7 @@ var (
 		CoreHosts:           1,
 		AppsHosts:           1,
 		DedicatedAppsHosts:  false,
+		CoreDriversOpts:     make(map[string][]interface{}),
 	}
 )
 
@@ -132,11 +133,12 @@ func (c *Install) Run(context *cmd.Context, cli *cmd.Client) error {
 		return fmt.Errorf("failed to create docker machine: %s", err)
 	}
 	defer dm.Close()
-	componentsMachines, err := ProvisionMachines(dm, config.CoreHosts, config.CoreDriversOpts)
+	config.CoreDriversOpts[config.DriverName+"-open-port"] = []interface{}{strconv.Itoa(defaultTsuruAPIPort)}
+	coreMachines, err := ProvisionMachines(dm, config.CoreHosts, config.CoreDriversOpts)
 	if err != nil {
 		return fmt.Errorf("failed to provision components machines: %s", err)
 	}
-	cluster, err := NewSwarmCluster(componentsMachines)
+	cluster, err := NewSwarmCluster(coreMachines)
 	if err != nil {
 		return fmt.Errorf("failed to setup swarm cluster: %s", err)
 	}
@@ -149,12 +151,12 @@ func (c *Install) Run(context *cmd.Context, cli *cmd.Client) error {
 		}
 		fmt.Fprintf(context.Stdout, "%s successfully installed!\n", component.Name())
 	}
-	poolMachines, err := ProvisionPool(dm, config, componentsMachines)
+	appsMachines, err := ProvisionPool(dm, config, coreMachines)
 	if err != nil {
 		return err
 	}
 	var nodesAddr []string
-	for _, m := range poolMachines {
+	for _, m := range appsMachines {
 		nodesAddr = append(nodesAddr, m.GetPrivateAddress())
 	}
 	fmt.Fprintf(context.Stdout, "Bootstrapping Tsuru API...")
@@ -171,7 +173,7 @@ func (c *Install) Run(context *cmd.Context, cli *cmd.Client) error {
 		return fmt.Errorf("Error bootstrapping tsuru: %s", err)
 	}
 	fmt.Fprintf(context.Stdout, "Applying iptables workaround for docker 1.12...\n")
-	for _, m := range componentsMachines {
+	for _, m := range coreMachines {
 		_, err = m.RunSSHCommand("PATH=$PATH:/usr/sbin/:/usr/local/sbin; sudo iptables -D DOCKER-ISOLATION -i docker_gwbridge -o docker0 -j DROP")
 		if err != nil {
 			fmt.Fprintf(context.Stderr, "Failed to apply iptables rule: %s. Maybe it is not needed anymore?\n", err)
