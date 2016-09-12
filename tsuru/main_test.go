@@ -487,7 +487,7 @@ func (s *S) TestNodeAddIsRegistered(c *check.C) {
 	c.Assert(change, check.FitsTypeOf, &admin.AddNodeCmd{})
 	change, ok = manager.Commands["docker-node-add"]
 	c.Assert(ok, check.Equals, true)
-	c.Assert(change, check.FitsTypeOf, &admin.CompatibleNodeAlias{})
+	c.Assert(change, check.FitsTypeOf, &cmd.DeprecatedCommand{})
 }
 
 func (s *S) TestNodeRemoveIsRegistered(c *check.C) {
@@ -497,7 +497,7 @@ func (s *S) TestNodeRemoveIsRegistered(c *check.C) {
 	c.Assert(change, check.FitsTypeOf, &admin.RemoveNodeCmd{})
 	change, ok = manager.Commands["docker-node-remove"]
 	c.Assert(ok, check.Equals, true)
-	c.Assert(change, check.FitsTypeOf, &admin.CompatibleNodeAlias{})
+	c.Assert(change, check.FitsTypeOf, &cmd.DeprecatedCommand{})
 }
 
 func (s *S) TestNodeUpdateIsRegistered(c *check.C) {
@@ -507,7 +507,7 @@ func (s *S) TestNodeUpdateIsRegistered(c *check.C) {
 	c.Assert(change, check.FitsTypeOf, &admin.UpdateNodeCmd{})
 	change, ok = manager.Commands["docker-node-update"]
 	c.Assert(ok, check.Equals, true)
-	c.Assert(change, check.FitsTypeOf, &admin.CompatibleNodeAlias{})
+	c.Assert(change, check.FitsTypeOf, &cmd.DeprecatedCommand{})
 }
 
 func (s *S) TestNodeListIsRegistered(c *check.C) {
@@ -517,5 +517,5 @@ func (s *S) TestNodeListIsRegistered(c *check.C) {
 	c.Assert(change, check.FitsTypeOf, &admin.ListNodesCmd{})
 	change, ok = manager.Commands["docker-node-list"]
 	c.Assert(ok, check.Equals, true)
-	c.Assert(change, check.FitsTypeOf, &admin.CompatibleNodeAlias{})
+	c.Assert(change, check.FitsTypeOf, &cmd.DeprecatedCommand{})
 }
