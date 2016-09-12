@@ -76,6 +76,24 @@ Url of a docker hub mirror used to fetch the components docker images.
 A path to a directory containing a ca.pem and ca-key.pem files that are going to be used to sign certificates used by docker and docker registry.
 If not set, a CA will be created, copied to every host provisioned and used to sign the certificates.
 
+- hosts:core:size
+Number of machines to be provisioned and used to host tsuru core components.
+
+- hosts:core:driver:options
+Driver parameters specific to the core hosts can be set on this namespace. The format is: <driver-param>>: ["value1", "value2"]. Each
+host will use one value from the list. Refer to the driver configuration for more information on what parameter are available.
+
+- hosts:apps:size
+Number of machines to be provisioned and used to host tsuru applications.
+
+- hosts:apps:dedicated
+Boolean to indicated if the installer should not reuse the machines created for
+the core components.
+
+- hosts:apps:driver:options
+Driver parameters specific to the applications hosts can be set on this namespace. The format is: <driver-param>>: ["value1", "value2"]. Each
+host will use one value from the list. Refer to the driver configuration for more information on what parameter are available.
+
 - driver
 Under this namespace lies all the docker machine driver configuration.
 
