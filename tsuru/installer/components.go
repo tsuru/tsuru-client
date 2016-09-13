@@ -437,7 +437,7 @@ func SetupTsuru(opts TsuruSetupOptions) error {
 	}
 	err = t.Run(&context, client)
 	if err != nil {
-		return err
+		return fmt.Errorf("failed to add tsuru target: %s", err)
 	}
 	fmt.Fprint(os.Stdout, "log in with default user: admin@example.com")
 	logincmd := manager.Commands["login"]
@@ -445,7 +445,7 @@ func SetupTsuru(opts TsuruSetupOptions) error {
 	context.Stdin = strings.NewReader(fmt.Sprintf("%s\n", opts.Password))
 	err = logincmd.Run(&context, client)
 	if err != nil {
-		return err
+		return fmt.Errorf("failed to login to tsuru: %s", err)
 	}
 	context.Args = []string{"theonepool"}
 	context.Stdin = nil
@@ -457,7 +457,7 @@ func SetupTsuru(opts TsuruSetupOptions) error {
 	}
 	err = poolAdd.Run(&context, client)
 	if err != nil {
-		return err
+		return fmt.Errorf("failed to add pool: %s", err)
 	}
 	if opts.DockerHubMirror != "" {
 		nodeConainerUpdate := nodecontainer.NodeContainerUpdate{}
@@ -468,7 +468,7 @@ func SetupTsuru(opts TsuruSetupOptions) error {
 		context.Args = []string{"big-sibling"}
 		err = nodeConainerUpdate.Run(&context, client)
 		if err != nil {
-			return err
+			return fmt.Errorf("failed to update bs nodecontainer: %s", err)
 		}
 	}
 	nodeAdd := admin.AddNodeCmd{}
@@ -481,7 +481,7 @@ func SetupTsuru(opts TsuruSetupOptions) error {
 		context.Args = []string{"docker", fmt.Sprintf("address=%s", n), "pool=theonepool"}
 		err = nodeAdd.Run(&context, client)
 		if err != nil {
-			return err
+			return fmt.Errorf("failed to register node: %s", err)
 		}
 	}
 	fmt.Fprintln(os.Stdout, "adding platform")
@@ -494,40 +494,56 @@ func SetupTsuru(opts TsuruSetupOptions) error {
 		return platformAdd.Run(&context, client) == nil
 	})
 	if err != nil {
-		return err
+		return fmt.Errorf("failed to add platform: %s", err)
 	}
 	context.Args = []string{"admin"}
 	fmt.Fprintln(os.Stdout, "adding team")
 	teamCreate := tclient.TeamCreate{}
 	err = teamCreate.Run(&context, client)
 	if err != nil {
-		return err
+		return fmt.Errorf("failed to create admin team: %s", err)
 	}
-	context.Args = []string{"tsuru-dashboard", "python"}
+	err = installDashboard(client, opts.DockerHubMirror)
+	if err != nil {
+		return fmt.Errorf("failed to install tsuru dashboard: %s", err)
+	}
+	return nil
+}
+
+func installDashboard(client *cmd.Client, dockerHubMirror string) error {
 	fmt.Fprintln(os.Stdout, "adding dashboard")
+	context := cmd.Context{
+		Args:   []string{"tsuru-dashboard", "python"},
+		Stdout: os.Stdout,
+		Stderr: os.Stderr,
+	}
 	createDashboard := tclient.AppCreate{}
-	err = createDashboard.Flags().Parse(true, []string{"-t", "admin"})
+	err := createDashboard.Flags().Parse(true, []string{"-t", "admin"})
 	if err != nil {
 		return err
 	}
 	err = createDashboard.Run(&context, client)
 	if err != nil {
-		return err
+		return fmt.Errorf("failed to create dashboard app: %s", err)
 	}
 	context.Args = []string{}
 	fmt.Fprintln(os.Stdout, "deploying dashboard")
 	deployDashboard := tclient.AppDeploy{}
 	deployFlags := []string{"-a", "tsuru-dashboard", "-i"}
-	if opts.DockerHubMirror == "" {
+	if dockerHubMirror == "" {
 		deployFlags = append(deployFlags, "tsuru/dashboard")
 	} else {
-		deployFlags = append(deployFlags, fmt.Sprintf("%s/tsuru/dashboard", opts.DockerHubMirror))
+		deployFlags = append(deployFlags, fmt.Sprintf("%s/tsuru/dashboard", dockerHubMirror))
 	}
 	err = deployDashboard.Flags().Parse(true, deployFlags)
 	if err != nil {
 		return err
 	}
-	return deployDashboard.Run(&context, client)
+	err = deployDashboard.Run(&context, client)
+	if err != nil {
+		return fmt.Errorf("failed to deploy dashboard app: %s", err)
+	}
+	return nil
 }
 
 func (c *TsuruAPI) Uninstall(installation string) error {
