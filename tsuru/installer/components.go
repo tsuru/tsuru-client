@@ -517,7 +517,13 @@ func SetupTsuru(opts TsuruSetupOptions) error {
 	context.Args = []string{}
 	fmt.Fprintln(os.Stdout, "deploying dashboard")
 	deployDashboard := tclient.AppDeploy{}
-	err = deployDashboard.Flags().Parse(true, []string{"-a", "tsuru-dashboard", "-i", "tsuru/dashboard"})
+	deployFlags := []string{"-a", "tsuru-dashboard", "-i"}
+	if opts.DockerHubMirror == "" {
+		deployFlags = append(deployFlags, "tsuru/dashboard")
+	} else {
+		deployFlags = append(deployFlags, fmt.Sprintf("%s/tsuru/dashboard", opts.DockerHubMirror))
+	}
+	err = deployDashboard.Flags().Parse(true, deployFlags)
 	if err != nil {
 		return err
 	}
