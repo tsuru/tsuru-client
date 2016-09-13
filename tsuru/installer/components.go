@@ -517,6 +517,7 @@ func installDashboard(client *cmd.Client, dockerHubMirror string) error {
 		Stdout: os.Stdout,
 		Stderr: os.Stderr,
 	}
+	context.RawOutput()
 	createDashboard := tclient.AppCreate{}
 	err := createDashboard.Flags().Parse(true, []string{"-t", "admin"})
 	if err != nil {
