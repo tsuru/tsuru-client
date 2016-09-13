@@ -147,13 +147,15 @@ func (s *S) TestInstallPlanbHostPortBindings(c *check.C) {
 
 func (s *S) TestTsuruAPIBootstrapLocalEnviroment(c *check.C) {
 	var paths []string
-	requiredPaths := []string{"/1.0/pools", "/1.2/node", "/1.0/platforms",
-		"/1.0/teams", "/1.0/apps", "/1.0/apps/tsuru-dashboard/deploy",
+	expectedPaths := []string{"/1.0/auth/scheme", "/1.0/users/test/tokens",
+		"/1.0/pools", "/1.2/node", "/1.0/platforms", "/1.0/teams", "/1.0/apps",
+		"/1.0/apps/tsuru-dashboard", "/1.0/apps/tsuru-dashboard/deploy",
 	}
 	server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		b, err := ioutil.ReadAll(r.Body)
 		defer r.Body.Close()
 		c.Assert(err, check.IsNil)
+		paths = append(paths, r.URL.Path)
 		if r.URL.Path == "/1.0/users/test/tokens" {
 			c.Assert(string(b), check.Equals, "password=test")
 			token := map[string]string{"token": "test"}
@@ -163,32 +165,26 @@ func (s *S) TestTsuruAPIBootstrapLocalEnviroment(c *check.C) {
 		}
 		if r.URL.Path == "/1.0/pools" {
 			c.Assert(string(b), check.Equals, "default=true&force=false&name=theonepool&public=true")
-			paths = append(paths, r.URL.Path)
 		}
 		if r.URL.Path == "/1.2/node" {
 			c.Assert(string(b), check.Matches, "Address=&Metadata.address=.*&Metadata.pool=theonepool&Register=true")
-			paths = append(paths, r.URL.Path)
 		}
 		if r.URL.Path == "/1.0/platforms" {
 			expected := "FROM tsuru/python"
 			c.Assert(strings.Contains(string(b), expected), check.Equals, true)
-			paths = append(paths, r.URL.Path)
 		}
 		if r.URL.Path == "/1.0/teams" {
 			c.Assert(string(b), check.Equals, "name=admin")
-			paths = append(paths, r.URL.Path)
 		}
 		if r.URL.Path == "/1.0/apps" {
 			c.Assert(string(b), check.Equals, "description=&name=tsuru-dashboard&plan=&platform=python&pool=&routeropts=&teamOwner=admin")
 			buf, err := json.Marshal(map[string]string{})
 			c.Assert(err, check.IsNil)
 			w.Write(buf)
-			paths = append(paths, r.URL.Path)
 		}
 		if r.URL.Path == "/1.0/apps/tsuru-dashboard/deploy" {
 			c.Assert(string(b), check.Equals, "image=tsuru%2Fdashboard&origin=image")
 			fmt.Fprintln(w, "\nOK")
-			paths = append(paths, r.URL.Path)
 		}
 		w.WriteHeader(http.StatusOK)
 		w.Header().Set("Content-Type", "application/json")
@@ -214,17 +210,21 @@ func (s *S) TestTsuruAPIBootstrapLocalEnviroment(c *check.C) {
 	}
 	err := SetupTsuru(opts)
 	c.Assert(err, check.IsNil)
-	c.Assert(paths, check.DeepEquals, requiredPaths)
+	c.Assert(paths, check.DeepEquals, expectedPaths)
 }
 
 func (s *S) TestTsuruAPIBootstrapCustomDockerRegistry(c *check.C) {
 	var paths []string
-	requiredPaths := []string{"/1.0/docker/nodecontainers/big-sibling", "/1.0/platforms",
-		"/1.0/apps/tsuru-dashboard/deploy"}
+	expectedPaths := []string{"/1.0/auth/scheme", "/1.0/users/test/tokens",
+		"/1.0/pools", "/1.0/docker/nodecontainers/big-sibling", "/1.2/node",
+		"/1.0/platforms", "/1.0/teams", "/1.0/apps", "/1.0/apps/tsuru-dashboard",
+		"/1.0/apps/tsuru-dashboard/deploy",
+	}
 	server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		b, err := ioutil.ReadAll(r.Body)
 		defer r.Body.Close()
 		c.Assert(err, check.IsNil)
+		paths = append(paths, r.URL.Path)
 		if r.URL.Path == "/1.0/users/test/tokens" {
 			token := map[string]string{"token": "test"}
 			buf, err := json.Marshal(token)
@@ -235,12 +235,10 @@ func (s *S) TestTsuruAPIBootstrapCustomDockerRegistry(c *check.C) {
 			m, err := url.ParseQuery(string(b))
 			c.Assert(err, check.IsNil)
 			c.Assert(m.Get("config.image"), check.Equals, "test.com/tsuru/bs:v1")
-			paths = append(paths, r.URL.Path)
 		}
 		if r.URL.Path == "/1.0/platforms" {
 			expected := "FROM test.com/python"
 			c.Assert(strings.Contains(string(b), expected), check.Equals, true)
-			paths = append(paths, r.URL.Path)
 		}
 		if r.URL.Path == "/1.0/apps" {
 			buf, err := json.Marshal(map[string]string{})
@@ -248,11 +246,8 @@ func (s *S) TestTsuruAPIBootstrapCustomDockerRegistry(c *check.C) {
 			w.Write(buf)
 		}
 		if r.URL.Path == "/1.0/apps/tsuru-dashboard/deploy" {
-			s, err := url.QueryUnescape(string(b))
-			c.Assert(err, check.IsNil)
-			c.Assert(s, check.Equals, "image=test.com/tsuru/dashboard&origin=image")
+			c.Assert(string(b), check.Equals, "image=test.com%2Ftsuru%2Fdashboard&origin=image")
 			fmt.Fprintln(w, "\nOK")
-			paths = append(paths, r.URL.Path)
 		}
 		w.WriteHeader(http.StatusOK)
 		w.Header().Set("Content-Type", "application/json")
@@ -279,7 +274,7 @@ func (s *S) TestTsuruAPIBootstrapCustomDockerRegistry(c *check.C) {
 	}
 	err := SetupTsuru(opts)
 	c.Assert(err, check.IsNil)
-	c.Assert(paths, check.DeepEquals, requiredPaths)
+	c.Assert(paths, check.DeepEquals, expectedPaths)
 }
 
 type FakeRedis struct {
