@@ -484,13 +484,13 @@ func SetupTsuru(opts TsuruSetupOptions) error {
 			return err
 		}
 	}
-	context.Args = []string{"python"}
 	fmt.Fprintln(os.Stdout, "adding platform")
+	platformAdd := admin.PlatformAdd{}
+	context.Args = []string{"python"}
+	if opts.DockerHubMirror != "" {
+		platformAdd.Flags().Parse(true, []string{"-i", fmt.Sprintf("%s/python", opts.DockerHubMirror)})
+	}
 	err = mcnutils.WaitFor(func() bool {
-		platformAdd := admin.PlatformAdd{}
-		if opts.DockerHubMirror != "" {
-			platformAdd.Flags().Parse(true, []string{"-i", fmt.Sprintf("%s/python", opts.DockerHubMirror)})
-		}
 		return platformAdd.Run(&context, client) == nil
 	})
 	if err != nil {
