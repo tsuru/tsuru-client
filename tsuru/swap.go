@@ -27,12 +27,9 @@ type appSwap struct {
 func (s *appSwap) Info() *cmd.Info {
 	return &cmd.Info{
 		Name:  "app-swap",
-		Usage: "app-swap <app1-name> <app2-name> [-f/--force] [-c/--cname-only]",
+		Usage: "app-swap <app1-name> <app2-name> [-c/--cname-only]",
 		Desc: `Swaps routing between two apps. This allows zero downtime and makes rollback
 as simple as swapping the applications back.
-
-Use [[--force]] if you want to swap applications with a different number of
-units or different platform without confirmation.
 
 Use [[--cname-only]] if you want to swap all cnames except the default
 cname of application`,

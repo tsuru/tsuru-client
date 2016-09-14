@@ -68,8 +68,8 @@
     "desc": "Restarts an application, or one of the processes of the application.\n\nFlags:\n  \n  -a, --app (= \"\")\n      The name of the app.\n  -p, --process (= \"\")\n      Process name\n  \n"
   }, 
   "app-swap": {
-    "usage": "tsuru app-swap <app1-name> <app2-name> [-f/--force] [-c/--cname-only]", 
-    "desc": "Swaps routing between two apps. This allows zero downtime and makes rollback\nas simple as swapping the applications back.\n\nUse [[--force]] if you want to swap applications with a different number of\nunits or different platform without confirmation.\n\nUse [[--cname-only]] if you want to swap all cnames except the default\ncname of application\n\nFlags:\n  \n  -c, --cname-only  (= false)\n      Swap all cnames except the default cname.\n  -f, --force  (= false)\n      Force Swap among apps with different number of units or different platform.\n  \nMinimum # of arguments: 2\n"
+    "usage": "tsuru app-swap <app1-name> <app2-name> [-c/--cname-only]", 
+    "desc": "Swaps routing between two apps. This allows zero downtime and makes rollback\nas simple as swapping the applications back.\n\nUse [[--cname-only]] if you want to swap all cnames except the default\ncname of application\n\nFlags:\n  \n  -c, --cname-only  (= false)\n      Swap all cnames except the default cname.\n  \nMinimum # of arguments: 2\n"
   }, 
   "app-plan-change": {
     "usage": "tsuru app-plan-change", 
@@ -200,8 +200,8 @@
     "desc": "This command was removed. You should use `tsuru service-info` instead.\n\n"
   }, 
   "key-add": {
-    "usage": "tsuru key-add <key-name> <path/to/key/file.pub> [-f/--force]", 
-    "desc": "Sends your public key to the git server used by tsuru.\n\nFlags:\n  \n  -f, --force  (= false)\n      Force overriding the key if it already exists\n  \nMinimum # of arguments: 2\n"
+    "usage": "tsuru key-add <key-name> <path/to/key/file.pub>", 
+    "desc": "Sends your public key to the git server used by tsuru.\n\nFlags:\n  \nMinimum # of arguments: 2\n"
   }, 
   "token-show": {
     "usage": "tsuru token-show [--user/-u useremail]", 
