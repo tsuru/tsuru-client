@@ -138,7 +138,11 @@ func (c *Install) Run(context *cmd.Context, cli *cmd.Client) error {
 	if err != nil {
 		return fmt.Errorf("failed to provision components machines: %s", err)
 	}
-	cluster, err := NewSwarmCluster(coreMachines)
+	numManagers := config.CoreHosts
+	if config.CoreHosts > 3 {
+		numManagers = 3
+	}
+	cluster, err := NewSwarmCluster(coreMachines, numManagers)
 	if err != nil {
 		return fmt.Errorf("failed to setup swarm cluster: %s", err)
 	}

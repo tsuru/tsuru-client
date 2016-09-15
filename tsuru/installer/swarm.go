@@ -23,22 +23,22 @@ type ServiceCluster interface {
 }
 
 type SwarmCluster struct {
-	Manager *Machine
-	Workers []*Machine
-	network *docker.Network
+	Managers []*Machine
+	Workers  []*Machine
+	network  *docker.Network
 }
 
 func (c *SwarmCluster) dockerClient() (*docker.Client, error) {
-	return c.Manager.dockerClient()
+	return c.GetManager().dockerClient()
 }
 
 func (c *SwarmCluster) GetManager() *Machine {
-	return c.Manager
+	return c.Managers[0]
 }
 
 // NewSwarmCluster creates a Swarm Cluster using the first machine as a manager
 // and the rest as workers and also creates an overlay network between the nodes.
-func NewSwarmCluster(machines []*Machine) (*SwarmCluster, error) {
+func NewSwarmCluster(machines []*Machine, numManagers int) (*SwarmCluster, error) {
 	swarmOpts := docker.InitSwarmOptions{
 		InitRequest: swarm.InitRequest{
 			ListenAddr:    fmt.Sprintf("0.0.0.0:%d", swarmPort),
@@ -74,7 +74,15 @@ func NewSwarmCluster(machines []*Machine) (*SwarmCluster, error) {
 	if err != nil {
 		return nil, fmt.Errorf("failed to create overlay network: %s", err)
 	}
+	managers := make([]*Machine, numManagers)
 	for i, m := range machines {
+		var joinToken string
+		if i < numManagers {
+			joinToken = swarmInspect.JoinTokens.Manager
+			managers[i] = m
+		} else {
+			joinToken = swarmInspect.JoinTokens.Worker
+		}
 		if i == 0 {
 			continue
 		}
@@ -85,7 +93,7 @@ func NewSwarmCluster(machines []*Machine) (*SwarmCluster, error) {
 		opts := docker.JoinSwarmOptions{
 			JoinRequest: swarm.JoinRequest{
 				ListenAddr:  fmt.Sprintf("0.0.0.0:%d", swarmPort),
-				JoinToken:   swarmInspect.JoinTokens.Worker,
+				JoinToken:   joinToken,
 				RemoteAddrs: []string{fmt.Sprintf("%s:%d", machines[0].IP, swarmPort)},
 			},
 		}
@@ -95,9 +103,9 @@ func NewSwarmCluster(machines []*Machine) (*SwarmCluster, error) {
 		}
 	}
 	return &SwarmCluster{
-		Manager: machines[0],
-		Workers: machines,
-		network: network,
+		Managers: managers,
+		Workers:  machines,
+		network:  network,
 	}, nil
 }
 

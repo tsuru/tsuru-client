@@ -54,9 +54,9 @@ func (s *S) createCluster() (*testCluster, error) {
 	}
 	return &testCluster{
 		SwarmCluster: &SwarmCluster{
-			Manager: managerMachine,
-			Workers: []*Machine{managerMachine, workerMachine},
-			network: &docker.Network{Name: "tsuru"},
+			Managers: []*Machine{managerMachine},
+			Workers:  []*Machine{managerMachine, workerMachine},
+			network:  &docker.Network{Name: "tsuru"},
 		},
 		ManagerServer: managerServer,
 		WorkerServer:  workerServer,
@@ -82,7 +82,7 @@ func (s *S) TestNewSwarmCluster(c *check.C) {
 	}, tlsConfig)
 	c.Assert(err, check.IsNil)
 	defer managerServer.Stop()
-	managerMachine := &Machine{
+	m1 := &Machine{
 		Host:    &host.Host{Name: "manager"},
 		IP:      "127.0.0.1",
 		Address: managerServer.URL(),
@@ -100,19 +100,71 @@ func (s *S) TestNewSwarmCluster(c *check.C) {
 	}, tlsConfig)
 	c.Assert(err, check.IsNil)
 	defer workerServer.Stop()
-	workerMachine := &Machine{
+	m2 := &Machine{
 		Host:    &host.Host{Name: "worker"},
 		IP:      "127.0.0.2",
 		Address: workerServer.URL(),
 		CAPath:  s.TLSCertsPath.RootDir,
 	}
-	cluster, err := NewSwarmCluster([]*Machine{managerMachine, workerMachine})
+	cluster, err := NewSwarmCluster([]*Machine{m1, m2}, 1)
 	c.Assert(err, check.IsNil)
 	c.Assert(cluster, check.NotNil)
+	c.Assert(cluster.Managers, check.DeepEquals, []*Machine{m1})
+	c.Assert(cluster.Workers, check.DeepEquals, []*Machine{m1, m2})
 	c.Assert(managerReqs[0].URL.Path, check.Equals, "/swarm/init")
 	c.Assert(managerReqs[1].URL.Path, check.Equals, "/swarm")
 	c.Assert(managerReqs[2].URL.Path, check.Equals, "/networks/create")
 	c.Assert(workerReqs[0].URL.Path, check.Equals, "/swarm/join")
+}
+
+func (s *S) TestNewSwarmClusterMultipleManagers(c *check.C) {
+	tlsConfig := testing.TLSConfig{
+		CertPath:    s.TLSCertsPath.ServerCert,
+		CertKeyPath: s.TLSCertsPath.ServerKey,
+		RootCAPath:  s.TLSCertsPath.RootCert,
+	}
+	var managerReqs, workerReqs []*http.Request
+	managerServer, err := testing.NewTLSServer("127.0.0.1:0", nil, func(r *http.Request) {
+		managerReqs = append(managerReqs, r)
+		if r.URL.Path == "/swarm/init" {
+			var initReq swarm.InitRequest
+			errDec := json.NewDecoder(r.Body).Decode(&initReq)
+			c.Assert(errDec, check.IsNil)
+			c.Assert(initReq.AdvertiseAddr, check.Equals, "127.0.0.1:2377")
+			c.Assert(initReq.ListenAddr, check.Equals, "0.0.0.0:2377")
+		}
+	}, tlsConfig)
+	c.Assert(err, check.IsNil)
+	defer managerServer.Stop()
+	m1 := &Machine{
+		Host:    &host.Host{Name: "manager"},
+		IP:      "127.0.0.1",
+		Address: managerServer.URL(),
+		CAPath:  s.TLSCertsPath.RootDir,
+	}
+	workerServer, err := testing.NewTLSServer("127.0.0.1:0", nil, func(r *http.Request) {
+		workerReqs = append(workerReqs, r)
+		if r.URL.Path == "/swarm/join" {
+			var joinReq swarm.JoinRequest
+			errDec := json.NewDecoder(workerReqs[0].Body).Decode(&joinReq)
+			c.Assert(errDec, check.IsNil)
+			c.Assert(joinReq.RemoteAddrs, check.DeepEquals, []string{"127.0.0.1:2377"})
+			c.Assert(joinReq.ListenAddr, check.Equals, "0.0.0.0:2377")
+		}
+	}, tlsConfig)
+	c.Assert(err, check.IsNil)
+	defer workerServer.Stop()
+	m2 := &Machine{
+		Host:    &host.Host{Name: "worker"},
+		IP:      "127.0.0.2",
+		Address: workerServer.URL(),
+		CAPath:  s.TLSCertsPath.RootDir,
+	}
+	cluster, err := NewSwarmCluster([]*Machine{m1, m2}, 2)
+	c.Assert(err, check.IsNil)
+	c.Assert(cluster, check.NotNil)
+	c.Assert(cluster.Managers, check.DeepEquals, []*Machine{m1, m2})
+	c.Assert(cluster.Workers, check.DeepEquals, []*Machine{m1, m2})
 }
 
 func (s *S) TestCreateService(c *check.C) {
@@ -133,7 +185,7 @@ func (s *S) TestCreateService(c *check.C) {
 		Address: server.URL(),
 		CAPath:  s.TLSCertsPath.RootDir,
 	}
-	cluster, err := NewSwarmCluster([]*Machine{m})
+	cluster, err := NewSwarmCluster([]*Machine{m}, 1)
 	c.Assert(err, check.IsNil)
 	err = cluster.CreateService(docker.CreateServiceOptions{})
 	c.Assert(err, check.IsNil)
