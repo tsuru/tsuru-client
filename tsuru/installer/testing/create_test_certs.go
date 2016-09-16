@@ -113,10 +113,15 @@ func CreateTestCerts() (CertsPath, error) {
 	clientKeyPEM := pem.EncodeToMemory(&pem.Block{
 		Type: "RSA PRIVATE KEY", Bytes: x509.MarshalPKCS1PrivateKey(clientKey),
 	})
-	absPath, err := ioutil.TempDir("", "installer_test_certs")
+	absPath, err := ioutil.TempDir("", "installer_test")
 	if err != nil {
 		return path, err
 	}
+	err = os.Mkdir(absPath+"/certs", 0700)
+	if err != nil {
+		return path, err
+	}
+	absPath = absPath + "/certs"
 	path = CertsPath{
 		RootDir:    absPath,
 		RootCert:   filepath.Join(absPath, "ca.pem"),

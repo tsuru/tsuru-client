@@ -10,6 +10,7 @@ import (
 	"io/ioutil"
 	"os"
 	"path/filepath"
+	"strings"
 	"testing"
 
 	check "gopkg.in/check.v1"
@@ -21,9 +22,7 @@ import (
 	"github.com/docker/machine/libmachine/persist/persisttest"
 	"github.com/docker/machine/libmachine/state"
 	dtesting "github.com/fsouza/go-dockerclient/testing"
-	"github.com/tsuru/tsuru-client/tsuru/client"
 	"github.com/tsuru/tsuru-client/tsuru/installer/testing"
-	"github.com/tsuru/tsuru/exec/exectest"
 )
 
 type S struct {
@@ -50,11 +49,10 @@ func TestMain(m *testing.M) {
 func Test(t *testing.T) { check.TestingT(t) }
 
 func (s *S) SetUpSuite(c *check.C) {
-	storeBasePath, err := ioutil.TempDir("", "tests-store")
-	c.Assert(err, check.IsNil)
-	s.StoreBasePath = storeBasePath
 	tlsCertsPath, err := installertest.CreateTestCerts()
 	c.Assert(err, check.IsNil)
+	s.StoreBasePath, _ = filepath.Split(tlsCertsPath.RootDir)
+	storeBasePath = s.StoreBasePath
 	s.TLSCertsPath = tlsCertsPath
 }
 
@@ -164,71 +162,34 @@ func (f *fakeSSHTarget) GetSSHKeyPath() string {
 }
 
 func (s *S) TestUploadRegistryCertificate(c *check.C) {
-	fakeSSHTarget := &fakeSSHTarget{}
-	fexec := exectest.FakeExecutor{}
-	client.Execut = &fexec
-	defer func() {
-		client.Execut = nil
-	}()
+	sshTarget := &fakeSSHTarget{ip: "127.0.0.1"}
 	config := &DockerMachineConfig{
 		CAPath: s.TLSCertsPath.RootDir,
 	}
 	defer os.Remove(s.StoreBasePath)
 	dm, err := NewDockerMachine(config)
 	c.Assert(err, check.IsNil)
-	err = dm.uploadRegistryCertificate(fakeSSHTarget)
+	err = dm.uploadRegistryCertificate(sshTarget)
 	c.Assert(err, check.IsNil)
-	expectedArgs := []string{"-o StrictHostKeyChecking=no",
-		"-i",
-		"/mykey",
-		"-r",
-		fmt.Sprintf("%s/", dm.certsPath),
-		fmt.Sprintf("%s@%s:/home/%s/", "ubuntu", "127.0.0.1", "ubuntu"),
-	}
-	c.Assert(fexec.ExecutedCmd("scp", expectedArgs), check.Equals, true)
-	expectedCmds := []string{
-		"mkdir -p /home/ubuntu/certs/127.0.0.1:5000",
-		"cp /home/ubuntu/certs/*.pem /home/ubuntu/certs/127.0.0.1:5000/",
-		"sudo mkdir /etc/docker/certs.d && sudo cp -r /home/ubuntu/certs/* /etc/docker/certs.d/",
-		"cat /home/ubuntu/certs/127.0.0.1:5000/ca.pem | sudo tee -a /etc/ssl/certs/ca-certificates.crt",
-		"sudo mkdir -p /var/lib/registry/",
-	}
-	c.Assert(fakeSSHTarget.cmds, check.DeepEquals, expectedCmds)
-}
-
-func (s *S) TestUploadAlreadyCreatedRegistryCertificate(c *check.C) {
-	fakeSSHTarget := &fakeSSHTarget{ip: "127.0.0.2"}
-	fexec := exectest.FakeExecutor{}
-	client.Execut = &fexec
-	defer func() {
-		client.Execut = nil
-	}()
-	config := &DockerMachineConfig{
-		CAPath: s.TLSCertsPath.RootDir,
-	}
-	defer os.Remove(s.StoreBasePath)
-	dm, err := NewDockerMachine(config)
+	c.Assert(len(sshTarget.cmds), check.Equals, 10)
+	c.Assert(sshTarget.cmds[0], check.Equals, "mkdir -p /home/ubuntu/certs/127.0.0.1:5000")
+	c.Assert(sshTarget.cmds[1], check.Equals, "sudo mkdir /etc/docker/certs.d")
+	c.Assert(strings.Contains(sshTarget.cmds[2], "sudo tee /home/ubuntu/certs/127.0.0.1:5000/registry-cert.pem"), check.Equals, true)
+	c.Assert(strings.Contains(sshTarget.cmds[3], "sudo tee /home/ubuntu/certs/127.0.0.1:5000/registry-key.pem"), check.Equals, true)
+	c.Assert(strings.Contains(sshTarget.cmds[4], "sudo tee /etc/docker/certs.d/ca.pem"), check.Equals, true)
+	c.Assert(strings.Contains(sshTarget.cmds[5], "sudo tee /etc/docker/certs.d/cert.pem"), check.Equals, true)
+	c.Assert(strings.Contains(sshTarget.cmds[6], "sudo tee /etc/docker/certs.d/key.pem"), check.Equals, true)
+	c.Assert(sshTarget.cmds[7], check.Equals, "sudo cp -r /home/ubuntu/certs/* /etc/docker/certs.d/")
+	c.Assert(sshTarget.cmds[8], check.Equals, "sudo cat /etc/docker/certs.d/ca.pem | sudo tee -a /etc/ssl/certs/ca-certificates.crt")
+	c.Assert(sshTarget.cmds[9], check.Equals, "sudo mkdir -p /var/lib/registry/")
+	sshTarget2 := &fakeSSHTarget{ip: "127.0.0.2"}
+	err = dm.uploadRegistryCertificate(sshTarget2)
 	c.Assert(err, check.IsNil)
-	err = dm.createRegistryCertificate("127.0.0.1")
-	c.Assert(err, check.IsNil)
-	err = dm.uploadRegistryCertificate(fakeSSHTarget)
-	c.Assert(err, check.IsNil)
-	expectedArgs := []string{"-o StrictHostKeyChecking=no",
-		"-i",
-		"/mykey",
-		"-r",
-		fmt.Sprintf("%s/", dm.certsPath),
-		fmt.Sprintf("%s@%s:/home/%s/", "ubuntu", "127.0.0.2", "ubuntu"),
-	}
-	c.Assert(fexec.ExecutedCmd("scp", expectedArgs), check.Equals, true)
-	expectedCmds := []string{
-		"mkdir -p /home/ubuntu/certs/127.0.0.1:5000",
-		"cp /home/ubuntu/certs/*.pem /home/ubuntu/certs/127.0.0.1:5000/",
-		"sudo mkdir /etc/docker/certs.d && sudo cp -r /home/ubuntu/certs/* /etc/docker/certs.d/",
-		"cat /home/ubuntu/certs/127.0.0.1:5000/ca.pem | sudo tee -a /etc/ssl/certs/ca-certificates.crt",
-		"sudo mkdir -p /var/lib/registry/",
-	}
-	c.Assert(fakeSSHTarget.cmds, check.DeepEquals, expectedCmds)
+	c.Assert(len(sshTarget2.cmds), check.Equals, 10)
+	c.Assert(sshTarget2.cmds[0], check.Equals, "mkdir -p /home/ubuntu/certs/127.0.0.1:5000")
+	c.Assert(sshTarget2.cmds[1], check.Equals, "sudo mkdir /etc/docker/certs.d")
+	c.Assert(strings.Contains(sshTarget2.cmds[2], "sudo tee /home/ubuntu/certs/127.0.0.1:5000/registry-cert.pem"), check.Equals, true)
+	c.Assert(strings.Contains(sshTarget2.cmds[3], "sudo tee /home/ubuntu/certs/127.0.0.1:5000/registry-key.pem"), check.Equals, true)
 }
 
 func (s *S) TestCreateRegistryCertificate(c *check.C) {

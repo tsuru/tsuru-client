@@ -5,7 +5,6 @@
 package installer
 
 import (
-	"bytes"
 	"crypto/x509"
 	"encoding/json"
 	"encoding/pem"
@@ -25,9 +24,7 @@ import (
 	"github.com/docker/machine/libmachine/host"
 	"github.com/docker/machine/libmachine/mcnutils"
 	"github.com/fsouza/go-dockerclient"
-	"github.com/tsuru/tsuru-client/tsuru/client"
 	"github.com/tsuru/tsuru/cmd"
-	"github.com/tsuru/tsuru/exec"
 )
 
 var (
@@ -224,15 +221,17 @@ type sshTarget interface {
 }
 
 func (d *DockerMachine) uploadRegistryCertificate(host sshTarget) error {
+	registryCertPath := filepath.Join(d.certsPath, "registry-cert.pem")
+	registryKeyPath := filepath.Join(d.certsPath, "registry-key.pem")
 	var registryIP string
-	if _, err := os.Stat(filepath.Join(d.certsPath, "registry-cert.pem")); os.IsNotExist(err) {
+	if _, err := os.Stat(registryCertPath); os.IsNotExist(err) {
 		errCreate := d.createRegistryCertificate(host.GetIP())
 		if errCreate != nil {
 			return errCreate
 		}
 		registryIP = host.GetIP()
 	} else {
-		certData, errRead := ioutil.ReadFile(filepath.Join(d.certsPath, "registry-cert.pem"))
+		certData, errRead := ioutil.ReadFile(registryCertPath)
 		if errRead != nil {
 			return fmt.Errorf("failed to read registry-cert.pem: %s", errRead)
 		}
@@ -244,43 +243,50 @@ func (d *DockerMachine) uploadRegistryCertificate(host sshTarget) error {
 		registryIP = cert.IPAddresses[0].String()
 	}
 	fmt.Printf("Uploading registry certificate...\n")
-	args := []string{
-		"-o StrictHostKeyChecking=no",
-		"-i",
-		host.GetSSHKeyPath(),
-		"-r",
-		fmt.Sprintf("%s/", d.certsPath),
-		fmt.Sprintf("%s@%s:/home/%s/", host.GetSSHUsername(), host.GetIP(), host.GetSSHUsername()),
-	}
-	stdout := bytes.NewBufferString("")
-	opts := exec.ExecuteOptions{
-		Cmd:    "scp",
-		Args:   args,
-		Stdout: stdout,
-	}
-	err := client.Executor().Execute(opts)
-	if err != nil {
-		return fmt.Errorf("Command: %s. Error:%s", stdout.String(), err.Error())
-	}
 	certsBasePath := fmt.Sprintf("/home/%s/certs/%s:5000", host.GetSSHUsername(), registryIP)
-	_, err = host.RunSSHCommand(fmt.Sprintf("mkdir -p %s", certsBasePath))
-	if err != nil {
+	if _, err := host.RunSSHCommand(fmt.Sprintf("mkdir -p %s", certsBasePath)); err != nil {
 		return err
 	}
-	_, err = host.RunSSHCommand(fmt.Sprintf("cp /home/%s/certs/*.pem %s/", host.GetSSHUsername(), certsBasePath))
-	if err != nil {
+	dockerCertsPath := "/etc/docker/certs.d"
+	if _, err := host.RunSSHCommand(fmt.Sprintf("sudo mkdir %s", dockerCertsPath)); err != nil {
 		return err
 	}
-	_, err = host.RunSSHCommand(fmt.Sprintf("sudo mkdir /etc/docker/certs.d && sudo cp -r /home/%s/certs/* /etc/docker/certs.d/", host.GetSSHUsername()))
-	if err != nil {
+	if err := writeRemoteFile(host, registryCertPath, filepath.Join(certsBasePath, "registry-cert.pem")); err != nil {
 		return err
 	}
-	_, err = host.RunSSHCommand(fmt.Sprintf("cat %s/ca.pem | sudo tee -a /etc/ssl/certs/ca-certificates.crt", certsBasePath))
-	if err != nil {
+	if err := writeRemoteFile(host, registryKeyPath, filepath.Join(certsBasePath, "registry-key.pem")); err != nil {
 		return err
 	}
-	_, err = host.RunSSHCommand("sudo mkdir -p /var/lib/registry/")
+	if err := writeRemoteFile(host, filepath.Join(d.certsPath, "ca.pem"), filepath.Join(dockerCertsPath, "ca.pem")); err != nil {
+		return err
+	}
+	if err := writeRemoteFile(host, filepath.Join(d.certsPath, "cert.pem"), filepath.Join(dockerCertsPath, "cert.pem")); err != nil {
+		return err
+	}
+	if err := writeRemoteFile(host, filepath.Join(d.certsPath, "key.pem"), filepath.Join(dockerCertsPath, "key.pem")); err != nil {
+		return err
+	}
+	if _, err := host.RunSSHCommand(fmt.Sprintf("sudo cp -r /home/%s/certs/* %s/", host.GetSSHUsername(), dockerCertsPath)); err != nil {
+		return err
+	}
+	if _, err := host.RunSSHCommand(fmt.Sprintf("sudo cat %s/ca.pem | sudo tee -a /etc/ssl/certs/ca-certificates.crt", dockerCertsPath)); err != nil {
+		return err
+	}
+	_, err := host.RunSSHCommand("sudo mkdir -p /var/lib/registry/")
 	return err
+}
+
+func writeRemoteFile(host sshTarget, filePath string, remotePath string) error {
+	file, err := ioutil.ReadFile(filePath)
+	if err != nil {
+		return fmt.Errorf("failed to read file %s: %s", filePath, err)
+	}
+	remoteWriteCmdFmt := "printf '%%s' '%s' | sudo tee %s"
+	_, err = host.RunSSHCommand(fmt.Sprintf(remoteWriteCmdFmt, string(file), remotePath))
+	if err != nil {
+		return fmt.Errorf("failed to write remote file: %s", err)
+	}
+	return nil
 }
 
 func (d *DockerMachine) createRegistryCertificate(hosts ...string) error {
