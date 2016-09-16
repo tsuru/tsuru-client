@@ -19,20 +19,21 @@ func (s *S) TestPoolListInfo(c *check.C) {
 
 func (s *S) TestPoolListRun(c *check.C) {
 	var stdout, stderr bytes.Buffer
-	result := `[{"Name":"theonepool","Teams":[],"Public":true,"Default":true},{"Name":"pool1","Teams":[],"Public":false,"Default":true},{"Name":"pool2","Teams":["admin"],"Public":false,"Default":false},{"Name":"pool0","Teams":["admin"],"Public":false,"Default":false}]`
+	result := `[{"Name":"theonepool","Teams":[],"Public":true,"Default":true},{"Name":"pool1","Teams":[],"Public":false,"Default":true},{"Name":"pool2","Teams":["admin"],"Public":false,"Default":false},{"Name":"pool0","Teams":["admin"],"Public":false,"Default":false},{"Name":"pool3","Teams":["admin"],"Public":false,"Default":false,"Provisioner":"swarm"}]`
 	context := cmd.Context{
 		Args:   []string{},
 		Stdout: &stdout,
 		Stderr: &stderr,
 	}
-	expected := `+------------+---------+-------+
-| Pool       | Kind    | Teams |
-+------------+---------+-------+
-| pool0      |         | admin |
-| pool2      |         | admin |
-| pool1      | default |       |
-| theonepool | public  |       |
-+------------+---------+-------+
+	expected := `+------------+---------+-------------+-------+
+| Pool       | Kind    | Provisioner | Teams |
++------------+---------+-------------+-------+
+| pool0      |         | default     | admin |
+| pool2      |         | default     | admin |
+| pool3      |         | swarm       | admin |
+| pool1      | default | default     |       |
+| theonepool | public  | default     |       |
++------------+---------+-------------+-------+
 `
 	client := cmd.NewClient(&http.Client{Transport: &cmdtest.Transport{Message: result, Status: http.StatusOK}}, nil, manager)
 	command := PoolList{}

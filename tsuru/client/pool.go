@@ -16,10 +16,11 @@ import (
 type PoolList struct{}
 
 type Pool struct {
-	Name    string
-	Teams   []string
-	Public  bool
-	Default bool
+	Name        string
+	Teams       []string
+	Public      bool
+	Default     bool
+	Provisioner string
 }
 
 func (p *Pool) Kind() string {
@@ -30,6 +31,13 @@ func (p *Pool) Kind() string {
 		return "default"
 	}
 	return ""
+}
+
+func (p *Pool) GetProvisioner() string {
+	if p.Provisioner == "" {
+		return "default"
+	}
+	return p.Provisioner
 }
 
 type poolEntriesList []Pool
@@ -64,9 +72,9 @@ func (PoolList) Run(context *cmd.Context, client *cmd.Client) error {
 		return err
 	}
 	sort.Sort(poolEntriesList(pools))
-	t := cmd.Table{Headers: cmd.Row([]string{"Pool", "Kind", "Teams"})}
+	t := cmd.Table{Headers: cmd.Row([]string{"Pool", "Kind", "Provisioner", "Teams"})}
 	for _, pool := range pools {
-		t.AddRow(cmd.Row([]string{pool.Name, pool.Kind(), strings.Join(pool.Teams, ", ")}))
+		t.AddRow(cmd.Row([]string{pool.Name, pool.Kind(), pool.GetProvisioner(), strings.Join(pool.Teams, ", ")}))
 	}
 	context.Stdout.Write(t.Bytes())
 	return nil
