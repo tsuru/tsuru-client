@@ -20,13 +20,14 @@ type AddPoolToSchedulerCmd struct {
 	public       bool
 	defaultPool  bool
 	forceDefault bool
+	provisioner  string
 	fs           *gnuflag.FlagSet
 }
 
 func (AddPoolToSchedulerCmd) Info() *cmd.Info {
 	return &cmd.Info{
 		Name:  "pool-add",
-		Usage: "pool-add <pool> [-p/--public] [-d/--default] [-f/--force]",
+		Usage: "pool-add <pool> [-p/--public] [-d/--default] [--provisioner <name>] [-f/--force]",
 		Desc: `Adds a new pool.
 
 Each docker node added using [[docker-node-add]] command belongs to one pool.
@@ -49,6 +50,8 @@ func (c *AddPoolToSchedulerCmd) Flags() *gnuflag.FlagSet {
 		msg = "Force overwrite default pool"
 		c.fs.BoolVar(&c.forceDefault, "force", false, msg)
 		c.fs.BoolVar(&c.forceDefault, "f", false, msg)
+		msg = "Provisioner associated to the pool (empty for default docker provisioner)"
+		c.fs.StringVar(&c.provisioner, "provisioner", "", msg)
 	}
 	return c.fs
 }
@@ -59,6 +62,7 @@ func (c *AddPoolToSchedulerCmd) Run(ctx *cmd.Context, client *cmd.Client) error 
 	v.Set("public", strconv.FormatBool(c.public))
 	v.Set("default", strconv.FormatBool(c.defaultPool))
 	v.Set("force", strconv.FormatBool(c.forceDefault))
+	v.Set("provisioner", c.provisioner)
 	u, err := cmd.GetURL("/pools")
 	err = doRequest(client, u, "POST", v.Encode())
 	if err != nil {

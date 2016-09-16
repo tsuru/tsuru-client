@@ -92,6 +92,28 @@ func (s *S) TestAddDefaultPool(c *check.C) {
 	c.Assert(err, check.IsNil)
 }
 
+func (s *S) TestAddPoolWithProvisioner(c *check.C) {
+	var buf bytes.Buffer
+	context := cmd.Context{Args: []string{"test"}, Stdout: &buf}
+	trans := &cmdtest.ConditionalTransport{
+		Transport: cmdtest.Transport{Message: "", Status: http.StatusOK},
+		CondFunc: func(req *http.Request) bool {
+			url := strings.HasSuffix(req.URL.Path, "/pools")
+			name := req.FormValue("name") == "test"
+			public := req.FormValue("public") == "false"
+			def := req.FormValue("default") == "false"
+			prov := req.FormValue("provisioner") == "kub"
+			return url && name && public && def && prov
+		},
+	}
+	manager := cmd.Manager{}
+	client := cmd.NewClient(&http.Client{Transport: trans}, nil, &manager)
+	command := AddPoolToSchedulerCmd{}
+	command.Flags().Parse(true, []string{"--provisioner", "kub"})
+	err := command.Run(&context, client)
+	c.Assert(err, check.IsNil)
+}
+
 func (s *S) TestFailToAddMoreThanOneDefaultPool(c *check.C) {
 	var buf bytes.Buffer
 	stdin := bytes.NewBufferString("no")
