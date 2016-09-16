@@ -12,6 +12,7 @@ import (
 
 	"github.com/tsuru/config"
 	"github.com/tsuru/gnuflag"
+	"github.com/tsuru/tsuru-client/tsuru/admin"
 	"github.com/tsuru/tsuru-client/tsuru/client"
 	"github.com/tsuru/tsuru/cmd"
 )
@@ -188,10 +189,13 @@ func (c *Install) Run(context *cmd.Context, cli *cmd.Client) error {
 		}
 	}
 	fmt.Fprint(context.Stdout, "--- Installation Overview ---\n")
-	fmt.Fprint(context.Stdout, "Swarm Cluster: \n"+buildClusterTable(cluster).String())
-	fmt.Fprint(context.Stdout, "Components: \n"+buildComponentsTable(TsuruComponents, cluster).String())
-	appList := &client.AppList{}
+	fmt.Fprint(context.Stdout, "Core Hosts: \n"+buildClusterTable(cluster).String())
+	fmt.Fprint(context.Stdout, "Core Components: \n"+buildComponentsTable(TsuruComponents, cluster).String())
+	fmt.Fprintln(context.Stdout, "Apps Hosts:")
+	nodeList := &admin.ListNodesCmd{}
+	nodeList.Run(context, cli)
 	fmt.Fprintln(context.Stdout, "Apps:")
+	appList := &client.AppList{}
 	appList.Run(context, cli)
 	return nil
 }
