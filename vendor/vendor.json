@@ -1308,11 +1308,10 @@
 			"revisionTime": "2016-07-22T16:38:28-03:00"
 		},
 		{
-			"checksumSHA1": "9G33E5OCeXlptPsnxIh0y6VrbMU=",
-			"origin": "github.com/tsuru/vendor/github.com/tsuru/tsuru/router/vulcand",
+			"checksumSHA1": "X3VNrz92b8akhP72gEQVJ12a3HU=",
 			"path": "github.com/tsuru/tsuru/router/vulcand",
-			"revision": "02423301ed5027c0dac7dbd283aee920425c5eb2",
-			"revisionTime": "2016-07-22T16:38:28-03:00"
+			"revision": "e3de0514411819c7e3f4109b3ae83d6cdc8d147d",
+			"revisionTime": "2016-09-16T14:06:00Z"
 		},
 		{
 			"checksumSHA1": "stHp/oA6y9eUne2+sVw/1CoxkmI=",
