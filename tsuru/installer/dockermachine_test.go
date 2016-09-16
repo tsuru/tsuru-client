@@ -135,6 +135,7 @@ type cmdOutput struct {
 }
 
 type fakeSSHTarget struct {
+	ip        string
 	cmds      []string
 	runOutput map[string]*cmdOutput
 }
@@ -148,7 +149,10 @@ func (f *fakeSSHTarget) RunSSHCommand(cmd string) (string, error) {
 }
 
 func (f *fakeSSHTarget) GetIP() string {
-	return "127.0.0.1"
+	if f.ip == "" {
+		return "127.0.0.1"
+	}
+	return f.ip
 }
 
 func (f *fakeSSHTarget) GetSSHUsername() string {
@@ -180,6 +184,41 @@ func (s *S) TestUploadRegistryCertificate(c *check.C) {
 		"-r",
 		fmt.Sprintf("%s/", dm.certsPath),
 		fmt.Sprintf("%s@%s:/home/%s/", "ubuntu", "127.0.0.1", "ubuntu"),
+	}
+	c.Assert(fexec.ExecutedCmd("scp", expectedArgs), check.Equals, true)
+	expectedCmds := []string{
+		"mkdir -p /home/ubuntu/certs/127.0.0.1:5000",
+		"cp /home/ubuntu/certs/*.pem /home/ubuntu/certs/127.0.0.1:5000/",
+		"sudo mkdir /etc/docker/certs.d && sudo cp -r /home/ubuntu/certs/* /etc/docker/certs.d/",
+		"cat /home/ubuntu/certs/127.0.0.1:5000/ca.pem | sudo tee -a /etc/ssl/certs/ca-certificates.crt",
+		"sudo mkdir -p /var/lib/registry/",
+	}
+	c.Assert(fakeSSHTarget.cmds, check.DeepEquals, expectedCmds)
+}
+
+func (s *S) TestUploadAlreadyCreatedRegistryCertificate(c *check.C) {
+	fakeSSHTarget := &fakeSSHTarget{ip: "127.0.0.2"}
+	fexec := exectest.FakeExecutor{}
+	client.Execut = &fexec
+	defer func() {
+		client.Execut = nil
+	}()
+	config := &DockerMachineConfig{
+		CAPath: s.TLSCertsPath.RootDir,
+	}
+	defer os.Remove(s.StoreBasePath)
+	dm, err := NewDockerMachine(config)
+	c.Assert(err, check.IsNil)
+	err = dm.createRegistryCertificate("127.0.0.1")
+	c.Assert(err, check.IsNil)
+	err = dm.uploadRegistryCertificate(fakeSSHTarget)
+	c.Assert(err, check.IsNil)
+	expectedArgs := []string{"-o StrictHostKeyChecking=no",
+		"-i",
+		"/mykey",
+		"-r",
+		fmt.Sprintf("%s/", dm.certsPath),
+		fmt.Sprintf("%s@%s:/home/%s/", "ubuntu", "127.0.0.2", "ubuntu"),
 	}
 	c.Assert(fexec.ExecutedCmd("scp", expectedArgs), check.Equals, true)
 	expectedCmds := []string{

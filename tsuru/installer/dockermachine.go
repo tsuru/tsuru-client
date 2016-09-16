@@ -6,7 +6,9 @@ package installer
 
 import (
 	"bytes"
+	"crypto/x509"
 	"encoding/json"
+	"encoding/pem"
 	"fmt"
 	"io"
 	"io/ioutil"
@@ -222,11 +224,24 @@ type sshTarget interface {
 }
 
 func (d *DockerMachine) uploadRegistryCertificate(host sshTarget) error {
+	var registryIP string
 	if _, err := os.Stat(filepath.Join(d.certsPath, "registry-cert.pem")); os.IsNotExist(err) {
 		errCreate := d.createRegistryCertificate(host.GetIP())
 		if errCreate != nil {
 			return errCreate
 		}
+		registryIP = host.GetIP()
+	} else {
+		certData, errRead := ioutil.ReadFile(filepath.Join(d.certsPath, "registry-cert.pem"))
+		if errRead != nil {
+			return fmt.Errorf("failed to read registry-cert.pem: %s", errRead)
+		}
+		block, _ := pem.Decode(certData)
+		cert, errRead := x509.ParseCertificate(block.Bytes)
+		if errRead != nil {
+			return fmt.Errorf("failed to parse registry certificate: %s", errRead)
+		}
+		registryIP = cert.IPAddresses[0].String()
 	}
 	fmt.Printf("Uploading registry certificate...\n")
 	args := []string{
@@ -247,7 +262,7 @@ func (d *DockerMachine) uploadRegistryCertificate(host sshTarget) error {
 	if err != nil {
 		return fmt.Errorf("Command: %s. Error:%s", stdout.String(), err.Error())
 	}
-	certsBasePath := fmt.Sprintf("/home/%s/certs/%s:5000", host.GetSSHUsername(), host.GetIP())
+	certsBasePath := fmt.Sprintf("/home/%s/certs/%s:5000", host.GetSSHUsername(), registryIP)
 	_, err = host.RunSSHCommand(fmt.Sprintf("mkdir -p %s", certsBasePath))
 	if err != nil {
 		return err
