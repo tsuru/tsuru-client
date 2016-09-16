@@ -164,7 +164,7 @@ func (s *S) TestTsuruAPIBootstrapLocalEnviroment(c *check.C) {
 			w.Write(buf)
 		}
 		if r.URL.Path == "/1.0/pools" {
-			c.Assert(string(b), check.Equals, "default=true&force=false&name=theonepool&public=true")
+			c.Assert(string(b), check.Equals, "default=true&force=false&name=theonepool&provisioner=&public=true")
 		}
 		if r.URL.Path == "/1.2/node" {
 			c.Assert(string(b), check.Matches, "Address=&Metadata.address=.*&Metadata.pool=theonepool&Register=true")
