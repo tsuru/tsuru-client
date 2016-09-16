@@ -35,7 +35,8 @@ import (
 	"github.com/tsuru/tsuru/provision"
 	"github.com/tsuru/tsuru/provision/docker/container"
 	"github.com/tsuru/tsuru/provision/docker/healer"
-	"github.com/tsuru/tsuru/provision/docker/nodecontainer"
+	internalNodeContainer "github.com/tsuru/tsuru/provision/docker/nodecontainer"
+	"github.com/tsuru/tsuru/provision/nodecontainer"
 	"github.com/tsuru/tsuru/queue"
 	"github.com/tsuru/tsuru/router"
 	_ "github.com/tsuru/tsuru/router/fusis"
@@ -111,7 +112,7 @@ func (p *dockerProvisioner) initDockerCluster() error {
 	if err != nil {
 		return err
 	}
-	p.cluster.AddHook(cluster.HookEventBeforeContainerCreate, &nodecontainer.ClusterHook{Provisioner: p})
+	p.cluster.AddHook(cluster.HookEventBeforeContainerCreate, &internalNodeContainer.ClusterHook{Provisioner: p})
 	autoHealingNodes, _ := config.GetBool("docker:healing:heal-nodes")
 	if autoHealingNodes {
 		disabledSeconds, _ := config.GetInt("docker:healing:disabled-time")
@@ -281,24 +282,19 @@ func (p *dockerProvisioner) StartupMessage() (string, error) {
 }
 
 func (p *dockerProvisioner) Initialize() error {
-	err := nodecontainer.RegisterQueueTask(p)
+	err := internalNodeContainer.RegisterQueueTask(p)
 	if err != nil {
 		return err
+	}
+	_, err = nodecontainer.InitializeBS()
+	if err != nil {
+		return fmt.Errorf("unable to initialize bs node container: %s", err)
 	}
 	return p.initDockerCluster()
 }
 
-// Provision creates a route for the container
 func (p *dockerProvisioner) Provision(app provision.App) error {
-	r, err := getRouterForApp(app)
-	if err != nil {
-		log.Fatalf("Failed to get router: %s", err)
-		return err
-	}
-	if optsRouter, ok := r.(router.OptsRouter); ok {
-		return optsRouter.AddBackendOpts(app.GetName(), app.GetRouterOpts())
-	}
-	return r.AddBackend(app.GetName())
+	return nil
 }
 
 func (p *dockerProvisioner) Restart(a provision.App, process string, w io.Writer) error {
@@ -718,16 +714,6 @@ func (p *dockerProvisioner) Destroy(app provision.App) error {
 	err = deleteAllAppImageNames(app.GetName())
 	if err != nil {
 		log.Errorf("Failed to remove image names from storage for app %s: %s", app.GetName(), err.Error())
-	}
-	r, err := getRouterForApp(app)
-	if err != nil {
-		log.Errorf("Failed to get router: %s", err.Error())
-		return err
-	}
-	err = r.RemoveBackend(app.GetName())
-	if err != nil {
-		log.Errorf("Failed to remove route backend: %s", err.Error())
-		return err
 	}
 	return nil
 }
@@ -1300,7 +1286,7 @@ func (n *clusterNodeWrapper) Metadata() map[string]string {
 }
 
 func (n *clusterNodeWrapper) Status() string {
-	return n.node.Metadata["pool"]
+	return n.node.Status()
 }
 
 func (n *clusterNodeWrapper) Units() ([]provision.Unit, error) {
@@ -1367,7 +1353,7 @@ func (p *dockerProvisioner) AddNode(opts provision.AddNodeOptions) error {
 		return err
 	}
 	jobParams := monsterqueue.JobParams{"endpoint": opts.Address, "metadata": opts.Metadata}
-	_, err = q.Enqueue(nodecontainer.QueueTaskName, jobParams)
+	_, err = q.Enqueue(internalNodeContainer.QueueTaskName, jobParams)
 	return err
 }
 
@@ -1417,4 +1403,8 @@ func (p *dockerProvisioner) RemoveNode(opts provision.RemoveNodeOptions) error {
 		}
 	}
 	return p.Cluster().Unregister(opts.Address)
+}
+
+func (p *dockerProvisioner) UpgradeNodeContainer(name string, pool string, writer io.Writer) error {
+	return internalNodeContainer.RecreateNamedContainers(p, writer, name)
 }

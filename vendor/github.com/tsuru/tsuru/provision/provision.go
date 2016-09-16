@@ -435,6 +435,10 @@ type NodeProvisioner interface {
 	UpdateNode(UpdateNodeOptions) error
 }
 
+type NodeContainerProvisioner interface {
+	UpgradeNodeContainer(name string, pool string, writer io.Writer) error
+}
+
 // UnitFinderProvisioner is a provisioner that allows finding a specific unit by
 // its id.
 type UnitFinderProvisioner interface {
@@ -541,6 +545,28 @@ func Registry() ([]Provisioner, error) {
 		registry = append(registry, p)
 	}
 	return registry, nil
+}
+
+func FindNode(address string) (Provisioner, Node, error) {
+	provisioners, err := Registry()
+	if err != nil {
+		return nil, nil, err
+	}
+	for _, prov := range provisioners {
+		nodeProv, ok := prov.(NodeProvisioner)
+		if !ok {
+			continue
+		}
+		node, err := nodeProv.GetNode(address)
+		if err == ErrNodeNotFound {
+			continue
+		}
+		if err != nil {
+			return nil, nil, err
+		}
+		return prov, node, nil
+	}
+	return nil, nil, ErrNodeNotFound
 }
 
 func InitializeAll() error {

@@ -24,7 +24,7 @@ import (
 	tclient "github.com/tsuru/tsuru-client/tsuru/client"
 	"github.com/tsuru/tsuru/cmd"
 	"github.com/tsuru/tsuru/provision"
-	"github.com/tsuru/tsuru/provision/docker/nodecontainer"
+	"github.com/tsuru/tsuru/provision/nodecontainer"
 )
 
 var (
