@@ -119,7 +119,7 @@ func (c *UserRemove) Run(context *cmd.Context, client *cmd.Client) error {
 	}
 	var qs string
 	if email != "" {
-		qs = "?user=" + email
+		qs = "?user=" + url.QueryEscape(email)
 	}
 	request, err := http.NewRequest("DELETE", u+qs, nil)
 	if err != nil {
@@ -400,14 +400,14 @@ if you need to invalidate an existing token.`,
 }
 
 func (c *ShowAPIToken) Run(context *cmd.Context, client *cmd.Client) error {
-	url, err := cmd.GetURL("/users/api-key")
+	u, err := cmd.GetURL("/users/api-key")
 	if err != nil {
 		return err
 	}
 	if c.user != "" {
-		url += fmt.Sprintf("?user=%s", c.user)
+		u += fmt.Sprintf("?user=%s", url.QueryEscape(c.user))
 	}
-	request, err := http.NewRequest("GET", url, nil)
+	request, err := http.NewRequest("GET", u, nil)
 	if err != nil {
 		return err
 	}
