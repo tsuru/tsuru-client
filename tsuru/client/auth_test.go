@@ -9,6 +9,7 @@ import (
 	"io"
 	"io/ioutil"
 	"net/http"
+	"net/url"
 	"strings"
 
 	"gopkg.in/check.v1"
@@ -364,7 +365,7 @@ func (s *S) TestUserRemoveWithArgs(c *check.C) {
 	context := cmd.Context{
 		Stdout: &buf,
 		Stdin:  strings.NewReader("y\n"),
-		Args:   []string{"u@email.com"},
+		Args:   []string{"test+u@email.com"},
 	}
 	trans := cmdtest.ConditionalTransport{
 		Transport: cmdtest.Transport{Message: "", Status: http.StatusOK},
@@ -378,7 +379,7 @@ func (s *S) TestUserRemoveWithArgs(c *check.C) {
 	err := command.Run(&context, client)
 	c.Assert(err, check.IsNil)
 	c.Assert(called, check.Equals, true)
-	c.Assert(buf.String(), check.Equals, "Are you sure you want to remove the user \"u@email.com\" from tsuru? (y/n) User \"u@email.com\" successfully removed.\n")
+	c.Assert(buf.String(), check.Equals, "Are you sure you want to remove the user \"test+u@email.com\" from tsuru? (y/n) User \"test+u@email.com\" successfully removed.\n")
 }
 
 func (s *S) TestUserRemoveWithoutConfirmation(c *check.C) {
@@ -602,7 +603,7 @@ func (s *S) TestShowAPITokenRunWithFlag(c *check.C) {
 		CondFunc: func(req *http.Request) bool {
 			called = true
 			return req.Method == "GET" && strings.HasSuffix(req.URL.Path, "/users/api-key") &&
-				req.URL.RawQuery == "user=admin@example.com"
+				req.URL.RawQuery == "user="+url.QueryEscape("admin@example.com")
 		},
 	}
 	expected := `API key: 23iou32nd3i2udnu23jd
