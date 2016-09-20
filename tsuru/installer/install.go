@@ -29,6 +29,7 @@ var (
 
 type TsuruInstallConfig struct {
 	*DockerMachineConfig
+	*ComponentsConfig
 	CoreHosts          int
 	CoreDriversOpts    map[string][]interface{}
 	AppsHosts          int
@@ -147,10 +148,9 @@ func (c *Install) Run(context *cmd.Context, cli *cmd.Client) error {
 	if err != nil {
 		return fmt.Errorf("failed to setup swarm cluster: %s", err)
 	}
-	installConfig := NewInstallConfig(config.Name)
 	for _, component := range TsuruComponents {
 		fmt.Fprintf(context.Stdout, "Installing %s\n", component.Name())
-		errInstall := component.Install(cluster, installConfig)
+		errInstall := component.Install(cluster, config.ComponentsConfig)
 		if errInstall != nil {
 			return fmt.Errorf("error installing %s: %s", component.Name(), errInstall)
 		}
@@ -166,12 +166,12 @@ func (c *Install) Run(context *cmd.Context, cli *cmd.Client) error {
 	}
 	fmt.Fprintf(context.Stdout, "Bootstrapping Tsuru API...")
 	opts := TsuruSetupOptions{
-		Login:           installConfig.RootUserEmail,
-		Password:        installConfig.RootUserPassword,
+		Login:           config.ComponentsConfig.RootUserEmail,
+		Password:        config.ComponentsConfig.RootUserPassword,
 		Target:          fmt.Sprintf("http://%s:%d", cluster.GetManager().IP, defaultTsuruAPIPort),
-		TargetName:      installConfig.TargetName,
+		TargetName:      config.ComponentsConfig.TargetName,
 		NodesAddr:       nodesAddr,
-		DockerHubMirror: installConfig.DockerHubMirror,
+		DockerHubMirror: config.ComponentsConfig.DockerHubMirror,
 	}
 	err = SetupTsuru(opts)
 	if err != nil {
@@ -390,6 +390,7 @@ func parseConfigFile(file string) (*TsuruInstallConfig, error) {
 			return nil, err
 		}
 	}
+	installConfig.ComponentsConfig = NewInstallConfig(installConfig.Name)
 	return installConfig, nil
 }
 

@@ -39,19 +39,19 @@ var (
 	defaultTsuruAPIPort = 8080
 )
 
-type InstallConfig struct {
+type ComponentsConfig struct {
 	DockerHubMirror  string
 	ComponentAddress map[string]string
 	TsuruAPIConfig
 }
 
-func NewInstallConfig(targetName string) *InstallConfig {
+func NewInstallConfig(targetName string) *ComponentsConfig {
 	hub, _ := config.GetString("docker-hub-mirror")
 	mongo, _ := config.GetString("components:mongo")
 	redis, _ := config.GetString("components:redis")
 	registry, _ := config.GetString("components:registry")
 	planb, _ := config.GetString("components:planb")
-	return &InstallConfig{
+	return &ComponentsConfig{
 		DockerHubMirror: hub,
 		TsuruAPIConfig: TsuruAPIConfig{
 			TargetName:       targetName,
@@ -67,7 +67,7 @@ func NewInstallConfig(targetName string) *InstallConfig {
 	}
 }
 
-func (i *InstallConfig) fullImageName(name string) string {
+func (i *ComponentsConfig) fullImageName(name string) string {
 	if i.DockerHubMirror != "" {
 		return fmt.Sprintf("%s/%s", i.DockerHubMirror, name)
 	}
@@ -76,7 +76,7 @@ func (i *InstallConfig) fullImageName(name string) string {
 
 type TsuruComponent interface {
 	Name() string
-	Install(ServiceCluster, *InstallConfig) error
+	Install(ServiceCluster, *ComponentsConfig) error
 	Status(ServiceCluster) (*ServiceInfo, error)
 	Healthcheck(string) error
 }
@@ -87,7 +87,7 @@ func (c *MongoDB) Name() string {
 	return "MongoDB"
 }
 
-func (c *MongoDB) Install(cluster ServiceCluster, i *InstallConfig) error {
+func (c *MongoDB) Install(cluster ServiceCluster, i *ComponentsConfig) error {
 	if i.ComponentAddress["mongo"] != "" {
 		return c.Healthcheck(i.ComponentAddress["mongo"])
 	}
@@ -128,7 +128,7 @@ func (c *PlanB) Name() string {
 	return "PlanB"
 }
 
-func (c *PlanB) Install(cluster ServiceCluster, i *InstallConfig) error {
+func (c *PlanB) Install(cluster ServiceCluster, i *ComponentsConfig) error {
 	if i.ComponentAddress["planb"] != "" {
 		return c.Healthcheck(i.ComponentAddress["planb"])
 	}
@@ -188,7 +188,7 @@ func (c *Redis) Name() string {
 	return "Redis"
 }
 
-func (c *Redis) Install(cluster ServiceCluster, i *InstallConfig) error {
+func (c *Redis) Install(cluster ServiceCluster, i *ComponentsConfig) error {
 	if i.ComponentAddress["redis"] != "" {
 		return c.Healthcheck(i.ComponentAddress["redis"])
 	}
@@ -229,7 +229,7 @@ func (c *Registry) Name() string {
 	return "Docker Registry"
 }
 
-func (c *Registry) Install(cluster ServiceCluster, i *InstallConfig) error {
+func (c *Registry) Install(cluster ServiceCluster, i *ComponentsConfig) error {
 	if i.ComponentAddress["registry"] != "" {
 		return c.Healthcheck(i.ComponentAddress["registry"])
 	}
@@ -318,7 +318,7 @@ func parseAddress(address, defaultPort string) (addr, port string) {
 	return addr, port
 }
 
-func (c *TsuruAPI) Install(cluster ServiceCluster, i *InstallConfig) error {
+func (c *TsuruAPI) Install(cluster ServiceCluster, i *ComponentsConfig) error {
 	mongo, mongoPort := parseAddress(i.ComponentAddress["mongo"], "27017")
 	redis, redisPort := parseAddress(i.ComponentAddress["redis"], "6379")
 	registry, registryPort := parseAddress(i.ComponentAddress["registry"], "5000")
