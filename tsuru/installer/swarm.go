@@ -10,12 +10,13 @@ import (
 
 	"github.com/docker/engine-api/types/swarm"
 	"github.com/fsouza/go-dockerclient"
+	"github.com/tsuru/tsuru-client/tsuru/installer/dm"
 )
 
 var swarmPort = 2377
 
 type ServiceCluster interface {
-	GetManager() *Machine
+	GetManager() *dm.Machine
 	ServiceExec(string, []string, docker.StartExecOptions) error
 	CreateService(docker.CreateServiceOptions) error
 	ServiceInfo(string) (*ServiceInfo, error)
@@ -23,29 +24,29 @@ type ServiceCluster interface {
 }
 
 type SwarmCluster struct {
-	Managers []*Machine
-	Workers  []*Machine
+	Managers []*dm.Machine
+	Workers  []*dm.Machine
 	network  *docker.Network
 }
 
 func (c *SwarmCluster) dockerClient() (*docker.Client, error) {
-	return c.GetManager().dockerClient()
+	return c.GetManager().DockerClient()
 }
 
-func (c *SwarmCluster) GetManager() *Machine {
+func (c *SwarmCluster) GetManager() *dm.Machine {
 	return c.Managers[0]
 }
 
 // NewSwarmCluster creates a Swarm Cluster using the first machine as a manager
 // and the rest as workers and also creates an overlay network between the nodes.
-func NewSwarmCluster(machines []*Machine, numManagers int) (*SwarmCluster, error) {
+func NewSwarmCluster(machines []*dm.Machine, numManagers int) (*SwarmCluster, error) {
 	swarmOpts := docker.InitSwarmOptions{
 		InitRequest: swarm.InitRequest{
 			ListenAddr:    fmt.Sprintf("0.0.0.0:%d", swarmPort),
 			AdvertiseAddr: fmt.Sprintf("%s:%d", machines[0].GetPrivateIP(), swarmPort),
 		},
 	}
-	dockerClient, err := machines[0].dockerClient()
+	dockerClient, err := machines[0].DockerClient()
 	if err != nil {
 		return nil, fmt.Errorf("failed to retrieve machine %s docker client: %s", machines[0].Name, err)
 	}
@@ -74,7 +75,7 @@ func NewSwarmCluster(machines []*Machine, numManagers int) (*SwarmCluster, error
 	if err != nil {
 		return nil, fmt.Errorf("failed to create overlay network: %s", err)
 	}
-	managers := make([]*Machine, numManagers)
+	managers := make([]*dm.Machine, numManagers)
 	for i, m := range machines {
 		var joinToken string
 		if i < numManagers {
@@ -86,7 +87,7 @@ func NewSwarmCluster(machines []*Machine, numManagers int) (*SwarmCluster, error
 		if i == 0 {
 			continue
 		}
-		dockerClient, err = m.dockerClient()
+		dockerClient, err = m.DockerClient()
 		if err != nil {
 			return nil, fmt.Errorf("failed to retrieve machine %s docker client: %s", m.Name, err)
 		}
@@ -132,7 +133,7 @@ func (c *SwarmCluster) ServiceExec(service string, cmd []string, startOpts docke
 		return fmt.Errorf("failed to inspect node %s: %s", tasks[0].NodeID, err)
 	}
 	nodeName := node.Description.Hostname
-	var machine *Machine
+	var machine *dm.Machine
 	for _, m := range c.Workers {
 		if m.Name == nodeName {
 			machine = m
@@ -142,7 +143,7 @@ func (c *SwarmCluster) ServiceExec(service string, cmd []string, startOpts docke
 	if machine == nil {
 		return fmt.Errorf("machine %s not found", nodeName)
 	}
-	client, err := machine.dockerClient()
+	client, err := machine.DockerClient()
 	if err != nil {
 		return fmt.Errorf("failed to retrieve task node %s docker client: %s", machine.Name, err)
 	}
@@ -207,7 +208,7 @@ func (c *SwarmCluster) ClusterInfo() ([]NodeInfo, error) {
 }
 
 // GetMachine retrieves a worker machine by its name
-func (c *SwarmCluster) GetMachine(name string) (*Machine, error) {
+func (c *SwarmCluster) GetMachine(name string) (*dm.Machine, error) {
 	for _, m := range c.Workers {
 		if m.Name == name {
 			return m, nil

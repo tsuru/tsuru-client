@@ -12,6 +12,7 @@ import (
 	"github.com/docker/machine/libmachine/host"
 	docker "github.com/fsouza/go-dockerclient"
 	"github.com/fsouza/go-dockerclient/testing"
+	"github.com/tsuru/tsuru-client/tsuru/installer/dm"
 	"gopkg.in/check.v1"
 )
 
@@ -40,13 +41,13 @@ func (s *S) createCluster() (*testCluster, error) {
 	if err != nil {
 		return nil, err
 	}
-	managerMachine := &Machine{
+	managerMachine := &dm.Machine{
 		Host:    &host.Host{Name: "manager"},
 		IP:      "127.0.0.1",
 		Address: managerServer.URL(),
 		CAPath:  s.TLSCertsPath.RootDir,
 	}
-	workerMachine := &Machine{
+	workerMachine := &dm.Machine{
 		Host:    &host.Host{Name: "worker"},
 		IP:      "127.0.0.2",
 		Address: workerServer.URL(),
@@ -54,8 +55,8 @@ func (s *S) createCluster() (*testCluster, error) {
 	}
 	return &testCluster{
 		SwarmCluster: &SwarmCluster{
-			Managers: []*Machine{managerMachine},
-			Workers:  []*Machine{managerMachine, workerMachine},
+			Managers: []*dm.Machine{managerMachine},
+			Workers:  []*dm.Machine{managerMachine, workerMachine},
 			network:  &docker.Network{Name: "tsuru"},
 		},
 		ManagerServer: managerServer,
@@ -82,7 +83,7 @@ func (s *S) TestNewSwarmCluster(c *check.C) {
 	}, tlsConfig)
 	c.Assert(err, check.IsNil)
 	defer managerServer.Stop()
-	m1 := &Machine{
+	m1 := &dm.Machine{
 		Host:    &host.Host{Name: "manager"},
 		IP:      "127.0.0.1",
 		Address: managerServer.URL(),
@@ -100,17 +101,17 @@ func (s *S) TestNewSwarmCluster(c *check.C) {
 	}, tlsConfig)
 	c.Assert(err, check.IsNil)
 	defer workerServer.Stop()
-	m2 := &Machine{
+	m2 := &dm.Machine{
 		Host:    &host.Host{Name: "worker"},
 		IP:      "127.0.0.2",
 		Address: workerServer.URL(),
 		CAPath:  s.TLSCertsPath.RootDir,
 	}
-	cluster, err := NewSwarmCluster([]*Machine{m1, m2}, 1)
+	cluster, err := NewSwarmCluster([]*dm.Machine{m1, m2}, 1)
 	c.Assert(err, check.IsNil)
 	c.Assert(cluster, check.NotNil)
-	c.Assert(cluster.Managers, check.DeepEquals, []*Machine{m1})
-	c.Assert(cluster.Workers, check.DeepEquals, []*Machine{m1, m2})
+	c.Assert(cluster.Managers, check.DeepEquals, []*dm.Machine{m1})
+	c.Assert(cluster.Workers, check.DeepEquals, []*dm.Machine{m1, m2})
 	c.Assert(managerReqs[0].URL.Path, check.Equals, "/swarm/init")
 	c.Assert(managerReqs[1].URL.Path, check.Equals, "/swarm")
 	c.Assert(managerReqs[2].URL.Path, check.Equals, "/networks/create")
@@ -136,7 +137,7 @@ func (s *S) TestNewSwarmClusterMultipleManagers(c *check.C) {
 	}, tlsConfig)
 	c.Assert(err, check.IsNil)
 	defer managerServer.Stop()
-	m1 := &Machine{
+	m1 := &dm.Machine{
 		Host:    &host.Host{Name: "manager"},
 		IP:      "127.0.0.1",
 		Address: managerServer.URL(),
@@ -154,17 +155,17 @@ func (s *S) TestNewSwarmClusterMultipleManagers(c *check.C) {
 	}, tlsConfig)
 	c.Assert(err, check.IsNil)
 	defer workerServer.Stop()
-	m2 := &Machine{
+	m2 := &dm.Machine{
 		Host:    &host.Host{Name: "worker"},
 		IP:      "127.0.0.2",
 		Address: workerServer.URL(),
 		CAPath:  s.TLSCertsPath.RootDir,
 	}
-	cluster, err := NewSwarmCluster([]*Machine{m1, m2}, 2)
+	cluster, err := NewSwarmCluster([]*dm.Machine{m1, m2}, 2)
 	c.Assert(err, check.IsNil)
 	c.Assert(cluster, check.NotNil)
-	c.Assert(cluster.Managers, check.DeepEquals, []*Machine{m1, m2})
-	c.Assert(cluster.Workers, check.DeepEquals, []*Machine{m1, m2})
+	c.Assert(cluster.Managers, check.DeepEquals, []*dm.Machine{m1, m2})
+	c.Assert(cluster.Workers, check.DeepEquals, []*dm.Machine{m1, m2})
 }
 
 func (s *S) TestCreateService(c *check.C) {
@@ -179,13 +180,13 @@ func (s *S) TestCreateService(c *check.C) {
 			created = true
 		}
 	}, tlsConfig)
-	m := &Machine{
+	m := &dm.Machine{
 		Host:    &host.Host{Name: "manager"},
 		IP:      "127.0.0.2",
 		Address: server.URL(),
 		CAPath:  s.TLSCertsPath.RootDir,
 	}
-	cluster, err := NewSwarmCluster([]*Machine{m}, 1)
+	cluster, err := NewSwarmCluster([]*dm.Machine{m}, 1)
 	c.Assert(err, check.IsNil)
 	err = cluster.CreateService(docker.CreateServiceOptions{})
 	c.Assert(err, check.IsNil)

@@ -5,21 +5,26 @@
 package installer
 
 import (
+	"encoding/json"
 	"fmt"
-	"os"
+	"io/ioutil"
+	"net/http"
+	"path/filepath"
 	"strconv"
 	"strings"
 
+	"github.com/ajg/form"
 	"github.com/tsuru/config"
 	"github.com/tsuru/gnuflag"
 	"github.com/tsuru/tsuru-client/tsuru/admin"
 	"github.com/tsuru/tsuru-client/tsuru/client"
+	"github.com/tsuru/tsuru-client/tsuru/installer/dm"
 	"github.com/tsuru/tsuru/cmd"
 )
 
 var (
 	defaultTsuruInstallConfig = &TsuruInstallConfig{
-		DockerMachineConfig: defaultDockerMachineConfig,
+		DockerMachineConfig: dm.DefaultDockerMachineConfig,
 		CoreHosts:           1,
 		AppsHosts:           1,
 		DedicatedAppsHosts:  false,
@@ -28,7 +33,7 @@ var (
 )
 
 type TsuruInstallConfig struct {
-	*DockerMachineConfig
+	*dm.DockerMachineConfig
 	*ComponentsConfig
 	CoreHosts          int
 	CoreDriversOpts    map[string][]interface{}
@@ -130,7 +135,7 @@ func (c *Install) Run(context *cmd.Context, cli *cmd.Client) error {
 	if err != nil {
 		return fmt.Errorf("pre-install checks failed: %s", err)
 	}
-	dm, err := NewDockerMachine(config.DockerMachineConfig)
+	dm, err := dm.NewDockerMachine(config.DockerMachineConfig)
 	if err != nil {
 		return fmt.Errorf("failed to create docker machine: %s", err)
 	}
@@ -200,7 +205,7 @@ func (c *Install) Run(context *cmd.Context, cli *cmd.Client) error {
 	return nil
 }
 
-func ProvisionPool(p MachineProvisioner, config *TsuruInstallConfig, hosts []*Machine) ([]*Machine, error) {
+func ProvisionPool(p dm.MachineProvisioner, config *TsuruInstallConfig, hosts []*dm.Machine) ([]*dm.Machine, error) {
 	if config.DedicatedAppsHosts {
 		return ProvisionMachines(p, config.AppsHosts, config.AppsDriversOpts)
 	}
@@ -214,10 +219,10 @@ func ProvisionPool(p MachineProvisioner, config *TsuruInstallConfig, hosts []*Ma
 	return hosts[:config.AppsHosts], nil
 }
 
-func ProvisionMachines(p MachineProvisioner, numMachines int, configs map[string][]interface{}) ([]*Machine, error) {
-	var machines []*Machine
+func ProvisionMachines(p dm.MachineProvisioner, numMachines int, configs map[string][]interface{}) ([]*dm.Machine, error) {
+	var machines []*dm.Machine
 	for i := 0; i < numMachines; i++ {
-		opts := make(DriverOpts)
+		opts := make(dm.DriverOpts)
 		for k, v := range configs {
 			idx := i % len(v)
 			opts[k] = v[idx]
@@ -305,7 +310,7 @@ func (c *Uninstall) Run(context *cmd.Context, client *cmd.Client) error {
 		fmt.Fprintf(context.Stderr, "Failed to read configuration file: %s\n", err)
 		return err
 	}
-	d, err := NewDockerMachine(config.DockerMachineConfig)
+	d, err := dm.NewDockerMachine(config.DockerMachineConfig)
 	if err != nil {
 		fmt.Fprintf(context.Stderr, "Failed to delete machine: %s\n", err)
 		return err
@@ -321,11 +326,6 @@ func (c *Uninstall) Run(context *cmd.Context, client *cmd.Client) error {
 	err = api.Uninstall(config.Name)
 	if err != nil {
 		fmt.Fprintf(context.Stderr, "Failed to uninstall tsuru API: %s\n", err)
-		return err
-	}
-	err = os.RemoveAll(d.storePath)
-	if err != nil {
-		fmt.Fprintf(context.Stderr, "Failed to delete installation directory: %s\n", err)
 		return err
 	}
 	fmt.Fprintf(context.Stdout, "Uninstall finished successfully!\n")
@@ -349,7 +349,7 @@ func parseConfigFile(file string) (*TsuruInstallConfig, error) {
 	if err == nil {
 		installConfig.Name = name
 	}
-	driverOpts := make(DriverOpts)
+	driverOpts := make(dm.DriverOpts)
 	opts, _ := config.Get("driver:options")
 	if opts != nil {
 		for k, v := range opts.(map[interface{}]interface{}) {

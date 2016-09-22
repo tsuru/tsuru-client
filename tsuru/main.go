@@ -12,6 +12,7 @@ import (
 	"github.com/tsuru/tsuru-client/tsuru/admin"
 	"github.com/tsuru/tsuru-client/tsuru/client"
 	"github.com/tsuru/tsuru-client/tsuru/installer"
+	"github.com/tsuru/tsuru-client/tsuru/installer/dm"
 	"github.com/tsuru/tsuru/cmd"
 	"github.com/tsuru/tsuru/provision"
 	_ "github.com/tsuru/tsuru/provision/docker"
@@ -109,6 +110,7 @@ func buildManager(name string) *cmd.Manager {
 	m.Register(&client.RoleDefaultRemove{})
 	m.Register(&installer.Install{})
 	m.Register(&installer.Uninstall{})
+	m.Register(&installer.InstallList{})
 	m.Register(&admin.AddPoolToSchedulerCmd{})
 	m.Register(&client.EventList{})
 	m.Register(&client.EventInfo{})
@@ -142,7 +144,7 @@ func inDockerMachineDriverMode() bool {
 
 func main() {
 	if inDockerMachineDriverMode() {
-		err := installer.RunDriver(os.Getenv(localbinary.PluginEnvDriverName))
+		err := dm.RunDriver(os.Getenv(localbinary.PluginEnvDriverName))
 		if err != nil {
 			log.Fatalf("Error running driver: %s", err)
 		}

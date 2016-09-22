@@ -2,7 +2,7 @@
 // Use of this source code is governed by a BSD-style
 // license that can be found in the LICENSE file.
 
-package installer
+package dm
 
 import (
 	"errors"
@@ -11,55 +11,16 @@ import (
 	"os"
 	"path/filepath"
 	"strings"
-	"testing"
 
 	check "gopkg.in/check.v1"
 
 	"github.com/docker/machine/drivers/amazonec2"
 	"github.com/docker/machine/drivers/fakedriver"
-	"github.com/docker/machine/libmachine/drivers/plugin/localbinary"
 	"github.com/docker/machine/libmachine/host"
 	"github.com/docker/machine/libmachine/persist/persisttest"
 	"github.com/docker/machine/libmachine/state"
 	dtesting "github.com/fsouza/go-dockerclient/testing"
-	"github.com/tsuru/tsuru-client/tsuru/installer/testing"
 )
-
-type S struct {
-	TLSCertsPath  installertest.CertsPath
-	StoreBasePath string
-}
-
-var _ = check.Suite(&S{})
-
-func TestMain(m *testing.M) {
-	if os.Getenv(localbinary.PluginEnvKey) == localbinary.PluginEnvVal {
-		driver := os.Getenv(localbinary.PluginEnvDriverName)
-		err := RunDriver(driver)
-		if err != nil {
-			fmt.Printf("Failed to run driver %s in test", driver)
-			os.Exit(1)
-		}
-	} else {
-		localbinary.CurrentBinaryIsDockerMachine = true
-		os.Exit(m.Run())
-	}
-}
-
-func Test(t *testing.T) { check.TestingT(t) }
-
-func (s *S) SetUpSuite(c *check.C) {
-	tlsCertsPath, err := installertest.CreateTestCerts()
-	c.Assert(err, check.IsNil)
-	s.StoreBasePath, _ = filepath.Split(tlsCertsPath.RootDir)
-	storeBasePath = s.StoreBasePath
-	s.TLSCertsPath = tlsCertsPath
-}
-
-func (s *S) TearDownSuite(c *check.C) {
-	installertest.CleanCerts(s.TLSCertsPath.RootDir)
-	os.Remove(s.StoreBasePath)
-}
 
 func (s *S) TestNewDockerMachine(c *check.C) {
 	config := &DockerMachineConfig{
@@ -270,7 +231,7 @@ func (s *S) TestCreateMachine(c *check.C) {
 	c.Assert(err, check.IsNil)
 	defer server.Stop()
 	println(server.URL())
-	dm, err := NewDockerMachine(defaultDockerMachineConfig)
+	dm, err := NewDockerMachine(DefaultDockerMachineConfig)
 	c.Assert(err, check.IsNil)
 	fakeAPI := &fakeMachineAPI{}
 	dm.client = fakeAPI
@@ -285,7 +246,7 @@ func (s *S) TestCreateMachine(c *check.C) {
 }
 
 func (s *S) TestDeleteMachine(c *check.C) {
-	dm, err := NewDockerMachine(defaultDockerMachineConfig)
+	dm, err := NewDockerMachine(DefaultDockerMachineConfig)
 	c.Assert(err, check.IsNil)
 	dm.client = &fakeMachineAPI{
 		FakeStore: &persisttest.FakeStore{
@@ -303,7 +264,7 @@ func (s *S) TestDeleteMachine(c *check.C) {
 }
 
 func (s *S) TestDeleteAll(c *check.C) {
-	dm, err := NewDockerMachine(defaultDockerMachineConfig)
+	dm, err := NewDockerMachine(DefaultDockerMachineConfig)
 	c.Assert(err, check.IsNil)
 	dm.client = &fakeMachineAPI{
 		FakeStore: &persisttest.FakeStore{
@@ -329,7 +290,7 @@ func (s *S) TestDeleteAll(c *check.C) {
 }
 
 func (s *S) TestDeleteMachineLoadError(c *check.C) {
-	dm, err := NewDockerMachine(defaultDockerMachineConfig)
+	dm, err := NewDockerMachine(DefaultDockerMachineConfig)
 	c.Assert(err, check.IsNil)
 	expectedErr := fmt.Errorf("failed to load")
 	dm.client = &fakeMachineAPI{
@@ -342,7 +303,7 @@ func (s *S) TestDeleteMachineLoadError(c *check.C) {
 }
 
 func (s *S) TestClose(c *check.C) {
-	dm, err := NewDockerMachine(defaultDockerMachineConfig)
+	dm, err := NewDockerMachine(DefaultDockerMachineConfig)
 	c.Assert(err, check.IsNil)
 	fakeAPI := &fakeMachineAPI{
 		FakeStore: &persisttest.FakeStore{},

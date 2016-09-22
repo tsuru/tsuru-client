@@ -2,7 +2,7 @@
 // Use of this source code is governed by a BSD-style
 // license that can be found in the LICENSE file.
 
-package installer
+package dm
 
 import (
 	"crypto/x509"
@@ -13,8 +13,6 @@ import (
 	"io/ioutil"
 	"os"
 	"path/filepath"
-	"strconv"
-	"strings"
 	"sync/atomic"
 
 	"github.com/docker/machine/libmachine"
@@ -23,77 +21,18 @@ import (
 	"github.com/docker/machine/libmachine/drivers/rpc"
 	"github.com/docker/machine/libmachine/host"
 	"github.com/docker/machine/libmachine/mcnutils"
-	"github.com/fsouza/go-dockerclient"
 	"github.com/tsuru/tsuru/cmd"
 )
 
 var (
 	dockerHTTPSPort            = 2376
 	storeBasePath              = cmd.JoinWithUserDir(".tsuru", "installs")
-	defaultDockerMachineConfig = &DockerMachineConfig{
+	DefaultDockerMachineConfig = &DockerMachineConfig{
 		DriverName: "virtualbox",
 		Name:       "tsuru",
 		DriverOpts: make(DriverOpts),
 	}
 )
-
-type Machine struct {
-	*host.Host
-	IP         string
-	Address    string
-	CAPath     string
-	DriverOpts DriverOpts
-}
-
-func (m *Machine) dockerClient() (*docker.Client, error) {
-	return docker.NewTLSClient(
-		m.Address,
-		filepath.Join(m.CAPath, "cert.pem"),
-		filepath.Join(m.CAPath, "key.pem"),
-		filepath.Join(m.CAPath, "ca.pem"),
-	)
-}
-
-func (m *Machine) GetIP() string {
-	return m.IP
-}
-
-func (m *Machine) GetSSHUsername() string {
-	return m.Driver.GetSSHUsername()
-}
-
-func (m *Machine) GetSSHKeyPath() string {
-	return m.Driver.GetSSHKeyPath()
-}
-
-// GetPrivateIP returns the instance private IP; if not available,
-// will fallback to the public IP.
-func (m *Machine) GetPrivateIP() string {
-	iface, err := GetPrivateIPInterface(m.DriverName)
-	if err == ErrNoPrivateIPInterface || iface == "" {
-		return m.GetIP()
-	}
-	return getIp(iface, m)
-}
-
-func (m *Machine) GetPrivateAddress() string {
-	return "https://" + m.GetPrivateIP() + ":" + strconv.Itoa(dockerHTTPSPort)
-}
-
-func getIp(iface string, remote sshTarget) string {
-	output, err := remote.RunSSHCommand(fmt.Sprintf("ip addr show dev %s", iface))
-	if err != nil {
-		return remote.GetIP()
-	}
-	lines := strings.Split(output, "\n")
-	for _, line := range lines {
-		vals := strings.Split(strings.TrimSpace(line), " ")
-		if len(vals) >= 2 && vals[0] == "inet" {
-			return vals[1][:strings.Index(vals[1], "/")]
-		}
-	}
-	return remote.GetIP()
-}
 
 type DockerMachine struct {
 	io.Closer
@@ -221,14 +160,7 @@ func (d *DockerMachine) generateMachineName() string {
 	return fmt.Sprintf("%s-%d", d.Name, atomic.LoadUint64(&d.machinesCount))
 }
 
-type sshTarget interface {
-	RunSSHCommand(string) (string, error)
-	GetIP() string
-	GetSSHUsername() string
-	GetSSHKeyPath() string
-}
-
-func (d *DockerMachine) uploadRegistryCertificate(host sshTarget) error {
+func (d *DockerMachine) uploadRegistryCertificate(host SSHTarget) error {
 	registryCertPath := filepath.Join(d.certsPath, "registry-cert.pem")
 	registryKeyPath := filepath.Join(d.certsPath, "registry-key.pem")
 	var registryIP string
@@ -284,7 +216,7 @@ func (d *DockerMachine) uploadRegistryCertificate(host sshTarget) error {
 	return err
 }
 
-func writeRemoteFile(host sshTarget, filePath string, remotePath string) error {
+func writeRemoteFile(host SSHTarget, filePath string, remotePath string) error {
 	file, err := ioutil.ReadFile(filePath)
 	if err != nil {
 		return fmt.Errorf("failed to read file %s: %s", filePath, err)
@@ -353,6 +285,10 @@ func (d *DockerMachine) DeleteAll() error {
 		if errDel != nil {
 			return errDel
 		}
+	}
+	err = os.RemoveAll(d.storePath)
+	if err != nil {
+		return err
 	}
 	return nil
 }

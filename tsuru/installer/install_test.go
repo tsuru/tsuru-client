@@ -11,6 +11,7 @@ import (
 	"os"
 	"reflect"
 
+	"github.com/tsuru/tsuru-client/tsuru/installer/dm"
 	"github.com/tsuru/tsuru/cmd"
 	"gopkg.in/check.v1"
 )
@@ -28,13 +29,26 @@ func (s *S) TestParseConfigFileNotExists(c *check.C) {
 
 func (s *S) TestParseConfigFile(c *check.C) {
 	expected := &TsuruInstallConfig{
-		DockerMachineConfig: &DockerMachineConfig{
+		DockerMachineConfig: &dm.DockerMachineConfig{
 			DriverName: "amazonec2",
 			DriverOpts: map[string]interface{}{
 				"opt1": "option1-value",
 			},
 			CAPath: "/tmp/certs",
 			Name:   "tsuru-test",
+		},
+		ComponentsConfig: &ComponentsConfig{
+			TsuruAPIConfig: TsuruAPIConfig{
+				TargetName:       "tsuru-test",
+				RootUserEmail:    "admin@example.com",
+				RootUserPassword: "admin123",
+			},
+			ComponentAddress: map[string]string{
+				"mongo":    "",
+				"redis":    "",
+				"registry": "",
+				"planb":    "",
+			},
 		},
 		CoreHosts: 2,
 		CoreDriversOpts: map[string][]interface{}{
@@ -165,26 +179,26 @@ type FakeMachineProvisioner struct {
 	hostsProvisioned int
 }
 
-func (p *FakeMachineProvisioner) ProvisionMachine(opts map[string]interface{}) (*Machine, error) {
+func (p *FakeMachineProvisioner) ProvisionMachine(opts map[string]interface{}) (*dm.Machine, error) {
 	p.hostsProvisioned = p.hostsProvisioned + 1
-	return &Machine{DriverOpts: DriverOpts(opts)}, nil
+	return &dm.Machine{DriverOpts: dm.DriverOpts(opts)}, nil
 }
 
 func (s *S) TestProvisionPool(c *check.C) {
-	opt1 := DriverOpts{"variable-opt": "opt1"}
-	opt2 := DriverOpts{"variable-opt": "opt2"}
+	opt1 := dm.DriverOpts{"variable-opt": "opt1"}
+	opt2 := dm.DriverOpts{"variable-opt": "opt2"}
 	tt := []struct {
 		poolHosts           int
 		dedicatedPool       bool
-		machines            []*Machine
+		machines            []*dm.Machine
 		expectedProvisioned int
-		expectedDriverOpts  []DriverOpts
+		expectedDriverOpts  []dm.DriverOpts
 	}{
-		{1, false, []*Machine{{}}, 0, []DriverOpts{}},
-		{2, false, []*Machine{{}}, 1, []DriverOpts{opt1, {}}},
-		{1, true, []*Machine{{}}, 1, []DriverOpts{opt1}},
-		{2, true, []*Machine{{}, {}}, 2, []DriverOpts{opt1, opt2}},
-		{3, true, []*Machine{{}}, 3, []DriverOpts{opt1, opt2, opt1}},
+		{1, false, []*dm.Machine{{}}, 0, []dm.DriverOpts{}},
+		{2, false, []*dm.Machine{{}}, 1, []dm.DriverOpts{opt1, {}}},
+		{1, true, []*dm.Machine{{}}, 1, []dm.DriverOpts{opt1}},
+		{2, true, []*dm.Machine{{}, {}}, 2, []dm.DriverOpts{opt1, opt2}},
+		{3, true, []*dm.Machine{{}}, 3, []dm.DriverOpts{opt1, opt2, opt1}},
 	}
 	for ti, t := range tt {
 		p := &FakeMachineProvisioner{}
