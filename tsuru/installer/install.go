@@ -525,6 +525,7 @@ func (c *InstallHostList) Show(result []byte, context *cmd.Context) error {
 		return err
 	}
 	table := cmd.NewTable()
+	table.LineSeparator = true
 	table.Headers = cmd.Row([]string{"Name", "Driver Name", "Driver"})
 	for _, h := range hosts {
 		driver, err := json.MarshalIndent(h.Driver, "", " ")
