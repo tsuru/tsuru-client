@@ -110,7 +110,7 @@ func buildManager(name string) *cmd.Manager {
 	m.Register(&client.RoleDefaultRemove{})
 	m.Register(&installer.Install{})
 	m.Register(&installer.Uninstall{})
-	m.Register(&installer.InstallList{})
+	m.Register(&installer.InstallHostList{})
 	m.Register(&admin.AddPoolToSchedulerCmd{})
 	m.Register(&client.EventList{})
 	m.Register(&client.EventInfo{})

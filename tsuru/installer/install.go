@@ -9,11 +9,12 @@ import (
 	"fmt"
 	"io/ioutil"
 	"net/http"
+	"net/url"
 	"path/filepath"
 	"strconv"
 	"strings"
 
-	"github.com/ajg/form"
+	"github.com/docker/machine/libmachine"
 	"github.com/tsuru/config"
 	"github.com/tsuru/gnuflag"
 	"github.com/tsuru/tsuru-client/tsuru/admin"
@@ -25,6 +26,7 @@ import (
 var (
 	defaultTsuruInstallConfig = &TsuruInstallConfig{
 		DockerMachineConfig: dm.DefaultDockerMachineConfig,
+		ComponentsConfig:    NewInstallConfig(dm.DefaultDockerMachineConfig.Name),
 		CoreHosts:           1,
 		AppsHosts:           1,
 		DedicatedAppsHosts:  false,
@@ -415,3 +417,67 @@ func parseDriverOptsSlice(opts interface{}) (map[string][]interface{}, error) {
 	}
 	return parsedOpts, nil
 }
+
+type InstallHostList struct{}
+
+type installHost struct {
+	Name          string
+	DriverName    string
+	Driver        map[string]interface{}
+	SSHPrivateKey string
+}
+
+func (c *InstallHostList) Info() *cmd.Info {
+	return &cmd.Info{
+		Name:    "install-host-list",
+		Usage:   "install-host-list",
+		Desc:    "List hosts created and registered by the installer.",
+		MinArgs: 0,
+		MaxArgs: 0,
+	}
+}
+
+func (c *InstallHostList) Flags() *gnuflag.FlagSet {
+	return gnuflag.NewFlagSet("install-host-list", gnuflag.ExitOnError)
+}
+
+func (c *InstallHostList) Run(context *cmd.Context, cli *cmd.Client) error {
+	url, err := cmd.GetURLVersion("1.3", "/install/hosts")
+	if err != nil {
+		return err
+	}
+	request, err := http.NewRequest("GET", url, nil)
+	if err != nil {
+		return err
+	}
+	response, err := cli.Do(request)
+	if err != nil {
+		return err
+	}
+	defer response.Body.Close()
+	body, err := ioutil.ReadAll(response.Body)
+	if err != nil {
+		return err
+	}
+	return c.Show(body, context)
+}
+
+func (c *InstallHostList) Show(result []byte, context *cmd.Context) error {
+	var hosts []installHost
+	err := json.Unmarshal(result, &hosts)
+	if err != nil {
+		return err
+	}
+	table := cmd.NewTable()
+	table.Headers = cmd.Row([]string{"Name", "Driver Name", "Driver"})
+	for _, h := range hosts {
+		driver, err := json.MarshalIndent(h.Driver, "", " ")
+		if err != nil {
+			return err
+		}
+		table.AddRow(cmd.Row([]string{h.Name, h.DriverName, string(driver)}))
+	}
+	context.Stdout.Write(table.Bytes())
+	return nil
+}
+

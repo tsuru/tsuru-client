@@ -10,9 +10,11 @@ import (
 	"net/http"
 	"os"
 	"reflect"
+	"strings"
 
 	"github.com/tsuru/tsuru-client/tsuru/installer/dm"
 	"github.com/tsuru/tsuru/cmd"
+	"github.com/tsuru/tsuru/cmd/cmdtest"
 	"gopkg.in/check.v1"
 )
 
@@ -218,4 +220,41 @@ func (s *S) TestProvisionPool(c *check.C) {
 			}
 		}
 	}
+}
+
+func (s *S) TestInstallHostList(c *check.C) {
+	os.Setenv("TSURU_TARGET", "http://localhost")
+	defer os.Unsetenv("TSURU_TARGET")
+	var buf bytes.Buffer
+	var called bool
+	transport := cmdtest.ConditionalTransport{
+		Transport: cmdtest.Transport{
+			Status: http.StatusOK,
+			Message: `[{"Name":"host1", "DriverName": "amazonec2", "Driver": {"IP": "127.0.0.1"}},
+				{"Name":"host2", "DriverName":"amazonec2", "Driver": {"SSHPort": 22, "IP": "127.0.0.2"}}]`,
+		},
+		CondFunc: func(r *http.Request) bool {
+			called = true
+			return r.Method == "GET" && strings.HasSuffix(r.URL.Path, "/install/hosts")
+		},
+	}
+	context := cmd.Context{Stdout: &buf}
+	client := cmd.NewClient(&http.Client{Transport: &transport}, nil, manager)
+	cmd := &InstallHostList{}
+	err := cmd.Run(&context, client)
+	c.Assert(err, check.IsNil)
+	c.Assert(called, check.Equals, true)
+	expected := `+-------+-------------+---------------------+
+| Name  | Driver Name | Driver              |
++-------+-------------+---------------------+
+| host1 | amazonec2   | {                   |
+|       |             |  "IP": "127.0.0.1"  |
+|       |             | }                   |
+| host2 | amazonec2   | {                   |
+|       |             |  "IP": "127.0.0.2", |
+|       |             |  "SSHPort": 22      |
+|       |             | }                   |
++-------+-------------+---------------------+
+`
+	c.Assert(buf.String(), check.Equals, expected)
 }
