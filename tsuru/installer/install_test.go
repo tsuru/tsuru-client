@@ -279,6 +279,7 @@ func (s *S) TestInstallHostList(c *check.C) {
 | host1 | amazonec2   | {                   |
 |       |             |  "IP": "127.0.0.1"  |
 |       |             | }                   |
++-------+-------------+---------------------+
 | host2 | amazonec2   | {                   |
 |       |             |  "IP": "127.0.0.2", |
 |       |             |  "SSHPort": 22      |
