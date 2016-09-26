@@ -308,3 +308,55 @@ func (d *DockerMachine) DeleteMachine(name string) error {
 func (d *DockerMachine) Close() error {
 	return d.client.Close()
 }
+
+type TempDockerMachine struct {
+	io.Closer
+	client    libmachine.API
+	storePath string
+	certsPath string
+}
+
+func NewTempDockerMachine() (*TempDockerMachine, error) {
+	storePath, err := ioutil.TempDir("", "store")
+	if err != nil {
+		return nil, fmt.Errorf("failed o create store dir: %s", err)
+	}
+	certsPath := filepath.Join(storePath, "certs")
+	err = os.Mkdir(certsPath, 0700)
+	if err != nil {
+		return nil, fmt.Errorf("failed to create certs dir: %s", err)
+	}
+	return &TempDockerMachine{
+		client:    libmachine.NewClient(storePath, certsPath),
+		storePath: storePath,
+		certsPath: certsPath,
+	}, nil
+}
+
+func (d *TempDockerMachine) Close() error {
+	defer os.RemoveAll(d.storePath)
+	return d.client.Close()
+}
+
+func (d *TempDockerMachine) NewHost(driverName, sshKey string, driver map[string]interface{}) (*host.Host, error) {
+	sshKeyPath := filepath.Join(d.certsPath, "id_rsa")
+	err := ioutil.WriteFile(sshKeyPath, []byte(sshKey), 0700)
+	if err != nil {
+		return nil, err
+	}
+	driver["SSHKeyPath"] = sshKeyPath
+	driver["StorePath"] = d.storePath
+	rawDriver, err := json.Marshal(driver)
+	if err != nil {
+		return nil, err
+	}
+	h, err := d.client.NewHost(driverName, rawDriver)
+	if err != nil {
+		return nil, err
+	}
+	err = d.client.Save(h)
+	if err != nil {
+		return nil, err
+	}
+	return d.client.Load(h.Name)
+}
