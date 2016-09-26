@@ -14,7 +14,6 @@ import (
 	"strconv"
 	"strings"
 
-	"github.com/docker/machine/libmachine"
 	"github.com/tsuru/config"
 	"github.com/tsuru/gnuflag"
 	"github.com/tsuru/tsuru-client/tsuru/admin"
@@ -533,4 +532,3 @@ func (c *InstallHostList) Show(result []byte, context *cmd.Context) error {
 	context.Stdout.Write(table.Bytes())
 	return nil
 }
-
