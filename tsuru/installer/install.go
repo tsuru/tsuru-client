@@ -519,15 +519,31 @@ func (c *InstallHostList) Show(result []byte, context *cmd.Context) error {
 	if err != nil {
 		return err
 	}
+	dockerMachine, err := dm.NewTempDockerMachine()
+	if err != nil {
+		return err
+	}
+	defer dockerMachine.Close()
 	table := cmd.NewTable()
 	table.LineSeparator = true
-	table.Headers = cmd.Row([]string{"Name", "Driver Name", "Driver"})
+	table.Headers = cmd.Row([]string{"Name", "Driver Name", "State", "Driver"})
 	for _, h := range hosts {
 		driver, err := json.MarshalIndent(h.Driver, "", " ")
 		if err != nil {
 			return err
 		}
-		table.AddRow(cmd.Row([]string{h.Name, h.DriverName, string(driver)}))
+		host, err := dockerMachine.NewHost(h.DriverName, h.SSHPrivateKey, h.Driver)
+		if err != nil {
+			return err
+		}
+		state, err := host.Driver.GetState()
+		var stateStr string
+		if err != nil {
+			stateStr = err.Error()
+		} else {
+			stateStr = state.String()
+		}
+		table.AddRow(cmd.Row([]string{h.Name, h.DriverName, stateStr, string(driver)}))
 	}
 	context.Stdout.Write(table.Bytes())
 	return nil

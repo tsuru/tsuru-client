@@ -273,18 +273,18 @@ func (s *S) TestInstallHostList(c *check.C) {
 	err := cmd.Run(&context, client)
 	c.Assert(err, check.IsNil)
 	c.Assert(called, check.Equals, true)
-	expected := `+-------+-------------+---------------------+
-| Name  | Driver Name | Driver              |
-+-------+-------------+---------------------+
-| host1 | amazonec2   | {                   |
-|       |             |  "IP": "127.0.0.1"  |
-|       |             | }                   |
-+-------+-------------+---------------------+
-| host2 | amazonec2   | {                   |
-|       |             |  "IP": "127.0.0.2", |
-|       |             |  "SSHPort": 22      |
-|       |             | }                   |
-+-------+-------------+---------------------+
+	expected := `+-------+-------------+------------------------------------------------+---------------------+
+| Name  | Driver Name | State                                          | Driver              |
++-------+-------------+------------------------------------------------+---------------------+
+| host1 | amazonec2   | EmptyStaticCreds: static credentials are empty | {                   |
+|       |             |                                                |  "IP": "127.0.0.1"  |
+|       |             |                                                | }                   |
++-------+-------------+------------------------------------------------+---------------------+
+| host2 | amazonec2   | EmptyStaticCreds: static credentials are empty | {                   |
+|       |             |                                                |  "IP": "127.0.0.2", |
+|       |             |                                                |  "SSHPort": 22      |
+|       |             |                                                | }                   |
++-------+-------------+------------------------------------------------+---------------------+
 `
 	c.Assert(buf.String(), check.Equals, expected)
 }
