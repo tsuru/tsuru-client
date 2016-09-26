@@ -6,12 +6,15 @@ package installer
 
 import (
 	"bytes"
+	"encoding/json"
 	"fmt"
 	"net/http"
 	"os"
 	"reflect"
 	"strings"
 
+	"github.com/docker/machine/drivers/fakedriver"
+	"github.com/docker/machine/libmachine/host"
 	"github.com/tsuru/tsuru-client/tsuru/installer/dm"
 	"github.com/tsuru/tsuru/cmd"
 	"github.com/tsuru/tsuru/cmd/cmdtest"
@@ -220,6 +223,32 @@ func (s *S) TestProvisionPool(c *check.C) {
 			}
 		}
 	}
+}
+
+func (s *S) TestAddInstallHosts(c *check.C) {
+	os.Setenv("TSURU_TARGET", "http://localhost")
+	defer os.Unsetenv("TSURU_TARGET")
+	var called bool
+	transport := cmdtest.ConditionalTransport{
+		Transport: cmdtest.Transport{
+			Status: http.StatusCreated,
+		},
+		CondFunc: func(r *http.Request) bool {
+			called = true
+			var driver map[string]interface{}
+			err := json.Unmarshal([]byte(r.FormValue("driver")), &driver)
+			c.Assert(err, check.IsNil)
+			c.Assert(driver["MockIP"], check.Equals, "127.0.0.1")
+			return r.Method == "POST" && strings.HasSuffix(r.URL.Path, "/install/hosts")
+		},
+	}
+	client := cmd.NewClient(&http.Client{Transport: &transport}, nil, manager)
+	machines := []*dm.Machine{
+		{Host: &host.Host{DriverName: "amazonec2", Driver: &fakedriver.Driver{MockIP: "127.0.0.1"}}},
+	}
+	err := addInstallHosts(machines, client)
+	c.Assert(err, check.IsNil)
+	c.Assert(called, check.Equals, true)
 }
 
 func (s *S) TestInstallHostList(c *check.C) {

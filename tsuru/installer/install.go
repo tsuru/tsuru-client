@@ -137,13 +137,13 @@ func (c *Install) Run(context *cmd.Context, cli *cmd.Client) error {
 	if err != nil {
 		return fmt.Errorf("pre-install checks failed: %s", err)
 	}
-	dm, err := dm.NewDockerMachine(config.DockerMachineConfig)
+	dockerMachine, err := dm.NewDockerMachine(config.DockerMachineConfig)
 	if err != nil {
 		return fmt.Errorf("failed to create docker machine: %s", err)
 	}
-	defer dm.Close()
+	defer dockerMachine.Close()
 	config.CoreDriversOpts[config.DriverName+"-open-port"] = []interface{}{strconv.Itoa(defaultTsuruAPIPort)}
-	coreMachines, err := ProvisionMachines(dm, config.CoreHosts, config.CoreDriversOpts)
+	coreMachines, err := ProvisionMachines(dockerMachine, config.CoreHosts, config.CoreDriversOpts)
 	if err != nil {
 		return fmt.Errorf("failed to provision components machines: %s", err)
 	}
@@ -163,7 +163,7 @@ func (c *Install) Run(context *cmd.Context, cli *cmd.Client) error {
 		}
 		fmt.Fprintf(context.Stdout, "%s successfully installed!\n", component.Name())
 	}
-	appsMachines, err := ProvisionPool(dm, config, coreMachines)
+	appsMachines, err := ProvisionPool(dockerMachine, config, coreMachines)
 	if err != nil {
 		return err
 	}
@@ -204,6 +204,62 @@ func (c *Install) Run(context *cmd.Context, cli *cmd.Client) error {
 	fmt.Fprintln(context.Stdout, "Apps:")
 	appList := &client.AppList{}
 	appList.Run(context, cli)
+	machineIndex := make(map[string]*dm.Machine)
+	allMachines := append(coreMachines, appsMachines...)
+	for _, m := range allMachines {
+		machineIndex[m.Name] = m
+	}
+	var uniqueMachines []*dm.Machine
+	for _, v := range machineIndex {
+		uniqueMachines = append(uniqueMachines, v)
+	}
+	err = addInstallHosts(uniqueMachines, cli)
+	if err != nil {
+		return fmt.Errorf("failed to register hosts: %s", err)
+	}
+	return nil
+}
+
+func addInstallHosts(machines []*dm.Machine, client *cmd.Client) error {
+	path, err := cmd.GetURLVersion("1.3", "/install/hosts")
+	if err != nil {
+		return err
+	}
+	for _, m := range machines {
+		rawDriver, err := json.Marshal(m.Driver)
+		if err != nil {
+			return err
+		}
+		privateKey, err := ioutil.ReadFile(m.GetSSHKeyPath())
+		if err != nil {
+			fmt.Printf("failed to read private ssh key file: %s", err)
+		}
+		caCert, err := ioutil.ReadFile(filepath.Join(m.CAPath, "ca.pem"))
+		if err != nil {
+			fmt.Printf("failed to read ca file: %s", err)
+		}
+		caPrivateKey, err := ioutil.ReadFile(filepath.Join(m.CAPath, "ca-key.pem"))
+		if err != nil {
+			fmt.Printf("failed to read ca private key file: %s", err)
+		}
+		v := url.Values{}
+		v.Set("driver", string(rawDriver))
+		v.Set("name", m.Name)
+		v.Set("driverName", m.DriverName)
+		v.Set("sshPrivateKey", string(privateKey))
+		v.Set("caCert", string(caCert))
+		v.Set("caPrivateKey", string(caPrivateKey))
+		body := strings.NewReader(v.Encode())
+		request, err := http.NewRequest("POST", path, body)
+		if err != nil {
+			return err
+		}
+		request.Header.Set("Content-Type", "application/x-www-form-urlencoded")
+		_, err = client.Do(request)
+		if err != nil {
+			return err
+		}
+	}
 	return nil
 }
 
