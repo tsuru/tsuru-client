@@ -216,19 +216,6 @@ func (d *DockerMachine) uploadRegistryCertificate(host SSHTarget) error {
 	return err
 }
 
-func writeRemoteFile(host SSHTarget, filePath string, remotePath string) error {
-	file, err := ioutil.ReadFile(filePath)
-	if err != nil {
-		return fmt.Errorf("failed to read file %s: %s", filePath, err)
-	}
-	remoteWriteCmdFmt := "printf '%%s' '%s' | sudo tee %s"
-	_, err = host.RunSSHCommand(fmt.Sprintf(remoteWriteCmdFmt, string(file), remotePath))
-	if err != nil {
-		return fmt.Errorf("failed to write remote file: %s", err)
-	}
-	return nil
-}
-
 func (d *DockerMachine) createRegistryCertificate(hosts ...string) error {
 	fmt.Printf("Creating registry certificate...\n")
 	caOrg := mcnutils.GetUsername()

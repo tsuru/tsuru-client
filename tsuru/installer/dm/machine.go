@@ -6,6 +6,7 @@ package dm
 
 import (
 	"fmt"
+	"io/ioutil"
 	"path/filepath"
 	"strconv"
 	"strings"
@@ -77,4 +78,17 @@ func getIp(iface string, remote SSHTarget) string {
 		}
 	}
 	return remote.GetIP()
+}
+
+func writeRemoteFile(host SSHTarget, filePath string, remotePath string) error {
+	file, err := ioutil.ReadFile(filePath)
+	if err != nil {
+		return fmt.Errorf("failed to read file %s: %s", filePath, err)
+	}
+	remoteWriteCmdFmt := "printf '%%s' '%s' | sudo tee %s"
+	_, err = host.RunSSHCommand(fmt.Sprintf(remoteWriteCmdFmt, string(file), remotePath))
+	if err != nil {
+		return fmt.Errorf("failed to write remote file: %s", err)
+	}
+	return nil
 }
