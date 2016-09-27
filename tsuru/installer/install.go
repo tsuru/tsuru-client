@@ -548,3 +548,58 @@ func (c *InstallHostList) Show(result []byte, context *cmd.Context) error {
 	context.Stdout.Write(table.Bytes())
 	return nil
 }
+
+type InstallSSH struct{}
+
+func (c *InstallSSH) Info() *cmd.Info {
+	return &cmd.Info{
+		Name:    "install-ssh",
+		Usage:   "install-ssh <hostname> [arg...]",
+		Desc:    "Log into or run a command on a host with SSH.",
+		MinArgs: 1,
+	}
+}
+
+func (c *InstallSSH) Flags() *gnuflag.FlagSet {
+	return gnuflag.NewFlagSet("install-ssh", gnuflag.ExitOnError)
+}
+
+func (c *InstallSSH) Run(context *cmd.Context, cli *cmd.Client) error {
+	hostName := context.Args[0]
+	url, err := cmd.GetURLVersion("1.3", "/install/hosts/"+hostName)
+	if err != nil {
+		return err
+	}
+	request, err := http.NewRequest("GET", url, nil)
+	if err != nil {
+		return err
+	}
+	response, err := cli.Do(request)
+	if err != nil {
+		return err
+	}
+	defer response.Body.Close()
+	var ih *installHost
+	err = json.NewDecoder(response.Body).Decode(&ih)
+	if err != nil {
+		return err
+	}
+	dockerMachine, err := dm.NewTempDockerMachine()
+	if err != nil {
+		return err
+	}
+	defer dockerMachine.Close()
+	h, err := dockerMachine.NewHost(ih.DriverName, ih.SSHPrivateKey, ih.Driver)
+	if err != nil {
+		return err
+	}
+	sshClient, err := h.CreateSSHClient()
+	if err != nil {
+		return fmt.Errorf("failed to create ssh client: %s", err)
+	}
+	sshArgs := []string{}
+	if len(context.Args) > 1 {
+		sshArgs = context.Args[1:]
+	}
+	return sshClient.Shell(sshArgs...)
+}

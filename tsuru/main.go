@@ -111,6 +111,7 @@ func buildManager(name string) *cmd.Manager {
 	m.Register(&installer.Install{})
 	m.Register(&installer.Uninstall{})
 	m.Register(&installer.InstallHostList{})
+	m.Register(&installer.InstallSSH{})
 	m.Register(&admin.AddPoolToSchedulerCmd{})
 	m.Register(&client.EventList{})
 	m.Register(&client.EventInfo{})
