@@ -366,11 +366,11 @@ func (c *GetNodeHealingConfigCmd) Info() *cmd.Info {
 }
 
 func (c *GetNodeHealingConfigCmd) Run(ctx *cmd.Context, client *cmd.Client) error {
-	url, err := cmd.GetURLVersion("1.3", "/healing/node")
+	u, err := cmd.GetURLVersion("1.3", "/healing/node")
 	if err != nil {
 		return err
 	}
-	req, err := http.NewRequest("GET", url, nil)
+	req, err := http.NewRequest("GET", u, nil)
 	if err != nil {
 		return err
 	}
