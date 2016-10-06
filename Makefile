@@ -40,6 +40,7 @@ doc: docs-clean doc-requirements
 docs: doc
 
 test:
-	go test ./... -check.vv
+	go test $$(go list ./... | grep -v /vendor/) -check.vv
+
 
 .PHONY: doc docs release manpage
