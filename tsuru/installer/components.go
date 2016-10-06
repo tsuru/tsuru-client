@@ -24,7 +24,6 @@ import (
 	tclient "github.com/tsuru/tsuru-client/tsuru/client"
 	"github.com/tsuru/tsuru/cmd"
 	"github.com/tsuru/tsuru/provision"
-	"github.com/tsuru/tsuru/provision/nodecontainer"
 )
 
 var (
@@ -40,19 +39,16 @@ var (
 )
 
 type ComponentsConfig struct {
-	DockerHubMirror  string
 	ComponentAddress map[string]string
 	TsuruAPIConfig
 }
 
 func NewInstallConfig(targetName string) *ComponentsConfig {
-	hub, _ := config.GetString("docker-hub-mirror")
 	mongo, _ := config.GetString("components:mongo")
 	redis, _ := config.GetString("components:redis")
 	registry, _ := config.GetString("components:registry")
 	planb, _ := config.GetString("components:planb")
 	return &ComponentsConfig{
-		DockerHubMirror: hub,
 		TsuruAPIConfig: TsuruAPIConfig{
 			TargetName:       targetName,
 			RootUserEmail:    "admin@example.com",
@@ -65,13 +61,6 @@ func NewInstallConfig(targetName string) *ComponentsConfig {
 			"planb":    planb,
 		},
 	}
-}
-
-func (i *ComponentsConfig) fullImageName(name string) string {
-	if i.DockerHubMirror != "" {
-		return fmt.Sprintf("%s/%s", i.DockerHubMirror, name)
-	}
-	return name
 }
 
 type TsuruComponent interface {
@@ -98,7 +87,7 @@ func (c *MongoDB) Install(cluster ServiceCluster, i *ComponentsConfig) error {
 			},
 			TaskTemplate: swarm.TaskSpec{
 				ContainerSpec: swarm.ContainerSpec{
-					Image: i.fullImageName("mongo:latest"),
+					Image: "mongo:latest",
 				},
 			},
 		},
@@ -139,7 +128,7 @@ func (c *PlanB) Install(cluster ServiceCluster, i *ComponentsConfig) error {
 			},
 			TaskTemplate: swarm.TaskSpec{
 				ContainerSpec: swarm.ContainerSpec{
-					Image: i.fullImageName("tsuru/planb:latest"),
+					Image: "tsuru/planb:latest",
 					Args:  []string{"--listen", ":8080", "--read-redis-host", "redis", "--write-redis-host", "redis"},
 				},
 			},
@@ -199,7 +188,7 @@ func (c *Redis) Install(cluster ServiceCluster, i *ComponentsConfig) error {
 			},
 			TaskTemplate: swarm.TaskSpec{
 				ContainerSpec: swarm.ContainerSpec{
-					Image: i.fullImageName("redis:latest"),
+					Image: "redis:latest",
 				},
 			},
 		},
@@ -240,7 +229,7 @@ func (c *Registry) Install(cluster ServiceCluster, i *ComponentsConfig) error {
 			},
 			TaskTemplate: swarm.TaskSpec{
 				ContainerSpec: swarm.ContainerSpec{
-					Image: i.fullImageName("registry:2"),
+					Image: "registry:2",
 					Env: []string{
 						"REGISTRY_STORAGE_FILESYSTEM_ROOTDIRECTORY=/var/lib/registry",
 						fmt.Sprintf("REGISTRY_HTTP_TLS_CERTIFICATE=/certs/%s:5000/registry-cert.pem", cluster.GetManager().IP),
@@ -330,7 +319,7 @@ func (c *TsuruAPI) Install(cluster ServiceCluster, i *ComponentsConfig) error {
 			},
 			TaskTemplate: swarm.TaskSpec{
 				ContainerSpec: swarm.ContainerSpec{
-					Image: i.fullImageName("tsuru/api:latest"),
+					Image: "tsuru/api:latest",
 					Env: []string{fmt.Sprintf("MONGODB_ADDR=%s", mongo),
 						fmt.Sprintf("MONGODB_PORT=%s", mongoPort),
 						fmt.Sprintf("REDIS_ADDR=%s", redis),
@@ -399,12 +388,11 @@ func (c *TsuruAPI) setupRootUser(cluster ServiceCluster, email, password string)
 }
 
 type TsuruSetupOptions struct {
-	Login           string
-	Password        string
-	Target          string
-	TargetName      string
-	NodesAddr       []string
-	DockerHubMirror string
+	Login      string
+	Password   string
+	Target     string
+	TargetName string
+	NodesAddr  []string
 }
 
 func SetupTsuru(opts TsuruSetupOptions) error {
@@ -459,18 +447,6 @@ func SetupTsuru(opts TsuruSetupOptions) error {
 	if err != nil {
 		return fmt.Errorf("failed to add pool: %s", err)
 	}
-	if opts.DockerHubMirror != "" {
-		nodeConainerUpdate := nodecontainer.NodeContainerUpdate{}
-		err = nodeConainerUpdate.Flags().Parse(true, []string{"--image", fmt.Sprintf("%s/tsuru/bs:v1", opts.DockerHubMirror)})
-		if err != nil {
-			return err
-		}
-		context.Args = []string{"big-sibling"}
-		err = nodeConainerUpdate.Run(&context, client)
-		if err != nil {
-			return fmt.Errorf("failed to update bs nodecontainer: %s", err)
-		}
-	}
 	nodeAdd := admin.AddNodeCmd{}
 	err = nodeAdd.Flags().Parse(true, []string{"--register"})
 	if err != nil {
@@ -487,9 +463,6 @@ func SetupTsuru(opts TsuruSetupOptions) error {
 	fmt.Fprintln(os.Stdout, "adding platform")
 	platformAdd := admin.PlatformAdd{}
 	context.Args = []string{"python"}
-	if opts.DockerHubMirror != "" {
-		platformAdd.Flags().Parse(true, []string{"-i", fmt.Sprintf("%s/python", opts.DockerHubMirror)})
-	}
 	err = mcnutils.WaitFor(func() bool {
 		return platformAdd.Run(&context, client) == nil
 	})
@@ -503,14 +476,14 @@ func SetupTsuru(opts TsuruSetupOptions) error {
 	if err != nil {
 		return fmt.Errorf("failed to create admin team: %s", err)
 	}
-	err = installDashboard(client, opts.DockerHubMirror)
+	err = installDashboard(client)
 	if err != nil {
 		return fmt.Errorf("failed to install tsuru dashboard: %s", err)
 	}
 	return nil
 }
 
-func installDashboard(client *cmd.Client, dockerHubMirror string) error {
+func installDashboard(client *cmd.Client) error {
 	fmt.Fprintln(os.Stdout, "adding dashboard")
 	context := cmd.Context{
 		Args:   []string{"tsuru-dashboard", "python"},
@@ -530,12 +503,7 @@ func installDashboard(client *cmd.Client, dockerHubMirror string) error {
 	context.Args = []string{}
 	fmt.Fprintln(os.Stdout, "deploying dashboard")
 	deployDashboard := tclient.AppDeploy{}
-	deployFlags := []string{"-a", "tsuru-dashboard", "-i"}
-	if dockerHubMirror == "" {
-		deployFlags = append(deployFlags, "tsuru/dashboard")
-	} else {
-		deployFlags = append(deployFlags, fmt.Sprintf("%s/tsuru/dashboard", dockerHubMirror))
-	}
+	deployFlags := []string{"-a", "tsuru-dashboard", "-i", "tsuru/dashboard"}
 	err = deployDashboard.Flags().Parse(true, deployFlags)
 	if err != nil {
 		return err

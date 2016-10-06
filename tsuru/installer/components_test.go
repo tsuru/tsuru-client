@@ -11,7 +11,6 @@ import (
 	"net"
 	"net/http"
 	"net/http/httptest"
-	"net/url"
 	"os"
 	"sort"
 	"strings"
@@ -104,31 +103,6 @@ func (s *S) TestInstallComponentsDefaultConfig(c *check.C) {
 	c.Assert(installConfig.ComponentAddress["planb"], check.Equals, "127.0.0.1")
 }
 
-func (s *S) TestInstallComponentsCustomRegistry(c *check.C) {
-	config.Set("docker-hub-mirror", "myregistry.com")
-	defer config.Unset("docker-hub-mirror")
-	tests := []struct {
-		component TsuruComponent
-		image     string
-	}{
-		{&MongoDB{}, "myregistry.com/mongo:latest"},
-		{&Redis{}, "myregistry.com/redis:latest"},
-		{&PlanB{}, "myregistry.com/tsuru/planb:latest"},
-		{&Registry{}, "myregistry.com/registry:2"},
-		{&TsuruAPI{}, "myregistry.com/tsuru/api:latest"},
-	}
-	c.Assert(len(tests), check.Equals, len(TsuruComponents))
-	services := make(chan docker.CreateServiceOptions)
-	fakeCluster := &FakeServiceCluster{Services: services}
-	for _, tt := range tests {
-		config := NewInstallConfig("test")
-		go tt.component.Install(fakeCluster, config)
-		s := <-services
-		img := s.TaskTemplate.ContainerSpec.Image
-		c.Assert(img, check.Equals, tt.image)
-	}
-}
-
 func (s *S) TestInstallPlanbHostPortBindings(c *check.C) {
 	services := make(chan docker.CreateServiceOptions, 1)
 	fakeCluster := &FakeServiceCluster{Services: services}
@@ -208,70 +182,6 @@ func (s *S) TestTsuruAPIBootstrapLocalEnviroment(c *check.C) {
 		Target:     server.URL,
 		TargetName: "test",
 		NodesAddr:  []string{server.URL},
-	}
-	err := SetupTsuru(opts)
-	c.Assert(err, check.IsNil)
-	c.Assert(paths, check.DeepEquals, expectedPaths)
-}
-
-func (s *S) TestTsuruAPIBootstrapCustomDockerRegistry(c *check.C) {
-	var paths []string
-	expectedPaths := []string{"/1.0/auth/scheme", "/1.0/users/test/tokens",
-		"/1.0/pools", "/1.0/docker/nodecontainers/big-sibling", "/1.2/node",
-		"/1.0/platforms", "/1.0/teams", "/1.0/apps", "/1.0/apps/tsuru-dashboard",
-		"/1.0/apps/tsuru-dashboard/deploy",
-	}
-	server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-		b, err := ioutil.ReadAll(r.Body)
-		defer r.Body.Close()
-		c.Assert(err, check.IsNil)
-		paths = append(paths, r.URL.Path)
-		if r.URL.Path == "/1.0/users/test/tokens" {
-			token := map[string]string{"token": "test"}
-			buf, err := json.Marshal(token)
-			c.Assert(err, check.IsNil)
-			w.Write(buf)
-		}
-		if r.URL.Path == "/1.0/docker/nodecontainers/big-sibling" {
-			m, err := url.ParseQuery(string(b))
-			c.Assert(err, check.IsNil)
-			c.Assert(m.Get("config.image"), check.Equals, "test.com/tsuru/bs:v1")
-		}
-		if r.URL.Path == "/1.0/platforms" {
-			expected := "FROM test.com/python"
-			c.Assert(strings.Contains(string(b), expected), check.Equals, true)
-		}
-		if r.URL.Path == "/1.0/apps" {
-			buf, err := json.Marshal(map[string]string{})
-			c.Assert(err, check.IsNil)
-			w.Write(buf)
-		}
-		if r.URL.Path == "/1.0/apps/tsuru-dashboard/deploy" {
-			c.Assert(string(b), check.Equals, "image=test.com%2Ftsuru%2Fdashboard&origin=image")
-			fmt.Fprintln(w, "\nOK")
-		}
-		w.WriteHeader(http.StatusOK)
-		w.Header().Set("Content-Type", "application/json")
-	}))
-	defer server.Close()
-	defer func() {
-		manager := cmd.BuildBaseManager("uninstall-client", "0.0.0", "", nil)
-		c := cmd.NewClient(&http.Client{}, nil, manager)
-		cont := cmd.Context{
-			Args:   []string{"test"},
-			Stdout: os.Stdout,
-			Stderr: os.Stderr,
-		}
-		targetrm := manager.Commands["target-remove"]
-		targetrm.Run(&cont, c)
-	}()
-	opts := TsuruSetupOptions{
-		Login:           "test",
-		Password:        "test",
-		Target:          server.URL,
-		TargetName:      "test",
-		NodesAddr:       []string{server.URL},
-		DockerHubMirror: "test.com",
 	}
 	err := SetupTsuru(opts)
 	c.Assert(err, check.IsNil)

@@ -43,13 +43,15 @@ type DockerMachine struct {
 	client           libmachine.API
 	machinesCount    uint64
 	globalDriverOpts DriverOpts
+	dockerHubMirror  string
 }
 
 type DockerMachineConfig struct {
-	DriverName string
-	CAPath     string
-	Name       string
-	DriverOpts DriverOpts
+	DriverName      string
+	CAPath          string
+	Name            string
+	DriverOpts      DriverOpts
+	DockerHubMirror string
 }
 
 type MachineProvisioner interface {
@@ -82,6 +84,7 @@ func NewDockerMachine(config *DockerMachineConfig) (*DockerMachine, error) {
 		Name:             config.Name,
 		client:           libmachine.NewClient(storePath, certsPath),
 		globalDriverOpts: config.DriverOpts,
+		dockerHubMirror:  config.DockerHubMirror,
 	}, nil
 }
 
@@ -121,7 +124,7 @@ func (d *DockerMachine) CreateMachine(driverOpts map[string]interface{}) (*Machi
 	if err != nil {
 		return nil, err
 	}
-	d.configureServerCertPaths(host)
+	d.configureHost(host)
 	d.configureDriver(host.Driver, driverOpts)
 	err = d.client.Create(host)
 	if err != nil {
@@ -148,10 +151,13 @@ func (d *DockerMachine) CreateMachine(driverOpts map[string]interface{}) (*Machi
 	return m, nil
 }
 
-func (d *DockerMachine) configureServerCertPaths(h *host.Host) {
+func (d *DockerMachine) configureHost(h *host.Host) {
 	if h.AuthOptions() != nil {
 		h.AuthOptions().ServerCertPath = filepath.Join(d.client.GetMachinesDir(), h.Name, "server.pem")
 		h.AuthOptions().ServerKeyPath = filepath.Join(d.client.GetMachinesDir(), h.Name, "server-key.pem")
+	}
+	if d.dockerHubMirror != "" {
+		h.HostOptions.EngineOptions.RegistryMirror = []string{d.dockerHubMirror}
 	}
 }
 

@@ -15,6 +15,7 @@ import (
 
 	"github.com/docker/machine/drivers/amazonec2"
 	"github.com/docker/machine/drivers/fakedriver"
+	"github.com/docker/machine/libmachine/engine"
 	"github.com/docker/machine/libmachine/host"
 	"github.com/docker/machine/libmachine/persist/persisttest"
 	"github.com/docker/machine/libmachine/state"
@@ -150,6 +151,9 @@ func (f *fakeMachineAPI) NewHost(driverName string, rawDriver []byte) (*host.Hos
 			MockState: state.Running,
 			MockIP:    "127.0.0.1",
 		},
+		HostOptions: &host.Options{
+			EngineOptions: &engine.Options{},
+		},
 	}, nil
 }
 
@@ -176,7 +180,6 @@ func (s *S) TestCreateMachine(c *check.C) {
 	server, err := dtesting.NewTLSServer("127.0.0.1:2376", nil, nil, tlsConfig)
 	c.Assert(err, check.IsNil)
 	defer server.Stop()
-	println(server.URL())
 	dm, err := NewDockerMachine(DefaultDockerMachineConfig)
 	c.Assert(err, check.IsNil)
 	fakeAPI := &fakeMachineAPI{}

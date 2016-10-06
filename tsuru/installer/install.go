@@ -168,12 +168,11 @@ func (c *Install) Run(context *cmd.Context, cli *cmd.Client) error {
 	}
 	fmt.Fprintf(context.Stdout, "Bootstrapping Tsuru API...")
 	opts := TsuruSetupOptions{
-		Login:           config.ComponentsConfig.RootUserEmail,
-		Password:        config.ComponentsConfig.RootUserPassword,
-		Target:          fmt.Sprintf("http://%s:%d", cluster.GetManager().IP, defaultTsuruAPIPort),
-		TargetName:      config.ComponentsConfig.TargetName,
-		NodesAddr:       nodesAddr,
-		DockerHubMirror: config.ComponentsConfig.DockerHubMirror,
+		Login:      config.ComponentsConfig.RootUserEmail,
+		Password:   config.ComponentsConfig.RootUserPassword,
+		Target:     fmt.Sprintf("http://%s:%d", cluster.GetManager().IP, defaultTsuruAPIPort),
+		TargetName: config.ComponentsConfig.TargetName,
+		NodesAddr:  nodesAddr,
 	}
 	err = SetupTsuru(opts)
 	if err != nil {
@@ -401,6 +400,10 @@ func parseConfigFile(file string) (*TsuruInstallConfig, error) {
 	name, err := config.GetString("name")
 	if err == nil {
 		installConfig.Name = name
+	}
+	hub, err := config.GetString("docker-hub-mirror")
+	if err == nil {
+		installConfig.DockerHubMirror = hub
 	}
 	driverOpts := make(dm.DriverOpts)
 	opts, _ := config.Get("driver:options")
