@@ -519,3 +519,33 @@ func (s *S) TestNodeListIsRegistered(c *check.C) {
 	c.Assert(ok, check.Equals, true)
 	c.Assert(change, check.FitsTypeOf, &cmd.DeprecatedCommand{})
 }
+
+func (s *S) TestNodeHealingInfoIsRegistered(c *check.C) {
+	manager = buildManager("tsuru")
+	change, ok := manager.Commands["node-healing-info"]
+	c.Assert(ok, check.Equals, true)
+	c.Assert(change, check.FitsTypeOf, &admin.GetNodeHealingConfigCmd{})
+	change, ok = manager.Commands["docker-healing-info"]
+	c.Assert(ok, check.Equals, true)
+	c.Assert(change, check.FitsTypeOf, &cmd.DeprecatedCommand{})
+}
+
+func (s *S) TestNodeHealingUpdateIsRegistered(c *check.C) {
+	manager = buildManager("tsuru")
+	change, ok := manager.Commands["node-healing-update"]
+	c.Assert(ok, check.Equals, true)
+	c.Assert(change, check.FitsTypeOf, &admin.SetNodeHealingConfigCmd{})
+	change, ok = manager.Commands["docker-healing-update"]
+	c.Assert(ok, check.Equals, true)
+	c.Assert(change, check.FitsTypeOf, &cmd.DeprecatedCommand{})
+}
+
+func (s *S) TestNodeHealingDeleteIsRegistered(c *check.C) {
+	manager = buildManager("tsuru")
+	change, ok := manager.Commands["node-healing-delete"]
+	c.Assert(ok, check.Equals, true)
+	c.Assert(change, check.FitsTypeOf, &admin.DeleteNodeHealingConfigCmd{})
+	change, ok = manager.Commands["docker-healing-delete"]
+	c.Assert(ok, check.Equals, true)
+	c.Assert(change, check.FitsTypeOf, &cmd.DeprecatedCommand{})
+}
