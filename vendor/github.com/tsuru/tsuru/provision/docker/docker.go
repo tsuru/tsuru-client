@@ -17,11 +17,13 @@ import (
 	"github.com/tsuru/docker-cluster/cluster"
 	"github.com/tsuru/docker-cluster/storage/mongodb"
 	"github.com/tsuru/tsuru/action"
+	"github.com/tsuru/tsuru/app/image"
 	"github.com/tsuru/tsuru/event"
 	"github.com/tsuru/tsuru/log"
 	"github.com/tsuru/tsuru/net"
 	"github.com/tsuru/tsuru/provision"
 	"github.com/tsuru/tsuru/provision/docker/container"
+	"github.com/tsuru/tsuru/provision/dockercommon"
 	"github.com/tsuru/tsuru/safe"
 )
 
@@ -60,10 +62,7 @@ func randomString() string {
 }
 
 func (p *dockerProvisioner) archiveDeploy(app provision.App, image, archiveURL string, evt *event.Event) (string, error) {
-	commands, err := archiveDeployCmds(app, archiveURL)
-	if err != nil {
-		return "", err
-	}
+	commands := dockercommon.ArchiveDeployCmds(app, archiveURL)
 	return p.deployPipeline(app, image, commands, evt)
 }
 
@@ -77,7 +76,7 @@ func (p *dockerProvisioner) deployPipeline(app provision.App, imageId string, co
 		&followLogsAndCommit,
 	}
 	pipeline := action.NewPipeline(actions...)
-	buildingImage, err := appNewImageName(app.GetName())
+	buildingImage, err := image.AppNewImageName(app.GetName())
 	if err != nil {
 		return "", log.WrapError(fmt.Errorf("error getting new image name for app %s", app.GetName()))
 	}
@@ -104,7 +103,7 @@ func (p *dockerProvisioner) deployPipeline(app provision.App, imageId string, co
 }
 
 func (p *dockerProvisioner) start(oldContainer *container.Container, app provision.App, imageId string, w io.Writer, exposedPort string, destinationHosts ...string) (*container.Container, error) {
-	commands, processName, err := runLeanContainerCmds(oldContainer.ProcessName, imageId, app)
+	commands, processName, err := dockercommon.LeanContainerCmds(oldContainer.ProcessName, imageId, app)
 	if err != nil {
 		return nil, err
 	}

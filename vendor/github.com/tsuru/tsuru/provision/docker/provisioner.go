@@ -12,6 +12,7 @@ import (
 	"io"
 	"io/ioutil"
 	"net/url"
+	"path/filepath"
 	"strings"
 	"sync"
 	"time"
@@ -25,17 +26,20 @@ import (
 	"github.com/tsuru/tsuru/action"
 	"github.com/tsuru/tsuru/api/shutdown"
 	"github.com/tsuru/tsuru/app"
+	"github.com/tsuru/tsuru/app/image"
 	"github.com/tsuru/tsuru/cmd"
 	"github.com/tsuru/tsuru/db"
 	"github.com/tsuru/tsuru/db/storage"
 	"github.com/tsuru/tsuru/errors"
 	"github.com/tsuru/tsuru/event"
+	tsuruHealer "github.com/tsuru/tsuru/healer"
 	"github.com/tsuru/tsuru/log"
 	"github.com/tsuru/tsuru/net"
 	"github.com/tsuru/tsuru/provision"
 	"github.com/tsuru/tsuru/provision/docker/container"
 	"github.com/tsuru/tsuru/provision/docker/healer"
 	internalNodeContainer "github.com/tsuru/tsuru/provision/docker/nodecontainer"
+	"github.com/tsuru/tsuru/provision/dockercommon"
 	"github.com/tsuru/tsuru/provision/nodecontainer"
 	"github.com/tsuru/tsuru/queue"
 	"github.com/tsuru/tsuru/router"
@@ -76,8 +80,22 @@ type dockerProvisioner struct {
 	storage        cluster.Storage
 	scheduler      *segregatedScheduler
 	isDryMode      bool
-	nodeHealer     *healer.NodeHealer
 	actionLimiter  provision.ActionLimiter
+	caCert         []byte
+	clientCert     []byte
+	clientKey      []byte
+}
+
+type hookHealer struct {
+	p *dockerProvisioner
+}
+
+func (h hookHealer) HandleError(node *cluster.Node) time.Duration {
+	return tsuruHealer.HealerInstance.HandleError(&clusterNodeWrapper{Node: node, prov: h.p})
+}
+
+func (h hookHealer) RunClusterHook(evt cluster.HookEvent, node *cluster.Node) error {
+	return tsuruHealer.HealerInstance.RemoveNode(&clusterNodeWrapper{Node: node, prov: h.p})
 }
 
 func (p *dockerProvisioner) initDockerCluster() error {
@@ -108,34 +126,29 @@ func (p *dockerProvisioner) initDockerCluster() error {
 		provisioner:         p,
 	}
 	caPath, _ := config.GetString("docker:tls:root-path")
-	p.cluster, err = cluster.New(p.scheduler, p.storage, caPath, nodes...)
+	if caPath != "" {
+		p.caCert, err = ioutil.ReadFile(filepath.Join(caPath, "ca.pem"))
+		if err != nil {
+			return err
+		}
+		p.clientCert, err = ioutil.ReadFile(filepath.Join(caPath, "cert.pem"))
+		if err != nil {
+			return err
+		}
+		p.clientKey, err = ioutil.ReadFile(filepath.Join(caPath, "key.pem"))
+		if err != nil {
+			return err
+		}
+	}
+	p.cluster, err = cluster.New(p.scheduler, p.storage, nodes...)
 	if err != nil {
 		return err
 	}
 	p.cluster.AddHook(cluster.HookEventBeforeContainerCreate, &internalNodeContainer.ClusterHook{Provisioner: p})
-	autoHealingNodes, _ := config.GetBool("docker:healing:heal-nodes")
-	if autoHealingNodes {
-		disabledSeconds, _ := config.GetInt("docker:healing:disabled-time")
-		if disabledSeconds <= 0 {
-			disabledSeconds = 30
-		}
-		maxFailures, _ := config.GetInt("docker:healing:max-failures")
-		if maxFailures <= 0 {
-			maxFailures = 5
-		}
-		waitSecondsNewMachine, _ := config.GetInt("docker:healing:wait-new-time")
-		if waitSecondsNewMachine <= 0 {
-			waitSecondsNewMachine = 5 * 60
-		}
-		p.nodeHealer = healer.NewNodeHealer(healer.NodeHealerArgs{
-			Provisioner:           p,
-			DisabledTime:          time.Duration(disabledSeconds) * time.Second,
-			WaitTimeNewMachine:    time.Duration(waitSecondsNewMachine) * time.Second,
-			FailuresBeforeHealing: maxFailures,
-		})
-		shutdown.Register(p.nodeHealer)
-		p.cluster.Healer = p.nodeHealer
-		p.cluster.AddHook(cluster.HookEventBeforeNodeUnregister, p.nodeHealer)
+	if tsuruHealer.HealerInstance != nil {
+		healer := hookHealer{p: p}
+		p.cluster.Healer = healer
+		p.cluster.AddHook(cluster.HookEventBeforeNodeUnregister, healer)
 	}
 	healContainersSeconds, _ := config.GetInt("docker:healing:heal-containers-timeout")
 	if healContainersSeconds > 0 {
@@ -202,8 +215,7 @@ func (p *dockerProvisioner) cloneProvisioner(ignoredContainers []container.Conta
 		provisioner:         &overridenProvisioner,
 		ignoredContainers:   containerIds,
 	}
-	caPath, _ := config.GetString("docker:tls:root-path")
-	overridenProvisioner.cluster, err = cluster.New(overridenProvisioner.scheduler, p.storage, caPath)
+	overridenProvisioner.cluster, err = cluster.New(overridenProvisioner.scheduler, p.storage)
 	if err != nil {
 		return nil, err
 	}
@@ -226,6 +238,9 @@ func (p *dockerProvisioner) dryMode(ignoredContainers []container.Container) (*d
 		collectionName: "containers_dry_" + randomString(),
 		isDryMode:      true,
 		actionLimiter:  &provision.LocalLimiter{},
+		caCert:         p.caCert,
+		clientCert:     p.clientCert,
+		clientKey:      p.clientKey,
 	}
 	containerIds := make([]string, len(ignoredContainers))
 	for i := range ignoredContainers {
@@ -237,8 +252,7 @@ func (p *dockerProvisioner) dryMode(ignoredContainers []container.Container) (*d
 		provisioner:         overridenProvisioner,
 		ignoredContainers:   containerIds,
 	}
-	caPath, _ := config.GetString("docker:tls:root-path")
-	overridenProvisioner.cluster, err = cluster.New(overridenProvisioner.scheduler, p.storage, caPath)
+	overridenProvisioner.cluster, err = cluster.New(overridenProvisioner.scheduler, p.storage)
 	if err != nil {
 		return nil, err
 	}
@@ -302,7 +316,7 @@ func (p *dockerProvisioner) Restart(a provision.App, process string, w io.Writer
 	if err != nil {
 		return err
 	}
-	imageId, err := appCurrentImageName(a.GetName())
+	imageId, err := image.AppCurrentImageName(a.GetName())
 	if err != nil {
 		return err
 	}
@@ -375,7 +389,7 @@ func (p *dockerProvisioner) Sleep(app provision.App, process string) error {
 }
 
 func (p *dockerProvisioner) Rollback(a provision.App, imageId string, evt *event.Event) (string, error) {
-	validImgs, err := p.ValidAppImages(a.GetName())
+	validImgs, err := image.ListValidAppImages(a.GetName())
 	if err != nil {
 		return "", err
 	}
@@ -419,7 +433,7 @@ func (p *dockerProvisioner) ImageDeploy(app provision.App, imageId string, evt *
 	fmt.Fprintln(w, "---- Getting process from image ----")
 	cmd := "cat /home/application/current/Procfile || cat /app/user/Procfile || cat /Procfile"
 	output, _ := p.runCommandInContainer(imageId, cmd, app)
-	procfile := getProcessesFromProcfile(output.String())
+	procfile := image.GetProcessesFromProcfile(output.String())
 	imageInspect, err := cluster.InspectImage(imageId)
 	if err != nil {
 		return "", err
@@ -438,7 +452,7 @@ func (p *dockerProvisioner) ImageDeploy(app provision.App, imageId string, evt *
 	for k, v := range procfile {
 		fmt.Fprintf(w, "  ---> Process %s found with command: %v\n", k, v)
 	}
-	newImage, err := appNewImageName(app.GetName())
+	newImage, err := image.AppNewImageName(app.GetName())
 	if err != nil {
 		return "", err
 	}
@@ -463,14 +477,14 @@ func (p *dockerProvisioner) ImageDeploy(app provision.App, imageId string, evt *
 	if err != nil {
 		return "", err
 	}
-	imageData := createImageMetadata(newImage, procfile)
+	imageData := image.CreateImageMetadata(newImage, procfile)
 	if len(imageInspect.Config.ExposedPorts) > 1 {
 		return "", stderr.New("Too many ports. You should especify which one you want to.")
 	}
 	for k := range imageInspect.Config.ExposedPorts {
 		imageData.CustomData["exposedPort"] = string(k)
 	}
-	err = saveImageCustomData(newImage, imageData.CustomData)
+	err = image.SaveImageCustomData(newImage, imageData.CustomData)
 	if err != nil {
 		return "", err
 	}
@@ -479,7 +493,7 @@ func (p *dockerProvisioner) ImageDeploy(app provision.App, imageId string, evt *
 }
 
 func (p *dockerProvisioner) ArchiveDeploy(app provision.App, archiveURL string, evt *event.Event) (string, error) {
-	imageId, err := p.archiveDeploy(app, p.getBuildImage(app), archiveURL, evt)
+	imageId, err := p.archiveDeploy(app, image.GetBuildImage(app), archiveURL, evt)
 	if err != nil {
 		return "", err
 	}
@@ -497,7 +511,7 @@ func (p *dockerProvisioner) UploadDeploy(app provision.App, archiveFile io.ReadC
 		user, _ = config.GetString("docker:ssh:user")
 	}
 	defer archiveFile.Close()
-	imageName := p.getBuildImage(app)
+	imageName := image.GetBuildImage(app)
 	options := docker.CreateContainerOptions{
 		Config: &docker.Config{
 			AttachStdout: true,
@@ -606,7 +620,7 @@ func (p *dockerProvisioner) deploy(a provision.App, imageId string, evt *event.E
 	if err != nil {
 		return err
 	}
-	imageData, err := getImageCustomData(imageId)
+	imageData, err := image.GetImageCustomData(imageId)
 	if err != nil {
 		return err
 	}
@@ -649,7 +663,7 @@ func setQuota(app provision.App, toAdd map[string]*containersToAdd) error {
 	return nil
 }
 
-func getContainersToAdd(data ImageMetadata, oldContainers []container.Container) map[string]*containersToAdd {
+func getContainersToAdd(data image.ImageMetadata, oldContainers []container.Container) map[string]*containersToAdd {
 	processMap := make(map[string]*containersToAdd, len(data.Processes))
 	for name := range data.Processes {
 		processMap[name] = &containersToAdd{}
@@ -696,7 +710,7 @@ func (p *dockerProvisioner) Destroy(app provision.App) error {
 	if err != nil {
 		return err
 	}
-	images, err := listAppImages(app.GetName())
+	images, err := image.ListAppImages(app.GetName())
 	if err != nil {
 		log.Errorf("Failed to get image ids for app %s: %s", app.GetName(), err.Error())
 	}
@@ -711,7 +725,7 @@ func (p *dockerProvisioner) Destroy(app provision.App) error {
 			log.Errorf("Failed to remove image %s from registry: %s", imageId, err.Error())
 		}
 	}
-	err = deleteAllAppImageNames(app.GetName())
+	err = image.DeleteAllAppImageNames(app.GetName())
 	if err != nil {
 		log.Errorf("Failed to remove image names from storage for app %s: %s", app.GetName(), err.Error())
 	}
@@ -719,7 +733,7 @@ func (p *dockerProvisioner) Destroy(app provision.App) error {
 }
 
 func (p *dockerProvisioner) runRestartAfterHooks(cont *container.Container, w io.Writer) error {
-	yamlData, err := getImageTsuruYamlData(cont.Image)
+	yamlData, err := image.GetImageTsuruYamlData(cont.Image)
 	if err != nil {
 		return err
 	}
@@ -742,7 +756,7 @@ func addContainersWithHost(args *changeUnitsPipelineArgs) ([]container.Container
 	for processName, v := range args.toAdd {
 		units += v.Quantity
 		if processName == "" {
-			_, processName, _ = processCmdForImage(processName, imageId)
+			_, processName, _ = dockercommon.ProcessCmdForImage(processName, imageId)
 		}
 		processMsg = append(processMsg, fmt.Sprintf("[%s: %d]", processName, v.Quantity))
 	}
@@ -809,11 +823,11 @@ func (p *dockerProvisioner) AddUnits(a provision.App, units uint, process string
 		w = ioutil.Discard
 	}
 	writer := io.MultiWriter(w, &app.LogWriter{App: a})
-	imageId, err := appCurrentImageName(a.GetName())
+	imageId, err := image.AppCurrentImageName(a.GetName())
 	if err != nil {
 		return nil, err
 	}
-	imageData, err := getImageCustomData(imageId)
+	imageData, err := image.GetImageCustomData(imageId)
 	if err != nil {
 		return nil, err
 	}
@@ -839,11 +853,11 @@ func (p *dockerProvisioner) RemoveUnits(a provision.App, units uint, processName
 	if w == nil {
 		w = ioutil.Discard
 	}
-	imgId, err := appCurrentImageName(a.GetName())
+	imgId, err := image.AppCurrentImageName(a.GetName())
 	if err != nil {
 		return err
 	}
-	_, processName, err = processCmdForImage(processName, imgId)
+	_, processName, err = dockercommon.ProcessCmdForImage(processName, imgId)
 	if err != nil {
 		return err
 	}
@@ -962,9 +976,6 @@ func (p *dockerProvisioner) AdminCommands() []cmd.Command {
 		&moveContainersCmd{},
 		&rebalanceContainersCmd{},
 		&healer.ListHealingHistoryCmd{},
-		&healer.GetNodeHealingConfigCmd{},
-		&healer.SetNodeHealingConfigCmd{},
-		&healer.DeleteNodeHealingConfigCmd{},
 		&autoScaleRunCmd{},
 		&listAutoScaleHistoryCmd{},
 		&autoScaleInfoCmd{},
@@ -1028,7 +1039,7 @@ func (p *dockerProvisioner) buildPlatform(name string, args map[string]string, w
 			return stderr.New("dockerfile parameter must be a URL")
 		}
 	}
-	imageName := platformImageName(name)
+	imageName := image.PlatformImageName(name)
 	cluster := p.Cluster()
 	buildOptions := docker.BuildImageOptions{
 		Name:              imageName,
@@ -1060,7 +1071,7 @@ func (p *dockerProvisioner) buildPlatform(name string, args map[string]string, w
 }
 
 func (p *dockerProvisioner) PlatformRemove(name string) error {
-	err := p.Cluster().RemoveImage(platformImageName(name))
+	err := p.Cluster().RemoveImage(image.PlatformImageName(name))
 	if err != nil && err == docker.ErrNoSuchImage {
 		log.Errorf("error on remove image %s from docker.", name)
 		return nil
@@ -1094,11 +1105,11 @@ func (p *dockerProvisioner) Units(app provision.App) ([]provision.Unit, error) {
 }
 
 func (p *dockerProvisioner) RoutableUnits(app provision.App) ([]provision.Unit, error) {
-	imageId, err := appCurrentImageName(app.GetName())
-	if err != nil && err != errNoImagesAvailable {
+	imageId, err := image.AppCurrentImageName(app.GetName())
+	if err != nil && err != image.ErrNoImagesAvailable {
 		return nil, err
 	}
-	webProcessName, err := getImageWebProcessName(imageId)
+	webProcessName, err := image.GetImageWebProcessName(imageId)
 	if err != nil {
 		return nil, err
 	}
@@ -1122,7 +1133,7 @@ func (p *dockerProvisioner) RegisterUnit(unit provision.Unit, customData map[str
 	}
 	if cont.Status == provision.StatusBuilding.String() {
 		if cont.BuildingImage != "" && customData != nil {
-			return saveImageCustomData(cont.BuildingImage, customData)
+			return image.SaveImageCustomData(cont.BuildingImage, customData)
 		}
 		return nil
 	}
@@ -1147,10 +1158,6 @@ func (p *dockerProvisioner) Shell(opts provision.ShellOptions) error {
 		return err
 	}
 	return c.Shell(p, opts.Conn, opts.Conn, opts.Conn, container.Pty{Width: opts.Width, Height: opts.Height, Term: opts.Term})
-}
-
-func (p *dockerProvisioner) ValidAppImages(appName string) ([]string, error) {
-	return listValidAppImages(appName)
 }
 
 func (p *dockerProvisioner) Nodes(app provision.App) ([]cluster.Node, error) {
@@ -1261,32 +1268,24 @@ func (p *dockerProvisioner) FilterAppsByUnitStatus(apps []provision.App, status 
 	return result, nil
 }
 
-func (p *dockerProvisioner) SetNodeStatus(nodeData provision.NodeStatusData) error {
-	if p.nodeHealer == nil {
-		return nil
-	}
-	return p.nodeHealer.UpdateNodeData(nodeData)
-}
+var _ provision.Node = &clusterNodeWrapper{}
+var _ provision.NodeHealthChecker = &clusterNodeWrapper{}
 
 type clusterNodeWrapper struct {
-	node *cluster.Node
+	*cluster.Node
 	prov *dockerProvisioner
 }
 
 func (n *clusterNodeWrapper) Address() string {
-	return n.node.Address
+	return n.Node.Address
 }
 
 func (n *clusterNodeWrapper) Pool() string {
-	return n.node.Metadata["pool"]
+	return n.Node.Metadata["pool"]
 }
 
 func (n *clusterNodeWrapper) Metadata() map[string]string {
-	return n.node.Metadata
-}
-
-func (n *clusterNodeWrapper) Status() string {
-	return n.node.Status()
+	return n.Node.Metadata
 }
 
 func (n *clusterNodeWrapper) Units() ([]provision.Unit, error) {
@@ -1306,6 +1305,10 @@ func (n *clusterNodeWrapper) Units() ([]provision.Unit, error) {
 		units[i] = c.AsUnit(a)
 	}
 	return units, nil
+}
+
+func (n *clusterNodeWrapper) Provisioner() provision.NodeProvisioner {
+	return n.prov
 }
 
 func (p *dockerProvisioner) ListNodes(addressFilter []string) ([]provision.Node, error) {
@@ -1333,7 +1336,7 @@ func (p *dockerProvisioner) ListNodes(addressFilter []string) ([]provision.Node,
 				continue
 			}
 		}
-		result = append(result, &clusterNodeWrapper{node: n, prov: p})
+		result = append(result, &clusterNodeWrapper{Node: n, prov: p})
 	}
 	return result, nil
 }
@@ -1343,7 +1346,19 @@ func (p *dockerProvisioner) GetName() string {
 }
 
 func (p *dockerProvisioner) AddNode(opts provision.AddNodeOptions) error {
-	node := cluster.Node{Address: opts.Address, Metadata: opts.Metadata, CreationStatus: cluster.NodeCreationStatusPending}
+	node := cluster.Node{
+		Address:        opts.Address,
+		Metadata:       opts.Metadata,
+		CreationStatus: cluster.NodeCreationStatusPending,
+		CaCert:         opts.CaCert,
+		ClientCert:     opts.ClientCert,
+		ClientKey:      opts.ClientKey,
+	}
+	if len(opts.CaCert) == 0 && len(p.caCert) > 0 {
+		node.CaCert = p.caCert
+		node.ClientCert = p.clientCert
+		node.ClientKey = p.clientKey
+	}
 	err := p.Cluster().Register(node)
 	if err != nil {
 		return err
@@ -1353,7 +1368,15 @@ func (p *dockerProvisioner) AddNode(opts provision.AddNodeOptions) error {
 		return err
 	}
 	jobParams := monsterqueue.JobParams{"endpoint": opts.Address, "metadata": opts.Metadata}
-	_, err = q.Enqueue(internalNodeContainer.QueueTaskName, jobParams)
+	var job monsterqueue.Job
+	if opts.WaitTO != 0 {
+		job, err = q.EnqueueWait(internalNodeContainer.QueueTaskName, jobParams, opts.WaitTO)
+	} else {
+		_, err = q.Enqueue(internalNodeContainer.QueueTaskName, jobParams)
+	}
+	if err == nil && job != nil {
+		_, err = job.Result()
+	}
 	return err
 }
 
@@ -1380,7 +1403,7 @@ func (p *dockerProvisioner) GetNode(address string) (provision.Node, error) {
 		}
 		return nil, err
 	}
-	return &clusterNodeWrapper{node: &node, prov: p}, nil
+	return &clusterNodeWrapper{Node: &node, prov: p}, nil
 }
 
 func (p *dockerProvisioner) RemoveNode(opts provision.RemoveNodeOptions) error {

@@ -25,6 +25,7 @@ import (
 	_ "github.com/tsuru/tsuru/auth/saml"
 	"github.com/tsuru/tsuru/db"
 	"github.com/tsuru/tsuru/hc"
+	"github.com/tsuru/tsuru/healer"
 	"github.com/tsuru/tsuru/log"
 	"github.com/tsuru/tsuru/provision"
 	"github.com/tsuru/tsuru/router"
@@ -269,6 +270,14 @@ func RunServer(dry bool) http.Handler {
 	m.Add("1.2", "POST", "/nodecontainers/{name}", AuthorizationRequiredHandler(nodeContainerUpdate))
 	m.Add("1.2", "POST", "/nodecontainers/{name}/upgrade", AuthorizationRequiredHandler(nodeContainerUpgrade))
 
+	m.Add("1.3", "POST", "/install/hosts", AuthorizationRequiredHandler(installHostAdd))
+	m.Add("1.3", "GET", "/install/hosts", AuthorizationRequiredHandler(installHostList))
+	m.Add("1.3", "GET", "/install/hosts/{name}", AuthorizationRequiredHandler(installHostInfo))
+
+	m.Add("1.3", "GET", "/healing/node", AuthorizationRequiredHandler(nodeHealingRead))
+	m.Add("1.3", "POST", "/healing/node", AuthorizationRequiredHandler(nodeHealingUpdate))
+	m.Add("1.3", "DELETE", "/healing/node", AuthorizationRequiredHandler(nodeHealingDelete))
+
 	// Handlers for compatibility reasons, should be removed on tsuru 2.0.
 	m.Add("1.0", "GET", "/docker/node", AuthorizationRequiredHandler(listNodesHandler))
 	m.Add("1.0", "GET", "/docker/node/apps/{appname}/containers", AuthorizationRequiredHandler(listUnitsByApp))
@@ -283,6 +292,10 @@ func RunServer(dry bool) http.Handler {
 	m.Add("1.0", "DELETE", "/docker/nodecontainers/{name}", AuthorizationRequiredHandler(nodeContainerDelete))
 	m.Add("1.0", "POST", "/docker/nodecontainers/{name}", AuthorizationRequiredHandler(nodeContainerUpdate))
 	m.Add("1.0", "POST", "/docker/nodecontainers/{name}/upgrade", AuthorizationRequiredHandler(nodeContainerUpgrade))
+
+	m.Add("1.0", "GET", "/docker/healing/node", AuthorizationRequiredHandler(nodeHealingRead))
+	m.Add("1.0", "POST", "/docker/healing/node", AuthorizationRequiredHandler(nodeHealingUpdate))
+	m.Add("1.0", "DELETE", "/docker/healing/node", AuthorizationRequiredHandler(nodeHealingDelete))
 
 	n := negroni.New()
 	n.Use(negroni.NewRecovery())
@@ -412,6 +425,10 @@ func startServer(handler http.Handler) {
 	}
 	fmt.Printf("Using %q auth scheme.\n", scheme)
 	err = provision.InitializeAll()
+	if err != nil {
+		fatal(err)
+	}
+	_, err = healer.Initialize()
 	if err != nil {
 		fatal(err)
 	}

@@ -286,10 +286,6 @@ type ImageDeployer interface {
 // previously deployed version.
 type RollbackableDeployer interface {
 	Rollback(App, string, *event.Event) (string, error)
-
-	// Returns list of valid image names for app, these can be used for
-	// rollback.
-	ValidAppImages(string) ([]string, error)
 }
 
 // Provisioner is the basic interface of this package.
@@ -397,9 +393,13 @@ type OptionalLogsProvisioner interface {
 }
 
 type AddNodeOptions struct {
-	Address  string
-	Metadata map[string]string
-	Register bool
+	Address    string
+	Metadata   map[string]string
+	Register   bool
+	CaCert     []byte
+	ClientCert []byte
+	ClientKey  []byte
+	WaitTO     time.Duration
 }
 
 type RemoveNodeOptions struct {
@@ -416,9 +416,6 @@ type UpdateNodeOptions struct {
 }
 
 type NodeProvisioner interface {
-	// SetNodeStatus changes the status of a node and all its units.
-	SetNodeStatus(NodeStatusData) error
-
 	// ListNodes returns a list of all nodes registered in the provisioner.
 	ListNodes(addressFilter []string) ([]Node, error)
 
@@ -458,15 +455,34 @@ type Node interface {
 	Status() string
 	Metadata() map[string]string
 	Units() ([]Unit, error)
+	Provisioner() NodeProvisioner
+}
+
+type NodeHealthChecker interface {
+	Node
+	FailureCount() int
+	HasSuccess() bool
+	ResetFailures()
+}
+
+type NodeSpec struct {
+	Address  string
+	Metadata map[string]string
+	Status   string
+	Pool     string
+}
+
+func NodeToSpec(n Node) NodeSpec {
+	return NodeSpec{
+		Address:  n.Address(),
+		Metadata: n.Metadata(),
+		Status:   n.Status(),
+		Pool:     n.Pool(),
+	}
 }
 
 func NodeToJSON(n Node) ([]byte, error) {
-	return json.Marshal(map[string]interface{}{
-		"Address":  n.Address(),
-		"Metadata": n.Metadata(),
-		"Status":   n.Status(),
-		"Pool":     n.Pool(),
-	})
+	return json.Marshal(NodeToSpec(n))
 }
 
 type NodeStatusData struct {
