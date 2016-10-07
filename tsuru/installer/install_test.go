@@ -39,11 +39,11 @@ func (s *S) TestParseConfigFile(c *check.C) {
 		},
 		CoreHosts: 2,
 		CoreDriversOpts: map[string][]interface{}{
-			"amazonec2-region": []interface{}{"us-east", "us-west"},
+			"amazonec2-region": {"us-east", "us-west"},
 		},
 		AppsHosts: 1,
 		AppsDriversOpts: map[string][]interface{}{
-			"amazonec2-tags": []interface{}{"my-tag"},
+			"amazonec2-tags": {"my-tag"},
 		},
 		DedicatedAppsHosts: true,
 	}
@@ -182,7 +182,7 @@ func (s *S) TestProvisionPool(c *check.C) {
 		expectedDriverOpts  []DriverOpts
 	}{
 		{1, false, []*Machine{{}}, 0, []DriverOpts{}},
-		{2, false, []*Machine{{}}, 1, []DriverOpts{opt1, DriverOpts{}}},
+		{2, false, []*Machine{{}}, 1, []DriverOpts{opt1, {}}},
 		{1, true, []*Machine{{}}, 1, []DriverOpts{opt1}},
 		{2, true, []*Machine{{}, {}}, 2, []DriverOpts{opt1, opt2}},
 		{3, true, []*Machine{{}}, 3, []DriverOpts{opt1, opt2, opt1}},
@@ -193,7 +193,7 @@ func (s *S) TestProvisionPool(c *check.C) {
 			AppsHosts:          t.poolHosts,
 			DedicatedAppsHosts: t.dedicatedPool,
 			AppsDriversOpts: map[string][]interface{}{
-				"variable-opt": []interface{}{"opt1", "opt2"},
+				"variable-opt": {"opt1", "opt2"},
 			},
 		}
 		machines, err := ProvisionPool(p, config, t.machines)
