@@ -42,5 +42,7 @@ docs: doc
 test:
 	go test $$(go list ./... | grep -v /vendor/) -check.vv
 
+build-all:
+	./misc/build-all.sh
 
 .PHONY: doc docs release manpage
