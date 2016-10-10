@@ -176,14 +176,14 @@ func (s *S) TestTsuruAPIBootstrapLocalEnviroment(c *check.C) {
 		targetrm := manager.Commands["target-remove"]
 		targetrm.Run(&cont, c)
 	}()
-	opts := TsuruSetupOptions{
+	bootstraper := TsuruBoostraper{opts: &BoostrapOptions{
 		Login:      "test",
 		Password:   "test",
 		Target:     server.URL,
 		TargetName: "test",
 		NodesAddr:  []string{server.URL},
-	}
-	err := SetupTsuru(opts)
+	}}
+	err := bootstraper.Do()
 	c.Assert(err, check.IsNil)
 	c.Assert(paths, check.DeepEquals, expectedPaths)
 }

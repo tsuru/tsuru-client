@@ -167,14 +167,14 @@ func (c *Install) Run(context *cmd.Context, cli *cmd.Client) error {
 		nodesAddr = append(nodesAddr, m.GetPrivateAddress())
 	}
 	fmt.Fprintf(context.Stdout, "Bootstrapping Tsuru API...")
-	opts := TsuruSetupOptions{
+	bootstraper := TsuruBoostraper{opts: &BoostrapOptions{
 		Login:      config.ComponentsConfig.RootUserEmail,
 		Password:   config.ComponentsConfig.RootUserPassword,
 		Target:     fmt.Sprintf("http://%s:%d", cluster.GetManager().IP, defaultTsuruAPIPort),
 		TargetName: config.ComponentsConfig.TargetName,
 		NodesAddr:  nodesAddr,
-	}
-	err = SetupTsuru(opts)
+	}}
+	err = bootstraper.Do()
 	if err != nil {
 		return fmt.Errorf("Error bootstrapping tsuru: %s", err)
 	}

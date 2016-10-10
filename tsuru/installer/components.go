@@ -387,7 +387,7 @@ func (c *TsuruAPI) setupRootUser(cluster ServiceCluster, email, password string)
 	return cluster.ServiceExec("tsuru", cmd, startOpts)
 }
 
-type TsuruSetupOptions struct {
+type BoostrapOptions struct {
 	Login      string
 	Password   string
 	Target     string
@@ -395,7 +395,14 @@ type TsuruSetupOptions struct {
 	NodesAddr  []string
 }
 
-func SetupTsuru(opts TsuruSetupOptions) error {
+type TsuruBoostraper struct {
+	opts    *BoostrapOptions
+	manager *cmd.Manager
+	client  *cmd.Client
+	context cmd.Context
+}
+
+func (s *TsuruBoostraper) Do() error {
 	manager := cmd.BuildBaseManager("setup-client", "0.0.0", "", nil)
 	provisioners, err := provision.Registry()
 	if err != nil {
@@ -409,98 +416,142 @@ func SetupTsuru(opts TsuruSetupOptions) error {
 			}
 		}
 	}
-	fmt.Fprintln(os.Stdout, "adding target")
-	client := cmd.NewClient(&http.Client{}, nil, manager)
-	context := cmd.Context{
-		Args:   []string{opts.TargetName, opts.Target},
+	s.manager = manager
+	s.client = cmd.NewClient(&http.Client{}, nil, s.manager)
+	s.context = cmd.Context{
+		Args:   []string{s.opts.TargetName, s.opts.Target},
 		Stdout: os.Stdout,
 		Stderr: os.Stderr,
 	}
-	context.RawOutput()
-	targetadd := manager.Commands["target-add"]
-	t, _ := targetadd.(cmd.FlaggedCommand)
-	err = t.Flags().Parse(true, []string{"-s"})
+	s.context.RawOutput()
+	err = s.addTarget()
 	if err != nil {
 		return err
 	}
-	err = t.Run(&context, client)
-	if err != nil {
-		return fmt.Errorf("failed to add tsuru target: %s", err)
-	}
-	fmt.Fprint(os.Stdout, "log in with default user: admin@example.com")
-	logincmd := manager.Commands["login"]
-	context.Args = []string{opts.Login}
-	context.Stdin = strings.NewReader(fmt.Sprintf("%s\n", opts.Password))
-	err = logincmd.Run(&context, client)
-	if err != nil {
-		return fmt.Errorf("failed to login to tsuru: %s", err)
-	}
-	context.Args = []string{"theonepool"}
-	context.Stdin = nil
-	fmt.Fprintln(os.Stdout, "adding pool")
-	poolAdd := admin.AddPoolToSchedulerCmd{}
-	err = poolAdd.Flags().Parse(true, []string{"-d", "-p"})
+	err = s.login(s.opts.Login, s.opts.Password)
 	if err != nil {
 		return err
 	}
-	err = poolAdd.Run(&context, client)
-	if err != nil {
-		return fmt.Errorf("failed to add pool: %s", err)
-	}
-	nodeAdd := admin.AddNodeCmd{}
-	err = nodeAdd.Flags().Parse(true, []string{"--register"})
+	err = s.addPool("theonepool")
 	if err != nil {
 		return err
 	}
-	for _, n := range opts.NodesAddr {
-		fmt.Printf("adding node %s\n", n)
-		context.Args = []string{"docker", fmt.Sprintf("address=%s", n), "pool=theonepool"}
-		err = nodeAdd.Run(&context, client)
-		if err != nil {
-			return fmt.Errorf("failed to register node: %s", err)
-		}
-	}
-	fmt.Fprintln(os.Stdout, "adding platform")
-	platformAdd := admin.PlatformAdd{}
-	context.Args = []string{"python"}
-	err = mcnutils.WaitFor(func() bool {
-		return platformAdd.Run(&context, client) == nil
-	})
+	err = s.addNodes("theonepool", s.opts.NodesAddr)
 	if err != nil {
-		return fmt.Errorf("failed to add platform: %s", err)
+		return err
 	}
-	context.Args = []string{"admin"}
-	fmt.Fprintln(os.Stdout, "adding team")
-	teamCreate := tclient.TeamCreate{}
-	err = teamCreate.Run(&context, client)
+	err = s.addPlatform("python")
 	if err != nil {
-		return fmt.Errorf("failed to create admin team: %s", err)
+		return err
 	}
-	err = installDashboard(client)
+	err = s.addTeam("admin")
 	if err != nil {
-		return fmt.Errorf("failed to install tsuru dashboard: %s", err)
+		return err
+	}
+	err = s.installDashboard()
+	if err != nil {
+		return err
 	}
 	return nil
 }
 
-func installDashboard(client *cmd.Client) error {
-	fmt.Fprintln(os.Stdout, "adding dashboard")
-	context := cmd.Context{
-		Args:   []string{"tsuru-dashboard", "python"},
-		Stdout: os.Stdout,
-		Stderr: os.Stderr,
+func (s *TsuruBoostraper) addTarget() error {
+	fmt.Fprintln(os.Stdout, "adding target")
+	targetadd := s.manager.Commands["target-add"]
+	t, _ := targetadd.(cmd.FlaggedCommand)
+	err := t.Flags().Parse(true, []string{"-s"})
+	if err != nil {
+		return err
 	}
-	context.RawOutput()
+	err = t.Run(&s.context, s.client)
+	if err != nil {
+		return fmt.Errorf("failed to add tsuru target: %s", err)
+	}
+	return nil
+}
+
+func (s *TsuruBoostraper) login(login, password string) error {
+	fmt.Fprintf(os.Stdout, "log in with default user: %s", login)
+	logincmd := s.manager.Commands["login"]
+	s.context.Args = []string{login}
+	s.context.Stdin = strings.NewReader(fmt.Sprintf("%s\n", password))
+	err := logincmd.Run(&s.context, s.client)
+	if err != nil {
+		return fmt.Errorf("failed to login to tsuru: %s", err)
+	}
+	return nil
+}
+
+func (s *TsuruBoostraper) addPool(pool string) error {
+	s.context.Args = []string{pool}
+	s.context.Stdin = nil
+	fmt.Fprintln(os.Stdout, "adding pool")
+	poolAdd := admin.AddPoolToSchedulerCmd{}
+	err := poolAdd.Flags().Parse(true, []string{"-d", "-p"})
+	if err != nil {
+		return err
+	}
+	err = poolAdd.Run(&s.context, s.client)
+	if err != nil {
+		return fmt.Errorf("failed to add pool: %s", err)
+	}
+	return nil
+}
+
+func (s *TsuruBoostraper) addNodes(pool string, nodes []string) error {
+	nodeAdd := admin.AddNodeCmd{}
+	err := nodeAdd.Flags().Parse(true, []string{"--register"})
+	if err != nil {
+		return err
+	}
+	for _, n := range nodes {
+		fmt.Printf("adding node %s\n", n)
+		s.context.Args = []string{"docker", fmt.Sprintf("address=%s", n), fmt.Sprintf("pool=%s", pool)}
+		err = nodeAdd.Run(&s.context, s.client)
+		if err != nil {
+			return fmt.Errorf("failed to register node: %s", err)
+		}
+	}
+	return nil
+}
+
+func (s *TsuruBoostraper) addPlatform(platform string) error {
+	fmt.Fprintln(os.Stdout, "adding platform")
+	platformAdd := admin.PlatformAdd{}
+	s.context.Args = []string{platform}
+	err := mcnutils.WaitFor(func() bool {
+		return platformAdd.Run(&s.context, s.client) == nil
+	})
+	if err != nil {
+		return fmt.Errorf("failed to add platform: %s", err)
+	}
+	return nil
+}
+
+func (s *TsuruBoostraper) addTeam(team string) error {
+	s.context.Args = []string{team}
+	fmt.Fprintln(os.Stdout, "adding team")
+	teamCreate := tclient.TeamCreate{}
+	err := teamCreate.Run(&s.context, s.client)
+	if err != nil {
+		return fmt.Errorf("failed to create admin team: %s", err)
+	}
+	return nil
+}
+
+func (s *TsuruBoostraper) installDashboard() error {
+	fmt.Fprintln(os.Stdout, "adding dashboard")
+	s.context.Args = []string{"tsuru-dashboard", "python"}
 	createDashboard := tclient.AppCreate{}
 	err := createDashboard.Flags().Parse(true, []string{"-t", "admin"})
 	if err != nil {
 		return err
 	}
-	err = createDashboard.Run(&context, client)
+	err = createDashboard.Run(&s.context, s.client)
 	if err != nil {
 		return fmt.Errorf("failed to create dashboard app: %s", err)
 	}
-	context.Args = []string{}
+	s.context.Args = []string{}
 	fmt.Fprintln(os.Stdout, "deploying dashboard")
 	deployDashboard := tclient.AppDeploy{}
 	deployFlags := []string{"-a", "tsuru-dashboard", "-i", "tsuru/dashboard"}
@@ -508,7 +559,7 @@ func installDashboard(client *cmd.Client) error {
 	if err != nil {
 		return err
 	}
-	err = deployDashboard.Run(&context, client)
+	err = deployDashboard.Run(&s.context, s.client)
 	if err != nil {
 		return fmt.Errorf("failed to deploy dashboard app: %s", err)
 	}
