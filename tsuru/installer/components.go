@@ -319,7 +319,7 @@ func (c *TsuruAPI) Install(cluster ServiceCluster, i *ComponentsConfig) error {
 			},
 			TaskTemplate: swarm.TaskSpec{
 				ContainerSpec: swarm.ContainerSpec{
-					Image: "tsuru/api:latest",
+					Image: "tsuru/api:v1",
 					Env: []string{fmt.Sprintf("MONGODB_ADDR=%s", mongo),
 						fmt.Sprintf("MONGODB_PORT=%s", mongoPort),
 						fmt.Sprintf("REDIS_ADDR=%s", redis),

@@ -70,7 +70,7 @@ func (s *S) TestInstallComponentsDefaultConfig(c *check.C) {
 			[]string{"REGISTRY_STORAGE_FILESYSTEM_ROOTDIRECTORY=/var/lib/registry",
 				"REGISTRY_HTTP_TLS_KEY=/certs/127.0.0.1:5000/registry-key.pem",
 				"REGISTRY_HTTP_TLS_CERTIFICATE=/certs/127.0.0.1:5000/registry-cert.pem"}},
-		{&TsuruAPI{}, "tsuru", "tsuru/api:latest", []string(nil),
+		{&TsuruAPI{}, "tsuru", "tsuru/api:v1", []string(nil),
 			[]string{"MONGODB_ADDR=mongo",
 				"MONGODB_PORT=27017",
 				"REDIS_ADDR=redis",
