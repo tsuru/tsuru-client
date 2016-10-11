@@ -388,11 +388,11 @@ func (c *TsuruAPI) setupRootUser(cluster ServiceCluster, email, password string)
 }
 
 type BoostrapOptions struct {
-	Login      string
-	Password   string
-	Target     string
-	TargetName string
-	NodesAddr  []string
+	Login           string
+	Password        string
+	Target          string
+	TargetName      string
+	NodesToRegister []string
 }
 
 type TsuruBoostraper struct {
@@ -436,7 +436,7 @@ func (s *TsuruBoostraper) Do() error {
 	if err != nil {
 		return err
 	}
-	err = s.addNodes("theonepool", s.opts.NodesAddr)
+	err = s.registerNodes("theonepool", s.opts.NodesToRegister)
 	if err != nil {
 		return err
 	}
@@ -498,7 +498,7 @@ func (s *TsuruBoostraper) addPool(pool string) error {
 	return nil
 }
 
-func (s *TsuruBoostraper) addNodes(pool string, nodes []string) error {
+func (s *TsuruBoostraper) registerNodes(pool string, nodes []string) error {
 	nodeAdd := admin.AddNodeCmd{}
 	err := nodeAdd.Flags().Parse(true, []string{"--register"})
 	if err != nil {

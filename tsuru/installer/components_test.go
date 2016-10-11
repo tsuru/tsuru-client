@@ -177,11 +177,11 @@ func (s *S) TestTsuruAPIBootstrapLocalEnviroment(c *check.C) {
 		targetrm.Run(&cont, c)
 	}()
 	bootstraper := TsuruBoostraper{opts: &BoostrapOptions{
-		Login:      "test",
-		Password:   "test",
-		Target:     server.URL,
-		TargetName: "test",
-		NodesAddr:  []string{server.URL},
+		Login:           "test",
+		Password:        "test",
+		Target:          server.URL,
+		TargetName:      "test",
+		NodesToRegister: []string{server.URL},
 	}}
 	err := bootstraper.Do()
 	c.Assert(err, check.IsNil)
