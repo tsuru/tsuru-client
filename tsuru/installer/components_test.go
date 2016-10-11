@@ -80,6 +80,7 @@ func (s *S) TestInstallComponentsDefaultConfig(c *check.C) {
 				"REGISTRY_PORT=5000",
 				"TSURU_ADDR=http://127.0.0.1",
 				"TSURU_PORT=8080",
+				"IAAS_CONF={}",
 			}},
 	}
 	c.Assert(len(tests), check.Equals, len(TsuruComponents))
@@ -273,6 +274,7 @@ func (s *S) TestInstallTsuruApiWithCustomComponentsAddress(c *check.C) {
 		"REGISTRY_PORT=5000",
 		"TSURU_ADDR=http://127.0.0.1",
 		"TSURU_PORT=8080",
+		"IAAS_CONF={}",
 	}
 	c.Assert(apiConf.TaskTemplate.ContainerSpec.Env, check.DeepEquals, expected)
 }

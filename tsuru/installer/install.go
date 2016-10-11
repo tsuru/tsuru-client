@@ -447,6 +447,15 @@ func parseConfigFile(file string) (*TsuruInstallConfig, error) {
 		}
 	}
 	installConfig.ComponentsConfig = NewInstallConfig(installConfig.Name)
+	installConfig.ComponentsConfig.IaaSConfig = map[string]interface{}{
+		"dockermachine": map[string]interface{}{
+			"ca-path": "/certs",
+			"driver": map[string]interface{}{
+				"name":    installConfig.DriverName,
+				"options": map[string]interface{}(installConfig.DriverOpts),
+			},
+		},
+	}
 	return installConfig, nil
 }
 

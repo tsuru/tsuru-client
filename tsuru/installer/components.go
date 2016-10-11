@@ -5,6 +5,7 @@
 package installer
 
 import (
+	"encoding/json"
 	"errors"
 	"fmt"
 	"net/http"
@@ -53,6 +54,7 @@ func NewInstallConfig(targetName string) *ComponentsConfig {
 			TargetName:       targetName,
 			RootUserEmail:    "admin@example.com",
 			RootUserPassword: "admin123",
+			IaaSConfig:       map[string]interface{}{},
 		},
 		ComponentAddress: map[string]string{
 			"mongo":    mongo,
@@ -290,6 +292,7 @@ type TsuruAPIConfig struct {
 	TargetName       string
 	RootUserEmail    string
 	RootUserPassword string
+	IaaSConfig       map[string]interface{}
 }
 
 func (c *TsuruAPI) Name() string {
@@ -312,7 +315,11 @@ func (c *TsuruAPI) Install(cluster ServiceCluster, i *ComponentsConfig) error {
 	redis, redisPort := parseAddress(i.ComponentAddress["redis"], "6379")
 	registry, registryPort := parseAddress(i.ComponentAddress["registry"], "5000")
 	planb, _ := parseAddress(i.ComponentAddress["planb"], "80")
-	err := cluster.CreateService(docker.CreateServiceOptions{
+	iaasConfig, err := json.Marshal(i.IaaSConfig)
+	if err != nil {
+		return fmt.Errorf("failed to marshal iaas config: %s", err)
+	}
+	err = cluster.CreateService(docker.CreateServiceOptions{
 		ServiceSpec: swarm.ServiceSpec{
 			Annotations: swarm.Annotations{
 				Name: "tsuru",
@@ -329,6 +336,7 @@ func (c *TsuruAPI) Install(cluster ServiceCluster, i *ComponentsConfig) error {
 						fmt.Sprintf("REGISTRY_PORT=%s", registryPort),
 						fmt.Sprintf("TSURU_ADDR=http://%s", cluster.GetManager().IP),
 						fmt.Sprintf("TSURU_PORT=%d", defaultTsuruAPIPort),
+						fmt.Sprintf("IAAS_CONF=%s", string(iaasConfig)),
 					},
 					Mounts: []mount.Mount{
 						{
