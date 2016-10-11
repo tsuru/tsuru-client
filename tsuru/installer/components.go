@@ -49,12 +49,17 @@ func NewInstallConfig(targetName string) *ComponentsConfig {
 	redis, _ := config.GetString("components:redis")
 	registry, _ := config.GetString("components:registry")
 	planb, _ := config.GetString("components:planb")
+	tsuruVersion, err := config.GetString("components:tsuru:version")
+	if err != nil {
+		tsuruVersion = "v1"
+	}
 	return &ComponentsConfig{
 		TsuruAPIConfig: TsuruAPIConfig{
 			TargetName:       targetName,
 			RootUserEmail:    "admin@example.com",
 			RootUserPassword: "admin123",
 			IaaSConfig:       map[string]interface{}{},
+			ImageTag:         tsuruVersion,
 		},
 		ComponentAddress: map[string]string{
 			"mongo":    mongo,
@@ -289,6 +294,7 @@ func (c *Registry) Healthcheck(addr string) error {
 type TsuruAPI struct{}
 
 type TsuruAPIConfig struct {
+	ImageTag         string
 	TargetName       string
 	RootUserEmail    string
 	RootUserPassword string
@@ -326,7 +332,7 @@ func (c *TsuruAPI) Install(cluster ServiceCluster, i *ComponentsConfig) error {
 			},
 			TaskTemplate: swarm.TaskSpec{
 				ContainerSpec: swarm.ContainerSpec{
-					Image: "tsuru/api:v1",
+					Image: fmt.Sprintf("tsuru/api:%s", i.TsuruAPIConfig.ImageTag),
 					Env: []string{fmt.Sprintf("MONGODB_ADDR=%s", mongo),
 						fmt.Sprintf("MONGODB_PORT=%s", mongoPort),
 						fmt.Sprintf("REDIS_ADDR=%s", redis),
