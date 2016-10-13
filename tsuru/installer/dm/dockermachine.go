@@ -203,6 +203,9 @@ func (d *DockerMachine) uploadRegistryCertificate(host SSHTarget) error {
 	if err := writeRemoteFile(host, registryKeyPath, filepath.Join(certsBasePath, "registry-key.pem")); err != nil {
 		return err
 	}
+	if err := writeRemoteFile(host, filepath.Join(d.certsPath, "ca-key.pem"), filepath.Join(dockerCertsPath, "ca-key.pem")); err != nil {
+		return err
+	}
 	if err := writeRemoteFile(host, filepath.Join(d.certsPath, "ca.pem"), filepath.Join(dockerCertsPath, "ca.pem")); err != nil {
 		return err
 	}
