@@ -42,6 +42,9 @@ docs: doc
 test:
 	go test $$(go list ./... | grep -v /vendor/) -check.vv
 
+install:
+	go install $$(go list ./... | grep -v /vendor/)
+
 build-all:
 	./misc/build-all.sh
 
