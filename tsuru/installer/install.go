@@ -158,22 +158,55 @@ func (c *Install) Run(context *cmd.Context, cli *cmd.Client) error {
 		}
 		fmt.Fprintf(context.Stdout, "%s successfully installed!\n", component.Name())
 	}
-	appsMachines, err := ProvisionPool(dockerMachine, config, coreMachines)
-	if err != nil {
-		return err
-	}
-	var nodesAddr []string
-	for _, m := range appsMachines {
-		nodesAddr = append(nodesAddr, m.GetPrivateAddress())
-	}
 	fmt.Fprintf(context.Stdout, "Bootstrapping Tsuru API...")
-	bootstraper := TsuruBoostraper{opts: &BoostrapOptions{
-		Login:           config.ComponentsConfig.RootUserEmail,
-		Password:        config.ComponentsConfig.RootUserPassword,
-		Target:          fmt.Sprintf("http://%s:%d", cluster.GetManager().IP, defaultTsuruAPIPort),
-		TargetName:      config.ComponentsConfig.TargetName,
-		NodesToRegister: nodesAddr,
-	}}
+	registryAddr, registryPort := parseAddress(config.ComponentsConfig.ComponentAddress["registry"], "5000")
+	bootstrapOpts := &BoostrapOptions{
+		Login:        config.ComponentsConfig.RootUserEmail,
+		Password:     config.ComponentsConfig.RootUserPassword,
+		Target:       fmt.Sprintf("http://%s:%d", cluster.GetManager().IP, defaultTsuruAPIPort),
+		TargetName:   config.ComponentsConfig.TargetName,
+		RegistryAddr: fmt.Sprintf("%s:%s", registryAddr, registryPort),
+		NodesParams:  config.AppsDriversOpts,
+	}
+	var installMachines []*dm.Machine
+	if config.DriverName == "virtualbox" {
+		appsMachines, errProv := ProvisionPool(dockerMachine, config, coreMachines)
+		if errProv != nil {
+			return errProv
+		}
+		machineIndex := make(map[string]*dm.Machine)
+		installMachines = append(coreMachines, appsMachines...)
+		for _, m := range installMachines {
+			machineIndex[m.Name] = m
+		}
+		var uniqueMachines []*dm.Machine
+		for _, v := range machineIndex {
+			uniqueMachines = append(uniqueMachines, v)
+		}
+		installMachines = uniqueMachines
+		var nodesAddr []string
+		for _, m := range appsMachines {
+			nodesAddr = append(nodesAddr, m.GetPrivateAddress())
+		}
+		bootstrapOpts.NodesToRegister = nodesAddr
+	} else {
+		installMachines = coreMachines
+		if config.DedicatedAppsHosts {
+			bootstrapOpts.NodesToCreate = config.AppsHosts
+		} else {
+			var nodesAddr []string
+			for _, m := range coreMachines {
+				nodesAddr = append(nodesAddr, m.GetPrivateAddress())
+			}
+			if config.AppsHosts > config.CoreHosts {
+				bootstrapOpts.NodesToCreate = config.AppsHosts - config.CoreHosts
+				bootstrapOpts.NodesToRegister = nodesAddr
+			} else {
+				bootstrapOpts.NodesToRegister = nodesAddr[:config.AppsHosts]
+			}
+		}
+	}
+	bootstraper := &TsuruBoostraper{opts: bootstrapOpts}
 	err = bootstraper.Do()
 	if err != nil {
 		return fmt.Errorf("Error bootstrapping tsuru: %s", err)
@@ -198,16 +231,7 @@ func (c *Install) Run(context *cmd.Context, cli *cmd.Client) error {
 	fmt.Fprintln(context.Stdout, "Apps:")
 	appList := &client.AppList{}
 	appList.Run(context, cli)
-	machineIndex := make(map[string]*dm.Machine)
-	allMachines := append(coreMachines, appsMachines...)
-	for _, m := range allMachines {
-		machineIndex[m.Name] = m
-	}
-	var uniqueMachines []*dm.Machine
-	for _, v := range machineIndex {
-		uniqueMachines = append(uniqueMachines, v)
-	}
-	err = addInstallHosts(uniqueMachines, cli)
+	err = addInstallHosts(installMachines, cli)
 	if err != nil {
 		return fmt.Errorf("failed to register hosts: %s", err)
 	}

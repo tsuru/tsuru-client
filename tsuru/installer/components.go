@@ -407,6 +407,9 @@ type BoostrapOptions struct {
 	Target          string
 	TargetName      string
 	NodesToRegister []string
+	NodesToCreate   int
+	NodesParams     map[string][]interface{}
+	RegistryAddr    string
 }
 
 type TsuruBoostraper struct {
@@ -451,6 +454,10 @@ func (s *TsuruBoostraper) Do() error {
 		return err
 	}
 	err = s.registerNodes("theonepool", s.opts.NodesToRegister)
+	if err != nil {
+		return err
+	}
+	err = s.createNodes("theonepool", s.opts.NodesToCreate)
 	if err != nil {
 		return err
 	}
@@ -524,6 +531,24 @@ func (s *TsuruBoostraper) registerNodes(pool string, nodes []string) error {
 		err = nodeAdd.Run(&s.context, s.client)
 		if err != nil {
 			return fmt.Errorf("failed to register node: %s", err)
+		}
+	}
+	return nil
+}
+
+func (s *TsuruBoostraper) createNodes(pool string, nodes int) error {
+	nodeAdd := admin.AddNodeCmd{}
+	for i := 0; i < nodes; i++ {
+		fmt.Printf("creating node %d/%d...\n", i+1, nodes)
+		s.context.Args = []string{"docker", "iaas=dockermachine", fmt.Sprintf("pool=%s", pool),
+			fmt.Sprintf("insecure-registry=%s", s.opts.RegistryAddr)}
+		for k, v := range s.opts.NodesParams {
+			idx := i % len(v)
+			s.context.Args = append(s.context.Args, fmt.Sprintf("%s=%s", k, v[idx]))
+		}
+		err := nodeAdd.Run(&s.context, s.client)
+		if err != nil {
+			return fmt.Errorf("failed to create node: %s", err)
 		}
 	}
 	return nil
