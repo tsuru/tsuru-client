@@ -47,6 +47,37 @@ func (s *S) TestAppRun(c *check.C) {
 	c.Assert(stdout.String(), check.Equals, expected)
 }
 
+func (s *S) TestAppRunFlagIsolated(c *check.C) {
+	var stdout, stderr bytes.Buffer
+	expected := "http.go		http_test.go"
+	context := cmd.Context{
+		Args:   []string{"ls"},
+		Stdout: &stdout,
+		Stderr: &stderr,
+	}
+	msg := io.SimpleJsonMessage{Message: expected}
+	result, err := json.Marshal(msg)
+	c.Assert(err, check.IsNil)
+	trans := &cmdtest.ConditionalTransport{
+		Transport: cmdtest.Transport{
+			Message: string(result),
+			Status:  http.StatusOK,
+		},
+		CondFunc: func(req *http.Request) bool {
+			contentType := req.Header.Get("Content-Type") == "application/x-www-form-urlencoded"
+			cmd := req.FormValue("isolated") == "true"
+			path := strings.HasSuffix(req.URL.Path, "/apps/ble/run")
+			return path && cmd && contentType
+		},
+	}
+	client := cmd.NewClient(&http.Client{Transport: trans}, nil, manager)
+	command := AppRun{}
+	command.Flags().Parse(true, []string{"--app", "ble", "--isolated"})
+	err = command.Run(&context, client)
+	c.Assert(err, check.IsNil)
+	c.Assert(stdout.String(), check.Equals, expected)
+}
+
 func (s *S) TestAppRunShouldUseAllSubsequentArgumentsAsArgumentsToTheGivenCommand(c *check.C) {
 	var stdout, stderr bytes.Buffer
 	expected := "-rw-r--r--  1 f  staff  119 Apr 26 18:23 http.go\n"
