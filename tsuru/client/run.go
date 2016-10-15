@@ -19,8 +19,9 @@ import (
 
 type AppRun struct {
 	cmd.GuessingCommand
-	fs   *gnuflag.FlagSet
-	once bool
+	fs       *gnuflag.FlagSet
+	once     bool
+	isolated bool
 }
 
 func (c *AppRun) Info() *cmd.Info {
@@ -31,7 +32,7 @@ If you use the [[--once]] flag tsuru will run the command only in one unit.
 Otherwise, it will run the command in all units.`
 	return &cmd.Info{
 		Name:    "app-run",
-		Usage:   "app-run <command> [commandarg1] [commandarg2] ... [commandargn] [-a/--app appname] [-o/--once]",
+		Usage:   "app-run <command> [commandarg1] [commandarg2] ... [commandargn] [-a/--app appname] [-o/--once] [-i/--isolated]",
 		Desc:    desc,
 		MinArgs: 1,
 	}
@@ -50,6 +51,7 @@ func (c *AppRun) Run(context *cmd.Context, client *cmd.Client) error {
 	v := url.Values{}
 	v.Set("command", strings.Join(context.Args, " "))
 	v.Set("once", strconv.FormatBool(c.once))
+	v.Set("isolated", strconv.FormatBool(c.isolated))
 	b := strings.NewReader(v.Encode())
 	request, err := http.NewRequest("POST", u, b)
 	if err != nil {
@@ -79,6 +81,8 @@ func (c *AppRun) Flags() *gnuflag.FlagSet {
 		c.fs = c.GuessingCommand.Flags()
 		c.fs.BoolVar(&c.once, "once", false, "Running only one unit")
 		c.fs.BoolVar(&c.once, "o", false, "Running only one unit")
+		c.fs.BoolVar(&c.isolated, "isolated", false, "Running in ephemeral container")
+		c.fs.BoolVar(&c.isolated, "i", false, "Running in ephemeral container")
 	}
 	return c.fs
 }
