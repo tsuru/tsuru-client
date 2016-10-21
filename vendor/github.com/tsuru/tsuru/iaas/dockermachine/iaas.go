@@ -5,16 +5,16 @@
 package dockermachine
 
 import (
+	"bytes"
 	"fmt"
 
+	"github.com/pkg/errors"
+	tsuruErrors "github.com/tsuru/tsuru/errors"
 	"github.com/tsuru/tsuru/iaas"
+	"github.com/tsuru/tsuru/log"
 )
 
-var (
-	errCaPathNotSet = fmt.Errorf("ca-path configuration is mandatory")
-
-	errDriverNotSet = fmt.Errorf("driver is mandatory")
-)
+var errDriverNotSet = errors.Errorf("driver is mandatory")
 
 func init() {
 	iaas.RegisterIaasProvider("dockermachine", newDockerMachineIaaS)
@@ -22,7 +22,7 @@ func init() {
 
 type dockerMachineIaaS struct {
 	base       iaas.NamedIaaS
-	apiFactory func(DockerMachineConfig) (dockerMachineAPI, error)
+	apiFactory func(DockerMachineConfig) (DockerMachineAPI, error)
 }
 
 func newDockerMachineIaaS(name string) iaas.IaaS {
@@ -40,10 +40,7 @@ func (i *dockerMachineIaaS) getParamOrConfigString(name string, params map[strin
 }
 
 func (i *dockerMachineIaaS) CreateMachine(params map[string]string) (*iaas.Machine, error) {
-	caPath, err := i.base.GetConfigString("ca-path")
-	if err != nil {
-		return nil, errCaPathNotSet
-	}
+	caPath, _ := i.base.GetConfigString("ca-path")
 	driverName, ok := params["driver"]
 	if !ok {
 		name, errConf := i.base.GetConfigString("driver:name")
@@ -53,37 +50,50 @@ func (i *dockerMachineIaaS) CreateMachine(params map[string]string) (*iaas.Machi
 		driverName = name
 		params["driver"] = driverName
 	}
-	dockerEngineInstallURL, err := i.getParamOrConfigString("docker-install-url", params)
-	if err != nil {
-		dockerEngineInstallURL = ""
-	}
-	insecureRegistry, _ := i.base.GetConfigString("insecure-registry")
+	dockerEngineInstallURL, _ := i.getParamOrConfigString("docker-install-url", params)
+	insecureRegistry, _ := i.getParamOrConfigString("insecure-registry", params)
 	machineName, ok := params["name"]
 	if !ok {
 		machines, errList := iaas.ListMachines()
 		if errList != nil {
-			return nil, errList
+			return nil, errors.Wrap(errList, "failed to list machines")
 		}
 		machineName = fmt.Sprintf("%s-%d", params["pool"], len(machines)+1)
 	} else {
 		delete(params, "name")
 	}
+	driverOpts := i.buildDriverOpts(params)
+	buf := &bytes.Buffer{}
 	dockerMachine, err := i.apiFactory(DockerMachineConfig{
-		CaPath:                 caPath,
-		InsecureRegistry:       insecureRegistry,
-		DockerEngineInstallURL: dockerEngineInstallURL,
+		CaPath:    caPath,
+		OutWriter: buf,
+		ErrWriter: buf,
 	})
 	if err != nil {
 		return nil, err
 	}
-	defer dockerMachine.Close()
-	driverOpts := i.buildDriverOpts(params)
-	m, err := dockerMachine.CreateMachine(machineName, driverName, driverOpts)
+	defer func() {
+		dockerMachine.Close()
+		log.Debug(buf.String())
+	}()
+	m, err := dockerMachine.CreateMachine(CreateMachineOpts{
+		Name:                   machineName,
+		DriverName:             driverName,
+		Params:                 driverOpts,
+		InsecureRegistry:       insecureRegistry,
+		DockerEngineInstallURL: dockerEngineInstallURL,
+	})
 	if err != nil {
+		if m != nil {
+			errRem := dockerMachine.DeleteMachine(m.Base)
+			if errRem != nil {
+				err = tsuruErrors.NewMultiError(err, errors.WithMessage(errRem, "failed to remove machine after error"))
+			}
+		}
 		return nil, err
 	}
-	m.CreationParams = params
-	return m, nil
+	m.Base.CreationParams = params
+	return m.Base, nil
 }
 
 func (i *dockerMachineIaaS) buildDriverOpts(params map[string]string) map[string]interface{} {
@@ -104,16 +114,28 @@ func (i *dockerMachineIaaS) buildDriverOpts(params map[string]string) map[string
 }
 
 func (i *dockerMachineIaaS) DeleteMachine(m *iaas.Machine) error {
-	dockerMachine, err := i.apiFactory(DockerMachineConfig{})
+	buf := &bytes.Buffer{}
+	dockerMachine, err := i.apiFactory(DockerMachineConfig{
+		OutWriter: buf,
+		ErrWriter: buf,
+	})
 	if err != nil {
 		return err
 	}
-	defer dockerMachine.Close()
+	defer func() {
+		dockerMachine.Close()
+		log.Debug(buf.String())
+	}()
 	return dockerMachine.DeleteMachine(m)
 }
 
 func (i *dockerMachineIaaS) Describe() string {
 	return `DockerMachine IaaS required params:
-  name: host name of the machine to be created
-  driver: name of the docker machine driver to be used`
+  driver=<driver>                         Driver to be used by docker machine. Can be set on the IaaS configuration.
+
+Optional params:
+  name=<name>                             Hostname for the created machine
+  docker-install-url=<docker-install-url> Remote script to be used for docker installation. Defaults to: http://get.docker.com. Can be set on the IaaS configuration.
+  insecure-registry=<insecure-registry>   Registry to be added as insecure-registry to the docker engine. Can be set on the IaaS configuration.
+`
 }

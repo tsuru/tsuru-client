@@ -832,11 +832,11 @@
 			"revision": ""
 		},
 		{
-			"checksumSHA1": "Hky3u+8Rqum+wB5BHMj0A8ZmT4g=",
+			"checksumSHA1": "ynJSWoF6v+3zMnh9R0QmmG6iGV8=",
 			"origin": "github.com/tsuru/tsuru/vendor/github.com/pkg/errors",
 			"path": "github.com/pkg/errors",
-			"revision": "d29f298f4917fe6a8ad5e1aef2c2606ec8c4d1bf",
-			"revisionTime": "2016-10-06T18:14:36Z"
+			"revision": "9d731c72b2c350f40869cd2a2b61d7b1ee56b2e8",
+			"revisionTime": "2016-10-21T13:02:28-02:00"
 		},
 		{
 			"checksumSHA1": "CubOH5Oi1hpjX54FY2DCQkZ4w5o=",
@@ -1140,10 +1140,11 @@
 			"revisionTime": "2016-10-06T18:14:36Z"
 		},
 		{
-			"checksumSHA1": "2MJ8hrFm2Jg0AZKMkdQaGdGlxto=",
+			"checksumSHA1": "k4iMExlQVYP5nWIFBXOx6OhTPaM=",
+			"origin": "github.com/tsuru/tsuru-client/vendor/github.com/tsuru/tsuru/errors",
 			"path": "github.com/tsuru/tsuru/errors",
-			"revision": "2ccaef10f66f5d34f03190e9656a927dae7e5402",
-			"revisionTime": "2016-10-06T18:14:36Z"
+			"revision": "1919249da68f1de3966180e1bae877028fb8abd7",
+			"revisionTime": "2016-10-21T14:17:21-02:00"
 		},
 		{
 			"checksumSHA1": "t5vG+RgsM3c/YoBla3HBerekY9Q=",
@@ -1194,10 +1195,11 @@
 			"revisionTime": "2016-10-06T18:14:36Z"
 		},
 		{
-			"checksumSHA1": "sypomv+MwPrKfmHM9qclEhrBrYU=",
+			"checksumSHA1": "3zVdvo4tZ08cV1jBof90Do6Dw5c=",
+			"origin": "github.com/tsuru/tsuru-client/vendor/github.com/tsuru/tsuru/iaas",
 			"path": "github.com/tsuru/tsuru/iaas",
-			"revision": "2ccaef10f66f5d34f03190e9656a927dae7e5402",
-			"revisionTime": "2016-10-06T18:14:36Z"
+			"revision": "db44499a28cfedabcde13dfe342178fdd01267b6",
+			"revisionTime": "2016-10-21T17:59:18-02:00"
 		},
 		{
 			"checksumSHA1": "BGVIKUDq8ih1U929FTAn61qEQBw=",
@@ -1212,10 +1214,11 @@
 			"revisionTime": "2016-10-06T18:14:36Z"
 		},
 		{
-			"checksumSHA1": "+mdz88poTqgnx3znHS+ag1IcBt4=",
+			"checksumSHA1": "obPTM96Jj0QCOWyb1Q7D4Dg++A8=",
+			"origin": "github.com/tsuru/tsuru-client/vendor/github.com/tsuru/tsuru/iaas/dockermachine",
 			"path": "github.com/tsuru/tsuru/iaas/dockermachine",
-			"revision": "2ccaef10f66f5d34f03190e9656a927dae7e5402",
-			"revisionTime": "2016-10-06T18:14:36Z"
+			"revision": "db44499a28cfedabcde13dfe342178fdd01267b6",
+			"revisionTime": "2016-10-21T17:59:18-02:00"
 		},
 		{
 			"checksumSHA1": "r8BVwQGsiVPcAiwtYeu6gjlErbM=",
