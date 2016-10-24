@@ -71,8 +71,8 @@ func NewDockerMachine(config DockerMachineConfig) (DockerMachineAPI, error) {
 		temp = true
 	}
 	certsPath := filepath.Join(storePath, "certs")
-	if _, err := os.Stat(certsPath); err != nil {
-		err := os.Mkdir(certsPath, 0700)
+	if _, err := os.Stat(certsPath); os.IsNotExist(err) {
+		err := os.MkdirAll(certsPath, 0700)
 		if err != nil {
 			return nil, errors.WithMessage(err, "failed to create certs dir")
 		}
@@ -212,11 +212,7 @@ func (d *DockerMachine) DeleteAll() error {
 			return err
 		}
 	}
-	err = os.RemoveAll(d.StorePath)
-	if err != nil {
-		return err
-	}
-	return nil
+	return os.RemoveAll(d.StorePath)
 }
 
 func configureDriver(driver drivers.Driver, driverOpts map[string]interface{}) error {

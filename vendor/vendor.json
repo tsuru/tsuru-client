@@ -1214,11 +1214,11 @@
 			"revisionTime": "2016-10-06T18:14:36Z"
 		},
 		{
-			"checksumSHA1": "obPTM96Jj0QCOWyb1Q7D4Dg++A8=",
+			"checksumSHA1": "xhy/iYHA3gKIpLWsWADCzJZilNc=",
 			"origin": "github.com/tsuru/tsuru-client/vendor/github.com/tsuru/tsuru/iaas/dockermachine",
 			"path": "github.com/tsuru/tsuru/iaas/dockermachine",
-			"revision": "db44499a28cfedabcde13dfe342178fdd01267b6",
-			"revisionTime": "2016-10-21T17:59:18-02:00"
+			"revision": "14dee7f8e80a7cddc8f673598a7ce789a3dcdf93",
+			"revisionTime": "2016-10-24T09:46:07-02:00"
 		},
 		{
 			"checksumSHA1": "r8BVwQGsiVPcAiwtYeu6gjlErbM=",

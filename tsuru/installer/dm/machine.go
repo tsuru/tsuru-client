@@ -8,9 +8,9 @@ import (
 	"fmt"
 	"io/ioutil"
 	"path/filepath"
-	"strconv"
 	"strings"
 
+	"github.com/docker/machine/libmachine/engine"
 	"github.com/docker/machine/libmachine/host"
 	docker "github.com/fsouza/go-dockerclient"
 )
@@ -62,7 +62,7 @@ func (m *Machine) GetPrivateIP() string {
 }
 
 func (m *Machine) GetPrivateAddress() string {
-	return "https://" + m.GetPrivateIP() + ":" + strconv.Itoa(dockerHTTPSPort)
+	return fmt.Sprintf("https://%s:%d", m.GetPrivateIP(), engine.DefaultPort)
 }
 
 func getIp(iface string, remote SSHTarget) string {

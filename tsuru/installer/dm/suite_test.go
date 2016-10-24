@@ -12,6 +12,7 @@ import (
 
 	"github.com/docker/machine/libmachine/drivers/plugin/localbinary"
 	"github.com/tsuru/tsuru-client/tsuru/installer/testing"
+	"github.com/tsuru/tsuru/iaas/dockermachine"
 	check "gopkg.in/check.v1"
 )
 
@@ -25,7 +26,7 @@ var _ = check.Suite(&S{})
 func TestMain(m *testing.M) {
 	if os.Getenv(localbinary.PluginEnvKey) == localbinary.PluginEnvVal {
 		driver := os.Getenv(localbinary.PluginEnvDriverName)
-		err := RunDriver(driver)
+		err := dockermachine.RunDriver(driver)
 		if err != nil {
 			fmt.Printf("Failed to run driver %s in test", driver)
 			os.Exit(1)

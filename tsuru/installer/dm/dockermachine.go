@@ -9,7 +9,6 @@ import (
 	"encoding/json"
 	"encoding/pem"
 	"fmt"
-	"io"
 	"io/ioutil"
 	"os"
 	"path/filepath"
@@ -17,15 +16,13 @@ import (
 
 	"github.com/docker/machine/libmachine"
 	"github.com/docker/machine/libmachine/cert"
-	"github.com/docker/machine/libmachine/drivers"
-	"github.com/docker/machine/libmachine/drivers/rpc"
 	"github.com/docker/machine/libmachine/host"
 	"github.com/docker/machine/libmachine/mcnutils"
 	"github.com/tsuru/tsuru/cmd"
+	"github.com/tsuru/tsuru/iaas/dockermachine"
 )
 
 var (
-	dockerHTTPSPort            = 2376
 	storeBasePath              = cmd.JoinWithUserDir(".tsuru", "installs")
 	DefaultDockerMachineConfig = &DockerMachineConfig{
 		DriverName: "virtualbox",
@@ -35,12 +32,11 @@ var (
 )
 
 type DockerMachine struct {
-	io.Closer
 	driverName       string
+	Name             string
 	storePath        string
 	certsPath        string
-	Name             string
-	client           libmachine.API
+	dm               dockermachine.DockerMachineAPI
 	machinesCount    uint64
 	globalDriverOpts DriverOpts
 	dockerHubMirror  string
@@ -61,43 +57,24 @@ type MachineProvisioner interface {
 func NewDockerMachine(config *DockerMachineConfig) (*DockerMachine, error) {
 	storePath := filepath.Join(storeBasePath, config.Name)
 	certsPath := filepath.Join(storePath, "certs")
-	err := os.MkdirAll(certsPath, 0700)
+	dm, err := dockermachine.NewDockerMachine(dockermachine.DockerMachineConfig{
+		CaPath:    config.CAPath,
+		OutWriter: os.Stdout,
+		ErrWriter: os.Stderr,
+		StorePath: storePath,
+	})
 	if err != nil {
-		return nil, fmt.Errorf("failed to create certs dir: %s", err)
-	}
-	if config.CAPath != "" {
-		fmt.Printf("Copying CA file from %s to %s", filepath.Join(config.CAPath, "ca.pem"), filepath.Join(certsPath, "ca.pem"))
-		err = copy(filepath.Join(config.CAPath, "ca.pem"), filepath.Join(certsPath, "ca.pem"))
-		if err != nil {
-			return nil, fmt.Errorf("failed to copy ca file: %s", err)
-		}
-		fmt.Printf("Copying CA key from %s to %s", filepath.Join(config.CAPath, "ca-key.pem"), filepath.Join(certsPath, "ca-key.pem"))
-		err = copy(filepath.Join(config.CAPath, "ca-key.pem"), filepath.Join(certsPath, "ca-key.pem"))
-		if err != nil {
-			return nil, fmt.Errorf("failed to copy ca key file: %s", err)
-		}
+		return nil, err
 	}
 	return &DockerMachine{
 		driverName:       config.DriverName,
-		storePath:        storePath,
-		certsPath:        certsPath,
 		Name:             config.Name,
-		client:           libmachine.NewClient(storePath, certsPath),
+		dm:               dm,
 		globalDriverOpts: config.DriverOpts,
 		dockerHubMirror:  config.DockerHubMirror,
+		certsPath:        certsPath,
+		storePath:        storePath,
 	}, nil
-}
-
-func copy(src, dst string) error {
-	fileSrc, err := ioutil.ReadFile(src)
-	if err != nil {
-		return err
-	}
-	err = ioutil.WriteFile(dst, fileSrc, 0644)
-	if err != nil {
-		return err
-	}
-	return nil
 }
 
 func (d *DockerMachine) ProvisionMachine(driverOpts map[string]interface{}) (*Machine, error) {
@@ -113,52 +90,40 @@ func (d *DockerMachine) ProvisionMachine(driverOpts map[string]interface{}) (*Ma
 }
 
 func (d *DockerMachine) CreateMachine(driverOpts map[string]interface{}) (*Machine, error) {
-	rawDriver, err := json.Marshal(&drivers.BaseDriver{
-		MachineName: d.generateMachineName(),
-		StorePath:   d.storePath,
+	driverOpts["swarm-master"] = false
+	driverOpts["swarm-host"] = ""
+	driverOpts["engine-install-url"] = ""
+	driverOpts["swarm-discovery"] = ""
+	mergedOpts := make(DriverOpts)
+	for k, v := range d.globalDriverOpts {
+		mergedOpts[k] = v
+	}
+	for k, v := range driverOpts {
+		mergedOpts[k] = v
+	}
+	mIaas, err := d.dm.CreateMachine(dockermachine.CreateMachineOpts{
+		Name:           d.generateMachineName(),
+		DriverName:     d.driverName,
+		Params:         mergedOpts,
+		RegistryMirror: d.dockerHubMirror,
 	})
-	if err != nil {
-		return nil, fmt.Errorf("Error creating docker-machine driver: %s", err)
-	}
-	host, err := d.client.NewHost(d.driverName, rawDriver)
-	if err != nil {
-		return nil, err
-	}
-	d.configureHost(host)
-	d.configureDriver(host.Driver, driverOpts)
-	err = d.client.Create(host)
-	if err != nil {
-		fmt.Printf("Ignoring error on machine creation: %s", err)
-	}
-	ip, err := host.Driver.GetIP()
 	if err != nil {
 		return nil, err
 	}
 	m := &Machine{
-		IP:         ip,
-		CAPath:     d.certsPath,
-		Host:       host,
-		Address:    fmt.Sprintf("https://%s:%d", ip, dockerHTTPSPort),
-		DriverOpts: DriverOpts(driverOpts),
+		Host:       mIaas.Host,
+		IP:         mIaas.Base.Address,
+		Address:    mIaas.Base.FormatNodeAddress(),
+		DriverOpts: mergedOpts,
 	}
-	if host.AuthOptions() != nil {
-		host.AuthOptions().ServerCertSANs = append(host.AuthOptions().ServerCertSANs, m.GetPrivateIP())
-		err = host.ConfigureAuth()
+	if m.Host.AuthOptions() != nil {
+		m.Host.AuthOptions().ServerCertSANs = append(m.Host.AuthOptions().ServerCertSANs, m.GetPrivateIP())
+		err = m.Host.ConfigureAuth()
 		if err != nil {
 			return nil, err
 		}
 	}
 	return m, nil
-}
-
-func (d *DockerMachine) configureHost(h *host.Host) {
-	if h.AuthOptions() != nil {
-		h.AuthOptions().ServerCertPath = filepath.Join(d.client.GetMachinesDir(), h.Name, "server.pem")
-		h.AuthOptions().ServerKeyPath = filepath.Join(d.client.GetMachinesDir(), h.Name, "server-key.pem")
-	}
-	if d.dockerHubMirror != "" {
-		h.HostOptions.EngineOptions.RegistryMirror = []string{d.dockerHubMirror}
-	}
 }
 
 func (d *DockerMachine) generateMachineName() string {
@@ -243,70 +208,15 @@ func (d *DockerMachine) createRegistryCertificate(hosts ...string) error {
 	return generator.GenerateCert(certOpts)
 }
 
-func (d *DockerMachine) configureDriver(driver drivers.Driver, driverOpts DriverOpts) error {
-	mergedOpts := make(DriverOpts)
-	for k, v := range d.globalDriverOpts {
-		mergedOpts[k] = v
-	}
-	for k, v := range driverOpts {
-		mergedOpts[k] = v
-	}
-	opts := &rpcdriver.RPCFlags{Values: mergedOpts}
-	for _, c := range driver.GetCreateFlags() {
-		_, ok := opts.Values[c.String()]
-		if !ok {
-			opts.Values[c.String()] = c.Default()
-			if c.Default() == nil {
-				opts.Values[c.String()] = false
-			}
-		}
-	}
-	opts.Values["swarm-master"] = false
-	opts.Values["swarm-host"] = ""
-	opts.Values["engine-install-url"] = ""
-	opts.Values["swarm-discovery"] = ""
-	if err := driver.SetConfigFromFlags(opts); err != nil {
-		return fmt.Errorf("Error setting driver configurations: %s", err)
-	}
-	return nil
-}
-
 func (d *DockerMachine) DeleteAll() error {
-	hosts, err := d.client.List()
-	if err != nil {
-		return err
-	}
-	for _, h := range hosts {
-		errDel := d.DeleteMachine(h)
-		if errDel != nil {
-			return errDel
-		}
-	}
-	err = os.RemoveAll(d.storePath)
-	if err != nil {
-		return err
-	}
-	return nil
-}
-
-func (d *DockerMachine) DeleteMachine(name string) error {
-	h, err := d.client.Load(name)
-	if err != nil {
-		return err
-	}
-	err = h.Driver.Remove()
-	if err != nil {
-		return err
-	}
-	return d.client.Remove(name)
+	return d.dm.DeleteAll()
 }
 
 func (d *DockerMachine) Close() error {
-	return d.client.Close()
+	return d.dm.Close()
 }
 
 type TempDockerMachine struct {
-	io.Closer
 	client    libmachine.API
 	storePath string
 	certsPath string

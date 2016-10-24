@@ -12,8 +12,8 @@ import (
 	"github.com/tsuru/tsuru-client/tsuru/admin"
 	"github.com/tsuru/tsuru-client/tsuru/client"
 	"github.com/tsuru/tsuru-client/tsuru/installer"
-	"github.com/tsuru/tsuru-client/tsuru/installer/dm"
 	"github.com/tsuru/tsuru/cmd"
+	"github.com/tsuru/tsuru/iaas/dockermachine"
 	"github.com/tsuru/tsuru/provision"
 	_ "github.com/tsuru/tsuru/provision/docker"
 )
@@ -148,7 +148,7 @@ func inDockerMachineDriverMode() bool {
 
 func main() {
 	if inDockerMachineDriverMode() {
-		err := dm.RunDriver(os.Getenv(localbinary.PluginEnvDriverName))
+		err := dockermachine.RunDriver(os.Getenv(localbinary.PluginEnvDriverName))
 		if err != nil {
 			log.Fatalf("Error running driver: %s", err)
 		}

@@ -5,21 +5,12 @@
 package dm
 
 import (
-	"fmt"
 	"io/ioutil"
 	"os"
 	"path/filepath"
 	"strings"
 
 	check "gopkg.in/check.v1"
-
-	"github.com/docker/machine/drivers/amazonec2"
-	"github.com/docker/machine/drivers/fakedriver"
-	"github.com/docker/machine/libmachine/engine"
-	"github.com/docker/machine/libmachine/host"
-	"github.com/docker/machine/libmachine/persist/persisttest"
-	"github.com/docker/machine/libmachine/state"
-	dtesting "github.com/fsouza/go-dockerclient/testing"
 )
 
 func (s *S) TestNewDockerMachine(c *check.C) {
@@ -43,49 +34,6 @@ func (s *S) TestNewDockerMachineDriverOpts(c *check.C) {
 	c.Assert(err, check.IsNil)
 	c.Assert(dm, check.NotNil)
 	c.Assert(dm.globalDriverOpts["url"].(string), check.Equals, "localhost")
-}
-
-func (s *S) TestNewDockerMachineCopyProvidedCa(c *check.C) {
-	config := &DockerMachineConfig{
-		CAPath: s.TLSCertsPath.RootDir,
-	}
-	defer os.Remove(s.StoreBasePath)
-	dm, err := NewDockerMachine(config)
-	c.Assert(err, check.IsNil)
-	c.Assert(dm, check.NotNil)
-	expected, err := ioutil.ReadFile(s.TLSCertsPath.RootCert)
-	c.Assert(err, check.IsNil)
-	contents, err := ioutil.ReadFile(filepath.Join(dm.certsPath, "ca.pem"))
-	c.Assert(err, check.IsNil)
-	c.Assert(contents, check.DeepEquals, expected)
-	expected, err = ioutil.ReadFile(s.TLSCertsPath.RootKey)
-	c.Assert(err, check.IsNil)
-	contents, err = ioutil.ReadFile(filepath.Join(dm.certsPath, "ca-key.pem"))
-	c.Assert(err, check.IsNil)
-	c.Assert(contents, check.DeepEquals, expected)
-}
-
-func (s *S) TestConfigureDriver(c *check.C) {
-	dm := &DockerMachine{globalDriverOpts: DriverOpts{
-		"amazonec2-access-key":     "abc",
-		"amazonec2-subnet-id":      "net",
-		"amazonec2-security-group": []string{"sg-123", "sg-456"},
-	}}
-	driver := amazonec2.NewDriver("", "")
-	opts := map[string]interface{}{
-		"amazonec2-tags": "my-tag1",
-	}
-	err := dm.configureDriver(driver, opts)
-	c.Assert(err, check.NotNil)
-	opts["amazonec2-secret-key"] = "cde"
-	err = dm.configureDriver(driver, opts)
-	c.Assert(err, check.IsNil)
-	c.Assert(driver.SecurityGroupNames, check.DeepEquals, []string{"sg-123", "sg-456"})
-	c.Assert(driver.SecretKey, check.Equals, "cde")
-	c.Assert(driver.SubnetId, check.Equals, "net")
-	c.Assert(driver.AccessKey, check.Equals, "abc")
-	c.Assert(driver.RetryCount, check.Equals, 5)
-	c.Assert(driver.Tags, check.Equals, "my-tag1")
 }
 
 func (s *S) TestUploadRegistryCertificate(c *check.C) {
@@ -135,134 +83,6 @@ func (s *S) TestCreateRegistryCertificate(c *check.C) {
 	file, err = os.Stat(filepath.Join(dm.certsPath, "registry-key.pem"))
 	c.Assert(err, check.IsNil)
 	c.Assert(file.Size() > 0, check.Equals, true)
-}
-
-type fakeMachineAPI struct {
-	*persisttest.FakeStore
-	driverName string
-	hostName   string
-	closed     bool
-}
-
-func (f *fakeMachineAPI) NewHost(driverName string, rawDriver []byte) (*host.Host, error) {
-	f.driverName = driverName
-	return &host.Host{
-		Name: "machine",
-		Driver: &fakedriver.Driver{
-			MockState: state.Running,
-			MockIP:    "127.0.0.1",
-		},
-		HostOptions: &host.Options{
-			EngineOptions: &engine.Options{},
-		},
-	}, nil
-}
-
-func (f *fakeMachineAPI) Create(h *host.Host) error {
-	f.hostName = h.Name
-	return nil
-}
-
-func (f *fakeMachineAPI) Close() error {
-	f.closed = true
-	return nil
-}
-
-func (f *fakeMachineAPI) GetMachinesDir() string {
-	return ""
-}
-
-func (s *S) TestCreateMachine(c *check.C) {
-	tlsConfig := dtesting.TLSConfig{
-		CertPath:    s.TLSCertsPath.ServerCert,
-		CertKeyPath: s.TLSCertsPath.ServerKey,
-		RootCAPath:  s.TLSCertsPath.RootCert,
-	}
-	server, err := dtesting.NewTLSServer("127.0.0.1:2376", nil, nil, tlsConfig)
-	c.Assert(err, check.IsNil)
-	defer server.Stop()
-	dm, err := NewDockerMachine(DefaultDockerMachineConfig)
-	c.Assert(err, check.IsNil)
-	fakeAPI := &fakeMachineAPI{}
-	dm.client = fakeAPI
-	dm.certsPath = s.TLSCertsPath.RootDir
-	machine, err := dm.CreateMachine(map[string]interface{}{})
-	c.Assert(err, check.IsNil)
-	c.Assert(machine, check.NotNil)
-	c.Assert(machine.IP, check.Equals, "127.0.0.1")
-	c.Assert(machine.Address, check.Equals, "https://127.0.0.1:2376")
-	c.Assert(fakeAPI.driverName, check.Equals, "virtualbox")
-	c.Assert(fakeAPI.hostName, check.Equals, "machine")
-}
-
-func (s *S) TestDeleteMachine(c *check.C) {
-	dm, err := NewDockerMachine(DefaultDockerMachineConfig)
-	c.Assert(err, check.IsNil)
-	dm.client = &fakeMachineAPI{
-		FakeStore: &persisttest.FakeStore{
-			Hosts: []*host.Host{{
-				Name: "test-machine",
-				Driver: &fakedriver.Driver{
-					MockState: state.Running,
-					MockIP:    "1.2.3.4",
-				},
-			}},
-		},
-	}
-	err = dm.DeleteMachine("test-machine")
-	c.Assert(err, check.IsNil)
-}
-
-func (s *S) TestDeleteAll(c *check.C) {
-	dm, err := NewDockerMachine(DefaultDockerMachineConfig)
-	c.Assert(err, check.IsNil)
-	dm.client = &fakeMachineAPI{
-		FakeStore: &persisttest.FakeStore{
-			Hosts: []*host.Host{{
-				Name: "test-machine2",
-				Driver: &fakedriver.Driver{
-					MockState: state.Running,
-					MockIP:    "1.2.3.4",
-				},
-			},
-				{
-					Name: "test-machine",
-					Driver: &fakedriver.Driver{
-						MockState: state.Running,
-						MockIP:    "1.2.3.5",
-					},
-				},
-			},
-		},
-	}
-	err = dm.DeleteAll()
-	c.Assert(err, check.IsNil)
-}
-
-func (s *S) TestDeleteMachineLoadError(c *check.C) {
-	dm, err := NewDockerMachine(DefaultDockerMachineConfig)
-	c.Assert(err, check.IsNil)
-	expectedErr := fmt.Errorf("failed to load")
-	dm.client = &fakeMachineAPI{
-		FakeStore: &persisttest.FakeStore{
-			LoadErr: expectedErr,
-		},
-	}
-	err = dm.DeleteMachine("test-machine")
-	c.Assert(err, check.Equals, expectedErr)
-}
-
-func (s *S) TestClose(c *check.C) {
-	dm, err := NewDockerMachine(DefaultDockerMachineConfig)
-	c.Assert(err, check.IsNil)
-	fakeAPI := &fakeMachineAPI{
-		FakeStore: &persisttest.FakeStore{},
-	}
-	dm.client = fakeAPI
-	dm.CreateMachine(map[string]interface{}{})
-	c.Assert(fakeAPI.closed, check.Equals, false)
-	dm.Close()
-	c.Assert(fakeAPI.closed, check.Equals, true)
 }
 
 func (s *S) TestNewTempDockerMachine(c *check.C) {
