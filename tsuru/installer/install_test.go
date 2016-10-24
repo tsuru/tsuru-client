@@ -168,30 +168,6 @@ func (s *S) TestUninstallCommandFlags(c *check.C) {
 	c.Check(config.DefValue, check.Equals, "")
 }
 
-func (s *S) TestBuildClusterTable(c *check.C) {
-	cluster := &FakeServiceCluster{}
-	table := buildClusterTable(cluster)
-	expected := `+-----------+---------+---------+
-| IP        | State   | Manager |
-+-----------+---------+---------+
-| 127.0.0.1 | running | true    |
-+-----------+---------+---------+
-`
-	c.Assert(table.String(), check.Equals, expected)
-}
-
-func (s *S) TestBuildComponentsTable(c *check.C) {
-	cluster := &FakeServiceCluster{}
-	table := buildComponentsTable([]TsuruComponent{&MongoDB{}}, cluster)
-	expected := `+-----------+-------+----------+
-| Component | Ports | Replicas |
-+-----------+-------+----------+
-| MongoDB   | 8080  | 1        |
-+-----------+-------+----------+
-`
-	c.Assert(table.String(), check.Equals, expected)
-}
-
 type FakeMachineProvisioner struct {
 	hostsProvisioned int
 }

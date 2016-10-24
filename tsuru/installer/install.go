@@ -11,37 +11,14 @@ import (
 	"net/http"
 	"net/url"
 	"path/filepath"
-	"strconv"
 	"strings"
 
-	"github.com/tsuru/config"
 	"github.com/tsuru/gnuflag"
 	"github.com/tsuru/tsuru-client/tsuru/admin"
 	"github.com/tsuru/tsuru-client/tsuru/client"
 	"github.com/tsuru/tsuru-client/tsuru/installer/dm"
 	"github.com/tsuru/tsuru/cmd"
 )
-
-var (
-	defaultTsuruInstallConfig = &TsuruInstallConfig{
-		DockerMachineConfig: dm.DefaultDockerMachineConfig,
-		ComponentsConfig:    NewInstallConfig(dm.DefaultDockerMachineConfig.Name),
-		CoreHosts:           1,
-		AppsHosts:           1,
-		DedicatedAppsHosts:  false,
-		CoreDriversOpts:     make(map[string][]interface{}),
-	}
-)
-
-type TsuruInstallConfig struct {
-	*dm.DockerMachineConfig
-	*ComponentsConfig
-	CoreHosts          int
-	CoreDriversOpts    map[string][]interface{}
-	AppsHosts          int
-	DedicatedAppsHosts bool
-	AppsDriversOpts    map[string][]interface{}
-}
 
 type Install struct {
 	fs     *gnuflag.FlagSet
@@ -127,114 +104,31 @@ func (c *Install) Flags() *gnuflag.FlagSet {
 
 func (c *Install) Run(context *cmd.Context, cli *cmd.Client) error {
 	context.RawOutput()
-	config, err := parseConfigFile(c.config)
+	installConfig, err := parseConfigFile(c.config)
 	if err != nil {
 		return err
 	}
-	fmt.Fprintf(context.Stdout, "Running pre-install checks...\n")
-	err = c.PreInstallChecks(config)
+	installer := &Installer{outWriter: context.Stdout, errWriter: context.Stderr}
+	dockerMachine, err := dm.NewDockerMachine(installConfig.DockerMachineConfig)
 	if err != nil {
-		return fmt.Errorf("pre-install checks failed: %s", err)
-	}
-	dockerMachine, err := dm.NewDockerMachine(config.DockerMachineConfig)
-	if err != nil {
-		return fmt.Errorf("failed to create docker machine: %s", err)
+		return err
 	}
 	defer dockerMachine.Close()
-	config.CoreDriversOpts[config.DriverName+"-open-port"] = []interface{}{strconv.Itoa(defaultTsuruAPIPort)}
-	coreMachines, err := ProvisionMachines(dockerMachine, config.CoreHosts, config.CoreDriversOpts)
+	installation, err := installer.Install(installConfig, dockerMachine)
 	if err != nil {
-		return fmt.Errorf("failed to provision components machines: %s", err)
+		return err
 	}
-	cluster, err := NewSwarmCluster(coreMachines, len(coreMachines))
+	err = addInstallHosts(installation.InstallMachines, cli)
 	if err != nil {
-		return fmt.Errorf("failed to setup swarm cluster: %s", err)
+		return fmt.Errorf("failed to register hosts: %s", err)
 	}
-	for _, component := range TsuruComponents {
-		fmt.Fprintf(context.Stdout, "Installing %s\n", component.Name())
-		errInstall := component.Install(cluster, config.ComponentsConfig)
-		if errInstall != nil {
-			return fmt.Errorf("error installing %s: %s", component.Name(), errInstall)
-		}
-		fmt.Fprintf(context.Stdout, "%s successfully installed!\n", component.Name())
-	}
-	fmt.Fprintf(context.Stdout, "Bootstrapping Tsuru API...")
-	registryAddr, registryPort := parseAddress(config.ComponentsConfig.ComponentAddress["registry"], "5000")
-	bootstrapOpts := &BoostrapOptions{
-		Login:        config.ComponentsConfig.RootUserEmail,
-		Password:     config.ComponentsConfig.RootUserPassword,
-		Target:       fmt.Sprintf("http://%s:%d", cluster.GetManager().IP, defaultTsuruAPIPort),
-		TargetName:   config.ComponentsConfig.TargetName,
-		RegistryAddr: fmt.Sprintf("%s:%s", registryAddr, registryPort),
-		NodesParams:  config.AppsDriversOpts,
-	}
-	var installMachines []*dm.Machine
-	if config.DriverName == "virtualbox" {
-		appsMachines, errProv := ProvisionPool(dockerMachine, config, coreMachines)
-		if errProv != nil {
-			return errProv
-		}
-		machineIndex := make(map[string]*dm.Machine)
-		installMachines = append(coreMachines, appsMachines...)
-		for _, m := range installMachines {
-			machineIndex[m.Name] = m
-		}
-		var uniqueMachines []*dm.Machine
-		for _, v := range machineIndex {
-			uniqueMachines = append(uniqueMachines, v)
-		}
-		installMachines = uniqueMachines
-		var nodesAddr []string
-		for _, m := range appsMachines {
-			nodesAddr = append(nodesAddr, m.GetPrivateAddress())
-		}
-		bootstrapOpts.NodesToRegister = nodesAddr
-	} else {
-		installMachines = coreMachines
-		if config.DedicatedAppsHosts {
-			bootstrapOpts.NodesToCreate = config.AppsHosts
-		} else {
-			var nodesAddr []string
-			for _, m := range coreMachines {
-				nodesAddr = append(nodesAddr, m.GetPrivateAddress())
-			}
-			if config.AppsHosts > config.CoreHosts {
-				bootstrapOpts.NodesToCreate = config.AppsHosts - config.CoreHosts
-				bootstrapOpts.NodesToRegister = nodesAddr
-			} else {
-				bootstrapOpts.NodesToRegister = nodesAddr[:config.AppsHosts]
-			}
-		}
-	}
-	bootstraper := &TsuruBoostraper{opts: bootstrapOpts}
-	err = bootstraper.Do()
-	if err != nil {
-		return fmt.Errorf("Error bootstrapping tsuru: %s", err)
-	}
-	fmt.Fprintf(context.Stdout, "Applying iptables workaround for docker 1.12...\n")
-	for _, m := range coreMachines {
-		_, err = m.RunSSHCommand("PATH=$PATH:/usr/sbin/:/usr/local/sbin; sudo iptables -D DOCKER-ISOLATION -i docker_gwbridge -o docker0 -j DROP")
-		if err != nil {
-			fmt.Fprintf(context.Stderr, "Failed to apply iptables rule: %s. Maybe it is not needed anymore?\n", err)
-		}
-		_, err = m.RunSSHCommand("PATH=$PATH:/usr/sbin/:/usr/local/sbin; sudo iptables -D DOCKER-ISOLATION -i docker0 -o docker_gwbridge -j DROP")
-		if err != nil {
-			fmt.Fprintf(context.Stderr, "Failed to apply iptables rule: %s. Maybe it is not needed anymore?\n", err)
-		}
-	}
-	fmt.Fprint(context.Stdout, "--- Installation Overview ---\n")
-	fmt.Fprint(context.Stdout, "Core Hosts: \n"+buildClusterTable(cluster).String())
-	fmt.Fprint(context.Stdout, "Core Components: \n"+buildComponentsTable(TsuruComponents, cluster).String())
+	fmt.Fprintln(context.Stdout, installation.Summary())
 	fmt.Fprintln(context.Stdout, "Apps Hosts:")
 	nodeList := &admin.ListNodesCmd{}
 	nodeList.Run(context, cli)
 	fmt.Fprintln(context.Stdout, "Apps:")
 	appList := &client.AppList{}
 	appList.Run(context, cli)
-	err = addInstallHosts(installMachines, cli)
-	if err != nil {
-		return fmt.Errorf("failed to register hosts: %s", err)
-	}
 	return nil
 }
 
@@ -279,81 +173,6 @@ func addInstallHosts(machines []*dm.Machine, client *cmd.Client) error {
 		}
 	}
 	return nil
-}
-
-func ProvisionPool(p dm.MachineProvisioner, config *TsuruInstallConfig, hosts []*dm.Machine) ([]*dm.Machine, error) {
-	if config.DedicatedAppsHosts {
-		return ProvisionMachines(p, config.AppsHosts, config.AppsDriversOpts)
-	}
-	if config.AppsHosts > len(hosts) {
-		poolMachines, err := ProvisionMachines(p, config.AppsHosts-len(hosts), config.AppsDriversOpts)
-		if err != nil {
-			return nil, fmt.Errorf("failed to provision pool hosts: %s", err)
-		}
-		return append(poolMachines, hosts...), nil
-	}
-	return hosts[:config.AppsHosts], nil
-}
-
-func ProvisionMachines(p dm.MachineProvisioner, numMachines int, configs map[string][]interface{}) ([]*dm.Machine, error) {
-	var machines []*dm.Machine
-	for i := 0; i < numMachines; i++ {
-		opts := make(dm.DriverOpts)
-		for k, v := range configs {
-			idx := i % len(v)
-			opts[k] = v[idx]
-		}
-		m, err := p.ProvisionMachine(opts)
-		if err != nil {
-			return nil, fmt.Errorf("failed to provision machines: %s", err)
-		}
-		machines = append(machines, m)
-	}
-	return machines, nil
-}
-
-func (c *Install) PreInstallChecks(config *TsuruInstallConfig) error {
-	exists, err := cmd.CheckIfTargetLabelExists(config.Name)
-	if err != nil {
-		return err
-	}
-	if exists {
-		return fmt.Errorf("tsuru target \"%s\" already exists", config.Name)
-	}
-	return nil
-}
-
-func buildClusterTable(cluster ServiceCluster) *cmd.Table {
-	t := cmd.NewTable()
-	t.Headers = cmd.Row{"IP", "State", "Manager"}
-	t.LineSeparator = true
-	nodes, err := cluster.ClusterInfo()
-	if err != nil {
-		t.AddRow(cmd.Row{fmt.Sprintf("failed to retrieve cluster info: %s", err)})
-	}
-	for _, n := range nodes {
-		t.AddRow(cmd.Row{n.IP, n.State, strconv.FormatBool(n.Manager)})
-	}
-	return t
-}
-
-func buildComponentsTable(components []TsuruComponent, cluster ServiceCluster) *cmd.Table {
-	t := cmd.NewTable()
-	t.Headers = cmd.Row{"Component", "Ports", "Replicas"}
-	t.LineSeparator = true
-	for _, component := range components {
-		info, err := component.Status(cluster)
-		if err != nil {
-			t.AddRow(cmd.Row{component.Name(), "?", fmt.Sprintf("%s", err)})
-			continue
-		}
-		row := cmd.Row{component.Name(),
-			strings.Join(info.Ports, ","),
-			strconv.Itoa(info.Replicas),
-		}
-		t.AddRow(row)
-	}
-	return t
 }
 
 type Uninstall struct {
@@ -406,81 +225,6 @@ func (c *Uninstall) Run(context *cmd.Context, client *cmd.Client) error {
 	}
 	fmt.Fprintf(context.Stdout, "Uninstall finished successfully!\n")
 	return nil
-}
-
-func parseConfigFile(file string) (*TsuruInstallConfig, error) {
-	installConfig := defaultTsuruInstallConfig
-	if file == "" {
-		return installConfig, nil
-	}
-	err := config.ReadConfigFile(file)
-	if err != nil {
-		return nil, err
-	}
-	driverName, err := config.GetString("driver:name")
-	if err == nil {
-		installConfig.DriverName = driverName
-	}
-	name, err := config.GetString("name")
-	if err == nil {
-		installConfig.Name = name
-	}
-	hub, err := config.GetString("docker-hub-mirror")
-	if err == nil {
-		installConfig.DockerHubMirror = hub
-	}
-	driverOpts := make(dm.DriverOpts)
-	opts, _ := config.Get("driver:options")
-	if opts != nil {
-		for k, v := range opts.(map[interface{}]interface{}) {
-			switch k := k.(type) {
-			case string:
-				driverOpts[k] = v
-			}
-		}
-		installConfig.DriverOpts = driverOpts
-	}
-	caPath, err := config.GetString("ca-path")
-	if err == nil {
-		installConfig.CAPath = caPath
-	}
-	cHosts, err := config.GetInt("hosts:core:size")
-	if err == nil {
-		installConfig.CoreHosts = cHosts
-	}
-	pHosts, err := config.GetInt("hosts:apps:size")
-	if err == nil {
-		installConfig.AppsHosts = pHosts
-	}
-	dedicated, err := config.GetBool("hosts:apps:dedicated")
-	if err == nil {
-		installConfig.DedicatedAppsHosts = dedicated
-	}
-	opts, _ = config.Get("hosts:core:driver:options")
-	if opts != nil {
-		installConfig.CoreDriversOpts, err = parseDriverOptsSlice(opts)
-		if err != nil {
-			return nil, err
-		}
-	}
-	opts, _ = config.Get("hosts:apps:driver:options")
-	if opts != nil {
-		installConfig.AppsDriversOpts, err = parseDriverOptsSlice(opts)
-		if err != nil {
-			return nil, err
-		}
-	}
-	installConfig.ComponentsConfig = NewInstallConfig(installConfig.Name)
-	installConfig.ComponentsConfig.IaaSConfig = map[string]interface{}{
-		"dockermachine": map[string]interface{}{
-			"ca-path": "/certs",
-			"driver": map[string]interface{}{
-				"name":    installConfig.DriverName,
-				"options": map[string]interface{}(installConfig.DriverOpts),
-			},
-		},
-	}
-	return installConfig, nil
 }
 
 func parseDriverOptsSlice(opts interface{}) (map[string][]interface{}, error) {
