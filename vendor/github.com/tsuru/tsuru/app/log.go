@@ -6,9 +6,9 @@ package app
 
 import (
 	"encoding/json"
-	"fmt"
 	"time"
 
+	"github.com/pkg/errors"
 	"github.com/tsuru/tsuru/db"
 	"github.com/tsuru/tsuru/log"
 	"github.com/tsuru/tsuru/queue"
@@ -66,7 +66,7 @@ func (l *LogListener) ListenChan() <-chan Applog {
 func (l *LogListener) Close() (err error) {
 	defer func() {
 		if r := recover(); r != nil {
-			err = fmt.Errorf("Recovered panic closing listener (possible double close): %v", r)
+			err = errors.Errorf("Recovered panic closing listener (possible double close): %v", r)
 		}
 	}()
 	err = l.q.UnSub()
@@ -76,23 +76,23 @@ func (l *LogListener) Close() (err error) {
 func notify(appName string, messages []interface{}) {
 	factory, err := queue.Factory()
 	if err != nil {
-		log.Errorf("Error on logs notify: %s", err.Error())
+		log.Errorf("Error on logs notify: %s", err)
 		return
 	}
 	pubSubQ, err := factory.PubSub(logQueueName(appName))
 	if err != nil {
-		log.Errorf("Error on logs notify: %s", err.Error())
+		log.Errorf("Error on logs notify: %s", err)
 		return
 	}
 	for _, msg := range messages {
 		bytes, err := json.Marshal(msg)
 		if err != nil {
-			log.Errorf("Error on logs notify: %s", err.Error())
+			log.Errorf("Error on logs notify: %s", err)
 			continue
 		}
 		err = pubSubQ.Pub(bytes)
 		if err != nil {
-			log.Errorf("Error on logs notify: %s", err.Error())
+			log.Errorf("Error on logs notify: %s", err)
 		}
 	}
 }

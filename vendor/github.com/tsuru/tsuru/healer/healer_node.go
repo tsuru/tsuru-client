@@ -10,6 +10,7 @@ import (
 	"sync"
 	"time"
 
+	"github.com/pkg/errors"
 	"github.com/tsuru/tsuru/db"
 	"github.com/tsuru/tsuru/db/storage"
 	"github.com/tsuru/tsuru/event"
@@ -52,17 +53,22 @@ type NodeHealerConfig struct {
 	MaxUnresponsiveTimeInherited bool
 }
 
-type nodeStatusData struct {
+type NodeStatusData struct {
 	Address     string       `bson:"_id,omitempty"`
-	Checks      []nodeChecks `bson:",omitempty"`
+	Checks      []NodeChecks `bson:",omitempty"`
 	LastSuccess time.Time    `bson:",omitempty"`
 	LastUpdate  time.Time
+}
+
+type NodeChecks struct {
+	Time   time.Time
+	Checks []provision.NodeCheckResult
 }
 
 type NodeHealerCustomData struct {
 	Node      provision.NodeSpec
 	Reason    string
-	LastCheck *nodeChecks
+	LastCheck *NodeChecks
 }
 
 func newNodeHealer(args nodeHealerArgs) *NodeHealer {
@@ -106,7 +112,7 @@ func (h *NodeHealer) healNode(node provision.Node) (*provision.NodeSpec, error) 
 		if isHealthNode {
 			healthNode.ResetFailures()
 		}
-		return nil, fmt.Errorf("Can't auto-heal after %d failures for node %s: error creating new machine: %s", failures, failingHost, err.Error())
+		return nil, errors.Wrapf(err, "Can't auto-heal after %d failures for node %s: error creating new machine", failures, failingHost)
 	}
 	err = node.Provisioner().UpdateNode(provision.UpdateNodeOptions{
 		Address: failingAddr,
@@ -114,7 +120,7 @@ func (h *NodeHealer) healNode(node provision.Node) (*provision.NodeSpec, error) 
 	})
 	if err != nil {
 		machine.Destroy()
-		return nil, fmt.Errorf("Can't auto-heal after %d failures for node %s: error unregistering old node: %s", failures, failingHost, err.Error())
+		return nil, errors.Wrapf(err, "Can't auto-heal after %d failures for node %s: error unregistering old node", failures, failingHost)
 	}
 	newAddr := machine.FormatNodeAddress()
 	log.Debugf("New machine created during healing process: %s - Waiting for docker to start...", newAddr)
@@ -130,7 +136,7 @@ func (h *NodeHealer) healNode(node provision.Node) (*provision.NodeSpec, error) 
 		}
 		node.Provisioner().UpdateNode(provision.UpdateNodeOptions{Address: failingAddr, Enable: true})
 		machine.Destroy()
-		return nil, fmt.Errorf("Can't auto-heal after %d failures for node %s: error registering new node: %s", failures, failingHost, err.Error())
+		return nil, errors.Wrapf(err, "Can't auto-heal after %d failures for node %s: error registering new node", failures, failingHost)
 	}
 	nodeSpec := provision.NodeToSpec(node)
 	nodeSpec.Address = newAddr
@@ -142,21 +148,21 @@ func (h *NodeHealer) healNode(node provision.Node) (*provision.NodeSpec, error) 
 		Writer:    &buf,
 	})
 	if err != nil {
-		log.Errorf("Unable to move containers, skipping containers healing %q -> %q: %s: %s", failingHost, machine.Address, err.Error(), buf.String())
+		log.Errorf("Unable to move containers, skipping containers healing %q -> %q: %s: %s", failingHost, machine.Address, err, buf.String())
 	}
 	failingMachine, err := iaas.FindMachineByIdOrAddress(node.Metadata()["iaas-id"], failingHost)
 	if err != nil {
-		return &nodeSpec, fmt.Errorf("Unable to find failing machine %s in IaaS: %s", failingHost, err.Error())
+		return &nodeSpec, errors.Wrapf(err, "Unable to find failing machine %s in IaaS", failingHost)
 	}
 	err = failingMachine.Destroy()
 	if err != nil {
-		return &nodeSpec, fmt.Errorf("Unable to destroy machine %s from IaaS: %s", failingHost, err.Error())
+		return &nodeSpec, errors.Wrapf(err, "Unable to destroy machine %s from IaaS", failingHost)
 	}
 	log.Debugf("Done auto-healing node %q, node %q created in its place.", failingHost, machine.Address)
 	return &nodeSpec, nil
 }
 
-func (h *NodeHealer) tryHealingNode(node provision.Node, reason string, lastCheck *nodeChecks) error {
+func (h *NodeHealer) tryHealingNode(node provision.Node, reason string, lastCheck *NodeChecks) error {
 	_, hasIaas := node.Metadata()["iaas"]
 	if !hasIaas {
 		log.Debugf("node %q doesn't have IaaS information, healing (%s) won't run on it.", node.Address(), reason)
@@ -178,7 +184,7 @@ func (h *NodeHealer) tryHealingNode(node provision.Node, reason string, lastChec
 			// Healing in progress.
 			return nil
 		}
-		return fmt.Errorf("Error trying to insert node healing event, healing aborted: %s", err.Error())
+		return errors.Wrap(err, "Error trying to insert node healing event, healing aborted")
 	}
 	var createdNode *provision.NodeSpec
 	var evtErr error
@@ -190,7 +196,7 @@ func (h *NodeHealer) tryHealingNode(node provision.Node, reason string, lastChec
 			updateErr = evt.DoneCustomData(evtErr, createdNode)
 		}
 		if updateErr != nil {
-			log.Errorf("error trying to update healing event: %s", updateErr.Error())
+			log.Errorf("error trying to update healing event: %s", updateErr)
 		}
 	}()
 	_, err = node.Provisioner().GetNode(node.Address())
@@ -198,12 +204,12 @@ func (h *NodeHealer) tryHealingNode(node provision.Node, reason string, lastChec
 		if err == provision.ErrNodeNotFound {
 			return nil
 		}
-		evtErr = fmt.Errorf("unable to check if node still exists: %s", err)
+		evtErr = errors.Wrap(err, "unable to check if node still exists")
 		return evtErr
 	}
 	shouldHeal, err := h.shouldHealNode(node)
 	if err != nil {
-		evtErr = fmt.Errorf("unable to check if node should be healed: %s", err)
+		evtErr = errors.Wrap(err, "unable to check if node should be healed")
 		return evtErr
 	}
 	if !shouldHeal {
@@ -242,11 +248,6 @@ func (h *NodeHealer) Shutdown() {
 
 func (h *NodeHealer) String() string {
 	return "node healer"
-}
-
-type nodeChecks struct {
-	Time   time.Time
-	Checks []provision.NodeCheckResult
 }
 
 func allNodes() ([]provision.Node, error) {
@@ -303,13 +304,13 @@ out:
 		n := nodeMap[net.URLToHost(addr)]
 		if n != nil {
 			if node != nil {
-				return nil, fmt.Errorf("addrs match multiple nodes: %v", nodeData.Addrs)
+				return nil, errors.Errorf("addrs match multiple nodes: %v", nodeData.Addrs)
 			}
 			node = n
 		}
 	}
 	if node == nil {
-		return nil, fmt.Errorf("node not found for addrs: %v", nodeData.Addrs)
+		return nil, errors.Errorf("node not found for addrs: %v", nodeData.Addrs)
 	}
 	return node, nil
 }
@@ -317,7 +318,7 @@ out:
 func (h *NodeHealer) UpdateNodeData(nodeData provision.NodeStatusData) error {
 	node, err := h.findNodeForNodeData(nodeData)
 	if err != nil {
-		return fmt.Errorf("[node healer update] %s", err)
+		return errors.Wrap(err, "[node healer update]")
 	}
 	isSuccess := true
 	for _, c := range nodeData.Checks {
@@ -327,7 +328,7 @@ func (h *NodeHealer) UpdateNodeData(nodeData provision.NodeStatusData) error {
 		}
 	}
 	now := time.Now().UTC()
-	toInsert := nodeStatusData{
+	toInsert := NodeStatusData{
 		LastUpdate: now,
 	}
 	if isSuccess {
@@ -342,7 +343,7 @@ func (h *NodeHealer) UpdateNodeData(nodeData provision.NodeStatusData) error {
 		"$set": toInsert,
 		"$push": bson.M{
 			"checks": bson.D([]bson.DocElem{
-				{Name: "$each", Value: []nodeChecks{{Time: now, Checks: nodeData.Checks}}},
+				{Name: "$each", Value: []NodeChecks{{Time: now, Checks: nodeData.Checks}}},
 				{Name: "$slice", Value: -10},
 			}),
 		},
@@ -353,7 +354,7 @@ func (h *NodeHealer) UpdateNodeData(nodeData provision.NodeStatusData) error {
 func (h *NodeHealer) RemoveNode(node provision.Node) error {
 	coll, err := nodeDataCollection()
 	if err != nil {
-		return fmt.Errorf("unable to get node data collection: %s", err)
+		return errors.Wrap(err, "unable to get node data collection")
 	}
 	defer coll.Close()
 	err = coll.RemoveId(node.Address())
@@ -422,20 +423,20 @@ func (h *NodeHealer) shouldHealNode(node provision.Node) (bool, error) {
 	}
 	coll, err := nodeDataCollection()
 	if err != nil {
-		return false, fmt.Errorf("unable to get node data collection: %s", err)
+		return false, errors.Wrap(err, "unable to get node data collection")
 	}
 	defer coll.Close()
 	count, err := coll.Find(queryPart).Count()
 	if err != nil {
-		return false, fmt.Errorf("unable to find nodes to heal: %s", err)
+		return false, errors.Wrap(err, "unable to find nodes to heal")
 	}
 	return count > 0, nil
 }
 
-func (h *NodeHealer) findNodesForHealing() ([]nodeStatusData, map[string]provision.Node, error) {
+func (h *NodeHealer) findNodesForHealing() ([]NodeStatusData, map[string]provision.Node, error) {
 	nodes, err := allNodes()
 	if err != nil {
-		return nil, nil, fmt.Errorf("unable to retrieve nodes: %s", err)
+		return nil, nil, errors.Wrap(err, "unable to retrieve nodes")
 	}
 	nodesPoolMap := map[string][]provision.Node{}
 	nodesAddrMap := map[string]provision.Node{}
@@ -481,13 +482,13 @@ func (h *NodeHealer) findNodesForHealing() ([]nodeStatusData, map[string]provisi
 	}
 	coll, err := nodeDataCollection()
 	if err != nil {
-		return nil, nil, fmt.Errorf("unable to get node data collection: %s", err)
+		return nil, nil, errors.Wrap(err, "unable to get node data collection")
 	}
 	defer coll.Close()
-	var nodesStatus []nodeStatusData
+	var nodesStatus []NodeStatusData
 	err = coll.Find(bson.M{"$or": query}).All(&nodesStatus)
 	if err != nil {
-		return nil, nil, fmt.Errorf("unable to find nodes to heal: %s", err)
+		return nil, nil, errors.Wrap(err, "unable to find nodes to heal")
 	}
 	return nodesStatus, nodesAddrMap, nil
 }
@@ -515,7 +516,7 @@ func UpdateConfig(pool string, config NodeHealerConfig) error {
 	conf := healerConfig()
 	err := conf.SaveMerge(pool, config)
 	if err != nil {
-		return fmt.Errorf("unable to save config: %s", err)
+		return errors.Wrap(err, "unable to save config")
 	}
 	return nil
 }
@@ -536,7 +537,7 @@ func GetConfig() (map[string]NodeHealerConfig, error) {
 	var ret map[string]NodeHealerConfig
 	err := conf.LoadAll(&ret)
 	if err != nil {
-		return nil, fmt.Errorf("unable to unmarshal config: %s", err)
+		return nil, errors.Wrap(err, "unable to unmarshal config")
 	}
 	return ret, nil
 }

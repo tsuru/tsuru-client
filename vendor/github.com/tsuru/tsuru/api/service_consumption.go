@@ -14,10 +14,11 @@ import (
 	"strings"
 	"time"
 
+	"github.com/pkg/errors"
 	"github.com/tsuru/config"
 	"github.com/tsuru/tsuru/api/context"
 	"github.com/tsuru/tsuru/auth"
-	"github.com/tsuru/tsuru/errors"
+	tsuruErrors "github.com/tsuru/tsuru/errors"
 	"github.com/tsuru/tsuru/event"
 	tsuruIo "github.com/tsuru/tsuru/io"
 	"github.com/tsuru/tsuru/permission"
@@ -100,13 +101,13 @@ func createServiceInstance(w http.ResponseWriter, r *http.Request, t auth.Token)
 	requestID := context.GetRequestID(r, requestIDHeader)
 	err = service.CreateServiceInstance(instance, &srv, user, requestID)
 	if err == service.ErrInstanceNameAlreadyExists {
-		return &errors.HTTP{
+		return &tsuruErrors.HTTP{
 			Code:    http.StatusConflict,
 			Message: err.Error(),
 		}
 	}
 	if err == service.ErrInvalidInstanceName {
-		return &errors.HTTP{
+		return &tsuruErrors.HTTP{
 			Code:    http.StatusBadRequest,
 			Message: err.Error(),
 		}
@@ -131,7 +132,7 @@ func updateServiceInstance(w http.ResponseWriter, r *http.Request, t auth.Token)
 	instanceName := r.URL.Query().Get(":instance")
 	description := r.FormValue("description")
 	if description == "" {
-		return &errors.HTTP{
+		return &tsuruErrors.HTTP{
 			Code:    http.StatusBadRequest,
 			Message: "Invalid value for description",
 		}
@@ -326,16 +327,8 @@ func serviceInstances(w http.ResponseWriter, r *http.Request, t auth.Token) erro
 		w.WriteHeader(http.StatusNoContent)
 		return nil
 	}
-	body, err := json.Marshal(result)
-	if err != nil {
-		return err
-	}
-	n, err := w.Write(body)
-	if n != len(body) {
-		return &errors.HTTP{Code: http.StatusInternalServerError, Message: "Failed to write the response body."}
-	}
 	w.Header().Set("Content-Type", "application/json")
-	return err
+	return json.NewEncoder(w).Encode(result)
 }
 
 // title: service instance status
@@ -362,18 +355,10 @@ func serviceInstanceStatus(w http.ResponseWriter, r *http.Request, t auth.Token)
 	requestIDHeader, _ := config.GetString("request-id-header")
 	requestID := context.GetRequestID(r, requestIDHeader)
 	if b, err = serviceInstance.Status(requestID); err != nil {
-		msg := fmt.Sprintf("Could not retrieve status of service instance, error: %s", err)
-		return &errors.HTTP{Code: http.StatusInternalServerError, Message: msg}
+		return errors.Wrap(err, "Could not retrieve status of service instance, error")
 	}
-	b = fmt.Sprintf(`Service instance "%s" is %s`, instanceName, b)
-	n, err := w.Write([]byte(b))
-	if err != nil {
-		return err
-	}
-	if n != len(b) {
-		return &errors.HTTP{Code: http.StatusInternalServerError, Message: "Failed to write response body"}
-	}
-	return nil
+	_, err = fmt.Fprintf(w, `Service instance "%s" is %s`, instanceName, b)
+	return err
 }
 
 type serviceInstanceInfo struct {
@@ -480,7 +465,7 @@ func getServiceInstanceOrError(serviceName string, instanceName string) (*servic
 	if err != nil {
 		switch err {
 		case service.ErrServiceInstanceNotFound:
-			return nil, &errors.HTTP{
+			return nil, &tsuruErrors.HTTP{
 				Code:    http.StatusNotFound,
 				Message: err.Error(),
 			}

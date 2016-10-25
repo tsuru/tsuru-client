@@ -8,13 +8,13 @@ package provision
 
 import (
 	"encoding/json"
-	"errors"
 	"fmt"
 	"io"
 	"net"
 	"net/url"
 	"time"
 
+	"github.com/pkg/errors"
 	"github.com/tsuru/tsuru/app/bind"
 	"github.com/tsuru/tsuru/event"
 	"github.com/tsuru/tsuru/quota"
@@ -187,6 +187,12 @@ type Named interface {
 	GetName() string
 }
 
+// RunArgs groups together the arguments to run an App.
+type RunArgs struct {
+	Once     bool
+	Isolated bool
+}
+
 // App represents a tsuru app.
 //
 // It contains only relevant information for provisioning.
@@ -211,7 +217,7 @@ type App interface {
 	// Run executes the command in app units. Commands executed with this
 	// method should have access to environment variables defined in the
 	// app.
-	Run(cmd string, w io.Writer, once bool) error
+	Run(cmd string, w io.Writer, args RunArgs) error
 
 	Envs() map[string]bind.EnvVar
 
@@ -305,7 +311,7 @@ type Provisioner interface {
 	// second is the number of units to be added.
 	//
 	// It returns a slice containing all added units
-	AddUnits(App, uint, string, io.Writer) ([]Unit, error)
+	AddUnits(App, uint, string, io.Writer) error
 
 	// RemoveUnits "undoes" AddUnits, removing the given number of units
 	// from the app.
@@ -362,6 +368,9 @@ type ExecutableProvisioner interface {
 
 	// ExecuteCommandOnce runs a command in one unit of the app.
 	ExecuteCommandOnce(stdout, stderr io.Writer, app App, cmd string, args ...string) error
+
+	// ExecuteCommandIsolated runs a command in an new and ephemeral container.
+	ExecuteCommandIsolated(stdout, stderr io.Writer, app App, cmd string, args ...string) error
 }
 
 // SleepableProvisioner is a provisioner that allows putting applications to
@@ -466,7 +475,8 @@ type NodeHealthChecker interface {
 }
 
 type NodeSpec struct {
-	Address  string
+	// BSON tag for bson serialized compatibility with cluster.Node
+	Address  string `bson:"_id"`
 	Metadata map[string]string
 	Status   string
 	Pool     string
@@ -538,7 +548,7 @@ func Unregister(name string) {
 func Get(name string) (Provisioner, error) {
 	pFunc, ok := provisioners[name]
 	if !ok {
-		return nil, fmt.Errorf("unknown provisioner: %q", name)
+		return nil, errors.Errorf("unknown provisioner: %q", name)
 	}
 	return pFunc()
 }

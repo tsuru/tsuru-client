@@ -6,7 +6,6 @@ package docker
 
 import (
 	"encoding/json"
-	"errors"
 	"fmt"
 	"io"
 	"net/http"
@@ -16,6 +15,7 @@ import (
 	"time"
 
 	"github.com/ajg/form"
+	"github.com/pkg/errors"
 	"github.com/tsuru/gnuflag"
 	"github.com/tsuru/tsuru/cmd"
 	tsuruIo "github.com/tsuru/tsuru/io"
@@ -69,7 +69,7 @@ func (c *listAutoScaleHistoryCmd) Run(ctx *cmd.Context, client *cmd.Client) erro
 		event := &history[i]
 		t.AddRow(cmd.Row([]string{
 			event.StartTime.Local().Format(time.Stamp),
-			event.EndTime.Local().Format(time.Stamp),
+			checkEndOfEvent(event),
 			fmt.Sprintf("%t", event.Successful),
 			event.MetadataValue,
 			event.Action,
@@ -80,6 +80,13 @@ func (c *listAutoScaleHistoryCmd) Run(ctx *cmd.Context, client *cmd.Client) erro
 	t.LineSeparator = true
 	ctx.Stdout.Write(t.Bytes())
 	return nil
+}
+
+func checkEndOfEvent(event *autoScaleEvent) string {
+	if event.EndTime.IsZero() {
+		return "in progress"
+	}
+	return event.EndTime.Local().Format(time.Stamp)
 }
 
 func (c *listAutoScaleHistoryCmd) Flags() *gnuflag.FlagSet {
@@ -131,7 +138,7 @@ func (c *autoScaleRunCmd) Run(context *cmd.Context, client *cmd.Client) error {
 	}
 	unparsed := w.Remaining()
 	if len(unparsed) > 0 {
-		return fmt.Errorf("unparsed message error: %s", string(unparsed))
+		return errors.Errorf("unparsed message error: %s", string(unparsed))
 	}
 	return nil
 }

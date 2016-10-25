@@ -5,13 +5,13 @@
 package docker
 
 import (
-	"errors"
 	"fmt"
 	"math"
 	"strconv"
 	"sync"
 
 	"github.com/fsouza/go-dockerclient"
+	"github.com/pkg/errors"
 	"github.com/tsuru/config"
 	"github.com/tsuru/docker-cluster/cluster"
 	"github.com/tsuru/tsuru/app"
@@ -37,7 +37,7 @@ func (s *segregatedScheduler) Schedule(c *cluster.Cluster, opts docker.CreateCon
 	schedOpts, ok := schedulerOpts.(*container.SchedulerOpts)
 	if !ok {
 		return cluster.Node{}, &container.SchedulerError{
-			Base: fmt.Errorf("invalid scheduler opts: %#v", schedulerOpts),
+			Base: errors.Errorf("invalid scheduler opts: %#v", schedulerOpts),
 		}
 	}
 	a, _ := app.GetByName(schedOpts.AppName)

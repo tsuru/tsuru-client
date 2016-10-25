@@ -4,7 +4,7 @@
 
 package auth
 
-import "fmt"
+import "github.com/pkg/errors"
 
 type SchemeInfo map[string]interface{}
 
@@ -51,7 +51,7 @@ func UnregisterScheme(name string) {
 func GetScheme(name string) (Scheme, error) {
 	scheme, ok := schemes[name]
 	if !ok {
-		return nil, fmt.Errorf("Unknown auth scheme: %q.", name)
+		return nil, errors.Errorf("Unknown auth scheme: %q.", name)
 	}
 	return scheme, nil
 }

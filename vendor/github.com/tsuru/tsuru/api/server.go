@@ -34,7 +34,7 @@ import (
 	"gopkg.in/tylerb/graceful.v1"
 )
 
-const Version = "1.1.0"
+const Version = "1.1.1"
 
 type TsuruHandler struct {
 	method string
@@ -462,6 +462,11 @@ func startServer(handler http.Handler) {
 	}
 	if err != nil {
 		fmt.Printf("Listening stopped: %s\n", err)
+		if errOp, ok := err.(*net.OpError); ok {
+			if errOp.Op == "listen" {
+				os.Exit(1)
+			}
+		}
 	}
 	<-shutdownChan
 }

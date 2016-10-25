@@ -11,6 +11,7 @@ import (
 	"strings"
 	"time"
 
+	"github.com/pkg/errors"
 	"github.com/tsuru/tsuru/app/image"
 	"github.com/tsuru/tsuru/db"
 	"github.com/tsuru/tsuru/event"
@@ -19,6 +20,7 @@ import (
 	"github.com/tsuru/tsuru/permission"
 	"github.com/tsuru/tsuru/provision"
 	"github.com/tsuru/tsuru/router/rebuild"
+	"github.com/tsuru/tsuru/set"
 	"gopkg.in/mgo.v2"
 	"gopkg.in/mgo.v2/bson"
 )
@@ -52,8 +54,8 @@ type DeployData struct {
 	Diff        string
 }
 
-func findValidImages(apps ...App) (set, error) {
-	validImages := set{}
+func findValidImages(apps ...App) (set.Set, error) {
+	validImages := set.Set{}
 	for _, a := range apps {
 		imgs, err := image.ListAppImages(a.Name)
 		if err != nil && err != mgo.ErrNotFound {
@@ -103,7 +105,7 @@ func ListDeploys(filter *Filter, skip, limit int) ([]DeployData, error) {
 
 func GetDeploy(id string) (*DeployData, error) {
 	if !bson.IsObjectIdHex(id) {
-		return nil, fmt.Errorf("id parameter is not ObjectId: %s", id)
+		return nil, errors.Errorf("id parameter is not ObjectId: %s", id)
 	}
 	objID := bson.ObjectIdHex(id)
 	evt, err := event.GetByID(objID)
@@ -113,7 +115,7 @@ func GetDeploy(id string) (*DeployData, error) {
 	return eventToDeployData(evt, nil, true), nil
 }
 
-func eventToDeployData(evt *event.Event, validImages set, full bool) *DeployData {
+func eventToDeployData(evt *event.Event, validImages set.Set, full bool) *DeployData {
 	data := &DeployData{
 		ID:        evt.UniqueID,
 		App:       evt.Target.Value,
@@ -205,7 +207,7 @@ func (o *DeployOptions) GetKind() (kind DeployKind) {
 // the Git based deployment.
 func Deploy(opts DeployOptions) (string, error) {
 	if opts.Event == nil {
-		return "", fmt.Errorf("missing event in deploy opts")
+		return "", errors.Errorf("missing event in deploy opts")
 	}
 	if opts.Rollback && !regexp.MustCompile(":v[0-9]+$").MatchString(opts.Image) {
 		validImages, err := findValidImages(*opts.App)
@@ -218,7 +220,7 @@ func Deploy(opts DeployOptions) (string, error) {
 				}
 			}
 			if opts.Image == inputImage {
-				return "", fmt.Errorf("invalid version: %q", inputImage)
+				return "", errors.Errorf("invalid version: %q", inputImage)
 			}
 		}
 	}

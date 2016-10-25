@@ -5,11 +5,11 @@
 package nodecontainer
 
 import (
-	"errors"
 	"fmt"
 	"strings"
 
 	"github.com/fsouza/go-dockerclient"
+	"github.com/pkg/errors"
 	"github.com/tsuru/tsuru/scopedconfig"
 	"gopkg.in/mgo.v2"
 )

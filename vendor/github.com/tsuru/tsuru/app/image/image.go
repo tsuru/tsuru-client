@@ -5,11 +5,11 @@
 package image
 
 import (
-	"errors"
 	"fmt"
 	"regexp"
 	"strings"
 
+	"github.com/pkg/errors"
 	"github.com/tsuru/config"
 	"github.com/tsuru/tsuru/db"
 	"github.com/tsuru/tsuru/db/storage"
@@ -164,7 +164,7 @@ func AppCurrentImageName(appName string) (string, error) {
 	var imgs appImages
 	err = coll.FindId(appName).One(&imgs)
 	if err != nil {
-		log.Errorf("Couldn't find images for app %q, fallback to old image names. Error: %s", appName, err.Error())
+		log.Errorf("Couldn't find images for app %q, fallback to old image names. Error: %s", appName, err)
 		return appBasicImageName(appName), nil
 	}
 	if len(imgs.Images) == 0 && imgs.Count > 0 {

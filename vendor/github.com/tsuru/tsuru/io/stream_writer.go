@@ -10,12 +10,27 @@ import (
 	"errors"
 	"fmt"
 	"io"
+	"sync"
+
+	"github.com/docker/docker/pkg/jsonmessage"
+	"golang.org/x/crypto/ssh/terminal"
 )
 
 type streamWriter struct {
 	w         io.Writer
 	b         []byte
 	formatter Formatter
+}
+
+type syncWriter struct {
+	w  io.Writer
+	mu sync.Mutex
+}
+
+func (w *syncWriter) Write(b []byte) (int, error) {
+	w.mu.Lock()
+	defer w.mu.Unlock()
+	return w.w.Write(b)
 }
 
 var ErrInvalidStreamChunk = errors.New("invalid stream chunk")
@@ -26,9 +41,9 @@ type Formatter interface {
 
 func NewStreamWriter(w io.Writer, formatter Formatter) *streamWriter {
 	if formatter == nil {
-		formatter = SimpleJsonMessageFormatter{}
+		formatter = &SimpleJsonMessageFormatter{}
 	}
-	return &streamWriter{w: w, formatter: formatter}
+	return &streamWriter{w: &syncWriter{w: w}, formatter: formatter}
 }
 
 func (w *streamWriter) Remaining() []byte {
@@ -65,10 +80,26 @@ type SimpleJsonMessage struct {
 	Error   string `json:",omitempty"`
 }
 
-type SimpleJsonMessageFormatter struct{}
+type SimpleJsonMessageFormatter struct {
+	pipeReader io.Reader
+	pipeWriter io.WriteCloser
+}
 
-func (SimpleJsonMessageFormatter) Format(out io.Writer, data []byte) error {
-	if len(data) == 1 && data[0] == '\n' {
+func likeJSON(str string) bool {
+	data := bytes.TrimSpace([]byte(str))
+	return len(data) > 1 && data[0] == '{' && data[len(data)-1] == '}'
+}
+
+type withFd interface {
+	Fd() uintptr
+}
+
+type withFD interface {
+	FD() uintptr
+}
+
+func (f *SimpleJsonMessageFormatter) Format(out io.Writer, data []byte) error {
+	if len(data) == 0 || (len(data) == 1 && data[0] == '\n') {
 		return nil
 	}
 	var msg SimpleJsonMessage
@@ -79,7 +110,28 @@ func (SimpleJsonMessageFormatter) Format(out io.Writer, data []byte) error {
 	if msg.Error != "" {
 		return errors.New(msg.Error)
 	}
-	out.Write([]byte(msg.Message))
+	if likeJSON(msg.Message) {
+		if f.pipeWriter == nil {
+			f.pipeReader, f.pipeWriter = io.Pipe()
+			var fd uintptr
+			switch v := out.(type) {
+			case withFd:
+				fd = v.Fd()
+			case withFD:
+				fd = v.FD()
+			}
+			isTerm := terminal.IsTerminal(int(fd))
+			go jsonmessage.DisplayJSONMessagesStream(f.pipeReader, out, fd, isTerm, nil)
+		}
+		f.pipeWriter.Write([]byte(msg.Message))
+	} else {
+		if f.pipeWriter != nil {
+			f.pipeWriter.Close()
+			f.pipeWriter = nil
+			f.pipeReader = nil
+		}
+		out.Write([]byte(msg.Message))
+	}
 	return nil
 }
 

@@ -7,7 +7,6 @@ package docker
 import (
 	"archive/tar"
 	"bytes"
-	stderr "errors"
 	"fmt"
 	"io"
 	"io/ioutil"
@@ -18,6 +17,7 @@ import (
 	"time"
 
 	"github.com/fsouza/go-dockerclient"
+	"github.com/pkg/errors"
 	"github.com/tsuru/config"
 	"github.com/tsuru/docker-cluster/cluster"
 	clusterLog "github.com/tsuru/docker-cluster/log"
@@ -30,7 +30,7 @@ import (
 	"github.com/tsuru/tsuru/cmd"
 	"github.com/tsuru/tsuru/db"
 	"github.com/tsuru/tsuru/db/storage"
-	"github.com/tsuru/tsuru/errors"
+	tsuruErrors "github.com/tsuru/tsuru/errors"
 	"github.com/tsuru/tsuru/event"
 	tsuruHealer "github.com/tsuru/tsuru/healer"
 	"github.com/tsuru/tsuru/log"
@@ -53,8 +53,8 @@ import (
 var (
 	mainDockerProvisioner *dockerProvisioner
 
-	ErrEntrypointOrProcfileNotFound = stderr.New("You should provide a entrypoint in image or a Procfile in the following locations: /home/application/current or /app/user or /.")
-	ErrDeployCanceled               = stderr.New("deploy canceled by user action")
+	ErrEntrypointOrProcfileNotFound = errors.New("You should provide a entrypoint in image or a Procfile in the following locations: /home/application/current or /app/user or /.")
+	ErrDeployCanceled               = errors.New("deploy canceled by user action")
 )
 
 const provisionerName = "docker"
@@ -302,7 +302,7 @@ func (p *dockerProvisioner) Initialize() error {
 	}
 	_, err = nodecontainer.InitializeBS()
 	if err != nil {
-		return fmt.Errorf("unable to initialize bs node container: %s", err)
+		return errors.Wrap(err, "unable to initialize bs node container")
 	}
 	return p.initDockerCluster()
 }
@@ -339,7 +339,7 @@ func (p *dockerProvisioner) Restart(a provision.App, process string, w io.Writer
 func (p *dockerProvisioner) Start(app provision.App, process string) error {
 	containers, err := p.listContainersByProcess(app.GetName(), process)
 	if err != nil {
-		return stderr.New(fmt.Sprintf("Got error while getting app containers: %s", err))
+		return errors.New(fmt.Sprintf("Got error while getting app containers: %s", err))
 	}
 	err = runInContainers(containers, func(c *container.Container, _ chan *container.Container) error {
 		startErr := c.Start(&container.StartArgs{
@@ -401,7 +401,7 @@ func (p *dockerProvisioner) Rollback(a provision.App, imageId string, evt *event
 		}
 	}
 	if !valid {
-		return "", fmt.Errorf("Image %q not found in app", imageId)
+		return "", errors.Errorf("Image %q not found in app", imageId)
 	}
 	return imageId, p.deploy(a, imageId, evt)
 }
@@ -479,7 +479,7 @@ func (p *dockerProvisioner) ImageDeploy(app provision.App, imageId string, evt *
 	}
 	imageData := image.CreateImageMetadata(newImage, procfile)
 	if len(imageInspect.Config.ExposedPorts) > 1 {
-		return "", stderr.New("Too many ports. You should especify which one you want to.")
+		return "", errors.New("Too many ports. You should especify which one you want to.")
 	}
 	for k := range imageInspect.Config.ExposedPorts {
 		imageData.CustomData["exposedPort"] = string(k)
@@ -502,7 +502,7 @@ func (p *dockerProvisioner) ArchiveDeploy(app provision.App, archiveURL string, 
 
 func (p *dockerProvisioner) UploadDeploy(app provision.App, archiveFile io.ReadCloser, fileSize int64, build bool, evt *event.Event) (string, error) {
 	if build {
-		return "", stderr.New("running UploadDeploy with build=true is not yet supported")
+		return "", errors.New("running UploadDeploy with build=true is not yet supported")
 	}
 	dirPath := "/home/application/"
 	filePath := fmt.Sprintf("%sarchive.tar.gz", dirPath)
@@ -562,14 +562,15 @@ func (p *dockerProvisioner) UploadDeploy(app provision.App, archiveFile io.ReadC
 		tarball.WriteHeader(&header)
 		n, tarErr := io.Copy(tarball, archiveFile)
 		if tarErr != nil {
-			log.Errorf("upload-deploy: unable to copy archive to tarball: %s", tarErr.Error())
+			log.Errorf("upload-deploy: unable to copy archive to tarball: %s", tarErr)
 			writer.CloseWithError(tarErr)
 			tarball.Close()
 			return
 		}
 		if n != fileSize {
-			tarErr = stderr.New("upload-deploy: short-write copying to tarball")
-			log.Errorf(tarErr.Error())
+			msg := "upload-deploy: short-write copying to tarball"
+			log.Errorf(msg)
+			tarErr = errors.New(msg)
 			writer.CloseWithError(tarErr)
 			tarball.Close()
 			return
@@ -655,7 +656,7 @@ func setQuota(app provision.App, toAdd map[string]*containersToAdd) error {
 	}
 	err := app.SetQuotaInUse(total)
 	if err != nil {
-		return &errors.CompositeError{
+		return &tsuruErrors.CompositeError{
 			Base:    err,
 			Message: "Cannot start application units",
 		}
@@ -691,7 +692,7 @@ func getContainersToAdd(data image.ImageMetadata, oldContainers []container.Cont
 func (p *dockerProvisioner) Destroy(app provision.App) error {
 	containers, err := p.listContainersByApp(app.GetName())
 	if err != nil {
-		log.Errorf("Failed to list app containers: %s", err.Error())
+		log.Errorf("Failed to list app containers: %s", err)
 		return err
 	}
 	args := changeUnitsPipelineArgs{
@@ -712,22 +713,22 @@ func (p *dockerProvisioner) Destroy(app provision.App) error {
 	}
 	images, err := image.ListAppImages(app.GetName())
 	if err != nil {
-		log.Errorf("Failed to get image ids for app %s: %s", app.GetName(), err.Error())
+		log.Errorf("Failed to get image ids for app %s: %s", app.GetName(), err)
 	}
 	cluster := p.Cluster()
 	for _, imageId := range images {
 		err = cluster.RemoveImage(imageId)
 		if err != nil {
-			log.Errorf("Failed to remove image %s: %s", imageId, err.Error())
+			log.Errorf("Failed to remove image %s: %s", imageId, err)
 		}
 		err = cluster.RemoveFromRegistry(imageId)
 		if err != nil {
-			log.Errorf("Failed to remove image %s from registry: %s", imageId, err.Error())
+			log.Errorf("Failed to remove image %s from registry: %s", imageId, err)
 		}
 	}
 	err = image.DeleteAllAppImageNames(app.GetName())
 	if err != nil {
-		log.Errorf("Failed to remove image names from storage for app %s: %s", app.GetName(), err.Error())
+		log.Errorf("Failed to remove image names from storage for app %s: %s", app.GetName(), err)
 	}
 	return nil
 }
@@ -741,7 +742,7 @@ func (p *dockerProvisioner) runRestartAfterHooks(cont *container.Container, w io
 	for _, cmd := range cmds {
 		err := cont.Exec(p, w, w, cmd)
 		if err != nil {
-			return fmt.Errorf("couldn't execute restart:after hook %q(%s): %s", cmd, cont.ShortID(), err.Error())
+			return errors.Wrapf(err, "couldn't execute restart:after hook %q(%s)", cmd, cont.ShortID())
 		}
 	}
 	return nil
@@ -812,12 +813,12 @@ func addContainersWithHost(args *changeUnitsPipelineArgs) ([]container.Container
 	return result, nil
 }
 
-func (p *dockerProvisioner) AddUnits(a provision.App, units uint, process string, w io.Writer) ([]provision.Unit, error) {
+func (p *dockerProvisioner) AddUnits(a provision.App, units uint, process string, w io.Writer) error {
 	if a.GetDeploys() == 0 {
-		return nil, stderr.New("New units can only be added after the first deployment")
+		return errors.New("New units can only be added after the first deployment")
 	}
 	if units == 0 {
-		return nil, stderr.New("Cannot add 0 units")
+		return errors.New("Cannot add 0 units")
 	}
 	if w == nil {
 		w = ioutil.Discard
@@ -825,29 +826,22 @@ func (p *dockerProvisioner) AddUnits(a provision.App, units uint, process string
 	writer := io.MultiWriter(w, &app.LogWriter{App: a})
 	imageId, err := image.AppCurrentImageName(a.GetName())
 	if err != nil {
-		return nil, err
+		return err
 	}
 	imageData, err := image.GetImageCustomData(imageId)
 	if err != nil {
-		return nil, err
+		return err
 	}
-	conts, err := p.runCreateUnitsPipeline(writer, a, map[string]*containersToAdd{process: {Quantity: int(units)}}, imageId, imageData.ExposedPort)
-	if err != nil {
-		return nil, err
-	}
-	result := make([]provision.Unit, len(conts))
-	for i, c := range conts {
-		result[i] = c.AsUnit(a)
-	}
-	return result, nil
+	_, err = p.runCreateUnitsPipeline(writer, a, map[string]*containersToAdd{process: {Quantity: int(units)}}, imageId, imageData.ExposedPort)
+	return err
 }
 
 func (p *dockerProvisioner) RemoveUnits(a provision.App, units uint, processName string, w io.Writer) error {
 	if a == nil {
-		return stderr.New("remove units: app should not be nil")
+		return errors.New("remove units: app should not be nil")
 	}
 	if units == 0 {
-		return stderr.New("cannot remove zero units")
+		return errors.New("cannot remove zero units")
 	}
 	var err error
 	if w == nil {
@@ -866,7 +860,7 @@ func (p *dockerProvisioner) RemoveUnits(a provision.App, units uint, processName
 		return err
 	}
 	if len(containers) < int(units) {
-		return fmt.Errorf("cannot remove %d units from process %q, only %d available", units, processName, len(containers))
+		return errors.Errorf("cannot remove %d units from process %q, only %d available", units, processName, len(containers))
 	}
 	fmt.Fprintf(w, "\n---- Removing %d %s ----\n", units, pluralize("unit", int(units)))
 	p, err = p.cloneProvisioner(nil)
@@ -903,7 +897,7 @@ func (p *dockerProvisioner) RemoveUnits(a provision.App, units uint, processName
 	)
 	err = pipeline.Execute(args)
 	if err != nil {
-		return fmt.Errorf("error removing routes, units weren't removed: %s", err)
+		return errors.Wrap(err, "error removing routes, units weren't removed")
 	}
 	return nil
 }
@@ -932,7 +926,7 @@ func (p *dockerProvisioner) SetUnitStatus(unit provision.Unit, status provision.
 		}
 	}
 	if unit.AppName != "" && cont.AppName != unit.AppName {
-		return stderr.New("wrong app name")
+		return errors.New("wrong app name")
 	}
 	err = cont.SetStatus(p, status, true)
 	if err != nil {
@@ -967,6 +961,19 @@ func (p *dockerProvisioner) ExecuteCommand(stdout, stderr io.Writer, app provisi
 			return err
 		}
 	}
+	return nil
+}
+
+func (p *dockerProvisioner) ExecuteCommandIsolated(stdout, stderr io.Writer, app provision.App, cmd string, args ...string) error {
+	imageID, err := image.AppCurrentImageName(app.GetName())
+	if err != nil {
+		return err
+	}
+	output, err := p.runCommandInContainer(imageID, cmd, app)
+	if err != nil {
+		return err
+	}
+	stdout.Write(output.Bytes())
 	return nil
 }
 
@@ -1033,10 +1040,10 @@ func (p *dockerProvisioner) buildPlatform(name string, args map[string]string, w
 	} else {
 		dockerfileURL = args["dockerfile"]
 		if dockerfileURL == "" {
-			return stderr.New("Dockerfile is required")
+			return errors.New("Dockerfile is required")
 		}
 		if _, err := url.ParseRequestURI(dockerfileURL); err != nil {
-			return stderr.New("dockerfile parameter must be a URL")
+			return errors.New("dockerfile parameter must be a URL")
 		}
 	}
 	imageName := image.PlatformImageName(name)
@@ -1050,6 +1057,7 @@ func (p *dockerProvisioner) buildPlatform(name string, args map[string]string, w
 		InputStream:       inputStream,
 		OutputStream:      w,
 		InactivityTimeout: net.StreamInactivityTimeout,
+		RawJSONStream:     true,
 	}
 	err := cluster.BuildImage(buildOptions)
 	if err != nil {
@@ -1169,7 +1177,7 @@ func (p *dockerProvisioner) Nodes(app provision.App) ([]cluster.Node, error) {
 	if len(nodes) > 0 {
 		return nodes, nil
 	}
-	return nil, fmt.Errorf("No nodes found with one of the following metadata: pool=%s", poolName)
+	return nil, errors.Errorf("No nodes found with one of the following metadata: pool=%s", poolName)
 }
 
 func (p *dockerProvisioner) MetricEnvs(app provision.App) map[string]string {
@@ -1243,7 +1251,7 @@ func pluralize(str string, sz int) string {
 
 func (p *dockerProvisioner) FilterAppsByUnitStatus(apps []provision.App, status []string) ([]provision.App, error) {
 	if apps == nil {
-		return nil, fmt.Errorf("apps must be provided to FilterAppsByUnitStatus")
+		return nil, errors.Errorf("apps must be provided to FilterAppsByUnitStatus")
 	}
 	if status == nil {
 		return make([]provision.App, 0), nil
@@ -1290,7 +1298,7 @@ func (n *clusterNodeWrapper) Metadata() map[string]string {
 
 func (n *clusterNodeWrapper) Units() ([]provision.Unit, error) {
 	if n.prov == nil {
-		return nil, stderr.New("no provisioner instance in node wrapper")
+		return nil, errors.New("no provisioner instance in node wrapper")
 	}
 	conts, err := n.prov.listContainersByHost(net.URLToHost(n.Address()))
 	if err != nil {
