@@ -338,6 +338,12 @@
 			"revision": ""
 		},
 		{
+			"checksumSHA1": "Skaqfq5EwZOh4nZrrdNQHmP+goI=",
+			"path": "github.com/docker/docker/pkg/jsonmessage",
+			"revision": "befb4568325054793d909c775f581e0f26841364",
+			"revisionTime": "2016-08-01T08:34:08-07:00"
+		},
+		{
 			"checksumSHA1": "ndnAFCfsGC3upNQ6jAEwzxcurww=",
 			"origin": "github.com/tsuru/vendor/github.com/docker/docker/pkg/longpath",
 			"path": "github.com/docker/docker/pkg/longpath",
