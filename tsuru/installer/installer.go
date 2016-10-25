@@ -51,7 +51,7 @@ func (i *Installer) Install(opts *InstallOpts) (*Installation, error) {
 		return nil, fmt.Errorf("pre-install checks failed: %s", errChecks)
 	}
 	opts.CoreDriversOpts[opts.DriverName+"-open-port"] = []interface{}{strconv.Itoa(defaultTsuruAPIPort)}
-	coreMachines, err := ProvisionMachines(i.machineProvisioner, opts.CoreHosts, opts.CoreDriversOpts)
+	coreMachines, err := i.ProvisionMachines(opts.CoreHosts, opts.CoreDriversOpts)
 	if err != nil {
 		return nil, fmt.Errorf("failed to provision components machines: %s", err)
 	}
@@ -101,7 +101,7 @@ func (i *Installer) BootstrapTsuru(opts *InstallOpts, target string, coreMachine
 	}
 	var installMachines []*dm.Machine
 	if opts.DriverName == "virtualbox" {
-		appsMachines, errProv := ProvisionPool(i.machineProvisioner, opts, coreMachines)
+		appsMachines, errProv := i.ProvisionPool(opts, coreMachines)
 		if errProv != nil {
 			return nil, errProv
 		}
@@ -244,12 +244,12 @@ func preInstallChecks(config *InstallOpts) error {
 	return nil
 }
 
-func ProvisionPool(p dm.MachineProvisioner, config *InstallOpts, hosts []*dm.Machine) ([]*dm.Machine, error) {
+func (i *Installer) ProvisionPool(config *InstallOpts, hosts []*dm.Machine) ([]*dm.Machine, error) {
 	if config.DedicatedAppsHosts {
-		return ProvisionMachines(p, config.AppsHosts, config.AppsDriversOpts)
+		return i.ProvisionMachines(config.AppsHosts, config.AppsDriversOpts)
 	}
 	if config.AppsHosts > len(hosts) {
-		poolMachines, err := ProvisionMachines(p, config.AppsHosts-len(hosts), config.AppsDriversOpts)
+		poolMachines, err := i.ProvisionMachines(config.AppsHosts-len(hosts), config.AppsDriversOpts)
 		if err != nil {
 			return nil, fmt.Errorf("failed to provision pool hosts: %s", err)
 		}
@@ -258,15 +258,15 @@ func ProvisionPool(p dm.MachineProvisioner, config *InstallOpts, hosts []*dm.Mac
 	return hosts[:config.AppsHosts], nil
 }
 
-func ProvisionMachines(p dm.MachineProvisioner, numMachines int, configs map[string][]interface{}) ([]*dm.Machine, error) {
+func (i *Installer) ProvisionMachines(numMachines int, configs map[string][]interface{}) ([]*dm.Machine, error) {
 	var machines []*dm.Machine
-	for i := 0; i < numMachines; i++ {
+	for j := 0; j < numMachines; j++ {
 		opts := make(dm.DriverOpts)
 		for k, v := range configs {
-			idx := i % len(v)
+			idx := j % len(v)
 			opts[k] = v[idx]
 		}
-		m, err := p.ProvisionMachine(opts)
+		m, err := i.machineProvisioner.ProvisionMachine(opts)
 		if err != nil {
 			return nil, fmt.Errorf("failed to provision machines: %s", err)
 		}

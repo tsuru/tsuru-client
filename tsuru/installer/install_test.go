@@ -10,7 +10,6 @@ import (
 	"fmt"
 	"net/http"
 	"os"
-	"reflect"
 	"strings"
 
 	"github.com/docker/machine/drivers/fakedriver"
@@ -166,51 +165,6 @@ func (s *S) TestUninstallCommandFlags(c *check.C) {
 	c.Check(config.Usage, check.Equals, usage)
 	c.Check(config.Value.String(), check.Equals, "my-conf.yml")
 	c.Check(config.DefValue, check.Equals, "")
-}
-
-type FakeMachineProvisioner struct {
-	hostsProvisioned int
-}
-
-func (p *FakeMachineProvisioner) ProvisionMachine(opts map[string]interface{}) (*dm.Machine, error) {
-	p.hostsProvisioned = p.hostsProvisioned + 1
-	return &dm.Machine{DriverOpts: dm.DriverOpts(opts)}, nil
-}
-
-func (s *S) TestProvisionPool(c *check.C) {
-	opt1 := dm.DriverOpts{"variable-opt": "opt1"}
-	opt2 := dm.DriverOpts{"variable-opt": "opt2"}
-	tt := []struct {
-		poolHosts           int
-		dedicatedPool       bool
-		machines            []*dm.Machine
-		expectedProvisioned int
-		expectedDriverOpts  []dm.DriverOpts
-	}{
-		{1, false, []*dm.Machine{{}}, 0, []dm.DriverOpts{}},
-		{2, false, []*dm.Machine{{}}, 1, []dm.DriverOpts{opt1, {}}},
-		{1, true, []*dm.Machine{{}}, 1, []dm.DriverOpts{opt1}},
-		{2, true, []*dm.Machine{{}, {}}, 2, []dm.DriverOpts{opt1, opt2}},
-		{3, true, []*dm.Machine{{}}, 3, []dm.DriverOpts{opt1, opt2, opt1}},
-	}
-	for ti, t := range tt {
-		p := &FakeMachineProvisioner{}
-		config := &InstallOpts{
-			AppsHosts:          t.poolHosts,
-			DedicatedAppsHosts: t.dedicatedPool,
-			AppsDriversOpts: map[string][]interface{}{
-				"variable-opt": {"opt1", "opt2"},
-			},
-		}
-		machines, err := ProvisionPool(p, config, t.machines)
-		c.Assert(err, check.IsNil)
-		c.Assert(p.hostsProvisioned, check.Equals, t.expectedProvisioned)
-		for i := 0; i < t.expectedProvisioned; i++ {
-			if !reflect.DeepEqual(machines[i].DriverOpts, t.expectedDriverOpts[i]) {
-				c.Errorf("Test case %d/%d failed. Expected %+v. Got %+v", ti, i, t.expectedDriverOpts[i], machines[i].DriverOpts)
-			}
-		}
-	}
 }
 
 func (s *S) TestAddInstallHosts(c *check.C) {
