@@ -16,7 +16,7 @@ import (
 )
 
 var (
-	defaultTsuruInstallConfig = &TsuruInstallConfig{
+	defaultInstallerConfig = &InstallOpts{
 		DockerMachineConfig: dm.DefaultDockerMachineConfig,
 		ComponentsConfig:    NewInstallConfig(dm.DefaultDockerMachineConfig.Name),
 		CoreHosts:           1,
@@ -26,7 +26,7 @@ var (
 	}
 )
 
-type TsuruInstallConfig struct {
+type InstallOpts struct {
 	*dm.DockerMachineConfig
 	*ComponentsConfig
 	CoreHosts          int
@@ -37,45 +37,71 @@ type TsuruInstallConfig struct {
 }
 
 type Installer struct {
-	outWriter io.Writer
-	errWriter io.Writer
+	outWriter          io.Writer
+	errWriter          io.Writer
+	machineProvisioner dm.MachineProvisioner
+	components         []TsuruComponent
+	bootstraper        Bootstraper
+	clusterCreator     func([]*dm.Machine, int) (ServiceCluster, error)
 }
 
-func (i *Installer) Install(config *TsuruInstallConfig, dockerMachine *dm.DockerMachine) (*Installation, error) {
+func (i *Installer) Install(opts *InstallOpts) (*Installation, error) {
 	fmt.Fprintf(i.outWriter, "Running pre-install checks...\n")
-	if errChecks := preInstallChecks(config); errChecks != nil {
+	if errChecks := preInstallChecks(opts); errChecks != nil {
 		return nil, fmt.Errorf("pre-install checks failed: %s", errChecks)
 	}
-	config.CoreDriversOpts[config.DriverName+"-open-port"] = []interface{}{strconv.Itoa(defaultTsuruAPIPort)}
-	coreMachines, err := ProvisionMachines(dockerMachine, config.CoreHosts, config.CoreDriversOpts)
+	opts.CoreDriversOpts[opts.DriverName+"-open-port"] = []interface{}{strconv.Itoa(defaultTsuruAPIPort)}
+	coreMachines, err := ProvisionMachines(i.machineProvisioner, opts.CoreHosts, opts.CoreDriversOpts)
 	if err != nil {
 		return nil, fmt.Errorf("failed to provision components machines: %s", err)
 	}
-	cluster, err := NewSwarmCluster(coreMachines, len(coreMachines))
+	cluster, err := i.clusterCreator(coreMachines, len(coreMachines))
 	if err != nil {
 		return nil, fmt.Errorf("failed to setup swarm cluster: %s", err)
 	}
-	for _, component := range TsuruComponents {
+	err = i.InstallComponents(cluster, opts.ComponentsConfig)
+	if err != nil {
+		return nil, err
+	}
+	target := fmt.Sprintf("http://%s:%d", cluster.GetManager().IP, defaultTsuruAPIPort)
+	installMachines, err := i.BootstrapTsuru(opts, target, coreMachines)
+	if err != nil {
+		return nil, err
+	}
+	i.applyIPtablesRules(coreMachines)
+	return &Installation{
+		CoreCluster:     cluster,
+		InstallMachines: installMachines,
+		Components:      i.components,
+	}, nil
+}
+
+func (i *Installer) InstallComponents(cluster ServiceCluster, opts *ComponentsConfig) error {
+	for _, component := range i.components {
 		fmt.Fprintf(i.outWriter, "Installing %s\n", component.Name())
-		errInstall := component.Install(cluster, config.ComponentsConfig)
+		errInstall := component.Install(cluster, opts)
 		if errInstall != nil {
-			return nil, fmt.Errorf("error installing %s: %s", component.Name(), errInstall)
+			return fmt.Errorf("error installing %s: %s", component.Name(), errInstall)
 		}
 		fmt.Fprintf(i.outWriter, "%s successfully installed!\n", component.Name())
 	}
+	return nil
+}
+
+func (i *Installer) BootstrapTsuru(opts *InstallOpts, target string, coreMachines []*dm.Machine) ([]*dm.Machine, error) {
 	fmt.Fprintf(i.outWriter, "Bootstrapping Tsuru API...")
-	registryAddr, registryPort := parseAddress(config.ComponentsConfig.ComponentAddress["registry"], "5000")
-	bootstrapOpts := &BoostrapOptions{
-		Login:        config.ComponentsConfig.RootUserEmail,
-		Password:     config.ComponentsConfig.RootUserPassword,
-		Target:       fmt.Sprintf("http://%s:%d", cluster.GetManager().IP, defaultTsuruAPIPort),
-		TargetName:   config.ComponentsConfig.TargetName,
+	registryAddr, registryPort := parseAddress(opts.ComponentsConfig.ComponentAddress["registry"], "5000")
+	bootstrapOpts := BoostrapOptions{
+		Login:        opts.ComponentsConfig.RootUserEmail,
+		Password:     opts.ComponentsConfig.RootUserPassword,
+		Target:       target,
+		TargetName:   opts.ComponentsConfig.TargetName,
 		RegistryAddr: fmt.Sprintf("%s:%s", registryAddr, registryPort),
-		NodesParams:  config.AppsDriversOpts,
+		NodesParams:  opts.AppsDriversOpts,
 	}
 	var installMachines []*dm.Machine
-	if config.DriverName == "virtualbox" {
-		appsMachines, errProv := ProvisionPool(dockerMachine, config, coreMachines)
+	if opts.DriverName == "virtualbox" {
+		appsMachines, errProv := ProvisionPool(i.machineProvisioner, opts, coreMachines)
 		if errProv != nil {
 			return nil, errProv
 		}
@@ -96,29 +122,32 @@ func (i *Installer) Install(config *TsuruInstallConfig, dockerMachine *dm.Docker
 		bootstrapOpts.NodesToRegister = nodesAddr
 	} else {
 		installMachines = coreMachines
-		if config.DedicatedAppsHosts {
-			bootstrapOpts.NodesToCreate = config.AppsHosts
+		if opts.DedicatedAppsHosts {
+			bootstrapOpts.NodesToCreate = opts.AppsHosts
 		} else {
 			var nodesAddr []string
 			for _, m := range coreMachines {
 				nodesAddr = append(nodesAddr, m.GetPrivateAddress())
 			}
-			if config.AppsHosts > config.CoreHosts {
-				bootstrapOpts.NodesToCreate = config.AppsHosts - config.CoreHosts
+			if opts.AppsHosts > opts.CoreHosts {
+				bootstrapOpts.NodesToCreate = opts.AppsHosts - opts.CoreHosts
 				bootstrapOpts.NodesToRegister = nodesAddr
 			} else {
-				bootstrapOpts.NodesToRegister = nodesAddr[:config.AppsHosts]
+				bootstrapOpts.NodesToRegister = nodesAddr[:opts.AppsHosts]
 			}
 		}
 	}
-	bootstraper := &TsuruBoostraper{opts: bootstrapOpts}
-	err = bootstraper.Do()
+	err := i.bootstraper.Bootstrap(bootstrapOpts)
 	if err != nil {
-		return nil, fmt.Errorf("Error bootstrapping tsuru: %s", err)
+		return installMachines, fmt.Errorf("Error bootstrapping tsuru: %s", err)
 	}
+	return installMachines, nil
+}
+
+func (i *Installer) applyIPtablesRules(machines []*dm.Machine) {
 	fmt.Fprintf(i.outWriter, "Applying iptables workaround for docker 1.12...\n")
-	for _, m := range coreMachines {
-		_, err = m.RunSSHCommand("PATH=$PATH:/usr/sbin/:/usr/local/sbin; sudo iptables -D DOCKER-ISOLATION -i docker_gwbridge -o docker0 -j DROP")
+	for _, m := range machines {
+		_, err := m.RunSSHCommand("PATH=$PATH:/usr/sbin/:/usr/local/sbin; sudo iptables -D DOCKER-ISOLATION -i docker_gwbridge -o docker0 -j DROP")
 		if err != nil {
 			fmt.Fprintf(i.errWriter, "Failed to apply iptables rule: %s. Maybe it is not needed anymore?\n", err)
 		}
@@ -127,15 +156,10 @@ func (i *Installer) Install(config *TsuruInstallConfig, dockerMachine *dm.Docker
 			fmt.Fprintf(i.errWriter, "Failed to apply iptables rule: %s. Maybe it is not needed anymore?\n", err)
 		}
 	}
-	return &Installation{
-		CoreCluster:     cluster,
-		InstallMachines: installMachines,
-		Components:      TsuruComponents,
-	}, nil
 }
 
-func parseConfigFile(file string) (*TsuruInstallConfig, error) {
-	installConfig := defaultTsuruInstallConfig
+func parseConfigFile(file string) (*InstallOpts, error) {
+	installConfig := defaultInstallerConfig
 	if file == "" {
 		return installConfig, nil
 	}
@@ -209,7 +233,7 @@ func parseConfigFile(file string) (*TsuruInstallConfig, error) {
 	return installConfig, nil
 }
 
-func preInstallChecks(config *TsuruInstallConfig) error {
+func preInstallChecks(config *InstallOpts) error {
 	exists, err := cmd.CheckIfTargetLabelExists(config.Name)
 	if err != nil {
 		return err
@@ -220,7 +244,7 @@ func preInstallChecks(config *TsuruInstallConfig) error {
 	return nil
 }
 
-func ProvisionPool(p dm.MachineProvisioner, config *TsuruInstallConfig, hosts []*dm.Machine) ([]*dm.Machine, error) {
+func ProvisionPool(p dm.MachineProvisioner, config *InstallOpts, hosts []*dm.Machine) ([]*dm.Machine, error) {
 	if config.DedicatedAppsHosts {
 		return ProvisionMachines(p, config.AppsHosts, config.AppsDriversOpts)
 	}
@@ -262,8 +286,7 @@ func (i *Installation) Summary() string {
 Core Hosts:
 %s
 Core Components:
-%s
-`, i.buildClusterTable().String(), i.buildComponentsTable().String())
+%s`, i.buildClusterTable().String(), i.buildComponentsTable().String())
 	return summary
 }
 

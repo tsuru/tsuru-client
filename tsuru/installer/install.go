@@ -108,13 +108,24 @@ func (c *Install) Run(context *cmd.Context, cli *cmd.Client) error {
 	if err != nil {
 		return err
 	}
-	installer := &Installer{outWriter: context.Stdout, errWriter: context.Stderr}
 	dockerMachine, err := dm.NewDockerMachine(installConfig.DockerMachineConfig)
 	if err != nil {
 		return err
 	}
 	defer dockerMachine.Close()
-	installation, err := installer.Install(installConfig, dockerMachine)
+	newSwarmServiceCluster := func(machines []*dm.Machine, numManagers int) (ServiceCluster, error) {
+		swarm, errNew := NewSwarmCluster(machines, numManagers)
+		return swarm, errNew
+	}
+	installer := &Installer{
+		outWriter:          context.Stdout,
+		errWriter:          context.Stderr,
+		machineProvisioner: dockerMachine,
+		components:         TsuruComponents,
+		bootstraper:        &TsuruBoostraper{},
+		clusterCreator:     newSwarmServiceCluster,
+	}
+	installation, err := installer.Install(installConfig)
 	if err != nil {
 		return err
 	}
@@ -122,7 +133,7 @@ func (c *Install) Run(context *cmd.Context, cli *cmd.Client) error {
 	if err != nil {
 		return fmt.Errorf("failed to register hosts: %s", err)
 	}
-	fmt.Fprintln(context.Stdout, installation.Summary())
+	fmt.Fprint(context.Stdout, installation.Summary())
 	fmt.Fprintln(context.Stdout, "Apps Hosts:")
 	nodeList := &admin.ListNodesCmd{}
 	nodeList.Run(context, cli)

@@ -401,6 +401,10 @@ func (c *TsuruAPI) setupRootUser(cluster ServiceCluster, email, password string)
 	return cluster.ServiceExec("tsuru", cmd, startOpts)
 }
 
+type Bootstraper interface {
+	Bootstrap(opts BoostrapOptions) error
+}
+
 type BoostrapOptions struct {
 	Login           string
 	Password        string
@@ -413,13 +417,12 @@ type BoostrapOptions struct {
 }
 
 type TsuruBoostraper struct {
-	opts    *BoostrapOptions
 	manager *cmd.Manager
 	client  *cmd.Client
 	context cmd.Context
 }
 
-func (s *TsuruBoostraper) Do() error {
+func (s *TsuruBoostraper) Bootstrap(opts BoostrapOptions) error {
 	manager := cmd.BuildBaseManager("setup-client", "0.0.0", "", nil)
 	provisioners, err := provision.Registry()
 	if err != nil {
@@ -436,7 +439,7 @@ func (s *TsuruBoostraper) Do() error {
 	s.manager = manager
 	s.client = cmd.NewClient(&http.Client{}, nil, s.manager)
 	s.context = cmd.Context{
-		Args:   []string{s.opts.TargetName, s.opts.Target},
+		Args:   []string{opts.TargetName, opts.Target},
 		Stdout: os.Stdout,
 		Stderr: os.Stderr,
 	}
@@ -445,7 +448,7 @@ func (s *TsuruBoostraper) Do() error {
 	if err != nil {
 		return err
 	}
-	err = s.login(s.opts.Login, s.opts.Password)
+	err = s.login(opts.Login, opts.Password)
 	if err != nil {
 		return err
 	}
@@ -453,11 +456,11 @@ func (s *TsuruBoostraper) Do() error {
 	if err != nil {
 		return err
 	}
-	err = s.registerNodes("theonepool", s.opts.NodesToRegister)
+	err = s.registerNodes("theonepool", opts.NodesToRegister)
 	if err != nil {
 		return err
 	}
-	err = s.createNodes("theonepool", s.opts.NodesToCreate)
+	err = s.createNodes("theonepool", opts.NodesToCreate, opts.RegistryAddr, opts.NodesParams)
 	if err != nil {
 		return err
 	}
@@ -536,13 +539,13 @@ func (s *TsuruBoostraper) registerNodes(pool string, nodes []string) error {
 	return nil
 }
 
-func (s *TsuruBoostraper) createNodes(pool string, nodes int) error {
+func (s *TsuruBoostraper) createNodes(pool string, nodes int, insecureRegistry string, nodesParams map[string][]interface{}) error {
 	nodeAdd := admin.AddNodeCmd{}
 	for i := 0; i < nodes; i++ {
 		fmt.Printf("creating node %d/%d...\n", i+1, nodes)
 		s.context.Args = []string{"docker", "iaas=dockermachine", fmt.Sprintf("pool=%s", pool),
-			fmt.Sprintf("insecure-registry=%s", s.opts.RegistryAddr)}
-		for k, v := range s.opts.NodesParams {
+			fmt.Sprintf("insecure-registry=%s", insecureRegistry)}
+		for k, v := range nodesParams {
 			idx := i % len(v)
 			s.context.Args = append(s.context.Args, fmt.Sprintf("%s=%s", k, v[idx]))
 		}

@@ -24,7 +24,7 @@ import (
 func (s *S) TestParseConfigDefaultConfig(c *check.C) {
 	dmConfig, err := parseConfigFile("")
 	c.Assert(err, check.IsNil)
-	c.Assert(dmConfig, check.DeepEquals, defaultTsuruInstallConfig)
+	c.Assert(dmConfig, check.DeepEquals, defaultInstallerConfig)
 }
 
 func (s *S) TestParseConfigFileNotExists(c *check.C) {
@@ -33,7 +33,7 @@ func (s *S) TestParseConfigFileNotExists(c *check.C) {
 }
 
 func (s *S) TestParseConfigFile(c *check.C) {
-	expected := &TsuruInstallConfig{
+	expected := &InstallOpts{
 		DockerMachineConfig: &dm.DockerMachineConfig{
 			DriverName: "amazonec2",
 			DriverOpts: map[string]interface{}{
@@ -195,7 +195,7 @@ func (s *S) TestProvisionPool(c *check.C) {
 	}
 	for ti, t := range tt {
 		p := &FakeMachineProvisioner{}
-		config := &TsuruInstallConfig{
+		config := &InstallOpts{
 			AppsHosts:          t.poolHosts,
 			DedicatedAppsHosts: t.dedicatedPool,
 			AppsDriversOpts: map[string][]interface{}{
