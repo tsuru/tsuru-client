@@ -10,13 +10,12 @@ import (
 	"strconv"
 	"strings"
 
-	"github.com/tsuru/config"
 	"github.com/tsuru/tsuru-client/tsuru/installer/dm"
 	"github.com/tsuru/tsuru/cmd"
 )
 
 var (
-	defaultInstallerConfig = &InstallOpts{
+	defaultInstallOpts = &InstallOpts{
 		DockerMachineConfig: dm.DefaultDockerMachineConfig,
 		ComponentsConfig:    NewInstallConfig(dm.DefaultDockerMachineConfig.Name),
 		CoreHosts:           1,
@@ -156,81 +155,6 @@ func (i *Installer) applyIPtablesRules(machines []*dm.Machine) {
 			fmt.Fprintf(i.errWriter, "Failed to apply iptables rule: %s. Maybe it is not needed anymore?\n", err)
 		}
 	}
-}
-
-func parseConfigFile(file string) (*InstallOpts, error) {
-	installConfig := defaultInstallerConfig
-	if file == "" {
-		return installConfig, nil
-	}
-	err := config.ReadConfigFile(file)
-	if err != nil {
-		return nil, err
-	}
-	driverName, err := config.GetString("driver:name")
-	if err == nil {
-		installConfig.DriverName = driverName
-	}
-	name, err := config.GetString("name")
-	if err == nil {
-		installConfig.Name = name
-	}
-	hub, err := config.GetString("docker-hub-mirror")
-	if err == nil {
-		installConfig.DockerHubMirror = hub
-	}
-	driverOpts := make(dm.DriverOpts)
-	opts, _ := config.Get("driver:options")
-	if opts != nil {
-		for k, v := range opts.(map[interface{}]interface{}) {
-			switch k := k.(type) {
-			case string:
-				driverOpts[k] = v
-			}
-		}
-		installConfig.DriverOpts = driverOpts
-	}
-	caPath, err := config.GetString("ca-path")
-	if err == nil {
-		installConfig.CAPath = caPath
-	}
-	cHosts, err := config.GetInt("hosts:core:size")
-	if err == nil {
-		installConfig.CoreHosts = cHosts
-	}
-	pHosts, err := config.GetInt("hosts:apps:size")
-	if err == nil {
-		installConfig.AppsHosts = pHosts
-	}
-	dedicated, err := config.GetBool("hosts:apps:dedicated")
-	if err == nil {
-		installConfig.DedicatedAppsHosts = dedicated
-	}
-	opts, _ = config.Get("hosts:core:driver:options")
-	if opts != nil {
-		installConfig.CoreDriversOpts, err = parseDriverOptsSlice(opts)
-		if err != nil {
-			return nil, err
-		}
-	}
-	opts, _ = config.Get("hosts:apps:driver:options")
-	if opts != nil {
-		installConfig.AppsDriversOpts, err = parseDriverOptsSlice(opts)
-		if err != nil {
-			return nil, err
-		}
-	}
-	installConfig.ComponentsConfig = NewInstallConfig(installConfig.Name)
-	installConfig.ComponentsConfig.IaaSConfig = map[string]interface{}{
-		"dockermachine": map[string]interface{}{
-			"ca-path": "/certs",
-			"driver": map[string]interface{}{
-				"name":    installConfig.DriverName,
-				"options": map[string]interface{}(installConfig.DriverOpts),
-			},
-		},
-	}
-	return installConfig, nil
 }
 
 func preInstallChecks(config *InstallOpts) error {

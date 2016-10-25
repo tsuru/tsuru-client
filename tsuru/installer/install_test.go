@@ -23,7 +23,7 @@ import (
 func (s *S) TestParseConfigDefaultConfig(c *check.C) {
 	dmConfig, err := parseConfigFile("")
 	c.Assert(err, check.IsNil)
-	c.Assert(dmConfig, check.DeepEquals, defaultInstallerConfig)
+	c.Assert(dmConfig, check.DeepEquals, defaultInstallOpts)
 }
 
 func (s *S) TestParseConfigFileNotExists(c *check.C) {
