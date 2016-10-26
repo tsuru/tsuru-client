@@ -19,6 +19,8 @@ import (
 	"github.com/tsuru/tsuru-client/tsuru/client"
 	"github.com/tsuru/tsuru-client/tsuru/installer/dm"
 	"github.com/tsuru/tsuru/cmd"
+	"github.com/tsuru/tsuru/iaas"
+	"github.com/tsuru/tsuru/iaas/dockermachine"
 )
 
 type Install struct {
@@ -386,7 +388,7 @@ func (c *InstallHostList) Show(result []byte, context *cmd.Context) error {
 	if err != nil {
 		return err
 	}
-	dockerMachine, err := dm.NewTempDockerMachine()
+	dockerMachine, err := dockermachine.NewDockerMachine(dockermachine.DockerMachineConfig{})
 	if err != nil {
 		return err
 	}
@@ -399,11 +401,17 @@ func (c *InstallHostList) Show(result []byte, context *cmd.Context) error {
 		if err != nil {
 			return err
 		}
-		host, err := dockerMachine.NewHost(h.DriverName, h.SSHPrivateKey, h.Driver)
+		m, err := dockerMachine.RegisterMachine(dockermachine.RegisterMachineOpts{
+			Base: &iaas.Machine{
+				CustomData: h.Driver,
+			},
+			DriverName:    h.DriverName,
+			SSHPrivateKey: []byte(h.SSHPrivateKey),
+		})
 		if err != nil {
 			return err
 		}
-		state, err := host.Driver.GetState()
+		state, err := m.Host.Driver.GetState()
 		var stateStr string
 		if err != nil {
 			stateStr = err.Error()
@@ -451,16 +459,22 @@ func (c *InstallSSH) Run(context *cmd.Context, cli *cmd.Client) error {
 	if err != nil {
 		return err
 	}
-	dockerMachine, err := dm.NewTempDockerMachine()
+	dockerMachine, err := dockermachine.NewDockerMachine(dockermachine.DockerMachineConfig{})
 	if err != nil {
 		return err
 	}
 	defer dockerMachine.Close()
-	h, err := dockerMachine.NewHost(ih.DriverName, ih.SSHPrivateKey, ih.Driver)
+	m, err := dockerMachine.RegisterMachine(dockermachine.RegisterMachineOpts{
+		Base: &iaas.Machine{
+			CustomData: ih.Driver,
+		},
+		DriverName:    ih.DriverName,
+		SSHPrivateKey: []byte(ih.SSHPrivateKey),
+	})
 	if err != nil {
 		return err
 	}
-	sshClient, err := h.CreateSSHClient()
+	sshClient, err := m.Host.CreateSSHClient()
 	if err != nil {
 		return fmt.Errorf("failed to create ssh client: %s", err)
 	}

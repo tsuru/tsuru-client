@@ -5,7 +5,6 @@
 package dm
 
 import (
-	"io/ioutil"
 	"os"
 	"path/filepath"
 	"strings"
@@ -83,27 +82,4 @@ func (s *S) TestCreateRegistryCertificate(c *check.C) {
 	file, err = os.Stat(filepath.Join(dm.certsPath, "registry-key.pem"))
 	c.Assert(err, check.IsNil)
 	c.Assert(file.Size() > 0, check.Equals, true)
-}
-
-func (s *S) TestNewTempDockerMachine(c *check.C) {
-	dm, err := NewTempDockerMachine()
-	c.Assert(err, check.IsNil)
-	defer dm.Close()
-	f, err := os.Stat(dm.certsPath)
-	c.Assert(err, check.IsNil)
-	c.Assert(f.IsDir(), check.Equals, true)
-	f, err = os.Stat(dm.storePath)
-	c.Assert(err, check.IsNil)
-	c.Assert(f.IsDir(), check.Equals, true)
-}
-
-func (s *S) TestTempDockerMachineNewHost(c *check.C) {
-	dm, err := NewTempDockerMachine()
-	c.Assert(err, check.IsNil)
-	h, err := dm.NewHost("amazonec2", "my-ssh-key", map[string]interface{}{})
-	c.Assert(err, check.IsNil)
-	c.Assert(h.DriverName, check.Equals, "amazonec2")
-	b, err := ioutil.ReadFile(h.Driver.GetSSHKeyPath())
-	c.Assert(err, check.IsNil)
-	c.Assert(string(b), check.Equals, "my-ssh-key")
 }
