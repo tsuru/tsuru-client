@@ -48,12 +48,10 @@ func (s *S) TestUploadRegistryCertificate(c *check.C) {
 	c.Assert(len(sshTarget.cmds), check.Equals, 11)
 	c.Assert(sshTarget.cmds[0], check.Equals, "mkdir -p /home/ubuntu/certs/127.0.0.1:5000")
 	c.Assert(sshTarget.cmds[1], check.Equals, "sudo mkdir /etc/docker/certs.d")
-	c.Assert(strings.Contains(sshTarget.cmds[2], "sudo tee /home/ubuntu/certs/127.0.0.1:5000/registry-cert.pem"), check.Equals, true)
-	c.Assert(strings.Contains(sshTarget.cmds[3], "sudo tee /home/ubuntu/certs/127.0.0.1:5000/registry-key.pem"), check.Equals, true)
-	c.Assert(strings.Contains(sshTarget.cmds[4], "sudo tee /etc/docker/certs.d/ca-key.pem"), check.Equals, true)
-	c.Assert(strings.Contains(sshTarget.cmds[5], "sudo tee /etc/docker/certs.d/ca.pem"), check.Equals, true)
-	c.Assert(strings.Contains(sshTarget.cmds[6], "sudo tee /etc/docker/certs.d/cert.pem"), check.Equals, true)
-	c.Assert(strings.Contains(sshTarget.cmds[7], "sudo tee /etc/docker/certs.d/key.pem"), check.Equals, true)
+	s.containsWithSubstring(sshTarget.cmds, "sudo tee /etc/docker/certs.d/ca-key.pem", c)
+	s.containsWithSubstring(sshTarget.cmds, "sudo tee /etc/docker/certs.d/ca.pem", c)
+	s.containsWithSubstring(sshTarget.cmds, "sudo tee /etc/docker/certs.d/cert.pem", c)
+	s.containsWithSubstring(sshTarget.cmds, "sudo tee /etc/docker/certs.d/key.pem", c)
 	c.Assert(sshTarget.cmds[8], check.Equals, "sudo cp -r /home/ubuntu/certs/* /etc/docker/certs.d/")
 	c.Assert(sshTarget.cmds[9], check.Equals, "sudo cat /etc/docker/certs.d/ca.pem | sudo tee -a /etc/ssl/certs/ca-certificates.crt")
 	c.Assert(sshTarget.cmds[10], check.Equals, "sudo mkdir -p /var/lib/registry/")
@@ -63,8 +61,17 @@ func (s *S) TestUploadRegistryCertificate(c *check.C) {
 	c.Assert(len(sshTarget2.cmds), check.Equals, 11)
 	c.Assert(sshTarget2.cmds[0], check.Equals, "mkdir -p /home/ubuntu/certs/127.0.0.1:5000")
 	c.Assert(sshTarget2.cmds[1], check.Equals, "sudo mkdir /etc/docker/certs.d")
-	c.Assert(strings.Contains(sshTarget2.cmds[2], "sudo tee /home/ubuntu/certs/127.0.0.1:5000/registry-cert.pem"), check.Equals, true)
-	c.Assert(strings.Contains(sshTarget2.cmds[3], "sudo tee /home/ubuntu/certs/127.0.0.1:5000/registry-key.pem"), check.Equals, true)
+	s.containsWithSubstring(sshTarget2.cmds, "sudo tee /home/ubuntu/certs/127.0.0.1:5000/registry-cert.pem", c)
+	s.containsWithSubstring(sshTarget2.cmds, "sudo tee /home/ubuntu/certs/127.0.0.1:5000/registry-key.pem", c)
+}
+
+func (s *S) containsWithSubstring(l []string, subs string, c *check.C) {
+	for _, v := range l {
+		if strings.Contains(v, subs) == true {
+			return
+		}
+	}
+	c.Fatalf("substring %s not found", subs)
 }
 
 func (s *S) TestCreateRegistryCertificate(c *check.C) {
