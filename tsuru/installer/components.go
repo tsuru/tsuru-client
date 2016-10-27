@@ -16,8 +16,8 @@ import (
 	"gopkg.in/mgo.v2"
 	redis "gopkg.in/redis.v3"
 
-	"github.com/docker/engine-api/types/mount"
-	"github.com/docker/engine-api/types/swarm"
+	"github.com/docker/docker/api/types/mount"
+	"github.com/docker/docker/api/types/swarm"
 	"github.com/docker/machine/libmachine/mcnutils"
 	"github.com/fsouza/go-dockerclient"
 	"github.com/tsuru/config"

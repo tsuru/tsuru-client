@@ -42,7 +42,7 @@ type Installer struct {
 	machineProvisioner dm.MachineProvisioner
 	components         []TsuruComponent
 	bootstraper        Bootstraper
-	clusterCreator     func([]*dockermachine.Machine, int) (ServiceCluster, error)
+	clusterCreator     func([]*dockermachine.Machine) (ServiceCluster, error)
 }
 
 func (i *Installer) Install(opts *InstallOpts) (*Installation, error) {
@@ -55,7 +55,7 @@ func (i *Installer) Install(opts *InstallOpts) (*Installation, error) {
 	if err != nil {
 		return nil, fmt.Errorf("failed to provision components machines: %s", err)
 	}
-	cluster, err := i.clusterCreator(coreMachines, len(coreMachines))
+	cluster, err := i.clusterCreator(coreMachines)
 	if err != nil {
 		return nil, fmt.Errorf("failed to setup swarm cluster: %s", err)
 	}

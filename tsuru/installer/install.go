@@ -115,8 +115,8 @@ func (c *Install) Run(context *cmd.Context, cli *cmd.Client) error {
 		return err
 	}
 	defer dockerMachine.Close()
-	newSwarmServiceCluster := func(machines []*dockermachine.Machine, numManagers int) (ServiceCluster, error) {
-		swarm, errNew := NewSwarmCluster(machines, numManagers)
+	newSwarmServiceCluster := func(machines []*dockermachine.Machine) (ServiceCluster, error) {
+		swarm, errNew := NewSwarmCluster(machines)
 		return swarm, errNew
 	}
 	installer := &Installer{

@@ -110,6 +110,7 @@ func (s *S) createCluster() (*testCluster, error) {
 }
 
 func (s *S) TestNewSwarmCluster(c *check.C) {
+	swarmPort = 0
 	tlsConfig := testing.TLSConfig{
 		CertPath:    s.TLSCertsPath.ServerCert,
 		CertKeyPath: s.TLSCertsPath.ServerKey,
@@ -124,13 +125,6 @@ func (s *S) TestNewSwarmCluster(c *check.C) {
 	var managerReqs, workerReqs []*http.Request
 	managerServer, err := testing.NewTLSServer("127.0.0.1:0", nil, func(r *http.Request) {
 		managerReqs = append(managerReqs, r)
-		if r.URL.Path == "/swarm/init" {
-			var initReq swarm.InitRequest
-			errDec := json.NewDecoder(r.Body).Decode(&initReq)
-			c.Assert(errDec, check.IsNil)
-			c.Assert(initReq.AdvertiseAddr, check.Equals, "127.0.0.1:2377")
-			c.Assert(initReq.ListenAddr, check.Equals, "0.0.0.0:2377")
-		}
 	}, tlsConfig)
 	c.Assert(err, check.IsNil)
 	defer managerServer.Stop()
@@ -149,13 +143,6 @@ func (s *S) TestNewSwarmCluster(c *check.C) {
 	}
 	workerServer, err := testing.NewTLSServer("127.0.0.1:0", nil, func(r *http.Request) {
 		workerReqs = append(workerReqs, r)
-		if r.URL.Path == "/swarm/join" {
-			var joinReq swarm.JoinRequest
-			errDec := json.NewDecoder(workerReqs[0].Body).Decode(&joinReq)
-			c.Assert(errDec, check.IsNil)
-			c.Assert(joinReq.RemoteAddrs, check.DeepEquals, []string{"127.0.0.1:2377"})
-			c.Assert(joinReq.ListenAddr, check.Equals, "0.0.0.0:2377")
-		}
 	}, tlsConfig)
 	c.Assert(err, check.IsNil)
 	defer workerServer.Stop()
@@ -172,14 +159,14 @@ func (s *S) TestNewSwarmCluster(c *check.C) {
 		},
 		Host: &host.Host{Name: "worker"},
 	}
-	cluster, err := NewSwarmCluster([]*dockermachine.Machine{m1, m2}, 1)
+	cluster, err := NewSwarmCluster([]*dockermachine.Machine{m1, m2})
 	c.Assert(err, check.IsNil)
 	c.Assert(cluster, check.NotNil)
-	c.Assert(cluster.Managers, check.DeepEquals, []*dockermachine.Machine{m1})
+	c.Assert(cluster.Managers, check.DeepEquals, []*dockermachine.Machine{m1, m2})
 	c.Assert(cluster.Workers, check.DeepEquals, []*dockermachine.Machine{m1, m2})
 	c.Assert(managerReqs[0].URL.Path, check.Equals, "/swarm/init")
-	c.Assert(managerReqs[1].URL.Path, check.Equals, "/swarm")
-	c.Assert(managerReqs[2].URL.Path, check.Equals, "/networks/create")
+	c.Assert(managerReqs[1].URL.Path, check.Equals, "/networks/create")
+	c.Assert(managerReqs[2].URL.Path, check.Equals, "/swarm")
 	c.Assert(workerReqs[0].URL.Path, check.Equals, "/swarm/join")
 }
 
@@ -198,13 +185,6 @@ func (s *S) TestNewSwarmClusterMultipleManagers(c *check.C) {
 	var managerReqs, workerReqs []*http.Request
 	managerServer, err := testing.NewTLSServer("127.0.0.1:0", nil, func(r *http.Request) {
 		managerReqs = append(managerReqs, r)
-		if r.URL.Path == "/swarm/init" {
-			var initReq swarm.InitRequest
-			errDec := json.NewDecoder(r.Body).Decode(&initReq)
-			c.Assert(errDec, check.IsNil)
-			c.Assert(initReq.AdvertiseAddr, check.Equals, "127.0.0.1:2377")
-			c.Assert(initReq.ListenAddr, check.Equals, "0.0.0.0:2377")
-		}
 	}, tlsConfig)
 	c.Assert(err, check.IsNil)
 	defer managerServer.Stop()
@@ -223,13 +203,6 @@ func (s *S) TestNewSwarmClusterMultipleManagers(c *check.C) {
 	}
 	workerServer, err := testing.NewTLSServer("127.0.0.1:0", nil, func(r *http.Request) {
 		workerReqs = append(workerReqs, r)
-		if r.URL.Path == "/swarm/join" {
-			var joinReq swarm.JoinRequest
-			errDec := json.NewDecoder(workerReqs[0].Body).Decode(&joinReq)
-			c.Assert(errDec, check.IsNil)
-			c.Assert(joinReq.RemoteAddrs, check.DeepEquals, []string{"127.0.0.1:2377"})
-			c.Assert(joinReq.ListenAddr, check.Equals, "0.0.0.0:2377")
-		}
 	}, tlsConfig)
 	c.Assert(err, check.IsNil)
 	defer workerServer.Stop()
@@ -246,7 +219,7 @@ func (s *S) TestNewSwarmClusterMultipleManagers(c *check.C) {
 		},
 		Host: &host.Host{Name: "worker"},
 	}
-	cluster, err := NewSwarmCluster([]*dockermachine.Machine{m1, m2}, 2)
+	cluster, err := NewSwarmCluster([]*dockermachine.Machine{m1, m2})
 	c.Assert(err, check.IsNil)
 	c.Assert(cluster, check.NotNil)
 	c.Assert(cluster.Managers, check.DeepEquals, []*dockermachine.Machine{m1, m2})
@@ -284,7 +257,7 @@ func (s *S) TestCreateService(c *check.C) {
 		},
 		Host: &host.Host{Name: "manager"},
 	}
-	cluster, err := NewSwarmCluster([]*dockermachine.Machine{m}, 1)
+	cluster, err := NewSwarmCluster([]*dockermachine.Machine{m})
 	c.Assert(err, check.IsNil)
 	err = cluster.CreateService(docker.CreateServiceOptions{})
 	c.Assert(err, check.IsNil)
