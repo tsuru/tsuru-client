@@ -16,6 +16,7 @@ import (
 	"strings"
 
 	"github.com/docker/docker/api/types/swarm"
+	"github.com/docker/machine/libmachine/host"
 	"github.com/fsouza/go-dockerclient"
 	"github.com/tsuru/config"
 	"github.com/tsuru/tsuru/cmd"
@@ -30,7 +31,10 @@ type FakeServiceCluster struct {
 }
 
 func (c *FakeServiceCluster) GetManager() *dockermachine.Machine {
-	return &dockermachine.Machine{Base: &iaas.Machine{Address: "127.0.0.1", Port: 2376}}
+	return &dockermachine.Machine{
+		Base: &iaas.Machine{Address: "127.0.0.1", Port: 2376},
+		Host: &host.Host{},
+	}
 }
 
 func (c *FakeServiceCluster) CreateService(opts docker.CreateServiceOptions) error {

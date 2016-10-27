@@ -23,6 +23,7 @@ import (
 	"github.com/tsuru/config"
 	"github.com/tsuru/tsuru-client/tsuru/admin"
 	tclient "github.com/tsuru/tsuru-client/tsuru/client"
+	"github.com/tsuru/tsuru-client/tsuru/installer/dm"
 	"github.com/tsuru/tsuru/cmd"
 	"github.com/tsuru/tsuru/provision"
 )
@@ -229,6 +230,7 @@ func (c *Registry) Install(cluster ServiceCluster, i *ComponentsConfig) error {
 	if i.ComponentAddress["registry"] != "" {
 		return c.Healthcheck(i.ComponentAddress["registry"])
 	}
+	address := dm.GetPrivateIP(cluster.GetManager())
 	err := cluster.CreateService(docker.CreateServiceOptions{
 		ServiceSpec: swarm.ServiceSpec{
 			Annotations: swarm.Annotations{
@@ -239,8 +241,8 @@ func (c *Registry) Install(cluster ServiceCluster, i *ComponentsConfig) error {
 					Image: "registry:2",
 					Env: []string{
 						"REGISTRY_STORAGE_FILESYSTEM_ROOTDIRECTORY=/var/lib/registry",
-						fmt.Sprintf("REGISTRY_HTTP_TLS_CERTIFICATE=/certs/%s:5000/registry-cert.pem", cluster.GetManager().Base.Address),
-						fmt.Sprintf("REGISTRY_HTTP_TLS_KEY=/certs/%s:5000/registry-key.pem", cluster.GetManager().Base.Address),
+						fmt.Sprintf("REGISTRY_HTTP_TLS_CERTIFICATE=/certs/%s:5000/registry-cert.pem", address),
+						fmt.Sprintf("REGISTRY_HTTP_TLS_KEY=/certs/%s:5000/registry-key.pem", address),
 					},
 					Mounts: []mount.Mount{
 						{
@@ -272,7 +274,7 @@ func (c *Registry) Install(cluster ServiceCluster, i *ComponentsConfig) error {
 	if err != nil {
 		return err
 	}
-	i.ComponentAddress["registry"] = cluster.GetManager().Base.Address
+	i.ComponentAddress["registry"] = address
 	return nil
 }
 
