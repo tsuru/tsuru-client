@@ -14,6 +14,7 @@ import (
 	"sync/atomic"
 
 	"github.com/docker/machine/libmachine/cert"
+	"github.com/docker/machine/libmachine/drivers"
 	"github.com/docker/machine/libmachine/mcnutils"
 	"github.com/tsuru/tsuru/cmd"
 	"github.com/tsuru/tsuru/iaas/dockermachine"
@@ -24,7 +25,7 @@ var (
 	DefaultDockerMachineConfig = &DockerMachineConfig{
 		DriverName: "virtualbox",
 		Name:       "tsuru",
-		DriverOpts: make(DriverOpts),
+		DriverOpts: make(map[string]interface{}),
 	}
 )
 
@@ -35,7 +36,7 @@ type DockerMachine struct {
 	certsPath        string
 	dm               dockermachine.DockerMachineAPI
 	machinesCount    uint64
-	globalDriverOpts DriverOpts
+	globalDriverOpts map[string]interface{}
 	dockerHubMirror  string
 }
 
@@ -43,12 +44,12 @@ type DockerMachineConfig struct {
 	DriverName      string
 	CAPath          string
 	Name            string
-	DriverOpts      DriverOpts
+	DriverOpts      map[string]interface{}
 	DockerHubMirror string
 }
 
 type MachineProvisioner interface {
-	ProvisionMachine(map[string]interface{}) (*Machine, error)
+	ProvisionMachine(map[string]interface{}) (*dockermachine.Machine, error)
 }
 
 func NewDockerMachine(config *DockerMachineConfig) (*DockerMachine, error) {
@@ -74,31 +75,31 @@ func NewDockerMachine(config *DockerMachineConfig) (*DockerMachine, error) {
 	}, nil
 }
 
-func (d *DockerMachine) ProvisionMachine(driverOpts map[string]interface{}) (*Machine, error) {
+func (d *DockerMachine) ProvisionMachine(driverOpts map[string]interface{}) (*dockermachine.Machine, error) {
 	m, err := d.CreateMachine(driverOpts)
 	if err != nil {
 		return nil, fmt.Errorf("error creating machine %s", err)
 	}
-	err = d.uploadRegistryCertificate(m)
+	err = d.uploadRegistryCertificate(m.Host.Driver)
 	if err != nil {
-		return nil, fmt.Errorf("error uploading registry certificates to %s: %s", m.IP, err)
+		return nil, fmt.Errorf("error uploading registry certificates to %s: %s", m.Base.Address, err)
 	}
 	return m, nil
 }
 
-func (d *DockerMachine) CreateMachine(driverOpts map[string]interface{}) (*Machine, error) {
+func (d *DockerMachine) CreateMachine(driverOpts map[string]interface{}) (*dockermachine.Machine, error) {
 	driverOpts["swarm-master"] = false
 	driverOpts["swarm-host"] = ""
 	driverOpts["engine-install-url"] = ""
 	driverOpts["swarm-discovery"] = ""
-	mergedOpts := make(DriverOpts)
+	mergedOpts := make(map[string]interface{})
 	for k, v := range d.globalDriverOpts {
 		mergedOpts[k] = v
 	}
 	for k, v := range driverOpts {
 		mergedOpts[k] = v
 	}
-	mIaas, err := d.dm.CreateMachine(dockermachine.CreateMachineOpts{
+	m, err := d.dm.CreateMachine(dockermachine.CreateMachineOpts{
 		Name:           d.generateMachineName(),
 		DriverName:     d.driverName,
 		Params:         mergedOpts,
@@ -107,14 +108,8 @@ func (d *DockerMachine) CreateMachine(driverOpts map[string]interface{}) (*Machi
 	if err != nil {
 		return nil, err
 	}
-	m := &Machine{
-		Host:       mIaas.Host,
-		IP:         mIaas.Base.Address,
-		Address:    mIaas.Base.FormatNodeAddress(),
-		DriverOpts: mergedOpts,
-	}
 	if m.Host.AuthOptions() != nil {
-		m.Host.AuthOptions().ServerCertSANs = append(m.Host.AuthOptions().ServerCertSANs, m.GetPrivateIP())
+		m.Host.AuthOptions().ServerCertSANs = append(m.Host.AuthOptions().ServerCertSANs, GetPrivateIP(m))
 		err = m.Host.ConfigureAuth()
 		if err != nil {
 			return nil, err
@@ -128,16 +123,20 @@ func (d *DockerMachine) generateMachineName() string {
 	return fmt.Sprintf("%s-%d", d.Name, atomic.LoadUint64(&d.machinesCount))
 }
 
-func (d *DockerMachine) uploadRegistryCertificate(host SSHTarget) error {
+func (d *DockerMachine) uploadRegistryCertificate(driver drivers.Driver) error {
+	ip, err := driver.GetIP()
+	if err != nil {
+		return err
+	}
 	registryCertPath := filepath.Join(d.certsPath, "registry-cert.pem")
 	registryKeyPath := filepath.Join(d.certsPath, "registry-key.pem")
 	var registryIP string
-	if _, err := os.Stat(registryCertPath); os.IsNotExist(err) {
-		errCreate := d.createRegistryCertificate(host.GetIP())
+	if _, errReg := os.Stat(registryCertPath); os.IsNotExist(errReg) {
+		errCreate := d.createRegistryCertificate(ip)
 		if errCreate != nil {
 			return errCreate
 		}
-		registryIP = host.GetIP()
+		registryIP = ip
 	} else {
 		certData, errRead := ioutil.ReadFile(registryCertPath)
 		if errRead != nil {
@@ -151,39 +150,39 @@ func (d *DockerMachine) uploadRegistryCertificate(host SSHTarget) error {
 		registryIP = cert.IPAddresses[0].String()
 	}
 	fmt.Printf("Uploading registry certificate...\n")
-	certsBasePath := fmt.Sprintf("/home/%s/certs/%s:5000", host.GetSSHUsername(), registryIP)
-	if _, err := host.RunSSHCommand(fmt.Sprintf("mkdir -p %s", certsBasePath)); err != nil {
-		return err
+	certsBasePath := fmt.Sprintf("/home/%s/certs/%s:5000", driver.GetSSHUsername(), registryIP)
+	if _, errCmd := drivers.RunSSHCommandFromDriver(driver, fmt.Sprintf("mkdir -p %s", certsBasePath)); errCmd != nil {
+		return errCmd
 	}
 	dockerCertsPath := "/etc/docker/certs.d"
-	if _, err := host.RunSSHCommand(fmt.Sprintf("sudo mkdir %s", dockerCertsPath)); err != nil {
-		return err
+	if _, errCmd := drivers.RunSSHCommandFromDriver(driver, fmt.Sprintf("sudo mkdir %s", dockerCertsPath)); errCmd != nil {
+		return errCmd
 	}
-	if err := writeRemoteFile(host, registryCertPath, filepath.Join(certsBasePath, "registry-cert.pem")); err != nil {
-		return err
+	if errCmd := writeRemoteFile(driver, registryCertPath, filepath.Join(certsBasePath, "registry-cert.pem")); errCmd != nil {
+		return errCmd
 	}
-	if err := writeRemoteFile(host, registryKeyPath, filepath.Join(certsBasePath, "registry-key.pem")); err != nil {
-		return err
+	if errCmd := writeRemoteFile(driver, registryKeyPath, filepath.Join(certsBasePath, "registry-key.pem")); errCmd != nil {
+		return errCmd
 	}
-	if err := writeRemoteFile(host, filepath.Join(d.certsPath, "ca-key.pem"), filepath.Join(dockerCertsPath, "ca-key.pem")); err != nil {
-		return err
+	if errCmd := writeRemoteFile(driver, filepath.Join(d.certsPath, "ca-key.pem"), filepath.Join(dockerCertsPath, "ca-key.pem")); errCmd != nil {
+		return errCmd
 	}
-	if err := writeRemoteFile(host, filepath.Join(d.certsPath, "ca.pem"), filepath.Join(dockerCertsPath, "ca.pem")); err != nil {
-		return err
+	if errCmd := writeRemoteFile(driver, filepath.Join(d.certsPath, "ca.pem"), filepath.Join(dockerCertsPath, "ca.pem")); errCmd != nil {
+		return errCmd
 	}
-	if err := writeRemoteFile(host, filepath.Join(d.certsPath, "cert.pem"), filepath.Join(dockerCertsPath, "cert.pem")); err != nil {
-		return err
+	if errCmd := writeRemoteFile(driver, filepath.Join(d.certsPath, "cert.pem"), filepath.Join(dockerCertsPath, "cert.pem")); errCmd != nil {
+		return errCmd
 	}
-	if err := writeRemoteFile(host, filepath.Join(d.certsPath, "key.pem"), filepath.Join(dockerCertsPath, "key.pem")); err != nil {
-		return err
+	if errCmd := writeRemoteFile(driver, filepath.Join(d.certsPath, "key.pem"), filepath.Join(dockerCertsPath, "key.pem")); errCmd != nil {
+		return errCmd
 	}
-	if _, err := host.RunSSHCommand(fmt.Sprintf("sudo cp -r /home/%s/certs/* %s/", host.GetSSHUsername(), dockerCertsPath)); err != nil {
-		return err
+	if _, errCmd := drivers.RunSSHCommandFromDriver(driver, fmt.Sprintf("sudo cp -r /home/%s/certs/* %s/", driver.GetSSHUsername(), dockerCertsPath)); errCmd != nil {
+		return errCmd
 	}
-	if _, err := host.RunSSHCommand(fmt.Sprintf("sudo cat %s/ca.pem | sudo tee -a /etc/ssl/certs/ca-certificates.crt", dockerCertsPath)); err != nil {
-		return err
+	if _, errCmd := drivers.RunSSHCommandFromDriver(driver, fmt.Sprintf("sudo cat %s/ca.pem | sudo tee -a /etc/ssl/certs/ca-certificates.crt", dockerCertsPath)); errCmd != nil {
+		return errCmd
 	}
-	_, err := host.RunSSHCommand("sudo mkdir -p /var/lib/registry/")
+	_, err = drivers.RunSSHCommandFromDriver(driver, "sudo mkdir -p /var/lib/registry/")
 	return err
 }
 

@@ -12,6 +12,7 @@ import (
 
 	"github.com/tsuru/tsuru-client/tsuru/installer/dm"
 	"github.com/tsuru/tsuru/cmd"
+	"github.com/tsuru/tsuru/iaas/dockermachine"
 )
 
 var (
@@ -41,7 +42,7 @@ type Installer struct {
 	machineProvisioner dm.MachineProvisioner
 	components         []TsuruComponent
 	bootstraper        Bootstraper
-	clusterCreator     func([]*dm.Machine, int) (ServiceCluster, error)
+	clusterCreator     func([]*dockermachine.Machine, int) (ServiceCluster, error)
 }
 
 func (i *Installer) Install(opts *InstallOpts) (*Installation, error) {
@@ -62,7 +63,7 @@ func (i *Installer) Install(opts *InstallOpts) (*Installation, error) {
 	if err != nil {
 		return nil, err
 	}
-	target := fmt.Sprintf("http://%s:%d", cluster.GetManager().IP, defaultTsuruAPIPort)
+	target := fmt.Sprintf("http://%s:%d", cluster.GetManager().Base.Address, defaultTsuruAPIPort)
 	installMachines, err := i.BootstrapTsuru(opts, target, coreMachines)
 	if err != nil {
 		return nil, err
@@ -87,7 +88,7 @@ func (i *Installer) InstallComponents(cluster ServiceCluster, opts *ComponentsCo
 	return nil
 }
 
-func (i *Installer) BootstrapTsuru(opts *InstallOpts, target string, coreMachines []*dm.Machine) ([]*dm.Machine, error) {
+func (i *Installer) BootstrapTsuru(opts *InstallOpts, target string, coreMachines []*dockermachine.Machine) ([]*dockermachine.Machine, error) {
 	fmt.Fprintf(i.outWriter, "Bootstrapping Tsuru API...")
 	registryAddr, registryPort := parseAddress(opts.ComponentsConfig.ComponentAddress["registry"], "5000")
 	bootstrapOpts := BoostrapOptions{
@@ -98,25 +99,25 @@ func (i *Installer) BootstrapTsuru(opts *InstallOpts, target string, coreMachine
 		RegistryAddr: fmt.Sprintf("%s:%s", registryAddr, registryPort),
 		NodesParams:  opts.AppsDriversOpts,
 	}
-	var installMachines []*dm.Machine
+	var installMachines []*dockermachine.Machine
 	if opts.DriverName == "virtualbox" {
 		appsMachines, errProv := i.ProvisionPool(opts, coreMachines)
 		if errProv != nil {
 			return nil, errProv
 		}
-		machineIndex := make(map[string]*dm.Machine)
+		machineIndex := make(map[string]*dockermachine.Machine)
 		installMachines = append(coreMachines, appsMachines...)
 		for _, m := range installMachines {
-			machineIndex[m.Name] = m
+			machineIndex[m.Host.Name] = m
 		}
-		var uniqueMachines []*dm.Machine
+		var uniqueMachines []*dockermachine.Machine
 		for _, v := range machineIndex {
 			uniqueMachines = append(uniqueMachines, v)
 		}
 		installMachines = uniqueMachines
 		var nodesAddr []string
 		for _, m := range appsMachines {
-			nodesAddr = append(nodesAddr, m.GetPrivateAddress())
+			nodesAddr = append(nodesAddr, dm.GetPrivateAddress(m))
 		}
 		bootstrapOpts.NodesToRegister = nodesAddr
 	} else {
@@ -126,7 +127,7 @@ func (i *Installer) BootstrapTsuru(opts *InstallOpts, target string, coreMachine
 		} else {
 			var nodesAddr []string
 			for _, m := range coreMachines {
-				nodesAddr = append(nodesAddr, m.GetPrivateAddress())
+				nodesAddr = append(nodesAddr, dm.GetPrivateAddress(m))
 			}
 			if opts.AppsHosts > opts.CoreHosts {
 				bootstrapOpts.NodesToCreate = opts.AppsHosts - opts.CoreHosts
@@ -143,14 +144,14 @@ func (i *Installer) BootstrapTsuru(opts *InstallOpts, target string, coreMachine
 	return installMachines, nil
 }
 
-func (i *Installer) applyIPtablesRules(machines []*dm.Machine) {
+func (i *Installer) applyIPtablesRules(machines []*dockermachine.Machine) {
 	fmt.Fprintf(i.outWriter, "Applying iptables workaround for docker 1.12...\n")
 	for _, m := range machines {
-		_, err := m.RunSSHCommand("PATH=$PATH:/usr/sbin/:/usr/local/sbin; sudo iptables -D DOCKER-ISOLATION -i docker_gwbridge -o docker0 -j DROP")
+		_, err := m.Host.RunSSHCommand("PATH=$PATH:/usr/sbin/:/usr/local/sbin; sudo iptables -D DOCKER-ISOLATION -i docker_gwbridge -o docker0 -j DROP")
 		if err != nil {
 			fmt.Fprintf(i.errWriter, "Failed to apply iptables rule: %s. Maybe it is not needed anymore?\n", err)
 		}
-		_, err = m.RunSSHCommand("PATH=$PATH:/usr/sbin/:/usr/local/sbin; sudo iptables -D DOCKER-ISOLATION -i docker0 -o docker_gwbridge -j DROP")
+		_, err = m.Host.RunSSHCommand("PATH=$PATH:/usr/sbin/:/usr/local/sbin; sudo iptables -D DOCKER-ISOLATION -i docker0 -o docker_gwbridge -j DROP")
 		if err != nil {
 			fmt.Fprintf(i.errWriter, "Failed to apply iptables rule: %s. Maybe it is not needed anymore?\n", err)
 		}
@@ -168,7 +169,7 @@ func preInstallChecks(config *InstallOpts) error {
 	return nil
 }
 
-func (i *Installer) ProvisionPool(config *InstallOpts, hosts []*dm.Machine) ([]*dm.Machine, error) {
+func (i *Installer) ProvisionPool(config *InstallOpts, hosts []*dockermachine.Machine) ([]*dockermachine.Machine, error) {
 	if config.DedicatedAppsHosts {
 		return i.ProvisionMachines(config.AppsHosts, config.AppsDriversOpts)
 	}
@@ -182,10 +183,10 @@ func (i *Installer) ProvisionPool(config *InstallOpts, hosts []*dm.Machine) ([]*
 	return hosts[:config.AppsHosts], nil
 }
 
-func (i *Installer) ProvisionMachines(numMachines int, configs map[string][]interface{}) ([]*dm.Machine, error) {
-	var machines []*dm.Machine
+func (i *Installer) ProvisionMachines(numMachines int, configs map[string][]interface{}) ([]*dockermachine.Machine, error) {
+	var machines []*dockermachine.Machine
 	for j := 0; j < numMachines; j++ {
-		opts := make(dm.DriverOpts)
+		opts := make(map[string]interface{})
 		for k, v := range configs {
 			idx := j % len(v)
 			opts[k] = v[idx]
@@ -201,7 +202,7 @@ func (i *Installer) ProvisionMachines(numMachines int, configs map[string][]inte
 
 type Installation struct {
 	CoreCluster     ServiceCluster
-	InstallMachines []*dm.Machine
+	InstallMachines []*dockermachine.Machine
 	Components      []TsuruComponent
 }
 

@@ -10,7 +10,6 @@ import (
 	"io/ioutil"
 	"net/http"
 	"net/url"
-	"path/filepath"
 	"strings"
 
 	"github.com/tsuru/config"
@@ -116,7 +115,7 @@ func (c *Install) Run(context *cmd.Context, cli *cmd.Client) error {
 		return err
 	}
 	defer dockerMachine.Close()
-	newSwarmServiceCluster := func(machines []*dm.Machine, numManagers int) (ServiceCluster, error) {
+	newSwarmServiceCluster := func(machines []*dockermachine.Machine, numManagers int) (ServiceCluster, error) {
 		swarm, errNew := NewSwarmCluster(machines, numManagers)
 		return swarm, errNew
 	}
@@ -167,7 +166,7 @@ func parseConfigFile(file string) (*InstallOpts, error) {
 	if err == nil {
 		installConfig.DockerHubMirror = hub
 	}
-	driverOpts := make(dm.DriverOpts)
+	driverOpts := make(map[string]interface{})
 	opts, _ := config.Get("driver:options")
 	if opts != nil {
 		for k, v := range opts.(map[interface{}]interface{}) {
@@ -221,34 +220,36 @@ func parseConfigFile(file string) (*InstallOpts, error) {
 	return installConfig, nil
 }
 
-func addInstallHosts(machines []*dm.Machine, client *cmd.Client) error {
+func addInstallHosts(machines []*dockermachine.Machine, client *cmd.Client) error {
 	path, err := cmd.GetURLVersion("1.3", "/install/hosts")
 	if err != nil {
 		return err
 	}
 	for _, m := range machines {
-		rawDriver, err := json.Marshal(m.Driver)
+		rawDriver, err := json.Marshal(m.Host.Driver)
 		if err != nil {
 			return err
 		}
-		privateKey, err := ioutil.ReadFile(m.GetSSHKeyPath())
-		if err != nil {
-			fmt.Printf("failed to read private ssh key file: %s", err)
+		privateKey := []byte("")
+		if m.Host.Driver.GetSSHKeyPath() != "" {
+			privateKey, err = ioutil.ReadFile(m.Host.Driver.GetSSHKeyPath())
+			if err != nil {
+				fmt.Printf("failed to read private ssh key file: %s", err)
+			}
 		}
-		caCert, err := ioutil.ReadFile(filepath.Join(m.CAPath, "ca.pem"))
-		if err != nil {
-			fmt.Printf("failed to read ca file: %s", err)
-		}
-		caPrivateKey, err := ioutil.ReadFile(filepath.Join(m.CAPath, "ca-key.pem"))
-		if err != nil {
-			fmt.Printf("failed to read ca private key file: %s", err)
+		caPrivateKey := []byte("")
+		if m.Host.AuthOptions() != nil {
+			caPrivateKey, err = ioutil.ReadFile(m.Host.AuthOptions().CaPrivateKeyPath)
+			if err != nil {
+				fmt.Printf("failed to read ca private key file: %s", err)
+			}
 		}
 		v := url.Values{}
 		v.Set("driver", string(rawDriver))
-		v.Set("name", m.Name)
-		v.Set("driverName", m.DriverName)
+		v.Set("name", m.Host.Name)
+		v.Set("driverName", m.Host.DriverName)
 		v.Set("sshPrivateKey", string(privateKey))
-		v.Set("caCert", string(caCert))
+		v.Set("caCert", string(m.Base.CaCert))
 		v.Set("caPrivateKey", string(caPrivateKey))
 		body := strings.NewReader(v.Encode())
 		request, err := http.NewRequest("POST", path, body)

@@ -6,13 +6,17 @@ package installer
 
 import (
 	"encoding/json"
+	"io/ioutil"
 	"net/http"
+	"strconv"
+	"strings"
 
 	"github.com/docker/engine-api/types/swarm"
 	"github.com/docker/machine/libmachine/host"
 	docker "github.com/fsouza/go-dockerclient"
 	"github.com/fsouza/go-dockerclient/testing"
-	"github.com/tsuru/tsuru-client/tsuru/installer/dm"
+	"github.com/tsuru/tsuru/iaas"
+	"github.com/tsuru/tsuru/iaas/dockermachine"
 	"gopkg.in/check.v1"
 )
 
@@ -20,6 +24,9 @@ type testCluster struct {
 	SwarmCluster  *SwarmCluster
 	ManagerServer *testing.DockerServer
 	WorkerServer  *testing.DockerServer
+	clientCert    []byte
+	clientKey     []byte
+	caCert        []byte
 }
 
 func (c *testCluster) Stop() {
@@ -27,11 +34,28 @@ func (c *testCluster) Stop() {
 	c.WorkerServer.Stop()
 }
 
+func getPort(server *testing.DockerServer) (int, error) {
+	mPort := strings.Split(server.URL()[:len(server.URL())-1], ":")
+	return strconv.Atoi(mPort[len(mPort)-1])
+}
+
 func (s *S) createCluster() (*testCluster, error) {
 	tlsConfig := testing.TLSConfig{
 		CertPath:    s.TLSCertsPath.ServerCert,
 		CertKeyPath: s.TLSCertsPath.ServerKey,
 		RootCAPath:  s.TLSCertsPath.RootCert,
+	}
+	clientCert, err := ioutil.ReadFile(s.TLSCertsPath.ClientCert)
+	if err != nil {
+		return nil, err
+	}
+	clientKey, err := ioutil.ReadFile(s.TLSCertsPath.ClientKey)
+	if err != nil {
+		return nil, err
+	}
+	caCert, err := ioutil.ReadFile(s.TLSCertsPath.RootCert)
+	if err != nil {
+		return nil, err
 	}
 	managerServer, err := testing.NewTLSServer("127.0.0.1:0", nil, nil, tlsConfig)
 	if err != nil {
@@ -41,26 +65,47 @@ func (s *S) createCluster() (*testCluster, error) {
 	if err != nil {
 		return nil, err
 	}
-	managerMachine := &dm.Machine{
-		Host:    &host.Host{Name: "manager"},
-		IP:      "127.0.0.1",
-		Address: managerServer.URL(),
-		CAPath:  s.TLSCertsPath.RootDir,
+	port, err := getPort(managerServer)
+	if err != nil {
+		return nil, err
 	}
-	workerMachine := &dm.Machine{
-		Host:    &host.Host{Name: "worker"},
-		IP:      "127.0.0.2",
-		Address: workerServer.URL(),
-		CAPath:  s.TLSCertsPath.RootDir,
+	managerMachine := &dockermachine.Machine{
+		Base: &iaas.Machine{
+			Address:    "127.0.0.1",
+			Protocol:   "https",
+			Port:       port,
+			ClientCert: clientCert,
+			ClientKey:  clientKey,
+			CaCert:     caCert,
+		},
+		Host: &host.Host{Name: "manager"},
+	}
+	port, err = getPort(workerServer)
+	if err != nil {
+		return nil, err
+	}
+	workerMachine := &dockermachine.Machine{
+		Base: &iaas.Machine{
+			Address:    "127.0.0.1",
+			Protocol:   "https",
+			Port:       port,
+			ClientCert: clientCert,
+			ClientKey:  clientKey,
+			CaCert:     caCert,
+		},
+		Host: &host.Host{Name: "worker"},
 	}
 	return &testCluster{
 		SwarmCluster: &SwarmCluster{
-			Managers: []*dm.Machine{managerMachine},
-			Workers:  []*dm.Machine{managerMachine, workerMachine},
+			Managers: []*dockermachine.Machine{managerMachine},
+			Workers:  []*dockermachine.Machine{managerMachine, workerMachine},
 			network:  &docker.Network{Name: "tsuru"},
 		},
 		ManagerServer: managerServer,
 		WorkerServer:  workerServer,
+		clientCert:    clientCert,
+		clientKey:     clientKey,
+		caCert:        caCert,
 	}, nil
 }
 
@@ -70,6 +115,12 @@ func (s *S) TestNewSwarmCluster(c *check.C) {
 		CertKeyPath: s.TLSCertsPath.ServerKey,
 		RootCAPath:  s.TLSCertsPath.RootCert,
 	}
+	clientCert, err := ioutil.ReadFile(s.TLSCertsPath.ClientCert)
+	c.Assert(err, check.IsNil)
+	clientKey, err := ioutil.ReadFile(s.TLSCertsPath.ClientKey)
+	c.Assert(err, check.IsNil)
+	caCert, err := ioutil.ReadFile(s.TLSCertsPath.RootCert)
+	c.Assert(err, check.IsNil)
 	var managerReqs, workerReqs []*http.Request
 	managerServer, err := testing.NewTLSServer("127.0.0.1:0", nil, func(r *http.Request) {
 		managerReqs = append(managerReqs, r)
@@ -83,11 +134,18 @@ func (s *S) TestNewSwarmCluster(c *check.C) {
 	}, tlsConfig)
 	c.Assert(err, check.IsNil)
 	defer managerServer.Stop()
-	m1 := &dm.Machine{
-		Host:    &host.Host{Name: "manager"},
-		IP:      "127.0.0.1",
-		Address: managerServer.URL(),
-		CAPath:  s.TLSCertsPath.RootDir,
+	port, err := getPort(managerServer)
+	c.Assert(err, check.IsNil)
+	m1 := &dockermachine.Machine{
+		Base: &iaas.Machine{
+			Address:    "127.0.0.1",
+			Protocol:   "https",
+			Port:       port,
+			ClientCert: clientCert,
+			ClientKey:  clientKey,
+			CaCert:     caCert,
+		},
+		Host: &host.Host{Name: "manager"},
 	}
 	workerServer, err := testing.NewTLSServer("127.0.0.1:0", nil, func(r *http.Request) {
 		workerReqs = append(workerReqs, r)
@@ -101,17 +159,24 @@ func (s *S) TestNewSwarmCluster(c *check.C) {
 	}, tlsConfig)
 	c.Assert(err, check.IsNil)
 	defer workerServer.Stop()
-	m2 := &dm.Machine{
-		Host:    &host.Host{Name: "worker"},
-		IP:      "127.0.0.2",
-		Address: workerServer.URL(),
-		CAPath:  s.TLSCertsPath.RootDir,
+	port, err = getPort(workerServer)
+	c.Assert(err, check.IsNil)
+	m2 := &dockermachine.Machine{
+		Base: &iaas.Machine{
+			Address:    "127.0.0.1",
+			Protocol:   "https",
+			Port:       port,
+			ClientCert: clientCert,
+			ClientKey:  clientKey,
+			CaCert:     caCert,
+		},
+		Host: &host.Host{Name: "worker"},
 	}
-	cluster, err := NewSwarmCluster([]*dm.Machine{m1, m2}, 1)
+	cluster, err := NewSwarmCluster([]*dockermachine.Machine{m1, m2}, 1)
 	c.Assert(err, check.IsNil)
 	c.Assert(cluster, check.NotNil)
-	c.Assert(cluster.Managers, check.DeepEquals, []*dm.Machine{m1})
-	c.Assert(cluster.Workers, check.DeepEquals, []*dm.Machine{m1, m2})
+	c.Assert(cluster.Managers, check.DeepEquals, []*dockermachine.Machine{m1})
+	c.Assert(cluster.Workers, check.DeepEquals, []*dockermachine.Machine{m1, m2})
 	c.Assert(managerReqs[0].URL.Path, check.Equals, "/swarm/init")
 	c.Assert(managerReqs[1].URL.Path, check.Equals, "/swarm")
 	c.Assert(managerReqs[2].URL.Path, check.Equals, "/networks/create")
@@ -124,6 +189,12 @@ func (s *S) TestNewSwarmClusterMultipleManagers(c *check.C) {
 		CertKeyPath: s.TLSCertsPath.ServerKey,
 		RootCAPath:  s.TLSCertsPath.RootCert,
 	}
+	clientCert, err := ioutil.ReadFile(s.TLSCertsPath.ClientCert)
+	c.Assert(err, check.IsNil)
+	clientKey, err := ioutil.ReadFile(s.TLSCertsPath.ClientKey)
+	c.Assert(err, check.IsNil)
+	caCert, err := ioutil.ReadFile(s.TLSCertsPath.RootCert)
+	c.Assert(err, check.IsNil)
 	var managerReqs, workerReqs []*http.Request
 	managerServer, err := testing.NewTLSServer("127.0.0.1:0", nil, func(r *http.Request) {
 		managerReqs = append(managerReqs, r)
@@ -137,11 +208,18 @@ func (s *S) TestNewSwarmClusterMultipleManagers(c *check.C) {
 	}, tlsConfig)
 	c.Assert(err, check.IsNil)
 	defer managerServer.Stop()
-	m1 := &dm.Machine{
-		Host:    &host.Host{Name: "manager"},
-		IP:      "127.0.0.1",
-		Address: managerServer.URL(),
-		CAPath:  s.TLSCertsPath.RootDir,
+	port, err := getPort(managerServer)
+	c.Assert(err, check.IsNil)
+	m1 := &dockermachine.Machine{
+		Base: &iaas.Machine{
+			Address:    "127.0.0.1",
+			Protocol:   "https",
+			Port:       port,
+			ClientCert: clientCert,
+			ClientKey:  clientKey,
+			CaCert:     caCert,
+		},
+		Host: &host.Host{Name: "manager"},
 	}
 	workerServer, err := testing.NewTLSServer("127.0.0.1:0", nil, func(r *http.Request) {
 		workerReqs = append(workerReqs, r)
@@ -155,17 +233,24 @@ func (s *S) TestNewSwarmClusterMultipleManagers(c *check.C) {
 	}, tlsConfig)
 	c.Assert(err, check.IsNil)
 	defer workerServer.Stop()
-	m2 := &dm.Machine{
-		Host:    &host.Host{Name: "worker"},
-		IP:      "127.0.0.2",
-		Address: workerServer.URL(),
-		CAPath:  s.TLSCertsPath.RootDir,
+	port, err = getPort(workerServer)
+	c.Assert(err, check.IsNil)
+	m2 := &dockermachine.Machine{
+		Base: &iaas.Machine{
+			Address:    "127.0.0.1",
+			Protocol:   "https",
+			Port:       port,
+			ClientCert: clientCert,
+			ClientKey:  clientKey,
+			CaCert:     caCert,
+		},
+		Host: &host.Host{Name: "worker"},
 	}
-	cluster, err := NewSwarmCluster([]*dm.Machine{m1, m2}, 2)
+	cluster, err := NewSwarmCluster([]*dockermachine.Machine{m1, m2}, 2)
 	c.Assert(err, check.IsNil)
 	c.Assert(cluster, check.NotNil)
-	c.Assert(cluster.Managers, check.DeepEquals, []*dm.Machine{m1, m2})
-	c.Assert(cluster.Workers, check.DeepEquals, []*dm.Machine{m1, m2})
+	c.Assert(cluster.Managers, check.DeepEquals, []*dockermachine.Machine{m1, m2})
+	c.Assert(cluster.Workers, check.DeepEquals, []*dockermachine.Machine{m1, m2})
 }
 
 func (s *S) TestCreateService(c *check.C) {
@@ -174,19 +259,32 @@ func (s *S) TestCreateService(c *check.C) {
 		CertKeyPath: s.TLSCertsPath.ServerKey,
 		RootCAPath:  s.TLSCertsPath.RootCert,
 	}
+	clientCert, err := ioutil.ReadFile(s.TLSCertsPath.ClientCert)
+	c.Assert(err, check.IsNil)
+	clientKey, err := ioutil.ReadFile(s.TLSCertsPath.ClientKey)
+	c.Assert(err, check.IsNil)
+	caCert, err := ioutil.ReadFile(s.TLSCertsPath.RootCert)
+	c.Assert(err, check.IsNil)
 	var created = false
 	server, err := testing.NewTLSServer("127.0.0.1:0", nil, func(r *http.Request) {
 		if r.URL.Path == "/services/create" {
 			created = true
 		}
 	}, tlsConfig)
-	m := &dm.Machine{
-		Host:    &host.Host{Name: "manager"},
-		IP:      "127.0.0.2",
-		Address: server.URL(),
-		CAPath:  s.TLSCertsPath.RootDir,
+	port, err := getPort(server)
+	c.Assert(err, check.IsNil)
+	m := &dockermachine.Machine{
+		Base: &iaas.Machine{
+			Address:    "127.0.0.1",
+			Protocol:   "https",
+			Port:       port,
+			ClientCert: clientCert,
+			ClientKey:  clientKey,
+			CaCert:     caCert,
+		},
+		Host: &host.Host{Name: "manager"},
 	}
-	cluster, err := NewSwarmCluster([]*dm.Machine{m}, 1)
+	cluster, err := NewSwarmCluster([]*dockermachine.Machine{m}, 1)
 	c.Assert(err, check.IsNil)
 	err = cluster.CreateService(docker.CreateServiceOptions{})
 	c.Assert(err, check.IsNil)
@@ -304,7 +402,7 @@ func (s *S) TestClusterInfo(c *check.C) {
 	}))
 	expected := []NodeInfo{
 		{IP: "127.0.0.1", State: "ready", Manager: true},
-		{IP: "127.0.0.2", State: "down", Manager: false},
+		{IP: "127.0.0.1", State: "down", Manager: false},
 	}
 	info, err := testCluster.SwarmCluster.ClusterInfo()
 	c.Assert(err, check.IsNil)
@@ -316,7 +414,7 @@ func (s *S) TestGetMachine(c *check.C) {
 	c.Assert(err, check.IsNil)
 	m, err := testCluster.SwarmCluster.GetMachine("manager")
 	c.Assert(err, check.IsNil)
-	c.Assert(m.IP, check.DeepEquals, "127.0.0.1")
+	c.Assert(m.Base.Address, check.DeepEquals, "127.0.0.1")
 }
 
 func (s *S) TestGetMachineNotFound(c *check.C) {

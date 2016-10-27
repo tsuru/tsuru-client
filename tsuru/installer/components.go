@@ -153,7 +153,7 @@ func (c *PlanB) Install(cluster ServiceCluster, i *ComponentsConfig) error {
 	if err != nil {
 		return err
 	}
-	i.ComponentAddress["planb"] = cluster.GetManager().IP
+	i.ComponentAddress["planb"] = cluster.GetManager().Base.Address
 	return nil
 }
 
@@ -239,8 +239,8 @@ func (c *Registry) Install(cluster ServiceCluster, i *ComponentsConfig) error {
 					Image: "registry:2",
 					Env: []string{
 						"REGISTRY_STORAGE_FILESYSTEM_ROOTDIRECTORY=/var/lib/registry",
-						fmt.Sprintf("REGISTRY_HTTP_TLS_CERTIFICATE=/certs/%s:5000/registry-cert.pem", cluster.GetManager().IP),
-						fmt.Sprintf("REGISTRY_HTTP_TLS_KEY=/certs/%s:5000/registry-key.pem", cluster.GetManager().IP),
+						fmt.Sprintf("REGISTRY_HTTP_TLS_CERTIFICATE=/certs/%s:5000/registry-cert.pem", cluster.GetManager().Base.Address),
+						fmt.Sprintf("REGISTRY_HTTP_TLS_KEY=/certs/%s:5000/registry-key.pem", cluster.GetManager().Base.Address),
 					},
 					Mounts: []mount.Mount{
 						{
@@ -272,7 +272,7 @@ func (c *Registry) Install(cluster ServiceCluster, i *ComponentsConfig) error {
 	if err != nil {
 		return err
 	}
-	i.ComponentAddress["registry"] = cluster.GetManager().IP
+	i.ComponentAddress["registry"] = cluster.GetManager().Base.Address
 	return nil
 }
 
@@ -340,7 +340,7 @@ func (c *TsuruAPI) Install(cluster ServiceCluster, i *ComponentsConfig) error {
 						fmt.Sprintf("HIPACHE_DOMAIN=%s.nip.io", planb),
 						fmt.Sprintf("REGISTRY_ADDR=%s", registry),
 						fmt.Sprintf("REGISTRY_PORT=%s", registryPort),
-						fmt.Sprintf("TSURU_ADDR=http://%s", cluster.GetManager().IP),
+						fmt.Sprintf("TSURU_ADDR=http://%s", cluster.GetManager().Base.Address),
 						fmt.Sprintf("TSURU_PORT=%d", defaultTsuruAPIPort),
 						fmt.Sprintf("IAAS_CONF=%s", string(iaasConfig)),
 					},
@@ -369,7 +369,7 @@ func (c *TsuruAPI) Install(cluster ServiceCluster, i *ComponentsConfig) error {
 		return err
 	}
 	fmt.Println("Waiting for Tsuru API to become responsive...")
-	tsuruURL := fmt.Sprintf("http://%s:%d", cluster.GetManager().IP, defaultTsuruAPIPort)
+	tsuruURL := fmt.Sprintf("http://%s:%d", cluster.GetManager().Base.Address, defaultTsuruAPIPort)
 	err = mcnutils.WaitForSpecific(func() bool {
 		_, errReq := http.Get(tsuruURL)
 		return errReq == nil

@@ -18,8 +18,9 @@ import (
 	"github.com/docker/engine-api/types/swarm"
 	"github.com/fsouza/go-dockerclient"
 	"github.com/tsuru/config"
-	"github.com/tsuru/tsuru-client/tsuru/installer/dm"
 	"github.com/tsuru/tsuru/cmd"
+	"github.com/tsuru/tsuru/iaas"
+	"github.com/tsuru/tsuru/iaas/dockermachine"
 	_ "github.com/tsuru/tsuru/provision/docker"
 	"gopkg.in/check.v1"
 )
@@ -28,8 +29,8 @@ type FakeServiceCluster struct {
 	Services chan<- docker.CreateServiceOptions
 }
 
-func (c *FakeServiceCluster) GetManager() *dm.Machine {
-	return &dm.Machine{IP: "127.0.0.1", Address: "127.0.0.1:2376"}
+func (c *FakeServiceCluster) GetManager() *dockermachine.Machine {
+	return &dockermachine.Machine{Base: &iaas.Machine{Address: "127.0.0.1", Port: 2376}}
 }
 
 func (c *FakeServiceCluster) CreateService(opts docker.CreateServiceOptions) error {

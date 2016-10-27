@@ -17,6 +17,8 @@ import (
 	"github.com/tsuru/tsuru-client/tsuru/installer/dm"
 	"github.com/tsuru/tsuru/cmd"
 	"github.com/tsuru/tsuru/cmd/cmdtest"
+	"github.com/tsuru/tsuru/iaas"
+	"github.com/tsuru/tsuru/iaas/dockermachine"
 	"gopkg.in/check.v1"
 )
 
@@ -185,8 +187,8 @@ func (s *S) TestAddInstallHosts(c *check.C) {
 		},
 	}
 	client := cmd.NewClient(&http.Client{Transport: &transport}, nil, manager)
-	machines := []*dm.Machine{
-		{Host: &host.Host{DriverName: "amazonec2", Driver: &fakedriver.Driver{MockIP: "127.0.0.1"}}},
+	machines := []*dockermachine.Machine{
+		{Base: &iaas.Machine{}, Host: &host.Host{DriverName: "amazonec2", Driver: &fakedriver.Driver{MockIP: "127.0.0.1"}}},
 	}
 	err := addInstallHosts(machines, client)
 	c.Assert(err, check.IsNil)
