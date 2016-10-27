@@ -393,12 +393,6 @@
 			"revision": ""
 		},
 		{
-			"checksumSHA1": "d5BuQrBPAQwmU/WjUSfYBZTKnFA=",
-			"path": "github.com/docker/engine-api/types/mount",
-			"revision": "4290f40c056686fcaa5c9caf02eac1dde9315adf",
-			"revisionTime": "2016-09-08T23:21:04Z"
-		},
-		{
 			"checksumSHA1": "kktbWelM0xVH61fOWltCEOR/87E=",
 			"origin": "github.com/tsuru/vendor/github.com/docker/go-connections/nat",
 			"path": "github.com/docker/go-connections/nat",

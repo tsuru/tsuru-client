@@ -11,7 +11,7 @@ import (
 	"strconv"
 	"strings"
 
-	"github.com/docker/engine-api/types/swarm"
+	"github.com/docker/docker/api/types/swarm"
 	"github.com/docker/machine/libmachine/host"
 	docker "github.com/fsouza/go-dockerclient"
 	"github.com/fsouza/go-dockerclient/testing"
