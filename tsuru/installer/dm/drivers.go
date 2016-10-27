@@ -10,7 +10,6 @@ import (
 	"io/ioutil"
 	"strings"
 
-	"github.com/docker/machine/libmachine/drivers"
 	"github.com/tsuru/config"
 	"github.com/tsuru/tsuru/iaas/dockermachine"
 )
@@ -35,7 +34,11 @@ func GetPrivateIPInterface(driverName string) (string, error) {
 }
 
 func GetPrivateIP(m *dockermachine.Machine) string {
-	ip, err := getPrivateIP(m.Host.Driver)
+	iface, err := GetPrivateIPInterface(m.Host.DriverName)
+	if err != nil || iface == "" {
+		return m.Base.Address
+	}
+	ip, err := getIP(m.Host, iface)
 	if err == nil {
 		return ip
 	}
@@ -43,24 +46,17 @@ func GetPrivateIP(m *dockermachine.Machine) string {
 }
 
 func GetPrivateAddress(m *dockermachine.Machine) string {
-	ip, err := getPrivateIP(m.Host.Driver)
-	if err != nil {
-		ip = m.Base.Address
-	}
-	return fmt.Sprintf("%s://%s:%d", m.Base.Protocol, ip, m.Base.Port)
+	return fmt.Sprintf("%s://%s:%d", m.Base.Protocol, GetPrivateIP(m), m.Base.Port)
 }
 
-func getPrivateIP(driver drivers.Driver) (string, error) {
-	if driver == nil {
-		return "", errors.New("driver must not be nil")
-	}
-	iface, err := GetPrivateIPInterface(driver.DriverName())
-	if err == ErrNoPrivateIPInterface || iface == "" {
-		return driver.GetIP()
-	}
-	output, err := drivers.RunSSHCommandFromDriver(driver, fmt.Sprintf("ip addr show dev %s", iface))
+type sshTarget interface {
+	RunSSHCommand(string) (string, error)
+}
+
+func getIP(target sshTarget, iface string) (string, error) {
+	output, err := target.RunSSHCommand(fmt.Sprintf("ip addr show dev %s", iface))
 	if err != nil {
-		return driver.GetIP()
+		return "", err
 	}
 	lines := strings.Split(output, "\n")
 	for _, line := range lines {
@@ -69,16 +65,16 @@ func getPrivateIP(driver drivers.Driver) (string, error) {
 			return vals[1][:strings.Index(vals[1], "/")], nil
 		}
 	}
-	return driver.GetIP()
+	return "", errors.New("failed to parse private ip from interface")
 }
 
-func writeRemoteFile(driver drivers.Driver, filePath string, remotePath string) error {
+func writeRemoteFile(target sshTarget, filePath string, remotePath string) error {
 	file, err := ioutil.ReadFile(filePath)
 	if err != nil {
 		return fmt.Errorf("failed to read file %s: %s", filePath, err)
 	}
 	remoteWriteCmdFmt := "printf '%%s' '%s' | sudo tee %s"
-	_, err = drivers.RunSSHCommandFromDriver(driver, fmt.Sprintf(remoteWriteCmdFmt, string(file), remotePath))
+	_, err = target.RunSSHCommand(fmt.Sprintf(remoteWriteCmdFmt, string(file), remotePath))
 	if err != nil {
 		return fmt.Errorf("failed to write remote file: %s", err)
 	}

@@ -14,7 +14,6 @@ import (
 	"sync/atomic"
 
 	"github.com/docker/machine/libmachine/cert"
-	"github.com/docker/machine/libmachine/drivers"
 	"github.com/docker/machine/libmachine/mcnutils"
 	"github.com/tsuru/tsuru/cmd"
 	"github.com/tsuru/tsuru/iaas/dockermachine"
@@ -80,7 +79,7 @@ func (d *DockerMachine) ProvisionMachine(driverOpts map[string]interface{}) (*do
 	if err != nil {
 		return nil, fmt.Errorf("error creating machine %s", err)
 	}
-	err = d.uploadRegistryCertificate(m.Host.Driver)
+	err = d.uploadRegistryCertificate(GetPrivateIP(m), m.Host.Driver.GetSSHUsername(), m.Host)
 	if err != nil {
 		return nil, fmt.Errorf("error uploading registry certificates to %s: %s", m.Base.Address, err)
 	}
@@ -123,11 +122,7 @@ func (d *DockerMachine) generateMachineName() string {
 	return fmt.Sprintf("%s-%d", d.Name, atomic.LoadUint64(&d.machinesCount))
 }
 
-func (d *DockerMachine) uploadRegistryCertificate(driver drivers.Driver) error {
-	ip, err := driver.GetIP()
-	if err != nil {
-		return err
-	}
+func (d *DockerMachine) uploadRegistryCertificate(ip, user string, target sshTarget) error {
 	registryCertPath := filepath.Join(d.certsPath, "registry-cert.pem")
 	registryKeyPath := filepath.Join(d.certsPath, "registry-key.pem")
 	var registryIP string
@@ -150,39 +145,35 @@ func (d *DockerMachine) uploadRegistryCertificate(driver drivers.Driver) error {
 		registryIP = cert.IPAddresses[0].String()
 	}
 	fmt.Printf("Uploading registry certificate...\n")
-	certsBasePath := fmt.Sprintf("/home/%s/certs/%s:5000", driver.GetSSHUsername(), registryIP)
-	if _, errCmd := drivers.RunSSHCommandFromDriver(driver, fmt.Sprintf("mkdir -p %s", certsBasePath)); errCmd != nil {
-		return errCmd
+	certsBasePath := fmt.Sprintf("/home/%s/certs/%s:5000", user, registryIP)
+	if _, err := target.RunSSHCommand(fmt.Sprintf("mkdir -p %s", certsBasePath)); err != nil {
+		return err
 	}
 	dockerCertsPath := "/etc/docker/certs.d"
-	if _, errCmd := drivers.RunSSHCommandFromDriver(driver, fmt.Sprintf("sudo mkdir %s", dockerCertsPath)); errCmd != nil {
-		return errCmd
+	if _, err := target.RunSSHCommand(fmt.Sprintf("sudo mkdir %s", dockerCertsPath)); err != nil {
+		return err
 	}
-	if errCmd := writeRemoteFile(driver, registryCertPath, filepath.Join(certsBasePath, "registry-cert.pem")); errCmd != nil {
-		return errCmd
+	fileCopies := map[string]string{
+		registryCertPath:                         filepath.Join(certsBasePath, "registry-cert.pem"),
+		registryKeyPath:                          filepath.Join(certsBasePath, "registry-key.pem"),
+		filepath.Join(d.certsPath, "ca-key.pem"): filepath.Join(dockerCertsPath, "ca-key.pem"),
+		filepath.Join(d.certsPath, "ca.pem"):     filepath.Join(dockerCertsPath, "ca.pem"),
+		filepath.Join(d.certsPath, "cert.pem"):   filepath.Join(dockerCertsPath, "cert.pem"),
+		filepath.Join(d.certsPath, "key.pem"):    filepath.Join(dockerCertsPath, "key.pem"),
 	}
-	if errCmd := writeRemoteFile(driver, registryKeyPath, filepath.Join(certsBasePath, "registry-key.pem")); errCmd != nil {
-		return errCmd
+	for src, dst := range fileCopies {
+		errWrite := writeRemoteFile(target, src, dst)
+		if errWrite != nil {
+			return errWrite
+		}
 	}
-	if errCmd := writeRemoteFile(driver, filepath.Join(d.certsPath, "ca-key.pem"), filepath.Join(dockerCertsPath, "ca-key.pem")); errCmd != nil {
-		return errCmd
+	if _, err := target.RunSSHCommand(fmt.Sprintf("sudo cp -r /home/%s/certs/* %s/", user, dockerCertsPath)); err != nil {
+		return err
 	}
-	if errCmd := writeRemoteFile(driver, filepath.Join(d.certsPath, "ca.pem"), filepath.Join(dockerCertsPath, "ca.pem")); errCmd != nil {
-		return errCmd
+	if _, err := target.RunSSHCommand(fmt.Sprintf("sudo cat %s/ca.pem | sudo tee -a /etc/ssl/certs/ca-certificates.crt", dockerCertsPath)); err != nil {
+		return err
 	}
-	if errCmd := writeRemoteFile(driver, filepath.Join(d.certsPath, "cert.pem"), filepath.Join(dockerCertsPath, "cert.pem")); errCmd != nil {
-		return errCmd
-	}
-	if errCmd := writeRemoteFile(driver, filepath.Join(d.certsPath, "key.pem"), filepath.Join(dockerCertsPath, "key.pem")); errCmd != nil {
-		return errCmd
-	}
-	if _, errCmd := drivers.RunSSHCommandFromDriver(driver, fmt.Sprintf("sudo cp -r /home/%s/certs/* %s/", driver.GetSSHUsername(), dockerCertsPath)); errCmd != nil {
-		return errCmd
-	}
-	if _, errCmd := drivers.RunSSHCommandFromDriver(driver, fmt.Sprintf("sudo cat %s/ca.pem | sudo tee -a /etc/ssl/certs/ca-certificates.crt", dockerCertsPath)); errCmd != nil {
-		return errCmd
-	}
-	_, err = drivers.RunSSHCommandFromDriver(driver, "sudo mkdir -p /var/lib/registry/")
+	_, err := target.RunSSHCommand("sudo mkdir -p /var/lib/registry/")
 	return err
 }
 
