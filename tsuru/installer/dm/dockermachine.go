@@ -33,7 +33,7 @@ type DockerMachine struct {
 	Name             string
 	storePath        string
 	certsPath        string
-	dm               dockermachine.DockerMachineAPI
+	API              dockermachine.DockerMachineAPI
 	machinesCount    uint64
 	globalDriverOpts map[string]interface{}
 	dockerHubMirror  string
@@ -66,7 +66,7 @@ func NewDockerMachine(config *DockerMachineConfig) (*DockerMachine, error) {
 	return &DockerMachine{
 		driverName:       config.DriverName,
 		Name:             config.Name,
-		dm:               dm,
+		API:              dm,
 		globalDriverOpts: config.DriverOpts,
 		dockerHubMirror:  config.DockerHubMirror,
 		certsPath:        certsPath,
@@ -98,7 +98,7 @@ func (d *DockerMachine) CreateMachine(driverOpts map[string]interface{}) (*docke
 	for k, v := range driverOpts {
 		mergedOpts[k] = v
 	}
-	m, err := d.dm.CreateMachine(dockermachine.CreateMachineOpts{
+	m, err := d.API.CreateMachine(dockermachine.CreateMachineOpts{
 		Name:           d.generateMachineName(),
 		DriverName:     d.driverName,
 		Params:         mergedOpts,
@@ -196,9 +196,9 @@ func (d *DockerMachine) createRegistryCertificate(hosts ...string) error {
 }
 
 func (d *DockerMachine) DeleteAll() error {
-	return d.dm.DeleteAll()
+	return d.API.DeleteAll()
 }
 
 func (d *DockerMachine) Close() error {
-	return d.dm.Close()
+	return d.API.Close()
 }

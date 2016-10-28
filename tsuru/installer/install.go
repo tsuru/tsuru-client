@@ -266,6 +266,7 @@ func addInstallHosts(machines []*dockermachine.Machine, client *cmd.Client) erro
 }
 
 type Uninstall struct {
+	cmd.ConfirmationCommand
 	fs     *gnuflag.FlagSet
 	config string
 }
@@ -273,7 +274,7 @@ type Uninstall struct {
 func (c *Uninstall) Info() *cmd.Info {
 	return &cmd.Info{
 		Name:    "uninstall",
-		Usage:   "uninstall [--config/-c config_file]",
+		Usage:   "uninstall [name]",
 		Desc:    "Uninstalls Tsuru and It's components.",
 		MinArgs: 0,
 	}
@@ -288,32 +289,81 @@ func (c *Uninstall) Flags() *gnuflag.FlagSet {
 	return c.fs
 }
 
-func (c *Uninstall) Run(context *cmd.Context, client *cmd.Client) error {
-	context.RawOutput()
-	config, err := parseConfigFile(c.config)
+func (c *Uninstall) Run(ctx *cmd.Context, cli *cmd.Client) error {
+	ctx.RawOutput()
+	var installName string
+	var dockerMachine dockermachine.DockerMachineAPI
+	hosts, errList := listHosts(ctx, cli)
+	if errList != nil {
+		fmt.Fprintf(ctx.Stderr, "Unable to fetch installed hosts: %s.\n Falling back to configuration file.\n", errList)
+		config, err := parseConfigFile(c.config)
+		if err != nil {
+			fmt.Fprintf(ctx.Stderr, "Failed to read configuration file: %s\n", err)
+			return err
+		}
+		d, err := dm.NewDockerMachine(config.DockerMachineConfig)
+		if err != nil {
+			fmt.Fprintf(ctx.Stderr, "Failed to delete machine: %s\n", err)
+			return err
+		}
+		installName = config.Name
+		dockerMachine = d.API
+	} else {
+		d, err := dockermachine.NewDockerMachine(dockermachine.DockerMachineConfig{})
+		if err != nil {
+			return err
+		}
+		for _, h := range hosts {
+			_, errReg := d.RegisterMachine(dockermachine.RegisterMachineOpts{
+				Base: &iaas.Machine{
+					CustomData: h.Driver,
+				},
+				DriverName:    h.DriverName,
+				SSHPrivateKey: []byte(h.SSHPrivateKey),
+			})
+			if errReg != nil {
+				return errReg
+			}
+		}
+		dockerMachine = d
+		installName, err = cmd.ReadTarget()
+		if err != nil {
+			return err
+		}
+	}
+	defer dockerMachine.Close()
+	machines, err := dockerMachine.List()
 	if err != nil {
-		fmt.Fprintf(context.Stderr, "Failed to read configuration file: %s\n", err)
 		return err
 	}
-	d, err := dm.NewDockerMachine(config.DockerMachineConfig)
+	tbl := cmd.Table{
+		LineSeparator: true,
+		Headers:       cmd.Row{"Name", "IP", "Data"},
+	}
+	for _, m := range machines {
+		data, errMarshal := json.MarshalIndent(m.Base.CustomData, "", "")
+		if errMarshal != nil {
+			data = []byte("failed to marshal data.")
+		}
+		tbl.AddRow(cmd.Row{m.Host.Name, m.Base.Address, string(data)})
+	}
+	fmt.Fprintf(ctx.Stdout, "The following machines will be destroyed:\n%s", tbl.String())
+	if !c.Confirm(ctx, fmt.Sprint("Are you sure you sure you want to uninstall tsuru?")) {
+		return nil
+	}
+	err = dockerMachine.DeleteAll()
 	if err != nil {
-		fmt.Fprintf(context.Stderr, "Failed to delete machine: %s\n", err)
+		fmt.Fprintf(ctx.Stderr, "Failed to delete machines: %s\n", err)
 		return err
 	}
-	defer d.Close()
-	err = d.DeleteAll()
-	if err != nil {
-		fmt.Fprintf(context.Stderr, "Failed to delete machines: %s\n", err)
-		return err
-	}
-	fmt.Fprintln(context.Stdout, "Machines successfully removed!")
+	fmt.Fprintln(ctx.Stdout, "Machines successfully removed!")
 	api := TsuruAPI{}
-	err = api.Uninstall(config.Name)
+	err = api.Uninstall(installName)
 	if err != nil {
-		fmt.Fprintf(context.Stderr, "Failed to uninstall tsuru API: %s\n", err)
+		fmt.Fprintf(ctx.Stderr, "Failed to uninstall tsuru API: %s\n", err)
 		return err
 	}
-	fmt.Fprintf(context.Stdout, "Uninstall finished successfully!\n")
+	fmt.Fprintf(ctx.Stdout, "Uninstall finished successfully!\n")
 	return nil
 }
 
