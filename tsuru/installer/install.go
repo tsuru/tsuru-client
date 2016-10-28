@@ -363,32 +363,33 @@ func (c *InstallHostList) Flags() *gnuflag.FlagSet {
 }
 
 func (c *InstallHostList) Run(context *cmd.Context, cli *cmd.Client) error {
-	url, err := cmd.GetURLVersion("1.3", "/install/hosts")
+	hosts, err := listHosts(context, cli)
 	if err != nil {
 		return err
+	}
+	return c.Show(hosts, context)
+}
+
+func listHosts(context *cmd.Context, cli *cmd.Client) ([]installHost, error) {
+	url, err := cmd.GetURLVersion("1.3", "/install/hosts")
+	if err != nil {
+		return nil, err
 	}
 	request, err := http.NewRequest("GET", url, nil)
 	if err != nil {
-		return err
+		return nil, err
 	}
 	response, err := cli.Do(request)
 	if err != nil {
-		return err
+		return nil, err
 	}
 	defer response.Body.Close()
-	body, err := ioutil.ReadAll(response.Body)
-	if err != nil {
-		return err
-	}
-	return c.Show(body, context)
+	var hosts []installHost
+	err = json.NewDecoder(response.Body).Decode(&hosts)
+	return hosts, err
 }
 
-func (c *InstallHostList) Show(result []byte, context *cmd.Context) error {
-	var hosts []installHost
-	err := json.Unmarshal(result, &hosts)
-	if err != nil {
-		return err
-	}
+func (c *InstallHostList) Show(hosts []installHost, context *cmd.Context) error {
 	dockerMachine, err := dockermachine.NewDockerMachine(dockermachine.DockerMachineConfig{})
 	if err != nil {
 		return err
