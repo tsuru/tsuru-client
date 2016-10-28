@@ -338,7 +338,7 @@ func (c *Uninstall) Run(ctx *cmd.Context, cli *cmd.Client) error {
 	}
 	tbl := cmd.Table{
 		LineSeparator: true,
-		Headers:       cmd.Row{"Name", "IP", "Data"},
+		Headers:       cmd.Row([]string{"Name", "IP", "Data"}),
 	}
 	for _, m := range machines {
 		data, errMarshal := json.MarshalIndent(m.Base.CustomData, "", "")
