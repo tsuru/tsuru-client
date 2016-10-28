@@ -110,7 +110,6 @@ func (s *S) createCluster() (*testCluster, error) {
 }
 
 func (s *S) TestNewSwarmCluster(c *check.C) {
-	swarmPort = 0
 	tlsConfig := testing.TLSConfig{
 		CertPath:    s.TLSCertsPath.ServerCert,
 		CertKeyPath: s.TLSCertsPath.ServerKey,

@@ -33,6 +33,7 @@ func (s *S) SetUpSuite(c *check.C) {
 	s.TLSCertsPath = tlsCertsPath
 	var stdout, stderr bytes.Buffer
 	manager = cmd.NewManager("glb", "1.0.0", "Supported-Tsuru-Version", &stdout, &stderr, os.Stdin, nil)
+	swarmPort = 0
 }
 
 func TestMain(m *testing.M) {
