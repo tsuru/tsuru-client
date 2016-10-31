@@ -30,23 +30,34 @@ These machines were created with the [[docker-node-add]] command.`,
 }
 
 func (c *MachineList) Run(context *cmd.Context, client *cmd.Client) error {
-	url, err := cmd.GetURL("/iaas/machines")
+	machines, err := c.List(client)
 	if err != nil {
 		return err
+	}
+	table := c.Tabulate(machines)
+	context.Stdout.Write(table.Bytes())
+	return nil
+}
+
+func (c *MachineList) List(client *cmd.Client) ([]iaas.Machine, error) {
+	url, err := cmd.GetURL("/iaas/machines")
+	if err != nil {
+		return nil, err
 	}
 	request, err := http.NewRequest("GET", url, nil)
 	if err != nil {
-		return err
+		return nil, err
 	}
 	response, err := client.Do(request)
 	if err != nil {
-		return err
+		return nil, err
 	}
 	var machines []iaas.Machine
 	err = json.NewDecoder(response.Body).Decode(&machines)
-	if err != nil {
-		return err
-	}
+	return machines, err
+}
+
+func (c *MachineList) Tabulate(machines []iaas.Machine) *cmd.Table {
 	table := cmd.NewTable()
 	table.Headers = cmd.Row([]string{"Id", "IaaS", "Address", "Creation Params"})
 	table.LineSeparator = true
@@ -59,8 +70,7 @@ func (c *MachineList) Run(context *cmd.Context, client *cmd.Client) error {
 		table.AddRow(cmd.Row([]string{machine.Id, machine.Iaas, machine.Address, strings.Join(params, "\n")}))
 	}
 	table.Sort()
-	context.Stdout.Write(table.Bytes())
-	return nil
+	return table
 }
 
 type MachineDestroy struct{}

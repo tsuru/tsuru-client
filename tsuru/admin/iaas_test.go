@@ -81,12 +81,12 @@ func (s *S) TestTemplateListRun(c *check.C) {
 		Stderr: &stderr,
 	}
 	tpl1 := iaas.Template{Name: "machine1", IaaSName: "ec2", Data: iaas.TemplateDataList{
-		{Name: "region", Value: "us-east-1"},
-		{Name: "type", Value: "m1.small"},
+		iaas.TemplateData{Name: "region", Value: "us-east-1"},
+		iaas.TemplateData{Name: "type", Value: "m1.small"},
 	}}
 	tpl2 := iaas.Template{Name: "tpl1", IaaSName: "ec2", Data: iaas.TemplateDataList{
-		{Name: "region", Value: "xxxx"},
-		{Name: "type", Value: "l1.large"},
+		iaas.TemplateData{Name: "region", Value: "xxxx"},
+		iaas.TemplateData{Name: "type", Value: "l1.large"},
 	}}
 	data, err := json.Marshal([]iaas.Template{tpl1, tpl2})
 	c.Assert(err, check.IsNil)
@@ -181,8 +181,8 @@ func (s *S) TestTemplateUpdateCmdRun(c *check.C) {
 			expected := iaas.Template{
 				Name: "my-tpl",
 				Data: iaas.TemplateDataList{
-					{Name: "zone", Value: ""},
-					{Name: "image", Value: "ami-something"},
+					iaas.TemplateData{Name: "zone", Value: ""},
+					iaas.TemplateData{Name: "image", Value: "ami-something"},
 				},
 			}
 			c.Assert(template, check.DeepEquals, expected)
