@@ -7,32 +7,12 @@ package admin
 import (
 	"bytes"
 	"net/http"
-	"os"
 	"strings"
-	"testing"
 
 	"github.com/tsuru/tsuru/cmd"
 	"github.com/tsuru/tsuru/cmd/cmdtest"
 	"gopkg.in/check.v1"
 )
-
-type S struct{}
-
-var manager *cmd.Manager
-
-func (s *S) SetUpSuite(c *check.C) {
-	var stdout, stderr bytes.Buffer
-	manager = cmd.NewManager("glb", "1.0.0", "Supported-Tsuru-Version", &stdout, &stderr, os.Stdin, nil)
-	os.Setenv("TSURU_TARGET", "http://localhost")
-}
-
-func (s *S) TearDownSuite(c *check.C) {
-	os.Unsetenv("TSURU_TARGET")
-}
-
-var _ = check.Suite(&S{})
-
-func Test(t *testing.T) { check.TestingT(t) }
 
 func (s *S) TestAddPoolToTheSchedulerCmd(c *check.C) {
 	var buf bytes.Buffer

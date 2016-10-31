@@ -32,7 +32,7 @@ func (s *S) TestPlatformList(c *check.C) {
 		},
 	}
 	context := cmd.Context{Stdout: &buf}
-	client := cmd.NewClient(&http.Client{Transport: &transport}, nil, manager)
+	client := cmd.NewClient(&http.Client{Transport: &transport}, nil, s.manager)
 	err := PlatformList{}.Run(&context, client)
 	c.Assert(err, check.IsNil)
 	c.Assert(called, check.Equals, true)
@@ -55,7 +55,7 @@ func (s *S) TestPlatformListWithDisabledPlatforms(c *check.C) {
 		},
 	}
 	context := cmd.Context{Stdout: &buf}
-	client := cmd.NewClient(&http.Client{Transport: &transport}, nil, manager)
+	client := cmd.NewClient(&http.Client{Transport: &transport}, nil, s.manager)
 	err := PlatformList{}.Run(&context, client)
 	c.Assert(err, check.IsNil)
 	c.Assert(called, check.Equals, true)
@@ -71,7 +71,7 @@ func (s *S) TestPlatformListEmpty(c *check.C) {
 		Status: http.StatusNoContent,
 	}
 	context := cmd.Context{Stdout: &buf}
-	client := cmd.NewClient(&http.Client{Transport: &transport}, nil, manager)
+	client := cmd.NewClient(&http.Client{Transport: &transport}, nil, s.manager)
 	err := PlatformList{}.Run(&context, client)
 	c.Assert(err, check.IsNil)
 	c.Assert(buf.String(), check.Equals, "No platforms available.\n")
@@ -113,7 +113,7 @@ func (s *S) TestPlatformAddRun(c *check.C) {
 			return strings.HasSuffix(req.URL.Path, "/platforms") && req.Method == "POST"
 		},
 	}
-	client := cmd.NewClient(&http.Client{Transport: trans}, nil, manager)
+	client := cmd.NewClient(&http.Client{Transport: trans}, nil, s.manager)
 	command := PlatformAdd{}
 	command.Flags().Parse(true, []string{"--dockerfile", server.URL})
 	err = command.Run(&context, client)
@@ -145,7 +145,7 @@ func (s *S) TestPlatformAddRunLocalDockerFile(c *check.C) {
 			return strings.HasSuffix(req.URL.Path, "/platforms") && req.Method == "POST"
 		},
 	}
-	client := cmd.NewClient(&http.Client{Transport: trans}, nil, manager)
+	client := cmd.NewClient(&http.Client{Transport: trans}, nil, s.manager)
 	command := PlatformAdd{}
 	command.Flags().Parse(true, []string{"--dockerfile", "testdata/Dockerfile"})
 	err = command.Run(&context, client)
@@ -177,7 +177,7 @@ func (s *S) TestPlatformAddPrebuiltImage(c *check.C) {
 			return strings.HasSuffix(req.URL.Path, "/platforms") && req.Method == "POST"
 		},
 	}
-	client := cmd.NewClient(&http.Client{Transport: trans}, nil, manager)
+	client := cmd.NewClient(&http.Client{Transport: trans}, nil, s.manager)
 	command := PlatformAdd{}
 	command.Flags().Parse(true, []string{"--image", "tsuru/python"})
 	err = command.Run(&context, client)
@@ -209,7 +209,7 @@ func (s *S) TestPlatformAddRunImplicitDockerfile(c *check.C) {
 			return strings.HasSuffix(req.URL.Path, "/platforms") && req.Method == "POST"
 		},
 	}
-	client := cmd.NewClient(&http.Client{Transport: trans}, nil, manager)
+	client := cmd.NewClient(&http.Client{Transport: trans}, nil, s.manager)
 	command := PlatformAdd{}
 	err = command.Run(&context, client)
 	c.Assert(err, check.IsNil)
@@ -223,7 +223,7 @@ func (s *S) TestPlatformAddRunFlagsConflict(c *check.C) {
 		Stderr: &stderr,
 		Args:   []string{"teste"},
 	}
-	client := cmd.NewClient(&http.Client{}, nil, manager)
+	client := cmd.NewClient(&http.Client{}, nil, s.manager)
 	command := PlatformAdd{}
 	command.Flags().Parse(true, []string{"--image", "tsuru/python", "--dockerfile", "testdata/Dockerfile"})
 	err := command.Run(&context, client)
