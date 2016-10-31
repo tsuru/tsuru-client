@@ -17,7 +17,7 @@ before_install:
   - '[[ $TRAVIS_OS_NAME == "linux" ]] && sudo sysctl -w net.ipv6.conf.lo.disable_ipv6=0 || true'
 script:
   - ./go.test.bash
-  - ./check-fmt.sh
+  - '[[ $TRAVIS_GO_VERSION == "1.7.3" ]] && ./check-fmt.sh || true'
 services:
   - redis
   - mongodb
