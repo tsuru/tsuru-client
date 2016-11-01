@@ -293,9 +293,11 @@ func (c *Uninstall) Run(ctx *cmd.Context, cli *cmd.Client) error {
 	ctx.RawOutput()
 	var installName string
 	var dockerMachine dockermachine.DockerMachineAPI
+	var appMachines []iaas.Machine
+	machineList := admin.MachineList{}
 	hosts, errList := listHosts(ctx, cli)
-	if errList != nil {
-		fmt.Fprintf(ctx.Stderr, "Unable to fetch installed hosts: %s.\n Falling back to configuration file.\n", errList)
+	if errList != nil || len(hosts) == 0 {
+		fmt.Fprint(ctx.Stderr, "Unable to fetch installed hosts.\nFalling back to configuration file.\n")
 		config, err := parseConfigFile(c.config)
 		if err != nil {
 			fmt.Fprintf(ctx.Stderr, "Failed to read configuration file: %s\n", err)
@@ -303,32 +305,28 @@ func (c *Uninstall) Run(ctx *cmd.Context, cli *cmd.Client) error {
 		}
 		d, err := dm.NewDockerMachine(config.DockerMachineConfig)
 		if err != nil {
-			fmt.Fprintf(ctx.Stderr, "Failed to delete machine: %s\n", err)
 			return err
 		}
 		installName = config.Name
 		dockerMachine = d.API
 	} else {
-		d, err := dockermachine.NewDockerMachine(dockermachine.DockerMachineConfig{})
+		api, err := dockerMachineWithHosts(hosts...)
 		if err != nil {
 			return err
 		}
-		for _, h := range hosts {
-			_, errReg := d.RegisterMachine(dockermachine.RegisterMachineOpts{
-				Base: &iaas.Machine{
-					CustomData: h.Driver,
-				},
-				DriverName:    h.DriverName,
-				SSHPrivateKey: []byte(h.SSHPrivateKey),
-			})
-			if errReg != nil {
-				return errReg
-			}
-		}
-		dockerMachine = d
-		installName, err = cmd.ReadTarget()
+		dockerMachine = api
+		tLabel, tURL, err := getTargetData()
 		if err != nil {
 			return err
+		}
+		installName = tLabel
+		fmt.Fprintf(ctx.Stdout, "This will uninstall Tsuru installed on your target %s: %s.\n", tLabel, tURL)
+		appMachines, err = machineList.List(cli)
+		if err != nil {
+			return err
+		}
+		if len(appMachines) > 0 {
+			fmt.Fprintf(ctx.Stdout, "The following app machines will be destroyed: \n%s", machineList.Tabulate(appMachines).String())
 		}
 	}
 	defer dockerMachine.Close()
@@ -336,10 +334,7 @@ func (c *Uninstall) Run(ctx *cmd.Context, cli *cmd.Client) error {
 	if err != nil {
 		return err
 	}
-	tbl := cmd.Table{
-		LineSeparator: true,
-		Headers:       cmd.Row([]string{"Name", "IP", "Data"}),
-	}
+	tbl := cmd.Table{LineSeparator: true, Headers: cmd.Row([]string{"Name", "IP", "Data"})}
 	for _, m := range machines {
 		data, errMarshal := json.MarshalIndent(m.Base.CustomData, "", "")
 		if errMarshal != nil {
@@ -347,16 +342,29 @@ func (c *Uninstall) Run(ctx *cmd.Context, cli *cmd.Client) error {
 		}
 		tbl.AddRow(cmd.Row{m.Host.Name, m.Base.Address, string(data)})
 	}
-	fmt.Fprintf(ctx.Stdout, "The following machines will be destroyed:\n%s", tbl.String())
+	fmt.Fprintf(ctx.Stdout, "The following core machines will be destroyed:\n%s", tbl.String())
 	if !c.Confirm(ctx, fmt.Sprint("Are you sure you sure you want to uninstall tsuru?")) {
 		return nil
 	}
+	if !c.Confirm(ctx, fmt.Sprint("Are you really sure? I wont ask you again.")) {
+		return nil
+	}
+	destroyMachineCmd := admin.MachineDestroy{}
+	destroyCtx := &cmd.Context{Stdout: ctx.Stdout, Stderr: ctx.Stderr}
+	for _, m := range appMachines {
+		destroyCtx.Args = []string{m.Id}
+		fmt.Fprintf(ctx.Stdout, "Destroying machine %s...\n", m.FormatNodeAddress())
+		errDest := destroyMachineCmd.Run(destroyCtx, cli)
+		if errDest != nil {
+			return errDest
+		}
+	}
 	err = dockerMachine.DeleteAll()
 	if err != nil {
-		fmt.Fprintf(ctx.Stderr, "Failed to delete machines: %s\n", err)
+		fmt.Fprintf(ctx.Stderr, "Failed to delete core machines: %s\n", err)
 		return err
 	}
-	fmt.Fprintln(ctx.Stdout, "Machines successfully removed!")
+	fmt.Fprintln(ctx.Stdout, "Core Machines successfully removed!")
 	api := TsuruAPI{}
 	err = api.Uninstall(installName)
 	if err != nil {
@@ -365,6 +373,38 @@ func (c *Uninstall) Run(ctx *cmd.Context, cli *cmd.Client) error {
 	}
 	fmt.Fprintf(ctx.Stdout, "Uninstall finished successfully!\n")
 	return nil
+}
+
+func dockerMachineWithHosts(hosts ...installHost) (dockermachine.DockerMachineAPI, error) {
+	d, err := dockermachine.NewDockerMachine(dockermachine.DockerMachineConfig{})
+	if err != nil {
+		return nil, err
+	}
+	for _, h := range hosts {
+		_, errReg := d.RegisterMachine(dockermachine.RegisterMachineOpts{
+			Base: &iaas.Machine{
+				CustomData: h.Driver,
+			},
+			DriverName:    h.DriverName,
+			SSHPrivateKey: []byte(h.SSHPrivateKey),
+		})
+		if errReg != nil {
+			return nil, errReg
+		}
+	}
+	return d, nil
+}
+
+func getTargetData() (string, string, error) {
+	targetLabel, err := cmd.GetTargetLabel()
+	if err != nil {
+		return "", "", err
+	}
+	targetURL, err := cmd.GetTarget()
+	if err != nil {
+		return "", "", err
+	}
+	return targetLabel, targetURL, nil
 }
 
 func parseDriverOptsSlice(opts interface{}) (map[string][]interface{}, error) {
