@@ -71,6 +71,8 @@ func buildManager(name string) *cmd.Manager {
 	m.RegisterRemoved("service-unbind", "You should use `tsuru service-instance-unbind` instead.")
 	m.Register(&admin.PlatformList{})
 	m.Register(&admin.PlatformAdd{})
+	m.Register(&admin.PlatformUpdate{})
+	m.Register(&admin.PlatformRemove{})
 	m.Register(&client.PluginInstall{})
 	m.Register(&client.PluginRemove{})
 	m.Register(&client.PluginList{})

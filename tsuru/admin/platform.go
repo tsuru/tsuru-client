@@ -135,6 +135,125 @@ func (p *PlatformAdd) Flags() *gnuflag.FlagSet {
 	return p.fs
 }
 
+type PlatformUpdate struct {
+	name        string
+	dockerfile  string
+	image       string
+	forceUpdate bool
+	disable     bool
+	enable      bool
+	fs          *gnuflag.FlagSet
+}
+
+func (p *PlatformUpdate) Info() *cmd.Info {
+	return &cmd.Info{
+		Name:  "platform-update",
+		Usage: "platform-update <platform name> [--dockerfile/-d Dockerfile] [--disable/--enable] [--image/-i image]",
+		Desc: `Updates a platform in tsuru.
+
+The name of the image can be automatically inferred in case you're using an
+official platform. Check https://github.com/tsuru/platforms for a list of
+official platforms.
+
+The flags --enable and --disable can be used for enabling or disabling a
+platform.
+
+Examples:
+
+[[tsuru-admin platform-update java # uses official tsuru/java image from docker hub]]
+[[tsuru-admin platform-update java -i registry.company.com/tsuru/java # uses custom Java image]]
+[[tsuru-admin platform-update java -d /data/projects/java/Dockerfile # uses local Dockerfile]]
+[[tsuru-admin platform-update java -d https://platforms.com/java/Dockerfile # uses remote Dockerfile]]`,
+		MinArgs: 1,
+	}
+}
+
+func (p *PlatformUpdate) Flags() *gnuflag.FlagSet {
+	dockerfileMessage := "URL or path to the Dockerfile used for building the image of the platform"
+	if p.fs == nil {
+		p.fs = gnuflag.NewFlagSet("platform-update", gnuflag.ExitOnError)
+		p.fs.StringVar(&p.dockerfile, "dockerfile", "", dockerfileMessage)
+		p.fs.StringVar(&p.dockerfile, "d", "", dockerfileMessage)
+		p.fs.BoolVar(&p.disable, "disable", false, "Disable the platform")
+		p.fs.BoolVar(&p.enable, "enable", false, "Enable the platform")
+		msg := "Name of the prebuilt Docker image"
+		p.fs.StringVar(&p.image, "image", "", msg)
+		p.fs.StringVar(&p.image, "i", "", msg)
+	}
+	return p.fs
+}
+
+func (p *PlatformUpdate) Run(context *cmd.Context, client *cmd.Client) error {
+	context.RawOutput()
+	name := context.Args[0]
+	if p.disable && p.enable {
+		return errors.New("Conflicting options: --enable and --disable")
+	}
+	var disable string
+	if p.enable {
+		disable = "false"
+	}
+	if p.disable {
+		disable = "true"
+	}
+	var body bytes.Buffer
+	implicitImage := !p.disable && !p.enable && p.dockerfile == "" && p.image == ""
+	writer, err := serializeDockerfile(context.Args[0], &body, p.dockerfile, p.image, implicitImage)
+	if err != nil {
+		return err
+	}
+	writer.WriteField("disabled", disable)
+	writer.Close()
+	url, err := cmd.GetURL(fmt.Sprintf("/platforms/%s", name))
+	request, err := http.NewRequest("PUT", url, &body)
+	if err != nil {
+		return err
+	}
+	request.Header.Add("Content-Type", writer.FormDataContentType())
+	response, err := client.Do(request)
+	if err != nil {
+		return err
+	}
+	defer response.Body.Close()
+	return cmd.StreamJSONResponse(context.Stdout, response)
+}
+
+type PlatformRemove struct {
+	cmd.ConfirmationCommand
+}
+
+func (p *PlatformRemove) Info() *cmd.Info {
+	return &cmd.Info{
+		Name:  "platform-remove",
+		Usage: "platform-remove <platform name> [-y]",
+		Desc: `Remove a platform from tsuru. This command will fail if there are application
+still using the platform.`,
+		MinArgs: 1,
+	}
+}
+
+func (p *PlatformRemove) Run(context *cmd.Context, client *cmd.Client) error {
+	name := context.Args[0]
+	if !p.Confirm(context, fmt.Sprintf(`Are you sure you want to remove "%s" platform?`, name)) {
+		return nil
+	}
+	url, err := cmd.GetURL("/platforms/" + name)
+	if err != nil {
+		return err
+	}
+	request, err := http.NewRequest("DELETE", url, nil)
+	if err != nil {
+		return err
+	}
+	_, err = client.Do(request)
+	if err != nil {
+		fmt.Fprintf(context.Stdout, "Failed to remove platform!\n")
+		return err
+	}
+	fmt.Fprintf(context.Stdout, "Platform successfully removed!\n")
+	return nil
+}
+
 func serializeDockerfile(name string, w io.Writer, dockerfile, image string, useImplicit bool) (*multipart.Writer, error) {
 	if dockerfile != "" && image != "" {
 		return nil, errors.New("Conflicting options: --image and --dockerfile")
