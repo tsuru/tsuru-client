@@ -80,6 +80,188 @@ func (c *AddPoolToSchedulerCmd) Run(ctx *cmd.Context, client *cmd.Client) error 
 	return nil
 }
 
+type UpdatePoolToSchedulerCmd struct {
+	public       pointerBoolFlag
+	defaultPool  pointerBoolFlag
+	forceDefault bool
+	fs           *gnuflag.FlagSet
+}
+
+func (UpdatePoolToSchedulerCmd) Info() *cmd.Info {
+	return &cmd.Info{
+		Name:    "pool-update",
+		Usage:   "pool-update <pool> [--public=true/false] [--default=true/false] [-f/--force]",
+		Desc:    `Updates attributes for a pool.`,
+		MinArgs: 1,
+	}
+}
+
+func (c *UpdatePoolToSchedulerCmd) Flags() *gnuflag.FlagSet {
+	if c.fs == nil {
+		c.fs = gnuflag.NewFlagSet("", gnuflag.ExitOnError)
+		msg := "Make pool public (all teams can use it)"
+		c.fs.Var(&c.public, "public", msg)
+		msg = "Make pool default (when none is specified during [[app-create]] this pool will be used)"
+		c.fs.Var(&c.defaultPool, "default", msg)
+		c.fs.BoolVar(&c.forceDefault, "force", false, "Force pool to be default.")
+		c.fs.BoolVar(&c.forceDefault, "f", false, "Force pool to be default.")
+	}
+	return c.fs
+}
+
+func (c *UpdatePoolToSchedulerCmd) Run(ctx *cmd.Context, client *cmd.Client) error {
+	v := url.Values{}
+	if c.public.value == nil {
+		v.Set("public", "")
+	} else {
+		v.Set("public", strconv.FormatBool(*c.public.value))
+	}
+	if c.defaultPool.value == nil {
+		v.Set("default", "")
+	} else {
+		v.Set("default", strconv.FormatBool(*c.defaultPool.value))
+	}
+	v.Set("force", strconv.FormatBool(c.forceDefault))
+	u, err := cmd.GetURL(fmt.Sprintf("/pools/%s", ctx.Args[0]))
+	err = doRequest(client, u, "PUT", v.Encode())
+	if err != nil {
+		if e, ok := err.(*errors.HTTP); ok && e.Code == http.StatusPreconditionFailed {
+			retryMessage := "WARNING: Default pool already exist. Do you want change to %s pool? (y/n) "
+			failMessage := "Pool update aborted.\n"
+			successMessage := "Pool successfully updated.\n"
+			v.Set("force", "true")
+			u, err = cmd.GetURL(fmt.Sprintf("/pools/%s", ctx.Args[0]))
+			return confirmAction(ctx, client, u, "PUT", v.Encode(), retryMessage, failMessage, successMessage)
+		}
+		return err
+	}
+	ctx.Stdout.Write([]byte("Pool successfully updated.\n"))
+	return nil
+}
+
+type RemovePoolFromSchedulerCmd struct {
+	cmd.ConfirmationCommand
+}
+
+func (c *RemovePoolFromSchedulerCmd) Info() *cmd.Info {
+	return &cmd.Info{
+		Name:    "pool-remove",
+		Usage:   "pool-remove <pool> [-y]",
+		Desc:    "Remove an existing pool.",
+		MinArgs: 1,
+	}
+}
+
+func (c *RemovePoolFromSchedulerCmd) Run(ctx *cmd.Context, client *cmd.Client) error {
+	if !c.Confirm(ctx, fmt.Sprintf("Are you sure you want to remove \"%s\" pool?", ctx.Args[0])) {
+		return nil
+	}
+	url, err := cmd.GetURL(fmt.Sprintf("/pools/%s", ctx.Args[0]))
+	if err != nil {
+		return err
+	}
+	req, err := http.NewRequest("DELETE", url, nil)
+	if err != nil {
+		return err
+	}
+	_, err = client.Do(req)
+	if err != nil {
+		return err
+	}
+	ctx.Stdout.Write([]byte("Pool successfully removed.\n"))
+	return nil
+}
+
+type AddTeamsToPoolCmd struct{}
+
+func (AddTeamsToPoolCmd) Info() *cmd.Info {
+	return &cmd.Info{
+		Name:  "pool-teams-add",
+		Usage: "pool-teams-add <pool> <teams>...",
+		Desc: `Adds teams to a pool. This will make the specified pool available when
+creating a new application for one of the added teams.`,
+		MinArgs: 2,
+	}
+}
+
+func (AddTeamsToPoolCmd) Run(ctx *cmd.Context, client *cmd.Client) error {
+	v := url.Values{}
+	for _, team := range ctx.Args[1:] {
+		v.Add("team", team)
+	}
+	u, err := cmd.GetURL(fmt.Sprintf("/pools/%s/team", ctx.Args[0]))
+	if err != nil {
+		return err
+	}
+	req, err := http.NewRequest("POST", u, strings.NewReader(v.Encode()))
+	if err != nil {
+		return err
+	}
+	req.Header.Set("Content-Type", "application/x-www-form-urlencoded")
+	_, err = client.Do(req)
+	if err != nil {
+		return err
+	}
+	ctx.Stdout.Write([]byte("Teams successfully registered.\n"))
+	return nil
+}
+
+type RemoveTeamsFromPoolCmd struct{}
+
+func (RemoveTeamsFromPoolCmd) Info() *cmd.Info {
+	return &cmd.Info{
+		Name:  "pool-teams-remove",
+		Usage: "pool-teams-remove <pool> <teams>...",
+		Desc: `Removes teams from a pool. Listed teams will be no longer able to use this
+pool when creating a new application.`,
+		MinArgs: 2,
+	}
+}
+
+func (RemoveTeamsFromPoolCmd) Run(ctx *cmd.Context, client *cmd.Client) error {
+	v := url.Values{}
+	for _, team := range ctx.Args[1:] {
+		v.Add("team", team)
+	}
+	u, err := cmd.GetURL(fmt.Sprintf("/pools/%s/team?%s", ctx.Args[0], v.Encode()))
+	if err != nil {
+		return err
+	}
+	req, err := http.NewRequest("DELETE", u, nil)
+	if err != nil {
+		return err
+	}
+	_, err = client.Do(req)
+	if err != nil {
+		return err
+	}
+	ctx.Stdout.Write([]byte("Teams successfully removed.\n"))
+	return nil
+}
+
+type pointerBoolFlag struct {
+	value *bool
+}
+
+func (p *pointerBoolFlag) String() string {
+	if p.value == nil {
+		return "not set"
+	}
+	return fmt.Sprintf("%v", *p.value)
+}
+
+func (p *pointerBoolFlag) Set(value string) error {
+	if value == "" {
+		return nil
+	}
+	v, err := strconv.ParseBool(value)
+	if err != nil {
+		return err
+	}
+	p.value = &v
+	return nil
+}
+
 func doRequest(client *cmd.Client, url, method, body string) error {
 	req, err := http.NewRequest(method, url, strings.NewReader(body))
 	if err != nil {
