@@ -37,59 +37,6 @@ with docker machine drivers.
 The [[--config]] parameter is the path to a .yml file containing the installation
 configuration. If not provided, Tsuru will be installed into a VirtualBox VM for
 experimentation.
-
-The following is an example of installation configuration to install Tsuru on
-Amazon EC2:
-
-==========
-name: tsuru-ec2
-driver:
-    name: amazonec2
-    options:
-        amazonec2-access-key: myAmazonAccessKey
-        amazonec2-secret-key: myAmazonSecretKey
-        amazonec2-vpc-id: vpc-abc1234
-        amazonec2-subnet-id: subnet-abc1234
-==========
-
-Available configuration parameters:
-
-- name
-Name of the installation.
-
-- docker-hub-mirror
-Url of a docker hub mirror used to fetch the components docker images.
-
-- ca-path
-A path to a directory containing a ca.pem and ca-key.pem files that are going to be used to sign certificates used by docker and docker registry.
-If not set, a CA will be created, copied to every host provisioned and used to sign the certificates.
-
-- hosts:core:size
-Number of machines to be provisioned and used to host tsuru core components.
-
-- hosts:core:driver:options
-Driver parameters specific to the core hosts can be set on this namespace. The format is: <driver-param>>: ["value1", "value2"]. Each
-host will use one value from the list. Refer to the driver configuration for more information on what parameter are available.
-
-- hosts:apps:size
-Number of machines to be provisioned and used to host tsuru applications.
-
-- hosts:apps:dedicated
-Boolean to indicated if the installer should not reuse the machines created for
-the core components.
-
-- hosts:apps:driver:options
-Driver parameters specific to the applications hosts can be set on this namespace. The format is: <driver-param>>: ["value1", "value2"]. Each
-host will use one value from the list. Refer to the driver configuration for more information on what parameter are available.
-
-- driver
-Under this namespace lies all the docker machine driver configuration.
-
-- driver:name
-Name of the driver to be used by the installer. This can be any core or 3rd party driver supported by docker machine. If a 3rd party driver name is used, it's binary must be available on the user path.
-
-- driver:options
-Under this namespace every driver parameters can be set. Refer to the driver configuration for more information on what parameter are available.
 `,
 		MinArgs: 0,
 	}
