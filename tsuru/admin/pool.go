@@ -30,7 +30,7 @@ func (AddPoolToSchedulerCmd) Info() *cmd.Info {
 		Usage: "pool-add <pool> [-p/--public] [-d/--default] [--provisioner <name>] [-f/--force]",
 		Desc: `Adds a new pool.
 
-Each docker node added using [[docker-node-add]] command belongs to one pool.
+Each docker node added using [[node-add]] command belongs to one pool.
 Also, when creating a new application a pool must be chosen and this means
 that all units of the created application will be spawned in nodes belonging
 to the chosen pool.`,

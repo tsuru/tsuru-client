@@ -91,10 +91,10 @@ official platforms and instructions on how to create a custom platform.
 
 Examples:
 
-	[[tsuru-admin platform-add java # uses official tsuru/java image from docker hub]]
-	[[tsuru-admin platform-add java -i registry.company.com/tsuru/java # uses custom Java image]]
-	[[tsuru-admin platform-add java -d /data/projects/java/Dockerfile # uses local Dockerfile]]
-	[[tsuru-admin platform-add java -d https://platforms.com/java/Dockerfile # uses remote Dockerfile]]`,
+	[[tsuru platform-add java # uses official tsuru/java image from docker hub]]
+	[[tsuru platform-add java -i registry.company.com/tsuru/java # uses custom Java image]]
+	[[tsuru platform-add java -d /data/projects/java/Dockerfile # uses local Dockerfile]]
+	[[tsuru platform-add java -d https://platforms.com/java/Dockerfile # uses remote Dockerfile]]`,
 		MinArgs: 1,
 	}
 }
@@ -160,10 +160,10 @@ platform.
 
 Examples:
 
-[[tsuru-admin platform-update java # uses official tsuru/java image from docker hub]]
-[[tsuru-admin platform-update java -i registry.company.com/tsuru/java # uses custom Java image]]
-[[tsuru-admin platform-update java -d /data/projects/java/Dockerfile # uses local Dockerfile]]
-[[tsuru-admin platform-update java -d https://platforms.com/java/Dockerfile # uses remote Dockerfile]]`,
+[[tsuru platform-update java # uses official tsuru/java image from docker hub]]
+[[tsuru platform-update java -i registry.company.com/tsuru/java # uses custom Java image]]
+[[tsuru platform-update java -d /data/projects/java/Dockerfile # uses local Dockerfile]]
+[[tsuru platform-update java -d https://platforms.com/java/Dockerfile # uses remote Dockerfile]]`,
 		MinArgs: 1,
 	}
 }
