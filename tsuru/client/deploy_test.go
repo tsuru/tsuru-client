@@ -20,6 +20,7 @@ import (
 	"github.com/tsuru/tsuru/cmd/cmdtest"
 	tsuruIo "github.com/tsuru/tsuru/io"
 	"gopkg.in/check.v1"
+	"runtime"
 )
 
 func (s *S) TestDeployInfo(c *check.C) {
@@ -320,6 +321,9 @@ func (s *S) TestTargzSingleDirectory(c *check.C) {
 }
 
 func (s *S) TestTargzSymlink(c *check.C) {
+	if runtime.GOOS == "windows" {
+		c.Skip("no symlink support on windows")
+	}
 	var buf bytes.Buffer
 	ctx := cmd.Context{Stderr: &buf}
 	var gzipBuf, tarBuf bytes.Buffer
@@ -346,7 +350,7 @@ func (s *S) TestTargzFailure(c *check.C) {
 	var buf bytes.Buffer
 	err := targz(&ctx, &buf, "/tmp/something/that/definitely/doesn't/exist/right", "testdata")
 	c.Assert(err, check.NotNil)
-	c.Assert(err.Error(), check.Equals, "lstat /tmp/something/that/definitely/doesn't/exist/right: no such file or directory")
+	c.Assert(err.Error(), check.Matches, ".*(no such file or directory|cannot find the path specified).*")
 }
 
 func (s *S) TestDeployListInfo(c *check.C) {
