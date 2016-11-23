@@ -11,6 +11,7 @@ import (
 	"io/ioutil"
 	"os"
 	"path/filepath"
+	"strings"
 	"sync/atomic"
 
 	"github.com/docker/machine/libmachine/cert"
@@ -122,6 +123,10 @@ func (d *DockerMachine) generateMachineName() string {
 	return fmt.Sprintf("%s-%d", d.Name, atomic.LoadUint64(&d.machinesCount))
 }
 
+func nixPathJoin(elem ...string) string {
+	return strings.Join(elem, "/")
+}
+
 func (d *DockerMachine) uploadRegistryCertificate(ip, user string, target sshTarget) error {
 	registryCertPath := filepath.Join(d.certsPath, "registry-cert.pem")
 	registryKeyPath := filepath.Join(d.certsPath, "registry-key.pem")
@@ -154,12 +159,12 @@ func (d *DockerMachine) uploadRegistryCertificate(ip, user string, target sshTar
 		return err
 	}
 	fileCopies := map[string]string{
-		registryCertPath:                         filepath.Join(certsBasePath, "registry-cert.pem"),
-		registryKeyPath:                          filepath.Join(certsBasePath, "registry-key.pem"),
-		filepath.Join(d.certsPath, "ca-key.pem"): filepath.Join(dockerCertsPath, "ca-key.pem"),
-		filepath.Join(d.certsPath, "ca.pem"):     filepath.Join(dockerCertsPath, "ca.pem"),
-		filepath.Join(d.certsPath, "cert.pem"):   filepath.Join(dockerCertsPath, "cert.pem"),
-		filepath.Join(d.certsPath, "key.pem"):    filepath.Join(dockerCertsPath, "key.pem"),
+		registryCertPath:                         nixPathJoin(certsBasePath, "registry-cert.pem"),
+		registryKeyPath:                          nixPathJoin(certsBasePath, "registry-key.pem"),
+		filepath.Join(d.certsPath, "ca-key.pem"): nixPathJoin(dockerCertsPath, "ca-key.pem"),
+		filepath.Join(d.certsPath, "ca.pem"):     nixPathJoin(dockerCertsPath, "ca.pem"),
+		filepath.Join(d.certsPath, "cert.pem"):   nixPathJoin(dockerCertsPath, "cert.pem"),
+		filepath.Join(d.certsPath, "key.pem"):    nixPathJoin(dockerCertsPath, "key.pem"),
 	}
 	for src, dst := range fileCopies {
 		errWrite := writeRemoteFile(target, src, dst)
