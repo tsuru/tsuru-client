@@ -67,11 +67,11 @@ func (s *S) TestUploadRegistryCertificate(c *check.C) {
 
 func (s *S) containsWithSubstring(l []string, subs string, c *check.C) {
 	for _, v := range l {
-		if strings.Contains(v, subs) == true {
+		if strings.Contains(v, subs) {
 			return
 		}
 	}
-	c.Fatalf("substring %s not found", subs)
+	c.Fatalf("substring %s not found in %#v", subs, l)
 }
 
 func (s *S) TestCreateRegistryCertificate(c *check.C) {
