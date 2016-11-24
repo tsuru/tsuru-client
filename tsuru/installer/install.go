@@ -168,7 +168,7 @@ func parseConfigFile(file string) (*InstallOpts, error) {
 }
 
 func addInstallHosts(machines []*dockermachine.Machine, client *cmd.Client) error {
-	path, err := cmd.GetURLVersion("1.3", "/install/hosts")
+	path, err := cmd.GetURLVersion("1.2", "/install/hosts")
 	if err != nil {
 		return err
 	}
@@ -408,7 +408,7 @@ func (c *InstallHostList) Run(context *cmd.Context, cli *cmd.Client) error {
 }
 
 func listHosts(context *cmd.Context, cli *cmd.Client) ([]installHost, error) {
-	url, err := cmd.GetURLVersion("1.3", "/install/hosts")
+	url, err := cmd.GetURLVersion("1.2", "/install/hosts")
 	if err != nil {
 		return nil, err
 	}
@@ -480,7 +480,7 @@ func (c *InstallSSH) Flags() *gnuflag.FlagSet {
 
 func (c *InstallSSH) Run(context *cmd.Context, cli *cmd.Client) error {
 	hostName := context.Args[0]
-	url, err := cmd.GetURLVersion("1.3", "/install/hosts/"+hostName)
+	url, err := cmd.GetURLVersion("1.2", "/install/hosts/"+hostName)
 	if err != nil {
 		return err
 	}

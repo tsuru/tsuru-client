@@ -366,7 +366,7 @@ func (c *GetNodeHealingConfigCmd) Info() *cmd.Info {
 }
 
 func (c *GetNodeHealingConfigCmd) Run(ctx *cmd.Context, client *cmd.Client) error {
-	u, err := cmd.GetURLVersion("1.3", "/healing/node")
+	u, err := cmd.GetURLVersion("1.2", "/healing/node")
 	if err != nil {
 		return err
 	}
@@ -473,7 +473,7 @@ func (c *SetNodeHealingConfigCmd) Run(ctx *cmd.Context, client *cmd.Client) erro
 		v.Set("Enabled", strconv.FormatBool(false))
 	}
 	body := strings.NewReader(v.Encode())
-	u, err := cmd.GetURLVersion("1.3", "/healing/node")
+	u, err := cmd.GetURLVersion("1.2", "/healing/node")
 	if err != nil {
 		return err
 	}
@@ -546,7 +546,7 @@ func (c *DeleteNodeHealingConfigCmd) Run(ctx *cmd.Context, client *cmd.Client) e
 	if c.maxUnsuccessful {
 		v.Add("name", "MaxTimeSinceSuccess")
 	}
-	u, err := cmd.GetURLVersion("1.3", "/healing/node?"+v.Encode())
+	u, err := cmd.GetURLVersion("1.2", "/healing/node?"+v.Encode())
 	if err != nil {
 		return err
 	}

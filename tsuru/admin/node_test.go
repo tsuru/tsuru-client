@@ -394,7 +394,7 @@ func (s *S) TestGetNodeHealingConfigCmd(c *check.C) {
 "p2": {"enabled": true, "maxunresponsivetime": 3, "enabledinherited": true}
 }`, Status: http.StatusOK},
 		CondFunc: func(req *http.Request) bool {
-			return req.URL.Path == "/1.3/healing/node"
+			return req.URL.Path == "/1.2/healing/node"
 		},
 	}
 	manager := cmd.Manager{}
@@ -438,7 +438,7 @@ func (s *S) TestGetNodeHealingConfigCmdEmpty(c *check.C) {
 	trans := &cmdtest.ConditionalTransport{
 		Transport: cmdtest.Transport{Message: `{}`, Status: http.StatusOK},
 		CondFunc: func(req *http.Request) bool {
-			return req.URL.Path == "/1.3/healing/node"
+			return req.URL.Path == "/1.2/healing/node"
 		},
 	}
 	manager := cmd.Manager{}
@@ -465,7 +465,7 @@ func (s *S) TestDeleteNodeHealingConfigCmd(c *check.C) {
 		Transport: cmdtest.Transport{Message: `{}`, Status: http.StatusOK},
 		CondFunc: func(req *http.Request) bool {
 			req.ParseForm()
-			return req.URL.Path == "/1.3/healing/node" && req.Method == "DELETE" &&
+			return req.URL.Path == "/1.2/healing/node" && req.Method == "DELETE" &&
 				req.Form.Get("name") == "Enabled" && req.Form.Get("pool") == "p1"
 		},
 	}
@@ -490,7 +490,7 @@ func (s *S) TestSetNodeHealingConfigCmd(c *check.C) {
 				"MaxUnresponsiveTime": []string{"10"},
 				"Enabled":             []string{"false"},
 			})
-			return req.URL.Path == "/1.3/healing/node" && req.Method == "POST"
+			return req.URL.Path == "/1.2/healing/node" && req.Method == "POST"
 		},
 	}
 	manager := cmd.Manager{}
