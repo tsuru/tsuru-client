@@ -47,7 +47,7 @@ func (s *S) TestUploadRegistryCertificate(c *check.C) {
 	c.Assert(err, check.IsNil)
 	c.Assert(len(sshTarget.cmds), check.Equals, 11)
 	c.Assert(sshTarget.cmds[0], check.Equals, "mkdir -p /home/ubuntu/certs/127.0.0.1:5000")
-	c.Assert(sshTarget.cmds[1], check.Equals, "sudo mkdir /etc/docker/certs.d")
+	c.Assert(sshTarget.cmds[1], check.Equals, "sudo mkdir -p /etc/docker/certs.d")
 	s.containsWithSubstring(sshTarget.cmds, "sudo tee /etc/docker/certs.d/ca-key.pem", c)
 	s.containsWithSubstring(sshTarget.cmds, "sudo tee /etc/docker/certs.d/ca.pem", c)
 	s.containsWithSubstring(sshTarget.cmds, "sudo tee /etc/docker/certs.d/cert.pem", c)
@@ -60,7 +60,7 @@ func (s *S) TestUploadRegistryCertificate(c *check.C) {
 	c.Assert(err, check.IsNil)
 	c.Assert(len(sshTarget2.cmds), check.Equals, 11)
 	c.Assert(sshTarget2.cmds[0], check.Equals, "mkdir -p /home/ubuntu/certs/127.0.0.1:5000")
-	c.Assert(sshTarget2.cmds[1], check.Equals, "sudo mkdir /etc/docker/certs.d")
+	c.Assert(sshTarget2.cmds[1], check.Equals, "sudo mkdir -p /etc/docker/certs.d")
 	s.containsWithSubstring(sshTarget2.cmds, "sudo tee /home/ubuntu/certs/127.0.0.1:5000/registry-cert.pem", c)
 	s.containsWithSubstring(sshTarget2.cmds, "sudo tee /home/ubuntu/certs/127.0.0.1:5000/registry-key.pem", c)
 }
