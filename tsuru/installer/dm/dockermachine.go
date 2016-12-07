@@ -155,7 +155,7 @@ func (d *DockerMachine) uploadRegistryCertificate(ip, user string, target sshTar
 		return err
 	}
 	dockerCertsPath := "/etc/docker/certs.d"
-	if _, err := target.RunSSHCommand(fmt.Sprintf("sudo mkdir %s", dockerCertsPath)); err != nil {
+	if _, err := target.RunSSHCommand(fmt.Sprintf("sudo mkdir -p %s", dockerCertsPath)); err != nil {
 		return err
 	}
 	fileCopies := map[string]string{
