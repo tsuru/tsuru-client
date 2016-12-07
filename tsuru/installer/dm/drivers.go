@@ -28,6 +28,8 @@ func GetPrivateIPInterface(driverName string) (string, error) {
 	switch driverName {
 	case "amazonec2":
 		return "eth0", nil
+	case "google":
+		return "eth0", nil
 	default:
 		return "", ErrNoPrivateIPInterface
 	}
