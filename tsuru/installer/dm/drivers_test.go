@@ -37,8 +37,14 @@ func (s *S) TestGetPrivateIPInterfaceFromConfig(c *check.C) {
 	c.Assert(iface, check.Equals, "eth1")
 }
 
-func (s *S) TestGetPrivateIPInterfaceForDriver(c *check.C) {
+func (s *S) TestGetPrivateIPInterfaceForAmazonEC2Driver(c *check.C) {
 	iface, err := GetPrivateIPInterface("amazonec2")
+	c.Assert(err, check.IsNil)
+	c.Assert(iface, check.Equals, "eth0")
+}
+
+func (s *S) TestGetPrivateIPInterfaceForGoogleDriver(c *check.C) {
+	iface, err := GetPrivateIPInterface("google")
 	c.Assert(err, check.IsNil)
 	c.Assert(iface, check.Equals, "eth0")
 }
