@@ -131,6 +131,9 @@ func (c *dockerCmd) flags(fs *gnuflag.FlagSet) {
 
 func (c *dockerCmd) toValues() (url.Values, error) {
 	ports, portBindings, err := nat.ParsePortSpecs(c.ports)
+	if err != nil {
+		return nil, err
+	}
 	c.config.Config.ExposedPorts = map[docker.Port]struct{}{}
 	for k, v := range ports {
 		c.config.Config.ExposedPorts[docker.Port(k)] = v
@@ -175,7 +178,7 @@ type NodeContainerAdd struct {
 func (c *NodeContainerAdd) Info() *cmd.Info {
 	return &cmd.Info{
 		Name:  "node-container-add",
-		Usage: fmt.Sprintf("node-container-add <name> [-p/--pool poolname] %s", c.dockerCmd.info()),
+		Usage: fmt.Sprintf("node-container-add <name> [-o/--pool poolname] %s", c.dockerCmd.info()),
 		Desc: `Add new node container or overwrite existing one. If the pool name is omitted
 the node container will be valid for all pools.`,
 		MinArgs: 1,
@@ -371,6 +374,8 @@ func (c *NodeContainerDelete) Flags() *gnuflag.FlagSet {
 
 type NodeContainerUpgrade struct {
 	cmd.ConfirmationCommand
+	fs   *gnuflag.FlagSet
+	pool string
 }
 
 func (c *NodeContainerUpgrade) Info() *cmd.Info {
@@ -383,6 +388,16 @@ func (c *NodeContainerUpgrade) Info() *cmd.Info {
 	}
 }
 
+func (c *NodeContainerUpgrade) Flags() *gnuflag.FlagSet {
+	if c.fs == nil {
+		c.fs = c.ConfirmationCommand.Flags()
+		msg := "Pool to upgrade container. If empty it'll be a default entry to all pools."
+		c.fs.StringVar(&c.pool, "p", "", msg)
+		c.fs.StringVar(&c.pool, "pool", "", msg)
+	}
+	return c.fs
+}
+
 func (c *NodeContainerUpgrade) Run(context *cmd.Context, client *cmd.Client) error {
 	context.RawOutput()
 	if !c.Confirm(context, "Are you sure you want to upgrade existing node containers?") {
@@ -392,10 +407,13 @@ func (c *NodeContainerUpgrade) Run(context *cmd.Context, client *cmd.Client) err
 	if err != nil {
 		return err
 	}
-	request, err := http.NewRequest("POST", u, nil)
+	val := url.Values{}
+	val.Set("pool", c.pool)
+	request, err := http.NewRequest("POST", u, strings.NewReader(val.Encode()))
 	if err != nil {
 		return err
 	}
+	request.Header.Set("Content-Type", "application/x-www-form-urlencoded")
 	rsp, err := client.Do(request)
 	if err != nil {
 		return err
