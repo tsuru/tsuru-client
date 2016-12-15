@@ -83,6 +83,7 @@ func (c *Install) Run(context *cmd.Context, cli *cmd.Client) error {
 		return fmt.Errorf("failed to register hosts: %s", err)
 	}
 	fmt.Fprint(context.Stdout, installation.Summary())
+	fmt.Printf("Configured default user:\nUsername: %s\nPassword: %s\n", installConfig.TsuruAPIConfig.RootUserEmail, installConfig.TsuruAPIConfig.RootUserPassword)
 	fmt.Fprintln(context.Stdout, "Apps Hosts:")
 	nodeList := &admin.ListNodesCmd{}
 	nodeList.Run(context, cli)
