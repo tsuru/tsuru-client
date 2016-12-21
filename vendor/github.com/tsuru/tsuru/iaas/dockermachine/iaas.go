@@ -6,7 +6,14 @@ package dockermachine
 
 import (
 	"bytes"
+	"crypto/rand"
+	"encoding/hex"
 	"fmt"
+	"io"
+	"io/ioutil"
+	"os"
+	"strconv"
+	"strings"
 
 	"github.com/pkg/errors"
 	tsuruErrors "github.com/tsuru/tsuru/errors"
@@ -21,13 +28,13 @@ func init() {
 }
 
 type dockerMachineIaaS struct {
-	base       iaas.NamedIaaS
+	base       iaas.UserDataIaaS
 	apiFactory func(DockerMachineConfig) (DockerMachineAPI, error)
 }
 
 func newDockerMachineIaaS(name string) iaas.IaaS {
 	return &dockerMachineIaaS{
-		base:       iaas.NamedIaaS{BaseIaaSName: "dockermachine", IaaSName: name},
+		base:       iaas.UserDataIaaS{NamedIaaS: iaas.NamedIaaS{BaseIaaSName: "dockermachine", IaaSName: name}},
 		apiFactory: NewDockerMachine,
 	}
 }
@@ -52,22 +59,55 @@ func (i *dockerMachineIaaS) CreateMachine(params map[string]string) (*iaas.Machi
 	}
 	dockerEngineInstallURL, _ := i.getParamOrConfigString("docker-install-url", params)
 	insecureRegistry, _ := i.getParamOrConfigString("insecure-registry", params)
+	var engineFlags []string
+	if f, err := i.getParamOrConfigString("docker-flags", params); err == nil {
+		engineFlags = strings.Split(f, ",")
+	}
 	machineName, ok := params["name"]
 	if !ok {
-		machines, errList := iaas.ListMachines()
-		if errList != nil {
-			return nil, errors.Wrap(errList, "failed to list machines")
+		name, err := generateMachineName(params["pool"])
+		if err != nil {
+			return nil, err
 		}
-		machineName = fmt.Sprintf("%s-%d", params["pool"], len(machines)+1)
+		machineName = name
 	} else {
 		delete(params, "name")
 	}
+	userDataFileParam, err := i.base.GetConfigString("driver:user-data-file-param")
+	if err == nil {
+		f, errTemp := ioutil.TempFile("", "")
+		if errTemp != nil {
+			return nil, errors.Wrap(errTemp, "failed to create userdata file")
+		}
+		defer os.RemoveAll(f.Name())
+		userData, errData := i.base.ReadUserData()
+		if errData != nil {
+			return nil, errors.WithMessage(errData, "failed to read userdata")
+		}
+		_, errWrite := f.WriteString(userData)
+		if errWrite != nil {
+			return nil, errors.Wrap(errWrite, "failed to write local userdata file")
+		}
+		params[userDataFileParam] = f.Name()
+	}
 	driverOpts := i.buildDriverOpts(driverName, params)
+	if userDataFileParam != "" {
+		delete(params, userDataFileParam)
+	}
 	buf := &bytes.Buffer{}
+	debugConf, _ := i.base.GetConfigString("debug")
+	if debugConf == "" {
+		debugConf = "false"
+	}
+	isDebug, err := strconv.ParseBool(debugConf)
+	if err != nil {
+		return nil, errors.Wrap(err, "failed to parse debug config")
+	}
 	dockerMachine, err := i.apiFactory(DockerMachineConfig{
 		CaPath:    caPath,
 		OutWriter: buf,
 		ErrWriter: buf,
+		IsDebug:   isDebug,
 	})
 	if err != nil {
 		return nil, err
@@ -82,6 +122,7 @@ func (i *dockerMachineIaaS) CreateMachine(params map[string]string) (*iaas.Machi
 		Params:                 driverOpts,
 		InsecureRegistry:       insecureRegistry,
 		DockerEngineInstallURL: dockerEngineInstallURL,
+		ArbitraryFlags:         engineFlags,
 	})
 	if err != nil {
 		if m != nil {
@@ -115,9 +156,18 @@ func (i *dockerMachineIaaS) buildDriverOpts(driverName string, params map[string
 
 func (i *dockerMachineIaaS) DeleteMachine(m *iaas.Machine) error {
 	buf := &bytes.Buffer{}
+	debugConf, _ := i.base.GetConfigString("debug")
+	if debugConf == "" {
+		debugConf = "false"
+	}
+	isDebug, err := strconv.ParseBool(debugConf)
+	if err != nil {
+		return errors.Wrap(err, "failed to parse debug config")
+	}
 	dockerMachine, err := i.apiFactory(DockerMachineConfig{
 		OutWriter: buf,
 		ErrWriter: buf,
+		IsDebug:   isDebug,
 	})
 	if err != nil {
 		return err
@@ -129,6 +179,29 @@ func (i *dockerMachineIaaS) DeleteMachine(m *iaas.Machine) error {
 	return dockerMachine.DeleteMachine(m)
 }
 
+func generateMachineName(prefix string) (string, error) {
+	r := strings.NewReplacer("_", "-", " ", "-")
+	prefix = r.Replace(prefix)
+	prefix = strings.TrimPrefix(prefix, "-")
+	id, err := generateRandomID()
+	if err != nil {
+		return "", err
+	}
+	name := fmt.Sprintf("%s-%s", prefix, id)
+	if len(name) > 63 {
+		name = name[:63]
+	}
+	return name, nil
+}
+
+func generateRandomID() (string, error) {
+	id := make([]byte, 16)
+	if _, err := io.ReadFull(rand.Reader, id); err != nil {
+		return "", errors.Wrap(err, "failed to generate random id")
+	}
+	return hex.EncodeToString(id), nil
+}
+
 func (i *dockerMachineIaaS) Describe() string {
 	return `DockerMachine IaaS required params:
   driver=<driver>                         Driver to be used by docker machine. Can be set on the IaaS configuration.
@@ -137,5 +210,6 @@ Optional params:
   name=<name>                             Hostname for the created machine
   docker-install-url=<docker-install-url> Remote script to be used for docker installation. Defaults to: http://get.docker.com. Can be set on the IaaS configuration.
   insecure-registry=<insecure-registry>   Registry to be added as insecure-registry to the docker engine. Can be set on the IaaS configuration.
+  docker-flags=<flag1,flag2>              Arbitrary docker engine flags. Can be set on the IaaS configuration.
 `
 }

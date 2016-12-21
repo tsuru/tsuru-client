@@ -317,9 +317,6 @@ type Provisioner interface {
 	// from the app.
 	RemoveUnits(App, uint, string, io.Writer) error
 
-	// SetUnitStatus changes the status of a unit.
-	SetUnitStatus(Unit, Status) error
-
 	// Restart restarts the units of the application, with an optional
 	// string parameter represeting the name of the process to start. When
 	// the process is empty, Restart will restart all units of the
@@ -339,11 +336,11 @@ type Provisioner interface {
 	// Units returns information about units by App.
 	Units(App) ([]Unit, error)
 
-	// RoutableUnits returns information about routable units by App.
-	RoutableUnits(App) ([]Unit, error)
+	// RoutableAddresses returns the addresses used to access an application.
+	RoutableAddresses(App) ([]url.URL, error)
 
 	// Register a unit after the container has been created or restarted.
-	RegisterUnit(Unit, map[string]interface{}) error
+	RegisterUnit(App, string, map[string]interface{}) error
 }
 
 // MetricsProvisioner is a provisioner that exposes environment variables
@@ -394,11 +391,18 @@ type InitializableProvisioner interface {
 	Initialize() error
 }
 
-// Provisioners can implement this interface to optionaly disable logs for a
-// given app.
+// OptionalLogsProvisioner is a provisioner that allows optionally disabling
+// logs for a given app.
 type OptionalLogsProvisioner interface {
 	// Checks if logs are enabled for given app.
 	LogsEnabled(App) (bool, string, error)
+}
+
+// UnitStatusProvisioner is a provisioner that receive notifications about unit
+// status changes.
+type UnitStatusProvisioner interface {
+	// SetUnitStatus changes the status of a unit.
+	SetUnitStatus(Unit, Status) error
 }
 
 type AddNodeOptions struct {
@@ -439,10 +443,14 @@ type NodeProvisioner interface {
 
 	// UpdateNode can be used to enable/disable a node and update its metadata.
 	UpdateNode(UpdateNodeOptions) error
+
+	// NodeForNodeData finds a node matching the received NodeStatusData.
+	NodeForNodeData(NodeStatusData) (Node, error)
 }
 
 type NodeContainerProvisioner interface {
 	UpgradeNodeContainer(name string, pool string, writer io.Writer) error
+	RemoveNodeContainer(name string, pool string, writer io.Writer) error
 }
 
 // UnitFinderProvisioner is a provisioner that allows finding a specific unit by

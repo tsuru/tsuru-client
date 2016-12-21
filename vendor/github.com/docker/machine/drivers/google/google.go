@@ -1,6 +1,7 @@
 package google
 
 import (
+	"errors"
 	"fmt"
 	"net"
 	"strings"
@@ -20,6 +21,7 @@ type Driver struct {
 	MachineImage      string
 	DiskType          string
 	Address           string
+	Network           string
 	Preemptible       bool
 	UseInternalIP     bool
 	UseInternalIPOnly bool
@@ -34,10 +36,11 @@ const (
 	defaultZone        = "us-central1-a"
 	defaultUser        = "docker-user"
 	defaultMachineType = "n1-standard-1"
-	defaultImageName   = "https://www.googleapis.com/compute/v1/projects/ubuntu-os-cloud/global/images/ubuntu-1510-wily-v20151114"
+	defaultImageName   = "ubuntu-os-cloud/global/images/ubuntu-1604-xenial-v20161130"
 	defaultScopes      = "https://www.googleapis.com/auth/devstorage.read_only,https://www.googleapis.com/auth/logging.write,https://www.googleapis.com/auth/monitoring.write"
 	defaultDiskType    = "pd-standard"
 	defaultDiskSize    = 10
+	defaultNetwork     = "default"
 )
 
 // GetCreateFlags registers the flags this driver adds to
@@ -92,6 +95,12 @@ func (d *Driver) GetCreateFlags() []mcnflag.Flag {
 			EnvVar: "GOOGLE_DISK_TYPE",
 		},
 		mcnflag.StringFlag{
+			Name:   "google-network",
+			Usage:  "Specify network in which to provision vm",
+			Value:  defaultNetwork,
+			EnvVar: "GOOGLE_NETWORK",
+		},
+		mcnflag.StringFlag{
 			Name:   "google-address",
 			Usage:  "GCE Instance External IP",
 			EnvVar: "GOOGLE_ADDRESS",
@@ -133,6 +142,7 @@ func NewDriver(machineName string, storePath string) *Driver {
 		DiskSize:     defaultDiskSize,
 		MachineType:  defaultMachineType,
 		MachineImage: defaultImageName,
+		Network:      defaultNetwork,
 		Scopes:       defaultScopes,
 		BaseDriver: &drivers.BaseDriver{
 			SSHUser:     defaultUser,
@@ -164,7 +174,7 @@ func (d *Driver) DriverName() string {
 func (d *Driver) SetConfigFromFlags(flags drivers.DriverOptions) error {
 	d.Project = flags.String("google-project")
 	if d.Project == "" {
-		return fmt.Errorf("Please specify the Google Cloud Project name using the option --google-project.")
+		return errors.New("no Google Cloud Project name specified (--google-project)")
 	}
 
 	d.Zone = flags.String("google-zone")
@@ -175,6 +185,7 @@ func (d *Driver) SetConfigFromFlags(flags drivers.DriverOptions) error {
 		d.DiskSize = flags.Int("google-disk-size")
 		d.DiskType = flags.String("google-disk-type")
 		d.Address = flags.String("google-address")
+		d.Network = flags.String("google-network")
 		d.Preemptible = flags.Bool("google-preemptible")
 		d.UseInternalIP = flags.Bool("google-use-internal-ip") || flags.Bool("google-use-internal-ip-only")
 		d.UseInternalIPOnly = flags.Bool("google-use-internal-ip-only")
@@ -210,11 +221,11 @@ func (d *Driver) PreCreateCheck() error {
 	instance, _ := c.instance()
 	if d.UseExisting {
 		if instance == nil {
-			return fmt.Errorf("Unable to find instance %q in zone %q.", d.MachineName, d.Zone)
+			return fmt.Errorf("unable to find instance %q in zone %q", d.MachineName, d.Zone)
 		}
 	} else {
 		if instance != nil {
-			return fmt.Errorf("Instance %q already exists in zone %q.", d.MachineName, d.Zone)
+			return fmt.Errorf("instance %q already exists in zone %q", d.MachineName, d.Zone)
 		}
 	}
 
@@ -236,7 +247,7 @@ func (d *Driver) Create() error {
 		return err
 	}
 
-	if err := c.openFirewallPorts(); err != nil {
+	if err := c.openFirewallPorts(d); err != nil {
 		return err
 	}
 

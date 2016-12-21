@@ -92,7 +92,7 @@ func (r *galebRouter) virtualHostName(base string) string {
 
 func (r *galebRouter) AddBackend(name string) error {
 	backendPoolId, err := r.client.AddBackendPool(r.poolName(name))
-	if err == galebClient.ErrItemAlreadyExists {
+	if _, ok := errors.Cause(err).(galebClient.ErrItemAlreadyExists); ok {
 		return router.ErrBackendExists
 	}
 	if err != nil {
@@ -120,7 +120,7 @@ func (r *galebRouter) AddRoute(name string, address *url.URL) error {
 	}
 	address.Scheme = router.HttpScheme
 	_, err = r.client.AddBackend(address, r.poolName(backendName))
-	if err == galebClient.ErrItemAlreadyExists {
+	if _, ok := errors.Cause(err).(galebClient.ErrItemAlreadyExists); ok {
 		return router.ErrRouteExists
 	}
 	return err
@@ -219,7 +219,7 @@ func (r *galebRouter) SetCName(cname, name string) error {
 		return router.ErrCNameNotAllowed
 	}
 	_, err = r.client.AddVirtualHost(cname)
-	if err == galebClient.ErrItemAlreadyExists {
+	if _, ok := errors.Cause(err).(galebClient.ErrItemAlreadyExists); ok {
 		return router.ErrCNameExists
 	}
 	if err != nil {
@@ -234,7 +234,7 @@ func (r *galebRouter) UnsetCName(cname, name string) error {
 		return err
 	}
 	err = r.client.RemoveRuleVirtualHost(r.ruleName(backendName), cname)
-	if err == galebClient.ErrItemNotFound {
+	if _, ok := errors.Cause(err).(galebClient.ErrItemNotFound); ok {
 		return router.ErrCNameNotFound
 	}
 	if err != nil {
@@ -293,6 +293,9 @@ func (r *galebRouter) RemoveBackend(name string) error {
 	rule := r.ruleName(backendName)
 	virtualhosts, err := r.client.FindVirtualHostsByRule(rule)
 	if err != nil {
+		if _, ok := err.(galebClient.ErrItemNotFound); ok {
+			return router.ErrBackendNotFound
+		}
 		return err
 	}
 	for _, virtualhost := range virtualhosts {
@@ -316,11 +319,7 @@ func (r *galebRouter) RemoveBackend(name string) error {
 	for _, target := range targets {
 		r.client.RemoveBackendByID(target.FullId())
 	}
-	err = r.client.RemoveBackendPool(r.poolName(backendName))
-	if err != nil {
-		return err
-	}
-	return router.Remove(backendName)
+	return r.client.RemoveBackendPool(r.poolName(backendName))
 }
 
 func (r *galebRouter) SetHealthcheck(name string, data router.HealthcheckData) error {

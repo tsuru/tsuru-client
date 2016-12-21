@@ -37,9 +37,7 @@ func (s *S) TestNewDockerMachineDriverOpts(c *check.C) {
 
 func (s *S) TestUploadRegistryCertificate(c *check.C) {
 	sshTarget := &fakeSSHTarget{}
-	config := &DockerMachineConfig{
-		CAPath: s.TLSCertsPath.RootDir,
-	}
+	config := &DockerMachineConfig{}
 	defer os.Remove(s.StoreBasePath)
 	dm, err := NewDockerMachine(config)
 	c.Assert(err, check.IsNil)
@@ -75,9 +73,7 @@ func (s *S) containsWithSubstring(l []string, subs string, c *check.C) {
 }
 
 func (s *S) TestCreateRegistryCertificate(c *check.C) {
-	config := &DockerMachineConfig{
-		CAPath: s.TLSCertsPath.RootDir,
-	}
+	config := &DockerMachineConfig{}
 	defer os.Remove(s.StoreBasePath)
 	dm, err := NewDockerMachine(config)
 	c.Assert(err, check.IsNil)

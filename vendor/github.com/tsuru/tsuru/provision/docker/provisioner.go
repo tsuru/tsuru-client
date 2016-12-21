@@ -53,8 +53,7 @@ import (
 var (
 	mainDockerProvisioner *dockerProvisioner
 
-	ErrEntrypointOrProcfileNotFound = errors.New("You should provide a entrypoint in image or a Procfile in the following locations: /home/application/current or /app/user or /.")
-	ErrDeployCanceled               = errors.New("deploy canceled by user action")
+	ErrDeployCanceled = errors.New("deploy canceled by user action")
 )
 
 const provisionerName = "docker"
@@ -432,59 +431,19 @@ func (p *dockerProvisioner) ImageDeploy(app provision.App, imageId string, evt *
 	}
 	fmt.Fprintln(w, "---- Getting process from image ----")
 	cmd := "cat /home/application/current/Procfile || cat /app/user/Procfile || cat /Procfile"
-	output, _ := p.runCommandInContainer(imageId, cmd, app)
-	procfile := image.GetProcessesFromProcfile(output.String())
-	imageInspect, err := cluster.InspectImage(imageId)
+	var outBuf bytes.Buffer
+	err = p.runCommandInContainer(imageId, cmd, app, &outBuf, nil)
 	if err != nil {
 		return "", err
 	}
-	if len(procfile) == 0 {
-		fmt.Fprintln(w, "  ---> Procfile not found, trying to get entrypoint")
-		if len(imageInspect.Config.Entrypoint) == 0 {
-			return "", ErrEntrypointOrProcfileNotFound
-		}
-		webProcess := imageInspect.Config.Entrypoint[0]
-		for _, c := range imageInspect.Config.Entrypoint[1:] {
-			webProcess += fmt.Sprintf(" %q", c)
-		}
-		procfile["web"] = webProcess
-	}
-	for k, v := range procfile {
-		fmt.Fprintf(w, "  ---> Process %s found with command: %v\n", k, v)
-	}
-	newImage, err := image.AppNewImageName(app.GetName())
-	if err != nil {
-		return "", err
-	}
-	imageInfo := strings.Split(newImage, ":")
-	err = cluster.TagImage(imageId, docker.TagImageOptions{Repo: strings.Join(imageInfo[:len(imageInfo)-1], ":"), Tag: imageInfo[len(imageInfo)-1], Force: true})
-	if err != nil {
-		return "", err
-	}
-	registry, err := config.GetString("docker:registry")
-	if err != nil {
-		return "", err
-	}
-	fmt.Fprintln(w, "---- Pushing image to tsuru ----")
-	pushOpts := docker.PushImageOptions{
-		Name:              strings.Join(imageInfo[:len(imageInfo)-1], ":"),
-		Tag:               imageInfo[len(imageInfo)-1],
-		Registry:          registry,
-		OutputStream:      w,
-		InactivityTimeout: net.StreamInactivityTimeout,
-	}
-	err = cluster.PushImage(pushOpts, mainDockerProvisioner.RegistryAuthConfig())
-	if err != nil {
-		return "", err
-	}
-	imageData := image.CreateImageMetadata(newImage, procfile)
-	if len(imageInspect.Config.ExposedPorts) > 1 {
-		return "", errors.New("Too many ports. You should especify which one you want to.")
-	}
-	for k := range imageInspect.Config.ExposedPorts {
-		imageData.CustomData["exposedPort"] = string(k)
-	}
-	err = image.SaveImageCustomData(newImage, imageData.CustomData)
+	newImage, err := dockercommon.PrepareImageForDeploy(dockercommon.PrepareImageArgs{
+		Client:      cluster,
+		App:         app,
+		ProcfileRaw: outBuf.String(),
+		ImageId:     imageId,
+		AuthConfig:  p.RegistryAuthConfig(),
+		Out:         w,
+	})
 	if err != nil {
 		return "", err
 	}
@@ -504,8 +463,6 @@ func (p *dockerProvisioner) UploadDeploy(app provision.App, archiveFile io.ReadC
 	if build {
 		return "", errors.New("running UploadDeploy with build=true is not yet supported")
 	}
-	dirPath := "/home/application/"
-	filePath := fmt.Sprintf("%sarchive.tar.gz", dirPath)
 	user, err := config.GetString("docker:user")
 	if err != nil {
 		user, _ = config.GetString("docker:ssh:user")
@@ -548,57 +505,17 @@ func (p *dockerProvisioner) UploadDeploy(app provision.App, archiveFile io.ReadC
 	if err != nil {
 		return "", err
 	}
-	reader, writer := io.Pipe()
-	tarball := tar.NewWriter(writer)
-	if err != nil {
-		return "", err
-	}
-	go func() {
-		header := tar.Header{
-			Name: "archive.tar.gz",
-			Mode: 0666,
-			Size: fileSize,
-		}
-		tarball.WriteHeader(&header)
-		n, tarErr := io.Copy(tarball, archiveFile)
-		if tarErr != nil {
-			log.Errorf("upload-deploy: unable to copy archive to tarball: %s", tarErr)
-			writer.CloseWithError(tarErr)
-			tarball.Close()
-			return
-		}
-		if n != fileSize {
-			msg := "upload-deploy: short-write copying to tarball"
-			log.Errorf(msg)
-			tarErr = errors.New(msg)
-			writer.CloseWithError(tarErr)
-			tarball.Close()
-			return
-		}
-		tarErr = tarball.Close()
-		if tarErr != nil {
-			writer.CloseWithError(tarErr)
-		}
-		writer.Close()
-	}()
-	uploadOpts := docker.UploadToContainerOptions{
-		InputStream: reader,
-		Path:        dirPath,
-	}
-	err = cluster.UploadToContainer(cont.ID, uploadOpts)
-	if err != nil {
-		return "", err
-	}
+	intermediateImageID, fileURI, err := dockercommon.UploadToContainer(cluster, cont.ID, archiveFile, fileSize)
 	done = p.ActionLimiter().Start(hostAddr)
-	err = cluster.StopContainer(cont.ID, 10)
+	stopErr := cluster.StopContainer(cont.ID, 10)
 	done()
+	if stopErr != nil {
+		return "", stopErr
+	}
 	if err != nil {
 		return "", err
 	}
-	done = p.ActionLimiter().Start(hostAddr)
-	image, err := cluster.CommitContainer(docker.CommitContainerOptions{Container: cont.ID})
-	done()
-	imageId, err := p.archiveDeploy(app, image.ID, "file://"+filePath, evt)
+	imageId, err := p.archiveDeploy(app, intermediateImageID, fileURI, evt)
 	if err != nil {
 		return "", err
 	}
@@ -943,8 +860,7 @@ func (p *dockerProvisioner) ExecuteCommandOnce(stdout, stderr io.Writer, app pro
 	if len(containers) == 0 {
 		return provision.ErrEmptyApp
 	}
-	container := containers[0]
-	return container.Exec(p, stdout, stderr, cmd, args...)
+	return containers[0].Exec(p, stdout, stderr, cmd, args...)
 }
 
 func (p *dockerProvisioner) ExecuteCommand(stdout, stderr io.Writer, app provision.App, cmd string, args ...string) error {
@@ -969,12 +885,7 @@ func (p *dockerProvisioner) ExecuteCommandIsolated(stdout, stderr io.Writer, app
 	if err != nil {
 		return err
 	}
-	output, err := p.runCommandInContainer(imageID, cmd, app)
-	if err != nil {
-		return err
-	}
-	stdout.Write(output.Bytes())
-	return nil
+	return p.runCommandInContainer(imageID, cmd, app, stdout, stderr)
 }
 
 func (p *dockerProvisioner) AdminCommands() []cmd.Command {
@@ -1112,7 +1023,7 @@ func (p *dockerProvisioner) Units(app provision.App) ([]provision.Unit, error) {
 	return units, nil
 }
 
-func (p *dockerProvisioner) RoutableUnits(app provision.App) ([]provision.Unit, error) {
+func (p *dockerProvisioner) RoutableAddresses(app provision.App) ([]url.URL, error) {
 	imageId, err := image.AppCurrentImageName(app.GetName())
 	if err != nil && err != image.ErrNoImagesAvailable {
 		return nil, err
@@ -1125,17 +1036,17 @@ func (p *dockerProvisioner) RoutableUnits(app provision.App) ([]provision.Unit, 
 	if err != nil {
 		return nil, err
 	}
-	units := make([]provision.Unit, 0, len(containers))
+	addrs := make([]url.URL, 0, len(containers))
 	for _, container := range containers {
 		if container.ProcessName == webProcessName && container.ValidAddr() {
-			units = append(units, container.AsUnit(app))
+			addrs = append(addrs, *container.Address())
 		}
 	}
-	return units, nil
+	return addrs, nil
 }
 
-func (p *dockerProvisioner) RegisterUnit(unit provision.Unit, customData map[string]interface{}) error {
-	cont, err := p.GetContainer(unit.ID)
+func (p *dockerProvisioner) RegisterUnit(a provision.App, unitId string, customData map[string]interface{}) error {
+	cont, err := p.GetContainer(unitId)
 	if err != nil {
 		return err
 	}
@@ -1349,6 +1260,45 @@ func (p *dockerProvisioner) ListNodes(addressFilter []string) ([]provision.Node,
 	return result, nil
 }
 
+func (p *dockerProvisioner) NodeForNodeData(nodeData provision.NodeStatusData) (provision.Node, error) {
+	nodes, err := p.Cluster().UnfilteredNodes()
+	if err != nil {
+		return nil, err
+	}
+	nodeSet := map[string]*cluster.Node{}
+	for i := range nodes {
+		nodeSet[net.URLToHost(nodes[i].Address)] = &nodes[i]
+	}
+	containerIDs := make([]string, 0, len(nodeData.Units))
+	containerNames := make([]string, 0, len(nodeData.Units))
+	for _, u := range nodeData.Units {
+		if u.ID != "" {
+			containerIDs = append(containerIDs, u.ID)
+		}
+		if u.Name != "" {
+			containerNames = append(containerNames, u.Name)
+		}
+	}
+	containersForNode, err := p.listContainersWithIDOrName(containerIDs, containerNames)
+	if err != nil {
+		return nil, err
+	}
+	var node *cluster.Node
+	for _, c := range containersForNode {
+		n := nodeSet[c.HostAddr]
+		if n != nil {
+			if node != nil && node.Address != n.Address {
+				return nil, errors.Errorf("containers match multiple nodes: %s and %s", node.Address, n.Address)
+			}
+			node = n
+		}
+	}
+	if node != nil {
+		return &clusterNodeWrapper{Node: node, prov: p}, nil
+	}
+	return provision.FindNodeByAddrs(p, nodeData.Addrs)
+}
+
 func (p *dockerProvisioner) GetName() string {
 	return provisionerName
 }
@@ -1437,5 +1387,9 @@ func (p *dockerProvisioner) RemoveNode(opts provision.RemoveNodeOptions) error {
 }
 
 func (p *dockerProvisioner) UpgradeNodeContainer(name string, pool string, writer io.Writer) error {
-	return internalNodeContainer.RecreateNamedContainers(p, writer, name)
+	return internalNodeContainer.RecreateNamedContainers(p, writer, name, pool)
+}
+
+func (p *dockerProvisioner) RemoveNodeContainer(name string, pool string, writer io.Writer) error {
+	return internalNodeContainer.RemoveNamedContainers(p, writer, name, pool)
 }

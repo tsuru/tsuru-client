@@ -10,6 +10,8 @@ import (
 	"io/ioutil"
 	"os"
 	"path/filepath"
+	"strconv"
+	"strings"
 
 	"github.com/docker/machine/libmachine"
 	"github.com/docker/machine/libmachine/drivers"
@@ -17,11 +19,11 @@ import (
 	"github.com/docker/machine/libmachine/engine"
 	"github.com/docker/machine/libmachine/host"
 	"github.com/docker/machine/libmachine/log"
+	"github.com/docker/machine/libmachine/mcnflag"
+	"github.com/docker/machine/libmachine/mcnutils"
 	"github.com/pkg/errors"
 	"github.com/tsuru/tsuru/iaas"
 )
-
-var defaultWriter = ioutil.Discard
 
 type DockerMachine struct {
 	io.Closer
@@ -36,6 +38,7 @@ type DockerMachineConfig struct {
 	OutWriter io.Writer
 	ErrWriter io.Writer
 	StorePath string
+	IsDebug   bool
 }
 
 type DockerMachineAPI interface {
@@ -54,6 +57,7 @@ type CreateMachineOpts struct {
 	InsecureRegistry       string
 	DockerEngineInstallURL string
 	RegistryMirror         string
+	ArbitraryFlags         []string
 }
 
 type RegisterMachineOpts struct {
@@ -86,26 +90,29 @@ func NewDockerMachine(config DockerMachineConfig) (DockerMachineAPI, error) {
 		}
 	}
 	if config.CaPath != "" {
-		err := copy(filepath.Join(config.CaPath, "ca.pem"), filepath.Join(certsPath, "ca.pem"))
+		err := mcnutils.CopyFile(filepath.Join(config.CaPath, "ca.pem"), filepath.Join(certsPath, "ca.pem"))
 		if err != nil {
-			return nil, errors.WithMessage(err, "failed to copy ca file")
+			return nil, errors.Wrap(err, "failed to copy ca file")
 		}
-		err = copy(filepath.Join(config.CaPath, "ca-key.pem"), filepath.Join(certsPath, "ca-key.pem"))
+		err = mcnutils.CopyFile(filepath.Join(config.CaPath, "ca-key.pem"), filepath.Join(certsPath, "ca-key.pem"))
 		if err != nil {
-			return nil, errors.WithMessage(err, "failed to copy ca key file")
+			return nil, errors.Wrap(err, "failed to copy ca key file")
 		}
 	}
+
 	if config.OutWriter != nil {
 		log.SetOutWriter(config.OutWriter)
 	} else {
-		log.SetOutWriter(defaultWriter)
+		log.SetOutWriter(ioutil.Discard)
 	}
 	if config.ErrWriter != nil {
 		log.SetOutWriter(config.ErrWriter)
 	} else {
-		log.SetOutWriter(defaultWriter)
+		log.SetOutWriter(ioutil.Discard)
 	}
+	log.SetDebug(config.IsDebug)
 	client := libmachine.NewClient(storePath, certsPath)
+	client.IsDebug = config.IsDebug
 	if _, err := os.Stat(client.GetMachinesDir()); os.IsNotExist(err) {
 		err := os.MkdirAll(client.GetMachinesDir(), 0700)
 		if err != nil {
@@ -153,11 +160,16 @@ func (d *DockerMachine) CreateMachine(opts CreateMachineOpts) (*Machine, error) 
 	if opts.RegistryMirror != "" {
 		engineOpts.RegistryMirror = []string{opts.RegistryMirror}
 	}
-	err = d.client.Create(h)
-	if err != nil {
-		return nil, errors.Wrap(err, "failed to create host")
+	engineOpts.ArbitraryFlags = opts.ArbitraryFlags
+	if h.AuthOptions() != nil {
+		h.AuthOptions().StorePath = d.StorePath
 	}
-	return newMachine(h)
+	errCreate := d.client.Create(h)
+	machine, err := newMachine(h)
+	if errCreate != nil {
+		return machine, errors.Wrap(errCreate, "failed to create host")
+	}
+	return machine, errors.Wrap(err, "failed to create machine")
 }
 
 func (d *DockerMachine) DeleteMachine(m *iaas.Machine) error {
@@ -279,6 +291,9 @@ func newMachine(h *host.Host) (*Machine, error) {
 			Port:       engine.DefaultPort,
 			Protocol:   "https",
 			CustomData: driverData,
+			CreationParams: map[string]string{
+				"driver": h.DriverName,
+			},
 		},
 		Host: h,
 	}
@@ -307,23 +322,33 @@ func newMachine(h *host.Host) (*Machine, error) {
 func configureDriver(driver drivers.Driver, driverOpts map[string]interface{}) error {
 	opts := &rpcdriver.RPCFlags{Values: driverOpts}
 	for _, c := range driver.GetCreateFlags() {
-		_, ok := opts.Values[c.String()]
+		val, ok := opts.Values[c.String()]
 		if !ok {
 			opts.Values[c.String()] = c.Default()
 			if c.Default() == nil {
 				opts.Values[c.String()] = false
 			}
+		} else {
+			if strVal, ok := val.(string); ok {
+				switch c.(type) {
+				case *mcnflag.StringSliceFlag, mcnflag.StringSliceFlag:
+					opts.Values[c.String()] = strings.Split(strVal, ",")
+				case *mcnflag.IntFlag, mcnflag.IntFlag:
+					v, err := strconv.Atoi(strVal)
+					if err != nil {
+						return errors.Wrapf(err, "failed to set %s flag: %s is not an int", c.String(), strVal)
+					}
+					opts.Values[c.String()] = v
+				case *mcnflag.BoolFlag, mcnflag.BoolFlag:
+					v, err := strconv.ParseBool(strVal)
+					if err != nil {
+						return errors.Wrapf(err, "failed to set %s flag: %s is not a bool", c.String(), strVal)
+					}
+					opts.Values[c.String()] = v
+				}
+			}
 		}
 	}
 	err := driver.SetConfigFromFlags(opts)
 	return errors.Wrap(err, "failed to set driver configuration")
-}
-
-func copy(src, dst string) error {
-	fileSrc, err := ioutil.ReadFile(src)
-	if err != nil {
-		return errors.Wrapf(err, "failed to read %s", src)
-	}
-	err = ioutil.WriteFile(dst, fileSrc, 0644)
-	return errors.Wrapf(err, "failed to write %s", dst)
 }

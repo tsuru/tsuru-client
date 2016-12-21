@@ -129,6 +129,7 @@ func (s *RouterSuite) TestRouteRemoveRouteAndBackend(c *check.C) {
 	addr1, err := url.Parse("http://10.10.10.10:8080")
 	c.Assert(err, check.IsNil)
 	err = s.Router.AddRoute(testBackend1, addr1)
+	c.Assert(err, check.IsNil)
 	addr2, err := url.Parse("http://10.10.10.11:8080")
 	c.Assert(err, check.IsNil)
 	err = s.Router.AddRoute(testBackend1, addr2)
@@ -145,8 +146,10 @@ func (s *RouterSuite) TestRouteRemoveRouteAndBackend(c *check.C) {
 	c.Assert(routes, HostEquals, []*url.URL{})
 	err = s.Router.RemoveBackend(testBackend1)
 	c.Assert(err, check.IsNil)
-	_, err = s.Router.Routes(testBackend1)
+	err = s.Router.RemoveBackend(testBackend1)
 	c.Assert(err, check.Equals, router.ErrBackendNotFound)
+	routes, _ = s.Router.Routes(testBackend1)
+	c.Assert(routes, check.HasLen, 0)
 }
 
 func (s *RouterSuite) TestRouteRemoveRouteOtherScheme(c *check.C) {
@@ -372,10 +375,10 @@ func (s *RouterSuite) TestSwapTwice(c *check.C) {
 	c.Assert(err, check.IsNil)
 	err = s.Router.AddRoute(testBackend2, addr2)
 	c.Assert(err, check.IsNil)
-	isSwapped, swappedWith, err := router.IsSwapped(testBackend1)
+	isSwapped, _, err := router.IsSwapped(testBackend1)
 	c.Assert(err, check.IsNil)
 	c.Assert(isSwapped, check.Equals, false)
-	isSwapped, swappedWith, err = router.IsSwapped(testBackend2)
+	isSwapped, swappedWith, err := router.IsSwapped(testBackend2)
 	c.Assert(err, check.IsNil)
 	c.Assert(isSwapped, check.Equals, false)
 	c.Assert(swappedWith, check.Equals, testBackend2)
@@ -591,6 +594,21 @@ func (s *RouterSuite) TestRemoveBackendWithoutRemoveRoutes(c *check.C) {
 	c.Assert(routes, HostEquals, []*url.URL{})
 	err = s.Router.RemoveBackend(testBackend1)
 	c.Assert(err, check.IsNil)
+}
+
+func (s *RouterSuite) TestRemoveBackendKeepsInRouter(c *check.C) {
+	_, err := router.Retrieve(testBackend1)
+	c.Assert(err, check.Equals, router.ErrBackendNotFound)
+	err = s.Router.AddBackend(testBackend1)
+	c.Assert(err, check.IsNil)
+	name, err := router.Retrieve(testBackend1)
+	c.Assert(err, check.IsNil)
+	c.Assert(name, check.Equals, testBackend1)
+	err = s.Router.RemoveBackend(testBackend1)
+	c.Assert(err, check.IsNil)
+	name, err = router.Retrieve(testBackend1)
+	c.Assert(err, check.IsNil)
+	c.Assert(name, check.Equals, testBackend1)
 }
 
 func (s *RouterSuite) TestSetHealthcheck(c *check.C) {

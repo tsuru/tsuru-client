@@ -123,13 +123,12 @@ func (r *hipacheRouter) RemoveBackend(name string) error {
 	if err != nil {
 		return &router.RouterError{Op: "remove", Err: err}
 	}
-	err = conn.Del(frontend).Err()
+	deleted, err := conn.Del(frontend).Result()
 	if err != nil {
 		return &router.RouterError{Op: "remove", Err: err}
 	}
-	err = router.Remove(backendName)
-	if err != nil {
-		return &router.RouterError{Op: "remove", Err: err}
+	if deleted == 0 {
+		return router.ErrBackendNotFound
 	}
 	cnames, err := r.getCNames(backendName)
 	if err != nil {
@@ -396,6 +395,9 @@ func (r *hipacheRouter) SetCName(cname, name string) error {
 	}
 	cnameExists := false
 	currentCnames, err := conn.LRange("cname:"+backendName, 0, -1).Result()
+	if err != nil {
+		return &router.RouterError{Op: "set", Err: err}
+	}
 	for _, n := range currentCnames {
 		if n == cname {
 			cnameExists = true
@@ -457,6 +459,9 @@ func (r *hipacheRouter) UnsetCName(cname, name string) error {
 		return &router.RouterError{Op: "unsetCName", Err: err}
 	}
 	currentCnames, err := conn.LRange("cname:"+backendName, 0, -1).Result()
+	if err != nil {
+		return &router.RouterError{Op: "unsetCName", Err: err}
+	}
 	found := false
 	for _, n := range currentCnames {
 		if n == cname {

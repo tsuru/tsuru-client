@@ -34,7 +34,9 @@ import (
 )
 
 const (
-	isoFilename = "boot2docker.iso"
+	// dockerBridgeIP is the default IP address of the docker0 bridge.
+	dockerBridgeIP = "172.17.0.1"
+	isoFilename    = "boot2docker.iso"
 	// B2DUser is the guest User for tools login
 	B2DUser = "docker"
 	// B2DPass is the guest Pass for tools login
@@ -234,7 +236,7 @@ func (d *Driver) GetIP() (string, error) {
 	}
 	defer c.Logout(ctx)
 
-	vm, err := d.fetchVM(c, ctx, d.MachineName)
+	vm, err := d.fetchVM(ctx, c, d.MachineName)
 	if err != nil {
 		return "", err
 	}
@@ -249,7 +251,11 @@ func (d *Driver) GetIP() (string, error) {
 			// Prefer IPv4 address, but fall back to first/IPv6
 			preferredIP := ips[0]
 			for _, ip := range ips {
-				if net.ParseIP(ip).To4() != nil {
+				// In addition to non IPv4 addresses, try to filter
+				// out link local addresses and the default address of
+				// the Docker0 bridge
+				netIP := net.ParseIP(ip)
+				if netIP.To4() != nil && netIP.IsGlobalUnicast() && !netIP.Equal(net.ParseIP(dockerBridgeIP)) {
 					preferredIP = ip
 					break
 				}
@@ -273,7 +279,7 @@ func (d *Driver) GetState() (state.State, error) {
 	}
 	defer c.Logout(ctx)
 
-	vm, err := d.fetchVM(c, ctx, d.MachineName)
+	vm, err := d.fetchVM(ctx, c, d.MachineName)
 	if err != nil {
 		return state.None, err
 	}
@@ -586,7 +592,7 @@ func (d *Driver) Start() error {
 		}
 		defer c.Logout(ctx)
 
-		vm, err := d.fetchVM(c, ctx, d.MachineName)
+		vm, err := d.fetchVM(ctx, c, d.MachineName)
 		if err != nil {
 			return err
 		}
@@ -619,7 +625,7 @@ func (d *Driver) Stop() error {
 	}
 	defer c.Logout(ctx)
 
-	vm, err := d.fetchVM(c, ctx, d.MachineName)
+	vm, err := d.fetchVM(ctx, c, d.MachineName)
 	if err != nil {
 		return err
 	}
@@ -675,7 +681,7 @@ func (d *Driver) Kill() error {
 	}
 	defer c.Logout(ctx)
 
-	vm, err := d.fetchVM(c, ctx, d.MachineName)
+	vm, err := d.fetchVM(ctx, c, d.MachineName)
 	if err != nil {
 		return err
 	}
@@ -744,7 +750,7 @@ func (d *Driver) Remove() error {
 		}
 	}
 
-	vm, err := d.fetchVM(c, ctx, d.MachineName)
+	vm, err := d.fetchVM(ctx, c, d.MachineName)
 	if err != nil {
 		return err
 	}
@@ -843,7 +849,7 @@ func (d *Driver) vsphereLogin(ctx context.Context) (*govmomi.Client, error) {
 	return c, nil
 }
 
-func (d *Driver) fetchVM(c *govmomi.Client, ctx context.Context, vmname string) (*object.VirtualMachine, error) {
+func (d *Driver) fetchVM(ctx context.Context, c *govmomi.Client, vmname string) (*object.VirtualMachine, error) {
 
 	// Create a new finder
 	f := find.NewFinder(c.Client, true)

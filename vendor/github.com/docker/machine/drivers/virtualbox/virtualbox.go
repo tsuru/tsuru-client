@@ -29,6 +29,7 @@ const (
 	defaultHostOnlyNictype     = "82540EM"
 	defaultHostOnlyPromiscMode = "deny"
 	defaultUIType              = "headless"
+	defaultHostOnlyNoDHCP      = false
 	defaultDiskSize            = 20000
 	defaultDNSProxy            = true
 	defaultDNSResolver         = false
@@ -64,9 +65,11 @@ type Driver struct {
 	HostOnlyNicType     string
 	HostOnlyPromiscMode string
 	UIType              string
+	HostOnlyNoDHCP      bool
 	NoShare             bool
 	DNSProxy            bool
 	NoVTXCheck          bool
+	ShareFolder         string
 }
 
 // NewDriver creates a new VirtualBox driver with default settings.
@@ -89,6 +92,7 @@ func NewDriver(hostName, storePath string) *Driver {
 		HostOnlyNicType:     defaultHostOnlyNictype,
 		HostOnlyPromiscMode: defaultHostOnlyPromiscMode,
 		UIType:              defaultUIType,
+		HostOnlyNoDHCP:      defaultHostOnlyNoDHCP,
 		DNSProxy:            defaultDNSProxy,
 		HostDNSResolver:     defaultDNSResolver,
 		BaseDriver: &drivers.BaseDriver{
@@ -168,6 +172,11 @@ func (d *Driver) GetCreateFlags() []mcnflag.Flag {
 			EnvVar: "VIRTUALBOX_UI_TYPE",
 		},
 		mcnflag.BoolFlag{
+			Name:   "virtualbox-hostonly-no-dhcp",
+			Usage:  "Disable the Host Only DHCP Server",
+			EnvVar: "VIRTUALBOX_HOSTONLY_NO_DHCP",
+		},
+		mcnflag.BoolFlag{
 			Name:   "virtualbox-no-share",
 			Usage:  "Disable the mount of your home directory",
 			EnvVar: "VIRTUALBOX_NO_SHARE",
@@ -181,6 +190,11 @@ func (d *Driver) GetCreateFlags() []mcnflag.Flag {
 			Name:   "virtualbox-no-vtx-check",
 			Usage:  "Disable checking for the availability of hardware virtualization before the vm is started",
 			EnvVar: "VIRTUALBOX_NO_VTX_CHECK",
+		},
+		mcnflag.StringFlag{
+			EnvVar: "VIRTUALBOX_SHARE_FOLDER",
+			Name:   "virtualbox-share-folder",
+			Usage:  "Mount the specified directory instead of the default home location. Format: dir:name",
 		},
 	}
 }
@@ -230,9 +244,11 @@ func (d *Driver) SetConfigFromFlags(flags drivers.DriverOptions) error {
 	d.HostOnlyNicType = flags.String("virtualbox-hostonly-nictype")
 	d.HostOnlyPromiscMode = flags.String("virtualbox-hostonly-nicpromisc")
 	d.UIType = flags.String("virtualbox-ui-type")
+	d.HostOnlyNoDHCP = flags.Bool("virtualbox-hostonly-no-dhcp")
 	d.NoShare = flags.Bool("virtualbox-no-share")
 	d.DNSProxy = !flags.Bool("virtualbox-no-dns-proxy")
 	d.NoVTXCheck = flags.Bool("virtualbox-no-vtx-check")
+	d.ShareFolder = flags.String("virtualbox-share-folder")
 
 	return nil
 }
@@ -438,6 +454,11 @@ func (d *Driver) CreateVM() error {
 	}
 
 	shareName, shareDir := getShareDriveAndName()
+
+	if d.ShareFolder != "" {
+		split := strings.Split(d.ShareFolder, ":")
+		shareDir, shareName = split[0], split[1]
+	}
 
 	if shareDir != "" && !d.NoShare {
 		log.Debugf("setting up shareDir")
@@ -832,7 +853,7 @@ func (d *Driver) setupHostOnlyNetwork(machineName string) (*hostOnlyNetwork, err
 	dhcp.IPv4.Mask = network.Mask
 	dhcp.LowerIP = net.IPv4(nAddr[0], nAddr[1], nAddr[2], byte(100))
 	dhcp.UpperIP = net.IPv4(nAddr[0], nAddr[1], nAddr[2], byte(254))
-	dhcp.Enabled = true
+	dhcp.Enabled = !d.HostOnlyNoDHCP
 	if err := addHostOnlyDHCPServer(hostOnlyAdapter.Name, dhcp, d.VBoxManager); err != nil {
 		return nil, err
 	}

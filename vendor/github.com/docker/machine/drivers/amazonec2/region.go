@@ -8,21 +8,25 @@ type region struct {
 	AmiId string
 }
 
-// Release 15.10 20151116.1
+// Release 16.04 LTS 20161013
 // See https://cloud-images.ubuntu.com/locator/ec2/
 var regionDetails map[string]*region = map[string]*region{
-	"ap-northeast-1": {"ami-b36d4edd"},
-	"ap-northeast-2": {"ami-09dc1267"},
-	"ap-southeast-1": {"ami-1069af73"},
-	"ap-southeast-2": {"ami-1d336a7e"},
-	"cn-north-1":     {"ami-79eb2214"},
-	"eu-west-1":      {"ami-8aa67cf9"},
-	"eu-central-1":   {"ami-ab0210c7"},
-	"sa-east-1":      {"ami-185de774"},
-	"us-east-1":      {"ami-26d5af4c"},
-	"us-west-1":      {"ami-9cbcd2fc"},
-	"us-west-2":      {"ami-16b1a077"},
-	"us-gov-west-1":  {"ami-b0bad893"},
+	"ap-northeast-1":  {"ami-31892c50"},
+	"ap-northeast-2":  {"ami-a3915acd"},
+	"ap-southeast-1":  {"ami-18e7417b"},
+	"ap-southeast-2":  {"ami-7be4d618"},
+	"ap-south-1":      {"ami-7e94fe11"},
+	"ca-central-1":    {"ami-ca6ddfae"},
+	"cn-north-1":      {"ami-d7c511ba"},
+	"eu-central-1":    {"ami-597c8236"},
+	"eu-west-1":       {"ami-c593deb6"},
+	"sa-east-1":       {"ami-909b06fc"},
+	"us-east-1":       {"ami-fd6e3bea"},
+	"us-east-2":       {"ami-0a104a6f"},
+	"us-west-1":       {"ami-73531b13"},
+	"us-west-2":       {"ami-f1ca1091"},
+	"us-gov-west-1":   {"ami-8df24aec"},
+	"custom-endpoint": {""},
 }
 
 func awsRegionsList() []string {

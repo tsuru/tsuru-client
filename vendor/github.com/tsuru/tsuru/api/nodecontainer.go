@@ -8,6 +8,7 @@ import (
 	"encoding/json"
 	"fmt"
 	"net/http"
+	"strconv"
 	"strings"
 	"time"
 
@@ -226,6 +227,7 @@ func nodeContainerDelete(w http.ResponseWriter, r *http.Request, t auth.Token) (
 	r.ParseForm()
 	name := r.URL.Query().Get(":name")
 	poolName := r.URL.Query().Get("pool")
+	kill, _ := strconv.ParseBool(r.URL.Query().Get("kill"))
 	var ctxs []permission.PermissionContext
 	if poolName != "" {
 		ctxs = append(ctxs, permission.Context(permission.CtxPool, poolName))
@@ -251,7 +253,32 @@ func nodeContainerDelete(w http.ResponseWriter, r *http.Request, t auth.Token) (
 			Message: fmt.Sprintf("node container %q not found for pool %q", name, poolName),
 		}
 	}
-	return err
+	if err != nil || !kill {
+		return err
+	}
+	provs, err := provision.Registry()
+	if err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/x-json-stream")
+	keepAliveWriter := tsuruIo.NewKeepAliveWriter(w, 15*time.Second, "")
+	defer keepAliveWriter.Stop()
+	writer := &tsuruIo.SimpleJsonMessageEncoderWriter{Encoder: json.NewEncoder(keepAliveWriter)}
+	var allErrors []string
+	for _, prov := range provs {
+		ncProv, ok := prov.(provision.NodeContainerProvisioner)
+		if !ok {
+			continue
+		}
+		err = ncProv.RemoveNodeContainer(name, poolName, writer)
+		if err != nil {
+			allErrors = append(allErrors, err.Error())
+		}
+	}
+	if len(allErrors) > 0 {
+		return errors.Errorf("multiple errors removing node container: %s", strings.Join(allErrors, "; "))
+	}
+	return nil
 }
 
 // title: node container upgrade
@@ -265,6 +292,7 @@ func nodeContainerDelete(w http.ResponseWriter, r *http.Request, t auth.Token) (
 //   401: Unauthorized
 //   404: Not found
 func nodeContainerUpgrade(w http.ResponseWriter, r *http.Request, t auth.Token) (err error) {
+	r.ParseForm()
 	name := r.URL.Query().Get(":name")
 	poolName := r.FormValue("pool")
 	var ctxs []permission.PermissionContext
@@ -285,7 +313,7 @@ func nodeContainerUpgrade(w http.ResponseWriter, r *http.Request, t auth.Token) 
 		return err
 	}
 	defer func() { evt.Done(err) }()
-	err = nodecontainer.ResetImage(poolName, name)
+	err = nodecontainer.UpgradeContainer(poolName, name)
 	if err != nil {
 		if err == nodecontainer.ErrNodeContainerNotFound {
 			return &tsuruErrors.HTTP{

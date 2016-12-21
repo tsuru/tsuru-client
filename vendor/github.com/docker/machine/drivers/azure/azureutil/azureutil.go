@@ -56,12 +56,12 @@ func New(env azure.Environment, subsID string, auth autorest.Authorizer) *AzureC
 // resource provider namespaces if they are not already registered. Namespaces
 // are case-insensitive.
 func (a AzureClient) RegisterResourceProviders(namespaces ...string) error {
-	l, err := a.providersClient().List(nil)
+	l, err := a.providersClient().List(nil, "")
 	if err != nil {
 		return err
 	}
 	if l.Value == nil {
-		return errors.New("Resource Providers list is returned as nil.")
+		return errors.New("resource providers list is returned as nil")
 	}
 
 	m := make(map[string]bool)
@@ -72,7 +72,7 @@ func (a AzureClient) RegisterResourceProviders(namespaces ...string) error {
 	for _, ns := range namespaces {
 		registered, ok := m[strings.ToLower(ns)]
 		if !ok {
-			return fmt.Errorf("Unknown resource provider %q", ns)
+			return fmt.Errorf("unknown resource provider %q", ns)
 		}
 		if registered {
 			log.Debugf("Already registered for %q", ns)
@@ -142,7 +142,7 @@ func (a AzureClient) DeleteNetworkSecurityGroupIfExists(resourceGroup, name stri
 		func() (autorest.Response, error) { return a.securityGroupsClient().Delete(resourceGroup, name, nil) })
 }
 
-func (a AzureClient) CreatePublicIPAddress(ctx *DeploymentContext, resourceGroup, name, location string, isStatic bool) error {
+func (a AzureClient) CreatePublicIPAddress(ctx *DeploymentContext, resourceGroup, name, location string, isStatic bool, dnsLabel string) error {
 	log.Info("Creating public IP address.", logutil.Fields{
 		"name":   name,
 		"static": isStatic})
@@ -154,11 +154,19 @@ func (a AzureClient) CreatePublicIPAddress(ctx *DeploymentContext, resourceGroup
 		ipType = network.Dynamic
 	}
 
+	var dns *network.PublicIPAddressDNSSettings
+	if dnsLabel != "" {
+		dns = &network.PublicIPAddressDNSSettings{
+			DomainNameLabel: to.StringPtr(dnsLabel),
+		}
+	}
+
 	_, err := a.publicIPAddressClient().CreateOrUpdate(resourceGroup, name,
 		network.PublicIPAddress{
 			Location: to.StringPtr(location),
 			Properties: &network.PublicIPAddressPropertiesFormat{
 				PublicIPAllocationMethod: ipType,
+				DNSSettings:              dns,
 			},
 		}, nil)
 	if err != nil {
@@ -181,7 +189,9 @@ func (a AzureClient) DeletePublicIPAddressIfExists(resourceGroup, name string) e
 func (a AzureClient) CreateVirtualNetworkIfNotExists(resourceGroup, name, location string) error {
 	f := logutil.Fields{
 		"name":     name,
-		"location": location}
+		"rg":       resourceGroup,
+		"location": location,
+	}
 
 	log.Info("Querying if virtual network already exists.", f)
 
@@ -192,7 +202,7 @@ func (a AzureClient) CreateVirtualNetworkIfNotExists(resourceGroup, name, locati
 		return nil
 	}
 
-	log.Debug("Creating virtual network.", f)
+	log.Info("Creating virtual network.", f)
 	_, err := a.virtualNetworksClient().CreateOrUpdate(resourceGroup, name,
 		network.VirtualNetwork{
 			Location: to.StringPtr(location),
@@ -305,13 +315,13 @@ func (a AzureClient) DeleteNetworkInterfaceIfExists(resourceGroup, name string) 
 		func() (autorest.Response, error) { return a.networkInterfacesClient().Delete(resourceGroup, name, nil) })
 }
 
-func (a AzureClient) CreateStorageAccount(ctx *DeploymentContext, resourceGroup, location string, storageType storage.AccountType) error {
+func (a AzureClient) CreateStorageAccount(ctx *DeploymentContext, resourceGroup, location string, storageType storage.SkuName) error {
 	s, err := a.findOrCreateStorageAccount(resourceGroup, location, storageType)
 	ctx.StorageAccount = s
 	return err
 }
 
-func (a AzureClient) findOrCreateStorageAccount(resourceGroup, location string, storageType storage.AccountType) (*storage.AccountProperties, error) {
+func (a AzureClient) findOrCreateStorageAccount(resourceGroup, location string, storageType storage.SkuName) (*storage.AccountProperties, error) {
 	prefix := storageAccountPrefix
 	if s, err := a.findStorageAccount(resourceGroup, location, prefix, storageType); err != nil {
 		return nil, err
@@ -321,13 +331,13 @@ func (a AzureClient) findOrCreateStorageAccount(resourceGroup, location string, 
 
 	log.Debug("No eligible storage account found.", logutil.Fields{
 		"location": location,
-		"type":     storageType})
+		"sku":      storageType})
 	return a.createStorageAccount(resourceGroup, location, storageType)
 }
 
-func (a AzureClient) findStorageAccount(resourceGroup, location, prefix string, storageType storage.AccountType) (*storage.AccountProperties, error) {
+func (a AzureClient) findStorageAccount(resourceGroup, location, prefix string, storageType storage.SkuName) (*storage.AccountProperties, error) {
 	f := logutil.Fields{
-		"type":     storageType,
+		"sku":      storageType,
 		"prefix":   prefix,
 		"location": location}
 	log.Debug("Querying existing storage accounts.", f)
@@ -340,11 +350,15 @@ func (a AzureClient) findStorageAccount(resourceGroup, location, prefix string, 
 		for _, v := range *l.Value {
 			log.Debug("Iterating...", logutil.Fields{
 				"name":     to.String(v.Name),
-				"type":     storageType,
+				"sku":      storageType,
 				"location": to.String(v.Location),
 			})
-			if to.String(v.Location) == location && v.Properties.AccountType == storageType && strings.HasPrefix(to.String(v.Name), prefix) {
+			if to.String(v.Location) == location && v.Sku.Name == storageType && strings.HasPrefix(to.String(v.Name), prefix) {
 				log.Debug("Found eligible storage account.", logutil.Fields{"name": to.String(v.Name)})
+				log.Info("Using existing storage account.", logutil.Fields{
+					"name": to.String(v.Name),
+					"sku":  storageType,
+				})
 				return v.Properties, nil
 			}
 		}
@@ -353,19 +367,20 @@ func (a AzureClient) findStorageAccount(resourceGroup, location, prefix string, 
 	return nil, err
 }
 
-func (a AzureClient) createStorageAccount(resourceGroup, location string, storageType storage.AccountType) (*storage.AccountProperties, error) {
+func (a AzureClient) createStorageAccount(resourceGroup, location string, storageType storage.SkuName) (*storage.AccountProperties, error) {
 	name := randomAzureStorageAccountName() // if it's not random enough, then you're unlucky
+
 	f := logutil.Fields{
 		"name":     name,
-		"location": location}
+		"location": location,
+		"sku":      storageType,
+	}
 
 	log.Info("Creating storage account.", f)
 	_, err := a.storageAccountsClient().Create(resourceGroup, name,
 		storage.AccountCreateParameters{
 			Location: to.StringPtr(location),
-			Properties: &storage.AccountPropertiesCreateParameters{
-				AccountType: storageType,
-			},
+			Sku:      &storage.Sku{Name: storageType},
 		}, nil)
 	if err != nil {
 		return nil, err
@@ -423,12 +438,15 @@ func (a AzureClient) removeOSDiskBlob(resourceGroup, vmName, vhdURL string) erro
 		"account":     storageAccount,
 		"storageBase": blobServiceBaseURL,
 	})
-	keys, err := a.storageAccountsClient().ListKeys(resourceGroup, storageAccount)
+	resp, err := a.storageAccountsClient().ListKeys(resourceGroup, storageAccount)
 	if err != nil {
 		return err
 	}
 
-	storageAccountKey := to.String(keys.Key1)
+	if resp.Keys == nil || len(*resp.Keys) < 1 {
+		return errors.New("Returned storage keys list response does not contain any keys")
+	}
+	storageAccountKey := to.String(((*resp.Keys)[0]).Value)
 	bs, err := blobstorage.NewClient(storageAccount, storageAccountKey, blobServiceBaseURL, defaultStorageAPIVersion, true)
 	if err != nil {
 		return fmt.Errorf("Error constructing blob storage client :%v", err)
@@ -446,7 +464,7 @@ func (a AzureClient) removeOSDiskBlob(resourceGroup, vmName, vhdURL string) erro
 }
 
 func (a AzureClient) CreateVirtualMachine(resourceGroup, name, location, size, availabilitySetID, networkInterfaceID,
-	username, sshPublicKey, imageName string, storageAccount *storage.AccountProperties) error {
+	username, sshPublicKey, imageName, customData string, storageAccount *storage.AccountProperties) error {
 	log.Info("Creating virtual machine.", logutil.Fields{
 		"name":     name,
 		"location": location,
@@ -467,6 +485,26 @@ func (a AzureClient) CreateVirtualMachine(resourceGroup, name, location, size, a
 	log.Debugf("OS disk blob will be placed at: %s", osDiskBlobURL)
 	log.Debugf("SSH key will be placed at: %s", sshKeyPath)
 
+	var osProfile = &compute.OSProfile{
+		ComputerName:  to.StringPtr(name),
+		AdminUsername: to.StringPtr(username),
+		LinuxConfiguration: &compute.LinuxConfiguration{
+			DisablePasswordAuthentication: to.BoolPtr(true),
+			SSH: &compute.SSHConfiguration{
+				PublicKeys: &[]compute.SSHPublicKey{
+					{
+						Path:    to.StringPtr(sshKeyPath),
+						KeyData: to.StringPtr(sshPublicKey),
+					},
+				},
+			},
+		},
+	}
+
+	if customData != "" {
+		osProfile.CustomData = to.StringPtr(customData)
+	}
+
 	_, err = a.virtualMachinesClient().CreateOrUpdate(resourceGroup, name,
 		compute.VirtualMachine{
 			Location: to.StringPtr(location),
@@ -484,21 +522,7 @@ func (a AzureClient) CreateVirtualMachine(resourceGroup, name, location, size, a
 						},
 					},
 				},
-				OsProfile: &compute.OSProfile{
-					ComputerName:  to.StringPtr(name),
-					AdminUsername: to.StringPtr(username),
-					LinuxConfiguration: &compute.LinuxConfiguration{
-						DisablePasswordAuthentication: to.BoolPtr(true),
-						SSH: &compute.SSHConfiguration{
-							PublicKeys: &[]compute.SSHPublicKey{
-								{
-									Path:    to.StringPtr(sshKeyPath),
-									KeyData: to.StringPtr(sshPublicKey),
-								},
-							},
-						},
-					},
-				},
+				OsProfile: osProfile,
 				StorageProfile: &compute.StorageProfile{
 					ImageReference: &compute.ImageReference{
 						Publisher: to.StringPtr(img.publisher),
@@ -554,8 +578,9 @@ func (a AzureClient) CleanupAvailabilitySetIfExists(resourceGroup, name string) 
 }
 
 // GetPublicIPAddress attempts to get public IP address from the Public IP
-// resource. If IP address is not allocated yet, returns empty string.
-func (a AzureClient) GetPublicIPAddress(resourceGroup, name string) (string, error) {
+// resource. If IP address is not allocated yet, returns empty string. If
+// useFqdn is set to true, the a FQDN hostname will be returned.
+func (a AzureClient) GetPublicIPAddress(resourceGroup, name string, useFqdn bool) (string, error) {
 	f := logutil.Fields{"name": name}
 	log.Debug("Querying public IP address.", f)
 	ip, err := a.publicIPAddressClient().Get(resourceGroup, name, "")
@@ -565,6 +590,14 @@ func (a AzureClient) GetPublicIPAddress(resourceGroup, name string) (string, err
 	if ip.Properties == nil {
 		log.Debug("publicIP.Properties is nil. Could not determine IP address", f)
 		return "", nil
+	}
+
+	if useFqdn { // return FQDN value on public IP
+		log.Debug("Will attempt to return FQDN.", f)
+		if ip.Properties.DNSSettings == nil || ip.Properties.DNSSettings.Fqdn == nil {
+			return "", errors.New("FQDN not found on public IP address")
+		}
+		return to.String(ip.Properties.DNSSettings.Fqdn), nil
 	}
 	return to.String(ip.Properties.IPAddress), nil
 }

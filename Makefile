@@ -40,10 +40,10 @@ doc: docs-clean doc-requirements
 docs: doc
 
 test:
-	go test $$(go list ./... | grep -v /vendor/) -check.vv
+	go test ./... -check.vv
 
 install:
-	go install $$(go list ./... | grep -v /vendor/)
+	go install ./...
 
 build-all:
 	./misc/build-all.sh
