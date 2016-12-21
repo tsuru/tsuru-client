@@ -1400,10 +1400,10 @@
 			"revisionTime": "2016-12-20T21:04:24Z"
 		},
 		{
-			"checksumSHA1": "SNY4P98uOASPsYmHrFmkCCZrkTg=",
+			"checksumSHA1": "jTdlfRjqeMErmW36M6o4wtINPH8=",
 			"path": "github.com/tsuru/tsuru/provision/nodecontainer",
-			"revision": "41597241c6c86e20fd77499b24e231a53dbf53bb",
-			"revisionTime": "2016-12-20T21:04:24Z"
+			"revision": "e8890559f56baa1097c6fc80c5e06cbafd7ab946",
+			"revisionTime": "2016-12-21T15:24:21Z"
 		},
 		{
 			"checksumSHA1": "QR0zjQK2k2kGp6rFLhEtZkZqzPs=",
