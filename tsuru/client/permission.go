@@ -128,7 +128,7 @@ func renderTree(w io.Writer, item *permissionData, level int, lastMap map[int]bo
 			if lastMap[i+1] {
 				padding += "   "
 			} else {
-				padding += "|  "
+				padding += "│  "
 			}
 		}
 	}
