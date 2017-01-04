@@ -304,13 +304,12 @@ func (c *Uninstall) Run(ctx *cmd.Context, cli *cmd.Client) error {
 		fmt.Fprintf(ctx.Stdout, "Destroying machine %s...\n", m.FormatNodeAddress())
 		errDest := destroyMachineCmd.Run(destroyCtx, cli)
 		if errDest != nil {
-			return errDest
+			fmt.Fprintf(ctx.Stderr, "Failed to delete machine: %s\n", errDest)
 		}
 	}
 	err = dockerMachine.DeleteAll()
 	if err != nil {
 		fmt.Fprintf(ctx.Stderr, "Failed to delete core machines: %s\n", err)
-		return err
 	}
 	fmt.Fprintln(ctx.Stdout, "Core Machines successfully removed!")
 	api := TsuruAPI{}
