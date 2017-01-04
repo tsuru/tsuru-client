@@ -280,7 +280,7 @@ func (c *Uninstall) Run(ctx *cmd.Context, cli *cmd.Client) error {
 	defer dockerMachine.Close()
 	machines, err := dockerMachine.List()
 	if err != nil {
-		return err
+		fmt.Fprintf(ctx.Stderr, "No dockerMachine found: %s\n", err)
 	}
 	tbl := cmd.Table{LineSeparator: true, Headers: cmd.Row([]string{"Name", "IP", "Data"})}
 	for _, m := range machines {
