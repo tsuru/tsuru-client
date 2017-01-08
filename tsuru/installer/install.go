@@ -161,7 +161,7 @@ func parseConfigFile(file string) (*InstallOpts, error) {
 			"ca-path": "/certs",
 			"driver": map[string]interface{}{
 				"name":    installConfig.DriverName,
-				"options": map[string]interface{}(installConfig.DriverOpts),
+				"options": installConfig.DriverOpts,
 			},
 		},
 	}
