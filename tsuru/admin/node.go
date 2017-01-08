@@ -316,11 +316,11 @@ func (c *ListNodesCmd) Run(ctx *cmd.Context, client *cmd.Client) error {
 		}
 		sort.Strings(result)
 		m, ok := machineMap[net.URLToHost(addr)]
-		var iaasId string
+		var iaasID string
 		if ok {
-			iaasId = m["Id"].(string)
+			iaasID = m["Id"].(string)
 		}
-		t.AddRow(cmd.Row([]string{addr, iaasId, status, strings.Join(result, "\n")}))
+		t.AddRow(cmd.Row([]string{addr, iaasID, status, strings.Join(result, "\n")}))
 	}
 	t.Sort()
 	ctx.Stdout.Write(t.Bytes())

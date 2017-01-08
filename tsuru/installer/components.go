@@ -6,7 +6,6 @@ package installer
 
 import (
 	"encoding/json"
-	"errors"
 	"fmt"
 	"net/http"
 	"os"
@@ -174,7 +173,7 @@ func (c *PlanB) Healthcheck(addr string) error {
 		return err
 	}
 	if resp.StatusCode != http.StatusOK {
-		return errors.New(fmt.Sprintf("Planb healthcheck error: Want status code 200. Got %s", resp.Status))
+		return fmt.Errorf("Planb healthcheck error: Want status code 200. Got %s", resp.Status)
 	}
 	return nil
 }
@@ -288,7 +287,7 @@ func (c *Registry) Healthcheck(addr string) error {
 		return err
 	}
 	if resp.StatusCode != http.StatusOK {
-		return errors.New(fmt.Sprintf("Registry healthcheck error: Want status code 200. Got %s.", resp.Status))
+		return fmt.Errorf("Registry healthcheck error: Want status code 200. Got %s.", resp.Status)
 	}
 	return nil
 }

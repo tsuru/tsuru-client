@@ -84,8 +84,8 @@ func (c *MachineDestroy) Info() *cmd.Info {
 	}
 }
 func (c *MachineDestroy) Run(context *cmd.Context, client *cmd.Client) error {
-	machineId := context.Args[0]
-	url, err := cmd.GetURL("/iaas/machines/" + machineId)
+	machineID := context.Args[0]
+	url, err := cmd.GetURL("/iaas/machines/" + machineID)
 	if err != nil {
 		return err
 	}

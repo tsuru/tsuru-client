@@ -104,7 +104,7 @@ func (s *S) TestSwapWhenAppsAreNotEqual(c *check.C) {
 	transportError := cmdtest.ConditionalTransport{
 		Transport: cmdtest.Transport{Status: http.StatusPreconditionFailed, Message: "Apps are not equal."},
 		CondFunc: func(r *http.Request) bool {
-			called += 1
+			called++
 			app1Name := r.FormValue("app1") == "app1"
 			app2Name := r.FormValue("app2") == "app2"
 			forceSwap := r.FormValue("force") == "false"
@@ -117,7 +117,7 @@ func (s *S) TestSwapWhenAppsAreNotEqual(c *check.C) {
 	transportOk := cmdtest.ConditionalTransport{
 		Transport: cmdtest.Transport{Status: http.StatusOK, Message: ""},
 		CondFunc: func(r *http.Request) bool {
-			called += 1
+			called++
 			app1Name := r.FormValue("app1") == "app1"
 			app2Name := r.FormValue("app2") == "app2"
 			forceSwap := r.FormValue("force") == "true"

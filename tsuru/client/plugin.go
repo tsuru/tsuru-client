@@ -33,13 +33,13 @@ func (c *PluginInstall) Run(context *cmd.Context, client *cmd.Client) error {
 		return err
 	}
 	pluginName := context.Args[0]
-	pluginUrl := context.Args[1]
+	pluginURL := context.Args[1]
 	pluginPath := cmd.JoinWithUserDir(".tsuru", "plugins", pluginName)
 	file, err := filesystem().OpenFile(pluginPath, os.O_WRONLY|os.O_CREATE|os.O_TRUNC, 0755)
 	if err != nil {
 		return err
 	}
-	resp, err := http.Get(pluginUrl)
+	resp, err := http.Get(pluginURL)
 	if err != nil {
 		return err
 	}
