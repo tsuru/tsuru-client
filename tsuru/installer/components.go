@@ -496,7 +496,7 @@ func (s *TsuruBoostraper) addTarget() error {
 }
 
 func (s *TsuruBoostraper) login(login, password string) error {
-	fmt.Fprintf(os.Stdout, "log in with default user: %s", login)
+	fmt.Fprintf(os.Stdout, "log in with default user: %s ", login)
 	logincmd := s.manager.Commands["login"]
 	s.context.Args = []string{login}
 	s.context.Stdin = strings.NewReader(fmt.Sprintf("%s\n", password))

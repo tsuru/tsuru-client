@@ -5,6 +5,7 @@
 package installer
 
 import (
+	"github.com/tsuru/tsuru-client/tsuru/installer/dm"
 	"reflect"
 
 	"github.com/tsuru/tsuru/iaas"
@@ -79,5 +80,39 @@ func (s *S) TestProvisionPool(c *check.C) {
 				c.Errorf("Test case %d/%d failed. Expected %+v. Got %+v", ti, i, t.expectedDriverOpts[i], machines[i].Base.CustomData)
 			}
 		}
+	}
+}
+
+func (s *S) TestsetCoreDriverDefaultOpts(c *check.C) {
+	tt := []struct {
+		test     *InstallOpts
+		expected map[string][]interface{}
+	}{
+		{
+			test: &InstallOpts{
+				DockerMachineConfig: &dm.DockerMachineConfig{
+					DriverName: "google",
+				},
+				CoreDriversOpts: map[string][]interface{}{"google-open-port": []interface{}{"8081"}},
+			},
+			expected: map[string][]interface{}{
+				"google-open-port": []interface{}{"8081"},
+				"google-scopes":    []interface{}{"https://www.googleapis.com/auth/devstorage.read_only,https://www.googleapis.com/auth/logging.write,https://www.googleapis.com/auth/monitoring.write,https://www.googleapis.com/auth/compute"},
+			},
+		},
+		{
+			test: &InstallOpts{
+				DockerMachineConfig: &dm.DockerMachineConfig{
+					DriverName: "generic",
+				},
+			},
+			expected: map[string][]interface{}{
+				"generic-open-port": []interface{}{"8080"},
+			},
+		},
+	}
+	for _, v := range tt {
+		setCoreDriverDefaultOpts(v.test)
+		c.Check(v.test.CoreDriversOpts, check.DeepEquals, v.expected)
 	}
 }

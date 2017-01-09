@@ -50,7 +50,7 @@ func (i *Installer) Install(opts *InstallOpts) (*Installation, error) {
 	if errChecks := preInstallChecks(opts); errChecks != nil {
 		return nil, fmt.Errorf("pre-install checks failed: %s", errChecks)
 	}
-	opts.CoreDriversOpts[opts.DriverName+"-open-port"] = []interface{}{strconv.Itoa(defaultTsuruAPIPort)}
+	setCoreDriverDefaultOpts(opts)
 	coreMachines, err := i.ProvisionMachines(opts.CoreHosts, opts.CoreDriversOpts)
 	if err != nil {
 		return nil, fmt.Errorf("failed to provision components machines: %s", err)
@@ -74,6 +74,18 @@ func (i *Installer) Install(opts *InstallOpts) (*Installation, error) {
 		InstallMachines: installMachines,
 		Components:      i.components,
 	}, nil
+}
+
+func setCoreDriverDefaultOpts(opts *InstallOpts) {
+	if opts.CoreDriversOpts == nil {
+		opts.CoreDriversOpts = make(map[string][]interface{})
+	}
+	if _, ok := opts.CoreDriversOpts[opts.DriverName+"-open-port"]; !ok {
+		opts.CoreDriversOpts[opts.DriverName+"-open-port"] = []interface{}{strconv.Itoa(defaultTsuruAPIPort)}
+	}
+	if (opts.DriverName == "google") && (opts.CoreDriversOpts["google-scopes"] == nil) {
+		opts.CoreDriversOpts["google-scopes"] = []interface{}{"https://www.googleapis.com/auth/devstorage.read_only,https://www.googleapis.com/auth/logging.write,https://www.googleapis.com/auth/monitoring.write,https://www.googleapis.com/auth/compute"}
+	}
 }
 
 func (i *Installer) InstallComponents(cluster ServiceCluster, opts *ComponentsConfig) error {
