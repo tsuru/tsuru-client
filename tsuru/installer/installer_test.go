@@ -5,9 +5,9 @@
 package installer
 
 import (
-	"github.com/tsuru/tsuru-client/tsuru/installer/dm"
 	"reflect"
 
+	"github.com/tsuru/tsuru-client/tsuru/installer/dm"
 	"github.com/tsuru/tsuru/iaas"
 	"github.com/tsuru/tsuru/iaas/dockermachine"
 	check "gopkg.in/check.v1"
