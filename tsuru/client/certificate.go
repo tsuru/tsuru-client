@@ -61,11 +61,11 @@ func (c *CertificateSet) Run(context *cmd.Context, client *cmd.Client) error {
 	v.Set("cname", c.cname)
 	v.Set("certificate", string(cert))
 	v.Set("key", string(key))
-	u, err := cmd.GetURL(fmt.Sprintf("/apps/%s/certificate", appName))
+	u, err := cmd.GetURLVersion("1.2", fmt.Sprintf("/apps/%s/certificate", appName))
 	if err != nil {
 		return err
 	}
-	request, err := http.NewRequest("POST", u, strings.NewReader(v.Encode()))
+	request, err := http.NewRequest(http.MethodPut, u, strings.NewReader(v.Encode()))
 	if err != nil {
 		return err
 	}
@@ -76,5 +76,57 @@ func (c *CertificateSet) Run(context *cmd.Context, client *cmd.Client) error {
 	}
 	defer response.Body.Close()
 	fmt.Fprintln(context.Stdout, "Succesfully created the certificated.")
+	return nil
+}
+
+type CertificateRemove struct {
+	cmd.GuessingCommand
+	cname string
+	fs    *gnuflag.FlagSet
+}
+
+func (c *CertificateRemove) Info() *cmd.Info {
+	return &cmd.Info{
+		Name:  "certificate-remove",
+		Usage: "certificate-remove [-a/--app appname] [-c/--cname CNAME]",
+		Desc:  `Removes a TLS certificate from a specific app.`,
+	}
+}
+
+func (c *CertificateRemove) Flags() *gnuflag.FlagSet {
+	if c.fs == nil {
+		c.fs = c.GuessingCommand.Flags()
+		cname := "App CNAME"
+		c.fs.StringVar(&c.cname, "cname", "", cname)
+		c.fs.StringVar(&c.cname, "c", "", cname)
+	}
+	return c.fs
+}
+
+func (c *CertificateRemove) Run(context *cmd.Context, client *cmd.Client) error {
+	appName, err := c.Guess()
+	if err != nil {
+		return err
+	}
+	if c.cname == "" {
+		return errors.New("You must set cname.")
+	}
+	v := url.Values{}
+	v.Set("cname", c.cname)
+	u, err := cmd.GetURLVersion("1.2", fmt.Sprintf("/apps/%s/certificate?%s", appName, v.Encode()))
+	if err != nil {
+		return err
+	}
+	request, err := http.NewRequest(http.MethodDelete, u, nil)
+	if err != nil {
+		return err
+	}
+	request.Header.Set("Content-Type", "application/x-www-form-urlencoded")
+	response, err := client.Do(request)
+	if err != nil {
+		return err
+	}
+	defer response.Body.Close()
+	fmt.Fprintln(context.Stdout, "Certificate removed.")
 	return nil
 }

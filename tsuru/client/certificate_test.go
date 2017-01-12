@@ -26,12 +26,11 @@ func (s *S) TestCertificateSetRunSuccessfully(c *check.C) {
 			"./testdata/cert/server.key",
 		},
 	}
-
 	trans := &cmdtest.ConditionalTransport{
 		Transport: cmdtest.Transport{Status: http.StatusNoContent},
 		CondFunc: func(req *http.Request) bool {
 			url := strings.HasSuffix(req.URL.Path, "/apps/secret/certificate")
-			method := req.Method == "POST"
+			method := req.Method == http.MethodPut
 			cname := req.FormValue("cname") == "app.io"
 			certificate := req.FormValue("certificate") == s.mustReadFileString(c, "./testdata/cert/server.crt")
 			key := req.FormValue("key") == s.mustReadFileString(c, "./testdata/cert/server.key")
@@ -69,6 +68,36 @@ func (s *S) TestCertificateSetRunCerticateNotFound(c *check.C) {
 	err := command.Run(&context, client)
 	c.Assert(os.IsNotExist(err), check.Equals, true)
 	c.Assert(stdout.String(), check.Equals, "")
+}
+
+func (s *S) TestCertificateRemoveRunSuccessfully(c *check.C) {
+	var stdout, stderr bytes.Buffer
+	context := cmd.Context{
+		Stdout: &stdout,
+		Stderr: &stderr,
+	}
+	requestCount := 0
+	trans := &cmdtest.ConditionalTransport{
+		Transport: cmdtest.Transport{Status: http.StatusNoContent},
+		CondFunc: func(req *http.Request) bool {
+			requestCount++
+			url := strings.HasSuffix(req.URL.Path, "/apps/secret/certificate")
+			method := req.Method == http.MethodDelete
+			cname := req.FormValue("cname") == "app.io"
+
+			return url && method && cname
+		},
+	}
+	client := cmd.NewClient(&http.Client{Transport: trans}, nil, manager)
+	fake := cmdtest.FakeGuesser{Name: "secret"}
+	guessCommand := cmd.GuessingCommand{G: &fake}
+	command := CertificateRemove{GuessingCommand: guessCommand}
+	command.Flags().Parse(true, []string{"-c", "app.io"})
+	c.Assert(command.cname, check.Equals, "app.io")
+	err := command.Run(&context, client)
+	c.Assert(err, check.IsNil)
+	c.Assert(stdout.String(), check.Equals, "Certificate removed.\n")
+	c.Assert(requestCount, check.Equals, 1)
 }
 
 func (s *S) mustReadFileString(c *check.C, path string) string {
