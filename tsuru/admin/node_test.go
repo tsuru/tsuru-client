@@ -85,7 +85,7 @@ func (s *S) TestRemoveNodeFromTheSchedulerCmdRun(c *check.C) {
 		CondFunc: func(req *http.Request) bool {
 			u := strings.HasSuffix(req.URL.Path, "/1.2/node/http://localhost:8080")
 			raw := req.URL.RawQuery == "no-rebalance=false"
-			method := req.Method == "DELETE"
+			method := req.Method == http.MethodDelete
 			return u && method && raw
 		},
 	}
@@ -106,7 +106,7 @@ func (s *S) TestRemoveNodeFromTheSchedulerWithDestroyCmdRun(c *check.C) {
 		CondFunc: func(req *http.Request) bool {
 			u := strings.HasSuffix(req.URL.Path, "/1.2/node/http://localhost:8080")
 			raw := req.URL.RawQuery == "no-rebalance=false&remove-iaas=true"
-			method := req.Method == "DELETE"
+			method := req.Method == http.MethodDelete
 			return u && method && raw
 		},
 	}
@@ -140,7 +140,7 @@ func (s *S) TestRemoveNodeFromTheSchedulerWithNoRebalanceCmdRun(c *check.C) {
 		CondFunc: func(req *http.Request) bool {
 			u := strings.HasSuffix(req.URL.Path, "/1.2/node/http://localhost:8080")
 			raw := req.URL.RawQuery == "no-rebalance=true"
-			method := req.Method == "DELETE"
+			method := req.Method == http.MethodDelete
 			return u && method && raw
 		},
 	}
@@ -465,7 +465,7 @@ func (s *S) TestDeleteNodeHealingConfigCmd(c *check.C) {
 		Transport: cmdtest.Transport{Message: `{}`, Status: http.StatusOK},
 		CondFunc: func(req *http.Request) bool {
 			req.ParseForm()
-			return req.URL.Path == "/1.2/healing/node" && req.Method == "DELETE" &&
+			return req.URL.Path == "/1.2/healing/node" && req.Method == http.MethodDelete &&
 				req.Form.Get("name") == "Enabled" && req.Form.Get("pool") == "p1"
 		},
 	}

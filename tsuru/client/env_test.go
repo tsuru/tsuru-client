@@ -364,7 +364,7 @@ func (s *S) TestEnvUnsetRun(c *check.C) {
 		Transport: cmdtest.Transport{Message: string(result), Status: http.StatusOK},
 		CondFunc: func(req *http.Request) bool {
 			path := strings.HasSuffix(req.URL.Path, "/apps/someapp/env")
-			method := req.Method == "DELETE"
+			method := req.Method == http.MethodDelete
 			noRestart := req.URL.Query().Get("noRestart") == "false"
 			env := req.URL.Query().Get("env") == "DATABASE_HOST"
 			return path && method && noRestart && env
@@ -393,7 +393,7 @@ func (s *S) TestEnvUnsetWithNoRestartFlag(c *check.C) {
 		Transport: cmdtest.Transport{Message: string(result), Status: http.StatusOK},
 		CondFunc: func(req *http.Request) bool {
 			path := strings.HasSuffix(req.URL.Path, "/apps/someapp/env")
-			method := req.Method == "DELETE"
+			method := req.Method == http.MethodDelete
 			noRestart := req.URL.Query().Get("noRestart") == "true"
 			env := req.URL.Query().Get("env") == "DATABASE_HOST"
 			return path && method && noRestart && env
@@ -422,7 +422,7 @@ func (s *S) TestEnvUnsetWithoutFlag(c *check.C) {
 		Transport: cmdtest.Transport{Message: string(result), Status: http.StatusOK},
 		CondFunc: func(req *http.Request) bool {
 			path := strings.HasSuffix(req.URL.Path, "/apps/otherapp/env")
-			method := req.Method == "DELETE"
+			method := req.Method == http.MethodDelete
 			noRestart := req.URL.Query().Get("noRestart") == "false"
 			env := req.URL.Query().Get("env") == "DATABASE_HOST"
 			return path && method && noRestart && env

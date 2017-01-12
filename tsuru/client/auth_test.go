@@ -65,7 +65,7 @@ func (s *S) TestTeamRemove(c *check.C) {
 		Transport: cmdtest.Transport{Message: "", Status: http.StatusOK},
 		CondFunc: func(req *http.Request) bool {
 			called = true
-			return strings.HasSuffix(req.URL.Path, "/teams/evergrey") && req.Method == "DELETE"
+			return strings.HasSuffix(req.URL.Path, "/teams/evergrey") && req.Method == http.MethodDelete
 		},
 	}
 	client := cmd.NewClient(&http.Client{Transport: &trans}, nil, manager)
@@ -337,7 +337,7 @@ func (s *S) TestUserRemove(c *check.C) {
 		var body string
 		if strings.HasSuffix(req.URL.Path, "/users/info") && req.Method == "GET" {
 			body = `{"Email":"myuser@tsuru.io","Teams":[]}`
-		} else if strings.HasSuffix(req.URL.Path, "/users") && req.Method == "DELETE" {
+		} else if strings.HasSuffix(req.URL.Path, "/users") && req.Method == http.MethodDelete {
 			called = true
 		}
 		return &http.Response{
@@ -371,7 +371,7 @@ func (s *S) TestUserRemoveWithArgs(c *check.C) {
 		Transport: cmdtest.Transport{Message: "", Status: http.StatusOK},
 		CondFunc: func(req *http.Request) bool {
 			called = true
-			return req.Method == "DELETE" && strings.HasSuffix(req.URL.Path, "/users") && req.URL.Query().Get("user") == context.Args[0]
+			return req.Method == http.MethodDelete && strings.HasSuffix(req.URL.Path, "/users") && req.URL.Query().Get("user") == context.Args[0]
 		},
 	}
 	client := cmd.NewClient(&http.Client{Transport: &trans}, nil, manager)

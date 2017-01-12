@@ -302,7 +302,7 @@ func (s *S) TestRemovePoolFromTheSchedulerCmd(c *check.C) {
 		Transport: cmdtest.Transport{Message: "", Status: http.StatusOK},
 		CondFunc: func(req *http.Request) bool {
 			url := strings.HasSuffix(req.URL.Path, "/pools/poolTest")
-			method := req.Method == "DELETE"
+			method := req.Method == http.MethodDelete
 			return method && url
 		},
 	}
@@ -356,7 +356,7 @@ func (s *S) TestRemoveTeamsFromPoolCmdRun(c *check.C) {
 		Transport: cmdtest.Transport{Message: "", Status: http.StatusOK},
 		CondFunc: func(req *http.Request) bool {
 			url := strings.HasSuffix(req.URL.Path, "/pools/pool1/team")
-			method := req.Method == "DELETE"
+			method := req.Method == http.MethodDelete
 			rq := req.URL.RawQuery == "team=team1"
 			return url && method && rq
 		},

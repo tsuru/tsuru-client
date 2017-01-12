@@ -64,7 +64,7 @@ func (s *S) TestMachineDestroyRun(c *check.C) {
 	trans := &cmdtest.ConditionalTransport{
 		Transport: cmdtest.Transport{Message: "", Status: http.StatusOK},
 		CondFunc: func(req *http.Request) bool {
-			return strings.HasSuffix(req.URL.Path, "/iaas/machines/myid1") && req.Method == "DELETE"
+			return strings.HasSuffix(req.URL.Path, "/iaas/machines/myid1") && req.Method == http.MethodDelete
 		},
 	}
 	client := cmd.NewClient(&http.Client{Transport: trans}, nil, s.manager)
@@ -154,7 +154,7 @@ func (s *S) TestTemplateRemoveCmdRun(c *check.C) {
 	trans := &cmdtest.ConditionalTransport{
 		Transport: cmdtest.Transport{Message: "", Status: http.StatusOK},
 		CondFunc: func(req *http.Request) bool {
-			return strings.HasSuffix(req.URL.Path, "/iaas/templates/my-tpl") && req.Method == "DELETE"
+			return strings.HasSuffix(req.URL.Path, "/iaas/templates/my-tpl") && req.Method == http.MethodDelete
 		},
 	}
 	manager := cmd.Manager{}

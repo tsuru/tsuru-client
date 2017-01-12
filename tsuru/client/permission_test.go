@@ -210,7 +210,7 @@ func (s *S) TestRoleDissociateRun(c *check.C) {
 	trans := &cmdtest.ConditionalTransport{
 		Transport: cmdtest.Transport{Message: string(""), Status: http.StatusCreated},
 		CondFunc: func(req *http.Request) bool {
-			return strings.HasSuffix(req.URL.Path, "/roles/myrole/user/me@me.com") && req.Method == "DELETE" &&
+			return strings.HasSuffix(req.URL.Path, "/roles/myrole/user/me@me.com") && req.Method == http.MethodDelete &&
 				req.URL.Query().Get("context") == "myapp"
 		},
 	}
@@ -262,7 +262,7 @@ func (s *S) TestRolePermissionRemoveRun(c *check.C) {
 	trans := &cmdtest.ConditionalTransport{
 		Transport: cmdtest.Transport{Message: string(""), Status: http.StatusCreated},
 		CondFunc: func(req *http.Request) bool {
-			return strings.HasSuffix(req.URL.Path, "/roles/myrole/permissions/app.create") && req.Method == "DELETE"
+			return strings.HasSuffix(req.URL.Path, "/roles/myrole/permissions/app.create") && req.Method == http.MethodDelete
 		},
 	}
 	client := cmd.NewClient(&http.Client{Transport: trans}, nil, manager)
@@ -287,7 +287,7 @@ func (s *S) TestRoleRemoveRun(c *check.C) {
 	trans := &cmdtest.ConditionalTransport{
 		Transport: cmdtest.Transport{Message: string(""), Status: http.StatusCreated},
 		CondFunc: func(req *http.Request) bool {
-			return strings.HasSuffix(req.URL.Path, "/roles/myrole") && req.Method == "DELETE"
+			return strings.HasSuffix(req.URL.Path, "/roles/myrole") && req.Method == http.MethodDelete
 		},
 	}
 	client := cmd.NewClient(&http.Client{Transport: trans}, nil, manager)
@@ -307,7 +307,7 @@ func (s *S) TestRoleRemoveWithConfirmation(c *check.C) {
 	trans := &cmdtest.ConditionalTransport{
 		Transport: cmdtest.Transport{Message: string(""), Status: http.StatusCreated},
 		CondFunc: func(req *http.Request) bool {
-			return strings.HasSuffix(req.URL.Path, "/roles/myrole") && req.Method == "DELETE"
+			return strings.HasSuffix(req.URL.Path, "/roles/myrole") && req.Method == http.MethodDelete
 		},
 	}
 	client := cmd.NewClient(&http.Client{Transport: trans}, nil, manager)
@@ -370,7 +370,7 @@ func (s *S) TestRoleDefaultRemove(c *check.C) {
 		CondFunc: func(req *http.Request) bool {
 			req.ParseForm()
 			sort.Strings(req.Form["user-create"])
-			return strings.HasSuffix(req.URL.Path, "/role/default") && req.Method == "DELETE" &&
+			return strings.HasSuffix(req.URL.Path, "/role/default") && req.Method == http.MethodDelete &&
 				reflect.DeepEqual(req.Form["user-create"], []string{"r1", "r2"}) &&
 				reflect.DeepEqual(req.Form["team-create"], []string{"r3"})
 		},
