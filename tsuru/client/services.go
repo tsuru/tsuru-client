@@ -259,7 +259,7 @@ func (su *ServiceInstanceUnbind) Run(ctx *cmd.Context, client *cmd.Client) error
 		return err
 	}
 	url += fmt.Sprintf("?noRestart=%t", su.noRestart)
-	request, err := http.NewRequest("DELETE", url, nil)
+	request, err := http.NewRequest(http.MethodDelete, url, nil)
 	if err != nil {
 		return err
 	}
@@ -620,7 +620,7 @@ func removeServiceInstanceWithUnbind(ctx *cmd.Context, client *cmd.Client) error
 	if err != nil {
 		return err
 	}
-	request, err := http.NewRequest("DELETE", url, nil)
+	request, err := http.NewRequest(http.MethodDelete, url, nil)
 	if err != nil {
 		return err
 	}
@@ -659,7 +659,7 @@ func (c *ServiceInstanceRemove) Run(ctx *cmd.Context, client *cmd.Client) error 
 	if err != nil {
 		return err
 	}
-	request, err := http.NewRequest("DELETE", url, nil)
+	request, err := http.NewRequest(http.MethodDelete, url, nil)
 	if err != nil {
 		return err
 	}
@@ -755,7 +755,7 @@ func (c *ServiceInstanceRevoke) Run(ctx *cmd.Context, client *cmd.Client) error 
 	if err != nil {
 		return err
 	}
-	request, err := http.NewRequest("DELETE", url, nil)
+	request, err := http.NewRequest(http.MethodDelete, url, nil)
 	if err != nil {
 		return err
 	}

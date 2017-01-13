@@ -221,7 +221,7 @@ func (s *S) TestKeyRemove(c *check.C) {
 	transport := cmdtest.ConditionalTransport{
 		Transport: cmdtest.Transport{Message: "success", Status: http.StatusOK},
 		CondFunc: func(r *http.Request) bool {
-			method := r.Method == "DELETE"
+			method := r.Method == http.MethodDelete
 			url := strings.HasSuffix(r.URL.Path, "/users/keys/my-key")
 			return method && url
 		},

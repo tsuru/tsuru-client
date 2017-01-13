@@ -1652,7 +1652,7 @@ func (s *S) TestRemoveCName(c *check.C) {
 		Transport: cmdtest.Transport{Message: "Restarted", Status: http.StatusOK},
 		CondFunc: func(req *http.Request) bool {
 			called = true
-			method := req.Method == "DELETE"
+			method := req.Method == http.MethodDelete
 			url := strings.HasSuffix(req.URL.Path, "/apps/death/cname")
 			return method && url
 		},
@@ -1680,7 +1680,7 @@ func (s *S) TestRemoveCNameWithoutTheFlag(c *check.C) {
 		Transport: cmdtest.Transport{Message: "Restarted", Status: http.StatusOK},
 		CondFunc: func(req *http.Request) bool {
 			called = true
-			method := req.Method == "DELETE"
+			method := req.Method == http.MethodDelete
 			url := strings.HasSuffix(req.URL.Path, "/apps/corey/cname")
 			return method && url
 		},
@@ -1944,7 +1944,7 @@ func (s *S) TestUnitRemove(c *check.C) {
 			called = true
 			c.Assert(req.FormValue("process"), check.Equals, "web1")
 			c.Assert(req.FormValue("units"), check.Equals, "2")
-			return strings.HasSuffix(req.URL.Path, "/apps/vapor/units") && req.Method == "DELETE"
+			return strings.HasSuffix(req.URL.Path, "/apps/vapor/units") && req.Method == http.MethodDelete
 		},
 	}
 	client := cmd.NewClient(&http.Client{Transport: trans}, nil, manager)

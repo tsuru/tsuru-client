@@ -258,7 +258,7 @@ func (c *AppRemove) Run(context *cmd.Context, client *cmd.Client) error {
 	if err != nil {
 		return err
 	}
-	request, err := http.NewRequest("DELETE", u, nil)
+	request, err := http.NewRequest(http.MethodDelete, u, nil)
 	if err != nil {
 		return err
 	}
@@ -600,7 +600,7 @@ func (c *AppRevoke) Run(context *cmd.Context, client *cmd.Client) error {
 	if err != nil {
 		return err
 	}
-	request, err := http.NewRequest("DELETE", u, nil)
+	request, err := http.NewRequest(http.MethodDelete, u, nil)
 	if err != nil {
 		return err
 	}
@@ -964,7 +964,7 @@ func unsetCName(cnames []string, g cmd.GuessingCommand, client *cmd.Client) erro
 	if err != nil {
 		return err
 	}
-	request, err := http.NewRequest("DELETE", u, nil)
+	request, err := http.NewRequest(http.MethodDelete, u, nil)
 	if err != nil {
 		return err
 	}
@@ -1084,7 +1084,7 @@ func (c *UnitRemove) Run(context *cmd.Context, client *cmd.Client) error {
 	if err != nil {
 		return err
 	}
-	request, err := http.NewRequest("DELETE", url, nil)
+	request, err := http.NewRequest(http.MethodDelete, url, nil)
 	if err != nil {
 		return err
 	}

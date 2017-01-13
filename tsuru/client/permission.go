@@ -345,7 +345,7 @@ func (c *RolePermissionRemove) Run(context *cmd.Context, client *cmd.Client) err
 	if err != nil {
 		return err
 	}
-	request, err := http.NewRequest("DELETE", addr, nil)
+	request, err := http.NewRequest(http.MethodDelete, addr, nil)
 	if err != nil {
 		return err
 	}
@@ -419,7 +419,7 @@ func (c *RoleDissociate) Run(context *cmd.Context, client *cmd.Client) error {
 	if err != nil {
 		return err
 	}
-	request, err := http.NewRequest("DELETE", addr, nil)
+	request, err := http.NewRequest(http.MethodDelete, addr, nil)
 	if err != nil {
 		return err
 	}
@@ -454,7 +454,7 @@ func (c *RoleRemove) Run(context *cmd.Context, client *cmd.Client) error {
 	if err != nil {
 		return err
 	}
-	request, err := http.NewRequest("DELETE", addr, nil)
+	request, err := http.NewRequest(http.MethodDelete, addr, nil)
 	if err != nil {
 		return err
 	}
@@ -573,7 +573,7 @@ func (c *RoleDefaultRemove) Run(context *cmd.Context, client *cmd.Client) error 
 	if err != nil {
 		return err
 	}
-	request, err := http.NewRequest("DELETE", addr, nil)
+	request, err := http.NewRequest(http.MethodDelete, addr, nil)
 	if err != nil {
 		return err
 	}

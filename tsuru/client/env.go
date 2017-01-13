@@ -188,7 +188,7 @@ func (c *EnvUnset) Run(context *cmd.Context, client *cmd.Client) error {
 	if err != nil {
 		return err
 	}
-	request, err := http.NewRequest("DELETE", u, nil)
+	request, err := http.NewRequest(http.MethodDelete, u, nil)
 	if err != nil {
 		return err
 	}

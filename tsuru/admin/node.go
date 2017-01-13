@@ -210,7 +210,7 @@ func (c *RemoveNodeCmd) Run(ctx *cmd.Context, client *cmd.Client) error {
 	if err != nil {
 		return err
 	}
-	req, err := http.NewRequest("DELETE", u, nil)
+	req, err := http.NewRequest(http.MethodDelete, u, nil)
 	if err != nil {
 		return err
 	}
@@ -550,7 +550,7 @@ func (c *DeleteNodeHealingConfigCmd) Run(ctx *cmd.Context, client *cmd.Client) e
 	if err != nil {
 		return err
 	}
-	req, err := http.NewRequest("DELETE", u, nil)
+	req, err := http.NewRequest(http.MethodDelete, u, nil)
 	if err != nil {
 		return err
 	}

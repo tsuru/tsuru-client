@@ -26,7 +26,7 @@ func (s *S) TestAppLockDeleteRun(c *check.C) {
 	trans := &cmdtest.ConditionalTransport{
 		Transport: cmdtest.Transport{Message: "", Status: http.StatusOK},
 		CondFunc: func(req *http.Request) bool {
-			return strings.HasSuffix(req.URL.Path, "/apps/app1/lock") && req.Method == "DELETE"
+			return strings.HasSuffix(req.URL.Path, "/apps/app1/lock") && req.Method == http.MethodDelete
 		},
 	}
 	client := cmd.NewClient(&http.Client{Transport: trans}, nil, s.manager)

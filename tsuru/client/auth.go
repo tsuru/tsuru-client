@@ -121,7 +121,7 @@ func (c *UserRemove) Run(context *cmd.Context, client *cmd.Client) error {
 	if email != "" {
 		qs = "?user=" + url.QueryEscape(email)
 	}
-	request, err := http.NewRequest("DELETE", u+qs, nil)
+	request, err := http.NewRequest(http.MethodDelete, u+qs, nil)
 	if err != nil {
 		return err
 	}
@@ -196,7 +196,7 @@ func (c *TeamRemove) Run(context *cmd.Context, client *cmd.Client) error {
 	if err != nil {
 		return err
 	}
-	request, err := http.NewRequest("DELETE", u, nil)
+	request, err := http.NewRequest(http.MethodDelete, u, nil)
 	if err != nil {
 		return err
 	}
