@@ -70,7 +70,7 @@ func (s *S) TestCertificateSetRunCerticateNotFound(c *check.C) {
 	c.Assert(stdout.String(), check.Equals, "")
 }
 
-func (s *S) TestCertificateRemoveRunSuccessfully(c *check.C) {
+func (s *S) TestCertificateUnsetRunSuccessfully(c *check.C) {
 	var stdout, stderr bytes.Buffer
 	context := cmd.Context{
 		Stdout: &stdout,
@@ -91,7 +91,7 @@ func (s *S) TestCertificateRemoveRunSuccessfully(c *check.C) {
 	client := cmd.NewClient(&http.Client{Transport: trans}, nil, manager)
 	fake := cmdtest.FakeGuesser{Name: "secret"}
 	guessCommand := cmd.GuessingCommand{G: &fake}
-	command := CertificateRemove{GuessingCommand: guessCommand}
+	command := CertificateUnset{GuessingCommand: guessCommand}
 	command.Flags().Parse(true, []string{"-c", "app.io"})
 	c.Assert(command.cname, check.Equals, "app.io")
 	err := command.Run(&context, client)

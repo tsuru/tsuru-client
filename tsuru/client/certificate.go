@@ -79,21 +79,21 @@ func (c *CertificateSet) Run(context *cmd.Context, client *cmd.Client) error {
 	return nil
 }
 
-type CertificateRemove struct {
+type CertificateUnset struct {
 	cmd.GuessingCommand
 	cname string
 	fs    *gnuflag.FlagSet
 }
 
-func (c *CertificateRemove) Info() *cmd.Info {
+func (c *CertificateUnset) Info() *cmd.Info {
 	return &cmd.Info{
-		Name:  "certificate-remove",
-		Usage: "certificate-remove [-a/--app appname] [-c/--cname CNAME]",
-		Desc:  `Removes a TLS certificate from a specific app.`,
+		Name:  "certificate-unset",
+		Usage: "certificate-unset [-a/--app appname] [-c/--cname CNAME]",
+		Desc:  `Unset a TLS certificate from a specific app.`,
 	}
 }
 
-func (c *CertificateRemove) Flags() *gnuflag.FlagSet {
+func (c *CertificateUnset) Flags() *gnuflag.FlagSet {
 	if c.fs == nil {
 		c.fs = c.GuessingCommand.Flags()
 		cname := "App CNAME"
@@ -103,7 +103,7 @@ func (c *CertificateRemove) Flags() *gnuflag.FlagSet {
 	return c.fs
 }
 
-func (c *CertificateRemove) Run(context *cmd.Context, client *cmd.Client) error {
+func (c *CertificateUnset) Run(context *cmd.Context, client *cmd.Client) error {
 	appName, err := c.Guess()
 	if err != nil {
 		return err

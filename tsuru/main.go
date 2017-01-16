@@ -44,7 +44,7 @@ func buildManager(name string) *cmd.Manager {
 	m.Register(&client.AppStop{})
 	m.Register(&admin.AppLockDelete{})
 	m.Register(&client.CertificateSet{})
-	m.Register(&client.CertificateRemove{})
+	m.Register(&client.CertificateUnset{})
 	m.RegisterRemoved("app-pool-change", "You should use `tsuru app-update` instead.")
 	m.RegisterRemoved("app-plan-change", "You should use `tsuru app-update` instead.")
 	m.Register(&client.CnameAdd{})
