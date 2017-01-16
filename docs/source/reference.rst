@@ -136,6 +136,8 @@ based on the git repository's configuration. It will try to find a remote labele
    :title: Set application certificate
 .. tsuru-command:: certificate-unset
    :title: Unset application certificate
+.. tsuru-command:: certificate-list
+   :title: List application certificates
 
 Public Keys
 ===========

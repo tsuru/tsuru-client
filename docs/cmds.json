@@ -183,6 +183,10 @@
     "usage": "tsuru plugin-remove <plugin-name>", 
     "desc": "Removes a previously installed tsuru plugin.\n\nMinimum # of arguments: 1\n"
   }, 
+  "certificate-list": {
+    "usage": "tsuru certificate-list [-a/--app appname] [-r/--raw]", 
+    "desc": "List App TLS certificates.\n\nFlags:\n  \n  -a, --app (= \"\")\n      The name of the app.\n  -r, --raw  (= false)\n      Display raw certificates\n  \n"
+  }, 
   "node-update": {
     "usage": "tsuru node-update <address> [param_name=param_value...] [--disable] [--enable]", 
     "desc": "Modifies metadata associated to a node. If a parameter is set to an\nempty value, it will be removed from the node's metadata.\n\nIf the [[--disable]] flag is used, the node will be marked as disabled and the\nscheduler won't consider it when selecting a node to receive containers.\n\nFlags:\n  \n  --disable  (= false)\n      Disable node in scheduler.\n  --enable  (= false)\n      Enable node in scheduler.\n  \nMinimum # of arguments: 1\n"
