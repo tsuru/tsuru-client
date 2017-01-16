@@ -67,9 +67,9 @@
     "usage": "tsuru app-start [-a/--app appname] [-p/--process processname]", 
     "desc": "Starts an application, or one of the processes of the application.\n\nFlags:\n  \n  -a, --app (= \"\")\n      The name of the app.\n  -p, --process (= \"\")\n      Process name\n  \n"
   }, 
-  "service-instance-revoke": {
-    "usage": "tsuru service-instance-revoke <service-name> <service-instance-name> <team-name>", 
-    "desc": "Revoke access to team in a service instance.\n\nMinimum # of arguments: 3\n"
+  "certificate-set": {
+    "usage": "tsuru certificate-set [-a/--app appname] [-c/--cname CNAME] [certificate] [key]", 
+    "desc": "Creates or update a TLS certificate into the specific app.\n\nFlags:\n  \n  -a, --app (= \"\")\n      The name of the app.\n  -c, --cname (= \"\")\n      App CNAME\n  \nMinimum # of arguments: 2\n"
   }, 
   "app-pool-change": {
     "usage": "tsuru app-pool-change", 
@@ -92,8 +92,8 @@
     "desc": "Creates or registers a new node in the cluster.\nBy default, this command will call the configured IaaS to create a new\nmachine. Every param will be sent to the IaaS implementation.\n\nIaaS providers should have been previously configured in the [[tsuru.conf]]\nfile. See tsuru.conf reference docs for more information.\n\nIf using an IaaS to create a node is not wanted it's possible to simply\nregister an existing node with the [[--register]] flag.\n\nParameters with special meaning:\n  iaas=<iaas name>\n    Which iaas provider should be used, if not set tsuru will use the default\n    iaas specified in tsuru.conf file.\n\n  template=<template name>\n    A machine template with predefined parameters, additional parameters will\n    override template ones. See 'machine-template-add' command.\n\n  address=<api url>\n    Only used if [[--register]] flag is used. Should point to the endpoint of\n    a working server.\n\n  pool=<pool name>\n    Mandatory parameter specifying to which pool the added node will belong.\n    Available pools can be lister with the [[pool-list]] command.\n\n\nFlags:\n  \n  --register  (= false)\n      Registers an existing docker endpoint, the IaaS won't be called.\n  \nMinimum # of arguments: 1\n"
   }, 
   "node-container-delete": {
-    "usage": "tsuru node-container-delete <name> [-p/--pool poolname] [-y]", 
-    "desc": "Delete existing node container.\n\nFlags:\n  \n  -p, --pool (= \"\")\n      Pool to remove container config. If empty the default node container will be removed.\n  -y, --assume-yes  (= false)\n      Don't ask for confirmation.\n  \nMinimum # of arguments: 1\nMaximum # of arguments: 1\n"
+    "usage": "tsuru node-container-delete <name> [-p/--pool poolname] [-k/--kill] [-y]", 
+    "desc": "Delete existing node container.\n\nFlags:\n  \n  -k, --kill  (= false)\n      Kill running containers.\n  -p, --pool (= \"\")\n      Pool to remove container config. If empty the default node container will be removed.\n  -y, --assume-yes  (= false)\n      Don't ask for confirmation.\n  \nMinimum # of arguments: 1\nMaximum # of arguments: 1\n"
   }, 
   "role-assign": {
     "usage": "tsuru role-assign <role-name> <user-email> [<context-value>]", 
@@ -109,7 +109,7 @@
   }, 
   "pool-add": {
     "usage": "tsuru pool-add <pool> [-p/--public] [-d/--default] [--provisioner <name>] [-f/--force]", 
-    "desc": "Adds a new pool.\n\nEach docker node added using [[docker-node-add]] command belongs to one pool.\nAlso, when creating a new application a pool must be chosen and this means\nthat all units of the created application will be spawned in nodes belonging\nto the chosen pool.\n\nFlags:\n  \n  -d, --default  (= false)\n      Make pool default (when none is specified during [[app-create]] this pool will be used)\n  -f, --force  (= false)\n      Force overwrite default pool\n  -p, --public  (= false)\n      Make pool public (all teams can use it)\n  --provisioner (= \"\")\n      Provisioner associated to the pool (empty for default docker provisioner)\n  \nMinimum # of arguments: 1\n"
+    "desc": "Adds a new pool.\n\nEach docker node added using [[node-add]] command belongs to one pool.\nAlso, when creating a new application a pool must be chosen and this means\nthat all units of the created application will be spawned in nodes belonging\nto the chosen pool.\n\nFlags:\n  \n  -d, --default  (= false)\n      Make pool default (when none is specified during [[app-create]] this pool will be used)\n  -f, --force  (= false)\n      Force overwrite default pool\n  -p, --public  (= false)\n      Make pool public (all teams can use it)\n  --provisioner (= \"\")\n      Provisioner associated to the pool (empty for default docker provisioner)\n  \nMinimum # of arguments: 1\n"
   }, 
   "node-container-update": {
     "usage": "tsuru node-container-update <name> [-o/--pool poolname] [-r/--raw path=value]... [docker run flags]...", 
@@ -145,7 +145,7 @@
   }, 
   "platform-update": {
     "usage": "tsuru platform-update <platform name> [--dockerfile/-d Dockerfile] [--disable/--enable] [--image/-i image]", 
-    "desc": "Updates a platform in tsuru.\n\nThe name of the image can be automatically inferred in case you're using an\nofficial platform. Check https://github.com/tsuru/platforms for a list of\nofficial platforms.\n\nThe flags --enable and --disable can be used for enabling or disabling a\nplatform.\n\nExamples:\n\n[[tsuru-admin platform-update java # uses official tsuru/java image from docker hub]]\n[[tsuru-admin platform-update java -i registry.company.com/tsuru/java # uses custom Java image]]\n[[tsuru-admin platform-update java -d /data/projects/java/Dockerfile # uses local Dockerfile]]\n[[tsuru-admin platform-update java -d https://platforms.com/java/Dockerfile # uses remote Dockerfile]]\n\nFlags:\n  \n  -d, --dockerfile (= \"\")\n      URL or path to the Dockerfile used for building the image of the platform\n  --disable  (= false)\n      Disable the platform\n  --enable  (= false)\n      Enable the platform\n  -i, --image (= \"\")\n      Name of the prebuilt Docker image\n  \nMinimum # of arguments: 1\n"
+    "desc": "Updates a platform in tsuru.\n\nThe name of the image can be automatically inferred in case you're using an\nofficial platform. Check https://github.com/tsuru/platforms for a list of\nofficial platforms.\n\nThe flags --enable and --disable can be used for enabling or disabling a\nplatform.\n\nExamples:\n\n[[tsuru platform-update java # uses official tsuru/java image from docker hub]]\n[[tsuru platform-update java -i registry.company.com/tsuru/java # uses custom Java image]]\n[[tsuru platform-update java -d /data/projects/java/Dockerfile # uses local Dockerfile]]\n[[tsuru platform-update java -d https://platforms.com/java/Dockerfile # uses remote Dockerfile]]\n\nFlags:\n  \n  -d, --dockerfile (= \"\")\n      URL or path to the Dockerfile used for building the image of the platform\n  --disable  (= false)\n      Disable the platform\n  --enable  (= false)\n      Enable the platform\n  -i, --image (= \"\")\n      Name of the prebuilt Docker image\n  \nMinimum # of arguments: 1\n"
   }, 
   "user-quota-change": {
     "usage": "tsuru user-quota-change <user-email> <new-limit>", 
@@ -166,6 +166,10 @@
   "team-user-remove": {
     "usage": "tsuru team-user-remove", 
     "desc": "This command was removed. You should use `tsuru role-dissociate` instead.\n\n"
+  }, 
+  "service-update": {
+    "usage": "tsuru service-update", 
+    "desc": "This command was removed. You should use `tsuru service-instance-update` instead.\n\n"
   }, 
   "role-add": {
     "usage": "tsuru role-add <role-name> <context-type> [--description/-d description]", 
@@ -201,7 +205,7 @@
   }, 
   "platform-add": {
     "usage": "tsuru platform-add <platform name> [--dockerfile/-d Dockerfile] [--image/-i image]", 
-    "desc": "Adds a new platform to tsuru.\n\nThe name of the image can be automatically inferred in case you're using an\nofficial platform. Check https://github.com/tsuru/platforms for a list of\nofficial platforms and instructions on how to create a custom platform.\n\nExamples:\n\n\t[[tsuru-admin platform-add java # uses official tsuru/java image from docker hub]]\n\t[[tsuru-admin platform-add java -i registry.company.com/tsuru/java # uses custom Java image]]\n\t[[tsuru-admin platform-add java -d /data/projects/java/Dockerfile # uses local Dockerfile]]\n\t[[tsuru-admin platform-add java -d https://platforms.com/java/Dockerfile # uses remote Dockerfile]]\n\nFlags:\n  \n  -d, --dockerfile (= \"\")\n      URL or path to the Dockerfile used for building the image of the platform\n  -i, --image (= \"\")\n      Name of the prebuilt Docker image\n  \nMinimum # of arguments: 1\n"
+    "desc": "Adds a new platform to tsuru.\n\nThe name of the image can be automatically inferred in case you're using an\nofficial platform. Check https://github.com/tsuru/platforms for a list of\nofficial platforms and instructions on how to create a custom platform.\n\nExamples:\n\n\t[[tsuru platform-add java # uses official tsuru/java image from docker hub]]\n\t[[tsuru platform-add java -i registry.company.com/tsuru/java # uses custom Java image]]\n\t[[tsuru platform-add java -d /data/projects/java/Dockerfile # uses local Dockerfile]]\n\t[[tsuru platform-add java -d https://platforms.com/java/Dockerfile # uses remote Dockerfile]]\n\nFlags:\n  \n  -d, --dockerfile (= \"\")\n      URL or path to the Dockerfile used for building the image of the platform\n  -i, --image (= \"\")\n      Name of the prebuilt Docker image\n  \nMinimum # of arguments: 1\n"
   }, 
   "node-list": {
     "usage": "tsuru node-list [--filter/-f <metadata>=<value>]...", 
@@ -227,9 +231,9 @@
     "usage": "tsuru logout", 
     "desc": "Logout will terminate the session with the tsuru server.\n\n"
   }, 
-  "docker-log-update": {
-    "usage": "tsuru docker-log-update [-r/--restart] [-p/--pool poolname] --log-driver <driver> [--log-opt name=value]...", 
-    "desc": "Set custom configuration for container logs. By default tsuru configures\napplication containers to send all logs to the tsuru/bs container through\nsyslog.\n\nSetting a custom log-driver allow users to change this behavior and make\ncontainers send their logs directly using the driver bypassing tsuru/bs\ncompletely. In this situation the 'tsuru app-log' command will not work\nanymore.\n\nThe --log-driver option accepts either the value 'bs' restoring tsuru default\nbehavior or any log-driver supported by docker along with their --log-opt. See\nhttps://docs.docker.com/engine/reference/logging/overview/ for more details.\n\nIf --pool is specified the log-driver will only be used on containers started\non the chosen pool.\n\nFlags:\n  \n  --log-driver (= \"\")\n      Chosen log driver. Supported log drivers depend on the docker version running on nodes.\n  --log-opt  (= {})\n      Log options send to the specified log-driver\n  -p, --pool (= \"\")\n      Pool name where log options will be used.\n  -r, --restart  (= false)\n      Whether tsuru should restart all apps on the specified pool.\n  \n"
+  "certificate-unset": {
+    "usage": "tsuru certificate-unset [-a/--app appname] [-c/--cname CNAME]", 
+    "desc": "Unset a TLS certificate from a specific app.\n\nFlags:\n  \n  -a, --app (= \"\")\n      The name of the app.\n  -c, --cname (= \"\")\n      App CNAME\n  \n"
   }, 
   "machine-template-add": {
     "usage": "tsuru machine-template-add <name> <iaas> <param>=<value>...", 
@@ -279,6 +283,10 @@
     "usage": "tsuru role-info <role-name>", 
     "desc": "Get information about specific role.\n\nMinimum # of arguments: 1\n"
   }, 
+  "docker-log-update": {
+    "usage": "tsuru docker-log-update [-r/--restart] [-p/--pool poolname] --log-driver <driver> [--log-opt name=value]...", 
+    "desc": "Set custom configuration for container logs. By default tsuru configures\napplication containers to send all logs to the tsuru/bs container through\nsyslog.\n\nSetting a custom log-driver allow users to change this behavior and make\ncontainers send their logs directly using the driver bypassing tsuru/bs\ncompletely. In this situation the 'tsuru app-log' command will not work\nanymore.\n\nThe --log-driver option accepts either the value 'bs' restoring tsuru default\nbehavior or any log-driver supported by docker along with their --log-opt. See\nhttps://docs.docker.com/engine/reference/logging/overview/ for more details.\n\nIf --pool is specified the log-driver will only be used on containers started\non the chosen pool.\n\nFlags:\n  \n  --log-driver (= \"\")\n      Chosen log driver. Supported log drivers depend on the docker version running on nodes.\n  --log-opt  (= {})\n      Log options send to the specified log-driver\n  -p, --pool (= \"\")\n      Pool name where log options will be used.\n  -r, --restart  (= false)\n      Whether tsuru should restart all apps on the specified pool.\n  \n"
+  }, 
   "containers-rebalance": {
     "usage": "tsuru containers-rebalance [--dry] [-y/--assume-yes] [-m/--metadata <metadata>=<value>]... [-a/--app <appname>]...", 
     "desc": "Move containers creating a more even distribution between docker nodes.\nInstead of specifying hosts as in the containers-move command, this command\nwill automatically choose to which host each unit should be moved, trying to\ndistribute the units as evenly as possible.\n\nThe --dry flag runs the balancing algorithm without doing any real\nmodification. It will only print which units would be moved and where they\nwould be created.\n\nFlags:\n  \n  -a, --app  (= [])\n      Filter by app name\n  --dry  (= false)\n      Dry run, only shows what would be done\n  -m, --metadata  (= {})\n      Filter by host metadata\n  -y, --assume-yes  (= false)\n      Don't ask for confirmation.\n  \n"
@@ -301,7 +309,7 @@
   }, 
   "node-container-upgrade": {
     "usage": "tsuru node-container-upgrade <name> [-p/--pool poolname] [-y]", 
-    "desc": "Upgrade version and restart node containers.\n\nFlags:\n  \n  -y, --assume-yes  (= false)\n      Don't ask for confirmation.\n  \nMinimum # of arguments: 1\nMaximum # of arguments: 1\n"
+    "desc": "Upgrade version and restart node containers.\n\nFlags:\n  \n  -p, --pool (= \"\")\n      Pool to upgrade container. If empty it'll be a default entry to all pools.\n  -y, --assume-yes  (= false)\n      Don't ask for confirmation.\n  \nMinimum # of arguments: 1\nMaximum # of arguments: 1\n"
   }, 
   "env-set": {
     "usage": "tsuru env-set <NAME=value> [NAME=value] ... [-a/--app appname] [-p/--private] [--no-restart]", 
@@ -390,16 +398,16 @@
     "usage": "tsuru cname-add <cname> [<cname> ...] [-a/--app appname]", 
     "desc": "Adds a new CNAME to the application.\n\nIt will not manage any DNS register, it's up to the user to create the DNS\nregister. Once the app contains a custom CNAME, it will be displayed by \"app-\nlist\" and \"app-info\".\n\nFlags:\n  \n  -a, --app (= \"\")\n      The name of the app.\n  \nMinimum # of arguments: 1\n"
   }, 
-  "service-update": {
-    "usage": "tsuru service-update", 
-    "desc": "This command was removed. You should use `tsuru service-instance-update` instead.\n\n"
+  "service-instance-revoke": {
+    "usage": "tsuru service-instance-revoke <service-name> <service-instance-name> <team-name>", 
+    "desc": "Revoke access to team in a service instance.\n\nMinimum # of arguments: 3\n"
   }, 
   "containers-move": {
     "usage": "tsuru containers-move <from host> <to host>", 
     "desc": "Move all containers from one host to another.\nThis command allows you to move all containers from one host to another. This\nis useful when doing maintenance on hosts. <from host> and <to host> must be\nhost names of existing docker nodes.\n\nThis command will go through the following steps:\n\n* Enumerate all units at the origin host;\n* For each unit, create a new unit at the destination host;\n* Erase each unit from the origin host.\n\nMinimum # of arguments: 2\n"
   }, 
   "node-container-add": {
-    "usage": "tsuru node-container-add <name> [-p/--pool poolname] [-r/--raw path=value]... [docker run flags]...", 
+    "usage": "tsuru node-container-add <name> [-o/--pool poolname] [-r/--raw path=value]... [docker run flags]...", 
     "desc": "Add new node container or overwrite existing one. If the pool name is omitted\nthe node container will be valid for all pools.\n\nFlags:\n  \n  -e, --env  (= [])\n      Set environment variables\n  --image (= \"\")\n      Image that will be used\n  --log-driver (= \"\")\n      Logging driver for container\n  --log-opt  (= {})\n      Log driver options\n  --net (= \"\")\n      Connect a container to a network\n  -o, --pool (= \"\")\n      Pool to add container config. If empty it'll be a default entry to all pools.\n  -p, --publish  (= [])\n      Publish a container's port(s) to the host\n  --privileged  (= false)\n      Give extended privileges to this container\n  -r, --raw  (= {})\n      Add raw parameter to node container api call\n  --restart (= \"\")\n      Restart policy to apply when a container exits\n  -v, --volume  (= [])\n      Bind mount a volume\n  \nMinimum # of arguments: 1\nMaximum # of arguments: 1\n"
   }, 
   "pool-update": {

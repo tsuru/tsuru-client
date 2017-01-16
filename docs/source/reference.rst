@@ -132,7 +132,10 @@ based on the git repository's configuration. It will try to find a remote labele
    :title: List deploys
 .. tsuru-command:: app-deploy-rollback
    :title: Rollback deploy
-
+.. tsuru-command:: certificate-set
+   :title: Set application certificate
+.. tsuru-command:: certificate-unset
+   :title: Unset application certificate
 
 Public Keys
 ===========
