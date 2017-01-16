@@ -5,6 +5,10 @@
 package client
 
 import (
+	"crypto/x509"
+	"crypto/x509/pkix"
+	"encoding/json"
+	"encoding/pem"
 	"errors"
 	"fmt"
 	"io/ioutil"
@@ -129,4 +133,96 @@ func (c *CertificateUnset) Run(context *cmd.Context, client *cmd.Client) error {
 	defer response.Body.Close()
 	fmt.Fprintln(context.Stdout, "Certificate removed.")
 	return nil
+}
+
+type CertificateList struct {
+	cmd.GuessingCommand
+	fs  *gnuflag.FlagSet
+	raw bool
+}
+
+func (c *CertificateList) Info() *cmd.Info {
+	return &cmd.Info{
+		Name:  "certificate-list",
+		Usage: "certificate-list [-a/--app appname] [-r/--raw]",
+		Desc:  `List App TLS certificates.`,
+	}
+}
+
+func (c *CertificateList) Flags() *gnuflag.FlagSet {
+	if c.fs == nil {
+		c.fs = c.GuessingCommand.Flags()
+		c.fs.BoolVar(&c.raw, "r", false, "Display raw certificates")
+		c.fs.BoolVar(&c.raw, "raw", false, "Display raw certificates")
+	}
+	return c.fs
+}
+
+func (c *CertificateList) Run(context *cmd.Context, client *cmd.Client) error {
+	appName, err := c.Guess()
+	if err != nil {
+		return err
+	}
+	u, err := cmd.GetURLVersion("1.2", fmt.Sprintf("/apps/%s/certificate", appName))
+	if err != nil {
+		return err
+	}
+	request, err := http.NewRequest(http.MethodGet, u, nil)
+	if err != nil {
+		return err
+	}
+	response, err := client.Do(request)
+	if err != nil {
+		return err
+	}
+	defer response.Body.Close()
+	rawCerts := make(map[string]string)
+	err = json.NewDecoder(response.Body).Decode(&rawCerts)
+	if err != nil {
+		return err
+	}
+	if c.raw {
+		for n, rawCert := range rawCerts {
+			if rawCert == "" {
+				rawCert = "No certificate.\n"
+			}
+			fmt.Fprintf(context.Stdout, "%s:\n%s", n, rawCert)
+		}
+		return nil
+	}
+	tbl := cmd.NewTable()
+	tbl.LineSeparator = true
+	tbl.Headers = cmd.Row{"CName", "Expires", "Issuer", "Subject"}
+	dateFormat := "2006-01-02 15:04:05"
+	for n, rawCert := range rawCerts {
+		if rawCert == "" {
+			tbl.AddRow(cmd.Row{n, "-", "-", "-"})
+			continue
+		}
+		certBlock, _ := pem.Decode([]byte(rawCert))
+		if certBlock == nil {
+			tbl.AddRow(cmd.Row{n, "failed to decode data", "-", "-"})
+			continue
+		}
+		cert, err := x509.ParseCertificate(certBlock.Bytes)
+		if err != nil {
+			tbl.AddRow(cmd.Row{n, "failed to parse certificate data", "-", "-"})
+			continue
+		}
+		tbl.AddRow(cmd.Row{n, cert.NotAfter.Local().Format(dateFormat),
+			formatName(&cert.Issuer), formatName(&cert.Subject),
+		})
+	}
+	tbl.Sort()
+	fmt.Fprint(context.Stdout, tbl.String())
+	return nil
+}
+
+func formatName(n *pkix.Name) string {
+	country := strings.Join(n.Country, ",")
+	state := strings.Join(n.Province, ",")
+	locality := strings.Join(n.Locality, ",")
+	org := strings.Join(n.Organization, ",")
+	cname := n.CommonName
+	return fmt.Sprintf("C=%s; ST=%s; \nL=%s; O=%s;\nCN=%s", country, state, locality, org, cname)
 }

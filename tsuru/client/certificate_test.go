@@ -6,6 +6,7 @@ package client
 
 import (
 	"bytes"
+	"encoding/json"
 	"io/ioutil"
 	"net/http"
 	"os"
@@ -107,4 +108,88 @@ func (s *S) mustReadFileString(c *check.C, path string) string {
 		return ""
 	}
 	return string(data)
+}
+
+func (s *S) TestCertificateListRunSuccessfully(c *check.C) {
+	var stdout, stderr bytes.Buffer
+	context := cmd.Context{
+		Stdout: &stdout,
+		Stderr: &stderr,
+	}
+	requestCount := 0
+	certMap := map[string]string{
+		"myapp.io":       s.mustReadFileString(c, "./testdata/cert/server.crt"),
+		"myapp.other.io": "",
+	}
+	data, err := json.Marshal(certMap)
+	c.Assert(err, check.IsNil)
+	expected := `+----------------+---------------------+----------------------------+----------------------------+
+| CName          | Expires             | Issuer                     | Subject                    |
++----------------+---------------------+----------------------------+----------------------------+
+| myapp.io       | 2027-01-10 18:33:11 | C=BR; ST=Rio de Janeiro;   | C=BR; ST=Rio de Janeiro;   |
+|                |                     | L=Rio de Janeiro; O=Tsuru; | L=Rio de Janeiro; O=Tsuru; |
+|                |                     | CN=app.io                  | CN=app.io                  |
++----------------+---------------------+----------------------------+----------------------------+
+| myapp.other.io | -                   | -                          | -                          |
++----------------+---------------------+----------------------------+----------------------------+
+`
+	trans := &cmdtest.ConditionalTransport{
+		Transport: cmdtest.Transport{
+			Status:  http.StatusNoContent,
+			Message: string(data),
+		},
+		CondFunc: func(req *http.Request) bool {
+			requestCount++
+			url := strings.HasSuffix(req.URL.Path, "/apps/myapp/certificate")
+			method := req.Method == http.MethodGet
+			return url && method
+		},
+	}
+	client := cmd.NewClient(&http.Client{Transport: trans}, nil, manager)
+	fake := cmdtest.FakeGuesser{Name: "myapp"}
+	guessCommand := cmd.GuessingCommand{G: &fake}
+	command := CertificateList{GuessingCommand: guessCommand}
+	command.Flags().Parse(true, []string{})
+	err = command.Run(&context, client)
+	c.Assert(err, check.IsNil)
+	c.Assert(stdout.String(), check.Equals, expected)
+	c.Assert(requestCount, check.Equals, 1)
+}
+
+func (s *S) TestCertificateListRawRunSuccessfully(c *check.C) {
+	var stdout, stderr bytes.Buffer
+	context := cmd.Context{
+		Stdout: &stdout,
+		Stderr: &stderr,
+	}
+	requestCount := 0
+	certData := s.mustReadFileString(c, "./testdata/cert/server.crt")
+	certMap := map[string]string{
+		"myapp.io":       certData,
+		"myapp.other.io": "",
+	}
+	data, err := json.Marshal(certMap)
+	c.Assert(err, check.IsNil)
+	trans := &cmdtest.ConditionalTransport{
+		Transport: cmdtest.Transport{
+			Status:  http.StatusNoContent,
+			Message: string(data),
+		},
+		CondFunc: func(req *http.Request) bool {
+			requestCount++
+			url := strings.HasSuffix(req.URL.Path, "/apps/myapp/certificate")
+			method := req.Method == http.MethodGet
+			return url && method
+		},
+	}
+	client := cmd.NewClient(&http.Client{Transport: trans}, nil, manager)
+	fake := cmdtest.FakeGuesser{Name: "myapp"}
+	guessCommand := cmd.GuessingCommand{G: &fake}
+	command := CertificateList{GuessingCommand: guessCommand}
+	command.Flags().Parse(true, []string{"-r"})
+	err = command.Run(&context, client)
+	c.Assert(err, check.IsNil)
+	c.Assert(strings.Contains(stdout.String(), "myapp.other.io:\nNo certificate."), check.Equals, true)
+	c.Assert(strings.Contains(stdout.String(), "myapp.io:\n"+certData), check.Equals, true)
+	c.Assert(requestCount, check.Equals, 1)
 }
