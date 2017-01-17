@@ -11,6 +11,7 @@ import (
 	"net/http"
 	"os"
 	"strings"
+	"time"
 
 	"github.com/tsuru/tsuru/cmd"
 	"github.com/tsuru/tsuru/cmd/cmdtest"
@@ -123,10 +124,13 @@ func (s *S) TestCertificateListRunSuccessfully(c *check.C) {
 	}
 	data, err := json.Marshal(certMap)
 	c.Assert(err, check.IsNil)
+	expectedDate, err := time.Parse("2006-01-02 15:04:05", "2027-01-10 20:33:11")
+	c.Assert(err, check.IsNil)
+	datestr := expectedDate.Local().Format("2006-01-02 15:04:05")
 	expected := `+----------------+---------------------+----------------------------+----------------------------+
 | CName          | Expires             | Issuer                     | Subject                    |
 +----------------+---------------------+----------------------------+----------------------------+
-| myapp.io       | 2027-01-10 18:33:11 | C=BR; ST=Rio de Janeiro;   | C=BR; ST=Rio de Janeiro;   |
+| myapp.io       | ` + datestr + ` | C=BR; ST=Rio de Janeiro;   | C=BR; ST=Rio de Janeiro;   |
 |                |                     | L=Rio de Janeiro; O=Tsuru; | L=Rio de Janeiro; O=Tsuru; |
 |                |                     | CN=app.io                  | CN=app.io                  |
 +----------------+---------------------+----------------------------+----------------------------+
