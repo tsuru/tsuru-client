@@ -160,7 +160,7 @@ func (s *S) TestServiceUpdateIsRegistered(c *check.C) {
 	manager = buildManager("tsuru")
 	add, ok := manager.Commands["service-update"]
 	c.Assert(ok, check.Equals, true)
-	c.Assert(add, check.FitsTypeOf, &cmd.RemovedCommand{})
+	c.Assert(add, check.FitsTypeOf, &admin.ServiceUpdate{})
 }
 
 func (s *S) TestServiceInstanceUpdateIsRegistered(c *check.C) {
@@ -548,4 +548,39 @@ func (s *S) TestNodeHealingDeleteIsRegistered(c *check.C) {
 	change, ok = manager.Commands["docker-healing-delete"]
 	c.Assert(ok, check.Equals, true)
 	c.Assert(change, check.FitsTypeOf, &cmd.DeprecatedCommand{})
+}
+
+func (s *S) TestServiceCreateIsRegistered(c *check.C) {
+	manager = buildManager("tsuru")
+	list, ok := manager.Commands["service-create"]
+	c.Assert(ok, check.Equals, true)
+	c.Assert(list, check.FitsTypeOf, &admin.ServiceCreate{})
+}
+
+func (s *S) TestServiceDestroyIsRegistered(c *check.C) {
+	manager = buildManager("tsuru")
+	list, ok := manager.Commands["service-destroy"]
+	c.Assert(ok, check.Equals, true)
+	c.Assert(list, check.FitsTypeOf, &admin.ServiceDestroy{})
+}
+
+func (s *S) TestServiceDocGetIsRegistered(c *check.C) {
+	manager = buildManager("tsuru")
+	list, ok := manager.Commands["service-doc-get"]
+	c.Assert(ok, check.Equals, true)
+	c.Assert(list, check.FitsTypeOf, &admin.ServiceDocGet{})
+}
+
+func (s *S) TestServiceDocAddIsRegistered(c *check.C) {
+	manager = buildManager("tsuru")
+	list, ok := manager.Commands["service-doc-add"]
+	c.Assert(ok, check.Equals, true)
+	c.Assert(list, check.FitsTypeOf, &admin.ServiceDocAdd{})
+}
+
+func (s *S) TestServiceTemplateIsRegistered(c *check.C) {
+	manager = buildManager("tsuru")
+	list, ok := manager.Commands["service-template"]
+	c.Assert(ok, check.Equals, true)
+	c.Assert(list, check.FitsTypeOf, &admin.ServiceTemplate{})
 }
