@@ -19,9 +19,9 @@
     "usage": "tsuru machine-template-list", 
     "desc": "Lists all machine templates.\n\n"
   }, 
-  "service-unbind": {
-    "usage": "tsuru service-unbind", 
-    "desc": "This command was removed. You should use `tsuru service-instance-unbind` instead.\n\n"
+  "unit-add": {
+    "usage": "tsuru unit-add <# of units> [-a/--app appname] [-p/--process processname]", 
+    "desc": "Adds new units to a process of an application. You need to have access to the\napp to be able to add new units to it.\n\nFlags:\n  \n  -a, --app (= \"\")\n      The name of the app.\n  -p, --process (= \"\")\n      Process name\n  \nMinimum # of arguments: 1\n"
   }, 
   "user-quota-view": {
     "usage": "tsuru user-quota-view <user-email>", 
@@ -47,6 +47,10 @@
     "usage": "tsuru app-unlock -a <app-name> [-y]", 
     "desc": "Forces the removal of an application lock.\nUse with caution, removing an active lock may cause inconsistencies.\n\nFlags:\n  \n  -a, --app (= \"\")\n      The name of the app.\n  -y, --assume-yes  (= false)\n      Don't ask for confirmation.\n  \n"
   }, 
+  "service-template": {
+    "usage": "tsuru service-template", 
+    "desc": "e.g.: $ tsuru service-template template\n\nGenerates a manifest template file and places it in current directory\n\n"
+  }, 
   "platform-list": {
     "usage": "tsuru platform-list", 
     "desc": "Lists the available platforms. All platforms displayed in this list may be used to create new apps (see app-create).\n\n"
@@ -70,10 +74,6 @@
   "certificate-set": {
     "usage": "tsuru certificate-set [-a/--app appname] [-c/--cname CNAME] [certificate] [key]", 
     "desc": "Creates or update a TLS certificate into the specific app.\n\nFlags:\n  \n  -a, --app (= \"\")\n      The name of the app.\n  -c, --cname (= \"\")\n      App CNAME\n  \nMinimum # of arguments: 2\n"
-  }, 
-  "app-pool-change": {
-    "usage": "tsuru app-pool-change", 
-    "desc": "This command was removed. You should use `tsuru app-update` instead.\n\n"
   }, 
   "docker-autoscale-run": {
     "usage": "tsuru docker-autoscale-run [-y/--assume-yes]", 
@@ -102,6 +102,10 @@
   "node-healing-info": {
     "usage": "tsuru node-healing-info", 
     "desc": "Show the current configuration for active healing nodes.\n\n"
+  }, 
+  "service-doc-add": {
+    "usage": "tsuru service-doc-add <service> <path/to/docfile>", 
+    "desc": "Update service documentation, extracting it from the given file.\n\nMinimum # of arguments: 2\n"
   }, 
   "app-stop": {
     "usage": "tsuru app-stop [-a/--app appname] [-p/--process processname]", 
@@ -139,10 +143,6 @@
     "usage": "tsuru app-swap <app1-name> <app2-name> [-f/--force] [-c/--cname-only]", 
     "desc": "Swaps routing between two apps. This allows zero downtime and makes rollback\nas simple as swapping the applications back.\n\nUse [[--force]] if you want to swap applications with a different number of\nunits or different platform without confirmation.\n\nUse [[--cname-only]] if you want to swap all cnames except the default\ncname of application\n\nFlags:\n  \n  -c, --cname-only  (= false)\n      Swap all cnames except the default cname.\n  -f, --force  (= false)\n      Force Swap among apps with different number of units or different platform.\n  \nMinimum # of arguments: 2\n"
   }, 
-  "app-plan-change": {
-    "usage": "tsuru app-plan-change", 
-    "desc": "This command was removed. You should use `tsuru app-update` instead.\n\n"
-  }, 
   "platform-update": {
     "usage": "tsuru platform-update <platform name> [--dockerfile/-d Dockerfile] [--disable/--enable] [--image/-i image]", 
     "desc": "Updates a platform in tsuru.\n\nThe name of the image can be automatically inferred in case you're using an\nofficial platform. Check https://github.com/tsuru/platforms for a list of\nofficial platforms.\n\nThe flags --enable and --disable can be used for enabling or disabling a\nplatform.\n\nExamples:\n\n[[tsuru platform-update java # uses official tsuru/java image from docker hub]]\n[[tsuru platform-update java -i registry.company.com/tsuru/java # uses custom Java image]]\n[[tsuru platform-update java -d /data/projects/java/Dockerfile # uses local Dockerfile]]\n[[tsuru platform-update java -d https://platforms.com/java/Dockerfile # uses remote Dockerfile]]\n\nFlags:\n  \n  -d, --dockerfile (= \"\")\n      URL or path to the Dockerfile used for building the image of the platform\n  --disable  (= false)\n      Disable the platform\n  --enable  (= false)\n      Enable the platform\n  -i, --image (= \"\")\n      Name of the prebuilt Docker image\n  \nMinimum # of arguments: 1\n"
@@ -155,25 +155,21 @@
     "usage": "tsuru event-list [-k kindName]", 
     "desc": "Lists events possibly filtering them.\n\nFlags:\n  \n  -k, --kind (= \"\")\n      Filter events by kind name\n  -o, --owner (= \"\")\n      Filter events by owner name\n  -r, --running  (= false)\n      Shows only currently running events\n  -t, --target (= \"\")\n      Filter events by target type\n  -v, --target-value (= \"\")\n      Filter events by target value\n  \n"
   }, 
-  "unit-add": {
-    "usage": "tsuru unit-add <# of units> [-a/--app appname] [-p/--process processname]", 
-    "desc": "Adds new units to a process of an application. You need to have access to the\napp to be able to add new units to it.\n\nFlags:\n  \n  -a, --app (= \"\")\n      The name of the app.\n  -p, --process (= \"\")\n      Process name\n  \nMinimum # of arguments: 1\n"
-  }, 
   "bs-info": {
     "usage": "tsuru bs-info", 
     "desc": "This command was removed. You should use `tsuru-admin node-container-info big-sibling` instead.\n\n"
   }, 
-  "team-user-remove": {
-    "usage": "tsuru team-user-remove", 
-    "desc": "This command was removed. You should use `tsuru role-dissociate` instead.\n\n"
-  }, 
   "service-update": {
-    "usage": "tsuru service-update", 
-    "desc": "This command was removed. You should use `tsuru service-instance-update` instead.\n\n"
+    "usage": "tsuru service-update <path/to/manifest>", 
+    "desc": "Update service data, extracting it from the given manifest file.\n\nMinimum # of arguments: 1\n"
   }, 
   "role-add": {
     "usage": "tsuru role-add <role-name> <context-type> [--description/-d description]", 
     "desc": "Create a new role for the specified context type.\nValid context types are:\n\n* global\n* app\n* team\n* pool\n* iaas\n* service\n* service-instance\n\nThe [[--description]] parameter sets a description for your role.\nIt is an optional parameter, and if its not set the role will only not have a\ndescription associated.\n\n\nFlags:\n  \n  -d, --description (= \"\")\n      Role description\n  \nMinimum # of arguments: 2\n"
+  }, 
+  "service-destroy": {
+    "usage": "tsuru service-destroy <servicename>", 
+    "desc": "removes a service from catalog\n\nFlags:\n  \n  -y, --assume-yes  (= false)\n      Don't ask for confirmation.\n  \nMinimum # of arguments: 1\nMaximum # of arguments: 1\n"
   }, 
   "role-default-list": {
     "usage": "tsuru role-default-list", 
@@ -271,10 +267,6 @@
     "usage": "tsuru team-remove <team-name>", 
     "desc": "Removes a team from tsuru server. You're able to remove teams that you're\nmember of. A team that has access to any app cannot be removed. Before\nremoving a team, make sure it does not have access to any app (see \"app-grant\"\nand \"app-revoke\" commands for details).\n\nFlags:\n  \n  -y, --assume-yes  (= false)\n      Don't ask for confirmation.\n  \nMinimum # of arguments: 1\n"
   }, 
-  "service-status": {
-    "usage": "tsuru service-status", 
-    "desc": "This command was removed. You should use `tsuru service-instance-status` instead.\n\n"
-  }, 
   "bs-env-set": {
     "usage": "tsuru bs-env-set", 
     "desc": "This command was removed. You should use `tsuru-admin node-container-update big-sibling` instead.\n\n"
@@ -303,9 +295,9 @@
     "usage": "tsuru plugin-install <plugin-name> <plugin-url>", 
     "desc": "Downloads the plugin file. It will be copied to [[$HOME/.tsuru/plugins]].\n\nMinimum # of arguments: 2\n"
   }, 
-  "service-doc": {
-    "usage": "tsuru service-doc", 
-    "desc": "This command was removed. You should use `tsuru service-info` instead.\n\n"
+  "user-create": {
+    "usage": "tsuru user-create <email>", 
+    "desc": "Creates a user within tsuru remote server. It will ask for the password before issue the request.\n\nMinimum # of arguments: 1\n"
   }, 
   "unit-remove": {
     "usage": "tsuru unit-remove <# of units> [-a/--app appname] [-p/-process processname]", 
@@ -339,9 +331,9 @@
     "usage": "tsuru plugin-list", 
     "desc": "List installed tsuru plugins.\n\n"
   }, 
-  "app-team-owner-set": {
-    "usage": "tsuru app-team-owner-set", 
-    "desc": "This command was removed. You should use `tsuru service-info` instead.\n\n"
+  "docker-autoscale-info": {
+    "usage": "tsuru docker-autoscale-info", 
+    "desc": "Display the current configuration for tsuru autoscale,\nincluding the set of rules and the current metadata filter.\n\nThe metadata filter is the value that defines which node metadata will be used\nto group autoscale rules. A common approach is to use the \"pool\" as the\nfilter. Then autoscale can be configured for each matching rule value.\n\n"
   }, 
   "machine-list": {
     "usage": "tsuru machine-list", 
@@ -351,9 +343,9 @@
     "usage": "tsuru key-add <key-name> <path/to/key/file.pub> [-f/--force]", 
     "desc": "Sends your public key to the git server used by tsuru.\n\nFlags:\n  \n  -f, --force  (= false)\n      Force overriding the key if it already exists\n  \nMinimum # of arguments: 2\n"
   }, 
-  "service-add": {
-    "usage": "tsuru service-add", 
-    "desc": "This command was removed. You should use `tsuru service-instance-add` instead.\n\n"
+  "token-show": {
+    "usage": "tsuru token-show [--user/-u useremail]", 
+    "desc": "Shows API token for the user. This token allow authenticated API calls to\ntsuru and will never expire. This is useful for integrating CI servers with\ntsuru.\n\nThe key will be generated the first time this command is called. See [[tsuru token-regenerate]]\nif you need to invalidate an existing token.\n\nFlags:\n  \n  -u, --user (= \"\")\n      Shows API token for the given user email\n  \n"
   }, 
   "user-list": {
     "usage": "tsuru user-list [--user/-u useremail] [--role/-r role [-c/--context-value value]]", 
@@ -375,17 +367,9 @@
     "usage": "tsuru role-default-remove [--user-create <role name>]... [--team-create <role name>]...", 
     "desc": "Remove a default role from a specific event.\n\nFlags:\n  \n  --team-create  (= [])\n      role added to user when a new team is created\n  --user-create  (= [])\n      role added to user when user is created\n  \n"
   }, 
-  "docker-autoscale-info": {
-    "usage": "tsuru docker-autoscale-info", 
-    "desc": "Display the current configuration for tsuru autoscale,\nincluding the set of rules and the current metadata filter.\n\nThe metadata filter is the value that defines which node metadata will be used\nto group autoscale rules. A common approach is to use the \"pool\" as the\nfilter. Then autoscale can be configured for each matching rule value.\n\n"
-  }, 
   "node-remove": {
     "usage": "tsuru node-remove <address> [--no-rebalance] [--destroy] [-y]", 
     "desc": "Removes a node from the cluster.\n\nBy default tsuru will redistribute all containers present on the removed node\namong other nodes. This behavior can be inhibited using the [[--no-rebalance]]\nflag.\n\nIf the node being removed was created using a IaaS provider tsuru will NOT\ndestroy the machine on the IaaS, unless the [[--destroy]] flag is used.\n\nFlags:\n  \n  --destroy  (= false)\n      Destroy node from IaaS\n  --no-rebalance  (= false)\n      Do not rebalance containers from removed node.\n  -y, --assume-yes  (= false)\n      Don't ask for confirmation.\n  \nMinimum # of arguments: 1\n"
-  }, 
-  "service-remove": {
-    "usage": "tsuru service-remove", 
-    "desc": "This command was removed. You should use `tsuru service-instance-remove` instead.\n\n"
   }, 
   "target": {
     "topic": "In tsuru, a target is the address of the remote tsuru server.\n\nEach target is identified by a label and a HTTP/HTTPS address. The client\nrequires at least one target to connect to, there's no default target. A user\nmay have multiple targets, but he/she will be able to use only per session."
@@ -442,10 +426,6 @@
     "usage": "tsuru docker-autoscale-list [--page/-p 1]", 
     "desc": "List node auto scale history.\n\nFlags:\n  \n  -p, --page  (= 1)\n      Current page\n  \n"
   }, 
-  "token-show": {
-    "usage": "tsuru token-show [--user/-u useremail]", 
-    "desc": "Shows API token for the user. This token allow authenticated API calls to\ntsuru and will never expire. This is useful for integrating CI servers with\ntsuru.\n\nThe key will be generated the first time this command is called. See [[tsuru token-regenerate]]\nif you need to invalidate an existing token.\n\nFlags:\n  \n  -u, --user (= \"\")\n      Shows API token for the given user email\n  \n"
-  }, 
   "node-healing-delete": {
     "usage": "tsuru node-healing-delete [-p/--pool pool] [--enabled] [--max-unresponsive] [--max-unsuccessful]", 
     "desc": "Delete a node healing configuration entry.\n\nIf [[--pool]] is provided the configuration entries from the specified pool\nwill be removed and the default value will be used.\n\nIf [[--pool]] is not provided the configuration entry will be removed from the\ndefault configuration.\n\nFlags:\n  \n  --enabled  (= false)\n      Remove the 'enabled' configuration option\n  --max-unresponsive  (= false)\n      Remove the 'max-unresponsive' configuration option\n  --max-unsuccessful  (= false)\n      Remove the 'max-unsuccessful' configuration option\n  -p, --pool (= \"\")\n      The pool name from where the configuration will be removed. If unset it'll delete the default healing configuration.\n  -y, --assume-yes  (= false)\n      Don't ask for confirmation.\n  \n"
@@ -470,17 +450,13 @@
     "usage": "tsuru role-permission-add <role-name> <permission-name>...", 
     "desc": "Add a new permission to an existing role.\n\nMinimum # of arguments: 2\n"
   }, 
-  "service-bind": {
-    "usage": "tsuru service-bind", 
-    "desc": "This command was removed. You should use `tsuru service-instance-bind` instead.\n\n"
-  }, 
   "service-instance-bind": {
     "usage": "tsuru service-instance-bind <service-name> <service-instance-name> [-a/--app appname] [--no-restart]", 
     "desc": "Binds an application to a previously created service instance. See [[tsuru\nservice-add]] for more details on how to create a service instance.\n\nWhen binding an application to a service instance, tsuru will add new\nenvironment variables to the application. All environment variables exported\nby bind will be private (not accessible via [[tsuru env-get]]).\n\nFlags:\n  \n  -a, --app (= \"\")\n      The name of the app.\n  --no-restart  (= false)\n      Binds an application to a service instance without restart the application\n  \nMinimum # of arguments: 2\n"
   }, 
-  "user-create": {
-    "usage": "tsuru user-create <email>", 
-    "desc": "Creates a user within tsuru remote server. It will ask for the password before issue the request.\n\nMinimum # of arguments: 1\n"
+  "service-create": {
+    "usage": "tsuru service-create path/to/manifest [- for stdin]", 
+    "desc": "Creates a service based on a passed manifest. The manifest format should be a yaml and follow the standard described in the documentation (should link to it here)\n\nMinimum # of arguments: 1\n"
   }, 
   "app-deploy-list": {
     "usage": "tsuru app-deploy-list [-a/--app <appname>]", 
@@ -509,10 +485,6 @@
   "reset-password": {
     "usage": "tsuru reset-password <email> [--token|-t <token>]", 
     "desc": "Resets the user password.\n\nThis process is composed of two steps:\n\n1. Generate a new token\n2. Reset the password using the token\n\nIn order to generate the token, users should run this command without the\n--token flag. The token will be mailed to the user.\n\nWith the token in hand, the user can finally reset the password using the\n--token flag. The new password will also be mailed to the user.\n\nFlags:\n  \n  -t, --token (= \"\")\n      Token to reset the password\n  \nMinimum # of arguments: 1\n"
-  }, 
-  "team-user-add": {
-    "usage": "tsuru team-user-add", 
-    "desc": "This command was removed. You should use `tsuru role-assign` instead.\n\n"
   }, 
   "target-remove": {
     "usage": "tsuru target-remove", 
@@ -554,6 +526,10 @@
     "usage": "tsuru app-run <command> [commandarg1] [commandarg2] ... [commandargn] [-a/--app appname] [-o/--once] [-i/--isolated]", 
     "desc": "Runs an arbitrary command in application's containers. The base directory for\nall commands is the root of the application.\n\nIf you use the [[--once]] flag tsuru will run the command only in one unit.\nOtherwise, it will run the command in all units.\n\nFlags:\n  \n  -a, --app (= \"\")\n      The name of the app.\n  -i, --isolated  (= false)\n      Running in ephemeral container\n  -o, --once  (= false)\n      Running only one unit\n  \nMinimum # of arguments: 1\n"
   }, 
+  "service-doc-get": {
+    "usage": "tsuru service-doc-get <service>", 
+    "desc": "Shows service documentation.\n\nMinimum # of arguments: 1\n"
+  }, 
   "service-instance-info": {
     "usage": "tsuru service-instance-info <service-name> <instance-name>", 
     "desc": "Displays the information of the given service instance.\n\nMinimum # of arguments: 2\n"
@@ -573,10 +549,6 @@
   "service-list": {
     "usage": "tsuru service-list", 
     "desc": "Retrieves and shows a list of services the user has access. If there are\ninstances created for any service they will also be shown.\n\n"
-  }, 
-  "team-user-list": {
-    "usage": "tsuru team-user-list", 
-    "desc": "This command was removed. You should use `tsuru user-list` instead.\n\n"
   }, 
   "key-remove": {
     "usage": "tsuru key-remove <key-name> [-y/--assume-yes]", 

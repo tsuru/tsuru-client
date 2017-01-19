@@ -23,6 +23,8 @@ Check current version
 Authentication
 ==============
 
+.. tsuru-command:: user-list
+   :title: List users
 .. tsuru-command:: user-create
    :title: Create a user
 .. tsuru-command:: user-remove
@@ -59,6 +61,8 @@ Authorization
    :title: List all available permissions
 .. tsuru-command:: role-add
    :title: Create a new role
+.. tsuru-command:: role-remove
+   :title: Remove a role
 .. tsuru-command:: role-list
    :title: List all created roles
 .. tsuru-command:: role-info
@@ -71,6 +75,12 @@ Authorization
    :title: Assign a role to a user
 .. tsuru-command:: role-dissociate
    :title: Dissociate a role from a user
+.. tsuru-command:: role-default-list
+   :title: List default roles
+.. tsuru-command:: role-default-add
+   :title: Add new default roles
+.. tsuru-command:: role-default-remove
+   :title: Remove default roles
 
 Applications
 ============
@@ -94,8 +104,8 @@ based on the git repository's configuration. It will try to find a remote labele
 
 .. tsuru-command:: app-create
    :title: Create an application
-.. tsuru-command:: app-plan-change
-   :title: Change the application plan
+.. tsuru-command:: app-update
+   :title: Update an application
 .. tsuru-command:: app-remove
    :title: Remove an application
 .. tsuru-command:: app-list
@@ -116,8 +126,6 @@ based on the git repository's configuration. It will try to find a remote labele
    :title: Add new units to an application
 .. tsuru-command:: unit-remove
    :title: Remove units from an application
-.. tsuru-command:: app-team-owner-set
-   :title: Change an application team owner
 .. tsuru-command:: app-grant
    :title: Allow a team to access an application
 .. tsuru-command:: app-revoke
@@ -155,24 +163,50 @@ Services
 
 .. tsuru-command:: service-list
    :title: List available services and instances
-.. tsuru-command:: service-add
-   :title: Create a new service instance
-.. tsuru-command:: service-remove
-   :title: Remove a service instance
 .. tsuru-command:: service-info
    :title: Display information about a service
-.. tsuru-command:: service-status
-   :title: Check if a service instance is up
-.. tsuru-command:: service-doc
-   :title: Check if a service instance is up
-.. tsuru-command:: service-bind
+.. tsuru-command:: service-instance-add
+   :title: Create a service instance
+.. tsuru-command:: service-instance-update
+   :title: Update a service instance
+.. tsuru-command:: service-instance-remove
+   :title: Remove a service instance
+.. tsuru-command:: service-instance-status
+   :title: Display the status of a service instance
+.. tsuru-command:: service-instance-info
+   :title: Display the information of a service instance
+.. tsuru-command:: service-instance-bind
    :title: Bind an application to a service instance
-.. tsuru-command:: service-unbind
+.. tsuru-command:: service-instance-unbind
    :title: Unbind an application from a service instance
 .. tsuru-command:: service-instance-grant
    :title: Grant access to a team in service instance
 .. tsuru-command:: service-instance-revoke
    :title: Revoke access to a team in service instance
+
+Service Management
+==================
+
+These commands manage entire services and not particular instances.
+
+.. tsuru-command:: service-create
+   :title: Create a service
+
+.. tsuru-command:: service-destroy
+   :title: Destroy a service
+
+.. tsuru-command:: service-update
+   :title: Update a service
+
+.. tsuru-command:: service-template
+   :title: Generate a manifest template file
+
+.. tsuru-command:: service-doc-add
+   :title: Add documentation to a service
+
+.. tsuru-command:: service-doc-get
+   :title: Get documentation of a service
+
 
 
 Environment variables
@@ -240,9 +274,6 @@ Pool
 
 .. tsuru-command:: pool-list
    :title: List available pool
-
-.. tsuru-command:: app-pool-change
-   :title: Change an app's pool
 
 Events
 ======
@@ -342,6 +373,9 @@ Machine management
 
 .. tsuru-command:: machine-template-remove
   :title: Remove machine template
+
+.. tsuru-command:: machine-template-update
+   :title: Update machine template
 
 Pool management
 ===============
@@ -475,5 +509,17 @@ Installer
 .. tsuru-command:: install
    :title: Install Tsuru and it's components
 
+.. tsuru-command:: install-host-list
+   :title: List hosts created by the installer
+
+.. tsuru-command:: install-ssh
+   :title: SSH into an host created by the installer
+
 .. tsuru-command:: uninstall
   :title: Uninstall Tsuru and it's components
+
+Help
+====
+
+.. tsuru-command:: help
+   :title: Display all available commands
