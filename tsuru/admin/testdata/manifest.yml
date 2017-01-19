@@ -1,0 +1,3 @@
+id: mysqlapi
+endpoint:
+    production: mysqlapi.com
