@@ -1,4 +1,4 @@
-// Copyright 2016 tsuru-client authors. All rights reserved.
+// Copyright 2017 tsuru-client authors. All rights reserved.
 // Use of this source code is governed by a BSD-style
 // license that can be found in the LICENSE file.
 
@@ -170,25 +170,11 @@ func (s *S) TestServiceInstanceUpdateIsRegistered(c *check.C) {
 	c.Assert(add, check.FitsTypeOf, &client.ServiceInstanceUpdate{})
 }
 
-func (s *S) TestServiceAddIsRegistered(c *check.C) {
-	manager = buildManager("tsuru")
-	add, ok := manager.Commands["service-add"]
-	c.Assert(ok, check.Equals, true)
-	c.Assert(add, check.FitsTypeOf, &cmd.RemovedCommand{})
-}
-
 func (s *S) TestServiceInstanceAddIsRegistered(c *check.C) {
 	manager = buildManager("tsuru")
 	add, ok := manager.Commands["service-instance-add"]
 	c.Assert(ok, check.Equals, true)
 	c.Assert(add, check.FitsTypeOf, &client.ServiceInstanceAdd{})
-}
-
-func (s *S) TestServiceRemoveIsRegistered(c *check.C) {
-	manager = buildManager("tsuru")
-	remove, ok := manager.Commands["service-remove"]
-	c.Assert(ok, check.Equals, true)
-	c.Assert(remove, check.FitsTypeOf, &cmd.RemovedCommand{})
 }
 
 func (s *S) TestServiceInstanceRemoveIsRegistered(c *check.C) {
@@ -198,25 +184,11 @@ func (s *S) TestServiceInstanceRemoveIsRegistered(c *check.C) {
 	c.Assert(remove, check.FitsTypeOf, &client.ServiceInstanceRemove{})
 }
 
-func (s *S) TestServiceBindIsRegistered(c *check.C) {
-	manager = buildManager("tsuru")
-	bind, ok := manager.Commands["service-bind"]
-	c.Assert(ok, check.Equals, true)
-	c.Assert(bind, check.FitsTypeOf, &cmd.RemovedCommand{})
-}
-
 func (s *S) TestServiceInstanceBindIsRegistered(c *check.C) {
 	manager = buildManager("tsuru")
 	bind, ok := manager.Commands["service-instance-bind"]
 	c.Assert(ok, check.Equals, true)
 	c.Assert(bind, check.FitsTypeOf, &client.ServiceInstanceBind{})
-}
-
-func (s *S) TestServiceUnbindIsRegistered(c *check.C) {
-	manager = buildManager("tsuru")
-	unbind, ok := manager.Commands["service-unbind"]
-	c.Assert(ok, check.Equals, true)
-	c.Assert(unbind, check.FitsTypeOf, &cmd.RemovedCommand{})
 }
 
 func (s *S) TestServiceInstanceUnbindIsRegistered(c *check.C) {
@@ -238,13 +210,6 @@ func (s *S) TestServiceInfoIsRegistered(c *check.C) {
 	info, ok := manager.Commands["service-info"]
 	c.Assert(ok, check.Equals, true)
 	c.Assert(info, check.FitsTypeOf, client.ServiceInfo{})
-}
-
-func (s *S) TestServiceStatusIsRegistered(c *check.C) {
-	manager = buildManager("tsuru")
-	bind, ok := manager.Commands["service-status"]
-	c.Assert(ok, check.Equals, true)
-	c.Assert(bind, check.FitsTypeOf, &cmd.RemovedCommand{})
 }
 
 func (s *S) TestServiceInstanceStatusIsRegistered(c *check.C) {
@@ -408,27 +373,6 @@ func (s *S) TestTeamRemoveIsRegistered(c *check.C) {
 	rmTeam, ok := manager.Commands["team-remove"]
 	c.Assert(ok, check.Equals, true)
 	c.Assert(rmTeam, check.FitsTypeOf, &client.TeamRemove{})
-}
-
-func (s *S) TestTeamAddUserIsRegistered(c *check.C) {
-	manager = buildManager("tsuru")
-	adduser, ok := manager.Commands["team-user-add"]
-	c.Assert(ok, check.Equals, true)
-	c.Assert(adduser, check.FitsTypeOf, &cmd.RemovedCommand{})
-}
-
-func (s *S) TestTeamRemoveUserIsRegistered(c *check.C) {
-	manager = buildManager("tsuru")
-	removeuser, ok := manager.Commands["team-user-remove"]
-	c.Assert(ok, check.Equals, true)
-	c.Assert(removeuser, check.FitsTypeOf, &cmd.RemovedCommand{})
-}
-
-func (s *S) TestTeamUserListIsRegistered(c *check.C) {
-	manager = buildManager("tsuru")
-	listuser, ok := manager.Commands["team-user-list"]
-	c.Assert(ok, check.Equals, true)
-	c.Assert(listuser, check.FitsTypeOf, &cmd.RemovedCommand{})
 }
 
 func (s *S) TestUserCreateIsRegistered(c *check.C) {
