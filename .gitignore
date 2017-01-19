@@ -3,3 +3,4 @@ docs/build
 *.pyc
 *.pem
 dist
+bin

@@ -48,4 +48,10 @@ install:
 build-all:
 	./misc/build-all.sh
 
+build:
+	go build -o ./bin/tsuru ./tsuru
+
+check-docs: build
+	./misc/check-all-cmds-docs.sh
+
 .PHONY: doc docs release manpage
