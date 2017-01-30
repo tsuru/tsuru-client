@@ -560,3 +560,74 @@ func (c *DeleteNodeHealingConfigCmd) Run(ctx *cmd.Context, client *cmd.Client) e
 	}
 	return err
 }
+
+type RebalanceNodeCmd struct {
+	cmd.ConfirmationCommand
+	fs             *gnuflag.FlagSet
+	dry            bool
+	metadataFilter cmd.MapFlag
+	appFilter      cmd.StringSliceFlag
+}
+
+func (c *RebalanceNodeCmd) Info() *cmd.Info {
+	return &cmd.Info{
+		Name:  "node-rebalance",
+		Usage: "node-rebalance [--dry] [-y/--assume-yes] [-m/--metadata <metadata>=<value>]... [-a/--app <appname>]...",
+		Desc: `Move units among nodes trying to create a more even distribution. This command
+will automatically choose to which node each unit should be moved, trying to
+distribute the units as evenly as possible.
+
+The --dry flag runs the balancing algorithm without doing any real
+modification. It will only print which units would be moved and where they
+would be created.`,
+		MinArgs: 0,
+	}
+}
+
+func (c *RebalanceNodeCmd) Run(context *cmd.Context, client *cmd.Client) error {
+	context.RawOutput()
+	if !c.dry && !c.Confirm(context, "Are you sure you want to rebalance containers?") {
+		return nil
+	}
+	u, err := cmd.GetURLVersion("1.3", "/node/rebalance")
+	if err != nil {
+		return err
+	}
+	opts := provision.RebalanceNodesOptions{
+		Dry: c.dry,
+	}
+	if len(c.metadataFilter) > 0 {
+		opts.MetadataFilter = c.metadataFilter
+	}
+	if len(c.appFilter) > 0 {
+		opts.AppFilter = c.appFilter
+	}
+	v, err := form.EncodeToValues(&opts)
+	if err != nil {
+		return err
+	}
+	request, err := http.NewRequest("POST", u, bytes.NewBufferString(v.Encode()))
+	if err != nil {
+		return err
+	}
+	request.Header.Set("Content-Type", "application/x-www-form-urlencoded")
+	response, err := client.Do(request)
+	if err != nil {
+		return err
+	}
+	return cmd.StreamJSONResponse(context.Stdout, response)
+}
+
+func (c *RebalanceNodeCmd) Flags() *gnuflag.FlagSet {
+	if c.fs == nil {
+		c.fs = c.ConfirmationCommand.Flags()
+		c.fs.BoolVar(&c.dry, "dry", false, "Dry run, only shows what would be done")
+		desc := "Filter by host metadata"
+		c.fs.Var(&c.metadataFilter, "metadata", desc)
+		c.fs.Var(&c.metadataFilter, "m", desc)
+		desc = "Filter by app name"
+		c.fs.Var(&c.appFilter, "app", desc)
+		c.fs.Var(&c.appFilter, "a", desc)
+	}
+	return c.fs
+}

@@ -6,6 +6,7 @@ package admin
 
 import (
 	"bytes"
+	"encoding/json"
 	"net/http"
 	"net/url"
 	"strings"
@@ -13,6 +14,7 @@ import (
 	"github.com/ajg/form"
 	"github.com/tsuru/tsuru/cmd"
 	"github.com/tsuru/tsuru/cmd/cmdtest"
+	tsuruIo "github.com/tsuru/tsuru/io"
 	"github.com/tsuru/tsuru/provision"
 	"gopkg.in/check.v1"
 )
@@ -500,4 +502,134 @@ func (s *S) TestSetNodeHealingConfigCmd(c *check.C) {
 	err := healing.Run(&context, client)
 	c.Assert(err, check.IsNil)
 	c.Assert(buf.String(), check.Equals, "Node healing configuration successfully updated.\n")
+}
+
+func (s *S) TestRebalanceNodeCmdRun(c *check.C) {
+	var stdout, stderr bytes.Buffer
+	context := cmd.Context{
+		Stdout: &stdout,
+		Stderr: &stderr,
+	}
+	msg, _ := json.Marshal(tsuruIo.SimpleJsonMessage{Message: "progress msg"})
+	result := string(msg)
+	expectedRebalance := provision.RebalanceNodesOptions{
+		Dry: true,
+	}
+	trans := &cmdtest.ConditionalTransport{
+		Transport: cmdtest.Transport{Message: result, Status: http.StatusOK},
+		CondFunc: func(req *http.Request) bool {
+			req.ParseForm()
+			var params provision.RebalanceNodesOptions
+			dec := form.NewDecoder(nil)
+			dec.IgnoreUnknownKeys(true)
+			err := dec.DecodeValues(&params, req.Form)
+			c.Assert(err, check.IsNil)
+			c.Assert(params, check.DeepEquals, expectedRebalance)
+			path := req.URL.Path == "/1.3/node/rebalance"
+			method := req.Method == "POST"
+			return path && method
+		},
+	}
+	manager := cmd.NewManager("admin", "0.1", "admin-ver", &stdout, &stderr, nil, nil)
+	client := cmd.NewClient(&http.Client{Transport: trans}, nil, manager)
+	rebalCmd := RebalanceNodeCmd{}
+	err := rebalCmd.Flags().Parse(true, []string{"--dry", "-y"})
+	c.Assert(err, check.IsNil)
+	err = rebalCmd.Run(&context, client)
+	c.Assert(err, check.IsNil)
+	expected := "progress msg"
+	c.Assert(stdout.String(), check.Equals, expected)
+	expectedRebalance = provision.RebalanceNodesOptions{
+		Dry: false,
+	}
+	cmd2 := RebalanceNodeCmd{}
+	cmd2.Flags().Parse(true, []string{"-y"})
+	err = cmd2.Run(&context, client)
+	c.Assert(err, check.IsNil)
+}
+
+func (s *S) TestRebalanceNodeCmdRunWithFilters(c *check.C) {
+	var stdout, stderr bytes.Buffer
+	context := cmd.Context{
+		Stdout: &stdout,
+		Stderr: &stderr,
+	}
+	msg, _ := json.Marshal(tsuruIo.SimpleJsonMessage{Message: "progress msg"})
+	result := string(msg)
+	expectedRebalance := provision.RebalanceNodesOptions{
+		Dry:            false,
+		MetadataFilter: map[string]string{"pool": "x", "a": "b"},
+		AppFilter:      []string{"x", "y"},
+	}
+	trans := &cmdtest.ConditionalTransport{
+		Transport: cmdtest.Transport{Message: result, Status: http.StatusOK},
+		CondFunc: func(req *http.Request) bool {
+			req.ParseForm()
+			var params provision.RebalanceNodesOptions
+			dec := form.NewDecoder(nil)
+			dec.IgnoreUnknownKeys(true)
+			err := dec.DecodeValues(&params, req.Form)
+			c.Assert(err, check.IsNil)
+			c.Assert(params, check.DeepEquals, expectedRebalance)
+			path := req.URL.Path == "/1.3/node/rebalance"
+			method := req.Method == "POST"
+			return path && method
+		},
+	}
+	manager := cmd.NewManager("admin", "0.1", "admin-ver", &stdout, &stderr, nil, nil)
+	client := cmd.NewClient(&http.Client{Transport: trans}, nil, manager)
+	rebalCmd := RebalanceNodeCmd{}
+	err := rebalCmd.Flags().Parse(true, []string{"-y", "--metadata", "pool=x", "--metadata", "a=b", "--app", "x", "--app", "y"})
+	c.Assert(err, check.IsNil)
+	err = rebalCmd.Run(&context, client)
+	c.Assert(err, check.IsNil)
+	expected := "progress msg"
+	c.Assert(stdout.String(), check.Equals, expected)
+}
+
+func (s *S) TestRebalanceNodeCmdRunAskingForConfirmation(c *check.C) {
+	var stdout, stderr bytes.Buffer
+	context := cmd.Context{
+		Stdout: &stdout,
+		Stderr: &stderr,
+		Stdin:  bytes.NewBufferString("y"),
+	}
+	msg, _ := json.Marshal(tsuruIo.SimpleJsonMessage{Message: "progress msg"})
+	result := string(msg)
+	trans := &cmdtest.ConditionalTransport{
+		Transport: cmdtest.Transport{Message: result, Status: http.StatusOK},
+		CondFunc: func(req *http.Request) bool {
+			req.ParseForm()
+			var params provision.RebalanceNodesOptions
+			dec := form.NewDecoder(nil)
+			dec.IgnoreUnknownKeys(true)
+			err := dec.DecodeValues(&params, req.Form)
+			c.Assert(err, check.IsNil)
+			c.Assert(params.Dry, check.Equals, false)
+			path := req.URL.Path == "/1.3/node/rebalance"
+			method := req.Method == "POST"
+			return path && method
+		},
+	}
+	manager := cmd.NewManager("admin", "0.1", "admin-ver", &stdout, &stderr, nil, nil)
+	client := cmd.NewClient(&http.Client{Transport: trans}, nil, manager)
+	rebalCmd := RebalanceNodeCmd{}
+	err := rebalCmd.Run(&context, client)
+	c.Assert(err, check.IsNil)
+	c.Assert(stdout.String(), check.Equals, "Are you sure you want to rebalance containers? (y/n) progress msg")
+	cmd2 := RebalanceNodeCmd{}
+	err = cmd2.Run(&context, client)
+	c.Assert(err, check.IsNil)
+}
+
+func (s *S) TestRebalanceNodeCmdRunGivingUp(c *check.C) {
+	var stdout bytes.Buffer
+	context := cmd.Context{
+		Stdout: &stdout,
+		Stdin:  bytes.NewBufferString("n\n"),
+	}
+	rebalCmd := RebalanceNodeCmd{}
+	err := rebalCmd.Run(&context, nil)
+	c.Assert(err, check.IsNil)
+	c.Assert(stdout.String(), check.Equals, "Are you sure you want to rebalance containers? (y/n) Abort.\n")
 }

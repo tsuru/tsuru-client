@@ -140,6 +140,7 @@ func buildManager(name string) *cmd.Manager {
 	m.RegisterDeprecated(&admin.GetNodeHealingConfigCmd{}, "docker-healing-info")
 	m.RegisterDeprecated(&admin.SetNodeHealingConfigCmd{}, "docker-healing-update")
 	m.RegisterDeprecated(&admin.DeleteNodeHealingConfigCmd{}, "docker-healing-delete")
+	m.RegisterDeprecated(&admin.RebalanceNodeCmd{}, "containers-rebalance")
 	registerProvisionersCommands(m)
 	return m
 }

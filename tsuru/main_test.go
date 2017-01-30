@@ -494,6 +494,16 @@ func (s *S) TestNodeHealingDeleteIsRegistered(c *check.C) {
 	c.Assert(change, check.FitsTypeOf, &cmd.DeprecatedCommand{})
 }
 
+func (s *S) TestNodeRebalanceIsRegistered(c *check.C) {
+	manager = buildManager("tsuru")
+	change, ok := manager.Commands["node-rebalance"]
+	c.Assert(ok, check.Equals, true)
+	c.Assert(change, check.FitsTypeOf, &admin.RebalanceNodeCmd{})
+	change, ok = manager.Commands["containers-rebalance"]
+	c.Assert(ok, check.Equals, true)
+	c.Assert(change, check.FitsTypeOf, &cmd.DeprecatedCommand{})
+}
+
 func (s *S) TestServiceCreateIsRegistered(c *check.C) {
 	manager = buildManager("tsuru")
 	list, ok := manager.Commands["service-create"]
