@@ -1,4 +1,4 @@
-// Copyright 2016 tsuru authors. All rights reserved.
+// Copyright 2017 tsuru authors. All rights reserved.
 // Use of this source code is governed by a BSD-style
 // license that can be found in the LICENSE file.
 
@@ -24,14 +24,15 @@ import (
 type routerFactory func(routerName, configPrefix string) (Router, error)
 
 var (
-	ErrBackendExists   = errors.New("Backend already exists")
-	ErrBackendNotFound = errors.New("Backend not found")
-	ErrBackendSwapped  = errors.New("Backend is swapped cannot remove")
-	ErrRouteExists     = errors.New("Route already exists")
-	ErrRouteNotFound   = errors.New("Route not found")
-	ErrCNameExists     = errors.New("CName already exists")
-	ErrCNameNotFound   = errors.New("CName not found")
-	ErrCNameNotAllowed = errors.New("CName as router subdomain not allowed")
+	ErrBackendExists       = errors.New("Backend already exists")
+	ErrBackendNotFound     = errors.New("Backend not found")
+	ErrBackendSwapped      = errors.New("Backend is swapped cannot remove")
+	ErrRouteExists         = errors.New("Route already exists")
+	ErrRouteNotFound       = errors.New("Route not found")
+	ErrCNameExists         = errors.New("CName already exists")
+	ErrCNameNotFound       = errors.New("CName not found")
+	ErrCNameNotAllowed     = errors.New("CName as router subdomain not allowed")
+	ErrCertificateNotFound = errors.New("Certificate not found")
 )
 
 const HttpScheme = "http"
@@ -115,6 +116,14 @@ type OptsRouter interface {
 	AddBackendOpts(name string, opts map[string]string) error
 }
 
+// TLSRouter is a router that supports adding and removing
+// certificates for a given cname
+type TLSRouter interface {
+	AddCertificate(cname, certificate, key string) error
+	RemoveCertificate(cname string) error
+	GetCertificate(cname string) (string, error)
+}
+
 type HealthcheckData struct {
 	Path   string
 	Status int
@@ -138,9 +147,16 @@ func collection() (*storage.Collection, error) {
 	coll := conn.Collection("routers")
 	err = coll.EnsureIndex(mgo.Index{Key: []string{"app"}, Unique: true})
 	if err != nil {
-		return nil, err
+		return nil, errors.Wrapf(err, "Could not create index on db.routers. Please run `tsurud migrate` before starting the api server to fix this issue.")
 	}
 	return coll, nil
+}
+
+type routerAppEntry struct {
+	ID     bson.ObjectId `bson:"_id,omitempty"`
+	App    string        `bson:"app"`
+	Router string        `bson:"router"`
+	Kind   string        `bson:"kind"`
 }
 
 // Store stores the app name related with the
@@ -151,17 +167,17 @@ func Store(appName, routerName, kind string) error {
 		return err
 	}
 	defer coll.Close()
-	data := map[string]string{
-		"app":    appName,
-		"router": routerName,
-		"kind":   kind,
+	data := routerAppEntry{
+		App:    appName,
+		Router: routerName,
+		Kind:   kind,
 	}
 	_, err = coll.Upsert(bson.M{"app": appName}, data)
 	return err
 }
 
-func retrieveRouterData(appName string) (map[string]string, error) {
-	data := map[string]string{}
+func retrieveRouterData(appName string) (routerAppEntry, error) {
+	var data routerAppEntry
 	coll, err := collection()
 	if err != nil {
 		return data, err
@@ -170,8 +186,8 @@ func retrieveRouterData(appName string) (map[string]string, error) {
 	err = coll.Find(bson.M{"app": appName}).One(&data)
 	// Avoid need for data migrations, before kind existed we only supported
 	// hipache as a router so we set is as default here.
-	if data["kind"] == "" {
-		data["kind"] = "hipache"
+	if data.Kind == "" {
+		data.Kind = "hipache"
 	}
 	return data, err
 }
@@ -184,7 +200,7 @@ func Retrieve(appName string) (string, error) {
 		}
 		return "", err
 	}
-	return data["router"], nil
+	return data.Router, nil
 }
 
 func Remove(appName string) error {
@@ -293,9 +309,9 @@ func Swap(r Router, backend1, backend2 string, cnameOnly bool) error {
 	if err != nil {
 		return err
 	}
-	if data1["kind"] != data2["kind"] {
+	if data1.Kind != data2.Kind {
 		return errors.Errorf("swap is only allowed between routers of the same kind. %q uses %q, %q uses %q",
-			backend1, data1["kind"], backend2, data2["kind"])
+			backend1, data1.Kind, backend2, data2.Kind)
 	}
 	if cnameOnly {
 		return swapCnames(r, backend1, backend2)

@@ -1,4 +1,4 @@
-// Copyright 2016 tsuru authors. All rights reserved.
+// Copyright 2017 tsuru authors. All rights reserved.
 // Use of this source code is governed by a BSD-style
 // license that can be found in the LICENSE file.
 
@@ -10,6 +10,7 @@ import (
 	"fmt"
 	"io"
 	"io/ioutil"
+	"math"
 	"net/url"
 	"path/filepath"
 	"strings"
@@ -48,6 +49,7 @@ import (
 	_ "github.com/tsuru/tsuru/router/hipache"
 	_ "github.com/tsuru/tsuru/router/routertest"
 	_ "github.com/tsuru/tsuru/router/vulcand"
+	"github.com/tsuru/tsuru/safe"
 )
 
 var (
@@ -892,7 +894,6 @@ func (p *dockerProvisioner) AdminCommands() []cmd.Command {
 	return []cmd.Command{
 		&moveContainerCmd{},
 		&moveContainersCmd{},
-		&rebalanceContainersCmd{},
 		&healer.ListHealingHistoryCmd{},
 		&autoScaleRunCmd{},
 		&listAutoScaleHistoryCmd{},
@@ -907,9 +908,9 @@ func (p *dockerProvisioner) AdminCommands() []cmd.Command {
 		&nodecontainer.NodeContainerUpdate{},
 		&nodecontainer.NodeContainerDelete{},
 		&nodecontainer.NodeContainerUpgrade{},
-		&cmd.RemovedCommand{Name: "bs-env-set", Help: "You should use `tsuru-admin node-container-update big-sibling` instead."},
-		&cmd.RemovedCommand{Name: "bs-info", Help: "You should use `tsuru-admin node-container-info big-sibling` instead."},
-		&cmd.RemovedCommand{Name: "bs-upgrade", Help: "You should use `tsuru-admin node-container-upgrade big-sibling` instead."},
+		&cmd.RemovedCommand{Name: "bs-env-set", Help: "You should use `tsuru node-container-update big-sibling` instead."},
+		&cmd.RemovedCommand{Name: "bs-info", Help: "You should use `tsuru node-container-info big-sibling` instead."},
+		&cmd.RemovedCommand{Name: "bs-upgrade", Help: "You should use `tsuru node-container-upgrade big-sibling` instead."},
 	}
 }
 
@@ -1392,4 +1393,43 @@ func (p *dockerProvisioner) UpgradeNodeContainer(name string, pool string, write
 
 func (p *dockerProvisioner) RemoveNodeContainer(name string, pool string, writer io.Writer) error {
 	return internalNodeContainer.RemoveNamedContainers(p, writer, name, pool)
+}
+
+func (p *dockerProvisioner) RebalanceNodes(opts provision.RebalanceNodesOptions) (bool, error) {
+	isOnlyPool := len(opts.MetadataFilter) == 1 && opts.MetadataFilter[poolMetadataName] != ""
+	if opts.Force || !isOnlyPool || len(opts.AppFilter) > 0 {
+		_, err := p.rebalanceContainersByFilter(opts.Writer, opts.AppFilter, opts.MetadataFilter, opts.Dry)
+		return true, err
+	}
+	nodes, err := p.Cluster().NodesForMetadata(opts.MetadataFilter)
+	if err != nil {
+		return false, err
+	}
+	ptrNodes := make([]*cluster.Node, len(nodes))
+	for i := range nodes {
+		ptrNodes[i] = &nodes[i]
+	}
+	// No action yet, check if we need rebalance
+	_, gap, err := p.containerGapInNodes(ptrNodes)
+	if err != nil {
+		return false, errors.Wrapf(err, "unable to obtain container gap in nodes")
+	}
+	buf := safe.NewBuffer(nil)
+	dryProvisioner, err := p.rebalanceContainersByFilter(buf, nil, opts.MetadataFilter, true)
+	if err != nil {
+		return false, errors.Wrapf(err, "unable to run dry rebalance to check if rebalance is needed. log: %s", buf.String())
+	}
+	if dryProvisioner == nil {
+		return false, nil
+	}
+	_, gapAfter, err := dryProvisioner.containerGapInNodes(ptrNodes)
+	if err != nil {
+		return false, errors.Wrap(err, "couldn't find containers from rebalanced nodes")
+	}
+	if math.Abs((float64)(gap-gapAfter)) > 2.0 {
+		fmt.Fprintf(opts.Writer, "Rebalancing as gap is %d, after rebalance gap will be %d\n", gap, gapAfter)
+		_, err := p.rebalanceContainersByFilter(opts.Writer, nil, opts.MetadataFilter, opts.Dry)
+		return true, err
+	}
+	return false, nil
 }

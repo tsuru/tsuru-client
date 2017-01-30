@@ -1,10 +1,12 @@
-// Copyright 2016 tsuru authors. All rights reserved.
+// Copyright 2017 tsuru authors. All rights reserved.
 // Use of this source code is governed by a BSD-style
 // license that can be found in the LICENSE file.
 
 package app
 
 import (
+	"crypto/tls"
+	"crypto/x509"
 	"encoding/json"
 	"fmt"
 	"io"
@@ -1691,6 +1693,81 @@ func (app *App) Shell(opts provision.ShellOptions) error {
 	} else {
 		return provision.ProvisionerNotSupported{Prov: prov, Action: "running shell"}
 	}
+}
+
+func (app *App) SetCertificate(name, certificate, key string) error {
+	hasCname := false
+	for _, c := range app.CName {
+		if c == name {
+			hasCname = true
+		}
+	}
+	if !hasCname && name != app.Ip {
+		return errors.New("invalid name")
+	}
+	r, err := app.Router()
+	if err != nil {
+		return err
+	}
+	tlsRouter, ok := r.(router.TLSRouter)
+	if !ok {
+		return errors.New("router does not support tls")
+	}
+	cert, err := tls.X509KeyPair([]byte(certificate), []byte(key))
+	if err != nil {
+		return err
+	}
+	x509Cert, err := x509.ParseCertificate(cert.Certificate[0])
+	if err != nil {
+		return err
+	}
+	err = x509Cert.VerifyHostname(name)
+	if err != nil {
+		return err
+	}
+	return tlsRouter.AddCertificate(name, certificate, key)
+}
+
+func (app *App) RemoveCertificate(name string) error {
+	hasCname := false
+	for _, c := range app.CName {
+		if c == name {
+			hasCname = true
+		}
+	}
+	if !hasCname && name != app.Ip {
+		return errors.New("invalid name")
+	}
+	r, err := app.Router()
+	if err != nil {
+		return err
+	}
+	tlsRouter, ok := r.(router.TLSRouter)
+	if !ok {
+		return errors.New("router does not support tls")
+	}
+	return tlsRouter.RemoveCertificate(name)
+}
+
+func (app *App) GetCertificates() (map[string]string, error) {
+	r, err := app.Router()
+	if err != nil {
+		return nil, err
+	}
+	tlsRouter, ok := r.(router.TLSRouter)
+	if !ok {
+		return nil, errors.New("router does not support tls")
+	}
+	names := append(app.CName, app.Ip)
+	certificates := make(map[string]string)
+	for _, n := range names {
+		cert, err := tlsRouter.GetCertificate(n)
+		if err != nil && err != router.ErrCertificateNotFound {
+			return nil, err
+		}
+		certificates[n] = cert
+	}
+	return certificates, nil
 }
 
 type ProcfileError struct {

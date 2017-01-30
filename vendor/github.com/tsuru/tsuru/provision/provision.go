@@ -1,4 +1,4 @@
-// Copyright 2016 tsuru authors. All rights reserved.
+// Copyright 2017 tsuru authors. All rights reserved.
 // Use of this source code is governed by a BSD-style
 // license that can be found in the LICENSE file.
 
@@ -446,6 +446,18 @@ type NodeProvisioner interface {
 
 	// NodeForNodeData finds a node matching the received NodeStatusData.
 	NodeForNodeData(NodeStatusData) (Node, error)
+}
+
+type RebalanceNodesOptions struct {
+	Writer         io.Writer
+	MetadataFilter map[string]string
+	AppFilter      []string
+	Dry            bool
+	Force          bool
+}
+
+type NodeRebalanceProvisioner interface {
+	RebalanceNodes(RebalanceNodesOptions) (bool, error)
 }
 
 type NodeContainerProvisioner interface {

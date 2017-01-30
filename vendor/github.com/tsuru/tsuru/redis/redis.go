@@ -1,4 +1,4 @@
-// Copyright 2016 tsuru authors. All rights reserved.
+// Copyright 2017 tsuru authors. All rights reserved.
 // Use of this source code is governed by a BSD-style
 // license that can be found in the LICENSE file.
 
@@ -32,6 +32,7 @@ type baseClient interface {
 	Select(index int64) *redis.StatusCmd
 	Keys(pattern string) *redis.StringSliceCmd
 	LLen(key string) *redis.IntCmd
+	HMGet(key string, fields ...string) *redis.SliceCmd
 	HMSetMap(key string, fields map[string]string) *redis.StatusCmd
 	HLen(key string) *redis.IntCmd
 	Close() error

@@ -1,7 +1,7 @@
 // AUTOMATICALLY GENERATED FILE - DO NOT EDIT!
 // Please run 'go generate' to update this file.
 //
-// Copyright 2016 tsuru authors. All rights reserved.
+// Copyright 2017 tsuru authors. All rights reserved.
 // Use of this source code is governed by a BSD-style
 // license that can be found in the LICENSE file.
 
@@ -24,6 +24,7 @@ var (
 	PermAppDeployRollback                = PermissionRegistry.get("app.deploy.rollback")                 // [global app team pool]
 	PermAppDeployUpload                  = PermissionRegistry.get("app.deploy.upload")                   // [global app team pool]
 	PermAppRead                          = PermissionRegistry.get("app.read")                            // [global app team pool]
+	PermAppReadCertificate               = PermissionRegistry.get("app.read.certificate")                // [global app team pool]
 	PermAppReadDeploy                    = PermissionRegistry.get("app.read.deploy")                     // [global app team pool]
 	PermAppReadEnv                       = PermissionRegistry.get("app.read.env")                        // [global app team pool]
 	PermAppReadEvents                    = PermissionRegistry.get("app.read.events")                     // [global app team pool]
@@ -33,6 +34,9 @@ var (
 	PermAppRunShell                      = PermissionRegistry.get("app.run.shell")                       // [global app team pool]
 	PermAppUpdate                        = PermissionRegistry.get("app.update")                          // [global app team pool]
 	PermAppUpdateBind                    = PermissionRegistry.get("app.update.bind")                     // [global app team pool]
+	PermAppUpdateCertificate             = PermissionRegistry.get("app.update.certificate")              // [global app team pool]
+	PermAppUpdateCertificateSet          = PermissionRegistry.get("app.update.certificate.set")          // [global app team pool]
+	PermAppUpdateCertificateUnset        = PermissionRegistry.get("app.update.certificate.unset")        // [global app team pool]
 	PermAppUpdateCname                   = PermissionRegistry.get("app.update.cname")                    // [global app team pool]
 	PermAppUpdateCnameAdd                = PermissionRegistry.get("app.update.cname.add")                // [global app team pool]
 	PermAppUpdateCnameRemove             = PermissionRegistry.get("app.update.cname.remove")             // [global app team pool]

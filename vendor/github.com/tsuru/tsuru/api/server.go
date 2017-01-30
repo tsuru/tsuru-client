@@ -1,4 +1,4 @@
-// Copyright 2016 tsuru authors. All rights reserved.
+// Copyright 2017 tsuru authors. All rights reserved.
 // Use of this source code is governed by a BSD-style
 // license that can be found in the LICENSE file.
 
@@ -35,7 +35,7 @@ import (
 	"gopkg.in/tylerb/graceful.v1"
 )
 
-const Version = "1.2.0-rc3"
+const Version = "1.2.0-rc4"
 
 type TsuruHandler struct {
 	method string
@@ -154,6 +154,9 @@ func RunServer(dry bool) http.Handler {
 	m.Add("1.0", "Post", "/apps/{appname}/deploy/rollback", AuthorizationRequiredHandler(deployRollback))
 	m.Add("1.0", "Get", "/apps/{app}/metric/envs", AuthorizationRequiredHandler(appMetricEnvs))
 	m.Add("1.0", "Post", "/apps/{app}/routes", AuthorizationRequiredHandler(appRebuildRoutes))
+	m.Add("1.2", "Get", "/apps/{app}/certificate", AuthorizationRequiredHandler(listCertificates))
+	m.Add("1.2", "Put", "/apps/{app}/certificate", AuthorizationRequiredHandler(setCertificate))
+	m.Add("1.2", "Delete", "/apps/{app}/certificate", AuthorizationRequiredHandler(unsetCertificate))
 
 	m.Add("1.0", "Post", "/node/status", AuthorizationRequiredHandler(setNodeStatus))
 
@@ -264,6 +267,7 @@ func RunServer(dry bool) http.Handler {
 	m.Add("1.2", "POST", "/node", AuthorizationRequiredHandler(addNodeHandler))
 	m.Add("1.2", "PUT", "/node", AuthorizationRequiredHandler(updateNodeHandler))
 	m.Add("1.2", "DELETE", "/node/{address:.*}", AuthorizationRequiredHandler(removeNodeHandler))
+	m.Add("1.3", "POST", "/node/rebalance", AuthorizationRequiredHandler(rebalanceNodesHandler))
 
 	m.Add("1.2", "GET", "/nodecontainers", AuthorizationRequiredHandler(nodeContainerList))
 	m.Add("1.2", "POST", "/nodecontainers", AuthorizationRequiredHandler(nodeContainerCreate))
@@ -289,6 +293,7 @@ func RunServer(dry bool) http.Handler {
 	m.Add("1.0", "POST", "/docker/node", AuthorizationRequiredHandler(addNodeHandler))
 	m.Add("1.0", "PUT", "/docker/node", AuthorizationRequiredHandler(updateNodeHandler))
 	m.Add("1.0", "DELETE", "/docker/node/{address:.*}", AuthorizationRequiredHandler(removeNodeHandler))
+	m.Add("1.0", "POST", "/docker/containers/rebalance", AuthorizationRequiredHandler(rebalanceNodesHandler))
 
 	m.Add("1.0", "GET", "/docker/nodecontainers", AuthorizationRequiredHandler(nodeContainerList))
 	m.Add("1.0", "POST", "/docker/nodecontainers", AuthorizationRequiredHandler(nodeContainerCreate))
@@ -388,6 +393,10 @@ func startServer(handler http.Handler) {
 		srv.Stop(srv.Timeout)
 	}()
 	var startupMessage string
+	err = router.Initialize()
+	if err != nil {
+		fatal(err)
+	}
 	routers, err := router.List()
 	if err != nil {
 		fatal(err)

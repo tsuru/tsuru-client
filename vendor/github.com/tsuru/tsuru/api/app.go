@@ -1,4 +1,4 @@
-// Copyright 2016 tsuru authors. All rights reserved.
+// Copyright 2017 tsuru authors. All rights reserved.
 // Use of this source code is governed by a BSD-style
 // license that can be found in the LICENSE file.
 
@@ -1451,6 +1451,7 @@ func swap(w http.ResponseWriter, r *http.Request, t auth.Token) (err error) {
 	if err != nil {
 		return err
 	}
+	defer func() { evt1.Done(err) }()
 	evt2, err := event.New(&event.Opts{
 		Target:     appTarget(app2Name),
 		Kind:       permission.PermAppUpdateSwap,
@@ -1461,7 +1462,7 @@ func swap(w http.ResponseWriter, r *http.Request, t auth.Token) (err error) {
 	if err != nil {
 		return err
 	}
-	defer func() { evt1.Done(err); evt2.Done(err) }()
+	defer func() { evt2.Done(err) }()
 	// compare apps by platform type and number of units
 	if forceSwap == "false" {
 		if app1.Platform != app2.Platform {
@@ -1712,6 +1713,128 @@ func appRebuildRoutes(w http.ResponseWriter, r *http.Request, t auth.Token) (err
 	defer func() { evt.Done(err) }()
 	w.Header().Set("Content-Type", "application/json")
 	result, err := rebuild.RebuildRoutes(&a)
+	if err != nil {
+		return err
+	}
+	return json.NewEncoder(w).Encode(&result)
+}
+
+// title: set app certificate
+// path: /apps/{app}/certificate
+// method: PUT
+// consume: application/x-www-form-urlencoded
+// responses:
+//   200: Ok
+//   400: Invalid data
+//   401: Unauthorized
+//   404: App not found
+func setCertificate(w http.ResponseWriter, r *http.Request, t auth.Token) (err error) {
+	a, err := getAppFromContext(r.URL.Query().Get(":app"), r)
+	if err != nil {
+		return err
+	}
+	allowed := permission.Check(t, permission.PermAppUpdateCertificateSet,
+		contextsForApp(&a)...,
+	)
+	if !allowed {
+		return permission.ErrUnauthorized
+	}
+	err = r.ParseForm()
+	if err != nil {
+		return &errors.HTTP{Code: http.StatusBadRequest, Message: err.Error()}
+	}
+	cname := r.FormValue("cname")
+	certificate := r.FormValue("certificate")
+	key := r.FormValue("key")
+	if cname == "" {
+		return &errors.HTTP{Code: http.StatusBadRequest, Message: "You must provide a cname."}
+	}
+	r.Form.Del("key")
+	evt, err := event.New(&event.Opts{
+		Target:     appTarget(a.Name),
+		Kind:       permission.PermAppUpdateCertificateSet,
+		Owner:      t,
+		CustomData: event.FormToCustomData(r.Form),
+		Allowed:    event.Allowed(permission.PermAppReadEvents, contextsForApp(&a)...),
+	})
+	if err != nil {
+		return err
+	}
+	defer func() { evt.Done(err) }()
+	err = a.SetCertificate(cname, certificate, key)
+	if err != nil {
+		return &errors.HTTP{Code: http.StatusBadRequest, Message: err.Error()}
+	}
+	return nil
+}
+
+// title: unset app certificate
+// path: /apps/{app}/certificate
+// method: DELETE
+// consume: application/x-www-form-urlencoded
+// responses:
+//   200: Ok
+//   400: Invalid data
+//   401: Unauthorized
+//   404: App not found
+func unsetCertificate(w http.ResponseWriter, r *http.Request, t auth.Token) (err error) {
+	a, err := getAppFromContext(r.URL.Query().Get(":app"), r)
+	if err != nil {
+		return err
+	}
+	allowed := permission.Check(t, permission.PermAppUpdateCertificateUnset,
+		contextsForApp(&a)...,
+	)
+	if !allowed {
+		return permission.ErrUnauthorized
+	}
+	err = r.ParseForm()
+	if err != nil {
+		return &errors.HTTP{Code: http.StatusBadRequest, Message: err.Error()}
+	}
+	cname := r.FormValue("cname")
+	if cname == "" {
+		return &errors.HTTP{Code: http.StatusBadRequest, Message: "You must provide a cname."}
+	}
+	evt, err := event.New(&event.Opts{
+		Target:     appTarget(a.Name),
+		Kind:       permission.PermAppUpdateCertificateUnset,
+		Owner:      t,
+		CustomData: event.FormToCustomData(r.Form),
+		Allowed:    event.Allowed(permission.PermAppReadEvents, contextsForApp(&a)...),
+	})
+	if err != nil {
+		return err
+	}
+	defer func() { evt.Done(err) }()
+	err = a.RemoveCertificate(cname)
+	if err != nil {
+		return &errors.HTTP{Code: http.StatusBadRequest, Message: err.Error()}
+	}
+	return nil
+}
+
+// title: list app certificates
+// path: /apps/{app}/certificate
+// method: GET
+// consume: application/x-www-form-urlencoded
+// responses:
+//   200: Ok
+//   401: Unauthorized
+//   404: App not found
+func listCertificates(w http.ResponseWriter, r *http.Request, t auth.Token) error {
+	a, err := getAppFromContext(r.URL.Query().Get(":app"), r)
+	if err != nil {
+		return err
+	}
+	allowed := permission.Check(t, permission.PermAppReadCertificate,
+		contextsForApp(&a)...,
+	)
+	if !allowed {
+		return permission.ErrUnauthorized
+	}
+	w.Header().Set("Content-Type", "application/json")
+	result, err := a.GetCertificates()
 	if err != nil {
 		return err
 	}

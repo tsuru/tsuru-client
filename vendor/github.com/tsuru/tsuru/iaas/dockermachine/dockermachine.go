@@ -99,7 +99,6 @@ func NewDockerMachine(config DockerMachineConfig) (DockerMachineAPI, error) {
 			return nil, errors.Wrap(err, "failed to copy ca key file")
 		}
 	}
-
 	if config.OutWriter != nil {
 		log.SetOutWriter(config.OutWriter)
 	} else {
