@@ -52,10 +52,11 @@ Your repository for "ble" project is "git@tsuru.plataformas.glb.com:ble.git"` + 
 			plan := r.FormValue("plan") == ""
 			pool := r.FormValue("pool") == ""
 			description := r.FormValue("description") == ""
+			router := r.FormValue("router") == ""
 			method := r.Method == "POST"
 			contentType := r.Header.Get("Content-Type") == "application/x-www-form-urlencoded"
 			url := strings.HasSuffix(r.URL.Path, "/apps")
-			return method && url && name && platform && teamOwner && plan && pool && description && contentType
+			return method && url && name && platform && teamOwner && plan && pool && description && contentType && router
 		},
 	}
 	client := cmd.NewClient(&http.Client{Transport: &trans}, nil, manager)
@@ -85,10 +86,11 @@ Your repository for "ble" project is "git@tsuru.plataformas.glb.com:ble.git"` + 
 			plan := r.FormValue("plan") == ""
 			pool := r.FormValue("pool") == ""
 			description := r.FormValue("description") == ""
+			router := r.FormValue("router") == ""
 			method := r.Method == "POST"
 			url := strings.HasSuffix(r.URL.Path, "/apps")
 			contentType := r.Header.Get("Content-Type") == "application/x-www-form-urlencoded"
-			return method && url && name && platform && teamOwner && plan && pool && description && contentType
+			return method && url && name && platform && teamOwner && plan && pool && description && contentType && router
 		},
 	}
 	client := cmd.NewClient(&http.Client{Transport: &trans}, nil, manager)
@@ -118,11 +120,12 @@ Your repository for "ble" project is "git@tsuru.plataformas.glb.com:ble.git"` + 
 			teamOwner := r.FormValue("teamOwner") == ""
 			plan := r.FormValue("plan") == "myplan"
 			pool := r.FormValue("pool") == ""
+			router := r.FormValue("router") == ""
 			description := r.FormValue("description") == ""
 			method := r.Method == "POST"
 			url := strings.HasSuffix(r.URL.Path, "/apps")
 			contentType := r.Header.Get("Content-Type") == "application/x-www-form-urlencoded"
-			return method && url && name && platform && teamOwner && plan && pool && description && contentType
+			return method && url && name && platform && teamOwner && plan && pool && description && contentType && router
 		},
 	}
 	client := cmd.NewClient(&http.Client{Transport: &trans}, nil, manager)
@@ -152,11 +155,12 @@ Your repository for "ble" project is "git@tsuru.plataformas.glb.com:ble.git"` + 
 			teamowner := r.FormValue("teamowner") == ""
 			plan := r.FormValue("plan") == ""
 			pool := r.FormValue("pool") == "mypool"
+			router := r.FormValue("router") == ""
 			description := r.FormValue("description") == ""
 			method := r.Method == "POST"
 			url := strings.HasSuffix(r.URL.Path, "/apps")
 			contentType := r.Header.Get("Content-Type") == "application/x-www-form-urlencoded"
-			return method && url && name && platform && teamowner && plan && pool && description && contentType
+			return method && url && name && platform && teamowner && plan && pool && description && contentType && router
 		},
 	}
 	client := cmd.NewClient(&http.Client{Transport: &trans}, nil, manager)
@@ -187,12 +191,13 @@ Your repository for "ble" project is "git@tsuru.plataformas.glb.com:ble.git"` + 
 			plan := r.FormValue("plan") == ""
 			pool := r.FormValue("pool") == ""
 			description := r.FormValue("description") == ""
+			router := r.FormValue("router") == ""
 			c.Assert(r.FormValue("routeropts.a"), check.Equals, "1")
 			c.Assert(r.FormValue("routeropts.b"), check.Equals, "2")
 			method := r.Method == "POST"
 			url := strings.HasSuffix(r.URL.Path, "/apps")
 			contentType := r.Header.Get("Content-Type") == "application/x-www-form-urlencoded"
-			return method && url && name && platform && teamowner && plan && pool && description && contentType
+			return method && url && name && platform && teamowner && plan && pool && description && contentType && router
 		},
 	}
 	client := cmd.NewClient(&http.Client{Transport: &trans}, nil, manager)
@@ -221,11 +226,12 @@ Use app-info to check the status of the app and its units.` + "\n"
 			teamowner := r.FormValue("teamowner") == ""
 			plan := r.FormValue("plan") == ""
 			pool := r.FormValue("pool") == ""
+			router := r.FormValue("router") == ""
 			description := r.FormValue("description") == ""
 			method := r.Method == "POST"
 			url := strings.HasSuffix(r.URL.Path, "/apps")
 			contentType := r.Header.Get("Content-Type") == "application/x-www-form-urlencoded"
-			return method && url && name && platform && teamowner && plan && pool && description && contentType
+			return method && url && name && platform && teamowner && plan && pool && description && contentType && router
 		},
 	}
 	client := cmd.NewClient(&http.Client{Transport: &trans}, nil, manager)
@@ -281,6 +287,20 @@ func (s *S) TestAppCreateFlags(c *check.C) {
 	c.Check(teamOwner.Usage, check.Equals, usage)
 	c.Check(teamOwner.Value.String(), check.Equals, "team")
 	c.Check(teamOwner.DefValue, check.Equals, "")
+	flagset.Parse(true, []string{"-r", "router"})
+	usage = "The router used by the app"
+	router := flagset.Lookup("router")
+	c.Check(router, check.NotNil)
+	c.Check(router.Name, check.Equals, "router")
+	c.Check(router.Usage, check.Equals, usage)
+	c.Check(router.Value.String(), check.Equals, "router")
+	c.Check(router.DefValue, check.Equals, "")
+	router = flagset.Lookup("r")
+	c.Check(router, check.NotNil)
+	c.Check(router.Name, check.Equals, "r")
+	c.Check(router.Usage, check.Equals, usage)
+	c.Check(router.Value.String(), check.Equals, "router")
+	c.Check(router.DefValue, check.Equals, "")
 }
 
 func (s *S) TestAppUpdateInfo(c *check.C) {
@@ -300,12 +320,13 @@ func (s *S) TestAppUpdate(c *check.C) {
 			url := strings.HasSuffix(req.URL.Path, "/apps/ble")
 			method := req.Method == "PUT"
 			description := req.FormValue("description") == "description of my app"
-			return url && method && description
+			router := req.FormValue("router") == "router"
+			return url && method && description && router
 		},
 	}
 	client := cmd.NewClient(&http.Client{Transport: trans}, nil, manager)
 	command := AppUpdate{}
-	command.Flags().Parse(true, []string{"-d", "description of my app", "-a", "ble"})
+	command.Flags().Parse(true, []string{"-d", "description of my app", "-a", "ble", "-r", "router"})
 	err := command.Run(&context, client)
 	c.Assert(err, check.IsNil)
 	c.Assert(stdout.String(), check.Equals, expected)
@@ -395,6 +416,20 @@ func (s *S) TestAppUpdateFlags(c *check.C) {
 	c.Check(steamOwner.Usage, check.Equals, description)
 	c.Check(steamOwner.Value.String(), check.Equals, "newowner")
 	c.Check(steamOwner.DefValue, check.Equals, "")
+	flagset.Parse(true, []string{"-r", "router"})
+	usage = "App router"
+	router := flagset.Lookup("router")
+	c.Check(router, check.NotNil)
+	c.Check(router.Name, check.Equals, "router")
+	c.Check(router.Usage, check.Equals, usage)
+	c.Check(router.Value.String(), check.Equals, "router")
+	c.Check(router.DefValue, check.Equals, "")
+	router = flagset.Lookup("r")
+	c.Check(router, check.NotNil)
+	c.Check(router.Name, check.Equals, "r")
+	c.Check(router.Usage, check.Equals, usage)
+	c.Check(router.Value.String(), check.Equals, "router")
+	c.Check(router.DefValue, check.Equals, "")
 }
 
 func (s *S) TestAppRemove(c *check.C) {

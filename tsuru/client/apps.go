@@ -28,6 +28,7 @@ import (
 type AppCreate struct {
 	teamOwner   string
 	plan        string
+	router      string
 	pool        string
 	description string
 	routerOpts  cmd.MapFlag
@@ -37,7 +38,7 @@ type AppCreate struct {
 func (c *AppCreate) Info() *cmd.Info {
 	return &cmd.Info{
 		Name:  "app-create",
-		Usage: "app-create <appname> <platform> [--plan/-p plan_name] [--team/-t (team owner)] [--pool/-o pool_name] [--description/-d description] [--router-opts key=value]...",
+		Usage: "app-create <appname> <platform> [--plan/-p plan_name] [--router/-r router_name] [--team/-t (team owner)] [--pool/-o pool_name] [--description/-d description] [--router-opts key=value]...",
 		Desc: `Creates a new app using the given name and platform. For tsuru,
 a platform is provisioner dependent. To check the available platforms, use the
 command [[tsuru platform-list]] and to add a platform use the command [[tsuru-admin platform-add]].
@@ -56,6 +57,12 @@ means limits for memory and swap usage, and how much cpu share is allocated.
 The list of available plans can be found running [[tsuru plan-list]].
 
 If this parameter is not informed, tsuru will choose the plan with the
+[[default]] flag set to true.
+
+The [[--router]] parameter defines the router to be used. The list of available
+routers can be found running [[tsuru router-list]].
+
+If this parameter is not informed, tsuru will choose the router with the
 [[default]] flag set to true.
 
 The [[--team]] parameter describes which team is responsible for the created
@@ -82,6 +89,9 @@ func (c *AppCreate) Flags() *gnuflag.FlagSet {
 		c.fs = gnuflag.NewFlagSet("", gnuflag.ExitOnError)
 		c.fs.StringVar(&c.plan, "plan", "", infoMessage)
 		c.fs.StringVar(&c.plan, "p", "", infoMessage)
+		routerMessage := "The router used by the app"
+		c.fs.StringVar(&c.router, "router", "", routerMessage)
+		c.fs.StringVar(&c.router, "r", "", routerMessage)
 		teamMessage := "Team owner app"
 		c.fs.StringVar(&c.teamOwner, "team", "", teamMessage)
 		c.fs.StringVar(&c.teamOwner, "t", "", teamMessage)
@@ -109,6 +119,7 @@ func (c *AppCreate) Run(context *cmd.Context, client *cmd.Client) error {
 	v.Set("teamOwner", c.teamOwner)
 	v.Set("pool", c.pool)
 	v.Set("description", c.description)
+	v.Set("router", c.router)
 	b := strings.NewReader(v.Encode())
 	u, err := cmd.GetURL("/apps")
 	if err != nil {
@@ -144,6 +155,7 @@ func (c *AppCreate) Run(context *cmd.Context, client *cmd.Client) error {
 type AppUpdate struct {
 	description string
 	plan        string
+	router      string
 	pool        string
 	teamOwner   string
 	fs          *gnuflag.FlagSet
@@ -154,12 +166,14 @@ type AppUpdate struct {
 func (c *AppUpdate) Info() *cmd.Info {
 	return &cmd.Info{
 		Name:  "app-update",
-		Usage: "app-update [-a/--app appname] [--description/-d description] [--plan/-p plan_name] [--pool/-o pool] [--team-owner/-t team-owner]",
+		Usage: "app-update [-a/--app appname] [--description/-d description] [--plan/-p plan_name] [--router/-r router_name] [--pool/-o pool] [--team-owner/-t team-owner]",
 		Desc: `Updates an app, changing its description, plan or pool information.
 
 The [[--description]] parameter sets a description for your app.
 
 The [[--plan]] parameter changes the plan of your app.
+
+The [[--router]] parameter changes the router of your app.
 
 The [[--pool]] parameter changes the pool of your app.
 
@@ -172,12 +186,15 @@ func (c *AppUpdate) Flags() *gnuflag.FlagSet {
 		flagSet := gnuflag.NewFlagSet("", gnuflag.ExitOnError)
 		descriptionMessage := "App description"
 		planMessage := "App plan"
+		routerMessage := "App router"
 		poolMessage := "App pool"
 		teamOwnerMessage := "App team owner"
 		flagSet.StringVar(&c.description, "description", "", descriptionMessage)
 		flagSet.StringVar(&c.description, "d", "", descriptionMessage)
 		flagSet.StringVar(&c.plan, "plan", "", planMessage)
 		flagSet.StringVar(&c.plan, "p", "", planMessage)
+		flagSet.StringVar(&c.router, "router", "", routerMessage)
+		flagSet.StringVar(&c.router, "r", "", routerMessage)
 		flagSet.StringVar(&c.pool, "o", "", poolMessage)
 		flagSet.StringVar(&c.pool, "pool", "", poolMessage)
 		flagSet.StringVar(&c.teamOwner, "t", "", teamOwnerMessage)
@@ -202,6 +219,7 @@ func (c *AppUpdate) Run(context *cmd.Context, client *cmd.Client) error {
 	}
 	v := url.Values{}
 	v.Set("plan", c.plan)
+	v.Set("router", c.router)
 	v.Set("description", c.description)
 	v.Set("pool", c.pool)
 	v.Set("teamOwner", c.teamOwner)
