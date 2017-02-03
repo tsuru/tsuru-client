@@ -141,6 +141,11 @@ func buildManager(name string) *cmd.Manager {
 	m.RegisterDeprecated(&admin.SetNodeHealingConfigCmd{}, "docker-healing-update")
 	m.RegisterDeprecated(&admin.DeleteNodeHealingConfigCmd{}, "docker-healing-delete")
 	m.RegisterDeprecated(&admin.RebalanceNodeCmd{}, "containers-rebalance")
+	m.RegisterDeprecated(&admin.AutoScaleRunCmd{}, "docker-autoscale-run")
+	m.RegisterDeprecated(&admin.ListAutoScaleHistoryCmd{}, "docker-autoscale-list")
+	m.RegisterDeprecated(&admin.AutoScaleInfoCmd{}, "docker-autoscale-info")
+	m.RegisterDeprecated(&admin.AutoScaleSetRuleCmd{}, "docker-autoscale-rule-set")
+	m.RegisterDeprecated(&admin.AutoScaleDeleteRuleCmd{}, "docker-autoscale-rule-remove")
 	registerProvisionersCommands(m)
 	return m
 }
