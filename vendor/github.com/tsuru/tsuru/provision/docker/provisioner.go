@@ -1,4 +1,4 @@
-// Copyright 2017 tsuru authors. All rights reserved.
+// Copyright 2013 tsuru authors. All rights reserved.
 // Use of this source code is governed by a BSD-style
 // license that can be found in the LICENSE file.
 
@@ -166,11 +166,6 @@ func (p *dockerProvisioner) initDockerCluster() error {
 	if activeMonitoring > 0 {
 		p.cluster.StartActiveMonitoring(time.Duration(activeMonitoring) * time.Second)
 	}
-	autoScale := p.initAutoScaleConfig()
-	if autoScale.Enabled {
-		shutdown.Register(autoScale)
-		go autoScale.run()
-	}
 	limitMode, _ := config.GetString("docker:limit:mode")
 	if limitMode == "global" {
 		p.actionLimiter = &provision.MongodbLimiter{}
@@ -186,21 +181,6 @@ func (p *dockerProvisioner) initDockerCluster() error {
 
 func (p *dockerProvisioner) ActionLimiter() provision.ActionLimiter {
 	return p.actionLimiter
-}
-
-func (p *dockerProvisioner) initAutoScaleConfig() *autoScaleConfig {
-	enabled, _ := config.GetBool("docker:auto-scale:enabled")
-	waitSecondsNewMachine, _ := config.GetInt("docker:auto-scale:wait-new-time")
-	runInterval, _ := config.GetInt("docker:auto-scale:run-interval")
-	TotalMemoryMetadata, _ := config.GetString("docker:scheduler:total-memory-metadata")
-	return &autoScaleConfig{
-		TotalMemoryMetadata: TotalMemoryMetadata,
-		WaitTimeNewMachine:  time.Duration(waitSecondsNewMachine) * time.Second,
-		RunInterval:         time.Duration(runInterval) * time.Second,
-		Enabled:             enabled,
-		provisioner:         p,
-		done:                make(chan bool),
-	}
 }
 
 func (p *dockerProvisioner) cloneProvisioner(ignoredContainers []container.Container) (*dockerProvisioner, error) {
@@ -895,11 +875,6 @@ func (p *dockerProvisioner) AdminCommands() []cmd.Command {
 		&moveContainerCmd{},
 		&moveContainersCmd{},
 		&healer.ListHealingHistoryCmd{},
-		&autoScaleRunCmd{},
-		&listAutoScaleHistoryCmd{},
-		&autoScaleInfoCmd{},
-		&autoScaleSetRuleCmd{},
-		&autoScaleDeleteRuleCmd{},
 		&dockerLogInfo{},
 		&dockerLogUpdate{},
 		&nodecontainer.NodeContainerList{},
@@ -1205,7 +1180,11 @@ func (n *clusterNodeWrapper) Pool() string {
 }
 
 func (n *clusterNodeWrapper) Metadata() map[string]string {
-	return n.Node.Metadata
+	return n.Node.CleanMetadata()
+}
+
+func (n *clusterNodeWrapper) ExtraData() map[string]string {
+	return n.Node.ExtraMetadata()
 }
 
 func (n *clusterNodeWrapper) Units() ([]provision.Unit, error) {
@@ -1396,7 +1375,7 @@ func (p *dockerProvisioner) RemoveNodeContainer(name string, pool string, writer
 }
 
 func (p *dockerProvisioner) RebalanceNodes(opts provision.RebalanceNodesOptions) (bool, error) {
-	isOnlyPool := len(opts.MetadataFilter) == 1 && opts.MetadataFilter[poolMetadataName] != ""
+	isOnlyPool := len(opts.MetadataFilter) == 1 && opts.MetadataFilter[provision.PoolMetadataName] != ""
 	if opts.Force || !isOnlyPool || len(opts.AppFilter) > 0 {
 		_, err := p.rebalanceContainersByFilter(opts.Writer, opts.AppFilter, opts.MetadataFilter, opts.Dry)
 		return true, err

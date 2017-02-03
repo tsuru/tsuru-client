@@ -1,4 +1,4 @@
-// Copyright 2016 tsuru authors. All rights reserved.
+// Copyright 2014 tsuru authors. All rights reserved.
 // Use of this source code is governed by a BSD-style
 // license that can be found in the LICENSE file.
 
@@ -8,11 +8,11 @@ import (
 	"fmt"
 	"io"
 	"io/ioutil"
-	"strings"
 	"sync"
 
 	"github.com/fsouza/go-dockerclient"
 	"github.com/pkg/errors"
+	"github.com/tsuru/docker-cluster/cluster"
 	"github.com/tsuru/tsuru/action"
 	"github.com/tsuru/tsuru/app"
 	"github.com/tsuru/tsuru/app/image"
@@ -244,23 +244,6 @@ func (p *dockerProvisioner) MoveContainers(fromHost, toHost string, writer io.Wr
 	return p.moveContainerList(containers, toHost, writer)
 }
 
-func (p *dockerProvisioner) moveContainersFromHosts(fromHosts []string, toHost string, writer io.Writer) error {
-	var allContainers []container.Container
-	for _, host := range fromHosts {
-		containers, err := p.listContainersByHost(host)
-		if err != nil {
-			return err
-		}
-		allContainers = append(allContainers, containers...)
-	}
-	if len(allContainers) == 0 {
-		fmt.Fprintf(writer, "No units to move in hosts %s\n", strings.Join(fromHosts, ", "))
-		return nil
-	}
-	fmt.Fprintf(writer, "Moving %d units...\n", len(allContainers))
-	return p.moveContainerList(allContainers, toHost, writer)
-}
-
 func (p *dockerProvisioner) rebalanceContainersByFilter(writer io.Writer, appFilter []string, metadataFilter map[string]string, dryRun bool) (*dockerProvisioner, error) {
 	var hostsFilter []string
 	if metadataFilter != nil {
@@ -372,4 +355,51 @@ func (p *dockerProvisioner) runCommandInContainer(image string, command string, 
 	}
 	waiter.Wait()
 	return nil
+}
+
+func (p *dockerProvisioner) runningContainersByNode(nodes []*cluster.Node) (map[string][]container.Container, error) {
+	appNames, err := p.listAppsForNodes(nodes)
+	if err != nil {
+		return nil, err
+	}
+	for _, appName := range appNames {
+		locked, err := app.AcquireApplicationLock(appName, app.InternalAppName, "node auto scale")
+		if err != nil {
+			return nil, err
+		}
+		if !locked {
+			return nil, errors.Errorf("unable to lock app %q for container count", appName)
+		}
+		defer app.ReleaseApplicationLock(appName)
+	}
+	result := map[string][]container.Container{}
+	for _, n := range nodes {
+		nodeConts, err := p.listRunningContainersByHost(net.URLToHost(n.Address))
+		if err != nil {
+			return nil, err
+		}
+		result[n.Address] = nodeConts
+	}
+	return result, nil
+}
+
+func (p *dockerProvisioner) containerGapInNodes(nodes []*cluster.Node) (int, int, error) {
+	maxCount := 0
+	minCount := -1
+	totalCount := 0
+	containersMap, err := p.runningContainersByNode(nodes)
+	if err != nil {
+		return 0, 0, err
+	}
+	for _, containers := range containersMap {
+		contCount := len(containers)
+		if contCount > maxCount {
+			maxCount = contCount
+		}
+		if minCount == -1 || contCount < minCount {
+			minCount = contCount
+		}
+		totalCount += contCount
+	}
+	return totalCount, maxCount - minCount, nil
 }

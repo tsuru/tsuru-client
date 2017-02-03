@@ -1,4 +1,4 @@
-// Copyright 2016 tsuru authors. All rights reserved.
+// Copyright 2013 tsuru authors. All rights reserved.
 // Use of this source code is governed by a BSD-style
 // license that can be found in the LICENSE file.
 
@@ -12,11 +12,12 @@ import (
 
 	"github.com/fsouza/go-dockerclient"
 	"github.com/pkg/errors"
-	"github.com/tsuru/config"
 	"github.com/tsuru/docker-cluster/cluster"
 	"github.com/tsuru/tsuru/app"
+	"github.com/tsuru/tsuru/autoscale"
 	"github.com/tsuru/tsuru/log"
 	"github.com/tsuru/tsuru/net"
+	"github.com/tsuru/tsuru/provision"
 	"github.com/tsuru/tsuru/provision/docker/container"
 	"gopkg.in/mgo.v2"
 	"gopkg.in/mgo.v2/bson"
@@ -103,7 +104,15 @@ func (s *segregatedScheduler) filterByMemoryUsage(a *app.App, nodes []cluster.No
 		}
 	}
 	if len(nodeList) == 0 {
-		autoScaleEnabled, _ := config.GetBool("docker:auto-scale:enabled")
+		cfg, _ := autoscale.CurrentConfig()
+		autoScaleEnabled := false
+		if cfg != nil {
+			autoScaleEnabled = cfg.Enabled
+		}
+		rule, _ := autoscale.AutoScaleRuleForMetadata(a.Pool)
+		if rule != nil {
+			autoScaleEnabled = rule.Enabled
+		}
 		errMsg := fmt.Sprintf("no nodes found with enough memory for container of %q: %0.4fMB",
 			a.Name, float64(a.Plan.Memory)/megabyte)
 		if autoScaleEnabled {
@@ -172,15 +181,14 @@ func (s *segregatedScheduler) GetRemovableContainer(appName string, process stri
 
 type errContainerNotFound struct {
 	AppName     string
-	HostAddr    string
 	ProcessName string
 }
 
 func (m *errContainerNotFound) Error() string {
-	return fmt.Sprintf("Container of app %q with process %q was not found in server %q", m.AppName, m.ProcessName, m.HostAddr)
+	return fmt.Sprintf("Container of app %q with process %q was not found in any servers", m.AppName, m.ProcessName)
 }
 
-func (s *segregatedScheduler) getContainerFromHost(host string, appName, process string) (string, error) {
+func (s *segregatedScheduler) getContainerPreferablyFromHost(host string, appName, process string) (string, error) {
 	coll := s.provisioner.Collection()
 	defer coll.Close()
 	var c container.Container
@@ -196,7 +204,11 @@ func (s *segregatedScheduler) getContainerFromHost(host string, appName, process
 	}
 	err := coll.Find(query).Select(bson.M{"id": 1}).One(&c)
 	if err == mgo.ErrNotFound {
-		return "", &errContainerNotFound{AppName: appName, ProcessName: process, HostAddr: net.URLToHost(host)}
+		delete(query, "hostaddr")
+		err = coll.Find(query).Select(bson.M{"id": 1}).One(&c)
+	}
+	if err == mgo.ErrNotFound {
+		return "", &errContainerNotFound{AppName: appName, ProcessName: process}
 	}
 	return c.ID, err
 }
@@ -241,7 +253,7 @@ func (s *segregatedScheduler) chooseContainerToRemove(nodes []cluster.Node, appN
 		return "", err
 	}
 	log.Debugf("[scheduler] Chosen node for remove a container: %#v", chosenNode)
-	containerID, err := s.getContainerFromHost(chosenNode, appName, process)
+	containerID, err := s.getContainerPreferablyFromHost(chosenNode, appName, process)
 	if err != nil {
 		return "", err
 	}
@@ -264,18 +276,18 @@ func appGroupCount(hostGroups map[string]int, appCountHost map[string]int) map[s
 // (good to remove a container) value for the pair [(number of containers for
 // app-process), (number of containers in host)]
 func (s *segregatedScheduler) minMaxNodes(nodes []cluster.Node, appName, process string) (string, string, error) {
-	nodesPtr := make([]*cluster.Node, len(nodes))
+	nodesList := make(provision.NodeList, len(nodes))
 	for i := range nodes {
-		nodesPtr[i] = &nodes[i]
+		nodesList[i] = &clusterNodeWrapper{Node: &nodes[i], prov: s.provisioner}
 	}
-	metaFreqList, _, err := splitMetadata(nodesPtr)
+	metaFreqList, _, err := nodesList.SplitMetadata()
 	if err != nil {
 		log.Debugf("[scheduler] ignoring metadata diff when selecting node: %s", err)
 	}
 	hostGroupMap := map[string]int{}
 	for i, m := range metaFreqList {
-		for _, n := range m.nodes {
-			hostGroupMap[net.URLToHost(n.Address)] = i
+		for _, n := range m.Nodes {
+			hostGroupMap[net.URLToHost(n.Address())] = i
 		}
 	}
 	hosts, hostsMap := s.nodesToHosts(nodes)
@@ -300,7 +312,7 @@ func (s *segregatedScheduler) minMaxNodes(nodes []cluster.Node, appName, process
 			minScore = score
 			minHost = host
 		}
-		if score > maxScore {
+		if score >= maxScore {
 			maxScore = score
 			maxHost = host
 		}

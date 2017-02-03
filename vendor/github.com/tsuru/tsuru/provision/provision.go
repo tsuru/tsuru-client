@@ -1,4 +1,4 @@
-// Copyright 2017 tsuru authors. All rights reserved.
+// Copyright 2012 tsuru authors. All rights reserved.
 // Use of this source code is governed by a BSD-style
 // license that can be found in the LICENSE file.
 
@@ -487,6 +487,10 @@ type Node interface {
 	Provisioner() NodeProvisioner
 }
 
+type NodeExtraData interface {
+	ExtraData() map[string]string
+}
+
 type NodeHealthChecker interface {
 	Node
 	FailureCount() int
@@ -503,9 +507,18 @@ type NodeSpec struct {
 }
 
 func NodeToSpec(n Node) NodeSpec {
+	metadata := map[string]string{}
+	if extra, ok := n.(NodeExtraData); ok {
+		for k, v := range extra.ExtraData() {
+			metadata[k] = v
+		}
+	}
+	for k, v := range n.Metadata() {
+		metadata[k] = v
+	}
 	return NodeSpec{
 		Address:  n.Address(),
-		Metadata: n.Metadata(),
+		Metadata: metadata,
 		Status:   n.Status(),
 		Pool:     n.Pool(),
 	}
