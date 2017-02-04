@@ -5,7 +5,6 @@
 package admin
 
 import (
-	"encoding/json"
 	"fmt"
 	"net/http"
 	"net/url"
@@ -14,7 +13,6 @@ import (
 
 	"github.com/tsuru/gnuflag"
 	"github.com/tsuru/tsuru/cmd"
-	"github.com/tsuru/tsuru/router"
 )
 
 type PlanCreate struct {
@@ -119,44 +117,5 @@ func (c *PlanRemove) Run(context *cmd.Context, client *cmd.Client) error {
 		return err
 	}
 	fmt.Fprintf(context.Stdout, "Plan successfully removed!\n")
-	return nil
-}
-
-type PlanRoutersList struct{}
-
-func (c *PlanRoutersList) Info() *cmd.Info {
-	return &cmd.Info{
-		Name:    "router-list",
-		Usage:   "router-list",
-		Desc:    "List all routers available for plan creation.",
-		MinArgs: 0,
-	}
-}
-
-func (c *PlanRoutersList) Run(context *cmd.Context, client *cmd.Client) error {
-	url, err := cmd.GetURL("/plans/routers")
-	if err != nil {
-		return err
-	}
-	request, err := http.NewRequest("GET", url, nil)
-	if err != nil {
-		return err
-	}
-	response, err := client.Do(request)
-	if err != nil {
-		return err
-	}
-	var routers []router.PlanRouter
-	err = json.NewDecoder(response.Body).Decode(&routers)
-	if err != nil {
-		return err
-	}
-	table := cmd.NewTable()
-	table.Headers = cmd.Row([]string{"Name", "Type"})
-	table.LineSeparator = true
-	for _, router := range routers {
-		table.AddRow(cmd.Row([]string{router.Name, router.Type}))
-	}
-	context.Stdout.Write(table.Bytes())
 	return nil
 }
