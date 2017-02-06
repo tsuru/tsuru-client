@@ -14,7 +14,6 @@ import (
 	"github.com/tsuru/tsuru/errors"
 	"github.com/tsuru/tsuru/event"
 	"github.com/tsuru/tsuru/permission"
-	"github.com/tsuru/tsuru/router"
 )
 
 // title: plan create
@@ -37,7 +36,6 @@ func addPlan(w http.ResponseWriter, r *http.Request, t auth.Token) (err error) {
 		Swap:     swap,
 		CpuShare: cpuShare,
 		Default:  isDefault,
-		Router:   r.FormValue("router"),
 	}
 	allowed := permission.Check(t, permission.PermPlanCreate)
 	if !allowed {
@@ -132,30 +130,6 @@ func removePlan(w http.ResponseWriter, r *http.Request, t auth.Token) (err error
 		}
 	}
 	return err
-}
-
-// title: router list
-// path: /plans/routers
-// method: GET
-// produce: application/json
-// responses:
-//   200: OK
-//   204: No content
-func listRouters(w http.ResponseWriter, r *http.Request, t auth.Token) error {
-	allowed := permission.Check(t, permission.PermPlanCreate)
-	if !allowed {
-		return permission.ErrUnauthorized
-	}
-	routers, err := router.List()
-	if err != nil {
-		return err
-	}
-	if len(routers) == 0 {
-		w.WriteHeader(http.StatusNoContent)
-		return nil
-	}
-	w.Header().Set("Content-Type", "application/json")
-	return json.NewEncoder(w).Encode(routers)
 }
 
 func getSize(formValue string) int64 {
