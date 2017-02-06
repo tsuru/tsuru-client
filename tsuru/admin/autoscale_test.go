@@ -27,7 +27,7 @@ func (s *S) TestAutoScaleRunCmdRun(c *check.C) {
 	trans := &cmdtest.ConditionalTransport{
 		Transport: cmdtest.Transport{Message: result, Status: http.StatusOK},
 		CondFunc: func(req *http.Request) bool {
-			return req.URL.Path == "/1.3/autoscale/run" && req.Method == "POST"
+			return req.URL.Path == "/1.3/node/autoscale/run" && req.Method == "POST"
 		},
 	}
 	manager := cmd.Manager{}
@@ -46,7 +46,7 @@ func (s *S) TestAutoScaleInfoCmdRun(c *check.C) {
 		Transport: cmdtest.Transport{Message: config, Status: http.StatusOK},
 		CondFunc: func(req *http.Request) bool {
 			calls++
-			return req.URL.Path == "/1.3/autoscale/config" && req.Method == "GET"
+			return req.URL.Path == "/1.3/node/autoscale/config" && req.Method == "GET"
 		},
 	}
 	rules := `[
@@ -82,7 +82,7 @@ func (s *S) TestAutoScaleInfoCmdRun(c *check.C) {
 		Transport: cmdtest.Transport{Message: rules, Status: http.StatusOK},
 		CondFunc: func(req *http.Request) bool {
 			calls++
-			return req.URL.Path == "/1.3/autoscale/rules" && req.Method == "GET"
+			return req.URL.Path == "/1.3/node/autoscale/rules" && req.Method == "GET"
 		},
 	}
 	var buf bytes.Buffer
@@ -115,7 +115,7 @@ func (s *S) TestAutoScaleInfoCmdRunDisabled(c *check.C) {
 		Transport: cmdtest.Transport{Message: config, Status: http.StatusOK},
 		CondFunc: func(req *http.Request) bool {
 			calls++
-			return req.URL.Path == "/1.3/autoscale/config" && req.Method == "GET"
+			return req.URL.Path == "/1.3/node/autoscale/config" && req.Method == "GET"
 		},
 	}
 	var buf bytes.Buffer
@@ -148,7 +148,7 @@ func (s *S) TestAutoScaleSetRuleCmdRun(c *check.C) {
 				ScaleDownRatio:    1.33,
 				PreventRebalance:  false,
 			})
-			return req.Method == "POST" && req.URL.Path == "/1.3/autoscale/rules"
+			return req.Method == "POST" && req.URL.Path == "/1.3/node/autoscale/rules"
 		},
 	}
 	var buf bytes.Buffer
@@ -171,7 +171,7 @@ func (s *S) TestAutoScaleDeleteCmdRun(c *check.C) {
 		Transport: cmdtest.Transport{Message: "", Status: http.StatusOK},
 		CondFunc: func(req *http.Request) bool {
 			called = true
-			return req.Method == "DELETE" && req.URL.Path == "/1.3/autoscale/rules/myrule"
+			return req.Method == "DELETE" && req.URL.Path == "/1.3/node/autoscale/rules/myrule"
 		},
 	}
 	var buf bytes.Buffer
@@ -193,7 +193,7 @@ func (s *S) TestAutoScaleDeleteCmdRunAskForConfirmation(c *check.C) {
 		Transport: cmdtest.Transport{Message: "", Status: http.StatusOK},
 		CondFunc: func(req *http.Request) bool {
 			called = true
-			return req.Method == "DELETE" && req.URL.Path == "/1.3/autoscale/rules/myrule"
+			return req.Method == "DELETE" && req.URL.Path == "/1.3/node/autoscale/rules/myrule"
 		},
 	}
 	var buf bytes.Buffer
@@ -213,7 +213,7 @@ func (s *S) TestAutoScaleDeleteCmdRunDefault(c *check.C) {
 		Transport: cmdtest.Transport{Message: "", Status: http.StatusOK},
 		CondFunc: func(req *http.Request) bool {
 			called = true
-			return req.Method == "DELETE" && req.URL.Path == "/1.3/autoscale/rules/"
+			return req.Method == "DELETE" && req.URL.Path == "/1.3/node/autoscale/rules/"
 		},
 	}
 	var buf bytes.Buffer
@@ -235,7 +235,7 @@ func (s *S) TestAutoScaleDeleteCmdRunDefaultAskForConfirmation(c *check.C) {
 		Transport: cmdtest.Transport{Message: "", Status: http.StatusOK},
 		CondFunc: func(req *http.Request) bool {
 			called = true
-			return req.Method == "DELETE" && req.URL.Path == "/1.3/autoscale/rules/"
+			return req.Method == "DELETE" && req.URL.Path == "/1.3/node/autoscale/rules/"
 		},
 	}
 	var buf bytes.Buffer
@@ -255,7 +255,7 @@ func (s *S) TestListAutoScaleHistoryCmdRunEmpty(c *check.C) {
 	trans := &cmdtest.ConditionalTransport{
 		Transport: cmdtest.Transport{Message: `[]`, Status: http.StatusOK},
 		CondFunc: func(req *http.Request) bool {
-			return req.URL.Path == "/1.3/autoscale" && req.URL.Query().Get("skip") == "0" && req.URL.Query().Get("limit") == "20"
+			return req.URL.Path == "/1.3/node/autoscale" && req.URL.Query().Get("skip") == "0" && req.URL.Query().Get("limit") == "20"
 		},
 	}
 	manager := cmd.Manager{}
@@ -298,7 +298,7 @@ func (s *S) TestListAutoScaleHistoryCmdRun(c *check.C) {
 	trans := &cmdtest.ConditionalTransport{
 		Transport: cmdtest.Transport{Message: msg, Status: http.StatusOK},
 		CondFunc: func(req *http.Request) bool {
-			return req.URL.Path == "/1.3/autoscale"
+			return req.URL.Path == "/1.3/node/autoscale"
 		},
 	}
 	manager := cmd.Manager{}
@@ -333,7 +333,7 @@ func (s *S) TestAutoScaleHistoryInProgressEndTimeCmdRun(c *check.C) {
 	trans := &cmdtest.ConditionalTransport{
 		Transport: cmdtest.Transport{Message: msg, Status: http.StatusOK},
 		CondFunc: func(req *http.Request) bool {
-			return req.URL.Path == "/1.3/autoscale"
+			return req.URL.Path == "/1.3/node/autoscale"
 		},
 	}
 	manager := cmd.Manager{}

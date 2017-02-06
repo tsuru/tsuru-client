@@ -24,8 +24,8 @@ type ListAutoScaleHistoryCmd struct {
 
 func (c *ListAutoScaleHistoryCmd) Info() *cmd.Info {
 	return &cmd.Info{
-		Name:  "autoscale-list",
-		Usage: "autoscale-list [--page/-p 1]",
+		Name:  "node-autoscale-list",
+		Usage: "node-autoscale-list [--page/-p 1]",
 		Desc:  "List node auto scale history.",
 	}
 }
@@ -36,7 +36,7 @@ func (c *ListAutoScaleHistoryCmd) Run(ctx *cmd.Context, client *cmd.Client) erro
 	}
 	limit := 20
 	skip := (c.page - 1) * limit
-	u, err := cmd.GetURLVersion("1.3", fmt.Sprintf("/autoscale?skip=%d&limit=%d", skip, limit))
+	u, err := cmd.GetURLVersion("1.3", fmt.Sprintf("/node/autoscale?skip=%d&limit=%d", skip, limit))
 	if err != nil {
 		return err
 	}
@@ -99,8 +99,8 @@ type AutoScaleRunCmd struct {
 
 func (c *AutoScaleRunCmd) Info() *cmd.Info {
 	return &cmd.Info{
-		Name:  "autoscale-run",
-		Usage: "autoscale-run [-y/--assume-yes]",
+		Name:  "node-autoscale-run",
+		Usage: "node-autoscale-run [-y/--assume-yes]",
 		Desc: `Run node auto scale checks once. This command will work even if [[docker:auto-
 scale:enabled]] config entry is set to false. Auto scaling checks may trigger
 the addition, removal or rebalancing of nodes, as long as these nodes were
@@ -113,7 +113,7 @@ func (c *AutoScaleRunCmd) Run(context *cmd.Context, client *cmd.Client) error {
 	if !c.Confirm(context, "Are you sure you want to run auto scaling checks?") {
 		return nil
 	}
-	u, err := cmd.GetURLVersion("1.3", "/autoscale/run")
+	u, err := cmd.GetURLVersion("1.3", "/node/autoscale/run")
 	if err != nil {
 		return err
 	}
@@ -142,8 +142,8 @@ type AutoScaleInfoCmd struct{}
 
 func (c *AutoScaleInfoCmd) Info() *cmd.Info {
 	return &cmd.Info{
-		Name:  "autoscale-info",
-		Usage: "autoscale-info",
+		Name:  "node-autoscale-info",
+		Usage: "node-autoscale-info",
 		Desc: `Display the current configuration for tsuru autoscale,
 including the set of rules and the current metadata filter.
 
@@ -170,7 +170,7 @@ func (c *AutoScaleInfoCmd) Run(context *cmd.Context, client *cmd.Client) error {
 }
 
 func (c *AutoScaleInfoCmd) getAutoScaleConfig(client *cmd.Client) (*autoscale.Config, error) {
-	u, err := cmd.GetURLVersion("1.3", "/autoscale/config")
+	u, err := cmd.GetURLVersion("1.3", "/node/autoscale/config")
 	if err != nil {
 		return nil, err
 	}
@@ -192,7 +192,7 @@ func (c *AutoScaleInfoCmd) getAutoScaleConfig(client *cmd.Client) (*autoscale.Co
 }
 
 func (c *AutoScaleInfoCmd) getAutoScaleRules(client *cmd.Client) ([]autoscale.Rule, error) {
-	u, err := cmd.GetURLVersion("1.3", "/autoscale/rules")
+	u, err := cmd.GetURLVersion("1.3", "/node/autoscale/rules")
 	if err != nil {
 		return nil, err
 	}
@@ -251,8 +251,8 @@ type AutoScaleSetRuleCmd struct {
 
 func (c *AutoScaleSetRuleCmd) Info() *cmd.Info {
 	return &cmd.Info{
-		Name:  "autoscale-rule-set",
-		Usage: "autoscale-rule-set [-f/--filter-value <pool name>] [-c/--max-container-count 0] [-m/--max-memory-ratio 0.9] [-d/--scale-down-ratio 1.33] [--no-rebalance-on-scale] [--enable] [--disable]",
+		Name:  "node-autoscale-rule-set",
+		Usage: "node-autoscale-rule-set [-f/--filter-value <pool name>] [-c/--max-container-count 0] [-m/--max-memory-ratio 0.9] [-d/--scale-down-ratio 1.33] [--no-rebalance-on-scale] [--enable] [--disable]",
 		Desc:  "Creates or update an auto-scale rule. Using resources limitation (amount of container or memory usage).",
 	}
 }
@@ -274,7 +274,7 @@ func (c *AutoScaleSetRuleCmd) Run(context *cmd.Context, client *cmd.Client) erro
 		return err
 	}
 	body := strings.NewReader(val.Encode())
-	u, err := cmd.GetURLVersion("1.3", "/autoscale/rules")
+	u, err := cmd.GetURLVersion("1.3", "/node/autoscale/rules")
 	if err != nil {
 		return err
 	}
@@ -293,7 +293,7 @@ func (c *AutoScaleSetRuleCmd) Run(context *cmd.Context, client *cmd.Client) erro
 
 func (c *AutoScaleSetRuleCmd) Flags() *gnuflag.FlagSet {
 	if c.fs == nil {
-		c.fs = gnuflag.NewFlagSet("autoscale-rule-set", gnuflag.ExitOnError)
+		c.fs = gnuflag.NewFlagSet("node-autoscale-rule-set", gnuflag.ExitOnError)
 		msg := "The pool name matching the rule. This is the unique identifier of the rule."
 		c.fs.StringVar(&c.filterValue, "filter-value", "", msg)
 		c.fs.StringVar(&c.filterValue, "f", "", msg)
@@ -322,8 +322,8 @@ type AutoScaleDeleteRuleCmd struct {
 
 func (c *AutoScaleDeleteRuleCmd) Info() *cmd.Info {
 	return &cmd.Info{
-		Name:  "autoscale-rule-remove",
-		Usage: "autoscale-rule-remove [rule-name] [-y/--assume-yes]",
+		Name:  "node-autoscale-rule-remove",
+		Usage: "node-autoscale-rule-remove [rule-name] [-y/--assume-yes]",
 		Desc:  `Removes an auto-scale rule. The name of the rule may be omitted, which means "remove the default rule".`,
 	}
 }
@@ -338,7 +338,7 @@ func (c *AutoScaleDeleteRuleCmd) Run(context *cmd.Context, client *cmd.Client) e
 	if !c.Confirm(context, confirmMsg) {
 		return nil
 	}
-	u, err := cmd.GetURLVersion("1.3", "/autoscale/rules/"+rule)
+	u, err := cmd.GetURLVersion("1.3", "/node/autoscale/rules/"+rule)
 	if err != nil {
 		return err
 	}
