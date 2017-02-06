@@ -1043,7 +1043,7 @@ Service instances: 2
 
 func (s *S) TestAppInfoWithPlan(c *check.C) {
 	var stdout, stderr bytes.Buffer
-	result := `{"name":"app1","teamowner":"myteam","cname":[""],"ip":"myapp.tsuru.io","platform":"php","repository":"git@git.com:php.git","state":"dead", "units":[{"Ip":"10.10.10.10","ID":"app1/0","Status":"started"}, {"Ip":"9.9.9.9","ID":"app1/1","Status":"started"}, {"Ip":"","ID":"app1/2","Status":"pending"}],"teams":["tsuruteam","crane"], "owner": "myapp_owner", "deploys": 7, "plan":{"name": "test",  "memory": 536870912, "swap": 268435456, "cpushare": 100, "router": "imemine", "default": false}}`
+	result := `{"name":"app1","teamowner":"myteam","cname":[""],"ip":"myapp.tsuru.io","platform":"php","repository":"git@git.com:php.git","state":"dead", "units":[{"Ip":"10.10.10.10","ID":"app1/0","Status":"started"}, {"Ip":"9.9.9.9","ID":"app1/1","Status":"started"}, {"Ip":"","ID":"app1/2","Status":"pending"}],"teams":["tsuruteam","crane"], "owner": "myapp_owner", "deploys": 7, "plan":{"name": "test",  "memory": 536870912, "swap": 268435456, "cpushare": 100, "default": false}}`
 	expected := `Application: app1
 Description:
 Repository: git@git.com:php.git
@@ -1066,11 +1066,11 @@ Units: 3
 +--------+---------+------+------+
 
 App Plan:
-+------+-----------+-----------+-----------+---------+---------+
-| Name | Memory    | Swap      | Cpu Share | Router  | Default |
-+------+-----------+-----------+-----------+---------+---------+
-| test | 536870912 | 268435456 | 100       | imemine | false   |
-+------+-----------+-----------+-----------+---------+---------+
++------+-----------+-----------+-----------+---------+
+| Name | Memory    | Swap      | Cpu Share | Default |
++------+-----------+-----------+-----------+---------+
+| test | 536870912 | 268435456 | 100       | false   |
++------+-----------+-----------+-----------+---------+
 
 `
 	context := cmd.Context{
@@ -1116,11 +1116,11 @@ Service instances: 1
 +----------+-----------------+
 
 App Plan:
-+------+-----------+-----------+-----------+---------+---------+
-| Name | Memory    | Swap      | Cpu Share | Router  | Default |
-+------+-----------+-----------+-----------+---------+---------+
-| test | 536870912 | 268435456 | 100       | freeeee | false   |
-+------+-----------+-----------+-----------+---------+---------+
++------+-----------+-----------+-----------+---------+
+| Name | Memory    | Swap      | Cpu Share | Default |
++------+-----------+-----------+-----------+---------+
+| test | 536870912 | 268435456 | 100       | false   |
++------+-----------+-----------+-----------+---------+
 
 `
 	context := cmd.Context{
@@ -1130,7 +1130,7 @@ App Plan:
 	transport := transportFunc(func(req *http.Request) (resp *http.Response, err error) {
 		var body string
 		if strings.HasSuffix(req.URL.Path, "/apps/app1") {
-			body = `{"name":"app1","teamowner":"myteam","ip":"myapp.tsuru.io","platform":"php","repository":"git@git.com:php.git","state":"dead","units":[{"Ip":"10.10.10.10","ID":"app1/0","Status":"started"}, {"Ip":"9.9.9.9","ID":"app1/1","Status":"started"}, {"Ip":"","ID":"app1/2","Status":"pending"}],"Teams":["tsuruteam","crane"], "owner": "myapp_owner", "deploys": 7,"plan":{"name": "test",  "memory": 536870912, "swap": 268435456, "cpushare": 100, "router": "freeeee", "default": false}}`
+			body = `{"name":"app1","teamowner":"myteam","ip":"myapp.tsuru.io","platform":"php","repository":"git@git.com:php.git","state":"dead","units":[{"Ip":"10.10.10.10","ID":"app1/0","Status":"started"}, {"Ip":"9.9.9.9","ID":"app1/1","Status":"started"}, {"Ip":"","ID":"app1/2","Status":"pending"}],"Teams":["tsuruteam","crane"], "owner": "myapp_owner", "deploys": 7,"plan":{"name": "test",  "memory": 536870912, "swap": 268435456, "cpushare": 100, "default": false}}`
 		} else if strings.HasSuffix(req.URL.Path, "/services/instances") && req.URL.RawQuery == "app=app1" {
 			body = `[{"service":"redisapi","instances":["myredisapi"], "plans": [""]},
 					 {"service":"mongodb", "instances":[], "plans": [""]}]`
@@ -1179,11 +1179,11 @@ Service instances: 1
 +----------+-------------------+
 
 App Plan:
-+------+-----------+-----------+-----------+---------+---------+
-| Name | Memory    | Swap      | Cpu Share | Router  | Default |
-+------+-----------+-----------+-----------+---------+---------+
-| test | 536870912 | 268435456 | 100       | freeeee | false   |
-+------+-----------+-----------+-----------+---------+---------+
++------+-----------+-----------+-----------+---------+
+| Name | Memory    | Swap      | Cpu Share | Default |
++------+-----------+-----------+-----------+---------+
+| test | 536870912 | 268435456 | 100       | false   |
++------+-----------+-----------+-----------+---------+
 
 `
 	context := cmd.Context{
@@ -1193,7 +1193,7 @@ App Plan:
 	transport := transportFunc(func(req *http.Request) (resp *http.Response, err error) {
 		var body string
 		if strings.HasSuffix(req.URL.Path, "/apps/app1") {
-			body = `{"name":"app1","teamowner":"myteam","ip":"myapp.tsuru.io","platform":"php","repository":"git@git.com:php.git","state":"dead","units":[{"Ip":"10.10.10.10","ID":"app1/0","Status":"started"}, {"Ip":"9.9.9.9","ID":"app1/1","Status":"started"}, {"Ip":"","ID":"app1/2","Status":"pending"}],"Teams":["tsuruteam","crane"], "owner": "myapp_owner", "deploys": 7,"plan":{"name": "test",  "memory": 536870912, "swap": 268435456, "cpushare": 100, "router": "freeeee", "default": false}}`
+			body = `{"name":"app1","teamowner":"myteam","ip":"myapp.tsuru.io","platform":"php","repository":"git@git.com:php.git","state":"dead","units":[{"Ip":"10.10.10.10","ID":"app1/0","Status":"started"}, {"Ip":"9.9.9.9","ID":"app1/1","Status":"started"}, {"Ip":"","ID":"app1/2","Status":"pending"}],"Teams":["tsuruteam","crane"], "owner": "myapp_owner", "deploys": 7,"plan":{"name": "test",  "memory": 536870912, "swap": 268435456, "cpushare": 100, "default": false}}`
 		} else if strings.HasSuffix(req.URL.Path, "/services/instances") && req.URL.RawQuery == "app=app1" {
 			body = `[{"service":"redisapi","instances":["myredisapi"], "plans": ["test"]},
 					 {"service":"mongodb", "instances":[], "plans": [""]}]`

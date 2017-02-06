@@ -21,15 +21,15 @@ func (s *S) TestPlanListInfo(c *check.C) {
 func (s *S) TestPlanListBytes(c *check.C) {
 	var stdout, stderr bytes.Buffer
 	result := `[
-    {"name": "test",  "memory": 536870912, "swap": 268435456, "cpushare": 100, "router": "r1", "default": false},
-    {"name": "test2", "memory": 536870912, "swap": 268435456, "cpushare": 200, "router": "r2", "default": true}
+    {"name": "test",  "memory": 536870912, "swap": 268435456, "cpushare": 100, "default": false},
+    {"name": "test2", "memory": 536870912, "swap": 268435456, "cpushare": 200, "default": true}
 ]`
-	expected := `+-------+-----------+-----------+-----------+--------+---------+
-| Name  | Memory    | Swap      | Cpu Share | Router | Default |
-+-------+-----------+-----------+-----------+--------+---------+
-| test  | 536870912 | 268435456 | 100       | r1     | false   |
-| test2 | 536870912 | 268435456 | 200       | r2     | true    |
-+-------+-----------+-----------+-----------+--------+---------+
+	expected := `+-------+-----------+-----------+-----------+---------+
+| Name  | Memory    | Swap      | Cpu Share | Default |
++-------+-----------+-----------+-----------+---------+
+| test  | 536870912 | 268435456 | 100       | false   |
+| test2 | 536870912 | 268435456 | 200       | true    |
++-------+-----------+-----------+-----------+---------+
 `
 	context := cmd.Context{
 		Args:   []string{},
@@ -56,12 +56,12 @@ func (s *S) TestPlanListHuman(c *check.C) {
     {"name": "test",  "memory": 536870912, "swap": 268435456, "cpushare": 100, "default": false},
     {"name": "test2", "memory": 536870912, "swap": 268435456, "cpushare": 200, "default": true}
 ]`
-	expected := `+-------+--------+--------+-----------+--------+---------+
-| Name  | Memory | Swap   | Cpu Share | Router | Default |
-+-------+--------+--------+-----------+--------+---------+
-| test  | 512 MB | 256 MB | 100       |        | false   |
-| test2 | 512 MB | 256 MB | 200       |        | true    |
-+-------+--------+--------+-----------+--------+---------+
+	expected := `+-------+--------+--------+-----------+---------+
+| Name  | Memory | Swap   | Cpu Share | Default |
++-------+--------+--------+-----------+---------+
+| test  | 512 MB | 256 MB | 100       | false   |
+| test2 | 512 MB | 256 MB | 200       | true    |
++-------+--------+--------+-----------+---------+
 `
 	context := cmd.Context{
 		Args:   []string{},

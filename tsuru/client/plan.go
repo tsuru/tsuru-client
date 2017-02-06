@@ -41,7 +41,7 @@ func (c *PlanList) Info() *cmd.Info {
 
 func renderPlans(plans []tsuruapp.Plan, isBytes bool) string {
 	table := cmd.NewTable()
-	table.Headers = []string{"Name", "Memory", "Swap", "Cpu Share", "Router", "Default"}
+	table.Headers = []string{"Name", "Memory", "Swap", "Cpu Share", "Default"}
 	for _, p := range plans {
 		var memory, swap string
 		if isBytes {
@@ -54,7 +54,6 @@ func renderPlans(plans []tsuruapp.Plan, isBytes bool) string {
 		table.AddRow([]string{
 			p.Name, memory, swap,
 			strconv.Itoa(p.CpuShare),
-			p.Router,
 			strconv.FormatBool(p.Default),
 		})
 	}
