@@ -432,6 +432,7 @@ type app struct {
 	services    []serviceData
 	Quota       quota
 	Plan        tsuruapp.Plan
+	Router      string
 }
 
 type serviceData struct {
@@ -462,6 +463,7 @@ func (a *app) String() string {
 Description:{{if .Description}} {{.Description}}{{end}}
 Repository: {{.Repository}}
 Platform: {{.Platform}}
+Router: {{.Router}}
 Teams: {{.GetTeams}}
 Address: {{.Addr}}
 Owner: {{.Owner}}
