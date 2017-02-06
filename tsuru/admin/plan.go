@@ -20,7 +20,6 @@ type PlanCreate struct {
 	swap       string
 	cpushare   int
 	setDefault bool
-	router     string
 	fs         *gnuflag.FlagSet
 }
 
@@ -45,9 +44,6 @@ The default plan will be used when creating an application without explicitly
 setting a plan.`
 		c.fs.BoolVar(&c.setDefault, "default", false, setDefault)
 		c.fs.BoolVar(&c.setDefault, "d", false, setDefault)
-		router := "The name of the router used by this plan."
-		c.fs.StringVar(&c.router, "router", "", router)
-		c.fs.StringVar(&c.router, "r", "", router)
 	}
 	return c.fs
 }
@@ -55,7 +51,7 @@ setting a plan.`
 func (c *PlanCreate) Info() *cmd.Info {
 	return &cmd.Info{
 		Name:    "plan-create",
-		Usage:   "plan-create <name> -c cpushare [-m memory] [-s swap] [-r router] [--default]",
+		Usage:   "plan-create <name> -c cpushare [-m memory] [-s swap] [--default]",
 		Desc:    `Creates a new plan for being used when creating apps.`,
 		MinArgs: 1,
 	}
@@ -72,7 +68,6 @@ func (c *PlanCreate) Run(context *cmd.Context, client *cmd.Client) error {
 	v.Set("swap", c.swap)
 	v.Set("cpushare", strconv.Itoa(c.cpushare))
 	v.Set("default", strconv.FormatBool(c.setDefault))
-	v.Set("router", c.router)
 	b := strings.NewReader(v.Encode())
 	request, err := http.NewRequest("POST", u, b)
 	if err != nil {

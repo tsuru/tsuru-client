@@ -29,11 +29,10 @@ func (s *S) TestPlanCreate(c *check.C) {
 			swap := req.FormValue("swap") == "0"
 			cpuShare := req.FormValue("cpushare") == "100"
 			deflt := req.FormValue("default") == "false"
-			router := req.FormValue("router") == ""
 			method := req.Method == "POST"
 			contentType := req.Header.Get("Content-Type") == "application/x-www-form-urlencoded"
 			url := strings.HasSuffix(req.URL.Path, "/plans")
-			return method && url && contentType && name && memory && swap && cpuShare && deflt && router
+			return method && url && contentType && name && memory && swap && cpuShare && deflt
 		},
 	}
 	client := cmd.NewClient(&http.Client{Transport: trans}, nil, s.manager)
@@ -59,16 +58,15 @@ func (s *S) TestPlanCreateFlags(c *check.C) {
 			swap := req.FormValue("swap") == "512"
 			cpuShare := req.FormValue("cpushare") == "100"
 			deflt := req.FormValue("default") == "true"
-			router := req.FormValue("router") == "myrouter"
 			method := req.Method == "POST"
 			contentType := req.Header.Get("Content-Type") == "application/x-www-form-urlencoded"
 			url := strings.HasSuffix(req.URL.Path, "/plans")
-			return method && url && contentType && name && memory && swap && cpuShare && deflt && router
+			return method && url && contentType && name && memory && swap && cpuShare && deflt
 		},
 	}
 	client := cmd.NewClient(&http.Client{Transport: trans}, nil, s.manager)
 	command := PlanCreate{}
-	command.Flags().Parse(true, []string{"-c", "100", "-m", "4194304", "-s", "512", "-d", "-r", "myrouter"})
+	command.Flags().Parse(true, []string{"-c", "100", "-m", "4194304", "-s", "512", "-d"})
 	err := command.Run(&context, client)
 	c.Assert(err, check.IsNil)
 	c.Assert(stdout.String(), check.Equals, "Plan successfully created!\n")
@@ -89,16 +87,15 @@ func (s *S) TestPlanCreateMemoryAndSwapUnits(c *check.C) {
 			swap := req.FormValue("swap") == "512K"
 			cpuShare := req.FormValue("cpushare") == "100"
 			deflt := req.FormValue("default") == "true"
-			router := req.FormValue("router") == "myrouter"
 			method := req.Method == "POST"
 			contentType := req.Header.Get("Content-Type") == "application/x-www-form-urlencoded"
 			url := strings.HasSuffix(req.URL.Path, "/plans")
-			return method && url && contentType && name && memory && swap && cpuShare && deflt && router
+			return method && url && contentType && name && memory && swap && cpuShare && deflt
 		},
 	}
 	client := cmd.NewClient(&http.Client{Transport: trans}, nil, s.manager)
 	command := PlanCreate{}
-	command.Flags().Parse(true, []string{"-c", "100", "-m", "100M", "-s", "512K", "-d", "-r", "myrouter"})
+	command.Flags().Parse(true, []string{"-c", "100", "-m", "100M", "-s", "512K", "-d"})
 	err := command.Run(&context, client)
 	c.Assert(err, check.IsNil)
 	c.Assert(stdout.String(), check.Equals, "Plan successfully created!\n")
@@ -140,11 +137,10 @@ func (s *S) TestPlanCreateInvalidMemory(c *check.C) {
 			swap := req.FormValue("swap") == "0"
 			cpuShare := req.FormValue("cpushare") == "100"
 			deflt := req.FormValue("default") == "false"
-			router := req.FormValue("router") == ""
 			method := req.Method == "POST"
 			contentType := req.Header.Get("Content-Type") == "application/x-www-form-urlencoded"
 			url := strings.HasSuffix(req.URL.Path, "/plans")
-			return method && url && contentType && name && memory && swap && cpuShare && deflt && router
+			return method && url && contentType && name && memory && swap && cpuShare && deflt
 		},
 	}
 	client := cmd.NewClient(&http.Client{Transport: trans}, nil, s.manager)
@@ -170,11 +166,10 @@ func (s *S) TestPlanCreateInvalidCpushare(c *check.C) {
 			swap := req.FormValue("swap") == "0"
 			cpuShare := req.FormValue("cpushare") == "1"
 			deflt := req.FormValue("default") == "false"
-			router := req.FormValue("router") == ""
 			method := req.Method == "POST"
 			contentType := req.Header.Get("Content-Type") == "application/x-www-form-urlencoded"
 			url := strings.HasSuffix(req.URL.Path, "/plans")
-			return method && url && contentType && name && memory && swap && cpuShare && deflt && router
+			return method && url && contentType && name && memory && swap && cpuShare && deflt
 		},
 	}
 	client := cmd.NewClient(&http.Client{Transport: trans}, nil, s.manager)
