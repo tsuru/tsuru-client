@@ -303,11 +303,6 @@ provisioner.
 .. tsuru-command:: containers-move
   :title: Moves all containers from on node
 
-.. _tsuru_admin_containers_rebalance_cmd:
-
-.. tsuru-command:: containers-rebalance
-  :title: Rebalance containers in nodes
-
 Node management
 ===============
 
@@ -328,6 +323,11 @@ Node management
 
 .. tsuru-command:: node-remove
   :title: Remove a node
+
+.. _tsuru_node_rebalance_cmd:
+
+.. tsuru-command:: node-rebalance
+  :title: Rebalance containers in nodes
 
 Node Containers management
 ==========================
@@ -450,19 +450,19 @@ Plan management
 Auto Scale
 ==========
 
-.. tsuru-command:: docker-autoscale-list
+.. tsuru-command:: node-autoscale-list
   :title: List auto scale events
 
-.. tsuru-command:: docker-autoscale-run
+.. tsuru-command:: node-autoscale-run
   :title: Run auto scale process algorithm once
 
-.. tsuru-command:: docker-autoscale-info
+.. tsuru-command:: node-autoscale-info
   :title: Show auto scale rules
 
-.. tsuru-command:: docker-autoscale-rule-set
+.. tsuru-command:: node-autoscale-rule-set
   :title: Set a new auto scale rule
 
-.. tsuru-command:: docker-autoscale-rule-remove
+.. tsuru-command:: node-autoscale-rule-remove
   :title: Remove an auto scale rule
 
 
