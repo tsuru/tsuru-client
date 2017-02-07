@@ -440,320 +440,320 @@
 			"checksumSHA1": "ieo6ruJi4pbY/VW20dOHzEAL+hk=",
 			"origin": "github.com/tsuru/vendor/github.com/docker/machine/commands/mcndirs",
 			"path": "github.com/docker/machine/commands/mcndirs",
-			"revision": "2d0127535ed904d09b8984266d35affdd7ad3f2e",
-			"revisionTime": "2017-01-03T20:16:12Z"
+			"revision": "926d5747141eac9f97d22475f5c483f584c290c9",
+			"revisionTime": "2017-02-07T21:35:23Z"
 		},
 		{
 			"checksumSHA1": "Bse7xEJyS4XYjoDwDbhxXZrHDj8=",
 			"origin": "github.com/tsuru/vendor/github.com/docker/machine/drivers/amazonec2",
 			"path": "github.com/docker/machine/drivers/amazonec2",
-			"revision": "2d0127535ed904d09b8984266d35affdd7ad3f2e",
-			"revisionTime": "2017-01-03T20:16:12Z"
+			"revision": "926d5747141eac9f97d22475f5c483f584c290c9",
+			"revisionTime": "2017-02-07T21:35:23Z"
 		},
 		{
 			"checksumSHA1": "5L7Y2xWxD0tNs7MtA/dn1zjjytc=",
 			"origin": "github.com/tsuru/vendor/github.com/docker/machine/drivers/azure",
 			"path": "github.com/docker/machine/drivers/azure",
-			"revision": "2d0127535ed904d09b8984266d35affdd7ad3f2e",
-			"revisionTime": "2017-01-03T20:16:12Z"
+			"revision": "926d5747141eac9f97d22475f5c483f584c290c9",
+			"revisionTime": "2017-02-07T21:35:23Z"
 		},
 		{
 			"checksumSHA1": "X6xePEnzPydvzTfgx8aRqvFGBN4=",
 			"origin": "github.com/tsuru/vendor/github.com/docker/machine/drivers/azure/azureutil",
 			"path": "github.com/docker/machine/drivers/azure/azureutil",
-			"revision": "2d0127535ed904d09b8984266d35affdd7ad3f2e",
-			"revisionTime": "2017-01-03T20:16:12Z"
+			"revision": "926d5747141eac9f97d22475f5c483f584c290c9",
+			"revisionTime": "2017-02-07T21:35:23Z"
 		},
 		{
 			"checksumSHA1": "v6TNmwgTDVuG2cghrXQIFN9GPX0=",
 			"origin": "github.com/tsuru/vendor/github.com/docker/machine/drivers/azure/logutil",
 			"path": "github.com/docker/machine/drivers/azure/logutil",
-			"revision": "2d0127535ed904d09b8984266d35affdd7ad3f2e",
-			"revisionTime": "2017-01-03T20:16:12Z"
+			"revision": "926d5747141eac9f97d22475f5c483f584c290c9",
+			"revisionTime": "2017-02-07T21:35:23Z"
 		},
 		{
 			"checksumSHA1": "GhVqhVUp8G56jOTrSjn1lrwjl3g=",
 			"origin": "github.com/tsuru/vendor/github.com/docker/machine/drivers/digitalocean",
 			"path": "github.com/docker/machine/drivers/digitalocean",
-			"revision": "2d0127535ed904d09b8984266d35affdd7ad3f2e",
-			"revisionTime": "2017-01-03T20:16:12Z"
+			"revision": "926d5747141eac9f97d22475f5c483f584c290c9",
+			"revisionTime": "2017-02-07T21:35:23Z"
 		},
 		{
 			"checksumSHA1": "BFT0xoDjEtnbyMB7qfFzaB4Qcys=",
 			"path": "github.com/docker/machine/drivers/driverutil",
-			"revision": "2d0127535ed904d09b8984266d35affdd7ad3f2e",
-			"revisionTime": "2017-01-03T20:16:12Z"
+			"revision": "926d5747141eac9f97d22475f5c483f584c290c9",
+			"revisionTime": "2017-02-07T21:35:23Z"
 		},
 		{
 			"checksumSHA1": "lykJWzEHIFQ2APXh5EBoeF7CUQg=",
 			"origin": "github.com/tsuru/vendor/github.com/docker/machine/drivers/errdriver",
 			"path": "github.com/docker/machine/drivers/errdriver",
-			"revision": "2d0127535ed904d09b8984266d35affdd7ad3f2e",
-			"revisionTime": "2017-01-03T20:16:12Z"
+			"revision": "926d5747141eac9f97d22475f5c483f584c290c9",
+			"revisionTime": "2017-02-07T21:35:23Z"
 		},
 		{
 			"checksumSHA1": "0wnvtbIqdk3luYoRO8b36KSZ+RM=",
 			"origin": "github.com/tsuru/vendor/github.com/docker/machine/drivers/exoscale",
 			"path": "github.com/docker/machine/drivers/exoscale",
-			"revision": "2d0127535ed904d09b8984266d35affdd7ad3f2e",
-			"revisionTime": "2017-01-03T20:16:12Z"
+			"revision": "926d5747141eac9f97d22475f5c483f584c290c9",
+			"revisionTime": "2017-02-07T21:35:23Z"
 		},
 		{
 			"checksumSHA1": "mY0t6aKsP1BUQF2hbd7BTiD+7u0=",
 			"path": "github.com/docker/machine/drivers/fakedriver",
-			"revision": "2d0127535ed904d09b8984266d35affdd7ad3f2e",
-			"revisionTime": "2017-01-03T20:16:12Z"
+			"revision": "926d5747141eac9f97d22475f5c483f584c290c9",
+			"revisionTime": "2017-02-07T21:35:23Z"
 		},
 		{
 			"checksumSHA1": "ukduIqa+9Q+Ah5eHlOhdQOPF+x8=",
 			"origin": "github.com/tsuru/vendor/github.com/docker/machine/drivers/generic",
 			"path": "github.com/docker/machine/drivers/generic",
-			"revision": "2d0127535ed904d09b8984266d35affdd7ad3f2e",
-			"revisionTime": "2017-01-03T20:16:12Z"
+			"revision": "926d5747141eac9f97d22475f5c483f584c290c9",
+			"revisionTime": "2017-02-07T21:35:23Z"
 		},
 		{
-			"checksumSHA1": "/nM+Lzma9YpDADgaJEh/KOxll2g=",
+			"checksumSHA1": "kB9Ypp7xrmQ0ZvrCyQXymbNjepI=",
 			"origin": "github.com/tsuru/vendor/github.com/docker/machine/drivers/google",
 			"path": "github.com/docker/machine/drivers/google",
-			"revision": "2d0127535ed904d09b8984266d35affdd7ad3f2e",
-			"revisionTime": "2017-01-03T20:16:12Z"
+			"revision": "926d5747141eac9f97d22475f5c483f584c290c9",
+			"revisionTime": "2017-02-07T21:35:23Z"
 		},
 		{
 			"checksumSHA1": "T/ovjX8EbP9AVF8ZXm9x5Nx2XOU=",
 			"origin": "github.com/tsuru/vendor/github.com/docker/machine/drivers/hyperv",
 			"path": "github.com/docker/machine/drivers/hyperv",
-			"revision": "2d0127535ed904d09b8984266d35affdd7ad3f2e",
-			"revisionTime": "2017-01-03T20:16:12Z"
+			"revision": "926d5747141eac9f97d22475f5c483f584c290c9",
+			"revisionTime": "2017-02-07T21:35:23Z"
 		},
 		{
 			"checksumSHA1": "jRoHFfodTW1QN68up3nxSzkMVQg=",
 			"origin": "github.com/tsuru/vendor/github.com/docker/machine/drivers/none",
 			"path": "github.com/docker/machine/drivers/none",
-			"revision": "2d0127535ed904d09b8984266d35affdd7ad3f2e",
-			"revisionTime": "2017-01-03T20:16:12Z"
+			"revision": "926d5747141eac9f97d22475f5c483f584c290c9",
+			"revisionTime": "2017-02-07T21:35:23Z"
 		},
 		{
 			"checksumSHA1": "1HWd4CWZbbVtLfIoa2Na0en2cmk=",
 			"origin": "github.com/tsuru/vendor/github.com/docker/machine/drivers/openstack",
 			"path": "github.com/docker/machine/drivers/openstack",
-			"revision": "2d0127535ed904d09b8984266d35affdd7ad3f2e",
-			"revisionTime": "2017-01-03T20:16:12Z"
+			"revision": "926d5747141eac9f97d22475f5c483f584c290c9",
+			"revisionTime": "2017-02-07T21:35:23Z"
 		},
 		{
 			"checksumSHA1": "XF8cKzBWeYi/wCZNI/7DgQRSDqI=",
 			"origin": "github.com/tsuru/vendor/github.com/docker/machine/drivers/rackspace",
 			"path": "github.com/docker/machine/drivers/rackspace",
-			"revision": "2d0127535ed904d09b8984266d35affdd7ad3f2e",
-			"revisionTime": "2017-01-03T20:16:12Z"
+			"revision": "926d5747141eac9f97d22475f5c483f584c290c9",
+			"revisionTime": "2017-02-07T21:35:23Z"
 		},
 		{
 			"checksumSHA1": "5dxvRlo1LeKp6zxA7+2O/8ZGe/Y=",
 			"origin": "github.com/tsuru/vendor/github.com/docker/machine/drivers/softlayer",
 			"path": "github.com/docker/machine/drivers/softlayer",
-			"revision": "2d0127535ed904d09b8984266d35affdd7ad3f2e",
-			"revisionTime": "2017-01-03T20:16:12Z"
+			"revision": "926d5747141eac9f97d22475f5c483f584c290c9",
+			"revisionTime": "2017-02-07T21:35:23Z"
 		},
 		{
 			"checksumSHA1": "ic5wNVOUbYTInEtxXUOFUna1VT0=",
 			"origin": "github.com/tsuru/vendor/github.com/docker/machine/drivers/virtualbox",
 			"path": "github.com/docker/machine/drivers/virtualbox",
-			"revision": "2d0127535ed904d09b8984266d35affdd7ad3f2e",
-			"revisionTime": "2017-01-03T20:16:12Z"
+			"revision": "926d5747141eac9f97d22475f5c483f584c290c9",
+			"revisionTime": "2017-02-07T21:35:23Z"
 		},
 		{
 			"checksumSHA1": "RgOpFV28mjrMeapWqinaCaDUWm0=",
 			"origin": "github.com/tsuru/vendor/github.com/docker/machine/drivers/vmwarefusion",
 			"path": "github.com/docker/machine/drivers/vmwarefusion",
-			"revision": "2d0127535ed904d09b8984266d35affdd7ad3f2e",
-			"revisionTime": "2017-01-03T20:16:12Z"
+			"revision": "926d5747141eac9f97d22475f5c483f584c290c9",
+			"revisionTime": "2017-02-07T21:35:23Z"
 		},
 		{
 			"checksumSHA1": "1HrLgXX9/QJZp/87KZ77tVAYtVs=",
 			"origin": "github.com/tsuru/vendor/github.com/docker/machine/drivers/vmwarevcloudair",
 			"path": "github.com/docker/machine/drivers/vmwarevcloudair",
-			"revision": "2d0127535ed904d09b8984266d35affdd7ad3f2e",
-			"revisionTime": "2017-01-03T20:16:12Z"
+			"revision": "926d5747141eac9f97d22475f5c483f584c290c9",
+			"revisionTime": "2017-02-07T21:35:23Z"
 		},
 		{
 			"checksumSHA1": "VaVUEERqJmTNe6hDtF3wZjduNiE=",
 			"origin": "github.com/tsuru/vendor/github.com/docker/machine/drivers/vmwarevsphere",
 			"path": "github.com/docker/machine/drivers/vmwarevsphere",
-			"revision": "2d0127535ed904d09b8984266d35affdd7ad3f2e",
-			"revisionTime": "2017-01-03T20:16:12Z"
+			"revision": "926d5747141eac9f97d22475f5c483f584c290c9",
+			"revisionTime": "2017-02-07T21:35:23Z"
 		},
 		{
 			"checksumSHA1": "kFRpO2WaCQ9PBputhZuWNi4o4+s=",
 			"origin": "github.com/tsuru/vendor/github.com/docker/machine/libmachine",
 			"path": "github.com/docker/machine/libmachine",
-			"revision": "2d0127535ed904d09b8984266d35affdd7ad3f2e",
-			"revisionTime": "2017-01-03T20:16:12Z"
+			"revision": "926d5747141eac9f97d22475f5c483f584c290c9",
+			"revisionTime": "2017-02-07T21:35:23Z"
 		},
 		{
 			"checksumSHA1": "6x0/ZuUs+PghQJiw16XgYrLf+/U=",
 			"origin": "github.com/tsuru/vendor/github.com/docker/machine/libmachine/auth",
 			"path": "github.com/docker/machine/libmachine/auth",
-			"revision": "2d0127535ed904d09b8984266d35affdd7ad3f2e",
-			"revisionTime": "2017-01-03T20:16:12Z"
+			"revision": "926d5747141eac9f97d22475f5c483f584c290c9",
+			"revisionTime": "2017-02-07T21:35:23Z"
 		},
 		{
 			"checksumSHA1": "vCm+ysvI3GtXdI33nd+s8ypib8g=",
 			"origin": "github.com/tsuru/vendor/github.com/docker/machine/libmachine/cert",
 			"path": "github.com/docker/machine/libmachine/cert",
-			"revision": "2d0127535ed904d09b8984266d35affdd7ad3f2e",
-			"revisionTime": "2017-01-03T20:16:12Z"
+			"revision": "926d5747141eac9f97d22475f5c483f584c290c9",
+			"revisionTime": "2017-02-07T21:35:23Z"
 		},
 		{
 			"checksumSHA1": "0jeYfbht7MrSraGjFXE61aL+6rQ=",
 			"origin": "github.com/tsuru/vendor/github.com/docker/machine/libmachine/check",
 			"path": "github.com/docker/machine/libmachine/check",
-			"revision": "2d0127535ed904d09b8984266d35affdd7ad3f2e",
-			"revisionTime": "2017-01-03T20:16:12Z"
+			"revision": "926d5747141eac9f97d22475f5c483f584c290c9",
+			"revisionTime": "2017-02-07T21:35:23Z"
 		},
 		{
 			"checksumSHA1": "d8M3PcCAioICBrmdU5L8m3lfl/Q=",
 			"origin": "github.com/tsuru/vendor/github.com/docker/machine/libmachine/drivers",
 			"path": "github.com/docker/machine/libmachine/drivers",
-			"revision": "2d0127535ed904d09b8984266d35affdd7ad3f2e",
-			"revisionTime": "2017-01-03T20:16:12Z"
+			"revision": "926d5747141eac9f97d22475f5c483f584c290c9",
+			"revisionTime": "2017-02-07T21:35:23Z"
 		},
 		{
 			"checksumSHA1": "b6FiGli26lMxC8618Y3QfmTluRE=",
 			"origin": "github.com/tsuru/vendor/github.com/docker/machine/libmachine/drivers/plugin",
 			"path": "github.com/docker/machine/libmachine/drivers/plugin",
-			"revision": "2d0127535ed904d09b8984266d35affdd7ad3f2e",
-			"revisionTime": "2017-01-03T20:16:12Z"
+			"revision": "926d5747141eac9f97d22475f5c483f584c290c9",
+			"revisionTime": "2017-02-07T21:35:23Z"
 		},
 		{
 			"checksumSHA1": "2hNSE9dzQg/RLX17++mtfCQ3Wgs=",
 			"origin": "github.com/tsuru/vendor/github.com/docker/machine/libmachine/drivers/plugin/localbinary",
 			"path": "github.com/docker/machine/libmachine/drivers/plugin/localbinary",
-			"revision": "2d0127535ed904d09b8984266d35affdd7ad3f2e",
-			"revisionTime": "2017-01-03T20:16:12Z"
+			"revision": "926d5747141eac9f97d22475f5c483f584c290c9",
+			"revisionTime": "2017-02-07T21:35:23Z"
 		},
 		{
 			"checksumSHA1": "8v9ClSqOpYREmiOAZR2Zve5Y32c=",
 			"origin": "github.com/tsuru/vendor/github.com/docker/machine/libmachine/drivers/rpc",
 			"path": "github.com/docker/machine/libmachine/drivers/rpc",
-			"revision": "2d0127535ed904d09b8984266d35affdd7ad3f2e",
-			"revisionTime": "2017-01-03T20:16:12Z"
+			"revision": "926d5747141eac9f97d22475f5c483f584c290c9",
+			"revisionTime": "2017-02-07T21:35:23Z"
 		},
 		{
 			"checksumSHA1": "7Q/gcV3glqiA424vVMv4DHyy/sQ=",
 			"origin": "github.com/tsuru/vendor/github.com/docker/machine/libmachine/engine",
 			"path": "github.com/docker/machine/libmachine/engine",
-			"revision": "2d0127535ed904d09b8984266d35affdd7ad3f2e",
-			"revisionTime": "2017-01-03T20:16:12Z"
+			"revision": "926d5747141eac9f97d22475f5c483f584c290c9",
+			"revisionTime": "2017-02-07T21:35:23Z"
 		},
 		{
 			"checksumSHA1": "KHi0yLzC9MuYexQG+N+VK7VP8w4=",
 			"origin": "github.com/tsuru/vendor/github.com/docker/machine/libmachine/host",
 			"path": "github.com/docker/machine/libmachine/host",
-			"revision": "2d0127535ed904d09b8984266d35affdd7ad3f2e",
-			"revisionTime": "2017-01-03T20:16:12Z"
+			"revision": "926d5747141eac9f97d22475f5c483f584c290c9",
+			"revisionTime": "2017-02-07T21:35:23Z"
 		},
 		{
 			"checksumSHA1": "pfZB2heUOImpxC+LS/xFSFDd2J8=",
 			"origin": "github.com/tsuru/vendor/github.com/docker/machine/libmachine/log",
 			"path": "github.com/docker/machine/libmachine/log",
-			"revision": "2d0127535ed904d09b8984266d35affdd7ad3f2e",
-			"revisionTime": "2017-01-03T20:16:12Z"
+			"revision": "926d5747141eac9f97d22475f5c483f584c290c9",
+			"revisionTime": "2017-02-07T21:35:23Z"
 		},
 		{
-			"checksumSHA1": "/oqq+p/+SsGUONOP+/1qUa1Dwss=",
+			"checksumSHA1": "fy3AI1VbRTJWu5t6tqUrKk90zIA=",
 			"origin": "github.com/tsuru/vendor/github.com/docker/machine/libmachine/mcndockerclient",
 			"path": "github.com/docker/machine/libmachine/mcndockerclient",
-			"revision": "2d0127535ed904d09b8984266d35affdd7ad3f2e",
-			"revisionTime": "2017-01-03T20:16:12Z"
+			"revision": "926d5747141eac9f97d22475f5c483f584c290c9",
+			"revisionTime": "2017-02-07T21:35:23Z"
 		},
 		{
 			"checksumSHA1": "h/kursKR+iFENi26TzkWiuGQn/8=",
 			"origin": "github.com/tsuru/vendor/github.com/docker/machine/libmachine/mcnerror",
 			"path": "github.com/docker/machine/libmachine/mcnerror",
-			"revision": "2d0127535ed904d09b8984266d35affdd7ad3f2e",
-			"revisionTime": "2017-01-03T20:16:12Z"
+			"revision": "926d5747141eac9f97d22475f5c483f584c290c9",
+			"revisionTime": "2017-02-07T21:35:23Z"
 		},
 		{
 			"checksumSHA1": "XIdpqyZtMW3gLbUefSiqsJvcDpw=",
 			"origin": "github.com/tsuru/vendor/github.com/docker/machine/libmachine/mcnflag",
 			"path": "github.com/docker/machine/libmachine/mcnflag",
-			"revision": "2d0127535ed904d09b8984266d35affdd7ad3f2e",
-			"revisionTime": "2017-01-03T20:16:12Z"
+			"revision": "926d5747141eac9f97d22475f5c483f584c290c9",
+			"revisionTime": "2017-02-07T21:35:23Z"
 		},
 		{
 			"checksumSHA1": "WZq3NS1/0CN7IyeZqH+AugPzm7k=",
 			"origin": "github.com/tsuru/vendor/github.com/docker/machine/libmachine/mcnutils",
 			"path": "github.com/docker/machine/libmachine/mcnutils",
-			"revision": "2d0127535ed904d09b8984266d35affdd7ad3f2e",
-			"revisionTime": "2017-01-03T20:16:12Z"
+			"revision": "926d5747141eac9f97d22475f5c483f584c290c9",
+			"revisionTime": "2017-02-07T21:35:23Z"
 		},
 		{
 			"checksumSHA1": "p08GXfgrmbLmIrouexqpYMSTZy4=",
 			"origin": "github.com/tsuru/vendor/github.com/docker/machine/libmachine/persist",
 			"path": "github.com/docker/machine/libmachine/persist",
-			"revision": "2d0127535ed904d09b8984266d35affdd7ad3f2e",
-			"revisionTime": "2017-01-03T20:16:12Z"
+			"revision": "926d5747141eac9f97d22475f5c483f584c290c9",
+			"revisionTime": "2017-02-07T21:35:23Z"
 		},
 		{
 			"checksumSHA1": "qhw9UzHtNhqh8QXP8ShVAUoLisw=",
 			"origin": "github.com/tsuru/vendor/github.com/docker/machine/libmachine/provision",
 			"path": "github.com/docker/machine/libmachine/provision",
-			"revision": "2d0127535ed904d09b8984266d35affdd7ad3f2e",
-			"revisionTime": "2017-01-03T20:16:12Z"
+			"revision": "926d5747141eac9f97d22475f5c483f584c290c9",
+			"revisionTime": "2017-02-07T21:35:23Z"
 		},
 		{
 			"checksumSHA1": "E/kmOsXJrFD5l9/zuxzY3jI8k8s=",
 			"origin": "github.com/tsuru/vendor/github.com/docker/machine/libmachine/provision/pkgaction",
 			"path": "github.com/docker/machine/libmachine/provision/pkgaction",
-			"revision": "2d0127535ed904d09b8984266d35affdd7ad3f2e",
-			"revisionTime": "2017-01-03T20:16:12Z"
+			"revision": "926d5747141eac9f97d22475f5c483f584c290c9",
+			"revisionTime": "2017-02-07T21:35:23Z"
 		},
 		{
 			"checksumSHA1": "er2qXjVZOdZJ/n4TD6XVyo6smRs=",
 			"origin": "github.com/tsuru/vendor/github.com/docker/machine/libmachine/provision/serviceaction",
 			"path": "github.com/docker/machine/libmachine/provision/serviceaction",
-			"revision": "2d0127535ed904d09b8984266d35affdd7ad3f2e",
-			"revisionTime": "2017-01-03T20:16:12Z"
+			"revision": "926d5747141eac9f97d22475f5c483f584c290c9",
+			"revisionTime": "2017-02-07T21:35:23Z"
 		},
 		{
 			"checksumSHA1": "Y8iIX+HxvvFrTYY44gARFxG1xYM=",
 			"origin": "github.com/tsuru/vendor/github.com/docker/machine/libmachine/ssh",
 			"path": "github.com/docker/machine/libmachine/ssh",
-			"revision": "2d0127535ed904d09b8984266d35affdd7ad3f2e",
-			"revisionTime": "2017-01-03T20:16:12Z"
+			"revision": "926d5747141eac9f97d22475f5c483f584c290c9",
+			"revisionTime": "2017-02-07T21:35:23Z"
 		},
 		{
 			"checksumSHA1": "a6bG+ux4k1XPcMoDrZSyjVhQ4cA=",
 			"origin": "github.com/tsuru/vendor/github.com/docker/machine/libmachine/state",
 			"path": "github.com/docker/machine/libmachine/state",
-			"revision": "2d0127535ed904d09b8984266d35affdd7ad3f2e",
-			"revisionTime": "2017-01-03T20:16:12Z"
+			"revision": "926d5747141eac9f97d22475f5c483f584c290c9",
+			"revisionTime": "2017-02-07T21:35:23Z"
 		},
 		{
 			"checksumSHA1": "z2qV0dprh3+jLREaDH5obUmG1nY=",
 			"origin": "github.com/tsuru/vendor/github.com/docker/machine/libmachine/swarm",
 			"path": "github.com/docker/machine/libmachine/swarm",
-			"revision": "2d0127535ed904d09b8984266d35affdd7ad3f2e",
-			"revisionTime": "2017-01-03T20:16:12Z"
+			"revision": "926d5747141eac9f97d22475f5c483f584c290c9",
+			"revisionTime": "2017-02-07T21:35:23Z"
 		},
 		{
 			"checksumSHA1": "q2r55GR/IIt8lDiXJYGsEdzQQqc=",
 			"origin": "github.com/tsuru/vendor/github.com/docker/machine/libmachine/version",
 			"path": "github.com/docker/machine/libmachine/version",
-			"revision": "2d0127535ed904d09b8984266d35affdd7ad3f2e",
-			"revisionTime": "2017-01-03T20:16:12Z"
+			"revision": "926d5747141eac9f97d22475f5c483f584c290c9",
+			"revisionTime": "2017-02-07T21:35:23Z"
 		},
 		{
 			"checksumSHA1": "RnbA/ZFpxjyfRgU3F7n/52/iDCQ=",
 			"path": "github.com/docker/machine/libmachine/versioncmp",
-			"revision": "2d0127535ed904d09b8984266d35affdd7ad3f2e",
-			"revisionTime": "2017-01-03T20:16:12Z"
+			"revision": "926d5747141eac9f97d22475f5c483f584c290c9",
+			"revisionTime": "2017-02-07T21:35:23Z"
 		},
 		{
 			"checksumSHA1": "OhDG4Mse3LVU7zTeaC0EX/jqz8w=",
 			"origin": "github.com/tsuru/vendor/github.com/docker/machine/version",
 			"path": "github.com/docker/machine/version",
-			"revision": "2d0127535ed904d09b8984266d35affdd7ad3f2e",
-			"revisionTime": "2017-01-03T20:16:12Z"
+			"revision": "926d5747141eac9f97d22475f5c483f584c290c9",
+			"revisionTime": "2017-02-07T21:35:23Z"
 		},
 		{
 			"checksumSHA1": "0wvRsWSHKxDacmlPSQhphwZgyGk=",
