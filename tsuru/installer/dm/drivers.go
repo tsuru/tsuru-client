@@ -82,3 +82,12 @@ func writeRemoteFile(target sshTarget, filePath string, remotePath string) error
 	}
 	return nil
 }
+
+func DefaultDriverOpts(driverName string) map[string]interface{} {
+	opts := make(map[string]interface{})
+	switch driverName {
+	case "virtualbox":
+		opts["virtualbox-memory"] = 2048
+	}
+	return opts
+}

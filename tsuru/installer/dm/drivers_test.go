@@ -70,3 +70,16 @@ valid_lft forever preferred_lft forever`},
 	c.Assert(err, check.NotNil)
 	c.Assert(ip, check.Equals, "")
 }
+
+func (s *S) TestDefaultDriverOpts(c *check.C) {
+	tt := []struct {
+		driverName   string
+		expectedOpts map[string]interface{}
+	}{
+		{"virtualbox", map[string]interface{}{"virtualbox-memory": 2048}},
+	}
+	for _, t := range tt {
+		opts := DefaultDriverOpts(t.driverName)
+		c.Check(opts, check.DeepEquals, t.expectedOpts)
+	}
+}

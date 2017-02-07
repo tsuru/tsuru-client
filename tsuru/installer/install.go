@@ -114,7 +114,7 @@ func parseConfigFile(file string) (*InstallOpts, error) {
 	if err == nil {
 		installConfig.DockerHubMirror = hub
 	}
-	driverOpts := make(map[string]interface{})
+	driverOpts := dm.DefaultDriverOpts(installConfig.DriverName)
 	opts, _ := config.Get("driver:options")
 	if opts != nil {
 		for k, v := range opts.(map[interface{}]interface{}) {
