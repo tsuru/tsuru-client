@@ -366,8 +366,8 @@ func targz(ctx *cmd.Context, destination io.Writer, ignoreList []string, filepat
 		if err != nil {
 			return err
 		}
-		wd, errWd := os.Getwd()
-		if errWd != nil {
+		wd, err := os.Getwd()
+		if err != nil {
 			return err
 		}
 		fiName := filepath.Join(wd, fi.Name())
@@ -387,7 +387,7 @@ func targz(ctx *cmd.Context, destination io.Writer, ignoreList []string, filepat
 			err = addDir(tarWriter, path, ignoreList)
 		} else {
 			for _, p := range ignoreList {
-				if (fiName == p) || (fi.Name() == ".tsuruignore") {
+				if fiName == p {
 					cont = true
 					break
 				}
@@ -447,8 +447,8 @@ func addDir(writer *tar.Writer, dirpath string, ignoreList []string) error {
 	if err != nil {
 		return err
 	}
-	wd, errWd := os.Getwd()
-	if errWd != nil {
+	wd, err := os.Getwd()
+	if err != nil {
 		return err
 	}
 	for _, fi := range fis {
@@ -470,7 +470,7 @@ func addDir(writer *tar.Writer, dirpath string, ignoreList []string) error {
 			err = addDir(writer, path.Join(dirpath, fi.Name()), ignoreList)
 		} else {
 			for _, p := range ignoreList {
-				if (fiName == p) || (fi.Name() == ".tsuruignore") {
+				if fiName == p {
 					cont = true
 					break
 				}
