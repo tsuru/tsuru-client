@@ -233,16 +233,18 @@ func (c *AppDeploy) Run(context *cmd.Context, client *cmd.Client) error {
 		if err != nil {
 			return err
 		}
-		var ignore []string
+		ignoreSet := make(map[string]struct{})
 		ignorePatterns, _ := readTsuruIgnore()
 		for _, pattern := range ignorePatterns {
-			ignPats, errProc := processTsuruIgnore(pattern, context.Args...)
+			ignSet, errProc := processTsuruIgnore(pattern, context.Args...)
 			if errProc != nil {
 				return errProc
 			}
-			ignore = append(ignore, ignPats...)
+			for k, v := range ignSet {
+				ignoreSet[k] = v
+			}
 		}
-		err = targz(context, file, ignore, context.Args...)
+		err = targz(context, file, ignoreSet, context.Args...)
 		if err != nil {
 			return err
 		}
@@ -289,8 +291,8 @@ func (c *AppDeploy) Run(context *cmd.Context, client *cmd.Client) error {
 	return cmd.ErrAbortCommand
 }
 
-func processTsuruIgnore(pattern string, dirPaths ...string) ([]string, error) {
-	var paths []string
+func processTsuruIgnore(pattern string, dirPaths ...string) (map[string]struct{}, error) {
+	ignoreSet := make(map[string]struct{})
 	old, err := os.Getwd()
 	if err != nil {
 		return nil, err
@@ -305,16 +307,16 @@ func processTsuruIgnore(pattern string, dirPaths ...string) ([]string, error) {
 		if err != nil {
 			return nil, err
 		}
-		paths, err = filepath.Glob(pattern)
+		paths, err := filepath.Glob(pattern)
 		if err != nil {
 			return nil, err
 		}
-		for i := range paths {
+		for _, v := range paths {
 			if dirPath == "." {
-				paths[i] = filepath.Join(wd, paths[i])
+				ignoreSet[filepath.Join(wd, v)] = struct{}{}
 				continue
 			}
-			paths[i] = filepath.Join(dirPath, paths[i])
+			ignoreSet[filepath.Join(dirPath, v)] = struct{}{}
 		}
 		dir, err := os.Open(dirPath)
 		if err != nil {
@@ -331,11 +333,13 @@ func processTsuruIgnore(pattern string, dirPaths ...string) ([]string, error) {
 				if err != nil {
 					return nil, err
 				}
-				paths = append(paths, glob...)
+				for k, v := range glob {
+					ignoreSet[k] = v
+				}
 			}
 		}
 	}
-	return paths, nil
+	return ignoreSet, nil
 }
 
 func readTsuruIgnore() ([]string, error) {
@@ -352,11 +356,10 @@ func readTsuruIgnore() ([]string, error) {
 	return patterns, nil
 }
 
-func targz(ctx *cmd.Context, destination io.Writer, ignoreList []string, filepaths ...string) error {
+func targz(ctx *cmd.Context, destination io.Writer, ignoreSet map[string]struct{}, filepaths ...string) error {
 	var buf bytes.Buffer
 	tarWriter := tar.NewWriter(&buf)
 	for _, path := range filepaths {
-		var cont bool
 		if path == ".." {
 			fmt.Fprintf(ctx.Stderr, "Warning: skipping %q", path)
 			continue
@@ -370,20 +373,14 @@ func targz(ctx *cmd.Context, destination io.Writer, ignoreList []string, filepat
 			return err
 		}
 		fiName := filepath.Join(wd, fi.Name())
-		for _, p := range ignoreList {
-			if fiName == p {
-				cont = true
-				break
-			}
-		}
-		if cont {
+		if _, inSet := ignoreSet[fiName]; inSet {
 			continue
 		}
 		if fi.IsDir() {
 			if len(filepaths) == 1 && path != "." {
-				return singleDir(ctx, destination, path, ignoreList)
+				return singleDir(ctx, destination, path, ignoreSet)
 			}
-			err = addDir(tarWriter, path, ignoreList)
+			err = addDir(tarWriter, path, ignoreSet)
 		} else {
 			err = addFile(tarWriter, path)
 		}
@@ -401,7 +398,7 @@ func targz(ctx *cmd.Context, destination io.Writer, ignoreList []string, filepat
 	return err
 }
 
-func singleDir(ctx *cmd.Context, destination io.Writer, path string, ignoreList []string) error {
+func singleDir(ctx *cmd.Context, destination io.Writer, path string, ignoreSet map[string]struct{}) error {
 	old, err := os.Getwd()
 	if err != nil {
 		return err
@@ -411,10 +408,10 @@ func singleDir(ctx *cmd.Context, destination io.Writer, path string, ignoreList 
 	if err != nil {
 		return err
 	}
-	return targz(ctx, destination, ignoreList, ".")
+	return targz(ctx, destination, ignoreSet, ".")
 }
 
-func addDir(writer *tar.Writer, dirpath string, ignoreList []string) error {
+func addDir(writer *tar.Writer, dirpath string, ignoreSet map[string]struct{}) error {
 	dir, err := os.Open(dirpath)
 	if err != nil {
 		return err
@@ -446,18 +443,11 @@ func addDir(writer *tar.Writer, dirpath string, ignoreList []string) error {
 		if dirpath != "." {
 			fiName = filepath.Join(wd, dirpath, fi.Name())
 		}
-		var cont bool
-		for _, p := range ignoreList {
-			if fiName == p {
-				cont = true
-				break
-			}
-		}
-		if cont {
+		if _, existSet := ignoreSet[fiName]; existSet {
 			continue
 		}
 		if fi.IsDir() {
-			err = addDir(writer, path.Join(dirpath, fi.Name()), ignoreList)
+			err = addDir(writer, path.Join(dirpath, fi.Name()), ignoreSet)
 		} else {
 			err = addFile(writer, path.Join(dirpath, fi.Name()))
 		}

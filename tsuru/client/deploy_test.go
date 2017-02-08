@@ -495,12 +495,16 @@ func (s *S) TestProcessTsuruIgnore(c *check.C) {
 		name    string
 		pattern string
 		dirPath []string
-		want    []string
+		want    map[string]struct{}
 	}{
 		{
 			pattern: "*.txt",
 			dirPath: []string{filepath.Join(dir, "testdata", "deploy")},
-			want:    []string{filepath.Join(dir, "testdata/deploy/file1.txt"), filepath.Join(dir, "testdata/deploy/file2.txt"), filepath.Join(dir, "testdata/deploy/directory/file.txt")},
+			want: map[string]struct{}{
+				filepath.Join(dir, "testdata/deploy/file2.txt"):          struct{}{},
+				filepath.Join(dir, "testdata/deploy/directory/file.txt"): struct{}{},
+				filepath.Join(dir, "testdata/deploy/file1.txt"):          struct{}{},
+			},
 		},
 	}
 	for _, tt := range tests {
@@ -513,11 +517,13 @@ func (s *S) TestProcessTsuruIgnore(c *check.C) {
 func (s *S) TestIgnoreGlobalFiles(c *check.C) {
 	wd, _ := os.Getwd()
 	var buf bytes.Buffer
-	var ignore []string
+	ignore := make(map[string]struct{})
 	ignorePatterns := []string{"*.txt"}
 	for _, pattern := range ignorePatterns {
-		ignPats, _ := processTsuruIgnore(pattern, filepath.Join(wd, "testdata/deploy2"))
-		ignore = append(ignore, ignPats...)
+		ignSets, _ := processTsuruIgnore(pattern, filepath.Join(wd, "testdata/deploy2"))
+		for k, v := range ignSets {
+			ignore[k] = v
+		}
 	}
 	ctx := cmd.Context{Stderr: &buf}
 	var gzipBuf, tarBuf bytes.Buffer
@@ -541,11 +547,13 @@ func (s *S) TestIgnoreGlobalFiles(c *check.C) {
 func (s *S) TestIgnoreDir(c *check.C) {
 	wd, _ := os.Getwd()
 	var buf bytes.Buffer
-	var ignore []string
+	ignore := make(map[string]struct{})
 	ignorePatterns := []string{"directory"}
 	for _, pattern := range ignorePatterns {
-		ignPats, _ := processTsuruIgnore(pattern, filepath.Join(wd, "testdata/deploy2"))
-		ignore = append(ignore, ignPats...)
+		ignSets, _ := processTsuruIgnore(pattern, filepath.Join(wd, "testdata/deploy2"))
+		for k, v := range ignSets {
+			ignore[k] = v
+		}
 	}
 	ctx := cmd.Context{Stderr: &buf}
 	var gzipBuf, tarBuf bytes.Buffer
@@ -569,11 +577,13 @@ func (s *S) TestIgnoreDir(c *check.C) {
 func (s *S) TestIgnoreRelativeDir(c *check.C) {
 	wd, _ := os.Getwd()
 	var buf bytes.Buffer
-	var ignore []string
+	ignore := make(map[string]struct{})
 	ignorePatterns := []string{"*/dir2"}
 	for _, pattern := range ignorePatterns {
-		ignPats, _ := processTsuruIgnore(pattern, filepath.Join(wd, "testdata/deploy2"))
-		ignore = append(ignore, ignPats...)
+		ignSets, _ := processTsuruIgnore(pattern, filepath.Join(wd, "testdata/deploy2"))
+		for k, v := range ignSets {
+			ignore[k] = v
+		}
 	}
 	ctx := cmd.Context{Stderr: &buf}
 	var gzipBuf, tarBuf bytes.Buffer
@@ -597,11 +607,13 @@ func (s *S) TestIgnoreRelativeDir(c *check.C) {
 func (s *S) TestIgnoreRelativeFile(c *check.C) {
 	wd, _ := os.Getwd()
 	var buf bytes.Buffer
-	var ignore []string
+	ignore := make(map[string]struct{})
 	ignorePatterns := []string{"directory/dir2/*"}
 	for _, pattern := range ignorePatterns {
-		ignPats, _ := processTsuruIgnore(pattern, filepath.Join(wd, "testdata/deploy2"))
-		ignore = append(ignore, ignPats...)
+		ignSets, _ := processTsuruIgnore(pattern, filepath.Join(wd, "testdata/deploy2"))
+		for k, v := range ignSets {
+			ignore[k] = v
+		}
 	}
 	ctx := cmd.Context{Stderr: &buf}
 	var gzipBuf, tarBuf bytes.Buffer
