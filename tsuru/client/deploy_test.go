@@ -529,23 +529,13 @@ func (s *S) TestIgnoreGlobalFiles(c *check.C) {
 	c.Assert(err, check.IsNil)
 	tarReader := tar.NewReader(&tarBuf)
 	var headers []string
-	var contents []string
 	for header, err := tarReader.Next(); err == nil; header, err = tarReader.Next() {
 		headers = append(headers, header.Name)
-		if !header.FileInfo().IsDir() {
-			content, err := ioutil.ReadAll(tarReader)
-			c.Assert(err, check.IsNil)
-			contents = append(contents, string(content))
-		}
 	}
-	expected := []string{
-		".", "directory", "directory/dir2",
-	}
+	expected := []string{".", ".tsuruignore", "directory", "directory/dir2"}
 	sort.Strings(expected)
 	sort.Strings(headers)
 	c.Assert(headers, check.DeepEquals, expected)
-	sort.Strings(contents)
-	c.Assert(contents, check.IsNil)
 }
 
 func (s *S) TestIgnoreDir(c *check.C) {
@@ -567,18 +557,10 @@ func (s *S) TestIgnoreDir(c *check.C) {
 	c.Assert(err, check.IsNil)
 	tarReader := tar.NewReader(&tarBuf)
 	var headers []string
-	var contents []string
 	for header, err := tarReader.Next(); err == nil; header, err = tarReader.Next() {
 		headers = append(headers, header.Name)
-		if !header.FileInfo().IsDir() {
-			content, err := ioutil.ReadAll(tarReader)
-			c.Assert(err, check.IsNil)
-			contents = append(contents, string(content))
-		}
 	}
-	expected := []string{
-		".", "file1.txt", "file2.txt",
-	}
+	expected := []string{".", ".tsuruignore", "file1.txt", "file2.txt"}
 	sort.Strings(expected)
 	sort.Strings(headers)
 	c.Assert(headers, check.DeepEquals, expected)
@@ -603,16 +585,10 @@ func (s *S) TestIgnoreRelativeDir(c *check.C) {
 	c.Assert(err, check.IsNil)
 	tarReader := tar.NewReader(&tarBuf)
 	var headers []string
-	var contents []string
 	for header, err := tarReader.Next(); err == nil; header, err = tarReader.Next() {
 		headers = append(headers, header.Name)
-		if !header.FileInfo().IsDir() {
-			content, err := ioutil.ReadAll(tarReader)
-			c.Assert(err, check.IsNil)
-			contents = append(contents, string(content))
-		}
 	}
-	expected := []string{".", "directory", "directory/file.txt", "file1.txt", "file2.txt"}
+	expected := []string{".", ".tsuruignore", "directory", "directory/file.txt", "file1.txt", "file2.txt"}
 	sort.Strings(expected)
 	sort.Strings(headers)
 	c.Assert(headers, check.DeepEquals, expected)
@@ -637,16 +613,10 @@ func (s *S) TestIgnoreRelativeFile(c *check.C) {
 	c.Assert(err, check.IsNil)
 	tarReader := tar.NewReader(&tarBuf)
 	var headers []string
-	var contents []string
 	for header, err := tarReader.Next(); err == nil; header, err = tarReader.Next() {
 		headers = append(headers, header.Name)
-		if !header.FileInfo().IsDir() {
-			content, err := ioutil.ReadAll(tarReader)
-			c.Assert(err, check.IsNil)
-			contents = append(contents, string(content))
-		}
 	}
-	expected := []string{".", "directory", "directory/dir2", "directory/file.txt", "file1.txt", "file2.txt"}
+	expected := []string{".", ".tsuruignore", "directory", "directory/dir2", "directory/file.txt", "file1.txt", "file2.txt"}
 	sort.Strings(expected)
 	sort.Strings(headers)
 	c.Assert(headers, check.DeepEquals, expected)
