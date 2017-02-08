@@ -506,7 +506,7 @@ func (s *S) TestProcessTsuruIgnore(c *check.C) {
 	}
 }
 
-func (s *S) TestIgnoreFiles(c *check.C) {
+func (s *S) TestIgnoreGlobalFiles(c *check.C) {
 	wd, _ := os.Getwd()
 	var buf bytes.Buffer
 	var ignore []string

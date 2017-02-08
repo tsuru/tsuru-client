@@ -310,6 +310,10 @@ func processTsuruIgnore(pattern string, dirPath ...string) ([]string, error) {
 			return nil, err
 		}
 		for i := range paths {
+			if dir == "." {
+				paths[i] = filepath.Join(wd, paths[i])
+				continue
+			}
 			paths[i] = filepath.Join(dir, paths[i])
 		}
 		dir, err := os.Open(dir)
