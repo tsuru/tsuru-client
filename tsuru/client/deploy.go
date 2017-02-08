@@ -238,7 +238,7 @@ func (c *AppDeploy) Run(context *cmd.Context, client *cmd.Client) error {
 		for _, pattern := range ignorePatterns {
 			ignPats, errProc := processTsuruIgnore(pattern, context.Args...)
 			if errProc != nil {
-				return err
+				return errProc
 			}
 			ignore = append(ignore, ignPats...)
 		}
@@ -289,15 +289,15 @@ func (c *AppDeploy) Run(context *cmd.Context, client *cmd.Client) error {
 	return cmd.ErrAbortCommand
 }
 
-func processTsuruIgnore(pattern string, dirPath ...string) ([]string, error) {
+func processTsuruIgnore(pattern string, dirPaths ...string) ([]string, error) {
 	var paths []string
 	old, err := os.Getwd()
 	if err != nil {
 		return nil, err
 	}
 	defer os.Chdir(old)
-	for _, dir := range dirPath {
-		err = os.Chdir(dir)
+	for _, dirPath := range dirPaths {
+		err = os.Chdir(dirPath)
 		if err != nil {
 			return nil, err
 		}
@@ -310,13 +310,13 @@ func processTsuruIgnore(pattern string, dirPath ...string) ([]string, error) {
 			return nil, err
 		}
 		for i := range paths {
-			if dir == "." {
+			if dirPath == "." {
 				paths[i] = filepath.Join(wd, paths[i])
 				continue
 			}
-			paths[i] = filepath.Join(dir, paths[i])
+			paths[i] = filepath.Join(dirPath, paths[i])
 		}
-		dir, err := os.Open(dir)
+		dir, err := os.Open(dirPath)
 		if err != nil {
 			return nil, err
 		}
@@ -324,6 +324,7 @@ func processTsuruIgnore(pattern string, dirPath ...string) ([]string, error) {
 		if err != nil {
 			return nil, err
 		}
+		dir.Close()
 		for _, f := range fis {
 			if f.IsDir() {
 				glob, err := processTsuruIgnore(pattern, filepath.Join(wd, f.Name()))
@@ -345,10 +346,8 @@ func readTsuruIgnore() ([]string, error) {
 	defer file.Close()
 	patterns := []string{}
 	scanner := bufio.NewScanner(file)
-	scanner.Split(bufio.ScanLines)
 	for scanner.Scan() {
-		pattern := scanner.Text()
-		patterns = append(patterns, pattern)
+		patterns = append(patterns, scanner.Text())
 	}
 	return patterns, nil
 }
