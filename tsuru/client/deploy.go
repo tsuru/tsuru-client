@@ -371,31 +371,22 @@ func targz(ctx *cmd.Context, destination io.Writer, ignoreList []string, filepat
 			return err
 		}
 		fiName := filepath.Join(wd, fi.Name())
+		for _, p := range ignoreList {
+			if fiName == p {
+				cont = true
+				break
+			}
+		}
+		if cont {
+			continue
+		}
 		if fi.IsDir() {
-			for _, p := range ignoreList {
-				if fiName == p {
-					cont = true
-					break
-				}
-			}
-			if cont {
-				continue
-			}
 			if len(filepaths) == 1 && path != "." {
 				return singleDir(ctx, destination, path, ignoreList)
 			}
 			err = addDir(tarWriter, path, ignoreList)
 		} else {
-			for _, p := range ignoreList {
-				if fiName == p {
-					cont = true
-					break
-				}
-			}
-			if cont {
-				continue
-			}
-			err = addFile(tarWriter, path, ignoreList)
+			err = addFile(tarWriter, path)
 		}
 		if err != nil {
 			return err
@@ -457,28 +448,19 @@ func addDir(writer *tar.Writer, dirpath string, ignoreList []string) error {
 			fiName = filepath.Join(wd, dirpath, fi.Name())
 		}
 		var cont bool
+		for _, p := range ignoreList {
+			if fiName == p {
+				cont = true
+				break
+			}
+		}
+		if cont {
+			continue
+		}
 		if fi.IsDir() {
-			for _, p := range ignoreList {
-				if fiName == p {
-					cont = true
-					break
-				}
-			}
-			if cont {
-				continue
-			}
 			err = addDir(writer, path.Join(dirpath, fi.Name()), ignoreList)
 		} else {
-			for _, p := range ignoreList {
-				if fiName == p {
-					cont = true
-					break
-				}
-			}
-			if cont {
-				continue
-			}
-			err = addFile(writer, path.Join(dirpath, fi.Name()), ignoreList)
+			err = addFile(writer, path.Join(dirpath, fi.Name()))
 		}
 		if err != nil {
 			return err
@@ -487,7 +469,7 @@ func addDir(writer *tar.Writer, dirpath string, ignoreList []string) error {
 	return nil
 }
 
-func addFile(writer *tar.Writer, filepath string, ignoreList []string) error {
+func addFile(writer *tar.Writer, filepath string) error {
 	f, err := os.Open(filepath)
 	if err != nil {
 		return err
