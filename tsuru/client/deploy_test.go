@@ -1,3 +1,7 @@
+// Copyright 2017 tsuru-client authors. All rights reserved.
+// Use of this source code is governed by a BSD-style
+// license that can be found in the LICENSE file.
+
 package client
 
 import (
@@ -544,7 +548,7 @@ func (s *S) TestIgnoreGlobalFiles(c *check.C) {
 	c.Assert(contents, check.IsNil)
 }
 
-func (s *S) TestIgnoreFolder(c *check.C) {
+func (s *S) TestIgnoreDir(c *check.C) {
 	wd, _ := os.Getwd()
 	var buf bytes.Buffer
 	var ignore []string
@@ -580,7 +584,7 @@ func (s *S) TestIgnoreFolder(c *check.C) {
 	c.Assert(headers, check.DeepEquals, expected)
 }
 
-func (s *S) TestIgnoreRelativeFolder(c *check.C) {
+func (s *S) TestIgnoreRelativeDir(c *check.C) {
 	wd, _ := os.Getwd()
 	var buf bytes.Buffer
 	var ignore []string
