@@ -60,7 +60,7 @@ type KeyAdd struct {
 func (c *KeyAdd) Info() *cmd.Info {
 	return &cmd.Info{
 		Name:    "key-add",
-		Usage:   "key-add <key-name> <path/to/key/file.pub> [-f/--force]",
+		Usage:   "key-add <key-name> <path/to/key/file.pub>",
 		Desc:    `Sends your public key to the git server used by tsuru.`,
 		MinArgs: 2,
 	}
