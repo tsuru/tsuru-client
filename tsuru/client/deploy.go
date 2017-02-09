@@ -211,7 +211,8 @@ func (c *AppDeploy) Run(context *cmd.Context, client *cmd.Client) error {
 		return err
 	}
 	buf := safe.NewBuffer(nil)
-	safeStdout := &safeWriter{w: context.Stdout}
+	stream := tsuruIo.NewStreamWriter(context.Stdout, nil)
+	safeStdout := &safeWriter{w: &tsuruIo.SimpleJsonMessageEncoderWriter{Encoder: json.NewEncoder(stream)}}
 	respBody := firstWriter{Writer: io.MultiWriter(safeStdout, buf)}
 	if c.image != "" {
 		request.Header.Set("Content-Type", "application/x-www-form-urlencoded")
