@@ -228,31 +228,32 @@ func (c *TemplateRemove) Run(context *cmd.Context, client *cmd.Client) error {
 
 type TemplateUpdate struct {
 	cmd.GuessingCommand
-	iaas string
-	fs   *gnuflag.FlagSet
+	iaasName string
+	fs       *gnuflag.FlagSet
 }
 
 func (c *TemplateUpdate) Info() *cmd.Info {
 	return &cmd.Info{
 		Name:    "machine-template-update",
-		Usage:   "machine-template-update [-i/--iaas <iaas_name>] <param>=<value>...",
+		Usage:   "machine-template-update [-i/--iaas <iaas_name>] name <param>=<value>...",
 		Desc:    "Update an existing machine template.",
-		MinArgs: 1,
+		MinArgs: 2,
 	}
 }
 func (c *TemplateUpdate) Flags() *gnuflag.FlagSet {
 	if c.fs == nil {
 		c.fs = c.GuessingCommand.Flags()
-		iaas := "The iaas used"
-		c.fs.StringVar(&c.iaas, "iaas", "", iaas)
-		c.fs.StringVar(&c.iaas, "i", "", iaas)
+		iaasName := "The iaas name to be used"
+		c.fs.StringVar(&c.iaasName, "iaas", "", iaasName)
+		c.fs.StringVar(&c.iaasName, "i", "", iaasName)
 	}
 	return c.fs
 }
 
 func (c *TemplateUpdate) Run(context *cmd.Context, client *cmd.Client) error {
-	template := iaas.Template{Name: c.iaas}
-	for _, param := range context.Args[0:] {
+	template := iaas.Template{Name: context.Args[0]}
+	template.IaaSName = c.iaasName
+	for _, param := range context.Args[1:] {
 		if strings.Contains(param, "=") {
 			keyValue := strings.SplitN(param, "=", 2)
 			template.Data = append(template.Data, iaas.TemplateData{
