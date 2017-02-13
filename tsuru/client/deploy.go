@@ -1,4 +1,4 @@
-// Copyright 2016 tsuru-client authors. All rights reserved.
+// Copyright 2017 tsuru-client authors. All rights reserved.
 // Use of this source code is governed by a BSD-style
 // license that can be found in the LICENSE file.
 
@@ -6,6 +6,7 @@ package client
 
 import (
 	"archive/tar"
+	"bufio"
 	"bytes"
 	"compress/gzip"
 	"encoding/json"
@@ -18,6 +19,7 @@ import (
 	"net/url"
 	"os"
 	"path"
+	"path/filepath"
 	"sort"
 	"strings"
 	"sync"
@@ -232,7 +234,18 @@ func (c *AppDeploy) Run(context *cmd.Context, client *cmd.Client) error {
 		if err != nil {
 			return err
 		}
-		err = targz(context, file, context.Args...)
+		ignoreSet := make(map[string]struct{})
+		ignorePatterns, _ := readTsuruIgnore()
+		for _, pattern := range ignorePatterns {
+			ignSet, errProc := processTsuruIgnore(pattern, context.Args...)
+			if errProc != nil {
+				return errProc
+			}
+			for k, v := range ignSet {
+				ignoreSet[k] = v
+			}
+		}
+		err = targz(context, file, ignoreSet, context.Args...)
 		if err != nil {
 			return err
 		}
@@ -279,7 +292,72 @@ func (c *AppDeploy) Run(context *cmd.Context, client *cmd.Client) error {
 	return cmd.ErrAbortCommand
 }
 
-func targz(ctx *cmd.Context, destination io.Writer, filepaths ...string) error {
+func processTsuruIgnore(pattern string, dirPaths ...string) (map[string]struct{}, error) {
+	ignoreSet := make(map[string]struct{})
+	old, err := os.Getwd()
+	if err != nil {
+		return nil, err
+	}
+	defer os.Chdir(old)
+	for _, dirPath := range dirPaths {
+		err = os.Chdir(dirPath)
+		if err != nil {
+			return nil, err
+		}
+		wd, err := os.Getwd()
+		if err != nil {
+			return nil, err
+		}
+		paths, err := filepath.Glob(pattern)
+		if err != nil {
+			return nil, err
+		}
+		for _, v := range paths {
+			if dirPath == "." {
+				ignoreSet[filepath.Join(wd, v)] = struct{}{}
+				continue
+			}
+			ignoreSet[filepath.Join(dirPath, v)] = struct{}{}
+		}
+		dir, err := os.Open(dirPath)
+		if err != nil {
+			return nil, err
+		}
+		fis, err := dir.Readdir(0)
+		if err != nil {
+			return nil, err
+		}
+		dir.Close()
+		for _, f := range fis {
+			if f.IsDir() {
+				glob, err := processTsuruIgnore(pattern, filepath.Join(wd, f.Name()))
+				if err != nil {
+					return nil, err
+				}
+				for k, v := range glob {
+					ignoreSet[k] = v
+				}
+			}
+		}
+	}
+	return ignoreSet, nil
+}
+
+func readTsuruIgnore() ([]string, error) {
+	file, err := os.Open(".tsuruignore")
+	if err != nil {
+		return nil, err
+	}
+	defer file.Close()
+	patterns := []string{}
+	scanner := bufio.NewScanner(file)
+	for scanner.Scan() {
+		patterns = append(patterns, scanner.Text())
+	}
+	return patterns, nil
+}
+
+func targz(ctx *cmd.Context, destination io.Writer, ignoreSet map[string]struct{}, filepaths ...string) error {
 	var buf bytes.Buffer
 	tarWriter := tar.NewWriter(&buf)
 	for _, path := range filepaths {
@@ -291,11 +369,19 @@ func targz(ctx *cmd.Context, destination io.Writer, filepaths ...string) error {
 		if err != nil {
 			return err
 		}
+		wd, err := os.Getwd()
+		if err != nil {
+			return err
+		}
+		fiName := filepath.Join(wd, fi.Name())
+		if _, inSet := ignoreSet[fiName]; inSet {
+			continue
+		}
 		if fi.IsDir() {
 			if len(filepaths) == 1 && path != "." {
-				return singleDir(ctx, destination, path)
+				return singleDir(ctx, destination, path, ignoreSet)
 			}
-			err = addDir(tarWriter, path)
+			err = addDir(tarWriter, path, ignoreSet)
 		} else {
 			err = addFile(tarWriter, path)
 		}
@@ -313,7 +399,7 @@ func targz(ctx *cmd.Context, destination io.Writer, filepaths ...string) error {
 	return err
 }
 
-func singleDir(ctx *cmd.Context, destination io.Writer, path string) error {
+func singleDir(ctx *cmd.Context, destination io.Writer, path string, ignoreSet map[string]struct{}) error {
 	old, err := os.Getwd()
 	if err != nil {
 		return err
@@ -323,10 +409,10 @@ func singleDir(ctx *cmd.Context, destination io.Writer, path string) error {
 	if err != nil {
 		return err
 	}
-	return targz(ctx, destination, ".")
+	return targz(ctx, destination, ignoreSet, ".")
 }
 
-func addDir(writer *tar.Writer, dirpath string) error {
+func addDir(writer *tar.Writer, dirpath string, ignoreSet map[string]struct{}) error {
 	dir, err := os.Open(dirpath)
 	if err != nil {
 		return err
@@ -349,9 +435,20 @@ func addDir(writer *tar.Writer, dirpath string) error {
 	if err != nil {
 		return err
 	}
+	wd, err := os.Getwd()
+	if err != nil {
+		return err
+	}
 	for _, fi := range fis {
+		fiName := filepath.Join(wd, fi.Name())
+		if dirpath != "." {
+			fiName = filepath.Join(wd, dirpath, fi.Name())
+		}
+		if _, existSet := ignoreSet[fiName]; existSet {
+			continue
+		}
 		if fi.IsDir() {
-			err = addDir(writer, path.Join(dirpath, fi.Name()))
+			err = addDir(writer, path.Join(dirpath, fi.Name()), ignoreSet)
 		} else {
 			err = addFile(writer, path.Join(dirpath, fi.Name()))
 		}

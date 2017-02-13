@@ -1,4 +1,4 @@
-// Copyright 2016 tsuru-client authors. All rights reserved.
+// Copyright 2017 tsuru-client authors. All rights reserved.
 // Use of this source code is governed by a BSD-style
 // license that can be found in the LICENSE file.
 
@@ -12,6 +12,9 @@ import (
 	"io"
 	"io/ioutil"
 	"net/http"
+	"os"
+	"path/filepath"
+	"runtime"
 	"sort"
 	"strings"
 	"time"
@@ -20,7 +23,6 @@ import (
 	"github.com/tsuru/tsuru/cmd/cmdtest"
 	tsuruIo "github.com/tsuru/tsuru/io"
 	"gopkg.in/check.v1"
-	"runtime"
 )
 
 func (s *S) TestDeployInfo(c *check.C) {
@@ -32,7 +34,7 @@ func (s *S) TestDeployRun(c *check.C) {
 	calledTimes := 0
 	var buf bytes.Buffer
 	ctx := cmd.Context{Stderr: bytes.NewBufferString("")}
-	err := targz(&ctx, &buf, "testdata", "..")
+	err := targz(&ctx, &buf, nil, "testdata", "..")
 	c.Assert(err, check.IsNil)
 	trans := cmdtest.ConditionalTransport{
 		Transport: cmdtest.Transport{Message: "deploy worked\nOK\n", Status: http.StatusOK},
@@ -107,7 +109,7 @@ func (s *S) TestDeployRunWithMessage(c *check.C) {
 	calledTimes := 0
 	var buf bytes.Buffer
 	ctx := cmd.Context{Stderr: bytes.NewBufferString("")}
-	err := targz(&ctx, &buf, "testdata", "..")
+	err := targz(&ctx, &buf, nil, "testdata", "..")
 	c.Assert(err, check.IsNil)
 	trans := cmdtest.ConditionalTransport{
 		Transport: cmdtest.Transport{Message: "deploy worked\nOK\n", Status: http.StatusOK},
@@ -258,7 +260,7 @@ func (s *S) TestTargz(c *check.C) {
 	var buf bytes.Buffer
 	ctx := cmd.Context{Stderr: &buf}
 	var gzipBuf, tarBuf bytes.Buffer
-	err := targz(&ctx, &gzipBuf, "testdata/deploy", "..")
+	err := targz(&ctx, &gzipBuf, nil, "testdata/deploy", "..")
 	c.Assert(err, check.IsNil)
 	gzipReader, err := gzip.NewReader(&gzipBuf)
 	c.Assert(err, check.IsNil)
@@ -293,7 +295,7 @@ func (s *S) TestTargzSingleDirectory(c *check.C) {
 	var buf bytes.Buffer
 	ctx := cmd.Context{Stderr: &buf}
 	var gzipBuf, tarBuf bytes.Buffer
-	err := targz(&ctx, &gzipBuf, "testdata/deploy")
+	err := targz(&ctx, &gzipBuf, nil, "testdata/deploy")
 	c.Assert(err, check.IsNil)
 	gzipReader, err := gzip.NewReader(&gzipBuf)
 	c.Assert(err, check.IsNil)
@@ -327,7 +329,7 @@ func (s *S) TestTargzSymlink(c *check.C) {
 	var buf bytes.Buffer
 	ctx := cmd.Context{Stderr: &buf}
 	var gzipBuf, tarBuf bytes.Buffer
-	err := targz(&ctx, &gzipBuf, "testdata-symlink", "..")
+	err := targz(&ctx, &gzipBuf, nil, "testdata-symlink", "..")
 	c.Assert(err, check.IsNil)
 	gzipReader, err := gzip.NewReader(&gzipBuf)
 	c.Assert(err, check.IsNil)
@@ -348,7 +350,7 @@ func (s *S) TestTargzFailure(c *check.C) {
 	var stderr bytes.Buffer
 	ctx := cmd.Context{Stderr: &stderr}
 	var buf bytes.Buffer
-	err := targz(&ctx, &buf, "/tmp/something/that/definitely/doesn't/exist/right", "testdata")
+	err := targz(&ctx, &buf, nil, "/tmp/something/that/definitely/doesn't/exist/right", "testdata")
 	c.Assert(err, check.NotNil)
 	c.Assert(err.Error(), check.Matches, ".*(no such file or directory|cannot find the path specified).*")
 }
@@ -486,4 +488,148 @@ func (s *S) TestAppDeployRollback(c *check.C) {
 	c.Assert(err, check.IsNil)
 	c.Assert(called, check.Equals, true)
 	c.Assert(stdout.String(), check.Equals, expectedOut)
+}
+func (s *S) TestProcessTsuruIgnore(c *check.C) {
+	dir, _ := os.Getwd()
+	tests := []struct {
+		name    string
+		pattern string
+		dirPath []string
+		want    map[string]struct{}
+	}{
+		{
+			pattern: "*.txt",
+			dirPath: []string{filepath.Join(dir, "testdata", "deploy")},
+			want: map[string]struct{}{
+				filepath.Join(dir, "testdata/deploy/file2.txt"):          struct{}{},
+				filepath.Join(dir, "testdata/deploy/directory/file.txt"): struct{}{},
+				filepath.Join(dir, "testdata/deploy/file1.txt"):          struct{}{},
+			},
+		},
+	}
+	for _, tt := range tests {
+		got, err := processTsuruIgnore(tt.pattern, tt.dirPath...)
+		c.Assert(err, check.IsNil)
+		c.Assert(got, check.DeepEquals, tt.want)
+	}
+}
+
+func (s *S) TestIgnoreGlobalFiles(c *check.C) {
+	wd, _ := os.Getwd()
+	var buf bytes.Buffer
+	ignore := make(map[string]struct{})
+	ignorePatterns := []string{"*.txt"}
+	for _, pattern := range ignorePatterns {
+		ignSets, _ := processTsuruIgnore(pattern, filepath.Join(wd, "testdata/deploy2"))
+		for k, v := range ignSets {
+			ignore[k] = v
+		}
+	}
+	ctx := cmd.Context{Stderr: &buf}
+	var gzipBuf, tarBuf bytes.Buffer
+	err := targz(&ctx, &gzipBuf, ignore, "testdata/deploy2")
+	c.Assert(err, check.IsNil)
+	gzipReader, err := gzip.NewReader(&gzipBuf)
+	c.Assert(err, check.IsNil)
+	_, err = io.Copy(&tarBuf, gzipReader)
+	c.Assert(err, check.IsNil)
+	tarReader := tar.NewReader(&tarBuf)
+	var headers []string
+	for header, err := tarReader.Next(); err == nil; header, err = tarReader.Next() {
+		headers = append(headers, header.Name)
+	}
+	expected := []string{".", ".tsuruignore", "directory", "directory/dir2"}
+	sort.Strings(expected)
+	sort.Strings(headers)
+	c.Assert(headers, check.DeepEquals, expected)
+}
+
+func (s *S) TestIgnoreDir(c *check.C) {
+	wd, _ := os.Getwd()
+	var buf bytes.Buffer
+	ignore := make(map[string]struct{})
+	ignorePatterns := []string{"directory"}
+	for _, pattern := range ignorePatterns {
+		ignSets, _ := processTsuruIgnore(pattern, filepath.Join(wd, "testdata/deploy2"))
+		for k, v := range ignSets {
+			ignore[k] = v
+		}
+	}
+	ctx := cmd.Context{Stderr: &buf}
+	var gzipBuf, tarBuf bytes.Buffer
+	err := targz(&ctx, &gzipBuf, ignore, "testdata/deploy2")
+	c.Assert(err, check.IsNil)
+	gzipReader, err := gzip.NewReader(&gzipBuf)
+	c.Assert(err, check.IsNil)
+	_, err = io.Copy(&tarBuf, gzipReader)
+	c.Assert(err, check.IsNil)
+	tarReader := tar.NewReader(&tarBuf)
+	var headers []string
+	for header, err := tarReader.Next(); err == nil; header, err = tarReader.Next() {
+		headers = append(headers, header.Name)
+	}
+	expected := []string{".", ".tsuruignore", "file1.txt", "file2.txt"}
+	sort.Strings(expected)
+	sort.Strings(headers)
+	c.Assert(headers, check.DeepEquals, expected)
+}
+
+func (s *S) TestIgnoreRelativeDir(c *check.C) {
+	wd, _ := os.Getwd()
+	var buf bytes.Buffer
+	ignore := make(map[string]struct{})
+	ignorePatterns := []string{"*/dir2"}
+	for _, pattern := range ignorePatterns {
+		ignSets, _ := processTsuruIgnore(pattern, filepath.Join(wd, "testdata/deploy2"))
+		for k, v := range ignSets {
+			ignore[k] = v
+		}
+	}
+	ctx := cmd.Context{Stderr: &buf}
+	var gzipBuf, tarBuf bytes.Buffer
+	err := targz(&ctx, &gzipBuf, ignore, "testdata/deploy2")
+	c.Assert(err, check.IsNil)
+	gzipReader, err := gzip.NewReader(&gzipBuf)
+	c.Assert(err, check.IsNil)
+	_, err = io.Copy(&tarBuf, gzipReader)
+	c.Assert(err, check.IsNil)
+	tarReader := tar.NewReader(&tarBuf)
+	var headers []string
+	for header, err := tarReader.Next(); err == nil; header, err = tarReader.Next() {
+		headers = append(headers, header.Name)
+	}
+	expected := []string{".", ".tsuruignore", "directory", "directory/file.txt", "file1.txt", "file2.txt"}
+	sort.Strings(expected)
+	sort.Strings(headers)
+	c.Assert(headers, check.DeepEquals, expected)
+}
+
+func (s *S) TestIgnoreRelativeFile(c *check.C) {
+	wd, _ := os.Getwd()
+	var buf bytes.Buffer
+	ignore := make(map[string]struct{})
+	ignorePatterns := []string{"directory/dir2/*"}
+	for _, pattern := range ignorePatterns {
+		ignSets, _ := processTsuruIgnore(pattern, filepath.Join(wd, "testdata/deploy2"))
+		for k, v := range ignSets {
+			ignore[k] = v
+		}
+	}
+	ctx := cmd.Context{Stderr: &buf}
+	var gzipBuf, tarBuf bytes.Buffer
+	err := targz(&ctx, &gzipBuf, ignore, "testdata/deploy2")
+	c.Assert(err, check.IsNil)
+	gzipReader, err := gzip.NewReader(&gzipBuf)
+	c.Assert(err, check.IsNil)
+	_, err = io.Copy(&tarBuf, gzipReader)
+	c.Assert(err, check.IsNil)
+	tarReader := tar.NewReader(&tarBuf)
+	var headers []string
+	for header, err := tarReader.Next(); err == nil; header, err = tarReader.Next() {
+		headers = append(headers, header.Name)
+	}
+	expected := []string{".", ".tsuruignore", "directory", "directory/dir2", "directory/file.txt", "file1.txt", "file2.txt"}
+	sort.Strings(expected)
+	sort.Strings(headers)
+	c.Assert(headers, check.DeepEquals, expected)
 }
