@@ -34,16 +34,53 @@ func (s *S) TestAddNodeCmdRun(c *check.C) {
 			c.Assert(err, check.IsNil)
 			u := strings.HasSuffix(req.URL.Path, "/1.2/node")
 			method := req.Method == "POST"
-			address := params.Metadata["address"] == "http://localhost:8080"
-			pool := params.Metadata["pool"] == "poolTest"
-			register := !params.Register
-			return u && method && register && address && pool
+			c.Assert(params, check.DeepEquals, provision.AddNodeOptions{
+				Metadata: map[string]string{"address": "http://localhost:8080", "pool": "poolTest"},
+			})
+			return u && method
 		},
 	}
 	manager := cmd.Manager{}
 	client := cmd.NewClient(&http.Client{Transport: trans}, nil, &manager)
-	cmd := AddNodeCmd{register: false}
-	err := cmd.Run(&context, client)
+	addCmd := AddNodeCmd{register: false}
+	err := addCmd.Run(&context, client)
+	c.Assert(err, check.IsNil)
+	c.Assert(buf.String(), check.Equals, "Node successfully registered.\n")
+}
+
+func (s *S) TestAddNodeCmdRuWithCerts(c *check.C) {
+	var buf bytes.Buffer
+	context := cmd.Context{Args: []string{"pool=poolTest", "address=http://localhost:8080"}, Stdout: &buf}
+	trans := &cmdtest.ConditionalTransport{
+		Transport: cmdtest.Transport{Message: "", Status: http.StatusOK},
+		CondFunc: func(req *http.Request) bool {
+			err := req.ParseForm()
+			c.Assert(err, check.IsNil)
+			var params provision.AddNodeOptions
+			dec := form.NewDecoder(nil)
+			dec.IgnoreUnknownKeys(true)
+			err = dec.DecodeValues(&params, req.Form)
+			c.Assert(err, check.IsNil)
+			u := strings.HasSuffix(req.URL.Path, "/1.2/node")
+			method := req.Method == "POST"
+			c.Assert(params, check.DeepEquals, provision.AddNodeOptions{
+				Metadata:   map[string]string{"address": "http://localhost:8080", "pool": "poolTest"},
+				CaCert:     []byte("invalidcacert"),
+				ClientCert: []byte("invalidcert"),
+				ClientKey:  []byte("invalidkey"),
+			})
+			return u && method
+		},
+	}
+	manager := cmd.Manager{}
+	client := cmd.NewClient(&http.Client{Transport: trans}, nil, &manager)
+	addCmd := AddNodeCmd{register: false}
+	addCmd.Flags().Parse(true, []string{
+		"--cacert", "testdata/cacert.pem",
+		"--clientcert", "testdata/cert.pem",
+		"--clientkey", "testdata/key.pem",
+	})
+	err := addCmd.Run(&context, client)
 	c.Assert(err, check.IsNil)
 	c.Assert(buf.String(), check.Equals, "Node successfully registered.\n")
 }

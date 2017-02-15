@@ -9,6 +9,7 @@ import (
 	"encoding/json"
 	"errors"
 	"fmt"
+	"io/ioutil"
 	"net/http"
 	"net/url"
 	"sort"
@@ -24,8 +25,11 @@ import (
 )
 
 type AddNodeCmd struct {
-	fs       *gnuflag.FlagSet
-	register bool
+	fs         *gnuflag.FlagSet
+	register   bool
+	caCert     string
+	clientCert string
+	clientKey  string
 }
 
 func (AddNodeCmd) Info() *cmd.Info {
@@ -65,8 +69,30 @@ Parameters with special meaning:
 
 func (a *AddNodeCmd) Run(ctx *cmd.Context, client *cmd.Client) error {
 	opts := provision.AddNodeOptions{
-		Register: a.register,
-		Metadata: map[string]string{},
+		Register:   a.register,
+		CaCert:     []byte(a.caCert),
+		ClientCert: []byte(a.clientCert),
+		ClientKey:  []byte(a.clientKey),
+		Metadata:   map[string]string{},
+	}
+	var err error
+	if a.caCert != "" {
+		opts.CaCert, err = ioutil.ReadFile(a.caCert)
+		if err != nil {
+			return err
+		}
+	}
+	if a.clientCert != "" {
+		opts.ClientCert, err = ioutil.ReadFile(a.clientCert)
+		if err != nil {
+			return err
+		}
+	}
+	if a.clientKey != "" {
+		opts.ClientKey, err = ioutil.ReadFile(a.clientKey)
+		if err != nil {
+			return err
+		}
 	}
 	for _, param := range ctx.Args {
 		if strings.Contains(param, "=") {
@@ -103,6 +129,9 @@ func (a *AddNodeCmd) Flags() *gnuflag.FlagSet {
 	if a.fs == nil {
 		a.fs = gnuflag.NewFlagSet("with-flags", gnuflag.ContinueOnError)
 		a.fs.BoolVar(&a.register, "register", false, "Registers an existing docker endpoint, the IaaS won't be called.")
+		a.fs.StringVar(&a.caCert, "cacert", "", "Path to CA file tsuru should trust.")
+		a.fs.StringVar(&a.clientCert, "clientcert", "", "Path to client TLS certificate file.")
+		a.fs.StringVar(&a.clientKey, "clientkey", "", "Path to client TLS key file.")
 	}
 	return a.fs
 }
