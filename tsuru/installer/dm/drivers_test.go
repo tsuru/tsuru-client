@@ -76,7 +76,7 @@ func (s *S) TestDefaultDriverOpts(c *check.C) {
 		driverName   string
 		expectedOpts map[string]interface{}
 	}{
-		{"virtualbox", map[string]interface{}{"virtualbox-memory": 2048}},
+		{"virtualbox", map[string]interface{}{"virtualbox-memory": 2048, "virtualbox-nat-nictype": "Am79C973"}},
 	}
 	for _, t := range tt {
 		opts := DefaultDriverOpts(t.driverName)
