@@ -203,8 +203,8 @@ func (s *S) TestInstallHostList(c *check.C) {
 	transport := cmdtest.ConditionalTransport{
 		Transport: cmdtest.Transport{
 			Status: http.StatusOK,
-			Message: `[{"Name":"host1", "DriverName": "amazonec2", "Driver": {"IP": "127.0.0.1"}},
-				{"Name":"host2", "DriverName":"amazonec2", "Driver": {"SSHPort": 22, "IP": "127.0.0.2"}}]`,
+			Message: `[{"Name":"host1", "DriverName": "generic", "Driver": {"IP": "127.0.0.1"}},
+				{"Name":"host2", "DriverName":"generic", "Driver": {"SSHPort": 9999, "IP": "127.0.0.2"}}]`,
 		},
 		CondFunc: func(r *http.Request) bool {
 			called = true
@@ -217,18 +217,18 @@ func (s *S) TestInstallHostList(c *check.C) {
 	err := cmd.Run(&context, client)
 	c.Assert(err, check.IsNil)
 	c.Assert(called, check.Equals, true)
-	expected := `+-------+-------------+----------------------------------------------------+---------------------+
-| Name  | Driver Name | State                                              | Driver              |
-+-------+-------------+----------------------------------------------------+---------------------+
-| host1 | amazonec2   | NoCredentialProviders: no valid providers in chain | {                   |
-|       |             |                                                    |  "IP": "127.0.0.1"  |
-|       |             |                                                    | }                   |
-+-------+-------------+----------------------------------------------------+---------------------+
-| host2 | amazonec2   | NoCredentialProviders: no valid providers in chain | {                   |
-|       |             |                                                    |  "IP": "127.0.0.2", |
-|       |             |                                                    |  "SSHPort": 22      |
-|       |             |                                                    | }                   |
-+-------+-------------+----------------------------------------------------+---------------------+
+	expected := `+-------+-------------+---------+---------------------+
+| Name  | Driver Name | State   | Driver              |
++-------+-------------+---------+---------------------+
+| host1 | generic     | Stopped | {                   |
+|       |             |         |  "IP": "127.0.0.1"  |
+|       |             |         | }                   |
++-------+-------------+---------+---------------------+
+| host2 | generic     | Stopped | {                   |
+|       |             |         |  "IP": "127.0.0.2", |
+|       |             |         |  "SSHPort": 9999    |
+|       |             |         | }                   |
++-------+-------------+---------+---------------------+
 `
 	c.Assert(buf.String(), check.Equals, expected)
 }
