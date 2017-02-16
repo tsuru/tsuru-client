@@ -11,7 +11,6 @@ import (
 	"net"
 	"net/http"
 	"net/http/httptest"
-	"os"
 	"sort"
 	"strings"
 
@@ -19,7 +18,6 @@ import (
 	"github.com/docker/machine/libmachine/host"
 	"github.com/fsouza/go-dockerclient"
 	"github.com/tsuru/config"
-	"github.com/tsuru/tsuru/cmd"
 	"github.com/tsuru/tsuru/iaas"
 	"github.com/tsuru/tsuru/iaas/dockermachine"
 	_ "github.com/tsuru/tsuru/provision/docker"
@@ -171,27 +169,29 @@ func (s *S) TestTsuruAPIBootstrapLocalEnviroment(c *check.C) {
 		w.Header().Set("Content-Type", "application/json")
 	}))
 	defer server.Close()
-	defer func() {
-		manager := cmd.BuildBaseManager("uninstall-client", "0.0.0", "", nil)
-		c := cmd.NewClient(&http.Client{}, nil, manager)
-		cont := cmd.Context{
-			Args:   []string{"test"},
-			Stdout: os.Stdout,
-			Stderr: os.Stderr,
-		}
-		targetrm := manager.Commands["target-remove"]
-		targetrm.Run(&cont, c)
-	}()
 	bootstraper := TsuruBoostraper{}
 	err := bootstraper.Bootstrap(BoostrapOptions{
-		Login:           "test",
-		Password:        "test",
-		Target:          server.URL,
-		TargetName:      "test",
-		NodesToRegister: []string{server.URL},
+		Login:            "test",
+		Password:         "test",
+		Target:           server.URL,
+		TargetName:       "test",
+		NodesToRegister:  []string{server.URL},
+		InstallDashboard: true,
 	})
 	c.Assert(err, check.IsNil)
 	c.Assert(paths, check.DeepEquals, expectedPaths)
+	paths = nil
+	bootstraper = TsuruBoostraper{}
+	err = bootstraper.Bootstrap(BoostrapOptions{
+		Login:            "test",
+		Password:         "test",
+		Target:           server.URL,
+		TargetName:       "test2",
+		NodesToRegister:  []string{server.URL},
+		InstallDashboard: false,
+	})
+	c.Assert(err, check.IsNil)
+	c.Assert(paths, check.DeepEquals, expectedPaths[:6])
 }
 
 type FakeRedis struct {

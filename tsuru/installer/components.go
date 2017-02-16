@@ -41,6 +41,7 @@ var (
 
 type ComponentsConfig struct {
 	ComponentAddress map[string]string
+	InstallDashboard bool
 	TsuruAPIConfig
 }
 
@@ -53,6 +54,10 @@ func NewInstallConfig(targetName string) *ComponentsConfig {
 	if err != nil {
 		tsuruVersion = "v1"
 	}
+	installDashboard, err := config.GetBool("components:tsuru:install-dashboard")
+	if err != nil {
+		installDashboard = true
+	}
 	return &ComponentsConfig{
 		TsuruAPIConfig: TsuruAPIConfig{
 			TargetName:       targetName,
@@ -61,6 +66,7 @@ func NewInstallConfig(targetName string) *ComponentsConfig {
 			IaaSConfig:       map[string]interface{}{},
 			ImageTag:         tsuruVersion,
 		},
+		InstallDashboard: installDashboard,
 		ComponentAddress: map[string]string{
 			"mongo":    mongo,
 			"redis":    redis,
@@ -407,14 +413,15 @@ type Bootstraper interface {
 }
 
 type BoostrapOptions struct {
-	Login           string
-	Password        string
-	Target          string
-	TargetName      string
-	NodesToRegister []string
-	NodesToCreate   int
-	NodesParams     map[string][]interface{}
-	RegistryAddr    string
+	Login            string
+	Password         string
+	Target           string
+	TargetName       string
+	NodesToRegister  []string
+	NodesToCreate    int
+	NodesParams      map[string][]interface{}
+	RegistryAddr     string
+	InstallDashboard bool
 }
 
 type TsuruBoostraper struct {
@@ -473,11 +480,10 @@ func (s *TsuruBoostraper) Bootstrap(opts BoostrapOptions) error {
 	if err != nil {
 		return err
 	}
-	err = s.installDashboard()
-	if err != nil {
-		return err
+	if opts.InstallDashboard {
+		err = s.installDashboard()
 	}
-	return nil
+	return err
 }
 
 func (s *TsuruBoostraper) addTarget() error {

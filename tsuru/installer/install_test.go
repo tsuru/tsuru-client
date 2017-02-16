@@ -61,6 +61,7 @@ func (s *S) TestParseConfigFile(c *check.C) {
 				},
 				ImageTag: "v1",
 			},
+			InstallDashboard: true,
 			ComponentAddress: map[string]string{
 				"mongo":    "",
 				"redis":    "",

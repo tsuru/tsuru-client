@@ -7,6 +7,7 @@ package installer
 import (
 	"bytes"
 	"fmt"
+	"io/ioutil"
 	"os"
 	"testing"
 
@@ -19,6 +20,7 @@ import (
 
 type S struct {
 	TLSCertsPath installertest.CertsPath
+	tmpDir       string
 }
 
 var _ = check.Suite(&S{})
@@ -28,12 +30,22 @@ func Test(t *testing.T) { check.TestingT(t) }
 var manager *cmd.Manager
 
 func (s *S) SetUpSuite(c *check.C) {
+	var err error
+	s.tmpDir, err = ioutil.TempDir("", "tsuru-client-test")
+	c.Assert(err, check.IsNil)
+	err = os.Setenv("HOME", s.tmpDir)
+	c.Assert(err, check.IsNil)
 	tlsCertsPath, err := installertest.CreateTestCerts()
 	c.Assert(err, check.IsNil)
 	s.TLSCertsPath = tlsCertsPath
 	var stdout, stderr bytes.Buffer
 	manager = cmd.NewManager("glb", "1.0.0", "Supported-Tsuru-Version", &stdout, &stderr, os.Stdin, nil)
 	swarmPort = 0
+}
+
+func (s *S) TearDownSuite(c *check.C) {
+	err := os.RemoveAll(s.tmpDir)
+	c.Assert(err, check.IsNil)
 }
 
 func TestMain(m *testing.M) {
