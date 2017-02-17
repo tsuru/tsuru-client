@@ -88,7 +88,7 @@ func DefaultDriverOpts(driverName string) map[string]interface{} {
 	switch driverName {
 	case "virtualbox":
 		opts["virtualbox-memory"] = 2048
-		opts["virtualbox-nat-nictype"] = "Am79C973"
+		opts["virtualbox-nat-nictype"] = "virtio"
 	}
 	return opts
 }

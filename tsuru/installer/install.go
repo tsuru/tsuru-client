@@ -114,16 +114,15 @@ func parseConfigFile(file string) (*InstallOpts, error) {
 	if err == nil {
 		installConfig.DockerHubMirror = hub
 	}
-	driverOpts := dm.DefaultDriverOpts(installConfig.DriverName)
+	installConfig.DriverOpts = dm.DefaultDriverOpts(installConfig.DriverName)
 	opts, _ := config.Get("driver:options")
 	if opts != nil {
 		for k, v := range opts.(map[interface{}]interface{}) {
 			switch k := k.(type) {
 			case string:
-				driverOpts[k] = v
+				installConfig.DriverOpts[k] = v
 			}
 		}
-		installConfig.DriverOpts = driverOpts
 	}
 	caPath, err := config.GetString("ca-path")
 	if err == nil {

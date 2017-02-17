@@ -7,9 +7,16 @@ package installer
 import (
 	"fmt"
 	"io"
+	"net/http"
+	"os"
 	"strconv"
 	"strings"
+	"time"
 
+	"github.com/docker/machine/libmachine/mcnutils"
+	"github.com/docker/machine/libmachine/provision"
+	"github.com/docker/machine/libmachine/provision/serviceaction"
+	"github.com/fsouza/go-dockerclient"
 	"github.com/tsuru/tsuru-client/tsuru/installer/dm"
 	"github.com/tsuru/tsuru/cmd"
 	"github.com/tsuru/tsuru/iaas/dockermachine"
@@ -63,6 +70,14 @@ func (i *Installer) Install(opts *InstallOpts) (*Installation, error) {
 	if err != nil {
 		return nil, err
 	}
+	err = i.restartDocker(coreMachines)
+	if err != nil {
+		return nil, err
+	}
+	err = i.waitTsuru(cluster, opts.ComponentsConfig)
+	if err != nil {
+		return nil, err
+	}
 	target := fmt.Sprintf("http://%s:%d", cluster.GetManager().Base.Address, defaultTsuruAPIPort)
 	installMachines, err := i.BootstrapTsuru(opts, target, coreMachines)
 	if err != nil {
@@ -74,6 +89,46 @@ func (i *Installer) Install(opts *InstallOpts) (*Installation, error) {
 		InstallMachines: installMachines,
 		Components:      i.components,
 	}, nil
+}
+
+// HACK: Sometimes docker will simply freeze while pulling the images for each
+// service, adding a restart here seems to unclog the pipes.
+func (i *Installer) restartDocker(coreMachines []*dockermachine.Machine) error {
+	time.Sleep(10 * time.Second)
+	for _, m := range coreMachines {
+		fmt.Fprintf(i.outWriter, "Restarting docker in %s\n", m.Host.Name)
+		provisioner, err := provision.DetectProvisioner(m.Host.Driver)
+		if err != nil {
+			return fmt.Errorf("failed to get machine provisioner: %s", err)
+		}
+		err = provisioner.Service("docker", serviceaction.Restart)
+		if err != nil {
+			return fmt.Errorf("failed to restart docker daemon: %s", err)
+		}
+	}
+	return nil
+}
+
+func (i *Installer) waitTsuru(cluster ServiceCluster, compConf *ComponentsConfig) error {
+	fmt.Println("Waiting for Tsuru API to become responsive...")
+	tsuruURL := fmt.Sprintf("http://%s:%d", cluster.GetManager().Base.Address, defaultTsuruAPIPort)
+	err := mcnutils.WaitForSpecific(func() bool {
+		_, errReq := http.Get(tsuruURL)
+		return errReq == nil
+	}, 60, 10*time.Second)
+	if err != nil {
+		return fmt.Errorf("failed to connect to %s: %s", tsuruURL, err)
+	}
+	cmd := []string{"tsurud", "root-user-create", compConf.RootUserEmail}
+	passwordConfirmation := strings.NewReader(fmt.Sprintf("%s\n%s\n", compConf.RootUserPassword, compConf.RootUserPassword))
+	startOpts := docker.StartExecOptions{
+		InputStream:  passwordConfirmation,
+		Detach:       false,
+		OutputStream: os.Stdout,
+		ErrorStream:  os.Stderr,
+		RawTerminal:  true,
+	}
+	return cluster.ServiceExec("tsuru", cmd, startOpts)
 }
 
 func setCoreDriverDefaultOpts(opts *InstallOpts) {

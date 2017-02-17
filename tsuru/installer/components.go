@@ -10,10 +10,6 @@ import (
 	"net/http"
 	"os"
 	"strings"
-	"time"
-
-	"gopkg.in/mgo.v2"
-	redis "gopkg.in/redis.v3"
 
 	"github.com/docker/docker/api/types/mount"
 	"github.com/docker/docker/api/types/swarm"
@@ -25,6 +21,8 @@ import (
 	"github.com/tsuru/tsuru-client/tsuru/installer/dm"
 	"github.com/tsuru/tsuru/cmd"
 	"github.com/tsuru/tsuru/provision"
+	"gopkg.in/mgo.v2"
+	redis "gopkg.in/redis.v3"
 )
 
 var (
@@ -372,19 +370,7 @@ func (c *TsuruAPI) Install(cluster ServiceCluster, i *ComponentsConfig) error {
 			},
 		},
 	})
-	if err != nil {
-		return err
-	}
-	fmt.Println("Waiting for Tsuru API to become responsive...")
-	tsuruURL := fmt.Sprintf("http://%s:%d", cluster.GetManager().Base.Address, defaultTsuruAPIPort)
-	err = mcnutils.WaitForSpecific(func() bool {
-		_, errReq := http.Get(tsuruURL)
-		return errReq == nil
-	}, 60, 10*time.Second)
-	if err != nil {
-		return fmt.Errorf("failed to connect to %s: %s", tsuruURL, err)
-	}
-	return c.setupRootUser(cluster, i.RootUserEmail, i.RootUserPassword)
+	return err
 }
 
 func (c *TsuruAPI) Status(cluster ServiceCluster) (*ServiceInfo, error) {
