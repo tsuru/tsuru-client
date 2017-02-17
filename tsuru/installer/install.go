@@ -222,7 +222,7 @@ type Uninstall struct {
 func (c *Uninstall) Info() *cmd.Info {
 	return &cmd.Info{
 		Name:    "uninstall",
-		Usage:   "uninstall [name]",
+		Usage:   "uninstall [name] [-y/--assume-yes]",
 		Desc:    "Uninstalls Tsuru and It's components.",
 		MinArgs: 0,
 	}
@@ -230,7 +230,7 @@ func (c *Uninstall) Info() *cmd.Info {
 
 func (c *Uninstall) Flags() *gnuflag.FlagSet {
 	if c.fs == nil {
-		c.fs = gnuflag.NewFlagSet("uninstall", gnuflag.ExitOnError)
+		c.fs = c.ConfirmationCommand.Flags()
 		c.fs.StringVar(&c.config, "c", "", "Configuration file")
 		c.fs.StringVar(&c.config, "config", "", "Configuration file")
 	}
