@@ -5,6 +5,7 @@
 package installer
 
 import (
+	"context"
 	"fmt"
 	"io"
 	"net/http"
@@ -113,7 +114,7 @@ func (i *Installer) waitTsuru(cluster ServiceCluster, compConf *ComponentsConfig
 	fmt.Println("Waiting for Tsuru API to become responsive...")
 	tsuruURL := fmt.Sprintf("http://%s:%d", cluster.GetManager().Base.Address, defaultTsuruAPIPort)
 	err := mcnutils.WaitForSpecific(func() bool {
-		_, errReq := http.Get(tsuruURL)
+		_, errReq := getWithTimeout(tsuruURL, 5*time.Second)
 		return errReq == nil
 	}, 60, 10*time.Second)
 	if err != nil {
@@ -314,4 +315,15 @@ func (i *Installation) buildComponentsTable() *cmd.Table {
 		t.AddRow(row)
 	}
 	return t
+}
+
+func getWithTimeout(url string, timeout time.Duration) (*http.Response, error) {
+	req, err := http.NewRequest("GET", url, nil)
+	if err != nil {
+		return nil, err
+	}
+	ctx, cancel := context.WithTimeout(context.Background(), timeout)
+	defer cancel()
+	req = req.WithContext(ctx)
+	return http.DefaultClient.Do(req)
 }

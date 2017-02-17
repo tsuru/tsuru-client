@@ -5,11 +5,13 @@
 package installer
 
 import (
+	"context"
 	"encoding/json"
 	"fmt"
 	"net/http"
 	"os"
 	"strings"
+	"time"
 
 	"github.com/docker/docker/api/types/mount"
 	"github.com/docker/docker/api/types/swarm"
@@ -115,7 +117,7 @@ func (c *MongoDB) Status(cluster ServiceCluster) (*ServiceInfo, error) {
 }
 
 func (c *MongoDB) Healthcheck(addr string) error {
-	s, err := mgo.Dial(addr)
+	s, err := mgo.DialWithTimeout(addr, 30*time.Second)
 	if err != nil {
 		return err
 	}
@@ -170,6 +172,9 @@ func (c *PlanB) Healthcheck(addr string) error {
 	if err != nil {
 		return err
 	}
+	ctx, cancel := context.WithTimeout(context.Background(), 15*time.Second)
+	defer cancel()
+	req = req.WithContext(ctx)
 	req.Host = "__ping__"
 	client := http.Client{}
 	resp, err := client.Do(req)
@@ -286,7 +291,7 @@ func (c *Registry) Status(cluster ServiceCluster) (*ServiceInfo, error) {
 }
 
 func (c *Registry) Healthcheck(addr string) error {
-	resp, err := http.Get(fmt.Sprintf("%s/v2/", addr))
+	resp, err := getWithTimeout(fmt.Sprintf("%s/v2/", addr), 15*time.Second)
 	if err != nil {
 		return err
 	}
