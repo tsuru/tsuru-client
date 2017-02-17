@@ -472,15 +472,15 @@ func (s *TsuruBoostraper) Bootstrap(opts BoostrapOptions) error {
 	if err != nil {
 		return err
 	}
-	err = s.addPlatform("python")
-	if err != nil {
-		return err
-	}
-	err = s.addTeam("admin")
-	if err != nil {
-		return err
-	}
 	if opts.InstallDashboard {
+		err = s.addPlatform("python")
+		if err != nil {
+			return err
+		}
+		err = s.addTeam("admin")
+		if err != nil {
+			return err
+		}
 		err = s.installDashboard()
 	}
 	return err

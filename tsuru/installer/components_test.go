@@ -191,7 +191,7 @@ func (s *S) TestTsuruAPIBootstrapLocalEnviroment(c *check.C) {
 		InstallDashboard: false,
 	})
 	c.Assert(err, check.IsNil)
-	c.Assert(paths, check.DeepEquals, expectedPaths[:6])
+	c.Assert(paths, check.DeepEquals, expectedPaths[:4])
 }
 
 type FakeRedis struct {
