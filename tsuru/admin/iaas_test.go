@@ -194,7 +194,48 @@ func (s *S) TestTemplateUpdateCmdRun(c *check.C) {
 	}
 	manager := cmd.Manager{}
 	client := cmd.NewClient(&http.Client{Transport: trans}, nil, &manager)
-	cmd := TemplateUpdate{}
+	cmd := TemplateUpdate{iaasName: ""}
+	err := cmd.Run(&context, client)
+	c.Assert(err, check.IsNil)
+	c.Assert(buf.String(), check.Equals, "Template successfully updated.\n")
+}
+
+func (s *S) TestTemplateUpdateIaaS(c *check.C) {
+	var buf bytes.Buffer
+	context := cmd.Context{Args: []string{
+		"my-tpl",
+		"ec2",
+		"zone=us",
+	}, Stdout: &buf}
+	expectedBody := iaas.Template{
+		Name:     "my-tpl",
+		IaaSName: "cloudstack",
+		Data: iaas.TemplateDataList{
+			iaas.TemplateData{Name: "zone", Value: "us"},
+		},
+	}
+	trans := &cmdtest.ConditionalTransport{
+		Transport: cmdtest.Transport{Message: "", Status: http.StatusOK},
+		CondFunc: func(req *http.Request) bool {
+			err := req.ParseForm()
+			c.Assert(err, check.IsNil)
+			var template iaas.Template
+			dec := form.NewDecoder(nil)
+			dec.IgnoreUnknownKeys(true)
+			err = dec.DecodeValues(&template, req.Form)
+			c.Assert(err, check.IsNil)
+			c.Assert(template, check.DeepEquals, expectedBody)
+			path := strings.HasSuffix(req.URL.Path, "/iaas/templates/my-tpl")
+			method := req.Method == "PUT"
+			contentType := req.Header.Get("Content-Type") == "application/x-www-form-urlencoded"
+			return path && method && contentType
+		},
+	}
+	manager := cmd.Manager{}
+	client := cmd.NewClient(&http.Client{Transport: trans}, nil, &manager)
+	cmd := TemplateUpdate{
+		iaasName: "cloudstack",
+	}
 	err := cmd.Run(&context, client)
 	c.Assert(err, check.IsNil)
 	c.Assert(buf.String(), check.Equals, "Template successfully updated.\n")
