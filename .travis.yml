@@ -23,7 +23,7 @@ services:
   - mongodb
 matrix:
   allow_failures:
-    - go: tip
+    - go: master
 notifications:
   slack:
     secure: dDuxAhF7DgwmCvb3V7nu01+RUhvxhOCiBfGVC6596nx93ThjbTgPcMdkAdO7Xk4zFQcH3AiF3+ionMTSk+4oxRIBI0i4p71AkQoFUARWCfmLYWlztZ3Wii4/3bT36bzn5NPqGbNXhx2sWRzOO2W01jQLyFFdZlVKVTBqwBqHqG4=
