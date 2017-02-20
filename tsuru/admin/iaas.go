@@ -251,8 +251,7 @@ func (c *TemplateUpdate) Flags() *gnuflag.FlagSet {
 }
 
 func (c *TemplateUpdate) Run(context *cmd.Context, client *cmd.Client) error {
-	template := iaas.Template{Name: context.Args[0]}
-	template.IaaSName = c.iaasName
+	template := iaas.Template{Name: context.Args[0], IaaSName: c.iaasName}
 	for _, param := range context.Args[1:] {
 		if strings.Contains(param, "=") {
 			keyValue := strings.SplitN(param, "=", 2)
