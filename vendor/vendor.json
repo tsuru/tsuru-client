@@ -1222,16 +1222,16 @@
 			"revisionTime": "2017-02-09T12:25:40Z"
 		},
 		{
-			"checksumSHA1": "g6HRbtQtfnMeX8+XHmx9h0eg49E=",
+			"checksumSHA1": "lT3HB5cNawKbNxCzMyI8MR47rjA=",
 			"path": "github.com/tsuru/tsuru/cmd",
-			"revision": "c709f1fecffc5000f02fadb6c3ad6a7b46a34cf6",
-			"revisionTime": "2017-02-09T12:25:40Z"
+			"revision": "0a55ed16114bd35bdccaedce3bc0d2ab48b4f9b5",
+			"revisionTime": "2017-02-21T19:44:13Z"
 		},
 		{
 			"checksumSHA1": "jlPMfwkYSDu6BpMWoc1j5bVlP7k=",
 			"path": "github.com/tsuru/tsuru/cmd/cmdtest",
-			"revision": "c709f1fecffc5000f02fadb6c3ad6a7b46a34cf6",
-			"revisionTime": "2017-02-09T12:25:40Z"
+			"revision": "0a55ed16114bd35bdccaedce3bc0d2ab48b4f9b5",
+			"revisionTime": "2017-02-21T19:44:13Z"
 		},
 		{
 			"checksumSHA1": "J5gtAILlL++I88fVPZIfZY4KXFk=",
