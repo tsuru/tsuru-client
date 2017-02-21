@@ -158,13 +158,11 @@ func (i *Installer) InstallComponents(cluster ServiceCluster, opts *ComponentsCo
 
 func (i *Installer) BootstrapTsuru(opts *InstallOpts, target string, coreMachines []*dockermachine.Machine) ([]*dockermachine.Machine, error) {
 	fmt.Fprintf(i.outWriter, "Bootstrapping Tsuru API...")
-	registryAddr, registryPort := parseAddress(opts.ComponentsConfig.ComponentAddress["registry"], "5000")
 	bootstrapOpts := BoostrapOptions{
 		Login:            opts.ComponentsConfig.RootUserEmail,
 		Password:         opts.ComponentsConfig.RootUserPassword,
 		Target:           target,
 		TargetName:       opts.ComponentsConfig.TargetName,
-		RegistryAddr:     fmt.Sprintf("%s:%s", registryAddr, registryPort),
 		NodesParams:      opts.AppsDriversOpts,
 		InstallDashboard: opts.ComponentsConfig.InstallDashboard,
 	}

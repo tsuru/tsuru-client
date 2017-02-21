@@ -63,7 +63,6 @@ func NewInstallConfig(targetName string) *ComponentsConfig {
 			TargetName:       targetName,
 			RootUserEmail:    "admin@example.com",
 			RootUserPassword: "admin123",
-			IaaSConfig:       map[string]interface{}{},
 			ImageTag:         tsuruVersion,
 		},
 		InstallDashboard: installDashboard,
@@ -308,7 +307,22 @@ type TsuruAPIConfig struct {
 	TargetName       string
 	RootUserEmail    string
 	RootUserPassword string
-	IaaSConfig       map[string]interface{}
+	IaaSConfig       iaasConfig
+}
+
+type iaasConfig struct {
+	Dockermachine iaasConfigInternal `json:"dockermachine,omitempty"`
+}
+
+type iaasConfigInternal struct {
+	CaPath           string           `json:"ca-path,omitempty"`
+	InsecureRegistry string           `json:"insecure-registry,omitempty"`
+	Driver           iaasConfigDriver `json:"driver,omitempty"`
+}
+
+type iaasConfigDriver struct {
+	Name    string                 `json:"name,omitempty"`
+	Options map[string]interface{} `json:"options,omitempty"`
 }
 
 func (c *TsuruAPI) Name() string {
@@ -331,6 +345,7 @@ func (c *TsuruAPI) Install(cluster ServiceCluster, i *ComponentsConfig) error {
 	redis, redisPort := parseAddress(i.ComponentAddress["redis"], "6379")
 	registry, registryPort := parseAddress(i.ComponentAddress["registry"], "5000")
 	planb, _ := parseAddress(i.ComponentAddress["planb"], "80")
+	i.IaaSConfig.Dockermachine.InsecureRegistry = fmt.Sprintf("%s:%s", registry, registryPort)
 	iaasConfig, err := json.Marshal(i.IaaSConfig)
 	if err != nil {
 		return fmt.Errorf("failed to marshal iaas config: %s", err)
@@ -411,7 +426,6 @@ type BoostrapOptions struct {
 	NodesToRegister  []string
 	NodesToCreate    int
 	NodesParams      map[string][]interface{}
-	RegistryAddr     string
 	InstallDashboard bool
 }
 
@@ -459,7 +473,7 @@ func (s *TsuruBoostraper) Bootstrap(opts BoostrapOptions) error {
 	if err != nil {
 		return err
 	}
-	err = s.createNodes("theonepool", opts.NodesToCreate, opts.RegistryAddr, opts.NodesParams)
+	err = s.createNodes("theonepool", opts.NodesToCreate, opts.NodesParams)
 	if err != nil {
 		return err
 	}
@@ -537,12 +551,11 @@ func (s *TsuruBoostraper) registerNodes(pool string, nodes []string) error {
 	return nil
 }
 
-func (s *TsuruBoostraper) createNodes(pool string, nodes int, insecureRegistry string, nodesParams map[string][]interface{}) error {
+func (s *TsuruBoostraper) createNodes(pool string, nodes int, nodesParams map[string][]interface{}) error {
 	nodeAdd := admin.AddNodeCmd{}
 	for i := 0; i < nodes; i++ {
 		fmt.Printf("creating node %d/%d...\n", i+1, nodes)
-		s.context.Args = []string{"docker", "iaas=dockermachine", fmt.Sprintf("pool=%s", pool),
-			fmt.Sprintf("insecure-registry=%s", insecureRegistry)}
+		s.context.Args = []string{"docker", "iaas=dockermachine", fmt.Sprintf("pool=%s", pool)}
 		for k, v := range nodesParams {
 			idx := i % len(v)
 			s.context.Args = append(s.context.Args, fmt.Sprintf("%s=%s", k, v[idx]))

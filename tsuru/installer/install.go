@@ -159,15 +159,10 @@ func parseConfigFile(file string) (*InstallOpts, error) {
 		}
 	}
 	installConfig.ComponentsConfig = NewInstallConfig(installConfig.Name)
-	installConfig.ComponentsConfig.IaaSConfig = map[string]interface{}{
-		"dockermachine": map[string]interface{}{
-			"ca-path": "/certs",
-			"driver": map[string]interface{}{
-				"name":    installConfig.DriverName,
-				"options": installConfig.DriverOpts,
-			},
-		},
-	}
+	conf := &installConfig.ComponentsConfig.IaaSConfig.Dockermachine
+	conf.CaPath = "/certs"
+	conf.Driver.Name = installConfig.DriverName
+	conf.Driver.Options = installConfig.DriverOpts
 	return installConfig, nil
 }
 

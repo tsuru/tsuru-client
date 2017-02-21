@@ -48,12 +48,12 @@ func (s *S) TestParseConfigFile(c *check.C) {
 				TargetName:       "tsuru-test",
 				RootUserEmail:    "admin@example.com",
 				RootUserPassword: "admin123",
-				IaaSConfig: map[string]interface{}{
-					"dockermachine": map[string]interface{}{
-						"ca-path": "/certs",
-						"driver": map[string]interface{}{
-							"name": "amazonec2",
-							"options": map[string]interface{}{
+				IaaSConfig: iaasConfig{
+					Dockermachine: iaasConfigInternal{
+						CaPath: "/certs",
+						Driver: iaasConfigDriver{
+							Name: "amazonec2",
+							Options: map[string]interface{}{
 								"opt1": "option1-value",
 							},
 						},
