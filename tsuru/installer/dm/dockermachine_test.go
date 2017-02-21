@@ -19,7 +19,7 @@ func (s *S) TestNewDockerMachine(c *check.C) {
 	dm, err := NewDockerMachine(config)
 	c.Assert(err, check.IsNil)
 	c.Assert(dm, check.NotNil)
-	c.Assert(dm.driverName, check.Equals, "virtualbox")
+	c.Assert(dm.config.DriverName, check.Equals, "virtualbox")
 }
 
 func (s *S) TestNewDockerMachineDriverOpts(c *check.C) {
@@ -32,7 +32,7 @@ func (s *S) TestNewDockerMachineDriverOpts(c *check.C) {
 	dm, err := NewDockerMachine(config)
 	c.Assert(err, check.IsNil)
 	c.Assert(dm, check.NotNil)
-	c.Assert(dm.globalDriverOpts["url"].(string), check.Equals, "localhost")
+	c.Assert(dm.config.DriverOpts["url"].(string), check.Equals, "localhost")
 }
 
 func (s *S) TestUploadRegistryCertificate(c *check.C) {

@@ -30,14 +30,11 @@ var (
 )
 
 type DockerMachine struct {
-	driverName       string
-	Name             string
-	storePath        string
-	certsPath        string
-	API              dockermachine.DockerMachineAPI
-	machinesCount    uint64
-	globalDriverOpts map[string]interface{}
-	dockerHubMirror  string
+	storePath     string
+	certsPath     string
+	API           dockermachine.DockerMachineAPI
+	machinesCount uint64
+	config        DockerMachineConfig
 }
 
 type DockerMachineConfig struct {
@@ -46,6 +43,7 @@ type DockerMachineConfig struct {
 	Name            string
 	DriverOpts      map[string]interface{}
 	DockerHubMirror string
+	DockerFlags     []string
 }
 
 type MachineProvisioner interface {
@@ -65,13 +63,10 @@ func NewDockerMachine(config *DockerMachineConfig) (*DockerMachine, error) {
 		return nil, err
 	}
 	return &DockerMachine{
-		driverName:       config.DriverName,
-		Name:             config.Name,
-		API:              dm,
-		globalDriverOpts: config.DriverOpts,
-		dockerHubMirror:  config.DockerHubMirror,
-		certsPath:        certsPath,
-		storePath:        storePath,
+		API:       dm,
+		certsPath: certsPath,
+		storePath: storePath,
+		config:    *config,
 	}, nil
 }
 
@@ -93,7 +88,7 @@ func (d *DockerMachine) CreateMachine(driverOpts map[string]interface{}) (*docke
 	driverOpts["engine-install-url"] = ""
 	driverOpts["swarm-discovery"] = ""
 	mergedOpts := make(map[string]interface{})
-	for k, v := range d.globalDriverOpts {
+	for k, v := range d.config.DriverOpts {
 		mergedOpts[k] = v
 	}
 	for k, v := range driverOpts {
@@ -101,9 +96,10 @@ func (d *DockerMachine) CreateMachine(driverOpts map[string]interface{}) (*docke
 	}
 	m, err := d.API.CreateMachine(dockermachine.CreateMachineOpts{
 		Name:           d.generateMachineName(),
-		DriverName:     d.driverName,
+		DriverName:     d.config.DriverName,
 		Params:         mergedOpts,
-		RegistryMirror: d.dockerHubMirror,
+		RegistryMirror: d.config.DockerHubMirror,
+		ArbitraryFlags: d.config.DockerFlags,
 	})
 	if err != nil {
 		return nil, err
@@ -120,7 +116,7 @@ func (d *DockerMachine) CreateMachine(driverOpts map[string]interface{}) (*docke
 
 func (d *DockerMachine) generateMachineName() string {
 	atomic.AddUint64(&d.machinesCount, 1)
-	return fmt.Sprintf("%s-%d", d.Name, atomic.LoadUint64(&d.machinesCount))
+	return fmt.Sprintf("%s-%d", d.config.Name, atomic.LoadUint64(&d.machinesCount))
 }
 
 func nixPathJoin(elem ...string) string {
