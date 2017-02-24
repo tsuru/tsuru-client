@@ -202,14 +202,10 @@ func (s *S) TestTemplateUpdateCmdRun(c *check.C) {
 
 func (s *S) TestTemplateUpdateIaaS(c *check.C) {
 	var buf bytes.Buffer
-	context := cmd.Context{Args: []string{
-		"my-tpl",
-		"ec2",
-		"zone=us",
-	}, Stdout: &buf}
+	context := cmd.Context{Args: []string{"my-tpl", "zone=us"}, Stdout: &buf}
 	expectedBody := iaas.Template{
 		Name:     "my-tpl",
-		IaaSName: "cloudstack",
+		IaaSName: "ec2",
 		Data: iaas.TemplateDataList{
 			iaas.TemplateData{Name: "zone", Value: "us"},
 		},
@@ -233,9 +229,8 @@ func (s *S) TestTemplateUpdateIaaS(c *check.C) {
 	}
 	manager := cmd.Manager{}
 	client := cmd.NewClient(&http.Client{Transport: trans}, nil, &manager)
-	cmd := TemplateUpdate{
-		iaasName: "cloudstack",
-	}
+	cmd := TemplateUpdate{}
+	cmd.Flags().Parse(true, []string{"-i", "ec2"})
 	err := cmd.Run(&context, client)
 	c.Assert(err, check.IsNil)
 	c.Assert(buf.String(), check.Equals, "Template successfully updated.\n")
