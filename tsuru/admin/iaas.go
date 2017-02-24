@@ -227,7 +227,6 @@ func (c *TemplateRemove) Run(context *cmd.Context, client *cmd.Client) error {
 }
 
 type TemplateUpdate struct {
-	cmd.GuessingCommand
 	iaasName string
 	fs       *gnuflag.FlagSet
 }
@@ -235,14 +234,14 @@ type TemplateUpdate struct {
 func (c *TemplateUpdate) Info() *cmd.Info {
 	return &cmd.Info{
 		Name:    "machine-template-update",
-		Usage:   "machine-template-update [-i/--iaas <iaas_name>] name <param>=<value>...",
+		Usage:   "machine-template-update <name> <param>=<value>... [-i/--iaas <iaas_name>]",
 		Desc:    "Update an existing machine template.",
 		MinArgs: 2,
 	}
 }
 func (c *TemplateUpdate) Flags() *gnuflag.FlagSet {
 	if c.fs == nil {
-		c.fs = c.GuessingCommand.Flags()
+		c.fs = gnuflag.NewFlagSet("", gnuflag.ExitOnError)
 		iaasName := "The iaas name to be used"
 		c.fs.StringVar(&c.iaasName, "iaas", "", iaasName)
 		c.fs.StringVar(&c.iaasName, "i", "", iaasName)
