@@ -237,10 +237,11 @@ func (s *S) TestTemplateUpdateIaaS(c *check.C) {
 }
 
 func (s *S) TestTemplateFailToUpdateIaaS(c *check.C) {
-	var buf bytes.Buffer
+	var stdout, stderr bytes.Buffer
 	context := cmd.Context{
 		Args:   []string{"my-tpl"},
-		Stdout: &buf,
+		Stdout: &stdout,
+		Stderr: &stderr,
 	}
 	expectedBody := iaas.Template{Name: "my-tpl", IaaSName: "notvalidiaas"}
 	trans := &cmdtest.ConditionalTransport{
@@ -266,5 +267,6 @@ func (s *S) TestTemplateFailToUpdateIaaS(c *check.C) {
 	cmd.Flags().Parse(true, []string{"-i", "notvalidiaas"})
 	err := cmd.Run(&context, client)
 	c.Assert(err, check.NotNil)
-	c.Assert(buf.String(), check.Equals, "Failed to update template.\n")
+	c.Assert(stdout.String(), check.Equals, "")
+	c.Assert(stderr.String(), check.Equals, "Failed to update template.\n")
 }

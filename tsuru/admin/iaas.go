@@ -275,7 +275,7 @@ func (c *TemplateUpdate) Run(context *cmd.Context, client *cmd.Client) error {
 	request.Header.Set("Content-Type", "application/x-www-form-urlencoded")
 	_, err = client.Do(request)
 	if err != nil {
-		context.Stdout.Write([]byte("Failed to update template.\n"))
+		context.Stderr.Write([]byte("Failed to update template.\n"))
 		return err
 	}
 	context.Stdout.Write([]byte("Template successfully updated.\n"))
