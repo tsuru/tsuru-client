@@ -235,3 +235,36 @@ func (s *S) TestTemplateUpdateIaaS(c *check.C) {
 	c.Assert(err, check.IsNil)
 	c.Assert(buf.String(), check.Equals, "Template successfully updated.\n")
 }
+
+func (s *S) TestTemplateFailToUpdateIaaS(c *check.C) {
+	var buf bytes.Buffer
+	context := cmd.Context{
+		Args:   []string{"my-tpl"},
+		Stdout: &buf,
+	}
+	expectedBody := iaas.Template{Name: "my-tpl", IaaSName: "notvalidiaas"}
+	trans := &cmdtest.ConditionalTransport{
+		Transport: cmdtest.Transport{Message: "", Status: http.StatusConflict},
+		CondFunc: func(req *http.Request) bool {
+			err := req.ParseForm()
+			c.Assert(err, check.IsNil)
+			var template iaas.Template
+			dec := form.NewDecoder(nil)
+			dec.IgnoreUnknownKeys(true)
+			err = dec.DecodeValues(&template, req.Form)
+			c.Assert(err, check.IsNil)
+			c.Assert(template, check.DeepEquals, expectedBody)
+			path := strings.HasSuffix(req.URL.Path, "/iaas/templates/my-tpl")
+			method := req.Method == "PUT"
+			contentType := req.Header.Get("Content-Type") == "application/x-www-form-urlencoded"
+			return path && method && contentType
+		},
+	}
+	manager := cmd.Manager{}
+	client := cmd.NewClient(&http.Client{Transport: trans}, nil, &manager)
+	cmd := TemplateUpdate{}
+	cmd.Flags().Parse(true, []string{"-i", "notvalidiaas"})
+	err := cmd.Run(&context, client)
+	c.Assert(err, check.NotNil)
+	c.Assert(buf.String(), check.Equals, "Failed to update template.\n")
+}
