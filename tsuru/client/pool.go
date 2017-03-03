@@ -17,7 +17,6 @@ type PoolList struct{}
 
 type Pool struct {
 	Name        string
-	Teams       []string
 	Public      bool
 	Default     bool
 	Provisioner string

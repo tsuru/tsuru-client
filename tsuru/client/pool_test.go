@@ -19,7 +19,7 @@ func (s *S) TestPoolListInfo(c *check.C) {
 
 func (s *S) TestPoolListRun(c *check.C) {
 	var stdout, stderr bytes.Buffer
-	result := `[{"Name":"theonepool","Teams":[],"Public":true,"Default":true,"Allowed":{"router":["hipache"]}},{"Name":"pool1","Teams":[],"Public":false,"Default":true},{"Name":"pool2","Teams":["admin"],"Public":false,"Default":false,"Allowed":{"team":["admin"]}},{"Name":"pool0","Teams":["admin"],"Public":false,"Default":false,"Allowed":{"team":["admin"]}},{"Name":"pool3","Teams":["admin"],"Public":false,"Default":false,"Provisioner":"swarm","Allowed":{"router":["hipache","planb"],"team":["admin"]}}]`
+	result := `[{"Name":"theonepool","Public":true,"Default":true,"Allowed":{"router":["hipache"]}},{"Name":"pool1","Public":false,"Default":true},{"Name":"pool2","Public":false,"Default":false,"Allowed":{"team":["admin"]}},{"Name":"pool0","Public":false,"Default":false,"Allowed":{"team":["admin"]}},{"Name":"pool3","Public":false,"Default":false,"Provisioner":"swarm","Allowed":{"router":["hipache","planb"],"team":["admin"]}}]`
 	context := cmd.Context{
 		Args:   []string{},
 		Stdout: &stdout,
