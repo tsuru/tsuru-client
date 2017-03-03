@@ -833,38 +833,42 @@ func (app *App) SetPool() error {
 }
 
 func (app *App) getPoolForApp(poolName string) (string, error) {
-	var pools []provision.Pool
-	var err error
-	if poolName != "" {
-		var pool *provision.Pool
-		pool, err = provision.GetPoolByName(poolName)
+	if poolName == "" {
+		pools, err := provision.ListPoolsForTeam(app.TeamOwner)
 		if err != nil {
 			return "", err
 		}
-		pools = append(pools, *pool)
-	} else {
-		pools, err = provision.ListPoolsForTeam(app.TeamOwner)
+		if len(pools) > 1 {
+			var names []string
+			for _, p := range pools {
+				names = append(names, fmt.Sprintf("%q", p.Name))
+			}
+			return "", errors.Errorf("you have access to %s pools. Please choose one in app creation", strings.Join(names, ","))
+		}
+		if len(pools) == 0 {
+			return "", nil
+		}
+		return pools[0].Name, nil
 	}
+	pool, err := provision.GetPoolByName(poolName)
 	if err != nil {
 		return "", err
 	}
-	if len(pools) > 1 {
-		return "", errors.New("you have access to more than one pool, please choose one in app creation")
-	}
-	if len(pools) == 0 {
-		return "", nil
+	poolTeams, err := pool.GetTeams()
+	if err != nil && err != provision.ErrPoolHasNoTeam {
+		return "", errors.WithMessage(err, fmt.Sprintf("failed to get pool %q teams", pool.Name))
 	}
 	var poolTeam bool
-	for _, team := range pools[0].Teams {
+	for _, team := range poolTeams {
 		if team == app.TeamOwner {
 			poolTeam = true
 			break
 		}
 	}
-	if !pools[0].Public && !poolTeam {
-		return "", errors.Errorf("App team owner %q has no access to pool %q", app.TeamOwner, poolName)
+	if !poolTeam {
+		return "", errors.Errorf("App team owner %q has no access to pool %q", app.TeamOwner, pool.Name)
 	}
-	return pools[0].Name, nil
+	return pool.Name, nil
 }
 
 // setEnv sets the given environment variable in the app.

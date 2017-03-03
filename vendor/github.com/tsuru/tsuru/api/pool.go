@@ -7,6 +7,7 @@ package api
 import (
 	"encoding/json"
 	"net/http"
+	"strconv"
 
 	"github.com/ajg/form"
 	"github.com/tsuru/tsuru/auth"
@@ -275,4 +276,80 @@ func poolUpdateHandler(w http.ResponseWriter, r *http.Request, t auth.Token) (er
 		}
 	}
 	return err
+}
+
+// title: pool constraints list
+// path: /constraints
+// method: GET
+// produce: application/json
+// responses:
+//   200: OK
+//   204: No content
+//   401: Unauthorized
+func poolConstraintList(w http.ResponseWriter, r *http.Request, t auth.Token) error {
+	if !permission.Check(t, permission.PermPoolReadConstraints) {
+		return permission.ErrUnauthorized
+	}
+	constraints, err := provision.ListPoolsConstraints(nil)
+	if err != nil {
+		return err
+	}
+	if len(constraints) == 0 {
+		w.WriteHeader(http.StatusNoContent)
+		return nil
+	}
+	w.Header().Set("Content-Type", "application/json")
+	return json.NewEncoder(w).Encode(constraints)
+}
+
+// title: set a pool constraint
+// path: /constraints
+// method: PUT
+// consume: application/x-www-form-urlencoded
+// responses:
+//   200: OK
+//   401: Unauthorized
+func poolConstraintSet(w http.ResponseWriter, r *http.Request, t auth.Token) (err error) {
+	if !permission.Check(t, permission.PermPoolUpdateConstraintsSet) {
+		return permission.ErrUnauthorized
+	}
+	dec := form.NewDecoder(nil)
+	dec.IgnoreCase(true)
+	dec.IgnoreUnknownKeys(true)
+	var poolConstraint provision.PoolConstraint
+	err = r.ParseForm()
+	if err == nil {
+		err = dec.DecodeValues(&poolConstraint, r.Form)
+	}
+	if err != nil {
+		return &terrors.HTTP{
+			Code:    http.StatusBadRequest,
+			Message: err.Error(),
+		}
+	}
+	if poolConstraint.PoolExpr == "" {
+		return &terrors.HTTP{
+			Code:    http.StatusBadRequest,
+			Message: "You must provide a Pool Expression",
+		}
+	}
+	evt, err := event.New(&event.Opts{
+		Target:     event.Target{Type: event.TargetTypePool, Value: poolConstraint.PoolExpr},
+		Kind:       permission.PermPoolUpdateConstraintsSet,
+		Owner:      t,
+		CustomData: event.FormToCustomData(r.Form),
+		Allowed:    event.Allowed(permission.PermPoolReadEvents),
+	})
+	if err != nil {
+		return err
+	}
+	defer func() { evt.Done(err) }()
+	append := false
+	if appendStr := r.FormValue("append"); appendStr != "" {
+		append, _ = strconv.ParseBool(appendStr)
+	}
+	if append {
+		return provision.AppendPoolConstraint(&poolConstraint)
+	}
+	return provision.SetPoolConstraint(&poolConstraint)
 }

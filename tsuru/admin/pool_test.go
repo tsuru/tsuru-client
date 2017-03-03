@@ -383,7 +383,7 @@ func (s *S) TestPoolConstraintSetDefaultFlags(c *check.C) {
 			err = dec.DecodeValues(&params, req.Form)
 			c.Assert(err, check.IsNil)
 			url := strings.HasSuffix(req.URL.Path, "/constraints")
-			c.Assert(params, check.DeepEquals, PoolConstraint{
+			c.Assert(params, check.DeepEquals, provision.PoolConstraint{
 				PoolExpr:  "*",
 				Field:     "router",
 				Values:    []string{"myrouter"},
@@ -414,7 +414,7 @@ func (s *S) TestPoolConstraintSet(c *check.C) {
 			err = dec.DecodeValues(&params, req.Form)
 			c.Assert(err, check.IsNil)
 			url := strings.HasSuffix(req.URL.Path, "/constraints")
-			c.Assert(params, check.DeepEquals, PoolConstraint{
+			c.Assert(params, check.DeepEquals, provision.PoolConstraint{
 				PoolExpr:  "*",
 				Field:     "router",
 				Values:    []string{"myrouter"},
