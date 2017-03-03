@@ -19,21 +19,21 @@ func (s *S) TestPoolListInfo(c *check.C) {
 
 func (s *S) TestPoolListRun(c *check.C) {
 	var stdout, stderr bytes.Buffer
-	result := `[{"Name":"theonepool","Teams":[],"Public":true,"Default":true},{"Name":"pool1","Teams":[],"Public":false,"Default":true},{"Name":"pool2","Teams":["admin"],"Public":false,"Default":false},{"Name":"pool0","Teams":["admin"],"Public":false,"Default":false},{"Name":"pool3","Teams":["admin"],"Public":false,"Default":false,"Provisioner":"swarm"}]`
+	result := `[{"Name":"theonepool","Teams":[],"Public":true,"Default":true,"Allowed":{"router":["hipache"]}},{"Name":"pool1","Teams":[],"Public":false,"Default":true},{"Name":"pool2","Teams":["admin"],"Public":false,"Default":false,"Allowed":{"team":["admin"]}},{"Name":"pool0","Teams":["admin"],"Public":false,"Default":false,"Allowed":{"team":["admin"]}},{"Name":"pool3","Teams":["admin"],"Public":false,"Default":false,"Provisioner":"swarm","Allowed":{"router":["hipache","planb"],"team":["admin"]}}]`
 	context := cmd.Context{
 		Args:   []string{},
 		Stdout: &stdout,
 		Stderr: &stderr,
 	}
-	expected := `+------------+---------+-------------+-------+
-| Pool       | Kind    | Provisioner | Teams |
-+------------+---------+-------------+-------+
-| pool0      |         | default     | admin |
-| pool2      |         | default     | admin |
-| pool3      |         | swarm       | admin |
-| pool1      | default | default     |       |
-| theonepool | public  | default     |       |
-+------------+---------+-------------+-------+
+	expected := `+------------+---------+-------------+-------+----------------+
+| Pool       | Kind    | Provisioner | Teams | Routers        |
++------------+---------+-------------+-------+----------------+
+| pool0      |         | default     | admin |                |
+| pool2      |         | default     | admin |                |
+| pool3      |         | swarm       | admin | hipache, planb |
+| pool1      | default | default     |       |                |
+| theonepool | public  | default     |       | hipache        |
++------------+---------+-------------+-------+----------------+
 `
 	client := cmd.NewClient(&http.Client{Transport: &cmdtest.Transport{Message: result, Status: http.StatusOK}}, nil, manager)
 	command := PoolList{}

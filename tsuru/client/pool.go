@@ -21,6 +21,7 @@ type Pool struct {
 	Public      bool
 	Default     bool
 	Provisioner string
+	Allowed     map[string][]string
 }
 
 func (p *Pool) Kind() string {
@@ -72,9 +73,11 @@ func (PoolList) Run(context *cmd.Context, client *cmd.Client) error {
 		return err
 	}
 	sort.Sort(poolEntriesList(pools))
-	t := cmd.Table{Headers: cmd.Row([]string{"Pool", "Kind", "Provisioner", "Teams"})}
+	t := cmd.Table{Headers: cmd.Row([]string{"Pool", "Kind", "Provisioner", "Teams", "Routers"})}
 	for _, pool := range pools {
-		t.AddRow(cmd.Row([]string{pool.Name, pool.Kind(), pool.GetProvisioner(), strings.Join(pool.Teams, ", ")}))
+		teams := strings.Join(pool.Allowed["team"], ", ")
+		routers := strings.Join(pool.Allowed["router"], ", ")
+		t.AddRow(cmd.Row([]string{pool.Name, pool.Kind(), pool.GetProvisioner(), teams, routers}))
 	}
 	context.Stdout.Write(t.Bytes())
 	return nil
