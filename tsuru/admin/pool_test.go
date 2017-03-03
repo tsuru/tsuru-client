@@ -402,7 +402,7 @@ func (s *S) TestPoolConstraintList(c *check.C) {
 
 func (s *S) TestPoolConstraintSetDefaultFlags(c *check.C) {
 	var buf bytes.Buffer
-	context := cmd.Context{Args: []string{"*", "router", "myrouter"}, Stdout: &buf}
+	context := cmd.Context{Args: []string{"*", "router", "myrouter", "myrouter2"}, Stdout: &buf}
 	trans := &cmdtest.ConditionalTransport{
 		Transport: cmdtest.Transport{Message: "", Status: http.StatusOK},
 		CondFunc: func(req *http.Request) bool {
@@ -417,7 +417,7 @@ func (s *S) TestPoolConstraintSetDefaultFlags(c *check.C) {
 			c.Assert(params, check.DeepEquals, provision.PoolConstraint{
 				PoolExpr:  "*",
 				Field:     "router",
-				Values:    []string{"myrouter"},
+				Values:    []string{"myrouter", "myrouter2"},
 				Blacklist: false,
 			})
 			method := req.Method == "PUT"
@@ -459,6 +459,36 @@ func (s *S) TestPoolConstraintSet(c *check.C) {
 	client := cmd.NewClient(&http.Client{Transport: trans}, nil, &cmd.Manager{})
 	cmd := PoolConstraintSet{}
 	cmd.Flags().Parse(true, []string{"--blacklist", "--append"})
+	err := cmd.Run(&context, client)
+	c.Assert(err, check.IsNil)
+}
+
+func (s *S) TestPoolConstraintSetEmptyValues(c *check.C) {
+	var buf bytes.Buffer
+	context := cmd.Context{Args: []string{"*", "router"}, Stdout: &buf}
+	trans := &cmdtest.ConditionalTransport{
+		Transport: cmdtest.Transport{Message: "", Status: http.StatusOK},
+		CondFunc: func(req *http.Request) bool {
+			err := req.ParseForm()
+			c.Assert(err, check.IsNil)
+			var params provision.PoolConstraint
+			dec := form.NewDecoder(nil)
+			dec.IgnoreUnknownKeys(true)
+			err = dec.DecodeValues(&params, req.Form)
+			c.Assert(err, check.IsNil)
+			url := strings.HasSuffix(req.URL.Path, "/constraints")
+			c.Assert(params, check.DeepEquals, provision.PoolConstraint{
+				PoolExpr:  "*",
+				Field:     "router",
+				Blacklist: false,
+			})
+			method := req.Method == "PUT"
+			append := req.FormValue("append") == "false"
+			return method && append && url
+		},
+	}
+	client := cmd.NewClient(&http.Client{Transport: trans}, nil, manager)
+	cmd := PoolConstraintSet{}
 	err := cmd.Run(&context, client)
 	c.Assert(err, check.IsNil)
 }

@@ -350,7 +350,7 @@ func (c *PoolConstraintSet) Flags() *gnuflag.FlagSet {
 func (c *PoolConstraintSet) Info() *cmd.Info {
 	return &cmd.Info{
 		Name:  "pool-constraint-set",
-		Usage: "pool-constraint-set <poolExpression> <field> <values>... [-b/--blacklist] [-a/--append]",
+		Usage: "pool-constraint-set <poolExpression> <field> [<values>]... [-b/--blacklist] [-a/--append]",
 		Desc: `Set a constraint on a pool expression.
 
 Examples:
@@ -358,7 +358,7 @@ Examples:
 [[tsuru pool-constraint-set dev_pool team "*" # allows every team to use the pool "dev_pool" ]]
 [[tsuru pool-constraint-set "dev_*" router prod_router --blacklist # disallows "prod_router" to be used on every pool with "dev_" prefix ]]
 [[tsuru pool-constraint-set prod_pool team team2 team3 --append # adds "team2" and "team3" to the list of teams allowed to use pool "prod_pool"]]`,
-		MinArgs: 3,
+		MinArgs: 2,
 	}
 }
 
