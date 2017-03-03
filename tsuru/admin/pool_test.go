@@ -6,6 +6,7 @@ package admin
 
 import (
 	"bytes"
+	"encoding/json"
 	"net/http"
 	"strings"
 
@@ -367,6 +368,36 @@ func (s *S) TestRemoveTeamsFromPoolCmdRun(c *check.C) {
 	client := cmd.NewClient(&http.Client{Transport: trans}, nil, &manager)
 	err := RemoveTeamsFromPoolCmd{}.Run(&ctx, client)
 	c.Assert(err, check.IsNil)
+}
+
+func (s *S) TestPoolConstraintList(c *check.C) {
+	var buf bytes.Buffer
+	context := cmd.Context{Stdout: &buf}
+	constraints := []provision.PoolConstraint{
+		{PoolExpr: "*", Field: "router", Values: []string{"routerA", "routerB"}},
+		{PoolExpr: "dev", Field: "team", Values: []string{"*"}, Blacklist: true},
+	}
+	json, err := json.Marshal(constraints)
+	c.Assert(err, check.IsNil)
+	trans := &cmdtest.ConditionalTransport{
+		Transport: cmdtest.Transport{Message: string(json), Status: http.StatusOK},
+		CondFunc: func(req *http.Request) bool {
+			url := strings.HasSuffix(req.URL.Path, "/constraints")
+			method := req.Method == "GET"
+			return method && url
+		},
+	}
+	client := cmd.NewClient(&http.Client{Transport: trans}, nil, &cmd.Manager{})
+	cmd := PoolConstraintList{}
+	err = cmd.Run(&context, client)
+	c.Assert(err, check.IsNil)
+	c.Assert(buf.String(), check.Equals, `+-----------------+--------+-----------------+-----------+
+| Pool Expression | Field  | Values          | Blacklist |
++-----------------+--------+-----------------+-----------+
+| *               | router | routerA,routerB | false     |
+| dev             | team   | *               | true      |
++-----------------+--------+-----------------+-----------+
+`)
 }
 
 func (s *S) TestPoolConstraintSetDefaultFlags(c *check.C) {

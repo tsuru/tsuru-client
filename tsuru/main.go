@@ -133,6 +133,7 @@ func buildManager(name string) *cmd.Manager {
 	m.Register(&admin.AppQuotaView{})
 	m.Register(&admin.AppQuotaChange{})
 	m.Register(&admin.AppRoutesRebuild{})
+	m.Register(&admin.PoolConstraintList{})
 	m.Register(&admin.PoolConstraintSet{})
 	m.RegisterDeprecated(&admin.AddNodeCmd{}, "docker-node-add")
 	m.RegisterDeprecated(&admin.RemoveNodeCmd{}, "docker-node-remove")
