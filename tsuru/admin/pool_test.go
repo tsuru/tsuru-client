@@ -9,8 +9,10 @@ import (
 	"net/http"
 	"strings"
 
+	"github.com/ajg/form"
 	"github.com/tsuru/tsuru/cmd"
 	"github.com/tsuru/tsuru/cmd/cmdtest"
+	"github.com/tsuru/tsuru/provision"
 	"gopkg.in/check.v1"
 )
 
@@ -364,5 +366,68 @@ func (s *S) TestRemoveTeamsFromPoolCmdRun(c *check.C) {
 	manager := cmd.Manager{}
 	client := cmd.NewClient(&http.Client{Transport: trans}, nil, &manager)
 	err := RemoveTeamsFromPoolCmd{}.Run(&ctx, client)
+	c.Assert(err, check.IsNil)
+}
+
+func (s *S) TestPoolConstraintSetDefaultFlags(c *check.C) {
+	var buf bytes.Buffer
+	context := cmd.Context{Args: []string{"*", "router", "myrouter"}, Stdout: &buf}
+	trans := &cmdtest.ConditionalTransport{
+		Transport: cmdtest.Transport{Message: "", Status: http.StatusOK},
+		CondFunc: func(req *http.Request) bool {
+			err := req.ParseForm()
+			c.Assert(err, check.IsNil)
+			var params provision.PoolConstraint
+			dec := form.NewDecoder(nil)
+			dec.IgnoreUnknownKeys(true)
+			err = dec.DecodeValues(&params, req.Form)
+			c.Assert(err, check.IsNil)
+			url := strings.HasSuffix(req.URL.Path, "/constraints")
+			c.Assert(params, check.DeepEquals, PoolConstraint{
+				PoolExpr:  "*",
+				Field:     "router",
+				Values:    []string{"myrouter"},
+				Blacklist: false,
+			})
+			method := req.Method == "PUT"
+			append := req.FormValue("append") == "false"
+			return method && append && url
+		},
+	}
+	client := cmd.NewClient(&http.Client{Transport: trans}, nil, &cmd.Manager{})
+	cmd := PoolConstraintSet{}
+	err := cmd.Run(&context, client)
+	c.Assert(err, check.IsNil)
+}
+
+func (s *S) TestPoolConstraintSet(c *check.C) {
+	var buf bytes.Buffer
+	context := cmd.Context{Args: []string{"*", "router", "myrouter"}, Stdout: &buf}
+	trans := &cmdtest.ConditionalTransport{
+		Transport: cmdtest.Transport{Message: "", Status: http.StatusOK},
+		CondFunc: func(req *http.Request) bool {
+			err := req.ParseForm()
+			c.Assert(err, check.IsNil)
+			var params provision.PoolConstraint
+			dec := form.NewDecoder(nil)
+			dec.IgnoreUnknownKeys(true)
+			err = dec.DecodeValues(&params, req.Form)
+			c.Assert(err, check.IsNil)
+			url := strings.HasSuffix(req.URL.Path, "/constraints")
+			c.Assert(params, check.DeepEquals, PoolConstraint{
+				PoolExpr:  "*",
+				Field:     "router",
+				Values:    []string{"myrouter"},
+				Blacklist: true,
+			})
+			method := req.Method == "PUT"
+			append := req.FormValue("append") == "true"
+			return method && append && url
+		},
+	}
+	client := cmd.NewClient(&http.Client{Transport: trans}, nil, &cmd.Manager{})
+	cmd := PoolConstraintSet{}
+	cmd.Flags().Parse(true, []string{"--blacklist", "--append"})
+	err := cmd.Run(&context, client)
 	c.Assert(err, check.IsNil)
 }

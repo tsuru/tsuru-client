@@ -11,9 +11,11 @@ import (
 	"strconv"
 	"strings"
 
+	"github.com/ajg/form"
 	"github.com/tsuru/gnuflag"
 	"github.com/tsuru/tsuru/cmd"
 	"github.com/tsuru/tsuru/errors"
+	"github.com/tsuru/tsuru/provision"
 )
 
 type AddPoolToSchedulerCmd struct {
@@ -203,6 +205,67 @@ func (AddTeamsToPoolCmd) Run(ctx *cmd.Context, client *cmd.Client) error {
 		return err
 	}
 	ctx.Stdout.Write([]byte("Teams successfully registered.\n"))
+	return nil
+}
+
+type PoolConstraintSet struct {
+	append    bool
+	blacklist bool
+	fs        *gnuflag.FlagSet
+}
+
+func (c *PoolConstraintSet) Flags() *gnuflag.FlagSet {
+	if c.fs == nil {
+		c.fs = gnuflag.NewFlagSet("", gnuflag.ExitOnError)
+		c.fs.BoolVar(&c.append, "append", false, "Append to existing constraint.")
+		c.fs.BoolVar(&c.append, "a", false, "Append to existing constraint.")
+		c.fs.BoolVar(&c.blacklist, "b", false, "Blacklist constraint.")
+		c.fs.BoolVar(&c.blacklist, "blacklist", false, "Blacklist constraint.")
+	}
+	return c.fs
+}
+func (c *PoolConstraintSet) Info() *cmd.Info {
+	return &cmd.Info{
+		Name:  "pool-constraint-set",
+		Usage: "pool-constraint-set <poolExpression> <field> <values>... [-b/--blacklist] [-a/--append]",
+		Desc: `Set a constraint on a pool expression.
+
+Examples:
+
+[[tsuru pool-constraint-set dev_pool team * # allows every team to use the pool "dev_pool" ]]
+[[tsuru pool-constraint-set dev_* router prod_router --blacklist # disallows "prod_router" to be used on every pool with "dev_" prefix ]]
+[[tsuru pool-constraint-set prod_pool team team2 team3 --append # adds "team2" and "team3" to the list of teams allowed to use pool "prod_pool"]]`,
+		MinArgs: 3,
+	}
+}
+
+func (c *PoolConstraintSet) Run(ctx *cmd.Context, client *cmd.Client) error {
+	u, err := cmd.GetURLVersion("1.3", "/constraints")
+	if err != nil {
+		return err
+	}
+	values := ctx.Args[2:]
+	var allValues []string
+	for _, v := range values {
+		allValues = append(allValues, strings.Split(v, ",")...)
+	}
+	constraint := provision.PoolConstraint{
+		PoolExpr:  ctx.Args[0],
+		Field:     ctx.Args[1],
+		Blacklist: c.blacklist,
+		Values:    allValues,
+	}
+	v, err := form.EncodeToValues(constraint)
+	if err != nil {
+		return err
+	}
+	v.Set("append", strconv.FormatBool(c.append))
+	ctx.Stdout.Write([]byte(v.Encode()))
+	err = doRequest(client, u, http.MethodPut, v.Encode())
+	if err != nil {
+		return err
+	}
+	ctx.Stdout.Write([]byte("Constraint successfully set.\n"))
 	return nil
 }
 
