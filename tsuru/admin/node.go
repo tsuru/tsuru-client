@@ -61,7 +61,7 @@ Parameters with special meaning:
 
   pool=<pool name>
     Mandatory parameter specifying to which pool the added node will belong.
-    Available pools can be lister with the [[pool-list]] command.
+    Available pools can be listed with the [[pool-list]] command.
 `,
 		MinArgs: 1,
 	}

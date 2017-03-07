@@ -368,7 +368,7 @@
     "desc": "Creates a new app using the given name and platform. For tsuru,\na platform is provisioner dependent. To check the available platforms, use the\ncommand [[tsuru platform-list]] and to add a platform use the command [[tsuru-admin platform-add]].\n\nIn order to create an app, you need to be member of at least one team. All\nteams that you are member (see [[tsuru team-list]]) will be able to access the\napp.\n\nThe [[--platform]] parameter is the name of the platform to be used when\ncreating the app. This will define how tsuru understands and executes your\napp. The list of available platforms can be found running [[tsuru platform-list]].\n\nThe [[--plan]] parameter defines the plan to be used. The plan specifies how\ncomputational resources are allocated to your application. Typically this\nmeans limits for memory and swap usage, and how much cpu share is allocated.\nThe list of available plans can be found running [[tsuru plan-list]].\n\nIf this parameter is not informed, tsuru will choose the plan with the\n[[default]] flag set to true.\n\nThe [[--router]] parameter defines the router to be used. The list of available\nrouters can be found running [[tsuru router-list]].\n\nIf this parameter is not informed, tsuru will choose the router with the\n[[default]] flag set to true.\n\nThe [[--team]] parameter describes which team is responsible for the created\napp, this is only needed if the current user belongs to more than one team, in\nwhich case this parameter will be mandatory.\n\nThe [[--pool]] parameter defines which pool your app will be deployed.\nThis is only needed if you have more than one pool associated with your teams.\n\nThe [[--description]] parameter sets a description for your app.\nIt is an optional parameter, and if its not set the app will only not have a\ndescription associated.\n\nThe [[--router-opts]] parameter allow passing custom parameters to the router\nused by the application's plan. The key and values used depends on the router\nimplementation.\n\nFlags:\n  \n  -d, --description (= \"\")\n      App description\n  -o, --pool (= \"\")\n      Pool to deploy your app\n  -p, --plan (= \"\")\n      The plan used to create the app\n  -r, --router (= \"\")\n      The router used by the app\n  --router-opts  (= {})\n      Router options\n  -t, --team (= \"\")\n      Team owner app\n  \nMinimum # of arguments: 2\n"
   }, 
   "role-default-remove": {
-    "usage": "tsuru role-default-remove [--user-create <role name>]... [--team-create <role name>]...", 
+    "usage": "tsuru role-default-remove [--team-create <role name>]... [--user-create <role name>]...", 
     "desc": "Remove a default role from a specific event.\n\nFlags:\n  \n  --team-create  (= [])\n      role added to user when a new team is created\n  --user-create  (= [])\n      role added to user when user is created\n  \n"
   }, 
   "node-remove": {
@@ -547,8 +547,8 @@
     "desc": "Lists the public keys registered in the current user account.\n\nFlags:\n  \n  -n, --no-truncate  (= false)\n      disable truncation of key content\n  \n"
   }, 
   "machine-template-update": {
-    "usage": "tsuru machine-template-update <name> <param>=<value>...", 
-    "desc": "Update an existing machine template.\n\nMinimum # of arguments: 2\n"
+    "usage": "tsuru machine-template-update <name> <param>=<value>... [-i/--iaas <iaas_name>]", 
+    "desc": "Update an existing machine template.\n\nFlags:\n  \n  -i, --iaas (= \"\")\n      The iaas name to be used\n  \nMinimum # of arguments: 2\n"
   }, 
   "service-list": {
     "usage": "tsuru service-list", 
