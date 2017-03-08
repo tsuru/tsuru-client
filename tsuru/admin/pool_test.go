@@ -330,6 +330,46 @@ func (s *S) TestRemovePoolFromTheSchedulerCmdConfirmation(c *check.C) {
 	c.Assert(stdout.String(), check.Equals, "Are you sure you want to remove \"poolX\" pool? (y/n) Abort.\n")
 }
 
+func (s *S) TestAddTeamsToPoolCmdRun(c *check.C) {
+	var buf bytes.Buffer
+	ctx := cmd.Context{Stdout: &buf, Args: []string{"pool1", "team1", "team2"}}
+	trans := &cmdtest.ConditionalTransport{
+		Transport: cmdtest.Transport{Message: "", Status: http.StatusOK},
+		CondFunc: func(req *http.Request) bool {
+			url := strings.HasSuffix(req.URL.Path, "/pools/pool1/team")
+			method := req.Method == "POST"
+			err := req.ParseForm()
+			c.Assert(err, check.IsNil)
+			teams := req.Form["team"]
+			c.Assert(teams, check.DeepEquals, []string{"team1", "team2"})
+			contentType := req.Header.Get("Content-Type") == "application/x-www-form-urlencoded"
+			return url && method && contentType
+		},
+	}
+	manager := cmd.Manager{}
+	client := cmd.NewClient(&http.Client{Transport: trans}, nil, &manager)
+	err := AddTeamsToPoolCmd{}.Run(&ctx, client)
+	c.Assert(err, check.IsNil)
+}
+
+func (s *S) TestRemoveTeamsFromPoolCmdRun(c *check.C) {
+	var buf bytes.Buffer
+	ctx := cmd.Context{Stdout: &buf, Args: []string{"pool1", "team1"}}
+	trans := &cmdtest.ConditionalTransport{
+		Transport: cmdtest.Transport{Message: "", Status: http.StatusOK},
+		CondFunc: func(req *http.Request) bool {
+			url := strings.HasSuffix(req.URL.Path, "/pools/pool1/team")
+			method := req.Method == http.MethodDelete
+			rq := req.URL.RawQuery == "team=team1"
+			return url && method && rq
+		},
+	}
+	manager := cmd.Manager{}
+	client := cmd.NewClient(&http.Client{Transport: trans}, nil, &manager)
+	err := RemoveTeamsFromPoolCmd{}.Run(&ctx, client)
+	c.Assert(err, check.IsNil)
+}
+
 func (s *S) TestPoolConstraintList(c *check.C) {
 	var buf bytes.Buffer
 	context := cmd.Context{Stdout: &buf}

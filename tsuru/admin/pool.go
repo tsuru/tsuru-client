@@ -175,6 +175,73 @@ func (c *RemovePoolFromSchedulerCmd) Run(ctx *cmd.Context, client *cmd.Client) e
 	return nil
 }
 
+type AddTeamsToPoolCmd struct{}
+
+func (AddTeamsToPoolCmd) Info() *cmd.Info {
+	return &cmd.Info{
+		Name:  "pool-teams-add",
+		Usage: "pool-teams-add <pool> <teams>...",
+		Desc: `Adds teams to a pool. This will make the specified pool available when
+creating a new application for one of the added teams.`,
+		MinArgs: 2,
+	}
+}
+
+func (AddTeamsToPoolCmd) Run(ctx *cmd.Context, client *cmd.Client) error {
+	v := url.Values{}
+	for _, team := range ctx.Args[1:] {
+		v.Add("team", team)
+	}
+	u, err := cmd.GetURL(fmt.Sprintf("/pools/%s/team", ctx.Args[0]))
+	if err != nil {
+		return err
+	}
+	req, err := http.NewRequest("POST", u, strings.NewReader(v.Encode()))
+	if err != nil {
+		return err
+	}
+	req.Header.Set("Content-Type", "application/x-www-form-urlencoded")
+	_, err = client.Do(req)
+	if err != nil {
+		return err
+	}
+	ctx.Stdout.Write([]byte("Teams successfully registered.\n"))
+	return nil
+}
+
+type RemoveTeamsFromPoolCmd struct{}
+
+func (RemoveTeamsFromPoolCmd) Info() *cmd.Info {
+	return &cmd.Info{
+		Name:  "pool-teams-remove",
+		Usage: "pool-teams-remove <pool> <teams>...",
+		Desc: `Removes teams from a pool. Listed teams will be no longer able to use this
+pool when creating a new application.`,
+		MinArgs: 2,
+	}
+}
+
+func (RemoveTeamsFromPoolCmd) Run(ctx *cmd.Context, client *cmd.Client) error {
+	v := url.Values{}
+	for _, team := range ctx.Args[1:] {
+		v.Add("team", team)
+	}
+	u, err := cmd.GetURL(fmt.Sprintf("/pools/%s/team?%s", ctx.Args[0], v.Encode()))
+	if err != nil {
+		return err
+	}
+	req, err := http.NewRequest(http.MethodDelete, u, nil)
+	if err != nil {
+		return err
+	}
+	_, err = client.Do(req)
+	if err != nil {
+		return err
+	}
+	ctx.Stdout.Write([]byte("Teams successfully removed.\n"))
+	return nil
+}
+
 type pointerBoolFlag struct {
 	value *bool
 }
