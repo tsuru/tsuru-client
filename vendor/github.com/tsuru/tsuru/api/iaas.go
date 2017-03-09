@@ -6,6 +6,7 @@ package api
 
 import (
 	"encoding/json"
+	"fmt"
 	"net/http"
 
 	"github.com/ajg/form"
@@ -131,6 +132,7 @@ func templatesList(w http.ResponseWriter, r *http.Request, token auth.Token) err
 //   201: Template created
 //   400: Invalid data
 //   401: Unauthorized
+//   409: Existent template
 func templateCreate(w http.ResponseWriter, r *http.Request, token auth.Token) (err error) {
 	err = r.ParseForm()
 	if err != nil {
@@ -159,6 +161,13 @@ func templateCreate(w http.ResponseWriter, r *http.Request, token auth.Token) (e
 		return err
 	}
 	defer func() { evt.Done(err) }()
+	_, err = iaas.FindTemplate(paramTemplate.Name)
+	if err != nil && err != mgo.ErrNotFound {
+		return err
+	}
+	if err == nil {
+		return &errors.HTTP{Code: http.StatusConflict, Message: fmt.Sprintf("template name \"%s\" already used", paramTemplate.Name)}
+	}
 	err = paramTemplate.Save()
 	if err != nil {
 		return err
@@ -231,6 +240,9 @@ func templateUpdate(w http.ResponseWriter, r *http.Request, token auth.Token) (e
 			return &errors.HTTP{Code: http.StatusNotFound, Message: "template not found"}
 		}
 		return err
+	}
+	if r.Form.Get("IaaSName") != "" {
+		dbTpl.IaaSName = r.Form.Get("IaaSName")
 	}
 	iaasCtx := permission.Context(permission.CtxIaaS, dbTpl.IaaSName)
 	allowed := permission.Check(token, permission.PermMachineTemplateUpdate, iaasCtx)
