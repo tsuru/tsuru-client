@@ -489,6 +489,7 @@ func (s *S) TestAppDeployRollback(c *check.C) {
 	c.Assert(called, check.Equals, true)
 	c.Assert(stdout.String(), check.Equals, expectedOut)
 }
+
 func (s *S) TestProcessTsuruIgnore(c *check.C) {
 	dir, _ := os.Getwd()
 	tests := []struct {
@@ -632,4 +633,40 @@ func (s *S) TestIgnoreRelativeFile(c *check.C) {
 	sort.Strings(expected)
 	sort.Strings(headers)
 	c.Assert(headers, check.DeepEquals, expected)
+}
+
+func (s *S) TestAppDeployRebuildInfo(c *check.C) {
+	c.Assert((&AppDeployRebuild{}).Info(), check.NotNil)
+}
+
+func (s *S) TestAppDeployRebuild(c *check.C) {
+	var (
+		called         bool
+		stdout, stderr bytes.Buffer
+	)
+	context := cmd.Context{
+		Stdout: &stdout,
+		Stderr: &stderr,
+	}
+	expectedOut := "---- rebuild ----"
+	msg := tsuruIo.SimpleJsonMessage{Message: expectedOut}
+	result, err := json.Marshal(msg)
+	c.Assert(err, check.IsNil)
+	trans := &cmdtest.ConditionalTransport{
+		Transport: cmdtest.Transport{Message: string(result), Status: http.StatusOK},
+		CondFunc: func(req *http.Request) bool {
+			called = true
+			method := req.Method == "POST"
+			path := strings.HasSuffix(req.URL.Path, "/apps/myapp/deploy/rebuild")
+			rebuild := req.FormValue("origin") == "rebuild"
+			return method && path && rebuild
+		},
+	}
+	client := cmd.NewClient(&http.Client{Transport: trans}, nil, manager)
+	command := AppDeployRebuild{}
+	command.Flags().Parse(true, []string{"--app", "myapp"})
+	err = command.Run(&context, client)
+	c.Assert(err, check.IsNil)
+	c.Assert(called, check.Equals, true)
+	c.Assert(stdout.String(), check.Equals, expectedOut)
 }

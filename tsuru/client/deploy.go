@@ -588,3 +588,53 @@ func (c *AppDeployRollback) Run(context *cmd.Context, client *cmd.Client) error 
 	}
 	return nil
 }
+
+type AppDeployRebuild struct {
+	cmd.GuessingCommand
+}
+
+func (c *AppDeployRebuild) Info() *cmd.Info {
+	desc := "Rebuild and deploy the last app image."
+	return &cmd.Info{
+		Name:    "app-deploy-rebuild",
+		Usage:   "app-deploy-rebuild [-a/--app appname]",
+		Desc:    desc,
+		MinArgs: 0,
+		MaxArgs: 0,
+	}
+}
+
+func (c *AppDeployRebuild) Run(context *cmd.Context, client *cmd.Client) error {
+	context.RawOutput()
+	appName, err := c.Guess()
+	if err != nil {
+		return err
+	}
+	u, err := cmd.GetURLVersion("1.3", fmt.Sprintf("/apps/%s/deploy/rebuild", appName))
+	if err != nil {
+		return err
+	}
+	v := url.Values{}
+	v.Set("origin", "rebuild")
+	request, err := http.NewRequest("POST", u, strings.NewReader(v.Encode()))
+	if err != nil {
+		return err
+	}
+	request.Header.Add("Content-Type", "application/x-www-form-urlencoded")
+	response, err := client.Do(request)
+	if err != nil {
+		return err
+	}
+	defer response.Body.Close()
+	w := tsuruIo.NewStreamWriter(context.Stdout, nil)
+	for n := int64(1); n > 0 && err == nil; n, err = io.Copy(w, response.Body) {
+	}
+	if err != nil {
+		return err
+	}
+	unparsed := w.Remaining()
+	if len(unparsed) > 0 {
+		return fmt.Errorf("unparsed message error: %s", string(unparsed))
+	}
+	return nil
+}

@@ -87,6 +87,7 @@ func buildManager(name string) *cmd.Manager {
 	m.Register(&client.RegenerateAPIToken{})
 	m.Register(&client.AppDeployList{})
 	m.Register(&client.AppDeployRollback{})
+	m.Register(&client.AppDeployRebuild{})
 	m.Register(&cmd.ShellToContainerCmd{})
 	m.Register(&client.PoolList{})
 	m.Register(&client.PermissionList{})
