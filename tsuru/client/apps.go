@@ -31,6 +31,7 @@ type AppCreate struct {
 	router      string
 	pool        string
 	description string
+	tags        string
 	routerOpts  cmd.MapFlag
 	fs          *gnuflag.FlagSet
 }
@@ -38,7 +39,7 @@ type AppCreate struct {
 func (c *AppCreate) Info() *cmd.Info {
 	return &cmd.Info{
 		Name:  "app-create",
-		Usage: "app-create <appname> <platform> [--plan/-p plan_name] [--router/-r router_name] [--team/-t (team owner)] [--pool/-o pool_name] [--description/-d description] [--router-opts key=value]...",
+		Usage: "app-create <appname> <platform> [--plan/-p plan_name] [--router/-r router_name] [--team/-t team owner] [--pool/-o pool_name] [--description/-d description] [--tags tag list] [--router-opts key=value]...",
 		Desc: `Creates a new app using the given name and platform. For tsuru,
 a platform is provisioner dependent. To check the available platforms, use the
 command [[tsuru platform-list]] and to add a platform use the command [[tsuru-admin platform-add]].
@@ -76,6 +77,8 @@ The [[--description]] parameter sets a description for your app.
 It is an optional parameter, and if its not set the app will only not have a
 description associated.
 
+The [[--tags]] parameter sets a list of tags to your app. It is an optional parameter.
+
 The [[--router-opts]] parameter allow passing custom parameters to the router
 used by the application's plan. The key and values used depends on the router
 implementation.`,
@@ -101,6 +104,8 @@ func (c *AppCreate) Flags() *gnuflag.FlagSet {
 		descriptionMessage := "App description"
 		c.fs.StringVar(&c.description, "description", "", descriptionMessage)
 		c.fs.StringVar(&c.description, "d", "", descriptionMessage)
+		tagsMessage := "App tags"
+		c.fs.StringVar(&c.tags, "tags", "", tagsMessage)
 		c.fs.Var(&c.routerOpts, "router-opts", "Router options")
 	}
 	return c.fs
@@ -119,6 +124,10 @@ func (c *AppCreate) Run(context *cmd.Context, client *cmd.Client) error {
 	v.Set("teamOwner", c.teamOwner)
 	v.Set("pool", c.pool)
 	v.Set("description", c.description)
+	tagList := strings.Split(c.tags, ",")
+	for _, tag := range tagList {
+		v.Add("tags", tag)
+	}
 	v.Set("router", c.router)
 	b := strings.NewReader(v.Encode())
 	u, err := cmd.GetURL("/apps")
