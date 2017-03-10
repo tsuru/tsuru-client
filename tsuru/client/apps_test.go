@@ -384,13 +384,15 @@ func (s *S) TestAppUpdate(c *check.C) {
 			url := strings.HasSuffix(req.URL.Path, "/apps/ble")
 			method := req.Method == "PUT"
 			description := req.FormValue("description") == "description of my app"
+			req.ParseForm()
+			tags := len(req.Form["tags"]) == 2 && req.Form["tags"][0] == "tag 1" && req.Form["tags"][1] == "tag 2"
 			router := req.FormValue("router") == "router"
-			return url && method && description && router
+			return url && method && description && tags && router
 		},
 	}
 	client := cmd.NewClient(&http.Client{Transport: trans}, nil, manager)
 	command := AppUpdate{}
-	command.Flags().Parse(true, []string{"-d", "description of my app", "-a", "ble", "-r", "router"})
+	command.Flags().Parse(true, []string{"-d", "description of my app", "-a", "ble", "-r", "router", "-g", " tag 1   ,, tag 1, , tag 2 , ,  "})
 	err := command.Run(&context, client)
 	c.Assert(err, check.IsNil)
 	c.Assert(stdout.String(), check.Equals, expected)
@@ -409,7 +411,9 @@ func (s *S) TestAppUpdateWithoutArgs(c *check.C) {
 			url := strings.HasSuffix(req.URL.Path, "/apps/secret")
 			method := req.Method == "PUT"
 			description := req.FormValue("description") == "description of my app"
-			return url && method && description
+			req.ParseForm()
+			tags := req.Form["tags"] == nil
+			return url && method && description && tags
 		},
 	}
 	client := cmd.NewClient(&http.Client{Transport: trans}, nil, manager)
@@ -494,6 +498,20 @@ func (s *S) TestAppUpdateFlags(c *check.C) {
 	c.Check(router.Usage, check.Equals, usage)
 	c.Check(router.Value.String(), check.Equals, "router")
 	c.Check(router.DefValue, check.Equals, "")
+	flagset.Parse(true, []string{"-g", "tags"})
+	usage = "App tags"
+	tags := flagset.Lookup("tags")
+	c.Check(tags, check.NotNil)
+	c.Check(tags.Name, check.Equals, "tags")
+	c.Check(tags.Usage, check.Equals, usage)
+	c.Check(tags.Value.String(), check.Equals, "tags")
+	c.Check(tags.DefValue, check.Equals, "")
+	tags = flagset.Lookup("g")
+	c.Check(tags, check.NotNil)
+	c.Check(tags.Name, check.Equals, "g")
+	c.Check(tags.Usage, check.Equals, usage)
+	c.Check(tags.Value.String(), check.Equals, "tags")
+	c.Check(tags.DefValue, check.Equals, "")
 }
 
 func (s *S) TestAppRemove(c *check.C) {

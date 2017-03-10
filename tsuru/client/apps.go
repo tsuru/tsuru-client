@@ -173,6 +173,7 @@ type AppUpdate struct {
 	router      string
 	pool        string
 	teamOwner   string
+	tags        string
 	fs          *gnuflag.FlagSet
 	cmd.GuessingCommand
 	cmd.ConfirmationCommand
@@ -181,7 +182,7 @@ type AppUpdate struct {
 func (c *AppUpdate) Info() *cmd.Info {
 	return &cmd.Info{
 		Name:  "app-update",
-		Usage: "app-update [-a/--app appname] [--description/-d description] [--plan/-p plan_name] [--router/-r router_name] [--pool/-o pool] [--team-owner/-t team-owner]",
+		Usage: "app-update [-a/--app appname] [--description/-d description] [--plan/-p plan name] [--router/-r router name] [--pool/-o pool] [--team-owner/-t team owner] [--tags/-g tag list]",
 		Desc: `Updates an app, changing its description, plan or pool information.
 
 The [[--description]] parameter sets a description for your app.
@@ -192,7 +193,9 @@ The [[--router]] parameter changes the router of your app.
 
 The [[--pool]] parameter changes the pool of your app.
 
-The [[--team-owner]] parameter sets owner team for an application.`,
+The [[--team-owner]] parameter sets owner team for an application.
+
+The [[--tags]] parameter sets tags for your app. Multiple tags must be separated by commas.`,
 	}
 }
 
@@ -204,6 +207,7 @@ func (c *AppUpdate) Flags() *gnuflag.FlagSet {
 		routerMessage := "App router"
 		poolMessage := "App pool"
 		teamOwnerMessage := "App team owner"
+		tagsMessage := "App tags"
 		flagSet.StringVar(&c.description, "description", "", descriptionMessage)
 		flagSet.StringVar(&c.description, "d", "", descriptionMessage)
 		flagSet.StringVar(&c.plan, "plan", "", planMessage)
@@ -214,6 +218,8 @@ func (c *AppUpdate) Flags() *gnuflag.FlagSet {
 		flagSet.StringVar(&c.pool, "pool", "", poolMessage)
 		flagSet.StringVar(&c.teamOwner, "t", "", teamOwnerMessage)
 		flagSet.StringVar(&c.teamOwner, "team-owner", "", teamOwnerMessage)
+		flagSet.StringVar(&c.tags, "g", "", tagsMessage)
+		flagSet.StringVar(&c.tags, "tags", "", tagsMessage)
 		c.fs = cmd.MergeFlagSet(
 			c.GuessingCommand.Flags(),
 			flagSet,
@@ -238,6 +244,15 @@ func (c *AppUpdate) Run(context *cmd.Context, client *cmd.Client) error {
 	v.Set("description", c.description)
 	v.Set("pool", c.pool)
 	v.Set("teamOwner", c.teamOwner)
+	tagList := strings.Split(c.tags, ",")
+	tagMap := make(map[string]bool)
+	for _, tag := range tagList {
+		tag = strings.Trim(tag, " ")
+		if len(tag) > 0 && !tagMap[tag] {
+			v.Add("tags", tag)
+			tagMap[tag] = true
+		}
+	}
 	request, err := http.NewRequest("PUT", u, strings.NewReader(v.Encode()))
 	if err != nil {
 		return err
