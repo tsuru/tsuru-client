@@ -126,9 +126,12 @@ func (c *AppCreate) Run(context *cmd.Context, client *cmd.Client) error {
 	v.Set("pool", c.pool)
 	v.Set("description", c.description)
 	tagList := strings.Split(c.tags, ",")
+	tagMap := make(map[string]bool)
 	for _, tag := range tagList {
-		if len(tag) > 0 {
+		tag = strings.Trim(tag, " ")
+		if len(tag) > 0 && !tagMap[tag] {
 			v.Add("tags", tag)
+			tagMap[tag] = true
 		}
 	}
 	v.Set("router", c.router)

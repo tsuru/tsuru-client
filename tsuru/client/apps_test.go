@@ -298,7 +298,7 @@ Your repository for "ble" project is "git@tsuru.plataformas.glb.com:ble.git"` + 
 	}
 	client := cmd.NewClient(&http.Client{Transport: &trans}, nil, manager)
 	command := AppCreate{}
-	command.Flags().Parse(true, []string{"--tags", "tag1,,tag2,"})
+	command.Flags().Parse(true, []string{"--tags", " tag1,,  tag2 ,   tag1 ,,,"})
 	err := command.Run(&context, client)
 	c.Assert(err, check.IsNil)
 	c.Assert(stdout.String(), check.Equals, expected)
