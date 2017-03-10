@@ -39,7 +39,7 @@ type AppCreate struct {
 func (c *AppCreate) Info() *cmd.Info {
 	return &cmd.Info{
 		Name:  "app-create",
-		Usage: "app-create <appname> <platform> [--plan/-p plan_name] [--router/-r router_name] [--team/-t team owner] [--pool/-o pool_name] [--description/-d description] [--tags tag list] [--router-opts key=value]...",
+		Usage: "app-create <appname> <platform> [--plan/-p plan_name] [--router/-r router_name] [--team/-t team owner] [--pool/-o pool_name] [--description/-d description] [--tags/-g tag list] [--router-opts key=value]...",
 		Desc: `Creates a new app using the given name and platform. For tsuru,
 a platform is provisioner dependent. To check the available platforms, use the
 command [[tsuru platform-list]] and to add a platform use the command [[tsuru-admin platform-add]].
@@ -77,7 +77,7 @@ The [[--description]] parameter sets a description for your app.
 It is an optional parameter, and if its not set the app will only not have a
 description associated.
 
-The [[--tags]] parameter sets a list of tags to your app. It is an optional parameter.
+The [[--tags]] parameter sets a list of tags to your app. Tags must be separated by commas. It is an optional parameter.
 
 The [[--router-opts]] parameter allow passing custom parameters to the router
 used by the application's plan. The key and values used depends on the router
@@ -106,6 +106,7 @@ func (c *AppCreate) Flags() *gnuflag.FlagSet {
 		c.fs.StringVar(&c.description, "d", "", descriptionMessage)
 		tagsMessage := "App tags"
 		c.fs.StringVar(&c.tags, "tags", "", tagsMessage)
+		c.fs.StringVar(&c.tags, "g", "", tagsMessage)
 		c.fs.Var(&c.routerOpts, "router-opts", "Router options")
 	}
 	return c.fs

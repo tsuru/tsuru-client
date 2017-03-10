@@ -358,6 +358,13 @@ func (s *S) TestAppCreateFlags(c *check.C) {
 	c.Check(tags.Usage, check.Equals, usage)
 	c.Check(tags.Value.String(), check.Equals, "tag1,tag2,tag3")
 	c.Check(tags.DefValue, check.Equals, "")
+	flagset.Parse(true, []string{"-g", "tag4,tag5"})
+	tags = flagset.Lookup("g")
+	c.Check(tags, check.NotNil)
+	c.Check(tags.Name, check.Equals, "g")
+	c.Check(tags.Usage, check.Equals, usage)
+	c.Check(tags.Value.String(), check.Equals, "tag4,tag5")
+	c.Check(tags.DefValue, check.Equals, "")
 }
 
 func (s *S) TestAppUpdateInfo(c *check.C) {
