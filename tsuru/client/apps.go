@@ -126,7 +126,9 @@ func (c *AppCreate) Run(context *cmd.Context, client *cmd.Client) error {
 	v.Set("description", c.description)
 	tagList := strings.Split(c.tags, ",")
 	for _, tag := range tagList {
-		v.Add("tags", tag)
+		if len(tag) > 0 {
+			v.Add("tags", tag)
+		}
 	}
 	v.Set("router", c.router)
 	b := strings.NewReader(v.Encode())
