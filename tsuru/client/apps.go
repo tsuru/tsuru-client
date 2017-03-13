@@ -185,7 +185,7 @@ type AppUpdate struct {
 	router      string
 	pool        string
 	teamOwner   string
-	tags        string
+	tags        stringFlag
 	fs          *gnuflag.FlagSet
 	cmd.GuessingCommand
 	cmd.ConfirmationCommand
@@ -231,8 +231,8 @@ func (c *AppUpdate) Flags() *gnuflag.FlagSet {
 		flagSet.StringVar(&c.pool, "pool", "", poolMessage)
 		flagSet.StringVar(&c.teamOwner, "t", "", teamOwnerMessage)
 		flagSet.StringVar(&c.teamOwner, "team-owner", "", teamOwnerMessage)
-		flagSet.StringVar(&c.tags, "g", "", tagsMessage)
-		flagSet.StringVar(&c.tags, "tags", "", tagsMessage)
+		flagSet.Var(&c.tags, "g", tagsMessage)
+		flagSet.Var(&c.tags, "tags", tagsMessage)
 		c.fs = cmd.MergeFlagSet(
 			c.GuessingCommand.Flags(),
 			flagSet,
@@ -257,9 +257,11 @@ func (c *AppUpdate) Run(context *cmd.Context, client *cmd.Client) error {
 	v.Set("description", c.description)
 	v.Set("pool", c.pool)
 	v.Set("teamOwner", c.teamOwner)
-	tags := strings.Split(c.tags, ",")
-	for _, tag := range tags {
-		v.Add("tags", tag)
+	if c.tags.isSet {
+		tags := strings.Split(c.tags.value, ",")
+		for _, tag := range tags {
+			v.Add("tags", tag)
+		}
 	}
 	request, err := http.NewRequest("PUT", u, strings.NewReader(v.Encode()))
 	if err != nil {
