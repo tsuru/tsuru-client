@@ -53,7 +53,7 @@ Your repository for "ble" project is "git@tsuru.plataformas.glb.com:ble.git"` + 
 			pool := r.FormValue("pool") == ""
 			description := r.FormValue("description") == ""
 			r.ParseForm()
-			tags := len(r.Form["tags"]) == 1 && r.Form["tags"][0] == ""
+			tags := r.Form["tags"] == nil
 			router := r.FormValue("router") == ""
 			method := r.Method == "POST"
 			contentType := r.Header.Get("Content-Type") == "application/x-www-form-urlencoded"
@@ -89,7 +89,7 @@ Your repository for "ble" project is "git@tsuru.plataformas.glb.com:ble.git"` + 
 			pool := r.FormValue("pool") == ""
 			description := r.FormValue("description") == ""
 			r.ParseForm()
-			tags := len(r.Form["tags"]) == 1 && r.Form["tags"][0] == ""
+			tags := r.Form["tags"] == nil
 			router := r.FormValue("router") == ""
 			method := r.Method == "POST"
 			url := strings.HasSuffix(r.URL.Path, "/apps")
@@ -127,7 +127,7 @@ Your repository for "ble" project is "git@tsuru.plataformas.glb.com:ble.git"` + 
 			router := r.FormValue("router") == ""
 			description := r.FormValue("description") == ""
 			r.ParseForm()
-			tags := len(r.Form["tags"]) == 1 && r.Form["tags"][0] == ""
+			tags := r.Form["tags"] == nil
 			method := r.Method == "POST"
 			url := strings.HasSuffix(r.URL.Path, "/apps")
 			contentType := r.Header.Get("Content-Type") == "application/x-www-form-urlencoded"
@@ -164,7 +164,7 @@ Your repository for "ble" project is "git@tsuru.plataformas.glb.com:ble.git"` + 
 			router := r.FormValue("router") == ""
 			description := r.FormValue("description") == ""
 			r.ParseForm()
-			tags := len(r.Form["tags"]) == 1 && r.Form["tags"][0] == ""
+			tags := r.Form["tags"] == nil
 			method := r.Method == "POST"
 			url := strings.HasSuffix(r.URL.Path, "/apps")
 			contentType := r.Header.Get("Content-Type") == "application/x-www-form-urlencoded"
@@ -200,7 +200,7 @@ Your repository for "ble" project is "git@tsuru.plataformas.glb.com:ble.git"` + 
 			pool := r.FormValue("pool") == ""
 			description := r.FormValue("description") == ""
 			r.ParseForm()
-			tags := len(r.Form["tags"]) == 1 && r.Form["tags"][0] == ""
+			tags := r.Form["tags"] == nil
 			router := r.FormValue("router") == ""
 			c.Assert(r.FormValue("routeropts.a"), check.Equals, "1")
 			c.Assert(r.FormValue("routeropts.b"), check.Equals, "2")
@@ -239,7 +239,7 @@ Use app-info to check the status of the app and its units.` + "\n"
 			router := r.FormValue("router") == ""
 			description := r.FormValue("description") == ""
 			r.ParseForm()
-			tags := len(r.Form["tags"]) == 1 && r.Form["tags"][0] == ""
+			tags := r.Form["tags"] == nil
 			method := r.Method == "POST"
 			url := strings.HasSuffix(r.URL.Path, "/apps")
 			contentType := r.Header.Get("Content-Type") == "application/x-www-form-urlencoded"
@@ -299,6 +299,43 @@ Your repository for "ble" project is "git@tsuru.plataformas.glb.com:ble.git"` + 
 	client := cmd.NewClient(&http.Client{Transport: &trans}, nil, manager)
 	command := AppCreate{}
 	command.Flags().Parse(true, []string{"--tags", "tag1,tag2"})
+	err := command.Run(&context, client)
+	c.Assert(err, check.IsNil)
+	c.Assert(stdout.String(), check.Equals, expected)
+}
+
+func (s *S) TestAppCreateWithEmptyTag(c *check.C) {
+	var stdout, stderr bytes.Buffer
+	result := `{"status":"success", "repository_url":"git@tsuru.plataformas.glb.com:ble.git"}`
+	expected := `App "ble" has been created!
+Use app-info to check the status of the app and its units.
+Your repository for "ble" project is "git@tsuru.plataformas.glb.com:ble.git"` + "\n"
+	context := cmd.Context{
+		Args:   []string{"ble", "django"},
+		Stdout: &stdout,
+		Stderr: &stderr,
+	}
+	trans := cmdtest.ConditionalTransport{
+		Transport: cmdtest.Transport{Message: result, Status: http.StatusOK},
+		CondFunc: func(r *http.Request) bool {
+			r.ParseForm()
+			name := r.FormValue("name") == "ble"
+			platform := r.FormValue("platform") == "django"
+			teamOwner := r.FormValue("teamOwner") == ""
+			plan := r.FormValue("plan") == ""
+			pool := r.FormValue("pool") == ""
+			description := r.FormValue("description") == ""
+			tags := len(r.Form["tags"]) == 1 && r.Form["tags"][0] == ""
+			router := r.FormValue("router") == ""
+			method := r.Method == "POST"
+			contentType := r.Header.Get("Content-Type") == "application/x-www-form-urlencoded"
+			url := strings.HasSuffix(r.URL.Path, "/apps")
+			return method && url && name && platform && teamOwner && plan && pool && description && tags && contentType && router
+		},
+	}
+	client := cmd.NewClient(&http.Client{Transport: &trans}, nil, manager)
+	command := AppCreate{}
+	command.Flags().Parse(true, []string{"--tags", ""})
 	err := command.Run(&context, client)
 	c.Assert(err, check.IsNil)
 	c.Assert(stdout.String(), check.Equals, expected)

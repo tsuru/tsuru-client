@@ -25,13 +25,28 @@ import (
 	tsuruerr "github.com/tsuru/tsuru/errors"
 )
 
+type stringFlag struct {
+	isSet bool
+	value string
+}
+
+func (sf *stringFlag) Set(value string) error {
+	sf.value = value
+	sf.isSet = true
+	return nil
+}
+
+func (sf *stringFlag) String() string {
+	return sf.value
+}
+
 type AppCreate struct {
 	teamOwner   string
 	plan        string
 	router      string
 	pool        string
 	description string
-	tags        string
+	tags        stringFlag
 	routerOpts  cmd.MapFlag
 	fs          *gnuflag.FlagSet
 }
@@ -105,8 +120,8 @@ func (c *AppCreate) Flags() *gnuflag.FlagSet {
 		c.fs.StringVar(&c.description, "description", "", descriptionMessage)
 		c.fs.StringVar(&c.description, "d", "", descriptionMessage)
 		tagsMessage := "App tags"
-		c.fs.StringVar(&c.tags, "tags", "", tagsMessage)
-		c.fs.StringVar(&c.tags, "g", "", tagsMessage)
+		c.fs.Var(&c.tags, "tags", tagsMessage)
+		c.fs.Var(&c.tags, "g", tagsMessage)
 		c.fs.Var(&c.routerOpts, "router-opts", "Router options")
 	}
 	return c.fs
@@ -125,9 +140,11 @@ func (c *AppCreate) Run(context *cmd.Context, client *cmd.Client) error {
 	v.Set("teamOwner", c.teamOwner)
 	v.Set("pool", c.pool)
 	v.Set("description", c.description)
-	tags := strings.Split(c.tags, ",")
-	for _, tag := range tags {
-		v.Add("tags", tag)
+	if c.tags.isSet {
+		tags := strings.Split(c.tags.value, ",")
+		for _, tag := range tags {
+			v.Add("tags", tag)
+		}
 	}
 	v.Set("router", c.router)
 	b := strings.NewReader(v.Encode())
