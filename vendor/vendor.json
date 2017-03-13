@@ -1498,10 +1498,6 @@
 			"revisionTime": "2017-03-08T21:41:15Z"
 		},
 		{
-			"path": "github.com/tsuru/tsuru/storage",
-			"revision": ""
-		},
-		{
 			"checksumSHA1": "gY9N6X94WevQNvXAhwmsDaxvZts=",
 			"path": "github.com/tsuru/tsuru/validation",
 			"revision": "c995d88552886c50e903378207026ba78cd3c413",
