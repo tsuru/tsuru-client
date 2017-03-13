@@ -39,10 +39,10 @@ type AppCreate struct {
 func (c *AppCreate) Info() *cmd.Info {
 	return &cmd.Info{
 		Name:  "app-create",
-		Usage: "app-create <appname> <platform> [--plan/-p plan_name] [--router/-r router_name] [--team/-t team owner] [--pool/-o pool_name] [--description/-d description] [--tags/-g tag list] [--router-opts key=value]...",
+		Usage: "app-create <appname> <platform> [--plan/-p plan name] [--router/-r router name] [--team/-t team owner] [--pool/-o pool name] [--description/-d description] [--tags/-g tag list] [--router-opts key=value]...",
 		Desc: `Creates a new app using the given name and platform. For tsuru,
 a platform is provisioner dependent. To check the available platforms, use the
-command [[tsuru platform-list]] and to add a platform use the command [[tsuru-admin platform-add]].
+command [[tsuru platform-list]] and to add a platform use the command [[tsuru platform-add]].
 
 In order to create an app, you need to be member of at least one team. All
 teams that you are member (see [[tsuru team-list]]) will be able to access the
@@ -125,14 +125,9 @@ func (c *AppCreate) Run(context *cmd.Context, client *cmd.Client) error {
 	v.Set("teamOwner", c.teamOwner)
 	v.Set("pool", c.pool)
 	v.Set("description", c.description)
-	tagList := strings.Split(c.tags, ",")
-	tagMap := make(map[string]bool)
-	for _, tag := range tagList {
-		tag = strings.Trim(tag, " ")
-		if len(tag) > 0 && !tagMap[tag] {
-			v.Add("tags", tag)
-			tagMap[tag] = true
-		}
+	tags := strings.Split(c.tags, ",")
+	for _, tag := range tags {
+		v.Add("tags", tag)
 	}
 	v.Set("router", c.router)
 	b := strings.NewReader(v.Encode())
@@ -244,14 +239,9 @@ func (c *AppUpdate) Run(context *cmd.Context, client *cmd.Client) error {
 	v.Set("description", c.description)
 	v.Set("pool", c.pool)
 	v.Set("teamOwner", c.teamOwner)
-	tagList := strings.Split(c.tags, ",")
-	tagMap := make(map[string]bool)
-	for _, tag := range tagList {
-		tag = strings.Trim(tag, " ")
-		if len(tag) > 0 && !tagMap[tag] {
-			v.Add("tags", tag)
-			tagMap[tag] = true
-		}
+	tags := strings.Split(c.tags, ",")
+	for _, tag := range tags {
+		v.Add("tags", tag)
 	}
 	request, err := http.NewRequest("PUT", u, strings.NewReader(v.Encode()))
 	if err != nil {

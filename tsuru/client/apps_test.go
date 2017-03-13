@@ -53,7 +53,7 @@ Your repository for "ble" project is "git@tsuru.plataformas.glb.com:ble.git"` + 
 			pool := r.FormValue("pool") == ""
 			description := r.FormValue("description") == ""
 			r.ParseForm()
-			tags := r.Form["tags"] == nil
+			tags := len(r.Form["tags"]) == 1 && r.Form["tags"][0] == ""
 			router := r.FormValue("router") == ""
 			method := r.Method == "POST"
 			contentType := r.Header.Get("Content-Type") == "application/x-www-form-urlencoded"
@@ -89,7 +89,7 @@ Your repository for "ble" project is "git@tsuru.plataformas.glb.com:ble.git"` + 
 			pool := r.FormValue("pool") == ""
 			description := r.FormValue("description") == ""
 			r.ParseForm()
-			tags := r.Form["tags"] == nil
+			tags := len(r.Form["tags"]) == 1 && r.Form["tags"][0] == ""
 			router := r.FormValue("router") == ""
 			method := r.Method == "POST"
 			url := strings.HasSuffix(r.URL.Path, "/apps")
@@ -127,7 +127,7 @@ Your repository for "ble" project is "git@tsuru.plataformas.glb.com:ble.git"` + 
 			router := r.FormValue("router") == ""
 			description := r.FormValue("description") == ""
 			r.ParseForm()
-			tags := r.Form["tags"] == nil
+			tags := len(r.Form["tags"]) == 1 && r.Form["tags"][0] == ""
 			method := r.Method == "POST"
 			url := strings.HasSuffix(r.URL.Path, "/apps")
 			contentType := r.Header.Get("Content-Type") == "application/x-www-form-urlencoded"
@@ -164,7 +164,7 @@ Your repository for "ble" project is "git@tsuru.plataformas.glb.com:ble.git"` + 
 			router := r.FormValue("router") == ""
 			description := r.FormValue("description") == ""
 			r.ParseForm()
-			tags := r.Form["tags"] == nil
+			tags := len(r.Form["tags"]) == 1 && r.Form["tags"][0] == ""
 			method := r.Method == "POST"
 			url := strings.HasSuffix(r.URL.Path, "/apps")
 			contentType := r.Header.Get("Content-Type") == "application/x-www-form-urlencoded"
@@ -200,7 +200,7 @@ Your repository for "ble" project is "git@tsuru.plataformas.glb.com:ble.git"` + 
 			pool := r.FormValue("pool") == ""
 			description := r.FormValue("description") == ""
 			r.ParseForm()
-			tags := r.Form["tags"] == nil
+			tags := len(r.Form["tags"]) == 1 && r.Form["tags"][0] == ""
 			router := r.FormValue("router") == ""
 			c.Assert(r.FormValue("routeropts.a"), check.Equals, "1")
 			c.Assert(r.FormValue("routeropts.b"), check.Equals, "2")
@@ -239,7 +239,7 @@ Use app-info to check the status of the app and its units.` + "\n"
 			router := r.FormValue("router") == ""
 			description := r.FormValue("description") == ""
 			r.ParseForm()
-			tags := r.Form["tags"] == nil
+			tags := len(r.Form["tags"]) == 1 && r.Form["tags"][0] == ""
 			method := r.Method == "POST"
 			url := strings.HasSuffix(r.URL.Path, "/apps")
 			contentType := r.Header.Get("Content-Type") == "application/x-www-form-urlencoded"
@@ -298,7 +298,7 @@ Your repository for "ble" project is "git@tsuru.plataformas.glb.com:ble.git"` + 
 	}
 	client := cmd.NewClient(&http.Client{Transport: &trans}, nil, manager)
 	command := AppCreate{}
-	command.Flags().Parse(true, []string{"--tags", " tag1,,  tag2 ,   tag1 ,,,"})
+	command.Flags().Parse(true, []string{"--tags", "tag1,tag2"})
 	err := command.Run(&context, client)
 	c.Assert(err, check.IsNil)
 	c.Assert(stdout.String(), check.Equals, expected)
@@ -392,7 +392,7 @@ func (s *S) TestAppUpdate(c *check.C) {
 	}
 	client := cmd.NewClient(&http.Client{Transport: trans}, nil, manager)
 	command := AppUpdate{}
-	command.Flags().Parse(true, []string{"-d", "description of my app", "-a", "ble", "-r", "router", "-g", " tag 1   ,, tag 1, , tag 2 , ,  "})
+	command.Flags().Parse(true, []string{"-d", "description of my app", "-a", "ble", "-r", "router", "-g", "tag 1,tag 2"})
 	err := command.Run(&context, client)
 	c.Assert(err, check.IsNil)
 	c.Assert(stdout.String(), check.Equals, expected)
