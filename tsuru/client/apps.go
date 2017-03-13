@@ -39,7 +39,7 @@ type AppCreate struct {
 func (c *AppCreate) Info() *cmd.Info {
 	return &cmd.Info{
 		Name:  "app-create",
-		Usage: "app-create <appname> <platform> [--plan/-p plan name] [--router/-r router name] [--team/-t team owner] [--pool/-o pool name] [--description/-d description] [--tags/-g tag list] [--router-opts key=value]...",
+		Usage: "app-create <appname> <platform> [--plan/-p plan name] [--router/-r router name] [--team/-t team owner] [--pool/-o pool name] [--description/-d description] [--tags/-g tags] [--router-opts key=value]...",
 		Desc: `Creates a new app using the given name and platform. For tsuru,
 a platform is provisioner dependent. To check the available platforms, use the
 command [[tsuru platform-list]] and to add a platform use the command [[tsuru platform-add]].
@@ -177,8 +177,8 @@ type AppUpdate struct {
 func (c *AppUpdate) Info() *cmd.Info {
 	return &cmd.Info{
 		Name:  "app-update",
-		Usage: "app-update [-a/--app appname] [--description/-d description] [--plan/-p plan name] [--router/-r router name] [--pool/-o pool] [--team-owner/-t team owner] [--tags/-g tag list]",
-		Desc: `Updates an app, changing its description, plan or pool information.
+		Usage: "app-update [-a/--app appname] [--description/-d description] [--plan/-p plan name] [--router/-r router name] [--pool/-o pool] [--team-owner/-t team owner] [--tags/-g tags]",
+		Desc: `Updates an app, changing its description, tags, plan or pool information.
 
 The [[--description]] parameter sets a description for your app.
 
@@ -190,7 +190,8 @@ The [[--pool]] parameter changes the pool of your app.
 
 The [[--team-owner]] parameter sets owner team for an application.
 
-The [[--tags]] parameter sets tags for your app. Multiple tags must be separated by commas.`,
+The [[--tags]] parameter sets tags for your app. Multiple tags must
+be separated by commas.`,
 	}
 }
 
