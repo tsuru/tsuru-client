@@ -229,6 +229,15 @@ func (s *Storage) Events() *storage.Collection {
 	return c
 }
 
+func (s *Storage) EventBlocks() *storage.Collection {
+	index := mgo.Index{Key: []string{"ownername", "kindname", "target"}}
+	startTimeIndex := mgo.Index{Key: []string{"-starttime"}}
+	c := s.Collection("event_blocks")
+	c.EnsureIndex(index)
+	c.EnsureIndex(startTimeIndex)
+	return c
+}
+
 func (s *Storage) InstallHosts() *storage.Collection {
 	nameIndex := mgo.Index{Key: []string{"name"}, Unique: true}
 	c := s.Collection("install_hosts")

@@ -69,6 +69,7 @@ var (
 	TargetTypePlan            = TargetType("plan")
 	TargetTypeNodeContainer   = TargetType("node-container")
 	TargetTypeInstallHost     = TargetType("install-host")
+	TargetTypeEventBlock      = TargetType("event-block")
 )
 
 const (
@@ -111,6 +112,10 @@ func (id Target) GetBSON() (interface{}, error) {
 
 func (id Target) IsValid() bool {
 	return id.Type != ""
+}
+
+func (id Target) String() string {
+	return fmt.Sprintf("%s(%s)", id.Type, id.Value)
 }
 
 type eventID struct {
@@ -699,6 +704,11 @@ func newEvt(opts *Opts) (*Event, error) {
 	for i := 0; i < maxRetries+1; i++ {
 		err = coll.Insert(evt.eventData)
 		if err == nil {
+			err = checkIsBlocked(&evt)
+			if err != nil {
+				evt.Done(err)
+				return nil, err
+			}
 			if !opts.DisableLock {
 				updater.addCh <- &opts.Target
 			}
