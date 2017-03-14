@@ -125,10 +125,8 @@ func (c *AppCreate) Run(context *cmd.Context, client *cmd.Client) error {
 	v.Set("teamOwner", c.teamOwner)
 	v.Set("pool", c.pool)
 	v.Set("description", c.description)
-	if c.tags != nil {
-		for _, tag := range c.tags {
-			v.Add("tag", tag)
-		}
+	for _, tag := range c.tags {
+		v.Add("tag", tag)
 	}
 	v.Set("router", c.router)
 	b := strings.NewReader(v.Encode())
@@ -241,10 +239,8 @@ func (c *AppUpdate) Run(context *cmd.Context, client *cmd.Client) error {
 	v.Set("description", c.description)
 	v.Set("pool", c.pool)
 	v.Set("teamOwner", c.teamOwner)
-	if c.tags != nil {
-		for _, tag := range c.tags {
-			v.Add("tag", tag)
-		}
+	for _, tag := range c.tags {
+		v.Add("tag", tag)
 	}
 	request, err := http.NewRequest("PUT", u, strings.NewReader(v.Encode()))
 	if err != nil {
