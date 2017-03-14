@@ -298,7 +298,7 @@ Your repository for "ble" project is "git@tsuru.plataformas.glb.com:ble.git"` + 
 	}
 	client := cmd.NewClient(&http.Client{Transport: &trans}, nil, manager)
 	command := AppCreate{}
-	command.Flags().Parse(true, []string{"--tags", "tag1,tag2"})
+	command.Flags().Parse(true, []string{"--tags", "tag1", "--tags", "tag2"})
 	err := command.Run(&context, client)
 	c.Assert(err, check.IsNil)
 	c.Assert(stdout.String(), check.Equals, expected)
@@ -387,21 +387,20 @@ func (s *S) TestAppCreateFlags(c *check.C) {
 	c.Check(router.Usage, check.Equals, usage)
 	c.Check(router.Value.String(), check.Equals, "router")
 	c.Check(router.DefValue, check.Equals, "")
-	flagset.Parse(true, []string{"--tags", "tag1,tag2,tag3"})
+	flagset.Parse(true, []string{"--tags", "tag1", "--tags", "tag2"})
 	usage = "App tags"
 	tags := flagset.Lookup("tags")
 	c.Check(tags, check.NotNil)
 	c.Check(tags.Name, check.Equals, "tags")
 	c.Check(tags.Usage, check.Equals, usage)
-	c.Check(tags.Value.String(), check.Equals, "tag1,tag2,tag3")
-	c.Check(tags.DefValue, check.Equals, "")
-	flagset.Parse(true, []string{"-g", "tag4,tag5"})
+	c.Check(tags.Value.String(), check.Equals, "[\"tag1\",\"tag2\"]")
+	c.Check(tags.DefValue, check.Equals, "[]")
 	tags = flagset.Lookup("g")
 	c.Check(tags, check.NotNil)
 	c.Check(tags.Name, check.Equals, "g")
 	c.Check(tags.Usage, check.Equals, usage)
-	c.Check(tags.Value.String(), check.Equals, "tag4,tag5")
-	c.Check(tags.DefValue, check.Equals, "")
+	c.Check(tags.Value.String(), check.Equals, "[\"tag1\",\"tag2\"]")
+	c.Check(tags.DefValue, check.Equals, "[]")
 }
 
 func (s *S) TestAppUpdateInfo(c *check.C) {
@@ -429,7 +428,7 @@ func (s *S) TestAppUpdate(c *check.C) {
 	}
 	client := cmd.NewClient(&http.Client{Transport: trans}, nil, manager)
 	command := AppUpdate{}
-	command.Flags().Parse(true, []string{"-d", "description of my app", "-a", "ble", "-r", "router", "-g", "tag 1,tag 2"})
+	command.Flags().Parse(true, []string{"-d", "description of my app", "-a", "ble", "-r", "router", "-g", "tag 1", "-g", "tag 2"})
 	err := command.Run(&context, client)
 	c.Assert(err, check.IsNil)
 	c.Assert(stdout.String(), check.Equals, expected)
@@ -593,14 +592,14 @@ func (s *S) TestAppUpdateFlags(c *check.C) {
 	c.Check(tags, check.NotNil)
 	c.Check(tags.Name, check.Equals, "tags")
 	c.Check(tags.Usage, check.Equals, usage)
-	c.Check(tags.Value.String(), check.Equals, "tags")
-	c.Check(tags.DefValue, check.Equals, "")
+	c.Check(tags.Value.String(), check.Equals, "[\"tags\"]")
+	c.Check(tags.DefValue, check.Equals, "[]")
 	tags = flagset.Lookup("g")
 	c.Check(tags, check.NotNil)
 	c.Check(tags.Name, check.Equals, "g")
 	c.Check(tags.Usage, check.Equals, usage)
-	c.Check(tags.Value.String(), check.Equals, "tags")
-	c.Check(tags.DefValue, check.Equals, "")
+	c.Check(tags.Value.String(), check.Equals, "[\"tags\"]")
+	c.Check(tags.DefValue, check.Equals, "[]")
 }
 
 func (s *S) TestAppRemove(c *check.C) {

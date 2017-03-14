@@ -25,28 +25,13 @@ import (
 	tsuruerr "github.com/tsuru/tsuru/errors"
 )
 
-type stringFlag struct {
-	isSet bool
-	value string
-}
-
-func (sf *stringFlag) Set(value string) error {
-	sf.value = value
-	sf.isSet = true
-	return nil
-}
-
-func (sf *stringFlag) String() string {
-	return sf.value
-}
-
 type AppCreate struct {
 	teamOwner   string
 	plan        string
 	router      string
 	pool        string
 	description string
-	tags        stringFlag
+	tags        cmd.StringSliceFlag
 	routerOpts  cmd.MapFlag
 	fs          *gnuflag.FlagSet
 }
@@ -140,9 +125,8 @@ func (c *AppCreate) Run(context *cmd.Context, client *cmd.Client) error {
 	v.Set("teamOwner", c.teamOwner)
 	v.Set("pool", c.pool)
 	v.Set("description", c.description)
-	if c.tags.isSet {
-		tags := strings.Split(c.tags.value, ",")
-		for _, tag := range tags {
+	if c.tags != nil {
+		for _, tag := range c.tags {
 			v.Add("tags", tag)
 		}
 	}
@@ -185,7 +169,7 @@ type AppUpdate struct {
 	router      string
 	pool        string
 	teamOwner   string
-	tags        stringFlag
+	tags        cmd.StringSliceFlag
 	fs          *gnuflag.FlagSet
 	cmd.GuessingCommand
 	cmd.ConfirmationCommand
@@ -257,9 +241,8 @@ func (c *AppUpdate) Run(context *cmd.Context, client *cmd.Client) error {
 	v.Set("description", c.description)
 	v.Set("pool", c.pool)
 	v.Set("teamOwner", c.teamOwner)
-	if c.tags.isSet {
-		tags := strings.Split(c.tags.value, ",")
-		for _, tag := range tags {
+	if c.tags != nil {
+		for _, tag := range c.tags {
 			v.Add("tags", tag)
 		}
 	}
