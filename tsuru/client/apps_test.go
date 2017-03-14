@@ -53,7 +53,7 @@ Your repository for "ble" project is "git@tsuru.plataformas.glb.com:ble.git"` + 
 			pool := r.FormValue("pool") == ""
 			description := r.FormValue("description") == ""
 			r.ParseForm()
-			tags := r.Form["tags"] == nil
+			tags := r.Form["tag"] == nil
 			router := r.FormValue("router") == ""
 			method := r.Method == "POST"
 			contentType := r.Header.Get("Content-Type") == "application/x-www-form-urlencoded"
@@ -89,7 +89,7 @@ Your repository for "ble" project is "git@tsuru.plataformas.glb.com:ble.git"` + 
 			pool := r.FormValue("pool") == ""
 			description := r.FormValue("description") == ""
 			r.ParseForm()
-			tags := r.Form["tags"] == nil
+			tags := r.Form["tag"] == nil
 			router := r.FormValue("router") == ""
 			method := r.Method == "POST"
 			url := strings.HasSuffix(r.URL.Path, "/apps")
@@ -127,7 +127,7 @@ Your repository for "ble" project is "git@tsuru.plataformas.glb.com:ble.git"` + 
 			router := r.FormValue("router") == ""
 			description := r.FormValue("description") == ""
 			r.ParseForm()
-			tags := r.Form["tags"] == nil
+			tags := r.Form["tag"] == nil
 			method := r.Method == "POST"
 			url := strings.HasSuffix(r.URL.Path, "/apps")
 			contentType := r.Header.Get("Content-Type") == "application/x-www-form-urlencoded"
@@ -164,7 +164,7 @@ Your repository for "ble" project is "git@tsuru.plataformas.glb.com:ble.git"` + 
 			router := r.FormValue("router") == ""
 			description := r.FormValue("description") == ""
 			r.ParseForm()
-			tags := r.Form["tags"] == nil
+			tags := r.Form["tag"] == nil
 			method := r.Method == "POST"
 			url := strings.HasSuffix(r.URL.Path, "/apps")
 			contentType := r.Header.Get("Content-Type") == "application/x-www-form-urlencoded"
@@ -200,7 +200,7 @@ Your repository for "ble" project is "git@tsuru.plataformas.glb.com:ble.git"` + 
 			pool := r.FormValue("pool") == ""
 			description := r.FormValue("description") == ""
 			r.ParseForm()
-			tags := r.Form["tags"] == nil
+			tags := r.Form["tag"] == nil
 			router := r.FormValue("router") == ""
 			c.Assert(r.FormValue("routeropts.a"), check.Equals, "1")
 			c.Assert(r.FormValue("routeropts.b"), check.Equals, "2")
@@ -239,7 +239,7 @@ Use app-info to check the status of the app and its units.` + "\n"
 			router := r.FormValue("router") == ""
 			description := r.FormValue("description") == ""
 			r.ParseForm()
-			tags := r.Form["tags"] == nil
+			tags := r.Form["tag"] == nil
 			method := r.Method == "POST"
 			url := strings.HasSuffix(r.URL.Path, "/apps")
 			contentType := r.Header.Get("Content-Type") == "application/x-www-form-urlencoded"
@@ -288,7 +288,7 @@ Your repository for "ble" project is "git@tsuru.plataformas.glb.com:ble.git"` + 
 			plan := r.FormValue("plan") == ""
 			pool := r.FormValue("pool") == ""
 			description := r.FormValue("description") == ""
-			tags := len(r.Form["tags"]) == 2 && r.Form["tags"][0] == "tag1" && r.Form["tags"][1] == "tag2"
+			tags := len(r.Form["tag"]) == 2 && r.Form["tag"][0] == "tag1" && r.Form["tag"][1] == "tag2"
 			router := r.FormValue("router") == ""
 			method := r.Method == "POST"
 			contentType := r.Header.Get("Content-Type") == "application/x-www-form-urlencoded"
@@ -298,7 +298,7 @@ Your repository for "ble" project is "git@tsuru.plataformas.glb.com:ble.git"` + 
 	}
 	client := cmd.NewClient(&http.Client{Transport: &trans}, nil, manager)
 	command := AppCreate{}
-	command.Flags().Parse(true, []string{"--tags", "tag1", "--tags", "tag2"})
+	command.Flags().Parse(true, []string{"--tag", "tag1", "--tag", "tag2"})
 	err := command.Run(&context, client)
 	c.Assert(err, check.IsNil)
 	c.Assert(stdout.String(), check.Equals, expected)
@@ -325,7 +325,7 @@ Your repository for "ble" project is "git@tsuru.plataformas.glb.com:ble.git"` + 
 			plan := r.FormValue("plan") == ""
 			pool := r.FormValue("pool") == ""
 			description := r.FormValue("description") == ""
-			tags := len(r.Form["tags"]) == 1 && r.Form["tags"][0] == ""
+			tags := len(r.Form["tag"]) == 1 && r.Form["tag"][0] == ""
 			router := r.FormValue("router") == ""
 			method := r.Method == "POST"
 			contentType := r.Header.Get("Content-Type") == "application/x-www-form-urlencoded"
@@ -335,7 +335,7 @@ Your repository for "ble" project is "git@tsuru.plataformas.glb.com:ble.git"` + 
 	}
 	client := cmd.NewClient(&http.Client{Transport: &trans}, nil, manager)
 	command := AppCreate{}
-	command.Flags().Parse(true, []string{"--tags", ""})
+	command.Flags().Parse(true, []string{"--tag", ""})
 	err := command.Run(&context, client)
 	c.Assert(err, check.IsNil)
 	c.Assert(stdout.String(), check.Equals, expected)
@@ -387,20 +387,20 @@ func (s *S) TestAppCreateFlags(c *check.C) {
 	c.Check(router.Usage, check.Equals, usage)
 	c.Check(router.Value.String(), check.Equals, "router")
 	c.Check(router.DefValue, check.Equals, "")
-	flagset.Parse(true, []string{"--tags", "tag1", "--tags", "tag2"})
-	usage = "App tags"
-	tags := flagset.Lookup("tags")
-	c.Check(tags, check.NotNil)
-	c.Check(tags.Name, check.Equals, "tags")
-	c.Check(tags.Usage, check.Equals, usage)
-	c.Check(tags.Value.String(), check.Equals, "[\"tag1\",\"tag2\"]")
-	c.Check(tags.DefValue, check.Equals, "[]")
-	tags = flagset.Lookup("g")
-	c.Check(tags, check.NotNil)
-	c.Check(tags.Name, check.Equals, "g")
-	c.Check(tags.Usage, check.Equals, usage)
-	c.Check(tags.Value.String(), check.Equals, "[\"tag1\",\"tag2\"]")
-	c.Check(tags.DefValue, check.Equals, "[]")
+	flagset.Parse(true, []string{"--tag", "tag1", "--tag", "tag2"})
+	usage = "App tag"
+	tag := flagset.Lookup("tag")
+	c.Check(tag, check.NotNil)
+	c.Check(tag.Name, check.Equals, "tag")
+	c.Check(tag.Usage, check.Equals, usage)
+	c.Check(tag.Value.String(), check.Equals, "[\"tag1\",\"tag2\"]")
+	c.Check(tag.DefValue, check.Equals, "[]")
+	tag = flagset.Lookup("g")
+	c.Check(tag, check.NotNil)
+	c.Check(tag.Name, check.Equals, "g")
+	c.Check(tag.Usage, check.Equals, usage)
+	c.Check(tag.Value.String(), check.Equals, "[\"tag1\",\"tag2\"]")
+	c.Check(tag.DefValue, check.Equals, "[]")
 }
 
 func (s *S) TestAppUpdateInfo(c *check.C) {
@@ -421,7 +421,7 @@ func (s *S) TestAppUpdate(c *check.C) {
 			method := req.Method == "PUT"
 			description := req.FormValue("description") == "description of my app"
 			req.ParseForm()
-			tags := len(req.Form["tags"]) == 2 && req.Form["tags"][0] == "tag 1" && req.Form["tags"][1] == "tag 2"
+			tags := len(req.Form["tag"]) == 2 && req.Form["tag"][0] == "tag 1" && req.Form["tag"][1] == "tag 2"
 			router := req.FormValue("router") == "router"
 			return url && method && description && tags && router
 		},
@@ -448,7 +448,7 @@ func (s *S) TestAppUpdateWithoutTags(c *check.C) {
 			method := req.Method == "PUT"
 			description := req.FormValue("description") == "description"
 			req.ParseForm()
-			tags := req.Form["tags"] == nil
+			tags := req.Form["tag"] == nil
 			return url && method && description && tags
 		},
 	}
@@ -474,7 +474,7 @@ func (s *S) TestAppUpdateWithEmptyTag(c *check.C) {
 			method := req.Method == "PUT"
 			description := req.FormValue("description") == "description"
 			req.ParseForm()
-			tags := len(req.Form["tags"]) == 1 && req.Form["tags"][0] == ""
+			tags := len(req.Form["tag"]) == 1 && req.Form["tag"][0] == ""
 			return url && method && description && tags
 		},
 	}
@@ -500,7 +500,7 @@ func (s *S) TestAppUpdateWithoutArgs(c *check.C) {
 			method := req.Method == "PUT"
 			description := req.FormValue("description") == "description of my app"
 			req.ParseForm()
-			tags := req.Form["tags"] == nil
+			tags := req.Form["tag"] == nil
 			return url && method && description && tags
 		},
 	}
@@ -586,20 +586,20 @@ func (s *S) TestAppUpdateFlags(c *check.C) {
 	c.Check(router.Usage, check.Equals, usage)
 	c.Check(router.Value.String(), check.Equals, "router")
 	c.Check(router.DefValue, check.Equals, "")
-	flagset.Parse(true, []string{"-g", "tags"})
-	usage = "App tags"
-	tags := flagset.Lookup("tags")
-	c.Check(tags, check.NotNil)
-	c.Check(tags.Name, check.Equals, "tags")
-	c.Check(tags.Usage, check.Equals, usage)
-	c.Check(tags.Value.String(), check.Equals, "[\"tags\"]")
-	c.Check(tags.DefValue, check.Equals, "[]")
-	tags = flagset.Lookup("g")
-	c.Check(tags, check.NotNil)
-	c.Check(tags.Name, check.Equals, "g")
-	c.Check(tags.Usage, check.Equals, usage)
-	c.Check(tags.Value.String(), check.Equals, "[\"tags\"]")
-	c.Check(tags.DefValue, check.Equals, "[]")
+	flagset.Parse(true, []string{"-g", "tag"})
+	usage = "App tag"
+	tag := flagset.Lookup("tag")
+	c.Check(tag, check.NotNil)
+	c.Check(tag.Name, check.Equals, "tag")
+	c.Check(tag.Usage, check.Equals, usage)
+	c.Check(tag.Value.String(), check.Equals, "[\"tag\"]")
+	c.Check(tag.DefValue, check.Equals, "[]")
+	tag = flagset.Lookup("g")
+	c.Check(tag, check.NotNil)
+	c.Check(tag.Name, check.Equals, "g")
+	c.Check(tag.Usage, check.Equals, usage)
+	c.Check(tag.Value.String(), check.Equals, "[\"tag\"]")
+	c.Check(tag.DefValue, check.Equals, "[]")
 }
 
 func (s *S) TestAppRemove(c *check.C) {

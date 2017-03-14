@@ -39,7 +39,7 @@ type AppCreate struct {
 func (c *AppCreate) Info() *cmd.Info {
 	return &cmd.Info{
 		Name:  "app-create",
-		Usage: "app-create <appname> <platform> [--plan/-p plan name] [--router/-r router name] [--team/-t team owner] [--pool/-o pool name] [--description/-d description] [--tags/-g tags] [--router-opts key=value]...",
+		Usage: "app-create <appname> <platform> [--plan/-p plan name] [--router/-r router name] [--team/-t team owner] [--pool/-o pool name] [--description/-d description] [--tag/-g tag]... [--router-opts key=value]...",
 		Desc: `Creates a new app using the given name and platform. For tsuru,
 a platform is provisioner dependent. To check the available platforms, use the
 command [[tsuru platform-list]] and to add a platform use the command [[tsuru platform-add]].
@@ -77,7 +77,7 @@ The [[--description]] parameter sets a description for your app.
 It is an optional parameter, and if its not set the app will only not have a
 description associated.
 
-The [[--tags]] parameter sets a list of tags to your app. Tags must be separated by commas. It is an optional parameter.
+The [[--tag]] parameter sets a tag to your app. You can set multiple [[--tag]] parameters.
 
 The [[--router-opts]] parameter allow passing custom parameters to the router
 used by the application's plan. The key and values used depends on the router
@@ -104,9 +104,9 @@ func (c *AppCreate) Flags() *gnuflag.FlagSet {
 		descriptionMessage := "App description"
 		c.fs.StringVar(&c.description, "description", "", descriptionMessage)
 		c.fs.StringVar(&c.description, "d", "", descriptionMessage)
-		tagsMessage := "App tags"
-		c.fs.Var(&c.tags, "tags", tagsMessage)
-		c.fs.Var(&c.tags, "g", tagsMessage)
+		tagMessage := "App tag"
+		c.fs.Var(&c.tags, "tag", tagMessage)
+		c.fs.Var(&c.tags, "g", tagMessage)
 		c.fs.Var(&c.routerOpts, "router-opts", "Router options")
 	}
 	return c.fs
@@ -127,7 +127,7 @@ func (c *AppCreate) Run(context *cmd.Context, client *cmd.Client) error {
 	v.Set("description", c.description)
 	if c.tags != nil {
 		for _, tag := range c.tags {
-			v.Add("tags", tag)
+			v.Add("tag", tag)
 		}
 	}
 	v.Set("router", c.router)
@@ -178,7 +178,7 @@ type AppUpdate struct {
 func (c *AppUpdate) Info() *cmd.Info {
 	return &cmd.Info{
 		Name:  "app-update",
-		Usage: "app-update [-a/--app appname] [--description/-d description] [--plan/-p plan name] [--router/-r router name] [--pool/-o pool] [--team-owner/-t team owner] [--tags/-g tags]",
+		Usage: "app-update [-a/--app appname] [--description/-d description] [--plan/-p plan name] [--router/-r router name] [--pool/-o pool] [--team-owner/-t team owner] [--tag/-g tag]...",
 		Desc: `Updates an app, changing its description, tags, plan or pool information.
 
 The [[--description]] parameter sets a description for your app.
@@ -191,8 +191,8 @@ The [[--pool]] parameter changes the pool of your app.
 
 The [[--team-owner]] parameter sets owner team for an application.
 
-The [[--tags]] parameter sets tags for your app. Multiple tags must
-be separated by commas.`,
+The [[--tag]] parameter sets a tag for your app. You can set
+multiple [[--tag]] parameters.`,
 	}
 }
 
@@ -204,7 +204,7 @@ func (c *AppUpdate) Flags() *gnuflag.FlagSet {
 		routerMessage := "App router"
 		poolMessage := "App pool"
 		teamOwnerMessage := "App team owner"
-		tagsMessage := "App tags"
+		tagMessage := "App tag"
 		flagSet.StringVar(&c.description, "description", "", descriptionMessage)
 		flagSet.StringVar(&c.description, "d", "", descriptionMessage)
 		flagSet.StringVar(&c.plan, "plan", "", planMessage)
@@ -215,8 +215,8 @@ func (c *AppUpdate) Flags() *gnuflag.FlagSet {
 		flagSet.StringVar(&c.pool, "pool", "", poolMessage)
 		flagSet.StringVar(&c.teamOwner, "t", "", teamOwnerMessage)
 		flagSet.StringVar(&c.teamOwner, "team-owner", "", teamOwnerMessage)
-		flagSet.Var(&c.tags, "g", tagsMessage)
-		flagSet.Var(&c.tags, "tags", tagsMessage)
+		flagSet.Var(&c.tags, "g", tagMessage)
+		flagSet.Var(&c.tags, "tag", tagMessage)
 		c.fs = cmd.MergeFlagSet(
 			c.GuessingCommand.Flags(),
 			flagSet,
@@ -243,7 +243,7 @@ func (c *AppUpdate) Run(context *cmd.Context, client *cmd.Client) error {
 	v.Set("teamOwner", c.teamOwner)
 	if c.tags != nil {
 		for _, tag := range c.tags {
-			v.Add("tags", tag)
+			v.Add("tag", tag)
 		}
 	}
 	request, err := http.NewRequest("PUT", u, strings.NewReader(v.Encode()))
