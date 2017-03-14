@@ -452,6 +452,7 @@ type app struct {
 	Quota       quota
 	Plan        tsuruapp.Plan
 	Router      string
+	Tags        []string
 }
 
 type serviceData struct {
@@ -473,6 +474,10 @@ func (a *app) Addr() string {
 	return a.IP
 }
 
+func (a *app) TagList() string {
+	return strings.Join(a.Tags, ", ")
+}
+
 func (a *app) GetTeams() string {
 	return strings.Join(a.Teams, ", ")
 }
@@ -480,6 +485,7 @@ func (a *app) GetTeams() string {
 func (a *app) String() string {
 	format := `Application: {{.Name}}
 Description:{{if .Description}} {{.Description}}{{end}}
+Tags:{{if .TagList}} {{.TagList}}{{end}}
 Repository: {{.Repository}}
 Platform: {{.Platform}}
 Router: {{.Router}}
