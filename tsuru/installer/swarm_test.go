@@ -99,7 +99,6 @@ func (s *S) createCluster() (*testCluster, error) {
 		SwarmCluster: &SwarmCluster{
 			Managers: []*dockermachine.Machine{managerMachine},
 			Workers:  []*dockermachine.Machine{managerMachine, workerMachine},
-			network:  &docker.Network{Name: "tsuru"},
 		},
 		ManagerServer: managerServer,
 		WorkerServer:  workerServer,
@@ -164,8 +163,7 @@ func (s *S) TestNewSwarmCluster(c *check.C) {
 	c.Assert(cluster.Managers, check.DeepEquals, []*dockermachine.Machine{m1, m2})
 	c.Assert(cluster.Workers, check.DeepEquals, []*dockermachine.Machine{m1, m2})
 	c.Assert(managerReqs[0].URL.Path, check.Equals, "/swarm/init")
-	c.Assert(managerReqs[1].URL.Path, check.Equals, "/networks/create")
-	c.Assert(managerReqs[2].URL.Path, check.Equals, "/swarm")
+	c.Assert(managerReqs[1].URL.Path, check.Equals, "/swarm")
 	c.Assert(workerReqs[0].URL.Path, check.Equals, "/swarm/join")
 }
 

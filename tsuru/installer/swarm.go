@@ -28,7 +28,6 @@ type ServiceCluster interface {
 type SwarmCluster struct {
 	Managers []*dockermachine.Machine
 	Workers  []*dockermachine.Machine
-	network  *docker.Network
 }
 
 func (c *SwarmCluster) dockerClient() (*docker.Client, error) {
@@ -50,23 +49,6 @@ func NewSwarmCluster(machines []*dockermachine.Machine) (*SwarmCluster, error) {
 	if err != nil {
 		return nil, fmt.Errorf("failed to init swarm: %s", err)
 	}
-	createNetworkOpts := docker.CreateNetworkOptions{
-		Name:           "tsuru",
-		Driver:         "overlay",
-		CheckDuplicate: true,
-		IPAM: docker.IPAMOptions{
-			Driver: "default",
-			Config: []docker.IPAMConfig{
-				{
-					Subnet: "10.0.9.0/24",
-				},
-			},
-		},
-	}
-	network, err := managerDockerClient.CreateNetwork(createNetworkOpts)
-	if err != nil {
-		return nil, fmt.Errorf("failed to create overlay network: %s", err)
-	}
 	var managers []*dockermachine.Machine
 	for i, m := range machines {
 		managers = append(managers, m)
@@ -85,7 +67,6 @@ func NewSwarmCluster(machines []*dockermachine.Machine) (*SwarmCluster, error) {
 	return &SwarmCluster{
 		Managers: managers,
 		Workers:  machines,
-		network:  network,
 	}, nil
 }
 
@@ -191,9 +172,6 @@ func (c *SwarmCluster) CreateService(opts docker.CreateServiceOptions) error {
 	client, err := c.dockerClient()
 	if err != nil {
 		return err
-	}
-	opts.Networks = []swarm.NetworkAttachmentConfig{
-		{Target: c.network.Name},
 	}
 	_, err = client.CreateService(opts)
 	return err

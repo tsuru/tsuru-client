@@ -11,13 +11,10 @@ import (
 	"net"
 	"net/http"
 	"net/http/httptest"
-	"sort"
 	"strings"
 
-	"github.com/docker/docker/api/types/swarm"
 	"github.com/docker/machine/libmachine/host"
 	"github.com/fsouza/go-dockerclient"
-	"github.com/tsuru/config"
 	"github.com/tsuru/tsuru/iaas"
 	"github.com/tsuru/tsuru/iaas/dockermachine"
 	_ "github.com/tsuru/tsuru/provision/docker"
@@ -52,76 +49,6 @@ func (c *FakeServiceCluster) ServiceInfo(service string) (*ServiceInfo, error) {
 
 func (c *FakeServiceCluster) ClusterInfo() ([]NodeInfo, error) {
 	return []NodeInfo{{IP: "127.0.0.1", State: "running", Manager: true}}, nil
-}
-
-func (s *S) TestInstallComponentsDefaultConfig(c *check.C) {
-	tests := []struct {
-		component     TsuruComponent
-		containerName string
-		image         string
-		cmd           []string
-		env           []string
-	}{
-		{&MongoDB{}, "mongo", "mongo:latest", []string(nil), []string(nil)},
-		{&Redis{}, "redis", "redis:latest", []string(nil), []string(nil)},
-		{&PlanB{}, "planb", "tsuru/planb:latest",
-			[]string{"--listen", ":8080",
-				"--read-redis-host", "redis",
-				"--write-redis-host", "redis",
-			}, []string(nil)},
-		{&Registry{}, "registry", "registry:2", []string(nil),
-			[]string{"REGISTRY_STORAGE_FILESYSTEM_ROOTDIRECTORY=/var/lib/registry",
-				"REGISTRY_HTTP_TLS_KEY=/certs/127.0.0.1:5000/registry-key.pem",
-				"REGISTRY_HTTP_TLS_CERTIFICATE=/certs/127.0.0.1:5000/registry-cert.pem"}},
-		{&TsuruAPI{}, "tsuru", "tsuru/api:v1", []string(nil),
-			[]string{"MONGODB_ADDR=mongo",
-				"MONGODB_PORT=27017",
-				"REDIS_ADDR=redis",
-				"REDIS_PORT=6379",
-				"HIPACHE_DOMAIN=127.0.0.1.nip.io",
-				"REGISTRY_ADDR=127.0.0.1",
-				"REGISTRY_PORT=5000",
-				"TSURU_ADDR=http://127.0.0.1",
-				"TSURU_PORT=8080",
-				"IAAS_CONF={\"dockermachine\":{\"insecure-registry\":\"127.0.0.1:5000\",\"driver\":{}}}",
-			}},
-	}
-	c.Assert(len(tests), check.Equals, len(TsuruComponents))
-	services := make(chan docker.CreateServiceOptions)
-	fakeCluster := &FakeServiceCluster{Services: services}
-	installConfig := NewInstallConfig("test")
-	for _, tt := range tests {
-		go tt.component.Install(fakeCluster, installConfig)
-		opts := <-services
-		cont := opts.ServiceSpec.TaskTemplate.ContainerSpec
-		c.Assert(opts.Annotations.Name, check.Equals, tt.containerName)
-		c.Assert(cont.Image, check.Equals, tt.image)
-		c.Assert(cont.Args, check.DeepEquals, tt.cmd)
-		sort.Strings(cont.Env)
-		sort.Strings(tt.env)
-		c.Assert(cont.Env, check.DeepEquals, tt.env)
-	}
-	c.Assert(installConfig.ComponentAddress["mongo"], check.Equals, "mongo")
-	c.Assert(installConfig.ComponentAddress["redis"], check.Equals, "redis")
-	c.Assert(installConfig.ComponentAddress["registry"], check.Equals, "127.0.0.1")
-	c.Assert(installConfig.ComponentAddress["planb"], check.Equals, "127.0.0.1")
-}
-
-func (s *S) TestInstallPlanbHostPortBindings(c *check.C) {
-	services := make(chan docker.CreateServiceOptions, 1)
-	fakeCluster := &FakeServiceCluster{Services: services}
-	planb := &PlanB{}
-	expectedConfigs := []swarm.PortConfig{
-		{
-			Protocol:      swarm.PortConfigProtocolTCP,
-			TargetPort:    uint32(8080),
-			PublishedPort: uint32(80),
-		},
-	}
-	installConfig := NewInstallConfig("test")
-	planb.Install(fakeCluster, installConfig)
-	config := <-services
-	c.Assert(config.EndpointSpec.Ports, check.DeepEquals, expectedConfigs)
 }
 
 func (s *S) TestTsuruAPIBootstrapLocalEnviroment(c *check.C) {
@@ -217,69 +144,4 @@ func (r *FakeRedis) ListenAndServe() {
 		conn.Write([]byte("$2"))
 		conn.Write([]byte("\nPONG"))
 	}
-}
-
-func (s *S) TestPreInstalledComponents(c *check.C) {
-	server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-		w.WriteHeader(http.StatusOK)
-	}))
-	defer server.Close()
-	planbServer := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-		if r.Host == "__ping__" {
-			w.WriteHeader(http.StatusOK)
-		} else {
-			w.WriteHeader(http.StatusBadRequest)
-		}
-	}))
-	defer planbServer.Close()
-	redis := &FakeRedis{URL: "127.0.0.1:0"}
-	redis.Listen()
-	go redis.ListenAndServe()
-	err := config.ReadConfigFile("./testdata/components-conf.yml")
-	c.Assert(err, check.IsNil)
-	conf := NewInstallConfig("testing")
-	conf.ComponentAddress["registry"] = server.URL
-	conf.ComponentAddress["planb"] = planbServer.URL
-	conf.ComponentAddress["redis"] = redis.URL
-	conf.ComponentAddress["mongo"] = ""
-	cluster := &FakeServiceCluster{}
-	m := &MongoDB{}
-	err = m.Install(cluster, conf)
-	c.Assert(err, check.IsNil)
-	r := &Redis{}
-	err = r.Install(cluster, conf)
-	c.Assert(err, check.IsNil)
-	c.Assert(conf.ComponentAddress["redis"], check.Equals, redis.URL)
-	registry := &Registry{}
-	err = registry.Install(cluster, conf)
-	c.Assert(err, check.IsNil)
-	c.Assert(conf.ComponentAddress["registry"], check.Equals, server.URL)
-	planb := &PlanB{}
-	err = planb.Install(cluster, conf)
-	c.Assert(err, check.IsNil)
-	c.Assert(conf.ComponentAddress["planb"], check.Equals, planbServer.URL)
-}
-
-func (s *S) TestInstallTsuruApiWithCustomComponentsAddress(c *check.C) {
-	err := config.ReadConfigFile("./testdata/components-conf.yml")
-	c.Assert(err, check.IsNil)
-	conf := NewInstallConfig("testing")
-	services := make(chan docker.CreateServiceOptions, 1)
-	cluster := &FakeServiceCluster{Services: services}
-	api := &TsuruAPI{}
-	go api.Install(cluster, conf)
-	apiConf := <-services
-	expected := []string{
-		"MONGODB_ADDR=127.0.0.1",
-		"MONGODB_PORT=27017",
-		"REDIS_ADDR=localhost",
-		"REDIS_PORT=6379",
-		"HIPACHE_DOMAIN=192.168.0.100.nip.io",
-		"REGISTRY_ADDR=192.168.0.100",
-		"REGISTRY_PORT=5000",
-		"TSURU_ADDR=http://127.0.0.1",
-		"TSURU_PORT=8080",
-		"IAAS_CONF={\"dockermachine\":{\"insecure-registry\":\"192.168.0.100:5000\",\"driver\":{}}}",
-	}
-	c.Assert(apiConf.TaskTemplate.ContainerSpec.Env, check.DeepEquals, expected)
 }

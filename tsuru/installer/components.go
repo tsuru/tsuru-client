@@ -6,21 +6,17 @@ package installer
 
 import (
 	"context"
-	"encoding/json"
 	"fmt"
 	"net/http"
 	"os"
 	"strings"
 	"time"
 
-	"github.com/docker/docker/api/types/mount"
-	"github.com/docker/docker/api/types/swarm"
 	"github.com/docker/machine/libmachine/mcnutils"
 	"github.com/fsouza/go-dockerclient"
 	"github.com/tsuru/config"
 	"github.com/tsuru/tsuru-client/tsuru/admin"
 	tclient "github.com/tsuru/tsuru-client/tsuru/client"
-	"github.com/tsuru/tsuru-client/tsuru/installer/dm"
 	"github.com/tsuru/tsuru/cmd"
 	"github.com/tsuru/tsuru/provision"
 	"gopkg.in/mgo.v2"
@@ -40,20 +36,11 @@ var (
 )
 
 type ComponentsConfig struct {
-	ComponentAddress map[string]string
 	InstallDashboard bool
 	TsuruAPIConfig
 }
 
 func NewInstallConfig(targetName string) *ComponentsConfig {
-	mongo, _ := config.GetString("components:mongo")
-	redis, _ := config.GetString("components:redis")
-	registry, _ := config.GetString("components:registry")
-	planb, _ := config.GetString("components:planb")
-	tsuruVersion, err := config.GetString("components:tsuru:version")
-	if err != nil {
-		tsuruVersion = "v1"
-	}
 	installDashboard, err := config.GetBool("components:tsuru:install-dashboard")
 	if err != nil {
 		installDashboard = true
@@ -63,21 +50,13 @@ func NewInstallConfig(targetName string) *ComponentsConfig {
 			TargetName:       targetName,
 			RootUserEmail:    "admin@example.com",
 			RootUserPassword: "admin123",
-			ImageTag:         tsuruVersion,
 		},
 		InstallDashboard: installDashboard,
-		ComponentAddress: map[string]string{
-			"mongo":    mongo,
-			"redis":    redis,
-			"registry": registry,
-			"planb":    planb,
-		},
 	}
 }
 
 type TsuruComponent interface {
 	Name() string
-	Install(ServiceCluster, *ComponentsConfig) error
 	Status(ServiceCluster) (*ServiceInfo, error)
 	Healthcheck(string) error
 }
@@ -86,29 +65,6 @@ type MongoDB struct{}
 
 func (c *MongoDB) Name() string {
 	return "MongoDB"
-}
-
-func (c *MongoDB) Install(cluster ServiceCluster, i *ComponentsConfig) error {
-	if i.ComponentAddress["mongo"] != "" {
-		return c.Healthcheck(i.ComponentAddress["mongo"])
-	}
-	err := cluster.CreateService(docker.CreateServiceOptions{
-		ServiceSpec: swarm.ServiceSpec{
-			Annotations: swarm.Annotations{
-				Name: "mongo",
-			},
-			TaskTemplate: swarm.TaskSpec{
-				ContainerSpec: swarm.ContainerSpec{
-					Image: "mongo:latest",
-				},
-			},
-		},
-	})
-	if err != nil {
-		return err
-	}
-	i.ComponentAddress["mongo"] = "mongo"
-	return nil
 }
 
 func (c *MongoDB) Status(cluster ServiceCluster) (*ServiceInfo, error) {
@@ -127,39 +83,6 @@ type PlanB struct{}
 
 func (c *PlanB) Name() string {
 	return "PlanB"
-}
-
-func (c *PlanB) Install(cluster ServiceCluster, i *ComponentsConfig) error {
-	if i.ComponentAddress["planb"] != "" {
-		return c.Healthcheck(i.ComponentAddress["planb"])
-	}
-	err := cluster.CreateService(docker.CreateServiceOptions{
-		ServiceSpec: swarm.ServiceSpec{
-			Annotations: swarm.Annotations{
-				Name: "planb",
-			},
-			TaskTemplate: swarm.TaskSpec{
-				ContainerSpec: swarm.ContainerSpec{
-					Image: "tsuru/planb:latest",
-					Args:  []string{"--listen", ":8080", "--read-redis-host", "redis", "--write-redis-host", "redis"},
-				},
-			},
-			EndpointSpec: &swarm.EndpointSpec{
-				Ports: []swarm.PortConfig{
-					{
-						Protocol:      swarm.PortConfigProtocolTCP,
-						TargetPort:    uint32(8080),
-						PublishedPort: uint32(80),
-					},
-				},
-			},
-		},
-	})
-	if err != nil {
-		return err
-	}
-	i.ComponentAddress["planb"] = cluster.GetManager().Base.Address
-	return nil
 }
 
 func (c *PlanB) Status(cluster ServiceCluster) (*ServiceInfo, error) {
@@ -192,29 +115,6 @@ func (c *Redis) Name() string {
 	return "Redis"
 }
 
-func (c *Redis) Install(cluster ServiceCluster, i *ComponentsConfig) error {
-	if i.ComponentAddress["redis"] != "" {
-		return c.Healthcheck(i.ComponentAddress["redis"])
-	}
-	err := cluster.CreateService(docker.CreateServiceOptions{
-		ServiceSpec: swarm.ServiceSpec{
-			Annotations: swarm.Annotations{
-				Name: "redis",
-			},
-			TaskTemplate: swarm.TaskSpec{
-				ContainerSpec: swarm.ContainerSpec{
-					Image: "redis:latest",
-				},
-			},
-		},
-	})
-	if err != nil {
-		return err
-	}
-	i.ComponentAddress["redis"] = "redis"
-	return nil
-}
-
 func (c *Redis) Status(cluster ServiceCluster) (*ServiceInfo, error) {
 	return cluster.ServiceInfo("redis")
 }
@@ -231,58 +131,6 @@ type Registry struct{}
 
 func (c *Registry) Name() string {
 	return "Docker Registry"
-}
-
-func (c *Registry) Install(cluster ServiceCluster, i *ComponentsConfig) error {
-	if i.ComponentAddress["registry"] != "" {
-		return c.Healthcheck(i.ComponentAddress["registry"])
-	}
-	address := dm.GetPrivateIP(cluster.GetManager())
-	err := cluster.CreateService(docker.CreateServiceOptions{
-		ServiceSpec: swarm.ServiceSpec{
-			Annotations: swarm.Annotations{
-				Name: "registry",
-			},
-			TaskTemplate: swarm.TaskSpec{
-				ContainerSpec: swarm.ContainerSpec{
-					Image: "registry:2",
-					Env: []string{
-						"REGISTRY_STORAGE_FILESYSTEM_ROOTDIRECTORY=/var/lib/registry",
-						fmt.Sprintf("REGISTRY_HTTP_TLS_CERTIFICATE=/certs/%s:5000/registry-cert.pem", address),
-						fmt.Sprintf("REGISTRY_HTTP_TLS_KEY=/certs/%s:5000/registry-key.pem", address),
-					},
-					Mounts: []mount.Mount{
-						{
-							Type:     mount.TypeBind,
-							Source:   "/var/lib/registry",
-							Target:   "/var/lib/registry",
-							ReadOnly: false,
-						},
-						{
-							Type:     mount.TypeBind,
-							Source:   "/etc/docker/certs.d",
-							Target:   "/certs",
-							ReadOnly: true,
-						},
-					},
-				},
-			},
-			EndpointSpec: &swarm.EndpointSpec{
-				Ports: []swarm.PortConfig{
-					{
-						Protocol:      swarm.PortConfigProtocolTCP,
-						TargetPort:    uint32(5000),
-						PublishedPort: uint32(5000),
-					},
-				},
-			},
-		},
-	})
-	if err != nil {
-		return err
-	}
-	i.ComponentAddress["registry"] = address
-	return nil
 }
 
 func (c *Registry) Status(cluster ServiceCluster) (*ServiceInfo, error) {
@@ -303,7 +151,6 @@ func (c *Registry) Healthcheck(addr string) error {
 type TsuruAPI struct{}
 
 type TsuruAPIConfig struct {
-	ImageTag         string
 	TargetName       string
 	RootUserEmail    string
 	RootUserPassword string
@@ -340,59 +187,6 @@ func parseAddress(address, defaultPort string) (addr, port string) {
 	return addr, port
 }
 
-func (c *TsuruAPI) Install(cluster ServiceCluster, i *ComponentsConfig) error {
-	mongo, mongoPort := parseAddress(i.ComponentAddress["mongo"], "27017")
-	redis, redisPort := parseAddress(i.ComponentAddress["redis"], "6379")
-	registry, registryPort := parseAddress(i.ComponentAddress["registry"], "5000")
-	planb, _ := parseAddress(i.ComponentAddress["planb"], "80")
-	i.IaaSConfig.Dockermachine.InsecureRegistry = fmt.Sprintf("%s:%s", registry, registryPort)
-	iaasConfig, err := json.Marshal(i.IaaSConfig)
-	if err != nil {
-		return fmt.Errorf("failed to marshal iaas config: %s", err)
-	}
-	err = cluster.CreateService(docker.CreateServiceOptions{
-		ServiceSpec: swarm.ServiceSpec{
-			Annotations: swarm.Annotations{
-				Name: "tsuru",
-			},
-			TaskTemplate: swarm.TaskSpec{
-				ContainerSpec: swarm.ContainerSpec{
-					Image: fmt.Sprintf("tsuru/api:%s", i.TsuruAPIConfig.ImageTag),
-					Env: []string{fmt.Sprintf("MONGODB_ADDR=%s", mongo),
-						fmt.Sprintf("MONGODB_PORT=%s", mongoPort),
-						fmt.Sprintf("REDIS_ADDR=%s", redis),
-						fmt.Sprintf("REDIS_PORT=%s", redisPort),
-						fmt.Sprintf("HIPACHE_DOMAIN=%s.nip.io", planb),
-						fmt.Sprintf("REGISTRY_ADDR=%s", registry),
-						fmt.Sprintf("REGISTRY_PORT=%s", registryPort),
-						fmt.Sprintf("TSURU_ADDR=http://%s", cluster.GetManager().Base.Address),
-						fmt.Sprintf("TSURU_PORT=%d", defaultTsuruAPIPort),
-						fmt.Sprintf("IAAS_CONF=%s", string(iaasConfig)),
-					},
-					Mounts: []mount.Mount{
-						{
-							Type:     mount.TypeBind,
-							Source:   "/etc/docker/certs.d",
-							Target:   "/certs",
-							ReadOnly: true,
-						},
-					},
-				},
-			},
-			EndpointSpec: &swarm.EndpointSpec{
-				Ports: []swarm.PortConfig{
-					{
-						Protocol:      swarm.PortConfigProtocolTCP,
-						TargetPort:    uint32(8080),
-						PublishedPort: uint32(8080),
-					},
-				},
-			},
-		},
-	})
-	return err
-}
-
 func (c *TsuruAPI) Status(cluster ServiceCluster) (*ServiceInfo, error) {
 	return cluster.ServiceInfo("tsuru")
 }
@@ -411,7 +205,7 @@ func (c *TsuruAPI) setupRootUser(cluster ServiceCluster, email, password string)
 		ErrorStream:  os.Stderr,
 		RawTerminal:  true,
 	}
-	return cluster.ServiceExec("tsuru", cmd, startOpts)
+	return cluster.ServiceExec("tsuru_tsuru", cmd, startOpts)
 }
 
 type Bootstraper interface {

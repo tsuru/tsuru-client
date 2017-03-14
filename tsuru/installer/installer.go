@@ -129,7 +129,7 @@ func (i *Installer) waitTsuru(cluster ServiceCluster, compConf *ComponentsConfig
 		ErrorStream:  os.Stderr,
 		RawTerminal:  true,
 	}
-	return cluster.ServiceExec("tsuru", cmd, startOpts)
+	return cluster.ServiceExec("tsuru_tsuru", cmd, startOpts)
 }
 
 func setCoreDriverDefaultOpts(opts *InstallOpts) {
@@ -145,15 +145,7 @@ func setCoreDriverDefaultOpts(opts *InstallOpts) {
 }
 
 func (i *Installer) InstallComponents(cluster ServiceCluster, opts *ComponentsConfig) error {
-	for _, component := range i.components {
-		fmt.Fprintf(i.outWriter, "Installing %s\n", component.Name())
-		errInstall := component.Install(cluster, opts)
-		if errInstall != nil {
-			return fmt.Errorf("error installing %s: %s", component.Name(), errInstall)
-		}
-		fmt.Fprintf(i.outWriter, "%s successfully installed!\n", component.Name())
-	}
-	return nil
+	return composeDeploy(cluster, opts)
 }
 
 func (i *Installer) BootstrapTsuru(opts *InstallOpts, target string, coreMachines []*dockermachine.Machine) ([]*dockermachine.Machine, error) {

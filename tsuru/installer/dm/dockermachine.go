@@ -23,9 +23,10 @@ import (
 var (
 	storeBasePath              = cmd.JoinWithUserDir(".tsuru", "installs")
 	DefaultDockerMachineConfig = &DockerMachineConfig{
-		DriverName: "virtualbox",
-		Name:       "tsuru",
-		DriverOpts: make(map[string]interface{}),
+		DriverName:  "virtualbox",
+		Name:        "tsuru",
+		DriverOpts:  make(map[string]interface{}),
+		DockerFlags: []string{"experimental"},
 	}
 )
 

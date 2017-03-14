@@ -40,8 +40,9 @@ func (s *S) TestParseConfigFile(c *check.C) {
 			DriverOpts: map[string]interface{}{
 				"opt1": "option1-value",
 			},
-			CAPath: "/tmp/certs",
-			Name:   "tsuru-test",
+			CAPath:      "/tmp/certs",
+			Name:        "tsuru-test",
+			DockerFlags: []string{"experimental"},
 		},
 		ComponentsConfig: &ComponentsConfig{
 			TsuruAPIConfig: TsuruAPIConfig{
@@ -59,15 +60,8 @@ func (s *S) TestParseConfigFile(c *check.C) {
 						},
 					},
 				},
-				ImageTag: "v1",
 			},
 			InstallDashboard: true,
-			ComponentAddress: map[string]string{
-				"mongo":    "",
-				"redis":    "",
-				"registry": "",
-				"planb":    "",
-			},
 		},
 		CoreHosts: 2,
 		CoreDriversOpts: map[string][]interface{}{
