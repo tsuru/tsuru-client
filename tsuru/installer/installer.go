@@ -48,7 +48,6 @@ type Installer struct {
 	outWriter          io.Writer
 	errWriter          io.Writer
 	machineProvisioner dm.MachineProvisioner
-	components         []TsuruComponent
 	bootstraper        Bootstraper
 	clusterCreator     func([]*dockermachine.Machine) (ServiceCluster, error)
 }
@@ -88,7 +87,6 @@ func (i *Installer) Install(opts *InstallOpts) (*Installation, error) {
 	return &Installation{
 		CoreCluster:     cluster,
 		InstallMachines: installMachines,
-		Components:      i.components,
 	}, nil
 }
 
@@ -262,7 +260,6 @@ func (i *Installer) ProvisionMachines(numMachines int, configs map[string][]inte
 type Installation struct {
 	CoreCluster     ServiceCluster
 	InstallMachines []*dockermachine.Machine
-	Components      []TsuruComponent
 }
 
 func (i *Installation) Summary() string {
@@ -292,18 +289,18 @@ func (i *Installation) buildComponentsTable() *cmd.Table {
 	t := cmd.NewTable()
 	t.Headers = cmd.Row{"Component", "Ports", "Replicas"}
 	t.LineSeparator = true
-	for _, component := range i.Components {
-		info, err := component.Status(i.CoreCluster)
-		if err != nil {
-			t.AddRow(cmd.Row{component.Name(), "?", fmt.Sprintf("%s", err)})
-			continue
-		}
-		row := cmd.Row{component.Name(),
-			strings.Join(info.Ports, ","),
-			strconv.Itoa(info.Replicas),
-		}
-		t.AddRow(row)
-	}
+	// for _, component := range i.Components {
+	// 	info, err := component.Status(i.CoreCluster)
+	// 	if err != nil {
+	// 		t.AddRow(cmd.Row{component.Name(), "?", fmt.Sprintf("%s", err)})
+	// 		continue
+	// 	}
+	// 	row := cmd.Row{component.Name(),
+	// 		strings.Join(info.Ports, ","),
+	// 		strconv.Itoa(info.Replicas),
+	// 	}
+	// 	t.AddRow(row)
+	// }
 	return t
 }
 

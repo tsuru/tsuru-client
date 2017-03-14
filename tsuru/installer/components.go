@@ -5,12 +5,10 @@
 package installer
 
 import (
-	"context"
 	"fmt"
 	"net/http"
 	"os"
 	"strings"
-	"time"
 
 	"github.com/docker/machine/libmachine/mcnutils"
 	"github.com/fsouza/go-dockerclient"
@@ -19,21 +17,9 @@ import (
 	tclient "github.com/tsuru/tsuru-client/tsuru/client"
 	"github.com/tsuru/tsuru/cmd"
 	"github.com/tsuru/tsuru/provision"
-	"gopkg.in/mgo.v2"
-	redis "gopkg.in/redis.v3"
 )
 
-var (
-	TsuruComponents = []TsuruComponent{
-		&MongoDB{},
-		&Redis{},
-		&PlanB{},
-		&Registry{},
-		&TsuruAPI{},
-	}
-
-	defaultTsuruAPIPort = 8080
-)
+var defaultTsuruAPIPort = 8080
 
 type ComponentsConfig struct {
 	InstallDashboard bool
@@ -53,99 +39,6 @@ func NewInstallConfig(targetName string) *ComponentsConfig {
 		},
 		InstallDashboard: installDashboard,
 	}
-}
-
-type TsuruComponent interface {
-	Name() string
-	Status(ServiceCluster) (*ServiceInfo, error)
-	Healthcheck(string) error
-}
-
-type MongoDB struct{}
-
-func (c *MongoDB) Name() string {
-	return "MongoDB"
-}
-
-func (c *MongoDB) Status(cluster ServiceCluster) (*ServiceInfo, error) {
-	return cluster.ServiceInfo("mongo")
-}
-
-func (c *MongoDB) Healthcheck(addr string) error {
-	s, err := mgo.DialWithTimeout(addr, 30*time.Second)
-	if err != nil {
-		return err
-	}
-	return s.Ping()
-}
-
-type PlanB struct{}
-
-func (c *PlanB) Name() string {
-	return "PlanB"
-}
-
-func (c *PlanB) Status(cluster ServiceCluster) (*ServiceInfo, error) {
-	return cluster.ServiceInfo("planb")
-}
-
-func (c *PlanB) Healthcheck(addr string) error {
-	req, err := http.NewRequest("GET", addr, nil)
-	if err != nil {
-		return err
-	}
-	ctx, cancel := context.WithTimeout(context.Background(), 15*time.Second)
-	defer cancel()
-	req = req.WithContext(ctx)
-	req.Host = "__ping__"
-	client := http.Client{}
-	resp, err := client.Do(req)
-	if err != nil {
-		return err
-	}
-	if resp.StatusCode != http.StatusOK {
-		return fmt.Errorf("Planb healthcheck error: Want status code 200. Got %s", resp.Status)
-	}
-	return nil
-}
-
-type Redis struct{}
-
-func (c *Redis) Name() string {
-	return "Redis"
-}
-
-func (c *Redis) Status(cluster ServiceCluster) (*ServiceInfo, error) {
-	return cluster.ServiceInfo("redis")
-}
-
-func (c *Redis) Healthcheck(addr string) error {
-	r := redis.NewClient(&redis.Options{
-		Addr: addr,
-	})
-	_, err := r.Ping().Result()
-	return err
-}
-
-type Registry struct{}
-
-func (c *Registry) Name() string {
-	return "Docker Registry"
-}
-
-func (c *Registry) Status(cluster ServiceCluster) (*ServiceInfo, error) {
-	return cluster.ServiceInfo("registry")
-}
-
-func (c *Registry) Healthcheck(addr string) error {
-	resp, err := getWithTimeout(fmt.Sprintf("%s/v2/", addr), 15*time.Second)
-	if err != nil {
-		return err
-	}
-	if resp.StatusCode != http.StatusOK {
-		return fmt.Errorf("Registry healthcheck error: Want status code 200. Got %s.", resp.Status)
-	}
-	return nil
 }
 
 type TsuruAPI struct{}
@@ -170,29 +63,6 @@ type iaasConfigInternal struct {
 type iaasConfigDriver struct {
 	Name    string                 `json:"name,omitempty"`
 	Options map[string]interface{} `json:"options,omitempty"`
-}
-
-func (c *TsuruAPI) Name() string {
-	return "Tsuru API"
-}
-
-func parseAddress(address, defaultPort string) (addr, port string) {
-	parts := strings.Split(address, ":")
-	if len(parts) == 1 {
-		port = defaultPort
-	} else {
-		port = parts[1]
-	}
-	addr = parts[0]
-	return addr, port
-}
-
-func (c *TsuruAPI) Status(cluster ServiceCluster) (*ServiceInfo, error) {
-	return cluster.ServiceInfo("tsuru")
-}
-
-func (c *TsuruAPI) Healthcheck(addr string) error {
-	return nil
 }
 
 func (c *TsuruAPI) setupRootUser(cluster ServiceCluster, email, password string) error {

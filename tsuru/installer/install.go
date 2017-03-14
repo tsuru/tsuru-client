@@ -70,7 +70,6 @@ func (c *Install) Run(context *cmd.Context, cli *cmd.Client) error {
 		outWriter:          context.Stdout,
 		errWriter:          context.Stderr,
 		machineProvisioner: dockerMachine,
-		components:         TsuruComponents,
 		bootstraper:        &TsuruBoostraper{},
 		clusterCreator:     newSwarmServiceCluster,
 	}
