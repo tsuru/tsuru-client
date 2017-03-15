@@ -35,8 +35,8 @@ services:
     image: registry:2
     environment:
       - "REGISTRY_STORAGE_FILESYSTEM_ROOTDIRECTORY=/var/lib/registry"
-      - "REGISTRY_HTTP_TLS_CERTIFICATE=/certs/{{MANAGER_ADDR}}:5000/registry-cert.pem"
-      - "REGISTRY_HTTP_TLS_KEY=/certs/{{MANAGER_ADDR}}:5000/registry-key.pem"
+      - "REGISTRY_HTTP_TLS_CERTIFICATE=/certs/{{CLUSTER_ADDR}}:5000/registry-cert.pem"
+      - "REGISTRY_HTTP_TLS_KEY=/certs/{{CLUSTER_ADDR}}:5000/registry-key.pem"
     volumes:
       - "/var/lib/registry:/var/lib/registry"
       - "/etc/docker/certs.d:/certs:ro"
@@ -58,10 +58,10 @@ services:
       - MONGODB_PORT=27017
       - REDIS_ADDR=redis
       - REDIS_PORT=6379
-      - HIPACHE_DOMAIN={{MANAGER_ADDR}}.nip.io
-      - REGISTRY_ADDR={{MANAGER_ADDR}}
+      - HIPACHE_DOMAIN={{CLUSTER_ADDR}}.nip.io
+      - REGISTRY_ADDR={{CLUSTER_PRIVATE_ADDR}}
       - REGISTRY_PORT=5000
-      - TSURU_ADDR=http://{{MANAGER_ADDR}}
+      - TSURU_ADDR=http://{{CLUSTER_ADDR}}
       - TSURU_PORT=8080
       - IAAS_CONF={{IAAS_CONF}}
 
@@ -101,8 +101,9 @@ func composeDeploy(c ServiceCluster, installConfig *InstallOpts) error {
 		return fmt.Errorf("failed to marshal iaas config: %s", err)
 	}
 	configs := map[string]string{
-		"MANAGER_ADDR": manager.Base.Address,
-		"IAAS_CONF":    string(iaasConfig),
+		"CLUSTER_ADDR":         manager.Base.Address,
+		"CLUSTER_PRIVATE_ADDR": dm.GetPrivateIP(manager),
+		"IAAS_CONF":            string(iaasConfig),
 	}
 	config, err := resolveConfig(installConfig.ComposeFile, configs)
 	if err != nil {
@@ -114,7 +115,7 @@ func composeDeploy(c ServiceCluster, installConfig *InstallOpts) error {
 		return fmt.Errorf("failed to write remote file: %s", err)
 	}
 	fmt.Printf("Deploying compose file in cluster manager....\n")
-	output, err := manager.Host.RunSSHCommand("docker deploy -c /tmp/compose.yml tsuru")
+	output, err := manager.Host.RunSSHCommand("sudo docker deploy -c /tmp/compose.yml tsuru")
 	if err != nil {
 		return err
 	}
