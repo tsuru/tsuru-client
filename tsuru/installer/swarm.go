@@ -21,7 +21,7 @@ type ServiceCluster interface {
 	GetManager() *dockermachine.Machine
 	ServiceExec(string, []string, docker.StartExecOptions) error
 	CreateService(docker.CreateServiceOptions) error
-	ServiceInfo(string) (*ServiceInfo, error)
+	ServicesInfo() ([]ServiceInfo, error)
 	ClusterInfo() ([]NodeInfo, error)
 }
 
@@ -226,24 +226,28 @@ type ServiceInfo struct {
 	Ports    []string
 }
 
-func (c *SwarmCluster) ServiceInfo(name string) (*ServiceInfo, error) {
+func (c *SwarmCluster) ServicesInfo() ([]ServiceInfo, error) {
 	client, err := c.dockerClient()
 	if err != nil {
 		return nil, err
 	}
-	service, err := client.InspectService(name)
+	services, err := client.ListServices(docker.ListServicesOptions{})
 	if err != nil {
 		return nil, err
 	}
-	var ports []string
-	for _, p := range service.Endpoint.Ports {
-		ports = append(ports, strconv.Itoa(int(p.PublishedPort)))
+	var infos []ServiceInfo
+	for _, s := range services {
+		var ports []string
+		for _, p := range s.Endpoint.Ports {
+			ports = append(ports, strconv.Itoa(int(p.PublishedPort)))
+		}
+		infos = append(infos, ServiceInfo{
+			Name:     s.Spec.Name,
+			Replicas: int(*s.Spec.Mode.Replicated.Replicas),
+			Ports:    ports,
+		})
 	}
-	return &ServiceInfo{
-		Name:     name,
-		Replicas: int(*service.Spec.Mode.Replicated.Replicas),
-		Ports:    ports,
-	}, nil
+	return infos, nil
 }
 
 func getDockerClient(m *dockermachine.Machine) (*docker.Client, error) {

@@ -8,48 +8,13 @@ import (
 	"encoding/json"
 	"fmt"
 	"io/ioutil"
-	"net"
 	"net/http"
 	"net/http/httptest"
 	"strings"
 
-	"github.com/docker/machine/libmachine/host"
-	"github.com/fsouza/go-dockerclient"
-	"github.com/tsuru/tsuru/iaas"
-	"github.com/tsuru/tsuru/iaas/dockermachine"
 	_ "github.com/tsuru/tsuru/provision/docker"
 	"gopkg.in/check.v1"
 )
-
-type FakeServiceCluster struct {
-	Services chan<- docker.CreateServiceOptions
-}
-
-func (c *FakeServiceCluster) GetManager() *dockermachine.Machine {
-	return &dockermachine.Machine{
-		Base: &iaas.Machine{Address: "127.0.0.1", Port: 2376},
-		Host: &host.Host{},
-	}
-}
-
-func (c *FakeServiceCluster) CreateService(opts docker.CreateServiceOptions) error {
-	if c.Services != nil {
-		c.Services <- opts
-	}
-	return nil
-}
-
-func (c *FakeServiceCluster) ServiceExec(service string, cmd []string, opts docker.StartExecOptions) error {
-	return nil
-}
-
-func (c *FakeServiceCluster) ServiceInfo(service string) (*ServiceInfo, error) {
-	return &ServiceInfo{Name: service, Replicas: 1, Ports: []string{"8080"}}, nil
-}
-
-func (c *FakeServiceCluster) ClusterInfo() ([]NodeInfo, error) {
-	return []NodeInfo{{IP: "127.0.0.1", State: "running", Manager: true}}, nil
-}
 
 func (s *S) TestTsuruAPIBootstrapLocalEnviroment(c *check.C) {
 	var paths []string
@@ -119,29 +84,4 @@ func (s *S) TestTsuruAPIBootstrapLocalEnviroment(c *check.C) {
 	})
 	c.Assert(err, check.IsNil)
 	c.Assert(paths, check.DeepEquals, expectedPaths[:4])
-}
-
-type FakeRedis struct {
-	URL      string
-	listener net.Listener
-}
-
-func (r *FakeRedis) Listen() {
-	l, _ := net.Listen("tcp", r.URL)
-	r.URL = l.Addr().String()
-	r.listener = l
-}
-
-// ListenAndServer starts a fake redis server that listen for a single
-// connection and answers to a PING
-func (r *FakeRedis) ListenAndServe() {
-	conn, _ := r.listener.Accept()
-	defer r.listener.Close()
-	defer conn.Close()
-	buf := make([]byte, 1024)
-	conn.Read(buf)
-	if strings.Contains(string(buf), "PING") {
-		conn.Write([]byte("$2"))
-		conn.Write([]byte("\nPONG"))
-	}
 }

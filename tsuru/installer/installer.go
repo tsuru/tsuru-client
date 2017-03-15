@@ -289,18 +289,17 @@ func (i *Installation) buildComponentsTable() *cmd.Table {
 	t := cmd.NewTable()
 	t.Headers = cmd.Row{"Component", "Ports", "Replicas"}
 	t.LineSeparator = true
-	// for _, component := range i.Components {
-	// 	info, err := component.Status(i.CoreCluster)
-	// 	if err != nil {
-	// 		t.AddRow(cmd.Row{component.Name(), "?", fmt.Sprintf("%s", err)})
-	// 		continue
-	// 	}
-	// 	row := cmd.Row{component.Name(),
-	// 		strings.Join(info.Ports, ","),
-	// 		strconv.Itoa(info.Replicas),
-	// 	}
-	// 	t.AddRow(row)
-	// }
+	services, err := i.CoreCluster.ServicesInfo()
+	if err != nil {
+		t.AddRow(cmd.Row{"Failed to fetch services.", "", ""})
+		return nil
+	}
+	for _, s := range services {
+		t.AddRow(cmd.Row{s.Name,
+			strings.Join(s.Ports, ","),
+			strconv.Itoa(s.Replicas),
+		})
+	}
 	return t
 }
 
