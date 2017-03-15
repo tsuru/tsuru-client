@@ -23,8 +23,9 @@ import (
 )
 
 type Install struct {
-	fs     *gnuflag.FlagSet
-	config string
+	fs      *gnuflag.FlagSet
+	config  string
+	compose string
 }
 
 func (c *Install) Info() *cmd.Info {
@@ -47,6 +48,8 @@ func (c *Install) Flags() *gnuflag.FlagSet {
 		c.fs = gnuflag.NewFlagSet("install", gnuflag.ExitOnError)
 		c.fs.StringVar(&c.config, "c", "", "Configuration file")
 		c.fs.StringVar(&c.config, "config", "", "Configuration file")
+		c.fs.StringVar(&c.compose, "e", "", "Components docker-compose file")
+		c.fs.StringVar(&c.compose, "compose", "", "Components docker-compose file")
 	}
 	return c.fs
 }
@@ -57,6 +60,7 @@ func (c *Install) Run(context *cmd.Context, cli *cmd.Client) error {
 	if err != nil {
 		return err
 	}
+	installConfig.ComposeFile = c.compose
 	dockerMachine, err := dm.NewDockerMachine(installConfig.DockerMachineConfig)
 	if err != nil {
 		return err

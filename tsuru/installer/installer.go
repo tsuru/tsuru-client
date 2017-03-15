@@ -42,6 +42,7 @@ type InstallOpts struct {
 	AppsHosts          int
 	DedicatedAppsHosts bool
 	AppsDriversOpts    map[string][]interface{}
+	ComposeFile        string
 }
 
 type Installer struct {
@@ -66,7 +67,7 @@ func (i *Installer) Install(opts *InstallOpts) (*Installation, error) {
 	if err != nil {
 		return nil, fmt.Errorf("failed to setup swarm cluster: %s", err)
 	}
-	err = i.InstallComponents(cluster, opts.ComponentsConfig)
+	err = composeDeploy(cluster, opts)
 	if err != nil {
 		return nil, err
 	}
@@ -140,10 +141,6 @@ func setCoreDriverDefaultOpts(opts *InstallOpts) {
 	if (opts.DriverName == "google") && (opts.CoreDriversOpts["google-scopes"] == nil) {
 		opts.CoreDriversOpts["google-scopes"] = []interface{}{"https://www.googleapis.com/auth/devstorage.read_only,https://www.googleapis.com/auth/logging.write,https://www.googleapis.com/auth/monitoring.write,https://www.googleapis.com/auth/compute"}
 	}
-}
-
-func (i *Installer) InstallComponents(cluster ServiceCluster, opts *ComponentsConfig) error {
-	return composeDeploy(cluster, opts)
 }
 
 func (i *Installer) BootstrapTsuru(opts *InstallOpts, target string, coreMachines []*dockermachine.Machine) ([]*dockermachine.Machine, error) {

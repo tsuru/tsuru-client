@@ -3,6 +3,7 @@ package installer
 import (
 	"encoding/json"
 	"fmt"
+	"io/ioutil"
 	"strings"
 
 	"github.com/tsuru/tsuru-client/tsuru/installer/dm"
@@ -73,16 +74,26 @@ networks:
         - subnet: 10.0.9.0/24
 `
 
-func resolveConfig(baseConfig string, customConfigs map[string]string) string {
+func resolveConfig(baseConfig string, customConfigs map[string]string) (string, error) {
+	if baseConfig == "" {
+		baseConfig = defaultCompose
+	} else {
+		b, err := ioutil.ReadFile(baseConfig)
+		if err != nil {
+			return "", err
+		}
+		baseConfig = string(b)
+	}
 	for k, v := range customConfigs {
 		if v != "" {
 			baseConfig = strings.Replace(baseConfig, fmt.Sprintf("{{%s}}", k), v, -1)
 		}
 	}
-	return baseConfig
+	return baseConfig, nil
 }
 
-func composeDeploy(c ServiceCluster, componentsConfig *ComponentsConfig) error {
+func composeDeploy(c ServiceCluster, installConfig *InstallOpts) error {
+	componentsConfig := installConfig.ComponentsConfig
 	manager := c.GetManager()
 	componentsConfig.IaaSConfig.Dockermachine.InsecureRegistry = fmt.Sprintf("%s:5000", dm.GetPrivateIP(manager))
 	iaasConfig, err := json.Marshal(componentsConfig.IaaSConfig)
@@ -90,11 +101,15 @@ func composeDeploy(c ServiceCluster, componentsConfig *ComponentsConfig) error {
 		return fmt.Errorf("failed to marshal iaas config: %s", err)
 	}
 	configs := map[string]string{
-		"MANAGER_ADDR": fmt.Sprintf("%s.nip.io", manager.Base.Address),
+		"MANAGER_ADDR": manager.Base.Address,
 		"IAAS_CONF":    string(iaasConfig),
 	}
+	config, err := resolveConfig(installConfig.ComposeFile, configs)
+	if err != nil {
+		return err
+	}
 	remoteWriteCmdFmt := "printf '%%s' '%s' | sudo tee %s"
-	_, err = manager.Host.RunSSHCommand(fmt.Sprintf(remoteWriteCmdFmt, resolveConfig(defaultCompose, configs), "/tmp/compose.yml"))
+	_, err = manager.Host.RunSSHCommand(fmt.Sprintf(remoteWriteCmdFmt, config, "/tmp/compose.yml"))
 	if err != nil {
 		return fmt.Errorf("failed to write remote file: %s", err)
 	}
