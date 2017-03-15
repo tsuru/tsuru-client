@@ -17,11 +17,15 @@ services:
     image: redis:latest
     networks:
       - tsuru
+    volumes:
+      - redis-data:/data/db
   
   mongo:
     image: mongo:latest
     networks:
       - tsuru
+    volumes:
+      - mongo-data:/data
 
   planb:
     image: tsuru/planb:latest
@@ -30,6 +34,8 @@ services:
       - 80:8080
     networks:
       - tsuru
+    depends_on:
+      - redis
 
   registry:
     image: registry:2
@@ -40,6 +46,7 @@ services:
     volumes:
       - "/var/lib/registry:/var/lib/registry"
       - "/etc/docker/certs.d:/certs:ro"
+      - registry-data:/var/lib/registry
     ports:
       - 5000:5000
     networks:
@@ -53,6 +60,11 @@ services:
       - 8080:8080
     networks:
       - tsuru
+    depends_on:
+      - redis
+      - mongo
+      - registry
+      - planb
     environment:
       - MONGODB_ADDR=mongo
       - MONGODB_PORT=27017
@@ -72,6 +84,11 @@ networks:
       driver: default
       config:
         - subnet: 10.0.9.0/24
+
+volumes:
+  mongo-data:
+  redis-data:
+  registry-data:
 `
 
 func resolveConfig(baseConfig string, customConfigs map[string]string) (string, error) {
