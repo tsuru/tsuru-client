@@ -8,6 +8,7 @@ import (
 	"bytes"
 	"encoding/json"
 	"fmt"
+	"io/ioutil"
 	"net/http"
 	"os"
 	"strings"
@@ -35,43 +36,48 @@ func (s *S) TestParseConfigFileNotExists(c *check.C) {
 
 func (s *S) TestParseConfigFile(c *check.C) {
 	expected := &InstallOpts{
-		DockerMachineConfig: &dm.DockerMachineConfig{
-			DriverName: "amazonec2",
-			DriverOpts: map[string]interface{}{
-				"opt1": "option1-value",
+		Name: "tsuru-test",
+		DockerMachineConfig: dm.DockerMachineConfig{
+			DriverOpts: &dm.DriverOpts{
+				Name: "amazonec2",
+				Options: map[string]interface{}{
+					"opt1": "option1-value",
+				},
 			},
 			CAPath:      "/tmp/certs",
-			Name:        "tsuru-test",
 			DockerFlags: []string{"experimental"},
 		},
 		ComponentsConfig: &ComponentsConfig{
-			TsuruAPIConfig: TsuruAPIConfig{
-				TargetName:       "tsuru-test",
-				RootUserEmail:    "admin@example.com",
-				RootUserPassword: "admin123",
-				IaaSConfig: iaasConfig{
-					Dockermachine: iaasConfigInternal{
-						CaPath: "/certs",
-						Driver: iaasConfigDriver{
-							Name: "amazonec2",
-							Options: map[string]interface{}{
-								"opt1": "option1-value",
-							},
+			InstallDashboard: true,
+			TargetName:       "tsuru-test",
+			RootUserEmail:    "admin@example.com",
+			RootUserPassword: "admin123",
+			IaaSConfig: iaasConfig{
+				Dockermachine: iaasConfigInternal{
+					CaPath: "/certs",
+					Driver: iaasConfigDriver{
+						Name: "amazonec2",
+						Options: map[string]interface{}{
+							"opt1": "option1-value",
 						},
 					},
 				},
 			},
-			InstallDashboard: true,
 		},
-		CoreHosts: 2,
-		CoreDriversOpts: map[string][]interface{}{
-			"amazonec2-region": {"us-east", "us-west"},
+		Hosts: hostGroups{
+			Apps: hostGroupConfig{
+				Size:      1,
+				Dedicated: true,
+				Driver: multiOptionsDriver{Options: map[string][]interface{}{
+					"amazonec2-tags": {"my-tag"},
+				}}},
+			Core: hostGroupConfig{
+				Size: 2,
+				Driver: multiOptionsDriver{Options: map[string][]interface{}{
+					"amazonec2-region": {"us-east", "us-west"},
+				}},
+			},
 		},
-		AppsHosts: 1,
-		AppsDriversOpts: map[string][]interface{}{
-			"amazonec2-tags": {"my-tag"},
-		},
-		DedicatedAppsHosts: true,
 	}
 	dmConfig, err := parseConfigFile("./testdata/hosts.yml")
 	c.Assert(err, check.IsNil)
@@ -226,4 +232,28 @@ func (s *S) TestInstallHostList(c *check.C) {
 +-------+-------------+---------+---------------------+
 `
 	c.Assert(buf.String(), check.Equals, expected)
+}
+
+func (s *S) TestInstallConfigInit(c *check.C) {
+	var buf bytes.Buffer
+	context := cmd.Context{Stdout: &buf}
+	command := InstallConfigInit{}
+	client := cmd.NewClient(&http.Client{}, nil, manager)
+	err := command.Run(&context, client)
+	c.Assert(err, check.IsNil)
+	defer os.Remove("install-compose.yml")
+	defer os.Remove("install-config.yml")
+	compose, err := ioutil.ReadFile("install-compose.yml")
+	c.Assert(err, check.IsNil)
+	c.Assert(string(compose), check.DeepEquals, defaultCompose)
+	configFile, err := ioutil.ReadFile("install-config.yml")
+	c.Assert(err, check.IsNil)
+	c.Assert(string(configFile), check.DeepEquals, `name: tsuru
+docker-flags:
+  - experimental
+
+driver:
+  name: virtualbox
+  options:
+`)
 }

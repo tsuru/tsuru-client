@@ -12,7 +12,6 @@ import (
 	"net/url"
 	"strings"
 
-	"github.com/tsuru/config"
 	"github.com/tsuru/gnuflag"
 	"github.com/tsuru/tsuru-client/tsuru/admin"
 	"github.com/tsuru/tsuru-client/tsuru/client"
@@ -20,6 +19,7 @@ import (
 	"github.com/tsuru/tsuru/cmd"
 	"github.com/tsuru/tsuru/iaas"
 	"github.com/tsuru/tsuru/iaas/dockermachine"
+	"gopkg.in/yaml.v2"
 )
 
 type Install struct {
@@ -61,7 +61,7 @@ func (c *Install) Run(context *cmd.Context, cli *cmd.Client) error {
 		return err
 	}
 	installConfig.ComposeFile = c.compose
-	dockerMachine, err := dm.NewDockerMachine(installConfig.DockerMachineConfig)
+	dockerMachine, err := dm.NewDockerMachine(installConfig.DockerMachineConfig, installConfig.Name)
 	if err != nil {
 		return err
 	}
@@ -86,7 +86,7 @@ func (c *Install) Run(context *cmd.Context, cli *cmd.Client) error {
 		return fmt.Errorf("failed to register hosts: %s", err)
 	}
 	fmt.Fprint(context.Stdout, installation.Summary())
-	fmt.Fprintf(context.Stdout, "Configured default user:\nUsername: %s\nPassword: %s\n", installConfig.TsuruAPIConfig.RootUserEmail, installConfig.TsuruAPIConfig.RootUserPassword)
+	fmt.Fprintf(context.Stdout, "Configured default user:\nUsername: %s\nPassword: %s\n", installConfig.ComponentsConfig.RootUserEmail, installConfig.ComponentsConfig.RootUserPassword)
 	fmt.Fprintln(context.Stdout, "Apps Hosts:")
 	nodeList := &admin.ListNodesCmd{}
 	nodeList.Run(context, cli)
@@ -101,71 +101,19 @@ func parseConfigFile(file string) (*InstallOpts, error) {
 	if file == "" {
 		return installConfig, nil
 	}
-	err := config.ReadConfigFile(file)
+	data, err := ioutil.ReadFile(file)
 	if err != nil {
 		return nil, err
 	}
-	driverName, err := config.GetString("driver:name")
-	if err == nil {
-		installConfig.DriverName = driverName
+	err = yaml.Unmarshal(data, installConfig)
+	if err != nil {
+		return nil, err
 	}
-	name, err := config.GetString("name")
-	if err == nil {
-		installConfig.Name = name
-	}
-	hub, err := config.GetString("docker-hub-mirror")
-	if err == nil {
-		installConfig.DockerHubMirror = hub
-	}
-	dockerFlags, err := config.GetList("docker-flags")
-	if err == nil {
-		installConfig.DockerFlags = dockerFlags
-	}
-	installConfig.DriverOpts = dm.DefaultDriverOpts(installConfig.DriverName)
-	opts, _ := config.Get("driver:options")
-	if opts != nil {
-		for k, v := range opts.(map[interface{}]interface{}) {
-			switch k := k.(type) {
-			case string:
-				installConfig.DriverOpts[k] = v
-			}
-		}
-	}
-	caPath, err := config.GetString("ca-path")
-	if err == nil {
-		installConfig.CAPath = caPath
-	}
-	cHosts, err := config.GetInt("hosts:core:size")
-	if err == nil {
-		installConfig.CoreHosts = cHosts
-	}
-	pHosts, err := config.GetInt("hosts:apps:size")
-	if err == nil {
-		installConfig.AppsHosts = pHosts
-	}
-	dedicated, err := config.GetBool("hosts:apps:dedicated")
-	if err == nil {
-		installConfig.DedicatedAppsHosts = dedicated
-	}
-	opts, _ = config.Get("hosts:core:driver:options")
-	if opts != nil {
-		installConfig.CoreDriversOpts, err = parseDriverOptsSlice(opts)
-		if err != nil {
-			return nil, err
-		}
-	}
-	opts, _ = config.Get("hosts:apps:driver:options")
-	if opts != nil {
-		installConfig.AppsDriversOpts, err = parseDriverOptsSlice(opts)
-		if err != nil {
-			return nil, err
-		}
-	}
-	installConfig.ComponentsConfig = NewInstallConfig(installConfig.Name)
+	installConfig.ComponentsConfig.TargetName = installConfig.Name
 	conf := &installConfig.ComponentsConfig.IaaSConfig.Dockermachine
 	conf.CaPath = "/certs"
-	conf.Driver.Name = installConfig.DriverName
-	conf.Driver.Options = installConfig.DriverOpts
+	conf.Driver.Name = installConfig.DriverOpts.Name
+	conf.Driver.Options = installConfig.DriverOpts.Options
 	return installConfig, nil
 }
 
@@ -252,7 +200,7 @@ func (c *Uninstall) Run(ctx *cmd.Context, cli *cmd.Client) error {
 			fmt.Fprintf(ctx.Stderr, "Failed to read configuration file: %s\n", err)
 			return err
 		}
-		d, err := dm.NewDockerMachine(config.DockerMachineConfig)
+		d, err := dm.NewDockerMachine(config.DockerMachineConfig, config.Name)
 		if err != nil {
 			return err
 		}
@@ -353,28 +301,6 @@ func getTargetData() (string, string, error) {
 		return "", "", err
 	}
 	return targetLabel, targetURL, nil
-}
-
-func parseDriverOptsSlice(opts interface{}) (map[string][]interface{}, error) {
-	unparsed, ok := opts.(map[interface{}]interface{})
-	if !ok {
-		return nil, fmt.Errorf("failed to parse opts: %+v", opts)
-	}
-	parsedOpts := make(map[string][]interface{})
-	if opts != nil {
-		for k, v := range unparsed {
-			switch k := k.(type) {
-			case string:
-				l, ok := v.([]interface{})
-				if ok {
-					parsedOpts[k] = l
-				} else {
-					parsedOpts[k] = []interface{}{v}
-				}
-			}
-		}
-	}
-	return parsedOpts, nil
 }
 
 type InstallHostList struct{}

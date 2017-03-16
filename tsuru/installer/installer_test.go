@@ -34,17 +34,17 @@ func (s *S) TestBuildClusterTable(c *check.C) {
 	c.Assert(table.String(), check.Equals, expected)
 }
 
-// func (s *S) TestBuildComponentsTable(c *check.C) {
-// 	i := &Installation{CoreCluster: &FakeServiceCluster{}}
-// 	table := i.buildComponentsTable()
-// 	expected := `+-----------+-------+----------+
-// | Component | Ports | Replicas |
-// +-----------+-------+----------+
-// | MongoDB   | 8080  | 1        |
-// +-----------+-------+----------+
-// `
-// 	c.Assert(table.String(), check.Equals, expected)
-// }
+func (s *S) TestBuildComponentsTable(c *check.C) {
+	i := &Installation{CoreCluster: &FakeServiceCluster{}}
+	table := i.buildComponentsTable()
+	expected := `+-----------+-------+----------+
+| Component | Ports | Replicas |
++-----------+-------+----------+
+| service   | 8080  | 1        |
++-----------+-------+----------+
+`
+	c.Assert(table.String(), check.Equals, expected)
+}
 
 func (s *S) TestProvisionPool(c *check.C) {
 	opt1 := map[string]interface{}{"variable-opt": "opt1"}
@@ -66,10 +66,14 @@ func (s *S) TestProvisionPool(c *check.C) {
 		p := &FakeMachineProvisioner{}
 		installer := &Installer{machineProvisioner: p}
 		config := &InstallOpts{
-			AppsHosts:          t.poolHosts,
-			DedicatedAppsHosts: t.dedicatedPool,
-			AppsDriversOpts: map[string][]interface{}{
-				"variable-opt": {"opt1", "opt2"},
+			Hosts: hostGroups{
+				Apps: hostGroupConfig{
+					Size:      t.poolHosts,
+					Dedicated: t.dedicatedPool,
+					Driver: multiOptionsDriver{Options: map[string][]interface{}{
+						"variable-opt": {"opt1", "opt2"},
+					}},
+				},
 			},
 		}
 		machines, err := installer.ProvisionPool(config, t.machines)
@@ -90,10 +94,12 @@ func (s *S) TestsetCoreDriverDefaultOpts(c *check.C) {
 	}{
 		{
 			test: &InstallOpts{
-				DockerMachineConfig: &dm.DockerMachineConfig{
-					DriverName: "google",
+				DockerMachineConfig: dm.DockerMachineConfig{
+					DriverOpts: &dm.DriverOpts{Name: "google"},
 				},
-				CoreDriversOpts: map[string][]interface{}{"google-open-port": []interface{}{"8081"}},
+				Hosts: hostGroups{
+					Core: hostGroupConfig{Driver: multiOptionsDriver{Options: map[string][]interface{}{"google-open-port": []interface{}{"8081"}}}},
+				},
 			},
 			expected: map[string][]interface{}{
 				"google-open-port": []interface{}{"8081"},
@@ -102,8 +108,8 @@ func (s *S) TestsetCoreDriverDefaultOpts(c *check.C) {
 		},
 		{
 			test: &InstallOpts{
-				DockerMachineConfig: &dm.DockerMachineConfig{
-					DriverName: "generic",
+				DockerMachineConfig: dm.DockerMachineConfig{
+					DriverOpts: &dm.DriverOpts{Name: "generic"},
 				},
 			},
 			expected: map[string][]interface{}{
@@ -113,6 +119,6 @@ func (s *S) TestsetCoreDriverDefaultOpts(c *check.C) {
 	}
 	for _, v := range tt {
 		setCoreDriverDefaultOpts(v.test)
-		c.Check(v.test.CoreDriversOpts, check.DeepEquals, v.expected)
+		c.Check(v.test.Hosts.Core.Driver.Options, check.DeepEquals, v.expected)
 	}
 }

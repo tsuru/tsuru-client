@@ -12,7 +12,6 @@ import (
 
 	"github.com/docker/machine/libmachine/mcnutils"
 	"github.com/fsouza/go-dockerclient"
-	"github.com/tsuru/config"
 	"github.com/tsuru/tsuru-client/tsuru/admin"
 	tclient "github.com/tsuru/tsuru-client/tsuru/client"
 	"github.com/tsuru/tsuru/cmd"
@@ -22,33 +21,14 @@ import (
 var defaultTsuruAPIPort = 8080
 
 type ComponentsConfig struct {
-	InstallDashboard bool
-	TsuruAPIConfig
-}
-
-func NewInstallConfig(targetName string) *ComponentsConfig {
-	installDashboard, err := config.GetBool("components:tsuru:install-dashboard")
-	if err != nil {
-		installDashboard = true
-	}
-	return &ComponentsConfig{
-		TsuruAPIConfig: TsuruAPIConfig{
-			TargetName:       targetName,
-			RootUserEmail:    "admin@example.com",
-			RootUserPassword: "admin123",
-		},
-		InstallDashboard: installDashboard,
-	}
+	InstallDashboard bool       `yaml:"install-dashboard,omitempty"`
+	TargetName       string     `yaml:"-"`
+	RootUserEmail    string     `yaml:"-"`
+	RootUserPassword string     `yaml:"-"`
+	IaaSConfig       iaasConfig `yaml:"-"`
 }
 
 type TsuruAPI struct{}
-
-type TsuruAPIConfig struct {
-	TargetName       string
-	RootUserEmail    string
-	RootUserPassword string
-	IaaSConfig       iaasConfig
-}
 
 type iaasConfig struct {
 	Dockermachine iaasConfigInternal `json:"dockermachine,omitempty"`

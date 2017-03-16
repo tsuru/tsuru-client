@@ -25,24 +25,45 @@ import (
 
 var (
 	defaultInstallOpts = &InstallOpts{
-		DockerMachineConfig: dm.DefaultDockerMachineConfig,
-		ComponentsConfig:    NewInstallConfig(dm.DefaultDockerMachineConfig.Name),
-		CoreHosts:           1,
-		AppsHosts:           1,
-		DedicatedAppsHosts:  false,
-		CoreDriversOpts:     make(map[string][]interface{}),
+		Name: "tsuru",
+		DockerMachineConfig: dm.DockerMachineConfig{
+			DriverOpts:  &dm.DriverOpts{Name: "virtualbox"},
+			DockerFlags: []string{"experimental"},
+		},
+		ComponentsConfig: &ComponentsConfig{
+			InstallDashboard: true,
+			TargetName:       "tsuru",
+			RootUserEmail:    "admin@example.com",
+			RootUserPassword: "admin123",
+		},
+		Hosts: hostGroups{
+			Apps: hostGroupConfig{Size: 1},
+			Core: hostGroupConfig{Size: 1},
+		},
 	}
 )
 
 type InstallOpts struct {
-	*dm.DockerMachineConfig
-	*ComponentsConfig
-	CoreHosts          int
-	CoreDriversOpts    map[string][]interface{}
-	AppsHosts          int
-	DedicatedAppsHosts bool
-	AppsDriversOpts    map[string][]interface{}
-	ComposeFile        string
+	dm.DockerMachineConfig `yaml:",inline"`
+	*ComponentsConfig      `yaml:"components"`
+	Name                   string
+	Hosts                  hostGroups `yaml:"hosts,omitempty"`
+	ComposeFile            string     `yaml:"-"`
+}
+
+type hostGroups struct {
+	Apps hostGroupConfig `yaml:"apps,omitempty"`
+	Core hostGroupConfig `yaml:"core,omitempty"`
+}
+
+type hostGroupConfig struct {
+	Size      int                `yaml:"size,omitempty"`
+	Dedicated bool               `yaml:"dedicated,omitempty"`
+	Driver    multiOptionsDriver `yaml:"driver,omitempty"`
+}
+
+type multiOptionsDriver struct {
+	Options map[string][]interface{} `yaml:"options,omitempty"`
 }
 
 type Installer struct {
@@ -59,7 +80,7 @@ func (i *Installer) Install(opts *InstallOpts) (*Installation, error) {
 		return nil, fmt.Errorf("pre-install checks failed: %s", errChecks)
 	}
 	setCoreDriverDefaultOpts(opts)
-	coreMachines, err := i.ProvisionMachines(opts.CoreHosts, opts.CoreDriversOpts)
+	coreMachines, err := i.ProvisionMachines(opts.Hosts.Core.Size, opts.Hosts.Core.Driver.Options)
 	if err != nil {
 		return nil, fmt.Errorf("failed to provision components machines: %s", err)
 	}
@@ -132,15 +153,18 @@ func (i *Installer) waitTsuru(cluster ServiceCluster, compConf *ComponentsConfig
 }
 
 func setCoreDriverDefaultOpts(opts *InstallOpts) {
-	if opts.CoreDriversOpts == nil {
-		opts.CoreDriversOpts = make(map[string][]interface{})
+	driverName := opts.DriverOpts.Name
+	coreDriverOpts := opts.Hosts.Core.Driver.Options
+	if coreDriverOpts == nil {
+		coreDriverOpts = make(map[string][]interface{})
 	}
-	if _, ok := opts.CoreDriversOpts[opts.DriverName+"-open-port"]; !ok {
-		opts.CoreDriversOpts[opts.DriverName+"-open-port"] = []interface{}{strconv.Itoa(defaultTsuruAPIPort)}
+	if _, ok := coreDriverOpts[driverName+"-open-port"]; !ok {
+		coreDriverOpts[driverName+"-open-port"] = []interface{}{strconv.Itoa(defaultTsuruAPIPort)}
 	}
-	if (opts.DriverName == "google") && (opts.CoreDriversOpts["google-scopes"] == nil) {
-		opts.CoreDriversOpts["google-scopes"] = []interface{}{"https://www.googleapis.com/auth/devstorage.read_only,https://www.googleapis.com/auth/logging.write,https://www.googleapis.com/auth/monitoring.write,https://www.googleapis.com/auth/compute"}
+	if (driverName == "google") && (coreDriverOpts["google-scopes"] == nil) {
+		coreDriverOpts["google-scopes"] = []interface{}{"https://www.googleapis.com/auth/devstorage.read_only,https://www.googleapis.com/auth/logging.write,https://www.googleapis.com/auth/monitoring.write,https://www.googleapis.com/auth/compute"}
 	}
+	opts.Hosts.Core.Driver.Options = coreDriverOpts
 }
 
 func (i *Installer) BootstrapTsuru(opts *InstallOpts, target string, coreMachines []*dockermachine.Machine) ([]*dockermachine.Machine, error) {
@@ -150,11 +174,11 @@ func (i *Installer) BootstrapTsuru(opts *InstallOpts, target string, coreMachine
 		Password:         opts.ComponentsConfig.RootUserPassword,
 		Target:           target,
 		TargetName:       opts.ComponentsConfig.TargetName,
-		NodesParams:      opts.AppsDriversOpts,
+		NodesParams:      opts.Hosts.Apps.Driver.Options,
 		InstallDashboard: opts.ComponentsConfig.InstallDashboard,
 	}
 	var installMachines []*dockermachine.Machine
-	if opts.DriverName == "virtualbox" {
+	if opts.DriverOpts.Name == "virtualbox" {
 		appsMachines, errProv := i.ProvisionPool(opts, coreMachines)
 		if errProv != nil {
 			return nil, errProv
@@ -176,18 +200,18 @@ func (i *Installer) BootstrapTsuru(opts *InstallOpts, target string, coreMachine
 		bootstrapOpts.NodesToRegister = nodesAddr
 	} else {
 		installMachines = coreMachines
-		if opts.DedicatedAppsHosts {
-			bootstrapOpts.NodesToCreate = opts.AppsHosts
+		if opts.Hosts.Apps.Dedicated {
+			bootstrapOpts.NodesToCreate = opts.Hosts.Apps.Size
 		} else {
 			var nodesAddr []string
 			for _, m := range coreMachines {
 				nodesAddr = append(nodesAddr, dm.GetPrivateAddress(m))
 			}
-			if opts.AppsHosts > opts.CoreHosts {
-				bootstrapOpts.NodesToCreate = opts.AppsHosts - opts.CoreHosts
+			if opts.Hosts.Apps.Size > opts.Hosts.Core.Size {
+				bootstrapOpts.NodesToCreate = opts.Hosts.Apps.Size - opts.Hosts.Core.Size
 				bootstrapOpts.NodesToRegister = nodesAddr
 			} else {
-				bootstrapOpts.NodesToRegister = nodesAddr[:opts.AppsHosts]
+				bootstrapOpts.NodesToRegister = nodesAddr[:opts.Hosts.Apps.Size]
 			}
 		}
 	}
@@ -224,17 +248,17 @@ func preInstallChecks(config *InstallOpts) error {
 }
 
 func (i *Installer) ProvisionPool(config *InstallOpts, hosts []*dockermachine.Machine) ([]*dockermachine.Machine, error) {
-	if config.DedicatedAppsHosts {
-		return i.ProvisionMachines(config.AppsHosts, config.AppsDriversOpts)
+	if config.Hosts.Apps.Dedicated {
+		return i.ProvisionMachines(config.Hosts.Apps.Size, config.Hosts.Apps.Driver.Options)
 	}
-	if config.AppsHosts > len(hosts) {
-		poolMachines, err := i.ProvisionMachines(config.AppsHosts-len(hosts), config.AppsDriversOpts)
+	if config.Hosts.Apps.Size > len(hosts) {
+		poolMachines, err := i.ProvisionMachines(config.Hosts.Apps.Size-len(hosts), config.Hosts.Apps.Driver.Options)
 		if err != nil {
 			return nil, fmt.Errorf("failed to provision pool hosts: %s", err)
 		}
 		return append(poolMachines, hosts...), nil
 	}
-	return hosts[:config.AppsHosts], nil
+	return hosts[:config.Hosts.Apps.Size], nil
 }
 
 func (i *Installer) ProvisionMachines(numMachines int, configs map[string][]interface{}) ([]*dockermachine.Machine, error) {

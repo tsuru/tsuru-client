@@ -13,33 +13,35 @@ import (
 )
 
 func (s *S) TestNewDockerMachine(c *check.C) {
-	config := &DockerMachineConfig{
-		DriverName: "virtualbox",
+	config := DockerMachineConfig{
+		DriverOpts: &DriverOpts{Name: "virtualbox"},
 	}
-	dm, err := NewDockerMachine(config)
+	dm, err := NewDockerMachine(config, "tsuru")
 	c.Assert(err, check.IsNil)
 	c.Assert(dm, check.NotNil)
-	c.Assert(dm.config.DriverName, check.Equals, "virtualbox")
+	c.Assert(dm.config.DriverOpts.Name, check.Equals, "virtualbox")
 }
 
 func (s *S) TestNewDockerMachineDriverOpts(c *check.C) {
-	config := &DockerMachineConfig{
-		DriverName: "none",
-		DriverOpts: map[string]interface{}{
-			"url": "localhost",
+	config := DockerMachineConfig{
+		DriverOpts: &DriverOpts{
+			Name: "virtualbox",
+			Options: map[string]interface{}{
+				"url": "localhost",
+			},
 		},
 	}
-	dm, err := NewDockerMachine(config)
+	dm, err := NewDockerMachine(config, "tsuru")
 	c.Assert(err, check.IsNil)
 	c.Assert(dm, check.NotNil)
-	c.Assert(dm.config.DriverOpts["url"].(string), check.Equals, "localhost")
+	c.Assert(dm.config.DriverOpts.Options["url"].(string), check.Equals, "localhost")
 }
 
 func (s *S) TestUploadRegistryCertificate(c *check.C) {
 	sshTarget := &fakeSSHTarget{}
-	config := &DockerMachineConfig{}
+	config := DockerMachineConfig{}
 	defer os.Remove(s.StoreBasePath)
-	dm, err := NewDockerMachine(config)
+	dm, err := NewDockerMachine(config, "tsuru")
 	c.Assert(err, check.IsNil)
 	err = dm.uploadRegistryCertificate("127.0.0.1", "ubuntu", sshTarget)
 	c.Assert(err, check.IsNil)
@@ -73,9 +75,9 @@ func (s *S) containsWithSubstring(l []string, subs string, c *check.C) {
 }
 
 func (s *S) TestCreateRegistryCertificate(c *check.C) {
-	config := &DockerMachineConfig{}
+	config := DockerMachineConfig{}
 	defer os.Remove(s.StoreBasePath)
-	dm, err := NewDockerMachine(config)
+	dm, err := NewDockerMachine(config, "")
 	c.Assert(err, check.IsNil)
 	err = dm.createRegistryCertificate("127.0.0.1")
 	c.Assert(err, check.IsNil)

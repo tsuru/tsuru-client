@@ -20,17 +20,10 @@ import (
 	"github.com/tsuru/tsuru/iaas/dockermachine"
 )
 
-var (
-	storeBasePath              = cmd.JoinWithUserDir(".tsuru", "installs")
-	DefaultDockerMachineConfig = &DockerMachineConfig{
-		DriverName:  "virtualbox",
-		Name:        "tsuru",
-		DriverOpts:  make(map[string]interface{}),
-		DockerFlags: []string{"experimental"},
-	}
-)
+var storeBasePath = cmd.JoinWithUserDir(".tsuru", "installs")
 
 type DockerMachine struct {
+	name          string
 	storePath     string
 	certsPath     string
 	API           dockermachine.DockerMachineAPI
@@ -39,20 +32,23 @@ type DockerMachine struct {
 }
 
 type DockerMachineConfig struct {
-	DriverName      string
-	CAPath          string
-	Name            string
-	DriverOpts      map[string]interface{}
-	DockerHubMirror string
-	DockerFlags     []string
+	CAPath          string      `yaml:"ca-path,omitempty"`
+	DriverOpts      *DriverOpts `yaml:"driver,omitempty"`
+	DockerHubMirror string      `yaml:"docker-hub-mirror,omitempty"`
+	DockerFlags     []string    `yaml:"docker-flags,omitempty"`
+}
+
+type DriverOpts struct {
+	Name    string
+	Options map[string]interface{} `yaml:",omitempty"`
 }
 
 type MachineProvisioner interface {
 	ProvisionMachine(map[string]interface{}) (*dockermachine.Machine, error)
 }
 
-func NewDockerMachine(config *DockerMachineConfig) (*DockerMachine, error) {
-	storePath := filepath.Join(storeBasePath, config.Name)
+func NewDockerMachine(config DockerMachineConfig, name string) (*DockerMachine, error) {
+	storePath := filepath.Join(storeBasePath, name)
 	certsPath := filepath.Join(storePath, "certs")
 	dm, err := dockermachine.NewDockerMachine(dockermachine.DockerMachineConfig{
 		CaPath:    config.CAPath,
@@ -65,9 +61,10 @@ func NewDockerMachine(config *DockerMachineConfig) (*DockerMachine, error) {
 	}
 	return &DockerMachine{
 		API:       dm,
+		name:      name,
 		certsPath: certsPath,
 		storePath: storePath,
-		config:    *config,
+		config:    config,
 	}, nil
 }
 
@@ -89,7 +86,7 @@ func (d *DockerMachine) CreateMachine(driverOpts map[string]interface{}) (*docke
 	driverOpts["engine-install-url"] = ""
 	driverOpts["swarm-discovery"] = ""
 	mergedOpts := make(map[string]interface{})
-	for k, v := range d.config.DriverOpts {
+	for k, v := range d.config.DriverOpts.Options {
 		mergedOpts[k] = v
 	}
 	for k, v := range driverOpts {
@@ -97,7 +94,7 @@ func (d *DockerMachine) CreateMachine(driverOpts map[string]interface{}) (*docke
 	}
 	m, err := d.API.CreateMachine(dockermachine.CreateMachineOpts{
 		Name:           d.generateMachineName(),
-		DriverName:     d.config.DriverName,
+		DriverName:     d.config.DriverOpts.Name,
 		Params:         mergedOpts,
 		RegistryMirror: d.config.DockerHubMirror,
 		ArbitraryFlags: d.config.DockerFlags,
@@ -117,7 +114,7 @@ func (d *DockerMachine) CreateMachine(driverOpts map[string]interface{}) (*docke
 
 func (d *DockerMachine) generateMachineName() string {
 	atomic.AddUint64(&d.machinesCount, 1)
-	return fmt.Sprintf("%s-%d", d.config.Name, atomic.LoadUint64(&d.machinesCount))
+	return fmt.Sprintf("%s-%d", d.name, atomic.LoadUint64(&d.machinesCount))
 }
 
 func nixPathJoin(elem ...string) string {
