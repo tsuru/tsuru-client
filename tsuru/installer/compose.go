@@ -41,8 +41,8 @@ services:
     image: registry:2
     environment:
       - "REGISTRY_STORAGE_FILESYSTEM_ROOTDIRECTORY=/var/lib/registry"
-      - "REGISTRY_HTTP_TLS_CERTIFICATE=/certs/{{CLUSTER_ADDR}}:5000/registry-cert.pem"
-      - "REGISTRY_HTTP_TLS_KEY=/certs/{{CLUSTER_ADDR}}:5000/registry-key.pem"
+      - "REGISTRY_HTTP_TLS_CERTIFICATE=/certs/{{CLUSTER_PRIVATE_ADDR}}:5000/registry-cert.pem"
+      - "REGISTRY_HTTP_TLS_KEY=/certs/{{CLUSTER_PRIVATE_ADDR}}:5000/registry-key.pem"
     volumes:
       - "/etc/docker/certs.d:/certs:ro"
       - registry-data:/var/lib/registry
