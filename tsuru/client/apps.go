@@ -792,7 +792,7 @@ func (c *AppList) Flags() *gnuflag.FlagSet {
 		c.fs.BoolVar(&c.filter.locked, "locked", false, "Filter applications by lock status")
 		c.fs.BoolVar(&c.filter.locked, "l", false, "Filter applications by lock status")
 		c.fs.BoolVar(&c.simplified, "q", false, "Display only applications name")
-		tagMessage := "Filter applications by tags"
+		tagMessage := "Filter applications by tag. Can be used multiple times"
 		c.fs.Var(&c.filter.tags, "tag", tagMessage)
 		c.fs.Var(&c.filter.tags, "g", tagMessage)
 	}
