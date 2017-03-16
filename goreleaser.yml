@@ -1,0 +1,40 @@
+# goreleaser.yml
+# Build customization
+build:
+  main: ./tsuru/main.go
+  binary_name: tsuru
+  goos:
+    - windows
+    - darwin
+    - linux
+  goarch:
+    - amd64
+
+# Archive customization
+archive:
+  name_template: "{{.BinaryName}}_{{.Version}}_{{.Os}}_{{.Arch}}"
+  format: tar.gz
+  replacements:
+    darwin: macOS
+  files:
+    - misc/bash-completion
+    - misc/zsh-completion
+
+# Mac OS Homebrew
+brew:
+  # Reporitory to push the tap to.
+  repo: tsuru/homebrew-tsuru
+
+  # Folder inside the repository to put the formula.
+  # Default is the root folder.
+  folder: Formula
+
+  # Only use brew for stable releases
+  version_match: '^[0-9\.]+$'
+
+  # Custom install
+  install: |
+    bin.install "tsuru"
+    bash_completion.install "misc/bash-completion" => "tsuru"
+    zsh_completion.install "misc/zsh-completion" => "tsuru"
+
