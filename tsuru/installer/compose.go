@@ -44,7 +44,6 @@ services:
       - "REGISTRY_HTTP_TLS_CERTIFICATE=/certs/{{CLUSTER_ADDR}}:5000/registry-cert.pem"
       - "REGISTRY_HTTP_TLS_KEY=/certs/{{CLUSTER_ADDR}}:5000/registry-key.pem"
     volumes:
-      - "/var/lib/registry:/var/lib/registry"
       - "/etc/docker/certs.d:/certs:ro"
       - registry-data:/var/lib/registry
     ports:
