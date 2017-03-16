@@ -41,7 +41,7 @@ func (s *S) TestUploadRegistryCertificate(c *check.C) {
 	sshTarget := &fakeSSHTarget{}
 	config := DockerMachineConfig{}
 	defer os.Remove(s.StoreBasePath)
-	dm, err := NewDockerMachine(config, "tsuru")
+	dm, err := NewDockerMachine(config, "")
 	c.Assert(err, check.IsNil)
 	err = dm.uploadRegistryCertificate("127.0.0.1", "ubuntu", sshTarget)
 	c.Assert(err, check.IsNil)

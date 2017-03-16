@@ -246,14 +246,7 @@ func (s *S) TestInstallConfigInit(c *check.C) {
 	compose, err := ioutil.ReadFile("install-compose.yml")
 	c.Assert(err, check.IsNil)
 	c.Assert(string(compose), check.DeepEquals, defaultCompose)
-	configFile, err := ioutil.ReadFile("install-config.yml")
+	opts, err := parseConfigFile("install-config.yml")
 	c.Assert(err, check.IsNil)
-	c.Assert(string(configFile), check.DeepEquals, `name: tsuru
-docker-flags:
-  - experimental
-
-driver:
-  name: virtualbox
-  options:
-`)
+	c.Assert(opts, check.DeepEquals, defaultInstallOpts)
 }

@@ -12,6 +12,7 @@ import (
 	"net/url"
 	"strings"
 
+	"github.com/pkg/errors"
 	"github.com/tsuru/gnuflag"
 	"github.com/tsuru/tsuru-client/tsuru/admin"
 	"github.com/tsuru/tsuru-client/tsuru/client"
@@ -449,4 +450,30 @@ func (c *InstallSSH) Run(context *cmd.Context, cli *cmd.Client) error {
 		sshArgs = context.Args[1:]
 	}
 	return sshClient.Shell(sshArgs...)
+}
+
+type InstallConfigInit struct{}
+
+func (c *InstallConfigInit) Info() *cmd.Info {
+	return &cmd.Info{
+		Name:  "install-config-init",
+		Usage: "install-config-init",
+		Desc:  "Generate install configuration files.",
+	}
+}
+
+func (c *InstallConfigInit) Run(context *cmd.Context, cli *cmd.Client) error {
+	err := ioutil.WriteFile("install-compose.yml", []byte(defaultCompose), 0644)
+	if err != nil {
+		return errors.Errorf("failed to write compose file: %s", err)
+	}
+	out, err := yaml.Marshal(defaultInstallOpts)
+	if err != nil {
+		return errors.Errorf("failed to generate config file: %s", err)
+	}
+	err = ioutil.WriteFile("install-config.yml", out, 0644)
+	if err != nil {
+		return errors.Errorf("failed to write config file: %s", err)
+	}
+	return nil
 }
