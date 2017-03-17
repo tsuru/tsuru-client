@@ -11,6 +11,7 @@ import (
 	"io/ioutil"
 	"net/http"
 	"os"
+	"path/filepath"
 	"strings"
 
 	"github.com/docker/machine/drivers/fakedriver"
@@ -236,17 +237,20 @@ func (s *S) TestInstallHostList(c *check.C) {
 
 func (s *S) TestInstallConfigInit(c *check.C) {
 	var buf bytes.Buffer
-	context := cmd.Context{Stdout: &buf}
+	d, err := ioutil.TempDir("", "installer")
+	c.Assert(err, check.IsNil)
+	context := cmd.Context{
+		Stdout: &buf,
+		Args:   []string{filepath.Join(d, "config.yml"), filepath.Join(d, "compose.yml")},
+	}
 	command := InstallConfigInit{}
 	client := cmd.NewClient(&http.Client{}, nil, manager)
-	err := command.Run(&context, client)
+	err = command.Run(&context, client)
 	c.Assert(err, check.IsNil)
-	defer os.Remove("install-compose.yml")
-	defer os.Remove("install-config.yml")
-	compose, err := ioutil.ReadFile("install-compose.yml")
+	compose, err := ioutil.ReadFile(filepath.Join(d, "compose.yml"))
 	c.Assert(err, check.IsNil)
 	c.Assert(string(compose), check.DeepEquals, defaultCompose)
-	opts, err := parseConfigFile("install-config.yml")
+	opts, err := parseConfigFile(filepath.Join(d, "config.yml"))
 	c.Assert(err, check.IsNil)
 	c.Assert(opts, check.DeepEquals, defaultInstallOpts)
 }

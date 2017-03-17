@@ -457,13 +457,21 @@ type InstallConfigInit struct{}
 func (c *InstallConfigInit) Info() *cmd.Info {
 	return &cmd.Info{
 		Name:  "install-config-init",
-		Usage: "install-config-init",
+		Usage: "install-config-init <config_file> <compose_file>",
 		Desc:  "Generate install configuration files.",
 	}
 }
 
 func (c *InstallConfigInit) Run(context *cmd.Context, cli *cmd.Client) error {
-	err := ioutil.WriteFile("install-compose.yml", []byte(defaultCompose), 0644)
+	configFile := "install-config.yml"
+	composeFile := "install-compose.yml"
+	if len(context.Args) > 0 {
+		configFile = context.Args[0]
+	}
+	if len(context.Args) > 1 {
+		composeFile = context.Args[1]
+	}
+	err := ioutil.WriteFile(composeFile, []byte(defaultCompose), 0644)
 	if err != nil {
 		return errors.Errorf("failed to write compose file: %s", err)
 	}
@@ -471,7 +479,7 @@ func (c *InstallConfigInit) Run(context *cmd.Context, cli *cmd.Client) error {
 	if err != nil {
 		return errors.Errorf("failed to generate config file: %s", err)
 	}
-	err = ioutil.WriteFile("install-config.yml", out, 0644)
+	err = ioutil.WriteFile(configFile, out, 0644)
 	if err != nil {
 		return errors.Errorf("failed to write config file: %s", err)
 	}
