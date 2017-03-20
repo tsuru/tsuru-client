@@ -69,9 +69,9 @@ Service test is foo bar.
 	}
 	if strings.HasSuffix(req.URL.Path, "/services/mymongo/instances/mongo") {
 		if t.includeAll {
-			message = `{"Apps": ["app", "app2"], "Teams": ["admin", "admin2"], "TeamOwner": "admin", "CustomInfo" : {"key4": "value8", "key2": "value9", "key3":"value3"},"Description": "description", "PlanName": "small", "PlanDescription": "another plan"}`
+			message = `{"Apps": ["app", "app2"], "Teams": ["admin", "admin2"], "TeamOwner": "admin", "CustomInfo" : {"key4": "value8", "key2": "value9", "key3":"value3"},"Description": "description", "PlanName": "small", "PlanDescription": "another plan", "Tags": ["tag 1", "tag 2"]}`
 		} else {
-			message = `{"Apps": ["app", "app2"], "Teams": ["admin", "admin2"], "TeamOwner": "admin", "CustomInfo" : {},"Description": "", "PlanName": "", "PlanDescription": ""}`
+			message = `{"Apps": ["app", "app2"], "Teams": ["admin", "admin2"], "TeamOwner": "admin", "CustomInfo" : {},"Description": "", "PlanName": "", "PlanDescription": "", "Tags": []}`
 		}
 	}
 	resp = &http.Response{
@@ -513,6 +513,7 @@ Apps: app, app2
 Teams: admin, admin2
 Team Owner: admin
 Description: description
+Tags: tag 1, tag 2
 Plan: small
 Plan description: another plan
 
@@ -546,9 +547,10 @@ Instance: mongo
 Apps: app, app2
 Teams: admin, admin2
 Team Owner: admin
-Description: 
-Plan: 
-Plan description: 
+Description:
+Tags:
+Plan:
+Plan description:
 `
 	args := []string{"mymongo", "mongo"}
 	context := cmd.Context{
@@ -559,7 +561,7 @@ Plan description:
 	client := cmd.NewClient(&http.Client{Transport: &infoTransport{includeAll: false}}, nil, manager)
 	err := (&ServiceInstanceInfo{}).Run(&context, client)
 	c.Assert(err, check.IsNil)
-	obtained := stdout.String()
+	obtained := strings.Replace(stdout.String(), " \n", "\n", -1)
 	c.Assert(obtained, check.Equals, expected)
 }
 

@@ -364,6 +364,7 @@ type ServiceInstanceInfoModel struct {
 	PlanName        string
 	PlanDescription string
 	CustomInfo      map[string]string
+	Tags            []string
 }
 
 func (c ServiceInstanceInfo) Run(ctx *cmd.Context, client *cmd.Client) error {
@@ -397,6 +398,7 @@ func (c ServiceInstanceInfo) Run(ctx *cmd.Context, client *cmd.Client) error {
 	fmt.Fprintf(ctx.Stdout, "Teams: %s\n", strings.Join(si.Teams, ", "))
 	fmt.Fprintf(ctx.Stdout, "Team Owner: %s\n", si.TeamOwner)
 	fmt.Fprintf(ctx.Stdout, "Description: %s\n", si.Description)
+	fmt.Fprintf(ctx.Stdout, "Tags: %s\n", strings.Join(si.Tags, ", "))
 	fmt.Fprintf(ctx.Stdout, "Plan: %s\n", si.PlanName)
 	fmt.Fprintf(ctx.Stdout, "Plan description: %s\n", si.PlanDescription)
 	if len(si.CustomInfo) != 0 {
