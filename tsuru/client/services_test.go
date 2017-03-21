@@ -361,18 +361,51 @@ func (s *S) TestServiceInstanceAddRun(c *check.C) {
 	trans := cmdtest.ConditionalTransport{
 		Transport: cmdtest.Transport{Message: result, Status: http.StatusOK},
 		CondFunc: func(r *http.Request) bool {
+			r.ParseForm()
 			name := r.FormValue("name") == "my_app_db"
 			plan := r.FormValue("plan") == "small"
-			owner := r.FormValue("owner ") == ""
-			description := r.FormValue("description") == ""
+			owner := r.FormValue("owner") == "my team"
+			description := r.FormValue("description") == "desc"
+			tags := len(r.Form["tag"]) == 2 && r.Form["tag"][0] == "my tag 1" && r.Form["tag"][1] == "my tag 2"
 			method := r.Method == "POST"
 			contentType := r.Header.Get("Content-Type") == "application/x-www-form-urlencoded"
 			url := strings.HasSuffix(r.URL.Path, "/services/mysql/instances")
-			return method && url && name && owner && plan && description && contentType
+			return method && url && name && owner && plan && description && tags && contentType
 		},
 	}
 	client := cmd.NewClient(&http.Client{Transport: &trans}, nil, manager)
-	err := (&ServiceInstanceAdd{}).Run(&context, client)
+	command := ServiceInstanceAdd{}
+	command.Flags().Parse(true, []string{"--team-owner", "my team", "--description", "desc", "--tag", "my tag 1", "--tag", "my tag 2"})
+	err := command.Run(&context, client)
+	c.Assert(err, check.IsNil)
+	obtained := stdout.String()
+	c.Assert(obtained, check.Equals, result)
+}
+
+func (s *S) TestServiceInstanceAddRunWithEmptyTag(c *check.C) {
+	var stdout, stderr bytes.Buffer
+	result := "Service successfully added.\n"
+	args := []string{
+		"mysql",
+		"my_app_db",
+		"small",
+	}
+	context := cmd.Context{
+		Args:   args,
+		Stdout: &stdout,
+		Stderr: &stderr,
+	}
+	trans := cmdtest.ConditionalTransport{
+		Transport: cmdtest.Transport{Message: result, Status: http.StatusOK},
+		CondFunc: func(r *http.Request) bool {
+			r.ParseForm()
+			return len(r.Form["tag"]) == 1 && r.Form["tag"][0] == ""
+		},
+	}
+	client := cmd.NewClient(&http.Client{Transport: &trans}, nil, manager)
+	command := ServiceInstanceAdd{}
+	command.Flags().Parse(true, []string{"--tag", ""})
+	err := command.Run(&context, client)
 	c.Assert(err, check.IsNil)
 	obtained := stdout.String()
 	c.Assert(obtained, check.Equals, result)
@@ -412,6 +445,20 @@ func (s *S) TestServiceInstanceAddFlags(c *check.C) {
 	c.Check(sassume.Value.String(), check.Equals, "description")
 	c.Check(sassume.DefValue, check.Equals, "")
 	c.Check(command.description, check.Equals, "description")
+	flagDesc = "service instance tag"
+	flagset.Parse(true, []string{"-g", "my tag"})
+	assume = flagset.Lookup("tag")
+	c.Check(assume, check.NotNil)
+	c.Check(assume.Name, check.Equals, "tag")
+	c.Check(assume.Usage, check.Equals, flagDesc)
+	c.Check(assume.Value.String(), check.Equals, "[\"my tag\"]")
+	c.Check(assume.DefValue, check.Equals, "[]")
+	sassume = flagset.Lookup("g")
+	c.Check(sassume, check.NotNil)
+	c.Check(sassume.Name, check.Equals, "g")
+	c.Check(sassume.Usage, check.Equals, flagDesc)
+	c.Check(sassume.Value.String(), check.Equals, "[\"my tag\"]")
+	c.Check(sassume.DefValue, check.Equals, "[]")
 }
 
 func (s *S) TestServiceInstanceUpdateInfo(c *check.C) {

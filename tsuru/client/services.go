@@ -69,12 +69,13 @@ type ServiceInstanceAdd struct {
 	fs          *gnuflag.FlagSet
 	teamOwner   string
 	description string
+	tags        cmd.StringSliceFlag
 }
 
 func (c *ServiceInstanceAdd) Info() *cmd.Info {
 	return &cmd.Info{
 		Name:  "service-instance-add",
-		Usage: "service-instance-add <service-name> <service-instance-name> [plan] [-t/--team-owner <team>] [-d/--description description]",
+		Usage: "service-instance-add <service-name> <service-instance-name> [plan] [-t/--team-owner <team>] [-d/--description description] [-g/--tag tag]...",
 		Desc: `Creates a service instance of a service. There can later be binded to
 applications with [[tsuru service-bind]].
 
@@ -101,6 +102,9 @@ func (c *ServiceInstanceAdd) Run(ctx *cmd.Context, client *cmd.Client) error {
 	v.Set("plan", plan)
 	v.Set("owner", c.teamOwner)
 	v.Set("description", c.description)
+	for _, tag := range c.tags {
+		v.Add("tag", tag)
+	}
 	u, err := cmd.GetURL(fmt.Sprintf("/services/%s/instances", serviceName))
 	if err != nil {
 		return err
@@ -124,6 +128,9 @@ func (c *ServiceInstanceAdd) Flags() *gnuflag.FlagSet {
 		descriptionMessage := "service instance description"
 		c.fs.StringVar(&c.description, "description", "", descriptionMessage)
 		c.fs.StringVar(&c.description, "d", "", descriptionMessage)
+		tagMessage := "service instance tag"
+		c.fs.Var(&c.tags, "tag", tagMessage)
+		c.fs.Var(&c.tags, "g", tagMessage)
 	}
 	return c.fs
 }
