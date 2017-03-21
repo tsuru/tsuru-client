@@ -481,15 +481,47 @@ func (s *S) TestServiceInstanceUpdateRun(c *check.C) {
 	trans := cmdtest.ConditionalTransport{
 		Transport: cmdtest.Transport{Message: result, Status: http.StatusOK},
 		CondFunc: func(r *http.Request) bool {
-			description := r.FormValue("description") == ""
+			r.ParseForm()
+			description := r.FormValue("description") == "desc"
+			tags := len(r.Form["tag"]) == 2 && r.Form["tag"][0] == "tag1" && r.Form["tag"][1] == "tag2"
 			method := r.Method == "PUT"
 			contentType := r.Header.Get("Content-Type") == "application/x-www-form-urlencoded"
 			url := strings.HasSuffix(r.URL.Path, "/services/service/instances/service-instance")
-			return method && url && description && contentType
+			return method && url && description && tags && contentType
 		},
 	}
 	client := cmd.NewClient(&http.Client{Transport: &trans}, nil, manager)
-	err := (&ServiceInstanceUpdate{}).Run(&context, client)
+	command := ServiceInstanceUpdate{}
+	command.Flags().Parse(true, []string{"--description", "desc", "--tag", "tag1", "--tag", "tag2"})
+	err := (&command).Run(&context, client)
+	c.Assert(err, check.IsNil)
+	obtained := stdout.String()
+	c.Assert(obtained, check.Equals, result)
+}
+
+func (s *S) TestServiceInstanceUpdateRunWithEmptyTag(c *check.C) {
+	var stdout, stderr bytes.Buffer
+	result := "Service successfully updated.\n"
+	args := []string{
+		"service",
+		"service-instance",
+	}
+	context := cmd.Context{
+		Args:   args,
+		Stdout: &stdout,
+		Stderr: &stderr,
+	}
+	trans := cmdtest.ConditionalTransport{
+		Transport: cmdtest.Transport{Message: result, Status: http.StatusOK},
+		CondFunc: func(r *http.Request) bool {
+			r.ParseForm()
+			return len(r.Form["tag"]) == 1 && r.Form["tag"][0] == ""
+		},
+	}
+	client := cmd.NewClient(&http.Client{Transport: &trans}, nil, manager)
+	command := ServiceInstanceUpdate{}
+	command.Flags().Parse(true, []string{"--tag", ""})
+	err := (&command).Run(&context, client)
 	c.Assert(err, check.IsNil)
 	obtained := stdout.String()
 	c.Assert(obtained, check.Equals, result)
@@ -514,6 +546,20 @@ func (s *S) TestServiceInstanceUpdateFlags(c *check.C) {
 	c.Check(sassume.Value.String(), check.Equals, "description")
 	c.Check(sassume.DefValue, check.Equals, "")
 	c.Check(command.description, check.Equals, "description")
+	flagDesc = "service instance tag"
+	flagset.Parse(true, []string{"-g", "my tag"})
+	assume = flagset.Lookup("tag")
+	c.Check(assume, check.NotNil)
+	c.Check(assume.Name, check.Equals, "tag")
+	c.Check(assume.Usage, check.Equals, flagDesc)
+	c.Check(assume.Value.String(), check.Equals, "[\"my tag\"]")
+	c.Check(assume.DefValue, check.Equals, "[]")
+	sassume = flagset.Lookup("g")
+	c.Check(sassume, check.NotNil)
+	c.Check(sassume.Name, check.Equals, "g")
+	c.Check(sassume.Usage, check.Equals, flagDesc)
+	c.Check(sassume.Value.String(), check.Equals, "[\"my tag\"]")
+	c.Check(sassume.DefValue, check.Equals, "[]")
 }
 
 func (s *S) TestServiceInstanceStatusInfo(c *check.C) {
