@@ -128,7 +128,7 @@ func (s *S) TestServiceListWithEmptyResponse(c *check.C) {
 	c.Assert(stdout.String(), check.Equals, expected)
 }
 
-func (s *S) TestInfoServiceList(c *check.C) {
+func (s *S) TestServiceListInfo(c *check.C) {
 	command := &ServiceList{}
 	c.Assert(command.Info(), check.NotNil)
 }
@@ -137,7 +137,7 @@ func (s *S) TestServiceListShouldBeCommand(c *check.C) {
 	var _ cmd.Command = &ServiceList{}
 }
 
-func (s *S) TestServiceBind(c *check.C) {
+func (s *S) TestServiceInstanceBind(c *check.C) {
 	var (
 		called         bool
 		stdout, stderr bytes.Buffer
@@ -170,7 +170,7 @@ func (s *S) TestServiceBind(c *check.C) {
 	c.Assert(stdout.String(), check.Equals, expectedOut)
 }
 
-func (s *S) TestServiceBindWithoutFlag(c *check.C) {
+func (s *S) TestServiceInstanceBindWithoutFlag(c *check.C) {
 	var (
 		called         bool
 		stdout, stderr bytes.Buffer
@@ -205,7 +205,7 @@ func (s *S) TestServiceBindWithoutFlag(c *check.C) {
 	c.Assert(stdout.String(), check.Equals, expectedOut)
 }
 
-func (s *S) TestServiceBindWithoutEnvironmentVariables(c *check.C) {
+func (s *S) TestServiceInstanceBindWithoutEnvironmentVariables(c *check.C) {
 	var stdout, stderr bytes.Buffer
 	ctx := cmd.Context{
 		Args:   []string{"mysql", "my-mysql"},
@@ -233,7 +233,7 @@ func (s *S) TestServiceBindWithoutEnvironmentVariables(c *check.C) {
 	c.Assert(stdout.String(), check.Equals, expectedOut)
 }
 
-func (s *S) TestServiceBindWithRequestFailure(c *check.C) {
+func (s *S) TestServiceInstanceBindWithRequestFailure(c *check.C) {
 	var stdout, stderr bytes.Buffer
 	ctx := cmd.Context{
 		Args:   []string{"mysql", "my-mysql"},
@@ -250,15 +250,15 @@ func (s *S) TestServiceBindWithRequestFailure(c *check.C) {
 	c.Assert(err.Error(), check.Equals, trans.Message)
 }
 
-func (s *S) TestServiceBindInfo(c *check.C) {
+func (s *S) TestServiceInstanceBindInfo(c *check.C) {
 	c.Assert((&ServiceInstanceBind{}).Info(), check.NotNil)
 }
 
-func (s *S) TestServiceBindIsAFlaggedCommand(c *check.C) {
+func (s *S) TestServiceInstanceBindIsAFlaggedCommand(c *check.C) {
 	var _ cmd.FlaggedCommand = &ServiceInstanceBind{}
 }
 
-func (s *S) TestServiceUnbind(c *check.C) {
+func (s *S) TestServiceInstanceUnbind(c *check.C) {
 	var stdout, stderr bytes.Buffer
 	var called bool
 	ctx := cmd.Context{
@@ -287,7 +287,7 @@ func (s *S) TestServiceUnbind(c *check.C) {
 	c.Assert(stdout.String(), check.Equals, expectedOut)
 }
 
-func (s *S) TestServiceUnbindWithoutFlag(c *check.C) {
+func (s *S) TestServiceInstanceUnbindWithoutFlag(c *check.C) {
 	var stdout, stderr bytes.Buffer
 	var called bool
 	ctx := cmd.Context{
@@ -315,7 +315,7 @@ func (s *S) TestServiceUnbindWithoutFlag(c *check.C) {
 	c.Assert(stdout.String(), check.Equals, expectedOut)
 }
 
-func (s *S) TestServiceUnbindWithRequestFailure(c *check.C) {
+func (s *S) TestServiceInstanceUnbindWithRequestFailure(c *check.C) {
 	var stdout, stderr bytes.Buffer
 	ctx := cmd.Context{
 		Args:   []string{"service", "hand"},
@@ -332,20 +332,20 @@ func (s *S) TestServiceUnbindWithRequestFailure(c *check.C) {
 	c.Assert(err.Error(), check.Equals, trans.Message)
 }
 
-func (s *S) TestServiceUnbindInfo(c *check.C) {
+func (s *S) TestServiceInstanceUnbindInfo(c *check.C) {
 	c.Assert((&ServiceInstanceUnbind{}).Info(), check.NotNil)
 }
 
-func (s *S) TestServiceUnbindIsAFlaggedComand(c *check.C) {
+func (s *S) TestServiceInstanceUnbindIsAFlaggedCommand(c *check.C) {
 	var _ cmd.FlaggedCommand = &ServiceInstanceUnbind{}
 }
 
-func (s *S) TestServiceAddInfo(c *check.C) {
+func (s *S) TestServiceInstanceAddInfo(c *check.C) {
 	command := &ServiceInstanceAdd{}
 	c.Assert(command.Info(), check.NotNil)
 }
 
-func (s *S) TestServiceAddRun(c *check.C) {
+func (s *S) TestServiceInstanceAddRun(c *check.C) {
 	var stdout, stderr bytes.Buffer
 	result := "Service successfully added.\n"
 	args := []string{
@@ -378,7 +378,7 @@ func (s *S) TestServiceAddRun(c *check.C) {
 	c.Assert(obtained, check.Equals, result)
 }
 
-func (s *S) TestServiceAddFlags(c *check.C) {
+func (s *S) TestServiceInstanceAddFlags(c *check.C) {
 	flagDesc := "the team that owns the service (mandatory if the user is member of more than one team)"
 	command := ServiceInstanceAdd{}
 	flagset := command.Flags()
@@ -414,12 +414,12 @@ func (s *S) TestServiceAddFlags(c *check.C) {
 	c.Check(command.description, check.Equals, "description")
 }
 
-func (s *S) TestServiceUpdateInfo(c *check.C) {
+func (s *S) TestServiceInstanceUpdateInfo(c *check.C) {
 	command := &ServiceInstanceUpdate{}
 	c.Assert(command.Info(), check.NotNil)
 }
 
-func (s *S) TestServiceUpdateRun(c *check.C) {
+func (s *S) TestServiceInstanceUpdateRun(c *check.C) {
 	var stdout, stderr bytes.Buffer
 	result := "Service successfully updated.\n"
 	args := []string{
@@ -448,7 +448,7 @@ func (s *S) TestServiceUpdateRun(c *check.C) {
 	c.Assert(obtained, check.Equals, result)
 }
 
-func (s *S) TestServiceUpdateFlags(c *check.C) {
+func (s *S) TestServiceInstanceUpdateFlags(c *check.C) {
 	flagDesc := "service instance description"
 	command := ServiceInstanceUpdate{}
 	flagset := command.Flags()
@@ -655,12 +655,12 @@ Service test is foo bar.
 	c.Assert(obtained, check.Equals, expected)
 }
 
-func (s *S) TestServiceRemoveInfo(c *check.C) {
+func (s *S) TestServiceInstanceRemoveInfo(c *check.C) {
 	i := (&ServiceInstanceRemove{}).Info()
 	c.Assert(i, check.NotNil)
 }
 
-func (s *S) TestServiceRemoveRun(c *check.C) {
+func (s *S) TestServiceInstanceRemoveRun(c *check.C) {
 	var stdout, stderr bytes.Buffer
 	ctx := cmd.Context{
 		Args:   []string{"some-service-name", "some-service-instance"},
@@ -687,7 +687,7 @@ func (s *S) TestServiceRemoveRun(c *check.C) {
 	c.Assert(obtained, check.Equals, expected)
 }
 
-func (s *S) TestServiceRemoveWithoutAsking(c *check.C) {
+func (s *S) TestServiceInstanceRemoveWithoutAsking(c *check.C) {
 	var stdout, stderr bytes.Buffer
 	expected := `Service "ble" successfully removed!` + "\n"
 	context := cmd.Context{
@@ -704,7 +704,7 @@ func (s *S) TestServiceRemoveWithoutAsking(c *check.C) {
 	c.Assert(stdout.String(), check.Equals, expected)
 }
 
-func (s *S) TestServiceRemoveFlags(c *check.C) {
+func (s *S) TestServiceInstanceRemoveFlags(c *check.C) {
 	command := ServiceInstanceRemove{}
 	flagset := command.Flags()
 	c.Assert(flagset, check.NotNil)
@@ -724,7 +724,7 @@ func (s *S) TestServiceRemoveFlags(c *check.C) {
 	c.Check(command.yes, check.Equals, true)
 }
 
-func (s *S) TestServiceUnbindFlag(c *check.C) {
+func (s *S) TestServiceInstanceRemoveUnbindFlag(c *check.C) {
 	command := ServiceInstanceRemove{}
 	flagset := command.Flags()
 	c.Assert(flagset, check.NotNil)
@@ -744,7 +744,7 @@ func (s *S) TestServiceUnbindFlag(c *check.C) {
 	c.Check(command.yesUnbind, check.Equals, true)
 }
 
-func (s *S) TestServiceRemoveWithAppBindNoUnbind(c *check.C) {
+func (s *S) TestServiceInstanceRemoveWithAppBindNoUnbind(c *check.C) {
 	var stdout, stderr bytes.Buffer
 	expected := `Are you sure you want to remove service "mongodb"? (y/n) `
 	expected += `Applications bound to the service "mongodb": "app1,app2"` + "\n"
@@ -776,7 +776,7 @@ func (s *S) TestServiceRemoveWithAppBindNoUnbind(c *check.C) {
 	c.Assert(obtained, check.Equals, expected)
 }
 
-func (s *S) TestServiceRemoveWithAppBindYesUnbind(c *check.C) {
+func (s *S) TestServiceInstanceRemoveWithAppBindYesUnbind(c *check.C) {
 	var stdout, stderr bytes.Buffer
 	expected := `Are you sure you want to remove service "mongodb"? (y/n) `
 	expected += `Applications bound to the service "mongodb": "app1,app2"` + "\n"
@@ -822,7 +822,7 @@ func (s *S) TestServiceRemoveWithAppBindYesUnbind(c *check.C) {
 	c.Assert(obtained, check.Equals, expected+expectedOut1+expected2)
 }
 
-func (s *S) TestServiceRemoveWithAppBindWithFlags(c *check.C) {
+func (s *S) TestServiceInstanceRemoveWithAppBindWithFlags(c *check.C) {
 	var stdout, stderr bytes.Buffer
 	expected := `Service "mongodb" successfully removed!` + "\n"
 	expectedOut := "-- service remove --"
@@ -848,7 +848,7 @@ func (s *S) TestServiceRemoveWithAppBindWithFlags(c *check.C) {
 	c.Assert(obtained, check.Equals, expectedOut+expected)
 }
 
-func (s *S) TestServiceRemoveWithAppBindShowAppsBound(c *check.C) {
+func (s *S) TestServiceInstanceRemoveWithAppBindShowAppsBound(c *check.C) {
 	var stdout, stderr bytes.Buffer
 	expected := `Are you sure you want to remove service "mongodb"? (y/n) `
 	expected += `Applications bound to the service "mongodb": "app1,app2"` + "\n"
