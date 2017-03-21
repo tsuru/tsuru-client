@@ -69,9 +69,9 @@ Service test is foo bar.
 	}
 	if strings.HasSuffix(req.URL.Path, "/services/mymongo/instances/mongo") {
 		if t.includeAll {
-			message = `{"Apps": ["app", "app2"], "Teams": ["admin", "admin2"], "TeamOwner": "admin", "CustomInfo" : {"key4": "value8", "key2": "value9", "key3":"value3"},"Description": "description", "PlanName": "small", "PlanDescription": "another plan"}`
+			message = `{"Apps": ["app", "app2"], "Teams": ["admin", "admin2"], "TeamOwner": "admin", "CustomInfo" : {"key4": "value8", "key2": "value9", "key3":"value3"},"Description": "description", "PlanName": "small", "PlanDescription": "another plan", "Tags": ["tag 1", "tag 2"]}`
 		} else {
-			message = `{"Apps": ["app", "app2"], "Teams": ["admin", "admin2"], "TeamOwner": "admin", "CustomInfo" : {},"Description": "", "PlanName": "", "PlanDescription": ""}`
+			message = `{"Apps": ["app", "app2"], "Teams": ["admin", "admin2"], "TeamOwner": "admin", "CustomInfo" : {},"Description": "", "PlanName": "", "PlanDescription": "", "Tags": []}`
 		}
 	}
 	resp = &http.Response{
@@ -128,7 +128,7 @@ func (s *S) TestServiceListWithEmptyResponse(c *check.C) {
 	c.Assert(stdout.String(), check.Equals, expected)
 }
 
-func (s *S) TestInfoServiceList(c *check.C) {
+func (s *S) TestServiceListInfo(c *check.C) {
 	command := &ServiceList{}
 	c.Assert(command.Info(), check.NotNil)
 }
@@ -137,7 +137,7 @@ func (s *S) TestServiceListShouldBeCommand(c *check.C) {
 	var _ cmd.Command = &ServiceList{}
 }
 
-func (s *S) TestServiceBind(c *check.C) {
+func (s *S) TestServiceInstanceBind(c *check.C) {
 	var (
 		called         bool
 		stdout, stderr bytes.Buffer
@@ -170,7 +170,7 @@ func (s *S) TestServiceBind(c *check.C) {
 	c.Assert(stdout.String(), check.Equals, expectedOut)
 }
 
-func (s *S) TestServiceBindWithoutFlag(c *check.C) {
+func (s *S) TestServiceInstanceBindWithoutFlag(c *check.C) {
 	var (
 		called         bool
 		stdout, stderr bytes.Buffer
@@ -205,7 +205,7 @@ func (s *S) TestServiceBindWithoutFlag(c *check.C) {
 	c.Assert(stdout.String(), check.Equals, expectedOut)
 }
 
-func (s *S) TestServiceBindWithoutEnvironmentVariables(c *check.C) {
+func (s *S) TestServiceInstanceBindWithoutEnvironmentVariables(c *check.C) {
 	var stdout, stderr bytes.Buffer
 	ctx := cmd.Context{
 		Args:   []string{"mysql", "my-mysql"},
@@ -233,7 +233,7 @@ func (s *S) TestServiceBindWithoutEnvironmentVariables(c *check.C) {
 	c.Assert(stdout.String(), check.Equals, expectedOut)
 }
 
-func (s *S) TestServiceBindWithRequestFailure(c *check.C) {
+func (s *S) TestServiceInstanceBindWithRequestFailure(c *check.C) {
 	var stdout, stderr bytes.Buffer
 	ctx := cmd.Context{
 		Args:   []string{"mysql", "my-mysql"},
@@ -250,15 +250,15 @@ func (s *S) TestServiceBindWithRequestFailure(c *check.C) {
 	c.Assert(err.Error(), check.Equals, trans.Message)
 }
 
-func (s *S) TestServiceBindInfo(c *check.C) {
+func (s *S) TestServiceInstanceBindInfo(c *check.C) {
 	c.Assert((&ServiceInstanceBind{}).Info(), check.NotNil)
 }
 
-func (s *S) TestServiceBindIsAFlaggedCommand(c *check.C) {
+func (s *S) TestServiceInstanceBindIsAFlaggedCommand(c *check.C) {
 	var _ cmd.FlaggedCommand = &ServiceInstanceBind{}
 }
 
-func (s *S) TestServiceUnbind(c *check.C) {
+func (s *S) TestServiceInstanceUnbind(c *check.C) {
 	var stdout, stderr bytes.Buffer
 	var called bool
 	ctx := cmd.Context{
@@ -287,7 +287,7 @@ func (s *S) TestServiceUnbind(c *check.C) {
 	c.Assert(stdout.String(), check.Equals, expectedOut)
 }
 
-func (s *S) TestServiceUnbindWithoutFlag(c *check.C) {
+func (s *S) TestServiceInstanceUnbindWithoutFlag(c *check.C) {
 	var stdout, stderr bytes.Buffer
 	var called bool
 	ctx := cmd.Context{
@@ -315,7 +315,7 @@ func (s *S) TestServiceUnbindWithoutFlag(c *check.C) {
 	c.Assert(stdout.String(), check.Equals, expectedOut)
 }
 
-func (s *S) TestServiceUnbindWithRequestFailure(c *check.C) {
+func (s *S) TestServiceInstanceUnbindWithRequestFailure(c *check.C) {
 	var stdout, stderr bytes.Buffer
 	ctx := cmd.Context{
 		Args:   []string{"service", "hand"},
@@ -332,20 +332,20 @@ func (s *S) TestServiceUnbindWithRequestFailure(c *check.C) {
 	c.Assert(err.Error(), check.Equals, trans.Message)
 }
 
-func (s *S) TestServiceUnbindInfo(c *check.C) {
+func (s *S) TestServiceInstanceUnbindInfo(c *check.C) {
 	c.Assert((&ServiceInstanceUnbind{}).Info(), check.NotNil)
 }
 
-func (s *S) TestServiceUnbindIsAFlaggedComand(c *check.C) {
+func (s *S) TestServiceInstanceUnbindIsAFlaggedCommand(c *check.C) {
 	var _ cmd.FlaggedCommand = &ServiceInstanceUnbind{}
 }
 
-func (s *S) TestServiceAddInfo(c *check.C) {
+func (s *S) TestServiceInstanceAddInfo(c *check.C) {
 	command := &ServiceInstanceAdd{}
 	c.Assert(command.Info(), check.NotNil)
 }
 
-func (s *S) TestServiceAddRun(c *check.C) {
+func (s *S) TestServiceInstanceAddRun(c *check.C) {
 	var stdout, stderr bytes.Buffer
 	result := "Service successfully added.\n"
 	args := []string{
@@ -361,24 +361,57 @@ func (s *S) TestServiceAddRun(c *check.C) {
 	trans := cmdtest.ConditionalTransport{
 		Transport: cmdtest.Transport{Message: result, Status: http.StatusOK},
 		CondFunc: func(r *http.Request) bool {
+			r.ParseForm()
 			name := r.FormValue("name") == "my_app_db"
 			plan := r.FormValue("plan") == "small"
-			owner := r.FormValue("owner ") == ""
-			description := r.FormValue("description") == ""
+			owner := r.FormValue("owner") == "my team"
+			description := r.FormValue("description") == "desc"
+			tags := len(r.Form["tag"]) == 2 && r.Form["tag"][0] == "my tag 1" && r.Form["tag"][1] == "my tag 2"
 			method := r.Method == "POST"
 			contentType := r.Header.Get("Content-Type") == "application/x-www-form-urlencoded"
 			url := strings.HasSuffix(r.URL.Path, "/services/mysql/instances")
-			return method && url && name && owner && plan && description && contentType
+			return method && url && name && owner && plan && description && tags && contentType
 		},
 	}
 	client := cmd.NewClient(&http.Client{Transport: &trans}, nil, manager)
-	err := (&ServiceInstanceAdd{}).Run(&context, client)
+	command := ServiceInstanceAdd{}
+	command.Flags().Parse(true, []string{"--team-owner", "my team", "--description", "desc", "--tag", "my tag 1", "--tag", "my tag 2"})
+	err := command.Run(&context, client)
 	c.Assert(err, check.IsNil)
 	obtained := stdout.String()
 	c.Assert(obtained, check.Equals, result)
 }
 
-func (s *S) TestServiceAddFlags(c *check.C) {
+func (s *S) TestServiceInstanceAddRunWithEmptyTag(c *check.C) {
+	var stdout, stderr bytes.Buffer
+	result := "Service successfully added.\n"
+	args := []string{
+		"mysql",
+		"my_app_db",
+		"small",
+	}
+	context := cmd.Context{
+		Args:   args,
+		Stdout: &stdout,
+		Stderr: &stderr,
+	}
+	trans := cmdtest.ConditionalTransport{
+		Transport: cmdtest.Transport{Message: result, Status: http.StatusOK},
+		CondFunc: func(r *http.Request) bool {
+			r.ParseForm()
+			return len(r.Form["tag"]) == 1 && r.Form["tag"][0] == ""
+		},
+	}
+	client := cmd.NewClient(&http.Client{Transport: &trans}, nil, manager)
+	command := ServiceInstanceAdd{}
+	command.Flags().Parse(true, []string{"--tag", ""})
+	err := command.Run(&context, client)
+	c.Assert(err, check.IsNil)
+	obtained := stdout.String()
+	c.Assert(obtained, check.Equals, result)
+}
+
+func (s *S) TestServiceInstanceAddFlags(c *check.C) {
 	flagDesc := "the team that owns the service (mandatory if the user is member of more than one team)"
 	command := ServiceInstanceAdd{}
 	flagset := command.Flags()
@@ -412,14 +445,28 @@ func (s *S) TestServiceAddFlags(c *check.C) {
 	c.Check(sassume.Value.String(), check.Equals, "description")
 	c.Check(sassume.DefValue, check.Equals, "")
 	c.Check(command.description, check.Equals, "description")
+	flagDesc = "service instance tag"
+	flagset.Parse(true, []string{"-g", "my tag"})
+	assume = flagset.Lookup("tag")
+	c.Check(assume, check.NotNil)
+	c.Check(assume.Name, check.Equals, "tag")
+	c.Check(assume.Usage, check.Equals, flagDesc)
+	c.Check(assume.Value.String(), check.Equals, "[\"my tag\"]")
+	c.Check(assume.DefValue, check.Equals, "[]")
+	sassume = flagset.Lookup("g")
+	c.Check(sassume, check.NotNil)
+	c.Check(sassume.Name, check.Equals, "g")
+	c.Check(sassume.Usage, check.Equals, flagDesc)
+	c.Check(sassume.Value.String(), check.Equals, "[\"my tag\"]")
+	c.Check(sassume.DefValue, check.Equals, "[]")
 }
 
-func (s *S) TestServiceUpdateInfo(c *check.C) {
+func (s *S) TestServiceInstanceUpdateInfo(c *check.C) {
 	command := &ServiceInstanceUpdate{}
 	c.Assert(command.Info(), check.NotNil)
 }
 
-func (s *S) TestServiceUpdateRun(c *check.C) {
+func (s *S) TestServiceInstanceUpdateRun(c *check.C) {
 	var stdout, stderr bytes.Buffer
 	result := "Service successfully updated.\n"
 	args := []string{
@@ -434,21 +481,53 @@ func (s *S) TestServiceUpdateRun(c *check.C) {
 	trans := cmdtest.ConditionalTransport{
 		Transport: cmdtest.Transport{Message: result, Status: http.StatusOK},
 		CondFunc: func(r *http.Request) bool {
-			description := r.FormValue("description") == ""
+			r.ParseForm()
+			description := r.FormValue("description") == "desc"
+			tags := len(r.Form["tag"]) == 2 && r.Form["tag"][0] == "tag1" && r.Form["tag"][1] == "tag2"
 			method := r.Method == "PUT"
 			contentType := r.Header.Get("Content-Type") == "application/x-www-form-urlencoded"
 			url := strings.HasSuffix(r.URL.Path, "/services/service/instances/service-instance")
-			return method && url && description && contentType
+			return method && url && description && tags && contentType
 		},
 	}
 	client := cmd.NewClient(&http.Client{Transport: &trans}, nil, manager)
-	err := (&ServiceInstanceUpdate{}).Run(&context, client)
+	command := ServiceInstanceUpdate{}
+	command.Flags().Parse(true, []string{"--description", "desc", "--tag", "tag1", "--tag", "tag2"})
+	err := (&command).Run(&context, client)
 	c.Assert(err, check.IsNil)
 	obtained := stdout.String()
 	c.Assert(obtained, check.Equals, result)
 }
 
-func (s *S) TestServiceUpdateFlags(c *check.C) {
+func (s *S) TestServiceInstanceUpdateRunWithEmptyTag(c *check.C) {
+	var stdout, stderr bytes.Buffer
+	result := "Service successfully updated.\n"
+	args := []string{
+		"service",
+		"service-instance",
+	}
+	context := cmd.Context{
+		Args:   args,
+		Stdout: &stdout,
+		Stderr: &stderr,
+	}
+	trans := cmdtest.ConditionalTransport{
+		Transport: cmdtest.Transport{Message: result, Status: http.StatusOK},
+		CondFunc: func(r *http.Request) bool {
+			r.ParseForm()
+			return len(r.Form["tag"]) == 1 && r.Form["tag"][0] == ""
+		},
+	}
+	client := cmd.NewClient(&http.Client{Transport: &trans}, nil, manager)
+	command := ServiceInstanceUpdate{}
+	command.Flags().Parse(true, []string{"--tag", ""})
+	err := (&command).Run(&context, client)
+	c.Assert(err, check.IsNil)
+	obtained := stdout.String()
+	c.Assert(obtained, check.Equals, result)
+}
+
+func (s *S) TestServiceInstanceUpdateFlags(c *check.C) {
 	flagDesc := "service instance description"
 	command := ServiceInstanceUpdate{}
 	flagset := command.Flags()
@@ -467,6 +546,20 @@ func (s *S) TestServiceUpdateFlags(c *check.C) {
 	c.Check(sassume.Value.String(), check.Equals, "description")
 	c.Check(sassume.DefValue, check.Equals, "")
 	c.Check(command.description, check.Equals, "description")
+	flagDesc = "service instance tag"
+	flagset.Parse(true, []string{"-g", "my tag"})
+	assume = flagset.Lookup("tag")
+	c.Check(assume, check.NotNil)
+	c.Check(assume.Name, check.Equals, "tag")
+	c.Check(assume.Usage, check.Equals, flagDesc)
+	c.Check(assume.Value.String(), check.Equals, "[\"my tag\"]")
+	c.Check(assume.DefValue, check.Equals, "[]")
+	sassume = flagset.Lookup("g")
+	c.Check(sassume, check.NotNil)
+	c.Check(sassume.Name, check.Equals, "g")
+	c.Check(sassume.Usage, check.Equals, flagDesc)
+	c.Check(sassume.Value.String(), check.Equals, "[\"my tag\"]")
+	c.Check(sassume.DefValue, check.Equals, "[]")
 }
 
 func (s *S) TestServiceInstanceStatusInfo(c *check.C) {
@@ -513,6 +606,7 @@ Apps: app, app2
 Teams: admin, admin2
 Team Owner: admin
 Description: description
+Tags: tag 1, tag 2
 Plan: small
 Plan description: another plan
 
@@ -546,9 +640,10 @@ Instance: mongo
 Apps: app, app2
 Teams: admin, admin2
 Team Owner: admin
-Description: 
-Plan: 
-Plan description: 
+Description:
+Tags:
+Plan:
+Plan description:
 `
 	args := []string{"mymongo", "mongo"}
 	context := cmd.Context{
@@ -559,7 +654,7 @@ Plan description:
 	client := cmd.NewClient(&http.Client{Transport: &infoTransport{includeAll: false}}, nil, manager)
 	err := (&ServiceInstanceInfo{}).Run(&context, client)
 	c.Assert(err, check.IsNil)
-	obtained := stdout.String()
+	obtained := strings.Replace(stdout.String(), " \n", "\n", -1)
 	c.Assert(obtained, check.Equals, expected)
 }
 
@@ -653,12 +748,12 @@ Service test is foo bar.
 	c.Assert(obtained, check.Equals, expected)
 }
 
-func (s *S) TestServiceRemoveInfo(c *check.C) {
+func (s *S) TestServiceInstanceRemoveInfo(c *check.C) {
 	i := (&ServiceInstanceRemove{}).Info()
 	c.Assert(i, check.NotNil)
 }
 
-func (s *S) TestServiceRemoveRun(c *check.C) {
+func (s *S) TestServiceInstanceRemoveRun(c *check.C) {
 	var stdout, stderr bytes.Buffer
 	ctx := cmd.Context{
 		Args:   []string{"some-service-name", "some-service-instance"},
@@ -685,7 +780,7 @@ func (s *S) TestServiceRemoveRun(c *check.C) {
 	c.Assert(obtained, check.Equals, expected)
 }
 
-func (s *S) TestServiceRemoveWithoutAsking(c *check.C) {
+func (s *S) TestServiceInstanceRemoveWithoutAsking(c *check.C) {
 	var stdout, stderr bytes.Buffer
 	expected := `Service "ble" successfully removed!` + "\n"
 	context := cmd.Context{
@@ -702,7 +797,7 @@ func (s *S) TestServiceRemoveWithoutAsking(c *check.C) {
 	c.Assert(stdout.String(), check.Equals, expected)
 }
 
-func (s *S) TestServiceRemoveFlags(c *check.C) {
+func (s *S) TestServiceInstanceRemoveFlags(c *check.C) {
 	command := ServiceInstanceRemove{}
 	flagset := command.Flags()
 	c.Assert(flagset, check.NotNil)
@@ -722,7 +817,7 @@ func (s *S) TestServiceRemoveFlags(c *check.C) {
 	c.Check(command.yes, check.Equals, true)
 }
 
-func (s *S) TestServiceUnbindFlag(c *check.C) {
+func (s *S) TestServiceInstanceRemoveUnbindFlag(c *check.C) {
 	command := ServiceInstanceRemove{}
 	flagset := command.Flags()
 	c.Assert(flagset, check.NotNil)
@@ -742,7 +837,7 @@ func (s *S) TestServiceUnbindFlag(c *check.C) {
 	c.Check(command.yesUnbind, check.Equals, true)
 }
 
-func (s *S) TestServiceRemoveWithAppBindNoUnbind(c *check.C) {
+func (s *S) TestServiceInstanceRemoveWithAppBindNoUnbind(c *check.C) {
 	var stdout, stderr bytes.Buffer
 	expected := `Are you sure you want to remove service "mongodb"? (y/n) `
 	expected += `Applications bound to the service "mongodb": "app1,app2"` + "\n"
@@ -774,7 +869,7 @@ func (s *S) TestServiceRemoveWithAppBindNoUnbind(c *check.C) {
 	c.Assert(obtained, check.Equals, expected)
 }
 
-func (s *S) TestServiceRemoveWithAppBindYesUnbind(c *check.C) {
+func (s *S) TestServiceInstanceRemoveWithAppBindYesUnbind(c *check.C) {
 	var stdout, stderr bytes.Buffer
 	expected := `Are you sure you want to remove service "mongodb"? (y/n) `
 	expected += `Applications bound to the service "mongodb": "app1,app2"` + "\n"
@@ -820,7 +915,7 @@ func (s *S) TestServiceRemoveWithAppBindYesUnbind(c *check.C) {
 	c.Assert(obtained, check.Equals, expected+expectedOut1+expected2)
 }
 
-func (s *S) TestServiceRemoveWithAppBindWithFlags(c *check.C) {
+func (s *S) TestServiceInstanceRemoveWithAppBindWithFlags(c *check.C) {
 	var stdout, stderr bytes.Buffer
 	expected := `Service "mongodb" successfully removed!` + "\n"
 	expectedOut := "-- service remove --"
@@ -846,7 +941,7 @@ func (s *S) TestServiceRemoveWithAppBindWithFlags(c *check.C) {
 	c.Assert(obtained, check.Equals, expectedOut+expected)
 }
 
-func (s *S) TestServiceRemoveWithAppBindShowAppsBound(c *check.C) {
+func (s *S) TestServiceInstanceRemoveWithAppBindShowAppsBound(c *check.C) {
 	var stdout, stderr bytes.Buffer
 	expected := `Are you sure you want to remove service "mongodb"? (y/n) `
 	expected += `Applications bound to the service "mongodb": "app1,app2"` + "\n"

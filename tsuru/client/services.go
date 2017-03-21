@@ -69,12 +69,13 @@ type ServiceInstanceAdd struct {
 	fs          *gnuflag.FlagSet
 	teamOwner   string
 	description string
+	tags        cmd.StringSliceFlag
 }
 
 func (c *ServiceInstanceAdd) Info() *cmd.Info {
 	return &cmd.Info{
 		Name:  "service-instance-add",
-		Usage: "service-instance-add <service-name> <service-instance-name> [plan] [-t/--team-owner <team>] [-d/--description description]",
+		Usage: "service-instance-add <service-name> <service-instance-name> [plan] [-t/--team-owner <team>] [-d/--description description] [-g/--tag tag]...",
 		Desc: `Creates a service instance of a service. There can later be binded to
 applications with [[tsuru service-bind]].
 
@@ -101,6 +102,9 @@ func (c *ServiceInstanceAdd) Run(ctx *cmd.Context, client *cmd.Client) error {
 	v.Set("plan", plan)
 	v.Set("owner", c.teamOwner)
 	v.Set("description", c.description)
+	for _, tag := range c.tags {
+		v.Add("tag", tag)
+	}
 	u, err := cmd.GetURL(fmt.Sprintf("/services/%s/instances", serviceName))
 	if err != nil {
 		return err
@@ -124,6 +128,9 @@ func (c *ServiceInstanceAdd) Flags() *gnuflag.FlagSet {
 		descriptionMessage := "service instance description"
 		c.fs.StringVar(&c.description, "description", "", descriptionMessage)
 		c.fs.StringVar(&c.description, "d", "", descriptionMessage)
+		tagMessage := "service instance tag"
+		c.fs.Var(&c.tags, "tag", tagMessage)
+		c.fs.Var(&c.tags, "g", tagMessage)
 	}
 	return c.fs
 }
@@ -131,15 +138,19 @@ func (c *ServiceInstanceAdd) Flags() *gnuflag.FlagSet {
 type ServiceInstanceUpdate struct {
 	fs          *gnuflag.FlagSet
 	description string
+	tags        cmd.StringSliceFlag
 }
 
 func (c *ServiceInstanceUpdate) Info() *cmd.Info {
 	return &cmd.Info{
 		Name:  "service-instance-update",
-		Usage: "service-instance-update <service-name> <service-instance-name> [-d/--description description]",
+		Usage: "service-instance-update <service-name> <service-instance-name> [-d/--description description] [-g/--tag tag]...",
 		Desc: `Updates a service instance of a service.
 
-The --description parameter sets a description for your service instance.`,
+The --description parameter sets a description for your service instance.
+
+The --tag parameter adds a tag to your service instance. This parameter
+may be used multiple times.`,
 		MinArgs: 2,
 	}
 }
@@ -152,6 +163,9 @@ func (c *ServiceInstanceUpdate) Run(ctx *cmd.Context, client *cmd.Client) error 
 	}
 	v := url.Values{}
 	v.Set("description", c.description)
+	for _, tag := range c.tags {
+		v.Add("tag", tag)
+	}
 	request, err := http.NewRequest("PUT", u, strings.NewReader(v.Encode()))
 	if err != nil {
 		return err
@@ -171,6 +185,9 @@ func (c *ServiceInstanceUpdate) Flags() *gnuflag.FlagSet {
 		descriptionMessage := "service instance description"
 		c.fs.StringVar(&c.description, "description", "", descriptionMessage)
 		c.fs.StringVar(&c.description, "d", "", descriptionMessage)
+		tagMessage := "service instance tag"
+		c.fs.Var(&c.tags, "tag", tagMessage)
+		c.fs.Var(&c.tags, "g", tagMessage)
 	}
 	return c.fs
 }
@@ -364,6 +381,7 @@ type ServiceInstanceInfoModel struct {
 	PlanName        string
 	PlanDescription string
 	CustomInfo      map[string]string
+	Tags            []string
 }
 
 func (c ServiceInstanceInfo) Run(ctx *cmd.Context, client *cmd.Client) error {
@@ -397,6 +415,7 @@ func (c ServiceInstanceInfo) Run(ctx *cmd.Context, client *cmd.Client) error {
 	fmt.Fprintf(ctx.Stdout, "Teams: %s\n", strings.Join(si.Teams, ", "))
 	fmt.Fprintf(ctx.Stdout, "Team Owner: %s\n", si.TeamOwner)
 	fmt.Fprintf(ctx.Stdout, "Description: %s\n", si.Description)
+	fmt.Fprintf(ctx.Stdout, "Tags: %s\n", strings.Join(si.Tags, ", "))
 	fmt.Fprintf(ctx.Stdout, "Plan: %s\n", si.PlanName)
 	fmt.Fprintf(ctx.Stdout, "Plan description: %s\n", si.PlanDescription)
 	if len(si.CustomInfo) != 0 {

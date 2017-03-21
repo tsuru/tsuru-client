@@ -389,12 +389,6 @@ Pool management
 .. tsuru-command:: pool-remove
   :title: Remove a pool
 
-.. tsuru-command:: pool-teams-add
-  :title: Add team to a pool
-
-.. tsuru-command:: pool-teams-remove
-  :title: Remove a team from a pool
-
 Healer
 ======
 
