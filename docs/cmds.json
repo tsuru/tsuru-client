@@ -68,8 +68,8 @@
     "desc": "Creates or update a TLS certificate into the specific app.\n\nFlags:\n  \n  -a, --app (= \"\")\n      The name of the app.\n  -c, --cname (= \"\")\n      App CNAME\n  \nMinimum # of arguments: 2\n"
   },
   "service-instance-update": {
-    "usage": "tsuru service-instance-update <service-name> <service-instance-name> [-d/--description description]",
-    "desc": "Updates a service instance of a service.\n\nThe --description parameter sets a description for your service instance.\n\nFlags:\n  \n  -d, --description (= \"\")\n      service instance description\n  \nMinimum # of arguments: 2\n"
+    "usage": "service-instance-update <service-name> <service-instance-name> [-d/--description description] [-g/--tag tag]...",
+    "desc": "Updates a service instance of a service.\n\nFlags:\n  \n  -d, --description (= \"\")\n      service instance description\n  \n  -g, --tag (= \"\")\n      service instance tag. May be used multiple times\n  \nMinimum # of arguments: 2\n"
   },
   "bs-upgrade": {
     "usage": "tsuru bs-upgrade",
@@ -419,8 +419,8 @@
     "desc": "Installs Tsuru and It's components as containers on hosts provisioned\nwith docker machine drivers.\n\nThe [[--config]] parameter is the path to a .yml file containing the installation\nconfiguration. If not provided, Tsuru will be installed into a VirtualBox VM for\nexperimentation.\n\n\nFlags:\n  \n  -c, --config (= \"\")\n      Configuration file\n  \n"
   },
   "service-instance-add": {
-    "usage": "tsuru service-instance-add <service-name> <service-instance-name> [plan] [-t/--team-owner <team>] [-d/--description description]",
-    "desc": "Creates a service instance of a service. There can later be binded to\napplications with [[tsuru service-bind]].\n\nThis example shows how to add a new instance of **mongodb** service, named\n**tsuru_mongodb** with the plan **small**:\n\n::\n\n    $ tsuru service-instance-add mongodb tsuru_mongodb small -t myteam\n\n\nFlags:\n  \n  -d, --description (= \"\")\n      service instance description\n  -t, --team-owner (= \"\")\n      the team that owns the service (mandatory if the user is member of more than one team)\n  \nMinimum # of arguments: 2\nMaximum # of arguments: 3\n"
+    "usage": "service-instance-add <service-name> <service-instance-name> [plan] [-t/--team-owner <team>] [-d/--description description] [-g/--tag tag]...",
+    "desc": "Creates a service instance of a service. There can later be binded to\napplications with [[tsuru service-bind]].\n\nThis example shows how to add a new instance of **mongodb** service, named\n**tsuru_mongodb** with the plan **small**:\n\n::\n\n    $ tsuru service-instance-add mongodb tsuru_mongodb small -t myteam\n\n\nFlags:\n  \n  -d, --description (= \"\")\n      service instance description\n  -t, --team-owner (= \"\")\n      the team that owns the service (mandatory if the user is member of more than one team)\n  -g, --tag (= \"\")\n      service instance tag. May be used multiple times\n  \nMinimum # of arguments: 2\nMaximum # of arguments: 3\n"
   },
   "app-quota-change": {
     "usage": "tsuru app-quota-change <app-name> <new-limit>",
