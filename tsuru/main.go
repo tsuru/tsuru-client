@@ -138,6 +138,7 @@ func buildManager(name string) *cmd.Manager {
 	m.Register(&admin.EventBlockList{})
 	m.Register(&admin.EventBlockAdd{})
 	m.Register(&admin.EventBlockRemove{})
+	m.Register(&client.TagList{})
 	m.RegisterDeprecated(&admin.AddTeamsToPoolCmd{}, "pool-teams-add")
 	m.RegisterDeprecated(&admin.RemoveTeamsFromPoolCmd{}, "pool-teams-remove")
 	m.RegisterDeprecated(&admin.AddNodeCmd{}, "docker-node-add")
