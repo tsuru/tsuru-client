@@ -54,19 +54,21 @@ func (t *TagList) Show(result []byte, context *cmd.Context) error {
 	if err != nil {
 		return err
 	}
-	table := cmd.NewTable()
-	table.Headers = cmd.Row([]string{"Tag", "Apps"})
 	tagList := make(map[string][]string)
 	for _, app := range apps {
 		for _, tag := range app.Tags {
 			tagList[tag] = append(tagList[tag], app.Name)
 		}
 	}
-	for tag, appNames := range tagList {
-		table.AddRow(cmd.Row([]string{tag, strings.Join(appNames, ", ")}))
+	if len(tagList) > 0 {
+		table := cmd.NewTable()
+		table.Headers = cmd.Row([]string{"Tag", "Apps"})
+		for tag, appNames := range tagList {
+			table.AddRow(cmd.Row([]string{tag, strings.Join(appNames, ", ")}))
+		}
+		table.LineSeparator = true
+		table.Sort()
+		context.Stdout.Write(table.Bytes())
 	}
-	table.LineSeparator = true
-	table.Sort()
-	context.Stdout.Write(table.Bytes())
 	return nil
 }
