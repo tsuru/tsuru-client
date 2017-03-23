@@ -9,6 +9,7 @@ import (
 	"fmt"
 	"io/ioutil"
 	"net/http"
+	"sort"
 	"strings"
 
 	"github.com/tsuru/tsuru/cmd"
@@ -48,15 +49,14 @@ func (t *TagList) Show(apps []app, services []service.ServiceModel, context *cmd
 	if len(tagList) > 0 {
 		table := cmd.NewTable()
 		table.Headers = cmd.Row([]string{"Tag", "Apps", "Service Instances"})
-		for _, t := range tagList {
-			instanceNames := ""
-			for serviceName, instances := range t.ServiceInstances {
-				if len(instanceNames) > 0 {
-					instanceNames += "\n"
-				}
-				instanceNames += fmt.Sprintf("%s: %s", serviceName, strings.Join(instances, ", "))
+		for _, tagName := range sortedTags(tagList) {
+			t := tagList[tagName]
+			instanceNames := []string{}
+			for _, serviceName := range sortedServices(t.ServiceInstances) {
+				instances := t.ServiceInstances[serviceName]
+				instanceNames = append(instanceNames, fmt.Sprintf("%s: %s", serviceName, strings.Join(instances, ", ")))
 			}
-			table.AddRow(cmd.Row([]string{t.Name, strings.Join(t.Apps, ", "), instanceNames}))
+			table.AddRow(cmd.Row([]string{t.Name, strings.Join(t.Apps, ", "), strings.Join(instanceNames, "\n")}))
 		}
 		table.LineSeparator = true
 		table.Sort()
@@ -130,4 +130,26 @@ func processTags(apps []app, services []service.ServiceModel) map[string]*tag {
 		}
 	}
 	return tagList
+}
+
+func sortedTags(tagList map[string]*tag) []string {
+	tagNames := make([]string, len(tagList))
+	i := 0
+	for t := range tagList {
+		tagNames[i] = t
+		i++
+	}
+	sort.Strings(tagNames)
+	return tagNames
+}
+
+func sortedServices(services map[string][]string) []string {
+	serviceNames := make([]string, len(services))
+	i := 0
+	for s := range services {
+		serviceNames[i] = s
+		i++
+	}
+	sort.Strings(serviceNames)
+	return serviceNames
 }
