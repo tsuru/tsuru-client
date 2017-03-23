@@ -126,6 +126,7 @@ type App struct {
 	Router         string
 	RouterOpts     map[string]string
 	Deploys        uint
+	Tags           []string
 
 	quota.Quota
 	provisioner provision.Provisioner
@@ -190,6 +191,7 @@ func (app *App) MarshalJSON() ([]byte, error) {
 	}
 	result["router"] = app.Router
 	result["lock"] = app.Lock
+	result["tags"] = app.Tags
 	return json.Marshal(&result)
 }
 
@@ -304,6 +306,7 @@ func CreateApp(app *App, user *auth.User) error {
 	}
 	app.Teams = []string{app.TeamOwner}
 	app.Owner = user.Email
+	app.Tags = processTags(app.Tags)
 	err = app.validate()
 	if err != nil {
 		return err
@@ -332,6 +335,7 @@ func (app *App) Update(updateData App, w io.Writer) (err error) {
 	poolName := updateData.Pool
 	teamOwner := updateData.TeamOwner
 	routerName := updateData.Router
+	tags := processTags(updateData.Tags)
 	if description != "" {
 		app.Description = description
 	}
@@ -370,6 +374,9 @@ func (app *App) Update(updateData App, w io.Writer) (err error) {
 			}
 		}()
 	}
+	if tags != nil {
+		app.Tags = tags
+	}
 	err = app.validate()
 	if err != nil {
 		return err
@@ -392,6 +399,22 @@ func (app *App) Update(updateData App, w io.Writer) (err error) {
 	}
 	defer conn.Close()
 	return conn.Apps().Update(bson.M{"name": app.Name}, app)
+}
+
+func processTags(tags []string) []string {
+	if tags == nil {
+		return nil
+	}
+	processedTags := []string{}
+	usedTags := make(map[string]bool)
+	for _, tag := range tags {
+		tag = strings.TrimSpace(tag)
+		if len(tag) > 0 && !usedTags[tag] {
+			processedTags = append(processedTags, tag)
+			usedTags[tag] = true
+		}
+	}
+	return processedTags
 }
 
 // unbind takes all service instances that are bound to the app, and unbind
@@ -1553,6 +1576,7 @@ type Filter struct {
 	Pools       []string
 	Statuses    []string
 	Locked      bool
+	Tags        []string
 	Extra       map[string][]string
 }
 
@@ -1600,6 +1624,10 @@ func (f *Filter) Query() bson.M {
 	}
 	if len(f.Pools) > 0 {
 		query["pool"] = bson.M{"$in": f.Pools}
+	}
+	tags := processTags(f.Tags)
+	if len(tags) > 0 {
+		query["tags"] = bson.M{"$all": tags}
 	}
 	return query
 }
