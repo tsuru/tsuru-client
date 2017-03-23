@@ -32,19 +32,8 @@ func (s *S) TestTagListWithApps(c *check.C) {
 		Stdout: &stdout,
 		Stderr: &stderr,
 	}
-	trueFunc := func(req *http.Request) bool { return true }
-	ct1 := cmdtest.ConditionalTransport{
-		Transport: cmdtest.Transport{Message: appList, Status: http.StatusOK},
-		CondFunc:  trueFunc,
-	}
-	ct2 := cmdtest.ConditionalTransport{
-		Transport: cmdtest.Transport{Message: serviceList, Status: http.StatusOK},
-		CondFunc:  trueFunc,
-	}
-	transport := &cmdtest.MultiConditionalTransport{ConditionalTransports: []cmdtest.ConditionalTransport{ct1, ct2}}
-	client := cmd.NewClient(&http.Client{Transport: transport}, nil, manager)
 	command := TagList{}
-	err := command.Run(&context, client)
+	err := command.Run(&context, makeClient([]string{appList, serviceList}))
 	c.Assert(err, check.IsNil)
 	c.Assert(stdout.String(), check.Equals, expected)
 }
@@ -66,19 +55,8 @@ func (s *S) TestTagListWithServiceInstances(c *check.C) {
 		Stdout: &stdout,
 		Stderr: &stderr,
 	}
-	trueFunc := func(req *http.Request) bool { return true }
-	ct1 := cmdtest.ConditionalTransport{
-		Transport: cmdtest.Transport{Message: appList, Status: http.StatusOK},
-		CondFunc:  trueFunc,
-	}
-	ct2 := cmdtest.ConditionalTransport{
-		Transport: cmdtest.Transport{Message: serviceList, Status: http.StatusOK},
-		CondFunc:  trueFunc,
-	}
-	transport := &cmdtest.MultiConditionalTransport{ConditionalTransports: []cmdtest.ConditionalTransport{ct1, ct2}}
-	client := cmd.NewClient(&http.Client{Transport: transport}, nil, manager)
 	command := TagList{}
-	err := command.Run(&context, client)
+	err := command.Run(&context, makeClient([]string{appList, serviceList}))
 	c.Assert(err, check.IsNil)
 	c.Assert(stdout.String(), check.Equals, expected)
 }
@@ -102,22 +80,12 @@ func (s *S) TestTagListWithAppsAndServiceInstances(c *check.C) {
 		Stdout: &stdout,
 		Stderr: &stderr,
 	}
-	trueFunc := func(req *http.Request) bool { return true }
-	ct1 := cmdtest.ConditionalTransport{
-		Transport: cmdtest.Transport{Message: appList, Status: http.StatusOK},
-		CondFunc:  trueFunc,
-	}
-	ct2 := cmdtest.ConditionalTransport{
-		Transport: cmdtest.Transport{Message: serviceList, Status: http.StatusOK},
-		CondFunc:  trueFunc,
-	}
-	transport := &cmdtest.MultiConditionalTransport{ConditionalTransports: []cmdtest.ConditionalTransport{ct1, ct2}}
-	client := cmd.NewClient(&http.Client{Transport: transport}, nil, manager)
 	command := TagList{}
-	err := command.Run(&context, client)
+	err := command.Run(&context, makeClient([]string{appList, serviceList}))
 	c.Assert(err, check.IsNil)
 	c.Assert(stdout.String(), check.Equals, expected)
 }
+
 func (s *S) TestTagListWithEmptyResponse(c *check.C) {
 	var stdout, stderr bytes.Buffer
 	appList := `[{"name":"app1","tags":[]}]`
@@ -128,19 +96,22 @@ func (s *S) TestTagListWithEmptyResponse(c *check.C) {
 		Stdout: &stdout,
 		Stderr: &stderr,
 	}
-	trueFunc := func(req *http.Request) bool { return true }
-	ct1 := cmdtest.ConditionalTransport{
-		Transport: cmdtest.Transport{Message: appList, Status: http.StatusOK},
-		CondFunc:  trueFunc,
-	}
-	ct2 := cmdtest.ConditionalTransport{
-		Transport: cmdtest.Transport{Message: serviceList, Status: http.StatusOK},
-		CondFunc:  trueFunc,
-	}
-	transport := &cmdtest.MultiConditionalTransport{ConditionalTransports: []cmdtest.ConditionalTransport{ct1, ct2}}
-	client := cmd.NewClient(&http.Client{Transport: transport}, nil, manager)
 	command := TagList{}
-	err := command.Run(&context, client)
+	err := command.Run(&context, makeClient([]string{appList, serviceList}))
 	c.Assert(err, check.IsNil)
 	c.Assert(stdout.String(), check.Equals, expected)
+}
+
+func makeClient(messages []string) *cmd.Client {
+	trueFunc := func(req *http.Request) bool { return true }
+	cts := make([]cmdtest.ConditionalTransport, len(messages))
+	for i, message := range messages {
+		cts[i] = cmdtest.ConditionalTransport{
+			Transport: cmdtest.Transport{Message: message, Status: http.StatusOK},
+			CondFunc:  trueFunc,
+		}
+	}
+	return cmd.NewClient(&http.Client{
+		Transport: &cmdtest.MultiConditionalTransport{ConditionalTransports: cts},
+	}, nil, manager)
 }
