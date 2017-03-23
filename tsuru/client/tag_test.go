@@ -41,14 +41,15 @@ func (s *S) TestTagListWithApps(c *check.C) {
 func (s *S) TestTagListWithServiceInstances(c *check.C) {
 	var stdout, stderr bytes.Buffer
 	appList := "[]"
-	serviceList := `[{"service_instances":[{"name":"instance1","tags":["tag1"]},{"name":"instance2","tags":[]},{"name":"instance3","tags":["tag1","tag2"]}]}]`
-	expected := `+------+------+----------------------+
-| Tag  | Apps | Service Instances    |
-+------+------+----------------------+
-| tag1 |      | instance1, instance3 |
-+------+------+----------------------+
-| tag2 |      | instance3            |
-+------+------+----------------------+
+	serviceList := `[{"service":"service1","service_instances":[{"name":"instance1","tags":["tag1"]},{"name":"instance2","tags":[]},{"name":"instance3","tags":["tag1","tag2"]}]},{"service":"service2","service_instances":[{"name":"instance4","tags":["tag1"]}]}]`
+	expected := `+------+------+--------------------------------+
+| Tag  | Apps | Service Instances              |
++------+------+--------------------------------+
+| tag1 |      | service1: instance1, instance3 |
+|      |      | service2: instance4            |
++------+------+--------------------------------+
+| tag2 |      | service1: instance3            |
++------+------+--------------------------------+
 `
 	context := cmd.Context{
 		Args:   []string{},
@@ -64,16 +65,16 @@ func (s *S) TestTagListWithServiceInstances(c *check.C) {
 func (s *S) TestTagListWithAppsAndServiceInstances(c *check.C) {
 	var stdout, stderr bytes.Buffer
 	appList := `[{"name":"app1","tags":["tag1"]},{"name":"app2","tags":["tag2","tag3"]},{"name":"app3","tags":[]},{"name":"app4","tags":["tag1","tag3"]}]`
-	serviceList := `[{"service_instances":[{"name":"instance1","tags":["tag1"]},{"name":"instance2","tags":[]},{"name":"instance3","tags":["tag1","tag2"]}]}]`
-	expected := `+------+------------+----------------------+
-| Tag  | Apps       | Service Instances    |
-+------+------------+----------------------+
-| tag1 | app1, app4 | instance1, instance3 |
-+------+------------+----------------------+
-| tag2 | app2       | instance3            |
-+------+------------+----------------------+
-| tag3 | app2, app4 |                      |
-+------+------------+----------------------+
+	serviceList := `[{"service":"service1","service_instances":[{"name":"instance1","tags":["tag1"]},{"name":"instance2","tags":[]},{"name":"instance3","tags":["tag1","tag2"]}]}]`
+	expected := `+------+------------+--------------------------------+
+| Tag  | Apps       | Service Instances              |
++------+------------+--------------------------------+
+| tag1 | app1, app4 | service1: instance1, instance3 |
++------+------------+--------------------------------+
+| tag2 | app2       | service1: instance3            |
++------+------------+--------------------------------+
+| tag3 | app2, app4 |                                |
++------+------------+--------------------------------+
 `
 	context := cmd.Context{
 		Args:   []string{},

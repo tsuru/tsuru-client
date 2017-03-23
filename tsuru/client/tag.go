@@ -6,6 +6,7 @@ package client
 
 import (
 	"encoding/json"
+	"fmt"
 	"io/ioutil"
 	"net/http"
 	"strings"
@@ -19,7 +20,7 @@ type TagList struct{}
 type tag struct {
 	Name             string
 	Apps             []string
-	ServiceInstances []string
+	ServiceInstances map[string][]string
 }
 
 func (t *TagList) Info() *cmd.Info {
@@ -39,37 +40,23 @@ func (t *TagList) Run(context *cmd.Context, client *cmd.Client) error {
 	if err != nil {
 		return err
 	}
-
 	return t.Show(apps, services, context)
 }
 
 func (t *TagList) Show(apps []app, services []service.ServiceModel, context *cmd.Context) error {
-	tagList := make(map[string]*tag)
-	for _, app := range apps {
-		for _, t := range app.Tags {
-			if _, ok := tagList[t]; !ok {
-				tagList[t] = &tag{Name: t, Apps: []string{app.Name}}
-			} else {
-				tagList[t].Apps = append(tagList[t].Apps, app.Name)
-			}
-		}
-	}
-	for _, s := range services {
-		for _, instance := range s.ServiceInstances {
-			for _, t := range instance.Tags {
-				if _, ok := tagList[t]; !ok {
-					tagList[t] = &tag{Name: t, ServiceInstances: []string{instance.Name}}
-				} else {
-					tagList[t].ServiceInstances = append(tagList[t].ServiceInstances, instance.Name)
-				}
-			}
-		}
-	}
+	tagList := processTags(apps, services)
 	if len(tagList) > 0 {
 		table := cmd.NewTable()
 		table.Headers = cmd.Row([]string{"Tag", "Apps", "Service Instances"})
 		for _, t := range tagList {
-			table.AddRow(cmd.Row([]string{t.Name, strings.Join(t.Apps, ", "), strings.Join(t.ServiceInstances, ", ")}))
+			instanceNames := ""
+			for serviceName, instances := range t.ServiceInstances {
+				if len(instanceNames) > 0 {
+					instanceNames += "\n"
+				}
+				instanceNames += fmt.Sprintf("%s: %s", serviceName, strings.Join(instances, ", "))
+			}
+			table.AddRow(cmd.Row([]string{t.Name, strings.Join(t.Apps, ", "), instanceNames}))
 		}
 		table.LineSeparator = true
 		table.Sort()
@@ -116,4 +103,31 @@ func getFromUrl(path string, client *cmd.Client) ([]byte, error) {
 	}
 	defer response.Body.Close()
 	return ioutil.ReadAll(response.Body)
+}
+
+func processTags(apps []app, services []service.ServiceModel) map[string]*tag {
+	tagList := make(map[string]*tag)
+	for _, app := range apps {
+		for _, t := range app.Tags {
+			if _, ok := tagList[t]; !ok {
+				tagList[t] = &tag{Name: t, Apps: []string{app.Name}}
+			} else {
+				tagList[t].Apps = append(tagList[t].Apps, app.Name)
+			}
+		}
+	}
+	for _, s := range services {
+		for _, instance := range s.ServiceInstances {
+			for _, t := range instance.Tags {
+				if _, ok := tagList[t]; !ok {
+					tagList[t] = &tag{Name: t, ServiceInstances: make(map[string][]string)}
+				}
+				if tagList[t].ServiceInstances == nil {
+					tagList[t].ServiceInstances = make(map[string][]string)
+				}
+				tagList[t].ServiceInstances[s.Service] = append(tagList[t].ServiceInstances[s.Service], instance.Name)
+			}
+		}
+	}
+	return tagList
 }
