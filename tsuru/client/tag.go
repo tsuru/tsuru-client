@@ -11,9 +11,16 @@ import (
 	"strings"
 
 	"github.com/tsuru/tsuru/cmd"
+	"github.com/tsuru/tsuru/service"
 )
 
 type TagList struct{}
+
+type tag struct {
+	Name             string
+	Apps             []string
+	ServiceInstances []string
+}
 
 func (t *TagList) Info() *cmd.Info {
 	return &cmd.Info{
@@ -24,51 +31,89 @@ func (t *TagList) Info() *cmd.Info {
 }
 
 func (t *TagList) Run(context *cmd.Context, client *cmd.Client) error {
-	url, err := cmd.GetURL("/apps")
+	apps, err := loadApps(client)
 	if err != nil {
 		return err
 	}
-	request, err := http.NewRequest("GET", url, nil)
-	if err != nil {
-		return err
-	}
-	response, err := client.Do(request)
-	if err != nil {
-		return err
-	}
-	if response.StatusCode != http.StatusOK {
-		return nil
-	}
-	defer response.Body.Close()
-	b, err := ioutil.ReadAll(response.Body)
+	services, err := loadServices(client)
 	if err != nil {
 		return err
 	}
 
-	return t.Show(b, context)
+	return t.Show(apps, services, context)
 }
 
-func (t *TagList) Show(result []byte, context *cmd.Context) error {
-	var apps []app
-	err := json.Unmarshal(result, &apps)
-	if err != nil {
-		return err
-	}
-	tagList := make(map[string][]string)
+func (t *TagList) Show(apps []app, services []service.ServiceModel, context *cmd.Context) error {
+	tagList := make(map[string]*tag)
 	for _, app := range apps {
-		for _, tag := range app.Tags {
-			tagList[tag] = append(tagList[tag], app.Name)
+		for _, t := range app.Tags {
+			if _, ok := tagList[t]; !ok {
+				tagList[t] = &tag{Name: t, Apps: []string{app.Name}}
+			} else {
+				tagList[t].Apps = append(tagList[t].Apps, app.Name)
+			}
+		}
+	}
+	for _, s := range services {
+		for _, instance := range s.ServiceInstances {
+			for _, t := range instance.Tags {
+				if _, ok := tagList[t]; !ok {
+					tagList[t] = &tag{Name: t, ServiceInstances: []string{instance.Name}}
+				} else {
+					tagList[t].ServiceInstances = append(tagList[t].ServiceInstances, instance.Name)
+				}
+			}
 		}
 	}
 	if len(tagList) > 0 {
 		table := cmd.NewTable()
-		table.Headers = cmd.Row([]string{"Tag", "Apps"})
-		for tag, appNames := range tagList {
-			table.AddRow(cmd.Row([]string{tag, strings.Join(appNames, ", ")}))
+		table.Headers = cmd.Row([]string{"Tag", "Apps", "Service Instances"})
+		for _, t := range tagList {
+			table.AddRow(cmd.Row([]string{t.Name, strings.Join(t.Apps, ", "), strings.Join(t.ServiceInstances, ", ")}))
 		}
 		table.LineSeparator = true
 		table.Sort()
 		context.Stdout.Write(table.Bytes())
 	}
 	return nil
+}
+
+func loadApps(client *cmd.Client) ([]app, error) {
+	result, err := getFromUrl("/apps", client)
+	if err != nil {
+		return nil, err
+	}
+	var apps []app
+	err = json.Unmarshal(result, &apps)
+	return apps, nil
+}
+
+func loadServices(client *cmd.Client) ([]service.ServiceModel, error) {
+	result, err := getFromUrl("/services", client)
+	if err != nil {
+		return nil, err
+	}
+	var services []service.ServiceModel
+	err = json.Unmarshal(result, &services)
+	return services, nil
+}
+
+func getFromUrl(path string, client *cmd.Client) ([]byte, error) {
+	url, err := cmd.GetURL(path)
+	if err != nil {
+		return nil, err
+	}
+	request, err := http.NewRequest("GET", url, nil)
+	if err != nil {
+		return nil, err
+	}
+	response, err := client.Do(request)
+	if err != nil {
+		return nil, err
+	}
+	if response.StatusCode != http.StatusOK {
+		return nil, nil
+	}
+	defer response.Body.Close()
+	return ioutil.ReadAll(response.Body)
 }

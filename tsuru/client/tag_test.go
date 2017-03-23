@@ -15,39 +15,130 @@ import (
 
 func (s *S) TestTagListWithApps(c *check.C) {
 	var stdout, stderr bytes.Buffer
-	result := `[{"name":"app1","tags":["tag1"]},{"name":"app2","tags":["tag2","tag3"]},{"name":"app3","tags":[]},{"name":"app4","tags":["tag1","tag3"]}]`
-	expected := `+------+------------+
-| Tag  | Apps       |
-+------+------------+
-| tag1 | app1, app4 |
-+------+------------+
-| tag2 | app2       |
-+------+------------+
-| tag3 | app2, app4 |
-+------+------------+
+	appList := `[{"name":"app1","tags":["tag1"]},{"name":"app2","tags":["tag2","tag3"]},{"name":"app3","tags":[]},{"name":"app4","tags":["tag1","tag3"]}]`
+	serviceList := "[]"
+	expected := `+------+------------+-------------------+
+| Tag  | Apps       | Service Instances |
++------+------------+-------------------+
+| tag1 | app1, app4 |                   |
++------+------------+-------------------+
+| tag2 | app2       |                   |
++------+------------+-------------------+
+| tag3 | app2, app4 |                   |
++------+------------+-------------------+
 `
 	context := cmd.Context{
 		Args:   []string{},
 		Stdout: &stdout,
 		Stderr: &stderr,
 	}
-	client := cmd.NewClient(&http.Client{Transport: &cmdtest.Transport{Message: result, Status: http.StatusOK}}, nil, manager)
+	trueFunc := func(req *http.Request) bool { return true }
+	ct1 := cmdtest.ConditionalTransport{
+		Transport: cmdtest.Transport{Message: appList, Status: http.StatusOK},
+		CondFunc:  trueFunc,
+	}
+	ct2 := cmdtest.ConditionalTransport{
+		Transport: cmdtest.Transport{Message: serviceList, Status: http.StatusOK},
+		CondFunc:  trueFunc,
+	}
+	transport := &cmdtest.MultiConditionalTransport{ConditionalTransports: []cmdtest.ConditionalTransport{ct1, ct2}}
+	client := cmd.NewClient(&http.Client{Transport: transport}, nil, manager)
 	command := TagList{}
 	err := command.Run(&context, client)
 	c.Assert(err, check.IsNil)
 	c.Assert(stdout.String(), check.Equals, expected)
 }
 
+func (s *S) TestTagListWithServiceInstances(c *check.C) {
+	var stdout, stderr bytes.Buffer
+	appList := "[]"
+	serviceList := `[{"service_instances":[{"name":"instance1","tags":["tag1"]},{"name":"instance2","tags":[]},{"name":"instance3","tags":["tag1","tag2"]}]}]`
+	expected := `+------+------+----------------------+
+| Tag  | Apps | Service Instances    |
++------+------+----------------------+
+| tag1 |      | instance1, instance3 |
++------+------+----------------------+
+| tag2 |      | instance3            |
++------+------+----------------------+
+`
+	context := cmd.Context{
+		Args:   []string{},
+		Stdout: &stdout,
+		Stderr: &stderr,
+	}
+	trueFunc := func(req *http.Request) bool { return true }
+	ct1 := cmdtest.ConditionalTransport{
+		Transport: cmdtest.Transport{Message: appList, Status: http.StatusOK},
+		CondFunc:  trueFunc,
+	}
+	ct2 := cmdtest.ConditionalTransport{
+		Transport: cmdtest.Transport{Message: serviceList, Status: http.StatusOK},
+		CondFunc:  trueFunc,
+	}
+	transport := &cmdtest.MultiConditionalTransport{ConditionalTransports: []cmdtest.ConditionalTransport{ct1, ct2}}
+	client := cmd.NewClient(&http.Client{Transport: transport}, nil, manager)
+	command := TagList{}
+	err := command.Run(&context, client)
+	c.Assert(err, check.IsNil)
+	c.Assert(stdout.String(), check.Equals, expected)
+}
+
+func (s *S) TestTagListWithAppsAndServiceInstances(c *check.C) {
+	var stdout, stderr bytes.Buffer
+	appList := `[{"name":"app1","tags":["tag1"]},{"name":"app2","tags":["tag2","tag3"]},{"name":"app3","tags":[]},{"name":"app4","tags":["tag1","tag3"]}]`
+	serviceList := `[{"service_instances":[{"name":"instance1","tags":["tag1"]},{"name":"instance2","tags":[]},{"name":"instance3","tags":["tag1","tag2"]}]}]`
+	expected := `+------+------------+----------------------+
+| Tag  | Apps       | Service Instances    |
++------+------------+----------------------+
+| tag1 | app1, app4 | instance1, instance3 |
++------+------------+----------------------+
+| tag2 | app2       | instance3            |
++------+------------+----------------------+
+| tag3 | app2, app4 |                      |
++------+------------+----------------------+
+`
+	context := cmd.Context{
+		Args:   []string{},
+		Stdout: &stdout,
+		Stderr: &stderr,
+	}
+	trueFunc := func(req *http.Request) bool { return true }
+	ct1 := cmdtest.ConditionalTransport{
+		Transport: cmdtest.Transport{Message: appList, Status: http.StatusOK},
+		CondFunc:  trueFunc,
+	}
+	ct2 := cmdtest.ConditionalTransport{
+		Transport: cmdtest.Transport{Message: serviceList, Status: http.StatusOK},
+		CondFunc:  trueFunc,
+	}
+	transport := &cmdtest.MultiConditionalTransport{ConditionalTransports: []cmdtest.ConditionalTransport{ct1, ct2}}
+	client := cmd.NewClient(&http.Client{Transport: transport}, nil, manager)
+	command := TagList{}
+	err := command.Run(&context, client)
+	c.Assert(err, check.IsNil)
+	c.Assert(stdout.String(), check.Equals, expected)
+}
 func (s *S) TestTagListWithEmptyResponse(c *check.C) {
 	var stdout, stderr bytes.Buffer
-	result := `[{"name":"app1","tags":[]}]`
+	appList := `[{"name":"app1","tags":[]}]`
+	serviceList := `[{"service_instances":[{"name":"service1","tags":[]}]}]`
 	expected := ""
 	context := cmd.Context{
 		Args:   []string{},
 		Stdout: &stdout,
 		Stderr: &stderr,
 	}
-	client := cmd.NewClient(&http.Client{Transport: &cmdtest.Transport{Message: result, Status: http.StatusOK}}, nil, manager)
+	trueFunc := func(req *http.Request) bool { return true }
+	ct1 := cmdtest.ConditionalTransport{
+		Transport: cmdtest.Transport{Message: appList, Status: http.StatusOK},
+		CondFunc:  trueFunc,
+	}
+	ct2 := cmdtest.ConditionalTransport{
+		Transport: cmdtest.Transport{Message: serviceList, Status: http.StatusOK},
+		CondFunc:  trueFunc,
+	}
+	transport := &cmdtest.MultiConditionalTransport{ConditionalTransports: []cmdtest.ConditionalTransport{ct1, ct2}}
+	client := cmd.NewClient(&http.Client{Transport: transport}, nil, manager)
 	command := TagList{}
 	err := command.Run(&context, client)
 	c.Assert(err, check.IsNil)
