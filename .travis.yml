@@ -5,8 +5,7 @@ os:
   - linux
   - osx
 go:
-  - 1.7.4
-  - 1.8
+  - 1.8.x
   - master
 env:
   global:
