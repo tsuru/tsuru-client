@@ -51,10 +51,10 @@ func (t *TagList) Show(apps []app, services []service.ServiceModel, context *cmd
 		table.Headers = cmd.Row([]string{"Tag", "Apps", "Service Instances"})
 		for _, tagName := range sortedTags(tagList) {
 			t := tagList[tagName]
-			instanceNames := []string{}
-			for _, serviceName := range sortedServices(t.ServiceInstances) {
+			instanceNames := make([]string, len(t.ServiceInstances))
+			for i, serviceName := range sortedServices(t.ServiceInstances) {
 				instances := t.ServiceInstances[serviceName]
-				instanceNames = append(instanceNames, fmt.Sprintf("%s: %s", serviceName, strings.Join(instances, ", ")))
+				instanceNames[i] = fmt.Sprintf("%s: %s", serviceName, strings.Join(instances, ", "))
 			}
 			table.AddRow(cmd.Row([]string{t.Name, strings.Join(t.Apps, ", "), strings.Join(instanceNames, "\n")}))
 		}
@@ -66,7 +66,7 @@ func (t *TagList) Show(apps []app, services []service.ServiceModel, context *cmd
 }
 
 func loadApps(client *cmd.Client) ([]app, error) {
-	result, err := getFromUrl("/apps", client)
+	result, err := getFromURL("/apps", client)
 	if err != nil {
 		return nil, err
 	}
@@ -76,7 +76,7 @@ func loadApps(client *cmd.Client) ([]app, error) {
 }
 
 func loadServices(client *cmd.Client) ([]service.ServiceModel, error) {
-	result, err := getFromUrl("/services", client)
+	result, err := getFromURL("/services", client)
 	if err != nil {
 		return nil, err
 	}
@@ -85,7 +85,7 @@ func loadServices(client *cmd.Client) ([]service.ServiceModel, error) {
 	return services, nil
 }
 
-func getFromUrl(path string, client *cmd.Client) ([]byte, error) {
+func getFromURL(path string, client *cmd.Client) ([]byte, error) {
 	url, err := cmd.GetURL(path)
 	if err != nil {
 		return nil, err
@@ -122,10 +122,11 @@ func processTags(apps []app, services []service.ServiceModel) map[string]*tag {
 				if _, ok := tagList[t]; !ok {
 					tagList[t] = &tag{Name: t, ServiceInstances: make(map[string][]string)}
 				}
-				if tagList[t].ServiceInstances == nil {
-					tagList[t].ServiceInstances = make(map[string][]string)
+				si := &tagList[t].ServiceInstances
+				if *si == nil {
+					*si = make(map[string][]string)
 				}
-				tagList[t].ServiceInstances[s.Service] = append(tagList[t].ServiceInstances[s.Service], instance.Name)
+				(*si)[s.Service] = append((*si)[s.Service], instance.Name)
 			}
 		}
 	}
