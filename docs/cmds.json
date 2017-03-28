@@ -68,8 +68,8 @@
     "desc": "Creates or update a TLS certificate into the specific app.\n\nFlags:\n  \n  -a, --app (= \"\")\n      The name of the app.\n  -c, --cname (= \"\")\n      App CNAME\n  \nMinimum # of arguments: 2\n"
   }, 
   "service-instance-update": {
-    "usage": "tsuru service-instance-update <service-name> <service-instance-name> [-d/--description description]", 
-    "desc": "Updates a service instance of a service.\n\nThe --description parameter sets a description for your service instance.\n\nFlags:\n  \n  -d, --description (= \"\")\n      service instance description\n  \nMinimum # of arguments: 2\n"
+    "usage": "tsuru service-instance-update <service-name> <service-instance-name> [-d/--description description] [-g/--tag tag]...", 
+    "desc": "Updates a service instance of a service.\n\nThe --description parameter sets a description for your service instance.\n\nThe --tag parameter adds a tag to your service instance. This parameter\nmay be used multiple times.\n\nFlags:\n  \n  -d, --description (= \"\")\n      service instance description\n  -g, --tag  (= [])\n      service instance tag\n  \nMinimum # of arguments: 2\n"
   }, 
   "bs-upgrade": {
     "usage": "tsuru bs-upgrade", 
@@ -78,6 +78,10 @@
   "node-add": {
     "usage": "tsuru node-add [param_name=param_value]... [--register]", 
     "desc": "Creates or registers a new node in the cluster.\nBy default, this command will call the configured IaaS to create a new\nmachine. Every param will be sent to the IaaS implementation.\n\nIaaS providers should have been previously configured in the [[tsuru.conf]]\nfile. See tsuru.conf reference docs for more information.\n\nIf using an IaaS to create a node is not wanted it's possible to simply\nregister an existing node with the [[--register]] flag.\n\nParameters with special meaning:\n  iaas=<iaas name>\n    Which iaas provider should be used, if not set tsuru will use the default\n    iaas specified in tsuru.conf file.\n\n  template=<template name>\n    A machine template with predefined parameters, additional parameters will\n    override template ones. See 'machine-template-add' command.\n\n  address=<api url>\n    Only used if [[--register]] flag is used. Should point to the endpoint of\n    a working server.\n\n  pool=<pool name>\n    Mandatory parameter specifying to which pool the added node will belong.\n    Available pools can be listed with the [[pool-list]] command.\n\n\nFlags:\n  \n  --cacert (= \"\")\n      Path to CA file tsuru should trust.\n  --clientcert (= \"\")\n      Path to client TLS certificate file.\n  --clientkey (= \"\")\n      Path to client TLS key file.\n  --register  (= false)\n      Registers an existing docker endpoint, the IaaS won't be called.\n  \nMinimum # of arguments: 1\n"
+  }, 
+  "tag-list": {
+    "usage": "tsuru tag-list", 
+    "desc": "Retrieves and shows a list of tags with the respective apps and service instances.\n\n"
   }, 
   "node-container-delete": {
     "usage": "tsuru node-container-delete <name> [-p/--pool poolname] [-k/--kill] [-y]", 
@@ -435,8 +439,8 @@
     "desc": "Installs Tsuru and It's components as containers on hosts provisioned\nwith docker machine drivers.\n\nThe [[--config]] parameter is the path to a .yml file containing the installation\nconfiguration. If not provided, Tsuru will be installed into a VirtualBox VM for\nexperimentation.\n\n\nFlags:\n  \n  -c, --config (= \"\")\n      Configuration file\n  -e, --compose (= \"\")\n      Components docker-compose file\n  \n"
   }, 
   "service-instance-add": {
-    "usage": "tsuru service-instance-add <service-name> <service-instance-name> [plan] [-t/--team-owner <team>] [-d/--description description]", 
-    "desc": "Creates a service instance of a service. There can later be binded to\napplications with [[tsuru service-bind]].\n\nThis example shows how to add a new instance of **mongodb** service, named\n**tsuru_mongodb** with the plan **small**:\n\n::\n\n    $ tsuru service-instance-add mongodb tsuru_mongodb small -t myteam\n\n\nFlags:\n  \n  -d, --description (= \"\")\n      service instance description\n  -t, --team-owner (= \"\")\n      the team that owns the service (mandatory if the user is member of more than one team)\n  \nMinimum # of arguments: 2\nMaximum # of arguments: 3\n"
+    "usage": "tsuru service-instance-add <service-name> <service-instance-name> [plan] [-t/--team-owner <team>] [-d/--description description] [-g/--tag tag]...", 
+    "desc": "Creates a service instance of a service. There can later be binded to\napplications with [[tsuru service-bind]].\n\nThis example shows how to add a new instance of **mongodb** service, named\n**tsuru_mongodb** with the plan **small**:\n\n::\n\n    $ tsuru service-instance-add mongodb tsuru_mongodb small -t myteam\n\n\nFlags:\n  \n  -d, --description (= \"\")\n      service instance description\n  -g, --tag  (= [])\n      service instance tag\n  -t, --team-owner (= \"\")\n      the team that owns the service (mandatory if the user is member of more than one team)\n  \nMinimum # of arguments: 2\nMaximum # of arguments: 3\n"
   }, 
   "app-quota-change": {
     "usage": "tsuru app-quota-change <app-name> <new-limit>", 
@@ -523,7 +527,7 @@
     "desc": "Show detailed information about one single event.\n\nMinimum # of arguments: 1\nMaximum # of arguments: 1\n"
   }, 
   "role-default-add": {
-    "usage": "tsuru role-default-add [--user-create <role name>]... [--team-create <role name>]...", 
+    "usage": "tsuru role-default-add [--team-create <role name>]... [--user-create <role name>]...", 
     "desc": "Add a new default role on a specific event.\n\nFlags:\n  \n  --team-create  (= [])\n      role added to user when a new team is created\n  --user-create  (= [])\n      role added to user when user is created\n  \n"
   }, 
   "app-remove": {

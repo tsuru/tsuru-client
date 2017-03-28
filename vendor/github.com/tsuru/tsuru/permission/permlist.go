@@ -12,6 +12,7 @@ var PermissionRegistry = (&registry{}).addWithCtx(
 	"app.create", []contextType{CtxTeam},
 ).add(
 	"app.update.description",
+	"app.update.tags",
 	"app.update.log",
 	"app.update.pool",
 	"app.update.unit.add",
@@ -131,6 +132,7 @@ var PermissionRegistry = (&registry{}).addWithCtx(
 	"service-instance.update.grant",
 	"service-instance.update.revoke",
 	"service-instance.update.description",
+	"service-instance.update.tags",
 ).add(
 	"role.create",
 	"role.delete",
@@ -182,4 +184,9 @@ var PermissionRegistry = (&registry{}).addWithCtx(
 	"nodecontainer.delete",
 ).add(
 	"install.manage",
+).add(
+	"event-block.read",
+	"event-block.read.events",
+	"event-block.add",
+	"event-block.remove",
 )
