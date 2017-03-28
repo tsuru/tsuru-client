@@ -103,8 +103,27 @@ func (s *S) TestTagListWithEmptyResponse(c *check.C) {
 	c.Assert(stdout.String(), check.Equals, expected)
 }
 
+func (s *S) TestTagListRequestError(c *check.C) {
+	var stdout, stderr bytes.Buffer
+	context := cmd.Context{
+		Args:   []string{},
+		Stdout: &stdout,
+		Stderr: &stderr,
+	}
+	command := TagList{}
+	err := command.Run(&context, cmd.NewClient(&http.Client{
+		Transport: &cmdtest.ConditionalTransport{
+			Transport: cmdtest.Transport{Status: http.StatusBadGateway},
+			CondFunc:  func(*http.Request) bool { return true },
+		},
+	}, nil, manager))
+	c.Assert(err, check.NotNil)
+	c.Assert(err.Error(), check.Equals, "502 Bad Gateway")
+	c.Assert(stdout.String(), check.Equals, "")
+}
+
 func makeClient(messages []string) *cmd.Client {
-	trueFunc := func(req *http.Request) bool { return true }
+	trueFunc := func(*http.Request) bool { return true }
 	cts := make([]cmdtest.ConditionalTransport, len(messages))
 	for i, message := range messages {
 		cts[i] = cmdtest.ConditionalTransport{

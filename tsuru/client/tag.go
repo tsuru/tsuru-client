@@ -46,22 +46,23 @@ func (t *TagList) Run(context *cmd.Context, client *cmd.Client) error {
 
 func (t *TagList) Show(apps []app, services []service.ServiceModel, context *cmd.Context) error {
 	tagList := processTags(apps, services)
-	if len(tagList) > 0 {
-		table := cmd.NewTable()
-		table.Headers = cmd.Row([]string{"Tag", "Apps", "Service Instances"})
-		for _, tagName := range sortedTags(tagList) {
-			t := tagList[tagName]
-			instanceNames := make([]string, len(t.ServiceInstances))
-			for i, serviceName := range sortedServices(t.ServiceInstances) {
-				instances := t.ServiceInstances[serviceName]
-				instanceNames[i] = fmt.Sprintf("%s: %s", serviceName, strings.Join(instances, ", "))
-			}
-			table.AddRow(cmd.Row([]string{t.Name, strings.Join(t.Apps, ", "), strings.Join(instanceNames, "\n")}))
-		}
-		table.LineSeparator = true
-		table.Sort()
-		context.Stdout.Write(table.Bytes())
+	if len(tagList) == 0 {
+		return nil
 	}
+	table := cmd.NewTable()
+	table.Headers = cmd.Row([]string{"Tag", "Apps", "Service Instances"})
+	for _, tagName := range sortedTags(tagList) {
+		t := tagList[tagName]
+		instanceNames := make([]string, len(t.ServiceInstances))
+		for i, serviceName := range sortedServices(t.ServiceInstances) {
+			instances := t.ServiceInstances[serviceName]
+			instanceNames[i] = fmt.Sprintf("%s: %s", serviceName, strings.Join(instances, ", "))
+		}
+		table.AddRow(cmd.Row([]string{t.Name, strings.Join(t.Apps, ", "), strings.Join(instanceNames, "\n")}))
+	}
+	table.LineSeparator = true
+	table.Sort()
+	context.Stdout.Write(table.Bytes())
 	return nil
 }
 
@@ -97,9 +98,6 @@ func getFromURL(path string, client *cmd.Client) ([]byte, error) {
 	response, err := client.Do(request)
 	if err != nil {
 		return nil, err
-	}
-	if response.StatusCode != http.StatusOK {
-		return nil, nil
 	}
 	defer response.Body.Close()
 	return ioutil.ReadAll(response.Body)
