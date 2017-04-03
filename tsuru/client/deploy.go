@@ -292,27 +292,34 @@ func (c *AppDeploy) Run(context *cmd.Context, client *cmd.Client) error {
 	return cmd.ErrAbortCommand
 }
 
-func processTsuruIgnore(pattern string, dirPaths ...string) (map[string]struct{}, error) {
+func processTsuruIgnore(pattern string, paths ...string) (map[string]struct{}, error) {
 	ignoreSet := make(map[string]struct{})
 	old, err := os.Getwd()
 	if err != nil {
 		return nil, err
 	}
 	defer os.Chdir(old)
-	for _, dirPath := range dirPaths {
-		err = os.Chdir(dirPath)
+	for _, dirPath := range paths {
+		fi, err := os.Stat(dirPath)
 		if err != nil {
 			return nil, err
+		}
+		if !fi.IsDir() {
+			dirPath = filepath.Dir(dirPath)
+		}
+		errCh := os.Chdir(dirPath)
+		if errCh != nil {
+			return nil, errCh
 		}
 		wd, err := os.Getwd()
 		if err != nil {
 			return nil, err
 		}
-		paths, err := filepath.Glob(pattern)
+		matchedPaths, err := filepath.Glob(pattern)
 		if err != nil {
 			return nil, err
 		}
-		for _, v := range paths {
+		for _, v := range matchedPaths {
 			if dirPath == "." {
 				ignoreSet[filepath.Join(wd, v)] = struct{}{}
 				continue

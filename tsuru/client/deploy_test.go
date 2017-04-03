@@ -495,21 +495,28 @@ func (s *S) TestProcessTsuruIgnore(c *check.C) {
 	tests := []struct {
 		name    string
 		pattern string
-		dirPath []string
+		path    []string
 		want    map[string]struct{}
 	}{
 		{
 			pattern: "*.txt",
-			dirPath: []string{filepath.Join(dir, "testdata", "deploy")},
+			path:    []string{filepath.Join(dir, "testdata", "deploy")},
 			want: map[string]struct{}{
 				filepath.Join(dir, "testdata/deploy/file2.txt"):          struct{}{},
 				filepath.Join(dir, "testdata/deploy/directory/file.txt"): struct{}{},
 				filepath.Join(dir, "testdata/deploy/file1.txt"):          struct{}{},
 			},
 		},
+		{
+			pattern: "file2.txt",
+			path:    []string{filepath.Join(dir, "testdata/deploy/file2.txt"), filepath.Join(dir, "testdata/deploy/file1.txt")},
+			want: map[string]struct{}{
+				filepath.Join(dir, "testdata/deploy/file2.txt"): struct{}{},
+			},
+		},
 	}
 	for _, tt := range tests {
-		got, err := processTsuruIgnore(tt.pattern, tt.dirPath...)
+		got, err := processTsuruIgnore(tt.pattern, tt.path...)
 		c.Assert(err, check.IsNil)
 		c.Assert(got, check.DeepEquals, tt.want)
 	}
