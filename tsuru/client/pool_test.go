@@ -41,3 +41,18 @@ func (s *S) TestPoolListRun(c *check.C) {
 	c.Assert(err, check.IsNil)
 	c.Assert(stdout.String(), check.Equals, expected)
 }
+
+func (s *S) TestPoolListRunNoContent(c *check.C) {
+	var stdout bytes.Buffer
+	context := cmd.Context{Args: []string{}, Stdout: &stdout}
+	client := cmd.NewClient(&http.Client{Transport: &cmdtest.Transport{Status: http.StatusNoContent}}, nil, manager)
+	command := PoolList{}
+	err := command.Run(&context, client)
+	expected := `+------+------+-------------+-------+---------+
+| Pool | Kind | Provisioner | Teams | Routers |
++------+------+-------------+-------+---------+
++------+------+-------------+-------+---------+
+`
+	c.Assert(err, check.IsNil)
+	c.Assert(stdout.String(), check.Equals, expected)
+}
