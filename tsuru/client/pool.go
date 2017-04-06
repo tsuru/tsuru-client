@@ -65,6 +65,11 @@ func (PoolList) Run(context *cmd.Context, client *cmd.Client) error {
 	if err != nil {
 		return err
 	}
+	t := cmd.Table{Headers: cmd.Row([]string{"Pool", "Kind", "Provisioner", "Teams", "Routers"})}
+	if resp.StatusCode == http.StatusNoContent {
+		context.Stdout.Write(t.Bytes())
+		return nil
+	}
 	defer resp.Body.Close()
 	var pools []Pool
 	err = json.NewDecoder(resp.Body).Decode(&pools)
@@ -72,7 +77,6 @@ func (PoolList) Run(context *cmd.Context, client *cmd.Client) error {
 		return err
 	}
 	sort.Sort(poolEntriesList(pools))
-	t := cmd.Table{Headers: cmd.Row([]string{"Pool", "Kind", "Provisioner", "Teams", "Routers"})}
 	for _, pool := range pools {
 		teams := strings.Join(pool.Allowed["team"], ", ")
 		routers := strings.Join(pool.Allowed["router"], ", ")
