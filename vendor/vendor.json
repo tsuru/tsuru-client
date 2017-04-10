@@ -1192,11 +1192,10 @@
 			"revisionTime": "2017-04-07T12:22:47Z"
 		},
 		{
-			"checksumSHA1": "ThIUiNEALTQ8b9KCs4F7FgLsJQQ=",
-			"origin": "github.com/tsuru/tsuru/vendor/github.com/tsuru/config",
+			"checksumSHA1": "oSqVjeYA3/FVbRHkJIilPjmbVTc=",
 			"path": "github.com/tsuru/config",
-			"revision": "7680fcde21073c916aa048d32aa866a9d4d8a03d",
-			"revisionTime": "2017-04-07T12:22:47Z"
+			"revision": "0eee1ec3c7a2917396b20453f32ecb41919a2a22",
+			"revisionTime": "2017-04-10T20:51:07Z"
 		},
 		{
 			"checksumSHA1": "4/+umnXEiZSaOI8wWrvxyDRe9d4=",
@@ -2008,11 +2007,10 @@
 			"revisionTime": "2017-04-07T12:22:47Z"
 		},
 		{
-			"checksumSHA1": "Hs7pfHDSvTNtnRogAAziW2Lki3M=",
-			"origin": "github.com/tsuru/tsuru/vendor/gopkg.in/yaml.v2",
+			"checksumSHA1": "fALlQNY1fM99NesfLJ50KguWsio=",
 			"path": "gopkg.in/yaml.v2",
-			"revision": "7680fcde21073c916aa048d32aa866a9d4d8a03d",
-			"revisionTime": "2017-04-07T12:22:47Z"
+			"revision": "cd8b52f8269e0feb286dfeef29f8fe4d5b397e0b",
+			"revisionTime": "2017-04-07T17:21:22Z"
 		}
 	],
 	"rootPath": "github.com/tsuru/tsuru-client"
