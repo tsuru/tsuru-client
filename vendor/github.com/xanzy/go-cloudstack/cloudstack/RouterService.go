@@ -952,7 +952,7 @@ func (s *RouterService) NewListRoutersParams() *ListRoutersParams {
 }
 
 // This is a courtesy helper function, which in some cases may not work as expected!
-func (s *RouterService) GetRouterID(name string, opts ...OptionFunc) (string, int, error) {
+func (s *RouterService) GetRouterID(name string, opts ...OptionFunc) (string, error) {
 	p := &ListRoutersParams{}
 	p.p = make(map[string]interface{})
 
@@ -960,38 +960,38 @@ func (s *RouterService) GetRouterID(name string, opts ...OptionFunc) (string, in
 
 	for _, fn := range opts {
 		if err := fn(s.cs, p); err != nil {
-			return "", -1, err
+			return "", err
 		}
 	}
 
 	l, err := s.ListRouters(p)
 	if err != nil {
-		return "", -1, err
+		return "", err
 	}
 
 	if l.Count == 0 {
-		return "", l.Count, fmt.Errorf("No match found for %s: %+v", name, l)
+		return "", fmt.Errorf("No match found for %s: %+v", name, l)
 	}
 
 	if l.Count == 1 {
-		return l.Routers[0].Id, l.Count, nil
+		return l.Routers[0].Id, nil
 	}
 
 	if l.Count > 1 {
 		for _, v := range l.Routers {
 			if v.Name == name {
-				return v.Id, l.Count, nil
+				return v.Id, nil
 			}
 		}
 	}
-	return "", l.Count, fmt.Errorf("Could not find an exact match for %s: %+v", name, l)
+	return "", fmt.Errorf("Could not find an exact match for %s: %+v", name, l)
 }
 
 // This is a courtesy helper function, which in some cases may not work as expected!
 func (s *RouterService) GetRouterByName(name string, opts ...OptionFunc) (*Router, int, error) {
-	id, count, err := s.GetRouterID(name, opts...)
+	id, err := s.GetRouterID(name, opts...)
 	if err != nil {
-		return nil, count, err
+		return nil, -1, err
 	}
 
 	r, count, err := s.GetRouterByID(id, opts...)

@@ -182,7 +182,7 @@ func (s *SwiftService) NewListSwiftsParams() *ListSwiftsParams {
 }
 
 // This is a courtesy helper function, which in some cases may not work as expected!
-func (s *SwiftService) GetSwiftID(keyword string, opts ...OptionFunc) (string, int, error) {
+func (s *SwiftService) GetSwiftID(keyword string, opts ...OptionFunc) (string, error) {
 	p := &ListSwiftsParams{}
 	p.p = make(map[string]interface{})
 
@@ -190,31 +190,31 @@ func (s *SwiftService) GetSwiftID(keyword string, opts ...OptionFunc) (string, i
 
 	for _, fn := range opts {
 		if err := fn(s.cs, p); err != nil {
-			return "", -1, err
+			return "", err
 		}
 	}
 
 	l, err := s.ListSwifts(p)
 	if err != nil {
-		return "", -1, err
+		return "", err
 	}
 
 	if l.Count == 0 {
-		return "", l.Count, fmt.Errorf("No match found for %s: %+v", keyword, l)
+		return "", fmt.Errorf("No match found for %s: %+v", keyword, l)
 	}
 
 	if l.Count == 1 {
-		return l.Swifts[0].Id, l.Count, nil
+		return l.Swifts[0].Id, nil
 	}
 
 	if l.Count > 1 {
 		for _, v := range l.Swifts {
 			if v.Name == keyword {
-				return v.Id, l.Count, nil
+				return v.Id, nil
 			}
 		}
 	}
-	return "", l.Count, fmt.Errorf("Could not find an exact match for %s: %+v", keyword, l)
+	return "", fmt.Errorf("Could not find an exact match for %s: %+v", keyword, l)
 }
 
 // List Swift.

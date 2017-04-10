@@ -29,6 +29,8 @@ import (
 
 type ComputeResource struct {
 	Common
+
+	InventoryPath string
 }
 
 func NewComputeResource(c *vim25.Client, ref types.ManagedObjectReference) *ComputeResource {

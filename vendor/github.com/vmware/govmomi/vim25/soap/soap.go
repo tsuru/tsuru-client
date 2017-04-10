@@ -36,7 +36,7 @@ type Fault struct {
 	Code    string   `xml:"faultcode"`
 	String  string   `xml:"faultstring"`
 	Detail  struct {
-		Fault types.AnyType `xml:",any,typeattr"`
+		Fault types.AnyType `xml:",any"`
 	} `xml:"detail"`
 }
 

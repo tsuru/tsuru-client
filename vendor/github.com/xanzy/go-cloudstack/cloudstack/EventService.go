@@ -203,7 +203,7 @@ func (p *ListEventsParams) SetType(v string) {
 	if p.p == nil {
 		p.p = make(map[string]interface{})
 	}
-	p.p["type"] = v
+	p.p["eventType"] = v
 	return
 }
 
@@ -379,7 +379,7 @@ func (p *ArchiveEventsParams) SetType(v string) {
 	if p.p == nil {
 		p.p = make(map[string]interface{})
 	}
-	p.p["type"] = v
+	p.p["eventType"] = v
 	return
 }
 
@@ -463,7 +463,7 @@ func (p *DeleteEventsParams) SetType(v string) {
 	if p.p == nil {
 		p.p = make(map[string]interface{})
 	}
-	p.p["type"] = v
+	p.p["eventType"] = v
 	return
 }
 

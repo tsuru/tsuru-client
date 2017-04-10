@@ -36,10 +36,6 @@ func (m DistributedVirtualSwitch) GetManagedEntity() ManagedEntity {
 	return m.ManagedEntity
 }
 
-func (m DistributedVirtualPortgroup) GetManagedEntity() ManagedEntity {
-	return m.ManagedEntity
-}
-
 func (m Folder) GetManagedEntity() ManagedEntity {
 	return m.ManagedEntity
 }

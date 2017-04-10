@@ -41,8 +41,7 @@ var binaryAbbrs = []string{"B", "KiB", "MiB", "GiB", "TiB", "PiB", "EiB", "ZiB",
 // using custom format.
 func CustomSize(format string, size float64, base float64, _map []string) string {
 	i := 0
-	unitsLimit := len(_map) - 1
-	for size >= base && i < unitsLimit {
+	for size >= base {
 		size = size / base
 		i++
 	}

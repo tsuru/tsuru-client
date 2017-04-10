@@ -66,7 +66,7 @@ func (msg *Error) JSON() interface{} {
 	return json
 }
 
-// MarshalJSON implements the json.Marshaller interface
+// Implements the json.Marshaller interface
 func (msg *Error) MarshalJSON() ([]byte, error) {
 	return json.Marshal(msg.JSON())
 }
@@ -89,7 +89,7 @@ func (a errorMsgs) ByType(typ ErrorType) errorMsgs {
 	if typ == ErrorTypeAny {
 		return a
 	}
-	var result errorMsgs
+	var result errorMsgs = nil
 	for _, msg := range a {
 		if msg.IsType(typ) {
 			result = append(result, msg)

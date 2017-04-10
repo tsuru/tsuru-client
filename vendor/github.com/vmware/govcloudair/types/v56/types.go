@@ -44,7 +44,6 @@ var VDCStatuses = map[int]string{
 
 // VCD API
 
-// DefaultStorageProfileSection is the name of the storage profile that will be specified for this virtual machine. The named storage profile must exist in the organization vDC that contains the virtual machine. If not specified, the default storage profile for the vDC is used.
 // Type: DefaultStorageProfileSection_Type
 // Namespace: http://www.vmware.com/vcloud/v1.5
 // Description: Name of the storage profile that will be specified for this virtual machine. The named storage profile must exist in the organization vDC that contains the virtual machine. If not specified, the default storage profile for the vDC is used.
@@ -53,7 +52,6 @@ type DefaultStorageProfileSection struct {
 	StorageProfile string `xml:"StorageProfile,omitempty"`
 }
 
-// CustomizationSection represents a vApp template customization settings.
 // Type: CustomizationSectionType
 // Namespace: http://www.vmware.com/vcloud/v1.5
 // Description: Represents a vApp template customization settings.
@@ -66,10 +64,9 @@ type CustomizationSection struct {
 	HREF                   string  `xml:"href,attr,omitempty"`
 	Type                   string  `xml:"type,attr,omitempty"`
 	CustomizeOnInstantiate bool    `xml:"CustomizeOnInstantiate"`
-	Link                   LinkList `xml:"Link,omitempty"`
+	Link                   []*Link `xml:"Link,omitempty"`
 }
 
-// LeaseSettingsSection represents vApp lease settings.
 // Type: LeaseSettingsSectionType
 // Namespace: http://www.vmware.com/vcloud/v1.5
 // Description: Represents vApp lease settings.
@@ -84,17 +81,15 @@ type LeaseSettingsSection struct {
 	StorageLeaseInSeconds     int    `xml:"StorageLeaseInSeconds,omitempty"`
 }
 
-// IPRange represents a range of IP addresses, start and end inclusive.
 // Type: IpRangeType
 // Namespace: http://www.vmware.com/vcloud/v1.5
 // Description: Represents a range of IP addresses, start and end inclusive.
 // Since: 0.9
 type IPRange struct {
-	StartAddress string `xml:"StartAddress"` // Start address of the IP range.
 	EndAddress   string `xml:"EndAddress"`   // End address of the IP range.
+	StartAddress string `xml:"StartAddress"` // Start address of the IP range.
 }
 
-// DhcpService represents a DHCP network service.
 // Type: DhcpServiceType
 // Namespace: http://www.vmware.com/vcloud/v1.5
 // Description: Represents a DHCP network service.
@@ -111,7 +106,6 @@ type DhcpService struct {
 	SubMask             string   `xml:"SubMask,omitempty"`             // The subnet mask.
 }
 
-// NetworkFeatures represents features of a network.
 // Type: NetworkFeaturesType
 // Namespace: http://www.vmware.com/vcloud/v1.5
 // Description: Represents features of a network.
@@ -126,7 +120,6 @@ type NetworkFeatures struct {
 	// IpsecVpnService      IpsecVpnService      `xml:"IpsecVpnService,omitempty"`      // Substitute for NetworkService. Ipsec Vpn service settings
 }
 
-// IPAddresses a list of IP addresses
 // Type: IpAddressesType
 // Namespace: http://www.vmware.com/vcloud/v1.5
 // Description: A list of IP addresses.
@@ -135,7 +128,6 @@ type IPAddresses struct {
 	IPAddress string `xml:"IpAddress,omitempty"` // An IP address.
 }
 
-// IPRanges representsa list of IP ranges.
 // Type: IpRangesType
 // Namespace: http://www.vmware.com/vcloud/v1.5
 // Description: Represents a list of IP ranges.
@@ -144,7 +136,6 @@ type IPRanges struct {
 	IPRange []*IPRange `xml:"IpRange,omitempty"` // IP range.
 }
 
-// IPScope specifies network settings like gateway, network mask, DNS servers IP ranges etc
 // Type: IpScopeType
 // Namespace: http://www.vmware.com/vcloud/v1.5
 // Description: Specify network settings like gateway, network mask, DNS servers, IP ranges, etc.
@@ -162,7 +153,6 @@ type IPScope struct {
 	SubAllocations       *SubAllocations `xml:"SubAllocations,omitempty"`       // Read-only list of IP addresses that are sub allocated to edge gateways.
 }
 
-// SubAllocations a list of IP addresses that are sub allocated to edge gateways.
 // Type: SubAllocationsType
 // Namespace: http://www.vmware.com/vcloud/v1.5
 // Description: A list of IP addresses that are sub allocated to edge gateways.
@@ -172,11 +162,10 @@ type SubAllocations struct {
 	HREF string `xml:"href,attr,omitempty"` // The URI of the entity.
 	Type string `xml:"type,attr,omitempty"` // The MIME type of the entity.
 	// Elements
-	Link          LinkList        `xml:"Link,omitempty"`          // A reference to an entity or operation associated with this object.
+	Link          []*Link        `xml:"Link,omitempty"`          // A reference to an entity or operation associated with this object.
 	SubAllocation *SubAllocation `xml:"SubAllocation,omitempty"` // IP Range sub allocated to a edge gateway.
 }
 
-// SubAllocation IP range sub allocated to an edge gateway.
 // Type: SubAllocationType
 // Namespace: http://www.vmware.com/vcloud/v1.5
 // Description: IP range sub allocated to an edge gateway.
@@ -186,7 +175,6 @@ type SubAllocation struct {
 	IPRanges    *IPRanges  `xml:"IpRanges,omitempty"`    // IP range sub allocated to the edge gateway.
 }
 
-// IPScopes represents a list of IP scopes.
 // Type: IpScopesType
 // Namespace: http://www.vmware.com/vcloud/v1.5
 // Description: Represents a list of IP scopes.
@@ -195,7 +183,6 @@ type IPScopes struct {
 	IPScope IPScope `xml:"IpScope"` // IP scope.
 }
 
-// NetworkConfiguration the configuration applied to a network. This is an abstract base type. The concrete types include thos for vApp and Organization wide networks.
 // Type: NetworkConfigurationType
 // Namespace: http://www.vmware.com/vcloud/v1.5
 // Description: The configurations applied to a network. This is an abstract base type. The concrete types include those for vApp and Organization wide networks.
@@ -204,15 +191,14 @@ type NetworkConfiguration struct {
 	BackwardCompatibilityMode      bool             `xml:"BackwardCompatibilityMode"`
 	Features                       *NetworkFeatures `xml:"Features,omitempty"`
 	ParentNetwork                  *Reference       `xml:"ParentNetwork,omitempty"`
-	IPScopes                       *IPScopes        `xml:"IpScopes,omitempty"`
 	FenceMode                      string           `xml:"FenceMode"`
+	IPScopes                       *IPScopes        `xml:"IpScopes,omitempty"`
 	RetainNetInfoAcrossDeployments bool             `xml:"RetainNetInfoAcrossDeployments"`
 	// TODO: Not Implemented
 	// RouterInfo                     RouterInfo           `xml:"RouterInfo,omitempty"`
 	// SyslogServerSettings           SyslogServerSettings `xml:"SyslogServerSettings,omitempty"`
 }
 
-// VAppNetworkConfiguration representa a vApp network configuration
 // Type: VAppNetworkConfigurationType
 // Namespace: http://www.vmware.com/vcloud/v1.5
 // Description: Represents a vApp network configuration.
@@ -228,7 +214,6 @@ type VAppNetworkConfiguration struct {
 	Link          *Link                 `xml:"Link,omitempty"`
 }
 
-// NetworkConfigSection is container for vApp networks.
 // Type: NetworkConfigSectionType
 // Namespace: http://www.vmware.com/vcloud/v1.5
 // Description: Container for vApp networks.
@@ -244,7 +229,6 @@ type NetworkConfigSection struct {
 	NetworkConfig *VAppNetworkConfiguration `xml:"NetworkConfig,omitempty"`
 }
 
-// NetworkConnection represents a network connection in the virtual machine.
 // Type: NetworkConnectionType
 // Namespace: http://www.vmware.com/vcloud/v1.5
 // Description: Represents a network connection in the virtual machine.
@@ -252,15 +236,14 @@ type NetworkConfigSection struct {
 type NetworkConnection struct {
 	Network                 string `xml:"network,attr"`                      // Name of the network to which this NIC is connected.
 	NetworkConnectionIndex  int    `xml:"NetworkConnectionIndex"`            // Virtual slot number associated with this NIC. First slot number is 0.
+	IsConnected             bool   `xml:"IsConnected"`                       // If the virtual machine is undeployed, this value specifies whether the NIC should be connected upon deployment. If the virtual machine is deployed, this value reports the current status of this NIC's connection, and can be updated to change that connection status.
 	NeedsCustomization      bool   `xml:"needsCustomization,attr,omitempty"` // True if this NIC needs customization.
 	ExternalIPAddress       string `xml:"ExternalIpAddress,omitempty"`       // If the network to which this NIC connects provides NAT services, the external address assigned to this NIC appears here.
 	IPAddress               string `xml:"IpAddress,omitempty"`               // IP address assigned to this NIC.
-	IsConnected             bool   `xml:"IsConnected"`                       // If the virtual machine is undeployed, this value specifies whether the NIC should be connected upon deployment. If the virtual machine is deployed, this value reports the current status of this NIC's connection, and can be updated to change that connection status.
 	IPAddressAllocationMode string `xml:"IpAddressAllocationMode"`           // IP address allocation mode for this connection. One of: POOL (A static IP address is allocated automatically from a pool of addresses.) DHCP (The IP address is obtained from a DHCP service.) MANUAL (The IP address is assigned manually in the IpAddress element.) NONE (No IP addressing mode specified.)
 	MACAddress              string `xml:"MACAddress,omitempty"`              // MAC address associated with the NIC.
 }
 
-// NetworkConnectionSection the container for the network connections of this virtual machine.
 // Type: NetworkConnectionSectionType
 // Namespace: http://www.vmware.com/vcloud/v1.5
 // Description: Container for the network connections of this virtual machine.
@@ -268,10 +251,6 @@ type NetworkConnection struct {
 type NetworkConnectionSection struct {
 	// Extends OVF Section_Type
 	// FIXME: Fix the OVF section
-	XMLName xml.Name `xml:"NetworkConnectionSection"`
-	Xmlns   string   `xml:"xmlns,attr,omitempty"`
-	Ovf     string   `xml:"xmlns:ovf,attr,omitempty"`
-
 	Info string `xml:"ovf:Info"`
 	//
 	HREF                          string             `xml:"href,attr,omitempty"`
@@ -281,7 +260,6 @@ type NetworkConnectionSection struct {
 	NetworkConnection             *NetworkConnection `xml:"NetworkConnection,omitempty"`
 }
 
-// InstantiationParams is a container for ovf:Section_Type elements that specify vApp configuration on instantiate, compose, or recompose.
 // Type: InstantiationParamsType
 // Namespace: http://www.vmware.com/vcloud/v1.5
 // Description: Container for ovf:Section_Type elements that specify vApp configuration on instantiate, compose, or recompose.
@@ -297,14 +275,12 @@ type InstantiationParams struct {
 	// SnapshotSection              SnapshotSection              `xml:"SnapshotSection,omitempty"`
 }
 
-// OrgVDCNetwork represents an Org vDC network in the vCloud model.
 // Type: OrgVdcNetworkType
 // Namespace: http://www.vmware.com/vcloud/v1.5
 // Description: Represents an Org vDC network in the vCloud model.
 // Since: 5.1
 type OrgVDCNetwork struct {
 	XMLName       xml.Name              `xml:"OrgVdcNetwork"`
-	Xmlns         string                `xml:"xmlns,attr,imitempty"`
 	HREF          string                `xml:"href,attr,omitempty"`
 	Type          string                `xml:"type,attr,omitempty"`
 	ID            string                `xml:"id,attr,omitempty"`
@@ -315,21 +291,27 @@ type OrgVDCNetwork struct {
 	Description   string                `xml:"Description,omitempty"`
 	EdgeGateway   *Reference            `xml:"EdgeGateway,omitempty"`
 	IsShared      bool                  `xml:"IsShared"`
-	Link          []Link                `xml:"Link,omitempty"`
+	Link          []Link                `xml:"Link"`
 	ServiceConfig *GatewayFeatures      `xml:"ServiceConfig,omitempty"` // Specifies the service configuration for an isolated Org vDC networks
-	Tasks         *TasksInProgress      `xml:"Tasks,omitempty"`
+	Tasks         TasksInProgress       `xml:"Tasks,omitempty"`
 }
 
-// SupportedHardwareVersions contains a list of VMware virtual hardware versions supported in this vDC.
+// Type: SupportedHardwareVersionType
+// Namespace: http://www.vmware.com/vcloud/v1.5
+// Description: Represents a supported virtual hardware version.
+// Since: 1.5
+type SupportedHardwareVersion struct {
+	SupportedHardwareVersion string `xml:"SupportedHardwareVersion"`
+}
+
 // Type: SupportedHardwareVersionsType
 // Namespace: http://www.vmware.com/vcloud/v1.5
 // Description: Contains a list of VMware virtual hardware versions supported in this vDC.
 // Since: 1.5
 type SupportedHardwareVersions struct {
-	SupportedHardwareVersion []string `xml:"SupportedHardwareVersion,omitempty"` // A virtual hardware version supported in this vDC.
+	SupportedHardwareVersion []*SupportedHardwareVersion `xml:"SupportedHardwareVersion,omitempty"` // A virtual hardware version supported in this vDC.
 }
 
-// Capabilities collection of supported hardware capabilities.
 // Type: CapabilitiesType
 // Namespace: http://www.vmware.com/vcloud/v1.5
 // Description: Collection of supported hardware capabilities.
@@ -338,7 +320,6 @@ type Capabilities struct {
 	SupportedHardwareVersions *SupportedHardwareVersions `xml:"SupportedHardwareVersions,omitempty"` // Read-only list of virtual hardware versions supported by this vDC.
 }
 
-// Vdc represents the user view of an organization vDC.
 // Type: VdcType
 // Namespace: http://www.vmware.com/vcloud/v1.5
 // Description: Represents the user view of an organization vDC.
@@ -357,17 +338,16 @@ type Vdc struct {
 	ComputeCapacity    []*ComputeCapacity    `xml:"ComputeCapacity"`
 	Description        string                `xml:"Description,omitempty"`
 	IsEnabled          bool                  `xml:"IsEnabled"`
-	Link               LinkList               `xml:"Link,omitempty"`
+	Link               []*Link               `xml:"Link,omitempty"`
 	NetworkQuota       int                   `xml:"NetworkQuota"`
 	NicQuota           int                   `xml:"NicQuota"`
 	ResourceEntities   []*ResourceEntities   `xml:"ResourceEntities,omitempty"`
-	Tasks              *TasksInProgress      `xml:"Tasks,omitempty"`
+	Tasks              *TasksInProgress      `xml:"Taks,omitempty"`
 	UsedNetworkCount   int                   `xml:"UsedNetworkCount,omitempty"`
 	VdcStorageProfiles []*VdcStorageProfiles `xml:"VdcStorageProfiles"`
 	VMQuota            int                   `xml:"VmQuota"`
 }
 
-// Task represents an asynchronous operation in vCloud Director.
 // Type: TaskType
 // Namespace: http://www.vmware.com/vcloud/v1.5
 // Description: Represents an asynchronous operation in vCloud Director.
@@ -397,7 +377,6 @@ type Task struct {
 	User             *Reference       `xml:"User,omitempty"`
 }
 
-// CapacityWithUsage represents a capacity and usage of a given resource.
 // Type: CapacityWithUsageType
 // Namespace: http://www.vmware.com/vcloud/v1.5
 // Description: Represents a capacity and usage of a given resource.
@@ -411,7 +390,6 @@ type CapacityWithUsage struct {
 	Used      int64  `xml:"Used,omitempty"`
 }
 
-// ComputeCapacity represents vDC compute capacity.
 // Type: ComputeCapacityType
 // Namespace: http://www.vmware.com/vcloud/v1.5
 // Description: Represents vDC compute capacity.
@@ -421,7 +399,6 @@ type ComputeCapacity struct {
 	Memory *CapacityWithUsage `xml:"Memory"`
 }
 
-// Reference is a reference to a resource. Contains an href attribute and optional name and type attributes.
 // Type: ReferenceType
 // Namespace: http://www.vmware.com/vcloud/v1.5
 // Description: A reference to a resource. Contains an href attribute and optional name and type attributes.
@@ -433,7 +410,6 @@ type Reference struct {
 	Name string `xml:"name,attr,omitempty"`
 }
 
-// ResourceReference represents a reference to a resource. Contains an href attribute, a resource status attribute, and optional name and type attributes.
 // Type: ResourceReferenceType
 // Namespace: http://www.vmware.com/vcloud/v1.5
 // Description: Represents a reference to a resource. Contains an href attribute, a resource status attribute, and optional name and type attributes.
@@ -446,7 +422,6 @@ type ResourceReference struct {
 	Status string `xml:"status,attr,omitempty"`
 }
 
-// VdcStorageProfiles is a container for references to storage profiles associated with a vDC.
 // Element: VdcStorageProfiles
 // Type: VdcStorageProfilesType
 // Namespace: http://www.vmware.com/vcloud/v1.5
@@ -456,7 +431,6 @@ type VdcStorageProfiles struct {
 	VdcStorageProfile []*Reference `xml:"VdcStorageProfile,omitempty"`
 }
 
-// ResourceEntities is a container for references to ResourceEntity objects in this vDC.
 // Type: ResourceEntitiesType
 // Namespace: http://www.vmware.com/vcloud/v1.5
 // Description: Container for references to ResourceEntity objects in this vDC.
@@ -465,7 +439,6 @@ type ResourceEntities struct {
 	ResourceEntity []*ResourceReference `xml:"ResourceEntity,omitempty"`
 }
 
-// AvailableNetworks is a container for references to available organization vDC networks.
 // Type: AvailableNetworksType
 // Namespace: http://www.vmware.com/vcloud/v1.5
 // Description: Container for references to available organization vDC networks.
@@ -474,7 +447,6 @@ type AvailableNetworks struct {
 	Network []*Reference `xml:"Network,omitempty"`
 }
 
-// Link extends reference type by adding relation attribute. Defines a hyper-link with a relationship, hyper-link reference, and an optional MIME type.
 // Type: LinkType
 // Namespace: http://www.vmware.com/vcloud/v1.5
 // Description: Extends reference type by adding relation attribute. Defines a hyper-link with a relationship, hyper-link reference, and an optional MIME type.
@@ -487,7 +459,6 @@ type Link struct {
 	Rel  string `xml:"rel,attr"`
 }
 
-// Org represents the user view of a vCloud Director organization.
 // Type: OrgType
 // Namespace: http://www.vmware.com/vcloud/v1.5
 // Description: Represents the user view of a vCloud Director organization.
@@ -501,11 +472,10 @@ type Org struct {
 	Description  string           `xml:"Description,omitempty"`
 	FullName     string           `xml:"FullName"`
 	IsEnabled    bool             `xml:"IsEnabled,omitempty"`
-	Link         LinkList          `xml:"Link,omitempty"`
+	Link         []*Link          `xml:"Link,omitempty"`
 	Tasks        *TasksInProgress `xml:"Tasks,omitempty"`
 }
 
-// CatalogItem contains a reference to a VappTemplate or Media object and related metadata.
 // Type: CatalogItemType
 // Namespace: http://www.vmware.com/vcloud/v1.5
 // Description: Contains a reference to a VappTemplate or Media object and related metadata.
@@ -520,12 +490,11 @@ type CatalogItem struct {
 	DateCreated   string           `xml:"DateCreated,omitempty"`
 	Description   string           `xml:"Description,omitempty"`
 	Entity        *Entity          `xml:"Entity"`
-	Link          LinkList          `xml:"Link,omitempty"`
+	Link          []*Link          `xml:"Link,omitempty"`
 	Tasks         *TasksInProgress `xml:"Tasks,omitempty"`
 	VersionNumber int64            `xml:"VersionNumber,omitempty"`
 }
 
-// Entity is a basic entity type in the vCloud object model. Includes a name, an optional description, and an optional list of links.
 // Type: EntityType
 // Namespace: http://www.vmware.com/vcloud/v1.5
 // Description: Basic entity type in the vCloud object model. Includes a name, an optional description, and an optional list of links.
@@ -537,11 +506,10 @@ type Entity struct {
 	OperationKey string           `xml:"operationKey,attr,omitempty"`
 	Name         string           `xml:"name,attr"`
 	Description  string           `xml:"Description,omitempty"`
-	Link         LinkList          `xml:"Link,omitempty"`
+	Link         []*Link          `xml:"Link,omitempty"`
 	Tasks        *TasksInProgress `xml:"Tasks,omitempty"`
 }
 
-// CatalogItems is a container for references to catalog items.
 // Type: CatalogItemsType
 // Namespace: http://www.vmware.com/vcloud/v1.5
 // Description: Container for references to catalog items.
@@ -550,7 +518,6 @@ type CatalogItems struct {
 	CatalogItem []*Reference `xml:"CatalogItem"`
 }
 
-// Catalog represents the user view of a Catalog object.
 // Type: CatalogType
 // Namespace: http://www.vmware.com/vcloud/v1.5
 // Description: Represents the user view of a Catalog object.
@@ -565,13 +532,12 @@ type Catalog struct {
 	DateCreated   string           `xml:"DateCreated"`
 	Description   string           `xml:"Description"`
 	IsPublished   bool             `xml:"IsPublished"`
-	Link          LinkList          `xml:"Link"`
+	Link          []*Link          `xml:"Link"`
 	Owner         *Owner           `xml:"Owner,omitempty"`
 	Tasks         *TasksInProgress `xml:"Tasks,omitempty"`
 	VersionNumber int64            `xml:"VersionNumber"`
 }
 
-// Owner represents the owner of this entity.
 // Type: OwnerType
 // Namespace: http://www.vmware.com/vcloud/v1.5
 // Description: Represents the owner of this entity.
@@ -579,11 +545,10 @@ type Catalog struct {
 type Owner struct {
 	HREF string     `xml:"href,attr,omitempty"`
 	Type string     `xml:"type,attr,omitempty"`
-	Link LinkList    `xml:"Link,omitempty"`
+	Link []*Link    `xml:"Link,omitempty"`
 	User *Reference `xml:"User"`
 }
 
-// Error is the standard error message type used in the vCloud REST API.
 // Type: ErrorType
 // Namespace: http://www.vmware.com/vcloud/v1.5
 // Description: The standard error message type used in the vCloud REST API.
@@ -596,7 +561,6 @@ type Error struct {
 	StackTrace              string `xml:"stackTrace,attr,omitempty"`
 }
 
-// File represents a file to be transferred (uploaded or downloaded).
 // Type: FileType
 // Namespace: http://www.vmware.com/vcloud/v1.5
 // Description: Represents a file to be transferred (uploaded or downloaded).
@@ -611,11 +575,10 @@ type File struct {
 	BytesTransferred int64            `xml:"bytesTransferred,attr,omitempty"`
 	Checksum         string           `xml:"checksum,attr,omitempty"`
 	Description      string           `xml:"Description,omitempty"`
-	Link             LinkList          `xml:"Link,omitempty"`
+	Link             []*Link          `xml:"Link,omitempty"`
 	Tasks            *TasksInProgress `xml:"Tasks,omitempty"`
 }
 
-// FilesList represents a list of files to be transferred (uploaded or downloaded).
 // Type: FilesListType
 // Namespace: http://www.vmware.com/vcloud/v1.5
 // Description: Represents a list of files to be transferred (uploaded or downloaded).
@@ -624,7 +587,6 @@ type FilesList struct {
 	File []*File `xml:"File"`
 }
 
-// UndeployVAppParams parameters to an undeploy vApp request.
 // Type: UndeployVAppParamsType
 // Namespace: http://www.vmware.com/vcloud/v1.5
 // Description: Parameters to an undeploy vApp request.
@@ -634,7 +596,6 @@ type UndeployVAppParams struct {
 	UndeployPowerAction string `xml:"UndeployPowerAction,omitempty"`
 }
 
-// VMCapabilities allows you to specify certain capabilities of this virtual machine.
 // Type: VmCapabilitiesType
 // Namespace: http://www.vmware.com/vcloud/v1.5
 // Description: Allows you to specify certain capabilities of this virtual machine.
@@ -643,11 +604,10 @@ type VMCapabilities struct {
 	HREF                string  `xml:"href,attr,omitempty"`
 	Type                string  `xml:"type,attr,omitempty"`
 	CPUHotAddEnabled    bool    `xml:"CpuHotAddEnabled,omitempty"`
-	Link                LinkList `xml:"Link,omitempty"`
+	Link                []*Link `xml:"Link,omitempty"`
 	MemoryHotAddEnabled bool    `xml:"MemoryHotAddEnabled,omitempty"`
 }
 
-// VMs represents a list of virtual machines.
 // Type: VmsType
 // Namespace: http://www.vmware.com/vcloud/v1.5
 // Description: Represents a list of virtual machines.
@@ -655,7 +615,7 @@ type VMCapabilities struct {
 type VMs struct {
 	HREF        string       `xml:"href,attr,omitempty"`
 	Type        string       `xml:"type,attr,omitempty"`
-	Link        LinkList      `xml:"Link,omitempty"`
+	Link        []*Link      `xml:"Link,omitempty"`
 	VMReference []*Reference `xml:"VmReference,omitempty"`
 }
 
@@ -663,7 +623,6 @@ type VMs struct {
  * Types that are completely valid (position, comment, coverage complete)
  */
 
-// ComposeVAppParams represetns vApp composition parameters
 // Type: ComposeVAppParamsType
 // Namespace: http://www.vmware.com/vcloud/v1.5
 // Description: Represents vApp composition parameters.
@@ -686,7 +645,6 @@ type ComposeVAppParams struct {
 	AllEULAsAccepted    bool                         `xml:"AllEULAsAccepted,omitempty"`    // True confirms acceptance of all EULAs in a vApp template. Instantiation fails if this element is missing, empty, or set to false and one or more EulaSection elements are present.
 }
 
-// SourcedCompositionItemParam represents a vApp, vApp template or Vm to include in a composed vApp.
 // Type: SourcedCompositionItemParamType
 // Namespace: http://www.vmware.com/vcloud/v1.5
 // Description: Represents a vApp, vApp template or Vm to include in a composed vApp.
@@ -704,7 +662,6 @@ type SourcedCompositionItemParam struct {
 	LocalityParams      *LocalityParams      `xml:"LocalityParams,omitempty"`      // Represents locality parameters. Locality parameters provide a hint that may help the placement engine optimize placement of a VM and an independent a Disk so that the VM can make efficient use of the disk.
 }
 
-// LocalityParams represents locality parameters. Locality parameters provide a hint that may help the placement engine optimize placement of a VM with respect to another VM or an independent disk.
 // Type: LocalityParamsType
 // Namespace: http://www.vmware.com/vcloud/v1.5
 // Description: Represents locality parameters. Locality parameters provide a hint that may help the placement engine optimize placement of a VM with respect to another VM or an independent disk.
@@ -714,7 +671,6 @@ type LocalityParams struct {
 	ResourceEntity *Reference `xml:"ResourceEntity,omitempty"` // Reference to a Disk, or a VM.
 }
 
-// NetworkAssignment maps a network name specified in a Vm to the network name of a vApp network defined in the VApp that contains the Vm
 // Type: NetworkAssignmentType
 // Namespace: http://www.vmware.com/vcloud/v1.5
 // Description: Maps a network name specified in a Vm to the network name of a vApp network defined in the VApp that contains the Vm
@@ -725,7 +681,6 @@ type NetworkAssignment struct {
 	ContainerNetwork string `xml:"containerNetwork,attr"` // Name of the vApp network to map to.
 }
 
-// VMGeneralParams a set of overrides to source VM properties to apply to target VM during copying.
 // Type: VmGeneralParamsType
 // Namespace: http://www.vmware.com/vcloud/v1.5
 // Description: A set of overrides to source VM properties to apply to target VM during copying.
@@ -737,7 +692,6 @@ type VMGeneralParams struct {
 	NeedsCustomization bool   `xml:"NeedsCustomization,omitempty"` // True if this VM needs guest customization
 }
 
-// VApp representa a vApp
 // Type: VAppType
 // Namespace: http://www.vmware.com/vcloud/v1.5
 // Description: Represents a vApp.
@@ -753,7 +707,7 @@ type VApp struct {
 	Deployed              bool   `xml:"deployed,attr,omitempty"`              // True if the virtual machine is deployed.
 	OvfDescriptorUploaded bool   `xml:"ovfDescriptorUploaded,attr,omitempty"` // Read-only indicator that the OVF descriptor for this vApp has been uploaded.
 	// Elements
-	Link        LinkList          `xml:"Link,omitempty"`        // A reference to an entity or operation associated with this object.
+	Link        []*Link          `xml:"Link,omitempty"`        // A reference to an entity or operation associated with this object.
 	Description string           `xml:"Description,omitempty"` // Optional description.
 	Tasks       *TasksInProgress `xml:"Tasks,omitempty"`       // A list of queued, running, or recently completed tasks associated with this entity.
 	Files       *FilesList       `xml:"Files,omitempty"`       // Represents a list of files to be transferred (uploaded or downloaded). Each File in the list is part of the ResourceEntity.
@@ -766,19 +720,6 @@ type VApp struct {
 	Children          *VAppChildren `xml:"Children,omitempty"`          // Container for virtual machines included in this vApp.
 }
 
-type MetadataValue struct {
-	XMLName    xml.Name    `xml:"MetadataValue"`
-	Xsi        string      `xml:"xmlns:xsi,attr"`
-	Xmlns      string      `xml:"xmlns,attr"`
-	TypedValue *TypedValue `xml:"TypedValue"`
-}
-
-type TypedValue struct {
-	XsiType string `xml:"xsi:type,attr"`
-	Value   string `xml:"Value"`
-}
-
-// VAppChildren is a container for virtual machines included in this vApp.
 // Type: VAppChildrenType
 // Namespace: http://www.vmware.com/vcloud/v1.5
 // Description: Container for virtual machines included in this vApp.
@@ -787,7 +728,6 @@ type VAppChildren struct {
 	VM []*VM `xml:"Vm,omitempty"` // Rerpresents a virtual machine.
 }
 
-// TasksInProgress is a list of queued, running, or recently completed tasks.
 // Type: TasksInProgressType
 // Namespace: http://www.vmware.com/vcloud/v1.5
 // Description: A list of queued, running, or recently completed tasks.
@@ -797,7 +737,6 @@ type TasksInProgress struct {
 	Task []*Task `xml:"Task"` // A task.
 }
 
-// VAppTemplateChildren is a container for virtual machines included in this vApp template.
 // Type: VAppTemplateChildrenType
 // Namespace: http://www.vmware.com/vcloud/v1.5
 // Description: Container for virtual machines included in this vApp template.
@@ -807,7 +746,6 @@ type VAppTemplateChildren struct {
 	VM []*VAppTemplate `xml:"Vm"` // Represents a virtual machine in this vApp template.
 }
 
-// VAppTemplate represents a vApp template.
 // Type: VAppTemplateType
 // Namespace: http://www.vmware.com/vcloud/v1.5
 // Description: Represents a vApp template.
@@ -823,7 +761,7 @@ type VAppTemplate struct {
 	OvfDescriptorUploaded string `xml:"ovfDescriptorUploaded,attr,omitempty"` // True if the OVF descriptor for this template has been uploaded.
 	GoldMaster            bool   `xml:"goldMaster,attr,omitempty"`            // True if this template is a gold master.
 	// Elements
-	Link                  LinkList               `xml:"Link,omitempty"`                  // A reference to an entity or operation associated with this object.
+	Link                  []*Link               `xml:"Link,omitempty"`                  // A reference to an entity or operation associated with this object.
 	Description           string                `xml:"Description,omitempty"`           // Optional description.
 	Tasks                 *TasksInProgress      `xml:"Tasks,omitempty"`                 // A list of queued, running, or recently completed tasks associated with this entity.
 	Files                 *FilesList            `xml:"Files,omitempty"`                 // Represents a list of files to be transferred (uploaded or downloaded). Each File in the list is part of the ResourceEntity.
@@ -844,17 +782,15 @@ type VAppTemplate struct {
 	// Section               Section              `xml:"Section,omitempty"`
 }
 
-// VM represents a virtual machine
 // Type: VmType
 // Namespace: http://www.vmware.com/vcloud/v1.5
 // Description: Represents a virtual machine.
 // Since: 0.9
 type VM struct {
 	// Attributes
-	XMLName xml.Name `xml:"Vm"`
-	Ovf     string   `xml:"xmlns:ovf,attr,omitempty"`
-	Xsi     string   `xml:"xmlns:xsi,attr,omitempty"`
-	Xmlns   string   `xml:"xmlns,attr,omitempty"`
+	Ovf   string `xml:"xmlns:ovf,attr,omitempty"`
+	Xsi   string `xml:"xmlns:xsi,attr,omitempty"`
+	Xmlns string `xml:"xmlns,attr,omitempty"`
 
 	HREF                    string `xml:"href,attr,omitempty"`                    // The URI of the entity.
 	Type                    string `xml:"type,attr,omitempty"`                    // The MIME type of the entity.
@@ -866,24 +802,19 @@ type VM struct {
 	NeedsCustomization      bool   `xml:"needsCustomization,attr,omitempty"`      // True if this virtual machine needs customization.
 	NestedHypervisorEnabled bool   `xml:"nestedHypervisorEnabled,attr,omitempty"` // True if hardware-assisted CPU virtualization capabilities in the host should be exposed to the guest operating system.
 	// Elements
-	Link        LinkList          `xml:"Link,omitempty"`        // A reference to an entity or operation associated with this object.
+	Link        []*Link          `xml:"Link,omitempty"`        // A reference to an entity or operation associated with this object.
 	Description string           `xml:"Description,omitempty"` // Optional description.
 	Tasks       *TasksInProgress `xml:"Tasks,omitempty"`       // A list of queued, running, or recently completed tasks associated with this entity.
 	Files       *FilesList       `xml:"FilesList,omitempty"`   // Represents a list of files to be transferred (uploaded or downloaded). Each File in the list is part of the ResourceEntity.
 	VAppParent  *Reference       `xml:"VAppParent,omitempty"`  // Reserved. Unimplemented.
 	// TODO: OVF Sections to be implemented
 	// Section OVF_Section `xml:"Section,omitempty"
-	DateCreated string `xml:"DateCreated,omitempty"` // Creation date/time of the vApp.
-
-	// Section ovf:VirtualHardwareSection
-	VirtualHardwareSection *VirtualHardwareSection `xml:"VirtualHardwareSection,omitempty"`
+	DateCreated string `xml:"DateCreated"` // Creation date/time of the vApp.
 
 	// FIXME: Upstream bug? Missing NetworkConnectionSection
 	NetworkConnectionSection *NetworkConnectionSection `xml:"NetworkConnectionSection,omitempty"`
 
 	VAppScopedLocalID string `xml:"VAppScopedLocalId,omitempty"` // A unique identifier for the virtual machine in the scope of the vApp.
-
-	Snapshots *SnapshotSection `xml:"SnapshotSection,omitempty"`
 
 	// TODO: OVF Sections to be implemented
 	// Environment OVF_Environment `xml:"Environment,omitempty"
@@ -892,74 +823,7 @@ type VM struct {
 	StorageProfile *Reference      `xml:"StorageProfile,omitempty"` // A reference to a storage profile to be used for this object. The specified storage profile must exist in the organization vDC that contains the object. If not specified, the default storage profile for the vDC is used.
 }
 
-// ovf:VirtualHardwareSection from VM struct
-type VirtualHardwareSection struct {
-	// Extends OVF Section_Type
-	XMLName xml.Name `xml:"VirtualHardwareSection"`
-	Xmlns   string   `xml:"vcloud,attr,omitempty"`
-
-	Info string                 `xml:"Info"`
-	HREF string                 `xml:"href,attr,omitempty"`
-	Type string                 `xml:"type,attr,omitempty"`
-	Item []*VirtualHardwareItem `xml:"Item,omitempty"`
-}
-
-// Each ovf:Item parsed from the ovf:VirtualHardwareSection
-type VirtualHardwareItem struct {
-	XMLName             xml.Name                       `xml:"Item"`
-	ResourceType        int                            `xml:"ResourceType,omitempty"`
-	ResourceSubType     string                         `xml:"ResourceSubType,omitempty"`
-	ElementName         string                         `xml:"ElementName,omitempty"`
-	Description         string                         `xml:"Description,omitempty"`
-	InstanceID          int                            `xml:"InstanceID,omitempty"`
-	AutomaticAllocation bool                           `xml:"AutomaticAllocation,omitempty"`
-	Address             string                         `xml:"Address,omitempty"`
-	AddressOnParent     int                            `xml:"AddressOnParent,omitempty"`
-	AllocationUnits     string                         `xml:"AllocationUnits,omitempty"`
-	Reservation         int                            `xml:"Reservation,omitempty"`
-	VirtualQuantity     int                            `xml:"VirtualQuantity,omitempty"`
-	Weight              int                            `xml:"Weight,omitempty"`
-	CoresPerSocket      int                            `xml:"CoresPerSocket,omitempty"`
-	Connection          []*VirtualHardwareConnection   `xml:"Connection,omitempty"`
-	HostResource        []*VirtualHardwareHostResource `xml:"HostResource,omitempty"`
-	Link                []*Link                        `xml:"Link,omitempty"`
-}
-
-// Connection info from ResourceType=10 (Network Interface)
-type VirtualHardwareConnection struct {
-	IPAddress         string `xml:"ipAddress,attr,omitempty"`
-	PrimaryConnection bool   `xml:"primaryNetworkConnection,attr,omitempty"`
-	IpAddressingMode  string `xml:"ipAddressingMode,attr,omitempty"`
-	NetworkName       string `xml:",chardata"`
-}
-
-// HostResource info from ResourceType=17 (Hard Disk)
-type VirtualHardwareHostResource struct {
-	BusType           int    `xml:"busType,attr,omitempty"`
-	BusSubType        string `xml:"busSubType,attr,omitempty"`
-	Capacity          int    `xml:"capacity,attr,omitempty"`
-	StorageProfile    string `xml:"storageProfileHref,attr,omitempty"`
-	OverrideVmDefault bool   `xml:"storageProfileOverrideVmDefault,attr,omitempty"`
-}
-
-// SnapshotSection from VM struct
-type SnapshotSection struct {
-	// Extends OVF Section_Type
-	XMLName  xml.Name        `xml:"SnapshotSection"`
-	Info     string          `xml:"Info"`
-	HREF     string          `xml:"href,attr,omitempty"`
-	Type     string          `xml:"type,attr,omitempty"`
-	Snapshot []*SnapshotItem `xml:"Snapshot,omitempty"`
-}
-
-// Each snapshot listed in the SnapshotSection
-type SnapshotItem struct {
-	Created   string `xml:"created,attr,omitempty"`
-	PoweredOn bool   `xml:"poweredOn,attr,omitempty"`
-	Size      int    `xml:"size,attr,omitempty"`
-}
-
-// OVFItem is a horrible kludge to process OVF, needs to be fixed with proper types.
+// Horrible kludge to process OVF, needs to be fixed with proper types.
 type OVFItem struct {
 	XMLName         xml.Name `xml:"vcloud:Item"`
 	XmlnsRasd       string   `xml:"xmlns:rasd,attr"`
@@ -978,7 +842,6 @@ type OVFItem struct {
 	Link            *Link    `xml:"vcloud:Link"`
 }
 
-// DeployVAppParams are the parameters to a deploy vApp request
 // Type: DeployVAppParamsType
 // Namespace: http://www.vmware.com/vcloud/v1.5
 // Description: Parameters to a deploy vApp request.
@@ -992,7 +855,6 @@ type DeployVAppParams struct {
 	ForceCustomization     bool `xml:"forceCustomization,attr,omitempty"`     // Used to specify whether to force customization on deployment, if not set default value is false
 }
 
-// GuestCustomizationSection represents guest customization settings
 // Type: GuestCustomizationSectionType
 // Namespace: http://www.vmware.com/vcloud/v1.5
 // Description: Represents a guest customization settings.
@@ -1026,10 +888,9 @@ type GuestCustomizationSection struct {
 	ResetPasswordRequired bool    `xml:"ResetPasswordRequired,omitempty"` // True if the administrator password for this virtual machine must be reset after first use.
 	CustomizationScript   string  `xml:"CustomizationScript,omitempty"`   // Script to run on guest customization. The entire script must appear in this element. Use the XML entity &#13; to represent a newline. Unicode characters can be represented in the form &#xxxx; where xxxx is the character number.
 	ComputerName          string  `xml:"ComputerName,omitempty"`          // Computer name to assign to this virtual machine.
-	Link                  LinkList `xml:"Link,omitempty"`                  // A link to an operation on this section.
+	Link                  []*Link `xml:"Link,omitempty"`                  // A link to an operation on this section.
 }
 
-// InstantiateVAppTemplateParams represents vApp template instantiation parameters.
 // Type: InstantiateVAppTemplateParamsType
 // Namespace: http://www.vmware.com/vcloud/v1.5
 // Description: Represents vApp template instantiation parameters.
@@ -1037,7 +898,7 @@ type GuestCustomizationSection struct {
 type InstantiateVAppTemplateParams struct {
 	XMLName xml.Name `xml:"InstantiateVAppTemplateParams"`
 	Ovf     string   `xml:"xmlns:ovf,attr"`
-	Xsi     string   `xml:"xmlns:xsi,attr,omitempty"`
+	Xsi     string   `xml:"xmlns:xsi,attr"`
 	Xmlns   string   `xml:"xmlns,attr"`
 	// Attributes
 	Name        string `xml:"name,attr,omitempty"`        // Typically used to name or identify the subject of the request. For example, the name of the object being created or modified.
@@ -1054,7 +915,6 @@ type InstantiateVAppTemplateParams struct {
 	AllEULAsAccepted    bool                         `xml:"AllEULAsAccepted,omitempty"`    // True confirms acceptance of all EULAs in a vApp template. Instantiation fails if this element is missing, empty, or set to false and one or more EulaSection elements are present.
 }
 
-// EdgeGateway represents a gateway.
 // Element: EdgeGateway
 // Type: GatewayType
 // Namespace: http://www.vmware.com/vcloud/v1.5
@@ -1069,13 +929,12 @@ type EdgeGateway struct {
 	Name         string `xml:"name,attr"`                   // The name of the entity.
 	Status       int    `xml:"status,attr,omitempty"`       // Creation status of the gateway. One of: 0 (The gateway is still being created) 1 (The gateway is ready) -1 (There was an error while creating the gateway).
 	// Elements
-	Link          LinkList               `xml:"Link,omitempty"`        // A link to an operation on this section.
+	Link          []*Link               `xml:"Link,omitempty"`        // A link to an operation on this section.
 	Description   string                `xml:"Description,omitempty"` // Optional description.
 	Tasks         *TasksInProgress      `xml:"Tasks,omitempty"`       //	A list of queued, running, or recently completed tasks associated with this entity.
 	Configuration *GatewayConfiguration `xml:"Configuration"`         // Gateway configuration.
 }
 
-// GatewayConfiguration is the gateway configuration
 // Type: GatewayConfigurationType
 // Namespace: http://www.vmware.com/vcloud/v1.5
 // Description: Gateway Configuration.
@@ -1091,7 +950,6 @@ type GatewayConfiguration struct {
 	UseDefaultRouteForDNSRelay      bool               `xml:"UseDefaultRouteForDnsRelay,omitempty"`      // True if the default gateway on the external network selected for default route should be used as the DNS relay.
 }
 
-// GatewayInterfaces is a list of Gateway Interfaces.
 // Type: GatewayInterfacesType
 // Namespace: http://www.vmware.com/vcloud/v1.5
 // Description: A list of Gateway Interfaces.
@@ -1100,7 +958,6 @@ type GatewayInterfaces struct {
 	GatewayInterface []*GatewayInterface `xml:"GatewayInterface"` // Gateway Interface.
 }
 
-// GatewayInterface is a gateway interface configuration.
 // Type: GatewayInterfaceType
 // Namespace: http://www.vmware.com/vcloud/v1.5
 // Description: Gateway Interface configuration.
@@ -1117,7 +974,6 @@ type GatewayInterface struct {
 	UseForDefaultRoute  bool                 `xml:"UseForDefaultRoute,omitempty"`  // True if this network is default route for the gateway.
 }
 
-// SubnetParticipation allows to chose which subnets a gateway can be a part of
 // Type: SubnetParticipationType
 // Namespace: http://www.vmware.com/vcloud/v1.5
 // Description: Allows to chose which subnets a gateway can be part of
@@ -1129,15 +985,6 @@ type SubnetParticipation struct {
 	Netmask   string    `xml:"Netmask"`             // Nestmask for the subnet
 }
 
-type EdgeGatewayServiceConfiguration struct {
-	XMLName            xml.Name            `xml:"EdgeGatewayServiceConfiguration"`
-	Xmlns              string              `xml:"xmlns,attr,omitempty"`
-	GatewayDhcpService *GatewayDhcpService `xml:"GatewayDhcpService,omitempty"`
-	FirewallService    *FirewallService    `xml:"FirewallService,omitempty"`
-	NatService         *NatService         `xml:"NatService,omitempty"`
-}
-
-// GatewayFeatures represents edge gateway services.
 // Element: EdgeGatewayServiceConfiguration
 // Type: GatewayFeaturesType
 // Namespace: http://www.vmware.com/vcloud/v1.5
@@ -1154,7 +1001,6 @@ type GatewayFeatures struct {
 	StaticRoutingService   *StaticRoutingService   `xml:"StaticRoutingService,omitempty"`   // Substitute for NetworkService. Static Routing service settings
 }
 
-// StaticRoutingService represents Static Routing network service.
 // Type: StaticRoutingServiceType
 // Namespace: http://www.vmware.com/vcloud/v1.5
 // Description: Represents Static Routing network service.
@@ -1164,7 +1010,6 @@ type StaticRoutingService struct {
 	StaticRoute *StaticRoute `xml:"StaticRoute,omitempty"` // Details of each Static Route.
 }
 
-// StaticRoute represents a static route entry
 // Type: StaticRouteType
 // Namespace: http://www.vmware.com/vcloud/v1.5
 // Description:
@@ -1172,12 +1017,11 @@ type StaticRoutingService struct {
 type StaticRoute struct {
 	Name             string     `xml:"Name"`                       // Name for the static route.
 	Network          string     `xml:"Network"`                    // Network specification in CIDR.
-	NextHopIP        string     `xml:"NextHopIp"`                  // IP Address of Next Hop router/gateway.
+	NextHopIp        string     `xml:"NextHopIp"`                  // IP Address of Next Hop router/gateway.
 	Interface        string     `xml:"Interface,omitempty"`        // Interface to use for static routing. Internal and External are the supported values.
 	GatewayInterface *Reference `xml:"GatewayInterface,omitempty"` // Gateway interface to which static route is bound.
 }
 
-// LoadBalancerService represents gateway load balancer service.
 // Type: LoadBalancerServiceType
 // Namespace: http://www.vmware.com/vcloud/v1.5
 // Description: Represents gateway load balancer service.
@@ -1188,7 +1032,6 @@ type LoadBalancerService struct {
 	VirtualServer *LoadBalancerVirtualServer `xml:"VirtualServer,omitempty"` // List of load balancer virtual servers.
 }
 
-// LoadBalancerPool represents a load balancer pool.
 // Type: LoadBalancerPoolType
 // Namespace: http://www.vmware.com/vcloud/v1.5
 // Description: Represents a load balancer pool.
@@ -1203,7 +1046,6 @@ type LoadBalancerPool struct {
 	ErrorDetails string             `xml:"ErrorDetails,omitempty"` // Error details for this pool.
 }
 
-// LBPoolServicePort represents a service port in a load balancer pool.
 // Type: LBPoolServicePortType
 // Namespace: http://www.vmware.com/vcloud/v1.5
 // Description: Represents a service port in a load balancer pool.
@@ -1217,21 +1059,19 @@ type LBPoolServicePort struct {
 	HealthCheck     *LBPoolHealthCheck `xml:"HealthCheck,omitempty"`     // Health check list.
 }
 
-// LBPoolHealthCheck represents a service port health check list.
 // Type: LBPoolHealthCheckType
 // Namespace: http://www.vmware.com/vcloud/v1.5
 // Description: Represents a service port health check list.
 // Since: 5.1
 type LBPoolHealthCheck struct {
 	Mode              string `xml:"Mode"`                        // Load balancer service port health check mode. One of: TCP, HTTP, SSL.
-	URI               string `xml:"Uri,omitempty"`               // Load balancer service port health check URI.
+	Uri               string `xml:"Uri,omitempty"`               // Load balancer service port health check URI.
 	HealthThreshold   string `xml:"HealthThreshold,omitempty"`   // Health threshold for this service port.
 	UnhealthThreshold string `xml:"UnhealthThreshold,omitempty"` // Unhealth check port for this profile.
 	Interval          string `xml:"Interval,omitempty"`          // Interval between health checks.
 	Timeout           string `xml:"Timeout,omitempty"`           // Health check timeout.
 }
 
-// LBPoolMember represents a member in a load balancer pool.
 // Type: LBPoolMemberType
 // Namespace: http://www.vmware.com/vcloud/v1.5
 // Description: Represents a member in a load balancer pool.
@@ -1242,7 +1082,6 @@ type LBPoolMember struct {
 	ServicePort *LBPoolServicePort `xml:"ServicePort,omitempty"` // Load balancer member service port.
 }
 
-// LoadBalancerVirtualServer represents a load balancer virtual server.
 // Type: LoadBalancerVirtualServerType
 // Namespace: http://www.vmware.com/vcloud/v1.5
 // Description: Represents a load balancer virtual server.
@@ -1259,7 +1098,6 @@ type LoadBalancerVirtualServer struct {
 	LoadBalancerTemplates *VendorTemplate                `xml:"LoadBalancerTemplates,omitempty"` // Service template related attributes.
 }
 
-// LBVirtualServerServiceProfile represents service profile for a load balancing virtual server.
 // Type: LBVirtualServerServiceProfileType
 // Namespace: http://www.vmware.com/vcloud/v1.5
 // Description: Represents service profile for a load balancing virtual server.
@@ -1271,7 +1109,6 @@ type LBVirtualServerServiceProfile struct {
 	Persistence *LBPersistence `xml:"Persistence,omitempty"` // Persistence type for service profile.
 }
 
-// LBPersistence represents persistence type for a load balancer service profile.
 // Type: LBPersistenceType
 // Namespace: http://www.vmware.com/vcloud/v1.5
 // Description: Represents persistence type for a load balancer service profile.
@@ -1282,7 +1119,6 @@ type LBPersistence struct {
 	CookieMode string `xml:"CookieMode,omitempty"` // Cookie Mode. One of: INSERT, PREFIX, APP.
 }
 
-// VendorTemplate is information about a vendor service template. This is optional.
 // Type: VendorTemplateType
 // Namespace: http://www.vmware.com/vcloud/v1.5
 // Description: Information about a vendor service template. This is optional.
@@ -1292,7 +1128,6 @@ type VendorTemplate struct {
 	ID   string `xml:"Id"`   // ID of the vendor template. This is required.
 }
 
-// GatewayIpsecVpnService represents gateway IPsec VPN service.
 // Type: GatewayIpsecVpnServiceType
 // Namespace: http://www.vmware.com/vcloud/v1.5
 // Description: Represents gateway IPsec VPN service.
@@ -1303,7 +1138,6 @@ type GatewayIpsecVpnService struct {
 	Tunnel    []*GatewayIpsecVpnTunnel `xml:"Tunnel"`             // List of IPSec VPN tunnels.
 }
 
-// GatewayIpsecVpnEndpoint represents an IPSec VPN endpoint.
 // Type: GatewayIpsecVpnEndpointType
 // Namespace: http://www.vmware.com/vcloud/v1.5
 // Description: Represents an IPSec VPN endpoint.
@@ -1313,7 +1147,6 @@ type GatewayIpsecVpnEndpoint struct {
 	PublicIP string     `xml:"PublicIp,omitempty"` // Public IP for IPSec endpoint.
 }
 
-// GatewayIpsecVpnTunnel represents an IPSec VPN tunnel.
 // Type: GatewayIpsecVpnTunnelType
 // Namespace: http://www.vmware.com/vcloud/v1.5
 // Description: Represents an IPSec VPN tunnel.
@@ -1338,12 +1171,10 @@ type GatewayIpsecVpnTunnel struct {
 	ErrorDetails           string                  `xml:"ErrorDetails,omitempty"`           // Error details of the tunnel.
 }
 
-// IpsecVpnThirdPartyPeer represents details about a peer network
 type IpsecVpnThirdPartyPeer struct {
 	PeerID string `xml:"PeerId,omitempty"` // Id for the peer end point
 }
 
-// IpsecVpnSubnet represents subnet details.
 // Type: IpsecVpnSubnetType
 // Namespace: http://www.vmware.com/vcloud/v1.5
 // Description: Represents subnet details.
@@ -1354,17 +1185,15 @@ type IpsecVpnSubnet struct {
 	Netmask string `xml:"Netmask"` // Subnet Netmask.
 }
 
-// GatewayDhcpService represents Gateway DHCP service.
 // Type: GatewayDhcpServiceType
 // Namespace: http://www.vmware.com/vcloud/v1.5
 // Description: Represents Gateway DHCP service.
 // Since: 5.1
 type GatewayDhcpService struct {
-	IsEnabled bool               `xml:"IsEnabled,omitempty"` // Enable or disable the service using this flag
-	Pool      []*DhcpPoolService `xml:"Pool,omitempty"`      // A DHCP pool.
+	IsEnabled bool             `xml:"IsEnabled,omitempty"` // Enable or disable the service using this flag
+	Pool      *DhcpPoolService `xml:"Pool,omitempty"`      // A DHCP pool.
 }
 
-// DhcpPoolService represents DHCP pool service.
 // Type: DhcpPoolServiceType
 // Namespace: http://www.vmware.com/vcloud/v1.5
 // Description: Represents DHCP pool service.
@@ -1378,7 +1207,6 @@ type DhcpPoolService struct {
 	HighIPAddress    string     `xml:"HighIpAddress"`              // High IP address in DHCP range.
 }
 
-// VMSelection represents details of an vm+nic+iptype selection.
 // Type: VmSelectionType
 // Namespace: http://www.vmware.com/vcloud/v1.5
 // Description: Represents details of an vm+nic+iptype selection.
@@ -1389,21 +1217,19 @@ type VMSelection struct {
 	IPType         string `xml:"IpType"`         // The value can be one of:- assigned: assigned internal IP be automatically choosen. NAT: NATed external IP will be automatically choosen.
 }
 
-// FirewallRuleProtocols flags for a network protocol in a firewall rule
 // Type: FirewallRuleType/Protocols
 // Namespace: http://www.vmware.com/vcloud/v1.5
 // Description:
 // Since:
 type FirewallRuleProtocols struct {
-	ICMP bool `xml:"Icmp,omitempty"` // True if the rule applies to the ICMP protocol.
+	Icmp bool `xml:"Icmp,omitempty"` // True if the rule applies to the ICMP protocol.
 	Any  bool `xml:"Any,omitempty"`  // True if the rule applies to any protocol.
-	TCP  bool `xml:"Tcp,omitempty"`  // True if the rule applies to the TCP protocol.
-	UDP  bool `xml:"Udp,omitempty"`  // True if the rule applies to the UDP protocol.
+	Tcp  bool `xml:"Tcp,omitempty"`  // True if the rule applies to the TCP protocol.
+	Udp  bool `xml:"Udp,omitempty"`  // True if the rule applies to the UDP protocol.
 	// FIXME: this is supposed to extend protocol support to all the VSM supported protocols
 	// Other string `xml:"Other,omitempty"` //	Any other protocol supported by vShield Manager
 }
 
-// FirewallRule represents a firewall rule
 // Type: FirewallRuleType
 // Namespace: http://www.vmware.com/vcloud/v1.5
 // Description: Represents a firewall rule.
@@ -1428,7 +1254,6 @@ type FirewallRule struct {
 	EnableLogging        bool                   `xml:"EnableLogging"`                  // Used to enable or disable firewall rule logging. Default value is false.
 }
 
-// FirewallService represent a network firewall service.
 // Type: FirewallServiceType
 // Namespace: http://www.vmware.com/vcloud/v1.5
 // Description: Represents a network firewall service.
@@ -1440,7 +1265,6 @@ type FirewallService struct {
 	FirewallRule     []*FirewallRule `xml:"FirewallRule,omitempty"`  //	A firewall rule.
 }
 
-// NatService represents a NAT network service.
 // Type: NatServiceType
 // Namespace: http://www.vmware.com/vcloud/v1.5
 // Description: Represents a NAT network service.
@@ -1455,7 +1279,6 @@ type NatService struct {
 	ExternalIP string     `xml:"ExternalIp,omitempty"` // External IP address for rule.
 }
 
-// NatRule represents a NAT rule.
 // Type: NatRuleType
 // Namespace: http://www.vmware.com/vcloud/v1.5
 // Description: Represents a NAT rule.
@@ -1474,8 +1297,7 @@ type NatRule struct {
 	VMRule             *NatVMRule             `xml:"VmRule,omitempty"`             // Port forwarding VM NIC to external IP addresses.
 }
 
-// GatewayNatRule represents the SNAT and DNAT rules.
-// Type: GatewayNatRuleType represents the SNAT and DNAT rules.
+// Type: GatewayNatRuleType
 // Namespace: http://www.vmware.com/vcloud/v1.5
 // Description: Represents the SNAT and DNAT rules.
 // Since: 5.1
@@ -1491,7 +1313,6 @@ type GatewayNatRule struct {
 	IcmpSubType    string     `xml:"IcmpSubType,omitempty"`    // ICMP subtype. One of: address-mask-request, address-mask-reply, destination-unreachable, echo-request, echo-reply, parameter-problem, redirect, router-advertisement, router-solicitation, source-quench, time-exceeded, timestamp-request, timestamp-reply, any.
 }
 
-// NatOneToOneBasicRule represents the NAT basic rule for one to one mapping of internal and external IP addresses from a network.
 // Type: NatOneToOneBasicRuleType
 // Namespace: http://www.vmware.com/vcloud/v1.5
 // Description: Represents the NAT basic rule for one to one mapping of internal and external IP addresses from a network.
@@ -1504,7 +1325,6 @@ type NatOneToOneBasicRule struct {
 	InternalIPAddress string `xml:"InternalIpAddress"` // Internal IP address to map.
 }
 
-// NatOneToOneVMRule represents the NAT rule for one to one mapping of VM NIC and external IP addresses from a network.
 // Type: NatOneToOneVmRuleType
 // Namespace: http://www.vmware.com/vcloud/v1.5
 // Description: Represents the NAT rule for one to one mapping of VM NIC and external IP addresses from a network.
@@ -1518,7 +1338,6 @@ type NatOneToOneVMRule struct {
 	VMNicID           int    `xml:"VmNicId"`           // VM NIC ID to which this rule applies.
 }
 
-// NatPortForwardingRule represents the NAT rule for port forwarding between internal IP/port and external IP/port.
 // Type: NatPortForwardingRuleType
 // Namespace: http://www.vmware.com/vcloud/v1.5
 // Description: Represents the NAT rule for port forwarding between internal IP/port and external IP/port.
@@ -1531,7 +1350,6 @@ type NatPortForwardingRule struct {
 	Protocol          string `xml:"Protocol,omitempty"` // Protocol to forward. One of: TCP (forward TCP packets), UDP (forward UDP packets), TCP_UDP (forward TCP and UDP packets).
 }
 
-// NatVMRule represents the NAT rule for port forwarding between VM NIC/port and external IP/port.
 // Type: NatVmRuleType
 // Namespace: http://www.vmware.com/vcloud/v1.5
 // Description: Represents the NAT rule for port forwarding between VM NIC/port and external IP/port.
@@ -1545,7 +1363,6 @@ type NatVMRule struct {
 	Protocol          string `xml:"Protocol,omitempty"`          // Protocol to forward. One of: TCP (forward TCP packets), UDP (forward UDP packets), TCP_UDP (forward TCP and UDP packets).
 }
 
-// QueryResultEdgeGatewayRecordsType is a container for query results in records format.
 // Type: QueryResultRecordsType
 // Namespace: http://www.vmware.com/vcloud/v1.5
 // Description: Container for query results in records format.
@@ -1559,27 +1376,10 @@ type QueryResultEdgeGatewayRecordsType struct {
 	PageSize int     `xml:"pageSize,attr,omitempty"` // Page size, as a number of records or references.
 	Total    float64 `xml:"total,attr,omitempty"`    // Total number of records or references in the container.
 	// Elements
-	Link              LinkList                           `xml:"Link,omitempty"`    // A reference to an entity or operation associated with this object.
+	Link              []*Link                           `xml:"Link,omitempty"`    // A reference to an entity or operation associated with this object.
 	EdgeGatewayRecord *QueryResultEdgeGatewayRecordType `xml:"EdgeGatewayRecord"` // A record representing a query result.
 }
 
-type QueryResultRecordsType struct {
-	// Attributes
-	HREF     string  `xml:"href,attr,omitempty"`     // The URI of the entity.
-	Type     string  `xml:"type,attr,omitempty"`     // The MIME type of the entity.
-	Name     string  `xml:"name,attr,omitempty"`     // The name of the entity.
-	Page     int     `xml:"page,attr,omitempty"`     // Page of the result set that this container holds. The first page is page number 1.
-	PageSize int     `xml:"pageSize,attr,omitempty"` // Page size, as a number of records or references.
-	Total    float64 `xml:"total,attr,omitempty"`    // Total number of records or references in the container.
-	// Elements
-	Link                       []*Link                                      `xml:"Link,omitempty"`             // A reference to an entity or operation associated with this object.
-	EdgeGatewayRecord          *QueryResultEdgeGatewayRecordType            `xml:"EdgeGatewayRecord"`          // A record representing a query result.
-	VMRecord                   []*QueryResultVMRecordType                   `xml:"VMRecord"`                   // A record representing a VM result.
-	VAppRecord                 []*QueryResultVAppRecordType                 `xml:"VAppRecord"`                 // A record representing a VApp result.
-	OrgVdcStorageProfileRecord []*QueryResultOrgVdcStorageProfileRecordType `xml:"OrgVdcStorageProfileRecord"` // A record representing storage profiles
-}
-
-// QueryResultEdgeGatewayRecordType represents an edge gateway record as query result.
 type QueryResultEdgeGatewayRecordType struct {
 	// Attributes
 	HREF                string `xml:"href,attr,omitempty"`                // The URI of the entity.
@@ -1591,84 +1391,4 @@ type QueryResultEdgeGatewayRecordType struct {
 	IsBusy              bool   `xml:"isBusy,attr"`                        // True if this Edge Gateway is busy.	Yes	Yes
 	GatewayStatus       string `xml:"gatewayStatus,attr,omitempty"`       //
 	HaStatus            string `xml:"haStatus,attr,omitempty"`            // High Availability Status of the edgeGateway	Yes	Yes
-}
-
-// QueryResultVMRecordType represents a VM record as query result.
-type QueryResultVMRecordType struct {
-	// Attributes
-	HREF                    string `xml:"href,attr,omitempty"`       // The URI of the entity.
-	Name                    string `xml:"name,attr,omitempty"`       // VM name.
-	Deployed                bool   `xml:"isDeployed,attr,omitempty"` // True if the virtual machine is deployed.
-	Status                  string `xml:"status,attr,omitempty"`
-	Busy                    bool   `xml:"isBusy,attr,omitempty"`
-	Deleted                 bool   `xml:"isDeleted,attr,omitempty"`
-	MaintenanceMode         bool   `xml:"isInMaintenanceMode,attr,omitempty"`
-	Published               bool   `xml:"isPublished,attr,omitempty"`
-	VAppTemplate            bool   `xml:"isVAppTemplate,attr,omitempty"`
-	VdcEnabled              bool   `xml:"isVdcEnabled,attr,omitempty"`
-	VdcHREF                 string `xml:"vdc,attr,omitempty"`
-	VAppParentHREF          string `xml:"container,attr,omitempty"`
-	VAppParentName          string `xml:"containerName,attr,omitempty"`
-	HardwareVersion         int    `xml:"hardwareVersion,attr,omitempty"`
-	HighestSupportedVersion int    `xml:"pvdcHighestSupportedHardwareVersion,attr,omitempty"`
-	VmToolsVersion          string `xml:"vmToolsVersion,attr,omitempty"`
-	GuestOS                 string `xml:"guestOs,attr,omitempty"`
-	MemoryMB                int    `xml:"memoryMB,attr,omitempty"`
-	Cpus                    int    `xml:"numberOfCpus,attr,omitempty"`
-	StorageProfileName      string `xml:"storageProfileName,attr,omitempty"`
-	NetworkName             string `xml:"networkName,attr,omitempty"`
-	TaskHREF                string `xml:"task,attr,omitempty"`
-	TaskStatusName          string `xml:"taskStatusName,attr,omitempty"`
-	TaskDetails             string `xml:"taskDetails,attr,omitempty"`
-	TaskStatus              string `xml:"TaskStatus,attr,omitempty"`
-}
-
-// QueryResultVAppRecordType represents a VM record as query result.
-type QueryResultVAppRecordType struct {
-	// Attributes
-	HREF                    string `xml:"href,attr,omitempty"`         // The URI of the entity.
-	Name                    string `xml:"name,attr"`                   // The name of the entity.
-	CreationDate            string `xml:"creationDate,attr,omitempty"` // Creation date/time of the vApp.
-	Busy                    bool   `xml:"isBusy,attr,omitempty"`
-	Deployed                bool   `xml:"isDeployed,attr,omitempty"` // True if the vApp is deployed.
-	Enabled                 bool   `xml:"isEnabled,attr,omitempty"`
-	Expired                 bool   `xml:"isExpired,attr,omitempty"`
-	MaintenanceMode         bool   `xml:"isInMaintenanceMode,attr,omitempty"`
-	Public                  bool   `xml:"isPublic,attr,omitempty"`
-	OwnerName               string `xml:"ownerName,attr,omitempty"`
-	Status                  string `xml:"status,attr,omitempty"`
-	VdcHREF                 string `xml:"vdc,attr,omitempty"`
-	VdcName                 string `xml:"vdcName,attr,omitempty"`
-	NumberOfVMs             int    `xml:"numberOfVMs,attr,omitempty"`
-	NumberOfCPUs            int    `xml:"numberOfCpus,attr,omitempty"`
-	CpuAllocationMhz        int    `xml:"cpuAllocationMhz,attr,omitempty"`
-	CpuAllocationInMhz      int    `xml:"cpuAllocationInMhz,attr,omitempty"`
-	StorageKB               int    `xml:"storageKB,attr,omitempty"`
-	MemoryAllocationMB      int    `xml:"memoryAllocationMB,attr,omitempty"`
-	AutoDeleteNotified      bool   `xml:"isAutoDeleteNotified,attr,omitempty"`
-	AutoUndeployNotified    bool   `xml:"isAutoUndeployNotified,attr,omitempty"`
-	VdcEnabled              bool   `xml:"isVdcEnabled, attr,omitempty"`
-	HonorBootOrder          bool   `xml:"honorBookOrder,attr,omitempty"`
-	HighestSupportedVersion int    `xml:"pvdcHighestSupportedHardwareVersion,attr,omitempty"`
-	LowestHardwareVersion   int    `xml:"lowestHardwareVersionInVApp,attr,omitempty"`
-	TaskHREF                string `xml:"task,attr,omitempty"`
-	TaskStatusName          string `xml:"taskStatusName,attr,omitempty"`
-	TaskStatus              string `xml:"TaskStatus,attr,omitempty"`
-	TaskDetails             string `xml:"taskDetails,attr,omitempty"`
-}
-
-// QueryResultOrgVdcStorageProfileRecordType represents a storage
-// profile as query result.
-type QueryResultOrgVdcStorageProfileRecordType struct {
-	// Attributes
-	HREF                    string `xml:"href,attr,omitempty"` // The URI of the entity.
-	Name                    string `xml:"name,attr,omitempty"` // Storage Profile name.
-	VdcHREF                 string `xml:"vdc,attr,omitempty"`
-	VdcName                 string `xml:"vdcName,attr,omitempty"`
-	IsDefaultStorageProfile bool   `xml:"isDefaultStorageProfile,attr,omitempty"`
-	IsEnabled               bool   `xml:"isEnabled,attr,omitempty"`
-	IsVdcBusy               bool   `xml:"isVdcBusy,attr,omitempty"`
-	NumberOfConditions      int    `xml:"numberOfConditions,attr,omitempty"`
-	StorageUsedMB           int    `xml:"storageUsedMB,attr,omitempty"`
-	StorageLimitMB          int    `xml:"storageLimitMB,attr,omitempty"`
 }

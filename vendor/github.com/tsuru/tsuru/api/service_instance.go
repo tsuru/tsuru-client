@@ -10,6 +10,7 @@ import (
 	"fmt"
 	"io"
 	"net/http"
+	"sort"
 	"strconv"
 	"strings"
 	"time"
@@ -23,11 +24,6 @@ import (
 	tsuruIo "github.com/tsuru/tsuru/io"
 	"github.com/tsuru/tsuru/permission"
 	"github.com/tsuru/tsuru/service"
-)
-
-const (
-	httpMethodGet  = "GET"
-	httpMethodHead = "HEAD"
 )
 
 func serviceInstanceTarget(name, instance string) event.Target {
@@ -344,7 +340,8 @@ func serviceInstances(w http.ResponseWriter, r *http.Request, t auth.Token) erro
 		entry.Plans = append(entry.Plans, instance.PlanName)
 	}
 	result := []service.ServiceModel{}
-	for _, entry := range servicesMap {
+	for _, name := range sortedServiceNames(servicesMap) {
+		entry := servicesMap[name]
 		result = append(result, *entry)
 	}
 	if len(result) == 0 {
@@ -572,7 +569,7 @@ func serviceInstanceProxy(w http.ResponseWriter, r *http.Request, t auth.Token) 
 		return permission.ErrUnauthorized
 	}
 	path := r.URL.Query().Get("callback")
-	if r.Method != httpMethodGet && r.Method != httpMethodHead {
+	if r.Method != http.MethodGet && r.Method != http.MethodHead {
 		evt, err := event.New(&event.Opts{
 			Target: serviceInstanceTarget(serviceName, instanceName),
 			Kind:   permission.PermServiceInstanceUpdateProxy,
@@ -678,4 +675,15 @@ func contextsForService(s *service.Service) []permission.PermissionContext {
 	return append(permission.Contexts(permission.CtxTeam, s.Teams),
 		permission.Context(permission.CtxService, s.Name),
 	)
+}
+
+func sortedServiceNames(services map[string]*service.ServiceModel) []string {
+	serviceNames := make([]string, len(services))
+	i := 0
+	for s := range services {
+		serviceNames[i] = s
+		i++
+	}
+	sort.Strings(serviceNames)
+	return serviceNames
 }

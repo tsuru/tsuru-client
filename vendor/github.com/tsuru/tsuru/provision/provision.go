@@ -17,7 +17,6 @@ import (
 	"github.com/pkg/errors"
 	"github.com/tsuru/tsuru/app/bind"
 	"github.com/tsuru/tsuru/event"
-	"github.com/tsuru/tsuru/quota"
 	"github.com/tsuru/tsuru/router"
 )
 
@@ -202,22 +201,12 @@ type App interface {
 	BindUnit(*Unit) error
 	UnbindUnit(*Unit) error
 
-	// Log should be used to log messages in the app.
-	Log(message, source, unit string) error
-
 	// GetPlatform returns the platform (type) of the app. It is equivalent
 	// to the Unit `Type` field.
 	GetPlatform() string
 
 	// GetDeploy returns the deploys that an app has.
 	GetDeploys() uint
-
-	Units() ([]Unit, error)
-
-	// Run executes the command in app units. Commands executed with this
-	// method should have access to environment variables defined in the
-	// app.
-	Run(cmd string, w io.Writer, args RunArgs) error
 
 	Envs() map[string]bind.EnvVar
 
@@ -232,20 +221,7 @@ type App interface {
 
 	GetPool() string
 
-	GetTeamOwner() string
-
-	GetTeamsName() []string
-
-	GetQuota() quota.Quota
 	SetQuotaInUse(int) error
-
-	GetCname() []string
-
-	GetIp() string
-
-	GetLock() AppLock
-
-	GetRouterOpts() map[string]string
 }
 
 type AppLock interface {
@@ -347,13 +323,6 @@ type Provisioner interface {
 
 	// Register a unit after the container has been created or restarted.
 	RegisterUnit(App, string, map[string]interface{}) error
-}
-
-// MetricsProvisioner is a provisioner that exposes environment variables
-// related to metrics.
-type MetricsProvisioner interface {
-	// Returns the metric backend environs for the app.
-	MetricEnvs(App) map[string]string
 }
 
 // ShellProvisioner is a provisioner that allows opening a shell to existing

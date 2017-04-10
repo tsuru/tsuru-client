@@ -98,7 +98,7 @@ func (p *CreateAffinityGroupParams) SetType(v string) {
 	if p.p == nil {
 		p.p = make(map[string]interface{})
 	}
-	p.p["type"] = v
+	p.p["affinityGroupType"] = v
 	return
 }
 
@@ -108,7 +108,7 @@ func (s *AffinityGroupService) NewCreateAffinityGroupParams(name string, affinit
 	p := &CreateAffinityGroupParams{}
 	p.p = make(map[string]interface{})
 	p.p["name"] = name
-	p.p["type"] = affinityGroupType
+	p.p["affinityGroupType"] = affinityGroupType
 	return p
 }
 
@@ -406,7 +406,7 @@ func (p *ListAffinityGroupsParams) SetType(v string) {
 	if p.p == nil {
 		p.p = make(map[string]interface{})
 	}
-	p.p["type"] = v
+	p.p["affinityGroupType"] = v
 	return
 }
 
@@ -427,7 +427,7 @@ func (s *AffinityGroupService) NewListAffinityGroupsParams() *ListAffinityGroups
 }
 
 // This is a courtesy helper function, which in some cases may not work as expected!
-func (s *AffinityGroupService) GetAffinityGroupID(name string, opts ...OptionFunc) (string, int, error) {
+func (s *AffinityGroupService) GetAffinityGroupID(name string, opts ...OptionFunc) (string, error) {
 	p := &ListAffinityGroupsParams{}
 	p.p = make(map[string]interface{})
 
@@ -435,42 +435,38 @@ func (s *AffinityGroupService) GetAffinityGroupID(name string, opts ...OptionFun
 
 	for _, fn := range opts {
 		if err := fn(s.cs, p); err != nil {
-			return "", -1, err
+			return "", err
 		}
 	}
 
 	l, err := s.ListAffinityGroups(p)
 	if err != nil {
-		return "", -1, err
+		return "", err
 	}
 
-	// This is needed because of a bug with the listAffinityGroup call. It reports the
-	// number of VirtualMachines in the groups as being the number of groups found.
-	l.Count = len(l.AffinityGroups)
-
 	if l.Count == 0 {
-		return "", l.Count, fmt.Errorf("No match found for %s: %+v", name, l)
+		return "", fmt.Errorf("No match found for %s: %+v", name, l)
 	}
 
 	if l.Count == 1 {
-		return l.AffinityGroups[0].Id, l.Count, nil
+		return l.AffinityGroups[0].Id, nil
 	}
 
 	if l.Count > 1 {
 		for _, v := range l.AffinityGroups {
 			if v.Name == name {
-				return v.Id, l.Count, nil
+				return v.Id, nil
 			}
 		}
 	}
-	return "", l.Count, fmt.Errorf("Could not find an exact match for %s: %+v", name, l)
+	return "", fmt.Errorf("Could not find an exact match for %s: %+v", name, l)
 }
 
 // This is a courtesy helper function, which in some cases may not work as expected!
 func (s *AffinityGroupService) GetAffinityGroupByName(name string, opts ...OptionFunc) (*AffinityGroup, int, error) {
-	id, count, err := s.GetAffinityGroupID(name, opts...)
+	id, err := s.GetAffinityGroupID(name, opts...)
 	if err != nil {
-		return nil, count, err
+		return nil, -1, err
 	}
 
 	r, count, err := s.GetAffinityGroupByID(id, opts...)
@@ -502,10 +498,6 @@ func (s *AffinityGroupService) GetAffinityGroupByID(id string, opts ...OptionFun
 		}
 		return nil, -1, err
 	}
-
-	// This is needed because of a bug with the listAffinityGroup call. It reports the
-	// number of VirtualMachines in the groups as being the number of groups found.
-	l.Count = len(l.AffinityGroups)
 
 	if l.Count == 0 {
 		return nil, l.Count, fmt.Errorf("No match found for %s: %+v", id, l)

@@ -572,7 +572,7 @@ func (s *SystemVMService) NewListSystemVmsParams() *ListSystemVmsParams {
 }
 
 // This is a courtesy helper function, which in some cases may not work as expected!
-func (s *SystemVMService) GetSystemVmID(name string, opts ...OptionFunc) (string, int, error) {
+func (s *SystemVMService) GetSystemVmID(name string, opts ...OptionFunc) (string, error) {
 	p := &ListSystemVmsParams{}
 	p.p = make(map[string]interface{})
 
@@ -580,38 +580,38 @@ func (s *SystemVMService) GetSystemVmID(name string, opts ...OptionFunc) (string
 
 	for _, fn := range opts {
 		if err := fn(s.cs, p); err != nil {
-			return "", -1, err
+			return "", err
 		}
 	}
 
 	l, err := s.ListSystemVms(p)
 	if err != nil {
-		return "", -1, err
+		return "", err
 	}
 
 	if l.Count == 0 {
-		return "", l.Count, fmt.Errorf("No match found for %s: %+v", name, l)
+		return "", fmt.Errorf("No match found for %s: %+v", name, l)
 	}
 
 	if l.Count == 1 {
-		return l.SystemVms[0].Id, l.Count, nil
+		return l.SystemVms[0].Id, nil
 	}
 
 	if l.Count > 1 {
 		for _, v := range l.SystemVms {
 			if v.Name == name {
-				return v.Id, l.Count, nil
+				return v.Id, nil
 			}
 		}
 	}
-	return "", l.Count, fmt.Errorf("Could not find an exact match for %s: %+v", name, l)
+	return "", fmt.Errorf("Could not find an exact match for %s: %+v", name, l)
 }
 
 // This is a courtesy helper function, which in some cases may not work as expected!
 func (s *SystemVMService) GetSystemVmByName(name string, opts ...OptionFunc) (*SystemVm, int, error) {
-	id, count, err := s.GetSystemVmID(name, opts...)
+	id, err := s.GetSystemVmID(name, opts...)
 	if err != nil {
-		return nil, count, err
+		return nil, -1, err
 	}
 
 	r, count, err := s.GetSystemVmByID(id, opts...)

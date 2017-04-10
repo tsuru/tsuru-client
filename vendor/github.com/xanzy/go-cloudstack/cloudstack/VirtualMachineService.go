@@ -2592,7 +2592,7 @@ func (s *VirtualMachineService) NewListVirtualMachinesParams() *ListVirtualMachi
 }
 
 // This is a courtesy helper function, which in some cases may not work as expected!
-func (s *VirtualMachineService) GetVirtualMachineID(name string, opts ...OptionFunc) (string, int, error) {
+func (s *VirtualMachineService) GetVirtualMachineID(name string, opts ...OptionFunc) (string, error) {
 	p := &ListVirtualMachinesParams{}
 	p.p = make(map[string]interface{})
 
@@ -2600,38 +2600,38 @@ func (s *VirtualMachineService) GetVirtualMachineID(name string, opts ...OptionF
 
 	for _, fn := range opts {
 		if err := fn(s.cs, p); err != nil {
-			return "", -1, err
+			return "", err
 		}
 	}
 
 	l, err := s.ListVirtualMachines(p)
 	if err != nil {
-		return "", -1, err
+		return "", err
 	}
 
 	if l.Count == 0 {
-		return "", l.Count, fmt.Errorf("No match found for %s: %+v", name, l)
+		return "", fmt.Errorf("No match found for %s: %+v", name, l)
 	}
 
 	if l.Count == 1 {
-		return l.VirtualMachines[0].Id, l.Count, nil
+		return l.VirtualMachines[0].Id, nil
 	}
 
 	if l.Count > 1 {
 		for _, v := range l.VirtualMachines {
 			if v.Name == name {
-				return v.Id, l.Count, nil
+				return v.Id, nil
 			}
 		}
 	}
-	return "", l.Count, fmt.Errorf("Could not find an exact match for %s: %+v", name, l)
+	return "", fmt.Errorf("Could not find an exact match for %s: %+v", name, l)
 }
 
 // This is a courtesy helper function, which in some cases may not work as expected!
 func (s *VirtualMachineService) GetVirtualMachineByName(name string, opts ...OptionFunc) (*VirtualMachine, int, error) {
-	id, count, err := s.GetVirtualMachineID(name, opts...)
+	id, err := s.GetVirtualMachineID(name, opts...)
 	if err != nil {
-		return nil, count, err
+		return nil, -1, err
 	}
 
 	r, count, err := s.GetVirtualMachineByID(id, opts...)

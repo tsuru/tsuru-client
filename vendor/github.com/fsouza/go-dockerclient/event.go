@@ -74,7 +74,7 @@ var (
 	// to receive an event.
 	ErrNoListeners = errors.New("no listeners present to receive event")
 
-	// ErrListenerAlreadyExists is the error returned when the listener already
+	// ErrListenerAlreadyExists is the error returned when the listerner already
 	// exists.
 	ErrListenerAlreadyExists = errors.New("listener already exists for docker events")
 
@@ -109,7 +109,7 @@ func (c *Client) RemoveEventListener(listener chan *APIEvents) error {
 	if err != nil {
 		return err
 	}
-	if c.eventMonitor.listenersCount() == 0 {
+	if c.eventMonitor.listernersCount() == 0 {
 		c.eventMonitor.disableEventMonitoring()
 	}
 	return nil
@@ -150,7 +150,7 @@ func (eventState *eventMonitoringState) closeListeners() {
 	eventState.listeners = nil
 }
 
-func (eventState *eventMonitoringState) listenersCount() int {
+func (eventState *eventMonitoringState) listernersCount() int {
 	eventState.RLock()
 	defer eventState.RUnlock()
 	return len(eventState.listeners)

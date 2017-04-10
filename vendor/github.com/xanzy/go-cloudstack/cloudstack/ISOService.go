@@ -754,7 +754,7 @@ func (s *ISOService) NewListIsosParams() *ListIsosParams {
 }
 
 // This is a courtesy helper function, which in some cases may not work as expected!
-func (s *ISOService) GetIsoID(name string, isofilter string, zoneid string, opts ...OptionFunc) (string, int, error) {
+func (s *ISOService) GetIsoID(name string, isofilter string, zoneid string, opts ...OptionFunc) (string, error) {
 	p := &ListIsosParams{}
 	p.p = make(map[string]interface{})
 
@@ -764,38 +764,38 @@ func (s *ISOService) GetIsoID(name string, isofilter string, zoneid string, opts
 
 	for _, fn := range opts {
 		if err := fn(s.cs, p); err != nil {
-			return "", -1, err
+			return "", err
 		}
 	}
 
 	l, err := s.ListIsos(p)
 	if err != nil {
-		return "", -1, err
+		return "", err
 	}
 
 	if l.Count == 0 {
-		return "", l.Count, fmt.Errorf("No match found for %s: %+v", name, l)
+		return "", fmt.Errorf("No match found for %s: %+v", name, l)
 	}
 
 	if l.Count == 1 {
-		return l.Isos[0].Id, l.Count, nil
+		return l.Isos[0].Id, nil
 	}
 
 	if l.Count > 1 {
 		for _, v := range l.Isos {
 			if v.Name == name {
-				return v.Id, l.Count, nil
+				return v.Id, nil
 			}
 		}
 	}
-	return "", l.Count, fmt.Errorf("Could not find an exact match for %s: %+v", name, l)
+	return "", fmt.Errorf("Could not find an exact match for %s: %+v", name, l)
 }
 
 // This is a courtesy helper function, which in some cases may not work as expected!
 func (s *ISOService) GetIsoByName(name string, isofilter string, zoneid string, opts ...OptionFunc) (*Iso, int, error) {
-	id, count, err := s.GetIsoID(name, isofilter, zoneid, opts...)
+	id, err := s.GetIsoID(name, isofilter, zoneid, opts...)
 	if err != nil {
-		return nil, count, err
+		return nil, -1, err
 	}
 
 	r, count, err := s.GetIsoByID(id, opts...)
@@ -1770,6 +1770,7 @@ func (s *ISOService) GetIsoPermissionByID(id string, opts ...OptionFunc) (*IsoPe
 	p := &ListIsoPermissionsParams{}
 	p.p = make(map[string]interface{})
 
+	p.p["id"] = id
 	p.p["id"] = id
 
 	for _, fn := range opts {

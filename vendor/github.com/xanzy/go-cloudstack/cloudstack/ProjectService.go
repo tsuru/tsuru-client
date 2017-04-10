@@ -805,7 +805,7 @@ func (s *ProjectService) NewListProjectsParams() *ListProjectsParams {
 }
 
 // This is a courtesy helper function, which in some cases may not work as expected!
-func (s *ProjectService) GetProjectID(name string, opts ...OptionFunc) (string, int, error) {
+func (s *ProjectService) GetProjectID(name string, opts ...OptionFunc) (string, error) {
 	p := &ListProjectsParams{}
 	p.p = make(map[string]interface{})
 
@@ -813,38 +813,38 @@ func (s *ProjectService) GetProjectID(name string, opts ...OptionFunc) (string, 
 
 	for _, fn := range opts {
 		if err := fn(s.cs, p); err != nil {
-			return "", -1, err
+			return "", err
 		}
 	}
 
 	l, err := s.ListProjects(p)
 	if err != nil {
-		return "", -1, err
+		return "", err
 	}
 
 	if l.Count == 0 {
-		return "", l.Count, fmt.Errorf("No match found for %s: %+v", name, l)
+		return "", fmt.Errorf("No match found for %s: %+v", name, l)
 	}
 
 	if l.Count == 1 {
-		return l.Projects[0].Id, l.Count, nil
+		return l.Projects[0].Id, nil
 	}
 
 	if l.Count > 1 {
 		for _, v := range l.Projects {
 			if v.Name == name {
-				return v.Id, l.Count, nil
+				return v.Id, nil
 			}
 		}
 	}
-	return "", l.Count, fmt.Errorf("Could not find an exact match for %s: %+v", name, l)
+	return "", fmt.Errorf("Could not find an exact match for %s: %+v", name, l)
 }
 
 // This is a courtesy helper function, which in some cases may not work as expected!
 func (s *ProjectService) GetProjectByName(name string, opts ...OptionFunc) (*Project, int, error) {
-	id, count, err := s.GetProjectID(name, opts...)
+	id, err := s.GetProjectID(name, opts...)
 	if err != nil {
-		return nil, count, err
+		return nil, -1, err
 	}
 
 	r, count, err := s.GetProjectByID(id, opts...)

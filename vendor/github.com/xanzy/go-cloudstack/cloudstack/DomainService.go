@@ -448,7 +448,7 @@ func (s *DomainService) NewListDomainsParams() *ListDomainsParams {
 }
 
 // This is a courtesy helper function, which in some cases may not work as expected!
-func (s *DomainService) GetDomainID(name string, opts ...OptionFunc) (string, int, error) {
+func (s *DomainService) GetDomainID(name string, opts ...OptionFunc) (string, error) {
 	p := &ListDomainsParams{}
 	p.p = make(map[string]interface{})
 
@@ -456,38 +456,38 @@ func (s *DomainService) GetDomainID(name string, opts ...OptionFunc) (string, in
 
 	for _, fn := range opts {
 		if err := fn(s.cs, p); err != nil {
-			return "", -1, err
+			return "", err
 		}
 	}
 
 	l, err := s.ListDomains(p)
 	if err != nil {
-		return "", -1, err
+		return "", err
 	}
 
 	if l.Count == 0 {
-		return "", l.Count, fmt.Errorf("No match found for %s: %+v", name, l)
+		return "", fmt.Errorf("No match found for %s: %+v", name, l)
 	}
 
 	if l.Count == 1 {
-		return l.Domains[0].Id, l.Count, nil
+		return l.Domains[0].Id, nil
 	}
 
 	if l.Count > 1 {
 		for _, v := range l.Domains {
 			if v.Name == name {
-				return v.Id, l.Count, nil
+				return v.Id, nil
 			}
 		}
 	}
-	return "", l.Count, fmt.Errorf("Could not find an exact match for %s: %+v", name, l)
+	return "", fmt.Errorf("Could not find an exact match for %s: %+v", name, l)
 }
 
 // This is a courtesy helper function, which in some cases may not work as expected!
 func (s *DomainService) GetDomainByName(name string, opts ...OptionFunc) (*Domain, int, error) {
-	id, count, err := s.GetDomainID(name, opts...)
+	id, err := s.GetDomainID(name, opts...)
 	if err != nil {
-		return nil, count, err
+		return nil, -1, err
 	}
 
 	r, count, err := s.GetDomainByID(id, opts...)
@@ -699,7 +699,7 @@ func (s *DomainService) NewListDomainChildrenParams() *ListDomainChildrenParams 
 }
 
 // This is a courtesy helper function, which in some cases may not work as expected!
-func (s *DomainService) GetDomainChildrenID(name string, opts ...OptionFunc) (string, int, error) {
+func (s *DomainService) GetDomainChildrenID(name string, opts ...OptionFunc) (string, error) {
 	p := &ListDomainChildrenParams{}
 	p.p = make(map[string]interface{})
 
@@ -707,38 +707,38 @@ func (s *DomainService) GetDomainChildrenID(name string, opts ...OptionFunc) (st
 
 	for _, fn := range opts {
 		if err := fn(s.cs, p); err != nil {
-			return "", -1, err
+			return "", err
 		}
 	}
 
 	l, err := s.ListDomainChildren(p)
 	if err != nil {
-		return "", -1, err
+		return "", err
 	}
 
 	if l.Count == 0 {
-		return "", l.Count, fmt.Errorf("No match found for %s: %+v", name, l)
+		return "", fmt.Errorf("No match found for %s: %+v", name, l)
 	}
 
 	if l.Count == 1 {
-		return l.DomainChildren[0].Id, l.Count, nil
+		return l.DomainChildren[0].Id, nil
 	}
 
 	if l.Count > 1 {
 		for _, v := range l.DomainChildren {
 			if v.Name == name {
-				return v.Id, l.Count, nil
+				return v.Id, nil
 			}
 		}
 	}
-	return "", l.Count, fmt.Errorf("Could not find an exact match for %s: %+v", name, l)
+	return "", fmt.Errorf("Could not find an exact match for %s: %+v", name, l)
 }
 
 // This is a courtesy helper function, which in some cases may not work as expected!
 func (s *DomainService) GetDomainChildrenByName(name string, opts ...OptionFunc) (*DomainChildren, int, error) {
-	id, count, err := s.GetDomainChildrenID(name, opts...)
+	id, err := s.GetDomainChildrenID(name, opts...)
 	if err != nil {
-		return nil, count, err
+		return nil, -1, err
 	}
 
 	r, count, err := s.GetDomainChildrenByID(id, opts...)
@@ -912,7 +912,7 @@ func (p *LinkDomainToLdapParams) SetType(v string) {
 	if p.p == nil {
 		p.p = make(map[string]interface{})
 	}
-	p.p["type"] = v
+	p.p["domainType"] = v
 	return
 }
 
@@ -924,7 +924,7 @@ func (s *DomainService) NewLinkDomainToLdapParams(accounttype int, domainid stri
 	p.p["accounttype"] = accounttype
 	p.p["domainid"] = domainid
 	p.p["name"] = name
-	p.p["type"] = domainType
+	p.p["domainType"] = domainType
 	return p
 }
 

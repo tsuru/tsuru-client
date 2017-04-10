@@ -27,6 +27,7 @@ import (
 	"github.com/tsuru/tsuru/log"
 	"github.com/tsuru/tsuru/permission"
 	"github.com/tsuru/tsuru/provision"
+	"github.com/tsuru/tsuru/provision/nodecontainer"
 	"github.com/tsuru/tsuru/quota"
 	"github.com/tsuru/tsuru/repository"
 	"github.com/tsuru/tsuru/router"
@@ -131,6 +132,11 @@ type App struct {
 	quota.Quota
 	provisioner provision.Provisioner
 }
+
+var (
+	_ provision.App      = &App{}
+	_ rebuild.RebuildApp = &App{}
+)
 
 func (app *App) getProvisioner() (provision.Provisioner, error) {
 	if app.provisioner == nil {
@@ -591,14 +597,15 @@ func (app *App) serviceInstances() ([]service.ServiceInstance, error) {
 
 // AddUnits creates n new units within the provisioner, saves new units in the
 // database and enqueues the apprc serialization.
-func (app *App) AddUnits(n uint, process string, writer io.Writer) error {
+func (app *App) AddUnits(n uint, process string, w io.Writer) error {
 	if n == 0 {
 		return errors.New("Cannot add zero units.")
 	}
+	w = app.withLogWriter(w)
 	err := action.NewPipeline(
 		&reserveUnitsToAdd,
 		&provisionAddUnits,
-	).Execute(app, n, writer, process)
+	).Execute(app, n, w, process)
 	rebuild.RoutesRebuildOrEnqueue(app.Name)
 	return err
 }
@@ -608,12 +615,13 @@ func (app *App) AddUnits(n uint, process string, writer io.Writer) error {
 //
 //     1. Remove units from the provisioner
 //     2. Update quota
-func (app *App) RemoveUnits(n uint, process string, writer io.Writer) error {
+func (app *App) RemoveUnits(n uint, process string, w io.Writer) error {
 	prov, err := app.getProvisioner()
 	if err != nil {
 		return err
 	}
-	err = prov.RemoveUnits(app, n, process, writer)
+	w = app.withLogWriter(w)
+	err = prov.RemoveUnits(app, n, process, w)
 	rebuild.RoutesRebuildOrEnqueue(app.Name)
 	if err != nil {
 		return err
@@ -980,8 +988,8 @@ func (app *App) InstanceEnv(name string) map[string]bind.EnvVar {
 // Run executes the command in app units, sourcing apprc before running the
 // command.
 func (app *App) Run(cmd string, w io.Writer, args provision.RunArgs) error {
-	if !app.available() {
-		return errors.New("App must be available to run commands")
+	if !args.Isolated && !app.available() {
+		return errors.New("App must be available to run non-isolated commands")
 	}
 	app.Log(fmt.Sprintf("running '%s'", cmd), "tsuru", "api")
 	logWriter := LogWriter{App: app, Source: "app-run"}
@@ -1017,15 +1025,12 @@ func (app *App) run(cmd string, w io.Writer, args provision.RunArgs) error {
 
 // Restart runs the restart hook for the app, writing its output to w.
 func (app *App) Restart(process string, w io.Writer) error {
-	msg := fmt.Sprintf("---- Restarting process %q ----\n", process)
+	w = app.withLogWriter(w)
+	msg := fmt.Sprintf("---- Restarting process %q ----", process)
 	if process == "" {
-		msg = fmt.Sprintf("---- Restarting the app %q ----\n", app.Name)
+		msg = fmt.Sprintf("---- Restarting the app %q ----", app.Name)
 	}
-	err := log.Write(w, []byte(msg))
-	if err != nil {
-		log.Errorf("[restart] error on write app log for the app %s - %s", app.Name, err)
-		return err
-	}
+	fmt.Fprintf(w, "%s\n", msg)
 	prov, err := app.getProvisioner()
 	if err != nil {
 		return err
@@ -1040,11 +1045,12 @@ func (app *App) Restart(process string, w io.Writer) error {
 }
 
 func (app *App) Stop(w io.Writer, process string) error {
-	msg := fmt.Sprintf("\n ---> Stopping the process %q\n", process)
+	w = app.withLogWriter(w)
+	msg := fmt.Sprintf("\n ---> Stopping the process %q", process)
 	if process == "" {
-		msg = fmt.Sprintf("\n ---> Stopping the app %q\n", app.Name)
+		msg = fmt.Sprintf("\n ---> Stopping the app %q", app.Name)
 	}
-	log.Write(w, []byte(msg))
+	fmt.Fprintf(w, "%s\n", msg)
 	prov, err := app.getProvisioner()
 	if err != nil {
 		return err
@@ -1066,11 +1072,12 @@ func (app *App) Sleep(w io.Writer, process string, proxyURL *url.URL) error {
 	if !ok {
 		return provision.ProvisionerNotSupported{Prov: prov, Action: "sleeping"}
 	}
-	msg := fmt.Sprintf("\n ---> Putting the process %q to sleep\n", process)
+	w = app.withLogWriter(w)
+	msg := fmt.Sprintf("\n ---> Putting the process %q to sleep", process)
 	if process == "" {
-		msg = fmt.Sprintf("\n ---> Putting the app %q to sleep\n", app.Name)
+		msg = fmt.Sprintf("\n ---> Putting the app %q to sleep", app.Name)
 	}
-	log.Write(w, []byte(msg))
+	fmt.Fprintf(w, "%s\n", msg)
 	r, err := app.GetRouter()
 	if err != nil {
 		log.Errorf("[sleep] error on sleep the app %s - %s", app.Name, err)
@@ -1718,11 +1725,12 @@ func Swap(app1, app2 *App, cnameOnly bool) error {
 // Start starts the app calling the provisioner.Start method and
 // changing the units state to StatusStarted.
 func (app *App) Start(w io.Writer, process string) error {
-	msg := fmt.Sprintf("\n ---> Starting the process %q\n", process)
+	w = app.withLogWriter(w)
+	msg := fmt.Sprintf("\n ---> Starting the process %q", process)
 	if process == "" {
-		msg = fmt.Sprintf("\n ---> Starting the app %q\n", app.Name)
+		msg = fmt.Sprintf("\n ---> Starting the app %q", app.Name)
 	}
-	log.Write(w, []byte(msg))
+	fmt.Fprintf(w, "%s\n", msg)
 	prov, err := app.getProvisioner()
 	if err != nil {
 		return err
@@ -1769,15 +1777,17 @@ func (app *App) GetRouter() (router.Router, error) {
 }
 
 func (app *App) MetricEnvs() (map[string]string, error) {
-	prov, err := app.getProvisioner()
+	bsContainer, err := nodecontainer.LoadNodeContainer(app.GetPool(), nodecontainer.BsDefaultName)
 	if err != nil {
 		return nil, err
 	}
-	if metricProv, ok := prov.(provision.MetricsProvisioner); ok {
-		return metricProv.MetricEnvs(app), nil
-	} else {
-		return nil, provision.ProvisionerNotSupported{Prov: prov, Action: "metrics"}
+	envs := bsContainer.EnvMap()
+	for envName := range envs {
+		if !strings.HasPrefix(envName, "METRICS_") {
+			delete(envs, envName)
+		}
 	}
+	return envs, nil
 }
 
 func (app *App) Shell(opts provision.ShellOptions) error {
@@ -1915,4 +1925,14 @@ func (app *App) InternalLock(reason string) (bool, error) {
 
 func (app *App) Unlock() {
 	ReleaseApplicationLock(app.Name)
+}
+
+func (app *App) withLogWriter(w io.Writer) io.Writer {
+	logWriter := &LogWriter{App: app}
+	if w != nil {
+		w = io.MultiWriter(w, logWriter)
+	} else {
+		w = logWriter
+	}
+	return w
 }

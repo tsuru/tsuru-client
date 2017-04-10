@@ -9,7 +9,6 @@ import (
 	"fmt"
 	"net"
 	"sync"
-	"time"
 )
 
 // Client implements a traditional SSH client that supports shells,
@@ -83,11 +82,11 @@ func NewClientConn(c net.Conn, addr string, config *ClientConfig) (Conn, <-chan 
 // clientHandshake performs the client side key exchange. See RFC 4253 Section
 // 7.
 func (c *connection) clientHandshake(dialAddress string, config *ClientConfig) error {
+	c.clientVersion = []byte(packageVersion)
 	if config.ClientVersion != "" {
 		c.clientVersion = []byte(config.ClientVersion)
-	} else {
-		c.clientVersion = []byte(packageVersion)
 	}
+
 	var err error
 	c.serverVersion, err = exchangeVersions(c.sshConn.conn, c.clientVersion)
 	if err != nil {
@@ -97,13 +96,15 @@ func (c *connection) clientHandshake(dialAddress string, config *ClientConfig) e
 	c.transport = newClientTransport(
 		newTransport(c.sshConn.conn, config.Rand, true /* is client */),
 		c.clientVersion, c.serverVersion, config, dialAddress, c.sshConn.RemoteAddr())
-	if err := c.transport.requestInitialKeyChange(); err != nil {
+	if err := c.transport.requestKeyChange(); err != nil {
 		return err
 	}
 
-	// We just did the key change, so the session ID is established.
-	c.sessionID = c.transport.getSessionID()
-
+	if packet, err := c.transport.readPacket(); err != nil {
+		return err
+	} else if packet[0] != msgNewKeys {
+		return unexpectedMessageError(msgNewKeys, packet[0])
+	}
 	return c.clientAuthenticate(config)
 }
 
@@ -164,7 +165,7 @@ func (c *Client) handleChannelOpens(in <-chan NewChannel) {
 // to incoming channels and requests, use net.Dial with NewClientConn
 // instead.
 func Dial(network, addr string, config *ClientConfig) (*Client, error) {
-	conn, err := net.DialTimeout(network, addr, config.Timeout)
+	conn, err := net.Dial(network, addr)
 	if err != nil {
 		return nil, err
 	}
@@ -198,16 +199,4 @@ type ClientConfig struct {
 	// ClientVersion contains the version identification string that will
 	// be used for the connection. If empty, a reasonable default is used.
 	ClientVersion string
-
-	// HostKeyAlgorithms lists the key types that the client will
-	// accept from the server as host key, in order of
-	// preference. If empty, a reasonable default is used. Any
-	// string returned from PublicKey.Type method may be used, or
-	// any of the CertAlgoXxxx and KeyAlgoXxxx constants.
-	HostKeyAlgorithms []string
-
-	// Timeout is the maximum amount of time for the TCP connection to establish.
-	//
-	// A Timeout of zero means no timeout.
-	Timeout time.Duration
 }

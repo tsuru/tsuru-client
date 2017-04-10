@@ -30,6 +30,7 @@ import (
 	"github.com/tsuru/tsuru/healer"
 	"github.com/tsuru/tsuru/log"
 	"github.com/tsuru/tsuru/provision"
+	"github.com/tsuru/tsuru/provision/nodecontainer"
 	"github.com/tsuru/tsuru/router"
 	"github.com/tsuru/tsuru/router/rebuild"
 	"golang.org/x/net/websocket"
@@ -39,9 +40,10 @@ import (
 const Version = "1.2.0-rc7"
 
 type TsuruHandler struct {
-	method string
-	path   string
-	h      http.Handler
+	version string
+	method  string
+	path    string
+	h       http.Handler
 }
 
 func fatal(err error) {
@@ -51,9 +53,15 @@ func fatal(err error) {
 
 var tsuruHandlerList []TsuruHandler
 
-//RegisterHandler inserts a handler on a list of handlers
+// RegisterHandler inserts a handler on a list of handlers for version 1.0
 func RegisterHandler(path string, method string, h http.Handler) {
+	RegisterHandlerVersion("1.0", path, method, h)
+}
+
+// RegisterHandlerVersion inserts a handler on a list of handlers
+func RegisterHandlerVersion(version, path, method string, h http.Handler) {
 	var th TsuruHandler
+	th.version = version
 	th.path = path
 	th.method = method
 	th.h = h
@@ -88,7 +96,7 @@ func RunServer(dry bool) http.Handler {
 	m := apiRouter.NewRouter()
 
 	for _, handler := range tsuruHandlerList {
-		m.Add("1.0", handler.method, handler.path, handler.h)
+		m.Add(handler.version, handler.method, handler.path, handler.h)
 	}
 
 	if disableIndex, _ := config.GetBool("disable-index-page"); !disableIndex {
@@ -463,6 +471,10 @@ func startServer(handler http.Handler) {
 		fatal(err)
 	}
 	fmt.Printf("Using %q auth scheme.\n", scheme)
+	_, err = nodecontainer.InitializeBS(app.AuthScheme, app.InternalAppName)
+	if err != nil {
+		fatal(err)
+	}
 	err = provision.InitializeAll()
 	if err != nil {
 		fatal(err)

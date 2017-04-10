@@ -1067,7 +1067,7 @@ func (s *LoadBalancerService) NewListLoadBalancerRulesParams() *ListLoadBalancer
 }
 
 // This is a courtesy helper function, which in some cases may not work as expected!
-func (s *LoadBalancerService) GetLoadBalancerRuleID(name string, opts ...OptionFunc) (string, int, error) {
+func (s *LoadBalancerService) GetLoadBalancerRuleID(name string, opts ...OptionFunc) (string, error) {
 	p := &ListLoadBalancerRulesParams{}
 	p.p = make(map[string]interface{})
 
@@ -1075,38 +1075,38 @@ func (s *LoadBalancerService) GetLoadBalancerRuleID(name string, opts ...OptionF
 
 	for _, fn := range opts {
 		if err := fn(s.cs, p); err != nil {
-			return "", -1, err
+			return "", err
 		}
 	}
 
 	l, err := s.ListLoadBalancerRules(p)
 	if err != nil {
-		return "", -1, err
+		return "", err
 	}
 
 	if l.Count == 0 {
-		return "", l.Count, fmt.Errorf("No match found for %s: %+v", name, l)
+		return "", fmt.Errorf("No match found for %s: %+v", name, l)
 	}
 
 	if l.Count == 1 {
-		return l.LoadBalancerRules[0].Id, l.Count, nil
+		return l.LoadBalancerRules[0].Id, nil
 	}
 
 	if l.Count > 1 {
 		for _, v := range l.LoadBalancerRules {
 			if v.Name == name {
-				return v.Id, l.Count, nil
+				return v.Id, nil
 			}
 		}
 	}
-	return "", l.Count, fmt.Errorf("Could not find an exact match for %s: %+v", name, l)
+	return "", fmt.Errorf("Could not find an exact match for %s: %+v", name, l)
 }
 
 // This is a courtesy helper function, which in some cases may not work as expected!
 func (s *LoadBalancerService) GetLoadBalancerRuleByName(name string, opts ...OptionFunc) (*LoadBalancerRule, int, error) {
-	id, count, err := s.GetLoadBalancerRuleID(name, opts...)
+	id, err := s.GetLoadBalancerRuleID(name, opts...)
 	if err != nil {
-		return nil, count, err
+		return nil, -1, err
 	}
 
 	r, count, err := s.GetLoadBalancerRuleByID(id, opts...)
@@ -1959,10 +1959,11 @@ func (s *LoadBalancerService) NewListLoadBalancerRuleInstancesParams(id string) 
 }
 
 // This is a courtesy helper function, which in some cases may not work as expected!
-func (s *LoadBalancerService) GetLoadBalancerRuleInstanceByID(id string, opts ...OptionFunc) (*VirtualMachine, int, error) {
+func (s *LoadBalancerService) GetLoadBalancerRuleInstanceByID(id string, opts ...OptionFunc) (*LoadBalancerRuleInstance, int, error) {
 	p := &ListLoadBalancerRuleInstancesParams{}
 	p.p = make(map[string]interface{})
 
+	p.p["id"] = id
 	p.p["id"] = id
 
 	for _, fn := range opts {
@@ -2007,8 +2008,7 @@ func (s *LoadBalancerService) ListLoadBalancerRuleInstances(p *ListLoadBalancerR
 
 type ListLoadBalancerRuleInstancesResponse struct {
 	Count                     int                         `json:"count"`
-	LBRuleVMIDIPs             []*LoadBalancerRuleInstance `json:"lbrulevmidip,omitempty"`
-	LoadBalancerRuleInstances []*VirtualMachine           `json:"loadbalancerruleinstance,omitempty"`
+	LoadBalancerRuleInstances []*LoadBalancerRuleInstance `json:"lbrulevmidip"`
 }
 
 type LoadBalancerRuleInstance struct {
@@ -3661,7 +3661,7 @@ func (s *LoadBalancerService) NewListGlobalLoadBalancerRulesParams() *ListGlobal
 }
 
 // This is a courtesy helper function, which in some cases may not work as expected!
-func (s *LoadBalancerService) GetGlobalLoadBalancerRuleID(keyword string, opts ...OptionFunc) (string, int, error) {
+func (s *LoadBalancerService) GetGlobalLoadBalancerRuleID(keyword string, opts ...OptionFunc) (string, error) {
 	p := &ListGlobalLoadBalancerRulesParams{}
 	p.p = make(map[string]interface{})
 
@@ -3669,38 +3669,38 @@ func (s *LoadBalancerService) GetGlobalLoadBalancerRuleID(keyword string, opts .
 
 	for _, fn := range opts {
 		if err := fn(s.cs, p); err != nil {
-			return "", -1, err
+			return "", err
 		}
 	}
 
 	l, err := s.ListGlobalLoadBalancerRules(p)
 	if err != nil {
-		return "", -1, err
+		return "", err
 	}
 
 	if l.Count == 0 {
-		return "", l.Count, fmt.Errorf("No match found for %s: %+v", keyword, l)
+		return "", fmt.Errorf("No match found for %s: %+v", keyword, l)
 	}
 
 	if l.Count == 1 {
-		return l.GlobalLoadBalancerRules[0].Id, l.Count, nil
+		return l.GlobalLoadBalancerRules[0].Id, nil
 	}
 
 	if l.Count > 1 {
 		for _, v := range l.GlobalLoadBalancerRules {
 			if v.Name == keyword {
-				return v.Id, l.Count, nil
+				return v.Id, nil
 			}
 		}
 	}
-	return "", l.Count, fmt.Errorf("Could not find an exact match for %s: %+v", keyword, l)
+	return "", fmt.Errorf("Could not find an exact match for %s: %+v", keyword, l)
 }
 
 // This is a courtesy helper function, which in some cases may not work as expected!
 func (s *LoadBalancerService) GetGlobalLoadBalancerRuleByName(name string, opts ...OptionFunc) (*GlobalLoadBalancerRule, int, error) {
-	id, count, err := s.GetGlobalLoadBalancerRuleID(name, opts...)
+	id, err := s.GetGlobalLoadBalancerRuleID(name, opts...)
 	if err != nil {
-		return nil, count, err
+		return nil, -1, err
 	}
 
 	r, count, err := s.GetGlobalLoadBalancerRuleByID(id, opts...)
@@ -4408,7 +4408,7 @@ func (s *LoadBalancerService) NewListLoadBalancersParams() *ListLoadBalancersPar
 }
 
 // This is a courtesy helper function, which in some cases may not work as expected!
-func (s *LoadBalancerService) GetLoadBalancerID(name string, opts ...OptionFunc) (string, int, error) {
+func (s *LoadBalancerService) GetLoadBalancerID(name string, opts ...OptionFunc) (string, error) {
 	p := &ListLoadBalancersParams{}
 	p.p = make(map[string]interface{})
 
@@ -4416,38 +4416,38 @@ func (s *LoadBalancerService) GetLoadBalancerID(name string, opts ...OptionFunc)
 
 	for _, fn := range opts {
 		if err := fn(s.cs, p); err != nil {
-			return "", -1, err
+			return "", err
 		}
 	}
 
 	l, err := s.ListLoadBalancers(p)
 	if err != nil {
-		return "", -1, err
+		return "", err
 	}
 
 	if l.Count == 0 {
-		return "", l.Count, fmt.Errorf("No match found for %s: %+v", name, l)
+		return "", fmt.Errorf("No match found for %s: %+v", name, l)
 	}
 
 	if l.Count == 1 {
-		return l.LoadBalancers[0].Id, l.Count, nil
+		return l.LoadBalancers[0].Id, nil
 	}
 
 	if l.Count > 1 {
 		for _, v := range l.LoadBalancers {
 			if v.Name == name {
-				return v.Id, l.Count, nil
+				return v.Id, nil
 			}
 		}
 	}
-	return "", l.Count, fmt.Errorf("Could not find an exact match for %s: %+v", name, l)
+	return "", fmt.Errorf("Could not find an exact match for %s: %+v", name, l)
 }
 
 // This is a courtesy helper function, which in some cases may not work as expected!
 func (s *LoadBalancerService) GetLoadBalancerByName(name string, opts ...OptionFunc) (*LoadBalancer, int, error) {
-	id, count, err := s.GetLoadBalancerID(name, opts...)
+	id, err := s.GetLoadBalancerID(name, opts...)
 	if err != nil {
-		return nil, count, err
+		return nil, -1, err
 	}
 
 	r, count, err := s.GetLoadBalancerByID(id, opts...)

@@ -10,6 +10,7 @@
 package config
 
 import (
+	"encoding/json"
 	"errors"
 	"fmt"
 	"io"
@@ -20,8 +21,9 @@ import (
 	"sync"
 	"time"
 
+	yaml "gopkg.in/yaml.v1"
+
 	"github.com/howeyc/fsnotify"
-	"gopkg.in/yaml.v1"
 )
 
 var ErrMismatchConf = errors.New("Your conf is wrong:")
@@ -159,7 +161,8 @@ func WriteConfigFile(filePath string, perm os.FileMode) error {
 //   mongo: $MONGOURI
 //
 // If there is an environment variable MONGOURI=localhost/test, the key "mongo"
-// would return "localhost/test"
+// would return "localhost/test". If the variable value is a json object/list, this
+// object will also be expanded.
 func Get(key string) (interface{}, error) {
 	keys := strings.Split(key, ":")
 	configs.RLock()
@@ -169,21 +172,65 @@ func Get(key string) (interface{}, error) {
 		return nil, fmt.Errorf("key %q not found", key)
 	}
 	for _, k := range keys[1:] {
-		_, ok = conf.(map[interface{}]interface{})
-		if !ok {
+		switch c := conf.(type) {
+		case map[interface{}]interface{}:
+			if conf, ok = c[k]; !ok {
+				return nil, fmt.Errorf("key %q not found", key)
+			}
+		case string:
+			value, err := expandEnv(c)
+			if err != nil {
+				return nil, ErrMismatchConf
+			}
+			if conf, ok = value.(map[interface{}]interface{})[k]; !ok {
+				return nil, fmt.Errorf("key %q not found", key)
+			}
+		default:
 			return nil, ErrMismatchConf
-		}
-		if conf, ok = conf.(map[interface{}]interface{})[k]; !ok {
-			return nil, fmt.Errorf("key %q not found", key)
 		}
 	}
 	if v, ok := conf.(func() interface{}); ok {
 		conf = v()
 	}
 	if v, ok := conf.(string); ok {
-		return os.ExpandEnv(v), nil
+		value, _ := expandEnv(v)
+		return value, nil
 	}
 	return conf, nil
+}
+
+// expandEnv expands an environment variable and unmarshalls
+// an json object or slice if it's found.
+func expandEnv(s string) (interface{}, error) {
+	raw := os.ExpandEnv(s)
+	var jsonMap map[string]interface{}
+	err := json.Unmarshal([]byte(raw), &jsonMap)
+	if err != nil {
+		var jsonSlice []interface{}
+		errS := json.Unmarshal([]byte(raw), &jsonSlice)
+		if errS != nil {
+			return raw, err
+		}
+		return jsonSlice, nil
+	}
+	return toInfMap(jsonMap), nil
+}
+
+// toInfMap takes an map[string]interface{} and recursively converts it
+// to an map[interface{}]interface{}.
+func toInfMap(sMap map[string]interface{}) map[interface{}]interface{} {
+	newMap := make(map[interface{}]interface{})
+	for k, v := range sMap {
+		var newValue interface{}
+		switch v := v.(type) {
+		case map[string]interface{}:
+			newValue = toInfMap(v)
+		default:
+			newValue = v
+		}
+		newMap[k] = newValue
+	}
+	return newMap
 }
 
 // GetString works like Get, but does an string type assertion before returning
@@ -196,16 +243,16 @@ func GetString(key string) (string, error) {
 		return "", err
 	}
 	switch v := value.(type) {
-                case int:
-                        return strconv.Itoa(v), nil
-                case int64:
-                        return strconv.FormatInt(v, 10), nil
-                default:
-                        if v, ok := value.(string); ok {
-                                return v, nil
-                        }
-        }
-	return "", &invalidValue{key, "string|int|int64"}
+	case int:
+		return strconv.Itoa(v), nil
+	case int64:
+		return strconv.FormatInt(v, 10), nil
+	default:
+		if v, ok := value.(string); ok {
+			return v, nil
+		}
+	}
+	return "", &InvalidValue{key, "string|int|int64"}
 }
 
 // GetInt works like Get, but does an int type assertion and attempts string
@@ -223,8 +270,12 @@ func GetInt(key string) (int, error) {
 		if i, err := strconv.ParseInt(v, 10, 64); err == nil {
 			return int(i), nil
 		}
+	} else if v, err := GetFloat(key); err == nil {
+		if float64(int(v)) == v {
+			return int(v), nil
+		}
 	}
-	return 0, &invalidValue{key, "int"}
+	return 0, &InvalidValue{key, "int"}
 }
 
 // GetFloat works like Get, but does a float type assertion and attempts string
@@ -248,22 +299,18 @@ func GetFloat(key string) (float64, error) {
 			return floatVal, nil
 		}
 	}
-	return 0, &invalidValue{key, "float"}
+	return 0, &InvalidValue{key, "float"}
 }
 
 // GetUint parses and returns an unsigned integer from the config file.
 func GetUint(key string) (uint, error) {
-	value, err := Get(key)
-	if err != nil {
-		return 0, err
-	}
-	if v, ok := value.(int); ok {
+	if v, err := GetInt(key); err == nil {
 		if v < 0 {
-			return 0, &invalidValue{key, "uint"}
+			return 0, &InvalidValue{key, "uint"}
 		}
 		return uint(v), nil
 	}
-	return 0, &invalidValue{key, "uint"}
+	return 0, &InvalidValue{key, "uint"}
 }
 
 // GetDuration parses and returns a duration from the config file. It may be an
@@ -291,7 +338,7 @@ func GetDuration(key string) (time.Duration, error) {
 			return value, nil
 		}
 	}
-	return 0, &invalidValue{key, "duration"}
+	return 0, &InvalidValue{key, "duration"}
 }
 
 // GetBool does a type assertion before returning the requested value
@@ -303,7 +350,7 @@ func GetBool(key string) (bool, error) {
 	if v, ok := value.(bool); ok {
 		return v, nil
 	}
-	return false, &invalidValue{key, "boolean"}
+	return false, &InvalidValue{key, "boolean"}
 }
 
 // GetList works like Get, but returns a slice of strings instead. It must be
@@ -346,7 +393,7 @@ func GetList(key string) ([]string, error) {
 	case []string:
 		return value.([]string), nil
 	}
-	return nil, &invalidValue{key, "list"}
+	return nil, &InvalidValue{key, "list"}
 }
 
 // mergeMaps takes two maps and merge its keys and values recursively.
@@ -434,11 +481,11 @@ func Unset(key string) error {
 	return nil
 }
 
-type invalidValue struct {
+type InvalidValue struct {
 	key  string
 	kind string
 }
 
-func (e *invalidValue) Error() string {
+func (e *InvalidValue) Error() string {
 	return fmt.Sprintf("value for the key %q is not a %s", e.key, e.kind)
 }

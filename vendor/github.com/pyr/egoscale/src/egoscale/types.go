@@ -176,14 +176,35 @@ type ListSecurityGroupsResponse struct {
 }
 
 type SecurityGroup struct {
-	Account     string `json:"account,omitempty"`
-	Description string `json:"description,omitempty"`
-	Domain      string `json:"domain,omitempty"`
-	Domainid    string `json:"domainid,omitempty"`
-	Id          string `json:"id,omitempty"`
-	Name        string `json:"name,omitempty"`
-	Project     string `json:"project,omitempty"`
-	Projectid   string `json:"projectid,omitempty"`
+	Account      string `json:"account,omitempty"`
+	Description  string `json:"description,omitempty"`
+	Domain       string `json:"domain,omitempty"`
+	Domainid     string `json:"domainid,omitempty"`
+	Id           string `json:"id,omitempty"`
+	Name         string `json:"name,omitempty"`
+	Project      string `json:"project,omitempty"`
+	Projectid    string `json:"projectid,omitempty"`
+	IngressRules []struct {
+		RuleId    string   `json:"ruleid,omitempty"`
+		Protocol  string   `json:"protocol,omitempty"`
+		StartPort int      `json:"startport,omitempty"`
+		EndPort   int      `json:"endport,omitempty"`
+		Cidr      string   `json:"cidr,omitempty"`
+		IcmpCode  int      `json:"icmpcode,omitempty"`
+		IcmpType  int      `json:"icmptype,omitempty"`
+		Tags      []string `json:"tags,omitempty"`
+	} `json:"ingressrule,omitempty"`
+	EgressRules []struct {
+		RuleId    string   `json:"ruleid,omitempty"`
+		Protocol  string   `json:"protocol,omitempty"`
+		StartPort int      `json:"startport,omitempty"`
+		EndPort   int      `json:"endport,omitempty"`
+		Cidr      string   `json:"cidr,omitempty"`
+		IcmpCode  int      `json:"icmpcode,omitempty"`
+		IcmpType  int      `json:"icmptype,omitempty"`
+		Tags      []string `json:"tags,omitempty"`
+	} `json:"egressrule,omitempty"`
+	Tags []string `json:"tags,omitempty"`
 }
 
 type CreateSecurityGroupResponseWrapper struct {
@@ -436,46 +457,46 @@ type DeleteSSHKeyPairResponse struct {
 }
 
 type DNSDomain struct {
-	Id					int64	`json:"id"`
-	UserId				int64	`json:"user_id"`
-	RegistrantId 		int64	`json:"registrant_id,omitempty"`
-	Name 				string 	`json:"name"`
-	UnicodeName			string 	`json:"unicode_name"`
-	Token 				string 	`json:"token"`
-	State 				string 	`json:"state"`
-	Language 			string 	`json:"language,omitempty"`
-	Lockable 			bool 	`json:"lockable"`
-	AutoRenew 			bool	`json:"auto_renew"`
-	WhoisProtected		bool	`json:"whois_protected"`
-	RecordCount			int64	`json:"record_count"`
-	ServiceCount		int64	`json:"service_count"`
-	ExpiresOn 			string 	`json:"expires_on,omitempty"`
-	CreatedAt			string 	`json:"created_at"`
-	UpdatedAt			string 	`json:"updated_at"`
+	Id             int64  `json:"id"`
+	UserId         int64  `json:"user_id"`
+	RegistrantId   int64  `json:"registrant_id,omitempty"`
+	Name           string `json:"name"`
+	UnicodeName    string `json:"unicode_name"`
+	Token          string `json:"token"`
+	State          string `json:"state"`
+	Language       string `json:"language,omitempty"`
+	Lockable       bool   `json:"lockable"`
+	AutoRenew      bool   `json:"auto_renew"`
+	WhoisProtected bool   `json:"whois_protected"`
+	RecordCount    int64  `json:"record_count"`
+	ServiceCount   int64  `json:"service_count"`
+	ExpiresOn      string `json:"expires_on,omitempty"`
+	CreatedAt      string `json:"created_at"`
+	UpdatedAt      string `json:"updated_at"`
 }
 
 type DNSDomainCreateRequest struct {
-	Domain              struct {
-		Name 				string 	`json:"name"`
+	Domain struct {
+		Name string `json:"name"`
 	} `json:"domain"`
 }
 
 type DNSRecord struct {
-	Id 					int64	`json:"id,omitempty"`
-	DomainId 			int64	`json:"domain_id,omitempty"`
-	Name 				string 	`json:"name"`
-	Ttl 				int	`json:"ttl,omitempty"`
-	CreatedAt			string 	`json:"created_at,omitempty"`
-	UpdatedAt			string 	`json:"updated_at,omitempty"`
-	Content 			string 	`json:"content"`
-	RecordType 			string 	`json:"record_type"`
-	Prio 				int 	`json:"prio,omitempty"`
+	Id         int64  `json:"id,omitempty"`
+	DomainId   int64  `json:"domain_id,omitempty"`
+	Name       string `json:"name"`
+	Ttl        int    `json:"ttl,omitempty"`
+	CreatedAt  string `json:"created_at,omitempty"`
+	UpdatedAt  string `json:"updated_at,omitempty"`
+	Content    string `json:"content"`
+	RecordType string `json:"record_type"`
+	Prio       int    `json:"prio,omitempty"`
 }
 
 type DNSRecordResponse struct {
-	Record		DNSRecord 		`json:"record"`
+	Record DNSRecord `json:"record"`
 }
 
 type DNSError struct {
-	Name 				[]string `json:"name"`
+	Name []string `json:"name"`
 }

@@ -325,7 +325,7 @@ func (s *UsageService) NewListTrafficTypesParams(physicalnetworkid string) *List
 }
 
 // This is a courtesy helper function, which in some cases may not work as expected!
-func (s *UsageService) GetTrafficTypeID(keyword string, physicalnetworkid string, opts ...OptionFunc) (string, int, error) {
+func (s *UsageService) GetTrafficTypeID(keyword string, physicalnetworkid string, opts ...OptionFunc) (string, error) {
 	p := &ListTrafficTypesParams{}
 	p.p = make(map[string]interface{})
 
@@ -334,31 +334,31 @@ func (s *UsageService) GetTrafficTypeID(keyword string, physicalnetworkid string
 
 	for _, fn := range opts {
 		if err := fn(s.cs, p); err != nil {
-			return "", -1, err
+			return "", err
 		}
 	}
 
 	l, err := s.ListTrafficTypes(p)
 	if err != nil {
-		return "", -1, err
+		return "", err
 	}
 
 	if l.Count == 0 {
-		return "", l.Count, fmt.Errorf("No match found for %s: %+v", keyword, l)
+		return "", fmt.Errorf("No match found for %s: %+v", keyword, l)
 	}
 
 	if l.Count == 1 {
-		return l.TrafficTypes[0].Id, l.Count, nil
+		return l.TrafficTypes[0].Id, nil
 	}
 
 	if l.Count > 1 {
 		for _, v := range l.TrafficTypes {
 			if v.Name == keyword {
-				return v.Id, l.Count, nil
+				return v.Id, nil
 			}
 		}
 	}
-	return "", l.Count, fmt.Errorf("Could not find an exact match for %s: %+v", keyword, l)
+	return "", fmt.Errorf("Could not find an exact match for %s: %+v", keyword, l)
 }
 
 // Lists traffic types of a given physical network.
@@ -811,7 +811,7 @@ func (p *ListUsageRecordsParams) SetType(v int64) {
 	if p.p == nil {
 		p.p = make(map[string]interface{})
 	}
-	p.p["type"] = v
+	p.p["usageType"] = v
 	return
 }
 

@@ -58,7 +58,10 @@ var (
 	ErrDeployCanceled = errors.New("deploy canceled by user action")
 )
 
-const provisionerName = "docker"
+const (
+	provisionerName           = "docker"
+	provisionerCollectionName = "dockercluster"
+)
 
 func init() {
 	mainDockerProvisioner = &dockerProvisioner{}
@@ -87,6 +90,29 @@ type dockerProvisioner struct {
 	clientKey      []byte
 }
 
+var (
+	_ provision.Provisioner              = &dockerProvisioner{}
+	_ provision.ArchiveDeployer          = &dockerProvisioner{}
+	_ provision.UploadDeployer           = &dockerProvisioner{}
+	_ provision.ImageDeployer            = &dockerProvisioner{}
+	_ provision.RollbackableDeployer     = &dockerProvisioner{}
+	_ provision.RebuildableDeployer      = &dockerProvisioner{}
+	_ provision.ShellProvisioner         = &dockerProvisioner{}
+	_ provision.ExecutableProvisioner    = &dockerProvisioner{}
+	_ provision.SleepableProvisioner     = &dockerProvisioner{}
+	_ provision.MessageProvisioner       = &dockerProvisioner{}
+	_ provision.InitializableProvisioner = &dockerProvisioner{}
+	_ provision.OptionalLogsProvisioner  = &dockerProvisioner{}
+	_ provision.UnitStatusProvisioner    = &dockerProvisioner{}
+	_ provision.NodeProvisioner          = &dockerProvisioner{}
+	_ provision.NodeRebalanceProvisioner = &dockerProvisioner{}
+	_ provision.NodeContainerProvisioner = &dockerProvisioner{}
+	_ provision.UnitFinderProvisioner    = &dockerProvisioner{}
+	_ provision.AppFilterProvisioner     = &dockerProvisioner{}
+	_ provision.ExtensibleProvisioner    = &dockerProvisioner{}
+	_ cmd.AdminCommandable               = &dockerProvisioner{}
+)
+
 type hookHealer struct {
 	p *dockerProvisioner
 }
@@ -114,7 +140,10 @@ func (p *dockerProvisioner) initDockerCluster() error {
 		var name string
 		name, err = config.GetString("docker:collection")
 		if err != nil {
-			return err
+			if serr, ok := err.(*config.InvalidValue); ok {
+				return serr
+			}
+			name = provisionerCollectionName
 		}
 		p.collectionName = name
 	}
@@ -281,10 +310,6 @@ func (p *dockerProvisioner) Initialize() error {
 	if err != nil {
 		return err
 	}
-	_, err = nodecontainer.InitializeBS()
-	if err != nil {
-		return errors.Wrap(err, "unable to initialize bs node container")
-	}
 	return p.initDockerCluster()
 }
 
@@ -304,7 +329,6 @@ func (p *dockerProvisioner) Restart(a provision.App, process string, w io.Writer
 	if w == nil {
 		w = ioutil.Discard
 	}
-	writer := io.MultiWriter(w, &app.LogWriter{App: a})
 	toAdd := make(map[string]*containersToAdd, len(containers))
 	for _, c := range containers {
 		if _, ok := toAdd[c.ProcessName]; !ok {
@@ -313,7 +337,7 @@ func (p *dockerProvisioner) Restart(a provision.App, process string, w io.Writer
 		toAdd[c.ProcessName].Quantity++
 		toAdd[c.ProcessName].Status = provision.StatusStarted
 	}
-	_, err = p.runReplaceUnitsPipeline(writer, a, toAdd, containers, imageId)
+	_, err = p.runReplaceUnitsPipeline(w, a, toAdd, containers, imageId)
 	return err
 }
 
@@ -411,7 +435,7 @@ func (p *dockerProvisioner) ImageDeploy(app provision.App, imageId string, evt *
 		OutputStream:      w,
 		InactivityTimeout: net.StreamInactivityTimeout,
 	}
-	nodes, err := cluster.NodesForMetadata(map[string]string{"pool": app.GetPool()})
+	nodes, err := p.Nodes(app)
 	if err != nil {
 		return "", err
 	}
@@ -688,7 +712,6 @@ func (p *dockerProvisioner) AddUnits(a provision.App, units uint, process string
 	if w == nil {
 		w = ioutil.Discard
 	}
-	writer := io.MultiWriter(w, &app.LogWriter{App: a})
 	imageId, err := image.AppCurrentImageName(a.GetName())
 	if err != nil {
 		return err
@@ -697,7 +720,7 @@ func (p *dockerProvisioner) AddUnits(a provision.App, units uint, process string
 	if err != nil {
 		return err
 	}
-	_, err = p.runCreateUnitsPipeline(writer, a, map[string]*containersToAdd{process: {Quantity: int(units)}}, imageId, imageData.ExposedPort)
+	_, err = p.runCreateUnitsPipeline(w, a, map[string]*containersToAdd{process: {Quantity: int(units)}}, imageId, imageData.ExposedPort)
 	return err
 }
 
@@ -1033,20 +1056,6 @@ func (p *dockerProvisioner) Nodes(app provision.App) ([]cluster.Node, error) {
 	return nil, errors.Errorf("No nodes found with one of the following metadata: pool=%s", poolName)
 }
 
-func (p *dockerProvisioner) MetricEnvs(app provision.App) map[string]string {
-	bsContainer, err := nodecontainer.LoadNodeContainer(app.GetPool(), nodecontainer.BsDefaultName)
-	if err != nil {
-		return map[string]string{}
-	}
-	envs := bsContainer.EnvMap()
-	for envName := range envs {
-		if !strings.HasPrefix(envName, "METRICS_") {
-			delete(envs, envName)
-		}
-	}
-	return envs
-}
-
 func (p *dockerProvisioner) LogsEnabled(app provision.App) (bool, string, error) {
 	const (
 		logBackendsEnv      = "LOG_BACKENDS"
@@ -1129,8 +1138,10 @@ func (p *dockerProvisioner) FilterAppsByUnitStatus(apps []provision.App, status 
 	return result, nil
 }
 
-var _ provision.Node = &clusterNodeWrapper{}
-var _ provision.NodeHealthChecker = &clusterNodeWrapper{}
+var (
+	_ provision.Node              = &clusterNodeWrapper{}
+	_ provision.NodeHealthChecker = &clusterNodeWrapper{}
+)
 
 type clusterNodeWrapper struct {
 	*cluster.Node

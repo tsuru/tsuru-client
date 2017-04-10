@@ -76,7 +76,7 @@ func (p *ListStorageProvidersParams) SetType(v string) {
 	if p.p == nil {
 		p.p = make(map[string]interface{})
 	}
-	p.p["type"] = v
+	p.p["storagePoolType"] = v
 	return
 }
 
@@ -85,7 +85,7 @@ func (p *ListStorageProvidersParams) SetType(v string) {
 func (s *StoragePoolService) NewListStorageProvidersParams(storagePoolType string) *ListStorageProvidersParams {
 	p := &ListStorageProvidersParams{}
 	p.p = make(map[string]interface{})
-	p.p["type"] = storagePoolType
+	p.p["storagePoolType"] = storagePoolType
 	return p
 }
 

@@ -25,6 +25,8 @@ import (
 
 type DistributedVirtualSwitch struct {
 	Common
+
+	InventoryPath string
 }
 
 func NewDistributedVirtualSwitch(c *vim25.Client, ref types.ManagedObjectReference) *DistributedVirtualSwitch {
