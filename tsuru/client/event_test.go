@@ -264,6 +264,11 @@ Start Custom Data:
       deploys: 0
       description: ""
       env:
+        TSURU_APP_TOKEN:
+          instancename: ""
+          name: TSURU_APP_TOKEN
+          public: false
+          value: 900d072c007a7f8029ff7b2ce79351b24ea64b3f
         TSURU_APPDIR:
           instancename: ""
           name: TSURU_APPDIR
@@ -274,15 +279,10 @@ Start Custom Data:
           name: TSURU_APPNAME
           public: false
           value: otherapp
-        TSURU_APP_TOKEN:
-          instancename: ""
-          name: TSURU_APP_TOKEN
-          public: false
-          value: 900d072c007a7f8029ff7b2ce79351b24ea64b3f
       framework: python
       ip: otherapp\.fakerouter\.com
       lock:
-        acquiredate: ".*?"
+        acquiredate: .*?
         locked: true
         owner: majortom@groundcontrol\.com
         reason: POST /apps/otherapp/repository/clone
@@ -399,9 +399,9 @@ Start Custom Data:
     id: 22717c3d7cd8511339edbcc9bf7b931e
     image: tsuru/python
     ip: ""
-    laststatusupdate: "0001-01-01T00:00:00Z"
-    lastsuccessstatusupdate: ".*?"
-    lockeduntil: "0001-01-01T00:00:00Z"
+    laststatusupdate: 0001-01-01T00:00:00Z
+    lastsuccessstatusupdate: .*?
+    lockeduntil: 0001-01-01T00:00:00Z
     name: ""
     privatekey: ""
     processname: web
@@ -419,9 +419,9 @@ End Custom Data:
     id: ""
     image: ""
     ip: ""
-    laststatusupdate: "0001-01-01T00:00:00Z"
-    lastsuccessstatusupdate: "0001-01-01T00:00:00Z"
-    lockeduntil: "0001-01-01T00:00:00Z"
+    laststatusupdate: 0001-01-01T00:00:00Z
+    lastsuccessstatusupdate: 0001-01-01T00:00:00Z
+    lockeduntil: 0001-01-01T00:00:00Z
     name: ""
     privatekey: ""
     processname: ""
