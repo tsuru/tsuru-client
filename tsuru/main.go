@@ -14,9 +14,8 @@ import (
 	"github.com/tsuru/tsuru-client/tsuru/installer"
 	"github.com/tsuru/tsuru/cmd"
 	"github.com/tsuru/tsuru/iaas/dockermachine"
-	"github.com/tsuru/tsuru/provision"
-	_ "github.com/tsuru/tsuru/provision/docker"
-	_ "github.com/tsuru/tsuru/provision/kubernetes"
+	_ "github.com/tsuru/tsuru/provision/docker/cmds"
+	_ "github.com/tsuru/tsuru/provision/kubernetes/cmds"
 )
 
 const (
@@ -164,22 +163,13 @@ func buildManager(name string) *cmd.Manager {
 	m.RegisterDeprecated(&admin.AutoScaleInfoCmd{}, "docker-autoscale-info")
 	m.RegisterDeprecated(&admin.AutoScaleSetRuleCmd{}, "docker-autoscale-rule-set")
 	m.RegisterDeprecated(&admin.AutoScaleDeleteRuleCmd{}, "docker-autoscale-rule-remove")
-	registerProvisionersCommands(m)
+	registerExtraCommands(m)
 	return m
 }
 
-func registerProvisionersCommands(m *cmd.Manager) {
-	provisioners, err := provision.Registry()
-	if err != nil {
-		log.Fatalf("Unable to list provisioners: %s", err)
-	}
-	for _, p := range provisioners {
-		if c, ok := p.(cmd.AdminCommandable); ok {
-			commands := c.AdminCommands()
-			for _, cmd := range commands {
-				m.Register(cmd)
-			}
-		}
+func registerExtraCommands(m *cmd.Manager) {
+	for _, c := range cmd.ExtraCmds() {
+		m.Register(c)
 	}
 }
 

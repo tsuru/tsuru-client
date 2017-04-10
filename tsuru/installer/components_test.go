@@ -12,7 +12,6 @@ import (
 	"net/http/httptest"
 	"strings"
 
-	_ "github.com/tsuru/tsuru/provision/docker"
 	"gopkg.in/check.v1"
 )
 

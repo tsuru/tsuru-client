@@ -15,7 +15,6 @@ import (
 	"github.com/tsuru/tsuru-client/tsuru/admin"
 	tclient "github.com/tsuru/tsuru-client/tsuru/client"
 	"github.com/tsuru/tsuru/cmd"
-	"github.com/tsuru/tsuru/provision"
 )
 
 var defaultTsuruAPIPort = 8080
@@ -81,17 +80,8 @@ type TsuruBoostraper struct {
 
 func (s *TsuruBoostraper) Bootstrap(opts BoostrapOptions) error {
 	manager := cmd.BuildBaseManager("setup-client", "0.0.0", "", nil)
-	provisioners, err := provision.Registry()
-	if err != nil {
-		return err
-	}
-	for _, p := range provisioners {
-		if c, ok := p.(cmd.AdminCommandable); ok {
-			commands := c.AdminCommands()
-			for _, comm := range commands {
-				manager.Register(comm)
-			}
-		}
+	for _, c := range cmd.ExtraCmds() {
+		manager.Register(c)
 	}
 	s.manager = manager
 	s.client = cmd.NewClient(&http.Client{}, nil, s.manager)
@@ -101,7 +91,7 @@ func (s *TsuruBoostraper) Bootstrap(opts BoostrapOptions) error {
 		Stderr: os.Stderr,
 	}
 	s.context.RawOutput()
-	err = s.addTarget()
+	err := s.addTarget()
 	if err != nil {
 		return err
 	}
@@ -265,17 +255,8 @@ func (s *TsuruBoostraper) installDashboard() error {
 
 func (c *TsuruAPI) Uninstall(installation string) error {
 	manager := cmd.BuildBaseManager("uninstall-client", "0.0.0", "", nil)
-	provisioners, err := provision.Registry()
-	if err != nil {
-		return err
-	}
-	for _, p := range provisioners {
-		if c, ok := p.(cmd.AdminCommandable); ok {
-			commands := c.AdminCommands()
-			for _, cmd := range commands {
-				manager.Register(cmd)
-			}
-		}
+	for _, c := range cmd.ExtraCmds() {
+		manager.Register(c)
 	}
 	fmt.Fprint(os.Stdout, "removing target\n")
 	client := cmd.NewClient(&http.Client{}, nil, manager)
