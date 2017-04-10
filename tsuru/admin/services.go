@@ -16,7 +16,7 @@ import (
 	"strings"
 
 	"github.com/tsuru/tsuru/cmd"
-	"gopkg.in/yaml.v1"
+	"gopkg.in/yaml.v2"
 )
 
 type ServiceCreate struct{}
