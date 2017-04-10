@@ -16,6 +16,7 @@ import (
 	"github.com/tsuru/tsuru/iaas/dockermachine"
 	"github.com/tsuru/tsuru/provision"
 	_ "github.com/tsuru/tsuru/provision/docker"
+	_ "github.com/tsuru/tsuru/provision/kubernetes"
 )
 
 const (
