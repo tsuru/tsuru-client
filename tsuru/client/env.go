@@ -19,7 +19,7 @@ import (
 
 	"github.com/ajg/form"
 	"github.com/tsuru/gnuflag"
-	"github.com/tsuru/tsuru/api"
+	"github.com/tsuru/tsuru/api/types"
 	"github.com/tsuru/tsuru/cmd"
 	tsuruIo "github.com/tsuru/tsuru/io"
 )
@@ -105,7 +105,7 @@ func (c *EnvSet) Run(context *cmd.Context, client *cmd.Client) error {
 		parts := strings.SplitN(decls[i][1], "=", 2)
 		envs[i] = struct{ Name, Value string }{Name: parts[0], Value: parts[1]}
 	}
-	e := api.Envs{
+	e := types.Envs{
 		Envs:      envs,
 		NoRestart: c.noRestart,
 		Private:   c.private,
