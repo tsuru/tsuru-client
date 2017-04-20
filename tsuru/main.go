@@ -15,7 +15,6 @@ import (
 	"github.com/tsuru/tsuru/cmd"
 	"github.com/tsuru/tsuru/iaas/dockermachine"
 	_ "github.com/tsuru/tsuru/provision/docker/cmds"
-	_ "github.com/tsuru/tsuru/provision/kubernetes/cmds"
 )
 
 const (
@@ -145,6 +144,9 @@ func buildManager(name string) *cmd.Manager {
 	m.Register(&admin.NodeContainerUpdate{})
 	m.Register(&admin.NodeContainerDelete{})
 	m.Register(&admin.NodeContainerUpgrade{})
+	m.Register(&admin.ClusterUpdate{})
+	m.Register(&admin.ClusterRemove{})
+	m.Register(&admin.ClusterList{})
 	m.RegisterRemoved("bs-env-set", "You should use `tsuru node-container-update big-sibling` instead.")
 	m.RegisterRemoved("bs-info", "You should use `tsuru node-container-info big-sibling` instead.")
 	m.RegisterRemoved("bs-upgrade", "You should use `tsuru node-container-upgrade big-sibling` instead.")
