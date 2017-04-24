@@ -27,7 +27,7 @@ type ClusterUpdate struct {
 	clientkey  string
 	addresses  cmd.StringSliceFlag
 	pools      cmd.StringSliceFlag
-	namespace  string
+	customData cmd.MapFlag
 	isDefault  bool
 }
 
@@ -40,14 +40,14 @@ func (c *ClusterUpdate) Flags() *gnuflag.FlagSet {
 		c.fs.StringVar(&c.clientcert, "clientcert", "", desc)
 		desc = "Path to client key file."
 		c.fs.StringVar(&c.clientkey, "clientkey", "", desc)
-		desc = "Namespace to be used in kubernetes cluster."
-		c.fs.StringVar(&c.namespace, "namespace", "", desc)
 		desc = "Whether this is the default cluster."
 		c.fs.BoolVar(&c.isDefault, "default", false, desc)
 		desc = "Address to be used in cluster."
 		c.fs.Var(&c.addresses, "addr", desc)
 		desc = "Pool which will use this cluster."
 		c.fs.Var(&c.pools, "pool", desc)
+		desc = "Custom provisioner specific data."
+		c.fs.Var(&c.customData, "custom", desc)
 	}
 	return c.fs
 }
@@ -55,7 +55,7 @@ func (c *ClusterUpdate) Flags() *gnuflag.FlagSet {
 func (c *ClusterUpdate) Info() *cmd.Info {
 	return &cmd.Info{
 		Name:    "cluster-update",
-		Usage:   "cluster-update <name> <provisioner> --addr address... [--pool poolname]... [--namespace] [--cacert cacertfile] [--clientcert clientcertfile] [--clientkey clientkeyfile] [--default]",
+		Usage:   "cluster-update <name> <provisioner> --addr address... [--pool poolname]... [--cacert cacertfile] [--clientcert clientcertfile] [--clientkey clientkeyfile] [--custom key=value]... [--default]",
 		Desc:    `Creates or updates a provisioner cluster definition.`,
 		MinArgs: 2,
 		MaxArgs: 2,
@@ -70,12 +70,12 @@ func (c *ClusterUpdate) Run(context *cmd.Context, client *cmd.Client) error {
 	name := context.Args[0]
 	provisioner := context.Args[1]
 	clus := cluster.Cluster{
-		Name:              name,
-		Addresses:         c.addresses,
-		Pools:             c.pools,
-		ExplicitNamespace: c.namespace,
-		Default:           c.isDefault,
-		Provisioner:       provisioner,
+		Name:        name,
+		Addresses:   c.addresses,
+		Pools:       c.pools,
+		CustomData:  c.customData,
+		Default:     c.isDefault,
+		Provisioner: provisioner,
 	}
 	var data []byte
 	if c.cacert != "" {
@@ -143,7 +143,7 @@ func (c *ClusterList) Run(context *cmd.Context, client *cmd.Client) error {
 	}
 	defer response.Body.Close()
 	if response.StatusCode == http.StatusNoContent {
-		fmt.Fprintln(context.Stdout, "No kubernetes clusters registered.")
+		fmt.Fprintln(context.Stdout, "No clusters registered.")
 		return nil
 	}
 	data, err := ioutil.ReadAll(response.Body)
@@ -157,10 +157,14 @@ func (c *ClusterList) Run(context *cmd.Context, client *cmd.Client) error {
 	}
 	tbl := cmd.NewTable()
 	tbl.LineSeparator = true
-	tbl.Headers = cmd.Row{"Name", "Provisioner", "Addresses", "Namespace", "Default", "Pools"}
+	tbl.Headers = cmd.Row{"Name", "Provisioner", "Addresses", "Custom Data", "Default", "Pools"}
 	sort.Slice(clusters, func(i, j int) bool { return clusters[i].Name < clusters[j].Name })
 	for _, c := range clusters {
-		tbl.AddRow(cmd.Row{c.Name, c.Provisioner, strings.Join(c.Addresses, "\n"), c.Namespace(), strconv.FormatBool(c.Default), strings.Join(c.Pools, "\n")})
+		var custom string
+		for k, v := range c.CustomData {
+			custom += fmt.Sprintf("%s=%s", k, v)
+		}
+		tbl.AddRow(cmd.Row{c.Name, c.Provisioner, strings.Join(c.Addresses, "\n"), custom, strconv.FormatBool(c.Default), strings.Join(c.Pools, "\n")})
 	}
 	fmt.Fprint(context.Stdout, tbl.String())
 	return nil

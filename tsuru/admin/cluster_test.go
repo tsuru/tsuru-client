@@ -38,15 +38,15 @@ func (s *S) TestClusterUpdateRun(c *check.C) {
 			err = dec.DecodeValues(&clus, req.Form)
 			c.Assert(err, check.IsNil)
 			c.Assert(clus, check.DeepEquals, cluster.Cluster{
-				Name:              "c1",
-				CaCert:            []byte("cadata"),
-				ClientCert:        []byte("certdata"),
-				ClientKey:         []byte("keydata"),
-				ExplicitNamespace: "tsuru",
-				Addresses:         []string{"addr1", "addr2"},
-				Pools:             []string{"p1", "p2"},
-				Default:           true,
-				Provisioner:       "myprov",
+				Name:        "c1",
+				CaCert:      []byte("cadata"),
+				ClientCert:  []byte("certdata"),
+				ClientKey:   []byte("keydata"),
+				CustomData:  map[string]string{"a": "b", "c": "d"},
+				Addresses:   []string{"addr1", "addr2"},
+				Pools:       []string{"p1", "p2"},
+				Default:     true,
+				Provisioner: "myprov",
 			})
 			return req.URL.Path == "/1.3/provisioner/clusters" && req.Method == "POST"
 		},
@@ -67,11 +67,12 @@ func (s *S) TestClusterUpdateRun(c *check.C) {
 		"--cacert", filepath.Join(dir, "ca"),
 		"--clientcert", filepath.Join(dir, "cert"),
 		"--clientkey", filepath.Join(dir, "key"),
-		"--namespace", "tsuru",
 		"--addr", "addr1",
 		"--addr", "addr2",
 		"--pool", "p1",
 		"--pool", "p2",
+		"--custom", "a=b",
+		"--custom", "c=d",
 		"--default",
 	})
 	c.Assert(err, check.IsNil)
@@ -87,14 +88,14 @@ func (s *S) TestClusterListRun(c *check.C) {
 		Stderr: &stderr,
 	}
 	clusters := []cluster.Cluster{{
-		Name:              "c1",
-		Addresses:         []string{"addr1", "addr2"},
-		CaCert:            []byte("cacert"),
-		ClientCert:        []byte("clientcert"),
-		ClientKey:         []byte("clientkey"),
-		ExplicitNamespace: "ns1",
-		Default:           true,
-		Provisioner:       "prov1",
+		Name:        "c1",
+		Addresses:   []string{"addr1", "addr2"},
+		CaCert:      []byte("cacert"),
+		ClientCert:  []byte("clientcert"),
+		ClientKey:   []byte("clientkey"),
+		CustomData:  map[string]string{"namespace": "ns1"},
+		Default:     true,
+		Provisioner: "prov1",
 	}, {
 		Name:        "c2",
 		Addresses:   []string{"addr3"},
@@ -115,15 +116,15 @@ func (s *S) TestClusterListRun(c *check.C) {
 	myCmd := ClusterList{}
 	err = myCmd.Run(&context, client)
 	c.Assert(err, check.IsNil)
-	c.Assert(stdout.String(), check.Equals, `+------+-------------+-----------+-----------+---------+-------+
-| Name | Provisioner | Addresses | Namespace | Default | Pools |
-+------+-------------+-----------+-----------+---------+-------+
-| c1   | prov1       | addr1     | ns1       | true    |       |
-|      |             | addr2     |           |         |       |
-+------+-------------+-----------+-----------+---------+-------+
-| c2   | prov2       | addr3     | default   | false   | p1    |
-|      |             |           |           |         | p2    |
-+------+-------------+-----------+-----------+---------+-------+
+	c.Assert(stdout.String(), check.Equals, `+------+-------------+-----------+---------------+---------+-------+
+| Name | Provisioner | Addresses | Custom Data   | Default | Pools |
++------+-------------+-----------+---------------+---------+-------+
+| c1   | prov1       | addr1     | namespace=ns1 | true    |       |
+|      |             | addr2     |               |         |       |
++------+-------------+-----------+---------------+---------+-------+
+| c2   | prov2       | addr3     |               | false   | p1    |
+|      |             |           |               |         | p2    |
++------+-------------+-----------+---------------+---------+-------+
 `)
 }
 
