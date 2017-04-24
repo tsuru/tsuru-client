@@ -160,11 +160,11 @@ func (c *ClusterList) Run(context *cmd.Context, client *cmd.Client) error {
 	tbl.Headers = cmd.Row{"Name", "Provisioner", "Addresses", "Custom Data", "Default", "Pools"}
 	sort.Slice(clusters, func(i, j int) bool { return clusters[i].Name < clusters[j].Name })
 	for _, c := range clusters {
-		var custom string
+		var custom []string
 		for k, v := range c.CustomData {
-			custom += fmt.Sprintf("%s=%s", k, v)
+			custom = append(custom, fmt.Sprintf("%s=%s", k, v))
 		}
-		tbl.AddRow(cmd.Row{c.Name, c.Provisioner, strings.Join(c.Addresses, "\n"), custom, strconv.FormatBool(c.Default), strings.Join(c.Pools, "\n")})
+		tbl.AddRow(cmd.Row{c.Name, c.Provisioner, strings.Join(c.Addresses, "\n"), strings.Join(custom, "\n"), strconv.FormatBool(c.Default), strings.Join(c.Pools, "\n")})
 	}
 	fmt.Fprint(context.Stdout, tbl.String())
 	return nil
