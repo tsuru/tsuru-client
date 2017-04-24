@@ -13,6 +13,7 @@ import (
 	"strings"
 
 	"github.com/pkg/errors"
+	"github.com/tsuru/config"
 	"github.com/tsuru/gnuflag"
 	"github.com/tsuru/tsuru-client/tsuru/admin"
 	"github.com/tsuru/tsuru-client/tsuru/client"
@@ -115,6 +116,7 @@ func parseConfigFile(file string) (*InstallOpts, error) {
 	conf.CaPath = "/certs"
 	conf.Driver.Name = installConfig.DriverOpts.Name
 	conf.Driver.Options = installConfig.DriverOpts.Options
+	config.ReadConfigFile(file)
 	return installConfig, nil
 }
 
