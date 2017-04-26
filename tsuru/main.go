@@ -165,6 +165,7 @@ func buildManager(name string) *cmd.Manager {
 	m.RegisterDeprecated(&admin.AutoScaleInfoCmd{}, "docker-autoscale-info")
 	m.RegisterDeprecated(&admin.AutoScaleSetRuleCmd{}, "docker-autoscale-rule-set")
 	m.RegisterDeprecated(&admin.AutoScaleDeleteRuleCmd{}, "docker-autoscale-rule-remove")
+	m.RegisterDeprecated(&admin.ListHealingHistoryCmd{}, "docker-healing-list")
 	registerExtraCommands(m)
 	return m
 }
