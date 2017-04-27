@@ -412,14 +412,14 @@ func (s *S) TestAppUpdateIsRegistered(c *check.C) {
 
 func (s *S) TestInstallIsRegistered(c *check.C) {
 	manager = buildManager("tsuru")
-	change, ok := manager.Commands["install"]
+	change, ok := manager.Commands["install-create"]
 	c.Assert(ok, check.Equals, true)
 	c.Assert(change, check.FitsTypeOf, &installer.Install{})
 }
 
 func (s *S) TestUninstallIsRegistered(c *check.C) {
 	manager = buildManager("tsuru")
-	change, ok := manager.Commands["uninstall"]
+	change, ok := manager.Commands["install-remove"]
 	c.Assert(ok, check.Equals, true)
 	c.Assert(change, check.FitsTypeOf, &installer.Uninstall{})
 }
