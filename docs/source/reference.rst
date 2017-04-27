@@ -392,7 +392,7 @@ Pool management
 Healer
 ======
 
-.. tsuru-command:: docker-healing-list
+.. tsuru-command:: healing-list
   :title: List latest healing events
 
 .. tsuru-command:: node-healing-info
@@ -503,7 +503,7 @@ Other commands
 Installer
 =========
 
-.. tsuru-command:: install
+.. tsuru-command:: install-create
    :title: Install Tsuru and it's components
 
 .. tsuru-command:: install-host-list
@@ -512,7 +512,7 @@ Installer
 .. tsuru-command:: install-ssh
    :title: SSH into an host created by the installer
 
-.. tsuru-command:: uninstall
+.. tsuru-command:: install-remove
   :title: Uninstall Tsuru and it's components
 
 Help

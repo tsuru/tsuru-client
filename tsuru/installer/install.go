@@ -32,8 +32,8 @@ type Install struct {
 
 func (c *Install) Info() *cmd.Info {
 	return &cmd.Info{
-		Name:  "install",
-		Usage: "install [--config/-c config_file]",
+		Name:  "install-create",
+		Usage: "install-create [--config/-c config_file]",
 		Desc: `Installs Tsuru and It's components as containers on hosts provisioned
 with docker machine drivers.
 
@@ -173,8 +173,8 @@ type Uninstall struct {
 
 func (c *Uninstall) Info() *cmd.Info {
 	return &cmd.Info{
-		Name:    "uninstall",
-		Usage:   "uninstall [name] [-y/--assume-yes]",
+		Name:    "install-remove",
+		Usage:   "install-remove [name] [-y/--assume-yes]",
 		Desc:    "Uninstalls Tsuru and It's components.",
 		MinArgs: 0,
 	}
