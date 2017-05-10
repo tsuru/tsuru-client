@@ -2,7 +2,7 @@
 # Build customization
 build:
   main: ./tsuru/main.go
-  binary_name: tsuru
+  binary: tsuru
   goos:
     - windows
     - darwin
@@ -23,7 +23,9 @@ archive:
 # Mac OS Homebrew
 brew:
   # Reporitory to push the tap to.
-  repo: tsuru/homebrew-tsuru
+  github: 
+    owner: tsuru
+    name: homebrew-tsuru
 
   # Folder inside the repository to put the formula.
   # Default is the root folder.
