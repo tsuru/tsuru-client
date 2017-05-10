@@ -12,7 +12,6 @@ import (
 	"io/ioutil"
 	"net/http"
 	"net/url"
-	"regexp"
 	"sort"
 	"strconv"
 	"strings"
@@ -94,16 +93,17 @@ func (c *EnvSet) Run(context *cmd.Context, client *cmd.Client) error {
 	if err != nil {
 		return err
 	}
-	raw := strings.Join(context.Args, "\n")
-	regex := regexp.MustCompile(`(\w+=[^\n]+)(\n|$)`)
-	decls := regex.FindAllStringSubmatch(raw, -1)
-	if len(decls) < 1 || len(decls) != len(context.Args) {
+	if len(context.Args) < 1 {
 		return errors.New(EnvSetValidationMessage)
 	}
-	envs := make([]struct{ Name, Value string }, len(decls))
-	for i := range decls {
-		parts := strings.SplitN(decls[i][1], "=", 2)
+	envs := make([]struct{ Name, Value string }, len(context.Args))
+	for i := range context.Args {
+		parts := strings.SplitN(context.Args[i], "=", 2)
+		if len(parts) != 2 {
+			return errors.New(EnvSetValidationMessage)
+		}
 		envs[i] = struct{ Name, Value string }{Name: parts[0], Value: parts[1]}
+
 	}
 	e := types.Envs{
 		Envs:      envs,
