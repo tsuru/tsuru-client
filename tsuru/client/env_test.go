@@ -186,6 +186,54 @@ func (s *S) TestEnvSetRunWithMultipleParams(c *check.C) {
 	c.Assert(stdout.String(), check.Equals, expectedOut)
 }
 
+func (s *S) TestEnvSetMultilineVariables(c *check.C) {
+	var stdout, stderr bytes.Buffer
+	context := cmd.Context{
+		Args: []string{
+			`LINE1=multiline
+variable 1`,
+			`LINE2=multiline
+variable 2`},
+		Stdout: &stdout,
+		Stderr: &stderr,
+	}
+	expectedOut := "variable(s) successfully exported\n"
+	msg := io.SimpleJsonMessage{Message: expectedOut}
+	result, err := json.Marshal(msg)
+	c.Assert(err, check.IsNil)
+	trans := &cmdtest.ConditionalTransport{
+		Transport: cmdtest.Transport{Message: string(result), Status: http.StatusOK},
+		CondFunc: func(req *http.Request) bool {
+			want := []struct{ Name, Value string }{
+				{Name: "LINE1", Value: `multiline
+variable 1`},
+				{Name: "LINE2", Value: `multiline
+variable 2`},
+			}
+			err = req.ParseForm()
+			c.Assert(err, check.IsNil)
+			var e types.Envs
+			dec := form.NewDecoder(nil)
+			dec.IgnoreUnknownKeys(true)
+			err = dec.DecodeValues(&e, req.Form)
+			c.Assert(err, check.IsNil)
+			c.Assert(e.Envs, check.DeepEquals, want)
+			private := !e.Private
+			noRestart := !e.NoRestart
+			path := strings.HasSuffix(req.URL.Path, "/apps/someapp/env")
+			method := req.Method == "POST"
+			contentType := req.Header.Get("Content-Type") == "application/x-www-form-urlencoded"
+			return path && contentType && method && private && noRestart
+		},
+	}
+	client := cmd.NewClient(&http.Client{Transport: trans}, nil, manager)
+	command := EnvSet{}
+	command.Flags().Parse(true, []string{"-a", "someapp"})
+	err = command.Run(&context, client)
+	c.Assert(err, check.IsNil)
+	c.Assert(stdout.String(), check.Equals, expectedOut)
+}
+
 func (s *S) TestEnvSetValues(c *check.C) {
 	var stdout, stderr bytes.Buffer
 	context := cmd.Context{
