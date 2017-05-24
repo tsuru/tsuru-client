@@ -71,6 +71,33 @@ func (s *S) TestEventBlockList(c *check.C) {
 	c.Assert(stdout.String(), check.Equals, expected)
 }
 
+func (s *S) TestEventBlockListNoEvents(c *check.C) {
+	os.Setenv("TSURU_DISABLE_COLORS", "1")
+	defer os.Unsetenv("TSURU_DISABLE_COLORS")
+	var stdout, stderr bytes.Buffer
+	context := cmd.Context{
+		Args:   []string{},
+		Stdout: &stdout,
+		Stderr: &stderr,
+	}
+	trans := &cmdtest.ConditionalTransport{
+		Transport: cmdtest.Transport{Status: http.StatusNoContent},
+		CondFunc: func(req *http.Request) bool {
+			return req.URL.Path == "/1.3/events/blocks"
+		},
+	}
+	client := cmd.NewClient(&http.Client{Transport: trans}, nil, s.manager)
+	command := EventBlockList{}
+	err := command.Run(&context, client)
+	c.Assert(err, check.IsNil)
+	expected := `+----+------------------+------+-------+----------------------+--------+
+| ID | Start (duration) | Kind | Owner | Target (Type: Value) | Reason |
++----+------------------+------+-------+----------------------+--------+
++----+------------------+------+-------+----------------------+--------+
+`
+	c.Assert(stdout.String(), check.Equals, expected)
+}
+
 func (s *S) TestEventBlockAdd(c *check.C) {
 	var stdout, stderr bytes.Buffer
 	context := cmd.Context{
