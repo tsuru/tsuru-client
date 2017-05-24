@@ -55,9 +55,11 @@ func (c *EventBlockList) Run(context *cmd.Context, client *cmd.Client) error {
 	}
 	defer resp.Body.Close()
 	var blocks []event.Block
-	err = json.NewDecoder(resp.Body).Decode(&blocks)
-	if err != nil {
-		return err
+	if resp.StatusCode == http.StatusOK {
+		err = json.NewDecoder(resp.Body).Decode(&blocks)
+		if err != nil {
+			return err
+		}
 	}
 	tbl := cmd.NewTable()
 	tbl.Headers = cmd.Row{"ID", "Start (duration)", "Kind", "Owner", "Target (Type: Value)", "Reason"}
