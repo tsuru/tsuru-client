@@ -240,7 +240,7 @@ func (sb *ServiceInstanceBind) Info() *cmd.Info {
 		Name:  "service-instance-bind",
 		Usage: "service-instance-bind <service-name> <service-instance-name> [-a/--app appname] [--no-restart]",
 		Desc: `Binds an application to a previously created service instance. See [[tsuru
-service-add]] for more details on how to create a service instance.
+service-instance-add]] for more details on how to create a service instance.
 
 When binding an application to a service instance, tsuru will add new
 environment variables to the application. All environment variables exported

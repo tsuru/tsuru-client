@@ -480,7 +480,7 @@
   }, 
   "service-instance-bind": {
     "usage": "tsuru service-instance-bind <service-name> <service-instance-name> [-a/--app appname] [--no-restart]", 
-    "desc": "Binds an application to a previously created service instance. See [[tsuru\nservice-add]] for more details on how to create a service instance.\n\nWhen binding an application to a service instance, tsuru will add new\nenvironment variables to the application. All environment variables exported\nby bind will be private (not accessible via [[tsuru env-get]]).\n\nFlags:\n  \n  -a, --app (= \"\")\n      The name of the app.\n  --no-restart  (= false)\n      Binds an application to a service instance without restart the application\n  \nMinimum # of arguments: 2\n"
+    "desc": "Binds an application to a previously created service instance. See [[tsuru\nservice-instance-add]] for more details on how to create a service instance.\n\nWhen binding an application to a service instance, tsuru will add new\nenvironment variables to the application. All environment variables exported\nby bind will be private (not accessible via [[tsuru env-get]]).\n\nFlags:\n  \n  -a, --app (= \"\")\n      The name of the app.\n  --no-restart  (= false)\n      Binds an application to a service instance without restart the application\n  \nMinimum # of arguments: 2\n"
   }, 
   "service-create": {
     "usage": "tsuru service-create path/to/manifest [- for stdin]", 
