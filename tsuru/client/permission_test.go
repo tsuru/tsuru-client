@@ -414,3 +414,58 @@ func (s *S) TestRoleDefaultList(c *check.C) {
 	c.Assert(err, check.IsNil)
 	c.Assert(stdout.String(), check.Equals, expected)
 }
+
+func (s *S) TestRoleUpdateInfo(c *check.C) {
+	c.Assert((&RoleUpdate{}).Info(), check.NotNil)
+}
+
+func (s *S) TestRoleUpdate(c *check.C) {
+	var stdout, stderr bytes.Buffer
+	context := cmd.Context{
+		Args:   []string{"team-member"},
+		Stdout: &stdout,
+		Stderr: &stderr,
+	}
+	trans := &cmdtest.ConditionalTransport{
+		Transport: cmdtest.Transport{Message: "", Status: http.StatusOK},
+		CondFunc: func(req *http.Request) bool {
+			path := strings.HasSuffix(req.URL.Path, "/role/update")
+			method := req.Method == "PUT"
+			contentType := req.Header.Get("Content-Type") == "application/x-www-form-urlencoded"
+			return path && method && contentType && req.FormValue("name") == "team-member" && req.FormValue("description") == "a developer"
+		},
+	}
+	manager := cmd.Manager{}
+	client := cmd.NewClient(&http.Client{Transport: trans}, nil, &manager)
+	cmd := RoleUpdate{}
+	cmd.Flags().Parse(true, []string{"-d", "a developer"})
+	err := cmd.Run(&context, client)
+	c.Assert(err, check.IsNil)
+	c.Assert(stdout.String(), check.Equals, "Role successfully updated\n")
+}
+
+func (s *S) TestRoleUpdateWithInvalidContent(c *check.C) {
+	var stdout, stderr bytes.Buffer
+	context := cmd.Context{
+		Args:   []string{"invalid-role"},
+		Stdout: &stdout,
+		Stderr: &stderr,
+	}
+	trans := &cmdtest.ConditionalTransport{
+		Transport: cmdtest.Transport{Message: "", Status: http.StatusConflict},
+		CondFunc: func(req *http.Request) bool {
+			path := strings.HasSuffix(req.URL.Path, "/role/update")
+			method := req.Method == "PUT"
+			contentType := req.Header.Get("Content-Type") == "application/x-www-form-urlencoded"
+			return path && method && contentType && req.FormValue("name") == "invalid-role" && req.FormValue("description") == "a developer"
+		},
+	}
+	manager := cmd.Manager{}
+	client := cmd.NewClient(&http.Client{Transport: trans}, nil, &manager)
+	cmd := RoleUpdate{}
+	cmd.Flags().Parse(true, []string{"-d", "a developer"})
+	err := cmd.Run(&context, client)
+	c.Assert(err, check.NotNil)
+	c.Assert(stdout.String(), check.Equals, "")
+	c.Assert(stderr.String(), check.Equals, "Failed to update role\n")
+}
