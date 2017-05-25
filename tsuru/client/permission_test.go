@@ -444,6 +444,31 @@ func (s *S) TestRoleUpdate(c *check.C) {
 	c.Assert(stdout.String(), check.Equals, "Role successfully updated\n")
 }
 
+func (s *S) TestRoleUpdateMultipleFlags(c *check.C) {
+	var stdout, stderr bytes.Buffer
+	context := cmd.Context{
+		Args:   []string{"team-member"},
+		Stdout: &stdout,
+		Stderr: &stderr,
+	}
+	trans := &cmdtest.ConditionalTransport{
+		Transport: cmdtest.Transport{Message: "", Status: http.StatusOK},
+		CondFunc: func(req *http.Request) bool {
+			path := strings.HasSuffix(req.URL.Path, "/role/update")
+			method := req.Method == "PUT"
+			contentType := req.Header.Get("Content-Type") == "application/x-www-form-urlencoded"
+			return path && method && contentType && req.FormValue("name") == "team-member" && req.FormValue("description") == "a developer" && req.FormValue("contextType") == "team" && req.FormValue("permissions") == "app.create app.delete"
+		},
+	}
+	manager := cmd.Manager{}
+	client := cmd.NewClient(&http.Client{Transport: trans}, nil, &manager)
+	cmd := RoleUpdate{}
+	cmd.Flags().Parse(true, []string{"-d", "a developer", "-c", "team", "-p", "app.create app.delete"})
+	err := cmd.Run(&context, client)
+	c.Assert(err, check.IsNil)
+	c.Assert(stdout.String(), check.Equals, "Role successfully updated\n")
+}
+
 func (s *S) TestRoleUpdateWithInvalidContent(c *check.C) {
 	var stdout, stderr bytes.Buffer
 	context := cmd.Context{
