@@ -639,3 +639,32 @@ func (c *RoleDefaultList) Run(context *cmd.Context, client *cmd.Client) error {
 	fmt.Fprint(context.Stdout, tbl.String())
 	return nil
 }
+
+type RoleUpdate struct {
+	description string
+	fs          *gnuflag.FlagSet
+}
+
+func (c *RoleUpdate) Info() *cmd.Info {
+	return &cmd.Info{
+		Name:    "role-update",
+		Usage:   "role-update <role> [-d/--description <description>]",
+		Desc:    "Updates a role description",
+		MinArgs: 1,
+	}
+}
+
+func (c *RoleUpdate) Flags() *gnuflag.FlagSet {
+	if c.fs == nil {
+		c.fs = gnuflag.NewFlagSet("", gnuflag.ExitOnError)
+		roleDescription := "Updates a role description"
+		c.fs.StringVar(&c.description, "d", "", roleDescription)
+		c.fs.StringVar(&c.description, "description", "", roleDescription)
+	}
+	return c.fs
+}
+
+func (c *RoleUpdate) Run(context *cmd.Context, client *cmd.Client) error {
+	roleName := context.Args[0]
+	return nil
+}
