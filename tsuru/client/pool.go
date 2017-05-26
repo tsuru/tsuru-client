@@ -78,8 +78,8 @@ func (PoolList) Run(context *cmd.Context, client *cmd.Client) error {
 	}
 	sort.Sort(poolEntriesList(pools))
 	for _, pool := range pools {
-		teams := "*"
-		if !pool.Public {
+		teams := ""
+		if !pool.Public && !pool.Default {
 			teams = formatToCol(pool.Allowed["team"], 5)
 		}
 		routers := formatToCol(pool.Allowed["router"], 5)

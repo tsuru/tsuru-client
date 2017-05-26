@@ -29,9 +29,13 @@ func (s *S) TestPoolListRun(c *check.C) {
 | Pool       | Kind    | Provisioner | Teams | Routers        |
 +------------+---------+-------------+-------+----------------+
 | pool0      |         | default     | admin |                |
++------------+---------+-------------+-------+----------------+
 | pool2      |         | default     | admin |                |
++------------+---------+-------------+-------+----------------+
 | pool3      |         | swarm       | admin | hipache, planb |
++------------+---------+-------------+-------+----------------+
 | pool1      | default | default     |       |                |
++------------+---------+-------------+-------+----------------+
 | theonepool | public  | default     |       | hipache        |
 +------------+---------+-------------+-------+----------------+
 `
@@ -50,7 +54,6 @@ func (s *S) TestPoolListRunNoContent(c *check.C) {
 	err := command.Run(&context, client)
 	expected := `+------+------+-------------+-------+---------+
 | Pool | Kind | Provisioner | Teams | Routers |
-+------+------+-------------+-------+---------+
 +------+------+-------------+-------+---------+
 `
 	c.Assert(err, check.IsNil)
