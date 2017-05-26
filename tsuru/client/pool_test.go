@@ -19,25 +19,26 @@ func (s *S) TestPoolListInfo(c *check.C) {
 
 func (s *S) TestPoolListRun(c *check.C) {
 	var stdout, stderr bytes.Buffer
-	result := `[{"Name":"theonepool","Public":true,"Default":true,"Allowed":{"router":["hipache"]}},{"Name":"pool1","Public":false,"Default":true},{"Name":"pool2","Public":false,"Default":false,"Allowed":{"team":["admin"]}},{"Name":"pool0","Public":false,"Default":false,"Allowed":{"team":["admin"]}},{"Name":"pool3","Public":false,"Default":false,"Provisioner":"swarm","Allowed":{"router":["hipache","planb"],"team":["admin"]}}]`
+	result := `[{"Name":"theonepool","Public":true,"Default":true,"Allowed":{"router":["hipache"]}},{"Name":"pool1","Public":false,"Default":true},{"Name":"pool2","Public":false,"Default":false,"Allowed":{"team":["admin"]}},{"Name":"pool0","Public":false,"Default":false,"Allowed":{"team":["admin"]}},{"Name":"pool3","Public":false,"Default":false,"Provisioner":"swarm","Allowed":{"router":["hipache","planb"],"team":["admin","team1","team2","team3","team4","team5"]}}]`
 	context := cmd.Context{
 		Args:   []string{},
 		Stdout: &stdout,
 		Stderr: &stderr,
 	}
-	expected := `+------------+---------+-------------+-------+----------------+
-| Pool       | Kind    | Provisioner | Teams | Routers        |
-+------------+---------+-------------+-------+----------------+
-| pool0      |         | default     | admin |                |
-+------------+---------+-------------+-------+----------------+
-| pool2      |         | default     | admin |                |
-+------------+---------+-------------+-------+----------------+
-| pool3      |         | swarm       | admin | hipache, planb |
-+------------+---------+-------------+-------+----------------+
-| pool1      | default | default     |       |                |
-+------------+---------+-------------+-------+----------------+
-| theonepool | public  | default     |       | hipache        |
-+------------+---------+-------------+-------+----------------+
+	expected := `+------------+---------+-------------+-----------------------------------+----------------+
+| Pool       | Kind    | Provisioner | Teams                             | Routers        |
++------------+---------+-------------+-----------------------------------+----------------+
+| pool0      |         | default     | admin                             |                |
++------------+---------+-------------+-----------------------------------+----------------+
+| pool2      |         | default     | admin                             |                |
++------------+---------+-------------+-----------------------------------+----------------+
+| pool3      |         | swarm       | admin, team1, team2, team3, team4 | hipache, planb |
+|            |         |             | team5                             |                |
++------------+---------+-------------+-----------------------------------+----------------+
+| pool1      | default | default     |                                   |                |
++------------+---------+-------------+-----------------------------------+----------------+
+| theonepool | public  | default     |                                   | hipache        |
++------------+---------+-------------+-----------------------------------+----------------+
 `
 	client := cmd.NewClient(&http.Client{Transport: &cmdtest.Transport{Message: result, Status: http.StatusOK}}, nil, manager)
 	command := PoolList{}
