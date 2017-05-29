@@ -650,7 +650,7 @@ type RoleUpdate struct {
 func (c *RoleUpdate) Info() *cmd.Info {
 	return &cmd.Info{
 		Name:    "role-update",
-		Usage:   "role-update <role> [-d/--description <description>] [-c/--context <context type>] [-p/--permission <permissions>...]",
+		Usage:   "role-update <role> [-d/--description <description>] [-c/--context <context type>]",
 		Desc:    "Updates a role description",
 		MinArgs: 1,
 		MaxArgs: 1,
@@ -666,9 +666,6 @@ func (c *RoleUpdate) Flags() *gnuflag.FlagSet {
 		contextType := "Updates the context type of a role"
 		c.fs.StringVar(&c.contextType, "c", "", contextType)
 		c.fs.StringVar(&c.contextType, "context", "", contextType)
-		permissions := "Updates the context type of a role"
-		c.fs.StringVar(&c.permissions, "p", "", permissions)
-		c.fs.StringVar(&c.permissions, "permissions", "", permissions)
 	}
 	return c.fs
 }
@@ -678,7 +675,6 @@ func (c *RoleUpdate) Run(context *cmd.Context, client *cmd.Client) error {
 	params.Set("name", context.Args[0])
 	params.Set("description", c.description)
 	params.Set("contextType", c.contextType)
-	params.Set("permissions", c.permissions)
 	url, err := cmd.GetURL("/role/update")
 	if err != nil {
 		return err
