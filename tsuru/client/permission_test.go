@@ -457,13 +457,13 @@ func (s *S) TestRoleUpdateMultipleFlags(c *check.C) {
 			path := strings.HasSuffix(req.URL.Path, "/role/update")
 			method := req.Method == "PUT"
 			contentType := req.Header.Get("Content-Type") == "application/x-www-form-urlencoded"
-			return path && method && contentType && req.FormValue("name") == "team-member" && req.FormValue("description") == "a developer" && req.FormValue("contextType") == "team"
+			return path && method && contentType && req.FormValue("name") == "team-member" && req.FormValue("description") == "a developer" && req.FormValue("contextType") == "team" && req.FormValue("newName") == "newName"
 		},
 	}
 	manager := cmd.Manager{}
 	client := cmd.NewClient(&http.Client{Transport: trans}, nil, &manager)
 	cmd := RoleUpdate{}
-	cmd.Flags().Parse(true, []string{"-d", "a developer", "-c", "team"})
+	cmd.Flags().Parse(true, []string{"-d", "a developer", "-c", "team", "-n", "newName"})
 	err := cmd.Run(&context, client)
 	c.Assert(err, check.IsNil)
 	c.Assert(stdout.String(), check.Equals, "Role successfully updated\n")
