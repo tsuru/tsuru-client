@@ -429,7 +429,7 @@ func (s *S) TestRoleUpdate(c *check.C) {
 	trans := &cmdtest.ConditionalTransport{
 		Transport: cmdtest.Transport{Message: "", Status: http.StatusOK},
 		CondFunc: func(req *http.Request) bool {
-			path := strings.HasSuffix(req.URL.Path, "/role/update")
+			path := strings.HasSuffix(req.URL.Path, "/roles")
 			method := req.Method == "PUT"
 			contentType := req.Header.Get("Content-Type") == "application/x-www-form-urlencoded"
 			return path && method && contentType && req.FormValue("name") == "team-member" && req.FormValue("description") == "a developer"
@@ -454,7 +454,7 @@ func (s *S) TestRoleUpdateMultipleFlags(c *check.C) {
 	trans := &cmdtest.ConditionalTransport{
 		Transport: cmdtest.Transport{Message: "", Status: http.StatusOK},
 		CondFunc: func(req *http.Request) bool {
-			path := strings.HasSuffix(req.URL.Path, "/role/update")
+			path := strings.HasSuffix(req.URL.Path, "/roles")
 			method := req.Method == "PUT"
 			contentType := req.Header.Get("Content-Type") == "application/x-www-form-urlencoded"
 			return path && method && contentType && req.FormValue("name") == "team-member" && req.FormValue("description") == "a developer" && req.FormValue("contextType") == "team" && req.FormValue("newName") == "newName"
@@ -479,7 +479,7 @@ func (s *S) TestRoleUpdateWithInvalidContent(c *check.C) {
 	trans := &cmdtest.ConditionalTransport{
 		Transport: cmdtest.Transport{Message: "", Status: http.StatusConflict},
 		CondFunc: func(req *http.Request) bool {
-			path := strings.HasSuffix(req.URL.Path, "/role/update")
+			path := strings.HasSuffix(req.URL.Path, "/roles")
 			method := req.Method == "PUT"
 			contentType := req.Header.Get("Content-Type") == "application/x-www-form-urlencoded"
 			return path && method && contentType && req.FormValue("name") == "invalid-role" && req.FormValue("description") == "a developer"
