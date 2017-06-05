@@ -37,9 +37,11 @@ func (c *RoutersList) Run(context *cmd.Context, client *cmd.Client) error {
 		return err
 	}
 	var routers []router.PlanRouter
-	err = json.NewDecoder(response.Body).Decode(&routers)
-	if err != nil {
-		return err
+	if response.StatusCode == http.StatusOK {
+		err = json.NewDecoder(response.Body).Decode(&routers)
+		if err != nil {
+			return err
+		}
 	}
 	table := cmd.NewTable()
 	table.Headers = cmd.Row([]string{"Name", "Type"})
