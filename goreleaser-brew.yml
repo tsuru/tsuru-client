@@ -1,0 +1,15 @@
+
+# Mac OS Homebrew
+brew:
+  # Reporitory to push the tap to.
+  repo: tsuru/homebrew-tsuru
+
+  # Folder inside the repository to put the formula.
+  # Default is the root folder.
+  folder: Formula
+
+  # Custom install
+  install: |
+    bin.install "tsuru"
+    bash_completion.install "misc/bash-completion" => "tsuru"
+    zsh_completion.install "misc/zsh-completion" => "tsuru"
