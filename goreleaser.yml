@@ -2,7 +2,7 @@
 # Build customization
 build:
   main: ./tsuru/main.go
-  binary_name: tsuru
+  binary: tsuru
   goos:
     - windows
     - darwin
@@ -19,3 +19,4 @@ archive:
   files:
     - misc/bash-completion
     - misc/zsh-completion
+
