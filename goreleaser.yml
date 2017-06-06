@@ -12,7 +12,7 @@ build:
 
 # Archive customization
 archive:
-  name_template: "{{.BinaryName}}_{{.Version}}_{{.Os}}_{{.Arch}}"
+  name_template: "{{.Binary}}_{{.Version}}_{{.Os}}_{{.Arch}}"
   format: tar.gz
   replacements:
     darwin: macOS
