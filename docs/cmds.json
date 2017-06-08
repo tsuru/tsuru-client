@@ -256,8 +256,8 @@
     "desc": "Creates a new machine template.\n\nTemplates can be used with the [[docker-node-add]] command running it with\nthe [[template=<template name>]] parameter. Templates can contain a list of\nparameters that will be sent to the IaaS provider.\n\nMinimum # of arguments: 3\n"
   }, 
   "app-update": {
-    "usage": "tsuru app-update [-a/--app appname] [--description/-d description] [--plan/-p plan name] [--router/-r router name] [--pool/-o pool] [--team-owner/-t team owner] [--tag/-g tag]...", 
-    "desc": "Updates an app, changing its description, tags, plan or pool information.\n\nThe [[--description]] parameter sets a description for your app.\n\nThe [[--plan]] parameter changes the plan of your app.\n\nThe [[--router]] parameter changes the router of your app.\n\nThe [[--pool]] parameter changes the pool of your app.\n\nThe [[--team-owner]] parameter sets owner team for an application.\n\nThe [[--tag]] parameter sets a tag for your app. You can set\nmultiple [[--tag]] parameters.\n\nFlags:\n  \n  -a, --app (= \"\")\n      The name of the app.\n  -d, --description (= \"\")\n      App description\n  -g, --tag  (= [])\n      App tag\n  -o, --pool (= \"\")\n      App pool\n  -p, --plan (= \"\")\n      App plan\n  -r, --router (= \"\")\n      App router\n  -t, --team-owner (= \"\")\n      App team owner\n  \n"
+    "usage": "tsuru app-update [-a/--app appname] [--description/-d description] [--plan/-p plan name] [--router/-r router name] [--pool/-o pool] [--team-owner/-t team owner] [-i/--image-reset] [--tag/-g tag]...", 
+    "desc": "Updates an app, changing its description, tags, plan or pool information.\n\nThe [[--description]] parameter sets a description for your app.\n\nThe [[--plan]] parameter changes the plan of your app.\n\nThe [[--router]] parameter changes the router of your app.\n\nThe [[--pool]] parameter changes the pool of your app.\n\nThe [[--team-owner]] parameter sets owner team for an application.\n\nThe [[--tag]] parameter sets a tag for your app. You can set\nmultiple [[--tag]] parameters.\n\nFlags:\n  \n  -a, --app (= \"\")\n      The name of the app.\n  -d, --description (= \"\")\n      App description\n  -g, --tag  (= [])\n      App tag\n  -i, --image-reset  (= false)\n      Forces next deploy to build app image\n  -o, --pool (= \"\")\n      App pool\n  -p, --plan (= \"\")\n      App plan\n  -r, --router (= \"\")\n      App router\n  -t, --team-owner (= \"\")\n      App team owner\n  \n"
   }, 
   "role-dissociate": {
     "usage": "tsuru role-dissociate <role-name> <user-email> [<context-value>]", 
@@ -404,7 +404,7 @@
     "desc": "Display the current configuration for tsuru autoscale,\nincluding the set of rules and the current metadata filter.\n\nThe metadata filter is the value that defines which node metadata will be used\nto group autoscale rules. A common approach is to use the \"pool\" as the\nfilter. Then autoscale can be configured for each matching rule value.\n\n"
   }, 
   "target": {
-    "topic": "In tsuru, a target is the address of the remote tsuru server.\n\nEach target is identified by a label and a HTTP/HTTPS address. The client\nrequires at least one target to connect to, there's no default target. A user\nmay have multiple targets, but he/she will be able to use only per session."
+    "topic": "Target is used to manage the address of the remote tsuru server.\n\nEach target is identified by a label and a HTTP/HTTPS address. The client\nrequires at least one target to connect to, there's no default target. A user\nmay have multiple targets, but only one will be used at a time."
   }, 
   "pool-remove": {
     "usage": "tsuru pool-remove <pool> [-y]", 
