@@ -205,7 +205,7 @@ func (c *AppUpdate) Flags() *gnuflag.FlagSet {
 		poolMessage := "App pool"
 		teamOwnerMessage := "App team owner"
 		tagMessage := "App tag"
-		imgReset := "Forces next deploy to build app image"
+		imgReset := "Forces next deploy to build app image from scratch"
 		flagSet.StringVar(&c.description, "description", "", descriptionMessage)
 		flagSet.StringVar(&c.description, "d", "", descriptionMessage)
 		flagSet.StringVar(&c.plan, "plan", "", planMessage)
