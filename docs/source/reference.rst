@@ -287,6 +287,12 @@ Events
 .. tsuru-command:: event-cancel
    :title: Cancel an event
 
+.. tsuru-command:: event-block-add
+   :title: Adds an event block
+
+.. tsuru-command:: event-block-remove
+   :title: Removes an event block
+
 Container management
 ====================
 
