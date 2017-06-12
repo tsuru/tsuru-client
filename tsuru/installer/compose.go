@@ -29,7 +29,7 @@ services:
 
   planb:
     image: tsuru/planb:latest
-    command: --listen :8080 --read-redis-host redis --write-redis-host redis
+    command: --listen :8080 --read-redis-host redis --write-redis-host redis --access-log stdout
     ports:
       - 80:8080
     networks:
