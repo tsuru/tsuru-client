@@ -163,6 +163,7 @@ func (c *AppCreate) Run(context *cmd.Context, client *cmd.Client) error {
 
 type AppUpdate struct {
 	description string
+	platform    string
 	plan        string
 	router      string
 	pool        string
@@ -176,7 +177,7 @@ type AppUpdate struct {
 func (c *AppUpdate) Info() *cmd.Info {
 	return &cmd.Info{
 		Name:  "app-update",
-		Usage: "app-update [-a/--app appname] [--description/-d description] [--plan/-p plan name] [--router/-r router name] [--pool/-o pool] [--team-owner/-t team owner] [--tag/-g tag]...",
+		Usage: "app-update [-a/--app appname] [--description/-d description] [--plan/-p plan name] [--router/-r router name] [--pool/-o pool] [--team-owner/-t team owner] [--platform/-f platform] [--tag/-g tag]...",
 		Desc: `Updates an app, changing its description, tags, plan or pool information.
 
 The [[--description]] parameter sets a description for your app.
@@ -203,10 +204,13 @@ func (c *AppUpdate) Flags() *gnuflag.FlagSet {
 		poolMessage := "App pool"
 		teamOwnerMessage := "App team owner"
 		tagMessage := "App tag"
+		platformMsg := "App platform"
 		flagSet.StringVar(&c.description, "description", "", descriptionMessage)
 		flagSet.StringVar(&c.description, "d", "", descriptionMessage)
 		flagSet.StringVar(&c.plan, "plan", "", planMessage)
 		flagSet.StringVar(&c.plan, "p", "", planMessage)
+		flagSet.StringVar(&c.platform, "f", "", platformMsg)
+		flagSet.StringVar(&c.platform, "platform", "", platformMsg)
 		flagSet.StringVar(&c.router, "router", "", routerMessage)
 		flagSet.StringVar(&c.router, "r", "", routerMessage)
 		flagSet.StringVar(&c.pool, "o", "", poolMessage)
@@ -239,6 +243,7 @@ func (c *AppUpdate) Run(context *cmd.Context, client *cmd.Client) error {
 	v.Set("description", c.description)
 	v.Set("pool", c.pool)
 	v.Set("teamOwner", c.teamOwner)
+	v.Set("platform", c.platform)
 	for _, tag := range c.tags {
 		v.Add("tag", tag)
 	}
