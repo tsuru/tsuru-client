@@ -434,6 +434,31 @@ func (s *S) TestAppUpdate(c *check.C) {
 	c.Assert(stdout.String(), check.Equals, expected)
 }
 
+func (s *S) TestAppUpdateImageReset(c *check.C) {
+	var stdout, stderr bytes.Buffer
+	expected := fmt.Sprintf("App %q has been updated!\n", "img")
+	context := cmd.Context{
+		Stdout: &stdout,
+		Stderr: &stderr,
+	}
+	trans := &cmdtest.ConditionalTransport{
+		Transport: cmdtest.Transport{Status: http.StatusOK},
+		CondFunc: func(req *http.Request) bool {
+			url := strings.HasSuffix(req.URL.Path, "/apps/img")
+			method := req.Method == "PUT"
+			imageReset := req.FormValue("imageReset") == "true"
+			req.ParseForm()
+			return url && method && imageReset
+		},
+	}
+	client := cmd.NewClient(&http.Client{Transport: trans}, nil, manager)
+	command := AppUpdate{}
+	command.Flags().Parse(true, []string{"-a", "img", "-i"})
+	err := command.Run(&context, client)
+	c.Assert(err, check.IsNil)
+	c.Assert(stdout.String(), check.Equals, expected)
+}
+
 func (s *S) TestAppUpdateWithoutTags(c *check.C) {
 	var stdout, stderr bytes.Buffer
 	expected := fmt.Sprintf("App %q has been updated!\n", "ble")
