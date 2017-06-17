@@ -33,7 +33,7 @@ type Install struct {
 func (c *Install) Info() *cmd.Info {
 	return &cmd.Info{
 		Name:  "install-create",
-		Usage: "install-create [--config/-c config_file]",
+		Usage: "install-create [--config/-c config_file] [--compose/-e compose_file]",
 		Desc: `Installs Tsuru and It's components as containers on hosts provisioned
 with docker machine drivers.
 
