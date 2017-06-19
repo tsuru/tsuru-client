@@ -14,6 +14,7 @@ import (
 	"net/http"
 	"net/url"
 	"sort"
+	"strconv"
 	"strings"
 	"text/template"
 	"time"
@@ -168,6 +169,7 @@ type AppUpdate struct {
 	router      string
 	pool        string
 	teamOwner   string
+	imageReset  bool
 	tags        cmd.StringSliceFlag
 	fs          *gnuflag.FlagSet
 	cmd.GuessingCommand
@@ -177,7 +179,7 @@ type AppUpdate struct {
 func (c *AppUpdate) Info() *cmd.Info {
 	return &cmd.Info{
 		Name:  "app-update",
-		Usage: "app-update [-a/--app appname] [--description/-d description] [--plan/-p plan name] [--router/-r router name] [--pool/-o pool] [--team-owner/-t team owner] [--platform/-l platform] [--tag/-g tag]...",
+		Usage: "app-update [-a/--app appname] [--description/-d description] [--plan/-p plan name] [--router/-r router name] [--pool/-o pool] [--team-owner/-t team owner] [--platform/-l platform] [-i/--image-reset] [--tag/-g tag]...",
 		Desc: `Updates an app, changing its description, tags, plan or pool information.
 
 The [[--description]] parameter sets a description for your app.
@@ -205,6 +207,7 @@ func (c *AppUpdate) Flags() *gnuflag.FlagSet {
 		teamOwnerMessage := "App team owner"
 		tagMessage := "App tag"
 		platformMsg := "App platform"
+		imgReset := "Forces next deploy to build app image from scratch"
 		flagSet.StringVar(&c.description, "description", "", descriptionMessage)
 		flagSet.StringVar(&c.description, "d", "", descriptionMessage)
 		flagSet.StringVar(&c.plan, "plan", "", planMessage)
@@ -215,6 +218,8 @@ func (c *AppUpdate) Flags() *gnuflag.FlagSet {
 		flagSet.StringVar(&c.router, "r", "", routerMessage)
 		flagSet.StringVar(&c.pool, "o", "", poolMessage)
 		flagSet.StringVar(&c.pool, "pool", "", poolMessage)
+		flagSet.BoolVar(&c.imageReset, "i", false, imgReset)
+		flagSet.BoolVar(&c.imageReset, "image-reset", false, imgReset)
 		flagSet.StringVar(&c.teamOwner, "t", "", teamOwnerMessage)
 		flagSet.StringVar(&c.teamOwner, "team-owner", "", teamOwnerMessage)
 		flagSet.Var(&c.tags, "g", tagMessage)
@@ -244,6 +249,7 @@ func (c *AppUpdate) Run(context *cmd.Context, client *cmd.Client) error {
 	v.Set("pool", c.pool)
 	v.Set("teamOwner", c.teamOwner)
 	v.Set("platform", c.platform)
+	v.Set("imageReset", strconv.FormatBool(c.imageReset))
 	for _, tag := range c.tags {
 		v.Add("tag", tag)
 	}
