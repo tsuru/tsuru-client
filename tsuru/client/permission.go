@@ -650,7 +650,7 @@ type RoleUpdate struct {
 func (c *RoleUpdate) Info() *cmd.Info {
 	return &cmd.Info{
 		Name:    "role-update",
-		Usage:   "role-update <role> [-d/--description <description>] [-c/--context <context type>]",
+		Usage:   "role-update <role> [-d/--description <description>] [-c/--context <context type>] [-n/--name <role new name>]",
 		Desc:    "Updates a role description",
 		MinArgs: 1,
 		MaxArgs: 1,
