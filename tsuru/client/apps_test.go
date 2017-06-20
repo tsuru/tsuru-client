@@ -429,7 +429,7 @@ func (s *S) TestAppUpdate(c *check.C) {
 	}
 	client := cmd.NewClient(&http.Client{Transport: trans}, nil, manager)
 	command := AppUpdate{}
-	command.Flags().Parse(true, []string{"-d", "description of my app", "-a", "ble", "-r", "router", "-f", "python", "-g", "tag 1", "-g", "tag 2"})
+	command.Flags().Parse(true, []string{"-d", "description of my app", "-a", "ble", "-r", "router", "-l", "python", "-g", "tag 1", "-g", "tag 2"})
 	err := command.Run(&context, client)
 	c.Assert(err, check.IsNil)
 	c.Assert(stdout.String(), check.Equals, expected)
