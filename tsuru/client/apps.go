@@ -32,6 +32,7 @@ type AppCreate struct {
 	router      string
 	pool        string
 	description string
+	platform    string
 	tags        cmd.StringSliceFlag
 	routerOpts  cmd.MapFlag
 	fs          *gnuflag.FlagSet
@@ -40,7 +41,7 @@ type AppCreate struct {
 func (c *AppCreate) Info() *cmd.Info {
 	return &cmd.Info{
 		Name:  "app-create",
-		Usage: "app-create <appname> <platform> [--plan/-p plan name] [--router/-r router name] [--team/-t team owner] [--pool/-o pool name] [--description/-d description] [--tag/-g tag]... [--router-opts key=value]...",
+		Usage: "app-create <appname> [--platform/-l platform] [--plan/-p plan name] [--router/-r router name] [--team/-t team owner] [--pool/-o pool name] [--description/-d description] [--tag/-g tag]... [--router-opts key=value]...",
 		Desc: `Creates a new app using the given name and platform. For tsuru,
 a platform is provisioner dependent. To check the available platforms, use the
 command [[tsuru platform-list]] and to add a platform use the command [[tsuru platform-add]].
@@ -96,6 +97,9 @@ func (c *AppCreate) Flags() *gnuflag.FlagSet {
 		routerMessage := "The router used by the app"
 		c.fs.StringVar(&c.router, "router", "", routerMessage)
 		c.fs.StringVar(&c.router, "r", "", routerMessage)
+		platformMessage := "The app's platform"
+		c.fs.StringVar(&c.platform, "platform", "", platformMessage)
+		c.fs.StringVar(&c.platform, "l", "", platformMessage)
 		teamMessage := "Team owner app"
 		c.fs.StringVar(&c.teamOwner, "team", "", teamMessage)
 		c.fs.StringVar(&c.teamOwner, "t", "", teamMessage)
@@ -115,13 +119,12 @@ func (c *AppCreate) Flags() *gnuflag.FlagSet {
 
 func (c *AppCreate) Run(context *cmd.Context, client *cmd.Client) error {
 	appName := context.Args[0]
-	platform := context.Args[1]
 	v, err := form.EncodeToValues(map[string]interface{}{"routeropts": c.routerOpts})
 	if err != nil {
 		return err
 	}
 	v.Set("name", appName)
-	v.Set("platform", platform)
+	v.Set("platform", c.platform)
 	v.Set("plan", c.plan)
 	v.Set("teamOwner", c.teamOwner)
 	v.Set("pool", c.pool)

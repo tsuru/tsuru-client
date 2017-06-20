@@ -39,7 +39,7 @@ func (s *S) TestAppCreate(c *check.C) {
 Use app-info to check the status of the app and its units.
 Your repository for "ble" project is "git@tsuru.plataformas.glb.com:ble.git"` + "\n"
 	context := cmd.Context{
-		Args:   []string{"ble", "django"},
+		Args:   []string{"ble"},
 		Stdout: &stdout,
 		Stderr: &stderr,
 	}
@@ -63,6 +63,7 @@ Your repository for "ble" project is "git@tsuru.plataformas.glb.com:ble.git"` + 
 	}
 	client := cmd.NewClient(&http.Client{Transport: &trans}, nil, manager)
 	command := AppCreate{}
+	command.Flags().Parse(true, []string{"--platform", "django"})
 	err := command.Run(&context, client)
 	c.Assert(err, check.IsNil)
 	c.Assert(stdout.String(), check.Equals, expected)
@@ -75,7 +76,7 @@ func (s *S) TestAppCreateTeamOwner(c *check.C) {
 Use app-info to check the status of the app and its units.
 Your repository for "ble" project is "git@tsuru.plataformas.glb.com:ble.git"` + "\n"
 	context := cmd.Context{
-		Args:   []string{"ble", "django"},
+		Args:   []string{"ble"},
 		Stdout: &stdout,
 		Stderr: &stderr,
 	}
@@ -99,7 +100,7 @@ Your repository for "ble" project is "git@tsuru.plataformas.glb.com:ble.git"` + 
 	}
 	client := cmd.NewClient(&http.Client{Transport: &trans}, nil, manager)
 	command := AppCreate{}
-	command.Flags().Parse(true, []string{"-t", "team"})
+	command.Flags().Parse(true, []string{"-t", "team", "--platform", "django"})
 	err := command.Run(&context, client)
 	c.Assert(err, check.IsNil)
 	c.Assert(stdout.String(), check.Equals, expected)
@@ -112,7 +113,7 @@ func (s *S) TestAppCreatePlan(c *check.C) {
 Use app-info to check the status of the app and its units.
 Your repository for "ble" project is "git@tsuru.plataformas.glb.com:ble.git"` + "\n"
 	context := cmd.Context{
-		Args:   []string{"ble", "django"},
+		Args:   []string{"ble"},
 		Stdout: &stdout,
 		Stderr: &stderr,
 	}
@@ -137,6 +138,7 @@ Your repository for "ble" project is "git@tsuru.plataformas.glb.com:ble.git"` + 
 	client := cmd.NewClient(&http.Client{Transport: &trans}, nil, manager)
 	command := AppCreate{}
 	command.Flags().Parse(true, []string{"-p", "myplan"})
+	command.Flags().Parse(true, []string{"--platform", "django"})
 	err := command.Run(&context, client)
 	c.Assert(err, check.IsNil)
 	c.Assert(stdout.String(), check.Equals, expected)
@@ -149,7 +151,7 @@ func (s *S) TestAppCreatePool(c *check.C) {
 Use app-info to check the status of the app and its units.
 Your repository for "ble" project is "git@tsuru.plataformas.glb.com:ble.git"` + "\n"
 	context := cmd.Context{
-		Args:   []string{"ble", "django"},
+		Args:   []string{"ble"},
 		Stdout: &stdout,
 		Stderr: &stderr,
 	}
@@ -173,7 +175,7 @@ Your repository for "ble" project is "git@tsuru.plataformas.glb.com:ble.git"` + 
 	}
 	client := cmd.NewClient(&http.Client{Transport: &trans}, nil, manager)
 	command := AppCreate{}
-	command.Flags().Parse(true, []string{"-o", "mypool"})
+	command.Flags().Parse(true, []string{"-o", "mypool", "--platform", "django"})
 	err := command.Run(&context, client)
 	c.Assert(err, check.IsNil)
 	c.Assert(stdout.String(), check.Equals, expected)
@@ -186,7 +188,7 @@ func (s *S) TestAppCreateRouterOpts(c *check.C) {
 Use app-info to check the status of the app and its units.
 Your repository for "ble" project is "git@tsuru.plataformas.glb.com:ble.git"` + "\n"
 	context := cmd.Context{
-		Args:   []string{"ble", "django"},
+		Args:   []string{"ble"},
 		Stdout: &stdout,
 		Stderr: &stderr,
 	}
@@ -212,7 +214,7 @@ Your repository for "ble" project is "git@tsuru.plataformas.glb.com:ble.git"` + 
 	}
 	client := cmd.NewClient(&http.Client{Transport: &trans}, nil, manager)
 	command := AppCreate{}
-	command.Flags().Parse(true, []string{"--router-opts", "a=1", "--router-opts", "b=2"})
+	command.Flags().Parse(true, []string{"--router-opts", "a=1", "--router-opts", "b=2", "--platform", "django"})
 	err := command.Run(&context, client)
 	c.Assert(err, check.IsNil)
 	c.Assert(stdout.String(), check.Equals, expected)
@@ -224,7 +226,7 @@ func (s *S) TestAppCreateNoRepository(c *check.C) {
 	expected := `App "ble" has been created!
 Use app-info to check the status of the app and its units.` + "\n"
 	context := cmd.Context{
-		Args:   []string{"ble", "django"},
+		Args:   []string{"ble"},
 		Stdout: &stdout,
 		Stderr: &stderr,
 	}
@@ -248,6 +250,7 @@ Use app-info to check the status of the app and its units.` + "\n"
 	}
 	client := cmd.NewClient(&http.Client{Transport: &trans}, nil, manager)
 	command := AppCreate{}
+	command.Flags().Parse(true, []string{"--platform", "django"})
 	err := command.Run(&context, client)
 	c.Assert(err, check.IsNil)
 	c.Assert(stdout.String(), check.Equals, expected)
@@ -274,7 +277,7 @@ func (s *S) TestAppCreateWithTags(c *check.C) {
 Use app-info to check the status of the app and its units.
 Your repository for "ble" project is "git@tsuru.plataformas.glb.com:ble.git"` + "\n"
 	context := cmd.Context{
-		Args:   []string{"ble", "django"},
+		Args:   []string{"ble"},
 		Stdout: &stdout,
 		Stderr: &stderr,
 	}
@@ -298,7 +301,7 @@ Your repository for "ble" project is "git@tsuru.plataformas.glb.com:ble.git"` + 
 	}
 	client := cmd.NewClient(&http.Client{Transport: &trans}, nil, manager)
 	command := AppCreate{}
-	command.Flags().Parse(true, []string{"--tag", "tag1", "--tag", "tag2"})
+	command.Flags().Parse(true, []string{"--tag", "tag1", "--tag", "tag2", "--platform", "django"})
 	err := command.Run(&context, client)
 	c.Assert(err, check.IsNil)
 	c.Assert(stdout.String(), check.Equals, expected)
@@ -311,7 +314,7 @@ func (s *S) TestAppCreateWithEmptyTag(c *check.C) {
 Use app-info to check the status of the app and its units.
 Your repository for "ble" project is "git@tsuru.plataformas.glb.com:ble.git"` + "\n"
 	context := cmd.Context{
-		Args:   []string{"ble", "django"},
+		Args:   []string{"ble"},
 		Stdout: &stdout,
 		Stderr: &stderr,
 	}
@@ -335,7 +338,7 @@ Your repository for "ble" project is "git@tsuru.plataformas.glb.com:ble.git"` + 
 	}
 	client := cmd.NewClient(&http.Client{Transport: &trans}, nil, manager)
 	command := AppCreate{}
-	command.Flags().Parse(true, []string{"--tag", ""})
+	command.Flags().Parse(true, []string{"--tag", "", "--platform", "django"})
 	err := command.Run(&context, client)
 	c.Assert(err, check.IsNil)
 	c.Assert(stdout.String(), check.Equals, expected)
