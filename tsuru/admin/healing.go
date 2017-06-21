@@ -111,7 +111,7 @@ func (c *ListHealingHistoryCmd) Run(ctx *cmd.Context, client *cmd.Client) error 
 
 func (c *ListHealingHistoryCmd) Flags() *gnuflag.FlagSet {
 	if c.fs == nil {
-		c.fs = gnuflag.NewFlagSet("with-flags", gnuflag.ContinueOnError)
+		c.fs = gnuflag.NewFlagSet("", gnuflag.ContinueOnError)
 		c.fs.BoolVar(&c.nodeOnly, "node", false, "List only healing process started for nodes")
 		c.fs.BoolVar(&c.containerOnly, "container", false, "List only healing process started for containers")
 	}
