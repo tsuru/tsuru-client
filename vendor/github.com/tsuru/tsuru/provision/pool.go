@@ -81,6 +81,38 @@ func (p *Pool) GetRouters() ([]string, error) {
 	return nil, ErrPoolHasNoRouter
 }
 
+func (p *Pool) GetDefaultRouter() (string, error) {
+	constraints, err := getConstraintsForPool(p.Name, "router")
+	if err != nil {
+		return "", err
+	}
+	constraint := constraints["router"]
+	if constraint == nil || len(constraint.Values) == 0 {
+		return router.Default()
+	}
+	if constraint.Blacklist || strings.Contains(constraint.Values[0], "*") {
+		var allowed map[string][]string
+		allowed, err = p.allowedValues()
+		if err != nil {
+			return "", err
+		}
+		if len(allowed["router"]) == 1 {
+			return allowed["router"][0], nil
+		}
+		return router.Default()
+	}
+	routers, err := routersNames()
+	if err != nil {
+		return "", err
+	}
+	for _, r := range routers {
+		if constraint.Values[0] == r {
+			return r, nil
+		}
+	}
+	return router.Default()
+}
+
 func (p *Pool) allowedValues() (map[string][]string, error) {
 	teams, err := teamsNames()
 	if err != nil {
@@ -276,6 +308,10 @@ func RemoveTeamsFromPool(poolName string, teams []string) error {
 
 func ListPools(names ...string) ([]Pool, error) {
 	return listPools(bson.M{"_id": bson.M{"$in": names}})
+}
+
+func ListAllPools() ([]Pool, error) {
+	return listPools(nil)
 }
 
 func ListPossiblePools(teams []string) ([]Pool, error) {
