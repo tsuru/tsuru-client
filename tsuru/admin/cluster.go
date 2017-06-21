@@ -33,7 +33,7 @@ type ClusterUpdate struct {
 
 func (c *ClusterUpdate) Flags() *gnuflag.FlagSet {
 	if c.fs == nil {
-		c.fs = gnuflag.NewFlagSet("with-flags", gnuflag.ContinueOnError)
+		c.fs = gnuflag.NewFlagSet("", gnuflag.ContinueOnError)
 		desc := "Path to CA cert file."
 		c.fs.StringVar(&c.cacert, "cacert", "", desc)
 		desc = "Path to client cert file."

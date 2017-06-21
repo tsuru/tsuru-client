@@ -127,7 +127,7 @@ func (a *AddNodeCmd) Run(ctx *cmd.Context, client *cmd.Client) error {
 
 func (a *AddNodeCmd) Flags() *gnuflag.FlagSet {
 	if a.fs == nil {
-		a.fs = gnuflag.NewFlagSet("with-flags", gnuflag.ContinueOnError)
+		a.fs = gnuflag.NewFlagSet("", gnuflag.ContinueOnError)
 		a.fs.BoolVar(&a.register, "register", false, "Registers an existing docker endpoint, the IaaS won't be called.")
 		a.fs.StringVar(&a.caCert, "cacert", "", "Path to CA file tsuru should trust.")
 		a.fs.StringVar(&a.clientCert, "clientcert", "", "Path to client TLS certificate file.")
@@ -282,7 +282,7 @@ Users can also combine filters using [[-f]] multiple times.`,
 
 func (c *ListNodesCmd) Flags() *gnuflag.FlagSet {
 	if c.fs == nil {
-		c.fs = gnuflag.NewFlagSet("with-flags", gnuflag.ContinueOnError)
+		c.fs = gnuflag.NewFlagSet("", gnuflag.ExitOnError)
 		filter := "Filter by metadata name and value"
 		c.fs.Var(&c.filter, "filter", filter)
 		c.fs.Var(&c.filter, "f", filter)
@@ -472,7 +472,7 @@ func (c *SetNodeHealingConfigCmd) Info() *cmd.Info {
 func (c *SetNodeHealingConfigCmd) Flags() *gnuflag.FlagSet {
 	msg := "The pool name to which the configuration will apply. If unset it'll be set as default for all pools."
 	if c.fs == nil {
-		c.fs = gnuflag.NewFlagSet("with-flags", gnuflag.ContinueOnError)
+		c.fs = gnuflag.NewFlagSet("", gnuflag.ContinueOnError)
 		c.fs.StringVar(&c.pool, "p", "", msg)
 		c.fs.StringVar(&c.pool, "pool", "", msg)
 		c.fs.BoolVar(&c.enable, "enable", false, "Enable active node healing")
