@@ -19,6 +19,7 @@ import (
 	"github.com/pkg/errors"
 	"github.com/tsuru/tsuru/action"
 	"github.com/tsuru/tsuru/app/bind"
+	"github.com/tsuru/tsuru/app/image"
 	"github.com/tsuru/tsuru/auth"
 	"github.com/tsuru/tsuru/db"
 	tsuruErrors "github.com/tsuru/tsuru/errors"
@@ -128,6 +129,7 @@ type App struct {
 	RouterOpts     map[string]string
 	Deploys        uint
 	Tags           []string
+	Error          string
 
 	quota.Quota
 	provisioner provision.Provisioner
@@ -176,10 +178,11 @@ func (app *App) MarshalJSON() ([]byte, error) {
 	result["platform"] = app.Platform
 	result["teams"] = app.Teams
 	units, err := app.Units()
-	if err != nil {
-		return nil, err
+	if err == nil {
+		result["units"] = units
+	} else {
+		result["error"] = fmt.Sprintf("unable to list app units: %+v", err)
 	}
-	result["units"] = units
 	result["repository"] = repo.ReadWriteURL
 	result["ip"] = app.Ip
 	result["cname"] = app.CName
@@ -203,6 +206,7 @@ func (app *App) MarshalJSON() ([]byte, error) {
 
 // Applog represents a log entry.
 type Applog struct {
+	MongoID bson.ObjectId `bson:"_id,omitempty" json:"-"`
 	Date    time.Time
 	Message string
 	Source  string
@@ -297,16 +301,20 @@ func CreateApp(app *App, user *auth.User) error {
 	if err != nil {
 		return err
 	}
-	if app.Router == "" {
-		app.Router, err = router.Default()
-	} else {
-		_, err = router.Get(app.Router)
-	}
+	app.Plan = *plan
+	err = app.SetPool()
 	if err != nil {
 		return err
 	}
-	app.Plan = *plan
-	err = app.SetPool()
+	if app.Router == "" {
+		pool, errPool := provision.GetPoolByName(app.GetPool())
+		if errPool != nil {
+			return errPool
+		}
+		app.Router, err = pool.GetDefaultRouter()
+	} else {
+		_, err = router.Get(app.Router)
+	}
 	if err != nil {
 		return err
 	}
@@ -485,6 +493,10 @@ func Delete(app *App, w io.Writer) error {
 	err = prov.Destroy(app)
 	if err != nil {
 		logErr("Unable to destroy app in provisioner", err)
+	}
+	err = image.DeleteAllAppImageNames(appName)
+	if err != nil {
+		log.Errorf("failed to remove image names from storage for app %s: %s", appName, err)
 	}
 	r, err := app.GetRouter()
 	if err == nil {
@@ -957,7 +969,7 @@ func (app *App) validateRouter(pool *provision.Pool) error {
 			return nil
 		}
 	}
-	msg := fmt.Sprintf("router %q is not available for pool %q", app.Router, app.Pool)
+	msg := fmt.Sprintf("router %q is not available for pool %q. Available routers are: %q", app.Router, app.Pool, strings.Join(routers, ", "))
 	return &tsuruErrors.ValidationError{Message: msg}
 }
 
@@ -1507,7 +1519,6 @@ func (app *App) Log(message, source, unit string) error {
 		}
 	}
 	if len(logs) > 0 {
-		notify(app.Name, logs)
 		conn, err := db.LogConn()
 		if err != nil {
 			return err
