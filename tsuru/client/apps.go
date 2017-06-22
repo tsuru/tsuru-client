@@ -150,8 +150,13 @@ func (c *AppCreate) Flags() *gnuflag.FlagSet {
 }
 
 func (c *AppCreate) Run(context *cmd.Context, client *cmd.Client) error {
+	var platform string
 	appName := context.Args[0]
-	platform := context.Args[1]
+	if len(context.Args) > 1 {
+		platform = context.Args[1]
+	} else {
+		platform = ""
+	}
 	v, err := form.EncodeToValues(map[string]interface{}{"routeropts": c.routerOpts})
 	if err != nil {
 		return err
