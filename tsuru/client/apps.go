@@ -154,8 +154,6 @@ func (c *AppCreate) Run(context *cmd.Context, client *cmd.Client) error {
 	appName := context.Args[0]
 	if len(context.Args) > 1 {
 		platform = context.Args[1]
-	} else {
-		platform = ""
 	}
 	v, err := form.EncodeToValues(map[string]interface{}{"routeropts": c.routerOpts})
 	if err != nil {
