@@ -459,6 +459,7 @@ type app struct {
 	Plan        tsuruapp.Plan
 	Router      string
 	Tags        []string
+	Error       string
 }
 
 type serviceData struct {
@@ -742,10 +743,10 @@ func (c *AppList) Run(context *cmd.Context, client *cmd.Client) error {
 	if err != nil {
 		return err
 	}
-	return c.Show(result, context)
+	return c.Show(result, context, client)
 }
 
-func (c *AppList) Show(result []byte, context *cmd.Context) error {
+func (c *AppList) Show(result []byte, context *cmd.Context, client *cmd.Client) error {
 	var apps []app
 	err := json.Unmarshal(result, &apps)
 	if err != nil {
@@ -771,6 +772,12 @@ func (c *AppList) Show(result []byte, context *cmd.Context) error {
 			}
 		}
 		summary := fmt.Sprintf("%d of %d units in-service", available, total)
+		if app.Error != "" {
+			summary = fmt.Sprintf("error fetching units")
+			if client.Verbosity > 0 {
+				summary += fmt.Sprintf(": %s", app.Error)
+			}
+		}
 		addrs := strings.Replace(app.Addr(), ", ", "\n", -1)
 		table.AddRow(cmd.Row([]string{app.Name, summary, addrs}))
 	}
