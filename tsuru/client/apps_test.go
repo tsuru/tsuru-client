@@ -1600,6 +1600,57 @@ func (s *S) TestAppListUnitIsntAvailable(c *check.C) {
 	c.Assert(stdout.String(), check.Equals, expected)
 }
 
+func (s *S) TestAppListErrorFetchingUnits(c *check.C) {
+	var stdout, stderr bytes.Buffer
+	result := `[{"ip":"10.10.10.10","name":"app1","units":[],"Error": "timeout"}]`
+	expected := `+-------------+----------------------+-------------+
+| Application | Units State Summary  | Address     |
++-------------+----------------------+-------------+
+| app1        | error fetching units | 10.10.10.10 |
++-------------+----------------------+-------------+
+`
+	context := cmd.Context{
+		Args:   []string{},
+		Stdout: &stdout,
+		Stderr: &stderr,
+	}
+	client := cmd.NewClient(&http.Client{Transport: &cmdtest.Transport{Message: result, Status: http.StatusOK}}, nil, manager)
+	command := AppList{}
+	err := command.Run(&context, client)
+	c.Assert(err, check.IsNil)
+	c.Assert(stdout.String(), check.Equals, expected)
+}
+
+func (s *S) TestAppListErrorFetchingUnitsVerbose(c *check.C) {
+	var stdout, stderr bytes.Buffer
+	result := `[{"ip":"10.10.10.10","name":"app1","units":[],"Error": "timeout"}]`
+	expected := "*************************** <Request uri=\"/1.0/apps?\"> **********************************\n" +
+		"GET /1.0/apps? HTTP/1.1\r\n" +
+		"Host: localhost:8080\r\n" +
+		"Connection: close\r\n" +
+		"Authorization: bearer sometoken\r\n" +
+		"\r\n" +
+		"*************************** </Request uri=\"/1.0/apps?\"> **********************************\n" +
+		"+-------------+-------------------------------+-------------+\n" +
+		"| Application | Units State Summary           | Address     |\n" +
+		"+-------------+-------------------------------+-------------+\n" +
+		"| app1        | error fetching units: timeout | 10.10.10.10 |\n" +
+		"+-------------+-------------------------------+-------------+\n"
+	context := cmd.Context{
+		Args:   []string{},
+		Stdout: &stdout,
+		Stderr: &stderr,
+	}
+	client := cmd.NewClient(&http.Client{
+		Transport: &cmdtest.Transport{Message: result, Status: http.StatusOK},
+	}, &context, manager)
+	client.Verbosity = 1
+	command := AppList{}
+	err := command.Run(&context, client)
+	c.Assert(err, check.IsNil)
+	c.Assert(stdout.String(), check.Equals, expected)
+}
+
 func (s *S) TestAppListUnitWithoutName(c *check.C) {
 	var stdout, stderr bytes.Buffer
 	result := `[{"ip":"10.10.10.10","name":"app1","units":[{"Name":"","Status":"pending"}]}]`
