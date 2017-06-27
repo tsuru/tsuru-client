@@ -178,7 +178,7 @@ func (i *Installer) BootstrapTsuru(opts *InstallOpts, target string, coreMachine
 		InstallDashboard: opts.ComponentsConfig.InstallDashboard,
 	}
 	var installMachines []*dockermachine.Machine
-	if opts.DriverOpts.Name == "virtualbox" {
+	if opts.DriverOpts.Name == "virtualbox" || opts.DriverOpts.Name == "generic" {
 		appsMachines, errProv := i.ProvisionPool(opts, coreMachines)
 		if errProv != nil {
 			return nil, errProv
