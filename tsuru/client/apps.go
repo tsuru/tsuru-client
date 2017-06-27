@@ -170,6 +170,7 @@ type AppUpdate struct {
 	teamOwner   string
 	imageReset  bool
 	tags        cmd.StringSliceFlag
+	routerOpts  cmd.MapFlag
 	fs          *gnuflag.FlagSet
 	cmd.GuessingCommand
 	cmd.ConfirmationCommand
@@ -178,7 +179,7 @@ type AppUpdate struct {
 func (c *AppUpdate) Info() *cmd.Info {
 	return &cmd.Info{
 		Name:  "app-update",
-		Usage: "app-update [-a/--app appname] [--description/-d description] [--plan/-p plan name] [--router/-r router name] [--pool/-o pool] [--team-owner/-t team owner] [-i/--image-reset] [--tag/-g tag]...",
+		Usage: "app-update [-a/--app appname] [--description/-d description] [--plan/-p plan name] [--router/-r router name] [--pool/-o pool] [--team-owner/-t team owner] [-i/--image-reset] [--tag/-g tag]... [--router-opts key=value]...",
 		Desc: `Updates an app, changing its description, tags, plan or pool information.
 
 The [[--description]] parameter sets a description for your app.
@@ -192,7 +193,9 @@ The [[--pool]] parameter changes the pool of your app.
 The [[--team-owner]] parameter sets owner team for an application.
 
 The [[--tag]] parameter sets a tag for your app. You can set
-multiple [[--tag]] parameters.`,
+multiple [[--tag]] parameters.
+
+The [[--router-opts]] parameter changes the custom router parameters.`,
 	}
 }
 
@@ -220,6 +223,7 @@ func (c *AppUpdate) Flags() *gnuflag.FlagSet {
 		flagSet.StringVar(&c.teamOwner, "team-owner", "", teamOwnerMessage)
 		flagSet.Var(&c.tags, "g", tagMessage)
 		flagSet.Var(&c.tags, "tag", tagMessage)
+		flagSet.Var(&c.routerOpts, "router-opts", "Router options")
 		c.fs = cmd.MergeFlagSet(
 			c.GuessingCommand.Flags(),
 			flagSet,
@@ -238,7 +242,10 @@ func (c *AppUpdate) Run(context *cmd.Context, client *cmd.Client) error {
 	if err != nil {
 		return err
 	}
-	v := url.Values{}
+	v, err := form.EncodeToValues(map[string]interface{}{"routeropts": c.routerOpts})
+	if err != nil {
+		return err
+	}
 	v.Set("plan", c.plan)
 	v.Set("router", c.router)
 	v.Set("description", c.description)

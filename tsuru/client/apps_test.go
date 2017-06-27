@@ -401,6 +401,13 @@ func (s *S) TestAppCreateFlags(c *check.C) {
 	c.Check(tag.Usage, check.Equals, usage)
 	c.Check(tag.Value.String(), check.Equals, "[\"tag1\",\"tag2\"]")
 	c.Check(tag.DefValue, check.Equals, "[]")
+	flagset.Parse(true, []string{"--router-opts", "opt1=val1", "--router-opts", "opt2=val2"})
+	routerOpts := flagset.Lookup("router-opts")
+	c.Check(routerOpts, check.NotNil)
+	c.Check(routerOpts.Name, check.Equals, "router-opts")
+	c.Check(routerOpts.Usage, check.Equals, "Router options")
+	c.Check(routerOpts.Value.String(), check.Equals, "{\"opt1\":\"val1\",\"opt2\":\"val2\"}")
+	c.Check(routerOpts.DefValue, check.Equals, "{}")
 }
 
 func (s *S) TestAppUpdateInfo(c *check.C) {
@@ -423,12 +430,14 @@ func (s *S) TestAppUpdate(c *check.C) {
 			req.ParseForm()
 			tags := len(req.Form["tag"]) == 2 && req.Form["tag"][0] == "tag 1" && req.Form["tag"][1] == "tag 2"
 			router := req.FormValue("router") == "router"
-			return url && method && description && tags && router
+			routerOpts := req.FormValue("routeropts.opt1") == "val1" && req.FormValue("routeropts.opt2") == "val2"
+			return url && method && description && tags && router && routerOpts
 		},
 	}
 	client := cmd.NewClient(&http.Client{Transport: trans}, nil, manager)
 	command := AppUpdate{}
-	command.Flags().Parse(true, []string{"-d", "description of my app", "-a", "ble", "-r", "router", "-g", "tag 1", "-g", "tag 2"})
+	command.Flags().Parse(true, []string{"-d", "description of my app", "-a", "ble", "-r", "router", "-g", "tag 1", "-g", "tag 2",
+		"--router-opts", "opt1=val1", "--router-opts", "opt2=val2"})
 	err := command.Run(&context, client)
 	c.Assert(err, check.IsNil)
 	c.Assert(stdout.String(), check.Equals, expected)
