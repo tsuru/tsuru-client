@@ -766,20 +766,24 @@ func (c *AppList) Show(result []byte, context *cmd.Context, client *cmd.Client) 
 		}
 		return nil
 	}
-	table.Headers = cmd.Row([]string{"Application", "Units State Summary", "Address"})
+	table.Headers = cmd.Row([]string{"Application", "Units", "Address"})
 	for _, app := range apps {
-		var available int
-		var total int
-		for _, unit := range app.Units {
-			if unit.ID != "" {
-				total++
-				if unit.Available() {
-					available++
+		summary := ""
+		if app.Error == "" {
+			unitsStatus := make(map[string]int)
+			for _, unit := range app.Units {
+				if unit.ID != "" {
+					unitsStatus[unit.Status]++
 				}
 			}
-		}
-		summary := fmt.Sprintf("%d of %d units in-service", available, total)
-		if app.Error != "" {
+			statusText := make([]string, len(unitsStatus))
+			i := 0
+			for status, count := range unitsStatus {
+				statusText[i] = fmt.Sprintf("%d %s", count, status)
+				i++
+			}
+			summary = strings.Join(statusText, "\n")
+		} else {
 			summary = fmt.Sprintf("error fetching units")
 			if client.Verbosity > 0 {
 				summary += fmt.Sprintf(": %s", app.Error)
