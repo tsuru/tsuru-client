@@ -538,6 +538,7 @@ func (a *app) GetRouterOpts() string {
 	for k, v := range a.RouterOpts {
 		kv = append(kv, fmt.Sprintf("%s=%s", k, v))
 	}
+	sort.Strings(kv)
 	return strings.Join(kv, ", ")
 }
 
