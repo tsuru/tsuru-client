@@ -442,6 +442,10 @@
     "usage": "tsuru app-shell [unit-id] -a/--app <appname>", 
     "desc": "Opens a remote shell inside unit, using the API server as a proxy. You\ncan access an app unit just giving app name, or specifying the id of the unit.\nYou can get the ID of the unit using the app-info command.\n\nFlags:\n  \n  -a, --app (= \"\")\n      The name of the app.\n  \n"
   }, 
+  "service-instance-info": {
+    "usage": "tsuru service-instance-info <service-name> <instance-name>", 
+    "desc": "Displays the information of the given service instance.\n\nMinimum # of arguments: 2\n"
+  }, 
   "service-instance-add": {
     "usage": "tsuru service-instance-add <service-name> <service-instance-name> [plan] [-t/--team-owner <team>] [-d/--description description] [-g/--tag tag]...", 
     "desc": "Creates a service instance of a service. There can later be binded to\napplications with [[tsuru service-bind]].\n\nThis example shows how to add a new instance of **mongodb** service, named\n**tsuru_mongodb** with the plan **small**:\n\n::\n\n    $ tsuru service-instance-add mongodb tsuru_mongodb small -t myteam\n\n\nFlags:\n  \n  -d, --description (= \"\")\n      service instance description\n  -g, --tag  (= [])\n      service instance tag\n  -t, --team-owner (= \"\")\n      the team that owns the service (mandatory if the user is member of more than one team)\n  \nMinimum # of arguments: 2\nMaximum # of arguments: 3\n"
@@ -578,9 +582,9 @@
     "usage": "tsuru service-doc-get <service>", 
     "desc": "Shows service documentation.\n\nMinimum # of arguments: 1\n"
   }, 
-  "service-instance-info": {
-    "usage": "tsuru service-instance-info <service-name> <instance-name>", 
-    "desc": "Displays the information of the given service instance.\n\nMinimum # of arguments: 2\n"
+  "role-update": {
+    "usage": "tsuru role-update <role> [-d/--description <description>] [-c/--context <context type>] [-n/--name <role new name>]", 
+    "desc": "Updates a role description\n\nFlags:\n  \n  -c, --context (= \"\")\n      Updates the context type of a role\n  -d, --description (= \"\")\n      Updates a role description\n  -n, --name (= \"\")\n      Updates the name of a role\n  \nMinimum # of arguments: 1\nMaximum # of arguments: 1\n"
   }, 
   "key-list": {
     "usage": "tsuru key-list [-n/--no-truncate]", 

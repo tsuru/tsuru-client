@@ -61,6 +61,8 @@ Authorization
    :title: List all available permissions
 .. tsuru-command:: role-add
    :title: Create a new role
+.. tsuru-command:: role-update
+   :title: Update a role
 .. tsuru-command:: role-remove
    :title: Remove a role
 .. tsuru-command:: role-list

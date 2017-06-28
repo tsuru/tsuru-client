@@ -91,6 +91,7 @@ func buildManager(name string) *cmd.Manager {
 	m.Register(&client.PoolList{})
 	m.Register(&client.PermissionList{})
 	m.Register(&client.RoleAdd{})
+	m.Register(&client.RoleUpdate{})
 	m.Register(&client.RoleRemove{})
 	m.Register(&client.RoleList{})
 	m.Register(&client.RoleInfo{})
