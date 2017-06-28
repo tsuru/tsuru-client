@@ -862,6 +862,45 @@ Units: 3
 	c.Assert(stdout.String(), check.Equals, expected)
 }
 
+func (s *S) TestAppInfoWithRouterOpts(c *check.C) {
+	var stdout, stderr bytes.Buffer
+	result := `{"name":"app1","teamowner":"myteam","cname":[""],"ip":"myapp.tsuru.io","platform":"php","repository":"git@git.com:php.git","state":"dead", "units":[{"Ip":"10.10.10.10","ID":"app1/0","Status":"started"}, {"Ip":"9.9.9.9","ID":"app1/1","Status":"started"}, {"Ip":"","ID":"app1/2","Status":"pending"}],"teams":["tsuruteam","crane"], "owner": "myapp_owner", "deploys": 7, "routeropts": {"opt1": "val1", "opt2": "val2"}, "router": "planb"}`
+	expected := `Application: app1
+Description:
+Tags:
+Repository: git@git.com:php.git
+Platform: php
+Router: planb (opt1=val1, opt2=val2)
+Teams: tsuruteam, crane
+Address: myapp.tsuru.io
+Owner: myapp_owner
+Team owner: myteam
+Deploys: 7
+Pool:
+Quota: 0/unlimited
+
+Units: 3
++--------+---------+------+------+
+| Unit   | State   | Host | Port |
++--------+---------+------+------+
+| app1/0 | started |      |      |
+| app1/1 | started |      |      |
+| app1/2 | pending |      |      |
++--------+---------+------+------+
+
+`
+	context := cmd.Context{
+		Stdout: &stdout,
+		Stderr: &stderr,
+	}
+	client := cmd.NewClient(&http.Client{Transport: &cmdtest.Transport{Message: result, Status: http.StatusOK}}, nil, manager)
+	command := AppInfo{}
+	command.Flags().Parse(true, []string{"-a/--app", "app1"})
+	err := command.Run(&context, client)
+	c.Assert(err, check.IsNil)
+	c.Assert(stdout.String(), check.Equals, expected)
+}
+
 type transportFunc func(req *http.Request) (resp *http.Response, err error)
 
 func (fn transportFunc) RoundTrip(req *http.Request) (resp *http.Response, err error) {

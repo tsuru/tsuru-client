@@ -501,6 +501,7 @@ type app struct {
 	Quota       quota
 	Plan        tsuruapp.Plan
 	Router      string
+	RouterOpts  map[string]string
 	Tags        []string
 	Error       string
 }
@@ -532,13 +533,21 @@ func (a *app) GetTeams() string {
 	return strings.Join(a.Teams, ", ")
 }
 
+func (a *app) GetRouterOpts() string {
+	var kv []string
+	for k, v := range a.RouterOpts {
+		kv = append(kv, fmt.Sprintf("%s=%s", k, v))
+	}
+	return strings.Join(kv, ", ")
+}
+
 func (a *app) String() string {
 	format := `Application: {{.Name}}
 Description:{{if .Description}} {{.Description}}{{end}}
 Tags:{{if .TagList}} {{.TagList}}{{end}}
 Repository: {{.Repository}}
 Platform: {{.Platform}}
-Router: {{.Router}}
+Router: {{.Router}}{{if .RouterOpts}} ({{.GetRouterOpts}}){{end}}
 Teams: {{.GetTeams}}
 Address: {{.Addr}}
 Owner: {{.Owner}}
