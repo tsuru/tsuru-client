@@ -37,6 +37,42 @@ type AppCreate struct {
 	fs          *gnuflag.FlagSet
 }
 
+type unitSorter struct {
+	Statuses []string
+	Counts   []int
+}
+
+func (u *unitSorter) Len() int {
+	return len(u.Statuses)
+}
+
+func (u *unitSorter) Swap(i, j int) {
+	u.Statuses[i], u.Statuses[j] = u.Statuses[j], u.Statuses[i]
+	u.Counts[i], u.Counts[j] = u.Counts[j], u.Counts[i]
+}
+
+func (u *unitSorter) Less(i, j int) bool {
+	if u.Counts[i] > u.Counts[j] {
+		return true
+	}
+	if u.Counts[i] == u.Counts[j] {
+		return u.Statuses[i] < u.Statuses[j]
+	}
+	return false
+}
+
+func newUnitSorter(m map[string]int) *unitSorter {
+	us := &unitSorter{
+		Statuses: make([]string, 0, len(m)),
+		Counts:   make([]int, 0, len(m)),
+	}
+	for k, v := range m {
+		us.Statuses = append(us.Statuses, k)
+		us.Counts = append(us.Counts, v)
+	}
+	return us
+}
+
 func (c *AppCreate) Info() *cmd.Info {
 	return &cmd.Info{
 		Name:  "app-create",
@@ -778,8 +814,10 @@ func (c *AppList) Show(result []byte, context *cmd.Context, client *cmd.Client) 
 			}
 			statusText := make([]string, len(unitsStatus))
 			i := 0
-			for status, count := range unitsStatus {
-				statusText[i] = fmt.Sprintf("%d %s", count, status)
+			us := newUnitSorter(unitsStatus)
+			sort.Sort(us)
+			for _, status := range us.Statuses {
+				statusText[i] = fmt.Sprintf("%d %s", unitsStatus[status], status)
 				i++
 			}
 			summary = strings.Join(statusText, "\n")

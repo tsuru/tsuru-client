@@ -1813,14 +1813,14 @@ func (s *S) TestAppListFilteringMe(c *check.C) {
 	c.Assert(request.URL.Query(), check.DeepEquals, queryString)
 }
 
-func (s *S) TestAppListMultipleStatuses(c *check.C) {
+func (s *S) TestAppListSortByCountAndStatus(c *check.C) {
 	var stdout, stderr bytes.Buffer
-	result := `[{"ip":"10.10.10.10","cname":["app1.tsuru.io"],"name":"app1","units":[{"ID":"app1/0","Status":"started"},{"ID":"app1/1","Status":"stopped"},{"ID":"app1/2","Status":"asleep"},{"ID":"app1/3","Status":"started"},{"ID":"app1/4","Status":"starting"}]}]`
+	result := `[{"ip":"10.10.10.10","cname":["app1.tsuru.io"],"name":"app1","units":[{"ID":"app1/0","Status":"starting"},{"ID":"app1/1","Status":"stopped"},{"ID":"app1/2","Status":"asleep"},{"ID":"app1/3","Status":"started"},{"ID":"app1/4","Status":"started"},{"ID":"app1/5","Status":"stopped"}]}]`
 	expected := `+-------------+------------+---------------+
 | Application | Units      | Address       |
 +-------------+------------+---------------+
 | app1        | 2 started  | app1.tsuru.io |
-|             | 1 stopped  | 10.10.10.10   |
+|             | 2 stopped  | 10.10.10.10   |
 |             | 1 asleep   |               |
 |             | 1 starting |               |
 +-------------+------------+---------------+
