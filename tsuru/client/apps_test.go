@@ -764,7 +764,7 @@ Quota: 0/unlimited
 
 Units: 3
 +--------+---------+----------+------+
-| Unit   | State   | Host     | Port |
+| Unit   | Status  | Host     | Port |
 +--------+---------+----------+------+
 | app1/2 | pending |          |      |
 | app1/0 | started | 10.8.7.6 | 3333 |
@@ -803,7 +803,7 @@ Quota: 0/unlimited
 
 Units: 3
 +--------+---------+------+------+
-| Unit   | State   | Host | Port |
+| Unit   | Status  | Host | Port |
 +--------+---------+------+------+
 | app1/0 | started |      |      |
 | app1/1 | started |      |      |
@@ -842,7 +842,7 @@ Quota: 0/unlimited
 
 Units: 3
 +--------+---------+------+------+
-| Unit   | State   | Host | Port |
+| Unit   | Status  | Host | Port |
 +--------+---------+------+------+
 | app1/0 | started |      |      |
 | app1/1 | started |      |      |
@@ -881,7 +881,7 @@ Quota: 0/unlimited
 
 Units: 3
 +--------+---------+------+------+
-| Unit   | State   | Host | Port |
+| Unit   | Status  | Host | Port |
 +--------+---------+------+------+
 | app1/0 | started |      |      |
 | app1/1 | started |      |      |
@@ -925,7 +925,7 @@ Quota: 3/40 units
 
 Units: 3
 +--------+---------+------+------+
-| Unit   | State   | Host | Port |
+| Unit   | Status  | Host | Port |
 +--------+---------+------+------+
 | app1/0 | started |      |      |
 | app1/1 | started |      |      |
@@ -980,7 +980,7 @@ Quota: 0/unlimited
 
 Units: 3
 +--------+---------+------+------+
-| Unit   | State   | Host | Port |
+| Unit   | Status  | Host | Port |
 +--------+---------+------+------+
 | app1/0 | started |      |      |
 | app1/1 | started |      |      |
@@ -1057,14 +1057,14 @@ Quota: 0/unlimited
 
 Units [web]: 1
 +--------+---------+------+------+
-| Unit   | State   | Host | Port |
+| Unit   | Status  | Host | Port |
 +--------+---------+------+------+
 | app1/0 | started |      |      |
 +--------+---------+------+------+
 
 Units [worker]: 2
 +--------+---------+------+------+
-| Unit   | State   | Host | Port |
+| Unit   | Status  | Host | Port |
 +--------+---------+------+------+
 | app1/1 | started |      |      |
 | app1/2 | pending |      |      |
@@ -1162,7 +1162,7 @@ Quota: 0/unlimited
 
 Units: 2
 +----------+---------+------+------+
-| Unit     | State   | Host | Port |
+| Unit     | Status  | Host | Port |
 +----------+---------+------+------+
 | secret/0 | started |      |      |
 | secret/1 | pending |      |      |
@@ -1208,7 +1208,7 @@ Quota: 0/unlimited
 
 Units: 3
 +--------+---------+------+------+
-| Unit   | State   | Host | Port |
+| Unit   | Status  | Host | Port |
 +--------+---------+------+------+
 | app1/0 | started |      |      |
 | app1/1 | started |      |      |
@@ -1246,7 +1246,7 @@ Quota: 0/unlimited
 
 Units: 3
 +--------+---------+------+------+
-| Unit   | State   | Host | Port |
+| Unit   | Status  | Host | Port |
 +--------+---------+------+------+
 | app1/0 | started |      |      |
 | app1/1 | started |      |      |
@@ -1304,7 +1304,7 @@ Quota: 0/unlimited
 
 Units: 3
 +--------+---------+------+------+
-| Unit   | State   | Host | Port |
+| Unit   | Status  | Host | Port |
 +--------+---------+------+------+
 | app1/0 | started |      |      |
 | app1/1 | started |      |      |
@@ -1365,7 +1365,7 @@ Quota: 0/unlimited
 
 Units: 3
 +--------+---------+------+------+
-| Unit   | State   | Host | Port |
+| Unit   | Status  | Host | Port |
 +--------+---------+------+------+
 | app1/0 | started |      |      |
 | app1/1 | started |      |      |
@@ -1410,7 +1410,7 @@ Quota: 0/unlimited
 
 Units: 3
 +--------+---------+------+------+
-| Unit   | State   | Host | Port |
+| Unit   | Status  | Host | Port |
 +--------+---------+------+------+
 | app1/0 | started |      |      |
 | app1/1 | started |      |      |
@@ -1475,7 +1475,7 @@ Quota: 0/unlimited
 
 Units: 3
 +--------+---------+------+------+
-| Unit   | State   | Host | Port |
+| Unit   | Status  | Host | Port |
 +--------+---------+------+------+
 | app1/0 | started |      |      |
 | app1/1 | started |      |      |

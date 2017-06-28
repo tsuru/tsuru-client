@@ -569,7 +569,7 @@ Quota: {{.Quota.InUse}}/{{if .Quota.Limit}}{{.Quota.Limit}} units{{else}}unlimit
 		processes = append(processes, process)
 	}
 	sort.Strings(processes)
-	titles := []string{"Unit", "State", "Host", "Port"}
+	titles := []string{"Unit", "Status", "Host", "Port"}
 	for _, process := range processes {
 		units := unitsByProcess[process]
 		unitsTable := cmd.NewTable()
