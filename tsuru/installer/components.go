@@ -25,6 +25,11 @@ type ComponentsConfig struct {
 	RootUserEmail    string     `yaml:"-"`
 	RootUserPassword string     `yaml:"-"`
 	IaaSConfig       iaasConfig `yaml:"-"`
+	Tsuru            tsuruComponent
+}
+
+type tsuruComponent struct {
+	Config map[string]interface{}
 }
 
 type TsuruAPI struct{}

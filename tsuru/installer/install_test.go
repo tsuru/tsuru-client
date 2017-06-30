@@ -37,6 +37,9 @@ func (s *S) TestParseConfigFileNotExists(c *check.C) {
 }
 
 func (s *S) TestParseConfigFile(c *check.C) {
+	expectedTsuruConf := defaultconfig.DefaultTsuruConfig()
+	expectedTsuruConf["debug"] = true
+	expectedTsuruConf["repo-manager"] = "gandalf"
 	expected := &InstallOpts{
 		Name: "tsuru-test",
 		DockerMachineConfig: dm.DockerMachineConfig{
@@ -65,6 +68,7 @@ func (s *S) TestParseConfigFile(c *check.C) {
 					},
 				},
 			},
+			Tsuru: tsuruComponent{Config: expectedTsuruConf},
 		},
 		Hosts: hostGroups{
 			Apps: hostGroupConfig{

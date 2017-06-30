@@ -14,6 +14,8 @@ import (
 	"strings"
 	"time"
 
+	yaml "gopkg.in/yaml.v1"
+
 	"github.com/docker/machine/libmachine/mcnutils"
 	"github.com/docker/machine/libmachine/provision"
 	"github.com/docker/machine/libmachine/provision/serviceaction"
@@ -36,6 +38,7 @@ var (
 			TargetName:       "tsuru",
 			RootUserEmail:    "admin@example.com",
 			RootUserPassword: "admin123",
+			Tsuru:            tsuruComponent{Config: defaultconfig.DefaultTsuruConfig()},
 		},
 		Hosts: hostGroups{
 			Apps: hostGroupConfig{Size: 1},
@@ -81,7 +84,11 @@ func (i *Installer) Install(opts *InstallOpts) (*Installation, error) {
 		return nil, fmt.Errorf("pre-install checks failed: %s", errChecks)
 	}
 	setCoreDriverDefaultOpts(opts)
-	coreMachines, err := i.ProvisionMachines(opts.Hosts.Core.Size, opts.Hosts.Core.Driver.Options, deployTsuruConfig)
+	deployFunc, err := deployTsuruConfig(opts)
+	if err != nil {
+		return nil, err
+	}
+	coreMachines, err := i.ProvisionMachines(opts.Hosts.Core.Size, opts.Hosts.Core.Driver.Options, deployFunc)
 	if err != nil {
 		return nil, fmt.Errorf("failed to provision components machines: %s", err)
 	}
@@ -113,18 +120,24 @@ func (i *Installer) Install(opts *InstallOpts) (*Installation, error) {
 	}, nil
 }
 
-func deployTsuruConfig(m *dockermachine.Machine) error {
-	fmt.Println("Deploying tsuru config...")
-	_, err := m.Host.RunSSHCommand("sudo mkdir -p /etc/tsuru/")
+func deployTsuruConfig(installOpts *InstallOpts) (func(*dockermachine.Machine) error, error) {
+	conf, err := yaml.Marshal(installOpts.Tsuru.Config)
 	if err != nil {
-		return fmt.Errorf("failed to create tsuru config directory: %s", err)
+		return nil, fmt.Errorf("failed to marshal tsuru api config: %s", err)
 	}
-	remoteWriteCmdFmt := "printf '%%s' '%s' | sudo tee %s"
-	_, err = m.Host.RunSSHCommand(fmt.Sprintf(remoteWriteCmdFmt, string(defaultconfig.Tsuru), "/etc/tsuru/tsuru.conf"))
-	if err != nil {
-		return fmt.Errorf("failed to write remote file: %s", err)
-	}
-	return nil
+	return func(m *dockermachine.Machine) error {
+		fmt.Println("Deploying tsuru config...")
+		_, err := m.Host.RunSSHCommand("sudo mkdir -p /etc/tsuru/")
+		if err != nil {
+			return fmt.Errorf("failed to create tsuru config directory: %s", err)
+		}
+		remoteWriteCmdFmt := "printf '%%s' '%s' | sudo tee %s"
+		_, err = m.Host.RunSSHCommand(fmt.Sprintf(remoteWriteCmdFmt, string(conf), "/etc/tsuru/tsuru.conf"))
+		if err != nil {
+			return fmt.Errorf("failed to write remote file: %s", err)
+		}
+		return nil
+	}, nil
 }
 
 // HACK: Sometimes docker will simply freeze while pulling the images for each
