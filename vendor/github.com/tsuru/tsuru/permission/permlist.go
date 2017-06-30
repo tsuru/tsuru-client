@@ -32,8 +32,11 @@ var PermissionRegistry = (&registry{}).addWithCtx(
 	"app.update.cname.add",
 	"app.update.cname.remove",
 	"app.update.plan",
+	"app.update.platform",
 	"app.update.router",
+	"app.update.router-opts",
 	"app.update.bind",
+	"app.update.image-reset",
 	"app.update.events",
 	"app.update.unbind",
 	"app.update.certificate.set",
@@ -77,7 +80,6 @@ var PermissionRegistry = (&registry{}).addWithCtx(
 ).addWithCtx(
 	"machine", []contextType{CtxIaaS},
 ).add(
-	"machine.create",
 	"machine.delete",
 	"machine.read",
 	"machine.read.events",
