@@ -6,93 +6,13 @@ import (
 	"io/ioutil"
 	"strings"
 
+	"github.com/tsuru/tsuru-client/tsuru/installer/defaultconfig"
 	"github.com/tsuru/tsuru-client/tsuru/installer/dm"
 )
 
-var defaultCompose = `
-version: "3"
-
-services:
-  redis:
-    image: redis:latest
-    networks:
-      - tsuru
-    volumes:
-      - redis-data:/data/db
-  
-  mongo:
-    image: mongo:latest
-    networks:
-      - tsuru
-    volumes:
-      - mongo-data:/data
-
-  planb:
-    image: tsuru/planb:latest
-    command: --listen :8080 --read-redis-host redis --write-redis-host redis --access-log stdout
-    ports:
-      - 80:8080
-    networks:
-      - tsuru
-    depends_on:
-      - redis
-
-  registry:
-    image: registry:2
-    environment:
-      - "REGISTRY_STORAGE_FILESYSTEM_ROOTDIRECTORY=/var/lib/registry"
-      - "REGISTRY_HTTP_TLS_CERTIFICATE=/certs/{{CLUSTER_PRIVATE_ADDR}}:5000/registry-cert.pem"
-      - "REGISTRY_HTTP_TLS_KEY=/certs/{{CLUSTER_PRIVATE_ADDR}}:5000/registry-key.pem"
-    volumes:
-      - "/etc/docker/certs.d:/certs:ro"
-      - registry-data:/var/lib/registry
-    ports:
-      - 5000:5000
-    networks:
-      - tsuru
-
-  tsuru:
-    image: tsuru/api:v1
-    volumes:
-      - "/etc/docker/certs.d:/certs:ro"
-    ports:
-      - 8080:8080
-    networks:
-      - tsuru
-    depends_on:
-      - redis
-      - mongo
-      - registry
-      - planb
-    environment:
-      - MONGODB_ADDR=mongo
-      - MONGODB_PORT=27017
-      - REDIS_ADDR=redis
-      - REDIS_PORT=6379
-      - HIPACHE_DOMAIN={{CLUSTER_ADDR}}.nip.io
-      - REGISTRY_ADDR={{CLUSTER_PRIVATE_ADDR}}
-      - REGISTRY_PORT=5000
-      - TSURU_ADDR=http://{{CLUSTER_ADDR}}
-      - TSURU_PORT=8080
-      - IAAS_CONF={{IAAS_CONF}}
-
-networks:
-  tsuru:
-    driver: overlay
-    ipam:
-      driver: default
-      config:
-        - subnet: 10.0.9.0/24
-
-volumes:
-  mongo-data:
-  redis-data:
-  registry-data:
-`
-
 func resolveConfig(baseConfig string, customConfigs map[string]string) (string, error) {
 	if baseConfig == "" {
-		baseConfig = defaultCompose
+		baseConfig = defaultconfig.Compose
 	} else {
 		b, err := ioutil.ReadFile(baseConfig)
 		if err != nil {

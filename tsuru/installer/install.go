@@ -17,6 +17,7 @@ import (
 	"github.com/tsuru/gnuflag"
 	"github.com/tsuru/tsuru-client/tsuru/admin"
 	"github.com/tsuru/tsuru-client/tsuru/client"
+	"github.com/tsuru/tsuru-client/tsuru/installer/defaultconfig"
 	"github.com/tsuru/tsuru-client/tsuru/installer/dm"
 	"github.com/tsuru/tsuru/cmd"
 	"github.com/tsuru/tsuru/iaas"
@@ -473,7 +474,7 @@ func (c *InstallConfigInit) Run(context *cmd.Context, cli *cmd.Client) error {
 	if len(context.Args) > 1 {
 		composeFile = context.Args[1]
 	}
-	err := ioutil.WriteFile(composeFile, []byte(defaultCompose), 0644)
+	err := ioutil.WriteFile(composeFile, []byte(defaultconfig.Compose), 0644)
 	if err != nil {
 		return errors.Errorf("failed to write compose file: %s", err)
 	}
