@@ -63,7 +63,6 @@ services:
       - REGISTRY_PORT=5000
       - TSURU_ADDR=http://{{CLUSTER_ADDR}}
       - TSURU_PORT=8080
-      - IAAS_CONF={{IAAS_CONF}}
 
 networks:
   tsuru:

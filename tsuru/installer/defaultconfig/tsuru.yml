@@ -1,5 +1,5 @@
-listen: "0.0.0.0:$TSURU_PORT"
-host: $TSURU_ADDR:$TSURU_PORT
+listen: "0.0.0.0:8080"
+host: $TSURU_ADDR:8080
 use-tls: false
 tls:
     cert-file: /certs/cert.pem
@@ -47,4 +47,3 @@ quota:
 log:
   disable-syslog: true
   use-stderr: true
-iaas: $IAAS_CONF

@@ -14,7 +14,7 @@ import (
 	"strings"
 	"time"
 
-	yaml "gopkg.in/yaml.v1"
+	yaml "gopkg.in/yaml.v2"
 
 	"github.com/docker/machine/libmachine/mcnutils"
 	"github.com/docker/machine/libmachine/provision"
@@ -26,8 +26,8 @@ import (
 	"github.com/tsuru/tsuru/iaas/dockermachine"
 )
 
-var (
-	defaultInstallOpts = &InstallOpts{
+func DefaultInstallOpts() *InstallOpts {
+	return &InstallOpts{
 		Name: "tsuru",
 		DockerMachineConfig: dm.DockerMachineConfig{
 			DriverOpts:  &dm.DriverOpts{Name: "virtualbox"},
@@ -45,7 +45,7 @@ var (
 			Core: hostGroupConfig{Size: 1},
 		},
 	}
-)
+}
 
 type InstallOpts struct {
 	dm.DockerMachineConfig `yaml:",inline"`
@@ -206,7 +206,7 @@ func (i *Installer) BootstrapTsuru(opts *InstallOpts, target string, coreMachine
 		InstallDashboard: opts.ComponentsConfig.InstallDashboard,
 	}
 	var installMachines []*dockermachine.Machine
-	if opts.DriverOpts.Name == "virtualbox" || opts.DriverOpts.Name == "generic" {
+	if !dm.IaaSCompatibleDriver(opts.DriverOpts.Name) {
 		appsMachines, errProv := i.ProvisionPool(opts, coreMachines)
 		if errProv != nil {
 			return nil, errProv

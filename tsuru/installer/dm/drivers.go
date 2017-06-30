@@ -92,3 +92,7 @@ func DefaultDriverOpts(driverName string) map[string]interface{} {
 	}
 	return opts
 }
+
+func IaaSCompatibleDriver(driverName string) bool {
+	return driverName != "virtualbox" && driverName != "generic"
+}

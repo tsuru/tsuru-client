@@ -1,7 +1,6 @@
 package installer
 
 import (
-	"encoding/json"
 	"fmt"
 	"io/ioutil"
 	"strings"
@@ -29,17 +28,10 @@ func resolveConfig(baseConfig string, customConfigs map[string]string) (string, 
 }
 
 func composeDeploy(c ServiceCluster, installConfig *InstallOpts) error {
-	componentsConfig := installConfig.ComponentsConfig
 	manager := c.GetManager()
-	componentsConfig.IaaSConfig.Dockermachine.InsecureRegistry = fmt.Sprintf("%s:5000", dm.GetPrivateIP(manager))
-	iaasConfig, err := json.Marshal(componentsConfig.IaaSConfig)
-	if err != nil {
-		return fmt.Errorf("failed to marshal iaas config: %s", err)
-	}
 	configs := map[string]string{
 		"CLUSTER_ADDR":         manager.Base.Address,
 		"CLUSTER_PRIVATE_ADDR": dm.GetPrivateIP(manager),
-		"IAAS_CONF":            string(iaasConfig),
 	}
 	config, err := resolveConfig(installConfig.ComposeFile, configs)
 	if err != nil {

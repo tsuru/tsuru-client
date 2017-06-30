@@ -100,7 +100,7 @@ func (c *Install) Run(context *cmd.Context, cli *cmd.Client) error {
 }
 
 func parseConfigFile(file string) (*InstallOpts, error) {
-	installConfig := defaultInstallOpts
+	installConfig := DefaultInstallOpts()
 	if file == "" {
 		return installConfig, nil
 	}
@@ -112,12 +112,32 @@ func parseConfigFile(file string) (*InstallOpts, error) {
 	if err != nil {
 		return nil, err
 	}
-	installConfig.ComponentsConfig.TargetName = installConfig.Name
-	conf := &installConfig.ComponentsConfig.IaaSConfig.Dockermachine
-	conf.CaPath = "/certs"
-	conf.Driver.Name = installConfig.DriverOpts.Name
-	conf.Driver.Options = installConfig.DriverOpts.Options
 	config.ReadConfigFile(file)
+	installConfig.ComponentsConfig.TargetName = installConfig.Name
+	defaultIaas := iaasConfig{
+		Dockermachine: iaasConfigInternal{
+			CaPath:           "/certs",
+			InsecureRegistry: "$REGISTRY_ADDR:$REGISTRY_PORT",
+		},
+	}
+	if dm.IaaSCompatibleDriver(installConfig.DriverOpts.Name) {
+		defaultIaas.Dockermachine.Driver = iaasConfigDriver{
+			Name:    installConfig.DriverOpts.Name,
+			Options: installConfig.DriverOpts.Options,
+		}
+	}
+	conf := installConfig.ComponentsConfig.Tsuru.Config
+	if _, ok := conf["iaas"]; ok {
+		customIaas, err := yaml.Marshal(conf["iaas"])
+		if err != nil {
+			return nil, err
+		}
+		err = yaml.Unmarshal(customIaas, &defaultIaas)
+		if err != nil {
+			return nil, err
+		}
+	}
+	conf["iaas"] = defaultIaas
 	return installConfig, nil
 }
 
@@ -478,7 +498,7 @@ func (c *InstallConfigInit) Run(context *cmd.Context, cli *cmd.Client) error {
 	if err != nil {
 		return errors.Errorf("failed to write compose file: %s", err)
 	}
-	out, err := yaml.Marshal(defaultInstallOpts)
+	out, err := yaml.Marshal(DefaultInstallOpts())
 	if err != nil {
 		return errors.Errorf("failed to generate config file: %s", err)
 	}

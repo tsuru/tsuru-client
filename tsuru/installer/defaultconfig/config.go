@@ -3,7 +3,7 @@ package defaultconfig
 import (
 	"fmt"
 
-	yaml "gopkg.in/yaml.v1"
+	yaml "gopkg.in/yaml.v2"
 )
 
 //go:generate bash -c "rm -f configs.go && go run ./generator/main.go -o configs.go"

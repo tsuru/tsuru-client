@@ -20,11 +20,10 @@ import (
 var defaultTsuruAPIPort = 8080
 
 type ComponentsConfig struct {
-	InstallDashboard bool       `yaml:"install-dashboard,omitempty"`
-	TargetName       string     `yaml:"-"`
-	RootUserEmail    string     `yaml:"-"`
-	RootUserPassword string     `yaml:"-"`
-	IaaSConfig       iaasConfig `yaml:"-"`
+	InstallDashboard bool   `yaml:"install-dashboard,omitempty"`
+	TargetName       string `yaml:"-"`
+	RootUserEmail    string `yaml:"-"`
+	RootUserPassword string `yaml:"-"`
 	Tsuru            tsuruComponent
 }
 

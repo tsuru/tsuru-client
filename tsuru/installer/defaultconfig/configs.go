@@ -68,7 +68,6 @@ services:
       - REGISTRY_PORT=5000
       - TSURU_ADDR=http://{{CLUSTER_ADDR}}
       - TSURU_PORT=8080
-      - IAAS_CONF={{IAAS_CONF}}
 
 networks:
   tsuru:
@@ -84,8 +83,8 @@ volumes:
   registry-data:
 
 `
-Tsuru = `listen: "0.0.0.0:$TSURU_PORT"
-host: $TSURU_ADDR:$TSURU_PORT
+Tsuru = `listen: "0.0.0.0:8080"
+host: $TSURU_ADDR:8080
 use-tls: false
 tls:
     cert-file: /certs/cert.pem
@@ -132,6 +131,5 @@ quota:
   apps-per-user: 2
 log:
   disable-syslog: true
-  use-stderr: true
-iaas: $IAAS_CONF`
+  use-stderr: true`
 )

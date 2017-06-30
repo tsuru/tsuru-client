@@ -28,7 +28,7 @@ import (
 func (s *S) TestParseConfigDefaultConfig(c *check.C) {
 	dmConfig, err := parseConfigFile("")
 	c.Assert(err, check.IsNil)
-	c.Assert(dmConfig, check.DeepEquals, defaultInstallOpts)
+	c.Assert(dmConfig, check.DeepEquals, DefaultInstallOpts())
 }
 
 func (s *S) TestParseConfigFileNotExists(c *check.C) {
@@ -38,6 +38,19 @@ func (s *S) TestParseConfigFileNotExists(c *check.C) {
 
 func (s *S) TestParseConfigFile(c *check.C) {
 	expectedTsuruConf := defaultconfig.DefaultTsuruConfig()
+	expectedTsuruConf["iaas"] = iaasConfig{
+		Dockermachine: iaasConfigInternal{
+			CaPath:           "/certs",
+			InsecureRegistry: "$REGISTRY_ADDR:$REGISTRY_PORT",
+			Driver: iaasConfigDriver{
+				Name: "amazonec2",
+				Options: map[string]interface{}{
+					"opt1": "option1-value",
+					"opt2": "option2-newvalue",
+				},
+			},
+		},
+	}
 	expectedTsuruConf["debug"] = true
 	expectedTsuruConf["repo-manager"] = "gandalf"
 	expected := &InstallOpts{
@@ -47,6 +60,7 @@ func (s *S) TestParseConfigFile(c *check.C) {
 				Name: "amazonec2",
 				Options: map[string]interface{}{
 					"opt1": "option1-value",
+					"opt2": "option2-newvalue",
 				},
 			},
 			CAPath:      "/tmp/certs",
@@ -57,18 +71,7 @@ func (s *S) TestParseConfigFile(c *check.C) {
 			TargetName:       "tsuru-test",
 			RootUserEmail:    "admin@example.com",
 			RootUserPassword: "admin123",
-			IaaSConfig: iaasConfig{
-				Dockermachine: iaasConfigInternal{
-					CaPath: "/certs",
-					Driver: iaasConfigDriver{
-						Name: "amazonec2",
-						Options: map[string]interface{}{
-							"opt1": "option1-value",
-						},
-					},
-				},
-			},
-			Tsuru: tsuruComponent{Config: expectedTsuruConf},
+			Tsuru:            tsuruComponent{Config: expectedTsuruConf},
 		},
 		Hosts: hostGroups{
 			Apps: hostGroupConfig{
@@ -257,5 +260,12 @@ func (s *S) TestInstallConfigInit(c *check.C) {
 	c.Assert(string(compose), check.DeepEquals, defaultconfig.Compose)
 	opts, err := parseConfigFile(filepath.Join(d, "config.yml"))
 	c.Assert(err, check.IsNil)
-	c.Assert(opts, check.DeepEquals, defaultInstallOpts)
+	expected := DefaultInstallOpts()
+	expected.Tsuru.Config["iaas"] = iaasConfig{
+		Dockermachine: iaasConfigInternal{
+			CaPath:           "/certs",
+			InsecureRegistry: "$REGISTRY_ADDR:$REGISTRY_PORT",
+		},
+	}
+	c.Assert(opts, check.DeepEquals, expected)
 }
