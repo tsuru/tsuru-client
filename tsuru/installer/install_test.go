@@ -16,6 +16,7 @@ import (
 
 	"github.com/docker/machine/drivers/fakedriver"
 	"github.com/docker/machine/libmachine/host"
+	"github.com/tsuru/tsuru-client/tsuru/installer/defaultconfig"
 	"github.com/tsuru/tsuru-client/tsuru/installer/dm"
 	"github.com/tsuru/tsuru/cmd"
 	"github.com/tsuru/tsuru/cmd/cmdtest"
@@ -249,7 +250,7 @@ func (s *S) TestInstallConfigInit(c *check.C) {
 	c.Assert(err, check.IsNil)
 	compose, err := ioutil.ReadFile(filepath.Join(d, "compose.yml"))
 	c.Assert(err, check.IsNil)
-	c.Assert(string(compose), check.DeepEquals, defaultCompose)
+	c.Assert(string(compose), check.DeepEquals, defaultconfig.Compose)
 	opts, err := parseConfigFile(filepath.Join(d, "config.yml"))
 	c.Assert(err, check.IsNil)
 	c.Assert(opts, check.DeepEquals, defaultInstallOpts)

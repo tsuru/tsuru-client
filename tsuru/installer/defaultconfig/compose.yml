@@ -43,6 +43,7 @@ services:
     image: tsuru/api:v1
     volumes:
       - "/etc/docker/certs.d:/certs:ro"
+      - "/etc/tsuru/tsuru.conf:/etc/tsuru/tsuru.conf:ro"
     ports:
       - 8080:8080
     networks:

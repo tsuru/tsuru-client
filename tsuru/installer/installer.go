@@ -18,6 +18,7 @@ import (
 	"github.com/docker/machine/libmachine/provision"
 	"github.com/docker/machine/libmachine/provision/serviceaction"
 	"github.com/fsouza/go-dockerclient"
+	"github.com/tsuru/tsuru-client/tsuru/installer/defaultconfig"
 	"github.com/tsuru/tsuru-client/tsuru/installer/dm"
 	"github.com/tsuru/tsuru/cmd"
 	"github.com/tsuru/tsuru/iaas/dockermachine"
@@ -80,7 +81,7 @@ func (i *Installer) Install(opts *InstallOpts) (*Installation, error) {
 		return nil, fmt.Errorf("pre-install checks failed: %s", errChecks)
 	}
 	setCoreDriverDefaultOpts(opts)
-	coreMachines, err := i.ProvisionMachines(opts.Hosts.Core.Size, opts.Hosts.Core.Driver.Options)
+	coreMachines, err := i.ProvisionMachines(opts.Hosts.Core.Size, opts.Hosts.Core.Driver.Options, deployTsuruConfig)
 	if err != nil {
 		return nil, fmt.Errorf("failed to provision components machines: %s", err)
 	}
@@ -110,6 +111,20 @@ func (i *Installer) Install(opts *InstallOpts) (*Installation, error) {
 		CoreCluster:     cluster,
 		InstallMachines: installMachines,
 	}, nil
+}
+
+func deployTsuruConfig(m *dockermachine.Machine) error {
+	fmt.Println("Deploying tsuru config...")
+	_, err := m.Host.RunSSHCommand("sudo mkdir -p /etc/tsuru/")
+	if err != nil {
+		return fmt.Errorf("failed to create tsuru config directory: %s", err)
+	}
+	remoteWriteCmdFmt := "printf '%%s' '%s' | sudo tee %s"
+	_, err = m.Host.RunSSHCommand(fmt.Sprintf(remoteWriteCmdFmt, string(defaultconfig.Tsuru), "/etc/tsuru/tsuru.conf"))
+	if err != nil {
+		return fmt.Errorf("failed to write remote file: %s", err)
+	}
+	return nil
 }
 
 // HACK: Sometimes docker will simply freeze while pulling the images for each
@@ -249,10 +264,10 @@ func preInstallChecks(config *InstallOpts) error {
 
 func (i *Installer) ProvisionPool(config *InstallOpts, hosts []*dockermachine.Machine) ([]*dockermachine.Machine, error) {
 	if config.Hosts.Apps.Dedicated {
-		return i.ProvisionMachines(config.Hosts.Apps.Size, config.Hosts.Apps.Driver.Options)
+		return i.ProvisionMachines(config.Hosts.Apps.Size, config.Hosts.Apps.Driver.Options, nil)
 	}
 	if config.Hosts.Apps.Size > len(hosts) {
-		poolMachines, err := i.ProvisionMachines(config.Hosts.Apps.Size-len(hosts), config.Hosts.Apps.Driver.Options)
+		poolMachines, err := i.ProvisionMachines(config.Hosts.Apps.Size-len(hosts), config.Hosts.Apps.Driver.Options, nil)
 		if err != nil {
 			return nil, fmt.Errorf("failed to provision pool hosts: %s", err)
 		}
@@ -261,7 +276,7 @@ func (i *Installer) ProvisionPool(config *InstallOpts, hosts []*dockermachine.Ma
 	return hosts[:config.Hosts.Apps.Size], nil
 }
 
-func (i *Installer) ProvisionMachines(numMachines int, configs map[string][]interface{}) ([]*dockermachine.Machine, error) {
+func (i *Installer) ProvisionMachines(numMachines int, configs map[string][]interface{}, initFunc func(*dockermachine.Machine) error) ([]*dockermachine.Machine, error) {
 	var machines []*dockermachine.Machine
 	for j := 0; j < numMachines; j++ {
 		opts := make(map[string]interface{})
@@ -272,6 +287,11 @@ func (i *Installer) ProvisionMachines(numMachines int, configs map[string][]inte
 		m, err := i.machineProvisioner.ProvisionMachine(opts)
 		if err != nil {
 			return nil, fmt.Errorf("failed to provision machines: %s", err)
+		}
+		if initFunc != nil {
+			if err := initFunc(m); err != nil {
+				return nil, fmt.Errorf("failed to initialize host: %s", err)
+			}
 		}
 		machines = append(machines, m)
 	}
