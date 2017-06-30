@@ -126,7 +126,7 @@ func (c *EventList) Show(evts []event.Event, context *cmd.Context) error {
 	for i := range evts {
 		evt := &evts[i]
 		if evt.Target.Type == "container" {
-			evt.Target.Value = evt.Target.Value[:12]
+			evt.Target.Value = shortID(evt.Target.Value)
 		}
 		fullTarget := fmt.Sprintf("%s: %s", evt.Target.Type, evt.Target.Value)
 		startFmt := evt.StartTime.Format(time.RFC822Z)

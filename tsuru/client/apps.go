@@ -13,6 +13,7 @@ import (
 	"net"
 	"net/http"
 	"net/url"
+	"regexp"
 	"sort"
 	"strconv"
 	"strings"
@@ -25,6 +26,12 @@ import (
 	"github.com/tsuru/tsuru/cmd"
 	tsuruerr "github.com/tsuru/tsuru/errors"
 )
+
+const (
+	cutoffHexID = 12
+)
+
+var hexRegex = regexp.MustCompile(`(?i)^[a-f0-9]+$`)
 
 type AppCreate struct {
 	teamOwner   string
@@ -545,6 +552,13 @@ func (a *app) GetRouterOpts() string {
 	return strings.Join(kv, ", ")
 }
 
+func shortID(id string) string {
+	if hexRegex.MatchString(id) && len(id) > cutoffHexID {
+		return id[:cutoffHexID]
+	}
+	return id
+}
+
 func (a *app) String() string {
 	format := `Application: {{.Name}}
 Description:{{if .Description}} {{.Description}}{{end}}
@@ -582,11 +596,7 @@ Quota: {{.Quota.InUse}}/{{if .Quota.Limit}}{{.Quota.Limit}} units{{else}}unlimit
 			if unit.ID == "" {
 				continue
 			}
-			id := unit.ID
-			if len(unit.ID) > 12 {
-				id = id[:12]
-			}
-			row := []string{id, unit.Status, unit.Host(), unit.Port()}
+			row := []string{shortID(unit.ID), unit.Status, unit.Host(), unit.Port()}
 			unitsTable.AddRow(cmd.Row(row))
 		}
 		if unitsTable.Rows() > 0 {

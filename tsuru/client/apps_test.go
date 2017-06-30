@@ -1558,6 +1558,78 @@ App Plan:
 	c.Assert(stdout.String(), check.Equals, expected)
 }
 
+func (s *S) TestAppInfoShortensHexIDs(c *check.C) {
+	var stdout, stderr bytes.Buffer
+	expected := `Application: app1
+Description:
+Tags:
+Repository: git@git.com:php.git
+Platform: php
+Router: planb
+Teams: tsuruteam, crane
+Address: app1.tsuru.io
+Owner: myapp_owner
+Team owner: myteam
+Deploys: 7
+Pool:
+Quota: 0/unlimited
+
+Units: 3
++--------------------+---------+------+------+
+| Unit               | Status  | Host | Port |
++--------------------+---------+------+------+
+| abcea389cbae       | started |      |      |
+| abcea3             | started |      |      |
+| my_long_non_hex_id | started |      |      |
++--------------------+---------+------+------+
+
+`
+	context := cmd.Context{
+		Stdout: &stdout,
+		Stderr: &stderr,
+	}
+	infoData := `{
+    "name": "app1",
+    "teamowner": "myteam",
+    "ip": "app1.tsuru.io",
+    "platform": "php",
+    "repository": "git@git.com:php.git",
+    "units": [
+        {
+            "ID": "abcea389cbaebce89abc9a",
+            "Status": "started"
+        },
+        {
+            "ID": "abcea3",
+            "Status": "started"
+        },
+        {
+            "ID": "my_long_non_hex_id",
+            "Status": "started"
+        }
+    ],
+    "Teams": [
+        "tsuruteam",
+        "crane"
+    ],
+    "owner": "myapp_owner",
+    "deploys": 7,
+    "router": "planb"
+}`
+	transport := transportFunc(func(req *http.Request) (resp *http.Response, err error) {
+		return &http.Response{
+			Body:       ioutil.NopCloser(bytes.NewBufferString(infoData)),
+			StatusCode: http.StatusOK,
+		}, nil
+	})
+	client := cmd.NewClient(&http.Client{Transport: transport}, nil, manager)
+	command := AppInfo{}
+	command.Flags().Parse(true, []string{"--app", "app1"})
+	err := command.Run(&context, client)
+	c.Assert(err, check.IsNil)
+	c.Assert(stdout.String(), check.Equals, expected)
+}
+
 func (s *S) TestAppInfoInfo(c *check.C) {
 	c.Assert((&AppInfo{}).Info(), check.NotNil)
 }
