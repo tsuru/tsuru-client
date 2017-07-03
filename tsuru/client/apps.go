@@ -210,6 +210,7 @@ func (c *AppCreate) Run(context *cmd.Context, client *cmd.Client) error {
 
 type AppUpdate struct {
 	description string
+	platform    string
 	plan        string
 	router      string
 	pool        string
@@ -225,7 +226,7 @@ type AppUpdate struct {
 func (c *AppUpdate) Info() *cmd.Info {
 	return &cmd.Info{
 		Name:  "app-update",
-		Usage: "app-update [-a/--app appname] [--description/-d description] [--plan/-p plan name] [--router/-r router name] [--pool/-o pool] [--team-owner/-t team owner] [-i/--image-reset] [--tag/-g tag]... [--router-opts key=value]...",
+		Usage: "app-update [-a/--app appname] [--description/-d description] [--plan/-p plan name] [--router/-r router name] [--pool/-o pool] [--team-owner/-t team owner] [--platform/-l platform] [-i/--image-reset image] [--tag/-g tag]... [--router-opts key=value]...",
 		Desc: `Updates an app, changing its description, tags, plan or pool information.
 
 The [[--description]] parameter sets a description for your app.
@@ -254,11 +255,14 @@ func (c *AppUpdate) Flags() *gnuflag.FlagSet {
 		poolMessage := "App pool"
 		teamOwnerMessage := "App team owner"
 		tagMessage := "App tag"
+		platformMsg := "App platform"
 		imgReset := "Forces next deploy to build app image from scratch"
 		flagSet.StringVar(&c.description, "description", "", descriptionMessage)
 		flagSet.StringVar(&c.description, "d", "", descriptionMessage)
 		flagSet.StringVar(&c.plan, "plan", "", planMessage)
 		flagSet.StringVar(&c.plan, "p", "", planMessage)
+		flagSet.StringVar(&c.platform, "l", "", platformMsg)
+		flagSet.StringVar(&c.platform, "platform", "", platformMsg)
 		flagSet.StringVar(&c.router, "router", "", routerMessage)
 		flagSet.StringVar(&c.router, "r", "", routerMessage)
 		flagSet.StringVar(&c.pool, "o", "", poolMessage)
@@ -297,6 +301,7 @@ func (c *AppUpdate) Run(context *cmd.Context, client *cmd.Client) error {
 	v.Set("description", c.description)
 	v.Set("pool", c.pool)
 	v.Set("teamOwner", c.teamOwner)
+	v.Set("platform", c.platform)
 	v.Set("imageReset", strconv.FormatBool(c.imageReset))
 	for _, tag := range c.tags {
 		v.Add("tag", tag)

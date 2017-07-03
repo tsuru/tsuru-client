@@ -466,13 +466,14 @@ func (s *S) TestAppUpdate(c *check.C) {
 			req.ParseForm()
 			tags := len(req.Form["tag"]) == 2 && req.Form["tag"][0] == "tag 1" && req.Form["tag"][1] == "tag 2"
 			router := req.FormValue("router") == "router"
+			platform := req.FormValue("platform") == "python"
 			routerOpts := req.FormValue("routeropts.opt1") == "val1" && req.FormValue("routeropts.opt2") == "val2"
-			return url && method && description && tags && router && routerOpts
+			return url && method && description && tags && router && routerOpts && platform
 		},
 	}
 	client := cmd.NewClient(&http.Client{Transport: trans}, nil, manager)
 	command := AppUpdate{}
-	command.Flags().Parse(true, []string{"-d", "description of my app", "-a", "ble", "-r", "router", "-g", "tag 1", "-g", "tag 2",
+	command.Flags().Parse(true, []string{"-d", "description of my app", "-a", "ble", "-r", "router", "-l", "python", "-g", "tag 1", "-g", "tag 2",
 		"--router-opts", "opt1=val1", "--router-opts", "opt2=val2"})
 	err := command.Run(&context, client)
 	c.Assert(err, check.IsNil)
