@@ -32,10 +32,12 @@ type DockerMachine struct {
 }
 
 type DockerMachineConfig struct {
-	CAPath          string      `yaml:"ca-path,omitempty"`
-	DriverOpts      *DriverOpts `yaml:"driver,omitempty"`
-	DockerHubMirror string      `yaml:"docker-hub-mirror,omitempty"`
-	DockerFlags     []string    `yaml:"docker-flags,omitempty"`
+	CAPath              string      `yaml:"ca-path,omitempty"`
+	DriverOpts          *DriverOpts `yaml:"driver,omitempty"`
+	DockerHubMirror     string      `yaml:"docker-hub-mirror,omitempty"`
+	DockerFlags         []string    `yaml:"docker-flags,omitempty"`
+	DockerStorageDriver string      `yaml:"docker-storage-driver,omitempty"`
+	DockerInstallURL    string      `yaml:"docker-install-url,omitempty"`
 }
 
 type DriverOpts struct {
@@ -93,11 +95,13 @@ func (d *DockerMachine) CreateMachine(driverOpts map[string]interface{}) (*docke
 		mergedOpts[k] = v
 	}
 	m, err := d.API.CreateMachine(dockermachine.CreateMachineOpts{
-		Name:           d.generateMachineName(),
-		DriverName:     d.config.DriverOpts.Name,
-		Params:         mergedOpts,
-		RegistryMirror: d.config.DockerHubMirror,
-		ArbitraryFlags: d.config.DockerFlags,
+		Name:                      d.generateMachineName(),
+		DriverName:                d.config.DriverOpts.Name,
+		Params:                    mergedOpts,
+		RegistryMirror:            d.config.DockerHubMirror,
+		ArbitraryFlags:            d.config.DockerFlags,
+		DockerEngineStorageDriver: d.config.DockerStorageDriver,
+		DockerEngineInstallURL:    d.config.DockerInstallURL,
 	})
 	if err != nil {
 		return nil, err
