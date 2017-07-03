@@ -116,8 +116,11 @@ func parseConfigFile(file string) (*InstallOpts, error) {
 	installConfig.ComponentsConfig.TargetName = installConfig.Name
 	defaultIaas := iaasConfig{
 		Dockermachine: iaasConfigInternal{
-			CaPath:           "/certs",
-			InsecureRegistry: "$REGISTRY_ADDR:$REGISTRY_PORT",
+			CaPath:              "/certs",
+			InsecureRegistry:    "$REGISTRY_ADDR:$REGISTRY_PORT",
+			DockerInstallURL:    installConfig.DockerInstallURL,
+			DockerStorageDriver: installConfig.DockerStorageDriver,
+			DockerFlags:         strings.Join(installConfig.DockerFlags, ","),
 		},
 	}
 	if dm.IaaSCompatibleDriver(installConfig.DriverOpts.Name) {

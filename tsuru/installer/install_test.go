@@ -42,6 +42,7 @@ func (s *S) TestParseConfigFile(c *check.C) {
 		Dockermachine: iaasConfigInternal{
 			CaPath:           "/certs",
 			InsecureRegistry: "$REGISTRY_ADDR:$REGISTRY_PORT",
+			DockerFlags:      "experimental",
 			Driver: iaasConfigDriver{
 				Name: "amazonec2",
 				Options: map[string]interface{}{
@@ -265,6 +266,7 @@ func (s *S) TestInstallConfigInit(c *check.C) {
 		Dockermachine: iaasConfigInternal{
 			CaPath:           "/certs",
 			InsecureRegistry: "$REGISTRY_ADDR:$REGISTRY_PORT",
+			DockerFlags:      "experimental",
 		},
 	}
 	c.Assert(opts, check.DeepEquals, expected)

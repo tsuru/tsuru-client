@@ -34,18 +34,21 @@ type tsuruComponent struct {
 type TsuruAPI struct{}
 
 type iaasConfig struct {
-	Dockermachine iaasConfigInternal `json:"dockermachine,omitempty"`
+	Dockermachine iaasConfigInternal `yaml:"dockermachine,omitempty"`
 }
 
 type iaasConfigInternal struct {
-	CaPath           string           `json:"ca-path,omitempty"`
-	InsecureRegistry string           `json:"insecure-registry,omitempty"`
-	Driver           iaasConfigDriver `json:"driver,omitempty"`
+	CaPath              string           `yaml:"ca-path,omitempty"`
+	InsecureRegistry    string           `yaml:"insecure-registry,omitempty"`
+	DockerStorageDriver string           `yaml:"docker-storage-driver,omitempty"`
+	DockerInstallURL    string           `yaml:"docker-install-url,omitempty"`
+	DockerFlags         string           `yaml:"docker-flags,omitempty"`
+	Driver              iaasConfigDriver `yaml:"driver,omitempty"`
 }
 
 type iaasConfigDriver struct {
-	Name    string                 `json:"name,omitempty"`
-	Options map[string]interface{} `json:"options,omitempty"`
+	Name    string                 `yaml:"name,omitempty"`
+	Options map[string]interface{} `yaml:"options,omitempty"`
 }
 
 func (c *TsuruAPI) setupRootUser(cluster ServiceCluster, email, password string) error {
