@@ -6,7 +6,9 @@ package rebuild
 
 import (
 	"net/url"
+	"strings"
 
+	"github.com/tsuru/tsuru/log"
 	"github.com/tsuru/tsuru/router"
 )
 
@@ -27,6 +29,7 @@ type RebuildApp interface {
 }
 
 func RebuildRoutes(app RebuildApp) (*RebuildRoutesResult, error) {
+	log.Debugf("[rebuild-routes] rebuilding routes for app %q", app.GetName())
 	r, err := app.GetRouter()
 	if err != nil {
 		return nil, err
@@ -55,11 +58,13 @@ func RebuildRoutes(app RebuildApp) (*RebuildRoutesResult, error) {
 	if err != nil {
 		return nil, err
 	}
+	log.Debugf("[rebuild-routes] old routes for app %q: %v", app.GetName(), oldRoutes)
 	expectedMap := make(map[string]*url.URL)
 	addresses, err := app.RoutableAddresses()
 	if err != nil {
 		return nil, err
 	}
+	log.Debugf("[rebuild-routes] addresses for app %q: %v", app.GetName(), addresses)
 	for i, addr := range addresses {
 		expectedMap[addr.Host] = &addresses[i]
 	}
@@ -72,19 +77,23 @@ func RebuildRoutes(app RebuildApp) (*RebuildRoutesResult, error) {
 		}
 	}
 	var result RebuildRoutesResult
-	for _, toAddUrl := range expectedMap {
-		err := r.AddRoute(app.GetName(), toAddUrl)
-		if err != nil {
-			return nil, err
-		}
-		result.Added = append(result.Added, toAddUrl.String())
+	var toAdd []*url.URL
+	for _, toAddURL := range expectedMap {
+		toAdd = append(toAdd, toAddURL)
+		result.Added = append(result.Added, toAddURL.String())
 	}
-	for _, toRemoveUrl := range toRemove {
-		err := r.RemoveRoute(app.GetName(), toRemoveUrl)
-		if err != nil {
-			return nil, err
-		}
-		result.Removed = append(result.Removed, toRemoveUrl.String())
+	err = r.AddRoutes(app.GetName(), toAdd)
+	if err != nil {
+		return nil, err
 	}
+	err = r.RemoveRoutes(app.GetName(), toRemove)
+	if err != nil {
+		return nil, err
+	}
+	for _, toRemoveURL := range toRemove {
+		result.Removed = append(result.Removed, toRemoveURL.String())
+	}
+	log.Debugf("[rebuild-routes] routes added for app %q: %s", app.GetName(), strings.Join(result.Added, ", "))
+	log.Debugf("[rebuild-routes] routes removed for app %q: %s", app.GetName(), strings.Join(result.Removed, ", "))
 	return &result, nil
 }

@@ -14,6 +14,7 @@ import (
 	"net/url"
 	"time"
 
+	docker "github.com/fsouza/go-dockerclient"
 	"github.com/pkg/errors"
 	"github.com/tsuru/tsuru/app/bind"
 	"github.com/tsuru/tsuru/event"
@@ -140,7 +141,7 @@ type Unit struct {
 	AppName     string
 	ProcessName string
 	Type        string
-	Ip          string
+	IP          string
 	Status      Status
 	Address     *url.URL
 }
@@ -152,7 +153,7 @@ func (u *Unit) GetID() string {
 
 // GetIp returns the Unit.IP.
 func (u *Unit) GetIp() string {
-	return u.Ip
+	return u.IP
 }
 
 func (u *Unit) MarshalJSON() ([]byte, error) {
@@ -168,7 +169,7 @@ func (u *Unit) MarshalJSON() ([]byte, error) {
 		UnitForMarshal: (*UnitForMarshal)(u),
 		HostAddr:       host,
 		HostPort:       port,
-		IP:             u.Ip,
+		IP:             u.IP,
 	})
 }
 
@@ -274,6 +275,13 @@ type RollbackableDeployer interface {
 // deployed image.
 type RebuildableDeployer interface {
 	Rebuild(App, *event.Event) (string, error)
+}
+
+// BuilderDeploy is a provisioner that allows deploy builded image.
+type BuilderDeploy interface {
+	Deploy(App, string, *event.Event) (string, error)
+	GetDockerClient(App) (*docker.Client, error)
+	CleanImage(appName string, image string)
 }
 
 // Provisioner is the basic interface of this package.
@@ -581,28 +589,6 @@ func Registry() ([]Provisioner, error) {
 		registry = append(registry, p)
 	}
 	return registry, nil
-}
-
-func FindNode(address string) (Provisioner, Node, error) {
-	provisioners, err := Registry()
-	if err != nil {
-		return nil, nil, err
-	}
-	for _, prov := range provisioners {
-		nodeProv, ok := prov.(NodeProvisioner)
-		if !ok {
-			continue
-		}
-		node, err := nodeProv.GetNode(address)
-		if err == ErrNodeNotFound {
-			continue
-		}
-		if err != nil {
-			return nil, nil, err
-		}
-		return prov, node, nil
-	}
-	return nil, nil, ErrNodeNotFound
 }
 
 func InitializeAll() error {

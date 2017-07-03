@@ -16,6 +16,7 @@ import (
 
 	"github.com/docker/machine/drivers/fakedriver"
 	"github.com/docker/machine/libmachine/host"
+	"github.com/tsuru/tsuru-client/tsuru/installer/defaultconfig"
 	"github.com/tsuru/tsuru-client/tsuru/installer/dm"
 	"github.com/tsuru/tsuru/cmd"
 	"github.com/tsuru/tsuru/cmd/cmdtest"
@@ -27,7 +28,7 @@ import (
 func (s *S) TestParseConfigDefaultConfig(c *check.C) {
 	dmConfig, err := parseConfigFile("")
 	c.Assert(err, check.IsNil)
-	c.Assert(dmConfig, check.DeepEquals, defaultInstallOpts)
+	c.Assert(dmConfig, check.DeepEquals, DefaultInstallOpts())
 }
 
 func (s *S) TestParseConfigFileNotExists(c *check.C) {
@@ -36,6 +37,23 @@ func (s *S) TestParseConfigFileNotExists(c *check.C) {
 }
 
 func (s *S) TestParseConfigFile(c *check.C) {
+	expectedTsuruConf := defaultconfig.DefaultTsuruConfig()
+	expectedTsuruConf["iaas"] = iaasConfig{
+		Dockermachine: iaasConfigInternal{
+			CaPath:           "/certs",
+			InsecureRegistry: "$REGISTRY_ADDR:$REGISTRY_PORT",
+			DockerFlags:      "experimental",
+			Driver: iaasConfigDriver{
+				Name: "amazonec2",
+				Options: map[string]interface{}{
+					"opt1": "option1-value",
+					"opt2": "option2-newvalue",
+				},
+			},
+		},
+	}
+	expectedTsuruConf["debug"] = true
+	expectedTsuruConf["repo-manager"] = "gandalf"
 	expected := &InstallOpts{
 		Name: "tsuru-test",
 		DockerMachineConfig: dm.DockerMachineConfig{
@@ -43,6 +61,7 @@ func (s *S) TestParseConfigFile(c *check.C) {
 				Name: "amazonec2",
 				Options: map[string]interface{}{
 					"opt1": "option1-value",
+					"opt2": "option2-newvalue",
 				},
 			},
 			CAPath:      "/tmp/certs",
@@ -53,17 +72,7 @@ func (s *S) TestParseConfigFile(c *check.C) {
 			TargetName:       "tsuru-test",
 			RootUserEmail:    "admin@example.com",
 			RootUserPassword: "admin123",
-			IaaSConfig: iaasConfig{
-				Dockermachine: iaasConfigInternal{
-					CaPath: "/certs",
-					Driver: iaasConfigDriver{
-						Name: "amazonec2",
-						Options: map[string]interface{}{
-							"opt1": "option1-value",
-						},
-					},
-				},
-			},
+			Tsuru:            tsuruComponent{Config: expectedTsuruConf},
 		},
 		Hosts: hostGroups{
 			Apps: hostGroupConfig{
@@ -249,8 +258,16 @@ func (s *S) TestInstallConfigInit(c *check.C) {
 	c.Assert(err, check.IsNil)
 	compose, err := ioutil.ReadFile(filepath.Join(d, "compose.yml"))
 	c.Assert(err, check.IsNil)
-	c.Assert(string(compose), check.DeepEquals, defaultCompose)
+	c.Assert(string(compose), check.DeepEquals, defaultconfig.Compose)
 	opts, err := parseConfigFile(filepath.Join(d, "config.yml"))
 	c.Assert(err, check.IsNil)
-	c.Assert(opts, check.DeepEquals, defaultInstallOpts)
+	expected := DefaultInstallOpts()
+	expected.Tsuru.Config["iaas"] = iaasConfig{
+		Dockermachine: iaasConfigInternal{
+			CaPath:           "/certs",
+			InsecureRegistry: "$REGISTRY_ADDR:$REGISTRY_PORT",
+			DockerFlags:      "experimental",
+		},
+	}
+	c.Assert(opts, check.DeepEquals, expected)
 }

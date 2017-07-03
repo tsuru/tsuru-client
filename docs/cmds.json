@@ -256,8 +256,8 @@
     "desc": "Creates a new machine template.\n\nTemplates can be used with the [[docker-node-add]] command running it with\nthe [[template=<template name>]] parameter. Templates can contain a list of\nparameters that will be sent to the IaaS provider.\n\nMinimum # of arguments: 3\n"
   }, 
   "app-update": {
-    "usage": "tsuru app-update [-a/--app appname] [--description/-d description] [--plan/-p plan name] [--router/-r router name] [--pool/-o pool] [--team-owner/-t team owner] [-i/--image-reset] [--tag/-g tag]...", 
-    "desc": "Updates an app, changing its description, tags, plan or pool information.\n\nThe [[--description]] parameter sets a description for your app.\n\nThe [[--plan]] parameter changes the plan of your app.\n\nThe [[--router]] parameter changes the router of your app.\n\nThe [[--pool]] parameter changes the pool of your app.\n\nThe [[--team-owner]] parameter sets owner team for an application.\n\nThe [[--tag]] parameter sets a tag for your app. You can set\nmultiple [[--tag]] parameters.\n\nFlags:\n  \n  -a, --app (= \"\")\n      The name of the app.\n  -d, --description (= \"\")\n      App description\n  -g, --tag  (= [])\n      App tag\n  -i, --image-reset  (= false)\n      Forces next deploy to build app image\n  -o, --pool (= \"\")\n      App pool\n  -p, --plan (= \"\")\n      App plan\n  -r, --router (= \"\")\n      App router\n  -t, --team-owner (= \"\")\n      App team owner\n  \n"
+    "usage": "tsuru app-update [-a/--app appname] [--description/-d description] [--plan/-p plan name] [--router/-r router name] [--pool/-o pool] [--team-owner/-t team owner] [-i/--image-reset] [--tag/-g tag]... [--router-opts key=value]...", 
+    "desc": "Updates an app, changing its description, tags, plan or pool information.\n\nThe [[--description]] parameter sets a description for your app.\n\nThe [[--plan]] parameter changes the plan of your app.\n\nThe [[--router]] parameter changes the router of your app.\n\nThe [[--pool]] parameter changes the pool of your app.\n\nThe [[--team-owner]] parameter sets owner team for an application.\n\nThe [[--tag]] parameter sets a tag for your app. You can set\nmultiple [[--tag]] parameters.\n\nThe [[--router-opts]] parameter changes the custom router parameters.\n\nFlags:\n  \n  -a, --app (= \"\")\n      The name of the app.\n  -d, --description (= \"\")\n      App description\n  -g, --tag  (= [])\n      App tag\n  -i, --image-reset  (= false)\n      Forces next deploy to build app image from scratch\n  -o, --pool (= \"\")\n      App pool\n  -p, --plan (= \"\")\n      App plan\n  -r, --router (= \"\")\n      App router\n  --router-opts  (= {})\n      Router options\n  -t, --team-owner (= \"\")\n      App team owner\n  \n"
   }, 
   "role-dissociate": {
     "usage": "tsuru role-dissociate <role-name> <user-email> [<context-value>]", 
@@ -384,7 +384,7 @@
     "desc": "Retrieves environment variables for an application.\n\nFlags:\n  \n  -a, --app (= \"\")\n      The name of the app.\n  \n"
   }, 
   "install-create": {
-    "usage": "tsuru install-create [--config/-c config_file]", 
+    "usage": "tsuru install-create [--config/-c config_file] [--compose/-e compose_file]", 
     "desc": "Installs Tsuru and It's components as containers on hosts provisioned\nwith docker machine drivers.\n\nThe [[--config]] parameter is the path to a .yml file containing the installation\nconfiguration. If not provided, Tsuru will be installed into a VirtualBox VM for\nexperimentation.\n\n\nFlags:\n  \n  -c, --config (= \"\")\n      Configuration file\n  -e, --compose (= \"\")\n      Components docker-compose file\n  \n"
   }, 
   "app-create": {
@@ -396,7 +396,7 @@
     "desc": "Block events.\n\nFlags:\n  \n  -k, --kind (= \"\")\n      Event kind to be blocked.\n  -o, --owner (= \"\")\n      Block this owner's events.\n  -t, --target (= \"\")\n      Block events with this target type.\n  -v, --value (= \"\")\n      Block events with this target value.\n  \nMinimum # of arguments: 1\n"
   }, 
   "role-default-remove": {
-    "usage": "tsuru role-default-remove [--team-create <role name>]... [--user-create <role name>]...", 
+    "usage": "tsuru role-default-remove [--user-create <role name>]... [--team-create <role name>]...", 
     "desc": "Remove a default role from a specific event.\n\nFlags:\n  \n  --team-create  (= [])\n      role added to user when a new team is created\n  --user-create  (= [])\n      role added to user when user is created\n  \n"
   }, 
   "node-remove": {
@@ -441,6 +441,10 @@
   "app-shell": {
     "usage": "tsuru app-shell [unit-id] -a/--app <appname>", 
     "desc": "Opens a remote shell inside unit, using the API server as a proxy. You\ncan access an app unit just giving app name, or specifying the id of the unit.\nYou can get the ID of the unit using the app-info command.\n\nFlags:\n  \n  -a, --app (= \"\")\n      The name of the app.\n  \n"
+  }, 
+  "service-instance-info": {
+    "usage": "tsuru service-instance-info <service-name> <instance-name>", 
+    "desc": "Displays the information of the given service instance.\n\nMinimum # of arguments: 2\n"
   }, 
   "service-instance-add": {
     "usage": "tsuru service-instance-add <service-name> <service-instance-name> [plan] [-t/--team-owner <team>] [-d/--description description] [-g/--tag tag]...", 
@@ -578,9 +582,9 @@
     "usage": "tsuru service-doc-get <service>", 
     "desc": "Shows service documentation.\n\nMinimum # of arguments: 1\n"
   }, 
-  "service-instance-info": {
-    "usage": "tsuru service-instance-info <service-name> <instance-name>", 
-    "desc": "Displays the information of the given service instance.\n\nMinimum # of arguments: 2\n"
+  "role-update": {
+    "usage": "tsuru role-update <role> [-d/--description <description>] [-c/--context <context type>] [-n/--name <role new name>]", 
+    "desc": "Updates a role description\n\nFlags:\n  \n  -c, --context (= \"\")\n      Updates the context type of a role\n  -d, --description (= \"\")\n      Updates a role description\n  -n, --name (= \"\")\n      Updates the name of a role\n  \nMinimum # of arguments: 1\nMaximum # of arguments: 1\n"
   }, 
   "key-list": {
     "usage": "tsuru key-list [-n/--no-truncate]", 

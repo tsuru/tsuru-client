@@ -13,6 +13,7 @@ import (
 	"net"
 	"net/http"
 	"net/url"
+	"regexp"
 	"sort"
 	"strconv"
 	"strings"
@@ -26,6 +27,12 @@ import (
 	tsuruerr "github.com/tsuru/tsuru/errors"
 )
 
+const (
+	cutoffHexID = 12
+)
+
+var hexRegex = regexp.MustCompile(`(?i)^[a-f0-9]+$`)
+
 type AppCreate struct {
 	teamOwner   string
 	plan        string
@@ -37,10 +44,46 @@ type AppCreate struct {
 	fs          *gnuflag.FlagSet
 }
 
+type unitSorter struct {
+	Statuses []string
+	Counts   []int
+}
+
+func (u *unitSorter) Len() int {
+	return len(u.Statuses)
+}
+
+func (u *unitSorter) Swap(i, j int) {
+	u.Statuses[i], u.Statuses[j] = u.Statuses[j], u.Statuses[i]
+	u.Counts[i], u.Counts[j] = u.Counts[j], u.Counts[i]
+}
+
+func (u *unitSorter) Less(i, j int) bool {
+	if u.Counts[i] > u.Counts[j] {
+		return true
+	}
+	if u.Counts[i] == u.Counts[j] {
+		return u.Statuses[i] < u.Statuses[j]
+	}
+	return false
+}
+
+func newUnitSorter(m map[string]int) *unitSorter {
+	us := &unitSorter{
+		Statuses: make([]string, 0, len(m)),
+		Counts:   make([]int, 0, len(m)),
+	}
+	for k, v := range m {
+		us.Statuses = append(us.Statuses, k)
+		us.Counts = append(us.Counts, v)
+	}
+	return us
+}
+
 func (c *AppCreate) Info() *cmd.Info {
 	return &cmd.Info{
 		Name:  "app-create",
-		Usage: "app-create <appname> <platform> [--plan/-p plan name] [--router/-r router name] [--team/-t team owner] [--pool/-o pool name] [--description/-d description] [--tag/-g tag]... [--router-opts key=value]...",
+		Usage: "app-create <appname> [platform] [--plan/-p plan name] [--router/-r router name] [--team/-t team owner] [--pool/-o pool name] [--description/-d description] [--tag/-g tag]... [--router-opts key=value]...",
 		Desc: `Creates a new app using the given name and platform. For tsuru,
 a platform is provisioner dependent. To check the available platforms, use the
 command [[tsuru platform-list]] and to add a platform use the command [[tsuru platform-add]].
@@ -83,7 +126,7 @@ The [[--tag]] parameter sets a tag to your app. You can set multiple [[--tag]] p
 The [[--router-opts]] parameter allow passing custom parameters to the router
 used by the application's plan. The key and values used depends on the router
 implementation.`,
-		MinArgs: 2,
+		MinArgs: 1,
 	}
 }
 
@@ -114,8 +157,11 @@ func (c *AppCreate) Flags() *gnuflag.FlagSet {
 }
 
 func (c *AppCreate) Run(context *cmd.Context, client *cmd.Client) error {
+	var platform string
 	appName := context.Args[0]
-	platform := context.Args[1]
+	if len(context.Args) > 1 {
+		platform = context.Args[1]
+	}
 	v, err := form.EncodeToValues(map[string]interface{}{"routeropts": c.routerOpts})
 	if err != nil {
 		return err
@@ -171,6 +217,7 @@ type AppUpdate struct {
 	teamOwner   string
 	imageReset  bool
 	tags        cmd.StringSliceFlag
+	routerOpts  cmd.MapFlag
 	fs          *gnuflag.FlagSet
 	cmd.GuessingCommand
 	cmd.ConfirmationCommand
@@ -179,7 +226,7 @@ type AppUpdate struct {
 func (c *AppUpdate) Info() *cmd.Info {
 	return &cmd.Info{
 		Name:  "app-update",
-		Usage: "app-update [-a/--app appname] [--description/-d description] [--plan/-p plan name] [--router/-r router name] [--pool/-o pool] [--team-owner/-t team owner] [--platform/-l platform] [-i/--image-reset] [--tag/-g tag]...",
+		Usage: "app-update [-a/--app appname] [--description/-d description] [--plan/-p plan name] [--router/-r router name] [--pool/-o pool] [--team-owner/-t team owner] [--platform/-l platform] [-i/--image-reset image] [--tag/-g tag]... [--router-opts key=value]...",
 		Desc: `Updates an app, changing its description, tags, plan or pool information.
 
 The [[--description]] parameter sets a description for your app.
@@ -193,7 +240,9 @@ The [[--pool]] parameter changes the pool of your app.
 The [[--team-owner]] parameter sets owner team for an application.
 
 The [[--tag]] parameter sets a tag for your app. You can set
-multiple [[--tag]] parameters.`,
+multiple [[--tag]] parameters.
+
+The [[--router-opts]] parameter changes the custom router parameters.`,
 	}
 }
 
@@ -224,6 +273,7 @@ func (c *AppUpdate) Flags() *gnuflag.FlagSet {
 		flagSet.StringVar(&c.teamOwner, "team-owner", "", teamOwnerMessage)
 		flagSet.Var(&c.tags, "g", tagMessage)
 		flagSet.Var(&c.tags, "tag", tagMessage)
+		flagSet.Var(&c.routerOpts, "router-opts", "Router options")
 		c.fs = cmd.MergeFlagSet(
 			c.GuessingCommand.Flags(),
 			flagSet,
@@ -242,7 +292,10 @@ func (c *AppUpdate) Run(context *cmd.Context, client *cmd.Client) error {
 	if err != nil {
 		return err
 	}
-	v := url.Values{}
+	v, err := form.EncodeToValues(map[string]interface{}{"routeropts": c.routerOpts})
+	if err != nil {
+		return err
+	}
 	v.Set("plan", c.plan)
 	v.Set("router", c.router)
 	v.Set("description", c.description)
@@ -463,7 +516,9 @@ type app struct {
 	Quota       quota
 	Plan        tsuruapp.Plan
 	Router      string
+	RouterOpts  map[string]string
 	Tags        []string
+	Error       string
 }
 
 type serviceData struct {
@@ -493,13 +548,29 @@ func (a *app) GetTeams() string {
 	return strings.Join(a.Teams, ", ")
 }
 
+func (a *app) GetRouterOpts() string {
+	var kv []string
+	for k, v := range a.RouterOpts {
+		kv = append(kv, fmt.Sprintf("%s=%s", k, v))
+	}
+	sort.Strings(kv)
+	return strings.Join(kv, ", ")
+}
+
+func shortID(id string) string {
+	if hexRegex.MatchString(id) && len(id) > cutoffHexID {
+		return id[:cutoffHexID]
+	}
+	return id
+}
+
 func (a *app) String() string {
 	format := `Application: {{.Name}}
 Description:{{if .Description}} {{.Description}}{{end}}
 Tags:{{if .TagList}} {{.TagList}}{{end}}
 Repository: {{.Repository}}
 Platform: {{.Platform}}
-Router: {{.Router}}
+Router: {{.Router}}{{if .RouterOpts}} ({{.GetRouterOpts}}){{end}}
 Teams: {{.GetTeams}}
 Address: {{.Addr}}
 Owner: {{.Owner}}
@@ -521,7 +592,7 @@ Quota: {{.Quota.InUse}}/{{if .Quota.Limit}}{{.Quota.Limit}} units{{else}}unlimit
 		processes = append(processes, process)
 	}
 	sort.Strings(processes)
-	titles := []string{"Unit", "State", "Host", "Port"}
+	titles := []string{"Unit", "Status", "Host", "Port"}
 	for _, process := range processes {
 		units := unitsByProcess[process]
 		unitsTable := cmd.NewTable()
@@ -530,11 +601,7 @@ Quota: {{.Quota.InUse}}/{{if .Quota.Limit}}{{.Quota.Limit}} units{{else}}unlimit
 			if unit.ID == "" {
 				continue
 			}
-			id := unit.ID
-			if len(unit.ID) > 12 {
-				id = id[:12]
-			}
-			row := []string{id, unit.Status, unit.Host(), unit.Port()}
+			row := []string{shortID(unit.ID), unit.Status, unit.Host(), unit.Port()}
 			unitsTable.AddRow(cmd.Row(row))
 		}
 		if unitsTable.Rows() > 0 {
@@ -747,10 +814,10 @@ func (c *AppList) Run(context *cmd.Context, client *cmd.Client) error {
 	if err != nil {
 		return err
 	}
-	return c.Show(result, context)
+	return c.Show(result, context, client)
 }
 
-func (c *AppList) Show(result []byte, context *cmd.Context) error {
+func (c *AppList) Show(result []byte, context *cmd.Context, client *cmd.Client) error {
 	var apps []app
 	err := json.Unmarshal(result, &apps)
 	if err != nil {
@@ -763,19 +830,31 @@ func (c *AppList) Show(result []byte, context *cmd.Context) error {
 		}
 		return nil
 	}
-	table.Headers = cmd.Row([]string{"Application", "Units State Summary", "Address"})
+	table.Headers = cmd.Row([]string{"Application", "Units", "Address"})
 	for _, app := range apps {
-		var available int
-		var total int
-		for _, unit := range app.Units {
-			if unit.ID != "" {
-				total++
-				if unit.Available() {
-					available++
+		summary := ""
+		if app.Error == "" {
+			unitsStatus := make(map[string]int)
+			for _, unit := range app.Units {
+				if unit.ID != "" {
+					unitsStatus[unit.Status]++
 				}
 			}
+			statusText := make([]string, len(unitsStatus))
+			i := 0
+			us := newUnitSorter(unitsStatus)
+			sort.Sort(us)
+			for _, status := range us.Statuses {
+				statusText[i] = fmt.Sprintf("%d %s", unitsStatus[status], status)
+				i++
+			}
+			summary = strings.Join(statusText, "\n")
+		} else {
+			summary = fmt.Sprintf("error fetching units")
+			if client.Verbosity > 0 {
+				summary += fmt.Sprintf(": %s", app.Error)
+			}
 		}
-		summary := fmt.Sprintf("%d of %d units in-service", available, total)
 		addrs := strings.Replace(app.Addr(), ", ", "\n", -1)
 		table.AddRow(cmd.Row([]string{app.Name, summary, addrs}))
 	}

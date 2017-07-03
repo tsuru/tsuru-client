@@ -68,6 +68,42 @@ Your repository for "ble" project is "git@tsuru.plataformas.glb.com:ble.git"` + 
 	c.Assert(stdout.String(), check.Equals, expected)
 }
 
+func (s *S) TestAppCreateEmptyPlatform(c *check.C) {
+	var stdout, stderr bytes.Buffer
+	result := `{"status":"success", "repository_url":"git@tsuru.plataformas.glb.com:ble.git"}`
+	expected := `App "ble" has been created!
+Use app-info to check the status of the app and its units.
+Your repository for "ble" project is "git@tsuru.plataformas.glb.com:ble.git"` + "\n"
+	context := cmd.Context{
+		Args:   []string{"ble"},
+		Stdout: &stdout,
+		Stderr: &stderr,
+	}
+	trans := cmdtest.ConditionalTransport{
+		Transport: cmdtest.Transport{Message: result, Status: http.StatusOK},
+		CondFunc: func(r *http.Request) bool {
+			name := r.FormValue("name") == "ble"
+			platform := r.FormValue("platform") == ""
+			teamOwner := r.FormValue("teamOwner") == ""
+			plan := r.FormValue("plan") == ""
+			pool := r.FormValue("pool") == ""
+			description := r.FormValue("description") == ""
+			r.ParseForm()
+			tags := r.Form["tag"] == nil
+			router := r.FormValue("router") == ""
+			method := r.Method == "POST"
+			contentType := r.Header.Get("Content-Type") == "application/x-www-form-urlencoded"
+			url := strings.HasSuffix(r.URL.Path, "/apps")
+			return method && url && name && platform && teamOwner && plan && pool && description && tags && contentType && router
+		},
+	}
+	client := cmd.NewClient(&http.Client{Transport: &trans}, nil, manager)
+	command := AppCreate{}
+	err := command.Run(&context, client)
+	c.Assert(err, check.IsNil)
+	c.Assert(stdout.String(), check.Equals, expected)
+}
+
 func (s *S) TestAppCreateTeamOwner(c *check.C) {
 	var stdout, stderr bytes.Buffer
 	result := `{"status":"success", "repository_url":"git@tsuru.plataformas.glb.com:ble.git"}`
@@ -401,6 +437,13 @@ func (s *S) TestAppCreateFlags(c *check.C) {
 	c.Check(tag.Usage, check.Equals, usage)
 	c.Check(tag.Value.String(), check.Equals, "[\"tag1\",\"tag2\"]")
 	c.Check(tag.DefValue, check.Equals, "[]")
+	flagset.Parse(true, []string{"--router-opts", "opt1=val1", "--router-opts", "opt2=val2"})
+	routerOpts := flagset.Lookup("router-opts")
+	c.Check(routerOpts, check.NotNil)
+	c.Check(routerOpts.Name, check.Equals, "router-opts")
+	c.Check(routerOpts.Usage, check.Equals, "Router options")
+	c.Check(routerOpts.Value.String(), check.Equals, "{\"opt1\":\"val1\",\"opt2\":\"val2\"}")
+	c.Check(routerOpts.DefValue, check.Equals, "{}")
 }
 
 func (s *S) TestAppUpdateInfo(c *check.C) {
@@ -424,12 +467,14 @@ func (s *S) TestAppUpdate(c *check.C) {
 			tags := len(req.Form["tag"]) == 2 && req.Form["tag"][0] == "tag 1" && req.Form["tag"][1] == "tag 2"
 			router := req.FormValue("router") == "router"
 			platform := req.FormValue("platform") == "python"
-			return url && method && description && tags && router && platform
+			routerOpts := req.FormValue("routeropts.opt1") == "val1" && req.FormValue("routeropts.opt2") == "val2"
+			return url && method && description && tags && router && routerOpts && platform
 		},
 	}
 	client := cmd.NewClient(&http.Client{Transport: trans}, nil, manager)
 	command := AppUpdate{}
-	command.Flags().Parse(true, []string{"-d", "description of my app", "-a", "ble", "-r", "router", "-l", "python", "-g", "tag 1", "-g", "tag 2"})
+	command.Flags().Parse(true, []string{"-d", "description of my app", "-a", "ble", "-r", "router", "-l", "python", "-g", "tag 1", "-g", "tag 2",
+		"--router-opts", "opt1=val1", "--router-opts", "opt2=val2"})
 	err := command.Run(&context, client)
 	c.Assert(err, check.IsNil)
 	c.Assert(stdout.String(), check.Equals, expected)
@@ -756,7 +801,7 @@ Quota: 0/unlimited
 
 Units: 3
 +--------+---------+----------+------+
-| Unit   | State   | Host     | Port |
+| Unit   | Status  | Host     | Port |
 +--------+---------+----------+------+
 | app1/2 | pending |          |      |
 | app1/0 | started | 10.8.7.6 | 3333 |
@@ -795,7 +840,7 @@ Quota: 0/unlimited
 
 Units: 3
 +--------+---------+------+------+
-| Unit   | State   | Host | Port |
+| Unit   | Status  | Host | Port |
 +--------+---------+------+------+
 | app1/0 | started |      |      |
 | app1/1 | started |      |      |
@@ -834,7 +879,46 @@ Quota: 0/unlimited
 
 Units: 3
 +--------+---------+------+------+
-| Unit   | State   | Host | Port |
+| Unit   | Status  | Host | Port |
++--------+---------+------+------+
+| app1/0 | started |      |      |
+| app1/1 | started |      |      |
+| app1/2 | pending |      |      |
++--------+---------+------+------+
+
+`
+	context := cmd.Context{
+		Stdout: &stdout,
+		Stderr: &stderr,
+	}
+	client := cmd.NewClient(&http.Client{Transport: &cmdtest.Transport{Message: result, Status: http.StatusOK}}, nil, manager)
+	command := AppInfo{}
+	command.Flags().Parse(true, []string{"-a/--app", "app1"})
+	err := command.Run(&context, client)
+	c.Assert(err, check.IsNil)
+	c.Assert(stdout.String(), check.Equals, expected)
+}
+
+func (s *S) TestAppInfoWithRouterOpts(c *check.C) {
+	var stdout, stderr bytes.Buffer
+	result := `{"name":"app1","teamowner":"myteam","cname":[""],"ip":"myapp.tsuru.io","platform":"php","repository":"git@git.com:php.git","state":"dead", "units":[{"Ip":"10.10.10.10","ID":"app1/0","Status":"started"}, {"Ip":"9.9.9.9","ID":"app1/1","Status":"started"}, {"Ip":"","ID":"app1/2","Status":"pending"}],"teams":["tsuruteam","crane"], "owner": "myapp_owner", "deploys": 7, "routeropts": {"opt1": "val1", "opt2": "val2"}, "router": "planb"}`
+	expected := `Application: app1
+Description:
+Tags:
+Repository: git@git.com:php.git
+Platform: php
+Router: planb (opt1=val1, opt2=val2)
+Teams: tsuruteam, crane
+Address: myapp.tsuru.io
+Owner: myapp_owner
+Team owner: myteam
+Deploys: 7
+Pool:
+Quota: 0/unlimited
+
+Units: 3
++--------+---------+------+------+
+| Unit   | Status  | Host | Port |
 +--------+---------+------+------+
 | app1/0 | started |      |      |
 | app1/1 | started |      |      |
@@ -878,7 +962,7 @@ Quota: 3/40 units
 
 Units: 3
 +--------+---------+------+------+
-| Unit   | State   | Host | Port |
+| Unit   | Status  | Host | Port |
 +--------+---------+------+------+
 | app1/0 | started |      |      |
 | app1/1 | started |      |      |
@@ -933,7 +1017,7 @@ Quota: 0/unlimited
 
 Units: 3
 +--------+---------+------+------+
-| Unit   | State   | Host | Port |
+| Unit   | Status  | Host | Port |
 +--------+---------+------+------+
 | app1/0 | started |      |      |
 | app1/1 | started |      |      |
@@ -1010,14 +1094,14 @@ Quota: 0/unlimited
 
 Units [web]: 1
 +--------+---------+------+------+
-| Unit   | State   | Host | Port |
+| Unit   | Status  | Host | Port |
 +--------+---------+------+------+
 | app1/0 | started |      |      |
 +--------+---------+------+------+
 
 Units [worker]: 2
 +--------+---------+------+------+
-| Unit   | State   | Host | Port |
+| Unit   | Status  | Host | Port |
 +--------+---------+------+------+
 | app1/1 | started |      |      |
 | app1/2 | pending |      |      |
@@ -1115,7 +1199,7 @@ Quota: 0/unlimited
 
 Units: 2
 +----------+---------+------+------+
-| Unit     | State   | Host | Port |
+| Unit     | Status  | Host | Port |
 +----------+---------+------+------+
 | secret/0 | started |      |      |
 | secret/1 | pending |      |      |
@@ -1161,7 +1245,7 @@ Quota: 0/unlimited
 
 Units: 3
 +--------+---------+------+------+
-| Unit   | State   | Host | Port |
+| Unit   | Status  | Host | Port |
 +--------+---------+------+------+
 | app1/0 | started |      |      |
 | app1/1 | started |      |      |
@@ -1199,7 +1283,7 @@ Quota: 0/unlimited
 
 Units: 3
 +--------+---------+------+------+
-| Unit   | State   | Host | Port |
+| Unit   | Status  | Host | Port |
 +--------+---------+------+------+
 | app1/0 | started |      |      |
 | app1/1 | started |      |      |
@@ -1257,7 +1341,7 @@ Quota: 0/unlimited
 
 Units: 3
 +--------+---------+------+------+
-| Unit   | State   | Host | Port |
+| Unit   | Status  | Host | Port |
 +--------+---------+------+------+
 | app1/0 | started |      |      |
 | app1/1 | started |      |      |
@@ -1318,7 +1402,7 @@ Quota: 0/unlimited
 
 Units: 3
 +--------+---------+------+------+
-| Unit   | State   | Host | Port |
+| Unit   | Status  | Host | Port |
 +--------+---------+------+------+
 | app1/0 | started |      |      |
 | app1/1 | started |      |      |
@@ -1363,7 +1447,7 @@ Quota: 0/unlimited
 
 Units: 3
 +--------+---------+------+------+
-| Unit   | State   | Host | Port |
+| Unit   | Status  | Host | Port |
 +--------+---------+------+------+
 | app1/0 | started |      |      |
 | app1/1 | started |      |      |
@@ -1428,7 +1512,7 @@ Quota: 0/unlimited
 
 Units: 3
 +--------+---------+------+------+
-| Unit   | State   | Host | Port |
+| Unit   | Status  | Host | Port |
 +--------+---------+------+------+
 | app1/0 | started |      |      |
 | app1/1 | started |      |      |
@@ -1464,6 +1548,78 @@ App Plan:
 		}
 		return &http.Response{
 			Body:       ioutil.NopCloser(bytes.NewBufferString(body)),
+			StatusCode: http.StatusOK,
+		}, nil
+	})
+	client := cmd.NewClient(&http.Client{Transport: transport}, nil, manager)
+	command := AppInfo{}
+	command.Flags().Parse(true, []string{"--app", "app1"})
+	err := command.Run(&context, client)
+	c.Assert(err, check.IsNil)
+	c.Assert(stdout.String(), check.Equals, expected)
+}
+
+func (s *S) TestAppInfoShortensHexIDs(c *check.C) {
+	var stdout, stderr bytes.Buffer
+	expected := `Application: app1
+Description:
+Tags:
+Repository: git@git.com:php.git
+Platform: php
+Router: planb
+Teams: tsuruteam, crane
+Address: app1.tsuru.io
+Owner: myapp_owner
+Team owner: myteam
+Deploys: 7
+Pool:
+Quota: 0/unlimited
+
+Units: 3
++--------------------+---------+------+------+
+| Unit               | Status  | Host | Port |
++--------------------+---------+------+------+
+| abcea389cbae       | started |      |      |
+| abcea3             | started |      |      |
+| my_long_non_hex_id | started |      |      |
++--------------------+---------+------+------+
+
+`
+	context := cmd.Context{
+		Stdout: &stdout,
+		Stderr: &stderr,
+	}
+	infoData := `{
+    "name": "app1",
+    "teamowner": "myteam",
+    "ip": "app1.tsuru.io",
+    "platform": "php",
+    "repository": "git@git.com:php.git",
+    "units": [
+        {
+            "ID": "abcea389cbaebce89abc9a",
+            "Status": "started"
+        },
+        {
+            "ID": "abcea3",
+            "Status": "started"
+        },
+        {
+            "ID": "my_long_non_hex_id",
+            "Status": "started"
+        }
+    ],
+    "Teams": [
+        "tsuruteam",
+        "crane"
+    ],
+    "owner": "myapp_owner",
+    "deploys": 7,
+    "router": "planb"
+}`
+	transport := transportFunc(func(req *http.Request) (resp *http.Response, err error) {
+		return &http.Response{
+			Body:       ioutil.NopCloser(bytes.NewBufferString(infoData)),
 			StatusCode: http.StatusOK,
 		}, nil
 	})
@@ -1564,11 +1720,11 @@ func (s *S) TestAppRevokeInfo(c *check.C) {
 func (s *S) TestAppList(c *check.C) {
 	var stdout, stderr bytes.Buffer
 	result := `[{"ip":"10.10.10.10","name":"app1","units":[{"ID":"app1/0","Status":"started"}]}]`
-	expected := `+-------------+-------------------------+-------------+
-| Application | Units State Summary     | Address     |
-+-------------+-------------------------+-------------+
-| app1        | 1 of 1 units in-service | 10.10.10.10 |
-+-------------+-------------------------+-------------+
+	expected := `+-------------+-----------+-------------+
+| Application | Units     | Address     |
++-------------+-----------+-------------+
+| app1        | 1 started | 10.10.10.10 |
++-------------+-----------+-------------+
 `
 	context := cmd.Context{
 		Args:   []string{},
@@ -1585,13 +1741,13 @@ func (s *S) TestAppList(c *check.C) {
 func (s *S) TestAppListDisplayAppsInAlphabeticalOrder(c *check.C) {
 	var stdout, stderr bytes.Buffer
 	result := `[{"ip":"10.10.10.11","name":"sapp","units":[{"ID":"sapp1/0","Status":"started"}]},{"ip":"10.10.10.10","name":"app1","units":[{"ID":"app1/0","Status":"started"}]}]`
-	expected := `+-------------+-------------------------+-------------+
-| Application | Units State Summary     | Address     |
-+-------------+-------------------------+-------------+
-| app1        | 1 of 1 units in-service | 10.10.10.10 |
-+-------------+-------------------------+-------------+
-| sapp        | 1 of 1 units in-service | 10.10.10.11 |
-+-------------+-------------------------+-------------+
+	expected := `+-------------+-----------+-------------+
+| Application | Units     | Address     |
++-------------+-----------+-------------+
+| app1        | 1 started | 10.10.10.10 |
++-------------+-----------+-------------+
+| sapp        | 1 started | 10.10.10.11 |
++-------------+-----------+-------------+
 `
 	context := cmd.Context{
 		Args:   []string{},
@@ -1608,11 +1764,11 @@ func (s *S) TestAppListDisplayAppsInAlphabeticalOrder(c *check.C) {
 func (s *S) TestAppListUnitIsntAvailable(c *check.C) {
 	var stdout, stderr bytes.Buffer
 	result := `[{"ip":"10.10.10.10","name":"app1","units":[{"ID":"app1/0","Status":"pending"}]}]`
-	expected := `+-------------+-------------------------+-------------+
-| Application | Units State Summary     | Address     |
-+-------------+-------------------------+-------------+
-| app1        | 0 of 1 units in-service | 10.10.10.10 |
-+-------------+-------------------------+-------------+
+	expected := `+-------------+-----------+-------------+
+| Application | Units     | Address     |
++-------------+-----------+-------------+
+| app1        | 1 pending | 10.10.10.10 |
++-------------+-----------+-------------+
 `
 	context := cmd.Context{
 		Args:   []string{},
@@ -1626,14 +1782,65 @@ func (s *S) TestAppListUnitIsntAvailable(c *check.C) {
 	c.Assert(stdout.String(), check.Equals, expected)
 }
 
-func (s *S) TestAppListUnitWithoutName(c *check.C) {
+func (s *S) TestAppListErrorFetchingUnits(c *check.C) {
 	var stdout, stderr bytes.Buffer
-	result := `[{"ip":"10.10.10.10","name":"app1","units":[{"Name":"","Status":"pending"}]}]`
-	expected := `+-------------+-------------------------+-------------+
-| Application | Units State Summary     | Address     |
-+-------------+-------------------------+-------------+
-| app1        | 0 of 0 units in-service | 10.10.10.10 |
-+-------------+-------------------------+-------------+
+	result := `[{"ip":"10.10.10.10","name":"app1","units":[],"Error": "timeout"}]`
+	expected := `+-------------+----------------------+-------------+
+| Application | Units                | Address     |
++-------------+----------------------+-------------+
+| app1        | error fetching units | 10.10.10.10 |
++-------------+----------------------+-------------+
+`
+	context := cmd.Context{
+		Args:   []string{},
+		Stdout: &stdout,
+		Stderr: &stderr,
+	}
+	client := cmd.NewClient(&http.Client{Transport: &cmdtest.Transport{Message: result, Status: http.StatusOK}}, nil, manager)
+	command := AppList{}
+	err := command.Run(&context, client)
+	c.Assert(err, check.IsNil)
+	c.Assert(stdout.String(), check.Equals, expected)
+}
+
+func (s *S) TestAppListErrorFetchingUnitsVerbose(c *check.C) {
+	var stdout, stderr bytes.Buffer
+	result := `[{"ip":"10.10.10.10","name":"app1","units":[],"Error": "timeout"}]`
+	expected := "*************************** <Request uri=\"/1.0/apps?\"> **********************************\n" +
+		"GET /1.0/apps? HTTP/1.1\r\n" +
+		"Host: localhost:8080\r\n" +
+		"Connection: close\r\n" +
+		"Authorization: bearer sometoken\r\n" +
+		"\r\n" +
+		"*************************** </Request uri=\"/1.0/apps?\"> **********************************\n" +
+		"+-------------+-------------------------------+-------------+\n" +
+		"| Application | Units                         | Address     |\n" +
+		"+-------------+-------------------------------+-------------+\n" +
+		"| app1        | error fetching units: timeout | 10.10.10.10 |\n" +
+		"+-------------+-------------------------------+-------------+\n"
+	context := cmd.Context{
+		Args:   []string{},
+		Stdout: &stdout,
+		Stderr: &stderr,
+	}
+	client := cmd.NewClient(&http.Client{
+		Transport: &cmdtest.Transport{Message: result, Status: http.StatusOK},
+	}, &context, manager)
+	client.Verbosity = 1
+	command := AppList{}
+	err := command.Run(&context, client)
+	c.Assert(err, check.IsNil)
+	c.Assert(stdout.String(), check.Equals, expected)
+}
+
+func (s *S) TestAppListUnitWithoutID(c *check.C) {
+	var stdout, stderr bytes.Buffer
+	result := `[{"ip":"10.10.10.10","name":"app1","units":[{"ID":"","Status":"pending"}, {"ID":"unit2","Status":"stopped"}]}]`
+	expected := `+-------------+-----------+-------------+
+| Application | Units     | Address     |
++-------------+-----------+-------------+
+| app1        | 1 stopped | 10.10.10.10 |
++-------------+-----------+-------------+
 `
 	context := cmd.Context{
 		Args:   []string{},
@@ -1650,12 +1857,12 @@ func (s *S) TestAppListUnitWithoutName(c *check.C) {
 func (s *S) TestAppListCName(c *check.C) {
 	var stdout, stderr bytes.Buffer
 	result := `[{"ip":"10.10.10.10","cname":["app1.tsuru.io"],"name":"app1","units":[{"ID":"app1/0","Status":"started"}]}]`
-	expected := `+-------------+-------------------------+---------------+
-| Application | Units State Summary     | Address       |
-+-------------+-------------------------+---------------+
-| app1        | 1 of 1 units in-service | app1.tsuru.io |
-|             |                         | 10.10.10.10   |
-+-------------+-------------------------+---------------+
+	expected := `+-------------+-----------+---------------+
+| Application | Units     | Address       |
++-------------+-----------+---------------+
+| app1        | 1 started | app1.tsuru.io |
+|             |           | 10.10.10.10   |
++-------------+-----------+---------------+
 `
 	context := cmd.Context{
 		Args:   []string{},
@@ -1672,12 +1879,12 @@ func (s *S) TestAppListCName(c *check.C) {
 func (s *S) TestAppListFiltering(c *check.C) {
 	var stdout, stderr bytes.Buffer
 	result := `[{"ip":"10.10.10.10","cname":["app1.tsuru.io"],"name":"app1","units":[{"ID":"app1/0","Status":"started"}]}]`
-	expected := `+-------------+-------------------------+---------------+
-| Application | Units State Summary     | Address       |
-+-------------+-------------------------+---------------+
-| app1        | 1 of 1 units in-service | app1.tsuru.io |
-|             |                         | 10.10.10.10   |
-+-------------+-------------------------+---------------+
+	expected := `+-------------+-----------+---------------+
+| Application | Units     | Address       |
++-------------+-----------+---------------+
+| app1        | 1 started | app1.tsuru.io |
+|             |           | 10.10.10.10   |
++-------------+-----------+---------------+
 `
 	context := cmd.Context{
 		Args:   []string{},
@@ -1714,12 +1921,57 @@ func (s *S) TestAppListFiltering(c *check.C) {
 func (s *S) TestAppListFilteringMe(c *check.C) {
 	var stdout, stderr bytes.Buffer
 	result := `[{"ip":"10.10.10.10","cname":["app1.tsuru.io"],"name":"app1","units":[{"ID":"app1/0","Status":"started"}]}]`
-	expected := `+-------------+-------------------------+---------------+
-| Application | Units State Summary     | Address       |
-+-------------+-------------------------+---------------+
-| app1        | 1 of 1 units in-service | app1.tsuru.io |
-|             |                         | 10.10.10.10   |
-+-------------+-------------------------+---------------+
+	expected := `+-------------+-----------+---------------+
+| Application | Units     | Address       |
++-------------+-----------+---------------+
+| app1        | 1 started | app1.tsuru.io |
+|             |           | 10.10.10.10   |
++-------------+-----------+---------------+
+`
+	context := cmd.Context{
+		Args:   []string{},
+		Stdout: &stdout,
+		Stderr: &stderr,
+	}
+	var request *http.Request
+	transport := cmdtest.MultiConditionalTransport{
+		ConditionalTransports: []cmdtest.ConditionalTransport{
+			{
+				CondFunc: func(r *http.Request) bool {
+					return true
+				},
+				Transport: cmdtest.Transport{Message: `{"Email":"gopher@tsuru.io","Teams":[]}`, Status: http.StatusOK},
+			},
+			{
+				CondFunc: func(r *http.Request) bool {
+					request = r
+					return true
+				},
+				Transport: cmdtest.Transport{Message: result, Status: http.StatusOK},
+			},
+		},
+	}
+	client := cmd.NewClient(&http.Client{Transport: &transport}, nil, manager)
+	command := AppList{}
+	command.Flags().Parse(true, []string{"-u", "me"})
+	err := command.Run(&context, client)
+	c.Assert(err, check.IsNil)
+	c.Assert(stdout.String(), check.Equals, expected)
+	queryString := url.Values(map[string][]string{"owner": {"gopher@tsuru.io"}})
+	c.Assert(request.URL.Query(), check.DeepEquals, queryString)
+}
+
+func (s *S) TestAppListSortByCountAndStatus(c *check.C) {
+	var stdout, stderr bytes.Buffer
+	result := `[{"ip":"10.10.10.10","cname":["app1.tsuru.io"],"name":"app1","units":[{"ID":"app1/0","Status":"starting"},{"ID":"app1/1","Status":"stopped"},{"ID":"app1/2","Status":"asleep"},{"ID":"app1/3","Status":"started"},{"ID":"app1/4","Status":"started"},{"ID":"app1/5","Status":"stopped"}]}]`
+	expected := `+-------------+------------+---------------+
+| Application | Units      | Address       |
++-------------+------------+---------------+
+| app1        | 2 started  | app1.tsuru.io |
+|             | 2 stopped  | 10.10.10.10   |
+|             | 1 asleep   |               |
+|             | 1 starting |               |
++-------------+------------+---------------+
 `
 	context := cmd.Context{
 		Args:   []string{},

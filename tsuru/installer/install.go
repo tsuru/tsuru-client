@@ -17,6 +17,7 @@ import (
 	"github.com/tsuru/gnuflag"
 	"github.com/tsuru/tsuru-client/tsuru/admin"
 	"github.com/tsuru/tsuru-client/tsuru/client"
+	"github.com/tsuru/tsuru-client/tsuru/installer/defaultconfig"
 	"github.com/tsuru/tsuru-client/tsuru/installer/dm"
 	"github.com/tsuru/tsuru/cmd"
 	"github.com/tsuru/tsuru/iaas"
@@ -33,7 +34,7 @@ type Install struct {
 func (c *Install) Info() *cmd.Info {
 	return &cmd.Info{
 		Name:  "install-create",
-		Usage: "install-create [--config/-c config_file]",
+		Usage: "install-create [--config/-c config_file] [--compose/-e compose_file]",
 		Desc: `Installs Tsuru and It's components as containers on hosts provisioned
 with docker machine drivers.
 
@@ -99,7 +100,7 @@ func (c *Install) Run(context *cmd.Context, cli *cmd.Client) error {
 }
 
 func parseConfigFile(file string) (*InstallOpts, error) {
-	installConfig := defaultInstallOpts
+	installConfig := DefaultInstallOpts()
 	if file == "" {
 		return installConfig, nil
 	}
@@ -111,12 +112,35 @@ func parseConfigFile(file string) (*InstallOpts, error) {
 	if err != nil {
 		return nil, err
 	}
-	installConfig.ComponentsConfig.TargetName = installConfig.Name
-	conf := &installConfig.ComponentsConfig.IaaSConfig.Dockermachine
-	conf.CaPath = "/certs"
-	conf.Driver.Name = installConfig.DriverOpts.Name
-	conf.Driver.Options = installConfig.DriverOpts.Options
 	config.ReadConfigFile(file)
+	installConfig.ComponentsConfig.TargetName = installConfig.Name
+	defaultIaas := iaasConfig{
+		Dockermachine: iaasConfigInternal{
+			CaPath:              "/certs",
+			InsecureRegistry:    "$REGISTRY_ADDR:$REGISTRY_PORT",
+			DockerInstallURL:    installConfig.DockerInstallURL,
+			DockerStorageDriver: installConfig.DockerStorageDriver,
+			DockerFlags:         strings.Join(installConfig.DockerFlags, ","),
+		},
+	}
+	if dm.IaaSCompatibleDriver(installConfig.DriverOpts.Name) {
+		defaultIaas.Dockermachine.Driver = iaasConfigDriver{
+			Name:    installConfig.DriverOpts.Name,
+			Options: installConfig.DriverOpts.Options,
+		}
+	}
+	conf := installConfig.ComponentsConfig.Tsuru.Config
+	if _, ok := conf["iaas"]; ok {
+		customIaas, err := yaml.Marshal(conf["iaas"])
+		if err != nil {
+			return nil, err
+		}
+		err = yaml.Unmarshal(customIaas, &defaultIaas)
+		if err != nil {
+			return nil, err
+		}
+	}
+	conf["iaas"] = defaultIaas
 	return installConfig, nil
 }
 
@@ -473,11 +497,11 @@ func (c *InstallConfigInit) Run(context *cmd.Context, cli *cmd.Client) error {
 	if len(context.Args) > 1 {
 		composeFile = context.Args[1]
 	}
-	err := ioutil.WriteFile(composeFile, []byte(defaultCompose), 0644)
+	err := ioutil.WriteFile(composeFile, []byte(defaultconfig.Compose), 0644)
 	if err != nil {
 		return errors.Errorf("failed to write compose file: %s", err)
 	}
-	out, err := yaml.Marshal(defaultInstallOpts)
+	out, err := yaml.Marshal(DefaultInstallOpts())
 	if err != nil {
 		return errors.Errorf("failed to generate config file: %s", err)
 	}

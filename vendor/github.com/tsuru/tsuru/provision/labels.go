@@ -43,6 +43,8 @@ var (
 	labelRestarts   = "restarts"
 
 	labelProvisioner = "provisioner"
+
+	labelBuilder = "builder"
 )
 
 type LabelSet struct {
@@ -199,6 +201,7 @@ type ServiceLabelExtendedOpts struct {
 	IsDeploy      bool
 	IsIsolatedRun bool
 	IsBuild       bool
+	Builder       string
 }
 
 func ExtendServiceLabels(set *LabelSet, opts ServiceLabelExtendedOpts) {
@@ -211,6 +214,7 @@ func ExtendServiceLabels(set *LabelSet, opts ServiceLabelExtendedOpts) {
 	set.Labels[labelIsDeploy] = strconv.FormatBool(opts.IsDeploy)
 	set.Labels[labelIsIsolatedRun] = strconv.FormatBool(opts.IsIsolatedRun)
 	set.Labels[labelIsBuild] = strconv.FormatBool(opts.IsBuild)
+	set.Labels[labelBuilder] = opts.Builder
 }
 
 func ServiceLabels(opts ServiceLabelsOpts) (*LabelSet, error) {
@@ -230,6 +234,7 @@ type ProcessLabelsOpts struct {
 	App         App
 	Process     string
 	Provisioner string
+	Builder     string
 	Prefix      string
 }
 
@@ -253,6 +258,7 @@ func ProcessLabels(opts ProcessLabelsOpts) (*LabelSet, error) {
 			labelRouterName:  routerName,
 			labelRouterType:  routerType,
 			labelProvisioner: opts.Provisioner,
+			labelBuilder:     opts.Builder,
 		},
 		Prefix: opts.Prefix,
 	}, nil

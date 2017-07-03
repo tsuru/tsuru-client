@@ -277,6 +277,57 @@ func (u *User) AddRole(roleName string, contextValue string) error {
 	return u.Reload()
 }
 
+func UpdateRoleFromAllUsers(roleName, newRoleName, ctx, desc string) error {
+	role, err := permission.FindRole(roleName)
+	if err != nil {
+		return permission.ErrRoleNotFound
+	}
+	if ctx != "" {
+		role.ContextType, err = permission.ParseContext(ctx)
+		if err != nil {
+			return err
+		}
+	}
+	if desc != "" {
+		role.Description = desc
+	}
+	if (newRoleName == "") || (role.Name == newRoleName) {
+		return role.Update()
+	}
+	role.Name = newRoleName
+	err = role.Add()
+	if err != nil {
+		return err
+	}
+	usersWithRole, err := ListUsersWithRole(roleName)
+	if err != nil {
+		errDtr := permission.DestroyRole(role.Name)
+		if errDtr != nil {
+			return tsuruErrors.NewMultiError(err, errDtr)
+		}
+		return err
+	}
+	for _, user := range usersWithRole {
+		errAddRole := user.AddRole(role.Name, string(role.ContextType))
+		if errAddRole != nil {
+			errDtr := permission.DestroyRole(role.Name)
+			if errDtr != nil {
+				return tsuruErrors.NewMultiError(errAddRole, errDtr)
+			}
+			errRmv := RemoveRoleFromAllUsers(roleName)
+			if errRmv != nil {
+				return tsuruErrors.NewMultiError(errAddRole, errRmv)
+			}
+			return errAddRole
+		}
+	}
+	err = permission.DestroyRole(roleName)
+	if err != nil {
+		return err
+	}
+	return RemoveRoleFromAllUsers(roleName)
+}
+
 func RemoveRoleFromAllUsers(roleName string) error {
 	conn, err := db.Conn()
 	if err != nil {

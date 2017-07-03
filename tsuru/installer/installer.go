@@ -14,17 +14,20 @@ import (
 	"strings"
 	"time"
 
+	yaml "gopkg.in/yaml.v2"
+
 	"github.com/docker/machine/libmachine/mcnutils"
 	"github.com/docker/machine/libmachine/provision"
 	"github.com/docker/machine/libmachine/provision/serviceaction"
 	"github.com/fsouza/go-dockerclient"
+	"github.com/tsuru/tsuru-client/tsuru/installer/defaultconfig"
 	"github.com/tsuru/tsuru-client/tsuru/installer/dm"
 	"github.com/tsuru/tsuru/cmd"
 	"github.com/tsuru/tsuru/iaas/dockermachine"
 )
 
-var (
-	defaultInstallOpts = &InstallOpts{
+func DefaultInstallOpts() *InstallOpts {
+	return &InstallOpts{
 		Name: "tsuru",
 		DockerMachineConfig: dm.DockerMachineConfig{
 			DriverOpts:  &dm.DriverOpts{Name: "virtualbox"},
@@ -35,13 +38,14 @@ var (
 			TargetName:       "tsuru",
 			RootUserEmail:    "admin@example.com",
 			RootUserPassword: "admin123",
+			Tsuru:            tsuruComponent{Config: defaultconfig.DefaultTsuruConfig()},
 		},
 		Hosts: hostGroups{
 			Apps: hostGroupConfig{Size: 1},
 			Core: hostGroupConfig{Size: 1},
 		},
 	}
-)
+}
 
 type InstallOpts struct {
 	dm.DockerMachineConfig `yaml:",inline"`
@@ -80,7 +84,11 @@ func (i *Installer) Install(opts *InstallOpts) (*Installation, error) {
 		return nil, fmt.Errorf("pre-install checks failed: %s", errChecks)
 	}
 	setCoreDriverDefaultOpts(opts)
-	coreMachines, err := i.ProvisionMachines(opts.Hosts.Core.Size, opts.Hosts.Core.Driver.Options)
+	deployFunc, err := deployTsuruConfig(opts)
+	if err != nil {
+		return nil, err
+	}
+	coreMachines, err := i.ProvisionMachines(opts.Hosts.Core.Size, opts.Hosts.Core.Driver.Options, deployFunc)
 	if err != nil {
 		return nil, fmt.Errorf("failed to provision components machines: %s", err)
 	}
@@ -109,6 +117,26 @@ func (i *Installer) Install(opts *InstallOpts) (*Installation, error) {
 	return &Installation{
 		CoreCluster:     cluster,
 		InstallMachines: installMachines,
+	}, nil
+}
+
+func deployTsuruConfig(installOpts *InstallOpts) (func(*dockermachine.Machine) error, error) {
+	conf, err := yaml.Marshal(installOpts.Tsuru.Config)
+	if err != nil {
+		return nil, fmt.Errorf("failed to marshal tsuru api config: %s", err)
+	}
+	return func(m *dockermachine.Machine) error {
+		fmt.Println("Deploying tsuru config...")
+		_, err := m.Host.RunSSHCommand("sudo mkdir -p /etc/tsuru/")
+		if err != nil {
+			return fmt.Errorf("failed to create tsuru config directory: %s", err)
+		}
+		remoteWriteCmdFmt := "printf '%%s' '%s' | sudo tee %s"
+		_, err = m.Host.RunSSHCommand(fmt.Sprintf(remoteWriteCmdFmt, string(conf), "/etc/tsuru/tsuru.conf"))
+		if err != nil {
+			return fmt.Errorf("failed to write remote file: %s", err)
+		}
+		return nil
 	}, nil
 }
 
@@ -178,7 +206,7 @@ func (i *Installer) BootstrapTsuru(opts *InstallOpts, target string, coreMachine
 		InstallDashboard: opts.ComponentsConfig.InstallDashboard,
 	}
 	var installMachines []*dockermachine.Machine
-	if opts.DriverOpts.Name == "virtualbox" {
+	if !dm.IaaSCompatibleDriver(opts.DriverOpts.Name) {
 		appsMachines, errProv := i.ProvisionPool(opts, coreMachines)
 		if errProv != nil {
 			return nil, errProv
@@ -249,10 +277,10 @@ func preInstallChecks(config *InstallOpts) error {
 
 func (i *Installer) ProvisionPool(config *InstallOpts, hosts []*dockermachine.Machine) ([]*dockermachine.Machine, error) {
 	if config.Hosts.Apps.Dedicated {
-		return i.ProvisionMachines(config.Hosts.Apps.Size, config.Hosts.Apps.Driver.Options)
+		return i.ProvisionMachines(config.Hosts.Apps.Size, config.Hosts.Apps.Driver.Options, nil)
 	}
 	if config.Hosts.Apps.Size > len(hosts) {
-		poolMachines, err := i.ProvisionMachines(config.Hosts.Apps.Size-len(hosts), config.Hosts.Apps.Driver.Options)
+		poolMachines, err := i.ProvisionMachines(config.Hosts.Apps.Size-len(hosts), config.Hosts.Apps.Driver.Options, nil)
 		if err != nil {
 			return nil, fmt.Errorf("failed to provision pool hosts: %s", err)
 		}
@@ -261,7 +289,7 @@ func (i *Installer) ProvisionPool(config *InstallOpts, hosts []*dockermachine.Ma
 	return hosts[:config.Hosts.Apps.Size], nil
 }
 
-func (i *Installer) ProvisionMachines(numMachines int, configs map[string][]interface{}) ([]*dockermachine.Machine, error) {
+func (i *Installer) ProvisionMachines(numMachines int, configs map[string][]interface{}, initFunc func(*dockermachine.Machine) error) ([]*dockermachine.Machine, error) {
 	var machines []*dockermachine.Machine
 	for j := 0; j < numMachines; j++ {
 		opts := make(map[string]interface{})
@@ -272,6 +300,11 @@ func (i *Installer) ProvisionMachines(numMachines int, configs map[string][]inte
 		m, err := i.machineProvisioner.ProvisionMachine(opts)
 		if err != nil {
 			return nil, fmt.Errorf("failed to provision machines: %s", err)
+		}
+		if initFunc != nil {
+			if err := initFunc(m); err != nil {
+				return nil, fmt.Errorf("failed to initialize host: %s", err)
+			}
 		}
 		machines = append(machines, m)
 	}

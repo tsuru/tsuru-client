@@ -86,7 +86,7 @@ func checkEndOfEvent(event *autoscale.Event) string {
 
 func (c *ListAutoScaleHistoryCmd) Flags() *gnuflag.FlagSet {
 	if c.fs == nil {
-		c.fs = gnuflag.NewFlagSet("with-flags", gnuflag.ContinueOnError)
+		c.fs = gnuflag.NewFlagSet("", gnuflag.ContinueOnError)
 		c.fs.IntVar(&c.page, "page", 1, "Current page")
 		c.fs.IntVar(&c.page, "p", 1, "Current page")
 	}

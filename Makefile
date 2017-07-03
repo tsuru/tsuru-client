@@ -59,7 +59,7 @@ doc: docs-clean doc-requirements
 docs: doc
 
 test:
-	go test ./... -check.vv
+	go test ./... -check.v
 
 install:
 	go install ./...

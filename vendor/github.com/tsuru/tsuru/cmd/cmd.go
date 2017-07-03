@@ -253,6 +253,9 @@ func (m *Manager) Run(args []string) {
 	}
 	if err != nil {
 		errorMsg := err.Error()
+		if verbosity > 0 {
+			errorMsg = fmt.Sprintf("%+v", err)
+		}
 		httpErr, ok := err.(*tsuruErrors.HTTP)
 		if ok && httpErr.Code == http.StatusUnauthorized && name != loginCmdName {
 			errorMsg = fmt.Sprintf(`You're not authenticated or your session has expired. Please use %q command for authentication.`, loginCmdName)
@@ -388,24 +391,20 @@ func (m *Manager) normalizeCommandArgs(args []string) []string {
 	if len(args) == 0 {
 		return args
 	}
-	name := args[0]
-	if _, ok := m.Commands[name]; ok {
-		return args
-	}
-	newArgs := []string{name}
-	var i int
-	for i = 1; i < len(args); i++ {
-		part := args[i]
-		newArgs[0] += "-" + part
-		if _, ok := m.Commands[newArgs[0]]; ok {
+	newArgs := append([]string{}, args...)
+	for len(newArgs) > 0 {
+		tryCmd := strings.Join(newArgs, "-")
+		if _, ok := m.Commands[tryCmd]; ok {
 			break
 		}
+		newArgs = newArgs[:len(newArgs)-1]
 	}
-	if i < len(args) {
-		newArgs = append(newArgs, args[i+1:]...)
-		return newArgs
+	remainder := len(newArgs)
+	if remainder > 0 {
+		newArgs = []string{strings.Join(newArgs, "-")}
 	}
-	return args
+	newArgs = append(newArgs, args[remainder:]...)
+	return newArgs
 }
 
 func (m *Manager) discoverTopics() []string {
@@ -496,7 +495,7 @@ func (c *help) Run(context *Context, client *Client) error {
 	const deprecatedMsg = "WARNING: %q is deprecated. Showing help for %q instead.\n\n"
 	output := fmt.Sprintf("%s\n", versionString(c.manager))
 	if c.manager.wrong {
-		output += fmt.Sprint("ERROR: wrong number of arguments.\n\n")
+		output += "ERROR: wrong number of arguments.\n\n"
 	}
 	if len(context.Args) > 0 {
 		if cmd, ok := c.manager.Commands[context.Args[0]]; ok {
@@ -516,7 +515,7 @@ func (c *help) Run(context *Context, client *Client) error {
 			if info.MaxArgs > 0 {
 				output += fmt.Sprintf("\nMaximum # of arguments: %d", info.MaxArgs)
 			}
-			output += fmt.Sprint("\n")
+			output += "\n"
 		} else if msg, ok := c.manager.tryImplicitTopic(context.Args[0]); ok {
 			output += msg
 		} else {

@@ -639,3 +639,60 @@ func (c *RoleDefaultList) Run(context *cmd.Context, client *cmd.Client) error {
 	fmt.Fprint(context.Stdout, tbl.String())
 	return nil
 }
+
+type RoleUpdate struct {
+	newName     string
+	description string
+	contextType string
+	fs          *gnuflag.FlagSet
+}
+
+func (c *RoleUpdate) Info() *cmd.Info {
+	return &cmd.Info{
+		Name:    "role-update",
+		Usage:   "role-update <role> [-d/--description <description>] [-c/--context <context type>] [-n/--name <role new name>]",
+		Desc:    "Updates a role description",
+		MinArgs: 1,
+		MaxArgs: 1,
+	}
+}
+
+func (c *RoleUpdate) Flags() *gnuflag.FlagSet {
+	if c.fs == nil {
+		c.fs = gnuflag.NewFlagSet("", gnuflag.ExitOnError)
+		roleDescription := "Updates a role description"
+		c.fs.StringVar(&c.description, "d", "", roleDescription)
+		c.fs.StringVar(&c.description, "description", "", roleDescription)
+		contextType := "Updates the context type of a role"
+		c.fs.StringVar(&c.contextType, "c", "", contextType)
+		c.fs.StringVar(&c.contextType, "context", "", contextType)
+		newName := "Updates the name of a role"
+		c.fs.StringVar(&c.newName, "n", "", newName)
+		c.fs.StringVar(&c.newName, "name", "", newName)
+	}
+	return c.fs
+}
+
+func (c *RoleUpdate) Run(context *cmd.Context, client *cmd.Client) error {
+	params := url.Values{}
+	params.Set("name", context.Args[0])
+	params.Set("newName", c.newName)
+	params.Set("description", c.description)
+	params.Set("contextType", c.contextType)
+	url, err := cmd.GetURL("/roles")
+	if err != nil {
+		return err
+	}
+	request, err := http.NewRequest("PUT", url, strings.NewReader(params.Encode()))
+	if err != nil {
+		return err
+	}
+	request.Header.Set("Content-Type", "application/x-www-form-urlencoded")
+	_, err = client.Do(request)
+	if err != nil {
+		context.Stderr.Write([]byte("Failed to update role\n"))
+		return err
+	}
+	context.Stdout.Write([]byte("Role successfully updated\n"))
+	return nil
+}
