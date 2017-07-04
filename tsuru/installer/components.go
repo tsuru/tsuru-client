@@ -44,6 +44,7 @@ type iaasConfigInternal struct {
 	DockerInstallURL    string           `yaml:"docker-install-url,omitempty"`
 	DockerFlags         string           `yaml:"docker-flags,omitempty"`
 	Driver              iaasConfigDriver `yaml:"driver,omitempty"`
+	Debug               bool             `yaml:"debug,omitempty"`
 }
 
 type iaasConfigDriver struct {
