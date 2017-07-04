@@ -148,6 +148,47 @@ func (s *S) TestDeployRunWithMessage(c *check.C) {
 	c.Assert(calledTimes, check.Equals, 2)
 }
 
+func (s *S) TestDeployRunWithFiles(c *check.C) {
+	calledTimes := 0
+	var buf bytes.Buffer
+	ctx := cmd.Context{Stderr: bytes.NewBufferString("")}
+	err := targz(&ctx, &buf, nil, "testdata/deploy/file1.txt", "testdata/deploy2/file2.txt")
+	c.Assert(err, check.IsNil)
+	trans := cmdtest.ConditionalTransport{
+		Transport: cmdtest.Transport{Message: "deploy worked\nOK\n", Status: http.StatusOK},
+		CondFunc: func(req *http.Request) bool {
+			calledTimes++
+			if req.Body != nil {
+				defer req.Body.Close()
+			}
+			if calledTimes == 1 {
+				return req.Method == "GET" && strings.HasSuffix(req.URL.Path, "/apps/leblank")
+			}
+			file, _, transErr := req.FormFile("file")
+			c.Assert(transErr, check.IsNil)
+			content, transErr := ioutil.ReadAll(file)
+			c.Assert(transErr, check.IsNil)
+			c.Assert(content, check.DeepEquals, buf.Bytes())
+			c.Assert(req.Header.Get("Content-Type"), check.Matches, "multipart/form-data; boundary=.*")
+			c.Assert(req.FormValue("origin"), check.Equals, "app-deploy")
+			return req.Method == "POST" && strings.HasSuffix(req.URL.Path, "/apps/leblank/deploy")
+		},
+	}
+	client := cmd.NewClient(&http.Client{Transport: &trans}, nil, manager)
+	var stdout, stderr bytes.Buffer
+	context := cmd.Context{
+		Stdout: &stdout,
+		Stderr: &stderr,
+		Args:   []string{"testdata/deploy/file1.txt", "testdata/deploy2/file2.txt"},
+	}
+	fake := cmdtest.FakeGuesser{Name: "leblank"}
+	guessCommand := cmd.GuessingCommand{G: &fake}
+	cmd := AppDeploy{GuessingCommand: guessCommand}
+	err = cmd.Run(&context, client)
+	c.Assert(err, check.IsNil)
+	c.Assert(calledTimes, check.Equals, 2)
+}
+
 func (s *S) TestDeployAuthNotOK(c *check.C) {
 	calledTimes := 0
 	trans := cmdtest.ConditionalTransport{
@@ -289,6 +330,37 @@ func (s *S) TestTargz(c *check.C) {
 	sort.Strings(contents)
 	c.Assert(contents, check.DeepEquals, expectedContents)
 	c.Assert(buf.String(), check.Equals, `Warning: skipping ".."`)
+}
+
+func (s *S) TestTargzParsingFiles(c *check.C) {
+	var buf bytes.Buffer
+	ctx := cmd.Context{Stderr: &buf}
+	var gzipBuf, tarBuf bytes.Buffer
+	err := targz(&ctx, &gzipBuf, nil, "testdata/deploy/file1.txt", "testdata/deploy/file2.txt")
+	c.Assert(err, check.IsNil)
+	gzipReader, err := gzip.NewReader(&gzipBuf)
+	c.Assert(err, check.IsNil)
+	_, err = io.Copy(&tarBuf, gzipReader)
+	c.Assert(err, check.IsNil)
+	tarReader := tar.NewReader(&tarBuf)
+	var headers []string
+	var contents []string
+	for header, err := tarReader.Next(); err == nil; header, err = tarReader.Next() {
+		headers = append(headers, header.Name)
+		if !header.FileInfo().IsDir() {
+			content, err := ioutil.ReadAll(tarReader)
+			c.Assert(err, check.IsNil)
+			contents = append(contents, string(content))
+		}
+	}
+	expected := []string{"testdata/deploy/file1.txt", "testdata/deploy/file2.txt"}
+	sort.Strings(expected)
+	sort.Strings(headers)
+	c.Assert(headers, check.DeepEquals, expected)
+	expectedContents := []string{"something happened\n", "twice\n"}
+	sort.Strings(expectedContents)
+	sort.Strings(contents)
+	c.Assert(contents, check.DeepEquals, expectedContents)
 }
 
 func (s *S) TestTargzSingleDirectory(c *check.C) {
