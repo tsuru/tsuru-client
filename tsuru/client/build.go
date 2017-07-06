@@ -88,7 +88,7 @@ func (c *AppBuild) Run(context *cmd.Context, client *cmd.Client) error {
 	stream := tsuruIo.NewStreamWriter(context.Stdout, nil)
 	safeStdout := &safeWriter{w: &tsuruIo.SimpleJsonMessageEncoderWriter{Encoder: json.NewEncoder(stream)}}
 	respBody := firstWriter{Writer: io.MultiWriter(safeStdout, buf)}
-	if err = uploadFiles(context, request, buf, safeStdout, body, values); err != nil {
+	if err = uploadFiles(context, false, request, buf, safeStdout, body, values); err != nil {
 		return err
 	}
 	resp, err := client.Do(request)
@@ -107,7 +107,7 @@ func (c *AppBuild) Run(context *cmd.Context, client *cmd.Client) error {
 	return nil
 }
 
-func uploadFiles(context *cmd.Context, request *http.Request, buf *safe.Buffer, safeStdout *safeWriter, body *safe.Buffer, values url.Values) error {
+func uploadFiles(context *cmd.Context, filesOnly bool, request *http.Request, buf *safe.Buffer, safeStdout *safeWriter, body *safe.Buffer, values url.Values) error {
 	writer := multipart.NewWriter(body)
 	for k := range values {
 		writer.WriteField(k, values.Get(k))
@@ -127,7 +127,7 @@ func uploadFiles(context *cmd.Context, request *http.Request, buf *safe.Buffer, 
 			ignoreSet[k] = v
 		}
 	}
-	err = targz(context, file, ignoreSet, context.Args...)
+	err = targz(context, file, ignoreSet, filesOnly, context.Args...)
 	if err != nil {
 		return err
 	}

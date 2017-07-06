@@ -34,7 +34,7 @@ func (s *S) TestDeployRun(c *check.C) {
 	calledTimes := 0
 	var buf bytes.Buffer
 	ctx := cmd.Context{Stderr: bytes.NewBufferString("")}
-	err := targz(&ctx, &buf, nil, "testdata", "..")
+	err := targz(&ctx, &buf, nil, false, "testdata", "..")
 	c.Assert(err, check.IsNil)
 	trans := cmdtest.ConditionalTransport{
 		Transport: cmdtest.Transport{Message: "deploy worked\nOK\n", Status: http.StatusOK},
@@ -109,7 +109,7 @@ func (s *S) TestDeployRunWithMessage(c *check.C) {
 	calledTimes := 0
 	var buf bytes.Buffer
 	ctx := cmd.Context{Stderr: bytes.NewBufferString("")}
-	err := targz(&ctx, &buf, nil, "testdata", "..")
+	err := targz(&ctx, &buf, nil, false, "testdata", "..")
 	c.Assert(err, check.IsNil)
 	trans := cmdtest.ConditionalTransport{
 		Transport: cmdtest.Transport{Message: "deploy worked\nOK\n", Status: http.StatusOK},
@@ -152,7 +152,7 @@ func (s *S) TestDeployRunWithFiles(c *check.C) {
 	calledTimes := 0
 	var buf bytes.Buffer
 	ctx := cmd.Context{Stderr: bytes.NewBufferString("")}
-	err := targz(&ctx, &buf, nil, "testdata/deploy/file1.txt", "testdata/deploy2/file2.txt")
+	err := targz(&ctx, &buf, nil, false, "testdata/deploy/file1.txt", "testdata/deploy2/file2.txt")
 	c.Assert(err, check.IsNil)
 	trans := cmdtest.ConditionalTransport{
 		Transport: cmdtest.Transport{Message: "deploy worked\nOK\n", Status: http.StatusOK},
@@ -184,6 +184,48 @@ func (s *S) TestDeployRunWithFiles(c *check.C) {
 	fake := cmdtest.FakeGuesser{Name: "leblank"}
 	guessCommand := cmd.GuessingCommand{G: &fake}
 	cmd := AppDeploy{GuessingCommand: guessCommand}
+	err = cmd.Run(&context, client)
+	c.Assert(err, check.IsNil)
+	c.Assert(calledTimes, check.Equals, 2)
+}
+
+func (s *S) TestDeployRunWithFlagToFiles(c *check.C) {
+	calledTimes := 0
+	var buf bytes.Buffer
+	ctx := cmd.Context{Stderr: bytes.NewBufferString("")}
+	err := targz(&ctx, &buf, nil, true, "testdata/deploy/file1.txt", "testdata/deploy2/file2.txt")
+	c.Assert(err, check.IsNil)
+	trans := cmdtest.ConditionalTransport{
+		Transport: cmdtest.Transport{Message: "deploy worked\nOK\n", Status: http.StatusOK},
+		CondFunc: func(req *http.Request) bool {
+			calledTimes++
+			if req.Body != nil {
+				defer req.Body.Close()
+			}
+			if calledTimes == 1 {
+				return req.Method == "GET" && strings.HasSuffix(req.URL.Path, "/apps/leblank")
+			}
+			file, _, transErr := req.FormFile("file")
+			c.Assert(transErr, check.IsNil)
+			content, transErr := ioutil.ReadAll(file)
+			c.Assert(transErr, check.IsNil)
+			c.Assert(content, check.DeepEquals, buf.Bytes())
+			c.Assert(req.Header.Get("Content-Type"), check.Matches, "multipart/form-data; boundary=.*")
+			c.Assert(req.FormValue("origin"), check.Equals, "app-deploy")
+			return req.Method == "POST" && strings.HasSuffix(req.URL.Path, "/apps/leblank/deploy")
+		},
+	}
+	client := cmd.NewClient(&http.Client{Transport: &trans}, nil, manager)
+	var stdout, stderr bytes.Buffer
+	context := cmd.Context{
+		Stdout: &stdout,
+		Stderr: &stderr,
+		Args:   []string{"testdata/deploy/file1.txt", "testdata/deploy2/file2.txt"},
+	}
+	fake := cmdtest.FakeGuesser{Name: "leblank"}
+	guessCommand := cmd.GuessingCommand{G: &fake}
+	cmd := AppDeploy{GuessingCommand: guessCommand}
+	cmd.Flags().Parse(true, []string{"-s"})
 	err = cmd.Run(&context, client)
 	c.Assert(err, check.IsNil)
 	c.Assert(calledTimes, check.Equals, 2)
@@ -301,7 +343,7 @@ func (s *S) TestTargz(c *check.C) {
 	var buf bytes.Buffer
 	ctx := cmd.Context{Stderr: &buf}
 	var gzipBuf, tarBuf bytes.Buffer
-	err := targz(&ctx, &gzipBuf, nil, "testdata/deploy", "..")
+	err := targz(&ctx, &gzipBuf, nil, false, "testdata/deploy", "..")
 	c.Assert(err, check.IsNil)
 	gzipReader, err := gzip.NewReader(&gzipBuf)
 	c.Assert(err, check.IsNil)
@@ -336,7 +378,7 @@ func (s *S) TestTargzParsingFiles(c *check.C) {
 	var buf bytes.Buffer
 	ctx := cmd.Context{Stderr: &buf}
 	var gzipBuf, tarBuf bytes.Buffer
-	err := targz(&ctx, &gzipBuf, nil, "testdata/deploy/file1.txt", "testdata/deploy/file2.txt")
+	err := targz(&ctx, &gzipBuf, nil, false, "testdata/deploy/file1.txt", "testdata/deploy/file2.txt")
 	c.Assert(err, check.IsNil)
 	gzipReader, err := gzip.NewReader(&gzipBuf)
 	c.Assert(err, check.IsNil)
@@ -367,7 +409,7 @@ func (s *S) TestTargzSingleDirectory(c *check.C) {
 	var buf bytes.Buffer
 	ctx := cmd.Context{Stderr: &buf}
 	var gzipBuf, tarBuf bytes.Buffer
-	err := targz(&ctx, &gzipBuf, nil, "testdata/deploy")
+	err := targz(&ctx, &gzipBuf, nil, false, "testdata/deploy")
 	c.Assert(err, check.IsNil)
 	gzipReader, err := gzip.NewReader(&gzipBuf)
 	c.Assert(err, check.IsNil)
@@ -401,7 +443,7 @@ func (s *S) TestTargzSymlink(c *check.C) {
 	var buf bytes.Buffer
 	ctx := cmd.Context{Stderr: &buf}
 	var gzipBuf, tarBuf bytes.Buffer
-	err := targz(&ctx, &gzipBuf, nil, "testdata-symlink", "..")
+	err := targz(&ctx, &gzipBuf, nil, false, "testdata-symlink", "..")
 	c.Assert(err, check.IsNil)
 	gzipReader, err := gzip.NewReader(&gzipBuf)
 	c.Assert(err, check.IsNil)
@@ -422,7 +464,7 @@ func (s *S) TestTargzFailure(c *check.C) {
 	var stderr bytes.Buffer
 	ctx := cmd.Context{Stderr: &stderr}
 	var buf bytes.Buffer
-	err := targz(&ctx, &buf, nil, "/tmp/something/that/definitely/doesn't/exist/right", "testdata")
+	err := targz(&ctx, &buf, nil, false, "/tmp/something/that/definitely/doesn't/exist/right", "testdata")
 	c.Assert(err, check.NotNil)
 	c.Assert(err.Error(), check.Matches, ".*(no such file or directory|cannot find the path specified).*")
 }
@@ -666,7 +708,7 @@ func (s *S) TestIgnoreGlobalFiles(c *check.C) {
 	}
 	ctx := cmd.Context{Stderr: &buf}
 	var gzipBuf, tarBuf bytes.Buffer
-	err := targz(&ctx, &gzipBuf, ignore, "testdata/deploy2")
+	err := targz(&ctx, &gzipBuf, ignore, false, "testdata/deploy2")
 	c.Assert(err, check.IsNil)
 	gzipReader, err := gzip.NewReader(&gzipBuf)
 	c.Assert(err, check.IsNil)
@@ -696,7 +738,7 @@ func (s *S) TestIgnoreDir(c *check.C) {
 	}
 	ctx := cmd.Context{Stderr: &buf}
 	var gzipBuf, tarBuf bytes.Buffer
-	err := targz(&ctx, &gzipBuf, ignore, "testdata/deploy2")
+	err := targz(&ctx, &gzipBuf, ignore, false, "testdata/deploy2")
 	c.Assert(err, check.IsNil)
 	gzipReader, err := gzip.NewReader(&gzipBuf)
 	c.Assert(err, check.IsNil)
@@ -726,7 +768,7 @@ func (s *S) TestIgnoreRelativeDir(c *check.C) {
 	}
 	ctx := cmd.Context{Stderr: &buf}
 	var gzipBuf, tarBuf bytes.Buffer
-	err := targz(&ctx, &gzipBuf, ignore, "testdata/deploy2")
+	err := targz(&ctx, &gzipBuf, ignore, false, "testdata/deploy2")
 	c.Assert(err, check.IsNil)
 	gzipReader, err := gzip.NewReader(&gzipBuf)
 	c.Assert(err, check.IsNil)
@@ -756,7 +798,7 @@ func (s *S) TestIgnoreRelativeFile(c *check.C) {
 	}
 	ctx := cmd.Context{Stderr: &buf}
 	var gzipBuf, tarBuf bytes.Buffer
-	err := targz(&ctx, &gzipBuf, ignore, "testdata/deploy2")
+	err := targz(&ctx, &gzipBuf, ignore, false, "testdata/deploy2")
 	c.Assert(err, check.IsNil)
 	gzipReader, err := gzip.NewReader(&gzipBuf)
 	c.Assert(err, check.IsNil)
