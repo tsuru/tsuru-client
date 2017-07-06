@@ -122,9 +122,10 @@ func (c *AppDeployList) Run(context *cmd.Context, client *cmd.Client) error {
 
 type AppDeploy struct {
 	cmd.GuessingCommand
-	image   string
-	message string
-	fs      *gnuflag.FlagSet
+	image       string
+	message     string
+	singleFiles bool
+	fs          *gnuflag.FlagSet
 }
 
 func (c *AppDeploy) Flags() *gnuflag.FlagSet {
@@ -136,6 +137,9 @@ func (c *AppDeploy) Flags() *gnuflag.FlagSet {
 		message := "A message describing this deploy"
 		c.fs.StringVar(&c.message, "message", "", message)
 		c.fs.StringVar(&c.message, "m", "", message)
+		sf := "enables single file deployment"
+		c.fs.BoolVar(&c.singleFiles, "s", false, sf)
+		c.fs.BoolVar(&c.singleFiles, "single-files", false, sf)
 	}
 	return c.fs
 }
@@ -245,7 +249,7 @@ func (c *AppDeploy) Run(context *cmd.Context, client *cmd.Client) error {
 				ignoreSet[k] = v
 			}
 		}
-		err = targz(context, file, ignoreSet, context.Args...)
+		err = targz(context, file, ignoreSet, c.singleFiles, context.Args...)
 		if err != nil {
 			return err
 		}
@@ -277,6 +281,7 @@ func (c *AppDeploy) Run(context *cmd.Context, client *cmd.Client) error {
 			}
 		}()
 	}
+	// fmt.Println(c.singleFiles)
 	resp, err := client.Do(request)
 	if err != nil {
 		return err
@@ -364,7 +369,7 @@ func readTsuruIgnore() ([]string, error) {
 	return patterns, nil
 }
 
-func targz(ctx *cmd.Context, destination io.Writer, ignoreSet map[string]struct{}, filepaths ...string) error {
+func targz(ctx *cmd.Context, destination io.Writer, ignoreSet map[string]struct{}, singleFiles bool, filepaths ...string) error {
 	var buf bytes.Buffer
 	tarWriter := tar.NewWriter(&buf)
 	for _, path := range filepaths {
@@ -389,6 +394,8 @@ func targz(ctx *cmd.Context, destination io.Writer, ignoreSet map[string]struct{
 				return singleDir(ctx, destination, path, ignoreSet)
 			}
 			err = addDir(tarWriter, path, ignoreSet)
+		} else if singleFiles {
+			err = singleFile(tarWriter, path)
 		} else {
 			err = addFile(tarWriter, path)
 		}
@@ -416,7 +423,7 @@ func singleDir(ctx *cmd.Context, destination io.Writer, path string, ignoreSet m
 	if err != nil {
 		return err
 	}
-	return targz(ctx, destination, ignoreSet, ".")
+	return targz(ctx, destination, ignoreSet, false, ".")
 }
 
 func addDir(writer *tar.Writer, dirpath string, ignoreSet map[string]struct{}) error {
@@ -466,7 +473,38 @@ func addDir(writer *tar.Writer, dirpath string, ignoreSet map[string]struct{}) e
 	return nil
 }
 
+func singleFile(writer *tar.Writer, filepath string) error {
+	f, err := os.Open(filepath)
+	if err != nil {
+		return err
+	}
+	defer f.Close()
+	fi, err := os.Lstat(filepath)
+	if err != nil {
+		return err
+	}
+	header, err := tar.FileInfoHeader(fi, "")
+	if err != nil {
+		return err
+	}
+	fp := strings.Split(filepath, "/")
+	header.Name = fp[len(fp)-1]
+	err = writer.WriteHeader(header)
+	if err != nil {
+		return err
+	}
+	n, err := io.Copy(writer, f)
+	if err != nil {
+		return err
+	}
+	if n != fi.Size() {
+		return io.ErrShortWrite
+	}
+	return nil
+}
+
 func addFile(writer *tar.Writer, filepath string) error {
+	fmt.Println(filepath)
 	f, err := os.Open(filepath)
 	if err != nil {
 		return err
