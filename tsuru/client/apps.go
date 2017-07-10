@@ -226,7 +226,7 @@ type AppUpdate struct {
 func (c *AppUpdate) Info() *cmd.Info {
 	return &cmd.Info{
 		Name:  "app-update",
-		Usage: "app-update [-a/--app appname] [--description/-d description] [--plan/-p plan name] [--router/-r router name] [--pool/-o pool] [--team-owner/-t team owner] [--platform/-l platform] [-i/--image-reset image] [--tag/-g tag]... [--router-opts key=value]...",
+		Usage: "app-update [-a/--app appname] [--description/-d description] [--plan/-p plan name] [--router/-r router name] [--pool/-o pool] [--team-owner/-t team owner] [--platform/-l platform] [-i/--image-reset] [--tag/-g tag]... [--router-opts key=value]...",
 		Desc: `Updates an app, changing its description, tags, plan or pool information.
 
 The [[--description]] parameter sets a description for your app.
@@ -238,6 +238,10 @@ The [[--router]] parameter changes the router of your app.
 The [[--pool]] parameter changes the pool of your app.
 
 The [[--team-owner]] parameter sets owner team for an application.
+
+The [[--platform]] parameter sets a platform for an application.
+
+The [[--image-reset]] parameter rebuilds the platform of an application.
 
 The [[--tag]] parameter sets a tag for your app. You can set
 multiple [[--tag]] parameters.
