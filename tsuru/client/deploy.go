@@ -21,6 +21,7 @@ import (
 	"path"
 	"path/filepath"
 	"sort"
+	"strconv"
 	"strings"
 	"sync"
 	"time"
@@ -644,4 +645,72 @@ func (c *AppDeployRebuild) Run(context *cmd.Context, client *cmd.Client) error {
 		return fmt.Errorf("unparsed message error: %s", string(unparsed))
 	}
 	return nil
+}
+
+type AppDeployRollbackUpdate struct {
+	cmd.GuessingCommand
+	image  string
+	reason string
+	enable bool
+	fs     *gnuflag.FlagSet
+}
+
+func (c *AppDeployRollbackUpdate) Info() *cmd.Info {
+	desc := `Locks an existing image of an app. You can list images with "tsuru app-deploy-list -a <appName>"
+
+::
+
+    The [-e/--enable] flag enables or disables a rollback to an image, by default if not parsed it enables a rollback to an image, otherwise it'll disable it.
+
+    The [-i/--image] flag is the name of an app image.
+
+    The [-r/--reason] flag lets the user tell why this action was needed.
+`
+	return &cmd.Info{
+		Name:    "app-deploy-rollback-update",
+		Usage:   "app-deploy-rollback-update [-a/--app appName] [-i/--image imageName] [-e/--enable] [-r/--reason message]",
+		Desc:    desc,
+		MinArgs: 0,
+		MaxArgs: 0,
+	}
+}
+
+func (c *AppDeployRollbackUpdate) Flags() *gnuflag.FlagSet {
+	if c.fs == nil {
+		c.fs = c.GuessingCommand.Flags()
+		image := "The image name of a version of a app"
+		c.fs.StringVar(&c.image, "image", "", image)
+		c.fs.StringVar(&c.image, "i", "", image)
+		reason := "A message describing this rollback"
+		c.fs.StringVar(&c.reason, "reason", "", reason)
+		c.fs.StringVar(&c.reason, "r", "", reason)
+		enable := "Enables or disables the rollback on a specific image version"
+		c.fs.BoolVar(&c.enable, "enable", false, enable)
+		c.fs.BoolVar(&c.enable, "e", false, enable)
+	}
+	return c.fs
+}
+
+func (c *AppDeployRollbackUpdate) Run(context *cmd.Context, client *cmd.Client) error {
+	appName, err := c.Guess()
+	if err != nil {
+		return err
+	}
+	u, err := cmd.GetURL(fmt.Sprintf("/apps/%s/deploy/rollback/update", appName))
+	if err != nil {
+		return err
+	}
+	v := url.Values{}
+	v.Set("image", c.image)
+	v.Set("reason", c.reason)
+	v.Set("origin", "rollback")
+	v.Set("enable", strconv.FormatBool(!c.enable))
+	request, err := http.NewRequest(http.MethodPut, u, strings.NewReader(v.Encode()))
+	if err != nil {
+		return err
+	}
+	request.Header.Add("Content-Type", "application/x-www-form-urlencoded")
+	response, err := client.Do(request)
+	defer response.Body.Close()
+	return err
 }
