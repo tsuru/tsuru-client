@@ -490,6 +490,76 @@ func (s *S) TestAppDeployRollback(c *check.C) {
 	c.Assert(stdout.String(), check.Equals, expectedOut)
 }
 
+func (s *S) TestAppDeployRollbackUpdate(c *check.C) {
+	var (
+		called         bool
+		stdout, stderr bytes.Buffer
+	)
+	context := cmd.Context{
+		Stdout: &stdout,
+		Stderr: &stderr,
+	}
+	expectedOut := ""
+	msg := tsuruIo.SimpleJsonMessage{Message: expectedOut}
+	result, err := json.Marshal(msg)
+	c.Assert(err, check.IsNil)
+	trans := &cmdtest.ConditionalTransport{
+		Transport: cmdtest.Transport{Message: string(result), Status: http.StatusOK},
+		CondFunc: func(req *http.Request) bool {
+			called = true
+			method := req.Method == http.MethodPut
+			path := strings.HasSuffix(req.URL.Path, "/apps/zilean/deploy/rollback/update")
+			enable := req.FormValue("enable") == "true"
+			image := req.FormValue("image") == "caitlyn"
+			reason := req.FormValue("reason") == "DEMACIA"
+			rollback := req.FormValue("origin") == "rollback"
+			return method && path && image && rollback && reason && enable
+		},
+	}
+	client := cmd.NewClient(&http.Client{Transport: trans}, nil, manager)
+	command := AppDeployRollbackUpdate{}
+	command.Flags().Parse(true, []string{"--app", "zilean", "-i", "caitlyn", "-r", "DEMACIA"})
+	err = command.Run(&context, client)
+	c.Assert(err, check.IsNil)
+	c.Assert(called, check.Equals, true)
+	c.Assert(stdout.String(), check.Equals, expectedOut)
+}
+
+func (s *S) TestAppDeployRollbackUpdateDisabling(c *check.C) {
+	var (
+		called         bool
+		stdout, stderr bytes.Buffer
+	)
+	context := cmd.Context{
+		Stdout: &stdout,
+		Stderr: &stderr,
+	}
+	expectedOut := ""
+	msg := tsuruIo.SimpleJsonMessage{Message: expectedOut}
+	result, err := json.Marshal(msg)
+	c.Assert(err, check.IsNil)
+	trans := &cmdtest.ConditionalTransport{
+		Transport: cmdtest.Transport{Message: string(result), Status: http.StatusOK},
+		CondFunc: func(req *http.Request) bool {
+			called = true
+			method := req.Method == http.MethodPut
+			path := strings.HasSuffix(req.URL.Path, "/apps/xayah/deploy/rollback/update")
+			image := req.FormValue("image") == "rakan"
+			enable := req.FormValue("enable") == "false"
+			reason := req.FormValue("reason") == "vastayan"
+			rollback := req.FormValue("origin") == "rollback"
+			return method && path && image && rollback && reason && enable
+		},
+	}
+	client := cmd.NewClient(&http.Client{Transport: trans}, nil, manager)
+	command := AppDeployRollbackUpdate{}
+	command.Flags().Parse(true, []string{"--app", "xayah", "-i", "rakan", "-r", "vastayan", "-e"})
+	err = command.Run(&context, client)
+	c.Assert(err, check.IsNil)
+	c.Assert(called, check.Equals, true)
+	c.Assert(stdout.String(), check.Equals, expectedOut)
+}
+
 func (s *S) TestProcessTsuruIgnore(c *check.C) {
 	dir, _ := os.Getwd()
 	tests := []struct {
