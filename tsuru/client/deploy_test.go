@@ -490,6 +490,10 @@ func (s *S) TestAppDeployRollback(c *check.C) {
 	c.Assert(stdout.String(), check.Equals, expectedOut)
 }
 
+func (s *S) TestAppDeployRollbackUpdateInfo(c *check.C) {
+	c.Assert((&AppDeployRollbackUpdate{}).Info(), check.NotNil)
+}
+
 func (s *S) TestAppDeployRollbackUpdate(c *check.C) {
 	var (
 		called         bool
