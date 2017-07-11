@@ -513,8 +513,8 @@ func (s *S) TestAppDeployRollbackUpdate(c *check.C) {
 			called = true
 			method := req.Method == http.MethodPut
 			path := strings.HasSuffix(req.URL.Path, "/apps/zilean/deploy/rollback/update")
-			enable := req.FormValue("enable") == "true"
 			image := req.FormValue("image") == "caitlyn"
+			enable := req.FormValue("disable") == "false"
 			reason := req.FormValue("reason") == "DEMACIA"
 			rollback := req.FormValue("origin") == "rollback"
 			return method && path && image && rollback && reason && enable
@@ -549,7 +549,7 @@ func (s *S) TestAppDeployRollbackUpdateDisabling(c *check.C) {
 			method := req.Method == http.MethodPut
 			path := strings.HasSuffix(req.URL.Path, "/apps/xayah/deploy/rollback/update")
 			image := req.FormValue("image") == "rakan"
-			enable := req.FormValue("enable") == "false"
+			enable := req.FormValue("disable") == "true"
 			reason := req.FormValue("reason") == "vastayan"
 			rollback := req.FormValue("origin") == "rollback"
 			return method && path && image && rollback && reason && enable
@@ -557,7 +557,7 @@ func (s *S) TestAppDeployRollbackUpdateDisabling(c *check.C) {
 	}
 	client := cmd.NewClient(&http.Client{Transport: trans}, nil, manager)
 	command := AppDeployRollbackUpdate{}
-	command.Flags().Parse(true, []string{"--app", "xayah", "-i", "rakan", "-r", "vastayan", "-e"})
+	command.Flags().Parse(true, []string{"--app", "xayah", "-i", "rakan", "-r", "vastayan", "-d"})
 	err = command.Run(&context, client)
 	c.Assert(err, check.IsNil)
 	c.Assert(called, check.Equals, true)

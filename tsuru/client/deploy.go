@@ -649,10 +649,10 @@ func (c *AppDeployRebuild) Run(context *cmd.Context, client *cmd.Client) error {
 
 type AppDeployRollbackUpdate struct {
 	cmd.GuessingCommand
-	image  string
-	reason string
-	enable bool
-	fs     *gnuflag.FlagSet
+	image   string
+	reason  string
+	disable bool
+	fs      *gnuflag.FlagSet
 }
 
 func (c *AppDeployRollbackUpdate) Info() *cmd.Info {
@@ -660,15 +660,15 @@ func (c *AppDeployRollbackUpdate) Info() *cmd.Info {
 
 ::
 
-    The [-e/--enable] flag enables or disables a rollback to an image, by default if not parsed it enables a rollback to an image, otherwise it'll disable it.
-
     The [-i/--image] flag is the name of an app image.
+
+    The [-d/--disable] flag enables or disables a rollback to an image, by default if not parsed it enables a rollback to an image, otherwise it'll disable it.
 
     The [-r/--reason] flag lets the user tell why this action was needed.
 `
 	return &cmd.Info{
 		Name:    "app-deploy-rollback-update",
-		Usage:   "app-deploy-rollback-update [-a/--app appName] [-i/--image imageName] [-e/--enable] [-r/--reason message]",
+		Usage:   "app-deploy-rollback-update [-a/--app appName] [-i/--image imageName] [-d/--disable] [-r/--reason reason]",
 		Desc:    desc,
 		MinArgs: 0,
 		MaxArgs: 0,
@@ -684,9 +684,9 @@ func (c *AppDeployRollbackUpdate) Flags() *gnuflag.FlagSet {
 		reason := "A message describing this rollback"
 		c.fs.StringVar(&c.reason, "reason", "", reason)
 		c.fs.StringVar(&c.reason, "r", "", reason)
-		enable := "Enables or disables the rollback on a specific image version"
-		c.fs.BoolVar(&c.enable, "enable", false, enable)
-		c.fs.BoolVar(&c.enable, "e", false, enable)
+		disable := "Enables or disables the rollback on a specific image version"
+		c.fs.BoolVar(&c.disable, "disable", false, disable)
+		c.fs.BoolVar(&c.disable, "d", false, disable)
 	}
 	return c.fs
 }
@@ -704,7 +704,7 @@ func (c *AppDeployRollbackUpdate) Run(context *cmd.Context, client *cmd.Client) 
 	v.Set("image", c.image)
 	v.Set("reason", c.reason)
 	v.Set("origin", "rollback")
-	v.Set("enable", strconv.FormatBool(!c.enable))
+	v.Set("disable", strconv.FormatBool(c.disable))
 	request, err := http.NewRequest(http.MethodPut, u, strings.NewReader(v.Encode()))
 	if err != nil {
 		return err
