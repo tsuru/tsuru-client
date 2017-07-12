@@ -704,7 +704,8 @@ func (c *AppDeployRollbackUpdate) Run(context *cmd.Context, client *cmd.Client) 
 	v.Set("image", c.image)
 	v.Set("reason", c.reason)
 	v.Set("origin", "rollback")
-	v.Set("disable", strconv.FormatBool(c.disable))
+	// inverted, cause when `disable == true`, in API `CanRollback == false `
+	v.Set("disable", strconv.FormatBool(!c.disable))
 	request, err := http.NewRequest(http.MethodPut, u, strings.NewReader(v.Encode()))
 	if err != nil {
 		return err
