@@ -225,7 +225,7 @@ func (s *S) TestDeployRunWithFlagToFiles(c *check.C) {
 	fake := cmdtest.FakeGuesser{Name: "leblank"}
 	guessCommand := cmd.GuessingCommand{G: &fake}
 	cmd := AppDeploy{GuessingCommand: guessCommand}
-	cmd.Flags().Parse(true, []string{"-r"})
+	cmd.Flags().Parse(true, []string{"-f"})
 	err = cmd.Run(&context, client)
 	c.Assert(err, check.IsNil)
 	c.Assert(calledTimes, check.Equals, 2)

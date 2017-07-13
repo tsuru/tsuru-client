@@ -122,10 +122,10 @@ func (c *AppDeployList) Run(context *cmd.Context, client *cmd.Client) error {
 
 type AppDeploy struct {
 	cmd.GuessingCommand
-	image    string
-	message  string
-	rootFile bool
-	fs       *gnuflag.FlagSet
+	image     string
+	message   string
+	filesOnly bool
+	fs        *gnuflag.FlagSet
 }
 
 func (c *AppDeploy) Flags() *gnuflag.FlagSet {
@@ -137,9 +137,9 @@ func (c *AppDeploy) Flags() *gnuflag.FlagSet {
 		message := "A message describing this deploy"
 		c.fs.StringVar(&c.message, "message", "", message)
 		c.fs.StringVar(&c.message, "m", "", message)
-		rf := "Enables single file deployment into the root of the app's tree"
-		c.fs.BoolVar(&c.rootFile, "r", false, rf)
-		c.fs.BoolVar(&c.rootFile, "root-file", false, rf)
+		filesOnly := "Enables single file deployment into the root of the app's tree"
+		c.fs.BoolVar(&c.filesOnly, "f", false, filesOnly)
+		c.fs.BoolVar(&c.filesOnly, "files-only", false, filesOnly)
 	}
 	return c.fs
 }
@@ -152,12 +152,13 @@ calls are:
 
     $ tsuru app-deploy .
     $ tsuru app-deploy myfile.jar Procfile
+    $ tsuru app-deploy -f directory/main.go directory/Procfile
     $ tsuru app-deploy mysite
     $ tsuru app-deploy -i http://registry.mysite.com:5000/image-name
 `
 	return &cmd.Info{
 		Name:    "app-deploy",
-		Usage:   "app-deploy [-a/--app <appname>] [-i/--image <image_url>] [-m/--message <message>] [-r/--root-file] <file-or-dir-1> [file-or-dir-2] ... [file-or-dir-n]",
+		Usage:   "app-deploy [-a/--app <appname>] [-i/--image <image_url>] [-m/--message <message>] [-f/--files-only] <file-or-dir-1> [file-or-dir-2] ... [file-or-dir-n]",
 		Desc:    desc,
 		MinArgs: 0,
 	}
@@ -249,7 +250,7 @@ func (c *AppDeploy) Run(context *cmd.Context, client *cmd.Client) error {
 				ignoreSet[k] = v
 			}
 		}
-		err = targz(context, file, ignoreSet, c.rootFile, context.Args...)
+		err = targz(context, file, ignoreSet, c.filesOnly, context.Args...)
 		if err != nil {
 			return err
 		}
@@ -368,7 +369,7 @@ func readTsuruIgnore() ([]string, error) {
 	return patterns, nil
 }
 
-func targz(ctx *cmd.Context, destination io.Writer, ignoreSet map[string]struct{}, rootFile bool, filepaths ...string) error {
+func targz(ctx *cmd.Context, destination io.Writer, ignoreSet map[string]struct{}, filesOnly bool, filepaths ...string) error {
 	var buf bytes.Buffer
 	tarWriter := tar.NewWriter(&buf)
 	for _, path := range filepaths {
@@ -393,8 +394,8 @@ func targz(ctx *cmd.Context, destination io.Writer, ignoreSet map[string]struct{
 				return singleDir(ctx, destination, path, ignoreSet)
 			}
 			err = addDir(tarWriter, path, ignoreSet)
-		} else if rootFile {
-			err = singleFile(tarWriter, path)
+		} else if filesOnly {
+			err = addFileOnly(tarWriter, path)
 		} else {
 			err = addFile(tarWriter, path)
 		}
@@ -472,7 +473,7 @@ func addDir(writer *tar.Writer, dirpath string, ignoreSet map[string]struct{}) e
 	return nil
 }
 
-func singleFile(writer *tar.Writer, filepath string) error {
+func addFileOnly(writer *tar.Writer, filepath string) error {
 	f, err := os.Open(filepath)
 	if err != nil {
 		return err
