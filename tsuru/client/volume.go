@@ -282,7 +282,7 @@ func (c *VolumePlansList) render(ctx *cmd.Context, plans map[string][]volume.Vol
 			})
 		}
 	}
-	tbl.Sort()
+	tbl.SortByColumn(0, 1)
 	fmt.Fprint(ctx.Stdout, tbl.String())
 	return nil
 }
