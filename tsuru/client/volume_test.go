@@ -223,6 +223,32 @@ func (s *S) TestVolumeBind(c *check.C) {
 	c.Assert(result, check.Equals, "Volume successfully bound.\n")
 }
 
+func (s *S) TestVolumeBindNoRestart(c *check.C) {
+	var stdout, stderr bytes.Buffer
+	ctx := cmd.Context{
+		Args:   []string{"vol1", "/mnt"},
+		Stdout: &stdout,
+		Stderr: &stderr,
+	}
+	trans := &cmdtest.ConditionalTransport{
+		Transport: cmdtest.Transport{Message: "", Status: http.StatusOK},
+		CondFunc: func(r *http.Request) bool {
+			r.ParseForm()
+			c.Assert(r.FormValue("App"), check.Equals, "myapp")
+			c.Assert(r.FormValue("MountPoint"), check.Equals, "/mnt")
+			c.Assert(r.FormValue("NoRestart"), check.Equals, "true")
+			return strings.HasSuffix(r.URL.Path, "/volumes/vol1/bind") && r.Method == "POST"
+		},
+	}
+	client := cmd.NewClient(&http.Client{Transport: trans}, nil, manager)
+	command := &VolumeBind{}
+	command.Flags().Parse(true, []string{"-a", "myapp", "--no-restart"})
+	err := command.Run(&ctx, client)
+	c.Assert(err, check.IsNil)
+	result := stdout.String()
+	c.Assert(result, check.Equals, "Volume successfully bound.\n")
+}
+
 func (s *S) TestVolumeBindRO(c *check.C) {
 	var stdout, stderr bytes.Buffer
 	ctx := cmd.Context{
@@ -268,6 +294,32 @@ func (s *S) TestVolumeUnbind(c *check.C) {
 	client := cmd.NewClient(&http.Client{Transport: trans}, nil, manager)
 	command := &VolumeUnbind{}
 	command.Flags().Parse(true, []string{"-a", "myapp"})
+	err := command.Run(&ctx, client)
+	c.Assert(err, check.IsNil)
+	result := stdout.String()
+	c.Assert(result, check.Equals, "Volume successfully unbound.\n")
+}
+
+func (s *S) TestVolumeUnbindNoRestart(c *check.C) {
+	var stdout, stderr bytes.Buffer
+	ctx := cmd.Context{
+		Args:   []string{"vol1", "/mnt"},
+		Stdout: &stdout,
+		Stderr: &stderr,
+	}
+	trans := &cmdtest.ConditionalTransport{
+		Transport: cmdtest.Transport{Message: "", Status: http.StatusOK},
+		CondFunc: func(r *http.Request) bool {
+			r.ParseForm()
+			c.Assert(r.FormValue("App"), check.Equals, "myapp")
+			c.Assert(r.FormValue("MountPoint"), check.Equals, "/mnt")
+			c.Assert(r.FormValue("NoRestart"), check.Equals, "true")
+			return strings.HasSuffix(r.URL.Path, "/volumes/vol1/bind") && r.Method == "DELETE"
+		},
+	}
+	client := cmd.NewClient(&http.Client{Transport: trans}, nil, manager)
+	command := &VolumeUnbind{}
+	command.Flags().Parse(true, []string{"-a", "myapp", "--no-restart"})
 	err := command.Run(&ctx, client)
 	c.Assert(err, check.IsNil)
 	result := stdout.String()

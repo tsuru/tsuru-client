@@ -7,6 +7,7 @@ package client
 import (
 	"encoding/json"
 	"fmt"
+	"io"
 	"io/ioutil"
 	"net/http"
 	"sort"
@@ -15,6 +16,7 @@ import (
 	"github.com/ajg/form"
 	"github.com/tsuru/gnuflag"
 	"github.com/tsuru/tsuru/cmd"
+	tsuruIo "github.com/tsuru/tsuru/io"
 	"github.com/tsuru/tsuru/volume"
 )
 
@@ -316,14 +318,15 @@ func (c *VolumeDelete) Run(ctx *cmd.Context, client *cmd.Client) error {
 
 type VolumeBind struct {
 	cmd.GuessingCommand
-	fs       *gnuflag.FlagSet
-	readOnly bool
+	fs        *gnuflag.FlagSet
+	readOnly  bool
+	noRestart bool
 }
 
 func (c *VolumeBind) Info() *cmd.Info {
 	return &cmd.Info{
 		Name:    "volume-bind",
-		Usage:   "volume-bind <volume-name> <mount point> [-a/--app <appname>] [-r/--readonly]",
+		Usage:   "volume-bind <volume-name> <mount point> [-a/--app <appname>] [-r/--readonly] [--no-restart]",
 		Desc:    `Binds an existing volume to an application.`,
 		MinArgs: 2,
 		MaxArgs: 2,
@@ -336,11 +339,13 @@ func (c *VolumeBind) Flags() *gnuflag.FlagSet {
 		desc := "the volume will be available only for reading"
 		c.fs.BoolVar(&c.readOnly, "readonly", false, desc)
 		c.fs.BoolVar(&c.readOnly, "r", false, desc)
+		c.fs.BoolVar(&c.noRestart, "no-restart", false, "prevents restarting the application")
 	}
 	return c.fs
 }
 
 func (c *VolumeBind) Run(ctx *cmd.Context, client *cmd.Client) error {
+	ctx.RawOutput()
 	volumeName := ctx.Args[0]
 	appName, err := c.Guess()
 	if err != nil {
@@ -350,10 +355,12 @@ func (c *VolumeBind) Run(ctx *cmd.Context, client *cmd.Client) error {
 		App        string
 		MountPoint string
 		ReadOnly   bool
+		NoRestart  bool
 	}{
 		App:        appName,
 		MountPoint: ctx.Args[1],
 		ReadOnly:   c.readOnly,
+		NoRestart:  c.noRestart,
 	}
 	val, err := form.EncodeToValues(bind)
 	if err != nil {
@@ -369,9 +376,20 @@ func (c *VolumeBind) Run(ctx *cmd.Context, client *cmd.Client) error {
 		return err
 	}
 	request.Header.Set("Content-Type", "application/x-www-form-urlencoded")
-	_, err = client.Do(request)
+	resp, err := client.Do(request)
 	if err != nil {
 		return err
+	}
+	defer resp.Body.Close()
+	w := tsuruIo.NewStreamWriter(ctx.Stdout, nil)
+	for n := int64(1); n > 0 && err == nil; n, err = io.Copy(w, resp.Body) {
+	}
+	if err != nil {
+		return err
+	}
+	unparsed := w.Remaining()
+	if len(unparsed) > 0 {
+		return fmt.Errorf("unparsed message error: %s", string(unparsed))
 	}
 	fmt.Fprint(ctx.Stdout, "Volume successfully bound.\n")
 	return nil
@@ -379,6 +397,8 @@ func (c *VolumeBind) Run(ctx *cmd.Context, client *cmd.Client) error {
 
 type VolumeUnbind struct {
 	cmd.GuessingCommand
+	fs        *gnuflag.FlagSet
+	noRestart bool
 }
 
 func (c *VolumeUnbind) Info() *cmd.Info {
@@ -391,7 +411,16 @@ func (c *VolumeUnbind) Info() *cmd.Info {
 	}
 }
 
+func (c *VolumeUnbind) Flags() *gnuflag.FlagSet {
+	if c.fs == nil {
+		c.fs = c.GuessingCommand.Flags()
+		c.fs.BoolVar(&c.noRestart, "no-restart", false, "prevents restarting the application")
+	}
+	return c.fs
+}
+
 func (c *VolumeUnbind) Run(ctx *cmd.Context, client *cmd.Client) error {
+	ctx.RawOutput()
 	volumeName := ctx.Args[0]
 	appName, err := c.Guess()
 	if err != nil {
@@ -400,9 +429,11 @@ func (c *VolumeUnbind) Run(ctx *cmd.Context, client *cmd.Client) error {
 	bind := struct {
 		App        string
 		MountPoint string
+		NoRestart  bool
 	}{
 		App:        appName,
 		MountPoint: ctx.Args[1],
+		NoRestart:  c.noRestart,
 	}
 	val, err := form.EncodeToValues(bind)
 	if err != nil {
@@ -416,9 +447,20 @@ func (c *VolumeUnbind) Run(ctx *cmd.Context, client *cmd.Client) error {
 	if err != nil {
 		return err
 	}
-	_, err = client.Do(request)
+	resp, err := client.Do(request)
 	if err != nil {
 		return err
+	}
+	defer resp.Body.Close()
+	w := tsuruIo.NewStreamWriter(ctx.Stdout, nil)
+	for n := int64(1); n > 0 && err == nil; n, err = io.Copy(w, resp.Body) {
+	}
+	if err != nil {
+		return err
+	}
+	unparsed := w.Remaining()
+	if len(unparsed) > 0 {
+		return fmt.Errorf("unparsed message error: %s", string(unparsed))
 	}
 	fmt.Fprint(ctx.Stdout, "Volume successfully unbound.\n")
 	return nil
