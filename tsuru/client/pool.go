@@ -80,9 +80,9 @@ func (PoolList) Run(context *cmd.Context, client *cmd.Client) error {
 	for _, pool := range pools {
 		teams := ""
 		if !pool.Public && !pool.Default {
-			teams = formatToCol(pool.Allowed["team"], 5)
+			teams = strings.Join(pool.Allowed["team"], ", ")
 		}
-		routers := formatToCol(pool.Allowed["router"], 5)
+		routers := strings.Join(pool.Allowed["router"], ", ")
 		t.AddRow(cmd.Row([]string{pool.Name, pool.Kind(), pool.GetProvisioner(), teams, routers}))
 	}
 	context.Stdout.Write(t.Bytes())
@@ -96,16 +96,4 @@ func (PoolList) Info() *cmd.Info {
 		Desc:    "List all pools available for deploy.",
 		MinArgs: 0,
 	}
-}
-
-func formatToCol(values []string, itemsPerLine int) string {
-	var lines []string
-	for i := 0; i < len(values); i += 5 {
-		endIdx := i + 5
-		if endIdx > len(values) {
-			endIdx = len(values)
-		}
-		lines = append(lines, strings.Join(values[i:endIdx], ", "))
-	}
-	return strings.Join(lines, "\n")
 }
