@@ -12,7 +12,6 @@ import (
 	"io"
 	"io/ioutil"
 	"net/url"
-	"regexp"
 	"strings"
 	"time"
 
@@ -35,6 +34,7 @@ import (
 	"github.com/tsuru/tsuru/router"
 	"github.com/tsuru/tsuru/router/rebuild"
 	"github.com/tsuru/tsuru/service"
+	"github.com/tsuru/tsuru/validation"
 	"gopkg.in/mgo.v2"
 	"gopkg.in/mgo.v2/bson"
 )
@@ -42,8 +42,6 @@ import (
 var AuthScheme auth.Scheme
 
 var (
-	nameRegexp = regexp.MustCompile(`^[a-z][a-z0-9-]{0,62}$`)
-
 	ErrAlreadyHaveAccess = errors.New("team already have access to this app")
 	ErrNoAccess          = errors.New("team does not have access to this app")
 	ErrCannotOrphanApp   = errors.New("cannot revoke access from this team, as it's the unique team with access to the app")
@@ -971,7 +969,7 @@ func (app *App) getEnv(name string) (bind.EnvVar, error) {
 
 // validate checks app name format
 func (app *App) validate() error {
-	if app.Name == InternalAppName || !nameRegexp.MatchString(app.Name) {
+	if app.Name == InternalAppName || !validation.ValidateName(app.Name) {
 		msg := "Invalid app name, your app should have at most 63 " +
 			"characters, containing only lower case letters, numbers or dashes, " +
 			"starting with a letter."

@@ -8,18 +8,14 @@ import (
 	"strconv"
 
 	"github.com/pkg/errors"
+	"github.com/tsuru/tsuru/builder"
 	"github.com/tsuru/tsuru/db"
 	tsuruErrors "github.com/tsuru/tsuru/errors"
 	"github.com/tsuru/tsuru/log"
-	"github.com/tsuru/tsuru/provision"
+	"github.com/tsuru/tsuru/validation"
 	"gopkg.in/mgo.v2"
 	"gopkg.in/mgo.v2/bson"
 )
-
-type Platform struct {
-	Name     string `bson:"_id"`
-	Disabled bool   `bson:",omitempty"`
-}
 
 var (
 	ErrPlatformNameMissing    = errors.New("Platform name is required.")
@@ -27,7 +23,27 @@ var (
 	DuplicatePlatformError    = errors.New("Duplicate platform")
 	InvalidPlatformError      = errors.New("Invalid platform")
 	ErrDeletePlatformWithApps = errors.New("Platform has apps. You should remove them before remove the platform.")
+	ErrInvalidPlatformName    = &tsuruErrors.ValidationError{
+		Message: "Invalid platform name, should have at most 63 " +
+			"characters, containing only lower case letters, numbers or dashes, " +
+			"starting with a letter.",
+	}
 )
+
+type Platform struct {
+	Name     string `bson:"_id"`
+	Disabled bool   `bson:",omitempty"`
+}
+
+func (p *Platform) validate() error {
+	if p.Name == "" {
+		return ErrPlatformNameMissing
+	}
+	if !validation.ValidateName(p.Name) {
+		return ErrInvalidPlatformName
+	}
+	return nil
+}
 
 // Platforms returns the list of available platforms.
 func Platforms(enabledOnly bool) ([]Platform, error) {
@@ -46,15 +62,11 @@ func Platforms(enabledOnly bool) ([]Platform, error) {
 }
 
 // PlatformAdd add a new platform to tsuru
-func PlatformAdd(opts provision.PlatformOptions) error {
-	if opts.Name == "" {
-		return ErrPlatformNameMissing
-	}
-	provisioners, err := provision.Registry()
-	if err != nil {
+func PlatformAdd(opts builder.PlatformOptions) error {
+	p := Platform{Name: opts.Name}
+	if err := p.validate(); err != nil {
 		return err
 	}
-	p := Platform{Name: opts.Name}
 	conn, err := db.Conn()
 	if err != nil {
 		return err
@@ -67,14 +79,7 @@ func PlatformAdd(opts provision.PlatformOptions) error {
 		}
 		return err
 	}
-	for _, p := range provisioners {
-		if extensibleProv, ok := p.(provision.ExtensibleProvisioner); ok {
-			err = extensibleProv.PlatformAdd(opts)
-			if err != nil {
-				break
-			}
-		}
-	}
+	err = builder.PlatformAdd(opts)
 	if err != nil {
 		dbErr := conn.Platforms().RemoveId(p.Name)
 		if dbErr != nil {
@@ -88,11 +93,7 @@ func PlatformAdd(opts provision.PlatformOptions) error {
 	return nil
 }
 
-func PlatformUpdate(opts provision.PlatformOptions) error {
-	provisioners, err := provision.Registry()
-	if err != nil {
-		return err
-	}
+func PlatformUpdate(opts builder.PlatformOptions) error {
 	var platform Platform
 	if opts.Name == "" {
 		return ErrPlatformNameMissing
@@ -110,13 +111,9 @@ func PlatformUpdate(opts provision.PlatformOptions) error {
 		return err
 	}
 	if opts.Args["dockerfile"] != "" || opts.Input != nil {
-		for _, p := range provisioners {
-			if extensibleProv, ok := p.(provision.ExtensibleProvisioner); ok {
-				err = extensibleProv.PlatformUpdate(opts)
-				if err != nil {
-					return err
-				}
-			}
+		err = builder.PlatformUpdate(opts)
+		if err != nil {
+			return err
 		}
 		var apps []App
 		err = conn.Apps().Find(bson.M{"framework": opts.Name}).All(&apps)
@@ -141,10 +138,6 @@ func PlatformUpdate(opts provision.PlatformOptions) error {
 }
 
 func PlatformRemove(name string) error {
-	provisioners, err := provision.Registry()
-	if err != nil {
-		return err
-	}
 	if name == "" {
 		return ErrPlatformNameMissing
 	}
@@ -157,13 +150,9 @@ func PlatformRemove(name string) error {
 	if apps > 0 {
 		return ErrDeletePlatformWithApps
 	}
-	for _, p := range provisioners {
-		if extensibleProv, ok := p.(provision.ExtensibleProvisioner); ok {
-			err = extensibleProv.PlatformRemove(name)
-			if err != nil {
-				log.Errorf("Failed to remove platform from provisioner %q: %s", p.GetName(), err)
-			}
-		}
+	err = builder.PlatformRemove(name)
+	if err != nil {
+		log.Errorf("Failed to remove platform: %s", err)
 	}
 	err = conn.Platforms().Remove(bson.M{"_id": name})
 	if err == mgo.ErrNotFound {

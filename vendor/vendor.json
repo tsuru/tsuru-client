@@ -1178,10 +1178,10 @@
 			"revisionTime": "2017-04-07T12:22:47Z"
 		},
 		{
-			"checksumSHA1": "oSqVjeYA3/FVbRHkJIilPjmbVTc=",
+			"checksumSHA1": "+/njsn+/E6wnuUuO0EosvUeYGxE=",
 			"path": "github.com/tsuru/config",
-			"revision": "0eee1ec3c7a2917396b20453f32ecb41919a2a22",
-			"revisionTime": "2017-04-10T20:51:07Z"
+			"revision": "1d2644c598466bc4c36c2c878abf3f99ba5bb3ed",
+			"revisionTime": "2017-07-14T19:47:31Z"
 		},
 		{
 			"checksumSHA1": "rBij19e3f5NQbCGnelCN0aASqRs=",
@@ -1214,278 +1214,284 @@
 		{
 			"checksumSHA1": "ryt39wbfrEu860Fc0heZBNZ94Nw=",
 			"path": "github.com/tsuru/tsuru/action",
-			"revision": "881adc82ea9df6ac851b20becd7b3320a6cd331a",
-			"revisionTime": "2017-07-03T14:00:01Z"
+			"revision": "2fc6351d79ebde978235d8d74733f76d4deb8ccd",
+			"revisionTime": "2017-07-20T18:21:05Z"
 		},
 		{
 			"checksumSHA1": "Tus6JLuL9Q0Jp+fE3BoMkxdGAlQ=",
 			"path": "github.com/tsuru/tsuru/api/shutdown",
-			"revision": "881adc82ea9df6ac851b20becd7b3320a6cd331a",
-			"revisionTime": "2017-07-03T14:00:01Z"
+			"revision": "2fc6351d79ebde978235d8d74733f76d4deb8ccd",
+			"revisionTime": "2017-07-20T18:21:05Z"
 		},
 		{
 			"checksumSHA1": "gfkzJv/QrjfQndGHsrgqAbiSCD8=",
 			"path": "github.com/tsuru/tsuru/api/types",
-			"revision": "881adc82ea9df6ac851b20becd7b3320a6cd331a",
-			"revisionTime": "2017-07-03T14:00:01Z"
+			"revision": "2fc6351d79ebde978235d8d74733f76d4deb8ccd",
+			"revisionTime": "2017-07-20T18:21:05Z"
 		},
 		{
-			"checksumSHA1": "nYyRidOvMNfc+T2DmpkzttLsiaU=",
+			"checksumSHA1": "dU/gU+/6gu5c886oP9wr702jt+A=",
 			"path": "github.com/tsuru/tsuru/app",
-			"revision": "881adc82ea9df6ac851b20becd7b3320a6cd331a",
-			"revisionTime": "2017-07-03T14:00:01Z"
+			"revision": "2fc6351d79ebde978235d8d74733f76d4deb8ccd",
+			"revisionTime": "2017-07-20T18:21:05Z"
 		},
 		{
 			"checksumSHA1": "7Q76qLH1r6vwxh3Wu0hZx0WPKMA=",
 			"path": "github.com/tsuru/tsuru/app/bind",
-			"revision": "881adc82ea9df6ac851b20becd7b3320a6cd331a",
-			"revisionTime": "2017-07-03T14:00:01Z"
+			"revision": "2fc6351d79ebde978235d8d74733f76d4deb8ccd",
+			"revisionTime": "2017-07-20T18:21:05Z"
 		},
 		{
 			"checksumSHA1": "HBXk7lWv+s4NQO+fyJ5TjnyBvQo=",
 			"path": "github.com/tsuru/tsuru/app/image",
-			"revision": "881adc82ea9df6ac851b20becd7b3320a6cd331a",
-			"revisionTime": "2017-07-03T14:00:01Z"
+			"revision": "2fc6351d79ebde978235d8d74733f76d4deb8ccd",
+			"revisionTime": "2017-07-20T18:21:05Z"
 		},
 		{
 			"checksumSHA1": "+VMwnkDHlaDFioKobncqMf5h8Vo=",
 			"path": "github.com/tsuru/tsuru/auth",
-			"revision": "881adc82ea9df6ac851b20becd7b3320a6cd331a",
-			"revisionTime": "2017-07-03T14:00:01Z"
+			"revision": "2fc6351d79ebde978235d8d74733f76d4deb8ccd",
+			"revisionTime": "2017-07-20T18:21:05Z"
 		},
 		{
 			"checksumSHA1": "6r3JNLGfWvASNPkhyPeKPkjCRR0=",
 			"path": "github.com/tsuru/tsuru/auth/native",
-			"revision": "881adc82ea9df6ac851b20becd7b3320a6cd331a",
-			"revisionTime": "2017-07-03T14:00:01Z"
+			"revision": "2fc6351d79ebde978235d8d74733f76d4deb8ccd",
+			"revisionTime": "2017-07-20T18:21:05Z"
 		},
 		{
 			"checksumSHA1": "4pKssBrnKs39dfpusCtOyyMImbk=",
 			"path": "github.com/tsuru/tsuru/auth/saml",
-			"revision": "881adc82ea9df6ac851b20becd7b3320a6cd331a",
-			"revisionTime": "2017-07-03T14:00:01Z"
+			"revision": "2fc6351d79ebde978235d8d74733f76d4deb8ccd",
+			"revisionTime": "2017-07-20T18:21:05Z"
 		},
 		{
 			"checksumSHA1": "/GUDYhONpDPWFci7QCp0YJd/AD0=",
 			"path": "github.com/tsuru/tsuru/autoscale",
-			"revision": "881adc82ea9df6ac851b20becd7b3320a6cd331a",
-			"revisionTime": "2017-07-03T14:00:01Z"
+			"revision": "2fc6351d79ebde978235d8d74733f76d4deb8ccd",
+			"revisionTime": "2017-07-20T18:21:05Z"
 		},
 		{
-			"checksumSHA1": "m5j50285VP2PWYAHJT3iXVQg0AM=",
+			"checksumSHA1": "ZnLWBshByxT0JryOF2lVaCNGVow=",
 			"path": "github.com/tsuru/tsuru/builder",
-			"revision": "881adc82ea9df6ac851b20becd7b3320a6cd331a",
-			"revisionTime": "2017-07-03T14:00:01Z"
+			"revision": "2fc6351d79ebde978235d8d74733f76d4deb8ccd",
+			"revisionTime": "2017-07-20T18:21:05Z"
 		},
 		{
 			"checksumSHA1": "NJTpaO4sRmB7/5uw4rpFcl3Ox68=",
 			"path": "github.com/tsuru/tsuru/cmd",
-			"revision": "881adc82ea9df6ac851b20becd7b3320a6cd331a",
-			"revisionTime": "2017-07-03T14:00:01Z"
+			"revision": "2fc6351d79ebde978235d8d74733f76d4deb8ccd",
+			"revisionTime": "2017-07-20T18:21:05Z"
 		},
 		{
 			"checksumSHA1": "AkEdSCjYLvsWxE6A+JcFzQuCzY0=",
 			"path": "github.com/tsuru/tsuru/cmd/cmdtest",
-			"revision": "881adc82ea9df6ac851b20becd7b3320a6cd331a",
-			"revisionTime": "2017-07-03T14:00:01Z"
+			"revision": "2fc6351d79ebde978235d8d74733f76d4deb8ccd",
+			"revisionTime": "2017-07-20T18:21:05Z"
 		},
 		{
-			"checksumSHA1": "+0K5FP2fkAD8g9TxJ/Ggs2fF6UI=",
+			"checksumSHA1": "/deB98i6lveM1havd87zez2Jf3U=",
+			"path": "github.com/tsuru/tsuru/config",
+			"revision": "2fc6351d79ebde978235d8d74733f76d4deb8ccd",
+			"revisionTime": "2017-07-20T18:21:05Z"
+		},
+		{
+			"checksumSHA1": "9N3XW0K2zD+Dw6dfS0t5AYSpKHA=",
 			"path": "github.com/tsuru/tsuru/db",
-			"revision": "881adc82ea9df6ac851b20becd7b3320a6cd331a",
-			"revisionTime": "2017-07-03T14:00:01Z"
+			"revision": "2fc6351d79ebde978235d8d74733f76d4deb8ccd",
+			"revisionTime": "2017-07-20T18:21:05Z"
 		},
 		{
 			"checksumSHA1": "qNo9+rhrLxGBdR55pwWCELmozNg=",
 			"path": "github.com/tsuru/tsuru/db/storage",
-			"revision": "881adc82ea9df6ac851b20becd7b3320a6cd331a",
-			"revisionTime": "2017-07-03T14:00:01Z"
+			"revision": "2fc6351d79ebde978235d8d74733f76d4deb8ccd",
+			"revisionTime": "2017-07-20T18:21:05Z"
 		},
 		{
 			"checksumSHA1": "x4zFgySNF5wz6b/06zqnPrI3o4c=",
 			"path": "github.com/tsuru/tsuru/errors",
-			"revision": "881adc82ea9df6ac851b20becd7b3320a6cd331a",
-			"revisionTime": "2017-07-03T14:00:01Z"
+			"revision": "2fc6351d79ebde978235d8d74733f76d4deb8ccd",
+			"revisionTime": "2017-07-20T18:21:05Z"
 		},
 		{
-			"checksumSHA1": "Hge6sjFQohgx2XnlduF8ZdY1JZU=",
+			"checksumSHA1": "VXoyWvh1uiZtfTTLvyty83ypU14=",
 			"path": "github.com/tsuru/tsuru/event",
-			"revision": "881adc82ea9df6ac851b20becd7b3320a6cd331a",
-			"revisionTime": "2017-07-03T14:00:01Z"
+			"revision": "2fc6351d79ebde978235d8d74733f76d4deb8ccd",
+			"revisionTime": "2017-07-20T18:21:05Z"
 		},
 		{
 			"checksumSHA1": "BmvUM1GzyLkH7o8hZaHI3mCYcAo=",
 			"path": "github.com/tsuru/tsuru/exec",
-			"revision": "881adc82ea9df6ac851b20becd7b3320a6cd331a",
-			"revisionTime": "2017-07-03T14:00:01Z"
+			"revision": "2fc6351d79ebde978235d8d74733f76d4deb8ccd",
+			"revisionTime": "2017-07-20T18:21:05Z"
 		},
 		{
 			"checksumSHA1": "kZHPqEo4XbjhXv+YuBVtESvDcSc=",
 			"path": "github.com/tsuru/tsuru/exec/exectest",
-			"revision": "881adc82ea9df6ac851b20becd7b3320a6cd331a",
-			"revisionTime": "2017-07-03T14:00:01Z"
+			"revision": "2fc6351d79ebde978235d8d74733f76d4deb8ccd",
+			"revisionTime": "2017-07-20T18:21:05Z"
 		},
 		{
 			"checksumSHA1": "jntPCmLJrA99iLBjgTVdyh3ue6c=",
 			"path": "github.com/tsuru/tsuru/fs",
-			"revision": "881adc82ea9df6ac851b20becd7b3320a6cd331a",
-			"revisionTime": "2017-07-03T14:00:01Z"
+			"revision": "2fc6351d79ebde978235d8d74733f76d4deb8ccd",
+			"revisionTime": "2017-07-20T18:21:05Z"
 		},
 		{
 			"checksumSHA1": "JW42UA+5XsxHqRQwwR7vnSynPeo=",
 			"path": "github.com/tsuru/tsuru/fs/fstest",
-			"revision": "881adc82ea9df6ac851b20becd7b3320a6cd331a",
-			"revisionTime": "2017-07-03T14:00:01Z"
+			"revision": "2fc6351d79ebde978235d8d74733f76d4deb8ccd",
+			"revisionTime": "2017-07-20T18:21:05Z"
 		},
 		{
 			"checksumSHA1": "qDCX9dj8zbAJPJhKWe0eTfV5rr4=",
 			"path": "github.com/tsuru/tsuru/git",
-			"revision": "881adc82ea9df6ac851b20becd7b3320a6cd331a",
-			"revisionTime": "2017-07-03T14:00:01Z"
+			"revision": "2fc6351d79ebde978235d8d74733f76d4deb8ccd",
+			"revisionTime": "2017-07-20T18:21:05Z"
 		},
 		{
 			"checksumSHA1": "83gjJOG+3wDtK61pwDaURkIPYQk=",
 			"path": "github.com/tsuru/tsuru/hc",
-			"revision": "881adc82ea9df6ac851b20becd7b3320a6cd331a",
-			"revisionTime": "2017-07-03T14:00:01Z"
+			"revision": "2fc6351d79ebde978235d8d74733f76d4deb8ccd",
+			"revisionTime": "2017-07-20T18:21:05Z"
 		},
 		{
-			"checksumSHA1": "rcBbqg9D6Q5aHURScaZgaqcv5pM=",
+			"checksumSHA1": "/4twubhSSx+W2kYyYUoZiPwPis8=",
 			"path": "github.com/tsuru/tsuru/healer",
-			"revision": "881adc82ea9df6ac851b20becd7b3320a6cd331a",
-			"revisionTime": "2017-07-03T14:00:01Z"
+			"revision": "2fc6351d79ebde978235d8d74733f76d4deb8ccd",
+			"revisionTime": "2017-07-20T18:21:05Z"
 		},
 		{
 			"checksumSHA1": "LUqyxUtqxCWGip3F6H4mKZvE69o=",
 			"path": "github.com/tsuru/tsuru/iaas",
-			"revision": "881adc82ea9df6ac851b20becd7b3320a6cd331a",
-			"revisionTime": "2017-07-03T14:00:01Z"
+			"revision": "2fc6351d79ebde978235d8d74733f76d4deb8ccd",
+			"revisionTime": "2017-07-20T18:21:05Z"
 		},
 		{
-			"checksumSHA1": "8lbfwBRGsYQBa3wABeFOzHUAH3g=",
+			"checksumSHA1": "JjNkZhxRkNhK25X5BmFb8b7DYvs=",
 			"path": "github.com/tsuru/tsuru/iaas/dockermachine",
-			"revision": "881adc82ea9df6ac851b20becd7b3320a6cd331a",
-			"revisionTime": "2017-07-03T14:00:01Z"
+			"revision": "2fc6351d79ebde978235d8d74733f76d4deb8ccd",
+			"revisionTime": "2017-07-20T18:21:05Z"
 		},
 		{
 			"checksumSHA1": "7YTsjWRuonns29aU30o1aASDYIQ=",
 			"path": "github.com/tsuru/tsuru/io",
-			"revision": "881adc82ea9df6ac851b20becd7b3320a6cd331a",
-			"revisionTime": "2017-07-03T14:00:01Z"
+			"revision": "2fc6351d79ebde978235d8d74733f76d4deb8ccd",
+			"revisionTime": "2017-07-20T18:21:05Z"
 		},
 		{
 			"checksumSHA1": "Kr4LZfAvZk3oRFT8BI5/MwwLvXU=",
 			"path": "github.com/tsuru/tsuru/log",
-			"revision": "881adc82ea9df6ac851b20becd7b3320a6cd331a",
-			"revisionTime": "2017-07-03T14:00:01Z"
+			"revision": "2fc6351d79ebde978235d8d74733f76d4deb8ccd",
+			"revisionTime": "2017-07-20T18:21:05Z"
 		},
 		{
 			"checksumSHA1": "cR+kRkUynEpqeRA/JpzYhFwG3NQ=",
 			"path": "github.com/tsuru/tsuru/net",
-			"revision": "881adc82ea9df6ac851b20becd7b3320a6cd331a",
-			"revisionTime": "2017-07-03T14:00:01Z"
+			"revision": "2fc6351d79ebde978235d8d74733f76d4deb8ccd",
+			"revisionTime": "2017-07-20T18:21:05Z"
 		},
 		{
-			"checksumSHA1": "fZqP5b+bPIxpikcMvD8Yg4YaaJU=",
+			"checksumSHA1": "AnI/NWi/k6ee/gufCZsp9HTvEQ8=",
 			"path": "github.com/tsuru/tsuru/permission",
-			"revision": "881adc82ea9df6ac851b20becd7b3320a6cd331a",
-			"revisionTime": "2017-07-03T14:00:01Z"
+			"revision": "2fc6351d79ebde978235d8d74733f76d4deb8ccd",
+			"revisionTime": "2017-07-20T18:21:05Z"
 		},
 		{
-			"checksumSHA1": "YDFMzxFcpvBnVbwKj3CTIPac9Pw=",
+			"checksumSHA1": "Dzuz6KE1+EsULCF8HiWR3YC0X5c=",
 			"path": "github.com/tsuru/tsuru/provision",
-			"revision": "881adc82ea9df6ac851b20becd7b3320a6cd331a",
-			"revisionTime": "2017-07-03T14:00:01Z"
+			"revision": "2fc6351d79ebde978235d8d74733f76d4deb8ccd",
+			"revisionTime": "2017-07-20T18:21:05Z"
 		},
 		{
-			"checksumSHA1": "zbHov7N91LWS6zCnAjxHT2PsvDU=",
+			"checksumSHA1": "d4gchbW2QOOzCcghxVShh6dqNJ0=",
 			"path": "github.com/tsuru/tsuru/provision/cluster",
-			"revision": "881adc82ea9df6ac851b20becd7b3320a6cd331a",
-			"revisionTime": "2017-07-03T14:00:01Z"
+			"revision": "2fc6351d79ebde978235d8d74733f76d4deb8ccd",
+			"revisionTime": "2017-07-20T18:21:05Z"
 		},
 		{
 			"checksumSHA1": "hBpPKwKXeRTanqUfgpu2s0Mi5Hg=",
 			"path": "github.com/tsuru/tsuru/provision/docker/cmds",
-			"revision": "881adc82ea9df6ac851b20becd7b3320a6cd331a",
-			"revisionTime": "2017-07-03T14:00:01Z"
+			"revision": "2fc6351d79ebde978235d8d74733f76d4deb8ccd",
+			"revisionTime": "2017-07-20T18:21:05Z"
 		},
 		{
 			"checksumSHA1": "YLYIsCHJN7k9m7vpdSFlbTNLoRw=",
 			"path": "github.com/tsuru/tsuru/provision/docker/types",
-			"revision": "881adc82ea9df6ac851b20becd7b3320a6cd331a",
-			"revisionTime": "2017-07-03T14:00:01Z"
+			"revision": "2fc6351d79ebde978235d8d74733f76d4deb8ccd",
+			"revisionTime": "2017-07-20T18:21:05Z"
 		},
 		{
 			"checksumSHA1": "3TvXvr+xSzvSQiNq0f20n6Cdqyg=",
 			"path": "github.com/tsuru/tsuru/provision/nodecontainer",
-			"revision": "881adc82ea9df6ac851b20becd7b3320a6cd331a",
-			"revisionTime": "2017-07-03T14:00:01Z"
+			"revision": "2fc6351d79ebde978235d8d74733f76d4deb8ccd",
+			"revisionTime": "2017-07-20T18:21:05Z"
 		},
 		{
 			"checksumSHA1": "GkFYXR9qhDpc7+MxdGK8oXgZJaA=",
 			"path": "github.com/tsuru/tsuru/queue",
-			"revision": "881adc82ea9df6ac851b20becd7b3320a6cd331a",
-			"revisionTime": "2017-07-03T14:00:01Z"
+			"revision": "2fc6351d79ebde978235d8d74733f76d4deb8ccd",
+			"revisionTime": "2017-07-20T18:21:05Z"
 		},
 		{
 			"checksumSHA1": "0sU2PQRMwkuq9BVSOxOF1hsSUBk=",
 			"path": "github.com/tsuru/tsuru/quota",
-			"revision": "881adc82ea9df6ac851b20becd7b3320a6cd331a",
-			"revisionTime": "2017-07-03T14:00:01Z"
-		},
-		{
-			"checksumSHA1": "JDpdlpI2YfMO1/3K7/CxB04yoYc=",
-			"path": "github.com/tsuru/tsuru/redis",
-			"revision": "881adc82ea9df6ac851b20becd7b3320a6cd331a",
-			"revisionTime": "2017-07-03T14:00:01Z"
+			"revision": "2fc6351d79ebde978235d8d74733f76d4deb8ccd",
+			"revisionTime": "2017-07-20T18:21:05Z"
 		},
 		{
 			"checksumSHA1": "2QWOt6dN4UtS+nA1Kb6VzTSpOJY=",
 			"path": "github.com/tsuru/tsuru/repository",
-			"revision": "881adc82ea9df6ac851b20becd7b3320a6cd331a",
-			"revisionTime": "2017-07-03T14:00:01Z"
+			"revision": "2fc6351d79ebde978235d8d74733f76d4deb8ccd",
+			"revisionTime": "2017-07-20T18:21:05Z"
 		},
 		{
 			"checksumSHA1": "QL86E9iED086AiX6jsFsqMwhkVU=",
 			"path": "github.com/tsuru/tsuru/router",
-			"revision": "881adc82ea9df6ac851b20becd7b3320a6cd331a",
-			"revisionTime": "2017-07-03T14:00:01Z"
+			"revision": "2fc6351d79ebde978235d8d74733f76d4deb8ccd",
+			"revisionTime": "2017-07-20T18:21:05Z"
 		},
 		{
 			"checksumSHA1": "CcwxbX5I6gX+BTJaJ5KKLmiMvuY=",
 			"path": "github.com/tsuru/tsuru/router/rebuild",
-			"revision": "881adc82ea9df6ac851b20becd7b3320a6cd331a",
-			"revisionTime": "2017-07-03T14:00:01Z"
+			"revision": "2fc6351d79ebde978235d8d74733f76d4deb8ccd",
+			"revisionTime": "2017-07-20T18:21:05Z"
 		},
 		{
 			"checksumSHA1": "uo4XuoZlIh2U6qsI9LEHDFG3grs=",
 			"path": "github.com/tsuru/tsuru/safe",
-			"revision": "881adc82ea9df6ac851b20becd7b3320a6cd331a",
-			"revisionTime": "2017-07-03T14:00:01Z"
+			"revision": "2fc6351d79ebde978235d8d74733f76d4deb8ccd",
+			"revisionTime": "2017-07-20T18:21:05Z"
 		},
 		{
 			"checksumSHA1": "ddaSyZ6DB1MljquuHKqbDaRm0GA=",
 			"path": "github.com/tsuru/tsuru/scopedconfig",
-			"revision": "881adc82ea9df6ac851b20becd7b3320a6cd331a",
-			"revisionTime": "2017-07-03T14:00:01Z"
+			"revision": "2fc6351d79ebde978235d8d74733f76d4deb8ccd",
+			"revisionTime": "2017-07-20T18:21:05Z"
 		},
 		{
-			"checksumSHA1": "O2qjoYAoym+6xiUoKR1kHgUIwo8=",
+			"checksumSHA1": "pNA4PbPAvYlpWqOSuhge0UkvmSU=",
 			"path": "github.com/tsuru/tsuru/service",
-			"revision": "881adc82ea9df6ac851b20becd7b3320a6cd331a",
-			"revisionTime": "2017-07-03T14:00:01Z"
+			"revision": "2fc6351d79ebde978235d8d74733f76d4deb8ccd",
+			"revisionTime": "2017-07-20T18:21:05Z"
 		},
 		{
 			"checksumSHA1": "0IqPnqDaIPNg2j26bzCOStgdLgY=",
 			"path": "github.com/tsuru/tsuru/set",
-			"revision": "881adc82ea9df6ac851b20becd7b3320a6cd331a",
-			"revisionTime": "2017-07-03T14:00:01Z"
+			"revision": "2fc6351d79ebde978235d8d74733f76d4deb8ccd",
+			"revisionTime": "2017-07-20T18:21:05Z"
 		},
 		{
-			"checksumSHA1": "gY9N6X94WevQNvXAhwmsDaxvZts=",
+			"checksumSHA1": "6ZEOrD9z8jD5mdwgungzrnyZuns=",
 			"path": "github.com/tsuru/tsuru/validation",
-			"revision": "881adc82ea9df6ac851b20becd7b3320a6cd331a",
-			"revisionTime": "2017-07-03T14:00:01Z"
+			"revision": "2fc6351d79ebde978235d8d74733f76d4deb8ccd",
+			"revisionTime": "2017-07-20T18:21:05Z"
+		},
+		{
+			"checksumSHA1": "jA0r62idHJc5yDMCJBorIewx+AM=",
+			"path": "github.com/tsuru/tsuru/volume",
+			"revision": "2fc6351d79ebde978235d8d74733f76d4deb8ccd",
+			"revisionTime": "2017-07-20T18:21:05Z"
 		},
 		{
 			"checksumSHA1": "2Y6vxEKm2ZtgT5C/X8phUEIZh+s=",
@@ -1831,13 +1837,6 @@
 			"revisionTime": "2017-04-07T12:22:47Z"
 		},
 		{
-			"checksumSHA1": "tGcoFB/NFIc+m/S2lMuL/ojcRnY=",
-			"origin": "github.com/tsuru/tsuru/vendor/gopkg.in/bsm/ratelimit.v1",
-			"path": "gopkg.in/bsm/ratelimit.v1",
-			"revision": "7680fcde21073c916aa048d32aa866a9d4d8a03d",
-			"revisionTime": "2017-04-07T12:22:47Z"
-		},
-		{
 			"checksumSHA1": "XeOje6FklwIZfFMTgE583al/ZDo=",
 			"origin": "github.com/tsuru/tsuru/vendor/gopkg.in/check.v1",
 			"path": "gopkg.in/check.v1",
@@ -1876,41 +1875,6 @@
 			"checksumSHA1": "+1WDRPaOphSCmRMxVPIPBV4aubc=",
 			"origin": "github.com/tsuru/tsuru/vendor/gopkg.in/mgo.v2/internal/scram",
 			"path": "gopkg.in/mgo.v2/internal/scram",
-			"revision": "7680fcde21073c916aa048d32aa866a9d4d8a03d",
-			"revisionTime": "2017-04-07T12:22:47Z"
-		},
-		{
-			"checksumSHA1": "N6mkIMn6ROr6xh0z7v0TtUU4H+E=",
-			"origin": "github.com/tsuru/tsuru/vendor/gopkg.in/redis.v3",
-			"path": "gopkg.in/redis.v3",
-			"revision": "7680fcde21073c916aa048d32aa866a9d4d8a03d",
-			"revisionTime": "2017-04-07T12:22:47Z"
-		},
-		{
-			"checksumSHA1": "b4Z72l8sq4xuWhR+nM5vbLQIv+o=",
-			"origin": "github.com/tsuru/tsuru/vendor/gopkg.in/redis.v3/internal",
-			"path": "gopkg.in/redis.v3/internal",
-			"revision": "7680fcde21073c916aa048d32aa866a9d4d8a03d",
-			"revisionTime": "2017-04-07T12:22:47Z"
-		},
-		{
-			"checksumSHA1": "tNI/mAuqqQqfYU4vuJghUroIts4=",
-			"origin": "github.com/tsuru/tsuru/vendor/gopkg.in/redis.v3/internal/consistenthash",
-			"path": "gopkg.in/redis.v3/internal/consistenthash",
-			"revision": "7680fcde21073c916aa048d32aa866a9d4d8a03d",
-			"revisionTime": "2017-04-07T12:22:47Z"
-		},
-		{
-			"checksumSHA1": "JvqkSear94dc+NgofRqBAUmLcN0=",
-			"origin": "github.com/tsuru/tsuru/vendor/gopkg.in/redis.v3/internal/hashtag",
-			"path": "gopkg.in/redis.v3/internal/hashtag",
-			"revision": "7680fcde21073c916aa048d32aa866a9d4d8a03d",
-			"revisionTime": "2017-04-07T12:22:47Z"
-		},
-		{
-			"checksumSHA1": "ROpD4/McQLnnxpPenjA0mEZfTL8=",
-			"origin": "github.com/tsuru/tsuru/vendor/gopkg.in/redis.v3/internal/pool",
-			"path": "gopkg.in/redis.v3/internal/pool",
 			"revision": "7680fcde21073c916aa048d32aa866a9d4d8a03d",
 			"revisionTime": "2017-04-07T12:22:47Z"
 		},
