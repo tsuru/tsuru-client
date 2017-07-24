@@ -105,6 +105,29 @@ func (s *S) TestVolumePlansList(c *check.C) {
 `)
 }
 
+func (s *S) TestVolumePlansListEmpty(c *check.C) {
+	var stdout, stderr bytes.Buffer
+	ctx := cmd.Context{
+		Args:   []string{},
+		Stdout: &stdout,
+		Stderr: &stderr,
+	}
+	trans := &cmdtest.ConditionalTransport{
+		Transport: cmdtest.Transport{Status: http.StatusNoContent},
+		CondFunc: func(req *http.Request) bool {
+			return strings.HasSuffix(req.URL.Path, "/volumeplans") && req.Method == "GET"
+		},
+	}
+	client := cmd.NewClient(&http.Client{Transport: trans}, nil, manager)
+	err := (&VolumePlansList{}).Run(&ctx, client)
+	c.Assert(err, check.IsNil)
+	result := stdout.String()
+	c.Assert(result, check.Equals, `+------+-------------+------+
+| Plan | Provisioner | Opts |
++------+-------------+------+
+`)
+}
+
 func (s *S) TestVolumeCreate(c *check.C) {
 	var stdout, stderr bytes.Buffer
 	ctx := cmd.Context{
