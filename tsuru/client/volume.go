@@ -254,14 +254,16 @@ func (c *VolumePlansList) Run(ctx *cmd.Context, client *cmd.Client) error {
 		return err
 	}
 	defer rsp.Body.Close()
-	data, err := ioutil.ReadAll(rsp.Body)
-	if err != nil {
-		return err
-	}
 	var plans map[string][]volume.VolumePlan
-	err = json.Unmarshal(data, &plans)
-	if err != nil {
-		return err
+	if rsp.StatusCode != http.StatusNoContent {
+		data, err := ioutil.ReadAll(rsp.Body)
+		if err != nil {
+			return err
+		}
+		err = json.Unmarshal(data, &plans)
+		if err != nil {
+			return err
+		}
 	}
 	return c.render(ctx, plans)
 }
