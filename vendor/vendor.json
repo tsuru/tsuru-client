@@ -1711,18 +1711,18 @@
 			"revisionTime": "2017-04-07T12:22:47Z"
 		},
 		{
-			"checksumSHA1": "42L+GOKH+OoRYqVyIohUcj8bLzI=",
+			"checksumSHA1": "GUzvy5+6gTwjQ2PaXxjHfbqjOVw=",
 			"origin": "github.com/tsuru/tsuru/vendor/golang.org/x/sys/windows",
 			"path": "golang.org/x/sys/windows",
-			"revision": "7680fcde21073c916aa048d32aa866a9d4d8a03d",
-			"revisionTime": "2017-04-07T12:22:47Z"
+			"revision": "0970c29987331abad3500c31f847376c22913b10",
+			"revisionTime": "2017-07-21T22:49:19Z"
 		},
 		{
-			"checksumSHA1": "Qvq4DjtYrcpGgBT0O1s8nTTeFWQ=",
+			"checksumSHA1": "ZdFZFaXmCgEEaEhVPkyXrnhKhsg=",
 			"origin": "github.com/tsuru/tsuru/vendor/golang.org/x/sys/windows/registry",
 			"path": "golang.org/x/sys/windows/registry",
-			"revision": "7680fcde21073c916aa048d32aa866a9d4d8a03d",
-			"revisionTime": "2017-04-07T12:22:47Z"
+			"revision": "0970c29987331abad3500c31f847376c22913b10",
+			"revisionTime": "2017-07-21T22:49:19Z"
 		},
 		{
 			"checksumSHA1": "pMUSLKpy/5j2Rng9GXzZGTKySLs=",
