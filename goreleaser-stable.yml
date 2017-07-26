@@ -1,3 +1,24 @@
+# goreleaser.yml
+# Build customization
+build:
+  main: ./tsuru/main.go
+  binary: tsuru
+  goos:
+    - windows
+    - darwin
+    - linux
+  goarch:
+    - amd64
+
+# Archive customization
+archive:
+  name_template: "{{.Binary}}_{{.Version}}_{{.Os}}_{{.Arch}}"
+  format: tar.gz
+  replacements:
+    darwin: macOS
+  files:
+    - misc/bash-completion
+    - misc/zsh-completion
 
 # Mac OS Homebrew
 brew:

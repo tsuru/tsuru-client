@@ -10,6 +10,7 @@ go:
 env:
   global:
     - GO_FOR_RELEASE=1.8
+    - GORELEASER_CONFIG=goreleaser-rc.yml
   matrix:
     - GOARCH=amd64
     - GOARCH=386
@@ -30,5 +31,5 @@ notifications:
     secure: dDuxAhF7DgwmCvb3V7nu01+RUhvxhOCiBfGVC6596nx93ThjbTgPcMdkAdO7Xk4zFQcH3AiF3+ionMTSk+4oxRIBI0i4p71AkQoFUARWCfmLYWlztZ3Wii4/3bT36bzn5NPqGbNXhx2sWRzOO2W01jQLyFFdZlVKVTBqwBqHqG4=
 after_success:
   - bash <(curl -s https://codecov.io/bash)
-  - '[[ "$TRAVIS_TAG" =~ ^[0-9\.]+$ ]] && cat goreleaser-brew.yml >> goreleaser.yml || true'
+  - '[[ "$TRAVIS_TAG" =~ ^[0-9\.]+$ ]] && export GORELEASER_CONFIG=goreleaser-stable.yml || true'
   - test -n "$TRAVIS_TAG" && curl -sL https://raw.githubusercontent.com/tsuru/push-to-packagecloud/master/push.sh | PACKAGE_NAME=tsuru bash
