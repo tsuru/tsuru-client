@@ -28,6 +28,9 @@ brew:
     owner: tsuru
     name: homebrew-tsuru
 
+  description: "tsuru-client is a tsuru command line tool for application developers."
+  homepage: "https://docs.tsuru.io/stable/"
+
   # Folder inside the repository to put the formula.
   # Default is the root folder.
   folder: Formula
