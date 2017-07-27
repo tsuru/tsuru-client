@@ -1,5 +1,6 @@
 # goreleaser.yml
 # Build customization
+project_name: tsuru
 build:
   main: ./tsuru/main.go
   binary: tsuru
@@ -12,7 +13,7 @@ build:
 
 # Archive customization
 archive:
-  name_template: "{{.Binary}}_{{.Version}}_{{.Os}}_{{.Arch}}"
+  name_template: "{{.ProjectName}}_{{.Version}}_{{.Os}}_{{.Arch}}"
   format: tar.gz
   replacements:
     darwin: macOS
