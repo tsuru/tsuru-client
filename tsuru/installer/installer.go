@@ -38,6 +38,7 @@ func DefaultInstallOpts() *InstallOpts {
 			TargetName:       "tsuru",
 			RootUserEmail:    "admin@example.com",
 			RootUserPassword: "admin123",
+			TsuruAPIImage:    "tsuru/api:v1",
 			Tsuru:            tsuruComponent{Config: defaultconfig.DefaultTsuruConfig()},
 		},
 		Hosts: hostGroups{

@@ -32,6 +32,7 @@ func composeDeploy(c ServiceCluster, installConfig *InstallOpts) error {
 	configs := map[string]string{
 		"CLUSTER_ADDR":         manager.Base.Address,
 		"CLUSTER_PRIVATE_ADDR": dm.GetPrivateIP(manager),
+		"TSURU_API_IMAGE":      installConfig.ComponentsConfig.TsuruAPIImage,
 	}
 	config, err := resolveConfig(installConfig.ComposeFile, configs)
 	if err != nil {
