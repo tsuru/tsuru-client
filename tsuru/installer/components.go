@@ -24,6 +24,7 @@ type ComponentsConfig struct {
 	TargetName       string `yaml:"-"`
 	RootUserEmail    string `yaml:"-"`
 	RootUserPassword string `yaml:"-"`
+	TsuruAPIImage    string `yaml:"tsuru-image,omitempty"`
 	Tsuru            tsuruComponent
 }
 

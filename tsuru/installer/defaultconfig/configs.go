@@ -45,7 +45,7 @@ services:
       - tsuru
 
   tsuru:
-    image: tsuru/api:v1
+    image: "{{TSURU_API_IMAGE}}"
     volumes:
       - "/etc/docker/certs.d:/certs:ro"
       - "/etc/tsuru/tsuru.conf:/etc/tsuru/tsuru.conf:ro"

@@ -73,6 +73,7 @@ func (s *S) TestParseConfigFile(c *check.C) {
 			RootUserEmail:    "admin@example.com",
 			RootUserPassword: "admin123",
 			Tsuru:            tsuruComponent{Config: expectedTsuruConf},
+			TsuruAPIImage:    "tsuru/api:latest",
 		},
 		Hosts: hostGroups{
 			Apps: hostGroupConfig{
