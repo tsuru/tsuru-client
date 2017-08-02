@@ -660,7 +660,6 @@ func removeServiceInstanceWithUnbind(ctx *cmd.Context, client *cmd.Client) error
 		return err
 	}
 	fmt.Fprintf(ctx.Stdout, `Service "%s" successfully removed!`+"\n", instanceName)
-
 	return nil
 }
 
@@ -695,11 +694,20 @@ func (c *ServiceInstanceRemove) Run(ctx *cmd.Context, client *cmd.Client) error 
 	if err != nil {
 		return err
 	}
-	var jsonMsg tsuruIo.SimpleJsonMessage
-	json.Unmarshal(result, &jsonMsg)
+	jsonParts := strings.Split(string(result), "\n")
+	var jsonMsg, jsonMsg2 tsuruIo.SimpleJsonMessage
+	if len(jsonParts) > 1 {
+		json.Unmarshal([]byte(jsonParts[0]), &jsonMsg)
+		json.Unmarshal([]byte(jsonParts[1]), &jsonMsg2)
+	} else {
+		json.Unmarshal(result, &jsonMsg)
+	}
 	var msgError error
-	if jsonMsg.Error != "" {
+	switch {
+	case (jsonMsg.Error != ""):
 		msgError = errors.New(jsonMsg.Error)
+	case (jsonMsg2.Error != ""):
+		msgError = errors.New(jsonMsg2.Error)
 	}
 	if msgError != nil {
 		if msgError.Error() == service.ErrServiceInstanceBound.Error() {
