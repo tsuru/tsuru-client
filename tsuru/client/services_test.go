@@ -849,7 +849,6 @@ func (s *S) TestServiceInstanceRemoveWithAppBindNoUnbind(c *check.C) {
 		Stderr: &stderr,
 		Stdin:  strings.NewReader("y\tn\n"),
 	}
-
 	expectedError := "This service instance is bound to at least one app. Unbind them before removing it"
 	expectedMsg := "app1,app2"
 	msg1 := io.SimpleJsonMessage{Message: expectedMsg, Error: expectedError}
@@ -864,6 +863,33 @@ func (s *S) TestServiceInstanceRemoveWithAppBindNoUnbind(c *check.C) {
 	}
 	client := cmd.NewClient(&http.Client{Transport: trans}, nil, manager)
 	err = (&ServiceInstanceRemove{}).Run(&ctx, client)
+	c.Assert(err, check.IsNil)
+	obtained := stdout.String()
+	c.Assert(obtained, check.Equals, expected)
+}
+
+func (s *S) TestServiceInstanceRemoveWithAppBindNoUnbindWithMultipleJSONs(c *check.C) {
+	var stdout, stderr bytes.Buffer
+	expected := `Are you sure you want to remove service "mongodb"? (y/n) `
+	expected += `Applications bound to the service "mongodb": "app1,app2"` + "\n"
+	expected += `Do you want unbind all apps? (y/n) `
+	expected += `Abort.` + "\n"
+	ctx := cmd.Context{
+		Args:   []string{"demacia-service", "mongodb"},
+		Stdout: &stdout,
+		Stderr: &stderr,
+		Stdin:  strings.NewReader("y\tn\n"),
+	}
+	msg := "{\"Message\":\"app1,app2\"}\n{\"Message\":\"\",\"Error\":\"This service instance is bound to at least one app. Unbind them before removing it\"}"
+	trans := &cmdtest.ConditionalTransport{
+		Transport: cmdtest.Transport{Message: msg, Status: http.StatusOK},
+		CondFunc: func(req *http.Request) bool {
+			return strings.HasSuffix(req.URL.Path, "/services/demacia-service/instances/mongodb") &&
+				req.Method == http.MethodDelete
+		},
+	}
+	client := cmd.NewClient(&http.Client{Transport: trans}, nil, manager)
+	err := (&ServiceInstanceRemove{}).Run(&ctx, client)
 	c.Assert(err, check.IsNil)
 	obtained := stdout.String()
 	c.Assert(obtained, check.Equals, expected)
@@ -921,6 +947,7 @@ func (s *S) TestServiceInstanceRemoveWithAppBindWithFlags(c *check.C) {
 	expectedOut := "-- service remove --"
 	msg := io.SimpleJsonMessage{Message: expectedOut}
 	result, err := json.Marshal(msg)
+	c.Assert(err, check.IsNil)
 	ctx := cmd.Context{
 		Args:   []string{"service-name", "mongodb"},
 		Stdout: &stdout,
