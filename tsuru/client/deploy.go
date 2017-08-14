@@ -662,7 +662,7 @@ func (c *AppDeployRollbackUpdate) Info() *cmd.Info {
 
     The [-i/--image] flag is the name of an app image.
 
-    The [-d/--disable] flag enables or disables a rollback to an image, by default if not parsed it enables a rollback to an image, otherwise it'll disable it.
+    The [-d/--disable] flag disables an image rollback. The default behavior (omitting this flag) is to enable it.
 
     The [-r/--reason] flag lets the user tell why this action was needed.
 `
@@ -678,10 +678,10 @@ func (c *AppDeployRollbackUpdate) Info() *cmd.Info {
 func (c *AppDeployRollbackUpdate) Flags() *gnuflag.FlagSet {
 	if c.fs == nil {
 		c.fs = c.GuessingCommand.Flags()
-		image := "The image name of a version of a app"
+		image := "The image name for an app version"
 		c.fs.StringVar(&c.image, "image", "", image)
 		c.fs.StringVar(&c.image, "i", "", image)
-		reason := "A message describing this rollback"
+		reason := "The reason why the rollback has to be disabled"
 		c.fs.StringVar(&c.reason, "reason", "", reason)
 		c.fs.StringVar(&c.reason, "r", "", reason)
 		disable := "Enables or disables the rollback on a specific image version"
@@ -704,8 +704,7 @@ func (c *AppDeployRollbackUpdate) Run(context *cmd.Context, client *cmd.Client) 
 	v.Set("image", c.image)
 	v.Set("reason", c.reason)
 	v.Set("origin", "rollback")
-	// inverted, cause when `disable == true`, in API `CanRollback == false `
-	v.Set("disable", strconv.FormatBool(!c.disable))
+	v.Set("disable", strconv.FormatBool(c.disable))
 	request, err := http.NewRequest(http.MethodPut, u, strings.NewReader(v.Encode()))
 	if err != nil {
 		return err
