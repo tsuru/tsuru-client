@@ -19,6 +19,70 @@ import (
 	"gopkg.in/check.v1"
 )
 
+func (s *S) TestClusterAddRun(c *check.C) {
+	var stdout, stderr bytes.Buffer
+	context := cmd.Context{
+		Stdout: &stdout,
+		Stderr: &stderr,
+		Args:   []string{"c1", "myprov"},
+	}
+	trans := &cmdtest.ConditionalTransport{
+		Transport: cmdtest.Transport{Status: http.StatusOK},
+		CondFunc: func(req *http.Request) bool {
+			err := req.ParseForm()
+			c.Assert(err, check.IsNil)
+			dec := form.NewDecoder(nil)
+			dec.IgnoreCase(true)
+			dec.IgnoreUnknownKeys(true)
+			var clus cluster.Cluster
+			err = dec.DecodeValues(&clus, req.Form)
+			c.Assert(err, check.IsNil)
+			c.Assert(clus, check.DeepEquals, cluster.Cluster{
+				Name:        "c1",
+				CaCert:      []byte("cadata"),
+				ClientCert:  []byte("certdata"),
+				ClientKey:   []byte("keydata"),
+				CustomData:  map[string]string{"a": "b", "c": "d"},
+				Addresses:   []string{"addr1", "addr2"},
+				Pools:       []string{"p1", "p2"},
+				Default:     true,
+				Provisioner: "myprov",
+				CreateData:  map[string]string{"iaas": "dockermachine"},
+			})
+			return req.URL.Path == "/1.3/provisioner/clusters" && req.Method == "POST"
+		},
+	}
+	manager := cmd.NewManager("admin", "0.1", "admin-ver", &stdout, &stderr, nil, nil)
+	client := cmd.NewClient(&http.Client{Transport: trans}, nil, manager)
+	myCmd := ClusterAdd{}
+	dir, err := ioutil.TempDir("", "tsuru")
+	c.Assert(err, check.IsNil)
+	defer os.RemoveAll(dir)
+	err = ioutil.WriteFile(filepath.Join(dir, "ca"), []byte("cadata"), 0600)
+	c.Assert(err, check.IsNil)
+	err = ioutil.WriteFile(filepath.Join(dir, "cert"), []byte("certdata"), 0600)
+	c.Assert(err, check.IsNil)
+	err = ioutil.WriteFile(filepath.Join(dir, "key"), []byte("keydata"), 0600)
+	c.Assert(err, check.IsNil)
+	err = myCmd.Flags().Parse(true, []string{
+		"--cacert", filepath.Join(dir, "ca"),
+		"--clientcert", filepath.Join(dir, "cert"),
+		"--clientkey", filepath.Join(dir, "key"),
+		"--addr", "addr1",
+		"--addr", "addr2",
+		"--pool", "p1",
+		"--pool", "p2",
+		"--custom", "a=b",
+		"--custom", "c=d",
+		"--create-data", "iaas=dockermachine",
+		"--default",
+	})
+	c.Assert(err, check.IsNil)
+	err = myCmd.Run(&context, client)
+	c.Assert(err, check.IsNil)
+	c.Assert(stdout.String(), check.Equals, "Cluster successfully added.\n")
+}
+
 func (s *S) TestClusterUpdateRun(c *check.C) {
 	var stdout, stderr bytes.Buffer
 	context := cmd.Context{
@@ -48,7 +112,7 @@ func (s *S) TestClusterUpdateRun(c *check.C) {
 				Default:     true,
 				Provisioner: "myprov",
 			})
-			return req.URL.Path == "/1.3/provisioner/clusters" && req.Method == "POST"
+			return req.URL.Path == "/1.4/provisioner/clusters/c1" && req.Method == "POST"
 		},
 	}
 	manager := cmd.NewManager("admin", "0.1", "admin-ver", &stdout, &stderr, nil, nil)

@@ -145,6 +145,7 @@ func buildManager(name string) *cmd.Manager {
 	m.Register(&admin.NodeContainerUpdate{})
 	m.Register(&admin.NodeContainerDelete{})
 	m.Register(&admin.NodeContainerUpgrade{})
+	m.Register(&admin.ClusterAdd{})
 	m.Register(&admin.ClusterUpdate{})
 	m.Register(&admin.ClusterRemove{})
 	m.Register(&admin.ClusterList{})
