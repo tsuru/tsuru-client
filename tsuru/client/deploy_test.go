@@ -515,7 +515,7 @@ func (s *S) TestAppDeployRollbackUpdate(c *check.C) {
 	}
 	client := cmd.NewClient(&http.Client{Transport: trans}, nil, manager)
 	command := AppDeployRollbackUpdate{}
-	command.Flags().Parse(true, []string{"--app", "zilean", "-i", "caitlyn", "-r", "DEMACIA"})
+	command.Flags().Parse(true, []string{"--app", "zilean", "-i", "caitlyn", "-r", "DEMACIA", "-d"})
 	err := command.Run(&context, client)
 	c.Assert(err, check.IsNil)
 	c.Assert(called, check.Equals, true)
@@ -543,7 +543,7 @@ func (s *S) TestAppDeployRollbackUpdateDisabling(c *check.C) {
 	}
 	client := cmd.NewClient(&http.Client{Transport: trans}, nil, manager)
 	command := AppDeployRollbackUpdate{}
-	command.Flags().Parse(true, []string{"--app", "xayah", "-i", "rakan", "-r", "vastayan", "-d"})
+	command.Flags().Parse(true, []string{"--app", "xayah", "-i", "rakan", "-r", "vastayan"})
 	err := command.Run(&context, client)
 	c.Assert(err, check.IsNil)
 	c.Assert(called, check.Equals, true)
