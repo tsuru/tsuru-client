@@ -16,7 +16,7 @@ import (
 	"github.com/tsuru/gnuflag"
 	"github.com/tsuru/tsuru/cmd"
 	"github.com/tsuru/tsuru/errors"
-	"github.com/tsuru/tsuru/provision"
+	"github.com/tsuru/tsuru/provision/pool"
 )
 
 type AddPoolToSchedulerCmd struct {
@@ -316,7 +316,7 @@ func (c *PoolConstraintList) Run(ctx *cmd.Context, client *cmd.Client) error {
 		return err
 	}
 	defer resp.Body.Close()
-	var constraints []provision.PoolConstraint
+	var constraints []pool.PoolConstraint
 	err = json.NewDecoder(resp.Body).Decode(&constraints)
 	if err != nil {
 		return err
@@ -374,7 +374,7 @@ func (c *PoolConstraintSet) Run(ctx *cmd.Context, client *cmd.Client) error {
 	for _, v := range values {
 		allValues = append(allValues, strings.Split(v, ",")...)
 	}
-	constraint := provision.PoolConstraint{
+	constraint := pool.PoolConstraint{
 		PoolExpr:  ctx.Args[0],
 		Field:     ctx.Args[1],
 		Blacklist: c.blacklist,

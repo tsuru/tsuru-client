@@ -96,11 +96,6 @@ func (s *Storage) Apps() *storage.Collection {
 	return c
 }
 
-// Platforms returns the platforms collection from MongoDB.
-func (s *Storage) Platforms() *storage.Collection {
-	return s.Collection("platforms")
-}
-
 // Services returns the services collection from MongoDB.
 func (s *Storage) Services() *storage.Collection {
 	return s.Collection("services")
@@ -151,11 +146,6 @@ func (s *Storage) UserActions() *storage.Collection {
 	return s.Collection("user_actions")
 }
 
-// Teams returns the teams collection from MongoDB.
-func (s *Storage) Teams() *storage.Collection {
-	return s.Collection("teams")
-}
-
 // Quota returns the quota collection from MongoDB.
 func (s *Storage) Quota() *storage.Collection {
 	userIndex := mgo.Index{Key: []string{"owner"}, Unique: true}
@@ -173,10 +163,9 @@ func (s *Storage) SAMLRequests() *storage.Collection {
 }
 
 var logCappedInfo = mgo.CollectionInfo{
-	Capped:       true,
-	MaxBytes:     200 * 5000,
-	MaxDocs:      5000,
-	ForceIdIndex: true,
+	Capped:   true,
+	MaxBytes: 200 * 5000,
+	MaxDocs:  5000,
 }
 
 // Logs returns the logs collection for one app from MongoDB.

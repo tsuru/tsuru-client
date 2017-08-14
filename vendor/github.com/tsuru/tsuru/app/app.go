@@ -29,12 +29,15 @@ import (
 	"github.com/tsuru/tsuru/permission"
 	"github.com/tsuru/tsuru/provision"
 	"github.com/tsuru/tsuru/provision/nodecontainer"
+	"github.com/tsuru/tsuru/provision/pool"
 	"github.com/tsuru/tsuru/quota"
 	"github.com/tsuru/tsuru/repository"
 	"github.com/tsuru/tsuru/router"
 	"github.com/tsuru/tsuru/router/rebuild"
 	"github.com/tsuru/tsuru/service"
+	authTypes "github.com/tsuru/tsuru/types/auth"
 	"github.com/tsuru/tsuru/validation"
+	"github.com/tsuru/tsuru/volume"
 	"gopkg.in/mgo.v2"
 	"gopkg.in/mgo.v2/bson"
 )
@@ -112,6 +115,7 @@ func (l *AppLock) GetAcquireDate() time.Time {
 // teams that have access to it, used platform, etc.
 type App struct {
 	Env            map[string]bind.EnvVar
+	ServiceEnvs    []bind.ServiceEnvVar
 	Platform       string `bson:"framework"`
 	Name           string
 	IP             string
@@ -145,7 +149,7 @@ func (app *App) getBuilder() (builder.Builder, error) {
 		if app.Pool == "" {
 			return builder.GetDefault()
 		}
-		pool, err := provision.GetPoolByName(app.Pool)
+		pool, err := pool.GetPoolByName(app.Pool)
 		if err != nil {
 			return nil, err
 		}
@@ -165,11 +169,11 @@ func (app *App) getProvisioner() (provision.Provisioner, error) {
 		if app.Pool == "" {
 			return provision.GetDefault()
 		}
-		pool, err := provision.GetPoolByName(app.Pool)
+		p, err := pool.GetPoolByName(app.Pool)
 		if err != nil {
 			return nil, err
 		}
-		app.provisioner, err = pool.GetProvisioner()
+		app.provisioner, err = p.GetProvisioner()
 		if err != nil {
 			return nil, err
 		}
@@ -334,7 +338,7 @@ func CreateApp(app *App, user *auth.User) error {
 		return err
 	}
 	if app.Router == "" {
-		pool, errPool := provision.GetPoolByName(app.GetPool())
+		pool, errPool := pool.GetPoolByName(app.GetPool())
 		if errPool != nil {
 			return errPool
 		}
@@ -481,7 +485,7 @@ func processTags(tags []string) []string {
 // them. This method is used by Destroy (before destroying the app, it unbinds
 // all service instances). Refer to Destroy docs for more details.
 func (app *App) unbind() error {
-	instances, err := app.serviceInstances()
+	instances, err := service.GetServiceInstancesBoundToApp(app.Name)
 	if err != nil {
 		return err
 	}
@@ -500,6 +504,27 @@ func (app *App) unbind() error {
 	}
 	if msg != "" {
 		return errors.New(msg)
+	}
+	return nil
+}
+
+func (app *App) unbindVolumes() error {
+	volumes, err := volume.ListByApp(app.Name)
+	if err != nil {
+		return errors.Wrap(err, "Unable to list volumes for unbind")
+	}
+	for _, v := range volumes {
+		var binds []volume.VolumeBind
+		binds, err = v.LoadBinds()
+		if err != nil {
+			return errors.Wrap(err, "Unable to list volume binds for unbind")
+		}
+		for _, b := range binds {
+			err = v.UnbindApp(app.Name, b.ID.MountPoint)
+			if err != nil {
+				return errors.Wrapf(err, "Unable to unbind volume %q in %q", app.Name, b.ID.MountPoint)
+			}
+		}
 	}
 	return nil
 }
@@ -559,6 +584,10 @@ func Delete(app *App, w io.Writer) error {
 	if err != nil {
 		logErr("Unable to unbind app", err)
 	}
+	err = app.unbindVolumes()
+	if err != nil {
+		logErr("Unable to unbind volumes", err)
+	}
 	err = repository.Manager().RemoveRepository(appName)
 	if err != nil {
 		logErr("Unable to remove app from repository manager", err)
@@ -599,7 +628,7 @@ func Delete(app *App, w io.Writer) error {
 }
 
 func (app *App) BindUnit(unit *provision.Unit) error {
-	instances, err := app.serviceInstances()
+	instances, err := service.GetServiceInstancesBoundToApp(app.Name)
 	if err != nil {
 		return err
 	}
@@ -625,7 +654,7 @@ func (app *App) BindUnit(unit *provision.Unit) error {
 }
 
 func (app *App) UnbindUnit(unit *provision.Unit) error {
-	instances, err := app.serviceInstances()
+	instances, err := service.GetServiceInstancesBoundToApp(app.Name)
 	if err != nil {
 		return err
 	}
@@ -636,21 +665,6 @@ func (app *App) UnbindUnit(unit *provision.Unit) error {
 		}
 	}
 	return nil
-}
-
-func (app *App) serviceInstances() ([]service.ServiceInstance, error) {
-	conn, err := db.Conn()
-	if err != nil {
-		return nil, err
-	}
-	defer conn.Close()
-	var instances []service.ServiceInstance
-	q := bson.M{"apps": bson.M{"$in": []string{app.Name}}}
-	err = conn.ServiceInstances().Find(q).All(&instances)
-	if err != nil {
-		return nil, err
-	}
-	return instances, nil
 }
 
 // AddUnits creates n new units within the provisioner, saves new units in the
@@ -786,7 +800,7 @@ func (app *App) available() bool {
 	return false
 }
 
-func (app *App) findTeam(team *auth.Team) (int, bool) {
+func (app *App) findTeam(team *authTypes.Team) (int, bool) {
 	for i, teamName := range app.Teams {
 		if teamName == team.Name {
 			return i, true
@@ -797,7 +811,7 @@ func (app *App) findTeam(team *auth.Team) (int, bool) {
 
 // Grant allows a team to have access to an app. It returns an error if the
 // team already have access to the app.
-func (app *App) Grant(team *auth.Team) error {
+func (app *App) Grant(team *authTypes.Team) error {
 	if _, found := app.findTeam(team); found {
 		return ErrAlreadyHaveAccess
 	}
@@ -831,7 +845,7 @@ func (app *App) Grant(team *auth.Team) error {
 
 // Revoke removes the access from a team. It returns an error if the team do
 // not have access to the app.
-func (app *App) Revoke(team *auth.Team) error {
+func (app *App) Revoke(team *authTypes.Team) error {
 	if len(app.Teams) == 1 {
 		return ErrCannotOrphanApp
 	}
@@ -884,16 +898,9 @@ func (app *App) Revoke(team *auth.Team) error {
 }
 
 // GetTeams returns a slice of teams that have access to the app.
-func (app *App) GetTeams() []auth.Team {
-	var teams []auth.Team
-	conn, err := db.Conn()
-	if err != nil {
-		log.Errorf("Failed to connect to the database: %s", err)
-		return nil
-	}
-	defer conn.Close()
-	conn.Teams().Find(bson.M{"_id": bson.M{"$in": app.Teams}}).All(&teams)
-	return teams
+func (app *App) GetTeams() []authTypes.Team {
+	t, _ := auth.TeamService().FindByNames(app.Teams)
+	return t
 }
 
 func (app *App) SetPool() error {
@@ -902,24 +909,24 @@ func (app *App) SetPool() error {
 		return err
 	}
 	if poolName == "" {
-		var pool *provision.Pool
-		pool, err = provision.GetDefaultPool()
+		var p *pool.Pool
+		p, err = pool.GetDefaultPool()
 		if err != nil {
 			return err
 		}
-		poolName = pool.Name
+		poolName = p.Name
 	}
 	app.Pool = poolName
-	pool, err := provision.GetPoolByName(poolName)
+	p, err := pool.GetPoolByName(poolName)
 	if err != nil {
 		return err
 	}
-	return app.validateTeamOwner(pool)
+	return app.validateTeamOwner(p)
 }
 
 func (app *App) getPoolForApp(poolName string) (string, error) {
 	if poolName == "" {
-		pools, err := provision.ListPoolsForTeam(app.TeamOwner)
+		pools, err := pool.ListPoolsForTeam(app.TeamOwner)
 		if err != nil {
 			return "", err
 		}
@@ -935,7 +942,7 @@ func (app *App) getPoolForApp(poolName string) (string, error) {
 		}
 		return pools[0].Name, nil
 	}
-	pool, err := provision.GetPoolByName(poolName)
+	pool, err := pool.GetPoolByName(poolName)
 	if err != nil {
 		return "", err
 	}
@@ -956,15 +963,10 @@ func (app *App) setEnv(env bind.EnvVar) {
 // getEnv returns the environment variable if it's declared in the app. It will
 // return an error if the variable is not defined in this app.
 func (app *App) getEnv(name string) (bind.EnvVar, error) {
-	var (
-		env bind.EnvVar
-		err error
-		ok  bool
-	)
-	if env, ok = app.Env[name]; !ok {
-		err = errors.New("Environment variable not declared for this app.")
+	if env, ok := app.Env[name]; ok {
+		return env, nil
 	}
-	return env, err
+	return bind.EnvVar{}, errors.New("Environment variable not declared for this app.")
 }
 
 // validate checks app name format
@@ -979,7 +981,7 @@ func (app *App) validate() error {
 }
 
 func (app *App) validatePool() error {
-	pool, err := provision.GetPoolByName(app.Pool)
+	pool, err := pool.GetPoolByName(app.Pool)
 	if err != nil {
 		return err
 	}
@@ -990,14 +992,14 @@ func (app *App) validatePool() error {
 	return app.validateRouter(pool)
 }
 
-func (app *App) validateTeamOwner(pool *provision.Pool) error {
+func (app *App) validateTeamOwner(p *pool.Pool) error {
 	_, err := auth.GetTeam(app.TeamOwner)
 	if err != nil {
 		return &tsuruErrors.ValidationError{Message: err.Error()}
 	}
-	poolTeams, err := pool.GetTeams()
-	if err != nil && err != provision.ErrPoolHasNoTeam {
-		msg := fmt.Sprintf("failed to get pool %q teams", pool.Name)
+	poolTeams, err := p.GetTeams()
+	if err != nil && err != pool.ErrPoolHasNoTeam {
+		msg := fmt.Sprintf("failed to get pool %q teams", p.Name)
 		return &tsuruErrors.ValidationError{Message: msg}
 	}
 	var poolTeam bool
@@ -1008,13 +1010,13 @@ func (app *App) validateTeamOwner(pool *provision.Pool) error {
 		}
 	}
 	if !poolTeam {
-		msg := fmt.Sprintf("App team owner %q has no access to pool %q", app.TeamOwner, pool.Name)
+		msg := fmt.Sprintf("App team owner %q has no access to pool %q", app.TeamOwner, p.Name)
 		return &tsuruErrors.ValidationError{Message: msg}
 	}
 	return nil
 }
 
-func (app *App) validateRouter(pool *provision.Pool) error {
+func (app *App) validateRouter(pool *pool.Pool) error {
 	routers, err := pool.GetRouters()
 	if err != nil {
 		return &tsuruErrors.ValidationError{Message: err.Error()}
@@ -1028,13 +1030,31 @@ func (app *App) validateRouter(pool *provision.Pool) error {
 	return &tsuruErrors.ValidationError{Message: msg}
 }
 
-// InstanceEnv returns a map of environment variables that belongs to the given
-// service instance (identified by the name only).
-func (app *App) InstanceEnv(name string) map[string]bind.EnvVar {
+func (app *App) ValidateService(service string) error {
+	pool, err := pool.GetPoolByName(app.Pool)
+	if err != nil {
+		return err
+	}
+	services, err := pool.GetServices()
+	if err != nil {
+		return err
+	}
+	for _, v := range services {
+		if v == service {
+			return nil
+		}
+	}
+	msg := fmt.Sprintf("service %q is not available for pool %q. Available services are: %q", service, pool.Name, strings.Join(services, ", "))
+	return &tsuruErrors.ValidationError{Message: msg}
+}
+
+// InstanceEnvs returns a map of environment variables that belongs to the
+// given service and service instance.
+func (app *App) InstanceEnvs(serviceName, instanceName string) map[string]bind.EnvVar {
 	envs := make(map[string]bind.EnvVar)
-	for k, env := range app.Env {
-		if env.InstanceName == name {
-			envs[k] = env
+	for _, env := range app.ServiceEnvs {
+		if env.ServiceName == serviceName && env.InstanceName == instanceName {
+			envs[env.Name] = env.EnvVar
 		}
 	}
 	return envs
@@ -1261,51 +1281,27 @@ func (app *App) GetDeploys() uint {
 
 // Envs returns a map representing the apps environment variables.
 func (app *App) Envs() map[string]bind.EnvVar {
-	return app.Env
+	mergedEnvs := make(map[string]bind.EnvVar, len(app.Env)+len(app.ServiceEnvs)+1)
+	for _, e := range app.Env {
+		mergedEnvs[e.Name] = e
+	}
+	for _, e := range app.ServiceEnvs {
+		mergedEnvs[e.Name] = e.EnvVar
+	}
+	mergedEnvs[TsuruServicesEnvVar] = serviceEnvsFromEnvVars(app.ServiceEnvs)
+	return mergedEnvs
 }
 
-// SetEnvs saves a list of environment variables in the app. The publicOnly
-// parameter indicates whether only public variables can be overridden (if set
-// to false, SetEnvs may override a private variable).
-func (app *App) SetEnvs(setEnvs bind.SetEnvApp, w io.Writer) error {
-	units, err := app.GetUnits()
-	if err != nil {
-		return err
-	}
-	if len(units) > 0 {
-		return app.setEnvsToApp(setEnvs, w)
-	}
-	setEnvs.ShouldRestart = false
-	return app.setEnvsToApp(setEnvs, w)
-}
-
-// setEnvsToApp adds environment variables to an app, serializing the resulting
-// list of environment variables in all units of apps. This method can
-// serialize them directly or using a queue.
-//
-// Besides the slice of environment variables, this method also takes two other
-// parameters: publicOnly indicates whether only public variables can be
-// overridden (if set to false, setEnvsToApp may override a private variable).
-//
-// shouldRestart defines if the server should be restarted after saving vars.
-func (app *App) setEnvsToApp(setEnvs bind.SetEnvApp, w io.Writer) error {
+// SetEnvs saves a list of environment variables in the app.
+func (app *App) SetEnvs(setEnvs bind.SetEnvArgs) error {
 	if len(setEnvs.Envs) == 0 {
 		return nil
 	}
-	if w != nil {
-		fmt.Fprintf(w, "---- Setting %d new environment variables ----\n", len(setEnvs.Envs))
+	if setEnvs.Writer != nil {
+		fmt.Fprintf(setEnvs.Writer, "---- Setting %d new environment variables ----\n", len(setEnvs.Envs))
 	}
 	for _, env := range setEnvs.Envs {
-		set := true
-		if setEnvs.PublicOnly {
-			e, err := app.getEnv(env.Name)
-			if err == nil && !e.Public && e.InstanceName != "" {
-				set = false
-			}
-		}
-		if set {
-			app.setEnv(env)
-		}
+		app.setEnv(env)
 	}
 	conn, err := db.Conn()
 	if err != nil {
@@ -1316,50 +1312,23 @@ func (app *App) setEnvsToApp(setEnvs bind.SetEnvApp, w io.Writer) error {
 	if err != nil {
 		return err
 	}
-	if !setEnvs.ShouldRestart {
-		return nil
+	if setEnvs.ShouldRestart {
+		return app.restartIfUnits(setEnvs.Writer)
 	}
-	prov, err := app.getProvisioner()
-	if err != nil {
-		return err
-	}
-	return prov.Restart(app, "", w)
+	return nil
 }
 
 // UnsetEnvs removes environment variables from an app, serializing the
 // remaining list of environment variables to all units of the app.
-//
-// Besides the slice with the name of the variables, this method also takes the
-// parameter publicOnly, which indicates whether only public variables can be
-// overridden (if set to false, setEnvsToApp may override a private variable).
-func (app *App) UnsetEnvs(unsetEnvs bind.UnsetEnvApp, w io.Writer) error {
-	units, err := app.GetUnits()
-	if err != nil {
-		return err
-	}
-	if len(units) > 0 {
-		return app.unsetEnvsToApp(unsetEnvs, w)
-	}
-	unsetEnvs.ShouldRestart = false
-	return app.unsetEnvsToApp(unsetEnvs, w)
-}
-
-func (app *App) unsetEnvsToApp(unsetEnvs bind.UnsetEnvApp, w io.Writer) error {
+func (app *App) UnsetEnvs(unsetEnvs bind.UnsetEnvArgs) error {
 	if len(unsetEnvs.VariableNames) == 0 {
 		return nil
 	}
-	if w != nil {
-		fmt.Fprintf(w, "---- Unsetting %d environment variables ----\n", len(unsetEnvs.VariableNames))
+	if unsetEnvs.Writer != nil {
+		fmt.Fprintf(unsetEnvs.Writer, "---- Unsetting %d environment variables ----\n", len(unsetEnvs.VariableNames))
 	}
 	for _, name := range unsetEnvs.VariableNames {
-		var unset bool
-		e, err := app.getEnv(name)
-		if !unsetEnvs.PublicOnly || (err == nil && e.Public) {
-			unset = true
-		}
-		if unset {
-			delete(app.Env, name)
-		}
+		delete(app.Env, name)
 	}
 	conn, err := db.Conn()
 	if err != nil {
@@ -1370,7 +1339,18 @@ func (app *App) unsetEnvsToApp(unsetEnvs bind.UnsetEnvApp, w io.Writer) error {
 	if err != nil {
 		return err
 	}
-	if !unsetEnvs.ShouldRestart {
+	if unsetEnvs.ShouldRestart {
+		return app.restartIfUnits(unsetEnvs.Writer)
+	}
+	return nil
+}
+
+func (app *App) restartIfUnits(w io.Writer) error {
+	units, err := app.GetUnits()
+	if err != nil {
+		return err
+	}
+	if len(units) == 0 {
 		return nil
 	}
 	prov, err := app.getProvisioner()
@@ -1408,148 +1388,88 @@ func (app *App) RemoveCName(cnames ...string) error {
 	return err
 }
 
-func (app *App) parsedTsuruServices() map[string][]bind.ServiceInstance {
-	var tsuruServices map[string][]bind.ServiceInstance
-	if servicesEnv, ok := app.Env[TsuruServicesEnvVar]; ok {
-		json.Unmarshal([]byte(servicesEnv.Value), &tsuruServices)
-	} else {
-		tsuruServices = make(map[string][]bind.ServiceInstance)
+func serviceEnvsFromEnvVars(vars []bind.ServiceEnvVar) bind.EnvVar {
+	type serviceInstanceEnvs struct {
+		InstanceName string            `json:"instance_name"`
+		Envs         map[string]string `json:"envs"`
 	}
-	return tsuruServices
+	result := map[string][]serviceInstanceEnvs{}
+	for _, v := range vars {
+		found := false
+		for i, instanceList := range result[v.ServiceName] {
+			if instanceList.InstanceName == v.InstanceName {
+				result[v.ServiceName][i].Envs[v.Name] = v.Value
+				found = true
+				break
+			}
+		}
+		if !found {
+			result[v.ServiceName] = append(result[v.ServiceName], serviceInstanceEnvs{
+				InstanceName: v.InstanceName,
+				Envs:         map[string]string{v.Name: v.Value},
+			})
+		}
+	}
+	jsonVal, _ := json.Marshal(result)
+	return bind.EnvVar{
+		Name:   TsuruServicesEnvVar,
+		Value:  string(jsonVal),
+		Public: false,
+	}
 }
 
-//func (app *App) AddInstance(serviceName string, instance bind.ServiceInstance, shouldRestart bool, writer io.Writer) error {
-func (app *App) AddInstance(instanceApp bind.InstanceApp, writer io.Writer) error {
-	tsuruServices := app.parsedTsuruServices()
-	serviceInstances := appendOrUpdateServiceInstance(tsuruServices[instanceApp.ServiceName], instanceApp.Instance)
-	tsuruServices[instanceApp.ServiceName] = serviceInstances
-	servicesJson, err := json.Marshal(tsuruServices)
+func (app *App) AddInstance(addArgs bind.AddInstanceArgs) error {
+	if len(addArgs.Envs) == 0 {
+		return nil
+	}
+	if addArgs.Writer != nil {
+		fmt.Fprintf(addArgs.Writer, "---- Setting %d new environment variables ----\n", len(addArgs.Envs)+1)
+	}
+	app.ServiceEnvs = append(app.ServiceEnvs, addArgs.Envs...)
+	conn, err := db.Conn()
 	if err != nil {
 		return err
 	}
-	if len(instanceApp.Instance.Envs) == 0 {
+	defer conn.Close()
+	err = conn.Apps().Update(bson.M{"name": app.Name}, bson.M{"$set": bson.M{"serviceenvs": app.ServiceEnvs}})
+	if err != nil {
+		return err
+	}
+	if addArgs.ShouldRestart {
+		return app.restartIfUnits(addArgs.Writer)
+	}
+	return nil
+}
+
+func (app *App) RemoveInstance(removeArgs bind.RemoveInstanceArgs) error {
+	lenBefore := len(app.ServiceEnvs)
+	for i := 0; i < len(app.ServiceEnvs); i++ {
+		se := app.ServiceEnvs[i]
+		if se.ServiceName == removeArgs.ServiceName && se.InstanceName == removeArgs.InstanceName {
+			app.ServiceEnvs = append(app.ServiceEnvs[:i], app.ServiceEnvs[i+1:]...)
+			i--
+		}
+	}
+	toUnset := lenBefore - len(app.ServiceEnvs)
+	if toUnset <= 0 {
 		return nil
 	}
-	envVars := make([]bind.EnvVar, 0, len(instanceApp.Instance.Envs)+1)
-	for k, v := range instanceApp.Instance.Envs {
-		envVars = append(envVars, bind.EnvVar{
-			Name:         k,
-			Value:        v,
-			Public:       false,
-			InstanceName: instanceApp.Instance.Name,
-		})
+	if removeArgs.Writer != nil {
+		fmt.Fprintf(removeArgs.Writer, "---- Unsetting %d environment variables ----\n", toUnset)
 	}
-	envVars = append(envVars, bind.EnvVar{
-		Name:   TsuruServicesEnvVar,
-		Value:  string(servicesJson),
-		Public: false,
-	})
-	return app.SetEnvs(
-		bind.SetEnvApp{
-			Envs:          envVars,
-			PublicOnly:    false,
-			ShouldRestart: instanceApp.ShouldRestart,
-		}, writer)
-}
-
-func appendOrUpdateServiceInstance(services []bind.ServiceInstance, service bind.ServiceInstance) []bind.ServiceInstance {
-	serviceInstanceFound := false
-	for i, serviceInstance := range services {
-		if serviceInstance.Name == service.Name {
-			serviceInstanceFound = true
-			services[i] = service
-			break
-		}
+	conn, err := db.Conn()
+	if err != nil {
+		return err
 	}
-	if !serviceInstanceFound {
-		services = append(services, service)
+	defer conn.Close()
+	err = conn.Apps().Update(bson.M{"name": app.Name}, bson.M{"$set": bson.M{"serviceenvs": app.ServiceEnvs}})
+	if err != nil {
+		return err
 	}
-	return services
-}
-
-func findServiceEnv(tsuruServices map[string][]bind.ServiceInstance, name string) (string, string) {
-	for _, serviceInstances := range tsuruServices {
-		for _, instance := range serviceInstances {
-			if instance.Envs[name] != "" {
-				return instance.Name, instance.Envs[name]
-			}
-		}
+	if removeArgs.ShouldRestart {
+		return app.restartIfUnits(removeArgs.Writer)
 	}
-	return "", ""
-}
-
-//func (app *App) RemoveInstance(serviceName string, instance bind.ServiceInstance, shouldRestart bool, writer io.Writer) error {
-func (app *App) RemoveInstance(instanceApp bind.InstanceApp, writer io.Writer) error {
-	tsuruServices := app.parsedTsuruServices()
-	toUnsetEnvs := make([]string, 0, len(instanceApp.Instance.Envs))
-	for varName := range instanceApp.Instance.Envs {
-		toUnsetEnvs = append(toUnsetEnvs, varName)
-	}
-	index := -1
-	serviceInstances := tsuruServices[instanceApp.ServiceName]
-	for i, si := range serviceInstances {
-		if si.Name == instanceApp.Instance.Name {
-			index = i
-			break
-		}
-	}
-	var servicesJson []byte
-	var err error
-	if index >= 0 {
-		for i := index; i < len(serviceInstances)-1; i++ {
-			serviceInstances[i] = serviceInstances[i+1]
-		}
-		tsuruServices[instanceApp.ServiceName] = serviceInstances[:len(serviceInstances)-1]
-		servicesJson, err = json.Marshal(tsuruServices)
-		if err != nil {
-			return err
-		}
-	}
-	var envsToSet []bind.EnvVar
-	for _, varName := range toUnsetEnvs {
-		instanceName, envValue := findServiceEnv(tsuruServices, varName)
-		if envValue == "" || instanceName == "" {
-			break
-		}
-		envsToSet = append(envsToSet, bind.EnvVar{
-			Name:         varName,
-			Value:        envValue,
-			Public:       false,
-			InstanceName: instanceName,
-		})
-	}
-	if servicesJson != nil {
-		envsToSet = append(envsToSet, bind.EnvVar{
-			Name:   TsuruServicesEnvVar,
-			Value:  string(servicesJson),
-			Public: false,
-		})
-	}
-	if len(toUnsetEnvs) > 0 {
-		units, err := app.GetUnits()
-		if err != nil {
-			return err
-		}
-		restart := instanceApp.ShouldRestart
-		if instanceApp.ShouldRestart {
-			restart = len(envsToSet) == 0 && len(units) > 0
-		}
-		err = app.unsetEnvsToApp(
-			bind.UnsetEnvApp{
-				VariableNames: toUnsetEnvs,
-				PublicOnly:    false,
-				ShouldRestart: restart,
-			}, writer)
-		if err != nil {
-			return err
-		}
-	}
-	return app.SetEnvs(
-		bind.SetEnvApp{
-			Envs:          envsToSet,
-			PublicOnly:    false,
-			ShouldRestart: instanceApp.ShouldRestart,
-		}, writer)
+	return nil
 }
 
 // Log adds a log message to the app. Specifying a good source is good so the
@@ -1815,7 +1735,21 @@ func (app *App) RegisterUnit(unitId string, customData map[string]interface{}) e
 	if err != nil {
 		return err
 	}
-	return prov.RegisterUnit(app, unitId, customData)
+	err = prov.RegisterUnit(app, unitId, customData)
+	if err != nil {
+		return err
+	}
+	units, err := prov.Units(app)
+	if err != nil {
+		return err
+	}
+	for i := range units {
+		if units[i].GetID() == unitId {
+			err = app.BindUnit(&units[i])
+			break
+		}
+	}
+	return err
 }
 
 func (app *App) GetRouterName() (string, error) {
@@ -1985,4 +1919,44 @@ func (app *App) withLogWriter(w io.Writer) io.Writer {
 		w = logWriter
 	}
 	return w
+}
+
+func RenameTeam(oldName, newName string) error {
+	conn, err := db.Conn()
+	if err != nil {
+		return err
+	}
+	defer conn.Close()
+	filter := &Filter{}
+	filter.ExtraIn("teams", oldName)
+	filter.ExtraIn("teamowner", oldName)
+	apps, err := List(filter)
+	if err != nil {
+		return err
+	}
+	for _, a := range apps {
+		var locked bool
+		locked, err = AcquireApplicationLock(a.Name, InternalAppName, "team rename")
+		if err != nil {
+			return err
+		}
+		if !locked {
+			return errors.Errorf("unable to acquire lock for app %q", a.Name)
+		}
+		defer ReleaseApplicationLock(a.Name)
+	}
+	bulk := conn.Apps().Bulk()
+	for _, a := range apps {
+		if a.TeamOwner == oldName {
+			a.TeamOwner = newName
+		}
+		for i, team := range a.Teams {
+			if team == oldName {
+				a.Teams[i] = newName
+			}
+		}
+		bulk.Update(bson.M{"name": a.Name}, a)
+	}
+	_, err = bulk.Run()
+	return err
 }

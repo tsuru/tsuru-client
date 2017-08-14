@@ -6,6 +6,7 @@ package event
 
 import (
 	"fmt"
+	"strings"
 	"time"
 
 	"github.com/tsuru/tsuru/db"
@@ -28,7 +29,7 @@ type ErrEventBlocked struct {
 	block *Block
 }
 
-func (e *ErrEventBlocked) Error() string {
+func (e ErrEventBlocked) Error() string {
 	return fmt.Sprintf("error running %q on %s(%s): %s",
 		e.event.Kind,
 		e.event.Target.Type,
@@ -46,6 +47,19 @@ type Block struct {
 	Target    Target `bson:"target,omitempty"`
 	Reason    string
 	Active    bool
+}
+
+func (b *Block) Blocks(e *Event) bool {
+	if !(strings.HasPrefix(e.Kind.Name, b.KindName) || b.KindName == "") {
+		return false
+	}
+	if !(e.Owner.Name == b.OwnerName || b.OwnerName == "") {
+		return false
+	}
+	if !(e.Target == b.Target || b.Target == Target{} || (b.Target.Type == e.Target.Type && b.Target.Value == "")) {
+		return false
+	}
+	return true
 }
 
 func (b *Block) String() string {
@@ -116,21 +130,14 @@ func checkIsBlocked(evt *Event) error {
 	if evt.Target.Type == TargetTypeEventBlock {
 		return nil
 	}
-	query := bson.M{"$and": []bson.M{
-		{"active": true},
-		{"$or": []bson.M{{"kindname": evt.Kind.Name}, {"kindname": ""}}},
-		{"$or": []bson.M{{"ownername": evt.Owner.Name}, {"ownername": ""}}},
-		{"$or": []bson.M{
-			{"target": evt.Target},
-			{"target": bson.M{"$exists": false}},
-			{"target.type": evt.Target.Type, "target.value": ""}}},
-	}}
-	blocks, err := listBlocks(query)
+	blocks, err := listBlocks(bson.M{"active": true})
 	if err != nil {
 		return err
 	}
-	if len(blocks) > 0 {
-		return &ErrEventBlocked{event: evt, block: &blocks[0]}
+	for _, b := range blocks {
+		if b.Blocks(evt) {
+			return ErrEventBlocked{event: evt, block: &b}
+		}
 	}
 	return nil
 }

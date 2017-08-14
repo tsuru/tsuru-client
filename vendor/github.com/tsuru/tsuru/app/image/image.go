@@ -226,6 +226,24 @@ func AppCurrentImageName(appName string) (string, error) {
 	return imgs.Images[len(imgs.Images)-1], nil
 }
 
+func AppCurrentImageVersion(appName string) (string, error) {
+	coll, err := appImagesColl()
+	if err != nil {
+		return "", err
+	}
+	defer coll.Close()
+	var imgs appImages
+	err = coll.FindId(appName).One(&imgs)
+	if err != nil && err != mgo.ErrNotFound {
+		return "", err
+	}
+	version := imgs.Count
+	if err == mgo.ErrNotFound || version == 0 {
+		version = 1
+	}
+	return fmt.Sprintf("v%d", version), nil
+}
+
 func AppendAppImageName(appName, imageID string) error {
 	coll, err := appImagesColl()
 	if err != nil {
@@ -344,7 +362,7 @@ func AppNewBuilderImageName(appName string) (string, error) {
 	defer coll.Close()
 	var imgs appImages
 	err = coll.FindId(appName).One(&imgs)
-	if err != nil && !strings.Contains(err.Error(), "not found") {
+	if err != nil && err != mgo.ErrNotFound {
 		return "", err
 	}
 	version := imgs.Count + 1

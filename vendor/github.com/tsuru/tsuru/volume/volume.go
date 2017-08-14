@@ -13,7 +13,10 @@ import (
 	"github.com/tsuru/tsuru/auth"
 	internalConfig "github.com/tsuru/tsuru/config"
 	"github.com/tsuru/tsuru/db"
+	tsuruErrors "github.com/tsuru/tsuru/errors"
 	"github.com/tsuru/tsuru/provision"
+	"github.com/tsuru/tsuru/provision/pool"
+	"github.com/tsuru/tsuru/validation"
 	"gopkg.in/mgo.v2"
 	"gopkg.in/mgo.v2/bson"
 )
@@ -62,7 +65,13 @@ func (v *Volume) Validate() error {
 	if v.Name == "" {
 		return errors.New("volume name cannot be empty")
 	}
-	pool, err := provision.GetPoolByName(v.Pool)
+	if !validation.ValidateName(v.Name) {
+		msg := "Invalid volume name, volume name should have at most 63 " +
+			"characters, containing only lower case letters, numbers or dashes, " +
+			"starting with a letter."
+		return errors.WithStack(&tsuruErrors.ValidationError{Message: msg})
+	}
+	p, err := pool.GetPoolByName(v.Pool)
 	if err != nil {
 		return errors.WithStack(err)
 	}
@@ -70,7 +79,7 @@ func (v *Volume) Validate() error {
 	if err != nil {
 		return errors.WithStack(err)
 	}
-	prov, err := pool.GetProvisioner()
+	prov, err := p.GetProvisioner()
 	if err != nil {
 		return errors.WithStack(err)
 	}
@@ -163,6 +172,20 @@ func (v *Volume) Delete() error {
 	}
 	if len(binds) > 0 {
 		return errors.New("cannot delete volume with existing binds")
+	}
+	p, err := pool.GetPoolByName(v.Pool)
+	if err != nil {
+		return errors.WithStack(err)
+	}
+	prov, err := p.GetProvisioner()
+	if err != nil {
+		return errors.WithStack(err)
+	}
+	if volProv, ok := prov.(provision.VolumeProvisioner); ok {
+		err = volProv.DeleteVolume(v.Name, v.Pool)
+		if err != nil {
+			return errors.WithStack(err)
+		}
 	}
 	conn, err := db.Conn()
 	if err != nil {
@@ -272,4 +295,14 @@ func Load(name string) (*Volume, error) {
 
 func volumePlanKey(planName, provisioner string) string {
 	return fmt.Sprintf("volume-plans:%s:%s", planName, provisioner)
+}
+
+func RenameTeam(oldName, newName string) error {
+	conn, err := db.Conn()
+	if err != nil {
+		return err
+	}
+	defer conn.Close()
+	_, err = conn.Volumes().UpdateAll(bson.M{"teamowner": oldName}, bson.M{"$set": bson.M{"teamowner": newName}})
+	return err
 }

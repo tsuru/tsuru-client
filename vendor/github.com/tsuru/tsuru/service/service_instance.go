@@ -29,7 +29,6 @@ var (
 	ErrTeamMandatory             = errors.New("please specify the team that owns the service instance")
 	ErrAppAlreadyBound           = errors.New("app is already bound to this service instance")
 	ErrAppNotBound               = errors.New("app is not bound to this service instance")
-	ErrUnitAlreadyBound          = errors.New("unit is already bound to this service instance")
 	ErrUnitNotBound              = errors.New("unit is not bound to this service instance")
 	ErrServiceInstanceBound      = errors.New("This service instance is bound to at least one app. Unbind them before removing it")
 )
@@ -40,11 +39,23 @@ type ServiceInstance struct {
 	ServiceName string `bson:"service_name"`
 	PlanName    string `bson:"plan_name"`
 	Apps        []string
-	Units       []string
+	BoundUnits  []Unit `bson:"bound_units"`
 	Teams       []string
 	TeamOwner   string
 	Description string
 	Tags        []string
+}
+
+type Unit struct {
+	ID, IP string
+}
+
+func (bu Unit) GetID() string {
+	return bu.ID
+}
+
+func (bu Unit) GetIp() string {
+	return bu.IP
 }
 
 // DeleteInstance deletes the service instance from the database.
@@ -192,17 +203,32 @@ func (si *ServiceInstance) BindUnit(app bind.App, unit bind.Unit) error {
 		return err
 	}
 	defer conn.Close()
-	updateOp := bson.M{"$addToSet": bson.M{"units": unit.GetID()}}
-	err = conn.ServiceInstances().Update(bson.M{"name": si.Name, "service_name": si.ServiceName, "units": bson.M{"$ne": unit.GetID()}}, updateOp)
+	updateOp := bson.M{
+		"$addToSet": bson.M{
+			"bound_units": bson.D([]bson.DocElem{
+				{Name: "id", Value: unit.GetID()},
+				{Name: "ip", Value: unit.GetIp()},
+			}),
+		},
+	}
+	err = conn.ServiceInstances().Update(bson.M{"name": si.Name, "service_name": si.ServiceName, "bound_units.id": bson.M{"$ne": unit.GetID()}}, updateOp)
 	if err != nil {
 		if err == mgo.ErrNotFound {
-			return ErrUnitAlreadyBound
+			return nil
 		}
 		return err
 	}
 	err = endpoint.BindUnit(si, app, unit)
 	if err != nil {
-		rollbackErr := si.updateData(bson.M{"$pull": bson.M{"units": unit.GetID()}})
+		updateOp = bson.M{
+			"$pull": bson.M{
+				"bound_units": bson.D([]bson.DocElem{
+					{Name: "id", Value: unit.GetID()},
+					{Name: "ip", Value: unit.GetIp()},
+				}),
+			},
+		}
+		rollbackErr := si.updateData(updateOp)
 		if rollbackErr != nil {
 			log.Errorf("[bind unit] could not remove stil unbound unit from db after failure: %s", rollbackErr)
 		}
@@ -243,8 +269,15 @@ func (si *ServiceInstance) UnbindUnit(app bind.App, unit bind.Unit) error {
 		return err
 	}
 	defer conn.Close()
-	updateOp := bson.M{"$pull": bson.M{"units": unit.GetID()}}
-	err = conn.ServiceInstances().Update(bson.M{"name": si.Name, "service_name": si.ServiceName, "units": unit.GetID()}, updateOp)
+	updateOp := bson.M{
+		"$pull": bson.M{
+			"bound_units": bson.D([]bson.DocElem{
+				{Name: "id", Value: unit.GetID()},
+				{Name: "ip", Value: unit.GetIp()},
+			}),
+		},
+	}
+	err = conn.ServiceInstances().Update(bson.M{"name": si.Name, "service_name": si.ServiceName, "bound_units.id": unit.GetID()}, updateOp)
 	if err != nil {
 		if err == mgo.ErrNotFound {
 			return ErrUnitNotBound
@@ -253,7 +286,15 @@ func (si *ServiceInstance) UnbindUnit(app bind.App, unit bind.Unit) error {
 	}
 	err = endpoint.UnbindUnit(si, app, unit)
 	if err != nil {
-		rollbackErr := si.updateData(bson.M{"$addToSet": bson.M{"units": unit.GetID()}})
+		updateOp = bson.M{
+			"$addToSet": bson.M{
+				"bound_units": bson.D([]bson.DocElem{
+					{Name: "id", Value: unit.GetID()},
+					{Name: "ip", Value: unit.GetIp()},
+				}),
+			},
+		}
+		rollbackErr := si.updateData(updateOp)
 		if rollbackErr != nil {
 			log.Errorf("[unbind unit] could not add bound unit back to db after failure: %s", rollbackErr)
 		}
@@ -391,6 +432,21 @@ func GetServiceInstance(serviceName string, instanceName string) (*ServiceInstan
 	return &instance, nil
 }
 
+func GetServiceInstancesBoundToApp(appName string) ([]ServiceInstance, error) {
+	conn, err := db.Conn()
+	if err != nil {
+		return nil, err
+	}
+	defer conn.Close()
+	var instances []ServiceInstance
+	q := bson.M{"apps": bson.M{"$in": []string{appName}}}
+	err = conn.ServiceInstances().Find(q).All(&instances)
+	if err != nil {
+		return nil, err
+	}
+	return instances, nil
+}
+
 func processTags(tags []string) []string {
 	if tags == nil {
 		return nil
@@ -405,4 +461,18 @@ func processTags(tags []string) []string {
 		}
 	}
 	return processedTags
+}
+
+func RenameServiceInstanceTeam(oldName, newName string) error {
+	conn, err := db.Conn()
+	if err != nil {
+		return err
+	}
+	defer conn.Close()
+	bulk := conn.ServiceInstances().Bulk()
+	bulk.UpdateAll(bson.M{"teamowner": oldName}, bson.M{"$set": bson.M{"teamowner": newName}})
+	bulk.UpdateAll(bson.M{"teams": oldName}, bson.M{"$push": bson.M{"teams": newName}})
+	bulk.UpdateAll(bson.M{"teams": oldName}, bson.M{"$pull": bson.M{"teams": oldName}})
+	_, err = bulk.Run()
+	return err
 }

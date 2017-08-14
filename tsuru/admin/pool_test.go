@@ -13,7 +13,7 @@ import (
 	"github.com/ajg/form"
 	"github.com/tsuru/tsuru/cmd"
 	"github.com/tsuru/tsuru/cmd/cmdtest"
-	"github.com/tsuru/tsuru/provision"
+	"github.com/tsuru/tsuru/provision/pool"
 	"gopkg.in/check.v1"
 )
 
@@ -373,7 +373,7 @@ func (s *S) TestRemoveTeamsFromPoolCmdRun(c *check.C) {
 func (s *S) TestPoolConstraintList(c *check.C) {
 	var buf bytes.Buffer
 	context := cmd.Context{Stdout: &buf}
-	constraints := []provision.PoolConstraint{
+	constraints := []pool.PoolConstraint{
 		{PoolExpr: "*", Field: "router", Values: []string{"routerA", "routerB"}},
 		{PoolExpr: "dev", Field: "team", Values: []string{"*"}, Blacklist: true},
 	}
@@ -408,13 +408,13 @@ func (s *S) TestPoolConstraintSetDefaultFlags(c *check.C) {
 		CondFunc: func(req *http.Request) bool {
 			err := req.ParseForm()
 			c.Assert(err, check.IsNil)
-			var params provision.PoolConstraint
+			var params pool.PoolConstraint
 			dec := form.NewDecoder(nil)
 			dec.IgnoreUnknownKeys(true)
 			err = dec.DecodeValues(&params, req.Form)
 			c.Assert(err, check.IsNil)
 			url := strings.HasSuffix(req.URL.Path, "/constraints")
-			c.Assert(params, check.DeepEquals, provision.PoolConstraint{
+			c.Assert(params, check.DeepEquals, pool.PoolConstraint{
 				PoolExpr:  "*",
 				Field:     "router",
 				Values:    []string{"myrouter", "myrouter2"},
@@ -439,13 +439,13 @@ func (s *S) TestPoolConstraintSet(c *check.C) {
 		CondFunc: func(req *http.Request) bool {
 			err := req.ParseForm()
 			c.Assert(err, check.IsNil)
-			var params provision.PoolConstraint
+			var params pool.PoolConstraint
 			dec := form.NewDecoder(nil)
 			dec.IgnoreUnknownKeys(true)
 			err = dec.DecodeValues(&params, req.Form)
 			c.Assert(err, check.IsNil)
 			url := strings.HasSuffix(req.URL.Path, "/constraints")
-			c.Assert(params, check.DeepEquals, provision.PoolConstraint{
+			c.Assert(params, check.DeepEquals, pool.PoolConstraint{
 				PoolExpr:  "*",
 				Field:     "router",
 				Values:    []string{"myrouter"},
@@ -471,13 +471,13 @@ func (s *S) TestPoolConstraintSetEmptyValues(c *check.C) {
 		CondFunc: func(req *http.Request) bool {
 			err := req.ParseForm()
 			c.Assert(err, check.IsNil)
-			var params provision.PoolConstraint
+			var params pool.PoolConstraint
 			dec := form.NewDecoder(nil)
 			dec.IgnoreUnknownKeys(true)
 			err = dec.DecodeValues(&params, req.Form)
 			c.Assert(err, check.IsNil)
 			url := strings.HasSuffix(req.URL.Path, "/constraints")
-			c.Assert(params, check.DeepEquals, provision.PoolConstraint{
+			c.Assert(params, check.DeepEquals, pool.PoolConstraint{
 				PoolExpr:  "*",
 				Field:     "router",
 				Blacklist: false,
