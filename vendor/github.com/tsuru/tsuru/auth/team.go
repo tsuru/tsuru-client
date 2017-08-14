@@ -6,28 +6,32 @@ package auth
 
 import (
 	"fmt"
-	"regexp"
 	"strings"
 
 	"github.com/pkg/errors"
 	"github.com/tsuru/tsuru/db"
 	"github.com/tsuru/tsuru/log"
 	"github.com/tsuru/tsuru/permission"
-	"gopkg.in/mgo.v2"
+	"github.com/tsuru/tsuru/storage"
+	authTypes "github.com/tsuru/tsuru/types/auth"
+	"github.com/tsuru/tsuru/validation"
 	"gopkg.in/mgo.v2/bson"
-)
-
-var (
-	ErrInvalidTeamName   = errors.New("invalid team name")
-	ErrTeamAlreadyExists = errors.New("team already exists")
-	ErrTeamNotFound      = errors.New("team not found")
-
-	teamNameRegexp = regexp.MustCompile(`^[a-zA-Z][-@_.+\w]+$`)
 )
 
 type ErrTeamStillUsed struct {
 	Apps             []string
 	ServiceInstances []string
+}
+
+func TeamService() authTypes.TeamService {
+	dbDriver, err := storage.GetCurrentDbDriver()
+	if err != nil {
+		dbDriver, err = storage.GetDefaultDbDriver()
+		if err != nil {
+			return nil
+		}
+	}
+	return dbDriver.TeamService
 }
 
 func (e *ErrTeamStillUsed) Error() string {
@@ -37,29 +41,11 @@ func (e *ErrTeamStillUsed) Error() string {
 	return fmt.Sprintf("Service instances: %s", strings.Join(e.ServiceInstances, ", "))
 }
 
-// Team represents a real world team, a team has one creating user and a name.
-type Team struct {
-	Name         string `bson:"_id" json:"name"`
-	CreatingUser string
-}
-
-// AllowedApps returns the apps that the team has access.
-func (t *Team) AllowedApps() ([]string, error) {
-	conn, err := db.Conn()
-	if err != nil {
-		return nil, err
+func validateTeam(t authTypes.Team) error {
+	if !validation.ValidateName(t.Name) {
+		return authTypes.ErrInvalidTeamName
 	}
-	defer conn.Close()
-	allowedApps := []map[string]string{}
-	query := conn.Apps().Find(bson.M{"teams": t.Name})
-	if err := query.Select(bson.M{"name": 1}).All(&allowedApps); err != nil {
-		return nil, err
-	}
-	appNames := make([]string, len(allowedApps))
-	for i, app := range allowedApps {
-		appNames[i] = app["name"]
-	}
-	return appNames, nil
+	return nil
 }
 
 // CreateTeam creates a team and add users to this team.
@@ -68,22 +54,14 @@ func CreateTeam(name string, user *User) error {
 		return errors.New("user cannot be null")
 	}
 	name = strings.TrimSpace(name)
-	if !isTeamNameValid(name) {
-		return ErrInvalidTeamName
-	}
-	team := Team{
+	team := authTypes.Team{
 		Name:         name,
 		CreatingUser: user.Email,
 	}
-	conn, err := db.Conn()
-	if err != nil {
+	if err := validateTeam(team); err != nil {
 		return err
 	}
-	defer conn.Close()
-	err = conn.Teams().Insert(team)
-	if mgo.IsDup(err) {
-		return ErrTeamAlreadyExists
-	}
+	err := TeamService().Insert(team)
 	if err != nil {
 		return err
 	}
@@ -94,30 +72,13 @@ func CreateTeam(name string, user *User) error {
 	return nil
 }
 
-func isTeamNameValid(name string) bool {
-	return teamNameRegexp.MatchString(name)
-}
-
 // GetTeam find a team by name.
-func GetTeam(name string) (*Team, error) {
-	var t Team
-	conn, err := db.Conn()
-	if err != nil {
-		return nil, err
-	}
-	defer conn.Close()
-	err = conn.Teams().FindId(name).One(&t)
-	if err != nil {
-		if err == mgo.ErrNotFound {
-			err = ErrTeamNotFound
-		}
-		return nil, err
-	}
-	return &t, nil
+func GetTeam(name string) (*authTypes.Team, error) {
+	return TeamService().FindByName(name)
 }
 
-// GetTeamsNames find teams by a list of team names.
-func GetTeamsNames(teams []Team) []string {
+// GetTeamsNames maps teams to a list of team names.
+func GetTeamsNames(teams []authTypes.Team) []string {
 	tn := make([]string, len(teams))
 	for i, t := range teams {
 		tn[i] = t.Name
@@ -147,23 +108,9 @@ func RemoveTeam(teamName string) error {
 	if len(serviceInstances) > 0 {
 		return &ErrTeamStillUsed{ServiceInstances: serviceInstances}
 	}
-	err = conn.Teams().RemoveId(teamName)
-	if err == mgo.ErrNotFound {
-		return ErrTeamNotFound
-	}
-	return nil
+	return TeamService().Delete(authTypes.Team{Name: teamName})
 }
 
-func ListTeams() ([]Team, error) {
-	conn, err := db.Conn()
-	if err != nil {
-		return nil, err
-	}
-	defer conn.Close()
-	var teams []Team
-	err = conn.Teams().Find(nil).All(&teams)
-	if err != nil {
-		return nil, err
-	}
-	return teams, nil
+func ListTeams() ([]authTypes.Team, error) {
+	return TeamService().FindAll()
 }

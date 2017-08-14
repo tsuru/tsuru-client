@@ -96,6 +96,7 @@ var PermissionRegistry = (&registry{}).addWithCtx(
 ).add(
 	"team.read.events",
 	"team.delete",
+	"team.update",
 ).addWithCtx(
 	"user", []contextType{CtxUser},
 ).addWithCtx(
@@ -195,6 +196,7 @@ var PermissionRegistry = (&registry{}).addWithCtx(
 	"event-block.remove",
 ).add(
 	"cluster.read.events",
+	"cluster.create",
 	"cluster.update",
 	"cluster.delete",
 ).addWithCtx(

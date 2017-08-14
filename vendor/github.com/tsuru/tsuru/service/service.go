@@ -10,9 +10,9 @@ import (
 	"regexp"
 
 	"github.com/pkg/errors"
-	"github.com/tsuru/tsuru/auth"
 	"github.com/tsuru/tsuru/db"
 	tsuruErrors "github.com/tsuru/tsuru/errors"
+	"github.com/tsuru/tsuru/types/auth"
 	"github.com/tsuru/tsuru/validation"
 	"gopkg.in/mgo.v2/bson"
 )
@@ -222,4 +222,20 @@ func Proxy(service *Service, path string, w http.ResponseWriter, r *http.Request
 		return err
 	}
 	return endpoint.Proxy(path, w, r)
+}
+
+func RenameServiceTeam(oldName, newName string) error {
+	conn, err := db.Conn()
+	if err != nil {
+		return err
+	}
+	defer conn.Close()
+	fields := []string{"owner_teams", "teams"}
+	bulk := conn.Services().Bulk()
+	for _, f := range fields {
+		bulk.UpdateAll(bson.M{f: oldName}, bson.M{"$push": bson.M{f: newName}})
+		bulk.UpdateAll(bson.M{f: oldName}, bson.M{"$pull": bson.M{f: oldName}})
+	}
+	_, err = bulk.Run()
+	return err
 }

@@ -5,11 +5,16 @@
 package shutdown
 
 import (
+	"context"
+	"fmt"
+	"io"
 	"sync"
 )
 
+// Shutdownable is an interface representing the ability to
+// shutdown a particular resource
 type Shutdownable interface {
-	Shutdown()
+	Shutdown(ctx context.Context) error
 }
 
 var (
@@ -17,14 +22,46 @@ var (
 	lock       sync.Mutex
 )
 
+// Register registers an item as shutdownable
 func Register(s Shutdownable) {
 	lock.Lock()
 	defer lock.Unlock()
 	registered = append(registered, s)
 }
 
-func All() []Shutdownable {
+// Do shutdowns All registered Shutdownable items
+func Do(ctx context.Context, w io.Writer) error {
 	lock.Lock()
 	defer lock.Unlock()
-	return registered
+	done := make(chan bool)
+	go func() {
+		wg := sync.WaitGroup{}
+		for _, h := range registered {
+			wg.Add(1)
+			go func(h Shutdownable) {
+				defer wg.Done()
+				var name string
+				if _, ok := h.(fmt.Stringer); ok {
+					name = fmt.Sprintf("%s", h)
+				} else {
+					name = fmt.Sprintf("%T", h)
+				}
+				fmt.Fprintf(w, "running shutdown for %s...\n", name)
+				err := h.Shutdown(ctx)
+				if err != nil {
+					fmt.Fprintf(w, "running shutdown for %s. ERROED: %v", name, err)
+					return
+				}
+				fmt.Fprintf(w, "running shutdown for %s. DONE.\n", name)
+			}(h)
+		}
+		wg.Wait()
+		close(done)
+	}()
+	select {
+	case <-ctx.Done():
+		return ctx.Err()
+	case <-done:
+	}
+	return nil
 }
