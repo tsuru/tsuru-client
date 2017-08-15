@@ -5,13 +5,16 @@
 package client
 
 import (
+	"bytes"
 	"encoding/json"
 	"errors"
 	"fmt"
 	"io/ioutil"
 	"net/http"
 	"net/url"
+	"sort"
 	"strings"
+	"text/template"
 
 	"github.com/tsuru/gnuflag"
 	"github.com/tsuru/tsuru/cmd"
@@ -267,6 +270,128 @@ func (c *TeamList) Run(context *cmd.Context, client *cmd.Client) error {
 			table.AddRow(cmd.Row{team.Name, strings.Join(team.Permissions, "\n")})
 		}
 		fmt.Fprint(context.Stdout, table.String())
+	}
+	return nil
+}
+
+type TeamInfo struct{}
+
+func (c *TeamInfo) Info() *cmd.Info {
+	return &cmd.Info{
+		Name:    "team-info",
+		Usage:   "team-info <team>",
+		Desc:    `Shows information about a specific team.`,
+		MinArgs: 1,
+	}
+}
+
+func (c *TeamInfo) Run(context *cmd.Context, client *cmd.Client) error {
+
+	context.RawOutput()
+	team := context.Args[0]
+	u, err := cmd.GetURL(fmt.Sprintf("/teams/%v", team))
+	if err != nil {
+		return err
+	}
+	request, err := http.NewRequest("GET", u, nil)
+	if err != nil {
+		return err
+	}
+	resp, err := client.Do(request)
+	if err != nil {
+		return err
+	}
+	if resp.StatusCode == http.StatusOK {
+		defer resp.Body.Close()
+		b, err := ioutil.ReadAll(resp.Body)
+		if err != nil {
+			return err
+		}
+
+		var team struct {
+			Name  string        `json:"name"`
+			Users []cmd.APIUser `json:"users"`
+			Pools []Pool        `json:"pools"`
+			Apps  []app         `json:"apps"`
+		}
+
+		err = json.Unmarshal(b, &team)
+		if err != nil {
+			return err
+		}
+
+		format := `Team: {{.Name}}
+`
+		tmpl := template.Must(template.New("app").Parse(format))
+
+		var tplBuffer bytes.Buffer
+		var buf bytes.Buffer
+
+		tmpl.Execute(&tplBuffer, team)
+
+		usersTable := cmd.NewTable()
+		usersTable.Headers = cmd.Row{"User", "Roles"}
+		usersTable.LineSeparator = true
+		for _, user := range team.Users {
+			usersTable.AddRow(cmd.Row{user.Email, strings.Join(user.RoleInstances(), "\n")})
+		}
+		if usersTable.Rows() > 0 {
+			buf.WriteString("\n")
+			buf.WriteString(fmt.Sprintf("Users: %d\n", usersTable.Rows()))
+			buf.WriteString(usersTable.String())
+		}
+
+		poolsTable := cmd.NewTable()
+		poolsTable.Headers = cmd.Row{"Pool", "Kind", "Provisioner", "Routers"}
+		poolsTable.LineSeparator = true
+		for _, pool := range team.Pools {
+			poolsTable.AddRow(cmd.Row{pool.Name, pool.Kind(), pool.GetProvisioner(), strings.Join(pool.Allowed["router"], "\n")})
+		}
+
+		if poolsTable.Rows() > 0 {
+			buf.WriteString("\n")
+			buf.WriteString(fmt.Sprintf("Pools: %d\n", poolsTable.Rows()))
+			buf.WriteString(poolsTable.String())
+		}
+
+		appsTable := cmd.NewTable()
+		appsTable.Headers = cmd.Row{"Application", "Units", "Address"}
+		appsTable.LineSeparator = true
+		for _, app := range team.Apps {
+			summary := ""
+			if app.Error == "" {
+				unitsStatus := make(map[string]int)
+				for _, unit := range app.Units {
+					if unit.ID != "" {
+						unitsStatus[unit.Status]++
+					}
+				}
+				statusText := make([]string, len(unitsStatus))
+				i := 0
+				us := newUnitSorter(unitsStatus)
+				sort.Sort(us)
+				for _, status := range us.Statuses {
+					statusText[i] = fmt.Sprintf("%d %s", unitsStatus[status], status)
+					i++
+				}
+				summary = strings.Join(statusText, "\n")
+			} else {
+				summary = fmt.Sprintf("error fetching units")
+				if client.Verbosity > 0 {
+					summary += fmt.Sprintf(": %s", app.Error)
+				}
+			}
+			addrs := strings.Replace(app.Addr(), ", ", "\n", -1)
+			appsTable.AddRow(cmd.Row([]string{app.Name, summary, addrs}))
+		}
+
+		if appsTable.Rows() > 0 {
+			buf.WriteString("\n")
+			buf.WriteString(fmt.Sprintf("Applications: %d\n", appsTable.Rows()))
+			buf.WriteString(appsTable.String())
+		}
+
+		fmt.Fprint(context.Stdout, tplBuffer.String()+buf.String())
 	}
 	return nil
 }
