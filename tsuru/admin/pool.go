@@ -357,7 +357,9 @@ Examples:
 
 [[tsuru pool-constraint-set dev_pool team "*" # allows every team to use the pool "dev_pool" ]]
 [[tsuru pool-constraint-set "dev_*" router prod_router --blacklist # disallows "prod_router" to be used on every pool with "dev_" prefix ]]
-[[tsuru pool-constraint-set prod_pool team team2 team3 --append # adds "team2" and "team3" to the list of teams allowed to use pool "prod_pool"]]`,
+[[tsuru pool-constraint-set prod_pool team team2 team3 --append # adds "team2" and "team3" to the list of teams allowed to use pool "prod_pool"]]
+[[tsuru pool-constraint-set prod_pool service service1 service2 --append # adds "service1" and "service2" to the list of services allowed to be used on pool "prod_pool"]]
+[[tsuru pool-constraint-set prod_pool service service1 --blacklist # disallows "service1" to be used on pool "prod_pool"]]`,
 		MinArgs: 2,
 	}
 }
