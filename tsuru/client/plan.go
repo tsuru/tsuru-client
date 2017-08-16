@@ -22,7 +22,7 @@ type PlanList struct {
 
 func (c *PlanList) Flags() *gnuflag.FlagSet {
 	if c.fs == nil {
-		c.fs = gnuflag.NewFlagSet("plan-List", gnuflag.ExitOnError)
+		c.fs = gnuflag.NewFlagSet("plan-list", gnuflag.ExitOnError)
 		bytes := "bytesized units for memory and swap."
 		c.fs.BoolVar(&c.bytes, "bytes", false, bytes)
 		c.fs.BoolVar(&c.bytes, "b", false, bytes)

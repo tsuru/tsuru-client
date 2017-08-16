@@ -51,6 +51,50 @@ func (s *S) TestTeamCreateInfo(c *check.C) {
 	c.Assert((&TeamCreate{}).Info(), check.NotNil)
 }
 
+func (s *S) TestTeamUpdate(c *check.C) {
+	var stdout, stderr bytes.Buffer
+	ctx := cmd.Context{
+		Args:   []string{"my-team"},
+		Stdout: &stdout,
+		Stderr: &stderr,
+	}
+	trans := &cmdtest.ConditionalTransport{
+		Transport: cmdtest.Transport{Message: "", Status: http.StatusOK},
+		CondFunc: func(r *http.Request) bool {
+			c.Assert(r.FormValue("newname"), check.Equals, "new-team")
+			c.Assert(strings.HasSuffix(r.URL.Path, "/teams/my-team"), check.Equals, true)
+			c.Assert(r.Method, check.Equals, http.MethodPost)
+			return true
+		},
+	}
+	client := cmd.NewClient(&http.Client{Transport: trans}, nil, manager)
+	command := &TeamUpdate{}
+	command.Flags().Parse(true, []string{"-n", "new-team"})
+	err := command.Run(&ctx, client)
+	c.Assert(err, check.IsNil)
+	result := stdout.String()
+	c.Assert(result, check.Equals, "Team successfully updated!\n")
+}
+
+func (s *S) TestTeamUpdateError(c *check.C) {
+	var stdout, stderr bytes.Buffer
+	ctx := cmd.Context{
+		Args:   []string{"my-team"},
+		Stdout: &stdout,
+		Stderr: &stderr,
+	}
+	errMsg := "team not found"
+	trans := &cmdtest.Transport{Message: errMsg, Status: http.StatusNotFound}
+	client := cmd.NewClient(&http.Client{Transport: trans}, nil, manager)
+	command := &TeamUpdate{}
+	err := command.Run(&ctx, client)
+	c.Assert(err, check.ErrorMatches, errMsg)
+}
+
+func (s *S) TestTeamUpdateInfo(c *check.C) {
+	c.Assert((&TeamUpdate{}).Info(), check.NotNil)
+}
+
 func (s *S) TestTeamRemove(c *check.C) {
 	var (
 		buf    bytes.Buffer

@@ -79,6 +79,7 @@ func buildManager(name string) *cmd.Manager {
 	m.Register(&client.UserRemove{})
 	m.Register(&client.ListUsers{})
 	m.Register(&client.TeamCreate{})
+	m.Register(&client.TeamUpdate{})
 	m.Register(&client.TeamRemove{})
 	m.Register(&client.TeamList{})
 	m.Register(&client.ChangePassword{})

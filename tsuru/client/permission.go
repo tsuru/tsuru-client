@@ -39,7 +39,7 @@ func (c *PermissionList) Info() *cmd.Info {
 
 func (c *PermissionList) Flags() *gnuflag.FlagSet {
 	if c.fs == nil {
-		c.fs = gnuflag.NewFlagSet("plan-List", gnuflag.ExitOnError)
+		c.fs = gnuflag.NewFlagSet("permission-list", gnuflag.ExitOnError)
 		tree := "Show permissions in tree format."
 		c.fs.BoolVar(&c.tree, "tree", false, tree)
 		c.fs.BoolVar(&c.tree, "t", false, tree)
