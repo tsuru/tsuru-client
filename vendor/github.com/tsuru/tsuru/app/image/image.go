@@ -19,12 +19,35 @@ import (
 	"gopkg.in/mgo.v2/bson"
 )
 
+var (
+	ErrNoImagesAvailable = errors.New("no images available for app")
+	procfileRegex        = regexp.MustCompile(`^([A-Za-z0-9_-]+):\s*(.+)$`)
+)
+
+type ImageNotFoundErr struct {
+	App, Image string
+}
+
+func (i *ImageNotFoundErr) Error() string {
+	return fmt.Sprintf("Image %s not found in app %q", i.Image, i.App)
+}
+
+type InvalidVersionErr struct {
+	Image string
+}
+
+func (i *InvalidVersionErr) Error() string {
+	return fmt.Sprintf("Invalid version: %s", i.Image)
+}
+
 type ImageMetadata struct {
 	Name            string `bson:"_id"`
 	CustomData      map[string]interface{}
 	LegacyProcesses map[string]string   `bson:"processes"`
 	Processes       map[string][]string `bson:"processes_list"`
 	ExposedPort     string
+	DisableRollback bool
+	Reason          string
 }
 
 type appImages struct {
@@ -44,9 +67,6 @@ func (i *ImageMetadata) Save() error {
 	defer coll.Close()
 	return coll.Insert(i)
 }
-
-var procfileRegex = regexp.MustCompile(`^([A-Za-z0-9_-]+):\s*(.+)$`)
-var ErrNoImagesAvailable = errors.New("no images available for app")
 
 // GetBuildImage returns the image name from app or plaftorm.
 // the platform image will be returned if:
@@ -115,7 +135,7 @@ func SaveImageCustomData(imageName string, customData map[string]interface{}) er
 	return data.Save()
 }
 
-func GetImageCustomData(imageName string) (ImageMetadata, error) {
+func GetImageMetaData(imageName string) (ImageMetadata, error) {
 	coll, err := imageCustomDataColl()
 	if err != nil {
 		return ImageMetadata{}, err
@@ -138,7 +158,7 @@ func GetImageCustomData(imageName string) (ImageMetadata, error) {
 
 func GetImageWebProcessName(imageName string) (string, error) {
 	processName := "web"
-	data, err := GetImageCustomData(imageName)
+	data, err := GetImageMetaData(imageName)
 	if err != nil {
 		return processName, err
 	}
@@ -159,7 +179,7 @@ func AllAppProcesses(appName string) ([]string, error) {
 	if err != nil {
 		return nil, errors.WithStack(err)
 	}
-	data, err := GetImageCustomData(imgID)
+	data, err := GetImageMetaData(imgID)
 	if err != nil {
 		return nil, errors.WithStack(err)
 	}
@@ -321,6 +341,15 @@ func DeleteAllAppImageNames(appName string) error {
 	return coll.RemoveId(appName)
 }
 
+func UpdateAppImageRollback(img, reason string, disableRollback bool) error {
+	dataColl, err := imageCustomDataColl()
+	if err != nil {
+		return err
+	}
+	defer dataColl.Close()
+	return dataColl.Update(bson.M{"_id": img}, bson.M{"$set": bson.M{"disablerollback": disableRollback, "reason": reason}})
+}
+
 func PullAppImageNames(appName string, images []string) error {
 	dataColl, err := imageCustomDataColl()
 	if err != nil {
@@ -475,4 +504,21 @@ func imageCustomDataColl() (*storage.Collection, error) {
 		name = "docker"
 	}
 	return conn.Collection(fmt.Sprintf("%s_image_custom_data", name)), nil
+}
+
+func GetAppImageBySuffix(appName, imageIdSuffix string) (string, error) {
+	inputImage := imageIdSuffix
+	validImgs, err := ListValidAppImages(appName)
+	if err != nil {
+		return "", err
+	}
+	if len(validImgs) == 0 {
+		return "", &ImageNotFoundErr{App: appName, Image: inputImage}
+	}
+	for _, img := range validImgs {
+		if strings.HasSuffix(img, inputImage) {
+			return img, nil
+		}
+	}
+	return "", &InvalidVersionErr{Image: inputImage}
 }

@@ -22,9 +22,9 @@ import (
 
 	"github.com/ajg/form"
 	"github.com/tsuru/gnuflag"
-	tsuruapp "github.com/tsuru/tsuru/app"
 	"github.com/tsuru/tsuru/cmd"
 	tsuruerr "github.com/tsuru/tsuru/errors"
+	apptypes "github.com/tsuru/tsuru/types/app"
 )
 
 const (
@@ -518,7 +518,7 @@ type app struct {
 	Lock        lock
 	services    []serviceData
 	Quota       quota
-	Plan        tsuruapp.Plan
+	Plan        apptypes.Plan
 	Router      string
 	RouterOpts  map[string]string
 	Tags        []string
@@ -644,7 +644,7 @@ Quota: {{.Quota.InUse}}/{{if .Quota.Limit}}{{.Quota.Limit}} units{{else}}unlimit
 	if a.Plan.Name != "" {
 		buf.WriteString("\n")
 		buf.WriteString("App Plan:\n")
-		buf.WriteString(renderPlans([]tsuruapp.Plan{a.Plan}, true))
+		buf.WriteString(renderPlans([]apptypes.Plan{a.Plan}, true))
 	}
 	var tplBuffer bytes.Buffer
 	tmpl.Execute(&tplBuffer, a)

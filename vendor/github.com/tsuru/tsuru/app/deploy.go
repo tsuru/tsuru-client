@@ -8,7 +8,6 @@ import (
 	"fmt"
 	"io"
 	"regexp"
-	"strings"
 	"time"
 
 	"github.com/pkg/errors"
@@ -70,11 +69,6 @@ func findValidImages(apps ...App) (set.Set, error) {
 
 // ListDeploys returns the list of deploy that match a given filter.
 func ListDeploys(filter *Filter, skip, limit int) ([]DeployData, error) {
-	conn, err := db.Conn()
-	if err != nil {
-		return nil, err
-	}
-	defer conn.Close()
 	appsList, err := List(filter)
 	if err != nil {
 		return nil, err
@@ -212,19 +206,11 @@ func Deploy(opts DeployOptions) (string, error) {
 		return "", errors.Errorf("missing event in deploy opts")
 	}
 	if opts.Rollback && !regexp.MustCompile(":v[0-9]+$").MatchString(opts.Image) {
-		validImages, err := findValidImages(*opts.App)
-		if err == nil {
-			inputImage := opts.Image
-			for img := range validImages {
-				if strings.HasSuffix(img, opts.Image) {
-					opts.Image = img
-					break
-				}
-			}
-			if opts.Image == inputImage {
-				return "", errors.Errorf("invalid version: %q", inputImage)
-			}
+		imageName, err := image.GetAppImageBySuffix(opts.App.Name, opts.Image)
+		if err != nil {
+			return "", err
 		}
+		opts.Image = imageName
 	}
 	logWriter := LogWriter{App: opts.App}
 	logWriter.Async()
@@ -243,6 +229,14 @@ func Deploy(opts DeployOptions) (string, error) {
 		opts.App.SetUpdatePlatform(false)
 	}
 	return imageID, nil
+}
+
+func RollbackUpdate(appName, imageID, reason string, disableRollback bool) error {
+	imgName, err := image.GetAppImageBySuffix(appName, imageID)
+	if err != nil {
+		return err
+	}
+	return image.UpdateAppImageRollback(imgName, reason, disableRollback)
 }
 
 func deployToProvisioner(opts *DeployOptions, evt *event.Event) (string, error) {

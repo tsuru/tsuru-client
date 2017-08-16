@@ -1811,6 +1811,7 @@ func (s *S) TestAppListErrorFetchingUnitsVerbose(c *check.C) {
 		"Host: localhost:8080\r\n" +
 		"Connection: close\r\n" +
 		"Authorization: bearer sometoken\r\n" +
+		"X-Tsuru-Verbosity: 1\r\n" +
 		"\r\n" +
 		"*************************** </Request uri=\"/1.0/apps?\"> **********************************\n" +
 		"+-------------+-------------------------------+-------------+\n" +
