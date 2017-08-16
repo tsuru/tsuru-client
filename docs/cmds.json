@@ -121,7 +121,7 @@
   }, 
   "app-deploy": {
     "usage": "tsuru app-deploy [-a/--app <appname>] [-i/--image <image_url>] [-m/--message <message>] <file-or-dir-1> [file-or-dir-2] ... [file-or-dir-n]", 
-    "desc": "Deploys set of files and/or directories to tsuru server. Some examples of\ncalls are:\n\n::\n\n    $ tsuru app-deploy .\n    $ tsuru app-deploy myfile.jar Procfile\n    $ tsuru app-deploy mysite\n    $ tsuru app-deploy -i http://registry.mysite.com:5000/image-name\n\n\nFlags:\n  \n  -a, --app (= \"\")\n      The name of the app.\n  -i, --image (= \"\")\n      The image to deploy in app\n  -m, --message (= \"\")\n      A message describing this deploy\n  -s, --single-files  (= false)\n      enables single file deployment\n  \n"
+    "desc": "Deploys set of files and/or directories to tsuru server. Some examples of\ncalls are:\n\n::\n\n    $ tsuru app-deploy .\n    $ tsuru app-deploy myfile.jar Procfile\n    $ tsuru app-deploy mysite\n    $ tsuru app-deploy -i http://registry.mysite.com:5000/image-name\n\n\nFlags:\n  \n  -a, --app (= \"\")\n      The name of the app.\n  -i, --image (= \"\")\n      The image to deploy in app\n  -m, --message (= \"\")\n      A message describing this deploy\n  \n"
   }, 
   "app-deploy-rebuild": {
     "usage": "tsuru app-deploy-rebuild [-a/--app appname]", 
@@ -215,6 +215,10 @@
     "usage": "tsuru container-move <container id> <to host>", 
     "desc": "Move specified container to another host.\nThis command allow you to specify a container id and a destination host, this\nwill create a new container on the destination host and remove the container\nfrom its previous host.\n\nMinimum # of arguments: 2\n"
   }, 
+  "volume-list": {
+    "usage": "tsuru volume-list", 
+    "desc": "Lists existing persistent volumes.\n\n"
+  }, 
   "node-rebalance": {
     "usage": "tsuru node-rebalance [--dry] [-y/--assume-yes] [-m/--metadata <metadata>=<value>]... [-a/--app <appname>]...", 
     "desc": "Move units among nodes trying to create a more even distribution. This command\nwill automatically choose to which node each unit should be moved, trying to\ndistribute the units as evenly as possible.\n\nThe --dry flag runs the balancing algorithm without doing any real\nmodification. It will only print which units would be moved and where they\nwould be created.\n\nFlags:\n  \n  -a, --app  (= [])\n      Filter by app name\n  --dry  (= false)\n      Dry run, only shows what would be done\n  -m, --metadata  (= {})\n      Filter by host metadata\n  -y, --assume-yes  (= false)\n      Don't ask for confirmation.\n  \n"
@@ -233,7 +237,7 @@
   }, 
   "pool-constraint-set": {
     "usage": "tsuru pool-constraint-set <poolExpression> <field> [<values>]... [-b/--blacklist] [-a/--append]", 
-    "desc": "Set a constraint on a pool expression.\n\nExamples:\n\n[[tsuru pool-constraint-set dev_pool team \"*\" # allows every team to use the pool \"dev_pool\" ]]\n[[tsuru pool-constraint-set \"dev_*\" router prod_router --blacklist # disallows \"prod_router\" to be used on every pool with \"dev_\" prefix ]]\n[[tsuru pool-constraint-set prod_pool team team2 team3 --append # adds \"team2\" and \"team3\" to the list of teams allowed to use pool \"prod_pool\"]]\n\nFlags:\n  \n  -a, --append  (= false)\n      Append to existing constraint.\n  -b, --blacklist  (= false)\n      Blacklist constraint.\n  \nMinimum # of arguments: 2\n"
+    "desc": "Set a constraint on a pool expression.\n\nExamples:\n\n[[tsuru pool-constraint-set dev_pool team \"*\" # allows every team to use the pool \"dev_pool\" ]]\n[[tsuru pool-constraint-set \"dev_*\" router prod_router --blacklist # disallows \"prod_router\" to be used on every pool with \"dev_\" prefix ]]\n[[tsuru pool-constraint-set prod_pool team team2 team3 --append # adds \"team2\" and \"team3\" to the list of teams allowed to use pool \"prod_pool\"]]\n[[tsuru pool-constraint-set prod_pool service service1 service2 --append # adds \"service1\" and \"service2\" to the list of services allowed to be used on pool \"prod_pool\"]]\n[[tsuru pool-constraint-set prod_pool service service1 --blacklist # disallows \"service1\" to be used on pool \"prod_pool\"]]\n\nFlags:\n  \n  -a, --append  (= false)\n      Append to existing constraint.\n  -b, --blacklist  (= false)\n      Blacklist constraint.\n  \nMinimum # of arguments: 2\n"
   }, 
   "node-autoscale-rule-remove": {
     "usage": "tsuru node-autoscale-rule-remove [rule-name] [-y/--assume-yes]", 
@@ -251,13 +255,17 @@
     "usage": "tsuru certificate-unset [-a/--app appname] [-c/--cname CNAME]", 
     "desc": "Unset a TLS certificate from a specific app.\n\nFlags:\n  \n  -a, --app (= \"\")\n      The name of the app.\n  -c, --cname (= \"\")\n      App CNAME\n  \n"
   }, 
+  "volume-create": {
+    "usage": "tsuru volume-create <volume-name> <plan-name> [-p/--pool <pool>] [-t/--team <team>] [-o/--opt key=value]...", 
+    "desc": "Creates a new persistent volume based on a volume plan.\n\nFlags:\n  \n  -o, --opt  (= {})\n      backend specific volume options\n  -p, --pool (= \"\")\n      the pool that owns the service (mandatory if the user has access to more than one pool)\n  -t, --team (= \"\")\n      the team that owns the service (mandatory if the user has access to more than one team)\n  \nMinimum # of arguments: 2\nMaximum # of arguments: 2\n"
+  }, 
   "machine-template-add": {
     "usage": "tsuru machine-template-add <name> <iaas> <param>=<value>...", 
     "desc": "Creates a new machine template.\n\nTemplates can be used with the [[docker-node-add]] command running it with\nthe [[template=<template name>]] parameter. Templates can contain a list of\nparameters that will be sent to the IaaS provider.\n\nMinimum # of arguments: 3\n"
   }, 
   "app-update": {
-    "usage": "tsuru app-update [-a/--app appname] [--description/-d description] [--plan/-p plan name] [--router/-r router name] [--pool/-o pool] [--team-owner/-t team owner] [--platform/-l platform] [-i/--image-reset image] [--tag/-g tag]... [--router-opts key=value]...", 
-    "desc": "Updates an app, changing its description, tags, plan or pool information.\n\nThe [[--description]] parameter sets a description for your app.\n\nThe [[--plan]] parameter changes the plan of your app.\n\nThe [[--router]] parameter changes the router of your app.\n\nThe [[--pool]] parameter changes the pool of your app.\n\nThe [[--team-owner]] parameter sets owner team for an application.\n\nThe [[--tag]] parameter sets a tag for your app. You can set\nmultiple [[--tag]] parameters.\n\nThe [[--router-opts]] parameter changes the custom router parameters.\n\nFlags:\n  \n  -a, --app (= \"\")\n      The name of the app.\n  -d, --description (= \"\")\n      App description\n  -g, --tag  (= [])\n      App tag\n  -i, --image-reset  (= false)\n      Forces next deploy to build app image from scratch\n  -l, --platform (= \"\")\n      App platform\n  -o, --pool (= \"\")\n      App pool\n  -p, --plan (= \"\")\n      App plan\n  -r, --router (= \"\")\n      App router\n  --router-opts  (= {})\n      Router options\n  -t, --team-owner (= \"\")\n      App team owner\n  \n"
+    "usage": "tsuru app-update [-a/--app appname] [--description/-d description] [--plan/-p plan name] [--router/-r router name] [--pool/-o pool] [--team-owner/-t team owner] [--platform/-l platform] [-i/--image-reset] [--tag/-g tag]... [--router-opts key=value]...", 
+    "desc": "Updates an app, changing its description, tags, plan or pool information.\n\nThe [[--description]] parameter sets a description for your app.\n\nThe [[--plan]] parameter changes the plan of your app.\n\nThe [[--router]] parameter changes the router of your app.\n\nThe [[--pool]] parameter changes the pool of your app.\n\nThe [[--team-owner]] parameter sets owner team for an application.\n\nThe [[--platform]] parameter sets a platform for an application.\n\nThe [[--image-reset]] parameter rebuilds the platform of an application.\n\nThe [[--tag]] parameter sets a tag for your app. You can set\nmultiple [[--tag]] parameters.\n\nThe [[--router-opts]] parameter changes the custom router parameters.\n\nFlags:\n  \n  -a, --app (= \"\")\n      The name of the app.\n  -d, --description (= \"\")\n      App description\n  -g, --tag  (= [])\n      App tag\n  -i, --image-reset  (= false)\n      Forces next deploy to build app image from scratch\n  -l, --platform (= \"\")\n      App platform\n  -o, --pool (= \"\")\n      App pool\n  -p, --plan (= \"\")\n      App plan\n  -r, --router (= \"\")\n      App router\n  --router-opts  (= {})\n      Router options\n  -t, --team-owner (= \"\")\n      App team owner\n  \n"
   }, 
   "role-dissociate": {
     "usage": "tsuru role-dissociate <role-name> <user-email> [<context-value>]", 
@@ -298,6 +306,10 @@
   "role-info": {
     "usage": "tsuru role-info <role-name>", 
     "desc": "Get information about specific role.\n\nMinimum # of arguments: 1\n"
+  }, 
+  "cluster-add": {
+    "usage": "tsuru cluster-add <name> <provisioner> [--addr address...] [--pool poolname]... [--cacert cacertfile] [--clientcert clientcertfile] [--clientkey clientkeyfile] [--custom key=value]... [--create-data key=value]... [--default]", 
+    "desc": "Creates a provisioner cluster definition.\n\nFlags:\n  \n  --addr  (= [])\n      Address to be used in cluster.\n  --cacert (= \"\")\n      Path to CA cert file.\n  --clientcert (= \"\")\n      Path to client cert file.\n  --clientkey (= \"\")\n      Path to client key file.\n  --create-data  (= {})\n      Create data, if set a iaas will be called with this data to create a new machine.\n  --custom  (= {})\n      Custom provisioner specific data.\n  --default  (= false)\n      Whether this is the default cluster.\n  --pool  (= [])\n      Pool which will use this cluster.\n  \nMinimum # of arguments: 2\nMaximum # of arguments: 2\n"
   }, 
   "docker-log-update": {
     "usage": "tsuru docker-log-update [-r/--restart] [-p/--pool poolname] --log-driver <driver> [--log-opt name=value]...", 
@@ -379,6 +391,10 @@
     "usage": "tsuru token-regenerate [--user/-u useremail]", 
     "desc": "Generates a new API token. This invalidates previously generated API tokens.\n\nFlags:\n  \n  -u, --user (= \"\")\n      Generates a new API token for the given user email\n  \n"
   }, 
+  "volume-delete": {
+    "usage": "tsuru volume-delete <volume-name>", 
+    "desc": "Delete an existing persistent volume.\n\nMinimum # of arguments: 1\nMaximum # of arguments: 1\n"
+  }, 
   "env-get": {
     "usage": "tsuru env-get [-a/--app appname] [ENVIRONMENT_VARIABLE1] [ENVIRONMENT_VARIABLE2] ...", 
     "desc": "Retrieves environment variables for an application.\n\nFlags:\n  \n  -a, --app (= \"\")\n      The name of the app.\n  \n"
@@ -386,6 +402,10 @@
   "install-create": {
     "usage": "tsuru install-create [--config/-c config_file] [--compose/-e compose_file]", 
     "desc": "Installs Tsuru and It's components as containers on hosts provisioned\nwith docker machine drivers.\n\nThe [[--config]] parameter is the path to a .yml file containing the installation\nconfiguration. If not provided, Tsuru will be installed into a VirtualBox VM for\nexperimentation.\n\n\nFlags:\n  \n  -c, --config (= \"\")\n      Configuration file\n  -e, --compose (= \"\")\n      Components docker-compose file\n  \n"
+  }, 
+  "volume-update": {
+    "usage": "tsuru volume-update <volume-name> <plan-name> [-p/--pool <pool>] [-t/--team <team>] [-o/--opt key=value]...", 
+    "desc": "Update an existing persistent volume.\n\nFlags:\n  \n  -o, --opt  (= {})\n      backend specific volume options\n  -p, --pool (= \"\")\n      the pool that owns the service (mandatory if the user has access to more than one pool)\n  -t, --team (= \"\")\n      the team that owns the service (mandatory if the user has access to more than one team)\n  \nMinimum # of arguments: 2\nMaximum # of arguments: 2\n"
   }, 
   "app-create": {
     "usage": "tsuru app-create <appname> [platform] [--plan/-p plan name] [--router/-r router name] [--team/-t team owner] [--pool/-o pool name] [--description/-d description] [--tag/-g tag]... [--router-opts key=value]...", 
@@ -396,7 +416,7 @@
     "desc": "Block events.\n\nFlags:\n  \n  -k, --kind (= \"\")\n      Event kind to be blocked.\n  -o, --owner (= \"\")\n      Block this owner's events.\n  -t, --target (= \"\")\n      Block events with this target type.\n  -v, --value (= \"\")\n      Block events with this target value.\n  \nMinimum # of arguments: 1\n"
   }, 
   "role-default-remove": {
-    "usage": "tsuru role-default-remove [--team-create <role name>]... [--user-create <role name>]...", 
+    "usage": "tsuru role-default-remove [--user-create <role name>]... [--team-create <role name>]...", 
     "desc": "Remove a default role from a specific event.\n\nFlags:\n  \n  --team-create  (= [])\n      role added to user when a new team is created\n  --user-create  (= [])\n      role added to user when user is created\n  \n"
   }, 
   "node-remove": {
@@ -410,9 +430,17 @@
   "target": {
     "topic": "Target is used to manage the address of the remote tsuru server.\n\nEach target is identified by a label and a HTTP/HTTPS address. The client\nrequires at least one target to connect to, there's no default target. A user\nmay have multiple targets, but only one will be used at a time."
   }, 
+  "volume-unbind": {
+    "usage": "tsuru volume-unbind <volume-name> <mount point> [-a/--app <appname>]", 
+    "desc": "Unbinds a volume from an application.\n\nFlags:\n  \n  -a, --app (= \"\")\n      The name of the app.\n  --no-restart  (= false)\n      prevents restarting the application\n  \nMinimum # of arguments: 2\nMaximum # of arguments: 2\n"
+  }, 
   "pool-remove": {
     "usage": "tsuru pool-remove <pool> [-y]", 
     "desc": "Remove an existing pool.\n\nFlags:\n  \n  -y, --assume-yes  (= false)\n      Don't ask for confirmation.\n  \nMinimum # of arguments: 1\n"
+  }, 
+  "volume-bind": {
+    "usage": "tsuru volume-bind <volume-name> <mount point> [-a/--app <appname>] [-r/--readonly] [--no-restart]", 
+    "desc": "Binds an existing volume to an application.\n\nFlags:\n  \n  -a, --app (= \"\")\n      The name of the app.\n  --no-restart  (= false)\n      prevents restarting the application\n  -r, --readonly  (= false)\n      the volume will be available only for reading\n  \nMinimum # of arguments: 2\nMaximum # of arguments: 2\n"
   }, 
   "cname-remove": {
     "usage": "tsuru cname-remove <cname> [<cname> ...] [-a/--app appname]", 
@@ -564,7 +592,7 @@
   }, 
   "cluster-update": {
     "usage": "tsuru cluster-update <name> <provisioner> --addr address... [--pool poolname]... [--cacert cacertfile] [--clientcert clientcertfile] [--clientkey clientkeyfile] [--custom key=value]... [--default]", 
-    "desc": "Creates or updates a provisioner cluster definition.\n\nFlags:\n  \n  --addr  (= [])\n      Address to be used in cluster.\n  --cacert (= \"\")\n      Path to CA cert file.\n  --clientcert (= \"\")\n      Path to client cert file.\n  --clientkey (= \"\")\n      Path to client key file.\n  --custom  (= {})\n      Custom provisioner specific data.\n  --default  (= false)\n      Whether this is the default cluster.\n  --pool  (= [])\n      Pool which will use this cluster.\n  \nMinimum # of arguments: 2\nMaximum # of arguments: 2\n"
+    "desc": "Updates a provisioner cluster definition.\n\nFlags:\n  \n  --addr  (= [])\n      Address to be used in cluster.\n  --cacert (= \"\")\n      Path to CA cert file.\n  --clientcert (= \"\")\n      Path to client cert file.\n  --clientkey (= \"\")\n      Path to client key file.\n  --custom  (= {})\n      Custom provisioner specific data.\n  --default  (= false)\n      Whether this is the default cluster.\n  --pool  (= [])\n      Pool which will use this cluster.\n  \nMinimum # of arguments: 2\nMaximum # of arguments: 2\n"
   }, 
   "docker-log-info": {
     "usage": "tsuru docker-log-info", 
@@ -585,6 +613,10 @@
   "role-update": {
     "usage": "tsuru role-update <role> [-d/--description <description>] [-c/--context <context type>] [-n/--name <role new name>]", 
     "desc": "Updates a role description\n\nFlags:\n  \n  -c, --context (= \"\")\n      Updates the context type of a role\n  -d, --description (= \"\")\n      Updates a role description\n  -n, --name (= \"\")\n      Updates the name of a role\n  \nMinimum # of arguments: 1\nMaximum # of arguments: 1\n"
+  }, 
+  "volume-plan-list": {
+    "usage": "tsuru volume-plan-list", 
+    "desc": "Lists existing volume plans.\n\n"
   }, 
   "key-list": {
     "usage": "tsuru key-list [-n/--no-truncate]", 

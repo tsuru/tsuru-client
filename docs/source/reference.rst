@@ -210,6 +210,29 @@ These commands manage entire services and not particular instances.
    :title: Get documentation of a service
 
 
+Volume management
+=================
+
+.. tsuru-command:: volume-create
+   :title: Creates a new volume
+
+.. tsuru-command:: volume-update
+   :title: Updates an existing volume
+
+.. tsuru-command:: volume-delete
+   :title: Deletes a volume
+
+.. tsuru-command:: volume-list
+   :title: List existing volumes
+
+.. tsuru-command:: volume-plan-list
+   :title: List available volume plans
+
+.. tsuru-command:: volume-bind
+   :title: Bind a volume to an application
+
+.. tsuru-command:: volume-unbind
+   :title: Unbinds a volume from an application
 
 Environment variables
 =====================
@@ -336,6 +359,18 @@ Node management
 
 .. tsuru-command:: node-rebalance
   :title: Rebalance containers in nodes
+
+Cluster management
+==================
+
+.. tsuru-command:: cluster-add
+  :title: Add a new cluster
+
+.. tsuru-command:: cluster-update
+  :title: Updates an existing cluster
+
+.. tsuru-command:: cluster-list
+  :title: List clusters
 
 Node Containers management
 ==========================
