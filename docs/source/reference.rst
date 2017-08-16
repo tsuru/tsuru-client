@@ -49,8 +49,10 @@ Team management
 
 .. tsuru-command:: team-create
    :title: Create a new team
+.. tsuru-command:: team-update
+   :title: Update a team
 .. tsuru-command:: team-remove
-   :title: Remove a team from tsuru
+   :title: Remove a team
 .. tsuru-command:: team-list
    :title: List teams current user is member
 

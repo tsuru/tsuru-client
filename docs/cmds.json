@@ -163,6 +163,10 @@
     "usage": "tsuru unit-add <# of units> [-a/--app appname] [-p/--process processname]", 
     "desc": "Adds new units to a process of an application. You need to have access to the\napp to be able to add new units to it.\n\nFlags:\n  \n  -a, --app (= \"\")\n      The name of the app.\n  -p, --process (= \"\")\n      Process name\n  \nMinimum # of arguments: 1\n"
   }, 
+  "team-update": {
+    "usage": "tsuru team-update <team-name> -n <new-team-name>", 
+    "desc": "Updates a team name.\n\nFlags:\n  \n  -n, --name (= \"\")\n      New team name.\n  \nMinimum # of arguments: 1\nMaximum # of arguments: 1\n"
+  }, 
   "bs-info": {
     "usage": "tsuru bs-info", 
     "desc": "This command was removed. You should use `tsuru node-container-info big-sibling` instead.\n\n"
