@@ -333,10 +333,8 @@ func (c *TeamInfo) Info() *cmd.Info {
 }
 
 func (c *TeamInfo) Run(context *cmd.Context, client *cmd.Client) error {
-
-	context.RawOutput()
 	team := context.Args[0]
-	u, err := cmd.GetURL(fmt.Sprintf("/teams/%v", team))
+	u, err := cmd.GetURLVersion("1.4", fmt.Sprintf("/teams/%v", team))
 	if err != nil {
 		return err
 	}
@@ -354,28 +352,22 @@ func (c *TeamInfo) Run(context *cmd.Context, client *cmd.Client) error {
 		if err != nil {
 			return err
 		}
-
 		var team struct {
 			Name  string        `json:"name"`
 			Users []cmd.APIUser `json:"users"`
 			Pools []Pool        `json:"pools"`
 			Apps  []app         `json:"apps"`
 		}
-
 		err = json.Unmarshal(b, &team)
 		if err != nil {
 			return err
 		}
-
 		format := `Team: {{.Name}}
 `
 		tmpl := template.Must(template.New("app").Parse(format))
-
 		var tplBuffer bytes.Buffer
 		var buf bytes.Buffer
-
 		tmpl.Execute(&tplBuffer, team)
-
 		usersTable := cmd.NewTable()
 		usersTable.Headers = cmd.Row{"User", "Roles"}
 		usersTable.LineSeparator = true
@@ -387,20 +379,17 @@ func (c *TeamInfo) Run(context *cmd.Context, client *cmd.Client) error {
 			buf.WriteString(fmt.Sprintf("Users: %d\n", usersTable.Rows()))
 			buf.WriteString(usersTable.String())
 		}
-
 		poolsTable := cmd.NewTable()
 		poolsTable.Headers = cmd.Row{"Pool", "Kind", "Provisioner", "Routers"}
 		poolsTable.LineSeparator = true
 		for _, pool := range team.Pools {
 			poolsTable.AddRow(cmd.Row{pool.Name, pool.Kind(), pool.GetProvisioner(), strings.Join(pool.Allowed["router"], "\n")})
 		}
-
 		if poolsTable.Rows() > 0 {
 			buf.WriteString("\n")
 			buf.WriteString(fmt.Sprintf("Pools: %d\n", poolsTable.Rows()))
 			buf.WriteString(poolsTable.String())
 		}
-
 		appsTable := cmd.NewTable()
 		appsTable.Headers = cmd.Row{"Application", "Units", "Address"}
 		appsTable.LineSeparator = true
@@ -431,7 +420,6 @@ func (c *TeamInfo) Run(context *cmd.Context, client *cmd.Client) error {
 			addrs := strings.Replace(app.Addr(), ", ", "\n", -1)
 			appsTable.AddRow(cmd.Row([]string{app.Name, summary, addrs}))
 		}
-
 		if appsTable.Rows() > 0 {
 			buf.WriteString("\n")
 			buf.WriteString(fmt.Sprintf("Applications: %d\n", appsTable.Rows()))
