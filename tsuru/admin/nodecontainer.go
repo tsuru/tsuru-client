@@ -6,6 +6,7 @@ package admin
 
 import (
 	"encoding/json"
+	"errors"
 	"fmt"
 	"net/http"
 	"net/url"
@@ -103,9 +104,11 @@ func (c *NodeContainerList) Flags() *gnuflag.FlagSet {
 }
 
 type dockerCmd struct {
-	config nodecontainer.NodeContainerConfig
-	raw    cmd.MapFlag
-	ports  cmd.StringSliceFlag
+	config  nodecontainer.NodeContainerConfig
+	raw     cmd.MapFlag
+	ports   cmd.StringSliceFlag
+	enable  bool
+	disable bool
 }
 
 func (c *dockerCmd) info() string {
@@ -129,6 +132,8 @@ func (c *dockerCmd) flags(fs *gnuflag.FlagSet) {
 	fs.StringVar(&c.config.HostConfig.RestartPolicy.Name, "restart", "", "Restart policy to apply when a container exits")
 	fs.StringVar(&c.config.HostConfig.NetworkMode, "net", "", "Connect a container to a network")
 	fs.StringVar(&c.config.HostConfig.LogConfig.Type, "log-driver", "", "Logging driver for container")
+	fs.BoolVar(&c.enable, "enable", false, "Enable node container")
+	fs.BoolVar(&c.disable, "disable", false, "Disable node container")
 }
 
 func (c *dockerCmd) toValues() (url.Values, error) {
@@ -151,6 +156,14 @@ func (c *dockerCmd) toValues() (url.Values, error) {
 	val, err := form.EncodeToValues(c.config)
 	if err != nil {
 		return nil, err
+	}
+	if c.enable && c.disable {
+		return nil, errors.New("cannot have both --enable and --disable")
+	}
+	if c.enable || c.disable {
+		val.Set("Disabled", strconv.FormatBool(c.disable))
+	} else {
+		val.Del("Disabled")
 	}
 	for k := range val {
 		lower := strings.ToLower(k)
