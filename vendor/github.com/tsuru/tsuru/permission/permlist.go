@@ -43,6 +43,7 @@ var PermissionRegistry = (&registry{}).addWithCtx(
 	"app.update.unbind-volume",
 	"app.update.certificate.set",
 	"app.update.certificate.unset",
+	"app.update.deploy.rollback",
 	"app.deploy",
 	"app.deploy.archive-url",
 	"app.deploy.build",
@@ -138,6 +139,7 @@ var PermissionRegistry = (&registry{}).addWithCtx(
 	"service-instance.update.revoke",
 	"service-instance.update.description",
 	"service-instance.update.tags",
+	"service-instance.update.teamowner",
 ).add(
 	"role.create",
 	"role.delete",

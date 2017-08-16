@@ -11,8 +11,8 @@ import (
 	"strconv"
 
 	"github.com/tsuru/gnuflag"
-	tsuruapp "github.com/tsuru/tsuru/app"
 	"github.com/tsuru/tsuru/cmd"
+	apptypes "github.com/tsuru/tsuru/types/app"
 )
 
 type PlanList struct {
@@ -39,7 +39,7 @@ func (c *PlanList) Info() *cmd.Info {
 	}
 }
 
-func renderPlans(plans []tsuruapp.Plan, isBytes bool) string {
+func renderPlans(plans []apptypes.Plan, isBytes bool) string {
 	table := cmd.NewTable()
 	table.Headers = []string{"Name", "Memory", "Swap", "Cpu Share", "Default"}
 	for _, p := range plans {
@@ -69,7 +69,7 @@ func (c *PlanList) Run(context *cmd.Context, client *cmd.Client) error {
 	if err != nil {
 		return err
 	}
-	var plans []tsuruapp.Plan
+	var plans []apptypes.Plan
 	resp, err := client.Do(request)
 	if err != nil {
 		return err
