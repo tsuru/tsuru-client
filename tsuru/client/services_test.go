@@ -484,15 +484,16 @@ func (s *S) TestServiceInstanceUpdateRun(c *check.C) {
 			r.ParseForm()
 			description := r.FormValue("description") == "desc"
 			tags := len(r.Form["tag"]) == 2 && r.Form["tag"][0] == "tag1" && r.Form["tag"][1] == "tag2"
-			method := r.Method == "PUT"
+			method := r.Method == http.MethodPut
 			contentType := r.Header.Get("Content-Type") == "application/x-www-form-urlencoded"
 			url := strings.HasSuffix(r.URL.Path, "/services/service/instances/service-instance")
+			c.Assert(r.FormValue("teamowner"), check.Equals, "new-team")
 			return method && url && description && tags && contentType
 		},
 	}
 	client := cmd.NewClient(&http.Client{Transport: &trans}, nil, manager)
 	command := ServiceInstanceUpdate{}
-	command.Flags().Parse(true, []string{"--description", "desc", "--tag", "tag1", "--tag", "tag2"})
+	command.Flags().Parse(true, []string{"--description", "desc", "--tag", "tag1", "--tag", "tag2", "--team-owner", "new-team"})
 	err := (&command).Run(&context, client)
 	c.Assert(err, check.IsNil)
 	obtained := stdout.String()
@@ -528,26 +529,44 @@ func (s *S) TestServiceInstanceUpdateRunWithEmptyTag(c *check.C) {
 }
 
 func (s *S) TestServiceInstanceUpdateFlags(c *check.C) {
-	flagDesc := "service instance description"
 	command := ServiceInstanceUpdate{}
 	flagset := command.Flags()
 	c.Assert(flagset, check.NotNil)
-	flagset.Parse(true, []string{"-d", "description"})
-	assume := flagset.Lookup("description")
+	err := flagset.Parse(true, []string{"-t", "the new owner"})
+	c.Assert(err, check.IsNil)
+	flagDesc := "service instance team owner"
+	assume := flagset.Lookup("team-owner")
+	c.Check(assume, check.NotNil)
+	c.Check(assume.Name, check.Equals, "team-owner")
+	c.Check(assume.Usage, check.Equals, flagDesc)
+	c.Check(assume.Value.String(), check.Equals, "the new owner")
+	c.Check(assume.DefValue, check.Equals, "")
+	sassume := flagset.Lookup("t")
+	c.Check(sassume, check.NotNil)
+	c.Check(sassume.Name, check.Equals, "t")
+	c.Check(sassume.Usage, check.Equals, flagDesc)
+	c.Check(sassume.Value.String(), check.Equals, "the new owner")
+	c.Check(sassume.DefValue, check.Equals, "")
+	c.Check(command.teamOwner, check.Equals, "the new owner")
+	err = flagset.Parse(true, []string{"-d", "description"})
+	c.Assert(err, check.IsNil)
+	flagDesc = "service instance description"
+	assume = flagset.Lookup("description")
 	c.Check(assume, check.NotNil)
 	c.Check(assume.Name, check.Equals, "description")
 	c.Check(assume.Usage, check.Equals, flagDesc)
 	c.Check(assume.Value.String(), check.Equals, "description")
 	c.Check(assume.DefValue, check.Equals, "")
-	sassume := flagset.Lookup("d")
+	sassume = flagset.Lookup("d")
 	c.Check(sassume, check.NotNil)
 	c.Check(sassume.Name, check.Equals, "d")
 	c.Check(sassume.Usage, check.Equals, flagDesc)
 	c.Check(sassume.Value.String(), check.Equals, "description")
 	c.Check(sassume.DefValue, check.Equals, "")
 	c.Check(command.description, check.Equals, "description")
+	err = flagset.Parse(true, []string{"-g", "my tag"})
+	c.Assert(err, check.IsNil)
 	flagDesc = "service instance tag"
-	flagset.Parse(true, []string{"-g", "my tag"})
 	assume = flagset.Lookup("tag")
 	c.Check(assume, check.NotNil)
 	c.Check(assume.Name, check.Equals, "tag")
