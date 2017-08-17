@@ -182,6 +182,53 @@ func (c *TeamCreate) Run(context *cmd.Context, client *cmd.Client) error {
 	return nil
 }
 
+type TeamUpdate struct {
+	newName string
+	fs      *gnuflag.FlagSet
+}
+
+func (t *TeamUpdate) Flags() *gnuflag.FlagSet {
+	if t.fs == nil {
+		t.fs = gnuflag.NewFlagSet("team-update", gnuflag.ExitOnError)
+		desc := "New team name."
+		t.fs.StringVar(&t.newName, "name", "", desc)
+		t.fs.StringVar(&t.newName, "n", "", desc)
+	}
+	return t.fs
+}
+
+func (t *TeamUpdate) Info() *cmd.Info {
+	return &cmd.Info{
+		Name:    "team-update",
+		Usage:   "team-update <team-name> -n <new-team-name>",
+		Desc:    `Updates a team name.`,
+		MinArgs: 1,
+		MaxArgs: 1,
+	}
+}
+
+func (t *TeamUpdate) Run(context *cmd.Context, client *cmd.Client) error {
+	name := context.Args[0]
+	v := url.Values{}
+	v.Set("newname", t.newName)
+	b := strings.NewReader(v.Encode())
+	u, err := cmd.GetURLVersion("1.4", fmt.Sprintf("/teams/%s", name))
+	if err != nil {
+		return err
+	}
+	request, err := http.NewRequest("POST", u, b)
+	if err != nil {
+		return err
+	}
+	request.Header.Set("Content-Type", "application/x-www-form-urlencoded")
+	_, err = client.Do(request)
+	if err != nil {
+		return err
+	}
+	fmt.Fprintln(context.Stdout, "Team successfully updated!")
+	return nil
+}
+
 type TeamRemove struct {
 	cmd.ConfirmationCommand
 }
