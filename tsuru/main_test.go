@@ -333,6 +333,20 @@ func (s *S) TestAppDeployIsRegistered(c *check.C) {
 	c.Assert(deployCmd, check.FitsTypeOf, &client.AppDeploy{})
 }
 
+func (s *S) TestAppDeployRollbackIsRegistered(c *check.C) {
+	manager = buildManager("tsuru")
+	deployRollbackCmd, ok := manager.Commands["app-deploy-rollback"]
+	c.Assert(ok, check.Equals, true)
+	c.Assert(deployRollbackCmd, check.FitsTypeOf, &client.AppDeployRollback{})
+}
+
+func (s *S) TestAppDeployRollbackUpdateIsRegistered(c *check.C) {
+	manager = buildManager("tsuru")
+	deployRollbackUpdateCmd, ok := manager.Commands["app-deploy-rollback-update"]
+	c.Assert(ok, check.Equals, true)
+	c.Assert(deployRollbackUpdateCmd, check.FitsTypeOf, &client.AppDeployRollbackUpdate{})
+}
+
 func (s *S) TestPlanListRegistered(c *check.C) {
 	manager = buildManager("tsuru")
 	list, ok := manager.Commands["plan-list"]
