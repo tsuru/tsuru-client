@@ -320,6 +320,6 @@ func (c *EventCancel) Run(context *cmd.Context, client *cmd.Client) error {
 	if err != nil {
 		return err
 	}
-	fmt.Fprintln(context.Stdout, "Event successfully canceled.")
+	fmt.Fprintln(context.Stdout, "Cancellation successfully requested.")
 	return nil
 }
