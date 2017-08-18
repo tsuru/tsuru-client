@@ -68,8 +68,8 @@
     "desc": "Creates or update a TLS certificate into the specific app.\n\nFlags:\n  \n  -a, --app (= \"\")\n      The name of the app.\n  -c, --cname (= \"\")\n      App CNAME\n  \nMinimum # of arguments: 2\n"
   }, 
   "service-instance-update": {
-    "usage": "tsuru service-instance-update <service-name> <service-instance-name> [-d/--description description] [-g/--tag tag]...", 
-    "desc": "Updates a service instance of a service.\n\nThe --description parameter sets a description for your service instance.\n\nThe --tag parameter adds a tag to your service instance. This parameter\nmay be used multiple times.\n\nFlags:\n  \n  -d, --description (= \"\")\n      service instance description\n  -g, --tag  (= [])\n      service instance tag\n  \nMinimum # of arguments: 2\n"
+    "usage": "tsuru service-instance-update <service-name> <service-instance-name> [-t/--team-owner team] [-d/--description description] [-g/--tag tag]...", 
+    "desc": "Updates a service instance.\n\nThe --team-owner parameter updates the team owner of a service instance.\n\nThe --description parameter sets a description for your service instance.\n\nThe --tag parameter adds a tag to your service instance. This parameter\nmay be used multiple times.\n\nFlags:\n  \n  -d, --description (= \"\")\n      service instance description\n  -g, --tag  (= [])\n      service instance tag\n  -t, --team-owner (= \"\")\n      service instance team owner\n  \nMinimum # of arguments: 2\n"
   }, 
   "bs-upgrade": {
     "usage": "tsuru bs-upgrade", 
@@ -479,7 +479,7 @@
     "desc": "Displays the information of the given service instance.\n\nMinimum # of arguments: 2\n"
   }, 
   "service-instance-add": {
-    "usage": "tsuru service-instance-add <service-name> <service-instance-name> [plan] [-t/--team-owner <team>] [-d/--description description] [-g/--tag tag]...", 
+    "usage": "tsuru service-instance-add <service-name> <service-instance-name> [plan] [-t/--team-owner team] [-d/--description description] [-g/--tag tag]...", 
     "desc": "Creates a service instance of a service. There can later be binded to\napplications with [[tsuru service-bind]].\n\nThis example shows how to add a new instance of **mongodb** service, named\n**tsuru_mongodb** with the plan **small**:\n\n::\n\n    $ tsuru service-instance-add mongodb tsuru_mongodb small -t myteam\n\n\nFlags:\n  \n  -d, --description (= \"\")\n      service instance description\n  -g, --tag  (= [])\n      service instance tag\n  -t, --team-owner (= \"\")\n      the team that owns the service (mandatory if the user is member of more than one team)\n  \nMinimum # of arguments: 2\nMaximum # of arguments: 3\n"
   }, 
   "app-quota-change": {
