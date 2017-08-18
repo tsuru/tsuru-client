@@ -521,5 +521,5 @@ func (s *S) TestEventCancel(c *check.C) {
 	command.Flags().Parse(true, []string{"-y"})
 	err := command.Run(&context, client)
 	c.Assert(err, check.IsNil)
-	c.Assert(stdout.String(), check.Matches, "Event successfully canceled.\n")
+	c.Assert(stdout.String(), check.Matches, "Cancellation successfully requested.\n")
 }
