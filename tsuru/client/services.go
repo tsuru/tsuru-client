@@ -75,7 +75,7 @@ type ServiceInstanceAdd struct {
 func (c *ServiceInstanceAdd) Info() *cmd.Info {
 	return &cmd.Info{
 		Name:  "service-instance-add",
-		Usage: "service-instance-add <service-name> <service-instance-name> [plan] [-t/--team-owner <team>] [-d/--description description] [-g/--tag tag]...",
+		Usage: "service-instance-add <service-name> <service-instance-name> [plan] [-t/--team-owner team] [-d/--description description] [-g/--tag tag]...",
 		Desc: `Creates a service instance of a service. There can later be binded to
 applications with [[tsuru service-bind]].
 
@@ -137,6 +137,7 @@ func (c *ServiceInstanceAdd) Flags() *gnuflag.FlagSet {
 
 type ServiceInstanceUpdate struct {
 	fs          *gnuflag.FlagSet
+	teamOwner   string
 	description string
 	tags        cmd.StringSliceFlag
 }
@@ -144,8 +145,10 @@ type ServiceInstanceUpdate struct {
 func (c *ServiceInstanceUpdate) Info() *cmd.Info {
 	return &cmd.Info{
 		Name:  "service-instance-update",
-		Usage: "service-instance-update <service-name> <service-instance-name> [-d/--description description] [-g/--tag tag]...",
-		Desc: `Updates a service instance of a service.
+		Usage: "service-instance-update <service-name> <service-instance-name> [-t/--team-owner team] [-d/--description description] [-g/--tag tag]...",
+		Desc: `Updates a service instance.
+
+The --team-owner parameter updates the team owner of a service instance.
 
 The --description parameter sets a description for your service instance.
 
@@ -162,6 +165,7 @@ func (c *ServiceInstanceUpdate) Run(ctx *cmd.Context, client *cmd.Client) error 
 		return err
 	}
 	v := url.Values{}
+	v.Set("teamowner", c.teamOwner)
 	v.Set("description", c.description)
 	for _, tag := range c.tags {
 		v.Add("tag", tag)
@@ -182,6 +186,9 @@ func (c *ServiceInstanceUpdate) Run(ctx *cmd.Context, client *cmd.Client) error 
 func (c *ServiceInstanceUpdate) Flags() *gnuflag.FlagSet {
 	if c.fs == nil {
 		c.fs = gnuflag.NewFlagSet("service-instance-update", gnuflag.ExitOnError)
+		teamOwnerMessage := "service instance team owner"
+		c.fs.StringVar(&c.teamOwner, "team-owner", "", teamOwnerMessage)
+		c.fs.StringVar(&c.teamOwner, "t", "", teamOwnerMessage)
 		descriptionMessage := "service instance description"
 		c.fs.StringVar(&c.description, "description", "", descriptionMessage)
 		c.fs.StringVar(&c.description, "d", "", descriptionMessage)
