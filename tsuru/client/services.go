@@ -687,24 +687,10 @@ func (c *ServiceInstanceRemove) Run(ctx *cmd.Context, client *cmd.Client) error 
 	if err != nil {
 		return err
 	}
-	jsonParts := strings.Split(string(result), "\n")
-	var jsonMsg, jsonMsg2 tsuruIo.SimpleJsonMessage
-	if len(jsonParts) > 1 {
-		json.Unmarshal([]byte(jsonParts[0]), &jsonMsg)
-		json.Unmarshal([]byte(jsonParts[1]), &jsonMsg2)
-	} else {
-		json.Unmarshal(result, &jsonMsg)
-	}
-	var msgError error
-	switch {
-	case (jsonMsg.Error != ""):
-		msgError = errors.New(jsonMsg.Error)
-	case (jsonMsg2.Error != ""):
-		msgError = errors.New(jsonMsg2.Error)
-	}
+	jsonMsg, msgError := getErrorAndMessageInSimpleJSON(strings.Split(string(result), "\n"))
 	if msgError != nil {
 		if msgError.Error() == service.ErrServiceInstanceBound.Error() {
-			fmt.Fprintf(ctx.Stdout, `Applications bound to the service "%s": "%s"`+"\n", instanceName, jsonMsg.Message)
+			fmt.Fprintf(ctx.Stdout, `Applications bound to the service "%s": "%s"`+"\n", instanceName, jsonMsg)
 			fmt.Fprintf(ctx.Stdout, `Do you want unbind all apps? (y/n) `)
 			fmt.Fscanf(ctx.Stdin, "%s", &answer)
 			if answer != "y" {
@@ -717,6 +703,21 @@ func (c *ServiceInstanceRemove) Run(ctx *cmd.Context, client *cmd.Client) error 
 	}
 	fmt.Fprintf(ctx.Stdout, `Service "%s" successfully removed!`+"\n", instanceName)
 	return nil
+}
+
+func getErrorAndMessageInSimpleJSON(jsons []string) (string, error) {
+	var jsonMsg, previousJSON tsuruIo.SimpleJsonMessage
+	for i, v := range jsons {
+		json.Unmarshal([]byte(v), &jsonMsg)
+		if jsonMsg.Error != "" {
+			if (len(jsons) > 1) && (jsonMsg.Message == "") {
+				json.Unmarshal([]byte(jsons[i-1]), &previousJSON)
+				jsonMsg.Message = previousJSON.Message
+			}
+			return jsonMsg.Message, errors.New(jsonMsg.Error)
+		}
+	}
+	return "", nil
 }
 
 func (c *ServiceInstanceRemove) Flags() *gnuflag.FlagSet {
