@@ -19,7 +19,6 @@ import (
 	"github.com/tsuru/gnuflag"
 	"github.com/tsuru/tsuru/cmd"
 	tsuruIo "github.com/tsuru/tsuru/io"
-	"github.com/tsuru/tsuru/service"
 )
 
 type ServiceList struct{}
@@ -615,15 +614,14 @@ func (c ServiceInfo) Run(ctx *cmd.Context, client *cmd.Client) error {
 }
 
 type ServiceInstanceRemove struct {
-	yes       bool
-	yesUnbind bool
-	fs        *gnuflag.FlagSet
+	force bool
+	fs    *gnuflag.FlagSet
 }
 
 func (c *ServiceInstanceRemove) Info() *cmd.Info {
 	return &cmd.Info{
 		Name:  "service-instance-remove",
-		Usage: "service-instance-remove <service-name> <service-instance-name> [--assume-yes] [--unbind]",
+		Usage: "service-instance-remove <service-name> <service-instance-name> [-f/--force]",
 		Desc: `Destroys a service instance. It can't remove a service instance that is bound
 to an app, so before remove a service instance, make sure there is no apps
 bound to it (see [[tsuru service-instance-info]] command).`,
@@ -631,10 +629,10 @@ bound to it (see [[tsuru service-instance-info]] command).`,
 	}
 }
 
-func removeServiceInstanceWithUnbind(ctx *cmd.Context, client *cmd.Client) error {
+func (c *ServiceInstanceRemove) Run(ctx *cmd.Context, client *cmd.Client) error {
 	serviceName := ctx.Args[0]
 	instanceName := ctx.Args[1]
-	url := fmt.Sprintf("/services/%s/instances/%s?unbindall=%s", serviceName, instanceName, "true")
+	url := fmt.Sprintf("/services/%s/instances/%s?unbindall=%s", serviceName, instanceName, strconv.FormatBool(c.force))
 	url, err := cmd.GetURL(url)
 	if err != nil {
 		return err
@@ -652,81 +650,16 @@ func removeServiceInstanceWithUnbind(ctx *cmd.Context, client *cmd.Client) error
 	if err != nil {
 		return err
 	}
-	fmt.Fprintf(ctx.Stdout, `Service "%s" successfully removed!`+"\n", instanceName)
-	return nil
-}
-
-func (c *ServiceInstanceRemove) Run(ctx *cmd.Context, client *cmd.Client) error {
-	serviceName := ctx.Args[0]
-	instanceName := ctx.Args[1]
-	var answer string
-	if !c.yes {
-		fmt.Fprintf(ctx.Stdout, `Are you sure you want to remove service "%s"? (y/n) `, instanceName)
-		fmt.Fscanf(ctx.Stdin, "%s", &answer)
-		if answer != "y" {
-			fmt.Fprintln(ctx.Stdout, "Abort.")
-			return nil
-		}
-	}
-	var url string
-	if c.yesUnbind {
-		return removeServiceInstanceWithUnbind(ctx, client)
-	}
-	url = fmt.Sprintf("/services/%s/instances/%s", serviceName, instanceName)
-	url, err := cmd.GetURL(url)
-	if err != nil {
-		return err
-	}
-	request, err := http.NewRequest(http.MethodDelete, url, nil)
-	if err != nil {
-		return err
-	}
-	resp, _ := client.Do(request)
 	defer resp.Body.Close()
-	result, err := ioutil.ReadAll(resp.Body)
-	if err != nil {
-		return err
-	}
-	jsonMsg, msgError := getErrorAndMessageInSimpleJSON(strings.Split(string(result), "\n"))
-	if msgError != nil {
-		if msgError.Error() == service.ErrServiceInstanceBound.Error() {
-			fmt.Fprintf(ctx.Stdout, `Applications bound to the service "%s": "%s"`+"\n", instanceName, jsonMsg)
-			fmt.Fprintf(ctx.Stdout, `Do you want unbind all apps? (y/n) `)
-			fmt.Fscanf(ctx.Stdin, "%s", &answer)
-			if answer != "y" {
-				fmt.Fprintln(ctx.Stdout, "Abort.")
-				return nil
-			}
-			msgError = removeServiceInstanceWithUnbind(ctx, client)
-		}
-		return msgError
-	}
 	fmt.Fprintf(ctx.Stdout, `Service "%s" successfully removed!`+"\n", instanceName)
 	return nil
-}
-
-func getErrorAndMessageInSimpleJSON(jsons []string) (string, error) {
-	var jsonMsg, previousJSON tsuruIo.SimpleJsonMessage
-	for i, v := range jsons {
-		json.Unmarshal([]byte(v), &jsonMsg)
-		if jsonMsg.Error != "" {
-			if (len(jsons) > 1) && (jsonMsg.Message == "") {
-				json.Unmarshal([]byte(jsons[i-1]), &previousJSON)
-				jsonMsg.Message = previousJSON.Message
-			}
-			return jsonMsg.Message, errors.New(jsonMsg.Error)
-		}
-	}
-	return "", nil
 }
 
 func (c *ServiceInstanceRemove) Flags() *gnuflag.FlagSet {
 	if c.fs == nil {
 		c.fs = gnuflag.NewFlagSet("service-instance-remove", gnuflag.ExitOnError)
-		c.fs.BoolVar(&c.yes, "assume-yes", false, "Don't ask for confirmation, just remove the service.")
-		c.fs.BoolVar(&c.yes, "y", false, "Don't ask for confirmation, just remove the service.")
-		c.fs.BoolVar(&c.yesUnbind, "unbind", false, "Don't ask for confirmation, just remove all applications bound.")
-		c.fs.BoolVar(&c.yesUnbind, "u", false, "Don't ask for confirmation, just remove all applications bound.")
+		c.fs.BoolVar(&c.force, "f", false, "Forces the removal of a service instance binded to apps.")
+		c.fs.BoolVar(&c.force, "force", false, "Forces the removal of a service instance binded to apps.")
 	}
 	return c.fs
 }
