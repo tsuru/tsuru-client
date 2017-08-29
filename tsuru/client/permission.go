@@ -679,7 +679,7 @@ func (c *RoleUpdate) Run(context *cmd.Context, client *cmd.Client) error {
 	params.Set("newName", c.newName)
 	params.Set("description", c.description)
 	params.Set("contextType", c.contextType)
-	url, err := cmd.GetURL("/roles")
+	url, err := cmd.GetURLVersion("1.4", "/roles")
 	if err != nil {
 		return err
 	}
