@@ -6,6 +6,7 @@ package client
 
 import (
 	"encoding/json"
+	"errors"
 	"fmt"
 	"io"
 	"io/ioutil"
@@ -674,6 +675,9 @@ func (c *RoleUpdate) Flags() *gnuflag.FlagSet {
 }
 
 func (c *RoleUpdate) Run(context *cmd.Context, client *cmd.Client) error {
+	if (c.newName == "") && (c.description == "") && (c.contextType == "") {
+		return errors.New("Neither the description, context or new name were set. You must define at least one.")
+	}
 	params := url.Values{}
 	params.Set("name", context.Args[0])
 	params.Set("newName", c.newName)
