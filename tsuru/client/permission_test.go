@@ -444,6 +444,31 @@ func (s *S) TestRoleUpdate(c *check.C) {
 	c.Assert(stdout.String(), check.Equals, "Role successfully updated\n")
 }
 
+func (s *S) TestRoleUpdateWithoutFlags(c *check.C) {
+	var stdout, stderr bytes.Buffer
+	expected := "Neither the description, context or new name were set. You must define at least one."
+	context := cmd.Context{
+		Args:   []string{"team-member"},
+		Stdout: &stdout,
+		Stderr: &stderr,
+	}
+	trans := &cmdtest.ConditionalTransport{
+		Transport: cmdtest.Transport{Message: "", Status: http.StatusOK},
+		CondFunc: func(req *http.Request) bool {
+			path := strings.HasSuffix(req.URL.Path, "/roles")
+			method := req.Method == "PUT"
+			contentType := req.Header.Get("Content-Type") == "application/x-www-form-urlencoded"
+			return path && method && contentType && req.FormValue("name") == "team-member" && req.FormValue("description") == "a developer"
+		},
+	}
+	manager := cmd.Manager{}
+	client := cmd.NewClient(&http.Client{Transport: trans}, nil, &manager)
+	cmd := RoleUpdate{}
+	err := cmd.Run(&context, client)
+	c.Assert(err, check.NotNil)
+	c.Assert(err.Error(), check.Equals, expected)
+}
+
 func (s *S) TestRoleUpdateMultipleFlags(c *check.C) {
 	var stdout, stderr bytes.Buffer
 	context := cmd.Context{
