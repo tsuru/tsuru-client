@@ -778,7 +778,6 @@ func (s *S) TestServiceInstanceRemoveRunWithForce(c *check.C) {
 		Stdout: &stdout,
 		Stderr: &stderr,
 	}
-	expected := "Service \"some-service-instance\" successfully removed!\n"
 	transport := cmdtest.ConditionalTransport{
 		Transport: cmdtest.Transport{Message: "", Status: http.StatusOK},
 		CondFunc: func(r *http.Request) bool {
@@ -791,8 +790,6 @@ func (s *S) TestServiceInstanceRemoveRunWithForce(c *check.C) {
 	cmd.Flags().Parse(true, []string{"-f", "-y"})
 	err := cmd.Run(&ctx, client)
 	c.Assert(err, check.IsNil)
-	obtained := stdout.String()
-	c.Assert(obtained, check.Equals, expected)
 }
 
 func (s *S) TestServiceInstanceRemoveFlags(c *check.C) {
@@ -833,7 +830,6 @@ func (s *S) TestServiceInstanceRemoveWithoutForce(c *check.C) {
 
 func (s *S) TestServiceInstanceRemoveWithAppBindWithFlags(c *check.C) {
 	var stdout, stderr bytes.Buffer
-	expected := `Service "mongodb" successfully removed!` + "\n"
 	ctx := cmd.Context{
 		Args:   []string{"service-name", "mongodb"},
 		Stdout: &stdout,
@@ -850,8 +846,6 @@ func (s *S) TestServiceInstanceRemoveWithAppBindWithFlags(c *check.C) {
 	command.Flags().Parse(true, []string{"-f", "-y"})
 	err := command.Run(&ctx, client)
 	c.Assert(err, check.IsNil)
-	obtained := stdout.String()
-	c.Assert(obtained, check.Equals, expected)
 }
 
 func (s *S) TestServiceInstanceGrantInfo(c *check.C) {
