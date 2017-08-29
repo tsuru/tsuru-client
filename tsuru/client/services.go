@@ -664,7 +664,6 @@ func (c *ServiceInstanceRemove) Run(ctx *cmd.Context, client *cmd.Client) error 
 	if err != nil {
 		return err
 	}
-	fmt.Fprintf(ctx.Stdout, `Service "%s" successfully removed!`+"\n", instanceName)
 	return nil
 }
 
