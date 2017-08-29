@@ -614,14 +614,15 @@ func (c ServiceInfo) Run(ctx *cmd.Context, client *cmd.Client) error {
 }
 
 type ServiceInstanceRemove struct {
-	force bool
+	cmd.ConfirmationCommand
 	fs    *gnuflag.FlagSet
+	force bool
 }
 
 func (c *ServiceInstanceRemove) Info() *cmd.Info {
 	return &cmd.Info{
 		Name:  "service-instance-remove",
-		Usage: "service-instance-remove <service-name> <service-instance-name> [-f/--force]",
+		Usage: "service-instance-remove <service-name> <service-instance-name> [-f/--force] [-y/--assume-yes]",
 		Desc: `Destroys a service instance. It can't remove a service instance that is bound
 to an app, so before remove a service instance, make sure there is no apps
 bound to it (see [[tsuru service-instance-info]] command).`,
@@ -632,7 +633,14 @@ bound to it (see [[tsuru service-instance-info]] command).`,
 func (c *ServiceInstanceRemove) Run(ctx *cmd.Context, client *cmd.Client) error {
 	serviceName := ctx.Args[0]
 	instanceName := ctx.Args[1]
-	url := fmt.Sprintf("/services/%s/instances/%s?unbindall=%s", serviceName, instanceName, strconv.FormatBool(c.force))
+	msg := fmt.Sprintf("Are you sure you want to remove the instance %q", instanceName)
+	if c.force {
+		msg += " and all binds"
+	}
+	if !c.Confirm(ctx, msg+"?") {
+		return nil
+	}
+	url := fmt.Sprintf("/services/%s/instances/%s?unbindall=%v", serviceName, instanceName, c.force)
 	url, err := cmd.GetURL(url)
 	if err != nil {
 		return err
@@ -649,14 +657,13 @@ func (c *ServiceInstanceRemove) Run(ctx *cmd.Context, client *cmd.Client) error 
 	if err != nil {
 		return err
 	}
-	defer resp.Body.Close()
 	fmt.Fprintf(ctx.Stdout, `Service "%s" successfully removed!`+"\n", instanceName)
 	return nil
 }
 
 func (c *ServiceInstanceRemove) Flags() *gnuflag.FlagSet {
 	if c.fs == nil {
-		c.fs = gnuflag.NewFlagSet("service-instance-remove", gnuflag.ExitOnError)
+		c.fs = c.ConfirmationCommand.Flags()
 		c.fs.BoolVar(&c.force, "f", false, "Forces the removal of a service instance binded to apps.")
 		c.fs.BoolVar(&c.force, "force", false, "Forces the removal of a service instance binded to apps.")
 	}

@@ -769,7 +769,7 @@ func (s *S) TestServiceInstanceRemoveRunWithForce(c *check.C) {
 	}
 	client := cmd.NewClient(&http.Client{Transport: &transport}, nil, manager)
 	cmd := ServiceInstanceRemove{}
-	cmd.Flags().Parse(true, []string{"-f"})
+	cmd.Flags().Parse(true, []string{"-f", "-y"})
 	err := cmd.Run(&ctx, client)
 	c.Assert(err, check.IsNil)
 	obtained := stdout.String()
@@ -805,7 +805,9 @@ func (s *S) TestServiceInstanceRemoveWithoutForce(c *check.C) {
 		},
 	}
 	client := cmd.NewClient(&http.Client{Transport: trans}, nil, manager)
-	err := (&ServiceInstanceRemove{}).Run(&ctx, client)
+	command := ServiceInstanceRemove{}
+	command.Flags().Parse(true, []string{"-y"})
+	err := command.Run(&ctx, client)
 	c.Assert(err, check.NotNil)
 	c.Assert(err.Error(), check.Equals, trans.Message)
 }
@@ -826,7 +828,7 @@ func (s *S) TestServiceInstanceRemoveWithAppBindWithFlags(c *check.C) {
 	}
 	client := cmd.NewClient(&http.Client{Transport: trans}, nil, manager)
 	command := ServiceInstanceRemove{}
-	command.Flags().Parse(true, []string{"-f"})
+	command.Flags().Parse(true, []string{"-f", "-y"})
 	err := command.Run(&ctx, client)
 	c.Assert(err, check.IsNil)
 	obtained := stdout.String()
