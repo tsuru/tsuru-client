@@ -652,7 +652,6 @@ func (c *ServiceInstanceRemove) Run(ctx *cmd.Context, client *cmd.Client) error 
 	if err != nil {
 		return err
 	}
-	defer resp.Body.Close()
 	err = cmd.StreamJSONResponse(ctx.Stdout, resp)
 	if err != nil {
 		return err
