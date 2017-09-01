@@ -45,7 +45,7 @@ func (s *S) TestPermissionListRun(c *check.C) {
 	trans := &cmdtest.ConditionalTransport{
 		Transport: cmdtest.Transport{Message: string(result), Status: http.StatusOK},
 		CondFunc: func(req *http.Request) bool {
-			return strings.HasSuffix(req.URL.Path, "/permissions") && req.Method == "GET"
+			return strings.HasSuffix(req.URL.Path, "/permissions") && req.Method == http.MethodGet
 		},
 	}
 	client := cmd.NewClient(&http.Client{Transport: trans}, nil, manager)
@@ -69,7 +69,7 @@ func (s *S) TestRoleAddRun(c *check.C) {
 	trans := &cmdtest.ConditionalTransport{
 		Transport: cmdtest.Transport{Message: string(""), Status: http.StatusCreated},
 		CondFunc: func(req *http.Request) bool {
-			return strings.HasSuffix(req.URL.Path, "/roles") && req.Method == "POST" &&
+			return strings.HasSuffix(req.URL.Path, "/roles") && req.Method == http.MethodPost &&
 				req.FormValue("name") == "myrole" && req.FormValue("context") == "app"
 		},
 	}
@@ -127,7 +127,7 @@ func (s *S) TestRoleListRun(c *check.C) {
 	trans := &cmdtest.ConditionalTransport{
 		Transport: cmdtest.Transport{Message: string(result), Status: http.StatusOK},
 		CondFunc: func(req *http.Request) bool {
-			return strings.HasSuffix(req.URL.Path, "/roles") && req.Method == "GET"
+			return strings.HasSuffix(req.URL.Path, "/roles") && req.Method == http.MethodGet
 		},
 	}
 	client := cmd.NewClient(&http.Client{Transport: trans}, nil, manager)
@@ -161,7 +161,7 @@ func (s *S) TestRoleInfoRun(c *check.C) {
 	trans := &cmdtest.ConditionalTransport{
 		Transport: cmdtest.Transport{Message: string(result), Status: http.StatusOK},
 		CondFunc: func(req *http.Request) bool {
-			return strings.HasSuffix(req.URL.Path, "/roles/role1") && req.Method == "GET"
+			return strings.HasSuffix(req.URL.Path, "/roles/role1") && req.Method == http.MethodGet
 		},
 	}
 	client := cmd.NewClient(&http.Client{Transport: trans}, nil, manager)
@@ -185,7 +185,7 @@ func (s *S) TestRoleAssignRun(c *check.C) {
 	trans := &cmdtest.ConditionalTransport{
 		Transport: cmdtest.Transport{Message: string(""), Status: http.StatusCreated},
 		CondFunc: func(req *http.Request) bool {
-			return strings.HasSuffix(req.URL.Path, "/roles/myrole/user") && req.Method == "POST" &&
+			return strings.HasSuffix(req.URL.Path, "/roles/myrole/user") && req.Method == http.MethodPost &&
 				req.FormValue("email") == "me@me.com" && req.FormValue("context") == "myapp"
 		},
 	}
@@ -237,7 +237,7 @@ func (s *S) TestRolePermissionAddRun(c *check.C) {
 		CondFunc: func(req *http.Request) bool {
 			req.ParseForm()
 			sort.Strings(req.Form["permission"])
-			return strings.HasSuffix(req.URL.Path, "/roles/myrole/permissions") && req.Method == "POST" &&
+			return strings.HasSuffix(req.URL.Path, "/roles/myrole/permissions") && req.Method == http.MethodPost &&
 				reflect.DeepEqual(req.Form["permission"], []string{"app.create", "app.deploy"})
 		},
 	}
@@ -345,7 +345,7 @@ func (s *S) TestRoleDefaultAdd(c *check.C) {
 		CondFunc: func(req *http.Request) bool {
 			req.ParseForm()
 			sort.Strings(req.Form["user-create"])
-			return strings.HasSuffix(req.URL.Path, "/role/default") && req.Method == "POST" &&
+			return strings.HasSuffix(req.URL.Path, "/role/default") && req.Method == http.MethodPost &&
 				reflect.DeepEqual(req.Form["user-create"], []string{"r1", "r2"}) &&
 				reflect.DeepEqual(req.Form["team-create"], []string{"r3"})
 		},
@@ -405,7 +405,7 @@ func (s *S) TestRoleDefaultList(c *check.C) {
 	trans := &cmdtest.ConditionalTransport{
 		Transport: cmdtest.Transport{Message: result, Status: http.StatusCreated},
 		CondFunc: func(req *http.Request) bool {
-			return strings.HasSuffix(req.URL.Path, "/role/default") && req.Method == "GET"
+			return strings.HasSuffix(req.URL.Path, "/role/default") && req.Method == http.MethodGet
 		},
 	}
 	client := cmd.NewClient(&http.Client{Transport: trans}, nil, manager)
@@ -429,8 +429,8 @@ func (s *S) TestRoleUpdate(c *check.C) {
 	trans := &cmdtest.ConditionalTransport{
 		Transport: cmdtest.Transport{Message: "", Status: http.StatusOK},
 		CondFunc: func(req *http.Request) bool {
-			path := strings.HasSuffix(req.URL.Path, "/roles")
-			method := req.Method == "PUT"
+			path := req.URL.Path == "/1.4/roles"
+			method := req.Method == http.MethodPut
 			contentType := req.Header.Get("Content-Type") == "application/x-www-form-urlencoded"
 			return path && method && contentType && req.FormValue("name") == "team-member" && req.FormValue("description") == "a developer"
 		},
@@ -456,7 +456,7 @@ func (s *S) TestRoleUpdateWithoutFlags(c *check.C) {
 		Transport: cmdtest.Transport{Message: "", Status: http.StatusOK},
 		CondFunc: func(req *http.Request) bool {
 			path := strings.HasSuffix(req.URL.Path, "/roles")
-			method := req.Method == "PUT"
+			method := req.Method == http.MethodPut
 			contentType := req.Header.Get("Content-Type") == "application/x-www-form-urlencoded"
 			return path && method && contentType && req.FormValue("name") == "team-member" && req.FormValue("description") == "a developer"
 		},
@@ -480,7 +480,7 @@ func (s *S) TestRoleUpdateMultipleFlags(c *check.C) {
 		Transport: cmdtest.Transport{Message: "", Status: http.StatusOK},
 		CondFunc: func(req *http.Request) bool {
 			path := strings.HasSuffix(req.URL.Path, "/roles")
-			method := req.Method == "PUT"
+			method := req.Method == http.MethodPut
 			contentType := req.Header.Get("Content-Type") == "application/x-www-form-urlencoded"
 			return path && method && contentType && req.FormValue("name") == "team-member" && req.FormValue("description") == "a developer" && req.FormValue("contextType") == "team" && req.FormValue("newName") == "newName"
 		},
@@ -505,7 +505,7 @@ func (s *S) TestRoleUpdateWithInvalidContent(c *check.C) {
 		Transport: cmdtest.Transport{Message: "", Status: http.StatusConflict},
 		CondFunc: func(req *http.Request) bool {
 			path := strings.HasSuffix(req.URL.Path, "/roles")
-			method := req.Method == "PUT"
+			method := req.Method == http.MethodPut
 			contentType := req.Header.Get("Content-Type") == "application/x-www-form-urlencoded"
 			return path && method && contentType && req.FormValue("name") == "invalid-role" && req.FormValue("description") == "a developer"
 		},

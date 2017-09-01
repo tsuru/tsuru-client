@@ -138,18 +138,21 @@ type ServiceInstanceUpdate struct {
 	fs          *gnuflag.FlagSet
 	teamOwner   string
 	description string
+	plan        string
 	tags        cmd.StringSliceFlag
 }
 
 func (c *ServiceInstanceUpdate) Info() *cmd.Info {
 	return &cmd.Info{
 		Name:  "service-instance-update",
-		Usage: "service-instance-update <service-name> <service-instance-name> [-t/--team-owner team] [-d/--description description] [-g/--tag tag]...",
+		Usage: "service-instance-update <service-name> <service-instance-name> [-t/--team-owner team] [-d/--description description] [-p/--plan plan] [-g/--tag tag]...",
 		Desc: `Updates a service instance.
 
 The --team-owner parameter updates the team owner of a service instance.
 
 The --description parameter sets a description for your service instance.
+
+The --plan parameter updates the service instance plan.
 
 The --tag parameter adds a tag to your service instance. This parameter
 may be used multiple times.`,
@@ -166,6 +169,7 @@ func (c *ServiceInstanceUpdate) Run(ctx *cmd.Context, client *cmd.Client) error 
 	v := url.Values{}
 	v.Set("teamowner", c.teamOwner)
 	v.Set("description", c.description)
+	v.Set("plan", c.plan)
 	for _, tag := range c.tags {
 		v.Add("tag", tag)
 	}
@@ -191,6 +195,9 @@ func (c *ServiceInstanceUpdate) Flags() *gnuflag.FlagSet {
 		descriptionMessage := "service instance description"
 		c.fs.StringVar(&c.description, "description", "", descriptionMessage)
 		c.fs.StringVar(&c.description, "d", "", descriptionMessage)
+		planMessage := "service instance plan"
+		c.fs.StringVar(&c.plan, "plan", "", planMessage)
+		c.fs.StringVar(&c.plan, "p", "", planMessage)
 		tagMessage := "service instance tag"
 		c.fs.Var(&c.tags, "tag", tagMessage)
 		c.fs.Var(&c.tags, "g", tagMessage)

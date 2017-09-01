@@ -481,18 +481,21 @@ func (s *S) TestServiceInstanceUpdateRun(c *check.C) {
 		Transport: cmdtest.Transport{Message: result, Status: http.StatusOK},
 		CondFunc: func(r *http.Request) bool {
 			r.ParseForm()
-			description := r.FormValue("description") == "desc"
-			tags := len(r.Form["tag"]) == 2 && r.Form["tag"][0] == "tag1" && r.Form["tag"][1] == "tag2"
-			method := r.Method == http.MethodPut
-			contentType := r.Header.Get("Content-Type") == "application/x-www-form-urlencoded"
-			url := strings.HasSuffix(r.URL.Path, "/services/service/instances/service-instance")
-			c.Assert(r.FormValue("teamowner"), check.Equals, "new-team")
-			return method && url && description && tags && contentType
+			c.Check(r.FormValue("description"), check.Equals, "desc")
+			c.Check(r.Form["tag"], check.HasLen, 2)
+			c.Check(r.Form["tag"][0], check.Equals, "tag1")
+			c.Check(r.Form["tag"][1], check.Equals, "tag2")
+			c.Check(r.FormValue("plan"), check.Equals, "new-plan")
+			c.Check(r.Method, check.Equals, http.MethodPut)
+			c.Check(r.Header.Get("Content-Type"), check.Equals, "application/x-www-form-urlencoded")
+			c.Check(strings.HasSuffix(r.URL.Path, "/services/service/instances/service-instance"), check.Equals, true)
+			c.Check(r.FormValue("teamowner"), check.Equals, "new-team")
+			return true
 		},
 	}
 	client := cmd.NewClient(&http.Client{Transport: &trans}, nil, manager)
 	command := ServiceInstanceUpdate{}
-	command.Flags().Parse(true, []string{"--description", "desc", "--tag", "tag1", "--tag", "tag2", "--team-owner", "new-team"})
+	command.Flags().Parse(true, []string{"--description", "desc", "--tag", "tag1", "--tag", "tag2", "--team-owner", "new-team", "--plan", "new-plan"})
 	err := (&command).Run(&context, client)
 	c.Assert(err, check.IsNil)
 	obtained := stdout.String()
@@ -540,13 +543,14 @@ func (s *S) TestServiceInstanceUpdateFlags(c *check.C) {
 	c.Check(assume.Usage, check.Equals, flagDesc)
 	c.Check(assume.Value.String(), check.Equals, "the new owner")
 	c.Check(assume.DefValue, check.Equals, "")
-	sassume := flagset.Lookup("t")
-	c.Check(sassume, check.NotNil)
-	c.Check(sassume.Name, check.Equals, "t")
-	c.Check(sassume.Usage, check.Equals, flagDesc)
-	c.Check(sassume.Value.String(), check.Equals, "the new owner")
-	c.Check(sassume.DefValue, check.Equals, "")
+	assume = flagset.Lookup("t")
+	c.Check(assume, check.NotNil)
+	c.Check(assume.Name, check.Equals, "t")
+	c.Check(assume.Usage, check.Equals, flagDesc)
+	c.Check(assume.Value.String(), check.Equals, "the new owner")
+	c.Check(assume.DefValue, check.Equals, "")
 	c.Check(command.teamOwner, check.Equals, "the new owner")
+
 	err = flagset.Parse(true, []string{"-d", "description"})
 	c.Assert(err, check.IsNil)
 	flagDesc = "service instance description"
@@ -556,13 +560,14 @@ func (s *S) TestServiceInstanceUpdateFlags(c *check.C) {
 	c.Check(assume.Usage, check.Equals, flagDesc)
 	c.Check(assume.Value.String(), check.Equals, "description")
 	c.Check(assume.DefValue, check.Equals, "")
-	sassume = flagset.Lookup("d")
-	c.Check(sassume, check.NotNil)
-	c.Check(sassume.Name, check.Equals, "d")
-	c.Check(sassume.Usage, check.Equals, flagDesc)
-	c.Check(sassume.Value.String(), check.Equals, "description")
-	c.Check(sassume.DefValue, check.Equals, "")
+	assume = flagset.Lookup("d")
+	c.Check(assume, check.NotNil)
+	c.Check(assume.Name, check.Equals, "d")
+	c.Check(assume.Usage, check.Equals, flagDesc)
+	c.Check(assume.Value.String(), check.Equals, "description")
+	c.Check(assume.DefValue, check.Equals, "")
 	c.Check(command.description, check.Equals, "description")
+
 	err = flagset.Parse(true, []string{"-g", "my tag"})
 	c.Assert(err, check.IsNil)
 	flagDesc = "service instance tag"
@@ -572,12 +577,28 @@ func (s *S) TestServiceInstanceUpdateFlags(c *check.C) {
 	c.Check(assume.Usage, check.Equals, flagDesc)
 	c.Check(assume.Value.String(), check.Equals, "[\"my tag\"]")
 	c.Check(assume.DefValue, check.Equals, "[]")
-	sassume = flagset.Lookup("g")
-	c.Check(sassume, check.NotNil)
-	c.Check(sassume.Name, check.Equals, "g")
-	c.Check(sassume.Usage, check.Equals, flagDesc)
-	c.Check(sassume.Value.String(), check.Equals, "[\"my tag\"]")
-	c.Check(sassume.DefValue, check.Equals, "[]")
+	assume = flagset.Lookup("g")
+	c.Check(assume, check.NotNil)
+	c.Check(assume.Name, check.Equals, "g")
+	c.Check(assume.Usage, check.Equals, flagDesc)
+	c.Check(assume.Value.String(), check.Equals, "[\"my tag\"]")
+	c.Check(assume.DefValue, check.Equals, "[]")
+
+	err = flagset.Parse(true, []string{"-p", "my plan"})
+	c.Assert(err, check.IsNil)
+	flagDesc = "service instance plan"
+	assume = flagset.Lookup("plan")
+	c.Check(assume, check.NotNil)
+	c.Check(assume.Name, check.Equals, "plan")
+	c.Check(assume.Usage, check.Equals, flagDesc)
+	c.Check(assume.Value.String(), check.Equals, "my plan")
+	c.Check(assume.DefValue, check.Equals, "")
+	assume = flagset.Lookup("p")
+	c.Check(assume, check.NotNil)
+	c.Check(assume.Name, check.Equals, "p")
+	c.Check(assume.Usage, check.Equals, flagDesc)
+	c.Check(assume.Value.String(), check.Equals, "my plan")
+	c.Check(assume.DefValue, check.Equals, "")
 }
 
 func (s *S) TestServiceInstanceStatusInfo(c *check.C) {
