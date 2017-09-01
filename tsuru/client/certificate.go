@@ -79,7 +79,7 @@ func (c *CertificateSet) Run(context *cmd.Context, client *cmd.Client) error {
 		return err
 	}
 	defer response.Body.Close()
-	fmt.Fprintln(context.Stdout, "Succesfully created the certificated.")
+	fmt.Fprintln(context.Stdout, "Successfully created the certificated.")
 	return nil
 }
 

@@ -98,12 +98,12 @@ func (s *S) TestsetCoreDriverDefaultOpts(c *check.C) {
 					DriverOpts: &dm.DriverOpts{Name: "google"},
 				},
 				Hosts: hostGroups{
-					Core: hostGroupConfig{Driver: multiOptionsDriver{Options: map[string][]interface{}{"google-open-port": []interface{}{"8081"}}}},
+					Core: hostGroupConfig{Driver: multiOptionsDriver{Options: map[string][]interface{}{"google-open-port": {"8081"}}}},
 				},
 			},
 			expected: map[string][]interface{}{
-				"google-open-port": []interface{}{"8081"},
-				"google-scopes":    []interface{}{"https://www.googleapis.com/auth/devstorage.read_only,https://www.googleapis.com/auth/logging.write,https://www.googleapis.com/auth/monitoring.write,https://www.googleapis.com/auth/compute"},
+				"google-open-port": {"8081"},
+				"google-scopes":    {"https://www.googleapis.com/auth/devstorage.read_only,https://www.googleapis.com/auth/logging.write,https://www.googleapis.com/auth/monitoring.write,https://www.googleapis.com/auth/compute"},
 			},
 		},
 		{
@@ -113,7 +113,7 @@ func (s *S) TestsetCoreDriverDefaultOpts(c *check.C) {
 				},
 			},
 			expected: map[string][]interface{}{
-				"generic-open-port": []interface{}{"8080"},
+				"generic-open-port": {"8080"},
 			},
 		},
 	}

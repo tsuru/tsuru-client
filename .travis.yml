@@ -19,7 +19,7 @@ before_install:
   - '[[ $TRAVIS_OS_NAME == "linux" ]] && sudo sysctl -w net.ipv6.conf.lo.disable_ipv6=0 || true'
 script:
   - ./go.test.bash
-  - '[[ $TRAVIS_GO_VERSION == "1.8" ]] && ./check-fmt.sh || true'
+  - make metalint
 services:
   - redis
   - mongodb

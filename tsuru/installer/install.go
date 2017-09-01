@@ -267,10 +267,10 @@ func (c *Uninstall) Run(ctx *cmd.Context, cli *cmd.Client) error {
 		tbl.AddRow(cmd.Row{m.Host.Name, m.Base.Address, string(data)})
 	}
 	fmt.Fprintf(ctx.Stdout, "The following core machines will be destroyed:\n%s", tbl.String())
-	if !c.Confirm(ctx, fmt.Sprint("Are you sure you sure you want to uninstall tsuru?")) {
+	if !c.Confirm(ctx, "Are you sure you sure you want to uninstall tsuru?") {
 		return nil
 	}
-	if !c.Confirm(ctx, fmt.Sprint("Are you really sure? I wont ask you again.")) {
+	if !c.Confirm(ctx, "Are you really sure? I wont ask you again.") {
 		return nil
 	}
 	destroyMachineCmd := admin.MachineDestroy{}

@@ -831,7 +831,7 @@ func (c *AppList) Show(result []byte, context *cmd.Context, client *cmd.Client) 
 	}
 	table.Headers = cmd.Row([]string{"Application", "Units", "Address"})
 	for _, app := range apps {
-		summary := ""
+		var summary string
 		if app.Error == "" {
 			unitsStatus := make(map[string]int)
 			for _, unit := range app.Units {

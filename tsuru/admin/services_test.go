@@ -263,6 +263,7 @@ func (s *S) TestServiceTemplateRun(c *check.C) {
 	f, err := os.Open("./manifest.yaml")
 	c.Assert(err, check.IsNil)
 	fc, err := ioutil.ReadAll(f)
+	c.Assert(err, check.IsNil)
 	manifest := `id: servicename
 username: username_to_auth
 password: .{16}

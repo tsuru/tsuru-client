@@ -300,6 +300,7 @@ func (s *S) TestPlatformUpdateRun(c *check.C) {
 	expectedMsg := "--something--\nPlatform successfully updated!\n"
 	msg := io.SimpleJsonMessage{Message: expectedMsg}
 	result, err := json.Marshal(msg)
+	c.Assert(err, check.IsNil)
 	trans := &cmdtest.ConditionalTransport{
 		Transport: cmdtest.Transport{Message: string(result), Status: http.StatusOK},
 		CondFunc: func(req *http.Request) bool {
@@ -332,6 +333,7 @@ func (s *S) TestPlatformUpdateRunLocalDockerfile(c *check.C) {
 	expectedMsg := "--something--\nPlatform successfully updated!\n"
 	msg := io.SimpleJsonMessage{Message: expectedMsg}
 	result, err := json.Marshal(msg)
+	c.Assert(err, check.IsNil)
 	trans := &cmdtest.ConditionalTransport{
 		Transport: cmdtest.Transport{Message: string(result), Status: http.StatusOK},
 		CondFunc: func(req *http.Request) bool {
@@ -364,6 +366,7 @@ func (s *S) TestPlatformUpdateRunPrebuiltImage(c *check.C) {
 	expectedMsg := "--something--\nPlatform successfully updated!\n"
 	msg := io.SimpleJsonMessage{Message: expectedMsg}
 	result, err := json.Marshal(msg)
+	c.Assert(err, check.IsNil)
 	trans := &cmdtest.ConditionalTransport{
 		Transport: cmdtest.Transport{Message: string(result), Status: http.StatusOK},
 		CondFunc: func(req *http.Request) bool {
@@ -396,6 +399,7 @@ func (s *S) TestPlatformUpdateRunImplicitImage(c *check.C) {
 	expectedMsg := "--something--\nPlatform successfully updated!\n"
 	msg := io.SimpleJsonMessage{Message: expectedMsg}
 	result, err := json.Marshal(msg)
+	c.Assert(err, check.IsNil)
 	trans := &cmdtest.ConditionalTransport{
 		Transport: cmdtest.Transport{Message: string(result), Status: http.StatusOK},
 		CondFunc: func(req *http.Request) bool {
@@ -427,6 +431,7 @@ func (s *S) TestPlatformUpdateWithFlagDisableTrue(c *check.C) {
 	expectedMsg := "Platform successfully updated!\n"
 	msg := io.SimpleJsonMessage{Message: expectedMsg}
 	result, err := json.Marshal(msg)
+	c.Assert(err, check.IsNil)
 	trans := &cmdtest.ConditionalTransport{
 		Transport: cmdtest.Transport{Message: string(result), Status: http.StatusOK},
 		CondFunc: func(req *http.Request) bool {
@@ -455,6 +460,7 @@ func (s *S) TestPlatformUpdateWithFlagEnabledTrue(c *check.C) {
 	expectedMsg := "Platform successfully updated!\n"
 	msg := io.SimpleJsonMessage{Message: expectedMsg}
 	result, err := json.Marshal(msg)
+	c.Assert(err, check.IsNil)
 	trans := &cmdtest.ConditionalTransport{
 		Transport: cmdtest.Transport{Message: string(result), Status: http.StatusOK},
 		CondFunc: func(req *http.Request) bool {

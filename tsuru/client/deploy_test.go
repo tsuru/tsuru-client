@@ -553,7 +553,6 @@ func (s *S) TestAppDeployRollbackUpdateDisabling(c *check.C) {
 func (s *S) TestProcessTsuruIgnore(c *check.C) {
 	dir, _ := os.Getwd()
 	tests := []struct {
-		name    string
 		pattern string
 		path    []string
 		want    map[string]struct{}
@@ -562,16 +561,16 @@ func (s *S) TestProcessTsuruIgnore(c *check.C) {
 			pattern: "*.txt",
 			path:    []string{filepath.Join(dir, "testdata", "deploy")},
 			want: map[string]struct{}{
-				filepath.Join(dir, "testdata/deploy/file2.txt"):          struct{}{},
-				filepath.Join(dir, "testdata/deploy/directory/file.txt"): struct{}{},
-				filepath.Join(dir, "testdata/deploy/file1.txt"):          struct{}{},
+				filepath.Join(dir, "testdata/deploy/file2.txt"):          {},
+				filepath.Join(dir, "testdata/deploy/directory/file.txt"): {},
+				filepath.Join(dir, "testdata/deploy/file1.txt"):          {},
 			},
 		},
 		{
 			pattern: "file2.txt",
 			path:    []string{filepath.Join(dir, "testdata/deploy/file2.txt"), filepath.Join(dir, "testdata/deploy/file1.txt")},
 			want: map[string]struct{}{
-				filepath.Join(dir, "testdata/deploy/file2.txt"): struct{}{},
+				filepath.Join(dir, "testdata/deploy/file2.txt"): {},
 			},
 		},
 	}

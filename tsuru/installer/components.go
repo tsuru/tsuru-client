@@ -11,7 +11,6 @@ import (
 	"strings"
 
 	"github.com/docker/machine/libmachine/mcnutils"
-	"github.com/fsouza/go-dockerclient"
 	"github.com/tsuru/tsuru-client/tsuru/admin"
 	tclient "github.com/tsuru/tsuru-client/tsuru/client"
 	"github.com/tsuru/tsuru/cmd"
@@ -51,19 +50,6 @@ type iaasConfigInternal struct {
 type iaasConfigDriver struct {
 	Name    string                 `yaml:"name,omitempty"`
 	Options map[string]interface{} `yaml:"options,omitempty"`
-}
-
-func (c *TsuruAPI) setupRootUser(cluster ServiceCluster, email, password string) error {
-	cmd := []string{"tsurud", "root-user-create", email}
-	passwordConfirmation := strings.NewReader(fmt.Sprintf("%s\n%s\n", password, password))
-	startOpts := docker.StartExecOptions{
-		InputStream:  passwordConfirmation,
-		Detach:       false,
-		OutputStream: os.Stdout,
-		ErrorStream:  os.Stderr,
-		RawTerminal:  true,
-	}
-	return cluster.ServiceExec("tsuru_tsuru", cmd, startOpts)
 }
 
 type Bootstraper interface {
