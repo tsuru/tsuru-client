@@ -23,7 +23,6 @@ import (
 	"github.com/ajg/form"
 	"github.com/tsuru/gnuflag"
 	"github.com/tsuru/tsuru/cmd"
-	tsuruerr "github.com/tsuru/tsuru/errors"
 	apptypes "github.com/tsuru/tsuru/types/app"
 )
 
@@ -317,10 +316,6 @@ func (c *AppUpdate) Run(context *cmd.Context, client *cmd.Client) error {
 	request.Header.Set("Content-Type", "application/x-www-form-urlencoded")
 	response, err := client.Do(request)
 	if err != nil {
-		e := err.(*tsuruerr.HTTP)
-		if e.Code == http.StatusBadRequest {
-			return errors.New("You must set a flag. Use the 'app-update --help' command for more information.")
-		}
 		return err
 	}
 	err = cmd.StreamJSONResponse(context.Stdout, response)
