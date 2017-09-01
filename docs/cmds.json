@@ -68,8 +68,8 @@
     "desc": "Creates or update a TLS certificate into the specific app.\n\nFlags:\n  \n  -a, --app (= \"\")\n      The name of the app.\n  -c, --cname (= \"\")\n      App CNAME\n  \nMinimum # of arguments: 2\n"
   }, 
   "service-instance-update": {
-    "usage": "tsuru service-instance-update <service-name> <service-instance-name> [-t/--team-owner team] [-d/--description description] [-g/--tag tag]...", 
-    "desc": "Updates a service instance.\n\nThe --team-owner parameter updates the team owner of a service instance.\n\nThe --description parameter sets a description for your service instance.\n\nThe --tag parameter adds a tag to your service instance. This parameter\nmay be used multiple times.\n\nFlags:\n  \n  -d, --description (= \"\")\n      service instance description\n  -g, --tag  (= [])\n      service instance tag\n  -t, --team-owner (= \"\")\n      service instance team owner\n  \nMinimum # of arguments: 2\n"
+    "usage": "tsuru service-instance-update <service-name> <service-instance-name> [-t/--team-owner team] [-d/--description description] [-p/--plan plan] [-g/--tag tag]...", 
+    "desc": "Updates a service instance.\n\nThe --team-owner parameter updates the team owner of a service instance.\n\nThe --description parameter sets a description for your service instance.\n\nThe --plan parameter updates the service instance plan.\n\nThe --tag parameter adds a tag to your service instance. This parameter\nmay be used multiple times.\n\nFlags:\n  \n  -d, --description (= \"\")\n      service instance description\n  -g, --tag  (= [])\n      service instance tag\n  -p, --plan (= \"\")\n      service instance plan\n  -t, --team-owner (= \"\")\n      service instance team owner\n  \nMinimum # of arguments: 2\n"
   }, 
   "bs-upgrade": {
     "usage": "tsuru bs-upgrade", 
@@ -113,7 +113,7 @@
   }, 
   "node-container-update": {
     "usage": "tsuru node-container-update <name> [-o/--pool poolname] [-r/--raw path=value]... [docker run flags]...", 
-    "desc": "Update an existing node container. If the pool name is omitted the default\nconfiguration will be updated. When updating node containers the specified\nconfiguration will be merged with the existing configuration.\n\nFlags:\n  \n  -e, --env  (= [])\n      Set environment variables\n  --image (= \"\")\n      Image that will be used\n  --log-driver (= \"\")\n      Logging driver for container\n  --log-opt  (= {})\n      Log driver options\n  --net (= \"\")\n      Connect a container to a network\n  -o, --pool (= \"\")\n      Pool to update container config. If empty it'll be a default entry to all pools.\n  -p, --publish  (= [])\n      Publish a container's port(s) to the host\n  --privileged  (= false)\n      Give extended privileges to this container\n  -r, --raw  (= {})\n      Add raw parameter to node container api call\n  --restart (= \"\")\n      Restart policy to apply when a container exits\n  -v, --volume  (= [])\n      Bind mount a volume\n  \nMinimum # of arguments: 1\nMaximum # of arguments: 1\n"
+    "desc": "Update an existing node container. If the pool name is omitted the default\nconfiguration will be updated. When updating node containers the specified\nconfiguration will be merged with the existing configuration.\n\nFlags:\n  \n  --disable  (= false)\n      Disable node container\n  -e, --env  (= [])\n      Set environment variables\n  --enable  (= false)\n      Enable node container\n  --image (= \"\")\n      Image that will be used\n  --log-driver (= \"\")\n      Logging driver for container\n  --log-opt  (= {})\n      Log driver options\n  --net (= \"\")\n      Connect a container to a network\n  -o, --pool (= \"\")\n      Pool to update container config. If empty it'll be a default entry to all pools.\n  -p, --publish  (= [])\n      Publish a container's port(s) to the host\n  --privileged  (= false)\n      Give extended privileges to this container\n  -r, --raw  (= {})\n      Add raw parameter to node container api call\n  --restart (= \"\")\n      Restart policy to apply when a container exits\n  -v, --volume  (= [])\n      Bind mount a volume\n  \nMinimum # of arguments: 1\nMaximum # of arguments: 1\n"
   }, 
   "app-log": {
     "usage": "tsuru app-log [-a/--app appname] [-l/--lines numberOfLines] [-s/--source source] [-u/--unit unit] [-f/--follow]", 
@@ -276,8 +276,8 @@
     "desc": "Dissociate an existing role from a user for some context value.\n\nMinimum # of arguments: 2\n"
   }, 
   "service-instance-remove": {
-    "usage": "tsuru service-instance-remove <service-name> <service-instance-name> [--assume-yes] [--unbind]", 
-    "desc": "Destroys a service instance. It can't remove a service instance that is bound\nto an app, so before remove a service instance, make sure there is no apps\nbound to it (see [[tsuru service-instance-info]] command).\n\nFlags:\n  \n  -u, --unbind  (= false)\n      Don't ask for confirmation, just remove all applications bound.\n  -y, --assume-yes  (= false)\n      Don't ask for confirmation, just remove the service.\n  \nMinimum # of arguments: 2\n"
+    "usage": "tsuru service-instance-remove <service-name> <service-instance-name> [-f/--force] [-y/--assume-yes]", 
+    "desc": "Destroys a service instance. It can't remove a service instance that is bound\nto an app, so before remove a service instance, make sure there is no apps\nbound to it (see [[tsuru service-instance-info]] command).\n\nFlags:\n  \n  -f, --force  (= false)\n      Forces the removal of a service instance binded to apps.\n  -y, --assume-yes  (= false)\n      Don't ask for confirmation.\n  \nMinimum # of arguments: 2\n"
   }, 
   "role-list": {
     "usage": "tsuru role-list", 
@@ -335,9 +335,9 @@
     "usage": "tsuru app-routes-rebuild -a <app-name>", 
     "desc": "Rebuild routes for an application.\nThis can be used to recover from some failure in the router that caused\nexisting routes to be lost.\n\nFlags:\n  \n  -a, --app (= \"\")\n      The name of the app.\n  \n"
   }, 
-  "user-create": {
-    "usage": "tsuru user-create <email>", 
-    "desc": "Creates a user within tsuru remote server. It will ask for the password before issue the request.\n\nMinimum # of arguments: 1\n"
+  "plan-create": {
+    "usage": "tsuru plan-create <name> -c cpushare [-m memory] [-s swap] [--default]", 
+    "desc": "Creates a new plan for being used when creating apps.\n\nFlags:\n  \n  -c, --cpushare  (= 0)\n      Relative cpu share each unit will have available. This value is unitless and\n      relative, so specifying the same value for all plans means all units will\n      equally share processing power.\n  -d, --default  (= false)\n      Set plan as default, this will remove the default flag from any other plan.\n      The default plan will be used when creating an application without explicitly\n      setting a plan.\n  -m, --memory (= \"0\")\n      Amount of available memory for units in bytes or an integer value followed\n      by M, K or G for megabytes, kilobytes or gigabytes respectively.\n  -s, --swap (= \"0\")\n      Amount of available swap space for units in bytes or an integer value followed\n      by M, K or G for megabytes, kilobytes or gigabytes respectively.\n  \nMinimum # of arguments: 1\n"
   }, 
   "unit-remove": {
     "usage": "tsuru unit-remove <# of units> [-a/--app appname] [-p/-process processname]", 
@@ -351,9 +351,9 @@
     "usage": "tsuru env-set <NAME=value> [NAME=value] ... [-a/--app appname] [-p/--private] [--no-restart]", 
     "desc": "Sets environment variables for an application.\n\nFlags:\n  \n  -a, --app (= \"\")\n      The name of the app.\n  --no-restart  (= false)\n      Sets environment varibles without restart the application\n  -p, --private  (= false)\n      Private environment variables\n  \nMinimum # of arguments: 1\n"
   }, 
-  "plan-create": {
-    "usage": "tsuru plan-create <name> -c cpushare [-m memory] [-s swap] [--default]", 
-    "desc": "Creates a new plan for being used when creating apps.\n\nFlags:\n  \n  -c, --cpushare  (= 0)\n      Relative cpu share each unit will have available. This value is unitless and\n      relative, so specifying the same value for all plans means all units will\n      equally share processing power.\n  -d, --default  (= false)\n      Set plan as default, this will remove the default flag from any other plan.\n      The default plan will be used when creating an application without explicitly\n      setting a plan.\n  -m, --memory (= \"0\")\n      Amount of available memory for units in bytes or an integer value followed\n      by M, K or G for megabytes, kilobytes or gigabytes respectively.\n  -s, --swap (= \"0\")\n      Amount of available swap space for units in bytes or an integer value followed\n      by M, K or G for megabytes, kilobytes or gigabytes respectively.\n  \nMinimum # of arguments: 1\n"
+  "node-healing-delete": {
+    "usage": "tsuru node-healing-delete [-p/--pool pool] [--enabled] [--max-unresponsive] [--max-unsuccessful]", 
+    "desc": "Delete a node healing configuration entry.\n\nIf [[--pool]] is provided the configuration entries from the specified pool\nwill be removed and the default value will be used.\n\nIf [[--pool]] is not provided the configuration entry will be removed from the\ndefault configuration.\n\nFlags:\n  \n  --enabled  (= false)\n      Remove the 'enabled' configuration option\n  --max-unresponsive  (= false)\n      Remove the 'max-unresponsive' configuration option\n  --max-unsuccessful  (= false)\n      Remove the 'max-unsuccessful' configuration option\n  -p, --pool (= \"\")\n      The pool name from where the configuration will be removed. If unset it'll delete the default healing configuration.\n  -y, --assume-yes  (= false)\n      Don't ask for confirmation.\n  \n"
   }, 
   "team-list": {
     "usage": "tsuru team-list", 
@@ -464,7 +464,7 @@
   }, 
   "node-container-add": {
     "usage": "tsuru node-container-add <name> [-o/--pool poolname] [-r/--raw path=value]... [docker run flags]...", 
-    "desc": "Add new node container or overwrite existing one. If the pool name is omitted\nthe node container will be valid for all pools.\n\nFlags:\n  \n  -e, --env  (= [])\n      Set environment variables\n  --image (= \"\")\n      Image that will be used\n  --log-driver (= \"\")\n      Logging driver for container\n  --log-opt  (= {})\n      Log driver options\n  --net (= \"\")\n      Connect a container to a network\n  -o, --pool (= \"\")\n      Pool to add container config. If empty it'll be a default entry to all pools.\n  -p, --publish  (= [])\n      Publish a container's port(s) to the host\n  --privileged  (= false)\n      Give extended privileges to this container\n  -r, --raw  (= {})\n      Add raw parameter to node container api call\n  --restart (= \"\")\n      Restart policy to apply when a container exits\n  -v, --volume  (= [])\n      Bind mount a volume\n  \nMinimum # of arguments: 1\nMaximum # of arguments: 1\n"
+    "desc": "Add new node container or overwrite existing one. If the pool name is omitted\nthe node container will be valid for all pools.\n\nFlags:\n  \n  --disable  (= false)\n      Disable node container\n  -e, --env  (= [])\n      Set environment variables\n  --enable  (= false)\n      Enable node container\n  --image (= \"\")\n      Image that will be used\n  --log-driver (= \"\")\n      Logging driver for container\n  --log-opt  (= {})\n      Log driver options\n  --net (= \"\")\n      Connect a container to a network\n  -o, --pool (= \"\")\n      Pool to add container config. If empty it'll be a default entry to all pools.\n  -p, --publish  (= [])\n      Publish a container's port(s) to the host\n  --privileged  (= false)\n      Give extended privileges to this container\n  -r, --raw  (= {})\n      Add raw parameter to node container api call\n  --restart (= \"\")\n      Restart policy to apply when a container exits\n  -v, --volume  (= [])\n      Bind mount a volume\n  \nMinimum # of arguments: 1\nMaximum # of arguments: 1\n"
   }, 
   "pool-update": {
     "usage": "tsuru pool-update <pool> [--public=true/false] [--default=true/false] [-f/--force]", 
@@ -490,9 +490,9 @@
     "usage": "tsuru machine-template-remove <name>", 
     "desc": "Removes an existing machine template.\n\nMinimum # of arguments: 1\n"
   }, 
-  "node-healing-delete": {
-    "usage": "tsuru node-healing-delete [-p/--pool pool] [--enabled] [--max-unresponsive] [--max-unsuccessful]", 
-    "desc": "Delete a node healing configuration entry.\n\nIf [[--pool]] is provided the configuration entries from the specified pool\nwill be removed and the default value will be used.\n\nIf [[--pool]] is not provided the configuration entry will be removed from the\ndefault configuration.\n\nFlags:\n  \n  --enabled  (= false)\n      Remove the 'enabled' configuration option\n  --max-unresponsive  (= false)\n      Remove the 'max-unresponsive' configuration option\n  --max-unsuccessful  (= false)\n      Remove the 'max-unsuccessful' configuration option\n  -p, --pool (= \"\")\n      The pool name from where the configuration will be removed. If unset it'll delete the default healing configuration.\n  -y, --assume-yes  (= false)\n      Don't ask for confirmation.\n  \n"
+  "app-deploy-rollback-update": {
+    "usage": "tsuru app-deploy-rollback-update [-a/--app appName] [-i/--image imageName] [-d/--disable] [-r/--reason reason]", 
+    "desc": "Locks an existing image of an app. You can list images with \"tsuru app-deploy-list -a <appName>\"\n\n::\n\n    The [-i/--image] flag is the name of an app image.\n\n    The [-d/--disable] flag disables an image rollback. The default behavior (omitting this flag) is to enable it.\n\n    The [-r/--reason] flag lets the user tell why this action was needed.\n\n\nFlags:\n  \n  -a, --app (= \"\")\n      The name of the app.\n  -d, --disable  (= false)\n      Enables or disables the rollback on a specific image version\n  -i, --image (= \"\")\n      The image name for an app version\n  -r, --reason (= \"\")\n      The reason why the rollback has to be disabled\n  \n"
   }, 
   "cluster-remove": {
     "usage": "tsuru cluster-remove <name>", 
@@ -525,6 +525,10 @@
   "service-create": {
     "usage": "tsuru service-create path/to/manifest [- for stdin]", 
     "desc": "Creates a service based on a passed manifest. The manifest format should be a yaml and follow the standard described in the documentation (should link to it here)\n\nMinimum # of arguments: 1\n"
+  }, 
+  "user-create": {
+    "usage": "tsuru user-create <email>", 
+    "desc": "Creates a user within tsuru remote server. It will ask for the password before issue the request.\n\nMinimum # of arguments: 1\n"
   }, 
   "app-deploy-list": {
     "usage": "tsuru app-deploy-list [-a/--app <appname>]", 
