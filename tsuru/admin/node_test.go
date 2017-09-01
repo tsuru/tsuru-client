@@ -255,6 +255,37 @@ func (s *S) TestListNodesCmdRunWithFilters(c *check.C) {
 	c.Assert(buf.String(), check.Equals, expected)
 }
 
+func (s *S) TestListNodesCmdRunWithPoolFilter(c *check.C) {
+	var buf bytes.Buffer
+	context := cmd.Context{Args: []string{}, Stdout: &buf}
+	trans := &cmdtest.ConditionalTransport{
+		Transport: cmdtest.Transport{Message: `{
+	"machines": [{"Id": "m-id-1", "Address": "localhost2"}],
+	"nodes": [
+		{"Address": "http://localhost1:8080", "Status": "disabled", "Pool": "pool1", "Metadata": {"meta1": "foo", "meta2": "bar"}},
+		{"Address": "http://localhost2:8089", "Status": "disabled", "Pool": "pool2"},
+		{"Address": "http://localhost2:9090", "Status": "disabled", "Pool": "pool3", "Metadata": {"meta1": "foo"}}
+	]
+}`, Status: http.StatusOK},
+		CondFunc: func(req *http.Request) bool {
+			return req.URL.Path == "/1.2/node"
+		},
+	}
+	manager := cmd.Manager{}
+	client := cmd.NewClient(&http.Client{Transport: trans}, nil, &manager)
+	cmd := ListNodesCmd{}
+	cmd.Flags().Parse(true, []string{"--filter", "pool=pool2"})
+	err := cmd.Run(&context, client)
+	c.Assert(err, check.IsNil)
+	expected := `+------------------------+---------+----------+----------+
+| Address                | IaaS ID | Status   | Metadata |
++------------------------+---------+----------+----------+
+| http://localhost2:8089 | m-id-1  | disabled |          |
++------------------------+---------+----------+----------+
+`
+	c.Assert(buf.String(), check.Equals, expected)
+}
+
 func (s *S) TestListNodesCmdRunEmptyAll(c *check.C) {
 	var buf bytes.Buffer
 	context := cmd.Context{Args: []string{}, Stdout: &buf}

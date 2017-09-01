@@ -20,6 +20,7 @@ import (
 	"github.com/tsuru/gnuflag"
 	"github.com/tsuru/tsuru/cmd"
 	"github.com/tsuru/tsuru/healer"
+	"github.com/tsuru/tsuru/iaas"
 	"github.com/tsuru/tsuru/net"
 	"github.com/tsuru/tsuru/provision"
 )
@@ -309,45 +310,42 @@ func (c *ListNodesCmd) Run(ctx *cmd.Context, client *cmd.Client) error {
 		ctx.Stdout.Write(t.Bytes())
 		return nil
 	}
-	var result map[string]interface{}
+	var result struct {
+		Nodes    []provision.NodeSpec
+		Machines []iaas.Machine
+	}
 	err = json.NewDecoder(resp.Body).Decode(&result)
 	if err != nil {
 		return err
 	}
-	machineMap := map[string]map[string]interface{}{}
-	if result["machines"] != nil {
-		machines := result["machines"].([]interface{})
-		for _, m := range machines {
-			machine := m.(map[string]interface{})
-			machineMap[machine["Address"].(string)] = m.(map[string]interface{})
+	machineMap := map[string]iaas.Machine{}
+	if len(result.Machines) > 0 {
+		for _, m := range result.Machines {
+			machineMap[m.Address] = m
 		}
 	}
-	var nodes []map[string]interface{}
-	if result["nodes"] != nil {
-		nodes = c.filterNodes(result["nodes"].([]interface{}))
+	var nodes []provision.NodeSpec
+	if len(result.Nodes) > 0 {
+		nodes = c.filterNodes(result.Nodes)
 	}
 	if c.simplified {
 		for _, node := range nodes {
-			fmt.Fprintln(ctx.Stdout, node["Address"].(string))
+			fmt.Fprintln(ctx.Stdout, node.Address)
 		}
 		return nil
 	}
 	for _, node := range nodes {
-		addr := node["Address"].(string)
-		status := node["Status"].(string)
+		addr := node.Address
+		status := node.Status
 		result := []string{}
-		metadataField, _ := node["Metadata"]
-		if metadataField != nil {
-			metadata := metadataField.(map[string]interface{})
-			for key, value := range metadata {
-				result = append(result, fmt.Sprintf("%s=%s", key, value.(string)))
-			}
+		for key, value := range node.Metadata {
+			result = append(result, fmt.Sprintf("%s=%s", key, value))
 		}
 		sort.Strings(result)
 		m, ok := machineMap[net.URLToHost(addr)]
 		var iaasID string
 		if ok {
-			iaasID = m["Id"].(string)
+			iaasID = m.Id
 		}
 		t.AddRow(cmd.Row([]string{addr, iaasID, status, strings.Join(result, "\n")}))
 	}
@@ -356,29 +354,27 @@ func (c *ListNodesCmd) Run(ctx *cmd.Context, client *cmd.Client) error {
 	return nil
 }
 
-func (c *ListNodesCmd) filterNodes(nodes []interface{}) []map[string]interface{} {
-	filteredNodes := make([]map[string]interface{}, 0)
+func (c *ListNodesCmd) filterNodes(nodes []provision.NodeSpec) []provision.NodeSpec {
+	filteredNodes := make([]provision.NodeSpec, 0)
 	for _, n := range nodes {
-		node := n.(map[string]interface{})
-		if c.nodeMetadataMatchesFilters(node) {
-			filteredNodes = append(filteredNodes, node)
+		if c.nodeMetadataMatchesFilters(n) {
+			filteredNodes = append(filteredNodes, n)
 		}
 	}
 	return filteredNodes
 }
 
-func (c *ListNodesCmd) nodeMetadataMatchesFilters(node map[string]interface{}) bool {
-	metadataField, _ := node["Metadata"]
-	if c.filter != nil && metadataField == nil {
-		return false
-	}
-	if metadataField != nil {
-		metadata := metadataField.(map[string]interface{})
-		for key, value := range c.filter {
-			metaVal, _ := metadata[key]
-			if metaVal != value {
+func (c *ListNodesCmd) nodeMetadataMatchesFilters(node provision.NodeSpec) bool {
+	for key, value := range c.filter {
+		if key == provision.PoolMetadataName {
+			if value != node.Pool {
 				return false
 			}
+			continue
+		}
+		metaVal, _ := node.Metadata[key]
+		if metaVal != value {
+			return false
 		}
 	}
 	return true
