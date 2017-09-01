@@ -180,6 +180,9 @@ func (c *ServiceDocAdd) Run(ctx *cmd.Context, client *cmd.Client) error {
 	}
 	docPath := ctx.Args[1]
 	b, err := ioutil.ReadFile(docPath)
+	if err != nil {
+		return err
+	}
 	v := url.Values{}
 	v.Set("doc", string(b))
 	request, err := http.NewRequest("PUT", u, strings.NewReader(v.Encode()))
@@ -266,10 +269,10 @@ endpoint:
   production: production-endpoint.com`
 	template = fmt.Sprintf(template, pass)
 	f, err := os.Create("manifest.yaml")
-	defer f.Close()
 	if err != nil {
 		return errors.New("Error while creating manifest template.\nOriginal error message is: " + err.Error())
 	}
+	defer f.Close()
 	f.Write([]byte(template))
 	fmt.Fprintln(ctx.Stdout, `Generated file "manifest.yaml" in current directory`)
 	return nil

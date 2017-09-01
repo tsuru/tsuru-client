@@ -99,7 +99,6 @@ type EventBlockAdd struct {
 	owner       string
 	targetType  string
 	targetValue string
-	reason      string
 }
 
 func (c *EventBlockAdd) Info() *cmd.Info {
@@ -133,7 +132,8 @@ func (c *EventBlockAdd) Run(context *cmd.Context, client *cmd.Client) error {
 	}
 	target := event.Target{}
 	if c.targetType != "" {
-		targetType, err := event.GetTargetType(c.targetType)
+		var targetType event.TargetType
+		targetType, err = event.GetTargetType(c.targetType)
 		if err != nil {
 			return err
 		}

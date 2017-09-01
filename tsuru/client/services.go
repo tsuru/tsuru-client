@@ -109,6 +109,9 @@ func (c *ServiceInstanceAdd) Run(ctx *cmd.Context, client *cmd.Client) error {
 		return err
 	}
 	request, err := http.NewRequest("POST", u, strings.NewReader(v.Encode()))
+	if err != nil {
+		return err
+	}
 	request.Header.Set("Content-Type", "application/x-www-form-urlencoded")
 	_, err = client.Do(request)
 	if err != nil {
@@ -667,11 +670,7 @@ func (c *ServiceInstanceRemove) Run(ctx *cmd.Context, client *cmd.Client) error 
 	if err != nil {
 		return err
 	}
-	err = cmd.StreamJSONResponse(ctx.Stdout, resp)
-	if err != nil {
-		return err
-	}
-	return nil
+	return cmd.StreamJSONResponse(ctx.Stdout, resp)
 }
 
 func (c *ServiceInstanceRemove) Flags() *gnuflag.FlagSet {

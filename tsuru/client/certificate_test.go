@@ -47,7 +47,7 @@ func (s *S) TestCertificateSetRunSuccessfully(c *check.C) {
 	c.Assert(command.cname, check.Equals, "app.io")
 	err := command.Run(&context, client)
 	c.Assert(err, check.IsNil)
-	c.Assert(stdout.String(), check.Equals, "Succesfully created the certificated.\n")
+	c.Assert(stdout.String(), check.Equals, "Successfully created the certificated.\n")
 }
 
 func (s *S) TestCertificateSetRunCerticateNotFound(c *check.C) {

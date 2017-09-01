@@ -67,6 +67,9 @@ func (c *AddPoolToSchedulerCmd) Run(ctx *cmd.Context, client *cmd.Client) error 
 	v.Set("force", strconv.FormatBool(c.forceDefault))
 	v.Set("provisioner", c.provisioner)
 	u, err := cmd.GetURL("/pools")
+	if err != nil {
+		return err
+	}
 	err = doRequest(client, u, "POST", v.Encode())
 	if err != nil {
 		if e, ok := err.(*errors.HTTP); ok && e.Code == http.StatusPreconditionFailed {
@@ -126,6 +129,9 @@ func (c *UpdatePoolToSchedulerCmd) Run(ctx *cmd.Context, client *cmd.Client) err
 	}
 	v.Set("force", strconv.FormatBool(c.forceDefault))
 	u, err := cmd.GetURL(fmt.Sprintf("/pools/%s", ctx.Args[0]))
+	if err != nil {
+		return err
+	}
 	err = doRequest(client, u, "PUT", v.Encode())
 	if err != nil {
 		if e, ok := err.(*errors.HTTP); ok && e.Code == http.StatusPreconditionFailed {
@@ -134,6 +140,9 @@ func (c *UpdatePoolToSchedulerCmd) Run(ctx *cmd.Context, client *cmd.Client) err
 			successMessage := "Pool successfully updated.\n"
 			v.Set("force", "true")
 			u, err = cmd.GetURL(fmt.Sprintf("/pools/%s", ctx.Args[0]))
+			if err != nil {
+				return err
+			}
 			return confirmAction(ctx, client, u, "PUT", v.Encode(), retryMessage, failMessage, successMessage)
 		}
 		return err

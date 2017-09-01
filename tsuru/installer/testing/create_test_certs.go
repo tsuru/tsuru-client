@@ -93,6 +93,9 @@ func CreateTestCerts() (CertsPath, error) {
 		return path, err
 	}
 	serverCertTmpl, err := CertTemplateGenerator()
+	if err != nil {
+		return path, err
+	}
 	serverCertTmpl.KeyUsage = x509.KeyUsageDigitalSignature
 	serverCertTmpl.ExtKeyUsage = []x509.ExtKeyUsage{x509.ExtKeyUsageServerAuth}
 	serverCertTmpl.IPAddresses = []net.IP{net.ParseIP("127.0.0.1")}
@@ -108,6 +111,9 @@ func CreateTestCerts() (CertsPath, error) {
 		return path, err
 	}
 	clientCertTmpl, err := CertTemplateGenerator()
+	if err != nil {
+		return path, err
+	}
 	clientCertTmpl.KeyUsage = x509.KeyUsageDigitalSignature
 	clientCertTmpl.ExtKeyUsage = []x509.ExtKeyUsage{x509.ExtKeyUsageClientAuth}
 	_, clientCertPEM, err := CreateCert(clientCertTmpl, rootCert, &clientKey.PublicKey, rootKey)
@@ -156,10 +162,7 @@ func CreateTestCerts() (CertsPath, error) {
 		return path, err
 	}
 	err = ioutil.WriteFile(path.ClientKey, clientKeyPEM, 0644)
-	if err != nil {
-		return path, err
-	}
-	return path, nil
+	return path, err
 }
 
 func CleanCerts(path string) error {

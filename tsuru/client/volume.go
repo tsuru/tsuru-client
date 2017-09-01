@@ -310,6 +310,9 @@ func (c *VolumeDelete) Run(ctx *cmd.Context, client *cmd.Client) error {
 		return err
 	}
 	request, err := http.NewRequest("DELETE", u, nil)
+	if err != nil {
+		return err
+	}
 	_, err = client.Do(request)
 	if err != nil {
 		return err

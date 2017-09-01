@@ -372,7 +372,7 @@ func (c *ListNodesCmd) nodeMetadataMatchesFilters(node provision.NodeSpec) bool 
 			}
 			continue
 		}
-		metaVal, _ := node.Metadata[key]
+		metaVal := node.Metadata[key]
 		if metaVal != value {
 			return false
 		}

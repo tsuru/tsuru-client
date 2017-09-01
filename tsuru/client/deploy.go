@@ -710,7 +710,6 @@ func (c *AppDeployRollbackUpdate) Run(context *cmd.Context, client *cmd.Client) 
 		return err
 	}
 	request.Header.Add("Content-Type", "application/x-www-form-urlencoded")
-	response, err := client.Do(request)
-	defer response.Body.Close()
+	_, err = client.Do(request)
 	return err
 }

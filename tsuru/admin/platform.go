@@ -109,6 +109,9 @@ func (p *PlatformAdd) Run(context *cmd.Context, client *cmd.Client) error {
 	writer.WriteField("name", context.Args[0])
 	writer.Close()
 	url, err := cmd.GetURL("/platforms")
+	if err != nil {
+		return err
+	}
 	request, err := http.NewRequest("POST", url, &body)
 	if err != nil {
 		return err
@@ -136,13 +139,11 @@ func (p *PlatformAdd) Flags() *gnuflag.FlagSet {
 }
 
 type PlatformUpdate struct {
-	name        string
-	dockerfile  string
-	image       string
-	forceUpdate bool
-	disable     bool
-	enable      bool
-	fs          *gnuflag.FlagSet
+	dockerfile string
+	image      string
+	disable    bool
+	enable     bool
+	fs         *gnuflag.FlagSet
 }
 
 func (p *PlatformUpdate) Info() *cmd.Info {
@@ -205,6 +206,9 @@ func (p *PlatformUpdate) Run(context *cmd.Context, client *cmd.Client) error {
 	writer.WriteField("disabled", disable)
 	writer.Close()
 	url, err := cmd.GetURL(fmt.Sprintf("/platforms/%s", name))
+	if err != nil {
+		return err
+	}
 	request, err := http.NewRequest("PUT", url, &body)
 	if err != nil {
 		return err

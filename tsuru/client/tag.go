@@ -73,7 +73,7 @@ func loadApps(client *cmd.Client) ([]app, error) {
 	}
 	var apps []app
 	err = json.Unmarshal(result, &apps)
-	return apps, nil
+	return apps, err
 }
 
 func loadServices(client *cmd.Client) ([]service.ServiceModel, error) {
@@ -83,7 +83,7 @@ func loadServices(client *cmd.Client) ([]service.ServiceModel, error) {
 	}
 	var services []service.ServiceModel
 	err = json.Unmarshal(result, &services)
-	return services, nil
+	return services, err
 }
 
 func getFromURL(path string, client *cmd.Client) ([]byte, error) {

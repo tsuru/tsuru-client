@@ -8,6 +8,14 @@ PYTHON := $(shell which python)
 GHR := $(shell which ghr)
 GITHUB_TOKEN := $(shell git config --global --get github.token || echo $$GITHUB_TOKEN)
 
+LINTER_ARGS_SLOW = \
+	-j 4 --enable-gc -s vendor -e '.*/vendor/.*' --vendor --enable=misspell --enable=gofmt --enable=goimports --enable=unused \
+	--disable=dupl --disable=gocyclo --disable=errcheck --disable=golint --disable=interfacer --disable=gas \
+	--disable=structcheck --deadline=60m --tests
+
+LINTER_ARGS = \
+	$(LINTER_ARGS_SLOW) --disable=staticcheck --disable=unused --disable=gosimple
+
 release:
 	@if [ ! $(version) ]; then \
 		echo "version parameter is required... use: make release version=<value>"; \
@@ -72,5 +80,12 @@ build:
 
 check-docs: build
 	./misc/check-all-cmds-docs.sh
+
+metalint:
+	go get -u github.com/alecthomas/gometalinter; \
+	gometalinter --install; \
+	go install ./...; \
+	go test -i ./...; \
+	gometalinter $(LINTER_ARGS) ./...; \
 
 .PHONY: doc docs release manpage
