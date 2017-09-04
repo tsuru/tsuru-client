@@ -37,7 +37,7 @@ func (s *S) TestTsuruAPIBootstrapLocalEnviroment(c *check.C) {
 			c.Assert(string(b), check.Equals, "default=true&force=false&name=theonepool&provisioner=&public=true")
 		}
 		if r.URL.Path == "/1.2/node" {
-			c.Assert(string(b), check.Matches, "Address=&CaCert=&ClientCert=&ClientKey=&Metadata.address=.*&Metadata.pool=theonepool&Register=true&WaitTO=")
+			c.Assert(string(b), check.Matches, "Address=&CaCert=&ClientCert=&ClientKey=&Metadata.address=.*&Metadata.pool=theonepool&Pool=&Register=true&WaitTO=")
 		}
 		if r.URL.Path == "/1.0/platforms" {
 			expected := "FROM tsuru/python"
