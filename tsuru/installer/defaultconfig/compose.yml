@@ -6,14 +6,15 @@ services:
     networks:
       - tsuru
     volumes:
-      - redis-data:/data/db
-  
+      - redis-data:/data
+
   mongo:
     image: mongo:latest
     networks:
       - tsuru
     volumes:
-      - mongo-data:/data
+      - mongo-data:/data/db
+      - mongo-data:/data/configdb
 
   planb:
     image: tsuru/planb:latest
