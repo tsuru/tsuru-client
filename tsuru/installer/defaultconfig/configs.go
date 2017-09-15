@@ -19,7 +19,7 @@ services:
       - tsuru
     volumes:
       - mongo-data:/data/db
-      - mongo-data:/data/configdb
+      - mongo-config:/data/configdb
 
   planb:
     image: tsuru/planb:latest
@@ -80,6 +80,7 @@ networks:
 
 volumes:
   mongo-data:
+  mongo-config:
   redis-data:
   registry-data:
 
