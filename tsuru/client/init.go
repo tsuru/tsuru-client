@@ -1,6 +1,7 @@
 package client
 
 import (
+	"fmt"
 	"os"
 
 	"github.com/tsuru/tsuru/cmd"
@@ -42,5 +43,7 @@ func (i *Init) Run(context *cmd.Context, client *cmd.Client) error {
 			return errC
 		}
 	}
+	msg := fmt.Sprintf("Initialized Tsuru sample files: `Procfile`, `.tsuruignore` and `tsuru.yaml`, for more info please refer to the docs: docs.tsuru.io\n")
+	context.Stdout.Write([]byte(msg))
 	return nil
 }
