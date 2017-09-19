@@ -2,6 +2,8 @@ package client
 
 import (
 	"fmt"
+	"io"
+	"io/ioutil"
 	"os"
 
 	"github.com/tsuru/tsuru/cmd"
@@ -45,5 +47,33 @@ func (i *Init) Run(context *cmd.Context, client *cmd.Client) error {
 	}
 	msg := fmt.Sprintf("Initialized Tsuru sample files: `Procfile`, `.tsuruignore` and `tsuru.yaml`, for more info please refer to the docs: docs.tsuru.io\n")
 	context.Stdout.Write([]byte(msg))
-	return nil
+	return copyGitIgnore()
+}
+
+func copyGitIgnore() error {
+	in, err := os.Open(".gitignore")
+	if err != nil {
+		dotGit := []byte(".git\n")
+		return ioutil.WriteFile(".tsuruignore", dotGit, 0644)
+	}
+	defer func() {
+		if errC := in.Close(); errC != nil {
+			err = errC
+		}
+	}()
+	out, err := os.OpenFile(".tsuruignore", os.O_APPEND|os.O_WRONLY, os.ModeAppend)
+	if err != nil {
+		return err
+	}
+	defer func() {
+		if errC := out.Close(); errC != nil {
+			err = errC
+		}
+	}()
+	_, err = io.Copy(out, in)
+	if err != nil {
+		return err
+	}
+	_, err = out.WriteString("\n.git\n")
+	return err
 }
