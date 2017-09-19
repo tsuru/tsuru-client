@@ -211,12 +211,10 @@ type AppUpdate struct {
 	description string
 	platform    string
 	plan        string
-	router      string
 	pool        string
 	teamOwner   string
 	imageReset  bool
 	tags        cmd.StringSliceFlag
-	routerOpts  cmd.MapFlag
 	fs          *gnuflag.FlagSet
 	cmd.GuessingCommand
 	cmd.ConfirmationCommand
@@ -225,14 +223,12 @@ type AppUpdate struct {
 func (c *AppUpdate) Info() *cmd.Info {
 	return &cmd.Info{
 		Name:  "app-update",
-		Usage: "app-update [-a/--app appname] [--description/-d description] [--plan/-p plan name] [--router/-r router name] [--pool/-o pool] [--team-owner/-t team owner] [--platform/-l platform] [-i/--image-reset] [--tag/-g tag]... [--router-opts key=value]...",
+		Usage: "app-update [-a/--app appname] [--description/-d description] [--plan/-p plan name] [--pool/-o pool] [--team-owner/-t team owner] [--platform/-l platform] [-i/--image-reset] [--tag/-g tag]...",
 		Desc: `Updates an app, changing its description, tags, plan or pool information.
 
 The [[--description]] parameter sets a description for your app.
 
 The [[--plan]] parameter changes the plan of your app.
-
-The [[--router]] parameter changes the router of your app.
 
 The [[--pool]] parameter changes the pool of your app.
 
@@ -243,9 +239,7 @@ The [[--platform]] parameter sets a platform for an application.
 The [[--image-reset]] parameter rebuilds the platform of an application.
 
 The [[--tag]] parameter sets a tag for your app. You can set
-multiple [[--tag]] parameters.
-
-The [[--router-opts]] parameter changes the custom router parameters.`,
+multiple [[--tag]] parameters.`,
 	}
 }
 
@@ -254,7 +248,6 @@ func (c *AppUpdate) Flags() *gnuflag.FlagSet {
 		flagSet := gnuflag.NewFlagSet("", gnuflag.ExitOnError)
 		descriptionMessage := "App description"
 		planMessage := "App plan"
-		routerMessage := "App router"
 		poolMessage := "App pool"
 		teamOwnerMessage := "App team owner"
 		tagMessage := "App tag"
@@ -266,8 +259,6 @@ func (c *AppUpdate) Flags() *gnuflag.FlagSet {
 		flagSet.StringVar(&c.plan, "p", "", planMessage)
 		flagSet.StringVar(&c.platform, "l", "", platformMsg)
 		flagSet.StringVar(&c.platform, "platform", "", platformMsg)
-		flagSet.StringVar(&c.router, "router", "", routerMessage)
-		flagSet.StringVar(&c.router, "r", "", routerMessage)
 		flagSet.StringVar(&c.pool, "o", "", poolMessage)
 		flagSet.StringVar(&c.pool, "pool", "", poolMessage)
 		flagSet.BoolVar(&c.imageReset, "i", false, imgReset)
@@ -276,7 +267,6 @@ func (c *AppUpdate) Flags() *gnuflag.FlagSet {
 		flagSet.StringVar(&c.teamOwner, "team-owner", "", teamOwnerMessage)
 		flagSet.Var(&c.tags, "g", tagMessage)
 		flagSet.Var(&c.tags, "tag", tagMessage)
-		flagSet.Var(&c.routerOpts, "router-opts", "Router options")
 		c.fs = cmd.MergeFlagSet(
 			c.GuessingCommand.Flags(),
 			flagSet,
@@ -295,12 +285,8 @@ func (c *AppUpdate) Run(context *cmd.Context, client *cmd.Client) error {
 	if err != nil {
 		return err
 	}
-	v, err := form.EncodeToValues(map[string]interface{}{"routeropts": c.routerOpts})
-	if err != nil {
-		return err
-	}
+	v := url.Values{}
 	v.Set("plan", c.plan)
-	v.Set("router", c.router)
 	v.Set("description", c.description)
 	v.Set("pool", c.pool)
 	v.Set("teamOwner", c.teamOwner)
@@ -518,6 +504,7 @@ type app struct {
 	RouterOpts  map[string]string
 	Tags        []string
 	Error       string
+	Routers     []apptypes.AppRouter
 }
 
 type serviceData struct {
@@ -532,11 +519,22 @@ type quota struct {
 }
 
 func (a *app) Addr() string {
-	cnames := strings.Join(a.CName, ", ")
-	if cnames != "" {
-		return fmt.Sprintf("%s, %s", cnames, a.IP)
+	var allAddrs []string
+	for _, cname := range a.CName {
+		if cname != "" {
+			allAddrs = append(allAddrs, cname)
+		}
 	}
-	return a.IP
+	if len(a.Routers) == 0 {
+		if a.IP != "" {
+			allAddrs = append(allAddrs, a.IP)
+		}
+	} else {
+		for _, r := range a.Routers {
+			allAddrs = append(allAddrs, r.Address)
+		}
+	}
+	return strings.Join(allAddrs, ", ")
 }
 
 func (a *app) TagList() string {
@@ -569,7 +567,9 @@ Description:{{if .Description}} {{.Description}}{{end}}
 Tags:{{if .TagList}} {{.TagList}}{{end}}
 Repository: {{.Repository}}
 Platform: {{.Platform}}
+{{if not .Routers -}}
 Router: {{.Router}}{{if .RouterOpts}} ({{.GetRouterOpts}}){{end}}
+{{end -}}
 Teams: {{.GetTeams}}
 Address: {{.Addr}}
 Owner: {{.Owner}}
@@ -640,6 +640,11 @@ Quota: {{.Quota.InUse}}/{{if .Quota.Limit}}{{.Quota.Limit}} units{{else}}unlimit
 		buf.WriteString("\n")
 		buf.WriteString("App Plan:\n")
 		buf.WriteString(renderPlans([]apptypes.Plan{a.Plan}, true))
+	}
+	if len(a.Routers) > 0 {
+		buf.WriteString("\n")
+		buf.WriteString("Routers:\n")
+		renderRouters(a.Routers, &buf)
 	}
 	var tplBuffer bytes.Buffer
 	tmpl.Execute(&tplBuffer, a)

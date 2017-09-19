@@ -465,16 +465,13 @@ func (s *S) TestAppUpdate(c *check.C) {
 			description := req.FormValue("description") == "description of my app"
 			req.ParseForm()
 			tags := len(req.Form["tag"]) == 2 && req.Form["tag"][0] == "tag 1" && req.Form["tag"][1] == "tag 2"
-			router := req.FormValue("router") == "router"
 			platform := req.FormValue("platform") == "python"
-			routerOpts := req.FormValue("routeropts.opt1") == "val1" && req.FormValue("routeropts.opt2") == "val2"
-			return url && method && description && tags && router && routerOpts && platform
+			return url && method && description && tags && platform
 		},
 	}
 	client := cmd.NewClient(&http.Client{Transport: trans}, nil, manager)
 	command := AppUpdate{}
-	command.Flags().Parse(true, []string{"-d", "description of my app", "-a", "ble", "-r", "router", "-l", "python", "-g", "tag 1", "-g", "tag 2",
-		"--router-opts", "opt1=val1", "--router-opts", "opt2=val2"})
+	command.Flags().Parse(true, []string{"-d", "description of my app", "-a", "ble", "-l", "python", "-g", "tag 1", "-g", "tag 2"})
 	err := command.Run(&context, client)
 	c.Assert(err, check.IsNil)
 	c.Assert(stdout.String(), check.Equals, expected)
@@ -643,20 +640,6 @@ func (s *S) TestAppUpdateFlags(c *check.C) {
 	c.Check(steamOwner.Usage, check.Equals, description)
 	c.Check(steamOwner.Value.String(), check.Equals, "newowner")
 	c.Check(steamOwner.DefValue, check.Equals, "")
-	flagset.Parse(true, []string{"-r", "router"})
-	usage = "App router"
-	router := flagset.Lookup("router")
-	c.Check(router, check.NotNil)
-	c.Check(router.Name, check.Equals, "router")
-	c.Check(router.Usage, check.Equals, usage)
-	c.Check(router.Value.String(), check.Equals, "router")
-	c.Check(router.DefValue, check.Equals, "")
-	router = flagset.Lookup("r")
-	c.Check(router, check.NotNil)
-	c.Check(router.Name, check.Equals, "r")
-	c.Check(router.Usage, check.Equals, usage)
-	c.Check(router.Value.String(), check.Equals, "router")
-	c.Check(router.DefValue, check.Equals, "")
 	flagset.Parse(true, []string{"-g", "tag"})
 	usage = "App tag"
 	tag := flagset.Lookup("tag")
@@ -807,6 +790,99 @@ Units: 3
 | app1/0 | started | 10.8.7.6 | 3333 |
 | app1/1 | started | 10.8.7.6 | 3323 |
 +--------+---------+----------+------+
+
+`
+	context := cmd.Context{
+		Stdout: &stdout,
+		Stderr: &stderr,
+	}
+	client := cmd.NewClient(&http.Client{Transport: &cmdtest.Transport{Message: result, Status: http.StatusOK}}, nil, manager)
+	command := AppInfo{}
+	command.Flags().Parse(true, []string{"-a/--app", "app1"})
+	err := command.Run(&context, client)
+	c.Assert(err, check.IsNil)
+	c.Assert(stdout.String(), check.Equals, expected)
+}
+
+func (s *S) TestAppInfoMultipleRouters(c *check.C) {
+	var stdout, stderr bytes.Buffer
+	result := `
+{
+	"name": "app1",
+	"teamowner": "myteam",
+	"cname": [
+		"cname1"
+	],
+	"ip": "myapp.tsuru.io",
+	"platform": "php",
+	"repository": "git@git.com:php.git",
+	"state": "dead",
+	"units": [
+		{
+			"Ip": "10.10.10.10",
+			"ID": "app1/0",
+			"Status": "started",
+			"Address": {
+				"Host": "10.8.7.6:3333"
+			}
+		},
+		{
+			"Ip": "9.9.9.9",
+			"ID": "app1/1",
+			"Status": "started",
+			"Address": {
+				"Host": "10.8.7.6:3323"
+			}
+		},
+		{
+			"Ip": "",
+			"ID": "app1/2",
+			"Status": "pending"
+		}
+	],
+	"teams": [
+		"tsuruteam",
+		"crane"
+	],
+	"owner": "myapp_owner",
+	"deploys": 7,
+	"router": "planb",
+	"routers": [
+		{"name": "r1", "opts": {"a": "b", "x": "y"}, "address": "addr1"},
+		{"name": "r2", "address": "addr2"}
+	]
+}`
+	expected := `Application: app1
+Description:
+Tags:
+Repository: git@git.com:php.git
+Platform: php
+Teams: tsuruteam, crane
+Address: cname1, addr1, addr2
+Owner: myapp_owner
+Team owner: myteam
+Deploys: 7
+Pool:
+Quota: 0/unlimited
+
+Units: 3
++--------+---------+----------+------+
+| Unit   | Status  | Host     | Port |
++--------+---------+----------+------+
+| app1/2 | pending |          |      |
+| app1/0 | started | 10.8.7.6 | 3333 |
+| app1/1 | started | 10.8.7.6 | 3323 |
++--------+---------+----------+------+
+
+Routers:
++------+------+---------+
+| Name | Opts | Address |
++------+------+---------+
+| r1   | a: b | addr1   |
+|      | x: y |         |
++------+------+---------+
+| r2   |      | addr2   |
++------+------+---------+
 
 `
 	context := cmd.Context{
