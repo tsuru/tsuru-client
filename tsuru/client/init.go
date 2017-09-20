@@ -20,6 +20,16 @@ func (i *Init) Info() *cmd.Info {
 }
 
 func (i *Init) Run(context *cmd.Context, client *cmd.Client) error {
+	err := createInitFiles()
+	if err != nil {
+		return err
+	}
+	msg := fmt.Sprintf("Initialized Tsuru sample files: `Procfile`, `.tsuruignore` and `tsuru.yaml`, for more info please refer to the docs: docs.tsuru.io\n")
+	context.Stdout.Write([]byte(msg))
+	return copyGitIgnore()
+}
+
+func createInitFiles() error {
 	wd, err := os.Getwd()
 	if err != nil {
 		return err
@@ -28,32 +38,35 @@ func (i *Init) Run(context *cmd.Context, client *cmd.Client) error {
 	if err != nil {
 		return err
 	}
+	defer fi.Close()
 	dirFiles, err := fi.Readdir(0)
 	if err != nil {
 		return err
 	}
-	stdExpFiles := map[string]string{".tsuruignore": "", "Procfile": "", "tsuru.yaml": ""}
+	initFiles := map[string]string{
+		".tsuruignore": "",
+		"Procfile":     "",
+		"tsuru.yaml":   "",
+	}
 	for _, f := range dirFiles {
-		if _, ok := stdExpFiles[f.Name()]; ok {
-			delete(stdExpFiles, f.Name())
+		if _, ok := initFiles[f.Name()]; ok {
+			delete(initFiles, f.Name())
 			continue
 		}
 	}
-	for f := range stdExpFiles {
+	for f := range initFiles {
 		_, errC := os.Create(f)
 		if errC != nil {
 			return errC
 		}
 	}
-	msg := fmt.Sprintf("Initialized Tsuru sample files: `Procfile`, `.tsuruignore` and `tsuru.yaml`, for more info please refer to the docs: docs.tsuru.io\n")
-	context.Stdout.Write([]byte(msg))
-	return copyGitIgnore()
+	return nil
 }
 
 func copyGitIgnore() error {
 	in, err := os.Open(".gitignore")
 	if err != nil {
-		dotGit := []byte(".git\n")
+		dotGit := []byte(".git\n.gitignore\n")
 		return ioutil.WriteFile(".tsuruignore", dotGit, 0644)
 	}
 	defer func() {
@@ -74,6 +87,6 @@ func copyGitIgnore() error {
 	if err != nil {
 		return err
 	}
-	_, err = out.WriteString("\n.git\n")
+	_, err = out.WriteString("\n.git\n.gitignore\n")
 	return err
 }
