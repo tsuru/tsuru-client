@@ -37,10 +37,9 @@ func (i *Init) Run(context *cmd.Context, client *cmd.Client) error {
 	if err != nil {
 		return err
 	}
-	const stdOutMsg = `
+	const msg = `
 Initialized Tsuru sample files: "Procfile", ".tsuruignore" and "tsuru.yaml", 
 for more info please refer to "tsuru init -h" or the docs at docs.tsuru.io`
-	msg := fmt.Sprintf(stdOutMsg)
 	context.Stdout.Write([]byte(msg))
 	err = writeTsuruYaml()
 	if err != nil {
