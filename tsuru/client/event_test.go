@@ -230,6 +230,33 @@ func (s *S) TestEventList(c *check.C) {
 	c.Assert(stdout.String(), check.Equals, expected)
 }
 
+func (s *S) TestEventListWithFilters(c *check.C) {
+	var stdout, stderr bytes.Buffer
+	context := cmd.Context{
+		Args:   []string{},
+		Stdout: &stdout,
+		Stderr: &stderr,
+	}
+	trans := &cmdtest.ConditionalTransport{
+		Transport: cmdtest.Transport{Message: evtsData, Status: http.StatusOK},
+		CondFunc: func(req *http.Request) bool {
+			c.Assert(req.URL.Path, check.Equals, "/1.1/events")
+			c.Assert(req.Method, check.Equals, http.MethodGet)
+			c.Assert(req.URL.Query().Get("kindname"), check.Equals, "app.update")
+			c.Assert(req.URL.Query().Get("ownername"), check.Equals, "event-owner")
+			c.Assert(req.URL.Query().Get("target.type"), check.Equals, "app")
+			c.Assert(req.URL.Query().Get("target.value"), check.Equals, "appname")
+			return true
+		},
+	}
+	client := cmd.NewClient(&http.Client{Transport: trans}, nil, manager)
+	command := EventList{}
+	err := command.Flags().Parse(true, []string{"-k", "app.update", "-o", "event-owner", "-t", "app", "-v", "appname"})
+	c.Assert(err, check.IsNil)
+	err = command.Run(&context, client)
+	c.Assert(err, check.IsNil)
+}
+
 func (s *S) TestEventInfo(c *check.C) {
 	os.Setenv("TSURU_DISABLE_COLORS", "1")
 	defer os.Unsetenv("TSURU_DISABLE_COLORS")
