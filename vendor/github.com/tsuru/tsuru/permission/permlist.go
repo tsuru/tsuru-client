@@ -43,6 +43,7 @@ var PermissionRegistry = (&registry{}).addWithCtx(
 	"app.update.certificate.unset",
 	"app.update.deploy.rollback",
 	"app.update.router.add",
+	"app.update.router.update",
 	"app.update.router.remove",
 	"app.deploy",
 	"app.deploy.archive-url",
@@ -65,6 +66,7 @@ var PermissionRegistry = (&registry{}).addWithCtx(
 	"app.admin.unlock",
 	"app.admin.routes",
 	"app.admin.quota",
+	"app.build",
 ).addWithCtx(
 	"node", []contextType{CtxPool},
 ).add(

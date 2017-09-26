@@ -31,6 +31,7 @@ import (
 	"github.com/tsuru/tsuru/provision/nodecontainer"
 	"github.com/tsuru/tsuru/provision/pool"
 	"github.com/tsuru/tsuru/quota"
+	"github.com/tsuru/tsuru/registry"
 	"github.com/tsuru/tsuru/repository"
 	"github.com/tsuru/tsuru/router"
 	"github.com/tsuru/tsuru/router/rebuild"
@@ -575,6 +576,10 @@ func Delete(app *App, w io.Writer) error {
 	err = prov.Destroy(app)
 	if err != nil {
 		logErr("Unable to destroy app in provisioner", err)
+	}
+	err = registry.RemoveAppImages(appName)
+	if err != nil {
+		log.Errorf("failed to remove images from registry for app %s: %s", appName, err)
 	}
 	err = image.DeleteAllAppImageNames(appName)
 	if err != nil {
@@ -1818,6 +1823,44 @@ func (app *App) AddRouter(appRouter appTypes.AppRouter) error {
 	return nil
 }
 
+func (app *App) UpdateRouter(appRouter appTypes.AppRouter) error {
+	var existing *appTypes.AppRouter
+	routers := app.GetRouters()
+	for i, r := range routers {
+		if r.Name == appRouter.Name {
+			existing = &routers[i]
+			break
+		}
+	}
+	if existing == nil {
+		return &router.ErrRouterNotFound{Name: appRouter.Name}
+	}
+	r, err := router.Get(appRouter.Name)
+	if err != nil {
+		return err
+	}
+	optsRouter, ok := r.(router.OptsRouter)
+	if !ok {
+		return errors.Errorf("updating is not supported by router %q", appRouter.Name)
+	}
+	oldOpts := existing.Opts
+	existing.Opts = appRouter.Opts
+	err = app.updateRoutersDB(routers)
+	if err != nil {
+		return err
+	}
+	err = optsRouter.UpdateBackendOpts(app.Name, appRouter.Opts)
+	if err != nil {
+		existing.Opts = oldOpts
+		rollbackErr := app.updateRoutersDB(routers)
+		if rollbackErr != nil {
+			log.Errorf("unable to update router opts in db rolling back update router: %v", rollbackErr)
+		}
+		return err
+	}
+	return nil
+}
+
 func (app *App) RemoveRouter(name string) error {
 	removed := false
 	routers := app.GetRouters()
@@ -1838,7 +1881,6 @@ func (app *App) RemoveRouter(name string) error {
 	}
 	err = app.updateRoutersDB(routers)
 	if err != nil {
-		println("here1?")
 		return err
 	}
 	err = r.RemoveBackend(app.Name)
