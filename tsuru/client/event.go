@@ -28,8 +28,9 @@ type EventList struct {
 }
 
 type eventFilter struct {
-	filter  event.Filter
-	running bool
+	filter    event.Filter
+	kindNames cmd.StringSliceFlag
+	running   bool
 }
 
 func (f *eventFilter) queryString(client *cmd.Client) (url.Values, error) {
@@ -47,13 +48,16 @@ func (f *eventFilter) queryString(client *cmd.Client) (url.Values, error) {
 	if f.filter.Running == nil {
 		values.Del("running")
 	}
+	for _, k := range f.kindNames {
+		values.Add("kindname", k)
+	}
 	return values, nil
 }
 
 func (f *eventFilter) flags(fs *gnuflag.FlagSet) {
 	name := "Filter events by kind name"
-	fs.StringVar(&f.filter.KindName, "kind", "", name)
-	fs.StringVar(&f.filter.KindName, "k", "", name)
+	fs.Var(&f.kindNames, "kind", name)
+	fs.Var(&f.kindNames, "k", name)
 	name = "Filter events by target type"
 	ptr := (*string)(&f.filter.Target.Type)
 	fs.StringVar(ptr, "target", "", name)
