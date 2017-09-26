@@ -73,6 +73,7 @@ func buildManager(name string) *cmd.Manager {
 	m.Register(&client.PluginList{})
 	m.Register(&client.AppSwap{})
 	m.Register(&client.AppDeploy{})
+	m.Register(&client.AppBuild{})
 	m.Register(&client.PlanList{})
 	m.Register(&client.UserCreate{})
 	m.Register(&client.ResetPassword{})
