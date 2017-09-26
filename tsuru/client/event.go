@@ -76,7 +76,7 @@ func (f *eventFilter) flags(fs *gnuflag.FlagSet) {
 func (c *EventList) Info() *cmd.Info {
 	return &cmd.Info{
 		Name:  "event-list",
-		Usage: "event-list [--kind/-k kind name] [--owner/-o owner] [--running/-r] [--target/-t target type] [--target-value/-v target value]",
+		Usage: "event-list [--kind/-k kind name]... [--owner/-o owner] [--running/-r] [--target/-t target type] [--target-value/-v target value]",
 		Desc: `Lists events that you have permission to see.
 
 		Flags can be used to filter the list of events.`,

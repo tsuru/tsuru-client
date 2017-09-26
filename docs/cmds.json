@@ -156,8 +156,8 @@
     "desc": "Changes the limit of apps that a user can create.\n\nThe new limit must be an integer, it may also be \"unlimited\".\n\nMinimum # of arguments: 2\n"
   }, 
   "event-list": {
-    "usage": "tsuru event-list [-k kindName]", 
-    "desc": "Lists events possibly filtering them.\n\nFlags:\n  \n  -k, --kind (= \"\")\n      Filter events by kind name\n  -o, --owner (= \"\")\n      Filter events by owner name\n  -r, --running  (= false)\n      Shows only currently running events\n  -t, --target (= \"\")\n      Filter events by target type\n  -v, --target-value (= \"\")\n      Filter events by target value\n  \n"
+    "usage": "tsuru event-list [--kind/-k kind name]... [--owner/-o owner] [--running/-r] [--target/-t target type] [--target-value/-v target value]", 
+    "desc": "Lists events that you have permission to see.\n\n\t\tFlags can be used to filter the list of events.\n\nFlags:\n  \n  -k, --kind  (= [])\n      Filter events by kind name\n  -o, --owner (= \"\")\n      Filter events by owner name\n  -r, --running  (= false)\n      Shows only currently running events\n  -t, --target (= \"\")\n      Filter events by target type\n  -v, --target-value (= \"\")\n      Filter events by target value\n  \n"
   }, 
   "unit-add": {
     "usage": "tsuru unit-add <# of units> [-a/--app appname] [-p/--process processname]", 
