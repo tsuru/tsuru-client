@@ -138,6 +138,36 @@ func (s *S) TestAppRoutersAddRun(c *check.C) {
 	c.Assert(stdout.String(), check.Equals, expected)
 }
 
+func (s *S) TestAppRoutersUpdateRun(c *check.C) {
+	var stdout, stderr bytes.Buffer
+	context := cmd.Context{
+		Args:   []string{"myrouter"},
+		Stdout: &stdout,
+		Stderr: &stderr,
+	}
+	expected := "Router successfully updated.\n"
+	trans := &cmdtest.ConditionalTransport{
+		Transport: cmdtest.Transport{Message: "", Status: http.StatusOK},
+		CondFunc: func(req *http.Request) bool {
+			err := req.ParseForm()
+			c.Assert(err, check.IsNil)
+			c.Assert(req.Form, check.DeepEquals, url.Values{
+				"Opts.a":  []string{"b"},
+				"Opts.x":  []string{"y"},
+				"Address": []string{""},
+				"Name":    []string{"myrouter"},
+			})
+			return strings.HasSuffix(req.URL.Path, "/1.5/apps/myapp/routers/myrouter") && req.Method == "PUT"
+		},
+	}
+	client := cmd.NewClient(&http.Client{Transport: trans}, nil, manager)
+	command := AppRoutersUpdate{}
+	command.Flags().Parse(true, []string{"-a", "myapp", "-o", "a=b", "-o", "x=y"})
+	err := command.Run(&context, client)
+	c.Assert(err, check.IsNil)
+	c.Assert(stdout.String(), check.Equals, expected)
+}
+
 func (s *S) TestAppRoutersRemoveRun(c *check.C) {
 	var stdout, stderr bytes.Buffer
 	context := cmd.Context{
@@ -149,12 +179,7 @@ func (s *S) TestAppRoutersRemoveRun(c *check.C) {
 	trans := &cmdtest.ConditionalTransport{
 		Transport: cmdtest.Transport{Message: "", Status: http.StatusOK},
 		CondFunc: func(req *http.Request) bool {
-			err := req.ParseForm()
-			c.Assert(err, check.IsNil)
-			c.Assert(req.Form, check.DeepEquals, url.Values{
-				"name": []string{"myrouter"},
-			})
-			return strings.HasSuffix(req.URL.Path, "/1.5/apps/myapp/routers") && req.Method == "DELETE"
+			return strings.HasSuffix(req.URL.Path, "/1.5/apps/myapp/routers/myrouter") && req.Method == "DELETE"
 		},
 	}
 	client := cmd.NewClient(&http.Client{Transport: trans}, nil, manager)
