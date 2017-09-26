@@ -56,6 +56,7 @@ release:
 	@git push origin master
 
 doc-requirements:
+	@go install ./...
 	@pip install -r requirements.txt
 
 docs-clean:
