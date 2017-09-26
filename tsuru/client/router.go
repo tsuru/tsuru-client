@@ -175,6 +175,63 @@ func (c *AppRoutersAdd) Run(context *cmd.Context, client *cmd.Client) error {
 	return nil
 }
 
+type AppRoutersUpdate struct {
+	cmd.GuessingCommand
+	opts cmd.MapFlag
+	fs   *gnuflag.FlagSet
+}
+
+func (c *AppRoutersUpdate) Info() *cmd.Info {
+	return &cmd.Info{
+		Name:    "app-router-update",
+		Usage:   "app-router-update <router name> [-a/--app appname] [-o/--opts key=value]...",
+		Desc:    "Update router opts in an application.",
+		MinArgs: 1,
+		MaxArgs: 1,
+	}
+}
+
+func (c *AppRoutersUpdate) Flags() *gnuflag.FlagSet {
+	if c.fs == nil {
+		c.fs = c.GuessingCommand.Flags()
+		optsMessage := "Custom options sent directly to router implementation."
+		c.fs.Var(&c.opts, "o", optsMessage)
+		c.fs.Var(&c.opts, "opts", optsMessage)
+	}
+	return c.fs
+}
+
+func (c *AppRoutersUpdate) Run(context *cmd.Context, client *cmd.Client) error {
+	appName, err := c.Guess()
+	if err != nil {
+		return err
+	}
+	routerName := context.Args[0]
+	url, err := cmd.GetURLVersion("1.5", fmt.Sprintf("/apps/%s/routers/%s", appName, routerName))
+	if err != nil {
+		return err
+	}
+	r := appTypes.AppRouter{
+		Name: routerName,
+		Opts: c.opts,
+	}
+	val, err := form.EncodeToValues(r)
+	if err != nil {
+		return err
+	}
+	request, err := http.NewRequest("PUT", url, strings.NewReader(val.Encode()))
+	if err != nil {
+		return err
+	}
+	request.Header.Set("Content-Type", "application/x-www-form-urlencoded")
+	_, err = client.Do(request)
+	if err != nil {
+		return err
+	}
+	fmt.Fprintln(context.Stdout, "Router successfully updated.")
+	return nil
+}
+
 type AppRoutersRemove struct {
 	cmd.GuessingCommand
 }
@@ -194,7 +251,7 @@ func (c *AppRoutersRemove) Run(context *cmd.Context, client *cmd.Client) error {
 	if err != nil {
 		return err
 	}
-	url, err := cmd.GetURLVersion("1.5", fmt.Sprintf("/apps/%s/routers?name=%s", appName, context.Args[0]))
+	url, err := cmd.GetURLVersion("1.5", fmt.Sprintf("/apps/%s/routers/%s", appName, context.Args[0]))
 	if err != nil {
 		return err
 	}
