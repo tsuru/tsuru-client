@@ -88,12 +88,31 @@ func (c *AppBuild) Run(context *cmd.Context, client *cmd.Client) error {
 	stream := tsuruIo.NewStreamWriter(context.Stdout, nil)
 	safeStdout := &safeWriter{w: &tsuruIo.SimpleJsonMessageEncoderWriter{Encoder: json.NewEncoder(stream)}}
 	respBody := firstWriter{Writer: io.MultiWriter(safeStdout, buf)}
+	if err := uploadFiles(context, request, buf, safeStdout, body, values); err != nil {
+		return err
+	}
+	resp, err := client.Do(request)
+	if err != nil {
+		return err
+	}
+	defer resp.Body.Close()
+	_, err = io.Copy(&respBody, resp.Body)
+	if err != nil {
+		return err
+	}
+	fmt.Fprintf(safeStdout, buf.String())
+	if strings.HasSuffix(buf.String(), "OK\n") {
+		return nil
+	}
+	return cmd.ErrAbortCommand
+}
+
+func uploadFiles(context *cmd.Context, request *http.Request, buf *safe.Buffer, safeStdout *safeWriter, body *safe.Buffer, values url.Values) error {
 	writer := multipart.NewWriter(body)
 	for k := range values {
 		writer.WriteField(k, values.Get(k))
 	}
-	var file io.Writer
-	file, err = writer.CreateFormFile("file", "archive.tar.gz")
+	file, err := writer.CreateFormFile("file", "archive.tar.gz")
 	if err != nil {
 		return err
 	}
@@ -139,18 +158,5 @@ func (c *AppBuild) Run(context *cmd.Context, client *cmd.Client) error {
 			time.Sleep(2e9)
 		}
 	}()
-	resp, err := client.Do(request)
-	if err != nil {
-		return err
-	}
-	defer resp.Body.Close()
-	_, err = io.Copy(&respBody, resp.Body)
-	if err != nil {
-		return err
-	}
-	fmt.Fprintf(safeStdout, buf.String())
-	if strings.HasSuffix(buf.String(), "OK\n") {
-		return nil
-	}
-	return cmd.ErrAbortCommand
+	return nil
 }

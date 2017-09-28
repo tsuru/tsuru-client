@@ -14,7 +14,6 @@ import (
 	"fmt"
 	"io"
 	"io/ioutil"
-	"mime/multipart"
 	"net/http"
 	"net/url"
 	"os"
@@ -226,57 +225,9 @@ func (c *AppDeploy) Run(context *cmd.Context, client *cmd.Client) error {
 		}
 		fmt.Fprint(context.Stdout, "Deploying image...")
 	} else {
-		writer := multipart.NewWriter(body)
-		for k := range values {
-			writer.WriteField(k, values.Get(k))
-		}
-		var file io.Writer
-		file, err = writer.CreateFormFile("file", "archive.tar.gz")
-		if err != nil {
+		if err := uploadFiles(context, request, buf, safeStdout, body, values); err != nil {
 			return err
 		}
-		ignoreSet := make(map[string]struct{})
-		ignorePatterns, _ := readTsuruIgnore()
-		for _, pattern := range ignorePatterns {
-			ignSet, errProc := processTsuruIgnore(pattern, context.Args...)
-			if errProc != nil {
-				return errProc
-			}
-			for k, v := range ignSet {
-				ignoreSet[k] = v
-			}
-		}
-		err = targz(context, file, ignoreSet, context.Args...)
-		if err != nil {
-			return err
-		}
-		writer.Close()
-		request.Header.Set("Content-Type", "multipart/form-data; boundary="+writer.Boundary())
-		fullSize := float64(body.Len())
-		megabyte := 1024.0 * 1024.0
-		fmt.Fprintf(context.Stdout, "Uploading files (%0.2fMB)... ", fullSize/megabyte)
-		count := 0
-		go func() {
-			t0 := time.Now()
-			lastTransferred := 0.0
-			for buf.Len() == 0 {
-				remaining := body.Len()
-				transferred := fullSize - float64(remaining)
-				speed := ((transferred - lastTransferred) / megabyte) / (float64(time.Since(t0)) / float64(time.Second))
-				t0 = time.Now()
-				lastTransferred = transferred
-				percent := (transferred / fullSize) * 100.0
-				fmt.Fprintf(safeStdout, "\rUploading files (%0.2fMB)... %0.2f%%", fullSize/megabyte, percent)
-				if remaining > 0 {
-					fmt.Fprintf(safeStdout, " (%0.2fMB/s)", speed)
-				}
-				if remaining == 0 && buf.Len() == 0 {
-					fmt.Fprintf(safeStdout, " Processing%s", strings.Repeat(".", count))
-					count++
-				}
-				time.Sleep(2e9)
-			}
-		}()
 	}
 	resp, err := client.Do(request)
 	if err != nil {
