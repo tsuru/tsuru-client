@@ -279,7 +279,7 @@ type ClusterRemove struct {
 func (c *ClusterRemove) Info() *cmd.Info {
 	return &cmd.Info{
 		Name:    "cluster-remove",
-		Usage:   "cluster-remove <name>",
+		Usage:   "cluster-remove <name> [-y]",
 		Desc:    `Removes a provisioner cluster definition.`,
 		MinArgs: 1,
 		MaxArgs: 1,
@@ -288,6 +288,11 @@ func (c *ClusterRemove) Info() *cmd.Info {
 
 func (c *ClusterRemove) Run(context *cmd.Context, client *cmd.Client) error {
 	name := context.Args[0]
+
+	if !c.Confirm(context, fmt.Sprintf("Are you sure you want to remove cluster \"%s\"?", name)) {
+		return nil
+	}
+
 	u, err := cmd.GetURLVersion("1.3", "/provisioner/clusters/"+name)
 	if err != nil {
 		return err
