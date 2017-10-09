@@ -11,6 +11,7 @@ import (
 	"net/http"
 	"os"
 	"path/filepath"
+	"strings"
 
 	"github.com/ajg/form"
 	"github.com/tsuru/tsuru/cmd"
@@ -194,10 +195,12 @@ func (s *S) TestClusterListRun(c *check.C) {
 
 func (s *S) TestClusterRemoveRun(c *check.C) {
 	var stdout, stderr bytes.Buffer
+	expected := `Are you sure you want to remove cluster "c1"? (y/n) `
 	context := cmd.Context{
+		Args:   []string{"c1"},
 		Stdout: &stdout,
 		Stderr: &stderr,
-		Args:   []string{"c1"},
+		Stdin:  strings.NewReader("y\n"),
 	}
 	trans := &cmdtest.ConditionalTransport{
 		Transport: cmdtest.Transport{Status: http.StatusNoContent},
@@ -207,9 +210,9 @@ func (s *S) TestClusterRemoveRun(c *check.C) {
 	}
 	manager := cmd.NewManager("admin", "0.1", "admin-ver", &stdout, &stderr, nil, nil)
 	client := cmd.NewClient(&http.Client{Transport: trans}, nil, manager)
-	myCmd := ClusterRemove{}
-	myCmd.Flags().Parse(true, []string{"-y"})
-	err := myCmd.Run(&context, client)
+	command := ClusterRemove{}
+	err := command.Run(&context, client)
 	c.Assert(err, check.IsNil)
-	c.Assert(stdout.String(), check.Equals, "Cluster successfully removed.\n")
+	expectedOut := "Cluster successfully removed.\n"
+	c.Assert(stdout.String(), check.Equals, expected+expectedOut)
 }
