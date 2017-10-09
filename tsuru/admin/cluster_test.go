@@ -208,6 +208,7 @@ func (s *S) TestClusterRemoveRun(c *check.C) {
 	manager := cmd.NewManager("admin", "0.1", "admin-ver", &stdout, &stderr, nil, nil)
 	client := cmd.NewClient(&http.Client{Transport: trans}, nil, manager)
 	myCmd := ClusterRemove{}
+	myCmd.Flags().Parse(true, []string{"-y"})
 	err := myCmd.Run(&context, client)
 	c.Assert(err, check.IsNil)
 	c.Assert(stdout.String(), check.Equals, "Cluster successfully removed.\n")
