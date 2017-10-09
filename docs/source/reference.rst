@@ -374,6 +374,9 @@ Cluster management
 .. tsuru-command:: cluster-list
   :title: List clusters
 
+.. tsuru-command:: cluster-remove
+  :title: Remove a cluster
+
 Node Containers management
 ==========================
 
