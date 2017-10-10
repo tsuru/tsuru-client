@@ -299,89 +299,89 @@ func (c *TeamInfo) Run(context *cmd.Context, client *cmd.Client) error {
 	if err != nil {
 		return err
 	}
-	if resp.StatusCode == http.StatusOK {
-		defer resp.Body.Close()
-		b, err := ioutil.ReadAll(resp.Body)
-		if err != nil {
-			return err
-		}
-		var team struct {
-			Name  string        `json:"name"`
-			Users []cmd.APIUser `json:"users"`
-			Pools []Pool        `json:"pools"`
-			Apps  []app         `json:"apps"`
-		}
-		err = json.Unmarshal(b, &team)
-		if err != nil {
-			return err
-		}
-		format := `Team: {{.Name}}
+	if resp.StatusCode != http.StatusOK {
+		return nil
+	}
+	defer resp.Body.Close()
+	b, err := ioutil.ReadAll(resp.Body)
+	if err != nil {
+		return err
+	}
+	var team struct {
+		Name  string        `json:"name"`
+		Users []cmd.APIUser `json:"users"`
+		Pools []Pool        `json:"pools"`
+		Apps  []app         `json:"apps"`
+	}
+	err = json.Unmarshal(b, &team)
+	if err != nil {
+		return err
+	}
+	format := `Team: {{.Name}}
 `
-		tmpl := template.Must(template.New("app").Parse(format))
-		var tplBuffer bytes.Buffer
-		var buf bytes.Buffer
-		tmpl.Execute(&tplBuffer, team)
-		usersTable := cmd.NewTable()
-		usersTable.Headers = cmd.Row{"User", "Roles"}
-		usersTable.LineSeparator = true
-		for _, user := range team.Users {
-			usersTable.AddRow(cmd.Row{user.Email, strings.Join(user.RoleInstances(), "\n")})
-		}
-		if usersTable.Rows() > 0 {
-			buf.WriteString("\n")
-			buf.WriteString(fmt.Sprintf("Users: %d\n", usersTable.Rows()))
-			buf.WriteString(usersTable.String())
-		}
-		poolsTable := cmd.NewTable()
-		poolsTable.Headers = cmd.Row{"Pool", "Kind", "Provisioner", "Routers"}
-		poolsTable.LineSeparator = true
-		for _, pool := range team.Pools {
-			poolsTable.AddRow(cmd.Row{pool.Name, pool.Kind(), pool.GetProvisioner(), strings.Join(pool.Allowed["router"], "\n")})
-		}
-		if poolsTable.Rows() > 0 {
-			buf.WriteString("\n")
-			buf.WriteString(fmt.Sprintf("Pools: %d\n", poolsTable.Rows()))
-			buf.WriteString(poolsTable.String())
-		}
-		appsTable := cmd.NewTable()
-		appsTable.Headers = cmd.Row{"Application", "Units", "Address"}
-		appsTable.LineSeparator = true
-		for _, app := range team.Apps {
-			summary := ""
-			if app.Error == "" {
-				unitsStatus := make(map[string]int)
-				for _, unit := range app.Units {
-					if unit.ID != "" {
-						unitsStatus[unit.Status]++
-					}
-				}
-				statusText := make([]string, len(unitsStatus))
-				i := 0
-				us := newUnitSorter(unitsStatus)
-				sort.Sort(us)
-				for _, status := range us.Statuses {
-					statusText[i] = fmt.Sprintf("%d %s", unitsStatus[status], status)
-					i++
-				}
-				summary = strings.Join(statusText, "\n")
-			} else {
-				summary = fmt.Sprintf("error fetching units")
-				if client.Verbosity > 0 {
-					summary += fmt.Sprintf(": %s", app.Error)
+	tmpl := template.Must(template.New("app").Parse(format))
+	var tplBuffer bytes.Buffer
+	var buf bytes.Buffer
+	tmpl.Execute(&tplBuffer, team)
+	usersTable := cmd.NewTable()
+	usersTable.Headers = cmd.Row{"User", "Roles"}
+	usersTable.LineSeparator = true
+	for _, user := range team.Users {
+		usersTable.AddRow(cmd.Row{user.Email, strings.Join(user.RoleInstances(), "\n")})
+	}
+	if usersTable.Rows() > 0 {
+		buf.WriteString("\n")
+		buf.WriteString(fmt.Sprintf("Users: %d\n", usersTable.Rows()))
+		buf.WriteString(usersTable.String())
+	}
+	poolsTable := cmd.NewTable()
+	poolsTable.Headers = cmd.Row{"Pool", "Kind", "Provisioner", "Routers"}
+	poolsTable.LineSeparator = true
+	for _, pool := range team.Pools {
+		poolsTable.AddRow(cmd.Row{pool.Name, pool.Kind(), pool.GetProvisioner(), strings.Join(pool.Allowed["router"], "\n")})
+	}
+	if poolsTable.Rows() > 0 {
+		buf.WriteString("\n")
+		buf.WriteString(fmt.Sprintf("Pools: %d\n", poolsTable.Rows()))
+		buf.WriteString(poolsTable.String())
+	}
+	appsTable := cmd.NewTable()
+	appsTable.Headers = cmd.Row{"Application", "Units", "Address"}
+	appsTable.LineSeparator = true
+	for _, app := range team.Apps {
+		summary := ""
+		if app.Error == "" {
+			unitsStatus := make(map[string]int)
+			for _, unit := range app.Units {
+				if unit.ID != "" {
+					unitsStatus[unit.Status]++
 				}
 			}
-			addrs := strings.Replace(app.Addr(), ", ", "\n", -1)
-			appsTable.AddRow(cmd.Row([]string{app.Name, summary, addrs}))
+			statusText := make([]string, len(unitsStatus))
+			i := 0
+			us := newUnitSorter(unitsStatus)
+			sort.Sort(us)
+			for _, status := range us.Statuses {
+				statusText[i] = fmt.Sprintf("%d %s", unitsStatus[status], status)
+				i++
+			}
+			summary = strings.Join(statusText, "\n")
+		} else {
+			summary = fmt.Sprintf("error fetching units")
+			if client.Verbosity > 0 {
+				summary += fmt.Sprintf(": %s", app.Error)
+			}
 		}
-		if appsTable.Rows() > 0 {
-			buf.WriteString("\n")
-			buf.WriteString(fmt.Sprintf("Applications: %d\n", appsTable.Rows()))
-			buf.WriteString(appsTable.String())
-		}
-
-		fmt.Fprint(context.Stdout, tplBuffer.String()+buf.String())
+		addrs := strings.Replace(app.Addr(), ", ", "\n", -1)
+		appsTable.AddRow(cmd.Row([]string{app.Name, summary, addrs}))
 	}
-	return nil
+	if appsTable.Rows() > 0 {
+		buf.WriteString("\n")
+		buf.WriteString(fmt.Sprintf("Applications: %d\n", appsTable.Rows()))
+		buf.WriteString(appsTable.String())
+	}
+
+	fmt.Fprint(context.Stdout, tplBuffer.String()+buf.String())
 }
 
 type ChangePassword struct{}
