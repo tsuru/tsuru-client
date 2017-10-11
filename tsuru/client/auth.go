@@ -321,6 +321,13 @@ func (c *TeamList) Run(context *cmd.Context, client *cmd.Client) error {
 	return nil
 }
 
+type ContentTeam struct {
+	Name  string        `json:"name"`
+	Users []cmd.APIUser `json:"users"`
+	Pools []Pool        `json:"pools"`
+	Apps  []app         `json:"apps"`
+}
+
 type TeamInfo struct{}
 
 func (c *TeamInfo) Info() *cmd.Info {
@@ -354,12 +361,7 @@ func (c *TeamInfo) Run(context *cmd.Context, client *cmd.Client) error {
 	if err != nil {
 		return err
 	}
-	var team struct {
-		Name  string        `json:"name"`
-		Users []cmd.APIUser `json:"users"`
-		Pools []Pool        `json:"pools"`
-		Apps  []app         `json:"apps"`
-	}
+	var contentTeam ContentTeam
 	err = json.Unmarshal(b, &team)
 	if err != nil {
 		return err
@@ -373,7 +375,7 @@ func (c *TeamInfo) Run(context *cmd.Context, client *cmd.Client) error {
 	usersTable := cmd.NewTable()
 	usersTable.Headers = cmd.Row{"User", "Roles"}
 	usersTable.LineSeparator = true
-	for _, user := range team.Users {
+	for _, user := range contentTeam.Users {
 		usersTable.AddRow(cmd.Row{user.Email, strings.Join(user.RoleInstances(), "\n")})
 	}
 	if usersTable.Rows() > 0 {
@@ -384,7 +386,7 @@ func (c *TeamInfo) Run(context *cmd.Context, client *cmd.Client) error {
 	poolsTable := cmd.NewTable()
 	poolsTable.Headers = cmd.Row{"Pool", "Kind", "Provisioner", "Routers"}
 	poolsTable.LineSeparator = true
-	for _, pool := range team.Pools {
+	for _, pool := range contentTeam.Pools {
 		poolsTable.AddRow(cmd.Row{pool.Name, pool.Kind(), pool.GetProvisioner(), strings.Join(pool.Allowed["router"], "\n")})
 	}
 	if poolsTable.Rows() > 0 {
@@ -395,7 +397,7 @@ func (c *TeamInfo) Run(context *cmd.Context, client *cmd.Client) error {
 	appsTable := cmd.NewTable()
 	appsTable.Headers = cmd.Row{"Application", "Units", "Address"}
 	appsTable.LineSeparator = true
-	for _, app := range team.Apps {
+	for _, app := range contentTeam.Apps {
 		summary := ""
 		if app.Error == "" {
 			unitsStatus := make(map[string]int)
@@ -429,6 +431,7 @@ func (c *TeamInfo) Run(context *cmd.Context, client *cmd.Client) error {
 	}
 
 	fmt.Fprint(context.Stdout, tplBuffer.String()+buf.String())
+	return nil
 }
 
 type ChangePassword struct{}
