@@ -362,7 +362,7 @@ func (c *TeamInfo) Run(context *cmd.Context, client *cmd.Client) error {
 		return err
 	}
 	var contentTeam ContentTeam
-	err = json.Unmarshal(b, &team)
+	err = json.Unmarshal(b, &contentTeam)
 	if err != nil {
 		return err
 	}
@@ -371,7 +371,7 @@ func (c *TeamInfo) Run(context *cmd.Context, client *cmd.Client) error {
 	tmpl := template.Must(template.New("app").Parse(format))
 	var tplBuffer bytes.Buffer
 	var buf bytes.Buffer
-	tmpl.Execute(&tplBuffer, team)
+	tmpl.Execute(&tplBuffer, contentTeam)
 	usersTable := cmd.NewTable()
 	usersTable.Headers = cmd.Row{"User", "Roles"}
 	usersTable.LineSeparator = true
