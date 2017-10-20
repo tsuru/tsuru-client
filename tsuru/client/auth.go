@@ -398,7 +398,7 @@ func (c *TeamInfo) Run(context *cmd.Context, client *cmd.Client) error {
 	appsTable.Headers = cmd.Row{"Application", "Units", "Address"}
 	appsTable.LineSeparator = true
 	for _, app := range contentTeam.Apps {
-		summary := ""
+		var summary string
 		if app.Error == "" {
 			unitsStatus := make(map[string]int)
 			for _, unit := range app.Units {
