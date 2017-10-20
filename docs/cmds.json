@@ -11,6 +11,10 @@
     "usage": "tsuru node-container-info <name>", 
     "desc": "Show details about a single node container.\n\nMinimum # of arguments: 1\nMaximum # of arguments: 1\n"
   }, 
+  "platform-remove": {
+    "usage": "tsuru platform-remove <platform name> [-y]", 
+    "desc": "Remove a platform from tsuru. This command will fail if there are application\nstill using the platform.\n\nFlags:\n  \n  -y, --assume-yes  (= false)\n      Don't ask for confirmation.\n  \nMinimum # of arguments: 1\n"
+  }, 
   "app-list": {
     "usage": "tsuru app-list", 
     "desc": "Lists all apps that you have access to. App access is controlled by teams. If\nyour team has access to an app, then you have access to it.\n\nFlags can be used to filter the list of applications.\n\nFlags:\n  \n  -g, --tag  (= [])\n      Filter applications by tag. Can be used multiple times\n  -l, --locked  (= false)\n      Filter applications by lock status\n  -n, --name (= \"\")\n      Filter applications by name\n  -o, --pool (= \"\")\n      Filter applications by pool\n  -p, --platform (= \"\")\n      Filter applications by platform\n  -q  (= false)\n      Display only applications name\n  -s, --status (= \"\")\n      Filter applications by unit status. Accepts multiple values separated by commas. Possible values can be: building, created, starting, error, started, stopped, asleep\n  -t, --team (= \"\")\n      Filter applications by team owner\n  -u, --user (= \"\")\n      Filter applications by owner\n  \n"
@@ -211,6 +215,10 @@
     "usage": "tsuru node-container-list", 
     "desc": "List all existing node containers.\n\nFlags:\n  \n  -q  (= false)\n      Show only names of existing node containers.\n  \n"
   }, 
+  "app-router-add": {
+    "usage": "tsuru app-router-add <router name> [-a/--app appname] [-o/--opts key=value]...", 
+    "desc": "Add a new router to an application.\n\nFlags:\n  \n  -a, --app (= \"\")\n      The name of the app.\n  -o, --opts  (= {})\n      Custom options sent directly to router implementation.\n  \nMinimum # of arguments: 1\nMaximum # of arguments: 1\n"
+  }, 
   "node-healing-update": {
     "usage": "tsuru node-healing-update [-p/--pool pool] [--enable] [--disable] [--max-unresponsive <seconds>] [--max-unsuccessful <seconds>]", 
     "desc": "Update node healing configuration\n\nFlags:\n  \n  --disable  (= false)\n      Disable active node healing\n  --enable  (= false)\n      Enable active node healing\n  --max-unresponsive  (= -1)\n      Number of seconds tsuru will wait for the node to notify it's alive\n  --max-unsuccessful  (= -1)\n      Number of seconds tsuru will wait for the node to run successul checks\n  -p, --pool (= \"\")\n      The pool name to which the configuration will apply. If unset it'll be set as default for all pools.\n  \n"
@@ -238,6 +246,10 @@
   "target-add": {
     "usage": "tsuru target-add <label> <target> [--set-current|-s]", 
     "desc": "Adds a new entry to the list of available targets\n\nFlags:\n  \n  -s, --set-current  (= false)\n      Add and define the target as the current target\n  \nMinimum # of arguments: 2\n"
+  }, 
+  "app-router-remove": {
+    "usage": "tsuru app-router-remove <router name> [-a/--app appname]", 
+    "desc": "Remove a router from an application.\n\nFlags:\n  \n  -a, --app (= \"\")\n      The name of the app.\n  \nMinimum # of arguments: 1\nMaximum # of arguments: 1\n"
   }, 
   "pool-constraint-set": {
     "usage": "tsuru pool-constraint-set <poolExpression> <field> [<values>]... [-b/--blacklist] [-a/--append]", 
@@ -268,8 +280,8 @@
     "desc": "Creates a new machine template.\n\nTemplates can be used with the [[docker-node-add]] command running it with\nthe [[template=<template name>]] parameter. Templates can contain a list of\nparameters that will be sent to the IaaS provider.\n\nMinimum # of arguments: 3\n"
   }, 
   "app-update": {
-    "usage": "tsuru app-update [-a/--app appname] [--description/-d description] [--plan/-p plan name] [--router/-r router name] [--pool/-o pool] [--team-owner/-t team owner] [--platform/-l platform] [-i/--image-reset] [--tag/-g tag]... [--router-opts key=value]...", 
-    "desc": "Updates an app, changing its description, tags, plan or pool information.\n\nThe [[--description]] parameter sets a description for your app.\n\nThe [[--plan]] parameter changes the plan of your app.\n\nThe [[--router]] parameter changes the router of your app.\n\nThe [[--pool]] parameter changes the pool of your app.\n\nThe [[--team-owner]] parameter sets owner team for an application.\n\nThe [[--platform]] parameter sets a platform for an application.\n\nThe [[--image-reset]] parameter rebuilds the platform of an application.\n\nThe [[--tag]] parameter sets a tag for your app. You can set\nmultiple [[--tag]] parameters.\n\nThe [[--router-opts]] parameter changes the custom router parameters.\n\nFlags:\n  \n  -a, --app (= \"\")\n      The name of the app.\n  -d, --description (= \"\")\n      App description\n  -g, --tag  (= [])\n      App tag\n  -i, --image-reset  (= false)\n      Forces next deploy to build app image from scratch\n  -l, --platform (= \"\")\n      App platform\n  -o, --pool (= \"\")\n      App pool\n  -p, --plan (= \"\")\n      App plan\n  -r, --router (= \"\")\n      App router\n  --router-opts  (= {})\n      Router options\n  -t, --team-owner (= \"\")\n      App team owner\n  \n"
+    "usage": "tsuru app-update [-a/--app appname] [--description/-d description] [--plan/-p plan name] [--pool/-o pool] [--team-owner/-t team owner] [--platform/-l platform] [-i/--image-reset] [--tag/-g tag]...", 
+    "desc": "Updates an app, changing its description, tags, plan or pool information.\n\nThe [[--description]] parameter sets a description for your app.\n\nThe [[--plan]] parameter changes the plan of your app.\n\nThe [[--pool]] parameter changes the pool of your app.\n\nThe [[--team-owner]] parameter sets owner team for an application.\n\nThe [[--platform]] parameter sets a platform for an application.\n\nThe [[--image-reset]] parameter rebuilds the platform of an application.\n\nThe [[--tag]] parameter sets a tag for your app. You can set\nmultiple [[--tag]] parameters.\n\nFlags:\n  \n  -a, --app (= \"\")\n      The name of the app.\n  -d, --description (= \"\")\n      App description\n  -g, --tag  (= [])\n      App tag\n  -i, --image-reset  (= false)\n      Forces next deploy to build app image from scratch\n  -l, --platform (= \"\")\n      App platform\n  -o, --pool (= \"\")\n      App pool\n  -p, --plan (= \"\")\n      App plan\n  -t, --team-owner (= \"\")\n      App team owner\n  \n"
   }, 
   "role-dissociate": {
     "usage": "tsuru role-dissociate <role-name> <user-email> [<context-value>]", 
@@ -379,9 +391,9 @@
     "usage": "tsuru key-add <key-name> <path/to/key/file.pub> [-f/--force]", 
     "desc": "Sends your public key to the git server used by tsuru.\n\nFlags:\n  \n  -f, --force  (= false)\n      Force overriding the key if it already exists\n  \nMinimum # of arguments: 2\n"
   }, 
-  "token-show": {
-    "usage": "tsuru token-show [--user/-u useremail]", 
-    "desc": "Shows API token for the user. This token allow authenticated API calls to\ntsuru and will never expire. This is useful for integrating CI servers with\ntsuru.\n\nThe key will be generated the first time this command is called. See [[tsuru token-regenerate]]\nif you need to invalidate an existing token.\n\nFlags:\n  \n  -u, --user (= \"\")\n      Shows API token for the given user email\n  \n"
+  "app-router-update": {
+    "usage": "tsuru app-router-update <router name> [-a/--app appname] [-o/--opts key=value]...", 
+    "desc": "Update router opts in an application.\n\nFlags:\n  \n  -a, --app (= \"\")\n      The name of the app.\n  -o, --opts  (= {})\n      Custom options sent directly to router implementation.\n  \nMinimum # of arguments: 1\nMaximum # of arguments: 1\n"
   }, 
   "user-list": {
     "usage": "tsuru user-list [--user/-u useremail] [--role/-r role [-c/--context-value value]]", 
@@ -490,12 +502,16 @@
     "usage": "tsuru machine-template-remove <name>", 
     "desc": "Removes an existing machine template.\n\nMinimum # of arguments: 1\n"
   }, 
+  "token-show": {
+    "usage": "tsuru token-show [--user/-u useremail]", 
+    "desc": "Shows API token for the user. This token allow authenticated API calls to\ntsuru and will never expire. This is useful for integrating CI servers with\ntsuru.\n\nThe key will be generated the first time this command is called. See [[tsuru token-regenerate]]\nif you need to invalidate an existing token.\n\nFlags:\n  \n  -u, --user (= \"\")\n      Shows API token for the given user email\n  \n"
+  }, 
   "app-deploy-rollback-update": {
     "usage": "tsuru app-deploy-rollback-update [-a/--app appName] [-i/--image imageName] [-d/--disable] [-r/--reason reason]", 
     "desc": "Locks an existing image of an app. You can list images with \"tsuru app-deploy-list -a <appName>\"\n\n::\n\n    The [-i/--image] flag is the name of an app image.\n\n    The [-d/--disable] flag disables an image rollback. The default behavior (omitting this flag) is to enable it.\n\n    The [-r/--reason] flag lets the user tell why this action was needed.\n\n\nFlags:\n  \n  -a, --app (= \"\")\n      The name of the app.\n  -d, --disable  (= false)\n      Enables or disables the rollback on a specific image version\n  -i, --image (= \"\")\n      The image name for an app version\n  -r, --reason (= \"\")\n      The reason why the rollback has to be disabled\n  \n"
   }, 
   "cluster-remove": {
-    "usage": "tsuru cluster-remove <name>", 
+    "usage": "tsuru cluster-remove <name> [-y]", 
     "desc": "Removes a provisioner cluster definition.\n\nFlags:\n  \n  -y, --assume-yes  (= false)\n      Don't ask for confirmation.\n  \nMinimum # of arguments: 1\nMaximum # of arguments: 1\n"
   }, 
   "app-revoke": {
@@ -534,9 +550,9 @@
     "usage": "tsuru app-deploy-list [-a/--app <appname>]", 
     "desc": "List information about deploys for an application.\n\nFlags:\n  \n  -a, --app (= \"\")\n      The name of the app.\n  \n"
   }, 
-  "platform-remove": {
-    "usage": "tsuru platform-remove <platform name> [-y]", 
-    "desc": "Remove a platform from tsuru. This command will fail if there are application\nstill using the platform.\n\nFlags:\n  \n  -y, --assume-yes  (= false)\n      Don't ask for confirmation.\n  \nMinimum # of arguments: 1\n"
+  "app-router-list": {
+    "usage": "tsuru app-router-list [-a/--app appname]", 
+    "desc": "List all routers associated to an application.\n\nFlags:\n  \n  -a, --app (= \"\")\n      The name of the app.\n  \n"
   }, 
   "user-info": {
     "usage": "tsuru user-info", 

@@ -1,6 +1,19 @@
 Reference
 ~~~~~~~~~
 
+Setting client verbosity
+=========================
+
+With the ``--verbosity/-v`` flag, tsuru client shows the request and/or response from the API calls.
+
+The value for this flag can be ``1`` or ``2``. With ``1``, the request details are shown before the command output; with ``2``, both the request and response details are shown.
+
+This flag must be set before the command name. Example:
+
+::
+
+    $ tsuru -v 2 app-create myapp python -t myteam
+
 Managing remote tsuru server endpoints
 ======================================
 
