@@ -34,7 +34,7 @@ func (c *AppBuild) Flags() *gnuflag.FlagSet {
 }
 
 func (c *AppBuild) Info() *cmd.Info {
-	desc := `Builds a tsuru app image. Some examples of calls are:
+	desc := `Builds a tsuru app image respecting .tsuruignore file. Some examples of calls are:
 
 ::
 
@@ -88,7 +88,7 @@ func (c *AppBuild) Run(context *cmd.Context, client *cmd.Client) error {
 	stream := tsuruIo.NewStreamWriter(context.Stdout, nil)
 	safeStdout := &safeWriter{w: &tsuruIo.SimpleJsonMessageEncoderWriter{Encoder: json.NewEncoder(stream)}}
 	respBody := firstWriter{Writer: io.MultiWriter(safeStdout, buf)}
-	if err := uploadFiles(context, request, buf, safeStdout, body, values); err != nil {
+	if err = uploadFiles(context, request, buf, safeStdout, body, values); err != nil {
 		return err
 	}
 	resp, err := client.Do(request)
@@ -101,10 +101,10 @@ func (c *AppBuild) Run(context *cmd.Context, client *cmd.Client) error {
 		return err
 	}
 	fmt.Fprintf(safeStdout, buf.String())
-	if strings.HasSuffix(buf.String(), "OK\n") {
-		return nil
+	if resp.StatusCode != http.StatusOK {
+		return cmd.ErrAbortCommand
 	}
-	return cmd.ErrAbortCommand
+	return nil
 }
 
 func uploadFiles(context *cmd.Context, request *http.Request, buf *safe.Buffer, safeStdout *safeWriter, body *safe.Buffer, values url.Values) error {

@@ -225,7 +225,7 @@ func (c *AppDeploy) Run(context *cmd.Context, client *cmd.Client) error {
 		}
 		fmt.Fprint(context.Stdout, "Deploying image...")
 	} else {
-		if err := uploadFiles(context, request, buf, safeStdout, body, values); err != nil {
+		if err = uploadFiles(context, request, buf, safeStdout, body, values); err != nil {
 			return err
 		}
 	}
