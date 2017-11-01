@@ -24,8 +24,10 @@ Creates a standard example of .tsuruignore , tsuru.yaml and Procfile
 	It is the way to tell tsuru how to run your applications;
 
 ".tsuruignore" describes to tsuru what it should not add into your 
-	deploy process, via "tsuru app-deploy" command and works just 
-	like you're used to use .gitignore;
+	deploy process, via "tsuru app-deploy" command. You can use 
+	".tsuruignore" to avoid sending files that were committed, 
+	but aren't necessary for running the app, like tests and 
+	documentation;
 
 "tsuru.yaml" describes certain aspects of your app, like information
 	about deployment hooks and deployment time health checks.`,
@@ -74,7 +76,6 @@ func createInitFiles() error {
 	for _, f := range dirFiles {
 		if _, ok := initFiles[f.Name()]; ok {
 			delete(initFiles, f.Name())
-			continue
 		}
 	}
 	for f := range initFiles {
@@ -86,32 +87,24 @@ func createInitFiles() error {
 	return nil
 }
 
-func copyGitIgnore() error {
+func copyGitIgnore() (err error) {
 	in, err := os.Open(".gitignore")
 	if err != nil {
 		dotGit := []byte(".git\n.gitignore\n")
 		return ioutil.WriteFile(".tsuruignore", dotGit, 0644)
 	}
-	defer func() {
-		if errC := in.Close(); errC != nil {
-			err = errC
-		}
-	}()
+	defer in.Close()
 	out, err := os.OpenFile(".tsuruignore", os.O_APPEND|os.O_WRONLY, os.ModeAppend)
 	if err != nil {
-		return err
+		return
 	}
-	defer func() {
-		if errC := out.Close(); errC != nil {
-			err = errC
-		}
-	}()
+	defer out.Close()
 	_, err = io.Copy(out, in)
 	if err != nil {
-		return err
+		return
 	}
 	_, err = out.WriteString("\n.git\n.gitignore\n")
-	return err
+	return
 }
 
 func writeTsuruYaml() error {
