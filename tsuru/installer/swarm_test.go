@@ -202,7 +202,13 @@ func (s *S) TestCreateService(c *check.C) {
 	testCluster, err := s.createCluster()
 	c.Assert(err, check.IsNil)
 	cluster := testCluster.SwarmCluster
-	err = cluster.CreateService(docker.CreateServiceOptions{})
+	err = cluster.CreateService(docker.CreateServiceOptions{
+		ServiceSpec: swarm.ServiceSpec{
+			TaskTemplate: swarm.TaskSpec{
+				ContainerSpec: &swarm.ContainerSpec{},
+			},
+		},
+	})
 	c.Assert(err, check.IsNil)
 	client, err := cluster.dockerClient()
 	c.Assert(err, check.IsNil)
@@ -273,6 +279,9 @@ func (s *S) TestServicesInfo(c *check.C) {
 	replicas := uint64(2)
 	testCluster.SwarmCluster.CreateService(docker.CreateServiceOptions{
 		ServiceSpec: swarm.ServiceSpec{
+			TaskTemplate: swarm.TaskSpec{
+				ContainerSpec: &swarm.ContainerSpec{},
+			},
 			Annotations:  swarm.Annotations{Name: "tsuru"},
 			Mode:         swarm.ServiceMode{Replicated: &swarm.ReplicatedService{Replicas: &replicas}},
 			EndpointSpec: &swarm.EndpointSpec{Ports: []swarm.PortConfig{{PublishedPort: 80}}},

@@ -216,7 +216,6 @@ type App interface {
 	GetSwap() int64
 	GetCpuShare() int
 
-	SetUpdatePlatform(bool) error
 	GetUpdatePlatform() bool
 
 	GetRouters() []appTypes.AppRouter
@@ -351,7 +350,7 @@ type Provisioner interface {
 	Stop(App, string) error
 
 	// Units returns information about units by App.
-	Units(App) ([]Unit, error)
+	Units(...App) ([]Unit, error)
 
 	// RoutableAddresses returns the addresses used to access an application.
 	RoutableAddresses(App) ([]url.URL, error)
@@ -416,6 +415,7 @@ type UnitStatusProvisioner interface {
 }
 
 type AddNodeOptions struct {
+	IaaSID     string
 	Address    string
 	Pool       string
 	Metadata   map[string]string
@@ -463,7 +463,7 @@ type NodeProvisioner interface {
 }
 
 type RebalanceNodesOptions struct {
-	Writer         io.Writer
+	Event          *event.Event
 	Pool           string
 	MetadataFilter map[string]string
 	AppFilter      []string
@@ -501,14 +501,23 @@ type VolumeProvisioner interface {
 
 type Node interface {
 	Pool() string
+	IaaSID() string
 	Address() string
 	Status() string
+
+	// Metadata returns node metadata exclusively managed by tsuru
 	Metadata() map[string]string
 	Units() ([]Unit, error)
 	Provisioner() NodeProvisioner
+
+	// MetadataNoPrefix returns node metadata managed by tsuru without any
+	// tsuru specific prefix. This can be used with iaas providers.
+	MetadataNoPrefix() map[string]string
 }
 
 type NodeExtraData interface {
+	// ExtraData returns node metadata not managed by tsuru, like metadata
+	// added by external sources.
 	ExtraData() map[string]string
 }
 
@@ -522,6 +531,7 @@ type NodeHealthChecker interface {
 type NodeSpec struct {
 	// BSON tag for bson serialized compatibility with cluster.Node
 	Address     string `bson:"_id"`
+	IaaSID      string
 	Metadata    map[string]string
 	Status      string
 	Pool        string
@@ -545,6 +555,7 @@ func NodeToSpec(n Node) NodeSpec {
 	}
 	return NodeSpec{
 		Address:     n.Address(),
+		IaaSID:      n.IaaSID(),
 		Metadata:    metadata,
 		Status:      n.Status(),
 		Pool:        n.Pool(),

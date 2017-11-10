@@ -32,9 +32,10 @@ var (
 	labelNodeContainerName = "node-container-name"
 	labelNodeContainerPool = "node-container-pool"
 
-	labelNodeInternalPrefix = "tsuru-internal-"
+	labelNodeInternalPrefix = "internal-"
 	labelNodeAddr           = labelNodeInternalPrefix + "node-addr"
 	LabelNodePool           = PoolMetadataName
+	labelNodeIaaSID         = IaaSIDMetadataName
 
 	labelVolumeName = "volume-name"
 	labelVolumePool = "volume-pool"
@@ -50,7 +51,7 @@ var (
 
 	labelBuilder = "builder"
 
-	LabelClusterMetadata = "tsuru.io/cluster"
+	labelClusterMetadata = "tsuru.io/cluster"
 )
 
 type LabelSet struct {
@@ -110,16 +111,54 @@ func (s *LabelSet) NodePool() string {
 	return s.getLabel(LabelNodePool)
 }
 
-func (s *LabelSet) PublicNodeLabels() map[string]string {
-	internalLabels := make(map[string]string)
-	for k, v := range s.Labels {
-		if strings.HasPrefix(k, labelNodeInternalPrefix) ||
-			strings.HasPrefix(k, s.Prefix+labelNodeInternalPrefix) {
-			continue
+func (s *LabelSet) NodeIaaSID() string {
+	return s.getLabel(labelNodeIaaSID)
+}
+
+func filterByPrefix(m map[string]string, prefix string, withPrefix bool) map[string]string {
+	result := make(map[string]string, len(m))
+	for k, v := range m {
+		hasPrefix := strings.HasPrefix(k, prefix)
+		if hasPrefix == withPrefix {
+			result[k] = v
 		}
-		internalLabels[k] = v
 	}
-	return internalLabels
+	return result
+}
+
+func (s *LabelSet) NodeMetadata() map[string]string {
+	m := filterByPrefix(s.Labels, s.Prefix, true)
+	for k := range m {
+		if strings.HasPrefix(k, s.Prefix+labelNodeInternalPrefix) {
+			delete(m, k)
+		}
+	}
+	return m
+}
+
+func (s *LabelSet) NodeMetadataNoPrefix() map[string]string {
+	m := filterByPrefix(s.Labels, s.Prefix, true)
+	for k, v := range m {
+		delete(m, k)
+		if !strings.HasPrefix(k, s.Prefix+labelNodeInternalPrefix) {
+			m[strings.TrimPrefix(k, s.Prefix)] = v
+		}
+
+	}
+	return m
+}
+
+func (s *LabelSet) NodeExtraData(cluster string) map[string]string {
+	m := filterByPrefix(s.Labels, s.Prefix, false)
+	for k, v := range s.Labels {
+		if strings.HasPrefix(k, s.Prefix+labelNodeInternalPrefix) {
+			m[k] = v
+		}
+	}
+	if cluster != "" {
+		m[labelClusterMetadata] = cluster
+	}
+	return m
 }
 
 func (s *LabelSet) AppReplicas() int {
@@ -299,6 +338,7 @@ func NodeContainerLabels(opts NodeContainerLabelsOpts) *LabelSet {
 }
 
 type NodeLabelsOpts struct {
+	IaaSID       string
 	Addr         string
 	Pool         string
 	Prefix       string
@@ -310,13 +350,16 @@ func NodeLabels(opts NodeLabelsOpts) *LabelSet {
 	for k, v := range opts.CustomLabels {
 		labels[k] = v
 	}
-	for _, r := range []string{LabelNodePool, labelNodeAddr} {
+	for _, r := range []string{LabelNodePool, labelNodeAddr, labelNodeIaaSID} {
 		delete(labels, r)
 		delete(labels, opts.Prefix+r)
 	}
 	labels[LabelNodePool] = opts.Pool
 	if opts.Addr != "" {
 		labels[labelNodeAddr] = opts.Addr
+	}
+	if opts.IaaSID != "" {
+		labels[labelNodeIaaSID] = opts.IaaSID
 	}
 	return &LabelSet{Labels: labels, Prefix: opts.Prefix}
 }

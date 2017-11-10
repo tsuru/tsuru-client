@@ -53,11 +53,10 @@ type AddPoolOptions struct {
 }
 
 type UpdatePoolOptions struct {
-	Default     *bool
-	Public      *bool
-	Force       bool
-	Provisioner string
-	Builder     string
+	Default *bool
+	Public  *bool
+	Force   bool
+	Builder string
 }
 
 func (p *Pool) GetProvisioner() (provision.Provisioner, error) {
@@ -385,6 +384,10 @@ func ListAllPools() ([]Pool, error) {
 	return listPools(nil)
 }
 
+func ListPublicPools() ([]Pool, error) {
+	return getPoolsSatisfyConstraints(true, "team", "*")
+}
+
 func ListPossiblePools(teams []string) ([]Pool, error) {
 	return getPoolsSatisfyConstraints(false, "team", teams...)
 }
@@ -405,6 +408,23 @@ func listPools(query bson.M) ([]Pool, error) {
 		return nil, err
 	}
 	return pools, nil
+}
+
+func GetProvisionerForPool(name string) (provision.Provisioner, error) {
+	prov := poolCache.Get(name)
+	if prov != nil {
+		return prov, nil
+	}
+	p, err := GetPoolByName(name)
+	if err != nil {
+		return nil, err
+	}
+	prov, err = p.GetProvisioner()
+	if err != nil {
+		return nil, err
+	}
+	poolCache.Set(name, prov)
+	return prov, nil
 }
 
 // GetPoolByName finds a pool by name
@@ -473,9 +493,6 @@ func PoolUpdate(name string, opts UpdatePoolOptions) error {
 		if errConstraint != nil {
 			return err
 		}
-	}
-	if opts.Provisioner != "" {
-		query["provisioner"] = opts.Provisioner
 	}
 	if len(query) == 0 {
 		return nil

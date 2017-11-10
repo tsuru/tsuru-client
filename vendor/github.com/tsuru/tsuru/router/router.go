@@ -52,6 +52,10 @@ func Register(name string, r routerFactory) {
 	routers[name] = r
 }
 
+func Unregister(name string) {
+	delete(routers, name)
+}
+
 func Type(name string) (string, string, error) {
 	prefix := "routers:" + name
 	routerType, err := config.GetString(prefix + ":type")
@@ -103,12 +107,20 @@ func Default() (string, error) {
 	return "", ErrDefaultRouterNotFound
 }
 
+// App is the interface implemented by routable applications.
+type App interface {
+	GetName() string
+	GetPool() string
+	GetTeamOwner() string
+	GetTeamsName() []string
+}
+
 // Router is the basic interface of this package. It provides methods for
 // managing backends and routes. Each backend can have multiple routes.
 type Router interface {
 	GetName() string
 
-	AddBackend(name string) error
+	AddBackend(app App) error
 	RemoveBackend(name string) error
 	AddRoutes(name string, address []*url.URL) error
 	RemoveRoutes(name string, addresses []*url.URL) error
@@ -122,7 +134,6 @@ type Router interface {
 }
 
 type CNameRouter interface {
-	Router
 	SetCName(cname, name string) error
 	UnsetCName(cname, name string) error
 	CNames(name string) ([]*url.URL, error)
@@ -141,16 +152,31 @@ type HealthChecker interface {
 }
 
 type OptsRouter interface {
-	AddBackendOpts(name string, opts map[string]string) error
-	UpdateBackendOpts(name string, opts map[string]string) error
+	AddBackendOpts(app App, opts map[string]string) error
+	UpdateBackendOpts(app App, opts map[string]string) error
 }
 
 // TLSRouter is a router that supports adding and removing
 // certificates for a given cname
 type TLSRouter interface {
-	AddCertificate(cname, certificate, key string) error
-	RemoveCertificate(cname string) error
-	GetCertificate(cname string) (string, error)
+	AddCertificate(app App, cname, certificate, key string) error
+	RemoveCertificate(app App, cname string) error
+	GetCertificate(app App, cname string) (string, error)
+}
+
+type InfoRouter interface {
+	GetInfo() (map[string]string, error)
+}
+
+type BackendStatus string
+
+var (
+	BackendStatusReady    = BackendStatus("ready")
+	BackendStatusNotReady = BackendStatus("not ready")
+)
+
+type StatusRouter interface {
+	GetBackendStatus(name string) (status BackendStatus, detail string, err error)
 }
 
 type HealthcheckData struct {
@@ -349,9 +375,30 @@ func Swap(r Router, backend1, backend2 string, cnameOnly bool) error {
 }
 
 type PlanRouter struct {
-	Name    string `json:"name"`
-	Type    string `json:"type"`
-	Default bool   `json:"default"`
+	Name    string            `json:"name"`
+	Type    string            `json:"type"`
+	Info    map[string]string `json:"info"`
+	Default bool              `json:"default"`
+}
+
+func ListWithInfo() ([]PlanRouter, error) {
+	routers, err := List()
+	if err != nil {
+		return nil, err
+	}
+	for i, planRouter := range routers {
+		r, err := Get(planRouter.Name)
+		if err != nil {
+			return nil, err
+		}
+		if infoR, ok := r.(InfoRouter); ok {
+			routers[i].Info, err = infoR.GetInfo()
+			if err != nil {
+				return nil, err
+			}
+		}
+	}
+	return routers, nil
 }
 
 func List() ([]PlanRouter, error) {
@@ -385,7 +432,11 @@ func List() ([]PlanRouter, error) {
 		if !defaultFlag {
 			defaultFlag = value == dockerRouter
 		}
-		routersList = append(routersList, PlanRouter{Name: value, Type: routerType, Default: defaultFlag})
+		routersList = append(routersList, PlanRouter{
+			Name:    value,
+			Type:    routerType,
+			Default: defaultFlag,
+		})
 	}
 	return routersList, nil
 }

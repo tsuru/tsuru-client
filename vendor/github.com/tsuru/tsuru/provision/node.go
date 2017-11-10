@@ -12,7 +12,11 @@ import (
 	"github.com/tsuru/tsuru/net"
 )
 
-const PoolMetadataName = "pool"
+const (
+	PoolMetadataName   = "pool"
+	IaaSIDMetadataName = "iaas-id"
+	IaaSMetadataName   = "iaas"
+)
 
 type MetaWithFrequency struct {
 	Metadata map[string]string
@@ -52,13 +56,16 @@ func FindNodeByAddrs(p NodeProvisioner, addrs []string) (Node, error) {
 	return node, nil
 }
 
-func FindNode(address string) (Provisioner, Node, error) {
+func FindNodeSkipProvisioner(address string, skipProv string) (Provisioner, Node, error) {
 	provisioners, err := Registry()
 	if err != nil {
 		return nil, nil, err
 	}
 	provErrors := tsuruErrors.NewMultiError()
 	for _, prov := range provisioners {
+		if skipProv != "" && prov.GetName() == skipProv {
+			continue
+		}
 		nodeProv, ok := prov.(NodeProvisioner)
 		if !ok {
 			continue
@@ -79,13 +86,17 @@ func FindNode(address string) (Provisioner, Node, error) {
 	return nil, nil, ErrNodeNotFound
 }
 
+func FindNode(address string) (Provisioner, Node, error) {
+	return FindNodeSkipProvisioner(address, "")
+}
+
 func metadataNoIaasID(n Node) map[string]string {
 	// iaas-id is ignored because it wasn't created in previous tsuru versions
 	// and having nodes with and without it would cause unbalanced metadata
 	// errors.
-	ignoredMetadata := []string{"iaas-id"}
+	ignoredMetadata := []string{IaaSIDMetadataName}
 	metadata := map[string]string{}
-	for k, v := range n.Metadata() {
+	for k, v := range n.MetadataNoPrefix() {
 		metadata[k] = v
 	}
 	for _, val := range ignoredMetadata {
