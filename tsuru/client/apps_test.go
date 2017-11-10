@@ -848,8 +848,9 @@ func (s *S) TestAppInfoMultipleRouters(c *check.C) {
 	"deploys": 7,
 	"router": "planb",
 	"routers": [
-		{"name": "r1", "opts": {"a": "b", "x": "y"}, "address": "addr1"},
-		{"name": "r2", "address": "addr2"}
+		{"name": "r1", "type": "r", "opts": {"a": "b", "x": "y"}, "address": "addr1"},
+		{"name": "r2", "address": "addr2", "status": "ready"},
+		{"name": "r3", "type": "r3", "address": "addr3", "status": "not ready", "status-detail": "something happening"}
 	]
 }`
 	expected := `Application: app1
@@ -858,7 +859,7 @@ Tags:
 Repository: git@git.com:php.git
 Platform: php
 Teams: tsuruteam, crane
-Address: cname1, addr1, addr2
+Address: cname1, addr1, addr2, addr3
 Owner: myapp_owner
 Team owner: myteam
 Deploys: 7
@@ -875,14 +876,16 @@ Units: 3
 +--------+---------+----------+------+
 
 Routers:
-+------+------+---------+
-| Name | Opts | Address |
-+------+------+---------+
-| r1   | a: b | addr1   |
-|      | x: y |         |
-+------+------+---------+
-| r2   |      | addr2   |
-+------+------+---------+
++------+------+------+---------+--------------------------------+
+| Name | Type | Opts | Address | Status                         |
++------+------+------+---------+--------------------------------+
+| r1   | r    | a: b | addr1   |                                |
+|      |      | x: y |         |                                |
++------+------+------+---------+--------------------------------+
+| r2   |      |      | addr2   | ready                          |
++------+------+------+---------+--------------------------------+
+| r3   | r3   |      | addr3   | not ready: something happening |
++------+------+------+---------+--------------------------------+
 
 `
 	context := cmd.Context{

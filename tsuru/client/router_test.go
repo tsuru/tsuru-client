@@ -26,16 +26,18 @@ func (s *S) TestRoutersListRun(c *check.C) {
 		Stderr: &stderr,
 	}
 	r1 := router.PlanRouter{Name: "router1", Type: "foo"}
-	r2 := router.PlanRouter{Name: "router2", Type: "bar"}
+	r2 := router.PlanRouter{Name: "router2", Type: "bar", Info: map[string]string{"i1": "v1", "i2": "v2"}}
 	data, err := json.Marshal([]router.PlanRouter{r1, r2})
 	c.Assert(err, check.IsNil)
-	expected := `+---------+------+
-| Name    | Type |
-+---------+------+
-| router1 | foo  |
-+---------+------+
-| router2 | bar  |
-+---------+------+
+
+	expected := `+---------+------+--------+
+| Name    | Type | Info   |
++---------+------+--------+
+| router1 | foo  |        |
++---------+------+--------+
+| router2 | bar  | i1: v1 |
+|         |      | i2: v2 |
++---------+------+--------+
 `
 	trans := &cmdtest.ConditionalTransport{
 		Transport: cmdtest.Transport{Message: string(data), Status: http.StatusOK},
@@ -58,19 +60,23 @@ func (s *S) TestAppRoutersListRun(c *check.C) {
 		Stderr: &stderr,
 	}
 	routers := []appTypes.AppRouter{
-		{Name: "r1", Opts: map[string]string{"a": "b", "x": "y"}, Address: "addr1"},
-		{Name: "r2", Address: "addr2"},
+		{Name: "r1", Type: "r", Opts: map[string]string{"a": "b", "x": "y"}, Address: "addr1"},
+		{Name: "r2", Address: "addr2", Status: "ready"},
+		{Name: "r3", Type: "r3", Address: "addr3", Status: "not ready", StatusDetail: "something happening"},
 	}
 	data, err := json.Marshal(routers)
 	c.Assert(err, check.IsNil)
-	expected := `+------+------+---------+
-| Name | Opts | Address |
-+------+------+---------+
-| r1   | a: b | addr1   |
-|      | x: y |         |
-+------+------+---------+
-| r2   |      | addr2   |
-+------+------+---------+
+
+	expected := `+------+------+------+---------+--------------------------------+
+| Name | Type | Opts | Address | Status                         |
++------+------+------+---------+--------------------------------+
+| r1   | r    | a: b | addr1   |                                |
+|      |      | x: y |         |                                |
++------+------+------+---------+--------------------------------+
+| r2   |      |      | addr2   | ready                          |
++------+------+------+---------+--------------------------------+
+| r3   | r3   |      | addr3   | not ready: something happening |
++------+------+------+---------+--------------------------------+
 `
 	trans := &cmdtest.ConditionalTransport{
 		Transport: cmdtest.Transport{Message: string(data), Status: http.StatusOK},
@@ -122,10 +128,13 @@ func (s *S) TestAppRoutersAddRun(c *check.C) {
 			err := req.ParseForm()
 			c.Assert(err, check.IsNil)
 			c.Assert(req.Form, check.DeepEquals, url.Values{
-				"Opts.a":  []string{"b"},
-				"Opts.x":  []string{"y"},
-				"Address": []string{""},
-				"Name":    []string{"myrouter"},
+				"Opts.a":       []string{"b"},
+				"Opts.x":       []string{"y"},
+				"Name":         []string{"myrouter"},
+				"Address":      []string{""},
+				"Type":         []string{""},
+				"Status":       []string{""},
+				"StatusDetail": []string{""},
 			})
 			return strings.HasSuffix(req.URL.Path, "/1.5/apps/myapp/routers") && req.Method == "POST"
 		},
@@ -152,10 +161,13 @@ func (s *S) TestAppRoutersUpdateRun(c *check.C) {
 			err := req.ParseForm()
 			c.Assert(err, check.IsNil)
 			c.Assert(req.Form, check.DeepEquals, url.Values{
-				"Opts.a":  []string{"b"},
-				"Opts.x":  []string{"y"},
-				"Address": []string{""},
-				"Name":    []string{"myrouter"},
+				"Opts.a":       []string{"b"},
+				"Opts.x":       []string{"y"},
+				"Name":         []string{"myrouter"},
+				"Address":      []string{""},
+				"Type":         []string{""},
+				"Status":       []string{""},
+				"StatusDetail": []string{""},
 			})
 			return strings.HasSuffix(req.URL.Path, "/1.5/apps/myapp/routers/myrouter") && req.Method == "PUT"
 		},

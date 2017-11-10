@@ -51,10 +51,15 @@ func (c *RoutersList) Run(context *cmd.Context, client *cmd.Client) error {
 		}
 	}
 	table := cmd.NewTable()
-	table.Headers = cmd.Row([]string{"Name", "Type"})
+	table.Headers = cmd.Row([]string{"Name", "Type", "Info"})
 	table.LineSeparator = true
 	for _, router := range routers {
-		table.AddRow(cmd.Row([]string{router.Name, router.Type}))
+		var infos []string
+		for k, v := range router.Info {
+			infos = append(infos, fmt.Sprintf("%s: %s", k, v))
+		}
+		sort.Strings(infos)
+		table.AddRow(cmd.Row([]string{router.Name, router.Type, strings.Join(infos, "\n")}))
 	}
 	context.Stdout.Write(table.Bytes())
 	return nil
@@ -106,7 +111,7 @@ func (c *AppRoutersList) Run(context *cmd.Context, client *cmd.Client) error {
 
 func renderRouters(routers []appTypes.AppRouter, out io.Writer) {
 	table := cmd.NewTable()
-	table.Headers = cmd.Row([]string{"Name", "Opts", "Address"})
+	table.Headers = cmd.Row([]string{"Name", "Type", "Opts", "Address", "Status"})
 	table.LineSeparator = true
 	for _, r := range routers {
 		var optsStr []string
@@ -114,7 +119,11 @@ func renderRouters(routers []appTypes.AppRouter, out io.Writer) {
 			optsStr = append(optsStr, fmt.Sprintf("%s: %s", k, v))
 		}
 		sort.Strings(optsStr)
-		table.AddRow(cmd.Row([]string{r.Name, strings.Join(optsStr, "\n"), r.Address}))
+		statusStr := r.Status
+		if r.StatusDetail != "" {
+			statusStr = fmt.Sprintf("%s: %s", statusStr, r.StatusDetail)
+		}
+		table.AddRow(cmd.Row([]string{r.Name, r.Type, strings.Join(optsStr, "\n"), r.Address, statusStr}))
 	}
 	out.Write(table.Bytes())
 }
