@@ -16,6 +16,7 @@ import (
 	"github.com/tsuru/tsuru/db"
 	"github.com/tsuru/tsuru/db/storage"
 	"github.com/tsuru/tsuru/log"
+	"github.com/tsuru/tsuru/provision"
 	"gopkg.in/mgo.v2"
 	"gopkg.in/mgo.v2/bson"
 )
@@ -44,6 +45,8 @@ var (
 		Name: "tsuru_iaas_destroy_errors_total",
 		Help: "The total number of machine destroy errors.",
 	}, []string{"iaas"})
+
+	ErrMachineNotFound = errors.New("machine not found")
 )
 
 func init() {
@@ -94,10 +97,10 @@ func CreateMachineForIaaS(iaasName string, params map[string]string) (*Machine, 
 		machineCreateErrors.WithLabelValues(iaasName).Inc()
 		return nil, err
 	}
-	params["iaas-id"] = m.Id
+	params[provision.IaaSIDMetadataName] = m.Id
 	m.Iaas = iaasName
 	m.CreationParams = params
-	err = m.saveToDB()
+	err = m.saveToDB(true)
 	if err != nil {
 		m.Destroy()
 		return nil, err
@@ -132,6 +135,9 @@ func FindMachineByIdOrAddress(id string, address string) (Machine, error) {
 		query["address"] = address
 	}
 	err = coll.Find(query).One(&result)
+	if err == mgo.ErrNotFound {
+		err = ErrMachineNotFound
+	}
 	return result, err
 }
 
@@ -143,6 +149,9 @@ func FindMachineByAddress(address string) (Machine, error) {
 	defer coll.Close()
 	var result Machine
 	err = coll.Find(bson.M{"address": address}).One(&result)
+	if err == mgo.ErrNotFound {
+		err = ErrMachineNotFound
+	}
 	return result, err
 }
 
@@ -154,6 +163,9 @@ func FindMachineById(id string) (Machine, error) {
 	defer coll.Close()
 	var result Machine
 	err = coll.FindId(id).One(&result)
+	if err == mgo.ErrNotFound {
+		err = ErrMachineNotFound
+	}
 	return result, err
 }
 
@@ -190,13 +202,17 @@ func (m *Machine) FormatNodeAddress() string {
 	return fmt.Sprintf("%s://%s:%d", protocol, m.Address, port)
 }
 
-func (m *Machine) saveToDB() error {
+func (m *Machine) saveToDB(forceOverwrite bool) error {
 	coll, err := collectionEnsureIdx()
 	if err != nil {
 		return err
 	}
 	defer coll.Close()
 	_, err = coll.UpsertId(m.Id, m)
+	if forceOverwrite && err != nil && mgo.IsDup(err) {
+		coll.Remove(bson.M{"address": m.Address, "iaas": m.Iaas})
+		_, err = coll.UpsertId(m.Id, m)
+	}
 	return err
 }
 

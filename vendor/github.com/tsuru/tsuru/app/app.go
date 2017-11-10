@@ -13,6 +13,7 @@ import (
 	"io/ioutil"
 	"net/url"
 	"strings"
+	"sync"
 	"time"
 
 	"github.com/pkg/errors"
@@ -36,8 +37,10 @@ import (
 	"github.com/tsuru/tsuru/router"
 	"github.com/tsuru/tsuru/router/rebuild"
 	"github.com/tsuru/tsuru/service"
+	"github.com/tsuru/tsuru/storage"
 	appTypes "github.com/tsuru/tsuru/types/app"
 	authTypes "github.com/tsuru/tsuru/types/auth"
+	"github.com/tsuru/tsuru/types/cache"
 	"github.com/tsuru/tsuru/validation"
 	"github.com/tsuru/tsuru/volume"
 	"gopkg.in/mgo.v2"
@@ -167,20 +170,14 @@ func (app *App) getBuilder() (builder.Builder, error) {
 }
 
 func (app *App) getProvisioner() (provision.Provisioner, error) {
+	var err error
 	if app.provisioner == nil {
 		if app.Pool == "" {
 			return provision.GetDefault()
 		}
-		p, err := pool.GetPoolByName(app.Pool)
-		if err != nil {
-			return nil, err
-		}
-		app.provisioner, err = p.GetProvisioner()
-		if err != nil {
-			return nil, err
-		}
+		app.provisioner, err = pool.GetProvisionerForPool(app.Pool)
 	}
-	return app.provisioner, nil
+	return app.provisioner, err
 }
 
 // Units returns the list of units.
@@ -255,6 +252,14 @@ type Applog struct {
 	Unit    string
 }
 
+type ErrAppNotLocked struct {
+	App string
+}
+
+func (e ErrAppNotLocked) Error() string {
+	return fmt.Sprintf("unable to lock app %q", e.App)
+}
+
 // AcquireApplicationLock acquires an application lock by setting the lock
 // field in the database.  This method is already called by a connection
 // middleware on requests with :app or :appname params that have side-effects.
@@ -290,6 +295,45 @@ func AcquireApplicationLockWait(appName string, owner string, reason string, tim
 			return false, nil
 		case <-time.After(300 * time.Millisecond):
 		}
+	}
+}
+
+func AcquireApplicationLockWaitMany(appNames []string, owner string, reason string, timeout time.Duration) error {
+	lockedApps := make(chan string, len(appNames))
+	errCh := make(chan error, len(appNames))
+	wg := sync.WaitGroup{}
+	for _, appName := range appNames {
+		wg.Add(1)
+		go func(appName string) {
+			defer wg.Done()
+			locked, err := AcquireApplicationLockWait(appName, owner, reason, timeout)
+			if err != nil {
+				errCh <- err
+				return
+			}
+			if !locked {
+				errCh <- ErrAppNotLocked{App: appName}
+				return
+			}
+			lockedApps <- appName
+		}(appName)
+	}
+	wg.Wait()
+	close(lockedApps)
+	close(errCh)
+	err := <-errCh
+	if err != nil {
+		for appName := range lockedApps {
+			ReleaseApplicationLock(appName)
+		}
+		return err
+	}
+	return nil
+}
+
+func ReleaseApplicationLockMany(appNames []string) {
+	for _, appName := range appNames {
+		ReleaseApplicationLock(appName)
 	}
 }
 
@@ -409,17 +453,26 @@ func (app *App) Update(updateData App, w io.Writer) (err error) {
 	teamOwner := updateData.TeamOwner
 	platform := updateData.Platform
 	tags := processTags(updateData.Tags)
+	oldApp := *app
 	if description != "" {
 		app.Description = description
 	}
 	if poolName != "" {
 		app.Pool = poolName
+		app.provisioner = nil
 		_, err = app.getPoolForApp(app.Pool)
 		if err != nil {
 			return err
 		}
 	}
-	oldPlan := app.Plan
+	newProv, err := app.getProvisioner()
+	if err != nil {
+		return err
+	}
+	oldProv, err := oldApp.getProvisioner()
+	if err != nil {
+		return err
+	}
 	if planName != "" {
 		plan, errFind := findPlanByName(planName)
 		if errFind != nil {
@@ -459,22 +512,18 @@ func (app *App) Update(updateData App, w io.Writer) (err error) {
 	if err != nil {
 		return err
 	}
-	if app.Plan != oldPlan {
-		actions := []*action.Action{
-			&saveApp,
-			&restartApp,
-		}
-		err = action.NewPipeline(actions...).Execute(app, &oldPlan, w)
-		if err != nil {
-			return err
-		}
+	actions := []*action.Action{
+		&saveApp,
 	}
-	conn, err := db.Conn()
-	if err != nil {
-		return err
+	if newProv.GetName() != oldProv.GetName() {
+		actions = append(actions,
+			&provisionAppNewProvisioner,
+			&provisionAppAddUnits,
+			&destroyAppOldProvisioner)
+	} else if app.Plan != oldApp.Plan {
+		actions = append(actions, &restartApp)
 	}
-	defer conn.Close()
-	return conn.Apps().Update(bson.M{"name": app.Name}, app)
+	return action.NewPipeline(actions...).Execute(app, &oldApp, w)
 }
 
 func processTags(tags []string) []string {
@@ -951,8 +1000,12 @@ func (app *App) getPoolForApp(poolName string) (string, error) {
 			return "", err
 		}
 		if len(pools) > 1 {
+			publicPools, err := pool.ListPublicPools()
+			if err != nil {
+				return "", err
+			}
 			var names []string
-			for _, p := range pools {
+			for _, p := range append(pools, publicPools...) {
 				names = append(names, fmt.Sprintf("%q", p.Name))
 			}
 			return "", errors.Errorf("you have access to %s pools. Please choose one in app creation", strings.Join(names, ","))
@@ -1262,17 +1315,13 @@ func (app *App) GetCpuShare() int {
 }
 
 func (app *App) GetAddresses() ([]string, error) {
-	var addresses []string
-	for _, appRouter := range app.GetRouters() {
-		r, err := router.Get(appRouter.Name)
-		if err != nil {
-			return nil, err
-		}
-		addr, err := r.Addr(app.Name)
-		if err != nil {
-			return nil, err
-		}
-		addresses = append(addresses, addr)
+	routers, err := app.GetRoutersWithAddr()
+	if err != nil {
+		return nil, err
+	}
+	addresses := make([]string, len(routers))
+	for i := range routers {
+		addresses[i] = routers[i].Address
 	}
 	return addresses, nil
 }
@@ -1653,6 +1702,68 @@ func (f *Filter) Query() bson.M {
 	return query
 }
 
+type AppUnitsResponse struct {
+	Units []provision.Unit
+	Err   error
+}
+
+func Units(apps []App) (map[string]AppUnitsResponse, error) {
+	poolProvMap := map[string]provision.Provisioner{}
+	provMap := map[provision.Provisioner][]provision.App{}
+	for i, a := range apps {
+		prov, ok := poolProvMap[a.Pool]
+		if !ok {
+			var err error
+			prov, err = a.getProvisioner()
+			if err != nil {
+				return nil, err
+			}
+			poolProvMap[a.Pool] = prov
+		}
+		provMap[prov] = append(provMap[prov], &apps[i])
+	}
+	type parallelRsp struct {
+		provApps []provision.App
+		units    []provision.Unit
+		err      error
+	}
+	rspCh := make(chan parallelRsp, len(provMap))
+	wg := sync.WaitGroup{}
+	for prov, provApps := range provMap {
+		wg.Add(1)
+		prov := prov
+		provApps := provApps
+		go func() {
+			defer wg.Done()
+			units, err := prov.Units(provApps...)
+			rspCh <- parallelRsp{
+				units:    units,
+				err:      err,
+				provApps: provApps,
+			}
+		}()
+	}
+	wg.Wait()
+	close(rspCh)
+	appUnits := map[string]AppUnitsResponse{}
+	for pRsp := range rspCh {
+		if pRsp.err != nil {
+			for _, a := range pRsp.provApps {
+				rsp := appUnits[a.GetName()]
+				rsp.Err = errors.Wrap(pRsp.err, "unable to list app units")
+				appUnits[a.GetName()] = rsp
+			}
+			continue
+		}
+		for _, u := range pRsp.units {
+			rsp := appUnits[u.AppName]
+			rsp.Units = append(rsp.Units, u)
+			appUnits[u.AppName] = rsp
+		}
+	}
+	return appUnits, nil
+}
+
 // List returns the list of apps filtered through the filter parameter.
 func List(filter *Filter) ([]App, error) {
 	apps := []App{}
@@ -1663,13 +1774,14 @@ func List(filter *Filter) ([]App, error) {
 	defer conn.Close()
 	query := filter.Query()
 	if err = conn.Apps().Find(query).All(&apps); err != nil {
-		return apps, err
+		return nil, err
 	}
 	if filter != nil && len(filter.Statuses) > 0 {
 		appsProvisionerMap := make(map[string][]provision.App)
+		var prov provision.Provisioner
 		for i := range apps {
 			a := &apps[i]
-			prov, err := a.getProvisioner()
+			prov, err = a.getProvisioner()
 			if err != nil {
 				return nil, err
 			}
@@ -1677,7 +1789,7 @@ func List(filter *Filter) ([]App, error) {
 		}
 		var provisionApps []provision.App
 		for provName, apps := range appsProvisionerMap {
-			prov, err := provision.Get(provName)
+			prov, err = provision.Get(provName)
 			if err != nil {
 				return nil, err
 			}
@@ -1694,7 +1806,60 @@ func List(filter *Filter) ([]App, error) {
 		}
 		apps = apps[:len(provisionApps)]
 	}
+	err = loadCachedAddrsInApps(apps)
+	if err != nil {
+		return nil, err
+	}
 	return apps, nil
+}
+
+func appRouterAddrKey(appName, routerName string) string {
+	return strings.Join([]string{"app-router-addr", appName, routerName}, "\x00")
+}
+
+func loadCachedAddrsInApps(apps []App) error {
+	keys := make([]string, 0, len(apps))
+	for i := range apps {
+		a := &apps[i]
+		a.Routers = a.GetRouters()
+		for j := range a.Routers {
+			keys = append(keys, appRouterAddrKey(a.Name, a.Routers[j].Name))
+		}
+	}
+	entries, err := cacheService().GetAll(keys...)
+	if err != nil {
+		return err
+	}
+	entryMap := make(map[string]cache.CacheEntry, len(entries))
+	for _, e := range entries {
+		entryMap[e.Key] = e
+	}
+	for i := range apps {
+		a := &apps[i]
+		hasEmpty := false
+		for j := range apps[i].Routers {
+			entry := entryMap[appRouterAddrKey(a.Name, a.Routers[j].Name)]
+			a.Routers[j].Address = entry.Value
+			if entry.Value == "" {
+				hasEmpty = true
+			}
+		}
+		if hasEmpty {
+			go a.GetRoutersWithAddr()
+		}
+	}
+	return nil
+}
+
+func cacheService() cache.CacheService {
+	dbDriver, err := storage.GetCurrentDbDriver()
+	if err != nil {
+		dbDriver, err = storage.GetDefaultDbDriver()
+		if err != nil {
+			return nil
+		}
+	}
+	return dbDriver.CacheService
 }
 
 // Swap calls the Router.Swap and updates the app.CName in the database.
@@ -1712,8 +1877,12 @@ func Swap(app1, app2 *App, cnameOnly bool) error {
 	if err != nil {
 		return err
 	}
-	defer rebuild.RoutesRebuildOrEnqueue(app1.Name)
-	defer rebuild.RoutesRebuildOrEnqueue(app2.Name)
+	defer func(app1, app2 *App) {
+		rebuild.RoutesRebuildOrEnqueue(app1.Name)
+		rebuild.RoutesRebuildOrEnqueue(app2.Name)
+		app1.GetRoutersWithAddr()
+		app2.GetRoutersWithAddr()
+	}(app1, app2)
 	err = r1.Swap(app1.Name, app2.Name, cnameOnly)
 	if err != nil {
 		return err
@@ -1804,9 +1973,9 @@ func (app *App) AddRouter(appRouter appTypes.AppRouter) error {
 		return err
 	}
 	if optsRouter, ok := r.(router.OptsRouter); ok {
-		err = optsRouter.AddBackendOpts(app.Name, appRouter.Opts)
+		err = optsRouter.AddBackendOpts(app, appRouter.Opts)
 	} else {
-		err = r.AddBackend(app.Name)
+		err = r.AddBackend(app)
 	}
 	if err != nil {
 		return err
@@ -1849,7 +2018,7 @@ func (app *App) UpdateRouter(appRouter appTypes.AppRouter) error {
 	if err != nil {
 		return err
 	}
-	err = optsRouter.UpdateBackendOpts(app.Name, appRouter.Opts)
+	err = optsRouter.UpdateBackendOpts(app, appRouter.Opts)
 	if err != nil {
 		existing.Opts = oldOpts
 		rollbackErr := app.updateRoutersDB(routers)
@@ -1909,7 +2078,7 @@ func (app *App) updateRoutersDB(routers []appTypes.AppRouter) error {
 }
 
 func (app *App) GetRouters() []appTypes.AppRouter {
-	routers := app.Routers
+	routers := append([]appTypes.AppRouter{}, app.Routers...)
 	if app.Router != "" {
 		routers = append([]appTypes.AppRouter{{
 			Name: app.Router,
@@ -1921,18 +2090,37 @@ func (app *App) GetRouters() []appTypes.AppRouter {
 
 func (app *App) GetRoutersWithAddr() ([]appTypes.AppRouter, error) {
 	routers := app.GetRouters()
+	multi := tsuruErrors.NewMultiError()
 	for i := range routers {
-		r, err := router.Get(routers[i].Name)
+		routerName := routers[i].Name
+		r, err := router.Get(routerName)
 		if err != nil {
-			return routers, err
+			multi.Add(err)
+			continue
 		}
 		addr, err := r.Addr(app.Name)
 		if err != nil {
-			return routers, err
+			multi.Add(err)
+			continue
 		}
+		if statusRouter, ok := r.(router.StatusRouter); ok {
+			status, detail, stErr := statusRouter.GetBackendStatus(app.Name)
+			if stErr != nil {
+				multi.Add(err)
+				continue
+			}
+			routers[i].Status = string(status)
+			routers[i].StatusDetail = detail
+		}
+		cacheService().Put(cache.CacheEntry{
+			Key:   appRouterAddrKey(app.Name, routerName),
+			Value: addr,
+		})
 		routers[i].Address = addr
+		rType, _, _ := router.Type(routerName)
+		routers[i].Type = rType
 	}
-	return routers, nil
+	return routers, multi.ToError()
 }
 
 func (app *App) MetricEnvs() (map[string]string, error) {
@@ -1990,7 +2178,7 @@ func (app *App) SetCertificate(name, certificate, key string) error {
 			continue
 		}
 		addedAny = true
-		err = tlsRouter.AddCertificate(name, certificate, key)
+		err = tlsRouter.AddCertificate(app, name, certificate, key)
 		if err != nil {
 			return err
 		}
@@ -2017,7 +2205,7 @@ func (app *App) RemoveCertificate(name string) error {
 			continue
 		}
 		removedAny = true
-		err = tlsRouter.RemoveCertificate(name)
+		err = tlsRouter.RemoveCertificate(app, name)
 		if err != nil {
 			return err
 		}
@@ -2064,7 +2252,7 @@ func (app *App) GetCertificates() (map[string]map[string]string, error) {
 			continue
 		}
 		for _, n := range names {
-			cert, err := tlsRouter.GetCertificate(n)
+			cert, err := tlsRouter.GetCertificate(app, n)
 			if err != nil && err != router.ErrCertificateNotFound {
 				return nil, errors.Wrapf(err, "error in router %q", appRouter.Name)
 			}

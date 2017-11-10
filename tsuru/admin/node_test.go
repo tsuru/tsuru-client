@@ -14,6 +14,7 @@ import (
 	"github.com/ajg/form"
 	"github.com/tsuru/tsuru/cmd"
 	"github.com/tsuru/tsuru/cmd/cmdtest"
+	"github.com/tsuru/tsuru/event"
 	tsuruIo "github.com/tsuru/tsuru/io"
 	"github.com/tsuru/tsuru/provision"
 	"gopkg.in/check.v1"
@@ -581,7 +582,8 @@ func (s *S) TestRebalanceNodeCmdRun(c *check.C) {
 	msg, _ := json.Marshal(tsuruIo.SimpleJsonMessage{Message: "progress msg"})
 	result := string(msg)
 	expectedRebalance := provision.RebalanceNodesOptions{
-		Dry: true,
+		Dry:   true,
+		Event: &event.Event{},
 	}
 	trans := &cmdtest.ConditionalTransport{
 		Transport: cmdtest.Transport{Message: result, Status: http.StatusOK},
@@ -608,7 +610,8 @@ func (s *S) TestRebalanceNodeCmdRun(c *check.C) {
 	expected := "progress msg"
 	c.Assert(stdout.String(), check.Equals, expected)
 	expectedRebalance = provision.RebalanceNodesOptions{
-		Dry: false,
+		Dry:   false,
+		Event: &event.Event{},
 	}
 	cmd2 := RebalanceNodeCmd{}
 	cmd2.Flags().Parse(true, []string{"-y"})
@@ -628,6 +631,7 @@ func (s *S) TestRebalanceNodeCmdRunWithFilters(c *check.C) {
 		Dry:            false,
 		MetadataFilter: map[string]string{"pool": "x", "a": "b"},
 		AppFilter:      []string{"x", "y"},
+		Event:          &event.Event{},
 	}
 	trans := &cmdtest.ConditionalTransport{
 		Transport: cmdtest.Transport{Message: result, Status: http.StatusOK},
