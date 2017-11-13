@@ -8,6 +8,7 @@ import (
 	"encoding/json"
 	"fmt"
 	"net/http"
+	"sort"
 
 	"github.com/tsuru/gnuflag"
 	"github.com/tsuru/tsuru/cmd"
@@ -97,28 +98,39 @@ func (c *AppRoutesRebuild) Run(ctx *cmd.Context, client *cmd.Client) error {
 		return err
 	}
 	defer rsp.Body.Close()
-	var rebuildResult rebuild.RebuildRoutesResult
-	err = json.NewDecoder(rsp.Body).Decode(&rebuildResult)
+	var allRebuildResult map[string]rebuild.RebuildRoutesResult
+	err = json.NewDecoder(rsp.Body).Decode(&allRebuildResult)
 	if err != nil {
 		return err
 	}
-	rebuilt := len(rebuildResult.Added) > 0 || len(rebuildResult.Removed) > 0
-	if len(rebuildResult.Added) > 0 {
-		fmt.Fprintf(ctx.Stdout, "Added routes:\n")
-		for _, added := range rebuildResult.Added {
-			fmt.Fprintf(ctx.Stdout, "- %s\n", added)
-		}
+	if len(allRebuildResult) == 0 {
+		fmt.Fprintf(ctx.Stdout, "App has no routers.\n")
+		return nil
 	}
-	if len(rebuildResult.Removed) > 0 {
-		fmt.Fprintf(ctx.Stdout, "Removed routes:\n")
-		for _, removed := range rebuildResult.Removed {
-			fmt.Fprintf(ctx.Stdout, "- %s\n", removed)
-		}
+	var routerNames []string
+	for routerName := range allRebuildResult {
+		routerNames = append(routerNames, routerName)
 	}
-	if rebuilt {
-		fmt.Fprintf(ctx.Stdout, "\nRoutes successfully rebuilt!\n")
-	} else {
-		fmt.Fprintf(ctx.Stdout, "Nothing to do, routes already correct.\n")
+	sort.Strings(routerNames)
+	for _, routerName := range routerNames {
+		rebuildResult := allRebuildResult[routerName]
+		fmt.Fprintf(ctx.Stdout, "Router %v:\n", routerName)
+		rebuilt := len(rebuildResult.Added) > 0 || len(rebuildResult.Removed) > 0
+		if len(rebuildResult.Added) > 0 {
+			fmt.Fprintf(ctx.Stdout, "  * Added routes:\n")
+			for _, added := range rebuildResult.Added {
+				fmt.Fprintf(ctx.Stdout, "    - %s\n", added)
+			}
+		}
+		if len(rebuildResult.Removed) > 0 {
+			fmt.Fprintf(ctx.Stdout, "  * Removed routes:\n")
+			for _, removed := range rebuildResult.Removed {
+				fmt.Fprintf(ctx.Stdout, "    - %s\n", removed)
+			}
+		}
+		if !rebuilt {
+			fmt.Fprintf(ctx.Stdout, "  * Nothing to do, routes already correct.\n")
+		}
 	}
 	return nil
 }

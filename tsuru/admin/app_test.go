@@ -57,9 +57,15 @@ func (s *S) TestAppRoutesRebuildRun(c *check.C) {
 		Stdout: &stdout,
 		Stderr: &stderr,
 	}
-	rebuildResult := rebuild.RebuildRoutesResult{
-		Added:   []string{"r1", "r2"},
-		Removed: []string{"r9"},
+	rebuildResult := map[string]rebuild.RebuildRoutesResult{
+		"r1": {
+			Added:   []string{"r1", "r2"},
+			Removed: []string{"r9"},
+		},
+		"r2": {
+			Removed: []string{"r9"},
+		},
+		"r3": {},
 	}
 	data, err := json.Marshal(rebuildResult)
 	c.Assert(err, check.IsNil)
@@ -74,13 +80,17 @@ func (s *S) TestAppRoutesRebuildRun(c *check.C) {
 	command.Flags().Parse(true, []string{"--app", "app1"})
 	err = command.Run(&context, client)
 	c.Assert(err, check.IsNil)
-	c.Assert(stdout.String(), check.Equals, `Added routes:
-- r1
-- r2
-Removed routes:
-- r9
-
-Routes successfully rebuilt!
+	c.Assert(stdout.String(), check.Equals, `Router r1:
+  * Added routes:
+    - r1
+    - r2
+  * Removed routes:
+    - r9
+Router r2:
+  * Removed routes:
+    - r9
+Router r3:
+  * Nothing to do, routes already correct.
 `)
 }
 
@@ -90,7 +100,9 @@ func (s *S) TestAppRoutesRebuildRunNothingToDo(c *check.C) {
 		Stdout: &stdout,
 		Stderr: &stderr,
 	}
-	rebuildResult := rebuild.RebuildRoutesResult{}
+	rebuildResult := map[string]rebuild.RebuildRoutesResult{
+		"r1": {},
+	}
 	data, err := json.Marshal(rebuildResult)
 	c.Assert(err, check.IsNil)
 	trans := &cmdtest.ConditionalTransport{
@@ -104,5 +116,30 @@ func (s *S) TestAppRoutesRebuildRunNothingToDo(c *check.C) {
 	command.Flags().Parse(true, []string{"--app", "app1"})
 	err = command.Run(&context, client)
 	c.Assert(err, check.IsNil)
-	c.Assert(stdout.String(), check.Equals, "Nothing to do, routes already correct.\n")
+	c.Assert(stdout.String(), check.Equals, `Router r1:
+  * Nothing to do, routes already correct.
+`)
+}
+
+func (s *S) TestAppRoutesRebuildRunNoRouters(c *check.C) {
+	var stdout, stderr bytes.Buffer
+	context := cmd.Context{
+		Stdout: &stdout,
+		Stderr: &stderr,
+	}
+	rebuildResult := map[string]rebuild.RebuildRoutesResult{}
+	data, err := json.Marshal(rebuildResult)
+	c.Assert(err, check.IsNil)
+	trans := &cmdtest.ConditionalTransport{
+		Transport: cmdtest.Transport{Message: string(data), Status: http.StatusOK},
+		CondFunc: func(req *http.Request) bool {
+			return strings.HasSuffix(req.URL.Path, "/apps/app1/routes") && req.Method == "POST"
+		},
+	}
+	client := cmd.NewClient(&http.Client{Transport: trans}, nil, s.manager)
+	command := AppRoutesRebuild{}
+	command.Flags().Parse(true, []string{"--app", "app1"})
+	err = command.Run(&context, client)
+	c.Assert(err, check.IsNil)
+	c.Assert(stdout.String(), check.Equals, "App has no routers.\n")
 }
