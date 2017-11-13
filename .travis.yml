@@ -40,8 +40,8 @@ jobs:
   include:
     - stage: deploy
       script:
-        - '[[ "$TRAVIS_TAG" =~ ^[0-9\.]+$ ]] && export GORELEASER_CONFIG=goreleaser-stable.yml || true'
-        - test -n "$TRAVIS_TAG" && curl -sL https://raw.githubusercontent.com/tsuru/push-to-packagecloud/master/push.sh | PACKAGE_NAME=tsuru bash
+        - 'if [[ "$TRAVIS_TAG" =~ ^[0-9\.]+$ ]]; then export GORELEASER_CONFIG=goreleaser-stable.yml; fi'
+        - 'if [ -n "$TRAVIS_TAG" ]; then curl -sL https://raw.githubusercontent.com/tsuru/push-to-packagecloud/master/push.sh | PACKAGE_NAME=tsuru bash; fi'
       env: JOB=packagecloud
 notifications:
   slack:
