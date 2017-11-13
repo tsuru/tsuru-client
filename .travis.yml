@@ -5,31 +5,46 @@ os:
   - linux
   - osx
 go:
-  - 1.8.x
+  - 1.9.2
   - master
 env:
   global:
-    - GO_FOR_RELEASE=1.8
+    - GO_FOR_RELEASE=1.9
     - GORELEASER_CONFIG=goreleaser-rc.yml
   matrix:
-    - GOARCH=amd64
-    - GOARCH=386
+    - GOARCH=amd64 JOB=test
+    - GOARCH=386 JOB=test
+    - GOARCH=amd64 JOB=gometalinter
 before_install:
   - '[[ $TRAVIS_OS_NAME == "linux" ]] && sudo sysctl -w net.ipv6.conf.all.disable_ipv6=0 || true'
   - '[[ $TRAVIS_OS_NAME == "linux" ]] && sudo sysctl -w net.ipv6.conf.lo.disable_ipv6=0 || true'
 script:
-  - ./go.test.bash
-  - make metalint
+  - 'if [ "${JOB}" = "test" ]; then ./go.test.bash; fi'
+  - 'if [ "${JOB}" = "gometalinter" ]; then make metalint; fi'
 services:
   - redis
   - mongodb
-matrix:
+jobs:
+  fast_finish: true
   allow_failures:
     - go: master
+  exclude:
+    - go: master
+      env: GOARCH=amd64 JOB=gometalinter
+    - os: osx
+      env: GOARCH=amd64 JOB=gometalinter
+    - os: osx
+      env: GOARCH=386 JOB=test
+    - os: osx
+      go: master
+  include:
+    - stage: deploy
+      script:
+        - '[[ "$TRAVIS_TAG" =~ ^[0-9\.]+$ ]] && export GORELEASER_CONFIG=goreleaser-stable.yml || true'
+        - test -n "$TRAVIS_TAG" && curl -sL https://raw.githubusercontent.com/tsuru/push-to-packagecloud/master/push.sh | PACKAGE_NAME=tsuru bash
+      env: JOB=packagecloud
 notifications:
   slack:
     secure: dDuxAhF7DgwmCvb3V7nu01+RUhvxhOCiBfGVC6596nx93ThjbTgPcMdkAdO7Xk4zFQcH3AiF3+ionMTSk+4oxRIBI0i4p71AkQoFUARWCfmLYWlztZ3Wii4/3bT36bzn5NPqGbNXhx2sWRzOO2W01jQLyFFdZlVKVTBqwBqHqG4=
 after_success:
   - bash <(curl -s https://codecov.io/bash)
-  - '[[ "$TRAVIS_TAG" =~ ^[0-9\.]+$ ]] && export GORELEASER_CONFIG=goreleaser-stable.yml || true'
-  - test -n "$TRAVIS_TAG" && curl -sL https://raw.githubusercontent.com/tsuru/push-to-packagecloud/master/push.sh | PACKAGE_NAME=tsuru bash
