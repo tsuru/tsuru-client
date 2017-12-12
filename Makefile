@@ -67,6 +67,9 @@ doc: docs-clean doc-requirements
 
 docs: doc
 
+docker-test:
+	docker run --rm -v ${PWD}:/go/src/github.com/tsuru/tsuru-client -w /go/src/github.com/tsuru/tsuru-client golang:latest sh -c "make test"
+
 test:
 	go test ./... -check.v
 
