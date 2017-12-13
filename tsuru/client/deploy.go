@@ -277,18 +277,15 @@ func processTsuruIgnore(pattern string, paths ...string) (map[string]struct{}, e
 			return nil, err
 		}
 		for _, v := range matchedPaths {
-			if dirPath == "." {
-				ignoreSet[filepath.Join(wd, v)] = struct{}{}
-				continue
-			}
-			ignoreSet[filepath.Join(dirPath, v)] = struct{}{}
+			ignoreSet[filepath.Join(wd, v)] = struct{}{}
 		}
-		dir, err := os.Open(dirPath)
+		dir, err := os.Open(wd)
 		if err != nil {
 			return nil, err
 		}
 		fis, err := dir.Readdir(0)
 		if err != nil {
+			dir.Close()
 			return nil, err
 		}
 		dir.Close()
@@ -342,14 +339,17 @@ func targz(ctx *cmd.Context, destination io.Writer, ignoreSet map[string]struct{
 			continue
 		}
 		if fi.IsDir() {
-			if len(filepaths) == 1 && path != "." {
-				return singleDir(ctx, destination, path, ignoreSet)
+			dir := wd
+			dirFilesOnly := filesOnly || len(filepaths) == 1
+			if dirFilesOnly {
+				dir = path
+				path = "."
 			}
-			err = addDir(tarWriter, path, ignoreSet)
-		} else if filesOnly {
-			err = addFileOnly(tarWriter, path)
+			err = inDir(func() error {
+				return addDir(tarWriter, path, ignoreSet, dirFilesOnly)
+			}, dir)
 		} else {
-			err = addFile(tarWriter, path)
+			err = addFile(tarWriter, path, filesOnly)
 		}
 		if err != nil {
 			return err
@@ -365,37 +365,41 @@ func targz(ctx *cmd.Context, destination io.Writer, ignoreSet map[string]struct{
 	return err
 }
 
-func singleDir(ctx *cmd.Context, destination io.Writer, path string, ignoreSet map[string]struct{}) error {
+func inDir(fn func() error, path string) error {
 	old, err := os.Getwd()
 	if err != nil {
 		return err
 	}
-	defer os.Chdir(old)
 	err = os.Chdir(path)
 	if err != nil {
 		return err
 	}
-	return targz(ctx, destination, ignoreSet, false, ".")
+	defer os.Chdir(old)
+	return fn()
 }
 
-func addDir(writer *tar.Writer, dirpath string, ignoreSet map[string]struct{}) error {
+func addDir(writer *tar.Writer, dirpath string, ignoreSet map[string]struct{}, filesOnly bool) error {
 	dir, err := os.Open(dirpath)
 	if err != nil {
 		return err
 	}
 	defer dir.Close()
-	fi, err := dir.Stat()
-	if err != nil {
-		return err
-	}
-	header, err := tar.FileInfoHeader(fi, "")
-	if err != nil {
-		return err
-	}
-	header.Name = dirpath
-	err = writer.WriteHeader(header)
-	if err != nil {
-		return err
+	if !filesOnly {
+		var fi os.FileInfo
+		fi, err = dir.Stat()
+		if err != nil {
+			return err
+		}
+		var header *tar.Header
+		header, err = tar.FileInfoHeader(fi, "")
+		if err != nil {
+			return err
+		}
+		header.Name = dirpath
+		err = writer.WriteHeader(header)
+		if err != nil {
+			return err
+		}
 	}
 	fis, err := dir.Readdir(0)
 	if err != nil {
@@ -414,9 +418,9 @@ func addDir(writer *tar.Writer, dirpath string, ignoreSet map[string]struct{}) e
 			continue
 		}
 		if fi.IsDir() {
-			err = addDir(writer, path.Join(dirpath, fi.Name()), ignoreSet)
+			err = addDir(writer, path.Join(dirpath, fi.Name()), ignoreSet, false)
 		} else {
-			err = addFile(writer, path.Join(dirpath, fi.Name()))
+			err = addFile(writer, path.Join(dirpath, fi.Name()), filesOnly)
 		}
 		if err != nil {
 			return err
@@ -425,7 +429,7 @@ func addDir(writer *tar.Writer, dirpath string, ignoreSet map[string]struct{}) e
 	return nil
 }
 
-func addFileOnly(writer *tar.Writer, filepath string) error {
+func addFile(writer *tar.Writer, filepath string, filesOnly bool) error {
 	f, err := os.Open(filepath)
 	if err != nil {
 		return err
@@ -435,52 +439,29 @@ func addFileOnly(writer *tar.Writer, filepath string) error {
 	if err != nil {
 		return err
 	}
-	header, err := tar.FileInfoHeader(fi, "")
-	if err != nil {
-		return err
-	}
-	fp := strings.Split(filepath, "/")
-	header.Name = fp[len(fp)-1]
-	err = writer.WriteHeader(header)
-	if err != nil {
-		return err
-	}
-	n, err := io.Copy(writer, f)
-	if err != nil {
-		return err
-	}
-	if n != fi.Size() {
-		return io.ErrShortWrite
-	}
-	return nil
-}
-
-func addFile(writer *tar.Writer, filepath string) error {
-	f, err := os.Open(filepath)
-	if err != nil {
-		return err
-	}
-	defer f.Close()
-	fi, err := os.Lstat(filepath)
-	if err != nil {
-		return err
-	}
+	var linkName string
 	if fi.Mode()&os.ModeSymlink == os.ModeSymlink {
 		var target string
 		target, err = os.Readlink(filepath)
 		if err != nil {
 			return err
 		}
-		return addSymlink(writer, filepath, target)
+		linkName = target
 	}
-	header, err := tar.FileInfoHeader(fi, "")
+	header, err := tar.FileInfoHeader(fi, linkName)
 	if err != nil {
 		return err
+	}
+	if filesOnly {
+		filepath = path.Base(filepath)
 	}
 	header.Name = filepath
 	err = writer.WriteHeader(header)
 	if err != nil {
 		return err
+	}
+	if linkName != "" {
+		return nil
 	}
 	n, err := io.Copy(writer, f)
 	if err != nil {
@@ -490,20 +471,6 @@ func addFile(writer *tar.Writer, filepath string) error {
 		return io.ErrShortWrite
 	}
 	return nil
-}
-
-func addSymlink(writer *tar.Writer, symlink, target string) error {
-	fi, err := os.Lstat(symlink)
-	if err != nil {
-		return err
-	}
-	header, err := tar.FileInfoHeader(fi, "")
-	if err != nil {
-		return err
-	}
-	header.Name = symlink
-	header.Linkname = target
-	return writer.WriteHeader(header)
 }
 
 type firstWriter struct {

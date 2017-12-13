@@ -13,6 +13,7 @@ import (
 	"io/ioutil"
 	"net/http"
 	"os"
+	"path"
 	"path/filepath"
 	"runtime"
 	"sort"
@@ -148,89 +149,6 @@ func (s *S) TestDeployRunWithMessage(c *check.C) {
 	c.Assert(calledTimes, check.Equals, 2)
 }
 
-func (s *S) TestDeployRunWithFiles(c *check.C) {
-	calledTimes := 0
-	var buf bytes.Buffer
-	ctx := cmd.Context{Stderr: bytes.NewBufferString("")}
-	err := targz(&ctx, &buf, nil, false, "testdata/deploy/file1.txt", "testdata/deploy2/file2.txt")
-	c.Assert(err, check.IsNil)
-	trans := cmdtest.ConditionalTransport{
-		Transport: cmdtest.Transport{Message: "deploy worked\nOK\n", Status: http.StatusOK},
-		CondFunc: func(req *http.Request) bool {
-			calledTimes++
-			if req.Body != nil {
-				defer req.Body.Close()
-			}
-			if calledTimes == 1 {
-				return req.Method == "GET" && strings.HasSuffix(req.URL.Path, "/apps/leblank")
-			}
-			file, _, transErr := req.FormFile("file")
-			c.Assert(transErr, check.IsNil)
-			content, transErr := ioutil.ReadAll(file)
-			c.Assert(transErr, check.IsNil)
-			c.Assert(content, check.DeepEquals, buf.Bytes())
-			c.Assert(req.Header.Get("Content-Type"), check.Matches, "multipart/form-data; boundary=.*")
-			c.Assert(req.FormValue("origin"), check.Equals, "app-deploy")
-			return req.Method == "POST" && strings.HasSuffix(req.URL.Path, "/apps/leblank/deploy")
-		},
-	}
-	client := cmd.NewClient(&http.Client{Transport: &trans}, nil, manager)
-	var stdout, stderr bytes.Buffer
-	context := cmd.Context{
-		Stdout: &stdout,
-		Stderr: &stderr,
-		Args:   []string{"testdata/deploy/file1.txt", "testdata/deploy2/file2.txt"},
-	}
-	fake := cmdtest.FakeGuesser{Name: "leblank"}
-	guessCommand := cmd.GuessingCommand{G: &fake}
-	cmd := AppDeploy{GuessingCommand: guessCommand}
-	err = cmd.Run(&context, client)
-	c.Assert(err, check.IsNil)
-	c.Assert(calledTimes, check.Equals, 2)
-}
-
-func (s *S) TestDeployRunWithFlagToFiles(c *check.C) {
-	calledTimes := 0
-	var buf bytes.Buffer
-	ctx := cmd.Context{Stderr: bytes.NewBufferString("")}
-	err := targz(&ctx, &buf, nil, true, "testdata/deploy/file1.txt", "testdata/deploy2/file2.txt")
-	c.Assert(err, check.IsNil)
-	trans := cmdtest.ConditionalTransport{
-		Transport: cmdtest.Transport{Message: "deploy worked\nOK\n", Status: http.StatusOK},
-		CondFunc: func(req *http.Request) bool {
-			calledTimes++
-			if req.Body != nil {
-				defer req.Body.Close()
-			}
-			if calledTimes == 1 {
-				return req.Method == "GET" && strings.HasSuffix(req.URL.Path, "/apps/leblank")
-			}
-			file, _, transErr := req.FormFile("file")
-			c.Assert(transErr, check.IsNil)
-			content, transErr := ioutil.ReadAll(file)
-			c.Assert(transErr, check.IsNil)
-			c.Assert(content, check.DeepEquals, buf.Bytes())
-			c.Assert(req.Header.Get("Content-Type"), check.Matches, "multipart/form-data; boundary=.*")
-			c.Assert(req.FormValue("origin"), check.Equals, "app-deploy")
-			return req.Method == "POST" && strings.HasSuffix(req.URL.Path, "/apps/leblank/deploy")
-		},
-	}
-	client := cmd.NewClient(&http.Client{Transport: &trans}, nil, manager)
-	var stdout, stderr bytes.Buffer
-	context := cmd.Context{
-		Stdout: &stdout,
-		Stderr: &stderr,
-		Args:   []string{"testdata/deploy/file1.txt", "testdata/deploy2/file2.txt"},
-	}
-	fake := cmdtest.FakeGuesser{Name: "leblank"}
-	guessCommand := cmd.GuessingCommand{G: &fake}
-	cmd := AppDeploy{GuessingCommand: guessCommand}
-	cmd.Flags().Parse(true, []string{"-f"})
-	err = cmd.Run(&context, client)
-	c.Assert(err, check.IsNil)
-	c.Assert(calledTimes, check.Equals, 2)
-}
-
 func (s *S) TestDeployAuthNotOK(c *check.C) {
 	calledTimes := 0
 	trans := cmdtest.ConditionalTransport{
@@ -337,103 +255,6 @@ func (s *S) TestDeployRunRequestFailure(c *check.C) {
 	err := command.Run(&context, client)
 	c.Assert(err, check.NotNil)
 	c.Assert(err.Error(), check.Equals, "app not found\n")
-}
-
-func (s *S) TestTargz(c *check.C) {
-	var buf bytes.Buffer
-	ctx := cmd.Context{Stderr: &buf}
-	var gzipBuf, tarBuf bytes.Buffer
-	err := targz(&ctx, &gzipBuf, nil, false, "testdata/deploy", "..")
-	c.Assert(err, check.IsNil)
-	gzipReader, err := gzip.NewReader(&gzipBuf)
-	c.Assert(err, check.IsNil)
-	_, err = io.Copy(&tarBuf, gzipReader)
-	c.Assert(err, check.IsNil)
-	tarReader := tar.NewReader(&tarBuf)
-	var headers []string
-	var contents []string
-	for header, err := tarReader.Next(); err == nil; header, err = tarReader.Next() {
-		headers = append(headers, header.Name)
-		if !header.FileInfo().IsDir() {
-			content, err := ioutil.ReadAll(tarReader)
-			c.Assert(err, check.IsNil)
-			contents = append(contents, string(content))
-		}
-	}
-	expected := []string{
-		"testdata/deploy", "testdata/deploy/directory", "testdata/deploy/directory/file.txt",
-		"testdata/deploy/file1.txt", "testdata/deploy/file2.txt",
-	}
-	sort.Strings(expected)
-	sort.Strings(headers)
-	c.Assert(headers, check.DeepEquals, expected)
-	expectedContents := []string{"wat\n", "something happened\n", "twice\n"}
-	sort.Strings(expectedContents)
-	sort.Strings(contents)
-	c.Assert(contents, check.DeepEquals, expectedContents)
-	c.Assert(buf.String(), check.Equals, `Warning: skipping ".."`)
-}
-
-func (s *S) TestTargzParsingFiles(c *check.C) {
-	var buf bytes.Buffer
-	ctx := cmd.Context{Stderr: &buf}
-	var gzipBuf, tarBuf bytes.Buffer
-	err := targz(&ctx, &gzipBuf, nil, false, "testdata/deploy/file1.txt", "testdata/deploy/file2.txt")
-	c.Assert(err, check.IsNil)
-	gzipReader, err := gzip.NewReader(&gzipBuf)
-	c.Assert(err, check.IsNil)
-	_, err = io.Copy(&tarBuf, gzipReader)
-	c.Assert(err, check.IsNil)
-	tarReader := tar.NewReader(&tarBuf)
-	var headers []string
-	var contents []string
-	for header, err := tarReader.Next(); err == nil; header, err = tarReader.Next() {
-		headers = append(headers, header.Name)
-		if !header.FileInfo().IsDir() {
-			content, err := ioutil.ReadAll(tarReader)
-			c.Assert(err, check.IsNil)
-			contents = append(contents, string(content))
-		}
-	}
-	expected := []string{"testdata/deploy/file1.txt", "testdata/deploy/file2.txt"}
-	sort.Strings(expected)
-	sort.Strings(headers)
-	c.Assert(headers, check.DeepEquals, expected)
-	expectedContents := []string{"something happened\n", "twice\n"}
-	sort.Strings(expectedContents)
-	sort.Strings(contents)
-	c.Assert(contents, check.DeepEquals, expectedContents)
-}
-
-func (s *S) TestTargzSingleDirectory(c *check.C) {
-	var buf bytes.Buffer
-	ctx := cmd.Context{Stderr: &buf}
-	var gzipBuf, tarBuf bytes.Buffer
-	err := targz(&ctx, &gzipBuf, nil, false, "testdata/deploy")
-	c.Assert(err, check.IsNil)
-	gzipReader, err := gzip.NewReader(&gzipBuf)
-	c.Assert(err, check.IsNil)
-	_, err = io.Copy(&tarBuf, gzipReader)
-	c.Assert(err, check.IsNil)
-	tarReader := tar.NewReader(&tarBuf)
-	var headers []string
-	var contents []string
-	for header, err := tarReader.Next(); err == nil; header, err = tarReader.Next() {
-		headers = append(headers, header.Name)
-		if !header.FileInfo().IsDir() {
-			content, err := ioutil.ReadAll(tarReader)
-			c.Assert(err, check.IsNil)
-			contents = append(contents, string(content))
-		}
-	}
-	expected := []string{".", "directory", "directory/file.txt", "file1.txt", "file2.txt"}
-	sort.Strings(expected)
-	sort.Strings(headers)
-	c.Assert(headers, check.DeepEquals, expected)
-	expectedContents := []string{"wat\n", "something happened\n", "twice\n"}
-	sort.Strings(expectedContents)
-	sort.Strings(contents)
-	c.Assert(contents, check.DeepEquals, expectedContents)
 }
 
 func (s *S) TestTargzSymlink(c *check.C) {
@@ -695,126 +516,6 @@ func (s *S) TestProcessTsuruIgnore(c *check.C) {
 	}
 }
 
-func (s *S) TestIgnoreGlobalFiles(c *check.C) {
-	wd, _ := os.Getwd()
-	var buf bytes.Buffer
-	ignore := make(map[string]struct{})
-	ignorePatterns := []string{"*.txt"}
-	for _, pattern := range ignorePatterns {
-		ignSets, _ := processTsuruIgnore(pattern, filepath.Join(wd, "testdata/deploy2"))
-		for k, v := range ignSets {
-			ignore[k] = v
-		}
-	}
-	ctx := cmd.Context{Stderr: &buf}
-	var gzipBuf, tarBuf bytes.Buffer
-	err := targz(&ctx, &gzipBuf, ignore, false, "testdata/deploy2")
-	c.Assert(err, check.IsNil)
-	gzipReader, err := gzip.NewReader(&gzipBuf)
-	c.Assert(err, check.IsNil)
-	_, err = io.Copy(&tarBuf, gzipReader)
-	c.Assert(err, check.IsNil)
-	tarReader := tar.NewReader(&tarBuf)
-	var headers []string
-	for header, err := tarReader.Next(); err == nil; header, err = tarReader.Next() {
-		headers = append(headers, header.Name)
-	}
-	expected := []string{".", ".tsuruignore", "directory", "directory/dir2"}
-	sort.Strings(expected)
-	sort.Strings(headers)
-	c.Assert(headers, check.DeepEquals, expected)
-}
-
-func (s *S) TestIgnoreDir(c *check.C) {
-	wd, _ := os.Getwd()
-	var buf bytes.Buffer
-	ignore := make(map[string]struct{})
-	ignorePatterns := []string{"directory"}
-	for _, pattern := range ignorePatterns {
-		ignSets, _ := processTsuruIgnore(pattern, filepath.Join(wd, "testdata/deploy2"))
-		for k, v := range ignSets {
-			ignore[k] = v
-		}
-	}
-	ctx := cmd.Context{Stderr: &buf}
-	var gzipBuf, tarBuf bytes.Buffer
-	err := targz(&ctx, &gzipBuf, ignore, false, "testdata/deploy2")
-	c.Assert(err, check.IsNil)
-	gzipReader, err := gzip.NewReader(&gzipBuf)
-	c.Assert(err, check.IsNil)
-	_, err = io.Copy(&tarBuf, gzipReader)
-	c.Assert(err, check.IsNil)
-	tarReader := tar.NewReader(&tarBuf)
-	var headers []string
-	for header, err := tarReader.Next(); err == nil; header, err = tarReader.Next() {
-		headers = append(headers, header.Name)
-	}
-	expected := []string{".", ".tsuruignore", "file1.txt", "file2.txt"}
-	sort.Strings(expected)
-	sort.Strings(headers)
-	c.Assert(headers, check.DeepEquals, expected)
-}
-
-func (s *S) TestIgnoreRelativeDir(c *check.C) {
-	wd, _ := os.Getwd()
-	var buf bytes.Buffer
-	ignore := make(map[string]struct{})
-	ignorePatterns := []string{"*/dir2"}
-	for _, pattern := range ignorePatterns {
-		ignSets, _ := processTsuruIgnore(pattern, filepath.Join(wd, "testdata/deploy2"))
-		for k, v := range ignSets {
-			ignore[k] = v
-		}
-	}
-	ctx := cmd.Context{Stderr: &buf}
-	var gzipBuf, tarBuf bytes.Buffer
-	err := targz(&ctx, &gzipBuf, ignore, false, "testdata/deploy2")
-	c.Assert(err, check.IsNil)
-	gzipReader, err := gzip.NewReader(&gzipBuf)
-	c.Assert(err, check.IsNil)
-	_, err = io.Copy(&tarBuf, gzipReader)
-	c.Assert(err, check.IsNil)
-	tarReader := tar.NewReader(&tarBuf)
-	var headers []string
-	for header, err := tarReader.Next(); err == nil; header, err = tarReader.Next() {
-		headers = append(headers, header.Name)
-	}
-	expected := []string{".", ".tsuruignore", "directory", "directory/file.txt", "file1.txt", "file2.txt"}
-	sort.Strings(expected)
-	sort.Strings(headers)
-	c.Assert(headers, check.DeepEquals, expected)
-}
-
-func (s *S) TestIgnoreRelativeFile(c *check.C) {
-	wd, _ := os.Getwd()
-	var buf bytes.Buffer
-	ignore := make(map[string]struct{})
-	ignorePatterns := []string{"directory/dir2/*"}
-	for _, pattern := range ignorePatterns {
-		ignSets, _ := processTsuruIgnore(pattern, filepath.Join(wd, "testdata/deploy2"))
-		for k, v := range ignSets {
-			ignore[k] = v
-		}
-	}
-	ctx := cmd.Context{Stderr: &buf}
-	var gzipBuf, tarBuf bytes.Buffer
-	err := targz(&ctx, &gzipBuf, ignore, false, "testdata/deploy2")
-	c.Assert(err, check.IsNil)
-	gzipReader, err := gzip.NewReader(&gzipBuf)
-	c.Assert(err, check.IsNil)
-	_, err = io.Copy(&tarBuf, gzipReader)
-	c.Assert(err, check.IsNil)
-	tarReader := tar.NewReader(&tarBuf)
-	var headers []string
-	for header, err := tarReader.Next(); err == nil; header, err = tarReader.Next() {
-		headers = append(headers, header.Name)
-	}
-	expected := []string{".", ".tsuruignore", "directory", "directory/dir2", "directory/file.txt", "file1.txt", "file2.txt"}
-	sort.Strings(expected)
-	sort.Strings(headers)
-	c.Assert(headers, check.DeepEquals, expected)
-}
-
 func (s *S) TestAppDeployRebuildInfo(c *check.C) {
 	c.Assert((&AppDeployRebuild{}).Info(), check.NotNil)
 }
@@ -849,4 +550,160 @@ func (s *S) TestAppDeployRebuild(c *check.C) {
 	c.Assert(err, check.IsNil)
 	c.Assert(called, check.Equals, true)
 	c.Assert(stdout.String(), check.Equals, expectedOut)
+}
+
+func (s *S) TestDeployRunTarGeneration(c *check.C) {
+	var foundFiles []string
+	trans := cmdtest.ConditionalTransport{
+		Transport: cmdtest.Transport{Message: "deploy worked\nOK\n", Status: http.StatusOK},
+		CondFunc: func(req *http.Request) bool {
+			if req.Method == "GET" {
+				return true
+			}
+			defer req.Body.Close()
+			file, _, transErr := req.FormFile("file")
+			c.Assert(transErr, check.IsNil)
+			gzReader, transErr := gzip.NewReader(file)
+			c.Assert(transErr, check.IsNil)
+			tarReader := tar.NewReader(gzReader)
+			foundFiles = nil
+			for {
+				header, transErr := tarReader.Next()
+				if transErr == io.EOF {
+					break
+				}
+				c.Assert(transErr, check.IsNil)
+				foundFiles = append(foundFiles, header.Name)
+			}
+			return true
+		},
+	}
+	client := cmd.NewClient(&http.Client{Transport: &trans}, nil, manager)
+	tests := []struct {
+		files          []string
+		ignored        []string
+		deployArgs     []string
+		flags          []string
+		expected       []string
+		expectedStderr string
+		absPath        bool
+	}{
+		{
+			files:      []string{"f1", "f2", "d1/f3", "d1/d2/f4"},
+			deployArgs: []string{"."},
+			expected:   []string{"f1", "f2", "d1", "d1/f3", "d1/d2", "d1/d2/f4"},
+		},
+		{
+			files:      []string{"testdata/deploy/file1.txt", "testdata/deploy2/file2.txt"},
+			deployArgs: []string{"testdata/deploy/file1.txt", "testdata/deploy2/file2.txt"},
+			expected:   []string{"testdata/deploy/file1.txt", "testdata/deploy2/file2.txt"},
+		},
+		{
+			files:      []string{"testdata/deploy/file1.txt", "testdata/deploy2/file2.txt"},
+			deployArgs: []string{"testdata/deploy/file1.txt", "testdata/deploy2/file2.txt"},
+			flags:      []string{"-f"},
+			expected:   []string{"file1.txt", "file2.txt"},
+		},
+		{
+			files:      []string{"testdata/deploy/file1.txt", "testdata/deploy/file2.txt", "testdata/deploy2/file3.txt", "testdata/deploy2/directory/file4.txt"},
+			deployArgs: []string{"testdata/deploy", "testdata/deploy2"},
+			expected:   []string{"testdata/deploy", "testdata/deploy2", "testdata/deploy/file1.txt", "testdata/deploy/file2.txt", "testdata/deploy2/file3.txt", "testdata/deploy2/directory", "testdata/deploy2/directory/file4.txt"},
+		},
+		{
+			files:      []string{"testdata/deploy/file1.txt", "testdata/deploy/file2.txt", "testdata/deploy2/file3.txt", "testdata/deploy2/directory/file4.txt"},
+			deployArgs: []string{"testdata/deploy", "testdata/deploy2"},
+			flags:      []string{"-f"},
+			expected:   []string{"file1.txt", "file2.txt", "file3.txt", "directory", "directory/file4.txt"},
+		},
+		{
+			files:          []string{"testdata/deploy/file1.txt", "testdata/deploy/file2.txt", "testdata/deploy/directory/file.txt"},
+			deployArgs:     []string{"testdata/deploy", ".."},
+			expected:       []string{"testdata/deploy", "testdata/deploy/file1.txt", "testdata/deploy/file2.txt", "testdata/deploy/directory", "testdata/deploy/directory/file.txt"},
+			expectedStderr: `Warning: skipping "\.\."`,
+		},
+		{
+			files:      []string{"testdata/deploy/file1.txt", "testdata/deploy/file2.txt", "testdata/deploy/directory/file.txt"},
+			deployArgs: []string{"testdata/deploy"},
+			expected:   []string{"file1.txt", "file2.txt", "directory", "directory/file.txt"},
+		},
+		{
+			files:      []string{"testdata/deploy2/file1.txt", "testdata/deploy2/file2.txt", "testdata/deploy2/directory/file.txt", "testdata/deploy2/directory/dir2/file.txt"},
+			ignored:    []string{"*.txt"},
+			deployArgs: []string{"testdata/deploy2"},
+			expected:   []string{"directory", "directory/dir2"},
+		},
+		{
+			files:      []string{"testdata/deploy2/file1.txt", "testdata/deploy2/file2.txt", "testdata/deploy2/directory/file.txt", "testdata/deploy2/directory/dir2/file.txt"},
+			ignored:    []string{"*.txt"},
+			deployArgs: []string{"testdata/deploy2"},
+			expected:   []string{"directory", "directory/dir2"},
+			absPath:    true,
+		},
+		{
+			files:      []string{"file1.txt", "file2.txt", "directory/file.txt", "directory/dir2/file.txt"},
+			ignored:    []string{"*.txt"},
+			deployArgs: []string{"."},
+			expected:   []string{".tsuruignore", "directory", "directory/dir2"},
+		},
+		{
+			files:      []string{"testdata/deploy2/file1.txt", "testdata/deploy2/file2.txt", "testdata/deploy2/directory/file.txt", "testdata/deploy2/directory/dir2/file.txt"},
+			ignored:    []string{"directory"},
+			deployArgs: []string{"testdata/deploy2"},
+			expected:   []string{"file1.txt", "file2.txt"},
+		},
+		{
+			files:      []string{"testdata/deploy2/file1.txt", "testdata/deploy2/file2.txt", "testdata/deploy2/directory/file.txt", "testdata/deploy2/directory/dir2/file.txt"},
+			ignored:    []string{"*/dir2"},
+			deployArgs: []string{"testdata/deploy2"},
+			expected:   []string{"directory", "directory/file.txt", "file1.txt", "file2.txt"},
+		},
+		{
+			files:      []string{"testdata/deploy2/file1.txt", "testdata/deploy2/file2.txt", "testdata/deploy2/directory/file.txt", "testdata/deploy2/directory/dir2/file.txt"},
+			ignored:    []string{"directory/dir2/*"},
+			deployArgs: []string{"testdata/deploy2"},
+			expected:   []string{"directory", "directory/dir2", "directory/file.txt", "file1.txt", "file2.txt"},
+		},
+	}
+	origDir, err := os.Getwd()
+	c.Assert(err, check.IsNil)
+	defer os.Chdir(origDir)
+	for _, tt := range tests {
+		tmpDir, err := ioutil.TempDir("", "integrarion")
+		c.Assert(err, check.IsNil)
+		defer os.RemoveAll(tmpDir)
+		err = os.Chdir(tmpDir)
+		c.Assert(err, check.IsNil)
+		for _, f := range tt.files {
+			err = os.MkdirAll(path.Dir(f), 0700)
+			c.Assert(err, check.IsNil)
+			err = ioutil.WriteFile(f, []byte{}, 0600)
+			c.Assert(err, check.IsNil)
+		}
+		if len(tt.ignored) > 0 {
+			err = ioutil.WriteFile(".tsuruignore", []byte(strings.Join(tt.ignored, "\n")), 0600)
+			c.Assert(err, check.IsNil)
+		}
+
+		var stdout, stderr bytes.Buffer
+		if tt.absPath {
+			for i, f := range tt.deployArgs {
+				tt.deployArgs[i], err = filepath.Abs(f)
+				c.Assert(err, check.IsNil)
+			}
+		}
+		context := cmd.Context{
+			Stdout: &stdout,
+			Stderr: &stderr,
+			Args:   tt.deployArgs,
+		}
+		guessCommand := cmd.GuessingCommand{G: &cmdtest.FakeGuesser{Name: "secret"}}
+		cmd := AppDeploy{GuessingCommand: guessCommand}
+		cmd.Flags().Parse(true, tt.flags)
+		err = cmd.Run(&context, client)
+		c.Assert(err, check.IsNil)
+		sort.Strings(foundFiles)
+		sort.Strings(tt.expected)
+		c.Assert(foundFiles, check.DeepEquals, tt.expected)
+		c.Assert(stderr.String(), check.Matches, tt.expectedStderr)
+	}
 }
