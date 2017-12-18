@@ -1,0 +1,120 @@
+[[constraint]]
+  name = "github.com/tsuru/tsuru"
+  revision = "6f4120e97c6f15e5dfbeba9c8e99ac03f781bd15"
+  # version = "=1.5.0-rc4"
+
+[[constraint]]
+  name = "github.com/fsouza/go-dockerclient"
+  branch = "master"
+
+[[constraint]]
+  name = "github.com/docker/docker"
+  branch = "master"
+
+[[constraint]]
+  name = "github.com/ajg/form"
+  revision = "523a5da1a92f01b01f840b61689c0340a0243532"
+
+[[constraint]]
+  name = "gopkg.in/yaml.v2"
+  revision = "53feefa2559fb8dfa8d81baad31be332c97d6c77"
+
+[[override]]
+  name = "github.com/kardianos/osext"
+  revision = "10da29423eb9a6269092eebdc2be32209612d9d2"
+[[override]]
+  name = "github.com/Azure/azure-sdk-for-go"
+  version = "v5.0.0-beta"
+[[override]]
+  name = "github.com/prometheus/client_model"
+  revision = "fa8ad6fec33561be4280a8f0514318c79d7f6cb6"
+[[override]]
+  name = "github.com/Microsoft/go-winio"
+  revision = "d8f60f2dd117cd64c2825143a89ecb6f158ad743"
+[[override]]
+  name = "github.com/xanzy/go-cloudstack"
+  revision = "5686bcde5af20565d8c7a3f66b5441430ac54186"
+[[override]]
+  name = "github.com/pyr/egoscale"
+  revision = "ab4b0d7ff424c462da486aef27f354cdeb29a319"
+[[override]]
+  name = "github.com/dgrijalva/jwt-go"
+  revision = "01aeca54ebda6e0fbfafd0a524d234159c05ec20"
+[[override]]
+  name = "github.com/gogo/protobuf"
+  revision = "c0656edd0d9eab7c66d1eb0c568f9039345796f7"
+[[override]]
+  name = "github.com/RobotsAndPencils/go-saml"
+  revision = "aa127de49a0111329d9dbd2e19ddf21da90eb931"
+[[override]]
+  name = "github.com/diego-araujo/go-saml"
+  revision = "81203d2425377605c5688e55dca1340b614b618d"
+[[override]]
+  name = "github.com/howeyc/fsnotify"
+  revision = "5102fde921d31f59c6e45d835aa01f0213aade0f"
+[[override]]
+  name = "github.com/codegangsta/negroni"
+  revision = "a13766a8c2572caeb14341b7de158aff2fd00fa9"
+[[override]]
+  name = "github.com/google/go-querystring"
+  revision = "547ef5ac979778feb2f760cdb5f4eae1a2207b86"
+[[override]]
+  name = "github.com/pkg/errors"
+  revision = "839d9e913e063e28dfd0e6c7b7512793e0a48be9"
+[[override]]
+  name = "github.com/docker/go-units"
+  revision = "5d2041e26a699eaca682e2ea41c8f891e1060444"
+[[override]]
+  name = "github.com/Azure/go-autorest"
+  version = "v7.2.3"
+[[override]]
+  name = "github.com/gorilla/context"
+  revision = "708054d61e5a2918b9f4e9700000ee611dcf03f5"
+[[override]]
+  name = "github.com/mitchellh/mapstructure"
+  revision = "ca63d7c062ee3c9f34db231e352b60012b4fd0c1"
+[[override]]
+  name = "github.com/tent/http-link-go"
+  revision = "ac974c61c2f990f4115b119354b5e0b47550e888"
+[[override]]
+  name = "github.com/prometheus/common"
+  revision = "0d5de9d6d8629cb8bee6d4674da4127cd8b615a3"
+[[override]]
+  name = "github.com/andrestc/docker-machine-driver-cloudstack"
+  version = "v0.7.0"
+[[override]]
+  name = "github.com/vmware/govcloudair"
+  version = "v0.0.2"
+[[override]]
+  name = "github.com/cenkalti/backoff"
+  revision = "8edc80b07f38c27352fb186d971c628a6c32552b"
+[[override]]
+  name = "github.com/golang/protobuf"
+  revision = "4bd1920723d7b7c925de087aa32e2187708897f7"
+[[override]]
+  name = "github.com/samalba/dockerclient"
+  revision = "a3036261847103270e9f732509f43b5f98710ace"
+[[override]]
+  name = "github.com/vmware/govmomi"
+  revision = "b932baf416e9101c762b7075f12af5a6fb364627"
+[[override]]
+  name = "github.com/prometheus/procfs"
+  revision = "abf152e5f3e97f2fafac028d2cc06c1feb87ffa5"
+[[override]]
+  name = "github.com/matttproud/golang_protobuf_extensions"
+  revision = "c12348ce28de40eed0136aa2b644d0ee0650e56c"
+[[override]]
+  name = "github.com/opencontainers/runc"
+  revision = "419d5be191c18eff75a3d0b2a16e20c7a9eb71db"
+[[override]]
+  name = "github.com/beorn7/perks"
+  revision = "4c0e84591b9aa9e6dcfdf3e020114cd81f89d5f9"
+[[override]]
+  name = "github.com/docker/go-connections"
+  revision = "f549a9393d05688dff0992ef3efd8bbe6c628aeb"
+[[override]]
+  name = "github.com/rackspace/gophercloud"
+  revision = "c90cb954266e1bdd6d1914678fd6909fc5fabbfa"
+[[override]]
+  name = "github.com/hashicorp/go-version"
+  revision = "0181db47023708a38c2d20d2fe25a5fa034d5743"
