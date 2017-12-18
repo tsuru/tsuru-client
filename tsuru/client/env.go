@@ -18,9 +18,9 @@ import (
 
 	"github.com/ajg/form"
 	"github.com/tsuru/gnuflag"
-	"github.com/tsuru/tsuru/api/types"
 	"github.com/tsuru/tsuru/cmd"
 	tsuruIo "github.com/tsuru/tsuru/io"
+	apiTypes "github.com/tsuru/tsuru/types/api"
 )
 
 const EnvSetValidationMessage = `You must specify environment variables in the form "NAME=value".
@@ -105,7 +105,7 @@ func (c *EnvSet) Run(context *cmd.Context, client *cmd.Client) error {
 		envs[i] = struct{ Name, Value string }{Name: parts[0], Value: parts[1]}
 
 	}
-	e := types.Envs{
+	e := apiTypes.Envs{
 		Envs:      envs,
 		NoRestart: c.noRestart,
 		Private:   c.private,

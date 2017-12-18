@@ -17,6 +17,7 @@ import (
 	"time"
 
 	"github.com/pkg/errors"
+	"github.com/prometheus/client_golang/prometheus"
 	"github.com/tsuru/tsuru/action"
 	"github.com/tsuru/tsuru/app/bind"
 	"github.com/tsuru/tsuru/app/image"
@@ -55,6 +56,17 @@ var (
 	ErrCannotOrphanApp   = errors.New("cannot revoke access from this team, as it's the unique team with access to the app")
 	ErrDisabledPlatform  = errors.New("Disabled Platform, only admin users can create applications with the platform")
 )
+
+var (
+	counterNodesNotFound = prometheus.NewCounter(prometheus.CounterOpts{
+		Name: "tsuru_node_status_not_found",
+		Help: "The number of not found nodes received in tsuru node status.",
+	})
+)
+
+func init() {
+	prometheus.MustRegister(counterNodesNotFound)
+}
 
 const (
 	// InternalAppName is a reserved name used for token generation. For
@@ -630,6 +642,21 @@ func Delete(app *App, w io.Writer) error {
 	if err != nil {
 		log.Errorf("failed to remove images from registry for app %s: %s", appName, err)
 	}
+	if builderProv, ok := prov.(provision.BuilderDeploy); ok {
+		var imgs []string
+		imgs, err = image.ListAppImages(appName)
+		if err != nil {
+			log.Errorf("failed to list images for app %s: %s", appName, err)
+		}
+		var imgsBuild []string
+		imgsBuild, err = image.ListAppBuilderImages(appName)
+		if err != nil {
+			log.Errorf("failed to list build images for app %s: %s", appName, err)
+		}
+		for _, img := range append(imgs, imgsBuild...) {
+			builderProv.CleanImage(appName, img, true)
+		}
+	}
 	err = image.DeleteAllAppImageNames(appName)
 	if err != nil {
 		log.Errorf("failed to remove image names from storage for app %s: %s", appName, err)
@@ -830,12 +857,18 @@ func UpdateNodeStatus(nodeData provision.NodeStatusData) ([]UpdateUnitsResult, e
 		}
 	}
 	if node == nil {
-		return nil, provision.ErrNodeNotFound
+		counterNodesNotFound.Inc()
+		log.Errorf("[update node status] node not found with nodedata: %#v", nodeData)
+		result := make([]UpdateUnitsResult, len(nodeData.Units))
+		for i, unitData := range nodeData.Units {
+			result[i] = UpdateUnitsResult{ID: unitData.ID, Found: false}
+		}
+		return result, nil
 	}
 	if healer.HealerInstance != nil {
 		err = healer.HealerInstance.UpdateNodeData(node, nodeData.Checks)
 		if err != nil {
-			log.Errorf("unable to set node status in healer: %s", err)
+			log.Errorf("[update node status] unable to set node status in healer: %s", err)
 		}
 	}
 	unitProv, ok := node.Provisioner().(provision.UnitStatusProvisioner)
@@ -1062,7 +1095,7 @@ func (app *App) validatePool() error {
 	if err != nil {
 		return err
 	}
-	return app.validateRouter(pool)
+	return pool.ValidateRouters(app.GetRouters())
 }
 
 func (app *App) validateTeamOwner(p *pool.Pool) error {
@@ -1085,25 +1118,6 @@ func (app *App) validateTeamOwner(p *pool.Pool) error {
 	if !poolTeam {
 		msg := fmt.Sprintf("App team owner %q has no access to pool %q", app.TeamOwner, p.Name)
 		return &tsuruErrors.ValidationError{Message: msg}
-	}
-	return nil
-}
-
-func (app *App) validateRouter(pool *pool.Pool) error {
-	routers, err := pool.GetRouters()
-	if err != nil {
-		return &tsuruErrors.ValidationError{Message: err.Error()}
-	}
-	possibleMap := make(map[string]struct{}, len(routers))
-	for _, r := range routers {
-		possibleMap[r] = struct{}{}
-	}
-	for _, appRouter := range app.GetRouters() {
-		_, ok := possibleMap[appRouter.Name]
-		if !ok {
-			msg := fmt.Sprintf("router %q is not available for pool %q. Available routers are: %q", appRouter.Name, app.Pool, strings.Join(routers, ", "))
-			return &tsuruErrors.ValidationError{Message: msg}
-		}
 	}
 	return nil
 }

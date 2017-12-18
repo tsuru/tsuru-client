@@ -14,14 +14,15 @@ import (
 )
 
 var (
-	labelIsTsuru         = "is-tsuru"
-	labelIsStopped       = "is-stopped"
-	labelIsAsleep        = "is-asleep"
-	labelIsBuild         = "is-build"
-	labelIsDeploy        = "is-deploy"
-	labelIsIsolatedRun   = "is-isolated-run"
-	labelIsNodeContainer = "is-node-container"
-	labelIsService       = "is-service"
+	labelIsTsuru           = "is-tsuru"
+	labelIsStopped         = "is-stopped"
+	labelIsAsleep          = "is-asleep"
+	labelIsBuild           = "is-build"
+	labelIsDeploy          = "is-deploy"
+	labelIsIsolatedRun     = "is-isolated-run"
+	labelIsNodeContainer   = "is-node-container"
+	labelIsService         = "is-service"
+	labelIsHeadlessService = "is-headless-service"
 
 	labelAppName            = "app-name"
 	labelAppProcess         = "app-process"
@@ -211,6 +212,10 @@ func (s *LabelSet) SetIsService() {
 	s.addLabel(labelIsService, strconv.FormatBool(true))
 }
 
+func (s *LabelSet) SetIsHeadlessService() {
+	s.addLabel(labelIsHeadlessService, strconv.FormatBool(true))
+}
+
 func (s *LabelSet) SetBuildImage(image string) {
 	s.addLabel(labelBuildImage, image)
 }
@@ -269,8 +274,9 @@ func ExtendServiceLabels(set *LabelSet, opts ServiceLabelExtendedOpts) {
 
 func ServiceLabels(opts ServiceLabelsOpts) (*LabelSet, error) {
 	set, err := ProcessLabels(ProcessLabelsOpts{
-		App:     opts.App,
-		Process: opts.Process,
+		App:      opts.App,
+		Process:  opts.Process,
+		IsDeploy: opts.IsDeploy,
 	})
 	if err != nil {
 		return nil, err
@@ -286,6 +292,7 @@ type ProcessLabelsOpts struct {
 	Provisioner string
 	Builder     string
 	Prefix      string
+	IsDeploy    bool
 }
 
 func ProcessLabels(opts ProcessLabelsOpts) (*LabelSet, error) {
@@ -302,6 +309,7 @@ func ProcessLabels(opts ProcessLabelsOpts) (*LabelSet, error) {
 		Labels: map[string]string{
 			labelIsTsuru:     strconv.FormatBool(true),
 			labelIsStopped:   strconv.FormatBool(false),
+			labelIsDeploy:    strconv.FormatBool(opts.IsDeploy),
 			labelAppName:     opts.App.GetName(),
 			labelAppProcess:  opts.Process,
 			labelAppPlatform: opts.App.GetPlatform(),

@@ -16,7 +16,6 @@ import (
 
 	"github.com/ajg/form"
 	"github.com/tsuru/tsuru/api/context"
-	"github.com/tsuru/tsuru/api/types"
 	"github.com/tsuru/tsuru/app"
 	"github.com/tsuru/tsuru/app/bind"
 	"github.com/tsuru/tsuru/auth"
@@ -33,6 +32,7 @@ import (
 	"github.com/tsuru/tsuru/router"
 	"github.com/tsuru/tsuru/router/rebuild"
 	"github.com/tsuru/tsuru/service"
+	apiTypes "github.com/tsuru/tsuru/types/api"
 	appTypes "github.com/tsuru/tsuru/types/app"
 	"gopkg.in/mgo.v2/bson"
 )
@@ -885,7 +885,7 @@ func setEnv(w http.ResponseWriter, r *http.Request, t auth.Token) (err error) {
 	if err != nil {
 		return &errors.HTTP{Code: http.StatusBadRequest, Message: err.Error()}
 	}
-	var e types.Envs
+	var e apiTypes.Envs
 	dec := form.NewDecoder(nil)
 	dec.IgnoreUnknownKeys(true)
 	err = dec.DecodeValues(&e, r.Form)
@@ -1501,8 +1501,11 @@ func swap(w http.ResponseWriter, r *http.Request, t auth.Token) (err error) {
 	if !allowed1 || !allowed2 {
 		return permission.ErrUnauthorized
 	}
-	evt1, err := event.New(&event.Opts{
-		Target:     appTarget(app1Name),
+	evt, err := event.New(&event.Opts{
+		Target: appTarget(app1Name),
+		ExtraTargets: []event.ExtraTarget{
+			{Target: appTarget(app2Name), Lock: true},
+		},
 		Kind:       permission.PermAppUpdateSwap,
 		Owner:      t,
 		CustomData: event.FormToCustomData(r.Form),
@@ -1511,18 +1514,7 @@ func swap(w http.ResponseWriter, r *http.Request, t auth.Token) (err error) {
 	if err != nil {
 		return err
 	}
-	defer func() { evt1.Done(err) }()
-	evt2, err := event.New(&event.Opts{
-		Target:     appTarget(app2Name),
-		Kind:       permission.PermAppUpdateSwap,
-		Owner:      t,
-		CustomData: event.FormToCustomData(r.Form),
-		Allowed:    event.Allowed(permission.PermAppReadEvents, contextsForApp(app2)...),
-	})
-	if err != nil {
-		return err
-	}
-	defer func() { evt2.Done(err) }()
+	defer func() { evt.Done(err) }()
 	// compare apps by platform type and number of units
 	if forceSwap == "false" {
 		if app1.Platform != app2.Platform {

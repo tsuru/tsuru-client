@@ -9,12 +9,6 @@ import (
 	"time"
 )
 
-var sampleEnglish []string
-
-func init() {
-	sampleEnglish = SampleEnglish()
-}
-
 func TestSpelling(t *testing.T) {
 	model := NewModel()
 
@@ -22,7 +16,7 @@ func TestSpelling(t *testing.T) {
 	model.SetThreshold(1)
 
 	// Train multiple words simultaneously
-	words := []string{"bob", "your", "uncle", "dynamite", "delicate", "biggest", "big", "bigger", "aunty", "you're", "bob", "your"}
+	words := []string{"bob", "your", "uncle", "dynamite", "delicate", "biggest", "big", "bigger", "aunty", "you're"}
 	model.Train(words)
 
 	// Check Spelling
@@ -41,42 +35,7 @@ func TestSpelling(t *testing.T) {
 	if model.SpellCheck("dellicade") != "delicate" {
 		t.Errorf("Spell check: Two char change failed")
 	}
-}
 
-func TestSpellingSuggestions(t *testing.T) {
-	model := NewModel()
-
-	// For testing only, this is not advisable on production
-	model.SetThreshold(1)
-
-	// Train multiple words simultaneously
-	words := []string{"bob", "your", "uncle", "dynamite", "delicate", "biggest", "big", "bigger", "aunty", "you're", "bob", "your"}
-	model.Train(words)
-
-	// Check Spelling
-	if model.SpellCheckSuggestions("yor", 2)[0] != "your" {
-		t.Errorf("Spell check: Single char delete failed")
-	}
-	if model.SpellCheckSuggestions("uncel", 2)[0] != "uncle" {
-		t.Errorf("Spell check: Single char transpose failed")
-	}
-	if model.SpellCheckSuggestions("dynemite", 2)[0] != "dynamite" {
-		t.Errorf("Spell check: Single char swap failed")
-	}
-	if model.SpellCheckSuggestions("dellicate", 2)[0] != "delicate" {
-		t.Errorf("Spell check: Single char insertion failed")
-	}
-	if model.SpellCheckSuggestions("dellicade", 2)[0] != "delicate" {
-		t.Errorf("Spell check: Two char change failed")
-	}
-
-	suggestions := model.SpellCheckSuggestions("bigge", 2)
-	if suggestions[0] != "bigger" {
-		t.Errorf("Spell check suggestions, Single char delete is closest")
-	}
-	if suggestions[1] != "biggest" {
-		t.Errorf("Spell check suggestions, Double char delete 2nd closest")
-	}
 }
 
 func TestSuggestions(t *testing.T) {
@@ -126,7 +85,8 @@ func TestConcurrency(t *testing.T) {
 	runtime.GOMAXPROCS(cpu)
 	model := NewModel()
 
-	piece := len(sampleEnglish) / cpu
+	english := SampleEnglish()
+	piece := len(english) / cpu
 
 	var wg sync.WaitGroup
 	// Train concurrently
@@ -135,7 +95,7 @@ func TestConcurrency(t *testing.T) {
 		go func(i int) {
 			begin := i * piece
 			end := (i+1)*piece - 1
-			model.Train(sampleEnglish[begin:end])
+			model.Train(english[begin:end])
 			wg.Done()
 		}(i)
 	}
@@ -155,21 +115,11 @@ func TestConcurrency(t *testing.T) {
 	wg.Wait()
 }
 
-func TestColdInit(t *testing.T) {
-	model := NewModel()
-	_, err := model.Autocomplete("a")
-	if err != nil {
-		t.Errorf("Failed to init and autocomplete: %v", err)
-	}
-}
-
 // Accuracy test sets come from Peter Norvig's set
 // The big.txt file is also from Peter Norvig's set. This helps to define a decent
 // dictionary, although it is still missing some of the common words in the test sets
 // We aim for > 60% correction success at a rate of > 5000Hz (single threaded)
 func TestAccuracy(t *testing.T) {
-	const test2AccuracyThreshold = .60
-
 	tests1 := map[string]string{"access": "acess", "accessing": "accesing", "accommodation": "accomodation acommodation acomodation", "account": "acount", "address": "adress adres", "addressable": "addresable", "arranged": "aranged arrainged",
 		"arranging": "aranging", "arrangement": "arragment", "articles": "articals",
 		"aunt": "annt anut arnt", "auxiliary": "auxillary", "available": "avaible",
@@ -273,8 +223,7 @@ func TestAccuracy(t *testing.T) {
 		"together": "togehter", "profits": "proffits"}
 
 	model := NewModel()
-	model.SetThreshold(1) // This ensures a more complete dictionary at the expense of size/speed.
-	model.Train(sampleEnglish)
+	model.Train(SampleEnglish())
 
 	// Look at test sets
 	// SET 1
@@ -326,8 +275,8 @@ func TestAccuracy(t *testing.T) {
 	fmt.Printf("Spell test2 count: %v, Correct: %v, Incorrect: %v, Ratio: %f, Total time: %v \n\n", count, correct, incorrect, float32(correct)/float32(count), t3.Sub(t2))
 
 	successrate = float32(correct) / float32(count)
-	if successrate < test2AccuracyThreshold {
-		t.Errorf("Unacceptable correction rate for set test2 (%v). e.g. below %v.", successrate, test2AccuracyThreshold)
+	if successrate < 0.60 {
+		t.Errorf("Unacceptable correction rate for set test2 (%v). e.g. below 60 percent.", successrate)
 	}
 
 	// 5000Hz is our aim
@@ -337,56 +286,4 @@ func TestAccuracy(t *testing.T) {
 		t.Errorf("Unacceptable completion time for set test2 (%v). e.g. %v corrections took greater than %v", t3.Sub(t2), count, maxtime)
 	}
 
-}
-
-// Quick test to make sure we're picking up the right stuff
-func TestAutocomplete(t *testing.T) {
-	model := NewModel()
-	model.Train(sampleEnglish)
-	out, err := model.Autocomplete("accoun")
-	if err != nil {
-		t.Errorf("Auocomplete() returned and error: ", err)
-	}
-	expected := map[string]bool{
-		"account":    true,
-		"accountant": true,
-		"accounts":   true,
-		"accounted":  true,
-	}
-	for _, m := range out {
-		if val, ok := expected[m]; !ok {
-			t.Errorf("Expected to find %v (%v), but didn't", m, val)
-		}
-	}
-}
-
-// Test to ensure query training begins to dominate over
-// corpus training when autocompleting
-func TestAutocompleteFromQueries(t *testing.T) {
-	model := NewModel()
-	// Changing defaults for testing only, this is not advisable on production
-	model.SetThreshold(1)
-	model.SetDivergenceThreshold(1)
-
-	model.Train([]string{"every", "every", "every", "every", "every", "every", "everest", "eveready", "eveready", "everything", "everything"})
-	model.TrainQuery("everest")  // Simulate a query
-	model.TrainQuery("everest")  // Simulate a query
-	model.TrainQuery("eveready") // Simulate a query
-
-	out, err := model.Autocomplete("eve")
-	if err != nil {
-		t.Errorf("Auocomplete() returned and error: ", err)
-	}
-	if out[0] != "everest" {
-		t.Errorf("Autocomplete failed to account for query training")
-	}
-	if out[1] != "eveready" {
-		t.Errorf("Autocomplete failed to account for query training")
-	}
-}
-
-func TestLoadOldModel(t *testing.T) {
-	if _, err := Load("data/test.dict"); err != nil {
-		t.Errorf("Couldn't load old model format: %v", err)
-	}
 }

@@ -333,7 +333,7 @@ func (c *PoolConstraintList) Run(ctx *cmd.Context, client *cmd.Client) error {
 	tbl := cmd.NewTable()
 	tbl.Headers = cmd.Row{"Pool Expression", "Field", "Values", "Blacklist"}
 	for _, c := range constraints {
-		tbl.AddRow(cmd.Row{c.PoolExpr, c.Field, strings.Join(c.Values, ","), strconv.FormatBool(c.Blacklist)})
+		tbl.AddRow(cmd.Row{c.PoolExpr, string(c.Field), strings.Join(c.Values, ","), strconv.FormatBool(c.Blacklist)})
 	}
 	tbl.SortByColumn(0)
 	ctx.Stdout.Write([]byte(tbl.String()))
@@ -383,9 +383,13 @@ func (c *PoolConstraintSet) Run(ctx *cmd.Context, client *cmd.Client) error {
 	for _, v := range values {
 		allValues = append(allValues, strings.Split(v, ",")...)
 	}
+	constraintType, err := pool.ToConstraintType(ctx.Args[1])
+	if err != nil {
+		return err
+	}
 	constraint := pool.PoolConstraint{
 		PoolExpr:  ctx.Args[0],
-		Field:     ctx.Args[1],
+		Field:     constraintType,
 		Blacklist: c.blacklist,
 		Values:    allValues,
 	}

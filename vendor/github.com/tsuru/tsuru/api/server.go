@@ -42,7 +42,7 @@ import (
 	"golang.org/x/net/websocket"
 )
 
-const Version = "1.5.0-rc2"
+const Version = "1.5.0-rc4"
 
 type TsuruHandler struct {
 	version string
@@ -201,7 +201,7 @@ func RunServer(dry bool) http.Handler {
 
 	// Shell also doesn't use {app} on purpose. Middlewares don't play well
 	// with websocket.
-	m.Add("1.0", "Get", "/apps/{appname}/shell", websocket.Handler(remoteShellHandler))
+	m.Add("1.0", "Get", "/apps/{appname}/shell", http.HandlerFunc(remoteShellHandler))
 
 	m.Add("1.0", "Get", "/users", AuthorizationRequiredHandler(listUsers))
 	m.Add("1.0", "Post", "/users", Handler(createUser))
@@ -299,6 +299,7 @@ func RunServer(dry bool) http.Handler {
 	m.Add("1.2", "PUT", "/node", AuthorizationRequiredHandler(updateNodeHandler))
 	m.Add("1.2", "DELETE", "/node/{address:.*}", AuthorizationRequiredHandler(removeNodeHandler))
 	m.Add("1.3", "POST", "/node/rebalance", AuthorizationRequiredHandler(rebalanceNodesHandler))
+	m.Add("1.6", "GET", "/node/{address:.*}", AuthorizationRequiredHandler(infoNodeHandler))
 
 	m.Add("1.2", "GET", "/nodecontainers", AuthorizationRequiredHandler(nodeContainerList))
 	m.Add("1.2", "POST", "/nodecontainers", AuthorizationRequiredHandler(nodeContainerCreate))
@@ -529,7 +530,7 @@ func startServer(handler http.Handler) {
 	if err != nil {
 		fatal(err)
 	}
-	err = event.LoadThrottling()
+	err = event.Initialize()
 	if err != nil {
 		fatal(errors.Wrap(err, "unable to load events throttling config"))
 	}
