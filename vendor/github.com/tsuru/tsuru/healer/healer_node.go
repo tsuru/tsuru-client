@@ -206,7 +206,10 @@ func (h *NodeHealer) tryHealingNode(node provision.Node, reason string, lastChec
 	}
 	poolName := node.Pool()
 	evt, err := event.NewInternal(&event.Opts{
-		Target:       event.Target{Type: event.TargetTypeNode, Value: node.Address()},
+		Target: event.Target{Type: event.TargetTypeNode, Value: node.Address()},
+		ExtraTargets: []event.ExtraTarget{
+			{Target: event.Target{Type: event.TargetTypePool, Value: poolName}},
+		},
 		InternalKind: "healer",
 		CustomData: NodeHealerCustomData{
 			Node:      provision.NodeToSpec(node),
@@ -225,6 +228,10 @@ func (h *NodeHealer) tryHealingNode(node provision.Node, reason string, lastChec
 	var createdNode *provision.NodeSpec
 	var evtErr error
 	defer func() {
+		if createdNode != nil {
+			evt.ExtraTargets = append(evt.ExtraTargets,
+				event.ExtraTarget{Target: event.Target{Type: event.TargetTypeNode, Value: createdNode.Address}})
+		}
 		var updateErr error
 		if evtErr == nil && createdNode == nil {
 			updateErr = evt.Abort()
@@ -304,6 +311,20 @@ func allNodes() ([]provision.Node, error) {
 		}
 	}
 	return nodes, nil
+}
+
+func (h *NodeHealer) GetNodeStatusData(node provision.Node) (NodeStatusData, error) {
+	var nodeStatus NodeStatusData
+	coll, err := nodeDataCollection()
+	if err != nil {
+		return nodeStatus, errors.Wrap(err, "unable to get node data collection")
+	}
+	defer coll.Close()
+	err = coll.FindId(node.Address()).One(&nodeStatus)
+	if err != nil {
+		return nodeStatus, provision.ErrNodeNotFound
+	}
+	return nodeStatus, nil
 }
 
 func (h *NodeHealer) UpdateNodeData(node provision.Node, checks []provision.NodeCheckResult) error {

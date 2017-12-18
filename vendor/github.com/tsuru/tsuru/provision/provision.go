@@ -280,7 +280,7 @@ type RebuildableDeployer interface {
 }
 
 type BuilderDockerClient interface {
-	CreateContainer(opts docker.CreateContainerOptions) (*docker.Container, error)
+	PullAndCreateContainer(opts docker.CreateContainerOptions, w io.Writer) (*docker.Container, string, error)
 	RemoveContainer(opts docker.RemoveContainerOptions) error
 	StartContainer(id string, hostConfig *docker.HostConfig) error
 	StopContainer(id string, timeout uint) error
@@ -293,7 +293,6 @@ type BuilderDockerClient interface {
 	WaitContainer(id string) (int, error)
 
 	BuildImage(opts docker.BuildImageOptions) error
-	PullImage(opts docker.PullImageOptions, auth docker.AuthConfiguration) error
 	PushImage(docker.PushImageOptions, docker.AuthConfiguration) error
 	InspectImage(string) (*docker.Image, error)
 	TagImage(string, docker.TagImageOptions) error
@@ -303,11 +302,18 @@ type BuilderDockerClient interface {
 	SetTimeout(timeout time.Duration)
 }
 
+type ExecDockerClient interface {
+	CreateExec(opts docker.CreateExecOptions) (*docker.Exec, error)
+	StartExec(execId string, opts docker.StartExecOptions) error
+	ResizeExecTTY(execId string, height, width int) error
+	InspectExec(execId string) (*docker.ExecInspect, error)
+}
+
 // BuilderDeploy is a provisioner that allows deploy builded image.
 type BuilderDeploy interface {
 	Deploy(App, string, *event.Event) (string, error)
 	GetDockerClient(App) (BuilderDockerClient, error)
-	CleanImage(appName string, image string)
+	CleanImage(appName string, image string, removeFromRegistry bool)
 }
 
 // Provisioner is the basic interface of this package.
@@ -668,24 +674,29 @@ func (e *Error) Error() string {
 	return err
 }
 
-type TsuruYamlRestartHooks struct {
-	Before []string
-	After  []string
+type TsuruYamlData struct {
+	Hooks       TsuruYamlHooks       `bson:",omitempty"`
+	Healthcheck TsuruYamlHealthcheck `bson:",omitempty"`
 }
 
 type TsuruYamlHooks struct {
-	Restart TsuruYamlRestartHooks
-	Build   []string
+	Restart TsuruYamlRestartHooks `bson:",omitempty"`
+	Build   []string              `bson:",omitempty"`
+}
+
+type TsuruYamlRestartHooks struct {
+	Before []string `bson:",omitempty"`
+	After  []string `bson:",omitempty"`
 }
 
 type TsuruYamlHealthcheck struct {
-	Path            string
-	Method          string
-	Status          int
-	Match           string
-	RouterBody      string
-	UseInRouter     bool `json:"use_in_router" bson:"use_in_router"`
-	AllowedFailures int  `json:"allowed_failures" bson:"allowed_failures"`
+	Path            string //`bson:",omitempty"`
+	Method          string //`bson:",omitempty"`
+	Status          int    //`bson:",omitempty"`
+	Match           string `bson:",omitempty"`
+	RouterBody      string `json:"router_body" yaml:"router_body" bson:"router_body,omitempty"`
+	UseInRouter     bool   `json:"use_in_router" yaml:"use_in_router" bson:"use_in_router,omitempty"`
+	AllowedFailures int    `json:"allowed_failures" yaml:"allowed_failures" bson:"allowed_failures,omitempty"`
 }
 
 func (hc TsuruYamlHealthcheck) ToRouterHC() router.HealthcheckData {
@@ -699,9 +710,4 @@ func (hc TsuruYamlHealthcheck) ToRouterHC() router.HealthcheckData {
 	return router.HealthcheckData{
 		Path: "/",
 	}
-}
-
-type TsuruYamlData struct {
-	Hooks       TsuruYamlHooks
-	Healthcheck TsuruYamlHealthcheck
 }

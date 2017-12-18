@@ -40,6 +40,7 @@ import (
 	"github.com/tsuru/tsuru/provision/nodecontainer"
 	"github.com/tsuru/tsuru/provision/pool"
 	"github.com/tsuru/tsuru/provision/provisiontest"
+	"github.com/tsuru/tsuru/queue"
 	"github.com/tsuru/tsuru/quota"
 	"github.com/tsuru/tsuru/router/routertest"
 	"github.com/tsuru/tsuru/safe"
@@ -550,6 +551,8 @@ func (s *S) TestDeployRegisterRace(c *check.C) {
 				registerErr := p.RegisterUnit(nil, parts[2], nil)
 				if registerErr == nil {
 					atomic.AddInt64(&registerCount, 1)
+				} else {
+					c.Fatal(registerErr)
 				}
 			}
 		}(r.URL.Path)
@@ -696,14 +699,25 @@ func (s *S) TestDeployErasesOldImagesIfFailed(c *check.C) {
 	a := s.newApp("appdeployimagetest")
 	err = app.CreateApp(&a, s.user)
 	c.Assert(err, check.IsNil)
+	stopCh := s.stopContainers(s.server.URL(), 1)
+	defer func() { <-stopCh }()
+	baseImgName := "tsuru/app-" + a.Name + ":v1"
+	customData := map[string]interface{}{
+		"processes": map[string]interface{}{
+			"web": "python myapp.py",
+		},
+	}
+	err = image.SaveImageCustomData(baseImgName, customData)
+	c.Assert(err, check.IsNil)
 	s.server.CustomHandler("/containers/create", http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		data, _ := ioutil.ReadAll(r.Body)
 		r.Body = ioutil.NopCloser(bytes.NewBuffer(data))
 		var result docker.Config
 		jsonErr := json.Unmarshal(data, &result)
 		if jsonErr == nil {
-			if result.Image == "tsuru/python:latest" {
+			if result.Image == baseImgName {
 				w.WriteHeader(http.StatusInternalServerError)
+				w.Write([]byte("my awesome error"))
 				return
 			}
 		}
@@ -716,13 +730,17 @@ func (s *S) TestDeployErasesOldImagesIfFailed(c *check.C) {
 		Allowed: event.Allowed(permission.PermApp),
 	})
 	c.Assert(err, check.IsNil)
-	_, err = s.p.Deploy(&a, "tsuru/app-"+a.Name+":v1-builder", evt)
-	c.Assert(err, check.NotNil)
+	_, err = s.p.Deploy(&a, baseImgName+"-builder", evt)
+	c.Assert(err, check.ErrorMatches, ".*my awesome error.*")
 	imgs, err := s.p.Cluster().ListImages(docker.ListImagesOptions{All: true})
 	c.Assert(err, check.IsNil)
-	c.Assert(imgs, check.HasLen, 1)
+	c.Assert(imgs, check.HasLen, 2)
 	c.Assert(imgs[0].RepoTags, check.HasLen, 1)
-	c.Assert("tsuru/python:latest", check.Equals, imgs[0].RepoTags[0])
+	c.Assert(imgs[1].RepoTags, check.HasLen, 1)
+	got := []string{imgs[0].RepoTags[0], imgs[1].RepoTags[0]}
+	sort.Strings(got)
+	expected := []string{"tsuru/app-appdeployimagetest:v1-builder", "tsuru/python:latest"}
+	c.Assert(got, check.DeepEquals, expected)
 }
 
 func (s *S) TestDeployErasesOldImagesWithLongHistory(c *check.C) {
@@ -790,16 +808,20 @@ func (s *S) TestDeployErasesOldImagesWithLongHistory(c *check.C) {
 	c.Assert(err, check.IsNil)
 	imgs, err = s.p.Cluster().ListImages(docker.ListImagesOptions{All: true})
 	c.Assert(err, check.IsNil)
-	c.Assert(imgs, check.HasLen, 5)
+	c.Assert(imgs, check.HasLen, 3)
 	c.Assert(imgs[0].RepoTags, check.HasLen, 1)
 	c.Assert(imgs[1].RepoTags, check.HasLen, 1)
 	c.Assert(imgs[2].RepoTags, check.HasLen, 1)
-	c.Assert(imgs[3].RepoTags, check.HasLen, 1)
-	c.Assert(imgs[4].RepoTags, check.HasLen, 1)
-	got = []string{imgs[0].RepoTags[0], imgs[1].RepoTags[0], imgs[2].RepoTags[0], imgs[3].RepoTags[0], imgs[4].RepoTags[0]}
+	got = []string{imgs[0].RepoTags[0], imgs[1].RepoTags[0], imgs[2].RepoTags[0]}
 	sort.Strings(got)
-	expected = []string{"tsuru/app-appdeployimagetest:v1", "tsuru/app-appdeployimagetest:v1-builder", "tsuru/app-appdeployimagetest:v2", "tsuru/app-appdeployimagetest:v2-builder", "tsuru/python:latest"}
+	expected = []string{"tsuru/app-appdeployimagetest:v2", "tsuru/app-appdeployimagetest:v2-builder", "tsuru/python:latest"}
 	c.Assert(got, check.DeepEquals, expected)
+	imgsInDB, err := image.ListAppImages(a.Name)
+	c.Assert(err, check.IsNil)
+	c.Assert(imgsInDB, check.DeepEquals, []string{"tsuru/app-appdeployimagetest:v1", "tsuru/app-appdeployimagetest:v2"})
+	imgsInDB, err = image.ListAppBuilderImages(a.Name)
+	c.Assert(err, check.IsNil)
+	c.Assert(imgsInDB, check.DeepEquals, []string{"tsuru/app-appdeployimagetest:v1-builder", "tsuru/app-appdeployimagetest:v2-builder"})
 	builderImgID, err = s.b.Build(s.p, &a, evt, buildOpts)
 	c.Assert(err, check.IsNil)
 	pullOpts = docker.PullImageOptions{
@@ -812,16 +834,20 @@ func (s *S) TestDeployErasesOldImagesWithLongHistory(c *check.C) {
 	c.Assert(err, check.IsNil)
 	imgs, err = s.p.Cluster().ListImages(docker.ListImagesOptions{All: true})
 	c.Assert(err, check.IsNil)
-	c.Assert(imgs, check.HasLen, 5)
+	c.Assert(imgs, check.HasLen, 3)
 	c.Assert(imgs[0].RepoTags, check.HasLen, 1)
 	c.Assert(imgs[1].RepoTags, check.HasLen, 1)
 	c.Assert(imgs[2].RepoTags, check.HasLen, 1)
-	c.Assert(imgs[3].RepoTags, check.HasLen, 1)
-	c.Assert(imgs[4].RepoTags, check.HasLen, 1)
-	got = []string{imgs[0].RepoTags[0], imgs[1].RepoTags[0], imgs[2].RepoTags[0], imgs[3].RepoTags[0], imgs[4].RepoTags[0]}
+	got = []string{imgs[0].RepoTags[0], imgs[1].RepoTags[0], imgs[2].RepoTags[0]}
 	sort.Strings(got)
-	expected = []string{"tsuru/app-appdeployimagetest:v2", "tsuru/app-appdeployimagetest:v2-builder", "tsuru/app-appdeployimagetest:v3", "tsuru/app-appdeployimagetest:v3-builder", "tsuru/python:latest"}
+	expected = []string{"tsuru/app-appdeployimagetest:v3", "tsuru/app-appdeployimagetest:v3-builder", "tsuru/python:latest"}
 	c.Assert(got, check.DeepEquals, expected)
+	imgsInDB, err = image.ListAppImages(a.Name)
+	c.Assert(err, check.IsNil)
+	c.Assert(imgsInDB, check.DeepEquals, []string{"tsuru/app-appdeployimagetest:v2", "tsuru/app-appdeployimagetest:v3"})
+	imgsInDB, err = image.ListAppBuilderImages(a.Name)
+	c.Assert(err, check.IsNil)
+	c.Assert(imgsInDB, check.DeepEquals, []string{"tsuru/app-appdeployimagetest:v2-builder", "tsuru/app-appdeployimagetest:v3-builder"})
 }
 
 func (s *S) TestRollbackDeployFailureDoesntEraseImage(c *check.C) {
@@ -1139,7 +1165,7 @@ func (s *S) TestProvisionerAddUnitsWithHostPartialRollback(c *check.C) {
 		imageID:     imageID,
 		provisioner: s.p,
 	})
-	c.Assert(err, check.ErrorMatches, "error in docker node.*")
+	c.Assert(err, check.ErrorMatches, "(?s).*error in docker node.*")
 	c.Assert(units, check.HasLen, 0)
 	coll := s.p.Collection()
 	defer coll.Close()
@@ -1447,7 +1473,7 @@ func (s *S) TestProvisionerSetUnitStatusAsleep(c *check.C) {
 	container, err := s.newContainer(&opts, nil)
 	c.Assert(err, check.IsNil)
 	defer s.removeTestContainer(container)
-	err = container.Sleep(s.p)
+	err = container.Sleep(s.p.ClusterClient(), s.p.ActionLimiter())
 	c.Assert(err, check.IsNil)
 	err = s.p.SetUnitStatus(provision.Unit{ID: container.ID, AppName: container.AppName}, provision.StatusStopped)
 	c.Assert(err, check.IsNil)
@@ -1625,9 +1651,9 @@ func (s *S) TestProvisionerExecuteCommandExcludesBuildContainers(c *check.C) {
 	c.Assert(err, check.IsNil)
 	container4, err := s.newContainer(&newContainerOpts{AppName: a.GetName()}, nil)
 	c.Assert(err, check.IsNil)
-	container2.SetStatus(s.p, provision.StatusCreated, true)
-	container3.SetStatus(s.p, provision.StatusBuilding, true)
-	container4.SetStatus(s.p, provision.StatusStopped, true)
+	container2.SetStatus(s.p.ClusterClient(), provision.StatusCreated, true)
+	container3.SetStatus(s.p.ClusterClient(), provision.StatusBuilding, true)
+	container4.SetStatus(s.p.ClusterClient(), provision.StatusStopped, true)
 	containers := []*container.Container{
 		container1,
 		container2,
@@ -1718,6 +1744,10 @@ func (s *S) TestProvisionerExecuteCommandIsolated(c *check.C) {
 }
 
 func (s *S) TestProvisionerExecuteCommandIsolatedNoImage(c *check.C) {
+	s.server.CustomHandler("/images/create", http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		// no actual pull executed
+		w.WriteHeader(http.StatusOK)
+	}))
 	a := provisiontest.NewFakeApp("almah", "static", 2)
 	var buf bytes.Buffer
 	err := s.p.ExecuteCommandIsolated(&buf, &buf, a, "ls", "-lh")
@@ -2021,7 +2051,7 @@ func (s *S) TestProvisionerSleep(c *check.C) {
 	defer s.removeTestContainer(cont1)
 	err = dcli.StartContainer(cont1.ID, nil)
 	c.Assert(err, check.IsNil)
-	err = cont1.SetStatus(s.p, provision.StatusStarted, true)
+	err = cont1.SetStatus(s.p.ClusterClient(), provision.StatusStarted, true)
 	c.Assert(err, check.IsNil)
 	cont2, err := s.newContainer(&newContainerOpts{
 		AppName:         a.GetName(),
@@ -2032,7 +2062,7 @@ func (s *S) TestProvisionerSleep(c *check.C) {
 	c.Assert(err, check.IsNil)
 	err = dcli.StartContainer(cont2.ID, nil)
 	c.Assert(err, check.IsNil)
-	err = cont2.SetStatus(s.p, provision.StatusStarted, true)
+	err = cont2.SetStatus(s.p.ClusterClient(), provision.StatusStarted, true)
 	c.Assert(err, check.IsNil)
 	defer s.removeTestContainer(cont2)
 	dockerContainer, err := dcli.InspectContainer(cont1.ID)
@@ -2076,7 +2106,7 @@ func (s *S) TestProvisionerSleepProcess(c *check.C) {
 	}, nil)
 	c.Assert(err, check.IsNil)
 	defer s.removeTestContainer(cont1)
-	err = cont1.SetStatus(s.p, provision.StatusStarted, true)
+	err = cont1.SetStatus(s.p.ClusterClient(), provision.StatusStarted, true)
 	c.Assert(err, check.IsNil)
 	cont2, err := s.newContainer(&newContainerOpts{
 		AppName:         a.GetName(),
@@ -2086,7 +2116,7 @@ func (s *S) TestProvisionerSleepProcess(c *check.C) {
 	}, nil)
 	c.Assert(err, check.IsNil)
 	defer s.removeTestContainer(cont2)
-	err = cont2.SetStatus(s.p, provision.StatusStarted, true)
+	err = cont2.SetStatus(s.p.ClusterClient(), provision.StatusStarted, true)
 	c.Assert(err, check.IsNil)
 	err = dcli.StartContainer(cont1.ID, nil)
 	c.Assert(err, check.IsNil)
@@ -2442,7 +2472,7 @@ func (s *S) TestRunRestartAfterHooks(c *check.C) {
 		reqBodies = append(reqBodies, data)
 		s.server.DefaultHandler().ServeHTTP(w, r)
 	}))
-	defer container.Remove(s.p)
+	defer container.Remove(s.p.ClusterClient(), s.p.ActionLimiter())
 	var buf bytes.Buffer
 	err = s.p.runRestartAfterHooks(container, &buf)
 	c.Assert(err, check.IsNil)
@@ -2765,6 +2795,62 @@ func (s *S) TestAddNode(c *check.C) {
 	c.Assert(nodes[0].Metadata, check.DeepEquals, map[string]string{
 		"pool":        "pool1",
 		"m1":          "x1",
+		"LastSuccess": nodes[0].Metadata["LastSuccess"],
+	})
+	c.Assert(nodes[0].CreationStatus, check.Equals, cluster.NodeCreationStatusCreated)
+}
+
+func (s *S) TestAddRemoveAddNodeRace(c *check.C) {
+	pong := make(chan struct{}, 2)
+	var callCount int32
+	server, err := testing.NewServer("127.0.0.1:0", nil, func(r *http.Request) {
+		if strings.Contains(r.URL.Path, "ping") {
+			pong <- struct{}{}
+			if atomic.AddInt32(&callCount, 1) == 1 {
+				time.Sleep(500 * time.Millisecond)
+			}
+		}
+	})
+	c.Assert(err, check.IsNil)
+	defer server.Stop()
+	var p dockerProvisioner
+	err = p.Initialize()
+	c.Assert(err, check.IsNil)
+	p.cluster, _ = cluster.New(nil, &cluster.MapStorage{}, "")
+	mainDockerProvisioner = &p
+	opts := provision.AddNodeOptions{
+		Address: server.URL(),
+		Pool:    "pool1",
+		Metadata: map[string]string{
+			"m1": "x1",
+		},
+	}
+	err = p.AddNode(opts)
+	c.Assert(err, check.IsNil)
+	<-pong
+	err = p.RemoveNode(provision.RemoveNodeOptions{
+		Address: server.URL(),
+	})
+	c.Assert(err, check.IsNil)
+	opts = provision.AddNodeOptions{
+		Address: server.URL(),
+		Pool:    "pool2",
+		Metadata: map[string]string{
+			"m2": "x2",
+		},
+	}
+	err = p.AddNode(opts)
+	c.Assert(err, check.IsNil)
+	<-pong
+	queue.ResetQueue()
+	c.Assert(atomic.LoadInt32(&callCount), check.Equals, int32(2))
+	nodes, err := p.Cluster().Nodes()
+	c.Assert(err, check.IsNil)
+	c.Assert(nodes, check.HasLen, 1)
+	c.Assert(nodes[0].Address, check.Equals, server.URL())
+	c.Assert(nodes[0].Metadata, check.DeepEquals, map[string]string{
+		"pool":        "pool2",
+		"m2":          "x2",
 		"LastSuccess": nodes[0].Metadata["LastSuccess"],
 	})
 	c.Assert(nodes[0].CreationStatus, check.Equals, cluster.NodeCreationStatusCreated)

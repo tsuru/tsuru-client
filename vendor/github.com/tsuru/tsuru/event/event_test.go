@@ -8,6 +8,7 @@ import (
 	"bytes"
 	"context"
 	"errors"
+	"fmt"
 	"io"
 	"runtime"
 	"sort"
@@ -177,6 +178,116 @@ func (s *S) TestNewLocks(c *check.C) {
 	c.Assert(err, check.ErrorMatches, `event locked: app\(myapp\) running "app.update.env.set" start by user me@me.com at .+`)
 }
 
+func (s *S) TestNewExtraTargetLocks(c *check.C) {
+	tests := []struct {
+		target1      Target
+		extras1      []ExtraTarget
+		disableLock1 bool
+		target2      Target
+		extras2      []ExtraTarget
+		disableLock2 bool
+		err          string
+	}{
+		{
+			target1: Target{Type: "app", Value: "myapp"},
+			target2: Target{Type: "container", Value: "x"},
+			extras2: []ExtraTarget{{Target: Target{Type: "app", Value: "myapp"}, Lock: true}},
+			err:     `event locked: app\(myapp\) running "app.update.env.set" start by user me@me.com at .+`,
+		},
+		{
+			target1: Target{Type: "app", Value: "myapp"},
+			extras1: []ExtraTarget{{Target: Target{Type: "app", Value: "myapp2"}, Lock: true}},
+			target2: Target{Type: "app", Value: "myapp2"},
+			err:     `event locked: app\(myapp\) running "app.update.env.set" start by user me@me.com at .+`,
+		},
+		{
+			target1: Target{Type: "app", Value: "myapp"},
+			target2: Target{Type: "container", Value: "x"},
+			extras2: []ExtraTarget{{Target: Target{Type: "app", Value: "myapp"}, Lock: false}},
+			err:     "",
+		},
+		{
+			target1: Target{Type: "app", Value: "myapp"},
+			extras1: []ExtraTarget{{Target: Target{Type: "app", Value: "myapp2"}, Lock: false}},
+			target2: Target{Type: "app", Value: "myapp2"},
+			err:     "",
+		},
+		{
+			target1:      Target{Type: "app", Value: "myapp"},
+			extras1:      []ExtraTarget{{Target: Target{Type: "app", Value: "myapp2"}, Lock: true}},
+			target2:      Target{Type: "app", Value: "myapp2"},
+			disableLock2: true,
+			err:          "",
+		},
+		{
+			target1:      Target{Type: "app", Value: "myapp"},
+			extras1:      []ExtraTarget{{Target: Target{Type: "app", Value: "myapp2"}, Lock: true}},
+			target2:      Target{Type: "app", Value: "myapp2"},
+			disableLock2: true,
+			err:          "",
+		},
+	}
+	for i, tt := range tests {
+		evt1, err := New(&Opts{
+			Target:       tt.target1,
+			ExtraTargets: tt.extras1,
+			Kind:         permission.PermAppUpdateEnvSet,
+			Owner:        s.token,
+			Allowed:      Allowed(permission.PermAppReadEvents),
+			DisableLock:  tt.disableLock1,
+		})
+		c.Assert(err, check.IsNil)
+		evt2, err := New(&Opts{
+			Target:       tt.target2,
+			ExtraTargets: tt.extras2,
+			Kind:         permission.PermAppUpdateEnvUnset,
+			Owner:        s.token,
+			Allowed:      Allowed(permission.PermAppReadEvents),
+			DisableLock:  tt.disableLock2,
+		})
+		if tt.err != "" {
+			c.Assert(err, check.ErrorMatches, tt.err, check.Commentf("failed test case %d - %#v", i, tt))
+		} else {
+			c.Assert(err, check.IsNil, check.Commentf("failed test case %d - %#v", i, tt))
+		}
+		err = evt1.Done(nil)
+		c.Assert(err, check.IsNil)
+		if evt2 != nil {
+			err = evt2.Done(nil)
+			c.Assert(err, check.IsNil)
+		}
+	}
+}
+
+func (s *S) TestNewLockExtraTargetRace(c *check.C) {
+	originalMaxProcs := runtime.GOMAXPROCS(10)
+	defer runtime.GOMAXPROCS(originalMaxProcs)
+	wg := sync.WaitGroup{}
+	var countOK int32
+	for i := 0; i < 100; i++ {
+		wg.Add(1)
+		go func(i int) {
+			defer wg.Done()
+			_, err := New(&Opts{
+				Target: Target{Type: "app", Value: fmt.Sprintf("myapp-%d", i)},
+				ExtraTargets: []ExtraTarget{
+					{Target: Target{Type: "app", Value: "myapp"}, Lock: true},
+				},
+				Kind:    permission.PermAppUpdateEnvSet,
+				Owner:   s.token,
+				Allowed: Allowed(permission.PermAppReadEvents),
+			})
+			if _, ok := err.(ErrEventLocked); ok {
+				return
+			}
+			c.Assert(err, check.IsNil)
+			atomic.AddInt32(&countOK, 1)
+		}(i)
+	}
+	wg.Wait()
+	c.Assert(countOK <= 1, check.Equals, true)
+}
+
 func (s *S) TestNewDoneDisableLock(c *check.C) {
 	evt, err := New(&Opts{
 		Target:      Target{Type: "app", Value: "myapp"},
@@ -276,46 +387,6 @@ func (s *S) TestNewEventBlocked(c *check.C) {
 	c.Assert(evts, check.HasLen, 1)
 	c.Assert(evts[0].Running, check.Equals, false)
 	c.Assert(evts[0].Error, check.Matches, `.*block app.deploy by all users on all targets: you shall not pass$`)
-}
-
-func (s *S) TestUpdaterUpdatesAndStopsUpdating(c *check.C) {
-	updater.stop()
-	oldUpdateInterval := lockUpdateInterval
-	lockUpdateInterval = time.Millisecond
-	defer func() {
-		updater.stop()
-		lockUpdateInterval = oldUpdateInterval
-	}()
-	evt, err := New(&Opts{
-		Target:  Target{Type: "app", Value: "myapp"},
-		Kind:    permission.PermAppUpdateEnvSet,
-		Owner:   s.token,
-		Allowed: Allowed(permission.PermAppReadEvents),
-	})
-	c.Assert(err, check.IsNil)
-	evts, err := All()
-	c.Assert(err, check.IsNil)
-	c.Assert(evts, check.HasLen, 1)
-	t0 := evts[0].LockUpdateTime
-	time.Sleep(100 * time.Millisecond)
-	evts, err = All()
-	c.Assert(err, check.IsNil)
-	c.Assert(evts, check.HasLen, 1)
-	t1 := evts[0].LockUpdateTime
-	c.Assert(t0.Before(t1), check.Equals, true)
-	err = evt.Done(nil)
-	c.Assert(err, check.IsNil)
-	time.Sleep(100 * time.Millisecond)
-	evts, err = All()
-	c.Assert(err, check.IsNil)
-	c.Assert(evts, check.HasLen, 1)
-	t0 = evts[0].LockUpdateTime
-	time.Sleep(100 * time.Millisecond)
-	evts, err = All()
-	c.Assert(err, check.IsNil)
-	c.Assert(evts, check.HasLen, 1)
-	t1 = evts[0].LockUpdateTime
-	c.Assert(t0, check.DeepEquals, t1)
 }
 
 func (s *S) TestEventAbort(c *check.C) {
@@ -844,6 +915,44 @@ func (s *S) TestNewThrottledExpirationWaitFinish(c *check.C) {
 	c.Assert(err, check.IsNil)
 }
 
+func (s *S) TestNewThrottledExpirationWaitFinishExpired(c *check.C) {
+	oldLockExpire := lockExpireTimeout
+	lockExpireTimeout = 200 * time.Millisecond
+	defer func() {
+		lockExpireTimeout = oldLockExpire
+	}()
+	SetThrottling(ThrottlingSpec{
+		TargetType: TargetTypeApp,
+		KindName:   permission.PermAppUpdateEnvSet.FullName(),
+		Time:       300 * time.Millisecond,
+		Max:        1,
+		AllTargets: true,
+		WaitFinish: true,
+	})
+	baseOpts := &Opts{
+		Target:  Target{Type: "app", Value: "myapp"},
+		Kind:    permission.PermAppUpdateEnvSet,
+		Owner:   s.token,
+		Allowed: Allowed(permission.PermAppReadEvents),
+	}
+	_, err := New(baseOpts)
+	c.Assert(err, check.IsNil)
+	updater.stop()
+	otherOpts := &Opts{
+		Target:  Target{Type: "app", Value: "myapp2"},
+		Kind:    permission.PermAppUpdateEnvSet,
+		Owner:   s.token,
+		Allowed: Allowed(permission.PermAppReadEvents),
+	}
+	_, err = New(otherOpts)
+	c.Assert(err, check.NotNil)
+	updater.stop()
+	c.Assert(err, check.ErrorMatches, "event throttled, limit for app.update.env.set on any app is 1 every 300ms")
+	time.Sleep(500 * time.Millisecond)
+	_, err = New(otherOpts)
+	c.Check(err, check.IsNil)
+}
+
 func (s *S) TestListFilterEmpty(c *check.C) {
 	evts, err := List(nil)
 	c.Assert(err, check.IsNil)
@@ -1113,7 +1222,7 @@ func (s *S) TestNewCustomDataPtr(c *check.C) {
 
 func (s *S) TestLoadThrottling(c *check.C) {
 	defer config.Unset("event:throttling")
-	err := LoadThrottling()
+	err := loadThrottling()
 	c.Assert(err, check.IsNil)
 	c.Assert(throttlingInfo, check.DeepEquals, map[string]ThrottlingSpec{})
 	err = config.ReadConfigBytes([]byte(`
@@ -1122,7 +1231,7 @@ event:
 `))
 	c.Assert(err, check.IsNil)
 	setBaseConfig()
-	err = LoadThrottling()
+	err = loadThrottling()
 	c.Assert(err, check.IsNil)
 	c.Assert(throttlingInfo, check.DeepEquals, map[string]ThrottlingSpec{})
 	err = config.ReadConfigBytes([]byte(`
@@ -1143,7 +1252,7 @@ event:
 `))
 	c.Assert(err, check.IsNil)
 	setBaseConfig()
-	err = LoadThrottling()
+	err = loadThrottling()
 	c.Assert(err, check.IsNil)
 	c.Assert(throttlingInfo, check.DeepEquals, map[string]ThrottlingSpec{
 		"app_app.update.env.set_global": {
@@ -1167,7 +1276,7 @@ event:
 
 func (s *S) TestLoadThrottlingInvalid(c *check.C) {
 	defer config.Unset("event:throttling")
-	err := LoadThrottling()
+	err := loadThrottling()
 	c.Assert(err, check.IsNil)
 	c.Assert(throttlingInfo, check.DeepEquals, map[string]ThrottlingSpec{})
 	err = config.ReadConfigBytes([]byte(`
@@ -1177,7 +1286,7 @@ event:
 `))
 	c.Assert(err, check.IsNil)
 	setBaseConfig()
-	err = LoadThrottling()
+	err = loadThrottling()
 	c.Assert(err, check.ErrorMatches, `json: cannot unmarshal object into Go value of type \[\]event.ThrottlingSpec`)
 	c.Assert(throttlingInfo, check.DeepEquals, map[string]ThrottlingSpec{})
 	err = config.ReadConfigBytes([]byte(`
@@ -1192,7 +1301,7 @@ event:
 `))
 	c.Assert(err, check.IsNil)
 	setBaseConfig()
-	err = LoadThrottling()
+	err = loadThrottling()
 	c.Assert(err, check.ErrorMatches, `json: cannot unmarshal string into Go struct field throttlingSpecAlias.limit of type int`)
 	c.Assert(throttlingInfo, check.DeepEquals, map[string]ThrottlingSpec{})
 }

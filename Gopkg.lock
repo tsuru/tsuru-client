@@ -212,7 +212,8 @@
 [[projects]]
   name = "github.com/pkg/errors"
   packages = ["."]
-  revision = "839d9e913e063e28dfd0e6c7b7512793e0a48be9"
+  revision = "645ef00459ed84a119197bfb8d8205042c6df63d"
+  version = "v0.8.0"
 
 [[projects]]
   name = "github.com/prometheus/client_golang"
@@ -245,10 +246,9 @@
   revision = "c90cb954266e1bdd6d1914678fd6909fc5fabbfa"
 
 [[projects]]
-  branch = "master"
   name = "github.com/sajari/fuzzy"
   packages = ["."]
-  revision = "243c923763cac789d1196949a834ca698dbd7a28"
+  revision = "bbbcac964e38148a7b43491a83d83b6b584600dc"
 
 [[projects]]
   name = "github.com/samalba/dockerclient"
@@ -285,9 +285,10 @@
   revision = "70e946ec66c3704722539ebf0b8beadf2d43146a"
 
 [[projects]]
+  branch = "master"
   name = "github.com/tsuru/tsuru"
-  packages = ["action","api/shutdown","api/types","app","app/bind","app/image","auth","auth/native","auth/saml","autoscale","builder","cmd","cmd/cmdtest","config","db","db/storage","errors","event","exec","exec/exectest","fs","fs/fstest","git","hc","healer","iaas","iaas/dockermachine","io","log","net","permission","provision","provision/cluster","provision/docker/cmds","provision/docker/types","provision/nodecontainer","provision/pool","queue","quota","registry","repository","router","router/rebuild","safe","scopedconfig","service","set","storage","types/app","types/auth","types/cache","validation","volume"]
-  revision = "6f4120e97c6f15e5dfbeba9c8e99ac03f781bd15"
+  packages = ["action","api/shutdown","app","app/bind","app/image","auth","auth/native","auth/saml","autoscale","builder","cmd","cmd/cmdtest","config","db","db/storage","errors","event","exec","exec/exectest","fs","fs/fstest","git","hc","healer","iaas","iaas/dockermachine","io","log","net","permission","provision","provision/cluster","provision/docker/cmds","provision/docker/types","provision/nodecontainer","provision/pool","queue","quota","registry","repository","router","router/rebuild","safe","scopedconfig","service","set","storage","types/api","types/app","types/auth","types/cache","validation","volume"]
+  revision = "50d74648539c7226022776392e9ff4db77b7f160"
 
 [[projects]]
   name = "github.com/vmware/govcloudair"
@@ -361,6 +362,6 @@
 [solve-meta]
   analyzer-name = "dep"
   analyzer-version = 1
-  inputs-digest = "e68e61f5e542690e9ca2d66862b58d49dbc6e886157bdb42d92fd686baa88849"
+  inputs-digest = "2d3e5f1c6724406483126985f882dbe048da7ac45320b512c3ac228aa900ff97"
   solver-name = "gps-cdcl"
   solver-version = 1

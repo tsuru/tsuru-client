@@ -26,6 +26,7 @@ import (
 	"github.com/tsuru/tsuru/permission"
 	"github.com/tsuru/tsuru/provision"
 	"github.com/tsuru/tsuru/provision/pool"
+	apiTypes "github.com/tsuru/tsuru/types/api"
 )
 
 func validateNodeAddress(address string) error {
@@ -78,7 +79,14 @@ func addNodeForParams(p provision.NodeProvisioner, params provision.AddNodeOptio
 	}
 	params.Address = address
 	err = p.AddNode(params)
-	return address, response, err
+	if err != nil {
+		return "", nil, err
+	}
+	node, err := p.GetNode(address)
+	if err != nil {
+		return "", nil, err
+	}
+	return node.Address(), response, err
 }
 
 // title: add node
@@ -220,11 +228,6 @@ func removeNodeHandler(w http.ResponseWriter, r *http.Request, t auth.Token) (er
 	return nil
 }
 
-type listNodeResponse struct {
-	Nodes    []provision.NodeSpec `json:"nodes"`
-	Machines []iaas.Machine       `json:"machines"`
-}
-
 // title: list nodes
 // path: /{provisioner}/node
 // method: GET
@@ -298,7 +301,7 @@ func listNodesHandler(w http.ResponseWriter, r *http.Request, t auth.Token) erro
 		w.WriteHeader(http.StatusNoContent)
 		return nil
 	}
-	result := listNodeResponse{
+	result := apiTypes.ListNodeResponse{
 		Nodes:    allNodes,
 		Machines: machines,
 	}
@@ -667,4 +670,61 @@ func rebalanceNodesHandler(w http.ResponseWriter, r *http.Request, t auth.Token)
 	}
 	fmt.Fprintf(writer, "Units successfully rebalanced!\n")
 	return nil
+}
+
+// title: node info
+// path: /node/{address}
+// method: GET
+// produce: application/json
+// responses:
+//   200: Ok
+//   404: Not found
+func infoNodeHandler(w http.ResponseWriter, r *http.Request, t auth.Token) error {
+	address := r.URL.Query().Get(":address")
+	if address == "" {
+		return errors.Errorf("Node address is required.")
+	}
+	_, node, err := provision.FindNode(address)
+	if err != nil {
+		if err == provision.ErrNodeNotFound {
+			return &tsuruErrors.HTTP{
+				Code:    http.StatusNotFound,
+				Message: err.Error(),
+			}
+		}
+		return err
+	}
+	spec := provision.NodeToSpec(node)
+	if spec.IaaSID == "" {
+		var machine iaas.Machine
+		machine, err = iaas.FindMachineByAddress(address)
+		if err != nil {
+			if err != iaas.ErrMachineNotFound {
+				return err
+			}
+		} else {
+			spec.IaaSID = machine.Iaas
+		}
+	}
+	nodeStatus, err := healer.HealerInstance.GetNodeStatusData(node)
+	if err != nil && err != provision.ErrNodeNotFound {
+		return &tsuruErrors.HTTP{
+			Code:    http.StatusNotFound,
+			Message: err.Error(),
+		}
+	}
+	units, err := node.Units()
+	if err != nil {
+		return &tsuruErrors.HTTP{
+			Code:    http.StatusNotFound,
+			Message: err.Error(),
+		}
+	}
+	response := apiTypes.InfoNodeResponse{
+		Node:   spec,
+		Status: nodeStatus,
+		Units:  units,
+	}
+	w.Header().Set("Content-Type", "application/json")
+	return json.NewEncoder(w).Encode(response)
 }

@@ -22,12 +22,12 @@ import (
 	"github.com/ajg/form"
 	"github.com/fsouza/go-dockerclient"
 	"github.com/tsuru/config"
-	"github.com/tsuru/tsuru/api/types"
 	"github.com/tsuru/tsuru/app"
 	"github.com/tsuru/tsuru/app/bind"
 	"github.com/tsuru/tsuru/auth"
 	"github.com/tsuru/tsuru/db"
 	"github.com/tsuru/tsuru/errors"
+	"github.com/tsuru/tsuru/event"
 	"github.com/tsuru/tsuru/event/eventtest"
 	"github.com/tsuru/tsuru/permission"
 	"github.com/tsuru/tsuru/permission/permissiontest"
@@ -41,6 +41,7 @@ import (
 	"github.com/tsuru/tsuru/router/rebuild"
 	"github.com/tsuru/tsuru/router/routertest"
 	"github.com/tsuru/tsuru/service"
+	apiTypes "github.com/tsuru/tsuru/types/api"
 	appTypes "github.com/tsuru/tsuru/types/app"
 	authTypes "github.com/tsuru/tsuru/types/auth"
 	"gopkg.in/check.v1"
@@ -2255,7 +2256,20 @@ func (s *S) TestSetNodeStatusNotFound(c *check.C) {
 	request.Header.Set("Authorization", "bearer "+token.GetValue())
 	recorder := httptest.NewRecorder()
 	s.testServer.ServeHTTP(recorder, request)
-	c.Assert(recorder.Code, check.Equals, http.StatusNotFound)
+	c.Assert(recorder.Code, check.Equals, http.StatusOK)
+	var got updateList
+	expected := updateList([]app.UpdateUnitsResult{
+		{ID: units[0].ID, Found: false},
+		{ID: units[1].ID, Found: false},
+		{ID: units[2].ID, Found: false},
+		{ID: "not-found1", Found: false},
+		{ID: "not-found2", Found: false},
+	})
+	err = json.NewDecoder(recorder.Body).Decode(&got)
+	c.Assert(err, check.IsNil)
+	sort.Sort(&got)
+	sort.Sort(&expected)
+	c.Assert(got, check.DeepEquals, expected)
 }
 
 func (s *S) TestSetNodeStatusNonInternalToken(c *check.C) {
@@ -2937,7 +2951,7 @@ func (s *S) TestSetEnvPublicEnvironmentVariableInTheApp(c *check.C) {
 	err := app.CreateApp(&a, s.user)
 	c.Assert(err, check.IsNil)
 	url := fmt.Sprintf("/apps/%s/env", a.Name)
-	d := types.Envs{
+	d := apiTypes.Envs{
 		Envs: []struct{ Name, Value string }{
 			{"DATABASE_HOST", "localhost"},
 		},
@@ -2981,7 +2995,7 @@ func (s *S) TestSetEnvHandlerShouldSetAPrivateEnvironmentVariableInTheApp(c *che
 	err := app.CreateApp(&a, s.user)
 	c.Assert(err, check.IsNil)
 	url := fmt.Sprintf("/apps/%s/env", a.Name)
-	d := types.Envs{
+	d := apiTypes.Envs{
 		Envs: []struct{ Name, Value string }{
 			{"DATABASE_HOST", "localhost"},
 		},
@@ -3025,7 +3039,7 @@ func (s *S) TestSetEnvHandlerShouldSetADoublePrivateEnvironmentVariableInTheApp(
 	err := app.CreateApp(&a, s.user)
 	c.Assert(err, check.IsNil)
 	url := fmt.Sprintf("/apps/%s/env", a.Name)
-	d := types.Envs{
+	d := apiTypes.Envs{
 		Envs: []struct{ Name, Value string }{
 			{"DATABASE_HOST", "localhost"},
 		},
@@ -3055,7 +3069,7 @@ func (s *S) TestSetEnvHandlerShouldSetADoublePrivateEnvironmentVariableInTheApp(
 			{"name": "Private", "value": "true"},
 		},
 	}, eventtest.HasEvent)
-	d = types.Envs{
+	d = apiTypes.Envs{
 		Envs: []struct{ Name, Value string }{
 			{"DATABASE_HOST", "127.0.0.1"},
 			{"DATABASE_PORT", "6379"},
@@ -3102,7 +3116,7 @@ func (s *S) TestSetEnvHandlerShouldSetMultipleEnvironmentVariablesInTheApp(c *ch
 	err := app.CreateApp(&a, s.user)
 	c.Assert(err, check.IsNil)
 	url := fmt.Sprintf("/apps/%s/env", a.Name)
-	d := types.Envs{
+	d := apiTypes.Envs{
 		Envs: []struct{ Name, Value string }{
 			{"DATABASE_HOST", "localhost"},
 			{"DATABASE_USER", "root"},
@@ -3157,7 +3171,7 @@ func (s *S) TestSetEnvHandlerShouldNotChangeValueOfServiceVariables(c *check.C) 
 	err := s.conn.Apps().Insert(a)
 	c.Assert(err, check.IsNil)
 	url := fmt.Sprintf("/apps/%s/env", a.Name)
-	d := types.Envs{
+	d := apiTypes.Envs{
 		Envs: []struct{ Name, Value string }{
 			{"DATABASE_HOST", "http://foo.com:8080"},
 		},
@@ -3204,7 +3218,7 @@ func (s *S) TestSetEnvHandlerNoRestart(c *check.C) {
 	a := app.App{Name: "black-dog", Platform: "zend", TeamOwner: s.team.Name}
 	err := app.CreateApp(&a, s.user)
 	c.Assert(err, check.IsNil)
-	d := types.Envs{
+	d := apiTypes.Envs{
 		Envs: []struct{ Name, Value string }{
 			{"DATABASE_HOST", "localhost"},
 		},
@@ -3294,7 +3308,7 @@ func (s *S) TestSetEnvHandlerReturnsForbiddenIfTheGivenUserDoesNotHaveAccessToTh
 		Scheme:  permission.PermAppUpdateEnvSet,
 		Context: permission.Context(permission.CtxApp, "-invalid-"),
 	})
-	d := types.Envs{
+	d := apiTypes.Envs{
 		Envs: []struct{ Name, Value string }{
 			{"DATABASE_HOST", "localhost"},
 		},
@@ -4219,7 +4233,7 @@ func (s *S) TestBindHandlerReturns400IfServiceIsBlacklistedAndItsTheOnlyService(
 	c.Assert(err, check.IsNil)
 	err = pool.SetPoolConstraint(&pool.PoolConstraint{
 		PoolExpr:  s.Pool,
-		Field:     "service",
+		Field:     pool.ConstraintTypeService,
 		Values:    []string{"mysql"},
 		Blacklist: true,
 	})
@@ -4251,7 +4265,7 @@ func (s *S) TestBindHandlerReturns400IfServiceIsBlacklistedAndMoreServicesAvaila
 	c.Assert(err, check.IsNil)
 	err = pool.SetPoolConstraint(&pool.PoolConstraint{
 		PoolExpr:  s.Pool,
-		Field:     "service",
+		Field:     pool.ConstraintTypeService,
 		Values:    []string{"mysql"},
 		Blacklist: true,
 	})
@@ -5126,18 +5140,11 @@ func (s *S) TestSwap(c *check.C) {
 	c.Assert(dbApp.Lock, check.Equals, app.AppLock{})
 	c.Assert(eventtest.EventDesc{
 		Target: appTarget(app1.Name),
-		Owner:  s.token.GetUserName(),
-		Kind:   "app.update.swap",
-		StartCustomData: []map[string]interface{}{
-			{"name": "app1", "value": app1.Name},
-			{"name": "app2", "value": app2.Name},
-			{"name": "cnameOnly", "value": "false"},
+		ExtraTargets: []event.ExtraTarget{
+			{Target: event.Target{Type: "app", Value: app2.Name}, Lock: true},
 		},
-	}, eventtest.HasEvent)
-	c.Assert(eventtest.EventDesc{
-		Target: appTarget(app2.Name),
-		Owner:  s.token.GetUserName(),
-		Kind:   "app.update.swap",
+		Owner: s.token.GetUserName(),
+		Kind:  "app.update.swap",
 		StartCustomData: []map[string]interface{}{
 			{"name": "app1", "value": app1.Name},
 			{"name": "app2", "value": app2.Name},
@@ -5170,18 +5177,11 @@ func (s *S) TestSwapCnameOnly(c *check.C) {
 	c.Assert(dbApp.Lock, check.Equals, app.AppLock{})
 	c.Assert(eventtest.EventDesc{
 		Target: appTarget(app1.Name),
-		Owner:  s.token.GetUserName(),
-		Kind:   "app.update.swap",
-		StartCustomData: []map[string]interface{}{
-			{"name": "app1", "value": app1.Name},
-			{"name": "app2", "value": app2.Name},
-			{"name": "cnameOnly", "value": "true"},
+		ExtraTargets: []event.ExtraTarget{
+			{Target: event.Target{Type: "app", Value: app2.Name}, Lock: true},
 		},
-	}, eventtest.HasEvent)
-	c.Assert(eventtest.EventDesc{
-		Target: appTarget(app2.Name),
-		Owner:  s.token.GetUserName(),
-		Kind:   "app.update.swap",
+		Owner: s.token.GetUserName(),
+		Kind:  "app.update.swap",
 		StartCustomData: []map[string]interface{}{
 			{"name": "app1", "value": app1.Name},
 			{"name": "app2", "value": app2.Name},
@@ -5251,18 +5251,10 @@ func (s *S) TestSwapIncompatiblePlatforms(c *check.C) {
 	c.Assert(recorder.Code, check.Equals, http.StatusPreconditionFailed)
 	c.Assert(recorder.Body.String(), check.Equals, "platforms don't match\n")
 	c.Assert(eventtest.EventDesc{
-		Target:       appTarget(app1.Name),
-		Owner:        s.token.GetUserName(),
-		Kind:         "app.update.swap",
-		ErrorMatches: "platforms don't match",
-		StartCustomData: []map[string]interface{}{
-			{"name": "app1", "value": app1.Name},
-			{"name": "app2", "value": app2.Name},
-			{"name": "cnameOnly", "value": "false"},
+		Target: appTarget(app1.Name),
+		ExtraTargets: []event.ExtraTarget{
+			{Target: event.Target{Type: "app", Value: app2.Name}, Lock: true},
 		},
-	}, eventtest.HasEvent)
-	c.Assert(eventtest.EventDesc{
-		Target:       appTarget(app2.Name),
 		Owner:        s.token.GetUserName(),
 		Kind:         "app.update.swap",
 		ErrorMatches: "platforms don't match",
@@ -5644,6 +5636,10 @@ func (s *S) TestRebuildRoutes(c *check.C) {
 	err := app.CreateApp(&a, s.user)
 	c.Assert(err, check.IsNil)
 	s.provisioner.Provision(&a)
+	err = routertest.FakeRouter.AddRoutes(a.Name, []*url.URL{
+		{Host: "h1"},
+	})
+	c.Assert(err, check.IsNil)
 	v := url.Values{}
 	v.Set("dry", "true")
 	body := strings.NewReader(v.Encode())
@@ -5654,9 +5650,13 @@ func (s *S) TestRebuildRoutes(c *check.C) {
 	recorder := httptest.NewRecorder()
 	s.testServer.ServeHTTP(recorder, request)
 	c.Assert(recorder.Code, check.Equals, http.StatusOK)
-	var parsed rebuild.RebuildRoutesResult
+	var parsed map[string]rebuild.RebuildRoutesResult
 	json.Unmarshal(recorder.Body.Bytes(), &parsed)
-	c.Assert(parsed, check.DeepEquals, rebuild.RebuildRoutesResult{})
+	c.Assert(parsed, check.DeepEquals, map[string]rebuild.RebuildRoutesResult{
+		"fake": {
+			Removed: []string{"http://h1"},
+		},
+	})
 	c.Assert(eventtest.EventDesc{
 		Target: appTarget(a.Name),
 		Owner:  s.token.GetUserName(),
@@ -5667,7 +5667,7 @@ func (s *S) TestRebuildRoutes(c *check.C) {
 		},
 		EndCustomData: map[string]interface{}{
 			"fake.added":   []string(nil),
-			"fake.removed": []string(nil),
+			"fake.removed": []string{"http://h1"},
 		},
 	}, eventtest.HasEvent)
 }

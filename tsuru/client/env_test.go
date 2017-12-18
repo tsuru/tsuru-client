@@ -11,10 +11,10 @@ import (
 	"strings"
 
 	"github.com/ajg/form"
-	"github.com/tsuru/tsuru/api/types"
 	"github.com/tsuru/tsuru/cmd"
 	"github.com/tsuru/tsuru/cmd/cmdtest"
 	"github.com/tsuru/tsuru/io"
+	apiTypes "github.com/tsuru/tsuru/types/api"
 	"gopkg.in/check.v1"
 )
 
@@ -146,7 +146,7 @@ func (s *S) TestEnvSetRun(c *check.C) {
 		CondFunc: func(req *http.Request) bool {
 			err = req.ParseForm()
 			c.Assert(err, check.IsNil)
-			var e types.Envs
+			var e apiTypes.Envs
 			dec := form.NewDecoder(nil)
 			dec.IgnoreUnknownKeys(true)
 			err = dec.DecodeValues(&e, req.Form)
@@ -212,7 +212,7 @@ variable 2`},
 			}
 			err = req.ParseForm()
 			c.Assert(err, check.IsNil)
-			var e types.Envs
+			var e apiTypes.Envs
 			dec := form.NewDecoder(nil)
 			dec.IgnoreUnknownKeys(true)
 			err = dec.DecodeValues(&e, req.Form)
@@ -267,7 +267,7 @@ func (s *S) TestEnvSetValues(c *check.C) {
 			}
 			err = req.ParseForm()
 			c.Assert(err, check.IsNil)
-			var e types.Envs
+			var e apiTypes.Envs
 			dec := form.NewDecoder(nil)
 			dec.IgnoreUnknownKeys(true)
 			err = dec.DecodeValues(&e, req.Form)
@@ -321,7 +321,7 @@ func (s *S) TestEnvSetValuesAndPrivateAndNoRestart(c *check.C) {
 			}
 			err = req.ParseForm()
 			c.Assert(err, check.IsNil)
-			var e types.Envs
+			var e apiTypes.Envs
 			dec := form.NewDecoder(nil)
 			dec.IgnoreUnknownKeys(true)
 			err = dec.DecodeValues(&e, req.Form)
@@ -359,7 +359,7 @@ func (s *S) TestEnvSetWithoutFlag(c *check.C) {
 		CondFunc: func(req *http.Request) bool {
 			err = req.ParseForm()
 			c.Assert(err, check.IsNil)
-			var e types.Envs
+			var e apiTypes.Envs
 			dec := form.NewDecoder(nil)
 			dec.IgnoreUnknownKeys(true)
 			err = dec.DecodeValues(&e, req.Form)

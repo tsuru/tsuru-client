@@ -272,7 +272,7 @@ func (s *S) TestCreateAppDefaultPlan(c *check.C) {
 func (s *S) TestCreateAppDefaultRouterForPool(c *check.C) {
 	pool.SetPoolConstraint(&pool.PoolConstraint{
 		PoolExpr: "pool1",
-		Field:    "router",
+		Field:    pool.ConstraintTypeRouter,
 		Values:   []string{"fake-tls", "fake"},
 	})
 	a := App{
@@ -896,8 +896,15 @@ func (s *S) TestUpdateNodeStatusNotFound(c *check.C) {
 		{ID: units[2].ID, Status: provision.Status("error")},
 		{ID: units[2].ID + "-not-found", Status: provision.Status("error")},
 	}
-	_, err = UpdateNodeStatus(provision.NodeStatusData{Addrs: []string{"addr1"}, Units: unitStates})
-	c.Assert(err, check.Equals, provision.ErrNodeNotFound)
+	result, err := UpdateNodeStatus(provision.NodeStatusData{Addrs: []string{"addr1"}, Units: unitStates})
+	c.Assert(err, check.IsNil)
+	expected := []UpdateUnitsResult{
+		{ID: units[0].ID, Found: false},
+		{ID: units[1].ID, Found: false},
+		{ID: units[2].ID, Found: false},
+		{ID: units[2].ID + "-not-found", Found: false},
+	}
+	c.Assert(result, check.DeepEquals, expected)
 }
 
 func (s *S) TestGrantAccess(c *check.C) {
@@ -2103,7 +2110,7 @@ func (s *S) TestIsValid(c *check.C) {
 	c.Assert(err, check.IsNil)
 	err = pool.SetPoolConstraint(&pool.PoolConstraint{
 		PoolExpr:  "pool1",
-		Field:     "team",
+		Field:     pool.ConstraintTypeTeam,
 		Values:    []string{"noaccessteam"},
 		Blacklist: true,
 	})
@@ -3934,7 +3941,7 @@ func (s *S) TestValidateBlacklistedAppService(c *check.C) {
 	c.Assert(err, check.IsNil)
 	err = app.ValidateService(serv.Name)
 	c.Assert(err, check.IsNil)
-	poolConstraint := pool.PoolConstraint{PoolExpr: s.Pool, Field: "service", Values: []string{serv.Name}, Blacklist: true}
+	poolConstraint := pool.PoolConstraint{PoolExpr: s.Pool, Field: pool.ConstraintTypeService, Values: []string{serv.Name}, Blacklist: true}
 	err = pool.SetPoolConstraint(&poolConstraint)
 	c.Assert(err, check.IsNil)
 	err = app.ValidateService(serv.Name)
@@ -3959,7 +3966,7 @@ func (s *S) TestAppCreateValidateTeamOwnerSetAnTeamWhichNotExists(c *check.C) {
 func (s *S) TestAppCreateValidateRouterNotAvailableForPool(c *check.C) {
 	pool.SetPoolConstraint(&pool.PoolConstraint{
 		PoolExpr:  "pool1",
-		Field:     "router",
+		Field:     pool.ConstraintTypeRouter,
 		Values:    []string{"fake-tls"},
 		Blacklist: true,
 	})
