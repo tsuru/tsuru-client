@@ -5,6 +5,7 @@
 package installer
 
 import (
+	"context"
 	"fmt"
 	"strconv"
 
@@ -84,7 +85,7 @@ func initSwarm(client *docker.Client, addr string) error {
 }
 
 func joinSwarm(existingClient *docker.Client, newClient *docker.Client) error {
-	swarmInfo, err := existingClient.InspectSwarm(nil)
+	swarmInfo, err := existingClient.InspectSwarm(context.Background())
 	if err != nil {
 		return errors.WithStack(err)
 	}
