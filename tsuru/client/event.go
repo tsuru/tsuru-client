@@ -128,13 +128,21 @@ var reEmailShort = regexp.MustCompile(`@.*$`)
 
 func (c *EventList) Show(evts []event.Event, context *cmd.Context) error {
 	tbl := cmd.NewTable()
+	tbl.LineSeparator = true
 	tbl.Headers = cmd.Row{"ID", "Start (duration)", "Success", "Owner", "Kind", "Target"}
 	for i := range evts {
 		evt := &evts[i]
-		if evt.Target.Type == "container" {
-			evt.Target.Value = shortID(evt.Target.Value)
+		targets := []event.Target{evt.Target}
+		for _, et := range evt.ExtraTargets {
+			targets = append(targets, et.Target)
 		}
-		fullTarget := fmt.Sprintf("%s: %s", evt.Target.Type, evt.Target.Value)
+		targetsStr := make([]string, len(targets))
+		for i, t := range targets {
+			if t.Type == "container" {
+				t.Value = shortID(t.Value)
+			}
+			targetsStr[i] = fmt.Sprintf("%s: %s", t.Type, t.Value)
+		}
 		startFmt := evt.StartTime.Format(time.RFC822Z)
 		owner := reEmailShort.ReplaceAllString(evt.Owner.Name, "@…")
 		var ts, success string
@@ -148,7 +156,7 @@ func (c *EventList) Show(evts []event.Event, context *cmd.Context) error {
 				success += " ✗"
 			}
 		}
-		row := cmd.Row{evt.UniqueID.Hex(), ts, success, owner, evt.Kind.Name, fullTarget}
+		row := cmd.Row{evt.UniqueID.Hex(), ts, success, owner, evt.Kind.Name, strings.Join(targetsStr, "\n")}
 		var color string
 		if evt.Running {
 			color = "yellow"
@@ -220,14 +228,26 @@ func (c *EventInfo) Show(evt *event.Event, context *cmd.Context) error {
 	} else {
 		endFmt = fmt.Sprintf("%s (%v)", evt.EndTime.Format(time.RFC822Z), evt.EndTime.Sub(evt.StartTime))
 	}
+	targets := []event.Target{evt.Target}
+	for _, et := range evt.ExtraTargets {
+		targets = append(targets, et.Target)
+	}
 	items := []item{
 		{"ID", evt.UniqueID.Hex()},
 		{"Start", startFmt},
 		{"End", endFmt},
-		{"Target", fmt.Sprintf("%s(%s)", evt.Target.Type, evt.Target.Value)},
-		{"Kind", fmt.Sprintf("%s(%s)", evt.Kind.Type, evt.Kind.Name)},
-		{"Owner", fmt.Sprintf("%s(%s)", evt.Owner.Type, evt.Owner.Name)},
 	}
+	for i, t := range targets {
+		var itemName string
+		if i == 0 {
+			itemName = "Targets"
+		}
+		items = append(items, item{itemName, fmt.Sprintf("%s(%s)", t.Type, t.Value)})
+	}
+	items = append(items,
+		item{"Kind", fmt.Sprintf("%s(%s)", evt.Kind.Type, evt.Kind.Name)},
+		item{"Owner", fmt.Sprintf("%s(%s)", evt.Owner.Type, evt.Owner.Name)},
+	)
 	successful := evt.Error == ""
 	successfulStr := strconv.FormatBool(successful)
 	if successful {
@@ -277,12 +297,15 @@ func (c *EventInfo) Show(evt *event.Event, context *cmd.Context) error {
 		}
 	}
 	for _, item := range items {
-		count := (maxSz - len(item.label)) + 1
+		if item.label != "" {
+			item.label += ":"
+		}
+		count := (maxSz - len(item.label)) + 2
 		var pad string
 		if count > 0 && len(item.value) > 0 && item.value[0] != '\n' {
 			pad = strings.Repeat(" ", count)
 		}
-		label := cmd.Colorfy(item.label+":", "cyan", "", "")
+		label := cmd.Colorfy(item.label, "cyan", "", "")
 		fmt.Fprintf(context.Stdout, "%s%s%s\n", label, pad, item.value)
 	}
 	return nil

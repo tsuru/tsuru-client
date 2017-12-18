@@ -31,6 +31,7 @@ var okEvt = `
     "Type": "app",
     "Value": "myapp"
   },
+  "ExtraTargets": [{"Target": {"Type": "app", "Value": "myapp2"}}],
   "StartCustomData": {
     "Kind": 3,
     "Data": "JQQAAANhcHAAXwMAAANlbnYATAEAAANUU1VSVV9BUFBfVE9LRU4AbwAAAAJuYW1lABAAAABUU1VSVV9BUFBfVE9LRU4AAnZhbHVlACkAAAA5MDBkMDcyYzAwN2E3ZjgwMjlmZjdiMmNlNzkzNTFiMjRlYTY0YjNmAAhwdWJsaWMAAAJpbnN0YW5jZW5hbWUAAQAAAAAAA1RTVVJVX0FQUE5BTUUATQAAAAJuYW1lAA4AAABUU1VSVV9BUFBOQU1FAAJ2YWx1ZQAJAAAAb3RoZXJhcHAACHB1YmxpYwAAAmluc3RhbmNlbmFtZQABAAAAAAADVFNVUlVfQVBQRElSAF0AAAACbmFtZQANAAAAVFNVUlVfQVBQRElSAAJ2YWx1ZQAaAAAAL2hvbWUvYXBwbGljYXRpb24vY3VycmVudAAIcHVibGljAAACaW5zdGFuY2VuYW1lAAEAAAAAAAACZnJhbWV3b3JrAAcAAABweXRob24AAm5hbWUACQAAAG90aGVyYXBwAAJpcAAYAAAAb3RoZXJhcHAuZmFrZXJvdXRlci5jb20ABGNuYW1lAAUAAAAABHRlYW1zABYAAAACMAAKAAAAdHN1cnV0ZWFtAAACdGVhbW93bmVyAAoAAAB0c3VydXRlYW0AAm93bmVyABsAAABtYWpvcnRvbUBncm91bmRjb250cm9sLmNvbQAQZGVwbG95cwAAAAAACHVwZGF0ZXBsYXRmb3JtAAADbG9jawB6AAAACGxvY2tlZAABAnJlYXNvbgAlAAAAUE9TVCAvYXBwcy9vdGhlcmFwcC9yZXBvc2l0b3J5L2Nsb25lAAJvd25lcgAbAAAAbWFqb3J0b21AZ3JvdW5kY29udHJvbC5jb20ACWFjcXVpcmVkYXRlAPZkwQRWAQAAAANwbGFuAF8AAAACX2lkAA4AAABhdXRvZ2VuZXJhdGVkABJtZW1vcnkAAAAAAAAAAAASc3dhcAAAAAAAAAAAABBjcHVzaGFyZQBkAAAACGRlZmF1bHQAAAJyb3V0ZXIAAQAAAAAAAnBvb2wABgAAAHBvb2wxAAJkZXNjcmlwdGlvbgABAAAAAANyb3V0ZXJvcHRzAAUAAAAAA3F1b3RhABsAAAAQbGltaXQA/////xBpbnVzZQAAAAAAAAACY29tbWl0AAEAAAAAAmFyY2hpdmV1cmwAGAAAAGh0dHA6Ly9zb21ldGhpbmcudGFyLmd6ABJmaWxlc2l6ZQAAAAAAAAAAAAJ1c2VyABsAAABtYWpvcnRvbUBncm91bmRjb250cm9sLmNvbQACaW1hZ2UAAQAAAAACb3JpZ2luAAEAAAAACHJvbGxiYWNrAAAIYnVpbGQAAAJraW5kAAwAAABhcmNoaXZlLXVybAACbWVzc2FnZQABAAAAAAA="
@@ -222,8 +223,12 @@ func (s *S) TestEventList(c *check.C) {
 | ID                       | Start (duration)                | Success | Owner     | Kind       | Target                  |
 +--------------------------+---------------------------------+---------+-----------+------------+-------------------------+
 | 578e3908413daf5fd9891aac | 19 Jul 16 11:28 -0300 (57.324s) | true    | someone@… | app.deploy | app: myapp              |
+|                          |                                 |         |           |            | app: myapp2             |
++--------------------------+---------------------------------+---------+-----------+------------+-------------------------+
 | 888e3908413daf5fd9891aac | 19 Jul 16 11:28 -0300 (57.324s) | false ✗ | someone@… | app.deploy | app: myapp              |
++--------------------------+---------------------------------+---------+-----------+------------+-------------------------+
 | 998e3908413daf5fd9891aac | 19 Jul 16 11:27 -0300 (…)       | …       | someone@… | app.deploy | app: myapp              |
++--------------------------+---------------------------------+---------+-----------+------------+-------------------------+
 | 5787bcc8413daf2aeb040730 | 14 Jul 16 13:24 -0300 (19.689s) | false   |           | healer     | container: 94d3140395a8 |
 +--------------------------+---------------------------------+---------+-----------+------------+-------------------------+
 `
@@ -279,7 +284,8 @@ func (s *S) TestEventInfo(c *check.C) {
 	expected := `ID:         578e3908413daf5fd9891aac
 Start:      19 Jul 16 11:28 -0300
 End:        19 Jul 16 11:29 -0300 \(57\.324s\)
-Target:     app\(myapp\)
+Targets:    app\(myapp\)
+            app\(myapp2\)
 Kind:       permission\(app\.deploy\)
 Owner:      user\(someone@removed\.com\)
 Success:    true
@@ -409,7 +415,7 @@ func (s *S) TestEventInfoWithError(c *check.C) {
 	expected := `ID:         5787bcc8413daf2aeb040730
 Start:      14 Jul 16 13:24 -0300
 End:        14 Jul 16 13:25 -0300 \(19\.689s\)
-Target:     container\(94d3140395a85e4a60b06de26f6a51270d7b762c65cc9478e2c544ae4d7fb82f\)
+Targets:    container\(94d3140395a85e4a60b06de26f6a51270d7b762c65cc9478e2c544ae4d7fb82f\)
 Kind:       internal\(healer\)
 Owner:      internal\(\)
 Success:    false
@@ -483,7 +489,7 @@ func (s *S) TestEventInfoRunning(c *check.C) {
 	expected := `ID:         998e3908413daf5fd9891aac
 Start:      19 Jul 16 11:27 -0300
 End:        running \(.+\)
-Target:     app\(myapp\)
+Targets:    app\(myapp\)
 Kind:       permission\(app\.deploy\)
 Owner:      user\(someone@removed\.com\)
 Success:    …
@@ -515,7 +521,7 @@ func (s *S) TestEventInfoCanceled(c *check.C) {
 	expected := `ID:         888e3908413daf5fd9891aac
 Start:      19 Jul 16 11:28 -0300
 End:        19 Jul 16 11:29 -0300 \(57\.324s\)
-Target:     app\(myapp\)
+Targets:    app\(myapp\)
 Kind:       permission\(app\.deploy\)
 Owner:      user\(someone@removed\.com\)
 Success:    false
