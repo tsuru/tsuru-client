@@ -139,7 +139,7 @@ func (c *EventList) Show(evts []event.Event, context *cmd.Context) error {
 		targetsStr := make([]string, len(targets))
 		for i, t := range targets {
 			if t.Type == "container" {
-				t.Value = shortID(t.Value)
+				t.Value = ShortID(t.Value)
 			}
 			targetsStr[i] = fmt.Sprintf("%s: %s", t.Type, t.Value)
 		}

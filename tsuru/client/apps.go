@@ -554,7 +554,7 @@ func (a *app) GetRouterOpts() string {
 	return strings.Join(kv, ", ")
 }
 
-func shortID(id string) string {
+func ShortID(id string) string {
 	if hexRegex.MatchString(id) && len(id) > cutoffHexID {
 		return id[:cutoffHexID]
 	}
@@ -600,7 +600,7 @@ Quota: {{.Quota.InUse}}/{{if .Quota.Limit}}{{.Quota.Limit}} units{{else}}unlimit
 			if unit.ID == "" {
 				continue
 			}
-			row := []string{shortID(unit.ID), unit.Status, unit.Host(), unit.Port()}
+			row := []string{ShortID(unit.ID), unit.Status, unit.Host(), unit.Port()}
 			unitsTable.AddRow(cmd.Row(row))
 		}
 		if unitsTable.Rows() > 0 {
