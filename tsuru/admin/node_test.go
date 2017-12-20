@@ -7,9 +7,11 @@ package admin
 import (
 	"bytes"
 	"encoding/json"
+	"fmt"
 	"net/http"
 	"net/url"
 	"strings"
+	"time"
 
 	"github.com/ajg/form"
 	"github.com/tsuru/tsuru/cmd"
@@ -704,4 +706,112 @@ func (s *S) TestRebalanceNodeCmdRunGivingUp(c *check.C) {
 	err := rebalCmd.Run(&context, nil)
 	c.Assert(err, check.IsNil)
 	c.Assert(stdout.String(), check.Equals, "Are you sure you want to rebalance containers? (y/n) Abort.\n")
+}
+
+func (s *S) TestInfoNodeCmdRun(c *check.C) {
+	var buf bytes.Buffer
+	context := cmd.Context{Args: []string{"host1:2375"}, Stdout: &buf}
+	trans := &cmdtest.ConditionalTransport{
+		Transport: cmdtest.Transport{Message: `{
+	"node":{"Address":"host1.com:2375","IaaSID":"test123","Metadata":{"foo": "bar"},"Status":"enabled","Pool":"pool1","Provisioner":"fake"},
+	"status":{
+		"Address":"host1.com:2375","LastSuccess":"2017-12-06T16:55:26.178-02:00","LastUpdate":"2017-12-06T16:55:26.178-02:00",
+		"Checks":[{"Time":"2017-12-06T16:55:26.178-02:00","Checks":[{"Name":"ok1","Err":"","Successful":true},{"Name":"ok2","Err":"","Successful":true}]}]
+	},
+	"units":[{"ID":"a834h983j498j","Name":"","AppName":"fake","ProcessName":"","Type":"","Status":"","HostAddr":"host1.com","HostPort":"2375","IP":"",
+			"Address": {"Scheme":"","Opaque":"","User":null,"Host":"host1.com:2375","Path":"","RawPath":"","ForceQuery":false,"RawQuery":"","Fragment":""}}
+	]
+}`, Status: http.StatusOK},
+		CondFunc: func(req *http.Request) bool {
+			return req.URL.Path == "/1.6/node/host1:2375"
+		},
+	}
+	statusT, _ := time.Parse(time.RFC3339, "2017-12-06T16:55:26.178-02:00")
+	statusTStr := statusT.Local().Format(time.Stamp)
+	manager := cmd.Manager{}
+	client := cmd.NewClient(&http.Client{Transport: trans}, nil, &manager)
+	err := (&InfoNodeCmd{}).Run(&context, client)
+	c.Assert(err, check.IsNil)
+	expected := `Address: host1.com:2375
+Status: enabled
+Pool: pool1
+Provisioner: fake
+Metadata:
++--------+---------+
+| Key    | Value   |
++--------+---------+
+| foo    | bar     |
++--------+---------+
+| iaasID | test123 |
++--------+---------+
+
+Units: 1
++---------------+--------+------+------+-------------+
+| Unit          | Status | Type | App  | ProcessName |
++---------------+--------+------+------+-------------+
+| a834h983j498j |        |      | fake |             |
++---------------+--------+------+------+-------------+
+
+Node Status:
+Last Success: %s
+Last Update: %s
++-----------------+------+---------+-------+
+| Time            | Name | Success | Error |
++-----------------+------+---------+-------+
+| %s | ok1  | true    |       |
++-----------------+------+---------+-------+
+| %s | ok2  | true    |       |
++-----------------+------+---------+-------+
+`
+	expected = fmt.Sprintf(expected, statusTStr, statusTStr, statusTStr, statusTStr)
+	c.Assert(buf.String(), check.Equals, expected)
+}
+
+func (s *S) TestInfoNodeCmdRunNodeOnly(c *check.C) {
+	var buf bytes.Buffer
+	context := cmd.Context{Args: []string{"host1:2375"}, Stdout: &buf}
+	trans := &cmdtest.ConditionalTransport{
+		Transport: cmdtest.Transport{Message: `{
+	"node":{"Address":"host1.com:2375","IaaSID":"","Metadata":{},"Status":"enabled","Pool":"pool1","Provisioner":"fake"},
+	"status":{},
+	"units":[]
+}`, Status: http.StatusOK},
+		CondFunc: func(req *http.Request) bool {
+			return req.URL.Path == "/1.6/node/host1:2375"
+		},
+	}
+	manager := cmd.Manager{}
+	client := cmd.NewClient(&http.Client{Transport: trans}, nil, &manager)
+	err := (&InfoNodeCmd{}).Run(&context, client)
+	c.Assert(err, check.IsNil)
+	expected := `Address: host1.com:2375
+Status: enabled
+Pool: pool1
+Provisioner: fake
+Metadata:
++-----+-------+
+| Key | Value |
++-----+-------+
+
+Units: 0
+
+Node Status:
+Missing check information`
+	c.Assert(buf.String(), check.Equals, expected)
+}
+
+func (s *S) TestInfoNodeCmdRunNotFound(c *check.C) {
+	var buf bytes.Buffer
+	context := cmd.Context{Args: []string{"host1:2375"}, Stdout: &buf}
+	trans := &cmdtest.ConditionalTransport{
+		Transport: cmdtest.Transport{Message: `{}`, Status: http.StatusNotFound},
+		CondFunc: func(req *http.Request) bool {
+			return req.URL.Path == "/1.6/node/host1:2375"
+		},
+	}
+	manager := cmd.Manager{}
+	client := cmd.NewClient(&http.Client{Transport: trans}, nil, &manager)
+	err := (&InfoNodeCmd{}).Run(&context, client)
+	c.Assert(err, check.NotNil)
+	c.Assert(buf.String(), check.Equals, "")
 }

@@ -15,14 +15,17 @@ import (
 	"sort"
 	"strconv"
 	"strings"
+	"time"
 
 	"github.com/ajg/form"
 	"github.com/tsuru/gnuflag"
+	tsuruClient "github.com/tsuru/tsuru-client/tsuru/client"
 	"github.com/tsuru/tsuru/cmd"
 	"github.com/tsuru/tsuru/healer"
 	"github.com/tsuru/tsuru/iaas"
 	"github.com/tsuru/tsuru/net"
 	"github.com/tsuru/tsuru/provision"
+	apiTypes "github.com/tsuru/tsuru/types/api"
 )
 
 type AddNodeCmd struct {
@@ -310,10 +313,7 @@ func (c *ListNodesCmd) Run(ctx *cmd.Context, client *cmd.Client) error {
 		ctx.Stdout.Write(t.Bytes())
 		return nil
 	}
-	var result struct {
-		Nodes    []provision.NodeSpec
-		Machines []iaas.Machine
-	}
+	var result apiTypes.ListNodeResponse
 	err = json.NewDecoder(resp.Body).Decode(&result)
 	if err != nil {
 		return err
@@ -655,4 +655,87 @@ func (c *RebalanceNodeCmd) Flags() *gnuflag.FlagSet {
 		c.fs.Var(&c.appFilter, "a", desc)
 	}
 	return c.fs
+}
+
+type InfoNodeCmd struct{}
+
+func (InfoNodeCmd) Info() *cmd.Info {
+	return &cmd.Info{
+		Name:  "node-info",
+		Usage: "node-info <address>",
+		Desc: `Get info about a node from the cluster.
+`,
+		MinArgs: 1,
+	}
+}
+
+func (c *InfoNodeCmd) Run(ctx *cmd.Context, client *cmd.Client) error {
+	address := ctx.Args[0]
+	u, err := cmd.GetURLVersion("1.6", fmt.Sprintf("/node/%s", address))
+	if err != nil {
+		return err
+	}
+	req, err := http.NewRequest("GET", u, nil)
+	if err != nil {
+		return err
+	}
+	resp, err := client.Do(req)
+	if err != nil {
+		return err
+	}
+	var result apiTypes.InfoNodeResponse
+	err = json.NewDecoder(resp.Body).Decode(&result)
+	if err != nil {
+		return err
+	}
+	var buf bytes.Buffer
+	buf.WriteString(fmt.Sprintf("Address: %s\n", result.Node.Address))
+	buf.WriteString(fmt.Sprintf("Status: %s\n", result.Node.Status))
+	buf.WriteString(fmt.Sprintf("Pool: %s\n", result.Node.Pool))
+	buf.WriteString(fmt.Sprintf("Provisioner: %s\n", result.Node.Provisioner))
+	buf.WriteString("Metadata:\n")
+	nodeTable := cmd.Table{Headers: cmd.Row([]string{"Key", "Value"}), LineSeparator: true}
+	for key, value := range result.Node.Metadata {
+		nodeTable.AddRow(cmd.Row([]string{key, value}))
+	}
+	nodeTable.Sort()
+	if result.Node.IaaSID != "" {
+		nodeTable.AddRow(cmd.Row([]string{"iaasID", result.Node.IaaSID}))
+	}
+	buf.WriteString(nodeTable.String())
+	buf.WriteString("\n")
+	unitsTable := cmd.Table{Headers: cmd.Row([]string{"Unit", "Status", "Type", "App", "ProcessName"}), LineSeparator: true}
+	for _, unit := range result.Units {
+		if unit.ID == "" {
+			continue
+		}
+		row := []string{tsuruClient.ShortID(unit.ID), string(unit.Status), unit.Type, unit.AppName, unit.ProcessName}
+		unitsTable.AddRow(cmd.Row(row))
+	}
+	buf.WriteString(fmt.Sprintf("Units: %d\n", unitsTable.Rows()))
+	if unitsTable.Rows() > 0 {
+		buf.WriteString(unitsTable.String())
+	}
+	buf.WriteString("\n")
+	buf.WriteString(fmt.Sprintf("Node Status:\n"))
+	if !result.Status.LastSuccess.IsZero() {
+		buf.WriteString(fmt.Sprintf("Last Success: %s\n", result.Status.LastSuccess.Local().Format(time.Stamp)))
+	}
+	if !result.Status.LastUpdate.IsZero() {
+		buf.WriteString(fmt.Sprintf("Last Update: %s\n", result.Status.LastUpdate.Local().Format(time.Stamp)))
+	}
+	statusTable := cmd.Table{Headers: cmd.Row([]string{"Time", "Name", "Success", "Error"}), LineSeparator: true}
+	for _, check := range result.Status.Checks {
+		for _, cc := range check.Checks {
+			statusTable.AddRow(cmd.Row([]string{check.Time.Local().Format(time.Stamp), cc.Name, fmt.Sprintf("%t", cc.Successful), cc.Err}))
+		}
+	}
+	if statusTable.Rows() > 0 {
+		statusTable.Reverse()
+		buf.WriteString(statusTable.String())
+	} else {
+		buf.WriteString("Missing check information")
+	}
+	ctx.Stdout.Write(buf.Bytes())
+	return nil
 }
