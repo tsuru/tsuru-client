@@ -176,42 +176,47 @@ func (c *CertificateList) Run(context *cmd.Context, client *cmd.Client) error {
 		return err
 	}
 	defer response.Body.Close()
-	rawCerts := make(map[string]string)
+	rawCerts := make(map[string]map[string]string)
 	err = json.NewDecoder(response.Body).Decode(&rawCerts)
 	if err != nil {
 		return err
 	}
 	if c.raw {
-		for n, rawCert := range rawCerts {
-			if rawCert == "" {
-				rawCert = "No certificate.\n"
+		for r, certs := range rawCerts {
+			fmt.Fprintf(context.Stdout, "%s:\n", r)
+			for n, rawCert := range certs {
+				if rawCert == "" {
+					rawCert = "No certificate.\n"
+				}
+				fmt.Fprintf(context.Stdout, "%s:\n%s", n, rawCert)
 			}
-			fmt.Fprintf(context.Stdout, "%s:\n%s", n, rawCert)
 		}
 		return nil
 	}
 	tbl := cmd.NewTable()
 	tbl.LineSeparator = true
-	tbl.Headers = cmd.Row{"CName", "Expires", "Issuer", "Subject"}
+	tbl.Headers = cmd.Row{"Router", "CName", "Expires", "Issuer", "Subject"}
 	dateFormat := "2006-01-02 15:04:05"
-	for n, rawCert := range rawCerts {
-		if rawCert == "" {
-			tbl.AddRow(cmd.Row{n, "-", "-", "-"})
-			continue
+	for r, certs := range rawCerts {
+		for n, rawCert := range certs {
+			if rawCert == "" {
+				tbl.AddRow(cmd.Row{r, n, "-", "-", "-"})
+				continue
+			}
+			certBlock, _ := pem.Decode([]byte(rawCert))
+			if certBlock == nil {
+				tbl.AddRow(cmd.Row{r, n, "failed to decode data", "-", "-"})
+				continue
+			}
+			cert, err := x509.ParseCertificate(certBlock.Bytes)
+			if err != nil {
+				tbl.AddRow(cmd.Row{r, n, "failed to parse certificate data", "-", "-"})
+				continue
+			}
+			tbl.AddRow(cmd.Row{r, n, cert.NotAfter.Local().Format(dateFormat),
+				formatName(&cert.Issuer), formatName(&cert.Subject),
+			})
 		}
-		certBlock, _ := pem.Decode([]byte(rawCert))
-		if certBlock == nil {
-			tbl.AddRow(cmd.Row{n, "failed to decode data", "-", "-"})
-			continue
-		}
-		cert, err := x509.ParseCertificate(certBlock.Bytes)
-		if err != nil {
-			tbl.AddRow(cmd.Row{n, "failed to parse certificate data", "-", "-"})
-			continue
-		}
-		tbl.AddRow(cmd.Row{n, cert.NotAfter.Local().Format(dateFormat),
-			formatName(&cert.Issuer), formatName(&cert.Subject),
-		})
 	}
 	tbl.Sort()
 	fmt.Fprint(context.Stdout, tbl.String())
