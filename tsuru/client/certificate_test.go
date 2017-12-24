@@ -118,24 +118,26 @@ func (s *S) TestCertificateListRunSuccessfully(c *check.C) {
 		Stderr: &stderr,
 	}
 	requestCount := 0
-	certMap := map[string]string{
-		"myapp.io":       s.mustReadFileString(c, "./testdata/cert/server.crt"),
-		"myapp.other.io": "",
+	certMap := map[string]map[string]string{
+		"ingress-router": {
+			"myapp.io":       s.mustReadFileString(c, "./testdata/cert/server.crt"),
+			"myapp.other.io": "",
+		},
 	}
 	data, err := json.Marshal(certMap)
 	c.Assert(err, check.IsNil)
 	expectedDate, err := time.Parse("2006-01-02 15:04:05", "2027-01-10 20:33:11")
 	c.Assert(err, check.IsNil)
 	datestr := expectedDate.Local().Format("2006-01-02 15:04:05")
-	expected := `+----------------+---------------------+----------------------------+----------------------------+
-| CName          | Expires             | Issuer                     | Subject                    |
-+----------------+---------------------+----------------------------+----------------------------+
-| myapp.io       | ` + datestr + ` | C=BR; ST=Rio de Janeiro;   | C=BR; ST=Rio de Janeiro;   |
-|                |                     | L=Rio de Janeiro; O=Tsuru; | L=Rio de Janeiro; O=Tsuru; |
-|                |                     | CN=app.io                  | CN=app.io                  |
-+----------------+---------------------+----------------------------+----------------------------+
-| myapp.other.io | -                   | -                          | -                          |
-+----------------+---------------------+----------------------------+----------------------------+
+	expected := `+----------------+----------------+---------------------+----------------------------+----------------------------+
+| Router         | CName          | Expires             | Issuer                     | Subject                    |
++----------------+----------------+---------------------+----------------------------+----------------------------+
+| ingress-router | myapp.io       | ` + datestr + ` | C=BR; ST=Rio de Janeiro;   | C=BR; ST=Rio de Janeiro;   |
+|                |                |                     | L=Rio de Janeiro; O=Tsuru; | L=Rio de Janeiro; O=Tsuru; |
+|                |                |                     | CN=app.io                  | CN=app.io                  |
++----------------+----------------+---------------------+----------------------------+----------------------------+
+| ingress-router | myapp.other.io | -                   | -                          | -                          |
++----------------+----------------+---------------------+----------------------------+----------------------------+
 `
 	trans := &cmdtest.ConditionalTransport{
 		Transport: cmdtest.Transport{
@@ -168,9 +170,11 @@ func (s *S) TestCertificateListRawRunSuccessfully(c *check.C) {
 	}
 	requestCount := 0
 	certData := s.mustReadFileString(c, "./testdata/cert/server.crt")
-	certMap := map[string]string{
-		"myapp.io":       certData,
-		"myapp.other.io": "",
+	certMap := map[string]map[string]string{
+		"ingress-router": {
+			"myapp.io":       certData,
+			"myapp.other.io": "",
+		},
 	}
 	data, err := json.Marshal(certMap)
 	c.Assert(err, check.IsNil)
