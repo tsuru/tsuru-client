@@ -7,4 +7,4 @@ RUN go build -i -v --ldflags '-linkmode external -extldflags "-static"' -o ./bin
 
 FROM alpine:3.4
 COPY --from=builder /go/src/github.com/tsuru/tsuru-client/bin/tsuru /bin/tsuru
-ENTRYPOINT ["/bin/tsuru"]
+CMD ["tsuru"]
