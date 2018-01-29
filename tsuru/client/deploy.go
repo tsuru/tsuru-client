@@ -430,11 +430,6 @@ func addDir(writer *tar.Writer, dirpath string, ignoreSet map[string]struct{}, f
 }
 
 func addFile(writer *tar.Writer, filepath string, filesOnly bool) error {
-	f, err := os.Open(filepath)
-	if err != nil {
-		return err
-	}
-	defer f.Close()
 	fi, err := os.Lstat(filepath)
 	if err != nil {
 		return err
@@ -452,10 +447,10 @@ func addFile(writer *tar.Writer, filepath string, filesOnly bool) error {
 	if err != nil {
 		return err
 	}
-	if filesOnly {
-		filepath = path.Base(filepath)
-	}
 	header.Name = filepath
+	if filesOnly {
+		header.Name = path.Base(filepath)
+	}
 	err = writer.WriteHeader(header)
 	if err != nil {
 		return err
@@ -463,6 +458,11 @@ func addFile(writer *tar.Writer, filepath string, filesOnly bool) error {
 	if linkName != "" {
 		return nil
 	}
+	f, err := os.Open(filepath)
+	if err != nil {
+		return err
+	}
+	defer f.Close()
 	n, err := io.Copy(writer, f)
 	if err != nil {
 		return err
