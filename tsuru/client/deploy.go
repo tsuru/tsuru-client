@@ -6,7 +6,6 @@ package client
 
 import (
 	"archive/tar"
-	"bufio"
 	"bytes"
 	"compress/gzip"
 	"encoding/json"
@@ -25,6 +24,7 @@ import (
 	"sync"
 	"time"
 
+	"github.com/sabhiram/go-gitignore"
 	"github.com/tsuru/gnuflag"
 	tsuruapp "github.com/tsuru/tsuru/app"
 	"github.com/tsuru/tsuru/cmd"
@@ -249,76 +249,11 @@ func (c *AppDeploy) Run(context *cmd.Context, client *cmd.Client) error {
 	return cmd.ErrAbortCommand
 }
 
-func processTsuruIgnore(pattern string, paths ...string) (map[string]struct{}, error) {
-	ignoreSet := make(map[string]struct{})
-	old, err := os.Getwd()
-	if err != nil {
-		return nil, err
+func targz(ctx *cmd.Context, destination io.Writer, filesOnly bool, filepaths ...string) error {
+	ign, err := ignore.CompileIgnoreFile(".tsuruignore")
+	if err != nil && !os.IsNotExist(err) {
+		return err
 	}
-	defer os.Chdir(old)
-	for _, dirPath := range paths {
-		fi, err := os.Stat(dirPath)
-		if err != nil {
-			return nil, err
-		}
-		if !fi.IsDir() {
-			dirPath = filepath.Dir(dirPath)
-		}
-		errCh := os.Chdir(dirPath)
-		if errCh != nil {
-			return nil, errCh
-		}
-		wd, err := os.Getwd()
-		if err != nil {
-			return nil, err
-		}
-		matchedPaths, err := filepath.Glob(pattern)
-		if err != nil {
-			return nil, err
-		}
-		for _, v := range matchedPaths {
-			ignoreSet[filepath.Join(wd, v)] = struct{}{}
-		}
-		dir, err := os.Open(wd)
-		if err != nil {
-			return nil, err
-		}
-		fis, err := dir.Readdir(0)
-		if err != nil {
-			dir.Close()
-			return nil, err
-		}
-		dir.Close()
-		for _, f := range fis {
-			if f.IsDir() {
-				glob, err := processTsuruIgnore(pattern, filepath.Join(wd, f.Name()))
-				if err != nil {
-					return nil, err
-				}
-				for k, v := range glob {
-					ignoreSet[k] = v
-				}
-			}
-		}
-	}
-	return ignoreSet, nil
-}
-
-func readTsuruIgnore() ([]string, error) {
-	file, err := os.Open(".tsuruignore")
-	if err != nil {
-		return nil, err
-	}
-	defer file.Close()
-	patterns := []string{}
-	scanner := bufio.NewScanner(file)
-	for scanner.Scan() {
-		patterns = append(patterns, scanner.Text())
-	}
-	return patterns, nil
-}
-
-func targz(ctx *cmd.Context, destination io.Writer, ignoreSet map[string]struct{}, filesOnly bool, filepaths ...string) error {
 	var buf bytes.Buffer
 	tarWriter := tar.NewWriter(&buf)
 	for _, path := range filepaths {
@@ -326,16 +261,18 @@ func targz(ctx *cmd.Context, destination io.Writer, ignoreSet map[string]struct{
 			fmt.Fprintf(ctx.Stderr, "Warning: skipping %q", path)
 			continue
 		}
-		fi, err := os.Lstat(path)
+		var fi os.FileInfo
+		fi, err = os.Lstat(path)
 		if err != nil {
 			return err
 		}
-		wd, err := os.Getwd()
+		var wd string
+		wd, err = os.Getwd()
 		if err != nil {
 			return err
 		}
 		fiName := filepath.Join(wd, fi.Name())
-		if _, inSet := ignoreSet[fiName]; inSet {
+		if ign != nil && ign.MatchesPath(fiName) {
 			continue
 		}
 		if fi.IsDir() {
@@ -346,7 +283,7 @@ func targz(ctx *cmd.Context, destination io.Writer, ignoreSet map[string]struct{
 				path = "."
 			}
 			err = inDir(func() error {
-				return addDir(tarWriter, path, ignoreSet, dirFilesOnly)
+				return addDir(tarWriter, path, ign, dirFilesOnly)
 			}, dir)
 		} else {
 			err = addFile(tarWriter, path, filesOnly)
@@ -355,7 +292,7 @@ func targz(ctx *cmd.Context, destination io.Writer, ignoreSet map[string]struct{
 			return err
 		}
 	}
-	err := tarWriter.Close()
+	err = tarWriter.Close()
 	if err != nil {
 		return err
 	}
@@ -378,7 +315,7 @@ func inDir(fn func() error, path string) error {
 	return fn()
 }
 
-func addDir(writer *tar.Writer, dirpath string, ignoreSet map[string]struct{}, filesOnly bool) error {
+func addDir(writer *tar.Writer, dirpath string, ign *ignore.GitIgnore, filesOnly bool) error {
 	dir, err := os.Open(dirpath)
 	if err != nil {
 		return err
@@ -414,11 +351,11 @@ func addDir(writer *tar.Writer, dirpath string, ignoreSet map[string]struct{}, f
 		if dirpath != "." {
 			fiName = filepath.Join(wd, dirpath, fi.Name())
 		}
-		if _, existSet := ignoreSet[fiName]; existSet {
+		if ign != nil && ign.MatchesPath(fiName) {
 			continue
 		}
 		if fi.IsDir() {
-			err = addDir(writer, path.Join(dirpath, fi.Name()), ignoreSet, false)
+			err = addDir(writer, path.Join(dirpath, fi.Name()), ign, false)
 		} else {
 			err = addFile(writer, path.Join(dirpath, fi.Name()), filesOnly)
 		}

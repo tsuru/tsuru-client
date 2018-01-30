@@ -9,19 +9,35 @@
 
 [[projects]]
   name = "github.com/Azure/azure-sdk-for-go"
-  packages = ["arm/compute","arm/network","arm/resources/resources","arm/resources/subscriptions","arm/storage","storage"]
+  packages = [
+    "arm/compute",
+    "arm/network",
+    "arm/resources/resources",
+    "arm/resources/subscriptions",
+    "arm/storage",
+    "storage"
+  ]
   revision = "91f3d4a4d024e3c0d4d9412916d05cf84504a616"
   version = "v5.0.0-beta"
 
 [[projects]]
   branch = "master"
   name = "github.com/Azure/go-ansiterm"
-  packages = [".","winterm"]
+  packages = [
+    ".",
+    "winterm"
+  ]
   revision = "d6e3b3328b783f23731bc4d058875b0371ff8109"
 
 [[projects]]
   name = "github.com/Azure/go-autorest"
-  packages = ["autorest","autorest/azure","autorest/date","autorest/to","autorest/validation"]
+  packages = [
+    "autorest",
+    "autorest/azure",
+    "autorest/date",
+    "autorest/to",
+    "autorest/validation"
+  ]
   revision = "a2fdd780c9a50455cecd249b00bdc3eb73a78e31"
   version = "v7.3.1"
 
@@ -54,7 +70,33 @@
 
 [[projects]]
   name = "github.com/aws/aws-sdk-go"
-  packages = ["aws","aws/awserr","aws/awsutil","aws/client","aws/client/metadata","aws/corehandlers","aws/credentials","aws/credentials/ec2rolecreds","aws/credentials/endpointcreds","aws/credentials/stscreds","aws/defaults","aws/ec2metadata","aws/endpoints","aws/request","aws/session","aws/signer/v4","internal/shareddefaults","private/protocol","private/protocol/ec2query","private/protocol/query","private/protocol/query/queryutil","private/protocol/rest","private/protocol/xml/xmlutil","service/ec2","service/sts"]
+  packages = [
+    "aws",
+    "aws/awserr",
+    "aws/awsutil",
+    "aws/client",
+    "aws/client/metadata",
+    "aws/corehandlers",
+    "aws/credentials",
+    "aws/credentials/ec2rolecreds",
+    "aws/credentials/endpointcreds",
+    "aws/credentials/stscreds",
+    "aws/defaults",
+    "aws/ec2metadata",
+    "aws/endpoints",
+    "aws/request",
+    "aws/session",
+    "aws/signer/v4",
+    "internal/shareddefaults",
+    "private/protocol",
+    "private/protocol/ec2query",
+    "private/protocol/query",
+    "private/protocol/query/queryutil",
+    "private/protocol/rest",
+    "private/protocol/xml/xmlutil",
+    "service/ec2",
+    "service/sts"
+  ]
   revision = "fd9b7491525896e01db35c1e20a5bd94bf11491c"
   version = "v1.12.48"
 
@@ -81,19 +123,51 @@
 
 [[projects]]
   name = "github.com/diego-araujo/go-saml"
-  packages = [".","util"]
+  packages = [
+    ".",
+    "util"
+  ]
   revision = "81203d2425377605c5688e55dca1340b614b618d"
 
 [[projects]]
   name = "github.com/digitalocean/godo"
-  packages = [".","context"]
+  packages = [
+    ".",
+    "context"
+  ]
   revision = "77ea48de76a7b31b234d854f15d003c68bb2fb90"
   version = "v1.1.1"
 
 [[projects]]
   branch = "master"
   name = "github.com/docker/docker"
-  packages = ["api/types","api/types/blkiodev","api/types/container","api/types/filters","api/types/mount","api/types/network","api/types/registry","api/types/strslice","api/types/swarm","api/types/swarm/runtime","api/types/versions","opts","pkg/archive","pkg/fileutils","pkg/homedir","pkg/idtools","pkg/ioutils","pkg/jsonmessage","pkg/longpath","pkg/mount","pkg/pools","pkg/stdcopy","pkg/system","pkg/term","pkg/term/windows"]
+  packages = [
+    "api/types",
+    "api/types/blkiodev",
+    "api/types/container",
+    "api/types/filters",
+    "api/types/mount",
+    "api/types/network",
+    "api/types/registry",
+    "api/types/strslice",
+    "api/types/swarm",
+    "api/types/swarm/runtime",
+    "api/types/versions",
+    "opts",
+    "pkg/archive",
+    "pkg/fileutils",
+    "pkg/homedir",
+    "pkg/idtools",
+    "pkg/ioutils",
+    "pkg/jsonmessage",
+    "pkg/longpath",
+    "pkg/mount",
+    "pkg/pools",
+    "pkg/stdcopy",
+    "pkg/system",
+    "pkg/term",
+    "pkg/term/windows"
+  ]
   revision = "26bc976ac9e379b4432f71394f069dfb1e4d7baf"
 
 [[projects]]
@@ -108,14 +182,64 @@
 
 [[projects]]
   name = "github.com/docker/machine"
-  packages = ["commands/mcndirs","drivers/amazonec2","drivers/azure","drivers/azure/azureutil","drivers/azure/logutil","drivers/digitalocean","drivers/driverutil","drivers/errdriver","drivers/exoscale","drivers/fakedriver","drivers/generic","drivers/google","drivers/hyperv","drivers/none","drivers/openstack","drivers/rackspace","drivers/softlayer","drivers/virtualbox","drivers/vmwarefusion","drivers/vmwarevcloudair","drivers/vmwarevsphere","libmachine","libmachine/auth","libmachine/cert","libmachine/check","libmachine/drivers","libmachine/drivers/plugin","libmachine/drivers/plugin/localbinary","libmachine/drivers/rpc","libmachine/engine","libmachine/host","libmachine/log","libmachine/mcndockerclient","libmachine/mcnerror","libmachine/mcnflag","libmachine/mcnutils","libmachine/persist","libmachine/provision","libmachine/provision/pkgaction","libmachine/provision/serviceaction","libmachine/ssh","libmachine/state","libmachine/swarm","libmachine/version","libmachine/versioncmp","version"]
+  packages = [
+    "commands/mcndirs",
+    "drivers/amazonec2",
+    "drivers/azure",
+    "drivers/azure/azureutil",
+    "drivers/azure/logutil",
+    "drivers/digitalocean",
+    "drivers/driverutil",
+    "drivers/errdriver",
+    "drivers/exoscale",
+    "drivers/fakedriver",
+    "drivers/generic",
+    "drivers/google",
+    "drivers/hyperv",
+    "drivers/none",
+    "drivers/openstack",
+    "drivers/rackspace",
+    "drivers/softlayer",
+    "drivers/virtualbox",
+    "drivers/vmwarefusion",
+    "drivers/vmwarevcloudair",
+    "drivers/vmwarevsphere",
+    "libmachine",
+    "libmachine/auth",
+    "libmachine/cert",
+    "libmachine/check",
+    "libmachine/drivers",
+    "libmachine/drivers/plugin",
+    "libmachine/drivers/plugin/localbinary",
+    "libmachine/drivers/rpc",
+    "libmachine/engine",
+    "libmachine/host",
+    "libmachine/log",
+    "libmachine/mcndockerclient",
+    "libmachine/mcnerror",
+    "libmachine/mcnflag",
+    "libmachine/mcnutils",
+    "libmachine/persist",
+    "libmachine/provision",
+    "libmachine/provision/pkgaction",
+    "libmachine/provision/serviceaction",
+    "libmachine/ssh",
+    "libmachine/state",
+    "libmachine/swarm",
+    "libmachine/version",
+    "libmachine/versioncmp",
+    "version"
+  ]
   revision = "937160559e02cc430fe176991beb9a6ffbfe3de0"
   version = "v0.12.2"
 
 [[projects]]
   branch = "master"
   name = "github.com/fsouza/go-dockerclient"
-  packages = [".","testing"]
+  packages = [
+    ".",
+    "testing"
+  ]
   revision = "413e380d74dfeddac90c0b89c598a1c7b19f5c54"
 
 [[projects]]
@@ -200,13 +324,19 @@
 
 [[projects]]
   name = "github.com/opencontainers/image-spec"
-  packages = ["specs-go","specs-go/v1"]
+  packages = [
+    "specs-go",
+    "specs-go/v1"
+  ]
   revision = "d60099175f88c47cd379c4738d158884749ed235"
   version = "v1.0.1"
 
 [[projects]]
   name = "github.com/opencontainers/runc"
-  packages = ["libcontainer/system","libcontainer/user"]
+  packages = [
+    "libcontainer/system",
+    "libcontainer/user"
+  ]
   revision = "419d5be191c18eff75a3d0b2a16e20c7a9eb71db"
 
 [[projects]]
@@ -227,7 +357,11 @@
 
 [[projects]]
   name = "github.com/prometheus/common"
-  packages = ["expfmt","internal/bitbucket.org/ww/goautoneg","model"]
+  packages = [
+    "expfmt",
+    "internal/bitbucket.org/ww/goautoneg",
+    "model"
+  ]
   revision = "0d5de9d6d8629cb8bee6d4674da4127cd8b615a3"
 
 [[projects]]
@@ -242,8 +376,35 @@
 
 [[projects]]
   name = "github.com/rackspace/gophercloud"
-  packages = [".","openstack","openstack/compute/v2/extensions/floatingip","openstack/compute/v2/extensions/keypairs","openstack/compute/v2/extensions/startstop","openstack/compute/v2/flavors","openstack/compute/v2/images","openstack/compute/v2/servers","openstack/identity/v2/tenants","openstack/identity/v2/tokens","openstack/identity/v3/tokens","openstack/networking/v2/extensions/layer3/floatingips","openstack/networking/v2/networks","openstack/networking/v2/ports","openstack/utils","pagination","rackspace","rackspace/identity/v2/tokens","testhelper","testhelper/client"]
+  packages = [
+    ".",
+    "openstack",
+    "openstack/compute/v2/extensions/floatingip",
+    "openstack/compute/v2/extensions/keypairs",
+    "openstack/compute/v2/extensions/startstop",
+    "openstack/compute/v2/flavors",
+    "openstack/compute/v2/images",
+    "openstack/compute/v2/servers",
+    "openstack/identity/v2/tenants",
+    "openstack/identity/v2/tokens",
+    "openstack/identity/v3/tokens",
+    "openstack/networking/v2/extensions/layer3/floatingips",
+    "openstack/networking/v2/networks",
+    "openstack/networking/v2/ports",
+    "openstack/utils",
+    "pagination",
+    "rackspace",
+    "rackspace/identity/v2/tokens",
+    "testhelper",
+    "testhelper/client"
+  ]
   revision = "c90cb954266e1bdd6d1914678fd6909fc5fabbfa"
+
+[[projects]]
+  branch = "master"
+  name = "github.com/sabhiram/go-gitignore"
+  packages = ["."]
+  revision = "362f9845770f1606d61ba3ddf9cfb1f0780d2ffe"
 
 [[projects]]
   name = "github.com/sajari/fuzzy"
@@ -281,24 +442,102 @@
 [[projects]]
   branch = "master"
   name = "github.com/tsuru/monsterqueue"
-  packages = [".","log","mongodb"]
+  packages = [
+    ".",
+    "log",
+    "mongodb"
+  ]
   revision = "70e946ec66c3704722539ebf0b8beadf2d43146a"
 
 [[projects]]
   branch = "master"
   name = "github.com/tsuru/tsuru"
-  packages = ["action","api/shutdown","app","app/bind","app/image","auth","auth/native","auth/saml","autoscale","builder","cmd","cmd/cmdtest","config","db","db/storage","errors","event","exec","exec/exectest","fs","fs/fstest","git","hc","healer","iaas","iaas/dockermachine","io","log","net","permission","provision","provision/cluster","provision/docker/cmds","provision/docker/types","provision/nodecontainer","provision/pool","queue","quota","registry","repository","router","router/rebuild","safe","scopedconfig","service","set","storage","types/api","types/app","types/auth","types/cache","validation","volume"]
+  packages = [
+    "action",
+    "api/shutdown",
+    "app",
+    "app/bind",
+    "app/image",
+    "auth",
+    "auth/native",
+    "auth/saml",
+    "autoscale",
+    "builder",
+    "cmd",
+    "cmd/cmdtest",
+    "config",
+    "db",
+    "db/storage",
+    "errors",
+    "event",
+    "exec",
+    "exec/exectest",
+    "fs",
+    "fs/fstest",
+    "git",
+    "hc",
+    "healer",
+    "iaas",
+    "iaas/dockermachine",
+    "io",
+    "log",
+    "net",
+    "permission",
+    "provision",
+    "provision/cluster",
+    "provision/docker/cmds",
+    "provision/docker/types",
+    "provision/nodecontainer",
+    "provision/pool",
+    "queue",
+    "quota",
+    "registry",
+    "repository",
+    "router",
+    "router/rebuild",
+    "safe",
+    "scopedconfig",
+    "service",
+    "set",
+    "storage",
+    "types/api",
+    "types/app",
+    "types/auth",
+    "types/cache",
+    "validation",
+    "volume"
+  ]
   revision = "50d74648539c7226022776392e9ff4db77b7f160"
 
 [[projects]]
   name = "github.com/vmware/govcloudair"
-  packages = [".","types/v56"]
+  packages = [
+    ".",
+    "types/v56"
+  ]
   revision = "66a23eaabc61518f91769939ff541886fe1dceef"
   version = "v0.0.2"
 
 [[projects]]
   name = "github.com/vmware/govmomi"
-  packages = [".","find","guest","list","object","property","session","task","vim25","vim25/debug","vim25/methods","vim25/mo","vim25/progress","vim25/soap","vim25/types","vim25/xml"]
+  packages = [
+    ".",
+    "find",
+    "guest",
+    "list",
+    "object",
+    "property",
+    "session",
+    "task",
+    "vim25",
+    "vim25/debug",
+    "vim25/methods",
+    "vim25/mo",
+    "vim25/progress",
+    "vim25/soap",
+    "vim25/types",
+    "vim25/xml"
+  ]
   revision = "b932baf416e9101c762b7075f12af5a6fb364627"
 
 [[projects]]
@@ -309,36 +548,74 @@
 [[projects]]
   branch = "master"
   name = "golang.org/x/crypto"
-  packages = ["bcrypt","blowfish","curve25519","ed25519","ed25519/internal/edwards25519","ssh","ssh/terminal"]
+  packages = [
+    "bcrypt",
+    "blowfish",
+    "curve25519",
+    "ed25519",
+    "ed25519/internal/edwards25519",
+    "ssh",
+    "ssh/terminal"
+  ]
   revision = "94eea52f7b742c7cbe0b03b22f0c4c8631ece122"
 
 [[projects]]
   branch = "master"
   name = "golang.org/x/net"
-  packages = ["context","context/ctxhttp","websocket"]
+  packages = [
+    "context",
+    "context/ctxhttp",
+    "websocket"
+  ]
   revision = "d866cfc389cec985d6fda2859936a575a55a3ab6"
 
 [[projects]]
   branch = "master"
   name = "golang.org/x/oauth2"
-  packages = [".","google","internal","jws","jwt"]
+  packages = [
+    ".",
+    "google",
+    "internal",
+    "jws",
+    "jwt"
+  ]
   revision = "462316686f20eb6df426961c1c131bdaa5dfa68e"
 
 [[projects]]
   branch = "master"
   name = "golang.org/x/sys"
-  packages = ["unix","windows","windows/registry"]
+  packages = [
+    "unix",
+    "windows",
+    "windows/registry"
+  ]
   revision = "571f7bbbe08da2a8955aed9d4db316e78630e9a3"
 
 [[projects]]
   branch = "master"
   name = "google.golang.org/api"
-  packages = ["compute/v1","gensupport","googleapi","googleapi/internal/uritemplates"]
+  packages = [
+    "compute/v1",
+    "gensupport",
+    "googleapi",
+    "googleapi/internal/uritemplates"
+  ]
   revision = "03a4a4fe3d2c5fb0d1a116cf20784fffa259a3d4"
 
 [[projects]]
   name = "google.golang.org/appengine"
-  packages = [".","internal","internal/app_identity","internal/base","internal/datastore","internal/log","internal/modules","internal/remote_api","internal/urlfetch","urlfetch"]
+  packages = [
+    ".",
+    "internal",
+    "internal/app_identity",
+    "internal/base",
+    "internal/datastore",
+    "internal/log",
+    "internal/modules",
+    "internal/remote_api",
+    "internal/urlfetch",
+    "urlfetch"
+  ]
   revision = "150dc57a1b433e64154302bdc40b6bb8aefa313a"
   version = "v1.0.0"
 
@@ -351,7 +628,13 @@
 [[projects]]
   branch = "v2"
   name = "gopkg.in/mgo.v2"
-  packages = [".","bson","internal/json","internal/sasl","internal/scram"]
+  packages = [
+    ".",
+    "bson",
+    "internal/json",
+    "internal/sasl",
+    "internal/scram"
+  ]
   revision = "3f83fa5005286a7fe593b055f0d7771a7dce4655"
 
 [[projects]]
@@ -362,6 +645,6 @@
 [solve-meta]
   analyzer-name = "dep"
   analyzer-version = 1
-  inputs-digest = "2d3e5f1c6724406483126985f882dbe048da7ac45320b512c3ac228aa900ff97"
+  inputs-digest = "b0926a65f5b988dcfde1f2dc61b7b4621865f039e9eb8f60519ec52e718cdda7"
   solver-name = "gps-cdcl"
   solver-version = 1

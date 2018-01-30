@@ -35,7 +35,7 @@ func (s *S) TestDeployRun(c *check.C) {
 	calledTimes := 0
 	var buf bytes.Buffer
 	ctx := cmd.Context{Stderr: bytes.NewBufferString("")}
-	err := targz(&ctx, &buf, nil, false, "testdata", "..")
+	err := targz(&ctx, &buf, false, "testdata", "..")
 	c.Assert(err, check.IsNil)
 	trans := cmdtest.ConditionalTransport{
 		Transport: cmdtest.Transport{Message: "deploy worked\nOK\n", Status: http.StatusOK},
@@ -110,7 +110,7 @@ func (s *S) TestDeployRunWithMessage(c *check.C) {
 	calledTimes := 0
 	var buf bytes.Buffer
 	ctx := cmd.Context{Stderr: bytes.NewBufferString("")}
-	err := targz(&ctx, &buf, nil, false, "testdata", "..")
+	err := targz(&ctx, &buf, false, "testdata", "..")
 	c.Assert(err, check.IsNil)
 	trans := cmdtest.ConditionalTransport{
 		Transport: cmdtest.Transport{Message: "deploy worked\nOK\n", Status: http.StatusOK},
@@ -264,7 +264,7 @@ func (s *S) TestTargzSymlink(c *check.C) {
 	var buf bytes.Buffer
 	ctx := cmd.Context{Stderr: &buf}
 	var gzipBuf, tarBuf bytes.Buffer
-	err := targz(&ctx, &gzipBuf, nil, false, "testdata-symlink", "..")
+	err := targz(&ctx, &gzipBuf, false, "testdata-symlink", "..")
 	c.Assert(err, check.IsNil)
 	gzipReader, err := gzip.NewReader(&gzipBuf)
 	c.Assert(err, check.IsNil)
@@ -285,7 +285,7 @@ func (s *S) TestTargzFailure(c *check.C) {
 	var stderr bytes.Buffer
 	ctx := cmd.Context{Stderr: &stderr}
 	var buf bytes.Buffer
-	err := targz(&ctx, &buf, nil, false, "/tmp/something/that/definitely/doesn't/exist/right", "testdata")
+	err := targz(&ctx, &buf, false, "/tmp/something/that/definitely/doesn't/exist/right", "testdata")
 	c.Assert(err, check.NotNil)
 	c.Assert(err.Error(), check.Matches, ".*(no such file or directory|cannot find the path specified).*")
 }
@@ -485,37 +485,6 @@ func (s *S) TestAppDeployRollbackUpdateDisabling(c *check.C) {
 	c.Assert(stdout.String(), check.Equals, "")
 }
 
-func (s *S) TestProcessTsuruIgnore(c *check.C) {
-	dir, _ := os.Getwd()
-	tests := []struct {
-		pattern string
-		path    []string
-		want    map[string]struct{}
-	}{
-		{
-			pattern: "*.txt",
-			path:    []string{filepath.Join(dir, "testdata", "deploy")},
-			want: map[string]struct{}{
-				filepath.Join(dir, "testdata/deploy/file2.txt"):          {},
-				filepath.Join(dir, "testdata/deploy/directory/file.txt"): {},
-				filepath.Join(dir, "testdata/deploy/file1.txt"):          {},
-			},
-		},
-		{
-			pattern: "file2.txt",
-			path:    []string{filepath.Join(dir, "testdata/deploy/file2.txt"), filepath.Join(dir, "testdata/deploy/file1.txt")},
-			want: map[string]struct{}{
-				filepath.Join(dir, "testdata/deploy/file2.txt"): {},
-			},
-		},
-	}
-	for _, tt := range tests {
-		got, err := processTsuruIgnore(tt.pattern, tt.path...)
-		c.Assert(err, check.IsNil)
-		c.Assert(got, check.DeepEquals, tt.want)
-	}
-}
-
 func (s *S) TestAppDeployRebuildInfo(c *check.C) {
 	c.Assert((&AppDeployRebuild{}).Info(), check.NotNil)
 }
@@ -633,6 +602,19 @@ func (s *S) TestDeployRunTarGeneration(c *check.C) {
 			expected:   []string{"directory", "directory/dir2"},
 		},
 		{
+			files:      []string{"testdata/deploy/file1.txt", "testdata/deploy/file2.txt", "testdata/deploy2/file3.txt", "testdata/deploy2/directory/file4.txt"},
+			deployArgs: []string{"testdata/deploy", "testdata/deploy2"},
+			ignored:    []string{"*.txt"},
+			expected:   []string{"testdata/deploy", "testdata/deploy2", "testdata/deploy2/directory"},
+		},
+		{
+			files:      []string{"testdata/deploy/file1.txt", "testdata/deploy/file2.txt", "testdata/deploy2/file3.txt", "testdata/deploy2/directory/file4.txt"},
+			deployArgs: []string{"testdata/deploy", "testdata/deploy2"},
+			ignored:    []string{"*.txt"},
+			flags:      []string{"-f"},
+			expected:   []string{"directory"},
+		},
+		{
 			files:      []string{"testdata/deploy2/file1.txt", "testdata/deploy2/file2.txt", "testdata/deploy2/directory/file.txt", "testdata/deploy2/directory/dir2/file.txt"},
 			ignored:    []string{"*.txt"},
 			deployArgs: []string{"testdata/deploy2"},
@@ -667,7 +649,7 @@ func (s *S) TestDeployRunTarGeneration(c *check.C) {
 	origDir, err := os.Getwd()
 	c.Assert(err, check.IsNil)
 	defer os.Chdir(origDir)
-	for _, tt := range tests {
+	for i, tt := range tests {
 		tmpDir, err := ioutil.TempDir("", "integrarion")
 		c.Assert(err, check.IsNil)
 		defer os.RemoveAll(tmpDir)
@@ -703,7 +685,7 @@ func (s *S) TestDeployRunTarGeneration(c *check.C) {
 		c.Assert(err, check.IsNil)
 		sort.Strings(foundFiles)
 		sort.Strings(tt.expected)
-		c.Assert(foundFiles, check.DeepEquals, tt.expected)
-		c.Assert(stderr.String(), check.Matches, tt.expectedStderr)
+		c.Assert(foundFiles, check.DeepEquals, tt.expected, check.Commentf("test %d", i))
+		c.Assert(stderr.String(), check.Matches, tt.expectedStderr, check.Commentf("test %d", i))
 	}
 }
