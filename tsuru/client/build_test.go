@@ -24,7 +24,7 @@ func (s *S) TestBuildRun(c *check.C) {
 	calledTimes := 0
 	var buf bytes.Buffer
 	ctx := cmd.Context{Stderr: bytes.NewBufferString("")}
-	err := targz(&ctx, &buf, nil, false, "testdata", "..")
+	err := targz(&ctx, &buf, false, "testdata", "..")
 	c.Assert(err, check.IsNil)
 	trans := cmdtest.ConditionalTransport{
 		Transport: cmdtest.Transport{Message: "OK\n", Status: http.StatusOK},

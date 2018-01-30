@@ -116,18 +116,7 @@ func uploadFiles(context *cmd.Context, filesOnly bool, request *http.Request, bu
 	if err != nil {
 		return err
 	}
-	ignoreSet := make(map[string]struct{})
-	ignorePatterns, _ := readTsuruIgnore()
-	for _, pattern := range ignorePatterns {
-		ignSet, errProc := processTsuruIgnore(pattern, context.Args...)
-		if errProc != nil {
-			return errProc
-		}
-		for k, v := range ignSet {
-			ignoreSet[k] = v
-		}
-	}
-	err = targz(context, file, ignoreSet, filesOnly, context.Args...)
+	err = targz(context, file, filesOnly, context.Args...)
 	if err != nil {
 		return err
 	}

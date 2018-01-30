@@ -99,3 +99,7 @@
 [[override]]
   name = "github.com/rackspace/gophercloud"
   revision = "c90cb954266e1bdd6d1914678fd6909fc5fabbfa"
+
+[[constraint]]
+  branch = "master"
+  name = "github.com/sabhiram/go-gitignore"
