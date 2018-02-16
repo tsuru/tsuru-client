@@ -12,6 +12,7 @@ import (
 
 	"github.com/ajg/form"
 	"github.com/tsuru/gnuflag"
+	"github.com/tsuru/tsuru-client/tsuru/formatter"
 	"github.com/tsuru/tsuru/cmd"
 	"github.com/tsuru/tsuru/event"
 )
@@ -64,10 +65,12 @@ func (c *EventBlockList) Run(context *cmd.Context, client *cmd.Client) error {
 	tbl := cmd.NewTable()
 	tbl.Headers = cmd.Row{"ID", "Start (duration)", "Kind", "Owner", "Target (Type: Value)", "Reason"}
 	for _, b := range blocks {
-		ts := b.StartTime.Format(time.RFC822Z)
+		var duration *time.Duration
 		if !b.EndTime.IsZero() {
-			ts = fmt.Sprintf("%s (%v)", ts, b.EndTime.Sub(b.StartTime))
+			timeDiff := b.EndTime.Sub(b.StartTime)
+			duration = &timeDiff
 		}
+		ts := formatter.FormatDateAndDuration(b.StartTime, duration)
 		kind := valueOrWildcard(b.KindName)
 		owner := valueOrWildcard(b.OwnerName)
 		targetType := valueOrWildcard(string(b.Target.Type))
