@@ -22,7 +22,6 @@ import (
 	"strconv"
 	"strings"
 	"sync"
-	"time"
 
 	"github.com/sabhiram/go-gitignore"
 	"github.com/tsuru/gnuflag"
@@ -91,17 +90,13 @@ func (c *AppDeployList) Run(context *cmd.Context, client *cmd.Client) error {
 	table := cmd.NewTable()
 	table.Headers = cmd.Row([]string{"Image (Rollback)", "Origin", "User", "Date (Duration)", "Error"})
 	for _, deploy := range deploys {
-		timestamp := deploy.Timestamp.Local().Format(time.Stamp)
-		seconds := deploy.Duration / time.Second
-		minutes := seconds / 60
-		seconds = seconds % 60
+		timestamp := formatDateAndDuration(deploy.Timestamp, &deploy.Duration)
 		if deploy.Origin == "git" {
 			if len(deploy.Commit) > 7 {
 				deploy.Commit = deploy.Commit[:7]
 			}
 			deploy.Origin = fmt.Sprintf("git (%s)", deploy.Commit)
 		}
-		timestamp = fmt.Sprintf("%s (%02d:%02d)", timestamp, minutes, seconds)
 		if deploy.CanRollback {
 			deploy.Image += " (*)"
 		}
