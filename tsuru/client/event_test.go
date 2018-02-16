@@ -282,8 +282,8 @@ func (s *S) TestEventInfo(c *check.C) {
 	err := command.Run(&context, client)
 	c.Assert(err, check.IsNil)
 	expected := `ID:         578e3908413daf5fd9891aac
-Start:      19 Jul 16 11:28 -0300
-End:        19 Jul 16 11:29 -0300 \(57\.324s\)
+Start:      Jul 19 11:28:24
+End:        Jul 19 11:29:22 \(00:57\)
 Targets:    app\(myapp\)
             app\(myapp2\)
 Kind:       permission\(app\.deploy\)
@@ -413,8 +413,8 @@ func (s *S) TestEventInfoWithError(c *check.C) {
 	err := command.Run(&context, client)
 	c.Assert(err, check.IsNil)
 	expected := `ID:         5787bcc8413daf2aeb040730
-Start:      14 Jul 16 13:24 -0300
-End:        14 Jul 16 13:25 -0300 \(19\.689s\)
+Start:      Jul 14 13:24:40
+End:        Jul 14 13:25:00 \(00:19\)
 Targets:    container\(94d3140395a85e4a60b06de26f6a51270d7b762c65cc9478e2c544ae4d7fb82f\)
 Kind:       internal\(healer\)
 Owner:      internal\(\)
@@ -487,7 +487,7 @@ func (s *S) TestEventInfoRunning(c *check.C) {
 	err := command.Run(&context, client)
 	c.Assert(err, check.IsNil)
 	expected := `ID:         998e3908413daf5fd9891aac
-Start:      19 Jul 16 11:27 -0300
+Start:      Jul 19 11:27:24
 End:        running \(.+\)
 Targets:    app\(myapp\)
 Kind:       permission\(app\.deploy\)
@@ -519,8 +519,8 @@ func (s *S) TestEventInfoCanceled(c *check.C) {
 	err := command.Run(&context, client)
 	c.Assert(err, check.IsNil)
 	expected := `ID:         888e3908413daf5fd9891aac
-Start:      19 Jul 16 11:28 -0300
-End:        19 Jul 16 11:29 -0300 \(57\.324s\)
+Start:      Jul 19 11:28:24
+End:        Jul 19 11:29:22 \(00:57\)
 Targets:    app\(myapp\)
 Kind:       permission\(app\.deploy\)
 Owner:      user\(someone@removed\.com\)

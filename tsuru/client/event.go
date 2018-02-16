@@ -222,12 +222,13 @@ func (c *EventInfo) Show(evt *event.Event, context *cmd.Context) error {
 		label string
 		value string
 	}
-	startFmt := evt.StartTime.Format(time.RFC822Z)
+	startFmt := evt.StartTime.Local().Format(time.Stamp)
 	var endFmt string
 	if evt.Running {
 		endFmt = fmt.Sprintf("running (%v)", time.Since(evt.StartTime))
 	} else {
-		endFmt = fmt.Sprintf("%s (%v)", evt.EndTime.Format(time.RFC822Z), evt.EndTime.Sub(evt.StartTime))
+		duration := evt.EndTime.Sub(evt.StartTime)
+		endFmt = formatDateAndDuration(evt.EndTime, &duration)
 	}
 	targets := []event.Target{evt.Target}
 	for _, et := range evt.ExtraTargets {
