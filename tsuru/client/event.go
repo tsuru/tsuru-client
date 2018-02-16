@@ -18,6 +18,7 @@ import (
 	"github.com/ajg/form"
 	"github.com/ghodss/yaml"
 	"github.com/tsuru/gnuflag"
+	"github.com/tsuru/tsuru-client/tsuru/formatter"
 	"github.com/tsuru/tsuru/cmd"
 	"github.com/tsuru/tsuru/event"
 )
@@ -156,7 +157,7 @@ func (c *EventList) Show(evts []event.Event, context *cmd.Context) error {
 				success += " ✗"
 			}
 		}
-		ts := formatDateAndDuration(evt.StartTime, duration)
+		ts := formatter.FormatDateAndDuration(evt.StartTime, duration)
 		row := cmd.Row{evt.UniqueID.Hex(), ts, success, owner, evt.Kind.Name, strings.Join(targetsStr, "\n")}
 		var color string
 		if evt.Running {
@@ -222,14 +223,14 @@ func (c *EventInfo) Show(evt *event.Event, context *cmd.Context) error {
 		label string
 		value string
 	}
-	startFmt := formatDate(evt.StartTime)
+	startFmt := formatter.FormatDate(evt.StartTime)
 	var endFmt string
 	if evt.Running {
 		duration := time.Since(evt.StartTime)
-		endFmt = fmt.Sprintf("running (%s)", formatDuration(&duration))
+		endFmt = fmt.Sprintf("running (%s)", formatter.FormatDuration(&duration))
 	} else {
 		duration := evt.EndTime.Sub(evt.StartTime)
-		endFmt = formatDateAndDuration(evt.EndTime, &duration)
+		endFmt = formatter.FormatDateAndDuration(evt.EndTime, &duration)
 	}
 	targets := []event.Target{evt.Target}
 	for _, et := range evt.ExtraTargets {

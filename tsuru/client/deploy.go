@@ -25,6 +25,7 @@ import (
 
 	"github.com/sabhiram/go-gitignore"
 	"github.com/tsuru/gnuflag"
+	"github.com/tsuru/tsuru-client/tsuru/formatter"
 	tsuruapp "github.com/tsuru/tsuru/app"
 	"github.com/tsuru/tsuru/cmd"
 	tsuruIo "github.com/tsuru/tsuru/io"
@@ -90,7 +91,7 @@ func (c *AppDeployList) Run(context *cmd.Context, client *cmd.Client) error {
 	table := cmd.NewTable()
 	table.Headers = cmd.Row([]string{"Image (Rollback)", "Origin", "User", "Date (Duration)", "Error"})
 	for _, deploy := range deploys {
-		timestamp := formatDateAndDuration(deploy.Timestamp, &deploy.Duration)
+		timestamp := formatter.FormatDateAndDuration(deploy.Timestamp, &deploy.Duration)
 		if deploy.Origin == "git" {
 			if len(deploy.Commit) > 7 {
 				deploy.Commit = deploy.Commit[:7]
