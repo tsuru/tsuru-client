@@ -14,6 +14,7 @@ import (
 	"io/ioutil"
 	"net/http"
 	"net/url"
+	"sort"
 	"strings"
 
 	"github.com/tsuru/gnuflag"
@@ -181,10 +182,15 @@ func (c *CertificateList) Run(context *cmd.Context, client *cmd.Client) error {
 	if err != nil {
 		return err
 	}
+	certKeys := []string{}
+	for k := range rawCerts {
+		certKeys = append(certKeys, k)
+	}
+	sort.Strings(certKeys)
 	if c.raw {
-		for r, certs := range rawCerts {
+		for _, r := range certKeys {
 			fmt.Fprintf(context.Stdout, "%s:\n", r)
-			for n, rawCert := range certs {
+			for n, rawCert := range rawCerts[r] {
 				if rawCert == "" {
 					rawCert = "No certificate.\n"
 				}
@@ -197,8 +203,8 @@ func (c *CertificateList) Run(context *cmd.Context, client *cmd.Client) error {
 	tbl.LineSeparator = true
 	tbl.Headers = cmd.Row{"Router", "CName", "Expires", "Issuer", "Subject"}
 	dateFormat := "2006-01-02 15:04:05"
-	for r, certs := range rawCerts {
-		for n, rawCert := range certs {
+	for _, r := range certKeys {
+		for n, rawCert := range rawCerts[r] {
 			if rawCert == "" {
 				tbl.AddRow(cmd.Row{r, n, "-", "-", "-"})
 				continue
