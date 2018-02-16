@@ -143,19 +143,20 @@ func (c *EventList) Show(evts []event.Event, context *cmd.Context) error {
 			}
 			targetsStr[i] = fmt.Sprintf("%s: %s", t.Type, t.Value)
 		}
-		startFmt := evt.StartTime.Format(time.RFC822Z)
 		owner := reEmailShort.ReplaceAllString(evt.Owner.Name, "@…")
-		var ts, success string
+		var success string
+		var duration *time.Duration
 		if evt.Running {
-			ts = fmt.Sprintf("%s (…)", startFmt)
 			success = "…"
 		} else {
-			ts = fmt.Sprintf("%s (%v)", startFmt, evt.EndTime.Sub(evt.StartTime))
+			timeDiff := evt.EndTime.Sub(evt.StartTime)
+			duration = &timeDiff
 			success = fmt.Sprintf("%v", evt.Error == "")
 			if evt.CancelInfo.Canceled {
 				success += " ✗"
 			}
 		}
+		ts := formatDateAndDuration(evt.StartTime, duration)
 		row := cmd.Row{evt.UniqueID.Hex(), ts, success, owner, evt.Kind.Name, strings.Join(targetsStr, "\n")}
 		var color string
 		if evt.Running {
