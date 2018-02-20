@@ -65,25 +65,6 @@ var healingJsonData = `[{
 	"Error": "err1"
 }]`
 
-var (
-	startT08, _ = time.Parse(time.RFC3339, "2014-10-23T08:00:00.000Z")
-	endT08, _   = time.Parse(time.RFC3339, "2014-10-23T08:30:00.000Z")
-	startT10, _ = time.Parse(time.RFC3339, "2014-10-23T10:00:00.000Z")
-	endT10, _   = time.Parse(time.RFC3339, "2014-10-23T10:30:00.000Z")
-	startT06, _ = time.Parse(time.RFC3339, "2014-10-23T06:00:00.000Z")
-	endT06, _   = time.Parse(time.RFC3339, "2014-10-23T06:30:00.000Z")
-	startT02, _ = time.Parse(time.RFC3339, "2014-10-23T02:00:00.000Z")
-	endT02, _   = time.Parse(time.RFC3339, "2014-10-23T02:30:00.000Z")
-	startTStr08 = startT08.Local().Format(time.Stamp)
-	endTStr08   = endT08.Local().Format(time.Stamp)
-	startTStr10 = startT10.Local().Format(time.Stamp)
-	endTStr10   = endT10.Local().Format(time.Stamp)
-	startTStr06 = startT06.Local().Format(time.Stamp)
-	endTStr06   = endT06.Local().Format(time.Stamp)
-	startTStr02 = startT02.Local().Format(time.Stamp)
-	endTStr02   = endT02.Local().Format(time.Stamp)
-)
-
 func (s *S) TestListHealingHistoryCmdRun(c *check.C) {
 	var buf bytes.Buffer
 	context := cmd.Context{Stdout: &buf}
@@ -98,25 +79,25 @@ func (s *S) TestListHealingHistoryCmdRun(c *check.C) {
 	healing := &ListHealingHistoryCmd{}
 	err := healing.Run(&context, client)
 	c.Assert(err, check.IsNil)
-	expected := fmt.Sprintf(`Node:
+	expected := `Node:
 +-----------------+-----------------+---------+---------+---------+-------+
 | Start           | Finish          | Success | Failing | Created | Error |
 +-----------------+-----------------+---------+---------+---------+-------+
-| %s | %s | true    | addr1   | addr2   |       |
+| Oct 23 03:00:00 | Oct 23 03:30:00 | true    | addr1   | addr2   |       |
 +-----------------+-----------------+---------+---------+---------+-------+
-| %s | %s | false   | addr1   | addr2   |       |
+| Oct 23 05:00:00 | Oct 23 05:30:00 | false   | addr1   | addr2   |       |
 +-----------------+-----------------+---------+---------+---------+-------+
 Container:
 +-----------------+-----------------+---------+------------+------------+-------+
 | Start           | Finish          | Success | Failing    | Created    | Error |
 +-----------------+-----------------+---------+------------+------------+-------+
-| %s | %s | true    | 1234567890 | 9234567890 |       |
+| Oct 23 01:00:00 | Oct 23 01:30:00 | true    | 1234567890 | 9234567890 |       |
 +-----------------+-----------------+---------+------------+------------+-------+
-| %s | %s | false   | 1234567890 |            | err1  |
+| Oct 23 03:00:00 | Oct 23 03:30:00 | false   | 1234567890 |            | err1  |
 +-----------------+-----------------+---------+------------+------------+-------+
-| %s | %s | false   | 1234567890 |            | err1  |
+| Oct 22 21:00:00 | Oct 22 21:30:00 | false   | 1234567890 |            | err1  |
 +-----------------+-----------------+---------+------------+------------+-------+
-`, startTStr08, endTStr08, startTStr10, endTStr10, startTStr06, endTStr06, startTStr08, endTStr08, startTStr02, endTStr02)
+`
 	c.Assert(buf.String(), check.Equals, expected)
 }
 
@@ -161,15 +142,15 @@ func (s *S) TestListHealingHistoryCmdRunFilterNode(c *check.C) {
 	cmd.Flags().Parse(true, []string{"--node"})
 	err := cmd.Run(&context, client)
 	c.Assert(err, check.IsNil)
-	expected := fmt.Sprintf(`Node:
+	expected := `Node:
 +-----------------+-----------------+---------+---------+---------+-------+
 | Start           | Finish          | Success | Failing | Created | Error |
 +-----------------+-----------------+---------+---------+---------+-------+
-| %s | %s | true    | addr1   | addr2   |       |
+| Oct 23 03:00:00 | Oct 23 03:30:00 | true    | addr1   | addr2   |       |
 +-----------------+-----------------+---------+---------+---------+-------+
-| %s | %s | false   | addr1   | addr2   |       |
+| Oct 23 05:00:00 | Oct 23 05:30:00 | false   | addr1   | addr2   |       |
 +-----------------+-----------------+---------+---------+---------+-------+
-`, startTStr08, endTStr08, startTStr10, endTStr10)
+`
 	c.Assert(buf.String(), check.Equals, expected)
 }
 
@@ -188,17 +169,17 @@ func (s *S) TestListHealingHistoryCmdRunFilterContainer(c *check.C) {
 	cmd.Flags().Parse(true, []string{"--container"})
 	err := cmd.Run(&context, client)
 	c.Assert(err, check.IsNil)
-	expected := fmt.Sprintf(`Container:
+	expected := `Container:
 +-----------------+-----------------+---------+------------+------------+-------+
 | Start           | Finish          | Success | Failing    | Created    | Error |
 +-----------------+-----------------+---------+------------+------------+-------+
-| %s | %s | true    | 1234567890 | 9234567890 |       |
+| Oct 23 01:00:00 | Oct 23 01:30:00 | true    | 1234567890 | 9234567890 |       |
 +-----------------+-----------------+---------+------------+------------+-------+
-| %s | %s | false   | 1234567890 |            | err1  |
+| Oct 23 03:00:00 | Oct 23 03:30:00 | false   | 1234567890 |            | err1  |
 +-----------------+-----------------+---------+------------+------------+-------+
-| %s | %s | false   | 1234567890 |            | err1  |
+| Oct 22 21:00:00 | Oct 22 21:30:00 | false   | 1234567890 |            | err1  |
 +-----------------+-----------------+---------+------------+------------+-------+
-`, startTStr06, endTStr06, startTStr08, endTStr08, startTStr02, endTStr02)
+`
 	c.Assert(buf.String(), check.Equals, expected)
 }
 
@@ -226,12 +207,12 @@ func (s *S) TestListHealingHistoryInProgressCmdRun(c *check.C) {
 	cmd.Flags().Parse(true, []string{"--container"})
 	err := cmd.Run(&context, client)
 	c.Assert(err, check.IsNil)
-	expected := fmt.Sprintf(`Container:
+	expected := `Container:
 +-----------------+-------------+---------+------------+------------+-------+
 | Start           | Finish      | Success | Failing    | Created    | Error |
 +-----------------+-------------+---------+------------+------------+-------+
-| %s | in progress | true    | 1234567890 | 9234567890 |       |
+| Oct 23 03:00:00 | in progress | true    | 1234567890 | 9234567890 |       |
 +-----------------+-------------+---------+------------+------------+-------+
-`, startTStr08)
+`
 	c.Assert(buf.String(), check.Equals, expected)
 }
