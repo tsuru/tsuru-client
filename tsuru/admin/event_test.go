@@ -64,8 +64,8 @@ func (s *S) TestEventBlockList(c *check.C) {
 	expected := `+--------------------------+-------------------------+------------+----------------+----------------------+--------------+
 | ID                       | Start (duration)        | Kind       | Owner          | Target (Type: Value) | Reason       |
 +--------------------------+-------------------------+------------+----------------+----------------------+--------------+
-| 58c6db0b0640fd2fec413cc6 | Mar 13 14:46:51 (…)     | app.create | user@email.com | all: all             | Problems     |
-| 58c1d29ac47369e95c5520c8 | Mar 13 13:43:09 (44:15) | app.deploy | all            | all: all             | Maintenance. |
+| 58c6db0b0640fd2fec413cc6 | Mar 13 12:46:51 (…)     | app.create | user@email.com | all: all             | Problems     |
+| 58c1d29ac47369e95c5520c8 | Mar 13 11:43:09 (44:15) | app.deploy | all            | all: all             | Maintenance. |
 +--------------------------+-------------------------+------------+----------------+----------------------+--------------+
 `
 	c.Assert(stdout.String(), check.Equals, expected)
