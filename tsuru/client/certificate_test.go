@@ -123,6 +123,9 @@ func (s *S) TestCertificateListRunSuccessfully(c *check.C) {
 			"myapp.io":       s.mustReadFileString(c, "./testdata/cert/server.crt"),
 			"myapp.other.io": "",
 		},
+		"a-new-router": {
+			"myapp.io": s.mustReadFileString(c, "./testdata/cert/server.crt"),
+		},
 	}
 	data, err := json.Marshal(certMap)
 	c.Assert(err, check.IsNil)
@@ -131,6 +134,10 @@ func (s *S) TestCertificateListRunSuccessfully(c *check.C) {
 	datestr := expectedDate.Local().Format("2006-01-02 15:04:05")
 	expected := `+----------------+----------------+---------------------+----------------------------+----------------------------+
 | Router         | CName          | Expires             | Issuer                     | Subject                    |
++----------------+----------------+---------------------+----------------------------+----------------------------+
+| a-new-router   | myapp.io       | ` + datestr + ` | C=BR; ST=Rio de Janeiro;   | C=BR; ST=Rio de Janeiro;   |
+|                |                |                     | L=Rio de Janeiro; O=Tsuru; | L=Rio de Janeiro; O=Tsuru; |
+|                |                |                     | CN=app.io                  | CN=app.io                  |
 +----------------+----------------+---------------------+----------------------------+----------------------------+
 | ingress-router | myapp.io       | ` + datestr + ` | C=BR; ST=Rio de Janeiro;   | C=BR; ST=Rio de Janeiro;   |
 |                |                |                     | L=Rio de Janeiro; O=Tsuru; | L=Rio de Janeiro; O=Tsuru; |

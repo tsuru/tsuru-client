@@ -182,13 +182,22 @@ func (c *CertificateList) Run(context *cmd.Context, client *cmd.Client) error {
 	if err != nil {
 		return err
 	}
-	certKeys := []string{}
+
+	routerNames := []string{}
+	routerMap := make(map[string][]string)
 	for k := range rawCerts {
-		certKeys = append(certKeys, k)
+		routerNames = append(routerNames, k)
+		for v := range rawCerts[k] {
+			routerMap[k] = append(routerMap[k], v)
+		}
 	}
-	sort.Strings(certKeys)
+	sort.Strings(routerNames)
+	for k := range routerMap {
+		sort.Strings(routerMap[k])
+	}
+
 	if c.raw {
-		for _, r := range certKeys {
+		for _, r := range routerNames {
 			fmt.Fprintf(context.Stdout, "%s:\n", r)
 			for n, rawCert := range rawCerts[r] {
 				if rawCert == "" {
@@ -203,8 +212,9 @@ func (c *CertificateList) Run(context *cmd.Context, client *cmd.Client) error {
 	tbl.LineSeparator = true
 	tbl.Headers = cmd.Row{"Router", "CName", "Expires", "Issuer", "Subject"}
 	dateFormat := "2006-01-02 15:04:05"
-	for _, r := range certKeys {
-		for n, rawCert := range rawCerts[r] {
+	for r, cnames := range routerMap {
+		for _, n := range cnames {
+			rawCert := rawCerts[r][n]
 			if rawCert == "" {
 				tbl.AddRow(cmd.Row{r, n, "-", "-", "-"})
 				continue
