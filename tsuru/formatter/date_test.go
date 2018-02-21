@@ -13,9 +13,8 @@ import (
 func (s *S) TestFormatDate(c *check.C) {
 	parsedTs, err := time.Parse(time.RFC3339, "2018-02-16T11:03:00.000Z")
 	c.Assert(err, check.IsNil)
-	formattedTs := parsedTs.Local().Format(time.Stamp)
 
-	c.Assert(FormatDate(parsedTs), check.Equals, formattedTs)
+	c.Assert(FormatDate(parsedTs), check.Equals, "16 Feb 18 05:03 CST")
 }
 
 func (s *S) TestFormatDuration(c *check.C) {
@@ -28,9 +27,8 @@ func (s *S) TestFormatDuration(c *check.C) {
 func (s *S) TestFormatDateAndDuration(c *check.C) {
 	parsedTs, err := time.Parse(time.RFC3339, "2018-02-16T11:03:00.000Z")
 	c.Assert(err, check.IsNil)
-	formattedTs := parsedTs.Local().Format(time.Stamp)
 	duration := 123 * time.Second
 
-	c.Assert(FormatDateAndDuration(parsedTs, &duration), check.Equals, formattedTs+" (02:03)")
-	c.Assert(FormatDateAndDuration(parsedTs, nil), check.Equals, formattedTs+" (…)")
+	c.Assert(FormatDateAndDuration(parsedTs, &duration), check.Equals, "16 Feb 18 05:03 CST (02:03)")
+	c.Assert(FormatDateAndDuration(parsedTs, nil), check.Equals, "16 Feb 18 05:03 CST (…)")
 }

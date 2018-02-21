@@ -10,7 +10,7 @@ import (
 )
 
 func FormatDate(date time.Time) string {
-	return date.Local().Format(time.Stamp)
+	return date.Local().Format(time.RFC822)
 }
 
 func FormatDuration(duration *time.Duration) string {
