@@ -10,6 +10,7 @@ import (
 	"sort"
 	"strings"
 
+	"github.com/tsuru/tablecli"
 	"github.com/tsuru/tsuru/cmd"
 )
 
@@ -65,7 +66,7 @@ func (PoolList) Run(context *cmd.Context, client *cmd.Client) error {
 	if err != nil {
 		return err
 	}
-	t := cmd.Table{Headers: cmd.Row([]string{"Pool", "Kind", "Provisioner", "Teams", "Routers"}), LineSeparator: true}
+	t := tablecli.Table{Headers: tablecli.Row([]string{"Pool", "Kind", "Provisioner", "Teams", "Routers"}), LineSeparator: true}
 	if resp.StatusCode == http.StatusNoContent {
 		context.Stdout.Write(t.Bytes())
 		return nil
@@ -83,7 +84,7 @@ func (PoolList) Run(context *cmd.Context, client *cmd.Client) error {
 			teams = strings.Join(pool.Allowed["team"], ", ")
 		}
 		routers := strings.Join(pool.Allowed["router"], ", ")
-		t.AddRow(cmd.Row([]string{pool.Name, pool.Kind(), pool.GetProvisioner(), teams, routers}))
+		t.AddRow(tablecli.Row([]string{pool.Name, pool.Kind(), pool.GetProvisioner(), teams, routers}))
 	}
 	context.Stdout.Write(t.Bytes())
 	return nil

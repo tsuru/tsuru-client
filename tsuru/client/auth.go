@@ -17,6 +17,7 @@ import (
 	"text/template"
 
 	"github.com/tsuru/gnuflag"
+	"github.com/tsuru/tablecli"
 	"github.com/tsuru/tsuru/cmd"
 )
 
@@ -310,11 +311,11 @@ func (c *TeamList) Run(context *cmd.Context, client *cmd.Client) error {
 		if err != nil {
 			return err
 		}
-		table := cmd.NewTable()
-		table.Headers = cmd.Row{"Team", "Permissions"}
+		table := tablecli.NewTable()
+		table.Headers = tablecli.Row{"Team", "Permissions"}
 		table.LineSeparator = true
 		for _, team := range teams {
-			table.AddRow(cmd.Row{team.Name, strings.Join(team.Permissions, "\n")})
+			table.AddRow(tablecli.Row{team.Name, strings.Join(team.Permissions, "\n")})
 		}
 		fmt.Fprint(context.Stdout, table.String())
 	}
@@ -372,30 +373,30 @@ func (c *TeamInfo) Run(context *cmd.Context, client *cmd.Client) error {
 	var tplBuffer bytes.Buffer
 	var buf bytes.Buffer
 	tmpl.Execute(&tplBuffer, contentTeam)
-	usersTable := cmd.NewTable()
-	usersTable.Headers = cmd.Row{"User", "Roles"}
+	usersTable := tablecli.NewTable()
+	usersTable.Headers = tablecli.Row{"User", "Roles"}
 	usersTable.LineSeparator = true
 	for _, user := range contentTeam.Users {
-		usersTable.AddRow(cmd.Row{user.Email, strings.Join(user.RoleInstances(), "\n")})
+		usersTable.AddRow(tablecli.Row{user.Email, strings.Join(user.RoleInstances(), "\n")})
 	}
 	if usersTable.Rows() > 0 {
 		buf.WriteString("\n")
 		buf.WriteString(fmt.Sprintf("Users: %d\n", usersTable.Rows()))
 		buf.WriteString(usersTable.String())
 	}
-	poolsTable := cmd.NewTable()
-	poolsTable.Headers = cmd.Row{"Pool", "Kind", "Provisioner", "Routers"}
+	poolsTable := tablecli.NewTable()
+	poolsTable.Headers = tablecli.Row{"Pool", "Kind", "Provisioner", "Routers"}
 	poolsTable.LineSeparator = true
 	for _, pool := range contentTeam.Pools {
-		poolsTable.AddRow(cmd.Row{pool.Name, pool.Kind(), pool.GetProvisioner(), strings.Join(pool.Allowed["router"], "\n")})
+		poolsTable.AddRow(tablecli.Row{pool.Name, pool.Kind(), pool.GetProvisioner(), strings.Join(pool.Allowed["router"], "\n")})
 	}
 	if poolsTable.Rows() > 0 {
 		buf.WriteString("\n")
 		buf.WriteString(fmt.Sprintf("Pools: %d\n", poolsTable.Rows()))
 		buf.WriteString(poolsTable.String())
 	}
-	appsTable := cmd.NewTable()
-	appsTable.Headers = cmd.Row{"Application", "Units", "Address"}
+	appsTable := tablecli.NewTable()
+	appsTable.Headers = tablecli.Row{"Application", "Units", "Address"}
 	appsTable.LineSeparator = true
 	for _, app := range contentTeam.Apps {
 		var summary string
@@ -422,7 +423,7 @@ func (c *TeamInfo) Run(context *cmd.Context, client *cmd.Client) error {
 			}
 		}
 		addrs := strings.Replace(app.Addr(), ", ", "\n", -1)
-		appsTable.AddRow(cmd.Row([]string{app.Name, summary, addrs}))
+		appsTable.AddRow(tablecli.Row([]string{app.Name, summary, addrs}))
 	}
 	if appsTable.Rows() > 0 {
 		buf.WriteString("\n")
@@ -688,10 +689,10 @@ func (c *ListUsers) Run(ctx *cmd.Context, client *cmd.Client) error {
 	if err != nil {
 		return err
 	}
-	table := cmd.NewTable()
-	table.Headers = cmd.Row([]string{"User", "Roles"})
+	table := tablecli.NewTable()
+	table.Headers = tablecli.Row([]string{"User", "Roles"})
 	for _, u := range users {
-		table.AddRow(cmd.Row([]string{
+		table.AddRow(tablecli.Row([]string{
 			u.Email,
 			strings.Join(u.RoleInstances(), "\n"),
 		}))

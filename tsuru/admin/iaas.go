@@ -14,6 +14,7 @@ import (
 
 	"github.com/ajg/form"
 	"github.com/tsuru/gnuflag"
+	"github.com/tsuru/tablecli"
 	"github.com/tsuru/tsuru/cmd"
 	"github.com/tsuru/tsuru/iaas"
 )
@@ -58,9 +59,9 @@ func (c *MachineList) List(client *cmd.Client) ([]iaas.Machine, error) {
 	return machines, err
 }
 
-func (c *MachineList) Tabulate(machines []iaas.Machine) *cmd.Table {
-	table := cmd.NewTable()
-	table.Headers = cmd.Row([]string{"Id", "IaaS", "Address", "Creation Params"})
+func (c *MachineList) Tabulate(machines []iaas.Machine) *tablecli.Table {
+	table := tablecli.NewTable()
+	table.Headers = tablecli.Row([]string{"Id", "IaaS", "Address", "Creation Params"})
 	table.LineSeparator = true
 	for _, machine := range machines {
 		var params []string
@@ -68,7 +69,7 @@ func (c *MachineList) Tabulate(machines []iaas.Machine) *cmd.Table {
 			params = append(params, fmt.Sprintf("%s=%s", k, v))
 		}
 		sort.Strings(params)
-		table.AddRow(cmd.Row([]string{machine.Id, machine.Iaas, machine.Address, strings.Join(params, "\n")}))
+		table.AddRow(tablecli.Row([]string{machine.Id, machine.Iaas, machine.Address, strings.Join(params, "\n")}))
 	}
 	table.Sort()
 	return table
@@ -131,8 +132,8 @@ func (c *TemplateList) Run(context *cmd.Context, client *cmd.Client) error {
 	if err != nil {
 		return err
 	}
-	table := cmd.NewTable()
-	table.Headers = cmd.Row([]string{"Name", "IaaS", "Params"})
+	table := tablecli.NewTable()
+	table.Headers = tablecli.Row([]string{"Name", "IaaS", "Params"})
 	table.LineSeparator = true
 	for _, template := range templates {
 		var params []string
@@ -140,7 +141,7 @@ func (c *TemplateList) Run(context *cmd.Context, client *cmd.Client) error {
 			params = append(params, fmt.Sprintf("%s=%s", data.Name, data.Value))
 		}
 		sort.Strings(params)
-		table.AddRow(cmd.Row([]string{template.Name, template.IaaSName, strings.Join(params, "\n")}))
+		table.AddRow(tablecli.Row([]string{template.Name, template.IaaSName, strings.Join(params, "\n")}))
 	}
 	table.Sort()
 	context.Stdout.Write(table.Bytes())

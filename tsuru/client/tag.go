@@ -12,6 +12,7 @@ import (
 	"sort"
 	"strings"
 
+	"github.com/tsuru/tablecli"
 	"github.com/tsuru/tsuru/cmd"
 	"github.com/tsuru/tsuru/service"
 )
@@ -49,8 +50,8 @@ func (t *TagList) Show(apps []app, services []service.ServiceModel, context *cmd
 	if len(tagList) == 0 {
 		return nil
 	}
-	table := cmd.NewTable()
-	table.Headers = cmd.Row([]string{"Tag", "Apps", "Service Instances"})
+	table := tablecli.NewTable()
+	table.Headers = tablecli.Row([]string{"Tag", "Apps", "Service Instances"})
 	for _, tagName := range sortedTags(tagList) {
 		t := tagList[tagName]
 		instanceNames := make([]string, len(t.ServiceInstances))
@@ -58,7 +59,7 @@ func (t *TagList) Show(apps []app, services []service.ServiceModel, context *cmd
 			instances := t.ServiceInstances[serviceName]
 			instanceNames[i] = fmt.Sprintf("%s: %s", serviceName, strings.Join(instances, ", "))
 		}
-		table.AddRow(cmd.Row([]string{t.Name, strings.Join(t.Apps, ", "), strings.Join(instanceNames, "\n")}))
+		table.AddRow(tablecli.Row([]string{t.Name, strings.Join(t.Apps, ", "), strings.Join(instanceNames, "\n")}))
 	}
 	table.LineSeparator = true
 	table.Sort()

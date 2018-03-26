@@ -19,6 +19,7 @@ import (
 
 	"github.com/ajg/form"
 	"github.com/tsuru/gnuflag"
+	"github.com/tsuru/tablecli"
 	tsuruClient "github.com/tsuru/tsuru-client/tsuru/client"
 	"github.com/tsuru/tsuru/cmd"
 	"github.com/tsuru/tsuru/healer"
@@ -308,7 +309,7 @@ func (c *ListNodesCmd) Run(ctx *cmd.Context, client *cmd.Client) error {
 	if err != nil {
 		return err
 	}
-	t := cmd.Table{Headers: cmd.Row([]string{"Address", "IaaS ID", "Status", "Metadata"}), LineSeparator: true}
+	t := tablecli.Table{Headers: tablecli.Row([]string{"Address", "IaaS ID", "Status", "Metadata"}), LineSeparator: true}
 	if resp.StatusCode == http.StatusNoContent {
 		ctx.Stdout.Write(t.Bytes())
 		return nil
@@ -347,7 +348,7 @@ func (c *ListNodesCmd) Run(ctx *cmd.Context, client *cmd.Client) error {
 		if ok {
 			iaasID = m.Id
 		}
-		t.AddRow(cmd.Row([]string{addr, iaasID, status, strings.Join(result, "\n")}))
+		t.AddRow(tablecli.Row([]string{addr, iaasID, status, strings.Join(result, "\n")}))
 	}
 	t.Sort()
 	ctx.Stdout.Write(t.Bytes())
@@ -418,11 +419,11 @@ func (c *GetNodeHealingConfigCmd) Run(ctx *cmd.Context, client *cmd.Client) erro
 	baseConf := conf[""]
 	delete(conf, "")
 	fmt.Fprint(ctx.Stdout, "Default:\n")
-	tbl := cmd.NewTable()
-	tbl.Headers = cmd.Row{"Config", "Value"}
-	tbl.AddRow(cmd.Row{"Enabled", fmt.Sprintf("%v", baseConf.Enabled != nil && *baseConf.Enabled)})
-	tbl.AddRow(cmd.Row{"Max unresponsive time", v(baseConf.MaxUnresponsiveTime)})
-	tbl.AddRow(cmd.Row{"Max time since success", v(baseConf.MaxTimeSinceSuccess)})
+	tbl := tablecli.NewTable()
+	tbl.Headers = tablecli.Row{"Config", "Value"}
+	tbl.AddRow(tablecli.Row{"Enabled", fmt.Sprintf("%v", baseConf.Enabled != nil && *baseConf.Enabled)})
+	tbl.AddRow(tablecli.Row{"Max unresponsive time", v(baseConf.MaxUnresponsiveTime)})
+	tbl.AddRow(tablecli.Row{"Max time since success", v(baseConf.MaxTimeSinceSuccess)})
 	fmt.Fprint(ctx.Stdout, tbl.String())
 	if len(conf) > 0 {
 		fmt.Fprintln(ctx.Stdout)
@@ -435,11 +436,11 @@ func (c *GetNodeHealingConfigCmd) Run(ctx *cmd.Context, client *cmd.Client) erro
 	for i, name := range poolNames {
 		poolConf := conf[name]
 		fmt.Fprintf(ctx.Stdout, "Pool %q:\n", name)
-		tbl := cmd.NewTable()
-		tbl.Headers = cmd.Row{"Config", "Value", "Inherited"}
-		tbl.AddRow(cmd.Row{"Enabled", fmt.Sprintf("%v", poolConf.Enabled != nil && *poolConf.Enabled), strconv.FormatBool(poolConf.EnabledInherited)})
-		tbl.AddRow(cmd.Row{"Max unresponsive time", v(poolConf.MaxUnresponsiveTime), strconv.FormatBool(poolConf.MaxUnresponsiveTimeInherited)})
-		tbl.AddRow(cmd.Row{"Max time since success", v(poolConf.MaxTimeSinceSuccess), strconv.FormatBool(poolConf.MaxTimeSinceSuccessInherited)})
+		tbl := tablecli.NewTable()
+		tbl.Headers = tablecli.Row{"Config", "Value", "Inherited"}
+		tbl.AddRow(tablecli.Row{"Enabled", fmt.Sprintf("%v", poolConf.Enabled != nil && *poolConf.Enabled), strconv.FormatBool(poolConf.EnabledInherited)})
+		tbl.AddRow(tablecli.Row{"Max unresponsive time", v(poolConf.MaxUnresponsiveTime), strconv.FormatBool(poolConf.MaxUnresponsiveTimeInherited)})
+		tbl.AddRow(tablecli.Row{"Max time since success", v(poolConf.MaxTimeSinceSuccess), strconv.FormatBool(poolConf.MaxTimeSinceSuccessInherited)})
 		fmt.Fprint(ctx.Stdout, tbl.String())
 		if i < len(poolNames)-1 {
 			fmt.Fprintln(ctx.Stdout)
@@ -694,23 +695,23 @@ func (c *InfoNodeCmd) Run(ctx *cmd.Context, client *cmd.Client) error {
 	buf.WriteString(fmt.Sprintf("Pool: %s\n", result.Node.Pool))
 	buf.WriteString(fmt.Sprintf("Provisioner: %s\n", result.Node.Provisioner))
 	buf.WriteString("Metadata:\n")
-	nodeTable := cmd.Table{Headers: cmd.Row([]string{"Key", "Value"}), LineSeparator: true}
+	nodeTable := tablecli.Table{Headers: tablecli.Row([]string{"Key", "Value"}), LineSeparator: true}
 	for key, value := range result.Node.Metadata {
-		nodeTable.AddRow(cmd.Row([]string{key, value}))
+		nodeTable.AddRow(tablecli.Row([]string{key, value}))
 	}
 	nodeTable.Sort()
 	if result.Node.IaaSID != "" {
-		nodeTable.AddRow(cmd.Row([]string{"iaasID", result.Node.IaaSID}))
+		nodeTable.AddRow(tablecli.Row([]string{"iaasID", result.Node.IaaSID}))
 	}
 	buf.WriteString(nodeTable.String())
 	buf.WriteString("\n")
-	unitsTable := cmd.Table{Headers: cmd.Row([]string{"Unit", "Status", "Type", "App", "ProcessName"}), LineSeparator: true}
+	unitsTable := tablecli.Table{Headers: tablecli.Row([]string{"Unit", "Status", "Type", "App", "ProcessName"}), LineSeparator: true}
 	for _, unit := range result.Units {
 		if unit.ID == "" {
 			continue
 		}
 		row := []string{tsuruClient.ShortID(unit.ID), string(unit.Status), unit.Type, unit.AppName, unit.ProcessName}
-		unitsTable.AddRow(cmd.Row(row))
+		unitsTable.AddRow(tablecli.Row(row))
 	}
 	buf.WriteString(fmt.Sprintf("Units: %d\n", unitsTable.Rows()))
 	if unitsTable.Rows() > 0 {
@@ -724,10 +725,10 @@ func (c *InfoNodeCmd) Run(ctx *cmd.Context, client *cmd.Client) error {
 	if !result.Status.LastUpdate.IsZero() {
 		buf.WriteString(fmt.Sprintf("Last Update: %s\n", result.Status.LastUpdate.Local().Format(time.Stamp)))
 	}
-	statusTable := cmd.Table{Headers: cmd.Row([]string{"Time", "Name", "Success", "Error"}), LineSeparator: true}
+	statusTable := tablecli.Table{Headers: tablecli.Row([]string{"Time", "Name", "Success", "Error"}), LineSeparator: true}
 	for _, check := range result.Status.Checks {
 		for _, cc := range check.Checks {
-			statusTable.AddRow(cmd.Row([]string{check.Time.Local().Format(time.Stamp), cc.Name, fmt.Sprintf("%t", cc.Successful), cc.Err}))
+			statusTable.AddRow(tablecli.Row([]string{check.Time.Local().Format(time.Stamp), cc.Name, fmt.Sprintf("%t", cc.Successful), cc.Err}))
 		}
 	}
 	if statusTable.Rows() > 0 {

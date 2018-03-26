@@ -12,6 +12,7 @@ import (
 	"time"
 
 	"github.com/tsuru/gnuflag"
+	"github.com/tsuru/tablecli"
 	"github.com/tsuru/tsuru/cmd"
 	"github.com/tsuru/tsuru/provision/docker/types"
 )
@@ -32,8 +33,8 @@ func (c *ListHealingHistoryCmd) Info() *cmd.Info {
 
 func renderHistoryTable(history []types.HealingEvent, filter string, ctx *cmd.Context) {
 	fmt.Fprintln(ctx.Stdout, strings.ToUpper(filter[:1])+filter[1:]+":")
-	headers := cmd.Row([]string{"Start", "Finish", "Success", "Failing", "Created", "Error"})
-	t := cmd.Table{Headers: headers}
+	headers := tablecli.Row([]string{"Start", "Finish", "Success", "Failing", "Created", "Error"})
+	t := tablecli.Table{Headers: headers}
 	for i := range history {
 		event := history[i]
 		if event.Action != filter+"-healing" {
@@ -59,7 +60,7 @@ func renderHistoryTable(history []types.HealingEvent, filter string, ctx *cmd.Co
 		} else {
 			endTime = event.EndTime.Local().Format(time.Stamp)
 		}
-		t.AddRow(cmd.Row([]string{
+		t.AddRow(tablecli.Row([]string{
 			event.StartTime.Local().Format(time.Stamp),
 			endTime,
 			fmt.Sprintf("%t", event.Successful),

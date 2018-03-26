@@ -18,6 +18,7 @@ import (
 	"github.com/ajg/form"
 	"github.com/ghodss/yaml"
 	"github.com/tsuru/gnuflag"
+	"github.com/tsuru/tablecli"
 	"github.com/tsuru/tsuru-client/tsuru/formatter"
 	"github.com/tsuru/tsuru/cmd"
 	"github.com/tsuru/tsuru/event"
@@ -128,9 +129,9 @@ func (c *EventList) Run(context *cmd.Context, client *cmd.Client) error {
 var reEmailShort = regexp.MustCompile(`@.*$`)
 
 func (c *EventList) Show(evts []event.Event, context *cmd.Context) error {
-	tbl := cmd.NewTable()
+	tbl := tablecli.NewTable()
 	tbl.LineSeparator = true
-	tbl.Headers = cmd.Row{"ID", "Start (duration)", "Success", "Owner", "Kind", "Target"}
+	tbl.Headers = tablecli.Row{"ID", "Start (duration)", "Success", "Owner", "Kind", "Target"}
 	for i := range evts {
 		evt := &evts[i]
 		targets := []event.Target{evt.Target}
@@ -158,7 +159,7 @@ func (c *EventList) Show(evts []event.Event, context *cmd.Context) error {
 			}
 		}
 		ts := formatter.FormatDateAndDuration(evt.StartTime, duration)
-		row := cmd.Row{evt.UniqueID.Hex(), ts, success, owner, evt.Kind.Name, strings.Join(targetsStr, "\n")}
+		row := tablecli.Row{evt.UniqueID.Hex(), ts, success, owner, evt.Kind.Name, strings.Join(targetsStr, "\n")}
 		var color string
 		if evt.Running {
 			color = "yellow"

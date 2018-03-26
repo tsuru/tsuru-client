@@ -16,6 +16,7 @@ import (
 	"strings"
 
 	"github.com/tsuru/gnuflag"
+	"github.com/tsuru/tablecli"
 	"github.com/tsuru/tsuru/cmd"
 	"github.com/tsuru/tsuru/errors"
 	"github.com/tsuru/tsuru/fs"
@@ -189,15 +190,15 @@ func (c *KeyList) Run(context *cmd.Context, client *cmd.Client) error {
 	if err != nil {
 		return err
 	}
-	var table cmd.Table
-	table.Headers = cmd.Row{"Name", "Content"}
+	var table tablecli.Table
+	table.Headers = tablecli.Row{"Name", "Content"}
 	table.LineSeparator = c.notrunc
 	for name, content := range keys {
 		row := []string{name, content}
 		if !c.notrunc && len(row[1]) > keyTruncate {
 			row[1] = row[1][:keyTruncate] + "..."
 		}
-		table.AddRow(cmd.Row(row))
+		table.AddRow(tablecli.Row(row))
 	}
 	table.SortByColumn(0)
 	context.Stdout.Write(table.Bytes())

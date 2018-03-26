@@ -451,6 +451,12 @@
 
 [[projects]]
   branch = "master"
+  name = "github.com/tsuru/tablecli"
+  packages = ["."]
+  revision = "82de88f75181e580de044c548755a88b164c658b"
+
+[[projects]]
+  branch = "master"
   name = "github.com/tsuru/tsuru"
   packages = [
     "action",
@@ -645,6 +651,6 @@
 [solve-meta]
   analyzer-name = "dep"
   analyzer-version = 1
-  inputs-digest = "b0926a65f5b988dcfde1f2dc61b7b4621865f039e9eb8f60519ec52e718cdda7"
+  inputs-digest = "14cb7be988c915395ea2ba8cec55a6737b90f7be47dd569608f0206b62243fdc"
   solver-name = "gps-cdcl"
   solver-version = 1

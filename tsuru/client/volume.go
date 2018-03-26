@@ -15,6 +15,7 @@ import (
 
 	"github.com/ajg/form"
 	"github.com/tsuru/gnuflag"
+	"github.com/tsuru/tablecli"
 	"github.com/tsuru/tsuru/cmd"
 	tsuruIo "github.com/tsuru/tsuru/io"
 	"github.com/tsuru/tsuru/volume"
@@ -191,8 +192,8 @@ func (c *VolumeList) Run(ctx *cmd.Context, client *cmd.Client) error {
 }
 
 func (c *VolumeList) render(ctx *cmd.Context, volumes []volume.Volume) error {
-	tbl := cmd.NewTable()
-	tbl.Headers = cmd.Row{"Name", "Plan", "Pool", "Team", "Plan Opts", "Opts", "Binds"}
+	tbl := tablecli.NewTable()
+	tbl.Headers = tablecli.Row{"Name", "Plan", "Pool", "Team", "Plan Opts", "Opts", "Binds"}
 	tbl.LineSeparator = true
 	for _, v := range volumes {
 		var bindsStr []string
@@ -213,7 +214,7 @@ func (c *VolumeList) render(ctx *cmd.Context, volumes []volume.Volume) error {
 			opts = append(opts, k+": "+v)
 		}
 		sort.Strings(opts)
-		tbl.AddRow(cmd.Row{
+		tbl.AddRow(tablecli.Row{
 			v.Name,
 			v.Plan.Name,
 			v.Pool,
@@ -269,8 +270,8 @@ func (c *VolumePlansList) Run(ctx *cmd.Context, client *cmd.Client) error {
 }
 
 func (c *VolumePlansList) render(ctx *cmd.Context, plans map[string][]volume.VolumePlan) error {
-	tbl := cmd.NewTable()
-	tbl.Headers = cmd.Row{"Plan", "Provisioner", "Opts"}
+	tbl := tablecli.NewTable()
+	tbl.Headers = tablecli.Row{"Plan", "Provisioner", "Opts"}
 	tbl.LineSeparator = true
 	for provisioner, provPlans := range plans {
 		for _, p := range provPlans {
@@ -279,7 +280,7 @@ func (c *VolumePlansList) render(ctx *cmd.Context, plans map[string][]volume.Vol
 				opts = append(opts, fmt.Sprintf("%s: %v", k, v))
 			}
 			sort.Strings(opts)
-			tbl.AddRow(cmd.Row{
+			tbl.AddRow(tablecli.Row{
 				p.Name,
 				provisioner,
 				strings.Join(opts, "\n"),

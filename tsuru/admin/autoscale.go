@@ -12,6 +12,7 @@ import (
 	"github.com/ajg/form"
 	"github.com/pkg/errors"
 	"github.com/tsuru/gnuflag"
+	"github.com/tsuru/tablecli"
 	"github.com/tsuru/tsuru/autoscale"
 	"github.com/tsuru/tsuru/cmd"
 	tsuruIo "github.com/tsuru/tsuru/io"
@@ -58,11 +59,11 @@ func (c *ListAutoScaleHistoryCmd) Run(ctx *cmd.Context, client *cmd.Client) erro
 	if err != nil {
 		return err
 	}
-	headers := cmd.Row([]string{"Start", "Finish", "Success", "Metadata", "Action", "Reason", "Error"})
-	t := cmd.Table{Headers: headers}
+	headers := tablecli.Row([]string{"Start", "Finish", "Success", "Metadata", "Action", "Reason", "Error"})
+	t := tablecli.Table{Headers: headers}
 	for i := range history {
 		event := &history[i]
-		t.AddRow(cmd.Row([]string{
+		t.AddRow(tablecli.Row([]string{
 			event.StartTime.Local().Format(time.Stamp),
 			checkEndOfEvent(event),
 			fmt.Sprintf("%t", event.Successful),
@@ -214,7 +215,7 @@ func (c *AutoScaleInfoCmd) getAutoScaleRules(client *cmd.Client) ([]autoscale.Ru
 }
 
 func (c *AutoScaleInfoCmd) render(context *cmd.Context, config *autoscale.Config, rules []autoscale.Rule) error {
-	var table cmd.Table
+	var table tablecli.Table
 	tableHeader := []string{
 		"Pool",
 		"Max container count",
