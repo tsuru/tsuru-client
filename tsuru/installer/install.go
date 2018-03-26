@@ -15,6 +15,7 @@ import (
 	"github.com/pkg/errors"
 	"github.com/tsuru/config"
 	"github.com/tsuru/gnuflag"
+	"github.com/tsuru/tablecli"
 	"github.com/tsuru/tsuru-client/tsuru/admin"
 	"github.com/tsuru/tsuru-client/tsuru/client"
 	"github.com/tsuru/tsuru-client/tsuru/installer/defaultconfig"
@@ -258,13 +259,13 @@ func (c *Uninstall) Run(ctx *cmd.Context, cli *cmd.Client) error {
 	if err != nil {
 		fmt.Fprintf(ctx.Stderr, "No dockerMachine found: %s\n", err)
 	}
-	tbl := cmd.Table{LineSeparator: true, Headers: cmd.Row([]string{"Name", "IP", "Data"})}
+	tbl := tablecli.Table{LineSeparator: true, Headers: tablecli.Row([]string{"Name", "IP", "Data"})}
 	for _, m := range machines {
 		data, errMarshal := json.MarshalIndent(m.Base.CustomData, "", "")
 		if errMarshal != nil {
 			data = []byte("failed to marshal data.")
 		}
-		tbl.AddRow(cmd.Row{m.Host.Name, m.Base.Address, string(data)})
+		tbl.AddRow(tablecli.Row{m.Host.Name, m.Base.Address, string(data)})
 	}
 	fmt.Fprintf(ctx.Stdout, "The following core machines will be destroyed:\n%s", tbl.String())
 	if !c.Confirm(ctx, "Are you sure you sure you want to uninstall tsuru?") {
@@ -386,9 +387,9 @@ func (c *InstallHostList) Show(hosts []installHost, context *cmd.Context) error 
 		return err
 	}
 	defer dockerMachine.Close()
-	table := cmd.NewTable()
+	table := tablecli.NewTable()
 	table.LineSeparator = true
-	table.Headers = cmd.Row([]string{"Name", "Driver Name", "State", "Driver"})
+	table.Headers = tablecli.Row([]string{"Name", "Driver Name", "State", "Driver"})
 	for _, h := range hosts {
 		driver, err := json.MarshalIndent(h.Driver, "", " ")
 		if err != nil {
@@ -411,7 +412,7 @@ func (c *InstallHostList) Show(hosts []installHost, context *cmd.Context) error 
 		} else {
 			stateStr = state.String()
 		}
-		table.AddRow(cmd.Row([]string{h.Name, h.DriverName, stateStr, string(driver)}))
+		table.AddRow(tablecli.Row([]string{h.Name, h.DriverName, stateStr, string(driver)}))
 	}
 	context.Stdout.Write(table.Bytes())
 	return nil

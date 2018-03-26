@@ -22,6 +22,7 @@ import (
 
 	"github.com/ajg/form"
 	"github.com/tsuru/gnuflag"
+	"github.com/tsuru/tablecli"
 	"github.com/tsuru/tsuru/cmd"
 	apptypes "github.com/tsuru/tsuru/types/app"
 )
@@ -594,14 +595,14 @@ Quota: {{.Quota.InUse}}/{{if .Quota.Limit}}{{.Quota.Limit}} units{{else}}unlimit
 	titles := []string{"Unit", "Status", "Host", "Port"}
 	for _, process := range processes {
 		units := unitsByProcess[process]
-		unitsTable := cmd.NewTable()
-		unitsTable.Headers = cmd.Row(titles)
+		unitsTable := tablecli.NewTable()
+		unitsTable.Headers = tablecli.Row(titles)
 		for _, unit := range units {
 			if unit.ID == "" {
 				continue
 			}
 			row := []string{ShortID(unit.ID), unit.Status, unit.Host(), unit.Port()}
-			unitsTable.AddRow(cmd.Row(row))
+			unitsTable.AddRow(tablecli.Row(row))
 		}
 		if unitsTable.Rows() > 0 {
 			unitsTable.SortByColumn(2)
@@ -614,7 +615,7 @@ Quota: {{.Quota.InUse}}/{{if .Quota.Limit}}{{.Quota.Limit}} units{{else}}unlimit
 			buf.WriteString(unitsTable.String())
 		}
 	}
-	servicesTable := cmd.NewTable()
+	servicesTable := tablecli.NewTable()
 	servicesTable.Headers = []string{"Service", "Instance (Plan)"}
 	for _, service := range a.services {
 		if len(service.Instances) == 0 {
@@ -827,14 +828,14 @@ func (c *AppList) Show(result []byte, context *cmd.Context, client *cmd.Client) 
 	if err != nil {
 		return err
 	}
-	table := cmd.NewTable()
+	table := tablecli.NewTable()
 	if c.simplified {
 		for _, app := range apps {
 			fmt.Fprintln(context.Stdout, app.Name)
 		}
 		return nil
 	}
-	table.Headers = cmd.Row([]string{"Application", "Units", "Address"})
+	table.Headers = tablecli.Row([]string{"Application", "Units", "Address"})
 	for _, app := range apps {
 		var summary string
 		if app.Error == "" {
@@ -860,7 +861,7 @@ func (c *AppList) Show(result []byte, context *cmd.Context, client *cmd.Client) 
 			}
 		}
 		addrs := strings.Replace(app.Addr(), ", ", "\n", -1)
-		table.AddRow(cmd.Row([]string{app.Name, summary, addrs}))
+		table.AddRow(tablecli.Row([]string{app.Name, summary, addrs}))
 	}
 	table.LineSeparator = true
 	table.Sort()

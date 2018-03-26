@@ -17,6 +17,7 @@ import (
 	"strings"
 
 	"github.com/tsuru/gnuflag"
+	"github.com/tsuru/tablecli"
 	"github.com/tsuru/tsuru/cmd"
 	tsuruIo "github.com/tsuru/tsuru/io"
 )
@@ -520,7 +521,7 @@ func (c ServiceInfo) BuildInstancesTable(serviceName string, ctx *cmd.Context, c
 	ctx.Stdout.Write([]byte(fmt.Sprintf("Info for \"%s\"\n\n", serviceName)))
 	if len(instances) > 0 {
 		ctx.Stdout.Write([]byte("Instances\n"))
-		table := cmd.NewTable()
+		table := tablecli.NewTable()
 		extraHeaders := c.ExtraHeaders(instances)
 		hasPlan := false
 		var data []string
@@ -540,7 +541,7 @@ func (c ServiceInfo) BuildInstancesTable(serviceName string, ctx *cmd.Context, c
 			for _, h := range extraHeaders {
 				data = append(data, instance.Info[h])
 			}
-			table.AddRow(cmd.Row(data))
+			table.AddRow(tablecli.Row(data))
 		}
 		if hasPlan {
 			headers = []string{"Instances", "Plan", "Apps"}
@@ -548,7 +549,7 @@ func (c ServiceInfo) BuildInstancesTable(serviceName string, ctx *cmd.Context, c
 			headers = []string{"Instances", "Apps"}
 		}
 		headers = append(headers, extraHeaders...)
-		table.Headers = cmd.Row(headers)
+		table.Headers = tablecli.Row(headers)
 		ctx.Stdout.Write(table.Bytes())
 	}
 	return nil
@@ -579,12 +580,12 @@ func (c ServiceInfo) BuildPlansTable(serviceName string, ctx *cmd.Context, clien
 	}
 	if len(plans) > 0 {
 		fmt.Fprint(ctx.Stdout, "\nPlans\n")
-		table := cmd.NewTable()
+		table := tablecli.NewTable()
 		for _, plan := range plans {
 			data := []string{plan["Name"], plan["Description"]}
-			table.AddRow(cmd.Row(data))
+			table.AddRow(tablecli.Row(data))
 		}
-		table.Headers = cmd.Row([]string{"Name", "Description"})
+		table.Headers = tablecli.Row([]string{"Name", "Description"})
 		ctx.Stdout.Write(table.Bytes())
 	}
 	return nil

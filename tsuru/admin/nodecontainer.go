@@ -19,6 +19,7 @@ import (
 	"github.com/docker/go-connections/nat"
 	"github.com/fsouza/go-dockerclient"
 	"github.com/tsuru/gnuflag"
+	"github.com/tsuru/tablecli"
 	"github.com/tsuru/tsuru/cmd"
 	"github.com/tsuru/tsuru/provision/nodecontainer"
 )
@@ -68,9 +69,9 @@ func (c *NodeContainerList) Run(context *cmd.Context, client *cmd.Client) error 
 		}
 		return nil
 	}
-	tbl := cmd.NewTable()
+	tbl := tablecli.NewTable()
 	tbl.LineSeparator = true
-	tbl.Headers = cmd.Row{"Name", "Pool Configs", "Image"}
+	tbl.Headers = tablecli.Row{"Name", "Pool Configs", "Image"}
 	for _, entry := range all {
 		var pools []string
 		for poolName := range entry.ConfigPools {
@@ -88,7 +89,7 @@ func (c *NodeContainerList) Run(context *cmd.Context, client *cmd.Client) error 
 			poolEntry := entry.ConfigPools[p]
 			images = append(images, poolEntry.Image())
 		}
-		tbl.AddRow(cmd.Row{entry.Name, strings.Join(pools, "\n"), strings.Join(images, "\n")})
+		tbl.AddRow(tablecli.Row{entry.Name, strings.Join(pools, "\n"), strings.Join(images, "\n")})
 	}
 	tbl.Sort()
 	fmt.Fprint(context.Stdout, tbl.String())
@@ -267,9 +268,9 @@ func (c *NodeContainerInfo) Run(context *cmd.Context, client *cmd.Client) error 
 	if err != nil {
 		return err
 	}
-	tbl := cmd.NewTable()
+	tbl := tablecli.NewTable()
 	tbl.LineSeparator = true
-	tbl.Headers = cmd.Row{"Pool", "Config"}
+	tbl.Headers = tablecli.Row{"Pool", "Config"}
 	for poolName, config := range poolConfigs {
 		data, err := json.MarshalIndent(config, "", "  ")
 		if err != nil {
@@ -278,7 +279,7 @@ func (c *NodeContainerInfo) Run(context *cmd.Context, client *cmd.Client) error 
 		if poolName == "" {
 			poolName = emptyPoolLabel
 		}
-		tbl.AddRow(cmd.Row{poolName, string(data)})
+		tbl.AddRow(tablecli.Row{poolName, string(data)})
 	}
 	tbl.Sort()
 	fmt.Fprint(context.Stdout, tbl.String())

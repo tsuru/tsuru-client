@@ -11,6 +11,7 @@ import (
 	"strconv"
 
 	"github.com/tsuru/gnuflag"
+	"github.com/tsuru/tablecli"
 	"github.com/tsuru/tsuru/cmd"
 	apptypes "github.com/tsuru/tsuru/types/app"
 )
@@ -40,7 +41,7 @@ func (c *PlanList) Info() *cmd.Info {
 }
 
 func renderPlans(plans []apptypes.Plan, isBytes bool) string {
-	table := cmd.NewTable()
+	table := tablecli.NewTable()
 	table.Headers = []string{"Name", "Memory", "Swap", "Cpu Share", "Default"}
 	for _, p := range plans {
 		var memory, swap string

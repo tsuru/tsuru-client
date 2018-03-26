@@ -20,6 +20,7 @@ import (
 	"github.com/docker/machine/libmachine/provision"
 	"github.com/docker/machine/libmachine/provision/serviceaction"
 	"github.com/fsouza/go-dockerclient"
+	"github.com/tsuru/tablecli"
 	"github.com/tsuru/tsuru-client/tsuru/installer/defaultconfig"
 	"github.com/tsuru/tsuru-client/tsuru/installer/dm"
 	"github.com/tsuru/tsuru/cmd"
@@ -326,31 +327,31 @@ Core Components:
 	return summary
 }
 
-func (i *Installation) buildClusterTable() *cmd.Table {
-	t := cmd.NewTable()
-	t.Headers = cmd.Row{"IP", "State", "Manager"}
+func (i *Installation) buildClusterTable() *tablecli.Table {
+	t := tablecli.NewTable()
+	t.Headers = tablecli.Row{"IP", "State", "Manager"}
 	t.LineSeparator = true
 	nodes, err := i.CoreCluster.ClusterInfo()
 	if err != nil {
-		t.AddRow(cmd.Row{fmt.Sprintf("failed to retrieve cluster info: %s", err)})
+		t.AddRow(tablecli.Row{fmt.Sprintf("failed to retrieve cluster info: %s", err)})
 	}
 	for _, n := range nodes {
-		t.AddRow(cmd.Row{n.IP, n.State, strconv.FormatBool(n.Manager)})
+		t.AddRow(tablecli.Row{n.IP, n.State, strconv.FormatBool(n.Manager)})
 	}
 	return t
 }
 
-func (i *Installation) buildComponentsTable() *cmd.Table {
-	t := cmd.NewTable()
-	t.Headers = cmd.Row{"Component", "Ports", "Replicas"}
+func (i *Installation) buildComponentsTable() *tablecli.Table {
+	t := tablecli.NewTable()
+	t.Headers = tablecli.Row{"Component", "Ports", "Replicas"}
 	t.LineSeparator = true
 	services, err := i.CoreCluster.ServicesInfo()
 	if err != nil {
-		t.AddRow(cmd.Row{"Failed to fetch services.", "", ""})
+		t.AddRow(tablecli.Row{"Failed to fetch services.", "", ""})
 		return nil
 	}
 	for _, s := range services {
-		t.AddRow(cmd.Row{s.Name,
+		t.AddRow(tablecli.Row{s.Name,
 			strings.Join(s.Ports, ","),
 			strconv.Itoa(s.Replicas),
 		})

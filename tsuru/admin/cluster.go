@@ -16,6 +16,7 @@ import (
 	"github.com/ajg/form"
 	"github.com/pkg/errors"
 	"github.com/tsuru/gnuflag"
+	"github.com/tsuru/tablecli"
 	"github.com/tsuru/tsuru/cmd"
 	"github.com/tsuru/tsuru/provision/cluster"
 )
@@ -257,16 +258,16 @@ func (c *ClusterList) Run(context *cmd.Context, client *cmd.Client) error {
 	if err != nil {
 		return errors.Wrapf(err, "unable to parse data %q", string(data))
 	}
-	tbl := cmd.NewTable()
+	tbl := tablecli.NewTable()
 	tbl.LineSeparator = true
-	tbl.Headers = cmd.Row{"Name", "Provisioner", "Addresses", "Custom Data", "Default", "Pools"}
+	tbl.Headers = tablecli.Row{"Name", "Provisioner", "Addresses", "Custom Data", "Default", "Pools"}
 	sort.Slice(clusters, func(i, j int) bool { return clusters[i].Name < clusters[j].Name })
 	for _, c := range clusters {
 		var custom []string
 		for k, v := range c.CustomData {
 			custom = append(custom, fmt.Sprintf("%s=%s", k, v))
 		}
-		tbl.AddRow(cmd.Row{c.Name, c.Provisioner, strings.Join(c.Addresses, "\n"), strings.Join(custom, "\n"), strconv.FormatBool(c.Default), strings.Join(c.Pools, "\n")})
+		tbl.AddRow(tablecli.Row{c.Name, c.Provisioner, strings.Join(c.Addresses, "\n"), strings.Join(custom, "\n"), strconv.FormatBool(c.Default), strings.Join(c.Pools, "\n")})
 	}
 	fmt.Fprint(context.Stdout, tbl.String())
 	return nil

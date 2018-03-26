@@ -18,6 +18,7 @@ import (
 	"strings"
 
 	"github.com/tsuru/gnuflag"
+	"github.com/tsuru/tablecli"
 	"github.com/tsuru/tsuru/cmd"
 )
 
@@ -208,28 +209,28 @@ func (c *CertificateList) Run(context *cmd.Context, client *cmd.Client) error {
 		}
 		return nil
 	}
-	tbl := cmd.NewTable()
+	tbl := tablecli.NewTable()
 	tbl.LineSeparator = true
-	tbl.Headers = cmd.Row{"Router", "CName", "Expires", "Issuer", "Subject"}
+	tbl.Headers = tablecli.Row{"Router", "CName", "Expires", "Issuer", "Subject"}
 	dateFormat := "2006-01-02 15:04:05"
 	for r, cnames := range routerMap {
 		for _, n := range cnames {
 			rawCert := rawCerts[r][n]
 			if rawCert == "" {
-				tbl.AddRow(cmd.Row{r, n, "-", "-", "-"})
+				tbl.AddRow(tablecli.Row{r, n, "-", "-", "-"})
 				continue
 			}
 			certBlock, _ := pem.Decode([]byte(rawCert))
 			if certBlock == nil {
-				tbl.AddRow(cmd.Row{r, n, "failed to decode data", "-", "-"})
+				tbl.AddRow(tablecli.Row{r, n, "failed to decode data", "-", "-"})
 				continue
 			}
 			cert, err := x509.ParseCertificate(certBlock.Bytes)
 			if err != nil {
-				tbl.AddRow(cmd.Row{r, n, "failed to parse certificate data", "-", "-"})
+				tbl.AddRow(tablecli.Row{r, n, "failed to parse certificate data", "-", "-"})
 				continue
 			}
-			tbl.AddRow(cmd.Row{r, n, cert.NotAfter.Local().Format(dateFormat),
+			tbl.AddRow(tablecli.Row{r, n, cert.NotAfter.Local().Format(dateFormat),
 				formatName(&cert.Issuer), formatName(&cert.Subject),
 			})
 		}

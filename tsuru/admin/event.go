@@ -12,6 +12,7 @@ import (
 
 	"github.com/ajg/form"
 	"github.com/tsuru/gnuflag"
+	"github.com/tsuru/tablecli"
 	"github.com/tsuru/tsuru-client/tsuru/formatter"
 	"github.com/tsuru/tsuru/cmd"
 	"github.com/tsuru/tsuru/event"
@@ -62,8 +63,8 @@ func (c *EventBlockList) Run(context *cmd.Context, client *cmd.Client) error {
 			return err
 		}
 	}
-	tbl := cmd.NewTable()
-	tbl.Headers = cmd.Row{"ID", "Start (duration)", "Kind", "Owner", "Target (Type: Value)", "Reason"}
+	tbl := tablecli.NewTable()
+	tbl.Headers = tablecli.Row{"ID", "Start (duration)", "Kind", "Owner", "Target (Type: Value)", "Reason"}
 	for _, b := range blocks {
 		var duration *time.Duration
 		if !b.EndTime.IsZero() {
@@ -75,7 +76,7 @@ func (c *EventBlockList) Run(context *cmd.Context, client *cmd.Client) error {
 		owner := valueOrWildcard(b.OwnerName)
 		targetType := valueOrWildcard(string(b.Target.Type))
 		targetValue := valueOrWildcard(b.Target.Value)
-		row := cmd.Row{b.ID.Hex(), ts, kind, owner, fmt.Sprintf("%s: %s", targetType, targetValue), b.Reason}
+		row := tablecli.Row{b.ID.Hex(), ts, kind, owner, fmt.Sprintf("%s: %s", targetType, targetValue), b.Reason}
 		color := "yellow"
 		if !b.Active {
 			color = "white"

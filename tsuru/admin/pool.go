@@ -14,6 +14,7 @@ import (
 
 	"github.com/ajg/form"
 	"github.com/tsuru/gnuflag"
+	"github.com/tsuru/tablecli"
 	"github.com/tsuru/tsuru/cmd"
 	"github.com/tsuru/tsuru/errors"
 	"github.com/tsuru/tsuru/provision/pool"
@@ -330,10 +331,10 @@ func (c *PoolConstraintList) Run(ctx *cmd.Context, client *cmd.Client) error {
 	if err != nil {
 		return err
 	}
-	tbl := cmd.NewTable()
-	tbl.Headers = cmd.Row{"Pool Expression", "Field", "Values", "Blacklist"}
+	tbl := tablecli.NewTable()
+	tbl.Headers = tablecli.Row{"Pool Expression", "Field", "Values", "Blacklist"}
 	for _, c := range constraints {
-		tbl.AddRow(cmd.Row{c.PoolExpr, string(c.Field), strings.Join(c.Values, ","), strconv.FormatBool(c.Blacklist)})
+		tbl.AddRow(tablecli.Row{c.PoolExpr, string(c.Field), strings.Join(c.Values, ","), strconv.FormatBool(c.Blacklist)})
 	}
 	tbl.SortByColumn(0)
 	ctx.Stdout.Write([]byte(tbl.String()))

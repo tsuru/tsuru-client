@@ -15,6 +15,7 @@ import (
 	"strings"
 
 	"github.com/tsuru/gnuflag"
+	"github.com/tsuru/tablecli"
 	"github.com/tsuru/tsuru/cmd"
 	"github.com/tsuru/tsuru/permission"
 )
@@ -106,10 +107,10 @@ func (c *PermissionList) Run(context *cmd.Context, client *cmd.Client) error {
 }
 
 func renderList(w io.Writer, permissions []*permissionData) {
-	t := cmd.NewTable()
-	t.Headers = cmd.Row{"Name", "Contexts"}
+	t := tablecli.NewTable()
+	t.Headers = tablecli.Row{"Name", "Contexts"}
 	for _, perm := range permissions {
-		t.AddRow(cmd.Row{perm.Name, strings.Join(perm.Contexts, ", ")})
+		t.AddRow(tablecli.Row{perm.Name, strings.Join(perm.Contexts, ", ")})
 	}
 	fmt.Fprint(w, t.String())
 }
@@ -180,10 +181,10 @@ func (c *RoleInfo) Run(context *cmd.Context, client *cmd.Client) error {
 	if err != nil {
 		return err
 	}
-	tbl := cmd.NewTable()
+	tbl := tablecli.NewTable()
 	tbl.LineSeparator = true
-	tbl.Headers = cmd.Row{"Name", "Context", "Permissions", "Description"}
-	tbl.AddRow(cmd.Row{perm.Name, string(perm.ContextType), strings.Join(perm.SchemeNames, "\n"), perm.Description})
+	tbl.Headers = tablecli.Row{"Name", "Context", "Permissions", "Description"}
+	tbl.AddRow(tablecli.Row{perm.Name, string(perm.ContextType), strings.Join(perm.SchemeNames, "\n"), perm.Description})
 	fmt.Fprintf(context.Stdout, tbl.String())
 	return nil
 }
@@ -284,11 +285,11 @@ func (c *RoleList) Run(context *cmd.Context, client *cmd.Client) error {
 	if err != nil {
 		return err
 	}
-	table := cmd.NewTable()
-	table.Headers = cmd.Row{"Role", "Context", "Permissions"}
+	table := tablecli.NewTable()
+	table.Headers = tablecli.Row{"Role", "Context", "Permissions"}
 	table.LineSeparator = true
 	for _, r := range roles {
-		table.AddRow(cmd.Row{r.Name, string(r.ContextType), strings.Join(r.SchemeNames, "\n")})
+		table.AddRow(tablecli.Row{r.Name, string(r.ContextType), strings.Join(r.SchemeNames, "\n")})
 	}
 	fmt.Fprint(context.Stdout, table.String())
 	return nil
@@ -625,16 +626,16 @@ func (c *RoleDefaultList) Run(context *cmd.Context, client *cmd.Client) error {
 			rolesByEvent[evt] = append(rolesByEvent[evt], r)
 		}
 	}
-	tbl := cmd.NewTable()
+	tbl := tablecli.NewTable()
 	tbl.LineSeparator = true
-	tbl.Headers = cmd.Row{"Event", "Description", "Roles"}
+	tbl.Headers = tablecli.Row{"Event", "Description", "Roles"}
 	for _, event := range permission.RoleEventMap {
 		roles := rolesByEvent[event.String()]
 		roleNames := make([]string, len(roles))
 		for i := range roles {
 			roleNames[i] = roles[i].Name
 		}
-		tbl.AddRow(cmd.Row{event.String(), event.Description, strings.Join(roleNames, "\n")})
+		tbl.AddRow(tablecli.Row{event.String(), event.Description, strings.Join(roleNames, "\n")})
 	}
 	tbl.Sort()
 	fmt.Fprint(context.Stdout, tbl.String())

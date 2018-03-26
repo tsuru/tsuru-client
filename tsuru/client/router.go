@@ -14,6 +14,7 @@ import (
 
 	"github.com/ajg/form"
 	"github.com/tsuru/gnuflag"
+	"github.com/tsuru/tablecli"
 	"github.com/tsuru/tsuru/cmd"
 	"github.com/tsuru/tsuru/router"
 	appTypes "github.com/tsuru/tsuru/types/app"
@@ -50,8 +51,8 @@ func (c *RoutersList) Run(context *cmd.Context, client *cmd.Client) error {
 			return err
 		}
 	}
-	table := cmd.NewTable()
-	table.Headers = cmd.Row([]string{"Name", "Type", "Info"})
+	table := tablecli.NewTable()
+	table.Headers = tablecli.Row([]string{"Name", "Type", "Info"})
 	table.LineSeparator = true
 	for _, router := range routers {
 		var infos []string
@@ -59,7 +60,7 @@ func (c *RoutersList) Run(context *cmd.Context, client *cmd.Client) error {
 			infos = append(infos, fmt.Sprintf("%s: %s", k, v))
 		}
 		sort.Strings(infos)
-		table.AddRow(cmd.Row([]string{router.Name, router.Type, strings.Join(infos, "\n")}))
+		table.AddRow(tablecli.Row([]string{router.Name, router.Type, strings.Join(infos, "\n")}))
 	}
 	context.Stdout.Write(table.Bytes())
 	return nil
@@ -110,8 +111,8 @@ func (c *AppRoutersList) Run(context *cmd.Context, client *cmd.Client) error {
 }
 
 func renderRouters(routers []appTypes.AppRouter, out io.Writer) {
-	table := cmd.NewTable()
-	table.Headers = cmd.Row([]string{"Name", "Type", "Opts", "Address", "Status"})
+	table := tablecli.NewTable()
+	table.Headers = tablecli.Row([]string{"Name", "Type", "Opts", "Address", "Status"})
 	table.LineSeparator = true
 	for _, r := range routers {
 		var optsStr []string
@@ -123,7 +124,7 @@ func renderRouters(routers []appTypes.AppRouter, out io.Writer) {
 		if r.StatusDetail != "" {
 			statusStr = fmt.Sprintf("%s: %s", statusStr, r.StatusDetail)
 		}
-		table.AddRow(cmd.Row([]string{r.Name, r.Type, strings.Join(optsStr, "\n"), r.Address, statusStr}))
+		table.AddRow(tablecli.Row([]string{r.Name, r.Type, strings.Join(optsStr, "\n"), r.Address, statusStr}))
 	}
 	out.Write(table.Bytes())
 }

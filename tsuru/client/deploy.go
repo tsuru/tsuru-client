@@ -25,6 +25,7 @@ import (
 
 	"github.com/sabhiram/go-gitignore"
 	"github.com/tsuru/gnuflag"
+	"github.com/tsuru/tablecli"
 	"github.com/tsuru/tsuru-client/tsuru/formatter"
 	tsuruapp "github.com/tsuru/tsuru/app"
 	"github.com/tsuru/tsuru/cmd"
@@ -88,8 +89,8 @@ func (c *AppDeployList) Run(context *cmd.Context, client *cmd.Client) error {
 		return err
 	}
 	sort.Sort(sort.Reverse(deployList(deploys)))
-	table := cmd.NewTable()
-	table.Headers = cmd.Row([]string{"Image (Rollback)", "Origin", "User", "Date (Duration)", "Error"})
+	table := tablecli.NewTable()
+	table.Headers = tablecli.Row([]string{"Image (Rollback)", "Origin", "User", "Date (Duration)", "Error"})
 	for _, deploy := range deploys {
 		timestamp := formatter.FormatDateAndDuration(deploy.Timestamp, &deploy.Duration)
 		if deploy.Origin == "git" {
@@ -110,7 +111,7 @@ func (c *AppDeployList) Run(context *cmd.Context, client *cmd.Client) error {
 			}
 		}
 		table.LineSeparator = true
-		table.AddRow(cmd.Row(rowData))
+		table.AddRow(tablecli.Row(rowData))
 	}
 	context.Stdout.Write(table.Bytes())
 	return nil
