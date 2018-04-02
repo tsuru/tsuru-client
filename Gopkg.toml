@@ -99,6 +99,10 @@
 [[override]]
   name = "github.com/rackspace/gophercloud"
   revision = "c90cb954266e1bdd6d1914678fd6909fc5fabbfa"
+[[override]]
+  name = "github.com/Nvveen/Gotty"
+  source = "https://github.com/ijc25/Gotty.git"
+  revision = "a8b993ba6abdb0e0c12b0125c603323a71c7790c"
 
 [[constraint]]
   branch = "master"
