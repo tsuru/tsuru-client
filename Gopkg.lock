@@ -47,10 +47,10 @@
   revision = "d8f60f2dd117cd64c2825143a89ecb6f158ad743"
 
 [[projects]]
-  branch = "master"
   name = "github.com/Nvveen/Gotty"
   packages = ["."]
-  revision = "cd527374f1e5bff4938207604a14f2e38a9cf512"
+  revision = "a8b993ba6abdb0e0c12b0125c603323a71c7790c"
+  source = "https://github.com/ijc25/Gotty.git"
 
 [[projects]]
   name = "github.com/RobotsAndPencils/go-saml"
@@ -651,6 +651,6 @@
 [solve-meta]
   analyzer-name = "dep"
   analyzer-version = 1
-  inputs-digest = "14cb7be988c915395ea2ba8cec55a6737b90f7be47dd569608f0206b62243fdc"
+  inputs-digest = "3a528323a3829489352fb596f3c182a972d7bdd589c205038870199a82221fcc"
   solver-name = "gps-cdcl"
   solver-version = 1
