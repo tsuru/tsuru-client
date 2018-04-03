@@ -57,6 +57,28 @@ func (s *S) TestPluginInstall(c *check.C) {
 	c.Assert(expected, check.Equals, stdout.String())
 }
 
+func (s *S) TestPluginInstallError(c *check.C) {
+	ts := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		w.WriteHeader(http.StatusInternalServerError)
+		w.Write([]byte("my err"))
+	}))
+	defer ts.Close()
+	rfs := fstest.RecordingFs{}
+	fsystem = &rfs
+	defer func() {
+		fsystem = nil
+	}()
+	var stdout bytes.Buffer
+	context := cmd.Context{
+		Args:   []string{"myplugin", ts.URL},
+		Stdout: &stdout,
+	}
+	client := cmd.NewClient(nil, nil, manager)
+	command := PluginInstall{}
+	err := command.Run(&context, client)
+	c.Assert(err, check.ErrorMatches, `Invalid status code reading plugin: 500 - "my err"`)
+}
+
 func (s *S) TestPluginInstallIsACommand(c *check.C) {
 	var _ cmd.Command = &PluginInstall{}
 }

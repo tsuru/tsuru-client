@@ -48,6 +48,9 @@ func (c *PluginInstall) Run(context *cmd.Context, client *cmd.Client) error {
 	if err != nil {
 		return err
 	}
+	if resp.StatusCode < 200 || resp.StatusCode >= 400 {
+		return fmt.Errorf("Invalid status code reading plugin: %d - %q", resp.StatusCode, string(data))
+	}
 	n, err := file.Write(data)
 	if err != nil {
 		return err
