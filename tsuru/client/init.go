@@ -5,7 +5,7 @@ import (
 	"io"
 	"io/ioutil"
 	"os"
-	"strings"
+	"path/filepath"
 
 	tsuruErrors "github.com/tsuru/tsuru/errors"
 
@@ -133,8 +133,7 @@ func writeProcfile() (err error) {
 	if err != nil {
 		return
 	}
-	projectPathSplitted := strings.Split(wd, "/")
-	projectName := projectPathSplitted[len(projectPathSplitted)-1]
+	projectName := filepath.Base(wd)
 	procfile := fmt.Sprintf("web: %s", projectName)
 	return ioutil.WriteFile("Procfile", []byte(procfile), 0644)
 }
