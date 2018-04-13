@@ -553,12 +553,12 @@ func (c *ShowAPIToken) Info() *cmd.Info {
 	return &cmd.Info{
 		Name:  "token-show",
 		Usage: "token-show [--user/-u useremail]",
-		Desc: `Shows API token for the user. This token allow authenticated API calls to
-tsuru and will never expire. This is useful for integrating CI servers with
-tsuru.
+		Desc: `Shows API token for the user. This command is deprecated, [[tsuru
+token-create]] should be used instead. This token allow authenticated API
+calls to tsuru impersonating the user who created it and will never expire.
 
-The key will be generated the first time this command is called. See [[tsuru token-regenerate]]
-if you need to invalidate an existing token.`,
+The token key will be generated the first time this command is called. See
+[[tsuru token-regenerate]] if you need to invalidate an existing token.`,
 		MinArgs: 0,
 	}
 }
@@ -611,9 +611,12 @@ type RegenerateAPIToken struct {
 
 func (c *RegenerateAPIToken) Info() *cmd.Info {
 	return &cmd.Info{
-		Name:    "token-regenerate",
-		Usage:   "token-regenerate [--user/-u useremail]",
-		Desc:    `Generates a new API token. This invalidates previously generated API tokens.`,
+		Name:  "token-regenerate",
+		Usage: "token-regenerate [--user/-u useremail]",
+		Desc: `Generates a new API token associated to the user. This invalidates and
+replaces the token previously shown in [[tsuru token-show]]. This command is
+deprecated, [[tsuru token-create]] and [[tsuru token-update]] should be used
+instead.`,
 		MinArgs: 0,
 	}
 }
