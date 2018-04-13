@@ -10,6 +10,7 @@ import (
 	"io/ioutil"
 	"net/http"
 	"os"
+	"path/filepath"
 
 	"github.com/tsuru/tsuru/cmd"
 	"github.com/tsuru/tsuru/exec"
@@ -112,7 +113,12 @@ func RunPlugin(context *cmd.Context) error {
 	}
 	pluginPath := cmd.JoinWithUserDir(".tsuru", "plugins", pluginName)
 	if _, err := os.Stat(pluginPath); os.IsNotExist(err) {
-		return cmd.ErrLookup
+		pluginPath += ".*"
+		results, _ := filepath.Glob(pluginPath)
+		if len(results) != 1 {
+			return cmd.ErrLookup
+		}
+		pluginPath = results[0]
 	}
 	target, err := cmd.GetTarget()
 	if err != nil {

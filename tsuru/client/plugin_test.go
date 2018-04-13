@@ -143,6 +143,48 @@ func (s *S) TestPluginWithArgs(c *check.C) {
 	c.Assert(fexec.ExecutedCmd(pluginPath, []string{"ble", "bla"}), check.Equals, true)
 }
 
+func (s *S) TestPluginTryNameWithAnyExtension(c *check.C) {
+	// Kids, do not try this at $HOME
+	defer os.Setenv("HOME", os.Getenv("HOME"))
+	tempHome, _ := filepath.Abs("testdata")
+	os.Setenv("HOME", tempHome)
+
+	fexec := exectest.FakeExecutor{
+		Output: map[string][][]byte{
+			"a b": {[]byte("hello world")},
+		},
+	}
+	Execut = &fexec
+	defer func() {
+		Execut = nil
+	}()
+	var buf bytes.Buffer
+	context := cmd.Context{
+		Args:   []string{"otherplugin", "a", "b"},
+		Stdout: &buf,
+		Stderr: &buf,
+	}
+	err := RunPlugin(&context)
+	c.Assert(err, check.IsNil)
+	pluginPath := cmd.JoinWithUserDir(".tsuru", "plugins", "otherplugin.exe")
+	c.Assert(fexec.ExecutedCmd(pluginPath, []string{"a", "b"}), check.Equals, true)
+	c.Assert(buf.String(), check.Equals, "hello world")
+	commands := fexec.GetCommands(pluginPath)
+	c.Assert(commands, check.HasLen, 1)
+	target, err := cmd.GetTarget()
+	c.Assert(err, check.IsNil)
+	token, err := cmd.ReadToken()
+	c.Assert(err, check.IsNil)
+	envs := os.Environ()
+	tsuruEnvs := []string{
+		fmt.Sprintf("TSURU_TARGET=%s", target),
+		fmt.Sprintf("TSURU_TOKEN=%s", token),
+		"TSURU_PLUGIN_NAME=otherplugin",
+	}
+	envs = append(envs, tsuruEnvs...)
+	c.Assert(commands[0].GetEnvs(), check.DeepEquals, envs)
+}
+
 func (s *S) TestPluginLoop(c *check.C) {
 	os.Setenv("TSURU_PLUGIN_NAME", "myplugin")
 	defer os.Unsetenv("TSURU_PLUGIN_NAME")
