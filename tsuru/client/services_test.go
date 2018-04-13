@@ -273,13 +273,16 @@ func (s *S) TestServiceInstanceUnbind(c *check.C) {
 		Transport: cmdtest.Transport{Message: string(result), Status: http.StatusOK},
 		CondFunc: func(req *http.Request) bool {
 			called = true
-			return req.Method == http.MethodDelete && strings.HasSuffix(req.URL.Path, "/services/service/instances/hand/pocket") &&
-				req.URL.RawQuery == "noRestart=true"
+			c.Assert(req.URL.Query().Get("noRestart"), check.Equals, "true")
+			c.Assert(req.URL.Query().Get("force"), check.Equals, "true")
+			c.Assert(req.URL.Path, check.Equals, "/1.0/services/service/instances/hand/pocket")
+			c.Assert(req.Method, check.Equals, http.MethodDelete)
+			return true
 		},
 	}
 	client := cmd.NewClient(&http.Client{Transport: trans}, nil, manager)
 	command := ServiceInstanceUnbind{}
-	command.Flags().Parse(true, []string{"-a", "pocket", "--no-restart"})
+	command.Flags().Parse(true, []string{"-a", "pocket", "--no-restart", "--force"})
 	err = command.Run(&ctx, client)
 	c.Assert(err, check.IsNil)
 	c.Assert(called, check.Equals, true)
@@ -302,8 +305,11 @@ func (s *S) TestServiceInstanceUnbindWithoutFlag(c *check.C) {
 		Transport: cmdtest.Transport{Message: string(result), Status: http.StatusOK},
 		CondFunc: func(req *http.Request) bool {
 			called = true
-			return req.Method == http.MethodDelete && strings.HasSuffix(req.URL.Path, "/services/service/instances/hand/sleeve") &&
-				req.URL.RawQuery == "noRestart=false"
+			c.Assert(req.URL.Query().Get("noRestart"), check.Equals, "false")
+			c.Assert(req.URL.Query().Get("force"), check.Equals, "false")
+			c.Assert(req.URL.Path, check.Equals, "/1.0/services/service/instances/hand/sleeve")
+			c.Assert(req.Method, check.Equals, http.MethodDelete)
+			return true
 		},
 	}
 	client := cmd.NewClient(&http.Client{Transport: trans}, nil, manager)

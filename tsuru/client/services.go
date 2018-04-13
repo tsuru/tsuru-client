@@ -278,6 +278,7 @@ type ServiceInstanceUnbind struct {
 	cmd.GuessingCommand
 	fs        *gnuflag.FlagSet
 	noRestart bool
+	force     bool
 }
 
 func (su *ServiceInstanceUnbind) Run(ctx *cmd.Context, client *cmd.Client) error {
@@ -288,15 +289,18 @@ func (su *ServiceInstanceUnbind) Run(ctx *cmd.Context, client *cmd.Client) error
 	}
 	serviceName := ctx.Args[0]
 	instanceName := ctx.Args[1]
-	url, err := cmd.GetURL("/services/" + serviceName + "/instances/" + instanceName + "/" + appName)
+	u, err := cmd.GetURL(fmt.Sprintf("/services/%s/instances/%s/%s", serviceName, instanceName, appName))
 	if err != nil {
 		return err
 	}
-	url += fmt.Sprintf("?noRestart=%t", su.noRestart)
-	request, err := http.NewRequest(http.MethodDelete, url, nil)
+	request, err := http.NewRequest(http.MethodDelete, u, nil)
 	if err != nil {
 		return err
 	}
+	query := url.Values{}
+	query.Set("noRestart", strconv.FormatBool(su.noRestart))
+	query.Set("force", strconv.FormatBool(su.force))
+	request.URL.RawQuery = query.Encode()
 	resp, err := client.Do(request)
 	if err != nil {
 		return err
@@ -318,7 +322,7 @@ func (su *ServiceInstanceUnbind) Run(ctx *cmd.Context, client *cmd.Client) error
 func (su *ServiceInstanceUnbind) Info() *cmd.Info {
 	return &cmd.Info{
 		Name:  "service-instance-unbind",
-		Usage: "service-instance-unbind <service-name> <service-instance-name> [-a/--app appname] [--no-restart]",
+		Usage: "service-instance-unbind <service-name> <service-instance-name> [-a/--app appname] [--no-restart] [--force]",
 		Desc: `Unbinds an application from a service instance. After unbinding, the instance
 will not be available anymore. For example, when unbinding an application from
 a MySQL service, the application would lose access to the database.`,
@@ -330,6 +334,7 @@ func (su *ServiceInstanceUnbind) Flags() *gnuflag.FlagSet {
 	if su.fs == nil {
 		su.fs = su.GuessingCommand.Flags()
 		su.fs.BoolVar(&su.noRestart, "no-restart", false, "Unbinds an application from a service instance without restart the application")
+		su.fs.BoolVar(&su.force, "force", false, "Forces the unbind even if the unbind API call to the service fails")
 	}
 	return su.fs
 }
