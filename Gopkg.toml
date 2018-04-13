@@ -15,6 +15,10 @@
   name = "github.com/docker/docker"
   branch = "master"
 
+[[constraint]]
+  name = "github.com/tsuru/go-tsuruclient"
+  branch = "master"
+
 [[override]]
   name = "github.com/kardianos/osext"
   revision = "10da29423eb9a6269092eebdc2be32209612d9d2"
