@@ -441,6 +441,15 @@
 
 [[projects]]
   branch = "master"
+  name = "github.com/tsuru/go-tsuruclient"
+  packages = [
+    "pkg/client",
+    "pkg/tsuru"
+  ]
+  revision = "9a9d75fe886f2c14e5899434445a58d03ba9861a"
+
+[[projects]]
+  branch = "master"
   name = "github.com/tsuru/monsterqueue"
   packages = [
     ".",
@@ -651,6 +660,6 @@
 [solve-meta]
   analyzer-name = "dep"
   analyzer-version = 1
-  inputs-digest = "3a528323a3829489352fb596f3c182a972d7bdd589c205038870199a82221fcc"
+  inputs-digest = "49e50fce780d8125faa887971a855c2b349e77d2f07bb96a9fd21ac12e21279d"
   solver-name = "gps-cdcl"
   solver-version = 1
