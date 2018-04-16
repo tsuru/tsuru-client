@@ -33,6 +33,7 @@ func (s *S) TestTokenCreate(c *check.C) {
 			data, err := ioutil.ReadAll(r.Body)
 			c.Assert(err, check.IsNil)
 			err = json.Unmarshal(data, &ret)
+			c.Assert(err, check.IsNil)
 			c.Assert(ret, check.DeepEquals, map[string]interface{}{})
 			return true
 		},
@@ -63,6 +64,7 @@ func (s *S) TestTokenCreateWithFlags(c *check.C) {
 			data, err := ioutil.ReadAll(r.Body)
 			c.Assert(err, check.IsNil)
 			err = json.Unmarshal(data, &ret)
+			c.Assert(err, check.IsNil)
 			c.Assert(ret, check.DeepEquals, map[string]interface{}{
 				"token_id":    "myid",
 				"description": "mydesc",
@@ -104,6 +106,7 @@ func (s *S) TestTokenUpdate(c *check.C) {
 			data, err := ioutil.ReadAll(r.Body)
 			c.Assert(err, check.IsNil)
 			err = json.Unmarshal(data, &ret)
+			c.Assert(err, check.IsNil)
 			c.Assert(ret, check.DeepEquals, map[string]interface{}{})
 			return true
 		},
@@ -135,6 +138,7 @@ func (s *S) TestTokenUpdateWithFlags(c *check.C) {
 			data, err := ioutil.ReadAll(r.Body)
 			c.Assert(err, check.IsNil)
 			err = json.Unmarshal(data, &ret)
+			c.Assert(err, check.IsNil)
 			c.Assert(ret, check.DeepEquals, map[string]interface{}{
 				"description": "mydesc",
 				"expires_in":  float64(180),

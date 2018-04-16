@@ -5,6 +5,7 @@
 package client
 
 import (
+	"context"
 	"fmt"
 	"sort"
 	"strings"
@@ -32,7 +33,7 @@ func (c *TokenCreateCmd) Info() *cmd.Info {
 	}
 }
 
-func (c *TokenCreateCmd) Run(context *cmd.Context, cli *cmd.Client) error {
+func (c *TokenCreateCmd) Run(ctx *cmd.Context, cli *cmd.Client) error {
 	apiClient, err := client.ClientFromEnvironment(&tsuru.Configuration{
 		HTTPClient: cli.HTTPClient,
 	})
@@ -40,11 +41,11 @@ func (c *TokenCreateCmd) Run(context *cmd.Context, cli *cmd.Client) error {
 		return err
 	}
 	c.args.ExpiresIn = int64(c.expires / time.Second)
-	token, _, err := apiClient.AuthApi.TeamTokenCreate(nil, c.args)
+	token, _, err := apiClient.AuthApi.TeamTokenCreate(context.TODO(), c.args)
 	if err != nil {
 		return err
 	}
-	fmt.Fprintf(context.Stdout, "Token %q created: %s\n", token.TokenId, token.Token)
+	fmt.Fprintf(ctx.Stdout, "Token %q created: %s\n", token.TokenId, token.Token)
 	return nil
 }
 
@@ -86,7 +87,7 @@ func (c *TokenUpdateCmd) Info() *cmd.Info {
 	}
 }
 
-func (c *TokenUpdateCmd) Run(context *cmd.Context, cli *cmd.Client) error {
+func (c *TokenUpdateCmd) Run(ctx *cmd.Context, cli *cmd.Client) error {
 	apiClient, err := client.ClientFromEnvironment(&tsuru.Configuration{
 		HTTPClient: cli.HTTPClient,
 	})
@@ -94,11 +95,11 @@ func (c *TokenUpdateCmd) Run(context *cmd.Context, cli *cmd.Client) error {
 		return err
 	}
 	c.args.ExpiresIn = int64(c.expires / time.Second)
-	token, _, err := apiClient.AuthApi.TeamTokenUpdate(nil, context.Args[0], c.args)
+	token, _, err := apiClient.AuthApi.TeamTokenUpdate(context.TODO(), ctx.Args[0], c.args)
 	if err != nil {
 		return err
 	}
-	fmt.Fprintf(context.Stdout, "Token %q updated: %s\n", token.TokenId, token.Token)
+	fmt.Fprintf(ctx.Stdout, "Token %q updated: %s\n", token.TokenId, token.Token)
 	return nil
 }
 
@@ -132,14 +133,14 @@ func (c *TokenListCmd) Info() *cmd.Info {
 	}
 }
 
-func (c *TokenListCmd) Run(context *cmd.Context, cli *cmd.Client) error {
+func (c *TokenListCmd) Run(ctx *cmd.Context, cli *cmd.Client) error {
 	apiClient, err := client.ClientFromEnvironment(&tsuru.Configuration{
 		HTTPClient: cli.HTTPClient,
 	})
 	if err != nil {
 		return err
 	}
-	tokens, _, err := apiClient.AuthApi.TeamTokensList(nil)
+	tokens, _, err := apiClient.AuthApi.TeamTokensList(context.TODO())
 	if err != nil {
 		return err
 	}
@@ -166,7 +167,7 @@ func (c *TokenListCmd) Run(context *cmd.Context, cli *cmd.Client) error {
 		})
 	}
 	table.Sort()
-	fmt.Fprint(context.Stdout, table.String())
+	fmt.Fprint(ctx.Stdout, table.String())
 	return nil
 }
 
@@ -191,17 +192,17 @@ func (c *TokenDeleteCmd) Info() *cmd.Info {
 	}
 }
 
-func (c *TokenDeleteCmd) Run(context *cmd.Context, cli *cmd.Client) error {
+func (c *TokenDeleteCmd) Run(ctx *cmd.Context, cli *cmd.Client) error {
 	apiClient, err := client.ClientFromEnvironment(&tsuru.Configuration{
 		HTTPClient: cli.HTTPClient,
 	})
 	if err != nil {
 		return err
 	}
-	_, err = apiClient.AuthApi.TeamTokenDelete(nil, context.Args[0])
+	_, err = apiClient.AuthApi.TeamTokenDelete(context.TODO(), ctx.Args[0])
 	if err != nil {
 		return err
 	}
-	fmt.Fprintln(context.Stdout, "Token successfully deleted.")
+	fmt.Fprintln(ctx.Stdout, "Token successfully deleted.")
 	return nil
 }
