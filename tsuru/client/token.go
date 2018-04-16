@@ -26,7 +26,7 @@ type TokenCreateCmd struct {
 func (c *TokenCreateCmd) Info() *cmd.Info {
 	return &cmd.Info{
 		Name:    "token-create",
-		Usage:   "token-create [--id/-i token-id] [--team/-t team] [--description/-d description] [--expires/-e expiration-in-seconds]",
+		Usage:   "token-create [--id/-i token-id] [--team/-t team] [--description/-d description] [--expires/-e expiration]",
 		Desc:    `Creates a new API token associated to a team.`,
 		MinArgs: 0,
 	}
@@ -64,7 +64,7 @@ func (c *TokenCreateCmd) Flags() *gnuflag.FlagSet {
 		c.fs.StringVar(&c.args.Team, "team", "", team)
 		c.fs.StringVar(&c.args.Team, "t", "", team)
 
-		expiration := "The expiration for the token being created. 0 or unset means it never expires."
+		expiration := "The expiration for the token being created. A duration suffix is mandatory (s for seconds, m for minutes, h for hours, ...). 0 or unset means it never expires."
 		c.fs.DurationVar(&c.expires, "expires", 0, expiration)
 		c.fs.DurationVar(&c.expires, "e", 0, expiration)
 	}
@@ -80,7 +80,7 @@ type TokenUpdateCmd struct {
 func (c *TokenUpdateCmd) Info() *cmd.Info {
 	return &cmd.Info{
 		Name:    "token-update",
-		Usage:   "token-update <token-id> [--regenerate] [--description/-d description] [--expires/-e expiration-in-seconds]",
+		Usage:   "token-update <token-id> [--regenerate] [--description/-d description] [--expires/-e expiration]",
 		Desc:    `Creates a new API token associated to a team.`,
 		MinArgs: 1,
 	}
@@ -113,7 +113,7 @@ func (c *TokenUpdateCmd) Flags() *gnuflag.FlagSet {
 		regenerate := "Setting regenerate will change de value of the token, invalidating the previous value."
 		c.fs.BoolVar(&c.args.Regenerate, "regenerate", false, regenerate)
 
-		expiration := "The expiration for the token being update. Setting to 0 or unset means the previous value will be used. Setting to a negative value will remove any existing expiration."
+		expiration := "The expiration for the token being updated. A duration suffix is mandatory ('s' for seconds, 'm' for minutes, 'h' for hours, ...). Setting to 0 or unset means the previous value will be used. Setting to a negative value will remove any existing expiration."
 		c.fs.DurationVar(&c.expires, "expires", 0, expiration)
 		c.fs.DurationVar(&c.expires, "e", 0, expiration)
 	}
@@ -156,7 +156,7 @@ func (c *TokenListCmd) Run(context *cmd.Context, cli *cmd.Client) error {
 			t.Team,
 			t.Description,
 			t.CreatorEmail,
-			fmt.Sprintf(" Created At: %s\n Expires At: %s\nAccessed At: %s",
+			fmt.Sprintf(" Created At: %s\n Expires At: %s\nLast Access: %s",
 				formatter.FormatDate(t.CreatedAt),
 				formatter.FormatDate(t.ExpiresAt),
 				formatter.FormatDate(t.LastAccess),
@@ -165,6 +165,7 @@ func (c *TokenListCmd) Run(context *cmd.Context, cli *cmd.Client) error {
 			formatRoles(t.Roles),
 		})
 	}
+	table.Sort()
 	fmt.Fprint(context.Stdout, table.String())
 	return nil
 }
