@@ -364,23 +364,32 @@ type RoleAssign struct{}
 func (c *RoleAssign) Info() *cmd.Info {
 	return &cmd.Info{
 		Name:    "role-assign",
-		Usage:   "role-assign <role-name> <user-email> [<context-value>]",
-		Desc:    `Assign an existing role to a user with some context value.`,
+		Usage:   "role-assign <role-name> <user-email>|<token-id> [<context-value>]",
+		Desc:    `Assign an existing role to a user or token with some context value.`,
 		MinArgs: 2,
 	}
 }
 
 func (c *RoleAssign) Run(context *cmd.Context, client *cmd.Client) error {
 	roleName := context.Args[0]
-	userEmail := context.Args[1]
+	emailOrToken := context.Args[1]
 	var contextValue string
 	if len(context.Args) > 2 {
 		contextValue = context.Args[2]
 	}
 	params := url.Values{}
-	params.Set("email", userEmail)
+	var suffix, version string
+	if strings.Contains(emailOrToken, "@") {
+		suffix = "user"
+		version = "1.0"
+		params.Set("email", emailOrToken)
+	} else {
+		suffix = "token"
+		version = "1.6"
+		params.Set("token_id", emailOrToken)
+	}
 	params.Set("context", contextValue)
-	addr, err := cmd.GetURL(fmt.Sprintf("/roles/%s/user", roleName))
+	addr, err := cmd.GetURLVersion(version, fmt.Sprintf("/roles/%s/%s", roleName, suffix))
 	if err != nil {
 		return err
 	}
@@ -402,22 +411,30 @@ type RoleDissociate struct{}
 func (c *RoleDissociate) Info() *cmd.Info {
 	return &cmd.Info{
 		Name:    "role-dissociate",
-		Usage:   "role-dissociate <role-name> <user-email> [<context-value>]",
-		Desc:    `Dissociate an existing role from a user for some context value.`,
+		Usage:   "role-dissociate <role-name> <user-email>|<token-id> [<context-value>]",
+		Desc:    `Dissociate an existing role from a user or token for some context value.`,
 		MinArgs: 2,
 	}
 }
 
 func (c *RoleDissociate) Run(context *cmd.Context, client *cmd.Client) error {
 	roleName := context.Args[0]
-	userEmail := context.Args[1]
+	emailOrToken := context.Args[1]
 	var contextValue string
 	if len(context.Args) > 2 {
 		contextValue = context.Args[2]
 	}
 	params := url.Values{}
+	var suffix, version string
+	if strings.Contains(emailOrToken, "@") {
+		suffix = "user/" + emailOrToken
+		version = "1.0"
+	} else {
+		suffix = "token/" + emailOrToken
+		version = "1.6"
+	}
 	params.Set("context", contextValue)
-	addr, err := cmd.GetURL(fmt.Sprintf("/roles/%s/user/%s?%s", roleName, userEmail, params.Encode()))
+	addr, err := cmd.GetURLVersion(version, fmt.Sprintf("/roles/%s/%s?%s", roleName, suffix, params.Encode()))
 	if err != nil {
 		return err
 	}
