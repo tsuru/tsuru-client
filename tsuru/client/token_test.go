@@ -184,11 +184,11 @@ func (s *S) TestTokenList(c *check.C) {
 +------------+--------+-------------+---------+----------------------------------+----------------+--------+
 | mytokenid  | myteam | desc        | me@me   |  Created At: 20 Feb 18 17:20 CST | mytokenvalue   | r1(v1) |
 |            |        |             |         |  Expires At: -                   |                | r2(v2) |
-|            |        |             |         | Accessed At: -                   |                |        |
+|            |        |             |         | Last Access: -                   |                |        |
 +------------+--------+-------------+---------+----------------------------------+----------------+--------+
 | othertoken | myteam | desc        | me@me   |  Created At: 20 Feb 18 17:20 CST | Not authorized | r1(v1) |
 |            |        |             |         |  Expires At: 20 Feb 18 17:20 CST |                | r2(v2) |
-|            |        |             |         | Accessed At: 20 Feb 18 17:20 CST |                |        |
+|            |        |             |         | Last Access: 20 Feb 18 17:20 CST |                |        |
 +------------+--------+-------------+---------+----------------------------------+----------------+--------+
 `
 	context := cmd.Context{
