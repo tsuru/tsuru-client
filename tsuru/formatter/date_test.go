@@ -15,6 +15,7 @@ func (s *S) TestFormatDate(c *check.C) {
 	c.Assert(err, check.IsNil)
 
 	c.Assert(FormatDate(parsedTs), check.Equals, "16 Feb 18 05:03 CST")
+	c.Assert(FormatDate(time.Time{}), check.Equals, "-")
 }
 
 func (s *S) TestFormatDuration(c *check.C) {

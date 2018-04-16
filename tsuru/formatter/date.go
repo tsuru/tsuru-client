@@ -10,6 +10,9 @@ import (
 )
 
 func FormatDate(date time.Time) string {
+	if date.IsZero() {
+		return "-"
+	}
 	return date.Local().Format(time.RFC822)
 }
 
