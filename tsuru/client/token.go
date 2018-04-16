@@ -177,3 +177,30 @@ func formatRoles(roles []tsuru.RoleInstance) string {
 	sort.Strings(rolesStr)
 	return strings.Join(rolesStr, "\n")
 }
+
+type TokenDeleteCmd struct {
+}
+
+func (c *TokenDeleteCmd) Info() *cmd.Info {
+	return &cmd.Info{
+		Name:    "token-delete",
+		Usage:   "token-delete <token id>",
+		Desc:    `Delete an existing token.`,
+		MinArgs: 1,
+	}
+}
+
+func (c *TokenDeleteCmd) Run(context *cmd.Context, cli *cmd.Client) error {
+	apiClient, err := client.ClientFromEnvironment(&tsuru.Configuration{
+		HTTPClient: cli.HTTPClient,
+	})
+	if err != nil {
+		return err
+	}
+	_, err = apiClient.AuthApi.TeamTokenDelete(nil, context.Args[0])
+	if err != nil {
+		return err
+	}
+	fmt.Fprintln(context.Stdout, "Token successfully deleted.")
+	return nil
+}

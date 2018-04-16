@@ -209,3 +209,26 @@ func (s *S) TestTokenList(c *check.C) {
 	c.Assert(err, check.IsNil)
 	c.Assert(stdout.String(), check.Equals, expected)
 }
+
+func (s *S) TestTokenDelete(c *check.C) {
+	var stdout, stderr bytes.Buffer
+	expected := "Token successfully deleted.\n"
+	context := cmd.Context{
+		Args:   []string{"mytokenid"},
+		Stdout: &stdout,
+		Stderr: &stderr,
+	}
+	trans := cmdtest.ConditionalTransport{
+		Transport: cmdtest.Transport{Message: "", Status: http.StatusOK},
+		CondFunc: func(r *http.Request) bool {
+			c.Assert(r.URL.Path, check.Equals, "/1.6/tokens/mytokenid")
+			c.Assert(r.Method, check.Equals, "DELETE")
+			return true
+		},
+	}
+	client := cmd.NewClient(&http.Client{Transport: &trans}, nil, manager)
+	command := TokenDeleteCmd{}
+	err := command.Run(&context, client)
+	c.Assert(err, check.IsNil)
+	c.Assert(stdout.String(), check.Equals, expected)
+}
