@@ -169,6 +169,7 @@ func buildManager(name string) *cmd.Manager {
 	m.Register(&client.TokenCreateCmd{})
 	m.Register(&client.TokenUpdateCmd{})
 	m.Register(&client.TokenListCmd{})
+	m.Register(&client.TokenDeleteCmd{})
 	m.RegisterRemoved("bs-env-set", "You should use `tsuru node-container-update big-sibling` instead.")
 	m.RegisterRemoved("bs-info", "You should use `tsuru node-container-info big-sibling` instead.")
 	m.RegisterRemoved("bs-upgrade", "You should use `tsuru node-container-upgrade big-sibling` instead.")
