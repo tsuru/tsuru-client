@@ -43,10 +43,16 @@ type APIClient struct {
 	common service // Reuse a single struct instead of allocating one for each service on the heap.
 
 	// API Services
-	AppApi    *AppApiService
-	AuthApi   *AuthApiService
-	NodeApi   *NodeApiService
-	VolumeApi *VolumeApiService
+	AppApi      *AppApiService
+	AuthApi     *AuthApiService
+	EventApi    *EventApiService
+	NodeApi     *NodeApiService
+	PlatformApi *PlatformApiService
+	PoolApi     *PoolApiService
+	ServiceApi  *ServiceApiService
+	TeamApi     *TeamApiService
+	UserApi     *UserApiService
+	VolumeApi   *VolumeApiService
 }
 
 type service struct {
@@ -67,7 +73,13 @@ func NewAPIClient(cfg *Configuration) *APIClient {
 	// API Services
 	c.AppApi = (*AppApiService)(&c.common)
 	c.AuthApi = (*AuthApiService)(&c.common)
+	c.EventApi = (*EventApiService)(&c.common)
 	c.NodeApi = (*NodeApiService)(&c.common)
+	c.PlatformApi = (*PlatformApiService)(&c.common)
+	c.PoolApi = (*PoolApiService)(&c.common)
+	c.ServiceApi = (*ServiceApiService)(&c.common)
+	c.TeamApi = (*TeamApiService)(&c.common)
+	c.UserApi = (*UserApiService)(&c.common)
 	c.VolumeApi = (*VolumeApiService)(&c.common)
 
 	return c

@@ -16,6 +16,7 @@ import (
 	"io/ioutil"
 	"net/http"
 	"net/url"
+	"os"
 	"strings"
 )
 
@@ -24,15 +25,15 @@ var (
 	_ context.Context
 )
 
-type AuthApiService service
+type PlatformApiService service
 
-/* AuthApiService
-Assigns a role to a team token.
+/* PlatformApiService
+Add new platform.
  * @param ctx context.Context for authentication, logging, tracing, etc.
-@param roleName
-@param token
+@param name
+@param dockerfileContent
 @return */
-func (a *AuthApiService) AssignRoleToToken(ctx context.Context, roleName string, token AssignTokenArgs) (*http.Response, error) {
+func (a *PlatformApiService) PlatformAdd(ctx context.Context, name string, dockerfileContent *os.File) (*http.Response, error) {
 	var (
 		localVarHttpMethod = strings.ToUpper("Post")
 		localVarPostBody   interface{}
@@ -41,15 +42,14 @@ func (a *AuthApiService) AssignRoleToToken(ctx context.Context, roleName string,
 	)
 
 	// create path and map variables
-	localVarPath := a.client.cfg.BasePath + "/1.6/roles/{role_name}/token"
-	localVarPath = strings.Replace(localVarPath, "{"+"role_name"+"}", fmt.Sprintf("%v", roleName), -1)
+	localVarPath := a.client.cfg.BasePath + "/1.0/platforms"
 
 	localVarHeaderParams := make(map[string]string)
 	localVarQueryParams := url.Values{}
 	localVarFormParams := url.Values{}
 
 	// to determine the Content-Type header
-	localVarHttpContentTypes := []string{"application/json"}
+	localVarHttpContentTypes := []string{"multipart/form-data"}
 
 	// set Content-Type header
 	localVarHttpContentType := selectHeaderContentType(localVarHttpContentTypes)
@@ -58,85 +58,20 @@ func (a *AuthApiService) AssignRoleToToken(ctx context.Context, roleName string,
 	}
 
 	// to determine the Accept header
-	localVarHttpHeaderAccepts := []string{}
+	localVarHttpHeaderAccepts := []string{"application/x-json-stream"}
 
 	// set Accept header
 	localVarHttpHeaderAccept := selectHeaderAccept(localVarHttpHeaderAccepts)
 	if localVarHttpHeaderAccept != "" {
 		localVarHeaderParams["Accept"] = localVarHttpHeaderAccept
 	}
-	// body params
-	localVarPostBody = &token
-	if ctx != nil {
-		// API Key Authentication
-		if auth, ok := ctx.Value(ContextAPIKey).(APIKey); ok {
-			var key string
-			if auth.Prefix != "" {
-				key = auth.Prefix + " " + auth.Key
-			} else {
-				key = auth.Key
-			}
-			localVarHeaderParams["Authorization"] = key
-		}
-	}
-	r, err := a.client.prepareRequest(ctx, localVarPath, localVarHttpMethod, localVarPostBody, localVarHeaderParams, localVarQueryParams, localVarFormParams, localVarFileName, localVarFileBytes)
-	if err != nil {
-		return nil, err
-	}
-
-	localVarHttpResponse, err := a.client.callAPI(r)
-	if err != nil || localVarHttpResponse == nil {
-		return localVarHttpResponse, err
-	}
-	defer localVarHttpResponse.Body.Close()
-	if localVarHttpResponse.StatusCode >= 300 {
-		bodyBytes, _ := ioutil.ReadAll(localVarHttpResponse.Body)
-		return localVarHttpResponse, reportError("Status: %v, Body: %s", localVarHttpResponse.Status, bodyBytes)
-	}
-	return localVarHttpResponse, err
-}
-
-/* AuthApiService
-Dissociates a role from a team token.
- * @param ctx context.Context for authentication, logging, tracing, etc.
-@param roleName
-@param tokenId
-@param context
-@return */
-func (a *AuthApiService) DissociateRoleFromToken(ctx context.Context, roleName string, tokenId string, context string) (*http.Response, error) {
-	var (
-		localVarHttpMethod = strings.ToUpper("Delete")
-		localVarPostBody   interface{}
-		localVarFileName   string
-		localVarFileBytes  []byte
-	)
-
-	// create path and map variables
-	localVarPath := a.client.cfg.BasePath + "/1.6/roles/{role_name}/token/{token_id}"
-	localVarPath = strings.Replace(localVarPath, "{"+"role_name"+"}", fmt.Sprintf("%v", roleName), -1)
-	localVarPath = strings.Replace(localVarPath, "{"+"token_id"+"}", fmt.Sprintf("%v", tokenId), -1)
-
-	localVarHeaderParams := make(map[string]string)
-	localVarQueryParams := url.Values{}
-	localVarFormParams := url.Values{}
-
-	localVarQueryParams.Add("context", parameterToString(context, ""))
-	// to determine the Content-Type header
-	localVarHttpContentTypes := []string{}
-
-	// set Content-Type header
-	localVarHttpContentType := selectHeaderContentType(localVarHttpContentTypes)
-	if localVarHttpContentType != "" {
-		localVarHeaderParams["Content-Type"] = localVarHttpContentType
-	}
-
-	// to determine the Accept header
-	localVarHttpHeaderAccepts := []string{}
-
-	// set Accept header
-	localVarHttpHeaderAccept := selectHeaderAccept(localVarHttpHeaderAccepts)
-	if localVarHttpHeaderAccept != "" {
-		localVarHeaderParams["Accept"] = localVarHttpHeaderAccept
+	localVarFormParams.Add("name", parameterToString(name, ""))
+	localVarFile := dockerfileContent
+	if localVarFile != nil {
+		fbs, _ := ioutil.ReadAll(localVarFile)
+		localVarFileBytes = fbs
+		localVarFileName = localVarFile.Name()
+		localVarFile.Close()
 	}
 	if ctx != nil {
 		// API Key Authentication
@@ -167,86 +102,12 @@ func (a *AuthApiService) DissociateRoleFromToken(ctx context.Context, roleName s
 	return localVarHttpResponse, err
 }
 
-/* AuthApiService
-Creates a team token.
+/* PlatformApiService
+Delete platform.
  * @param ctx context.Context for authentication, logging, tracing, etc.
-@param token
-@return TeamToken*/
-func (a *AuthApiService) TeamTokenCreate(ctx context.Context, token TeamTokenCreateArgs) (TeamToken, *http.Response, error) {
-	var (
-		localVarHttpMethod = strings.ToUpper("Post")
-		localVarPostBody   interface{}
-		localVarFileName   string
-		localVarFileBytes  []byte
-		successPayload     TeamToken
-	)
-
-	// create path and map variables
-	localVarPath := a.client.cfg.BasePath + "/1.6/tokens"
-
-	localVarHeaderParams := make(map[string]string)
-	localVarQueryParams := url.Values{}
-	localVarFormParams := url.Values{}
-
-	// to determine the Content-Type header
-	localVarHttpContentTypes := []string{"application/json"}
-
-	// set Content-Type header
-	localVarHttpContentType := selectHeaderContentType(localVarHttpContentTypes)
-	if localVarHttpContentType != "" {
-		localVarHeaderParams["Content-Type"] = localVarHttpContentType
-	}
-
-	// to determine the Accept header
-	localVarHttpHeaderAccepts := []string{"application/json"}
-
-	// set Accept header
-	localVarHttpHeaderAccept := selectHeaderAccept(localVarHttpHeaderAccepts)
-	if localVarHttpHeaderAccept != "" {
-		localVarHeaderParams["Accept"] = localVarHttpHeaderAccept
-	}
-	// body params
-	localVarPostBody = &token
-	if ctx != nil {
-		// API Key Authentication
-		if auth, ok := ctx.Value(ContextAPIKey).(APIKey); ok {
-			var key string
-			if auth.Prefix != "" {
-				key = auth.Prefix + " " + auth.Key
-			} else {
-				key = auth.Key
-			}
-			localVarHeaderParams["Authorization"] = key
-		}
-	}
-	r, err := a.client.prepareRequest(ctx, localVarPath, localVarHttpMethod, localVarPostBody, localVarHeaderParams, localVarQueryParams, localVarFormParams, localVarFileName, localVarFileBytes)
-	if err != nil {
-		return successPayload, nil, err
-	}
-
-	localVarHttpResponse, err := a.client.callAPI(r)
-	if err != nil || localVarHttpResponse == nil {
-		return successPayload, localVarHttpResponse, err
-	}
-	defer localVarHttpResponse.Body.Close()
-	if localVarHttpResponse.StatusCode >= 300 {
-		bodyBytes, _ := ioutil.ReadAll(localVarHttpResponse.Body)
-		return successPayload, localVarHttpResponse, reportError("Status: %v, Body: %s", localVarHttpResponse.Status, bodyBytes)
-	}
-
-	if err = json.NewDecoder(localVarHttpResponse.Body).Decode(&successPayload); err != nil {
-		return successPayload, localVarHttpResponse, err
-	}
-
-	return successPayload, localVarHttpResponse, err
-}
-
-/* AuthApiService
-Deletes a team token.
- * @param ctx context.Context for authentication, logging, tracing, etc.
-@param tokenId Token ID.
+@param platform Platform name.
 @return */
-func (a *AuthApiService) TeamTokenDelete(ctx context.Context, tokenId string) (*http.Response, error) {
+func (a *PlatformApiService) PlatformDelete(ctx context.Context, platform string) (*http.Response, error) {
 	var (
 		localVarHttpMethod = strings.ToUpper("Delete")
 		localVarPostBody   interface{}
@@ -255,14 +116,14 @@ func (a *AuthApiService) TeamTokenDelete(ctx context.Context, tokenId string) (*
 	)
 
 	// create path and map variables
-	localVarPath := a.client.cfg.BasePath + "/1.6/tokens/{token_id}"
-	localVarPath = strings.Replace(localVarPath, "{"+"token_id"+"}", fmt.Sprintf("%v", tokenId), -1)
+	localVarPath := a.client.cfg.BasePath + "/1.0/platforms/{platform}"
+	localVarPath = strings.Replace(localVarPath, "{"+"platform"+"}", fmt.Sprintf("%v", platform), -1)
 
 	localVarHeaderParams := make(map[string]string)
 	localVarQueryParams := url.Values{}
 	localVarFormParams := url.Values{}
-	if strlen(tokenId) < 1 {
-		return nil, reportError("tokenId must have at least 1 elements")
+	if strlen(platform) < 1 {
+		return nil, reportError("platform must have at least 1 elements")
 	}
 
 	// to determine the Content-Type header
@@ -311,100 +172,21 @@ func (a *AuthApiService) TeamTokenDelete(ctx context.Context, tokenId string) (*
 	return localVarHttpResponse, err
 }
 
-/* AuthApiService
-Updates a team token.
+/* PlatformApiService
+List platforms.
  * @param ctx context.Context for authentication, logging, tracing, etc.
-@param tokenId Token ID.
-@param token
-@return TeamToken*/
-func (a *AuthApiService) TeamTokenUpdate(ctx context.Context, tokenId string, token TeamTokenUpdateArgs) (TeamToken, *http.Response, error) {
-	var (
-		localVarHttpMethod = strings.ToUpper("Put")
-		localVarPostBody   interface{}
-		localVarFileName   string
-		localVarFileBytes  []byte
-		successPayload     TeamToken
-	)
-
-	// create path and map variables
-	localVarPath := a.client.cfg.BasePath + "/1.6/tokens/{token_id}"
-	localVarPath = strings.Replace(localVarPath, "{"+"token_id"+"}", fmt.Sprintf("%v", tokenId), -1)
-
-	localVarHeaderParams := make(map[string]string)
-	localVarQueryParams := url.Values{}
-	localVarFormParams := url.Values{}
-	if strlen(tokenId) < 1 {
-		return successPayload, nil, reportError("tokenId must have at least 1 elements")
-	}
-
-	// to determine the Content-Type header
-	localVarHttpContentTypes := []string{"application/json"}
-
-	// set Content-Type header
-	localVarHttpContentType := selectHeaderContentType(localVarHttpContentTypes)
-	if localVarHttpContentType != "" {
-		localVarHeaderParams["Content-Type"] = localVarHttpContentType
-	}
-
-	// to determine the Accept header
-	localVarHttpHeaderAccepts := []string{"application/json"}
-
-	// set Accept header
-	localVarHttpHeaderAccept := selectHeaderAccept(localVarHttpHeaderAccepts)
-	if localVarHttpHeaderAccept != "" {
-		localVarHeaderParams["Accept"] = localVarHttpHeaderAccept
-	}
-	// body params
-	localVarPostBody = &token
-	if ctx != nil {
-		// API Key Authentication
-		if auth, ok := ctx.Value(ContextAPIKey).(APIKey); ok {
-			var key string
-			if auth.Prefix != "" {
-				key = auth.Prefix + " " + auth.Key
-			} else {
-				key = auth.Key
-			}
-			localVarHeaderParams["Authorization"] = key
-		}
-	}
-	r, err := a.client.prepareRequest(ctx, localVarPath, localVarHttpMethod, localVarPostBody, localVarHeaderParams, localVarQueryParams, localVarFormParams, localVarFileName, localVarFileBytes)
-	if err != nil {
-		return successPayload, nil, err
-	}
-
-	localVarHttpResponse, err := a.client.callAPI(r)
-	if err != nil || localVarHttpResponse == nil {
-		return successPayload, localVarHttpResponse, err
-	}
-	defer localVarHttpResponse.Body.Close()
-	if localVarHttpResponse.StatusCode >= 300 {
-		bodyBytes, _ := ioutil.ReadAll(localVarHttpResponse.Body)
-		return successPayload, localVarHttpResponse, reportError("Status: %v, Body: %s", localVarHttpResponse.Status, bodyBytes)
-	}
-
-	if err = json.NewDecoder(localVarHttpResponse.Body).Decode(&successPayload); err != nil {
-		return successPayload, localVarHttpResponse, err
-	}
-
-	return successPayload, localVarHttpResponse, err
-}
-
-/* AuthApiService
-List team tokens.
- * @param ctx context.Context for authentication, logging, tracing, etc.
-@return []TeamToken*/
-func (a *AuthApiService) TeamTokensList(ctx context.Context) ([]TeamToken, *http.Response, error) {
+@return []Platform*/
+func (a *PlatformApiService) PlatformList(ctx context.Context) ([]Platform, *http.Response, error) {
 	var (
 		localVarHttpMethod = strings.ToUpper("Get")
 		localVarPostBody   interface{}
 		localVarFileName   string
 		localVarFileBytes  []byte
-		successPayload     []TeamToken
+		successPayload     []Platform
 	)
 
 	// create path and map variables
-	localVarPath := a.client.cfg.BasePath + "/1.6/tokens"
+	localVarPath := a.client.cfg.BasePath + "/1.0/platforms"
 
 	localVarHeaderParams := make(map[string]string)
 	localVarQueryParams := url.Values{}
@@ -459,4 +241,82 @@ func (a *AuthApiService) TeamTokensList(ctx context.Context) ([]TeamToken, *http
 	}
 
 	return successPayload, localVarHttpResponse, err
+}
+
+/* PlatformApiService
+Update platform.
+ * @param ctx context.Context for authentication, logging, tracing, etc.
+@param platform Platform name.
+@param dockerfileContent
+@return */
+func (a *PlatformApiService) PlatformUpdate(ctx context.Context, platform string, dockerfileContent *os.File) (*http.Response, error) {
+	var (
+		localVarHttpMethod = strings.ToUpper("Put")
+		localVarPostBody   interface{}
+		localVarFileName   string
+		localVarFileBytes  []byte
+	)
+
+	// create path and map variables
+	localVarPath := a.client.cfg.BasePath + "/1.0/platforms/{platform}"
+	localVarPath = strings.Replace(localVarPath, "{"+"platform"+"}", fmt.Sprintf("%v", platform), -1)
+
+	localVarHeaderParams := make(map[string]string)
+	localVarQueryParams := url.Values{}
+	localVarFormParams := url.Values{}
+	if strlen(platform) < 1 {
+		return nil, reportError("platform must have at least 1 elements")
+	}
+
+	// to determine the Content-Type header
+	localVarHttpContentTypes := []string{"multipart/form-data"}
+
+	// set Content-Type header
+	localVarHttpContentType := selectHeaderContentType(localVarHttpContentTypes)
+	if localVarHttpContentType != "" {
+		localVarHeaderParams["Content-Type"] = localVarHttpContentType
+	}
+
+	// to determine the Accept header
+	localVarHttpHeaderAccepts := []string{"application/x-json-stream"}
+
+	// set Accept header
+	localVarHttpHeaderAccept := selectHeaderAccept(localVarHttpHeaderAccepts)
+	if localVarHttpHeaderAccept != "" {
+		localVarHeaderParams["Accept"] = localVarHttpHeaderAccept
+	}
+	localVarFile := dockerfileContent
+	if localVarFile != nil {
+		fbs, _ := ioutil.ReadAll(localVarFile)
+		localVarFileBytes = fbs
+		localVarFileName = localVarFile.Name()
+		localVarFile.Close()
+	}
+	if ctx != nil {
+		// API Key Authentication
+		if auth, ok := ctx.Value(ContextAPIKey).(APIKey); ok {
+			var key string
+			if auth.Prefix != "" {
+				key = auth.Prefix + " " + auth.Key
+			} else {
+				key = auth.Key
+			}
+			localVarHeaderParams["Authorization"] = key
+		}
+	}
+	r, err := a.client.prepareRequest(ctx, localVarPath, localVarHttpMethod, localVarPostBody, localVarHeaderParams, localVarQueryParams, localVarFormParams, localVarFileName, localVarFileBytes)
+	if err != nil {
+		return nil, err
+	}
+
+	localVarHttpResponse, err := a.client.callAPI(r)
+	if err != nil || localVarHttpResponse == nil {
+		return localVarHttpResponse, err
+	}
+	defer localVarHttpResponse.Body.Close()
+	if localVarHttpResponse.StatusCode >= 300 {
+		bodyBytes, _ := ioutil.ReadAll(localVarHttpResponse.Body)
+		return localVarHttpResponse, reportError("Status: %v, Body: %s", localVarHttpResponse.Status, bodyBytes)
+	}
+	return localVarHttpResponse, err
 }

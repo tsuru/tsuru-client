@@ -458,7 +458,7 @@
     "pkg/client",
     "pkg/tsuru"
   ]
-  revision = "9a9d75fe886f2c14e5899434445a58d03ba9861a"
+  revision = "68f4bafaa0ea5c25387489255ae2e1e85e1470c3"
 
 [[projects]]
   branch = "master"
