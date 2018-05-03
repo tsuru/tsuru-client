@@ -9,6 +9,10 @@
 
 package tsuru
 
-// Response returned by Volume List.
-type VolumeListResponse struct {
+type ChangePasswordData struct {
+	Confirm string `json:"confirm,omitempty"`
+
+	New string `json:"new,omitempty"`
+
+	Old string `json:"old,omitempty"`
 }
