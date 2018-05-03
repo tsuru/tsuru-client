@@ -11,6 +11,7 @@ import (
 	"fmt"
 	"time"
 
+	"github.com/globalsign/mgo/bson"
 	"github.com/pkg/errors"
 	"github.com/tsuru/config"
 	"github.com/tsuru/tsuru/db"
@@ -19,27 +20,16 @@ import (
 	"github.com/tsuru/tsuru/permission"
 	"github.com/tsuru/tsuru/quota"
 	"github.com/tsuru/tsuru/repository"
+	authTypes "github.com/tsuru/tsuru/types/auth"
 	"github.com/tsuru/tsuru/validation"
-	"gopkg.in/mgo.v2/bson"
 )
-
-var (
-	ErrUserNotFound = errors.New("user not found")
-	ErrInvalidKey   = errors.New("invalid key")
-	ErrKeyDisabled  = errors.New("key management is disabled")
-)
-
-type RoleInstance struct {
-	Name         string
-	ContextValue string
-}
 
 type User struct {
 	quota.Quota
 	Email    string
 	Password string
 	APIKey   string
-	Roles    []RoleInstance `bson:",omitempty"`
+	Roles    []authTypes.RoleInstance `bson:",omitempty"`
 }
 
 func listUsers(filter bson.M) ([]User, error) {
@@ -100,7 +90,7 @@ func GetUserByEmail(email string) (*User, error) {
 	defer conn.Close()
 	err = conn.Users().Find(bson.M{"email": email}).One(&u)
 	if err != nil {
-		return nil, ErrUserNotFound
+		return nil, authTypes.ErrUserNotFound
 	}
 	return &u, nil
 }
@@ -164,7 +154,7 @@ func (u *User) Update() error {
 func (u *User) AddKey(key repository.Key, force bool) error {
 	if mngr, ok := repository.Manager().(repository.KeyRepositoryManager); ok {
 		if key.Name == "" {
-			return ErrInvalidKey
+			return authTypes.ErrInvalidKey
 		}
 		err := mngr.AddKey(u.Email, key)
 		if err == repository.ErrKeyAlreadyExists && force {
@@ -172,14 +162,14 @@ func (u *User) AddKey(key repository.Key, force bool) error {
 		}
 		return err
 	}
-	return ErrKeyDisabled
+	return authTypes.ErrKeyDisabled
 }
 
 func (u *User) RemoveKey(key repository.Key) error {
 	if mngr, ok := repository.Manager().(repository.KeyRepositoryManager); ok {
 		return mngr.RemoveKey(u.Email, key)
 	}
-	return ErrKeyDisabled
+	return authTypes.ErrKeyDisabled
 }
 
 func (u *User) ListKeys() (map[string]string, error) {
@@ -194,7 +184,7 @@ func (u *User) ListKeys() (map[string]string, error) {
 		}
 		return keysMap, nil
 	}
-	return nil, ErrKeyDisabled
+	return nil, authTypes.ErrKeyDisabled
 }
 
 func (u *User) createOnRepositoryManager() error {
@@ -208,17 +198,23 @@ func (u *User) ShowAPIKey() (string, error) {
 	return u.APIKey, u.Update()
 }
 
-func (u *User) RegenerateAPIKey() (string, error) {
-	random_byte := make([]byte, 32)
-	_, err := rand.Read(random_byte)
-	if err != nil {
-		return "", err
+const keySize = 32
+
+func generateToken(data string, hash crypto.Hash) string {
+	var tokenKey [keySize]byte
+	n, err := rand.Read(tokenKey[:])
+	for n < keySize || err != nil {
+		n, err = rand.Read(tokenKey[:])
 	}
-	h := crypto.SHA256.New()
-	h.Write([]byte(u.Email))
-	h.Write(random_byte)
+	h := hash.New()
+	h.Write([]byte(data))
+	h.Write(tokenKey[:])
 	h.Write([]byte(time.Now().Format(time.RFC3339Nano)))
-	u.APIKey = fmt.Sprintf("%x", h.Sum(nil))
+	return fmt.Sprintf("%x", h.Sum(nil))
+}
+
+func (u *User) RegenerateAPIKey() (string, error) {
+	u.APIKey = generateToken(u.Email, crypto.SHA256)
 	return u.APIKey, u.Update()
 }
 
@@ -231,12 +227,10 @@ func (u *User) Reload() error {
 	return conn.Users().Find(bson.M{"email": u.Email}).One(u)
 }
 
-func (u *User) Permissions() ([]permission.Permission, error) {
-	permissions := []permission.Permission{
-		{Scheme: permission.PermUser, Context: permission.Context(permission.CtxUser, u.Email)},
-	}
+func expandRolePermissions(roleInstances []authTypes.RoleInstance) ([]permission.Permission, error) {
+	var permissions []permission.Permission
 	roles := make(map[string]*permission.Role)
-	for _, roleData := range u.Roles {
+	for _, roleData := range roleInstances {
 		role := roles[roleData.Name]
 		if role == nil {
 			foundRole, err := permission.FindRole(roleData.Name)
@@ -249,6 +243,17 @@ func (u *User) Permissions() ([]permission.Permission, error) {
 		permissions = append(permissions, role.PermissionsFor(roleData.ContextValue)...)
 	}
 	return permissions, nil
+}
+
+func (u *User) Permissions() ([]permission.Permission, error) {
+	permissions, err := expandRolePermissions(u.Roles)
+	if err != nil {
+		return nil, err
+	}
+	return append([]permission.Permission{{
+		Scheme:  permission.PermUser,
+		Context: permission.Context(permission.CtxUser, u.Email),
+	}}, permissions...), nil
 }
 
 func (u *User) AddRole(roleName string, contextValue string) error {

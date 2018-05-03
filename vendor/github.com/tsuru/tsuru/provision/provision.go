@@ -22,7 +22,10 @@ import (
 	appTypes "github.com/tsuru/tsuru/types/app"
 )
 
-const defaultDockerProvisioner = "docker"
+const (
+	defaultDockerProvisioner = "docker"
+	DefaultHealthcheckScheme = "http"
+)
 
 var (
 	ErrInvalidStatus = errors.New("invalid status")
@@ -250,33 +253,10 @@ type ShellOptions struct {
 	Term   string
 }
 
-// ArchiveDeployer is a provisioner that can deploy archives.
-type ArchiveDeployer interface {
-	ArchiveDeploy(app App, archiveURL string, evt *event.Event) (string, error)
-}
-
-// UploadDeployer is a provisioner that can deploy the application from an
-// uploaded file.
-type UploadDeployer interface {
-	UploadDeploy(app App, file io.ReadCloser, fileSize int64, build bool, evt *event.Event) (string, error)
-}
-
-// ImageDeployer is a provisioner that can deploy the application from a
-// previously generated image.
-type ImageDeployer interface {
-	ImageDeploy(app App, image string, evt *event.Event) (string, error)
-}
-
 // RollbackableDeployer is a provisioner that allows rolling back to a
 // previously deployed version.
 type RollbackableDeployer interface {
 	Rollback(App, string, *event.Event) (string, error)
-}
-
-// RebuildableDeployer is a provisioner that allows rebuild the last
-// deployed image.
-type RebuildableDeployer interface {
-	Rebuild(App, *event.Event) (string, error)
 }
 
 type BuilderDockerClient interface {
@@ -309,11 +289,24 @@ type ExecDockerClient interface {
 	InspectExec(execId string) (*docker.ExecInspect, error)
 }
 
+type BuilderKubeClient interface {
+	BuildPod(App, *event.Event, io.Reader, string) (string, error)
+	ImageTagPushAndInspect(App, string, string) (*docker.Image, string, *TsuruYamlData, error)
+}
+
 // BuilderDeploy is a provisioner that allows deploy builded image.
 type BuilderDeploy interface {
 	Deploy(App, string, *event.Event) (string, error)
-	GetDockerClient(App) (BuilderDockerClient, error)
-	CleanImage(appName string, image string, removeFromRegistry bool)
+}
+
+type BuilderDeployDockerClient interface {
+	BuilderDeploy
+	GetClient(App) (BuilderDockerClient, error)
+}
+
+type BuilderDeployKubeClient interface {
+	BuilderDeploy
+	GetClient(App) (BuilderKubeClient, error)
 }
 
 // Provisioner is the basic interface of this package.
@@ -505,6 +498,10 @@ type VolumeProvisioner interface {
 	DeleteVolume(volumeName, pool string) error
 }
 
+type CleanImageProvisioner interface {
+	CleanImage(appName string, image string) error
+}
+
 type Node interface {
 	Pool() string
 	IaaSID() string
@@ -690,9 +687,10 @@ type TsuruYamlRestartHooks struct {
 }
 
 type TsuruYamlHealthcheck struct {
-	Path            string //`bson:",omitempty"`
-	Method          string //`bson:",omitempty"`
-	Status          int    //`bson:",omitempty"`
+	Path            string
+	Method          string
+	Status          int
+	Scheme          string
 	Match           string `bson:",omitempty"`
 	RouterBody      string `json:"router_body" yaml:"router_body" bson:"router_body,omitempty"`
 	UseInRouter     bool   `json:"use_in_router" yaml:"use_in_router" bson:"use_in_router,omitempty"`
@@ -710,4 +708,23 @@ func (hc TsuruYamlHealthcheck) ToRouterHC() router.HealthcheckData {
 	return router.HealthcheckData{
 		Path: "/",
 	}
+}
+
+type ErrUnitStartup struct {
+	Err error
+}
+
+func (e ErrUnitStartup) Error() string {
+	return e.Err.Error()
+}
+
+func (e ErrUnitStartup) IsStartupError() bool {
+	return true
+}
+
+func IsStartupError(err error) bool {
+	se, ok := errors.Cause(err).(interface {
+		IsStartupError() bool
+	})
+	return ok && se.IsStartupError()
 }

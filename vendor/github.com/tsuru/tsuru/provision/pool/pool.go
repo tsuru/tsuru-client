@@ -10,17 +10,17 @@ import (
 	"regexp"
 	"strings"
 
+	"github.com/globalsign/mgo"
+	"github.com/globalsign/mgo/bson"
 	"github.com/pkg/errors"
-	"github.com/tsuru/tsuru/auth"
 	"github.com/tsuru/tsuru/db"
 	tsuruErrors "github.com/tsuru/tsuru/errors"
 	"github.com/tsuru/tsuru/provision"
 	"github.com/tsuru/tsuru/router"
 	"github.com/tsuru/tsuru/service"
+	"github.com/tsuru/tsuru/servicemanager"
 	appTypes "github.com/tsuru/tsuru/types/app"
 	"github.com/tsuru/tsuru/validation"
-	"gopkg.in/mgo.v2"
-	"gopkg.in/mgo.v2/bson"
 )
 
 var (
@@ -38,7 +38,6 @@ type Pool struct {
 	Name        string `bson:"_id"`
 	Default     bool
 	Provisioner string
-	Builder     string
 }
 
 type AddPoolOptions struct {
@@ -47,14 +46,12 @@ type AddPoolOptions struct {
 	Default     bool
 	Force       bool
 	Provisioner string
-	Builder     string
 }
 
 type UpdatePoolOptions struct {
 	Default *bool
 	Public  *bool
 	Force   bool
-	Builder string
 }
 
 func (p *Pool) GetProvisioner() (provision.Provisioner, error) {
@@ -204,7 +201,7 @@ func routersNames() ([]string, error) {
 }
 
 func teamsNames() ([]string, error) {
-	teams, err := auth.ListTeams()
+	teams, err := servicemanager.Team.List()
 	if err != nil {
 		return nil, err
 	}

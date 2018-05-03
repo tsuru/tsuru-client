@@ -2,7 +2,7 @@
 // Use of this source code is governed by a BSD-style
 // license that can be found in the LICENSE file.
 
-package cache
+package app
 
 import (
 	"time"
@@ -21,6 +21,12 @@ type CacheEntry struct {
 }
 
 type CacheService interface {
+	Create(entry CacheEntry) error
+	List(keys ...string) ([]CacheEntry, error)
+	FindByName(key string) (CacheEntry, error)
+}
+
+type CacheStorage interface {
 	GetAll(keys ...string) ([]CacheEntry, error)
 	Get(key string) (CacheEntry, error)
 	Put(entry CacheEntry) error

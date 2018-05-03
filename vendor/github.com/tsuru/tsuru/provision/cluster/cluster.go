@@ -7,14 +7,14 @@ package cluster
 import (
 	"strings"
 
+	"github.com/globalsign/mgo"
+	"github.com/globalsign/mgo/bson"
 	"github.com/pkg/errors"
 	"github.com/tsuru/tsuru/db"
 	"github.com/tsuru/tsuru/db/storage"
 	tsuruErrors "github.com/tsuru/tsuru/errors"
 	"github.com/tsuru/tsuru/provision"
 	"github.com/tsuru/tsuru/validation"
-	"gopkg.in/mgo.v2"
-	"gopkg.in/mgo.v2/bson"
 )
 
 var (
@@ -64,9 +64,6 @@ func (c *Cluster) validate() error {
 	prov, err := provision.Get(c.Provisioner)
 	if err != nil {
 		return errors.WithStack(&tsuruErrors.ValidationError{Message: err.Error()})
-	}
-	if len(c.Addresses) == 0 {
-		return errors.WithStack(&tsuruErrors.ValidationError{Message: "at least one address must be present"})
 	}
 	if len(c.Pools) > 0 {
 		if c.Default {

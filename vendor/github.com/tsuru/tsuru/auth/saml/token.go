@@ -10,13 +10,14 @@ import (
 	"fmt"
 	"time"
 
+	"github.com/globalsign/mgo"
+	"github.com/globalsign/mgo/bson"
 	"github.com/pkg/errors"
 	"github.com/tsuru/config"
 	"github.com/tsuru/tsuru/auth"
 	"github.com/tsuru/tsuru/db"
 	"github.com/tsuru/tsuru/permission"
-	"gopkg.in/mgo.v2"
-	"gopkg.in/mgo.v2/bson"
+	authTypes "github.com/tsuru/tsuru/types/auth"
 )
 
 const (
@@ -38,8 +39,8 @@ func (t *Token) GetValue() string {
 	return t.Token
 }
 
-func (t *Token) User() (*auth.User, error) {
-	return auth.GetUserByEmail(t.UserEmail)
+func (t *Token) User() (*authTypes.User, error) {
+	return auth.ConvertOldUser(auth.GetUserByEmail(t.UserEmail))
 }
 
 func (t *Token) IsAppToken() bool {

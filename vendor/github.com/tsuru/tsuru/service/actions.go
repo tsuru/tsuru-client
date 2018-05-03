@@ -5,17 +5,19 @@
 package service
 
 import (
+	"fmt"
 	"io"
 	"sort"
 	"sync"
 
+	"github.com/globalsign/mgo"
+	"github.com/globalsign/mgo/bson"
 	"github.com/pkg/errors"
 	"github.com/tsuru/tsuru/action"
 	"github.com/tsuru/tsuru/app/bind"
 	"github.com/tsuru/tsuru/db"
+	"github.com/tsuru/tsuru/event"
 	"github.com/tsuru/tsuru/log"
-	"gopkg.in/mgo.v2"
-	"gopkg.in/mgo.v2/bson"
 )
 
 // notifyCreateServiceInstance is an action that calls the service endpoint
@@ -39,15 +41,15 @@ var notifyCreateServiceInstance = action.Action{
 		if !ok {
 			return nil, errors.New("Second parameter must be a ServiceInstance.")
 		}
-		user, ok := ctx.Params[2].(string)
+		evt, ok := ctx.Params[2].(*event.Event)
 		if !ok {
-			return nil, errors.New("Third parameter must be a string.")
+			return nil, errors.New("Third parameter must be an event.")
 		}
 		requestID, ok := ctx.Params[3].(string)
 		if !ok {
 			return nil, errors.New("RequestID should be a string.")
 		}
-		err = endpoint.Create(&instance, user, requestID)
+		err = endpoint.Create(&instance, evt, requestID)
 		if err != nil {
 			return nil, err
 		}
@@ -66,11 +68,15 @@ var notifyCreateServiceInstance = action.Action{
 		if !ok {
 			return
 		}
+		evt, ok := ctx.Params[2].(*event.Event)
+		if !ok {
+			return
+		}
 		requestID, ok := ctx.Params[3].(string)
 		if !ok {
 			return
 		}
-		endpoint.Destroy(&instance, requestID)
+		endpoint.Destroy(&instance, evt, requestID)
 	},
 	MinParams: 3,
 }
@@ -134,6 +140,7 @@ var updateServiceInstance = action.Action{
 					"description": updateData.Description,
 					"tags":        updateData.Tags,
 					"teamowner":   updateData.TeamOwner,
+					"plan_name":   updateData.PlanName,
 				},
 				"$addToSet": bson.M{
 					"teams": updateData.TeamOwner,
@@ -159,6 +166,7 @@ var updateServiceInstance = action.Action{
 					"tags":        instance.Tags,
 					"teamowner":   instance.TeamOwner,
 					"teams":       instance.Teams,
+					"plan_name":   instance.PlanName,
 				},
 			},
 		)
@@ -187,11 +195,15 @@ var notifyUpdateServiceInstance = action.Action{
 		if !ok {
 			return nil, errors.New("Second parameter must be a ServiceInstance.")
 		}
-		requestID, ok := ctx.Params[3].(string)
+		evt, ok := ctx.Params[3].(*event.Event)
+		if !ok {
+			return nil, errors.New("Third parameter must be an event.")
+		}
+		requestID, ok := ctx.Params[4].(string)
 		if !ok {
 			return nil, errors.New("RequestID should be a string.")
 		}
-		err = endpoint.Update(&instance, requestID)
+		err = endpoint.Update(&instance, evt, requestID)
 		if err != nil {
 			return nil, err
 		}
@@ -205,7 +217,10 @@ type bindPipelineArgs struct {
 	app             bind.App
 	writer          io.Writer
 	serviceInstance *ServiceInstance
+	event           *event.Event
+	requestID       string
 	shouldRestart   bool
+	forceRemove     bool
 }
 
 var bindAppDBAction = &action.Action{
@@ -251,7 +266,7 @@ var bindAppEndpointAction = &action.Action{
 		if err != nil {
 			return nil, err
 		}
-		return endpoint.BindApp(args.serviceInstance, args.app)
+		return endpoint.BindApp(args.serviceInstance, args.app, args.event, args.requestID)
 	},
 	Backward: func(ctx action.BWContext) {
 		args, _ := ctx.Params[0].(*bindPipelineArgs)
@@ -260,7 +275,7 @@ var bindAppEndpointAction = &action.Action{
 			log.Errorf("[bind-app-endpoint backward] could not get endpoint: %s", err)
 			return
 		}
-		err = endpoint.UnbindApp(args.serviceInstance, args.app)
+		err = endpoint.UnbindApp(args.serviceInstance, args.app, args.event, args.requestID)
 		if err != nil {
 			log.Errorf("[bind-app-endpoint backward] failed to unbind unit: %s", err)
 		}
@@ -443,8 +458,16 @@ var unbindAppEndpoint = action.Action{
 			return nil, errors.New("invalid arguments for pipeline, expected *bindPipelineArgs.")
 		}
 		if endpoint, err := args.serviceInstance.Service().getClient("production"); err == nil {
-			err := endpoint.UnbindApp(args.serviceInstance, args.app)
+			err := endpoint.UnbindApp(args.serviceInstance, args.app, args.event, args.requestID)
 			if err != nil && err != ErrInstanceNotFoundInAPI {
+				if args.forceRemove {
+					msg := fmt.Sprintf("[unbind-app-endpoint] ignored error due to force: %v", err.Error())
+					if args.writer != nil {
+						fmt.Fprintln(args.writer, msg)
+					}
+					log.Errorf("%s", msg)
+					return nil, nil
+				}
 				return nil, err
 			}
 		}
@@ -453,7 +476,7 @@ var unbindAppEndpoint = action.Action{
 	Backward: func(ctx action.BWContext) {
 		args, _ := ctx.Params[0].(*bindPipelineArgs)
 		if endpoint, err := args.serviceInstance.Service().getClient("production"); err == nil {
-			_, err := endpoint.BindApp(args.serviceInstance, args.app)
+			_, err := endpoint.BindApp(args.serviceInstance, args.app, args.event, args.requestID)
 			if err != nil {
 				log.Errorf("[unbind-app-endpoint backward] failed to rebind app in endpoint: %s", err)
 			}

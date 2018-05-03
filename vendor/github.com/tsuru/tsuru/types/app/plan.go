@@ -18,6 +18,14 @@ type Plan struct {
 }
 
 type PlanService interface {
+	Create(plan Plan) error
+	List() ([]Plan, error)
+	FindByName(name string) (*Plan, error)
+	DefaultPlan() (*Plan, error)
+	Remove(planName string) error
+}
+
+type PlanStorage interface {
 	Insert(Plan) error
 	FindAll() ([]Plan, error)
 	FindDefault() (*Plan, error)
@@ -37,6 +45,7 @@ var (
 	ErrPlanNotFound         = errors.New("plan not found")
 	ErrPlanAlreadyExists    = errors.New("plan already exists")
 	ErrPlanDefaultAmbiguous = errors.New("more than one default plan found")
+	ErrPlanDefaultNotFound  = errors.New("default plan not found")
 	ErrLimitOfCpuShare      = errors.New("The minimum allowed cpu-shares is 2")
 	ErrLimitOfMemory        = errors.New("The minimum allowed memory is 4MB")
 )

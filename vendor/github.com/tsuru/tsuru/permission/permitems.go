@@ -1,7 +1,7 @@
 // AUTOMATICALLY GENERATED FILE - DO NOT EDIT!
 // Please run 'go generate' to update this file.
 //
-// Copyright 2017 tsuru authors. All rights reserved.
+// Copyright 2018 tsuru authors. All rights reserved.
 // Use of this source code is governed by a BSD-style
 // license that can be found in the LICENSE file.
 
@@ -197,6 +197,11 @@ var (
 	PermTeamDelete                       = PermissionRegistry.get("team.delete")                         // [global team]
 	PermTeamRead                         = PermissionRegistry.get("team.read")                           // [global team]
 	PermTeamReadEvents                   = PermissionRegistry.get("team.read.events")                    // [global team]
+	PermTeamToken                        = PermissionRegistry.get("team.token")                          // [global team]
+	PermTeamTokenCreate                  = PermissionRegistry.get("team.token.create")                   // [global team]
+	PermTeamTokenDelete                  = PermissionRegistry.get("team.token.delete")                   // [global team]
+	PermTeamTokenRead                    = PermissionRegistry.get("team.token.read")                     // [global team]
+	PermTeamTokenUpdate                  = PermissionRegistry.get("team.token.update")                   // [global team]
 	PermTeamUpdate                       = PermissionRegistry.get("team.update")                         // [global team]
 	PermUser                             = PermissionRegistry.get("user")                                // [global user]
 	PermUserCreate                       = PermissionRegistry.get("user.create")                         // [global]

@@ -10,12 +10,13 @@ import (
 	"encoding/json"
 	"fmt"
 	"io"
-	"io/ioutil"
 	"net/url"
 	"strings"
 	"sync"
 	"time"
 
+	"github.com/globalsign/mgo"
+	"github.com/globalsign/mgo/bson"
 	"github.com/pkg/errors"
 	"github.com/prometheus/client_golang/prometheus"
 	"github.com/tsuru/tsuru/action"
@@ -38,14 +39,11 @@ import (
 	"github.com/tsuru/tsuru/router"
 	"github.com/tsuru/tsuru/router/rebuild"
 	"github.com/tsuru/tsuru/service"
-	"github.com/tsuru/tsuru/storage"
+	"github.com/tsuru/tsuru/servicemanager"
 	appTypes "github.com/tsuru/tsuru/types/app"
 	authTypes "github.com/tsuru/tsuru/types/auth"
-	"github.com/tsuru/tsuru/types/cache"
 	"github.com/tsuru/tsuru/validation"
 	"github.com/tsuru/tsuru/volume"
-	"gopkg.in/mgo.v2"
-	"gopkg.in/mgo.v2/bson"
 )
 
 var AuthScheme auth.Scheme
@@ -162,23 +160,27 @@ var (
 )
 
 func (app *App) getBuilder() (builder.Builder, error) {
-	if app.builder == nil {
-		if app.Pool == "" {
-			return builder.GetDefault()
-		}
-		pool, err := pool.GetPoolByName(app.Pool)
-		if err != nil {
-			return nil, err
-		}
-		if pool.Builder == "" {
-			return builder.GetDefault()
-		}
-		app.builder, err = builder.Get(pool.Builder)
-		if err != nil {
-			return nil, err
-		}
+	if app.builder != nil {
+		return app.builder, nil
 	}
-	return app.builder, nil
+	p, err := app.getProvisioner()
+	if err != nil {
+		return nil, err
+	}
+	app.builder, err = builder.GetForProvisioner(p)
+	return app.builder, err
+}
+
+func (app *App) CleanImage(img string) error {
+	prov, err := app.getProvisioner()
+	if err != nil {
+		return err
+	}
+	cleanProv, ok := prov.(provision.CleanImageProvisioner)
+	if !ok {
+		return nil
+	}
+	return cleanProv.CleanImage(app.Name, img)
 }
 
 func (app *App) getProvisioner() (provision.Provisioner, error) {
@@ -283,11 +285,6 @@ func AcquireApplicationLock(appName string, owner string, reason string) (bool, 
 // until timeout is reached.
 func AcquireApplicationLockWait(appName string, owner string, reason string, timeout time.Duration) (bool, error) {
 	timeoutChan := time.After(timeout)
-	conn, err := db.Conn()
-	if err != nil {
-		return false, err
-	}
-	defer conn.Close()
 	for {
 		appLock := AppLock{
 			Locked:      true,
@@ -295,7 +292,12 @@ func AcquireApplicationLockWait(appName string, owner string, reason string, tim
 			Owner:       owner,
 			AcquireDate: time.Now().In(time.UTC),
 		}
+		conn, err := db.Conn()
+		if err != nil {
+			return false, err
+		}
 		err = conn.Apps().Update(bson.M{"name": appName, "lock.locked": bson.M{"$in": []interface{}{false, nil}}}, bson.M{"$set": bson.M{"lock": appLock}})
+		conn.Close()
 		if err == nil {
 			return true, nil
 		}
@@ -391,9 +393,9 @@ func CreateApp(app *App, user *auth.User) error {
 	var plan *appTypes.Plan
 	var err error
 	if app.Plan.Name == "" {
-		plan, err = DefaultPlan()
+		plan, err = servicemanager.Plan.DefaultPlan()
 	} else {
-		plan, err = findPlanByName(app.Plan.Name)
+		plan, err = servicemanager.Plan.FindByName(app.Plan.Name)
 	}
 	if err != nil {
 		return err
@@ -417,6 +419,7 @@ func CreateApp(app *App, user *auth.User) error {
 	actions := []*action.Action{
 		&reserveUserApp,
 		&insertApp,
+		&createAppToken,
 		&exportEnvironmentsAction,
 		&createRepository,
 		&addRouterBackend,
@@ -486,14 +489,14 @@ func (app *App) Update(updateData App, w io.Writer) (err error) {
 		return err
 	}
 	if planName != "" {
-		plan, errFind := findPlanByName(planName)
+		plan, errFind := servicemanager.Plan.FindByName(planName)
 		if errFind != nil {
 			return errFind
 		}
 		app.Plan = *plan
 	}
 	if teamOwner != "" {
-		team, errTeam := auth.GetTeam(teamOwner)
+		team, errTeam := servicemanager.Team.FindByName(teamOwner)
 		if errTeam != nil {
 			return errTeam
 		}
@@ -508,7 +511,7 @@ func (app *App) Update(updateData App, w io.Writer) (err error) {
 		app.Tags = tags
 	}
 	if platform != "" {
-		p, errPlat := GetPlatform(platform)
+		p, errPlat := servicemanager.Platform.FindByName(platform)
 		if errPlat != nil {
 			return errPlat
 		}
@@ -557,7 +560,7 @@ func processTags(tags []string) []string {
 // unbind takes all service instances that are bound to the app, and unbind
 // them. This method is used by Destroy (before destroying the app, it unbinds
 // all service instances). Refer to Destroy docs for more details.
-func (app *App) unbind() error {
+func (app *App) unbind(evt *event.Event, requestID string) error {
 	instances, err := service.GetServiceInstancesBoundToApp(app.Name)
 	if err != nil {
 		return err
@@ -570,7 +573,13 @@ func (app *App) unbind() error {
 		msg += fmt.Sprintf("- %s (%s)", instanceName, reason.Error())
 	}
 	for _, instance := range instances {
-		err = instance.UnbindApp(app, true, nil)
+		err = instance.UnbindApp(service.UnbindAppArgs{
+			App:         app,
+			Restart:     false,
+			ForceRemove: true,
+			Event:       evt,
+			RequestID:   requestID,
+		})
 		if err != nil {
 			addMsg(instance.Name, err)
 		}
@@ -603,7 +612,8 @@ func (app *App) unbindVolumes() error {
 }
 
 // Delete deletes an app.
-func Delete(app *App, w io.Writer) error {
+func Delete(app *App, evt *event.Event, requestID string) error {
+	w := evt
 	isSwapped, swappedWith, err := router.IsSwapped(app.GetName())
 	if err != nil {
 		return errors.Wrap(err, "unable to check if app is swapped")
@@ -612,9 +622,6 @@ func Delete(app *App, w io.Writer) error {
 		return errors.Errorf("application is swapped with %q, cannot remove it", swappedWith)
 	}
 	appName := app.Name
-	if w == nil {
-		w = ioutil.Discard
-	}
 	fmt.Fprintf(w, "---- Removing application %q...\n", appName)
 	var hasErrors bool
 	defer func() {
@@ -642,7 +649,7 @@ func Delete(app *App, w io.Writer) error {
 	if err != nil {
 		log.Errorf("failed to remove images from registry for app %s: %s", appName, err)
 	}
-	if builderProv, ok := prov.(provision.BuilderDeploy); ok {
+	if cleanProv, ok := prov.(provision.CleanImageProvisioner); ok {
 		var imgs []string
 		imgs, err = image.ListAppImages(appName)
 		if err != nil {
@@ -654,14 +661,17 @@ func Delete(app *App, w io.Writer) error {
 			log.Errorf("failed to list build images for app %s: %s", appName, err)
 		}
 		for _, img := range append(imgs, imgsBuild...) {
-			builderProv.CleanImage(appName, img, true)
+			err = cleanProv.CleanImage(appName, img)
+			if err != nil {
+				log.Errorf("failed to remove image from provisioner %s: %s", appName, err)
+			}
 		}
 	}
 	err = image.DeleteAllAppImageNames(appName)
 	if err != nil {
 		log.Errorf("failed to remove image names from storage for app %s: %s", appName, err)
 	}
-	err = app.unbind()
+	err = app.unbind(evt, requestID)
 	if err != nil {
 		logErr("Unable to unbind app", err)
 	}
@@ -1001,7 +1011,7 @@ func (app *App) Revoke(team *authTypes.Team) error {
 
 // GetTeams returns a slice of teams that have access to the app.
 func (app *App) GetTeams() []authTypes.Team {
-	t, _ := auth.TeamService().FindByNames(app.Teams)
+	t, _ := servicemanager.Team.FindByNames(app.Teams)
 	return t
 }
 
@@ -1099,7 +1109,7 @@ func (app *App) validatePool() error {
 }
 
 func (app *App) validateTeamOwner(p *pool.Pool) error {
-	_, err := auth.GetTeam(app.TeamOwner)
+	_, err := servicemanager.Team.FindByName(app.TeamOwner)
 	if err != nil {
 		return &tsuruErrors.ValidationError{Message: err.Error()}
 	}
@@ -1108,18 +1118,13 @@ func (app *App) validateTeamOwner(p *pool.Pool) error {
 		msg := fmt.Sprintf("failed to get pool %q teams", p.Name)
 		return &tsuruErrors.ValidationError{Message: msg}
 	}
-	var poolTeam bool
 	for _, team := range poolTeams {
 		if team == app.TeamOwner {
-			poolTeam = true
-			break
+			return nil
 		}
 	}
-	if !poolTeam {
-		msg := fmt.Sprintf("App team owner %q has no access to pool %q", app.TeamOwner, p.Name)
-		return &tsuruErrors.ValidationError{Message: msg}
-	}
-	return nil
+	msg := fmt.Sprintf("App team owner %q has no access to pool %q", app.TeamOwner, p.Name)
+	return &tsuruErrors.ValidationError{Message: msg}
 }
 
 func (app *App) ValidateService(service string) error {
@@ -1308,7 +1313,7 @@ func (app *App) GetTeamOwner() string {
 	return app.TeamOwner
 }
 
-// GetTeamsNames returns the names of teams app.
+// GetTeamsName returns the names of the app teams.
 func (app *App) GetTeamsName() []string {
 	return app.Teams
 }
@@ -1610,6 +1615,10 @@ func (app *App) Log(message, source, unit string) error {
 // LastLogs returns a list of the last `lines` log of the app, matching the
 // fields in the log instance received as an example.
 func (app *App) LastLogs(lines int, filterLog Applog) ([]Applog, error) {
+	return app.lastLogs(lines, filterLog, false)
+}
+
+func (app *App) lastLogs(lines int, filterLog Applog, invertFilter bool) ([]Applog, error) {
 	prov, err := app.getProvisioner()
 	if err != nil {
 		return nil, err
@@ -1638,6 +1647,11 @@ func (app *App) LastLogs(lines int, filterLog Applog) ([]Applog, error) {
 	}
 	if filterLog.Unit != "" {
 		q["unit"] = filterLog.Unit
+	}
+	if invertFilter {
+		for k, v := range q {
+			q[k] = bson.M{"$ne": v}
+		}
 	}
 	err = conn.Logs(app.Name).Find(q).Sort("-$natural").Limit(lines).All(&logs)
 	if err != nil {
@@ -1781,13 +1795,14 @@ func Units(apps []App) (map[string]AppUnitsResponse, error) {
 // List returns the list of apps filtered through the filter parameter.
 func List(filter *Filter) ([]App, error) {
 	apps := []App{}
+	query := filter.Query()
 	conn, err := db.Conn()
 	if err != nil {
 		return nil, err
 	}
-	defer conn.Close()
-	query := filter.Query()
-	if err = conn.Apps().Find(query).All(&apps); err != nil {
+	err = conn.Apps().Find(query).All(&apps)
+	conn.Close()
+	if err != nil {
 		return nil, err
 	}
 	if filter != nil && len(filter.Statuses) > 0 {
@@ -1840,11 +1855,11 @@ func loadCachedAddrsInApps(apps []App) error {
 			keys = append(keys, appRouterAddrKey(a.Name, a.Routers[j].Name))
 		}
 	}
-	entries, err := cacheService().GetAll(keys...)
+	entries, err := servicemanager.Cache.List(keys...)
 	if err != nil {
 		return err
 	}
-	entryMap := make(map[string]cache.CacheEntry, len(entries))
+	entryMap := make(map[string]appTypes.CacheEntry, len(entries))
 	for _, e := range entries {
 		entryMap[e.Key] = e
 	}
@@ -1859,21 +1874,10 @@ func loadCachedAddrsInApps(apps []App) error {
 			}
 		}
 		if hasEmpty {
-			go a.GetRoutersWithAddr()
+			GetAppRouterUpdater().update(a)
 		}
 	}
 	return nil
-}
-
-func cacheService() cache.CacheService {
-	dbDriver, err := storage.GetCurrentDbDriver()
-	if err != nil {
-		dbDriver, err = storage.GetDefaultDbDriver()
-		if err != nil {
-			return nil
-		}
-	}
-	return dbDriver.CacheService
 }
 
 // Swap calls the Router.Swap and updates the app.CName in the database.
@@ -2126,7 +2130,7 @@ func (app *App) GetRoutersWithAddr() ([]appTypes.AppRouter, error) {
 			routers[i].Status = string(status)
 			routers[i].StatusDetail = detail
 		}
-		cacheService().Put(cache.CacheEntry{
+		servicemanager.Cache.Create(appTypes.CacheEntry{
 			Key:   appRouterAddrKey(app.Name, routerName),
 			Value: addr,
 		})
@@ -2352,4 +2356,16 @@ func RenameTeam(oldName, newName string) error {
 	}
 	_, err = bulk.Run()
 	return err
+}
+
+func (app *App) GetHealthcheckData() (router.HealthcheckData, error) {
+	imageName, err := image.AppCurrentImageName(app.Name)
+	if err != nil {
+		return router.HealthcheckData{}, err
+	}
+	yamlData, err := image.GetImageTsuruYamlData(imageName)
+	if err != nil {
+		return router.HealthcheckData{}, err
+	}
+	return yamlData.Healthcheck.ToRouterHC(), nil
 }
