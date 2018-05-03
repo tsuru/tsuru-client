@@ -12,8 +12,11 @@ import (
 	"net/url"
 	"reflect"
 	"strings"
+	"sync"
 	"time"
 
+	"github.com/globalsign/mgo"
+	"github.com/globalsign/mgo/bson"
 	"github.com/pkg/errors"
 	"github.com/prometheus/client_golang/prometheus"
 	"github.com/tsuru/config"
@@ -24,8 +27,7 @@ import (
 	"github.com/tsuru/tsuru/log"
 	"github.com/tsuru/tsuru/permission"
 	"github.com/tsuru/tsuru/safe"
-	"gopkg.in/mgo.v2"
-	"gopkg.in/mgo.v2/bson"
+	authTypes "github.com/tsuru/tsuru/types/auth"
 )
 
 var (
@@ -78,6 +80,7 @@ var (
 	OwnerTypeUser     = ownerType("user")
 	OwnerTypeApp      = ownerType("app")
 	OwnerTypeInternal = ownerType("internal")
+	OwnerTypeToken    = ownerType("token")
 
 	KindTypePermission = kindType("permission")
 	KindTypeInternal   = kindType("internal")
@@ -505,9 +508,6 @@ func (f *Filter) toQuery() (bson.M, error) {
 		}
 		andBlock = append(andBlock, bson.M{"$or": orBlock})
 	}
-	if len(andBlock) > 0 {
-		query["$and"] = andBlock
-	}
 	if f.KindType != "" {
 		query["kind.type"] = f.KindType
 	}
@@ -528,7 +528,10 @@ func (f *Filter) toQuery() (bson.M, error) {
 		timeParts = append(timeParts, bson.M{"starttime": bson.M{"$lte": f.Until}})
 	}
 	if len(timeParts) != 0 {
-		query["$and"] = timeParts
+		andBlock = append(andBlock, timeParts...)
+	}
+	if len(andBlock) > 0 {
+		query["$and"] = andBlock
 	}
 	if f.Running != nil {
 		query["running"] = *f.Running
@@ -826,12 +829,17 @@ func newEvt(opts *Opts) (evt *Event, err error) {
 		} else {
 			o.Type = OwnerTypeInternal
 		}
-	} else if opts.Owner.IsAppToken() {
-		o.Type = OwnerTypeApp
-		o.Name = opts.Owner.GetAppName()
 	} else {
-		o.Type = OwnerTypeUser
-		o.Name = opts.Owner.GetUserName()
+		if token, ok := opts.Owner.(authTypes.NamedToken); ok {
+			o.Type = OwnerTypeToken
+			o.Name = token.GetTokenName()
+		} else if opts.Owner.IsAppToken() {
+			o.Type = OwnerTypeApp
+			o.Name = opts.Owner.GetAppName()
+		} else {
+			o.Type = OwnerTypeUser
+			o.Name = opts.Owner.GetUserName()
+		}
 	}
 	conn, err := db.Conn()
 	if err != nil {
@@ -889,7 +897,7 @@ func newEvt(opts *Opts) (evt *Event, err error) {
 				evt.Done(err)
 				return nil, err
 			}
-			updater.addCh <- id
+			updater.add(id)
 			return evt, nil
 		}
 		if mgo.IsDup(err) {
@@ -1030,10 +1038,17 @@ func (e *Event) Write(data []byte) (int, error) {
 
 func (e *Event) CancelableContext(ctx context.Context) (context.Context, context.CancelFunc) {
 	ctx, cancel := context.WithCancel(ctx)
-	if !e.Cancelable {
+	if e == nil || !e.Cancelable {
 		return ctx, cancel
 	}
+	wg := sync.WaitGroup{}
+	cancelWrapper := func() {
+		cancel()
+		wg.Wait()
+	}
+	wg.Add(1)
 	go func() {
+		defer wg.Done()
 		for {
 			canceled, err := e.AckCancel()
 			if err != nil {
@@ -1051,7 +1066,7 @@ func (e *Event) CancelableContext(ctx context.Context) (context.Context, context
 			}
 		}
 	}()
-	return ctx, cancel
+	return ctx, cancelWrapper
 }
 
 func (e *Event) TryCancel(reason, owner string) error {
@@ -1140,7 +1155,7 @@ func (e *Event) done(evtErr error, customData interface{}, abort bool) (err erro
 			log.Errorf("[events] error marking event as done - %#v: %s", e, err)
 		}
 	}()
-	updater.removeCh <- e.ID
+	updater.remove(e.ID)
 	conn, err := db.Conn()
 	if err != nil {
 		return err

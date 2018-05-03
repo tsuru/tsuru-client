@@ -108,10 +108,14 @@ func (r dockerRegistry) getDigest(image, tag string) (string, error) {
 		return "", err
 	}
 	defer resp.Body.Close()
-	if resp.StatusCode == http.StatusBadRequest {
+	if resp.StatusCode == http.StatusNotFound {
 		return "", ErrDigestNotFound
 	}
-	return resp.Header.Get("Docker-Content-Digest"), nil
+	digest := resp.Header.Get("Docker-Content-Digest")
+	if digest == "" {
+		return "", errors.Errorf("empty digest returned for image %v:%v", image, tag)
+	}
+	return digest, nil
 }
 
 type imageTags struct {
@@ -149,7 +153,7 @@ func (r dockerRegistry) removeImage(image, digest string) error {
 	if resp.StatusCode == http.StatusMethodNotAllowed {
 		return ErrDeleteDisabled
 	}
-	if resp.StatusCode != http.StatusOK {
+	if resp.StatusCode < 200 || resp.StatusCode >= 300 {
 		data, _ := ioutil.ReadAll(resp.Body)
 		return errors.Errorf("invalid status code trying to remove image (%d): %s", resp.StatusCode, string(data))
 	}
@@ -174,6 +178,11 @@ func (r *dockerRegistry) doRequest(method, path string, headers map[string]strin
 		}
 		for k, v := range headers {
 			req.Header.Set(k, v)
+		}
+		username, _ := config.GetString("docker:registry-auth:username")
+		password, _ := config.GetString("docker:registry-auth:password")
+		if len(username) > 0 || len(password) > 0 {
+			req.SetBasicAuth(username, password)
 		}
 		resp, err = r.client.Do(req)
 		if err != nil {

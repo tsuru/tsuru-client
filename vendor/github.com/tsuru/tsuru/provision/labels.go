@@ -116,6 +116,17 @@ func (s *LabelSet) NodeIaaSID() string {
 	return s.getLabel(labelNodeIaaSID)
 }
 
+func (s *LabelSet) WithoutAppReplicas() *LabelSet {
+	ns := LabelSet{Prefix: s.Prefix, Labels: make(map[string]string)}
+	for k, v := range s.Labels {
+		if k == labelAppProcessReplicas {
+			continue
+		}
+		ns.Labels[k] = v
+	}
+	return &ns
+}
+
 func filterByPrefix(m map[string]string, prefix string, withPrefix bool) map[string]string {
 	result := make(map[string]string, len(m))
 	for k, v := range m {
@@ -286,6 +297,23 @@ func ServiceLabels(opts ServiceLabelsOpts) (*LabelSet, error) {
 	return set, nil
 }
 
+func SplitServiceLabelsAnnotations(ls *LabelSet) (labels *LabelSet, ann *LabelSet) {
+	labels = &LabelSet{Prefix: ls.Prefix, Labels: map[string]string{}}
+	ann = &LabelSet{Prefix: ls.Prefix, Labels: map[string]string{}}
+	annKeys := map[string]struct{}{
+		labelRouterName: {},
+		labelRouterType: {},
+	}
+	for k, v := range ls.Labels {
+		if _, ok := annKeys[k]; ok {
+			ann.Labels[k] = v
+		} else {
+			labels.Labels[k] = v
+		}
+	}
+	return labels, ann
+}
+
 type ProcessLabelsOpts struct {
 	App         App
 	Process     string
@@ -321,6 +349,29 @@ func ProcessLabels(opts ProcessLabelsOpts) (*LabelSet, error) {
 		},
 		Prefix: opts.Prefix,
 	}, nil
+}
+
+type ServiceAccountLabelsOpts struct {
+	App               App
+	NodeContainerName string
+	Provisioner       string
+	Prefix            string
+}
+
+func ServiceAccountLabels(opts ServiceAccountLabelsOpts) *LabelSet {
+	labelMap := map[string]string{
+		labelIsTsuru:     strconv.FormatBool(true),
+		labelProvisioner: opts.Provisioner,
+	}
+	if opts.App == nil {
+		labelMap[labelNodeContainerName] = opts.NodeContainerName
+	} else {
+		labelMap[labelAppName] = opts.App.GetName()
+	}
+	return &LabelSet{
+		Labels: labelMap,
+		Prefix: opts.Prefix,
+	}
 }
 
 type NodeContainerLabelsOpts struct {

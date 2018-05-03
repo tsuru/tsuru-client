@@ -8,8 +8,11 @@ import (
 	"fmt"
 	"io"
 	"regexp"
+	"strings"
 	"time"
 
+	"github.com/globalsign/mgo"
+	"github.com/globalsign/mgo/bson"
 	"github.com/pkg/errors"
 	"github.com/tsuru/tsuru/app/image"
 	"github.com/tsuru/tsuru/builder"
@@ -21,20 +24,19 @@ import (
 	"github.com/tsuru/tsuru/provision"
 	"github.com/tsuru/tsuru/router/rebuild"
 	"github.com/tsuru/tsuru/set"
-	"gopkg.in/mgo.v2"
-	"gopkg.in/mgo.v2/bson"
 )
 
 type DeployKind string
 
 const (
-	DeployArchiveURL  DeployKind = "archive-url"
-	DeployGit         DeployKind = "git"
-	DeployImage       DeployKind = "image"
-	DeployRollback    DeployKind = "rollback"
-	DeployUpload      DeployKind = "upload"
-	DeployUploadBuild DeployKind = "uploadbuild"
-	DeployRebuild     DeployKind = "rebuild"
+	DeployArchiveURL   DeployKind = "archive-url"
+	DeployGit          DeployKind = "git"
+	DeployImage        DeployKind = "image"
+	DeployBuildedImage DeployKind = "imagebuild"
+	DeployRollback     DeployKind = "rollback"
+	DeployUpload       DeployKind = "upload"
+	DeployUploadBuild  DeployKind = "uploadbuild"
+	DeployRebuild      DeployKind = "rebuild"
 )
 
 var reImageVersion = regexp.MustCompile("v[0-9]+$")
@@ -53,6 +55,7 @@ type DeployData struct {
 	CanRollback bool
 	RemoveDate  time.Time `bson:",omitempty"`
 	Diff        string
+	Message     string
 }
 
 func findValidImages(apps ...App) (set.Set, error) {
@@ -125,6 +128,7 @@ func eventToDeployData(evt *event.Event, validImages set.Set, full bool) *Deploy
 	if err == nil {
 		data.Commit = startOpts.Commit
 		data.Origin = startOpts.GetOrigin()
+		data.Message = startOpts.Message
 	}
 	if full {
 		data.Log = evt.Log
@@ -222,10 +226,32 @@ func Build(opts DeployOptions) (string, error) {
 	if err != nil {
 		return "", err
 	}
-	if opts.App.UpdatePlatform {
-		opts.App.SetUpdatePlatform(false)
-	}
 	return imageID, nil
+}
+
+type errorWithLog struct {
+	err  error
+	logs []Applog
+}
+
+func (e *errorWithLog) Cause() error {
+	return e.err
+}
+
+func (e *errorWithLog) formatLogLines() string {
+	linesStr := make([]string, len(e.logs))
+	for i, l := range e.logs {
+		linesStr[i] = fmt.Sprintf("    %s[%s][%s]: %s", l.Date.Format(time.RFC3339), l.Source, l.Unit, l.Message)
+	}
+	return strings.Join(linesStr, "\n")
+}
+
+func (e *errorWithLog) Error() string {
+	var logPart string
+	if len(e.logs) > 0 {
+		logPart = fmt.Sprintf("\n---- Last %d log messages: ----\n%s", len(e.logs), e.formatLogLines())
+	}
+	return fmt.Sprintf("---- ERROR during deploy: ----\n%v%s", e.err, logPart)
 }
 
 // Deploy runs a deployment of an application. It will first try to run an
@@ -249,6 +275,13 @@ func Deploy(opts DeployOptions) (string, error) {
 	imageID, err := deployToProvisioner(&opts, opts.Event)
 	rebuild.RoutesRebuildOrEnqueue(opts.App.Name)
 	if err != nil {
+		var logLines []Applog
+		if provision.IsStartupError(err) {
+			logLines, _ = opts.App.lastLogs(10, Applog{
+				Source: "tsuru",
+			}, true)
+		}
+		err = &errorWithLog{err: err, logs: logLines}
 		return "", err
 	}
 	err = incrementDeploy(opts.App)
@@ -298,26 +331,6 @@ func deployToProvisioner(opts *DeployOptions, evt *event.Event) (string, error) 
 			return deployer.Rollback(opts.App, opts.Image, evt)
 		}
 	}
-
-	// Fallback if provisioner dont't implement BuilderDeploy
-	switch opts.Kind {
-	case DeployImage:
-		if deployer, ok := prov.(provision.ImageDeployer); ok {
-			return deployer.ImageDeploy(opts.App, opts.Image, evt)
-		}
-	case DeployUpload, DeployUploadBuild:
-		if deployer, ok := prov.(provision.UploadDeployer); ok {
-			return deployer.UploadDeploy(opts.App, opts.File, opts.FileSize, opts.Build, evt)
-		}
-	case DeployRebuild:
-		if deployer, ok := prov.(provision.RebuildableDeployer); ok {
-			return deployer.Rebuild(opts.App, evt)
-		}
-	default:
-		if deployer, ok := prov.(provision.ArchiveDeployer); ok {
-			return deployer.ArchiveDeploy(opts.App, opts.ArchiveURL, evt)
-		}
-	}
 	return "", provision.ProvisionerNotSupported{Prov: prov, Action: fmt.Sprintf("%s deploy", opts.Kind)}
 }
 
@@ -336,7 +349,11 @@ func builderDeploy(prov provision.BuilderDeploy, opts *DeployOptions, evt *event
 	if err != nil {
 		return "", err
 	}
-	return builder.Build(prov, opts.App, evt, buildOpts)
+	img, err := builder.Build(prov, opts.App, evt, &buildOpts)
+	if buildOpts.IsTsuruBuilderImage {
+		opts.Kind = DeployBuildedImage
+	}
+	return img, err
 }
 
 func ValidateOrigin(origin string) bool {

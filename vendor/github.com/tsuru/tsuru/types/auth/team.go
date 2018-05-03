@@ -17,6 +17,14 @@ type Team struct {
 }
 
 type TeamService interface {
+	Create(string, *User) error
+	List() ([]Team, error)
+	FindByName(string) (*Team, error)
+	FindByNames([]string) ([]Team, error)
+	Remove(string) error
+}
+
+type TeamStorage interface {
 	Insert(Team) error
 	FindAll() ([]Team, error)
 	FindByName(string) (*Team, error)

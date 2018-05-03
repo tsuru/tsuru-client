@@ -5,53 +5,38 @@
 package auth
 
 import (
-	"fmt"
 	"regexp"
 	"strings"
 
+	"github.com/globalsign/mgo/bson"
 	"github.com/pkg/errors"
 	"github.com/tsuru/tsuru/db"
 	"github.com/tsuru/tsuru/log"
 	"github.com/tsuru/tsuru/permission"
 	"github.com/tsuru/tsuru/storage"
 	authTypes "github.com/tsuru/tsuru/types/auth"
-	"gopkg.in/mgo.v2/bson"
 )
 
 var teamNameRegexp = regexp.MustCompile(`^[a-z][-@_.+\w]+$`)
 
-type ErrTeamStillUsed struct {
-	Apps             []string
-	ServiceInstances []string
+type teamService struct {
+	storage authTypes.TeamStorage
 }
 
-func TeamService() authTypes.TeamService {
+func TeamService() (authTypes.TeamService, error) {
 	dbDriver, err := storage.GetCurrentDbDriver()
 	if err != nil {
 		dbDriver, err = storage.GetDefaultDbDriver()
 		if err != nil {
-			return nil
+			return nil, err
 		}
 	}
-	return dbDriver.TeamService
+	return &teamService{
+		storage: dbDriver.TeamStorage,
+	}, nil
 }
 
-func (e *ErrTeamStillUsed) Error() string {
-	if len(e.Apps) > 0 {
-		return fmt.Sprintf("Apps: %s", strings.Join(e.Apps, ", "))
-	}
-	return fmt.Sprintf("Service instances: %s", strings.Join(e.ServiceInstances, ", "))
-}
-
-func validateTeam(t authTypes.Team) error {
-	if !teamNameRegexp.MatchString(t.Name) {
-		return authTypes.ErrInvalidTeamName
-	}
-	return nil
-}
-
-// CreateTeam creates a team and add users to this team.
-func CreateTeam(name string, user *User) error {
+func (t *teamService) Create(name string, user *authTypes.User) error {
 	if user == nil {
 		return errors.New("user cannot be null")
 	}
@@ -60,35 +45,34 @@ func CreateTeam(name string, user *User) error {
 		Name:         name,
 		CreatingUser: user.Email,
 	}
-	if err := validateTeam(team); err != nil {
+	if err := t.validate(team); err != nil {
 		return err
 	}
-	err := TeamService().Insert(team)
+	err := t.storage.Insert(team)
 	if err != nil {
 		return err
 	}
-	err = user.AddRolesForEvent(permission.RoleEventTeamCreate, name)
+	u := User(*user)
+	err = u.AddRolesForEvent(permission.RoleEventTeamCreate, name)
 	if err != nil {
 		log.Errorf("unable to add default roles during team %q creation for %q: %s", name, user.Email, err)
 	}
 	return nil
 }
 
-// GetTeam find a team by name.
-func GetTeam(name string) (*authTypes.Team, error) {
-	return TeamService().FindByName(name)
+func (t *teamService) List() ([]authTypes.Team, error) {
+	return t.storage.FindAll()
 }
 
-// GetTeamsNames maps teams to a list of team names.
-func GetTeamsNames(teams []authTypes.Team) []string {
-	tn := make([]string, len(teams))
-	for i, t := range teams {
-		tn[i] = t.Name
-	}
-	return tn
+func (t *teamService) FindByName(name string) (*authTypes.Team, error) {
+	return t.storage.FindByName(name)
 }
 
-func RemoveTeam(teamName string) error {
+func (t *teamService) FindByNames(names []string) ([]authTypes.Team, error) {
+	return t.storage.FindByNames(names)
+}
+
+func (t *teamService) Remove(teamName string) error {
 	conn, err := db.Conn()
 	if err != nil {
 		return err
@@ -100,7 +84,7 @@ func RemoveTeam(teamName string) error {
 		return err
 	}
 	if len(apps) > 0 {
-		return &ErrTeamStillUsed{Apps: apps}
+		return &authTypes.ErrTeamStillUsed{Apps: apps}
 	}
 	var serviceInstances []string
 	err = conn.ServiceInstances().Find(bson.M{"teams": teamName}).Distinct("name", &serviceInstances)
@@ -108,11 +92,14 @@ func RemoveTeam(teamName string) error {
 		return err
 	}
 	if len(serviceInstances) > 0 {
-		return &ErrTeamStillUsed{ServiceInstances: serviceInstances}
+		return &authTypes.ErrTeamStillUsed{ServiceInstances: serviceInstances}
 	}
-	return TeamService().Delete(authTypes.Team{Name: teamName})
+	return t.storage.Delete(authTypes.Team{Name: teamName})
 }
 
-func ListTeams() ([]authTypes.Team, error) {
-	return TeamService().FindAll()
+func (t *teamService) validate(team authTypes.Team) error {
+	if !teamNameRegexp.MatchString(team.Name) {
+		return authTypes.ErrInvalidTeamName
+	}
+	return nil
 }

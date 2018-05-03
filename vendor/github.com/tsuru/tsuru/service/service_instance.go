@@ -13,16 +13,17 @@ import (
 	"strconv"
 	"strings"
 
+	"github.com/globalsign/mgo"
+	"github.com/globalsign/mgo/bson"
 	"github.com/pkg/errors"
 	"github.com/tsuru/tsuru/action"
 	"github.com/tsuru/tsuru/app/bind"
-	"github.com/tsuru/tsuru/auth"
 	"github.com/tsuru/tsuru/db"
 	tsuruErrors "github.com/tsuru/tsuru/errors"
+	"github.com/tsuru/tsuru/event"
 	"github.com/tsuru/tsuru/log"
+	"github.com/tsuru/tsuru/servicemanager"
 	authTypes "github.com/tsuru/tsuru/types/auth"
-	"gopkg.in/mgo.v2"
-	"gopkg.in/mgo.v2/bson"
 )
 
 var (
@@ -64,13 +65,13 @@ func (bu Unit) GetIp() string {
 }
 
 // DeleteInstance deletes the service instance from the database.
-func DeleteInstance(si *ServiceInstance, requestID string) error {
+func DeleteInstance(si *ServiceInstance, evt *event.Event, requestID string) error {
 	if len(si.Apps) > 0 {
 		return ErrServiceInstanceBound
 	}
 	endpoint, err := si.Service().getClient("production")
 	if err == nil {
-		endpoint.Destroy(si, requestID)
+		endpoint.Destroy(si, evt, requestID)
 	}
 	conn, err := db.Conn()
 	if err != nil {
@@ -146,7 +147,7 @@ func (si *ServiceInstance) FindApp(appName string) int {
 }
 
 // Update changes informations of the service instance.
-func (si *ServiceInstance) Update(service Service, updateData ServiceInstance, requestID string) error {
+func (si *ServiceInstance) Update(service Service, updateData ServiceInstance, evt *event.Event, requestID string) error {
 	err := validateServiceInstanceTeamOwner(updateData)
 	if err != nil {
 		return err
@@ -164,7 +165,7 @@ func (si *ServiceInstance) Update(service Service, updateData ServiceInstance, r
 	}
 	actions := []*action.Action{&updateServiceInstance, &notifyUpdateServiceInstance}
 	pipeline := action.NewPipeline(actions...)
-	return pipeline.Execute(service, *si, updateData, requestID)
+	return pipeline.Execute(service, *si, updateData, evt, requestID)
 }
 
 func (si *ServiceInstance) updateData(update bson.M) error {
@@ -177,12 +178,14 @@ func (si *ServiceInstance) updateData(update bson.M) error {
 }
 
 // BindApp makes the bind between the service instance and an app.
-func (si *ServiceInstance) BindApp(app bind.App, shouldRestart bool, writer io.Writer) error {
+func (si *ServiceInstance) BindApp(app bind.App, shouldRestart bool, writer io.Writer, evt *event.Event, requestID string) error {
 	args := bindPipelineArgs{
 		serviceInstance: si,
 		app:             app,
 		writer:          writer,
 		shouldRestart:   shouldRestart,
+		event:           evt,
+		requestID:       requestID,
 	}
 	actions := []*action.Action{
 		bindAppDBAction,
@@ -204,7 +207,6 @@ func (si *ServiceInstance) BindUnit(app bind.App, unit bind.Unit) error {
 	if err != nil {
 		return err
 	}
-	defer conn.Close()
 	updateOp := bson.M{
 		"$addToSet": bson.M{
 			"bound_units": bson.D([]bson.DocElem{
@@ -215,6 +217,7 @@ func (si *ServiceInstance) BindUnit(app bind.App, unit bind.Unit) error {
 		},
 	}
 	err = conn.ServiceInstances().Update(bson.M{"name": si.Name, "service_name": si.ServiceName, "bound_units.id": bson.M{"$ne": unit.GetID()}}, updateOp)
+	conn.Close()
 	if err != nil {
 		if err == mgo.ErrNotFound {
 			return nil
@@ -241,16 +244,27 @@ func (si *ServiceInstance) BindUnit(app bind.App, unit bind.Unit) error {
 	return nil
 }
 
+type UnbindAppArgs struct {
+	App         bind.App
+	Restart     bool
+	ForceRemove bool
+	Event       *event.Event
+	RequestID   string
+}
+
 // UnbindApp makes the unbind between the service instance and an app.
-func (si *ServiceInstance) UnbindApp(app bind.App, shouldRestart bool, writer io.Writer) error {
-	if si.FindApp(app.GetName()) == -1 {
+func (si *ServiceInstance) UnbindApp(unbindArgs UnbindAppArgs) error {
+	if si.FindApp(unbindArgs.App.GetName()) == -1 {
 		return ErrAppNotBound
 	}
 	args := bindPipelineArgs{
 		serviceInstance: si,
-		app:             app,
-		writer:          writer,
-		shouldRestart:   shouldRestart,
+		app:             unbindArgs.App,
+		writer:          unbindArgs.Event,
+		shouldRestart:   unbindArgs.Restart,
+		event:           unbindArgs.Event,
+		requestID:       unbindArgs.RequestID,
+		forceRemove:     unbindArgs.ForceRemove,
 	}
 	actions := []*action.Action{
 		&unbindUnits,
@@ -319,7 +333,7 @@ func (si *ServiceInstance) Status(requestID string) (string, error) {
 }
 
 func (si *ServiceInstance) Grant(teamName string) error {
-	team, err := auth.GetTeam(teamName)
+	team, err := servicemanager.Team.FindByName(teamName)
 	if err != nil {
 		return err
 	}
@@ -327,7 +341,7 @@ func (si *ServiceInstance) Grant(teamName string) error {
 }
 
 func (si *ServiceInstance) Revoke(teamName string) error {
-	team, err := auth.GetTeam(teamName)
+	team, err := servicemanager.Team.FindByName(teamName)
 	if err != nil {
 		return err
 	}
@@ -381,14 +395,14 @@ func validateServiceInstanceTeamOwner(si ServiceInstance) error {
 	if si.TeamOwner == "" {
 		return ErrTeamMandatory
 	}
-	_, err := auth.TeamService().FindByName(si.TeamOwner)
+	_, err := servicemanager.Team.FindByName(si.TeamOwner)
 	if err == authTypes.ErrTeamNotFound {
 		return fmt.Errorf("Team owner doesn't exist")
 	}
 	return err
 }
 
-func CreateServiceInstance(instance ServiceInstance, service *Service, user *auth.User, requestID string) error {
+func CreateServiceInstance(instance ServiceInstance, service *Service, evt *event.Event, requestID string) error {
 	err := validateServiceInstance(instance, service)
 	if err != nil {
 		return err
@@ -398,7 +412,7 @@ func CreateServiceInstance(instance ServiceInstance, service *Service, user *aut
 	instance.Tags = processTags(instance.Tags)
 	actions := []*action.Action{&notifyCreateServiceInstance, &createServiceInstance}
 	pipeline := action.NewPipeline(actions...)
-	return pipeline.Execute(*service, instance, user.Email, requestID)
+	return pipeline.Execute(*service, instance, evt, requestID)
 }
 
 func GetServiceInstancesByServices(services []Service) ([]ServiceInstance, error) {
@@ -501,7 +515,7 @@ func RenameServiceInstanceTeam(oldName, newName string) error {
 
 // ProxyInstance is a proxy between tsuru and the service instance.
 // This method allow customized service instance methods.
-func ProxyInstance(instance *ServiceInstance, path string, w http.ResponseWriter, r *http.Request) error {
+func ProxyInstance(instance *ServiceInstance, path string, evt *event.Event, requestID string, w http.ResponseWriter, r *http.Request) error {
 	service := instance.Service()
 	endpoint, err := service.getClient("production")
 	if err != nil {
@@ -516,5 +530,5 @@ func ProxyInstance(instance *ServiceInstance, path string, w http.ResponseWriter
 			}
 		}
 	}
-	return endpoint.Proxy(fmt.Sprintf("%s%s", prefix, path), w, r)
+	return endpoint.Proxy(fmt.Sprintf("%s%s", prefix, path), evt, requestID, w, r)
 }

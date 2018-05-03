@@ -249,6 +249,18 @@
   version = "v1.0.0"
 
 [[projects]]
+  branch = "master"
+  name = "github.com/globalsign/mgo"
+  packages = [
+    ".",
+    "bson",
+    "internal/json",
+    "internal/sasl",
+    "internal/scram"
+  ]
+  revision = "efe0945164a7e582241f37ae8983c075f8f2e870"
+
+[[projects]]
   name = "github.com/go-ini/ini"
   packages = ["."]
   revision = "32e4c1e6bc4e7d0d8451aa6b75200d19e37a536a"
@@ -513,16 +525,16 @@
     "safe",
     "scopedconfig",
     "service",
+    "servicemanager",
     "set",
     "storage",
     "types/api",
     "types/app",
     "types/auth",
-    "types/cache",
     "validation",
     "volume"
   ]
-  revision = "50d74648539c7226022776392e9ff4db77b7f160"
+  revision = "220d82efdcef3923d083fe6957cec004c99b251c"
 
 [[projects]]
   name = "github.com/vmware/govcloudair"

@@ -8,11 +8,11 @@ import (
 	"sync"
 	"time"
 
+	"github.com/globalsign/mgo"
+	"github.com/globalsign/mgo/bson"
 	"github.com/pkg/errors"
 	"github.com/tsuru/tsuru/db"
 	"github.com/tsuru/tsuru/log"
-	"gopkg.in/mgo.v2"
-	"gopkg.in/mgo.v2/bson"
 )
 
 var (
@@ -20,9 +20,7 @@ var (
 	lockExpireTimeout    = 5 * time.Minute
 	eventCleanerInterval = 5 * time.Minute
 	updater              = lockUpdater{
-		addCh:    make(chan eventID, 10),
-		removeCh: make(chan eventID, 10),
-		once:     &sync.Once{},
+		once: &sync.Once{},
 	}
 	cleaner = eventCleaner{
 		once: &sync.Once{},
@@ -55,7 +53,6 @@ func (l *eventCleaner) tryCleaning() error {
 	if err != nil {
 		return errors.Wrap(err, "[events] [event cleaner] error getting db conn")
 	}
-	defer conn.Close()
 	now := time.Now().UTC()
 	coll := conn.Events()
 	var allData []eventData
@@ -63,6 +60,7 @@ func (l *eventCleaner) tryCleaning() error {
 		"running":        true,
 		"lockupdatetime": bson.M{"$lt": now.Add(-lockExpireTimeout)},
 	}).All(&allData)
+	conn.Close()
 	if err != nil {
 		return errors.Wrap(err, "[events] [event cleaner] error updating expired events")
 	}
@@ -95,14 +93,15 @@ func (l *eventCleaner) spin() {
 }
 
 type lockUpdater struct {
-	addCh    chan eventID
-	removeCh chan eventID
-	stopCh   chan struct{}
-	once     *sync.Once
+	stopCh chan struct{}
+	once   *sync.Once
+	setMu  sync.Mutex
+	set    map[eventID]struct{}
 }
 
 func (l *lockUpdater) start() {
 	l.once.Do(func() {
+		l.set = make(map[eventID]struct{})
 		l.stopCh = make(chan struct{})
 		go l.spin()
 	})
@@ -117,18 +116,36 @@ func (l *lockUpdater) stop() {
 	l.once = &sync.Once{}
 }
 
+func (l *lockUpdater) add(id eventID) {
+	l.setMu.Lock()
+	l.set[id] = struct{}{}
+	l.setMu.Unlock()
+}
+
+func (l *lockUpdater) remove(id eventID) {
+	l.setMu.Lock()
+	delete(l.set, id)
+	l.setMu.Unlock()
+}
+
+func (l *lockUpdater) setCopy() map[eventID]struct{} {
+	l.setMu.Lock()
+	defer l.setMu.Unlock()
+	setCopy := make(map[eventID]struct{}, len(l.set))
+	for k := range l.set {
+		setCopy[k] = struct{}{}
+	}
+	return setCopy
+}
+
 func (l *lockUpdater) spin() {
-	set := map[eventID]struct{}{}
 	for {
 		select {
-		case added := <-l.addCh:
-			set[added] = struct{}{}
-		case removed := <-l.removeCh:
-			delete(set, removed)
 		case <-l.stopCh:
 			return
 		case <-time.After(lockUpdateInterval):
 		}
+		set := l.setCopy()
 		if len(set) == 0 {
 			continue
 		}
