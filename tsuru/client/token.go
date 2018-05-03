@@ -11,6 +11,8 @@ import (
 	"strings"
 	"time"
 
+	"github.com/tsuru/tablecli"
+
 	"github.com/tsuru/gnuflag"
 	"github.com/tsuru/go-tsuruclient/pkg/client"
 	"github.com/tsuru/go-tsuruclient/pkg/tsuru"
@@ -144,15 +146,15 @@ func (c *TokenListCmd) Run(ctx *cmd.Context, cli *cmd.Client) error {
 	if err != nil {
 		return err
 	}
-	table := cmd.Table{
-		Headers:       cmd.Row{"Token ID", "Team", "Description", "Creator", "Timestamps", "Value", "Roles"},
+	table := tablecli.Table{
+		Headers:       tablecli.Row{"Token ID", "Team", "Description", "Creator", "Timestamps", "Value", "Roles"},
 		LineSeparator: true,
 	}
 	for _, t := range tokens {
 		if t.Token == "" {
 			t.Token = "Not authorized"
 		}
-		table.AddRow(cmd.Row{
+		table.AddRow(tablecli.Row{
 			t.TokenId,
 			t.Team,
 			t.Description,
