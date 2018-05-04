@@ -852,7 +852,7 @@ func (s *S) TestServiceInstanceRemoveWithoutForce(c *check.C) {
 	command.Flags().Parse(true, []string{"-y"})
 	err := command.Run(&ctx, client)
 	c.Assert(err, check.NotNil)
-	c.Assert(err.Error(), check.Equals, trans.Message)
+	c.Assert(err.Error(), check.Equals, trans.Transport.(cmdtest.Transport).Message)
 }
 
 func (s *S) TestServiceInstanceRemoveWithAppBindWithFlags(c *check.C) {
