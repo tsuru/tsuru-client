@@ -6,8 +6,10 @@ package client
 
 import (
 	"archive/tar"
+	"bufio"
 	"bytes"
 	"compress/gzip"
+	"context"
 	"encoding/json"
 	"errors"
 	"fmt"
@@ -25,6 +27,8 @@ import (
 
 	"github.com/sabhiram/go-gitignore"
 	"github.com/tsuru/gnuflag"
+	"github.com/tsuru/go-tsuruclient/pkg/client"
+	"github.com/tsuru/go-tsuruclient/pkg/tsuru"
 	"github.com/tsuru/tablecli"
 	"github.com/tsuru/tsuru-client/tsuru/formatter"
 	tsuruapp "github.com/tsuru/tsuru/app"
@@ -117,12 +121,16 @@ func (c *AppDeployList) Run(context *cmd.Context, client *cmd.Client) error {
 	return nil
 }
 
+var _ cmd.Cancelable = &AppDeploy{}
+
 type AppDeploy struct {
 	cmd.GuessingCommand
 	image     string
 	message   string
 	filesOnly bool
 	fs        *gnuflag.FlagSet
+	m         sync.Mutex
+	eventID   string
 }
 
 func (c *AppDeploy) Flags() *gnuflag.FlagSet {
@@ -231,19 +239,54 @@ func (c *AppDeploy) Run(context *cmd.Context, client *cmd.Client) error {
 			return err
 		}
 	}
+	c.m.Lock()
 	resp, err := client.Do(request)
 	if err != nil {
+		c.m.Unlock()
 		return err
 	}
 	defer resp.Body.Close()
-	_, err = io.Copy(&respBody, resp.Body)
-	if err != nil {
-		return err
+	c.eventID = resp.Header.Get("X-Tsuru-Eventid")
+	c.m.Unlock()
+	scanner := bufio.NewScanner(resp.Body)
+	for scanner.Scan() {
+		c.m.Lock()
+		_, err := respBody.Write([]byte(scanner.Text() + "\n"))
+		if err != nil {
+			fmt.Fprintln(context.Stderr, "writing response:", err)
+		}
+		c.m.Unlock()
+	}
+	if err := scanner.Err(); err != nil {
+		fmt.Fprintln(context.Stderr, "reading response:", err)
 	}
 	if strings.HasSuffix(buf.String(), "\nOK\n") {
 		return nil
 	}
 	return cmd.ErrAbortCommand
+}
+
+func (c *AppDeploy) Cancel(ctx cmd.Context, cli *cmd.Client) error {
+	apiClient, err := client.ClientFromEnvironment(&tsuru.Configuration{
+		HTTPClient: cli.HTTPClient,
+	})
+	if err != nil {
+		return err
+	}
+	c.m.Lock()
+	defer c.m.Unlock()
+	if c.eventID == "" {
+		return nil
+	}
+	fmt.Fprintln(ctx.Stdout, cmd.Colorfy("Warning: the deploy is still RUNNING in the background!", "red", "", "bold"))
+	fmt.Fprint(ctx.Stdout, "Are you sure you want to cancel this deploy? (Y/n) ")
+	var answer string
+	fmt.Fscanf(ctx.Stdin, "%s", &answer)
+	if strings.ToLower(answer) != "y" && answer != "" {
+		return fmt.Errorf("aborted")
+	}
+	_, err = apiClient.EventApi.EventCancel(context.Background(), c.eventID, tsuru.EventCancelArgs{Reason: "SIGINT"})
+	return err
 }
 
 func targz(ctx *cmd.Context, destination io.Writer, filesOnly bool, filepaths ...string) error {

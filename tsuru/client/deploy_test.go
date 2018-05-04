@@ -72,6 +72,92 @@ func (s *S) TestDeployRun(c *check.C) {
 	c.Assert(calledTimes, check.Equals, 2)
 }
 
+type slowReader struct {
+	io.ReadCloser
+	Latency time.Duration
+}
+
+func (s *slowReader) Read(p []byte) (n int, err error) {
+	time.Sleep(s.Latency)
+	return s.ReadCloser.Read(p)
+}
+
+func (s *slowReader) Close() error {
+	return s.ReadCloser.Close()
+}
+
+func (s *S) TestDeployRunCancel(c *check.C) {
+	calledTimes := 0
+	var buf bytes.Buffer
+	ctx := cmd.Context{Stderr: bytes.NewBufferString("")}
+	err := targz(&ctx, &buf, false, "testdata", "..")
+	c.Assert(err, check.IsNil)
+	deploy := make(chan struct{}, 1)
+	trans := cmdtest.MultiConditionalTransport{
+		ConditionalTransports: []cmdtest.ConditionalTransport{
+			{
+				Transport: cmdtest.Transport{Status: http.StatusOK},
+				CondFunc: func(req *http.Request) bool {
+					calledTimes++
+					c.Assert(req.Method, check.Equals, "GET")
+					c.Assert(req.URL.Path, check.Equals, "/1.0/apps/secret")
+					return true
+				},
+			},
+			{
+				Transport: &cmdtest.BodyTransport{
+					Status:  http.StatusOK,
+					Headers: map[string][]string{"X-Tsuru-Eventid": []string{"5aec54d93195b20001194951"}},
+					Body:    &slowReader{ReadCloser: ioutil.NopCloser(bytes.NewBufferString("deploy worked\nOK\n")), Latency: time.Second * 5},
+				},
+				CondFunc: func(req *http.Request) bool {
+					deploy <- struct{}{}
+					calledTimes++
+					if req.Body != nil {
+						defer req.Body.Close()
+					}
+					file, _, transErr := req.FormFile("file")
+					c.Assert(transErr, check.IsNil)
+					content, transErr := ioutil.ReadAll(file)
+					c.Assert(transErr, check.IsNil)
+					c.Assert(content, check.DeepEquals, buf.Bytes())
+					c.Assert(req.Header.Get("Content-Type"), check.Matches, "multipart/form-data; boundary=.*")
+					c.Assert(req.FormValue("origin"), check.Equals, "app-deploy")
+					return req.Method == "POST" && strings.HasSuffix(req.URL.Path, "/apps/secret/deploy")
+				},
+			},
+			{
+				Transport: cmdtest.Transport{Status: http.StatusOK},
+				CondFunc: func(req *http.Request) bool {
+					calledTimes++
+					c.Assert(req.Method, check.Equals, "POST")
+					c.Assert(req.URL.Path, check.Equals, "/1.1/events/5aec54d93195b20001194951/cancel")
+					return true
+				},
+			},
+		},
+	}
+	client := cmd.NewClient(&http.Client{Transport: &trans}, nil, manager)
+	var stdout, stderr bytes.Buffer
+	context := cmd.Context{
+		Stdout: &stdout,
+		Stderr: &stderr,
+		Stdin:  bytes.NewReader([]byte("y")),
+		Args:   []string{"testdata", ".."},
+	}
+	fake := cmdtest.FakeGuesser{Name: "secret"}
+	guessCommand := cmd.GuessingCommand{G: &fake}
+	cmd := AppDeploy{GuessingCommand: guessCommand}
+	go func() {
+		err = cmd.Run(&context, client)
+		c.Assert(err, check.IsNil)
+	}()
+	<-deploy
+	err = cmd.Cancel(context, client)
+	c.Assert(err, check.IsNil)
+	c.Assert(calledTimes, check.Equals, 3)
+}
+
 func (s *S) TestDeployImage(c *check.C) {
 	calledTimes := 0
 	trans := cmdtest.ConditionalTransport{
