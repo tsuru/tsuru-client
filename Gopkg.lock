@@ -534,7 +534,7 @@
     "validation",
     "volume"
   ]
-  revision = "9c1077c2fe7279a22a5c80ef71895962453a1a4a"
+  revision = "25011009236a43770732f6afba7b409d8258a478"
 
 [[projects]]
   name = "github.com/vmware/govcloudair"
