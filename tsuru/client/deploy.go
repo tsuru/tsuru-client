@@ -285,7 +285,7 @@ func (c *AppDeploy) Cancel(ctx cmd.Context, cli *cmd.Client) error {
 	if strings.ToLower(answer) != "y" && answer != "" {
 		return fmt.Errorf("aborted")
 	}
-	_, err = apiClient.EventApi.EventCancel(context.Background(), c.eventID, tsuru.EventCancelArgs{Reason: "SIGINT"})
+	_, err = apiClient.EventApi.EventCancel(context.Background(), c.eventID, tsuru.EventCancelArgs{Reason: "Canceled on client."})
 	return err
 }
 
