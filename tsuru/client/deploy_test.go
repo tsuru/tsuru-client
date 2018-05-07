@@ -107,7 +107,7 @@ func (s *S) TestDeployRunCancel(c *check.C) {
 			{
 				Transport: &cmdtest.BodyTransport{
 					Status:  http.StatusOK,
-					Headers: map[string][]string{"X-Tsuru-Eventid": []string{"5aec54d93195b20001194951"}},
+					Headers: map[string][]string{"X-Tsuru-Eventid": {"5aec54d93195b20001194951"}},
 					Body:    &slowReader{ReadCloser: ioutil.NopCloser(bytes.NewBufferString("deploy worked\nOK\n")), Latency: time.Second * 5},
 				},
 				CondFunc: func(req *http.Request) bool {
