@@ -5,11 +5,11 @@ os:
   - linux
   - osx
 go:
-  - 1.9.2
+  - 1.10.x
   - master
 env:
   global:
-    - GO_FOR_RELEASE=1.9
+    - GO_FOR_RELEASE=1.10
     - GORELEASER_CONFIG=goreleaser-rc.yml
   matrix:
     - GOARCH=amd64 JOB=test
