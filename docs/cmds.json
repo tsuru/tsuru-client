@@ -519,8 +519,8 @@
     "desc": "Updates attributes for a pool.\n\nFlags:\n  \n  --default  (= not set)\n      Make pool default (when none is specified during [[app-create]] this pool will be used)\n  -f, --force  (= false)\n      Force pool to be default.\n  --public  (= not set)\n      Make pool public (all teams can use it)\n  \nMinimum # of arguments: 1\n"
   }, 
   "app-shell": {
-    "usage": "tsuru app-shell [unit-id] -a/--app <appname>", 
-    "desc": "Opens a remote shell inside unit, using the API server as a proxy. You\ncan access an app unit just giving app name, or specifying the id of the unit.\nYou can get the ID of the unit using the app-info command.\n\nFlags:\n  \n  -a, --app (= \"\")\n      The name of the app.\n  \n"
+    "usage": "tsuru app-shell [unit-id] -a/--app <appname> [-i/--isolated]", 
+    "desc": "Opens a remote shell inside unit, using the API server as a proxy. You\ncan access an app unit just giving app name, or specifying the id of the unit.\nYou can get the ID of the unit using the app-info command.\n\nFlags:\n  \n  -a, --app (= \"\")\n      The name of the app.\n  -i, --isolated  (= false)\n      Run shell in a new unit\n  \n"
   }, 
   "service-instance-info": {
     "usage": "tsuru service-instance-info <service-name> <instance-name>", 

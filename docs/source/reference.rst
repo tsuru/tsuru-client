@@ -57,6 +57,18 @@ Authentication
 .. tsuru-command:: token-regenerate
    :title: Regenerate API token
 
+Tokens
+======
+
+.. tsuru-command:: token-create
+   :title: Creates a new API token
+.. tsuru-command:: token-update
+   :title: Updates an existing API token
+.. tsuru-command:: token-delete
+   :title: Deletes an existing API token
+.. tsuru-command:: token-list
+   :title: List existing tokens
+
 Team management
 ===============
 
@@ -332,6 +344,21 @@ Events
 
 .. tsuru-command:: event-block-remove
    :title: Removes an event block
+
+Event Webhooks
+==============
+
+.. tsuru-command:: event-webhook-list
+   :title: List all webhooks
+
+.. tsuru-command:: event-webhook-create
+   :title: Creates a webhook
+
+.. tsuru-command:: event-webhook-update
+   :title: Updates a webhook
+
+.. tsuru-command:: event-webhook-delete
+   :title: Deletes a webhook
 
 Container management
 ====================
