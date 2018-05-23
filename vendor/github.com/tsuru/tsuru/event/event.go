@@ -27,6 +27,7 @@ import (
 	"github.com/tsuru/tsuru/log"
 	"github.com/tsuru/tsuru/permission"
 	"github.com/tsuru/tsuru/safe"
+	"github.com/tsuru/tsuru/servicemanager"
 	authTypes "github.com/tsuru/tsuru/types/auth"
 )
 
@@ -103,6 +104,7 @@ var (
 	TargetTypeEventBlock      = TargetType("event-block")
 	TargetTypeCluster         = TargetType("cluster")
 	TargetTypeVolume          = TargetType("volume")
+	TargetTypeWebhook         = TargetType("webhook")
 )
 
 const (
@@ -243,6 +245,26 @@ func GetTargetType(t string) (TargetType, error) {
 		return TargetTypeTeam, nil
 	case "user":
 		return TargetTypeUser, nil
+	case "iaas":
+		return TargetTypeIaas, nil
+	case "role":
+		return TargetTypeRole, nil
+	case "platform":
+		return TargetTypePlatform, nil
+	case "plan":
+		return TargetTypePlan, nil
+	case "node-container":
+		return TargetTypeNodeContainer, nil
+	case "install-host":
+		return TargetTypeInstallHost, nil
+	case "event-block":
+		return TargetTypeEventBlock, nil
+	case "cluster":
+		return TargetTypeCluster, nil
+	case "volume":
+		return TargetTypeVolume, nil
+	case "webhook":
+		return TargetTypeWebhook, nil
 	}
 	return TargetType(""), ErrInvalidTargetType
 }
@@ -586,6 +608,13 @@ func GetRunning(target Target, kind string) (*Event, error) {
 		return nil, err
 	}
 	return &evt, nil
+}
+
+func GetByHexID(hexid string) (*Event, error) {
+	if !bson.IsObjectIdHex(hexid) {
+		return nil, errors.Errorf("receive ID is not a valid event object id: %q", hexid)
+	}
+	return GetByID(bson.ObjectIdHex(hexid))
 }
 
 func GetByID(id bson.ObjectId) (*Event, error) {
@@ -1153,6 +1182,10 @@ func (e *Event) done(evtErr error, customData interface{}, abort bool) (err erro
 		eventCurrent.WithLabelValues(e.Kind.Name).Dec()
 		if err != nil {
 			log.Errorf("[events] error marking event as done - %#v: %s", e, err)
+		} else {
+			if !abort && servicemanager.Webhook != nil {
+				servicemanager.Webhook.Notify(e.UniqueID.Hex())
+			}
 		}
 	}()
 	updater.remove(e.ID)

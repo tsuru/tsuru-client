@@ -33,7 +33,6 @@ import (
 	"github.com/tsuru/tsuru/provision"
 	"github.com/tsuru/tsuru/provision/nodecontainer"
 	"github.com/tsuru/tsuru/provision/pool"
-	"github.com/tsuru/tsuru/quota"
 	"github.com/tsuru/tsuru/registry"
 	"github.com/tsuru/tsuru/repository"
 	"github.com/tsuru/tsuru/router"
@@ -42,6 +41,7 @@ import (
 	"github.com/tsuru/tsuru/servicemanager"
 	appTypes "github.com/tsuru/tsuru/types/app"
 	authTypes "github.com/tsuru/tsuru/types/auth"
+	"github.com/tsuru/tsuru/types/quota"
 	"github.com/tsuru/tsuru/validation"
 	"github.com/tsuru/tsuru/volume"
 )
@@ -149,7 +149,7 @@ type App struct {
 	Error          string
 	Routers        []appTypes.AppRouter
 
-	quota.Quota
+	Quota       quota.Quota
 	builder     builder.Builder
 	provisioner provision.Provisioner
 }
@@ -377,7 +377,7 @@ func GetByName(name string) (*App, error) {
 	defer conn.Close()
 	err = conn.Apps().Find(bson.M{"name": name}).One(&app)
 	if err == mgo.ErrNotFound {
-		return nil, ErrAppNotFound
+		return nil, appTypes.ErrAppNotFound
 	}
 	return &app, err
 }
@@ -705,7 +705,7 @@ func Delete(app *App, evt *event.Event, requestID string) error {
 	}
 	owner, err := auth.GetUserByEmail(app.Owner)
 	if err == nil {
-		err = auth.ReleaseApp(owner)
+		err = servicemanager.UserQuota.Inc(owner.Email, -1)
 	}
 	if err != nil {
 		logErr("Unable to release app quota", err)
@@ -794,7 +794,11 @@ func (app *App) AddUnits(n uint, process string, w io.Writer) error {
 		&provisionAddUnits,
 	).Execute(app, n, w, process)
 	rebuild.RoutesRebuildOrEnqueue(app.Name)
-	return err
+	quotaErr := app.fixQuota()
+	if err != nil {
+		return err
+	}
+	return quotaErr
 }
 
 // RemoveUnits removes n units from the app. It's a process composed of
@@ -810,14 +814,27 @@ func (app *App) RemoveUnits(n uint, process string, w io.Writer) error {
 	w = app.withLogWriter(w)
 	err = prov.RemoveUnits(app, n, process, w)
 	rebuild.RoutesRebuildOrEnqueue(app.Name)
+	quotaErr := app.fixQuota()
 	if err != nil {
 		return err
 	}
+	return quotaErr
+}
+
+func (app *App) fixQuota() error {
 	units, err := app.Units()
 	if err != nil {
 		return err
 	}
-	return app.SetQuotaInUse(len(units))
+	var count int
+	for _, u := range units {
+		if u.Status == provision.StatusBuilding ||
+			u.Status == provision.StatusCreated {
+			continue
+		}
+		count++
+	}
+	return app.SetQuotaInUse(count)
 }
 
 // SetUnitStatus changes the status of the given unit.
@@ -1167,14 +1184,13 @@ func (app *App) Run(cmd string, w io.Writer, args provision.RunArgs) error {
 	logWriter := LogWriter{App: app, Source: "app-run"}
 	logWriter.Async()
 	defer logWriter.Close()
-	return app.sourced(cmd, io.MultiWriter(w, &logWriter), args)
+	return app.run(cmd, io.MultiWriter(w, &logWriter), args)
 }
 
-func (app *App) sourced(cmd string, w io.Writer, args provision.RunArgs) error {
+func cmdsForExec(cmd string) []string {
 	source := "[ -f /home/application/apprc ] && source /home/application/apprc"
 	cd := fmt.Sprintf("[ -d %s ] && cd %s", defaultAppDir, defaultAppDir)
-	cmd = fmt.Sprintf("%s; %s; %s", source, cd, cmd)
-	return app.run(cmd, w, args)
+	return []string{"/bin/sh", "-c", fmt.Sprintf("%s; %s; %s", source, cd, cmd)}
 }
 
 func (app *App) run(cmd string, w io.Writer, args provision.RunArgs) error {
@@ -1186,13 +1202,24 @@ func (app *App) run(cmd string, w io.Writer, args provision.RunArgs) error {
 	if !ok {
 		return provision.ProvisionerNotSupported{Prov: prov, Action: "running commands"}
 	}
-	if args.Isolated {
-		return execProv.ExecuteCommandIsolated(w, w, app, cmd)
+	opts := provision.ExecOptions{
+		App:    app,
+		Stdout: w,
+		Stderr: w,
+		Cmds:   cmdsForExec(cmd),
 	}
-	if args.Once {
-		return execProv.ExecuteCommandOnce(w, w, app, cmd)
+	units, err := app.Units()
+	if err != nil {
+		return err
 	}
-	return execProv.ExecuteCommand(w, w, app, cmd)
+	if args.Once && len(units) > 0 {
+		opts.Units = []string{units[0].ID}
+	} else if !args.Isolated {
+		for _, u := range units {
+			opts.Units = append(opts.Units, u.ID)
+		}
+	}
+	return execProv.ExecuteCommand(opts)
 }
 
 // Restart runs the restart hook for the app, writing its output to w.
@@ -1350,25 +1377,11 @@ func (app *App) GetQuota() quota.Quota {
 }
 
 func (app *App) SetQuotaInUse(inUse int) error {
-	if inUse < 0 {
-		return errors.New("invalid value, cannot be lesser than 0")
-	}
-	if !app.Quota.Unlimited() && inUse > app.Quota.Limit {
-		return &quota.QuotaExceededError{
-			Requested: uint(inUse),
-			Available: uint(app.Quota.Limit),
-		}
-	}
-	conn, err := db.Conn()
-	if err != nil {
-		return err
-	}
-	defer conn.Close()
-	err = conn.Apps().Update(bson.M{"name": app.Name}, bson.M{"$set": bson.M{"quota.inuse": inUse}})
-	if err == mgo.ErrNotFound {
-		return ErrAppNotFound
-	}
-	return err
+	return servicemanager.AppQuota.Set(app.Name, inUse)
+}
+
+func (app *App) SetQuotaLimit(limit int) error {
+	return servicemanager.AppQuota.SetLimit(app.Name, limit)
 }
 
 // GetCname returns the cnames of the app.
@@ -2155,17 +2168,18 @@ func (app *App) MetricEnvs() (map[string]string, error) {
 	return envs, nil
 }
 
-func (app *App) Shell(opts provision.ShellOptions) error {
-	opts.App = app
+func (app *App) Shell(opts provision.ExecOptions) error {
 	prov, err := app.getProvisioner()
 	if err != nil {
 		return err
 	}
-	if shellProv, ok := prov.(provision.ShellProvisioner); ok {
-		return shellProv.Shell(opts)
-	} else {
+	execProv, ok := prov.(provision.ExecutableProvisioner)
+	if !ok {
 		return provision.ProvisionerNotSupported{Prov: prov, Action: "running shell"}
 	}
+	opts.App = app
+	opts.Cmds = cmdsForExec("bash -l")
+	return execProv.ExecuteCommand(opts)
 }
 
 func (app *App) SetCertificate(name, certificate, key string) error {

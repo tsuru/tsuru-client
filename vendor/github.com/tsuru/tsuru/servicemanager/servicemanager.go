@@ -7,6 +7,8 @@ package servicemanager
 import (
 	"github.com/tsuru/tsuru/types/app"
 	"github.com/tsuru/tsuru/types/auth"
+	"github.com/tsuru/tsuru/types/event"
+	"github.com/tsuru/tsuru/types/quota"
 )
 
 var (
@@ -15,4 +17,7 @@ var (
 	Platform  app.PlatformService
 	Team      auth.TeamService
 	TeamToken auth.TeamTokenService
+	Webhook   event.WebhookService
+	AppQuota  quota.QuotaService
+	UserQuota quota.QuotaService
 )

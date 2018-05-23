@@ -14,7 +14,7 @@ import (
 	"strconv"
 
 	"github.com/tsuru/tsuru/cmd"
-	"github.com/tsuru/tsuru/quota"
+	"github.com/tsuru/tsuru/types/quota"
 )
 
 type UserQuotaView struct{}
