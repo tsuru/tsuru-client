@@ -11,6 +11,8 @@ import (
 	"github.com/tsuru/config"
 	"github.com/tsuru/tsuru/types/app"
 	"github.com/tsuru/tsuru/types/auth"
+	"github.com/tsuru/tsuru/types/event"
+	"github.com/tsuru/tsuru/types/quota"
 )
 
 type DbDriver struct {
@@ -19,6 +21,9 @@ type DbDriver struct {
 	PlanStorage      app.PlanStorage
 	CacheStorage     app.CacheStorage
 	TeamTokenStorage auth.TeamTokenStorage
+	UserQuotaStorage quota.QuotaStorage
+	AppQuotaStorage  quota.QuotaStorage
+	WebhookStorage   event.WebhookStorage
 }
 
 var (

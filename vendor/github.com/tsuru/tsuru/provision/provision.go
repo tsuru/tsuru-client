@@ -25,6 +25,10 @@ import (
 const (
 	defaultDockerProvisioner = "docker"
 	DefaultHealthcheckScheme = "http"
+
+	PoolMetadataName   = "pool"
+	IaaSIDMetadataName = "iaas-id"
+	IaaSMetadataName   = "iaas"
 )
 
 var (
@@ -242,17 +246,6 @@ type AppLock interface {
 	GetAcquireDate() time.Time
 }
 
-// ShellOptions is the set of options that can be used when calling the method
-// Shell in the provisioner.
-type ShellOptions struct {
-	App    App
-	Conn   io.ReadWriteCloser
-	Width  int
-	Height int
-	Unit   string
-	Term   string
-}
-
 // RollbackableDeployer is a provisioner that allows rolling back to a
 // previously deployed version.
 type RollbackableDeployer interface {
@@ -358,24 +351,20 @@ type Provisioner interface {
 	RegisterUnit(App, string, map[string]interface{}) error
 }
 
-// ShellProvisioner is a provisioner that allows opening a shell to existing
-// units.
-type ShellProvisioner interface {
-	// Open a remote shel in one of the units in the application.
-	Shell(ShellOptions) error
+type ExecOptions struct {
+	App    App
+	Stdout io.Writer
+	Stderr io.Writer
+	Stdin  io.Reader
+	Width  int
+	Height int
+	Term   string
+	Cmds   []string
+	Units  []string
 }
 
-// ExecutableProvisioner is a provisioner that allows executing commands on
-// units.
 type ExecutableProvisioner interface {
-	// ExecuteCommand runs a command in all units of the app.
-	ExecuteCommand(stdout, stderr io.Writer, app App, cmd string, args ...string) error
-
-	// ExecuteCommandOnce runs a command in one unit of the app.
-	ExecuteCommandOnce(stdout, stderr io.Writer, app App, cmd string, args ...string) error
-
-	// ExecuteCommandIsolated runs a command in an new and ephemeral container.
-	ExecuteCommandIsolated(stdout, stderr io.Writer, app App, cmd string, args ...string) error
+	ExecuteCommand(opts ExecOptions) error
 }
 
 // SleepableProvisioner is a provisioner that allows putting applications to
@@ -495,6 +484,7 @@ type AppFilterProvisioner interface {
 }
 
 type VolumeProvisioner interface {
+	IsVolumeProvisioned(volumeName, pool string) (bool, error)
 	DeleteVolume(volumeName, pool string) error
 }
 
@@ -694,7 +684,10 @@ type TsuruYamlHealthcheck struct {
 	Match           string `bson:",omitempty"`
 	RouterBody      string `json:"router_body" yaml:"router_body" bson:"router_body,omitempty"`
 	UseInRouter     bool   `json:"use_in_router" yaml:"use_in_router" bson:"use_in_router,omitempty"`
+	ForceRestart    bool   `json:"force_restart" yaml:"force_restart" bson:"force_restart,omitempty"`
 	AllowedFailures int    `json:"allowed_failures" yaml:"allowed_failures" bson:"allowed_failures,omitempty"`
+	IntervalSeconds int    `json:"interval_seconds" yaml:"interval_seconds" bson:"interval_seconds,omitempty"`
+	TimeoutSeconds  int    `json:"timeout_seconds" yaml:"timeout_seconds" bson:"timeout_seconds,omitempty"`
 }
 
 func (hc TsuruYamlHealthcheck) ToRouterHC() router.HealthcheckData {

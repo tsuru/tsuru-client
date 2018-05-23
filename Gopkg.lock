@@ -514,6 +514,7 @@
     "provision/cluster",
     "provision/docker/cmds",
     "provision/docker/types",
+    "provision/node",
     "provision/nodecontainer",
     "provision/pool",
     "queue",
@@ -531,10 +532,12 @@
     "types/api",
     "types/app",
     "types/auth",
+    "types/event",
+    "types/quota",
     "validation",
     "volume"
   ]
-  revision = "25011009236a43770732f6afba7b409d8258a478"
+  revision = "d8ae46ee88eaa3ced43096b4fadde58d62e9b34f"
 
 [[projects]]
   name = "github.com/vmware/govcloudair"
@@ -672,6 +675,6 @@
 [solve-meta]
   analyzer-name = "dep"
   analyzer-version = 1
-  inputs-digest = "49e50fce780d8125faa887971a855c2b349e77d2f07bb96a9fd21ac12e21279d"
+  inputs-digest = "b2135eea532a037d5346b07d29f9cc7a92d4ef68d2b71b4da8ceb30653588931"
   solver-name = "gps-cdcl"
   solver-version = 1
