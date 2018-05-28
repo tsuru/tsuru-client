@@ -9,6 +9,7 @@ import (
 	"encoding/json"
 	stdErrors "errors"
 	"fmt"
+	"net/http"
 	"sort"
 	"strconv"
 	"strings"
@@ -273,8 +274,11 @@ func (c *WebhookList) Run(ctx *cmd.Context, cli *cmd.Client) error {
 	if err != nil {
 		return err
 	}
-	webhooks, _, err := apiClient.EventApi.WebhookList(context.TODO())
+	webhooks, rsp, err := apiClient.EventApi.WebhookList(context.TODO())
 	if err != nil {
+		if rsp != nil && rsp.StatusCode == http.StatusNoContent {
+			return nil
+		}
 		return err
 	}
 	tbl := tablecli.Table{

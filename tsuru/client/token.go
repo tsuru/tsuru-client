@@ -7,6 +7,7 @@ package client
 import (
 	"context"
 	"fmt"
+	"net/http"
 	"sort"
 	"strings"
 	"time"
@@ -142,8 +143,11 @@ func (c *TokenListCmd) Run(ctx *cmd.Context, cli *cmd.Client) error {
 	if err != nil {
 		return err
 	}
-	tokens, _, err := apiClient.AuthApi.TeamTokensList(context.TODO())
+	tokens, rsp, err := apiClient.AuthApi.TeamTokensList(context.TODO())
 	if err != nil {
+		if rsp != nil && rsp.StatusCode == http.StatusNoContent {
+			return nil
+		}
 		return err
 	}
 	table := tablecli.Table{
