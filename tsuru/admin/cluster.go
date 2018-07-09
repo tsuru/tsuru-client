@@ -18,7 +18,7 @@ import (
 	"github.com/tsuru/gnuflag"
 	"github.com/tsuru/tablecli"
 	"github.com/tsuru/tsuru/cmd"
-	"github.com/tsuru/tsuru/provision/cluster"
+	"github.com/tsuru/tsuru/types/provision"
 )
 
 type ClusterAdd struct {
@@ -73,7 +73,7 @@ func (c *ClusterAdd) Run(context *cmd.Context, client *cmd.Client) error {
 	}
 	name := context.Args[0]
 	provisioner := context.Args[1]
-	clus := cluster.Cluster{
+	clus := provision.Cluster{
 		Name:        name,
 		Addresses:   c.addresses,
 		Pools:       c.pools,
@@ -172,7 +172,7 @@ func (c *ClusterUpdate) Run(context *cmd.Context, client *cmd.Client) error {
 		return err
 	}
 	provisioner := context.Args[1]
-	clus := cluster.Cluster{
+	clus := provision.Cluster{
 		Name:        name,
 		Addresses:   c.addresses,
 		Pools:       c.pools,
@@ -253,7 +253,7 @@ func (c *ClusterList) Run(context *cmd.Context, client *cmd.Client) error {
 	if err != nil {
 		return err
 	}
-	var clusters []cluster.Cluster
+	var clusters []provision.Cluster
 	err = json.Unmarshal(data, &clusters)
 	if err != nil {
 		return errors.Wrapf(err, "unable to parse data %q", string(data))

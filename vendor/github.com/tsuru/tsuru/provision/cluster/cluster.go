@@ -7,47 +7,80 @@ package cluster
 import (
 	"strings"
 
-	"github.com/globalsign/mgo"
-	"github.com/globalsign/mgo/bson"
 	"github.com/pkg/errors"
-	"github.com/tsuru/tsuru/db"
-	"github.com/tsuru/tsuru/db/storage"
 	tsuruErrors "github.com/tsuru/tsuru/errors"
+	"github.com/tsuru/tsuru/iaas"
 	"github.com/tsuru/tsuru/provision"
+	"github.com/tsuru/tsuru/storage"
+	provTypes "github.com/tsuru/tsuru/types/provision"
 	"github.com/tsuru/tsuru/validation"
 )
 
-var (
-	ErrClusterNotFound = errors.New("cluster not found")
-	ErrNoCluster       = errors.New("no cluster")
-)
-
-type Cluster struct {
-	Name        string            `json:"name" bson:"_id"`
-	Addresses   []string          `json:"addresses"`
-	Provisioner string            `json:"provisioner"`
-	CaCert      []byte            `json:"cacert" bson:",omitempty"`
-	ClientCert  []byte            `json:"clientcert" bson:",omitempty"`
-	ClientKey   []byte            `json:"-" bson:",omitempty"`
-	Pools       []string          `json:"pools" bson:",omitempty"`
-	CustomData  map[string]string `json:"custom_data" bson:",omitempty"`
-	CreateData  map[string]string `json:"create_data" bson:",omitempty"`
-	Default     bool              `json:"default"`
-}
-
 type InitClusterProvisioner interface {
-	InitializeCluster(c *Cluster) error
+	InitializeCluster(c *provTypes.Cluster) error
 }
 
-func clusterCollection() (*storage.Collection, error) {
-	conn, err := db.Conn()
+type clusterService struct {
+	storage provTypes.ClusterStorage
+}
+
+func ClusterService() (provTypes.ClusterService, error) {
+	dbDriver, err := storage.GetCurrentDbDriver()
 	if err != nil {
-		return nil, errors.WithStack(err)
+		dbDriver, err = storage.GetDefaultDbDriver()
+		if err != nil {
+			return nil, err
+		}
 	}
-	return conn.ProvisionerClusters(), nil
+	return &clusterService{
+		storage: dbDriver.ClusterStorage,
+	}, nil
 }
 
-func (c *Cluster) validate() error {
+func (s *clusterService) Create(c provTypes.Cluster) error {
+	if err := s.createClusterMachine(&c); err != nil {
+		return err
+	}
+	return s.save(c)
+}
+
+func (s *clusterService) Update(c provTypes.Cluster) error {
+	return s.save(c)
+}
+
+func (s *clusterService) save(c provTypes.Cluster) error {
+	err := s.validate(c)
+	if err != nil {
+		return err
+	}
+	err = s.initCluster(c)
+	if err != nil {
+		return err
+	}
+	return s.storage.Upsert(c)
+}
+
+func (s *clusterService) List() ([]provTypes.Cluster, error) {
+	return s.storage.FindAll()
+}
+
+func (s *clusterService) FindByName(name string) (*provTypes.Cluster, error) {
+	return s.storage.FindByName(name)
+}
+
+func (s *clusterService) FindByProvisioner(prov string) ([]provTypes.Cluster, error) {
+	return s.storage.FindByProvisioner(prov)
+}
+
+func (s *clusterService) FindByPool(prov, pool string) (*provTypes.Cluster, error) {
+	return s.storage.FindByPool(prov, pool)
+}
+
+func (s *clusterService) Delete(c provTypes.Cluster) error {
+	return s.storage.Delete(c)
+}
+
+func (s *clusterService) validate(c provTypes.Cluster) error {
 	c.Name = strings.TrimSpace(c.Name)
 	if c.Name == "" {
 		return errors.WithStack(&tsuruErrors.ValidationError{Message: "cluster name is mandatory"})
@@ -61,10 +94,6 @@ func (c *Cluster) validate() error {
 	if c.Provisioner == "" {
 		return errors.WithStack(&tsuruErrors.ValidationError{Message: "provisioner name is mandatory"})
 	}
-	prov, err := provision.Get(c.Provisioner)
-	if err != nil {
-		return errors.WithStack(&tsuruErrors.ValidationError{Message: err.Error()})
-	}
 	if len(c.Pools) > 0 {
 		if c.Default {
 			return errors.WithStack(&tsuruErrors.ValidationError{Message: "cannot have both pools and default set"})
@@ -74,114 +103,38 @@ func (c *Cluster) validate() error {
 			return errors.WithStack(&tsuruErrors.ValidationError{Message: "either default or a list of pools must be set"})
 		}
 	}
-	if clusterProv, ok := prov.(InitClusterProvisioner); ok {
-		err = clusterProv.InitializeCluster(c)
-		if err != nil {
-			return err
-		}
-	}
 	return nil
 }
 
-func (c *Cluster) Save() error {
-	err := c.validate()
+func (s *clusterService) initCluster(c provTypes.Cluster) error {
+	prov, err := provision.Get(c.Provisioner)
 	if err != nil {
 		return err
 	}
-	coll, err := clusterCollection()
-	if err != nil {
-		return err
-	}
-	defer coll.Close()
-	updates := bson.M{}
-	if len(c.Pools) > 0 {
-		updates["$pullAll"] = bson.M{"pools": c.Pools}
-	}
-	if c.Default {
-		updates["$set"] = bson.M{"default": false}
-	}
-	if len(updates) > 0 {
-		_, err = coll.UpdateAll(bson.M{"provisioner": c.Provisioner}, updates)
-		if err != nil {
-			return errors.WithStack(err)
-		}
-	}
-	_, err = coll.UpsertId(c.Name, c)
-	return errors.WithStack(err)
-}
-
-func AllClusters() ([]*Cluster, error) {
-	return listClusters(nil)
-}
-
-func ByName(clusterName string) (*Cluster, error) {
-	coll, err := clusterCollection()
-	if err != nil {
-		return nil, err
-	}
-	defer coll.Close()
-	var c *Cluster
-	err = coll.FindId(clusterName).One(&c)
-	if err == mgo.ErrNotFound {
-		return nil, ErrClusterNotFound
-	}
-	return c, err
-}
-
-func DeleteCluster(clusterName string) error {
-	coll, err := clusterCollection()
-	if err != nil {
-		return err
-	}
-	defer coll.Close()
-	err = coll.RemoveId(clusterName)
-	if err != nil {
-		if err == mgo.ErrNotFound {
-			return ErrClusterNotFound
-		}
+	if clusterProv, ok := prov.(InitClusterProvisioner); ok {
+		err = clusterProv.InitializeCluster(&c)
 	}
 	return err
 }
 
-func ForProvisioner(provisioner string) ([]*Cluster, error) {
-	return listClusters(bson.M{"provisioner": provisioner})
-}
-
-func ForPool(provisioner, pool string) (*Cluster, error) {
-	coll, err := clusterCollection()
-	if err != nil {
-		return nil, err
+func (s *clusterService) createClusterMachine(c *provTypes.Cluster) error {
+	if len(c.CreateData) == 0 {
+		return nil
 	}
-	defer coll.Close()
-	var c Cluster
-	if pool != "" {
-		err = coll.Find(bson.M{"provisioner": provisioner, "pools": pool}).One(&c)
-	}
-	if pool == "" || err == mgo.ErrNotFound {
-		err = coll.Find(bson.M{"provisioner": provisioner, "default": true}).One(&c)
-	}
-	if err != nil {
-		if err == mgo.ErrNotFound {
-			return nil, ErrNoCluster
+	if templateName, ok := c.CreateData["template"]; ok {
+		var err error
+		c.CreateData, err = iaas.ExpandTemplate(templateName, c.CreateData)
+		if err != nil {
+			return err
 		}
-		return nil, errors.WithStack(err)
 	}
-	return &c, nil
-}
-
-func listClusters(query bson.M) ([]*Cluster, error) {
-	coll, err := clusterCollection()
+	m, err := iaas.CreateMachine(c.CreateData)
 	if err != nil {
-		return nil, err
+		return err
 	}
-	defer coll.Close()
-	var clusters []*Cluster
-	err = coll.Find(query).All(&clusters)
-	if err != nil {
-		return nil, errors.WithStack(err)
-	}
-	if len(clusters) == 0 {
-		return nil, ErrNoCluster
-	}
-	return clusters, nil
+	c.Addresses = append(c.Addresses, m.FormatNodeAddress())
+	c.CaCert = m.CaCert
+	c.ClientCert = m.ClientCert
+	c.ClientKey = m.ClientKey
+	return nil
 }

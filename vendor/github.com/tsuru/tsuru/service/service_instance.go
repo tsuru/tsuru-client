@@ -5,7 +5,6 @@
 package service
 
 import (
-	"encoding/json"
 	"fmt"
 	"io"
 	"net/http"
@@ -40,20 +39,23 @@ var (
 )
 
 type ServiceInstance struct {
-	Name        string
-	Id          int
-	ServiceName string `bson:"service_name"`
-	PlanName    string `bson:"plan_name"`
-	Apps        []string
-	BoundUnits  []Unit `bson:"bound_units"`
-	Teams       []string
-	TeamOwner   string
-	Description string
-	Tags        []string
+	Name        string                 `json:"name"`
+	Id          int                    `json:"id"`
+	ServiceName string                 `bson:"service_name" json:"service_name"`
+	PlanName    string                 `bson:"plan_name" json:"plan_name"`
+	Apps        []string               `json:"apps"`
+	BoundUnits  []Unit                 `bson:"bound_units" json:"bound_units"`
+	Teams       []string               `json:"teams"`
+	TeamOwner   string                 `json:"team_owner"`
+	Description string                 `json:"description"`
+	Tags        []string               `json:"tags"`
+	Parameters  map[string]interface{} `json:"parameters,omitempty"`
 }
 
 type Unit struct {
-	AppName, ID, IP string
+	AppName string `json:"app_name"`
+	ID      string `json:"id"`
+	IP      string `json:"ip"`
 }
 
 func (bu Unit) GetID() string {
@@ -69,7 +71,11 @@ func DeleteInstance(si *ServiceInstance, evt *event.Event, requestID string) err
 	if len(si.Apps) > 0 {
 		return ErrServiceInstanceBound
 	}
-	endpoint, err := si.Service().getClient("production")
+	s, err := Get(si.ServiceName)
+	if err != nil {
+		return err
+	}
+	endpoint, err := s.getClient("production")
 	if err == nil {
 		endpoint.Destroy(si, evt, requestID)
 	}
@@ -88,29 +94,44 @@ func (si *ServiceInstance) GetIdentifier() string {
 	return si.Name
 }
 
-// MarshalJSON marshals the ServiceName in json format.
-func (si *ServiceInstance) MarshalJSON() ([]byte, error) {
+type ServiceInstanceWithInfo struct {
+	Id          int
+	Name        string
+	Teams       []string
+	PlanName    string
+	Apps        []string
+	ServiceName string
+	Info        map[string]string
+	TeamOwner   string
+}
+
+// ToInfo returns the service instance as a struct compatible with the return
+// of the service info api call.
+func (si *ServiceInstance) ToInfo() (ServiceInstanceWithInfo, error) {
 	info, err := si.Info("")
 	if err != nil {
 		info = nil
 	}
-	data := map[string]interface{}{
-		"Id":          si.Id,
-		"Name":        si.Name,
-		"Teams":       si.Teams,
-		"PlanName":    si.PlanName,
-		"Apps":        si.Apps,
-		"ServiceName": si.ServiceName,
-		"Info":        info,
-		"TeamOwner":   si.TeamOwner,
-	}
-	return json.Marshal(&data)
+	return ServiceInstanceWithInfo{
+		Id:          si.Id,
+		Name:        si.Name,
+		Teams:       si.Teams,
+		PlanName:    si.PlanName,
+		Apps:        si.Apps,
+		ServiceName: si.ServiceName,
+		Info:        info,
+		TeamOwner:   si.TeamOwner,
+	}, nil
 }
 
 func (si *ServiceInstance) Info(requestID string) (map[string]string, error) {
-	endpoint, err := si.Service().getClient("production")
+	s, err := Get(si.ServiceName)
 	if err != nil {
-		return nil, errors.New("endpoint does not exists")
+		return nil, err
+	}
+	endpoint, err := s.getClient("production")
+	if err != nil {
+		return nil, err
 	}
 	result, err := endpoint.Info(si, requestID)
 	if err != nil {
@@ -121,18 +142,6 @@ func (si *ServiceInstance) Info(requestID string) (map[string]string, error) {
 		info[d["label"]] = d["value"]
 	}
 	return info, nil
-}
-
-func (si *ServiceInstance) Service() *Service {
-	conn, err := db.Conn()
-	if err != nil {
-		log.Errorf("Failed to connect to the database: %s", err)
-		return nil
-	}
-	defer conn.Close()
-	var s Service
-	conn.Services().Find(bson.M{"_id": si.ServiceName}).One(&s)
-	return &s
 }
 
 func (si *ServiceInstance) FindApp(appName string) int {
@@ -178,12 +187,13 @@ func (si *ServiceInstance) updateData(update bson.M) error {
 }
 
 // BindApp makes the bind between the service instance and an app.
-func (si *ServiceInstance) BindApp(app bind.App, shouldRestart bool, writer io.Writer, evt *event.Event, requestID string) error {
+func (si *ServiceInstance) BindApp(app bind.App, params BindAppParameters, shouldRestart bool, writer io.Writer, evt *event.Event, requestID string) error {
 	args := bindPipelineArgs{
 		serviceInstance: si,
 		app:             app,
 		writer:          writer,
 		shouldRestart:   shouldRestart,
+		params:          BindAppParameters{},
 		event:           evt,
 		requestID:       requestID,
 	}
@@ -199,7 +209,11 @@ func (si *ServiceInstance) BindApp(app bind.App, shouldRestart bool, writer io.W
 
 // BindUnit makes the bind between the binder and an unit.
 func (si *ServiceInstance) BindUnit(app bind.App, unit bind.Unit) error {
-	endpoint, err := si.Service().getClient("production")
+	s, err := Get(si.ServiceName)
+	if err != nil {
+		return err
+	}
+	endpoint, err := s.getClient("production")
 	if err != nil {
 		return err
 	}
@@ -278,7 +292,11 @@ func (si *ServiceInstance) UnbindApp(unbindArgs UnbindAppArgs) error {
 
 // UnbindUnit makes the unbind between the service instance and an unit.
 func (si *ServiceInstance) UnbindUnit(app bind.App, unit bind.Unit) error {
-	endpoint, err := si.Service().getClient("production")
+	s, err := Get(si.ServiceName)
+	if err != nil {
+		return err
+	}
+	endpoint, err := s.getClient("production")
 	if err != nil {
 		return err
 	}
@@ -325,7 +343,11 @@ func (si *ServiceInstance) UnbindUnit(app bind.App, unit bind.Unit) error {
 
 // Status returns the service instance status.
 func (si *ServiceInstance) Status(requestID string) (string, error) {
-	endpoint, err := si.Service().getClient("production")
+	s, err := Get(si.ServiceName)
+	if err != nil {
+		return "", err
+	}
+	endpoint, err := s.getClient("production")
 	if err != nil {
 		return "", err
 	}
@@ -354,7 +376,7 @@ func genericServiceInstancesFilter(services interface{}, teams []string) bson.M 
 		query["teams"] = bson.M{"$in": teams}
 	}
 	if v, ok := services.([]Service); ok {
-		names := GetServicesNames(v)
+		names := getServicesNames(v)
 		query["service_name"] = bson.M{"$in": names}
 	}
 	if v, ok := services.(Service); ok {
@@ -516,7 +538,10 @@ func RenameServiceInstanceTeam(oldName, newName string) error {
 // ProxyInstance is a proxy between tsuru and the service instance.
 // This method allow customized service instance methods.
 func ProxyInstance(instance *ServiceInstance, path string, evt *event.Event, requestID string, w http.ResponseWriter, r *http.Request) error {
-	service := instance.Service()
+	service, err := Get(instance.ServiceName)
+	if err != nil {
+		return err
+	}
 	endpoint, err := service.getClient("production")
 	if err != nil {
 		return err

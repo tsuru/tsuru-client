@@ -9,8 +9,10 @@ import (
 	"net/http"
 	"regexp"
 
+	"github.com/globalsign/mgo"
 	"github.com/globalsign/mgo/bson"
 	"github.com/pkg/errors"
+	"github.com/tsuru/tsuru/app/bind"
 	"github.com/tsuru/tsuru/db"
 	tsuruErrors "github.com/tsuru/tsuru/errors"
 	"github.com/tsuru/tsuru/event"
@@ -30,23 +32,49 @@ type Service struct {
 	IsRestricted bool `bson:"is_restricted"`
 }
 
+type BindAppParameters map[string]interface{}
+
+type ServiceClient interface {
+	Create(instance *ServiceInstance, evt *event.Event, requestID string) error
+	Update(instance *ServiceInstance, evt *event.Event, requestID string) error
+	Destroy(instance *ServiceInstance, evt *event.Event, requestID string) error
+	BindApp(instance *ServiceInstance, app bind.App, params BindAppParameters, evt *event.Event, requestID string) (map[string]string, error)
+	BindUnit(instance *ServiceInstance, app bind.App, unit bind.Unit) error
+	UnbindApp(instance *ServiceInstance, app bind.App, evt *event.Event, requestID string) error
+	UnbindUnit(instance *ServiceInstance, app bind.App, unit bind.Unit) error
+	Status(instance *ServiceInstance, requestID string) (string, error)
+	Info(instance *ServiceInstance, requestID string) ([]map[string]string, error)
+	Plans(requestID string) ([]Plan, error)
+	Proxy(path string, evt *event.Event, requestID string, w http.ResponseWriter, r *http.Request) error
+}
+
 var (
 	ErrServiceAlreadyExists = errors.New("Service already exists.")
+	ErrServiceNotFound      = errors.New("Service not found.")
 
 	schemeRegexp = regexp.MustCompile("^https?://")
 )
 
-func (s *Service) Get() error {
+func Get(service string) (Service, error) {
+	if isBrokeredService(service) {
+		return getBrokeredService(service)
+	}
 	conn, err := db.Conn()
 	if err != nil {
-		return err
+		return Service{}, err
 	}
 	defer conn.Close()
-	query := bson.M{"_id": s.Name}
-	return conn.Services().Find(query).One(&s)
+	var s Service
+	if err := conn.Services().Find(bson.M{"_id": service}).One(&s); err != nil {
+		if err == mgo.ErrNotFound {
+			return Service{}, ErrServiceNotFound
+		}
+		return Service{}, err
+	}
+	return s, nil
 }
 
-func (s *Service) Create() error {
+func Create(s Service) error {
 	if err := s.validate(false); err != nil {
 		return err
 	}
@@ -65,7 +93,7 @@ func (s *Service) Create() error {
 	return conn.Services().Insert(s)
 }
 
-func (s *Service) Update() error {
+func Update(s Service) error {
 	if err := s.validate(true); err != nil {
 		return err
 	}
@@ -74,45 +102,89 @@ func (s *Service) Update() error {
 		return err
 	}
 	defer conn.Close()
-	return conn.Services().Update(bson.M{"_id": s.Name}, s)
+	err = conn.Services().Update(bson.M{"_id": s.Name}, s)
+	if err == mgo.ErrNotFound {
+		return ErrServiceNotFound
+	}
+	return err
 }
 
-func (s *Service) Delete() error {
+func Delete(s Service) error {
 	conn, err := db.Conn()
 	if err != nil {
 		return err
 	}
 	defer conn.Close()
 	_, err = conn.Services().RemoveAll(bson.M{"_id": s.Name})
+	if err == mgo.ErrNotFound {
+		return ErrServiceNotFound
+	}
 	return err
 }
 
-func (s *Service) getClient(endpoint string) (cli *Client, err error) {
-	if e, ok := s.Endpoint[endpoint]; ok {
-		if p := schemeRegexp.MatchString(e); !p {
-			e = "http://" + e
-		}
-		cli = &Client{serviceName: s.Name, endpoint: e, username: s.GetUsername(), password: s.Password}
-	} else {
-		err = errors.New("Unknown endpoint: " + endpoint)
-	}
-	return
+func GetServices() ([]Service, error) {
+	return getServicesByFilter(nil)
 }
 
-func (s *Service) GetUsername() string {
-	if s.Username != "" {
-		return s.Username
-	}
-	return s.Name
-}
-
-func (s *Service) findTeam(team *authTypes.Team) int {
-	for i, t := range s.Teams {
-		if team.Name == t {
-			return i
+func GetServicesByTeamsAndServices(teams []string, services []string) ([]Service, error) {
+	var filter bson.M
+	if teams != nil || services != nil {
+		filter = bson.M{
+			"$or": []bson.M{
+				{"teams": bson.M{"$in": teams}},
+				{"_id": bson.M{"$in": services}},
+				{"is_restricted": false},
+			},
 		}
 	}
-	return -1
+	return getServicesByFilter(filter)
+}
+
+func GetServicesByOwnerTeamsAndServices(teams []string, services []string) ([]Service, error) {
+	var filter bson.M
+	if teams != nil || services != nil {
+		filter = bson.M{
+			"$or": []bson.M{
+				{"owner_teams": bson.M{"$in": teams}},
+				{"_id": bson.M{"$in": services}},
+			},
+		}
+	}
+	return getServicesByFilter(filter)
+}
+
+func RenameServiceTeam(oldName, newName string) error {
+	conn, err := db.Conn()
+	if err != nil {
+		return err
+	}
+	defer conn.Close()
+	fields := []string{"owner_teams", "teams"}
+	bulk := conn.Services().Bulk()
+	for _, f := range fields {
+		bulk.UpdateAll(bson.M{f: oldName}, bson.M{"$push": bson.M{f: newName}})
+		bulk.UpdateAll(bson.M{f: oldName}, bson.M{"$pull": bson.M{f: oldName}})
+	}
+	_, err = bulk.Run()
+	return err
+}
+
+func getServicesByFilter(filter bson.M) ([]Service, error) {
+	conn, err := db.Conn()
+	if err != nil {
+		return nil, err
+	}
+	defer conn.Close()
+	var services []Service
+	err = conn.Services().Find(filter).All(&services)
+	if err != nil {
+		return nil, err
+	}
+	brokerServices, err := getBrokeredServices()
+	if err != nil {
+		return nil, err
+	}
+	return append(services, brokerServices...), err
 }
 
 func (s *Service) HasTeam(team *authTypes.Team) bool {
@@ -137,6 +209,37 @@ func (s *Service) RevokeAccess(team *authTypes.Team) error {
 	return nil
 }
 
+func (s *Service) getUsername() string {
+	if s.Username != "" {
+		return s.Username
+	}
+	return s.Name
+}
+
+func (s *Service) findTeam(team *authTypes.Team) int {
+	for i, t := range s.Teams {
+		if team.Name == t {
+			return i
+		}
+	}
+	return -1
+}
+
+func (s *Service) getClient(endpoint string) (cli ServiceClient, err error) {
+	if isBrokeredService(s.Name) {
+		return newBrokeredServiceClient(s.Name)
+	}
+	if e, ok := s.Endpoint[endpoint]; ok {
+		if p := schemeRegexp.MatchString(e); !p {
+			e = "http://" + e
+		}
+		cli = &endpointClient{serviceName: s.Name, endpoint: e, username: s.getUsername(), password: s.Password}
+	} else {
+		err = errors.New("Unknown endpoint: " + endpoint)
+	}
+	return
+}
+
 func (s *Service) validate(skipName bool) (err error) {
 	defer func() {
 		if err != nil {
@@ -145,6 +248,9 @@ func (s *Service) validate(skipName bool) (err error) {
 	}()
 	if s.Name == "" {
 		return fmt.Errorf("Service id is required")
+	}
+	if isBrokeredService(s.Name) {
+		return fmt.Errorf("Brokered services are not managed.")
 	}
 	if !skipName && !validation.ValidateName(s.Name) {
 		return fmt.Errorf("Invalid service id, should have at most 63 " +
@@ -174,7 +280,7 @@ func (s *Service) validateOwnerTeams() error {
 	return nil
 }
 
-func GetServicesNames(services []Service) []string {
+func getServicesNames(services []Service) []string {
 	sNames := make([]string, len(services))
 	for i, s := range services {
 		sNames[i] = s.Name
@@ -182,54 +288,11 @@ func GetServicesNames(services []Service) []string {
 	return sNames
 }
 
-func GetServicesByFilter(filter bson.M) ([]Service, error) {
-	conn, err := db.Conn()
-	if err != nil {
-		return nil, err
-	}
-	defer conn.Close()
-	var services []Service
-	err = conn.Services().Find(filter).All(&services)
-	return services, err
-}
-
-func GetServicesByTeamsAndServices(teams []string, services []string) ([]Service, error) {
-	var filter bson.M
-	if teams != nil || services != nil {
-		filter = bson.M{
-			"$or": []bson.M{
-				{"teams": bson.M{"$in": teams}},
-				{"_id": bson.M{"$in": services}},
-				{"is_restricted": false},
-			},
-		}
-	}
-	return GetServicesByFilter(filter)
-}
-
-func GetServicesByOwnerTeamsAndServices(teams []string, services []string) ([]Service, error) {
-	var filter bson.M
-	if teams != nil || services != nil {
-		filter = bson.M{
-			"$or": []bson.M{
-				{"owner_teams": bson.M{"$in": teams}},
-				{"_id": bson.M{"$in": services}},
-			},
-		}
-	}
-	return GetServicesByFilter(filter)
-}
-
-type ServiceInstanceModel struct {
-	Name string   `json:"name"`
-	Tags []string `json:"tags"`
-}
-
 type ServiceModel struct {
-	Service          string                 `json:"service"`
-	Instances        []string               `json:"instances"`
-	Plans            []string               `json:"plans"`
-	ServiceInstances []ServiceInstanceModel `json:"service_instances"`
+	Service          string            `json:"service"`
+	Instances        []string          `json:"instances"`
+	Plans            []string          `json:"plans"`
+	ServiceInstances []ServiceInstance `json:"service_instances"`
 }
 
 // Proxy is a proxy between tsuru and the service.
@@ -240,20 +303,4 @@ func Proxy(service *Service, path string, evt *event.Event, requestID string, w 
 		return err
 	}
 	return endpoint.Proxy(path, evt, requestID, w, r)
-}
-
-func RenameServiceTeam(oldName, newName string) error {
-	conn, err := db.Conn()
-	if err != nil {
-		return err
-	}
-	defer conn.Close()
-	fields := []string{"owner_teams", "teams"}
-	bulk := conn.Services().Bulk()
-	for _, f := range fields {
-		bulk.UpdateAll(bson.M{f: oldName}, bson.M{"$push": bson.M{f: newName}})
-		bulk.UpdateAll(bson.M{f: oldName}, bson.M{"$pull": bson.M{f: oldName}})
-	}
-	_, err = bulk.Run()
-	return err
 }

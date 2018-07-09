@@ -217,6 +217,7 @@ type bindPipelineArgs struct {
 	app             bind.App
 	writer          io.Writer
 	serviceInstance *ServiceInstance
+	params          BindAppParameters
 	event           *event.Event
 	requestID       string
 	shouldRestart   bool
@@ -262,15 +263,24 @@ var bindAppEndpointAction = &action.Action{
 		if args == nil {
 			return nil, errors.New("invalid arguments for pipeline, expected *bindPipelineArgs.")
 		}
-		endpoint, err := args.serviceInstance.Service().getClient("production")
+		s, err := Get(args.serviceInstance.ServiceName)
 		if err != nil {
 			return nil, err
 		}
-		return endpoint.BindApp(args.serviceInstance, args.app, args.event, args.requestID)
+		endpoint, err := s.getClient("production")
+		if err != nil {
+			return nil, err
+		}
+		return endpoint.BindApp(args.serviceInstance, args.app, args.params, args.event, args.requestID)
 	},
 	Backward: func(ctx action.BWContext) {
 		args, _ := ctx.Params[0].(*bindPipelineArgs)
-		endpoint, err := args.serviceInstance.Service().getClient("production")
+		s, err := Get(args.serviceInstance.ServiceName)
+		if err != nil {
+			log.Errorf("[bind-app-endpoint backward] could not service from instance: %s", err)
+			return
+		}
+		endpoint, err := s.getClient("production")
 		if err != nil {
 			log.Errorf("[bind-app-endpoint backward] could not get endpoint: %s", err)
 			return
@@ -457,7 +467,11 @@ var unbindAppEndpoint = action.Action{
 		if args == nil {
 			return nil, errors.New("invalid arguments for pipeline, expected *bindPipelineArgs.")
 		}
-		if endpoint, err := args.serviceInstance.Service().getClient("production"); err == nil {
+		s, err := Get(args.serviceInstance.ServiceName)
+		if err != nil {
+			return nil, err
+		}
+		if endpoint, err := s.getClient("production"); err == nil {
 			err := endpoint.UnbindApp(args.serviceInstance, args.app, args.event, args.requestID)
 			if err != nil && err != ErrInstanceNotFoundInAPI {
 				if args.forceRemove {
@@ -475,8 +489,13 @@ var unbindAppEndpoint = action.Action{
 	},
 	Backward: func(ctx action.BWContext) {
 		args, _ := ctx.Params[0].(*bindPipelineArgs)
-		if endpoint, err := args.serviceInstance.Service().getClient("production"); err == nil {
-			_, err := endpoint.BindApp(args.serviceInstance, args.app, args.event, args.requestID)
+		s, err := Get(args.serviceInstance.ServiceName)
+		if err != nil {
+			log.Errorf("[unbind-app-endpoint backward] failed to rebind app in endpoint: %s", err)
+			return
+		}
+		if endpoint, err := s.getClient("production"); err == nil {
+			_, err := endpoint.BindApp(args.serviceInstance, args.app, args.params, args.event, args.requestID)
 			if err != nil {
 				log.Errorf("[unbind-app-endpoint backward] failed to rebind app in endpoint: %s", err)
 			}

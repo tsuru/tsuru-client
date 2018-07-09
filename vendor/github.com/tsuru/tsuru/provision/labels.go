@@ -27,7 +27,7 @@ var (
 	labelAppName            = "app-name"
 	labelAppProcess         = "app-process"
 	labelAppProcessReplicas = "app-process-replicas"
-	labelAppPool            = "app-pool"
+	LabelAppPool            = "app-pool"
 	labelAppPlatform        = "app-platform"
 
 	labelNodeContainerName = "node-container-name"
@@ -341,7 +341,7 @@ func ProcessLabels(opts ProcessLabelsOpts) (*LabelSet, error) {
 			labelAppName:     opts.App.GetName(),
 			labelAppProcess:  opts.Process,
 			labelAppPlatform: opts.App.GetPlatform(),
-			labelAppPool:     opts.App.GetPool(),
+			LabelAppPool:     opts.App.GetPool(),
 			labelRouterName:  strings.Join(routerNames, ","),
 			labelRouterType:  strings.Join(routerTypes, ","),
 			labelProvisioner: opts.Provisioner,
@@ -438,6 +438,26 @@ func VolumeLabels(opts VolumeLabelsOpts) *LabelSet {
 		labelVolumeName:  opts.Name,
 		labelVolumePool:  opts.Pool,
 		labelVolumePlan:  opts.Plan,
+	}
+	return &LabelSet{Labels: labels, Prefix: opts.Prefix}
+}
+
+type ImageBuildLabelsOpts struct {
+	Name         string
+	CustomLabels map[string]string
+	Provisioner  string
+	Prefix       string
+	IsBuild      bool
+}
+
+func ImageBuildLabels(opts ImageBuildLabelsOpts) *LabelSet {
+	labels := map[string]string{
+		labelIsTsuru:     strconv.FormatBool(true),
+		labelProvisioner: opts.Provisioner,
+		labelIsBuild:     strconv.FormatBool(opts.IsBuild),
+	}
+	for k, v := range opts.CustomLabels {
+		labels[k] = v
 	}
 	return &LabelSet{Labels: labels, Prefix: opts.Prefix}
 }
