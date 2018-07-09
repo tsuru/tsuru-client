@@ -11,9 +11,11 @@ import (
 	"net/http"
 	"strings"
 
+	"github.com/ajg/form"
 	"github.com/tsuru/tsuru/cmd"
 	"github.com/tsuru/tsuru/cmd/cmdtest"
 	"github.com/tsuru/tsuru/io"
+	"github.com/tsuru/tsuru/service"
 	"gopkg.in/check.v1"
 )
 
@@ -366,21 +368,38 @@ func (s *S) TestServiceInstanceAddRun(c *check.C) {
 	trans := cmdtest.ConditionalTransport{
 		Transport: cmdtest.Transport{Message: result, Status: http.StatusOK},
 		CondFunc: func(r *http.Request) bool {
-			r.ParseForm()
-			name := r.FormValue("name") == "my_app_db"
-			plan := r.FormValue("plan") == "small"
-			owner := r.FormValue("owner") == "my team"
-			description := r.FormValue("description") == "desc"
-			tags := len(r.Form["tag"]) == 2 && r.Form["tag"][0] == "my tag 1" && r.Form["tag"][1] == "my tag 2"
-			method := r.Method == "POST"
-			contentType := r.Header.Get("Content-Type") == "application/x-www-form-urlencoded"
-			url := strings.HasSuffix(r.URL.Path, "/services/mysql/instances")
-			return method && url && name && owner && plan && description && tags && contentType
+			instance := service.ServiceInstance{
+				PlanName: r.FormValue("plan"), // for compatibility
+			}
+			dec := form.NewDecoder(nil)
+			dec.IgnoreCase(true)
+			dec.IgnoreUnknownKeys(true)
+			err := dec.DecodeValues(&instance, r.Form)
+			c.Assert(err, check.IsNil)
+			c.Assert(instance, check.DeepEquals, service.ServiceInstance{
+				Name:        "my_app_db",
+				PlanName:    "small",
+				TeamOwner:   "my team",
+				Description: "desc",
+				Tags:        []string{"my tag 1", "my tag 2"},
+				Parameters: map[string]interface{}{
+					"param1": "value1",
+					"param2": "value2",
+				},
+			})
+			c.Assert(r.Method, check.DeepEquals, "POST")
+			c.Assert(r.Header.Get("Content-Type"), check.DeepEquals, "application/x-www-form-urlencoded")
+			return strings.HasSuffix(r.URL.Path, "/services/mysql/instances")
 		},
 	}
 	client := cmd.NewClient(&http.Client{Transport: &trans}, nil, manager)
 	command := ServiceInstanceAdd{}
-	command.Flags().Parse(true, []string{"--team-owner", "my team", "--description", "desc", "--tag", "my tag 1", "--tag", "my tag 2"})
+	command.Flags().Parse(true, []string{
+		"--team-owner", "my team",
+		"--description", "desc",
+		"--tag", "my tag 1", "--tag", "my tag 2",
+		"--plan-param", "param1=value1", "--plan-param", "param2=value2",
+	})
 	err := command.Run(&context, client)
 	c.Assert(err, check.IsNil)
 	obtained := stdout.String()
@@ -403,8 +422,15 @@ func (s *S) TestServiceInstanceAddRunWithEmptyTag(c *check.C) {
 	trans := cmdtest.ConditionalTransport{
 		Transport: cmdtest.Transport{Message: result, Status: http.StatusOK},
 		CondFunc: func(r *http.Request) bool {
+			var instance service.ServiceInstance
 			r.ParseForm()
-			return len(r.Form["tag"]) == 1 && r.Form["tag"][0] == ""
+			dec := form.NewDecoder(nil)
+			dec.IgnoreCase(true)
+			dec.IgnoreUnknownKeys(true)
+			dec.DecodeValues(&instance, r.Form)
+			c.Assert(len(instance.Tags), check.Equals, 1)
+			c.Assert(instance.Tags[0], check.DeepEquals, "")
+			return true
 		},
 	}
 	client := cmd.NewClient(&http.Client{Transport: &trans}, nil, manager)

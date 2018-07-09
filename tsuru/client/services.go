@@ -16,10 +16,12 @@ import (
 	"strconv"
 	"strings"
 
+	"github.com/ajg/form"
 	"github.com/tsuru/gnuflag"
 	"github.com/tsuru/tablecli"
 	"github.com/tsuru/tsuru/cmd"
 	tsuruIo "github.com/tsuru/tsuru/io"
+	"github.com/tsuru/tsuru/service"
 )
 
 type ServiceList struct{}
@@ -70,12 +72,13 @@ type ServiceInstanceAdd struct {
 	teamOwner   string
 	description string
 	tags        cmd.StringSliceFlag
+	params      cmd.MapFlag
 }
 
 func (c *ServiceInstanceAdd) Info() *cmd.Info {
 	return &cmd.Info{
 		Name:  "service-instance-add",
-		Usage: "service-instance-add <service-name> <service-instance-name> [plan] [-t/--team-owner team] [-d/--description description] [-g/--tag tag]...",
+		Usage: "service-instance-add <service-name> <service-instance-name> [plan] [-t/--team-owner team] [-d/--description description] [-g/--tag tag]... [--plan-param key=value]...",
 		Desc: `Creates a service instance of a service. There can later be binded to
 applications with [[tsuru service-bind]].
 
@@ -97,13 +100,21 @@ func (c *ServiceInstanceAdd) Run(ctx *cmd.Context, client *cmd.Client) error {
 	if len(ctx.Args) > 2 {
 		plan = ctx.Args[2]
 	}
-	v := url.Values{}
-	v.Set("name", instanceName)
-	v.Set("plan", plan)
-	v.Set("owner", c.teamOwner)
-	v.Set("description", c.description)
-	for _, tag := range c.tags {
-		v.Add("tag", tag)
+	parameters := make(map[string]interface{})
+	for k, v := range c.params {
+		parameters[k] = v
+	}
+	instance := service.ServiceInstance{
+		Name:        instanceName,
+		PlanName:    plan,
+		TeamOwner:   c.teamOwner,
+		Description: c.description,
+		Parameters:  parameters,
+		Tags:        c.tags,
+	}
+	v, err := form.EncodeToValues(instance)
+	if err != nil {
+		return err
 	}
 	u, err := cmd.GetURL(fmt.Sprintf("/services/%s/instances", serviceName))
 	if err != nil {
@@ -134,6 +145,7 @@ func (c *ServiceInstanceAdd) Flags() *gnuflag.FlagSet {
 		tagMessage := "service instance tag"
 		c.fs.Var(&c.tags, "tag", tagMessage)
 		c.fs.Var(&c.tags, "g", tagMessage)
+		c.fs.Var(&c.params, "plan-param", "Plan parameters")
 	}
 	return c.fs
 }
