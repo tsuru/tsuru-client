@@ -131,6 +131,11 @@ var PermissionRegistry = (&registry{}).addWithCtx(
 	"service.update.grant-access",
 	"service.update.doc",
 	"service.delete",
+	"service-broker.read",
+	"service-broker.read.events",
+	"service-broker.create",
+	"service-broker.delete",
+	"service-broker.update",
 ).addWithCtx(
 	"service-instance", []contextType{CtxServiceInstance, CtxTeam},
 ).addWithCtx(

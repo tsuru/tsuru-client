@@ -272,6 +272,12 @@
   revision = "c0656edd0d9eab7c66d1eb0c568f9039345796f7"
 
 [[projects]]
+  branch = "master"
+  name = "github.com/golang/glog"
+  packages = ["."]
+  revision = "23def4e6c14b4da8ac2ed8007337bc5eb5007998"
+
+[[projects]]
   name = "github.com/golang/protobuf"
   packages = ["proto"]
   revision = "4bd1920723d7b7c925de087aa32e2187708897f7"
@@ -356,6 +362,12 @@
   packages = ["."]
   revision = "645ef00459ed84a119197bfb8d8205042c6df63d"
   version = "v0.8.0"
+
+[[projects]]
+  name = "github.com/pmorie/go-open-service-broker-client"
+  packages = ["v2"]
+  revision = "dca737037ce636eb282e84e3a1c7479c9692e884"
+  version = "0.0.10"
 
 [[projects]]
   name = "github.com/prometheus/client_golang"
@@ -533,11 +545,13 @@
     "types/app",
     "types/auth",
     "types/event",
+    "types/provision",
     "types/quota",
+    "types/service",
     "validation",
     "volume"
   ]
-  revision = "d8ae46ee88eaa3ced43096b4fadde58d62e9b34f"
+  revision = "8d58b89fcf57e0dfa431242c3abbdc600384394b"
 
 [[projects]]
   name = "github.com/vmware/govcloudair"

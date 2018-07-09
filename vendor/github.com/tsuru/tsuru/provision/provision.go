@@ -7,6 +7,7 @@
 package provision
 
 import (
+	"context"
 	"encoding/json"
 	"fmt"
 	"io"
@@ -284,6 +285,7 @@ type ExecDockerClient interface {
 
 type BuilderKubeClient interface {
 	BuildPod(App, *event.Event, io.Reader, string) (string, error)
+	BuildImage(name string, inputStream io.Reader, output io.Writer, ctx context.Context) error
 	ImageTagPushAndInspect(App, string, string) (*docker.Image, string, *TsuruYamlData, error)
 }
 
@@ -374,6 +376,12 @@ type SleepableProvisioner interface {
 	// parameter representing the name of the process to sleep. When the
 	// process is empty, Sleep will put all units of the application to sleep.
 	Sleep(App, string) error
+}
+
+// UpdatableProvisioner is a provisioner that stores data about applications
+// and must be notified when they are updated
+type UpdatableProvisioner interface {
+	UpdateApp(old, new App, w io.Writer) error
 }
 
 // MessageProvisioner is a provisioner that provides a welcome message for

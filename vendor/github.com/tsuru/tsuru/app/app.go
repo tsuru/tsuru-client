@@ -422,8 +422,8 @@ func CreateApp(app *App, user *auth.User) error {
 		&createAppToken,
 		&exportEnvironmentsAction,
 		&createRepository,
-		&addRouterBackend,
 		&provisionApp,
+		&addRouterBackend,
 	}
 	pipeline := action.NewPipeline(actions...)
 	err = pipeline.Execute(app, user)
@@ -529,6 +529,9 @@ func (app *App) Update(updateData App, w io.Writer) (err error) {
 	}
 	actions := []*action.Action{
 		&saveApp,
+	}
+	if newProv.GetName() == oldProv.GetName() {
+		actions = append(actions, &updateAppProvisioner)
 	}
 	if newProv.GetName() != oldProv.GetName() {
 		actions = append(actions,

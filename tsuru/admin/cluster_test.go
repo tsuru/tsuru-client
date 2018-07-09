@@ -16,7 +16,7 @@ import (
 	"github.com/ajg/form"
 	"github.com/tsuru/tsuru/cmd"
 	"github.com/tsuru/tsuru/cmd/cmdtest"
-	"github.com/tsuru/tsuru/provision/cluster"
+	"github.com/tsuru/tsuru/types/provision"
 	"gopkg.in/check.v1"
 )
 
@@ -35,10 +35,10 @@ func (s *S) TestClusterAddRun(c *check.C) {
 			dec := form.NewDecoder(nil)
 			dec.IgnoreCase(true)
 			dec.IgnoreUnknownKeys(true)
-			var clus cluster.Cluster
+			var clus provision.Cluster
 			err = dec.DecodeValues(&clus, req.Form)
 			c.Assert(err, check.IsNil)
-			c.Assert(clus, check.DeepEquals, cluster.Cluster{
+			c.Assert(clus, check.DeepEquals, provision.Cluster{
 				Name:        "c1",
 				CaCert:      []byte("cadata"),
 				ClientCert:  []byte("certdata"),
@@ -99,10 +99,10 @@ func (s *S) TestClusterUpdateRun(c *check.C) {
 			dec := form.NewDecoder(nil)
 			dec.IgnoreCase(true)
 			dec.IgnoreUnknownKeys(true)
-			var clus cluster.Cluster
+			var clus provision.Cluster
 			err = dec.DecodeValues(&clus, req.Form)
 			c.Assert(err, check.IsNil)
-			c.Assert(clus, check.DeepEquals, cluster.Cluster{
+			c.Assert(clus, check.DeepEquals, provision.Cluster{
 				Name:        "c1",
 				CaCert:      []byte("cadata"),
 				ClientCert:  []byte("certdata"),
@@ -152,7 +152,7 @@ func (s *S) TestClusterListRun(c *check.C) {
 		Stdout: &stdout,
 		Stderr: &stderr,
 	}
-	clusters := []cluster.Cluster{{
+	clusters := []provision.Cluster{{
 		Name:        "c1",
 		Addresses:   []string{"addr1", "addr2"},
 		CaCert:      []byte("cacert"),
