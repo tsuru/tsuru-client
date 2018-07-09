@@ -578,7 +578,11 @@ func (c ServiceInfo) BuildPlansTable(serviceName string, ctx *cmd.Context, clien
 	if err != nil {
 		return err
 	}
-	var plans []map[string]string
+	var plans []struct {
+		Name        string
+		Description string
+		Schemas     interface{}
+	}
 	err = json.Unmarshal(result, &plans)
 	if err != nil {
 		return err
@@ -587,10 +591,17 @@ func (c ServiceInfo) BuildPlansTable(serviceName string, ctx *cmd.Context, clien
 		fmt.Fprint(ctx.Stdout, "\nPlans\n")
 		table := tablecli.NewTable()
 		for _, plan := range plans {
-			data := []string{plan["Name"], plan["Description"]}
+			schema, err := json.MarshalIndent(plan.Schemas, "", " ")
+			if err != nil {
+				return err
+			}
+			if plan.Schemas == nil {
+				schema = []byte("")
+			}
+			data := []string{plan.Name, plan.Description, string(schema)}
 			table.AddRow(tablecli.Row(data))
 		}
-		table.Headers = tablecli.Row([]string{"Name", "Description"})
+		table.Headers = tablecli.Row([]string{"Name", "Description", "Schemas"})
 		ctx.Stdout.Write(table.Bytes())
 	}
 	return nil

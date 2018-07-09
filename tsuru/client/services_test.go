@@ -715,11 +715,11 @@ Instances
 +-----------+-------+-------+-------+--------+
 
 Plans
-+-------+--------------+
-| Name  | Description  |
-+-------+--------------+
-| small | another plan |
-+-------+--------------+
++-------+--------------+---------+
+| Name  | Description  | Schemas |
++-------+--------------+---------+
+| small | another plan |         |
++-------+--------------+---------+
 `
 	args := []string{"mongodb"}
 	context := cmd.Context{
@@ -770,11 +770,11 @@ Instances
 +-----------+-------+-------+-------+--------+
 
 Plans
-+-------+--------------+
-| Name  | Description  |
-+-------+--------------+
-| small | another plan |
-+-------+--------------+
++-------+--------------+---------+
+| Name  | Description  | Schemas |
++-------+--------------+---------+
+| small | another plan |         |
++-------+--------------+---------+
 
 Documentation:
 This is a test doc for a test service.
