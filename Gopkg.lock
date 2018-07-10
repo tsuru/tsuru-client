@@ -523,7 +523,6 @@
     "net",
     "permission",
     "provision",
-    "provision/cluster",
     "provision/docker/cmds",
     "provision/docker/types",
     "provision/node",
@@ -689,6 +688,6 @@
 [solve-meta]
   analyzer-name = "dep"
   analyzer-version = 1
-  inputs-digest = "b2135eea532a037d5346b07d29f9cc7a92d4ef68d2b71b4da8ceb30653588931"
+  inputs-digest = "46767061c55fae793fe8b9de16ad087b73a60c9a9e2005ced7e0f746b4045cc0"
   solver-name = "gps-cdcl"
   solver-version = 1
