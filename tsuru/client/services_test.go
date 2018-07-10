@@ -36,6 +36,16 @@ func (t *infoTransport) RoundTrip(req *http.Request) (resp *http.Response, err e
 			message = `[]`
 		}
 	}
+	if strings.HasSuffix(req.URL.Path, "/services/mongodb-broker") {
+		message = `[{"Name":"mymongo", "Apps":["myapp"], "Id":0, "Info":{"key": "value", "key2": "value2"}, "PlanName":"small", "ServiceName":"mongoservice", "Teams":["mongoteam"]}]`
+	}
+	if strings.HasSuffix(req.URL.Path, "/services/mongodb-broker/plans") {
+		if t.includePlans {
+			message = `[{"Name":"default","Description":"Plan with parameter and response schemas","Schemas":{"service_instance":{"create":{"parameters":{"$schema":"http://json-schema.org/draft-04/schema#","properties":{"param-1":{"description":"First input parameter","type":"string"},"param-2":{"description":"Second input parameter","type":"string"}},"type":"object"}},"update":{"parameters":{"$schema":"http://json-schema.org/draft-04/schema#","properties":{"param-1":{"description":"First input parameter","type":"string"},"param-2":{"description":"Second input parameter","type":"string"}},"type":"object"}}},"service_binding":{"create":{"parameters":{"$schema":"http://json-schema.org/draft-04/schema#","properties":{"param-1":{"description":"First input parameter","type":"string"},"param-2":{"description":"Second input parameter","type":"string"}},"type":"object"}}}}}]`
+		} else {
+			message = `[]`
+		}
+	}
 	if strings.HasSuffix(req.URL.Path, "/services/mongodbnoplan") {
 		message = `[{"Name":"mymongo", "Apps":["myapp"], "Id":0, "Info":{"key": "value", "key2": "value2"}, "PlanName":"", "ServiceName":"noplanservice", "Teams":["noplanteam"]}]`
 	}
@@ -741,11 +751,11 @@ Instances
 +-----------+-------+-------+-------+--------+
 
 Plans
-+-------+--------------+---------+
-| Name  | Description  | Schemas |
-+-------+--------------+---------+
-| small | another plan |         |
-+-------+--------------+---------+
++-------+--------------+-----------------+----------------+
+| Name  | Description  | Instance Params | Binding Params |
++-------+--------------+-----------------+----------------+
+| small | another plan |                 |                |
++-------+--------------+-----------------+----------------+
 `
 	args := []string{"mongodb"}
 	context := cmd.Context{
@@ -796,17 +806,54 @@ Instances
 +-----------+-------+-------+-------+--------+
 
 Plans
-+-------+--------------+---------+
-| Name  | Description  | Schemas |
-+-------+--------------+---------+
-| small | another plan |         |
-+-------+--------------+---------+
++-------+--------------+-----------------+----------------+
+| Name  | Description  | Instance Params | Binding Params |
++-------+--------------+-----------------+----------------+
+| small | another plan |                 |                |
++-------+--------------+-----------------+----------------+
 
 Documentation:
 This is a test doc for a test service.
 Service test is foo bar.
 `
 	args := []string{"mongo"}
+	context := cmd.Context{
+		Args:   args,
+		Stdout: &stdout,
+		Stderr: &stderr,
+	}
+	client := cmd.NewClient(&http.Client{Transport: &infoTransport{includePlans: true}}, nil, manager)
+	err := (&ServiceInfo{}).Run(&context, client)
+	c.Assert(err, check.IsNil)
+	obtained := stdout.String()
+	c.Assert(obtained, check.Equals, expected)
+}
+
+func (s *S) TestServiceInfoWithSchemas(c *check.C) {
+	var stdout, stderr bytes.Buffer
+	expected := `Info for "mongodb-broker"
+
+Instances
++-----------+-------+-------+-------+--------+
+| Instances | Plan  | Apps  | key   | key2   |
++-----------+-------+-------+-------+--------+
+| mymongo   | small | myapp | value | value2 |
++-----------+-------+-------+-------+--------+
+
+Plans
++---------+------------------------------------------+---------------------------------------+---------------------------------------+
+| Name    | Description                              | Instance Params                       | Binding Params                        |
++---------+------------------------------------------+---------------------------------------+---------------------------------------+
+| default | Plan with parameter and response schemas | param-1:                              | param-1:                              |
+|         |                                          |   description: First input parameter  |   description: First input parameter  |
+|         |                                          |   type: string                        |   type: string                        |
+|         |                                          | param-2:                              | param-2:                              |
+|         |                                          |   description: Second input parameter |   description: Second input parameter |
+|         |                                          |   type: string                        |   type: string                        |
+|         |                                          |                                       |                                       |
++---------+------------------------------------------+---------------------------------------+---------------------------------------+
+`
+	args := []string{"mongodb-broker"}
 	context := cmd.Context{
 		Args:   args,
 		Stdout: &stdout,
