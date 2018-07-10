@@ -17,6 +17,7 @@ import (
 	"strings"
 
 	"github.com/ajg/form"
+	osb "github.com/pmorie/go-open-service-broker-client/v2"
 	"github.com/tsuru/gnuflag"
 	"github.com/tsuru/tablecli"
 	"github.com/tsuru/tsuru/cmd"
@@ -590,10 +591,11 @@ func (c ServiceInfo) BuildPlansTable(serviceName string, ctx *cmd.Context, clien
 	if err != nil {
 		return err
 	}
+	// TODO: swap with service.Plan
 	var plans []struct {
 		Name        string
 		Description string
-		Schemas     interface{}
+		Schemas     *osb.Schemas
 	}
 	err = json.Unmarshal(result, &plans)
 	if err != nil {
@@ -603,20 +605,65 @@ func (c ServiceInfo) BuildPlansTable(serviceName string, ctx *cmd.Context, clien
 		fmt.Fprint(ctx.Stdout, "\nPlans\n")
 		table := tablecli.NewTable()
 		for _, plan := range plans {
-			schema, err := json.MarshalIndent(plan.Schemas, "", " ")
-			if err != nil {
-				return err
-			}
-			if plan.Schemas == nil {
-				schema = []byte("")
-			}
-			data := []string{plan.Name, plan.Description, string(schema)}
+			instanceParam, bindParam := parsePlanParams(plan.Schemas)
+			data := []string{plan.Name, plan.Description, instanceParam, bindParam}
 			table.AddRow(tablecli.Row(data))
 		}
-		table.Headers = tablecli.Row([]string{"Name", "Description", "Schemas"})
+		table.Headers = tablecli.Row([]string{"Name", "Description", "Instance Params", "Binding Params"})
 		ctx.Stdout.Write(table.Bytes())
 	}
 	return nil
+}
+
+func parsePlanParams(schemas *osb.Schemas) (instanceParams string, bindingParams string) {
+	if schemas == nil {
+		return instanceParams, bindingParams
+	}
+	var err error
+	if schemas.ServiceInstance != nil {
+		instanceParams, err = parseParams(schemas.ServiceInstance.Create.Parameters)
+		if err != nil {
+			instanceParams = fmt.Sprintf("error parsing: %+v", schemas.ServiceInstance.Create)
+		}
+	}
+	if schemas.ServiceBinding != nil {
+		bindingParams, err = parseParams(schemas.ServiceBinding.Create.Parameters)
+		if err != nil {
+			bindingParams = fmt.Sprintf("error parsing: %+v", schemas.ServiceBinding.Create)
+		}
+	}
+	return instanceParams, bindingParams
+}
+
+type jsonSchema struct {
+	Properties  map[string]*jsonSchema
+	Type        string
+	Description string
+}
+
+func parseParams(params interface{}) (string, error) {
+	if params == nil {
+		return "", nil
+	}
+	d, err := json.Marshal(params)
+	if err != nil {
+		return "", err
+	}
+	var schema jsonSchema
+	err = json.Unmarshal(d, &schema)
+	if err != nil {
+		return "", err
+	}
+	var sb strings.Builder
+	for k, v := range schema.Properties {
+		if v == nil {
+			continue
+		}
+		sb.WriteString(fmt.Sprintf("%v: \n", k))
+		sb.WriteString(fmt.Sprintf("  description: %v\n", v.Description))
+		sb.WriteString(fmt.Sprintf("  type: %v\n", v.Type))
+	}
+	return sb.String(), nil
 }
 
 func (c ServiceInfo) WriteDoc(ctx *cmd.Context, client *cmd.Client) error {
