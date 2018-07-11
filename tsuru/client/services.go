@@ -655,7 +655,13 @@ func parseParams(params interface{}) (string, error) {
 		return "", err
 	}
 	var sb strings.Builder
-	for k, v := range schema.Properties {
+	var props []string
+	for k := range schema.Properties {
+		props = append(props, k)
+	}
+	sort.Strings(props)
+	for _, k := range props {
+		v := schema.Properties[k]
 		if v == nil {
 			continue
 		}
