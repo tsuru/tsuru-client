@@ -22,7 +22,6 @@ import (
 	"github.com/tsuru/tablecli"
 	"github.com/tsuru/tsuru/cmd"
 	tsuruIo "github.com/tsuru/tsuru/io"
-	"github.com/tsuru/tsuru/service"
 )
 
 type ServiceList struct{}
@@ -105,17 +104,18 @@ func (c *ServiceInstanceAdd) Run(ctx *cmd.Context, client *cmd.Client) error {
 	for k, v := range c.params {
 		parameters[k] = v
 	}
-	instance := service.ServiceInstance{
-		Name:        instanceName,
-		PlanName:    plan,
-		TeamOwner:   c.teamOwner,
-		Description: c.description,
-		Parameters:  parameters,
-		Tags:        c.tags,
-	}
-	v, err := form.EncodeToValues(instance)
+	v := url.Values{}
+	v, err := form.EncodeToValues(map[string]interface{}{"parameters": parameters})
 	if err != nil {
 		return err
+	}
+	// This is kept as this to keep backwards compatibility with older API versions
+	v.Set("name", instanceName)
+	v.Set("plan", plan)
+	v.Set("owner", c.teamOwner)
+	v.Set("description", c.description)
+	for _, tag := range c.tags {
+		v.Add("tag", tag)
 	}
 	u, err := cmd.GetURL(fmt.Sprintf("/services/%s/instances", serviceName))
 	if err != nil {

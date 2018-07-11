@@ -378,13 +378,18 @@ func (s *S) TestServiceInstanceAddRun(c *check.C) {
 	trans := cmdtest.ConditionalTransport{
 		Transport: cmdtest.Transport{Message: result, Status: http.StatusOK},
 		CondFunc: func(r *http.Request) bool {
+			err := r.ParseForm()
+			c.Assert(err, check.IsNil)
 			instance := service.ServiceInstance{
-				PlanName: r.FormValue("plan"), // for compatibility
+				PlanName:  r.FormValue("plan"),
+				TeamOwner: r.FormValue("owner"),
 			}
 			dec := form.NewDecoder(nil)
 			dec.IgnoreCase(true)
 			dec.IgnoreUnknownKeys(true)
-			err := dec.DecodeValues(&instance, r.Form)
+			err = dec.DecodeValues(&instance, r.Form)
+			c.Assert(err, check.IsNil)
+			instance.Tags = append(instance.Tags, r.Form["tag"]...)
 			c.Assert(err, check.IsNil)
 			c.Assert(instance, check.DeepEquals, service.ServiceInstance{
 				Name:        "my_app_db",
@@ -432,12 +437,19 @@ func (s *S) TestServiceInstanceAddRunWithEmptyTag(c *check.C) {
 	trans := cmdtest.ConditionalTransport{
 		Transport: cmdtest.Transport{Message: result, Status: http.StatusOK},
 		CondFunc: func(r *http.Request) bool {
-			var instance service.ServiceInstance
-			r.ParseForm()
+			err := r.ParseForm()
+			c.Assert(err, check.IsNil)
+			instance := service.ServiceInstance{
+				PlanName:  r.FormValue("plan"),
+				TeamOwner: r.FormValue("owner"),
+			}
 			dec := form.NewDecoder(nil)
 			dec.IgnoreCase(true)
 			dec.IgnoreUnknownKeys(true)
-			dec.DecodeValues(&instance, r.Form)
+			err = dec.DecodeValues(&instance, r.Form)
+			c.Assert(err, check.IsNil)
+			instance.Tags = append(instance.Tags, r.Form["tag"]...)
+			c.Assert(err, check.IsNil)
 			c.Assert(len(instance.Tags), check.Equals, 1)
 			c.Assert(instance.Tags[0], check.DeepEquals, "")
 			return true
