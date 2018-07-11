@@ -146,7 +146,7 @@ func (c *ServiceInstanceAdd) Flags() *gnuflag.FlagSet {
 		tagMessage := "service instance tag"
 		c.fs.Var(&c.tags, "tag", tagMessage)
 		c.fs.Var(&c.tags, "g", tagMessage)
-		c.fs.Var(&c.params, "plan-param", "Plan parameters")
+		c.fs.Var(&c.params, "plan-param", "Plan specific parameters")
 	}
 	return c.fs
 }
