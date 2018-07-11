@@ -104,7 +104,6 @@ func (c *ServiceInstanceAdd) Run(ctx *cmd.Context, client *cmd.Client) error {
 	for k, v := range c.params {
 		parameters[k] = v
 	}
-	v := url.Values{}
 	v, err := form.EncodeToValues(map[string]interface{}{"parameters": parameters})
 	if err != nil {
 		return err
