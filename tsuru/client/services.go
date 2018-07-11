@@ -603,6 +603,7 @@ func (c ServiceInfo) BuildPlansTable(serviceName string, ctx *cmd.Context, clien
 	if len(plans) > 0 {
 		fmt.Fprint(ctx.Stdout, "\nPlans\n")
 		table := tablecli.NewTable()
+		table.LineSeparator = true
 		for _, plan := range plans {
 			instanceParam, bindParam := parsePlanParams(plan.Schemas)
 			data := []string{plan.Name, plan.Description, instanceParam, bindParam}
