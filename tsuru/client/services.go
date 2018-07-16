@@ -623,13 +623,13 @@ func parsePlanParams(schemas *osb.Schemas) (instanceParams string, bindingParams
 	if schemas.ServiceInstance != nil {
 		instanceParams, err = parseParams(schemas.ServiceInstance.Create.Parameters)
 		if err != nil {
-			instanceParams = fmt.Sprintf("error parsing: %+v", schemas.ServiceInstance.Create)
+			instanceParams = fmt.Sprintf("error parsing %+v: %v", schemas.ServiceInstance.Create, err)
 		}
 	}
 	if schemas.ServiceBinding != nil {
 		bindingParams, err = parseParams(schemas.ServiceBinding.Create.Parameters)
 		if err != nil {
-			bindingParams = fmt.Sprintf("error parsing: %+v", schemas.ServiceBinding.Create)
+			bindingParams = fmt.Sprintf("error parsing %+v: %v", schemas.ServiceBinding.Create, err)
 		}
 	}
 	return instanceParams, bindingParams
@@ -637,8 +637,10 @@ func parsePlanParams(schemas *osb.Schemas) (instanceParams string, bindingParams
 
 type jsonSchema struct {
 	Properties  map[string]*jsonSchema
+	Default     interface{}
 	Type        string
 	Description string
+	Required    []string
 }
 
 func parseParams(params interface{}) (string, error) {
@@ -660,6 +662,10 @@ func parseParams(params interface{}) (string, error) {
 		props = append(props, k)
 	}
 	sort.Strings(props)
+	requireMap := make(map[string]struct{})
+	for _, r := range schema.Required {
+		requireMap[r] = struct{}{}
+	}
 	for _, k := range props {
 		v := schema.Properties[k]
 		if v == nil {
@@ -668,6 +674,12 @@ func parseParams(params interface{}) (string, error) {
 		sb.WriteString(fmt.Sprintf("%v: \n", k))
 		sb.WriteString(fmt.Sprintf("  description: %v\n", v.Description))
 		sb.WriteString(fmt.Sprintf("  type: %v\n", v.Type))
+		if v.Default != nil {
+			sb.WriteString(fmt.Sprintf("  default: %v\n", v.Default))
+		}
+		if _, ok := requireMap[k]; ok {
+			sb.WriteString(fmt.Sprintf("  required: true\n"))
+		}
 	}
 	return sb.String(), nil
 }

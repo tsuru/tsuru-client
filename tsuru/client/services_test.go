@@ -41,7 +41,7 @@ func (t *infoTransport) RoundTrip(req *http.Request) (resp *http.Response, err e
 	}
 	if strings.HasSuffix(req.URL.Path, "/services/mongodb-broker/plans") {
 		if t.includePlans {
-			message = `[{"Name":"default","Description":"Plan with parameter and response schemas","Schemas":{"service_instance":{"create":{"parameters":{"$schema":"http://json-schema.org/draft-04/schema#","properties":{"param-1":{"description":"First input parameter","type":"string"},"param-2":{"description":"Second input parameter","type":"string"}},"type":"object"}},"update":{"parameters":{"$schema":"http://json-schema.org/draft-04/schema#","properties":{"param-1":{"description":"First input parameter","type":"string"},"param-2":{"description":"Second input parameter","type":"string"}},"type":"object"}}},"service_binding":{"create":{"parameters":{"$schema":"http://json-schema.org/draft-04/schema#","properties":{"param-1":{"description":"First input parameter","type":"string"},"param-2":{"description":"Second input parameter","type":"string"}},"type":"object"}}}}}]`
+			message = `[{"Name":"default","Description":"Plan with parameter and response schemas","Schemas":{"service_instance":{"create":{"parameters":{"$schema":"http://json-schema.org/draft-04/schema#", "required": ["param-2"], "properties":{"param-1":{"description":"First input parameter","type":"string", "default":"value1"},"param-2":{"description":"Second input parameter","type":"string"}},"type":"object"}},"update":{"parameters":{"$schema":"http://json-schema.org/draft-04/schema#","properties":{"param-1":{"description":"First input parameter","type":"string"},"param-2":{"description":"Second input parameter","type":"string"}},"type":"object"}}},"service_binding":{"create":{"parameters":{"$schema":"http://json-schema.org/draft-04/schema#","properties":{"param-1":{"description":"First input parameter","type":"string"},"param-2":{"description":"Second input parameter","type":"string"}},"type":"object"}}}}}]`
 		} else {
 			message = `[]`
 		}
@@ -859,9 +859,11 @@ Plans
 | default | Plan with parameter and response schemas | param-1:                              | param-1:                              |
 |         |                                          |   description: First input parameter  |   description: First input parameter  |
 |         |                                          |   type: string                        |   type: string                        |
-|         |                                          | param-2:                              | param-2:                              |
-|         |                                          |   description: Second input parameter |   description: Second input parameter |
-|         |                                          |   type: string                        |   type: string                        |
+|         |                                          |   default: value1                     | param-2:                              |
+|         |                                          | param-2:                              |   description: Second input parameter |
+|         |                                          |   description: Second input parameter |   type: string                        |
+|         |                                          |   type: string                        |                                       |
+|         |                                          |   required: true                      |                                       |
 |         |                                          |                                       |                                       |
 +---------+------------------------------------------+---------------------------------------+---------------------------------------+
 `
