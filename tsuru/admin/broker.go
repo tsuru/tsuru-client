@@ -84,6 +84,38 @@ func (c *BrokerUpdate) Run(ctx *cmd.Context, cli *cmd.Client) error {
 	return nil
 }
 
+type BrokerDelete struct {
+	fs *gnuflag.FlagSet
+}
+
+func (c *BrokerDelete) Info() *cmd.Info {
+	return &cmd.Info{
+		Name:    "service-broker-delete",
+		Usage:   "service-broker-delete <name>",
+		Desc:    `Removes a service broker.`,
+		MinArgs: 1,
+	}
+}
+
+func (c *BrokerDelete) Flags() *gnuflag.FlagSet {
+	return gnuflag.NewFlagSet("", gnuflag.ExitOnError)
+}
+
+func (c *BrokerDelete) Run(ctx *cmd.Context, cli *cmd.Client) error {
+	apiClient, err := client.ClientFromEnvironment(&tsuru.Configuration{
+		HTTPClient: cli.HTTPClient,
+	})
+	if err != nil {
+		return err
+	}
+	_, err = apiClient.ServiceApi.ServiceBrokerDelete(context.TODO(), ctx.Args[0])
+	if err != nil {
+		return err
+	}
+	fmt.Fprintln(ctx.Stdout, "Service broker successfully deleted.")
+	return nil
+}
+
 func flagsForServiceBroker(broker *tsuru.ServiceBroker) *gnuflag.FlagSet {
 	fs := gnuflag.NewFlagSet("", gnuflag.ExitOnError)
 

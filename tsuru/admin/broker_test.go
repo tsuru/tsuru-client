@@ -111,3 +111,27 @@ func (s *S) TestBrokerUpdate(c *check.C) {
 	c.Assert(err, check.IsNil)
 	c.Assert(stdout.String(), check.Equals, expected)
 }
+
+func (s *S) TestBrokerDelete(c *check.C) {
+	var stdout, stderr bytes.Buffer
+	expected := "Service broker successfully deleted.\n"
+	context := cmd.Context{
+		Stdout: &stdout,
+		Stderr: &stderr,
+		Args:   []string{"br1"},
+	}
+	trans := cmdtest.ConditionalTransport{
+		Transport: cmdtest.Transport{Message: "", Status: http.StatusOK},
+		CondFunc: func(r *http.Request) bool {
+			c.Assert(r.URL.Path, check.Equals, "/1.7/brokers/br1")
+			c.Assert(r.Method, check.Equals, "DELETE")
+			return true
+		},
+	}
+	manager := cmd.NewManager("admin", "0.1", "admin-ver", &stdout, &stderr, nil, nil)
+	client := cmd.NewClient(&http.Client{Transport: &trans}, nil, manager)
+	command := BrokerDelete{}
+	err := command.Run(&context, client)
+	c.Assert(err, check.IsNil)
+	c.Assert(stdout.String(), check.Equals, expected)
+}
