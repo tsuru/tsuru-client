@@ -47,6 +47,43 @@ func (c *BrokerAdd) Run(ctx *cmd.Context, cli *cmd.Client) error {
 	return nil
 }
 
+type BrokerUpdate struct {
+	broker tsuru.ServiceBroker
+	fs     *gnuflag.FlagSet
+}
+
+func (c *BrokerUpdate) Info() *cmd.Info {
+	return &cmd.Info{
+		Name:    "service-broker-update",
+		Usage:   "service-broker-updates <name> <url> [-i/--insecure] [-c/--context key=value] [-t/--token token] [-u/--user username] [-p/--password password]",
+		Desc:    `Updates a service broker.`,
+		MinArgs: 2,
+	}
+}
+
+func (c *BrokerUpdate) Flags() *gnuflag.FlagSet {
+	if c.fs == nil {
+		c.fs = flagsForServiceBroker(&c.broker)
+	}
+	return c.fs
+}
+
+func (c *BrokerUpdate) Run(ctx *cmd.Context, cli *cmd.Client) error {
+	apiClient, err := client.ClientFromEnvironment(&tsuru.Configuration{
+		HTTPClient: cli.HTTPClient,
+	})
+	if err != nil {
+		return err
+	}
+	c.broker.Name, c.broker.URL = ctx.Args[0], ctx.Args[1]
+	_, err = apiClient.ServiceApi.ServiceBrokerUpdate(context.TODO(), c.broker.Name, c.broker)
+	if err != nil {
+		return err
+	}
+	fmt.Fprintln(ctx.Stdout, "Service broker successfully updated.")
+	return nil
+}
+
 func flagsForServiceBroker(broker *tsuru.ServiceBroker) *gnuflag.FlagSet {
 	fs := gnuflag.NewFlagSet("", gnuflag.ExitOnError)
 
