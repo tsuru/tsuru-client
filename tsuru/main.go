@@ -174,6 +174,7 @@ func buildManager(name string) *cmd.Manager {
 	m.Register(&client.WebhookCreate{})
 	m.Register(&client.WebhookUpdate{})
 	m.Register(&client.WebhookDelete{})
+	m.Register(&admin.BrokerAdd{})
 	m.RegisterRemoved("bs-env-set", "You should use `tsuru node-container-update big-sibling` instead.")
 	m.RegisterRemoved("bs-info", "You should use `tsuru node-container-info big-sibling` instead.")
 	m.RegisterRemoved("bs-upgrade", "You should use `tsuru node-container-upgrade big-sibling` instead.")
