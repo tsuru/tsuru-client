@@ -88,9 +88,7 @@ func (c *BrokerUpdate) Run(ctx *cmd.Context, cli *cmd.Client) error {
 	return nil
 }
 
-type BrokerDelete struct {
-	fs *gnuflag.FlagSet
-}
+type BrokerDelete struct{}
 
 func (c *BrokerDelete) Info() *cmd.Info {
 	return &cmd.Info{
@@ -99,10 +97,6 @@ func (c *BrokerDelete) Info() *cmd.Info {
 		Desc:    `Removes a service broker.`,
 		MinArgs: 1,
 	}
-}
-
-func (c *BrokerDelete) Flags() *gnuflag.FlagSet {
-	return gnuflag.NewFlagSet("", gnuflag.ExitOnError)
 }
 
 func (c *BrokerDelete) Run(ctx *cmd.Context, cli *cmd.Client) error {
