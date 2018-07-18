@@ -135,3 +135,67 @@ func (s *S) TestBrokerDelete(c *check.C) {
 	c.Assert(err, check.IsNil)
 	c.Assert(stdout.String(), check.Equals, expected)
 }
+
+func (s *S) TestBrokerList(c *check.C) {
+	var stdout, stderr bytes.Buffer
+	expected := `+-------+-------------------------------------------------+----------+--------+-------------------------------+
+| Name  | URL                                             | Insecure | Auth   | Context                       |
++-------+-------------------------------------------------+----------+--------+-------------------------------+
+| aws   | https://192.168.99.100:31767/aws-service-broker | true     | Bearer | Namespace: aws-service-broker |
+|       |                                                 |          |        | Platform: tsuru               |
++-------+-------------------------------------------------+----------+--------+-------------------------------+
+| azure | https://localhost:9090                          | false    | Basic  |                               |
+|       |                                                 |          |        |                               |
++-------+-------------------------------------------------+----------+--------+-------------------------------+
+`
+	brokers := []tsuru.ServiceBroker{
+		{
+			Name: "aws",
+			URL:  "https://192.168.99.100:31767/aws-service-broker",
+			Config: &tsuru.ServiceBrokerConfig{
+				Insecure: true,
+				AuthConfig: &tsuru.ServiceBrokerConfigAuthConfig{
+					BearerConfig: &tsuru.ServiceBrokerConfigAuthConfigBearerConfig{
+						Token: "xpto",
+					},
+				},
+				Context: map[string]string{
+					"Namespace": "aws-service-broker",
+					"Platform":  "tsuru",
+				},
+			},
+		},
+		{
+			Name: "azure",
+			URL:  "https://localhost:9090",
+			Config: &tsuru.ServiceBrokerConfig{
+				AuthConfig: &tsuru.ServiceBrokerConfigAuthConfig{
+					BasicAuthConfig: &tsuru.ServiceBrokerConfigAuthConfigBasicAuthConfig{
+						Password: "pass",
+						Username: "user",
+					},
+				},
+			},
+		},
+	}
+	body, err := json.Marshal(map[string]interface{}{"brokers": brokers})
+	c.Assert(err, check.IsNil)
+	context := cmd.Context{
+		Stdout: &stdout,
+		Stderr: &stderr,
+	}
+	trans := cmdtest.ConditionalTransport{
+		Transport: cmdtest.Transport{Message: string(body), Status: http.StatusOK},
+		CondFunc: func(r *http.Request) bool {
+			c.Assert(r.URL.Path, check.Equals, "/1.7/brokers")
+			c.Assert(r.Method, check.Equals, "GET")
+			return true
+		},
+	}
+	manager := cmd.NewManager("admin", "0.1", "admin-ver", &stdout, &stderr, nil, nil)
+	client := cmd.NewClient(&http.Client{Transport: &trans}, nil, manager)
+	command := BrokerList{}
+	err = command.Run(&context, client)
+	c.Assert(err, check.IsNil)
+	c.Assert(stdout.String(), check.Equals, expected)
+}

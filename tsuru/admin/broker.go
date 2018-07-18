@@ -3,10 +3,13 @@ package admin
 import (
 	"context"
 	"fmt"
+	"strconv"
+	"strings"
 
 	"github.com/tsuru/gnuflag"
 	"github.com/tsuru/go-tsuruclient/pkg/client"
 	"github.com/tsuru/go-tsuruclient/pkg/tsuru"
+	"github.com/tsuru/tablecli"
 	"github.com/tsuru/tsuru/cmd"
 )
 
@@ -113,6 +116,62 @@ func (c *BrokerDelete) Run(ctx *cmd.Context, cli *cmd.Client) error {
 		return err
 	}
 	fmt.Fprintln(ctx.Stdout, "Service broker successfully deleted.")
+	return nil
+}
+
+type BrokerList struct {
+	fs *gnuflag.FlagSet
+}
+
+func (c *BrokerList) Info() *cmd.Info {
+	return &cmd.Info{
+		Name:  "service-broker-list",
+		Usage: "service-broker-list",
+		Desc:  `List service brokers.`,
+	}
+}
+
+func (c *BrokerList) Flags() *gnuflag.FlagSet {
+	return gnuflag.NewFlagSet("", gnuflag.ExitOnError)
+}
+
+func (c *BrokerList) Run(ctx *cmd.Context, cli *cmd.Client) error {
+	apiClient, err := client.ClientFromEnvironment(&tsuru.Configuration{
+		HTTPClient: cli.HTTPClient,
+	})
+	if err != nil {
+		return err
+	}
+	brokerList, _, err := apiClient.ServiceApi.ServiceBrokerList(context.TODO())
+	if err != nil {
+		return err
+	}
+	tbl := tablecli.Table{
+		Headers:       tablecli.Row{"Name", "URL", "Insecure", "Auth", "Context"},
+		LineSeparator: true,
+	}
+	for _, b := range brokerList.Brokers {
+		authMethod := "None"
+		if b.Config.AuthConfig != nil {
+			if b.Config.AuthConfig.BasicAuthConfig != nil {
+				authMethod = "Basic\n"
+			} else if b.Config.AuthConfig.BearerConfig != nil {
+				authMethod = "Bearer\n"
+			}
+		}
+		var contexts []string
+		for k, v := range b.Config.Context {
+			contexts = append(contexts, fmt.Sprintf("%v: %v", k, v))
+		}
+		tbl.AddRow(tablecli.Row{
+			b.Name,
+			b.URL,
+			strconv.FormatBool(b.Config.Insecure),
+			authMethod,
+			strings.Join(contexts, "\n"),
+		})
+	}
+	fmt.Fprint(ctx.Stdout, tbl.String())
 	return nil
 }
 

@@ -174,6 +174,7 @@ func buildManager(name string) *cmd.Manager {
 	m.Register(&client.WebhookCreate{})
 	m.Register(&client.WebhookUpdate{})
 	m.Register(&client.WebhookDelete{})
+	m.Register(&admin.BrokerList{})
 	m.Register(&admin.BrokerAdd{})
 	m.Register(&admin.BrokerUpdate{})
 	m.Register(&admin.BrokerDelete{})
