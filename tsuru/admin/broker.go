@@ -119,9 +119,7 @@ func (c *BrokerDelete) Run(ctx *cmd.Context, cli *cmd.Client) error {
 	return nil
 }
 
-type BrokerList struct {
-	fs *gnuflag.FlagSet
-}
+type BrokerList struct{}
 
 func (c *BrokerList) Info() *cmd.Info {
 	return &cmd.Info{
@@ -129,10 +127,6 @@ func (c *BrokerList) Info() *cmd.Info {
 		Usage: "service-broker-list",
 		Desc:  `List service brokers.`,
 	}
-}
-
-func (c *BrokerList) Flags() *gnuflag.FlagSet {
-	return gnuflag.NewFlagSet("", gnuflag.ExitOnError)
 }
 
 func (c *BrokerList) Run(ctx *cmd.Context, cli *cmd.Client) error {
