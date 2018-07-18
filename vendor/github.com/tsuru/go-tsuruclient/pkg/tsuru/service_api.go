@@ -485,14 +485,14 @@ func (a *ServiceApiService) ServiceBrokerDelete(ctx context.Context, name string
 /* ServiceApiService
 List service brokers
  * @param ctx context.Context for authentication, logging, tracing, etc.
-@return []ServiceBroker*/
-func (a *ServiceApiService) ServiceBrokerList(ctx context.Context) ([]ServiceBroker, *http.Response, error) {
+@return ServiceBrokerList*/
+func (a *ServiceApiService) ServiceBrokerList(ctx context.Context) (ServiceBrokerList, *http.Response, error) {
 	var (
 		localVarHttpMethod = strings.ToUpper("Get")
 		localVarPostBody   interface{}
 		localVarFileName   string
 		localVarFileBytes  []byte
-		successPayload     []ServiceBroker
+		successPayload     ServiceBrokerList
 	)
 
 	// create path and map variables
