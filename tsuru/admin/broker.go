@@ -3,6 +3,7 @@ package admin
 import (
 	"context"
 	"fmt"
+	"sort"
 	"strconv"
 	"strings"
 
@@ -157,6 +158,7 @@ func (c *BrokerList) Run(ctx *cmd.Context, cli *cmd.Client) error {
 		for k, v := range b.Config.Context {
 			contexts = append(contexts, fmt.Sprintf("%v: %v", k, v))
 		}
+		sort.Strings(contexts)
 		tbl.AddRow(tablecli.Row{
 			b.Name,
 			b.URL,
