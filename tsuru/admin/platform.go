@@ -6,6 +6,7 @@ package admin
 
 import (
 	"bytes"
+	"context"
 	"encoding/json"
 	"errors"
 	"fmt"
@@ -17,6 +18,8 @@ import (
 	"sort"
 
 	"github.com/tsuru/gnuflag"
+	"github.com/tsuru/go-tsuruclient/pkg/client"
+	"github.com/tsuru/go-tsuruclient/pkg/tsuru"
 	"github.com/tsuru/tsuru/cmd"
 )
 
@@ -255,6 +258,52 @@ func (p *PlatformRemove) Run(context *cmd.Context, client *cmd.Client) error {
 		return err
 	}
 	fmt.Fprintf(context.Stdout, "Platform successfully removed!\n")
+	return nil
+}
+
+type PlatformInfo struct{}
+
+func (p *PlatformInfo) Info() *cmd.Info {
+	return &cmd.Info{
+		Name:    "platform-info",
+		Usage:   "platform-info <platform name>",
+		Desc:    `Shows information about a specific platform.`,
+		MinArgs: 1,
+	}
+}
+
+func (PlatformInfo) Run(ctx *cmd.Context, cli *cmd.Client) error {
+	apiClient, err := client.ClientFromEnvironment(&tsuru.Configuration{
+		HTTPClient: cli.HTTPClient,
+	})
+	if err != nil {
+		return err
+	}
+	ctx.RawOutput()
+	name := ctx.Args[0]
+	info, resp, err := apiClient.PlatformApi.PlatformInfo(context.TODO(), name)
+	if err != nil {
+		return err
+	}
+	if resp.StatusCode == http.StatusNoContent {
+		return nil
+	}
+	defer resp.Body.Close()
+	var status string
+	if info.Platform.Disabled {
+		status = "disabled"
+	} else {
+		status = "enabled"
+	}
+	var buf bytes.Buffer
+	buf.WriteString(fmt.Sprintf("Name: %s\n", info.Platform.Name))
+	buf.WriteString(fmt.Sprintf("Status: %s\n", status))
+	buf.WriteString("Images:\n")
+	sort.Sort(sort.Reverse(sort.StringSlice(info.Images)))
+	for _, img := range info.Images {
+		buf.WriteString(fmt.Sprintf(" - %s\n", img))
+	}
+	ctx.Stdout.Write(buf.Bytes())
 	return nil
 }
 

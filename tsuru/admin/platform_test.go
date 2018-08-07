@@ -547,3 +547,36 @@ func (s *S) TestPlatformRemoveConfirmation(c *check.C) {
 	c.Assert(err, check.IsNil)
 	c.Assert(stdout.String(), check.Equals, "Are you sure you want to remove \"something\" platform? (y/n) Abort.\n")
 }
+
+func (s *S) TestPlatformInfoRun(c *check.C) {
+	var stdout, stderr bytes.Buffer
+	name := "teste"
+	context := cmd.Context{
+		Stdout: &stdout,
+		Stderr: &stderr,
+		Args:   []string{name},
+	}
+	expectedMsg := "Name: teste\nStatus: enabled\nImages:\n - tsuru/teste:v2\n - tsuru/teste:v1\n"
+	res := struct {
+		Platform platform
+		Images   []string
+	}{
+		Platform: platform{Name: name, Disabled: false},
+		Images:   []string{"tsuru/teste:v1", "tsuru/teste:v2"},
+	}
+	result, err := json.Marshal(res)
+	c.Assert(err, check.IsNil)
+	trans := &cmdtest.ConditionalTransport{
+		Transport: cmdtest.Transport{
+			Message: string(result),
+			Status:  http.StatusOK},
+		CondFunc: func(req *http.Request) bool {
+			return strings.HasSuffix(req.URL.Path, "/platforms/"+name) && req.Method == "GET"
+		},
+	}
+	client := cmd.NewClient(&http.Client{Transport: trans}, nil, s.manager)
+	command := PlatformInfo{}
+	err = command.Run(&context, client)
+	c.Assert(err, check.IsNil)
+	c.Assert(stdout.String(), check.Equals, expectedMsg)
+}
