@@ -10,7 +10,7 @@ GITHUB_TOKEN := $(shell git config --global --get github.token || echo $$GITHUB_
 
 LINTER_ARGS_SLOW = \
 	-j 4 --enable-gc -s vendor -e '.*/vendor/.*' --vendor --enable=misspell --enable=gofmt --enable=goimports --enable=unused \
-	--disable=dupl --disable=gocyclo --disable=errcheck --disable=golint --disable=interfacer --disable=gas \
+	--disable=dupl --disable=gocyclo --disable=errcheck --disable=golint --disable=interfacer --disable=gosec \
 	--disable=structcheck --deadline=60m --tests
 
 LINTER_ARGS = \
