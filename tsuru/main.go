@@ -69,6 +69,7 @@ func buildManager(name string) *cmd.Manager {
 	m.Register(&admin.PlatformAdd{})
 	m.Register(&admin.PlatformUpdate{})
 	m.Register(&admin.PlatformRemove{})
+	m.Register(&admin.PlatformInfo{})
 	m.Register(&client.PluginInstall{})
 	m.Register(&client.PluginRemove{})
 	m.Register(&client.PluginList{})
