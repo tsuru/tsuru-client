@@ -59,7 +59,7 @@ type BrokerUpdate struct {
 func (c *BrokerUpdate) Info() *cmd.Info {
 	return &cmd.Info{
 		Name:    "service-broker-update",
-		Usage:   "service-broker-updates <name> <url> [-i/--insecure] [-c/--context key=value] [-t/--token token] [-u/--user username] [-p/--password password]",
+		Usage:   "service-broker-update <name> <url> [-i/--insecure] [-c/--context key=value] [-t/--token token] [-u/--user username] [-p/--password password]",
 		Desc:    `Updates a service broker.`,
 		MinArgs: 2,
 	}
