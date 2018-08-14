@@ -43,6 +43,12 @@ func (c *BrokerAdd) Run(ctx *cmd.Context, cli *cmd.Client) error {
 		return err
 	}
 	c.broker.Name, c.broker.URL = ctx.Args[0], ctx.Args[1]
+	if c.broker.Config.AuthConfig.BearerConfig.Token == "" {
+		c.broker.Config.AuthConfig.BearerConfig = nil
+	}
+	if c.broker.Config.AuthConfig.BasicAuthConfig.Password == "" && c.broker.Config.AuthConfig.BasicAuthConfig.Username == "" {
+		c.broker.Config.AuthConfig.BasicAuthConfig = nil
+	}
 	_, err = apiClient.ServiceApi.ServiceBrokerCreate(context.TODO(), c.broker)
 	if err != nil {
 		return err
@@ -80,6 +86,12 @@ func (c *BrokerUpdate) Run(ctx *cmd.Context, cli *cmd.Client) error {
 		return err
 	}
 	c.broker.Name, c.broker.URL = ctx.Args[0], ctx.Args[1]
+	if c.broker.Config.AuthConfig.BearerConfig.Token == "" {
+		c.broker.Config.AuthConfig.BearerConfig = nil
+	}
+	if c.broker.Config.AuthConfig.BasicAuthConfig.Password == "" && c.broker.Config.AuthConfig.BasicAuthConfig.Username == "" {
+		c.broker.Config.AuthConfig.BasicAuthConfig = nil
+	}
 	_, err = apiClient.ServiceApi.ServiceBrokerUpdate(context.TODO(), c.broker.Name, c.broker)
 	if err != nil {
 		return err
