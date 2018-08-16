@@ -12,5 +12,7 @@ package tsuru
 type Team struct {
 	Name string `json:"name,omitempty"`
 
+	Tags []string `json:"tags,omitempty"`
+
 	Permissions []string `json:"permissions,omitempty"`
 }

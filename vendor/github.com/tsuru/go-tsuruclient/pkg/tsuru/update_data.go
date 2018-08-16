@@ -11,4 +11,6 @@ package tsuru
 
 type UpdateData struct {
 	Newname string `json:"newname,omitempty"`
+
+	Tags []string `json:"tags,omitempty"`
 }
