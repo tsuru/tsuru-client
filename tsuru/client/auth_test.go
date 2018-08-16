@@ -257,6 +257,7 @@ func (s *S) TestTeamInfoRun(c *check.C) {
 
 	body := `
 {
+	"tags": ["tag1", "tag2"],
     "apps": [
         {
             "cname": [],
@@ -330,6 +331,7 @@ func (s *S) TestTeamInfoRun(c *check.C) {
 		},
 	}
 	expected := `Team: admin
+Tags: [tag1 tag2]
 
 Users: 1
 +----------------+------------------+

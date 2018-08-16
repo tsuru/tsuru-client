@@ -335,6 +335,7 @@ type ContentTeam struct {
 	Users []cmd.APIUser `json:"users"`
 	Pools []Pool        `json:"pools"`
 	Apps  []app         `json:"apps"`
+	Tags  []string      `json:"tags"`
 }
 
 type TeamInfo struct{}
@@ -376,6 +377,7 @@ func (c *TeamInfo) Run(ctx *cmd.Context, cli *cmd.Client) error {
 		return err
 	}
 	format := `Team: {{.Name}}
+Tags: {{.Tags}}
 `
 	tmpl := template.Must(template.New("app").Parse(format))
 	var tplBuffer bytes.Buffer
