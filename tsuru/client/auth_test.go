@@ -6,6 +6,7 @@ package client
 
 import (
 	"bytes"
+	"encoding/json"
 	"io"
 	"io/ioutil"
 	"net/http"
@@ -14,6 +15,7 @@ import (
 
 	"gopkg.in/check.v1"
 
+	"github.com/tsuru/go-tsuruclient/pkg/tsuru"
 	"github.com/tsuru/tsuru/cmd"
 	"github.com/tsuru/tsuru/cmd/cmdtest"
 	"github.com/tsuru/tsuru/fs/fstest"
@@ -34,14 +36,19 @@ func (s *S) TestTeamCreate(c *check.C) {
 			Status:  http.StatusCreated,
 		},
 		CondFunc: func(r *http.Request) bool {
-			contentType := r.Header.Get("Content-Type") == "application/x-www-form-urlencoded"
-			team := r.FormValue("name") == "core"
-			url := r.URL.Path == "/1.0/teams"
-			return contentType && team && url
+			c.Assert(r.Header.Get("Content-Type"), check.Equals, "application/json")
+			data, err := ioutil.ReadAll(r.Body)
+			c.Assert(err, check.IsNil)
+			var ret tsuru.TeamData
+			err = json.Unmarshal(data, &ret)
+			c.Assert(ret, check.DeepEquals, tsuru.TeamData{Name: "core", Tags: []string{"tag1", "tag2"}})
+			c.Assert(r.URL.Path, check.DeepEquals, "/1.0/teams")
+			return true
 		},
 	}
 	client := cmd.NewClient(&http.Client{Transport: &transport}, nil, manager)
 	command := TeamCreate{}
+	command.Flags().Parse(true, []string{"-t", "tag1", "-t", "tag2"})
 	err := command.Run(&context, client)
 	c.Assert(err, check.IsNil)
 	c.Assert(stdout.String(), check.Equals, expected)
@@ -61,15 +68,20 @@ func (s *S) TestTeamUpdate(c *check.C) {
 	trans := &cmdtest.ConditionalTransport{
 		Transport: cmdtest.Transport{Message: "", Status: http.StatusOK},
 		CondFunc: func(r *http.Request) bool {
-			c.Assert(r.FormValue("newname"), check.Equals, "new-team")
+			c.Assert(r.Header.Get("Content-Type"), check.Equals, "application/json")
+			data, err := ioutil.ReadAll(r.Body)
+			c.Assert(err, check.IsNil)
+			var ret tsuru.UpdateData
+			err = json.Unmarshal(data, &ret)
+			c.Assert(ret, check.DeepEquals, tsuru.UpdateData{Newname: "new-team", Tags: []string{"tag1", "tag2"}})
 			c.Assert(strings.HasSuffix(r.URL.Path, "/teams/my-team"), check.Equals, true)
-			c.Assert(r.Method, check.Equals, http.MethodPost)
+			c.Assert(r.Method, check.Equals, http.MethodPut)
 			return true
 		},
 	}
 	client := cmd.NewClient(&http.Client{Transport: trans}, nil, manager)
 	command := &TeamUpdate{}
-	command.Flags().Parse(true, []string{"-n", "new-team"})
+	command.Flags().Parse(true, []string{"-n", "new-team", "-t", "tag1", "-t", "tag2"})
 	err := command.Run(&ctx, client)
 	c.Assert(err, check.IsNil)
 	result := stdout.String()
@@ -88,7 +100,7 @@ func (s *S) TestTeamUpdateError(c *check.C) {
 	client := cmd.NewClient(&http.Client{Transport: trans}, nil, manager)
 	command := &TeamUpdate{}
 	err := command.Run(&ctx, client)
-	c.Assert(err, check.ErrorMatches, errMsg)
+	c.Assert(err, check.ErrorMatches, `team not found`)
 }
 
 func (s *S) TestTeamUpdateInfo(c *check.C) {
@@ -166,15 +178,15 @@ func (s *S) TestTeamListRun(c *check.C) {
 			return req.Method == "GET" && strings.HasSuffix(req.URL.Path, "/teams")
 		},
 	}
-	expected := `+-------------+-------------+
-| Team        | Permissions |
-+-------------+-------------+
-| timeredbull | app.deploy  |
-|             | app.abc     |
-+-------------+-------------+
-| cobrateam   | a           |
-|             | b           |
-+-------------+-------------+
+	expected := `+-------------+-------------+------+
+| Team        | Permissions | Tags |
++-------------+-------------+------+
+| timeredbull | app.deploy  |      |
+|             | app.abc     |      |
++-------------+-------------+------+
+| cobrateam   | a           |      |
+|             | b           |      |
++-------------+-------------+------+
 `
 	client := cmd.NewClient(&http.Client{Transport: trans}, nil, manager)
 	var stdout, stderr bytes.Buffer
@@ -198,13 +210,13 @@ func (s *S) TestTeamListRunNoPermissions(c *check.C) {
 			return req.Method == "GET" && strings.HasSuffix(req.URL.Path, "/teams")
 		},
 	}
-	expected := `+-------------+-------------+
-| Team        | Permissions |
-+-------------+-------------+
-| timeredbull |             |
-+-------------+-------------+
-| cobrateam   |             |
-+-------------+-------------+
+	expected := `+-------------+-------------+------+
+| Team        | Permissions | Tags |
++-------------+-------------+------+
+| timeredbull |             |      |
++-------------+-------------+------+
+| cobrateam   |             |      |
++-------------+-------------+------+
 `
 	client := cmd.NewClient(&http.Client{Transport: trans}, nil, manager)
 	var stdout, stderr bytes.Buffer

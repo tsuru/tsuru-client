@@ -44,7 +44,7 @@ func (s *S) TestTsuruAPIBootstrapLocalEnviroment(c *check.C) {
 			c.Assert(strings.Contains(string(b), expected), check.Equals, true)
 		}
 		if r.URL.Path == "/1.0/teams" {
-			c.Assert(string(b), check.Equals, "name=admin")
+			c.Assert(string(b), check.Equals, "{\"name\":\"admin\"}\n")
 		}
 		if r.URL.Path == "/1.0/apps" {
 			c.Assert(string(b), check.Equals, "description=&name=tsuru-dashboard&plan=&platform=python&pool=&router=&routeropts=&teamOwner=admin")

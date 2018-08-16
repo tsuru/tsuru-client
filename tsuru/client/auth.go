@@ -6,6 +6,7 @@ package client
 
 import (
 	"bytes"
+	"context"
 	"encoding/json"
 	"errors"
 	"fmt"
@@ -17,6 +18,8 @@ import (
 	"text/template"
 
 	"github.com/tsuru/gnuflag"
+	"github.com/tsuru/go-tsuruclient/pkg/client"
+	"github.com/tsuru/go-tsuruclient/pkg/tsuru"
 	"github.com/tsuru/tablecli"
 	"github.com/tsuru/tsuru/cmd"
 )
@@ -150,44 +153,57 @@ you remove the team using ` + "`team-remove`" + ` before removing the user.`,
 	}
 }
 
-type TeamCreate struct{}
+type TeamCreate struct {
+	tags cmd.StringSliceFlag
+	fs   *gnuflag.FlagSet
+}
 
 func (c *TeamCreate) Info() *cmd.Info {
 	return &cmd.Info{
 		Name:  "team-create",
-		Usage: "team-create <teamname>",
+		Usage: "team-create <teamname> [--tag/-t tag]...",
 		Desc: `Create a team for the user. tsuru requires a user to be a member of at least
 one team in order to create an app or a service instance.
 
-When you create a team, you're automatically member of this team.`,
+When you create a team, you're automatically member of this team.
+
+The [[--tag]] parameter sets a tag to the team. You can set multiple [[--tag]] parameters.
+`,
 		MinArgs: 1,
 	}
 }
 
-func (c *TeamCreate) Run(context *cmd.Context, client *cmd.Client) error {
-	team := context.Args[0]
-	v := url.Values{}
-	v.Set("name", team)
-	b := strings.NewReader(v.Encode())
-	u, err := cmd.GetURL("/teams")
+func (c *TeamCreate) Flags() *gnuflag.FlagSet {
+	if c.fs == nil {
+		c.fs = gnuflag.NewFlagSet("", gnuflag.ExitOnError)
+		c.fs.Var(&c.tags, "tag", "Team tag.")
+		c.fs.Var(&c.tags, "t", "Team tag.")
+	}
+	return c.fs
+}
+
+func (c *TeamCreate) Run(ctx *cmd.Context, cli *cmd.Client) error {
+	apiClient, err := client.ClientFromEnvironment(&tsuru.Configuration{
+		HTTPClient: cli.HTTPClient,
+	})
 	if err != nil {
 		return err
 	}
-	request, err := http.NewRequest("POST", u, b)
+	team := ctx.Args[0]
+	_, err = apiClient.TeamApi.TeamCreate(context.TODO(), tsuru.TeamData{
+		Name: team,
+		Tags: c.tags,
+	})
 	if err != nil {
-		return err
+		return parseErrBody(err)
 	}
-	request.Header.Set("Content-Type", "application/x-www-form-urlencoded")
-	_, err = client.Do(request)
-	if err != nil {
-		return err
-	}
-	fmt.Fprintf(context.Stdout, `Team "%s" successfully created!`+"\n", team)
+	fmt.Fprintf(ctx.Stdout, `Team "%s" successfully created!`+"\n", team)
 	return nil
 }
 
 type TeamUpdate struct {
 	newName string
+	tags    cmd.StringSliceFlag
 	fs      *gnuflag.FlagSet
 }
 
@@ -197,39 +213,41 @@ func (t *TeamUpdate) Flags() *gnuflag.FlagSet {
 		desc := "New team name."
 		t.fs.StringVar(&t.newName, "name", "", desc)
 		t.fs.StringVar(&t.newName, "n", "", desc)
+		t.fs.Var(&t.tags, "tag", "Team tag.")
+		t.fs.Var(&t.tags, "t", "Team tag.")
 	}
 	return t.fs
 }
 
 func (t *TeamUpdate) Info() *cmd.Info {
 	return &cmd.Info{
-		Name:    "team-update",
-		Usage:   "team-update <team-name> -n <new-team-name>",
-		Desc:    `Updates a team name.`,
+		Name:  "team-update",
+		Usage: "team-update <team-name> -n <new-team-name> [--tag/-t tag]...",
+		Desc: `Updates a team.
+		
+The [[--tag]] parameter sets a tag to the team. You can set multiple [[--tag]] parameters.		
+`,
 		MinArgs: 1,
 		MaxArgs: 1,
 	}
 }
 
-func (t *TeamUpdate) Run(context *cmd.Context, client *cmd.Client) error {
-	name := context.Args[0]
-	v := url.Values{}
-	v.Set("newname", t.newName)
-	b := strings.NewReader(v.Encode())
-	u, err := cmd.GetURLVersion("1.4", fmt.Sprintf("/teams/%s", name))
+func (t *TeamUpdate) Run(ctx *cmd.Context, cli *cmd.Client) error {
+	apiClient, err := client.ClientFromEnvironment(&tsuru.Configuration{
+		HTTPClient: cli.HTTPClient,
+	})
 	if err != nil {
 		return err
 	}
-	request, err := http.NewRequest("POST", u, b)
+	team := ctx.Args[0]
+	_, err = apiClient.TeamApi.TeamUpdate(context.TODO(), team, tsuru.UpdateData{
+		Newname: t.newName,
+		Tags:    t.tags,
+	})
 	if err != nil {
-		return err
+		return parseErrBody(err)
 	}
-	request.Header.Set("Content-Type", "application/x-www-form-urlencoded")
-	_, err = client.Do(request)
-	if err != nil {
-		return err
-	}
-	fmt.Fprintln(context.Stdout, "Team successfully updated!")
+	fmt.Fprintln(ctx.Stdout, "Team successfully updated!")
 	return nil
 }
 
@@ -237,25 +255,23 @@ type TeamRemove struct {
 	cmd.ConfirmationCommand
 }
 
-func (c *TeamRemove) Run(context *cmd.Context, client *cmd.Client) error {
-	team := context.Args[0]
+func (c *TeamRemove) Run(ctx *cmd.Context, cli *cmd.Client) error {
+	team := ctx.Args[0]
 	question := fmt.Sprintf("Are you sure you want to remove team %q?", team)
-	if !c.Confirm(context, question) {
+	if !c.Confirm(ctx, question) {
 		return nil
 	}
-	u, err := cmd.GetURL(fmt.Sprintf("/teams/%s", team))
+	apiClient, err := client.ClientFromEnvironment(&tsuru.Configuration{
+		HTTPClient: cli.HTTPClient,
+	})
 	if err != nil {
 		return err
 	}
-	request, err := http.NewRequest(http.MethodDelete, u, nil)
+	_, err = apiClient.TeamApi.TeamDelete(context.TODO(), team)
 	if err != nil {
-		return err
+		return parseErrBody(err)
 	}
-	_, err = client.Do(request)
-	if err != nil {
-		return err
-	}
-	fmt.Fprintf(context.Stdout, `Team "%s" successfully removed!`+"\n", team)
+	fmt.Fprintf(ctx.Stdout, `Team "%s" successfully removed!`+"\n", team)
 	return nil
 }
 
@@ -287,37 +303,29 @@ type teamItem struct {
 	Permissions []string
 }
 
-func (c *TeamList) Run(context *cmd.Context, client *cmd.Client) error {
-	u, err := cmd.GetURL("/teams")
+func (c *TeamList) Run(ctx *cmd.Context, cli *cmd.Client) error {
+	apiClient, err := client.ClientFromEnvironment(&tsuru.Configuration{
+		HTTPClient: cli.HTTPClient,
+	})
 	if err != nil {
 		return err
 	}
-	request, err := http.NewRequest("GET", u, nil)
-	if err != nil {
-		return err
+	teams, resp, err := apiClient.TeamApi.TeamsList(context.TODO())
+	if resp.StatusCode == http.StatusNoContent {
+		return nil
 	}
-	resp, err := client.Do(request)
 	if err != nil {
-		return err
+		return parseErrBody(err)
 	}
+	defer resp.Body.Close()
 	if resp.StatusCode == http.StatusOK {
-		defer resp.Body.Close()
-		b, err := ioutil.ReadAll(resp.Body)
-		if err != nil {
-			return err
-		}
-		var teams []teamItem
-		err = json.Unmarshal(b, &teams)
-		if err != nil {
-			return err
-		}
 		table := tablecli.NewTable()
-		table.Headers = tablecli.Row{"Team", "Permissions"}
+		table.Headers = tablecli.Row{"Team", "Permissions", "Tags"}
 		table.LineSeparator = true
 		for _, team := range teams {
-			table.AddRow(tablecli.Row{team.Name, strings.Join(team.Permissions, "\n")})
+			table.AddRow(tablecli.Row{team.Name, strings.Join(team.Permissions, "\n"), strings.Join(team.Tags, "\n")})
 		}
-		fmt.Fprint(context.Stdout, table.String())
+		fmt.Fprint(ctx.Stdout, table.String())
 	}
 	return nil
 }
@@ -340,8 +348,8 @@ func (c *TeamInfo) Info() *cmd.Info {
 	}
 }
 
-func (c *TeamInfo) Run(context *cmd.Context, client *cmd.Client) error {
-	team := context.Args[0]
+func (c *TeamInfo) Run(ctx *cmd.Context, cli *cmd.Client) error {
+	team := ctx.Args[0]
 	u, err := cmd.GetURLVersion("1.4", fmt.Sprintf("/teams/%v", team))
 	if err != nil {
 		return err
@@ -350,7 +358,7 @@ func (c *TeamInfo) Run(context *cmd.Context, client *cmd.Client) error {
 	if err != nil {
 		return err
 	}
-	resp, err := client.Do(request)
+	resp, err := cli.Do(request)
 	if err != nil {
 		return err
 	}
@@ -418,7 +426,7 @@ func (c *TeamInfo) Run(context *cmd.Context, client *cmd.Client) error {
 			summary = strings.Join(statusText, "\n")
 		} else {
 			summary = fmt.Sprintf("error fetching units")
-			if client.Verbosity > 0 {
+			if cli.Verbosity > 0 {
 				summary += fmt.Sprintf(": %s", app.Error)
 			}
 		}
@@ -431,7 +439,7 @@ func (c *TeamInfo) Run(context *cmd.Context, client *cmd.Client) error {
 		buf.WriteString(appsTable.String())
 	}
 
-	fmt.Fprint(context.Stdout, tplBuffer.String()+buf.String())
+	fmt.Fprint(ctx.Stdout, tplBuffer.String()+buf.String())
 	return nil
 }
 
@@ -726,4 +734,13 @@ func (c *ListUsers) Flags() *gnuflag.FlagSet {
 		c.fs.StringVar(&c.context, "context-value", "", "Filter user by role context value")
 	}
 	return c.fs
+}
+
+func parseErrBody(err error) error {
+	sep := "Body: "
+	idx := strings.LastIndex(err.Error(), sep)
+	if idx == -1 {
+		return err
+	}
+	return errors.New(err.Error()[idx+len(sep):])
 }
