@@ -41,6 +41,7 @@ func (s *S) TestTeamCreate(c *check.C) {
 			c.Assert(err, check.IsNil)
 			var ret tsuru.TeamData
 			err = json.Unmarshal(data, &ret)
+			c.Assert(err, check.IsNil)
 			c.Assert(ret, check.DeepEquals, tsuru.TeamData{Name: "core", Tags: []string{"tag1", "tag2"}})
 			c.Assert(r.URL.Path, check.DeepEquals, "/1.0/teams")
 			return true
@@ -73,6 +74,7 @@ func (s *S) TestTeamUpdate(c *check.C) {
 			c.Assert(err, check.IsNil)
 			var ret tsuru.UpdateData
 			err = json.Unmarshal(data, &ret)
+			c.Assert(err, check.IsNil)
 			c.Assert(ret, check.DeepEquals, tsuru.UpdateData{Newname: "new-team", Tags: []string{"tag1", "tag2"}})
 			c.Assert(strings.HasSuffix(r.URL.Path, "/teams/my-team"), check.Equals, true)
 			c.Assert(r.Method, check.Equals, http.MethodPut)
