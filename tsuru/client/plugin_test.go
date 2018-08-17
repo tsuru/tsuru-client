@@ -38,7 +38,7 @@ func (s *S) TestPluginInstall(c *check.C) {
 		Args:   []string{"myplugin", ts.URL},
 		Stdout: &stdout,
 	}
-	client := cmd.NewClient(nil, nil, manager)
+	client := cmd.NewClient(&http.Client{}, nil, manager)
 	command := PluginInstall{}
 	err := command.Run(&context, client)
 	c.Assert(err, check.IsNil)
@@ -73,7 +73,7 @@ func (s *S) TestPluginInstallError(c *check.C) {
 		Args:   []string{"myplugin", ts.URL},
 		Stdout: &stdout,
 	}
-	client := cmd.NewClient(nil, nil, manager)
+	client := cmd.NewClient(&http.Client{}, nil, manager)
 	command := PluginInstall{}
 	err := command.Run(&context, client)
 	c.Assert(err, check.ErrorMatches, `Invalid status code reading plugin: 500 - "my err"`)
@@ -238,7 +238,7 @@ func (s *S) TestPluginRemove(c *check.C) {
 		Args:   []string{"myplugin"},
 		Stdout: &stdout,
 	}
-	client := cmd.NewClient(nil, nil, manager)
+	client := cmd.NewClient(&http.Client{}, nil, manager)
 	command := PluginRemove{}
 	err := command.Run(&context, client)
 	c.Assert(err, check.IsNil)
