@@ -298,11 +298,6 @@ func (c *TeamList) Info() *cmd.Info {
 	}
 }
 
-type teamItem struct {
-	Name        string
-	Permissions []string
-}
-
 func (c *TeamList) Run(ctx *cmd.Context, cli *cmd.Client) error {
 	apiClient, err := client.ClientFromEnvironment(&tsuru.Configuration{
 		HTTPClient: cli.HTTPClient,
