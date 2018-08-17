@@ -166,8 +166,6 @@ func (c *TeamCreate) Info() *cmd.Info {
 one team in order to create an app or a service instance.
 
 When you create a team, you're automatically member of this team.
-
-The [[--tag]] parameter sets a tag to the team. You can set multiple [[--tag]] parameters.
 `,
 		MinArgs: 1,
 	}
@@ -176,8 +174,8 @@ The [[--tag]] parameter sets a tag to the team. You can set multiple [[--tag]] p
 func (c *TeamCreate) Flags() *gnuflag.FlagSet {
 	if c.fs == nil {
 		c.fs = gnuflag.NewFlagSet("", gnuflag.ExitOnError)
-		c.fs.Var(&c.tags, "tag", "Team tag.")
-		c.fs.Var(&c.tags, "t", "Team tag.")
+		c.fs.Var(&c.tags, "tag", "Sets tags to the team.")
+		c.fs.Var(&c.tags, "t", "Sets tags to the team.")
 	}
 	return c.fs
 }
@@ -213,8 +211,8 @@ func (t *TeamUpdate) Flags() *gnuflag.FlagSet {
 		desc := "New team name."
 		t.fs.StringVar(&t.newName, "name", "", desc)
 		t.fs.StringVar(&t.newName, "n", "", desc)
-		t.fs.Var(&t.tags, "tag", "Team tag.")
-		t.fs.Var(&t.tags, "t", "Team tag.")
+		t.fs.Var(&t.tags, "tag", "New team tags.")
+		t.fs.Var(&t.tags, "t", "New team tags.")
 	}
 	return t.fs
 }
@@ -224,8 +222,6 @@ func (t *TeamUpdate) Info() *cmd.Info {
 		Name:  "team-update",
 		Usage: "team-update <team-name> -n <new-team-name> [--tag/-t tag]...",
 		Desc: `Updates a team.
-		
-The [[--tag]] parameter sets a tag to the team. You can set multiple [[--tag]] parameters.		
 `,
 		MinArgs: 1,
 		MaxArgs: 1,
