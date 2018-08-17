@@ -17,6 +17,7 @@ import (
 
 	"github.com/globalsign/mgo"
 	"github.com/globalsign/mgo/bson"
+	"github.com/nu7hatch/gouuid"
 	"github.com/pkg/errors"
 	"github.com/prometheus/client_golang/prometheus"
 	"github.com/tsuru/tsuru/action"
@@ -148,6 +149,9 @@ type App struct {
 	Tags           []string
 	Error          string
 	Routers        []appTypes.AppRouter
+
+	// UUID is a v4 UUID lazily generated on the first call to GetUUID()
+	UUID string
 
 	Quota       quota.Quota
 	builder     builder.Builder
@@ -355,15 +359,29 @@ func ReleaseApplicationLockMany(appNames []string) {
 // by a middleware, however, ideally, it should be called individually by each
 // handler since they might be doing operations in background.
 func ReleaseApplicationLock(appName string) {
+	var err error
+	retries := 3
+	for i := 0; i < retries; i++ {
+		err = releaseApplicationLockOnce(appName)
+		if err == nil {
+			return
+		}
+		time.Sleep(time.Second * time.Duration(i+1))
+	}
+	log.Error(err)
+}
+
+func releaseApplicationLockOnce(appName string) error {
 	conn, err := db.Conn()
 	if err != nil {
-		log.Errorf("Error getting DB, couldn't unlock %s: %s", appName, err)
+		return errors.Wrapf(err, "error getting DB, couldn't unlock %s", appName)
 	}
 	defer conn.Close()
 	err = conn.Apps().Update(bson.M{"name": appName, "lock.locked": true}, bson.M{"$set": bson.M{"lock": AppLock{}}})
 	if err != nil {
-		log.Errorf("Error updating entry, couldn't unlock %s: %s", appName, err)
+		return errors.Wrapf(err, "Error updating entry, couldn't unlock %s", appName)
 	}
+	return nil
 }
 
 // GetByName queries the database to find an app identified by the given
@@ -867,26 +885,51 @@ type UpdateUnitsResult struct {
 	Found bool
 }
 
-// UpdateNodeStatus updates the status of the given node and its units,
-// returning a map which units were found during the update.
-func UpdateNodeStatus(nodeData provision.NodeStatusData) ([]UpdateUnitsResult, error) {
+func findNodeForNodeData(nodeData provision.NodeStatusData) (provision.Node, error) {
 	provisioners, err := provision.Registry()
 	if err != nil {
 		return nil, err
 	}
-	var node provision.Node
+	provErrors := tsuruErrors.NewMultiError()
 	for _, p := range provisioners {
 		if nodeProv, ok := p.(provision.NodeProvisioner); ok {
-			node, err = nodeProv.NodeForNodeData(nodeData)
+			var node provision.Node
+			if len(nodeData.Addrs) == 1 {
+				node, err = nodeProv.GetNode(nodeData.Addrs[0])
+			} else {
+				node, err = nodeProv.NodeForNodeData(nodeData)
+			}
 			if err == nil {
-				break
+				return node, nil
 			}
 			if errors.Cause(err) != provision.ErrNodeNotFound {
-				return nil, err
+				provErrors.Add(err)
 			}
 		}
 	}
-	if node == nil {
+	if err = provErrors.ToError(); err != nil {
+		return nil, err
+	}
+	return nil, provision.ErrNodeNotFound
+}
+
+// UpdateNodeStatus updates the status of the given node and its units,
+// returning a map which units were found during the update.
+func UpdateNodeStatus(nodeData provision.NodeStatusData) ([]UpdateUnitsResult, error) {
+	node, findNodeErr := findNodeForNodeData(nodeData)
+	var nodeAddresses []string
+	if findNodeErr == nil {
+		nodeAddresses = []string{node.Address()}
+	} else {
+		nodeAddresses = nodeData.Addrs
+	}
+	if healer.HealerInstance != nil {
+		err := healer.HealerInstance.UpdateNodeData(nodeAddresses, nodeData.Checks)
+		if err != nil {
+			log.Errorf("[update node status] unable to set node status in healer: %s", err)
+		}
+	}
+	if findNodeErr == provision.ErrNodeNotFound {
 		counterNodesNotFound.Inc()
 		log.Errorf("[update node status] node not found with nodedata: %#v", nodeData)
 		result := make([]UpdateUnitsResult, len(nodeData.Units))
@@ -895,11 +938,8 @@ func UpdateNodeStatus(nodeData provision.NodeStatusData) ([]UpdateUnitsResult, e
 		}
 		return result, nil
 	}
-	if healer.HealerInstance != nil {
-		err = healer.HealerInstance.UpdateNodeData(node, nodeData.Checks)
-		if err != nil {
-			log.Errorf("[update node status] unable to set node status in healer: %s", err)
-		}
+	if findNodeErr != nil {
+		return nil, findNodeErr
 	}
 	unitProv, ok := node.Provisioner().(provision.UnitStatusProvisioner)
 	if !ok {
@@ -908,7 +948,7 @@ func UpdateNodeStatus(nodeData provision.NodeStatusData) ([]UpdateUnitsResult, e
 	result := make([]UpdateUnitsResult, len(nodeData.Units))
 	for i, unitData := range nodeData.Units {
 		unit := provision.Unit{ID: unitData.ID, Name: unitData.Name}
-		err = unitProv.SetUnitStatus(unit, unitData.Status)
+		err := unitProv.SetUnitStatus(unit, unitData.Status)
 		_, isNotFound := err.(*provision.UnitNotFoundError)
 		if err != nil && !isNotFound {
 			return nil, err
@@ -1331,6 +1371,29 @@ func (app *App) GetUnits() ([]bind.Unit, error) {
 // GetName returns the name of the app.
 func (app *App) GetName() string {
 	return app.Name
+}
+
+// GetUUID returns the app v4 UUID. An UUID will be generated
+// if it does not exist.
+func (app *App) GetUUID() (string, error) {
+	if app.UUID != "" {
+		return app.UUID, nil
+	}
+	uuidV4, err := uuid.NewV4()
+	if err != nil {
+		return "", errors.WithMessage(err, "failed to generate uuid v4")
+	}
+	conn, err := db.Conn()
+	if err != nil {
+		return "", err
+	}
+	defer conn.Close()
+	err = conn.Apps().Update(bson.M{"name": app.Name}, bson.M{"$set": bson.M{"uuid": uuidV4.String()}})
+	if err != nil {
+		return "", err
+	}
+	app.UUID = uuidV4.String()
+	return app.UUID, nil
 }
 
 // GetPool returns the pool of the app.
