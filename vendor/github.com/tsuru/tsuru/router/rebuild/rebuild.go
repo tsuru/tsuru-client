@@ -29,9 +29,17 @@ type RebuildApp interface {
 }
 
 func RebuildRoutes(app RebuildApp, dry bool) (map[string]RebuildRoutesResult, error) {
+	return rebuildRoutes(app, dry, true)
+}
+
+func rebuildRoutesAsync(app RebuildApp, dry bool) (map[string]RebuildRoutesResult, error) {
+	return rebuildRoutes(app, dry, false)
+}
+
+func rebuildRoutes(app RebuildApp, dry, wait bool) (map[string]RebuildRoutesResult, error) {
 	result := make(map[string]RebuildRoutesResult)
 	for _, appRouter := range app.GetRouters() {
-		resultInRouter, err := rebuildRoutesInRouter(app, dry, appRouter)
+		resultInRouter, err := rebuildRoutesInRouter(app, dry, appRouter, wait)
 		if err != nil {
 			return nil, err
 		}
@@ -40,11 +48,33 @@ func RebuildRoutes(app RebuildApp, dry bool) (map[string]RebuildRoutesResult, er
 	return result, nil
 }
 
-func rebuildRoutesInRouter(app RebuildApp, dry bool, appRouter appTypes.AppRouter) (*RebuildRoutesResult, error) {
+func diffRoutes(old []*url.URL, new []url.URL) (toAdd []*url.URL, toRemove []*url.URL) {
+	expectedMap := make(map[string]*url.URL)
+	for i, addr := range new {
+		expectedMap[addr.Host] = &new[i]
+	}
+	for _, url := range old {
+		if _, isPresent := expectedMap[url.Host]; isPresent {
+			delete(expectedMap, url.Host)
+		} else {
+			toRemove = append(toRemove, url)
+		}
+	}
+	for _, toAddURL := range expectedMap {
+		toAdd = append(toAdd, toAddURL)
+	}
+	return toAdd, toRemove
+}
+
+func rebuildRoutesInRouter(app RebuildApp, dry bool, appRouter appTypes.AppRouter, wait bool) (*RebuildRoutesResult, error) {
 	log.Debugf("[rebuild-routes] rebuilding routes for app %q", app.GetName())
 	r, err := router.Get(appRouter.Name)
 	if err != nil {
 		return nil, err
+	}
+	var asyncR router.AsyncRouter
+	if !wait {
+		asyncR, _ = r.(router.AsyncRouter)
 	}
 	if optsRouter, ok := r.(router.OptsRouter); ok {
 		err = optsRouter.AddBackendOpts(app, appRouter.Opts)
@@ -55,9 +85,26 @@ func rebuildRoutesInRouter(app RebuildApp, dry bool, appRouter appTypes.AppRoute
 		return nil, err
 	}
 	if cnameRouter, ok := r.(router.CNameRouter); ok {
-		for _, cname := range app.GetCname() {
+		var oldCnames []*url.URL
+		oldCnames, err = cnameRouter.CNames(app.GetName())
+		if err != nil {
+			return nil, err
+		}
+		appCnames := app.GetCname()
+		cnameAddrs := make([]url.URL, len(appCnames))
+		for i, cname := range appCnames {
+			cnameAddrs[i] = url.URL{Host: cname}
+		}
+		_, toRemove := diffRoutes(oldCnames, cnameAddrs)
+		for _, cname := range appCnames {
 			err = cnameRouter.SetCName(cname, app.GetName())
 			if err != nil && err != router.ErrCNameExists {
+				return nil, err
+			}
+		}
+		for _, toRemoveCname := range toRemove {
+			err = cnameRouter.UnsetCName(toRemoveCname.Host, app.GetName())
+			if err != nil && err != router.ErrCNameNotFound {
 				return nil, err
 			}
 		}
@@ -77,27 +124,14 @@ func rebuildRoutesInRouter(app RebuildApp, dry bool, appRouter appTypes.AppRoute
 		return nil, err
 	}
 	log.Debugf("[rebuild-routes] old routes for app %q: %v", app.GetName(), oldRoutes)
-	expectedMap := make(map[string]*url.URL)
 	addresses, err := app.RoutableAddresses()
 	if err != nil {
 		return nil, err
 	}
 	log.Debugf("[rebuild-routes] addresses for app %q: %v", app.GetName(), addresses)
-	for i, addr := range addresses {
-		expectedMap[addr.Host] = &addresses[i]
-	}
-	var toRemove []*url.URL
-	for _, url := range oldRoutes {
-		if _, isPresent := expectedMap[url.Host]; isPresent {
-			delete(expectedMap, url.Host)
-		} else {
-			toRemove = append(toRemove, url)
-		}
-	}
+	toAdd, toRemove := diffRoutes(oldRoutes, addresses)
 	var result RebuildRoutesResult
-	var toAdd []*url.URL
-	for _, toAddURL := range expectedMap {
-		toAdd = append(toAdd, toAddURL)
+	for _, toAddURL := range toAdd {
 		result.Added = append(result.Added, toAddURL.String())
 	}
 	for _, toRemoveURL := range toRemove {
@@ -107,7 +141,11 @@ func rebuildRoutesInRouter(app RebuildApp, dry bool, appRouter appTypes.AppRoute
 		log.Debugf("[rebuild-routes] nothing to do. DRY mode for app: %q", app.GetName())
 		return &result, nil
 	}
-	err = r.AddRoutes(app.GetName(), toAdd)
+	if asyncR != nil {
+		err = asyncR.AddRoutesAsync(app.GetName(), toAdd)
+	} else {
+		err = r.AddRoutes(app.GetName(), toAdd)
+	}
 	if err != nil {
 		return nil, err
 	}

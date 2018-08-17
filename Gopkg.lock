@@ -329,7 +329,6 @@
   revision = "ca63d7c062ee3c9f34db231e352b60012b4fd0c1"
 
 [[projects]]
-  branch = "master"
   name = "github.com/nu7hatch/gouuid"
   packages = ["."]
   revision = "179d4d0c4d8d407a32af483c2354df1d2c91e6c3"
@@ -542,6 +541,7 @@
     "storage",
     "types/api",
     "types/app",
+    "types/app/image",
     "types/auth",
     "types/event",
     "types/provision",
@@ -550,7 +550,7 @@
     "validation",
     "volume"
   ]
-  revision = "8d58b89fcf57e0dfa431242c3abbdc600384394b"
+  revision = "025fd25dc3f033ee74784a5a77bc26486067f7c8"
 
 [[projects]]
   name = "github.com/vmware/govcloudair"

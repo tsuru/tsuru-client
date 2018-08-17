@@ -36,7 +36,7 @@ func TeamService() (authTypes.TeamService, error) {
 	}, nil
 }
 
-func (t *teamService) Create(name string, user *authTypes.User) error {
+func (t *teamService) Create(name string, tags []string, user *authTypes.User) error {
 	if user == nil {
 		return errors.New("user cannot be null")
 	}
@@ -44,6 +44,7 @@ func (t *teamService) Create(name string, user *authTypes.User) error {
 	team := authTypes.Team{
 		Name:         name,
 		CreatingUser: user.Email,
+		Tags:         processTags(tags),
 	}
 	if err := t.validate(team); err != nil {
 		return err
@@ -58,6 +59,15 @@ func (t *teamService) Create(name string, user *authTypes.User) error {
 		log.Errorf("unable to add default roles during team %q creation for %q: %s", name, user.Email, err)
 	}
 	return nil
+}
+
+func (t *teamService) Update(name string, tags []string) error {
+	team, err := t.storage.FindByName(name)
+	if err != nil {
+		return err
+	}
+	team.Tags = processTags(tags)
+	return t.storage.Update(*team)
 }
 
 func (t *teamService) List() ([]authTypes.Team, error) {
@@ -102,4 +112,21 @@ func (t *teamService) validate(team authTypes.Team) error {
 		return authTypes.ErrInvalidTeamName
 	}
 	return nil
+}
+
+// processTags removes duplicates and trims spaces from each tag
+func processTags(tags []string) []string {
+	if tags == nil {
+		return nil
+	}
+	processedTags := []string{}
+	usedTags := make(map[string]bool)
+	for _, tag := range tags {
+		tag = strings.TrimSpace(tag)
+		if len(tag) > 0 && !usedTags[tag] {
+			processedTags = append(processedTags, tag)
+			usedTags[tag] = true
+		}
+	}
+	return processedTags
 }

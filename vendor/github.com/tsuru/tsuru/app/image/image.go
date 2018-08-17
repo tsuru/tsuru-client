@@ -17,7 +17,10 @@ import (
 	"github.com/tsuru/tsuru/db/storage"
 	"github.com/tsuru/tsuru/log"
 	"github.com/tsuru/tsuru/provision"
+	"github.com/tsuru/tsuru/servicemanager"
 )
+
+const defaultCollection = "docker"
 
 var (
 	ErrNoImagesAvailable = errors.New("no images available for app")
@@ -73,16 +76,16 @@ func (i *ImageMetadata) Save() error {
 // * there are no containers;
 // * the container have an empty image name;
 // * the deploy number is multiple of 10.
-// in all other cases the app image name will be returne.
-func GetBuildImage(app provision.App) string {
+// in all other cases the app image name will be returned.
+func GetBuildImage(app provision.App) (string, error) {
 	if usePlatformImage(app) {
-		return PlatformImageName(app.GetPlatform())
+		return servicemanager.PlatformImage.CurrentImage(app.GetPlatform())
 	}
 	appImageName, err := AppCurrentImageName(app.GetName())
 	if err != nil {
-		return PlatformImageName(app.GetPlatform())
+		return servicemanager.PlatformImage.CurrentImage(app.GetPlatform())
 	}
-	return appImageName
+	return appImageName, nil
 }
 
 func customDataToImageMetadata(imageName string, customData map[string]interface{}) (*ImageMetadata, error) {
@@ -425,10 +428,6 @@ func PullAppImageNames(appName string, images []string) error {
 	return nil
 }
 
-func PlatformImageName(platformName string) string {
-	return fmt.Sprintf("%s/%s:latest", basicImageName("tsuru"), platformName)
-}
-
 func GetProcessesFromProcfile(strProcfile string) map[string][]string {
 	procfile := strings.Split(strProcfile, "\n")
 	processes := make(map[string][]string, len(procfile))
@@ -577,7 +576,7 @@ func appImagesColl() (*storage.Collection, error) {
 	}
 	name, err := config.GetString("docker:collection")
 	if err != nil {
-		name = "docker"
+		name = defaultCollection
 	}
 	return conn.Collection(fmt.Sprintf("%s_app_image", name)), nil
 }
@@ -596,7 +595,7 @@ func imageCustomDataColl() (*storage.Collection, error) {
 	}
 	name, err := config.GetString("docker:collection")
 	if err != nil {
-		name = "docker"
+		name = defaultCollection
 	}
 	return conn.Collection(fmt.Sprintf("%s_image_custom_data", name)), nil
 }

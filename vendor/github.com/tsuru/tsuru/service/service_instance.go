@@ -50,6 +50,28 @@ type ServiceInstance struct {
 	Description string                 `json:"description"`
 	Tags        []string               `json:"tags"`
 	Parameters  map[string]interface{} `json:"parameters,omitempty"`
+
+	// BrokerData stores data used by Instances provisioned by Brokers
+	BrokerData *BrokerInstanceData `json:"broker_data,omitempty" bson:"broker_data"`
+}
+
+type BrokerInstanceData struct {
+	// UUID is a v4 UUID generated for this Instance on creation
+	UUID             string
+	ServiceID        string
+	PlanID           string
+	OrgID            string
+	SpaceID          string
+	LastOperationKey string
+
+	Binds map[string]BrokerInstanceBind
+}
+
+type BrokerInstanceBind struct {
+	// UUID is a v4 UUID generated when binding
+	UUID         string
+	OperationKey string
+	Parameters   map[string]interface{}
 }
 
 type Unit struct {
@@ -193,7 +215,7 @@ func (si *ServiceInstance) BindApp(app bind.App, params BindAppParameters, shoul
 		app:             app,
 		writer:          writer,
 		shouldRestart:   shouldRestart,
-		params:          BindAppParameters{},
+		params:          params,
 		event:           evt,
 		requestID:       requestID,
 	}
@@ -434,7 +456,7 @@ func CreateServiceInstance(instance ServiceInstance, service *Service, evt *even
 	instance.Tags = processTags(instance.Tags)
 	actions := []*action.Action{&notifyCreateServiceInstance, &createServiceInstance}
 	pipeline := action.NewPipeline(actions...)
-	return pipeline.Execute(*service, instance, evt, requestID)
+	return pipeline.Execute(*service, &instance, evt, requestID)
 }
 
 func GetServiceInstancesByServices(services []Service) ([]ServiceInstance, error) {
