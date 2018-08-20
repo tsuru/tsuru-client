@@ -14,6 +14,7 @@ import (
 	"github.com/pkg/errors"
 	"github.com/tsuru/gnuflag"
 	"github.com/tsuru/tablecli"
+	"github.com/tsuru/tsuru/fs"
 )
 
 func getHome() string {
@@ -32,40 +33,62 @@ func JoinWithUserDir(p ...string) string {
 }
 
 func writeToken(token string) error {
-	tokenPath := JoinWithUserDir(".tsuru", "token")
-	file, err := filesystem().Create(tokenPath)
-	if err != nil {
-		return err
+	tokenPaths := []string{
+		JoinWithUserDir(".tsuru", "token"),
 	}
-	defer file.Close()
-	n, err := file.WriteString(token)
-	if err != nil {
-		return err
+	targetLabel, err := GetTargetLabel()
+	if err == nil {
+		err := filesystem().MkdirAll(JoinWithUserDir(".tsuru", "token.d"), 0700)
+		if err != nil {
+			return err
+		}
+		tokenPaths = append(tokenPaths, JoinWithUserDir(".tsuru", "token.d", targetLabel))
 	}
-	if n != len(token) {
-		return errors.New("Failed to write token file.")
+	for _, tokenPath := range tokenPaths {
+		file, err := filesystem().Create(tokenPath)
+		if err != nil {
+			return err
+		}
+		defer file.Close()
+		n, err := file.WriteString(token)
+		if err != nil {
+			return err
+		}
+		if n != len(token) {
+			return errors.New("Failed to write token file.")
+		}
 	}
 	return nil
 }
 
 func ReadToken() (string, error) {
+	var token []byte
 	if token := os.Getenv("TSURU_TOKEN"); token != "" {
 		return token, nil
 	}
-	tokenPath := JoinWithUserDir(".tsuru", "token")
-	file, err := filesystem().Open(tokenPath)
+	tokenPaths := []string{
+		JoinWithUserDir(".tsuru", "token"),
+	}
+	targetLabel, err := GetTargetLabel()
+	if err == nil {
+		tokenPaths = append([]string{JoinWithUserDir(".tsuru", "token.d", targetLabel)}, tokenPaths...)
+	}
+	for _, tokenPath := range tokenPaths {
+		var tkFile fs.File
+		tkFile, err = filesystem().Open(tokenPath)
+		if err == nil {
+			defer tkFile.Close()
+			token, err = ioutil.ReadAll(tkFile)
+			if err != nil {
+				return "", err
+			}
+			return string(token), nil
+		}
+	}
 	if os.IsNotExist(err) {
 		return "", nil
 	}
-	if err != nil {
-		return "", err
-	}
-	defer file.Close()
-	token, err := ioutil.ReadAll(file)
-	if err != nil {
-		return "", err
-	}
-	return string(token), nil
+	return "", err
 }
 
 type ServiceModel struct {

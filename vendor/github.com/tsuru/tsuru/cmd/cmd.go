@@ -156,6 +156,7 @@ func (m *Manager) Run(args []string) {
 		verbosity      int
 		displayHelp    bool
 		displayVersion bool
+		target         string
 	)
 	if len(args) == 0 {
 		args = append(args, "help")
@@ -167,6 +168,8 @@ func (m *Manager) Run(args []string) {
 	flagset.BoolVar(&displayHelp, "help", false, "Display help and exit")
 	flagset.BoolVar(&displayHelp, "h", false, "Display help and exit")
 	flagset.BoolVar(&displayVersion, "version", false, "Print version and exit")
+	flagset.StringVar(&target, "t", "", "Define target for running command")
+	flagset.StringVar(&target, "target", "", "Define target for running command")
 	parseErr := flagset.Parse(false, args)
 	if parseErr != nil {
 		fmt.Fprint(m.stderr, parseErr)
@@ -179,6 +182,9 @@ func (m *Manager) Run(args []string) {
 		args = append([]string{"help"}, args...)
 	} else if displayVersion {
 		args = []string{"version"}
+	}
+	if len(target) > 0 {
+		os.Setenv("TSURU_TARGET", target)
 	}
 	if m.lookup != nil {
 		context := m.newContext(args, m.stdout, m.stderr, m.stdin)
@@ -291,7 +297,7 @@ func (m *Manager) Run(args []string) {
 func (m *Manager) newContext(args []string, stdout io.Writer, stderr io.Writer, stdin io.Reader) *Context {
 	stdout = newPagerWriter(stdout)
 	stdin = newSyncReader(stdin, stdout)
-	ctx := &Context{args, stdout, stderr, stdin}
+	ctx := &Context{Args: args, Stdout: stdout, Stderr: stderr, Stdin: stdin}
 	m.contexts = append(m.contexts, ctx)
 	return ctx
 }

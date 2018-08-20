@@ -96,6 +96,12 @@ func (t *targetSlice) String() string {
 // environment variable or in the target file.
 func ReadTarget() (string, error) {
 	if target := os.Getenv("TSURU_TARGET"); target != "" {
+		targets, err := getTargets()
+		if err == nil {
+			if val, ok := targets[target]; ok {
+				return val, nil
+			}
+		}
 		return target, nil
 	}
 	targetPath := JoinWithUserDir(".tsuru", "target")
@@ -142,12 +148,17 @@ func GetTargetLabel() (string, error) {
 	if err != nil {
 		return "", err
 	}
-	for k, v := range targets {
-		if v == target {
+	targetKeys := make([]string, len(targets))
+	for k := range targets {
+		targetKeys = append(targetKeys, k)
+	}
+	sort.Strings(targetKeys)
+	for _, k := range targetKeys {
+		if targets[k] == target {
 			return k, nil
 		}
 	}
-	return "", errors.New("label for target not found")
+	return "", errors.Errorf("label for target %q not found ", target)
 }
 
 func GetURLVersion(version, path string) (string, error) {
