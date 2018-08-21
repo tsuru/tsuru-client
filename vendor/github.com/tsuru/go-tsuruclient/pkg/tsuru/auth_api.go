@@ -89,10 +89,9 @@ func (a *AuthApiService) AssignRoleToToken(ctx context.Context, roleName string,
 	if err != nil || localVarHttpResponse == nil {
 		return localVarHttpResponse, err
 	}
-	defer localVarHttpResponse.Body.Close()
 	if localVarHttpResponse.StatusCode >= 300 {
 		bodyBytes, _ := ioutil.ReadAll(localVarHttpResponse.Body)
-		return localVarHttpResponse, reportError("Status: %v, Body: %s", localVarHttpResponse.Status, bodyBytes)
+		return localVarHttpResponse, &HTTPError{status: localVarHttpResponse.Status, statusCode: localVarHttpResponse.StatusCode, body: bodyBytes}
 	}
 	return localVarHttpResponse, err
 }
@@ -160,10 +159,9 @@ func (a *AuthApiService) DissociateRoleFromToken(ctx context.Context, roleName s
 	if err != nil || localVarHttpResponse == nil {
 		return localVarHttpResponse, err
 	}
-	defer localVarHttpResponse.Body.Close()
 	if localVarHttpResponse.StatusCode >= 300 {
 		bodyBytes, _ := ioutil.ReadAll(localVarHttpResponse.Body)
-		return localVarHttpResponse, reportError("Status: %v, Body: %s", localVarHttpResponse.Status, bodyBytes)
+		return localVarHttpResponse, &HTTPError{status: localVarHttpResponse.Status, statusCode: localVarHttpResponse.StatusCode, body: bodyBytes}
 	}
 	return localVarHttpResponse, err
 }
@@ -232,7 +230,7 @@ func (a *AuthApiService) TeamTokenCreate(ctx context.Context, token TeamTokenCre
 	defer localVarHttpResponse.Body.Close()
 	if localVarHttpResponse.StatusCode >= 300 {
 		bodyBytes, _ := ioutil.ReadAll(localVarHttpResponse.Body)
-		return successPayload, localVarHttpResponse, reportError("Status: %v, Body: %s", localVarHttpResponse.Status, bodyBytes)
+		return successPayload, localVarHttpResponse, &HTTPError{status: localVarHttpResponse.Status, statusCode: localVarHttpResponse.StatusCode, body: bodyBytes}
 	}
 
 	if err = json.NewDecoder(localVarHttpResponse.Body).Decode(&successPayload); err != nil {
@@ -304,10 +302,9 @@ func (a *AuthApiService) TeamTokenDelete(ctx context.Context, tokenId string) (*
 	if err != nil || localVarHttpResponse == nil {
 		return localVarHttpResponse, err
 	}
-	defer localVarHttpResponse.Body.Close()
 	if localVarHttpResponse.StatusCode >= 300 {
 		bodyBytes, _ := ioutil.ReadAll(localVarHttpResponse.Body)
-		return localVarHttpResponse, reportError("Status: %v, Body: %s", localVarHttpResponse.Status, bodyBytes)
+		return localVarHttpResponse, &HTTPError{status: localVarHttpResponse.Status, statusCode: localVarHttpResponse.StatusCode, body: bodyBytes}
 	}
 	return localVarHttpResponse, err
 }
@@ -381,7 +378,7 @@ func (a *AuthApiService) TeamTokenUpdate(ctx context.Context, tokenId string, to
 	defer localVarHttpResponse.Body.Close()
 	if localVarHttpResponse.StatusCode >= 300 {
 		bodyBytes, _ := ioutil.ReadAll(localVarHttpResponse.Body)
-		return successPayload, localVarHttpResponse, reportError("Status: %v, Body: %s", localVarHttpResponse.Status, bodyBytes)
+		return successPayload, localVarHttpResponse, &HTTPError{status: localVarHttpResponse.Status, statusCode: localVarHttpResponse.StatusCode, body: bodyBytes}
 	}
 
 	if err = json.NewDecoder(localVarHttpResponse.Body).Decode(&successPayload); err != nil {
@@ -452,7 +449,7 @@ func (a *AuthApiService) TeamTokensList(ctx context.Context) ([]TeamToken, *http
 	defer localVarHttpResponse.Body.Close()
 	if localVarHttpResponse.StatusCode >= 300 {
 		bodyBytes, _ := ioutil.ReadAll(localVarHttpResponse.Body)
-		return successPayload, localVarHttpResponse, reportError("Status: %v, Body: %s", localVarHttpResponse.Status, bodyBytes)
+		return successPayload, localVarHttpResponse, &HTTPError{status: localVarHttpResponse.Status, statusCode: localVarHttpResponse.StatusCode, body: bodyBytes}
 	}
 
 	if err = json.NewDecoder(localVarHttpResponse.Body).Decode(&successPayload); err != nil {

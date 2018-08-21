@@ -95,10 +95,9 @@ func (a *PlatformApiService) PlatformAdd(ctx context.Context, name string, docke
 	if err != nil || localVarHttpResponse == nil {
 		return localVarHttpResponse, err
 	}
-	defer localVarHttpResponse.Body.Close()
 	if localVarHttpResponse.StatusCode >= 300 {
 		bodyBytes, _ := ioutil.ReadAll(localVarHttpResponse.Body)
-		return localVarHttpResponse, reportError("Status: %v, Body: %s", localVarHttpResponse.Status, bodyBytes)
+		return localVarHttpResponse, &HTTPError{status: localVarHttpResponse.Status, statusCode: localVarHttpResponse.StatusCode, body: bodyBytes}
 	}
 	return localVarHttpResponse, err
 }
@@ -165,10 +164,9 @@ func (a *PlatformApiService) PlatformDelete(ctx context.Context, platform string
 	if err != nil || localVarHttpResponse == nil {
 		return localVarHttpResponse, err
 	}
-	defer localVarHttpResponse.Body.Close()
 	if localVarHttpResponse.StatusCode >= 300 {
 		bodyBytes, _ := ioutil.ReadAll(localVarHttpResponse.Body)
-		return localVarHttpResponse, reportError("Status: %v, Body: %s", localVarHttpResponse.Status, bodyBytes)
+		return localVarHttpResponse, &HTTPError{status: localVarHttpResponse.Status, statusCode: localVarHttpResponse.StatusCode, body: bodyBytes}
 	}
 	return localVarHttpResponse, err
 }
@@ -239,7 +237,7 @@ func (a *PlatformApiService) PlatformInfo(ctx context.Context, platform string) 
 	defer localVarHttpResponse.Body.Close()
 	if localVarHttpResponse.StatusCode >= 300 {
 		bodyBytes, _ := ioutil.ReadAll(localVarHttpResponse.Body)
-		return successPayload, localVarHttpResponse, reportError("Status: %v, Body: %s", localVarHttpResponse.Status, bodyBytes)
+		return successPayload, localVarHttpResponse, &HTTPError{status: localVarHttpResponse.Status, statusCode: localVarHttpResponse.StatusCode, body: bodyBytes}
 	}
 
 	if err = json.NewDecoder(localVarHttpResponse.Body).Decode(&successPayload); err != nil {
@@ -310,7 +308,7 @@ func (a *PlatformApiService) PlatformList(ctx context.Context) ([]Platform, *htt
 	defer localVarHttpResponse.Body.Close()
 	if localVarHttpResponse.StatusCode >= 300 {
 		bodyBytes, _ := ioutil.ReadAll(localVarHttpResponse.Body)
-		return successPayload, localVarHttpResponse, reportError("Status: %v, Body: %s", localVarHttpResponse.Status, bodyBytes)
+		return successPayload, localVarHttpResponse, &HTTPError{status: localVarHttpResponse.Status, statusCode: localVarHttpResponse.StatusCode, body: bodyBytes}
 	}
 
 	if err = json.NewDecoder(localVarHttpResponse.Body).Decode(&successPayload); err != nil {
@@ -390,10 +388,9 @@ func (a *PlatformApiService) PlatformUpdate(ctx context.Context, platform string
 	if err != nil || localVarHttpResponse == nil {
 		return localVarHttpResponse, err
 	}
-	defer localVarHttpResponse.Body.Close()
 	if localVarHttpResponse.StatusCode >= 300 {
 		bodyBytes, _ := ioutil.ReadAll(localVarHttpResponse.Body)
-		return localVarHttpResponse, reportError("Status: %v, Body: %s", localVarHttpResponse.Status, bodyBytes)
+		return localVarHttpResponse, &HTTPError{status: localVarHttpResponse.Status, statusCode: localVarHttpResponse.StatusCode, body: bodyBytes}
 	}
 	return localVarHttpResponse, err
 }

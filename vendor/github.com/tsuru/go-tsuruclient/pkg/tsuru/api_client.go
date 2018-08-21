@@ -440,3 +440,17 @@ func CacheExpires(r *http.Response) time.Time {
 func strlen(s string) int {
 	return utf8.RuneCountInString(s)
 }
+
+type HTTPError struct {
+	body       []byte
+	status     string
+	statusCode int
+}
+
+func (e *HTTPError) Error() string {
+	return fmt.Sprintf("Status: %v, Body: %s", e.status, e.body)
+}
+
+func (e *HTTPError) StatusCode() int {
+	return e.statusCode
+}

@@ -550,14 +550,14 @@
 
 [[projects]]
   branch = "master"
-  digest = "1:8ad2bea150e6877c6d2971521fe28a60511a5f5b78a5f1cce86a5ed6129abbbc"
+  digest = "1:128b1d811bee2f0d0d11baec5b57991d2a3ff8e08b27e64a559949a7334e53e0"
   name = "github.com/tsuru/go-tsuruclient"
   packages = [
     "pkg/client",
     "pkg/tsuru",
   ]
   pruneopts = "NUT"
-  revision = "82dfed74fa0a99d1a8b073744d459a432993503b"
+  revision = "74bfb0384e98a689aecf1e705d12c6b823639b74"
 
 [[projects]]
   branch = "master"
@@ -581,7 +581,7 @@
 
 [[projects]]
   branch = "master"
-  digest = "1:f101e10a8e1d64c64e6952f90d3759ff34721ef8f95277740a7c6f81050b4133"
+  digest = "1:32a7a51afc711ffe7623d42fce4c9ad234f0adced31c41ba1b695cb301b00ca7"
   name = "github.com/tsuru/tsuru"
   packages = [
     "action",
@@ -643,7 +643,7 @@
     "volume",
   ]
   pruneopts = "NUT"
-  revision = "0e7f7f02eac50944f389a572885d2a0b58e28e11"
+  revision = "b2c2ffb1bd6d7eaaf09ac04dd211b758100dfad9"
 
 [[projects]]
   digest = "1:b8df06f4e63f6a89bd109e553dfb4e15340c65a8afbe42b5dc1ee5811498aff3"
