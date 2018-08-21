@@ -730,10 +730,11 @@ func (c *ListUsers) Flags() *gnuflag.FlagSet {
 }
 
 func parseErrBody(err error) error {
-	sep := "Body: "
-	idx := strings.LastIndex(err.Error(), sep)
-	if idx == -1 {
-		return err
+	type httpErr interface {
+		Body() []byte
 	}
-	return errors.New(err.Error()[idx+len(sep):])
+	if hErr, ok := err.(httpErr); ok {
+		return fmt.Errorf("%s", hErr.Body())
+	}
+	return err
 }
