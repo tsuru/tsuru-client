@@ -454,3 +454,7 @@ func (e *HTTPError) Error() string {
 func (e *HTTPError) StatusCode() int {
 	return e.statusCode
 }
+
+func (e *HTTPError) Body() []byte {
+	return e.body
+}
