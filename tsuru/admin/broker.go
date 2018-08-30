@@ -6,6 +6,7 @@ import (
 	"sort"
 	"strconv"
 	"strings"
+	"time"
 
 	"github.com/tsuru/gnuflag"
 	"github.com/tsuru/go-tsuruclient/pkg/client"
@@ -15,14 +16,15 @@ import (
 )
 
 type BrokerAdd struct {
-	broker tsuru.ServiceBroker
-	fs     *gnuflag.FlagSet
+	broker          tsuru.ServiceBroker
+	fs              *gnuflag.FlagSet
+	cacheExpiration string
 }
 
 func (c *BrokerAdd) Info() *cmd.Info {
 	return &cmd.Info{
 		Name:    "service-broker-add",
-		Usage:   "service-broker-add <name> <url> [-i/--insecure] [-c/--context key=value] [-t/--token token] [-u/--user username] [-p/--password password]",
+		Usage:   "service-broker-add <name> <url> [-i/--insecure] [-c/--context key=value] [-t/--token token] [-u/--user username] [-p/--password password] [--cache cache expiration time]",
 		Desc:    `Adds a new Service Broker.`,
 		MinArgs: 2,
 	}
@@ -30,7 +32,7 @@ func (c *BrokerAdd) Info() *cmd.Info {
 
 func (c *BrokerAdd) Flags() *gnuflag.FlagSet {
 	if c.fs == nil {
-		c.fs = flagsForServiceBroker(&c.broker)
+		c.fs = flagsForServiceBroker(&c.broker, &c.cacheExpiration)
 	}
 	return c.fs
 }
@@ -49,6 +51,13 @@ func (c *BrokerAdd) Run(ctx *cmd.Context, cli *cmd.Client) error {
 	if c.broker.Config.AuthConfig.BasicAuthConfig.Password == "" && c.broker.Config.AuthConfig.BasicAuthConfig.Username == "" {
 		c.broker.Config.AuthConfig.BasicAuthConfig = nil
 	}
+	if len(c.cacheExpiration) > 0 {
+		duration, err := time.ParseDuration(c.cacheExpiration)
+		if err != nil {
+			return err
+		}
+		c.broker.Config.CacheExpirationSeconds = int32(duration.Seconds())
+	}
 	_, err = apiClient.ServiceApi.ServiceBrokerCreate(context.TODO(), c.broker)
 	if err != nil {
 		return err
@@ -58,14 +67,15 @@ func (c *BrokerAdd) Run(ctx *cmd.Context, cli *cmd.Client) error {
 }
 
 type BrokerUpdate struct {
-	broker tsuru.ServiceBroker
-	fs     *gnuflag.FlagSet
+	broker          tsuru.ServiceBroker
+	fs              *gnuflag.FlagSet
+	cacheExpiration string
 }
 
 func (c *BrokerUpdate) Info() *cmd.Info {
 	return &cmd.Info{
 		Name:    "service-broker-update",
-		Usage:   "service-broker-update <name> <url> [-i/--insecure] [-c/--context key=value] [-t/--token token] [-u/--user username] [-p/--password password]",
+		Usage:   "service-broker-update <name> <url> [-i/--insecure] [-c/--context key=value] [-t/--token token] [-u/--user username] [-p/--password password] [--cache cache expiration time]",
 		Desc:    `Updates a service broker.`,
 		MinArgs: 2,
 	}
@@ -73,7 +83,7 @@ func (c *BrokerUpdate) Info() *cmd.Info {
 
 func (c *BrokerUpdate) Flags() *gnuflag.FlagSet {
 	if c.fs == nil {
-		c.fs = flagsForServiceBroker(&c.broker)
+		c.fs = flagsForServiceBroker(&c.broker, &c.cacheExpiration)
 	}
 	return c.fs
 }
@@ -91,6 +101,13 @@ func (c *BrokerUpdate) Run(ctx *cmd.Context, cli *cmd.Client) error {
 	}
 	if c.broker.Config.AuthConfig.BasicAuthConfig.Password == "" && c.broker.Config.AuthConfig.BasicAuthConfig.Username == "" {
 		c.broker.Config.AuthConfig.BasicAuthConfig = nil
+	}
+	if len(c.cacheExpiration) > 0 {
+		duration, err := time.ParseDuration(c.cacheExpiration)
+		if err != nil {
+			return err
+		}
+		c.broker.Config.CacheExpirationSeconds = int32(duration.Seconds())
 	}
 	_, err = apiClient.ServiceApi.ServiceBrokerUpdate(context.TODO(), c.broker.Name, c.broker)
 	if err != nil {
@@ -177,7 +194,7 @@ func (c *BrokerList) Run(ctx *cmd.Context, cli *cmd.Client) error {
 	return nil
 }
 
-func flagsForServiceBroker(broker *tsuru.ServiceBroker) *gnuflag.FlagSet {
+func flagsForServiceBroker(broker *tsuru.ServiceBroker, cacheExpiration *string) *gnuflag.FlagSet {
 	fs := gnuflag.NewFlagSet("", gnuflag.ExitOnError)
 
 	if broker.Config == nil {
@@ -208,6 +225,9 @@ func flagsForServiceBroker(broker *tsuru.ServiceBroker) *gnuflag.FlagSet {
 	token := "Service broker authentication token."
 	fs.StringVar(&broker.Config.AuthConfig.BearerConfig.Token, "token", "", token)
 	fs.StringVar(&broker.Config.AuthConfig.BearerConfig.Token, "t", "", token)
+
+	cache := `Cache expiration time for service broker catalog. This may use a duration notation like "5m" or "2h".`
+	fs.StringVar(cacheExpiration, "cache", "", cache)
 
 	return fs
 }
