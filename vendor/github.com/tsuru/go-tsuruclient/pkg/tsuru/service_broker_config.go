@@ -15,4 +15,6 @@ type ServiceBrokerConfig struct {
 	Context map[string]string `json:"Context,omitempty"`
 
 	AuthConfig *ServiceBrokerConfigAuthConfig `json:"AuthConfig,omitempty"`
+
+	CacheExpirationSeconds int32 `json:"CacheExpirationSeconds,omitempty"`
 }
