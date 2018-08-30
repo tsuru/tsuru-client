@@ -44,19 +44,9 @@ func (c *BrokerAdd) Run(ctx *cmd.Context, cli *cmd.Client) error {
 	if err != nil {
 		return err
 	}
-	c.broker.Name, c.broker.URL = ctx.Args[0], ctx.Args[1]
-	if c.broker.Config.AuthConfig.BearerConfig.Token == "" {
-		c.broker.Config.AuthConfig.BearerConfig = nil
-	}
-	if c.broker.Config.AuthConfig.BasicAuthConfig.Password == "" && c.broker.Config.AuthConfig.BasicAuthConfig.Username == "" {
-		c.broker.Config.AuthConfig.BasicAuthConfig = nil
-	}
-	if len(c.cacheExpiration) > 0 {
-		duration, err := time.ParseDuration(c.cacheExpiration)
-		if err != nil {
-			return err
-		}
-		c.broker.Config.CacheExpirationSeconds = int32(duration.Seconds())
+	err = parseServiceBroker(&c.broker, ctx, c.cacheExpiration)
+	if err != nil {
+		return err
 	}
 	_, err = apiClient.ServiceApi.ServiceBrokerCreate(context.TODO(), c.broker)
 	if err != nil {
@@ -70,12 +60,13 @@ type BrokerUpdate struct {
 	broker          tsuru.ServiceBroker
 	fs              *gnuflag.FlagSet
 	cacheExpiration string
+	noCache         bool
 }
 
 func (c *BrokerUpdate) Info() *cmd.Info {
 	return &cmd.Info{
 		Name:    "service-broker-update",
-		Usage:   "service-broker-update <name> <url> [-i/--insecure] [-c/--context key=value] [-t/--token token] [-u/--user username] [-p/--password password] [--cache cache expiration time]",
+		Usage:   "service-broker-update <name> <url> [-i/--insecure] [-c/--context key=value] [-t/--token token] [-u/--user username] [-p/--password password] [--cache cache expiration time] [--no-cache]",
 		Desc:    `Updates a service broker.`,
 		MinArgs: 2,
 	}
@@ -84,6 +75,7 @@ func (c *BrokerUpdate) Info() *cmd.Info {
 func (c *BrokerUpdate) Flags() *gnuflag.FlagSet {
 	if c.fs == nil {
 		c.fs = flagsForServiceBroker(&c.broker, &c.cacheExpiration)
+		c.fs.BoolVar(&c.noCache, "no-cache", false, "Disable cache expiration config.")
 	}
 	return c.fs
 }
@@ -95,19 +87,15 @@ func (c *BrokerUpdate) Run(ctx *cmd.Context, cli *cmd.Client) error {
 	if err != nil {
 		return err
 	}
-	c.broker.Name, c.broker.URL = ctx.Args[0], ctx.Args[1]
-	if c.broker.Config.AuthConfig.BearerConfig.Token == "" {
-		c.broker.Config.AuthConfig.BearerConfig = nil
+	if len(c.cacheExpiration) > 0 && c.noCache {
+		return fmt.Errorf("Can't set --cache and --no-cache flags together.")
 	}
-	if c.broker.Config.AuthConfig.BasicAuthConfig.Password == "" && c.broker.Config.AuthConfig.BasicAuthConfig.Username == "" {
-		c.broker.Config.AuthConfig.BasicAuthConfig = nil
+	err = parseServiceBroker(&c.broker, ctx, c.cacheExpiration)
+	if err != nil {
+		return err
 	}
-	if len(c.cacheExpiration) > 0 {
-		duration, err := time.ParseDuration(c.cacheExpiration)
-		if err != nil {
-			return err
-		}
-		c.broker.Config.CacheExpirationSeconds = int32(duration.Seconds())
+	if c.noCache {
+		c.broker.Config.CacheExpirationSeconds = -1
 	}
 	_, err = apiClient.ServiceApi.ServiceBrokerUpdate(context.TODO(), c.broker.Name, c.broker)
 	if err != nil {
@@ -230,4 +218,22 @@ func flagsForServiceBroker(broker *tsuru.ServiceBroker, cacheExpiration *string)
 	fs.StringVar(cacheExpiration, "cache", "", cache)
 
 	return fs
+}
+
+func parseServiceBroker(broker *tsuru.ServiceBroker, ctx *cmd.Context, cacheExpiration string) error {
+	broker.Name, broker.URL = ctx.Args[0], ctx.Args[1]
+	if broker.Config.AuthConfig.BearerConfig.Token == "" {
+		broker.Config.AuthConfig.BearerConfig = nil
+	}
+	if broker.Config.AuthConfig.BasicAuthConfig.Password == "" && broker.Config.AuthConfig.BasicAuthConfig.Username == "" {
+		broker.Config.AuthConfig.BasicAuthConfig = nil
+	}
+	if len(cacheExpiration) > 0 {
+		duration, err := time.ParseDuration(cacheExpiration)
+		if err != nil {
+			return err
+		}
+		broker.Config.CacheExpirationSeconds = int32(duration.Seconds())
+	}
+	return nil
 }
