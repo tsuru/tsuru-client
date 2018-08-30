@@ -233,6 +233,57 @@ func (s *S) TestBrokerUpdateEmptyAuth(c *check.C) {
 	c.Assert(stdout.String(), check.Equals, expected)
 }
 
+func (s *S) TestBrokerUpdateNoCache(c *check.C) {
+	var stdout, stderr bytes.Buffer
+	expected := "Service broker successfully updated.\n"
+	context := cmd.Context{
+		Stdout: &stdout,
+		Stderr: &stderr,
+		Args:   []string{"br1", "http://x.com"},
+	}
+	trans := cmdtest.ConditionalTransport{
+		Transport: cmdtest.Transport{Message: "", Status: http.StatusOK},
+		CondFunc: func(r *http.Request) bool {
+			var ret tsuru.ServiceBroker
+			data, err := ioutil.ReadAll(r.Body)
+			c.Assert(err, check.IsNil)
+			err = json.Unmarshal(data, &ret)
+			c.Assert(err, check.IsNil)
+			c.Assert(ret.Config.CacheExpirationSeconds, check.Equals, int32(-1))
+			return true
+		},
+	}
+	manager := cmd.NewManager("admin", "0.1", "admin-ver", &stdout, &stderr, nil, nil)
+	client := cmd.NewClient(&http.Client{Transport: &trans}, nil, manager)
+	command := BrokerUpdate{}
+	command.Flags().Parse(true, []string{"--no-cache"})
+	err := command.Run(&context, client)
+	c.Assert(err, check.IsNil)
+	c.Assert(stdout.String(), check.Equals, expected)
+}
+
+func (s *S) TestBrokerUpdateErrorWithCacheAndNoCache(c *check.C) {
+	var stdout, stderr bytes.Buffer
+	context := cmd.Context{
+		Stdout: &stdout,
+		Stderr: &stderr,
+		Args:   []string{"br1", "http://x.com"},
+	}
+	trans := cmdtest.ConditionalTransport{
+		Transport: cmdtest.Transport{Message: "", Status: http.StatusOK},
+		CondFunc: func(r *http.Request) bool {
+			c.Error("should not make the request")
+			return false
+		},
+	}
+	manager := cmd.NewManager("admin", "0.1", "admin-ver", &stdout, &stderr, nil, nil)
+	client := cmd.NewClient(&http.Client{Transport: &trans}, nil, manager)
+	command := BrokerUpdate{}
+	command.Flags().Parse(true, []string{"--cache", "30m", "--no-cache"})
+	err := command.Run(&context, client)
+	c.Assert(err, check.ErrorMatches, "Can't set --cache and --no-cache flags together.")
+}
+
 func (s *S) TestBrokerDelete(c *check.C) {
 	var stdout, stderr bytes.Buffer
 	expected := "Service broker successfully deleted.\n"
