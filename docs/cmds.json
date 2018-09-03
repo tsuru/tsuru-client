@@ -47,6 +47,10 @@
     "usage": "tsuru platform-add <platform name> [--dockerfile/-d Dockerfile] [--image/-i image]", 
     "desc": "Adds a new platform to tsuru.\n\nThe name of the image can be automatically inferred in case you're using an\nofficial platform. Check https://github.com/tsuru/platforms for a list of\nofficial platforms and instructions on how to create a custom platform.\n\nExamples:\n\n\t[[tsuru platform-add java # uses official tsuru/java image from docker hub]]\n\t[[tsuru platform-add java -i registry.company.com/tsuru/java # uses custom Java image]]\n\t[[tsuru platform-add java -d /data/projects/java/Dockerfile # uses local Dockerfile]]\n\t[[tsuru platform-add java -d https://platforms.com/java/Dockerfile # uses remote Dockerfile]]\n\nFlags:\n  \n  -d, --dockerfile (= \"\")\n      URL or path to the Dockerfile used for building the image of the platform\n  -i, --image (= \"\")\n      Name of the prebuilt Docker image\n  \nMinimum # of arguments: 1\n"
   }, 
+  "service-broker-update": {
+    "usage": "tsuru service-broker-update <name> <url> [-i/--insecure] [-c/--context key=value] [-t/--token token] [-u/--user username] [-p/--password password] [--cache cache expiration time] [--no-cache]", 
+    "desc": "Updates a service broker.\n\nFlags:\n  \n  -c, --context  (= {})\n      Context values to be sent on every broker request.\n  --cache (= \"\")\n      Cache expiration time for service broker catalog. This may use a duration notation like \"5m\" or \"2h\".\n  -i, --insecure  (= false)\n      Ignore TLS errors in the broker request.\n  --no-cache  (= false)\n      Disable cache expiration config.\n  -p, --password (= \"\")\n      Service broker authentication password.\n  -t, --token (= \"\")\n      Service broker authentication token.\n  -u, --user (= \"\")\n      Service broker authentication username.\n  \nMinimum # of arguments: 2\n"
+  }, 
   "app-unlock": {
     "usage": "tsuru app-unlock -a <app-name> [-y]", 
     "desc": "Forces the removal of an application lock.\nUse with caution, removing an active lock may cause inconsistencies.\n\nFlags:\n  \n  -a, --app (= \"\")\n      The name of the app.\n  -y, --assume-yes  (= false)\n      Don't ask for confirmation.\n  \n"
@@ -82,6 +86,10 @@
   "certificate-set": {
     "usage": "tsuru certificate-set [-a/--app appname] [-c/--cname CNAME] [certificate] [key]", 
     "desc": "Creates or update a TLS certificate into the specific app.\n\nFlags:\n  \n  -a, --app (= \"\")\n      The name of the app.\n  -c, --cname (= \"\")\n      App CNAME\n  \nMinimum # of arguments: 2\n"
+  }, 
+  "service-broker-add": {
+    "usage": "tsuru service-broker-add <name> <url> [-i/--insecure] [-c/--context key=value] [-t/--token token] [-u/--user username] [-p/--password password] [--cache cache expiration time]", 
+    "desc": "Adds a new Service Broker.\n\nFlags:\n  \n  -c, --context  (= {})\n      Context values to be sent on every broker request.\n  --cache (= \"\")\n      Cache expiration time for service broker catalog. This may use a duration notation like \"5m\" or \"2h\".\n  -i, --insecure  (= false)\n      Ignore TLS errors in the broker request.\n  -p, --password (= \"\")\n      Service broker authentication password.\n  -t, --token (= \"\")\n      Service broker authentication token.\n  -u, --user (= \"\")\n      Service broker authentication username.\n  \nMinimum # of arguments: 2\n"
   }, 
   "service-instance-update": {
     "usage": "tsuru service-instance-update <service-name> <service-instance-name> [-t/--team-owner team] [-d/--description description] [-p/--plan plan] [-g/--tag tag]...", 
@@ -180,8 +188,8 @@
     "desc": "Adds new units to a process of an application. You need to have access to the\napp to be able to add new units to it.\n\nFlags:\n  \n  -a, --app (= \"\")\n      The name of the app.\n  -p, --process (= \"\")\n      Process name\n  \nMinimum # of arguments: 1\n"
   }, 
   "team-update": {
-    "usage": "tsuru team-update <team-name> -n <new-team-name>", 
-    "desc": "Updates a team name.\n\nFlags:\n  \n  -n, --name (= \"\")\n      New team name.\n  \nMinimum # of arguments: 1\nMaximum # of arguments: 1\n"
+    "usage": "tsuru team-update <team-name> -n <new-team-name> [--tag/-t tag]...", 
+    "desc": "Updates a team.\n\n\nFlags:\n  \n  -n, --name (= \"\")\n      New team name.\n  -t, --tag  (= [])\n      New team tags.\n  \nMinimum # of arguments: 1\nMaximum # of arguments: 1\n"
   }, 
   "bs-info": {
     "usage": "tsuru bs-info", 
@@ -220,8 +228,8 @@
     "desc": "Downloads the plugin file. It will be copied to [[$HOME/.tsuru/plugins]].\n\nMinimum # of arguments: 2\n"
   }, 
   "team-create": {
-    "usage": "tsuru team-create <teamname>", 
-    "desc": "Create a team for the user. tsuru requires a user to be a member of at least\none team in order to create an app or a service instance.\n\nWhen you create a team, you're automatically member of this team.\n\nMinimum # of arguments: 1\n"
+    "usage": "tsuru team-create <teamname> [--tag/-t tag]...", 
+    "desc": "Create a team for the user. tsuru requires a user to be a member of at least\none team in order to create an app or a service instance.\n\nWhen you create a team, you're automatically member of this team.\n\n\nFlags:\n  \n  -t, --tag  (= [])\n      Sets tags to the team.\n  \nMinimum # of arguments: 1\n"
   }, 
   "node-container-list": {
     "usage": "tsuru node-container-list", 
@@ -318,6 +326,10 @@
   "role-remove": {
     "usage": "tsuru role-remove <role-name> [-y/--assume-yes]", 
     "desc": "Remove an existing role.\n\nFlags:\n  \n  -y, --assume-yes  (= false)\n      Don't ask for confirmation.\n  \nMinimum # of arguments: 1\n"
+  }, 
+  "platform-info": {
+    "usage": "tsuru platform-info <platform name>", 
+    "desc": "Shows information about a specific platform.\n\nMinimum # of arguments: 1\n"
   }, 
   "login": {
     "usage": "tsuru login [email]", 
@@ -418,6 +430,10 @@
   "token-delete": {
     "usage": "tsuru token-delete <token id>", 
     "desc": "Delete an existing token.\n\nMinimum # of arguments: 1\n"
+  }, 
+  "service-broker-delete": {
+    "usage": "tsuru service-broker-delete <name>", 
+    "desc": "Removes a service broker.\n\nMinimum # of arguments: 1\n"
   }, 
   "key-add": {
     "usage": "tsuru key-add <key-name> <path/to/key/file.pub> [-f/--force]", 
@@ -531,8 +547,8 @@
     "desc": "List existing API tokens associated with a team.\n\n"
   }, 
   "service-instance-add": {
-    "usage": "tsuru service-instance-add <service-name> <service-instance-name> [plan] [-t/--team-owner team] [-d/--description description] [-g/--tag tag]...", 
-    "desc": "Creates a service instance of a service. There can later be binded to\napplications with [[tsuru service-bind]].\n\nThis example shows how to add a new instance of **mongodb** service, named\n**tsuru_mongodb** with the plan **small**:\n\n::\n\n    $ tsuru service-instance-add mongodb tsuru_mongodb small -t myteam\n\n\nFlags:\n  \n  -d, --description (= \"\")\n      service instance description\n  -g, --tag  (= [])\n      service instance tag\n  -t, --team-owner (= \"\")\n      the team that owns the service (mandatory if the user is member of more than one team)\n  \nMinimum # of arguments: 2\nMaximum # of arguments: 3\n"
+    "usage": "tsuru service-instance-add <service-name> <service-instance-name> [plan] [-t/--team-owner team] [-d/--description description] [-g/--tag tag]... [--plan-param key=value]...", 
+    "desc": "Creates a service instance of a service. There can later be binded to\napplications with [[tsuru service-bind]].\n\nThis example shows how to add a new instance of **mongodb** service, named\n**tsuru_mongodb** with the plan **small**:\n\n::\n\n    $ tsuru service-instance-add mongodb tsuru_mongodb small -t myteam\n\n\nFlags:\n  \n  -d, --description (= \"\")\n      service instance description\n  -g, --tag  (= [])\n      service instance tag\n  --plan-param  (= {})\n      Plan specific parameters\n  -t, --team-owner (= \"\")\n      the team that owns the service (mandatory if the user is member of more than one team)\n  \nMinimum # of arguments: 2\nMaximum # of arguments: 3\n"
   }, 
   "app-quota-change": {
     "usage": "tsuru app-quota-change <app-name> <new-limit>", 
@@ -645,6 +661,10 @@
   "install-remove": {
     "usage": "tsuru install-remove [name] [-y/--assume-yes]", 
     "desc": "Uninstalls Tsuru and It's components.\n\nFlags:\n  \n  -c, --config (= \"\")\n      Configuration file\n  -y, --assume-yes  (= false)\n      Don't ask for confirmation.\n  \n"
+  }, 
+  "service-broker-list": {
+    "usage": "tsuru service-broker-list", 
+    "desc": "List service brokers.\n\n"
   }, 
   "role-default-add": {
     "usage": "tsuru role-default-add [--user-create <role name>]... [--team-create <role name>]...", 
