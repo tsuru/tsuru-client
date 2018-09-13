@@ -2,7 +2,7 @@
 // Use of this source code is governed by a BSD-style
 // license that can be found in the LICENSE file.
 
-package app
+package cache
 
 import (
 	"time"
@@ -20,7 +20,7 @@ type CacheEntry struct {
 	ExpireAt time.Time
 }
 
-type CacheService interface {
+type AppCacheService interface {
 	Create(entry CacheEntry) error
 	List(keys ...string) ([]CacheEntry, error)
 	FindByName(key string) (CacheEntry, error)

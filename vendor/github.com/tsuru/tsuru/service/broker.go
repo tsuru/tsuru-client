@@ -17,6 +17,8 @@ import (
 	"github.com/tsuru/tsuru/app/bind"
 	"github.com/tsuru/tsuru/db"
 	"github.com/tsuru/tsuru/event"
+	"github.com/tsuru/tsuru/log"
+	"github.com/tsuru/tsuru/servicemanager"
 	serviceTypes "github.com/tsuru/tsuru/types/service"
 )
 
@@ -72,8 +74,50 @@ func newClient(b serviceTypes.Broker, service string) (*brokerClient, error) {
 	return &broker, nil
 }
 
+func convertResponseToCatalog(response osb.CatalogResponse) serviceTypes.BrokerCatalog {
+	cat := serviceTypes.BrokerCatalog{
+		Services: make([]serviceTypes.BrokerService, len(response.Services)),
+	}
+	for i, s := range response.Services {
+		cat.Services[i].ID = s.ID
+		cat.Services[i].Name = s.Name
+		cat.Services[i].Description = s.Description
+		cat.Services[i].Plans = make([]serviceTypes.BrokerPlan, len(s.Plans))
+		for j, p := range s.Plans {
+			cat.Services[i].Plans[j].ID = p.ID
+			cat.Services[i].Plans[j].Name = p.Name
+			cat.Services[i].Plans[j].Description = p.Description
+			if p.Schemas != nil {
+				cat.Services[i].Plans[j].Schemas = *p.Schemas
+			}
+		}
+	}
+	return cat
+}
+
+func convertCatalogToResponse(catalog serviceTypes.BrokerCatalog) osb.CatalogResponse {
+	cat := osb.CatalogResponse{
+		Services: make([]osb.Service, len(catalog.Services)),
+	}
+	for i, s := range catalog.Services {
+		cat.Services[i].ID = s.ID
+		cat.Services[i].Name = s.Name
+		cat.Services[i].Description = s.Description
+		cat.Services[i].Plans = make([]osb.Plan, len(s.Plans))
+		for j, p := range s.Plans {
+			cat.Services[i].Plans[j].ID = p.ID
+			cat.Services[i].Plans[j].Name = p.Name
+			cat.Services[i].Plans[j].Description = p.Description
+			if schemas, ok := p.Schemas.(osb.Schemas); ok {
+				cat.Services[i].Plans[j].Schemas = &schemas
+			}
+		}
+	}
+	return cat
+}
+
 func (b *brokerClient) Create(instance *ServiceInstance, evt *event.Event, requestID string) error {
-	_, s, err := b.getService(b.service)
+	_, s, err := b.getService(b.service, instance.Name)
 	if err != nil {
 		return err
 	}
@@ -133,7 +177,7 @@ func (b *brokerClient) Update(instance *ServiceInstance, evt *event.Event, reque
 	if instance.BrokerData == nil {
 		return ErrInvalidBrokerData
 	}
-	_, s, err := b.getService(b.service)
+	_, s, err := b.getService(b.service, instance.Name)
 	if err != nil {
 		return err
 	}
@@ -347,7 +391,7 @@ func (b *brokerClient) Info(instance *ServiceInstance, requestID string) ([]map[
 }
 
 func (b *brokerClient) Plans(_ string) ([]Plan, error) {
-	_, s, err := b.getService(b.service)
+	_, s, err := b.getService(b.service, b.broker.Name)
 	if err != nil {
 		return nil, err
 	}
@@ -377,8 +421,27 @@ func (b *brokerClient) BindUnit(instance *ServiceInstance, app bind.App, unit bi
 	return nil
 }
 
-func (b *brokerClient) getService(name string) (Service, osb.Service, error) {
-	cat, err := b.client.GetCatalog()
+func (b *brokerClient) getCatalog(name string) (*osb.CatalogResponse, error) {
+	catalog, err := servicemanager.ServiceBrokerCatalogCache.Load(name)
+	if err != nil || catalog == nil {
+		response, err := b.client.GetCatalog()
+		if err != nil {
+			return nil, err
+		}
+		cat := convertResponseToCatalog(*response)
+		err = servicemanager.ServiceBrokerCatalogCache.Save(name, cat)
+		if err != nil {
+			log.Errorf("[Broker=%v] error caching catalog: %v.", name, err)
+		}
+		return response, nil
+	}
+
+	cat := convertCatalogToResponse(*catalog)
+	return &cat, nil
+}
+
+func (b *brokerClient) getService(name, catalogName string) (Service, osb.Service, error) {
+	cat, err := b.getCatalog(catalogName)
 	if err != nil {
 		return Service{}, osb.Service{}, err
 	}

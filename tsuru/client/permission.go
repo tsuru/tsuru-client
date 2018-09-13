@@ -18,6 +18,7 @@ import (
 	"github.com/tsuru/tablecli"
 	"github.com/tsuru/tsuru/cmd"
 	"github.com/tsuru/tsuru/permission"
+	permTypes "github.com/tsuru/tsuru/types/permission"
 )
 
 type PermissionList struct {
@@ -209,9 +210,9 @@ description associated.
 `,
 		MinArgs: 2,
 	}
-	allTypes := make([]string, len(permission.ContextTypes))
-	for i := range permission.ContextTypes {
-		allTypes[i] = "* " + string(permission.ContextTypes[i])
+	allTypes := make([]string, len(permTypes.ContextTypes))
+	for i := range permTypes.ContextTypes {
+		allTypes[i] = "* " + string(permTypes.ContextTypes[i])
 	}
 	info.Desc = fmt.Sprintf(info.Desc, strings.Join(allTypes, "\n"))
 	return info
@@ -494,7 +495,7 @@ func (c *RoleDefaultAdd) Flags() *gnuflag.FlagSet {
 	if c.fs == nil {
 		c.fs = gnuflag.NewFlagSet("", gnuflag.ExitOnError)
 		c.roles = map[string]*cmd.StringSliceFlag{}
-		for eventName, event := range permission.RoleEventMap {
+		for eventName, event := range permTypes.RoleEventMap {
 			flag := &cmd.StringSliceFlag{}
 			c.roles[eventName] = flag
 			c.fs.Var(flag, eventName, event.Description)
@@ -510,7 +511,7 @@ func (c *RoleDefaultAdd) Info() *cmd.Info {
 		Desc:  `Add a new default role on a specific event.`,
 	}
 	var usage []string
-	for eventName := range permission.RoleEventMap {
+	for eventName := range permTypes.RoleEventMap {
 		usage = append(usage, fmt.Sprintf("[--%s <role name>]...", eventName))
 	}
 	info.Usage = fmt.Sprintf("%s %s", info.Usage, strings.Join(usage, " "))
@@ -554,7 +555,7 @@ func (c *RoleDefaultRemove) Flags() *gnuflag.FlagSet {
 	if c.fs == nil {
 		c.fs = gnuflag.NewFlagSet("", gnuflag.ExitOnError)
 		c.roles = map[string]*cmd.StringSliceFlag{}
-		for eventName, event := range permission.RoleEventMap {
+		for eventName, event := range permTypes.RoleEventMap {
 			flag := &cmd.StringSliceFlag{}
 			c.roles[eventName] = flag
 			c.fs.Var(flag, eventName, event.Description)
@@ -570,7 +571,7 @@ func (c *RoleDefaultRemove) Info() *cmd.Info {
 		Desc:  `Remove a default role from a specific event.`,
 	}
 	var usage []string
-	for eventName := range permission.RoleEventMap {
+	for eventName := range permTypes.RoleEventMap {
 		usage = append(usage, fmt.Sprintf("[--%s <role name>]...", eventName))
 	}
 	info.Usage = fmt.Sprintf("%s %s", info.Usage, strings.Join(usage, " "))
@@ -646,7 +647,7 @@ func (c *RoleDefaultList) Run(context *cmd.Context, client *cmd.Client) error {
 	tbl := tablecli.NewTable()
 	tbl.LineSeparator = true
 	tbl.Headers = tablecli.Row{"Event", "Description", "Roles"}
-	for _, event := range permission.RoleEventMap {
+	for _, event := range permTypes.RoleEventMap {
 		roles := rolesByEvent[event.String()]
 		roleNames := make([]string, len(roles))
 		for i := range roles {

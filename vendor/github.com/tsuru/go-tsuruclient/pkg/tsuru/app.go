@@ -16,7 +16,7 @@ type App struct {
 	Name string `json:"name"`
 
 	// App tags.
-	Tag []string `json:"tag,omitempty"`
+	Tags []string `json:"tags,omitempty"`
 
 	// App router.
 	Router string `json:"router,omitempty"`
@@ -24,8 +24,7 @@ type App struct {
 	// Custom router options.
 	Routeropts map[string]string `json:"routeropts,omitempty"`
 
-	// App plan.
-	Plan string `json:"plan,omitempty"`
+	Plan *Plan `json:"plan,omitempty"`
 
 	// App pool.
 	Pool string `json:"pool,omitempty"`
@@ -38,4 +37,12 @@ type App struct {
 
 	// Team that owns the app.
 	TeamOwner string `json:"teamOwner,omitempty"`
+
+	Teams []string `json:"teams,omitempty"`
+
+	Cname []string `json:"cname,omitempty"`
+
+	Ip string `json:"ip,omitempty"`
+
+	Owner string `json:"owner,omitempty"`
 }

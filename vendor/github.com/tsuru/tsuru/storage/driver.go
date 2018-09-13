@@ -12,6 +12,7 @@ import (
 	"github.com/tsuru/tsuru/types/app"
 	"github.com/tsuru/tsuru/types/app/image"
 	"github.com/tsuru/tsuru/types/auth"
+	"github.com/tsuru/tsuru/types/cache"
 	"github.com/tsuru/tsuru/types/event"
 	"github.com/tsuru/tsuru/types/provision"
 	"github.com/tsuru/tsuru/types/quota"
@@ -19,17 +20,18 @@ import (
 )
 
 type DbDriver struct {
-	TeamStorage          auth.TeamStorage
-	PlatformStorage      app.PlatformStorage
-	PlanStorage          app.PlanStorage
-	CacheStorage         app.CacheStorage
-	TeamTokenStorage     auth.TeamTokenStorage
-	UserQuotaStorage     quota.QuotaStorage
-	AppQuotaStorage      quota.QuotaStorage
-	WebhookStorage       event.WebhookStorage
-	ClusterStorage       provision.ClusterStorage
-	ServiceBrokerStorage service.ServiceBrokerStorage
-	PlatformImageStorage image.PlatformImageStorage
+	TeamStorage                      auth.TeamStorage
+	PlatformStorage                  app.PlatformStorage
+	PlanStorage                      app.PlanStorage
+	AppCacheStorage                  cache.CacheStorage
+	TeamTokenStorage                 auth.TeamTokenStorage
+	UserQuotaStorage                 quota.QuotaStorage
+	AppQuotaStorage                  quota.QuotaStorage
+	WebhookStorage                   event.WebhookStorage
+	ClusterStorage                   provision.ClusterStorage
+	ServiceBrokerStorage             service.ServiceBrokerStorage
+	ServiceBrokerCatalogCacheStorage cache.CacheStorage
+	PlatformImageStorage             image.PlatformImageStorage
 }
 
 var (

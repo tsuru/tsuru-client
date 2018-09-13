@@ -9,6 +9,7 @@ import (
 	"strings"
 
 	"github.com/tsuru/tsuru/log"
+	"github.com/tsuru/tsuru/servicemanager"
 	"github.com/tsuru/tsuru/storage"
 	serviceTypes "github.com/tsuru/tsuru/types/service"
 )
@@ -33,6 +34,15 @@ func (b *brokerService) Create(broker serviceTypes.Broker) error {
 }
 
 func (b *brokerService) Update(name string, broker serviceTypes.Broker) error {
+	if broker.Config.CacheExpirationSeconds == 0 {
+		sb, err := b.Find(name)
+		if err != nil {
+			return err
+		}
+		broker.Config.CacheExpirationSeconds = sb.Config.CacheExpirationSeconds
+	} else if broker.Config.CacheExpirationSeconds < 0 {
+		broker.Config.CacheExpirationSeconds = 0
+	}
 	return b.storage.Update(name, broker)
 }
 
@@ -64,7 +74,7 @@ func getBrokeredServices() ([]Service, error) {
 			log.Errorf("[Broker=%v] error creating broker client: %v.", b.Name, err)
 			continue
 		}
-		cat, err := c.client.GetCatalog()
+		cat, err := c.getCatalog(b.Name)
 		if err != nil {
 			log.Errorf("[Broker=%v] error getting catalog: %v.", b.Name, err)
 			continue
@@ -79,7 +89,7 @@ func getBrokeredServices() ([]Service, error) {
 // getBrokeredService retrieves the service information from a service that is
 // offered by a broker. name is in the format "<broker>serviceNameBrokerSep<service>".
 func getBrokeredService(name string) (Service, error) {
-	_, serviceName, err := splitBrokerService(name)
+	catalogName, serviceName, err := splitBrokerService(name)
 	if err != nil {
 		return Service{}, err
 	}
@@ -87,7 +97,7 @@ func getBrokeredService(name string) (Service, error) {
 	if err != nil {
 		return Service{}, err
 	}
-	s, _, err := client.getService(serviceName)
+	s, _, err := client.getService(serviceName, catalogName)
 	return s, err
 }
 
@@ -108,11 +118,7 @@ func newBrokeredServiceClient(service string) (*brokerClient, error) {
 	if err != nil {
 		return nil, err
 	}
-	brokerService, err := BrokerService()
-	if err != nil {
-		return nil, err
-	}
-	broker, err := brokerService.Find(brokerName)
+	broker, err := servicemanager.ServiceBroker.Find(brokerName)
 	if err != nil {
 		return nil, err
 	}

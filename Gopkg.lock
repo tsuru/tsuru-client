@@ -524,14 +524,16 @@
     "types/app",
     "types/app/image",
     "types/auth",
+    "types/cache",
     "types/event",
+    "types/permission",
     "types/provision",
     "types/quota",
     "types/service",
     "validation",
     "volume"
   ]
-  revision = "b2c2ffb1bd6d7eaaf09ac04dd211b758100dfad9"
+  revision = "0c93c2d4f970f36845a8486f0680934b0d769c31"
 
 [[projects]]
   name = "github.com/vmware/govcloudair"

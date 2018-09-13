@@ -20,4 +20,6 @@ type Plan struct {
 	Cpushare int32 `json:"cpushare,omitempty"`
 
 	Default_ bool `json:"default,omitempty"`
+
+	Router string `json:"router,omitempty"`
 }

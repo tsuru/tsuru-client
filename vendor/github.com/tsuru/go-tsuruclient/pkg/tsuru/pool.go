@@ -15,4 +15,10 @@ type Pool struct {
 	Default_ bool `json:"default,omitempty"`
 
 	Provisioner string `json:"provisioner,omitempty"`
+
+	Public bool `json:"public,omitempty"`
+
+	Teams []string `json:"teams,omitempty"`
+
+	Allowed map[string][]string `json:"allowed,omitempty"`
 }
