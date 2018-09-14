@@ -705,13 +705,13 @@ Plan description: another plan
 
 Custom Info for "mongo"
 key2:
-value9
+	value9
 
 key3:
-value3
+	value3
 
 key4:
-value8
+	value8
 `
 	args := []string{"mymongo", "mongo"}
 	context := cmd.Context{
