@@ -364,7 +364,7 @@ func (s *S) TestServiceInstanceAddInfo(c *check.C) {
 
 func (s *S) TestServiceInstanceAddRun(c *check.C) {
 	var stdout, stderr bytes.Buffer
-	result := "Service successfully added.\n"
+	result := "Service instance successfully added.\nTo check its status use: tsuru service instance status mysql my_app_db\nFor additional information use: tsuru service instance info mysql my_app_db\n"
 	args := []string{
 		"mysql",
 		"my_app_db",
@@ -423,7 +423,7 @@ func (s *S) TestServiceInstanceAddRun(c *check.C) {
 
 func (s *S) TestServiceInstanceAddRunWithEmptyTag(c *check.C) {
 	var stdout, stderr bytes.Buffer
-	result := "Service successfully added.\n"
+	result := "Service instance successfully added.\nTo check its status use: tsuru service instance status mysql my_app_db\nFor additional information use: tsuru service instance info mysql my_app_db\n"
 	args := []string{
 		"mysql",
 		"my_app_db",

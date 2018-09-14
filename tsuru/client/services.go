@@ -129,7 +129,9 @@ func (c *ServiceInstanceAdd) Run(ctx *cmd.Context, client *cmd.Client) error {
 	if err != nil {
 		return err
 	}
-	fmt.Fprint(ctx.Stdout, "Service successfully added.\n")
+	fmt.Fprint(ctx.Stdout, "Service instance successfully added.\n")
+	fmt.Fprintf(ctx.Stdout, "To check its status use: tsuru service instance status %s %s\n", serviceName, instanceName)
+	fmt.Fprintf(ctx.Stdout, "For additional information use: tsuru service instance info %s %s\n", serviceName, instanceName)
 	return nil
 }
 
