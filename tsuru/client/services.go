@@ -461,7 +461,7 @@ func (c ServiceInstanceInfo) Run(ctx *cmd.Context, client *cmd.Client) error {
 		sort.Strings(keyList)
 		for ind, key := range keyList {
 			ctx.Stdout.Write([]byte(key + ":" + "\n"))
-			ctx.Stdout.Write([]byte(si.CustomInfo[key] + "\n"))
+			ctx.Stdout.Write([]byte("\t" + si.CustomInfo[key] + "\n"))
 			if ind != len(keyList)-1 {
 				ctx.Stdout.Write([]byte("\n"))
 			}
