@@ -122,3 +122,9 @@ func (s *S) TestsetCoreDriverDefaultOpts(c *check.C) {
 		c.Check(v.test.Hosts.Core.Driver.Options, check.DeepEquals, v.expected)
 	}
 }
+
+func (s *S) TestDefaulInstalltOptsRootUserPasswordIsRandom(c *check.C) {
+	rootPassword1 := DefaultInstallOpts().RootUserPassword
+	rootPassword2 := DefaultInstallOpts().RootUserPassword
+	c.Check(rootPassword1, check.Not(check.Equals), rootPassword2)
+}

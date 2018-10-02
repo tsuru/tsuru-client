@@ -26,6 +26,9 @@ import (
 )
 
 func (s *S) TestParseConfigDefaultConfig(c *check.C) {
+	rootUserPassswordGenerator = generateDummyRootUserPassword
+	defer func() { rootUserPassswordGenerator = generateStrongPassword }()
+
 	dmConfig, err := parseConfigFile("")
 	c.Assert(err, check.IsNil)
 	c.Assert(dmConfig, check.DeepEquals, DefaultInstallOpts())
@@ -37,6 +40,9 @@ func (s *S) TestParseConfigFileNotExists(c *check.C) {
 }
 
 func (s *S) TestParseConfigFile(c *check.C) {
+	rootUserPassswordGenerator = generateDummyRootUserPassword
+	defer func() { rootUserPassswordGenerator = generateStrongPassword }()
+
 	expectedTsuruConf := defaultconfig.DefaultTsuruConfig()
 	expectedTsuruConf["iaas"] = iaasConfig{
 		Dockermachine: iaasConfigInternal{
@@ -246,6 +252,9 @@ func (s *S) TestInstallHostList(c *check.C) {
 }
 
 func (s *S) TestInstallConfigInit(c *check.C) {
+	rootUserPassswordGenerator = generateDummyRootUserPassword
+	defer func() { rootUserPassswordGenerator = generateStrongPassword }()
+
 	var buf bytes.Buffer
 	d, err := ioutil.TempDir("", "installer")
 	c.Assert(err, check.IsNil)
@@ -271,4 +280,8 @@ func (s *S) TestInstallConfigInit(c *check.C) {
 		},
 	}
 	c.Assert(opts, check.DeepEquals, expected)
+}
+
+func generateDummyRootUserPassword() string {
+	return "admin123"
 }
