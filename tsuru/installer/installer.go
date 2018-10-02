@@ -20,12 +20,23 @@ import (
 	"github.com/docker/machine/libmachine/provision"
 	"github.com/docker/machine/libmachine/provision/serviceaction"
 	"github.com/fsouza/go-dockerclient"
+	"github.com/sethvargo/go-password/password"
 	"github.com/tsuru/tablecli"
 	"github.com/tsuru/tsuru-client/tsuru/installer/defaultconfig"
 	"github.com/tsuru/tsuru-client/tsuru/installer/dm"
 	"github.com/tsuru/tsuru/cmd"
 	"github.com/tsuru/tsuru/iaas/dockermachine"
 )
+
+var (
+	// rootUserPassswordGenerator generates a password to root user. That's
+	// very useful for testing purposes.
+	rootUserPassswordGenerator func() string
+)
+
+func init() {
+	rootUserPassswordGenerator = generateStrongPassword
+}
 
 func DefaultInstallOpts() *InstallOpts {
 	return &InstallOpts{
@@ -38,7 +49,7 @@ func DefaultInstallOpts() *InstallOpts {
 			InstallDashboard: true,
 			TargetName:       "tsuru",
 			RootUserEmail:    "admin@example.com",
-			RootUserPassword: "admin123",
+			RootUserPassword: rootUserPassswordGenerator(),
 			TsuruAPIImage:    "tsuru/api:v1",
 			Tsuru:            tsuruComponent{Config: defaultconfig.DefaultTsuruConfig()},
 		},
@@ -368,4 +379,12 @@ func getWithTimeout(url string, timeout time.Duration) (*http.Response, error) {
 	defer cancel()
 	req = req.WithContext(ctx)
 	return http.DefaultClient.Do(req)
+}
+
+// generateStrongPassword produces a pseudorandom string which contains 64 chars
+// with 10 numbers, 10 symbols, and 44 letters, including uppercase,
+// distinct between itself.
+func generateStrongPassword() string {
+	randomPassword, _ := password.Generate(64, 10, 10, false, false)
+	return randomPassword
 }
