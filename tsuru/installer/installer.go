@@ -381,10 +381,10 @@ func getWithTimeout(url string, timeout time.Duration) (*http.Response, error) {
 	return http.DefaultClient.Do(req)
 }
 
-// generateStrongPassword produces a pseudorandom string which contains 64 chars
-// with 10 numbers, 10 symbols, and 44 letters, including uppercase,
+// generateStrongPassword produces a pseudorandom string which contains 50 chars
+// with 10 numbers, 10 symbols, and 30 letters, including uppercase,
 // distinct between itself.
 func generateStrongPassword() string {
-	randomPassword, _ := password.Generate(64, 10, 10, false, false)
+	randomPassword, _ := password.Generate(50, 10, 10, false, false)
 	return randomPassword
 }
