@@ -59,7 +59,6 @@ func buildManager(name string) *cmd.Manager {
 	m.Register(&client.ServiceInstanceUpdate{})
 	m.Register(&client.ServiceInstanceRemove{})
 	m.Register(client.ServiceInfo{})
-	m.Register(client.ServiceInstanceInfo{})
 	m.Register(client.ServiceInstanceStatus{})
 	m.Register(&client.ServiceInstanceGrant{})
 	m.Register(&client.ServiceInstanceRevoke{})
@@ -198,6 +197,7 @@ func buildManager(name string) *cmd.Manager {
 	m.RegisterDeprecated(&admin.AutoScaleSetRuleCmd{}, "docker-autoscale-rule-set")
 	m.RegisterDeprecated(&admin.AutoScaleDeleteRuleCmd{}, "docker-autoscale-rule-remove")
 	m.RegisterDeprecated(&admin.ListHealingHistoryCmd{}, "docker-healing-list")
+	m.RegisterDeprecated(client.ServiceInstanceInfo{}, "service-instance-status")
 	registerExtraCommands(m)
 	return m
 }

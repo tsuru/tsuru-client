@@ -86,6 +86,9 @@ Service test is foo bar.
 			message = `{"Apps": ["app", "app2"], "Teams": ["admin", "admin2"], "TeamOwner": "admin", "CustomInfo" : {},"Description": "", "PlanName": "", "PlanDescription": "", "Tags": []}`
 		}
 	}
+	if strings.HasSuffix(req.URL.Path, "/status") {
+		message = `Service instance "mongo" is up`
+	}
 	resp = &http.Response{
 		Body:       ioutil.NopCloser(bytes.NewBufferString(message)),
 		StatusCode: http.StatusOK,
@@ -712,6 +715,7 @@ key3:
 
 key4:
 	value8
+Service instance "mongo" is up
 `
 	args := []string{"mymongo", "mongo"}
 	context := cmd.Context{
@@ -737,6 +741,7 @@ Description:
 Tags:
 Plan:
 Plan description:
+Service instance "mongo" is up
 `
 	args := []string{"mymongo", "mongo"}
 	context := cmd.Context{

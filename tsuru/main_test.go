@@ -203,6 +203,9 @@ func (s *S) TestServiceInstanceInfoIsRegistered(c *check.C) {
 	info, ok := manager.Commands["service-instance-info"]
 	c.Assert(ok, check.Equals, true)
 	c.Assert(info, check.FitsTypeOf, client.ServiceInstanceInfo{})
+	status, ok := manager.Commands["service-instance-status"]
+	c.Assert(ok, check.Equals, true)
+	c.Assert(status, check.FitsTypeOf, &cmd.DeprecatedCommand{})
 }
 
 func (s *S) TestServiceInfoIsRegistered(c *check.C) {
@@ -210,13 +213,6 @@ func (s *S) TestServiceInfoIsRegistered(c *check.C) {
 	info, ok := manager.Commands["service-info"]
 	c.Assert(ok, check.Equals, true)
 	c.Assert(info, check.FitsTypeOf, client.ServiceInfo{})
-}
-
-func (s *S) TestServiceInstanceStatusIsRegistered(c *check.C) {
-	manager = buildManager("tsuru")
-	status, ok := manager.Commands["service-instance-status"]
-	c.Assert(ok, check.Equals, true)
-	c.Assert(status, check.FitsTypeOf, client.ServiceInstanceStatus{})
 }
 
 func (s *S) TestAppInfoIsRegistered(c *check.C) {
