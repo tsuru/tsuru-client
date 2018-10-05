@@ -14,6 +14,7 @@ import (
 	"strings"
 
 	"github.com/ajg/form"
+	"github.com/tsuru/go-tsuruclient/pkg/tsuru"
 	"github.com/tsuru/tsuru/cmd"
 	"github.com/tsuru/tsuru/cmd/cmdtest"
 	"github.com/tsuru/tsuru/types/provision"
@@ -113,7 +114,9 @@ func (s *S) TestClusterUpdateRun(c *check.C) {
 				Default:     true,
 				Provisioner: "myprov",
 			})
-			return req.URL.Path == "/1.4/provisioner/clusters/c1" && req.Method == "POST"
+			c.Assert(req.URL.Path, check.Equals, "/1.4/provisioner/clusters/c1")
+			c.Assert(req.Method, check.Equals, http.MethodPost)
+			return true
 		},
 	}
 	manager := cmd.NewManager("admin", "0.1", "admin-ver", &stdout, &stderr, nil, nil)
@@ -152,19 +155,19 @@ func (s *S) TestClusterListRun(c *check.C) {
 		Stdout: &stdout,
 		Stderr: &stderr,
 	}
-	clusters := []provision.Cluster{{
+	clusters := []tsuru.Cluster{{
 		Name:        "c1",
 		Addresses:   []string{"addr1", "addr2"},
-		CaCert:      []byte("cacert"),
-		ClientCert:  []byte("clientcert"),
-		ClientKey:   []byte("clientkey"),
+		Cacert:      "cacert",
+		Clientcert:  "clientcert",
+		Clientkey:   "clientkey",
 		CustomData:  map[string]string{"namespace": "ns1"},
-		Default:     true,
+		Default_:    true,
 		Provisioner: "prov1",
 	}, {
 		Name:        "c2",
 		Addresses:   []string{"addr3"},
-		Default:     false,
+		Default_:    false,
 		Pools:       []string{"p1", "p2"},
 		Provisioner: "prov2",
 	}}
@@ -173,7 +176,9 @@ func (s *S) TestClusterListRun(c *check.C) {
 	trans := &cmdtest.ConditionalTransport{
 		Transport: cmdtest.Transport{Message: string(data), Status: http.StatusOK},
 		CondFunc: func(req *http.Request) bool {
-			return req.URL.Path == "/1.3/provisioner/clusters" && req.Method == "GET"
+			c.Assert(req.URL.Path, check.Equals, "/1.3/provisioner/clusters")
+			c.Assert(req.Method, check.Equals, http.MethodGet)
+			return true
 		},
 	}
 	manager := cmd.NewManager("admin", "0.1", "admin-ver", &stdout, &stderr, nil, nil)
