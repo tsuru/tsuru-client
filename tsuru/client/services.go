@@ -469,6 +469,32 @@ func (c ServiceInstanceInfo) Run(ctx *cmd.Context, client *cmd.Client) error {
 			}
 		}
 	}
+
+	url, err = cmd.GetURL("/services/" + serviceName + "/instances/" + instanceName + "/status")
+	if err != nil {
+		return err
+	}
+	request, err = http.NewRequest("GET", url, nil)
+	if err != nil {
+		return err
+	}
+	resp, err = client.Do(request)
+	if err != nil {
+		return err
+	}
+	defer resp.Body.Close()
+	bMsg, err := ioutil.ReadAll(resp.Body)
+	if err != nil {
+		return err
+	}
+	msg := string(bMsg) + "\n"
+	n, err := fmt.Fprint(ctx.Stdout, msg)
+	if err != nil {
+		return err
+	}
+	if n != len(msg) {
+		return errors.New("Failed to write to standard output.\n")
+	}
 	return nil
 }
 
