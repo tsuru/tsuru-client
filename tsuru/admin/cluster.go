@@ -5,7 +5,7 @@
 package admin
 
 import (
-	"encoding/json"
+	"context"
 	"fmt"
 	"io/ioutil"
 	"net/http"
@@ -14,8 +14,9 @@ import (
 	"strings"
 
 	"github.com/ajg/form"
-	"github.com/pkg/errors"
 	"github.com/tsuru/gnuflag"
+	"github.com/tsuru/go-tsuruclient/pkg/client"
+	"github.com/tsuru/go-tsuruclient/pkg/tsuru"
 	"github.com/tsuru/tablecli"
 	"github.com/tsuru/tsuru/cmd"
 	"github.com/tsuru/tsuru/types/provision"
@@ -231,33 +232,24 @@ func (c *ClusterList) Info() *cmd.Info {
 	}
 }
 
-func (c *ClusterList) Run(context *cmd.Context, client *cmd.Client) error {
-	u, err := cmd.GetURLVersion("1.3", "/provisioner/clusters")
+func (c *ClusterList) Run(ctx *cmd.Context, cli *cmd.Client) error {
+	apiClient, err := client.ClientFromEnvironment(&tsuru.Configuration{
+		HTTPClient: cli.HTTPClient,
+	})
 	if err != nil {
 		return err
 	}
-	request, err := http.NewRequest("GET", u, nil)
+	ctx.RawOutput()
+	clusters, resp, err := apiClient.ClusterApi.ClusterList(context.TODO())
 	if err != nil {
 		return err
 	}
-	response, err := client.Do(request)
-	if err != nil {
-		return err
-	}
-	defer response.Body.Close()
-	if response.StatusCode == http.StatusNoContent {
-		fmt.Fprintln(context.Stdout, "No clusters registered.")
+	if resp.StatusCode == http.StatusNoContent {
+		fmt.Fprintln(ctx.Stdout, "No clusters registered.")
 		return nil
 	}
-	data, err := ioutil.ReadAll(response.Body)
-	if err != nil {
-		return err
-	}
-	var clusters []provision.Cluster
-	err = json.Unmarshal(data, &clusters)
-	if err != nil {
-		return errors.Wrapf(err, "unable to parse data %q", string(data))
-	}
+	defer resp.Body.Close()
+
 	tbl := tablecli.NewTable()
 	tbl.LineSeparator = true
 	tbl.Headers = tablecli.Row{"Name", "Provisioner", "Addresses", "Custom Data", "Default", "Pools"}
@@ -267,9 +259,9 @@ func (c *ClusterList) Run(context *cmd.Context, client *cmd.Client) error {
 		for k, v := range c.CustomData {
 			custom = append(custom, fmt.Sprintf("%s=%s", k, v))
 		}
-		tbl.AddRow(tablecli.Row{c.Name, c.Provisioner, strings.Join(c.Addresses, "\n"), strings.Join(custom, "\n"), strconv.FormatBool(c.Default), strings.Join(c.Pools, "\n")})
+		tbl.AddRow(tablecli.Row{c.Name, c.Provisioner, strings.Join(c.Addresses, "\n"), strings.Join(custom, "\n"), strconv.FormatBool(c.Default_), strings.Join(c.Pools, "\n")})
 	}
-	fmt.Fprint(context.Stdout, tbl.String())
+	fmt.Fprint(ctx.Stdout, tbl.String())
 	return nil
 }
 
