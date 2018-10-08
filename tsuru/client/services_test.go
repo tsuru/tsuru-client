@@ -658,28 +658,6 @@ func (s *S) TestServiceInstanceUpdateFlags(c *check.C) {
 	c.Check(assume.DefValue, check.Equals, "")
 }
 
-func (s *S) TestServiceInstanceStatusInfo(c *check.C) {
-	got := (&ServiceInstanceStatus{}).Info()
-	c.Assert(got, check.NotNil)
-}
-
-func (s *S) TestServiceInstanceStatusRun(c *check.C) {
-	var stdout, stderr bytes.Buffer
-	result := `Service instance "foo" is up`
-	args := []string{"foo", "fooBar"}
-	context := cmd.Context{
-		Args:   args,
-		Stdout: &stdout,
-		Stderr: &stderr,
-	}
-	client := cmd.NewClient(&http.Client{Transport: &cmdtest.Transport{Message: result, Status: http.StatusOK}}, nil, manager)
-	err := (&ServiceInstanceStatus{}).Run(&context, client)
-	c.Assert(err, check.IsNil)
-	obtained := stdout.String()
-	obtained = strings.Replace(obtained, "\n", "", -1)
-	c.Assert(obtained, check.Equals, result)
-}
-
 func (s *S) TestServiceInfoInfo(c *check.C) {
 	got := (&ServiceInfo{}).Info()
 	c.Assert(got, check.NotNil)
@@ -715,7 +693,7 @@ key3:
 
 key4:
 	value8
-Service instance "mongo" is up
+Status: Service instance "mongo" is up
 `
 	args := []string{"mymongo", "mongo"}
 	context := cmd.Context{
@@ -741,7 +719,7 @@ Description:
 Tags:
 Plan:
 Plan description:
-Service instance "mongo" is up
+Status: Service instance "mongo" is up
 `
 	args := []string{"mymongo", "mongo"}
 	context := cmd.Context{
