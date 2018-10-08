@@ -136,19 +136,18 @@ func (s *S) TestAppQuotaViewRun(c *check.C) {
 	result := `{"inuse":3,"limit":4}`
 	var stdout, stderr bytes.Buffer
 	context := cmd.Context{
-		Args:   []string{"hibria"},
 		Stdout: &stdout,
 		Stderr: &stderr,
 	}
-	manager := cmd.NewManager("tsuru", "0.5", "ad-ver", &stdout, &stderr, nil, nil)
 	trans := cmdtest.ConditionalTransport{
 		Transport: cmdtest.Transport{Message: result, Status: http.StatusOK},
 		CondFunc: func(req *http.Request) bool {
 			return req.Method == "GET" && strings.HasSuffix(req.URL.Path, "/apps/hibria/quota")
 		},
 	}
-	client := cmd.NewClient(&http.Client{Transport: &trans}, nil, manager)
+	client := cmd.NewClient(&http.Client{Transport: &trans}, nil, s.manager)
 	command := AppQuotaView{}
+	command.Flags().Parse(true, []string{"--app", "hibria"})
 	err := command.Run(&context, client)
 	c.Assert(err, check.IsNil)
 	expected := `App: hibria
@@ -162,6 +161,7 @@ func (s *S) TestAppQuotaViewRunFailure(c *check.C) {
 	trans := cmdtest.Transport{Message: "app not found", Status: http.StatusNotFound}
 	client := cmd.NewClient(&http.Client{Transport: &trans}, nil, s.manager)
 	command := AppQuotaView{}
+	command.Flags().Parse(true, []string{"--app", "hibria"})
 	err := command.Run(&context, client)
 	c.Assert(err, check.NotNil)
 	c.Assert(err.Error(), check.Equals, "app not found")
@@ -171,7 +171,6 @@ func (s *S) TestAppQuotaChangeRun(c *check.C) {
 	var called bool
 	var stdout, stderr bytes.Buffer
 	context := cmd.Context{
-		Args:   []string{"myapp", "5"},
 		Stdout: &stdout,
 		Stderr: &stderr,
 	}
@@ -189,6 +188,7 @@ func (s *S) TestAppQuotaChangeRun(c *check.C) {
 	}
 	client := cmd.NewClient(&http.Client{Transport: &trans}, nil, manager)
 	command := AppQuotaChange{}
+	command.Flags().Parse(true, []string{"--app", "myapp", "5"})
 	err := command.Run(&context, client)
 	c.Assert(err, check.IsNil)
 	c.Assert(stdout.String(), check.Equals, "Quota successfully updated.\n")
@@ -199,11 +199,9 @@ func (s *S) TestAppQuotaChangeRunUnlimited(c *check.C) {
 	var called bool
 	var stdout, stderr bytes.Buffer
 	context := cmd.Context{
-		Args:   []string{"myapp", "unlimited"},
 		Stdout: &stdout,
 		Stderr: &stderr,
 	}
-	manager := cmd.NewManager("tsuru", "0.5", "ad-ver", &stdout, &stderr, nil, nil)
 	trans := cmdtest.ConditionalTransport{
 		Transport: cmdtest.Transport{Message: "", Status: http.StatusOK},
 		CondFunc: func(req *http.Request) bool {
@@ -215,8 +213,9 @@ func (s *S) TestAppQuotaChangeRunUnlimited(c *check.C) {
 			return url && method && limit
 		},
 	}
-	client := cmd.NewClient(&http.Client{Transport: &trans}, nil, manager)
+	client := cmd.NewClient(&http.Client{Transport: &trans}, nil, s.manager)
 	command := AppQuotaChange{}
+	command.Flags().Parse(true, []string{"--app", "myapp", "unlimited"})
 	err := command.Run(&context, client)
 	c.Assert(err, check.IsNil)
 	c.Assert(stdout.String(), check.Equals, "Quota successfully updated.\n")
@@ -224,8 +223,9 @@ func (s *S) TestAppQuotaChangeRunUnlimited(c *check.C) {
 }
 
 func (s *S) TestAppQuotaChangeRunInvalidLimit(c *check.C) {
-	context := cmd.Context{Args: []string{"myapp", "unlimiteddd"}}
+	context := cmd.Context{}
 	command := AppQuotaChange{}
+	command.Flags().Parse(true, []string{"-a", "myapp", "unlimiteddd"})
 	err := command.Run(&context, nil)
 	c.Assert(err, check.NotNil)
 	c.Assert(err.Error(), check.Equals, `invalid limit. It must be either an integer or "unlimited"`)
@@ -233,18 +233,17 @@ func (s *S) TestAppQuotaChangeRunInvalidLimit(c *check.C) {
 
 func (s *S) TestAppQuotaChangeFailure(c *check.C) {
 	var stdout, stderr bytes.Buffer
-	manager := cmd.NewManager("tsuru", "0.5", "ad-ver", &stdout, &stderr, nil, nil)
 	trans := &cmdtest.Transport{
 		Message: "app not found",
 		Status:  http.StatusNotFound,
 	}
 	context := cmd.Context{
-		Args:   []string{"myapp", "5"},
 		Stdout: &stdout,
 		Stderr: &stderr,
 	}
-	client := cmd.NewClient(&http.Client{Transport: trans}, nil, manager)
+	client := cmd.NewClient(&http.Client{Transport: trans}, nil, s.manager)
 	command := AppQuotaChange{}
+	command.Flags().Parse(true, []string{"-a", "myapp", "5"})
 	err := command.Run(&context, client)
 	c.Assert(err, check.NotNil)
 	c.Assert(err.Error(), check.Equals, "app not found")
