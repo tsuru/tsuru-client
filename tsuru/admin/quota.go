@@ -84,19 +84,26 @@ func (*UserChangeQuota) Run(context *cmd.Context, client *cmd.Client) error {
 	return nil
 }
 
-type AppQuotaView struct{}
+type AppQuotaView struct {
+	cmd.GuessingCommand
+}
 
 func (*AppQuotaView) Info() *cmd.Info {
 	return &cmd.Info{
 		Name:    "app-quota-view",
-		MinArgs: 1,
-		Usage:   "app-quota-view <app-name>",
+		MinArgs: 0,
+		Usage:   "app-quota-view [-a/--app appname]",
 		Desc:    "Displays the current usage and limit of the given app.",
 	}
 }
 
-func (*AppQuotaView) Run(context *cmd.Context, client *cmd.Client) error {
-	url, err := cmd.GetURL("/apps/" + context.Args[0] + "/quota")
+func (c *AppQuotaView) Run(context *cmd.Context, client *cmd.Client) error {
+	context.RawOutput()
+	appName, err := c.Guess()
+	if err != nil {
+		return err
+	}
+	url, err := cmd.GetURL(fmt.Sprintf("/apps/%s/quota", appName))
 	if err != nil {
 		return err
 	}
@@ -111,12 +118,14 @@ func (*AppQuotaView) Run(context *cmd.Context, client *cmd.Client) error {
 	if err != nil {
 		return err
 	}
-	fmt.Fprintf(context.Stdout, "App: %s\n", context.Args[0])
+	fmt.Fprintf(context.Stdout, "App: %s\n", appName)
 	fmt.Fprintf(context.Stdout, "Units usage: %d/%d\n", quota.InUse, quota.Limit)
 	return nil
 }
 
-type AppQuotaChange struct{}
+type AppQuotaChange struct {
+	cmd.GuessingCommand
+}
 
 func (*AppQuotaChange) Info() *cmd.Info {
 	desc := `Changes the limit of units that an app can have.
@@ -124,18 +133,23 @@ func (*AppQuotaChange) Info() *cmd.Info {
 The new limit must be an integer, it may also be "unlimited".`
 	return &cmd.Info{
 		Name:    "app-quota-change",
-		MinArgs: 2,
-		Usage:   "app-quota-change <app-name> <new-limit>",
+		MinArgs: 1,
+		Usage:   "app-quota-change [-a/--app appname] <new-limit>",
 		Desc:    desc,
 	}
 }
 
-func (AppQuotaChange) Run(context *cmd.Context, client *cmd.Client) error {
-	u, err := cmd.GetURL("/apps/" + context.Args[0] + "/quota")
+func (c *AppQuotaChange) Run(context *cmd.Context, client *cmd.Client) error {
+	context.RawOutput()
+	appName, err := c.Guess()
 	if err != nil {
 		return err
 	}
-	limit, err := parseLimit(context.Args[1])
+	u, err := cmd.GetURL(fmt.Sprintf("/apps/%s/quota", appName))
+	if err != nil {
+		return err
+	}
+	limit, err := parseLimit(c.Flags().Arg(0))
 	if err != nil {
 		return err
 	}
