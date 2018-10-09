@@ -69,6 +69,9 @@ func (c *ClusterAdd) Run(ctx *cmd.Context, cli *cmd.Client) error {
 	apiClient, err := client.ClientFromEnvironment(&tsuru.Configuration{
 		HTTPClient: cli.HTTPClient,
 	})
+	if err != nil {
+		return err
+	}
 	name := ctx.Args[0]
 	provisioner := ctx.Args[1]
 	clus := tsuru.Cluster{
@@ -103,6 +106,9 @@ func (c *ClusterAdd) Run(ctx *cmd.Context, cli *cmd.Client) error {
 		clus.Clientkey = string(data)
 	}
 	response, err := apiClient.ClusterApi.ClusterCreate(context.TODO(), clus)
+	if err != nil {
+		return err
+	}
 	defer response.Body.Close()
 	fmt.Fprintln(ctx.Stdout, "Cluster successfully added.")
 	return nil
@@ -271,6 +277,9 @@ func (c *ClusterRemove) Run(ctx *cmd.Context, cli *cmd.Client) error {
 	}
 	ctx.RawOutput()
 	response, err := apiClient.ClusterApi.ClusterDelete(context.TODO(), name)
+	if err != nil {
+		return err
+	}
 	defer response.Body.Close()
 	fmt.Fprintln(ctx.Stdout, "Cluster successfully removed.")
 	return nil
