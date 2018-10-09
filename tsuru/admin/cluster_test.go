@@ -208,7 +208,9 @@ func (s *S) TestClusterRemoveRun(c *check.C) {
 	trans := &cmdtest.ConditionalTransport{
 		Transport: cmdtest.Transport{Status: http.StatusNoContent},
 		CondFunc: func(req *http.Request) bool {
-			return req.URL.Path == "/1.3/provisioner/clusters/c1" && req.Method == "DELETE"
+			c.Assert(req.URL.Path, check.Equals, "/1.3/provisioner/clusters/c1")
+			c.Assert(req.Method, check.Equals, http.MethodDelete)
+			return true
 		},
 	}
 	manager := cmd.NewManager("admin", "0.1", "admin-ver", &stdout, &stderr, nil, nil)

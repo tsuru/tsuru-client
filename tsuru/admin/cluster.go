@@ -256,26 +256,22 @@ func (c *ClusterRemove) Info() *cmd.Info {
 	}
 }
 
-func (c *ClusterRemove) Run(context *cmd.Context, client *cmd.Client) error {
-	name := context.Args[0]
+func (c *ClusterRemove) Run(ctx *cmd.Context, cli *cmd.Client) error {
+	name := ctx.Args[0]
 
-	if !c.Confirm(context, fmt.Sprintf("Are you sure you want to remove cluster \"%s\"?", name)) {
+	if !c.Confirm(ctx, fmt.Sprintf("Are you sure you want to remove cluster \"%s\"?", name)) {
 		return nil
 	}
 
-	u, err := cmd.GetURLVersion("1.3", "/provisioner/clusters/"+name)
+	apiClient, err := client.ClientFromEnvironment(&tsuru.Configuration{
+		HTTPClient: cli.HTTPClient,
+	})
 	if err != nil {
 		return err
 	}
-	request, err := http.NewRequest("DELETE", u, nil)
-	if err != nil {
-		return err
-	}
-	response, err := client.Do(request)
-	if err != nil {
-		return err
-	}
+	ctx.RawOutput()
+	response, err := apiClient.ClusterApi.ClusterDelete(context.TODO(), name)
 	defer response.Body.Close()
-	fmt.Fprintln(context.Stdout, "Cluster successfully removed.")
+	fmt.Fprintln(ctx.Stdout, "Cluster successfully removed.")
 	return nil
 }
