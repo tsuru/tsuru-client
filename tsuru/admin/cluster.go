@@ -13,13 +13,11 @@ import (
 	"strconv"
 	"strings"
 
-	"github.com/ajg/form"
 	"github.com/tsuru/gnuflag"
 	"github.com/tsuru/go-tsuruclient/pkg/client"
 	"github.com/tsuru/go-tsuruclient/pkg/tsuru"
 	"github.com/tsuru/tablecli"
 	"github.com/tsuru/tsuru/cmd"
-	"github.com/tsuru/tsuru/types/provision"
 )
 
 type ClusterAdd struct {
@@ -67,19 +65,18 @@ func (c *ClusterAdd) Info() *cmd.Info {
 	}
 }
 
-func (c *ClusterAdd) Run(context *cmd.Context, client *cmd.Client) error {
-	u, err := cmd.GetURLVersion("1.3", "/provisioner/clusters")
-	if err != nil {
-		return err
-	}
-	name := context.Args[0]
-	provisioner := context.Args[1]
-	clus := provision.Cluster{
+func (c *ClusterAdd) Run(ctx *cmd.Context, cli *cmd.Client) error {
+	apiClient, err := client.ClientFromEnvironment(&tsuru.Configuration{
+		HTTPClient: cli.HTTPClient,
+	})
+	name := ctx.Args[0]
+	provisioner := ctx.Args[1]
+	clus := tsuru.Cluster{
 		Name:        name,
 		Addresses:   c.addresses,
 		Pools:       c.pools,
 		CustomData:  c.customData,
-		Default:     c.isDefault,
+		Default_:    c.isDefault,
 		Provisioner: provisioner,
 		CreateData:  c.createData,
 	}
@@ -89,38 +86,25 @@ func (c *ClusterAdd) Run(context *cmd.Context, client *cmd.Client) error {
 		if err != nil {
 			return err
 		}
-		clus.CaCert = data
+		clus.Cacert = string(data)
 	}
 	if c.clientcert != "" {
 		data, err = ioutil.ReadFile(c.clientcert)
 		if err != nil {
 			return err
 		}
-		clus.ClientCert = data
+		clus.Clientcert = string(data)
 	}
 	if c.clientkey != "" {
 		data, err = ioutil.ReadFile(c.clientkey)
 		if err != nil {
 			return err
 		}
-		clus.ClientKey = data
+		clus.Clientkey = string(data)
 	}
-	values, err := form.EncodeToValues(clus)
-	if err != nil {
-		return err
-	}
-	reader := strings.NewReader(values.Encode())
-	request, err := http.NewRequest("POST", u, reader)
-	if err != nil {
-		return err
-	}
-	request.Header.Set("Content-Type", "application/x-www-form-urlencoded")
-	response, err := client.Do(request)
-	if err != nil {
-		return err
-	}
+	response, err := apiClient.ClusterApi.ClusterCreate(context.TODO(), clus)
 	defer response.Body.Close()
-	fmt.Fprintln(context.Stdout, "Cluster successfully added.")
+	fmt.Fprintln(ctx.Stdout, "Cluster successfully added.")
 	return nil
 }
 
