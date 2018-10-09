@@ -95,27 +95,26 @@ func (s *S) TestClusterUpdateRun(c *check.C) {
 	trans := &cmdtest.ConditionalTransport{
 		Transport: cmdtest.Transport{Status: http.StatusOK},
 		CondFunc: func(req *http.Request) bool {
-			err := req.ParseForm()
+			c.Assert(req.URL.Path, check.Equals, "/1.4/provisioner/clusters/c1")
+			c.Assert(req.Method, check.Equals, http.MethodPost)
+			c.Assert(req.Header.Get("Content-Type"), check.Equals, "application/json")
+
+			var clus tsuru.Cluster
+			data, err := ioutil.ReadAll(req.Body)
 			c.Assert(err, check.IsNil)
-			dec := form.NewDecoder(nil)
-			dec.IgnoreCase(true)
-			dec.IgnoreUnknownKeys(true)
-			var clus provision.Cluster
-			err = dec.DecodeValues(&clus, req.Form)
+			err = json.Unmarshal(data, &clus)
 			c.Assert(err, check.IsNil)
-			c.Assert(clus, check.DeepEquals, provision.Cluster{
+			c.Assert(clus, check.DeepEquals, tsuru.Cluster{
 				Name:        "c1",
-				CaCert:      []byte("cadata"),
-				ClientCert:  []byte("certdata"),
-				ClientKey:   []byte("keydata"),
+				Cacert:      "cadata",
+				Clientcert:  "certdata",
+				Clientkey:   "keydata",
 				CustomData:  map[string]string{"a": "b", "c": "d"},
 				Addresses:   []string{"addr1", "addr2"},
 				Pools:       []string{"p1", "p2"},
-				Default:     true,
+				Default_:    true,
 				Provisioner: "myprov",
 			})
-			c.Assert(req.URL.Path, check.Equals, "/1.4/provisioner/clusters/c1")
-			c.Assert(req.Method, check.Equals, http.MethodPost)
 			return true
 		},
 	}

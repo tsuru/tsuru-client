@@ -166,19 +166,22 @@ func (c *ClusterUpdate) Info() *cmd.Info {
 	}
 }
 
-func (c *ClusterUpdate) Run(context *cmd.Context, client *cmd.Client) error {
-	name := context.Args[0]
-	u, err := cmd.GetURLVersion("1.4", "/provisioner/clusters/"+name)
+func (c *ClusterUpdate) Run(ctx *cmd.Context, cli *cmd.Client) error {
+	apiClient, err := client.ClientFromEnvironment(&tsuru.Configuration{
+		HTTPClient: cli.HTTPClient,
+	})
 	if err != nil {
 		return err
 	}
-	provisioner := context.Args[1]
-	clus := provision.Cluster{
+	ctx.RawOutput()
+	name := ctx.Args[0]
+	provisioner := ctx.Args[1]
+	clus := tsuru.Cluster{
 		Name:        name,
 		Addresses:   c.addresses,
 		Pools:       c.pools,
 		CustomData:  c.customData,
-		Default:     c.isDefault,
+		Default_:    c.isDefault,
 		Provisioner: provisioner,
 	}
 	var data []byte
@@ -187,38 +190,28 @@ func (c *ClusterUpdate) Run(context *cmd.Context, client *cmd.Client) error {
 		if err != nil {
 			return err
 		}
-		clus.CaCert = data
+		clus.Cacert = string(data)
 	}
 	if c.clientcert != "" {
 		data, err = ioutil.ReadFile(c.clientcert)
 		if err != nil {
 			return err
 		}
-		clus.ClientCert = data
+		clus.Clientcert = string(data)
 	}
 	if c.clientkey != "" {
 		data, err = ioutil.ReadFile(c.clientkey)
 		if err != nil {
 			return err
 		}
-		clus.ClientKey = data
+		clus.Clientkey = string(data)
 	}
-	values, err := form.EncodeToValues(clus)
+	resp, err := apiClient.ClusterApi.ClusterUpdate(context.TODO(), name, clus)
 	if err != nil {
 		return err
 	}
-	reader := strings.NewReader(values.Encode())
-	request, err := http.NewRequest("POST", u, reader)
-	if err != nil {
-		return err
-	}
-	request.Header.Set("Content-Type", "application/x-www-form-urlencoded")
-	response, err := client.Do(request)
-	if err != nil {
-		return err
-	}
-	defer response.Body.Close()
-	fmt.Fprintln(context.Stdout, "Cluster successfully updated.")
+	defer resp.Body.Close()
+	fmt.Fprintln(ctx.Stdout, "Cluster successfully updated.")
 	return nil
 }
 
