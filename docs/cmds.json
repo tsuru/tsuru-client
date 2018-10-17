@@ -305,7 +305,7 @@
   }, 
   "machine-template-add": {
     "usage": "tsuru machine-template-add <name> <iaas> <param>=<value>...", 
-    "desc": "Creates a new machine template.\n\nTemplates can be used with the [[docker-node-add]] command running it with\nthe [[template=<template name>]] parameter. Templates can contain a list of\nparameters that will be sent to the IaaS provider.\n\nMinimum # of arguments: 3\n"
+    "desc": "Creates a new machine template.\n\nTemplates can be used with the [[node-add]] command running it with the\n[[template=<template name>]] parameter. Templates can contain a list of\nparameters that will be sent to the IaaS provider.\n\nMinimum # of arguments: 3\n"
   }, 
   "app-update": {
     "usage": "tsuru app-update [-a/--app appname] [--description/-d description] [--plan/-p plan name] [--pool/-o pool] [--team-owner/-t team owner] [--platform/-l platform] [-i/--image-reset] [--tag/-g tag]...", 
@@ -383,6 +383,10 @@
     "usage": "tsuru app-routes-rebuild -a <app-name>", 
     "desc": "Rebuild routes for an application.\nThis can be used to recover from some failure in the router that caused\nexisting routes to be lost.\n\nFlags:\n  \n  -a, --app (= \"\")\n      The name of the app.\n  \n"
   }, 
+  "machine-template-copy": {
+    "usage": "tsuru machine-template-copy <new-name> <src-name> <param>=<value>...", 
+    "desc": "Copies an existing template.\n\nTemplates can be used with the [[node-add]] command running it with the\n[[template=<template name>]] parameter. Templates can contain a list of\nparameters that will be sent to the IaaS provider.\n\nMinimum # of arguments: 2\n"
+  }, 
   "plan-create": {
     "usage": "tsuru plan-create <name> -c cpushare [-m memory] [-s swap] [--default]", 
     "desc": "Creates a new plan for being used when creating apps.\n\nFlags:\n  \n  -c, --cpushare  (= 0)\n      Relative cpu share each unit will have available. This value is unitless and\n      relative, so specifying the same value for all plans means all units will\n      equally share processing power.\n  -d, --default  (= false)\n      Set plan as default, this will remove the default flag from any other plan.\n      The default plan will be used when creating an application without explicitly\n      setting a plan.\n  -m, --memory (= \"0\")\n      Amount of available memory for units in bytes or an integer value followed\n      by M, K or G for megabytes, kilobytes or gigabytes respectively.\n  -s, --swap (= \"0\")\n      Amount of available swap space for units in bytes or an integer value followed\n      by M, K or G for megabytes, kilobytes or gigabytes respectively.\n  \nMinimum # of arguments: 1\n"
@@ -425,7 +429,7 @@
   }, 
   "machine-list": {
     "usage": "tsuru machine-list", 
-    "desc": "Lists all machines created using an IaaS provider.\nThese machines were created with the [[docker-node-add]] command.\n\n"
+    "desc": "Lists all machines created using an IaaS provider.\nThese machines were created with the [[node-add]] command.\n\n"
   }, 
   "token-delete": {
     "usage": "tsuru token-delete <token id>", 
@@ -555,8 +559,8 @@
     "desc": "Changes the limit of units that an app can have.\n\nThe new limit must be an integer, it may also be \"unlimited\".\n\nMinimum # of arguments: 2\n"
   }, 
   "machine-template-remove": {
-    "usage": "tsuru machine-template-remove <name>", 
-    "desc": "Removes an existing machine template.\n\nMinimum # of arguments: 1\n"
+    "usage": "tsuru machine-template-remove <name> [-y/--assume-yes]", 
+    "desc": "Removes an existing machine template.\n\nFlags:\n  \n  -y, --assume-yes  (= false)\n      Don't ask for confirmation.\n  \nMinimum # of arguments: 1\n"
   }, 
   "token-show": {
     "usage": "tsuru token-show [--user/-u useremail]", 
@@ -675,8 +679,8 @@
     "desc": "Removes an application. If the app is bound to any service instance, all binds\nwill be removed before the app gets deleted (see [[tsuru service-unbind]]).\n\nYou need to be a member of a team that has access to the app to be able to\nremove it (you are able to remove any app that you see in [[tsuru app-list]]).\n\nFlags:\n  \n  -a, --app (= \"\")\n      The name of the app.\n  -y, --assume-yes  (= false)\n      Don't ask for confirmation.\n  \n"
   }, 
   "machine-destroy": {
-    "usage": "tsuru machine-destroy <machine id>", 
-    "desc": "Destroys an existing machine created using a IaaS.\n\nMinimum # of arguments: 1\n"
+    "usage": "tsuru machine-destroy <machine id> [-y/--assume-yes]", 
+    "desc": "Destroys an existing machine created using a IaaS.\n\nFlags:\n  \n  -y, --assume-yes  (= false)\n      Don't ask for confirmation.\n  \nMinimum # of arguments: 1\n"
   }, 
   "install-ssh": {
     "usage": "tsuru install-ssh <hostname> [arg...]", 

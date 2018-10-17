@@ -122,6 +122,7 @@ func buildManager(name string) *cmd.Manager {
 	m.Register(&admin.MachineList{})
 	m.Register(&admin.MachineDestroy{})
 	m.Register(&admin.TemplateUpdate{})
+	m.Register(&admin.TemplateCopy{})
 	m.Register(&admin.PlanCreate{})
 	m.Register(&admin.PlanRemove{})
 	m.Register(&admin.UpdatePoolToSchedulerCmd{})

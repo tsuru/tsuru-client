@@ -8,6 +8,7 @@ import (
 	"bytes"
 	"encoding/json"
 	"net/http"
+	"sort"
 	"strings"
 
 	"github.com/ajg/form"
@@ -69,6 +70,7 @@ func (s *S) TestMachineDestroyRun(c *check.C) {
 	}
 	client := cmd.NewClient(&http.Client{Transport: trans}, nil, s.manager)
 	command := MachineDestroy{}
+	command.Flags().Parse(true, []string{"-y"})
 	err := command.Run(&context, client)
 	c.Assert(err, check.IsNil)
 	c.Assert(stdout.String(), check.Equals, "Machine successfully destroyed.\n")
@@ -160,6 +162,7 @@ func (s *S) TestTemplateRemoveCmdRun(c *check.C) {
 	manager := cmd.Manager{}
 	client := cmd.NewClient(&http.Client{Transport: trans}, nil, &manager)
 	cmd := TemplateRemove{}
+	cmd.Flags().Parse(true, []string{"-y"})
 	err := cmd.Run(&context, client)
 	c.Assert(err, check.IsNil)
 	c.Assert(buf.String(), check.Equals, "Template successfully removed.\n")
@@ -269,4 +272,59 @@ func (s *S) TestTemplateFailToUpdateIaaS(c *check.C) {
 	c.Assert(err, check.NotNil)
 	c.Assert(stdout.String(), check.Equals, "")
 	c.Assert(stderr.String(), check.Equals, "Failed to update template.\n")
+}
+
+func (s *S) TestTemplateCopyCmdRun(c *check.C) {
+	var buf bytes.Buffer
+	tpl1 := iaas.Template{Name: "tpl1", IaaSName: "ec2", Data: iaas.TemplateDataList{
+		iaas.TemplateData{Name: "region", Value: "xxxx"},
+		iaas.TemplateData{Name: "type", Value: "l1.large"},
+	}}
+	data, err := json.Marshal([]iaas.Template{tpl1})
+	c.Assert(err, check.IsNil)
+	context := cmd.Context{Args: []string{"my-tpl", "tpl1", "zone=xyz", "type=l2.large"}, Stdout: &buf}
+	expectedBody := iaas.Template{
+		Name:     "my-tpl",
+		IaaSName: "ec2",
+		Data: []iaas.TemplateData{
+			{Name: "region", Value: "xxxx"},
+			{Name: "type", Value: "l2.large"},
+			{Name: "zone", Value: "xyz"},
+		},
+	}
+	trans := &cmdtest.MultiConditionalTransport{ConditionalTransports: []cmdtest.ConditionalTransport{
+		{
+			Transport: cmdtest.Transport{Message: string(data), Status: http.StatusOK},
+			CondFunc: func(req *http.Request) bool {
+				c.Assert(strings.HasSuffix(req.URL.Path, "/iaas/templates"), check.Equals, true)
+				c.Assert(req.Method, check.Equals, "GET")
+				return true
+			},
+		},
+		{
+			Transport: cmdtest.Transport{Message: "", Status: http.StatusOK},
+			CondFunc: func(req *http.Request) bool {
+				err = req.ParseForm()
+				c.Assert(err, check.IsNil)
+				var paramTemplate iaas.Template
+				dec := form.NewDecoder(nil)
+				dec.IgnoreUnknownKeys(true)
+				err = dec.DecodeValues(&paramTemplate, req.Form)
+				c.Assert(err, check.IsNil)
+				sort.Slice(paramTemplate.Data, func(i, j int) bool {
+					return paramTemplate.Data[i].Name < paramTemplate.Data[j].Name
+				})
+				c.Assert(paramTemplate, check.DeepEquals, expectedBody)
+				path := strings.HasSuffix(req.URL.Path, "/iaas/templates")
+				method := req.Method == "POST"
+				return path && method
+			},
+		},
+	}}
+	manager := cmd.Manager{}
+	client := cmd.NewClient(&http.Client{Transport: trans}, nil, &manager)
+	cmd := TemplateCopy{}
+	err = cmd.Run(&context, client)
+	c.Assert(err, check.IsNil)
+	c.Assert(buf.String(), check.Equals, "Template successfully copied.\n")
 }
