@@ -26,7 +26,7 @@ func (c *MachineList) Info() *cmd.Info {
 		Name:  "machine-list",
 		Usage: "machine-list",
 		Desc: `Lists all machines created using an IaaS provider.
-These machines were created with the [[docker-node-add]] command.`,
+These machines were created with the [[node-add]] command.`,
 		MinArgs: 0,
 	}
 }
@@ -75,18 +75,23 @@ func (c *MachineList) Tabulate(machines []iaas.Machine) *tablecli.Table {
 	return table
 }
 
-type MachineDestroy struct{}
+type MachineDestroy struct {
+	cmd.ConfirmationCommand
+}
 
 func (c *MachineDestroy) Info() *cmd.Info {
 	return &cmd.Info{
 		Name:    "machine-destroy",
-		Usage:   "machine-destroy <machine id>",
+		Usage:   "machine-destroy <machine id> [-y/--assume-yes]",
 		Desc:    "Destroys an existing machine created using a IaaS.",
 		MinArgs: 1,
 	}
 }
 func (c *MachineDestroy) Run(context *cmd.Context, client *cmd.Client) error {
 	machineID := context.Args[0]
+	if !c.Confirm(context, fmt.Sprintf("Are you sure you want to remove machine %q?", machineID)) {
+		return nil
+	}
 	url, err := cmd.GetURL("/iaas/machines/" + machineID)
 	if err != nil {
 		return err
@@ -156,8 +161,8 @@ func (c *TemplateAdd) Info() *cmd.Info {
 		Usage: "machine-template-add <name> <iaas> <param>=<value>...",
 		Desc: `Creates a new machine template.
 
-Templates can be used with the [[docker-node-add]] command running it with
-the [[template=<template name>]] parameter. Templates can contain a list of
+Templates can be used with the [[node-add]] command running it with the
+[[template=<template name>]] parameter. Templates can contain a list of
 parameters that will be sent to the IaaS provider.`,
 		MinArgs: 3,
 	}
@@ -198,19 +203,25 @@ func (c *TemplateAdd) Run(context *cmd.Context, client *cmd.Client) error {
 	return nil
 }
 
-type TemplateRemove struct{}
+type TemplateRemove struct {
+	cmd.ConfirmationCommand
+}
 
 func (c *TemplateRemove) Info() *cmd.Info {
 	return &cmd.Info{
 		Name:    "machine-template-remove",
-		Usage:   "machine-template-remove <name>",
+		Usage:   "machine-template-remove <name> [-y/--assume-yes]",
 		Desc:    "Removes an existing machine template.",
 		MinArgs: 1,
 	}
 }
 
 func (c *TemplateRemove) Run(context *cmd.Context, client *cmd.Client) error {
-	url, err := cmd.GetURL("/iaas/templates/" + context.Args[0])
+	templateName := context.Args[0]
+	if !c.Confirm(context, fmt.Sprintf("Are you sure you want to remove template %q?", templateName)) {
+		return nil
+	}
+	url, err := cmd.GetURL("/iaas/templates/" + templateName)
 	if err != nil {
 		return err
 	}
@@ -280,5 +291,90 @@ func (c *TemplateUpdate) Run(context *cmd.Context, client *cmd.Client) error {
 		return err
 	}
 	context.Stdout.Write([]byte("Template successfully updated.\n"))
+	return nil
+}
+
+type TemplateCopy struct{}
+
+func (c *TemplateCopy) Info() *cmd.Info {
+	return &cmd.Info{
+		Name:  "machine-template-copy",
+		Usage: "machine-template-copy <new-name> <src-name> <param>=<value>...",
+		Desc: `Copies an existing template.
+
+Templates can be used with the [[node-add]] command running it with the
+[[template=<template name>]] parameter. Templates can contain a list of
+parameters that will be sent to the IaaS provider.`,
+		MinArgs: 2,
+	}
+}
+
+func (c *TemplateCopy) Run(context *cmd.Context, client *cmd.Client) error {
+	newName, srcName := context.Args[0], context.Args[1]
+	url, err := cmd.GetURL("/iaas/templates")
+	if err != nil {
+		return err
+	}
+	request, err := http.NewRequest("GET", url, nil)
+	if err != nil {
+		return err
+	}
+	response, err := client.Do(request)
+	if err != nil {
+		return err
+	}
+	defer response.Body.Close()
+	var templates []iaas.Template
+	err = json.NewDecoder(response.Body).Decode(&templates)
+	if err != nil {
+		return err
+	}
+	var template iaas.Template
+	for _, tpl := range templates {
+		if tpl.Name == srcName {
+			template = tpl
+			break
+		}
+	}
+	if template.Name == "" {
+		return fmt.Errorf("Template not found with name %s", srcName)
+	}
+	varMap := map[string]string{}
+	for _, entry := range template.Data {
+		varMap[entry.Name] = entry.Value
+	}
+	template.Name = newName
+	for _, param := range context.Args[2:] {
+		if strings.Contains(param, "=") {
+			keyValue := strings.SplitN(param, "=", 2)
+			varMap[keyValue[0]] = keyValue[1]
+		}
+	}
+	template.Data = make([]iaas.TemplateData, 0, len(varMap))
+	for k, v := range varMap {
+		template.Data = append(template.Data, iaas.TemplateData{
+			Name:  k,
+			Value: v,
+		})
+	}
+	v, err := form.EncodeToValues(&template)
+	if err != nil {
+		return err
+	}
+	u, err := cmd.GetURL("/iaas/templates")
+	if err != nil {
+		return err
+	}
+	request, err = http.NewRequest("POST", u, bytes.NewBufferString(v.Encode()))
+	if err != nil {
+		return err
+	}
+	request.Header.Set("Content-Type", "application/x-www-form-urlencoded")
+	_, err = client.Do(request)
+	if err != nil {
+		context.Stderr.Write([]byte("Failed to copy template.\n"))
+		return err
+	}
+	context.Stdout.Write([]byte("Template successfully copied.\n"))
 	return nil
 }
