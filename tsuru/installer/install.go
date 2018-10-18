@@ -275,6 +275,7 @@ func (c *Uninstall) Run(ctx *cmd.Context, cli *cmd.Client) error {
 		return nil
 	}
 	destroyMachineCmd := admin.MachineDestroy{}
+	destroyMachineCmd.Flags().Parse(true, []string{"-y"})
 	destroyCtx := &cmd.Context{Stdout: ctx.Stdout, Stderr: ctx.Stderr}
 	for _, m := range appMachines {
 		destroyCtx.Args = []string{m.Id}
