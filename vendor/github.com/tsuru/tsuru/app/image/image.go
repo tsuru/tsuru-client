@@ -7,6 +7,7 @@ package image
 import (
 	"fmt"
 	"regexp"
+	"sort"
 	"strings"
 
 	"github.com/globalsign/mgo"
@@ -168,20 +169,22 @@ func GetImageMetaData(imageName string) (ImageMetadata, error) {
 }
 
 func GetImageWebProcessName(imageName string) (string, error) {
-	processName := "web"
 	data, err := GetImageMetaData(imageName)
 	if err != nil {
-		return processName, err
+		return "", err
 	}
 	if len(data.Processes) == 0 {
 		return "", nil
 	}
-	if len(data.Processes) == 1 {
-		for name := range data.Processes {
-			processName = name
+	var processes []string
+	for name := range data.Processes {
+		if name == "web" || len(data.Processes) == 1 {
+			return name, nil
 		}
+		processes = append(processes, name)
 	}
-	return processName, nil
+	sort.Strings(processes)
+	return processes[0], nil
 }
 
 func AllAppProcesses(appName string) ([]string, error) {

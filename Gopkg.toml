@@ -33,7 +33,7 @@
   revision = "d8f60f2dd117cd64c2825143a89ecb6f158ad743"
 [[override]]
   name = "github.com/xanzy/go-cloudstack"
-  revision = "5686bcde5af20565d8c7a3f66b5441430ac54186"
+  branch = "master"
 [[override]]
   name = "github.com/pyr/egoscale"
   revision = "ab4b0d7ff424c462da486aef27f354cdeb29a319"

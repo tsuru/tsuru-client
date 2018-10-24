@@ -41,6 +41,7 @@ import (
 	"github.com/tsuru/tsuru/router/rebuild"
 	"github.com/tsuru/tsuru/service"
 	"github.com/tsuru/tsuru/servicemanager"
+	"github.com/tsuru/tsuru/set"
 	appTypes "github.com/tsuru/tsuru/types/app"
 	authTypes "github.com/tsuru/tsuru/types/auth"
 	"github.com/tsuru/tsuru/types/cache"
@@ -176,6 +177,9 @@ func (app *App) MarshalJSON() ([]byte, error) {
 	result := make(map[string]interface{})
 	result["name"] = app.Name
 	result["platform"] = app.Platform
+	if version := app.GetPlatformVersion(); version != "latest" {
+		result["platform"] = fmt.Sprintf("%s:%s", app.Platform, version)
+	}
 	result["teams"] = app.Teams
 	units, err := app.Units()
 	result["units"] = units
@@ -379,12 +383,10 @@ func CreateApp(app *App, user *auth.User) error {
 	app.Owner = user.Email
 	app.Tags = processTags(app.Tags)
 	if app.Platform != "" {
-		p, v, err := getPlatformNameAndVersion(app.Platform)
+		app.Platform, app.PlatformVersion, err = getPlatformNameAndVersion(app.Platform)
 		if err != nil {
 			return err
 		}
-		app.Platform = p
-		app.PlatformVersion = v
 	}
 	err = app.validateNew()
 	if err != nil {
@@ -486,7 +488,8 @@ func (app *App) Update(updateData App, w io.Writer) (err error) {
 		app.Tags = tags
 	}
 	if platform != "" {
-		p, v, err := getPlatformNameAndVersion(platform)
+		var p, v string
+		p, v, err = getPlatformNameAndVersion(platform)
 		if err != nil {
 			return err
 		}
@@ -511,6 +514,11 @@ func (app *App) Update(updateData App, w io.Writer) (err error) {
 		actions = append(actions, &updateAppProvisioner)
 	}
 	if newProv.GetName() != oldProv.GetName() {
+		err = validateVolumes(app)
+		if err != nil {
+			return err
+		}
+
 		actions = append(actions,
 			&provisionAppNewProvisioner,
 			&provisionAppAddUnits,
@@ -519,6 +527,17 @@ func (app *App) Update(updateData App, w io.Writer) (err error) {
 		actions = append(actions, &restartApp)
 	}
 	return action.NewPipeline(actions...).Execute(app, &oldApp, w)
+}
+
+func validateVolumes(app *App) error {
+	volumes, err := volume.ListByApp(app.Name)
+	if err != nil {
+		return err
+	}
+	if len(volumes) > 0 {
+		return fmt.Errorf("can't change the provisioner of an app with binded volumes")
+	}
+	return nil
 }
 
 func getPlatformNameAndVersion(platform string) (string, string, error) {
@@ -1121,7 +1140,7 @@ func (app *App) getEnv(name string) (bind.EnvVar, error) {
 	return bind.EnvVar{}, errors.New("Environment variable not declared for this app.")
 }
 
-// validateNew checks app name format and pool
+// validateNew checks app name format, pool and plan
 func (app *App) validateNew() error {
 	if app.Name == InternalAppName || !validation.ValidateName(app.Name) {
 		msg := "Invalid app name, your app should have at most 40 " +
@@ -1132,9 +1151,30 @@ func (app *App) validateNew() error {
 	return app.validate()
 }
 
-// validate checks app pool
+// validate checks app pool and plan
 func (app *App) validate() error {
-	return app.validatePool()
+	err := app.validatePool()
+	if err != nil {
+		return err
+	}
+	return app.validatePlan()
+}
+
+func (app *App) validatePlan() error {
+	pool, err := pool.GetPoolByName(app.Pool)
+	if err != nil {
+		return err
+	}
+	plans, err := pool.GetPlans()
+	if err != nil {
+		return err
+	}
+	planSet := set.FromSlice(plans)
+	if !planSet.Includes(app.Plan.Name) {
+		msg := fmt.Sprintf("App plan %q is not allowed on pool %q", app.Plan.Name, pool.Name)
+		return &tsuruErrors.ValidationError{Message: msg}
+	}
+	return nil
 }
 
 func (app *App) validatePool() error {
@@ -1160,6 +1200,7 @@ func (app *App) validatePool() error {
 			return err
 		}
 	}
+
 	return pool.ValidateRouters(app.GetRouters())
 }
 
@@ -1804,7 +1845,21 @@ func (f *Filter) Query() bson.M {
 		query["teamowner"] = f.TeamOwner
 	}
 	if f.Platform != "" {
-		query["framework"] = f.Platform
+		parts := strings.SplitN(f.Platform, ":", 2)
+		query["framework"] = parts[0]
+		if len(parts) == 2 {
+			v := parts[1]
+			if v == "latest" {
+				query["$and"] = []bson.M{
+					{"$or": []bson.M{
+						{"platformversion": bson.M{"$in": []string{"latest", ""}}},
+						{"platformversion": bson.M{"$exists": false}},
+					}},
+				}
+			} else {
+				query["platformversion"] = v
+			}
+		}
 	}
 	if f.UserOwner != "" {
 		query["owner"] = f.UserOwner
