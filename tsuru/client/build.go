@@ -96,15 +96,18 @@ func (c *AppBuild) Run(context *cmd.Context, client *cmd.Client) error {
 		return err
 	}
 	defer resp.Body.Close()
+	if resp.StatusCode != http.StatusOK {
+		return cmd.ErrAbortCommand
+	}
 	_, err = io.Copy(&respBody, resp.Body)
 	if err != nil {
 		return err
 	}
 	fmt.Fprintf(safeStdout, buf.String())
-	if resp.StatusCode != http.StatusOK {
-		return cmd.ErrAbortCommand
+	if strings.HasSuffix(buf.String(), "\nOK\n") {
+		return nil
 	}
-	return nil
+	return cmd.ErrAbortCommand
 }
 
 func uploadFiles(context *cmd.Context, filesOnly bool, request *http.Request, buf *safe.Buffer, safeStdout *safeWriter, body *safe.Buffer, values url.Values) error {

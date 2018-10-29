@@ -61,6 +61,44 @@ func (s *S) TestBuildRun(c *check.C) {
 	c.Assert(calledTimes, check.Equals, 2)
 }
 
+func (s *S) TestBuildFail(c *check.C) {
+	var buf bytes.Buffer
+	ctx := cmd.Context{Stderr: bytes.NewBufferString("")}
+	err := targz(&ctx, &buf, false, "testdata", "..")
+	c.Assert(err, check.IsNil)
+	trans := cmdtest.ConditionalTransport{
+		Transport: cmdtest.Transport{Message: "Failed", Status: http.StatusOK},
+		CondFunc: func(req *http.Request) bool {
+			if req.Body != nil {
+				defer req.Body.Close()
+			}
+			if req.Method == "GET" {
+				return strings.HasSuffix(req.URL.Path, "/apps/myapp")
+			}
+			file, _, transErr := req.FormFile("file")
+			c.Assert(transErr, check.IsNil)
+			content, transErr := ioutil.ReadAll(file)
+			c.Assert(transErr, check.IsNil)
+			c.Assert(content, check.DeepEquals, buf.Bytes())
+			c.Assert(req.Header.Get("Content-Type"), check.Matches, "multipart/form-data; boundary=.*")
+			return req.Method == "POST" && strings.HasSuffix(req.URL.Path, "/apps/myapp/build")
+		},
+	}
+	client := cmd.NewClient(&http.Client{Transport: &trans}, nil, manager)
+	var stdout, stderr bytes.Buffer
+	context := cmd.Context{
+		Stdout: &stdout,
+		Stderr: &stderr,
+		Args:   []string{"testdata", ".."},
+	}
+	fake := cmdtest.FakeGuesser{Name: "myapp"}
+	guessCommand := cmd.GuessingCommand{G: &fake}
+	command := AppBuild{GuessingCommand: guessCommand}
+	command.Flags().Parse(true, []string{"-t", "mytag"})
+	err = command.Run(&context, client)
+	c.Assert(err, check.Equals, cmd.ErrAbortCommand)
+}
+
 func (s *S) TestBuildRunWithoutArgs(c *check.C) {
 	var stdout, stderr bytes.Buffer
 	ctx := cmd.Context{
