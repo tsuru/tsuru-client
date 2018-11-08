@@ -18,7 +18,7 @@ import (
 	"github.com/tsuru/tsuru/cmd"
 	"github.com/tsuru/tsuru/cmd/cmdtest"
 	"github.com/tsuru/tsuru/io"
-	"gopkg.in/check.v1"
+	check "gopkg.in/check.v1"
 )
 
 var appflag = &gnuflag.Flag{
@@ -2611,4 +2611,319 @@ func (s *S) TestUnitRemoveInfo(c *check.C) {
 
 func (s *S) TestUnitRemoveIsACommand(c *check.C) {
 	var _ cmd.Command = &UnitRemove{}
+}
+
+func (s *S) TestUnitSetAddUnits(c *check.C) {
+	var stdout, stderr bytes.Buffer
+	var calledGet bool
+	var calledPut bool
+	context := cmd.Context{
+		Args:   []string{"10"},
+		Stdout: &stdout,
+		Stderr: &stderr,
+	}
+
+	resultGet := `{"name":"app1","teamowner":"myteam","cname":[""],"ip":"myapp.tsuru.io","platform":"php","repository":"git@git.com:php.git","state":"dead","units":[{"Ip":"10.10.10.10","ID":"app1/0","Status":"started","ProcessName":"web"},{"Ip":"9.9.9.9","ID":"app1/1","Status":"started","ProcessName":"web"},{"Ip":"","ID":"app1/2","Status":"pending","ProcessName":"web"},{"Ip":"8.8.8.8","ID":"app1/3","Status":"started","ProcessName":"worker"}],"teams":["tsuruteam","crane"],"owner":"myapp_owner","deploys":7,"router":"planb"}`
+
+	expectedOut := "-- added unit --"
+	msg := io.SimpleJsonMessage{Message: expectedOut}
+	resultPut, _ := json.Marshal(msg)
+
+	transport := cmdtest.MultiConditionalTransport{
+		ConditionalTransports: []cmdtest.ConditionalTransport{
+			{
+				CondFunc: func(req *http.Request) bool {
+					calledGet = true
+					return strings.HasSuffix(req.URL.Path, "/apps/app1") && req.Method == http.MethodGet
+				},
+				Transport: cmdtest.Transport{Message: resultGet, Status: http.StatusOK},
+			},
+			{
+				CondFunc: func(req *http.Request) bool {
+					calledPut = true
+					c.Assert(req.FormValue("process"), check.Equals, "web")
+					c.Assert(req.FormValue("units"), check.Equals, "7")
+					return strings.HasSuffix(req.URL.Path, "/apps/app1/units") && req.Method == http.MethodPut
+				},
+				Transport: cmdtest.Transport{Message: string(resultPut), Status: http.StatusOK},
+			},
+		},
+	}
+
+	client := cmd.NewClient(&http.Client{Transport: &transport}, nil, manager)
+	command := UnitSet{}
+	command.Flags().Parse(true, []string{"-a", "app1", "-p", "web"})
+	err := command.Run(&context, client)
+	c.Assert(err, check.IsNil)
+	c.Assert(calledGet, check.Equals, true)
+	c.Assert(calledPut, check.Equals, true)
+	c.Assert(stdout.String(), check.Equals, expectedOut)
+}
+
+func (s *S) TestUnitSetAddUnitsFailure(c *check.C) {
+	var stdout, stderr bytes.Buffer
+	var calledGet bool
+	var calledPut bool
+	context := cmd.Context{
+		Args:   []string{"10"},
+		Stdout: &stdout,
+		Stderr: &stderr,
+	}
+
+	resultGet := `{"name":"app1","teamowner":"myteam","cname":[""],"ip":"myapp.tsuru.io","platform":"php","repository":"git@git.com:php.git","state":"dead","units":[{"Ip":"10.10.10.10","ID":"app1/0","Status":"started","ProcessName":"web"},{"Ip":"9.9.9.9","ID":"app1/1","Status":"started","ProcessName":"web"},{"Ip":"","ID":"app1/2","Status":"pending","ProcessName":"web"},{"Ip":"8.8.8.8","ID":"app1/3","Status":"started","ProcessName":"worker"}],"teams":["tsuruteam","crane"],"owner":"myapp_owner","deploys":7,"router":"planb"}`
+
+	transport := cmdtest.MultiConditionalTransport{
+		ConditionalTransports: []cmdtest.ConditionalTransport{
+			{
+				CondFunc: func(req *http.Request) bool {
+					calledGet = true
+					return strings.HasSuffix(req.URL.Path, "/apps/app1") && req.Method == http.MethodGet
+				},
+				Transport: cmdtest.Transport{Message: resultGet, Status: http.StatusOK},
+			},
+			{
+				CondFunc: func(req *http.Request) bool {
+					calledPut = true
+					c.Assert(req.FormValue("process"), check.Equals, "web")
+					c.Assert(req.FormValue("units"), check.Equals, "7")
+					return strings.HasSuffix(req.URL.Path, "/apps/app1/units") && req.Method == http.MethodPut
+				},
+				Transport: cmdtest.Transport{Message: "Failed to put.", Status: http.StatusInternalServerError},
+			},
+		},
+	}
+
+	client := cmd.NewClient(&http.Client{Transport: &transport}, nil, manager)
+	command := UnitSet{}
+	command.Flags().Parse(true, []string{"-a", "app1", "-p", "web"})
+	err := command.Run(&context, client)
+	c.Assert(err, check.NotNil)
+	c.Assert(err.Error(), check.Equals, "Failed to put.")
+	c.Assert(calledGet, check.Equals, true)
+	c.Assert(calledPut, check.Equals, true)
+}
+
+func (s *S) TestUnitSetRemoveUnits(c *check.C) {
+	var stdout, stderr bytes.Buffer
+	var calledGet bool
+	var calledDelete bool
+	context := cmd.Context{
+		Args:   []string{"1"},
+		Stdout: &stdout,
+		Stderr: &stderr,
+	}
+
+	resultGet := `{"name":"app1","teamowner":"myteam","cname":[""],"ip":"myapp.tsuru.io","platform":"php","repository":"git@git.com:php.git","state":"dead","units":[{"Ip":"10.10.10.10","ID":"app1/0","Status":"started","ProcessName":"web"},{"Ip":"9.9.9.9","ID":"app1/1","Status":"started","ProcessName":"web"},{"Ip":"","ID":"app1/2","Status":"pending","ProcessName":"web"},{"Ip":"8.8.8.8","ID":"app1/3","Status":"started","ProcessName":"worker"}],"teams":["tsuruteam","crane"],"owner":"myapp_owner","deploys":7,"router":"planb"}`
+
+	expectedOut := "-- removed unit --"
+	msg := io.SimpleJsonMessage{Message: expectedOut}
+	resultDelete, _ := json.Marshal(msg)
+
+	transport := cmdtest.MultiConditionalTransport{
+		ConditionalTransports: []cmdtest.ConditionalTransport{
+			{
+				CondFunc: func(req *http.Request) bool {
+					calledGet = true
+					return strings.HasSuffix(req.URL.Path, "/apps/app1") && req.Method == http.MethodGet
+				},
+				Transport: cmdtest.Transport{Message: resultGet, Status: http.StatusOK},
+			},
+			{
+				CondFunc: func(req *http.Request) bool {
+					calledDelete = true
+					c.Assert(req.FormValue("process"), check.Equals, "web")
+					c.Assert(req.FormValue("units"), check.Equals, "2")
+					return strings.HasSuffix(req.URL.Path, "/apps/app1/units") && req.Method == http.MethodDelete
+				},
+				Transport: cmdtest.Transport{Message: string(resultDelete), Status: http.StatusOK},
+			},
+		},
+	}
+
+	client := cmd.NewClient(&http.Client{Transport: &transport}, nil, manager)
+	command := UnitSet{}
+	command.Flags().Parse(true, []string{"-a", "app1", "-p", "web"})
+	err := command.Run(&context, client)
+	c.Assert(err, check.IsNil)
+	c.Assert(calledGet, check.Equals, true)
+	c.Assert(calledDelete, check.Equals, true)
+	c.Assert(stdout.String(), check.Equals, expectedOut)
+}
+
+func (s *S) TestUnitSetRemoveUnitsFailure(c *check.C) {
+	var stdout, stderr bytes.Buffer
+	var calledGet bool
+	var calledDelete bool
+	context := cmd.Context{
+		Args:   []string{"1"},
+		Stdout: &stdout,
+		Stderr: &stderr,
+	}
+
+	resultGet := `{"name":"app1","teamowner":"myteam","cname":[""],"ip":"myapp.tsuru.io","platform":"php","repository":"git@git.com:php.git","state":"dead","units":[{"Ip":"10.10.10.10","ID":"app1/0","Status":"started","ProcessName":"web"},{"Ip":"9.9.9.9","ID":"app1/1","Status":"started","ProcessName":"web"},{"Ip":"","ID":"app1/2","Status":"pending","ProcessName":"web"},{"Ip":"8.8.8.8","ID":"app1/3","Status":"started","ProcessName":"worker"}],"teams":["tsuruteam","crane"],"owner":"myapp_owner","deploys":7,"router":"planb"}`
+
+	transport := cmdtest.MultiConditionalTransport{
+		ConditionalTransports: []cmdtest.ConditionalTransport{
+			{
+				CondFunc: func(req *http.Request) bool {
+					calledGet = true
+					return strings.HasSuffix(req.URL.Path, "/apps/app1") && req.Method == http.MethodGet
+				},
+				Transport: cmdtest.Transport{Message: resultGet, Status: http.StatusOK},
+			},
+			{
+				CondFunc: func(req *http.Request) bool {
+					calledDelete = true
+					c.Assert(req.FormValue("process"), check.Equals, "web")
+					c.Assert(req.FormValue("units"), check.Equals, "2")
+					return strings.HasSuffix(req.URL.Path, "/apps/app1/units") && req.Method == http.MethodDelete
+				},
+				Transport: cmdtest.Transport{Message: "Failed to delete.", Status: http.StatusInternalServerError},
+			},
+		},
+	}
+
+	client := cmd.NewClient(&http.Client{Transport: &transport}, nil, manager)
+	command := UnitSet{}
+	command.Flags().Parse(true, []string{"-a", "app1", "-p", "web"})
+	err := command.Run(&context, client)
+	c.Assert(err, check.NotNil)
+	c.Assert(err.Error(), check.Equals, "Failed to delete.")
+	c.Assert(calledGet, check.Equals, true)
+	c.Assert(calledDelete, check.Equals, true)
+}
+
+func (s *S) TestUnitSetNoChanges(c *check.C) {
+	var stdout, stderr bytes.Buffer
+	var calledGet bool
+	context := cmd.Context{
+		Args:   []string{"3"},
+		Stdout: &stdout,
+		Stderr: &stderr,
+	}
+
+	resultGet := `{"name":"app1","teamowner":"myteam","cname":[""],"ip":"myapp.tsuru.io","platform":"php","repository":"git@git.com:php.git","state":"dead","units":[{"Ip":"10.10.10.10","ID":"app1/0","Status":"started","ProcessName":"web"},{"Ip":"9.9.9.9","ID":"app1/1","Status":"started","ProcessName":"web"},{"Ip":"","ID":"app1/2","Status":"pending","ProcessName":"web"},{"Ip":"8.8.8.8","ID":"app1/3","Status":"started","ProcessName":"worker"}],"teams":["tsuruteam","crane"],"owner":"myapp_owner","deploys":7,"router":"planb"}`
+	transport := cmdtest.ConditionalTransport{
+		CondFunc: func(req *http.Request) bool {
+			calledGet = true
+			return strings.HasSuffix(req.URL.Path, "/apps/app1") && req.Method == http.MethodGet
+		},
+		Transport: cmdtest.Transport{Message: resultGet, Status: http.StatusOK},
+	}
+
+	client := cmd.NewClient(&http.Client{Transport: &transport}, nil, manager)
+	command := UnitSet{}
+	command.Flags().Parse(true, []string{"-a", "app1", "-p", "web"})
+	err := command.Run(&context, client)
+	c.Assert(err, check.IsNil)
+	c.Assert(calledGet, check.Equals, true)
+	c.Assert(stdout.String(), check.Equals, "The process web already has 3 units.\n")
+}
+
+func (s *S) TestUnitSetFailedGet(c *check.C) {
+	var stdout, stderr bytes.Buffer
+	calledTimes := 0
+	context := cmd.Context{
+		Args:   []string{"3"},
+		Stdout: &stdout,
+		Stderr: &stderr,
+	}
+
+	transport := cmdtest.ConditionalTransport{
+		CondFunc: func(req *http.Request) bool {
+			calledTimes++
+			return strings.HasSuffix(req.URL.Path, "/apps/app1") && req.Method == http.MethodGet
+		},
+		Transport: cmdtest.Transport{Message: "Failed to get.", Status: http.StatusInternalServerError},
+	}
+
+	client := cmd.NewClient(&http.Client{Transport: &transport}, nil, manager)
+	command := UnitSet{}
+	command.Flags().Parse(true, []string{"-a", "app1", "-p", "web"})
+	err := command.Run(&context, client)
+	c.Assert(err, check.NotNil)
+	c.Assert(err.Error(), check.Equals, "Failed to get.")
+	c.Assert(calledTimes, check.Equals, 1)
+}
+
+func (s *S) TestUnitSetNoProcessSpecifiedAndMultipleExist(c *check.C) {
+	var stdout, stderr bytes.Buffer
+	var calledGet bool
+	context := cmd.Context{
+		Args:   []string{"3"},
+		Stdout: &stdout,
+		Stderr: &stderr,
+	}
+
+	resultGet := `{"name":"app1","teamowner":"myteam","cname":[""],"ip":"myapp.tsuru.io","platform":"php","repository":"git@git.com:php.git","state":"dead","units":[{"Ip":"10.10.10.10","ID":"app1/0","Status":"started","ProcessName":"web"},{"Ip":"9.9.9.9","ID":"app1/1","Status":"started","ProcessName":"web"},{"Ip":"","ID":"app1/2","Status":"pending","ProcessName":"web"},{"Ip":"8.8.8.8","ID":"app1/3","Status":"started","ProcessName":"worker"}],"teams":["tsuruteam","crane"],"owner":"myapp_owner","deploys":7,"router":"planb"}`
+	transport := cmdtest.ConditionalTransport{
+		CondFunc: func(req *http.Request) bool {
+			calledGet = true
+			return strings.HasSuffix(req.URL.Path, "/apps/app1") && req.Method == http.MethodGet
+		},
+		Transport: cmdtest.Transport{Message: resultGet, Status: http.StatusOK},
+	}
+
+	client := cmd.NewClient(&http.Client{Transport: &transport}, nil, manager)
+	command := UnitSet{}
+	command.Flags().Parse(true, []string{"-a", "app1"})
+	err := command.Run(&context, client)
+	c.Assert(err, check.NotNil)
+	c.Assert(err.Error(), check.Equals, "Please use the -p/--process flag to specify which process you want to update set units for.")
+	c.Assert(calledGet, check.Equals, true)
+}
+
+func (s *S) TestUnitSetNoProcessSpecifiedAndSingleExists(c *check.C) {
+	var stdout, stderr bytes.Buffer
+	var calledGet bool
+	var calledPut bool
+	context := cmd.Context{
+		Args:   []string{"10"},
+		Stdout: &stdout,
+		Stderr: &stderr,
+	}
+
+	resultGet := `{"name":"app1","teamowner":"myteam","cname":[""],"ip":"myapp.tsuru.io","platform":"php","repository":"git@git.com:php.git","state":"dead","units":[{"Ip":"","ID":"app1/2","Status":"pending","ProcessName":"worker"},{"Ip":"8.8.8.8","ID":"app1/3","Status":"started","ProcessName":"worker"}],"teams":["tsuruteam","crane"],"owner":"myapp_owner","deploys":7,"router":"planb"}`
+
+	expectedOut := "-- added unit --"
+	msg := io.SimpleJsonMessage{Message: expectedOut}
+	resultPut, _ := json.Marshal(msg)
+
+	transport := cmdtest.MultiConditionalTransport{
+		ConditionalTransports: []cmdtest.ConditionalTransport{
+			{
+				CondFunc: func(req *http.Request) bool {
+					calledGet = true
+					return strings.HasSuffix(req.URL.Path, "/apps/app1") && req.Method == http.MethodGet
+				},
+				Transport: cmdtest.Transport{Message: resultGet, Status: http.StatusOK},
+			},
+			{
+				CondFunc: func(req *http.Request) bool {
+					calledPut = true
+					c.Assert(req.FormValue("process"), check.Equals, "worker")
+					c.Assert(req.FormValue("units"), check.Equals, "8")
+					return strings.HasSuffix(req.URL.Path, "/apps/app1/units") && req.Method == http.MethodPut
+				},
+				Transport: cmdtest.Transport{Message: string(resultPut), Status: http.StatusOK},
+			},
+		},
+	}
+
+	client := cmd.NewClient(&http.Client{Transport: &transport}, nil, manager)
+	command := UnitSet{}
+	command.Flags().Parse(true, []string{"-a", "app1"})
+	err := command.Run(&context, client)
+	c.Assert(err, check.IsNil)
+	c.Assert(calledGet, check.Equals, true)
+	c.Assert(calledPut, check.Equals, true)
+	c.Assert(stdout.String(), check.Equals, expectedOut)
+}
+
+func (s *S) TestUnitSetInfo(c *check.C) {
+	c.Assert((&UnitSet{}).Info(), check.NotNil)
+}
+
+func (s *S) TestUnitSetIsACommand(c *check.C) {
+	var _ cmd.Command = &UnitSet{}
 }

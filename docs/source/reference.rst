@@ -155,6 +155,8 @@ based on the git repository's configuration. It will try to find a remote labele
    :title: Add new units to an application
 .. tsuru-command:: unit-remove
    :title: Remove units from an application
+.. tsuru-command:: unit-set
+   :title: Set the desired number of units for an application's process
 .. tsuru-command:: app-grant
    :title: Allow a team to access an application
 .. tsuru-command:: app-revoke

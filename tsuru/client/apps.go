@@ -1241,3 +1241,141 @@ func (c *UnitRemove) Run(context *cmd.Context, client *cmd.Client) error {
 	}
 	return cmd.StreamJSONResponse(context.Stdout, response)
 }
+
+type UnitSet struct {
+	cmd.GuessingCommand
+	fs      *gnuflag.FlagSet
+	process string
+}
+
+func (c *UnitSet) Info() *cmd.Info {
+	return &cmd.Info{
+		Name:  "unit-set",
+		Usage: "unit-set <# of units> [-a/--app appname] [-p/--process processname]",
+		Desc: `Set the number of units for a process of an application, adding or removing units as needed. You need to have access to the
+app to be able to set the number of units for it. The process flag is optional if the app has only 1 process.`,
+		MinArgs: 1,
+	}
+}
+
+func (c *UnitSet) Flags() *gnuflag.FlagSet {
+	if c.fs == nil {
+		c.fs = c.GuessingCommand.Flags()
+		processMessage := "Process name"
+		c.fs.StringVar(&c.process, "process", "", processMessage)
+		c.fs.StringVar(&c.process, "p", "", processMessage)
+	}
+	return c.fs
+}
+
+func (c *UnitSet) Run(context *cmd.Context, client *cmd.Client) error {
+	context.RawOutput()
+	appName, err := c.Guess()
+	if err != nil {
+		return err
+	}
+	u, err := cmd.GetURL(fmt.Sprintf("/apps/%s", appName))
+	if err != nil {
+		return err
+	}
+	request, err := http.NewRequest(http.MethodGet, u, nil)
+	if err != nil {
+		return err
+	}
+	response, err := client.Do(request)
+	if err != nil {
+		return err
+	}
+	result, err := ioutil.ReadAll(response.Body)
+	if err != nil {
+		return err
+	}
+	var a app
+	err = json.Unmarshal(result, &a)
+	if err != nil {
+		return err
+	}
+
+	unitsByProcess := map[string][]unit{}
+	for _, u := range a.Units {
+		units := unitsByProcess[u.ProcessName]
+		unitsByProcess[u.ProcessName] = append(units, u)
+	}
+
+	if len(unitsByProcess) != 1 && c.process == "" {
+		return errors.New("Please use the -p/--process flag to specify which process you want to update set units for.")
+	}
+
+	process := c.process
+	if process == "" {
+		for p := range unitsByProcess {
+			// TODO - assert
+			process = p
+			break
+		}
+	}
+
+	existingUnits := 0
+	for _, unit := range a.Units {
+		if unit.ProcessName == process {
+			existingUnits++
+		}
+	}
+
+	desiredUnits, err := strconv.Atoi(context.Args[0])
+	if err != nil {
+		return err
+	}
+
+	if existingUnits < desiredUnits {
+		u, err := cmd.GetURL(fmt.Sprintf("/apps/%s/units", appName))
+		if err != nil {
+			return err
+		}
+
+		unitsToAdd := desiredUnits - existingUnits
+		val := url.Values{}
+		val.Add("units", strconv.Itoa(unitsToAdd))
+		val.Add("process", process)
+		request, err := http.NewRequest(http.MethodPut, u, bytes.NewBufferString(val.Encode()))
+		if err != nil {
+			return err
+		}
+
+		request.Header.Add("Content-Type", "application/x-www-form-urlencoded")
+		response, err := client.Do(request)
+		if err != nil {
+			return err
+		}
+
+		defer response.Body.Close()
+		return cmd.StreamJSONResponse(context.Stdout, response)
+	}
+
+	if existingUnits > desiredUnits {
+		unitsToRemove := existingUnits - desiredUnits
+		val := url.Values{}
+		val.Add("units", strconv.Itoa(unitsToRemove))
+		val.Add("process", process)
+		u, err := cmd.GetURL(fmt.Sprintf("/apps/%s/units?%s", appName, val.Encode()))
+		if err != nil {
+			return err
+		}
+
+		request, err := http.NewRequest(http.MethodDelete, u, nil)
+		if err != nil {
+			return err
+		}
+
+		response, err := client.Do(request)
+		if err != nil {
+			return err
+		}
+
+		defer response.Body.Close()
+		return cmd.StreamJSONResponse(context.Stdout, response)
+	}
+
+	fmt.Fprintf(context.Stdout, "The process %s already has %d units.\n", process, existingUnits)
+	return nil
+}
