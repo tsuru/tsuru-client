@@ -236,6 +236,13 @@ func (s *S) TestUnitRemoveIsRegistered(c *check.C) {
 	c.Assert(rmunit, check.FitsTypeOf, &client.UnitRemove{})
 }
 
+func (s *S) TestUnitSetIsRegistered(c *check.C) {
+	manager = buildManager("tsuru")
+	rmunit, ok := manager.Commands["unit-set"]
+	c.Assert(ok, check.Equals, true)
+	c.Assert(rmunit, check.FitsTypeOf, &client.UnitSet{})
+}
+
 func (s *S) TestCNameAddIsRegistered(c *check.C) {
 	manager = buildManager("tsuru")
 	cname, ok := manager.Commands["cname-add"]
