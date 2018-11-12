@@ -36,7 +36,36 @@ func (c *MachineList) Run(context *cmd.Context, client *cmd.Client) error {
 	if err != nil {
 		return err
 	}
-	table := c.Tabulate(machines)
+	tmplList := TemplateList{}
+	templates, err := tmplList.List(client)
+	if err != nil {
+		return err
+	}
+	tmplParams := make(map[string]map[string]string)
+	for _, t := range templates {
+		tmplMap := make(map[string]string)
+		for _, d := range t.Data {
+			tmplMap[d.Name] = d.Value
+		}
+		tmplParams[t.Name] = tmplMap
+	}
+	machineToTemplates := make(map[string][]string)
+	for _, m := range machines {
+	loop:
+		for t, tmap := range tmplParams {
+			if len(tmap) > len(m.CreationParams) {
+				continue
+			}
+
+			for k, v := range tmap {
+				if m.CreationParams[k] != v {
+					continue loop
+				}
+			}
+			machineToTemplates[m.Id] = append(machineToTemplates[m.Id], t)
+		}
+	}
+	table := c.Tabulate(machines, machineToTemplates)
 	context.Stdout.Write(table.Bytes())
 	return nil
 }
@@ -59,9 +88,9 @@ func (c *MachineList) List(client *cmd.Client) ([]iaas.Machine, error) {
 	return machines, err
 }
 
-func (c *MachineList) Tabulate(machines []iaas.Machine) *tablecli.Table {
+func (c *MachineList) Tabulate(machines []iaas.Machine, machineToTemplate map[string][]string) *tablecli.Table {
 	table := tablecli.NewTable()
-	table.Headers = tablecli.Row([]string{"Id", "IaaS", "Address", "Creation Params"})
+	table.Headers = tablecli.Row([]string{"Id", "IaaS", "Address", "Creation Params", "Matching Templates"})
 	table.LineSeparator = true
 	for _, machine := range machines {
 		var params []string
@@ -69,7 +98,9 @@ func (c *MachineList) Tabulate(machines []iaas.Machine) *tablecli.Table {
 			params = append(params, fmt.Sprintf("%s=%s", k, v))
 		}
 		sort.Strings(params)
-		table.AddRow(tablecli.Row([]string{machine.Id, machine.Iaas, machine.Address, strings.Join(params, "\n")}))
+		sort.Strings(machineToTemplate[machine.Id])
+		table.AddRow(tablecli.Row([]string{machine.Id, machine.Iaas, machine.Address, strings.Join(params, "\n"),
+			strings.Join(machineToTemplate[machine.Id], "\n")}))
 	}
 	table.Sort()
 	return table
@@ -131,21 +162,29 @@ func (c *TemplateList) Flags() *gnuflag.FlagSet {
 	return c.fs
 }
 
-func (c *TemplateList) Run(context *cmd.Context, client *cmd.Client) error {
+func (c *TemplateList) List(client *cmd.Client) ([]iaas.Template, error) {
 	url, err := cmd.GetURL("/iaas/templates")
 	if err != nil {
-		return err
+		return nil, err
 	}
 	request, err := http.NewRequest("GET", url, nil)
 	if err != nil {
-		return err
+		return nil, err
 	}
 	response, err := client.Do(request)
 	if err != nil {
-		return err
+		return nil, err
 	}
 	var templates []iaas.Template
 	err = json.NewDecoder(response.Body).Decode(&templates)
+	if err != nil {
+		return nil, err
+	}
+	return templates, nil
+}
+
+func (c *TemplateList) Run(context *cmd.Context, client *cmd.Client) error {
+	templates, err := c.List(client)
 	if err != nil {
 		return err
 	}
@@ -161,7 +200,6 @@ func (c *TemplateList) Run(context *cmd.Context, client *cmd.Client) error {
 			for _, data := range t.Data {
 				tParams[data.Name] = data.Value
 			}
-			fmt.Printf("%v\n", tParams)
 
 		loop:
 			for _, m := range machines {
