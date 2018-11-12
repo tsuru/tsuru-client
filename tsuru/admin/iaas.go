@@ -108,15 +108,27 @@ func (c *MachineDestroy) Run(context *cmd.Context, client *cmd.Client) error {
 	return nil
 }
 
-type TemplateList struct{}
+type TemplateList struct {
+	countMachines bool
+	fs            *gnuflag.FlagSet
+}
 
 func (c *TemplateList) Info() *cmd.Info {
 	return &cmd.Info{
 		Name:    "machine-template-list",
-		Usage:   "machine-template-list",
+		Usage:   "machine-template-list [--count]",
 		Desc:    "Lists all machine templates.",
 		MinArgs: 0,
 	}
+}
+
+func (c *TemplateList) Flags() *gnuflag.FlagSet {
+	if c.fs == nil {
+		c.fs = gnuflag.NewFlagSet("", gnuflag.ExitOnError)
+		c.fs.BoolVar(&c.countMachines, "count", false, "Count machines using each template.")
+		c.fs.BoolVar(&c.countMachines, "c", false, "Count machines using each template.")
+	}
+	return c.fs
 }
 
 func (c *TemplateList) Run(context *cmd.Context, client *cmd.Client) error {
@@ -137,8 +149,41 @@ func (c *TemplateList) Run(context *cmd.Context, client *cmd.Client) error {
 	if err != nil {
 		return err
 	}
+	templateIndex := make(map[string]int)
+	if c.countMachines {
+		mList := MachineList{}
+		machines, err := mList.List(client)
+		if err != nil {
+			return err
+		}
+		for _, t := range templates {
+			tParams := make(map[string]string)
+			for _, data := range t.Data {
+				tParams[data.Name] = data.Value
+			}
+			fmt.Printf("%v\n", tParams)
+
+		loop:
+			for _, m := range machines {
+				if len(tParams) > len(m.CreationParams) {
+					continue
+				}
+
+				for k, v := range tParams {
+					if m.CreationParams[k] != v {
+						continue loop
+					}
+				}
+				templateIndex[t.Name]++
+			}
+		}
+	}
 	table := tablecli.NewTable()
-	table.Headers = tablecli.Row([]string{"Name", "IaaS", "Params"})
+	headers := []string{"Name", "IaaS", "Params"}
+	if c.countMachines {
+		headers = append(headers, "# Machines")
+	}
+	table.Headers = tablecli.Row(headers)
 	table.LineSeparator = true
 	for _, template := range templates {
 		var params []string
@@ -146,7 +191,11 @@ func (c *TemplateList) Run(context *cmd.Context, client *cmd.Client) error {
 			params = append(params, fmt.Sprintf("%s=%s", data.Name, data.Value))
 		}
 		sort.Strings(params)
-		table.AddRow(tablecli.Row([]string{template.Name, template.IaaSName, strings.Join(params, "\n")}))
+		row := []string{template.Name, template.IaaSName, strings.Join(params, "\n")}
+		if c.countMachines {
+			row = append(row, fmt.Sprintf("%d", templateIndex[template.Name]))
+		}
+		table.AddRow(tablecli.Row(row))
 	}
 	table.Sort()
 	context.Stdout.Write(table.Bytes())
@@ -251,6 +300,7 @@ func (c *TemplateUpdate) Info() *cmd.Info {
 		MinArgs: 2,
 	}
 }
+
 func (c *TemplateUpdate) Flags() *gnuflag.FlagSet {
 	if c.fs == nil {
 		c.fs = gnuflag.NewFlagSet("", gnuflag.ExitOnError)

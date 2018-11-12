@@ -115,6 +115,59 @@ func (s *S) TestTemplateListRun(c *check.C) {
 	c.Assert(stdout.String(), check.Equals, expected)
 }
 
+func (s *S) TestTemplateListCountRun(c *check.C) {
+	var stdout, stderr bytes.Buffer
+	context := cmd.Context{
+		Stdout: &stdout,
+		Stderr: &stderr,
+	}
+	tpl1 := iaas.Template{Name: "tpl1", IaaSName: "ec2", Data: iaas.TemplateDataList{
+		iaas.TemplateData{Name: "region", Value: "us-east-1"},
+		iaas.TemplateData{Name: "type", Value: "m1.small"},
+	}}
+	tpl2 := iaas.Template{Name: "tpl2", IaaSName: "ec2", Data: iaas.TemplateDataList{
+		iaas.TemplateData{Name: "region", Value: "xxxx"},
+		iaas.TemplateData{Name: "type", Value: "l1.large"},
+	}}
+	data, err := json.Marshal([]iaas.Template{tpl1, tpl2})
+	c.Assert(err, check.IsNil)
+	expected := `+------+------+------------------+------------+
+| Name | IaaS | Params           | # Machines |
++------+------+------------------+------------+
+| tpl1 | ec2  | region=us-east-1 | 2          |
+|      |      | type=m1.small    |            |
++------+------+------------------+------------+
+| tpl2 | ec2  | region=xxxx      | 1          |
+|      |      | type=l1.large    |            |
++------+------+------------------+------------+
+`
+	machines, err := json.Marshal([]iaas.Machine{
+		{CreationParams: map[string]string{"region": "xxxx", "type": "l1.large", "extra": "xpto"}},
+		{CreationParams: map[string]string{"region": "us-east-1", "type": "m1.small"}},
+		{CreationParams: map[string]string{"region": "us-east-1", "type": "m1.small", "extra": "xpto"}},
+	})
+	trans := &cmdtest.MultiConditionalTransport{ConditionalTransports: []cmdtest.ConditionalTransport{
+		{
+			Transport: cmdtest.Transport{Message: string(data), Status: http.StatusOK},
+			CondFunc: func(req *http.Request) bool {
+				return strings.HasSuffix(req.URL.Path, "/iaas/templates") && req.Method == "GET"
+			},
+		},
+		{
+			Transport: cmdtest.Transport{Message: string(machines), Status: http.StatusOK},
+			CondFunc: func(req *http.Request) bool {
+				return strings.HasSuffix(req.URL.Path, "/iaas/machines") && req.Method == "GET"
+			},
+		},
+	}}
+	client := cmd.NewClient(&http.Client{Transport: trans}, nil, s.manager)
+	command := TemplateList{}
+	command.Flags().Parse(true, []string{"--count"})
+	err = command.Run(&context, client)
+	c.Assert(err, check.IsNil)
+	c.Assert(stdout.String(), check.Equals, expected)
+}
+
 func (s *S) TestTemplateAddCmdRun(c *check.C) {
 	var buf bytes.Buffer
 	context := cmd.Context{Args: []string{"my-tpl", "ec2", "zone=xyz", "image=ami-something"}, Stdout: &buf}
