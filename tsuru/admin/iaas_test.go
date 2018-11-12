@@ -33,21 +33,39 @@ func (s *S) TestMachineListRun(c *check.C) {
 	}}
 	data, err := json.Marshal([]iaas.Machine{m1, m2})
 	c.Assert(err, check.IsNil)
-	expected := `+-----+-------+---------+-----------------+
-| Id  | IaaS  | Address | Creation Params |
-+-----+-------+---------+-----------------+
-| id1 | iaas1 | addr1   | param1=value1   |
-+-----+-------+---------+-----------------+
-| id2 | iaas2 | addr2   | param1=value1   |
-|     |       |         | param2=value2   |
-+-----+-------+---------+-----------------+
+	expected := `+-----+-------+---------+-----------------+--------------------+
+| Id  | IaaS  | Address | Creation Params | Matching Templates |
++-----+-------+---------+-----------------+--------------------+
+| id1 | iaas1 | addr1   | param1=value1   | tmpl1              |
++-----+-------+---------+-----------------+--------------------+
+| id2 | iaas2 | addr2   | param1=value1   | tmpl1              |
+|     |       |         | param2=value2   | tmpl2              |
++-----+-------+---------+-----------------+--------------------+
 `
-	trans := &cmdtest.ConditionalTransport{
-		Transport: cmdtest.Transport{Message: string(data), Status: http.StatusOK},
-		CondFunc: func(req *http.Request) bool {
-			return strings.HasSuffix(req.URL.Path, "/iaas/machines") && req.Method == "GET"
+	templates, err := json.Marshal([]iaas.Template{
+		{Name: "tmpl1", Data: iaas.TemplateDataList{
+			{Name: "param1", Value: "value1"},
+		}},
+		{Name: "tmpl2", Data: iaas.TemplateDataList{
+			{Name: "param1", Value: "value1"},
+			{Name: "param2", Value: "value2"},
+		}},
+	})
+	c.Assert(err, check.IsNil)
+	trans := &cmdtest.MultiConditionalTransport{ConditionalTransports: []cmdtest.ConditionalTransport{
+		{
+			Transport: cmdtest.Transport{Message: string(data), Status: http.StatusOK},
+			CondFunc: func(req *http.Request) bool {
+				return strings.HasSuffix(req.URL.Path, "/iaas/machines") && req.Method == "GET"
+			},
 		},
-	}
+		{
+			Transport: cmdtest.Transport{Message: string(templates), Status: http.StatusOK},
+			CondFunc: func(req *http.Request) bool {
+				return strings.HasSuffix(req.URL.Path, "/iaas/templates") && req.Method == "GET"
+			},
+		},
+	}}
 	client := cmd.NewClient(&http.Client{Transport: trans}, nil, s.manager)
 	command := MachineList{}
 	err = command.Run(&context, client)

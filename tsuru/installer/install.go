@@ -251,7 +251,7 @@ func (c *Uninstall) Run(ctx *cmd.Context, cli *cmd.Client) error {
 			return err
 		}
 		if len(appMachines) > 0 {
-			fmt.Fprintf(ctx.Stdout, "The following app machines will be destroyed: \n%s", machineList.Tabulate(appMachines).String())
+			fmt.Fprintf(ctx.Stdout, "The following app machines will be destroyed: \n%s", machineList.Tabulate(appMachines, nil).String())
 		}
 	}
 	defer dockerMachine.Close()
