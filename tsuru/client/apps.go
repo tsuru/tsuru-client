@@ -637,7 +637,7 @@ Quota: {{.Quota.InUse}}/{{if .Quota.Limit}}{{.Quota.Limit}} units{{else}}unlimit
 		buf.WriteString(fmt.Sprintf("Service instances: %d\n", servicesTable.Rows()))
 		buf.WriteString(servicesTable.String())
 	}
-	if a.Plan.Name != "" {
+	if a.Plan.Memory != 0 || a.Plan.Swap != 0 || a.Plan.CpuShare != 0 {
 		buf.WriteString("\n")
 		buf.WriteString("App Plan:\n")
 		buf.WriteString(renderPlans([]apptypes.Plan{a.Plan}, true))
