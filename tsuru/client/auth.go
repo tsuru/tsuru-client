@@ -188,7 +188,7 @@ func (c *TeamCreate) Run(ctx *cmd.Context, cli *cmd.Client) error {
 		return err
 	}
 	team := ctx.Args[0]
-	_, err = apiClient.TeamApi.TeamCreate(context.TODO(), tsuru.TeamData{
+	_, err = apiClient.TeamApi.TeamCreate(context.TODO(), tsuru.TeamCreateArgs{
 		Name: team,
 		Tags: c.tags,
 	})
@@ -236,7 +236,7 @@ func (t *TeamUpdate) Run(ctx *cmd.Context, cli *cmd.Client) error {
 		return err
 	}
 	team := ctx.Args[0]
-	_, err = apiClient.TeamApi.TeamUpdate(context.TODO(), team, tsuru.UpdateData{
+	_, err = apiClient.TeamApi.TeamUpdate(context.TODO(), team, tsuru.TeamUpdateArgs{
 		Newname: t.newName,
 		Tags:    t.tags,
 	})

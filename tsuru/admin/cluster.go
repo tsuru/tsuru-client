@@ -79,7 +79,7 @@ func (c *ClusterAdd) Run(ctx *cmd.Context, cli *cmd.Client) error {
 		Addresses:   c.addresses,
 		Pools:       c.pools,
 		CustomData:  c.customData,
-		Default_:    c.isDefault,
+		Default:     c.isDefault,
 		Provisioner: provisioner,
 		CreateData:  c.createData,
 	}
@@ -89,21 +89,21 @@ func (c *ClusterAdd) Run(ctx *cmd.Context, cli *cmd.Client) error {
 		if err != nil {
 			return err
 		}
-		clus.Cacert = string(data)
+		clus.Cacert = data
 	}
 	if c.clientcert != "" {
 		data, err = ioutil.ReadFile(c.clientcert)
 		if err != nil {
 			return err
 		}
-		clus.Clientcert = string(data)
+		clus.Clientcert = data
 	}
 	if c.clientkey != "" {
 		data, err = ioutil.ReadFile(c.clientkey)
 		if err != nil {
 			return err
 		}
-		clus.Clientkey = string(data)
+		clus.Clientkey = data
 	}
 	response, err := apiClient.ClusterApi.ClusterCreate(context.TODO(), clus)
 	if err != nil {
@@ -171,7 +171,7 @@ func (c *ClusterUpdate) Run(ctx *cmd.Context, cli *cmd.Client) error {
 		Addresses:   c.addresses,
 		Pools:       c.pools,
 		CustomData:  c.customData,
-		Default_:    c.isDefault,
+		Default:     c.isDefault,
 		Provisioner: provisioner,
 	}
 	var data []byte
@@ -180,21 +180,21 @@ func (c *ClusterUpdate) Run(ctx *cmd.Context, cli *cmd.Client) error {
 		if err != nil {
 			return err
 		}
-		clus.Cacert = string(data)
+		clus.Cacert = data
 	}
 	if c.clientcert != "" {
 		data, err = ioutil.ReadFile(c.clientcert)
 		if err != nil {
 			return err
 		}
-		clus.Clientcert = string(data)
+		clus.Clientcert = data
 	}
 	if c.clientkey != "" {
 		data, err = ioutil.ReadFile(c.clientkey)
 		if err != nil {
 			return err
 		}
-		clus.Clientkey = string(data)
+		clus.Clientkey = data
 	}
 	resp, err := apiClient.ClusterApi.ClusterUpdate(context.TODO(), name, clus)
 	if err != nil {
@@ -242,7 +242,7 @@ func (c *ClusterList) Run(ctx *cmd.Context, cli *cmd.Client) error {
 		for k, v := range c.CustomData {
 			custom = append(custom, fmt.Sprintf("%s=%s", k, v))
 		}
-		tbl.AddRow(tablecli.Row{c.Name, c.Provisioner, strings.Join(c.Addresses, "\n"), strings.Join(custom, "\n"), strconv.FormatBool(c.Default_), strings.Join(c.Pools, "\n")})
+		tbl.AddRow(tablecli.Row{c.Name, c.Provisioner, strings.Join(c.Addresses, "\n"), strings.Join(custom, "\n"), strconv.FormatBool(c.Default), strings.Join(c.Pools, "\n")})
 	}
 	fmt.Fprint(ctx.Stdout, tbl.String())
 	return nil

@@ -40,13 +40,13 @@ func (s *S) TestClusterAddRun(c *check.C) {
 			c.Assert(err, check.IsNil)
 			c.Assert(clus, check.DeepEquals, tsuru.Cluster{
 				Name:        "c1",
-				Cacert:      "cadata",
-				Clientcert:  "certdata",
-				Clientkey:   "keydata",
+				Cacert:      []byte("cadata"),
+				Clientcert:  []byte("certdata"),
+				Clientkey:   []byte("keydata"),
 				CustomData:  map[string]string{"a": "b", "c": "d"},
 				Addresses:   []string{"addr1", "addr2"},
 				Pools:       []string{"p1", "p2"},
-				Default_:    true,
+				Default:     true,
 				Provisioner: "myprov",
 				CreateData:  map[string]string{"iaas": "dockermachine"},
 			})
@@ -105,13 +105,13 @@ func (s *S) TestClusterUpdateRun(c *check.C) {
 			c.Assert(err, check.IsNil)
 			c.Assert(clus, check.DeepEquals, tsuru.Cluster{
 				Name:        "c1",
-				Cacert:      "cadata",
-				Clientcert:  "certdata",
-				Clientkey:   "keydata",
+				Cacert:      []byte("cadata"),
+				Clientcert:  []byte("certdata"),
+				Clientkey:   []byte("keydata"),
 				CustomData:  map[string]string{"a": "b", "c": "d"},
 				Addresses:   []string{"addr1", "addr2"},
 				Pools:       []string{"p1", "p2"},
-				Default_:    true,
+				Default:     true,
 				Provisioner: "myprov",
 			})
 			return true
@@ -156,16 +156,16 @@ func (s *S) TestClusterListRun(c *check.C) {
 	clusters := []tsuru.Cluster{{
 		Name:        "c1",
 		Addresses:   []string{"addr1", "addr2"},
-		Cacert:      "cacert",
-		Clientcert:  "clientcert",
-		Clientkey:   "clientkey",
+		Cacert:      []byte("cacert"),
+		Clientcert:  []byte("clientcert"),
+		Clientkey:   []byte("clientkey"),
 		CustomData:  map[string]string{"namespace": "ns1"},
-		Default_:    true,
+		Default:     true,
 		Provisioner: "prov1",
 	}, {
 		Name:        "c2",
 		Addresses:   []string{"addr3"},
-		Default_:    false,
+		Default:     false,
 		Pools:       []string{"p1", "p2"},
 		Provisioner: "prov2",
 	}}

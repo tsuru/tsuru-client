@@ -34,13 +34,13 @@ func (s *S) TestBrokerAdd(c *check.C) {
 			c.Assert(ret, check.DeepEquals, tsuru.ServiceBroker{
 				Name: "br1",
 				URL:  "http://x.com",
-				Config: &tsuru.ServiceBrokerConfig{
-					AuthConfig: &tsuru.ServiceBrokerConfigAuthConfig{
-						BasicAuthConfig: &tsuru.ServiceBrokerConfigAuthConfigBasicAuthConfig{
+				Config: tsuru.ServiceBrokerConfig{
+					AuthConfig: tsuru.ServiceBrokerConfigAuthConfig{
+						BasicAuthConfig: tsuru.ServiceBrokerConfigAuthConfigBasicAuthConfig{
 							Password: "password",
 							Username: "username",
 						},
-						BearerConfig: &tsuru.ServiceBrokerConfigAuthConfigBearerConfig{
+						BearerConfig: tsuru.ServiceBrokerConfigAuthConfigBearerConfig{
 							Token: "ABCDE",
 						},
 					},
@@ -85,11 +85,7 @@ func (s *S) TestBrokerAddEmptyAuth(c *check.C) {
 			c.Assert(ret, check.DeepEquals, tsuru.ServiceBroker{
 				Name: "br1",
 				URL:  "http://x.com",
-				Config: &tsuru.ServiceBrokerConfig{
-					AuthConfig: &tsuru.ServiceBrokerConfigAuthConfig{
-						BasicAuthConfig: nil,
-						BearerConfig:    nil,
-					},
+				Config: tsuru.ServiceBrokerConfig{
 					Context: map[string]string{
 						"p1": "v1",
 						"p2": "v2",
@@ -159,13 +155,13 @@ func (s *S) TestBrokerUpdate(c *check.C) {
 			c.Assert(ret, check.DeepEquals, tsuru.ServiceBroker{
 				Name: "br1",
 				URL:  "http://x.com",
-				Config: &tsuru.ServiceBrokerConfig{
-					AuthConfig: &tsuru.ServiceBrokerConfigAuthConfig{
-						BasicAuthConfig: &tsuru.ServiceBrokerConfigAuthConfigBasicAuthConfig{
+				Config: tsuru.ServiceBrokerConfig{
+					AuthConfig: tsuru.ServiceBrokerConfigAuthConfig{
+						BasicAuthConfig: tsuru.ServiceBrokerConfigAuthConfigBasicAuthConfig{
 							Password: "password",
 							Username: "username",
 						},
-						BearerConfig: &tsuru.ServiceBrokerConfigAuthConfigBearerConfig{
+						BearerConfig: tsuru.ServiceBrokerConfigAuthConfigBearerConfig{
 							Token: "ABCDE",
 						},
 					},
@@ -210,11 +206,7 @@ func (s *S) TestBrokerUpdateEmptyAuth(c *check.C) {
 			c.Assert(ret, check.DeepEquals, tsuru.ServiceBroker{
 				Name: "br1",
 				URL:  "http://x.com",
-				Config: &tsuru.ServiceBrokerConfig{
-					AuthConfig: &tsuru.ServiceBrokerConfigAuthConfig{
-						BasicAuthConfig: nil,
-						BearerConfig:    nil,
-					},
+				Config: tsuru.ServiceBrokerConfig{
 					Context: map[string]string{
 						"p1": "v1",
 						"p2": "v2",
@@ -324,10 +316,10 @@ func (s *S) TestBrokerList(c *check.C) {
 		{
 			Name: "aws",
 			URL:  "https://192.168.99.100:31767/aws-service-broker",
-			Config: &tsuru.ServiceBrokerConfig{
+			Config: tsuru.ServiceBrokerConfig{
 				Insecure: true,
-				AuthConfig: &tsuru.ServiceBrokerConfigAuthConfig{
-					BearerConfig: &tsuru.ServiceBrokerConfigAuthConfigBearerConfig{
+				AuthConfig: tsuru.ServiceBrokerConfigAuthConfig{
+					BearerConfig: tsuru.ServiceBrokerConfigAuthConfigBearerConfig{
 						Token: "xpto",
 					},
 				},
@@ -340,9 +332,9 @@ func (s *S) TestBrokerList(c *check.C) {
 		{
 			Name: "azure",
 			URL:  "https://localhost:9090",
-			Config: &tsuru.ServiceBrokerConfig{
-				AuthConfig: &tsuru.ServiceBrokerConfigAuthConfig{
-					BasicAuthConfig: &tsuru.ServiceBrokerConfigAuthConfigBasicAuthConfig{
+			Config: tsuru.ServiceBrokerConfig{
+				AuthConfig: tsuru.ServiceBrokerConfigAuthConfig{
+					BasicAuthConfig: tsuru.ServiceBrokerConfigAuthConfigBasicAuthConfig{
 						Password: "pass",
 						Username: "user",
 					},
