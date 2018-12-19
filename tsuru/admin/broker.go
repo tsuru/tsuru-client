@@ -158,12 +158,10 @@ func (c *BrokerList) Run(ctx *cmd.Context, cli *cmd.Client) error {
 	}
 	for _, b := range brokerList.Brokers {
 		authMethod := "None"
-		if b.Config.AuthConfig != nil {
-			if b.Config.AuthConfig.BasicAuthConfig != nil {
-				authMethod = "Basic\n"
-			} else if b.Config.AuthConfig.BearerConfig != nil {
-				authMethod = "Bearer\n"
-			}
+		if b.Config.AuthConfig.BasicAuthConfig.Username != "" {
+			authMethod = "Basic\n"
+		} else if b.Config.AuthConfig.BearerConfig.Token != "" {
+			authMethod = "Bearer\n"
 		}
 		var contexts []string
 		for k, v := range b.Config.Context {
@@ -184,15 +182,6 @@ func (c *BrokerList) Run(ctx *cmd.Context, cli *cmd.Client) error {
 
 func flagsForServiceBroker(broker *tsuru.ServiceBroker, cacheExpiration *string) *gnuflag.FlagSet {
 	fs := gnuflag.NewFlagSet("", gnuflag.ExitOnError)
-
-	if broker.Config == nil {
-		broker.Config = &tsuru.ServiceBrokerConfig{
-			AuthConfig: &tsuru.ServiceBrokerConfigAuthConfig{
-				BasicAuthConfig: &tsuru.ServiceBrokerConfigAuthConfigBasicAuthConfig{},
-				BearerConfig:    &tsuru.ServiceBrokerConfigAuthConfigBearerConfig{},
-			},
-		}
-	}
 
 	insecure := "Ignore TLS errors in the broker request."
 	fs.BoolVar(&broker.Config.Insecure, "insecure", false, insecure)
@@ -222,12 +211,6 @@ func flagsForServiceBroker(broker *tsuru.ServiceBroker, cacheExpiration *string)
 
 func parseServiceBroker(broker *tsuru.ServiceBroker, ctx *cmd.Context, cacheExpiration string) error {
 	broker.Name, broker.URL = ctx.Args[0], ctx.Args[1]
-	if broker.Config.AuthConfig.BearerConfig.Token == "" {
-		broker.Config.AuthConfig.BearerConfig = nil
-	}
-	if broker.Config.AuthConfig.BasicAuthConfig.Password == "" && broker.Config.AuthConfig.BasicAuthConfig.Username == "" {
-		broker.Config.AuthConfig.BasicAuthConfig = nil
-	}
 	if len(cacheExpiration) > 0 {
 		duration, err := time.ParseDuration(cacheExpiration)
 		if err != nil {

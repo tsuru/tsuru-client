@@ -75,7 +75,7 @@ func flagsForWebhook(webhook *tsuru.Webhook) *gnuflag.FlagSet {
 
 	fs.BoolVar(&webhook.Insecure, "insecure", false, "Ignore TLS errors in the webhook request.")
 
-	webhook.EventFilter = &tsuru.WebhookEventFilter{}
+	webhook.EventFilter = tsuru.WebhookEventFilter{}
 	fs.Var(cmd.StringSliceFlagWrapper{Dst: &webhook.EventFilter.TargetTypes}, "target-type",
 		"Target Type for matching events.")
 	fs.Var(cmd.StringSliceFlagWrapper{Dst: &webhook.EventFilter.TargetValues}, "target-value",
@@ -220,9 +220,6 @@ func (c *WebhookUpdate) mergeWebhooks(existing tsuru.Webhook) tsuru.Webhook {
 	} else if c.noHeader {
 		existing.Headers = nil
 	}
-	if existing.EventFilter == nil {
-		existing.EventFilter = &tsuru.WebhookEventFilter{}
-	}
 	if len(new.EventFilter.KindNames) != 0 {
 		existing.EventFilter.KindNames = new.EventFilter.KindNames
 	} else if c.noKindName {
@@ -316,10 +313,7 @@ func (c *WebhookList) Run(ctx *cmd.Context, cli *cmd.Client) error {
 	return nil
 }
 
-func filterToStr(f *tsuru.WebhookEventFilter) string {
-	if f == nil {
-		return ""
-	}
+func filterToStr(f tsuru.WebhookEventFilter) string {
 	var strs []string
 	for _, v := range f.KindTypes {
 		strs = append(strs, fmt.Sprintf("kind-type == %s", v))

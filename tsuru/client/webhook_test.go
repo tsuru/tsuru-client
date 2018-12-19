@@ -38,7 +38,7 @@ func (s *S) TestWebhookCreate(c *check.C) {
 			c.Assert(ret, check.DeepEquals, tsuru.Webhook{
 				Name:        "wh1",
 				Url:         "http://x.com",
-				EventFilter: &tsuru.WebhookEventFilter{},
+				EventFilter: tsuru.WebhookEventFilter{},
 			})
 			return true
 		},
@@ -82,7 +82,7 @@ func (s *S) TestWebhookCreateFlags(c *check.C) {
 					"b": {"d"},
 				},
 				Insecure: true,
-				EventFilter: &tsuru.WebhookEventFilter{
+				EventFilter: tsuru.WebhookEventFilter{
 					TargetTypes:  []string{"a1", "b1"},
 					TargetValues: []string{"a2", "b2"},
 					KindTypes:    []string{"k1"},
@@ -145,7 +145,7 @@ func (s *S) TestWebhookList(c *check.C) {
 			"b": {"d"},
 		},
 		Insecure: true,
-		EventFilter: &tsuru.WebhookEventFilter{
+		EventFilter: tsuru.WebhookEventFilter{
 			TargetTypes:  []string{"a1", "b1"},
 			TargetValues: []string{"a2", "b2"},
 			KindTypes:    []string{"k1"},
@@ -236,7 +236,7 @@ func (s *S) TestWebhookUpdate(c *check.C) {
 				Name:        "wh1",
 				Url:         "http://x.com",
 				Method:      "GET",
-				EventFilter: &tsuru.WebhookEventFilter{},
+				EventFilter: tsuru.WebhookEventFilter{},
 				Headers:     map[string][]string{"a": {"b", "c"}},
 			})
 			return true
@@ -290,7 +290,7 @@ func (s *S) TestWebhookUpdateWithFlags(c *check.C) {
 				Name:   "wh1",
 				Url:    "http://y.com",
 				Method: "GET",
-				EventFilter: &tsuru.WebhookEventFilter{
+				EventFilter: tsuru.WebhookEventFilter{
 					KindNames: []string{"app.deploy"},
 				},
 			})
