@@ -19,7 +19,7 @@ func (s *S) TestResolverConfig(c *check.C) {
 		Result      string
 		ErrMsg      string
 	}{
-		{"invalid path", "invalid", nil, "", "no such file or directory"},
+		{"invalid path", "invalid", nil, "", ".*(cannot find the file|no such file).*"},
 		{"default configuration", "", nil, defaultconfig.Compose, ""},
 		{"custom parameter", "", map[string]string{"TSURU_API_IMAGE": "INJECT_TEST"}, "INJECT_TEST", ""},
 	}
@@ -27,8 +27,7 @@ func (s *S) TestResolverConfig(c *check.C) {
 	for _, tc := range tt {
 		result, err := resolveConfig(tc.Base, tc.Config)
 		if len(tc.ErrMsg) > 0 {
-			contains := strings.Contains(err.Error(), tc.ErrMsg)
-			c.Assert(contains, check.Equals, true)
+			c.Assert(err, check.ErrorMatches, tc.ErrMsg)
 		} else {
 			c.Assert(err, check.IsNil)
 		}
