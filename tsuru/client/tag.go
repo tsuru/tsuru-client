@@ -54,12 +54,14 @@ func (t *TagList) Show(apps []app, services []service.ServiceModel, context *cmd
 	table.Headers = tablecli.Row([]string{"Tag", "Apps", "Service Instances"})
 	for _, tagName := range sortedTags(tagList) {
 		t := tagList[tagName]
-		instanceNames := make([]string, len(t.ServiceInstances))
-		for i, serviceName := range sortedServices(t.ServiceInstances) {
+		var instanceNames []string
+		for _, serviceName := range sortedServices(t.ServiceInstances) {
 			instances := t.ServiceInstances[serviceName]
-			instanceNames[i] = fmt.Sprintf("%s: %s", serviceName, strings.Join(instances, ", "))
+			for _, instanceName := range instances {
+				instanceNames = append(instanceNames, fmt.Sprintf("%s: %s", serviceName, instanceName))
+			}
 		}
-		table.AddRow(tablecli.Row([]string{t.Name, strings.Join(t.Apps, ", "), strings.Join(instanceNames, "\n")}))
+		table.AddRow(tablecli.Row([]string{t.Name, strings.Join(t.Apps, "\n"), strings.Join(instanceNames, "\n")}))
 	}
 	table.LineSeparator = true
 	table.Sort()
