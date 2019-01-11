@@ -151,7 +151,7 @@ func (c *TokenListCmd) Run(ctx *cmd.Context, cli *cmd.Client) error {
 		return err
 	}
 	table := tablecli.Table{
-		Headers:       tablecli.Row{"Token ID", "Team", "Description", "Creator", "Timestamps", "Value", "Roles"},
+		Headers:       tablecli.Row{"Token ID", "Team", "Timestamps", "Roles"},
 		LineSeparator: true,
 	}
 	for _, t := range tokens {
@@ -161,14 +161,11 @@ func (c *TokenListCmd) Run(ctx *cmd.Context, cli *cmd.Client) error {
 		table.AddRow(tablecli.Row{
 			t.TokenId,
 			t.Team,
-			t.Description,
-			t.CreatorEmail,
 			fmt.Sprintf(" Created At: %s\n Expires At: %s\nLast Access: %s",
 				formatter.FormatDate(t.CreatedAt),
 				formatter.FormatDate(t.ExpiresAt),
 				formatter.FormatDate(t.LastAccess),
 			),
-			t.Token,
 			formatRoles(t.Roles),
 		})
 	}
@@ -211,4 +208,50 @@ func (c *TokenDeleteCmd) Run(ctx *cmd.Context, cli *cmd.Client) error {
 	}
 	fmt.Fprintln(ctx.Stdout, "Token successfully deleted.")
 	return nil
+}
+
+type TokenInfoCmd struct {
+}
+
+func (c *TokenInfoCmd) Info() *cmd.Info {
+	return &cmd.Info{
+		Name:    "token-info",
+		Usage:   "token-info <token id>",
+		Desc:    `Shows information about a specific token.`,
+		MinArgs: 1,
+	}
+}
+
+func (c *TokenInfoCmd) Run(ctx *cmd.Context, cli *cmd.Client) error {
+	apiClient, err := client.ClientFromEnvironment(&tsuru.Configuration{
+		HTTPClient: cli.HTTPClient,
+	})
+	if err != nil {
+		return err
+	}
+
+	tokenID := ctx.Args[0]
+	token, rsp, err := apiClient.AuthApi.TeamTokenInfo(context.TODO(), tokenID)
+	if err != nil {
+		if rsp != nil && rsp.StatusCode == http.StatusNoContent {
+			return nil
+		}
+		return err
+	}
+
+	if tokenID != "" {
+		fmt.Fprintf(ctx.Stdout, "Token: %s\nToken Id: %s\nDescription: %s\nCreated at: %s\nExpires at: %s\nLast Acess: %s\nCreator: %s\nTeam: %s\nRoles: %s\n",
+			token.Token,
+			token.TokenId,
+			token.Description,
+			formatter.FormatDate(token.CreatedAt),
+			formatter.FormatDate(token.ExpiresAt),
+			formatter.FormatDate(token.LastAccess),
+			token.CreatorEmail,
+			token.Team,
+			formatRoles(token.Roles),
+		)
+		return nil
+	}
+	return fmt.Errorf("Token not found")
 }
