@@ -6,7 +6,6 @@ package client
 
 import (
 	"archive/tar"
-	"bufio"
 	"bytes"
 	"compress/gzip"
 	"context"
@@ -25,7 +24,7 @@ import (
 	"strings"
 	"sync"
 
-	"github.com/sabhiram/go-gitignore"
+	ignore "github.com/sabhiram/go-gitignore"
 	"github.com/tsuru/gnuflag"
 	"github.com/tsuru/go-tsuruclient/pkg/client"
 	"github.com/tsuru/go-tsuruclient/pkg/tsuru"
@@ -35,6 +34,10 @@ import (
 	"github.com/tsuru/tsuru/cmd"
 	tsuruIo "github.com/tsuru/tsuru/io"
 	"github.com/tsuru/tsuru/safe"
+)
+
+const (
+	deployOutputBufferSize = 4096
 )
 
 type deployList []tsuruapp.DeployData
@@ -248,17 +251,26 @@ func (c *AppDeploy) Run(context *cmd.Context, client *cmd.Client) error {
 	defer resp.Body.Close()
 	c.eventID = resp.Header.Get("X-Tsuru-Eventid")
 	c.m.Unlock()
-	scanner := bufio.NewScanner(resp.Body)
-	for scanner.Scan() {
-		c.m.Lock()
-		_, err := respBody.Write([]byte(scanner.Text() + "\n"))
-		if err != nil {
-			fmt.Fprintln(context.Stderr, "writing response:", err)
+	var readBuffer [deployOutputBufferSize]byte
+	var readErr error
+	for readErr == nil {
+		var read int
+		read, readErr = resp.Body.Read(readBuffer[:])
+		if read == 0 {
+			continue
 		}
+		c.m.Lock()
+		written, writeErr := respBody.Write(readBuffer[:read])
 		c.m.Unlock()
+		if written < read {
+			return fmt.Errorf("short write processing output, read: %d, written: %d", read, written)
+		}
+		if writeErr != nil {
+			return fmt.Errorf("error writing response: %v", writeErr)
+		}
 	}
-	if err := scanner.Err(); err != nil {
-		fmt.Fprintln(context.Stderr, "reading response:", err)
+	if readErr != io.EOF {
+		return fmt.Errorf("error reading response: %v", readErr)
 	}
 	if strings.HasSuffix(buf.String(), "\nOK\n") {
 		return nil
