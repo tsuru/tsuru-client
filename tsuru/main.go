@@ -171,6 +171,7 @@ func buildManager(name string) *cmd.Manager {
 	m.Register(&client.TokenUpdateCmd{})
 	m.Register(&client.TokenListCmd{})
 	m.Register(&client.TokenDeleteCmd{})
+	m.Register(&client.TokenInfoCmd{})
 	m.Register(&client.WebhookList{})
 	m.Register(&client.WebhookCreate{})
 	m.Register(&client.WebhookUpdate{})

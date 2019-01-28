@@ -183,17 +183,17 @@ func (s *S) TestTokenList(c *check.C) {
 			]
 		}
 	]`
-	expected := `+------------+--------+-------------+---------+----------------------------------+----------------+--------+
-| Token ID   | Team   | Description | Creator | Timestamps                       | Value          | Roles  |
-+------------+--------+-------------+---------+----------------------------------+----------------+--------+
-| mytokenid  | myteam | desc        | me@me   |  Created At: 20 Feb 18 17:20 CST | mytokenvalue   | r1(v1) |
-|            |        |             |         |  Expires At: -                   |                | r2(v2) |
-|            |        |             |         | Last Access: -                   |                |        |
-+------------+--------+-------------+---------+----------------------------------+----------------+--------+
-| othertoken | myteam | desc        | me@me   |  Created At: 20 Feb 18 17:20 CST | Not authorized | r1(v1) |
-|            |        |             |         |  Expires At: 20 Feb 18 17:20 CST |                | r2(v2) |
-|            |        |             |         | Last Access: 20 Feb 18 17:20 CST |                |        |
-+------------+--------+-------------+---------+----------------------------------+----------------+--------+
+	expected := `+------------+--------+----------------------------------+--------+
+| Token ID   | Team   | Timestamps                       | Roles  |
++------------+--------+----------------------------------+--------+
+| mytokenid  | myteam |  Created At: 20 Feb 18 17:20 CST | r1(v1) |
+|            |        |  Expires At: -                   | r2(v2) |
+|            |        | Last Access: -                   |        |
++------------+--------+----------------------------------+--------+
+| othertoken | myteam |  Created At: 20 Feb 18 17:20 CST | r1(v1) |
+|            |        |  Expires At: 20 Feb 18 17:20 CST | r2(v2) |
+|            |        | Last Access: 20 Feb 18 17:20 CST |        |
++------------+--------+----------------------------------+--------+
 `
 	context := cmd.Context{
 		Stdout: &stdout,
@@ -232,6 +232,52 @@ func (s *S) TestTokenDelete(c *check.C) {
 	}
 	client := cmd.NewClient(&http.Client{Transport: &trans}, nil, manager)
 	command := TokenDeleteCmd{}
+	err := command.Run(&context, client)
+	c.Assert(err, check.IsNil)
+	c.Assert(stdout.String(), check.Equals, expected)
+}
+
+func (s *S) TestTokenInfo(c *check.C) {
+	var stdout, stderr bytes.Buffer
+	result := `
+		{
+			"token_id": "mytokenid",
+			"token": "mytokenvalue",
+			"description": "desc",
+			"created_at": "2018-02-20T20:20:20.00-03:00",
+			"expires_at": "2018-02-20T20:20:20.00-03:00",
+			"last_access": "2018-02-20T20:20:20.00-03:00",
+			"creator_email": "me@me",
+			"team": "myteam",
+			"roles": [
+				{"name": "r1", "contextvalue": "v1"}
+			]
+		}`
+	expected := `Token: mytokenvalue
+Token Id: mytokenid
+Description: desc
+Created at: 20 Feb 18 17:20 CST
+Expires at: 20 Feb 18 17:20 CST
+Last Acess: 20 Feb 18 17:20 CST
+Creator: me@me
+Team: myteam
+Roles: r1(v1)
+`
+	context := cmd.Context{
+		Args:   []string{"mytokenid"},
+		Stdout: &stdout,
+		Stderr: &stderr,
+	}
+	trans := cmdtest.ConditionalTransport{
+		Transport: cmdtest.Transport{Message: result, Status: http.StatusOK},
+		CondFunc: func(r *http.Request) bool {
+			c.Assert(r.URL.Path, check.Equals, "/1.6/tokens/mytokenid")
+			c.Assert(r.Method, check.Equals, "GET")
+			return true
+		},
+	}
+	client := cmd.NewClient(&http.Client{Transport: &trans}, nil, manager)
+	command := TokenInfoCmd{}
 	err := command.Run(&context, client)
 	c.Assert(err, check.IsNil)
 	c.Assert(stdout.String(), check.Equals, expected)

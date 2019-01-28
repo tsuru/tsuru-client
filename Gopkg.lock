@@ -566,14 +566,14 @@
 
 [[projects]]
   branch = "master"
-  digest = "1:21ec7b0cc872b8a9e17a4bb1537439a4dca8d03ab7dad0e8dbb7c39981806ad6"
+  digest = "1:7c1e96a8812427b4e3ab690d9327df87bac23b2aef9fa8dd8e34ab042316ad15"
   name = "github.com/tsuru/go-tsuruclient"
   packages = [
     "pkg/client",
     "pkg/tsuru",
   ]
   pruneopts = "NUT"
-  revision = "a7f378b3a2435b6173b5ac4fa2ca810e18a8d23f"
+  revision = "84bc5a4111f0e774f16c6488c74789790687275d"
 
 [[projects]]
   branch = "master"
