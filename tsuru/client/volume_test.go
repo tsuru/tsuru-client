@@ -37,16 +37,13 @@ func (s *S) TestVolumeList(c *check.C) {
 	err := (&VolumeList{}).Run(&ctx, client)
 	c.Assert(err, check.IsNil)
 	result := stdout.String()
-	c.Assert(result, check.Equals, `+---------+------+-----------+-------+-----------------------------+-----------------------------+------------------+
-| Name    | Plan | Pool      | Team  | Plan Opts                   | Opts                        | Binds            |
-+---------+------+-----------+-------+-----------------------------+-----------------------------+------------------+
-| other   | nfs  | swarmpool | admin | driver: local               | device: :/exports/dir       |                  |
-|         |      |           |       |                             | o: addr=192.168.50.1,rw     |                  |
-+---------+------+-----------+-------+-----------------------------+-----------------------------+------------------+
-| vag-nfs | nfs  | kubepool  | admin | access-modes: ReadWriteMany | capacity: 1Gi               | myapp:/mymnt:rw  |
-|         |      |           |       | plugin: nfs                 | path: /home/vagrant/nfstest | myapp:/mymnt1:rw |
-|         |      |           |       |                             | server: 192.168.50.4        |                  |
-+---------+------+-----------+-------+-----------------------------+-----------------------------+------------------+
+	c.Assert(result, check.Equals, `+---------+------+-----------+-------+
+| Name    | Plan | Pool      | Team  |
++---------+------+-----------+-------+
+| other   | nfs  | swarmpool | admin |
++---------+------+-----------+-------+
+| vag-nfs | nfs  | kubepool  | admin |
++---------+------+-----------+-------+
 `)
 }
 
@@ -65,6 +62,83 @@ func (s *S) TestVolumeListEmpty(c *check.C) {
 	}
 	client := cmd.NewClient(&http.Client{Transport: trans}, nil, manager)
 	err := (&VolumeList{}).Run(&ctx, client)
+	c.Assert(err, check.IsNil)
+	result := stdout.String()
+	c.Assert(result, check.Equals, "No volumes available.\n")
+}
+
+func (s *S) TestVolumeInfo(c *check.C) {
+	var stdout, stderr bytes.Buffer
+	response := `
+		{"Name":"vol1","Pool":"kubepool","Plan":{"Name":"nfs","Opts":{"access-modes":"ReadWriteMany","plugin":"nfs"}},"TeamOwner":"admin","Status":"","Binds":[{"ID":{"App":"myapp","MountPoint":"/mymnt","Volume":"vag-nfs"},"ReadOnly":false},{"ID":{"App":"myapp","MountPoint":"/mymnt1","Volume":"vag-nfs"},"ReadOnly":false}],"Opts":{"capacity":"1Gi","path":"/home/vagrant/nfstest","server":"192.168.50.4"}}`
+	ctx := cmd.Context{
+		Args:   []string{"vol1"},
+		Stdout: &stdout,
+		Stderr: &stderr,
+	}
+	trans := &cmdtest.ConditionalTransport{
+		Transport: cmdtest.Transport{Message: response, Status: http.StatusOK},
+		CondFunc: func(req *http.Request) bool {
+			return strings.HasSuffix(req.URL.Path, "/volumes/vol1") && req.Method == "GET"
+		},
+	}
+	client := cmd.NewClient(&http.Client{Transport: trans}, nil, manager)
+	command := &VolumeInfo{}
+	err := command.Run(&ctx, client)
+	c.Assert(err, check.IsNil)
+	result := stdout.String()
+	c.Assert(result, check.Equals, `Name: vol1
+Plan: nfs
+Pool: kubepool
+Team: admin
+
+Binds:
++-------+------------+------+
+| App   | MountPoint | Mode |
++-------+------------+------+
+| myapp | /mymnt     | rw   |
++-------+------------+------+
+| myapp | /mymnt1    | rw   |
++-------+------------+------+
+
+Plan Opts:
++--------------+---------------+
+| Key          | Value         |
++--------------+---------------+
+| access-modes | ReadWriteMany |
++--------------+---------------+
+| plugin       | nfs           |
++--------------+---------------+
+
+Opts:
++----------+-----------------------+
+| Key      | Value                 |
++----------+-----------------------+
+| capacity | 1Gi                   |
++----------+-----------------------+
+| path     | /home/vagrant/nfstest |
++----------+-----------------------+
+| server   | 192.168.50.4          |
++----------+-----------------------+
+`)
+}
+
+func (s *S) TestVolumeInfoEmpty(c *check.C) {
+	var stdout, stderr bytes.Buffer
+	ctx := cmd.Context{
+		Args:   []string{"vol"},
+		Stdout: &stdout,
+		Stderr: &stderr,
+	}
+	trans := &cmdtest.ConditionalTransport{
+		Transport: cmdtest.Transport{Message: "", Status: http.StatusNoContent},
+		CondFunc: func(req *http.Request) bool {
+			return strings.HasSuffix(req.URL.Path, "/volumes/vol") && req.Method == "GET"
+		},
+	}
+	client := cmd.NewClient(&http.Client{Transport: trans}, nil, manager)
+	command := &VolumeInfo{}
+	err := command.Run(&ctx, client)
 	c.Assert(err, check.IsNil)
 	result := stdout.String()
 	c.Assert(result, check.Equals, "No volumes available.\n")

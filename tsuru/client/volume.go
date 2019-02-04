@@ -193,39 +193,99 @@ func (c *VolumeList) Run(ctx *cmd.Context, client *cmd.Client) error {
 
 func (c *VolumeList) render(ctx *cmd.Context, volumes []volume.Volume) error {
 	tbl := tablecli.NewTable()
-	tbl.Headers = tablecli.Row{"Name", "Plan", "Pool", "Team", "Plan Opts", "Opts", "Binds"}
+	tbl.Headers = tablecli.Row{"Name", "Plan", "Pool", "Team"}
 	tbl.LineSeparator = true
 	for _, v := range volumes {
-		var bindsStr []string
-		for _, b := range v.Binds {
-			mode := "rw"
-			if b.ReadOnly {
-				mode = "ro"
-			}
-			bindsStr = append(bindsStr, fmt.Sprintf("%s:%s:%s", b.ID.App, b.ID.MountPoint, mode))
-		}
-		var planOpts []string
-		for k, v := range v.Plan.Opts {
-			planOpts = append(planOpts, fmt.Sprintf("%s: %v", k, v))
-		}
-		sort.Strings(planOpts)
-		var opts []string
-		for k, v := range v.Opts {
-			opts = append(opts, k+": "+v)
-		}
-		sort.Strings(opts)
 		tbl.AddRow(tablecli.Row{
 			v.Name,
 			v.Plan.Name,
 			v.Pool,
 			v.TeamOwner,
-			strings.Join(planOpts, "\n"),
-			strings.Join(opts, "\n"),
-			strings.Join(bindsStr, "\n"),
 		})
 	}
 	tbl.Sort()
 	fmt.Fprint(ctx.Stdout, tbl.String())
+	return nil
+}
+
+type VolumeInfo struct{}
+
+func (c *VolumeInfo) Info() *cmd.Info {
+	return &cmd.Info{
+		Name:    "volume-info",
+		Usage:   "volume-info <volume>",
+		Desc:    `Get a volume.`,
+		MinArgs: 1,
+		MaxArgs: 1,
+	}
+}
+
+func (c *VolumeInfo) Run(ctx *cmd.Context, client *cmd.Client) error {
+	volumeName := ctx.Args[0]
+	u, err := cmd.GetURLVersion("1.4", "/volumes/"+volumeName)
+	if err != nil {
+		return err
+	}
+	request, err := http.NewRequest("GET", u, nil)
+	if err != nil {
+		return err
+	}
+	rsp, err := client.Do(request)
+	if err != nil {
+		return err
+	}
+	defer rsp.Body.Close()
+	if rsp.StatusCode == http.StatusNoContent {
+		fmt.Fprintln(ctx.Stdout, "No volumes available.")
+		return nil
+	}
+	data, err := ioutil.ReadAll(rsp.Body)
+	if err != nil {
+		return err
+	}
+	var volume volume.Volume
+	err = json.Unmarshal(data, &volume)
+	if err != nil {
+		return err
+	}
+	return c.render(ctx, volume)
+}
+
+func (c *VolumeInfo) render(ctx *cmd.Context, volume volume.Volume) error {
+	fmt.Fprintf(ctx.Stdout, "Name: %s\nPlan: %s\nPool: %s\nTeam: %s\n",
+		volume.Name,
+		volume.Plan.Name,
+		volume.Pool,
+		volume.TeamOwner,
+	)
+	bindTable := tablecli.NewTable()
+	bindTable.Headers = tablecli.Row([]string{"App", "MountPoint", "Mode"})
+	bindTable.LineSeparator = true
+	for _, b := range volume.Binds {
+		mode := "rw"
+		if b.ReadOnly {
+			mode = "ro"
+		}
+		bindTable.AddRow(tablecli.Row([]string{fmt.Sprintf(b.ID.App), fmt.Sprintf(b.ID.MountPoint), fmt.Sprintf(mode)}))
+	}
+	fmt.Fprintf(ctx.Stdout, "\nBinds:\n")
+	fmt.Fprintf(ctx.Stdout, bindTable.String())
+	planOptsTable := tablecli.NewTable()
+	planOptsTable.Headers = []string{"Key", "Value"}
+	planOptsTable.LineSeparator = true
+	for k, v := range volume.Plan.Opts {
+		planOptsTable.AddRow([]string{k, fmt.Sprintf("%v", v)})
+	}
+	fmt.Fprintf(ctx.Stdout, "\nPlan Opts:\n")
+	fmt.Fprintf(ctx.Stdout, planOptsTable.String())
+	optsTable := tablecli.NewTable()
+	optsTable.Headers = []string{"Key", "Value"}
+	optsTable.LineSeparator = true
+	for k, v := range volume.Opts {
+		optsTable.AddRow([]string{k, fmt.Sprintf("%v", v)})
+	}
+	fmt.Fprintf(ctx.Stdout, "\nOpts:\n")
+	fmt.Fprintf(ctx.Stdout, optsTable.String())
 	return nil
 }
 
