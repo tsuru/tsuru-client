@@ -13,6 +13,7 @@ import (
 	"strconv"
 	"strings"
 
+	"github.com/pkg/errors"
 	"github.com/tsuru/gnuflag"
 	"github.com/tsuru/go-tsuruclient/pkg/client"
 	"github.com/tsuru/go-tsuruclient/pkg/tsuru"
@@ -222,17 +223,15 @@ func (c *ClusterList) Run(ctx *cmd.Context, cli *cmd.Client) error {
 	if err != nil {
 		return err
 	}
-	ctx.RawOutput()
 	clusters, resp, err := apiClient.ClusterApi.ClusterList(context.TODO())
-	if err != nil {
-		return err
-	}
 	if resp.StatusCode == http.StatusNoContent {
 		fmt.Fprintln(ctx.Stdout, "No clusters registered.")
 		return nil
 	}
+	if err != nil {
+		return err
+	}
 	defer resp.Body.Close()
-
 	tbl := tablecli.NewTable()
 	tbl.LineSeparator = true
 	tbl.Headers = tablecli.Row{"Name", "Provisioner", "Addresses", "Custom Data", "Default", "Pools"}
@@ -282,5 +281,105 @@ func (c *ClusterRemove) Run(ctx *cmd.Context, cli *cmd.Client) error {
 	}
 	defer response.Body.Close()
 	fmt.Fprintln(ctx.Stdout, "Cluster successfully removed.")
+	return nil
+}
+
+type ProvisionerList struct{}
+
+func (c *ProvisionerList) Info() *cmd.Info {
+	return &cmd.Info{
+		Name:  "provisioner-list",
+		Usage: "provisioner-list",
+		Desc:  `List registered provisioners and their cluster options.`,
+	}
+}
+
+func (c *ProvisionerList) Run(ctx *cmd.Context, cli *cmd.Client) error {
+	apiClient, err := client.ClientFromEnvironment(&tsuru.Configuration{
+		HTTPClient: cli.HTTPClient,
+	})
+	if err != nil {
+		return err
+	}
+	provisioners, resp, err := apiClient.ClusterApi.ProvisionerList(context.TODO())
+	if resp.StatusCode == http.StatusNoContent {
+		fmt.Fprintln(ctx.Stdout, "No provisioners registered.")
+		return nil
+	}
+	if err != nil {
+		return err
+	}
+	defer resp.Body.Close()
+	tbl := tablecli.NewTable()
+	tbl.Headers = tablecli.Row{"Name", "Cluster Usage"}
+	sort.Slice(provisioners, func(i, j int) bool {
+		return provisioners[i].Name < provisioners[j].Name
+	})
+	for _, p := range provisioners {
+		tbl.AddRow(tablecli.Row{p.Name, p.ClusterHelp.ProvisionerHelp})
+	}
+	fmt.Fprint(ctx.Stdout, tbl.String())
+	return nil
+}
+
+type ProvisionerInfo struct{}
+
+func (c *ProvisionerInfo) Info() *cmd.Info {
+	return &cmd.Info{
+		Name:    "provisioner-info",
+		Usage:   "provisioner-info <provisioner name>",
+		Desc:    `Detailed information about provisioner.`,
+		MinArgs: 1,
+		MaxArgs: 1,
+	}
+}
+
+func (c *ProvisionerInfo) Run(ctx *cmd.Context, cli *cmd.Client) error {
+	provisionerName := ctx.Args[0]
+	apiClient, err := client.ClientFromEnvironment(&tsuru.Configuration{
+		HTTPClient: cli.HTTPClient,
+	})
+	if err != nil {
+		return err
+	}
+	provisioners, resp, err := apiClient.ClusterApi.ProvisionerList(context.TODO())
+	if resp.StatusCode == http.StatusNoContent {
+		return errors.New("provisioner not found")
+	}
+	if err != nil {
+		return err
+	}
+	defer resp.Body.Close()
+	var provisioner *tsuru.Provisioner
+	for _, p := range provisioners {
+		if p.Name == provisionerName {
+			provisioner = &p
+			break
+		}
+	}
+	if provisioner == nil {
+		return errors.New("provisioner not found")
+	}
+	fmt.Fprintf(ctx.Stdout, "Name: %v\n", provisioner.Name)
+	fmt.Fprintf(ctx.Stdout, "Cluster usage: %v\n", provisioner.ClusterHelp.ProvisionerHelp)
+	fmt.Fprintf(ctx.Stdout, "\nCustom Data:\n")
+	tbl := tablecli.NewTable()
+	tbl.LineSeparator = true
+	tbl.Headers = tablecli.Row{"Name", "Usage"}
+	for key, value := range provisioner.ClusterHelp.CustomDataHelp {
+		tbl.AddRow(tablecli.Row{key, value})
+	}
+	tbl.Sort()
+	fmt.Fprint(ctx.Stdout, tbl.String())
+
+	fmt.Fprintf(ctx.Stdout, "\nCreate Data:\n")
+	tbl = tablecli.NewTable()
+	tbl.LineSeparator = true
+	tbl.Headers = tablecli.Row{"Name", "Usage"}
+	for key, value := range provisioner.ClusterHelp.CreateDataHelp {
+		tbl.AddRow(tablecli.Row{key, value})
+	}
+	tbl.Sort()
+	fmt.Fprint(ctx.Stdout, tbl.String())
 	return nil
 }
