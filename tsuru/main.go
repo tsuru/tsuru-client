@@ -160,6 +160,7 @@ func buildManager(name string) *cmd.Manager {
 	m.Register(&client.VolumeList{})
 	m.Register(&client.VolumePlansList{})
 	m.Register(&client.VolumeDelete{})
+	m.Register(&client.VolumeInfo{})
 	m.Register(&client.VolumeBind{})
 	m.Register(&client.VolumeUnbind{})
 	m.Register(&client.AppRoutersList{})
