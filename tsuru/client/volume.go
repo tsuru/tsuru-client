@@ -276,6 +276,7 @@ func (c *VolumeInfo) render(ctx *cmd.Context, volume volume.Volume) error {
 	for k, v := range volume.Plan.Opts {
 		planOptsTable.AddRow([]string{k, fmt.Sprintf("%v", v)})
 	}
+	planOptsTable.Sort()
 	fmt.Fprintf(ctx.Stdout, "\nPlan Opts:\n")
 	fmt.Fprintf(ctx.Stdout, planOptsTable.String())
 	optsTable := tablecli.NewTable()
@@ -284,6 +285,7 @@ func (c *VolumeInfo) render(ctx *cmd.Context, volume volume.Volume) error {
 	for k, v := range volume.Opts {
 		optsTable.AddRow([]string{k, fmt.Sprintf("%v", v)})
 	}
+	optsTable.Sort()
 	fmt.Fprintf(ctx.Stdout, "\nOpts:\n")
 	fmt.Fprintf(ctx.Stdout, optsTable.String())
 	return nil
