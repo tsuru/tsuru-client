@@ -164,6 +164,7 @@ func (s *S) TestTemplateListCountRun(c *check.C) {
 		{CreationParams: map[string]string{"region": "us-east-1", "type": "m1.small"}},
 		{CreationParams: map[string]string{"region": "us-east-1", "type": "m1.small", "extra": "xpto"}},
 	})
+	c.Assert(err, check.IsNil)
 	trans := &cmdtest.MultiConditionalTransport{ConditionalTransports: []cmdtest.ConditionalTransport{
 		{
 			Transport: cmdtest.Transport{Message: string(data), Status: http.StatusOK},
