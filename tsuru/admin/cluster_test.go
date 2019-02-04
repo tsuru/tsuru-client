@@ -221,3 +221,116 @@ func (s *S) TestClusterRemoveRun(c *check.C) {
 	expectedOut := "Cluster successfully removed.\n"
 	c.Assert(stdout.String(), check.Equals, expected+expectedOut)
 }
+
+func (s *S) TestProvisionerListRun(c *check.C) {
+	var stdout, stderr bytes.Buffer
+	context := cmd.Context{
+		Stdout: &stdout,
+		Stderr: &stderr,
+	}
+	data := `[{
+		"name": "p1",
+		"cluster_help": {
+			"provisioner_help": "help",
+			"custom_data_help": {
+				"key1": "value1"
+			},
+			"create_data_help": {
+				"create key1": "create value1"
+			}
+		}
+	},{
+		"name": "p2",
+		"cluster_help": {
+			"provisioner_help": "help2",
+			"custom_data_help": {
+				"key2": "value2"
+			},
+			"create_data_help": {
+				"create key2": "create value2"
+			}
+		}
+	}]`
+	trans := &cmdtest.ConditionalTransport{
+		Transport: cmdtest.Transport{Message: data, Status: http.StatusOK},
+		CondFunc: func(req *http.Request) bool {
+			c.Assert(req.URL.Path, check.Equals, "/1.7/provisioner")
+			c.Assert(req.Method, check.Equals, http.MethodGet)
+			return true
+		},
+	}
+	manager := cmd.NewManager("admin", "0.1", "admin-ver", &stdout, &stderr, nil, nil)
+	client := cmd.NewClient(&http.Client{Transport: trans}, nil, manager)
+	myCmd := ProvisionerList{}
+	err := myCmd.Run(&context, client)
+	c.Assert(err, check.IsNil)
+	c.Assert(stdout.String(), check.Equals, `+------+---------------+
+| Name | Cluster Usage |
++------+---------------+
+| p1   | help          |
+| p2   | help2         |
++------+---------------+
+`)
+}
+
+func (s *S) TestProvisionerInfoRun(c *check.C) {
+	var stdout, stderr bytes.Buffer
+	context := cmd.Context{
+		Stdout: &stdout,
+		Stderr: &stderr,
+		Args:   []string{"p2"},
+	}
+	data := `[{
+		"name": "p1",
+		"cluster_help": {
+			"provisioner_help": "help",
+			"custom_data_help": {
+				"key1": "value1"
+			},
+			"create_data_help": {
+				"create key1": "create value1"
+			}
+		}
+	},{
+		"name": "p2",
+		"cluster_help": {
+			"provisioner_help": "help2",
+			"custom_data_help": {
+				"key2": "value2"
+			},
+			"create_data_help": {
+				"create key2": "create value2"
+			}
+		}
+	}]`
+	trans := &cmdtest.ConditionalTransport{
+		Transport: cmdtest.Transport{Message: data, Status: http.StatusOK},
+		CondFunc: func(req *http.Request) bool {
+			c.Assert(req.URL.Path, check.Equals, "/1.7/provisioner")
+			c.Assert(req.Method, check.Equals, http.MethodGet)
+			return true
+		},
+	}
+	manager := cmd.NewManager("admin", "0.1", "admin-ver", &stdout, &stderr, nil, nil)
+	client := cmd.NewClient(&http.Client{Transport: trans}, nil, manager)
+	myCmd := ProvisionerInfo{}
+	err := myCmd.Run(&context, client)
+	c.Assert(err, check.IsNil)
+	c.Assert(stdout.String(), check.Equals, `Name: p2
+Cluster usage: help2
+
+Custom Data:
++------+--------+
+| Name | Usage  |
++------+--------+
+| key2 | value2 |
++------+--------+
+
+Create Data:
++-------------+---------------+
+| Name        | Usage         |
++-------------+---------------+
+| create key2 | create value2 |
++-------------+---------------+
+`)
+}
