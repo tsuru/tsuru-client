@@ -20,11 +20,13 @@
   branch = "master"
 
 [[override]]
+  name = "github.com/docker/machine"
+  source = "github.com/cezarsa/machine"
+  branch = "azureupdate"
+
+[[override]]
   name = "github.com/kardianos/osext"
   revision = "10da29423eb9a6269092eebdc2be32209612d9d2"
-[[override]]
-  name = "github.com/Azure/azure-sdk-for-go"
-  version = "v5.0.0-beta"
 [[override]]
   name = "github.com/prometheus/client_model"
   revision = "fa8ad6fec33561be4280a8f0514318c79d7f6cb6"
@@ -55,9 +57,6 @@
 [[override]]
   name = "github.com/docker/go-units"
   revision = "5d2041e26a699eaca682e2ea41c8f891e1060444"
-[[override]]
-  name = "github.com/Azure/go-autorest"
-  version = "v7.2.3"
 [[override]]
   name = "github.com/gorilla/context"
   revision = "708054d61e5a2918b9f4e9700000ee611dcf03f5"
