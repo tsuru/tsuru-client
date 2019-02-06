@@ -799,6 +799,9 @@ func (c *AppList) Run(context *cmd.Context, client *cmd.Client) error {
 	if err != nil {
 		return err
 	}
+	if c.simplified {
+		qs.Set("simplified", "true")
+	}
 	u, err := cmd.GetURL(fmt.Sprintf("/apps?%s", qs.Encode()))
 	if err != nil {
 		return err
