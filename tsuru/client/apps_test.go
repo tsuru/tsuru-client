@@ -2112,6 +2112,39 @@ app3
 	c.Assert(stdout.String(), check.Equals, expected)
 }
 
+func (s *S) TestAppListWithFlags(c *check.C) {
+	var stdout, stderr bytes.Buffer
+	result := `[{"name":"app1","platform":"python","pool":"pool2"},{"name":"app2","platform":"python","pool":"pool2"},{"name":"app3","platform":"go","pool":"pool1"}]`
+	expected := `app1
+app2
+app3
+`
+	context := cmd.Context{
+		Args:   []string{},
+		Stdout: &stdout,
+		Stderr: &stderr,
+	}
+	var request *http.Request
+	transport := cmdtest.ConditionalTransport{
+		CondFunc: func(r *http.Request) bool {
+			request = r
+			return true
+		},
+		Transport: cmdtest.Transport{Message: result, Status: http.StatusOK},
+	}
+	client := cmd.NewClient(&http.Client{Transport: &transport}, nil, manager)
+	command := AppList{}
+	command.Flags().Parse(true, []string{"-p", "python", "-q"})
+	err := command.Run(&context, client)
+	c.Assert(err, check.IsNil)
+	c.Assert(stdout.String(), check.Equals, expected)
+	queryString := url.Values(map[string][]string{
+		"platform":   {"python"},
+		"simplified": {"true"},
+	})
+	c.Assert(request.URL.Query(), check.DeepEquals, queryString)
+}
+
 func (s *S) TestAppListInfo(c *check.C) {
 	c.Assert((&AppList{}).Info(), check.NotNil)
 }
