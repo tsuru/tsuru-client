@@ -89,11 +89,7 @@ func (a *PoolApiService) PoolCreate(ctx context.Context, poolCreateData PoolCrea
 		return localVarHttpResponse, err
 	}
 
-	localVarBody, err := ioutil.ReadAll(localVarHttpResponse.Body)
-	localVarHttpResponse.Body.Close()
-	if err != nil {
-		return localVarHttpResponse, err
-	}
+	var localVarBody []byte
 
 	if localVarHttpResponse.StatusCode >= 300 {
 		newErr := GenericOpenAPIError{
@@ -102,6 +98,13 @@ func (a *PoolApiService) PoolCreate(ctx context.Context, poolCreateData PoolCrea
 			statusCode: localVarHttpResponse.StatusCode,
 		}
 		if localVarHttpResponse.StatusCode == 400 {
+			localVarBody, err = ioutil.ReadAll(localVarHttpResponse.Body)
+			localVarHttpResponse.Body.Close()
+			if err != nil {
+				newErr.error = err.Error()
+				return localVarHttpResponse, newErr
+			}
+			newErr.body = localVarBody
 			var v string
 			err = a.client.decode(&v, localVarBody, localVarHttpResponse.Header.Get("Content-Type"))
 			if err != nil {
@@ -112,6 +115,13 @@ func (a *PoolApiService) PoolCreate(ctx context.Context, poolCreateData PoolCrea
 			return localVarHttpResponse, newErr
 		}
 		if localVarHttpResponse.StatusCode == 401 {
+			localVarBody, err = ioutil.ReadAll(localVarHttpResponse.Body)
+			localVarHttpResponse.Body.Close()
+			if err != nil {
+				newErr.error = err.Error()
+				return localVarHttpResponse, newErr
+			}
+			newErr.body = localVarBody
 			var v string
 			err = a.client.decode(&v, localVarBody, localVarHttpResponse.Header.Get("Content-Type"))
 			if err != nil {
@@ -122,6 +132,13 @@ func (a *PoolApiService) PoolCreate(ctx context.Context, poolCreateData PoolCrea
 			return localVarHttpResponse, newErr
 		}
 		if localVarHttpResponse.StatusCode == 409 {
+			localVarBody, err = ioutil.ReadAll(localVarHttpResponse.Body)
+			localVarHttpResponse.Body.Close()
+			if err != nil {
+				newErr.error = err.Error()
+				return localVarHttpResponse, newErr
+			}
+			newErr.body = localVarBody
 			var v string
 			err = a.client.decode(&v, localVarBody, localVarHttpResponse.Header.Get("Content-Type"))
 			if err != nil {
@@ -200,11 +217,7 @@ func (a *PoolApiService) PoolDelete(ctx context.Context, pool string) (*http.Res
 		return localVarHttpResponse, err
 	}
 
-	localVarBody, err := ioutil.ReadAll(localVarHttpResponse.Body)
-	localVarHttpResponse.Body.Close()
-	if err != nil {
-		return localVarHttpResponse, err
-	}
+	var localVarBody []byte
 
 	if localVarHttpResponse.StatusCode >= 300 {
 		newErr := GenericOpenAPIError{
@@ -213,6 +226,13 @@ func (a *PoolApiService) PoolDelete(ctx context.Context, pool string) (*http.Res
 			statusCode: localVarHttpResponse.StatusCode,
 		}
 		if localVarHttpResponse.StatusCode == 401 {
+			localVarBody, err = ioutil.ReadAll(localVarHttpResponse.Body)
+			localVarHttpResponse.Body.Close()
+			if err != nil {
+				newErr.error = err.Error()
+				return localVarHttpResponse, newErr
+			}
+			newErr.body = localVarBody
 			var v string
 			err = a.client.decode(&v, localVarBody, localVarHttpResponse.Header.Get("Content-Type"))
 			if err != nil {
@@ -223,6 +243,13 @@ func (a *PoolApiService) PoolDelete(ctx context.Context, pool string) (*http.Res
 			return localVarHttpResponse, newErr
 		}
 		if localVarHttpResponse.StatusCode == 403 {
+			localVarBody, err = ioutil.ReadAll(localVarHttpResponse.Body)
+			localVarHttpResponse.Body.Close()
+			if err != nil {
+				newErr.error = err.Error()
+				return localVarHttpResponse, newErr
+			}
+			newErr.body = localVarBody
 			var v string
 			err = a.client.decode(&v, localVarBody, localVarHttpResponse.Header.Get("Content-Type"))
 			if err != nil {
@@ -233,6 +260,13 @@ func (a *PoolApiService) PoolDelete(ctx context.Context, pool string) (*http.Res
 			return localVarHttpResponse, newErr
 		}
 		if localVarHttpResponse.StatusCode == 404 {
+			localVarBody, err = ioutil.ReadAll(localVarHttpResponse.Body)
+			localVarHttpResponse.Body.Close()
+			if err != nil {
+				newErr.error = err.Error()
+				return localVarHttpResponse, newErr
+			}
+			newErr.body = localVarBody
 			var v string
 			err = a.client.decode(&v, localVarBody, localVarHttpResponse.Header.Get("Content-Type"))
 			if err != nil {
@@ -425,11 +459,7 @@ func (a *PoolApiService) PoolUpdate(ctx context.Context, pool string, poolUpdate
 		return localVarHttpResponse, err
 	}
 
-	localVarBody, err := ioutil.ReadAll(localVarHttpResponse.Body)
-	localVarHttpResponse.Body.Close()
-	if err != nil {
-		return localVarHttpResponse, err
-	}
+	var localVarBody []byte
 
 	if localVarHttpResponse.StatusCode >= 300 {
 		newErr := GenericOpenAPIError{
@@ -438,6 +468,13 @@ func (a *PoolApiService) PoolUpdate(ctx context.Context, pool string, poolUpdate
 			statusCode: localVarHttpResponse.StatusCode,
 		}
 		if localVarHttpResponse.StatusCode == 401 {
+			localVarBody, err = ioutil.ReadAll(localVarHttpResponse.Body)
+			localVarHttpResponse.Body.Close()
+			if err != nil {
+				newErr.error = err.Error()
+				return localVarHttpResponse, newErr
+			}
+			newErr.body = localVarBody
 			var v string
 			err = a.client.decode(&v, localVarBody, localVarHttpResponse.Header.Get("Content-Type"))
 			if err != nil {
@@ -448,6 +485,13 @@ func (a *PoolApiService) PoolUpdate(ctx context.Context, pool string, poolUpdate
 			return localVarHttpResponse, newErr
 		}
 		if localVarHttpResponse.StatusCode == 404 {
+			localVarBody, err = ioutil.ReadAll(localVarHttpResponse.Body)
+			localVarHttpResponse.Body.Close()
+			if err != nil {
+				newErr.error = err.Error()
+				return localVarHttpResponse, newErr
+			}
+			newErr.body = localVarBody
 			var v string
 			err = a.client.decode(&v, localVarBody, localVarHttpResponse.Header.Get("Content-Type"))
 			if err != nil {
@@ -458,6 +502,13 @@ func (a *PoolApiService) PoolUpdate(ctx context.Context, pool string, poolUpdate
 			return localVarHttpResponse, newErr
 		}
 		if localVarHttpResponse.StatusCode == 409 {
+			localVarBody, err = ioutil.ReadAll(localVarHttpResponse.Body)
+			localVarHttpResponse.Body.Close()
+			if err != nil {
+				newErr.error = err.Error()
+				return localVarHttpResponse, newErr
+			}
+			newErr.body = localVarBody
 			var v string
 			err = a.client.decode(&v, localVarBody, localVarHttpResponse.Header.Get("Content-Type"))
 			if err != nil {

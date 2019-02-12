@@ -100,11 +100,7 @@ func (a *ServiceApiService) InstanceDelete(ctx context.Context, service string, 
 		return localVarHttpResponse, err
 	}
 
-	localVarBody, err := ioutil.ReadAll(localVarHttpResponse.Body)
-	localVarHttpResponse.Body.Close()
-	if err != nil {
-		return localVarHttpResponse, err
-	}
+	var localVarBody []byte
 
 	if localVarHttpResponse.StatusCode >= 300 {
 		newErr := GenericOpenAPIError{
@@ -113,6 +109,13 @@ func (a *ServiceApiService) InstanceDelete(ctx context.Context, service string, 
 			statusCode: localVarHttpResponse.StatusCode,
 		}
 		if localVarHttpResponse.StatusCode == 401 {
+			localVarBody, err = ioutil.ReadAll(localVarHttpResponse.Body)
+			localVarHttpResponse.Body.Close()
+			if err != nil {
+				newErr.error = err.Error()
+				return localVarHttpResponse, newErr
+			}
+			newErr.body = localVarBody
 			var v string
 			err = a.client.decode(&v, localVarBody, localVarHttpResponse.Header.Get("Content-Type"))
 			if err != nil {
@@ -123,6 +126,13 @@ func (a *ServiceApiService) InstanceDelete(ctx context.Context, service string, 
 			return localVarHttpResponse, newErr
 		}
 		if localVarHttpResponse.StatusCode == 404 {
+			localVarBody, err = ioutil.ReadAll(localVarHttpResponse.Body)
+			localVarHttpResponse.Body.Close()
+			if err != nil {
+				newErr.error = err.Error()
+				return localVarHttpResponse, newErr
+			}
+			newErr.body = localVarBody
 			var v string
 			err = a.client.decode(&v, localVarBody, localVarHttpResponse.Header.Get("Content-Type"))
 			if err != nil {
@@ -356,11 +366,7 @@ func (a *ServiceApiService) InstanceUpdate(ctx context.Context, service string, 
 		return localVarHttpResponse, err
 	}
 
-	localVarBody, err := ioutil.ReadAll(localVarHttpResponse.Body)
-	localVarHttpResponse.Body.Close()
-	if err != nil {
-		return localVarHttpResponse, err
-	}
+	var localVarBody []byte
 
 	if localVarHttpResponse.StatusCode >= 300 {
 		newErr := GenericOpenAPIError{
@@ -369,6 +375,13 @@ func (a *ServiceApiService) InstanceUpdate(ctx context.Context, service string, 
 			statusCode: localVarHttpResponse.StatusCode,
 		}
 		if localVarHttpResponse.StatusCode == 400 {
+			localVarBody, err = ioutil.ReadAll(localVarHttpResponse.Body)
+			localVarHttpResponse.Body.Close()
+			if err != nil {
+				newErr.error = err.Error()
+				return localVarHttpResponse, newErr
+			}
+			newErr.body = localVarBody
 			var v string
 			err = a.client.decode(&v, localVarBody, localVarHttpResponse.Header.Get("Content-Type"))
 			if err != nil {
@@ -379,6 +392,13 @@ func (a *ServiceApiService) InstanceUpdate(ctx context.Context, service string, 
 			return localVarHttpResponse, newErr
 		}
 		if localVarHttpResponse.StatusCode == 401 {
+			localVarBody, err = ioutil.ReadAll(localVarHttpResponse.Body)
+			localVarHttpResponse.Body.Close()
+			if err != nil {
+				newErr.error = err.Error()
+				return localVarHttpResponse, newErr
+			}
+			newErr.body = localVarBody
 			var v string
 			err = a.client.decode(&v, localVarBody, localVarHttpResponse.Header.Get("Content-Type"))
 			if err != nil {
@@ -389,6 +409,13 @@ func (a *ServiceApiService) InstanceUpdate(ctx context.Context, service string, 
 			return localVarHttpResponse, newErr
 		}
 		if localVarHttpResponse.StatusCode == 404 {
+			localVarBody, err = ioutil.ReadAll(localVarHttpResponse.Body)
+			localVarHttpResponse.Body.Close()
+			if err != nil {
+				newErr.error = err.Error()
+				return localVarHttpResponse, newErr
+			}
+			newErr.body = localVarBody
 			var v string
 			err = a.client.decode(&v, localVarBody, localVarHttpResponse.Header.Get("Content-Type"))
 			if err != nil {
@@ -589,11 +616,7 @@ func (a *ServiceApiService) ServiceBrokerCreate(ctx context.Context, serviceBrok
 		return localVarHttpResponse, err
 	}
 
-	localVarBody, err := ioutil.ReadAll(localVarHttpResponse.Body)
-	localVarHttpResponse.Body.Close()
-	if err != nil {
-		return localVarHttpResponse, err
-	}
+	var localVarBody []byte
 
 	if localVarHttpResponse.StatusCode >= 300 {
 		newErr := GenericOpenAPIError{
@@ -602,6 +625,13 @@ func (a *ServiceApiService) ServiceBrokerCreate(ctx context.Context, serviceBrok
 			statusCode: localVarHttpResponse.StatusCode,
 		}
 		if localVarHttpResponse.StatusCode == 400 {
+			localVarBody, err = ioutil.ReadAll(localVarHttpResponse.Body)
+			localVarHttpResponse.Body.Close()
+			if err != nil {
+				newErr.error = err.Error()
+				return localVarHttpResponse, newErr
+			}
+			newErr.body = localVarBody
 			var v string
 			err = a.client.decode(&v, localVarBody, localVarHttpResponse.Header.Get("Content-Type"))
 			if err != nil {
@@ -612,6 +642,13 @@ func (a *ServiceApiService) ServiceBrokerCreate(ctx context.Context, serviceBrok
 			return localVarHttpResponse, newErr
 		}
 		if localVarHttpResponse.StatusCode == 401 {
+			localVarBody, err = ioutil.ReadAll(localVarHttpResponse.Body)
+			localVarHttpResponse.Body.Close()
+			if err != nil {
+				newErr.error = err.Error()
+				return localVarHttpResponse, newErr
+			}
+			newErr.body = localVarBody
 			var v string
 			err = a.client.decode(&v, localVarBody, localVarHttpResponse.Header.Get("Content-Type"))
 			if err != nil {
@@ -622,6 +659,13 @@ func (a *ServiceApiService) ServiceBrokerCreate(ctx context.Context, serviceBrok
 			return localVarHttpResponse, newErr
 		}
 		if localVarHttpResponse.StatusCode == 409 {
+			localVarBody, err = ioutil.ReadAll(localVarHttpResponse.Body)
+			localVarHttpResponse.Body.Close()
+			if err != nil {
+				newErr.error = err.Error()
+				return localVarHttpResponse, newErr
+			}
+			newErr.body = localVarBody
 			var v string
 			err = a.client.decode(&v, localVarBody, localVarHttpResponse.Header.Get("Content-Type"))
 			if err != nil {
@@ -702,11 +746,7 @@ func (a *ServiceApiService) ServiceBrokerDelete(ctx context.Context, name string
 		return localVarHttpResponse, err
 	}
 
-	localVarBody, err := ioutil.ReadAll(localVarHttpResponse.Body)
-	localVarHttpResponse.Body.Close()
-	if err != nil {
-		return localVarHttpResponse, err
-	}
+	var localVarBody []byte
 
 	if localVarHttpResponse.StatusCode >= 300 {
 		newErr := GenericOpenAPIError{
@@ -715,6 +755,13 @@ func (a *ServiceApiService) ServiceBrokerDelete(ctx context.Context, name string
 			statusCode: localVarHttpResponse.StatusCode,
 		}
 		if localVarHttpResponse.StatusCode == 400 {
+			localVarBody, err = ioutil.ReadAll(localVarHttpResponse.Body)
+			localVarHttpResponse.Body.Close()
+			if err != nil {
+				newErr.error = err.Error()
+				return localVarHttpResponse, newErr
+			}
+			newErr.body = localVarBody
 			var v string
 			err = a.client.decode(&v, localVarBody, localVarHttpResponse.Header.Get("Content-Type"))
 			if err != nil {
@@ -725,6 +772,13 @@ func (a *ServiceApiService) ServiceBrokerDelete(ctx context.Context, name string
 			return localVarHttpResponse, newErr
 		}
 		if localVarHttpResponse.StatusCode == 401 {
+			localVarBody, err = ioutil.ReadAll(localVarHttpResponse.Body)
+			localVarHttpResponse.Body.Close()
+			if err != nil {
+				newErr.error = err.Error()
+				return localVarHttpResponse, newErr
+			}
+			newErr.body = localVarBody
 			var v string
 			err = a.client.decode(&v, localVarBody, localVarHttpResponse.Header.Get("Content-Type"))
 			if err != nil {
@@ -735,6 +789,13 @@ func (a *ServiceApiService) ServiceBrokerDelete(ctx context.Context, name string
 			return localVarHttpResponse, newErr
 		}
 		if localVarHttpResponse.StatusCode == 404 {
+			localVarBody, err = ioutil.ReadAll(localVarHttpResponse.Body)
+			localVarHttpResponse.Body.Close()
+			if err != nil {
+				newErr.error = err.Error()
+				return localVarHttpResponse, newErr
+			}
+			newErr.body = localVarBody
 			var v string
 			err = a.client.decode(&v, localVarBody, localVarHttpResponse.Header.Get("Content-Type"))
 			if err != nil {
@@ -930,11 +991,7 @@ func (a *ServiceApiService) ServiceBrokerUpdate(ctx context.Context, name string
 		return localVarHttpResponse, err
 	}
 
-	localVarBody, err := ioutil.ReadAll(localVarHttpResponse.Body)
-	localVarHttpResponse.Body.Close()
-	if err != nil {
-		return localVarHttpResponse, err
-	}
+	var localVarBody []byte
 
 	if localVarHttpResponse.StatusCode >= 300 {
 		newErr := GenericOpenAPIError{
@@ -943,6 +1000,13 @@ func (a *ServiceApiService) ServiceBrokerUpdate(ctx context.Context, name string
 			statusCode: localVarHttpResponse.StatusCode,
 		}
 		if localVarHttpResponse.StatusCode == 400 {
+			localVarBody, err = ioutil.ReadAll(localVarHttpResponse.Body)
+			localVarHttpResponse.Body.Close()
+			if err != nil {
+				newErr.error = err.Error()
+				return localVarHttpResponse, newErr
+			}
+			newErr.body = localVarBody
 			var v string
 			err = a.client.decode(&v, localVarBody, localVarHttpResponse.Header.Get("Content-Type"))
 			if err != nil {
@@ -953,6 +1017,13 @@ func (a *ServiceApiService) ServiceBrokerUpdate(ctx context.Context, name string
 			return localVarHttpResponse, newErr
 		}
 		if localVarHttpResponse.StatusCode == 401 {
+			localVarBody, err = ioutil.ReadAll(localVarHttpResponse.Body)
+			localVarHttpResponse.Body.Close()
+			if err != nil {
+				newErr.error = err.Error()
+				return localVarHttpResponse, newErr
+			}
+			newErr.body = localVarBody
 			var v string
 			err = a.client.decode(&v, localVarBody, localVarHttpResponse.Header.Get("Content-Type"))
 			if err != nil {
@@ -963,6 +1034,13 @@ func (a *ServiceApiService) ServiceBrokerUpdate(ctx context.Context, name string
 			return localVarHttpResponse, newErr
 		}
 		if localVarHttpResponse.StatusCode == 404 {
+			localVarBody, err = ioutil.ReadAll(localVarHttpResponse.Body)
+			localVarHttpResponse.Body.Close()
+			if err != nil {
+				newErr.error = err.Error()
+				return localVarHttpResponse, newErr
+			}
+			newErr.body = localVarBody
 			var v string
 			err = a.client.decode(&v, localVarBody, localVarHttpResponse.Header.Get("Content-Type"))
 			if err != nil {
