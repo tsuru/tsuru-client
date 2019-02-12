@@ -7,6 +7,7 @@ package admin
 import (
 	"context"
 	"fmt"
+	"io"
 	"io/ioutil"
 	"net/http"
 	"sort"
@@ -67,6 +68,7 @@ func (c *ClusterAdd) Info() *cmd.Info {
 }
 
 func (c *ClusterAdd) Run(ctx *cmd.Context, cli *cmd.Client) error {
+	ctx.RawOutput()
 	apiClient, err := client.ClientFromEnvironment(&tsuru.Configuration{
 		HTTPClient: cli.HTTPClient,
 	})
@@ -110,7 +112,10 @@ func (c *ClusterAdd) Run(ctx *cmd.Context, cli *cmd.Client) error {
 	if err != nil {
 		return err
 	}
-	defer response.Body.Close()
+	err = optionalStreamResponse(ctx.Stdout, response)
+	if err != nil {
+		return err
+	}
 	fmt.Fprintln(ctx.Stdout, "Cluster successfully added.")
 	return nil
 }
@@ -158,13 +163,13 @@ func (c *ClusterUpdate) Info() *cmd.Info {
 }
 
 func (c *ClusterUpdate) Run(ctx *cmd.Context, cli *cmd.Client) error {
+	ctx.RawOutput()
 	apiClient, err := client.ClientFromEnvironment(&tsuru.Configuration{
 		HTTPClient: cli.HTTPClient,
 	})
 	if err != nil {
 		return err
 	}
-	ctx.RawOutput()
 	name := ctx.Args[0]
 	provisioner := ctx.Args[1]
 	clus := tsuru.Cluster{
@@ -201,7 +206,10 @@ func (c *ClusterUpdate) Run(ctx *cmd.Context, cli *cmd.Client) error {
 	if err != nil {
 		return err
 	}
-	defer resp.Body.Close()
+	err = optionalStreamResponse(ctx.Stdout, resp)
+	if err != nil {
+		return err
+	}
 	fmt.Fprintln(ctx.Stdout, "Cluster successfully updated.")
 	return nil
 }
@@ -224,7 +232,7 @@ func (c *ClusterList) Run(ctx *cmd.Context, cli *cmd.Client) error {
 		return err
 	}
 	clusters, resp, err := apiClient.ClusterApi.ClusterList(context.TODO())
-	if resp.StatusCode == http.StatusNoContent {
+	if resp != nil && resp.StatusCode == http.StatusNoContent {
 		fmt.Fprintln(ctx.Stdout, "No clusters registered.")
 		return nil
 	}
@@ -262,24 +270,25 @@ func (c *ClusterRemove) Info() *cmd.Info {
 }
 
 func (c *ClusterRemove) Run(ctx *cmd.Context, cli *cmd.Client) error {
+	ctx.RawOutput()
 	name := ctx.Args[0]
-
 	if !c.Confirm(ctx, fmt.Sprintf("Are you sure you want to remove cluster \"%s\"?", name)) {
 		return nil
 	}
-
 	apiClient, err := client.ClientFromEnvironment(&tsuru.Configuration{
 		HTTPClient: cli.HTTPClient,
 	})
 	if err != nil {
 		return err
 	}
-	ctx.RawOutput()
 	response, err := apiClient.ClusterApi.ClusterDelete(context.TODO(), name)
 	if err != nil {
 		return err
 	}
-	defer response.Body.Close()
+	err = optionalStreamResponse(ctx.Stdout, response)
+	if err != nil {
+		return err
+	}
 	fmt.Fprintln(ctx.Stdout, "Cluster successfully removed.")
 	return nil
 }
@@ -302,7 +311,7 @@ func (c *ProvisionerList) Run(ctx *cmd.Context, cli *cmd.Client) error {
 		return err
 	}
 	provisioners, resp, err := apiClient.ClusterApi.ProvisionerList(context.TODO())
-	if resp.StatusCode == http.StatusNoContent {
+	if resp != nil && resp.StatusCode == http.StatusNoContent {
 		fmt.Fprintln(ctx.Stdout, "No provisioners registered.")
 		return nil
 	}
@@ -343,7 +352,7 @@ func (c *ProvisionerInfo) Run(ctx *cmd.Context, cli *cmd.Client) error {
 		return err
 	}
 	provisioners, resp, err := apiClient.ClusterApi.ProvisionerList(context.TODO())
-	if resp.StatusCode == http.StatusNoContent {
+	if resp != nil && resp.StatusCode == http.StatusNoContent {
 		return errors.New("provisioner not found")
 	}
 	if err != nil {
@@ -381,5 +390,12 @@ func (c *ProvisionerInfo) Run(ctx *cmd.Context, cli *cmd.Client) error {
 	}
 	tbl.Sort()
 	fmt.Fprint(ctx.Stdout, tbl.String())
+	return nil
+}
+
+func optionalStreamResponse(w io.Writer, resp *http.Response) error {
+	if resp.Header.Get("Content-Type") == "application/x-json-stream" {
+		return cmd.StreamJSONResponse(w, resp)
+	}
 	return nil
 }
