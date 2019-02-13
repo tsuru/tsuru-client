@@ -68,6 +68,8 @@ Tokens
    :title: Deletes an existing API token
 .. tsuru-command:: token-list
    :title: List existing tokens
+.. tsuru-command:: token-info
+   :title: Show detailed information about a token
 
 Team management
 ===============
@@ -202,8 +204,6 @@ Services
    :title: Update a service instance
 .. tsuru-command:: service-instance-remove
    :title: Remove a service instance
-.. tsuru-command:: service-instance-status
-   :title: Display the status of a service instance
 .. tsuru-command:: service-instance-info
    :title: Display the information of a service instance
 .. tsuru-command:: service-instance-bind
@@ -262,6 +262,9 @@ Volume management
 
 .. tsuru-command:: volume-unbind
    :title: Unbinds a volume from an application
+
+.. tsuru-command:: volume-info
+   :title: Show details about a volume
 
 Environment variables
 =====================
@@ -418,6 +421,12 @@ Cluster management
 
 .. tsuru-command:: cluster-remove
   :title: Remove a cluster
+
+.. tsuru-command:: provisioner-list
+  :title: List provisioners available for clusters
+
+.. tsuru-command:: provisioner-info
+  :title: Details about a cluster provisioner
 
 Node Containers management
 ==========================

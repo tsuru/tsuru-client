@@ -15,6 +15,10 @@
     "usage": "tsuru platform-remove <platform name> [-y]", 
     "desc": "Remove a platform from tsuru. This command will fail if there are application\nstill using the platform.\n\nFlags:\n  \n  -y, --assume-yes  (= false)\n      Don't ask for confirmation.\n  \nMinimum # of arguments: 1\n"
   }, 
+  "provisioner-list": {
+    "usage": "tsuru provisioner-list", 
+    "desc": "List registered provisioners and their cluster options.\n\n"
+  }, 
   "app-list": {
     "usage": "tsuru app-list", 
     "desc": "Lists all apps that you have access to. App access is controlled by teams. If\nyour team has access to an app, then you have access to it.\n\nFlags can be used to filter the list of applications.\n\nFlags:\n  \n  -g, --tag  (= [])\n      Filter applications by tag. Can be used multiple times\n  -l, --locked  (= false)\n      Filter applications by lock status\n  -n, --name (= \"\")\n      Filter applications by name\n  -o, --pool (= \"\")\n      Filter applications by pool\n  -p, --platform (= \"\")\n      Filter applications by platform\n  -q  (= false)\n      Display only applications name\n  -s, --status (= \"\")\n      Filter applications by unit status. Accepts multiple values separated by commas. Possible values can be: building, created, starting, error, started, stopped, asleep\n  -t, --team (= \"\")\n      Filter applications by team owner\n  -u, --user (= \"\")\n      Filter applications by owner\n  \n"
@@ -24,8 +28,8 @@
     "desc": "Updates an existing webhook.\n\nFlags:\n  \n  -H, --header  (= {})\n      The HTTP headers sent in the request.\n  -b, --body (= \"\")\n      The HTTP body sent in the request if method is either POST, PUT or PATCH, if unset defaults to the Event that triggered the webhook serialized as JSON. The API will try to parse the body as a Go template string with the event available as context.\n  -d, --description (= \"\")\n      A description on how the webhook will be used.\n  --error-only  (= false)\n      Only matches events with error.\n  --insecure  (= false)\n      Ignore TLS errors in the webhook request.\n  --kind-name  (= [])\n      Kind Name for matching events.\n  --kind-type  (= [])\n      Kind Type for matching events.\n  -m, --method (= \"\")\n      The HTTP Method used in the request, if unset defaults to POST.\n  --no-body  (= false)\n      Unset body value.\n  --no-error-only  (= false)\n      Unset only matches events with error.\n  --no-header  (= false)\n      Unset header value.\n  --no-insecure  (= false)\n      Unset insecure value.\n  --no-kind-name  (= false)\n      Unset Kind Name for matching events.\n  --no-kind-type  (= false)\n      Unset Kind Type for matching events.\n  --no-success-only  (= false)\n      Unset only matches events with success.\n  --no-target-type  (= false)\n      Unset Target Type for matching events.\n  --no-target-value  (= false)\n      Unset Target Value for matching events.\n  --proxy (= \"\")\n      The proxy server URL used in the request. Supported schemes are http(s) and socks5.\n  --success-only  (= false)\n      Only matches events with success.\n  -t, --team (= \"\")\n      The team name responsible for this webhook.\n  --target-type  (= [])\n      Target Type for matching events.\n  --target-value  (= [])\n      Target Value for matching events.\n  -u, --url (= \"\")\n      The HTTP URL used in the request.\n  \nMinimum # of arguments: 1\n"
   }, 
   "machine-template-list": {
-    "usage": "tsuru machine-template-list", 
-    "desc": "Lists all machine templates.\n\n"
+    "usage": "tsuru machine-template-list [--count]", 
+    "desc": "Lists all machine templates.\n\nFlags:\n  \n  -c, --count  (= false)\n      Count machines using each template.\n  \n"
   }, 
   "node-autoscale-list": {
     "usage": "tsuru node-autoscale-list [--page/-p 1]", 
@@ -78,6 +82,10 @@
   "router-list": {
     "usage": "tsuru router-list", 
     "desc": "List all routers available for app creation.\n\n"
+  }, 
+  "version": {
+    "usage": "tsuru version", 
+    "desc": "display the current version\n\n"
   }, 
   "app-start": {
     "usage": "tsuru app-start [-a/--app appname] [-p/--process processname]", 
@@ -171,9 +179,9 @@
     "usage": "tsuru cluster-list", 
     "desc": "List registered provisioner cluster definitions.\n\n"
   }, 
-  "version": {
-    "usage": "tsuru version", 
-    "desc": "display the current version\n\n"
+  "provisioner-info": {
+    "usage": "tsuru provisioner-info <provisioner name>", 
+    "desc": "Detailed information about provisioner.\n\nMinimum # of arguments: 1\nMaximum # of arguments: 1\n"
   }, 
   "user-quota-change": {
     "usage": "tsuru user-quota-change <user-email> <new-limit>", 
@@ -255,6 +263,10 @@
     "usage": "tsuru node-rebalance [--dry] [-y/--assume-yes] [-m/--metadata <metadata>=<value>]... [-a/--app <appname>]...", 
     "desc": "Move units among nodes trying to create a more even distribution. This command\nwill automatically choose to which node each unit should be moved, trying to\ndistribute the units as evenly as possible.\n\nThe --dry flag runs the balancing algorithm without doing any real\nmodification. It will only print which units would be moved and where they\nwould be created.\n\nFlags:\n  \n  -a, --app  (= [])\n      Filter by app name\n  --dry  (= false)\n      Dry run, only shows what would be done\n  -m, --metadata  (= {})\n      Filter by host metadata\n  -y, --assume-yes  (= false)\n      Don't ask for confirmation.\n  \n"
   }, 
+  "unit-set": {
+    "usage": "tsuru unit-set <# of units> [-a/--app appname] [-p/--process processname]", 
+    "desc": "Set the number of units for a process of an application, adding or removing units as needed. You need to have access to the\napp to be able to set the number of units for it. The process flag is optional if the app has only 1 process.\n\nFlags:\n  \n  -a, --app (= \"\")\n      The name of the app.\n  -p, --process (= \"\")\n      Process name\n  \nMinimum # of arguments: 1\n"
+  }, 
   "node-list": {
     "usage": "tsuru node-list [--filter/-f <metadata>=<value>]...", 
     "desc": "Lists nodes in the cluster. It will also show you metadata associated to each\nnode and the IaaS ID if the node was added using tsuru IaaS providers.\n\nUsing the [[-f/--filter]] flag, the user is able to filter the nodes that\nappear in the list based on the key pairs displayed in the metadata column.\nUsers can also combine filters using [[-f]] multiple times.\n\nFlags:\n  \n  -f, --filter  (= {})\n      Filter by metadata name and value\n  -q  (= false)\n      Display only nodes IP address\n  \n"
@@ -264,8 +276,8 @@
     "desc": "Get info about a node from the cluster.\n\n\nMinimum # of arguments: 1\n"
   }, 
   "app-quota-view": {
-    "usage": "tsuru app-quota-view <app-name>", 
-    "desc": "Displays the current usage and limit of the given app.\n\nMinimum # of arguments: 1\n"
+    "usage": "tsuru app-quota-view [-a/--app appname]", 
+    "desc": "Displays the current usage and limit of the given app.\n\nFlags:\n  \n  -a, --app (= \"\")\n      The name of the app.\n  \n"
   }, 
   "target-add": {
     "usage": "tsuru target-add <label> <target> [--set-current|-s]", 
@@ -367,10 +379,6 @@
     "usage": "tsuru platform-update <platform name> [--dockerfile/-d Dockerfile] [--disable/--enable] [--image/-i image]", 
     "desc": "Updates a platform in tsuru.\n\nThe name of the image can be automatically inferred in case you're using an\nofficial platform. Check https://github.com/tsuru/platforms for a list of\nofficial platforms.\n\nThe flags --enable and --disable can be used for enabling or disabling a\nplatform.\n\nExamples:\n\n[[tsuru platform-update java # uses official tsuru/java image from docker hub]]\n[[tsuru platform-update java -i registry.company.com/tsuru/java # uses custom Java image]]\n[[tsuru platform-update java -d /data/projects/java/Dockerfile # uses local Dockerfile]]\n[[tsuru platform-update java -d https://platforms.com/java/Dockerfile # uses remote Dockerfile]]\n\nFlags:\n  \n  -d, --dockerfile (= \"\")\n      URL or path to the Dockerfile used for building the image of the platform\n  --disable  (= false)\n      Disable the platform\n  --enable  (= false)\n      Enable the platform\n  -i, --image (= \"\")\n      Name of the prebuilt Docker image\n  \nMinimum # of arguments: 1\n"
   }, 
-  "service-instance-status": {
-    "usage": "tsuru service-instance-status <service-name> <service-instance-name>", 
-    "desc": "Displays the status of the given service instance. For now, it checks only if\nthe instance is \"up\" (receiving connections) or \"down\" (refusing connections).\n\nMinimum # of arguments: 2\n"
-  }, 
   "node-update": {
     "usage": "tsuru node-update <address> [param_name=param_value...] [--disable] [--enable]", 
     "desc": "Modifies metadata associated to a node. If a parameter is set to an\nempty value, it will be removed from the node's metadata.\n\nIf the [[--disable]] flag is used, the node will be marked as disabled and the\nscheduler won't consider it when selecting a node to receive containers.\n\nFlags:\n  \n  --disable  (= false)\n      Disable node in scheduler.\n  --enable  (= false)\n      Enable node in scheduler.\n  \nMinimum # of arguments: 1\n"
@@ -451,6 +459,10 @@
     "usage": "tsuru user-list [--user/-u useremail] [--role/-r role [-c/--context-value value]]", 
     "desc": "List all users in tsuru. It may also filter users by user email or role name with context value.\n\nFlags:\n  \n  -c, --context-value (= \"\")\n      Filter user by role context value\n  -r, --role (= \"\")\n      Filter user by role\n  -u, --user (= \"\")\n      Filter user by user email\n  \n"
   }, 
+  "volume-info": {
+    "usage": "tsuru volume-info <volume>", 
+    "desc": "Get a volume.\n\nMinimum # of arguments: 1\nMaximum # of arguments: 1\n"
+  }, 
   "app-build": {
     "usage": "tsuru app-build [-a/--app <appname>] [-t/--tag <image_tag>] <file-or-dir-1> [file-or-dir-2] ... [file-or-dir-n]", 
     "desc": "Builds a tsuru app image respecting .tsuruignore file. Some examples of calls are:\n\n::\n\n\t\t$ tsuru app-build -a myapp -t mytag .\n\t\t$ tsuru app-build -a myapp -t latest myfile.jar Procfile\n\n\nFlags:\n  \n  -a, --app (= \"\")\n      The name of the app.\n  -t, --tag (= \"\")\n      The image tag\n  \n"
@@ -474,6 +486,10 @@
   "install-create": {
     "usage": "tsuru install-create [--config/-c config_file] [--compose/-e compose_file]", 
     "desc": "Installs Tsuru and It's components as containers on hosts provisioned\nwith docker machine drivers.\n\nThe [[--config]] parameter is the path to a .yml file containing the installation\nconfiguration. If not provided, Tsuru will be installed into a VirtualBox VM for\nexperimentation.\n\n\nFlags:\n  \n  -c, --config (= \"\")\n      Configuration file\n  -e, --compose (= \"\")\n      Components docker-compose file\n  \n"
+  }, 
+  "token-info": {
+    "usage": "tsuru token-info <token id>", 
+    "desc": "Shows information about a specific token.\n\nMinimum # of arguments: 1\n"
   }, 
   "volume-update": {
     "usage": "tsuru volume-update <volume-name> <plan-name> [-p/--pool <pool>] [-t/--team <team>] [-o/--opt key=value]...", 
@@ -555,8 +571,8 @@
     "desc": "Creates a service instance of a service. There can later be binded to\napplications with [[tsuru service-bind]].\n\nThis example shows how to add a new instance of **mongodb** service, named\n**tsuru_mongodb** with the plan **small**:\n\n::\n\n    $ tsuru service-instance-add mongodb tsuru_mongodb small -t myteam\n\n\nFlags:\n  \n  -d, --description (= \"\")\n      service instance description\n  -g, --tag  (= [])\n      service instance tag\n  --plan-param  (= {})\n      Plan specific parameters\n  -t, --team-owner (= \"\")\n      the team that owns the service (mandatory if the user is member of more than one team)\n  \nMinimum # of arguments: 2\nMaximum # of arguments: 3\n"
   }, 
   "app-quota-change": {
-    "usage": "tsuru app-quota-change <app-name> <new-limit>", 
-    "desc": "Changes the limit of units that an app can have.\n\nThe new limit must be an integer, it may also be \"unlimited\".\n\nMinimum # of arguments: 2\n"
+    "usage": "tsuru app-quota-change [-a/--app appname] <new-limit>", 
+    "desc": "Changes the limit of units that an app can have.\n\nThe new limit must be an integer, it may also be \"unlimited\".\n\nFlags:\n  \n  -a, --app (= \"\")\n      The name of the app.\n  \nMinimum # of arguments: 1\n"
   }, 
   "machine-template-remove": {
     "usage": "tsuru machine-template-remove <name> [-y/--assume-yes]", 
