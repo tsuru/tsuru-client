@@ -5,6 +5,7 @@
 package dm
 
 import (
+	"encoding/base64"
 	"errors"
 	"fmt"
 	"io/ioutil"
@@ -70,17 +71,22 @@ func getIP(target sshTarget, iface string) (string, error) {
 	return "", errors.New("failed to parse private ip from interface")
 }
 
+func WriterRemoteData(target sshTarget, remotePath string, remoteData []byte) error {
+	base64Data := base64.StdEncoding.EncodeToString(remoteData)
+	remoteWriteCmdFmt := "printf '%%s' '%s' | base64 --decode | sudo tee %s"
+	_, err := target.RunSSHCommand(fmt.Sprintf(remoteWriteCmdFmt, base64Data, remotePath))
+	if err != nil {
+		return fmt.Errorf("failed to write remote file: %s", err)
+	}
+	return nil
+}
+
 func writeRemoteFile(target sshTarget, filePath string, remotePath string) error {
 	file, err := ioutil.ReadFile(filePath)
 	if err != nil {
 		return fmt.Errorf("failed to read file %s: %s", filePath, err)
 	}
-	remoteWriteCmdFmt := "printf '%%s' '%s' | sudo tee %s"
-	_, err = target.RunSSHCommand(fmt.Sprintf(remoteWriteCmdFmt, string(file), remotePath))
-	if err != nil {
-		return fmt.Errorf("failed to write remote file: %s", err)
-	}
-	return nil
+	return WriterRemoteData(target, remotePath, file)
 }
 
 func DefaultDriverOpts(driverName string) map[string]interface{} {
