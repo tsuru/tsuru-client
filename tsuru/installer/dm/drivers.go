@@ -15,35 +15,28 @@ import (
 	"github.com/tsuru/tsuru/iaas/dockermachine"
 )
 
-var ErrNoPrivateIPInterface = errors.New("no private IP interface")
-
-// GetPrivateIPInterface returns the interface name which contains
+// getPrivateIPInterface returns the interface name which contains
 // the private IP address of a machine provisioned with the given
 // driver. This is a workaround while the Driver interface does not
 // provide a way to access the instance private IP.
-func GetPrivateIPInterface(driverName string) (string, error) {
+func getPrivateIPInterface() string {
 	iface, err := config.GetString("driver:private-ip-interface")
 	if err == nil {
-		return iface, nil
+		return iface
 	}
-	switch driverName {
-	case "amazonec2":
-		return "eth0", nil
-	case "google":
-		return "eth0", nil
-	default:
-		return "", ErrNoPrivateIPInterface
-	}
+	return "eth0"
 }
 
 func GetPrivateIP(m *dockermachine.Machine) string {
-	iface, err := GetPrivateIPInterface(m.Host.DriverName)
-	if err != nil || iface == "" {
+	iface := getPrivateIPInterface()
+	if iface == "" {
 		return m.Base.Address
 	}
-	ip, err := getIP(m.Host, iface)
-	if err == nil {
-		return ip
+	if m.Host != nil && m.Host.Driver != nil {
+		ip, err := getIP(m.Host, iface)
+		if err == nil {
+			return ip
+		}
 	}
 	return m.Base.Address
 }

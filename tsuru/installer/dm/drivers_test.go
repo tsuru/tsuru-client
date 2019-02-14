@@ -8,6 +8,8 @@ import (
 	"errors"
 
 	"github.com/tsuru/config"
+	"github.com/tsuru/tsuru/iaas"
+	"github.com/tsuru/tsuru/iaas/dockermachine"
 	check "gopkg.in/check.v1"
 )
 
@@ -32,21 +34,25 @@ func (f *fakeSSHTarget) RunSSHCommand(cmd string) (string, error) {
 func (s *S) TestGetPrivateIPInterfaceFromConfig(c *check.C) {
 	config.Set("driver:private-ip-interface", "eth1")
 	defer config.Unset("driver:private-ip-interface")
-	iface, err := GetPrivateIPInterface("")
-	c.Assert(err, check.IsNil)
+	iface := getPrivateIPInterface()
 	c.Assert(iface, check.Equals, "eth1")
-}
-
-func (s *S) TestGetPrivateIPInterfaceForAmazonEC2Driver(c *check.C) {
-	iface, err := GetPrivateIPInterface("amazonec2")
-	c.Assert(err, check.IsNil)
+	config.Set("driver:private-ip-interface", "")
+	iface = getPrivateIPInterface()
+	c.Assert(iface, check.Equals, "")
+	config.Unset("driver:private-ip-interface")
+	iface = getPrivateIPInterface()
 	c.Assert(iface, check.Equals, "eth0")
 }
 
-func (s *S) TestGetPrivateIPInterfaceForGoogleDriver(c *check.C) {
-	iface, err := GetPrivateIPInterface("google")
-	c.Assert(err, check.IsNil)
-	c.Assert(iface, check.Equals, "eth0")
+func (s *S) TestGetPrivateIP(c *check.C) {
+	defer config.Unset("driver:private-ip-interface")
+	m := &dockermachine.Machine{
+		Base: &iaas.Machine{
+			Address: "base-addr",
+		},
+	}
+	addr := GetPrivateIP(m)
+	c.Assert(addr, check.Equals, "base-addr")
 }
 
 func (s *S) TestGetIP(c *check.C) {
@@ -59,7 +65,9 @@ inet 172.30.0.69/24 brd 172.30.0.255 scope global eth0
 valid_lft forever preferred_lft forever
 inet6 fe80::10d4:8cff:fe93:e1c5/64 scope link
 valid_lft forever preferred_lft forever`},
-		"ip addr show dev eth1": {output: "", err: errors.New("failed to get ip")}}
+		"ip addr show dev eth1": {output: "", err: errors.New("failed to get ip")},
+		"ip addr show dev xyz":  {output: "Device \"xyz\" does not exist."},
+	}
 	ip, err := getIP(target, "eth2")
 	c.Assert(err, check.NotNil)
 	c.Assert(ip, check.Equals, "")
@@ -68,6 +76,9 @@ valid_lft forever preferred_lft forever`},
 	c.Assert(ip, check.Equals, "172.30.0.69")
 	ip, err = getIP(target, "eth1")
 	c.Assert(err, check.NotNil)
+	c.Assert(ip, check.Equals, "")
+	ip, err = getIP(target, "xyz")
+	c.Assert(err, check.ErrorMatches, `failed to parse private ip from interface`)
 	c.Assert(ip, check.Equals, "")
 }
 
