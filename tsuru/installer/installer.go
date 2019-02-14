@@ -14,18 +14,17 @@ import (
 	"strings"
 	"time"
 
-	yaml "gopkg.in/yaml.v2"
-
 	"github.com/docker/machine/libmachine/mcnutils"
 	"github.com/docker/machine/libmachine/provision"
 	"github.com/docker/machine/libmachine/provision/serviceaction"
-	"github.com/fsouza/go-dockerclient"
+	docker "github.com/fsouza/go-dockerclient"
 	"github.com/sethvargo/go-password/password"
 	"github.com/tsuru/tablecli"
 	"github.com/tsuru/tsuru-client/tsuru/installer/defaultconfig"
 	"github.com/tsuru/tsuru-client/tsuru/installer/dm"
 	"github.com/tsuru/tsuru/cmd"
 	"github.com/tsuru/tsuru/iaas/dockermachine"
+	yaml "gopkg.in/yaml.v2"
 )
 
 var (
@@ -144,8 +143,7 @@ func deployTsuruConfig(installOpts *InstallOpts) (func(*dockermachine.Machine) e
 		if err != nil {
 			return fmt.Errorf("failed to create tsuru config directory: %s", err)
 		}
-		remoteWriteCmdFmt := "printf '%%s' '%s' | sudo tee %s"
-		_, err = m.Host.RunSSHCommand(fmt.Sprintf(remoteWriteCmdFmt, string(conf), "/etc/tsuru/tsuru.conf"))
+		err = dm.WriterRemoteData(m.Host, "/etc/tsuru/tsuru.conf", conf)
 		if err != nil {
 			return fmt.Errorf("failed to write remote file: %s", err)
 		}

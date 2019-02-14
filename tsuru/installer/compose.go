@@ -38,8 +38,7 @@ func composeDeploy(c ServiceCluster, installConfig *InstallOpts) error {
 	if err != nil {
 		return err
 	}
-	remoteWriteCmdFmt := "printf '%%s' '%s' | sudo tee %s"
-	_, err = manager.Host.RunSSHCommand(fmt.Sprintf(remoteWriteCmdFmt, config, "/tmp/compose.yml"))
+	err = dm.WriterRemoteData(manager.Host, "/tmp/compose.yml", []byte(config))
 	if err != nil {
 		return fmt.Errorf("failed to write remote file: %s", err)
 	}
