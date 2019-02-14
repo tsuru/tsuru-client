@@ -220,7 +220,7 @@
 
 [[projects]]
   branch = "azureupdate"
-  digest = "1:b1dcc173548591fa0e09bebe61ff11fb54902fee80207c86e39ec63be2fd7f09"
+  digest = "1:217fada65cda013ed41adf2fe69aec313f311ff59e907a0aa642262967fb67bf"
   name = "github.com/docker/machine"
   packages = [
     "commands/mcndirs",
@@ -271,7 +271,7 @@
     "version",
   ]
   pruneopts = "NUT"
-  revision = "701e9ccdb0724ac6e019ec283f02b76374756327"
+  revision = "6cacfaf7b6c09ceabff9b283e3d4b2f30b9d1932"
   source = "github.com/cezarsa/machine"
 
 [[projects]]
