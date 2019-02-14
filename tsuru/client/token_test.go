@@ -271,7 +271,7 @@ Roles: r1(v1)
 	trans := cmdtest.ConditionalTransport{
 		Transport: cmdtest.Transport{Message: result, Status: http.StatusOK},
 		CondFunc: func(r *http.Request) bool {
-			c.Assert(r.URL.Path, check.Equals, "/1.6/tokens/mytokenid")
+			c.Assert(r.URL.Path, check.Equals, "/1.7/tokens/mytokenid")
 			c.Assert(r.Method, check.Equals, "GET")
 			return true
 		},

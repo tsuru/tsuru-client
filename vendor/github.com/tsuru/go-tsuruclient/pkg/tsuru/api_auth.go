@@ -510,7 +510,7 @@ func (a *AuthApiService) TeamTokenInfo(ctx context.Context, tokenId string) (Tea
 	)
 
 	// create path and map variables
-	localVarPath := a.client.cfg.BasePath + "/1.6/tokens/{token_id}"
+	localVarPath := a.client.cfg.BasePath + "/1.7/tokens/{token_id}"
 	localVarPath = strings.Replace(localVarPath, "{"+"token_id"+"}", fmt.Sprintf("%v", tokenId), -1)
 
 	localVarHeaderParams := make(map[string]string)
