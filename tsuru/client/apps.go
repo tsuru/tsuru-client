@@ -25,7 +25,7 @@ import (
 	"github.com/tsuru/tablecli"
 	"github.com/tsuru/tsuru/cmd"
 	apptypes "github.com/tsuru/tsuru/types/app"
-	volume "github.com/tsuru/tsuru/volume"
+	"github.com/tsuru/tsuru/volume"
 )
 
 const (
@@ -659,7 +659,7 @@ Quota: {{.Quota.InUse}}/{{if .Quota.Limit}}{{.Quota.Limit}} units{{else}}unlimit
 				if b.ReadOnly {
 					mode = "ro"
 				}
-				volumeTable.AddRow(tablecli.Row([]string{fmt.Sprintf(b.ID.Volume), fmt.Sprintf(b.ID.MountPoint), fmt.Sprintf(mode)}))
+				volumeTable.AddRow(tablecli.Row([]string{b.ID.Volume, b.ID.MountPoint, mode}))
 			}
 		}
 	}
