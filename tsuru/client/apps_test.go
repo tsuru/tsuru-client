@@ -798,7 +798,7 @@ Units: 3
 	}
 	client := cmd.NewClient(&http.Client{Transport: &cmdtest.Transport{Message: result, Status: http.StatusOK}}, nil, manager)
 	command := AppInfo{}
-	command.Flags().Parse(true, []string{"-a/--app", "app1"})
+	command.Flags().Parse(true, []string{"--app", "app1"})
 	err := command.Run(&context, client)
 	c.Assert(err, check.IsNil)
 	c.Assert(stdout.String(), check.Equals, expected)
@@ -894,7 +894,7 @@ Routers:
 	}
 	client := cmd.NewClient(&http.Client{Transport: &cmdtest.Transport{Message: result, Status: http.StatusOK}}, nil, manager)
 	command := AppInfo{}
-	command.Flags().Parse(true, []string{"-a/--app", "app1"})
+	command.Flags().Parse(true, []string{"--app", "app1"})
 	err := command.Run(&context, client)
 	c.Assert(err, check.IsNil)
 	c.Assert(stdout.String(), check.Equals, expected)
@@ -933,7 +933,7 @@ Units: 3
 	}
 	client := cmd.NewClient(&http.Client{Transport: &cmdtest.Transport{Message: result, Status: http.StatusOK}}, nil, manager)
 	command := AppInfo{}
-	command.Flags().Parse(true, []string{"-a/--app", "app1"})
+	command.Flags().Parse(true, []string{"--app", "app1"})
 	err := command.Run(&context, client)
 	c.Assert(err, check.IsNil)
 	c.Assert(stdout.String(), check.Equals, expected)
@@ -972,7 +972,7 @@ Units: 3
 	}
 	client := cmd.NewClient(&http.Client{Transport: &cmdtest.Transport{Message: result, Status: http.StatusOK}}, nil, manager)
 	command := AppInfo{}
-	command.Flags().Parse(true, []string{"-a/--app", "app1"})
+	command.Flags().Parse(true, []string{"--app", "app1"})
 	err := command.Run(&context, client)
 	c.Assert(err, check.IsNil)
 	c.Assert(stdout.String(), check.Equals, expected)
@@ -1011,7 +1011,7 @@ Units: 3
 	}
 	client := cmd.NewClient(&http.Client{Transport: &cmdtest.Transport{Message: result, Status: http.StatusOK}}, nil, manager)
 	command := AppInfo{}
-	command.Flags().Parse(true, []string{"-a/--app", "app1"})
+	command.Flags().Parse(true, []string{"--app", "app1"})
 	err := command.Run(&context, client)
 	c.Assert(err, check.IsNil)
 	c.Assert(stdout.String(), check.Equals, expected)
@@ -1111,7 +1111,7 @@ Units: 3
 	}
 	client := cmd.NewClient(&http.Client{Transport: &cmdtest.Transport{Message: result, Status: http.StatusOK}}, nil, manager)
 	command := AppInfo{}
-	command.Flags().Parse(true, []string{"-a/--app", "app1"})
+	command.Flags().Parse(true, []string{"--app", "app1"})
 	err := command.Run(&context, client)
 	c.Assert(err, check.IsNil)
 	c.Assert(stdout.String(), check.Equals, expected)
@@ -1193,7 +1193,7 @@ Units [worker]: 2
 	}
 	client := cmd.NewClient(&http.Client{Transport: &cmdtest.Transport{Message: result, Status: http.StatusOK}}, nil, manager)
 	command := AppInfo{}
-	command.Flags().Parse(true, []string{"-a/--app", "app1"})
+	command.Flags().Parse(true, []string{"--app", "app1"})
 	err := command.Run(&context, client)
 	c.Assert(err, check.IsNil)
 	c.Assert(stdout.String(), check.Equals, expected)
@@ -1223,7 +1223,7 @@ Quota: 0/unlimited
 	}
 	client := cmd.NewClient(&http.Client{Transport: &cmdtest.Transport{Message: result, Status: http.StatusOK}}, nil, manager)
 	command := AppInfo{}
-	command.Flags().Parse(true, []string{"-a/--app", "app1"})
+	command.Flags().Parse(true, []string{"--app", "app1"})
 	err := command.Run(&context, client)
 	c.Assert(err, check.IsNil)
 	c.Assert(stdout.String(), check.Equals, expected)
@@ -1253,7 +1253,7 @@ Quota: 0/unlimited
 	}
 	client := cmd.NewClient(&http.Client{Transport: &cmdtest.Transport{Message: result, Status: http.StatusOK}}, nil, manager)
 	command := AppInfo{}
-	command.Flags().Parse(true, []string{"-a/--app", "app1"})
+	command.Flags().Parse(true, []string{"--app", "app1"})
 	err := command.Run(&context, client)
 	c.Assert(err, check.IsNil)
 	c.Assert(stdout.String(), check.Equals, expected)
@@ -1292,7 +1292,7 @@ Units: 2
 	trans := &cmdtest.ConditionalTransport{
 		Transport: cmdtest.Transport{Message: result, Status: http.StatusOK},
 		CondFunc: func(req *http.Request) bool {
-			return strings.HasSuffix(req.URL.Path, "/apps/secret") && req.Method == "GET" || strings.HasSuffix(req.URL.Path, "/apps/secret/quota") && req.Method == "GET"
+			return strings.HasSuffix(req.URL.Path, "/apps/secret") && req.Method == "GET" || strings.HasSuffix(req.URL.Path, "/apps/secret/quota") && req.Method == "GET" || strings.HasSuffix(req.URL.Path, "/volumes") && req.Method == "GET"
 		},
 	}
 	client := cmd.NewClient(&http.Client{Transport: trans}, nil, manager)
@@ -1338,7 +1338,7 @@ Units: 3
 	}
 	client := cmd.NewClient(&http.Client{Transport: &cmdtest.Transport{Message: result, Status: http.StatusOK}}, nil, manager)
 	command := AppInfo{}
-	command.Flags().Parse(true, []string{"-a/--app", "app1"})
+	command.Flags().Parse(true, []string{"--app", "app1"})
 	err := command.Run(&context, client)
 	c.Assert(err, check.IsNil)
 	c.Assert(stdout.String(), check.Equals, expected)
@@ -1502,7 +1502,7 @@ App Plan:
 	}
 	client := cmd.NewClient(&http.Client{Transport: &cmdtest.Transport{Message: result, Status: http.StatusOK}}, nil, manager)
 	command := AppInfo{}
-	command.Flags().Parse(true, []string{"-a/--app", "app1"})
+	command.Flags().Parse(true, []string{"--app", "app1"})
 	err := command.Run(&context, client)
 	c.Assert(err, check.IsNil)
 	c.Assert(stdout.String(), check.Equals, expected)
@@ -1699,6 +1699,77 @@ Units: 3
 	transport := transportFunc(func(req *http.Request) (resp *http.Response, err error) {
 		return &http.Response{
 			Body:       ioutil.NopCloser(bytes.NewBufferString(infoData)),
+			StatusCode: http.StatusOK,
+		}, nil
+	})
+	client := cmd.NewClient(&http.Client{Transport: transport}, nil, manager)
+	command := AppInfo{}
+	command.Flags().Parse(true, []string{"--app", "app1"})
+	err := command.Run(&context, client)
+	c.Assert(err, check.IsNil)
+	c.Assert(stdout.String(), check.Equals, expected)
+}
+
+func (s *S) TestAppInfoWithVolume(c *check.C) {
+	var stdout, stderr bytes.Buffer
+	expected := `Application: app1
+Description:
+Tags:
+Repository: git@git.com:php.git
+Platform: php
+Router: planb
+Teams: tsuruteam, crane
+Address: myapp.tsuru.io
+Owner: myapp_owner
+Team owner: myteam
+Deploys: 7
+Pool:
+Quota: 3/40 units
+
+Units: 3
++--------+---------+------+------+
+| Unit   | Status  | Host | Port |
++--------+---------+------+------+
+| app1/0 | started |      |      |
+| app1/1 | started |      |      |
+| app1/2 | pending |      |      |
++--------+---------+------+------+
+
+Service instances: 1
++----------+-------------------+
+| Service  | Instance (Plan)   |
++----------+-------------------+
+| redisapi | myredisapi (test) |
++----------+-------------------+
+
+Volumes: 1
++------+------------+------+
+| Name | MountPoint | Mode |
++------+------------+------+
+| vol1 | /vol1      | rw   |
++------+------------+------+
+
+`
+	context := cmd.Context{
+		Stdout: &stdout,
+		Stderr: &stderr,
+	}
+	transport := transportFunc(func(req *http.Request) (resp *http.Response, err error) {
+		var body string
+		switch {
+		case strings.HasSuffix(req.URL.Path, "/apps/app1"):
+			body = `{"AppName":"app1","teamowner":"myteam","ip":"myapp.tsuru.io","platform":"php","repository":"git@git.com:php.git","state":"dead","units":[{"Ip":"10.10.10.10","ID":"app1/0","Status":"started"}, {"Ip":"9.9.9.9","ID":"app1/1","Status":"started"}, {"Ip":"","ID":"app1/2","Status":"pending"}],"Teams":["tsuruteam","crane"], "owner": "myapp_owner", "deploys": 7, "router": "planb"}`
+		case strings.HasSuffix(req.URL.Path, "/services/instances") && req.URL.RawQuery == "app=app1":
+			body = `[{"service":"redisapi","instances":["myredisapi"], "plans": ["test"]},
+					 {"service":"mongodb", "instances":[], "plans": [""]}]`
+		case strings.HasSuffix(req.URL.Path, "/volumes") && req.Method == "GET":
+			body = `[{"Name":"vol1","TeamOwner":"myteam","Status":"","Binds":[{"ID":{"App":"app1","MountPoint":"/vol1","Volume":"vol1"},"ReadOnly":false}],"Opts":{"medium":"Memory"}},
+					 {"Name":"vol2","Plan":{"Name":"emptydir","Opts":{"plugin":"emptyDir"}},"TeamOwner":"admin","Status":"","Binds":[{"ID":{"App":"app2","MountPoint":"/vol2","Volume":"vol2"},"ReadOnly":false}]}]`
+		case strings.HasSuffix(req.URL.Path, "/apps/app1/quota") && req.Method == "GET":
+			body = `{"Limit":40,"InUse":3}`
+		}
+		return &http.Response{
+			Body:       ioutil.NopCloser(bytes.NewBufferString(body)),
 			StatusCode: http.StatusOK,
 		}, nil
 	})
