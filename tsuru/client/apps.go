@@ -25,6 +25,7 @@ import (
 	"github.com/tsuru/tablecli"
 	"github.com/tsuru/tsuru/cmd"
 	apptypes "github.com/tsuru/tsuru/types/app"
+	volume "github.com/tsuru/tsuru/volume"
 )
 
 const (
@@ -438,7 +439,22 @@ func (c *AppInfo) Run(context *cmd.Context, client *cmd.Client) error {
 	if err != nil {
 		return err
 	}
-	return c.Show(result, servicesResult, quota, context)
+	var volumes []byte
+	u, err = cmd.GetURLVersion("1.4", "/volumes")
+	if err != nil {
+		return err
+	}
+	request, _ = http.NewRequest("GET", u, nil)
+	response, err = client.Do(request)
+	if err != nil {
+		return err
+	}
+	defer response.Body.Close()
+	volumes, err = ioutil.ReadAll(response.Body)
+	if err != nil {
+		return err
+	}
+	return c.Show(result, appName, servicesResult, quota, volumes, context)
 }
 
 type unit struct {
@@ -506,6 +522,7 @@ type app struct {
 	Tags        []string
 	Error       string
 	Routers     []apptypes.AppRouter
+	Volumes     []volume.Volume
 }
 
 type serviceData struct {
@@ -632,6 +649,20 @@ Quota: {{.Quota.InUse}}/{{if .Quota.Limit}}{{.Quota.Limit}} units{{else}}unlimit
 		instancePlanString := strings.Join(instancePlan, "\n")
 		servicesTable.AddRow([]string{service.Service, instancePlanString})
 	}
+	volumeTable := tablecli.NewTable()
+	volumeTable.Headers = tablecli.Row([]string{"Name", "MountPoint", "Mode"})
+	volumeTable.LineSeparator = true
+	for _, v := range a.Volumes {
+		for _, b := range v.Binds {
+			if b.ID.App == a.Name {
+				mode := "rw"
+				if b.ReadOnly {
+					mode = "ro"
+				}
+				volumeTable.AddRow(tablecli.Row([]string{fmt.Sprintf(b.ID.Volume), fmt.Sprintf(b.ID.MountPoint), fmt.Sprintf(mode)}))
+			}
+		}
+	}
 	if servicesTable.Rows() > 0 {
 		buf.WriteString("\n")
 		buf.WriteString(fmt.Sprintf("Service instances: %d\n", servicesTable.Rows()))
@@ -647,19 +678,26 @@ Quota: {{.Quota.InUse}}/{{if .Quota.Limit}}{{.Quota.Limit}} units{{else}}unlimit
 		buf.WriteString("Routers:\n")
 		renderRouters(a.Routers, &buf)
 	}
+	if volumeTable.Rows() > 0 {
+		buf.WriteString("\n")
+		buf.WriteString(fmt.Sprintf("Volumes: %d\n", volumeTable.Rows()))
+		buf.WriteString(volumeTable.String())
+	}
 	var tplBuffer bytes.Buffer
 	tmpl.Execute(&tplBuffer, a)
 	return tplBuffer.String() + buf.String()
 }
 
-func (c *AppInfo) Show(result []byte, servicesResult []byte, quota []byte, context *cmd.Context) error {
+func (c *AppInfo) Show(result []byte, appName string, servicesResult []byte, quota []byte, volumes []byte, context *cmd.Context) error {
 	var a app
 	err := json.Unmarshal(result, &a)
 	if err != nil {
 		return err
 	}
+	a.Name = appName
 	json.Unmarshal(servicesResult, &a.services)
 	json.Unmarshal(quota, &a.Quota)
+	json.Unmarshal(volumes, &a.Volumes)
 	fmt.Fprintln(context.Stdout, &a)
 	return nil
 }
