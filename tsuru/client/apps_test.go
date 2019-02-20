@@ -804,6 +804,45 @@ Units: 3
 	c.Assert(stdout.String(), check.Equals, expected)
 }
 
+func (s *S) TestAppInfoMultipleAddresses(c *check.C) {
+	var stdout, stderr bytes.Buffer
+	result := `{"name":"app1","teamowner":"myteam","cname":[""],"ip":"myapp.tsuru.io","platform":"php","repository":"git@git.com:php.git","state":"dead", "units":[{"Ip":"10.10.10.10","ID":"app1/0","Status":"started","Address":{"Host": "10.8.7.6:3333"},"Addresses":[{"Host": "10.8.7.6:3333"}, {"Host": "10.8.7.6:4444"}]}, {"Ip":"9.9.9.9","ID":"app1/1","Status":"started","Address":{"Host": "10.8.7.6:3323"}}, {"Ip":"","ID":"app1/2","Status":"pending"}],"teams":["tsuruteam","crane"], "owner": "myapp_owner", "deploys": 7, "router": "planb"}`
+	expected := `Application: app1
+Description:
+Tags:
+Repository: git@git.com:php.git
+Platform: php
+Router: planb
+Teams: tsuruteam, crane
+Address: myapp.tsuru.io
+Owner: myapp_owner
+Team owner: myteam
+Deploys: 7
+Pool:
+Quota: 0/unlimited
+
+Units: 3
++--------+---------+----------+------------+
+| Unit   | Status  | Host     | Port       |
++--------+---------+----------+------------+
+| app1/2 | pending |          |            |
+| app1/0 | started | 10.8.7.6 | 3333, 4444 |
+| app1/1 | started | 10.8.7.6 | 3323       |
++--------+---------+----------+------------+
+
+`
+	context := cmd.Context{
+		Stdout: &stdout,
+		Stderr: &stderr,
+	}
+	client := cmd.NewClient(&http.Client{Transport: &cmdtest.Transport{Message: result, Status: http.StatusOK}}, nil, manager)
+	command := AppInfo{}
+	command.Flags().Parse(true, []string{"--app", "app1"})
+	err := command.Run(&context, client)
+	c.Assert(err, check.IsNil)
+	c.Assert(stdout.String(), check.Equals, expected)
+}
+
 func (s *S) TestAppInfoMultipleRouters(c *check.C) {
 	var stdout, stderr bytes.Buffer
 	result := `

@@ -463,22 +463,39 @@ type unit struct {
 	Status      string
 	ProcessName string
 	Address     *url.URL
+	Addresses   []url.URL
 }
 
 func (u *unit) Host() string {
-	if u.Address == nil {
-		return ""
+	address := ""
+	if len(u.Addresses) > 0 {
+		address = u.Addresses[0].Host
+	} else if u.Address != nil {
+		address = u.Address.Host
 	}
-	host, _, _ := net.SplitHostPort(u.Address.Host)
+	if address == "" {
+		return address
+	}
+
+	host, _, _ := net.SplitHostPort(address)
 	return host
 }
 
 func (u *unit) Port() string {
-	if u.Address == nil {
-		return ""
+	if len(u.Addresses) == 0 {
+		if u.Address == nil {
+			return ""
+		}
+		_, port, _ := net.SplitHostPort(u.Address.Host)
+		return port
 	}
-	_, port, _ := net.SplitHostPort(u.Address.Host)
-	return port
+
+	ports := []string{}
+	for _, addr := range u.Addresses {
+		_, port, _ := net.SplitHostPort(addr.Host)
+		ports = append(ports, port)
+	}
+	return strings.Join(ports, ", ")
 }
 
 func (u *unit) Available() bool {
