@@ -45,6 +45,8 @@ type iaasConfigInternal struct {
 	DockerFlags         string           `yaml:"docker-flags,omitempty"`
 	Driver              iaasConfigDriver `yaml:"driver,omitempty"`
 	Debug               bool             `yaml:"debug,omitempty"`
+	UserDataFileParam   string           `yaml:"user-data-file-param,omitempty"`
+	UserData            string           `yaml:"user-data,omitempty"`
 }
 
 type iaasConfigDriver struct {
