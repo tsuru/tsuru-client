@@ -66,7 +66,19 @@ func getIP(target sshTarget, iface string) (string, error) {
 
 func WriterRemoteData(target sshTarget, remotePath string, remoteData []byte) error {
 	base64Data := base64.StdEncoding.EncodeToString(remoteData)
-	remoteWriteCmdFmt := "printf '%%s' '%s' | base64 --decode | sudo tee %s"
+	remoteWriteCmdFmt := `set -o pipefail
+if type base64; then
+	base64dec="base64 --decode"
+elif type openssl; then
+	base64dec="openssl enc -base64 -d -A"
+elif type python; then
+	base64dec="python -m base64 -d"
+fi
+if [ -z "$base64dec" ]; then
+	echo "no base64 decoder available"
+	exit 1
+fi
+echo '%s' | $base64dec | sudo tee %s`
 	_, err := target.RunSSHCommand(fmt.Sprintf(remoteWriteCmdFmt, base64Data, remotePath))
 	if err != nil {
 		return fmt.Errorf("failed to write remote file: %s", err)
