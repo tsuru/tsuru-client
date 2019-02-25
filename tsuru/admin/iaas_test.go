@@ -73,6 +73,60 @@ func (s *S) TestMachineListRun(c *check.C) {
 	c.Assert(stdout.String(), check.Equals, expected)
 }
 
+func (s *S) TestMachineListWithFlag(c *check.C) {
+	var stdout, stderr bytes.Buffer
+	context := cmd.Context{
+		Stdout: &stdout,
+		Stderr: &stderr,
+	}
+	m1 := iaas.Machine{Id: "id1", Address: "addr1", Iaas: "iaas1", CreationParams: map[string]string{
+		"param1": "value1",
+	}}
+	m2 := iaas.Machine{Id: "id2", Address: "addr2", Iaas: "iaas2", CreationParams: map[string]string{
+		"param1": "value1",
+		"param2": "value2",
+	}}
+	data, err := json.Marshal([]iaas.Machine{m1, m2})
+	c.Assert(err, check.IsNil)
+	expected := `+-----+-------+---------+-----------------+--------------------+
+| Id  | IaaS  | Address | Creation Params | Matching Templates |
++-----+-------+---------+-----------------+--------------------+
+| id2 | iaas2 | addr2   | param1=value1   | tmpl1              |
+|     |       |         | param2=value2   | tmpl2              |
++-----+-------+---------+-----------------+--------------------+
+`
+	templates, err := json.Marshal([]iaas.Template{
+		{Name: "tmpl1", Data: iaas.TemplateDataList{
+			{Name: "param1", Value: "value1"},
+		}},
+		{Name: "tmpl2", Data: iaas.TemplateDataList{
+			{Name: "param1", Value: "value1"},
+			{Name: "param2", Value: "value2"},
+		}},
+	})
+	c.Assert(err, check.IsNil)
+	trans := &cmdtest.MultiConditionalTransport{ConditionalTransports: []cmdtest.ConditionalTransport{
+		{
+			Transport: cmdtest.Transport{Message: string(data), Status: http.StatusOK},
+			CondFunc: func(req *http.Request) bool {
+				return strings.HasSuffix(req.URL.Path, "/iaas/machines") && req.Method == "GET"
+			},
+		},
+		{
+			Transport: cmdtest.Transport{Message: string(templates), Status: http.StatusOK},
+			CondFunc: func(req *http.Request) bool {
+				return strings.HasSuffix(req.URL.Path, "/iaas/templates") && req.Method == "GET"
+			},
+		},
+	}}
+	client := cmd.NewClient(&http.Client{Transport: trans}, nil, s.manager)
+	command := MachineList{}
+	command.Flags().Parse(true, []string{"-f", "param2=value2"})
+	err = command.Run(&context, client)
+	c.Assert(err, check.IsNil)
+	c.Assert(stdout.String(), check.Equals, expected)
+}
+
 func (s *S) TestMachineDestroyRun(c *check.C) {
 	var stdout, stderr bytes.Buffer
 	context := cmd.Context{
@@ -182,6 +236,152 @@ func (s *S) TestTemplateListCountRun(c *check.C) {
 	client := cmd.NewClient(&http.Client{Transport: trans}, nil, s.manager)
 	command := TemplateList{}
 	command.Flags().Parse(true, []string{"--count"})
+	err = command.Run(&context, client)
+	c.Assert(err, check.IsNil)
+	c.Assert(stdout.String(), check.Equals, expected)
+}
+
+func (s *S) TestTemplateListWithFilterFlag(c *check.C) {
+	var stdout, stderr bytes.Buffer
+	context := cmd.Context{
+		Stdout: &stdout,
+		Stderr: &stderr,
+	}
+	tpl1 := iaas.Template{Name: "machine1", IaaSName: "ec2", Data: iaas.TemplateDataList{
+		iaas.TemplateData{Name: "region", Value: "us-east-1"},
+		iaas.TemplateData{Name: "type", Value: "m1.small"},
+	}}
+	tpl2 := iaas.Template{Name: "tpl1", IaaSName: "ec2", Data: iaas.TemplateDataList{
+		iaas.TemplateData{Name: "region", Value: "xxxx"},
+		iaas.TemplateData{Name: "type", Value: "l1.large"},
+	}}
+	tpl3 := iaas.Template{Name: "tpl2", IaaSName: "ec2", Data: iaas.TemplateDataList{
+		iaas.TemplateData{Name: "region", Value: "us-east-2"},
+		iaas.TemplateData{Name: "type", Value: "m1.small"},
+	}}
+	data, err := json.Marshal([]iaas.Template{tpl1, tpl2, tpl3})
+	c.Assert(err, check.IsNil)
+	expected := `+----------+------+------------------+
+| Name     | IaaS | Params           |
++----------+------+------------------+
+| machine1 | ec2  | region=us-east-1 |
+|          |      | type=m1.small    |
++----------+------+------------------+
+| tpl2     | ec2  | region=us-east-2 |
+|          |      | type=m1.small    |
++----------+------+------------------+
+`
+	trans := &cmdtest.ConditionalTransport{
+		Transport: cmdtest.Transport{Message: string(data), Status: http.StatusOK},
+		CondFunc: func(req *http.Request) bool {
+			return strings.HasSuffix(req.URL.Path, "/iaas/templates") && req.Method == "GET"
+		},
+	}
+	client := cmd.NewClient(&http.Client{Transport: trans}, nil, s.manager)
+	command := TemplateList{}
+	command.Flags().Parse(true, []string{"--filter", "type=m1.small"})
+	err = command.Run(&context, client)
+	c.Assert(err, check.IsNil)
+	c.Assert(stdout.String(), check.Equals, expected)
+}
+
+func (s *S) TestTemplateListWithTwoFilterFlags(c *check.C) {
+	var stdout, stderr bytes.Buffer
+	context := cmd.Context{
+		Stdout: &stdout,
+		Stderr: &stderr,
+	}
+	tpl1 := iaas.Template{Name: "machine1", IaaSName: "ec2", Data: iaas.TemplateDataList{
+		iaas.TemplateData{Name: "region", Value: "us-east-1"},
+		iaas.TemplateData{Name: "type", Value: "m1.small"},
+	}}
+	tpl2 := iaas.Template{Name: "tpl1", IaaSName: "ec2", Data: iaas.TemplateDataList{
+		iaas.TemplateData{Name: "region", Value: "xxxx"},
+		iaas.TemplateData{Name: "type", Value: "l1.large"},
+	}}
+	tpl3 := iaas.Template{Name: "tpl2", IaaSName: "ec2", Data: iaas.TemplateDataList{
+		iaas.TemplateData{Name: "region", Value: "us-east-1"},
+		iaas.TemplateData{Name: "type", Value: "m1.small"},
+	}}
+	data, err := json.Marshal([]iaas.Template{tpl1, tpl2, tpl3})
+	c.Assert(err, check.IsNil)
+	expected := `+----------+------+------------------+
+| Name     | IaaS | Params           |
++----------+------+------------------+
+| machine1 | ec2  | region=us-east-1 |
+|          |      | type=m1.small    |
++----------+------+------------------+
+| tpl2     | ec2  | region=us-east-1 |
+|          |      | type=m1.small    |
++----------+------+------------------+
+`
+	trans := &cmdtest.ConditionalTransport{
+		Transport: cmdtest.Transport{Message: string(data), Status: http.StatusOK},
+		CondFunc: func(req *http.Request) bool {
+			return strings.HasSuffix(req.URL.Path, "/iaas/templates") && req.Method == "GET"
+		},
+	}
+	client := cmd.NewClient(&http.Client{Transport: trans}, nil, s.manager)
+	command := TemplateList{}
+	command.Flags().Parse(true, []string{"--filter", "region=us-east-1", "--filter", "type=m1.small"})
+	err = command.Run(&context, client)
+	c.Assert(err, check.IsNil)
+	c.Assert(stdout.String(), check.Equals, expected)
+}
+
+func (s *S) TestTemplateListWithFlags(c *check.C) {
+	var stdout, stderr bytes.Buffer
+	context := cmd.Context{
+		Stdout: &stdout,
+		Stderr: &stderr,
+	}
+	tpl1 := iaas.Template{Name: "tpl1", IaaSName: "ec2", Data: iaas.TemplateDataList{
+		iaas.TemplateData{Name: "region", Value: "us-east-1"},
+		iaas.TemplateData{Name: "type", Value: "m1.small"},
+	}}
+	tpl2 := iaas.Template{Name: "tpl2", IaaSName: "ec2", Data: iaas.TemplateDataList{
+		iaas.TemplateData{Name: "region", Value: "xxxx"},
+		iaas.TemplateData{Name: "type", Value: "l1.large"},
+	}}
+	tpl3 := iaas.Template{Name: "tpl3", IaaSName: "ec2", Data: iaas.TemplateDataList{
+		iaas.TemplateData{Name: "region", Value: "us-east-1"},
+		iaas.TemplateData{Name: "type", Value: "m1.small"},
+	}}
+	data, err := json.Marshal([]iaas.Template{tpl1, tpl2, tpl3})
+	c.Assert(err, check.IsNil)
+	expected := `+------+------+------------------+------------+
+| Name | IaaS | Params           | # Machines |
++------+------+------------------+------------+
+| tpl1 | ec2  | region=us-east-1 | 2          |
+|      |      | type=m1.small    |            |
++------+------+------------------+------------+
+| tpl3 | ec2  | region=us-east-1 | 2          |
+|      |      | type=m1.small    |            |
++------+------+------------------+------------+
+`
+	machines, err := json.Marshal([]iaas.Machine{
+		{CreationParams: map[string]string{"region": "xxxx", "type": "l1.large", "extra": "xpto"}},
+		{CreationParams: map[string]string{"region": "us-east-1", "type": "m1.small"}},
+		{CreationParams: map[string]string{"region": "us-east-1", "type": "m1.small", "extra": "xpto"}},
+	})
+	c.Assert(err, check.IsNil)
+	trans := &cmdtest.MultiConditionalTransport{ConditionalTransports: []cmdtest.ConditionalTransport{
+		{
+			Transport: cmdtest.Transport{Message: string(data), Status: http.StatusOK},
+			CondFunc: func(req *http.Request) bool {
+				return strings.HasSuffix(req.URL.Path, "/iaas/templates") && req.Method == "GET"
+			},
+		},
+		{
+			Transport: cmdtest.Transport{Message: string(machines), Status: http.StatusOK},
+			CondFunc: func(req *http.Request) bool {
+				return strings.HasSuffix(req.URL.Path, "/iaas/machines") && req.Method == "GET"
+			},
+		},
+	}}
+	client := cmd.NewClient(&http.Client{Transport: trans}, nil, s.manager)
+	command := TemplateList{}
+	command.Flags().Parse(true, []string{"--count", "--filter", "type=m1.small"})
 	err = command.Run(&context, client)
 	c.Assert(err, check.IsNil)
 	c.Assert(stdout.String(), check.Equals, expected)

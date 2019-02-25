@@ -19,16 +19,29 @@ import (
 	"github.com/tsuru/tsuru/iaas"
 )
 
-type MachineList struct{}
+type MachineList struct {
+	fs     *gnuflag.FlagSet
+	filter cmd.MapFlag
+}
 
 func (c *MachineList) Info() *cmd.Info {
 	return &cmd.Info{
 		Name:  "machine-list",
-		Usage: "machine-list",
+		Usage: "machine-list [--filter/-f <metadata>=<value>]",
 		Desc: `Lists all machines created using an IaaS provider.
 These machines were created with the [[node-add]] command.`,
 		MinArgs: 0,
 	}
+}
+
+func (c *MachineList) Flags() *gnuflag.FlagSet {
+	if c.fs == nil {
+		c.fs = gnuflag.NewFlagSet("", gnuflag.ExitOnError)
+		filter := "Filter by metadata name and value"
+		c.fs.Var(&c.filter, "filter", filter)
+		c.fs.Var(&c.filter, "f", filter)
+	}
+	return c.fs
 }
 
 func (c *MachineList) Run(context *cmd.Context, client *cmd.Client) error {
@@ -92,6 +105,9 @@ func (c *MachineList) Tabulate(machines []iaas.Machine, machineToTemplate map[st
 	table := tablecli.NewTable()
 	table.Headers = tablecli.Row([]string{"Id", "IaaS", "Address", "Creation Params", "Matching Templates"})
 	table.LineSeparator = true
+	if len(machines) > 0 {
+		machines = c.filterMachines(machines)
+	}
 	for _, machine := range machines {
 		var params []string
 		for k, v := range machine.CreationParams {
@@ -106,6 +122,26 @@ func (c *MachineList) Tabulate(machines []iaas.Machine, machineToTemplate map[st
 	return table
 }
 
+func (c *MachineList) filterMachines(machines []iaas.Machine) []iaas.Machine {
+	filteredMachines := make([]iaas.Machine, 0)
+	for _, m := range machines {
+		if c.machineMetadataMatchesFilters(m) {
+			filteredMachines = append(filteredMachines, m)
+		}
+	}
+	return filteredMachines
+}
+
+func (c *MachineList) machineMetadataMatchesFilters(machine iaas.Machine) bool {
+	for key, value := range c.filter {
+		metaVal := machine.CreationParams[key]
+		if metaVal != value {
+			return false
+		}
+	}
+	return true
+}
+
 type MachineDestroy struct {
 	cmd.ConfirmationCommand
 }
@@ -118,6 +154,7 @@ func (c *MachineDestroy) Info() *cmd.Info {
 		MinArgs: 1,
 	}
 }
+
 func (c *MachineDestroy) Run(context *cmd.Context, client *cmd.Client) error {
 	machineID := context.Args[0]
 	if !c.Confirm(context, fmt.Sprintf("Are you sure you want to remove machine %q?", machineID)) {
@@ -142,12 +179,13 @@ func (c *MachineDestroy) Run(context *cmd.Context, client *cmd.Client) error {
 type TemplateList struct {
 	countMachines bool
 	fs            *gnuflag.FlagSet
+	filter        cmd.MapFlag
 }
 
 func (c *TemplateList) Info() *cmd.Info {
 	return &cmd.Info{
 		Name:    "machine-template-list",
-		Usage:   "machine-template-list [--count]",
+		Usage:   "machine-template-list [--count] [--filter/-f <metadata>=<value>]",
 		Desc:    "Lists all machine templates.",
 		MinArgs: 0,
 	}
@@ -156,8 +194,11 @@ func (c *TemplateList) Info() *cmd.Info {
 func (c *TemplateList) Flags() *gnuflag.FlagSet {
 	if c.fs == nil {
 		c.fs = gnuflag.NewFlagSet("", gnuflag.ExitOnError)
+		filter := "Filter by metadata name and value"
 		c.fs.BoolVar(&c.countMachines, "count", false, "Count machines using each template.")
 		c.fs.BoolVar(&c.countMachines, "c", false, "Count machines using each template.")
+		c.fs.Var(&c.filter, "filter", filter)
+		c.fs.Var(&c.filter, "f", filter)
 	}
 	return c.fs
 }
@@ -223,6 +264,9 @@ func (c *TemplateList) Run(context *cmd.Context, client *cmd.Client) error {
 	}
 	table.Headers = tablecli.Row(headers)
 	table.LineSeparator = true
+	if len(templates) > 0 {
+		templates = c.filterTemplates(templates)
+	}
 	for _, template := range templates {
 		var params []string
 		for _, data := range template.Data {
@@ -238,6 +282,34 @@ func (c *TemplateList) Run(context *cmd.Context, client *cmd.Client) error {
 	table.Sort()
 	context.Stdout.Write(table.Bytes())
 	return nil
+}
+
+func (c *TemplateList) filterTemplates(templates []iaas.Template) []iaas.Template {
+	filteredTemplates := make([]iaas.Template, 0)
+	for _, t := range templates {
+		if c.templateMetadataMatchesFilters(t) {
+			filteredTemplates = append(filteredTemplates, t)
+		}
+	}
+	return filteredTemplates
+}
+
+func (c *TemplateList) templateMetadataMatchesFilters(template iaas.Template) bool {
+	for key, value := range c.filter {
+		hasKey := false
+		for _, templateData := range template.Data {
+			if key == templateData.Name {
+				hasKey = true
+				if value != templateData.Value {
+					return false
+				}
+			}
+		}
+		if hasKey == false {
+			return false
+		}
+	}
+	return true
 }
 
 type TemplateAdd struct{}
