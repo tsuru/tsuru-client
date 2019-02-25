@@ -127,6 +127,57 @@ func (s *S) TestMachineListWithFlag(c *check.C) {
 	c.Assert(stdout.String(), check.Equals, expected)
 }
 
+func (s *S) TestMachineKeyNotExist(c *check.C) {
+	var stdout, stderr bytes.Buffer
+	context := cmd.Context{
+		Stdout: &stdout,
+		Stderr: &stderr,
+	}
+	m1 := iaas.Machine{Id: "id1", Address: "addr1", Iaas: "iaas1", CreationParams: map[string]string{
+		"param1": "value1",
+	}}
+	m2 := iaas.Machine{Id: "id2", Address: "addr2", Iaas: "iaas2", CreationParams: map[string]string{
+		"param1": "value1",
+		"param2": "value2",
+	}}
+	data, err := json.Marshal([]iaas.Machine{m1, m2})
+	c.Assert(err, check.IsNil)
+	expected := `+----+------+---------+-----------------+--------------------+
+| Id | IaaS | Address | Creation Params | Matching Templates |
++----+------+---------+-----------------+--------------------+
+`
+	templates, err := json.Marshal([]iaas.Template{
+		{Name: "tmpl1", Data: iaas.TemplateDataList{
+			{Name: "param1", Value: "value1"},
+		}},
+		{Name: "tmpl2", Data: iaas.TemplateDataList{
+			{Name: "param1", Value: "value1"},
+			{Name: "param2", Value: "value2"},
+		}},
+	})
+	c.Assert(err, check.IsNil)
+	trans := &cmdtest.MultiConditionalTransport{ConditionalTransports: []cmdtest.ConditionalTransport{
+		{
+			Transport: cmdtest.Transport{Message: string(data), Status: http.StatusOK},
+			CondFunc: func(req *http.Request) bool {
+				return strings.HasSuffix(req.URL.Path, "/iaas/machines") && req.Method == "GET"
+			},
+		},
+		{
+			Transport: cmdtest.Transport{Message: string(templates), Status: http.StatusOK},
+			CondFunc: func(req *http.Request) bool {
+				return strings.HasSuffix(req.URL.Path, "/iaas/templates") && req.Method == "GET"
+			},
+		},
+	}}
+	client := cmd.NewClient(&http.Client{Transport: trans}, nil, s.manager)
+	command := MachineList{}
+	command.Flags().Parse(true, []string{"-f", "param=value"})
+	err = command.Run(&context, client)
+	c.Assert(err, check.IsNil)
+	c.Assert(stdout.String(), check.Equals, expected)
+}
+
 func (s *S) TestMachineDestroyRun(c *check.C) {
 	var stdout, stderr bytes.Buffer
 	context := cmd.Context{

@@ -19,6 +19,8 @@ import (
 	"github.com/tsuru/tsuru/iaas"
 )
 
+const filterMessage = "Filter metadata name and value"
+
 type MachineList struct {
 	fs     *gnuflag.FlagSet
 	filter cmd.MapFlag
@@ -37,9 +39,8 @@ These machines were created with the [[node-add]] command.`,
 func (c *MachineList) Flags() *gnuflag.FlagSet {
 	if c.fs == nil {
 		c.fs = gnuflag.NewFlagSet("", gnuflag.ExitOnError)
-		filter := "Filter by metadata name and value"
-		c.fs.Var(&c.filter, "filter", filter)
-		c.fs.Var(&c.filter, "f", filter)
+		c.fs.Var(&c.filter, "filter", filterMessage)
+		c.fs.Var(&c.filter, "f", filterMessage)
 	}
 	return c.fs
 }
@@ -194,11 +195,10 @@ func (c *TemplateList) Info() *cmd.Info {
 func (c *TemplateList) Flags() *gnuflag.FlagSet {
 	if c.fs == nil {
 		c.fs = gnuflag.NewFlagSet("", gnuflag.ExitOnError)
-		filter := "Filter by metadata name and value"
 		c.fs.BoolVar(&c.countMachines, "count", false, "Count machines using each template.")
 		c.fs.BoolVar(&c.countMachines, "c", false, "Count machines using each template.")
-		c.fs.Var(&c.filter, "filter", filter)
-		c.fs.Var(&c.filter, "f", filter)
+		c.fs.Var(&c.filter, "filter", filterMessage)
+		c.fs.Var(&c.filter, "f", filterMessage)
 	}
 	return c.fs
 }
