@@ -305,7 +305,7 @@ func (c *TemplateList) templateMetadataMatchesFilters(template iaas.Template) bo
 				}
 			}
 		}
-		if hasKey == false {
+		if !hasKey {
 			return false
 		}
 	}
