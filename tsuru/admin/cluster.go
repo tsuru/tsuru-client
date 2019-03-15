@@ -128,6 +128,7 @@ type ClusterUpdate struct {
 	addresses  cmd.StringSliceFlag
 	pools      cmd.StringSliceFlag
 	customData cmd.MapFlag
+	createData cmd.MapFlag
 	isDefault  bool
 }
 
@@ -148,6 +149,8 @@ func (c *ClusterUpdate) Flags() *gnuflag.FlagSet {
 		c.fs.Var(&c.pools, "pool", desc)
 		desc = "Custom provisioner specific data."
 		c.fs.Var(&c.customData, "custom", desc)
+		desc = "Create data, if set a iaas will be called with this data to re-create the machine."
+		c.fs.Var(&c.createData, "create-data", desc)
 	}
 	return c.fs
 }
@@ -155,7 +158,7 @@ func (c *ClusterUpdate) Flags() *gnuflag.FlagSet {
 func (c *ClusterUpdate) Info() *cmd.Info {
 	return &cmd.Info{
 		Name:    "cluster-update",
-		Usage:   "cluster-update <name> <provisioner> --addr address... [--pool poolname]... [--cacert cacertfile] [--clientcert clientcertfile] [--clientkey clientkeyfile] [--custom key=value]... [--default]",
+		Usage:   "cluster-update <name> <provisioner> --addr address... [--pool poolname]... [--cacert cacertfile] [--clientcert clientcertfile] [--clientkey clientkeyfile] [--custom key=value]... [--create-data key=value]... [--default]",
 		Desc:    `Updates a provisioner cluster definition.`,
 		MinArgs: 2,
 		MaxArgs: 2,
@@ -179,6 +182,7 @@ func (c *ClusterUpdate) Run(ctx *cmd.Context, cli *cmd.Client) error {
 		CustomData:  c.customData,
 		Default:     c.isDefault,
 		Provisioner: provisioner,
+		CreateData:  c.createData,
 	}
 	var data []byte
 	if c.cacert != "" {
