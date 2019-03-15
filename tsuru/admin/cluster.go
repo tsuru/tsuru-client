@@ -51,7 +51,7 @@ func (c *ClusterAdd) Flags() *gnuflag.FlagSet {
 		c.fs.Var(&c.pools, "pool", desc)
 		desc = "Custom provisioner specific data."
 		c.fs.Var(&c.customData, "custom", desc)
-		desc = "Create data, if set a iaas will be called with this data to create a new machine."
+		desc = "Create data, if set an iaas will be called with this data to create a new machine."
 		c.fs.Var(&c.createData, "create-data", desc)
 	}
 	return c.fs
@@ -149,7 +149,7 @@ func (c *ClusterUpdate) Flags() *gnuflag.FlagSet {
 		c.fs.Var(&c.pools, "pool", desc)
 		desc = "Custom provisioner specific data."
 		c.fs.Var(&c.customData, "custom", desc)
-		desc = "Create data, if set a iaas will be called with this data to re-create the machine."
+		desc = "Create data, if set an iaas will be called with this data to re-create the machine."
 		c.fs.Var(&c.createData, "create-data", desc)
 	}
 	return c.fs
