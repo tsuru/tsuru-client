@@ -116,7 +116,11 @@ func (i *Installer) Install(opts *InstallOpts) (*Installation, error) {
 	if err != nil {
 		return nil, err
 	}
-	err = i.waitTsuru(cluster, opts.ComponentsConfig)
+	err = waitTsuru(cluster, opts.ComponentsConfig)
+	if err != nil {
+		return nil, err
+	}
+	err = waitRegistry(cluster.GetManager().Host, dm.GetPrivateIP(cluster.GetManager()), opts.ComponentsConfig)
 	if err != nil {
 		return nil, err
 	}
@@ -169,15 +173,43 @@ func (i *Installer) restartDocker(coreMachines []*dockermachine.Machine) error {
 	return nil
 }
 
-func (i *Installer) waitTsuru(cluster ServiceCluster, compConf *ComponentsConfig) error {
-	fmt.Println("Waiting for Tsuru API to become responsive...")
-	tsuruURL := fmt.Sprintf("http://%s:%d", cluster.GetManager().Base.Address, defaultTsuruAPIPort)
+type sshTarget interface {
+	RunSSHCommand(string) (string, error)
+}
+
+func waitRegistry(target sshTarget, privateIP string, compConf *ComponentsConfig) error {
+	registryURL := fmt.Sprintf("https://%s:5000", privateIP)
+	if compConf != nil {
+		tsuruConf := compConf.Tsuru.Config
+		if dockerConf, ok := tsuruConf["docker"].(map[string]interface{}); ok {
+			if registry, ok := dockerConf["registry"].(string); ok {
+				registryURL = fmt.Sprintf("https://%s", registry)
+			}
+		}
+	}
+	fmt.Printf("Waiting for Docker Registry to become responsive at %q...\n", registryURL)
+	remoteCurlCommand := fmt.Sprintf("curl -m5 -sSLk %q", registryURL)
+	var errCurl error
 	err := mcnutils.WaitForSpecific(func() bool {
-		_, errReq := getWithTimeout(tsuruURL, 5*time.Second)
+		_, errCurl = target.RunSSHCommand(remoteCurlCommand)
+		return errCurl == nil
+	}, 60, 10*time.Second)
+	if err != nil {
+		return fmt.Errorf("failed to connect to %s: %v: %v", registryURL, err, errCurl)
+	}
+	return nil
+}
+
+func waitTsuru(cluster ServiceCluster, compConf *ComponentsConfig) error {
+	tsuruURL := fmt.Sprintf("http://%s:%d", cluster.GetManager().Base.Address, defaultTsuruAPIPort)
+	fmt.Printf("Waiting for Tsuru API to become responsive at %q...\n", tsuruURL)
+	var errReq error
+	err := mcnutils.WaitForSpecific(func() bool {
+		_, errReq = getWithTimeout(tsuruURL, 5*time.Second)
 		return errReq == nil
 	}, 60, 10*time.Second)
 	if err != nil {
-		return fmt.Errorf("failed to connect to %s: %s", tsuruURL, err)
+		return fmt.Errorf("failed to connect to %s: %v: %v", tsuruURL, err, errReq)
 	}
 	cmd := []string{"tsurud", "root-user-create", compConf.RootUserEmail}
 	passwordConfirmation := strings.NewReader(fmt.Sprintf("%s\n%s\n", compConf.RootUserPassword, compConf.RootUserPassword))
