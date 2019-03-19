@@ -128,3 +128,79 @@ func (s *S) TestDefaulInstalltOptsRootUserPasswordIsRandom(c *check.C) {
 	rootPassword2 := DefaultInstallOpts().RootUserPassword
 	c.Check(rootPassword1, check.Not(check.Equals), rootPassword2)
 }
+
+type fakeSSH struct {
+	cmd string
+}
+
+func (f *fakeSSH) RunSSHCommand(command string) (string, error) {
+	f.cmd = command
+	return "", nil
+}
+
+func (s *S) TestWaitRegistry(c *check.C) {
+	fssh := &fakeSSH{}
+	tests := []struct {
+		ip         string
+		compConfig *ComponentsConfig
+		expected   string
+	}{
+		{
+			ip:       "10.0.0.1",
+			expected: "curl -m5 -sSLk \"https://10.0.0.1:5000\"",
+		},
+		{
+			ip: "10.0.0.1",
+			compConfig: &ComponentsConfig{
+				Tsuru: tsuruComponent{
+					Config: map[string]interface{}{
+						"docker": map[string]interface{}{
+							"registry": "192.168.1.1:5001",
+						},
+					},
+				},
+			},
+			expected: "curl -m5 -sSLk \"https://192.168.1.1:5001\"",
+		},
+		{
+			ip: "10.0.0.1",
+			compConfig: &ComponentsConfig{
+				Tsuru: tsuruComponent{
+					Config: map[string]interface{}{
+						"docker": map[string]interface{}{},
+					},
+				},
+			},
+			expected: "curl -m5 -sSLk \"https://10.0.0.1:5000\"",
+		},
+		{
+			ip: "10.0.0.1",
+			compConfig: &ComponentsConfig{
+				Tsuru: tsuruComponent{
+					Config: map[string]interface{}{
+						"docker": nil,
+					},
+				},
+			},
+			expected: "curl -m5 -sSLk \"https://10.0.0.1:5000\"",
+		},
+		{
+			ip: "10.0.0.1",
+			compConfig: &ComponentsConfig{
+				Tsuru: tsuruComponent{
+					Config: map[string]interface{}{
+						"docker": map[string]interface{}{
+							"registry": nil,
+						},
+					},
+				},
+			},
+			expected: "curl -m5 -sSLk \"https://10.0.0.1:5000\"",
+		},
+	}
+	for _, tt := range tests {
+		err := waitRegistry(fssh, tt.ip, tt.compConfig)
+		c.Assert(err, check.IsNil)
+		c.Assert(fssh.cmd, check.Equals, tt.expected)
+	}
+}
