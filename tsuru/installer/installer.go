@@ -15,8 +15,6 @@ import (
 	"time"
 
 	"github.com/docker/machine/libmachine/mcnutils"
-	"github.com/docker/machine/libmachine/provision"
-	"github.com/docker/machine/libmachine/provision/serviceaction"
 	docker "github.com/fsouza/go-dockerclient"
 	"github.com/sethvargo/go-password/password"
 	"github.com/tsuru/tablecli"
@@ -112,10 +110,6 @@ func (i *Installer) Install(opts *InstallOpts) (*Installation, error) {
 	if err != nil {
 		return nil, err
 	}
-	err = i.restartDocker(coreMachines)
-	if err != nil {
-		return nil, err
-	}
 	err = waitTsuru(cluster, opts.ComponentsConfig)
 	if err != nil {
 		return nil, err
@@ -153,24 +147,6 @@ func deployTsuruConfig(installOpts *InstallOpts) (func(*dockermachine.Machine) e
 		}
 		return nil
 	}, nil
-}
-
-// HACK: Sometimes docker will simply freeze while pulling the images for each
-// service, adding a restart here seems to unclog the pipes.
-func (i *Installer) restartDocker(coreMachines []*dockermachine.Machine) error {
-	time.Sleep(10 * time.Second)
-	for _, m := range coreMachines {
-		fmt.Fprintf(i.outWriter, "Restarting docker in %s\n", m.Host.Name)
-		provisioner, err := provision.DetectProvisioner(m.Host.Driver)
-		if err != nil {
-			return fmt.Errorf("failed to get machine provisioner: %s", err)
-		}
-		err = provisioner.Service("docker", serviceaction.Restart)
-		if err != nil {
-			return fmt.Errorf("failed to restart docker daemon: %s", err)
-		}
-	}
-	return nil
 }
 
 type sshTarget interface {
