@@ -113,6 +113,12 @@ func parseConfigFile(file string) (*InstallOpts, error) {
 	if err != nil {
 		return nil, err
 	}
+	defaultDriverOpts := dm.DefaultDriverOpts(installConfig.DriverOpts.Name)
+	for k, v := range defaultDriverOpts {
+		if _, ok := installConfig.DriverOpts.Options[k]; !ok {
+			installConfig.DriverOpts.Options[k] = v
+		}
+	}
 	config.ReadConfigFile(file)
 	installConfig.ComponentsConfig.TargetName = installConfig.Name
 	defaultIaas := iaasConfig{
