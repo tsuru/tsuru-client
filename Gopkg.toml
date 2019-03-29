@@ -21,8 +21,8 @@
 
 [[override]]
   name = "github.com/docker/machine"
-  source = "github.com/cezarsa/machine"
-  branch = "azureupdate"
+  source = "github.com/tsuru/machine"
+  branch = "master"
 
 [[override]]
   name = "github.com/kardianos/osext"
