@@ -1169,9 +1169,17 @@ func (d *Driver) configureSecurityGroupPermissions(group *ec2.SecurityGroup) ([]
 		return nil, nil
 	}
 	hasPorts := make(map[string]bool)
+	hasSGTrafficAllowed := false
 	for _, p := range group.IpPermissions {
 		if p.FromPort != nil {
 			hasPorts[fmt.Sprintf("%d/%s", *p.FromPort, *p.IpProtocol)] = true
+		}
+		if *p.IpProtocol == "-1" {
+			for _, gp := range p.UserIdGroupPairs {
+				if *gp.GroupId == *group.GroupId {
+					hasSGTrafficAllowed = true
+				}
+			}
 		}
 	}
 
@@ -1201,6 +1209,13 @@ func (d *Driver) configureSecurityGroupPermissions(group *ec2.SecurityGroup) ([]
 			FromPort:   aws.Int64(int64(swarmPort)),
 			ToPort:     aws.Int64(int64(swarmPort)),
 			IpRanges:   []*ec2.IpRange{{CidrIp: aws.String(ipRange)}},
+		})
+	}
+
+	if !hasSGTrafficAllowed {
+		perms = append(perms, &ec2.IpPermission{
+			IpProtocol:       aws.String("-1"),
+			UserIdGroupPairs: []*ec2.UserIdGroupPair{{GroupId: group.GroupId}},
 		})
 	}
 
