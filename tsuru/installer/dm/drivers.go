@@ -100,6 +100,8 @@ func DefaultDriverOpts(driverName string) map[string]interface{} {
 	case "virtualbox":
 		opts["virtualbox-memory"] = 2048
 		opts["virtualbox-nat-nictype"] = "virtio"
+	case "google":
+		opts["private-ip-interface"] = "ens4"
 	}
 	return opts
 }
