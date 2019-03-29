@@ -38,12 +38,12 @@ func composeDeploy(c ServiceCluster, installConfig *InstallOpts) error {
 	if err != nil {
 		return err
 	}
-	err = dm.WriterRemoteData(manager.Host, "/tmp/compose.yml", []byte(config))
+	err = dm.WriterRemoteData(manager.Host, "/etc/tsuru/compose.yml", []byte(config))
 	if err != nil {
 		return fmt.Errorf("failed to write remote file: %s", err)
 	}
 	fmt.Print("Deploying compose file in cluster manager...\n")
-	output, err := manager.Host.RunSSHCommand("sudo docker deploy -c /tmp/compose.yml tsuru")
+	output, err := manager.Host.RunSSHCommand("sudo docker deploy -c /etc/tsuru/compose.yml tsuru")
 	if err != nil {
 		return err
 	}
