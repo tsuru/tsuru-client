@@ -94,14 +94,14 @@ func writeRemoteFile(target sshTarget, filePath string, remotePath string) error
 	return WriterRemoteData(target, remotePath, file)
 }
 
-func DefaultDriverOpts(driverName string) map[string]interface{} {
+func DefaultDriverConfig(driverName string) map[string]interface{} {
 	opts := make(map[string]interface{})
 	switch driverName {
 	case "virtualbox":
-		opts["virtualbox-memory"] = 2048
-		opts["virtualbox-nat-nictype"] = "virtio"
+		opts["driver:options:virtualbox-memory"] = 2048
+		opts["driver:options:virtualbox-nat-nictype"] = "virtio"
 	case "google":
-		opts["private-ip-interface"] = "ens4"
+		opts["driver:private-ip-interface"] = "ens4"
 	}
 	return opts
 }

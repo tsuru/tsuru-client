@@ -105,7 +105,20 @@ func parseConfigFile(file string) (*InstallOpts, error) {
 	if file == "" {
 		return installConfig, nil
 	}
-	data, err := ioutil.ReadFile(file)
+	err := config.ReadConfigFile(file)
+	if err != nil {
+		return nil, err
+	}
+	driverName, err := config.GetString("driver:name")
+	if err == nil {
+		defaultConfig := dm.DefaultDriverConfig(driverName)
+		for k, v := range defaultConfig {
+			if _, ok := config.Get(k); ok != nil {
+				config.Set(k, v)
+			}
+		}
+	}
+	data, err := config.Bytes()
 	if err != nil {
 		return nil, err
 	}
@@ -113,13 +126,6 @@ func parseConfigFile(file string) (*InstallOpts, error) {
 	if err != nil {
 		return nil, err
 	}
-	defaultDriverOpts := dm.DefaultDriverOpts(installConfig.DriverOpts.Name)
-	for k, v := range defaultDriverOpts {
-		if _, ok := installConfig.DriverOpts.Options[k]; !ok {
-			installConfig.DriverOpts.Options[k] = v
-		}
-	}
-	config.ReadConfigFile(file)
 	installConfig.ComponentsConfig.TargetName = installConfig.Name
 	defaultIaas := iaasConfig{
 		Dockermachine: iaasConfigInternal{

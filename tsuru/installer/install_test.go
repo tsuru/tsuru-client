@@ -279,6 +279,7 @@ func (s *S) TestInstallConfigInit(c *check.C) {
 			DockerFlags:      "experimental",
 		},
 	}
+	expected.DriverOpts.Options = map[string]interface{}{"virtualbox-memory": 2048, "virtualbox-nat-nictype": "virtio"}
 	c.Assert(opts, check.DeepEquals, expected)
 }
 
