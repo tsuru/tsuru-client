@@ -82,15 +82,15 @@ valid_lft forever preferred_lft forever`},
 	c.Assert(ip, check.Equals, "")
 }
 
-func (s *S) TestDefaultDriverOpts(c *check.C) {
+func (s *S) TestDefaultDriverConfig(c *check.C) {
 	tt := []struct {
 		driverName   string
 		expectedOpts map[string]interface{}
 	}{
-		{"virtualbox", map[string]interface{}{"virtualbox-memory": 2048, "virtualbox-nat-nictype": "virtio"}},
+		{"virtualbox", map[string]interface{}{"driver:options:virtualbox-memory": 2048, "driver:options:virtualbox-nat-nictype": "virtio"}},
 	}
 	for _, t := range tt {
-		opts := DefaultDriverOpts(t.driverName)
+		opts := DefaultDriverConfig(t.driverName)
 		c.Check(opts, check.DeepEquals, t.expectedOpts)
 	}
 }
