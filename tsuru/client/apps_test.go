@@ -1749,6 +1749,51 @@ Units: 3
 	c.Assert(stdout.String(), check.Equals, expected)
 }
 
+func (s *S) TestAppInfoWithInternalAddresses(c *check.C) {
+	var stdout, stderr bytes.Buffer
+	result := `{"name":"powerapp","teamowner":"powerteam","cname":[""],"ip":"monster.tsuru.io","platform":"assembly","repository":"git@git.com:app.git","state":"dead", "units":[{"Ip":"9.9.9.9","ID":"app1/1","Status":"started","Address":{"Host": "10.8.7.6:3323"}}],"teams":["tsuruzers"], "owner": "myapp_owner", "deploys": 7, "router": "", "internalAddresses":[{"domain":"test.cluster.com","port":80,"protocol":"TCP"}, {"domain":"test.cluster.com","port":443,"protocol":"TCP"}]}`
+	expected := `Application: app1
+Description:
+Tags:
+Repository: git@git.com:app.git
+Platform: assembly
+Router: 
+Teams: tsuruzers
+Address: monster.tsuru.io
+Owner: myapp_owner
+Team owner: powerteam
+Deploys: 7
+Pool:
+Quota: 0/unlimited
+
+Units: 1
++--------+---------+----------+------+
+| Unit   | Status  | Host     | Port |
++--------+---------+----------+------+
+| app1/1 | started | 10.8.7.6 | 3323 |
++--------+---------+----------+------+
+
+Cluster internal addresses:
++------------------+----------+------+
+| Domain           | Protocol | Port |
++------------------+----------+------+
+| test.cluster.com | TCP      | 80   |
+| test.cluster.com | TCP      | 443  |
++------------------+----------+------+
+
+`
+	context := cmd.Context{
+		Stdout: &stdout,
+		Stderr: &stderr,
+	}
+	client := cmd.NewClient(&http.Client{Transport: &cmdtest.Transport{Message: result, Status: http.StatusOK}}, nil, manager)
+	command := AppInfo{}
+	command.Flags().Parse(true, []string{"--app", "app1"})
+	err := command.Run(&context, client)
+	c.Assert(err, check.IsNil)
+	c.Assert(stdout.String(), check.Equals, expected)
+}
+
 func (s *S) TestAppInfoWithVolume(c *check.C) {
 	var stdout, stderr bytes.Buffer
 	expected := `Application: app1
