@@ -540,6 +540,14 @@ type app struct {
 	Error       string
 	Routers     []apptypes.AppRouter
 	Volumes     []volume.Volume
+
+	InternalAddresses []appInternalAddress
+}
+
+type appInternalAddress struct {
+	Domain   string
+	Protocol string
+	Port     int
 }
 
 type serviceData struct {
@@ -649,6 +657,15 @@ Quota: {{.Quota.InUse}}/{{if .Quota.Limit}}{{.Quota.Limit}} units{{else}}unlimit
 			buf.WriteString(unitsTable.String())
 		}
 	}
+	internalAddressesTable := tablecli.NewTable()
+	internalAddressesTable.Headers = []string{"Domain", "Protocol", "Port"}
+	for _, internalAddress := range a.InternalAddresses {
+		internalAddressesTable.AddRow([]string{
+			internalAddress.Domain,
+			internalAddress.Protocol,
+			strconv.Itoa(internalAddress.Port),
+		})
+	}
 	servicesTable := tablecli.NewTable()
 	servicesTable.Headers = []string{"Service", "Instance (Plan)"}
 	for _, service := range a.services {
@@ -689,6 +706,11 @@ Quota: {{.Quota.InUse}}/{{if .Quota.Limit}}{{.Quota.Limit}} units{{else}}unlimit
 		buf.WriteString("\n")
 		buf.WriteString("App Plan:\n")
 		buf.WriteString(renderPlans([]apptypes.Plan{a.Plan}, true))
+	}
+	if internalAddressesTable.Rows() > 0 {
+		buf.WriteString("\n")
+		buf.WriteString("Cluster internal addresses:\n")
+		buf.WriteString(internalAddressesTable.String())
 	}
 	if len(a.Routers) > 0 {
 		buf.WriteString("\n")
