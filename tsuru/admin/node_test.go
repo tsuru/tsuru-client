@@ -233,19 +233,18 @@ func (s *S) TestListNodesCmdRunWithFilters(c *check.C) {
 		Transport: cmdtest.Transport{Message: `{
 	"machines": [{"Id": "m-id-1", "Address": "localhost2"}],
 	"nodes": [
-		{"Address": "http://localhost1:8080", "Status": "disabled", "Metadata": {"meta1": "foo", "meta2": "bar"}},
-		{"Address": "http://localhost2:8089", "Status": "disabled"},
-		{"Address": "http://localhost2:9090", "Status": "disabled", "Metadata": {"meta1": "foo"}}
+		{"Address": "http://localhost1:8080", "Status": "disabled", "Metadata": {"meta1": "foo", "meta2": "bar"}}, 
+		{"Address": "http://localhost2:8089", "Status": "disabled", "Metadata": {"key": "value"}}
 	]
 }`, Status: http.StatusOK},
 		CondFunc: func(req *http.Request) bool {
-			return req.URL.Path == "/1.2/node"
+			return req.URL.Path == "/1.2/node" && req.URL.RawQuery == "metadata.meta1=foo&metadata.meta2=bar"
 		},
 	}
 	manager := cmd.Manager{}
 	client := cmd.NewClient(&http.Client{Transport: trans}, nil, &manager)
 	cmd := ListNodesCmd{}
-	cmd.Flags().Parse(true, []string{"--filter", "meta1=foo", "-f", "meta2=bar"})
+	cmd.Flags().Parse(true, []string{"--filter", "meta1=foo", "--filter", "meta2=bar"})
 	err := cmd.Run(&context, client)
 	c.Assert(err, check.IsNil)
 	expected := `+------------------------+---------+----------+-----------+
@@ -265,26 +264,25 @@ func (s *S) TestListNodesCmdRunWithPoolFilter(c *check.C) {
 		Transport: cmdtest.Transport{Message: `{
 	"machines": [{"Id": "m-id-1", "Address": "localhost2"}],
 	"nodes": [
-		{"Address": "http://localhost1:8080", "Status": "disabled", "Pool": "pool1", "Metadata": {"meta1": "foo", "meta2": "bar"}},
-		{"Address": "http://localhost2:8089", "Status": "disabled", "Pool": "pool2"},
-		{"Address": "http://localhost2:9090", "Status": "disabled", "Pool": "pool3", "Metadata": {"meta1": "foo"}}
+		{"Address": "http://localhost:8080", "Status": "disabled", "Pool": "pool1"},
+		{"Address": "http://localhost2:9090", "Status": "ready", "Pool": "pool2"}
 	]
 }`, Status: http.StatusOK},
 		CondFunc: func(req *http.Request) bool {
-			return req.URL.Path == "/1.2/node"
+			return req.URL.Path == "/1.2/node" && req.URL.RawQuery == "metadata.pool=pool1"
 		},
 	}
 	manager := cmd.Manager{}
 	client := cmd.NewClient(&http.Client{Transport: trans}, nil, &manager)
 	cmd := ListNodesCmd{}
-	cmd.Flags().Parse(true, []string{"--filter", "pool=pool2"})
+	cmd.Flags().Parse(true, []string{"--filter", "pool=pool1"})
 	err := cmd.Run(&context, client)
 	c.Assert(err, check.IsNil)
-	expected := `+------------------------+---------+----------+----------+
-| Address                | IaaS ID | Status   | Metadata |
-+------------------------+---------+----------+----------+
-| http://localhost2:8089 | m-id-1  | disabled |          |
-+------------------------+---------+----------+----------+
+	expected := `+-----------------------+---------+----------+----------+
+| Address               | IaaS ID | Status   | Metadata |
++-----------------------+---------+----------+----------+
+| http://localhost:8080 |         | disabled |          |
++-----------------------+---------+----------+----------+
 `
 	c.Assert(buf.String(), check.Equals, expected)
 }
@@ -338,20 +336,21 @@ func (s *S) TestListNodesCmdRunWithFlagQ(c *check.C) {
 	"nodes": [
 		{"Address": "http://localhost1:8080", "Status": "disabled", "Metadata": {"meta1": "foo", "meta2": "bar"}},
 		{"Address": "http://localhost1:8989", "Status": "disabled", "Metadata": {"meta2": "bar"}},
-		{"Address": "http://localhost2:9090", "Status": "ready"}
+		{"Address": "http://localhost1:8985", "Status": "disabled", "Metadata": {"meta1": "foo"}}
+
 	]
 }`, Status: http.StatusOK},
 		CondFunc: func(req *http.Request) bool {
-			return req.URL.Path == "/1.2/node"
+			return req.URL.Path == "/1.2/node" && req.URL.RawQuery == "metadata.meta1=foo"
 		},
 	}
 	manager := cmd.Manager{}
 	client := cmd.NewClient(&http.Client{Transport: trans}, nil, &manager)
 	cmd := ListNodesCmd{}
-	cmd.Flags().Parse(true, []string{"-q", "-f", "meta2=bar"})
+	cmd.Flags().Parse(true, []string{"-q", "-f", "meta1=foo"})
 	err := cmd.Run(&context, client)
 	c.Assert(err, check.IsNil)
-	expected := "http://localhost1:8080\nhttp://localhost1:8989\n"
+	expected := "http://localhost1:8080\nhttp://localhost1:8985\n"
 	c.Assert(buf.String(), check.Equals, expected)
 }
 

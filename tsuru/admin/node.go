@@ -301,6 +301,15 @@ func (c *ListNodesCmd) Run(ctx *cmd.Context, client *cmd.Client) error {
 	if err != nil {
 		return err
 	}
+	values := url.Values{}
+	for k, v := range c.filter {
+		k = fmt.Sprintf("metadata.%s", k)
+		values.Set(k, v)
+	}
+	queryString := values.Encode()
+	if queryString != "" {
+		u = fmt.Sprintf("%s?%s", u, queryString)
+	}
 	req, err := http.NewRequest("GET", u, nil)
 	if err != nil {
 		return err
