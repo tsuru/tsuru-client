@@ -91,55 +91,71 @@ func (s *S) TestClusterUpdateRun(c *check.C) {
 		Stderr: &stderr,
 		Args:   []string{"c1", "myprov"},
 	}
-	trans := &cmdtest.ConditionalTransport{
-		Transport: cmdtest.Transport{Status: http.StatusOK},
-		CondFunc: func(req *http.Request) bool {
-			c.Assert(req.URL.Path, check.Equals, "/1.4/provisioner/clusters/c1")
-			c.Assert(req.Method, check.Equals, http.MethodPost)
-			c.Assert(req.Header.Get("Content-Type"), check.Equals, "application/json")
+	cluster := tsuru.Cluster{
+		Name:        "c1",
+		Addresses:   []string{"addr1", "addr2"},
+		Cacert:      []byte("cadata"),
+		Clientcert:  []byte("certdata"),
+		Clientkey:   []byte("keydata"),
+		CustomData:  map[string]string{"a": "b", "c": "d"},
+		Pools:       []string{"p1", "p2"},
+		Default:     false,
+		Provisioner: "myprov",
+	}
+	data, err := json.Marshal(cluster)
+	c.Assert(err, check.IsNil)
+	trans := cmdtest.MultiConditionalTransport{
+		ConditionalTransports: []cmdtest.ConditionalTransport{
+			{
+				Transport: cmdtest.Transport{Message: string(data), Status: http.StatusOK},
+				CondFunc: func(req *http.Request) bool {
+					c.Assert(req.Method, check.Equals, http.MethodGet)
+					c.Assert(req.URL.Path, check.Equals, "/1.8/provisioner/clusters/c1")
+					return true
+				},
+			},
+			{
+				Transport: cmdtest.Transport{Status: http.StatusOK},
+				CondFunc: func(req *http.Request) bool {
+					c.Assert(req.Method, check.Equals, http.MethodPost)
+					c.Assert(req.URL.Path, check.Equals, "/1.4/provisioner/clusters/c1")
+					c.Assert(req.Header.Get("Content-Type"), check.Equals, "application/json")
 
-			var clus tsuru.Cluster
-			data, err := ioutil.ReadAll(req.Body)
-			c.Assert(err, check.IsNil)
-			err = json.Unmarshal(data, &clus)
-			c.Assert(err, check.IsNil)
-			c.Assert(clus, check.DeepEquals, tsuru.Cluster{
-				Name:        "c1",
-				Cacert:      []byte("cadata"),
-				Clientcert:  []byte("certdata"),
-				Clientkey:   []byte("keydata"),
-				CustomData:  map[string]string{"a": "b", "c": "d"},
-				Addresses:   []string{"addr1", "addr2"},
-				Pools:       []string{"p1", "p2"},
-				Default:     true,
-				Provisioner: "myprov",
-			})
-			return true
+					var clus tsuru.Cluster
+					data, err := ioutil.ReadAll(req.Body)
+					c.Assert(err, check.IsNil)
+					err = json.Unmarshal(data, &clus)
+					c.Assert(err, check.IsNil)
+					c.Assert(clus, check.DeepEquals, tsuru.Cluster{
+						Name:        "c1",
+						Clientcert:  []byte("clientcert"),
+						Clientkey:   []byte("keydata"),
+						CustomData:  map[string]string{"a": "b", "e": "f"},
+						Addresses:   []string{"addr1", "addr2"},
+						Pools:       []string{"p1"},
+						Default:     false,
+						Provisioner: "myprov",
+					})
+					return true
+				},
+			},
 		},
 	}
 	manager := cmd.NewManager("admin", "0.1", "admin-ver", &stdout, &stderr, nil, nil)
-	client := cmd.NewClient(&http.Client{Transport: trans}, nil, manager)
+	client := cmd.NewClient(&http.Client{Transport: &trans}, nil, manager)
 	myCmd := ClusterUpdate{}
 	dir, err := ioutil.TempDir("", "tsuru")
 	c.Assert(err, check.IsNil)
 	defer os.RemoveAll(dir)
-	err = ioutil.WriteFile(filepath.Join(dir, "ca"), []byte("cadata"), 0600)
-	c.Assert(err, check.IsNil)
-	err = ioutil.WriteFile(filepath.Join(dir, "cert"), []byte("certdata"), 0600)
-	c.Assert(err, check.IsNil)
-	err = ioutil.WriteFile(filepath.Join(dir, "key"), []byte("keydata"), 0600)
+	err = ioutil.WriteFile(filepath.Join(dir, "cert"), []byte("clientcert"), 0600)
 	c.Assert(err, check.IsNil)
 	err = myCmd.Flags().Parse(true, []string{
-		"--cacert", filepath.Join(dir, "ca"),
+		"--remove-pool", "p2",
+		"--add-pool", "p1",
+		"--remove-custom", "c=d",
+		"--add-custom", "e=f",
+		"--remove-cacert",
 		"--clientcert", filepath.Join(dir, "cert"),
-		"--clientkey", filepath.Join(dir, "key"),
-		"--addr", "addr1",
-		"--addr", "addr2",
-		"--pool", "p1",
-		"--pool", "p2",
-		"--custom", "a=b",
-		"--custom", "c=d",
-		"--default",
 	})
 	c.Assert(err, check.IsNil)
 	err = myCmd.Run(&context, client)
