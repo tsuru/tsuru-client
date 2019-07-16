@@ -94,7 +94,7 @@ func (s *S) TestAppLogWithUnparsableData(c *check.C) {
 	err = command.Run(&context, client)
 	c.Assert(err, check.IsNil)
 	expected := cmd.Colorfy(t.Format(tfmt)+" [tsuru]:", "blue", "", "") + " creating app lost\n"
-	expected += "Error: unparseable data"
+	expected += "Error: invalid character 'u' looking for beginning of value: \"unparseable data\""
 	c.Assert(stdout.String(), check.Equals, expected)
 }
 

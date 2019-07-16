@@ -65,7 +65,7 @@ func (f logFormatter) Format(out io.Writer, data []byte) error {
 	var logs []log
 	err := json.Unmarshal(data, &logs)
 	if err != nil {
-		return tsuruIo.ErrInvalidStreamChunk
+		return err
 	}
 	for _, l := range logs {
 		prefix := f.prefix(l)
