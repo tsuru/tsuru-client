@@ -8,9 +8,11 @@ import (
 	"net/url"
 	"strings"
 
+	"github.com/tsuru/tsuru/errors"
 	"github.com/tsuru/tsuru/log"
 	"github.com/tsuru/tsuru/router"
 	appTypes "github.com/tsuru/tsuru/types/app"
+	routerTypes "github.com/tsuru/tsuru/types/router"
 )
 
 type RebuildRoutesResult struct {
@@ -22,7 +24,7 @@ type RebuildApp interface {
 	router.App
 	GetCname() []string
 	GetRouters() []appTypes.AppRouter
-	GetHealthcheckData() (router.HealthcheckData, error)
+	GetHealthcheckData() (routerTypes.HealthcheckData, error)
 	RoutableAddresses() ([]url.URL, error)
 	InternalLock(string) (bool, error)
 	Unlock()
@@ -38,14 +40,16 @@ func rebuildRoutesAsync(app RebuildApp, dry bool) (map[string]RebuildRoutesResul
 
 func rebuildRoutes(app RebuildApp, dry, wait bool) (map[string]RebuildRoutesResult, error) {
 	result := make(map[string]RebuildRoutesResult)
+	multi := errors.NewMultiError()
 	for _, appRouter := range app.GetRouters() {
 		resultInRouter, err := rebuildRoutesInRouter(app, dry, appRouter, wait)
-		if err != nil {
-			return nil, err
+		if err == nil {
+			result[appRouter.Name] = *resultInRouter
+		} else {
+			multi.Add(err)
 		}
-		result[appRouter.Name] = *resultInRouter
 	}
-	return result, nil
+	return result, multi.ToError()
 }
 
 func diffRoutes(old []*url.URL, new []url.URL) (toAdd []*url.URL, toRemove []*url.URL) {

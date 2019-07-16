@@ -144,7 +144,7 @@ func (c *AppLog) Run(context *cmd.Context, client *cmd.Client) error {
 	}
 	unparsed := w.Remaining()
 	if len(unparsed) > 0 {
-		fmt.Fprintf(context.Stdout, "Error: %s", string(unparsed))
+		fmt.Fprintf(context.Stdout, "Error: %v: %q", err, string(unparsed))
 	}
 	return nil
 }

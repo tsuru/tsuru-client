@@ -5,6 +5,7 @@
 package app
 
 import (
+	"context"
 	"crypto/tls"
 	"crypto/x509"
 	"encoding/json"
@@ -47,6 +48,7 @@ import (
 	"github.com/tsuru/tsuru/types/cache"
 	permTypes "github.com/tsuru/tsuru/types/permission"
 	"github.com/tsuru/tsuru/types/quota"
+	routerTypes "github.com/tsuru/tsuru/types/router"
 	"github.com/tsuru/tsuru/validation"
 	"github.com/tsuru/tsuru/volume"
 )
@@ -110,6 +112,10 @@ type App struct {
 	// UUID is a v4 UUID lazily generated on the first call to GetUUID()
 	UUID string
 
+	// InterApp Properties implemented by provision.InterAppProvisioner
+	// it is lazy generated on the first call to FillInternalAddresses
+	InternalAddresses []provision.AppInternalAddress `json:",omitempty" bson:"-"`
+
 	Quota       quota.Quota
 	builder     builder.Builder
 	provisioner provision.Provisioner
@@ -130,6 +136,22 @@ func (app *App) getBuilder() (builder.Builder, error) {
 	}
 	app.builder, err = builder.GetForProvisioner(p)
 	return app.builder, err
+}
+
+func (app *App) FillInternalAddresses(ctx context.Context) error {
+	provisioner, err := app.getProvisioner()
+	if err != nil {
+		return err
+	}
+
+	if interAppProvisioner, ok := provisioner.(provision.InterAppProvisioner); ok {
+		app.InternalAddresses, err = interAppProvisioner.InternalAddresses(ctx, app)
+		if err != nil {
+			return err
+		}
+	}
+
+	return nil
 }
 
 func (app *App) CleanImage(img string) error {
@@ -1750,7 +1772,11 @@ func (app *App) Log(message, source, unit string) error {
 			return err
 		}
 		defer conn.Close()
-		return conn.AppLogCollection(app.Name).Insert(logs...)
+		coll, err := conn.CreateAppLogCollection(app.Name)
+		if err != nil {
+			return err
+		}
+		return coll.Insert(logs...)
 	}
 	return nil
 }
@@ -2513,14 +2539,14 @@ func RenameTeam(oldName, newName string) error {
 	return err
 }
 
-func (app *App) GetHealthcheckData() (router.HealthcheckData, error) {
+func (app *App) GetHealthcheckData() (routerTypes.HealthcheckData, error) {
 	imageName, err := image.AppCurrentImageName(app.Name)
 	if err != nil {
-		return router.HealthcheckData{}, err
+		return routerTypes.HealthcheckData{}, err
 	}
 	yamlData, err := image.GetImageTsuruYamlData(imageName)
 	if err != nil || yamlData.Healthcheck == nil {
-		return router.HealthcheckData{}, err
+		return routerTypes.HealthcheckData{}, err
 	}
 	return yamlData.ToRouterHC(), nil
 }

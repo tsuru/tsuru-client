@@ -20,12 +20,16 @@ import (
 	"github.com/tsuru/tsuru/api/shutdown"
 	"github.com/tsuru/tsuru/db"
 	"github.com/tsuru/tsuru/log"
+	"golang.org/x/time/rate"
 )
 
 var (
 	bulkMaxWaitMongoTime = 1 * time.Second
 	bulkMaxNumberMsgs    = 1000
 	bulkQueueMaxSize     = 10000
+
+	rateLimitWarningInterval = 5 * time.Second
+	globalRateLimiter        = rate.NewLimiter(rate.Inf, 1)
 
 	buckets = append([]float64{0.1, 0.5}, prometheus.ExponentialBuckets(1, 1.6, 15)...)
 
@@ -64,6 +68,11 @@ var (
 		Help: "The number of log entries dropped due to full buffers.",
 	}, []string{"app"})
 
+	logsDroppedRateLimit = prometheus.NewCounterVec(prometheus.CounterOpts{
+		Name: "tsuru_logs_dropped_rate_limit_total",
+		Help: "The number of log entries dropped due to rate limit exceeded.",
+	}, []string{"app"})
+
 	logsMongoFullLatency = prometheus.NewHistogram(prometheus.HistogramOpts{
 		Name:    "tsuru_logs_mongo_full_duration_seconds",
 		Help:    "The latency distributions for log messages to be stored in database.",
@@ -75,6 +84,16 @@ var (
 		Help:    "The latency distributions for log messages to be stored in database.",
 		Buckets: buckets,
 	})
+
+	logsAppTail = prometheus.NewGaugeVec(prometheus.GaugeOpts{
+		Name: "tsuru_logs_app_tail_current",
+		Help: "The current number of active log tail queries for an app.",
+	}, []string{"app"})
+
+	logsAppTailEntries = prometheus.NewCounterVec(prometheus.CounterOpts{
+		Name: "tsuru_logs_app_tail_entries_total",
+		Help: "The number of log entries read in tail requests for an app.",
+	}, []string{"app"})
 )
 
 func init() {
@@ -84,9 +103,12 @@ func init() {
 	prometheus.MustRegister(logsEnqueued)
 	prometheus.MustRegister(logsWritten)
 	prometheus.MustRegister(logsDropped)
+	prometheus.MustRegister(logsDroppedRateLimit)
 	prometheus.MustRegister(logsQueueBlockedTotal)
 	prometheus.MustRegister(logsMongoFullLatency)
 	prometheus.MustRegister(logsMongoLatency)
+	prometheus.MustRegister(logsAppTail)
+	prometheus.MustRegister(logsAppTailEntries)
 }
 
 type LogListener struct {
@@ -123,11 +145,13 @@ func NewLogListener(a *App, filterLog Applog) (*LogListener, error) {
 		// though so the impact of this extra log message is really small.
 		err = a.Log("Logs initialization", "tsuru", "")
 		if err != nil {
+			conn.Close()
 			return nil, err
 		}
 		err = coll.Find(nil).Sort("-_id").Limit(1).One(&lastLog)
 	}
 	if err != nil {
+		conn.Close()
 		return nil, err
 	}
 	lastId := lastLog.MongoID
@@ -146,7 +170,11 @@ func NewLogListener(a *App, filterLog Applog) (*LogListener, error) {
 	query := coll.Find(mkQuery())
 	tailTimeout := 10 * time.Second
 	iter := query.Sort("$natural").Tail(tailTimeout)
+	tailCountMetric := logsAppTail.WithLabelValues(a.Name)
+	entriesMetric := logsAppTailEntries.WithLabelValues(a.Name)
 	go func() {
+		tailCountMetric.Inc()
+		defer tailCountMetric.Dec()
 		defer close(c)
 		defer func() {
 			if r := recover(); r != nil {
@@ -162,6 +190,7 @@ func NewLogListener(a *App, filterLog Applog) (*LogListener, error) {
 				lastId = applog.MongoID
 				select {
 				case c <- applog:
+					entriesMetric.Inc()
 				case <-quit:
 					iter.Close()
 					return
@@ -301,25 +330,33 @@ func newAppLogDispatcher(appName string) *appLogDispatcher {
 	return d
 }
 
-func (d *appLogDispatcher) flush(msgs []interface{}, lastMessage *msgWithTS) bool {
+func (d *appLogDispatcher) flush(msgs []interface{}, lastMessage *msgWithTS) error {
 	conn, err := db.LogConn()
 	if err != nil {
 		log.Errorf("[log flusher] unable to connect to mongodb: %s", err)
-		return false
+		return err
 	}
-	coll := conn.AppLogCollection(d.appName)
+	defer conn.Close()
+	coll, err := conn.CreateAppLogCollection(d.appName)
+	if err != nil && !db.IsCollectionExistsError(err) {
+		log.Errorf("[log flusher] unable to create collection in mongodb: %s", err)
+		return err
+	}
+	unsafeWrite, _ := config.GetBool("log:unsafe-write")
+	if unsafeWrite {
+		coll.Database.Session.SetSafe(nil)
+	}
 	err = coll.Insert(msgs...)
-	coll.Close()
 	if err != nil {
 		log.Errorf("[log flusher] unable to insert logs: %s", err)
-		return false
+		return err
 	}
 	if lastMessage != nil {
 		logsMongoLatency.Observe(time.Since(lastMessage.arriveTime).Seconds())
 		logsMongoFullLatency.Observe(time.Since(lastMessage.msg.Date).Seconds())
 	}
 	logsWritten.WithLabelValues(d.appName).Add(float64(len(msgs)))
-	return true
+	return nil
 }
 
 type bulkProcessor struct {
@@ -330,7 +367,7 @@ type bulkProcessor struct {
 	ch          chan *msgWithTS
 	nextNotify  *time.Timer
 	flushable   interface {
-		flush([]interface{}, *msgWithTS) bool
+		flush([]interface{}, *msgWithTS) error
 	}
 }
 
@@ -369,6 +406,53 @@ func (p *bulkProcessor) stopWait() {
 	<-p.finished
 }
 
+func (p *bulkProcessor) rateLimitWarning(rateLimit int) *Applog {
+	return &Applog{
+		AppName: p.appName,
+		Date:    time.Now(),
+		Message: fmt.Sprintf("Log messages dropped due to exceeded rate limit. Limit: %v logs/s.", rateLimit),
+		Source:  "tsuru",
+		Unit:    "api",
+	}
+}
+
+func (p *bulkProcessor) globalRateLimitWarning() *Applog {
+	return &Applog{
+		AppName: p.appName,
+		Date:    time.Now(),
+		Message: fmt.Sprintf("Log messages dropped due to exceeded global rate limit. Global Limit: %v logs/s.", globalRateLimiter.Limit()),
+		Source:  "tsuru",
+		Unit:    "api",
+	}
+}
+
+func (p *bulkProcessor) flushErrorMessage(err error) *Applog {
+	return &Applog{
+		AppName: p.appName,
+		Date:    time.Now(),
+		Message: fmt.Sprintf("Log messages dropped due to mongodb insert error: %v", err),
+		Source:  "tsuru",
+		Unit:    "api",
+	}
+}
+
+func updateLogRateLimiter(rateLimiter *rate.Limiter) *rate.Limiter {
+	globalRateLimit, _ := config.GetInt("log:global-app-log-rate-limit")
+	if globalRateLimit <= 0 {
+		globalRateLimiter.SetLimit(rate.Inf)
+	} else if globalRateLimit != int(globalRateLimiter.Limit()) {
+		globalRateLimiter.SetLimitAt(time.Now().Add(-2*time.Second), rate.Limit(globalRateLimit))
+	}
+	rateLimit, _ := config.GetInt("log:app-log-rate-limit")
+	if rateLimit <= 0 {
+		return nil
+	}
+	if rateLimiter == nil || rateLimiter.Burst() != rateLimit {
+		return rate.NewLimiter(rate.Limit(rateLimit), rateLimit)
+	}
+	return rateLimiter
+}
+
 func (p *bulkProcessor) run() {
 	defer close(p.finished)
 	t := time.NewTimer(p.maxWaitTime)
@@ -376,20 +460,42 @@ func (p *bulkProcessor) run() {
 	bulkBuffer := make([]interface{}, p.bulkSize)
 	shouldReturn := false
 	var lastMessage *msgWithTS
+	var lastRateNotice time.Time
+	logsInAppQueue := logsInAppQueues.WithLabelValues(p.appName)
+	logsDropped := logsDroppedRateLimit.WithLabelValues(p.appName)
+	rateLimiter := updateLogRateLimiter(nil)
 	for {
 		var flush bool
 		select {
 		case msgExtra := <-p.ch:
-			logsInAppQueues.WithLabelValues(p.appName).Set(float64(len(p.ch)))
+			logsInAppQueue.Set(float64(len(p.ch)))
 			if msgExtra == nil {
 				flush = true
 				shouldReturn = true
 				break
 			}
 			if pos == p.bulkSize {
-				flush = true
+				pos--
+			}
+
+			globalAllow := globalRateLimiter.Allow()
+			if !globalAllow || (rateLimiter != nil && !rateLimiter.Allow()) {
+				logsDropped.Inc()
+				if time.Since(lastRateNotice) > rateLimitWarningInterval {
+					lastRateNotice = time.Now()
+					var warning *Applog
+					if globalAllow {
+						warning = p.rateLimitWarning(rateLimiter.Burst())
+					} else {
+						warning = p.globalRateLimitWarning()
+					}
+					bulkBuffer[pos] = warning
+					pos++
+				}
+				flush = p.bulkSize == pos
 				break
 			}
+
 			lastMessage = msgExtra
 			bulkBuffer[pos] = msgExtra.msg
 			pos++
@@ -399,10 +505,15 @@ func (p *bulkProcessor) run() {
 			t.Reset(p.maxWaitTime)
 		}
 		if flush && pos > 0 {
-			if p.flushable.flush(bulkBuffer[:pos], lastMessage) {
-				lastMessage = nil
+			err := p.flushable.flush(bulkBuffer[:pos], lastMessage)
+			if err == nil {
 				pos = 0
+				lastMessage = nil
+			} else {
+				bulkBuffer[0] = p.flushErrorMessage(err)
+				pos = 1
 			}
+			rateLimiter = updateLogRateLimiter(rateLimiter)
 		}
 		if shouldReturn {
 			return
