@@ -31,7 +31,7 @@ func (s *S) TestFormatterUsesCurrentTimeZone(c *check.C) {
 		time.Local = old
 	}()
 	formatter := logFormatter{}
-	err = formatter.Format(&writer, data)
+	err = formatter.Format(&writer, json.NewDecoder(bytes.NewReader(data)))
 	c.Assert(err, check.IsNil)
 	tfmt := "2006-01-02 15:04:05 -0700"
 	t = t.In(time.UTC)
@@ -94,7 +94,7 @@ func (s *S) TestAppLogWithUnparsableData(c *check.C) {
 	err = command.Run(&context, client)
 	c.Assert(err, check.IsNil)
 	expected := cmd.Colorfy(t.Format(tfmt)+" [tsuru]:", "blue", "", "") + " creating app lost\n"
-	expected += "Error: invalid character 'u' looking for beginning of value: \"unparseable data\""
+	expected += "Error: unable to parse json: invalid character 'u' looking for beginning of value: \"\\nunparseable data\""
 	c.Assert(stdout.String(), check.Equals, expected)
 }
 

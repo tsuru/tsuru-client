@@ -8,13 +8,13 @@ import (
 	"encoding/json"
 	"fmt"
 	"io"
+	"io/ioutil"
 	"net/http"
 	"strings"
 	"time"
 
 	"github.com/tsuru/gnuflag"
 	"github.com/tsuru/tsuru/cmd"
-	tsuruIo "github.com/tsuru/tsuru/io"
 )
 
 type AppLog struct {
@@ -61,11 +61,16 @@ type logFormatter struct {
 	noSource bool
 }
 
-func (f logFormatter) Format(out io.Writer, data []byte) error {
+func (f logFormatter) Format(out io.Writer, dec *json.Decoder) error {
 	var logs []log
-	err := json.Unmarshal(data, &logs)
+	err := dec.Decode(&logs)
 	if err != nil {
-		return err
+		if err == io.EOF {
+			return err
+		}
+		buffered := dec.Buffered()
+		bufferedData, _ := ioutil.ReadAll(buffered)
+		return fmt.Errorf("unable to parse json: %v: %q", err, string(bufferedData))
 	}
 	for _, l := range logs {
 		prefix := f.prefix(l)
@@ -136,15 +141,19 @@ func (c *AppLog) Run(context *cmd.Context, client *cmd.Client) error {
 		return nil
 	}
 	defer response.Body.Close()
-	w := tsuruIo.NewStreamWriter(context.Stdout, logFormatter{
+	formatter := logFormatter{
 		noDate:   c.noDate,
 		noSource: c.noSource,
-	})
-	for n := int64(1); n > 0 && err == nil; n, err = io.Copy(w, response.Body) {
 	}
-	unparsed := w.Remaining()
-	if len(unparsed) > 0 {
-		fmt.Fprintf(context.Stdout, "Error: %v: %q", err, string(unparsed))
+	dec := json.NewDecoder(response.Body)
+	for {
+		err = formatter.Format(context.Stdout, dec)
+		if err != nil {
+			if err != io.EOF {
+				fmt.Fprintf(context.Stdout, "Error: %v", err)
+			}
+			break
+		}
 	}
 	return nil
 }
