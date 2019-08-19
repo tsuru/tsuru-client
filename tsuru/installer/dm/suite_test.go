@@ -11,7 +11,7 @@ import (
 	"testing"
 
 	"github.com/docker/machine/libmachine/drivers/plugin/localbinary"
-	"github.com/tsuru/tsuru-client/tsuru/installer/testing"
+	installertest "github.com/tsuru/tsuru-client/tsuru/installer/testing"
 	"github.com/tsuru/tsuru/iaas/dockermachine"
 	check "gopkg.in/check.v1"
 )

@@ -492,7 +492,7 @@ func (ServiceInfo) ExtraHeaders(instances []ServiceInstanceModel) []string {
 			}
 		}
 	}
-	sort.Sort(sort.StringSlice(headers))
+	sort.Strings(headers)
 	return headers
 }
 
