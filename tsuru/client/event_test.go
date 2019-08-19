@@ -432,9 +432,9 @@ Start Custom Data:
     id: 22717c3d7cd8511339edbcc9bf7b931e
     image: tsuru/python
     ip: ""
-    laststatusupdate: 0001-01-01T00:00:00Z
+    laststatusupdate: "0001-01-01T00:00:00Z"
     lastsuccessstatusupdate: .*?
-    lockeduntil: 0001-01-01T00:00:00Z
+    lockeduntil: "0001-01-01T00:00:00Z"
     name: ""
     privatekey: ""
     processname: web
@@ -452,9 +452,9 @@ End Custom Data:
     id: ""
     image: ""
     ip: ""
-    laststatusupdate: 0001-01-01T00:00:00Z
-    lastsuccessstatusupdate: 0001-01-01T00:00:00Z
-    lockeduntil: 0001-01-01T00:00:00Z
+    laststatusupdate: "0001-01-01T00:00:00Z"
+    lastsuccessstatusupdate: "0001-01-01T00:00:00Z"
+    lockeduntil: "0001-01-01T00:00:00Z"
     name: ""
     privatekey: ""
     processname: ""

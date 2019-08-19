@@ -204,11 +204,11 @@ variable 2`},
 	trans := &cmdtest.ConditionalTransport{
 		Transport: cmdtest.Transport{Message: string(result), Status: http.StatusOK},
 		CondFunc: func(req *http.Request) bool {
-			want := []struct{ Name, Value string }{
+			want := []struct{ Name, Value, Alias string }{
 				{Name: "LINE1", Value: `multiline
-variable 1`},
+variable 1`, Alias: ""},
 				{Name: "LINE2", Value: `multiline
-variable 2`},
+variable 2`, Alias: ""},
 			}
 			err = req.ParseForm()
 			c.Assert(err, check.IsNil)
@@ -256,14 +256,14 @@ func (s *S) TestEnvSetValues(c *check.C) {
 	trans := &cmdtest.ConditionalTransport{
 		Transport: cmdtest.Transport{Message: string(result), Status: http.StatusOK},
 		CondFunc: func(req *http.Request) bool {
-			want := []struct{ Name, Value string }{
-				{Name: "DATABASE_HOST", Value: "some host"},
-				{Name: "DATABASE_USER", Value: "root"},
-				{Name: "DATABASE_PASSWORD", Value: ".1234..abc"},
-				{Name: "http_proxy", Value: "http://myproxy.com:3128/"},
-				{Name: "VALUE_WITH_EQUAL_SIGN", Value: "http://wholikesquerystrings.me/?tsuru=awesome"},
-				{Name: "BASE64_STRING", Value: "t5urur0ck5=="},
-				{Name: "SOME_PASSWORD", Value: "js87$%32??"},
+			want := []struct{ Name, Value, Alias string }{
+				{Name: "DATABASE_HOST", Value: "some host", Alias: ""},
+				{Name: "DATABASE_USER", Value: "root", Alias: ""},
+				{Name: "DATABASE_PASSWORD", Value: ".1234..abc", Alias: ""},
+				{Name: "http_proxy", Value: "http://myproxy.com:3128/", Alias: ""},
+				{Name: "VALUE_WITH_EQUAL_SIGN", Value: "http://wholikesquerystrings.me/?tsuru=awesome", Alias: ""},
+				{Name: "BASE64_STRING", Value: "t5urur0ck5==", Alias: ""},
+				{Name: "SOME_PASSWORD", Value: "js87$%32??", Alias: ""},
 			}
 			err = req.ParseForm()
 			c.Assert(err, check.IsNil)
@@ -311,13 +311,13 @@ func (s *S) TestEnvSetValuesAndPrivateAndNoRestart(c *check.C) {
 	trans := &cmdtest.ConditionalTransport{
 		Transport: cmdtest.Transport{Message: string(result), Status: http.StatusOK},
 		CondFunc: func(req *http.Request) bool {
-			want := []struct{ Name, Value string }{
-				{Name: "DATABASE_HOST", Value: "some host"},
-				{Name: "DATABASE_USER", Value: "root"},
-				{Name: "DATABASE_PASSWORD", Value: ".1234..abc"},
-				{Name: "http_proxy", Value: "http://myproxy.com:3128/"},
+			want := []struct{ Name, Value, Alias string }{
+				{Name: "DATABASE_HOST", Value: "some host", Alias: ""},
+				{Name: "DATABASE_USER", Value: "root", Alias: ""},
+				{Name: "DATABASE_PASSWORD", Value: ".1234..abc", Alias: ""},
+				{Name: "http_proxy", Value: "http://myproxy.com:3128/", Alias: ""},
 				{Name: "VALUE_WITH_EQUAL_SIGN", Value: "http://wholikesquerystrings.me/?tsuru=awesome"},
-				{Name: "BASE64_STRING", Value: "t5urur0ck5=="},
+				{Name: "BASE64_STRING", Value: "t5urur0ck5==", Alias: ""},
 			}
 			err = req.ParseForm()
 			c.Assert(err, check.IsNil)

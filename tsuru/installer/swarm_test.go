@@ -233,7 +233,7 @@ func (s *S) TestServiceExec(c *check.C) {
 				ID:     "123",
 				NodeID: "node-id",
 				Status: swarm.TaskStatus{
-					ContainerStatus: swarm.ContainerStatus{
+					ContainerStatus: &swarm.ContainerStatus{
 						ContainerID: "container-id"},
 				},
 			},
