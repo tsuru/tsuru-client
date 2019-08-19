@@ -5,12 +5,13 @@ os:
   - linux
   - osx
 go:
-  - 1.10.x
-  - master
+  - 1.12.x
 env:
   global:
-    - GO_FOR_RELEASE=1.10
+    - GO_FOR_RELEASE=1.12
     - GORELEASER_CONFIG=goreleaser-rc.yml
+    - GOPROXY=https://proxy.golang.org
+    - GO111MODULE=on
   matrix:
     - GOARCH=amd64 JOB=test
     - GOARCH=386 JOB=test
@@ -29,15 +30,14 @@ jobs:
   allow_failures:
     - go: master
   exclude:
-    - go: master
-      env: GOARCH=amd64 JOB=gometalinter
     - os: osx
       env: GOARCH=amd64 JOB=gometalinter
     - os: osx
       env: GOARCH=386 JOB=test
-    - os: osx
-      go: master
   include:
+    - os: linux
+      go: master
+      env: GOARCH=amd64 JOB=test
     - stage: deploy
       script:
         - 'if [[ "$TRAVIS_TAG" =~ ^[0-9\.]+$ ]]; then export GORELEASER_CONFIG=goreleaser-stable.yml; fi'

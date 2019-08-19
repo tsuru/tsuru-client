@@ -15,16 +15,17 @@ var versionRegexp *regexp.Regexp
 // The raw regular expression string used for testing the validity
 // of a version.
 const VersionRegexpRaw string = `v?([0-9]+(\.[0-9]+)*?)` +
-	`(-([0-9A-Za-z\-]+(\.[0-9A-Za-z\-]+)*))?` +
-	`(\+([0-9A-Za-z\-]+(\.[0-9A-Za-z\-]+)*))?` +
+	`(-([0-9]+[0-9A-Za-z\-~]*(\.[0-9A-Za-z\-~]+)*)|(-?([A-Za-z\-~]+[0-9A-Za-z\-~]*(\.[0-9A-Za-z\-~]+)*)))?` +
+	`(\+([0-9A-Za-z\-~]+(\.[0-9A-Za-z\-~]+)*))?` +
 	`?`
 
 // Version represents a single version.
 type Version struct {
 	metadata string
 	pre      string
-	segments []int
+	segments []int64
 	si       int
+	original string
 }
 
 func init() {
@@ -39,16 +40,16 @@ func NewVersion(v string) (*Version, error) {
 		return nil, fmt.Errorf("Malformed version: %s", v)
 	}
 	segmentsStr := strings.Split(matches[1], ".")
-	segments := make([]int, len(segmentsStr))
+	segments := make([]int64, len(segmentsStr))
 	si := 0
 	for i, str := range segmentsStr {
-		val, err := strconv.ParseInt(str, 10, 32)
+		val, err := strconv.ParseInt(str, 10, 64)
 		if err != nil {
 			return nil, fmt.Errorf(
 				"Error parsing version: %s", err)
 		}
 
-		segments[i] = int(val)
+		segments[i] = int64(val)
 		si++
 	}
 
@@ -59,11 +60,17 @@ func NewVersion(v string) (*Version, error) {
 		segments = append(segments, 0)
 	}
 
+	pre := matches[7]
+	if pre == "" {
+		pre = matches[4]
+	}
+
 	return &Version{
-		metadata: matches[7],
-		pre:      matches[4],
+		metadata: matches[10],
+		pre:      pre,
 		segments: segments,
 		si:       si,
+		original: v,
 	}, nil
 }
 
@@ -89,8 +96,8 @@ func (v *Version) Compare(other *Version) int {
 		return 0
 	}
 
-	segmentsSelf := v.Segments()
-	segmentsOther := other.Segments()
+	segmentsSelf := v.Segments64()
+	segmentsOther := other.Segments64()
 
 	// If the segments are the same, we must compare on prerelease info
 	if reflect.DeepEqual(segmentsSelf, segmentsOther) {
@@ -152,7 +159,7 @@ func (v *Version) Compare(other *Version) int {
 	return 0
 }
 
-func allZero(segs []int) bool {
+func allZero(segs []int64) bool {
 	for _, s := range segs {
 		if s != 0 {
 			return false
@@ -166,24 +173,42 @@ func comparePart(preSelf string, preOther string) int {
 		return 0
 	}
 
+	var selfInt int64
+	selfNumeric := true
+	selfInt, err := strconv.ParseInt(preSelf, 10, 64)
+	if err != nil {
+		selfNumeric = false
+	}
+
+	var otherInt int64
+	otherNumeric := true
+	otherInt, err = strconv.ParseInt(preOther, 10, 64)
+	if err != nil {
+		otherNumeric = false
+	}
+
 	// if a part is empty, we use the other to decide
 	if preSelf == "" {
-		_, notIsNumeric := strconv.ParseInt(preOther, 10, 64)
-		if notIsNumeric == nil {
+		if otherNumeric {
 			return -1
 		}
 		return 1
 	}
 
 	if preOther == "" {
-		_, notIsNumeric := strconv.ParseInt(preSelf, 10, 64)
-		if notIsNumeric == nil {
+		if selfNumeric {
 			return 1
 		}
 		return -1
 	}
 
-	if preSelf > preOther {
+	if selfNumeric && !otherNumeric {
+		return -1
+	} else if !selfNumeric && otherNumeric {
+		return 1
+	} else if !selfNumeric && !otherNumeric && preSelf > preOther {
+		return 1
+	} else if selfInt > otherInt {
 		return 1
 	}
 
@@ -264,23 +289,44 @@ func (v *Version) Prerelease() string {
 	return v.pre
 }
 
-// Segments returns the numeric segments of the version as a slice.
+// Segments returns the numeric segments of the version as a slice of ints.
 //
 // This excludes any metadata or pre-release information. For example,
 // for a version "1.2.3-beta", segments will return a slice of
 // 1, 2, 3.
 func (v *Version) Segments() []int {
-	return v.segments
+	segmentSlice := make([]int, len(v.segments))
+	for i, v := range v.segments {
+		segmentSlice[i] = int(v)
+	}
+	return segmentSlice
+}
+
+// Segments64 returns the numeric segments of the version as a slice of int64s.
+//
+// This excludes any metadata or pre-release information. For example,
+// for a version "1.2.3-beta", segments will return a slice of
+// 1, 2, 3.
+func (v *Version) Segments64() []int64 {
+	result := make([]int64, len(v.segments))
+	copy(result, v.segments)
+	return result
 }
 
 // String returns the full version string included pre-release
 // and metadata information.
+//
+// This value is rebuilt according to the parsed segments and other
+// information. Therefore, ambiguities in the version string such as
+// prefixed zeroes (1.04.0 => 1.4.0), `v` prefix (v1.0.0 => 1.0.0), and
+// missing parts (1.0 => 1.0.0) will be made into a canonicalized form
+// as shown in the parenthesized examples.
 func (v *Version) String() string {
 	var buf bytes.Buffer
 	fmtParts := make([]string, len(v.segments))
 	for i, s := range v.segments {
 		// We can ignore err here since we've pre-parsed the values in segments
-		str := strconv.Itoa(s)
+		str := strconv.FormatInt(s, 10)
 		fmtParts[i] = str
 	}
 	fmt.Fprintf(&buf, strings.Join(fmtParts, "."))
@@ -292,4 +338,10 @@ func (v *Version) String() string {
 	}
 
 	return buf.String()
+}
+
+// Original returns the original parsed version as-is, including any
+// potential whitespace, `v` prefix, etc.
+func (v *Version) Original() string {
+	return v.original
 }
