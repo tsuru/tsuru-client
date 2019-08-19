@@ -10,7 +10,7 @@ import (
 	"strconv"
 
 	"github.com/docker/docker/api/types/swarm"
-	"github.com/fsouza/go-dockerclient"
+	docker "github.com/fsouza/go-dockerclient"
 	"github.com/pkg/errors"
 	"github.com/tsuru/tsuru-client/tsuru/installer/dm"
 	"github.com/tsuru/tsuru/iaas/dockermachine"
@@ -121,7 +121,7 @@ func joinSwarm(existingClient *docker.Client, newClient *docker.Client) error {
 func (c *SwarmCluster) ServiceExec(service string, cmd []string, startOpts docker.StartExecOptions) error {
 	mClient, err := c.dockerClient()
 	if err != nil {
-		return fmt.Errorf("failed to retrive swarm docker client: %s", err)
+		return fmt.Errorf("failed to retrieve swarm docker client: %s", err)
 	}
 	tasks, err := mClient.ListTasks(docker.ListTasksOptions{
 		Filters: map[string][]string{

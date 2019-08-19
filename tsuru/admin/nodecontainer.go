@@ -17,7 +17,7 @@ import (
 
 	"github.com/ajg/form"
 	"github.com/docker/go-connections/nat"
-	"github.com/fsouza/go-dockerclient"
+	docker "github.com/fsouza/go-dockerclient"
 	"github.com/tsuru/gnuflag"
 	"github.com/tsuru/tablecli"
 	"github.com/tsuru/tsuru/cmd"

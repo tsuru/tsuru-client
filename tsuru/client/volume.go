@@ -266,7 +266,7 @@ func (c *VolumeInfo) render(ctx *cmd.Context, volume volume.Volume) error {
 		if b.ReadOnly {
 			mode = "ro"
 		}
-		bindTable.AddRow(tablecli.Row([]string{fmt.Sprintf(b.ID.App), fmt.Sprintf(b.ID.MountPoint), fmt.Sprintf(mode)}))
+		bindTable.AddRow(tablecli.Row([]string{b.ID.App, b.ID.MountPoint, mode}))
 	}
 	fmt.Fprintf(ctx.Stdout, "\nBinds:\n")
 	fmt.Fprintf(ctx.Stdout, bindTable.String())
