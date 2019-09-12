@@ -212,6 +212,9 @@ func (s *S) TestEventList(c *check.C) {
 	trans := &cmdtest.ConditionalTransport{
 		Transport: cmdtest.Transport{Message: evtsData, Status: http.StatusOK},
 		CondFunc: func(req *http.Request) bool {
+			for _, value := range req.URL.Query() {
+				c.Assert(value, check.DeepEquals, []string{""})
+			}
 			return req.URL.Path == "/1.1/events"
 		},
 	}
@@ -251,12 +254,14 @@ func (s *S) TestEventListWithFilters(c *check.C) {
 			c.Assert(req.URL.Query().Get("ownername"), check.Equals, "event-owner")
 			c.Assert(req.URL.Query().Get("target.type"), check.Equals, "app")
 			c.Assert(req.URL.Query().Get("target.value"), check.Equals, "appname")
+			c.Assert(req.URL.Query().Get("running"), check.Equals, "true")
+			c.Assert(req.URL.Query().Get("includeremoved"), check.Equals, "true")
 			return true
 		},
 	}
 	client := cmd.NewClient(&http.Client{Transport: trans}, nil, manager)
 	command := EventList{}
-	err := command.Flags().Parse(true, []string{"-k", "app.update", "-k", "app.deploy", "-o", "event-owner", "-t", "app", "-v", "appname"})
+	err := command.Flags().Parse(true, []string{"-k", "app.update", "-k", "app.deploy", "-o", "event-owner", "-t", "app", "-v", "appname", "-i", "-r"})
 	c.Assert(err, check.IsNil)
 	err = command.Run(&context, client)
 	c.Assert(err, check.IsNil)
