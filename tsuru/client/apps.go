@@ -216,6 +216,7 @@ type AppUpdate struct {
 	pool        string
 	teamOwner   string
 	imageReset  bool
+	noRestart   bool
 	tags        cmd.StringSliceFlag
 	fs          *gnuflag.FlagSet
 	cmd.GuessingCommand
@@ -229,6 +230,8 @@ func (c *AppUpdate) Info() *cmd.Info {
 		Desc: `Updates an app, changing its description, tags, plan or pool information.
 
 The [[--description]] parameter sets a description for your app.
+
+The [[--no-restart]] parameter sets the specified parameters to be updated without restarting the application
 
 The [[--plan]] parameter changes the plan of your app.
 
@@ -255,6 +258,7 @@ func (c *AppUpdate) Flags() *gnuflag.FlagSet {
 		tagMessage := "App tag"
 		platformMsg := "App platform"
 		imgReset := "Forces next deploy to build app image from scratch"
+		noRestartMessage := "doesn't restart the app after the update"
 		flagSet.StringVar(&c.description, "description", "", descriptionMessage)
 		flagSet.StringVar(&c.description, "d", "", descriptionMessage)
 		flagSet.StringVar(&c.plan, "plan", "", planMessage)
@@ -265,6 +269,7 @@ func (c *AppUpdate) Flags() *gnuflag.FlagSet {
 		flagSet.StringVar(&c.pool, "pool", "", poolMessage)
 		flagSet.BoolVar(&c.imageReset, "i", false, imgReset)
 		flagSet.BoolVar(&c.imageReset, "image-reset", false, imgReset)
+		flagSet.BoolVar(&c.noRestart, "no-restart", false, noRestartMessage)
 		flagSet.StringVar(&c.teamOwner, "t", "", teamOwnerMessage)
 		flagSet.StringVar(&c.teamOwner, "team-owner", "", teamOwnerMessage)
 		flagSet.Var(&c.tags, "g", tagMessage)
@@ -294,6 +299,7 @@ func (c *AppUpdate) Run(context *cmd.Context, client *cmd.Client) error {
 	v.Set("teamOwner", c.teamOwner)
 	v.Set("platform", c.platform)
 	v.Set("imageReset", strconv.FormatBool(c.imageReset))
+	v.Set("noRestart", strconv.FormatBool(c.noRestart))
 	for _, tag := range c.tags {
 		v.Add("tag", tag)
 	}
