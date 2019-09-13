@@ -654,6 +654,15 @@ func (s *S) TestAppUpdateFlags(c *check.C) {
 	c.Check(tag.Usage, check.Equals, usage)
 	c.Check(tag.Value.String(), check.Equals, "[\"tag\"]")
 	c.Check(tag.DefValue, check.Equals, "[]")
+
+	flagset.Parse(true, []string{"--no-restart"})
+	usage = "doesn't restart the app after the update"
+	noRestart := flagset.Lookup("no-restart")
+	c.Check(noRestart, check.NotNil)
+	c.Check(noRestart.Name, check.Equals, "no-restart")
+	c.Check(noRestart.Usage, check.Equals, usage)
+	c.Check(noRestart.Value.String(), check.Equals, "true")
+	c.Check(noRestart.DefValue, check.Equals, "false")
 }
 
 func (s *S) TestAppRemove(c *check.C) {
