@@ -297,8 +297,8 @@ github.com/tsuru/tablecli v0.0.0-20180215113938-82de88f75181/go.mod h1:ztYpOhW+u
 github.com/tsuru/tablecli v0.0.0-20190131152944-7ded8a3383c6 h1:1XDdWFAjIbCSG1OjN9v9KdWhuM8UtYlFcfHe/Ldkchk=
 github.com/tsuru/tablecli v0.0.0-20190131152944-7ded8a3383c6/go.mod h1:ztYpOhW+u1k21FEqp7nZNgpWbr0dUKok5lgGCZi+1AQ=
 github.com/tsuru/tsuru v0.0.0-20180820205921-0e7f7f02eac5/go.mod h1:8EIA5MXZUPRxQR1lf8kQkcJVss0q+lv0L8f2nb23siQ=
-github.com/tsuru/tsuru v0.0.0-20190904131034-179bce0a7649 h1:hVrLc8C3YqVFVMzdNPcw45LFOzzWUOw/NYh4RKRHGE0=
-github.com/tsuru/tsuru v0.0.0-20190904131034-179bce0a7649/go.mod h1:PRfgEgCblaa/pAz9Kr9EdA1Yn4RQj5ac1UsIT72viuE=
+github.com/tsuru/tsuru v0.0.0-20190917161403-b6b3f8bee958 h1:iLYJX1Nyu+qPCLwcvaptvos7y88SEg/MGtPg1vrz/rM=
+github.com/tsuru/tsuru v0.0.0-20190917161403-b6b3f8bee958/go.mod h1:o+QJz3mJdDfdpUwdl7KSNBhZO0P35xfGVDn5Ed84z3A=
 github.com/ugorji/go v1.1.1/go.mod h1:hnLbHMwcvSihnDhEfx2/BzKp2xb0Y+ErdfYcrs9tkJQ=
 github.com/urfave/cli v1.20.0/go.mod h1:70zkFmudgCuE/ngEzBv17Jvp/497gISqfk5gWijbERA=
 github.com/vishvananda/netlink v1.0.0 h1:bqNY2lgheFIu1meHUFSH3d7vG93AFyqg3oGbJCOJgSM=
