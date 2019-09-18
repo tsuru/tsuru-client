@@ -198,9 +198,9 @@ func (c *MachineDestroy) Run(context *cmd.Context, client *cmd.Client) error {
 
 type TemplateList struct {
 	countMachines bool
+	simplified    bool
 	fs            *gnuflag.FlagSet
 	filter        cmd.MapFlag
-	simplified    bool
 }
 
 func (c *TemplateList) Info() *cmd.Info {
