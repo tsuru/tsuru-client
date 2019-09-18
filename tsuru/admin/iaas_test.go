@@ -105,7 +105,7 @@ func (s *S) TestMachineListWithFlag(c *check.C) {
 		}},
 	})
 	c.Assert(err, check.IsNil)
-	trans := &cmdtest.MultiConditionalTransport{ConditionalTransports: []cmdtest.ConditionalTransport{
+	multiTrans := &cmdtest.MultiConditionalTransport{ConditionalTransports: []cmdtest.ConditionalTransport{
 		{
 			Transport: cmdtest.Transport{Message: string(data), Status: http.StatusOK},
 			CondFunc: func(req *http.Request) bool {
@@ -119,12 +119,55 @@ func (s *S) TestMachineListWithFlag(c *check.C) {
 			},
 		},
 	}}
-	client := cmd.NewClient(&http.Client{Transport: trans}, nil, s.manager)
+	singleTrans := &cmdtest.ConditionalTransport{
+		Transport: cmdtest.Transport{Message: string(data), Status: http.StatusOK},
+		CondFunc: func(req *http.Request) bool {
+			return strings.HasSuffix(req.URL.Path, "/iaas/machines") && req.Method == "GET"
+		},
+	}
+	multiTransClient := cmd.NewClient(&http.Client{Transport: multiTrans}, nil, s.manager)
 	command := MachineList{}
 	command.Flags().Parse(true, []string{"-f", "param2=value2"})
-	err = command.Run(&context, client)
+	err = command.Run(&context, multiTransClient)
 	c.Assert(err, check.IsNil)
 	c.Assert(stdout.String(), check.Equals, expected)
+	stdout.Reset()
+	singleTransClient := cmd.NewClient(&http.Client{Transport: singleTrans}, nil, s.manager)
+	command2 := MachineList{}
+	command2.Flags().Parse(true, []string{"-q"})
+	err = command2.Run(&context, singleTransClient)
+	c.Assert(err, check.IsNil)
+	c.Assert(stdout.String(), check.Equals, "addr1\naddr2\n")
+	stdout.Reset()
+	command3 := MachineList{}
+	command3.Flags().Parse(true, []string{"-i"})
+	err = command3.Run(&context, singleTransClient)
+	c.Assert(err, check.IsNil)
+	c.Assert(stdout.String(), check.Equals, "id1\nid2\n")
+}
+
+func (s *S) TestMachineListWithAddressAndIDFlagsSet(c *check.C) {
+	var stdout, stderr bytes.Buffer
+	context := cmd.Context{
+		Stdout: &stdout,
+		Stderr: &stderr,
+	}
+	m1 := iaas.Machine{Id: "id1", Address: "addr1", Iaas: "iaas1", CreationParams: map[string]string{
+		"param1": "value1",
+	}}
+	data, err := json.Marshal([]iaas.Machine{m1})
+	c.Assert(err, check.IsNil)
+	trans := &cmdtest.ConditionalTransport{
+		Transport: cmdtest.Transport{Message: string(data), Status: http.StatusOK},
+		CondFunc: func(req *http.Request) bool {
+			return strings.HasSuffix(req.URL.Path, "/iaas/machines") && req.Method == "GET"
+		},
+	}
+	client := cmd.NewClient(&http.Client{Transport: trans}, nil, s.manager)
+	command := MachineList{}
+	command.Flags().Parse(true, []string{"-q", "-i"})
+	err = command.Run(&context, client)
+	c.Assert(err.Error(), check.Equals, "-i and -q flags are mutually exclusive")
 }
 
 func (s *S) TestMachineKeyNotExist(c *check.C) {
@@ -416,7 +459,7 @@ func (s *S) TestTemplateListWithFlags(c *check.C) {
 		{CreationParams: map[string]string{"region": "us-east-1", "type": "m1.small", "extra": "xpto"}},
 	})
 	c.Assert(err, check.IsNil)
-	trans := &cmdtest.MultiConditionalTransport{ConditionalTransports: []cmdtest.ConditionalTransport{
+	multiTrans := &cmdtest.MultiConditionalTransport{ConditionalTransports: []cmdtest.ConditionalTransport{
 		{
 			Transport: cmdtest.Transport{Message: string(data), Status: http.StatusOK},
 			CondFunc: func(req *http.Request) bool {
@@ -430,12 +473,25 @@ func (s *S) TestTemplateListWithFlags(c *check.C) {
 			},
 		},
 	}}
-	client := cmd.NewClient(&http.Client{Transport: trans}, nil, s.manager)
+	singleTrans := &cmdtest.ConditionalTransport{
+		Transport: cmdtest.Transport{Message: string(data), Status: http.StatusOK},
+		CondFunc: func(req *http.Request) bool {
+			return strings.HasSuffix(req.URL.Path, "/iaas/templates") && req.Method == "GET"
+		},
+	}
+	multiTransClient := cmd.NewClient(&http.Client{Transport: multiTrans}, nil, s.manager)
 	command := TemplateList{}
 	command.Flags().Parse(true, []string{"--count", "--filter", "type=m1.small"})
-	err = command.Run(&context, client)
+	err = command.Run(&context, multiTransClient)
 	c.Assert(err, check.IsNil)
 	c.Assert(stdout.String(), check.Equals, expected)
+	stdout.Reset()
+	singleTransClient := cmd.NewClient(&http.Client{Transport: singleTrans}, nil, s.manager)
+	command2 := TemplateList{}
+	command2.Flags().Parse(true, []string{"-q", "--filter", "type=m1.small"})
+	err = command2.Run(&context, singleTransClient)
+	c.Assert(err, check.IsNil)
+	c.Assert(stdout.String(), check.Equals, "tpl1\ntpl3\n")
 }
 
 func (s *S) TestTemplateAddCmdRun(c *check.C) {
