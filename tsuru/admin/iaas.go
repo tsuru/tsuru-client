@@ -22,14 +22,16 @@ import (
 const filterMessage = "Filter metadata name and value"
 
 type MachineList struct {
-	fs     *gnuflag.FlagSet
-	filter cmd.MapFlag
+	fs                *gnuflag.FlagSet
+	filter            cmd.MapFlag
+	simplifiedID      bool
+	simplifiedAddress bool
 }
 
 func (c *MachineList) Info() *cmd.Info {
 	return &cmd.Info{
 		Name:  "machine-list",
-		Usage: "machine-list [--filter/-f <metadata>=<value>]",
+		Usage: "machine-list [--filter/-f <metadata>=<value>]...",
 		Desc: `Lists all machines created using an IaaS provider.
 These machines were created with the [[node-add]] command.`,
 		MinArgs: 0,
@@ -41,6 +43,8 @@ func (c *MachineList) Flags() *gnuflag.FlagSet {
 		c.fs = gnuflag.NewFlagSet("", gnuflag.ExitOnError)
 		c.fs.Var(&c.filter, "filter", filterMessage)
 		c.fs.Var(&c.filter, "f", filterMessage)
+		c.fs.BoolVar(&c.simplifiedID, "i", false, "Display only machine Id on IaaS")
+		c.fs.BoolVar(&c.simplifiedAddress, "q", false, "Display only machine address on IaaS")
 	}
 	return c.fs
 }
@@ -49,6 +53,24 @@ func (c *MachineList) Run(context *cmd.Context, client *cmd.Client) error {
 	machines, err := c.List(client)
 	if err != nil {
 		return err
+	}
+	if len(machines) > 0 {
+		machines = c.filterMachines(machines)
+	}
+	if c.simplifiedAddress && c.simplifiedID {
+		return fmt.Errorf("-i and -q flags are mutually exclusive")
+	}
+	if c.simplifiedID {
+		for _, machine := range machines {
+			fmt.Fprintln(context.Stdout, machine.Id)
+		}
+		return nil
+	}
+	if c.simplifiedAddress {
+		for _, machine := range machines {
+			fmt.Fprintln(context.Stdout, machine.Address)
+		}
+		return nil
 	}
 	tmplList := TemplateList{}
 	templates, err := tmplList.List(client)
@@ -106,9 +128,6 @@ func (c *MachineList) Tabulate(machines []iaas.Machine, machineToTemplate map[st
 	table := tablecli.NewTable()
 	table.Headers = tablecli.Row([]string{"Id", "IaaS", "Address", "Creation Params", "Matching Templates"})
 	table.LineSeparator = true
-	if len(machines) > 0 {
-		machines = c.filterMachines(machines)
-	}
 	for _, machine := range machines {
 		var params []string
 		for k, v := range machine.CreationParams {
@@ -179,6 +198,7 @@ func (c *MachineDestroy) Run(context *cmd.Context, client *cmd.Client) error {
 
 type TemplateList struct {
 	countMachines bool
+	simplified    bool
 	fs            *gnuflag.FlagSet
 	filter        cmd.MapFlag
 }
@@ -199,6 +219,7 @@ func (c *TemplateList) Flags() *gnuflag.FlagSet {
 		c.fs.BoolVar(&c.countMachines, "c", false, "Count machines using each template.")
 		c.fs.Var(&c.filter, "filter", filterMessage)
 		c.fs.Var(&c.filter, "f", filterMessage)
+		c.fs.BoolVar(&c.simplified, "q", false, "Display only machine template name")
 	}
 	return c.fs
 }
@@ -228,6 +249,15 @@ func (c *TemplateList) Run(context *cmd.Context, client *cmd.Client) error {
 	templates, err := c.List(client)
 	if err != nil {
 		return err
+	}
+	if len(templates) > 0 {
+		templates = c.filterTemplates(templates)
+	}
+	if c.simplified {
+		for _, template := range templates {
+			fmt.Fprintln(context.Stdout, template.Name)
+		}
+		return nil
 	}
 	templateIndex := make(map[string]int)
 	if c.countMachines {
@@ -264,9 +294,6 @@ func (c *TemplateList) Run(context *cmd.Context, client *cmd.Client) error {
 	}
 	table.Headers = tablecli.Row(headers)
 	table.LineSeparator = true
-	if len(templates) > 0 {
-		templates = c.filterTemplates(templates)
-	}
 	for _, template := range templates {
 		var params []string
 		for _, data := range template.Data {
