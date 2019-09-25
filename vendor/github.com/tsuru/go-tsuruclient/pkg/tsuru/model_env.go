@@ -13,4 +13,5 @@ package tsuru
 type Env struct {
 	Name  string `json:"name,omitempty"`
 	Value string `json:"value,omitempty"`
+	Alias string `json:"alias,omitempty"`
 }
