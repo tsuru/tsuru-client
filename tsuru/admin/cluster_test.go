@@ -7,6 +7,7 @@ package admin
 import (
 	"bytes"
 	"encoding/json"
+	"fmt"
 	"io/ioutil"
 	"net/http"
 	"os"
@@ -132,7 +133,7 @@ func (s *S) TestClusterUpdateRun(c *check.C) {
 						Clientkey:   []byte("keydata"),
 						CustomData:  map[string]string{"a": "b", "e": "f"},
 						Addresses:   []string{"addr1", "addr2"},
-						Pools:       []string{"p1"},
+						Pools:       []string{"p1", "p3"},
 						Default:     false,
 						Provisioner: "myprov",
 					})
@@ -151,8 +152,8 @@ func (s *S) TestClusterUpdateRun(c *check.C) {
 	c.Assert(err, check.IsNil)
 	err = myCmd.Flags().Parse(true, []string{
 		"--remove-pool", "p2",
-		"--add-pool", "p1",
-		"--remove-custom", "c=d",
+		"--add-pool", "p3",
+		"--remove-custom", "c",
 		"--add-custom", "e=f",
 		"--remove-cacert",
 		"--clientcert", filepath.Join(dir, "cert"),
@@ -161,6 +162,218 @@ func (s *S) TestClusterUpdateRun(c *check.C) {
 	err = myCmd.Run(&context, client)
 	c.Assert(err, check.IsNil)
 	c.Assert(stdout.String(), check.Equals, "Cluster successfully updated.\n")
+}
+
+func (s *S) TestClusterUpdateMergeCluster(c *check.C) {
+	baseDir := c.MkDir()
+	caCertPath := fmt.Sprintf("%s/cacert.crt", baseDir)
+	clientCertPath := fmt.Sprintf("%s/client.crt", baseDir)
+	clientKeyPath := fmt.Sprintf("%s/client.key", baseDir)
+
+	writeStringToFile := func(path, content string) {
+		file, err := os.Create(path)
+		if err != nil {
+			c.Fatal(err)
+		}
+		_, err = file.WriteString(content)
+		if err != nil {
+			c.Fatal(err)
+		}
+		err = file.Close()
+		if err != nil {
+			c.Fatal(err)
+		}
+	}
+
+	writeStringToFile(caCertPath, "ANOTHER CA CERTIFICATE")
+	writeStringToFile(clientCertPath, "ANOTHER CLIENT CERTIFICATE")
+	writeStringToFile(clientKeyPath, "ANOTHER CLIENT KEY")
+
+	getCluster := func() tsuru.Cluster {
+		return tsuru.Cluster{
+			Name:        "c1",
+			Addresses:   []string{"https://c1.test:443"},
+			Provisioner: "kubernetes",
+			Cacert:      []byte("ca certificate"),
+			Clientcert:  []byte("client certificate"),
+			Clientkey:   []byte("client key"),
+			Pools:       []string{"pool1", "pool2"},
+			CustomData:  map[string]string{"key": "value"},
+			CreateData:  map[string]string{"key": "value"},
+			Default:     false,
+		}
+	}
+
+	tests := []struct {
+		command     ClusterUpdate
+		cluster     tsuru.Cluster
+		want        tsuru.Cluster
+		errorString string
+	}{
+		{
+			command: ClusterUpdate{
+				cacert:       "/path/to/my/ca.crt",
+				removeCacert: true,
+			},
+			cluster:     getCluster(),
+			errorString: "cannot both remove and replace the CA certificate",
+		},
+		{
+			command: ClusterUpdate{
+				clientcert:       "/path/to/my/ca.crt",
+				removeClientcert: true,
+			},
+			cluster:     getCluster(),
+			errorString: "cannot both remove and replace the client certificate",
+		},
+		{
+			command: ClusterUpdate{
+				clientkey:       "/path/to/my/ca.crt",
+				removeClientkey: true,
+			},
+			cluster:     getCluster(),
+			errorString: "cannot both remove and replace the client key",
+		},
+		{
+			command: ClusterUpdate{
+				removeCustomData: cmd.StringSliceFlag{"some-not-found-key"},
+			},
+			cluster:     getCluster(),
+			errorString: "cannot unset custom data entry: key \"some-not-found-key\" not found",
+		},
+		{
+			command: ClusterUpdate{
+				removeCreateData: cmd.StringSliceFlag{"some-not-found-key"},
+			},
+			cluster:     getCluster(),
+			errorString: "cannot unset create data entry: key \"some-not-found-key\" not found",
+		},
+		{
+			command: ClusterUpdate{
+				isDefault: "true",
+				addPool:   cmd.StringSliceFlag{"new-pool"},
+			},
+			cluster:     getCluster(),
+			errorString: "cannot add or remove pools in a default cluster",
+		},
+		{
+			command: ClusterUpdate{
+				addPool: cmd.StringSliceFlag{"pool1"},
+			},
+			cluster:     getCluster(),
+			errorString: "pool \"pool1\" already defined",
+		},
+		{
+			command: ClusterUpdate{
+				removePool: cmd.StringSliceFlag{"pool-not-found"},
+			},
+			cluster:     getCluster(),
+			errorString: "pool \"pool-not-found\" not found",
+		},
+		{
+			cluster: getCluster(),
+			want: tsuru.Cluster{
+				Name:        "c1",
+				Addresses:   []string{"https://c1.test:443"},
+				Provisioner: "kubernetes",
+				Cacert:      []byte("ca certificate"),
+				Clientcert:  []byte("client certificate"),
+				Clientkey:   []byte("client key"),
+				Pools:       []string{"pool1", "pool2"},
+				CustomData:  map[string]string{"key": "value"},
+				CreateData:  map[string]string{"key": "value"},
+				Default:     false,
+			},
+		},
+		{
+			command: ClusterUpdate{
+				isDefault: "true",
+			},
+			cluster: getCluster(),
+			want: tsuru.Cluster{
+				Name:        "c1",
+				Addresses:   []string{"https://c1.test:443"},
+				Provisioner: "kubernetes",
+				Cacert:      []byte("ca certificate"),
+				Clientcert:  []byte("client certificate"),
+				Clientkey:   []byte("client key"),
+				Pools:       []string{},
+				CustomData:  map[string]string{"key": "value"},
+				CreateData:  map[string]string{"key": "value"},
+				Default:     true,
+			},
+		},
+		{
+			command: ClusterUpdate{
+				removeCacert:     true,
+				removeClientcert: true,
+				removeClientkey:  true,
+			},
+			cluster: getCluster(),
+			want: tsuru.Cluster{
+				Name:        "c1",
+				Addresses:   []string{"https://c1.test:443"},
+				Provisioner: "kubernetes",
+				Cacert:      nil,
+				Clientcert:  nil,
+				Clientkey:   nil,
+				Pools:       []string{"pool1", "pool2"},
+				CustomData:  map[string]string{"key": "value"},
+				CreateData:  map[string]string{"key": "value"},
+				Default:     false,
+			},
+		},
+		{
+			command: ClusterUpdate{
+				removeCreateData: cmd.StringSliceFlag{"key"},
+				removeCustomData: cmd.StringSliceFlag{"key"},
+			},
+			cluster: getCluster(),
+			want: tsuru.Cluster{
+				Name:        "c1",
+				Addresses:   []string{"https://c1.test:443"},
+				Provisioner: "kubernetes",
+				Cacert:      []byte("ca certificate"),
+				Clientcert:  []byte("client certificate"),
+				Clientkey:   []byte("client key"),
+				Pools:       []string{"pool1", "pool2"},
+				CustomData:  map[string]string{},
+				CreateData:  map[string]string{},
+				Default:     false,
+			},
+		},
+		{
+			command: ClusterUpdate{
+				cacert:     caCertPath,
+				clientcert: clientCertPath,
+				clientkey:  clientKeyPath,
+			},
+			cluster: getCluster(),
+			want: tsuru.Cluster{
+				Name:        "c1",
+				Addresses:   []string{"https://c1.test:443"},
+				Provisioner: "kubernetes",
+				Cacert:      []byte("ANOTHER CA CERTIFICATE"),
+				Clientcert:  []byte("ANOTHER CLIENT CERTIFICATE"),
+				Clientkey:   []byte("ANOTHER CLIENT KEY"),
+				Pools:       []string{"pool1", "pool2"},
+				CustomData:  map[string]string{"key": "value"},
+				CreateData:  map[string]string{"key": "value"},
+				Default:     false,
+			},
+		},
+	}
+
+	for index, tt := range tests {
+		fmt.Printf("Executing test case %v\n", index)
+		err := tt.command.mergeCluster(&tt.cluster)
+		if tt.errorString != "" {
+			c.Assert(err.Error(), check.Equals, tt.errorString)
+			continue
+		}
+		c.Assert(err, check.IsNil)
+		c.Assert(tt.cluster, check.DeepEquals, tt.want)
+	}
 }
 
 func (s *S) TestClusterListRun(c *check.C) {
