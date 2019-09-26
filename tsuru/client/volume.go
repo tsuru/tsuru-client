@@ -269,7 +269,7 @@ func (c *VolumeInfo) render(ctx *cmd.Context, volume volume.Volume) error {
 		bindTable.AddRow(tablecli.Row([]string{b.ID.App, b.ID.MountPoint, mode}))
 	}
 	fmt.Fprintf(ctx.Stdout, "\nBinds:\n")
-	fmt.Fprintf(ctx.Stdout, bindTable.String())
+	fmt.Fprint(ctx.Stdout, bindTable.String())
 	planOptsTable := tablecli.NewTable()
 	planOptsTable.Headers = []string{"Key", "Value"}
 	planOptsTable.LineSeparator = true
@@ -277,8 +277,8 @@ func (c *VolumeInfo) render(ctx *cmd.Context, volume volume.Volume) error {
 		planOptsTable.AddRow([]string{k, fmt.Sprintf("%v", v)})
 	}
 	planOptsTable.Sort()
-	fmt.Fprintf(ctx.Stdout, "\nPlan Opts:\n")
-	fmt.Fprintf(ctx.Stdout, planOptsTable.String())
+	fmt.Fprint(ctx.Stdout, "\nPlan Opts:\n")
+	fmt.Fprint(ctx.Stdout, planOptsTable.String())
 	optsTable := tablecli.NewTable()
 	optsTable.Headers = []string{"Key", "Value"}
 	optsTable.LineSeparator = true
@@ -287,7 +287,7 @@ func (c *VolumeInfo) render(ctx *cmd.Context, volume volume.Volume) error {
 	}
 	optsTable.Sort()
 	fmt.Fprintf(ctx.Stdout, "\nOpts:\n")
-	fmt.Fprintf(ctx.Stdout, optsTable.String())
+	fmt.Fprint(ctx.Stdout, optsTable.String())
 	return nil
 }
 
