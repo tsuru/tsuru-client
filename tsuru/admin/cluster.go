@@ -196,7 +196,7 @@ func (c *ClusterUpdate) Run(ctx *cmd.Context, cli *cmd.Client) error {
 	if err != nil {
 		return err
 	}
-	if err := c.mergeCluster(&cluster); err != nil {
+	if err = c.mergeCluster(&cluster); err != nil {
 		return err
 	}
 	_, err = apiClient.ClusterApi.ClusterUpdate(context.TODO(), name, cluster)

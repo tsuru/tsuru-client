@@ -103,7 +103,7 @@ func (c *AppBuild) Run(context *cmd.Context, client *cmd.Client) error {
 	if err != nil {
 		return err
 	}
-	fmt.Fprintf(safeStdout, buf.String())
+	fmt.Fprint(safeStdout, buf.String())
 	if strings.HasSuffix(buf.String(), "\nOK\n") {
 		return nil
 	}

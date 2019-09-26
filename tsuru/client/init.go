@@ -83,9 +83,7 @@ func createInitFiles() (err error) {
 		"tsuru.yaml":   "",
 	}
 	for _, f := range dirFiles {
-		if _, ok := initFiles[f.Name()]; ok {
-			delete(initFiles, f.Name())
-		}
+		delete(initFiles, f.Name())
 	}
 	for f := range initFiles {
 		_, err = os.Create(f)

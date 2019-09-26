@@ -186,7 +186,7 @@ func (c *RoleInfo) Run(context *cmd.Context, client *cmd.Client) error {
 	tbl.LineSeparator = true
 	tbl.Headers = tablecli.Row{"Name", "Context", "Permissions", "Description"}
 	tbl.AddRow(tablecli.Row{perm.Name, string(perm.ContextType), strings.Join(perm.SchemeNames, "\n"), perm.Description})
-	fmt.Fprintf(context.Stdout, tbl.String())
+	fmt.Fprint(context.Stdout, tbl.String())
 	return nil
 }
 

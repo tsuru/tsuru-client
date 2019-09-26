@@ -123,7 +123,7 @@ func (s *S) TestClusterUpdateRun(c *check.C) {
 					c.Assert(req.Header.Get("Content-Type"), check.Equals, "application/json")
 
 					var clus tsuru.Cluster
-					data, err := ioutil.ReadAll(req.Body)
+					data, err = ioutil.ReadAll(req.Body)
 					c.Assert(err, check.IsNil)
 					err = json.Unmarshal(data, &clus)
 					c.Assert(err, check.IsNil)
