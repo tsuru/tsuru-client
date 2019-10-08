@@ -424,7 +424,10 @@ Targets:    container\(94d3140395a85e4a60b06de26f6a51270d7b762c65cc9478e2c544ae4
 Kind:       internal\(healer\)
 Owner:      internal\(\)
 Success:    false
-Error:      "Error healing container \\"94d3140395a85e4a60b06de26f6a51270d7b762c65cc9478e2c544ae4d7fb82f\\": Error trying to heal containers 94d3140395a85e4a60b06de26f6a51270d7b762c65cc9478e2c544ae4d7fb82f: couldn't move container: Error moving some containers\. - Moving unit 94d3140395a85e4a60b06de26f6a51270d7b762c65cc9478e2c544ae4d7fb82f for \\"myapp\\" from 10\.0\.0\.4\.\.\.\\nError moving container: Error moving unit 94d3140395a85e4a60b06de26f6a51270d7b762c65cc9478e2c544ae4d7fb82f Caused by: Post http://10\.0\.0\.5:8000/services/myapp/destinations: dial tcp 10\.0\.0\.5:8000: getsockopt: no route to host\\n"
+Error:
+Error healing container "94d3140395a85e4a60b06de26f6a51270d7b762c65cc9478e2c544ae4d7fb82f": Error trying to heal containers 94d3140395a85e4a60b06de26f6a51270d7b762c65cc9478e2c544ae4d7fb82f: couldn't move container: Error moving some containers\. - Moving unit 94d3140395a85e4a60b06de26f6a51270d7b762c65cc9478e2c544ae4d7fb82f for "myapp" from 10\.0\.0\.4\.\.\.
+Error moving container: Error moving unit 94d3140395a85e4a60b06de26f6a51270d7b762c65cc9478e2c544ae4d7fb82f Caused by: Post http://10\.0\.0\.5:8000/services/myapp/destinations: dial tcp 10\.0\.0\.5:8000: getsockopt: no route to host
+
 Cancelable: false
 Canceled:   false
 Start Custom Data:
@@ -530,7 +533,9 @@ Targets:    app\(myapp\)
 Kind:       permission\(app\.deploy\)
 Owner:      user\(someone@removed\.com\)
 Success:    false
-Error:      "canceled by user action"
+Error:
+canceled by user action
+
 Cancelable: true
 Canceled:   true
   Reason:   because yes

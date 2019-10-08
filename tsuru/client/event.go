@@ -271,11 +271,26 @@ func (c *EventInfo) Show(evt *event.Event, context *cmd.Context) error {
 		}
 		items = append(items, item{"Success", successfulStr})
 	} else {
-		redError := cmd.Colorfy(fmt.Sprintf("%q", evt.Error), "red", "", "")
+		parts := strings.Split(evt.Error, "\n")
+		var redError []string
+		for i, p := range parts {
+			if i == 0 && p != "" {
+				redError = append(redError, "")
+			}
+			if p == "" {
+				redError = append(redError, "")
+				continue
+			}
+			redError = append(redError, cmd.Colorfy(p, "red", "", ""))
+		}
+		fullError := strings.Join(redError, "\n")
+		if !strings.HasSuffix(fullError, "\n") {
+			fullError += "\n"
+		}
 		redSuccess := cmd.Colorfy(successfulStr, "red", "", "")
 		items = append(items, []item{
 			{"Success", redSuccess},
-			{"Error", redError},
+			{"Error", fullError},
 		}...)
 	}
 	items = append(items, []item{
