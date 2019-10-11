@@ -6,7 +6,6 @@ package client
 
 import (
 	"archive/tar"
-	"bytes"
 	"compress/gzip"
 	"context"
 	"encoding/json"
@@ -34,10 +33,13 @@ import (
 	"github.com/tsuru/tsuru/cmd"
 	tsuruIo "github.com/tsuru/tsuru/io"
 	"github.com/tsuru/tsuru/safe"
+	"golang.org/x/crypto/ssh/terminal"
 )
 
 const (
 	deployOutputBufferSize = 4096
+
+	clearLineEscape = "\033[2K\r"
 )
 
 type deployList []tsuruapp.DeployData
@@ -296,7 +298,7 @@ func (c *AppDeploy) Cancel(ctx cmd.Context, cli *cmd.Client) error {
 	c.m.Lock()
 	defer c.m.Unlock()
 	if c.eventID == "" {
-		return nil
+		return errors.New("event ID not available yet")
 	}
 	fmt.Fprintln(ctx.Stdout, cmd.Colorfy("Warning: the deploy is still RUNNING in the background!", "red", "", "bold"))
 	fmt.Fprint(ctx.Stdout, "Are you sure you want to cancel this deploy? (Y/n) ")
@@ -309,16 +311,37 @@ func (c *AppDeploy) Cancel(ctx cmd.Context, cli *cmd.Client) error {
 	return err
 }
 
-func targz(ctx *cmd.Context, destination io.Writer, filesOnly bool, filepaths ...string) error {
+type tarMaker struct {
+	ctx    *cmd.Context
+	isTerm bool
+}
+
+func newTarMaker(ctx *cmd.Context) tarMaker {
+	isTerm := false
+	if desc, ok := ctx.Stdin.(interface {
+		Fd() uintptr
+	}); ok {
+		fd := int(desc.Fd())
+		isTerm = terminal.IsTerminal(fd)
+	}
+	return tarMaker{
+		ctx:    ctx,
+		isTerm: isTerm,
+	}
+}
+
+func (m tarMaker) targz(destination io.Writer, filesOnly bool, filepaths ...string) error {
+	fmt.Fprint(m.ctx.Stdout, "Generating tar.gz...")
+	defer fmt.Fprintf(m.ctx.Stdout, "%sGenerating tar.gz. Done!\n", clearLineEscape)
 	ign, err := ignore.CompileIgnoreFile(".tsuruignore")
 	if err != nil && !os.IsNotExist(err) {
 		return err
 	}
-	var buf bytes.Buffer
-	tarWriter := tar.NewWriter(&buf)
+	gzipWriter := gzip.NewWriter(destination)
+	tarWriter := tar.NewWriter(gzipWriter)
 	for _, path := range filepaths {
 		if path == ".." {
-			fmt.Fprintf(ctx.Stderr, "Warning: skipping %q", path)
+			fmt.Fprintf(m.ctx.Stderr, "Warning: skipping %q", path)
 			continue
 		}
 		var fi os.FileInfo
@@ -343,10 +366,10 @@ func targz(ctx *cmd.Context, destination io.Writer, filesOnly bool, filepaths ..
 				path = "."
 			}
 			err = inDir(func() error {
-				return addDir(tarWriter, path, ign, dirFilesOnly)
+				return m.addDir(tarWriter, path, ign, dirFilesOnly)
 			}, dir)
 		} else {
-			err = addFile(tarWriter, path, filesOnly)
+			err = m.addFile(tarWriter, path, filesOnly)
 		}
 		if err != nil {
 			return err
@@ -356,10 +379,7 @@ func targz(ctx *cmd.Context, destination io.Writer, filesOnly bool, filepaths ..
 	if err != nil {
 		return err
 	}
-	gzipWriter := gzip.NewWriter(destination)
-	defer gzipWriter.Close()
-	_, err = io.Copy(gzipWriter, &buf)
-	return err
+	return gzipWriter.Close()
 }
 
 func inDir(fn func() error, path string) error {
@@ -375,7 +395,7 @@ func inDir(fn func() error, path string) error {
 	return fn()
 }
 
-func addDir(writer *tar.Writer, dirpath string, ign *ignore.GitIgnore, filesOnly bool) error {
+func (m tarMaker) addDir(writer *tar.Writer, dirpath string, ign *ignore.GitIgnore, filesOnly bool) error {
 	dir, err := os.Open(dirpath)
 	if err != nil {
 		return err
@@ -415,9 +435,9 @@ func addDir(writer *tar.Writer, dirpath string, ign *ignore.GitIgnore, filesOnly
 			continue
 		}
 		if fi.IsDir() {
-			err = addDir(writer, path.Join(dirpath, fi.Name()), ign, false)
+			err = m.addDir(writer, path.Join(dirpath, fi.Name()), ign, false)
 		} else {
-			err = addFile(writer, path.Join(dirpath, fi.Name()), filesOnly)
+			err = m.addFile(writer, path.Join(dirpath, fi.Name()), filesOnly)
 		}
 		if err != nil {
 			return err
@@ -426,7 +446,7 @@ func addDir(writer *tar.Writer, dirpath string, ign *ignore.GitIgnore, filesOnly
 	return nil
 }
 
-func addFile(writer *tar.Writer, filepath string, filesOnly bool) error {
+func (m tarMaker) addFile(writer *tar.Writer, filepath string, filesOnly bool) error {
 	fi, err := os.Lstat(filepath)
 	if err != nil {
 		return err
@@ -447,6 +467,9 @@ func addFile(writer *tar.Writer, filepath string, filesOnly bool) error {
 	header.Name = filepath
 	if filesOnly {
 		header.Name = path.Base(filepath)
+	}
+	if m.isTerm {
+		fmt.Fprintf(m.ctx.Stdout, "%sGenerating tar.gz... adding %s", clearLineEscape, header.Name)
 	}
 	err = writer.WriteHeader(header)
 	if err != nil {
