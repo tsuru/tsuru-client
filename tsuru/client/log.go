@@ -14,6 +14,7 @@ import (
 	"time"
 
 	"github.com/tsuru/gnuflag"
+	"github.com/tsuru/tsuru-client/tsuru/formatter"
 	"github.com/tsuru/tsuru/cmd"
 )
 
@@ -87,7 +88,7 @@ func (f logFormatter) Format(out io.Writer, dec *json.Decoder) error {
 func (f logFormatter) prefix(l log) string {
 	parts := make([]string, 0, 2)
 	if !f.noDate {
-		parts = append(parts, l.Date.In(time.Local).Format("2006-01-02 15:04:05 -0700"))
+		parts = append(parts, formatter.Local(l.Date).Format("2006-01-02 15:04:05 -0700"))
 	}
 	if !f.noSource {
 		if l.Unit != "" {

@@ -316,8 +316,9 @@ func (c *EventInfo) Show(evt *event.Event, context *cmd.Context) error {
 			}
 		}
 	}
-	if evt.Log != "" {
-		items = append(items, item{"Log", "\n" + padLines(evt.Log, "    ")})
+	log := evt.Log()
+	if log != "" {
+		items = append(items, item{"Log", "\n" + padLines(log, "    ")})
 	}
 	var maxSz int
 	for _, item := range items {

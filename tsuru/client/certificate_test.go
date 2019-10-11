@@ -13,6 +13,7 @@ import (
 	"strings"
 	"time"
 
+	"github.com/tsuru/tsuru-client/tsuru/formatter"
 	"github.com/tsuru/tsuru/cmd"
 	"github.com/tsuru/tsuru/cmd/cmdtest"
 	check "gopkg.in/check.v1"
@@ -131,7 +132,7 @@ func (s *S) TestCertificateListRunSuccessfully(c *check.C) {
 	c.Assert(err, check.IsNil)
 	expectedDate, err := time.Parse("2006-01-02 15:04:05", "2027-01-10 20:33:11")
 	c.Assert(err, check.IsNil)
-	datestr := expectedDate.Local().Format("2006-01-02 15:04:05")
+	datestr := formatter.Local(expectedDate).Format("2006-01-02 15:04:05")
 	expected := `+----------------+----------------+---------------------+----------------------------+----------------------------+
 | Router         | CName          | Expires             | Issuer                     | Subject                    |
 +----------------+----------------+---------------------+----------------------------+----------------------------+

@@ -10,6 +10,7 @@ import (
 	"testing"
 	"time"
 
+	"github.com/tsuru/tsuru-client/tsuru/formatter"
 	"github.com/tsuru/tsuru/cmd"
 	check "gopkg.in/check.v1"
 )
@@ -30,15 +31,15 @@ func (s *S) TearDownSuite(c *check.C) {
 }
 
 func (s *S) SetUpTest(c *check.C) {
-	s.defaultLocation = *time.Local
+	s.defaultLocation = *formatter.LocalTZ
 	location, err := time.LoadLocation("US/Central")
 	if err == nil {
-		time.Local = location
+		formatter.LocalTZ = location
 	}
 }
 
 func (s *S) TearDownTest(c *check.C) {
-	time.Local = &s.defaultLocation
+	formatter.LocalTZ = &s.defaultLocation
 }
 
 var _ = check.Suite(&S{})

@@ -20,6 +20,7 @@ import (
 	"strings"
 	"time"
 
+	"github.com/tsuru/tsuru-client/tsuru/formatter"
 	"github.com/tsuru/tsuru/cmd"
 	"github.com/tsuru/tsuru/cmd/cmdtest"
 	tsuruIo "github.com/tsuru/tsuru/io"
@@ -431,7 +432,7 @@ func (s *S) TestAppDeployList(c *check.C) {
 	var formatted []string
 	for _, t := range timestamps {
 		parsed, _ := time.Parse(time.RFC3339, t)
-		formatted = append(formatted, parsed.Local().Format(time.RFC822))
+		formatted = append(formatted, formatter.Local(parsed).Format(time.RFC822))
 	}
 	red := "\x1b[0;31;10m"
 	reset := "\x1b[0m"

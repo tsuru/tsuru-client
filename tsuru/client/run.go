@@ -63,7 +63,7 @@ func (c *AppRun) Run(context *cmd.Context, client *cmd.Client) error {
 		return err
 	}
 	defer r.Body.Close()
-	w := tsuruIo.NewStreamWriter(context.Stdout, nil)
+	w := tsuruIo.NewStreamWriter(context.Stdout, &tsuruIo.SimpleJsonMessageFormatter{NoTimestamp: true})
 	for n := int64(1); n > 0 && err == nil; n, err = io.Copy(w, r.Body) {
 	}
 	if err != nil {

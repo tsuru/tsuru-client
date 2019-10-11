@@ -9,6 +9,7 @@ import (
 	"time"
 
 	"github.com/ajg/form"
+	"github.com/tsuru/tsuru-client/tsuru/formatter"
 	"github.com/tsuru/tsuru/autoscale"
 	"github.com/tsuru/tsuru/cmd"
 	"github.com/tsuru/tsuru/cmd/cmdtest"
@@ -293,8 +294,8 @@ func (s *S) TestListAutoScaleHistoryCmdRun(c *check.C) {
 }]`
 	startT, _ := time.Parse(time.RFC3339, "2014-10-23T08:00:00.000Z")
 	endT, _ := time.Parse(time.RFC3339, "2014-10-23T08:30:00.000Z")
-	startTStr := startT.Local().Format(time.Stamp)
-	endTStr := endT.Local().Format(time.Stamp)
+	startTStr := formatter.FormatStamp(startT)
+	endTStr := formatter.FormatStamp(endT)
 	trans := &cmdtest.ConditionalTransport{
 		Transport: cmdtest.Transport{Message: msg, Status: http.StatusOK},
 		CondFunc: func(req *http.Request) bool {
@@ -343,7 +344,7 @@ func (s *S) TestAutoScaleHistoryInProgressEndTimeCmdRun(c *check.C) {
 	c.Assert(err, check.IsNil)
 	timeFormat, err := time.Parse(time.RFC3339, "2015-10-23T08:00:00.000Z")
 	c.Assert(err, check.IsNil)
-	startTime := timeFormat.Local().Format(time.Stamp)
+	startTime := formatter.FormatStamp(timeFormat)
 	expected := fmt.Sprintf(`+-----------------+-------------+---------+----------+--------+--------+-------+
 | Start           | Finish      | Success | Metadata | Action | Reason | Error |
 +-----------------+-------------+---------+----------+--------+--------+-------+

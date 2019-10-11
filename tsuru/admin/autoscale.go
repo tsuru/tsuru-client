@@ -3,19 +3,17 @@ package admin
 import (
 	"encoding/json"
 	"fmt"
-	"io"
 	"net/http"
 	"strconv"
 	"strings"
-	"time"
 
 	"github.com/ajg/form"
 	"github.com/pkg/errors"
 	"github.com/tsuru/gnuflag"
 	"github.com/tsuru/tablecli"
+	"github.com/tsuru/tsuru-client/tsuru/formatter"
 	"github.com/tsuru/tsuru/autoscale"
 	"github.com/tsuru/tsuru/cmd"
-	tsuruIo "github.com/tsuru/tsuru/io"
 )
 
 type ListAutoScaleHistoryCmd struct {
@@ -64,7 +62,7 @@ func (c *ListAutoScaleHistoryCmd) Run(ctx *cmd.Context, client *cmd.Client) erro
 	for i := range history {
 		event := &history[i]
 		t.AddRow(tablecli.Row([]string{
-			event.StartTime.Local().Format(time.Stamp),
+			formatter.FormatStamp(event.StartTime),
 			checkEndOfEvent(event),
 			fmt.Sprintf("%t", event.Successful),
 			event.MetadataValue,
@@ -82,7 +80,7 @@ func checkEndOfEvent(event *autoscale.Event) string {
 	if event.EndTime.IsZero() {
 		return "in progress"
 	}
-	return event.EndTime.Local().Format(time.Stamp)
+	return formatter.FormatStamp(event.EndTime)
 }
 
 func (c *ListAutoScaleHistoryCmd) Flags() *gnuflag.FlagSet {
@@ -126,17 +124,7 @@ func (c *AutoScaleRunCmd) Run(context *cmd.Context, client *cmd.Client) error {
 	if err != nil {
 		return err
 	}
-	w := tsuruIo.NewStreamWriter(context.Stdout, nil)
-	for n := int64(1); n > 0 && err == nil; n, err = io.Copy(w, response.Body) {
-	}
-	if err != nil {
-		return err
-	}
-	unparsed := w.Remaining()
-	if len(unparsed) > 0 {
-		return errors.Errorf("unparsed message error: %s", string(unparsed))
-	}
-	return nil
+	return cmd.StreamJSONResponse(context.Stdout, response)
 }
 
 type AutoScaleInfoCmd struct{}

@@ -15,12 +15,12 @@ import (
 	"sort"
 	"strconv"
 	"strings"
-	"time"
 
 	"github.com/ajg/form"
 	"github.com/tsuru/gnuflag"
 	"github.com/tsuru/tablecli"
 	tsuruClient "github.com/tsuru/tsuru-client/tsuru/client"
+	"github.com/tsuru/tsuru-client/tsuru/formatter"
 	"github.com/tsuru/tsuru/cmd"
 	"github.com/tsuru/tsuru/healer"
 	"github.com/tsuru/tsuru/iaas"
@@ -729,15 +729,15 @@ func (c *InfoNodeCmd) Run(ctx *cmd.Context, client *cmd.Client) error {
 	buf.WriteString("\n")
 	buf.WriteString(fmt.Sprintf("Node Status:\n"))
 	if !result.Status.LastSuccess.IsZero() {
-		buf.WriteString(fmt.Sprintf("Last Success: %s\n", result.Status.LastSuccess.Local().Format(time.Stamp)))
+		buf.WriteString(fmt.Sprintf("Last Success: %s\n", formatter.FormatStamp(result.Status.LastSuccess)))
 	}
 	if !result.Status.LastUpdate.IsZero() {
-		buf.WriteString(fmt.Sprintf("Last Update: %s\n", result.Status.LastUpdate.Local().Format(time.Stamp)))
+		buf.WriteString(fmt.Sprintf("Last Update: %s\n", formatter.FormatStamp(result.Status.LastUpdate)))
 	}
 	statusTable := tablecli.Table{Headers: tablecli.Row([]string{"Time", "Name", "Success", "Error"}), LineSeparator: true}
 	for _, check := range result.Status.Checks {
 		for _, cc := range check.Checks {
-			statusTable.AddRow(tablecli.Row([]string{check.Time.Local().Format(time.Stamp), cc.Name, fmt.Sprintf("%t", cc.Successful), cc.Err}))
+			statusTable.AddRow(tablecli.Row([]string{formatter.FormatStamp(check.Time), cc.Name, fmt.Sprintf("%t", cc.Successful), cc.Err}))
 		}
 	}
 	if statusTable.Rows() > 0 {

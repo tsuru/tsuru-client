@@ -14,6 +14,7 @@ import (
 	"time"
 
 	"github.com/ajg/form"
+	"github.com/tsuru/tsuru-client/tsuru/formatter"
 	"github.com/tsuru/tsuru/cmd"
 	"github.com/tsuru/tsuru/cmd/cmdtest"
 	"github.com/tsuru/tsuru/event"
@@ -726,7 +727,7 @@ func (s *S) TestInfoNodeCmdRun(c *check.C) {
 		},
 	}
 	statusT, _ := time.Parse(time.RFC3339, "2017-12-06T16:55:26.178-02:00")
-	statusTStr := statusT.Local().Format(time.Stamp)
+	statusTStr := formatter.FormatStamp(statusT)
 	manager := cmd.Manager{}
 	client := cmd.NewClient(&http.Client{Transport: trans}, nil, &manager)
 	err := (&InfoNodeCmd{}).Run(&context, client)

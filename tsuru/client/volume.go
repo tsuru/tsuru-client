@@ -7,7 +7,6 @@ package client
 import (
 	"encoding/json"
 	"fmt"
-	"io"
 	"io/ioutil"
 	"net/http"
 	"sort"
@@ -17,7 +16,6 @@ import (
 	"github.com/tsuru/gnuflag"
 	"github.com/tsuru/tablecli"
 	"github.com/tsuru/tsuru/cmd"
-	tsuruIo "github.com/tsuru/tsuru/io"
 	"github.com/tsuru/tsuru/volume"
 )
 
@@ -448,16 +446,9 @@ func (c *VolumeBind) Run(ctx *cmd.Context, client *cmd.Client) error {
 	if err != nil {
 		return err
 	}
-	defer resp.Body.Close()
-	w := tsuruIo.NewStreamWriter(ctx.Stdout, nil)
-	for n := int64(1); n > 0 && err == nil; n, err = io.Copy(w, resp.Body) {
-	}
+	err = cmd.StreamJSONResponse(ctx.Stdout, resp)
 	if err != nil {
 		return err
-	}
-	unparsed := w.Remaining()
-	if len(unparsed) > 0 {
-		return fmt.Errorf("unparsed message error: %s", string(unparsed))
 	}
 	fmt.Fprint(ctx.Stdout, "Volume successfully bound.\n")
 	return nil
@@ -519,16 +510,9 @@ func (c *VolumeUnbind) Run(ctx *cmd.Context, client *cmd.Client) error {
 	if err != nil {
 		return err
 	}
-	defer resp.Body.Close()
-	w := tsuruIo.NewStreamWriter(ctx.Stdout, nil)
-	for n := int64(1); n > 0 && err == nil; n, err = io.Copy(w, resp.Body) {
-	}
+	err = cmd.StreamJSONResponse(ctx.Stdout, resp)
 	if err != nil {
 		return err
-	}
-	unparsed := w.Remaining()
-	if len(unparsed) > 0 {
-		return fmt.Errorf("unparsed message error: %s", string(unparsed))
 	}
 	fmt.Fprint(ctx.Stdout, "Volume successfully unbound.\n")
 	return nil
