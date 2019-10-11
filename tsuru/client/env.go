@@ -8,7 +8,6 @@ import (
 	"encoding/json"
 	"errors"
 	"fmt"
-	"io"
 	"io/ioutil"
 	"net/http"
 	"net/url"
@@ -19,7 +18,6 @@ import (
 	"github.com/ajg/form"
 	"github.com/tsuru/gnuflag"
 	"github.com/tsuru/tsuru/cmd"
-	tsuruIo "github.com/tsuru/tsuru/io"
 	apiTypes "github.com/tsuru/tsuru/types/api"
 )
 
@@ -127,17 +125,7 @@ func (c *EnvSet) Run(context *cmd.Context, client *cmd.Client) error {
 	if err != nil {
 		return err
 	}
-	w := tsuruIo.NewStreamWriter(context.Stdout, nil)
-	for n := int64(1); n > 0 && err == nil; n, err = io.Copy(w, response.Body) {
-	}
-	if err != nil {
-		return err
-	}
-	unparsed := w.Remaining()
-	if len(unparsed) > 0 {
-		return fmt.Errorf("unparsed message error: %s", string(unparsed))
-	}
-	return nil
+	return cmd.StreamJSONResponse(context.Stdout, response)
 }
 
 func (c *EnvSet) Flags() *gnuflag.FlagSet {
@@ -196,17 +184,7 @@ func (c *EnvUnset) Run(context *cmd.Context, client *cmd.Client) error {
 	if err != nil {
 		return err
 	}
-	w := tsuruIo.NewStreamWriter(context.Stdout, nil)
-	for n := int64(1); n > 0 && err == nil; n, err = io.Copy(w, response.Body) {
-	}
-	if err != nil {
-		return err
-	}
-	unparsed := w.Remaining()
-	if len(unparsed) > 0 {
-		return fmt.Errorf("unparsed message error: %s", string(unparsed))
-	}
-	return nil
+	return cmd.StreamJSONResponse(context.Stdout, response)
 }
 
 func requestEnvGetURL(g cmd.GuessingCommand, args []string, client *cmd.Client) ([]byte, error) {

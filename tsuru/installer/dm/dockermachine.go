@@ -49,13 +49,15 @@ type MachineProvisioner interface {
 	ProvisionMachine(map[string]interface{}) (*dockermachine.Machine, error)
 }
 
+func init() {
+	dockermachine.InitLogging(os.Stdout, os.Stderr, false)
+}
+
 func NewDockerMachine(config DockerMachineConfig, name string) (*DockerMachine, error) {
 	storePath := filepath.Join(storeBasePath, name)
 	certsPath := filepath.Join(storePath, "certs")
 	dm, err := dockermachine.NewDockerMachine(dockermachine.DockerMachineConfig{
 		CaPath:    config.CAPath,
-		OutWriter: os.Stdout,
-		ErrWriter: os.Stderr,
 		StorePath: storePath,
 	})
 	if err != nil {

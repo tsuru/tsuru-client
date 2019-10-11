@@ -9,11 +9,21 @@ import (
 	"time"
 )
 
+var LocalTZ = time.Local
+
+func Local(date time.Time) time.Time {
+	return date.In(LocalTZ)
+}
+
+func FormatStamp(date time.Time) string {
+	return date.In(LocalTZ).Format(time.Stamp)
+}
+
 func FormatDate(date time.Time) string {
 	if date.IsZero() {
 		return "-"
 	}
-	return date.Local().Format(time.RFC822)
+	return date.In(LocalTZ).Format(time.RFC822)
 }
 
 func FormatDuration(duration *time.Duration) string {

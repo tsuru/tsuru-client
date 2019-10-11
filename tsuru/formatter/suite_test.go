@@ -20,13 +20,13 @@ var _ = check.Suite(&S{})
 func Test(t *testing.T) { check.TestingT(t) }
 
 func (s *S) SetUpTest(c *check.C) {
-	s.defaultLocation = *time.Local
+	s.defaultLocation = *LocalTZ
 	location, err := time.LoadLocation("US/Central")
 	if err == nil {
-		time.Local = location
+		LocalTZ = location
 	}
 }
 
 func (s *S) TearDownTest(c *check.C) {
-	time.Local = &s.defaultLocation
+	LocalTZ = &s.defaultLocation
 }

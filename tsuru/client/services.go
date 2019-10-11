@@ -8,7 +8,6 @@ import (
 	"encoding/json"
 	"errors"
 	"fmt"
-	"io"
 	"io/ioutil"
 	"net/http"
 	"net/url"
@@ -21,7 +20,6 @@ import (
 	"github.com/tsuru/gnuflag"
 	"github.com/tsuru/tablecli"
 	"github.com/tsuru/tsuru/cmd"
-	tsuruIo "github.com/tsuru/tsuru/io"
 )
 
 type ServiceList struct{}
@@ -251,18 +249,7 @@ func (sb *ServiceInstanceBind) Run(ctx *cmd.Context, client *cmd.Client) error {
 	if err != nil {
 		return err
 	}
-	defer resp.Body.Close()
-	w := tsuruIo.NewStreamWriter(ctx.Stdout, nil)
-	for n := int64(1); n > 0 && err == nil; n, err = io.Copy(w, resp.Body) {
-	}
-	if err != nil {
-		return err
-	}
-	unparsed := w.Remaining()
-	if len(unparsed) > 0 {
-		return fmt.Errorf("unparsed message error: %s", string(unparsed))
-	}
-	return nil
+	return cmd.StreamJSONResponse(ctx.Stdout, resp)
 }
 
 func (sb *ServiceInstanceBind) Info() *cmd.Info {
@@ -318,18 +305,7 @@ func (su *ServiceInstanceUnbind) Run(ctx *cmd.Context, client *cmd.Client) error
 	if err != nil {
 		return err
 	}
-	defer resp.Body.Close()
-	w := tsuruIo.NewStreamWriter(ctx.Stdout, nil)
-	for n := int64(1); n > 0 && err == nil; n, err = io.Copy(w, resp.Body) {
-	}
-	if err != nil {
-		return err
-	}
-	unparsed := w.Remaining()
-	if len(unparsed) > 0 {
-		return fmt.Errorf("unparsed message error: %s", string(unparsed))
-	}
-	return nil
+	return cmd.StreamJSONResponse(ctx.Stdout, resp)
 }
 
 func (su *ServiceInstanceUnbind) Info() *cmd.Info {

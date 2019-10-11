@@ -19,6 +19,7 @@ import (
 
 	"github.com/tsuru/gnuflag"
 	"github.com/tsuru/tablecli"
+	"github.com/tsuru/tsuru-client/tsuru/formatter"
 	"github.com/tsuru/tsuru/cmd"
 )
 
@@ -230,7 +231,7 @@ func (c *CertificateList) Run(context *cmd.Context, client *cmd.Client) error {
 				tbl.AddRow(tablecli.Row{r, n, "failed to parse certificate data", "-", "-"})
 				continue
 			}
-			tbl.AddRow(tablecli.Row{r, n, cert.NotAfter.Local().Format(dateFormat),
+			tbl.AddRow(tablecli.Row{r, n, formatter.Local(cert.NotAfter).Format(dateFormat),
 				formatName(&cert.Issuer), formatName(&cert.Subject),
 			})
 		}

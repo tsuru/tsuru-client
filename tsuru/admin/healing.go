@@ -9,10 +9,10 @@ import (
 	"fmt"
 	"net/http"
 	"strings"
-	"time"
 
 	"github.com/tsuru/gnuflag"
 	"github.com/tsuru/tablecli"
+	"github.com/tsuru/tsuru-client/tsuru/formatter"
 	"github.com/tsuru/tsuru/cmd"
 	"github.com/tsuru/tsuru/provision/docker/types"
 )
@@ -58,10 +58,10 @@ func renderHistoryTable(history []types.HealingEvent, filter string, ctx *cmd.Co
 		if event.EndTime.IsZero() {
 			endTime = "in progress"
 		} else {
-			endTime = event.EndTime.Local().Format(time.Stamp)
+			endTime = formatter.FormatStamp(event.EndTime)
 		}
 		t.AddRow(tablecli.Row([]string{
-			event.StartTime.Local().Format(time.Stamp),
+			formatter.FormatStamp(event.StartTime),
 			endTime,
 			fmt.Sprintf("%t", event.Successful),
 			data[0],

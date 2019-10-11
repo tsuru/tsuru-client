@@ -11,6 +11,7 @@ import (
 	"strings"
 	"time"
 
+	"github.com/tsuru/tsuru-client/tsuru/formatter"
 	"github.com/tsuru/tsuru/cmd"
 	"github.com/tsuru/tsuru/cmd/cmdtest"
 	"gopkg.in/check.v1"
@@ -25,13 +26,13 @@ func (s *S) TestFormatterUsesCurrentTimeZone(c *check.C) {
 	data, err := json.Marshal(logs)
 	c.Assert(err, check.IsNil)
 	var writer bytes.Buffer
-	old := time.Local
-	time.Local = time.UTC
+	old := formatter.LocalTZ
+	formatter.LocalTZ = time.UTC
 	defer func() {
-		time.Local = old
+		formatter.LocalTZ = old
 	}()
-	formatter := logFormatter{}
-	err = formatter.Format(&writer, json.NewDecoder(bytes.NewReader(data)))
+	logFmt := logFormatter{}
+	err = logFmt.Format(&writer, json.NewDecoder(bytes.NewReader(data)))
 	c.Assert(err, check.IsNil)
 	tfmt := "2006-01-02 15:04:05 -0700"
 	t = t.In(time.UTC)
@@ -49,7 +50,7 @@ func (s *S) TestAppLog(c *check.C) {
 	}
 	result, err := json.Marshal(logs)
 	c.Assert(err, check.IsNil)
-	t = t.In(time.Local)
+	t = formatter.Local(t)
 	tfmt := "2006-01-02 15:04:05 -0700"
 	expected := cmd.Colorfy(t.Format(tfmt)+" [tsuru]:", "blue", "", "") + " creating app lost\n"
 	expected = expected + cmd.Colorfy(t.Add(2*time.Hour).Format(tfmt)+" [app][abcdef]:", "blue", "", "") + " app lost successfully created\n"
@@ -77,7 +78,7 @@ func (s *S) TestAppLogWithUnparsableData(c *check.C) {
 	}
 	result, err := json.Marshal(logs)
 	c.Assert(err, check.IsNil)
-	t = t.In(time.Local)
+	t = formatter.Local(t)
 	tfmt := "2006-01-02 15:04:05 -0700"
 
 	context := cmd.Context{
@@ -107,7 +108,7 @@ func (s *S) TestAppLogWithoutTheFlag(c *check.C) {
 	}
 	result, err := json.Marshal(logs)
 	c.Assert(err, check.IsNil)
-	t = t.In(time.Local)
+	t = formatter.Local(t)
 	tfmt := "2006-01-02 15:04:05 -0700"
 	expected := cmd.Colorfy(t.Format(tfmt)+" [tsuru]:", "blue", "", "") + " creating app lost\n"
 	expected = expected + cmd.Colorfy(t.Add(2*time.Hour).Format(tfmt)+" [app]:", "blue", "", "") + " app lost successfully created\n"
@@ -158,7 +159,7 @@ func (s *S) TestAppLogBySource(c *check.C) {
 	}
 	result, err := json.Marshal(logs)
 	c.Assert(err, check.IsNil)
-	t = t.In(time.Local)
+	t = formatter.Local(t)
 	tfmt := "2006-01-02 15:04:05 -0700"
 	expected := cmd.Colorfy(t.Format(tfmt)+" [tsuru]:", "blue", "", "") + " creating app lost\n"
 	expected = expected + cmd.Colorfy(t.Add(2*time.Hour).Format(tfmt)+" [tsuru]:", "blue", "", "") + " app lost successfully created\n"
@@ -190,7 +191,7 @@ func (s *S) TestAppLogByUnit(c *check.C) {
 	}
 	result, err := json.Marshal(logs)
 	c.Assert(err, check.IsNil)
-	t = t.In(time.Local)
+	t = formatter.Local(t)
 	tfmt := "2006-01-02 15:04:05 -0700"
 	expected := cmd.Colorfy(t.Format(tfmt)+" [tsuru][api]:", "blue", "", "") + " creating app lost\n"
 	expected = expected + cmd.Colorfy(t.Add(2*time.Hour).Format(tfmt)+" [tsuru][api]:", "blue", "", "") + " app lost successfully created\n"
@@ -222,7 +223,7 @@ func (s *S) TestAppLogWithLines(c *check.C) {
 	}
 	result, err := json.Marshal(logs)
 	c.Assert(err, check.IsNil)
-	t = t.In(time.Local)
+	t = formatter.Local(t)
 	tfmt := "2006-01-02 15:04:05 -0700"
 	expected := cmd.Colorfy(t.Format(tfmt)+" [tsuru]:", "blue", "", "") + " creating app lost\n"
 	expected = expected + cmd.Colorfy(t.Add(2*time.Hour).Format(tfmt)+" [tsuru]:", "blue", "", "") + " app lost successfully created\n"
@@ -254,7 +255,7 @@ func (s *S) TestAppLogWithFollow(c *check.C) {
 	}
 	result, err := json.Marshal(logs)
 	c.Assert(err, check.IsNil)
-	t = t.In(time.Local)
+	t = formatter.Local(t)
 	tfmt := "2006-01-02 15:04:05 -0700"
 	expected := cmd.Colorfy(t.Format(tfmt)+" [tsuru]:", "blue", "", "") + " creating app lost\n"
 	expected = expected + cmd.Colorfy(t.Add(2*time.Hour).Format(tfmt)+" [tsuru]:", "blue", "", "") + " app lost successfully created\n"
@@ -286,7 +287,7 @@ func (s *S) TestAppLogWithNoDateAndNoSource(c *check.C) {
 	}
 	result, err := json.Marshal(logs)
 	c.Assert(err, check.IsNil)
-	t = t.In(time.Local)
+	t = formatter.Local(t)
 	expected := "GET /\n"
 	expected = expected + "POST /\n"
 	context := cmd.Context{
@@ -317,7 +318,7 @@ func (s *S) TestAppLogWithNoSource(c *check.C) {
 	}
 	result, err := json.Marshal(logs)
 	c.Assert(err, check.IsNil)
-	t = t.In(time.Local)
+	t = formatter.Local(t)
 	tfmt := "2006-01-02 15:04:05 -0700"
 	expected := cmd.Colorfy(t.Format(tfmt)+":", "blue", "", "") + " GET /\n"
 	expected = expected + cmd.Colorfy(t.Add(2*time.Hour).Format(tfmt)+":", "blue", "", "") + " POST /\n"
