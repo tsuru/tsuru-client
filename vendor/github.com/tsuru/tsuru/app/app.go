@@ -351,14 +351,20 @@ func (app *App) configureCreateRouters() error {
 	return nil
 }
 
+type UpdateAppArgs struct {
+	UpdateData    App
+	Writer        io.Writer
+	ShouldRestart bool
+}
+
 // Update changes informations of the application.
-func (app *App) Update(updateData App, w io.Writer) (err error) {
-	description := updateData.Description
-	planName := updateData.Plan.Name
-	poolName := updateData.Pool
-	teamOwner := updateData.TeamOwner
-	platform := updateData.Platform
-	tags := processTags(updateData.Tags)
+func (app *App) Update(args UpdateAppArgs) (err error) {
+	description := args.UpdateData.Description
+	planName := args.UpdateData.Plan.Name
+	poolName := args.UpdateData.Pool
+	teamOwner := args.UpdateData.TeamOwner
+	platform := args.UpdateData.Platform
+	tags := processTags(args.UpdateData.Tags)
 	oldApp := *app
 
 	if description != "" {
@@ -414,7 +420,7 @@ func (app *App) Update(updateData App, w io.Writer) (err error) {
 		app.Platform = p
 		app.PlatformVersion = v
 	}
-	if updateData.UpdatePlatform {
+	if args.UpdateData.UpdatePlatform {
 		app.UpdatePlatform = true
 	}
 	err = app.validate()
@@ -439,10 +445,12 @@ func (app *App) Update(updateData App, w io.Writer) (err error) {
 			&provisionAppNewProvisioner,
 			&provisionAppAddUnits,
 			&destroyAppOldProvisioner)
-	} else if app.Plan != oldApp.Plan {
+	} else if app.Plan != oldApp.Plan && args.ShouldRestart {
+		actions = append(actions, &restartApp)
+	} else if app.Pool != oldApp.Pool {
 		actions = append(actions, &restartApp)
 	}
-	return action.NewPipeline(actions...).Execute(app, &oldApp, w)
+	return action.NewPipeline(actions...).Execute(app, &oldApp, args.Writer)
 }
 
 func validateVolumes(app *App) error {
@@ -728,7 +736,7 @@ func (app *App) AddUnits(n uint, process string, w io.Writer) error {
 	rebuild.RoutesRebuildOrEnqueue(app.Name)
 	quotaErr := app.fixQuota()
 	if err != nil {
-		return err
+		return newErrorWithLog(err, app, "add units")
 	}
 	return quotaErr
 }
@@ -748,7 +756,7 @@ func (app *App) RemoveUnits(n uint, process string, w io.Writer) error {
 	rebuild.RoutesRebuildOrEnqueue(app.Name)
 	quotaErr := app.fixQuota()
 	if err != nil {
-		return err
+		return newErrorWithLog(err, app, "remove units")
 	}
 	return quotaErr
 }
@@ -1239,7 +1247,7 @@ func (app *App) Restart(process string, w io.Writer) error {
 	err = prov.Restart(app, process, w)
 	if err != nil {
 		log.Errorf("[restart] error on restart the app %s - %s", app.Name, err)
-		return err
+		return newErrorWithLog(err, app, "restart")
 	}
 	rebuild.RoutesRebuildOrEnqueue(app.Name)
 	return nil
@@ -1309,7 +1317,7 @@ func (app *App) Sleep(w io.Writer, process string, proxyURL *url.URL) error {
 		log.Errorf("[sleep] error on sleep the app %s - %s", app.Name, err)
 		log.Errorf("[sleep] rolling back the sleep %s", app.Name)
 		rebuild.RoutesRebuildOrEnqueue(app.Name)
-		return err
+		return newErrorWithLog(err, app, "sleep")
 	}
 	return nil
 }
@@ -1540,7 +1548,11 @@ func (app *App) restartIfUnits(w io.Writer) error {
 	if err != nil {
 		return err
 	}
-	return prov.Restart(app, "", w)
+	err = prov.Restart(app, "", w)
+	if err != nil {
+		return newErrorWithLog(err, app, "restart")
+	}
+	return nil
 }
 
 // AddCName adds a CName to app. It updates the attribute,
@@ -1657,11 +1669,7 @@ func (app *App) RemoveInstance(removeArgs bind.RemoveInstanceArgs) error {
 
 // LastLogs returns a list of the last `lines` log of the app, matching the
 // fields in the log instance received as an example.
-func (app *App) LastLogs(logService appTypes.AppLogService, lines int, filterLog appTypes.Applog, t authTypes.Token) ([]appTypes.Applog, error) {
-	return app.lastLogs(logService, lines, filterLog, false, t)
-}
-
-func (app *App) lastLogs(logService appTypes.AppLogService, lines int, filterLog appTypes.Applog, invertFilter bool, t authTypes.Token) ([]appTypes.Applog, error) {
+func (app *App) LastLogs(logService appTypes.AppLogService, args appTypes.ListLogArgs) ([]appTypes.Applog, error) {
 	prov, err := app.getProvisioner()
 	if err != nil {
 		return nil, err
@@ -1678,14 +1686,8 @@ func (app *App) lastLogs(logService appTypes.AppLogService, lines int, filterLog
 			return nil, errors.New(doc)
 		}
 	}
-	return logService.List(appTypes.ListLogArgs{
-		AppName:       app.Name,
-		InvertFilters: invertFilter,
-		Limit:         lines,
-		Source:        filterLog.Source,
-		Unit:          filterLog.Unit,
-		Token:         t,
-	})
+	args.AppName = app.Name
+	return logService.List(args)
 }
 
 type Filter struct {
@@ -1978,7 +1980,7 @@ func (app *App) Start(w io.Writer, process string) error {
 	err = prov.Start(app, process)
 	if err != nil {
 		log.Errorf("[start] error on start the app %s - %s", app.Name, err)
-		return err
+		return newErrorWithLog(err, app, "start")
 	}
 	rebuild.RoutesRebuildOrEnqueue(app.Name)
 	return err
@@ -2393,8 +2395,19 @@ func (app *App) GetHealthcheckData() (routerTypes.HealthcheckData, error) {
 		return routerTypes.HealthcheckData{}, err
 	}
 	yamlData, err := image.GetImageTsuruYamlData(imageName)
-	if err != nil || yamlData.Healthcheck == nil {
+	if err != nil {
 		return routerTypes.HealthcheckData{}, err
+	}
+	prov, err := app.getProvisioner()
+	if err != nil {
+		return routerTypes.HealthcheckData{}, err
+	}
+	if hcProv, ok := prov.(provision.HCProvisioner); ok {
+		if hcProv.HandlesHC() {
+			return routerTypes.HealthcheckData{
+				TCPOnly: true,
+			}, nil
+		}
 	}
 	return yamlData.ToRouterHC(), nil
 }
