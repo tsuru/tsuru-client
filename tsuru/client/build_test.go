@@ -27,7 +27,7 @@ func (s *S) TestBuildRun(c *check.C) {
 	err := targz(&ctx, &buf, false, "testdata", "..")
 	c.Assert(err, check.IsNil)
 	trans := cmdtest.ConditionalTransport{
-		Transport: cmdtest.Transport{Message: "OK\n", Status: http.StatusOK},
+		Transport: cmdtest.Transport{Message: "\nOK\n", Status: http.StatusOK},
 		CondFunc: func(req *http.Request) bool {
 			calledTimes++
 			if req.Body != nil {

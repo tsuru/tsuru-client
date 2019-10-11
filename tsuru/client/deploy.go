@@ -183,6 +183,14 @@ func (w *safeWriter) Write(p []byte) (int, error) {
 	return w.w.Write(p)
 }
 
+func prepareUploadStreams(context *cmd.Context, buf *safe.Buffer) io.Writer {
+	context.Stdout = &safeWriter{w: context.Stdout}
+	stream := tsuruIo.NewStreamWriter(&firstWriter{Writer: context.Stdout}, nil)
+	encoderWriter := &safeWriter{w: &tsuruIo.SimpleJsonMessageEncoderWriter{Encoder: json.NewEncoder(stream)}}
+	respBody := io.MultiWriter(encoderWriter, buf)
+	return respBody
+}
+
 func (c *AppDeploy) Run(context *cmd.Context, client *cmd.Client) error {
 	context.RawOutput()
 	if c.image == "" && len(context.Args) == 0 {
@@ -226,9 +234,9 @@ func (c *AppDeploy) Run(context *cmd.Context, client *cmd.Client) error {
 		return err
 	}
 	buf := safe.NewBuffer(nil)
-	stream := tsuruIo.NewStreamWriter(context.Stdout, nil)
-	safeStdout := &safeWriter{w: &tsuruIo.SimpleJsonMessageEncoderWriter{Encoder: json.NewEncoder(stream)}}
-	respBody := firstWriter{Writer: io.MultiWriter(safeStdout, buf)}
+	c.m.Lock()
+	respBody := prepareUploadStreams(context, buf)
+	c.m.Unlock()
 	if c.image != "" {
 		request.Header.Set("Content-Type", "application/x-www-form-urlencoded")
 		values.Set("image", c.image)
@@ -238,7 +246,7 @@ func (c *AppDeploy) Run(context *cmd.Context, client *cmd.Client) error {
 		}
 		fmt.Fprint(context.Stdout, "Deploying image...")
 	} else {
-		if err = uploadFiles(context, c.filesOnly, request, buf, safeStdout, body, values); err != nil {
+		if err = uploadFiles(context, c.filesOnly, request, buf, body, values); err != nil {
 			return err
 		}
 	}
@@ -527,18 +535,7 @@ func (c *AppDeployRollback) Run(context *cmd.Context, client *cmd.Client) error 
 	if err != nil {
 		return err
 	}
-	defer response.Body.Close()
-	w := tsuruIo.NewStreamWriter(context.Stdout, nil)
-	for n := int64(1); n > 0 && err == nil; n, err = io.Copy(w, response.Body) {
-	}
-	if err != nil {
-		return err
-	}
-	unparsed := w.Remaining()
-	if len(unparsed) > 0 {
-		return fmt.Errorf("unparsed message error: %s", string(unparsed))
-	}
-	return nil
+	return cmd.StreamJSONResponse(context.Stdout, response)
 }
 
 type AppDeployRebuild struct {
@@ -577,18 +574,7 @@ func (c *AppDeployRebuild) Run(context *cmd.Context, client *cmd.Client) error {
 	if err != nil {
 		return err
 	}
-	defer response.Body.Close()
-	w := tsuruIo.NewStreamWriter(context.Stdout, nil)
-	for n := int64(1); n > 0 && err == nil; n, err = io.Copy(w, response.Body) {
-	}
-	if err != nil {
-		return err
-	}
-	unparsed := w.Remaining()
-	if len(unparsed) > 0 {
-		return fmt.Errorf("unparsed message error: %s", string(unparsed))
-	}
-	return nil
+	return cmd.StreamJSONResponse(context.Stdout, response)
 }
 
 type AppDeployRollbackUpdate struct {
