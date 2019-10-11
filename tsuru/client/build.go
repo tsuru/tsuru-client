@@ -114,8 +114,8 @@ func uploadFiles(context *cmd.Context, filesOnly bool, request *http.Request, bu
 	if err != nil {
 		return err
 	}
-	fmt.Fprint(context.Stdout, "Generating tar.gz...\n")
-	err = targz(context, file, filesOnly, context.Args...)
+	tm := newTarMaker(context)
+	err = tm.targz(file, filesOnly, context.Args...)
 	if err != nil {
 		return err
 	}

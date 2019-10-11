@@ -20,6 +20,7 @@ require (
 	github.com/tsuru/go-tsuruclient v0.0.0-20190823213153-7d63d14246d5
 	github.com/tsuru/tablecli v0.0.0-20190131152944-7ded8a3383c6
 	github.com/tsuru/tsuru v0.0.0-20191011194423-fe8ba13df2e3
+	golang.org/x/crypto v0.0.0-20190701094942-4def268fd1a4
 	gopkg.in/check.v1 v1.0.0-20180628173108-788fd7840127
 	gopkg.in/yaml.v2 v2.2.2
 )

@@ -35,8 +35,9 @@ func (s *S) TestDeployInfo(c *check.C) {
 func (s *S) TestDeployRun(c *check.C) {
 	calledTimes := 0
 	var buf bytes.Buffer
-	ctx := cmd.Context{Stderr: bytes.NewBufferString("")}
-	err := targz(&ctx, &buf, false, "testdata", "..")
+	ctx := cmd.Context{Stderr: bytes.NewBufferString(""), Stdout: bytes.NewBufferString("")}
+	tm := newTarMaker(&ctx)
+	err := tm.targz(&buf, false, "testdata", "..")
 	c.Assert(err, check.IsNil)
 	trans := cmdtest.ConditionalTransport{
 		Transport: cmdtest.Transport{Message: "deploy worked\nOK\n", Status: http.StatusOK},
@@ -90,8 +91,9 @@ func (s *slowReader) Close() error {
 func (s *S) TestDeployRunCancel(c *check.C) {
 	calledTimes := 0
 	var buf bytes.Buffer
-	ctx := cmd.Context{Stderr: bytes.NewBufferString("")}
-	err := targz(&ctx, &buf, false, "testdata", "..")
+	ctx := cmd.Context{Stderr: bytes.NewBufferString(""), Stdout: bytes.NewBufferString("")}
+	tm := newTarMaker(&ctx)
+	err := tm.targz(&buf, false, "testdata", "..")
 	c.Assert(err, check.IsNil)
 	deploy := make(chan struct{}, 1)
 	trans := cmdtest.MultiConditionalTransport{
@@ -196,8 +198,9 @@ func (s *S) TestDeployImage(c *check.C) {
 func (s *S) TestDeployRunWithMessage(c *check.C) {
 	calledTimes := 0
 	var buf bytes.Buffer
-	ctx := cmd.Context{Stderr: bytes.NewBufferString("")}
-	err := targz(&ctx, &buf, false, "testdata", "..")
+	ctx := cmd.Context{Stderr: bytes.NewBufferString(""), Stdout: bytes.NewBufferString("")}
+	tm := newTarMaker(&ctx)
+	err := tm.targz(&buf, false, "testdata", "..")
 	c.Assert(err, check.IsNil)
 	trans := cmdtest.ConditionalTransport{
 		Transport: cmdtest.Transport{Message: "deploy worked\nOK\n", Status: http.StatusOK},
@@ -348,10 +351,11 @@ func (s *S) TestTargzSymlink(c *check.C) {
 	if runtime.GOOS == "windows" {
 		c.Skip("no symlink support on windows")
 	}
-	var buf bytes.Buffer
-	ctx := cmd.Context{Stderr: &buf}
+	var buf, outBuf bytes.Buffer
+	ctx := cmd.Context{Stderr: &buf, Stdout: &outBuf}
 	var gzipBuf, tarBuf bytes.Buffer
-	err := targz(&ctx, &gzipBuf, false, "testdata-symlink", "..")
+	tm := newTarMaker(&ctx)
+	err := tm.targz(&gzipBuf, false, "testdata-symlink", "..")
 	c.Assert(err, check.IsNil)
 	gzipReader, err := gzip.NewReader(&gzipBuf)
 	c.Assert(err, check.IsNil)
@@ -369,10 +373,11 @@ func (s *S) TestTargzSymlink(c *check.C) {
 }
 
 func (s *S) TestTargzFailure(c *check.C) {
-	var stderr bytes.Buffer
-	ctx := cmd.Context{Stderr: &stderr}
+	var stderr, stdout bytes.Buffer
+	ctx := cmd.Context{Stderr: &stderr, Stdout: &stdout}
 	var buf bytes.Buffer
-	err := targz(&ctx, &buf, false, "/tmp/something/that/definitely/doesn't/exist/right", "testdata")
+	tm := newTarMaker(&ctx)
+	err := tm.targz(&buf, false, "/tmp/something/that/definitely/doesn't/exist/right", "testdata")
 	c.Assert(err, check.NotNil)
 	c.Assert(err.Error(), check.Matches, ".*(no such file or directory|cannot find the path specified).*")
 }
