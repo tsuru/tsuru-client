@@ -1,7 +1,6 @@
 package client
 
 import (
-	"encoding/json"
 	"errors"
 	"fmt"
 	"io"
@@ -13,7 +12,6 @@ import (
 
 	"github.com/tsuru/gnuflag"
 	"github.com/tsuru/tsuru/cmd"
-	tsuruIo "github.com/tsuru/tsuru/io"
 	"github.com/tsuru/tsuru/safe"
 )
 
@@ -85,10 +83,8 @@ func (c *AppBuild) Run(context *cmd.Context, client *cmd.Client) error {
 		return err
 	}
 	buf := safe.NewBuffer(nil)
-	stream := tsuruIo.NewStreamWriter(context.Stdout, nil)
-	safeStdout := &safeWriter{w: &tsuruIo.SimpleJsonMessageEncoderWriter{Encoder: json.NewEncoder(stream)}}
-	respBody := firstWriter{Writer: io.MultiWriter(safeStdout, buf)}
-	if err = uploadFiles(context, false, request, buf, safeStdout, body, values); err != nil {
+	respBody := prepareUploadStreams(context, buf)
+	if err = uploadFiles(context, false, request, buf, body, values); err != nil {
 		return err
 	}
 	resp, err := client.Do(request)
@@ -99,18 +95,17 @@ func (c *AppBuild) Run(context *cmd.Context, client *cmd.Client) error {
 	if resp.StatusCode != http.StatusOK {
 		return cmd.ErrAbortCommand
 	}
-	_, err = io.Copy(&respBody, resp.Body)
+	_, err = io.Copy(respBody, resp.Body)
 	if err != nil {
 		return err
 	}
-	fmt.Fprint(safeStdout, buf.String())
 	if strings.HasSuffix(buf.String(), "\nOK\n") {
 		return nil
 	}
 	return cmd.ErrAbortCommand
 }
 
-func uploadFiles(context *cmd.Context, filesOnly bool, request *http.Request, buf *safe.Buffer, safeStdout *safeWriter, body *safe.Buffer, values url.Values) error {
+func uploadFiles(context *cmd.Context, filesOnly bool, request *http.Request, buf *safe.Buffer, body *safe.Buffer, values url.Values) error {
 	writer := multipart.NewWriter(body)
 	for k := range values {
 		writer.WriteField(k, values.Get(k))
@@ -119,6 +114,7 @@ func uploadFiles(context *cmd.Context, filesOnly bool, request *http.Request, bu
 	if err != nil {
 		return err
 	}
+	fmt.Fprint(context.Stdout, "Generating tar.gz...\n")
 	err = targz(context, file, filesOnly, context.Args...)
 	if err != nil {
 		return err
@@ -139,12 +135,12 @@ func uploadFiles(context *cmd.Context, filesOnly bool, request *http.Request, bu
 			t0 = time.Now()
 			lastTransferred = transferred
 			percent := (transferred / fullSize) * 100.0
-			fmt.Fprintf(safeStdout, "\rUploading files (%0.2fMB)... %0.2f%%", fullSize/megabyte, percent)
+			fmt.Fprintf(context.Stdout, "\rUploading files (%0.2fMB)... %0.2f%%", fullSize/megabyte, percent)
 			if remaining > 0 {
-				fmt.Fprintf(safeStdout, " (%0.2fMB/s)", speed)
+				fmt.Fprintf(context.Stdout, " (%0.2fMB/s)", speed)
 			}
 			if remaining == 0 && buf.Len() == 0 {
-				fmt.Fprintf(safeStdout, " Processing%s", strings.Repeat(".", count))
+				fmt.Fprintf(context.Stdout, " Processing%s", strings.Repeat(".", count))
 				count++
 			}
 			time.Sleep(2e9)
