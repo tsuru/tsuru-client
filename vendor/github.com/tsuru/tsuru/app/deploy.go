@@ -101,7 +101,7 @@ func ListDeploys(filter *Filter, skip, limit int) ([]DeployData, error) {
 	}
 	list := make([]DeployData, len(evts))
 	for i := range evts {
-		list[i] = *eventToDeployData(&evts[i], validImages, false)
+		list[i] = *eventToDeployData(evts[i], validImages, false)
 	}
 	return list, nil
 }
@@ -135,7 +135,7 @@ func eventToDeployData(evt *event.Event, validImages set.Set, full bool) *Deploy
 		data.Message = startOpts.Message
 	}
 	if full {
-		data.Log = evt.Log
+		data.Log = evt.Log()
 		var otherData map[string]string
 		err = evt.OtherData(&otherData)
 		if err == nil {
@@ -235,8 +235,29 @@ func Build(opts DeployOptions) (string, error) {
 }
 
 type errorWithLog struct {
-	err  error
-	logs []appTypes.Applog
+	err    error
+	action string
+	logs   []appTypes.Applog
+}
+
+func newErrorWithLog(base error, app *App, action string) *errorWithLog {
+	logErr := &errorWithLog{
+		err:    base,
+		action: action,
+	}
+	if provision.IsStartupError(base) {
+		tokenValue := app.Env["TSURU_APP_TOKEN"].Value
+		token, _ := AuthScheme.Auth(tokenValue)
+		units := provision.StartupBadUnits(base)
+		logErr.logs, _ = app.LastLogs(servicemanager.AppLog, appTypes.ListLogArgs{
+			Source:       "tsuru",
+			InvertSource: true,
+			Units:        units,
+			Token:        token,
+			Limit:        10,
+		})
+	}
+	return logErr
 }
 
 func (e *errorWithLog) Cause() error {
@@ -244,9 +265,10 @@ func (e *errorWithLog) Cause() error {
 }
 
 func (e *errorWithLog) formatLogLines() string {
+	const timeFormat = "2006-01-02 15:04:05 -0700"
 	linesStr := make([]string, len(e.logs))
 	for i, l := range e.logs {
-		linesStr[i] = fmt.Sprintf("    %s[%s][%s]: %s", l.Date.Format(time.RFC3339), l.Source, l.Unit, l.Message)
+		linesStr[i] = fmt.Sprintf("    %s [%s][%s]: %s", l.Date.Local().Format(timeFormat), l.Source, l.Unit, l.Message)
 	}
 	return strings.Join(linesStr, "\n")
 }
@@ -256,7 +278,7 @@ func (e *errorWithLog) Error() string {
 	if len(e.logs) > 0 {
 		logPart = fmt.Sprintf("\n---- Last %d log messages: ----\n%s", len(e.logs), e.formatLogLines())
 	}
-	return fmt.Sprintf("---- ERROR during deploy: ----\n%v%s", e.err, logPart)
+	return fmt.Sprintf("\n---- ERROR during %s: ----\n%v\n%s", e.action, e.err, logPart)
 }
 
 // Deploy runs a deployment of an application. It will first try to run an
@@ -284,14 +306,7 @@ func Deploy(opts DeployOptions) (string, error) {
 		log.Errorf("WARNING: unable to ensure quota is up-to-date after deploy: %v", quotaErr)
 	}
 	if err != nil {
-		var logLines []appTypes.Applog
-		if provision.IsStartupError(err) {
-			logLines, _ = opts.App.lastLogs(servicemanager.AppLog, 10, appTypes.Applog{
-				Source: "tsuru",
-			}, true, opts.Token)
-		}
-		err = &errorWithLog{err: err, logs: logLines}
-		return "", err
+		return "", newErrorWithLog(err, opts.App, "deploy")
 	}
 	err = incrementDeploy(opts.App)
 	if err != nil {
@@ -400,7 +415,9 @@ func deployDataToEvent(data *DeployData) error {
 	evt.StartTime = data.Timestamp
 	evt.EndTime = data.Timestamp.Add(data.Duration)
 	evt.Error = data.Error
-	evt.Log = data.Log
+	evt.StructuredLog = []event.LogEntry{
+		{Message: data.Log},
+	}
 	evt.RemoveDate = data.RemoveDate
 	a, err := GetByName(data.App)
 	if err == nil {

@@ -415,6 +415,13 @@ type UnitStatusProvisioner interface {
 	SetUnitStatus(Unit, Status) error
 }
 
+// HCProvisioner is a provisioner that may handle loadbalancing healthchecks.
+type HCProvisioner interface {
+	// HandlesHC returns true if the provisioner will handle healthchecking
+	// instead of the router.
+	HandlesHC() bool
+}
+
 type AddNodeOptions struct {
 	IaaSID     string
 	Address    string
@@ -678,7 +685,8 @@ func (e *Error) Error() string {
 }
 
 type ErrUnitStartup struct {
-	Err error
+	BadUnits []string
+	Err      error
 }
 
 func (e ErrUnitStartup) Error() string {
@@ -687,6 +695,20 @@ func (e ErrUnitStartup) Error() string {
 
 func (e ErrUnitStartup) IsStartupError() bool {
 	return true
+}
+
+func (e ErrUnitStartup) Units() []string {
+	return e.BadUnits
+}
+
+func StartupBadUnits(err error) []string {
+	se, ok := errors.Cause(err).(interface {
+		Units() []string
+	})
+	if ok {
+		return se.Units()
+	}
+	return nil
 }
 
 func IsStartupError(err error) bool {
