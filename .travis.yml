@@ -5,12 +5,11 @@ os:
   - linux
   - osx
 go:
-  - 1.12.x
+  - 1.13.x
 env:
   global:
-    - GO_FOR_RELEASE=1.12
+    - GO_FOR_RELEASE=1.13
     - GORELEASER_CONFIG=goreleaser-rc.yml
-    - GOPROXY=https://proxy.golang.org
     - GO111MODULE=on
   matrix:
     - GOARCH=amd64 JOB=test
@@ -20,7 +19,7 @@ before_install:
   - '[[ $TRAVIS_OS_NAME == "linux" ]] && sudo sysctl -w net.ipv6.conf.all.disable_ipv6=0 || true'
   - '[[ $TRAVIS_OS_NAME == "linux" ]] && sudo sysctl -w net.ipv6.conf.lo.disable_ipv6=0 || true'
 script:
-  - 'if [ "${JOB}" = "test" ]; then ./go.test.bash; fi'
+  - 'if [ "${JOB}" = "test" ]; then go test -race -coverprofile=coverage.txt -covermode=atomic ./...; fi'
   - 'if [ "${JOB}" = "gometalinter" ]; then make metalint; fi'
 services:
   - redis
