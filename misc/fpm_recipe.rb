@@ -26,6 +26,7 @@ package.version = ENV['PACKAGE_VERSION']
 package.maintainer = 'tsuru@corp.globo.com'
 package.vendor = 'Tsuru team <tsuru@corp.globo.com>'
 package.url = 'https://tsuru.io'
+package.attributes[:workdir] = Dir.tmpdir
 package.description =  <<-EOS
 tsuru is the command line interface for the tsuru server
 
