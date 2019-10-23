@@ -46,12 +46,16 @@ jobs:
       if: contains(github.ref, '-rc')
       with:
         args: --config goreleaser-rc.yml
+      env:
+        GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
 
     - name: stable release
       uses: goreleaser/goreleaser-action@v1
       if: "!contains(github.ref, '-rc')"
       with:
         args: --config goreleaser-stable.yml
+      env:
+        GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
 
     - uses: actions/setup-ruby@v1
       with:
