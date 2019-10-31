@@ -17,8 +17,9 @@ import (
 
 type AppBuild struct {
 	cmd.GuessingCommand
-	tag string
-	fs  *gnuflag.FlagSet
+	tag       string
+	fs        *gnuflag.FlagSet
+	filesOnly bool
 }
 
 func (c *AppBuild) Flags() *gnuflag.FlagSet {
@@ -27,6 +28,9 @@ func (c *AppBuild) Flags() *gnuflag.FlagSet {
 		tag := "The image tag"
 		c.fs.StringVar(&c.tag, "tag", "", tag)
 		c.fs.StringVar(&c.tag, "t", "", tag)
+		filesOnly := "Enables single file build into the root of the app's tree"
+		c.fs.BoolVar(&c.filesOnly, "f", false, filesOnly)
+		c.fs.BoolVar(&c.filesOnly, "files-only", false, filesOnly)
 	}
 	return c.fs
 }
@@ -38,10 +42,11 @@ func (c *AppBuild) Info() *cmd.Info {
 
 		$ tsuru app-build -a myapp -t mytag .
 		$ tsuru app-build -a myapp -t latest myfile.jar Procfile
+		$ tsuru app-build -a myapp -t mytag -f directory/main.go directory/Procfile
 `
 	return &cmd.Info{
 		Name:    "app-build",
-		Usage:   "app-build [-a/--app <appname>] [-t/--tag <image_tag>] <file-or-dir-1> [file-or-dir-2] ... [file-or-dir-n]",
+		Usage:   "app-build [-a/--app <appname>] [-t/--tag <image_tag>] [-f/--files-only] <file-or-dir-1> [file-or-dir-2] ... [file-or-dir-n]",
 		Desc:    desc,
 		MinArgs: 0,
 	}
@@ -84,7 +89,7 @@ func (c *AppBuild) Run(context *cmd.Context, client *cmd.Client) error {
 	}
 	buf := safe.NewBuffer(nil)
 	respBody := prepareUploadStreams(context, buf)
-	if err = uploadFiles(context, false, request, buf, body, values); err != nil {
+	if err = uploadFiles(context, c.filesOnly, request, buf, body, values); err != nil {
 		return err
 	}
 	resp, err := client.Do(request)
