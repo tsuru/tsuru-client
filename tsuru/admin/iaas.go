@@ -9,7 +9,9 @@ import (
 	"encoding/json"
 	"fmt"
 	"net/http"
+	"net/url"
 	"sort"
+	"strconv"
 	"strings"
 
 	"github.com/ajg/form"
@@ -164,12 +166,22 @@ func (c *MachineList) machineMetadataMatchesFilters(machine iaas.Machine) bool {
 
 type MachineDestroy struct {
 	cmd.ConfirmationCommand
+	fs    *gnuflag.FlagSet
+	force bool
+}
+
+func (c *MachineDestroy) Flags() *gnuflag.FlagSet {
+	if c.fs == nil {
+		c.fs = c.ConfirmationCommand.Flags()
+		c.fs.BoolVar(&c.force, "force", false, "Force removal from machines database even after IaaS error.")
+	}
+	return c.fs
 }
 
 func (c *MachineDestroy) Info() *cmd.Info {
 	return &cmd.Info{
 		Name:    "machine-destroy",
-		Usage:   "machine-destroy <machine id> [-y/--assume-yes]",
+		Usage:   "machine-destroy <machine id> [-y/--assume-yes] [--force]",
 		Desc:    "Destroys an existing machine created using a IaaS.",
 		MinArgs: 1,
 	}
@@ -180,7 +192,11 @@ func (c *MachineDestroy) Run(context *cmd.Context, client *cmd.Client) error {
 	if !c.Confirm(context, fmt.Sprintf("Are you sure you want to remove machine %q?", machineID)) {
 		return nil
 	}
-	url, err := cmd.GetURL("/iaas/machines/" + machineID)
+	qs := url.Values{}
+	if c.force {
+		qs.Set("force", strconv.FormatBool(c.force))
+	}
+	url, err := cmd.GetURL(fmt.Sprintf("/iaas/machines/%s?%s", machineID, qs.Encode()))
 	if err != nil {
 		return err
 	}
