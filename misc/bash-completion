@@ -14,16 +14,35 @@ _tsuru() {
     fi
 
     let last_complete=COMP_CWORD-1
+
+    # TODO(cezarsa): Parse flags from help is possible
+    local main_flags_with_args=("-t" "--target" "-v" "--verbosity")
     local base_cmd=""
+    local ignore_arg=0
     for i in $(seq 1 1 $last_complete 2>/dev/null); do
         local current=${COMP_WORDS[i]}
-        if [[ "$current" == "-*" ]]; then
-            break
+        if [[ "${current}" == "=" ]]; then
+            continue
+        fi
+        if [[ $ignore_arg == 1 ]]; then
+            ignore_arg=0
+            continue
+        fi
+        if [[ "${current}" == "-"* ]]; then
+            if [[ $i != 1 ]]; then
+                continue
+            fi
+            for flag in ${main_flags_with_args[@]}; do
+                if [[ "${current}" == "${flag}" ]]; then
+                    ignore_arg=1
+                fi
+            done
+            continue
         fi
         base_cmd="${base_cmd}${current}-"
     done
     local incomplete_command="${base_cmd}${COMP_WORDS[COMP_CWORD]}"
-    local genlist=$(compgen -W "$tasks" "$incomplete_command")
+    local genlist=$(compgen -W "$tasks" -- "$incomplete_command")
     genlist=$(echo "$genlist" | sed "s/^${base_cmd}//" | sed 's/-.*$//')
     COMPREPLY=( $(compgen -W "$genlist") )
 }
