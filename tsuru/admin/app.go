@@ -7,6 +7,7 @@ package admin
 import (
 	"encoding/json"
 	"fmt"
+	"io"
 	"net/http"
 	"sort"
 
@@ -80,6 +81,11 @@ existing routes to be lost.`,
 	}
 }
 
+type compatibleRebuildResult struct {
+	rebuild.RebuildRoutesResult
+	rebuild.RebuildPrefixResult
+}
+
 func (c *AppRoutesRebuild) Run(ctx *cmd.Context, client *cmd.Client) error {
 	appName, err := c.Guess()
 	if err != nil {
@@ -98,7 +104,7 @@ func (c *AppRoutesRebuild) Run(ctx *cmd.Context, client *cmd.Client) error {
 		return err
 	}
 	defer rsp.Body.Close()
-	var allRebuildResult map[string]rebuild.RebuildRoutesResult
+	var allRebuildResult map[string]compatibleRebuildResult
 	err = json.NewDecoder(rsp.Body).Decode(&allRebuildResult)
 	if err != nil {
 		return err
@@ -115,22 +121,32 @@ func (c *AppRoutesRebuild) Run(ctx *cmd.Context, client *cmd.Client) error {
 	for _, routerName := range routerNames {
 		rebuildResult := allRebuildResult[routerName]
 		fmt.Fprintf(ctx.Stdout, "Router %v:\n", routerName)
-		rebuilt := len(rebuildResult.Added) > 0 || len(rebuildResult.Removed) > 0
-		if len(rebuildResult.Added) > 0 {
-			fmt.Fprintf(ctx.Stdout, "  * Added routes:\n")
-			for _, added := range rebuildResult.Added {
-				fmt.Fprintf(ctx.Stdout, "    - %s\n", added)
-			}
+		if len(rebuildResult.PrefixResults) == 0 {
+			printRouterResult(ctx.Stdout, rebuildResult.Added, rebuildResult.Removed)
 		}
-		if len(rebuildResult.Removed) > 0 {
-			fmt.Fprintf(ctx.Stdout, "  * Removed routes:\n")
-			for _, removed := range rebuildResult.Removed {
-				fmt.Fprintf(ctx.Stdout, "    - %s\n", removed)
-			}
-		}
-		if !rebuilt {
-			fmt.Fprintf(ctx.Stdout, "  * Nothing to do, routes already correct.\n")
+		for _, prefixResult := range rebuildResult.PrefixResults {
+			fmt.Fprintf(ctx.Stdout, " - Prefix %q:\n", prefixResult.Prefix)
+			printRouterResult(ctx.Stdout, prefixResult.Added, prefixResult.Removed)
 		}
 	}
 	return nil
+}
+
+func printRouterResult(w io.Writer, added, removed []string) {
+	rebuilt := len(added) > 0 || len(removed) > 0
+	if len(added) > 0 {
+		fmt.Fprintf(w, "  * Added routes:\n")
+		for _, added := range added {
+			fmt.Fprintf(w, "    - %s\n", added)
+		}
+	}
+	if len(removed) > 0 {
+		fmt.Fprintf(w, "  * Removed routes:\n")
+		for _, removed := range removed {
+			fmt.Fprintf(w, "    - %s\n", removed)
+		}
+	}
+	if !rebuilt {
+		fmt.Fprintf(w, "  * Nothing to do, routes already correct.\n")
+	}
 }
