@@ -7,10 +7,12 @@ package client
 import (
 	"bytes"
 	"encoding/json"
+	"io/ioutil"
 	"net/http"
 	"net/url"
 	"strings"
 
+	"github.com/tsuru/go-tsuruclient/pkg/tsuru"
 	"github.com/tsuru/tsuru/cmd"
 	"github.com/tsuru/tsuru/cmd/cmdtest"
 	"github.com/tsuru/tsuru/router"
@@ -196,6 +198,76 @@ func (s *S) TestAppRoutersRemoveRun(c *check.C) {
 	}
 	client := cmd.NewClient(&http.Client{Transport: trans}, nil, manager)
 	command := AppRoutersRemove{}
+	command.Flags().Parse(true, []string{"-a", "myapp"})
+	err := command.Run(&context, client)
+	c.Assert(err, check.IsNil)
+	c.Assert(stdout.String(), check.Equals, expected)
+}
+
+func (s *S) TestAppVersionRouterAdd(c *check.C) {
+	var stdout, stderr bytes.Buffer
+	expected := "Version successfully updated.\n"
+	context := cmd.Context{
+		Stdout: &stdout,
+		Stderr: &stderr,
+		Args:   []string{"2"},
+	}
+	trans := cmdtest.ConditionalTransport{
+		Transport: cmdtest.Transport{Message: "", Status: http.StatusOK},
+		CondFunc: func(r *http.Request) bool {
+			c.Assert(r.URL.Path, check.Equals, "/1.8/apps/myapp/routable")
+			c.Assert(r.Method, check.Equals, "POST")
+			var ret tsuru.SetRoutableArgs
+			c.Assert(r.Header.Get("Content-Type"), check.Equals, "application/json")
+			data, err := ioutil.ReadAll(r.Body)
+			c.Assert(err, check.IsNil)
+			err = json.Unmarshal(data, &ret)
+			c.Assert(err, check.IsNil)
+			c.Assert(ret, check.DeepEquals, tsuru.SetRoutableArgs{
+				Version:    "2",
+				IsRoutable: true,
+			})
+			return true
+		},
+	}
+	client := cmd.NewClient(&http.Client{Transport: &trans}, nil, manager)
+	command := AppVersionRouterAdd{}
+	command.Info()
+	command.Flags().Parse(true, []string{"-a", "myapp"})
+	err := command.Run(&context, client)
+	c.Assert(err, check.IsNil)
+	c.Assert(stdout.String(), check.Equals, expected)
+}
+
+func (s *S) TestAppVersionRouterRemove(c *check.C) {
+	var stdout, stderr bytes.Buffer
+	expected := "Version successfully updated.\n"
+	context := cmd.Context{
+		Stdout: &stdout,
+		Stderr: &stderr,
+		Args:   []string{"2"},
+	}
+	trans := cmdtest.ConditionalTransport{
+		Transport: cmdtest.Transport{Message: "", Status: http.StatusOK},
+		CondFunc: func(r *http.Request) bool {
+			c.Assert(r.URL.Path, check.Equals, "/1.8/apps/myapp/routable")
+			c.Assert(r.Method, check.Equals, "POST")
+			var ret tsuru.SetRoutableArgs
+			c.Assert(r.Header.Get("Content-Type"), check.Equals, "application/json")
+			data, err := ioutil.ReadAll(r.Body)
+			c.Assert(err, check.IsNil)
+			err = json.Unmarshal(data, &ret)
+			c.Assert(err, check.IsNil)
+			c.Assert(ret, check.DeepEquals, tsuru.SetRoutableArgs{
+				Version:    "2",
+				IsRoutable: false,
+			})
+			return true
+		},
+	}
+	client := cmd.NewClient(&http.Client{Transport: &trans}, nil, manager)
+	command := AppVersionRouterRemove{}
+	command.Info()
 	command.Flags().Parse(true, []string{"-a", "myapp"})
 	err := command.Run(&context, client)
 	c.Assert(err, check.IsNil)
