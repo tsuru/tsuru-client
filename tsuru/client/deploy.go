@@ -130,6 +130,7 @@ var _ cmd.Cancelable = &AppDeploy{}
 
 type AppDeploy struct {
 	cmd.GuessingCommand
+	deployVersionArgs
 	image     string
 	message   string
 	filesOnly bool
@@ -150,6 +151,7 @@ func (c *AppDeploy) Flags() *gnuflag.FlagSet {
 		filesOnly := "Enables single file deployment into the root of the app's tree"
 		c.fs.BoolVar(&c.filesOnly, "f", false, filesOnly)
 		c.fs.BoolVar(&c.filesOnly, "files-only", false, filesOnly)
+		c.deployVersionArgs.flags(c.fs)
 	}
 	return c.fs
 }
@@ -168,7 +170,7 @@ calls are:
 `
 	return &cmd.Info{
 		Name:    "app-deploy",
-		Usage:   "app-deploy [-a/--app <appname>] [-i/--image <image_url>] [-m/--message <message>] [-f/--files-only] <file-or-dir-1> [file-or-dir-2] ... [file-or-dir-n]",
+		Usage:   "app-deploy [-a/--app <appname>] [-i/--image <image_url>] [-m/--message <message>] [--new-version] [--override-versions] [-f/--files-only] <file-or-dir-1> [file-or-dir-2] ... [file-or-dir-n]",
 		Desc:    desc,
 		MinArgs: 0,
 	}
@@ -223,6 +225,7 @@ func (c *AppDeploy) Run(context *cmd.Context, client *cmd.Client) error {
 	}
 	values := url.Values{}
 	values.Set("origin", origin)
+	c.deployVersionArgs.values(values)
 	if c.message != "" {
 		values.Set("message", c.message)
 	}
@@ -508,6 +511,7 @@ func (w *firstWriter) Write(p []byte) (int, error) {
 type AppDeployRollback struct {
 	cmd.GuessingCommand
 	cmd.ConfirmationCommand
+	deployVersionArgs
 	fs *gnuflag.FlagSet
 }
 
@@ -517,6 +521,7 @@ func (c *AppDeployRollback) Flags() *gnuflag.FlagSet {
 			c.GuessingCommand.Flags(),
 			c.ConfirmationCommand.Flags(),
 		)
+		c.deployVersionArgs.flags(c.fs)
 	}
 	return c.fs
 }
@@ -549,6 +554,7 @@ func (c *AppDeployRollback) Run(context *cmd.Context, client *cmd.Client) error 
 	v := url.Values{}
 	v.Set("origin", "rollback")
 	v.Set("image", imgName)
+	c.deployVersionArgs.values(v)
 	request, err := http.NewRequest("POST", u, strings.NewReader(v.Encode()))
 	if err != nil {
 		return err
@@ -563,6 +569,16 @@ func (c *AppDeployRollback) Run(context *cmd.Context, client *cmd.Client) error 
 
 type AppDeployRebuild struct {
 	cmd.GuessingCommand
+	deployVersionArgs
+	fs *gnuflag.FlagSet
+}
+
+func (c *AppDeployRebuild) Flags() *gnuflag.FlagSet {
+	if c.fs == nil {
+		c.fs = c.GuessingCommand.Flags()
+		c.deployVersionArgs.flags(c.fs)
+	}
+	return c.fs
 }
 
 func (c *AppDeployRebuild) Info() *cmd.Info {
@@ -588,6 +604,7 @@ func (c *AppDeployRebuild) Run(context *cmd.Context, client *cmd.Client) error {
 	}
 	v := url.Values{}
 	v.Set("origin", "rebuild")
+	c.deployVersionArgs.values(v)
 	request, err := http.NewRequest("POST", u, strings.NewReader(v.Encode()))
 	if err != nil {
 		return err
@@ -665,4 +682,25 @@ func (c *AppDeployRollbackUpdate) Run(context *cmd.Context, client *cmd.Client) 
 	request.Header.Add("Content-Type", "application/x-www-form-urlencoded")
 	_, err = client.Do(request)
 	return err
+}
+
+type deployVersionArgs struct {
+	newVersion       bool
+	overrideVersions bool
+}
+
+func (c *deployVersionArgs) flags(fs *gnuflag.FlagSet) {
+	newVersion := "Creates a new version for the current deployment while preserving existing versions"
+	fs.BoolVar(&c.newVersion, "new-version", false, newVersion)
+	overrideVersions := "Force replace all deployed versions by this new deploy"
+	fs.BoolVar(&c.overrideVersions, "override-old-versions", false, overrideVersions)
+}
+
+func (c *deployVersionArgs) values(values url.Values) {
+	if c.newVersion {
+		values.Set("new-version", strconv.FormatBool(c.newVersion))
+	}
+	if c.overrideVersions {
+		values.Set("override-versions", strconv.FormatBool(c.overrideVersions))
+	}
 }
