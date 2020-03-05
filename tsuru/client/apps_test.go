@@ -1247,6 +1247,119 @@ Units [worker]: 2
 	c.Assert(stdout.String(), check.Equals, expected)
 }
 
+func (s *S) TestAppInfoManyVersions(c *check.C) {
+	var stdout, stderr bytes.Buffer
+	result := `{
+  "name": "app1",
+  "teamowner": "myteam",
+  "cname": [
+    ""
+  ],
+  "ip": "myapp.tsuru.io",
+  "platform": "php",
+  "repository": "git@git.com:php.git",
+  "state": "dead",
+  "units": [
+    {
+      "ID": "app1/0",
+      "Status": "started",
+	  "ProcessName": "web",
+	  "Version": 1,
+	  "Routable": false
+    },
+    {
+      "ID": "app1/1",
+      "Status": "started",
+	  "ProcessName": "worker",
+	  "Version": 1,
+	  "Routable": false
+    },
+    {
+      "ID": "app1/2",
+      "Status": "pending",
+	  "ProcessName": "worker",
+	  "Version": 1,
+	  "Routable": false
+	},
+	{
+      "ID": "app1/3",
+      "Status": "started",
+	  "ProcessName": "web",
+	  "Version": 2,
+	  "Routable": true
+    },
+    {
+      "ID": "app1/4",
+      "Status": "started",
+	  "ProcessName": "worker",
+	  "Version": 2,
+	  "Routable": true
+    }
+  ],
+  "teams": [
+    "tsuruteam",
+    "crane"
+  ],
+  "owner": "myapp_owner",
+  "deploys": 7,
+  "router": "planb"
+}`
+	expected := `Application: app1
+Description:
+Tags:
+Repository: git@git.com:php.git
+Platform: php
+Router: planb
+Teams: tsuruteam, crane
+Address: myapp.tsuru.io
+Owner: myapp_owner
+Team owner: myteam
+Deploys: 7
+Pool:
+Quota: 0/unlimited
+
+Units [web] [version 1]: 1
++--------+---------+------+------+----------+
+| Unit   | Status  | Host | Port | Routable |
++--------+---------+------+------+----------+
+| app1/0 | started |      |      | false    |
++--------+---------+------+------+----------+
+
+Units [worker] [version 1]: 2
++--------+---------+------+------+----------+
+| Unit   | Status  | Host | Port | Routable |
++--------+---------+------+------+----------+
+| app1/1 | started |      |      | false    |
+| app1/2 | pending |      |      | false    |
++--------+---------+------+------+----------+
+
+Units [web] [version 2]: 1
++--------+---------+------+------+----------+
+| Unit   | Status  | Host | Port | Routable |
++--------+---------+------+------+----------+
+| app1/3 | started |      |      | true     |
++--------+---------+------+------+----------+
+
+Units [worker] [version 2]: 1
++--------+---------+------+------+----------+
+| Unit   | Status  | Host | Port | Routable |
++--------+---------+------+------+----------+
+| app1/4 | started |      |      | true     |
++--------+---------+------+------+----------+
+
+`
+	context := cmd.Context{
+		Stdout: &stdout,
+		Stderr: &stderr,
+	}
+	client := cmd.NewClient(&http.Client{Transport: &cmdtest.Transport{Message: result, Status: http.StatusOK}}, nil, manager)
+	command := AppInfo{}
+	command.Flags().Parse(true, []string{"--app", "app1"})
+	err := command.Run(&context, client)
+	c.Assert(err, check.IsNil)
+	c.Assert(stdout.String(), check.Equals, expected)
+}
+
 func (s *S) TestAppInfoNoUnits(c *check.C) {
 	var stdout, stderr bytes.Buffer
 	result := `{"name":"app1","ip":"app1.tsuru.io","teamowner":"myteam","platform":"php","repository":"git@git.com:php.git","state":"dead","units":[],"teams":["tsuruteam","crane"], "owner": "myapp_owner", "deploys": 7, "router": "planb"}`

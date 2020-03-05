@@ -470,6 +470,8 @@ type unit struct {
 	ProcessName string
 	Address     *url.URL
 	Addresses   []url.URL
+	Version     int
+	Routable    *bool
 }
 
 func (u *unit) Host() string {
@@ -630,39 +632,7 @@ Quota: {{.Quota.InUse}}/{{if .Quota.Limit}}{{.Quota.Limit}} units{{else}}unlimit
 `
 	var buf bytes.Buffer
 	tmpl := template.Must(template.New("app").Parse(format))
-	unitsByProcess := map[string][]unit{}
-	for _, u := range a.Units {
-		units := unitsByProcess[u.ProcessName]
-		unitsByProcess[u.ProcessName] = append(units, u)
-	}
-	processes := make([]string, 0, len(unitsByProcess))
-	for process := range unitsByProcess {
-		processes = append(processes, process)
-	}
-	sort.Strings(processes)
-	titles := []string{"Unit", "Status", "Host", "Port"}
-	for _, process := range processes {
-		units := unitsByProcess[process]
-		unitsTable := tablecli.NewTable()
-		unitsTable.Headers = tablecli.Row(titles)
-		for _, unit := range units {
-			if unit.ID == "" {
-				continue
-			}
-			row := []string{ShortID(unit.ID), unit.Status, unit.Host(), unit.Port()}
-			unitsTable.AddRow(tablecli.Row(row))
-		}
-		if unitsTable.Rows() > 0 {
-			unitsTable.SortByColumn(2)
-			buf.WriteString("\n")
-			processStr := ""
-			if process != "" {
-				processStr = fmt.Sprintf(" [%s]", process)
-			}
-			buf.WriteString(fmt.Sprintf("Units%s: %d\n", processStr, unitsTable.Rows()))
-			buf.WriteString(unitsTable.String())
-		}
-	}
+	renderUnits(&buf, a.Units)
 	internalAddressesTable := tablecli.NewTable()
 	internalAddressesTable.Headers = []string{"Domain", "Protocol", "Port"}
 	for _, internalAddress := range a.InternalAddresses {
@@ -731,6 +701,73 @@ Quota: {{.Quota.InUse}}/{{if .Quota.Limit}}{{.Quota.Limit}} units{{else}}unlimit
 	var tplBuffer bytes.Buffer
 	tmpl.Execute(&tplBuffer, a)
 	return tplBuffer.String() + buf.String()
+}
+
+func renderUnits(buf *bytes.Buffer, units []unit) {
+	type unitsKey struct {
+		process string
+		version int
+	}
+	groupedUnits := map[unitsKey][]unit{}
+	for _, u := range units {
+		key := unitsKey{process: u.ProcessName, version: u.Version}
+		groupedUnits[key] = append(groupedUnits[key], u)
+	}
+	keys := make([]unitsKey, 0, len(groupedUnits))
+	for key := range groupedUnits {
+		keys = append(keys, key)
+	}
+	sort.Slice(keys, func(i, j int) bool {
+		if keys[i].version == keys[j].version {
+			return keys[i].process < keys[j].process
+		}
+		return keys[i].version < keys[j].version
+	})
+	includeRoutable := false
+	if len(units) > 0 {
+		includeRoutable = units[0].Routable != nil
+	}
+	titles := []string{"Unit", "Status", "Host", "Port"}
+	if includeRoutable {
+		titles = append(titles, "Routable")
+	}
+	for _, key := range keys {
+		units := groupedUnits[key]
+		unitsTable := tablecli.NewTable()
+		unitsTable.Headers = tablecli.Row(titles)
+		for _, unit := range units {
+			if unit.ID == "" {
+				continue
+			}
+			row := tablecli.Row([]string{
+				ShortID(unit.ID),
+				unit.Status,
+				unit.Host(),
+				unit.Port(),
+			})
+			if includeRoutable {
+				var routable bool
+				if unit.Routable != nil {
+					routable = *unit.Routable
+				}
+				row = append(row, strconv.FormatBool(routable))
+			}
+			unitsTable.AddRow(row)
+		}
+		if unitsTable.Rows() > 0 {
+			unitsTable.SortByColumn(2)
+			buf.WriteString("\n")
+			groupLabel := ""
+			if key.process != "" {
+				groupLabel = fmt.Sprintf(" [%s]", key.process)
+			}
+			if key.version != 0 {
+				groupLabel = fmt.Sprintf("%s [version %d]", groupLabel, key.version)
+			}
+			buf.WriteString(fmt.Sprintf("Units%s: %d\n", groupLabel, unitsTable.Rows()))
+			buf.WriteString(unitsTable.String())
+		}
+	}
 }
 
 func (c *AppInfo) Show(result []byte, appName string, servicesResult []byte, quota []byte, volumes []byte, context *cmd.Context) error {
