@@ -5,6 +5,7 @@
 package client
 
 import (
+	"context"
 	"encoding/json"
 	"fmt"
 	"io"
@@ -14,6 +15,8 @@ import (
 
 	"github.com/ajg/form"
 	"github.com/tsuru/gnuflag"
+	"github.com/tsuru/go-tsuruclient/pkg/client"
+	"github.com/tsuru/go-tsuruclient/pkg/tsuru"
 	"github.com/tsuru/tablecli"
 	"github.com/tsuru/tsuru/cmd"
 	"github.com/tsuru/tsuru/router"
@@ -275,4 +278,62 @@ func (c *AppRoutersRemove) Run(context *cmd.Context, client *cmd.Client) error {
 	}
 	fmt.Fprintln(context.Stdout, "Router successfully removed.")
 	return nil
+}
+
+type appVersionRouterBase struct {
+	cmd.GuessingCommand
+	routable bool
+}
+
+func (c *appVersionRouterBase) Run(ctx *cmd.Context, cli *cmd.Client) error {
+	appName, err := c.Guess()
+	if err != nil {
+		return err
+	}
+
+	apiClient, err := client.ClientFromEnvironment(&tsuru.Configuration{
+		HTTPClient: cli.HTTPClient,
+	})
+	if err != nil {
+		return err
+	}
+	_, err = apiClient.AppApi.AppSetRoutable(context.TODO(), appName, tsuru.SetRoutableArgs{
+		Version:    ctx.Args[0],
+		IsRoutable: c.routable,
+	})
+	if err != nil {
+		return err
+	}
+	fmt.Fprintln(ctx.Stdout, "Version successfully updated.")
+	return nil
+}
+
+type AppVersionRouterAdd struct {
+	appVersionRouterBase
+}
+
+func (c *AppVersionRouterAdd) Info() *cmd.Info {
+	c.appVersionRouterBase.routable = true
+	return &cmd.Info{
+		Name:    "app-router-version-add",
+		Usage:   "app-router-version-add <version> [-a/--app appname]",
+		Desc:    "Adds an app version as routable.",
+		MinArgs: 1,
+		MaxArgs: 1,
+	}
+}
+
+type AppVersionRouterRemove struct {
+	appVersionRouterBase
+}
+
+func (c *AppVersionRouterRemove) Info() *cmd.Info {
+	c.appVersionRouterBase.routable = false
+	return &cmd.Info{
+		Name:    "app-router-version-remove",
+		Usage:   "app-router-version-remove <version> [-a/--app appname]",
+		Desc:    "Removes an app version from being routable.",
+		MinArgs: 1,
+		MaxArgs: 1,
+	}
 }

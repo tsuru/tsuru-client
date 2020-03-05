@@ -28,8 +28,8 @@
     "desc": "Updates an existing webhook.\n\nFlags:\n  \n  -H, --header  (= {})\n      The HTTP headers sent in the request.\n  -b, --body (= \"\")\n      The HTTP body sent in the request if method is either POST, PUT or PATCH, if unset defaults to the Event that triggered the webhook serialized as JSON. The API will try to parse the body as a Go template string with the event available as context.\n  -d, --description (= \"\")\n      A description on how the webhook will be used.\n  --error-only  (= false)\n      Only matches events with error.\n  --insecure  (= false)\n      Ignore TLS errors in the webhook request.\n  --kind-name  (= [])\n      Kind Name for matching events.\n  --kind-type  (= [])\n      Kind Type for matching events.\n  -m, --method (= \"\")\n      The HTTP Method used in the request, if unset defaults to POST.\n  --no-body  (= false)\n      Unset body value.\n  --no-error-only  (= false)\n      Unset only matches events with error.\n  --no-header  (= false)\n      Unset header value.\n  --no-insecure  (= false)\n      Unset insecure value.\n  --no-kind-name  (= false)\n      Unset Kind Name for matching events.\n  --no-kind-type  (= false)\n      Unset Kind Type for matching events.\n  --no-success-only  (= false)\n      Unset only matches events with success.\n  --no-target-type  (= false)\n      Unset Target Type for matching events.\n  --no-target-value  (= false)\n      Unset Target Value for matching events.\n  --proxy (= \"\")\n      The proxy server URL used in the request. Supported schemes are http(s) and socks5.\n  --success-only  (= false)\n      Only matches events with success.\n  -t, --team (= \"\")\n      The team name responsible for this webhook.\n  --target-type  (= [])\n      Target Type for matching events.\n  --target-value  (= [])\n      Target Value for matching events.\n  -u, --url (= \"\")\n      The HTTP URL used in the request.\n  \nMinimum # of arguments: 1\n"
   }, 
   "machine-template-list": {
-    "usage": "tsuru machine-template-list [--count]", 
-    "desc": "Lists all machine templates.\n\nFlags:\n  \n  -c, --count  (= false)\n      Count machines using each template.\n  \n"
+    "usage": "tsuru machine-template-list [--count] [--filter/-f <metadata>=<value>]", 
+    "desc": "Lists all machine templates.\n\nFlags:\n  \n  -c, --count  (= false)\n      Count machines using each template.\n  -f, --filter  (= {})\n      Filter metadata name and value\n  -q  (= false)\n      Display only machine template name\n  \n"
   }, 
   "node-autoscale-list": {
     "usage": "tsuru node-autoscale-list [--page/-p 1]", 
@@ -152,12 +152,12 @@
     "desc": "Shows log entries for an application. These logs include everything the\napplication send to stdout and stderr, alongside with logs from tsuru server\n(deployments, restarts, etc.)\n\nThe [[--lines]] flag is optional and by default its value is 10.\n\nThe [[--source]] flag is optional and allows filtering logs by log source\n(e.g. application, tsuru api).\n\nThe [[--unit]] flag is optional and allows filtering by unit. It's useful if\nyour application has multiple units and you want logs from a single one.\n\nThe [[--follow]] flag is optional and makes the command wait for additional\nlog output\n\nThe [[--no-date]] flag is optional and makes the log output without date.\n\nThe [[--no-source]] flag is optional and makes the log output without source\ninformation, useful to very dense logs.\n\n\nFlags:\n  \n  -a, --app (= \"\")\n      The name of the app.\n  -f, --follow  (= false)\n      Follow logs\n  -l, --lines  (= 10)\n      The number of log lines to display\n  --no-date  (= false)\n      No date information\n  --no-source  (= false)\n      No source information\n  -s, --source (= \"\")\n      The log from the given source\n  -u, --unit (= \"\")\n      The log from the given unit\n  \n"
   }, 
   "app-deploy": {
-    "usage": "tsuru app-deploy [-a/--app <appname>] [-i/--image <image_url>] [-m/--message <message>] [-f/--files-only] <file-or-dir-1> [file-or-dir-2] ... [file-or-dir-n]", 
-    "desc": "Deploys set of files and/or directories to tsuru server. Some examples of\ncalls are:\n\n::\n\n    $ tsuru app-deploy .\n    $ tsuru app-deploy myfile.jar Procfile\n    $ tsuru app-deploy -f directory/main.go directory/Procfile\n    $ tsuru app-deploy mysite\n    $ tsuru app-deploy -i http://registry.mysite.com:5000/image-name\n\n\nFlags:\n  \n  -a, --app (= \"\")\n      The name of the app.\n  -f, --files-only  (= false)\n      Enables single file deployment into the root of the app's tree\n  -i, --image (= \"\")\n      The image to deploy in app\n  -m, --message (= \"\")\n      A message describing this deploy\n  \n"
+    "usage": "tsuru app-deploy [-a/--app <appname>] [-i/--image <image_url>] [-m/--message <message>] [--new-version] [--override-versions] [-f/--files-only] <file-or-dir-1> [file-or-dir-2] ... [file-or-dir-n]", 
+    "desc": "Deploys set of files and/or directories to tsuru server. Some examples of\ncalls are:\n\n::\n\n    $ tsuru app-deploy .\n    $ tsuru app-deploy myfile.jar Procfile\n    $ tsuru app-deploy -f directory/main.go directory/Procfile\n    $ tsuru app-deploy mysite\n    $ tsuru app-deploy -i http://registry.mysite.com:5000/image-name\n\n\nFlags:\n  \n  -a, --app (= \"\")\n      The name of the app.\n  -f, --files-only  (= false)\n      Enables single file deployment into the root of the app's tree\n  -i, --image (= \"\")\n      The image to deploy in app\n  -m, --message (= \"\")\n      A message describing this deploy\n  --new-version  (= false)\n      Creates a new version for the current deployment while preserving existing versions\n  --override-old-versions  (= false)\n      Force replace all deployed versions by this new deploy\n  \n"
   }, 
   "app-deploy-rebuild": {
     "usage": "tsuru app-deploy-rebuild [-a/--app appname]", 
-    "desc": "Rebuild and deploy the last app image.\n\nFlags:\n  \n  -a, --app (= \"\")\n      The name of the app.\n  \n"
+    "desc": "Rebuild and deploy the last app image.\n\nFlags:\n  \n  -a, --app (= \"\")\n      The name of the app.\n  --new-version  (= false)\n      Creates a new version for the current deployment while preserving existing versions\n  --override-old-versions  (= false)\n      Force replace all deployed versions by this new deploy\n  \n"
   }, 
   "install-config-init": {
     "usage": "tsuru install-config-init <config_file> <compose_file>", 
@@ -188,8 +188,8 @@
     "desc": "Changes the limit of apps that a user can create.\n\nThe new limit must be an integer, it may also be \"unlimited\".\n\nMinimum # of arguments: 2\n"
   }, 
   "event-list": {
-    "usage": "tsuru event-list [--kind/-k kind name]... [--owner/-o owner] [--running/-r] [--target/-t target type] [--target-value/-v target value]", 
-    "desc": "Lists events that you have permission to see.\n\n\t\tFlags can be used to filter the list of events.\n\nFlags:\n  \n  -k, --kind  (= [])\n      Filter events by kind name\n  -o, --owner (= \"\")\n      Filter events by owner name\n  -r, --running  (= false)\n      Shows only currently running events\n  -t, --target (= \"\")\n      Filter events by target type\n  -v, --target-value (= \"\")\n      Filter events by target value\n  \n"
+    "usage": "tsuru event-list [--kind/-k kind name]... [--owner/-o owner] [--running/-r] [--include-removed/-i] [--target/-t target type] [--target-value/-v target value]", 
+    "desc": "Lists events that you have permission to see.\n\n\t\tFlags can be used to filter the list of events.\n\nFlags:\n  \n  -i, --include-removed  (= false)\n      Include also removed events\n  -k, --kind  (= [])\n      Filter events by kind name\n  -o, --owner (= \"\")\n      Filter events by owner name\n  -r, --running  (= false)\n      Shows only currently running events\n  -t, --target (= \"\")\n      Filter events by target type\n  -v, --target-value (= \"\")\n      Filter events by target value\n  \n"
   }, 
   "unit-add": {
     "usage": "tsuru unit-add <# of units> [-a/--app appname] [-p/--process processname]", 
@@ -319,9 +319,13 @@
     "usage": "tsuru machine-template-add <name> <iaas> <param>=<value>...", 
     "desc": "Creates a new machine template.\n\nTemplates can be used with the [[node-add]] command running it with the\n[[template=<template name>]] parameter. Templates can contain a list of\nparameters that will be sent to the IaaS provider.\n\nMinimum # of arguments: 3\n"
   }, 
+  "app-router-version-remove": {
+    "usage": "tsuru app-router-version-remove <version> [-a/--app appname]", 
+    "desc": "Removes an app version from being routable.\n\nFlags:\n  \n  -a, --app (= \"\")\n      The name of the app.\n  \nMinimum # of arguments: 1\nMaximum # of arguments: 1\n"
+  }, 
   "app-update": {
     "usage": "tsuru app-update [-a/--app appname] [--description/-d description] [--plan/-p plan name] [--pool/-o pool] [--team-owner/-t team owner] [--platform/-l platform] [-i/--image-reset] [--tag/-g tag]...", 
-    "desc": "Updates an app, changing its description, tags, plan or pool information.\n\nThe [[--description]] parameter sets a description for your app.\n\nThe [[--plan]] parameter changes the plan of your app.\n\nThe [[--pool]] parameter changes the pool of your app.\n\nThe [[--team-owner]] parameter sets owner team for an application.\n\nThe [[--platform]] parameter sets a platform for an application.\n\nThe [[--image-reset]] parameter rebuilds the platform of an application.\n\nThe [[--tag]] parameter sets a tag for your app. You can set\nmultiple [[--tag]] parameters.\n\nFlags:\n  \n  -a, --app (= \"\")\n      The name of the app.\n  -d, --description (= \"\")\n      App description\n  -g, --tag  (= [])\n      App tag\n  -i, --image-reset  (= false)\n      Forces next deploy to build app image from scratch\n  -l, --platform (= \"\")\n      App platform\n  -o, --pool (= \"\")\n      App pool\n  -p, --plan (= \"\")\n      App plan\n  -t, --team-owner (= \"\")\n      App team owner\n  \n"
+    "desc": "Updates an app, changing its description, tags, plan or pool information.\n\nThe [[--description]] parameter sets a description for your app.\n\nThe [[--no-restart]] parameter sets the specified parameters to be updated without restarting the application\n\nThe [[--plan]] parameter changes the plan of your app.\n\nThe [[--pool]] parameter changes the pool of your app.\n\nThe [[--team-owner]] parameter sets owner team for an application.\n\nThe [[--platform]] parameter sets a platform for an application.\n\nThe [[--image-reset]] parameter rebuilds the platform of an application.\n\nThe [[--tag]] parameter sets a tag for your app. You can set\nmultiple [[--tag]] parameters.\n\nFlags:\n  \n  -a, --app (= \"\")\n      The name of the app.\n  -d, --description (= \"\")\n      App description\n  -g, --tag  (= [])\n      App tag\n  -i, --image-reset  (= false)\n      Forces next deploy to build app image from scratch\n  -l, --platform (= \"\")\n      App platform\n  --no-restart  (= false)\n      doesn't restart the app after the update\n  -o, --pool (= \"\")\n      App pool\n  -p, --plan (= \"\")\n      App plan\n  -t, --team-owner (= \"\")\n      App team owner\n  \n"
   }, 
   "role-dissociate": {
     "usage": "tsuru role-dissociate <role-name> <user-email>|<token-id> [<context-value>]", 
@@ -369,7 +373,7 @@
   }, 
   "cluster-add": {
     "usage": "tsuru cluster-add <name> <provisioner> [--addr address...] [--pool poolname]... [--cacert cacertfile] [--clientcert clientcertfile] [--clientkey clientkeyfile] [--custom key=value]... [--create-data key=value]... [--default]", 
-    "desc": "Creates a provisioner cluster definition.\n\nFlags:\n  \n  --addr  (= [])\n      Address to be used in cluster.\n  --cacert (= \"\")\n      Path to CA cert file.\n  --clientcert (= \"\")\n      Path to client cert file.\n  --clientkey (= \"\")\n      Path to client key file.\n  --create-data  (= {})\n      Create data, if set a iaas will be called with this data to create a new machine.\n  --custom  (= {})\n      Custom provisioner specific data.\n  --default  (= false)\n      Whether this is the default cluster.\n  --pool  (= [])\n      Pool which will use this cluster.\n  \nMinimum # of arguments: 2\nMaximum # of arguments: 2\n"
+    "desc": "Creates a provisioner cluster definition.\n\nFlags:\n  \n  --addr  (= [])\n      Address to be used in cluster.\n  --cacert (= \"\")\n      Path to CA cert file.\n  --clientcert (= \"\")\n      Path to client cert file.\n  --clientkey (= \"\")\n      Path to client key file.\n  --create-data  (= {})\n      Create data, if set an iaas will be called with this data to create a new machine.\n  --custom  (= {})\n      Custom provisioner specific data.\n  --default  (= false)\n      Whether this is the default cluster.\n  --pool  (= [])\n      Pool which will use this cluster.\n  \nMinimum # of arguments: 2\nMaximum # of arguments: 2\n"
   }, 
   "docker-log-update": {
     "usage": "tsuru docker-log-update [-r/--restart] [-p/--pool poolname] --log-driver <driver> [--log-opt name=value]...", 
@@ -436,8 +440,8 @@
     "desc": "List installed tsuru plugins.\n\n"
   }, 
   "machine-list": {
-    "usage": "tsuru machine-list", 
-    "desc": "Lists all machines created using an IaaS provider.\nThese machines were created with the [[node-add]] command.\n\n"
+    "usage": "tsuru machine-list [--filter/-f <metadata>=<value>]...", 
+    "desc": "Lists all machines created using an IaaS provider.\nThese machines were created with the [[node-add]] command.\n\nFlags:\n  \n  -f, --filter  (= {})\n      Filter metadata name and value\n  -i  (= false)\n      Display only machine Id on IaaS\n  -q  (= false)\n      Display only machine address on IaaS\n  \n"
   }, 
   "token-delete": {
     "usage": "tsuru token-delete <token id>", 
@@ -464,8 +468,8 @@
     "desc": "Get a volume.\n\nMinimum # of arguments: 1\nMaximum # of arguments: 1\n"
   }, 
   "app-build": {
-    "usage": "tsuru app-build [-a/--app <appname>] [-t/--tag <image_tag>] <file-or-dir-1> [file-or-dir-2] ... [file-or-dir-n]", 
-    "desc": "Builds a tsuru app image respecting .tsuruignore file. Some examples of calls are:\n\n::\n\n\t\t$ tsuru app-build -a myapp -t mytag .\n\t\t$ tsuru app-build -a myapp -t latest myfile.jar Procfile\n\n\nFlags:\n  \n  -a, --app (= \"\")\n      The name of the app.\n  -t, --tag (= \"\")\n      The image tag\n  \n"
+    "usage": "tsuru app-build [-a/--app <appname>] [-t/--tag <image_tag>] [-f/--files-only] <file-or-dir-1> [file-or-dir-2] ... [file-or-dir-n]", 
+    "desc": "Builds a tsuru app image respecting .tsuruignore file. Some examples of calls are:\n\n::\n\n\t\t$ tsuru app-build -a myapp -t mytag .\n\t\t$ tsuru app-build -a myapp -t latest myfile.jar Procfile\n\t\t$ tsuru app-build -a myapp -t mytag -f directory/main.go directory/Procfile\n\n\nFlags:\n  \n  -a, --app (= \"\")\n      The name of the app.\n  -f, --files-only  (= false)\n      Enables single file build into the root of the app's tree\n  -t, --tag (= \"\")\n      The image tag\n  \n"
   }, 
   "node-autoscale-rule-set": {
     "usage": "tsuru node-autoscale-rule-set [-f/--filter-value <pool name>] [-c/--max-container-count 0] [-m/--max-memory-ratio 0.9] [-d/--scale-down-ratio 1.33] [--no-rebalance-on-scale] [--enable] [--disable]", 
@@ -478,6 +482,10 @@
   "volume-delete": {
     "usage": "tsuru volume-delete <volume-name>", 
     "desc": "Delete an existing persistent volume.\n\nMinimum # of arguments: 1\nMaximum # of arguments: 1\n"
+  }, 
+  "app-router-version-add": {
+    "usage": "tsuru app-router-version-add <version> [-a/--app appname]", 
+    "desc": "Adds an app version as routable.\n\nFlags:\n  \n  -a, --app (= \"\")\n      The name of the app.\n  \nMinimum # of arguments: 1\nMaximum # of arguments: 1\n"
   }, 
   "env-get": {
     "usage": "tsuru env-get [-a/--app appname] [ENVIRONMENT_VARIABLE1] [ENVIRONMENT_VARIABLE2] ...", 
@@ -644,7 +652,7 @@
   }, 
   "app-deploy-rollback": {
     "usage": "tsuru app-deploy-rollback [-a/--app appname] [-y/--assume-yes] <image-name>", 
-    "desc": "Deploys an existing image for an app. You can list available images with `tsuru app-deploy-list`.\n\nFlags:\n  \n  -a, --app (= \"\")\n      The name of the app.\n  -y, --assume-yes  (= false)\n      Don't ask for confirmation.\n  \nMinimum # of arguments: 1\nMaximum # of arguments: 1\n"
+    "desc": "Deploys an existing image for an app. You can list available images with `tsuru app-deploy-list`.\n\nFlags:\n  \n  -a, --app (= \"\")\n      The name of the app.\n  --new-version  (= false)\n      Creates a new version for the current deployment while preserving existing versions\n  --override-old-versions  (= false)\n      Force replace all deployed versions by this new deploy\n  -y, --assume-yes  (= false)\n      Don't ask for confirmation.\n  \nMinimum # of arguments: 1\nMaximum # of arguments: 1\n"
   }, 
   "event-block-list": {
     "usage": "tsuru event-block-list [-a/--active]", 
@@ -695,16 +703,16 @@
     "desc": "Removes an application. If the app is bound to any service instance, all binds\nwill be removed before the app gets deleted (see [[tsuru service-unbind]]).\n\nYou need to be a member of a team that has access to the app to be able to\nremove it (you are able to remove any app that you see in [[tsuru app-list]]).\n\nFlags:\n  \n  -a, --app (= \"\")\n      The name of the app.\n  -y, --assume-yes  (= false)\n      Don't ask for confirmation.\n  \n"
   }, 
   "machine-destroy": {
-    "usage": "tsuru machine-destroy <machine id> [-y/--assume-yes]", 
-    "desc": "Destroys an existing machine created using a IaaS.\n\nFlags:\n  \n  -y, --assume-yes  (= false)\n      Don't ask for confirmation.\n  \nMinimum # of arguments: 1\n"
+    "usage": "tsuru machine-destroy <machine id> [-y/--assume-yes] [--force]", 
+    "desc": "Destroys an existing machine created using a IaaS.\n\nFlags:\n  \n  --force  (= false)\n      Force removal from machines database even after IaaS error.\n  -y, --assume-yes  (= false)\n      Don't ask for confirmation.\n  \nMinimum # of arguments: 1\n"
   }, 
   "install-ssh": {
     "usage": "tsuru install-ssh <hostname> [arg...]", 
     "desc": "Log into or run a command on a host with SSH.\n\nMinimum # of arguments: 1\n"
   }, 
   "cluster-update": {
-    "usage": "tsuru cluster-update <name> <provisioner> --addr address... [--pool poolname]... [--cacert cacertfile] [--clientcert clientcertfile] [--clientkey clientkeyfile] [--custom key=value]... [--default]", 
-    "desc": "Updates a provisioner cluster definition.\n\nFlags:\n  \n  --addr  (= [])\n      Address to be used in cluster.\n  --cacert (= \"\")\n      Path to CA cert file.\n  --clientcert (= \"\")\n      Path to client cert file.\n  --clientkey (= \"\")\n      Path to client key file.\n  --custom  (= {})\n      Custom provisioner specific data.\n  --default  (= false)\n      Whether this is the default cluster.\n  --pool  (= [])\n      Pool which will use this cluster.\n  \nMinimum # of arguments: 2\nMaximum # of arguments: 2\n"
+    "usage": "tsuru cluster-update <name> <provisioner> [--addr address]... [--add-pool poolname]... [--remove-pool poolname]... [--cacert cacertfile] [--remove-cacert] [--clientcert clientcertfile] [--remove-clientcert] [--clientkey clientkeyfile] [--remove-clientkey] [--add-custom key=value]... [--remove-custom key]... [--add-create-data key=value]... [--remove-create-data key]... [--default=true|false]", 
+    "desc": "Updates a provisioner cluster definition.\n\nFlags:\n  \n  --add-create-data  (= {})\n      Create data, if set an iaas will be called with this data to re-create the machine.\n  --add-custom  (= {})\n      Add custom provisioner specific data.\n  --add-pool  (= [])\n      Add pool which will use this cluster.\n  --addr  (= [])\n      Address to be used in cluster.\n  --cacert (= \"\")\n      Path to CA cert file.\n  --clientcert (= \"\")\n      Path to client cert file.\n  --clientkey (= \"\")\n      Path to client key file.\n  --default (= \"\")\n      Whether this is the default cluster.\n  --remove-cacert  (= false)\n      Remove path to CA cert file.\n  --remove-clientcert  (= false)\n      Remove path to client cert file.\n  --remove-clientkey  (= false)\n      Remove path to client key file.\n  --remove-create-data  (= [])\n      Remove create data\n  --remove-custom  (= [])\n      Remove custom provisioner specific data.\n  --remove-pool  (= [])\n      Remove pool which use this cluster.\n  \nMinimum # of arguments: 2\nMaximum # of arguments: 2\n"
   }, 
   "docker-log-info": {
     "usage": "tsuru docker-log-info", 
