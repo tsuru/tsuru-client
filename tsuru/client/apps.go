@@ -1035,13 +1035,14 @@ Flags can be used to filter the list of applications.`,
 type AppStop struct {
 	cmd.GuessingCommand
 	process string
+	version string
 	fs      *gnuflag.FlagSet
 }
 
 func (c *AppStop) Info() *cmd.Info {
 	return &cmd.Info{
 		Name:    "app-stop",
-		Usage:   "app-stop [-a/--app appname] [-p/--process processname]",
+		Usage:   "app-stop [-a/--app appname] [-p/--process processname] [--version version]",
 		Desc:    "Stops an application, or one of the processes of the application.",
 		MinArgs: 0,
 	}
@@ -1057,7 +1058,10 @@ func (c *AppStop) Run(context *cmd.Context, client *cmd.Client) error {
 	if err != nil {
 		return err
 	}
-	body := strings.NewReader("process=" + c.process)
+	qs := url.Values{}
+	qs.Set("process", c.process)
+	qs.Set("version", c.version)
+	body := strings.NewReader(qs.Encode())
 	request, err := http.NewRequest("POST", u, body)
 	if err != nil {
 		return err
@@ -1075,6 +1079,7 @@ func (c *AppStop) Flags() *gnuflag.FlagSet {
 		c.fs = c.GuessingCommand.Flags()
 		c.fs.StringVar(&c.process, "process", "", "Process name")
 		c.fs.StringVar(&c.process, "p", "", "Process name")
+		c.fs.StringVar(&c.version, "version", "", "Version number")
 	}
 	return c.fs
 }
@@ -1082,13 +1087,14 @@ func (c *AppStop) Flags() *gnuflag.FlagSet {
 type AppStart struct {
 	cmd.GuessingCommand
 	process string
+	version string
 	fs      *gnuflag.FlagSet
 }
 
 func (c *AppStart) Info() *cmd.Info {
 	return &cmd.Info{
 		Name:    "app-start",
-		Usage:   "app-start [-a/--app appname] [-p/--process processname]",
+		Usage:   "app-start [-a/--app appname] [-p/--process processname] [--version version]",
 		Desc:    "Starts an application, or one of the processes of the application.",
 		MinArgs: 0,
 	}
@@ -1104,7 +1110,10 @@ func (c *AppStart) Run(context *cmd.Context, client *cmd.Client) error {
 	if err != nil {
 		return err
 	}
-	body := strings.NewReader("process=" + c.process)
+	qs := url.Values{}
+	qs.Set("process", c.process)
+	qs.Set("version", c.version)
+	body := strings.NewReader(qs.Encode())
 	request, err := http.NewRequest("POST", u, body)
 	if err != nil {
 		return err
@@ -1122,6 +1131,7 @@ func (c *AppStart) Flags() *gnuflag.FlagSet {
 		c.fs = c.GuessingCommand.Flags()
 		c.fs.StringVar(&c.process, "process", "", "Process name")
 		c.fs.StringVar(&c.process, "p", "", "Process name")
+		c.fs.StringVar(&c.version, "version", "", "Version number")
 	}
 	return c.fs
 }
@@ -1129,6 +1139,7 @@ func (c *AppStart) Flags() *gnuflag.FlagSet {
 type AppRestart struct {
 	cmd.GuessingCommand
 	process string
+	version string
 	fs      *gnuflag.FlagSet
 }
 
@@ -1142,7 +1153,10 @@ func (c *AppRestart) Run(context *cmd.Context, client *cmd.Client) error {
 	if err != nil {
 		return err
 	}
-	body := strings.NewReader("process=" + c.process)
+	qs := url.Values{}
+	qs.Set("process", c.process)
+	qs.Set("version", c.version)
+	body := strings.NewReader(qs.Encode())
 	request, err := http.NewRequest("POST", u, body)
 	if err != nil {
 		return err
@@ -1158,7 +1172,7 @@ func (c *AppRestart) Run(context *cmd.Context, client *cmd.Client) error {
 func (c *AppRestart) Info() *cmd.Info {
 	return &cmd.Info{
 		Name:    "app-restart",
-		Usage:   "app-restart [-a/--app appname] [-p/--process processname]",
+		Usage:   "app-restart [-a/--app appname] [-p/--process processname] [--version version]",
 		Desc:    `Restarts an application, or one of the processes of the application.`,
 		MinArgs: 0,
 	}
@@ -1169,6 +1183,7 @@ func (c *AppRestart) Flags() *gnuflag.FlagSet {
 		c.fs = c.GuessingCommand.Flags()
 		c.fs.StringVar(&c.process, "process", "", "Process name")
 		c.fs.StringVar(&c.process, "p", "", "Process name")
+		c.fs.StringVar(&c.version, "version", "", "Version number")
 	}
 	return c.fs
 }
@@ -1273,12 +1288,13 @@ type UnitAdd struct {
 	cmd.GuessingCommand
 	fs      *gnuflag.FlagSet
 	process string
+	version string
 }
 
 func (c *UnitAdd) Info() *cmd.Info {
 	return &cmd.Info{
 		Name:  "unit-add",
-		Usage: "unit-add <# of units> [-a/--app appname] [-p/--process processname]",
+		Usage: "unit-add <# of units> [-a/--app appname] [-p/--process processname] [--version version]",
 		Desc: `Adds new units to a process of an application. You need to have access to the
 app to be able to add new units to it.`,
 		MinArgs: 1,
@@ -1290,6 +1306,7 @@ func (c *UnitAdd) Flags() *gnuflag.FlagSet {
 		c.fs = c.GuessingCommand.Flags()
 		c.fs.StringVar(&c.process, "process", "", "Process name")
 		c.fs.StringVar(&c.process, "p", "", "Process name")
+		c.fs.StringVar(&c.version, "version", "", "Version number")
 	}
 	return c.fs
 }
@@ -1307,6 +1324,7 @@ func (c *UnitAdd) Run(context *cmd.Context, client *cmd.Client) error {
 	val := url.Values{}
 	val.Add("units", context.Args[0])
 	val.Add("process", c.process)
+	val.Set("version", c.version)
 	request, err := http.NewRequest("PUT", u, bytes.NewBufferString(val.Encode()))
 	if err != nil {
 		return err
@@ -1324,12 +1342,13 @@ type UnitRemove struct {
 	cmd.GuessingCommand
 	fs      *gnuflag.FlagSet
 	process string
+	version string
 }
 
 func (c *UnitRemove) Info() *cmd.Info {
 	return &cmd.Info{
 		Name:  "unit-remove",
-		Usage: "unit-remove <# of units> [-a/--app appname] [-p/-process processname]",
+		Usage: "unit-remove <# of units> [-a/--app appname] [-p/-process processname] [--version version]",
 		Desc: `Removes units from a process of an application. You need to have access to the
 app to be able to remove units from it.`,
 		MinArgs: 1,
@@ -1341,6 +1360,7 @@ func (c *UnitRemove) Flags() *gnuflag.FlagSet {
 		c.fs = c.GuessingCommand.Flags()
 		c.fs.StringVar(&c.process, "process", "", "Process name")
 		c.fs.StringVar(&c.process, "p", "", "Process name")
+		c.fs.StringVar(&c.version, "version", "", "Version number")
 	}
 	return c.fs
 }
@@ -1354,6 +1374,7 @@ func (c *UnitRemove) Run(context *cmd.Context, client *cmd.Client) error {
 	val := url.Values{}
 	val.Add("units", context.Args[0])
 	val.Add("process", c.process)
+	val.Set("version", c.version)
 	url, err := cmd.GetURL(fmt.Sprintf("/apps/%s/units?%s", appName, val.Encode()))
 	if err != nil {
 		return err
@@ -1373,12 +1394,13 @@ type UnitSet struct {
 	cmd.GuessingCommand
 	fs      *gnuflag.FlagSet
 	process string
+	version int
 }
 
 func (c *UnitSet) Info() *cmd.Info {
 	return &cmd.Info{
 		Name:  "unit-set",
-		Usage: "unit-set <# of units> [-a/--app appname] [-p/--process processname]",
+		Usage: "unit-set <# of units> [-a/--app appname] [-p/--process processname] [--version version]",
 		Desc: `Set the number of units for a process of an application, adding or removing units as needed. You need to have access to the
 app to be able to set the number of units for it. The process flag is optional if the app has only 1 process.`,
 		MinArgs: 1,
@@ -1391,6 +1413,7 @@ func (c *UnitSet) Flags() *gnuflag.FlagSet {
 		processMessage := "Process name"
 		c.fs.StringVar(&c.process, "process", "", processMessage)
 		c.fs.StringVar(&c.process, "p", "", processMessage)
+		c.fs.IntVar(&c.version, "version", 0, "Version number")
 	}
 	return c.fs
 }
@@ -1424,27 +1447,37 @@ func (c *UnitSet) Run(context *cmd.Context, client *cmd.Client) error {
 	}
 
 	unitsByProcess := map[string][]unit{}
+	unitsByVersion := map[int][]unit{}
 	for _, u := range a.Units {
-		units := unitsByProcess[u.ProcessName]
-		unitsByProcess[u.ProcessName] = append(units, u)
+		unitsByProcess[u.ProcessName] = append(unitsByProcess[u.ProcessName], u)
+		unitsByVersion[u.Version] = append(unitsByVersion[u.Version], u)
 	}
 
 	if len(unitsByProcess) != 1 && c.process == "" {
-		return errors.New("Please use the -p/--process flag to specify which process you want to update set units for.")
+		return errors.New("Please use the -p/--process flag to specify which process you want to set units for.")
 	}
 
-	process := c.process
-	if process == "" {
+	if len(unitsByVersion) != 1 && c.version == 0 {
+		return errors.New("Please use the --version flag to specify which version you want to set units for.")
+	}
+
+	if c.process == "" {
 		for p := range unitsByProcess {
-			// TODO - assert
-			process = p
+			c.process = p
+			break
+		}
+	}
+
+	if c.version == 0 {
+		for v := range unitsByVersion {
+			c.version = v
 			break
 		}
 	}
 
 	existingUnits := 0
 	for _, unit := range a.Units {
-		if unit.ProcessName == process {
+		if unit.ProcessName == c.process && unit.Version == c.version {
 			existingUnits++
 		}
 	}
@@ -1463,7 +1496,8 @@ func (c *UnitSet) Run(context *cmd.Context, client *cmd.Client) error {
 		unitsToAdd := desiredUnits - existingUnits
 		val := url.Values{}
 		val.Add("units", strconv.Itoa(unitsToAdd))
-		val.Add("process", process)
+		val.Add("process", c.process)
+		val.Add("version", strconv.Itoa(c.version))
 		request, err := http.NewRequest(http.MethodPut, u, bytes.NewBufferString(val.Encode()))
 		if err != nil {
 			return err
@@ -1483,7 +1517,8 @@ func (c *UnitSet) Run(context *cmd.Context, client *cmd.Client) error {
 		unitsToRemove := existingUnits - desiredUnits
 		val := url.Values{}
 		val.Add("units", strconv.Itoa(unitsToRemove))
-		val.Add("process", process)
+		val.Add("process", c.process)
+		val.Add("version", strconv.Itoa(c.version))
 		u, err := cmd.GetURL(fmt.Sprintf("/apps/%s/units?%s", appName, val.Encode()))
 		if err != nil {
 			return err
@@ -1503,6 +1538,6 @@ func (c *UnitSet) Run(context *cmd.Context, client *cmd.Client) error {
 		return cmd.StreamJSONResponse(context.Stdout, response)
 	}
 
-	fmt.Fprintf(context.Stdout, "The process %s already has %d units.\n", process, existingUnits)
+	fmt.Fprintf(context.Stdout, "The process %s, version %d already has %d units.\n", c.process, c.version, existingUnits)
 	return nil
 }

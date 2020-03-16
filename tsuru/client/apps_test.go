@@ -2843,6 +2843,37 @@ func (s *S) TestUnitAdd(c *check.C) {
 	c.Assert(stdout.String(), check.Equals, expectedOut)
 }
 
+func (s *S) TestUnitAddWithVersion(c *check.C) {
+	var stdout, stderr bytes.Buffer
+	var called bool
+	context := cmd.Context{
+		Args:   []string{"3"},
+		Stdout: &stdout,
+		Stderr: &stderr,
+	}
+	expectedOut := "-- added unit --"
+	msg := io.SimpleJsonMessage{Message: expectedOut}
+	result, err := json.Marshal(msg)
+	c.Assert(err, check.IsNil)
+	trans := &cmdtest.ConditionalTransport{
+		Transport: cmdtest.Transport{Message: string(result), Status: http.StatusOK},
+		CondFunc: func(req *http.Request) bool {
+			called = true
+			c.Assert(req.FormValue("process"), check.Equals, "p1")
+			c.Assert(req.FormValue("units"), check.Equals, "3")
+			c.Assert(req.FormValue("version"), check.Equals, "9")
+			return strings.HasSuffix(req.URL.Path, "/apps/radio/units") && req.Method == "PUT"
+		},
+	}
+	client := cmd.NewClient(&http.Client{Transport: trans}, nil, manager)
+	command := UnitAdd{}
+	command.Flags().Parse(true, []string{"-a", "radio", "-p", "p1", "--version", "9"})
+	err = command.Run(&context, client)
+	c.Assert(err, check.IsNil)
+	c.Assert(called, check.Equals, true)
+	c.Assert(stdout.String(), check.Equals, expectedOut)
+}
+
 func (s *S) TestUnitAddFailure(c *check.C) {
 	var stdout, stderr bytes.Buffer
 	context := cmd.Context{
@@ -3128,7 +3159,7 @@ func (s *S) TestUnitSetNoChanges(c *check.C) {
 	err := command.Run(&context, client)
 	c.Assert(err, check.IsNil)
 	c.Assert(calledGet, check.Equals, true)
-	c.Assert(stdout.String(), check.Equals, "The process web already has 3 units.\n")
+	c.Assert(stdout.String(), check.Equals, "The process web, version 0 already has 3 units.\n")
 }
 
 func (s *S) TestUnitSetFailedGet(c *check.C) {
@@ -3180,7 +3211,7 @@ func (s *S) TestUnitSetNoProcessSpecifiedAndMultipleExist(c *check.C) {
 	command.Flags().Parse(true, []string{"-a", "app1"})
 	err := command.Run(&context, client)
 	c.Assert(err, check.NotNil)
-	c.Assert(err.Error(), check.Equals, "Please use the -p/--process flag to specify which process you want to update set units for.")
+	c.Assert(err.Error(), check.Equals, "Please use the -p/--process flag to specify which process you want to set units for.")
 	c.Assert(calledGet, check.Equals, true)
 }
 
