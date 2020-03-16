@@ -546,7 +546,7 @@ type app struct {
 	RouterOpts  map[string]string
 	Tags        []string
 	Error       string
-	Routers     []apptypes.AppRouter
+	Routers     []appRoutersExtended
 	Volumes     []volume.Volume
 
 	InternalAddresses []appInternalAddress
@@ -582,7 +582,11 @@ func (a *app) Addr() string {
 		}
 	} else {
 		for _, r := range a.Routers {
-			allAddrs = append(allAddrs, r.Address)
+			if len(r.Addresses) > 0 {
+				allAddrs = append(allAddrs, r.Addresses...)
+			} else if r.Address != "" {
+				allAddrs = append(allAddrs, r.Address)
+			}
 		}
 	}
 	return strings.Join(allAddrs, ", ")
