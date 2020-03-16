@@ -897,7 +897,7 @@ func (s *S) TestAppInfoMultipleRouters(c *check.C) {
 	"router": "planb",
 	"routers": [
 		{"name": "r1", "type": "r", "opts": {"a": "b", "x": "y"}, "address": "addr1"},
-		{"name": "r2", "address": "addr2", "status": "ready"},
+		{"name": "r2", "addresses": ["addr2", "addr9"], "status": "ready"},
 		{"name": "r3", "type": "r3", "address": "addr3", "status": "not ready", "status-detail": "something happening"}
 	]
 }`
@@ -907,7 +907,7 @@ Tags:
 Repository: git@git.com:php.git
 Platform: php
 Teams: tsuruteam, crane
-Address: cname1, addr1, addr2, addr3
+Address: cname1, addr1, addr2, addr9, addr3
 Owner: myapp_owner
 Team owner: myteam
 Deploys: 7
@@ -924,16 +924,17 @@ Units: 3
 +--------+---------+----------+------+
 
 Routers:
-+------+------+------+---------+--------------------------------+
-| Name | Type | Opts | Address | Status                         |
-+------+------+------+---------+--------------------------------+
-| r1   | r    | a: b | addr1   |                                |
-|      |      | x: y |         |                                |
-+------+------+------+---------+--------------------------------+
-| r2   |      |      | addr2   | ready                          |
-+------+------+------+---------+--------------------------------+
-| r3   | r3   |      | addr3   | not ready: something happening |
-+------+------+------+---------+--------------------------------+
++------+------+------+-----------+--------------------------------+
+| Name | Type | Opts | Addresses | Status                         |
++------+------+------+-----------+--------------------------------+
+| r1   | r    | a: b | addr1     |                                |
+|      |      | x: y |           |                                |
++------+------+------+-----------+--------------------------------+
+| r2   |      |      | addr2     | ready                          |
+|      |      |      | addr9     |                                |
++------+------+------+-----------+--------------------------------+
+| r3   | r3   |      | addr3     | not ready: something happening |
++------+------+------+-----------+--------------------------------+
 
 `
 	context := cmd.Context{

@@ -104,7 +104,7 @@ func (c *AppRoutersList) Run(context *cmd.Context, client *cmd.Client) error {
 		fmt.Fprintln(context.Stdout, "No routers available for app.")
 		return nil
 	}
-	var routers []appTypes.AppRouter
+	var routers []appRoutersExtended
 	err = json.NewDecoder(response.Body).Decode(&routers)
 	if err != nil {
 		return err
@@ -113,9 +113,14 @@ func (c *AppRoutersList) Run(context *cmd.Context, client *cmd.Client) error {
 	return nil
 }
 
-func renderRouters(routers []appTypes.AppRouter, out io.Writer) {
+type appRoutersExtended struct {
+	appTypes.AppRouter
+	Addresses []string
+}
+
+func renderRouters(routers []appRoutersExtended, out io.Writer) {
 	table := tablecli.NewTable()
-	table.Headers = tablecli.Row([]string{"Name", "Type", "Opts", "Address", "Status"})
+	table.Headers = tablecli.Row([]string{"Name", "Type", "Opts", "Addresses", "Status"})
 	table.LineSeparator = true
 	for _, r := range routers {
 		var optsStr []string
@@ -127,7 +132,18 @@ func renderRouters(routers []appTypes.AppRouter, out io.Writer) {
 		if r.StatusDetail != "" {
 			statusStr = fmt.Sprintf("%s: %s", statusStr, r.StatusDetail)
 		}
-		table.AddRow(tablecli.Row([]string{r.Name, r.Type, strings.Join(optsStr, "\n"), r.Address, statusStr}))
+		addresses := r.Address
+		if len(r.Addresses) > 0 {
+			addresses = strings.Join(r.Addresses, "\n")
+		}
+		row := tablecli.Row([]string{
+			r.Name,
+			r.Type,
+			strings.Join(optsStr, "\n"),
+			addresses,
+			statusStr,
+		})
+		table.AddRow(row)
 	}
 	out.Write(table.Bytes())
 }
