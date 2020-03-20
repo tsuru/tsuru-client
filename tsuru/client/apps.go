@@ -583,6 +583,7 @@ func (a *app) Addr() string {
 	} else {
 		for _, r := range a.Routers {
 			if len(r.Addresses) > 0 {
+				sort.Strings(r.Addresses)
 				allAddrs = append(allAddrs, r.Addresses...)
 			} else if r.Address != "" {
 				allAddrs = append(allAddrs, r.Address)

@@ -129,6 +129,7 @@ func renderRouters(routers []appTypes.AppRouter, out io.Writer) {
 		}
 		addresses := r.Address
 		if len(r.Addresses) > 0 {
+			sort.Strings(r.Addresses)
 			addresses = strings.Join(r.Addresses, "\n")
 		}
 		row := tablecli.Row([]string{
