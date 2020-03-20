@@ -638,7 +638,7 @@ func parseParams(params interface{}) (string, error) {
 			sb.WriteString(fmt.Sprintf("  default: %v\n", v.Default))
 		}
 		if _, ok := requireMap[k]; ok {
-			sb.WriteString(fmt.Sprintf("  required: true\n"))
+			sb.WriteString("  required: true\n")
 		}
 	}
 	return sb.String(), nil
