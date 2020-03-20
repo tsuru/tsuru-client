@@ -418,7 +418,7 @@ Tags: {{.Tags}}
 			}
 			summary = strings.Join(statusText, "\n")
 		} else {
-			summary = fmt.Sprintf("error fetching units")
+			summary = "error fetching units"
 			if cli.Verbosity > 0 {
 				summary += fmt.Sprintf(": %s", app.Error)
 			}

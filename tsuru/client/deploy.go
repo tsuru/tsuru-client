@@ -130,13 +130,13 @@ var _ cmd.Cancelable = &AppDeploy{}
 
 type AppDeploy struct {
 	cmd.GuessingCommand
+	image   string
+	message string
+	eventID string
+	fs      *gnuflag.FlagSet
+	m       sync.Mutex
 	deployVersionArgs
-	image     string
-	message   string
 	filesOnly bool
-	fs        *gnuflag.FlagSet
-	m         sync.Mutex
-	eventID   string
 }
 
 func (c *AppDeploy) Flags() *gnuflag.FlagSet {

@@ -727,7 +727,7 @@ func (c *InfoNodeCmd) Run(ctx *cmd.Context, client *cmd.Client) error {
 		buf.WriteString(unitsTable.String())
 	}
 	buf.WriteString("\n")
-	buf.WriteString(fmt.Sprintf("Node Status:\n"))
+	buf.WriteString("Node Status:\n")
 	if !result.Status.LastSuccess.IsZero() {
 		buf.WriteString(fmt.Sprintf("Last Success: %s\n", formatter.FormatStamp(result.Status.LastSuccess)))
 	}

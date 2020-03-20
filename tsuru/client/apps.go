@@ -982,7 +982,7 @@ func (c *AppList) Show(result []byte, context *cmd.Context, client *cmd.Client) 
 			}
 			summary = strings.Join(statusText, "\n")
 		} else {
-			summary = fmt.Sprintf("error fetching units")
+			summary = "error fetching units"
 			if client.Verbosity > 0 {
 				summary += fmt.Sprintf(": %s", app.Error)
 			}
