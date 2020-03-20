@@ -18,10 +18,8 @@ jobs:
       shell: bash
     
     - name: Upload coverage to Codecov  
-      uses: codecov/codecov-action@v1.0.2
+      uses: codecov/codecov-action@v1
       if: matrix.os == 'ubuntu-latest'
-      with:
-        token: ${{secrets.CODECOV_TOKEN}}
 
   lint:
     runs-on: ubuntu-latest

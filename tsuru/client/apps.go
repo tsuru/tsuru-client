@@ -546,7 +546,7 @@ type app struct {
 	RouterOpts  map[string]string
 	Tags        []string
 	Error       string
-	Routers     []appRoutersExtended
+	Routers     []apptypes.AppRouter
 	Volumes     []volume.Volume
 
 	InternalAddresses []appInternalAddress

@@ -104,7 +104,7 @@ func (c *AppRoutersList) Run(context *cmd.Context, client *cmd.Client) error {
 		fmt.Fprintln(context.Stdout, "No routers available for app.")
 		return nil
 	}
-	var routers []appRoutersExtended
+	var routers []appTypes.AppRouter
 	err = json.NewDecoder(response.Body).Decode(&routers)
 	if err != nil {
 		return err
@@ -113,12 +113,7 @@ func (c *AppRoutersList) Run(context *cmd.Context, client *cmd.Client) error {
 	return nil
 }
 
-type appRoutersExtended struct {
-	appTypes.AppRouter
-	Addresses []string
-}
-
-func renderRouters(routers []appRoutersExtended, out io.Writer) {
+func renderRouters(routers []appTypes.AppRouter, out io.Writer) {
 	table := tablecli.NewTable()
 	table.Headers = tablecli.Row([]string{"Name", "Type", "Opts", "Addresses", "Status"})
 	table.LineSeparator = true
