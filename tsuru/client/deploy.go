@@ -170,7 +170,7 @@ calls are:
 `
 	return &cmd.Info{
 		Name:    "app-deploy",
-		Usage:   "app-deploy [-a/--app <appname>] [-i/--image <image_url>] [-m/--message <message>] [--new-version] [--override-versions] [-f/--files-only] <file-or-dir-1> [file-or-dir-2] ... [file-or-dir-n]",
+		Usage:   "app-deploy [-a/--app <appname>] [-i/--image <image_url>] [-m/--message <message>] [--new-version] [--override-old-versions] [-f/--files-only] <file-or-dir-1> [file-or-dir-2] ... [file-or-dir-n]",
 		Desc:    desc,
 		MinArgs: 0,
 	}

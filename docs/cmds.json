@@ -88,8 +88,8 @@
     "desc": "display the current version\n\n"
   }, 
   "app-start": {
-    "usage": "tsuru app-start [-a/--app appname] [-p/--process processname]", 
-    "desc": "Starts an application, or one of the processes of the application.\n\nFlags:\n  \n  -a, --app (= \"\")\n      The name of the app.\n  -p, --process (= \"\")\n      Process name\n  \n"
+    "usage": "tsuru app-start [-a/--app appname] [-p/--process processname] [--version version]", 
+    "desc": "Starts an application, or one of the processes of the application.\n\nFlags:\n  \n  -a, --app (= \"\")\n      The name of the app.\n  -p, --process (= \"\")\n      Process name\n  --version (= \"\")\n      Version number\n  \n"
   }, 
   "certificate-set": {
     "usage": "tsuru certificate-set [-a/--app appname] [-c/--cname CNAME] [certificate] [key]", 
@@ -132,8 +132,8 @@
     "desc": "Update service documentation, extracting it from the given file.\n\nMinimum # of arguments: 2\n"
   }, 
   "app-stop": {
-    "usage": "tsuru app-stop [-a/--app appname] [-p/--process processname]", 
-    "desc": "Stops an application, or one of the processes of the application.\n\nFlags:\n  \n  -a, --app (= \"\")\n      The name of the app.\n  -p, --process (= \"\")\n      Process name\n  \n"
+    "usage": "tsuru app-stop [-a/--app appname] [-p/--process processname] [--version version]", 
+    "desc": "Stops an application, or one of the processes of the application.\n\nFlags:\n  \n  -a, --app (= \"\")\n      The name of the app.\n  -p, --process (= \"\")\n      Process name\n  --version (= \"\")\n      Version number\n  \n"
   }, 
   "pool-add": {
     "usage": "tsuru pool-add <pool> [-p/--public] [-d/--default] [--provisioner <name>] [-f/--force]", 
@@ -152,7 +152,7 @@
     "desc": "Shows log entries for an application. These logs include everything the\napplication send to stdout and stderr, alongside with logs from tsuru server\n(deployments, restarts, etc.)\n\nThe [[--lines]] flag is optional and by default its value is 10.\n\nThe [[--source]] flag is optional and allows filtering logs by log source\n(e.g. application, tsuru api).\n\nThe [[--unit]] flag is optional and allows filtering by unit. It's useful if\nyour application has multiple units and you want logs from a single one.\n\nThe [[--follow]] flag is optional and makes the command wait for additional\nlog output\n\nThe [[--no-date]] flag is optional and makes the log output without date.\n\nThe [[--no-source]] flag is optional and makes the log output without source\ninformation, useful to very dense logs.\n\n\nFlags:\n  \n  -a, --app (= \"\")\n      The name of the app.\n  -f, --follow  (= false)\n      Follow logs\n  -l, --lines  (= 10)\n      The number of log lines to display\n  --no-date  (= false)\n      No date information\n  --no-source  (= false)\n      No source information\n  -s, --source (= \"\")\n      The log from the given source\n  -u, --unit (= \"\")\n      The log from the given unit\n  \n"
   }, 
   "app-deploy": {
-    "usage": "tsuru app-deploy [-a/--app <appname>] [-i/--image <image_url>] [-m/--message <message>] [--new-version] [--override-versions] [-f/--files-only] <file-or-dir-1> [file-or-dir-2] ... [file-or-dir-n]", 
+    "usage": "tsuru app-deploy [-a/--app <appname>] [-i/--image <image_url>] [-m/--message <message>] [--new-version] [--override-old-versions] [-f/--files-only] <file-or-dir-1> [file-or-dir-2] ... [file-or-dir-n]", 
     "desc": "Deploys set of files and/or directories to tsuru server. Some examples of\ncalls are:\n\n::\n\n    $ tsuru app-deploy .\n    $ tsuru app-deploy myfile.jar Procfile\n    $ tsuru app-deploy -f directory/main.go directory/Procfile\n    $ tsuru app-deploy mysite\n    $ tsuru app-deploy -i http://registry.mysite.com:5000/image-name\n\n\nFlags:\n  \n  -a, --app (= \"\")\n      The name of the app.\n  -f, --files-only  (= false)\n      Enables single file deployment into the root of the app's tree\n  -i, --image (= \"\")\n      The image to deploy in app\n  -m, --message (= \"\")\n      A message describing this deploy\n  --new-version  (= false)\n      Creates a new version for the current deployment while preserving existing versions\n  --override-old-versions  (= false)\n      Force replace all deployed versions by this new deploy\n  \n"
   }, 
   "app-deploy-rebuild": {
@@ -172,8 +172,8 @@
     "desc": "Allows a team to access an application. You need to be a member of a team that\nhas access to the app to allow another team to access it. grants access to an\napp to a team.\n\nFlags:\n  \n  -a, --app (= \"\")\n      The name of the app.\n  \nMinimum # of arguments: 1\n"
   }, 
   "app-restart": {
-    "usage": "tsuru app-restart [-a/--app appname] [-p/--process processname]", 
-    "desc": "Restarts an application, or one of the processes of the application.\n\nFlags:\n  \n  -a, --app (= \"\")\n      The name of the app.\n  -p, --process (= \"\")\n      Process name\n  \n"
+    "usage": "tsuru app-restart [-a/--app appname] [-p/--process processname] [--version version]", 
+    "desc": "Restarts an application, or one of the processes of the application.\n\nFlags:\n  \n  -a, --app (= \"\")\n      The name of the app.\n  -p, --process (= \"\")\n      Process name\n  --version (= \"\")\n      Version number\n  \n"
   }, 
   "cluster-list": {
     "usage": "tsuru cluster-list", 
@@ -192,8 +192,8 @@
     "desc": "Lists events that you have permission to see.\n\n\t\tFlags can be used to filter the list of events.\n\nFlags:\n  \n  -i, --include-removed  (= false)\n      Include also removed events\n  -k, --kind  (= [])\n      Filter events by kind name\n  -o, --owner (= \"\")\n      Filter events by owner name\n  -r, --running  (= false)\n      Shows only currently running events\n  -t, --target (= \"\")\n      Filter events by target type\n  -v, --target-value (= \"\")\n      Filter events by target value\n  \n"
   }, 
   "unit-add": {
-    "usage": "tsuru unit-add <# of units> [-a/--app appname] [-p/--process processname]", 
-    "desc": "Adds new units to a process of an application. You need to have access to the\napp to be able to add new units to it.\n\nFlags:\n  \n  -a, --app (= \"\")\n      The name of the app.\n  -p, --process (= \"\")\n      Process name\n  \nMinimum # of arguments: 1\n"
+    "usage": "tsuru unit-add <# of units> [-a/--app appname] [-p/--process processname] [--version version]", 
+    "desc": "Adds new units to a process of an application. You need to have access to the\napp to be able to add new units to it.\n\nFlags:\n  \n  -a, --app (= \"\")\n      The name of the app.\n  -p, --process (= \"\")\n      Process name\n  --version (= \"\")\n      Version number\n  \nMinimum # of arguments: 1\n"
   }, 
   "team-update": {
     "usage": "tsuru team-update <team-name> -n <new-team-name> [--tag/-t tag]...", 
@@ -264,8 +264,8 @@
     "desc": "Move units among nodes trying to create a more even distribution. This command\nwill automatically choose to which node each unit should be moved, trying to\ndistribute the units as evenly as possible.\n\nThe --dry flag runs the balancing algorithm without doing any real\nmodification. It will only print which units would be moved and where they\nwould be created.\n\nFlags:\n  \n  -a, --app  (= [])\n      Filter by app name\n  --dry  (= false)\n      Dry run, only shows what would be done\n  -m, --metadata  (= {})\n      Filter by host metadata\n  -y, --assume-yes  (= false)\n      Don't ask for confirmation.\n  \n"
   }, 
   "unit-set": {
-    "usage": "tsuru unit-set <# of units> [-a/--app appname] [-p/--process processname]", 
-    "desc": "Set the number of units for a process of an application, adding or removing units as needed. You need to have access to the\napp to be able to set the number of units for it. The process flag is optional if the app has only 1 process.\n\nFlags:\n  \n  -a, --app (= \"\")\n      The name of the app.\n  -p, --process (= \"\")\n      Process name\n  \nMinimum # of arguments: 1\n"
+    "usage": "tsuru unit-set <# of units> [-a/--app appname] [-p/--process processname] [--version version]", 
+    "desc": "Set the number of units for a process of an application, adding or removing units as needed. You need to have access to the\napp to be able to set the number of units for it. The process flag is optional if the app has only 1 process.\n\nFlags:\n  \n  -a, --app (= \"\")\n      The name of the app.\n  -p, --process (= \"\")\n      Process name\n  --version  (= 0)\n      Version number\n  \nMinimum # of arguments: 1\n"
   }, 
   "node-list": {
     "usage": "tsuru node-list [--filter/-f <metadata>=<value>]...", 
@@ -404,8 +404,8 @@
     "desc": "Creates a new plan for being used when creating apps.\n\nFlags:\n  \n  -c, --cpushare  (= 0)\n      Relative cpu share each unit will have available. This value is unitless and\n      relative, so specifying the same value for all plans means all units will\n      equally share processing power.\n  -d, --default  (= false)\n      Set plan as default, this will remove the default flag from any other plan.\n      The default plan will be used when creating an application without explicitly\n      setting a plan.\n  -m, --memory (= \"0\")\n      Amount of available memory for units in bytes or an integer value followed\n      by M, K or G for megabytes, kilobytes or gigabytes respectively.\n  -s, --swap (= \"0\")\n      Amount of available swap space for units in bytes or an integer value followed\n      by M, K or G for megabytes, kilobytes or gigabytes respectively.\n  \nMinimum # of arguments: 1\n"
   }, 
   "unit-remove": {
-    "usage": "tsuru unit-remove <# of units> [-a/--app appname] [-p/-process processname]", 
-    "desc": "Removes units from a process of an application. You need to have access to the\napp to be able to remove units from it.\n\nFlags:\n  \n  -a, --app (= \"\")\n      The name of the app.\n  -p, --process (= \"\")\n      Process name\n  \nMinimum # of arguments: 1\n"
+    "usage": "tsuru unit-remove <# of units> [-a/--app appname] [-p/-process processname] [--version version]", 
+    "desc": "Removes units from a process of an application. You need to have access to the\napp to be able to remove units from it.\n\nFlags:\n  \n  -a, --app (= \"\")\n      The name of the app.\n  -p, --process (= \"\")\n      Process name\n  --version (= \"\")\n      Version number\n  \nMinimum # of arguments: 1\n"
   }, 
   "node-container-upgrade": {
     "usage": "tsuru node-container-upgrade <name> [-p/--pool poolname] [-y]", 
@@ -512,7 +512,7 @@
     "desc": "Block events.\n\nFlags:\n  \n  -k, --kind (= \"\")\n      Event kind to be blocked.\n  -o, --owner (= \"\")\n      Block this owner's events.\n  -t, --target (= \"\")\n      Block events with this target type.\n  -v, --value (= \"\")\n      Block events with this target value.\n  \nMinimum # of arguments: 1\n"
   }, 
   "role-default-remove": {
-    "usage": "tsuru role-default-remove [--user-create <role name>]... [--team-create <role name>]...", 
+    "usage": "tsuru role-default-remove [--team-create <role name>]... [--user-create <role name>]...", 
     "desc": "Remove a default role from a specific event.\n\nFlags:\n  \n  --team-create  (= [])\n      role added to user when a new team is created\n  --user-create  (= [])\n      role added to user when user is created\n  \n"
   }, 
   "node-remove": {
