@@ -16,8 +16,8 @@ build:
       goarch: 386
 
 # Archive customization
-archive:
-  name_template: "{{.ProjectName}}_{{.Version}}_{{.Os}}_{{.Arch}}"
+archives:
+- name_template: "{{.ProjectName}}_{{.Version}}_{{.Os}}_{{.Arch}}"
   format: tar.gz
   replacements:
     darwin: macOS
@@ -29,9 +29,9 @@ archive:
     - misc/zsh-completion
 
 # Mac OS Homebrew
-brew:
+brews:
   # Reporitory to push the tap to.
-  github: 
+- github:
     owner: tsuru
     name: homebrew-tsuru
 

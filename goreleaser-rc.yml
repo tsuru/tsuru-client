@@ -16,8 +16,8 @@ build:
       goarch: 386
 
 # Archive customization
-archive:
-  name_template: "{{.ProjectName}}_{{.Version}}_{{.Os}}_{{.Arch}}"
+archives:
+- name_template: "{{.ProjectName}}_{{.Version}}_{{.Os}}_{{.Arch}}"
   format: tar.gz
   replacements:
     darwin: macOS
