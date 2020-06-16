@@ -17,6 +17,7 @@ import (
 
 	"github.com/ajg/form"
 	"github.com/tsuru/gnuflag"
+	"github.com/tsuru/tsuru/app"
 	"github.com/tsuru/tsuru/cmd"
 	apiTypes "github.com/tsuru/tsuru/types/api"
 )
@@ -58,7 +59,7 @@ func (c *EnvGet) Run(context *cmd.Context, client *cmd.Client) error {
 	}
 	formatted := make([]string, 0, len(variables))
 	for _, v := range variables {
-		value := "*** (private variable)"
+		value := app.SuppressedEnv
 		if v["public"].(bool) {
 			value = v["value"].(string)
 		}
