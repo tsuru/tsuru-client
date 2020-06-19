@@ -162,12 +162,13 @@ type ServiceInstanceUpdate struct {
 	description string
 	plan        string
 	tags        cmd.StringSliceFlag
+	params      cmd.MapFlag
 }
 
 func (c *ServiceInstanceUpdate) Info() *cmd.Info {
 	return &cmd.Info{
 		Name:  "service-instance-update",
-		Usage: "service-instance-update <service-name> <service-instance-name> [-t/--team-owner team] [-d/--description description] [-p/--plan plan] [-g/--tag tag]...",
+		Usage: "service-instance-update <service-name> <service-instance-name> [-t/--team-owner team] [-d/--description description] [-p/--plan plan] [-g/--tag tag]... [--plan-param key=value]...",
 		Desc: `Updates a service instance.
 
 The --team-owner parameter updates the team owner of a service instance.
@@ -177,7 +178,10 @@ The --description parameter sets a description for your service instance.
 The --plan parameter updates the service instance plan.
 
 The --tag parameter adds a tag to your service instance. This parameter
-may be used multiple times.`,
+may be used multiple times.
+
+The --plan-param updates plan's parameter of a service instance. This
+parameter may be used multiple times.`,
 		MinArgs: 2,
 	}
 }
@@ -188,7 +192,14 @@ func (c *ServiceInstanceUpdate) Run(ctx *cmd.Context, client *cmd.Client) error 
 	if err != nil {
 		return err
 	}
-	v := url.Values{}
+	parameters := make(map[string]interface{})
+	for k, v := range c.params {
+		parameters[k] = v
+	}
+	v, err := form.EncodeToValues(map[string]interface{}{"parameters": parameters})
+	if err != nil {
+		return err
+	}
 	v.Set("teamowner", c.teamOwner)
 	v.Set("description", c.description)
 	v.Set("plan", c.plan)
@@ -223,6 +234,7 @@ func (c *ServiceInstanceUpdate) Flags() *gnuflag.FlagSet {
 		tagMessage := "service instance tag"
 		c.fs.Var(&c.tags, "tag", tagMessage)
 		c.fs.Var(&c.tags, "g", tagMessage)
+		c.fs.Var(&c.params, "plan-param", "Plan specific parameters")
 	}
 	return c.fs
 }
@@ -357,6 +369,7 @@ type ServiceInstanceInfoModel struct {
 	PlanDescription string
 	CustomInfo      map[string]string
 	Tags            []string
+	Parameters      map[string]interface{}
 }
 
 func (c ServiceInstanceInfo) Run(ctx *cmd.Context, client *cmd.Client) error {
@@ -389,6 +402,17 @@ func (c ServiceInstanceInfo) Run(ctx *cmd.Context, client *cmd.Client) error {
 	fmt.Fprintf(ctx.Stdout, "Tags: %s\n", strings.Join(si.Tags, ", "))
 	fmt.Fprintf(ctx.Stdout, "Plan: %s\n", si.PlanName)
 	fmt.Fprintf(ctx.Stdout, "Plan description: %s\n", si.PlanDescription)
+	if len(si.Parameters) != 0 {
+		var keys []string
+		for k, _ := range si.Parameters {
+			keys = append(keys, k)
+		}
+		sort.Strings(keys)
+		fmt.Fprintf(ctx.Stdout, "Plan parameters:\n")
+		for _, k := range keys {
+			fmt.Fprintf(ctx.Stdout, "\t%s = %v\n", k, si.Parameters[k])
+		}
+	}
 	if len(si.CustomInfo) != 0 {
 		ctx.Stdout.Write([]byte(fmt.Sprintf("\nCustom Info for \"%s\"\n", instanceName)))
 		keyList := make([]string, 0)
