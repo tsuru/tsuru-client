@@ -81,7 +81,7 @@ Service test is foo bar.
 	}
 	if strings.HasSuffix(req.URL.Path, "/services/mymongo/instances/mongo") {
 		if t.includeAll {
-			message = `{"Apps": ["app", "app2"], "Teams": ["admin", "admin2"], "TeamOwner": "admin", "CustomInfo" : {"key4": "value8", "key2": "value9", "key3":"value3"},"Description": "description", "PlanName": "small", "PlanDescription": "another plan", "Tags": ["tag 1", "tag 2"]}`
+			message = `{"Apps": ["app", "app2"], "Teams": ["admin", "admin2"], "TeamOwner": "admin", "CustomInfo" : {"key4": "value8", "key2": "value9", "key3":"value3"},"Description": "description", "PlanName": "small", "PlanDescription": "another plan", "Tags": ["tag 1", "tag 2"], "Parameters": {"param1": "{\"some\": \"custom-data\"}", "param2": "value2", "param3": 3}}`
 		} else {
 			message = `{"Apps": ["app", "app2"], "Teams": ["admin", "admin2"], "TeamOwner": "admin", "CustomInfo" : {},"Description": "", "PlanName": "", "PlanDescription": "", "Tags": []}`
 		}
@@ -547,12 +547,14 @@ func (s *S) TestServiceInstanceUpdateRun(c *check.C) {
 			c.Check(r.Header.Get("Content-Type"), check.Equals, "application/x-www-form-urlencoded")
 			c.Check(strings.HasSuffix(r.URL.Path, "/services/service/instances/service-instance"), check.Equals, true)
 			c.Check(r.FormValue("teamowner"), check.Equals, "new-team")
+			c.Check(r.FormValue("parameters.param1"), check.Equals, "value1")
+			c.Check(r.FormValue("parameters.param2"), check.Equals, "value2")
 			return true
 		},
 	}
 	client := cmd.NewClient(&http.Client{Transport: &trans}, nil, manager)
 	command := ServiceInstanceUpdate{}
-	command.Flags().Parse(true, []string{"--description", "desc", "--tag", "tag1", "--tag", "tag2", "--team-owner", "new-team", "--plan", "new-plan"})
+	command.Flags().Parse(true, []string{"--description", "desc", "--tag", "tag1", "--tag", "tag2", "--team-owner", "new-team", "--plan", "new-plan", "--plan-param", "param1=value1", "--plan-param", "param2=value2"})
 	err := (&command).Run(&context, client)
 	c.Assert(err, check.IsNil)
 	obtained := stdout.String()
@@ -683,6 +685,10 @@ Description: description
 Tags: tag 1, tag 2
 Plan: small
 Plan description: another plan
+Plan parameters:
+	param1 = {"some": "custom-data"}
+	param2 = value2
+	param3 = 3
 
 Custom Info for "mongo"
 key2:
