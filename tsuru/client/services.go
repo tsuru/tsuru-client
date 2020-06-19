@@ -401,7 +401,7 @@ func (c ServiceInstanceInfo) Run(ctx *cmd.Context, client *cmd.Client) error {
 	fmt.Fprintf(ctx.Stdout, "Plan description: %s\n", si.PlanDescription)
 	if len(si.Parameters) != 0 {
 		var keys []string
-		for k, _ := range si.Parameters {
+		for k := range si.Parameters {
 			keys = append(keys, k)
 		}
 		sort.Strings(keys)
