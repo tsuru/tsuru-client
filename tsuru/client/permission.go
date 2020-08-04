@@ -365,29 +365,33 @@ type RoleAssign struct{}
 func (c *RoleAssign) Info() *cmd.Info {
 	return &cmd.Info{
 		Name:    "role-assign",
-		Usage:   "role-assign <role-name> <user-email>|<token-id> [<context-value>]",
-		Desc:    `Assign an existing role to a user or token with some context value.`,
+		Usage:   "role-assign <role-name> <user-email>|<token-id>|group:<group-id> [<context-value>]",
+		Desc:    `Assign an existing role to a user, token or group with some context value.`,
 		MinArgs: 2,
 	}
 }
 
 func (c *RoleAssign) Run(context *cmd.Context, client *cmd.Client) error {
 	roleName := context.Args[0]
-	emailOrToken := context.Args[1]
+	roleTarget := context.Args[1]
 	var contextValue string
 	if len(context.Args) > 2 {
 		contextValue = context.Args[2]
 	}
 	params := url.Values{}
 	var suffix, version string
-	if strings.Contains(emailOrToken, "@") {
+	if strings.HasPrefix(roleTarget, "group:") {
+		suffix = "group"
+		version = "1.9"
+		params.Set("group_name", strings.TrimPrefix(roleTarget, "group:"))
+	} else if strings.Contains(roleTarget, "@") {
 		suffix = "user"
 		version = "1.0"
-		params.Set("email", emailOrToken)
+		params.Set("email", roleTarget)
 	} else {
 		suffix = "token"
 		version = "1.6"
-		params.Set("token_id", emailOrToken)
+		params.Set("token_id", roleTarget)
 	}
 	params.Set("context", contextValue)
 	addr, err := cmd.GetURLVersion(version, fmt.Sprintf("/roles/%s/%s", roleName, suffix))

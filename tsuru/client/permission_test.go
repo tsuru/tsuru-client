@@ -220,6 +220,30 @@ func (s *S) TestRoleAssignRunWithToken(c *check.C) {
 	c.Assert(stdout.String(), check.Equals, "Role successfully assigned!\n")
 }
 
+func (s *S) TestRoleAssignRunWithGroup(c *check.C) {
+	var stdout, stderr bytes.Buffer
+	context := cmd.Context{
+		Args:   []string{"myrole", "group:grp1", "myapp"},
+		Stdout: &stdout,
+		Stderr: &stderr,
+	}
+	trans := &cmdtest.ConditionalTransport{
+		Transport: cmdtest.Transport{Message: string(""), Status: http.StatusCreated},
+		CondFunc: func(req *http.Request) bool {
+			c.Assert(req.URL.Path, check.Equals, "/1.9/roles/myrole/group")
+			c.Assert(req.Method, check.Equals, http.MethodPost)
+			c.Assert(req.FormValue("group_name"), check.Equals, "grp1")
+			c.Assert(req.FormValue("context"), check.Equals, "myapp")
+			return true
+		},
+	}
+	client := cmd.NewClient(&http.Client{Transport: trans}, nil, manager)
+	command := RoleAssign{}
+	err := command.Run(&context, client)
+	c.Assert(err, check.IsNil)
+	c.Assert(stdout.String(), check.Equals, "Role successfully assigned!\n")
+}
+
 func (s *S) TestRoleDissociateInfo(c *check.C) {
 	c.Assert((&RoleDissociate{}).Info(), check.NotNil)
 }
