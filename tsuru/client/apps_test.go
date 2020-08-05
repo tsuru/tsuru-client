@@ -462,11 +462,18 @@ func (s *S) TestAppUpdate(c *check.C) {
 		CondFunc: func(req *http.Request) bool {
 			url := strings.HasSuffix(req.URL.Path, "/apps/ble")
 			method := req.Method == "PUT"
-			description := req.FormValue("description") == "description of my app"
-			req.ParseForm()
-			tags := len(req.Form["tag"]) == 2 && req.Form["tag"][0] == "tag 1" && req.Form["tag"][1] == "tag 2"
-			platform := req.FormValue("platform") == "python"
-			return url && method && description && tags && platform
+			data, err := ioutil.ReadAll(req.Body)
+			c.Assert(err, check.IsNil)
+			var result map[string]interface{}
+			err = json.Unmarshal(data, &result)
+			c.Assert(err, check.IsNil)
+			c.Assert(result, check.DeepEquals, map[string]interface{}{
+				"description":  "description of my app",
+				"platform":     "python",
+				"tags":         []interface{}{"tag 1", "tag 2"},
+				"planoverride": map[string]interface{}{},
+			})
+			return url && method
 		},
 	}
 	client := cmd.NewClient(&http.Client{Transport: trans}, nil, manager)
@@ -489,9 +496,16 @@ func (s *S) TestAppUpdateImageReset(c *check.C) {
 		CondFunc: func(req *http.Request) bool {
 			url := strings.HasSuffix(req.URL.Path, "/apps/img")
 			method := req.Method == "PUT"
-			imageReset := req.FormValue("imageReset") == "true"
-			req.ParseForm()
-			return url && method && imageReset
+			data, err := ioutil.ReadAll(req.Body)
+			c.Assert(err, check.IsNil)
+			var result map[string]interface{}
+			err = json.Unmarshal(data, &result)
+			c.Assert(err, check.IsNil)
+			c.Assert(result, check.DeepEquals, map[string]interface{}{
+				"imageReset":   true,
+				"planoverride": map[string]interface{}{},
+			})
+			return url && method
 		},
 	}
 	client := cmd.NewClient(&http.Client{Transport: trans}, nil, manager)
@@ -514,10 +528,16 @@ func (s *S) TestAppUpdateWithoutTags(c *check.C) {
 		CondFunc: func(req *http.Request) bool {
 			url := strings.HasSuffix(req.URL.Path, "/apps/ble")
 			method := req.Method == "PUT"
-			description := req.FormValue("description") == "description"
-			req.ParseForm()
-			tags := req.Form["tag"] == nil
-			return url && method && description && tags
+			data, err := ioutil.ReadAll(req.Body)
+			c.Assert(err, check.IsNil)
+			var result map[string]interface{}
+			err = json.Unmarshal(data, &result)
+			c.Assert(err, check.IsNil)
+			c.Assert(result, check.DeepEquals, map[string]interface{}{
+				"description":  "description",
+				"planoverride": map[string]interface{}{},
+			})
+			return url && method
 		},
 	}
 	client := cmd.NewClient(&http.Client{Transport: trans}, nil, manager)
@@ -540,15 +560,56 @@ func (s *S) TestAppUpdateWithEmptyTag(c *check.C) {
 		CondFunc: func(req *http.Request) bool {
 			url := strings.HasSuffix(req.URL.Path, "/apps/ble")
 			method := req.Method == "PUT"
-			description := req.FormValue("description") == "description"
-			req.ParseForm()
-			tags := len(req.Form["tag"]) == 1 && req.Form["tag"][0] == ""
-			return url && method && description && tags
+			data, err := ioutil.ReadAll(req.Body)
+			c.Assert(err, check.IsNil)
+			var result map[string]interface{}
+			err = json.Unmarshal(data, &result)
+			c.Assert(err, check.IsNil)
+			c.Assert(result, check.DeepEquals, map[string]interface{}{
+				"description":  "description",
+				"tags":         []interface{}{""},
+				"planoverride": map[string]interface{}{},
+			})
+			return url && method
 		},
 	}
 	client := cmd.NewClient(&http.Client{Transport: trans}, nil, manager)
 	command := AppUpdate{}
 	command.Flags().Parse(true, []string{"-d", "description", "-a", "ble", "-g", ""})
+	err := command.Run(&context, client)
+	c.Assert(err, check.IsNil)
+	c.Assert(stdout.String(), check.Equals, expected)
+}
+
+func (s *S) TestAppUpdateWithCPUAndMemory(c *check.C) {
+	var stdout, stderr bytes.Buffer
+	expected := fmt.Sprintf("App %q has been updated!\n", "ble")
+	context := cmd.Context{
+		Stdout: &stdout,
+		Stderr: &stderr,
+	}
+	trans := &cmdtest.ConditionalTransport{
+		Transport: cmdtest.Transport{Status: http.StatusOK},
+		CondFunc: func(req *http.Request) bool {
+			url := strings.HasSuffix(req.URL.Path, "/apps/ble")
+			method := req.Method == "PUT"
+			data, err := ioutil.ReadAll(req.Body)
+			c.Assert(err, check.IsNil)
+			var result map[string]interface{}
+			err = json.Unmarshal(data, &result)
+			c.Assert(err, check.IsNil)
+			c.Assert(result, check.DeepEquals, map[string]interface{}{
+				"planoverride": map[string]interface{}{
+					"cpumilli": float64(100),
+					"memory":   float64(1 * 1024 * 1024 * 1024),
+				},
+			})
+			return url && method
+		},
+	}
+	client := cmd.NewClient(&http.Client{Transport: trans}, nil, manager)
+	command := AppUpdate{}
+	command.Flags().Parse(true, []string{"-a", "ble", "--cpu", "100m", "--memory", "1Gi"})
 	err := command.Run(&context, client)
 	c.Assert(err, check.IsNil)
 	c.Assert(stdout.String(), check.Equals, expected)
@@ -586,81 +647,64 @@ func (s *S) TestAppUpdateFlags(c *check.C) {
 	c.Assert(flagset, check.NotNil)
 	flagset.Parse(true, []string{"-d", "description of my app"})
 	appdescription := flagset.Lookup("description")
-	usage := "App description"
 	c.Check(appdescription, check.NotNil)
 	c.Check(appdescription.Name, check.Equals, "description")
-	c.Check(appdescription.Usage, check.Equals, usage)
 	c.Check(appdescription.Value.String(), check.Equals, "description of my app")
 	c.Check(appdescription.DefValue, check.Equals, "")
 	sdescription := flagset.Lookup("d")
 	c.Check(sdescription, check.NotNil)
 	c.Check(sdescription.Name, check.Equals, "d")
-	c.Check(sdescription.Usage, check.Equals, usage)
 	c.Check(sdescription.Value.String(), check.Equals, "description of my app")
 	c.Check(sdescription.DefValue, check.Equals, "")
 	flagset.Parse(true, []string{"-p", "my plan"})
 	plan := flagset.Lookup("plan")
-	description := "App plan"
 	c.Check(plan, check.NotNil)
 	c.Check(plan.Name, check.Equals, "plan")
-	c.Check(plan.Usage, check.Equals, description)
 	c.Check(plan.Value.String(), check.Equals, "my plan")
 	c.Check(plan.DefValue, check.Equals, "")
 	splan := flagset.Lookup("p")
 	c.Check(splan, check.NotNil)
 	c.Check(splan.Name, check.Equals, "p")
-	c.Check(splan.Usage, check.Equals, description)
 	c.Check(splan.Value.String(), check.Equals, "my plan")
 	c.Check(splan.DefValue, check.Equals, "")
 	flagset.Parse(true, []string{"-o", "myPool"})
 	pool := flagset.Lookup("pool")
-	description = "App pool"
 	c.Check(pool, check.NotNil)
 	c.Check(pool.Name, check.Equals, "pool")
-	c.Check(pool.Usage, check.Equals, description)
 	c.Check(pool.Value.String(), check.Equals, "myPool")
 	c.Check(pool.DefValue, check.Equals, "")
 	spool := flagset.Lookup("o")
 	c.Check(spool, check.NotNil)
 	c.Check(spool.Name, check.Equals, "o")
-	c.Check(spool.Usage, check.Equals, description)
 	c.Check(spool.Value.String(), check.Equals, "myPool")
 	c.Check(spool.DefValue, check.Equals, "")
 	flagset.Parse(true, []string{"-t", "newowner"})
 	teamOwner := flagset.Lookup("team-owner")
-	description = "App team owner"
 	c.Check(teamOwner, check.NotNil)
 	c.Check(teamOwner.Name, check.Equals, "team-owner")
-	c.Check(teamOwner.Usage, check.Equals, description)
 	c.Check(teamOwner.Value.String(), check.Equals, "newowner")
 	c.Check(teamOwner.DefValue, check.Equals, "")
 	steamOwner := flagset.Lookup("t")
 	c.Check(steamOwner, check.NotNil)
 	c.Check(steamOwner.Name, check.Equals, "t")
-	c.Check(steamOwner.Usage, check.Equals, description)
 	c.Check(steamOwner.Value.String(), check.Equals, "newowner")
 	c.Check(steamOwner.DefValue, check.Equals, "")
 	flagset.Parse(true, []string{"-g", "tag"})
-	usage = "App tag"
 	tag := flagset.Lookup("tag")
 	c.Check(tag, check.NotNil)
 	c.Check(tag.Name, check.Equals, "tag")
-	c.Check(tag.Usage, check.Equals, usage)
 	c.Check(tag.Value.String(), check.Equals, "[\"tag\"]")
 	c.Check(tag.DefValue, check.Equals, "[]")
 	tag = flagset.Lookup("g")
 	c.Check(tag, check.NotNil)
 	c.Check(tag.Name, check.Equals, "g")
-	c.Check(tag.Usage, check.Equals, usage)
 	c.Check(tag.Value.String(), check.Equals, "[\"tag\"]")
 	c.Check(tag.DefValue, check.Equals, "[]")
 
 	flagset.Parse(true, []string{"--no-restart"})
-	usage = "doesn't restart the app after the update"
 	noRestart := flagset.Lookup("no-restart")
 	c.Check(noRestart, check.NotNil)
 	c.Check(noRestart.Name, check.Equals, "no-restart")
-	c.Check(noRestart.Usage, check.Equals, usage)
 	c.Check(noRestart.Value.String(), check.Equals, "true")
 	c.Check(noRestart.DefValue, check.Equals, "false")
 }

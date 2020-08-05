@@ -17,12 +17,13 @@ require (
 	github.com/sethvargo/go-password v0.1.1
 	github.com/tsuru/config v0.0.0-20180418191556-87403ee7da02
 	github.com/tsuru/gnuflag v0.0.0-20151217162021-86b8c1b864aa
-	github.com/tsuru/go-tsuruclient v0.0.0-20200413205207-f845c52800f9
+	github.com/tsuru/go-tsuruclient v0.0.0-20200804184222-aad3236dabde
 	github.com/tsuru/tablecli v0.0.0-20190131152944-7ded8a3383c6
 	github.com/tsuru/tsuru v0.0.0-20200616195516-9784c7cafdb8
-	golang.org/x/crypto v0.0.0-20190701094942-4def268fd1a4
+	golang.org/x/crypto v0.0.0-20191011191535-87dc89f01550
 	gopkg.in/check.v1 v1.0.0-20180628173108-788fd7840127
 	gopkg.in/yaml.v2 v2.2.2
+	k8s.io/apimachinery v0.0.0-20190913080033-27d36303b655
 )
 
 replace (
