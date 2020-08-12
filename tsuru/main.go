@@ -185,6 +185,7 @@ func buildManager(name string) *cmd.Manager {
 	m.Register(&admin.ProvisionerInfo{})
 	m.Register(&client.AppVersionRouterAdd{})
 	m.Register(&client.AppVersionRouterRemove{})
+	m.Register(client.UserInfo{})
 	m.RegisterRemoved("bs-env-set", "You should use `tsuru node-container-update big-sibling` instead.")
 	m.RegisterRemoved("bs-info", "You should use `tsuru node-container-info big-sibling` instead.")
 	m.RegisterRemoved("bs-upgrade", "You should use `tsuru node-container-upgrade big-sibling` instead.")

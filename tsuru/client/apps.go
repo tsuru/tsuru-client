@@ -277,7 +277,8 @@ func (c *AppUpdate) Run(ctx *cmd.Context, cli *cmd.Client) error {
 	}
 
 	if c.cpu != "" {
-		cpuQuantity, err := resource.ParseQuantity(c.cpu)
+		var cpuQuantity resource.Quantity
+		cpuQuantity, err = resource.ParseQuantity(c.cpu)
 		if err != nil {
 			return err
 		}
@@ -286,7 +287,8 @@ func (c *AppUpdate) Run(ctx *cmd.Context, cli *cmd.Client) error {
 	}
 
 	if c.memory != "" {
-		memoryQuantity, err := resource.ParseQuantity(c.memory)
+		var memoryQuantity resource.Quantity
+		memoryQuantity, err = resource.ParseQuantity(c.memory)
 		if err != nil {
 			return err
 		}
@@ -868,7 +870,7 @@ type appFilter struct {
 	tags      cmd.StringSliceFlag
 }
 
-func (f *appFilter) queryString(client *cmd.Client) (url.Values, error) {
+func (f *appFilter) queryString(cli *cmd.Client) (url.Values, error) {
 	result := make(url.Values)
 	if f.name != "" {
 		result.Set("name", f.name)
@@ -882,11 +884,11 @@ func (f *appFilter) queryString(client *cmd.Client) (url.Values, error) {
 	if f.owner != "" {
 		owner := f.owner
 		if owner == "me" {
-			user, err := cmd.GetUser(client)
+			var err error
+			owner, err = currentUserEmail(cli)
 			if err != nil {
 				return nil, err
 			}
-			owner = user.Email
 		}
 		result.Set("owner", owner)
 	}
@@ -903,6 +905,20 @@ func (f *appFilter) queryString(client *cmd.Client) (url.Values, error) {
 		result.Add("tag", tag)
 	}
 	return result, nil
+}
+
+func currentUserEmail(cli *cmd.Client) (string, error) {
+	apiClient, err := client.ClientFromEnvironment(&tsuru.Configuration{
+		HTTPClient: cli.HTTPClient,
+	})
+	if err != nil {
+		return "", err
+	}
+	user, _, err := apiClient.UserApi.UserGet(context.TODO())
+	if err != nil {
+		return "", err
+	}
+	return user.Email, nil
 }
 
 type AppList struct {

@@ -974,8 +974,8 @@ func (s *S) TestListUsersRunFilterByUserEmail(c *check.C) {
 	trans := cmdtest.ConditionalTransport{
 		Transport: cmdtest.Transport{Message: result, Status: http.StatusOK},
 		CondFunc: func(req *http.Request) bool {
-			return req.Method == "GET" && strings.HasSuffix(req.URL.Path, "/users") &&
-				req.URL.RawQuery == "userEmail=test2@test.com&role=&context="
+			return req.Method == "GET" && strings.HasSuffix(req.URL.Path, "/1.0/users") &&
+				req.URL.RawQuery == "context=&role=&userEmail=test2%40test.com"
 		},
 	}
 	expected := `+---------------+---------------+
@@ -1013,8 +1013,8 @@ func (s *S) TestListUsersRunFilterByRole(c *check.C) {
 	trans := cmdtest.ConditionalTransport{
 		Transport: cmdtest.Transport{Message: result, Status: http.StatusOK},
 		CondFunc: func(req *http.Request) bool {
-			return req.Method == "GET" && strings.HasSuffix(req.URL.Path, "/users") &&
-				req.URL.RawQuery == "userEmail=&role=role2&context="
+			return req.Method == "GET" && strings.HasSuffix(req.URL.Path, "/1.0/users") &&
+				req.URL.RawQuery == "context=&role=role2&userEmail="
 		},
 	}
 	expected := `+---------------+---------------+
@@ -1052,8 +1052,8 @@ func (s *S) TestListUsersRunFilterByRoleWithContext(c *check.C) {
 	trans := cmdtest.ConditionalTransport{
 		Transport: cmdtest.Transport{Message: result, Status: http.StatusOK},
 		CondFunc: func(req *http.Request) bool {
-			return req.Method == "GET" && strings.HasSuffix(req.URL.Path, "/users") &&
-				req.URL.RawQuery == "userEmail=&role=role2&context=x"
+			return req.Method == "GET" && strings.HasSuffix(req.URL.Path, "/1.0/users") &&
+				req.URL.RawQuery == "context=x&role=role2&userEmail="
 		},
 	}
 	expected := `+---------------+---------------+
