@@ -500,10 +500,6 @@ func (u *unit) Port() string {
 	return strings.Join(ports, ", ")
 }
 
-func (u *unit) Available() bool {
-	return u.Status == "started"
-}
-
 type lock struct {
 	Locked      bool
 	Reason      string

@@ -2782,13 +2782,6 @@ func (s *S) TestUnitHost(c *check.C) {
 	}
 }
 
-func (s *S) TestUnitAvailable(c *check.C) {
-	u := &unit{Status: "started"}
-	c.Assert(u.Available(), check.Equals, true)
-	u = &unit{Status: "down"}
-	c.Assert(u.Available(), check.Equals, false)
-}
-
 func (s *S) TestAppStopInfo(c *check.C) {
 	c.Assert((&AppStop{}).Info(), check.NotNil)
 }
