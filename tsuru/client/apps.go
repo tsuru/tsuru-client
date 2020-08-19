@@ -238,7 +238,7 @@ func (c *AppUpdate) Flags() *gnuflag.FlagSet {
 		poolMessage := "Changes pool for the app"
 		teamOwnerMessage := "Changes owner team for the app"
 		tagMessage := "Add tags for the app. You can add multiple tags repeating the --tag argument"
-		platformMsg := "Changes platform for the apa"
+		platformMsg := "Changes platform for the app"
 		imgReset := "Forces next deploy to build app image from scratch"
 		noRestartMessage := "Prevent tsuru from restarting the application"
 		flagSet.StringVar(&c.args.Description, "description", "", descriptionMessage)
@@ -256,8 +256,8 @@ func (c *AppUpdate) Flags() *gnuflag.FlagSet {
 		flagSet.StringVar(&c.args.TeamOwner, "team-owner", "", teamOwnerMessage)
 		flagSet.Var((*cmd.StringSliceFlag)(&c.args.Tags), "g", tagMessage)
 		flagSet.Var((*cmd.StringSliceFlag)(&c.args.Tags), "tag", tagMessage)
-		flagSet.StringVar(&c.cpu, "cpu", "", "CPU limit for app, this will override the plan cpu value")
-		flagSet.StringVar(&c.memory, "memory", "", "Memory limit for app, this will override the plan memory value")
+		flagSet.StringVar(&c.cpu, "cpu", "", "CPU limit for app, this will override the plan cpu value. One cpu is equivalent to 1 vCPU/Core, fractional requests are allowed and the expression 0.1 is equivalent to the expression 100m")
+		flagSet.StringVar(&c.memory, "memory", "", "Memory limit for app, this will override the plan memory value. You can express memory as a bytes integer or using one of these suffixes: E, P, T, G, M, K, Ei, Pi, Ti, Gi, Mi, Ki")
 		c.fs = cmd.MergeFlagSet(
 			c.GuessingCommand.Flags(),
 			flagSet,
