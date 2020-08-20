@@ -5,6 +5,7 @@ go 1.12
 require (
 	github.com/Nvveen/Gotty v0.0.0-20170406111628-a8b993ba6abd // indirect
 	github.com/ajg/form v0.0.0-20160822230020-523a5da1a92f
+	github.com/antihax/optional v0.0.0-20180407024304-ca021399b1a6
 	github.com/digitalocean/godo v1.1.1 // indirect
 	github.com/docker/docker v1.13.1
 	github.com/docker/go-connections v0.4.0
@@ -15,14 +16,15 @@ require (
 	github.com/pmorie/go-open-service-broker-client v0.0.0-20180330214919-dca737037ce6
 	github.com/sabhiram/go-gitignore v0.0.0-20171017070213-362f9845770f
 	github.com/sethvargo/go-password v0.1.1
-	github.com/tsuru/config v0.0.0-20180418191556-87403ee7da02
+	github.com/tsuru/config v0.0.0-20200717192526-2a9a0efe5f28
 	github.com/tsuru/gnuflag v0.0.0-20151217162021-86b8c1b864aa
-	github.com/tsuru/go-tsuruclient v0.0.0-20200413205207-f845c52800f9
+	github.com/tsuru/go-tsuruclient v0.0.0-20200812143932-f76c67509dd4
 	github.com/tsuru/tablecli v0.0.0-20190131152944-7ded8a3383c6
-	github.com/tsuru/tsuru v0.0.0-20200616195516-9784c7cafdb8
-	golang.org/x/crypto v0.0.0-20190701094942-4def268fd1a4
-	gopkg.in/check.v1 v1.0.0-20180628173108-788fd7840127
-	gopkg.in/yaml.v2 v2.2.2
+	github.com/tsuru/tsuru v0.0.0-20200806210400-056d51c31afe
+	golang.org/x/crypto v0.0.0-20191011191535-87dc89f01550
+	gopkg.in/check.v1 v1.0.0-20200227125254-8fa46927fb4f
+	gopkg.in/yaml.v2 v2.3.0
+	k8s.io/apimachinery v0.0.0-20190913080033-27d36303b655
 )
 
 replace (

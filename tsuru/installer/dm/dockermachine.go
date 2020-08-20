@@ -200,10 +200,6 @@ func (d *DockerMachine) createRegistryCertificate(hosts ...string) error {
 	return generator.GenerateCert(certOpts)
 }
 
-func (d *DockerMachine) DeleteAll() error {
-	return d.API.DeleteAll()
-}
-
 func (d *DockerMachine) Close() error {
 	return d.API.Close()
 }

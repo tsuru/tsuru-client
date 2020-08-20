@@ -17,6 +17,7 @@ import (
 	"strings"
 	"text/template"
 
+	"github.com/antihax/optional"
 	"github.com/tsuru/gnuflag"
 	"github.com/tsuru/go-tsuruclient/pkg/client"
 	"github.com/tsuru/go-tsuruclient/pkg/tsuru"
@@ -321,12 +322,51 @@ func (c *TeamList) Run(ctx *cmd.Context, cli *cmd.Client) error {
 	return nil
 }
 
+func formatRoleInstances(userRoles []tsuru.RoleUser) []string {
+	roles := make([]string, len(userRoles))
+	for i, r := range userRoles {
+		if r.Contextvalue != "" {
+			r.Contextvalue = " " + r.Contextvalue
+		}
+		if r.Group != "" {
+			r.Group = fmt.Sprintf(" (group %s)", r.Group)
+		}
+		roles[i] = fmt.Sprintf("%s(%s%s)%s", r.Name, r.Contexttype, r.Contextvalue, r.Group)
+	}
+	sort.Strings(roles)
+	return roles
+}
+
+func formatPermissionInstances(userPerms []tsuru.PermissionUser) []string {
+	permissions := make([]string, len(userPerms))
+	for i, r := range userPerms {
+		if r.Name == "" {
+			r.Name = "*"
+		}
+		if r.Contextvalue != "" {
+			r.Contextvalue = " " + r.Contextvalue
+		}
+		if r.Group != "" {
+			r.Group = fmt.Sprintf(" (group %s)", r.Group)
+		}
+		permissions[i] = fmt.Sprintf("%s(%s%s)%s", r.Name, r.Contexttype, r.Contextvalue, r.Group)
+	}
+	sort.Strings(permissions)
+	return permissions
+}
+
+type apiUser struct {
+	Email       string
+	Roles       []tsuru.RoleUser
+	Permissions []tsuru.PermissionUser
+}
+
 type ContentTeam struct {
-	Name  string        `json:"name"`
-	Users []cmd.APIUser `json:"users"`
-	Pools []Pool        `json:"pools"`
-	Apps  []app         `json:"apps"`
-	Tags  []string      `json:"tags"`
+	Name  string    `json:"name"`
+	Users []apiUser `json:"users"`
+	Pools []Pool    `json:"pools"`
+	Apps  []app     `json:"apps"`
+	Tags  []string  `json:"tags"`
 }
 
 type TeamInfo struct{}
@@ -378,7 +418,7 @@ Tags: {{.Tags}}
 	usersTable.Headers = tablecli.Row{"User", "Roles"}
 	usersTable.LineSeparator = true
 	for _, user := range contentTeam.Users {
-		usersTable.AddRow(tablecli.Row{user.Email, strings.Join(user.RoleInstances(), "\n")})
+		usersTable.AddRow(tablecli.Row{user.Email, strings.Join(formatRoleInstances(user.Roles), "\n")})
 	}
 	if usersTable.Rows() > 0 {
 		buf.WriteString("\n")
@@ -670,35 +710,34 @@ type ListUsers struct {
 	fs        *gnuflag.FlagSet
 }
 
-func (c *ListUsers) Run(ctx *cmd.Context, client *cmd.Client) error {
+func (c *ListUsers) Run(ctx *cmd.Context, cli *cmd.Client) error {
 	if c.userEmail != "" && c.role != "" {
 		return errors.New("You cannot filter by user email and role at same time. Enter <tsuru user-list --help> for more information.")
 	}
 	if c.context != "" && c.role == "" {
 		return errors.New("You should provide a role to filter by context value.")
 	}
-	url := fmt.Sprintf("/users?userEmail=%s&role=%s&context=%s", c.userEmail, c.role, c.context)
-	url, err := cmd.GetURL(url)
+
+	apiClient, err := client.ClientFromEnvironment(&tsuru.Configuration{
+		HTTPClient: cli.HTTPClient,
+	})
 	if err != nil {
 		return err
 	}
-	request, _ := http.NewRequest("GET", url, nil)
-	resp, err := client.Do(request)
+	users, _, err := apiClient.UserApi.UsersList(context.TODO(), c.userEmail, &tsuru.UsersListOpts{
+		Context: optional.NewString(c.context),
+		Role:    optional.NewString(c.role),
+	})
 	if err != nil {
 		return err
 	}
-	defer resp.Body.Close()
-	var users []cmd.APIUser
-	err = json.NewDecoder(resp.Body).Decode(&users)
-	if err != nil {
-		return err
-	}
+
 	table := tablecli.NewTable()
 	table.Headers = tablecli.Row([]string{"User", "Roles"})
 	for _, u := range users {
 		table.AddRow(tablecli.Row([]string{
 			u.Email,
-			strings.Join(u.RoleInstances(), "\n"),
+			strings.Join(formatRoleInstances(u.Roles), "\n"),
 		}))
 	}
 	table.LineSeparator = true
@@ -727,6 +766,42 @@ func (c *ListUsers) Flags() *gnuflag.FlagSet {
 		c.fs.StringVar(&c.context, "context-value", "", "Filter user by role context value")
 	}
 	return c.fs
+}
+
+type UserInfo struct{}
+
+func (UserInfo) Info() *cmd.Info {
+	return &cmd.Info{
+		Name:  "user-info",
+		Usage: "user-info",
+		Desc:  "Displays information about the current user.",
+	}
+}
+
+func (UserInfo) Run(ctx *cmd.Context, cli *cmd.Client) error {
+	apiClient, err := client.ClientFromEnvironment(&tsuru.Configuration{
+		HTTPClient: cli.HTTPClient,
+	})
+	if err != nil {
+		return err
+	}
+	u, _, err := apiClient.UserApi.UserGet(context.TODO())
+	if err != nil {
+		return err
+	}
+	fmt.Fprintf(ctx.Stdout, "Email: %s\n", u.Email)
+	roles := formatRoleInstances(u.Roles)
+	if len(roles) > 0 {
+		fmt.Fprintf(ctx.Stdout, "Roles:\n\t%s\n", strings.Join(roles, "\n\t"))
+	}
+	perms := formatPermissionInstances(u.Permissions)
+	if len(perms) > 0 {
+		fmt.Fprintf(ctx.Stdout, "Permissions:\n\t%s\n", strings.Join(perms, "\n\t"))
+	}
+	if len(u.Groups) > 0 {
+		fmt.Fprintf(ctx.Stdout, "Groups:\n\t%s\n", strings.Join(u.Groups, "\n\t"))
+	}
+	return nil
 }
 
 func parseErrBody(err error) error {

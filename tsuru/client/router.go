@@ -14,14 +14,146 @@ import (
 	"strings"
 
 	"github.com/ajg/form"
+	"github.com/pkg/errors"
 	"github.com/tsuru/gnuflag"
 	"github.com/tsuru/go-tsuruclient/pkg/client"
 	"github.com/tsuru/go-tsuruclient/pkg/tsuru"
 	"github.com/tsuru/tablecli"
 	"github.com/tsuru/tsuru/cmd"
-	"github.com/tsuru/tsuru/router"
 	appTypes "github.com/tsuru/tsuru/types/app"
 )
+
+type RouterAdd struct {
+	rawConfig string
+	fs        *gnuflag.FlagSet
+}
+
+func (c *RouterAdd) Info() *cmd.Info {
+	return &cmd.Info{
+		Name:    "router-add",
+		Usage:   "router-add <name> <type> [--config {json object}]",
+		Desc:    "Adds a new dynamic router to tsuru.",
+		MinArgs: 2,
+		MaxArgs: 2,
+	}
+}
+
+func (c *RouterAdd) Flags() *gnuflag.FlagSet {
+	if c.fs == nil {
+		c.fs = gnuflag.NewFlagSet("router-add", gnuflag.ExitOnError)
+		c.fs.StringVar(&c.rawConfig, "config", "", "JSON object with router configuration")
+	}
+	return c.fs
+}
+
+func (c *RouterAdd) Run(ctx *cmd.Context, cli *cmd.Client) error {
+	apiClient, err := client.ClientFromEnvironment(&tsuru.Configuration{
+		HTTPClient: cli.HTTPClient,
+	})
+	if err != nil {
+		return err
+	}
+	if len(ctx.Args) != 2 {
+		return errors.New("invalid arguments")
+	}
+	dynRouter := tsuru.DynamicRouter{
+		Name: ctx.Args[0],
+		Type: ctx.Args[1],
+	}
+	if c.rawConfig != "" {
+		err = json.Unmarshal([]byte(c.rawConfig), &dynRouter.Config)
+		if err != nil {
+			return errors.Wrap(err, "unable to parse config")
+		}
+	}
+	_, err = apiClient.RouterApi.RouterCreate(context.TODO(), dynRouter)
+	if err != nil {
+		return err
+	}
+	fmt.Fprintln(ctx.Stdout, "Dynamic router successfully added.")
+	return nil
+}
+
+type RouterUpdate struct {
+	rawConfig string
+	fs        *gnuflag.FlagSet
+}
+
+func (c *RouterUpdate) Info() *cmd.Info {
+	return &cmd.Info{
+		Name:    "router-update",
+		Usage:   "router-update <name> <type> [--config {json object}]",
+		Desc:    "Updates an existing dynamic router.",
+		MinArgs: 2,
+		MaxArgs: 2,
+	}
+}
+
+func (c *RouterUpdate) Flags() *gnuflag.FlagSet {
+	if c.fs == nil {
+		c.fs = gnuflag.NewFlagSet("router-add", gnuflag.ExitOnError)
+		c.fs.StringVar(&c.rawConfig, "config", "", "JSON object with router configuration")
+	}
+	return c.fs
+}
+
+func (c *RouterUpdate) Run(ctx *cmd.Context, cli *cmd.Client) error {
+	apiClient, err := client.ClientFromEnvironment(&tsuru.Configuration{
+		HTTPClient: cli.HTTPClient,
+	})
+	if err != nil {
+		return err
+	}
+	if len(ctx.Args) != 2 {
+		return errors.New("invalid arguments")
+	}
+	dynRouter := tsuru.DynamicRouter{
+		Name: ctx.Args[0],
+		Type: ctx.Args[1],
+	}
+	if c.rawConfig != "" {
+		err = json.Unmarshal([]byte(c.rawConfig), &dynRouter.Config)
+		if err != nil {
+			return errors.Wrap(err, "unable to parse config")
+		}
+	}
+	_, err = apiClient.RouterApi.RouterUpdate(context.TODO(), dynRouter.Name, dynRouter)
+	if err != nil {
+		return err
+	}
+	fmt.Fprintln(ctx.Stdout, "Dynamic router successfully updated.")
+	return nil
+}
+
+type RouterRemove struct{}
+
+func (c *RouterRemove) Info() *cmd.Info {
+	return &cmd.Info{
+		Name:    "router-remove",
+		Usage:   "router-remove <name>",
+		Desc:    "Removes an existing dynamic router.",
+		MinArgs: 1,
+		MaxArgs: 1,
+	}
+}
+
+func (c *RouterRemove) Run(ctx *cmd.Context, cli *cmd.Client) error {
+	apiClient, err := client.ClientFromEnvironment(&tsuru.Configuration{
+		HTTPClient: cli.HTTPClient,
+	})
+	if err != nil {
+		return err
+	}
+	if len(ctx.Args) != 1 {
+		return errors.New("invalid arguments")
+	}
+	_, err = apiClient.RouterApi.RouterDelete(context.TODO(), ctx.Args[0])
+	if err != nil {
+		return err
+	}
+	fmt.Fprintln(ctx.Stdout, "Dynamic router successfully removed.")
+	return nil
+}
 
 type RoutersList struct{}
 
@@ -34,26 +166,18 @@ func (c *RoutersList) Info() *cmd.Info {
 	}
 }
 
-func (c *RoutersList) Run(context *cmd.Context, client *cmd.Client) error {
-	url, err := cmd.GetURLVersion("1.3", "/routers")
+func (c *RoutersList) Run(ctx *cmd.Context, cli *cmd.Client) error {
+	apiClient, err := client.ClientFromEnvironment(&tsuru.Configuration{
+		HTTPClient: cli.HTTPClient,
+	})
 	if err != nil {
 		return err
 	}
-	request, err := http.NewRequest("GET", url, nil)
+	routers, _, err := apiClient.RouterApi.RouterList(context.TODO())
 	if err != nil {
 		return err
 	}
-	response, err := client.Do(request)
-	if err != nil {
-		return err
-	}
-	var routers []router.PlanRouter
-	if response.StatusCode == http.StatusOK {
-		err = json.NewDecoder(response.Body).Decode(&routers)
-		if err != nil {
-			return err
-		}
-	}
+
 	table := tablecli.NewTable()
 	table.Headers = tablecli.Row([]string{"Name", "Type", "Info"})
 	table.LineSeparator = true
@@ -63,9 +187,64 @@ func (c *RoutersList) Run(context *cmd.Context, client *cmd.Client) error {
 			infos = append(infos, fmt.Sprintf("%s: %s", k, v))
 		}
 		sort.Strings(infos)
+		if router.Dynamic {
+			router.Type += " (dynamic)"
+		}
 		table.AddRow(tablecli.Row([]string{router.Name, router.Type, strings.Join(infos, "\n")}))
 	}
-	context.Stdout.Write(table.Bytes())
+	ctx.Stdout.Write(table.Bytes())
+	return nil
+}
+
+type RouterInfo struct{}
+
+func (c *RouterInfo) Info() *cmd.Info {
+	return &cmd.Info{
+		Name:    "router-info",
+		Usage:   "router-info <name>",
+		Desc:    "Show detailed information for router.",
+		MinArgs: 1,
+		MaxArgs: 1,
+	}
+}
+
+func (c *RouterInfo) Run(ctx *cmd.Context, cli *cmd.Client) error {
+	apiClient, err := client.ClientFromEnvironment(&tsuru.Configuration{
+		HTTPClient: cli.HTTPClient,
+	})
+	if err != nil {
+		return err
+	}
+	routers, _, err := apiClient.RouterApi.RouterList(context.TODO())
+	if err != nil {
+		return err
+	}
+	name := ctx.Args[0]
+
+	var router *tsuru.PlanRouter
+	for _, r := range routers {
+		if r.Name == name {
+			router = &r
+			break
+		}
+	}
+	if router == nil {
+		return errors.Errorf("router %q not found", name)
+	}
+
+	fmt.Fprintf(ctx.Stdout, "Name: %s\n", router.Name)
+	fmt.Fprintf(ctx.Stdout, "Type: %s\n", router.Type)
+	fmt.Fprintf(ctx.Stdout, "Dynamic: %v\n", router.Dynamic)
+	fmt.Fprintf(ctx.Stdout, "Info:\n")
+	for key, value := range router.Info {
+		fmt.Fprintf(ctx.Stdout, "  %s: %s\n", key, value)
+	}
+	fmt.Fprintf(ctx.Stdout, "Config:\n")
+	data, err := json.MarshalIndent(router.Config, "", "  ")
+	if err != nil {
+		return err
+	}
+	fmt.Fprintf(ctx.Stdout, "%s\n", data)
 	return nil
 }
 

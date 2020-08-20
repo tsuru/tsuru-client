@@ -6,6 +6,7 @@ package client
 
 import (
 	"bytes"
+	"context"
 	"encoding/json"
 	"errors"
 	"fmt"
@@ -22,10 +23,13 @@ import (
 
 	"github.com/ajg/form"
 	"github.com/tsuru/gnuflag"
+	"github.com/tsuru/go-tsuruclient/pkg/client"
+	"github.com/tsuru/go-tsuruclient/pkg/tsuru"
 	"github.com/tsuru/tablecli"
 	"github.com/tsuru/tsuru/cmd"
 	apptypes "github.com/tsuru/tsuru/types/app"
 	"github.com/tsuru/tsuru/volume"
+	"k8s.io/apimachinery/pkg/api/resource"
 )
 
 const (
@@ -210,70 +214,50 @@ func (c *AppCreate) Run(context *cmd.Context, client *cmd.Client) error {
 }
 
 type AppUpdate struct {
-	description string
-	platform    string
-	plan        string
-	pool        string
-	teamOwner   string
-	imageReset  bool
-	noRestart   bool
-	tags        cmd.StringSliceFlag
-	fs          *gnuflag.FlagSet
+	args tsuru.UpdateApp
+	fs   *gnuflag.FlagSet
 	cmd.GuessingCommand
 	cmd.ConfirmationCommand
+
+	memory, cpu string
 }
 
 func (c *AppUpdate) Info() *cmd.Info {
 	return &cmd.Info{
 		Name:  "app-update",
-		Usage: "app-update [-a/--app appname] [--description/-d description] [--plan/-p plan name] [--pool/-o pool] [--team-owner/-t team owner] [--platform/-l platform] [-i/--image-reset] [--tag/-g tag]...",
-		Desc: `Updates an app, changing its description, tags, plan or pool information.
-
-The [[--description]] parameter sets a description for your app.
-
-The [[--no-restart]] parameter sets the specified parameters to be updated without restarting the application
-
-The [[--plan]] parameter changes the plan of your app.
-
-The [[--pool]] parameter changes the pool of your app.
-
-The [[--team-owner]] parameter sets owner team for an application.
-
-The [[--platform]] parameter sets a platform for an application.
-
-The [[--image-reset]] parameter rebuilds the platform of an application.
-
-The [[--tag]] parameter sets a tag for your app. You can set
-multiple [[--tag]] parameters.`,
+		Usage: "app-update [-a/--app appname] [--description/-d description] [--plan/-p plan name] [--pool/-o pool] [--team-owner/-t team owner] [--platform/-l platform] [-i/--image-reset] [--cpu cpu] [--memory memory] [--tag/-g tag]...",
+		Desc:  `Updates an app, changing its description, tags, plan or pool information.`,
 	}
 }
 
 func (c *AppUpdate) Flags() *gnuflag.FlagSet {
 	if c.fs == nil {
 		flagSet := gnuflag.NewFlagSet("", gnuflag.ExitOnError)
-		descriptionMessage := "App description"
-		planMessage := "App plan"
-		poolMessage := "App pool"
-		teamOwnerMessage := "App team owner"
-		tagMessage := "App tag"
-		platformMsg := "App platform"
+		descriptionMessage := "Changes description for the app"
+		planMessage := "Changes plan for the app"
+		poolMessage := "Changes pool for the app"
+		teamOwnerMessage := "Changes owner team for the app"
+		tagMessage := "Add tags for the app. You can add multiple tags repeating the --tag argument"
+		platformMsg := "Changes platform for the app"
 		imgReset := "Forces next deploy to build app image from scratch"
-		noRestartMessage := "doesn't restart the app after the update"
-		flagSet.StringVar(&c.description, "description", "", descriptionMessage)
-		flagSet.StringVar(&c.description, "d", "", descriptionMessage)
-		flagSet.StringVar(&c.plan, "plan", "", planMessage)
-		flagSet.StringVar(&c.plan, "p", "", planMessage)
-		flagSet.StringVar(&c.platform, "l", "", platformMsg)
-		flagSet.StringVar(&c.platform, "platform", "", platformMsg)
-		flagSet.StringVar(&c.pool, "o", "", poolMessage)
-		flagSet.StringVar(&c.pool, "pool", "", poolMessage)
-		flagSet.BoolVar(&c.imageReset, "i", false, imgReset)
-		flagSet.BoolVar(&c.imageReset, "image-reset", false, imgReset)
-		flagSet.BoolVar(&c.noRestart, "no-restart", false, noRestartMessage)
-		flagSet.StringVar(&c.teamOwner, "t", "", teamOwnerMessage)
-		flagSet.StringVar(&c.teamOwner, "team-owner", "", teamOwnerMessage)
-		flagSet.Var(&c.tags, "g", tagMessage)
-		flagSet.Var(&c.tags, "tag", tagMessage)
+		noRestartMessage := "Prevent tsuru from restarting the application"
+		flagSet.StringVar(&c.args.Description, "description", "", descriptionMessage)
+		flagSet.StringVar(&c.args.Description, "d", "", descriptionMessage)
+		flagSet.StringVar(&c.args.Plan, "plan", "", planMessage)
+		flagSet.StringVar(&c.args.Plan, "p", "", planMessage)
+		flagSet.StringVar(&c.args.Platform, "l", "", platformMsg)
+		flagSet.StringVar(&c.args.Platform, "platform", "", platformMsg)
+		flagSet.StringVar(&c.args.Pool, "o", "", poolMessage)
+		flagSet.StringVar(&c.args.Pool, "pool", "", poolMessage)
+		flagSet.BoolVar(&c.args.ImageReset, "i", false, imgReset)
+		flagSet.BoolVar(&c.args.ImageReset, "image-reset", false, imgReset)
+		flagSet.BoolVar(&c.args.NoRestart, "no-restart", false, noRestartMessage)
+		flagSet.StringVar(&c.args.TeamOwner, "t", "", teamOwnerMessage)
+		flagSet.StringVar(&c.args.TeamOwner, "team-owner", "", teamOwnerMessage)
+		flagSet.Var((*cmd.StringSliceFlag)(&c.args.Tags), "g", tagMessage)
+		flagSet.Var((*cmd.StringSliceFlag)(&c.args.Tags), "tag", tagMessage)
+		flagSet.StringVar(&c.cpu, "cpu", "", "CPU limit for app, this will override the plan cpu value. One cpu is equivalent to 1 vCPU/Core, fractional requests are allowed and the expression 0.1 is equivalent to the expression 100m")
+		flagSet.StringVar(&c.memory, "memory", "", "Memory limit for app, this will override the plan memory value. You can express memory as a bytes integer or using one of these suffixes: E, P, T, G, M, K, Ei, Pi, Ti, Gi, Mi, Ki")
 		c.fs = cmd.MergeFlagSet(
 			c.GuessingCommand.Flags(),
 			flagSet,
@@ -282,41 +266,51 @@ func (c *AppUpdate) Flags() *gnuflag.FlagSet {
 	return c.fs
 }
 
-func (c *AppUpdate) Run(context *cmd.Context, client *cmd.Client) error {
-	context.RawOutput()
+func (c *AppUpdate) Run(ctx *cmd.Context, cli *cmd.Client) error {
+	ctx.RawOutput()
+
+	apiClient, err := client.ClientFromEnvironment(&tsuru.Configuration{
+		HTTPClient: cli.HTTPClient,
+	})
+	if err != nil {
+		return err
+	}
+
+	if c.cpu != "" {
+		var cpuQuantity resource.Quantity
+		cpuQuantity, err = resource.ParseQuantity(c.cpu)
+		if err != nil {
+			return err
+		}
+		milliValue := int(cpuQuantity.MilliValue())
+		c.args.Planoverride.Cpumilli = &milliValue
+	}
+
+	if c.memory != "" {
+		var memoryQuantity resource.Quantity
+		memoryQuantity, err = resource.ParseQuantity(c.memory)
+		if err != nil {
+			return err
+		}
+		val := memoryQuantity.Value()
+		c.args.Planoverride.Memory = &val
+	}
+
 	appName := c.Flags().Lookup("app").Value.String()
 	if appName == "" {
 		return errors.New("Please use the -a/--app flag to specify which app you want to update.")
 	}
-	u, err := cmd.GetURL(fmt.Sprintf("/apps/%s", appName))
+
+	response, err := apiClient.AppApi.AppUpdate(context.TODO(), appName, c.args)
 	if err != nil {
 		return err
 	}
-	v := url.Values{}
-	v.Set("plan", c.plan)
-	v.Set("description", c.description)
-	v.Set("pool", c.pool)
-	v.Set("teamOwner", c.teamOwner)
-	v.Set("platform", c.platform)
-	v.Set("imageReset", strconv.FormatBool(c.imageReset))
-	v.Set("noRestart", strconv.FormatBool(c.noRestart))
-	for _, tag := range c.tags {
-		v.Add("tag", tag)
-	}
-	request, err := http.NewRequest("PUT", u, strings.NewReader(v.Encode()))
+
+	err = cmd.StreamJSONResponse(ctx.Stdout, response)
 	if err != nil {
 		return err
 	}
-	request.Header.Set("Content-Type", "application/x-www-form-urlencoded")
-	response, err := client.Do(request)
-	if err != nil {
-		return err
-	}
-	err = cmd.StreamJSONResponse(context.Stdout, response)
-	if err != nil {
-		return err
-	}
-	fmt.Fprintf(context.Stdout, "App %q has been updated!\n", appName)
+	fmt.Fprintf(ctx.Stdout, "App %q has been updated!\n", appName)
 	return nil
 }
 
@@ -504,10 +498,6 @@ func (u *unit) Port() string {
 		ports = append(ports, port)
 	}
 	return strings.Join(ports, ", ")
-}
-
-func (u *unit) Available() bool {
-	return u.Status == "started"
 }
 
 type lock struct {
@@ -876,7 +866,7 @@ type appFilter struct {
 	tags      cmd.StringSliceFlag
 }
 
-func (f *appFilter) queryString(client *cmd.Client) (url.Values, error) {
+func (f *appFilter) queryString(cli *cmd.Client) (url.Values, error) {
 	result := make(url.Values)
 	if f.name != "" {
 		result.Set("name", f.name)
@@ -890,11 +880,11 @@ func (f *appFilter) queryString(client *cmd.Client) (url.Values, error) {
 	if f.owner != "" {
 		owner := f.owner
 		if owner == "me" {
-			user, err := cmd.GetUser(client)
+			var err error
+			owner, err = currentUserEmail(cli)
 			if err != nil {
 				return nil, err
 			}
-			owner = user.Email
 		}
 		result.Set("owner", owner)
 	}
@@ -911,6 +901,20 @@ func (f *appFilter) queryString(client *cmd.Client) (url.Values, error) {
 		result.Add("tag", tag)
 	}
 	return result, nil
+}
+
+func currentUserEmail(cli *cmd.Client) (string, error) {
+	apiClient, err := client.ClientFromEnvironment(&tsuru.Configuration{
+		HTTPClient: cli.HTTPClient,
+	})
+	if err != nil {
+		return "", err
+	}
+	user, _, err := apiClient.UserApi.UserGet(context.TODO())
+	if err != nil {
+		return "", err
+	}
+	return user.Email, nil
 }
 
 type AppList struct {
