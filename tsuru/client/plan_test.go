@@ -25,7 +25,7 @@ func (s *S) TestPlanListBytes(c *check.C) {
     {"name": "test2", "memory": 536870912, "swap": 268435456, "cpushare": 200, "default": true}
 ]`
 	expected := `+-------+-----------+-----------+-----------+---------+
-| Name  | Memory    | Swap      | Cpu Share | Default |
+| Name  | Memory    | Swap      | CPU Share | Default |
 +-------+-----------+-----------+-----------+---------+
 | test  | 536870912 | 268435456 | 100       | false   |
 | test2 | 536870912 | 268435456 | 200       | true    |
@@ -56,12 +56,12 @@ func (s *S) TestPlanListHuman(c *check.C) {
     {"name": "test",  "memory": 536870912, "swap": 268435456, "cpushare": 100, "default": false},
     {"name": "test2", "memory": 536870912, "swap": 268435456, "cpushare": 200, "default": true}
 ]`
-	expected := `+-------+--------+--------+-----------+---------+
-| Name  | Memory | Swap   | Cpu Share | Default |
-+-------+--------+--------+-----------+---------+
-| test  | 512 MB | 256 MB | 100       | false   |
-| test2 | 512 MB | 256 MB | 200       | true    |
-+-------+--------+--------+-----------+---------+
+	expected := `+-------+--------+-------+-----------+---------+
+| Name  | Memory | Swap  | CPU Share | Default |
++-------+--------+-------+-----------+---------+
+| test  | 512Mi  | 256Mi | 100       | false   |
+| test2 | 512Mi  | 256Mi | 200       | true    |
++-------+--------+-------+-----------+---------+
 `
 	context := cmd.Context{
 		Args:   []string{},
