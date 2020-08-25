@@ -14,6 +14,7 @@ import (
 	"github.com/tsuru/tablecli"
 	"github.com/tsuru/tsuru/cmd"
 	apptypes "github.com/tsuru/tsuru/types/app"
+	"k8s.io/apimachinery/pkg/api/resource"
 )
 
 type PlanList struct {
@@ -42,18 +43,20 @@ func (c *PlanList) Info() *cmd.Info {
 
 func renderPlans(plans []apptypes.Plan, isBytes bool) string {
 	table := tablecli.NewTable()
-	table.Headers = []string{"Name", "Memory", "Swap", "Cpu Share", "Default"}
+	table.Headers = []string{"Name", "Memory", "Swap", "CPU Share", "Default"}
 	for _, p := range plans {
 		var memory, swap string
 		if isBytes {
 			memory = fmt.Sprintf("%d", p.Memory)
 			swap = fmt.Sprintf("%d", p.Swap)
 		} else {
-			memory = fmt.Sprintf("%d MB", p.Memory/1024/1024)
-			swap = fmt.Sprintf("%d MB", p.Swap/1024/1024)
+			memory = resource.NewQuantity(p.Memory, resource.BinarySI).String()
+			swap = resource.NewQuantity(p.Swap, resource.BinarySI).String()
 		}
 		table.AddRow([]string{
-			p.Name, memory, swap,
+			p.Name,
+			memory,
+			swap,
 			strconv.Itoa(p.CpuShare),
 			strconv.FormatBool(p.Default),
 		})
