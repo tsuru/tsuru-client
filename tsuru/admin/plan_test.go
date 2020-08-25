@@ -82,20 +82,24 @@ func (s *S) TestPlanCreateMemoryAndSwapUnits(c *check.C) {
 	trans := &cmdtest.ConditionalTransport{
 		Transport: cmdtest.Transport{Message: "", Status: http.StatusCreated},
 		CondFunc: func(req *http.Request) bool {
-			name := req.FormValue("name") == "myplan"
-			memory := req.FormValue("memory") == "100M"
-			swap := req.FormValue("swap") == "512K"
-			cpuShare := req.FormValue("cpushare") == "100"
-			deflt := req.FormValue("default") == "true"
-			method := req.Method == "POST"
-			contentType := req.Header.Get("Content-Type") == "application/x-www-form-urlencoded"
-			url := strings.HasSuffix(req.URL.Path, "/plans")
-			return method && url && contentType && name && memory && swap && cpuShare && deflt
+			if !strings.HasSuffix(req.URL.Path, "/plans") {
+				return false
+			}
+			c.Assert(req.Method, check.Equals, "POST")
+			c.Assert(req.Header.Get("Content-Type"), check.Equals, "application/x-www-form-urlencoded")
+
+			c.Check(req.FormValue("name"), check.Equals, "myplan")
+			c.Check(req.FormValue("memory"), check.Equals, "104857600")
+			c.Check(req.FormValue("swap"), check.Equals, "524288")
+			c.Check(req.FormValue("cpushare"), check.Equals, "100")
+			c.Check(req.FormValue("default"), check.Equals, "true")
+
+			return true
 		},
 	}
 	client := cmd.NewClient(&http.Client{Transport: trans}, nil, s.manager)
 	command := PlanCreate{}
-	command.Flags().Parse(true, []string{"-c", "100", "-m", "100M", "-s", "512K", "-d"})
+	command.Flags().Parse(true, []string{"-c", "100", "-m", "100Mi", "-s", "512Ki", "-d"})
 	err := command.Run(&context, client)
 	c.Assert(err, check.IsNil)
 	c.Assert(stdout.String(), check.Equals, "Plan successfully created!\n")

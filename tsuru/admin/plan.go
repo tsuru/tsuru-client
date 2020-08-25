@@ -13,6 +13,7 @@ import (
 
 	"github.com/tsuru/gnuflag"
 	"github.com/tsuru/tsuru/cmd"
+	"k8s.io/apimachinery/pkg/api/resource"
 )
 
 type PlanCreate struct {
@@ -31,7 +32,7 @@ by M, K or G for megabytes, kilobytes or gigabytes respectively.`
 		c.fs.StringVar(&c.memory, "memory", "0", memory)
 		c.fs.StringVar(&c.memory, "m", "0", memory)
 		swap := `Amount of available swap space for units in bytes or an integer value followed
-by M, K or G for megabytes, kilobytes or gigabytes respectively.`
+by Mi, Ki or Gi for megabytes, kilobytes or gigabytes respectively.`
 		c.fs.StringVar(&c.swap, "swap", "0", swap)
 		c.fs.StringVar(&c.swap, "s", "0", swap)
 		cpushare := `Relative cpu share each unit will have available. This value is unitless and
@@ -64,8 +65,19 @@ func (c *PlanCreate) Run(context *cmd.Context, client *cmd.Client) error {
 	}
 	v := url.Values{}
 	v.Set("name", context.Args[0])
-	v.Set("memory", c.memory)
-	v.Set("swap", c.swap)
+
+	memoryValue, err := parseMemoryQuantity(c.memory)
+	if err != nil {
+		return err
+	}
+	v.Set("memory", fmt.Sprintf("%d", memoryValue))
+
+	swapValue, err := parseMemoryQuantity(c.swap)
+	if err != nil {
+		return err
+	}
+	v.Set("swap", fmt.Sprintf("%d", swapValue))
+
 	v.Set("cpushare", strconv.Itoa(c.cpushare))
 	v.Set("default", strconv.FormatBool(c.setDefault))
 	b := strings.NewReader(v.Encode())
@@ -113,4 +125,17 @@ func (c *PlanRemove) Run(context *cmd.Context, client *cmd.Client) error {
 	}
 	fmt.Fprintf(context.Stdout, "Plan successfully removed!\n")
 	return nil
+}
+
+func parseMemoryQuantity(userQuantity string) (numBytes int64, err error) {
+	if v, err := strconv.Atoi(userQuantity); err == nil {
+		return int64(v), nil
+	}
+	memoryQuantity, err := resource.ParseQuantity(userQuantity)
+	if err != nil {
+		return 0, err
+	}
+
+	numBytes, _ = memoryQuantity.AsInt64()
+	return numBytes, nil
 }
