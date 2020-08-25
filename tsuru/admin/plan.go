@@ -128,7 +128,7 @@ func (c *PlanRemove) Run(context *cmd.Context, client *cmd.Client) error {
 }
 
 func parseMemoryQuantity(userQuantity string) (numBytes int64, err error) {
-	if v, err := strconv.Atoi(userQuantity); err == nil {
+	if v, parseErr := strconv.Atoi(userQuantity); parseErr == nil {
 		return int64(v), nil
 	}
 	memoryQuantity, err := resource.ParseQuantity(userQuantity)
