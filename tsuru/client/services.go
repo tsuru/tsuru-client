@@ -20,6 +20,7 @@ import (
 	"github.com/tsuru/gnuflag"
 	"github.com/tsuru/tablecli"
 	"github.com/tsuru/tsuru/cmd"
+	"github.com/tsuru/tsuru/service"
 )
 
 type ServiceList struct{}
@@ -50,19 +51,25 @@ func (s ServiceList) Run(ctx *cmd.Context, client *cmd.Client) error {
 		return nil
 	}
 	defer resp.Body.Close()
-	b, err := ioutil.ReadAll(resp.Body)
+
+	services := []service.ServiceModel{}
+	err = json.NewDecoder(resp.Body).Decode(&services)
 	if err != nil {
 		return err
 	}
-	rslt, err := cmd.ShowServicesInstancesList(b)
-	if err != nil {
-		return err
+	table := tablecli.NewTable()
+	table.Headers = tablecli.Row([]string{"Services", "Instances"})
+	for _, s := range services {
+		sort.Strings(s.Instances)
+
+		for _, instance := range s.Instances {
+			r := tablecli.Row([]string{s.Service, instance})
+			table.AddRow(r)
+		}
 	}
-	n, _ := ctx.Stdout.Write(rslt)
-	if n != len(rslt) {
-		return errors.New("Failed to write the output of the command")
-	}
-	return nil
+
+	_, err = ctx.Stdout.Write(table.Bytes())
+	return err
 }
 
 type ServiceInstanceAdd struct {
@@ -368,12 +375,8 @@ func (c ServiceInstanceInfo) Run(ctx *cmd.Context, client *cmd.Client) error {
 		return err
 	}
 	defer resp.Body.Close()
-	result, err := ioutil.ReadAll(resp.Body)
-	if err != nil {
-		return err
-	}
 	var si ServiceInstanceInfoModel
-	err = json.Unmarshal(result, &si)
+	err = json.NewDecoder(resp.Body).Decode(&si)
 	if err != nil {
 		return err
 	}
@@ -486,18 +489,18 @@ func (c ServiceInfo) BuildInstancesTable(serviceName string, ctx *cmd.Context, c
 		return err
 	}
 	defer resp.Body.Close()
-	result, err := ioutil.ReadAll(resp.Body)
-	if err != nil {
-		return err
-	}
 	var instances []ServiceInstanceModel
-	err = json.Unmarshal(result, &instances)
+	err = json.NewDecoder(resp.Body).Decode(&instances)
 	if err != nil {
 		return err
 	}
-	ctx.Stdout.Write([]byte(fmt.Sprintf("Info for \"%s\"\n\n", serviceName)))
+	fmt.Fprintf(ctx.Stdout, "Info for \"%s\"\n", serviceName)
+	sort.Slice(instances, func(i, j int) bool {
+		return instances[i].Name < instances[j].Name
+	})
+
 	if len(instances) > 0 {
-		ctx.Stdout.Write([]byte("Instances\n"))
+		fmt.Fprintln(ctx.Stdout, "\nInstances")
 		table := tablecli.NewTable()
 		extraHeaders := c.ExtraHeaders(instances)
 		hasPlan := false
@@ -560,6 +563,9 @@ func (c ServiceInfo) BuildPlansTable(serviceName string, ctx *cmd.Context, clien
 	if err != nil {
 		return err
 	}
+	sort.Slice(plans, func(i, j int) bool {
+		return plans[i].Name < plans[j].Name
+	})
 	if len(plans) > 0 {
 		fmt.Fprint(ctx.Stdout, "\nPlans\n")
 		table := tablecli.NewTable()
