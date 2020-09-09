@@ -405,10 +405,8 @@ github.com/tsuru/gandalf v0.0.0-20180117164358-86866cf0af24/go.mod h1:0VdaaU608j
 github.com/tsuru/gnuflag v0.0.0-20151217162021-86b8c1b864aa h1:JlLQP1xa13a994p/Aau2e3K9xXYaHNoNvTDVIMHSUa4=
 github.com/tsuru/gnuflag v0.0.0-20151217162021-86b8c1b864aa/go.mod h1:UibOSvkMFKRe/eiwktAPAvQG8L+p8nYsECJvu3Dgw7I=
 github.com/tsuru/go-gandalfclient v0.0.0-20160909010455-9d375d012f75/go.mod h1:R5aDolIXVmn+2YSBa/RFjcgEPAb8dVgx+0F0C/gL9Fg=
-github.com/tsuru/go-tsuruclient v0.0.0-20200805185724-5aa62a5190ea h1:p1wsMJqOjULXN4TJQyPZZCwhwKPn6zzds1UZjZiU7kU=
-github.com/tsuru/go-tsuruclient v0.0.0-20200805185724-5aa62a5190ea/go.mod h1:KJLUM1rSes7I01GnjOgndownzYDbCOxxbTxMSzSctTA=
-github.com/tsuru/go-tsuruclient v0.0.0-20200812143932-f76c67509dd4 h1:KuqgNpn9ZAuq3XZN6XSOFtnmHw+1aXCUk2xTZ9eAV/Y=
-github.com/tsuru/go-tsuruclient v0.0.0-20200812143932-f76c67509dd4/go.mod h1:KJLUM1rSes7I01GnjOgndownzYDbCOxxbTxMSzSctTA=
+github.com/tsuru/go-tsuruclient v0.0.0-20200909193302-1ec9de8292a2 h1:gh4IQzn+y7YD+vPeS7Ll1Y5AFK9uWNa1D1UoV9O7nLw=
+github.com/tsuru/go-tsuruclient v0.0.0-20200909193302-1ec9de8292a2/go.mod h1:KJLUM1rSes7I01GnjOgndownzYDbCOxxbTxMSzSctTA=
 github.com/tsuru/monsterqueue v0.0.0-20160909010522-70e946ec66c3 h1:+aJngj5cQjYyx/qSjffQceop25t97hLS0+t8bvx9hg4=
 github.com/tsuru/monsterqueue v0.0.0-20160909010522-70e946ec66c3/go.mod h1:3KR1vkjfm5b7Lhu5OXuO0NMIyZNG0d0d9xh6ufWYVxg=
 github.com/tsuru/tablecli v0.0.0-20180215113938-82de88f75181/go.mod h1:ztYpOhW+u1k21FEqp7nZNgpWbr0dUKok5lgGCZi+1AQ=
