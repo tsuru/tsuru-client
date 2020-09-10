@@ -676,7 +676,7 @@ Quota: {{.Quota.InUse}}/{{if .Quota.Limit}}{{.Quota.Limit}} units{{else}}unlimit
 	if a.Plan.Memory != 0 || a.Plan.Swap != 0 || a.Plan.CpuShare != 0 {
 		buf.WriteString("\n")
 		buf.WriteString("App Plan:\n")
-		buf.WriteString(renderPlans([]apptypes.Plan{a.Plan}, false))
+		buf.WriteString(renderPlans([]apptypes.Plan{a.Plan}, false, false))
 	}
 	if internalAddressesTable.Rows() > 0 {
 		buf.WriteString("\n")

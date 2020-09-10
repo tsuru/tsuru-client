@@ -41,11 +41,27 @@ func (c *PlanList) Info() *cmd.Info {
 	}
 }
 
-func renderPlans(plans []apptypes.Plan, isBytes bool) string {
+func renderPlans(plans []apptypes.Plan, isBytes, showDefaultColumn bool) string {
 	table := tablecli.NewTable()
-	table.Headers = []string{"Name", "Memory", "Swap", "CPU Share", "Default"}
+	table.Headers = []string{"Name", "CPU", "Memory"}
+	hasSwap := false
+
 	for _, p := range plans {
-		var memory, swap string
+		if p.Swap > 0 {
+			hasSwap = true
+		}
+	}
+
+	if hasSwap {
+		table.Headers = append(table.Headers, "Swap")
+	}
+
+	if showDefaultColumn {
+		table.Headers = append(table.Headers, "Default")
+	}
+
+	for _, p := range plans {
+		var cpu, memory, swap string
 		if isBytes {
 			memory = fmt.Sprintf("%d", p.Memory)
 			swap = fmt.Sprintf("%d", p.Swap)
@@ -53,13 +69,33 @@ func renderPlans(plans []apptypes.Plan, isBytes bool) string {
 			memory = resource.NewQuantity(p.Memory, resource.BinarySI).String()
 			swap = resource.NewQuantity(p.Swap, resource.BinarySI).String()
 		}
-		table.AddRow([]string{
+
+		if p.Override.CPUMilli != nil {
+			cpu = fmt.Sprintf("%g", float64(*p.Override.CPUMilli)/10) + "% (override)"
+		} else if p.CPUMilli > 0 {
+			cpu = fmt.Sprintf("%g", float64(p.CPUMilli)/10) + "%"
+		} else {
+			cpu = fmt.Sprintf("%d (CPU share)", p.CpuShare)
+		}
+
+		if p.Override.Memory != nil {
+			memory = resource.NewQuantity(*p.Override.Memory, resource.BinarySI).String() + " (override)"
+		}
+
+		row := []string{
 			p.Name,
+			cpu,
 			memory,
-			swap,
-			strconv.Itoa(p.CpuShare),
-			strconv.FormatBool(p.Default),
-		})
+		}
+
+		if hasSwap {
+			row = append(row, swap)
+		}
+
+		if showDefaultColumn {
+			row = append(row, strconv.FormatBool(p.Default))
+		}
+		table.AddRow(row)
 	}
 	return table.String()
 }
@@ -87,6 +123,6 @@ func (c *PlanList) Run(context *cmd.Context, client *cmd.Client) error {
 	if err != nil {
 		return err
 	}
-	fmt.Fprintf(context.Stdout, "%s", renderPlans(plans, c.bytes))
+	fmt.Fprintf(context.Stdout, "%s", renderPlans(plans, c.bytes, true))
 	return nil
 }

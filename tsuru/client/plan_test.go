@@ -21,15 +21,15 @@ func (s *S) TestPlanListInfo(c *check.C) {
 func (s *S) TestPlanListBytes(c *check.C) {
 	var stdout, stderr bytes.Buffer
 	result := `[
-    {"name": "test",  "memory": 536870912, "swap": 268435456, "cpushare": 100, "default": false},
-    {"name": "test2", "memory": 536870912, "swap": 268435456, "cpushare": 200, "default": true}
+	{"name": "test",  "memory": 536870912, "swap": 268435456, "cpushare": 100, "default": false},
+	{"name": "test2", "memory": 536870912, "swap": 268435456, "cpushare": 200, "default": true}
 ]`
-	expected := `+-------+-----------+-----------+-----------+---------+
-| Name  | Memory    | Swap      | CPU Share | Default |
-+-------+-----------+-----------+-----------+---------+
-| test  | 536870912 | 268435456 | 100       | false   |
-| test2 | 536870912 | 268435456 | 200       | true    |
-+-------+-----------+-----------+-----------+---------+
+	expected := `+-------+-----------------+-----------+-----------+---------+
+| Name  | CPU             | Memory    | Swap      | Default |
++-------+-----------------+-----------+-----------+---------+
+| test  | 100 (CPU share) | 536870912 | 268435456 | false   |
+| test2 | 200 (CPU share) | 536870912 | 268435456 | true    |
++-------+-----------------+-----------+-----------+---------+
 `
 	context := cmd.Context{
 		Args:   []string{},
@@ -53,15 +53,75 @@ func (s *S) TestPlanListBytes(c *check.C) {
 func (s *S) TestPlanListHuman(c *check.C) {
 	var stdout, stderr bytes.Buffer
 	result := `[
-    {"name": "test",  "memory": 536870912, "swap": 268435456, "cpushare": 100, "default": false},
-    {"name": "test2", "memory": 536870912, "swap": 268435456, "cpushare": 200, "default": true}
+	{"name": "test",  "memory": 536870912, "swap": 268435456, "cpushare": 100, "default": false},
+	{"name": "test2", "memory": 536870912, "swap": 268435456, "cpushare": 200, "default": true}
 ]`
-	expected := `+-------+--------+-------+-----------+---------+
-| Name  | Memory | Swap  | CPU Share | Default |
-+-------+--------+-------+-----------+---------+
-| test  | 512Mi  | 256Mi | 100       | false   |
-| test2 | 512Mi  | 256Mi | 200       | true    |
-+-------+--------+-------+-----------+---------+
+	expected := `+-------+-----------------+--------+-------+---------+
+| Name  | CPU             | Memory | Swap  | Default |
++-------+-----------------+--------+-------+---------+
+| test  | 100 (CPU share) | 512Mi  | 256Mi | false   |
+| test2 | 200 (CPU share) | 512Mi  | 256Mi | true    |
++-------+-----------------+--------+-------+---------+
+`
+	context := cmd.Context{
+		Args:   []string{},
+		Stdout: &stdout,
+		Stderr: &stderr,
+	}
+	trans := &cmdtest.ConditionalTransport{
+		Transport: cmdtest.Transport{Message: string(result), Status: http.StatusOK},
+		CondFunc: func(req *http.Request) bool {
+			return strings.HasSuffix(req.URL.Path, "/plans") && req.Method == "GET"
+		},
+	}
+	client := cmd.NewClient(&http.Client{Transport: trans}, nil, manager)
+	command := PlanList{}
+	// command.Flags().Parse(true, []string{"-h"})
+	err := command.Run(&context, client)
+	c.Assert(err, check.IsNil)
+	c.Assert(stdout.String(), check.Equals, expected)
+}
+
+func (s *S) TestPlanListOverride(c *check.C) {
+	var stdout, stderr bytes.Buffer
+	result := `[
+	{"name": "test",  "memory": 536870912, "swap": 268435456, "cpushare": 100, "default": false, "override": {"cpumilli": 300, "memory": 268435456}}
+]`
+	expected := `+------+----------------+------------------+-------+---------+
+| Name | CPU            | Memory           | Swap  | Default |
++------+----------------+------------------+-------+---------+
+| test | 30% (override) | 256Mi (override) | 256Mi | false   |
++------+----------------+------------------+-------+---------+
+`
+	context := cmd.Context{
+		Args:   []string{},
+		Stdout: &stdout,
+		Stderr: &stderr,
+	}
+	trans := &cmdtest.ConditionalTransport{
+		Transport: cmdtest.Transport{Message: string(result), Status: http.StatusOK},
+		CondFunc: func(req *http.Request) bool {
+			return strings.HasSuffix(req.URL.Path, "/plans") && req.Method == "GET"
+		},
+	}
+	client := cmd.NewClient(&http.Client{Transport: trans}, nil, manager)
+	command := PlanList{}
+	// command.Flags().Parse(true, []string{"-h"})
+	err := command.Run(&context, client)
+	c.Assert(err, check.IsNil)
+	c.Assert(stdout.String(), check.Equals, expected)
+}
+
+func (s *S) TestPlanListCPUMilli(c *check.C) {
+	var stdout, stderr bytes.Buffer
+	result := `[
+	{"name": "test",  "memory": 536870912, "swap": 0, "cpumilli": 500, "default": false, "override": {"cpumilli": null, "memory": null}}
+]`
+	expected := `+------+-----+--------+---------+
+| Name | CPU | Memory | Default |
++------+-----+--------+---------+
+| test | 50% | 512Mi  | false   |
++------+-----+--------+---------+
 `
 	context := cmd.Context{
 		Args:   []string{},
