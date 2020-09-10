@@ -25,7 +25,7 @@ release:
 	@echo " ==> Releasing tsuru $(version) version."
 
 	@echo " ==> Replacing version string."
-	@sed -i "" "s/version = \".*\"/version = \"$(version)\"/g" tsuru/main.go
+	@sed -i "s/version = \".*\"/version = \"$(version)\"/g" tsuru/main.go
 
 	@echo " ==> Building binaries."
 	@./misc/build-all.sh
