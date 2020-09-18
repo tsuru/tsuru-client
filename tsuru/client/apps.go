@@ -538,6 +538,7 @@ type app struct {
 	Error       string
 	Routers     []apptypes.AppRouter
 	Volumes     []volume.Volume
+	AutoScale   []tsuru.AutoScaleSpec
 
 	InternalAddresses []appInternalAddress
 }
@@ -668,6 +669,29 @@ Quota: {{.Quota.InUse}}/{{if .Quota.Limit}}{{.Quota.Limit}} units{{else}}unlimit
 			}
 		}
 	}
+
+	autoScaleTable := tablecli.NewTable()
+	autoScaleTable.Headers = tablecli.Row([]string{"Process", "Min", "Max", "Target CPU"})
+	for _, as := range a.AutoScale {
+		var cpu string
+		q, err := resource.ParseQuantity(as.AverageCPU)
+		if err == nil {
+			cpu = fmt.Sprintf("%d%%", q.MilliValue()/10)
+		}
+		autoScaleTable.AddRow(tablecli.Row([]string{
+			fmt.Sprintf("%s (v%d)", as.Process, as.Version),
+			strconv.Itoa(int(as.MinUnits)),
+			strconv.Itoa(int(as.MaxUnits)),
+			cpu,
+		}))
+	}
+
+	if autoScaleTable.Rows() > 0 {
+		buf.WriteString("\n")
+		buf.WriteString("Auto Scale:\n")
+		buf.WriteString(autoScaleTable.String())
+	}
+
 	if servicesTable.Rows() > 0 {
 		buf.WriteString("\n")
 		buf.WriteString(fmt.Sprintf("Service instances: %d\n", servicesTable.Rows()))
