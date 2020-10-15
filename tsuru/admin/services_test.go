@@ -269,6 +269,7 @@ username: username_to_auth
 password: .{16}
 team: team_responsible_to_provide_service
 endpoint:
-  production: production-endpoint.com`
+  production: production-endpoint.com
+multi-cluster: false`
 	c.Assert(string(fc), check.Matches, manifest)
 }
