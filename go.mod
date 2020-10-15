@@ -20,9 +20,9 @@ require (
 	github.com/tsuru/gnuflag v0.0.0-20151217162021-86b8c1b864aa
 	github.com/tsuru/go-tsuruclient v0.0.0-20200917194500-f859f989a659
 	github.com/tsuru/tablecli v0.0.0-20190131152944-7ded8a3383c6
-	github.com/tsuru/tsuru v0.0.0-20200806210400-056d51c31afe
+	github.com/tsuru/tsuru v0.0.0-20201015140049-87f9605e6cb7
 	golang.org/x/crypto v0.0.0-20191011191535-87dc89f01550
-	gopkg.in/check.v1 v1.0.0-20200227125254-8fa46927fb4f
+	gopkg.in/check.v1 v1.0.0-20200902074654-038fdea0a05b
 	gopkg.in/yaml.v2 v2.3.0
 	k8s.io/apimachinery v0.0.0-20190913080033-27d36303b655
 )
