@@ -3,17 +3,20 @@ module github.com/tsuru/tsuru-client
 go 1.12
 
 require (
-	github.com/Nvveen/Gotty v0.0.0-20170406111628-a8b993ba6abd // indirect
+	github.com/Microsoft/hcsshim v0.8.10 // indirect
 	github.com/ajg/form v0.0.0-20160822230020-523a5da1a92f
 	github.com/antihax/optional v0.0.0-20180407024304-ca021399b1a6
+	github.com/containerd/containerd v1.4.1 // indirect
 	github.com/digitalocean/godo v1.1.1 // indirect
+	github.com/docker/distribution v2.7.1+incompatible // indirect
 	github.com/docker/docker v1.13.1
 	github.com/docker/go-connections v0.4.0
 	github.com/docker/machine v0.16.1
 	github.com/exoscale/egoscale v0.9.31 // indirect
 	github.com/fsouza/go-dockerclient v0.0.0-20180427001620-3a206030a28a
 	github.com/ghodss/yaml v1.0.0
-	github.com/pkg/errors v0.8.1
+	github.com/morikuni/aec v1.0.0 // indirect
+	github.com/pkg/errors v0.9.1
 	github.com/pmorie/go-open-service-broker-client v0.0.0-20180330214919-dca737037ce6
 	github.com/sabhiram/go-gitignore v0.0.0-20171017070213-362f9845770f
 	github.com/sethvargo/go-password v0.1.1
@@ -31,7 +34,8 @@ require (
 )
 
 replace (
-	github.com/docker/docker => github.com/docker/engine v0.0.0-20190219214528-cbe11bdc6da8
+	github.com/docker/docker => github.com/docker/engine v0.0.0-20191121165722-d1d5f6476656
+
 	github.com/docker/machine => github.com/cezarsa/machine v0.7.1-0.20190219165632-cdcfd549f935
 	github.com/rancher/kontainer-engine => github.com/cezarsa/kontainer-engine v0.0.4-dev.0.20190725184110-8b6c46d5dadd
 	github.com/samalba/dockerclient => github.com/cezarsa/dockerclient v0.0.0-20190924055524-af5052a88081
