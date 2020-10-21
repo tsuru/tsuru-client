@@ -10,6 +10,7 @@ require (
 	github.com/docker/docker v1.13.1
 	github.com/docker/go-connections v0.4.0
 	github.com/docker/machine v0.16.1
+	github.com/exoscale/egoscale v0.9.31 // indirect
 	github.com/fsouza/go-dockerclient v0.0.0-20180427001620-3a206030a28a
 	github.com/ghodss/yaml v1.0.0
 	github.com/pkg/errors v0.8.1
@@ -20,11 +21,13 @@ require (
 	github.com/tsuru/gnuflag v0.0.0-20151217162021-86b8c1b864aa
 	github.com/tsuru/go-tsuruclient v0.0.0-20200917194500-f859f989a659
 	github.com/tsuru/tablecli v0.0.0-20190131152944-7ded8a3383c6
-	github.com/tsuru/tsuru v0.0.0-20200806210400-056d51c31afe
-	golang.org/x/crypto v0.0.0-20191011191535-87dc89f01550
-	gopkg.in/check.v1 v1.0.0-20200227125254-8fa46927fb4f
+	github.com/tsuru/tsuru v0.0.0-20201020115853-db6e1154ebdc
+	golang.org/x/crypto v0.0.0-20201012173705-84dcc777aaee
+	google.golang.org/appengine v1.6.1 // indirect
+	gopkg.in/check.v1 v1.0.0-20200902074654-038fdea0a05b
 	gopkg.in/yaml.v2 v2.3.0
-	k8s.io/apimachinery v0.0.0-20190913080033-27d36303b655
+	k8s.io/apimachinery v0.18.9
+	k8s.io/client-go v11.0.1-0.20190805182715-88a2adca7e76+incompatible // indirect
 )
 
 replace (
