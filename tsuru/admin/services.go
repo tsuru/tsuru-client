@@ -13,6 +13,7 @@ import (
 	"net/http"
 	"net/url"
 	"os"
+	"strconv"
 	"strings"
 
 	"github.com/tsuru/tsuru/cmd"
@@ -32,11 +33,12 @@ func (c *ServiceCreate) Info() *cmd.Info {
 }
 
 type serviceYaml struct {
-	Id       string
-	Username string
-	Password string
-	Endpoint map[string]string
-	Team     string
+	Id           string
+	Username     string
+	Password     string
+	Endpoint     map[string]string
+	Team         string
+	MultiCluster bool `yaml:"multi-cluster"`
 }
 
 func (c *ServiceCreate) Run(context *cmd.Context, client *cmd.Client) error {
@@ -65,6 +67,7 @@ func (c *ServiceCreate) Run(context *cmd.Context, client *cmd.Client) error {
 	v.Set("username", y.Username)
 	v.Set("team", y.Team)
 	v.Set("endpoint", y.Endpoint["production"])
+	v.Set("multi-cluster", strconv.FormatBool(y.MultiCluster))
 	request, err := http.NewRequest("POST", u, strings.NewReader(v.Encode()))
 	if err != nil {
 		return err
@@ -266,7 +269,8 @@ username: username_to_auth
 password: %s
 team: team_responsible_to_provide_service
 endpoint:
-  production: production-endpoint.com`
+  production: production-endpoint.com
+multi-cluster: false`
 	template = fmt.Sprintf(template, pass)
 	f, err := os.Create("manifest.yaml")
 	if err != nil {

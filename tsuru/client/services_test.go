@@ -404,6 +404,7 @@ func (s *S) TestServiceInstanceAddRun(c *check.C) {
 					"param1": "value1",
 					"param2": "value2",
 				},
+				Pool: "pool-one",
 			})
 			c.Assert(r.Method, check.DeepEquals, "POST")
 			c.Assert(r.Header.Get("Content-Type"), check.DeepEquals, "application/x-www-form-urlencoded")
@@ -417,6 +418,7 @@ func (s *S) TestServiceInstanceAddRun(c *check.C) {
 		"--description", "desc",
 		"--tag", "my tag 1", "--tag", "my tag 2",
 		"--plan-param", "param1=value1", "--plan-param", "param2=value2",
+		"--pool", "pool-one",
 	})
 	err := command.Run(&context, client)
 	c.Assert(err, check.IsNil)

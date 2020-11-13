@@ -78,12 +78,13 @@ type ServiceInstanceAdd struct {
 	description string
 	tags        cmd.StringSliceFlag
 	params      cmd.MapFlag
+	pool        string
 }
 
 func (c *ServiceInstanceAdd) Info() *cmd.Info {
 	return &cmd.Info{
 		Name:  "service-instance-add",
-		Usage: "service-instance-add <service-name> <service-instance-name> [plan] [-t/--team-owner team] [-d/--description description] [-g/--tag tag]... [--plan-param key=value]...",
+		Usage: "service-instance-add <service-name> <service-instance-name> [plan] [-t/--team-owner team] [-d/--description description] [-g/--tag tag]... [--plan-param key=value]... [--pool name]",
 		Desc: `Creates a service instance of a service. There can later be binded to
 applications with [[tsuru service-bind]].
 
@@ -118,6 +119,7 @@ func (c *ServiceInstanceAdd) Run(ctx *cmd.Context, client *cmd.Client) error {
 	v.Set("plan", plan)
 	v.Set("owner", c.teamOwner)
 	v.Set("description", c.description)
+	v.Set("pool", c.pool)
 	for _, tag := range c.tags {
 		v.Add("tag", tag)
 	}
@@ -152,6 +154,7 @@ func (c *ServiceInstanceAdd) Flags() *gnuflag.FlagSet {
 		c.fs.Var(&c.tags, "tag", tagMessage)
 		c.fs.Var(&c.tags, "g", tagMessage)
 		c.fs.Var(&c.params, "plan-param", "Plan specific parameters")
+		c.fs.StringVar(&c.pool, "pool", "", "pool name where this service instance is going to run into (valid only for multi-cluster service)")
 	}
 	return c.fs
 }
