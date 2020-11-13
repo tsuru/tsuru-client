@@ -76,10 +76,20 @@ build:
 check-docs: build
 	./misc/check-all-cmds-docs.sh
 
+godownloader:
+	git clone https://github.com/goreleaser/godownloader.git /tmp/godownloader
+	cd /tmp/godownloader && go install .
+	rm -rf /tmp/godownloader
+
+install.sh: goreleaser-stable.yml godownloader
+	godownloader --repo tsuru/tsuru-client $< >$@
+
+install-scripts: install.sh
+
 metalint:
 	curl -sfL https://raw.githubusercontent.com/golangci/golangci-lint/master/install.sh | sh -s -- -b $$(go env GOPATH)/bin
 	go install ./...
 	go test -i ./...
 	$$(go env GOPATH)/bin/golangci-lint run -c ./.golangci.yml ./...
 
-.PHONY: doc docs release manpage
+.PHONY: doc docs release manpage godownloader install-scripts
