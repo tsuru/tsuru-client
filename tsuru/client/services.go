@@ -57,18 +57,39 @@ func (s ServiceList) Run(ctx *cmd.Context, client *cmd.Client) error {
 	if err != nil {
 		return err
 	}
+	hasPool := false
+	for _, service := range services {
+		for _, instance := range service.ServiceInstances {
+			if instance.Pool != "" {
+				hasPool = true
+			}
+		}
+	}
 	table := tablecli.NewTable()
-	table.Headers = tablecli.Row([]string{"Services", "Instances"})
+	header := []string{"Services", "Instances"}
+	if hasPool {
+		header = append(header, "Pool")
+	}
+	table.Headers = tablecli.Row(header)
 	for _, s := range services {
-		sort.Strings(s.Instances)
+		sort.Slice(s.ServiceInstances, func(i, j int) bool {
+			return s.ServiceInstances[i].Name < s.ServiceInstances[j].Name
+		})
 
-		if len(s.Instances) == 0 {
-			r := tablecli.Row([]string{s.Service, ""})
-			table.AddRow(r)
+		if len(s.ServiceInstances) == 0 {
+			row := []string{s.Service, ""}
+			if hasPool {
+				row = append(row, "")
+			}
+			table.AddRow(tablecli.Row(row))
 		}
 
-		for _, instance := range s.Instances {
-			r := tablecli.Row([]string{s.Service, instance})
+		for _, instance := range s.ServiceInstances {
+			row := []string{s.Service, instance.Name}
+			if hasPool {
+				row = append(row, instance.Pool)
+			}
+			r := tablecli.Row(row)
 			table.AddRow(r)
 		}
 	}
@@ -484,6 +505,7 @@ to), and apps bound to these instances.`,
 type ServiceInstanceModel struct {
 	Name     string
 	PlanName string
+	Pool     string
 	Apps     []string
 	Info     map[string]string
 }
@@ -540,31 +562,43 @@ func (c ServiceInfo) BuildInstancesTable(serviceName string, ctx *cmd.Context, c
 		table := tablecli.NewTable()
 		extraHeaders := c.ExtraHeaders(instances)
 		hasPlan := false
-		var data []string
+		hasPool := false
 		var headers []string
 		for _, instance := range instances {
 			if instance.PlanName != "" {
 				hasPlan = true
 			}
+			if instance.Pool != "" {
+				hasPool = true
+			}
 		}
 		for _, instance := range instances {
 			apps := strings.Join(instance.Apps, ", ")
+			row := []string{instance.Name}
 			if hasPlan {
-				data = []string{instance.Name, instance.PlanName, apps}
-			} else {
-				data = []string{instance.Name, apps}
+				row = append(row, instance.PlanName)
 			}
+			if hasPool {
+				row = append(row, instance.Pool)
+			}
+			row = append(row, apps)
+
 			for _, h := range extraHeaders {
-				data = append(data, instance.Info[h])
+				row = append(row, instance.Info[h])
 			}
-			table.AddRow(tablecli.Row(data))
+			table.AddRow(tablecli.Row(row))
 		}
+		headers = []string{"Instances"}
 		if hasPlan {
-			headers = []string{"Instances", "Plan", "Apps"}
-		} else {
-			headers = []string{"Instances", "Apps"}
+			headers = append(headers, "Plan")
 		}
+		if hasPool {
+			headers = append(headers, "Pool")
+		}
+
+		headers = append(headers, "Apps")
 		headers = append(headers, extraHeaders...)
+
 		table.Headers = tablecli.Row(headers)
 		ctx.Stdout.Write(table.Bytes())
 	}

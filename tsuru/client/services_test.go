@@ -39,6 +39,9 @@ func (t *infoTransport) RoundTrip(req *http.Request) (resp *http.Response, err e
 	if strings.HasSuffix(req.URL.Path, "/services/mongodb-broker") {
 		message = `[{"Name":"mymongo", "Apps":["myapp"], "Id":0, "Info":{"key": "value", "key2": "value2"}, "PlanName":"small", "ServiceName":"mongoservice", "Teams":["mongoteam"]}]`
 	}
+	if strings.HasSuffix(req.URL.Path, "/services/multicluster") {
+		message = `[{"Name":"mymongo", "Apps":["myapp"], "Id":0, "Info":{"key": "value", "key2": "value2"}, "PlanName":"small", "ServiceName":"mongoservice", "Teams":["mongoteam"],"Pool":"my-pool-01"}]`
+	}
 	if strings.HasSuffix(req.URL.Path, "/services/mongodb-broker/plans") {
 		if t.includePlans {
 			message = `[{"Name":"default","Description":"Plan with parameter and response schemas","Schemas":{"service_instance":{"create":{"parameters":{"$schema":"http://json-schema.org/draft-04/schema#", "required": ["param-2"], "properties":{"param-1":{"description":"First input parameter","type":"string", "default":"value1"},"param-2":{"description":"Second input parameter","type":"string"}},"type":"object"}},"update":{"parameters":{"$schema":"http://json-schema.org/draft-04/schema#","properties":{"param-1":{"description":"First input parameter","type":"string"},"param-2":{"description":"Second input parameter","type":"string"}},"type":"object"}}},"service_binding":{"create":{"parameters":{"$schema":"http://json-schema.org/draft-04/schema#","properties":{"param-1":{"description":"First input parameter","type":"string"},"param-2":{"description":"Second input parameter","type":"string"}},"type":"object"}}}}}]`
@@ -50,6 +53,13 @@ func (t *infoTransport) RoundTrip(req *http.Request) (resp *http.Response, err e
 		message = `[{"Name":"mymongo", "Apps":["myapp"], "Id":0, "Info":{"key": "value", "key2": "value2"}, "PlanName":"", "ServiceName":"noplanservice", "Teams":["noplanteam"]}]`
 	}
 	if strings.HasSuffix(req.URL.Path, "/services/mongodbnoplan/plans") {
+		if t.includePlans {
+			message = `[{"Name": "small", "Description": "another plan"}]`
+		} else {
+			message = `[]`
+		}
+	}
+	if strings.HasSuffix(req.URL.Path, "/services/multicluster/plans") {
 		if t.includePlans {
 			message = `[{"Name": "small", "Description": "another plan"}]`
 		} else {
@@ -98,29 +108,98 @@ Service test is foo bar.
 
 func (s *S) TestServiceList(c *check.C) {
 	var stdout, stderr bytes.Buffer
-	output := `[{"service": "mysql", "instances": ["mysql01", "mysql02"]}, {"service": "oracle", "instances": []}]`
-	expectedPrefix := `+---------+------------------+
-| Service | Instances        |`
-	lineMysql := "| mysql   | mysql01, mysql02 |"
-	lineOracle := "| oracle  |                  |"
+	output, err := json.Marshal([]service.ServiceModel{
+		{
+			Service: "mysql",
+			ServiceInstances: []service.ServiceInstance{
+				{
+					Name: "mysql01",
+				},
+				{
+					Name: "mysql02",
+				},
+			},
+		},
+		{
+			Service:          "oracle",
+			ServiceInstances: []service.ServiceInstance{},
+		},
+	})
+	c.Assert(err, check.IsNil)
 	ctx := cmd.Context{
 		Args:   []string{},
 		Stdout: &stdout,
 		Stderr: &stderr,
 	}
 	trans := &cmdtest.ConditionalTransport{
-		Transport: cmdtest.Transport{Message: output, Status: http.StatusOK},
+		Transport: cmdtest.Transport{Message: string(output), Status: http.StatusOK},
 		CondFunc: func(req *http.Request) bool {
 			return strings.HasSuffix(req.URL.Path, "/services/instances")
 		},
 	}
 	client := cmd.NewClient(&http.Client{Transport: trans}, nil, manager)
-	err := (&ServiceList{}).Run(&ctx, client)
+	err = (&ServiceList{}).Run(&ctx, client)
 	c.Assert(err, check.IsNil)
 	table := stdout.String()
-	c.Assert(table, check.Matches, "^"+expectedPrefix+".*")
-	c.Assert(table, check.Matches, "^.*"+lineMysql+".*")
-	c.Assert(table, check.Matches, "^.*"+lineOracle+".*")
+
+	c.Assert(table, check.Equals, `+----------+-----------+
+| Services | Instances |
++----------+-----------+
+| mysql    | mysql01   |
+| mysql    | mysql02   |
+| oracle   |           |
++----------+-----------+
+`)
+
+}
+
+func (s *S) TestServiceListWithPool(c *check.C) {
+	var stdout, stderr bytes.Buffer
+	output, err := json.Marshal([]service.ServiceModel{
+		{
+			Service: "mysql",
+			ServiceInstances: []service.ServiceInstance{
+				{
+					Name: "mysql01",
+					Pool: "cluster-pool-01",
+				},
+				{
+					Name: "mysql02",
+					Pool: "cluster-pool-02",
+				},
+			},
+		},
+		{
+			Service:          "oracle",
+			ServiceInstances: []service.ServiceInstance{},
+		},
+	})
+	c.Assert(err, check.IsNil)
+
+	ctx := cmd.Context{
+		Args:   []string{},
+		Stdout: &stdout,
+		Stderr: &stderr,
+	}
+	trans := &cmdtest.ConditionalTransport{
+		Transport: cmdtest.Transport{Message: string(output), Status: http.StatusOK},
+		CondFunc: func(req *http.Request) bool {
+			return strings.HasSuffix(req.URL.Path, "/services/instances")
+		},
+	}
+	client := cmd.NewClient(&http.Client{Transport: trans}, nil, manager)
+	err = (&ServiceList{}).Run(&ctx, client)
+	c.Assert(err, check.IsNil)
+	table := stdout.String()
+
+	c.Assert(table, check.Equals, `+----------+-----------+-----------------+
+| Services | Instances | Pool            |
++----------+-----------+-----------------+
+| mysql    | mysql01   | cluster-pool-01 |
+| mysql    | mysql02   | cluster-pool-02 |
+| oracle   |           |                 |
++----------+-----------+-----------------+
+`)
 }
 
 func (s *S) TestServiceListWithEmptyResponse(c *check.C) {
@@ -762,6 +841,37 @@ Plans
 +-------+--------------+-----------------+----------------+
 `
 	args := []string{"mongodb"}
+	context := cmd.Context{
+		Args:   args,
+		Stdout: &stdout,
+		Stderr: &stderr,
+	}
+	client := cmd.NewClient(&http.Client{Transport: &infoTransport{includePlans: true}}, nil, manager)
+	err := (&ServiceInfo{}).Run(&context, client)
+	c.Assert(err, check.IsNil)
+	obtained := stdout.String()
+	c.Assert(obtained, check.Equals, expected)
+}
+
+func (s *S) TestServiceInfoRunWithPools(c *check.C) {
+	var stdout, stderr bytes.Buffer
+	expected := `Info for "multicluster"
+
+Instances
++-----------+-------+------------+-------+-------+--------+
+| Instances | Plan  | Pool       | Apps  | key   | key2   |
++-----------+-------+------------+-------+-------+--------+
+| mymongo   | small | my-pool-01 | myapp | value | value2 |
++-----------+-------+------------+-------+-------+--------+
+
+Plans
++-------+--------------+-----------------+----------------+
+| Name  | Description  | Instance Params | Binding Params |
++-------+--------------+-----------------+----------------+
+| small | another plan |                 |                |
++-------+--------------+-----------------+----------------+
+`
+	args := []string{"multicluster"}
 	context := cmd.Context{
 		Args:   args,
 		Stdout: &stdout,
