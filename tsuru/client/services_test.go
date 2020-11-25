@@ -81,7 +81,7 @@ Service test is foo bar.
 	}
 	if strings.HasSuffix(req.URL.Path, "/services/mymongo/instances/mongo") {
 		if t.includeAll {
-			message = `{"Apps": ["app", "app2"], "Teams": ["admin", "admin2"], "TeamOwner": "admin", "CustomInfo" : {"key4": "value8", "key2": "value9", "key3":"value3"},"Description": "description", "PlanName": "small", "PlanDescription": "another plan", "Tags": ["tag 1", "tag 2"], "Parameters": {"param1": "{\"some\": \"custom-data\"}", "param2": "value2", "param3": 3}}`
+			message = `{"Apps": ["app", "app2"], "Teams": ["admin", "admin2"], "TeamOwner": "admin", "CustomInfo" : {"key4": "value8", "key2": "value9", "key3":"value3"},"Description": "description", "PlanName": "small", "PlanDescription": "another plan", "Tags": ["tag 1", "tag 2"], "Parameters": {"param1": "{\"some\": \"custom-data\"}", "param2": "value2", "param3": 3}, "Pool": "my-pool"}`
 		} else {
 			message = `{"Apps": ["app", "app2"], "Teams": ["admin", "admin2"], "TeamOwner": "admin", "CustomInfo" : {},"Description": "", "PlanName": "", "PlanDescription": "", "Tags": []}`
 		}
@@ -680,6 +680,7 @@ func (s *S) TestServiceInstanceInfoRun(c *check.C) {
 	var stdout, stderr bytes.Buffer
 	expected := `Service: mymongo
 Instance: mongo
+Pool: my-pool
 Apps: app, app2
 Teams: admin, admin2
 Team Owner: admin

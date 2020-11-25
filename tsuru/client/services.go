@@ -62,6 +62,11 @@ func (s ServiceList) Run(ctx *cmd.Context, client *cmd.Client) error {
 	for _, s := range services {
 		sort.Strings(s.Instances)
 
+		if len(s.Instances) == 0 {
+			r := tablecli.Row([]string{s.Service, ""})
+			table.AddRow(r)
+		}
+
 		for _, instance := range s.Instances {
 			r := tablecli.Row([]string{s.Service, instance})
 			table.AddRow(r)
@@ -364,6 +369,7 @@ func (c ServiceInstanceInfo) Info() *cmd.Info {
 type ServiceInstanceInfoModel struct {
 	ServiceName     string
 	InstanceName    string
+	Pool            string
 	Apps            []string
 	Teams           []string
 	TeamOwner       string
@@ -398,6 +404,9 @@ func (c ServiceInstanceInfo) Run(ctx *cmd.Context, client *cmd.Client) error {
 	}
 	fmt.Fprintf(ctx.Stdout, "Service: %s\n", serviceName)
 	fmt.Fprintf(ctx.Stdout, "Instance: %s\n", instanceName)
+	if si.Pool != "" {
+		fmt.Fprintf(ctx.Stdout, "Pool: %s\n", si.Pool)
+	}
 	fmt.Fprintf(ctx.Stdout, "Apps: %s\n", strings.Join(si.Apps, ", "))
 	fmt.Fprintf(ctx.Stdout, "Teams: %s\n", strings.Join(si.Teams, ", "))
 	fmt.Fprintf(ctx.Stdout, "Team Owner: %s\n", si.TeamOwner)
