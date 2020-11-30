@@ -714,7 +714,7 @@ func (c *InfoNodeCmd) Run(ctx *cmd.Context, client *cmd.Client) error {
 	}
 	buf.WriteString(nodeTable.String())
 	buf.WriteString("\n")
-	unitsTable := tablecli.Table{Headers: tablecli.Row([]string{"Unit", "Status", "Type", "App", "ProcessName"}), LineSeparator: true}
+	unitsTable := tablecli.Table{Headers: tablecli.Row([]string{"Name", "Status", "Type", "App", "ProcessName"}), LineSeparator: true}
 	for _, unit := range result.Units {
 		if unit.ID == "" {
 			continue

@@ -294,7 +294,7 @@ func (c *AppRoutersList) Run(context *cmd.Context, client *cmd.Client) error {
 
 func renderRouters(routers []appTypes.AppRouter, out io.Writer) {
 	table := tablecli.NewTable()
-	table.Headers = tablecli.Row([]string{"Name", "Type", "Opts", "Addresses", "Status"})
+	table.Headers = tablecli.Row([]string{"Name", "Opts", "Addresses", "Status"})
 	table.LineSeparator = true
 	for _, r := range routers {
 		var optsStr []string
@@ -313,7 +313,6 @@ func renderRouters(routers []appTypes.AppRouter, out io.Writer) {
 		}
 		row := tablecli.Row([]string{
 			r.Name,
-			r.Type,
 			strings.Join(optsStr, "\n"),
 			addresses,
 			statusStr,

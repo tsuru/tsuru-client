@@ -30,6 +30,7 @@ import (
 	apptypes "github.com/tsuru/tsuru/types/app"
 	"github.com/tsuru/tsuru/volume"
 	"k8s.io/apimachinery/pkg/api/resource"
+	"k8s.io/apimachinery/pkg/util/duration"
 )
 
 const (
@@ -466,6 +467,9 @@ type unit struct {
 	Addresses   []url.URL
 	Version     int
 	Routable    *bool
+	Ready       *bool
+	Restarts    *int
+	CreatedAt   *time.Time
 }
 
 func (u *unit) Host() string {
@@ -481,6 +485,15 @@ func (u *unit) Host() string {
 
 	host, _, _ := net.SplitHostPort(address)
 	return host
+
+}
+
+func (u *unit) ReadyAndStatus() string {
+	if u.Ready != nil && *u.Ready {
+		return "ready"
+	}
+
+	return u.Status
 }
 
 func (u *unit) Port() string {
@@ -498,6 +511,12 @@ func (u *unit) Port() string {
 		ports = append(ports, port)
 	}
 	return strings.Join(ports, ", ")
+}
+
+type unitMetrics struct {
+	ID     string
+	CPU    string
+	Memory string
 }
 
 type lock struct {
@@ -519,6 +538,8 @@ type app struct {
 	IP          string
 	CName       []string
 	Name        string
+	Provisioner string
+	Cluster     string
 	Platform    string
 	Repository  string
 	Teams       []string
@@ -541,12 +562,15 @@ type app struct {
 	AutoScale   []tsuru.AutoScaleSpec
 
 	InternalAddresses []appInternalAddress
+	UnitsMetrics      []unitMetrics
 }
 
 type appInternalAddress struct {
 	Domain   string
 	Protocol string
 	Port     int
+	Version  string
+	Process  string
 }
 
 type serviceData struct {
@@ -558,6 +582,14 @@ type serviceData struct {
 type quota struct {
 	Limit int
 	InUse int
+}
+
+func (q *quota) LimitString() string {
+	if q.Limit > 0 {
+		return fmt.Sprintf("%d units", q.Limit)
+	}
+
+	return "unlimited"
 }
 
 func (a *app) Addr() string {
@@ -609,11 +641,17 @@ func ShortID(id string) string {
 }
 
 func (a *app) String() string {
-	format := `Application: {{.Name}}
+	format := `{{ if .Error -}}
+Error: {{ .Error }}
+{{ end -}}
+Application: {{.Name}}
 Description:{{if .Description}} {{.Description}}{{end}}
 Tags:{{if .TagList}} {{.TagList}}{{end}}
 Repository: {{.Repository}}
 Platform: {{.Platform}}
+{{ if .Provisioner -}}
+Provisioner: {{ .Provisioner }}
+{{ end -}}
 {{if not .Routers -}}
 Router: {{.Router}}{{if .RouterOpts}} ({{.GetRouterOpts}}){{end}}
 {{end -}}
@@ -622,20 +660,24 @@ Address: {{.Addr}}
 Owner: {{.Owner}}
 Team owner: {{.TeamOwner}}
 Deploys: {{.Deploys}}
+{{if .Cluster -}}
+Cluster: {{ .Cluster }}
+{{ end -}}
 Pool:{{if .Pool}} {{.Pool}}{{end}}{{if .Lock.Locked}}
 {{.Lock.String}}{{end}}
-Quota: {{.Quota.InUse}}/{{if .Quota.Limit}}{{.Quota.Limit}} units{{else}}unlimited{{end}}
+Quota: {{.Quota.InUse}}/{{.Quota.LimitString}}
 `
 	var buf bytes.Buffer
 	tmpl := template.Must(template.New("app").Parse(format))
-	renderUnits(&buf, a.Units)
+	renderUnits(&buf, a.Units, a.UnitsMetrics, a.Provisioner)
 	internalAddressesTable := tablecli.NewTable()
-	internalAddressesTable.Headers = []string{"Domain", "Protocol", "Port"}
+	internalAddressesTable.Headers = []string{"Domain", "Port", "Process", "Version"}
 	for _, internalAddress := range a.InternalAddresses {
 		internalAddressesTable.AddRow([]string{
 			internalAddress.Domain,
-			internalAddress.Protocol,
-			strconv.Itoa(internalAddress.Port),
+			strconv.Itoa(internalAddress.Port) + "/" + internalAddress.Protocol,
+			internalAddress.Process,
+			internalAddress.Version,
 		})
 	}
 	servicesTable := tablecli.NewTable()
@@ -673,11 +715,7 @@ Quota: {{.Quota.InUse}}/{{if .Quota.Limit}}{{.Quota.Limit}} units{{else}}unlimit
 	autoScaleTable := tablecli.NewTable()
 	autoScaleTable.Headers = tablecli.Row([]string{"Process", "Min", "Max", "Target CPU"})
 	for _, as := range a.AutoScale {
-		var cpu string
-		q, err := resource.ParseQuantity(as.AverageCPU)
-		if err == nil {
-			cpu = fmt.Sprintf("%d%%", q.MilliValue()/10)
-		}
+		cpu := cpuValue(as.AverageCPU)
 		autoScaleTable.AddRow(tablecli.Row([]string{
 			fmt.Sprintf("%s (v%d)", as.Process, as.Version),
 			strconv.Itoa(int(as.MinUnits)),
@@ -722,7 +760,7 @@ Quota: {{.Quota.InUse}}/{{if .Quota.Limit}}{{.Quota.Limit}} units{{else}}unlimit
 	return tplBuffer.String() + buf.String()
 }
 
-func renderUnits(buf *bytes.Buffer, units []unit) {
+func renderUnits(buf *bytes.Buffer, units []unit, metrics []unitMetrics, provisioner string) {
 	type unitsKey struct {
 		process string
 		version int
@@ -746,30 +784,52 @@ func renderUnits(buf *bytes.Buffer, units []unit) {
 	if len(units) > 0 {
 		includeRoutable = units[0].Routable != nil
 	}
-	titles := []string{"Unit", "Status", "Host", "Port"}
+
+	var titles []string
+	if provisioner == "kubernetes" {
+		titles = []string{"Name", "Host", "Status", "Restarts", "Age", "CPU", "Memory"}
+	} else {
+		titles = []string{"Name", "Status", "Host", "Port"}
+	}
+	mapUnitMetrics := map[string]unitMetrics{}
+	for _, unitMetric := range metrics {
+		mapUnitMetrics[unitMetric.ID] = unitMetric
+	}
+
 	if includeRoutable {
 		titles = append(titles, "Routable")
 	}
 	for _, key := range keys {
 		units := groupedUnits[key]
 		unitsTable := tablecli.NewTable()
+		tablecli.TableConfig.ForceWrap = false
 		unitsTable.Headers = tablecli.Row(titles)
 		for _, unit := range units {
 			if unit.ID == "" {
 				continue
 			}
-			row := tablecli.Row([]string{
-				ShortID(unit.ID),
-				unit.Status,
-				unit.Host(),
-				unit.Port(),
-			})
-			if includeRoutable {
-				var routable bool
-				if unit.Routable != nil {
-					routable = *unit.Routable
+			var row tablecli.Row
+			if provisioner == "kubernetes" {
+				row = tablecli.Row{
+					unit.ID,
+					unit.Host(),
+					unit.ReadyAndStatus(),
+					countValue(unit.Restarts),
+					translateTimestampSince(unit.CreatedAt),
+					cpuValue(mapUnitMetrics[unit.ID].CPU),
+					memoryValue(mapUnitMetrics[unit.ID].Memory),
 				}
-				row = append(row, strconv.FormatBool(routable))
+			} else {
+				row = tablecli.Row{
+					ShortID(unit.ID),
+					unit.Status,
+					unit.Host(),
+					unit.Port(),
+				}
+			}
+
+			if includeRoutable {
+				row = append(row, checkedChar(unit.Routable))
 			}
 			unitsTable.AddRow(row)
 		}
@@ -778,7 +838,7 @@ func renderUnits(buf *bytes.Buffer, units []unit) {
 			buf.WriteString("\n")
 			groupLabel := ""
 			if key.process != "" {
-				groupLabel = fmt.Sprintf(" [%s]", key.process)
+				groupLabel = fmt.Sprintf(" [process %s]", key.process)
 			}
 			if key.version != 0 {
 				groupLabel = fmt.Sprintf("%s [version %d]", groupLabel, key.version)
@@ -787,6 +847,50 @@ func renderUnits(buf *bytes.Buffer, units []unit) {
 			buf.WriteString(unitsTable.String())
 		}
 	}
+}
+
+func countValue(i *int) string {
+	if i == nil {
+		return ""
+	}
+
+	return fmt.Sprintf("%d", *i)
+}
+
+func cpuValue(q string) string {
+	var cpu string
+	qt, err := resource.ParseQuantity(q)
+	if err == nil {
+		cpu = fmt.Sprintf("%d%%", qt.MilliValue()/10)
+	}
+
+	return cpu
+}
+
+func memoryValue(q string) string {
+	var memory string
+	qt, err := resource.ParseQuantity(q)
+	if err == nil {
+		memory = fmt.Sprintf("%vMi", qt.Value()/(1024*1024))
+
+	}
+	return memory
+}
+
+func checkedChar(b *bool) string {
+	if b == nil || !*b {
+		return ""
+	}
+
+	return "✓"
+}
+
+func translateTimestampSince(timestamp *time.Time) string {
+	if timestamp == nil || timestamp.IsZero() {
+		return ""
+	}
+
+	return duration.HumanDuration(time.Since(*timestamp))
 }
 
 func (c *AppInfo) Show(result []byte, appName string, servicesResult []byte, quota []byte, volumes []byte, context *cmd.Context) error {

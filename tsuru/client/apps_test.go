@@ -837,12 +837,93 @@ Quota: 0/unlimited
 
 Units: 3
 +--------+---------+----------+------+
-| Unit   | Status  | Host     | Port |
+| Name   | Status  | Host     | Port |
 +--------+---------+----------+------+
 | app1/2 | pending |          |      |
 | app1/0 | started | 10.8.7.6 | 3333 |
 | app1/1 | started | 10.8.7.6 | 3323 |
 +--------+---------+----------+------+
+
+`
+	context := cmd.Context{
+		Stdout: &stdout,
+		Stderr: &stderr,
+	}
+	client := cmd.NewClient(&http.Client{Transport: &cmdtest.Transport{Message: result, Status: http.StatusOK}}, nil, manager)
+	command := AppInfo{}
+	command.Flags().Parse(true, []string{"--app", "app1"})
+	err := command.Run(&context, client)
+	c.Assert(err, check.IsNil)
+	c.Assert(stdout.String(), check.Equals, expected)
+}
+
+func (s *S) TestAppInfoKubernetes(c *check.C) {
+	var stdout, stderr bytes.Buffer
+	t0 := time.Now().UTC().Format(time.RFC3339)
+	t1 := time.Now().Add(time.Hour * -1).UTC().Format(time.RFC3339)
+	t2 := time.Now().Add(time.Hour * -1 * 24 * 30).UTC().Format(time.RFC3339)
+
+	result := fmt.Sprintf(`{
+		"name":"app1",
+		"teamowner":"myteam",
+		"cname":[""],"ip":"myapp.tsuru.io",
+		"provisioner": "kubernetes",
+		"platform":"php",
+		"repository":"git@git.com:php.git",
+		"state":"dead",
+		"cluster": "kube-cluster-dev",
+		"pool": "dev-a",
+		"units":[
+			{"Ip":"10.10.10.10","ID":"app1/0","Status":"started","Address":{"Host": "10.8.7.6:3333"}, "ready": true, "restarts": 10, "createdAt": "%s"},
+			{"Ip":"9.9.9.9","ID":"app1/1","Status":"started","Address":{"Host": "10.8.7.6:3323"}, "ready": true, "restarts": 0, "createdAt": "%s"},
+			{"Ip":"","ID":"app1/2","Status":"pending", "ready": false, "createdAt": "%s"}
+		],
+		"unitsMetrics": [
+			{
+				"ID": "app1/0",
+				"CPU": "900m",
+				"Memory": "2000000Ki"
+			},
+			{
+				"ID": "app1/1",
+				"CPU": "800m",
+				"Memory": "3000000Ki"
+			},
+			{
+				"ID": "app1/2",
+				"CPU": "80m",
+				"Memory": "300Ki"
+			}
+		],
+		"teams": ["tsuruteam","crane"],
+		"owner": "myapp_owner",
+		"deploys": 7,
+		"router": "planb"
+	}`, t0, t1, t2)
+	expected := `Application: app1
+Description:
+Tags:
+Repository: git@git.com:php.git
+Platform: php
+Provisioner: kubernetes
+Router: planb
+Teams: tsuruteam, crane
+Address: myapp.tsuru.io
+Owner: myapp_owner
+Team owner: myteam
+Deploys: 7
+Cluster: kube-cluster-dev
+Pool: dev-a
+Quota: 0/unlimited
+
+Units: 3
++--------+----------+---------+----------+-----+-----+--------+
+| Name   | Host     | Status  | Restarts | Age | CPU | Memory |
++--------+----------+---------+----------+-----+-----+--------+
+| app1/2 |          | pending |          | 30d | 8%  | 0Mi    |
+| app1/0 | 10.8.7.6 | ready   | 10       | 0s  | 90% | 1953Mi |
+| app1/1 | 10.8.7.6 | ready   | 0        | 60m | 80% | 2929Mi |
++--------+----------+---------+----------+-----+-----+--------+
 
 `
 	context := cmd.Context{
@@ -876,7 +957,7 @@ Quota: 0/unlimited
 
 Units: 3
 +--------+---------+----------+------------+
-| Unit   | Status  | Host     | Port       |
+| Name   | Status  | Host     | Port       |
 +--------+---------+----------+------------+
 | app1/2 | pending |          |            |
 | app1/0 | started | 10.8.7.6 | 3333, 4444 |
@@ -960,7 +1041,7 @@ Quota: 0/unlimited
 
 Units: 3
 +--------+---------+----------+------+
-| Unit   | Status  | Host     | Port |
+| Name   | Status  | Host     | Port |
 +--------+---------+----------+------+
 | app1/2 | pending |          |      |
 | app1/0 | started | 10.8.7.6 | 3333 |
@@ -968,17 +1049,17 @@ Units: 3
 +--------+---------+----------+------+
 
 Routers:
-+------+------+------+-----------+--------------------------------+
-| Name | Type | Opts | Addresses | Status                         |
-+------+------+------+-----------+--------------------------------+
-| r1   | r    | a: b | addr1     |                                |
-|      |      | x: y |           |                                |
-+------+------+------+-----------+--------------------------------+
-| r2   |      |      | addr2     | ready                          |
-|      |      |      | addr9     |                                |
-+------+------+------+-----------+--------------------------------+
-| r3   | r3   |      | addr3     | not ready: something happening |
-+------+------+------+-----------+--------------------------------+
++------+------+-----------+--------------------------------+
+| Name | Opts | Addresses | Status                         |
++------+------+-----------+--------------------------------+
+| r1   | a: b | addr1     |                                |
+|      | x: y |           |                                |
++------+------+-----------+--------------------------------+
+| r2   |      | addr2     | ready                          |
+|      |      | addr9     |                                |
++------+------+-----------+--------------------------------+
+| r3   |      | addr3     | not ready: something happening |
++------+------+-----------+--------------------------------+
 
 `
 	context := cmd.Context{
@@ -1012,7 +1093,7 @@ Quota: 0/unlimited
 
 Units: 3
 +--------+---------+------+------+
-| Unit   | Status  | Host | Port |
+| Name   | Status  | Host | Port |
 +--------+---------+------+------+
 | app1/0 | started |      |      |
 | app1/1 | started |      |      |
@@ -1051,7 +1132,7 @@ Quota: 0/unlimited
 
 Units: 3
 +--------+---------+------+------+
-| Unit   | Status  | Host | Port |
+| Name   | Status  | Host | Port |
 +--------+---------+------+------+
 | app1/0 | started |      |      |
 | app1/1 | started |      |      |
@@ -1090,7 +1171,7 @@ Quota: 0/unlimited
 
 Units: 3
 +--------+---------+------+------+
-| Unit   | Status  | Host | Port |
+| Name   | Status  | Host | Port |
 +--------+---------+------+------+
 | app1/0 | started |      |      |
 | app1/1 | started |      |      |
@@ -1134,7 +1215,7 @@ Quota: 3/40 units
 
 Units: 3
 +--------+---------+------+------+
-| Unit   | Status  | Host | Port |
+| Name   | Status  | Host | Port |
 +--------+---------+------+------+
 | app1/0 | started |      |      |
 | app1/1 | started |      |      |
@@ -1189,7 +1270,7 @@ Quota: 0/unlimited
 
 Units: 3
 +--------+---------+------+------+
-| Unit   | Status  | Host | Port |
+| Name   | Status  | Host | Port |
 +--------+---------+------+------+
 | app1/0 | started |      |      |
 | app1/1 | started |      |      |
@@ -1264,16 +1345,16 @@ Deploys: 7
 Pool:
 Quota: 0/unlimited
 
-Units [web]: 1
+Units [process web]: 1
 +--------+---------+------+------+
-| Unit   | Status  | Host | Port |
+| Name   | Status  | Host | Port |
 +--------+---------+------+------+
 | app1/0 | started |      |      |
 +--------+---------+------+------+
 
-Units [worker]: 2
+Units [process worker]: 2
 +--------+---------+------+------+
-| Unit   | Status  | Host | Port |
+| Name   | Status  | Host | Port |
 +--------+---------+------+------+
 | app1/1 | started |      |      |
 | app1/2 | pending |      |      |
@@ -1363,33 +1444,33 @@ Deploys: 7
 Pool:
 Quota: 0/unlimited
 
-Units [web] [version 1]: 1
+Units [process web] [version 1]: 1
 +--------+---------+------+------+----------+
-| Unit   | Status  | Host | Port | Routable |
+| Name   | Status  | Host | Port | Routable |
 +--------+---------+------+------+----------+
-| app1/0 | started |      |      | false    |
-+--------+---------+------+------+----------+
-
-Units [worker] [version 1]: 2
-+--------+---------+------+------+----------+
-| Unit   | Status  | Host | Port | Routable |
-+--------+---------+------+------+----------+
-| app1/1 | started |      |      | false    |
-| app1/2 | pending |      |      | false    |
+| app1/0 | started |      |      |          |
 +--------+---------+------+------+----------+
 
-Units [web] [version 2]: 1
+Units [process worker] [version 1]: 2
 +--------+---------+------+------+----------+
-| Unit   | Status  | Host | Port | Routable |
+| Name   | Status  | Host | Port | Routable |
 +--------+---------+------+------+----------+
-| app1/3 | started |      |      | true     |
+| app1/1 | started |      |      |          |
+| app1/2 | pending |      |      |          |
 +--------+---------+------+------+----------+
 
-Units [worker] [version 2]: 1
+Units [process web] [version 2]: 1
 +--------+---------+------+------+----------+
-| Unit   | Status  | Host | Port | Routable |
+| Name   | Status  | Host | Port | Routable |
 +--------+---------+------+------+----------+
-| app1/4 | started |      |      | true     |
+| app1/3 | started |      |      | ✓        |
++--------+---------+------+------+----------+
+
+Units [process worker] [version 2]: 1
++--------+---------+------+------+----------+
+| Name   | Status  | Host | Port | Routable |
++--------+---------+------+------+----------+
+| app1/4 | started |      |      | ✓        |
 +--------+---------+------+------+----------+
 
 `
@@ -1469,16 +1550,16 @@ Deploys: 7
 Pool:
 Quota: 0/unlimited
 
-Units [web]: 1
+Units [process web]: 1
 +--------+---------+------+------+
-| Unit   | Status  | Host | Port |
+| Name   | Status  | Host | Port |
 +--------+---------+------+------+
 | app1/0 | started |      |      |
 +--------+---------+------+------+
 
-Units [worker]: 1
+Units [process worker]: 1
 +--------+---------+------+------+
-| Unit   | Status  | Host | Port |
+| Name   | Status  | Host | Port |
 +--------+---------+------+------+
 | app1/1 | started |      |      |
 +--------+---------+------+------+
@@ -1583,7 +1664,7 @@ Quota: 0/unlimited
 
 Units: 2
 +----------+---------+------+------+
-| Unit     | Status  | Host | Port |
+| Name     | Status  | Host | Port |
 +----------+---------+------+------+
 | secret/0 | started |      |      |
 | secret/1 | pending |      |      |
@@ -1629,7 +1710,7 @@ Quota: 0/unlimited
 
 Units: 3
 +--------+---------+------+------+
-| Unit   | Status  | Host | Port |
+| Name   | Status  | Host | Port |
 +--------+---------+------+------+
 | app1/0 | started |      |      |
 | app1/1 | started |      |      |
@@ -1667,7 +1748,7 @@ Quota: 0/unlimited
 
 Units: 3
 +--------+---------+------+------+
-| Unit   | Status  | Host | Port |
+| Name   | Status  | Host | Port |
 +--------+---------+------+------+
 | app1/0 | started |      |      |
 | app1/1 | started |      |      |
@@ -1725,7 +1806,7 @@ Quota: 0/unlimited
 
 Units: 3
 +--------+---------+------+------+
-| Unit   | Status  | Host | Port |
+| Name   | Status  | Host | Port |
 +--------+---------+------+------+
 | app1/0 | started |      |      |
 | app1/1 | started |      |      |
@@ -1786,7 +1867,7 @@ Quota: 0/unlimited
 
 Units: 3
 +--------+---------+------+------+
-| Unit   | Status  | Host | Port |
+| Name   | Status  | Host | Port |
 +--------+---------+------+------+
 | app1/0 | started |      |      |
 | app1/1 | started |      |      |
@@ -1831,7 +1912,7 @@ Quota: 0/unlimited
 
 Units: 3
 +--------+---------+------+------+
-| Unit   | Status  | Host | Port |
+| Name   | Status  | Host | Port |
 +--------+---------+------+------+
 | app1/0 | started |      |      |
 | app1/1 | started |      |      |
@@ -1896,7 +1977,7 @@ Quota: 0/unlimited
 
 Units: 3
 +--------+---------+------+------+
-| Unit   | Status  | Host | Port |
+| Name   | Status  | Host | Port |
 +--------+---------+------+------+
 | app1/0 | started |      |      |
 | app1/1 | started |      |      |
@@ -1961,7 +2042,7 @@ Quota: 0/unlimited
 
 Units: 3
 +--------------------+---------+------+------+
-| Unit               | Status  | Host | Port |
+| Name               | Status  | Host | Port |
 +--------------------+---------+------+------+
 | abcea389cbae       | started |      |      |
 | abcea3             | started |      |      |
@@ -2017,7 +2098,7 @@ Units: 3
 
 func (s *S) TestAppInfoWithInternalAddresses(c *check.C) {
 	var stdout, stderr bytes.Buffer
-	result := `{"name":"powerapp","teamowner":"powerteam","cname":[""],"ip":"monster.tsuru.io","platform":"assembly","repository":"git@git.com:app.git","state":"dead", "units":[{"Ip":"9.9.9.9","ID":"app1/1","Status":"started","Address":{"Host": "10.8.7.6:3323"}}],"teams":["tsuruzers"], "owner": "myapp_owner", "deploys": 7, "router": "", "internalAddresses":[{"domain":"test.cluster.com","port":80,"protocol":"TCP"}, {"domain":"test.cluster.com","port":443,"protocol":"TCP"}]}`
+	result := `{"name":"powerapp","teamowner":"powerteam","cname":[""],"ip":"monster.tsuru.io","platform":"assembly","repository":"git@git.com:app.git","state":"dead", "units":[{"Ip":"9.9.9.9","ID":"app1/1","Status":"started","Address":{"Host": "10.8.7.6:3323"}}],"teams":["tsuruzers"], "owner": "myapp_owner", "deploys": 7, "router": "", "internalAddresses":[{"domain":"test.cluster.com","port":80,"protocol":"TCP","process": "web","version":"2"}, {"domain":"test.cluster.com","port":443,"protocol":"TCP","process":"jobs","version":"3"}]}`
 	expected := `Application: app1
 Description:
 Tags:
@@ -2034,18 +2115,18 @@ Quota: 0/unlimited
 
 Units: 1
 +--------+---------+----------+------+
-| Unit   | Status  | Host     | Port |
+| Name   | Status  | Host     | Port |
 +--------+---------+----------+------+
 | app1/1 | started | 10.8.7.6 | 3323 |
 +--------+---------+----------+------+
 
 Cluster internal addresses:
-+------------------+----------+------+
-| Domain           | Protocol | Port |
-+------------------+----------+------+
-| test.cluster.com | TCP      | 80   |
-| test.cluster.com | TCP      | 443  |
-+------------------+----------+------+
++------------------+---------+---------+---------+
+| Domain           | Port    | Process | Version |
++------------------+---------+---------+---------+
+| test.cluster.com | 80/TCP  | web     | 2       |
+| test.cluster.com | 443/TCP | jobs    | 3       |
++------------------+---------+---------+---------+
 
 `
 	context := cmd.Context{
@@ -2078,7 +2159,7 @@ Quota: 3/40 units
 
 Units: 3
 +--------+---------+------+------+
-| Unit   | Status  | Host | Port |
+| Name   | Status  | Host | Port |
 +--------+---------+------+------+
 | app1/0 | started |      |      |
 | app1/1 | started |      |      |

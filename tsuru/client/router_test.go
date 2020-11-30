@@ -69,16 +69,16 @@ func (s *S) TestAppRoutersListRun(c *check.C) {
 	data, err := json.Marshal(routers)
 	c.Assert(err, check.IsNil)
 
-	expected := `+------+------+------+-----------+--------------------------------+
-| Name | Type | Opts | Addresses | Status                         |
-+------+------+------+-----------+--------------------------------+
-| r1   | r    | a: b | addr1     |                                |
-|      |      | x: y |           |                                |
-+------+------+------+-----------+--------------------------------+
-| r2   |      |      | addr2     | ready                          |
-+------+------+------+-----------+--------------------------------+
-| r3   | r3   |      | addr3     | not ready: something happening |
-+------+------+------+-----------+--------------------------------+
+	expected := `+------+------+-----------+--------------------------------+
+| Name | Opts | Addresses | Status                         |
++------+------+-----------+--------------------------------+
+| r1   | a: b | addr1     |                                |
+|      | x: y |           |                                |
++------+------+-----------+--------------------------------+
+| r2   |      | addr2     | ready                          |
++------+------+-----------+--------------------------------+
+| r3   |      | addr3     | not ready: something happening |
++------+------+-----------+--------------------------------+
 `
 	trans := &cmdtest.ConditionalTransport{
 		Transport: cmdtest.Transport{Message: string(data), Status: http.StatusOK},
