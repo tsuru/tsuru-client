@@ -212,7 +212,7 @@ func (s *S) TestServiceInfoIsRegistered(c *check.C) {
 	manager = buildManager("tsuru")
 	info, ok := manager.Commands["service-info"]
 	c.Assert(ok, check.Equals, true)
-	c.Assert(info, check.FitsTypeOf, client.ServiceInfo{})
+	c.Assert(info, check.FitsTypeOf, &client.ServiceInfo{})
 }
 
 func (s *S) TestAppInfoIsRegistered(c *check.C) {

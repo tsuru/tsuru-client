@@ -490,12 +490,15 @@ func (c ServiceInstanceInfo) Run(ctx *cmd.Context, client *cmd.Client) error {
 	return nil
 }
 
-type ServiceInfo struct{}
+type ServiceInfo struct {
+	fs   *gnuflag.FlagSet
+	pool string
+}
 
-func (c ServiceInfo) Info() *cmd.Info {
+func (c *ServiceInfo) Info() *cmd.Info {
 	return &cmd.Info{
 		Name:  "service-info",
-		Usage: "service-info <service-name>",
+		Usage: "service-info <service-name> [-p/--pool pool]",
 		Desc: `Displays a list of all instances of a given service (that the user has access
 to), and apps bound to these instances.`,
 		MinArgs: 1,
@@ -520,7 +523,7 @@ func in(value string, list []string) bool {
 	return false
 }
 
-func (ServiceInfo) ExtraHeaders(instances []ServiceInstanceModel) []string {
+func (*ServiceInfo) ExtraHeaders(instances []ServiceInstanceModel) []string {
 	var headers []string
 	for _, instance := range instances {
 		for key := range instance.Info {
@@ -533,25 +536,7 @@ func (ServiceInfo) ExtraHeaders(instances []ServiceInstanceModel) []string {
 	return headers
 }
 
-func (c ServiceInfo) BuildInstancesTable(serviceName string, ctx *cmd.Context, client *cmd.Client) error {
-	url, err := cmd.GetURL("/services/" + serviceName)
-	if err != nil {
-		return err
-	}
-	request, err := http.NewRequest("GET", url, nil)
-	if err != nil {
-		return err
-	}
-	resp, err := client.Do(request)
-	if err != nil {
-		return err
-	}
-	defer resp.Body.Close()
-	var instances []ServiceInstanceModel
-	err = json.NewDecoder(resp.Body).Decode(&instances)
-	if err != nil {
-		return err
-	}
+func (c *ServiceInfo) BuildInstancesTable(ctx *cmd.Context, serviceName string, instances []ServiceInstanceModel) error {
 	fmt.Fprintf(ctx.Stdout, "Info for \"%s\"\n", serviceName)
 	sort.Slice(instances, func(i, j int) bool {
 		return instances[i].Name < instances[j].Name
@@ -605,37 +590,7 @@ func (c ServiceInfo) BuildInstancesTable(serviceName string, ctx *cmd.Context, c
 	return nil
 }
 
-func (c ServiceInfo) BuildPlansTable(serviceName string, ctx *cmd.Context, client *cmd.Client) error {
-	url, err := cmd.GetURL(fmt.Sprintf("/services/%s/plans", serviceName))
-	if err != nil {
-		return err
-	}
-	request, err := http.NewRequest("GET", url, nil)
-	if err != nil {
-		return err
-	}
-	resp, err := client.Do(request)
-	if err != nil {
-		return err
-	}
-	defer resp.Body.Close()
-	result, err := ioutil.ReadAll(resp.Body)
-	if err != nil {
-		return err
-	}
-	// TODO: swap with service.Plan
-	var plans []struct {
-		Name        string
-		Description string
-		Schemas     *osb.Schemas
-	}
-	err = json.Unmarshal(result, &plans)
-	if err != nil {
-		return err
-	}
-	sort.Slice(plans, func(i, j int) bool {
-		return plans[i].Name < plans[j].Name
-	})
+func (c *ServiceInfo) BuildPlansTable(ctx *cmd.Context, plans []plan) error {
 	if len(plans) > 0 {
 		fmt.Fprint(ctx.Stdout, "\nPlans\n")
 		table := tablecli.NewTable()
@@ -720,7 +675,7 @@ func parseParams(params interface{}) (string, error) {
 	return sb.String(), nil
 }
 
-func (c ServiceInfo) WriteDoc(ctx *cmd.Context, client *cmd.Client) error {
+func (c *ServiceInfo) WriteDoc(ctx *cmd.Context, client *cmd.Client) error {
 	sName := ctx.Args[0]
 	url := fmt.Sprintf("/services/%s/doc", sName)
 	url, err := cmd.GetURL(url)
@@ -747,17 +702,98 @@ func (c ServiceInfo) WriteDoc(ctx *cmd.Context, client *cmd.Client) error {
 	return nil
 }
 
-func (c ServiceInfo) Run(ctx *cmd.Context, client *cmd.Client) error {
+func (c *ServiceInfo) Flags() *gnuflag.FlagSet {
+	if c.fs == nil {
+		flagDesc := "the pool used to fetch details (could be required if the service is a multi-cluster offering)"
+		c.fs = gnuflag.NewFlagSet("service-instance-add", gnuflag.ExitOnError)
+		c.fs.StringVar(&c.pool, "pool", "", flagDesc)
+		c.fs.StringVar(&c.pool, "p", "", flagDesc)
+	}
+	return c.fs
+}
+
+func (c *ServiceInfo) Run(ctx *cmd.Context, client *cmd.Client) error {
 	serviceName := ctx.Args[0]
-	err := c.BuildInstancesTable(serviceName, ctx, client)
+
+	instances, err := c.fetchInstances(serviceName, client)
 	if err != nil {
 		return err
 	}
-	err = c.BuildPlansTable(serviceName, ctx, client)
+
+	plans, err := c.fetchPlans(serviceName, client)
+	if err != nil {
+		return err
+	}
+
+	err = c.BuildInstancesTable(ctx, serviceName, instances)
+	if err != nil {
+		return err
+	}
+	err = c.BuildPlansTable(ctx, plans)
 	if err != nil {
 		return err
 	}
 	return c.WriteDoc(ctx, client)
+}
+
+func (c *ServiceInfo) fetchInstances(serviceName string, client *cmd.Client) ([]ServiceInstanceModel, error) {
+	url, err := cmd.GetURL("/services/" + serviceName)
+	if err != nil {
+		return nil, err
+	}
+	request, err := http.NewRequest("GET", url, nil)
+	if err != nil {
+		return nil, err
+	}
+	resp, err := client.Do(request)
+	if err != nil {
+		return nil, err
+	}
+	defer resp.Body.Close()
+	var instances []ServiceInstanceModel
+	err = json.NewDecoder(resp.Body).Decode(&instances)
+	if err != nil {
+		return nil, err
+	}
+
+	return instances, nil
+}
+
+// TODO: swap with service.Plan
+type plan struct {
+	Name        string
+	Description string
+	Schemas     *osb.Schemas
+}
+
+func (c *ServiceInfo) fetchPlans(serviceName string, client *cmd.Client) ([]plan, error) {
+	v := url.Values{}
+	if c.pool != "" {
+		v.Set("pool", c.pool)
+	}
+	url, err := cmd.GetURL(fmt.Sprintf("/services/%s/plans?", serviceName) + v.Encode())
+	if err != nil {
+		return nil, err
+	}
+	request, err := http.NewRequest("GET", url, nil)
+	if err != nil {
+		return nil, err
+	}
+	resp, err := client.Do(request)
+	if err != nil {
+		return nil, err
+	}
+	defer resp.Body.Close()
+	plans := []plan{}
+	err = json.NewDecoder(resp.Body).Decode(&plans)
+	if err != nil {
+		return nil, err
+	}
+	sort.Slice(plans, func(i, j int) bool {
+		return plans[i].Name < plans[j].Name
+	})
+
+	return plans, nil
 }
 
 type ServiceInstanceRemove struct {
