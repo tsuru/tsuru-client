@@ -884,6 +884,39 @@ Plans
 	c.Assert(obtained, check.Equals, expected)
 }
 
+func (s *S) TestServiceInfoRunWithPoolSelected(c *check.C) {
+	var stdout, stderr bytes.Buffer
+	expected := `Info for "multicluster" in pool "my-pool-01"
+
+Instances
++-----------+-------+-------+-------+--------+
+| Instances | Plan  | Apps  | key   | key2   |
++-----------+-------+-------+-------+--------+
+| mymongo   | small | myapp | value | value2 |
++-----------+-------+-------+-------+--------+
+
+Plans
++-------+--------------+-----------------+----------------+
+| Name  | Description  | Instance Params | Binding Params |
++-------+--------------+-----------------+----------------+
+| small | another plan |                 |                |
++-------+--------------+-----------------+----------------+
+`
+	args := []string{"multicluster"}
+	context := cmd.Context{
+		Args:   args,
+		Stdout: &stdout,
+		Stderr: &stderr,
+	}
+	client := cmd.NewClient(&http.Client{Transport: &infoTransport{includePlans: true}}, nil, manager)
+	err := (&ServiceInfo{
+		pool: "my-pool-01",
+	}).Run(&context, client)
+	c.Assert(err, check.IsNil)
+	obtained := stdout.String()
+	c.Assert(obtained, check.Equals, expected)
+}
+
 func (s *S) TestServiceInfoNoPlans(c *check.C) {
 	var stdout, stderr bytes.Buffer
 	expected := `Info for "mongodbnoplan"

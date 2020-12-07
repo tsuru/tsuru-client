@@ -537,7 +537,13 @@ func (*ServiceInfo) ExtraHeaders(instances []ServiceInstanceModel) []string {
 }
 
 func (c *ServiceInfo) BuildInstancesTable(ctx *cmd.Context, serviceName string, instances []ServiceInstanceModel) error {
-	fmt.Fprintf(ctx.Stdout, "Info for \"%s\"\n", serviceName)
+	if c.pool == "" {
+		fmt.Fprintf(ctx.Stdout, "Info for \"%s\"\n", serviceName)
+	} else {
+		fmt.Fprintf(ctx.Stdout, "Info for \"%s\" in pool \"%s\"\n", serviceName, c.pool)
+		instances = filterInstancesByPool(instances, c.pool)
+	}
+
 	sort.Slice(instances, func(i, j int) bool {
 		return instances[i].Name < instances[j].Name
 	})
@@ -553,7 +559,7 @@ func (c *ServiceInfo) BuildInstancesTable(ctx *cmd.Context, serviceName string, 
 			if instance.PlanName != "" {
 				hasPlan = true
 			}
-			if instance.Pool != "" {
+			if instance.Pool != "" && c.pool == "" {
 				hasPool = true
 			}
 		}
@@ -588,6 +594,17 @@ func (c *ServiceInfo) BuildInstancesTable(ctx *cmd.Context, serviceName string, 
 		ctx.Stdout.Write(table.Bytes())
 	}
 	return nil
+}
+
+func filterInstancesByPool(instances []ServiceInstanceModel, pool string) []ServiceInstanceModel {
+	n := 0
+	for _, instance := range instances {
+		if instance.Pool == pool {
+			instances[n] = instance
+			n++
+		}
+	}
+	return instances[:n]
 }
 
 func (c *ServiceInfo) BuildPlansTable(ctx *cmd.Context, plans []plan) error {
