@@ -72,4 +72,4 @@ jobs:
         PACKAGE_NAME: tsuru
         PACKAGECLOUD_TOKEN: ${{secrets.PACKAGECLOUD_TOKEN}}
       run: |
-        curl -sL https://raw.githubusercontent.com/tsuru/push-to-packagecloud/master/push-github.sh | bash
+        curl -sL https://raw.githubusercontent.com/tsuru/push-to-packagecloud/master/push.sh | bash
