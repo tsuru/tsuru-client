@@ -804,6 +804,9 @@ func renderUnits(buf *bytes.Buffer, units []unit, metrics []unitMetrics, provisi
 		unitsTable := tablecli.NewTable()
 		tablecli.TableConfig.ForceWrap = false
 		unitsTable.Headers = tablecli.Row(titles)
+		sort.Slice(units, func(i, j int) bool {
+			return units[i].ID < units[j].ID
+		})
 		for _, unit := range units {
 			if unit.ID == "" {
 				continue

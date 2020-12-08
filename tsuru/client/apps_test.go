@@ -2044,8 +2044,8 @@ Units: 3
 +--------------------+---------+------+------+
 | Name               | Status  | Host | Port |
 +--------------------+---------+------+------+
-| abcea389cbae       | started |      |      |
 | abcea3             | started |      |      |
+| abcea389cbae       | started |      |      |
 | my_long_non_hex_id | started |      |      |
 +--------------------+---------+------+------+
 
