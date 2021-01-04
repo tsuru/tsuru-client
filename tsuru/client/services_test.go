@@ -1066,7 +1066,9 @@ func (s *S) TestServiceInstanceRemoveWithoutForce(c *check.C) {
 		Transport: cmdtest.Transport{Message: msg, Status: http.StatusBadRequest},
 		CondFunc: func(req *http.Request) bool {
 			return strings.HasSuffix(req.URL.Path, "/services/some-service-name/instances/mongodb") &&
-				req.Method == http.MethodDelete
+				req.Method == http.MethodDelete &&
+				req.URL.Query().Get("unbindall") == "false" &&
+				req.URL.Query().Get("ignoreerrors") == "false"
 		},
 	}
 	client := cmd.NewClient(&http.Client{Transport: trans}, nil, manager)
@@ -1087,12 +1089,38 @@ func (s *S) TestServiceInstanceRemoveWithAppBindWithFlags(c *check.C) {
 	trans := &cmdtest.ConditionalTransport{
 		Transport: cmdtest.Transport{Message: "", Status: http.StatusOK},
 		CondFunc: func(req *http.Request) bool {
-			return strings.HasSuffix(req.URL.Path, "/services/service-name/instances/mongodb") && req.Method == http.MethodDelete && req.URL.RawQuery == "unbindall=true"
+			return strings.HasSuffix(req.URL.Path, "/services/service-name/instances/mongodb") &&
+				req.Method == http.MethodDelete &&
+				req.URL.Query().Get("unbindall") == "true" &&
+				req.URL.Query().Get("ignoreerrors") == "false"
 		},
 	}
 	client := cmd.NewClient(&http.Client{Transport: trans}, nil, manager)
 	command := ServiceInstanceRemove{}
 	command.Flags().Parse(true, []string{"-f", "-y"})
+	err := command.Run(&ctx, client)
+	c.Assert(err, check.IsNil)
+}
+
+func (s *S) TestServiceInstanceRemoveWithAppBindWithFlagsIgnoreErros(c *check.C) {
+	var stdout, stderr bytes.Buffer
+	ctx := cmd.Context{
+		Args:   []string{"service-name", "mongodb"},
+		Stdout: &stdout,
+		Stderr: &stderr,
+	}
+	trans := &cmdtest.ConditionalTransport{
+		Transport: cmdtest.Transport{Message: "", Status: http.StatusOK},
+		CondFunc: func(req *http.Request) bool {
+			return strings.HasSuffix(req.URL.Path, "/services/service-name/instances/mongodb") &&
+				req.Method == http.MethodDelete &&
+				req.URL.Query().Get("unbindall") == "true" &&
+				req.URL.Query().Get("ignoreerrors") == "true"
+		},
+	}
+	client := cmd.NewClient(&http.Client{Transport: trans}, nil, manager)
+	command := ServiceInstanceRemove{}
+	command.Flags().Parse(true, []string{"-f", "-y", "--ignore-errors"})
 	err := command.Run(&ctx, client)
 	c.Assert(err, check.IsNil)
 }

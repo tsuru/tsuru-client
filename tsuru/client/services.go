@@ -815,14 +815,15 @@ func (c *ServiceInfo) fetchPlans(serviceName string, client *cmd.Client) ([]plan
 
 type ServiceInstanceRemove struct {
 	cmd.ConfirmationCommand
-	fs    *gnuflag.FlagSet
-	force bool
+	fs           *gnuflag.FlagSet
+	force        bool
+	ignoreErrors bool
 }
 
 func (c *ServiceInstanceRemove) Info() *cmd.Info {
 	return &cmd.Info{
 		Name:  "service-instance-remove",
-		Usage: "service-instance-remove <service-name> <service-instance-name> [-f/--force] [-y/--assume-yes]",
+		Usage: "service-instance-remove <service-name> <service-instance-name> [-f/--force] [--ignore-errors] [-y/--assume-yes]",
 		Desc: `Destroys a service instance. It can't remove a service instance that is bound
 to an app, so before remove a service instance, make sure there is no apps
 bound to it (see [[tsuru service-instance-info]] command).`,
@@ -840,7 +841,10 @@ func (c *ServiceInstanceRemove) Run(ctx *cmd.Context, client *cmd.Client) error 
 	if !c.Confirm(ctx, msg+"?") {
 		return nil
 	}
-	url := fmt.Sprintf("/services/%s/instances/%s?unbindall=%v", serviceName, instanceName, c.force)
+	qs := url.Values{}
+	qs.Set("unbindall", strconv.FormatBool(c.force))
+	qs.Set("ignoreerrors", strconv.FormatBool(c.ignoreErrors))
+	url := fmt.Sprintf("/services/%s/instances/%s?%s", serviceName, instanceName, qs.Encode())
 	url, err := cmd.GetURL(url)
 	if err != nil {
 		return err
@@ -861,6 +865,7 @@ func (c *ServiceInstanceRemove) Flags() *gnuflag.FlagSet {
 		c.fs = c.ConfirmationCommand.Flags()
 		c.fs.BoolVar(&c.force, "f", false, "Forces the removal of a service instance binded to apps.")
 		c.fs.BoolVar(&c.force, "force", false, "Forces the removal of a service instance binded to apps.")
+		c.fs.BoolVar(&c.ignoreErrors, "ignore-errors", false, "Ignore errors returned by service backend.")
 	}
 	return c.fs
 }
