@@ -31,7 +31,7 @@ archives:
 # Mac OS Homebrew
 brews:
   # Reporitory to push the tap to.
-- github:
+- tap:
     owner: tsuru
     name: homebrew-tsuru
 
