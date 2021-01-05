@@ -404,10 +404,12 @@ func (c *AppInfo) Run(context *cmd.Context, client *cmd.Client) error {
 		return nil
 	}
 	defer response.Body.Close()
-	result, err := ioutil.ReadAll(response.Body)
+	var a app
+	err = json.NewDecoder(response.Body).Decode(&a)
 	if err != nil {
 		return err
 	}
+	a.Name = appName
 	u, err = cmd.GetURL(fmt.Sprintf("/services/instances?app=%s", appName))
 	if err != nil {
 		return err
@@ -417,15 +419,10 @@ func (c *AppInfo) Run(context *cmd.Context, client *cmd.Client) error {
 		return err
 	}
 	response, err = client.Do(request)
-	var servicesResult []byte
-	if err == nil {
+	if err == nil && response.StatusCode == http.StatusOK {
 		defer response.Body.Close()
-		servicesResult, err = ioutil.ReadAll(response.Body)
-		if err != nil {
-			return err
-		}
+		json.NewDecoder(response.Body).Decode(&a.services)
 	}
-	var quota []byte
 	u, err = cmd.GetURL("/apps/" + appName + "/quota")
 	if err != nil {
 		return err
@@ -436,26 +433,23 @@ func (c *AppInfo) Run(context *cmd.Context, client *cmd.Client) error {
 		return err
 	}
 	defer response.Body.Close()
-	quota, err = ioutil.ReadAll(response.Body)
-	if err != nil {
-		return err
+	json.NewDecoder(response.Body).Decode(&a.Quota)
+
+	if a.VolumeBinds == nil {
+		u, err = cmd.GetURLVersion("1.4", "/volumes")
+		if err != nil {
+			return err
+		}
+		request, _ = http.NewRequest("GET", u, nil)
+		response, err = client.Do(request)
+		if err != nil {
+			return err
+		}
+		defer response.Body.Close()
+		json.NewDecoder(response.Body).Decode(&a.Volumes)
 	}
-	var volumes []byte
-	u, err = cmd.GetURLVersion("1.4", "/volumes")
-	if err != nil {
-		return err
-	}
-	request, _ = http.NewRequest("GET", u, nil)
-	response, err = client.Do(request)
-	if err != nil {
-		return err
-	}
-	defer response.Body.Close()
-	volumes, err = ioutil.ReadAll(response.Body)
-	if err != nil {
-		return err
-	}
-	return c.Show(result, appName, servicesResult, quota, volumes, context)
+
+	return c.Show(&a, context)
 }
 
 type unit struct {
@@ -563,6 +557,7 @@ type app struct {
 
 	InternalAddresses []appInternalAddress
 	UnitsMetrics      []unitMetrics
+	VolumeBinds       []volumeTypes.VolumeBind
 }
 
 type appInternalAddress struct {
@@ -700,16 +695,23 @@ Quota: {{.Quota.InUse}}/{{.Quota.LimitString}}
 	volumeTable := tablecli.NewTable()
 	volumeTable.Headers = tablecli.Row([]string{"Name", "MountPoint", "Mode"})
 	volumeTable.LineSeparator = true
+	binds := []volumeTypes.VolumeBind{}
+
+	// TODO: in the next version of tsuru we could remove a.Volumes
 	for _, v := range a.Volumes {
 		for _, b := range v.Binds {
 			if b.ID.App == a.Name {
-				mode := "rw"
-				if b.ReadOnly {
-					mode = "ro"
-				}
-				volumeTable.AddRow(tablecli.Row([]string{b.ID.Volume, b.ID.MountPoint, mode}))
+				binds = append(binds, b)
 			}
 		}
+	}
+	binds = append(binds, a.VolumeBinds...)
+	for _, b := range binds {
+		mode := "rw"
+		if b.ReadOnly {
+			mode = "ro"
+		}
+		volumeTable.AddRow(tablecli.Row([]string{b.ID.Volume, b.ID.MountPoint, mode}))
 	}
 
 	autoScaleTable := tablecli.NewTable()
@@ -896,17 +898,8 @@ func translateTimestampSince(timestamp *time.Time) string {
 	return duration.HumanDuration(time.Since(*timestamp))
 }
 
-func (c *AppInfo) Show(result []byte, appName string, servicesResult []byte, quota []byte, volumes []byte, context *cmd.Context) error {
-	var a app
-	err := json.Unmarshal(result, &a)
-	if err != nil {
-		return err
-	}
-	a.Name = appName
-	json.Unmarshal(servicesResult, &a.services)
-	json.Unmarshal(quota, &a.Quota)
-	json.Unmarshal(volumes, &a.Volumes)
-	fmt.Fprintln(context.Stdout, &a)
+func (c *AppInfo) Show(a *app, context *cmd.Context) error {
+	fmt.Fprintln(context.Stdout, a)
 	return nil
 }
 

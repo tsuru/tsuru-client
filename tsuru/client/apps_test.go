@@ -1229,7 +1229,9 @@ Units: 3
 	}
 	transport := transportFunc(func(req *http.Request) (resp *http.Response, err error) {
 		var body string
-		if strings.HasSuffix(req.URL.Path, "/apps/app1/quota") {
+		if strings.HasSuffix(req.URL.Path, "/services/instances") {
+			body = `[]`
+		} else if strings.HasSuffix(req.URL.Path, "/apps/app1/quota") {
 			body = `{"Limit":40,"InUse":3}`
 		} else if strings.HasSuffix(req.URL.Path, "/apps/app1") {
 			body = `{"name":"app1","teamowner":"myteam","cname":[""],"ip":"myapp.tsuru.io","platform":"php","repository":"git@git.com:php.git","state":"dead", "units":[{"Ip":"10.10.10.10","ID":"app1/0","Status":"started"}, {"Ip":"9.9.9.9","ID":"app1/1","Status":"started"}, {"Ip":"","ID":"app1/2","Status":"pending"}],"teams":["tsuruteam","crane"], "owner": "myapp_owner", "deploys": 7, "router": "planb"}`
@@ -2189,13 +2191,10 @@ Volumes: 1
 		var body string
 		switch {
 		case strings.HasSuffix(req.URL.Path, "/apps/app1"):
-			body = `{"AppName":"app1","teamowner":"myteam","ip":"myapp.tsuru.io","platform":"php","repository":"git@git.com:php.git","state":"dead","units":[{"Ip":"10.10.10.10","ID":"app1/0","Status":"started"}, {"Ip":"9.9.9.9","ID":"app1/1","Status":"started"}, {"Ip":"","ID":"app1/2","Status":"pending"}],"Teams":["tsuruteam","crane"], "owner": "myapp_owner", "deploys": 7, "router": "planb"}`
+			body = `{"AppName":"app1","teamowner":"myteam","ip":"myapp.tsuru.io","platform":"php","repository":"git@git.com:php.git","state":"dead","units":[{"Ip":"10.10.10.10","ID":"app1/0","Status":"started"}, {"Ip":"9.9.9.9","ID":"app1/1","Status":"started"}, {"Ip":"","ID":"app1/2","Status":"pending"}],"Teams":["tsuruteam","crane"], "owner": "myapp_owner", "deploys": 7, "router": "planb", "volumeBinds": [{"ID":{"App":"app1","MountPoint":"/vol1","Volume":"vol1"},"ReadOnly":false}]}`
 		case strings.HasSuffix(req.URL.Path, "/services/instances") && req.URL.RawQuery == "app=app1":
 			body = `[{"service":"redisapi","instances":["myredisapi"], "plans": ["test"]},
 					 {"service":"mongodb", "instances":[], "plans": [""]}]`
-		case strings.HasSuffix(req.URL.Path, "/volumes") && req.Method == "GET":
-			body = `[{"Name":"vol1","TeamOwner":"myteam","Status":"","Binds":[{"ID":{"App":"app1","MountPoint":"/vol1","Volume":"vol1"},"ReadOnly":false}],"Opts":{"medium":"Memory"}},
-					 {"Name":"vol2","Plan":{"Name":"emptydir","Opts":{"plugin":"emptyDir"}},"TeamOwner":"admin","Status":"","Binds":[{"ID":{"App":"app2","MountPoint":"/vol2","Volume":"vol2"},"ReadOnly":false}]}]`
 		case strings.HasSuffix(req.URL.Path, "/apps/app1/quota") && req.Method == "GET":
 			body = `{"Limit":40,"InUse":3}`
 		}
