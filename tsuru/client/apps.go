@@ -28,7 +28,7 @@ import (
 	"github.com/tsuru/tablecli"
 	"github.com/tsuru/tsuru/cmd"
 	apptypes "github.com/tsuru/tsuru/types/app"
-	"github.com/tsuru/tsuru/volume"
+	volumeTypes "github.com/tsuru/tsuru/types/volume"
 	"k8s.io/apimachinery/pkg/api/resource"
 	"k8s.io/apimachinery/pkg/util/duration"
 )
@@ -558,7 +558,7 @@ type app struct {
 	Tags        []string
 	Error       string
 	Routers     []apptypes.AppRouter
-	Volumes     []volume.Volume
+	Volumes     []volumeTypes.Volume
 	AutoScale   []tsuru.AutoScaleSpec
 
 	InternalAddresses []appInternalAddress

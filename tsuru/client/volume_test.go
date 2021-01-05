@@ -12,7 +12,7 @@ import (
 	"github.com/ajg/form"
 	"github.com/tsuru/tsuru/cmd"
 	"github.com/tsuru/tsuru/cmd/cmdtest"
-	"github.com/tsuru/tsuru/volume"
+	volumeTypes "github.com/tsuru/tsuru/types/volume"
 	"gopkg.in/check.v1"
 )
 
@@ -216,12 +216,12 @@ func (s *S) TestVolumeCreate(c *check.C) {
 			dec := form.NewDecoder(nil)
 			dec.IgnoreCase(true)
 			dec.IgnoreUnknownKeys(true)
-			var vol volume.Volume
+			var vol volumeTypes.Volume
 			err := dec.DecodeValues(&vol, r.Form)
 			c.Assert(err, check.IsNil)
-			c.Assert(vol, check.DeepEquals, volume.Volume{
+			c.Assert(vol, check.DeepEquals, volumeTypes.Volume{
 				Name:      "vol1",
-				Plan:      volume.VolumePlan{Name: "plan1"},
+				Plan:      volumeTypes.VolumePlan{Name: "plan1"},
 				TeamOwner: "team1",
 				Pool:      "pool1",
 				Opts:      map[string]string{"a": "1", "b": "2"},
@@ -252,12 +252,12 @@ func (s *S) TestVolumeUpdate(c *check.C) {
 			dec := form.NewDecoder(nil)
 			dec.IgnoreCase(true)
 			dec.IgnoreUnknownKeys(true)
-			var vol volume.Volume
+			var vol volumeTypes.Volume
 			err := dec.DecodeValues(&vol, r.Form)
 			c.Assert(err, check.IsNil)
-			c.Assert(vol, check.DeepEquals, volume.Volume{
+			c.Assert(vol, check.DeepEquals, volumeTypes.Volume{
 				Name:      "vol1",
-				Plan:      volume.VolumePlan{Name: "plan1"},
+				Plan:      volumeTypes.VolumePlan{Name: "plan1"},
 				TeamOwner: "team1",
 				Pool:      "pool1",
 				Opts:      map[string]string{"a": "1", "b": "2"},

@@ -255,13 +255,12 @@ func (s *S) TestEventListWithFilters(c *check.C) {
 			c.Assert(req.URL.Query().Get("target.type"), check.Equals, "app")
 			c.Assert(req.URL.Query().Get("target.value"), check.Equals, "appname")
 			c.Assert(req.URL.Query().Get("running"), check.Equals, "true")
-			c.Assert(req.URL.Query().Get("includeremoved"), check.Equals, "true")
 			return true
 		},
 	}
 	client := cmd.NewClient(&http.Client{Transport: trans}, nil, manager)
 	command := EventList{}
-	err := command.Flags().Parse(true, []string{"-k", "app.update", "-k", "app.deploy", "-o", "event-owner", "-t", "app", "-v", "appname", "-i", "-r"})
+	err := command.Flags().Parse(true, []string{"-k", "app.update", "-k", "app.deploy", "-o", "event-owner", "-t", "app", "-v", "appname", "-r"})
 	c.Assert(err, check.IsNil)
 	err = command.Run(&context, client)
 	c.Assert(err, check.IsNil)

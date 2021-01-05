@@ -30,18 +30,14 @@ type EventList struct {
 }
 
 type eventFilter struct {
-	filter         event.Filter
-	kindNames      cmd.StringSliceFlag
-	running        bool
-	includeRemoved bool
+	filter    event.Filter
+	kindNames cmd.StringSliceFlag
+	running   bool
 }
 
 func (f *eventFilter) queryString(client *cmd.Client) (url.Values, error) {
 	if f.running {
 		f.filter.Running = &f.running
-	}
-	if f.includeRemoved {
-		f.filter.IncludeRemoved = f.includeRemoved
 	}
 	values, err := form.EncodeToValues(f.filter)
 	if err != nil {
@@ -53,9 +49,6 @@ func (f *eventFilter) queryString(client *cmd.Client) (url.Values, error) {
 	}
 	if f.filter.Running == nil {
 		values.Del("running")
-	}
-	if !f.filter.IncludeRemoved {
-		values.Del("includeremoved")
 	}
 	for _, k := range f.kindNames {
 		values.Add("kindname", k)
@@ -80,9 +73,6 @@ func (f *eventFilter) flags(fs *gnuflag.FlagSet) {
 	name = "Shows only currently running events"
 	fs.BoolVar(&f.running, "running", false, name)
 	fs.BoolVar(&f.running, "r", false, name)
-	name = "Include also removed events"
-	fs.BoolVar(&f.includeRemoved, "include-removed", false, name)
-	fs.BoolVar(&f.includeRemoved, "i", false, name)
 }
 
 func (c *EventList) Info() *cmd.Info {

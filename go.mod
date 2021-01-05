@@ -20,12 +20,13 @@ require (
 	github.com/pmorie/go-open-service-broker-client v0.0.0-20180330214919-dca737037ce6
 	github.com/sabhiram/go-gitignore v0.0.0-20171017070213-362f9845770f
 	github.com/sethvargo/go-password v0.1.1
-	github.com/tsuru/config v0.0.0-20200717192526-2a9a0efe5f28
+	github.com/tsuru/config v0.0.0-20201023175036-375aaee8b560
 	github.com/tsuru/gnuflag v0.0.0-20151217162021-86b8c1b864aa
 	github.com/tsuru/go-tsuruclient v0.0.0-20200917194500-f859f989a659
 	github.com/tsuru/tablecli v0.0.0-20190131152944-7ded8a3383c6
-	github.com/tsuru/tsuru v0.0.0-20201020115853-db6e1154ebdc
+	github.com/tsuru/tsuru v0.0.0-20210105150415-7be708014704
 	golang.org/x/crypto v0.0.0-20201012173705-84dcc777aaee
+	google.golang.org/api v0.7.0 // indirect
 	google.golang.org/appengine v1.6.1 // indirect
 	gopkg.in/check.v1 v1.0.0-20200902074654-038fdea0a05b
 	gopkg.in/yaml.v2 v2.3.0

@@ -16,7 +16,7 @@ import (
 	"github.com/tsuru/gnuflag"
 	"github.com/tsuru/tablecli"
 	"github.com/tsuru/tsuru/cmd"
-	"github.com/tsuru/tsuru/volume"
+	volumeTypes "github.com/tsuru/tsuru/types/volume"
 )
 
 type VolumeCreate struct {
@@ -54,9 +54,9 @@ func (c *VolumeCreate) Flags() *gnuflag.FlagSet {
 
 func (c *VolumeCreate) Run(ctx *cmd.Context, client *cmd.Client) error {
 	volumeName, planName := ctx.Args[0], ctx.Args[1]
-	vol := volume.Volume{
+	vol := volumeTypes.Volume{
 		Name:      volumeName,
-		Plan:      volume.VolumePlan{Name: planName},
+		Plan:      volumeTypes.VolumePlan{Name: planName},
 		Pool:      c.pool,
 		TeamOwner: c.team,
 		Opts:      map[string]string(c.opt),
@@ -118,9 +118,9 @@ func (c *VolumeUpdate) Flags() *gnuflag.FlagSet {
 
 func (c *VolumeUpdate) Run(ctx *cmd.Context, client *cmd.Client) error {
 	volumeName, planName := ctx.Args[0], ctx.Args[1]
-	vol := volume.Volume{
+	vol := volumeTypes.Volume{
 		Name:      volumeName,
-		Plan:      volume.VolumePlan{Name: planName},
+		Plan:      volumeTypes.VolumePlan{Name: planName},
 		Pool:      c.pool,
 		TeamOwner: c.team,
 		Opts:      map[string]string(c.opt),
@@ -181,7 +181,7 @@ func (c *VolumeList) Run(ctx *cmd.Context, client *cmd.Client) error {
 	if err != nil {
 		return err
 	}
-	var volumes []volume.Volume
+	var volumes []volumeTypes.Volume
 	err = json.Unmarshal(data, &volumes)
 	if err != nil {
 		return err
@@ -189,7 +189,7 @@ func (c *VolumeList) Run(ctx *cmd.Context, client *cmd.Client) error {
 	return c.render(ctx, volumes)
 }
 
-func (c *VolumeList) render(ctx *cmd.Context, volumes []volume.Volume) error {
+func (c *VolumeList) render(ctx *cmd.Context, volumes []volumeTypes.Volume) error {
 	tbl := tablecli.NewTable()
 	tbl.Headers = tablecli.Row{"Name", "Plan", "Pool", "Team"}
 	tbl.LineSeparator = true
@@ -241,7 +241,7 @@ func (c *VolumeInfo) Run(ctx *cmd.Context, client *cmd.Client) error {
 	if err != nil {
 		return err
 	}
-	var volume volume.Volume
+	var volume volumeTypes.Volume
 	err = json.Unmarshal(data, &volume)
 	if err != nil {
 		return err
@@ -249,7 +249,7 @@ func (c *VolumeInfo) Run(ctx *cmd.Context, client *cmd.Client) error {
 	return c.render(ctx, volume)
 }
 
-func (c *VolumeInfo) render(ctx *cmd.Context, volume volume.Volume) error {
+func (c *VolumeInfo) render(ctx *cmd.Context, volume volumeTypes.Volume) error {
 	fmt.Fprintf(ctx.Stdout, "Name: %s\nPlan: %s\nPool: %s\nTeam: %s\n",
 		volume.Name,
 		volume.Plan.Name,
@@ -315,7 +315,7 @@ func (c *VolumePlansList) Run(ctx *cmd.Context, client *cmd.Client) error {
 		return err
 	}
 	defer rsp.Body.Close()
-	var plans map[string][]volume.VolumePlan
+	var plans map[string][]volumeTypes.VolumePlan
 	if rsp.StatusCode != http.StatusNoContent {
 		data, err := ioutil.ReadAll(rsp.Body)
 		if err != nil {
@@ -329,7 +329,7 @@ func (c *VolumePlansList) Run(ctx *cmd.Context, client *cmd.Client) error {
 	return c.render(ctx, plans)
 }
 
-func (c *VolumePlansList) render(ctx *cmd.Context, plans map[string][]volume.VolumePlan) error {
+func (c *VolumePlansList) render(ctx *cmd.Context, plans map[string][]volumeTypes.VolumePlan) error {
 	tbl := tablecli.NewTable()
 	tbl.Headers = tablecli.Row{"Plan", "Provisioner", "Opts"}
 	tbl.LineSeparator = true
