@@ -648,7 +648,7 @@ Platform: {{.Platform}}
 Provisioner: {{ .Provisioner }}
 {{ end -}}
 {{if not .Routers -}}
-Router: {{.Router}}{{if .RouterOpts}} ({{.GetRouterOpts}}){{end}}
+Router:{{if .Router}} {{.Router}}{{if .RouterOpts}} ({{.GetRouterOpts}}){{end}}{{end}}
 {{end -}}
 Teams: {{.GetTeams}}
 Address: {{.Addr}}
