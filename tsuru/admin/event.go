@@ -10,7 +10,6 @@ import (
 	"net/http"
 	"time"
 
-	"github.com/ajg/form"
 	"github.com/tsuru/gnuflag"
 	"github.com/tsuru/tablecli"
 	"github.com/tsuru/tsuru-client/tsuru/formatter"
@@ -150,11 +149,12 @@ func (c *EventBlockAdd) Run(context *cmd.Context, client *cmd.Client) error {
 		OwnerName: c.owner,
 		Target:    target,
 	}
-	v, err := form.EncodeToValues(&block)
+
+	body, err := json.Marshal(block)
 	if err != nil {
 		return err
 	}
-	err = doRequest(client, url, http.MethodPost, v.Encode())
+	err = doRequest(client, url, http.MethodPost, body)
 	if err != nil {
 		return err
 	}

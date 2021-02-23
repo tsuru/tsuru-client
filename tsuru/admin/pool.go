@@ -5,6 +5,8 @@
 package admin
 
 import (
+	"bytes"
+	"context"
 	"encoding/json"
 	"fmt"
 	"net/http"
@@ -12,8 +14,9 @@ import (
 	"strconv"
 	"strings"
 
-	"github.com/ajg/form"
 	"github.com/tsuru/gnuflag"
+	"github.com/tsuru/go-tsuruclient/pkg/client"
+	"github.com/tsuru/go-tsuruclient/pkg/tsuru"
 	"github.com/tsuru/tablecli"
 	"github.com/tsuru/tsuru/cmd"
 	"github.com/tsuru/tsuru/errors"
@@ -25,13 +28,14 @@ type AddPoolToSchedulerCmd struct {
 	defaultPool  bool
 	forceDefault bool
 	provisioner  string
+	labels       cmd.MapFlag
 	fs           *gnuflag.FlagSet
 }
 
 func (AddPoolToSchedulerCmd) Info() *cmd.Info {
 	return &cmd.Info{
 		Name:  "pool-add",
-		Usage: "pool-add <pool> [-p/--public] [-d/--default] [--provisioner <name>] [-f/--force]",
+		Usage: "pool-add <pool> [-p/--public] [-d/--default] [--provisioner <name>] [-f/--force] [-l/--labels \"{\"key\":\"value\"}\"]",
 		Desc: `Adds a new pool.
 
 Each docker node added using [[node-add]] command belongs to one pool.
@@ -56,30 +60,57 @@ func (c *AddPoolToSchedulerCmd) Flags() *gnuflag.FlagSet {
 		c.fs.BoolVar(&c.forceDefault, "f", false, msg)
 		msg = "Provisioner associated to the pool (empty for default docker provisioner)"
 		c.fs.StringVar(&c.provisioner, "provisioner", "", msg)
+		msg = "LabelSet that integrates with kubernetes, i.e could be used to define a podAffinity rule for the pool"
+		c.fs.Var(&c.labels, "labels", msg)
 	}
 	return c.fs
 }
 
+type addOpts struct {
+	Name         string            `json:"name"`
+	Public       bool              `json:"public,omitempty"`
+	DefaultPool  bool              `json:"default,omitempty"`
+	ForceDefault bool              `json:"force,omitempty"`
+	Provisioner  string            `json:"provisioner,omitempty"`
+	Labels       map[string]string `json:"labels,omitempty"`
+}
+
+func (c *AddPoolToSchedulerCmd) marshalAddPoolOpts(poolName string) ([]byte, error) {
+	opts := addOpts{
+		Name:         poolName,
+		Public:       c.public,
+		DefaultPool:  c.defaultPool,
+		ForceDefault: c.forceDefault,
+		Provisioner:  c.provisioner,
+		Labels:       c.labels,
+	}
+
+	return json.Marshal(opts)
+}
+
 func (c *AddPoolToSchedulerCmd) Run(ctx *cmd.Context, client *cmd.Client) error {
-	v := url.Values{}
-	v.Set("name", ctx.Args[0])
-	v.Set("public", strconv.FormatBool(c.public))
-	v.Set("default", strconv.FormatBool(c.defaultPool))
-	v.Set("force", strconv.FormatBool(c.forceDefault))
-	v.Set("provisioner", c.provisioner)
+	poolName := ctx.Args[0]
+	body, err := c.marshalAddPoolOpts(poolName)
+	if err != nil {
+		return err
+	}
 	u, err := cmd.GetURL("/pools")
 	if err != nil {
 		return err
 	}
-	err = doRequest(client, u, "POST", v.Encode())
+	err = doRequest(client, u, "POST", body)
 	if err != nil {
 		if e, ok := err.(*errors.HTTP); ok && e.Code == http.StatusPreconditionFailed {
 			retryMessage := "WARNING: Default pool already exist. Do you want change to %s pool? (y/n) "
-			v.Set("force", "true")
+			c.forceDefault = true
+			body, err = c.marshalAddPoolOpts(poolName)
+			if err != nil {
+				return err
+			}
 			url, _ := cmd.GetURL("/pools")
 			successMessage := "Pool successfully registered.\n"
 			failMessage := "Pool add aborted.\n"
-			return confirmAction(ctx, client, url, "POST", v.Encode(), retryMessage, failMessage, successMessage)
+			return confirmAction(ctx, client, url, "POST", body, retryMessage, failMessage, successMessage)
 		}
 		return err
 	}
@@ -91,13 +122,15 @@ type UpdatePoolToSchedulerCmd struct {
 	public       pointerBoolFlag
 	defaultPool  pointerBoolFlag
 	forceDefault bool
+	labelsAdd    cmd.MapFlag
+	labelsRemove cmd.StringSliceFlag
 	fs           *gnuflag.FlagSet
 }
 
 func (UpdatePoolToSchedulerCmd) Info() *cmd.Info {
 	return &cmd.Info{
 		Name:    "pool-update",
-		Usage:   "pool-update <pool> [--public=true/false] [--default=true/false] [-f/--force]",
+		Usage:   "pool-update <pool> [--public=true/false] [--default=true/false] [-f/--force] [--add-labels key=value]... [--remove-labels key]...",
 		Desc:    `Updates attributes for a pool.`,
 		MinArgs: 1,
 	}
@@ -112,39 +145,104 @@ func (c *UpdatePoolToSchedulerCmd) Flags() *gnuflag.FlagSet {
 		c.fs.Var(&c.defaultPool, "default", msg)
 		c.fs.BoolVar(&c.forceDefault, "force", false, "Force pool to be default.")
 		c.fs.BoolVar(&c.forceDefault, "f", false, "Force pool to be default.")
+		c.fs.Var(&c.labelsAdd, "add-labels", "group of key/value pairs that specify a kubernetes object label, this option adds the specified labels to the pool")
+		c.fs.Var(&c.labelsRemove, "remove-labels", "group of keys from a kubernetes object label, this option removes the specified labels from the pool")
 	}
 	return c.fs
 }
 
+type updateOpts struct {
+	Public       *bool `json:"public,omitempty"`
+	DefaultPool  *bool `json:"default,omitempty"`
+	ForceDefault bool  `json:"force,omitempty"`
+
+	Labels map[string]string `json:"labels"`
+}
+
+func removeKeys(m map[string]string, toRemove []string) (map[string]string, error) {
+	for _, k := range toRemove {
+		if _, ok := m[k]; !ok {
+			return nil, &errors.ValidationError{Message: fmt.Sprintf("key %s does not exist in pool labelset, can't delete an unexisting key", k)}
+		}
+		delete(m, k)
+	}
+
+	return m, nil
+}
+
+func (c *UpdatePoolToSchedulerCmd) checkLabels(poolName string, cli *cmd.Client) (map[string]string, error) {
+	api, err := client.ClientFromEnvironment(&tsuru.Configuration{
+		HTTPClient: cli.HTTPClient,
+	})
+	if err != nil {
+		return nil, err
+	}
+
+	pool, _, err := api.PoolApi.PoolGet(context.TODO(), poolName)
+	if err != nil {
+		return nil, err
+	}
+	labels := make(map[string]string)
+	if len(c.labelsRemove) > 0 {
+		labels, err = removeKeys(pool.Labels, c.labelsRemove)
+		if err != nil {
+			return nil, err
+		}
+	}
+
+	for k, v := range c.labelsAdd {
+		labels[k] = v
+	}
+
+	return labels, nil
+}
+
+func (c *UpdatePoolToSchedulerCmd) marshalUpdateOpts(poolName string, client *cmd.Client) ([]byte, error) {
+	var labels map[string]string
+	var err error
+	if len(c.labelsAdd) > 0 || len(c.labelsRemove) > 0 {
+		labels, err = c.checkLabels(poolName, client)
+		if err != nil {
+			return nil, err
+		}
+	}
+	opts := updateOpts{
+		Public:       c.public.value,
+		DefaultPool:  c.defaultPool.value,
+		ForceDefault: c.forceDefault,
+		Labels:       labels,
+	}
+	return json.Marshal(opts)
+}
+
 func (c *UpdatePoolToSchedulerCmd) Run(ctx *cmd.Context, client *cmd.Client) error {
-	v := url.Values{}
-	if c.public.value == nil {
-		v.Set("public", "")
-	} else {
-		v.Set("public", strconv.FormatBool(*c.public.value))
-	}
-	if c.defaultPool.value == nil {
-		v.Set("default", "")
-	} else {
-		v.Set("default", strconv.FormatBool(*c.defaultPool.value))
-	}
-	v.Set("force", strconv.FormatBool(c.forceDefault))
-	u, err := cmd.GetURL(fmt.Sprintf("/pools/%s", ctx.Args[0]))
+	poolName := ctx.Args[0]
+	body, err := c.marshalUpdateOpts(poolName, client)
 	if err != nil {
 		return err
 	}
-	err = doRequest(client, u, "PUT", v.Encode())
+
+	u, err := cmd.GetURL(fmt.Sprintf("/pools/%s", poolName))
+	if err != nil {
+		return err
+	}
+	err = doRequest(client, u, "PUT", body)
 	if err != nil {
 		if e, ok := err.(*errors.HTTP); ok && e.Code == http.StatusPreconditionFailed {
 			retryMessage := "WARNING: Default pool already exist. Do you want change to %s pool? (y/n) "
 			failMessage := "Pool update aborted.\n"
 			successMessage := "Pool successfully updated.\n"
-			v.Set("force", "true")
-			u, err = cmd.GetURL(fmt.Sprintf("/pools/%s", ctx.Args[0]))
+			c.forceDefault = true
+			body, err = c.marshalUpdateOpts(poolName, client)
 			if err != nil {
 				return err
 			}
-			return confirmAction(ctx, client, u, "PUT", v.Encode(), retryMessage, failMessage, successMessage)
+
+			u, err = cmd.GetURL(fmt.Sprintf("/pools/%s", poolName))
+			if err != nil {
+				return err
+			}
+			return confirmAction(ctx, client, u, "PUT", body, retryMessage, failMessage, successMessage)
 		}
 		return err
 	}
@@ -275,17 +373,17 @@ func (p *pointerBoolFlag) Set(value string) error {
 	return nil
 }
 
-func doRequest(client *cmd.Client, url, method, body string) error {
-	req, err := http.NewRequest(method, url, strings.NewReader(body))
+func doRequest(client *cmd.Client, url, method string, body []byte) error {
+	req, err := http.NewRequest(method, url, bytes.NewBuffer(body))
 	if err != nil {
 		return err
 	}
-	req.Header.Set("Content-Type", "application/x-www-form-urlencoded")
+	req.Header.Set("Content-Type", "application/json")
 	_, err = client.Do(req)
 	return err
 }
 
-func confirmAction(ctx *cmd.Context, client *cmd.Client, url, method, body string, retryMessage, failMessage, successMessage string) error {
+func confirmAction(ctx *cmd.Context, client *cmd.Client, url, method string, body []byte, retryMessage, failMessage, successMessage string) error {
 	var answer string
 	fmt.Fprintf(ctx.Stdout, retryMessage, ctx.Args[0])
 	fmt.Fscanf(ctx.Stdin, "%s", &answer)
@@ -394,12 +492,16 @@ func (c *PoolConstraintSet) Run(ctx *cmd.Context, client *cmd.Client) error {
 		Blacklist: c.blacklist,
 		Values:    allValues,
 	}
-	v, err := form.EncodeToValues(constraint)
+
+	body, err := json.Marshal(constraint)
 	if err != nil {
 		return err
 	}
-	v.Set("append", strconv.FormatBool(c.append))
-	err = doRequest(client, u, http.MethodPut, v.Encode())
+
+	if c.append {
+		u = fmt.Sprintf("%s?append=true", u)
+	}
+	err = doRequest(client, u, http.MethodPut, body)
 	if err != nil {
 		return err
 	}

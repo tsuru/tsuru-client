@@ -10,12 +10,17 @@ import (
 	"net/http"
 	"strings"
 
-	"github.com/ajg/form"
+	"github.com/tsuru/go-tsuruclient/pkg/tsuru"
 	"github.com/tsuru/tsuru/cmd"
 	"github.com/tsuru/tsuru/cmd/cmdtest"
 	"github.com/tsuru/tsuru/provision/pool"
 	"gopkg.in/check.v1"
 )
+
+func decodeJSONBody(c *check.C, req *http.Request, opts interface{}) {
+	err := json.NewDecoder(req.Body).Decode(&opts)
+	c.Assert(err, check.IsNil)
+}
 
 func (s *S) TestAddPoolToTheSchedulerCmd(c *check.C) {
 	var buf bytes.Buffer
@@ -39,10 +44,13 @@ func (s *S) TestAddPublicPool(c *check.C) {
 	trans := &cmdtest.ConditionalTransport{
 		Transport: cmdtest.Transport{Message: "", Status: http.StatusOK},
 		CondFunc: func(req *http.Request) bool {
+			opts := new(addOpts)
+			decodeJSONBody(c, req, opts)
 			url := strings.HasSuffix(req.URL.Path, "/pools")
-			name := req.FormValue("name") == "test"
-			public := req.FormValue("public") == "true"
-			def := req.FormValue("default") == "false"
+			name := opts.Name == "test"
+			public := opts.Public == true
+			def := opts.DefaultPool == false
+
 			return url && name && public && def
 		},
 	}
@@ -61,9 +69,11 @@ func (s *S) TestAddDefaultPool(c *check.C) {
 		Transport: cmdtest.Transport{Message: "", Status: http.StatusOK},
 		CondFunc: func(req *http.Request) bool {
 			url := strings.HasSuffix(req.URL.Path, "/pools")
-			name := req.FormValue("name") == "test"
-			public := req.FormValue("public") == "false"
-			def := req.FormValue("default") == "true"
+			opts := new(addOpts)
+			decodeJSONBody(c, req, opts)
+			name := opts.Name == "test"
+			public := opts.Public == false
+			def := opts.DefaultPool == true
 			return url && name && public && def
 		},
 	}
@@ -82,10 +92,12 @@ func (s *S) TestAddPoolWithProvisioner(c *check.C) {
 		Transport: cmdtest.Transport{Message: "", Status: http.StatusOK},
 		CondFunc: func(req *http.Request) bool {
 			url := strings.HasSuffix(req.URL.Path, "/pools")
-			name := req.FormValue("name") == "test"
-			public := req.FormValue("public") == "false"
-			def := req.FormValue("default") == "false"
-			prov := req.FormValue("provisioner") == "kub"
+			opts := new(addOpts)
+			decodeJSONBody(c, req, opts)
+			name := opts.Name == "test"
+			public := opts.Public == false
+			def := opts.DefaultPool == false
+			prov := opts.Provisioner == "kub"
 			return url && name && public && def && prov
 		},
 	}
@@ -97,15 +109,41 @@ func (s *S) TestAddPoolWithProvisioner(c *check.C) {
 	c.Assert(err, check.IsNil)
 }
 
+func (s *S) TestAddPoolWithLabels(c *check.C) {
+	var buf bytes.Buffer
+	context := cmd.Context{Args: []string{"poolTest"}, Stdout: &buf}
+	trans := &cmdtest.ConditionalTransport{
+		Transport: cmdtest.Transport{Message: "", Status: http.StatusOK},
+		CondFunc: func(req *http.Request) bool {
+			opts := new(addOpts)
+			decodeJSONBody(c, req, opts)
+			if v, ok := opts.Labels["test-key"]; ok {
+				if strings.Compare(v, "test-value") == 0 {
+					return true
+				}
+			}
+			return false
+		},
+	}
+	manager := cmd.Manager{}
+	client := cmd.NewClient(&http.Client{Transport: trans}, nil, &manager)
+	cmd := AddPoolToSchedulerCmd{}
+	cmd.Flags().Parse(true, []string{"--labels", "test-key=test-value"})
+	err := cmd.Run(&context, client)
+	c.Assert(err, check.IsNil)
+}
+
 func (s *S) TestFailToAddMoreThanOneDefaultPool(c *check.C) {
 	var buf bytes.Buffer
 	stdin := bytes.NewBufferString("no")
 	transportError := cmdtest.ConditionalTransport{
 		Transport: cmdtest.Transport{Status: http.StatusPreconditionFailed, Message: "Default pool already exist."},
 		CondFunc: func(req *http.Request) bool {
-			name := req.FormValue("name") == "test"
-			public := req.FormValue("public") == "false"
-			def := req.FormValue("default") == "true"
+			opts := new(addOpts)
+			decodeJSONBody(c, req, opts)
+			name := opts.Name == "test"
+			public := opts.Public == false
+			def := opts.DefaultPool == true
 			url := strings.HasSuffix(req.URL.Path, "/pools")
 			return name && public && def && url
 		},
@@ -127,10 +165,12 @@ func (s *S) TestForceToOverwriteDefaultPool(c *check.C) {
 	transportError := cmdtest.ConditionalTransport{
 		Transport: cmdtest.Transport{Status: http.StatusPreconditionFailed, Message: "Default pool already exist."},
 		CondFunc: func(req *http.Request) bool {
-			name := req.FormValue("name") == "test"
-			public := req.FormValue("public") == "false"
-			def := req.FormValue("default") == "true"
-			force := req.FormValue("force") == "true"
+			opts := new(addOpts)
+			decodeJSONBody(c, req, opts)
+			name := opts.Name == "test"
+			public := opts.Public == false
+			def := opts.DefaultPool == true
+			force := opts.ForceDefault == true
 			return name && public && def && force
 		},
 	}
@@ -152,10 +192,12 @@ func (s *S) TestAskOverwriteDefaultPool(c *check.C) {
 		Transport: cmdtest.Transport{Status: http.StatusPreconditionFailed, Message: "Default pool already exist."},
 		CondFunc: func(req *http.Request) bool {
 			called++
-			name := req.FormValue("name") == "test"
-			public := req.FormValue("public") == "false"
-			def := req.FormValue("default") == "true"
-			url := req.FormValue("force") == "false"
+			opts := new(addOpts)
+			decodeJSONBody(c, req, opts)
+			name := opts.Name == "test"
+			public := opts.Public == false
+			def := opts.DefaultPool == true
+			url := opts.ForceDefault == false
 			return url && name && public && def
 		},
 	}
@@ -163,7 +205,9 @@ func (s *S) TestAskOverwriteDefaultPool(c *check.C) {
 		Transport: cmdtest.Transport{Status: http.StatusOK, Message: ""},
 		CondFunc: func(req *http.Request) bool {
 			called++
-			return req.FormValue("force") == "true"
+			opts := new(addOpts)
+			decodeJSONBody(c, req, opts)
+			return opts.ForceDefault == true
 		},
 	}
 	multiTransport := cmdtest.MultiConditionalTransport{
@@ -191,12 +235,18 @@ func (s *S) TestUpdatePoolToTheSchedulerCmd(c *check.C) {
 	trans := &cmdtest.ConditionalTransport{
 		Transport: cmdtest.Transport{Message: "", Status: http.StatusOK},
 		CondFunc: func(req *http.Request) bool {
-			def := req.FormValue("default") == ""
-			public := req.FormValue("public") == "true"
+			opts := new(updateOpts)
+			decodeJSONBody(c, req, opts)
+			def := opts.DefaultPool == nil
+			var public bool
+			if opts.Public != nil {
+				public = *opts.Public == true
+			}
+			labels := opts.Labels == nil
+			force := opts.ForceDefault == false
 			url := strings.HasSuffix(req.URL.Path, "/pools/poolTest")
 			method := req.Method == "PUT"
-			force := req.FormValue("force") == "false"
-			return public && method && url && force && def
+			return public && method && url && force && def && labels
 		},
 	}
 	manager := cmd.Manager{}
@@ -207,17 +257,209 @@ func (s *S) TestUpdatePoolToTheSchedulerCmd(c *check.C) {
 	c.Assert(err, check.IsNil)
 }
 
+func (s *S) TestUpdatePoolAddLabels(c *check.C) {
+	var buf bytes.Buffer
+	context := cmd.Context{Args: []string{"poolTest"}, Stdout: &buf}
+	pool := tsuru.Pool{
+		Name: "poolTest",
+	}
+	data, err := json.Marshal(pool)
+	c.Assert(err, check.IsNil)
+	trans := cmdtest.MultiConditionalTransport{
+		ConditionalTransports: []cmdtest.ConditionalTransport{
+			{
+				Transport: cmdtest.Transport{Message: string(data), Status: http.StatusOK},
+				CondFunc: func(req *http.Request) bool {
+					c.Assert(req.Method, check.Equals, http.MethodGet)
+					c.Assert(req.URL.Path, check.Equals, "/pools/poolTest")
+					return true
+				},
+			},
+			{
+				Transport: cmdtest.Transport{Message: string(data), Status: http.StatusOK},
+				CondFunc: func(req *http.Request) bool {
+					url := strings.HasSuffix(req.URL.Path, "/pools/poolTest")
+					method := req.Method == "PUT"
+					opts := new(updateOpts)
+					decodeJSONBody(c, req, opts)
+					expected := map[string]string{"test-key": "test-value"}
+					c.Assert(opts.Labels, check.DeepEquals, expected)
+					return url && method
+				},
+			},
+		},
+	}
+	manager := cmd.Manager{}
+	client := cmd.NewClient(&http.Client{Transport: &trans}, nil, &manager)
+	cmd := UpdatePoolToSchedulerCmd{}
+	cmd.Flags().Parse(true, []string{"--add-labels", "test-key=test-value"})
+	err = cmd.Run(&context, client)
+	c.Assert(err, check.IsNil)
+}
+
+func (s *S) TestUpdatePoolFailRemoveUnexistingLabels(c *check.C) {
+	var buf bytes.Buffer
+	context := cmd.Context{Args: []string{"poolTest"}, Stdout: &buf}
+	pool := tsuru.Pool{
+		Name: "poolTest",
+	}
+	data, err := json.Marshal(pool)
+	c.Assert(err, check.IsNil)
+	trans := cmdtest.ConditionalTransport{
+		Transport: cmdtest.Transport{Message: string(data), Status: http.StatusOK},
+		CondFunc: func(req *http.Request) bool {
+			c.Assert(req.Method, check.Equals, http.MethodGet)
+			c.Assert(req.URL.Path, check.Equals, "/pools/poolTest")
+			return true
+		},
+	}
+	manager := cmd.Manager{}
+	client := cmd.NewClient(&http.Client{Transport: &trans}, nil, &manager)
+	cmd := UpdatePoolToSchedulerCmd{}
+	cmd.Flags().Parse(true, []string{"--remove-labels", "test-key"})
+	err = cmd.Run(&context, client)
+	c.Assert(err.Error(), check.Equals, "key test-key does not exist in pool labelset, can't delete an unexisting key")
+}
+
+func (s *S) TestUpdatePoolRemoveAllLabels(c *check.C) {
+	var buf bytes.Buffer
+	context := cmd.Context{Args: []string{"poolTest"}, Stdout: &buf}
+	pool := tsuru.Pool{
+		Name:   "poolTest",
+		Labels: map[string]string{"k1": "v1", "k2": "v2", "k3": "v3"},
+	}
+	data, err := json.Marshal(pool)
+	c.Assert(err, check.IsNil)
+	trans := cmdtest.MultiConditionalTransport{
+		ConditionalTransports: []cmdtest.ConditionalTransport{
+			{
+				Transport: cmdtest.Transport{Message: string(data), Status: http.StatusOK},
+				CondFunc: func(req *http.Request) bool {
+					c.Assert(req.Method, check.Equals, http.MethodGet)
+					c.Assert(req.URL.Path, check.Equals, "/pools/poolTest")
+					return true
+				},
+			},
+			{
+				Transport: cmdtest.Transport{Message: string(data), Status: http.StatusOK},
+				CondFunc: func(req *http.Request) bool {
+					url := strings.HasSuffix(req.URL.Path, "/pools/poolTest")
+					method := req.Method == "PUT"
+					opts := new(updateOpts)
+					decodeJSONBody(c, req, opts)
+					expected := map[string]string{}
+					c.Assert(opts.Labels, check.DeepEquals, expected)
+					return url && method
+				},
+			},
+		},
+	}
+	manager := cmd.Manager{}
+	client := cmd.NewClient(&http.Client{Transport: &trans}, nil, &manager)
+	cmd := UpdatePoolToSchedulerCmd{}
+	cmd.Flags().Parse(true, []string{"--remove-labels", "k1", "--remove-labels", "k2", "--remove-labels", "k3"})
+	err = cmd.Run(&context, client)
+	c.Assert(err, check.IsNil)
+}
+
+func (s *S) TestUpdatePoolRemoveAllLabelsThenAddNewOnes(c *check.C) {
+	var buf bytes.Buffer
+	context := cmd.Context{Args: []string{"poolTest"}, Stdout: &buf}
+	pool := tsuru.Pool{
+		Name:   "poolTest",
+		Labels: map[string]string{"k1": "v1", "k2": "v2", "k3": "v3"},
+	}
+	data, err := json.Marshal(pool)
+	c.Assert(err, check.IsNil)
+	trans := cmdtest.MultiConditionalTransport{
+		ConditionalTransports: []cmdtest.ConditionalTransport{
+			{
+				Transport: cmdtest.Transport{Message: string(data), Status: http.StatusOK},
+				CondFunc: func(req *http.Request) bool {
+					c.Assert(req.Method, check.Equals, http.MethodGet)
+					c.Assert(req.URL.Path, check.Equals, "/pools/poolTest")
+					return true
+				},
+			},
+			{
+				Transport: cmdtest.Transport{Message: string(data), Status: http.StatusOK},
+				CondFunc: func(req *http.Request) bool {
+					url := strings.HasSuffix(req.URL.Path, "/pools/poolTest")
+					method := req.Method == "PUT"
+					opts := new(updateOpts)
+					decodeJSONBody(c, req, opts)
+					c.Assert(opts.Labels, check.DeepEquals, map[string]string{"new-key": "new-value"})
+					return url && method
+				},
+			},
+		},
+	}
+	manager := cmd.Manager{}
+	client := cmd.NewClient(&http.Client{Transport: &trans}, nil, &manager)
+	cmd := UpdatePoolToSchedulerCmd{}
+	cmd.Flags().Parse(true, []string{"--remove-labels", "k1", "--remove-labels", "k2", "--remove-labels", "k3", "--add-labels", "new-key=new-value"})
+	err = cmd.Run(&context, client)
+	c.Assert(err, check.IsNil)
+}
+
+func (s *S) TestUpdatePoolWithLabelsAddAndRemoveLabels(c *check.C) {
+	var buf bytes.Buffer
+	context := cmd.Context{Args: []string{"poolTest"}, Stdout: &buf}
+	pool := tsuru.Pool{
+		Name:   "poolTest",
+		Labels: map[string]string{"k1": "v1", "k2": "v2", "k3": "v3"},
+	}
+	data, err := json.Marshal(pool)
+	c.Assert(err, check.IsNil)
+	trans := cmdtest.MultiConditionalTransport{
+		ConditionalTransports: []cmdtest.ConditionalTransport{
+			{
+				Transport: cmdtest.Transport{Message: string(data), Status: http.StatusOK},
+				CondFunc: func(req *http.Request) bool {
+					c.Assert(req.Method, check.Equals, http.MethodGet)
+					c.Assert(req.URL.Path, check.Equals, "/pools/poolTest")
+					return true
+				},
+			},
+			{
+				Transport: cmdtest.Transport{Message: string(data), Status: http.StatusOK},
+				CondFunc: func(req *http.Request) bool {
+					url := strings.HasSuffix(req.URL.Path, "/pools/poolTest")
+					method := req.Method == "PUT"
+					opts := new(updateOpts)
+					decodeJSONBody(c, req, opts)
+					expected := map[string]string{"k1": "v1", "k3": "v3", "k4": "v4"}
+					c.Assert(opts.Labels, check.DeepEquals, expected)
+					return url && method
+				},
+			},
+		},
+	}
+	manager := cmd.Manager{}
+	client := cmd.NewClient(&http.Client{Transport: &trans}, nil, &manager)
+	cmd := UpdatePoolToSchedulerCmd{}
+	cmd.Flags().Parse(true, []string{"--add-labels", "k4=v4", "--remove-labels", "k2"})
+	err = cmd.Run(&context, client)
+	c.Assert(err, check.IsNil)
+}
+
 func (s *S) TestFailToUpdateMoreThanOneDefaultPool(c *check.C) {
 	var buf bytes.Buffer
 	stdin := bytes.NewBufferString("no")
 	transportError := cmdtest.ConditionalTransport{
 		Transport: cmdtest.Transport{Status: http.StatusPreconditionFailed, Message: "Default pool already exist."},
 		CondFunc: func(req *http.Request) bool {
-			def := req.FormValue("default") == "true"
-			public := req.FormValue("public") == ""
-			force := req.FormValue("force") == "false"
+			opts := new(updateOpts)
+			decodeJSONBody(c, req, opts)
+			var def bool
+			if opts.DefaultPool != nil {
+				def = *opts.DefaultPool == true
+			}
+			public := opts.Public == nil
+			force := opts.ForceDefault == false
+			labels := opts.Labels == nil
 			url := strings.HasSuffix(req.URL.Path, "/pools/test")
-			return def && url && public && force
+			return def && url && public && force && labels
 		},
 	}
 	manager := cmd.Manager{}
@@ -237,12 +479,18 @@ func (s *S) TestForceToOverwriteDefaultPoolInUpdate(c *check.C) {
 	transportError := cmdtest.ConditionalTransport{
 		Transport: cmdtest.Transport{Status: http.StatusPreconditionFailed, Message: "Default pool already exist."},
 		CondFunc: func(req *http.Request) bool {
-			def := req.FormValue("default") == "true"
-			public := req.FormValue("public") == ""
+			opts := new(updateOpts)
+			decodeJSONBody(c, req, opts)
+			var def bool
+			if opts.DefaultPool != nil {
+				def = *opts.DefaultPool == true
+			}
+			public := opts.Public == nil
+			labels := opts.Labels == nil
+			force := opts.ForceDefault == true
 			url := strings.HasSuffix(req.URL.Path, "/pools/test")
-			force := req.FormValue("force") == "true"
 			method := req.Method == "PUT"
-			return url && force && def && public && method
+			return url && force && def && public && method && labels
 		},
 	}
 	manager := cmd.Manager{}
@@ -263,10 +511,15 @@ func (s *S) TestAskOverwriteDefaultPoolInUpdate(c *check.C) {
 		Transport: cmdtest.Transport{Status: http.StatusPreconditionFailed, Message: "Default pool already exist."},
 		CondFunc: func(req *http.Request) bool {
 			called++
-			def := req.FormValue("default") == "true"
-			public := req.FormValue("public") == ""
+			opts := new(updateOpts)
+			decodeJSONBody(c, req, opts)
+			var def bool
+			if opts.DefaultPool != nil {
+				def = *opts.DefaultPool == true
+			}
+			public := opts.Public == nil
+			force := opts.ForceDefault == false
 			url := strings.HasSuffix(req.URL.Path, "/pools/test")
-			force := req.FormValue("force") == "false"
 			return url && def && public && force
 		},
 	}
@@ -275,7 +528,9 @@ func (s *S) TestAskOverwriteDefaultPoolInUpdate(c *check.C) {
 		CondFunc: func(req *http.Request) bool {
 			called++
 			url := strings.HasSuffix(req.URL.Path, "/pools/test")
-			force := req.FormValue("force") == "true"
+			opts := new(updateOpts)
+			decodeJSONBody(c, req, opts)
+			force := opts.ForceDefault == true
 			return url && force
 		},
 	}
@@ -406,22 +661,19 @@ func (s *S) TestPoolConstraintSetDefaultFlags(c *check.C) {
 	trans := &cmdtest.ConditionalTransport{
 		Transport: cmdtest.Transport{Message: "", Status: http.StatusOK},
 		CondFunc: func(req *http.Request) bool {
-			err := req.ParseForm()
-			c.Assert(err, check.IsNil)
-			var params pool.PoolConstraint
-			dec := form.NewDecoder(nil)
-			dec.IgnoreUnknownKeys(true)
-			err = dec.DecodeValues(&params, req.Form)
-			c.Assert(err, check.IsNil)
+			constraint := new(pool.PoolConstraint)
+			decodeJSONBody(c, req, constraint)
 			url := strings.HasSuffix(req.URL.Path, "/constraints")
-			c.Assert(params, check.DeepEquals, pool.PoolConstraint{
+			c.Assert(constraint, check.DeepEquals, &pool.PoolConstraint{
 				PoolExpr:  "*",
 				Field:     "router",
 				Values:    []string{"myrouter", "myrouter2"},
 				Blacklist: false,
 			})
 			method := req.Method == "PUT"
-			append := req.FormValue("append") == "false"
+			err := req.ParseForm()
+			c.Assert(err, check.IsNil)
+			append := req.FormValue("append") == ""
 			return method && append && url
 		},
 	}
@@ -437,21 +689,18 @@ func (s *S) TestPoolConstraintSet(c *check.C) {
 	trans := &cmdtest.ConditionalTransport{
 		Transport: cmdtest.Transport{Message: "", Status: http.StatusOK},
 		CondFunc: func(req *http.Request) bool {
-			err := req.ParseForm()
-			c.Assert(err, check.IsNil)
-			var params pool.PoolConstraint
-			dec := form.NewDecoder(nil)
-			dec.IgnoreUnknownKeys(true)
-			err = dec.DecodeValues(&params, req.Form)
-			c.Assert(err, check.IsNil)
+			constraint := new(pool.PoolConstraint)
+			decodeJSONBody(c, req, constraint)
 			url := strings.HasSuffix(req.URL.Path, "/constraints")
-			c.Assert(params, check.DeepEquals, pool.PoolConstraint{
+			c.Assert(constraint, check.DeepEquals, &pool.PoolConstraint{
 				PoolExpr:  "*",
 				Field:     "router",
 				Values:    []string{"myrouter"},
 				Blacklist: true,
 			})
 			method := req.Method == "PUT"
+			err := req.ParseForm()
+			c.Assert(err, check.IsNil)
 			append := req.FormValue("append") == "true"
 			return method && append && url
 		},
@@ -469,21 +718,18 @@ func (s *S) TestPoolConstraintSetEmptyValues(c *check.C) {
 	trans := &cmdtest.ConditionalTransport{
 		Transport: cmdtest.Transport{Message: "", Status: http.StatusOK},
 		CondFunc: func(req *http.Request) bool {
-			err := req.ParseForm()
-			c.Assert(err, check.IsNil)
-			var params pool.PoolConstraint
-			dec := form.NewDecoder(nil)
-			dec.IgnoreUnknownKeys(true)
-			err = dec.DecodeValues(&params, req.Form)
-			c.Assert(err, check.IsNil)
+			constraint := new(pool.PoolConstraint)
+			decodeJSONBody(c, req, constraint)
 			url := strings.HasSuffix(req.URL.Path, "/constraints")
-			c.Assert(params, check.DeepEquals, pool.PoolConstraint{
+			c.Assert(constraint, check.DeepEquals, &pool.PoolConstraint{
 				PoolExpr:  "*",
 				Field:     "router",
 				Blacklist: false,
 			})
 			method := req.Method == "PUT"
-			append := req.FormValue("append") == "false"
+			err := req.ParseForm()
+			c.Assert(err, check.IsNil)
+			append := req.FormValue("append") == ""
 			return method && append && url
 		},
 	}
