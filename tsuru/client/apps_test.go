@@ -472,6 +472,7 @@ func (s *S) TestAppUpdate(c *check.C) {
 				"platform":     "python",
 				"tags":         []interface{}{"tag 1", "tag 2"},
 				"planoverride": map[string]interface{}{},
+				"metadata":     map[string]interface{}{},
 			})
 			return url && method
 		},
@@ -504,6 +505,7 @@ func (s *S) TestAppUpdateImageReset(c *check.C) {
 			c.Assert(result, check.DeepEquals, map[string]interface{}{
 				"imageReset":   true,
 				"planoverride": map[string]interface{}{},
+				"metadata":     map[string]interface{}{},
 			})
 			return url && method
 		},
@@ -536,6 +538,7 @@ func (s *S) TestAppUpdateWithoutTags(c *check.C) {
 			c.Assert(result, check.DeepEquals, map[string]interface{}{
 				"description":  "description",
 				"planoverride": map[string]interface{}{},
+				"metadata":     map[string]interface{}{},
 			})
 			return url && method
 		},
@@ -569,6 +572,7 @@ func (s *S) TestAppUpdateWithEmptyTag(c *check.C) {
 				"description":  "description",
 				"tags":         []interface{}{""},
 				"planoverride": map[string]interface{}{},
+				"metadata":     map[string]interface{}{},
 			})
 			return url && method
 		},
@@ -603,6 +607,7 @@ func (s *S) TestAppUpdateWithCPUAndMemory(c *check.C) {
 					"cpumilli": float64(100),
 					"memory":   float64(1 * 1024 * 1024 * 1024),
 				},
+				"metadata": map[string]interface{}{},
 			})
 			return url && method
 		},
@@ -2106,7 +2111,7 @@ Description:
 Tags:
 Repository: git@git.com:app.git
 Platform: assembly
-Router: 
+Router:
 Teams: tsuruzers
 Address: monster.tsuru.io
 Owner: myapp_owner

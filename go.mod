@@ -9,7 +9,7 @@ require (
 	github.com/containerd/containerd v1.4.1 // indirect
 	github.com/digitalocean/godo v1.1.1 // indirect
 	github.com/docker/distribution v2.7.1+incompatible // indirect
-	github.com/docker/docker v1.13.1
+	github.com/docker/docker v20.10.2+incompatible
 	github.com/docker/go-connections v0.4.0
 	github.com/docker/machine v0.16.1
 	github.com/exoscale/egoscale v0.9.31 // indirect
@@ -22,9 +22,9 @@ require (
 	github.com/sethvargo/go-password v0.1.1
 	github.com/tsuru/config v0.0.0-20201023175036-375aaee8b560
 	github.com/tsuru/gnuflag v0.0.0-20151217162021-86b8c1b864aa
-	github.com/tsuru/go-tsuruclient v0.0.0-20200917194500-f859f989a659
+	github.com/tsuru/go-tsuruclient v0.0.0-20210212185155-1a2f3d9e64cc
 	github.com/tsuru/tablecli v0.0.0-20190131152944-7ded8a3383c6
-	github.com/tsuru/tsuru v0.0.0-20210119182211-cf61c10f9104
+	github.com/tsuru/tsuru v0.0.0-20210212185225-da889133d5d9
 	golang.org/x/crypto v0.0.0-20201012173705-84dcc777aaee
 	google.golang.org/api v0.7.0 // indirect
 	google.golang.org/appengine v1.6.1 // indirect
@@ -42,4 +42,5 @@ replace (
 	github.com/samalba/dockerclient => github.com/cezarsa/dockerclient v0.0.0-20190924055524-af5052a88081
 	gopkg.in/ahmetb/go-linq.v3 => github.com/ahmetb/go-linq v3.0.0+incompatible
 	gopkg.in/check.v1 => gopkg.in/check.v1 v1.0.0-20161208181325-20d25e280405
+	golang.org/x/sys => golang.org/x/sys v0.0.0-20200826173525-f9321e4c35a6
 )
