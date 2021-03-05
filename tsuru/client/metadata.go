@@ -20,8 +20,8 @@ const metadataSetValidationMessage = `You must specify metadata in the form "NAM
 
 Example:
 
-  tsuru app-metadata-set -t label NAME=value OTHER_NAME="value with spaces" ANOTHER_NAME='using single quotes'
-  tsuru app-metadata-set -t annotation NAME=value OTHER_NAME="value with spaces" ANOTHER_NAME='using single quotes'
+  tsuru app-metadata-set -a APPNAME -t label NAME=value OTHER_NAME="value with spaces" ANOTHER_NAME='using single quotes'
+  tsuru app-metadata-set -a APPNAME -t annotation NAME=value OTHER_NAME="value with spaces" ANOTHER_NAME='using single quotes'
 
 `
 
