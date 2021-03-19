@@ -15,7 +15,6 @@ require (
 	github.com/exoscale/egoscale v0.9.31 // indirect
 	github.com/fsouza/go-dockerclient v0.0.0-20180427001620-3a206030a28a
 	github.com/ghodss/yaml v1.0.0
-	github.com/morikuni/aec v1.0.0 // indirect
 	github.com/pkg/errors v0.9.1
 	github.com/pmorie/go-open-service-broker-client v0.0.0-20180330214919-dca737037ce6
 	github.com/sabhiram/go-gitignore v0.0.0-20171017070213-362f9845770f
@@ -40,7 +39,7 @@ replace (
 	github.com/docker/machine => github.com/cezarsa/machine v0.7.1-0.20190219165632-cdcfd549f935
 	github.com/rancher/kontainer-engine => github.com/cezarsa/kontainer-engine v0.0.4-dev.0.20190725184110-8b6c46d5dadd
 	github.com/samalba/dockerclient => github.com/cezarsa/dockerclient v0.0.0-20190924055524-af5052a88081
+	golang.org/x/sys => golang.org/x/sys v0.0.0-20200826173525-f9321e4c35a6
 	gopkg.in/ahmetb/go-linq.v3 => github.com/ahmetb/go-linq v3.0.0+incompatible
 	gopkg.in/check.v1 => gopkg.in/check.v1 v1.0.0-20161208181325-20d25e280405
-	golang.org/x/sys => golang.org/x/sys v0.0.0-20200826173525-f9321e4c35a6
 )
