@@ -179,16 +179,12 @@ based on the git repository's configuration. It will try to find a remote labele
    :title: Unset application certificate
 .. tsuru-command:: certificate-list
    :title: List application certificates
-
-Public Keys
-===========
-
-.. tsuru-command:: key-add
-   :title: Add SSH public key
-.. tsuru-command:: key-remove
-   :title: Remove SSH public key
-.. tsuru-command:: key-list
-   :title: List SSH public keys
+.. tsuru-command:: app-metadata-set
+   :title: Sets metadata such as labels and annotations for an application.
+.. tsuru-command:: app-metadata-get
+   :title: Retrieves metadata for an application.
+.. tsuru-command:: app-metadata-unset
+   :title: Unsets metadata such as labels and annotations for an application
 
 
 Services
