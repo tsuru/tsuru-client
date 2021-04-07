@@ -1,4 +1,8 @@
 {
+  "app-metadata-unset": {
+    "usage": "tsuru app-metadata-unset <NAME> [NAME] ... [-a/--app appname] [-t/--type type]", 
+    "desc": "Unsets metadata such as labels and annotations for an application.\n\nFlags:\n  \n  -a, --app (= \"\")\n      The name of the app.\n  --no-restart  (= false)\n      Sets metadata without restarting the application\n  -t, --type (= \"\")\n      Metadata type: annotation or label\n  \nMinimum # of arguments: 1\n"
+  }, 
   "help": {
     "usage": "tsuru command [args]", 
     "desc": ""
@@ -123,6 +127,10 @@
     "usage": "tsuru role-assign <role-name> <user-email>|<token-id>|group:<group-id> [<context-value>]", 
     "desc": "Assign an existing role to a user, token or group with some context value.\n\nMinimum # of arguments: 2\n"
   }, 
+  "app-metadata-set": {
+    "usage": "tsuru app-metadata-set <NAME=value> [NAME=value] ... [-a/--app appname] [-t/--type type]", 
+    "desc": "Sets metadata such as labels and annotations for an application.\n\nFlags:\n  \n  -a, --app (= \"\")\n      The name of the app.\n  --no-restart  (= false)\n      Sets metadata without restarting the application\n  -t, --type (= \"\")\n      Metadata type: annotation or label\n  \nMinimum # of arguments: 1\n"
+  }, 
   "node-healing-info": {
     "usage": "tsuru node-healing-info", 
     "desc": "Show the current configuration for active healing nodes.\n\n"
@@ -193,7 +201,7 @@
   }, 
   "event-list": {
     "usage": "tsuru event-list [--kind/-k kind name]... [--owner/-o owner] [--running/-r] [--include-removed/-i] [--target/-t target type] [--target-value/-v target value]", 
-    "desc": "Lists events that you have permission to see.\n\n\t\tFlags can be used to filter the list of events.\n\nFlags:\n  \n  -i, --include-removed  (= false)\n      Include also removed events\n  -k, --kind  (= [])\n      Filter events by kind name\n  -o, --owner (= \"\")\n      Filter events by owner name\n  -r, --running  (= false)\n      Shows only currently running events\n  -t, --target (= \"\")\n      Filter events by target type\n  -v, --target-value (= \"\")\n      Filter events by target value\n  \n"
+    "desc": "Lists events that you have permission to see.\n\n\t\tFlags can be used to filter the list of events.\n\nFlags:\n  \n  -k, --kind  (= [])\n      Filter events by kind name\n  -o, --owner (= \"\")\n      Filter events by owner name\n  -r, --running  (= false)\n      Shows only currently running events\n  -t, --target (= \"\")\n      Filter events by target type\n  -v, --target-value (= \"\")\n      Filter events by target value\n  \n"
   }, 
   "unit-add": {
     "usage": "tsuru unit-add <# of units> [-a/--app appname] [-p/--process processname] [--version version]", 
@@ -467,10 +475,6 @@
     "usage": "tsuru service-broker-delete <name>", 
     "desc": "Removes a service broker.\n\nMinimum # of arguments: 1\n"
   }, 
-  "key-add": {
-    "usage": "tsuru key-add <key-name> <path/to/key/file.pub> [-f/--force]", 
-    "desc": "Sends your public key to the git server used by tsuru.\n\nFlags:\n  \n  -f, --force  (= false)\n      Force overriding the key if it already exists\n  \nMinimum # of arguments: 2\n"
-  }, 
   "app-router-update": {
     "usage": "tsuru app-router-update <router name> [-a/--app appname] [-o/--opts key=value]...", 
     "desc": "Update router opts in an application.\n\nFlags:\n  \n  -a, --app (= \"\")\n      The name of the app.\n  -o, --opts  (= {})\n      Custom options sent directly to router implementation.\n  \nMinimum # of arguments: 1\nMaximum # of arguments: 1\n"
@@ -597,6 +601,10 @@
   "service-instance-add": {
     "usage": "tsuru service-instance-add <service-name> <service-instance-name> [plan] [-t/--team-owner team] [-d/--description description] [-g/--tag tag]... [--plan-param key=value]... [--pool name]", 
     "desc": "Creates a service instance of a service. There can later be binded to\napplications with [[tsuru service-bind]].\n\nThis example shows how to add a new instance of **mongodb** service, named\n**tsuru_mongodb** with the plan **small**:\n\n::\n\n    $ tsuru service-instance-add mongodb tsuru_mongodb small -t myteam\n\n\nFlags:\n  \n  -d, --description (= \"\")\n      service instance description\n  -g, --tag  (= [])\n      service instance tag\n  --plan-param  (= {})\n      Plan specific parameters\n  --pool (= \"\")\n      pool name where this service instance is going to run into (valid only for multi-cluster service)\n  -t, --team-owner (= \"\")\n      the team that owns the service (mandatory if the user is member of more than one team)\n  \nMinimum # of arguments: 2\nMaximum # of arguments: 3\n"
+  }, 
+  "app-metadata-get": {
+    "usage": "tsuru app-metadata-get [-a/--app appname]", 
+    "desc": "Retrieves metadata for an application.\n\nFlags:\n  \n  -a, --app (= \"\")\n      The name of the app.\n  \n"
   }, 
   "app-quota-change": {
     "usage": "tsuru app-quota-change [-a/--app appname] <new-limit>", 
@@ -758,10 +766,6 @@
     "usage": "tsuru volume-plan-list", 
     "desc": "Lists existing volume plans.\n\n"
   }, 
-  "key-list": {
-    "usage": "tsuru key-list [-n/--no-truncate]", 
-    "desc": "Lists the public keys registered in the current user account.\n\nFlags:\n  \n  -n, --no-truncate  (= false)\n      disable truncation of key content\n  \n"
-  }, 
   "machine-template-update": {
     "usage": "tsuru machine-template-update <name> <param>=<value>... [-i/--iaas <iaas_name>]", 
     "desc": "Update an existing machine template.\n\nFlags:\n  \n  -i, --iaas (= \"\")\n      The iaas name to be used\n  \nMinimum # of arguments: 2\n"
@@ -773,10 +777,6 @@
   "unit-autoscale-unset": {
     "usage": "tsuru unit-autoscale-unset [-a/--app appname] [-p/--process processname]", 
     "desc": "Unsets a unit auto scale configuration.\n\nFlags:\n  \n  -a, --app (= \"\")\n      The name of the app.\n  -p, --process (= \"\")\n      Process name\n  \n"
-  }, 
-  "key-remove": {
-    "usage": "tsuru key-remove <key-name> [-y/--assume-yes]", 
-    "desc": "Removes your public key from the git server used by tsuru. The key will be\nremoved from the current logged in user.\n\nFlags:\n  \n  -y, --assume-yes  (= false)\n      Don't ask for confirmation.\n  \nMinimum # of arguments: 1\n"
   }, 
   "pool-list": {
     "usage": "tsuru pool-list", 
