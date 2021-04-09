@@ -10,7 +10,7 @@ jobs:
 
     - uses: actions/setup-go@v1
       with:
-        go-version: 1.13
+        go-version: 1.15
 
     - uses: actions/checkout@v1
 
@@ -33,7 +33,7 @@ jobs:
     steps:
     - uses: actions/setup-go@v1
       with:
-        go-version: 1.13
+        go-version: 1.15
     - uses: actions/checkout@v1
     - run: make metalint
 
@@ -44,7 +44,7 @@ jobs:
     steps:
     - uses: actions/setup-go@v1
       with:
-        go-version: 1.13
+        go-version: 1.15
     - uses: actions/checkout@v1
 
     - name: rc release

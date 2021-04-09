@@ -749,8 +749,13 @@ Quota: {{.Quota.InUse}}/{{.Quota.LimitString}}
 	}
 	if len(a.Routers) > 0 {
 		buf.WriteString("\n")
-		buf.WriteString("Routers:\n")
-		renderRouters(a.Routers, &buf)
+		if a.Provisioner == "kubernetes" {
+			buf.WriteString("Cluster external addresses:\n")
+			renderRouters(a.Routers, &buf, "Router")
+		} else {
+			buf.WriteString("Routers:\n")
+			renderRouters(a.Routers, &buf, "Name")
+		}
 	}
 	if volumeTable.Rows() > 0 {
 		buf.WriteString("\n")

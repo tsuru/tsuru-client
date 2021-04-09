@@ -18,7 +18,7 @@ import (
 )
 
 const (
-	version = "1.9.5"
+	version = "1.9.6"
 	header  = "Supported-Tsuru"
 )
 
@@ -192,6 +192,9 @@ func buildManager(name string) *cmd.Manager {
 	m.Register(client.UserInfo{})
 	m.Register(&client.AutoScaleSet{})
 	m.Register(&client.AutoScaleUnset{})
+	m.Register(&client.MetadataSet{})
+	m.Register(&client.MetadataUnset{})
+	m.Register(&client.MetadataGet{})
 	m.RegisterRemoved("bs-env-set", "You should use `tsuru node-container-update big-sibling` instead.")
 	m.RegisterRemoved("bs-info", "You should use `tsuru node-container-info big-sibling` instead.")
 	m.RegisterRemoved("bs-upgrade", "You should use `tsuru node-container-upgrade big-sibling` instead.")

@@ -288,13 +288,13 @@ func (c *AppRoutersList) Run(context *cmd.Context, client *cmd.Client) error {
 	if err != nil {
 		return err
 	}
-	renderRouters(routers, context.Stdout)
+	renderRouters(routers, context.Stdout, "Name")
 	return nil
 }
 
-func renderRouters(routers []appTypes.AppRouter, out io.Writer) {
+func renderRouters(routers []appTypes.AppRouter, out io.Writer, idColumn string) {
 	table := tablecli.NewTable()
-	table.Headers = tablecli.Row([]string{"Name", "Opts", "Addresses", "Status"})
+	table.Headers = tablecli.Row([]string{idColumn, "Opts", "Addresses", "Status"})
 	table.LineSeparator = true
 	for _, r := range routers {
 		var optsStr []string
