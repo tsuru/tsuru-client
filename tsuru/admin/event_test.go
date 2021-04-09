@@ -9,7 +9,6 @@ import (
 	"net/http"
 	"os"
 
-	"github.com/ajg/form"
 	"github.com/tsuru/tsuru/cmd"
 	"github.com/tsuru/tsuru/cmd/cmdtest"
 	"github.com/tsuru/tsuru/event"
@@ -108,15 +107,9 @@ func (s *S) TestEventBlockAdd(c *check.C) {
 	trans := &cmdtest.ConditionalTransport{
 		Transport: cmdtest.Transport{Message: "", Status: http.StatusOK},
 		CondFunc: func(req *http.Request) bool {
-			var block event.Block
-			err := req.ParseForm()
-			c.Assert(err, check.IsNil)
-			dec := form.NewDecoder(nil)
-			dec.IgnoreUnknownKeys(true)
-			dec.IgnoreCase(true)
-			err = dec.DecodeValues(&block, req.Form)
-			c.Assert(err, check.IsNil)
-			c.Assert(block, check.DeepEquals, event.Block{Reason: "Reason", Active: false})
+			block := new(event.Block)
+			decodeJSONBody(c, req, block)
+			c.Assert(block, check.DeepEquals, &event.Block{Reason: "Reason", Active: false})
 			return req.URL.Path == "/1.3/events/blocks" && req.Method == http.MethodPost
 		},
 	}
@@ -137,15 +130,9 @@ func (s *S) TestEventBlockAddAllFlags(c *check.C) {
 	trans := &cmdtest.ConditionalTransport{
 		Transport: cmdtest.Transport{Message: "", Status: http.StatusOK},
 		CondFunc: func(req *http.Request) bool {
-			var block event.Block
-			err := req.ParseForm()
-			c.Assert(err, check.IsNil)
-			dec := form.NewDecoder(nil)
-			dec.IgnoreUnknownKeys(true)
-			dec.IgnoreCase(true)
-			err = dec.DecodeValues(&block, req.Form)
-			c.Assert(err, check.IsNil)
-			c.Assert(block, check.DeepEquals, event.Block{
+			block := new(event.Block)
+			decodeJSONBody(c, req, block)
+			c.Assert(block, check.DeepEquals, &event.Block{
 				KindName:  "app.deploy",
 				OwnerName: "user@email.com",
 				Target:    event.Target{Type: event.TargetTypeApp, Value: "myapp"},

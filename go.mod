@@ -21,7 +21,7 @@ require (
 	github.com/sethvargo/go-password v0.1.1
 	github.com/tsuru/config v0.0.0-20201023175036-375aaee8b560
 	github.com/tsuru/gnuflag v0.0.0-20151217162021-86b8c1b864aa
-	github.com/tsuru/go-tsuruclient v0.0.0-20210212185155-1a2f3d9e64cc
+	github.com/tsuru/go-tsuruclient v0.0.0-20210303180837-ce578d5dc7a9
 	github.com/tsuru/tablecli v0.0.0-20190131152944-7ded8a3383c6
 	github.com/tsuru/tsuru v0.0.0-20210212185225-da889133d5d9
 	golang.org/x/crypto v0.0.0-20201012173705-84dcc777aaee
