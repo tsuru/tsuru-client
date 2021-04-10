@@ -208,9 +208,6 @@ func (c *AppCreate) Run(context *cmd.Context, client *cmd.Client) error {
 	}
 	fmt.Fprintf(context.Stdout, "App %q has been created!\n", appName)
 	fmt.Fprintln(context.Stdout, "Use app-info to check the status of the app and its units.")
-	if out["repository_url"] != "" {
-		fmt.Fprintf(context.Stdout, "Your repository for %q project is %q\n", appName, out["repository_url"])
-	}
 	return nil
 }
 
@@ -642,7 +639,6 @@ Error: {{ .Error }}
 Application: {{.Name}}
 Description:{{if .Description}} {{.Description}}{{end}}
 Tags:{{if .TagList}} {{.TagList}}{{end}}
-Repository: {{.Repository}}
 Platform: {{.Platform}}
 {{ if .Provisioner -}}
 Provisioner: {{ .Provisioner }}

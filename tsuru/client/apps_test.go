@@ -36,8 +36,7 @@ func (s *S) TestAppCreate(c *check.C) {
 	var stdout, stderr bytes.Buffer
 	result := `{"status":"success", "repository_url":"git@tsuru.plataformas.glb.com:ble.git"}`
 	expected := `App "ble" has been created!
-Use app-info to check the status of the app and its units.
-Your repository for "ble" project is "git@tsuru.plataformas.glb.com:ble.git"` + "\n"
+Use app-info to check the status of the app and its units.` + "\n"
 	context := cmd.Context{
 		Args:   []string{"ble", "django"},
 		Stdout: &stdout,
@@ -72,8 +71,7 @@ func (s *S) TestAppCreateEmptyPlatform(c *check.C) {
 	var stdout, stderr bytes.Buffer
 	result := `{"status":"success", "repository_url":"git@tsuru.plataformas.glb.com:ble.git"}`
 	expected := `App "ble" has been created!
-Use app-info to check the status of the app and its units.
-Your repository for "ble" project is "git@tsuru.plataformas.glb.com:ble.git"` + "\n"
+Use app-info to check the status of the app and its units.` + "\n"
 	context := cmd.Context{
 		Args:   []string{"ble"},
 		Stdout: &stdout,
@@ -108,8 +106,7 @@ func (s *S) TestAppCreateTeamOwner(c *check.C) {
 	var stdout, stderr bytes.Buffer
 	result := `{"status":"success", "repository_url":"git@tsuru.plataformas.glb.com:ble.git"}`
 	expected := `App "ble" has been created!
-Use app-info to check the status of the app and its units.
-Your repository for "ble" project is "git@tsuru.plataformas.glb.com:ble.git"` + "\n"
+Use app-info to check the status of the app and its units.` + "\n"
 	context := cmd.Context{
 		Args:   []string{"ble", "django"},
 		Stdout: &stdout,
@@ -145,8 +142,7 @@ func (s *S) TestAppCreatePlan(c *check.C) {
 	var stdout, stderr bytes.Buffer
 	result := `{"status":"success", "repository_url":"git@tsuru.plataformas.glb.com:ble.git"}`
 	expected := `App "ble" has been created!
-Use app-info to check the status of the app and its units.
-Your repository for "ble" project is "git@tsuru.plataformas.glb.com:ble.git"` + "\n"
+Use app-info to check the status of the app and its units.` + "\n"
 	context := cmd.Context{
 		Args:   []string{"ble", "django"},
 		Stdout: &stdout,
@@ -182,8 +178,7 @@ func (s *S) TestAppCreatePool(c *check.C) {
 	var stdout, stderr bytes.Buffer
 	result := `{"status":"success", "repository_url":"git@tsuru.plataformas.glb.com:ble.git"}`
 	expected := `App "ble" has been created!
-Use app-info to check the status of the app and its units.
-Your repository for "ble" project is "git@tsuru.plataformas.glb.com:ble.git"` + "\n"
+Use app-info to check the status of the app and its units.` + "\n"
 	context := cmd.Context{
 		Args:   []string{"ble", "django"},
 		Stdout: &stdout,
@@ -219,8 +214,7 @@ func (s *S) TestAppCreateRouterOpts(c *check.C) {
 	var stdout, stderr bytes.Buffer
 	result := `{"status":"success", "repository_url":"git@tsuru.plataformas.glb.com:ble.git"}`
 	expected := `App "ble" has been created!
-Use app-info to check the status of the app and its units.
-Your repository for "ble" project is "git@tsuru.plataformas.glb.com:ble.git"` + "\n"
+Use app-info to check the status of the app and its units.` + "\n"
 	context := cmd.Context{
 		Args:   []string{"ble", "django"},
 		Stdout: &stdout,
@@ -307,8 +301,7 @@ func (s *S) TestAppCreateWithTags(c *check.C) {
 	var stdout, stderr bytes.Buffer
 	result := `{"status":"success", "repository_url":"git@tsuru.plataformas.glb.com:ble.git"}`
 	expected := `App "ble" has been created!
-Use app-info to check the status of the app and its units.
-Your repository for "ble" project is "git@tsuru.plataformas.glb.com:ble.git"` + "\n"
+Use app-info to check the status of the app and its units.` + "\n"
 	context := cmd.Context{
 		Args:   []string{"ble", "django"},
 		Stdout: &stdout,
@@ -344,8 +337,7 @@ func (s *S) TestAppCreateWithEmptyTag(c *check.C) {
 	var stdout, stderr bytes.Buffer
 	result := `{"status":"success", "repository_url":"git@tsuru.plataformas.glb.com:ble.git"}`
 	expected := `App "ble" has been created!
-Use app-info to check the status of the app and its units.
-Your repository for "ble" project is "git@tsuru.plataformas.glb.com:ble.git"` + "\n"
+Use app-info to check the status of the app and its units.` + "\n"
 	context := cmd.Context{
 		Args:   []string{"ble", "django"},
 		Stdout: &stdout,
@@ -829,7 +821,6 @@ func (s *S) TestAppInfo(c *check.C) {
 	expected := `Application: app1
 Description:
 Tags:
-Repository: git@git.com:php.git
 Platform: php
 Router: planb
 Teams: tsuruteam, crane
@@ -908,7 +899,6 @@ func (s *S) TestAppInfoKubernetes(c *check.C) {
 	expected := `Application: app1
 Description:
 Tags:
-Repository: git@git.com:php.git
 Platform: php
 Provisioner: kubernetes
 Router: planb
@@ -949,7 +939,6 @@ func (s *S) TestAppInfoMultipleAddresses(c *check.C) {
 	expected := `Application: app1
 Description:
 Tags:
-Repository: git@git.com:php.git
 Platform: php
 Router: planb
 Teams: tsuruteam, crane
@@ -1034,7 +1023,6 @@ func (s *S) TestAppInfoMultipleRouters(c *check.C) {
 	expected := `Application: app1
 Description:
 Tags:
-Repository: git@git.com:php.git
 Platform: php
 Teams: tsuruteam, crane
 Address: cname1, addr1, addr2, addr9, addr3
@@ -1085,7 +1073,6 @@ func (s *S) TestAppInfoWithDescription(c *check.C) {
 	expected := `Application: app1
 Description: My app
 Tags:
-Repository: git@git.com:php.git
 Platform: php
 Router: planb
 Teams: tsuruteam, crane
@@ -1124,7 +1111,6 @@ func (s *S) TestAppInfoWithTags(c *check.C) {
 	expected := `Application: app1
 Description:
 Tags: tag 1, tag 2, tag 3
-Repository: git@git.com:php.git
 Platform: php
 Router: planb
 Teams: tsuruteam, crane
@@ -1163,7 +1149,6 @@ func (s *S) TestAppInfoWithRouterOpts(c *check.C) {
 	expected := `Application: app1
 Description:
 Tags:
-Repository: git@git.com:php.git
 Platform: php
 Router: planb (opt1=val1, opt2=val2)
 Teams: tsuruteam, crane
@@ -1207,7 +1192,6 @@ func (s *S) TestAppInfoWithQuota(c *check.C) {
 	expected := `Application: app1
 Description:
 Tags:
-Repository: git@git.com:php.git
 Platform: php
 Router: planb
 Teams: tsuruteam, crane
@@ -1260,7 +1244,6 @@ func (s *S) TestAppInfoLock(c *check.C) {
 	expected := `Application: app1
 Description:
 Tags:
-Repository: git@git.com:php.git
 Platform: php
 Router: planb
 Teams: tsuruteam, crane
@@ -1341,7 +1324,6 @@ func (s *S) TestAppInfoManyProcesses(c *check.C) {
 	expected := `Application: app1
 Description:
 Tags:
-Repository: git@git.com:php.git
 Platform: php
 Router: planb
 Teams: tsuruteam, crane
@@ -1440,7 +1422,6 @@ func (s *S) TestAppInfoManyVersions(c *check.C) {
 	expected := `Application: app1
 Description:
 Tags:
-Repository: git@git.com:php.git
 Platform: php
 Router: planb
 Teams: tsuruteam, crane
@@ -1546,7 +1527,6 @@ func (s *S) TestAppInfoWithAutoScale(c *check.C) {
 	expected := `Application: app1
 Description:
 Tags:
-Repository: git@git.com:php.git
 Platform: php
 Router: planb
 Teams: tsuruteam, crane
@@ -1598,7 +1578,6 @@ func (s *S) TestAppInfoNoUnits(c *check.C) {
 	expected := `Application: app1
 Description:
 Tags:
-Repository: git@git.com:php.git
 Platform: php
 Router: planb
 Teams: tsuruteam, crane
@@ -1628,7 +1607,6 @@ func (s *S) TestAppInfoEmptyUnit(c *check.C) {
 	expected := `Application: app1
 Description:
 Tags:
-Repository: git@git.com:php.git
 Platform: php
 Router: planb
 Teams: tsuruteam, crane
@@ -1658,7 +1636,6 @@ func (s *S) TestAppInfoWithoutArgs(c *check.C) {
 	expected := `Application: secret
 Description:
 Tags:
-Repository: git@git.com:php.git
 Platform: ruby
 Router: planb
 Teams: tsuruteam, crane
@@ -1704,7 +1681,6 @@ func (s *S) TestAppInfoCName(c *check.C) {
 	expected := `Application: app1
 Description:
 Tags:
-Repository: git@git.com:php.git
 Platform: php
 Router: planb
 Teams: tsuruteam, crane
@@ -1742,7 +1718,6 @@ func (s *S) TestAppInfoWithServices(c *check.C) {
 	expected := `Application: app1
 Description:
 Tags:
-Repository: git@git.com:php.git
 Platform: php
 Router: planb
 Teams: tsuruteam, crane
@@ -1800,7 +1775,6 @@ func (s *S) TestAppInfoWithServicesTwoService(c *check.C) {
 	expected := `Application: app1
 Description:
 Tags:
-Repository: git@git.com:php.git
 Platform: php
 Router: planb
 Teams: tsuruteam, crane
@@ -1861,7 +1835,6 @@ func (s *S) TestAppInfoWithPlan(c *check.C) {
 	expected := `Application: app1
 Description:
 Tags:
-Repository: git@git.com:php.git
 Platform: php
 Router: planb
 Teams: tsuruteam, crane
@@ -1906,7 +1879,6 @@ func (s *S) TestAppInfoWithServicesAndPlan(c *check.C) {
 	expected := `Application: app1
 Description:
 Tags:
-Repository: git@git.com:php.git
 Platform: php
 Router: planb
 Teams: tsuruteam, crane
@@ -1971,7 +1943,6 @@ func (s *S) TestAppInfoWithServicesAndPlanAssociated(c *check.C) {
 	expected := `Application: app1
 Description:
 Tags:
-Repository: git@git.com:php.git
 Platform: php
 Router: planb
 Teams: tsuruteam, crane
@@ -2036,7 +2007,6 @@ func (s *S) TestAppInfoShortensHexIDs(c *check.C) {
 	expected := `Application: app1
 Description:
 Tags:
-Repository: git@git.com:php.git
 Platform: php
 Router: planb
 Teams: tsuruteam, crane
@@ -2109,7 +2079,6 @@ func (s *S) TestAppInfoWithInternalAddresses(c *check.C) {
 	expected := `Application: app1
 Description:
 Tags:
-Repository: git@git.com:app.git
 Platform: assembly
 Router:
 Teams: tsuruzers
@@ -2153,7 +2122,6 @@ func (s *S) TestAppInfoWithVolume(c *check.C) {
 	expected := `Application: app1
 Description:
 Tags:
-Repository: git@git.com:php.git
 Platform: php
 Router: planb
 Teams: tsuruteam, crane
