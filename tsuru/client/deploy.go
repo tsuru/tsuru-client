@@ -61,7 +61,7 @@ type AppDeployList struct {
 func (c *AppDeployList) Info() *cmd.Info {
 	return &cmd.Info{
 		Name:  "app-deploy-list",
-		Usage: "app-deploy-list [-a/--app <appname>]",
+		Usage: "app deploy list [-a/--app <appname>]",
 		Desc:  "List information about deploys for an application.",
 	}
 }
@@ -162,15 +162,15 @@ calls are:
 
 ::
 
-    $ tsuru app-deploy .
-    $ tsuru app-deploy myfile.jar Procfile
-    $ tsuru app-deploy -f directory/main.go directory/Procfile
-    $ tsuru app-deploy mysite
-    $ tsuru app-deploy -i http://registry.mysite.com:5000/image-name
+	$ tsuru app deploy .
+	$ tsuru app deploy myfile.jar Procfile
+	$ tsuru app deploy -f directory/main.go directory/Procfile
+	$ tsuru app deploy mysite
+	$ tsuru app deploy -i http://registry.mysite.com:5000/image-name
 `
 	return &cmd.Info{
 		Name:    "app-deploy",
-		Usage:   "app-deploy [-a/--app <appname>] [-i/--image <image_url>] [-m/--message <message>] [--new-version] [--override-old-versions] [-f/--files-only] <file-or-dir-1> [file-or-dir-2] ... [file-or-dir-n]",
+		Usage:   "app deploy [-a/--app <appname>] [-i/--image <image_url>] [-m/--message <message>] [--new-version] [--override-old-versions] [-f/--files-only] <file-or-dir-1> [file-or-dir-2] ... [file-or-dir-n]",
 		Desc:    desc,
 		MinArgs: 0,
 	}
@@ -527,10 +527,10 @@ func (c *AppDeployRollback) Flags() *gnuflag.FlagSet {
 }
 
 func (c *AppDeployRollback) Info() *cmd.Info {
-	desc := "Deploys an existing image for an app. You can list available images with `tsuru app-deploy-list`."
+	desc := "Deploys an existing image for an app. You can list available images with `tsuru app deploy list`."
 	return &cmd.Info{
 		Name:    "app-deploy-rollback",
-		Usage:   "app-deploy-rollback [-a/--app appname] [-y/--assume-yes] <image-name>",
+		Usage:   "app deploy rollback [-a/--app appname] [-y/--assume-yes] <image-name>",
 		Desc:    desc,
 		MinArgs: 1,
 		MaxArgs: 1,
@@ -585,7 +585,7 @@ func (c *AppDeployRebuild) Info() *cmd.Info {
 	desc := "Rebuild and deploy the last app image."
 	return &cmd.Info{
 		Name:    "app-deploy-rebuild",
-		Usage:   "app-deploy-rebuild [-a/--app appname]",
+		Usage:   "app deploy rebuild [-a/--app appname]",
 		Desc:    desc,
 		MinArgs: 0,
 		MaxArgs: 0,
@@ -626,19 +626,19 @@ type AppDeployRollbackUpdate struct {
 }
 
 func (c *AppDeployRollbackUpdate) Info() *cmd.Info {
-	desc := `Locks an existing image of an app. You can list images with "tsuru app-deploy-list -a <appName>"
+	desc := `Locks an existing image of an app. You can list images with "tsuru app deploy list -a <appName>"
 
 ::
 
-    The [-i/--image] flag is the name of an app image.
+	The [-i/--image] flag is the name of an app image.
 
-    The [-d/--disable] flag disables an image rollback. The default behavior (omitting this flag) is to enable it.
+	The [-d/--disable] flag disables an image rollback. The default behavior (omitting this flag) is to enable it.
 
-    The [-r/--reason] flag lets the user tell why this action was needed.
+	The [-r/--reason] flag lets the user tell why this action was needed.
 `
 	return &cmd.Info{
 		Name:    "app-deploy-rollback-update",
-		Usage:   "app-deploy-rollback-update [-a/--app appName] [-i/--image imageName] [-d/--disable] [-r/--reason reason]",
+		Usage:   "app deploy rollback update [-a/--app appName] [-i/--image imageName] [-d/--disable] [-r/--reason reason]",
 		Desc:    desc,
 		MinArgs: 0,
 		MaxArgs: 0,

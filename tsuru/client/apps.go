@@ -89,10 +89,10 @@ func newUnitSorter(m map[string]int) *unitSorter {
 func (c *AppCreate) Info() *cmd.Info {
 	return &cmd.Info{
 		Name:  "app-create",
-		Usage: "app-create <appname> [platform] [--plan/-p plan name] [--router/-r router name] [--team/-t team owner] [--pool/-o pool name] [--description/-d description] [--tag/-g tag]... [--router-opts key=value]...",
+		Usage: "app create <appname> [platform] [--plan/-p plan name] [--router/-r router name] [--team/-t team owner] [--pool/-o pool name] [--description/-d description] [--tag/-g tag]... [--router-opts key=value]...",
 		Desc: `Creates a new app using the given name and platform. For tsuru,
 a platform is provisioner dependent. To check the available platforms, use the
-command [[tsuru platform-list]] and to add a platform use the command [[tsuru platform-add]].
+command [[tsuru platform list]] and to add a platform use the command [[tsuru platform add]].
 
 In order to create an app, you need to be member of at least one team. All
 teams that you are member (see [[tsuru team-list]]) will be able to access the
@@ -100,12 +100,12 @@ app.
 
 The [[--platform]] parameter is the name of the platform to be used when
 creating the app. This will define how tsuru understands and executes your
-app. The list of available platforms can be found running [[tsuru platform-list]].
+app. The list of available platforms can be found running [[tsuru platform list]].
 
 The [[--plan]] parameter defines the plan to be used. The plan specifies how
 computational resources are allocated to your application. Typically this
 means limits for memory and swap usage, and how much cpu share is allocated.
-The list of available plans can be found running [[tsuru plan-list]].
+The list of available plans can be found running [[tsuru plan list]].
 
 If this parameter is not informed, tsuru will choose the plan with the
 [[default]] flag set to true.
@@ -207,7 +207,7 @@ func (c *AppCreate) Run(context *cmd.Context, client *cmd.Client) error {
 		return err
 	}
 	fmt.Fprintf(context.Stdout, "App %q has been created!\n", appName)
-	fmt.Fprintln(context.Stdout, "Use app-info to check the status of the app and its units.")
+	fmt.Fprintln(context.Stdout, "Use app info to check the status of the app and its units.")
 	return nil
 }
 
@@ -223,7 +223,7 @@ type AppUpdate struct {
 func (c *AppUpdate) Info() *cmd.Info {
 	return &cmd.Info{
 		Name:  "app-update",
-		Usage: "app-update [-a/--app appname] [--description/-d description] [--plan/-p plan name] [--pool/-o pool] [--team-owner/-t team owner] [--platform/-l platform] [-i/--image-reset] [--cpu cpu] [--memory memory] [--tag/-g tag]...",
+		Usage: "app update [-a/--app appname] [--description/-d description] [--plan/-p plan name] [--pool/-o pool] [--team-owner/-t team owner] [--platform/-l platform] [-i/--image-reset] [--cpu cpu] [--memory memory] [--tag/-g tag]...",
 		Desc:  `Updates an app, changing its description, tags, plan or pool information.`,
 	}
 }
@@ -321,12 +321,12 @@ type AppRemove struct {
 func (c *AppRemove) Info() *cmd.Info {
 	return &cmd.Info{
 		Name:  "app-remove",
-		Usage: "app-remove [-a/--app appname] [-y/--assume-yes]",
+		Usage: "app remove [-a/--app appname] [-y/--assume-yes]",
 		Desc: `Removes an application. If the app is bound to any service instance, all binds
 will be removed before the app gets deleted (see [[tsuru service-unbind]]).
 
 You need to be a member of a team that has access to the app to be able to
-remove it (you are able to remove any app that you see in [[tsuru app-list]]).`,
+remove it (you are able to remove any app that you see in [[tsuru app list]]).`,
 		MinArgs: 0,
 	}
 }
@@ -372,7 +372,7 @@ type AppInfo struct {
 func (c *AppInfo) Info() *cmd.Info {
 	return &cmd.Info{
 		Name:  "app-info",
-		Usage: "app-info [-a/--app appname]",
+		Usage: "app info [-a/--app appname]",
 		Desc: `Shows information about a specific app. Its state, platform, git repository,
 etc. You need to be a member of a team that has access to the app to be able to
 see information about it.`,
@@ -911,7 +911,7 @@ type AppGrant struct {
 func (c *AppGrant) Info() *cmd.Info {
 	return &cmd.Info{
 		Name:  "app-grant",
-		Usage: "app-grant <teamname> [-a/--app appname]",
+		Usage: "app grant <teamname> [-a/--app appname]",
 		Desc: `Allows a team to access an application. You need to be a member of a team that
 has access to the app to allow another team to access it. grants access to an
 app to a team.`,
@@ -948,7 +948,7 @@ type AppRevoke struct {
 func (c *AppRevoke) Info() *cmd.Info {
 	return &cmd.Info{
 		Name:  "app-revoke",
-		Usage: "app-revoke <teamname> [-a/--app appname]",
+		Usage: "app revoke <teamname> [-a/--app appname]",
 		Desc: `Revokes the permission to access an application from a team. You need to have
 access to the application to revoke access from a team.
 
@@ -1154,7 +1154,7 @@ func (c *AppList) Flags() *gnuflag.FlagSet {
 func (c *AppList) Info() *cmd.Info {
 	return &cmd.Info{
 		Name:  "app-list",
-		Usage: "app-list",
+		Usage: "app list",
 		Desc: `Lists all apps that you have access to. App access is controlled by teams. If
 your team has access to an app, then you have access to it.
 
@@ -1172,7 +1172,7 @@ type AppStop struct {
 func (c *AppStop) Info() *cmd.Info {
 	return &cmd.Info{
 		Name:    "app-stop",
-		Usage:   "app-stop [-a/--app appname] [-p/--process processname] [--version version]",
+		Usage:   "app stop [-a/--app appname] [-p/--process processname] [--version version]",
 		Desc:    "Stops an application, or one of the processes of the application.",
 		MinArgs: 0,
 	}
@@ -1224,7 +1224,7 @@ type AppStart struct {
 func (c *AppStart) Info() *cmd.Info {
 	return &cmd.Info{
 		Name:    "app-start",
-		Usage:   "app-start [-a/--app appname] [-p/--process processname] [--version version]",
+		Usage:   "app start [-a/--app appname] [-p/--process processname] [--version version]",
 		Desc:    "Starts an application, or one of the processes of the application.",
 		MinArgs: 0,
 	}
@@ -1302,7 +1302,7 @@ func (c *AppRestart) Run(context *cmd.Context, client *cmd.Client) error {
 func (c *AppRestart) Info() *cmd.Info {
 	return &cmd.Info{
 		Name:    "app-restart",
-		Usage:   "app-restart [-a/--app appname] [-p/--process processname] [--version version]",
+		Usage:   "app restart [-a/--app appname] [-p/--process processname] [--version version]",
 		Desc:    `Restarts an application, or one of the processes of the application.`,
 		MinArgs: 0,
 	}
@@ -1334,12 +1334,11 @@ func (c *CnameAdd) Run(context *cmd.Context, client *cmd.Client) error {
 func (c *CnameAdd) Info() *cmd.Info {
 	return &cmd.Info{
 		Name:  "cname-add",
-		Usage: "cname-add <cname> [<cname> ...] [-a/--app appname]",
+		Usage: "cname add <cname> [<cname> ...] [-a/--app appname]",
 		Desc: `Adds a new CNAME to the application.
 
 It will not manage any DNS register, it's up to the user to create the DNS
-register. Once the app contains a custom CNAME, it will be displayed by "app-
-list" and "app-info".`,
+register. Once the app contains a custom CNAME, it will be displayed by "app list" and "app info".`,
 		MinArgs: 1,
 	}
 }
@@ -1360,12 +1359,11 @@ func (c *CnameRemove) Run(context *cmd.Context, client *cmd.Client) error {
 func (c *CnameRemove) Info() *cmd.Info {
 	return &cmd.Info{
 		Name:  "cname-remove",
-		Usage: "cname-remove <cname> [<cname> ...] [-a/--app appname]",
+		Usage: "cname remove <cname> [<cname> ...] [-a/--app appname]",
 		Desc: `Removes a CNAME from the application. This undoes the change that cname-add
 does.
 
-After unsetting the CNAME from the app, [[tsuru app-list]] and [[tsuru app-
-info]] will display the internal, unfriendly address that tsuru uses.`,
+After unsetting the CNAME from the app, [[tsuru app list]] and [[tsuru app info]] will display the internal, unfriendly address that tsuru uses.`,
 		MinArgs: 1,
 	}
 }
@@ -1424,7 +1422,7 @@ type UnitAdd struct {
 func (c *UnitAdd) Info() *cmd.Info {
 	return &cmd.Info{
 		Name:  "unit-add",
-		Usage: "unit-add <# of units> [-a/--app appname] [-p/--process processname] [--version version]",
+		Usage: "unit add <# of units> [-a/--app appname] [-p/--process processname] [--version version]",
 		Desc: `Adds new units to a process of an application. You need to have access to the
 app to be able to add new units to it.`,
 		MinArgs: 1,
@@ -1478,7 +1476,7 @@ type UnitRemove struct {
 func (c *UnitRemove) Info() *cmd.Info {
 	return &cmd.Info{
 		Name:  "unit-remove",
-		Usage: "unit-remove <# of units> [-a/--app appname] [-p/-process processname] [--version version]",
+		Usage: "unit remove <# of units> [-a/--app appname] [-p/-process processname] [--version version]",
 		Desc: `Removes units from a process of an application. You need to have access to the
 app to be able to remove units from it.`,
 		MinArgs: 1,
@@ -1530,7 +1528,7 @@ type UnitSet struct {
 func (c *UnitSet) Info() *cmd.Info {
 	return &cmd.Info{
 		Name:  "unit-set",
-		Usage: "unit-set <# of units> [-a/--app appname] [-p/--process processname] [--version version]",
+		Usage: "unit set <# of units> [-a/--app appname] [-p/--process processname] [--version version]",
 		Desc: `Set the number of units for a process of an application, adding or removing units as needed. You need to have access to the
 app to be able to set the number of units for it. The process flag is optional if the app has only 1 process.`,
 		MinArgs: 1,

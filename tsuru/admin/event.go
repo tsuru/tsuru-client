@@ -25,7 +25,7 @@ type EventBlockList struct {
 func (c *EventBlockList) Info() *cmd.Info {
 	return &cmd.Info{
 		Name:    "event-block-list",
-		Usage:   "event-block-list [-a/--active]",
+		Usage:   "event block list [-a/--active]",
 		Desc:    "Lists all event blocks",
 		MinArgs: 0,
 	}
@@ -107,7 +107,7 @@ type EventBlockAdd struct {
 func (c *EventBlockAdd) Info() *cmd.Info {
 	return &cmd.Info{
 		Name:    "event-block-add",
-		Usage:   "event-block-add <reason> [-k/--kind kindName] [-o/--owner ownerName] [-t/--target targetType] [-v/--value targetValue]",
+		Usage:   "event block add <reason> [-k/--kind kindName] [-o/--owner ownerName] [-t/--target targetType] [-v/--value targetValue]",
 		Desc:    "Block events.",
 		MinArgs: 1,
 	}
@@ -167,7 +167,7 @@ type EventBlockRemove struct{}
 func (c *EventBlockRemove) Info() *cmd.Info {
 	return &cmd.Info{
 		Name:    "event-block-remove",
-		Usage:   "event-block-remove <ID>",
+		Usage:   "event block remove <ID>",
 		Desc:    "Removes an event block.",
 		MinArgs: 1,
 		MaxArgs: 1,

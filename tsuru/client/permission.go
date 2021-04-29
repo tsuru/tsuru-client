@@ -35,7 +35,7 @@ type permissionData struct {
 func (c *PermissionList) Info() *cmd.Info {
 	return &cmd.Info{
 		Name:  "permission-list",
-		Usage: "permission-list [-t/--tree]",
+		Usage: "permission list [-t/--tree]",
 		Desc:  `Lists all permissions available to use when defining roles.`,
 	}
 }
@@ -152,7 +152,7 @@ type RoleInfo struct{}
 func (c *RoleInfo) Info() *cmd.Info {
 	return &cmd.Info{
 		Name:    "role-info",
-		Usage:   "role-info <role-name>",
+		Usage:   "role info <role-name>",
 		Desc:    "Get information about specific role.",
 		MinArgs: 1,
 	}
@@ -198,7 +198,7 @@ type RoleAdd struct {
 func (c *RoleAdd) Info() *cmd.Info {
 	info := &cmd.Info{
 		Name:  "role-add",
-		Usage: "role-add <role-name> <context-type> [--description/-d description]",
+		Usage: "role add <role-name> <context-type> [--description/-d description]",
 		Desc: `Create a new role for the specified context type.
 Valid context types are:
 
@@ -258,7 +258,7 @@ type RoleList struct{}
 func (c *RoleList) Info() *cmd.Info {
 	return &cmd.Info{
 		Name:    "role-list",
-		Usage:   "role-list",
+		Usage:   "role list",
 		Desc:    `List all existing roles.`,
 		MinArgs: 0,
 	}
@@ -301,7 +301,7 @@ type RolePermissionAdd struct{}
 func (c *RolePermissionAdd) Info() *cmd.Info {
 	return &cmd.Info{
 		Name:    "role-permission-add",
-		Usage:   "role-permission-add <role-name> <permission-name>...",
+		Usage:   "role permission add <role-name> <permission-name>...",
 		Desc:    `Add a new permission to an existing role.`,
 		MinArgs: 2,
 	}
@@ -335,7 +335,7 @@ type RolePermissionRemove struct{}
 func (c *RolePermissionRemove) Info() *cmd.Info {
 	return &cmd.Info{
 		Name:    "role-permission-remove",
-		Usage:   "role-permission-remove <role-name> <permission-name>",
+		Usage:   "role permission remove <role-name> <permission-name>",
 		Desc:    `Remove a permission from an existing role.`,
 		MinArgs: 2,
 	}
@@ -365,7 +365,7 @@ type RoleAssign struct{}
 func (c *RoleAssign) Info() *cmd.Info {
 	return &cmd.Info{
 		Name:    "role-assign",
-		Usage:   "role-assign <role-name> <user-email>|<token-id>|group:<group-id> [<context-value>]",
+		Usage:   "role assign <role-name> <user-email>|<token-id>|group:<group-id> [<context-value>]",
 		Desc:    `Assign an existing role to a user, token or group with some context value.`,
 		MinArgs: 2,
 	}
@@ -416,7 +416,7 @@ type RoleDissociate struct{}
 func (c *RoleDissociate) Info() *cmd.Info {
 	return &cmd.Info{
 		Name:    "role-dissociate",
-		Usage:   "role-dissociate <role-name> <user-email>|<token-id> [<context-value>]",
+		Usage:   "role dissociate <role-name> <user-email>|<token-id> [<context-value>]",
 		Desc:    `Dissociate an existing role from a user or token for some context value.`,
 		MinArgs: 2,
 	}
@@ -463,7 +463,7 @@ type RoleRemove struct {
 func (c *RoleRemove) Info() *cmd.Info {
 	return &cmd.Info{
 		Name:    "role-remove",
-		Usage:   "role-remove <role-name> [-y/--assume-yes]",
+		Usage:   "role remove <role-name> [-y/--assume-yes]",
 		Desc:    `Remove an existing role.`,
 		MinArgs: 1,
 	}
@@ -511,7 +511,7 @@ func (c *RoleDefaultAdd) Flags() *gnuflag.FlagSet {
 func (c *RoleDefaultAdd) Info() *cmd.Info {
 	info := &cmd.Info{
 		Name:  "role-default-add",
-		Usage: "role-default-add",
+		Usage: "role default add",
 		Desc:  `Add a new default role on a specific event.`,
 	}
 	var usage []string
@@ -571,7 +571,7 @@ func (c *RoleDefaultRemove) Flags() *gnuflag.FlagSet {
 func (c *RoleDefaultRemove) Info() *cmd.Info {
 	info := &cmd.Info{
 		Name:  "role-default-remove",
-		Usage: "role-default-remove",
+		Usage: "role default remove",
 		Desc:  `Remove a default role from a specific event.`,
 	}
 	var usage []string
@@ -614,7 +614,7 @@ type RoleDefaultList struct{}
 func (c *RoleDefaultList) Info() *cmd.Info {
 	return &cmd.Info{
 		Name:  "role-default-list",
-		Usage: "role-default-list",
+		Usage: "role default list",
 		Desc:  `List all roles set as default on any event.`,
 	}
 }
@@ -674,7 +674,7 @@ type RoleUpdate struct {
 func (c *RoleUpdate) Info() *cmd.Info {
 	return &cmd.Info{
 		Name:    "role-update",
-		Usage:   "role-update <role> [-d/--description <description>] [-c/--context <context type>] [-n/--name <role new name>]",
+		Usage:   "role update <role> [-d/--description <description>] [-c/--context <context type>] [-n/--name <role new name>]",
 		Desc:    "Updates a role description",
 		MinArgs: 1,
 		MaxArgs: 1,

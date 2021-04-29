@@ -36,7 +36,7 @@ func (s *S) TestAppCreate(c *check.C) {
 	var stdout, stderr bytes.Buffer
 	result := `{"status":"success", "repository_url":"git@tsuru.plataformas.glb.com:ble.git"}`
 	expected := `App "ble" has been created!
-Use app-info to check the status of the app and its units.` + "\n"
+Use app info to check the status of the app and its units.` + "\n"
 	context := cmd.Context{
 		Args:   []string{"ble", "django"},
 		Stdout: &stdout,
@@ -71,7 +71,7 @@ func (s *S) TestAppCreateEmptyPlatform(c *check.C) {
 	var stdout, stderr bytes.Buffer
 	result := `{"status":"success", "repository_url":"git@tsuru.plataformas.glb.com:ble.git"}`
 	expected := `App "ble" has been created!
-Use app-info to check the status of the app and its units.` + "\n"
+Use app info to check the status of the app and its units.` + "\n"
 	context := cmd.Context{
 		Args:   []string{"ble"},
 		Stdout: &stdout,
@@ -106,7 +106,7 @@ func (s *S) TestAppCreateTeamOwner(c *check.C) {
 	var stdout, stderr bytes.Buffer
 	result := `{"status":"success", "repository_url":"git@tsuru.plataformas.glb.com:ble.git"}`
 	expected := `App "ble" has been created!
-Use app-info to check the status of the app and its units.` + "\n"
+Use app info to check the status of the app and its units.` + "\n"
 	context := cmd.Context{
 		Args:   []string{"ble", "django"},
 		Stdout: &stdout,
@@ -142,7 +142,7 @@ func (s *S) TestAppCreatePlan(c *check.C) {
 	var stdout, stderr bytes.Buffer
 	result := `{"status":"success", "repository_url":"git@tsuru.plataformas.glb.com:ble.git"}`
 	expected := `App "ble" has been created!
-Use app-info to check the status of the app and its units.` + "\n"
+Use app info to check the status of the app and its units.` + "\n"
 	context := cmd.Context{
 		Args:   []string{"ble", "django"},
 		Stdout: &stdout,
@@ -178,7 +178,7 @@ func (s *S) TestAppCreatePool(c *check.C) {
 	var stdout, stderr bytes.Buffer
 	result := `{"status":"success", "repository_url":"git@tsuru.plataformas.glb.com:ble.git"}`
 	expected := `App "ble" has been created!
-Use app-info to check the status of the app and its units.` + "\n"
+Use app info to check the status of the app and its units.` + "\n"
 	context := cmd.Context{
 		Args:   []string{"ble", "django"},
 		Stdout: &stdout,
@@ -214,7 +214,7 @@ func (s *S) TestAppCreateRouterOpts(c *check.C) {
 	var stdout, stderr bytes.Buffer
 	result := `{"status":"success", "repository_url":"git@tsuru.plataformas.glb.com:ble.git"}`
 	expected := `App "ble" has been created!
-Use app-info to check the status of the app and its units.` + "\n"
+Use app info to check the status of the app and its units.` + "\n"
 	context := cmd.Context{
 		Args:   []string{"ble", "django"},
 		Stdout: &stdout,
@@ -252,7 +252,7 @@ func (s *S) TestAppCreateNoRepository(c *check.C) {
 	var stdout, stderr bytes.Buffer
 	result := `{"status":"success"}`
 	expected := `App "ble" has been created!
-Use app-info to check the status of the app and its units.` + "\n"
+Use app info to check the status of the app and its units.` + "\n"
 	context := cmd.Context{
 		Args:   []string{"ble", "django"},
 		Stdout: &stdout,
@@ -301,7 +301,7 @@ func (s *S) TestAppCreateWithTags(c *check.C) {
 	var stdout, stderr bytes.Buffer
 	result := `{"status":"success", "repository_url":"git@tsuru.plataformas.glb.com:ble.git"}`
 	expected := `App "ble" has been created!
-Use app-info to check the status of the app and its units.` + "\n"
+Use app info to check the status of the app and its units.` + "\n"
 	context := cmd.Context{
 		Args:   []string{"ble", "django"},
 		Stdout: &stdout,
@@ -337,7 +337,7 @@ func (s *S) TestAppCreateWithEmptyTag(c *check.C) {
 	var stdout, stderr bytes.Buffer
 	result := `{"status":"success", "repository_url":"git@tsuru.plataformas.glb.com:ble.git"}`
 	expected := `App "ble" has been created!
-Use app-info to check the status of the app and its units.` + "\n"
+Use app info to check the status of the app and its units.` + "\n"
 	context := cmd.Context{
 		Args:   []string{"ble", "django"},
 		Stdout: &stdout,

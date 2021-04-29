@@ -32,7 +32,7 @@ type CertificateSet struct {
 func (c *CertificateSet) Info() *cmd.Info {
 	return &cmd.Info{
 		Name:    "certificate-set",
-		Usage:   "certificate-set [-a/--app appname] [-c/--cname CNAME] [certificate] [key]",
+		Usage:   "certificate set [-a/--app appname] [-c/--cname CNAME] [certificate] [key]",
 		Desc:    `Creates or update a TLS certificate into the specific app.`,
 		MinArgs: 2,
 	}
@@ -95,7 +95,7 @@ type CertificateUnset struct {
 func (c *CertificateUnset) Info() *cmd.Info {
 	return &cmd.Info{
 		Name:  "certificate-unset",
-		Usage: "certificate-unset [-a/--app appname] [-c/--cname CNAME]",
+		Usage: "certificate unset [-a/--app appname] [-c/--cname CNAME]",
 		Desc:  `Unset a TLS certificate from a specific app.`,
 	}
 }
@@ -147,7 +147,7 @@ type CertificateList struct {
 func (c *CertificateList) Info() *cmd.Info {
 	return &cmd.Info{
 		Name:  "certificate-list",
-		Usage: "certificate-list [-a/--app appname] [-r/--raw]",
+		Usage: "certificate list [-a/--app appname] [-r/--raw]",
 		Desc:  `List App TLS certificates.`,
 	}
 }

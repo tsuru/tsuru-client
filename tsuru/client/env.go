@@ -41,7 +41,7 @@ type EnvGet struct {
 func (c *EnvGet) Info() *cmd.Info {
 	return &cmd.Info{
 		Name:    "env-get",
-		Usage:   "env-get [-a/--app appname] [ENVIRONMENT_VARIABLE1] [ENVIRONMENT_VARIABLE2] ...",
+		Usage:   "env get [-a/--app appname] [ENVIRONMENT_VARIABLE1] [ENVIRONMENT_VARIABLE2] ...",
 		Desc:    `Retrieves environment variables for an application.`,
 		MinArgs: 0,
 	}
@@ -80,7 +80,7 @@ type EnvSet struct {
 func (c *EnvSet) Info() *cmd.Info {
 	return &cmd.Info{
 		Name:    "env-set",
-		Usage:   "env-set <NAME=value> [NAME=value] ... [-a/--app appname] [-p/--private] [--no-restart]",
+		Usage:   "env set <NAME=value> [NAME=value] ... [-a/--app appname] [-p/--private] [--no-restart]",
 		Desc:    `Sets environment variables for an application.`,
 		MinArgs: 1,
 	}
@@ -156,7 +156,7 @@ func (c *EnvUnset) Flags() *gnuflag.FlagSet {
 func (c *EnvUnset) Info() *cmd.Info {
 	return &cmd.Info{
 		Name:    "env-unset",
-		Usage:   "env-unset <ENVIRONMENT_VARIABLE1> [ENVIRONMENT_VARIABLE2] ... [ENVIRONMENT_VARIABLEN] [-a/--app appname] [--no-restart]",
+		Usage:   "env unset <ENVIRONMENT_VARIABLE1> [ENVIRONMENT_VARIABLE2] ... [ENVIRONMENT_VARIABLEN] [-a/--app appname] [--no-restart]",
 		Desc:    `Unset environment variables for an application.`,
 		MinArgs: 1,
 	}

@@ -29,7 +29,7 @@ type VolumeCreate struct {
 func (c *VolumeCreate) Info() *cmd.Info {
 	return &cmd.Info{
 		Name:    "volume-create",
-		Usage:   "volume-create <volume-name> <plan-name> [-p/--pool <pool>] [-t/--team <team>] [-o/--opt key=value]...",
+		Usage:   "volume create <volume-name> <plan-name> [-p/--pool <pool>] [-t/--team <team>] [-o/--opt key=value]...",
 		Desc:    `Creates a new persistent volume based on a volume plan.`,
 		MinArgs: 2,
 		MaxArgs: 2,
@@ -93,7 +93,7 @@ type VolumeUpdate struct {
 func (c *VolumeUpdate) Info() *cmd.Info {
 	return &cmd.Info{
 		Name:    "volume-update",
-		Usage:   "volume-update <volume-name> <plan-name> [-p/--pool <pool>] [-t/--team <team>] [-o/--opt key=value]...",
+		Usage:   "volume update <volume name> <plan-name> [-p/--pool <pool>] [-t/--team <team>] [-o/--opt key=value]...",
 		Desc:    `Update an existing persistent volume.`,
 		MinArgs: 2,
 		MaxArgs: 2,
@@ -152,7 +152,7 @@ type VolumeList struct{}
 func (c *VolumeList) Info() *cmd.Info {
 	return &cmd.Info{
 		Name:    "volume-list",
-		Usage:   "volume-list",
+		Usage:   "volume list",
 		Desc:    `Lists existing persistent volumes.`,
 		MinArgs: 0,
 		MaxArgs: 0,
@@ -211,7 +211,7 @@ type VolumeInfo struct{}
 func (c *VolumeInfo) Info() *cmd.Info {
 	return &cmd.Info{
 		Name:    "volume-info",
-		Usage:   "volume-info <volume>",
+		Usage:   "volume info <volume>",
 		Desc:    `Get a volume.`,
 		MinArgs: 1,
 		MaxArgs: 1,
@@ -294,7 +294,7 @@ type VolumePlansList struct{}
 func (c *VolumePlansList) Info() *cmd.Info {
 	return &cmd.Info{
 		Name:    "volume-plan-list",
-		Usage:   "volume-plan-list",
+		Usage:   "volume plan list",
 		Desc:    `Lists existing volume plans.`,
 		MinArgs: 0,
 		MaxArgs: 0,
@@ -357,7 +357,7 @@ type VolumeDelete struct{}
 func (c *VolumeDelete) Info() *cmd.Info {
 	return &cmd.Info{
 		Name:    "volume-delete",
-		Usage:   "volume-delete <volume-name>",
+		Usage:   "volume delete <volume-name>",
 		Desc:    `Delete an existing persistent volume.`,
 		MinArgs: 1,
 		MaxArgs: 1,
@@ -392,7 +392,7 @@ type VolumeBind struct {
 func (c *VolumeBind) Info() *cmd.Info {
 	return &cmd.Info{
 		Name:    "volume-bind",
-		Usage:   "volume-bind <volume-name> <mount point> [-a/--app <appname>] [-r/--readonly] [--no-restart]",
+		Usage:   "volume bind <volume-name> <mount point> [-a/--app <appname>] [-r/--readonly] [--no-restart]",
 		Desc:    `Binds an existing volume to an application.`,
 		MinArgs: 2,
 		MaxArgs: 2,
@@ -463,7 +463,7 @@ type VolumeUnbind struct {
 func (c *VolumeUnbind) Info() *cmd.Info {
 	return &cmd.Info{
 		Name:    "volume-unbind",
-		Usage:   "volume-unbind <volume-name> <mount point> [-a/--app <appname>]",
+		Usage:   "volume unbind <volume-name> <mount point> [-a/--app <appname>]",
 		Desc:    `Unbinds a volume from an application.`,
 		MinArgs: 2,
 		MaxArgs: 2,

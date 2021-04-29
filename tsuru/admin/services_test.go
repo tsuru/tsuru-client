@@ -21,7 +21,7 @@ func (s *S) TestServiceCreateInfo(c *check.C) {
 	cmd := ServiceCreate{}
 	i := cmd.Info()
 	c.Assert(i.Name, check.Equals, "service-create")
-	c.Assert(i.Usage, check.Equals, "service-create path/to/manifest [- for stdin]")
+	c.Assert(i.Usage, check.Equals, "service create path/to/manifest [- for stdin]")
 	c.Assert(i.Desc, check.Equals, desc)
 	c.Assert(i.MinArgs, check.Equals, 1)
 }
@@ -109,7 +109,7 @@ func (s *S) TestServiceDestroyIsACommand(c *check.C) {
 func (s *S) TestServiceDestroyInfo(c *check.C) {
 	expected := &cmd.Info{
 		Name:    "service-destroy",
-		Usage:   "service-destroy <servicename>",
+		Usage:   "service destroy <servicename>",
 		Desc:    "removes a service from catalog",
 		MinArgs: 1,
 		MaxArgs: 1,
@@ -156,7 +156,7 @@ func (s *S) TestServiceUpdateIsACommand(c *check.C) {
 func (s *S) TestServiceUpdateInfo(c *check.C) {
 	expected := &cmd.Info{
 		Name:    "service-update",
-		Usage:   "service-update <path/to/manifest>",
+		Usage:   "service update <path/to/manifest>",
 		Desc:    "Update service data, extracting it from the given manifest file.",
 		MinArgs: 1,
 	}
@@ -193,7 +193,7 @@ func (s *S) TestServiceDocAdd(c *check.C) {
 func (s *S) TestServiceDocAddInfo(c *check.C) {
 	expected := &cmd.Info{
 		Name:    "service-doc-add",
-		Usage:   "service-doc-add <service> <path/to/docfile>",
+		Usage:   "service doc add <service> <path/to/docfile>",
 		Desc:    "Update service documentation, extracting it from the given file.",
 		MinArgs: 2,
 	}
@@ -227,7 +227,7 @@ func (s *S) TestServiceDocGet(c *check.C) {
 func (s *S) TestServiceDocGetInfo(c *check.C) {
 	expected := &cmd.Info{
 		Name:    "service-doc-get",
-		Usage:   "service-doc-get <service>",
+		Usage:   "service doc get <service>",
 		Desc:    "Shows service documentation.",
 		MinArgs: 1,
 	}
@@ -236,8 +236,8 @@ func (s *S) TestServiceDocGetInfo(c *check.C) {
 
 func (s *S) TestServiceTemplateInfo(c *check.C) {
 	got := (&ServiceTemplate{}).Info()
-	usg := `service-template
-e.g.: $ tsuru service-template template`
+	usg := `service template
+e.g.: $ tsuru service template template`
 	expected := &cmd.Info{
 		Name:  "service-template",
 		Usage: usg,

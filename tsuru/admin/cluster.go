@@ -60,7 +60,7 @@ func (c *ClusterAdd) Flags() *gnuflag.FlagSet {
 func (c *ClusterAdd) Info() *cmd.Info {
 	return &cmd.Info{
 		Name:    "cluster-add",
-		Usage:   "cluster-add <name> <provisioner> [--addr address...] [--pool poolname]... [--cacert cacertfile] [--clientcert clientcertfile] [--clientkey clientkeyfile] [--custom key=value]... [--create-data key=value]... [--default]",
+		Usage:   "cluster add <name> <provisioner> [--addr address...] [--pool poolname]... [--cacert cacertfile] [--clientcert clientcertfile] [--clientkey clientkeyfile] [--custom key=value]... [--create-data key=value]... [--default]",
 		Desc:    `Creates a provisioner cluster definition.`,
 		MinArgs: 2,
 		MaxArgs: 2,
@@ -176,7 +176,7 @@ func (c *ClusterUpdate) Flags() *gnuflag.FlagSet {
 func (c *ClusterUpdate) Info() *cmd.Info {
 	return &cmd.Info{
 		Name:    "cluster-update",
-		Usage:   "cluster-update <name> <provisioner> [--addr address]... [--add-pool poolname]... [--remove-pool poolname]... [--cacert cacertfile] [--remove-cacert] [--clientcert clientcertfile] [--remove-clientcert] [--clientkey clientkeyfile] [--remove-clientkey] [--add-custom key=value]... [--remove-custom key]... [--add-create-data key=value]... [--remove-create-data key]... [--default=true|false]",
+		Usage:   "cluster update <name> <provisioner> [--addr address]... [--add-pool poolname]... [--remove-pool poolname]... [--cacert cacertfile] [--remove-cacert] [--clientcert clientcertfile] [--remove-clientcert] [--clientkey clientkeyfile] [--remove-clientkey] [--add-custom key=value]... [--remove-custom key]... [--add-create-data key=value]... [--remove-create-data key]... [--default=true|false]",
 		Desc:    `Updates a provisioner cluster definition.`,
 		MinArgs: 2,
 		MaxArgs: 2,
@@ -372,7 +372,7 @@ type ClusterList struct{}
 func (c *ClusterList) Info() *cmd.Info {
 	return &cmd.Info{
 		Name:  "cluster-list",
-		Usage: "cluster-list",
+		Usage: "cluster list",
 		Desc:  `List registered provisioner cluster definitions.`,
 	}
 }
@@ -415,7 +415,7 @@ type ClusterRemove struct {
 func (c *ClusterRemove) Info() *cmd.Info {
 	return &cmd.Info{
 		Name:    "cluster-remove",
-		Usage:   "cluster-remove <name> [-y]",
+		Usage:   "cluster remove <name> [-y]",
 		Desc:    `Removes a provisioner cluster definition.`,
 		MinArgs: 1,
 		MaxArgs: 1,
@@ -451,7 +451,7 @@ type ProvisionerList struct{}
 func (c *ProvisionerList) Info() *cmd.Info {
 	return &cmd.Info{
 		Name:  "provisioner-list",
-		Usage: "provisioner-list",
+		Usage: "provisioner list",
 		Desc:  `List registered provisioners and their cluster options.`,
 	}
 }
@@ -489,7 +489,7 @@ type ProvisionerInfo struct{}
 func (c *ProvisionerInfo) Info() *cmd.Info {
 	return &cmd.Info{
 		Name:    "provisioner-info",
-		Usage:   "provisioner-info <provisioner name>",
+		Usage:   "provisioner info <provisioner name>",
 		Desc:    `Detailed information about provisioner.`,
 		MinArgs: 1,
 		MaxArgs: 1,

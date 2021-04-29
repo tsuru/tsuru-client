@@ -24,7 +24,7 @@ type BrokerAdd struct {
 func (c *BrokerAdd) Info() *cmd.Info {
 	return &cmd.Info{
 		Name:    "service-broker-add",
-		Usage:   "service-broker-add <name> <url> [-i/--insecure] [-c/--context key=value] [-t/--token token] [-u/--user username] [-p/--password password] [--cache cache expiration time]",
+		Usage:   "service broker add <name> <url> [-i/--insecure] [-c/--context key=value] [-t/--token token] [-u/--user username] [-p/--password password] [--cache cache expiration time]",
 		Desc:    `Adds a new Service Broker.`,
 		MinArgs: 2,
 	}
@@ -66,7 +66,7 @@ type BrokerUpdate struct {
 func (c *BrokerUpdate) Info() *cmd.Info {
 	return &cmd.Info{
 		Name:    "service-broker-update",
-		Usage:   "service-broker-update <name> <url> [-i/--insecure] [-c/--context key=value] [-t/--token token] [-u/--user username] [-p/--password password] [--cache cache expiration time] [--no-cache]",
+		Usage:   "service broker update <name> <url> [-i/--insecure] [-c/--context key=value] [-t/--token token] [-u/--user username] [-p/--password password] [--cache cache expiration time] [--no-cache]",
 		Desc:    `Updates a service broker.`,
 		MinArgs: 2,
 	}
@@ -110,7 +110,7 @@ type BrokerDelete struct{}
 func (c *BrokerDelete) Info() *cmd.Info {
 	return &cmd.Info{
 		Name:    "service-broker-delete",
-		Usage:   "service-broker-delete <name>",
+		Usage:   "service broker delete <name>",
 		Desc:    `Removes a service broker.`,
 		MinArgs: 1,
 	}
@@ -136,7 +136,7 @@ type BrokerList struct{}
 func (c *BrokerList) Info() *cmd.Info {
 	return &cmd.Info{
 		Name:  "service-broker-list",
-		Usage: "service-broker-list",
+		Usage: "service broker list",
 		Desc:  `List service brokers.`,
 	}
 }

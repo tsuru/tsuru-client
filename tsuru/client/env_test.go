@@ -204,11 +204,12 @@ variable 2`},
 	trans := &cmdtest.ConditionalTransport{
 		Transport: cmdtest.Transport{Message: string(result), Status: http.StatusOK},
 		CondFunc: func(req *http.Request) bool {
-			want := []struct{ Name, Value, Alias string }{
+			private := false
+			want := []apiTypes.Env{
 				{Name: "LINE1", Value: `multiline
-variable 1`, Alias: ""},
+variable 1`, Alias: "", Private: &private},
 				{Name: "LINE2", Value: `multiline
-variable 2`, Alias: ""},
+variable 2`, Alias: "", Private: &private},
 			}
 			err = req.ParseForm()
 			c.Assert(err, check.IsNil)
@@ -218,7 +219,7 @@ variable 2`, Alias: ""},
 			err = dec.DecodeValues(&e, req.Form)
 			c.Assert(err, check.IsNil)
 			c.Assert(e.Envs, check.DeepEquals, want)
-			private := !e.Private
+			private = !e.Private
 			noRestart := !e.NoRestart
 			path := strings.HasSuffix(req.URL.Path, "/apps/someapp/env")
 			method := req.Method == "POST"
@@ -256,14 +257,15 @@ func (s *S) TestEnvSetValues(c *check.C) {
 	trans := &cmdtest.ConditionalTransport{
 		Transport: cmdtest.Transport{Message: string(result), Status: http.StatusOK},
 		CondFunc: func(req *http.Request) bool {
-			want := []struct{ Name, Value, Alias string }{
-				{Name: "DATABASE_HOST", Value: "some host", Alias: ""},
-				{Name: "DATABASE_USER", Value: "root", Alias: ""},
-				{Name: "DATABASE_PASSWORD", Value: ".1234..abc", Alias: ""},
-				{Name: "http_proxy", Value: "http://myproxy.com:3128/", Alias: ""},
-				{Name: "VALUE_WITH_EQUAL_SIGN", Value: "http://wholikesquerystrings.me/?tsuru=awesome", Alias: ""},
-				{Name: "BASE64_STRING", Value: "t5urur0ck5==", Alias: ""},
-				{Name: "SOME_PASSWORD", Value: "js87$%32??", Alias: ""},
+			private := false
+			want := []apiTypes.Env{
+				{Name: "DATABASE_HOST", Value: "some host", Alias: "", Private: &private},
+				{Name: "DATABASE_USER", Value: "root", Alias: "", Private: &private},
+				{Name: "DATABASE_PASSWORD", Value: ".1234..abc", Alias: "", Private: &private},
+				{Name: "http_proxy", Value: "http://myproxy.com:3128/", Alias: "", Private: &private},
+				{Name: "VALUE_WITH_EQUAL_SIGN", Value: "http://wholikesquerystrings.me/?tsuru=awesome", Alias: "", Private: &private},
+				{Name: "BASE64_STRING", Value: "t5urur0ck5==", Alias: "", Private: &private},
+				{Name: "SOME_PASSWORD", Value: "js87$%32??", Alias: "", Private: &private},
 			}
 			err = req.ParseForm()
 			c.Assert(err, check.IsNil)
@@ -273,7 +275,7 @@ func (s *S) TestEnvSetValues(c *check.C) {
 			err = dec.DecodeValues(&e, req.Form)
 			c.Assert(err, check.IsNil)
 			c.Assert(e.Envs, check.DeepEquals, want)
-			private := !e.Private
+			private = !e.Private
 			noRestart := !e.NoRestart
 			path := strings.HasSuffix(req.URL.Path, "/apps/someapp/env")
 			method := req.Method == "POST"
@@ -311,13 +313,14 @@ func (s *S) TestEnvSetValuesAndPrivateAndNoRestart(c *check.C) {
 	trans := &cmdtest.ConditionalTransport{
 		Transport: cmdtest.Transport{Message: string(result), Status: http.StatusOK},
 		CondFunc: func(req *http.Request) bool {
-			want := []struct{ Name, Value, Alias string }{
-				{Name: "DATABASE_HOST", Value: "some host", Alias: ""},
-				{Name: "DATABASE_USER", Value: "root", Alias: ""},
-				{Name: "DATABASE_PASSWORD", Value: ".1234..abc", Alias: ""},
-				{Name: "http_proxy", Value: "http://myproxy.com:3128/", Alias: ""},
-				{Name: "VALUE_WITH_EQUAL_SIGN", Value: "http://wholikesquerystrings.me/?tsuru=awesome"},
-				{Name: "BASE64_STRING", Value: "t5urur0ck5==", Alias: ""},
+			private := false
+			want := []apiTypes.Env{
+				{Name: "DATABASE_HOST", Value: "some host", Alias: "", Private: &private},
+				{Name: "DATABASE_USER", Value: "root", Alias: "", Private: &private},
+				{Name: "DATABASE_PASSWORD", Value: ".1234..abc", Alias: "", Private: &private},
+				{Name: "http_proxy", Value: "http://myproxy.com:3128/", Alias: "", Private: &private},
+				{Name: "VALUE_WITH_EQUAL_SIGN", Value: "http://wholikesquerystrings.me/?tsuru=awesome", Private: &private},
+				{Name: "BASE64_STRING", Value: "t5urur0ck5==", Alias: "", Private: &private},
 			}
 			err = req.ParseForm()
 			c.Assert(err, check.IsNil)
@@ -327,7 +330,7 @@ func (s *S) TestEnvSetValuesAndPrivateAndNoRestart(c *check.C) {
 			err = dec.DecodeValues(&e, req.Form)
 			c.Assert(err, check.IsNil)
 			c.Assert(e.Envs, check.DeepEquals, want)
-			private := e.Private
+			private = e.Private
 			noRestart := e.NoRestart
 			path := strings.HasSuffix(req.URL.Path, "/apps/someapp/env")
 			method := req.Method == "POST"

@@ -97,7 +97,7 @@ type WebhookCreate struct {
 func (c *WebhookCreate) Info() *cmd.Info {
 	return &cmd.Info{
 		Name:    "event-webhook-create",
-		Usage:   "event-webhook-create <name> <url> [-d/--description <description>] [-t/--team <team>] [-m/--method <method>] [-b/--body <body>] [--proxy <url>] [-H/--header <name=value>]... [--insecure] [--error-only] [--success-only] [--target-type <type>]... [--target-value <value>]... [--kind-type <type>]... [--kind-name <name>]...",
+		Usage:   "event webhook create <name> <url> [-d/--description <description>] [-t/--team <team>] [-m/--method <method>] [-b/--body <body>] [--proxy <url>] [-H/--header <name=value>]... [--insecure] [--error-only] [--success-only] [--target-type <type>]... [--target-value <value>]... [--kind-type <type>]... [--kind-name <name>]...",
 		Desc:    `Creates a new webhook triggered when an event matches.`,
 		MinArgs: 2,
 	}
@@ -143,7 +143,7 @@ type WebhookUpdate struct {
 func (c *WebhookUpdate) Info() *cmd.Info {
 	return &cmd.Info{
 		Name:    "event-webhook-update",
-		Usage:   "event-webhook-update <name> [-u/--url <url>] [-d/--description <description>] [-t/--team <team>] [-m/--method <method>] [-b/--body <body>] [--proxy <url>] [-H/--header <name=value>]... [--insecure] [--error-only] [--success-only] [--target-type <type>]... [--target-value <value>]... [--kind-type <type>]... [--kind-name <name>]... [--no-body] [--no-header] [--no-insecure] [--no-target-type] [--no-target-value] [--no-kind-type] [--no-kind-name] [--no-error-only] [--no-success-only]",
+		Usage:   "event webhook update <name> [-u/--url <url>] [-d/--description <description>] [-t/--team <team>] [-m/--method <method>] [-b/--body <body>] [--proxy <url>] [-H/--header <name=value>]... [--insecure] [--error-only] [--success-only] [--target-type <type>]... [--target-value <value>]... [--kind-type <type>]... [--kind-name <name>]... [--no-body] [--no-header] [--no-insecure] [--no-target-type] [--no-target-value] [--no-kind-type] [--no-kind-name] [--no-error-only] [--no-success-only]",
 		Desc:    `Updates an existing webhook.`,
 		MinArgs: 1,
 	}
@@ -259,7 +259,7 @@ type WebhookList struct {
 func (c *WebhookList) Info() *cmd.Info {
 	return &cmd.Info{
 		Name:  "event-webhook-list",
-		Usage: "event-webhook-list",
+		Usage: "event webhook list",
 		Desc:  `List existing webhooks.`,
 	}
 }
@@ -341,7 +341,7 @@ type WebhookDelete struct{}
 func (c *WebhookDelete) Info() *cmd.Info {
 	return &cmd.Info{
 		Name:    "event-webhook-delete",
-		Usage:   "event-webhook-delete <name>",
+		Usage:   "event webhook delete <name>",
 		Desc:    `Deletes an existing webhook.`,
 		MinArgs: 1,
 	}

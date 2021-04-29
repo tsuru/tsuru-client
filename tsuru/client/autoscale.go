@@ -35,7 +35,7 @@ type AutoScaleSet struct {
 func (c *AutoScaleSet) Info() *cmd.Info {
 	return &cmd.Info{
 		Name:    "unit-autoscale-set",
-		Usage:   "unit-autoscale-set [-a/--app appname] [-p/--process processname] [--cpu targetCPU] [--min minUnits] [--max maxUnits]",
+		Usage:   "unit autoscale set [-a/--app appname] [-p/--process processname] [--cpu targetCPU] [--min minUnits] [--max maxUnits]",
 		Desc:    `Sets a unit auto scale configuration.`,
 		MinArgs: 0,
 		MaxArgs: 0,
@@ -97,7 +97,7 @@ type AutoScaleUnset struct {
 func (c *AutoScaleUnset) Info() *cmd.Info {
 	return &cmd.Info{
 		Name:    "unit-autoscale-unset",
-		Usage:   "unit-autoscale-unset [-a/--app appname] [-p/--process processname]",
+		Usage:   "unit autoscale unset [-a/--app appname] [-p/--process processname]",
 		Desc:    `Unsets a unit auto scale configuration.`,
 		MinArgs: 0,
 		MaxArgs: 0,
