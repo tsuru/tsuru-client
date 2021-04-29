@@ -95,13 +95,13 @@ func (c *EnvSet) Run(context *cmd.Context, client *cmd.Client) error {
 	if len(context.Args) < 1 {
 		return errors.New(EnvSetValidationMessage)
 	}
-	envs := make([]struct{ Name, Value, Alias string }, len(context.Args))
+	envs := make([]apiTypes.Env, len(context.Args))
 	for i := range context.Args {
 		parts := strings.SplitN(context.Args[i], "=", 2)
 		if len(parts) != 2 {
 			return errors.New(EnvSetValidationMessage)
 		}
-		envs[i] = struct{ Name, Value, Alias string }{Name: parts[0], Value: parts[1]}
+		envs[i] = apiTypes.Env{Name: parts[0], Value: parts[1]}
 
 	}
 	e := apiTypes.Envs{

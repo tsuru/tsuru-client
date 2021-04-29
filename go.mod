@@ -23,7 +23,7 @@ require (
 	github.com/tsuru/gnuflag v0.0.0-20151217162021-86b8c1b864aa
 	github.com/tsuru/go-tsuruclient v0.0.0-20210303180837-ce578d5dc7a9
 	github.com/tsuru/tablecli v0.0.0-20190131152944-7ded8a3383c6
-	github.com/tsuru/tsuru v0.0.0-20210212185225-da889133d5d9
+	github.com/tsuru/tsuru v0.0.0-20210427192337-bedac47740ea
 	golang.org/x/crypto v0.0.0-20201012173705-84dcc777aaee
 	google.golang.org/api v0.7.0 // indirect
 	google.golang.org/appengine v1.6.1 // indirect
