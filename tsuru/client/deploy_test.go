@@ -191,7 +191,7 @@ func (s *S) TestDeployImage(c *check.C) {
 		Stderr: &stderr,
 	}
 	cmd := AppDeploy{}
-	err := cmd.Flags().Parse(true, []string{"-i", "registr.com/image-to-deploy", "-a", "secret"})
+	err := cmd.Flags().Parse(true, []string{"-a", "secret", "-i", "registr.com/image-to-deploy"})
 	c.Assert(err, check.IsNil)
 	context.Args = cmd.Flags().Args()
 	err = cmd.Run(&context, client)
@@ -660,43 +660,49 @@ func (s *S) TestDeployRunTarGeneration(c *check.C) {
 			files:      []string{"f1", "f2", "d1/f3", "d1/d2/f4"},
 			deployArgs: []string{"."},
 			expected:   []string{"f1", "f2", "d1", "d1/f3", "d1/d2", "d1/d2/f4"},
+			flags:      []string{"-a", "secret"},
 		},
 		{
 			files:      []string{"testdata/deploy/file1.txt", "testdata/deploy2/file2.txt"},
 			deployArgs: []string{"testdata/deploy/file1.txt", "testdata/deploy2/file2.txt"},
 			expected:   []string{"testdata/deploy/file1.txt", "testdata/deploy2/file2.txt"},
+			flags:      []string{"-a", "secret"},
 		},
 		{
 			files:      []string{"testdata/deploy/file1.txt", "testdata/deploy2/file2.txt"},
 			deployArgs: []string{"testdata/deploy/file1.txt", "testdata/deploy2/file2.txt"},
-			flags:      []string{"-f"},
+			flags:      []string{"-a", "secret", "-f"},
 			expected:   []string{"file1.txt", "file2.txt"},
 		},
 		{
 			files:      []string{"testdata/deploy/file1.txt", "testdata/deploy/file2.txt", "testdata/deploy2/file3.txt", "testdata/deploy2/directory/file4.txt"},
 			deployArgs: []string{"testdata/deploy", "testdata/deploy2"},
+			flags:      []string{"-a", "secret"},
 			expected:   []string{"testdata/deploy", "testdata/deploy2", "testdata/deploy/file1.txt", "testdata/deploy/file2.txt", "testdata/deploy2/file3.txt", "testdata/deploy2/directory", "testdata/deploy2/directory/file4.txt"},
 		},
 		{
 			files:      []string{"testdata/deploy/file1.txt", "testdata/deploy/file2.txt", "testdata/deploy2/file3.txt", "testdata/deploy2/directory/file4.txt"},
 			deployArgs: []string{"testdata/deploy", "testdata/deploy2"},
-			flags:      []string{"-f"},
+			flags:      []string{"-a", "secret", "-f"},
 			expected:   []string{"file1.txt", "file2.txt", "file3.txt", "directory", "directory/file4.txt"},
 		},
 		{
 			files:          []string{"testdata/deploy/file1.txt", "testdata/deploy/file2.txt", "testdata/deploy/directory/file.txt"},
 			deployArgs:     []string{"testdata/deploy", ".."},
+			flags:          []string{"-a", "secret"},
 			expected:       []string{"testdata/deploy", "testdata/deploy/file1.txt", "testdata/deploy/file2.txt", "testdata/deploy/directory", "testdata/deploy/directory/file.txt"},
 			expectedStderr: `Warning: skipping "\.\."`,
 		},
 		{
 			files:      []string{"testdata/deploy/file1.txt", "testdata/deploy/file2.txt", "testdata/deploy/directory/file.txt"},
 			deployArgs: []string{"testdata/deploy"},
+			flags:      []string{"-a", "secret"},
 			expected:   []string{"file1.txt", "file2.txt", "directory", "directory/file.txt"},
 		},
 		{
 			files:      []string{"testdata/deploy2/file1.txt", "testdata/deploy2/file2.txt", "testdata/deploy2/directory/file.txt", "testdata/deploy2/directory/dir2/file.txt"},
 			ignored:    []string{"*.txt"},
+			flags:      []string{"-a", "secret"},
 			deployArgs: []string{"testdata/deploy2"},
 			expected:   []string{"directory", "directory/dir2"},
 		},
@@ -704,19 +710,21 @@ func (s *S) TestDeployRunTarGeneration(c *check.C) {
 			files:      []string{"testdata/deploy/file1.txt", "testdata/deploy/file2.txt", "testdata/deploy2/file3.txt", "testdata/deploy2/directory/file4.txt"},
 			deployArgs: []string{"testdata/deploy", "testdata/deploy2"},
 			ignored:    []string{"*.txt"},
+			flags:      []string{"-a", "secret"},
 			expected:   []string{"testdata/deploy", "testdata/deploy2", "testdata/deploy2/directory"},
 		},
 		{
 			files:      []string{"testdata/deploy/file1.txt", "testdata/deploy/file2.txt", "testdata/deploy2/file3.txt", "testdata/deploy2/directory/file4.txt"},
 			deployArgs: []string{"testdata/deploy", "testdata/deploy2"},
 			ignored:    []string{"*.txt"},
-			flags:      []string{"-f"},
+			flags:      []string{"-a", "secret", "-f"},
 			expected:   []string{"directory"},
 		},
 		{
 			files:      []string{"testdata/deploy2/file1.txt", "testdata/deploy2/file2.txt", "testdata/deploy2/directory/file.txt", "testdata/deploy2/directory/dir2/file.txt"},
 			ignored:    []string{"*.txt"},
 			deployArgs: []string{"testdata/deploy2"},
+			flags:      []string{"-a", "secret"},
 			expected:   []string{"directory", "directory/dir2"},
 			absPath:    true,
 		},
@@ -724,24 +732,28 @@ func (s *S) TestDeployRunTarGeneration(c *check.C) {
 			files:      []string{"file1.txt", "file2.txt", "directory/file.txt", "directory/dir2/file.txt"},
 			ignored:    []string{"*.txt"},
 			deployArgs: []string{"."},
+			flags:      []string{"-a", "secret"},
 			expected:   []string{".tsuruignore", "directory", "directory/dir2"},
 		},
 		{
 			files:      []string{"testdata/deploy2/file1.txt", "testdata/deploy2/file2.txt", "testdata/deploy2/directory/file.txt", "testdata/deploy2/directory/dir2/file.txt"},
 			ignored:    []string{"directory"},
 			deployArgs: []string{"testdata/deploy2"},
+			flags:      []string{"-a", "secret"},
 			expected:   []string{"file1.txt", "file2.txt"},
 		},
 		{
 			files:      []string{"testdata/deploy2/file1.txt", "testdata/deploy2/file2.txt", "testdata/deploy2/directory/file.txt", "testdata/deploy2/directory/dir2/file.txt"},
 			ignored:    []string{"*/dir2"},
 			deployArgs: []string{"testdata/deploy2"},
+			flags:      []string{"-a", "secret"},
 			expected:   []string{"directory", "directory/file.txt", "file1.txt", "file2.txt"},
 		},
 		{
 			files:      []string{"testdata/deploy2/file1.txt", "testdata/deploy2/file2.txt", "testdata/deploy2/directory/file.txt", "testdata/deploy2/directory/dir2/file.txt"},
 			ignored:    []string{"directory/dir2/*"},
 			deployArgs: []string{"testdata/deploy2"},
+			flags:      []string{"-a", "secret"},
 			expected:   []string{"directory", "directory/dir2", "directory/file.txt", "file1.txt", "file2.txt"},
 		},
 	}

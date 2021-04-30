@@ -167,7 +167,7 @@ func (s *S) TestAppLogBySource(c *check.C) {
 		Stderr: &stderr,
 	}
 	command := AppLog{}
-	command.Flags().Parse(true, []string{"--source", "mysource", "-a", "hitthelights"})
+	command.Flags().Parse(true, []string{"-a", "hitthelights", "--source", "mysource"})
 	trans := &cmdtest.ConditionalTransport{
 		Transport: cmdtest.Transport{Message: string(result), Status: http.StatusOK},
 		CondFunc: func(req *http.Request) bool {
@@ -198,7 +198,7 @@ func (s *S) TestAppLogByUnit(c *check.C) {
 		Stderr: &stderr,
 	}
 	command := AppLog{}
-	command.Flags().Parse(true, []string{"--unit", "api", "-a", "hitthelights"})
+	command.Flags().Parse(true, []string{"-a", "hitthelights", "--unit", "api"})
 	trans := &cmdtest.ConditionalTransport{
 		Transport: cmdtest.Transport{Message: string(result), Status: http.StatusOK},
 		CondFunc: func(req *http.Request) bool {
@@ -229,7 +229,7 @@ func (s *S) TestAppLogWithLines(c *check.C) {
 		Stderr: &stderr,
 	}
 	command := AppLog{}
-	command.Flags().Parse(true, []string{"--lines", "12", "-a", "hitthelights"})
+	command.Flags().Parse(true, []string{"-a", "hitthelights", "--lines", "12"})
 	trans := &cmdtest.ConditionalTransport{
 		Transport: cmdtest.Transport{Message: string(result), Status: http.StatusOK},
 		CondFunc: func(req *http.Request) bool {
@@ -260,7 +260,7 @@ func (s *S) TestAppLogWithFollow(c *check.C) {
 		Stderr: &stderr,
 	}
 	command := AppLog{}
-	command.Flags().Parse(true, []string{"--lines", "12", "-f", "-a", "hitthelights"})
+	command.Flags().Parse(true, []string{"-a", "hitthelights", "--lines", "12", "-f"})
 	trans := &cmdtest.ConditionalTransport{
 		Transport: cmdtest.Transport{Message: string(result), Status: http.StatusOK},
 		CondFunc: func(req *http.Request) bool {
@@ -290,7 +290,7 @@ func (s *S) TestAppLogWithNoDateAndNoSource(c *check.C) {
 		Stderr: &stderr,
 	}
 	command := AppLog{}
-	command.Flags().Parse(true, []string{"--lines", "12", "-f", "--no-date", "--no-source", "-a", "hitthelights"})
+	command.Flags().Parse(true, []string{"-a", "hitthelights", "--lines", "12", "-f", "--no-date", "--no-source"})
 	trans := &cmdtest.ConditionalTransport{
 		Transport: cmdtest.Transport{Message: string(result), Status: http.StatusOK},
 		CondFunc: func(req *http.Request) bool {
@@ -321,7 +321,7 @@ func (s *S) TestAppLogWithNoSource(c *check.C) {
 		Stderr: &stderr,
 	}
 	command := AppLog{}
-	command.Flags().Parse(true, []string{"--lines", "12", "-f", "--no-source", "-a", "hitthelights"})
+	command.Flags().Parse(true, []string{"-a", "hitthelights", "--lines", "12", "-f", "--no-source"})
 	trans := &cmdtest.ConditionalTransport{
 		Transport: cmdtest.Transport{Message: string(result), Status: http.StatusOK},
 		CondFunc: func(req *http.Request) bool {

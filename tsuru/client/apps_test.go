@@ -2209,22 +2209,6 @@ func (s *S) TestAppGrant(c *check.C) {
 	c.Assert(stdout.String(), check.Equals, expected)
 }
 
-func (s *S) TestAppGrantWithoutFlag(c *check.C) {
-	var stdout, stderr bytes.Buffer
-	expected := `Team "cobrateam" was added to the "fights" app` + "\n"
-	context := cmd.Context{
-		Args:   []string{"cobrateam"},
-		Stdout: &stdout,
-		Stderr: &stderr,
-	}
-	command := AppGrant{}
-	command.Flags().Parse(true, []string{"-a", "fights"})
-	client := cmd.NewClient(&http.Client{Transport: &cmdtest.Transport{Message: "", Status: http.StatusOK}}, nil, manager)
-	err := command.Run(&context, client)
-	c.Assert(err, check.IsNil)
-	c.Assert(stdout.String(), check.Equals, expected)
-}
-
 func (s *S) TestAppGrantInfo(c *check.C) {
 	c.Assert((&AppGrant{}).Info(), check.NotNil)
 }
@@ -2241,25 +2225,6 @@ func (s *S) TestAppRevoke(c *check.C) {
 	command.Flags().Parse(true, []string{"--app", "games"})
 	client := cmd.NewClient(&http.Client{Transport: &cmdtest.Transport{Message: "", Status: http.StatusOK}}, nil, manager)
 	err := command.Run(&context, client)
-	c.Assert(err, check.IsNil)
-	c.Assert(stdout.String(), check.Equals, expected)
-}
-
-func (s *S) TestAppRevokeWithoutFlag(c *check.C) {
-	var stdout, stderr bytes.Buffer
-	expected := `Team "cobrateam" was removed from the "fights" app` + "\n"
-	context := cmd.Context{
-		Stdout: &stdout,
-		Stderr: &stderr,
-	}
-	command := AppRevoke{}
-	err := command.Flags().Parse(true, []string{"-a", "fights", "cobrateam"})
-	c.Assert(err, check.IsNil)
-
-	client := cmd.NewClient(&http.Client{Transport: &cmdtest.Transport{Message: "", Status: http.StatusOK}}, nil, manager)
-
-	context.Args = command.Flags().Args()
-	err = command.Run(&context, client)
 	c.Assert(err, check.IsNil)
 	c.Assert(stdout.String(), check.Equals, expected)
 }
@@ -2655,35 +2620,6 @@ func (s *S) TestAppRestart(c *check.C) {
 	c.Assert(stdout.String(), check.Equals, expectedOut)
 }
 
-func (s *S) TestAppRestartWithoutTheFlag(c *check.C) {
-	var (
-		called         bool
-		stdout, stderr bytes.Buffer
-	)
-	context := cmd.Context{
-		Stdout: &stdout,
-		Stderr: &stderr,
-	}
-	expectedOut := "-- restarted --"
-	msg := io.SimpleJsonMessage{Message: expectedOut}
-	result, err := json.Marshal(msg)
-	c.Assert(err, check.IsNil)
-	trans := &cmdtest.ConditionalTransport{
-		Transport: cmdtest.Transport{Message: string(result), Status: http.StatusOK},
-		CondFunc: func(req *http.Request) bool {
-			called = true
-			return strings.HasSuffix(req.URL.Path, "/apps/motorbreath/restart") && req.Method == "POST"
-		},
-	}
-	client := cmd.NewClient(&http.Client{Transport: trans}, nil, manager)
-	command := AppRestart{}
-	command.Flags().Parse(true, []string{"-a", "motorbreath"})
-	err = command.Run(&context, client)
-	c.Assert(err, check.IsNil)
-	c.Assert(called, check.Equals, true)
-	c.Assert(stdout.String(), check.Equals, expectedOut)
-}
-
 func (s *S) TestAppRestartInfo(c *check.C) {
 	c.Assert((&AppRestart{}).Info(), check.NotNil)
 }
@@ -2716,39 +2652,6 @@ func (s *S) TestAddCName(c *check.C) {
 	command := CnameAdd{}
 	err := command.Flags().Parse(true, []string{"-a", "death", "death.evergrey.mycompany.com"})
 	c.Assert(err, check.IsNil)
-	context.Args = command.Flags().Args()
-	err = command.Run(&context, client)
-	c.Assert(err, check.IsNil)
-	c.Assert(called, check.Equals, true)
-	c.Assert(stdout.String(), check.Equals, "cname successfully defined.\n")
-}
-
-func (s *S) TestAddCNameWithoutTheFlag(c *check.C) {
-	var (
-		called         bool
-		stdout, stderr bytes.Buffer
-	)
-	context := cmd.Context{
-		Stdout: &stdout,
-		Stderr: &stderr,
-	}
-	trans := &cmdtest.ConditionalTransport{
-		Transport: cmdtest.Transport{Message: "Restarted", Status: http.StatusOK},
-		CondFunc: func(req *http.Request) bool {
-			called = true
-			cname := req.FormValue("cname") == "corey.evergrey.mycompany.com"
-			method := req.Method == "POST"
-			url := strings.HasSuffix(req.URL.Path, "/apps/corey/cname")
-			contentType := req.Header.Get("Content-Type") == "application/x-www-form-urlencoded"
-			return method && url && cname && contentType
-		},
-	}
-	client := cmd.NewClient(&http.Client{Transport: trans}, nil, manager)
-
-	command := &CnameAdd{}
-	err := command.Flags().Parse(true, []string{"corey.evergrey.mycompany.com", "-a", "corey"})
-	c.Assert(err, check.IsNil)
-
 	context.Args = command.Flags().Args()
 	err = command.Run(&context, client)
 	c.Assert(err, check.IsNil)
@@ -2878,35 +2781,6 @@ func (s *S) TestAppStart(c *check.C) {
 	c.Assert(stdout.String(), check.Equals, expectedOut)
 }
 
-func (s *S) TestAppStartWithoutTheFlag(c *check.C) {
-	var (
-		called         bool
-		stdout, stderr bytes.Buffer
-	)
-	context := cmd.Context{
-		Stdout: &stdout,
-		Stderr: &stderr,
-	}
-	expectedOut := "-- started --"
-	msg := io.SimpleJsonMessage{Message: expectedOut}
-	result, err := json.Marshal(msg)
-	c.Assert(err, check.IsNil)
-	trans := &cmdtest.ConditionalTransport{
-		Transport: cmdtest.Transport{Message: string(result), Status: http.StatusOK},
-		CondFunc: func(req *http.Request) bool {
-			called = true
-			return strings.HasSuffix(req.URL.Path, "/apps/motorbreath/start") && req.Method == "POST"
-		},
-	}
-	client := cmd.NewClient(&http.Client{Transport: trans}, nil, manager)
-	command := AppStart{}
-	command.Flags().Parse(true, []string{"-a", "motorbreath"})
-	err = command.Run(&context, client)
-	c.Assert(err, check.IsNil)
-	c.Assert(called, check.Equals, true)
-	c.Assert(stdout.String(), check.Equals, expectedOut)
-}
-
 func (s *S) TestAppStartIsAFlaggedCommand(c *check.C) {
 	var _ cmd.FlaggedCommand = &AppStart{}
 }
@@ -2966,35 +2840,6 @@ func (s *S) TestAppStop(c *check.C) {
 	client := cmd.NewClient(&http.Client{Transport: trans}, nil, manager)
 	command := AppStop{}
 	command.Flags().Parse(true, []string{"--app", "handful_of_nothing", "--process", "worker"})
-	err = command.Run(&context, client)
-	c.Assert(err, check.IsNil)
-	c.Assert(called, check.Equals, true)
-	c.Assert(stdout.String(), check.Equals, expectedOut)
-}
-
-func (s *S) TestAppStopWithoutTheFlag(c *check.C) {
-	var (
-		called         bool
-		stdout, stderr bytes.Buffer
-	)
-	context := cmd.Context{
-		Stdout: &stdout,
-		Stderr: &stderr,
-	}
-	expectedOut := "-- stopped --"
-	msg := io.SimpleJsonMessage{Message: expectedOut}
-	result, err := json.Marshal(msg)
-	c.Assert(err, check.IsNil)
-	trans := &cmdtest.ConditionalTransport{
-		Transport: cmdtest.Transport{Message: string(result), Status: http.StatusOK},
-		CondFunc: func(req *http.Request) bool {
-			called = true
-			return strings.HasSuffix(req.URL.Path, "/apps/motorbreath/stop") && req.Method == "POST"
-		},
-	}
-	client := cmd.NewClient(&http.Client{Transport: trans}, nil, manager)
-	command := AppStop{}
-	command.Flags().Parse(true, []string{"-a", "motorbreath"})
 	err = command.Run(&context, client)
 	c.Assert(err, check.IsNil)
 	c.Assert(called, check.Equals, true)

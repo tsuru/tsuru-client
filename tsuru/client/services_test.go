@@ -264,42 +264,6 @@ func (s *S) TestServiceInstanceBind(c *check.C) {
 	c.Assert(stdout.String(), check.Equals, expectedOut)
 }
 
-func (s *S) TestServiceInstanceBindWithoutFlag(c *check.C) {
-	var (
-		called         bool
-		stdout, stderr bytes.Buffer
-	)
-	ctx := cmd.Context{
-		Args:   []string{"mysql", "my-mysql"},
-		Stdout: &stdout,
-		Stderr: &stderr,
-	}
-	expectedOut := `["DATABASE_HOST","DATABASE_USER","DATABASE_PASSWORD"]`
-	msg := io.SimpleJsonMessage{Message: expectedOut}
-	result, err := json.Marshal(msg)
-	c.Assert(err, check.IsNil)
-	trans := &cmdtest.ConditionalTransport{
-		Transport: cmdtest.Transport{
-			Message: string(result),
-			Status:  http.StatusOK,
-		},
-		CondFunc: func(req *http.Request) bool {
-			called = true
-			method := req.Method == "PUT"
-			path := strings.HasSuffix(req.URL.Path, "/services/mysql/instances/my-mysql/ge")
-			noRestart := req.FormValue("noRestart") == "false"
-			return method && path && noRestart
-		},
-	}
-	client := cmd.NewClient(&http.Client{Transport: trans}, nil, manager)
-	cmd := &ServiceInstanceBind{}
-	cmd.Flags().Parse(true, []string{"-a", "ge"})
-	err = cmd.Run(&ctx, client)
-	c.Assert(err, check.IsNil)
-	c.Assert(called, check.Equals, true)
-	c.Assert(stdout.String(), check.Equals, expectedOut)
-}
-
 func (s *S) TestServiceInstanceBindWithoutEnvironmentVariables(c *check.C) {
 	var stdout, stderr bytes.Buffer
 	ctx := cmd.Context{
@@ -379,38 +343,6 @@ func (s *S) TestServiceInstanceUnbind(c *check.C) {
 	command := ServiceInstanceUnbind{}
 	command.Flags().Parse(true, []string{"-a", "pocket", "--no-restart", "--force"})
 	err = command.Run(&ctx, client)
-	c.Assert(err, check.IsNil)
-	c.Assert(called, check.Equals, true)
-	c.Assert(stdout.String(), check.Equals, expectedOut)
-}
-
-func (s *S) TestServiceInstanceUnbindWithoutFlag(c *check.C) {
-	var stdout, stderr bytes.Buffer
-	var called bool
-	ctx := cmd.Context{
-		Args:   []string{"service", "hand"},
-		Stdout: &stdout,
-		Stderr: &stderr,
-	}
-	expectedOut := `something`
-	msg := io.SimpleJsonMessage{Message: expectedOut}
-	result, err := json.Marshal(msg)
-	c.Assert(err, check.IsNil)
-	trans := &cmdtest.ConditionalTransport{
-		Transport: cmdtest.Transport{Message: string(result), Status: http.StatusOK},
-		CondFunc: func(req *http.Request) bool {
-			called = true
-			c.Assert(req.URL.Query().Get("noRestart"), check.Equals, "false")
-			c.Assert(req.URL.Query().Get("force"), check.Equals, "false")
-			c.Assert(req.URL.Path, check.Equals, "/1.0/services/service/instances/hand/sleeve")
-			c.Assert(req.Method, check.Equals, http.MethodDelete)
-			return true
-		},
-	}
-	client := cmd.NewClient(&http.Client{Transport: trans}, nil, manager)
-	cmd := &ServiceInstanceUnbind{}
-	cmd.Flags().Parse(true, []string{"-a", "sleeve"})
-	err = cmd.Run(&ctx, client)
 	c.Assert(err, check.IsNil)
 	c.Assert(called, check.Equals, true)
 	c.Assert(stdout.String(), check.Equals, expectedOut)
