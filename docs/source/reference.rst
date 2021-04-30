@@ -116,15 +116,8 @@ Authorization
 Applications
 ============
 
-Guessing application names
---------------------------
-
-Some application related commands that are described below have the optional
+All application related commands that are described below have the required
 parameter ``-a/--app``, used to specify the name of the application.
-
-If this parameter is omitted, tsuru will try to *guess* the application's name
-based on the git repository's configuration. It will try to find a remote labeled
-**tsuru**, and parse its URL.
 
 
 .. tsuru-command:: platform-list

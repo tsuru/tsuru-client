@@ -353,47 +353,6 @@ func (s *S) TestEnvSetValuesAndPrivateAndNoRestart(c *check.C) {
 	c.Assert(stdout.String(), check.Equals, expectedOut)
 }
 
-func (s *S) TestEnvSetWithoutFlag(c *check.C) {
-	var stdout, stderr bytes.Buffer
-	context := cmd.Context{
-		Args:   []string{"DATABASE_HOST=somehost", "DATABASE_USER=user"},
-		Stdout: &stdout,
-		Stderr: &stderr,
-	}
-	expectedOut := "variable(s) successfully exported\n"
-	msg := io.SimpleJsonMessage{Message: expectedOut}
-	result, err := json.Marshal(msg)
-	c.Assert(err, check.IsNil)
-	trans := &cmdtest.ConditionalTransport{
-		Transport: cmdtest.Transport{Message: string(result), Status: http.StatusOK},
-		CondFunc: func(req *http.Request) bool {
-			err = req.ParseForm()
-			c.Assert(err, check.IsNil)
-			var e apiTypes.Envs
-			dec := form.NewDecoder(nil)
-			dec.IgnoreUnknownKeys(true)
-			dec.UseJSONTags(false)
-			err = dec.DecodeValues(&e, req.Form)
-			c.Assert(err, check.IsNil)
-			private := !e.Private
-			noRestart := !e.NoRestart
-			path := strings.HasSuffix(req.URL.Path, "/apps/otherapp/env")
-			method := req.Method == "POST"
-			contentType := req.Header.Get("Content-Type") == "application/x-www-form-urlencoded"
-			return path && contentType && method && private && noRestart
-		},
-	}
-	client := cmd.NewClient(&http.Client{Transport: trans}, nil, manager)
-
-	cmd := &EnvSet{}
-	err = cmd.Flags().Parse(true, []string{"-a", "otherapp"})
-	c.Assert(err, check.IsNil)
-
-	err = cmd.Run(&context, client)
-	c.Assert(err, check.IsNil)
-	c.Assert(stdout.String(), check.Equals, expectedOut)
-}
-
 func (s *S) TestEnvSetInvalidParameters(c *check.C) {
 	var stdout, stderr bytes.Buffer
 	context := cmd.Context{
@@ -466,35 +425,6 @@ func (s *S) TestEnvUnsetWithNoRestartFlag(c *check.C) {
 	command := EnvUnset{}
 	command.Flags().Parse(true, []string{"-a", "someapp", "--no-restart"})
 	err = command.Run(&context, client)
-	c.Assert(err, check.IsNil)
-	c.Assert(stdout.String(), check.Equals, expectedOut)
-}
-
-func (s *S) TestEnvUnsetWithoutFlag(c *check.C) {
-	var stdout, stderr bytes.Buffer
-	context := cmd.Context{
-		Args:   []string{"DATABASE_HOST"},
-		Stdout: &stdout,
-		Stderr: &stderr,
-	}
-	expectedOut := "variable(s) successfully unset\n"
-	msg := io.SimpleJsonMessage{Message: expectedOut}
-	result, err := json.Marshal(msg)
-	c.Assert(err, check.IsNil)
-	trans := &cmdtest.ConditionalTransport{
-		Transport: cmdtest.Transport{Message: string(result), Status: http.StatusOK},
-		CondFunc: func(req *http.Request) bool {
-			path := strings.HasSuffix(req.URL.Path, "/apps/otherapp/env")
-			method := req.Method == http.MethodDelete
-			noRestart := req.URL.Query().Get("noRestart") == "false"
-			env := req.URL.Query().Get("env") == "DATABASE_HOST"
-			return path && method && noRestart && env
-		},
-	}
-	client := cmd.NewClient(&http.Client{Transport: trans}, nil, manager)
-	cmd := &EnvUnset{}
-	cmd.Flags().Parse(true, []string{"-a", "otherapp"})
-	err = cmd.Run(&context, client)
 	c.Assert(err, check.IsNil)
 	c.Assert(stdout.String(), check.Equals, expectedOut)
 }
