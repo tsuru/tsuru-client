@@ -5,6 +5,7 @@
 package client
 
 import (
+	"context"
 	"encoding/json"
 	"errors"
 	"fmt"
@@ -16,8 +17,11 @@ import (
 	"strings"
 
 	"github.com/ajg/form"
+	"github.com/antihax/optional"
 	osb "github.com/pmorie/go-open-service-broker-client/v2"
 	"github.com/tsuru/gnuflag"
+	tsuruClient "github.com/tsuru/go-tsuruclient/pkg/client"
+	"github.com/tsuru/go-tsuruclient/pkg/tsuru"
 	"github.com/tsuru/tablecli"
 	"github.com/tsuru/tsuru/cmd"
 	"github.com/tsuru/tsuru/service"
@@ -503,6 +507,62 @@ func (c *ServiceInfo) Info() *cmd.Info {
 to), and apps bound to these instances.`,
 		MinArgs: 1,
 	}
+}
+
+type ServicePlanList struct {
+	fs   *gnuflag.FlagSet
+	pool string
+}
+
+func (c *ServicePlanList) Info() *cmd.Info {
+	return &cmd.Info{
+		Name:    "service-plan-list",
+		Usage:   "service plan list <service-name> [-p/--pool pool]",
+		Desc:    `Displays a list of all plans of a given service.`,
+		MinArgs: 1,
+	}
+}
+
+func (c *ServicePlanList) Flags() *gnuflag.FlagSet {
+	if c.fs == nil {
+		flagDesc := "the pool used to fetch details (could be required if the service is a multi-cluster offering)"
+		c.fs = gnuflag.NewFlagSet("service-plan-list", gnuflag.ExitOnError)
+		c.fs.StringVar(&c.pool, "pool", "", flagDesc)
+		c.fs.StringVar(&c.pool, "p", "", flagDesc)
+	}
+	return c.fs
+}
+
+func (c *ServicePlanList) Run(ctx *cmd.Context, client *cmd.Client) error {
+	apiClient, err := tsuruClient.ClientFromEnvironment(&tsuru.Configuration{
+		HTTPClient: client.HTTPClient,
+	})
+	if err != nil {
+		return err
+	}
+	serviceName := ctx.Args[0]
+	plans, _, err := apiClient.ServiceApi.ServicePlans(context.Background(), serviceName, &tsuru.ServicePlansOpts{
+		Pool: optional.NewString(c.pool),
+	})
+	if err != nil {
+		return err
+	}
+
+	if c.pool == "" {
+		fmt.Fprintf(ctx.Stdout, "Plans for \"%s\"\n", serviceName)
+	} else {
+		fmt.Fprintf(ctx.Stdout, "Plans for \"%s\" in pool \"%s\"\n", serviceName, c.pool)
+	}
+
+	table := tablecli.NewTable()
+	table.LineSeparator = true
+	for _, plan := range plans {
+		data := []string{plan.Name, plan.Description}
+		table.AddRow(tablecli.Row(data))
+	}
+	table.Headers = tablecli.Row([]string{"Name", "Description"})
+	ctx.Stdout.Write(table.Bytes())
+	return nil
 }
 
 type ServiceInstanceModel struct {
