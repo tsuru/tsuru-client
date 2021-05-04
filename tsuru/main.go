@@ -197,7 +197,6 @@ func buildManager(name string) *cmd.Manager {
 	m.Register(&admin.RemoveNodeCmd{})
 	m.Register(&admin.UpdateNodeCmd{})
 	m.Register(&admin.ListNodesCmd{})
-	m.Register(&admin.DeleteNodeHealingConfigCmd{})
 	m.Register(&admin.GetNodeHealingConfigCmd{})
 	m.Register(&admin.SetNodeHealingConfigCmd{})
 	m.Register(&admin.DeleteNodeHealingConfigCmd{})
