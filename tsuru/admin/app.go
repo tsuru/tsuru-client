@@ -17,7 +17,7 @@ import (
 )
 
 type AppLockDelete struct {
-	cmd.GuessingCommand
+	cmd.AppNameMixIn
 	cmd.ConfirmationCommand
 	fs *gnuflag.FlagSet
 }
@@ -33,7 +33,7 @@ Use with caution, removing an active lock may cause inconsistencies.`,
 }
 
 func (c *AppLockDelete) Run(ctx *cmd.Context, client *cmd.Client) error {
-	appName, err := c.Guess()
+	appName, err := c.AppName()
 	if err != nil {
 		return err
 	}
@@ -59,7 +59,7 @@ func (c *AppLockDelete) Run(ctx *cmd.Context, client *cmd.Client) error {
 func (c *AppLockDelete) Flags() *gnuflag.FlagSet {
 	if c.fs == nil {
 		c.fs = cmd.MergeFlagSet(
-			c.GuessingCommand.Flags(),
+			c.AppNameMixIn.Flags(),
 			c.ConfirmationCommand.Flags(),
 		)
 	}
@@ -67,7 +67,7 @@ func (c *AppLockDelete) Flags() *gnuflag.FlagSet {
 }
 
 type AppRoutesRebuild struct {
-	cmd.GuessingCommand
+	cmd.AppNameMixIn
 }
 
 func (c *AppRoutesRebuild) Info() *cmd.Info {
@@ -87,7 +87,7 @@ type compatibleRebuildResult struct {
 }
 
 func (c *AppRoutesRebuild) Run(ctx *cmd.Context, client *cmd.Client) error {
-	appName, err := c.Guess()
+	appName, err := c.AppName()
 	if err != nil {
 		return err
 	}

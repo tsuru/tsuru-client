@@ -27,7 +27,7 @@ func (i *int32Value) Get() interface{} { return int32(*i) }
 func (i *int32Value) String() string   { return fmt.Sprintf("%v", *i) }
 
 type AutoScaleSet struct {
-	cmd.GuessingCommand
+	cmd.AppNameMixIn
 	fs        *gnuflag.FlagSet
 	autoscale tsuru.AutoScaleSpec
 }
@@ -44,7 +44,7 @@ func (c *AutoScaleSet) Info() *cmd.Info {
 
 func (c *AutoScaleSet) Flags() *gnuflag.FlagSet {
 	if c.fs == nil {
-		c.fs = c.GuessingCommand.Flags()
+		c.fs = c.AppNameMixIn.Flags()
 
 		c.fs.StringVar(&c.autoscale.Process, "process", "", "Process name")
 		c.fs.StringVar(&c.autoscale.Process, "p", "", "Process name")
@@ -66,7 +66,7 @@ func (c *AutoScaleSet) Run(ctx *cmd.Context, cli *cmd.Client) error {
 	if err != nil {
 		return err
 	}
-	appName, err := c.Guess()
+	appName, err := c.AppName()
 	if err != nil {
 		return err
 	}
@@ -89,7 +89,7 @@ func (c *AutoScaleSet) Run(ctx *cmd.Context, cli *cmd.Client) error {
 }
 
 type AutoScaleUnset struct {
-	cmd.GuessingCommand
+	cmd.AppNameMixIn
 	fs      *gnuflag.FlagSet
 	process string
 }
@@ -106,7 +106,7 @@ func (c *AutoScaleUnset) Info() *cmd.Info {
 
 func (c *AutoScaleUnset) Flags() *gnuflag.FlagSet {
 	if c.fs == nil {
-		c.fs = c.GuessingCommand.Flags()
+		c.fs = c.AppNameMixIn.Flags()
 		c.fs.StringVar(&c.process, "process", "", "Process name")
 		c.fs.StringVar(&c.process, "p", "", "Process name")
 	}
@@ -120,7 +120,7 @@ func (c *AutoScaleUnset) Run(ctx *cmd.Context, cli *cmd.Client) error {
 	if err != nil {
 		return err
 	}
-	appName, err := c.Guess()
+	appName, err := c.AppName()
 	if err != nil {
 		return err
 	}

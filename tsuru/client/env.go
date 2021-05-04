@@ -35,7 +35,7 @@ Example:
   tsuru env-set NAME=value OTHER_NAME="value with spaces" ANOTHER_NAME='using single quotes' -p`
 
 type EnvGet struct {
-	cmd.GuessingCommand
+	cmd.AppNameMixIn
 }
 
 func (c *EnvGet) Info() *cmd.Info {
@@ -48,7 +48,7 @@ func (c *EnvGet) Info() *cmd.Info {
 }
 
 func (c *EnvGet) Run(context *cmd.Context, client *cmd.Client) error {
-	b, err := requestEnvGetURL(c.GuessingCommand, context.Args, client)
+	b, err := requestEnvGetURL(c.AppNameMixIn, context.Args, client)
 	if err != nil {
 		return err
 	}
@@ -71,7 +71,7 @@ func (c *EnvGet) Run(context *cmd.Context, client *cmd.Client) error {
 }
 
 type EnvSet struct {
-	cmd.GuessingCommand
+	cmd.AppNameMixIn
 	fs        *gnuflag.FlagSet
 	private   bool
 	noRestart bool
@@ -88,7 +88,7 @@ func (c *EnvSet) Info() *cmd.Info {
 
 func (c *EnvSet) Run(context *cmd.Context, client *cmd.Client) error {
 	context.RawOutput()
-	appName, err := c.Guess()
+	appName, err := c.AppName()
 	if err != nil {
 		return err
 	}
@@ -131,7 +131,7 @@ func (c *EnvSet) Run(context *cmd.Context, client *cmd.Client) error {
 
 func (c *EnvSet) Flags() *gnuflag.FlagSet {
 	if c.fs == nil {
-		c.fs = c.GuessingCommand.Flags()
+		c.fs = c.AppNameMixIn.Flags()
 		c.fs.BoolVar(&c.private, "private", false, "Private environment variables")
 		c.fs.BoolVar(&c.private, "p", false, "Private environment variables")
 		c.fs.BoolVar(&c.noRestart, "no-restart", false, "Sets environment varibles without restart the application")
@@ -140,14 +140,14 @@ func (c *EnvSet) Flags() *gnuflag.FlagSet {
 }
 
 type EnvUnset struct {
-	cmd.GuessingCommand
+	cmd.AppNameMixIn
 	fs        *gnuflag.FlagSet
 	noRestart bool
 }
 
 func (c *EnvUnset) Flags() *gnuflag.FlagSet {
 	if c.fs == nil {
-		c.fs = c.GuessingCommand.Flags()
+		c.fs = c.AppNameMixIn.Flags()
 		c.fs.BoolVar(&c.noRestart, "no-restart", false, "Unset environment variables without restart the application")
 	}
 	return c.fs
@@ -164,7 +164,7 @@ func (c *EnvUnset) Info() *cmd.Info {
 
 func (c *EnvUnset) Run(context *cmd.Context, client *cmd.Client) error {
 	context.RawOutput()
-	appName, err := c.Guess()
+	appName, err := c.AppName()
 	if err != nil {
 		return err
 	}
@@ -188,8 +188,8 @@ func (c *EnvUnset) Run(context *cmd.Context, client *cmd.Client) error {
 	return cmd.StreamJSONResponse(context.Stdout, response)
 }
 
-func requestEnvGetURL(g cmd.GuessingCommand, args []string, client *cmd.Client) ([]byte, error) {
-	appName, err := g.Guess()
+func requestEnvGetURL(g cmd.AppNameMixIn, args []string, client *cmd.Client) ([]byte, error) {
+	appName, err := g.AppName()
 	if err != nil {
 		return nil, err
 	}

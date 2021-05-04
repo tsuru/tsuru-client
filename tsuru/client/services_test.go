@@ -292,8 +292,9 @@ func (s *S) TestServiceInstanceBindWithoutFlag(c *check.C) {
 		},
 	}
 	client := cmd.NewClient(&http.Client{Transport: trans}, nil, manager)
-	fake := &cmdtest.FakeGuesser{Name: "ge"}
-	err = (&ServiceInstanceBind{GuessingCommand: cmd.GuessingCommand{G: fake}}).Run(&ctx, client)
+	cmd := &ServiceInstanceBind{}
+	cmd.Flags().Parse(true, []string{"-a", "ge"})
+	err = cmd.Run(&ctx, client)
 	c.Assert(err, check.IsNil)
 	c.Assert(called, check.Equals, true)
 	c.Assert(stdout.String(), check.Equals, expectedOut)
@@ -407,8 +408,9 @@ func (s *S) TestServiceInstanceUnbindWithoutFlag(c *check.C) {
 		},
 	}
 	client := cmd.NewClient(&http.Client{Transport: trans}, nil, manager)
-	fake := &cmdtest.FakeGuesser{Name: "sleeve"}
-	err = (&ServiceInstanceUnbind{GuessingCommand: cmd.GuessingCommand{G: fake}}).Run(&ctx, client)
+	cmd := &ServiceInstanceUnbind{}
+	cmd.Flags().Parse(true, []string{"-a", "sleeve"})
+	err = cmd.Run(&ctx, client)
 	c.Assert(err, check.IsNil)
 	c.Assert(called, check.Equals, true)
 	c.Assert(stdout.String(), check.Equals, expectedOut)

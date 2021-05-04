@@ -182,9 +182,6 @@ func (s *S) TestServiceInstanceInfoIsRegistered(c *check.C) {
 	info, ok := manager.Commands["service-instance-info"]
 	c.Assert(ok, check.Equals, true)
 	c.Assert(info, check.FitsTypeOf, client.ServiceInstanceInfo{})
-	status, ok := manager.Commands["service-instance-status"]
-	c.Assert(ok, check.Equals, true)
-	c.Assert(status, check.FitsTypeOf, &cmd.DeprecatedCommand{})
 }
 
 func (s *S) TestServiceInfoIsRegistered(c *check.C) {
@@ -432,9 +429,6 @@ func (s *S) TestNodeAddIsRegistered(c *check.C) {
 	change, ok := manager.Commands["node-add"]
 	c.Assert(ok, check.Equals, true)
 	c.Assert(change, check.FitsTypeOf, &admin.AddNodeCmd{})
-	change, ok = manager.Commands["docker-node-add"]
-	c.Assert(ok, check.Equals, true)
-	c.Assert(change, check.FitsTypeOf, &cmd.DeprecatedCommand{})
 }
 
 func (s *S) TestNodeRemoveIsRegistered(c *check.C) {
@@ -442,9 +436,6 @@ func (s *S) TestNodeRemoveIsRegistered(c *check.C) {
 	change, ok := manager.Commands["node-remove"]
 	c.Assert(ok, check.Equals, true)
 	c.Assert(change, check.FitsTypeOf, &admin.RemoveNodeCmd{})
-	change, ok = manager.Commands["docker-node-remove"]
-	c.Assert(ok, check.Equals, true)
-	c.Assert(change, check.FitsTypeOf, &cmd.DeprecatedCommand{})
 }
 
 func (s *S) TestNodeUpdateIsRegistered(c *check.C) {
@@ -452,9 +443,6 @@ func (s *S) TestNodeUpdateIsRegistered(c *check.C) {
 	change, ok := manager.Commands["node-update"]
 	c.Assert(ok, check.Equals, true)
 	c.Assert(change, check.FitsTypeOf, &admin.UpdateNodeCmd{})
-	change, ok = manager.Commands["docker-node-update"]
-	c.Assert(ok, check.Equals, true)
-	c.Assert(change, check.FitsTypeOf, &cmd.DeprecatedCommand{})
 }
 
 func (s *S) TestNodeListIsRegistered(c *check.C) {
@@ -462,9 +450,6 @@ func (s *S) TestNodeListIsRegistered(c *check.C) {
 	change, ok := manager.Commands["node-list"]
 	c.Assert(ok, check.Equals, true)
 	c.Assert(change, check.FitsTypeOf, &admin.ListNodesCmd{})
-	change, ok = manager.Commands["docker-node-list"]
-	c.Assert(ok, check.Equals, true)
-	c.Assert(change, check.FitsTypeOf, &cmd.DeprecatedCommand{})
 }
 
 func (s *S) TestNodeHealingInfoIsRegistered(c *check.C) {
@@ -472,9 +457,6 @@ func (s *S) TestNodeHealingInfoIsRegistered(c *check.C) {
 	change, ok := manager.Commands["node-healing-info"]
 	c.Assert(ok, check.Equals, true)
 	c.Assert(change, check.FitsTypeOf, &admin.GetNodeHealingConfigCmd{})
-	change, ok = manager.Commands["docker-healing-info"]
-	c.Assert(ok, check.Equals, true)
-	c.Assert(change, check.FitsTypeOf, &cmd.DeprecatedCommand{})
 }
 
 func (s *S) TestNodeHealingUpdateIsRegistered(c *check.C) {
@@ -482,9 +464,6 @@ func (s *S) TestNodeHealingUpdateIsRegistered(c *check.C) {
 	change, ok := manager.Commands["node-healing-update"]
 	c.Assert(ok, check.Equals, true)
 	c.Assert(change, check.FitsTypeOf, &admin.SetNodeHealingConfigCmd{})
-	change, ok = manager.Commands["docker-healing-update"]
-	c.Assert(ok, check.Equals, true)
-	c.Assert(change, check.FitsTypeOf, &cmd.DeprecatedCommand{})
 }
 
 func (s *S) TestNodeHealingDeleteIsRegistered(c *check.C) {
@@ -492,9 +471,6 @@ func (s *S) TestNodeHealingDeleteIsRegistered(c *check.C) {
 	change, ok := manager.Commands["node-healing-delete"]
 	c.Assert(ok, check.Equals, true)
 	c.Assert(change, check.FitsTypeOf, &admin.DeleteNodeHealingConfigCmd{})
-	change, ok = manager.Commands["docker-healing-delete"]
-	c.Assert(ok, check.Equals, true)
-	c.Assert(change, check.FitsTypeOf, &cmd.DeprecatedCommand{})
 }
 
 func (s *S) TestNodeRebalanceIsRegistered(c *check.C) {
@@ -502,9 +478,6 @@ func (s *S) TestNodeRebalanceIsRegistered(c *check.C) {
 	change, ok := manager.Commands["node-rebalance"]
 	c.Assert(ok, check.Equals, true)
 	c.Assert(change, check.FitsTypeOf, &admin.RebalanceNodeCmd{})
-	change, ok = manager.Commands["containers-rebalance"]
-	c.Assert(ok, check.Equals, true)
-	c.Assert(change, check.FitsTypeOf, &cmd.DeprecatedCommand{})
 }
 
 func (s *S) TestServiceCreateIsRegistered(c *check.C) {

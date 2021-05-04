@@ -249,7 +249,7 @@ func (c *RouterInfo) Run(ctx *cmd.Context, cli *cmd.Client) error {
 }
 
 type AppRoutersList struct {
-	cmd.GuessingCommand
+	cmd.AppNameMixIn
 }
 
 func (c *AppRoutersList) Info() *cmd.Info {
@@ -262,7 +262,7 @@ func (c *AppRoutersList) Info() *cmd.Info {
 }
 
 func (c *AppRoutersList) Run(context *cmd.Context, client *cmd.Client) error {
-	appName, err := c.Guess()
+	appName, err := c.AppName()
 	if err != nil {
 		return err
 	}
@@ -323,7 +323,7 @@ func renderRouters(routers []appTypes.AppRouter, out io.Writer, idColumn string)
 }
 
 type AppRoutersAdd struct {
-	cmd.GuessingCommand
+	cmd.AppNameMixIn
 	opts cmd.MapFlag
 	fs   *gnuflag.FlagSet
 }
@@ -340,7 +340,7 @@ func (c *AppRoutersAdd) Info() *cmd.Info {
 
 func (c *AppRoutersAdd) Flags() *gnuflag.FlagSet {
 	if c.fs == nil {
-		c.fs = c.GuessingCommand.Flags()
+		c.fs = c.AppNameMixIn.Flags()
 		optsMessage := "Custom options sent directly to router implementation."
 		c.fs.Var(&c.opts, "o", optsMessage)
 		c.fs.Var(&c.opts, "opts", optsMessage)
@@ -349,7 +349,7 @@ func (c *AppRoutersAdd) Flags() *gnuflag.FlagSet {
 }
 
 func (c *AppRoutersAdd) Run(context *cmd.Context, client *cmd.Client) error {
-	appName, err := c.Guess()
+	appName, err := c.AppName()
 	if err != nil {
 		return err
 	}
@@ -379,7 +379,7 @@ func (c *AppRoutersAdd) Run(context *cmd.Context, client *cmd.Client) error {
 }
 
 type AppRoutersUpdate struct {
-	cmd.GuessingCommand
+	cmd.AppNameMixIn
 	opts cmd.MapFlag
 	fs   *gnuflag.FlagSet
 }
@@ -396,7 +396,7 @@ func (c *AppRoutersUpdate) Info() *cmd.Info {
 
 func (c *AppRoutersUpdate) Flags() *gnuflag.FlagSet {
 	if c.fs == nil {
-		c.fs = c.GuessingCommand.Flags()
+		c.fs = c.AppNameMixIn.Flags()
 		optsMessage := "Custom options sent directly to router implementation."
 		c.fs.Var(&c.opts, "o", optsMessage)
 		c.fs.Var(&c.opts, "opts", optsMessage)
@@ -405,7 +405,7 @@ func (c *AppRoutersUpdate) Flags() *gnuflag.FlagSet {
 }
 
 func (c *AppRoutersUpdate) Run(context *cmd.Context, client *cmd.Client) error {
-	appName, err := c.Guess()
+	appName, err := c.AppName()
 	if err != nil {
 		return err
 	}
@@ -436,7 +436,7 @@ func (c *AppRoutersUpdate) Run(context *cmd.Context, client *cmd.Client) error {
 }
 
 type AppRoutersRemove struct {
-	cmd.GuessingCommand
+	cmd.AppNameMixIn
 }
 
 func (c *AppRoutersRemove) Info() *cmd.Info {
@@ -450,7 +450,7 @@ func (c *AppRoutersRemove) Info() *cmd.Info {
 }
 
 func (c *AppRoutersRemove) Run(context *cmd.Context, client *cmd.Client) error {
-	appName, err := c.Guess()
+	appName, err := c.AppName()
 	if err != nil {
 		return err
 	}
@@ -471,12 +471,12 @@ func (c *AppRoutersRemove) Run(context *cmd.Context, client *cmd.Client) error {
 }
 
 type appVersionRouterBase struct {
-	cmd.GuessingCommand
+	cmd.AppNameMixIn
 	routable bool
 }
 
 func (c *appVersionRouterBase) Run(ctx *cmd.Context, cli *cmd.Client) error {
-	appName, err := c.Guess()
+	appName, err := c.AppName()
 	if err != nil {
 		return err
 	}

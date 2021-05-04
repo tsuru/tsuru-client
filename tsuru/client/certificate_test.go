@@ -41,10 +41,8 @@ func (s *S) TestCertificateSetRunSuccessfully(c *check.C) {
 		},
 	}
 	client := cmd.NewClient(&http.Client{Transport: trans}, nil, manager)
-	fake := cmdtest.FakeGuesser{Name: "secret"}
-	guessCommand := cmd.GuessingCommand{G: &fake}
-	command := CertificateSet{GuessingCommand: guessCommand}
-	command.Flags().Parse(true, []string{"-c", "app.io"})
+	command := CertificateSet{}
+	command.Flags().Parse(true, []string{"-c", "app.io", "-a", "secret"})
 	c.Assert(command.cname, check.Equals, "app.io")
 	err := command.Run(&context, client)
 	c.Assert(err, check.IsNil)
@@ -63,10 +61,8 @@ func (s *S) TestCertificateSetRunCerticateNotFound(c *check.C) {
 	}
 	trans := &cmdtest.Transport{Status: http.StatusOK}
 	client := cmd.NewClient(&http.Client{Transport: trans}, nil, manager)
-	fake := cmdtest.FakeGuesser{Name: "secret"}
-	guessCommand := cmd.GuessingCommand{G: &fake}
-	command := CertificateSet{GuessingCommand: guessCommand}
-	command.Flags().Parse(true, []string{"-c", "app.io"})
+	command := CertificateSet{}
+	command.Flags().Parse(true, []string{"-c", "app.io", "-a", "secret"})
 	c.Assert(command.cname, check.Equals, "app.io")
 	err := command.Run(&context, client)
 	c.Assert(os.IsNotExist(err), check.Equals, true)
@@ -92,10 +88,8 @@ func (s *S) TestCertificateUnsetRunSuccessfully(c *check.C) {
 		},
 	}
 	client := cmd.NewClient(&http.Client{Transport: trans}, nil, manager)
-	fake := cmdtest.FakeGuesser{Name: "secret"}
-	guessCommand := cmd.GuessingCommand{G: &fake}
-	command := CertificateUnset{GuessingCommand: guessCommand}
-	command.Flags().Parse(true, []string{"-c", "app.io"})
+	command := CertificateUnset{}
+	command.Flags().Parse(true, []string{"-c", "app.io", "-a", "secret"})
 	c.Assert(command.cname, check.Equals, "app.io")
 	err := command.Run(&context, client)
 	c.Assert(err, check.IsNil)
@@ -160,10 +154,8 @@ func (s *S) TestCertificateListRunSuccessfully(c *check.C) {
 		},
 	}
 	client := cmd.NewClient(&http.Client{Transport: trans}, nil, manager)
-	fake := cmdtest.FakeGuesser{Name: "myapp"}
-	guessCommand := cmd.GuessingCommand{G: &fake}
-	command := CertificateList{GuessingCommand: guessCommand}
-	command.Flags().Parse(true, []string{})
+	command := CertificateList{}
+	command.Flags().Parse(true, []string{"-a", "myapp"})
 	err = command.Run(&context, client)
 	c.Assert(err, check.IsNil)
 	c.Assert(stdout.String(), check.Equals, expected)
@@ -199,10 +191,8 @@ func (s *S) TestCertificateListRawRunSuccessfully(c *check.C) {
 		},
 	}
 	client := cmd.NewClient(&http.Client{Transport: trans}, nil, manager)
-	fake := cmdtest.FakeGuesser{Name: "myapp"}
-	guessCommand := cmd.GuessingCommand{G: &fake}
-	command := CertificateList{GuessingCommand: guessCommand}
-	command.Flags().Parse(true, []string{"-r"})
+	command := CertificateList{}
+	command.Flags().Parse(true, []string{"-r", "-a", "myapp"})
 	err = command.Run(&context, client)
 	c.Assert(err, check.IsNil)
 	c.Assert(strings.Contains(stdout.String(), "myapp.other.io:\nNo certificate."), check.Equals, true)

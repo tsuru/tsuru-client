@@ -116,9 +116,8 @@ func (s *S) TestAppLogWithoutTheFlag(c *check.C) {
 		Stdout: &stdout,
 		Stderr: &stderr,
 	}
-	fake := &cmdtest.FakeGuesser{Name: "hitthelights"}
-	command := AppLog{GuessingCommand: cmd.GuessingCommand{G: fake}}
-	command.Flags().Parse(true, nil)
+	command := AppLog{}
+	command.Flags().Parse(true, []string{"-a", "hitthelights"})
 	trans := &cmdtest.ConditionalTransport{
 		Transport: cmdtest.Transport{Message: string(result), Status: http.StatusOK},
 		CondFunc: func(req *http.Request) bool {
@@ -167,9 +166,8 @@ func (s *S) TestAppLogBySource(c *check.C) {
 		Stdout: &stdout,
 		Stderr: &stderr,
 	}
-	fake := &cmdtest.FakeGuesser{Name: "hitthelights"}
-	command := AppLog{GuessingCommand: cmd.GuessingCommand{G: fake}}
-	command.Flags().Parse(true, []string{"--source", "mysource"})
+	command := AppLog{}
+	command.Flags().Parse(true, []string{"--source", "mysource", "-a", "hitthelights"})
 	trans := &cmdtest.ConditionalTransport{
 		Transport: cmdtest.Transport{Message: string(result), Status: http.StatusOK},
 		CondFunc: func(req *http.Request) bool {
@@ -199,9 +197,8 @@ func (s *S) TestAppLogByUnit(c *check.C) {
 		Stdout: &stdout,
 		Stderr: &stderr,
 	}
-	fake := &cmdtest.FakeGuesser{Name: "hitthelights"}
-	command := AppLog{GuessingCommand: cmd.GuessingCommand{G: fake}}
-	command.Flags().Parse(true, []string{"--unit", "api"})
+	command := AppLog{}
+	command.Flags().Parse(true, []string{"--unit", "api", "-a", "hitthelights"})
 	trans := &cmdtest.ConditionalTransport{
 		Transport: cmdtest.Transport{Message: string(result), Status: http.StatusOK},
 		CondFunc: func(req *http.Request) bool {
@@ -231,9 +228,8 @@ func (s *S) TestAppLogWithLines(c *check.C) {
 		Stdout: &stdout,
 		Stderr: &stderr,
 	}
-	fake := &cmdtest.FakeGuesser{Name: "hitthelights"}
-	command := AppLog{GuessingCommand: cmd.GuessingCommand{G: fake}}
-	command.Flags().Parse(true, []string{"--lines", "12"})
+	command := AppLog{}
+	command.Flags().Parse(true, []string{"--lines", "12", "-a", "hitthelights"})
 	trans := &cmdtest.ConditionalTransport{
 		Transport: cmdtest.Transport{Message: string(result), Status: http.StatusOK},
 		CondFunc: func(req *http.Request) bool {
@@ -263,9 +259,8 @@ func (s *S) TestAppLogWithFollow(c *check.C) {
 		Stdout: &stdout,
 		Stderr: &stderr,
 	}
-	fake := &cmdtest.FakeGuesser{Name: "hitthelights"}
-	command := AppLog{GuessingCommand: cmd.GuessingCommand{G: fake}}
-	command.Flags().Parse(true, []string{"--lines", "12", "-f"})
+	command := AppLog{}
+	command.Flags().Parse(true, []string{"--lines", "12", "-f", "-a", "hitthelights"})
 	trans := &cmdtest.ConditionalTransport{
 		Transport: cmdtest.Transport{Message: string(result), Status: http.StatusOK},
 		CondFunc: func(req *http.Request) bool {
@@ -294,9 +289,8 @@ func (s *S) TestAppLogWithNoDateAndNoSource(c *check.C) {
 		Stdout: &stdout,
 		Stderr: &stderr,
 	}
-	fake := &cmdtest.FakeGuesser{Name: "hitthelights"}
-	command := AppLog{GuessingCommand: cmd.GuessingCommand{G: fake}}
-	command.Flags().Parse(true, []string{"--lines", "12", "-f", "--no-date", "--no-source"})
+	command := AppLog{}
+	command.Flags().Parse(true, []string{"--lines", "12", "-f", "--no-date", "--no-source", "-a", "hitthelights"})
 	trans := &cmdtest.ConditionalTransport{
 		Transport: cmdtest.Transport{Message: string(result), Status: http.StatusOK},
 		CondFunc: func(req *http.Request) bool {
@@ -326,9 +320,8 @@ func (s *S) TestAppLogWithNoSource(c *check.C) {
 		Stdout: &stdout,
 		Stderr: &stderr,
 	}
-	fake := &cmdtest.FakeGuesser{Name: "hitthelights"}
-	command := AppLog{GuessingCommand: cmd.GuessingCommand{G: fake}}
-	command.Flags().Parse(true, []string{"--lines", "12", "-f", "--no-source"})
+	command := AppLog{}
+	command.Flags().Parse(true, []string{"--lines", "12", "-f", "--no-source", "-a", "hitthelights"})
 	trans := &cmdtest.ConditionalTransport{
 		Transport: cmdtest.Transport{Message: string(result), Status: http.StatusOK},
 		CondFunc: func(req *http.Request) bool {

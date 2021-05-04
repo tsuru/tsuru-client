@@ -214,7 +214,7 @@ func (c *AppCreate) Run(context *cmd.Context, client *cmd.Client) error {
 type AppUpdate struct {
 	args tsuru.UpdateApp
 	fs   *gnuflag.FlagSet
-	cmd.GuessingCommand
+	cmd.AppNameMixIn
 	cmd.ConfirmationCommand
 
 	memory, cpu string
@@ -257,7 +257,7 @@ func (c *AppUpdate) Flags() *gnuflag.FlagSet {
 		flagSet.StringVar(&c.cpu, "cpu", "", "CPU limit for app, this will override the plan cpu value. One cpu is equivalent to 1 vCPU/Core, fractional requests are allowed and the expression 0.1 is equivalent to the expression 100m")
 		flagSet.StringVar(&c.memory, "memory", "", "Memory limit for app, this will override the plan memory value. You can express memory as a bytes integer or using one of these suffixes: E, P, T, G, M, K, Ei, Pi, Ti, Gi, Mi, Ki")
 		c.fs = cmd.MergeFlagSet(
-			c.GuessingCommand.Flags(),
+			c.AppNameMixIn.Flags(),
 			flagSet,
 		)
 	}
@@ -313,7 +313,7 @@ func (c *AppUpdate) Run(ctx *cmd.Context, cli *cmd.Client) error {
 }
 
 type AppRemove struct {
-	cmd.GuessingCommand
+	cmd.AppNameMixIn
 	cmd.ConfirmationCommand
 	fs *gnuflag.FlagSet
 }
@@ -358,7 +358,7 @@ func (c *AppRemove) Run(context *cmd.Context, client *cmd.Client) error {
 func (c *AppRemove) Flags() *gnuflag.FlagSet {
 	if c.fs == nil {
 		c.fs = cmd.MergeFlagSet(
-			c.GuessingCommand.Flags(),
+			c.AppNameMixIn.Flags(),
 			c.ConfirmationCommand.Flags(),
 		)
 	}
@@ -366,7 +366,7 @@ func (c *AppRemove) Flags() *gnuflag.FlagSet {
 }
 
 type AppInfo struct {
-	cmd.GuessingCommand
+	cmd.AppNameMixIn
 }
 
 func (c *AppInfo) Info() *cmd.Info {
@@ -381,7 +381,7 @@ see information about it.`,
 }
 
 func (c *AppInfo) Run(context *cmd.Context, client *cmd.Client) error {
-	appName, err := c.Guess()
+	appName, err := c.AppName()
 	if err != nil {
 		return err
 	}
@@ -905,7 +905,7 @@ func (c *AppInfo) Show(a *app, context *cmd.Context) error {
 }
 
 type AppGrant struct {
-	cmd.GuessingCommand
+	cmd.AppNameMixIn
 }
 
 func (c *AppGrant) Info() *cmd.Info {
@@ -920,7 +920,7 @@ app to a team.`,
 }
 
 func (c *AppGrant) Run(context *cmd.Context, client *cmd.Client) error {
-	appName, err := c.Guess()
+	appName, err := c.AppName()
 	if err != nil {
 		return err
 	}
@@ -942,7 +942,7 @@ func (c *AppGrant) Run(context *cmd.Context, client *cmd.Client) error {
 }
 
 type AppRevoke struct {
-	cmd.GuessingCommand
+	cmd.AppNameMixIn
 }
 
 func (c *AppRevoke) Info() *cmd.Info {
@@ -959,7 +959,7 @@ authorized team.`,
 }
 
 func (c *AppRevoke) Run(context *cmd.Context, client *cmd.Client) error {
-	appName, err := c.Guess()
+	appName, err := c.AppName()
 	if err != nil {
 		return err
 	}
@@ -1163,7 +1163,7 @@ Flags can be used to filter the list of applications.`,
 }
 
 type AppStop struct {
-	cmd.GuessingCommand
+	cmd.AppNameMixIn
 	process string
 	version string
 	fs      *gnuflag.FlagSet
@@ -1180,7 +1180,7 @@ func (c *AppStop) Info() *cmd.Info {
 
 func (c *AppStop) Run(context *cmd.Context, client *cmd.Client) error {
 	context.RawOutput()
-	appName, err := c.Guess()
+	appName, err := c.AppName()
 	if err != nil {
 		return err
 	}
@@ -1206,7 +1206,7 @@ func (c *AppStop) Run(context *cmd.Context, client *cmd.Client) error {
 
 func (c *AppStop) Flags() *gnuflag.FlagSet {
 	if c.fs == nil {
-		c.fs = c.GuessingCommand.Flags()
+		c.fs = c.AppNameMixIn.Flags()
 		c.fs.StringVar(&c.process, "process", "", "Process name")
 		c.fs.StringVar(&c.process, "p", "", "Process name")
 		c.fs.StringVar(&c.version, "version", "", "Version number")
@@ -1215,7 +1215,7 @@ func (c *AppStop) Flags() *gnuflag.FlagSet {
 }
 
 type AppStart struct {
-	cmd.GuessingCommand
+	cmd.AppNameMixIn
 	process string
 	version string
 	fs      *gnuflag.FlagSet
@@ -1232,7 +1232,7 @@ func (c *AppStart) Info() *cmd.Info {
 
 func (c *AppStart) Run(context *cmd.Context, client *cmd.Client) error {
 	context.RawOutput()
-	appName, err := c.Guess()
+	appName, err := c.AppName()
 	if err != nil {
 		return err
 	}
@@ -1258,7 +1258,7 @@ func (c *AppStart) Run(context *cmd.Context, client *cmd.Client) error {
 
 func (c *AppStart) Flags() *gnuflag.FlagSet {
 	if c.fs == nil {
-		c.fs = c.GuessingCommand.Flags()
+		c.fs = c.AppNameMixIn.Flags()
 		c.fs.StringVar(&c.process, "process", "", "Process name")
 		c.fs.StringVar(&c.process, "p", "", "Process name")
 		c.fs.StringVar(&c.version, "version", "", "Version number")
@@ -1267,7 +1267,7 @@ func (c *AppStart) Flags() *gnuflag.FlagSet {
 }
 
 type AppRestart struct {
-	cmd.GuessingCommand
+	cmd.AppNameMixIn
 	process string
 	version string
 	fs      *gnuflag.FlagSet
@@ -1275,7 +1275,7 @@ type AppRestart struct {
 
 func (c *AppRestart) Run(context *cmd.Context, client *cmd.Client) error {
 	context.RawOutput()
-	appName, err := c.Guess()
+	appName, err := c.AppName()
 	if err != nil {
 		return err
 	}
@@ -1310,7 +1310,7 @@ func (c *AppRestart) Info() *cmd.Info {
 
 func (c *AppRestart) Flags() *gnuflag.FlagSet {
 	if c.fs == nil {
-		c.fs = c.GuessingCommand.Flags()
+		c.fs = c.AppNameMixIn.Flags()
 		c.fs.StringVar(&c.process, "process", "", "Process name")
 		c.fs.StringVar(&c.process, "p", "", "Process name")
 		c.fs.StringVar(&c.version, "version", "", "Version number")
@@ -1319,11 +1319,11 @@ func (c *AppRestart) Flags() *gnuflag.FlagSet {
 }
 
 type CnameAdd struct {
-	cmd.GuessingCommand
+	cmd.AppNameMixIn
 }
 
 func (c *CnameAdd) Run(context *cmd.Context, client *cmd.Client) error {
-	err := addCName(context.Args, c.GuessingCommand, client)
+	err := addCName(context.Args, c.AppNameMixIn, client)
 	if err != nil {
 		return err
 	}
@@ -1344,11 +1344,11 @@ register. Once the app contains a custom CNAME, it will be displayed by "app lis
 }
 
 type CnameRemove struct {
-	cmd.GuessingCommand
+	cmd.AppNameMixIn
 }
 
 func (c *CnameRemove) Run(context *cmd.Context, client *cmd.Client) error {
-	err := unsetCName(context.Args, c.GuessingCommand, client)
+	err := unsetCName(context.Args, c.AppNameMixIn, client)
 	if err != nil {
 		return err
 	}
@@ -1368,8 +1368,8 @@ After unsetting the CNAME from the app, [[tsuru app list]] and [[tsuru app info]
 	}
 }
 
-func unsetCName(cnames []string, g cmd.GuessingCommand, client *cmd.Client) error {
-	appName, err := g.Guess()
+func unsetCName(cnames []string, g cmd.AppNameMixIn, client *cmd.Client) error {
+	appName, err := g.AppName()
 	if err != nil {
 		return err
 	}
@@ -1389,8 +1389,8 @@ func unsetCName(cnames []string, g cmd.GuessingCommand, client *cmd.Client) erro
 	return err
 }
 
-func addCName(cnames []string, g cmd.GuessingCommand, client *cmd.Client) error {
-	appName, err := g.Guess()
+func addCName(cnames []string, g cmd.AppNameMixIn, client *cmd.Client) error {
+	appName, err := g.AppName()
 	if err != nil {
 		return err
 	}
@@ -1413,7 +1413,7 @@ func addCName(cnames []string, g cmd.GuessingCommand, client *cmd.Client) error 
 }
 
 type UnitAdd struct {
-	cmd.GuessingCommand
+	cmd.AppNameMixIn
 	fs      *gnuflag.FlagSet
 	process string
 	version string
@@ -1431,7 +1431,7 @@ app to be able to add new units to it.`,
 
 func (c *UnitAdd) Flags() *gnuflag.FlagSet {
 	if c.fs == nil {
-		c.fs = c.GuessingCommand.Flags()
+		c.fs = c.AppNameMixIn.Flags()
 		c.fs.StringVar(&c.process, "process", "", "Process name")
 		c.fs.StringVar(&c.process, "p", "", "Process name")
 		c.fs.StringVar(&c.version, "version", "", "Version number")
@@ -1441,7 +1441,7 @@ func (c *UnitAdd) Flags() *gnuflag.FlagSet {
 
 func (c *UnitAdd) Run(context *cmd.Context, client *cmd.Client) error {
 	context.RawOutput()
-	appName, err := c.Guess()
+	appName, err := c.AppName()
 	if err != nil {
 		return err
 	}
@@ -1467,7 +1467,7 @@ func (c *UnitAdd) Run(context *cmd.Context, client *cmd.Client) error {
 }
 
 type UnitRemove struct {
-	cmd.GuessingCommand
+	cmd.AppNameMixIn
 	fs      *gnuflag.FlagSet
 	process string
 	version string
@@ -1485,7 +1485,7 @@ app to be able to remove units from it.`,
 
 func (c *UnitRemove) Flags() *gnuflag.FlagSet {
 	if c.fs == nil {
-		c.fs = c.GuessingCommand.Flags()
+		c.fs = c.AppNameMixIn.Flags()
 		c.fs.StringVar(&c.process, "process", "", "Process name")
 		c.fs.StringVar(&c.process, "p", "", "Process name")
 		c.fs.StringVar(&c.version, "version", "", "Version number")
@@ -1495,7 +1495,7 @@ func (c *UnitRemove) Flags() *gnuflag.FlagSet {
 
 func (c *UnitRemove) Run(context *cmd.Context, client *cmd.Client) error {
 	context.RawOutput()
-	appName, err := c.Guess()
+	appName, err := c.AppName()
 	if err != nil {
 		return err
 	}
@@ -1519,7 +1519,7 @@ func (c *UnitRemove) Run(context *cmd.Context, client *cmd.Client) error {
 }
 
 type UnitSet struct {
-	cmd.GuessingCommand
+	cmd.AppNameMixIn
 	fs      *gnuflag.FlagSet
 	process string
 	version int
@@ -1537,7 +1537,7 @@ app to be able to set the number of units for it. The process flag is optional i
 
 func (c *UnitSet) Flags() *gnuflag.FlagSet {
 	if c.fs == nil {
-		c.fs = c.GuessingCommand.Flags()
+		c.fs = c.AppNameMixIn.Flags()
 		processMessage := "Process name"
 		c.fs.StringVar(&c.process, "process", "", processMessage)
 		c.fs.StringVar(&c.process, "p", "", processMessage)
@@ -1548,7 +1548,7 @@ func (c *UnitSet) Flags() *gnuflag.FlagSet {
 
 func (c *UnitSet) Run(context *cmd.Context, client *cmd.Client) error {
 	context.RawOutput()
-	appName, err := c.Guess()
+	appName, err := c.AppName()
 	if err != nil {
 		return err
 	}

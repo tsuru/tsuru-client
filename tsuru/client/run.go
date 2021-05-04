@@ -18,7 +18,7 @@ import (
 )
 
 type AppRun struct {
-	cmd.GuessingCommand
+	cmd.AppNameMixIn
 	fs       *gnuflag.FlagSet
 	once     bool
 	isolated bool
@@ -40,7 +40,7 @@ Otherwise, it will run the command in all units.`
 
 func (c *AppRun) Run(context *cmd.Context, client *cmd.Client) error {
 	context.RawOutput()
-	appName, err := c.Guess()
+	appName, err := c.AppName()
 	if err != nil {
 		return err
 	}
@@ -78,7 +78,7 @@ func (c *AppRun) Run(context *cmd.Context, client *cmd.Client) error {
 
 func (c *AppRun) Flags() *gnuflag.FlagSet {
 	if c.fs == nil {
-		c.fs = c.GuessingCommand.Flags()
+		c.fs = c.AppNameMixIn.Flags()
 		c.fs.BoolVar(&c.once, "once", false, "Running only one unit")
 		c.fs.BoolVar(&c.once, "o", false, "Running only one unit")
 		c.fs.BoolVar(&c.isolated, "isolated", false, "Running in ephemeral container")

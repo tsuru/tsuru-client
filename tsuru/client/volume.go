@@ -383,7 +383,7 @@ func (c *VolumeDelete) Run(ctx *cmd.Context, client *cmd.Client) error {
 }
 
 type VolumeBind struct {
-	cmd.GuessingCommand
+	cmd.AppNameMixIn
 	fs        *gnuflag.FlagSet
 	readOnly  bool
 	noRestart bool
@@ -401,7 +401,7 @@ func (c *VolumeBind) Info() *cmd.Info {
 
 func (c *VolumeBind) Flags() *gnuflag.FlagSet {
 	if c.fs == nil {
-		c.fs = c.GuessingCommand.Flags()
+		c.fs = c.AppNameMixIn.Flags()
 		desc := "the volume will be available only for reading"
 		c.fs.BoolVar(&c.readOnly, "readonly", false, desc)
 		c.fs.BoolVar(&c.readOnly, "r", false, desc)
@@ -413,7 +413,7 @@ func (c *VolumeBind) Flags() *gnuflag.FlagSet {
 func (c *VolumeBind) Run(ctx *cmd.Context, client *cmd.Client) error {
 	ctx.RawOutput()
 	volumeName := ctx.Args[0]
-	appName, err := c.Guess()
+	appName, err := c.AppName()
 	if err != nil {
 		return err
 	}
@@ -455,7 +455,7 @@ func (c *VolumeBind) Run(ctx *cmd.Context, client *cmd.Client) error {
 }
 
 type VolumeUnbind struct {
-	cmd.GuessingCommand
+	cmd.AppNameMixIn
 	fs        *gnuflag.FlagSet
 	noRestart bool
 }
@@ -472,7 +472,7 @@ func (c *VolumeUnbind) Info() *cmd.Info {
 
 func (c *VolumeUnbind) Flags() *gnuflag.FlagSet {
 	if c.fs == nil {
-		c.fs = c.GuessingCommand.Flags()
+		c.fs = c.AppNameMixIn.Flags()
 		c.fs.BoolVar(&c.noRestart, "no-restart", false, "prevents restarting the application")
 	}
 	return c.fs
@@ -481,7 +481,7 @@ func (c *VolumeUnbind) Flags() *gnuflag.FlagSet {
 func (c *VolumeUnbind) Run(ctx *cmd.Context, client *cmd.Client) error {
 	ctx.RawOutput()
 	volumeName := ctx.Args[0]
-	appName, err := c.Guess()
+	appName, err := c.AppName()
 	if err != nil {
 		return err
 	}

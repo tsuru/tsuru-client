@@ -273,14 +273,14 @@ func (c *ServiceInstanceUpdate) Flags() *gnuflag.FlagSet {
 }
 
 type ServiceInstanceBind struct {
-	cmd.GuessingCommand
+	cmd.AppNameMixIn
 	fs        *gnuflag.FlagSet
 	noRestart bool
 }
 
 func (sb *ServiceInstanceBind) Run(ctx *cmd.Context, client *cmd.Client) error {
 	ctx.RawOutput()
-	appName, err := sb.Guess()
+	appName, err := sb.AppName()
 	if err != nil {
 		return err
 	}
@@ -320,14 +320,14 @@ by bind will be private (not accessible via [[tsuru env-get]]).`,
 
 func (sb *ServiceInstanceBind) Flags() *gnuflag.FlagSet {
 	if sb.fs == nil {
-		sb.fs = sb.GuessingCommand.Flags()
+		sb.fs = sb.AppNameMixIn.Flags()
 		sb.fs.BoolVar(&sb.noRestart, "no-restart", false, "Binds an application to a service instance without restart the application")
 	}
 	return sb.fs
 }
 
 type ServiceInstanceUnbind struct {
-	cmd.GuessingCommand
+	cmd.AppNameMixIn
 	fs        *gnuflag.FlagSet
 	noRestart bool
 	force     bool
@@ -335,7 +335,7 @@ type ServiceInstanceUnbind struct {
 
 func (su *ServiceInstanceUnbind) Run(ctx *cmd.Context, client *cmd.Client) error {
 	ctx.RawOutput()
-	appName, err := su.Guess()
+	appName, err := su.AppName()
 	if err != nil {
 		return err
 	}
@@ -373,7 +373,7 @@ a MySQL service, the application would lose access to the database.`,
 
 func (su *ServiceInstanceUnbind) Flags() *gnuflag.FlagSet {
 	if su.fs == nil {
-		su.fs = su.GuessingCommand.Flags()
+		su.fs = su.AppNameMixIn.Flags()
 		su.fs.BoolVar(&su.noRestart, "no-restart", false, "Unbinds an application from a service instance without restart the application")
 		su.fs.BoolVar(&su.force, "force", false, "Forces the unbind even if the unbind API call to the service fails")
 	}

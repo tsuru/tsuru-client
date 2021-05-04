@@ -19,7 +19,7 @@ import (
 )
 
 type AppLog struct {
-	cmd.GuessingCommand
+	cmd.AppNameMixIn
 	fs       *gnuflag.FlagSet
 	source   string
 	unit     string
@@ -113,7 +113,7 @@ type log struct {
 
 func (c *AppLog) Run(context *cmd.Context, client *cmd.Client) error {
 	context.RawOutput()
-	appName, err := c.Guess()
+	appName, err := c.AppName()
 	if err != nil {
 		return err
 	}
@@ -161,7 +161,7 @@ func (c *AppLog) Run(context *cmd.Context, client *cmd.Client) error {
 
 func (c *AppLog) Flags() *gnuflag.FlagSet {
 	if c.fs == nil {
-		c.fs = c.GuessingCommand.Flags()
+		c.fs = c.AppNameMixIn.Flags()
 		c.fs.IntVar(&c.lines, "lines", 10, "The number of log lines to display")
 		c.fs.IntVar(&c.lines, "l", 10, "The number of log lines to display")
 		c.fs.StringVar(&c.source, "source", "", "The log from the given source")

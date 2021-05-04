@@ -28,7 +28,7 @@ Example:
 var allowedTypes = []string{"label", "annotation"}
 
 type MetadataGet struct {
-	cmd.GuessingCommand
+	cmd.AppNameMixIn
 }
 
 func (c *MetadataGet) Info() *cmd.Info {
@@ -41,7 +41,7 @@ func (c *MetadataGet) Info() *cmd.Info {
 }
 
 func (c *MetadataGet) Run(context *cmd.Context, client *cmd.Client) error {
-	appName, err := c.Guess()
+	appName, err := c.AppName()
 	if err != nil {
 		return err
 	}
@@ -91,7 +91,7 @@ func (c *MetadataGet) Run(context *cmd.Context, client *cmd.Client) error {
 }
 
 type MetadataSet struct {
-	cmd.GuessingCommand
+	cmd.AppNameMixIn
 	fs           *gnuflag.FlagSet
 	metadataType string
 	noRestart    bool
@@ -108,7 +108,7 @@ func (c *MetadataSet) Info() *cmd.Info {
 
 func (c *MetadataSet) Flags() *gnuflag.FlagSet {
 	if c.fs == nil {
-		c.fs = c.GuessingCommand.Flags()
+		c.fs = c.AppNameMixIn.Flags()
 		c.fs.StringVar(&c.metadataType, "type", "", "Metadata type: annotation or label")
 		c.fs.StringVar(&c.metadataType, "t", "", "Metadata type: annotation or label")
 		c.fs.BoolVar(&c.noRestart, "no-restart", false, "Sets metadata without restarting the application")
@@ -184,7 +184,7 @@ func validateType(t string) error {
 }
 
 type MetadataUnset struct {
-	cmd.GuessingCommand
+	cmd.AppNameMixIn
 	fs           *gnuflag.FlagSet
 	metadataType string
 	noRestart    bool
@@ -201,7 +201,7 @@ func (c *MetadataUnset) Info() *cmd.Info {
 
 func (c *MetadataUnset) Flags() *gnuflag.FlagSet {
 	if c.fs == nil {
-		c.fs = c.GuessingCommand.Flags()
+		c.fs = c.AppNameMixIn.Flags()
 		c.fs.StringVar(&c.metadataType, "type", "", "Metadata type: annotation or label")
 		c.fs.StringVar(&c.metadataType, "t", "", "Metadata type: annotation or label")
 		c.fs.BoolVar(&c.noRestart, "no-restart", false, "Sets metadata without restarting the application")

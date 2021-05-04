@@ -85,7 +85,7 @@ func (*UserChangeQuota) Run(context *cmd.Context, client *cmd.Client) error {
 }
 
 type AppQuotaView struct {
-	cmd.GuessingCommand
+	cmd.AppNameMixIn
 }
 
 func (*AppQuotaView) Info() *cmd.Info {
@@ -99,7 +99,7 @@ func (*AppQuotaView) Info() *cmd.Info {
 
 func (c *AppQuotaView) Run(context *cmd.Context, client *cmd.Client) error {
 	context.RawOutput()
-	appName, err := c.Guess()
+	appName, err := c.AppName()
 	if err != nil {
 		return err
 	}
@@ -124,7 +124,7 @@ func (c *AppQuotaView) Run(context *cmd.Context, client *cmd.Client) error {
 }
 
 type AppQuotaChange struct {
-	cmd.GuessingCommand
+	cmd.AppNameMixIn
 }
 
 func (*AppQuotaChange) Info() *cmd.Info {
@@ -141,7 +141,7 @@ The new limit must be an integer, it may also be "unlimited".`
 
 func (c *AppQuotaChange) Run(context *cmd.Context, client *cmd.Client) error {
 	context.RawOutput()
-	appName, err := c.Guess()
+	appName, err := c.AppName()
 	if err != nil {
 		return err
 	}

@@ -120,8 +120,11 @@ func (s *S) TestEnvGetWithoutTheFlag(c *check.C) {
 		},
 	}
 	client := cmd.NewClient(&http.Client{Transport: trans}, nil, manager)
-	fake := &cmdtest.FakeGuesser{Name: "seek"}
-	err := (&EnvGet{cmd.GuessingCommand{G: fake}}).Run(&context, client)
+	cmd := &EnvGet{}
+	err := cmd.Flags().Parse(true, []string{"-a", "seek"})
+	c.Assert(err, check.IsNil)
+
+	err = cmd.Run(&context, client)
 	c.Assert(err, check.IsNil)
 	c.Assert(stdout.String(), check.Equals, result)
 }
@@ -376,8 +379,12 @@ func (s *S) TestEnvSetWithoutFlag(c *check.C) {
 		},
 	}
 	client := cmd.NewClient(&http.Client{Transport: trans}, nil, manager)
-	fake := &cmdtest.FakeGuesser{Name: "otherapp"}
-	err = (&EnvSet{GuessingCommand: cmd.GuessingCommand{G: fake}}).Run(&context, client)
+
+	cmd := &EnvSet{}
+	err = cmd.Flags().Parse(true, []string{"-a", "otherapp"})
+	c.Assert(err, check.IsNil)
+
+	err = cmd.Run(&context, client)
 	c.Assert(err, check.IsNil)
 	c.Assert(stdout.String(), check.Equals, expectedOut)
 }
@@ -480,8 +487,9 @@ func (s *S) TestEnvUnsetWithoutFlag(c *check.C) {
 		},
 	}
 	client := cmd.NewClient(&http.Client{Transport: trans}, nil, manager)
-	fake := &cmdtest.FakeGuesser{Name: "otherapp"}
-	err = (&EnvUnset{GuessingCommand: cmd.GuessingCommand{G: fake}}).Run(&context, client)
+	cmd := &EnvUnset{}
+	cmd.Flags().Parse(true, []string{"-a", "otherapp"})
+	err = cmd.Run(&context, client)
 	c.Assert(err, check.IsNil)
 	c.Assert(stdout.String(), check.Equals, expectedOut)
 }
@@ -490,7 +498,8 @@ func (s *S) TestRequestEnvURL(c *check.C) {
 	result := "DATABASE_HOST=somehost"
 	client := cmd.NewClient(&http.Client{Transport: &cmdtest.Transport{Message: result, Status: http.StatusOK}}, nil, manager)
 	args := []string{"DATABASE_HOST"}
-	g := cmd.GuessingCommand{G: &cmdtest.FakeGuesser{Name: "someapp"}}
+	g := cmd.AppNameMixIn{}
+	g.Flags().Parse(true, []string{"-a", "someapp"})
 	b, err := requestEnvGetURL(g, args, client)
 	c.Assert(err, check.IsNil)
 	c.Assert(b, check.DeepEquals, []byte(result))

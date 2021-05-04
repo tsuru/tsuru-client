@@ -24,7 +24,7 @@ import (
 )
 
 type CertificateSet struct {
-	cmd.GuessingCommand
+	cmd.AppNameMixIn
 	cname string
 	fs    *gnuflag.FlagSet
 }
@@ -40,7 +40,7 @@ func (c *CertificateSet) Info() *cmd.Info {
 
 func (c *CertificateSet) Flags() *gnuflag.FlagSet {
 	if c.fs == nil {
-		c.fs = c.GuessingCommand.Flags()
+		c.fs = c.AppNameMixIn.Flags()
 		cname := "App CNAME"
 		c.fs.StringVar(&c.cname, "cname", "", cname)
 		c.fs.StringVar(&c.cname, "c", "", cname)
@@ -49,7 +49,7 @@ func (c *CertificateSet) Flags() *gnuflag.FlagSet {
 }
 
 func (c *CertificateSet) Run(context *cmd.Context, client *cmd.Client) error {
-	appName, err := c.Guess()
+	appName, err := c.AppName()
 	if err != nil {
 		return err
 	}
@@ -87,7 +87,7 @@ func (c *CertificateSet) Run(context *cmd.Context, client *cmd.Client) error {
 }
 
 type CertificateUnset struct {
-	cmd.GuessingCommand
+	cmd.AppNameMixIn
 	cname string
 	fs    *gnuflag.FlagSet
 }
@@ -102,7 +102,7 @@ func (c *CertificateUnset) Info() *cmd.Info {
 
 func (c *CertificateUnset) Flags() *gnuflag.FlagSet {
 	if c.fs == nil {
-		c.fs = c.GuessingCommand.Flags()
+		c.fs = c.AppNameMixIn.Flags()
 		cname := "App CNAME"
 		c.fs.StringVar(&c.cname, "cname", "", cname)
 		c.fs.StringVar(&c.cname, "c", "", cname)
@@ -111,7 +111,7 @@ func (c *CertificateUnset) Flags() *gnuflag.FlagSet {
 }
 
 func (c *CertificateUnset) Run(context *cmd.Context, client *cmd.Client) error {
-	appName, err := c.Guess()
+	appName, err := c.AppName()
 	if err != nil {
 		return err
 	}
@@ -139,7 +139,7 @@ func (c *CertificateUnset) Run(context *cmd.Context, client *cmd.Client) error {
 }
 
 type CertificateList struct {
-	cmd.GuessingCommand
+	cmd.AppNameMixIn
 	fs  *gnuflag.FlagSet
 	raw bool
 }
@@ -154,7 +154,7 @@ func (c *CertificateList) Info() *cmd.Info {
 
 func (c *CertificateList) Flags() *gnuflag.FlagSet {
 	if c.fs == nil {
-		c.fs = c.GuessingCommand.Flags()
+		c.fs = c.AppNameMixIn.Flags()
 		c.fs.BoolVar(&c.raw, "r", false, "Display raw certificates")
 		c.fs.BoolVar(&c.raw, "raw", false, "Display raw certificates")
 	}
@@ -162,7 +162,7 @@ func (c *CertificateList) Flags() *gnuflag.FlagSet {
 }
 
 func (c *CertificateList) Run(context *cmd.Context, client *cmd.Client) error {
-	appName, err := c.Guess()
+	appName, err := c.AppName()
 	if err != nil {
 		return err
 	}

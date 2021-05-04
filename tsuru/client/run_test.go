@@ -20,7 +20,6 @@ func (s *S) TestAppRun(c *check.C) {
 	var stdout, stderr bytes.Buffer
 	expected := "http.go		http_test.go"
 	context := cmd.Context{
-		Args:   []string{"ls"},
 		Stdout: &stdout,
 		Stderr: &stderr,
 	}
@@ -41,7 +40,10 @@ func (s *S) TestAppRun(c *check.C) {
 	}
 	client := cmd.NewClient(&http.Client{Transport: trans}, nil, manager)
 	command := AppRun{}
-	command.Flags().Parse(true, []string{"--app", "ble"})
+	err = command.Flags().Parse(true, []string{"--app", "ble", "ls"})
+	c.Assert(err, check.IsNil)
+
+	context.Args = command.Flags().Args()
 	err = command.Run(&context, client)
 	c.Assert(err, check.IsNil)
 	c.Assert(stdout.String(), check.Equals, expected)
@@ -51,7 +53,6 @@ func (s *S) TestAppRunFlagIsolated(c *check.C) {
 	var stdout, stderr bytes.Buffer
 	expected := "http.go		http_test.go"
 	context := cmd.Context{
-		Args:   []string{"ls"},
 		Stdout: &stdout,
 		Stderr: &stderr,
 	}
@@ -72,7 +73,10 @@ func (s *S) TestAppRunFlagIsolated(c *check.C) {
 	}
 	client := cmd.NewClient(&http.Client{Transport: trans}, nil, manager)
 	command := AppRun{}
-	command.Flags().Parse(true, []string{"--app", "ble", "--isolated"})
+	err = command.Flags().Parse(true, []string{"--app", "ble", "--isolated", "ls"})
+	c.Assert(err, check.IsNil)
+
+	context.Args = command.Flags().Args()
 	err = command.Run(&context, client)
 	c.Assert(err, check.IsNil)
 	c.Assert(stdout.String(), check.Equals, expected)
@@ -82,7 +86,6 @@ func (s *S) TestAppRunShouldUseAllSubsequentArgumentsAsArgumentsToTheGivenComman
 	var stdout, stderr bytes.Buffer
 	expected := "-rw-r--r--  1 f  staff  119 Apr 26 18:23 http.go\n"
 	context := cmd.Context{
-		Args:   []string{"ls", "-l"},
 		Stdout: &stdout,
 		Stderr: &stderr,
 	}
@@ -103,7 +106,12 @@ func (s *S) TestAppRunShouldUseAllSubsequentArgumentsAsArgumentsToTheGivenComman
 	}
 	client := cmd.NewClient(&http.Client{Transport: trans}, nil, manager)
 	command := AppRun{}
-	command.Flags().Parse(true, []string{"--app", "ble"})
+	err = command.Flags().Parse(true, []string{"--app", "ble", "ls -l"})
+
+	c.Assert(err, check.IsNil)
+
+	context.Args = command.Flags().Args()
+
 	err = command.Run(&context, client)
 	c.Assert(err, check.IsNil)
 	c.Assert(stdout.String(), check.Equals, expected+expected)
@@ -113,7 +121,6 @@ func (s *S) TestAppRunWithoutTheFlag(c *check.C) {
 	var stdout, stderr bytes.Buffer
 	expected := "-rw-r--r--  1 f  staff  119 Apr 26 18:23 http.go"
 	context := cmd.Context{
-		Args:   []string{"ls", "-lh"},
 		Stdout: &stdout,
 		Stderr: &stderr,
 	}
@@ -133,9 +140,11 @@ func (s *S) TestAppRunWithoutTheFlag(c *check.C) {
 		},
 	}
 	client := cmd.NewClient(&http.Client{Transport: trans}, nil, manager)
-	fake := &cmdtest.FakeGuesser{Name: "bla"}
-	command := AppRun{GuessingCommand: cmd.GuessingCommand{G: fake}}
-	command.Flags().Parse(true, nil)
+	command := AppRun{}
+	err = command.Flags().Parse(true, []string{"-a", "bla", "ls -lh"})
+	c.Assert(err, check.IsNil)
+
+	context.Args = command.Flags().Args()
 	err = command.Run(&context, client)
 	c.Assert(err, check.IsNil)
 	c.Assert(stdout.String(), check.Equals, expected)
@@ -144,7 +153,6 @@ func (s *S) TestAppRunWithoutTheFlag(c *check.C) {
 func (s *S) TestAppRunShouldReturnErrorWhenCommandGoWrong(c *check.C) {
 	var stdout, stderr bytes.Buffer
 	context := cmd.Context{
-		Args:   []string{"cmd_error"},
 		Stdout: &stdout,
 		Stderr: &stderr,
 	}
@@ -161,9 +169,12 @@ func (s *S) TestAppRunShouldReturnErrorWhenCommandGoWrong(c *check.C) {
 		},
 	}
 	client := cmd.NewClient(&http.Client{Transport: trans}, nil, manager)
-	fake := &cmdtest.FakeGuesser{Name: "bla"}
-	command := AppRun{GuessingCommand: cmd.GuessingCommand{G: fake}}
-	command.Flags().Parse(true, nil)
+	command := AppRun{}
+	err = command.Flags().Parse(true, []string{"-a", "bla", "cmd_error"})
+	c.Assert(err, check.IsNil)
+
+	context.Args = command.Flags().Args()
+
 	err = command.Run(&context, client)
 	c.Assert(err, check.ErrorMatches, "command doesn't exist.")
 }

@@ -55,7 +55,7 @@ func (dl deployList) Less(i, j int) bool {
 }
 
 type AppDeployList struct {
-	cmd.GuessingCommand
+	cmd.AppNameMixIn
 }
 
 func (c *AppDeployList) Info() *cmd.Info {
@@ -67,7 +67,7 @@ func (c *AppDeployList) Info() *cmd.Info {
 }
 
 func (c *AppDeployList) Run(context *cmd.Context, client *cmd.Client) error {
-	appName, err := c.Guess()
+	appName, err := c.AppName()
 	if err != nil {
 		return err
 	}
@@ -129,7 +129,7 @@ func (c *AppDeployList) Run(context *cmd.Context, client *cmd.Client) error {
 var _ cmd.Cancelable = &AppDeploy{}
 
 type AppDeploy struct {
-	cmd.GuessingCommand
+	cmd.AppNameMixIn
 	image   string
 	message string
 	eventID string
@@ -141,7 +141,7 @@ type AppDeploy struct {
 
 func (c *AppDeploy) Flags() *gnuflag.FlagSet {
 	if c.fs == nil {
-		c.fs = c.GuessingCommand.Flags()
+		c.fs = c.AppNameMixIn.Flags()
 		image := "The image to deploy in app"
 		c.fs.StringVar(&c.image, "image", "", image)
 		c.fs.StringVar(&c.image, "i", "", image)
@@ -203,7 +203,7 @@ func (c *AppDeploy) Run(context *cmd.Context, client *cmd.Client) error {
 	if c.image != "" && len(context.Args) > 0 {
 		return errors.New("You can't deploy files and docker image at the same time.\n")
 	}
-	appName, err := c.Guess()
+	appName, err := c.AppName()
 	if err != nil {
 		return err
 	}
@@ -509,7 +509,7 @@ func (w *firstWriter) Write(p []byte) (int, error) {
 }
 
 type AppDeployRollback struct {
-	cmd.GuessingCommand
+	cmd.AppNameMixIn
 	cmd.ConfirmationCommand
 	deployVersionArgs
 	fs *gnuflag.FlagSet
@@ -518,7 +518,7 @@ type AppDeployRollback struct {
 func (c *AppDeployRollback) Flags() *gnuflag.FlagSet {
 	if c.fs == nil {
 		c.fs = cmd.MergeFlagSet(
-			c.GuessingCommand.Flags(),
+			c.AppNameMixIn.Flags(),
 			c.ConfirmationCommand.Flags(),
 		)
 		c.deployVersionArgs.flags(c.fs)
@@ -539,7 +539,7 @@ func (c *AppDeployRollback) Info() *cmd.Info {
 
 func (c *AppDeployRollback) Run(context *cmd.Context, client *cmd.Client) error {
 	context.RawOutput()
-	appName, err := c.Guess()
+	appName, err := c.AppName()
 	if err != nil {
 		return err
 	}
@@ -568,14 +568,14 @@ func (c *AppDeployRollback) Run(context *cmd.Context, client *cmd.Client) error 
 }
 
 type AppDeployRebuild struct {
-	cmd.GuessingCommand
+	cmd.AppNameMixIn
 	deployVersionArgs
 	fs *gnuflag.FlagSet
 }
 
 func (c *AppDeployRebuild) Flags() *gnuflag.FlagSet {
 	if c.fs == nil {
-		c.fs = c.GuessingCommand.Flags()
+		c.fs = c.AppNameMixIn.Flags()
 		c.deployVersionArgs.flags(c.fs)
 	}
 	return c.fs
@@ -594,7 +594,7 @@ func (c *AppDeployRebuild) Info() *cmd.Info {
 
 func (c *AppDeployRebuild) Run(context *cmd.Context, client *cmd.Client) error {
 	context.RawOutput()
-	appName, err := c.Guess()
+	appName, err := c.AppName()
 	if err != nil {
 		return err
 	}
@@ -618,7 +618,7 @@ func (c *AppDeployRebuild) Run(context *cmd.Context, client *cmd.Client) error {
 }
 
 type AppDeployRollbackUpdate struct {
-	cmd.GuessingCommand
+	cmd.AppNameMixIn
 	image   string
 	reason  string
 	disable bool
@@ -647,7 +647,7 @@ func (c *AppDeployRollbackUpdate) Info() *cmd.Info {
 
 func (c *AppDeployRollbackUpdate) Flags() *gnuflag.FlagSet {
 	if c.fs == nil {
-		c.fs = c.GuessingCommand.Flags()
+		c.fs = c.AppNameMixIn.Flags()
 		image := "The image name for an app version"
 		c.fs.StringVar(&c.image, "image", "", image)
 		c.fs.StringVar(&c.image, "i", "", image)
@@ -662,7 +662,7 @@ func (c *AppDeployRollbackUpdate) Flags() *gnuflag.FlagSet {
 }
 
 func (c *AppDeployRollbackUpdate) Run(context *cmd.Context, client *cmd.Client) error {
-	appName, err := c.Guess()
+	appName, err := c.AppName()
 	if err != nil {
 		return err
 	}

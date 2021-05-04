@@ -16,7 +16,7 @@ import (
 )
 
 type AppBuild struct {
-	cmd.GuessingCommand
+	cmd.AppNameMixIn
 	tag       string
 	fs        *gnuflag.FlagSet
 	filesOnly bool
@@ -24,7 +24,7 @@ type AppBuild struct {
 
 func (c *AppBuild) Flags() *gnuflag.FlagSet {
 	if c.fs == nil {
-		c.fs = c.GuessingCommand.Flags()
+		c.fs = c.AppNameMixIn.Flags()
 		tag := "The image tag"
 		c.fs.StringVar(&c.tag, "tag", "", tag)
 		c.fs.StringVar(&c.tag, "t", "", tag)
@@ -60,7 +60,7 @@ func (c *AppBuild) Run(context *cmd.Context, client *cmd.Client) error {
 	if len(context.Args) == 0 {
 		return errors.New("You should provide at least one file to build the image.\n")
 	}
-	appName, err := c.Guess()
+	appName, err := c.AppName()
 	if err != nil {
 		return err
 	}

@@ -53,10 +53,8 @@ func (s *S) TestBuildRun(c *check.C) {
 		Stderr: &stderr,
 		Args:   []string{"testdata", ".."},
 	}
-	fake := cmdtest.FakeGuesser{Name: "myapp"}
-	guessCommand := cmd.GuessingCommand{G: &fake}
-	command := AppBuild{GuessingCommand: guessCommand}
-	command.Flags().Parse(true, []string{"-t", "mytag"})
+	command := AppBuild{}
+	command.Flags().Parse(true, []string{"-t", "mytag", "-a", "myapp"})
 	err = command.Run(&context, client)
 	c.Assert(err, check.IsNil)
 	c.Assert(calledTimes, check.Equals, 2)
@@ -93,10 +91,8 @@ func (s *S) TestBuildFail(c *check.C) {
 		Stderr: &stderr,
 		Args:   []string{"testdata", ".."},
 	}
-	fake := cmdtest.FakeGuesser{Name: "myapp"}
-	guessCommand := cmd.GuessingCommand{G: &fake}
-	command := AppBuild{GuessingCommand: guessCommand}
-	command.Flags().Parse(true, []string{"-t", "mytag"})
+	command := AppBuild{}
+	command.Flags().Parse(true, []string{"-t", "mytag", "-a", "myapp"})
 	err = command.Run(&context, client)
 	c.Assert(err, check.Equals, cmd.ErrAbortCommand)
 }
@@ -110,10 +106,8 @@ func (s *S) TestBuildRunWithoutArgs(c *check.C) {
 	}
 	trans := cmdtest.Transport{Message: "OK\n", Status: http.StatusOK}
 	client := cmd.NewClient(&http.Client{Transport: &trans}, nil, manager)
-	fake := cmdtest.FakeGuesser{Name: "myapp"}
-	guessCommand := cmd.GuessingCommand{G: &fake}
-	command := AppBuild{GuessingCommand: guessCommand}
-	command.Flags().Parse(true, []string{"-t", "mytag"})
+	command := AppBuild{}
+	command.Flags().Parse(true, []string{"-t", "mytag", "-a", "myapp"})
 	err := command.Run(&ctx, client)
 	c.Assert(err, check.NotNil)
 	c.Assert(err.Error(), check.Equals, "You should provide at least one file to build the image.\n")
@@ -124,13 +118,11 @@ func (s *S) TestBuildRunWithoutTag(c *check.C) {
 	ctx := cmd.Context{
 		Stdout: &stdout,
 		Stderr: &stderr,
-		Args:   []string{"testdata", ".."},
+		Args:   []string{"testdata", "..", "-a", "myapp"},
 	}
 	trans := cmdtest.Transport{Message: "OK\n", Status: http.StatusOK}
 	client := cmd.NewClient(&http.Client{Transport: &trans}, nil, manager)
-	fake := cmdtest.FakeGuesser{Name: "myapp"}
-	guessCommand := cmd.GuessingCommand{G: &fake}
-	command := AppBuild{GuessingCommand: guessCommand}
+	command := AppBuild{}
 	err := command.Run(&ctx, client)
 	c.Assert(err, check.NotNil)
 	c.Assert(err.Error(), check.Equals, "You should provide one tag to build the image.\n")

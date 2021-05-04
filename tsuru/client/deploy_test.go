@@ -64,11 +64,12 @@ func (s *S) TestDeployRun(c *check.C) {
 	context := cmd.Context{
 		Stdout: &stdout,
 		Stderr: &stderr,
-		Args:   []string{"testdata", ".."},
 	}
-	fake := cmdtest.FakeGuesser{Name: "secret"}
-	guessCommand := cmd.GuessingCommand{G: &fake}
-	cmd := AppDeploy{GuessingCommand: guessCommand}
+	cmd := AppDeploy{}
+	err = cmd.Flags().Parse(true, []string{"testdata", "..", "-a", "secret"})
+	c.Assert(err, check.IsNil)
+	context.Args = cmd.Flags().Args()
+
 	err = cmd.Run(&context, client)
 	c.Assert(err, check.IsNil)
 	c.Assert(calledTimes, check.Equals, 2)
@@ -146,11 +147,14 @@ func (s *S) TestDeployRunCancel(c *check.C) {
 		Stdout: &stdout,
 		Stderr: &stderr,
 		Stdin:  bytes.NewReader([]byte("y")),
-		Args:   []string{"testdata", ".."},
+		Args:   []string{"testdata", "..", "-a", "secret"},
 	}
-	fake := cmdtest.FakeGuesser{Name: "secret"}
-	guessCommand := cmd.GuessingCommand{G: &fake}
-	cmd := AppDeploy{GuessingCommand: guessCommand}
+	cmd := AppDeploy{}
+
+	err = cmd.Flags().Parse(true, context.Args)
+	c.Assert(err, check.IsNil)
+	context.Args = cmd.Flags().Args()
+
 	go func() {
 		err = cmd.Run(&context, client)
 		c.Assert(err, check.IsNil)
@@ -186,11 +190,11 @@ func (s *S) TestDeployImage(c *check.C) {
 		Stdout: &stdout,
 		Stderr: &stderr,
 	}
-	fake := cmdtest.FakeGuesser{Name: "secret"}
-	guessCommand := cmd.GuessingCommand{G: &fake}
-	cmd := AppDeploy{GuessingCommand: guessCommand}
-	cmd.Flags().Parse(true, []string{"-i", "registr.com/image-to-deploy"})
-	err := cmd.Run(&context, client)
+	cmd := AppDeploy{}
+	err := cmd.Flags().Parse(true, []string{"-i", "registr.com/image-to-deploy", "-a", "secret"})
+	c.Assert(err, check.IsNil)
+	context.Args = cmd.Flags().Args()
+	err = cmd.Run(&context, client)
 	c.Assert(err, check.IsNil)
 	c.Assert(calledTimes, check.Equals, 2)
 }
@@ -230,10 +234,9 @@ func (s *S) TestDeployRunWithMessage(c *check.C) {
 		Stderr: &stderr,
 		Args:   []string{"testdata", ".."},
 	}
-	fake := cmdtest.FakeGuesser{Name: "secret"}
-	guessCommand := cmd.GuessingCommand{G: &fake}
-	cmd := AppDeploy{GuessingCommand: guessCommand}
-	cmd.Flags().Parse(true, []string{"-m", "my awesome deploy"})
+	cmd := AppDeploy{}
+	err = cmd.Flags().Parse(true, []string{"-a", "secret", "-m", "my awesome deploy"})
+	c.Assert(err, check.IsNil)
 	err = cmd.Run(&context, client)
 	c.Assert(err, check.IsNil)
 	c.Assert(calledTimes, check.Equals, 2)
@@ -253,12 +256,13 @@ func (s *S) TestDeployAuthNotOK(c *check.C) {
 	context := cmd.Context{
 		Stdout: &stdout,
 		Stderr: &stderr,
-		Args:   []string{"testdata", ".."},
+		Args:   []string{"testdata", "..", "-a", "secret"},
 	}
-	fake := cmdtest.FakeGuesser{Name: "secret"}
-	guessCommand := cmd.GuessingCommand{G: &fake}
-	command := AppDeploy{GuessingCommand: guessCommand}
-	err := command.Run(&context, client)
+	command := AppDeploy{}
+	err := command.Flags().Parse(true, context.Args)
+	c.Assert(err, check.IsNil)
+	context.Args = command.Flags().Args()
+	err = command.Run(&context, client)
 	c.Assert(err, check.ErrorMatches, "Forbidden")
 	c.Assert(calledTimes, check.Equals, 1)
 }
@@ -270,12 +274,13 @@ func (s *S) TestDeployRunNotOK(c *check.C) {
 	context := cmd.Context{
 		Stdout: &stdout,
 		Stderr: &stderr,
-		Args:   []string{"testdata", ".."},
+		Args:   []string{"testdata", "..", "-a", "secret"},
 	}
-	fake := cmdtest.FakeGuesser{Name: "secret"}
-	guessCommand := cmd.GuessingCommand{G: &fake}
-	command := AppDeploy{GuessingCommand: guessCommand}
-	err := command.Run(&context, client)
+	command := AppDeploy{}
+	err := command.Flags().Parse(true, context.Args)
+	c.Assert(err, check.IsNil)
+	context.Args = command.Flags().Args()
+	err = command.Run(&context, client)
 	c.Assert(err, check.Equals, cmd.ErrAbortCommand)
 }
 
@@ -284,14 +289,15 @@ func (s *S) TestDeployRunFileNotFound(c *check.C) {
 	context := cmd.Context{
 		Stdout: &stdout,
 		Stderr: &stderr,
-		Args:   []string{"/tmp/something/that/doesn't/really/exist/im/sure"},
+		Args:   []string{"/tmp/something/that/doesn't/really/exist/im/sure", "-a", "secret"},
 	}
 	trans := cmdtest.Transport{Message: "OK\n", Status: http.StatusOK}
 	client := cmd.NewClient(&http.Client{Transport: &trans}, nil, manager)
-	fake := cmdtest.FakeGuesser{Name: "secret"}
-	guessCommand := cmd.GuessingCommand{G: &fake}
-	command := AppDeploy{GuessingCommand: guessCommand}
-	err := command.Run(&context, client)
+	command := AppDeploy{}
+	err := command.Flags().Parse(true, context.Args)
+	c.Assert(err, check.IsNil)
+	context.Args = command.Flags().Args()
+	err = command.Run(&context, client)
 	c.Assert(err, check.NotNil)
 }
 
@@ -300,14 +306,15 @@ func (s *S) TestDeployRunWithoutArgsAndImage(c *check.C) {
 	ctx := cmd.Context{
 		Stdout: &stdout,
 		Stderr: &stderr,
-		Args:   []string{},
+		Args:   []string{"-a", "secret"},
 	}
 	trans := cmdtest.Transport{Message: "OK\n", Status: http.StatusOK}
 	client := cmd.NewClient(&http.Client{Transport: &trans}, nil, manager)
-	fake := cmdtest.FakeGuesser{Name: "secret"}
-	guessCommand := cmd.GuessingCommand{G: &fake}
-	command := AppDeploy{GuessingCommand: guessCommand}
-	err := command.Run(&ctx, client)
+	command := AppDeploy{}
+	err := command.Flags().Parse(true, ctx.Args)
+	c.Assert(err, check.IsNil)
+	ctx.Args = command.Flags().Args()
+	err = command.Run(&ctx, client)
 	c.Assert(err, check.NotNil)
 	c.Assert(err.Error(), check.Equals, "You should provide at least one file or a docker image to deploy.\n")
 }
@@ -317,13 +324,11 @@ func (s *S) TestDeployRunWithArgsAndImage(c *check.C) {
 	ctx := cmd.Context{
 		Stdout: &stdout,
 		Stderr: &stderr,
-		Args:   []string{"testdata", ".."},
+		Args:   []string{"testdata", "..", "-a", "secret"},
 	}
 	trans := cmdtest.Transport{Message: "OK\n", Status: http.StatusOK}
 	client := cmd.NewClient(&http.Client{Transport: &trans}, nil, manager)
-	fake := cmdtest.FakeGuesser{Name: "secret"}
-	guessCommand := cmd.GuessingCommand{G: &fake}
-	command := AppDeploy{GuessingCommand: guessCommand}
+	command := AppDeploy{}
 	command.Flags().Parse(true, []string{"-i", "registr.com/image-to-deploy"})
 	err := command.Run(&ctx, client)
 	c.Assert(err, check.NotNil)
@@ -337,12 +342,13 @@ func (s *S) TestDeployRunRequestFailure(c *check.C) {
 	context := cmd.Context{
 		Stdout: &stdout,
 		Stderr: &stderr,
-		Args:   []string{"testdata", ".."},
+		Args:   []string{"testdata", "..", "-a", "secret"},
 	}
-	fake := cmdtest.FakeGuesser{Name: "secret"}
-	guessCommand := cmd.GuessingCommand{G: &fake}
-	command := AppDeploy{GuessingCommand: guessCommand}
-	err := command.Run(&context, client)
+	command := AppDeploy{}
+	err := command.Flags().Parse(true, context.Args)
+	c.Assert(err, check.IsNil)
+	context.Args = command.Flags().Args()
+	err = command.Run(&context, client)
 	c.Assert(err, check.NotNil)
 	c.Assert(err.Error(), check.Equals, "app not found\n")
 }
@@ -457,8 +463,10 @@ func (s *S) TestAppDeployList(c *check.C) {
 	}
 	client := cmd.NewClient(&http.Client{Transport: &cmdtest.Transport{Message: result, Status: http.StatusOK}}, nil, manager)
 	command := AppDeployList{}
-	command.Flags().Parse(true, []string{"--app", "test"})
-	err := command.Run(&context, client)
+	err := command.Flags().Parse(true, []string{"--app", "test"})
+	c.Assert(err, check.IsNil)
+	context.Args = command.Flags().Args()
+	err = command.Run(&context, client)
 	c.Assert(err, check.IsNil)
 	c.Assert(stdout.String(), check.Equals, expected)
 }
@@ -471,9 +479,8 @@ func (s *S) TestDeployRunAppWithouDeploy(c *check.C) {
 		Stdout: &stdout,
 		Stderr: &stderr,
 	}
-	fake := cmdtest.FakeGuesser{Name: "secret"}
-	guessCommand := cmd.GuessingCommand{G: &fake}
-	command := AppDeployList{GuessingCommand: guessCommand}
+	command := AppDeployList{}
+	command.Flags().Parse(true, []string{"-a", "secret"})
 	err := command.Run(&context, client)
 	c.Assert(err, check.IsNil)
 	c.Assert(stdout.String(), check.Equals, "App secret has no deploy.\n")
@@ -742,7 +749,9 @@ func (s *S) TestDeployRunTarGeneration(c *check.C) {
 	c.Assert(err, check.IsNil)
 	defer os.Chdir(origDir)
 	for i, tt := range tests {
-		tmpDir, err := ioutil.TempDir("", "integrarion")
+		comment := check.Commentf("test %d", i)
+
+		tmpDir, err := ioutil.TempDir("", "integration")
 		c.Assert(err, check.IsNil)
 		defer os.RemoveAll(tmpDir)
 		err = os.Chdir(tmpDir)
@@ -770,14 +779,14 @@ func (s *S) TestDeployRunTarGeneration(c *check.C) {
 			Stderr: &stderr,
 			Args:   tt.deployArgs,
 		}
-		guessCommand := cmd.GuessingCommand{G: &cmdtest.FakeGuesser{Name: "secret"}}
-		cmd := AppDeploy{GuessingCommand: guessCommand}
-		cmd.Flags().Parse(true, tt.flags)
-		err = cmd.Run(&context, client)
+		cmd := AppDeploy{}
+		err = cmd.Flags().Parse(true, append([]string{"-a", "secret"}, tt.flags...))
 		c.Assert(err, check.IsNil)
+		err = cmd.Run(&context, client)
+		c.Assert(err, check.IsNil, comment)
 		sort.Strings(foundFiles)
 		sort.Strings(tt.expected)
-		c.Assert(foundFiles, check.DeepEquals, tt.expected, check.Commentf("test %d", i))
-		c.Assert(stderr.String(), check.Matches, tt.expectedStderr, check.Commentf("test %d", i))
+		c.Assert(foundFiles, check.DeepEquals, tt.expected, comment)
+		c.Assert(stderr.String(), check.Matches, tt.expectedStderr, comment)
 	}
 }
