@@ -40,13 +40,13 @@ func (c *AppBuild) Info() *cmd.Info {
 
 ::
 
-		$ tsuru app-build -a myapp -t mytag .
-		$ tsuru app-build -a myapp -t latest myfile.jar Procfile
-		$ tsuru app-build -a myapp -t mytag -f directory/main.go directory/Procfile
+		$ tsuru app build -a myapp -t mytag .
+		$ tsuru app build -a myapp -t latest myfile.jar Procfile
+		$ tsuru app build -a myapp -t mytag -f directory/main.go directory/Procfile
 `
 	return &cmd.Info{
 		Name:    "app-build",
-		Usage:   "app-build [-a/--app <appname>] [-t/--tag <image_tag>] [-f/--files-only] <file-or-dir-1> [file-or-dir-2] ... [file-or-dir-n]",
+		Usage:   "app build [-a/--app <appname>] [-t/--tag <image_tag>] [-f/--files-only] <file-or-dir-1> [file-or-dir-2] ... [file-or-dir-n]",
 		Desc:    desc,
 		MinArgs: 0,
 	}

@@ -26,7 +26,7 @@ Creates a standard example of .tsuruignore , tsuru.yaml and Procfile
 	It is the way to tell tsuru how to run your applications;
 
 ".tsuruignore" describes to tsuru what it should not add into your 
-	deploy process, via "tsuru app-deploy" command. You can use 
+	deploy process, via "tsuru app deploy" command. You can use 
 	".tsuruignore" to avoid sending files that were committed, 
 	but aren't necessary for running the app, like tests and 
 	documentation;

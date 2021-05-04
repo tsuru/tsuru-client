@@ -32,7 +32,7 @@ If you use the [[--once]] flag tsuru will run the command only in one unit.
 Otherwise, it will run the command in all units.`
 	return &cmd.Info{
 		Name:    "app-run",
-		Usage:   "app-run <command> [commandarg1] [commandarg2] ... [commandargn] [-a/--app appname] [-o/--once] [-i/--isolated]",
+		Usage:   "app run <command> [commandarg1] [commandarg2] ... [commandargn] [-a/--app appname] [-o/--once] [-i/--isolated]",
 		Desc:    desc,
 		MinArgs: 1,
 	}

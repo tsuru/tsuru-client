@@ -27,7 +27,7 @@ type AppSwap struct {
 func (s *AppSwap) Info() *cmd.Info {
 	return &cmd.Info{
 		Name:  "app-swap",
-		Usage: "app-swap <app1-name> <app2-name> [-f/--force] [-c/--cname-only]",
+		Usage: "app swap <app1-name> <app2-name> [-f/--force] [-c/--cname-only]",
 		Desc: `Swaps routing between two apps. This allows zero downtime and makes rollback
 as simple as swapping the applications back.
 

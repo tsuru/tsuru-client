@@ -34,7 +34,7 @@ type MetadataGet struct {
 func (c *MetadataGet) Info() *cmd.Info {
 	return &cmd.Info{
 		Name:    "app-metadata-get",
-		Usage:   "app-metadata-get [-a/--app appname]",
+		Usage:   "app metadata get [-a/--app appname]",
 		Desc:    `Retrieves metadata for an application.`,
 		MinArgs: 0,
 	}
@@ -100,7 +100,7 @@ type MetadataSet struct {
 func (c *MetadataSet) Info() *cmd.Info {
 	return &cmd.Info{
 		Name:    "app-metadata-set",
-		Usage:   "app-metadata-set <NAME=value> [NAME=value] ... [-a/--app appname] [-t/--type type]",
+		Usage:   "app metadata set <NAME=value> [NAME=value] ... [-a/--app appname] [-t/--type type]",
 		Desc:    `Sets metadata such as labels and annotations for an application.`,
 		MinArgs: 1,
 	}
@@ -193,7 +193,7 @@ type MetadataUnset struct {
 func (c *MetadataUnset) Info() *cmd.Info {
 	return &cmd.Info{
 		Name:    "app-metadata-unset",
-		Usage:   "app-metadata-unset <NAME> [NAME] ... [-a/--app appname] [-t/--type type]",
+		Usage:   "app metadata unset <NAME> [NAME] ... [-a/--app appname] [-t/--type type]",
 		Desc:    `Unsets metadata such as labels and annotations for an application.`,
 		MinArgs: 1,
 	}
