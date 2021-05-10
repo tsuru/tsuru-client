@@ -152,6 +152,7 @@ func (s *S) TestEnvSetRun(c *check.C) {
 			var e apiTypes.Envs
 			dec := form.NewDecoder(nil)
 			dec.IgnoreUnknownKeys(true)
+			dec.UseJSONTags(false)
 			err = dec.DecodeValues(&e, req.Form)
 			c.Assert(err, check.IsNil)
 			path := strings.HasSuffix(req.URL.Path, "/apps/someapp/env")
@@ -219,6 +220,7 @@ variable 2`, Alias: "", Private: &private},
 			var e apiTypes.Envs
 			dec := form.NewDecoder(nil)
 			dec.IgnoreUnknownKeys(true)
+			dec.UseJSONTags(false)
 			err = dec.DecodeValues(&e, req.Form)
 			c.Assert(err, check.IsNil)
 			c.Assert(e.Envs, check.DeepEquals, want)
@@ -275,6 +277,7 @@ func (s *S) TestEnvSetValues(c *check.C) {
 			var e apiTypes.Envs
 			dec := form.NewDecoder(nil)
 			dec.IgnoreUnknownKeys(true)
+			dec.UseJSONTags(false)
 			err = dec.DecodeValues(&e, req.Form)
 			c.Assert(err, check.IsNil)
 			c.Assert(e.Envs, check.DeepEquals, want)
@@ -330,6 +333,7 @@ func (s *S) TestEnvSetValuesAndPrivateAndNoRestart(c *check.C) {
 			var e apiTypes.Envs
 			dec := form.NewDecoder(nil)
 			dec.IgnoreUnknownKeys(true)
+			dec.UseJSONTags(false)
 			err = dec.DecodeValues(&e, req.Form)
 			c.Assert(err, check.IsNil)
 			c.Assert(e.Envs, check.DeepEquals, want)
@@ -368,6 +372,7 @@ func (s *S) TestEnvSetWithoutFlag(c *check.C) {
 			var e apiTypes.Envs
 			dec := form.NewDecoder(nil)
 			dec.IgnoreUnknownKeys(true)
+			dec.UseJSONTags(false)
 			err = dec.DecodeValues(&e, req.Form)
 			c.Assert(err, check.IsNil)
 			private := !e.Private

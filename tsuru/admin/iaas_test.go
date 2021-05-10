@@ -513,6 +513,7 @@ func (s *S) TestTemplateAddCmdRun(c *check.C) {
 			var paramTemplate iaas.Template
 			dec := form.NewDecoder(nil)
 			dec.IgnoreUnknownKeys(true)
+			dec.UseJSONTags(false)
 			err = dec.DecodeValues(&paramTemplate, req.Form)
 			c.Assert(err, check.IsNil)
 			c.Assert(paramTemplate, check.DeepEquals, expectedBody)
@@ -556,6 +557,7 @@ func (s *S) TestTemplateUpdateCmdRun(c *check.C) {
 			var template iaas.Template
 			dec := form.NewDecoder(nil)
 			dec.IgnoreUnknownKeys(true)
+			dec.UseJSONTags(false)
 			err := req.ParseForm()
 			c.Assert(err, check.IsNil)
 			err = dec.DecodeValues(&template, req.Form)
@@ -600,6 +602,7 @@ func (s *S) TestTemplateUpdateIaaS(c *check.C) {
 			var template iaas.Template
 			dec := form.NewDecoder(nil)
 			dec.IgnoreUnknownKeys(true)
+			dec.UseJSONTags(false)
 			err = dec.DecodeValues(&template, req.Form)
 			c.Assert(err, check.IsNil)
 			c.Assert(template, check.DeepEquals, expectedBody)
@@ -634,6 +637,7 @@ func (s *S) TestTemplateFailToUpdateIaaS(c *check.C) {
 			var template iaas.Template
 			dec := form.NewDecoder(nil)
 			dec.IgnoreUnknownKeys(true)
+			dec.UseJSONTags(false)
 			err = dec.DecodeValues(&template, req.Form)
 			c.Assert(err, check.IsNil)
 			c.Assert(template, check.DeepEquals, expectedBody)
@@ -688,6 +692,7 @@ func (s *S) TestTemplateCopyCmdRun(c *check.C) {
 				var paramTemplate iaas.Template
 				dec := form.NewDecoder(nil)
 				dec.IgnoreUnknownKeys(true)
+				dec.UseJSONTags(false)
 				err = dec.DecodeValues(&paramTemplate, req.Form)
 				c.Assert(err, check.IsNil)
 				sort.Slice(paramTemplate.Data, func(i, j int) bool {

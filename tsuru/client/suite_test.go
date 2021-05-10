@@ -10,6 +10,7 @@ import (
 	"testing"
 	"time"
 
+	"github.com/ajg/form"
 	"github.com/tsuru/tsuru-client/tsuru/formatter"
 	"github.com/tsuru/tsuru/cmd"
 	"gopkg.in/check.v1"
@@ -22,6 +23,8 @@ type S struct {
 func (s *S) SetUpSuite(c *check.C) {
 	os.Setenv("TSURU_TARGET", "http://localhost:8080")
 	os.Setenv("TSURU_TOKEN", "sometoken")
+	form.DefaultEncoder = form.DefaultEncoder.UseJSONTags(false)
+	form.DefaultDecoder = form.DefaultDecoder.UseJSONTags(false)
 }
 
 func (s *S) TearDownSuite(c *check.C) {

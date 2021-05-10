@@ -34,6 +34,7 @@ func (s *S) TestAddNodeCmdRun(c *check.C) {
 			var params provision.AddNodeOptions
 			dec := form.NewDecoder(nil)
 			dec.IgnoreUnknownKeys(true)
+			dec.UseJSONTags(false)
 			err = dec.DecodeValues(&params, req.Form)
 			c.Assert(err, check.IsNil)
 			u := strings.HasSuffix(req.URL.Path, "/1.2/node")
@@ -63,6 +64,7 @@ func (s *S) TestAddNodeCmdRuWithCerts(c *check.C) {
 			var params provision.AddNodeOptions
 			dec := form.NewDecoder(nil)
 			dec.IgnoreUnknownKeys(true)
+			dec.UseJSONTags(false)
 			err = dec.DecodeValues(&params, req.Form)
 			c.Assert(err, check.IsNil)
 			u := strings.HasSuffix(req.URL.Path, "/1.2/node")
@@ -103,6 +105,7 @@ func (s *S) TestAddNodeWithErrorCmdRun(c *check.C) {
 			var params provision.AddNodeOptions
 			dec := form.NewDecoder(nil)
 			dec.IgnoreUnknownKeys(true)
+			dec.UseJSONTags(false)
 			err = dec.DecodeValues(&params, req.Form)
 			c.Assert(err, check.IsNil)
 			u := strings.HasSuffix(req.URL.Path, "/1.2/node")
@@ -368,6 +371,7 @@ func (s *S) TestUpdateNodeCmdRun(c *check.C) {
 			c.Assert(err, check.IsNil)
 			dec := form.NewDecoder(nil)
 			dec.IgnoreUnknownKeys(true)
+			dec.UseJSONTags(false)
 			err = dec.DecodeValues(&params, req.Form)
 			c.Assert(err, check.IsNil)
 			address := params.Address == "http://localhost:1111"
@@ -396,6 +400,7 @@ func (s *S) TestUpdateNodeToDisableCmdRun(c *check.C) {
 			c.Assert(err, check.IsNil)
 			dec := form.NewDecoder(nil)
 			dec.IgnoreUnknownKeys(true)
+			dec.UseJSONTags(false)
 			err = dec.DecodeValues(&params, req.Form)
 			c.Assert(err, check.IsNil)
 			return params.Disable
@@ -421,6 +426,7 @@ func (s *S) TestUpdateNodeToEnabledCmdRun(c *check.C) {
 			c.Assert(err, check.IsNil)
 			dec := form.NewDecoder(nil)
 			dec.IgnoreUnknownKeys(true)
+			dec.UseJSONTags(false)
 			err = dec.DecodeValues(&params, req.Form)
 			c.Assert(err, check.IsNil)
 			return params.Enable
@@ -594,6 +600,7 @@ func (s *S) TestRebalanceNodeCmdRun(c *check.C) {
 			var params provision.RebalanceNodesOptions
 			dec := form.NewDecoder(nil)
 			dec.IgnoreUnknownKeys(true)
+			dec.UseJSONTags(false)
 			err := dec.DecodeValues(&params, req.Form)
 			c.Assert(err, check.IsNil)
 			c.Assert(params, check.DeepEquals, expectedRebalance)
@@ -642,6 +649,7 @@ func (s *S) TestRebalanceNodeCmdRunWithFilters(c *check.C) {
 			var params provision.RebalanceNodesOptions
 			dec := form.NewDecoder(nil)
 			dec.IgnoreUnknownKeys(true)
+			dec.UseJSONTags(false)
 			err := dec.DecodeValues(&params, req.Form)
 			c.Assert(err, check.IsNil)
 			c.Assert(params, check.DeepEquals, expectedRebalance)
@@ -677,6 +685,7 @@ func (s *S) TestRebalanceNodeCmdRunAskingForConfirmation(c *check.C) {
 			var params provision.RebalanceNodesOptions
 			dec := form.NewDecoder(nil)
 			dec.IgnoreUnknownKeys(true)
+			dec.UseJSONTags(false)
 			err := dec.DecodeValues(&params, req.Form)
 			c.Assert(err, check.IsNil)
 			c.Assert(params.Dry, check.Equals, false)

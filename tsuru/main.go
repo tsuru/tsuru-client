@@ -8,6 +8,7 @@ import (
 	"log"
 	"os"
 
+	"github.com/ajg/form"
 	"github.com/docker/machine/libmachine/drivers/plugin/localbinary"
 	"github.com/tsuru/tsuru-client/tsuru/admin"
 	"github.com/tsuru/tsuru-client/tsuru/client"
@@ -23,6 +24,9 @@ const (
 )
 
 func buildManager(name string) *cmd.Manager {
+	form.DefaultEncoder = form.DefaultEncoder.UseJSONTags(false)
+	form.DefaultDecoder = form.DefaultDecoder.UseJSONTags(false)
+
 	lookup := func(context *cmd.Context) error {
 		return client.RunPlugin(context)
 	}

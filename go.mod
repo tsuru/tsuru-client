@@ -34,6 +34,7 @@ require (
 )
 
 replace (
+	github.com/ajg/form => github.com/cezarsa/form v0.0.0-20210510165411-863b166467b9
 	github.com/docker/docker => github.com/docker/engine v0.0.0-20191121165722-d1d5f6476656
 
 	github.com/docker/machine => github.com/cezarsa/machine v0.7.1-0.20190219165632-cdcfd549f935

@@ -216,6 +216,7 @@ func (s *S) TestVolumeCreate(c *check.C) {
 			dec := form.NewDecoder(nil)
 			dec.IgnoreCase(true)
 			dec.IgnoreUnknownKeys(true)
+			dec.UseJSONTags(false)
 			var vol volumeTypes.Volume
 			err := dec.DecodeValues(&vol, r.Form)
 			c.Assert(err, check.IsNil)
@@ -252,6 +253,7 @@ func (s *S) TestVolumeUpdate(c *check.C) {
 			dec := form.NewDecoder(nil)
 			dec.IgnoreCase(true)
 			dec.IgnoreUnknownKeys(true)
+			dec.UseJSONTags(false)
 			var vol volumeTypes.Volume
 			err := dec.DecodeValues(&vol, r.Form)
 			c.Assert(err, check.IsNil)
