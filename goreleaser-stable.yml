@@ -1,8 +1,8 @@
 # goreleaser.yml
 # Build customization
 project_name: tsuru
-build:
-  main: ./tsuru/main.go
+builds:
+- main: ./tsuru/main.go
   binary: tsuru
   goos:
     - windows
@@ -11,9 +11,12 @@ build:
   goarch:
     - amd64
     - 386
+    - arm64
   ignore:
     - goos: darwin
       goarch: 386
+    - goos: windows
+      goarch: arm64
 
 # Archive customization
 archives:
