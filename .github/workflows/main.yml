@@ -32,7 +32,6 @@ jobs:
       uses: github/codeql-action/upload-sarif@v1
       with:
         sarif_file: results.sarif
-
   docker_deploy:
     name: "publish image on dockerhub"
     if: github.event_name != 'pull_request'
