@@ -1,0 +1,102 @@
+name: Go
+on: [push, pull_request]
+jobs:
+    steps:
+    - name: Checkout the code
+      uses: actions/checkout@v2
+    - name: Build the Docker image
+      run: docker build . --file Dockerfile --tag localbuild/testimage:latest
+    - name: Run the Anchore scan action itself with GitHub Advanced Security code scanning integration enabled
+      uses: anchore/scan-action@main
+      with:
+        image: "localbuild/testimage:latest"
+        acs-report-enable: true
+    - name: Upload Anchore Scan Report
+      uses: github/codeql-action/upload-sarif@v1
+      with:
+        sarif_file: results.sarif
+
+  lint:
+    runs-on: ubuntu-latest
+    steps:
+    - name: Checkout the code
+      uses: actions/checkout@v2
+    - name: Build the Docker image
+      run: docker build . --file Dockerfile --tag localbuild/testimage:latest
+    - name: Run the Anchore scan action itself with GitHub Advanced Security code scanning integration enabled
+      uses: anchore/scan-action@main
+      with:
+        image: "localbuild/testimage:latest"
+        acs-report-enable: true
+    - name: Upload Anchore Scan Report
+      uses: github/codeql-action/upload-sarif@v1
+      with:
+        sarif_file: results.sarif
+  docker_deploy:
+    name: "publish image on dockerhub"
+    if: github.event_name != 'pull_request'
+    needs: [test, lint]
+    runs-on: ubuntu-latest
+    steps:
+    - uses: actions/checkout@v2
+    - uses: docker/setup-buildx-action@v1
+    - uses: actions/cache@v2
+      with:
+        path: /tmp/.buildx-cache
+        key: ${{ runner.os }}-buildx-${{ github.sha }}
+        restore-keys: |
+          ${{ runner.os }}-buildx-
+    - uses: Surgo/docker-smart-tag-action@v1
+      id: smarttag
+      with:
+        docker_image: tsuru/client
+        default_branch: master
+    - uses: docker/login-action@v1
+      with:
+        username: ${{ secrets.DOCKERHUB_USERNAME }}
+        password: ${{ secrets.DOCKERHUB_PASSWORD }}
+    - uses: docker/build-push-action@v2
+      with:
+        file: ./Dockerfile
+        push: true
+        tags: ${{ steps.smarttag.outputs.tag }}
+        cache-from: type=local,src=/tmp/.buildx-cache
+        cache-to: type=local,dest=/tmp/.buildx-cache
+
+  deploy:
+    if: github.event_name != 'pull_request' && startsWith(github.ref, 'refs/tags/')
+    needs: [test, lint]
+    runs-on: ubuntu-latest
+    steps:
+    - uses: actions/setup-go@v1
+      with:
+        go-version: 1.16
+    - uses: actions/checkout@v1
+
+    - name: rc release
+      uses: goreleaser/goreleaser-action@v2
+      if: contains(github.ref, '-rc')
+      with:
+        args: --config goreleaser-rc.yml
+      env:
+        GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+
+    - name: stable release
+      uses: goreleaser/goreleaser-action@v2
+      if: "!contains(github.ref, '-rc')"
+      with:
+        args: --config goreleaser-stable.yml
+      env:
+        GITHUB_TOKEN: ${{ secrets.CUSTOM_GITHUB_TOKEN }}
+
+    - uses: actions/setup-ruby@v1
+      with:
+        ruby-version: '2.5'
+
+    - name: packagecloud
+      env:
+        PACKAGE_NAME: tsuru-client
+        PACKAGECLOUD_TOKEN: ${{secrets.PACKAGECLOUD_TOKEN}}
+        SKIP_GORELEASER: "true"
+      run: |
+        curl -sL https://raw.githubusercontent.com/tsuru/push-to-packagecloud/master/push.sh | bash
