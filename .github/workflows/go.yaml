@@ -6,37 +6,37 @@ jobs:
     strategy:
       matrix:
         os: [ubuntu-latest, windows-latest, macOS-latest]
-    steps:
-
-    - uses: actions/setup-go@v1
+        steps:
+    - name: Checkout the code
+      uses: actions/checkout@v2
+    - name: Build the Docker image
+      run: docker build . --file Dockerfile --tag localbuild/testimage:latest
+    - name: Run the Anchore scan action itself with GitHub Advanced Security code scanning integration enabled
+      uses: anchore/scan-action@main
       with:
-        go-version: 1.16
-
-    - uses: actions/checkout@v1
-
-    - uses: actions/cache@v1
+        image: "localbuild/testimage:latest"
+        acs-report-enable: true
+    - name: Upload Anchore Scan Report
+      uses: github/codeql-action/upload-sarif@v1
       with:
-        path: ~/go/pkg/mod
-        key: ${{ runner.os }}-go-${{ hashFiles('**/go.sum') }}
-        restore-keys: |
-          ${{ runner.os }}-go-
-
-    - run: go test -race -coverprofile=coverage.txt -covermode=atomic ./...
-      shell: bash
-
-    - name: Upload coverage to Codecov
-      uses: codecov/codecov-action@v1
-      if: matrix.os == 'ubuntu-latest'
+        sarif_file: results.sarif
 
   lint:
     runs-on: ubuntu-latest
-    steps:
-    - uses: actions/setup-go@v1
+        steps:
+    - name: Checkout the code
+      uses: actions/checkout@v2
+    - name: Build the Docker image
+      run: docker build . --file Dockerfile --tag localbuild/testimage:latest
+    - name: Run the Anchore scan action itself with GitHub Advanced Security code scanning integration enabled
+      uses: anchore/scan-action@main
       with:
-        go-version: 1.16
-    - uses: actions/checkout@v1
-    - run: make metalint
-
+        image: "localbuild/testimage:latest"
+        acs-report-enable: true
+    - name: Upload Anchore Scan Report
+      uses: github/codeql-action/upload-sarif@v1
+      with:
+        sarif_file: results.sarif
   docker_deploy:
     name: "publish image on dockerhub"
     if: github.event_name != 'pull_request'
