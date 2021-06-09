@@ -45,19 +45,23 @@ Use app info to check the status of the app and its units.` + "\n"
 	trans := cmdtest.ConditionalTransport{
 		Transport: cmdtest.Transport{Message: result, Status: http.StatusOK},
 		CondFunc: func(r *http.Request) bool {
-			name := r.FormValue("name") == "ble"
-			platform := r.FormValue("platform") == "django"
-			teamOwner := r.FormValue("teamOwner") == ""
-			plan := r.FormValue("plan") == ""
-			pool := r.FormValue("pool") == ""
-			description := r.FormValue("description") == ""
-			r.ParseForm()
-			tags := r.Form["tag"] == nil
-			router := r.FormValue("router") == ""
-			method := r.Method == "POST"
-			contentType := r.Header.Get("Content-Type") == "application/x-www-form-urlencoded"
 			url := strings.HasSuffix(r.URL.Path, "/apps")
-			return method && url && name && platform && teamOwner && plan && pool && description && tags && contentType && router
+			data, err := ioutil.ReadAll(r.Body)
+			c.Assert(err, check.IsNil)
+			var appResult map[string]interface{}
+			err = json.Unmarshal(data, &appResult)
+			c.Assert(err, check.IsNil)
+			name := appResult["name"] == "ble"
+			platform := appResult["platform"] == "django"
+			teamOwner := appResult["teamOwner"] == nil
+			plan := appResult["plan"] == nil
+			pool := appResult["pool"] == nil
+			description := appResult["description"] == nil
+			tags := appResult["tags"] == nil
+			router := appResult["router"] == nil
+			method := r.Method == "POST"
+			//contentType := r.Header.Get("Content-Type") == "application/json"
+			return method && url && name && platform && teamOwner && plan && pool && description && tags && router
 		},
 	}
 	client := cmd.NewClient(&http.Client{Transport: &trans}, nil, manager)
@@ -80,18 +84,22 @@ Use app info to check the status of the app and its units.` + "\n"
 	trans := cmdtest.ConditionalTransport{
 		Transport: cmdtest.Transport{Message: result, Status: http.StatusOK},
 		CondFunc: func(r *http.Request) bool {
-			name := r.FormValue("name") == "ble"
-			platform := r.FormValue("platform") == ""
-			teamOwner := r.FormValue("teamOwner") == ""
-			plan := r.FormValue("plan") == ""
-			pool := r.FormValue("pool") == ""
-			description := r.FormValue("description") == ""
-			r.ParseForm()
-			tags := r.Form["tag"] == nil
-			router := r.FormValue("router") == ""
-			method := r.Method == "POST"
-			contentType := r.Header.Get("Content-Type") == "application/x-www-form-urlencoded"
 			url := strings.HasSuffix(r.URL.Path, "/apps")
+			data, err := ioutil.ReadAll(r.Body)
+			c.Assert(err, check.IsNil)
+			var appResult map[string]interface{}
+			err = json.Unmarshal(data, &appResult)
+			c.Assert(err, check.IsNil)
+			name := appResult["name"] == "ble"
+			platform := appResult["platform"] == nil
+			teamOwner := appResult["teamOwner"] == nil
+			plan := appResult["plan"] == nil
+			pool := appResult["pool"] == nil
+			description := appResult["description"] == nil
+			tags := appResult["tags"] == nil
+			router := appResult["router"] == nil
+			method := r.Method == "POST"
+			contentType := r.Header.Get("Content-Type") == "application/json"
 			return method && url && name && platform && teamOwner && plan && pool && description && tags && contentType && router
 		},
 	}
@@ -115,18 +123,22 @@ Use app info to check the status of the app and its units.` + "\n"
 	trans := cmdtest.ConditionalTransport{
 		Transport: cmdtest.Transport{Message: result, Status: http.StatusOK},
 		CondFunc: func(r *http.Request) bool {
-			name := r.FormValue("name") == "ble"
-			platform := r.FormValue("platform") == "django"
-			teamOwner := r.FormValue("teamOwner") == "team"
-			plan := r.FormValue("plan") == ""
-			pool := r.FormValue("pool") == ""
-			description := r.FormValue("description") == ""
-			r.ParseForm()
-			tags := r.Form["tag"] == nil
-			router := r.FormValue("router") == ""
-			method := r.Method == "POST"
 			url := strings.HasSuffix(r.URL.Path, "/apps")
-			contentType := r.Header.Get("Content-Type") == "application/x-www-form-urlencoded"
+			data, err := ioutil.ReadAll(r.Body)
+			c.Assert(err, check.IsNil)
+			var appResult map[string]interface{}
+			err = json.Unmarshal(data, &appResult)
+			c.Assert(err, check.IsNil)
+			name := appResult["name"] == "ble"
+			platform := appResult["platform"] == "django"
+			teamOwner := appResult["teamOwner"] == "team"
+			plan := appResult["plan"] == nil
+			pool := appResult["pool"] == nil
+			description := appResult["description"] == nil
+			tags := appResult["tags"] == nil
+			router := appResult["router"] == nil
+			method := r.Method == "POST"
+			contentType := r.Header.Get("Content-Type") == "application/json"
 			return method && url && name && platform && teamOwner && plan && pool && description && tags && contentType && router
 		},
 	}
@@ -151,18 +163,22 @@ Use app info to check the status of the app and its units.` + "\n"
 	trans := cmdtest.ConditionalTransport{
 		Transport: cmdtest.Transport{Message: result, Status: http.StatusOK},
 		CondFunc: func(r *http.Request) bool {
-			name := r.FormValue("name") == "ble"
-			platform := r.FormValue("platform") == "django"
-			teamOwner := r.FormValue("teamOwner") == ""
-			plan := r.FormValue("plan") == "myplan"
-			pool := r.FormValue("pool") == ""
-			router := r.FormValue("router") == ""
-			description := r.FormValue("description") == ""
-			r.ParseForm()
-			tags := r.Form["tag"] == nil
-			method := r.Method == "POST"
 			url := strings.HasSuffix(r.URL.Path, "/apps")
-			contentType := r.Header.Get("Content-Type") == "application/x-www-form-urlencoded"
+			data, err := ioutil.ReadAll(r.Body)
+			c.Assert(err, check.IsNil)
+			var appResult map[string]interface{}
+			err = json.Unmarshal(data, &appResult)
+			c.Assert(err, check.IsNil)
+			name := appResult["name"] == "ble"
+			platform := appResult["platform"] == "django"
+			teamOwner := appResult["teamOwner"] == nil
+			plan := appResult["plan"] == "myplan"
+			pool := appResult["pool"] == nil
+			description := appResult["description"] == nil
+			tags := appResult["tags"] == nil
+			router := appResult["router"] == nil
+			method := r.Method == "POST"
+			contentType := r.Header.Get("Content-Type") == "application/json"
 			return method && url && name && platform && teamOwner && plan && pool && description && tags && contentType && router
 		},
 	}
@@ -187,19 +203,23 @@ Use app info to check the status of the app and its units.` + "\n"
 	trans := cmdtest.ConditionalTransport{
 		Transport: cmdtest.Transport{Message: result, Status: http.StatusOK},
 		CondFunc: func(r *http.Request) bool {
-			name := r.FormValue("name") == "ble"
-			platform := r.FormValue("platform") == "django"
-			teamowner := r.FormValue("teamowner") == ""
-			plan := r.FormValue("plan") == ""
-			pool := r.FormValue("pool") == "mypool"
-			router := r.FormValue("router") == ""
-			description := r.FormValue("description") == ""
-			r.ParseForm()
-			tags := r.Form["tag"] == nil
-			method := r.Method == "POST"
 			url := strings.HasSuffix(r.URL.Path, "/apps")
-			contentType := r.Header.Get("Content-Type") == "application/x-www-form-urlencoded"
-			return method && url && name && platform && teamowner && plan && pool && description && tags && contentType && router
+			data, err := ioutil.ReadAll(r.Body)
+			c.Assert(err, check.IsNil)
+			var appResult map[string]interface{}
+			err = json.Unmarshal(data, &appResult)
+			c.Assert(err, check.IsNil)
+			name := appResult["name"] == "ble"
+			platform := appResult["platform"] == "django"
+			teamOwner := appResult["teamOwner"] == nil
+			plan := appResult["plan"] == nil
+			pool := appResult["pool"] == "mypool"
+			description := appResult["description"] == nil
+			tags := appResult["tags"] == nil
+			router := appResult["router"] == nil
+			method := r.Method == "POST"
+			contentType := r.Header.Get("Content-Type") == "application/json"
+			return method && url && name && platform && teamOwner && plan && pool && description && tags && contentType && router
 		},
 	}
 	client := cmd.NewClient(&http.Client{Transport: &trans}, nil, manager)
@@ -223,21 +243,23 @@ Use app info to check the status of the app and its units.` + "\n"
 	trans := cmdtest.ConditionalTransport{
 		Transport: cmdtest.Transport{Message: result, Status: http.StatusOK},
 		CondFunc: func(r *http.Request) bool {
-			name := r.FormValue("name") == "ble"
-			platform := r.FormValue("platform") == "django"
-			teamowner := r.FormValue("teamowner") == ""
-			plan := r.FormValue("plan") == ""
-			pool := r.FormValue("pool") == ""
-			description := r.FormValue("description") == ""
-			r.ParseForm()
-			tags := r.Form["tag"] == nil
-			router := r.FormValue("router") == ""
-			c.Assert(r.FormValue("routeropts.a"), check.Equals, "1")
-			c.Assert(r.FormValue("routeropts.b"), check.Equals, "2")
-			method := r.Method == "POST"
 			url := strings.HasSuffix(r.URL.Path, "/apps")
-			contentType := r.Header.Get("Content-Type") == "application/x-www-form-urlencoded"
-			return method && url && name && platform && teamowner && plan && pool && description && tags && contentType && router
+			data, err := ioutil.ReadAll(r.Body)
+			c.Assert(err, check.IsNil)
+			var appResult map[string]interface{}
+			err = json.Unmarshal(data, &appResult)
+			c.Assert(err, check.IsNil)
+			method := r.Method == "POST"
+			contentType := r.Header.Get("Content-Type") == "application/json"
+			c.Assert(appResult, check.DeepEquals, map[string]interface{}{
+				"name":     "ble",
+				"platform": "django",
+				"routeropts": map[string]interface{}{
+					"a": "1",
+					"b": "2"},
+				"metadata": map[string]interface{}{},
+			})
+			return method && url && contentType
 		},
 	}
 	client := cmd.NewClient(&http.Client{Transport: &trans}, nil, manager)
@@ -261,18 +283,22 @@ Use app info to check the status of the app and its units.` + "\n"
 	trans := cmdtest.ConditionalTransport{
 		Transport: cmdtest.Transport{Message: result, Status: http.StatusOK},
 		CondFunc: func(r *http.Request) bool {
-			name := r.FormValue("name") == "ble"
-			platform := r.FormValue("platform") == "django"
-			teamowner := r.FormValue("teamowner") == ""
-			plan := r.FormValue("plan") == ""
-			pool := r.FormValue("pool") == ""
-			router := r.FormValue("router") == ""
-			description := r.FormValue("description") == ""
-			r.ParseForm()
-			tags := r.Form["tag"] == nil
-			method := r.Method == "POST"
 			url := strings.HasSuffix(r.URL.Path, "/apps")
-			contentType := r.Header.Get("Content-Type") == "application/x-www-form-urlencoded"
+			data, err := ioutil.ReadAll(r.Body)
+			c.Assert(err, check.IsNil)
+			var appResult map[string]interface{}
+			err = json.Unmarshal(data, &appResult)
+			c.Assert(err, check.IsNil)
+			name := appResult["name"] == "ble"
+			platform := appResult["platform"] == "django"
+			teamowner := appResult["teamOwner"] == nil
+			plan := appResult["plan"] == nil
+			pool := appResult["pool"] == nil
+			description := appResult["description"] == nil
+			tags := appResult["tags"] == nil
+			router := appResult["router"] == nil
+			method := r.Method == "POST"
+			contentType := r.Header.Get("Content-Type") == "application/json"
 			return method && url && name && platform && teamowner && plan && pool && description && tags && contentType && router
 		},
 	}
@@ -310,19 +336,23 @@ Use app info to check the status of the app and its units.` + "\n"
 	trans := cmdtest.ConditionalTransport{
 		Transport: cmdtest.Transport{Message: result, Status: http.StatusOK},
 		CondFunc: func(r *http.Request) bool {
-			r.ParseForm()
-			name := r.FormValue("name") == "ble"
-			platform := r.FormValue("platform") == "django"
-			teamOwner := r.FormValue("teamOwner") == ""
-			plan := r.FormValue("plan") == ""
-			pool := r.FormValue("pool") == ""
-			description := r.FormValue("description") == ""
-			tags := len(r.Form["tag"]) == 2 && r.Form["tag"][0] == "tag1" && r.Form["tag"][1] == "tag2"
-			router := r.FormValue("router") == ""
-			method := r.Method == "POST"
-			contentType := r.Header.Get("Content-Type") == "application/x-www-form-urlencoded"
 			url := strings.HasSuffix(r.URL.Path, "/apps")
-			return method && url && name && platform && teamOwner && plan && pool && description && tags && contentType && router
+			data, err := ioutil.ReadAll(r.Body)
+			c.Assert(err, check.IsNil)
+			var appResult map[string]interface{}
+			err = json.Unmarshal(data, &appResult)
+			c.Assert(err, check.IsNil)
+			c.Assert(appResult, check.DeepEquals, map[string]interface{}{
+				"name":     "ble",
+				"platform": "django",
+				"tags": []interface{}{
+					"tag1",
+					"tag2"},
+				"metadata": map[string]interface{}{},
+			})
+			method := r.Method == "POST"
+			contentType := r.Header.Get("Content-Type") == "application/json"
+			return method && contentType && url
 		},
 	}
 	client := cmd.NewClient(&http.Client{Transport: &trans}, nil, manager)
@@ -346,19 +376,21 @@ Use app info to check the status of the app and its units.` + "\n"
 	trans := cmdtest.ConditionalTransport{
 		Transport: cmdtest.Transport{Message: result, Status: http.StatusOK},
 		CondFunc: func(r *http.Request) bool {
-			r.ParseForm()
-			name := r.FormValue("name") == "ble"
-			platform := r.FormValue("platform") == "django"
-			teamOwner := r.FormValue("teamOwner") == ""
-			plan := r.FormValue("plan") == ""
-			pool := r.FormValue("pool") == ""
-			description := r.FormValue("description") == ""
-			tags := len(r.Form["tag"]) == 1 && r.Form["tag"][0] == ""
-			router := r.FormValue("router") == ""
-			method := r.Method == "POST"
-			contentType := r.Header.Get("Content-Type") == "application/x-www-form-urlencoded"
 			url := strings.HasSuffix(r.URL.Path, "/apps")
-			return method && url && name && platform && teamOwner && plan && pool && description && tags && contentType && router
+			data, err := ioutil.ReadAll(r.Body)
+			c.Assert(err, check.IsNil)
+			var appResult map[string]interface{}
+			err = json.Unmarshal(data, &appResult)
+			c.Assert(err, check.IsNil)
+			c.Assert(appResult, check.DeepEquals, map[string]interface{}{
+				"name":     "ble",
+				"platform": "django",
+				"tags":     []interface{}{""},
+				"metadata": map[string]interface{}{},
+			})
+			method := r.Method == "POST"
+			contentType := r.Header.Get("Content-Type") == "application/json"
+			return method && url && contentType
 		},
 	}
 	client := cmd.NewClient(&http.Client{Transport: &trans}, nil, manager)
@@ -2641,11 +2673,18 @@ func (s *S) TestAddCName(c *check.C) {
 		Transport: cmdtest.Transport{Message: "Restarted", Status: http.StatusOK},
 		CondFunc: func(req *http.Request) bool {
 			called = true
-			cname := req.FormValue("cname") == "death.evergrey.mycompany.com"
+			data, err := ioutil.ReadAll(req.Body)
+			c.Assert(err, check.IsNil)
+			cNameResult := make(map[string]interface{})
+			err = json.Unmarshal(data, &cNameResult)
+			c.Assert(err, check.IsNil)
+			c.Assert(cNameResult, check.DeepEquals, map[string]interface{}{
+				"cname": []interface{}{"death.evergrey.mycompany.com"},
+			})
 			method := req.Method == "POST"
 			url := strings.HasSuffix(req.URL.Path, "/apps/death/cname")
-			contentType := req.Header.Get("Content-Type") == "application/x-www-form-urlencoded"
-			return method && url && cname && contentType
+			contentType := req.Header.Get("Content-Type") == "application/json"
+			return method && url && contentType
 		},
 	}
 	client := cmd.NewClient(&http.Client{Transport: trans}, nil, manager)
