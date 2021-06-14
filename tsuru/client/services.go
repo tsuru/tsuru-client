@@ -130,39 +130,36 @@ This example shows how to add a new instance of **mongodb** service, named
 	}
 }
 
-func (c *ServiceInstanceAdd) Run(ctx *cmd.Context, client *cmd.Client) error {
+func (c *ServiceInstanceAdd) Run(ctx *cmd.Context, cli *cmd.Client) error {
+	ctx.RawOutput()
 	serviceName, instanceName := ctx.Args[0], ctx.Args[1]
 	var plan string
 	if len(ctx.Args) > 2 {
 		plan = ctx.Args[2]
 	}
-	parameters := make(map[string]interface{})
-	for k, v := range c.params {
-		parameters[k] = v
-	}
-	v, err := form.EncodeToValues(map[string]interface{}{"parameters": parameters})
-	if err != nil {
-		return err
-	}
 	// This is kept as this to keep backwards compatibility with older API versions
-	v.Set("name", instanceName)
-	v.Set("plan", plan)
-	v.Set("owner", c.teamOwner)
-	v.Set("description", c.description)
-	v.Set("pool", c.pool)
-	for _, tag := range c.tags {
-		v.Add("tag", tag)
-	}
-	u, err := cmd.GetURL(fmt.Sprintf("/services/%s/instances", serviceName))
+	var instanceAdd tsuru.ServiceInstance
+	instanceAdd.Name = instanceName
+	instanceAdd.PlanName = plan
+	instanceAdd.Description = c.description
+	instanceAdd.TeamOwner = c.teamOwner
+	instanceAdd.Pool = c.pool
+	instanceAdd.Parameters = c.params
+	instanceAdd.Tags = c.tags
+
+	apiClient, err := tsuruClient.ClientFromEnvironment(&tsuru.Configuration{
+		HTTPClient: cli.HTTPClient,
+	})
 	if err != nil {
 		return err
 	}
-	request, err := http.NewRequest("POST", u, strings.NewReader(v.Encode()))
+	_, err = apiClient.ServiceApi.InstanceCreate(context.TODO(), serviceName, instanceAdd)
 	if err != nil {
 		return err
 	}
-	request.Header.Set("Content-Type", "application/x-www-form-urlencoded")
-	_, err = client.Do(request)
+	//err = cmd.StreamJSONResponse(ctx.Stdout, response)
+	//request.Header.Set("Content-Type", "application/json")
+	// _, err = cli.Do(request)
 	if err != nil {
 		return err
 	}

@@ -11,7 +11,6 @@ import (
 	"net/http"
 	"strings"
 
-	"github.com/ajg/form"
 	"github.com/tsuru/tsuru/cmd"
 	"github.com/tsuru/tsuru/cmd/cmdtest"
 	"github.com/tsuru/tsuru/io"
@@ -394,34 +393,52 @@ func (s *S) TestServiceInstanceAddRun(c *check.C) {
 	trans := cmdtest.ConditionalTransport{
 		Transport: cmdtest.Transport{Message: result, Status: http.StatusOK},
 		CondFunc: func(r *http.Request) bool {
-			err := r.ParseForm()
+			//err := r.ParseForm()
+			data, err := ioutil.ReadAll(r.Body)
 			c.Assert(err, check.IsNil)
-			instance := service.ServiceInstance{
-				PlanName:  r.FormValue("plan"),
-				TeamOwner: r.FormValue("owner"),
-			}
-			dec := form.NewDecoder(nil)
-			dec.IgnoreCase(true)
-			dec.IgnoreUnknownKeys(true)
-			dec.UseJSONTags(false)
-			err = dec.DecodeValues(&instance, r.Form)
+			// instance := service.ServiceInstance{
+			// 	PlanName:  r.FormValue("plan"),
+			// 	TeamOwner: r.FormValue("owner"),
+			// }
+			// dec := form.NewDecoder(nil)
+			// dec.IgnoreCase(true)
+			// dec.IgnoreUnknownKeys(true)
+			// dec.UseJSONTags(false)
+			var result map[string]interface{}
+			err = json.Unmarshal(data, &result)
 			c.Assert(err, check.IsNil)
-			instance.Tags = append(instance.Tags, r.Form["tag"]...)
-			c.Assert(err, check.IsNil)
-			c.Assert(instance, check.DeepEquals, service.ServiceInstance{
-				Name:        "my_app_db",
-				PlanName:    "small",
-				TeamOwner:   "my team",
-				Description: "desc",
-				Tags:        []string{"my tag 1", "my tag 2"},
-				Parameters: map[string]interface{}{
+			c.Assert(result, check.DeepEquals, map[string]interface{}{
+				"name":        "my_app_db",
+				"plan_name":   "small",
+				"team_owner":  "my team",
+				"description": "desc",
+				"tags": []interface{}{
+					"my tag 1", "my tag 2"},
+				"parameters": map[string]interface{}{
 					"param1": "value1",
 					"param2": "value2",
 				},
-				Pool: "pool-one",
+				"pool": "pool-one",
 			})
+			//err = json.Unmarshal(data, &instance)
+			//err = dec.DecodeValues(&instance, r.Form)
+			//c.Assert(err, check.IsNil)
+			// instance.Tags = append(instance.Tags, r.Form["tag"]...)
+			// c.Assert(err, check.IsNil)
+			// c.Assert(instance, check.DeepEquals, service.ServiceInstance{
+			// 	Name:        "my_app_db",
+			// 	PlanName:    "small",
+			// 	TeamOwner:   "my team",
+			// 	Description: "desc",
+			// 	Tags:        []string{"my tag 1", "my tag 2"},
+			// 	Parameters: map[string]interface{}{
+			// 		"param1": "value1",
+			// 		"param2": "value2",
+			// 	},
+			// 	Pool: "pool-one",
+			// })
 			c.Assert(r.Method, check.DeepEquals, "POST")
-			c.Assert(r.Header.Get("Content-Type"), check.DeepEquals, "application/x-www-form-urlencoded")
+			c.Assert(r.Header.Get("Content-Type"), check.DeepEquals, "application/json")
 			return strings.HasSuffix(r.URL.Path, "/services/mysql/instances")
 		},
 	}
@@ -456,22 +473,32 @@ func (s *S) TestServiceInstanceAddRunWithEmptyTag(c *check.C) {
 	trans := cmdtest.ConditionalTransport{
 		Transport: cmdtest.Transport{Message: result, Status: http.StatusOK},
 		CondFunc: func(r *http.Request) bool {
-			err := r.ParseForm()
+			data, err := ioutil.ReadAll(r.Body)
 			c.Assert(err, check.IsNil)
-			instance := service.ServiceInstance{
-				PlanName:  r.FormValue("plan"),
-				TeamOwner: r.FormValue("owner"),
-			}
-			dec := form.NewDecoder(nil)
-			dec.IgnoreCase(true)
-			dec.IgnoreUnknownKeys(true)
-			dec.UseJSONTags(false)
-			err = dec.DecodeValues(&instance, r.Form)
+			var result map[string]interface{}
+			err = json.Unmarshal(data, &result)
 			c.Assert(err, check.IsNil)
-			instance.Tags = append(instance.Tags, r.Form["tag"]...)
-			c.Assert(err, check.IsNil)
-			c.Assert(len(instance.Tags), check.Equals, 1)
-			c.Assert(instance.Tags[0], check.DeepEquals, "")
+			c.Assert(result, check.DeepEquals, map[string]interface{}{
+				"name":      "my_app_db",
+				"plan_name": "small",
+				"tags":      []interface{}{""},
+			})
+			// err := r.ParseForm()
+			// c.Assert(err, check.IsNil)
+			// instance := service.ServiceInstance{
+			// 	PlanName:  r.FormValue("plan"),
+			// 	TeamOwner: r.FormValue("owner"),
+			// }
+			// dec := form.NewDecoder(nil)
+			// dec.IgnoreCase(true)
+			// dec.IgnoreUnknownKeys(true)
+			// dec.UseJSONTags(false)
+			// err = dec.DecodeValues(&instance, r.Form)
+			// c.Assert(err, check.IsNil)
+			// instance.Tags = append(instance.Tags, r.Form["tag"]...)
+			// c.Assert(err, check.IsNil)
+			// c.Assert(len(instance.Tags), check.Equals, 1)
+			// c.Assert(instance.Tags[0], check.DeepEquals, "")
 			return true
 		},
 	}

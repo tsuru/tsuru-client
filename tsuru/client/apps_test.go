@@ -2713,7 +2713,7 @@ func (s *S) TestAddCNameFailure(c *check.C) {
 	context.Args = command.Flags().Args()
 	err = command.Run(&context, client)
 	c.Assert(err, check.NotNil)
-	c.Assert(err.Error(), check.Equals, "Invalid cname")
+	c.Assert(err.Error(), check.Equals, "412 Precondition Failed: Invalid cname")
 }
 
 func (s *S) TestAddCNameInfo(c *check.C) {
@@ -2905,8 +2905,17 @@ func (s *S) TestUnitAdd(c *check.C) {
 		Transport: cmdtest.Transport{Message: string(result), Status: http.StatusOK},
 		CondFunc: func(req *http.Request) bool {
 			called = true
-			c.Assert(req.FormValue("process"), check.Equals, "p1")
-			c.Assert(req.FormValue("units"), check.Equals, "3")
+			data, err := ioutil.ReadAll(req.Body)
+			c.Assert(err, check.IsNil)
+			var result map[string]interface{}
+			err = json.Unmarshal(data, &result)
+			c.Assert(err, check.IsNil)
+			c.Assert(result, check.DeepEquals, map[string]interface{}{
+				"units":   "3",
+				"process": "p1",
+			})
+			// c.Assert(req.FormValue("process"), check.Equals, "p1")
+			// c.Assert(req.FormValue("units"), check.Equals, "3")
 			return strings.HasSuffix(req.URL.Path, "/apps/radio/units") && req.Method == "PUT"
 		},
 	}
@@ -2935,9 +2944,19 @@ func (s *S) TestUnitAddWithVersion(c *check.C) {
 		Transport: cmdtest.Transport{Message: string(result), Status: http.StatusOK},
 		CondFunc: func(req *http.Request) bool {
 			called = true
-			c.Assert(req.FormValue("process"), check.Equals, "p1")
-			c.Assert(req.FormValue("units"), check.Equals, "3")
-			c.Assert(req.FormValue("version"), check.Equals, "9")
+			data, err := ioutil.ReadAll(req.Body)
+			c.Assert(err, check.IsNil)
+			var result map[string]interface{}
+			err = json.Unmarshal(data, &result)
+			c.Assert(err, check.IsNil)
+			c.Assert(result, check.DeepEquals, map[string]interface{}{
+				"units":   "3",
+				"process": "p1",
+				"version": "9",
+			})
+			// c.Assert(req.FormValue("process"), check.Equals, "p1")
+			// c.Assert(req.FormValue("units"), check.Equals, "3")
+			// c.Assert(req.FormValue("version"), check.Equals, "9")
 			return strings.HasSuffix(req.URL.Path, "/apps/radio/units") && req.Method == "PUT"
 		},
 	}
@@ -3059,8 +3078,16 @@ func (s *S) TestUnitSetAddUnits(c *check.C) {
 			{
 				CondFunc: func(req *http.Request) bool {
 					calledPut = true
-					c.Assert(req.FormValue("process"), check.Equals, "web")
-					c.Assert(req.FormValue("units"), check.Equals, "7")
+					data, err := ioutil.ReadAll(req.Body)
+					c.Assert(err, check.IsNil)
+					var result map[string]interface{}
+					err = json.Unmarshal(data, &result)
+					c.Assert(err, check.IsNil)
+					c.Assert(result, check.DeepEquals, map[string]interface{}{
+						"units":   "7",
+						"process": "web",
+						"version": "0",
+					})
 					return strings.HasSuffix(req.URL.Path, "/apps/app1/units") && req.Method == http.MethodPut
 				},
 				Transport: cmdtest.Transport{Message: string(resultPut), Status: http.StatusOK},
@@ -3102,8 +3129,16 @@ func (s *S) TestUnitSetAddUnitsFailure(c *check.C) {
 			{
 				CondFunc: func(req *http.Request) bool {
 					calledPut = true
-					c.Assert(req.FormValue("process"), check.Equals, "web")
-					c.Assert(req.FormValue("units"), check.Equals, "7")
+					data, err := ioutil.ReadAll(req.Body)
+					c.Assert(err, check.IsNil)
+					var result map[string]interface{}
+					err = json.Unmarshal(data, &result)
+					c.Assert(err, check.IsNil)
+					c.Assert(result, check.DeepEquals, map[string]interface{}{
+						"units":   "7",
+						"process": "web",
+						"version": "0",
+					})
 					return strings.HasSuffix(req.URL.Path, "/apps/app1/units") && req.Method == http.MethodPut
 				},
 				Transport: cmdtest.Transport{Message: "Failed to put.", Status: http.StatusInternalServerError},
@@ -3116,7 +3151,7 @@ func (s *S) TestUnitSetAddUnitsFailure(c *check.C) {
 	command.Flags().Parse(true, []string{"-a", "app1", "-p", "web"})
 	err := command.Run(&context, client)
 	c.Assert(err, check.NotNil)
-	c.Assert(err.Error(), check.Equals, "Failed to put.")
+	c.Assert(err.Error(), check.Equals, "500 Internal Server Error: Failed to put.")
 	c.Assert(calledGet, check.Equals, true)
 	c.Assert(calledPut, check.Equals, true)
 }
@@ -3149,8 +3184,18 @@ func (s *S) TestUnitSetRemoveUnits(c *check.C) {
 			{
 				CondFunc: func(req *http.Request) bool {
 					calledDelete = true
-					c.Assert(req.FormValue("process"), check.Equals, "web")
-					c.Assert(req.FormValue("units"), check.Equals, "2")
+					data, err := ioutil.ReadAll(req.Body)
+					c.Assert(err, check.IsNil)
+					var result map[string]interface{}
+					err = json.Unmarshal(data, &result)
+					c.Assert(err, check.IsNil)
+					c.Assert(result, check.DeepEquals, map[string]interface{}{
+						"units":   "2",
+						"process": "web",
+						"version": "0",
+					})
+					// c.Assert(req.FormValue("process"), check.Equals, "web")
+					// c.Assert(req.FormValue("units"), check.Equals, "2")
 					return strings.HasSuffix(req.URL.Path, "/apps/app1/units") && req.Method == http.MethodDelete
 				},
 				Transport: cmdtest.Transport{Message: string(resultDelete), Status: http.StatusOK},
@@ -3192,8 +3237,18 @@ func (s *S) TestUnitSetRemoveUnitsFailure(c *check.C) {
 			{
 				CondFunc: func(req *http.Request) bool {
 					calledDelete = true
-					c.Assert(req.FormValue("process"), check.Equals, "web")
-					c.Assert(req.FormValue("units"), check.Equals, "2")
+					data, err := ioutil.ReadAll(req.Body)
+					c.Assert(err, check.IsNil)
+					var result map[string]interface{}
+					err = json.Unmarshal(data, &result)
+					c.Assert(err, check.IsNil)
+					c.Assert(result, check.DeepEquals, map[string]interface{}{
+						"units":   "2",
+						"process": "web",
+						"version": "0",
+					})
+					// c.Assert(req.FormValue("process"), check.Equals, "web")
+					// c.Assert(req.FormValue("units"), check.Equals, "2")
 					return strings.HasSuffix(req.URL.Path, "/apps/app1/units") && req.Method == http.MethodDelete
 				},
 				Transport: cmdtest.Transport{Message: "Failed to delete.", Status: http.StatusInternalServerError},
@@ -3206,7 +3261,7 @@ func (s *S) TestUnitSetRemoveUnitsFailure(c *check.C) {
 	command.Flags().Parse(true, []string{"-a", "app1", "-p", "web"})
 	err := command.Run(&context, client)
 	c.Assert(err, check.NotNil)
-	c.Assert(err.Error(), check.Equals, "Failed to delete.")
+	c.Assert(err.Error(), check.Equals, "500 Internal Server Error: Failed to delete.")
 	c.Assert(calledGet, check.Equals, true)
 	c.Assert(calledDelete, check.Equals, true)
 }
@@ -3319,8 +3374,18 @@ func (s *S) TestUnitSetNoProcessSpecifiedAndSingleExists(c *check.C) {
 			{
 				CondFunc: func(req *http.Request) bool {
 					calledPut = true
-					c.Assert(req.FormValue("process"), check.Equals, "worker")
-					c.Assert(req.FormValue("units"), check.Equals, "8")
+					data, err := ioutil.ReadAll(req.Body)
+					c.Assert(err, check.IsNil)
+					var result map[string]interface{}
+					err = json.Unmarshal(data, &result)
+					c.Assert(err, check.IsNil)
+					c.Assert(result, check.DeepEquals, map[string]interface{}{
+						"units":   "8",
+						"process": "worker",
+						"version": "0",
+					})
+					// c.Assert(req.FormValue("process"), check.Equals, "worker")
+					// c.Assert(req.FormValue("units"), check.Equals, "8")
 					return strings.HasSuffix(req.URL.Path, "/apps/app1/units") && req.Method == http.MethodPut
 				},
 				Transport: cmdtest.Transport{Message: string(resultPut), Status: http.StatusOK},
