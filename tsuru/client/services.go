@@ -283,22 +283,36 @@ func (sb *ServiceInstanceBind) Run(ctx *cmd.Context, client *cmd.Client) error {
 	}
 	serviceName := ctx.Args[0]
 	instanceName := ctx.Args[1]
-	u, err := cmd.GetURL("/services/" + serviceName + "/instances/" + instanceName + "/" + appName)
+	// u, err := cmd.GetURL("/services/" + serviceName + "/instances/" + instanceName + "/" + appName)
+	// if err != nil {
+	// 	return err
+	// }
+	// v := url.Values{}
+	// v.Set("noRestart", strconv.FormatBool(sb.noRestart))
+	// request, err := http.NewRequest("PUT", u, strings.NewReader(v.Encode()))
+	// if err != nil {
+	// 	return err
+	// }
+	// request.Header.Set("Content-Type", "application/x-www-form-urlencoded")
+	// resp, err := client.Do(request)
+	// if err != nil {
+	// 	return err
+	// }
+	var serviceBind tsuru.ServiceInstanceBind
+
+	serviceBind.NoRestart = sb.noRestart
+
+	apiClient, err := tsuruClient.ClientFromEnvironment(&tsuru.Configuration{
+		HTTPClient: client.HTTPClient,
+	})
 	if err != nil {
 		return err
 	}
-	v := url.Values{}
-	v.Set("noRestart", strconv.FormatBool(sb.noRestart))
-	request, err := http.NewRequest("PUT", u, strings.NewReader(v.Encode()))
+	response, err := apiClient.ServiceApi.ServiceInstanceBind(context.TODO(), serviceName, instanceName, appName, serviceBind)
 	if err != nil {
 		return err
 	}
-	request.Header.Set("Content-Type", "application/x-www-form-urlencoded")
-	resp, err := client.Do(request)
-	if err != nil {
-		return err
-	}
-	return cmd.StreamJSONResponse(ctx.Stdout, resp)
+	return cmd.StreamJSONResponse(ctx.Stdout, response)
 }
 
 func (sb *ServiceInstanceBind) Info() *cmd.Info {

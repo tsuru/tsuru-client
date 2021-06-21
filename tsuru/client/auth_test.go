@@ -410,11 +410,20 @@ func (s *S) TestUserCreateShouldNotDependOnTsuruTokenFile(c *check.C) {
 			Status:  http.StatusCreated,
 		},
 		CondFunc: func(r *http.Request) bool {
-			contentType := r.Header.Get("Content-Type") == "application/x-www-form-urlencoded"
-			password := r.FormValue("password") == "foo123"
-			email := r.FormValue("email") == "foo@foo.com"
+			contentType := r.Header.Get("Content-Type") == "application/json"
+			// password := r.FormValue("password") == "foo123"
+			// email := r.FormValue("email") == "foo@foo.com"
 			url := r.URL.Path == "/1.0/users"
-			return contentType && password && email && url
+			data, err := ioutil.ReadAll(r.Body)
+			c.Assert(err, check.IsNil)
+			var createResult map[string]interface{}
+			err = json.Unmarshal(data, &createResult)
+			c.Assert(err, check.IsNil)
+			c.Assert(createResult, check.DeepEquals, map[string]interface{}{
+				"password": "foo123",
+				"email":    "foo@foo.com",
+			})
+			return contentType && url
 		},
 	}
 	client := cmd.NewClient(&http.Client{Transport: &transport}, nil, manager)
@@ -487,7 +496,8 @@ func (s *S) TestUserCreateNotFound(c *check.C) {
 	command := UserCreate{}
 	err := command.Run(&context, client)
 	c.Assert(err, check.NotNil)
-	c.Assert(err.Error(), check.Equals, "User creation is disabled.")
+	c.Assert(err.Error(), check.Equals, "404 Not Found: Not found")
+	// c.Assert(err.Error(), check.Equals, "User creation is disabled.")
 }
 
 func (s *S) TestUserCreateMethodNotAllowed(c *check.C) {
@@ -507,7 +517,8 @@ func (s *S) TestUserCreateMethodNotAllowed(c *check.C) {
 	command := UserCreate{}
 	err := command.Run(&context, client)
 	c.Assert(err, check.NotNil)
-	c.Assert(err.Error(), check.Equals, "User creation is disabled.")
+	c.Assert(err.Error(), check.Equals, "405 Method Not Allowed: Not found")
+	// c.Assert(err.Error(), check.Equals, "User creation is disabled.")
 }
 
 func (s *S) TestUserCreateInfo(c *check.C) {
@@ -627,6 +638,16 @@ func (s *S) TestChangePassword(c *check.C) {
 			contentType := r.Header.Get("Content-Type") == "application/x-www-form-urlencoded"
 			url := strings.HasSuffix(r.URL.Path, "/users/password")
 			called = true
+			// data, err := ioutil.ReadAll(r.Body)
+			// c.Assert(err, check.IsNil)
+			// var changePassResult map[string]interface{}
+			// err = json.Unmarshal(data, &changePassResult)
+			// c.Assert(err, check.IsNil)
+			// c.Assert(changePassResult, check.DeepEquals, map[string]interface{}{
+			// 	"old":     "gopher",
+			// 	"new":     "bbrothers",
+			// 	"confirm": "bbrothers",
+			// })
 			return method && url && contentType && old && new && confirm
 		},
 	}

@@ -7,14 +7,14 @@ package client
 import (
 	"bytes"
 	"encoding/json"
+	"io/ioutil"
 	"net/http"
 	"strings"
 
-	"github.com/ajg/form"
+	"github.com/tsuru/go-tsuruclient/pkg/tsuru"
 	"github.com/tsuru/tsuru/cmd"
 	"github.com/tsuru/tsuru/cmd/cmdtest"
 	"github.com/tsuru/tsuru/io"
-	apiTypes "github.com/tsuru/tsuru/types/api"
 	"gopkg.in/check.v1"
 )
 
@@ -149,18 +149,24 @@ func (s *S) TestEnvSetRun(c *check.C) {
 		CondFunc: func(req *http.Request) bool {
 			err = req.ParseForm()
 			c.Assert(err, check.IsNil)
-			var e apiTypes.Envs
-			dec := form.NewDecoder(nil)
-			dec.IgnoreUnknownKeys(true)
-			dec.UseJSONTags(false)
-			err = dec.DecodeValues(&e, req.Form)
+			//var e tsuru.Env
+			// dec := form.NewDecoder(nil)
+			// dec.IgnoreUnknownKeys(true)
+			// dec.UseJSONTags(false)
 			c.Assert(err, check.IsNil)
+			data, err := ioutil.ReadAll(req.Body)
+			c.Assert(err, check.IsNil)
+			var envResult map[string]interface{}
+			err = json.Unmarshal(data, &envResult)
+			c.Assert(err, check.IsNil)
+			c.Assert(envResult, check.DeepEquals, map[string]interface{}{"envs": []interface{}{map[string]interface{}{"name": "DATABASE_HOST",
+				"value": "somehost"}}})
 			path := strings.HasSuffix(req.URL.Path, "/apps/someapp/env")
 			method := req.Method == "POST"
-			contentType := req.Header.Get("Content-Type") == "application/x-www-form-urlencoded"
-			name := e.Envs[0].Name == "DATABASE_HOST"
-			value := e.Envs[0].Value == "somehost"
-			return path && method && contentType && name && value
+			contentType := req.Header.Get("Content-Type") == "application/json"
+			//name := e.Env[0].Name == "DATABASE_HOST"
+			//value := e.Env[0].Value == "somehost"
+			return path && method && contentType
 		},
 	}
 	client := cmd.NewClient(&http.Client{Transport: trans}, nil, manager)
@@ -209,26 +215,30 @@ variable 2`},
 		Transport: cmdtest.Transport{Message: string(result), Status: http.StatusOK},
 		CondFunc: func(req *http.Request) bool {
 			private := false
-			want := []apiTypes.Env{
-				{Name: "LINE1", Value: `multiline
-variable 1`, Alias: "", Private: &private},
-				{Name: "LINE2", Value: `multiline
-variable 2`, Alias: "", Private: &private},
+			want := []tsuru.Env{
+				{Name: "LINE1", Value: "multiline\nvariable 1", Alias: "", Private: private},
+				{Name: "LINE2", Value: "multiline\nvariable 2", Alias: "", Private: private},
 			}
 			err = req.ParseForm()
+			// c.Assert(err, check.IsNil)
+			var e tsuru.EnvSetData
+			// dec := form.NewDecoder(nil)
+			// dec.IgnoreUnknownKeys(true)
+			// dec.UseJSONTags(false)
+			// err = dec.DecodeValues(&e, req.Form)
+			// c.Assert(err, check.IsNil)
+			data, err := ioutil.ReadAll(req.Body)
 			c.Assert(err, check.IsNil)
-			var e apiTypes.Envs
-			dec := form.NewDecoder(nil)
-			dec.IgnoreUnknownKeys(true)
-			dec.UseJSONTags(false)
-			err = dec.DecodeValues(&e, req.Form)
+			///var envResult map[string]interface{}
+			err = json.Unmarshal(data, &e)
 			c.Assert(err, check.IsNil)
 			c.Assert(e.Envs, check.DeepEquals, want)
+			//c.Assert(e.Envs, check.DeepEquals, want)
 			private = !e.Private
-			noRestart := !e.NoRestart
+			noRestart := !e.Norestart
 			path := strings.HasSuffix(req.URL.Path, "/apps/someapp/env")
 			method := req.Method == "POST"
-			contentType := req.Header.Get("Content-Type") == "application/x-www-form-urlencoded"
+			contentType := req.Header.Get("Content-Type") == "application/json"
 			return path && contentType && method && private && noRestart
 		},
 	}
@@ -263,29 +273,36 @@ func (s *S) TestEnvSetValues(c *check.C) {
 		Transport: cmdtest.Transport{Message: string(result), Status: http.StatusOK},
 		CondFunc: func(req *http.Request) bool {
 			private := false
-			want := []apiTypes.Env{
-				{Name: "DATABASE_HOST", Value: "some host", Alias: "", Private: &private},
-				{Name: "DATABASE_USER", Value: "root", Alias: "", Private: &private},
-				{Name: "DATABASE_PASSWORD", Value: ".1234..abc", Alias: "", Private: &private},
-				{Name: "http_proxy", Value: "http://myproxy.com:3128/", Alias: "", Private: &private},
-				{Name: "VALUE_WITH_EQUAL_SIGN", Value: "http://wholikesquerystrings.me/?tsuru=awesome", Alias: "", Private: &private},
-				{Name: "BASE64_STRING", Value: "t5urur0ck5==", Alias: "", Private: &private},
-				{Name: "SOME_PASSWORD", Value: "js87$%32??", Alias: "", Private: &private},
+			want := []tsuru.Env{
+				{Name: "DATABASE_HOST", Value: "some host", Alias: "", Private: private},
+				{Name: "DATABASE_USER", Value: "root", Alias: "", Private: private},
+				{Name: "DATABASE_PASSWORD", Value: ".1234..abc", Alias: "", Private: private},
+				{Name: "http_proxy", Value: "http://myproxy.com:3128/", Alias: "", Private: private},
+				{Name: "VALUE_WITH_EQUAL_SIGN", Value: "http://wholikesquerystrings.me/?tsuru=awesome", Alias: "", Private: private},
+				{Name: "BASE64_STRING", Value: "t5urur0ck5==", Alias: "", Private: private},
+				{Name: "SOME_PASSWORD", Value: "js87$%32??", Alias: "", Private: private},
 			}
 			err = req.ParseForm()
 			c.Assert(err, check.IsNil)
-			var e apiTypes.Envs
-			dec := form.NewDecoder(nil)
-			dec.IgnoreUnknownKeys(true)
-			dec.UseJSONTags(false)
-			err = dec.DecodeValues(&e, req.Form)
+			var e tsuru.EnvSetData
+			//dec := form.NewDecoder(nil)
+			//dec.IgnoreUnknownKeys(true)
+			//dec.UseJSONTags(false)
+			///err = dec.DecodeValues(&e, req.Form)
+			c.Assert(err, check.IsNil)
+			data, err := ioutil.ReadAll(req.Body)
+			c.Assert(err, check.IsNil)
+			//var envResult map[string]interface{}
+			err = json.Unmarshal(data, &e)
 			c.Assert(err, check.IsNil)
 			c.Assert(e.Envs, check.DeepEquals, want)
+			//c.Assert(err, check.IsNil)
+			//c.Assert(e.Envs, check.DeepEquals, want)
 			private = !e.Private
-			noRestart := !e.NoRestart
+			noRestart := !e.Norestart
 			path := strings.HasSuffix(req.URL.Path, "/apps/someapp/env")
 			method := req.Method == "POST"
-			contentType := req.Header.Get("Content-Type") == "application/x-www-form-urlencoded"
+			contentType := req.Header.Get("Content-Type") == "application/json"
 			return path && contentType && method && private && noRestart
 		},
 	}
@@ -320,28 +337,31 @@ func (s *S) TestEnvSetValuesAndPrivateAndNoRestart(c *check.C) {
 		Transport: cmdtest.Transport{Message: string(result), Status: http.StatusOK},
 		CondFunc: func(req *http.Request) bool {
 			private := false
-			want := []apiTypes.Env{
-				{Name: "DATABASE_HOST", Value: "some host", Alias: "", Private: &private},
-				{Name: "DATABASE_USER", Value: "root", Alias: "", Private: &private},
-				{Name: "DATABASE_PASSWORD", Value: ".1234..abc", Alias: "", Private: &private},
-				{Name: "http_proxy", Value: "http://myproxy.com:3128/", Alias: "", Private: &private},
-				{Name: "VALUE_WITH_EQUAL_SIGN", Value: "http://wholikesquerystrings.me/?tsuru=awesome", Private: &private},
-				{Name: "BASE64_STRING", Value: "t5urur0ck5==", Alias: "", Private: &private},
+			want := []tsuru.Env{
+				{Name: "DATABASE_HOST", Value: "some host", Alias: "", Private: private},
+				{Name: "DATABASE_USER", Value: "root", Alias: "", Private: private},
+				{Name: "DATABASE_PASSWORD", Value: ".1234..abc", Alias: "", Private: private},
+				{Name: "http_proxy", Value: "http://myproxy.com:3128/", Alias: "", Private: private},
+				{Name: "VALUE_WITH_EQUAL_SIGN", Value: "http://wholikesquerystrings.me/?tsuru=awesome", Private: private},
+				{Name: "BASE64_STRING", Value: "t5urur0ck5==", Alias: "", Private: private},
 			}
 			err = req.ParseForm()
 			c.Assert(err, check.IsNil)
-			var e apiTypes.Envs
-			dec := form.NewDecoder(nil)
-			dec.IgnoreUnknownKeys(true)
-			dec.UseJSONTags(false)
-			err = dec.DecodeValues(&e, req.Form)
+			var e tsuru.EnvSetData
+			// dec := form.NewDecoder(nil)
+			// dec.IgnoreUnknownKeys(true)
+			// dec.UseJSONTags(false)
+			// err = dec.DecodeValues(&e, req.Form)
+			data, err := ioutil.ReadAll(req.Body)
+			c.Assert(err, check.IsNil)
+			err = json.Unmarshal(data, &e)
 			c.Assert(err, check.IsNil)
 			c.Assert(e.Envs, check.DeepEquals, want)
 			private = e.Private
-			noRestart := e.NoRestart
+			noRestart := e.Norestart
 			path := strings.HasSuffix(req.URL.Path, "/apps/someapp/env")
 			method := req.Method == "POST"
-			contentType := req.Header.Get("Content-Type") == "application/x-www-form-urlencoded"
+			contentType := req.Header.Get("Content-Type") == "application/json"
 			return path && contentType && method && private && noRestart
 		},
 	}

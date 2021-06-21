@@ -5,6 +5,7 @@
 package client
 
 import (
+	"context"
 	"encoding/json"
 	"errors"
 	"fmt"
@@ -15,11 +16,11 @@ import (
 	"strconv"
 	"strings"
 
-	"github.com/ajg/form"
 	"github.com/tsuru/gnuflag"
+	tsuruClient "github.com/tsuru/go-tsuruclient/pkg/client"
+	"github.com/tsuru/go-tsuruclient/pkg/tsuru"
 	tsuruAPIApp "github.com/tsuru/tsuru/app"
 	"github.com/tsuru/tsuru/cmd"
-	apiTypes "github.com/tsuru/tsuru/types/api"
 )
 
 const EnvSetValidationMessage = `You must specify environment variables in the form "NAME=value".
@@ -86,47 +87,62 @@ func (c *EnvSet) Info() *cmd.Info {
 	}
 }
 
-func (c *EnvSet) Run(context *cmd.Context, client *cmd.Client) error {
-	context.RawOutput()
+func (c *EnvSet) Run(ctx *cmd.Context, client *cmd.Client) error {
+	ctx.RawOutput()
 	appName, err := c.AppName()
 	if err != nil {
 		return err
 	}
-	if len(context.Args) < 1 {
+	if len(ctx.Args) < 1 {
 		return errors.New(EnvSetValidationMessage)
 	}
-	envs := make([]apiTypes.Env, len(context.Args))
-	for i := range context.Args {
-		parts := strings.SplitN(context.Args[i], "=", 2)
+	envs := make([]tsuru.Env, len(ctx.Args))
+	for i := range ctx.Args {
+		parts := strings.SplitN(ctx.Args[i], "=", 2)
 		if len(parts) != 2 {
 			return errors.New(EnvSetValidationMessage)
 		}
-		envs[i] = apiTypes.Env{Name: parts[0], Value: parts[1]}
+		envs[i] = tsuru.Env{Name: parts[0], Value: parts[1]}
 
 	}
-	e := apiTypes.Envs{
+	// e := apiTypes.Envs{
+	// 	Envs:      envs,
+	// 	NoRestart: c.noRestart,
+	// 	Private:   c.private,
+	// }
+
+	apiClient, err := tsuruClient.ClientFromEnvironment(&tsuru.Configuration{
+		HTTPClient: client.HTTPClient,
+	})
+	if err != nil {
+		return err
+	}
+	response, err := apiClient.AppApi.EnvSet(context.TODO(), appName, tsuru.EnvSetData{
 		Envs:      envs,
-		NoRestart: c.noRestart,
+		Norestart: c.noRestart,
 		Private:   c.private,
-	}
-	url, err := cmd.GetURL(fmt.Sprintf("/apps/%s/env", appName))
+	})
 	if err != nil {
 		return err
 	}
-	v, err := form.EncodeToValues(&e)
-	if err != nil {
-		return err
-	}
-	request, err := http.NewRequest("POST", url, strings.NewReader(v.Encode()))
-	if err != nil {
-		return err
-	}
-	request.Header.Set("Content-Type", "application/x-www-form-urlencoded")
-	response, err := client.Do(request)
-	if err != nil {
-		return err
-	}
-	return cmd.StreamJSONResponse(context.Stdout, response)
+	// url, err := cmd.GetURL(fmt.Sprintf("/apps/%s/env", appName))
+	// if err != nil {
+	// 	return err
+	// }
+	// v, err := form.EncodeToValues(&e)
+	// if err != nil {
+	// 	return err
+	// }
+	// request, err := http.NewRequest("POST", url, strings.NewReader(v.Encode()))
+	// if err != nil {
+	// 	return err
+	// }
+	// request.Header.Set("Content-Type", "application/x-www-form-urlencoded")
+	// response, err := client.Do(request)
+	// if err != nil {
+	// 	return err
+	// }
+	return cmd.StreamJSONResponse(ctx.Stdout, response)
 }
 
 func (c *EnvSet) Flags() *gnuflag.FlagSet {

@@ -168,24 +168,23 @@ func (c *AppCreate) Run(ctx *cmd.Context, client *cmd.Client) error {
 	if len(ctx.Args) > 1 {
 		platform = ctx.Args[1]
 	}
-	var inputApp tsuru.InputApp
-	inputApp.Name = appName
-	inputApp.Platform = platform
-	inputApp.Plan = c.plan
-	inputApp.TeamOwner = c.teamOwner
-	inputApp.Pool = c.pool
-	inputApp.Description = c.description
-	inputApp.Tags = c.tags
-	inputApp.Router = c.router
-	inputApp.Routeropts = c.routerOpts
-
 	apiClient, err := tsuruClient.ClientFromEnvironment(&tsuru.Configuration{
 		HTTPClient: client.HTTPClient,
 	})
 	if err != nil {
 		return err
 	}
-	_, response, err := apiClient.AppApi.AppCreate(context.TODO(), inputApp)
+	_, response, err := apiClient.AppApi.AppCreate(context.TODO(), tsuru.InputApp{
+		Name:        appName,
+		Platform:    platform,
+		Pool:        c.pool,
+		Description: c.description,
+		Plan:        c.plan,
+		TeamOwner:   c.teamOwner,
+		Tags:        c.tags,
+		Router:      c.router,
+		Routeropts:  c.routerOpts,
+	})
 	if err != nil {
 		return err
 	}
@@ -1198,6 +1197,14 @@ func (c *AppStop) Run(context *cmd.Context, client *cmd.Client) error {
 	if err != nil {
 		return err
 	}
+	// apiClient, err := tsuruClient.ClientFromEnvironment(&tsuru.Configuration{
+	// 	HTTPClient: client.HTTPClient,
+	// })
+	// if err != nil {
+	// 	return err
+	// }
+	// _, err = apiClient.AppApi.AppRestart()
+
 	request.Header.Set("Content-Type", "application/x-www-form-urlencoded")
 	response, err := client.Do(request)
 	if err != nil {

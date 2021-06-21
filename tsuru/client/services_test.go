@@ -250,8 +250,15 @@ func (s *S) TestServiceInstanceBind(c *check.C) {
 			called = true
 			method := req.Method == "PUT"
 			path := strings.HasSuffix(req.URL.Path, "/services/mysql/instances/my-mysql/g1")
-			noRestart := req.FormValue("noRestart") == "true"
-			return method && path && noRestart
+			data, err := ioutil.ReadAll(req.Body)
+			c.Assert(err, check.IsNil)
+			var bindResult map[string]interface{}
+			err = json.Unmarshal(data, &bindResult)
+			c.Assert(err, check.IsNil)
+			c.Assert(bindResult, check.DeepEquals, map[string]interface{}{
+				"noRestart": true,
+			})
+			return method && path
 		},
 	}
 	client := cmd.NewClient(&http.Client{Transport: trans}, nil, manager)
@@ -279,8 +286,13 @@ func (s *S) TestServiceInstanceBindWithoutEnvironmentVariables(c *check.C) {
 		CondFunc: func(req *http.Request) bool {
 			method := req.Method == "PUT"
 			path := strings.HasSuffix(req.URL.Path, "/services/mysql/instances/my-mysql/g1")
-			noRestart := req.FormValue("noRestart") == "false"
-			return method && path && noRestart
+			data, err := ioutil.ReadAll(req.Body)
+			c.Assert(err, check.IsNil)
+			var bindResult map[string]interface{}
+			err = json.Unmarshal(data, &bindResult)
+			c.Assert(err, check.IsNil)
+			c.Assert(bindResult, check.DeepEquals, map[string]interface{}{})
+			return method && path
 		},
 	}
 	client := cmd.NewClient(&http.Client{Transport: trans}, nil, manager)
@@ -304,7 +316,7 @@ func (s *S) TestServiceInstanceBindWithRequestFailure(c *check.C) {
 	command.Flags().Parse(true, []string{"-a", "g1"})
 	err := command.Run(&ctx, client)
 	c.Assert(err, check.NotNil)
-	c.Assert(err.Error(), check.Equals, trans.Message)
+	c.Assert(err.Error(), check.Equals, "403 Forbidden: "+trans.Message)
 }
 
 func (s *S) TestServiceInstanceBindInfo(c *check.C) {

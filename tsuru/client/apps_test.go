@@ -51,17 +51,14 @@ Use app info to check the status of the app and its units.` + "\n"
 			var appResult map[string]interface{}
 			err = json.Unmarshal(data, &appResult)
 			c.Assert(err, check.IsNil)
-			name := appResult["name"] == "ble"
-			platform := appResult["platform"] == "django"
-			teamOwner := appResult["teamOwner"] == nil
-			plan := appResult["plan"] == nil
-			pool := appResult["pool"] == nil
-			description := appResult["description"] == nil
-			tags := appResult["tags"] == nil
-			router := appResult["router"] == nil
+			c.Assert(appResult, check.DeepEquals, map[string]interface{}{
+				"name":     "ble",
+				"platform": "django",
+				"metadata": map[string]interface{}{},
+			})
 			method := r.Method == "POST"
-			//contentType := r.Header.Get("Content-Type") == "application/json"
-			return method && url && name && platform && teamOwner && plan && pool && description && tags && router
+			contentType := r.Header.Get("Content-Type") == "application/json"
+			return method && url && contentType
 		},
 	}
 	client := cmd.NewClient(&http.Client{Transport: &trans}, nil, manager)
@@ -90,17 +87,13 @@ Use app info to check the status of the app and its units.` + "\n"
 			var appResult map[string]interface{}
 			err = json.Unmarshal(data, &appResult)
 			c.Assert(err, check.IsNil)
-			name := appResult["name"] == "ble"
-			platform := appResult["platform"] == nil
-			teamOwner := appResult["teamOwner"] == nil
-			plan := appResult["plan"] == nil
-			pool := appResult["pool"] == nil
-			description := appResult["description"] == nil
-			tags := appResult["tags"] == nil
-			router := appResult["router"] == nil
+			c.Assert(appResult, check.DeepEquals, map[string]interface{}{
+				"name":     "ble",
+				"metadata": map[string]interface{}{},
+			})
 			method := r.Method == "POST"
 			contentType := r.Header.Get("Content-Type") == "application/json"
-			return method && url && name && platform && teamOwner && plan && pool && description && tags && contentType && router
+			return method && url && contentType
 		},
 	}
 	client := cmd.NewClient(&http.Client{Transport: &trans}, nil, manager)
@@ -129,17 +122,14 @@ Use app info to check the status of the app and its units.` + "\n"
 			var appResult map[string]interface{}
 			err = json.Unmarshal(data, &appResult)
 			c.Assert(err, check.IsNil)
-			name := appResult["name"] == "ble"
-			platform := appResult["platform"] == "django"
-			teamOwner := appResult["teamOwner"] == "team"
-			plan := appResult["plan"] == nil
-			pool := appResult["pool"] == nil
-			description := appResult["description"] == nil
-			tags := appResult["tags"] == nil
-			router := appResult["router"] == nil
-			method := r.Method == "POST"
+			c.Assert(appResult, check.DeepEquals, map[string]interface{}{
+				"name":      "ble",
+				"platform":  "django",
+				"teamOwner": "team",
+				"metadata":  map[string]interface{}{},
+			})
 			contentType := r.Header.Get("Content-Type") == "application/json"
-			return method && url && name && platform && teamOwner && plan && pool && description && tags && contentType && router
+			return url && contentType
 		},
 	}
 	client := cmd.NewClient(&http.Client{Transport: &trans}, nil, manager)
@@ -169,17 +159,15 @@ Use app info to check the status of the app and its units.` + "\n"
 			var appResult map[string]interface{}
 			err = json.Unmarshal(data, &appResult)
 			c.Assert(err, check.IsNil)
-			name := appResult["name"] == "ble"
-			platform := appResult["platform"] == "django"
-			teamOwner := appResult["teamOwner"] == nil
-			plan := appResult["plan"] == "myplan"
-			pool := appResult["pool"] == nil
-			description := appResult["description"] == nil
-			tags := appResult["tags"] == nil
-			router := appResult["router"] == nil
+			c.Assert(appResult, check.DeepEquals, map[string]interface{}{
+				"name":     "ble",
+				"platform": "django",
+				"plan":     "myplan",
+				"metadata": map[string]interface{}{},
+			})
 			method := r.Method == "POST"
 			contentType := r.Header.Get("Content-Type") == "application/json"
-			return method && url && name && platform && teamOwner && plan && pool && description && tags && contentType && router
+			return method && url && contentType
 		},
 	}
 	client := cmd.NewClient(&http.Client{Transport: &trans}, nil, manager)
@@ -209,17 +197,15 @@ Use app info to check the status of the app and its units.` + "\n"
 			var appResult map[string]interface{}
 			err = json.Unmarshal(data, &appResult)
 			c.Assert(err, check.IsNil)
-			name := appResult["name"] == "ble"
-			platform := appResult["platform"] == "django"
-			teamOwner := appResult["teamOwner"] == nil
-			plan := appResult["plan"] == nil
-			pool := appResult["pool"] == "mypool"
-			description := appResult["description"] == nil
-			tags := appResult["tags"] == nil
-			router := appResult["router"] == nil
+			c.Assert(appResult, check.DeepEquals, map[string]interface{}{
+				"name":     "ble",
+				"platform": "django",
+				"pool":     "mypool",
+				"metadata": map[string]interface{}{},
+			})
 			method := r.Method == "POST"
 			contentType := r.Header.Get("Content-Type") == "application/json"
-			return method && url && name && platform && teamOwner && plan && pool && description && tags && contentType && router
+			return method && url && contentType
 		},
 	}
 	client := cmd.NewClient(&http.Client{Transport: &trans}, nil, manager)
@@ -289,17 +275,14 @@ Use app info to check the status of the app and its units.` + "\n"
 			var appResult map[string]interface{}
 			err = json.Unmarshal(data, &appResult)
 			c.Assert(err, check.IsNil)
-			name := appResult["name"] == "ble"
-			platform := appResult["platform"] == "django"
-			teamowner := appResult["teamOwner"] == nil
-			plan := appResult["plan"] == nil
-			pool := appResult["pool"] == nil
-			description := appResult["description"] == nil
-			tags := appResult["tags"] == nil
-			router := appResult["router"] == nil
+			c.Assert(appResult, check.DeepEquals, map[string]interface{}{
+				"name":     "ble",
+				"platform": "django",
+				"metadata": map[string]interface{}{},
+			})
 			method := r.Method == "POST"
 			contentType := r.Header.Get("Content-Type") == "application/json"
-			return method && url && name && platform && teamowner && plan && pool && description && tags && contentType && router
+			return method && url && contentType
 		},
 	}
 	client := cmd.NewClient(&http.Client{Transport: &trans}, nil, manager)

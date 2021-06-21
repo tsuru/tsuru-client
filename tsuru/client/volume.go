@@ -5,6 +5,7 @@
 package client
 
 import (
+	"context"
 	"encoding/json"
 	"fmt"
 	"io/ioutil"
@@ -14,6 +15,8 @@ import (
 
 	"github.com/ajg/form"
 	"github.com/tsuru/gnuflag"
+	tsuruClient "github.com/tsuru/go-tsuruclient/pkg/client"
+	"github.com/tsuru/go-tsuruclient/pkg/tsuru"
 	"github.com/tsuru/tablecli"
 	"github.com/tsuru/tsuru/cmd"
 	volumeTypes "github.com/tsuru/tsuru/types/volume"
@@ -53,32 +56,54 @@ func (c *VolumeCreate) Flags() *gnuflag.FlagSet {
 }
 
 func (c *VolumeCreate) Run(ctx *cmd.Context, client *cmd.Client) error {
+	ctx.RawOutput()
 	volumeName, planName := ctx.Args[0], ctx.Args[1]
-	vol := volumeTypes.Volume{
+	// vol := volumeTypes.Volume{
+	// 	Name:      volumeName,
+	// 	Plan:      volumeTypes.VolumePlan{Name: planName},
+	// 	Pool:      c.pool,
+	// 	TeamOwner: c.team,
+	// 	Opts:      map[string]string(c.opt),
+	// }
+	// val, err := form.EncodeToValues(vol)
+	// if err != nil {
+	// 	return err
+	// }
+	// body := strings.NewReader(val.Encode())
+	// u, err := cmd.GetURLVersion("1.4", "/volumes")
+	// if err != nil {
+	// 	return err
+	// }
+	// request, err := http.NewRequest("POST", u, body)
+	// if err != nil {
+	// 	return err
+	// }
+	// request.Header.Set("Content-Type", "application/x-www-form-urlencoded")
+	// _, err = client.Do(request)
+	// if err != nil {
+	// 	return err
+	// }
+
+	apiClient, err := tsuruClient.ClientFromEnvironment(&tsuru.Configuration{
+		HTTPClient: client.HTTPClient,
+	})
+	if err != nil {
+		return err
+	}
+	response, err := apiClient.VolumeApi.VolumeCreate(context.TODO(), tsuru.Volume{
 		Name:      volumeName,
-		Plan:      volumeTypes.VolumePlan{Name: planName},
+		Plan:      tsuru.VolumePlan{Name: planName},
 		Pool:      c.pool,
 		TeamOwner: c.team,
 		Opts:      map[string]string(c.opt),
-	}
-	val, err := form.EncodeToValues(vol)
+	})
+
 	if err != nil {
 		return err
 	}
-	body := strings.NewReader(val.Encode())
-	u, err := cmd.GetURLVersion("1.4", "/volumes")
-	if err != nil {
-		return err
-	}
-	request, err := http.NewRequest("POST", u, body)
-	if err != nil {
-		return err
-	}
-	request.Header.Set("Content-Type", "application/x-www-form-urlencoded")
-	_, err = client.Do(request)
-	if err != nil {
-		return err
-	}
+
+	err = cmd.StreamJSONResponse(ctx.Stdout, response)
+
 	fmt.Fprint(ctx.Stdout, "Volume successfully created.\n")
 	return nil
 }
@@ -417,36 +442,46 @@ func (c *VolumeBind) Run(ctx *cmd.Context, client *cmd.Client) error {
 	if err != nil {
 		return err
 	}
-	bind := struct {
-		App        string
-		MountPoint string
-		ReadOnly   bool
-		NoRestart  bool
-	}{
+	// bind := struct {
+	// 	App        string
+	// 	MountPoint string
+	// 	ReadOnly   bool
+	// 	NoRestart  bool
+	// }{
+	bind := tsuru.VolumeBindData{
 		App:        appName,
-		MountPoint: ctx.Args[1],
-		ReadOnly:   c.readOnly,
-		NoRestart:  c.noRestart,
+		Mountpoint: ctx.Args[1],
+		Readonly:   c.readOnly,
+		Norestart:  c.noRestart,
 	}
-	val, err := form.EncodeToValues(bind)
+	// val, err := form.EncodeToValues(bind)
+	// if err != nil {
+	// 	return err
+	// }
+	// body := strings.NewReader(val.Encode())
+	// u, err := cmd.GetURLVersion("1.4", fmt.Sprintf("/volumes/%s/bind", volumeName))
+	// if err != nil {
+	// 	return err
+	// }
+	// request, err := http.NewRequest("POST", u, body)
+	// if err != nil {
+	// 	return err
+	// }
+	// request.Header.Set("Content-Type", "application/x-www-form-urlencoded")
+	// resp, err := client.Do(request)
+	// if err != nil {
+	// 	return err
+	// }
+	apiClient, err := tsuruClient.ClientFromEnvironment(&tsuru.Configuration{
+		HTTPClient: client.HTTPClient,
+	})
+
+	response, err := apiClient.VolumeApi.VolumeBind(context.TODO(), volumeName, bind)
 	if err != nil {
 		return err
 	}
-	body := strings.NewReader(val.Encode())
-	u, err := cmd.GetURLVersion("1.4", fmt.Sprintf("/volumes/%s/bind", volumeName))
-	if err != nil {
-		return err
-	}
-	request, err := http.NewRequest("POST", u, body)
-	if err != nil {
-		return err
-	}
-	request.Header.Set("Content-Type", "application/x-www-form-urlencoded")
-	resp, err := client.Do(request)
-	if err != nil {
-		return err
-	}
-	err = cmd.StreamJSONResponse(ctx.Stdout, resp)
+
+	err = cmd.StreamJSONResponse(ctx.Stdout, response)
 	if err != nil {
 		return err
 	}

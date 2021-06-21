@@ -19,7 +19,7 @@ import (
 
 	"github.com/antihax/optional"
 	"github.com/tsuru/gnuflag"
-	"github.com/tsuru/go-tsuruclient/pkg/client"
+	tsuruClient "github.com/tsuru/go-tsuruclient/pkg/client"
 	"github.com/tsuru/go-tsuruclient/pkg/tsuru"
 	"github.com/tsuru/tablecli"
 	"github.com/tsuru/tsuru/cmd"
@@ -36,47 +36,66 @@ func (c *UserCreate) Info() *cmd.Info {
 	}
 }
 
-func (c *UserCreate) Run(context *cmd.Context, client *cmd.Client) error {
-	context.RawOutput()
-	u, err := cmd.GetURL("/users")
+func (c *UserCreate) Run(ctx *cmd.Context, client *cmd.Client) error {
+	ctx.RawOutput()
+	_, err := cmd.GetURL("/users")
 	if err != nil {
 		return err
 	}
-	email := context.Args[0]
-	fmt.Fprint(context.Stdout, "Password: ")
-	password, err := cmd.PasswordFromReader(context.Stdin)
+	email := ctx.Args[0]
+	fmt.Fprint(ctx.Stdout, "Password: ")
+	password, err := cmd.PasswordFromReader(ctx.Stdin)
 	if err != nil {
 		return err
 	}
-	fmt.Fprint(context.Stdout, "\nConfirm: ")
-	confirm, err := cmd.PasswordFromReader(context.Stdin)
+	fmt.Fprint(ctx.Stdout, "\nConfirm: ")
+	confirm, err := cmd.PasswordFromReader(ctx.Stdin)
 	if err != nil {
 		return err
 	}
-	fmt.Fprintln(context.Stdout)
+	fmt.Fprintln(ctx.Stdout)
 	if password != confirm {
 		return errors.New("Passwords didn't match.")
 	}
-	v := url.Values{}
-	v.Set("email", email)
-	v.Set("password", password)
-	b := strings.NewReader(v.Encode())
-	request, err := http.NewRequest("POST", u, b)
+	// v := url.Values{}
+	// v.Set("email", email)
+	// v.Set("password", password)
+	//b := strings.NewReader(v.Encode())
+	// request, err := http.NewRequest("POST", u, b)
+	// if err != nil {
+	// 	return err
+	// }
+	// request.Header.Set("Content-Type", "application/x-www-form-urlencoded")
+	// resp, err := client.Do(request)
+	// if resp != nil {
+	// 	if resp.StatusCode == http.StatusNotFound ||
+	// 		resp.StatusCode == http.StatusMethodNotAllowed {
+	// 		return errors.New("User creation is disabled.")
+	// 	}
+	// }
+	// if err != nil {
+	// 	return err
+	// }
+
+	apiClient, err := tsuruClient.ClientFromEnvironment(&tsuru.Configuration{
+		HTTPClient: client.HTTPClient,
+	})
 	if err != nil {
 		return err
 	}
-	request.Header.Set("Content-Type", "application/x-www-form-urlencoded")
-	resp, err := client.Do(request)
-	if resp != nil {
-		if resp.StatusCode == http.StatusNotFound ||
-			resp.StatusCode == http.StatusMethodNotAllowed {
-			return errors.New("User creation is disabled.")
-		}
-	}
+	response, err := apiClient.UserApi.UserCreate(context.TODO(), tsuru.UserData{
+		Email:    email,
+		Password: password,
+	})
 	if err != nil {
 		return err
 	}
-	fmt.Fprintf(context.Stdout, `User "%s" successfully created!`+"\n", email)
+	err = cmd.StreamJSONResponse(ctx.Stdout, response)
+
+	if err != nil {
+		return err
+	}
+	fmt.Fprintf(ctx.Stdout, `User "%s" successfully created!`+"\n", email)
 	return nil
 }
 
@@ -182,7 +201,7 @@ func (c *TeamCreate) Flags() *gnuflag.FlagSet {
 }
 
 func (c *TeamCreate) Run(ctx *cmd.Context, cli *cmd.Client) error {
-	apiClient, err := client.ClientFromEnvironment(&tsuru.Configuration{
+	apiClient, err := tsuruClient.ClientFromEnvironment(&tsuru.Configuration{
 		HTTPClient: cli.HTTPClient,
 	})
 	if err != nil {
@@ -230,7 +249,7 @@ func (t *TeamUpdate) Info() *cmd.Info {
 }
 
 func (t *TeamUpdate) Run(ctx *cmd.Context, cli *cmd.Client) error {
-	apiClient, err := client.ClientFromEnvironment(&tsuru.Configuration{
+	apiClient, err := tsuruClient.ClientFromEnvironment(&tsuru.Configuration{
 		HTTPClient: cli.HTTPClient,
 	})
 	if err != nil {
@@ -258,7 +277,7 @@ func (c *TeamRemove) Run(ctx *cmd.Context, cli *cmd.Client) error {
 	if !c.Confirm(ctx, question) {
 		return nil
 	}
-	apiClient, err := client.ClientFromEnvironment(&tsuru.Configuration{
+	apiClient, err := tsuruClient.ClientFromEnvironment(&tsuru.Configuration{
 		HTTPClient: cli.HTTPClient,
 	})
 	if err != nil {
@@ -296,7 +315,7 @@ func (c *TeamList) Info() *cmd.Info {
 }
 
 func (c *TeamList) Run(ctx *cmd.Context, cli *cmd.Client) error {
-	apiClient, err := client.ClientFromEnvironment(&tsuru.Configuration{
+	apiClient, err := tsuruClient.ClientFromEnvironment(&tsuru.Configuration{
 		HTTPClient: cli.HTTPClient,
 	})
 	if err != nil {
@@ -478,27 +497,28 @@ Tags: {{.Tags}}
 
 type ChangePassword struct{}
 
-func (c *ChangePassword) Run(context *cmd.Context, client *cmd.Client) error {
+func (c *ChangePassword) Run(ctx *cmd.Context, client *cmd.Client) error {
+	ctx.RawOutput()
 	u, err := cmd.GetURL("/users/password")
 	if err != nil {
 		return err
 	}
-	fmt.Fprint(context.Stdout, "Current password: ")
-	old, err := cmd.PasswordFromReader(context.Stdin)
+	fmt.Fprint(ctx.Stdout, "Current password: ")
+	old, err := cmd.PasswordFromReader(ctx.Stdin)
 	if err != nil {
 		return err
 	}
-	fmt.Fprint(context.Stdout, "\nNew password: ")
-	new, err := cmd.PasswordFromReader(context.Stdin)
+	fmt.Fprint(ctx.Stdout, "\nNew password: ")
+	new, err := cmd.PasswordFromReader(ctx.Stdin)
 	if err != nil {
 		return err
 	}
-	fmt.Fprint(context.Stdout, "\nConfirm: ")
-	confirm, err := cmd.PasswordFromReader(context.Stdin)
+	fmt.Fprint(ctx.Stdout, "\nConfirm: ")
+	confirm, err := cmd.PasswordFromReader(ctx.Stdin)
 	if err != nil {
 		return err
 	}
-	fmt.Fprintln(context.Stdout)
+	fmt.Fprintln(ctx.Stdout)
 	v := url.Values{}
 	v.Set("old", old)
 	v.Set("new", new)
@@ -512,7 +532,23 @@ func (c *ChangePassword) Run(context *cmd.Context, client *cmd.Client) error {
 	if err != nil {
 		return err
 	}
-	fmt.Fprintln(context.Stdout, "Password successfully updated!")
+
+	// apiClient, err := tsuruClient.ClientFromEnvironment(&tsuru.Configuration{
+	// 	HTTPClient: client.HTTPClient,
+	// })
+	// if err != nil {
+	// 	return err
+	// }
+	// response, err := apiClient.UserApi.ChangePassword()
+	// if err != nil {
+	// 	return err
+	// }
+	// err = cmd.StreamJSONResponse(ctx.Stdout, response)
+
+	if err != nil {
+		return err
+	}
+	fmt.Fprintln(ctx.Stdout, "Password successfully updated!")
 	return nil
 }
 
@@ -718,7 +754,7 @@ func (c *ListUsers) Run(ctx *cmd.Context, cli *cmd.Client) error {
 		return errors.New("You should provide a role to filter by context value.")
 	}
 
-	apiClient, err := client.ClientFromEnvironment(&tsuru.Configuration{
+	apiClient, err := tsuruClient.ClientFromEnvironment(&tsuru.Configuration{
 		HTTPClient: cli.HTTPClient,
 	})
 	if err != nil {
@@ -779,7 +815,7 @@ func (UserInfo) Info() *cmd.Info {
 }
 
 func (UserInfo) Run(ctx *cmd.Context, cli *cmd.Client) error {
-	apiClient, err := client.ClientFromEnvironment(&tsuru.Configuration{
+	apiClient, err := tsuruClient.ClientFromEnvironment(&tsuru.Configuration{
 		HTTPClient: cli.HTTPClient,
 	})
 	if err != nil {
