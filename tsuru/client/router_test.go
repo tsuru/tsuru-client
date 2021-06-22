@@ -9,7 +9,6 @@ import (
 	"encoding/json"
 	"io/ioutil"
 	"net/http"
-	"net/url"
 	"strings"
 
 	"github.com/tsuru/go-tsuruclient/pkg/tsuru"
@@ -129,15 +128,14 @@ func (s *S) TestAppRoutersAddRun(c *check.C) {
 		CondFunc: func(req *http.Request) bool {
 			err := req.ParseForm()
 			c.Assert(err, check.IsNil)
-			c.Assert(req.Form, check.DeepEquals, url.Values{
-				"Opts.a":       []string{"b"},
-				"Opts.x":       []string{"y"},
-				"Name":         []string{"myrouter"},
-				"Address":      []string{""},
-				"Addresses":    []string{""},
-				"Type":         []string{""},
-				"Status":       []string{""},
-				"StatusDetail": []string{""},
+			var routerAdd tsuru.AppRouter
+			data, err := ioutil.ReadAll(req.Body)
+			c.Assert(err, check.IsNil)
+			err = json.Unmarshal(data, &routerAdd)
+			c.Assert(err, check.IsNil)
+			c.Assert(routerAdd, check.DeepEquals, tsuru.AppRouter{
+				Opts: map[string]interface{}{"a": "b", "x": "y"},
+				Name: "myrouter",
 			})
 			return strings.HasSuffix(req.URL.Path, "/1.5/apps/myapp/routers") && req.Method == "POST"
 		},
@@ -163,15 +161,14 @@ func (s *S) TestAppRoutersUpdateRun(c *check.C) {
 		CondFunc: func(req *http.Request) bool {
 			err := req.ParseForm()
 			c.Assert(err, check.IsNil)
-			c.Assert(req.Form, check.DeepEquals, url.Values{
-				"Opts.a":       []string{"b"},
-				"Opts.x":       []string{"y"},
-				"Name":         []string{"myrouter"},
-				"Address":      []string{""},
-				"Addresses":    []string{""},
-				"Type":         []string{""},
-				"Status":       []string{""},
-				"StatusDetail": []string{""},
+			var routerUpdt tsuru.AppRouter
+			data, err := ioutil.ReadAll(req.Body)
+			c.Assert(err, check.IsNil)
+			err = json.Unmarshal(data, &routerUpdt)
+			c.Assert(err, check.IsNil)
+			c.Assert(routerUpdt, check.DeepEquals, tsuru.AppRouter{
+				Opts: map[string]interface{}{"a": "b", "x": "y"},
+				Name: "myrouter",
 			})
 			return strings.HasSuffix(req.URL.Path, "/1.5/apps/myapp/routers/myrouter") && req.Method == "PUT"
 		},

@@ -5,6 +5,7 @@
 package client
 
 import (
+	"context"
 	"encoding/json"
 	"fmt"
 	"io/ioutil"
@@ -18,6 +19,8 @@ import (
 	"github.com/ajg/form"
 	"github.com/ghodss/yaml"
 	"github.com/tsuru/gnuflag"
+	"github.com/tsuru/go-tsuruclient/pkg/client"
+	"github.com/tsuru/go-tsuruclient/pkg/tsuru"
 	"github.com/tsuru/tablecli"
 	"github.com/tsuru/tsuru-client/tsuru/formatter"
 	"github.com/tsuru/tsuru/cmd"
@@ -351,25 +354,36 @@ func (c *EventCancel) Info() *cmd.Info {
 	}
 }
 
-func (c *EventCancel) Run(context *cmd.Context, client *cmd.Client) error {
-	if !c.Confirm(context, "Are you sure you want to cancel this event?") {
+func (c *EventCancel) Run(ctx *cmd.Context, cli *cmd.Client) error {
+	if !c.Confirm(ctx, "Are you sure you want to cancel this event?") {
 		return nil
 	}
-	u, err := cmd.GetURLVersion("1.1", fmt.Sprintf("/events/%s/cancel", context.Args[0]))
+	// u, err := cmd.GetURLVersion("1.1", fmt.Sprintf("/events/%s/cancel", ctx.Args[0]))
+	// if err != nil {
+	// 	return err
+	// }
+	// v := url.Values{}
+	// v.Set("reason", strings.Join(ctx.Args[1:], " "))
+	// request, err := http.NewRequest("POST", u, strings.NewReader(v.Encode()))
+	// if err != nil {
+	// 	return err
+	// }
+	// request.Header.Set("Content-Type", "application/x-www-form-urlencoded")
+	//_, err = client.Do(request)
+
+	apiClient, err := client.ClientFromEnvironment(&tsuru.Configuration{
+		HTTPClient: cli.HTTPClient,
+	})
 	if err != nil {
 		return err
 	}
-	v := url.Values{}
-	v.Set("reason", strings.Join(context.Args[1:], " "))
-	request, err := http.NewRequest("POST", u, strings.NewReader(v.Encode()))
+	_, err = apiClient.EventApi.EventCancel(context.TODO(), ctx.Args[0], tsuru.EventCancelArgs{
+		Reason: strings.Join(ctx.Args[1:], " "),
+	})
+
 	if err != nil {
 		return err
 	}
-	request.Header.Set("Content-Type", "application/x-www-form-urlencoded")
-	_, err = client.Do(request)
-	if err != nil {
-		return err
-	}
-	fmt.Fprintln(context.Stdout, "Cancellation successfully requested.")
+	fmt.Fprintln(ctx.Stdout, "Cancellation successfully requested.")
 	return nil
 }

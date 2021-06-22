@@ -13,7 +13,6 @@ import (
 	"sort"
 	"strings"
 
-	"github.com/ajg/form"
 	"github.com/pkg/errors"
 	"github.com/tsuru/gnuflag"
 	"github.com/tsuru/go-tsuruclient/pkg/client"
@@ -348,33 +347,54 @@ func (c *AppRoutersAdd) Flags() *gnuflag.FlagSet {
 	return c.fs
 }
 
-func (c *AppRoutersAdd) Run(context *cmd.Context, client *cmd.Client) error {
+func (c *AppRoutersAdd) Run(ctx *cmd.Context, cli *cmd.Client) error {
+	ctx.RawOutput()
 	appName, err := c.AppName()
 	if err != nil {
 		return err
 	}
-	url, err := cmd.GetURLVersion("1.5", fmt.Sprintf("/apps/%s/routers", appName))
+	// url, err := cmd.GetURLVersion("1.5", fmt.Sprintf("/apps/%s/routers", appName))
+	// if err != nil {
+	// 	return err
+	// }
+	// r := appTypes.AppRouter{
+	// 	Name: ctx.Args[0],
+	// 	Opts: c.opts,
+	// }
+	// val, err := form.EncodeToValues(r)
+	// if err != nil {
+	// 	return err
+	// }
+	// request, err := http.NewRequest("POST", url, strings.NewReader(val.Encode()))
+	// if err != nil {
+	// 	return err
+	// }
+	opts := make(map[string]interface{}, len(c.opts))
+	for k, v := range c.opts {
+		opts[k] = v
+	}
+	apiClient, err := client.ClientFromEnvironment(&tsuru.Configuration{
+		HTTPClient: cli.HTTPClient,
+	})
 	if err != nil {
 		return err
 	}
-	r := appTypes.AppRouter{
-		Name: context.Args[0],
-		Opts: c.opts,
-	}
-	val, err := form.EncodeToValues(r)
+	_, err = apiClient.AppApi.AppRouterAdd(context.TODO(), appName, tsuru.AppRouter{
+		Name: ctx.Args[0],
+		Opts: opts,
+	})
+
 	if err != nil {
 		return err
 	}
-	request, err := http.NewRequest("POST", url, strings.NewReader(val.Encode()))
-	if err != nil {
-		return err
-	}
-	request.Header.Set("Content-Type", "application/x-www-form-urlencoded")
-	_, err = client.Do(request)
-	if err != nil {
-		return err
-	}
-	fmt.Fprintln(context.Stdout, "Router successfully added.")
+
+	// request.Header.Set("Content-Type", "application/x-www-form-urlencoded")
+
+	// _, err = client.Do(request)
+	// if err != nil {
+	// 	return err
+	// }
+	fmt.Fprintln(ctx.Stdout, "Router successfully added.")
 	return nil
 }
 
@@ -404,34 +424,55 @@ func (c *AppRoutersUpdate) Flags() *gnuflag.FlagSet {
 	return c.fs
 }
 
-func (c *AppRoutersUpdate) Run(context *cmd.Context, client *cmd.Client) error {
+func (c *AppRoutersUpdate) Run(ctx *cmd.Context, cli *cmd.Client) error {
+	ctx.RawOutput()
 	appName, err := c.AppName()
 	if err != nil {
 		return err
 	}
-	routerName := context.Args[0]
-	url, err := cmd.GetURLVersion("1.5", fmt.Sprintf("/apps/%s/routers/%s", appName, routerName))
+	routerName := ctx.Args[0]
+	// url, err := cmd.GetURLVersion("1.5", fmt.Sprintf("/apps/%s/routers/%s", appName, routerName))
+	// if err != nil {
+	// 	return err
+	// }
+	// r := appTypes.AppRouter{
+	// 	Name: routerName,
+	// 	Opts: c.opts,
+	// }
+	// val, err := form.EncodeToValues(r)
+	// if err != nil {
+	// 	return err
+	// }
+	// request, err := http.NewRequest("PUT", url, strings.NewReader(val.Encode()))
+	// if err != nil {
+	// 	return err
+	// }
+	// request.Header.Set("Content-Type", "application/x-www-form-urlencoded")
+	// _, err = client.Do(request)
+	// if err != nil {
+	// 	return err
+	// }
+
+	opts := make(map[string]interface{}, len(c.opts))
+	for k, v := range c.opts {
+		opts[k] = v
+	}
+	apiClient, err := client.ClientFromEnvironment(&tsuru.Configuration{
+		HTTPClient: cli.HTTPClient,
+	})
 	if err != nil {
 		return err
 	}
-	r := appTypes.AppRouter{
-		Name: routerName,
-		Opts: c.opts,
-	}
-	val, err := form.EncodeToValues(r)
+	_, err = apiClient.AppApi.AppRouterUpdate(context.TODO(), appName, routerName, tsuru.AppRouter{
+		Name: ctx.Args[0],
+		Opts: opts,
+	})
+
 	if err != nil {
 		return err
 	}
-	request, err := http.NewRequest("PUT", url, strings.NewReader(val.Encode()))
-	if err != nil {
-		return err
-	}
-	request.Header.Set("Content-Type", "application/x-www-form-urlencoded")
-	_, err = client.Do(request)
-	if err != nil {
-		return err
-	}
-	fmt.Fprintln(context.Stdout, "Router successfully updated.")
+
+	fmt.Fprintln(ctx.Stdout, "Router successfully updated.")
 	return nil
 }
 

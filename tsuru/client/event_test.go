@@ -6,10 +6,13 @@ package client
 
 import (
 	"bytes"
+	"encoding/json"
 	"fmt"
+	"io/ioutil"
 	"net/http"
 	"os"
 
+	"github.com/tsuru/go-tsuruclient/pkg/tsuru"
 	"github.com/tsuru/tsuru/cmd"
 	"github.com/tsuru/tsuru/cmd/cmdtest"
 	"gopkg.in/check.v1"
@@ -554,7 +557,13 @@ func (s *S) TestEventCancel(c *check.C) {
 	trans := &cmdtest.ConditionalTransport{
 		Transport: cmdtest.Transport{Message: runningEvt, Status: http.StatusOK},
 		CondFunc: func(req *http.Request) bool {
-			c.Assert(req.FormValue("reason"), check.Equals, "my reason")
+			var eventCancel tsuru.EventCancelArgs
+			data, err := ioutil.ReadAll(req.Body)
+			c.Assert(err, check.IsNil)
+			err = json.Unmarshal(data, &eventCancel)
+			c.Assert(err, check.IsNil)
+			c.Assert(eventCancel, check.Equals, tsuru.EventCancelArgs{Reason: "my reason"})
+			//c.Assert(req.FormValue("reason"), check.Equals, "my reason")
 			return req.URL.Path == "/1.1/events/998e3908413daf5fd9891aac/cancel" && req.Method == "POST"
 		},
 	}
