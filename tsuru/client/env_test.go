@@ -149,10 +149,6 @@ func (s *S) TestEnvSetRun(c *check.C) {
 		CondFunc: func(req *http.Request) bool {
 			err = req.ParseForm()
 			c.Assert(err, check.IsNil)
-			//var e tsuru.Env
-			// dec := form.NewDecoder(nil)
-			// dec.IgnoreUnknownKeys(true)
-			// dec.UseJSONTags(false)
 			c.Assert(err, check.IsNil)
 			data, err := ioutil.ReadAll(req.Body)
 			c.Assert(err, check.IsNil)
@@ -164,8 +160,6 @@ func (s *S) TestEnvSetRun(c *check.C) {
 			path := strings.HasSuffix(req.URL.Path, "/apps/someapp/env")
 			method := req.Method == "POST"
 			contentType := req.Header.Get("Content-Type") == "application/json"
-			//name := e.Env[0].Name == "DATABASE_HOST"
-			//value := e.Env[0].Value == "somehost"
 			return path && method && contentType
 		},
 	}
@@ -220,20 +214,12 @@ variable 2`},
 				{Name: "LINE2", Value: "multiline\nvariable 2", Alias: "", Private: private},
 			}
 			err = req.ParseForm()
-			// c.Assert(err, check.IsNil)
 			var e tsuru.EnvSetData
-			// dec := form.NewDecoder(nil)
-			// dec.IgnoreUnknownKeys(true)
-			// dec.UseJSONTags(false)
-			// err = dec.DecodeValues(&e, req.Form)
-			// c.Assert(err, check.IsNil)
 			data, err := ioutil.ReadAll(req.Body)
 			c.Assert(err, check.IsNil)
-			///var envResult map[string]interface{}
 			err = json.Unmarshal(data, &e)
 			c.Assert(err, check.IsNil)
 			c.Assert(e.Envs, check.DeepEquals, want)
-			//c.Assert(e.Envs, check.DeepEquals, want)
 			private = !e.Private
 			noRestart := !e.Norestart
 			path := strings.HasSuffix(req.URL.Path, "/apps/someapp/env")
@@ -285,19 +271,12 @@ func (s *S) TestEnvSetValues(c *check.C) {
 			err = req.ParseForm()
 			c.Assert(err, check.IsNil)
 			var e tsuru.EnvSetData
-			//dec := form.NewDecoder(nil)
-			//dec.IgnoreUnknownKeys(true)
-			//dec.UseJSONTags(false)
-			///err = dec.DecodeValues(&e, req.Form)
 			c.Assert(err, check.IsNil)
 			data, err := ioutil.ReadAll(req.Body)
 			c.Assert(err, check.IsNil)
-			//var envResult map[string]interface{}
 			err = json.Unmarshal(data, &e)
 			c.Assert(err, check.IsNil)
 			c.Assert(e.Envs, check.DeepEquals, want)
-			//c.Assert(err, check.IsNil)
-			//c.Assert(e.Envs, check.DeepEquals, want)
 			private = !e.Private
 			noRestart := !e.Norestart
 			path := strings.HasSuffix(req.URL.Path, "/apps/someapp/env")
@@ -348,10 +327,6 @@ func (s *S) TestEnvSetValuesAndPrivateAndNoRestart(c *check.C) {
 			err = req.ParseForm()
 			c.Assert(err, check.IsNil)
 			var e tsuru.EnvSetData
-			// dec := form.NewDecoder(nil)
-			// dec.IgnoreUnknownKeys(true)
-			// dec.UseJSONTags(false)
-			// err = dec.DecodeValues(&e, req.Form)
 			data, err := ioutil.ReadAll(req.Body)
 			c.Assert(err, check.IsNil)
 			err = json.Unmarshal(data, &e)

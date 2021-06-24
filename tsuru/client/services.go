@@ -129,7 +129,18 @@ This example shows how to add a new instance of **mongodb** service, named
 		MaxArgs: 3,
 	}
 }
-
+func (c *ServiceInstanceAdd) instanceAdd(instanceName, plan string) tsuru.ServiceInstance {
+	instanceAdd := tsuru.ServiceInstance{
+		Name:        instanceName,
+		PlanName:    plan,
+		Description: c.description,
+		TeamOwner:   c.teamOwner,
+		Pool:        c.pool,
+		Parameters:  c.params,
+		Tags:        c.tags,
+	}
+	return instanceAdd
+}
 func (c *ServiceInstanceAdd) Run(ctx *cmd.Context, cli *cmd.Client) error {
 	ctx.RawOutput()
 	serviceName, instanceName := ctx.Args[0], ctx.Args[1]
@@ -138,14 +149,8 @@ func (c *ServiceInstanceAdd) Run(ctx *cmd.Context, cli *cmd.Client) error {
 		plan = ctx.Args[2]
 	}
 	// This is kept as this to keep backwards compatibility with older API versions
-	var instanceAdd tsuru.ServiceInstance
-	instanceAdd.Name = instanceName
-	instanceAdd.PlanName = plan
-	instanceAdd.Description = c.description
-	instanceAdd.TeamOwner = c.teamOwner
-	instanceAdd.Pool = c.pool
-	instanceAdd.Parameters = c.params
-	instanceAdd.Tags = c.tags
+
+	instanceAdd := c.instanceAdd(instanceName, plan)
 
 	apiClient, err := tsuruClient.ClientFromEnvironment(&tsuru.Configuration{
 		HTTPClient: cli.HTTPClient,
@@ -157,9 +162,6 @@ func (c *ServiceInstanceAdd) Run(ctx *cmd.Context, cli *cmd.Client) error {
 	if err != nil {
 		return err
 	}
-	//err = cmd.StreamJSONResponse(ctx.Stdout, response)
-	//request.Header.Set("Content-Type", "application/json")
-	// _, err = cli.Do(request)
 	if err != nil {
 		return err
 	}
@@ -283,24 +285,6 @@ func (sb *ServiceInstanceBind) Run(ctx *cmd.Context, client *cmd.Client) error {
 	}
 	serviceName := ctx.Args[0]
 	instanceName := ctx.Args[1]
-	// u, err := cmd.GetURL("/services/" + serviceName + "/instances/" + instanceName + "/" + appName)
-	// if err != nil {
-	// 	return err
-	// }
-	// v := url.Values{}
-	// v.Set("noRestart", strconv.FormatBool(sb.noRestart))
-	// request, err := http.NewRequest("PUT", u, strings.NewReader(v.Encode()))
-	// if err != nil {
-	// 	return err
-	// }
-	// request.Header.Set("Content-Type", "application/x-www-form-urlencoded")
-	// resp, err := client.Do(request)
-	// if err != nil {
-	// 	return err
-	// }
-	var serviceBind tsuru.ServiceInstanceBind
-
-	serviceBind.NoRestart = sb.noRestart
 
 	apiClient, err := tsuruClient.ClientFromEnvironment(&tsuru.Configuration{
 		HTTPClient: client.HTTPClient,
@@ -308,7 +292,7 @@ func (sb *ServiceInstanceBind) Run(ctx *cmd.Context, client *cmd.Client) error {
 	if err != nil {
 		return err
 	}
-	response, err := apiClient.ServiceApi.ServiceInstanceBind(context.TODO(), serviceName, instanceName, appName, serviceBind)
+	response, err := apiClient.ServiceApi.ServiceInstanceBind(context.TODO(), serviceName, instanceName, appName, tsuru.ServiceInstanceBind{NoRestart: sb.noRestart})
 	if err != nil {
 		return err
 	}
@@ -552,9 +536,7 @@ func (c *ServicePlanList) Run(ctx *cmd.Context, client *cmd.Client) error {
 		return err
 	}
 	serviceName := ctx.Args[0]
-	plans, _, err := apiClient.ServiceApi.ServicePlans(context.Background(), serviceName, &tsuru.ServicePlansOpts{
-		Pool: optional.NewString(c.pool),
-	})
+	plans, _, err := apiClient.ServiceApi.ServicePlans(context.Background(), serviceName, &tsuru.ServicePlansOpts{Pool: optional.NewString(c.pool)})
 	if err != nil {
 		return err
 	}

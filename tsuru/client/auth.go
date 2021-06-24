@@ -35,7 +35,13 @@ func (c *UserCreate) Info() *cmd.Info {
 		MinArgs: 1,
 	}
 }
-
+func (c *UserCreate) userData(ctx *cmd.Context, password string) tsuru.UserData {
+	userData := tsuru.UserData{
+		Email:    ctx.Args[0],
+		Password: password,
+	}
+	return userData
+}
 func (c *UserCreate) Run(ctx *cmd.Context, client *cmd.Client) error {
 	ctx.RawOutput()
 	_, err := cmd.GetURL("/users")
@@ -57,36 +63,14 @@ func (c *UserCreate) Run(ctx *cmd.Context, client *cmd.Client) error {
 	if password != confirm {
 		return errors.New("Passwords didn't match.")
 	}
-	// v := url.Values{}
-	// v.Set("email", email)
-	// v.Set("password", password)
-	//b := strings.NewReader(v.Encode())
-	// request, err := http.NewRequest("POST", u, b)
-	// if err != nil {
-	// 	return err
-	// }
-	// request.Header.Set("Content-Type", "application/x-www-form-urlencoded")
-	// resp, err := client.Do(request)
-	// if resp != nil {
-	// 	if resp.StatusCode == http.StatusNotFound ||
-	// 		resp.StatusCode == http.StatusMethodNotAllowed {
-	// 		return errors.New("User creation is disabled.")
-	// 	}
-	// }
-	// if err != nil {
-	// 	return err
-	// }
-
 	apiClient, err := tsuruClient.ClientFromEnvironment(&tsuru.Configuration{
 		HTTPClient: client.HTTPClient,
 	})
 	if err != nil {
 		return err
 	}
-	response, err := apiClient.UserApi.UserCreate(context.TODO(), tsuru.UserData{
-		Email:    email,
-		Password: password,
-	})
+	userData := c.userData(ctx, password)
+	response, err := apiClient.UserApi.UserCreate(context.TODO(), userData)
 	if err != nil {
 		return err
 	}
@@ -199,7 +183,13 @@ func (c *TeamCreate) Flags() *gnuflag.FlagSet {
 	}
 	return c.fs
 }
-
+func (c *TeamCreate) teamCreate(name string) tsuru.TeamCreateArgs {
+	team := tsuru.TeamCreateArgs{
+		Name: name,
+		Tags: c.tags,
+	}
+	return team
+}
 func (c *TeamCreate) Run(ctx *cmd.Context, cli *cmd.Client) error {
 	apiClient, err := tsuruClient.ClientFromEnvironment(&tsuru.Configuration{
 		HTTPClient: cli.HTTPClient,
@@ -208,10 +198,9 @@ func (c *TeamCreate) Run(ctx *cmd.Context, cli *cmd.Client) error {
 		return err
 	}
 	team := ctx.Args[0]
-	_, err = apiClient.TeamApi.TeamCreate(context.TODO(), tsuru.TeamCreateArgs{
-		Name: team,
-		Tags: c.tags,
-	})
+
+	teamCreate := c.teamCreate(team)
+	_, err = apiClient.TeamApi.TeamCreate(context.TODO(), teamCreate)
 	if err != nil {
 		return parseErrBody(err)
 	}
@@ -247,7 +236,13 @@ func (t *TeamUpdate) Info() *cmd.Info {
 		MaxArgs: 1,
 	}
 }
-
+func (t *TeamUpdate) teamUpdate() tsuru.TeamUpdateArgs {
+	teamUpdate := tsuru.TeamUpdateArgs{
+		Newname: t.newName,
+		Tags:    t.tags,
+	}
+	return teamUpdate
+}
 func (t *TeamUpdate) Run(ctx *cmd.Context, cli *cmd.Client) error {
 	apiClient, err := tsuruClient.ClientFromEnvironment(&tsuru.Configuration{
 		HTTPClient: cli.HTTPClient,
@@ -256,10 +251,9 @@ func (t *TeamUpdate) Run(ctx *cmd.Context, cli *cmd.Client) error {
 		return err
 	}
 	team := ctx.Args[0]
-	_, err = apiClient.TeamApi.TeamUpdate(context.TODO(), team, tsuru.TeamUpdateArgs{
-		Newname: t.newName,
-		Tags:    t.tags,
-	})
+
+	teamUpdate := t.teamUpdate()
+	_, err = apiClient.TeamApi.TeamUpdate(context.TODO(), team, teamUpdate)
 	if err != nil {
 		return parseErrBody(err)
 	}
@@ -532,19 +526,6 @@ func (c *ChangePassword) Run(ctx *cmd.Context, client *cmd.Client) error {
 	if err != nil {
 		return err
 	}
-
-	// apiClient, err := tsuruClient.ClientFromEnvironment(&tsuru.Configuration{
-	// 	HTTPClient: client.HTTPClient,
-	// })
-	// if err != nil {
-	// 	return err
-	// }
-	// response, err := apiClient.UserApi.ChangePassword()
-	// if err != nil {
-	// 	return err
-	// }
-	// err = cmd.StreamJSONResponse(ctx.Stdout, response)
-
 	if err != nil {
 		return err
 	}
@@ -746,6 +727,13 @@ type ListUsers struct {
 	fs        *gnuflag.FlagSet
 }
 
+func (c *ListUsers) listUsers() tsuru.UsersListOpts {
+	userList := &tsuru.UsersListOpts{
+		Context: optional.NewString(c.context),
+		Role:    optional.NewString(c.role),
+	}
+	return *userList
+}
 func (c *ListUsers) Run(ctx *cmd.Context, cli *cmd.Client) error {
 	if c.userEmail != "" && c.role != "" {
 		return errors.New("You cannot filter by user email and role at same time. Enter <tsuru user-list --help> for more information.")
@@ -760,10 +748,8 @@ func (c *ListUsers) Run(ctx *cmd.Context, cli *cmd.Client) error {
 	if err != nil {
 		return err
 	}
-	users, _, err := apiClient.UserApi.UsersList(context.TODO(), c.userEmail, &tsuru.UsersListOpts{
-		Context: optional.NewString(c.context),
-		Role:    optional.NewString(c.role),
-	})
+	userList := c.listUsers()
+	users, _, err := apiClient.UserApi.UsersList(context.TODO(), c.userEmail, &userList)
 	if err != nil {
 		return err
 	}

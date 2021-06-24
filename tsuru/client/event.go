@@ -358,18 +358,6 @@ func (c *EventCancel) Run(ctx *cmd.Context, cli *cmd.Client) error {
 	if !c.Confirm(ctx, "Are you sure you want to cancel this event?") {
 		return nil
 	}
-	// u, err := cmd.GetURLVersion("1.1", fmt.Sprintf("/events/%s/cancel", ctx.Args[0]))
-	// if err != nil {
-	// 	return err
-	// }
-	// v := url.Values{}
-	// v.Set("reason", strings.Join(ctx.Args[1:], " "))
-	// request, err := http.NewRequest("POST", u, strings.NewReader(v.Encode()))
-	// if err != nil {
-	// 	return err
-	// }
-	// request.Header.Set("Content-Type", "application/x-www-form-urlencoded")
-	//_, err = client.Do(request)
 
 	apiClient, err := client.ClientFromEnvironment(&tsuru.Configuration{
 		HTTPClient: cli.HTTPClient,

@@ -347,31 +347,22 @@ func (c *AppRoutersAdd) Flags() *gnuflag.FlagSet {
 	return c.fs
 }
 
+func (c *AppRoutersAdd) routerAdd(ctx *cmd.Context) tsuru.AppRouter {
+	opts := make(map[string]interface{}, len(c.opts))
+	for k, v := range c.opts {
+		opts[k] = v
+	}
+	appRouter := tsuru.AppRouter{
+		Name: ctx.Args[0],
+		Opts: opts,
+	}
+	return appRouter
+}
 func (c *AppRoutersAdd) Run(ctx *cmd.Context, cli *cmd.Client) error {
 	ctx.RawOutput()
 	appName, err := c.AppName()
 	if err != nil {
 		return err
-	}
-	// url, err := cmd.GetURLVersion("1.5", fmt.Sprintf("/apps/%s/routers", appName))
-	// if err != nil {
-	// 	return err
-	// }
-	// r := appTypes.AppRouter{
-	// 	Name: ctx.Args[0],
-	// 	Opts: c.opts,
-	// }
-	// val, err := form.EncodeToValues(r)
-	// if err != nil {
-	// 	return err
-	// }
-	// request, err := http.NewRequest("POST", url, strings.NewReader(val.Encode()))
-	// if err != nil {
-	// 	return err
-	// }
-	opts := make(map[string]interface{}, len(c.opts))
-	for k, v := range c.opts {
-		opts[k] = v
 	}
 	apiClient, err := client.ClientFromEnvironment(&tsuru.Configuration{
 		HTTPClient: cli.HTTPClient,
@@ -379,21 +370,13 @@ func (c *AppRoutersAdd) Run(ctx *cmd.Context, cli *cmd.Client) error {
 	if err != nil {
 		return err
 	}
-	_, err = apiClient.AppApi.AppRouterAdd(context.TODO(), appName, tsuru.AppRouter{
-		Name: ctx.Args[0],
-		Opts: opts,
-	})
+	appRouter := c.routerAdd(ctx)
+	_, err = apiClient.AppApi.AppRouterAdd(context.TODO(), appName, appRouter)
 
 	if err != nil {
 		return err
 	}
 
-	// request.Header.Set("Content-Type", "application/x-www-form-urlencoded")
-
-	// _, err = client.Do(request)
-	// if err != nil {
-	// 	return err
-	// }
 	fmt.Fprintln(ctx.Stdout, "Router successfully added.")
 	return nil
 }
@@ -424,6 +407,17 @@ func (c *AppRoutersUpdate) Flags() *gnuflag.FlagSet {
 	return c.fs
 }
 
+func (c *AppRoutersUpdate) routerUpdate(ctx *cmd.Context) tsuru.AppRouter {
+	opts := make(map[string]interface{}, len(c.opts))
+	for k, v := range c.opts {
+		opts[k] = v
+	}
+	routerUpdate := tsuru.AppRouter{
+		Name: ctx.Args[0],
+		Opts: opts,
+	}
+	return routerUpdate
+}
 func (c *AppRoutersUpdate) Run(ctx *cmd.Context, cli *cmd.Client) error {
 	ctx.RawOutput()
 	appName, err := c.AppName()
@@ -431,42 +425,14 @@ func (c *AppRoutersUpdate) Run(ctx *cmd.Context, cli *cmd.Client) error {
 		return err
 	}
 	routerName := ctx.Args[0]
-	// url, err := cmd.GetURLVersion("1.5", fmt.Sprintf("/apps/%s/routers/%s", appName, routerName))
-	// if err != nil {
-	// 	return err
-	// }
-	// r := appTypes.AppRouter{
-	// 	Name: routerName,
-	// 	Opts: c.opts,
-	// }
-	// val, err := form.EncodeToValues(r)
-	// if err != nil {
-	// 	return err
-	// }
-	// request, err := http.NewRequest("PUT", url, strings.NewReader(val.Encode()))
-	// if err != nil {
-	// 	return err
-	// }
-	// request.Header.Set("Content-Type", "application/x-www-form-urlencoded")
-	// _, err = client.Do(request)
-	// if err != nil {
-	// 	return err
-	// }
-
-	opts := make(map[string]interface{}, len(c.opts))
-	for k, v := range c.opts {
-		opts[k] = v
-	}
 	apiClient, err := client.ClientFromEnvironment(&tsuru.Configuration{
 		HTTPClient: cli.HTTPClient,
 	})
 	if err != nil {
 		return err
 	}
-	_, err = apiClient.AppApi.AppRouterUpdate(context.TODO(), appName, routerName, tsuru.AppRouter{
-		Name: ctx.Args[0],
-		Opts: opts,
-	})
+	AppRouterUpdate := c.routerUpdate(ctx)
+	_, err = apiClient.AppApi.AppRouterUpdate(context.TODO(), appName, routerName, AppRouterUpdate)
 
 	if err != nil {
 		return err
@@ -516,6 +482,13 @@ type appVersionRouterBase struct {
 	routable bool
 }
 
+func (c *appVersionRouterBase) setRoutable(ctx *cmd.Context) tsuru.SetRoutableArgs {
+	setRoutable := tsuru.SetRoutableArgs{
+		Version:    ctx.Args[0],
+		IsRoutable: c.routable,
+	}
+	return setRoutable
+}
 func (c *appVersionRouterBase) Run(ctx *cmd.Context, cli *cmd.Client) error {
 	appName, err := c.AppName()
 	if err != nil {
@@ -528,10 +501,8 @@ func (c *appVersionRouterBase) Run(ctx *cmd.Context, cli *cmd.Client) error {
 	if err != nil {
 		return err
 	}
-	_, err = apiClient.AppApi.AppSetRoutable(context.TODO(), appName, tsuru.SetRoutableArgs{
-		Version:    ctx.Args[0],
-		IsRoutable: c.routable,
-	})
+	setRoutable := c.setRoutable(ctx)
+	_, err = apiClient.AppApi.AppSetRoutable(context.TODO(), appName, setRoutable)
 	if err != nil {
 		return err
 	}

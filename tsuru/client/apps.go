@@ -161,6 +161,20 @@ func (c *AppCreate) Flags() *gnuflag.FlagSet {
 	return c.fs
 }
 
+func (c *AppCreate) InputApp(appName string, platform string) tsuru.InputApp {
+	inputApp := tsuru.InputApp{
+		Name:        appName,
+		Platform:    platform,
+		Pool:        c.pool,
+		Description: c.description,
+		Plan:        c.plan,
+		TeamOwner:   c.teamOwner,
+		Tags:        c.tags,
+		Router:      c.router,
+		Routeropts:  c.routerOpts,
+	}
+	return inputApp
+}
 func (c *AppCreate) Run(ctx *cmd.Context, client *cmd.Client) error {
 	ctx.RawOutput()
 	var platform string
@@ -174,17 +188,8 @@ func (c *AppCreate) Run(ctx *cmd.Context, client *cmd.Client) error {
 	if err != nil {
 		return err
 	}
-	_, response, err := apiClient.AppApi.AppCreate(context.TODO(), tsuru.InputApp{
-		Name:        appName,
-		Platform:    platform,
-		Pool:        c.pool,
-		Description: c.description,
-		Plan:        c.plan,
-		TeamOwner:   c.teamOwner,
-		Tags:        c.tags,
-		Router:      c.router,
-		Routeropts:  c.routerOpts,
-	})
+	inputApp := c.InputApp(appName, platform)
+	_, response, err := apiClient.AppApi.AppCreate(context.TODO(), inputApp)
 	if err != nil {
 		return err
 	}
@@ -193,19 +198,6 @@ func (c *AppCreate) Run(ctx *cmd.Context, client *cmd.Client) error {
 	if err != nil {
 		return err
 	}
-	// request.Header.Set("Content-Type", "application/x-www-form-urlencoded")
-	// response, err := client.Do(request)
-	// if err != nil {
-	// 	return err
-	// }
-	//defer response.Body.Close()
-
-	//result, err := ioutil.ReadAll(response.Body)
-	//if err != nil {
-	//	return err
-	//}
-	//out := make(map[string]string)
-	//err = json.Unmarshal(result, &out)
 
 	fmt.Fprintf(ctx.Stdout, "App %q has been created!\n", appName)
 	fmt.Fprintln(ctx.Stdout, "Use app info to check the status of the app and its units.")
@@ -1403,19 +1395,6 @@ func addCName(cnames []string, g cmd.AppNameMixIn, client *cmd.Client) error {
 	if err != nil {
 		return err
 	}
-	// u, err := cmd.GetURL(fmt.Sprintf("/apps/%s/cname", appName))
-	// if err != nil {
-	// 	return err
-	// }
-	// v := url.Values{}
-	// for _, cname := range cnames {
-	// 	v.Add("cname", cname)
-	// }
-	// b := strings.NewReader(v.Encode())
-	// request, err := http.NewRequest("POST", u, b)
-	// if err != nil {
-	// 	return err
-	// }
 	var appCname tsuru.AppCName
 	appCname.Cname = cnames
 
@@ -1429,14 +1408,6 @@ func addCName(cnames []string, g cmd.AppNameMixIn, client *cmd.Client) error {
 	if err != nil {
 		return err
 	}
-
-	//err = cmd.StreamJSONResponse(, response)
-
-	//if err != nil {
-	//	return err
-	//}
-	// request.Header.Set("Content-Type", "application/x-www-form-urlencoded")
-	// _, err = client.Do(request)
 	return err
 }
 
@@ -1466,30 +1437,20 @@ func (c *UnitAdd) Flags() *gnuflag.FlagSet {
 	}
 	return c.fs
 }
-
+func (c *UnitAdd) unitDelta(ctx *cmd.Context, AppName string) tsuru.UnitsDelta {
+	unitDelta := tsuru.UnitsDelta{
+		Units:   ctx.Args[0],
+		Process: c.process,
+		Version: c.version,
+	}
+	return unitDelta
+}
 func (c *UnitAdd) Run(ctx *cmd.Context, client *cmd.Client) error {
 	ctx.RawOutput()
 	appName, err := c.AppName()
 	if err != nil {
 		return err
 	}
-	// u, err := cmd.GetURL(fmt.Sprintf("/apps/%s/units", appName))
-	// if err != nil {
-	// 	return err
-	// }
-	// val := url.Values{}
-	// val.Add("units", context.Args[0])
-	// val.Add("process", c.process)
-	// val.Set("version", c.version)
-	// request, err := http.NewRequest("PUT", u, bytes.NewBufferString(val.Encode()))
-	// if err != nil {
-	// 	return err
-	// }
-	var unitDelta tsuru.UnitsDelta
-
-	unitDelta.Units = ctx.Args[0]
-	unitDelta.Process = c.process
-	unitDelta.Version = c.version
 
 	apiClient, err := tsuruClient.ClientFromEnvironment(&tsuru.Configuration{
 		HTTPClient: client.HTTPClient,
@@ -1498,16 +1459,12 @@ func (c *UnitAdd) Run(ctx *cmd.Context, client *cmd.Client) error {
 		return err
 	}
 
+	unitDelta := c.unitDelta(ctx, appName)
+
 	response, err := apiClient.AppApi.UnitsAdd(context.TODO(), appName, unitDelta)
 	if err != nil {
 		return err
 	}
-	// request.Header.Add("Content-Type", "application/x-www-form-urlencoded")
-	// response, err := client.Do(request)
-	// if err != nil {
-	// 	return err
-	// }
-	//defer response.Body.Close()
 	return cmd.StreamJSONResponse(ctx.Stdout, response)
 }
 
@@ -1590,6 +1547,14 @@ func (c *UnitSet) Flags() *gnuflag.FlagSet {
 	}
 	return c.fs
 }
+func (c *UnitSet) unitDelta(units int) tsuru.UnitsDelta {
+	unitDelta := tsuru.UnitsDelta{
+		Units:   strconv.Itoa(units),
+		Process: c.process,
+		Version: strconv.Itoa(c.version),
+	}
+	return unitDelta
+}
 
 func (c *UnitSet) Run(ctx *cmd.Context, client *cmd.Client) error {
 	ctx.RawOutput()
@@ -1661,24 +1626,10 @@ func (c *UnitSet) Run(ctx *cmd.Context, client *cmd.Client) error {
 	}
 
 	if existingUnits < desiredUnits {
-		// u, err := cmd.GetURL(fmt.Sprintf("/apps/%s/units", appName))
-		// if err != nil {
-		// 	return err
-		// }
 
 		unitsToAdd := desiredUnits - existingUnits
-		// val := url.Values{}
-		// val.Add("units", strconv.Itoa(unitsToAdd))
-		// val.Add("process", c.process)
-		// val.Add("version", strconv.Itoa(c.version))
-		// request, err := http.NewRequest(http.MethodPut, u, bytes.NewBufferString(val.Encode()))
-		// if err != nil {
-		// 	return err
-		// }
-		var unitDelta tsuru.UnitsDelta
-		unitDelta.Units = strconv.Itoa(unitsToAdd)
-		unitDelta.Process = c.process
-		unitDelta.Version = strconv.Itoa(c.version)
+
+		unitsDelta := c.unitDelta(unitsToAdd)
 
 		apiClient, err := tsuruClient.ClientFromEnvironment(&tsuru.Configuration{
 			HTTPClient: client.HTTPClient,
@@ -1687,35 +1638,17 @@ func (c *UnitSet) Run(ctx *cmd.Context, client *cmd.Client) error {
 			return err
 		}
 
-		response, err := apiClient.AppApi.UnitsAdd(context.TODO(), appName, unitDelta)
+		response, err := apiClient.AppApi.UnitsAdd(context.TODO(), appName, unitsDelta)
 		if err != nil {
 			return err
 		}
-		// request.Header.Add("Content-Type", "application/x-www-form-urlencoded")
-		// response, err := client.Do(request)
-		// if err != nil {
-		// 	return err
-		// }
-
-		// defer response.Body.Close()
 		return cmd.StreamJSONResponse(ctx.Stdout, response)
 	}
 
 	if existingUnits > desiredUnits {
 		unitsToRemove := existingUnits - desiredUnits
-		// val := url.Values{}
-		// val.Add("units", strconv.Itoa(unitsToRemove))
-		// val.Add("process", c.process)
-		// val.Add("version", strconv.Itoa(c.version))
-		// u, err := cmd.GetURL(fmt.Sprintf("/apps/%s/units?%s", appName, val.Encode()))
-		// if err != nil {
-		// 	return err
-		// }
 
-		var unitDelta tsuru.UnitsDelta
-		unitDelta.Units = strconv.Itoa(unitsToRemove)
-		unitDelta.Process = c.process
-		unitDelta.Version = strconv.Itoa(c.version)
+		unitsDelta := c.unitDelta(unitsToRemove)
 
 		apiClient, err := tsuruClient.ClientFromEnvironment(&tsuru.Configuration{
 			HTTPClient: client.HTTPClient,
@@ -1724,22 +1657,11 @@ func (c *UnitSet) Run(ctx *cmd.Context, client *cmd.Client) error {
 			return err
 		}
 
-		response, err := apiClient.AppApi.UnitsRemove(context.TODO(), appName, unitDelta)
+		response, err := apiClient.AppApi.UnitsRemove(context.TODO(), appName, unitsDelta)
 		if err != nil {
 			return err
 		}
 
-		// request, err := http.NewRequest(http.MethodDelete, u, nil)
-		// if err != nil {
-		// 	return err
-		// }
-
-		// response, err := client.Do(request)
-		// if err != nil {
-		// 	return err
-		// }
-
-		// defer response.Body.Close()
 		return cmd.StreamJSONResponse(ctx.Stdout, response)
 	}
 

@@ -216,12 +216,7 @@ func (s *S) TestVolumeCreate(c *check.C) {
 		Transport: cmdtest.Transport{Message: "", Status: http.StatusCreated},
 		CondFunc: func(r *http.Request) bool {
 			r.ParseForm()
-			// dec := form.NewDecoder(nil)
-			// dec.IgnoreCase(true)
-			// dec.IgnoreUnknownKeys(true)
-			// dec.UseJSONTags(false)
 			var vol tsuru.Volume
-			//err := dec.DecodeValues(&vol, r.Form)
 			data, err := ioutil.ReadAll(r.Body)
 			c.Assert(err, check.IsNil)
 			err = json.Unmarshal(data, &vol)
@@ -313,9 +308,6 @@ func (s *S) TestVolumeBind(c *check.C) {
 	trans := &cmdtest.ConditionalTransport{
 		Transport: cmdtest.Transport{Message: "", Status: http.StatusOK},
 		CondFunc: func(r *http.Request) bool {
-			// r.ParseForm()
-			// c.Assert(r.FormValue("App"), check.Equals, "myapp")
-			// c.Assert(r.FormValue("MountPoint"), check.Equals, "/mnt")
 			var vol tsuru.VolumeBindData
 			data, err := ioutil.ReadAll(r.Body)
 			c.Assert(err, check.IsNil)
@@ -349,10 +341,6 @@ func (s *S) TestVolumeBindNoRestart(c *check.C) {
 	trans := &cmdtest.ConditionalTransport{
 		Transport: cmdtest.Transport{Message: "", Status: http.StatusOK},
 		CondFunc: func(r *http.Request) bool {
-			// r.ParseForm()
-			// c.Assert(r.FormValue("App"), check.Equals, "myapp")
-			// c.Assert(r.FormValue("MountPoint"), check.Equals, "/mnt")
-			// c.Assert(r.FormValue("NoRestart"), check.Equals, "true")
 			var vol tsuru.VolumeBindData
 			data, err := ioutil.ReadAll(r.Body)
 			c.Assert(err, check.IsNil)
@@ -386,10 +374,6 @@ func (s *S) TestVolumeBindRO(c *check.C) {
 	trans := &cmdtest.ConditionalTransport{
 		Transport: cmdtest.Transport{Message: "", Status: http.StatusOK},
 		CondFunc: func(r *http.Request) bool {
-			// r.ParseForm()
-			// c.Assert(r.FormValue("App"), check.Equals, "myapp")
-			// c.Assert(r.FormValue("MountPoint"), check.Equals, "/mnt")
-			// c.Assert(r.FormValue("ReadOnly"), check.Equals, "true")
 			var vol tsuru.VolumeBindData
 			data, err := ioutil.ReadAll(r.Body)
 			c.Assert(err, check.IsNil)

@@ -86,7 +86,14 @@ func (c *EnvSet) Info() *cmd.Info {
 		MinArgs: 1,
 	}
 }
-
+func (c *EnvSet) envSet(envs []tsuru.Env) tsuru.EnvSetData {
+	envSet := tsuru.EnvSetData{
+		Envs:      envs,
+		Norestart: c.noRestart,
+		Private:   c.private,
+	}
+	return envSet
+}
 func (c *EnvSet) Run(ctx *cmd.Context, client *cmd.Client) error {
 	ctx.RawOutput()
 	appName, err := c.AppName()
@@ -105,11 +112,6 @@ func (c *EnvSet) Run(ctx *cmd.Context, client *cmd.Client) error {
 		envs[i] = tsuru.Env{Name: parts[0], Value: parts[1]}
 
 	}
-	// e := apiTypes.Envs{
-	// 	Envs:      envs,
-	// 	NoRestart: c.noRestart,
-	// 	Private:   c.private,
-	// }
 
 	apiClient, err := tsuruClient.ClientFromEnvironment(&tsuru.Configuration{
 		HTTPClient: client.HTTPClient,
@@ -117,31 +119,13 @@ func (c *EnvSet) Run(ctx *cmd.Context, client *cmd.Client) error {
 	if err != nil {
 		return err
 	}
-	response, err := apiClient.AppApi.EnvSet(context.TODO(), appName, tsuru.EnvSetData{
-		Envs:      envs,
-		Norestart: c.noRestart,
-		Private:   c.private,
-	})
+	envSet := c.envSet(envs)
+
+	response, err := apiClient.AppApi.EnvSet(context.TODO(), appName, envSet)
 	if err != nil {
 		return err
 	}
-	// url, err := cmd.GetURL(fmt.Sprintf("/apps/%s/env", appName))
-	// if err != nil {
-	// 	return err
-	// }
-	// v, err := form.EncodeToValues(&e)
-	// if err != nil {
-	// 	return err
-	// }
-	// request, err := http.NewRequest("POST", url, strings.NewReader(v.Encode()))
-	// if err != nil {
-	// 	return err
-	// }
-	// request.Header.Set("Content-Type", "application/x-www-form-urlencoded")
-	// response, err := client.Do(request)
-	// if err != nil {
-	// 	return err
-	// }
+
 	return cmd.StreamJSONResponse(ctx.Stdout, response)
 }
 
