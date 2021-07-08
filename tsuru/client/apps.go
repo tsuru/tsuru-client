@@ -1170,39 +1170,34 @@ func (c *AppStop) Info() *cmd.Info {
 		MinArgs: 0,
 	}
 }
+func (c *AppStop) StoptApp() tsuru.AppStartStop {
+	stopApp := tsuru.AppStartStop{
+		Process: c.process,
+		Version: c.version,
+	}
+	return stopApp
+}
 
-func (c *AppStop) Run(context *cmd.Context, client *cmd.Client) error {
-	context.RawOutput()
+func (c *AppStop) Run(ctx *cmd.Context, client *cmd.Client) error {
+	ctx.RawOutput()
 	appName, err := c.AppName()
 	if err != nil {
 		return err
 	}
-	u, err := cmd.GetURL(fmt.Sprintf("/apps/%s/stop", appName))
+	apiClient, err := tsuruClient.ClientFromEnvironment(&tsuru.Configuration{
+		HTTPClient: client.HTTPClient,
+	})
 	if err != nil {
 		return err
 	}
-	qs := url.Values{}
-	qs.Set("process", c.process)
-	qs.Set("version", c.version)
-	body := strings.NewReader(qs.Encode())
-	request, err := http.NewRequest("POST", u, body)
-	if err != nil {
-		return err
-	}
-	// apiClient, err := tsuruClient.ClientFromEnvironment(&tsuru.Configuration{
-	// 	HTTPClient: client.HTTPClient,
-	// })
-	// if err != nil {
-	// 	return err
-	// }
-	// _, err = apiClient.AppApi.AppRestart()
+	appStop := c.StoptApp()
 
-	request.Header.Set("Content-Type", "application/x-www-form-urlencoded")
-	response, err := client.Do(request)
+	response, err := apiClient.AppApi.AppStop(context.TODO(), appName, appStop)
+
 	if err != nil {
 		return err
 	}
-	return cmd.StreamJSONResponse(context.Stdout, response)
+	return cmd.StreamJSONResponse(ctx.Stdout, response)
 }
 
 func (c *AppStop) Flags() *gnuflag.FlagSet {
@@ -1230,31 +1225,32 @@ func (c *AppStart) Info() *cmd.Info {
 		MinArgs: 0,
 	}
 }
+func (c *AppStart) StartApp() tsuru.AppStartStop {
+	startApp := tsuru.AppStartStop{
+		Process: c.process,
+		Version: c.version,
+	}
+	return startApp
+}
 
-func (c *AppStart) Run(context *cmd.Context, client *cmd.Client) error {
-	context.RawOutput()
+func (c *AppStart) Run(ctx *cmd.Context, client *cmd.Client) error {
+	ctx.RawOutput()
 	appName, err := c.AppName()
 	if err != nil {
 		return err
 	}
-	u, err := cmd.GetURL(fmt.Sprintf("/apps/%s/start", appName))
+	appStart := c.StartApp()
+	apiClient, err := tsuruClient.ClientFromEnvironment(&tsuru.Configuration{
+		HTTPClient: client.HTTPClient,
+	})
 	if err != nil {
 		return err
 	}
-	qs := url.Values{}
-	qs.Set("process", c.process)
-	qs.Set("version", c.version)
-	body := strings.NewReader(qs.Encode())
-	request, err := http.NewRequest("POST", u, body)
+	response, err := apiClient.AppApi.AppStart(context.TODO(), appName, appStart)
 	if err != nil {
 		return err
 	}
-	request.Header.Set("Content-Type", "application/x-www-form-urlencoded")
-	response, err := client.Do(request)
-	if err != nil {
-		return err
-	}
-	return cmd.StreamJSONResponse(context.Stdout, response)
+	return cmd.StreamJSONResponse(ctx.Stdout, response)
 }
 
 func (c *AppStart) Flags() *gnuflag.FlagSet {
@@ -1274,30 +1270,32 @@ type AppRestart struct {
 	fs      *gnuflag.FlagSet
 }
 
-func (c *AppRestart) Run(context *cmd.Context, client *cmd.Client) error {
-	context.RawOutput()
+func (c *AppRestart) RestartApp() tsuru.AppStartStop {
+	restartApp := tsuru.AppStartStop{
+		Process: c.process,
+		Version: c.version,
+	}
+	return restartApp
+}
+func (c *AppRestart) Run(ctx *cmd.Context, client *cmd.Client) error {
+	ctx.RawOutput()
 	appName, err := c.AppName()
 	if err != nil {
 		return err
 	}
-	u, err := cmd.GetURL(fmt.Sprintf("/apps/%s/restart", appName))
+
+	appRestart := c.RestartApp()
+	apiClient, err := tsuruClient.ClientFromEnvironment(&tsuru.Configuration{
+		HTTPClient: client.HTTPClient,
+	})
 	if err != nil {
 		return err
 	}
-	qs := url.Values{}
-	qs.Set("process", c.process)
-	qs.Set("version", c.version)
-	body := strings.NewReader(qs.Encode())
-	request, err := http.NewRequest("POST", u, body)
+	response, err := apiClient.AppApi.AppRestart(context.TODO(), appName, appRestart)
 	if err != nil {
 		return err
 	}
-	request.Header.Set("Content-Type", "application/x-www-form-urlencoded")
-	response, err := client.Do(request)
-	if err != nil {
-		return err
-	}
-	return cmd.StreamJSONResponse(context.Stdout, response)
+	return cmd.StreamJSONResponse(ctx.Stdout, response)
 }
 
 func (c *AppRestart) Info() *cmd.Info {

@@ -2622,7 +2622,14 @@ func (s *S) TestAppRestart(c *check.C) {
 		Transport: cmdtest.Transport{Message: string(result), Status: http.StatusOK},
 		CondFunc: func(req *http.Request) bool {
 			called = true
-			c.Assert(req.FormValue("process"), check.Equals, "web")
+			data, err := ioutil.ReadAll(req.Body)
+			c.Assert(err, check.IsNil)
+			var restartResult map[string]interface{}
+			err = json.Unmarshal(data, &restartResult)
+			c.Assert(err, check.IsNil)
+			c.Assert(restartResult, check.DeepEquals, map[string]interface{}{
+				"process": "web",
+			})
 			return strings.HasSuffix(req.URL.Path, "/apps/handful_of_nothing/restart") && req.Method == "POST"
 		},
 	}
@@ -2790,7 +2797,14 @@ func (s *S) TestAppStart(c *check.C) {
 		Transport: cmdtest.Transport{Message: string(result), Status: http.StatusOK},
 		CondFunc: func(req *http.Request) bool {
 			called = true
-			c.Assert(req.FormValue("process"), check.Equals, "worker")
+			data, err := ioutil.ReadAll(req.Body)
+			c.Assert(err, check.IsNil)
+			var startResult map[string]interface{}
+			err = json.Unmarshal(data, &startResult)
+			c.Assert(err, check.IsNil)
+			c.Assert(startResult, check.DeepEquals, map[string]interface{}{
+				"process": "worker",
+			})
 			return strings.HasSuffix(req.URL.Path, "/apps/handful_of_nothing/start") && req.Method == "POST"
 		},
 	}
@@ -2855,7 +2869,14 @@ func (s *S) TestAppStop(c *check.C) {
 		Transport: cmdtest.Transport{Message: string(result), Status: http.StatusOK},
 		CondFunc: func(req *http.Request) bool {
 			called = true
-			c.Assert(req.FormValue("process"), check.Equals, "worker")
+			data, err := ioutil.ReadAll(req.Body)
+			c.Assert(err, check.IsNil)
+			var stopResult map[string]interface{}
+			err = json.Unmarshal(data, &stopResult)
+			c.Assert(err, check.IsNil)
+			c.Assert(stopResult, check.DeepEquals, map[string]interface{}{
+				"process": "worker",
+			})
 			return strings.HasSuffix(req.URL.Path, "/apps/handful_of_nothing/stop") && req.Method == "POST"
 		},
 	}

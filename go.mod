@@ -21,14 +21,14 @@ require (
 	github.com/sethvargo/go-password v0.1.1
 	github.com/tsuru/config v0.0.0-20201023175036-375aaee8b560
 	github.com/tsuru/gnuflag v0.0.0-20151217162021-86b8c1b864aa
-	github.com/tsuru/go-tsuruclient v0.0.0-20210426181646-b7774d33597a
+	github.com/tsuru/go-tsuruclient v0.0.0-20210706193529-586e01e63f2c
 	github.com/tsuru/tablecli v0.0.0-20190131152944-7ded8a3383c6
-	github.com/tsuru/tsuru v0.0.0-20210504215419-6e4b785e561c
+	github.com/tsuru/tsuru v0.0.0-20210706143918-b89a484dc93f
 	golang.org/x/crypto v0.0.0-20201012173705-84dcc777aaee
 	google.golang.org/api v0.7.0 // indirect
 	google.golang.org/appengine v1.6.1 // indirect
 	gopkg.in/check.v1 v1.0.0-20200902074654-038fdea0a05b
-	gopkg.in/yaml.v2 v2.3.0
+	gopkg.in/yaml.v2 v2.4.0
 	k8s.io/apimachinery v0.18.9
 	k8s.io/client-go v11.0.1-0.20190805182715-88a2adca7e76+incompatible // indirect
 )

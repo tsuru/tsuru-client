@@ -11,11 +11,9 @@ import (
 	"net/http"
 	"strings"
 
-	"github.com/ajg/form"
 	"github.com/tsuru/go-tsuruclient/pkg/tsuru"
 	"github.com/tsuru/tsuru/cmd"
 	"github.com/tsuru/tsuru/cmd/cmdtest"
-	volumeTypes "github.com/tsuru/tsuru/types/volume"
 	"gopkg.in/check.v1"
 )
 
@@ -250,17 +248,14 @@ func (s *S) TestVolumeUpdate(c *check.C) {
 	trans := &cmdtest.ConditionalTransport{
 		Transport: cmdtest.Transport{Message: "", Status: http.StatusOK},
 		CondFunc: func(r *http.Request) bool {
-			r.ParseForm()
-			dec := form.NewDecoder(nil)
-			dec.IgnoreCase(true)
-			dec.IgnoreUnknownKeys(true)
-			dec.UseJSONTags(false)
-			var vol volumeTypes.Volume
-			err := dec.DecodeValues(&vol, r.Form)
+			var vol tsuru.Volume
+			data, err := ioutil.ReadAll(r.Body)
 			c.Assert(err, check.IsNil)
-			c.Assert(vol, check.DeepEquals, volumeTypes.Volume{
+			err = json.Unmarshal(data, &vol)
+			c.Assert(err, check.IsNil)
+			c.Assert(vol, check.DeepEquals, tsuru.Volume{
 				Name:      "vol1",
-				Plan:      volumeTypes.VolumePlan{Name: "plan1"},
+				Plan:      tsuru.VolumePlan{Name: "plan1"},
 				TeamOwner: "team1",
 				Pool:      "pool1",
 				Opts:      map[string]string{"a": "1", "b": "2"},

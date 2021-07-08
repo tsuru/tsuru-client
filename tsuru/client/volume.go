@@ -118,31 +118,28 @@ func (c *VolumeUpdate) Flags() *gnuflag.FlagSet {
 	}
 	return c.fs
 }
-
-func (c *VolumeUpdate) Run(ctx *cmd.Context, client *cmd.Client) error {
-	volumeName, planName := ctx.Args[0], ctx.Args[1]
-	vol := volumeTypes.Volume{
+func (c *VolumeUpdate) volumeUpdate(volumeName, planName string) tsuru.Volume {
+	volumeCreate := tsuru.Volume{
 		Name:      volumeName,
-		Plan:      volumeTypes.VolumePlan{Name: planName},
+		Plan:      tsuru.VolumePlan{Name: planName},
 		Pool:      c.pool,
 		TeamOwner: c.team,
 		Opts:      map[string]string(c.opt),
 	}
-	val, err := form.EncodeToValues(vol)
+	return volumeCreate
+}
+
+func (c *VolumeUpdate) Run(ctx *cmd.Context, client *cmd.Client) error {
+	volumeName, planName := ctx.Args[0], ctx.Args[1]
+
+	apiClient, err := tsuruClient.ClientFromEnvironment(&tsuru.Configuration{
+		HTTPClient: client.HTTPClient,
+	})
 	if err != nil {
 		return err
 	}
-	body := strings.NewReader(val.Encode())
-	u, err := cmd.GetURLVersion("1.4", "/volumes/"+volumeName)
-	if err != nil {
-		return err
-	}
-	request, err := http.NewRequest("POST", u, body)
-	if err != nil {
-		return err
-	}
-	request.Header.Set("Content-Type", "application/x-www-form-urlencoded")
-	_, err = client.Do(request)
+	volumeUpdate := c.volumeUpdate(volumeName, planName)
+	_, err = apiClient.VolumeApi.VolumeUpdate(context.TODO(), volumeName, volumeUpdate)
 	if err != nil {
 		return err
 	}

@@ -563,7 +563,6 @@ func (s *S) TestEventCancel(c *check.C) {
 			err = json.Unmarshal(data, &eventCancel)
 			c.Assert(err, check.IsNil)
 			c.Assert(eventCancel, check.Equals, tsuru.EventCancelArgs{Reason: "my reason"})
-			//c.Assert(req.FormValue("reason"), check.Equals, "my reason")
 			return req.URL.Path == "/1.1/events/998e3908413daf5fd9891aac/cancel" && req.Method == "POST"
 		},
 	}

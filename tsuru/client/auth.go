@@ -491,12 +491,17 @@ Tags: {{.Tags}}
 
 type ChangePassword struct{}
 
+func (c *ChangePassword) ChangePassword(old, new, confirm string) tsuru.ChangePasswordData {
+	changePass := tsuru.ChangePasswordData{
+		Old:     old,
+		New:     new,
+		Confirm: confirm,
+	}
+	return changePass
+}
 func (c *ChangePassword) Run(ctx *cmd.Context, client *cmd.Client) error {
 	ctx.RawOutput()
-	u, err := cmd.GetURL("/users/password")
-	if err != nil {
-		return err
-	}
+
 	fmt.Fprint(ctx.Stdout, "Current password: ")
 	old, err := cmd.PasswordFromReader(ctx.Stdin)
 	if err != nil {
@@ -517,15 +522,14 @@ func (c *ChangePassword) Run(ctx *cmd.Context, client *cmd.Client) error {
 	v.Set("old", old)
 	v.Set("new", new)
 	v.Set("confirm", confirm)
-	request, err := http.NewRequest("PUT", u, strings.NewReader(v.Encode()))
+	apiClient, err := tsuruClient.ClientFromEnvironment(&tsuru.Configuration{
+		HTTPClient: client.HTTPClient,
+	})
 	if err != nil {
 		return err
 	}
-	request.Header.Set("Content-Type", "application/x-www-form-urlencoded")
-	_, err = client.Do(request)
-	if err != nil {
-		return err
-	}
+	changePassword := c.ChangePassword(old, new, confirm)
+	_, err = apiClient.UserApi.ChangePassword(context.TODO(), changePassword)
 	if err != nil {
 		return err
 	}
