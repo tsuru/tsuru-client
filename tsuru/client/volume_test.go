@@ -6,13 +6,13 @@ package client
 
 import (
 	"bytes"
+	"encoding/json"
 	"net/http"
 	"strings"
 
-	"github.com/ajg/form"
+	"github.com/tsuru/go-tsuruclient/pkg/tsuru"
 	"github.com/tsuru/tsuru/cmd"
 	"github.com/tsuru/tsuru/cmd/cmdtest"
-	volumeTypes "github.com/tsuru/tsuru/types/volume"
 	"gopkg.in/check.v1"
 )
 
@@ -212,17 +212,12 @@ func (s *S) TestVolumeCreate(c *check.C) {
 	trans := &cmdtest.ConditionalTransport{
 		Transport: cmdtest.Transport{Message: "", Status: http.StatusCreated},
 		CondFunc: func(r *http.Request) bool {
-			r.ParseForm()
-			dec := form.NewDecoder(nil)
-			dec.IgnoreCase(true)
-			dec.IgnoreUnknownKeys(true)
-			dec.UseJSONTags(false)
-			var vol volumeTypes.Volume
-			err := dec.DecodeValues(&vol, r.Form)
+			var vol tsuru.Volume
+			err := json.NewDecoder(r.Body).Decode(&vol)
 			c.Assert(err, check.IsNil)
-			c.Assert(vol, check.DeepEquals, volumeTypes.Volume{
+			c.Assert(vol, check.DeepEquals, tsuru.Volume{
 				Name:      "vol1",
-				Plan:      volumeTypes.VolumePlan{Name: "plan1"},
+				Plan:      tsuru.VolumePlan{Name: "plan1"},
 				TeamOwner: "team1",
 				Pool:      "pool1",
 				Opts:      map[string]string{"a": "1", "b": "2"},
@@ -249,17 +244,12 @@ func (s *S) TestVolumeUpdate(c *check.C) {
 	trans := &cmdtest.ConditionalTransport{
 		Transport: cmdtest.Transport{Message: "", Status: http.StatusOK},
 		CondFunc: func(r *http.Request) bool {
-			r.ParseForm()
-			dec := form.NewDecoder(nil)
-			dec.IgnoreCase(true)
-			dec.IgnoreUnknownKeys(true)
-			dec.UseJSONTags(false)
-			var vol volumeTypes.Volume
-			err := dec.DecodeValues(&vol, r.Form)
+			var vol map[string]interface{}
+			err := json.NewDecoder(r.Body).Decode(&vol)
 			c.Assert(err, check.IsNil)
-			c.Assert(vol, check.DeepEquals, volumeTypes.Volume{
+			c.Assert(vol, check.DeepEquals, tsuru.Volume{
 				Name:      "vol1",
-				Plan:      volumeTypes.VolumePlan{Name: "plan1"},
+				Plan:      tsuru.VolumePlan{Name: "plan1"},
 				TeamOwner: "team1",
 				Pool:      "pool1",
 				Opts:      map[string]string{"a": "1", "b": "2"},
@@ -307,9 +297,15 @@ func (s *S) TestVolumeBind(c *check.C) {
 	trans := &cmdtest.ConditionalTransport{
 		Transport: cmdtest.Transport{Message: "", Status: http.StatusOK},
 		CondFunc: func(r *http.Request) bool {
-			r.ParseForm()
-			c.Assert(r.FormValue("App"), check.Equals, "myapp")
-			c.Assert(r.FormValue("MountPoint"), check.Equals, "/mnt")
+			var vol tsuru.VolumeBindData
+			err := json.NewDecoder(r.Body).Decode(&vol)
+			c.Assert(err, check.IsNil)
+			c.Assert(vol, check.DeepEquals, tsuru.VolumeBindData{
+				App:        "myapp",
+				Mountpoint: "/mnt",
+				Norestart:  false,
+				Readonly:   false,
+			})
 			return strings.HasSuffix(r.URL.Path, "/volumes/vol1/bind") && r.Method == "POST"
 		},
 	}
@@ -332,10 +328,15 @@ func (s *S) TestVolumeBindNoRestart(c *check.C) {
 	trans := &cmdtest.ConditionalTransport{
 		Transport: cmdtest.Transport{Message: "", Status: http.StatusOK},
 		CondFunc: func(r *http.Request) bool {
-			r.ParseForm()
-			c.Assert(r.FormValue("App"), check.Equals, "myapp")
-			c.Assert(r.FormValue("MountPoint"), check.Equals, "/mnt")
-			c.Assert(r.FormValue("NoRestart"), check.Equals, "true")
+			var vol tsuru.VolumeBindData
+			err := json.NewDecoder(r.Body).Decode(&vol)
+			c.Assert(err, check.IsNil)
+			c.Assert(vol, check.DeepEquals, tsuru.VolumeBindData{
+				App:        "myapp",
+				Mountpoint: "/mnt",
+				Norestart:  true,
+				Readonly:   false,
+			})
 			return strings.HasSuffix(r.URL.Path, "/volumes/vol1/bind") && r.Method == "POST"
 		},
 	}
@@ -358,10 +359,15 @@ func (s *S) TestVolumeBindRO(c *check.C) {
 	trans := &cmdtest.ConditionalTransport{
 		Transport: cmdtest.Transport{Message: "", Status: http.StatusOK},
 		CondFunc: func(r *http.Request) bool {
-			r.ParseForm()
-			c.Assert(r.FormValue("App"), check.Equals, "myapp")
-			c.Assert(r.FormValue("MountPoint"), check.Equals, "/mnt")
-			c.Assert(r.FormValue("ReadOnly"), check.Equals, "true")
+			var vol tsuru.VolumeBindData
+			err := json.NewDecoder(r.Body).Decode(&vol)
+			c.Assert(err, check.IsNil)
+			c.Assert(vol, check.DeepEquals, tsuru.VolumeBindData{
+				App:        "myapp",
+				Mountpoint: "/mnt",
+				Norestart:  false,
+				Readonly:   true,
+			})
 			return strings.HasSuffix(r.URL.Path, "/volumes/vol1/bind") && r.Method == "POST"
 		},
 	}

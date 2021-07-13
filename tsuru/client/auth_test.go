@@ -410,11 +410,16 @@ func (s *S) TestUserCreateShouldNotDependOnTsuruTokenFile(c *check.C) {
 			Status:  http.StatusCreated,
 		},
 		CondFunc: func(r *http.Request) bool {
-			contentType := r.Header.Get("Content-Type") == "application/x-www-form-urlencoded"
-			password := r.FormValue("password") == "foo123"
-			email := r.FormValue("email") == "foo@foo.com"
+			contentType := r.Header.Get("Content-Type") == "application/json"
 			url := r.URL.Path == "/1.0/users"
-			return contentType && password && email && url
+			var createResult map[string]interface{}
+			err := json.NewDecoder(r.Body).Decode(&createResult)
+			c.Assert(err, check.IsNil)
+			c.Assert(createResult, check.DeepEquals, map[string]interface{}{
+				"password": "foo123",
+				"email":    "foo@foo.com",
+			})
+			return contentType && url
 		},
 	}
 	client := cmd.NewClient(&http.Client{Transport: &transport}, nil, manager)
@@ -487,7 +492,7 @@ func (s *S) TestUserCreateNotFound(c *check.C) {
 	command := UserCreate{}
 	err := command.Run(&context, client)
 	c.Assert(err, check.NotNil)
-	c.Assert(err.Error(), check.Equals, "User creation is disabled.")
+	c.Assert(err.Error(), check.Equals, "404 Not Found: Not found")
 }
 
 func (s *S) TestUserCreateMethodNotAllowed(c *check.C) {
@@ -507,7 +512,7 @@ func (s *S) TestUserCreateMethodNotAllowed(c *check.C) {
 	command := UserCreate{}
 	err := command.Run(&context, client)
 	c.Assert(err, check.NotNil)
-	c.Assert(err.Error(), check.Equals, "User creation is disabled.")
+	c.Assert(err.Error(), check.Equals, "405 Method Not Allowed: Not found")
 }
 
 func (s *S) TestUserCreateInfo(c *check.C) {
@@ -620,14 +625,19 @@ func (s *S) TestChangePassword(c *check.C) {
 	trans := cmdtest.ConditionalTransport{
 		Transport: cmdtest.Transport{Message: "", Status: http.StatusOK},
 		CondFunc: func(r *http.Request) bool {
-			old := r.FormValue("old") == "gopher"
-			new := r.FormValue("new") == "bbrothers"
-			confirm := r.FormValue("confirm") == "bbrothers"
+			var changePassResult map[string]interface{}
+			err := json.NewDecoder(r.Body).Decode(&changePassResult)
+			c.Assert(err, check.IsNil)
+			c.Assert(changePassResult, check.DeepEquals, map[string]interface{}{
+				"old":     "gopher",
+				"new":     "bbrothers",
+				"confirm": "bbrothers",
+			})
 			method := r.Method == "PUT"
-			contentType := r.Header.Get("Content-Type") == "application/x-www-form-urlencoded"
+			contentType := r.Header.Get("Content-Type") == "application/json"
 			url := strings.HasSuffix(r.URL.Path, "/users/password")
 			called = true
-			return method && url && contentType && old && new && confirm
+			return method && url && contentType
 		},
 	}
 	client := cmd.NewClient(&http.Client{Transport: &trans}, nil, manager)
@@ -652,20 +662,25 @@ func (s *S) TestChangePasswordWrongConfirmation(c *check.C) {
 	trans := cmdtest.ConditionalTransport{
 		Transport: cmdtest.Transport{Message: "New password and password confirmation didn't match.", Status: http.StatusBadRequest},
 		CondFunc: func(r *http.Request) bool {
-			old := r.FormValue("old") == "gopher"
-			new := r.FormValue("new") == "bbrothers"
-			confirm := r.FormValue("confirm") == "brothers"
+			var changePassResult map[string]interface{}
+			err := json.NewDecoder(r.Body).Decode(&changePassResult)
+			c.Assert(err, check.IsNil)
+			c.Assert(changePassResult, check.DeepEquals, map[string]interface{}{
+				"old":     "gopher",
+				"new":     "bbrothers",
+				"confirm": "brothers",
+			})
 			method := r.Method == "PUT"
-			contentType := r.Header.Get("Content-Type") == "application/x-www-form-urlencoded"
+			contentType := r.Header.Get("Content-Type") == "application/json"
 			url := strings.HasSuffix(r.URL.Path, "/users/password")
-			return method && url && contentType && old && new && confirm
+			return method && url && contentType
 		},
 	}
 	client := cmd.NewClient(&http.Client{Transport: &trans}, nil, manager)
 	command := ChangePassword{}
 	err := command.Run(&context, client)
 	c.Assert(err, check.NotNil)
-	c.Assert(err.Error(), check.Equals, "New password and password confirmation didn't match.")
+	c.Assert(err.Error(), check.Equals, "400 Bad Request: New password and password confirmation didn't match.")
 }
 
 func (s *S) TestChangePasswordInfo(c *check.C) {

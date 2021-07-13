@@ -45,19 +45,18 @@ Use app info to check the status of the app and its units.` + "\n"
 	trans := cmdtest.ConditionalTransport{
 		Transport: cmdtest.Transport{Message: result, Status: http.StatusOK},
 		CondFunc: func(r *http.Request) bool {
-			name := r.FormValue("name") == "ble"
-			platform := r.FormValue("platform") == "django"
-			teamOwner := r.FormValue("teamOwner") == ""
-			plan := r.FormValue("plan") == ""
-			pool := r.FormValue("pool") == ""
-			description := r.FormValue("description") == ""
-			r.ParseForm()
-			tags := r.Form["tag"] == nil
-			router := r.FormValue("router") == ""
-			method := r.Method == "POST"
-			contentType := r.Header.Get("Content-Type") == "application/x-www-form-urlencoded"
 			url := strings.HasSuffix(r.URL.Path, "/apps")
-			return method && url && name && platform && teamOwner && plan && pool && description && tags && contentType && router
+			var appResult map[string]interface{}
+			err := json.NewDecoder(r.Body).Decode(&appResult)
+			c.Assert(err, check.IsNil)
+			c.Assert(appResult, check.DeepEquals, map[string]interface{}{
+				"name":     "ble",
+				"platform": "django",
+				"metadata": map[string]interface{}{},
+			})
+			method := r.Method == "POST"
+			contentType := r.Header.Get("Content-Type") == "application/json"
+			return method && url && contentType
 		},
 	}
 	client := cmd.NewClient(&http.Client{Transport: &trans}, nil, manager)
@@ -80,19 +79,17 @@ Use app info to check the status of the app and its units.` + "\n"
 	trans := cmdtest.ConditionalTransport{
 		Transport: cmdtest.Transport{Message: result, Status: http.StatusOK},
 		CondFunc: func(r *http.Request) bool {
-			name := r.FormValue("name") == "ble"
-			platform := r.FormValue("platform") == ""
-			teamOwner := r.FormValue("teamOwner") == ""
-			plan := r.FormValue("plan") == ""
-			pool := r.FormValue("pool") == ""
-			description := r.FormValue("description") == ""
-			r.ParseForm()
-			tags := r.Form["tag"] == nil
-			router := r.FormValue("router") == ""
-			method := r.Method == "POST"
-			contentType := r.Header.Get("Content-Type") == "application/x-www-form-urlencoded"
 			url := strings.HasSuffix(r.URL.Path, "/apps")
-			return method && url && name && platform && teamOwner && plan && pool && description && tags && contentType && router
+			var appResult map[string]interface{}
+			err := json.NewDecoder(r.Body).Decode(&appResult)
+			c.Assert(err, check.IsNil)
+			c.Assert(appResult, check.DeepEquals, map[string]interface{}{
+				"name":     "ble",
+				"metadata": map[string]interface{}{},
+			})
+			method := r.Method == "POST"
+			contentType := r.Header.Get("Content-Type") == "application/json"
+			return method && url && contentType
 		},
 	}
 	client := cmd.NewClient(&http.Client{Transport: &trans}, nil, manager)
@@ -115,19 +112,18 @@ Use app info to check the status of the app and its units.` + "\n"
 	trans := cmdtest.ConditionalTransport{
 		Transport: cmdtest.Transport{Message: result, Status: http.StatusOK},
 		CondFunc: func(r *http.Request) bool {
-			name := r.FormValue("name") == "ble"
-			platform := r.FormValue("platform") == "django"
-			teamOwner := r.FormValue("teamOwner") == "team"
-			plan := r.FormValue("plan") == ""
-			pool := r.FormValue("pool") == ""
-			description := r.FormValue("description") == ""
-			r.ParseForm()
-			tags := r.Form["tag"] == nil
-			router := r.FormValue("router") == ""
-			method := r.Method == "POST"
 			url := strings.HasSuffix(r.URL.Path, "/apps")
-			contentType := r.Header.Get("Content-Type") == "application/x-www-form-urlencoded"
-			return method && url && name && platform && teamOwner && plan && pool && description && tags && contentType && router
+			var appResult map[string]interface{}
+			err := json.NewDecoder(r.Body).Decode(&appResult)
+			c.Assert(err, check.IsNil)
+			c.Assert(appResult, check.DeepEquals, map[string]interface{}{
+				"name":      "ble",
+				"platform":  "django",
+				"teamOwner": "team",
+				"metadata":  map[string]interface{}{},
+			})
+			contentType := r.Header.Get("Content-Type") == "application/json"
+			return url && contentType
 		},
 	}
 	client := cmd.NewClient(&http.Client{Transport: &trans}, nil, manager)
@@ -151,19 +147,19 @@ Use app info to check the status of the app and its units.` + "\n"
 	trans := cmdtest.ConditionalTransport{
 		Transport: cmdtest.Transport{Message: result, Status: http.StatusOK},
 		CondFunc: func(r *http.Request) bool {
-			name := r.FormValue("name") == "ble"
-			platform := r.FormValue("platform") == "django"
-			teamOwner := r.FormValue("teamOwner") == ""
-			plan := r.FormValue("plan") == "myplan"
-			pool := r.FormValue("pool") == ""
-			router := r.FormValue("router") == ""
-			description := r.FormValue("description") == ""
-			r.ParseForm()
-			tags := r.Form["tag"] == nil
-			method := r.Method == "POST"
 			url := strings.HasSuffix(r.URL.Path, "/apps")
-			contentType := r.Header.Get("Content-Type") == "application/x-www-form-urlencoded"
-			return method && url && name && platform && teamOwner && plan && pool && description && tags && contentType && router
+			var appResult map[string]interface{}
+			err := json.NewDecoder(r.Body).Decode(&appResult)
+			c.Assert(err, check.IsNil)
+			c.Assert(appResult, check.DeepEquals, map[string]interface{}{
+				"name":     "ble",
+				"platform": "django",
+				"plan":     "myplan",
+				"metadata": map[string]interface{}{},
+			})
+			method := r.Method == "POST"
+			contentType := r.Header.Get("Content-Type") == "application/json"
+			return method && url && contentType
 		},
 	}
 	client := cmd.NewClient(&http.Client{Transport: &trans}, nil, manager)
@@ -187,19 +183,19 @@ Use app info to check the status of the app and its units.` + "\n"
 	trans := cmdtest.ConditionalTransport{
 		Transport: cmdtest.Transport{Message: result, Status: http.StatusOK},
 		CondFunc: func(r *http.Request) bool {
-			name := r.FormValue("name") == "ble"
-			platform := r.FormValue("platform") == "django"
-			teamowner := r.FormValue("teamowner") == ""
-			plan := r.FormValue("plan") == ""
-			pool := r.FormValue("pool") == "mypool"
-			router := r.FormValue("router") == ""
-			description := r.FormValue("description") == ""
-			r.ParseForm()
-			tags := r.Form["tag"] == nil
-			method := r.Method == "POST"
 			url := strings.HasSuffix(r.URL.Path, "/apps")
-			contentType := r.Header.Get("Content-Type") == "application/x-www-form-urlencoded"
-			return method && url && name && platform && teamowner && plan && pool && description && tags && contentType && router
+			var appResult map[string]interface{}
+			err := json.NewDecoder(r.Body).Decode(&appResult)
+			c.Assert(err, check.IsNil)
+			c.Assert(appResult, check.DeepEquals, map[string]interface{}{
+				"name":     "ble",
+				"platform": "django",
+				"pool":     "mypool",
+				"metadata": map[string]interface{}{},
+			})
+			method := r.Method == "POST"
+			contentType := r.Header.Get("Content-Type") == "application/json"
+			return method && url && contentType
 		},
 	}
 	client := cmd.NewClient(&http.Client{Transport: &trans}, nil, manager)
@@ -223,21 +219,21 @@ Use app info to check the status of the app and its units.` + "\n"
 	trans := cmdtest.ConditionalTransport{
 		Transport: cmdtest.Transport{Message: result, Status: http.StatusOK},
 		CondFunc: func(r *http.Request) bool {
-			name := r.FormValue("name") == "ble"
-			platform := r.FormValue("platform") == "django"
-			teamowner := r.FormValue("teamowner") == ""
-			plan := r.FormValue("plan") == ""
-			pool := r.FormValue("pool") == ""
-			description := r.FormValue("description") == ""
-			r.ParseForm()
-			tags := r.Form["tag"] == nil
-			router := r.FormValue("router") == ""
-			c.Assert(r.FormValue("routeropts.a"), check.Equals, "1")
-			c.Assert(r.FormValue("routeropts.b"), check.Equals, "2")
-			method := r.Method == "POST"
 			url := strings.HasSuffix(r.URL.Path, "/apps")
-			contentType := r.Header.Get("Content-Type") == "application/x-www-form-urlencoded"
-			return method && url && name && platform && teamowner && plan && pool && description && tags && contentType && router
+			var appResult map[string]interface{}
+			err := json.NewDecoder(r.Body).Decode(&appResult)
+			c.Assert(err, check.IsNil)
+			method := r.Method == "POST"
+			contentType := r.Header.Get("Content-Type") == "application/json"
+			c.Assert(appResult, check.DeepEquals, map[string]interface{}{
+				"name":     "ble",
+				"platform": "django",
+				"routeropts": map[string]interface{}{
+					"a": "1",
+					"b": "2"},
+				"metadata": map[string]interface{}{},
+			})
+			return method && url && contentType
 		},
 	}
 	client := cmd.NewClient(&http.Client{Transport: &trans}, nil, manager)
@@ -261,19 +257,18 @@ Use app info to check the status of the app and its units.` + "\n"
 	trans := cmdtest.ConditionalTransport{
 		Transport: cmdtest.Transport{Message: result, Status: http.StatusOK},
 		CondFunc: func(r *http.Request) bool {
-			name := r.FormValue("name") == "ble"
-			platform := r.FormValue("platform") == "django"
-			teamowner := r.FormValue("teamowner") == ""
-			plan := r.FormValue("plan") == ""
-			pool := r.FormValue("pool") == ""
-			router := r.FormValue("router") == ""
-			description := r.FormValue("description") == ""
-			r.ParseForm()
-			tags := r.Form["tag"] == nil
-			method := r.Method == "POST"
 			url := strings.HasSuffix(r.URL.Path, "/apps")
-			contentType := r.Header.Get("Content-Type") == "application/x-www-form-urlencoded"
-			return method && url && name && platform && teamowner && plan && pool && description && tags && contentType && router
+			var appResult map[string]interface{}
+			err := json.NewDecoder(r.Body).Decode(&appResult)
+			c.Assert(err, check.IsNil)
+			c.Assert(appResult, check.DeepEquals, map[string]interface{}{
+				"name":     "ble",
+				"platform": "django",
+				"metadata": map[string]interface{}{},
+			})
+			method := r.Method == "POST"
+			contentType := r.Header.Get("Content-Type") == "application/json"
+			return method && url && contentType
 		},
 	}
 	client := cmd.NewClient(&http.Client{Transport: &trans}, nil, manager)
@@ -310,19 +305,21 @@ Use app info to check the status of the app and its units.` + "\n"
 	trans := cmdtest.ConditionalTransport{
 		Transport: cmdtest.Transport{Message: result, Status: http.StatusOK},
 		CondFunc: func(r *http.Request) bool {
-			r.ParseForm()
-			name := r.FormValue("name") == "ble"
-			platform := r.FormValue("platform") == "django"
-			teamOwner := r.FormValue("teamOwner") == ""
-			plan := r.FormValue("plan") == ""
-			pool := r.FormValue("pool") == ""
-			description := r.FormValue("description") == ""
-			tags := len(r.Form["tag"]) == 2 && r.Form["tag"][0] == "tag1" && r.Form["tag"][1] == "tag2"
-			router := r.FormValue("router") == ""
-			method := r.Method == "POST"
-			contentType := r.Header.Get("Content-Type") == "application/x-www-form-urlencoded"
 			url := strings.HasSuffix(r.URL.Path, "/apps")
-			return method && url && name && platform && teamOwner && plan && pool && description && tags && contentType && router
+			var appResult map[string]interface{}
+			err := json.NewDecoder(r.Body).Decode(&appResult)
+			c.Assert(err, check.IsNil)
+			c.Assert(appResult, check.DeepEquals, map[string]interface{}{
+				"name":     "ble",
+				"platform": "django",
+				"tags": []interface{}{
+					"tag1",
+					"tag2"},
+				"metadata": map[string]interface{}{},
+			})
+			method := r.Method == "POST"
+			contentType := r.Header.Get("Content-Type") == "application/json"
+			return method && contentType && url
 		},
 	}
 	client := cmd.NewClient(&http.Client{Transport: &trans}, nil, manager)
@@ -346,19 +343,19 @@ Use app info to check the status of the app and its units.` + "\n"
 	trans := cmdtest.ConditionalTransport{
 		Transport: cmdtest.Transport{Message: result, Status: http.StatusOK},
 		CondFunc: func(r *http.Request) bool {
-			r.ParseForm()
-			name := r.FormValue("name") == "ble"
-			platform := r.FormValue("platform") == "django"
-			teamOwner := r.FormValue("teamOwner") == ""
-			plan := r.FormValue("plan") == ""
-			pool := r.FormValue("pool") == ""
-			description := r.FormValue("description") == ""
-			tags := len(r.Form["tag"]) == 1 && r.Form["tag"][0] == ""
-			router := r.FormValue("router") == ""
-			method := r.Method == "POST"
-			contentType := r.Header.Get("Content-Type") == "application/x-www-form-urlencoded"
 			url := strings.HasSuffix(r.URL.Path, "/apps")
-			return method && url && name && platform && teamOwner && plan && pool && description && tags && contentType && router
+			var appResult map[string]interface{}
+			err := json.NewDecoder(r.Body).Decode(&appResult)
+			c.Assert(err, check.IsNil)
+			c.Assert(appResult, check.DeepEquals, map[string]interface{}{
+				"name":     "ble",
+				"platform": "django",
+				"tags":     []interface{}{""},
+				"metadata": map[string]interface{}{},
+			})
+			method := r.Method == "POST"
+			contentType := r.Header.Get("Content-Type") == "application/json"
+			return method && url && contentType
 		},
 	}
 	client := cmd.NewClient(&http.Client{Transport: &trans}, nil, manager)
@@ -454,10 +451,8 @@ func (s *S) TestAppUpdate(c *check.C) {
 		CondFunc: func(req *http.Request) bool {
 			url := strings.HasSuffix(req.URL.Path, "/apps/ble")
 			method := req.Method == "PUT"
-			data, err := ioutil.ReadAll(req.Body)
-			c.Assert(err, check.IsNil)
 			var result map[string]interface{}
-			err = json.Unmarshal(data, &result)
+			err := json.NewDecoder(req.Body).Decode(&result)
 			c.Assert(err, check.IsNil)
 			c.Assert(result, check.DeepEquals, map[string]interface{}{
 				"description":  "description of my app",
@@ -490,10 +485,8 @@ func (s *S) TestAppUpdateImageReset(c *check.C) {
 		CondFunc: func(req *http.Request) bool {
 			url := strings.HasSuffix(req.URL.Path, "/apps/img")
 			method := req.Method == "PUT"
-			data, err := ioutil.ReadAll(req.Body)
-			c.Assert(err, check.IsNil)
 			var result map[string]interface{}
-			err = json.Unmarshal(data, &result)
+			err := json.NewDecoder(req.Body).Decode(&result)
 			c.Assert(err, check.IsNil)
 			c.Assert(result, check.DeepEquals, map[string]interface{}{
 				"imageReset":   true,
@@ -523,10 +516,8 @@ func (s *S) TestAppUpdateWithoutTags(c *check.C) {
 		CondFunc: func(req *http.Request) bool {
 			url := strings.HasSuffix(req.URL.Path, "/apps/ble")
 			method := req.Method == "PUT"
-			data, err := ioutil.ReadAll(req.Body)
-			c.Assert(err, check.IsNil)
 			var result map[string]interface{}
-			err = json.Unmarshal(data, &result)
+			err := json.NewDecoder(req.Body).Decode(&result)
 			c.Assert(err, check.IsNil)
 			c.Assert(result, check.DeepEquals, map[string]interface{}{
 				"description":  "description",
@@ -556,10 +547,8 @@ func (s *S) TestAppUpdateWithEmptyTag(c *check.C) {
 		CondFunc: func(req *http.Request) bool {
 			url := strings.HasSuffix(req.URL.Path, "/apps/ble")
 			method := req.Method == "PUT"
-			data, err := ioutil.ReadAll(req.Body)
-			c.Assert(err, check.IsNil)
 			var result map[string]interface{}
-			err = json.Unmarshal(data, &result)
+			err := json.NewDecoder(req.Body).Decode(&result)
 			c.Assert(err, check.IsNil)
 			c.Assert(result, check.DeepEquals, map[string]interface{}{
 				"description":  "description",
@@ -590,10 +579,8 @@ func (s *S) TestAppUpdateWithCPUAndMemory(c *check.C) {
 		CondFunc: func(req *http.Request) bool {
 			url := strings.HasSuffix(req.URL.Path, "/apps/ble")
 			method := req.Method == "PUT"
-			data, err := ioutil.ReadAll(req.Body)
-			c.Assert(err, check.IsNil)
 			var result map[string]interface{}
-			err = json.Unmarshal(data, &result)
+			err := json.NewDecoder(req.Body).Decode(&result)
 			c.Assert(err, check.IsNil)
 			c.Assert(result, check.DeepEquals, map[string]interface{}{
 				"planoverride": map[string]interface{}{
@@ -2607,7 +2594,12 @@ func (s *S) TestAppRestart(c *check.C) {
 		Transport: cmdtest.Transport{Message: string(result), Status: http.StatusOK},
 		CondFunc: func(req *http.Request) bool {
 			called = true
-			c.Assert(req.FormValue("process"), check.Equals, "web")
+			var restartResult map[string]interface{}
+			err := json.NewDecoder(req.Body).Decode(&restartResult)
+			c.Assert(err, check.IsNil)
+			c.Assert(restartResult, check.DeepEquals, map[string]interface{}{
+				"process": "web",
+			})
 			return strings.HasSuffix(req.URL.Path, "/apps/handful_of_nothing/restart") && req.Method == "POST"
 		},
 	}
@@ -2641,11 +2633,16 @@ func (s *S) TestAddCName(c *check.C) {
 		Transport: cmdtest.Transport{Message: "Restarted", Status: http.StatusOK},
 		CondFunc: func(req *http.Request) bool {
 			called = true
-			cname := req.FormValue("cname") == "death.evergrey.mycompany.com"
+			var cNameResult map[string]interface{}
+			err := json.NewDecoder(req.Body).Decode(&cNameResult)
+			c.Assert(err, check.IsNil)
+			c.Assert(cNameResult, check.DeepEquals, map[string]interface{}{
+				"cname": []interface{}{"death.evergrey.mycompany.com"},
+			})
 			method := req.Method == "POST"
 			url := strings.HasSuffix(req.URL.Path, "/apps/death/cname")
-			contentType := req.Header.Get("Content-Type") == "application/x-www-form-urlencoded"
-			return method && url && cname && contentType
+			contentType := req.Header.Get("Content-Type") == "application/json"
+			return method && url && contentType
 		},
 	}
 	client := cmd.NewClient(&http.Client{Transport: trans}, nil, manager)
@@ -2674,7 +2671,7 @@ func (s *S) TestAddCNameFailure(c *check.C) {
 	context.Args = command.Flags().Args()
 	err = command.Run(&context, client)
 	c.Assert(err, check.NotNil)
-	c.Assert(err.Error(), check.Equals, "Invalid cname")
+	c.Assert(err.Error(), check.Equals, "412 Precondition Failed: Invalid cname")
 }
 
 func (s *S) TestAddCNameInfo(c *check.C) {
@@ -2768,7 +2765,12 @@ func (s *S) TestAppStart(c *check.C) {
 		Transport: cmdtest.Transport{Message: string(result), Status: http.StatusOK},
 		CondFunc: func(req *http.Request) bool {
 			called = true
-			c.Assert(req.FormValue("process"), check.Equals, "worker")
+			var startResult map[string]interface{}
+			err := json.NewDecoder(req.Body).Decode(&startResult)
+			c.Assert(err, check.IsNil)
+			c.Assert(startResult, check.DeepEquals, map[string]interface{}{
+				"process": "worker",
+			})
 			return strings.HasSuffix(req.URL.Path, "/apps/handful_of_nothing/start") && req.Method == "POST"
 		},
 	}
@@ -2833,7 +2835,12 @@ func (s *S) TestAppStop(c *check.C) {
 		Transport: cmdtest.Transport{Message: string(result), Status: http.StatusOK},
 		CondFunc: func(req *http.Request) bool {
 			called = true
-			c.Assert(req.FormValue("process"), check.Equals, "worker")
+			var stopResult map[string]interface{}
+			err := json.NewDecoder(req.Body).Decode(&stopResult)
+			c.Assert(err, check.IsNil)
+			c.Assert(stopResult, check.DeepEquals, map[string]interface{}{
+				"process": "worker",
+			})
 			return strings.HasSuffix(req.URL.Path, "/apps/handful_of_nothing/stop") && req.Method == "POST"
 		},
 	}
@@ -2866,8 +2873,13 @@ func (s *S) TestUnitAdd(c *check.C) {
 		Transport: cmdtest.Transport{Message: string(result), Status: http.StatusOK},
 		CondFunc: func(req *http.Request) bool {
 			called = true
-			c.Assert(req.FormValue("process"), check.Equals, "p1")
-			c.Assert(req.FormValue("units"), check.Equals, "3")
+			var result map[string]interface{}
+			err := json.NewDecoder(req.Body).Decode(&result)
+			c.Assert(err, check.IsNil)
+			c.Assert(result, check.DeepEquals, map[string]interface{}{
+				"units":   "3",
+				"process": "p1",
+			})
 			return strings.HasSuffix(req.URL.Path, "/apps/radio/units") && req.Method == "PUT"
 		},
 	}
@@ -2896,9 +2908,14 @@ func (s *S) TestUnitAddWithVersion(c *check.C) {
 		Transport: cmdtest.Transport{Message: string(result), Status: http.StatusOK},
 		CondFunc: func(req *http.Request) bool {
 			called = true
-			c.Assert(req.FormValue("process"), check.Equals, "p1")
-			c.Assert(req.FormValue("units"), check.Equals, "3")
-			c.Assert(req.FormValue("version"), check.Equals, "9")
+			var result map[string]interface{}
+			err := json.NewDecoder(req.Body).Decode(&result)
+			c.Assert(err, check.IsNil)
+			c.Assert(result, check.DeepEquals, map[string]interface{}{
+				"units":   "3",
+				"process": "p1",
+				"version": "9",
+			})
 			return strings.HasSuffix(req.URL.Path, "/apps/radio/units") && req.Method == "PUT"
 		},
 	}
@@ -3020,8 +3037,14 @@ func (s *S) TestUnitSetAddUnits(c *check.C) {
 			{
 				CondFunc: func(req *http.Request) bool {
 					calledPut = true
-					c.Assert(req.FormValue("process"), check.Equals, "web")
-					c.Assert(req.FormValue("units"), check.Equals, "7")
+					var result map[string]interface{}
+					err := json.NewDecoder(req.Body).Decode(&result)
+					c.Assert(err, check.IsNil)
+					c.Assert(result, check.DeepEquals, map[string]interface{}{
+						"units":   "7",
+						"process": "web",
+						"version": "0",
+					})
 					return strings.HasSuffix(req.URL.Path, "/apps/app1/units") && req.Method == http.MethodPut
 				},
 				Transport: cmdtest.Transport{Message: string(resultPut), Status: http.StatusOK},
@@ -3063,8 +3086,14 @@ func (s *S) TestUnitSetAddUnitsFailure(c *check.C) {
 			{
 				CondFunc: func(req *http.Request) bool {
 					calledPut = true
-					c.Assert(req.FormValue("process"), check.Equals, "web")
-					c.Assert(req.FormValue("units"), check.Equals, "7")
+					var result map[string]interface{}
+					err := json.NewDecoder(req.Body).Decode(&result)
+					c.Assert(err, check.IsNil)
+					c.Assert(result, check.DeepEquals, map[string]interface{}{
+						"units":   "7",
+						"process": "web",
+						"version": "0",
+					})
 					return strings.HasSuffix(req.URL.Path, "/apps/app1/units") && req.Method == http.MethodPut
 				},
 				Transport: cmdtest.Transport{Message: "Failed to put.", Status: http.StatusInternalServerError},
@@ -3077,7 +3106,7 @@ func (s *S) TestUnitSetAddUnitsFailure(c *check.C) {
 	command.Flags().Parse(true, []string{"-a", "app1", "-p", "web"})
 	err := command.Run(&context, client)
 	c.Assert(err, check.NotNil)
-	c.Assert(err.Error(), check.Equals, "Failed to put.")
+	c.Assert(err.Error(), check.Equals, "500 Internal Server Error: Failed to put.")
 	c.Assert(calledGet, check.Equals, true)
 	c.Assert(calledPut, check.Equals, true)
 }
@@ -3110,8 +3139,14 @@ func (s *S) TestUnitSetRemoveUnits(c *check.C) {
 			{
 				CondFunc: func(req *http.Request) bool {
 					calledDelete = true
-					c.Assert(req.FormValue("process"), check.Equals, "web")
-					c.Assert(req.FormValue("units"), check.Equals, "2")
+					var result map[string]interface{}
+					err := json.NewDecoder(req.Body).Decode(&result)
+					c.Assert(err, check.IsNil)
+					c.Assert(result, check.DeepEquals, map[string]interface{}{
+						"units":   "2",
+						"process": "web",
+						"version": "0",
+					})
 					return strings.HasSuffix(req.URL.Path, "/apps/app1/units") && req.Method == http.MethodDelete
 				},
 				Transport: cmdtest.Transport{Message: string(resultDelete), Status: http.StatusOK},
@@ -3153,8 +3188,15 @@ func (s *S) TestUnitSetRemoveUnitsFailure(c *check.C) {
 			{
 				CondFunc: func(req *http.Request) bool {
 					calledDelete = true
-					c.Assert(req.FormValue("process"), check.Equals, "web")
-					c.Assert(req.FormValue("units"), check.Equals, "2")
+					var result map[string]interface{}
+					err := json.NewDecoder(req.Body).Decode(&result)
+					c.Assert(err, check.IsNil)
+					c.Assert(result, check.DeepEquals, map[string]interface{}{
+						"units":   "2",
+						"process": "web",
+						"version": "0",
+					})
+
 					return strings.HasSuffix(req.URL.Path, "/apps/app1/units") && req.Method == http.MethodDelete
 				},
 				Transport: cmdtest.Transport{Message: "Failed to delete.", Status: http.StatusInternalServerError},
@@ -3167,7 +3209,7 @@ func (s *S) TestUnitSetRemoveUnitsFailure(c *check.C) {
 	command.Flags().Parse(true, []string{"-a", "app1", "-p", "web"})
 	err := command.Run(&context, client)
 	c.Assert(err, check.NotNil)
-	c.Assert(err.Error(), check.Equals, "Failed to delete.")
+	c.Assert(err.Error(), check.Equals, "500 Internal Server Error: Failed to delete.")
 	c.Assert(calledGet, check.Equals, true)
 	c.Assert(calledDelete, check.Equals, true)
 }
@@ -3280,8 +3322,14 @@ func (s *S) TestUnitSetNoProcessSpecifiedAndSingleExists(c *check.C) {
 			{
 				CondFunc: func(req *http.Request) bool {
 					calledPut = true
-					c.Assert(req.FormValue("process"), check.Equals, "worker")
-					c.Assert(req.FormValue("units"), check.Equals, "8")
+					var result map[string]interface{}
+					err := json.NewDecoder(req.Body).Decode(&result)
+					c.Assert(err, check.IsNil)
+					c.Assert(result, check.DeepEquals, map[string]interface{}{
+						"units":   "8",
+						"process": "worker",
+						"version": "0",
+					})
 					return strings.HasSuffix(req.URL.Path, "/apps/app1/units") && req.Method == http.MethodPut
 				},
 				Transport: cmdtest.Transport{Message: string(resultPut), Status: http.StatusOK},
