@@ -250,10 +250,8 @@ func (s *S) TestServiceInstanceBind(c *check.C) {
 			called = true
 			method := req.Method == "PUT"
 			path := strings.HasSuffix(req.URL.Path, "/services/mysql/instances/my-mysql/g1")
-			data, err := ioutil.ReadAll(req.Body)
-			c.Assert(err, check.IsNil)
 			var bindResult map[string]interface{}
-			err = json.Unmarshal(data, &bindResult)
+			err := json.NewDecoder(req.Body).Decode(&bindResult)
 			c.Assert(err, check.IsNil)
 			c.Assert(bindResult, check.DeepEquals, map[string]interface{}{
 				"noRestart": true,
@@ -286,10 +284,8 @@ func (s *S) TestServiceInstanceBindWithoutEnvironmentVariables(c *check.C) {
 		CondFunc: func(req *http.Request) bool {
 			method := req.Method == "PUT"
 			path := strings.HasSuffix(req.URL.Path, "/services/mysql/instances/my-mysql/g1")
-			data, err := ioutil.ReadAll(req.Body)
-			c.Assert(err, check.IsNil)
 			var bindResult map[string]interface{}
-			err = json.Unmarshal(data, &bindResult)
+			err := json.NewDecoder(req.Body).Decode(&bindResult)
 			c.Assert(err, check.IsNil)
 			c.Assert(bindResult, check.DeepEquals, map[string]interface{}{})
 			return method && path
@@ -405,10 +401,8 @@ func (s *S) TestServiceInstanceAddRun(c *check.C) {
 	trans := cmdtest.ConditionalTransport{
 		Transport: cmdtest.Transport{Message: result, Status: http.StatusOK},
 		CondFunc: func(r *http.Request) bool {
-			data, err := ioutil.ReadAll(r.Body)
-			c.Assert(err, check.IsNil)
 			var result map[string]interface{}
-			err = json.Unmarshal(data, &result)
+			err := json.NewDecoder(r.Body).Decode(&result)
 			c.Assert(err, check.IsNil)
 			c.Assert(result, check.DeepEquals, map[string]interface{}{
 				"name":        "my_app_db",
@@ -460,10 +454,8 @@ func (s *S) TestServiceInstanceAddRunWithEmptyTag(c *check.C) {
 	trans := cmdtest.ConditionalTransport{
 		Transport: cmdtest.Transport{Message: result, Status: http.StatusOK},
 		CondFunc: func(r *http.Request) bool {
-			data, err := ioutil.ReadAll(r.Body)
-			c.Assert(err, check.IsNil)
 			var result map[string]interface{}
-			err = json.Unmarshal(data, &result)
+			err := json.NewDecoder(r.Body).Decode(&result)
 			c.Assert(err, check.IsNil)
 			c.Assert(result, check.DeepEquals, map[string]interface{}{
 				"name":      "my_app_db",

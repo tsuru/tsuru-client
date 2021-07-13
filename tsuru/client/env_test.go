@@ -147,13 +147,8 @@ func (s *S) TestEnvSetRun(c *check.C) {
 	trans := &cmdtest.ConditionalTransport{
 		Transport: cmdtest.Transport{Message: string(result), Status: http.StatusOK},
 		CondFunc: func(req *http.Request) bool {
-			err = req.ParseForm()
-			c.Assert(err, check.IsNil)
-			c.Assert(err, check.IsNil)
-			data, err := ioutil.ReadAll(req.Body)
-			c.Assert(err, check.IsNil)
 			var envResult map[string]interface{}
-			err = json.Unmarshal(data, &envResult)
+			err := json.NewDecoder(req.Body).Decode(&envResult)
 			c.Assert(err, check.IsNil)
 			c.Assert(envResult, check.DeepEquals, map[string]interface{}{"envs": []interface{}{map[string]interface{}{"name": "DATABASE_HOST",
 				"value": "somehost"}}})

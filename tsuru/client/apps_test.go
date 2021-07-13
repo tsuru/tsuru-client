@@ -46,10 +46,8 @@ Use app info to check the status of the app and its units.` + "\n"
 		Transport: cmdtest.Transport{Message: result, Status: http.StatusOK},
 		CondFunc: func(r *http.Request) bool {
 			url := strings.HasSuffix(r.URL.Path, "/apps")
-			data, err := ioutil.ReadAll(r.Body)
-			c.Assert(err, check.IsNil)
 			var appResult map[string]interface{}
-			err = json.Unmarshal(data, &appResult)
+			err := json.NewDecoder(r.Body).Decode(&appResult)
 			c.Assert(err, check.IsNil)
 			c.Assert(appResult, check.DeepEquals, map[string]interface{}{
 				"name":     "ble",
@@ -82,10 +80,8 @@ Use app info to check the status of the app and its units.` + "\n"
 		Transport: cmdtest.Transport{Message: result, Status: http.StatusOK},
 		CondFunc: func(r *http.Request) bool {
 			url := strings.HasSuffix(r.URL.Path, "/apps")
-			data, err := ioutil.ReadAll(r.Body)
-			c.Assert(err, check.IsNil)
 			var appResult map[string]interface{}
-			err = json.Unmarshal(data, &appResult)
+			err := json.NewDecoder(r.Body).Decode(&appResult)
 			c.Assert(err, check.IsNil)
 			c.Assert(appResult, check.DeepEquals, map[string]interface{}{
 				"name":     "ble",
@@ -117,10 +113,8 @@ Use app info to check the status of the app and its units.` + "\n"
 		Transport: cmdtest.Transport{Message: result, Status: http.StatusOK},
 		CondFunc: func(r *http.Request) bool {
 			url := strings.HasSuffix(r.URL.Path, "/apps")
-			data, err := ioutil.ReadAll(r.Body)
-			c.Assert(err, check.IsNil)
 			var appResult map[string]interface{}
-			err = json.Unmarshal(data, &appResult)
+			err := json.NewDecoder(r.Body).Decode(&appResult)
 			c.Assert(err, check.IsNil)
 			c.Assert(appResult, check.DeepEquals, map[string]interface{}{
 				"name":      "ble",
@@ -154,10 +148,8 @@ Use app info to check the status of the app and its units.` + "\n"
 		Transport: cmdtest.Transport{Message: result, Status: http.StatusOK},
 		CondFunc: func(r *http.Request) bool {
 			url := strings.HasSuffix(r.URL.Path, "/apps")
-			data, err := ioutil.ReadAll(r.Body)
-			c.Assert(err, check.IsNil)
 			var appResult map[string]interface{}
-			err = json.Unmarshal(data, &appResult)
+			err := json.NewDecoder(r.Body).Decode(&appResult)
 			c.Assert(err, check.IsNil)
 			c.Assert(appResult, check.DeepEquals, map[string]interface{}{
 				"name":     "ble",
@@ -192,10 +184,8 @@ Use app info to check the status of the app and its units.` + "\n"
 		Transport: cmdtest.Transport{Message: result, Status: http.StatusOK},
 		CondFunc: func(r *http.Request) bool {
 			url := strings.HasSuffix(r.URL.Path, "/apps")
-			data, err := ioutil.ReadAll(r.Body)
-			c.Assert(err, check.IsNil)
 			var appResult map[string]interface{}
-			err = json.Unmarshal(data, &appResult)
+			err := json.NewDecoder(r.Body).Decode(&appResult)
 			c.Assert(err, check.IsNil)
 			c.Assert(appResult, check.DeepEquals, map[string]interface{}{
 				"name":     "ble",
@@ -230,10 +220,8 @@ Use app info to check the status of the app and its units.` + "\n"
 		Transport: cmdtest.Transport{Message: result, Status: http.StatusOK},
 		CondFunc: func(r *http.Request) bool {
 			url := strings.HasSuffix(r.URL.Path, "/apps")
-			data, err := ioutil.ReadAll(r.Body)
-			c.Assert(err, check.IsNil)
 			var appResult map[string]interface{}
-			err = json.Unmarshal(data, &appResult)
+			err := json.NewDecoder(r.Body).Decode(&appResult)
 			c.Assert(err, check.IsNil)
 			method := r.Method == "POST"
 			contentType := r.Header.Get("Content-Type") == "application/json"
@@ -270,10 +258,8 @@ Use app info to check the status of the app and its units.` + "\n"
 		Transport: cmdtest.Transport{Message: result, Status: http.StatusOK},
 		CondFunc: func(r *http.Request) bool {
 			url := strings.HasSuffix(r.URL.Path, "/apps")
-			data, err := ioutil.ReadAll(r.Body)
-			c.Assert(err, check.IsNil)
 			var appResult map[string]interface{}
-			err = json.Unmarshal(data, &appResult)
+			err := json.NewDecoder(r.Body).Decode(&appResult)
 			c.Assert(err, check.IsNil)
 			c.Assert(appResult, check.DeepEquals, map[string]interface{}{
 				"name":     "ble",
@@ -320,10 +306,8 @@ Use app info to check the status of the app and its units.` + "\n"
 		Transport: cmdtest.Transport{Message: result, Status: http.StatusOK},
 		CondFunc: func(r *http.Request) bool {
 			url := strings.HasSuffix(r.URL.Path, "/apps")
-			data, err := ioutil.ReadAll(r.Body)
-			c.Assert(err, check.IsNil)
 			var appResult map[string]interface{}
-			err = json.Unmarshal(data, &appResult)
+			err := json.NewDecoder(r.Body).Decode(&appResult)
 			c.Assert(err, check.IsNil)
 			c.Assert(appResult, check.DeepEquals, map[string]interface{}{
 				"name":     "ble",
@@ -360,10 +344,8 @@ Use app info to check the status of the app and its units.` + "\n"
 		Transport: cmdtest.Transport{Message: result, Status: http.StatusOK},
 		CondFunc: func(r *http.Request) bool {
 			url := strings.HasSuffix(r.URL.Path, "/apps")
-			data, err := ioutil.ReadAll(r.Body)
-			c.Assert(err, check.IsNil)
 			var appResult map[string]interface{}
-			err = json.Unmarshal(data, &appResult)
+			err := json.NewDecoder(r.Body).Decode(&appResult)
 			c.Assert(err, check.IsNil)
 			c.Assert(appResult, check.DeepEquals, map[string]interface{}{
 				"name":     "ble",
@@ -469,10 +451,8 @@ func (s *S) TestAppUpdate(c *check.C) {
 		CondFunc: func(req *http.Request) bool {
 			url := strings.HasSuffix(req.URL.Path, "/apps/ble")
 			method := req.Method == "PUT"
-			data, err := ioutil.ReadAll(req.Body)
-			c.Assert(err, check.IsNil)
 			var result map[string]interface{}
-			err = json.Unmarshal(data, &result)
+			err := json.NewDecoder(req.Body).Decode(&result)
 			c.Assert(err, check.IsNil)
 			c.Assert(result, check.DeepEquals, map[string]interface{}{
 				"description":  "description of my app",
@@ -505,10 +485,8 @@ func (s *S) TestAppUpdateImageReset(c *check.C) {
 		CondFunc: func(req *http.Request) bool {
 			url := strings.HasSuffix(req.URL.Path, "/apps/img")
 			method := req.Method == "PUT"
-			data, err := ioutil.ReadAll(req.Body)
-			c.Assert(err, check.IsNil)
 			var result map[string]interface{}
-			err = json.Unmarshal(data, &result)
+			err := json.NewDecoder(req.Body).Decode(&result)
 			c.Assert(err, check.IsNil)
 			c.Assert(result, check.DeepEquals, map[string]interface{}{
 				"imageReset":   true,
@@ -538,10 +516,8 @@ func (s *S) TestAppUpdateWithoutTags(c *check.C) {
 		CondFunc: func(req *http.Request) bool {
 			url := strings.HasSuffix(req.URL.Path, "/apps/ble")
 			method := req.Method == "PUT"
-			data, err := ioutil.ReadAll(req.Body)
-			c.Assert(err, check.IsNil)
 			var result map[string]interface{}
-			err = json.Unmarshal(data, &result)
+			err := json.NewDecoder(req.Body).Decode(&result)
 			c.Assert(err, check.IsNil)
 			c.Assert(result, check.DeepEquals, map[string]interface{}{
 				"description":  "description",
@@ -571,10 +547,8 @@ func (s *S) TestAppUpdateWithEmptyTag(c *check.C) {
 		CondFunc: func(req *http.Request) bool {
 			url := strings.HasSuffix(req.URL.Path, "/apps/ble")
 			method := req.Method == "PUT"
-			data, err := ioutil.ReadAll(req.Body)
-			c.Assert(err, check.IsNil)
 			var result map[string]interface{}
-			err = json.Unmarshal(data, &result)
+			err := json.NewDecoder(req.Body).Decode(&result)
 			c.Assert(err, check.IsNil)
 			c.Assert(result, check.DeepEquals, map[string]interface{}{
 				"description":  "description",
@@ -605,10 +579,8 @@ func (s *S) TestAppUpdateWithCPUAndMemory(c *check.C) {
 		CondFunc: func(req *http.Request) bool {
 			url := strings.HasSuffix(req.URL.Path, "/apps/ble")
 			method := req.Method == "PUT"
-			data, err := ioutil.ReadAll(req.Body)
-			c.Assert(err, check.IsNil)
 			var result map[string]interface{}
-			err = json.Unmarshal(data, &result)
+			err := json.NewDecoder(req.Body).Decode(&result)
 			c.Assert(err, check.IsNil)
 			c.Assert(result, check.DeepEquals, map[string]interface{}{
 				"planoverride": map[string]interface{}{
@@ -2622,10 +2594,8 @@ func (s *S) TestAppRestart(c *check.C) {
 		Transport: cmdtest.Transport{Message: string(result), Status: http.StatusOK},
 		CondFunc: func(req *http.Request) bool {
 			called = true
-			data, err := ioutil.ReadAll(req.Body)
-			c.Assert(err, check.IsNil)
 			var restartResult map[string]interface{}
-			err = json.Unmarshal(data, &restartResult)
+			err := json.NewDecoder(req.Body).Decode(&restartResult)
 			c.Assert(err, check.IsNil)
 			c.Assert(restartResult, check.DeepEquals, map[string]interface{}{
 				"process": "web",
@@ -2663,10 +2633,8 @@ func (s *S) TestAddCName(c *check.C) {
 		Transport: cmdtest.Transport{Message: "Restarted", Status: http.StatusOK},
 		CondFunc: func(req *http.Request) bool {
 			called = true
-			data, err := ioutil.ReadAll(req.Body)
-			c.Assert(err, check.IsNil)
-			cNameResult := make(map[string]interface{})
-			err = json.Unmarshal(data, &cNameResult)
+			var cNameResult map[string]interface{}
+			err := json.NewDecoder(req.Body).Decode(&cNameResult)
 			c.Assert(err, check.IsNil)
 			c.Assert(cNameResult, check.DeepEquals, map[string]interface{}{
 				"cname": []interface{}{"death.evergrey.mycompany.com"},
@@ -2797,10 +2765,8 @@ func (s *S) TestAppStart(c *check.C) {
 		Transport: cmdtest.Transport{Message: string(result), Status: http.StatusOK},
 		CondFunc: func(req *http.Request) bool {
 			called = true
-			data, err := ioutil.ReadAll(req.Body)
-			c.Assert(err, check.IsNil)
 			var startResult map[string]interface{}
-			err = json.Unmarshal(data, &startResult)
+			err := json.NewDecoder(req.Body).Decode(&startResult)
 			c.Assert(err, check.IsNil)
 			c.Assert(startResult, check.DeepEquals, map[string]interface{}{
 				"process": "worker",
@@ -2869,10 +2835,8 @@ func (s *S) TestAppStop(c *check.C) {
 		Transport: cmdtest.Transport{Message: string(result), Status: http.StatusOK},
 		CondFunc: func(req *http.Request) bool {
 			called = true
-			data, err := ioutil.ReadAll(req.Body)
-			c.Assert(err, check.IsNil)
 			var stopResult map[string]interface{}
-			err = json.Unmarshal(data, &stopResult)
+			err := json.NewDecoder(req.Body).Decode(&stopResult)
 			c.Assert(err, check.IsNil)
 			c.Assert(stopResult, check.DeepEquals, map[string]interface{}{
 				"process": "worker",
@@ -2909,17 +2873,13 @@ func (s *S) TestUnitAdd(c *check.C) {
 		Transport: cmdtest.Transport{Message: string(result), Status: http.StatusOK},
 		CondFunc: func(req *http.Request) bool {
 			called = true
-			data, err := ioutil.ReadAll(req.Body)
-			c.Assert(err, check.IsNil)
 			var result map[string]interface{}
-			err = json.Unmarshal(data, &result)
+			err := json.NewDecoder(req.Body).Decode(&result)
 			c.Assert(err, check.IsNil)
 			c.Assert(result, check.DeepEquals, map[string]interface{}{
 				"units":   "3",
 				"process": "p1",
 			})
-			// c.Assert(req.FormValue("process"), check.Equals, "p1")
-			// c.Assert(req.FormValue("units"), check.Equals, "3")
 			return strings.HasSuffix(req.URL.Path, "/apps/radio/units") && req.Method == "PUT"
 		},
 	}
@@ -2948,19 +2908,14 @@ func (s *S) TestUnitAddWithVersion(c *check.C) {
 		Transport: cmdtest.Transport{Message: string(result), Status: http.StatusOK},
 		CondFunc: func(req *http.Request) bool {
 			called = true
-			data, err := ioutil.ReadAll(req.Body)
-			c.Assert(err, check.IsNil)
 			var result map[string]interface{}
-			err = json.Unmarshal(data, &result)
+			err := json.NewDecoder(req.Body).Decode(&result)
 			c.Assert(err, check.IsNil)
 			c.Assert(result, check.DeepEquals, map[string]interface{}{
 				"units":   "3",
 				"process": "p1",
 				"version": "9",
 			})
-			// c.Assert(req.FormValue("process"), check.Equals, "p1")
-			// c.Assert(req.FormValue("units"), check.Equals, "3")
-			// c.Assert(req.FormValue("version"), check.Equals, "9")
 			return strings.HasSuffix(req.URL.Path, "/apps/radio/units") && req.Method == "PUT"
 		},
 	}
@@ -3082,10 +3037,8 @@ func (s *S) TestUnitSetAddUnits(c *check.C) {
 			{
 				CondFunc: func(req *http.Request) bool {
 					calledPut = true
-					data, err := ioutil.ReadAll(req.Body)
-					c.Assert(err, check.IsNil)
 					var result map[string]interface{}
-					err = json.Unmarshal(data, &result)
+					err := json.NewDecoder(req.Body).Decode(&result)
 					c.Assert(err, check.IsNil)
 					c.Assert(result, check.DeepEquals, map[string]interface{}{
 						"units":   "7",
@@ -3133,10 +3086,8 @@ func (s *S) TestUnitSetAddUnitsFailure(c *check.C) {
 			{
 				CondFunc: func(req *http.Request) bool {
 					calledPut = true
-					data, err := ioutil.ReadAll(req.Body)
-					c.Assert(err, check.IsNil)
 					var result map[string]interface{}
-					err = json.Unmarshal(data, &result)
+					err := json.NewDecoder(req.Body).Decode(&result)
 					c.Assert(err, check.IsNil)
 					c.Assert(result, check.DeepEquals, map[string]interface{}{
 						"units":   "7",
@@ -3188,18 +3139,14 @@ func (s *S) TestUnitSetRemoveUnits(c *check.C) {
 			{
 				CondFunc: func(req *http.Request) bool {
 					calledDelete = true
-					data, err := ioutil.ReadAll(req.Body)
-					c.Assert(err, check.IsNil)
 					var result map[string]interface{}
-					err = json.Unmarshal(data, &result)
+					err := json.NewDecoder(req.Body).Decode(&result)
 					c.Assert(err, check.IsNil)
 					c.Assert(result, check.DeepEquals, map[string]interface{}{
 						"units":   "2",
 						"process": "web",
 						"version": "0",
 					})
-					// c.Assert(req.FormValue("process"), check.Equals, "web")
-					// c.Assert(req.FormValue("units"), check.Equals, "2")
 					return strings.HasSuffix(req.URL.Path, "/apps/app1/units") && req.Method == http.MethodDelete
 				},
 				Transport: cmdtest.Transport{Message: string(resultDelete), Status: http.StatusOK},
@@ -3241,18 +3188,15 @@ func (s *S) TestUnitSetRemoveUnitsFailure(c *check.C) {
 			{
 				CondFunc: func(req *http.Request) bool {
 					calledDelete = true
-					data, err := ioutil.ReadAll(req.Body)
-					c.Assert(err, check.IsNil)
 					var result map[string]interface{}
-					err = json.Unmarshal(data, &result)
+					err := json.NewDecoder(req.Body).Decode(&result)
 					c.Assert(err, check.IsNil)
 					c.Assert(result, check.DeepEquals, map[string]interface{}{
 						"units":   "2",
 						"process": "web",
 						"version": "0",
 					})
-					// c.Assert(req.FormValue("process"), check.Equals, "web")
-					// c.Assert(req.FormValue("units"), check.Equals, "2")
+
 					return strings.HasSuffix(req.URL.Path, "/apps/app1/units") && req.Method == http.MethodDelete
 				},
 				Transport: cmdtest.Transport{Message: "Failed to delete.", Status: http.StatusInternalServerError},
@@ -3378,18 +3322,14 @@ func (s *S) TestUnitSetNoProcessSpecifiedAndSingleExists(c *check.C) {
 			{
 				CondFunc: func(req *http.Request) bool {
 					calledPut = true
-					data, err := ioutil.ReadAll(req.Body)
-					c.Assert(err, check.IsNil)
 					var result map[string]interface{}
-					err = json.Unmarshal(data, &result)
+					err := json.NewDecoder(req.Body).Decode(&result)
 					c.Assert(err, check.IsNil)
 					c.Assert(result, check.DeepEquals, map[string]interface{}{
 						"units":   "8",
 						"process": "worker",
 						"version": "0",
 					})
-					// c.Assert(req.FormValue("process"), check.Equals, "worker")
-					// c.Assert(req.FormValue("units"), check.Equals, "8")
 					return strings.HasSuffix(req.URL.Path, "/apps/app1/units") && req.Method == http.MethodPut
 				},
 				Transport: cmdtest.Transport{Message: string(resultPut), Status: http.StatusOK},

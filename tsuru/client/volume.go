@@ -427,14 +427,14 @@ func (c *VolumeBind) Run(ctx *cmd.Context, client *cmd.Client) error {
 	}
 	bind := c.volumeBind(appName, ctx)
 	apiClient, err := tsuruClient.ClientFromEnvironment(&tsuru.Configuration{
-		HTTPClient: client.HTTPClient,
-	})
-
+		HTTPClient: client.HTTPClient})
+	if err != nil {
+		return err
+	}
 	response, err := apiClient.VolumeApi.VolumeBind(context.TODO(), volumeName, bind)
 	if err != nil {
 		return err
 	}
-
 	err = cmd.StreamJSONResponse(ctx.Stdout, response)
 	if err != nil {
 		return err

@@ -412,10 +412,8 @@ func (s *S) TestUserCreateShouldNotDependOnTsuruTokenFile(c *check.C) {
 		CondFunc: func(r *http.Request) bool {
 			contentType := r.Header.Get("Content-Type") == "application/json"
 			url := r.URL.Path == "/1.0/users"
-			data, err := ioutil.ReadAll(r.Body)
-			c.Assert(err, check.IsNil)
 			var createResult map[string]interface{}
-			err = json.Unmarshal(data, &createResult)
+			err := json.NewDecoder(r.Body).Decode(&createResult)
 			c.Assert(err, check.IsNil)
 			c.Assert(createResult, check.DeepEquals, map[string]interface{}{
 				"password": "foo123",
@@ -627,10 +625,8 @@ func (s *S) TestChangePassword(c *check.C) {
 	trans := cmdtest.ConditionalTransport{
 		Transport: cmdtest.Transport{Message: "", Status: http.StatusOK},
 		CondFunc: func(r *http.Request) bool {
-			data, err := ioutil.ReadAll(r.Body)
-			c.Assert(err, check.IsNil)
 			var changePassResult map[string]interface{}
-			err = json.Unmarshal(data, &changePassResult)
+			err := json.NewDecoder(r.Body).Decode(&changePassResult)
 			c.Assert(err, check.IsNil)
 			c.Assert(changePassResult, check.DeepEquals, map[string]interface{}{
 				"old":     "gopher",
@@ -666,10 +662,8 @@ func (s *S) TestChangePasswordWrongConfirmation(c *check.C) {
 	trans := cmdtest.ConditionalTransport{
 		Transport: cmdtest.Transport{Message: "New password and password confirmation didn't match.", Status: http.StatusBadRequest},
 		CondFunc: func(r *http.Request) bool {
-			data, err := ioutil.ReadAll(r.Body)
-			c.Assert(err, check.IsNil)
 			var changePassResult map[string]interface{}
-			err = json.Unmarshal(data, &changePassResult)
+			err := json.NewDecoder(r.Body).Decode(&changePassResult)
 			c.Assert(err, check.IsNil)
 			c.Assert(changePassResult, check.DeepEquals, map[string]interface{}{
 				"old":     "gopher",

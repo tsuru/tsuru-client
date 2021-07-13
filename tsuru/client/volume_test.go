@@ -7,7 +7,6 @@ package client
 import (
 	"bytes"
 	"encoding/json"
-	"io/ioutil"
 	"net/http"
 	"strings"
 
@@ -213,11 +212,8 @@ func (s *S) TestVolumeCreate(c *check.C) {
 	trans := &cmdtest.ConditionalTransport{
 		Transport: cmdtest.Transport{Message: "", Status: http.StatusCreated},
 		CondFunc: func(r *http.Request) bool {
-			r.ParseForm()
 			var vol tsuru.Volume
-			data, err := ioutil.ReadAll(r.Body)
-			c.Assert(err, check.IsNil)
-			err = json.Unmarshal(data, &vol)
+			err := json.NewDecoder(r.Body).Decode(&vol)
 			c.Assert(err, check.IsNil)
 			c.Assert(vol, check.DeepEquals, tsuru.Volume{
 				Name:      "vol1",
@@ -248,10 +244,8 @@ func (s *S) TestVolumeUpdate(c *check.C) {
 	trans := &cmdtest.ConditionalTransport{
 		Transport: cmdtest.Transport{Message: "", Status: http.StatusOK},
 		CondFunc: func(r *http.Request) bool {
-			var vol tsuru.Volume
-			data, err := ioutil.ReadAll(r.Body)
-			c.Assert(err, check.IsNil)
-			err = json.Unmarshal(data, &vol)
+			var vol map[string]interface{}
+			err := json.NewDecoder(r.Body).Decode(&vol)
 			c.Assert(err, check.IsNil)
 			c.Assert(vol, check.DeepEquals, tsuru.Volume{
 				Name:      "vol1",
@@ -304,9 +298,7 @@ func (s *S) TestVolumeBind(c *check.C) {
 		Transport: cmdtest.Transport{Message: "", Status: http.StatusOK},
 		CondFunc: func(r *http.Request) bool {
 			var vol tsuru.VolumeBindData
-			data, err := ioutil.ReadAll(r.Body)
-			c.Assert(err, check.IsNil)
-			err = json.Unmarshal(data, &vol)
+			err := json.NewDecoder(r.Body).Decode(&vol)
 			c.Assert(err, check.IsNil)
 			c.Assert(vol, check.DeepEquals, tsuru.VolumeBindData{
 				App:        "myapp",
@@ -337,9 +329,7 @@ func (s *S) TestVolumeBindNoRestart(c *check.C) {
 		Transport: cmdtest.Transport{Message: "", Status: http.StatusOK},
 		CondFunc: func(r *http.Request) bool {
 			var vol tsuru.VolumeBindData
-			data, err := ioutil.ReadAll(r.Body)
-			c.Assert(err, check.IsNil)
-			err = json.Unmarshal(data, &vol)
+			err := json.NewDecoder(r.Body).Decode(&vol)
 			c.Assert(err, check.IsNil)
 			c.Assert(vol, check.DeepEquals, tsuru.VolumeBindData{
 				App:        "myapp",
@@ -370,9 +360,7 @@ func (s *S) TestVolumeBindRO(c *check.C) {
 		Transport: cmdtest.Transport{Message: "", Status: http.StatusOK},
 		CondFunc: func(r *http.Request) bool {
 			var vol tsuru.VolumeBindData
-			data, err := ioutil.ReadAll(r.Body)
-			c.Assert(err, check.IsNil)
-			err = json.Unmarshal(data, &vol)
+			err := json.NewDecoder(r.Body).Decode(&vol)
 			c.Assert(err, check.IsNil)
 			c.Assert(vol, check.DeepEquals, tsuru.VolumeBindData{
 				App:        "myapp",
