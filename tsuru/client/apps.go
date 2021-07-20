@@ -881,14 +881,6 @@ func memoryValue(q string) string {
 	return memory
 }
 
-func checkedChar(b *bool) string {
-	if b == nil || !*b {
-		return ""
-	}
-
-	return "✓"
-}
-
 func translateTimestampSince(timestamp *time.Time) string {
 	if timestamp == nil || timestamp.IsZero() {
 		return ""
