@@ -16,7 +16,6 @@ import (
 	"strconv"
 	"strings"
 
-	"github.com/ajg/form"
 	"github.com/antihax/optional"
 	osb "github.com/pmorie/go-open-service-broker-client/v2"
 	"github.com/tsuru/gnuflag"
@@ -217,33 +216,27 @@ parameter may be used multiple times.`,
 		MinArgs: 2,
 	}
 }
+func (c *ServiceInstanceUpdate) instanceUpdate() tsuru.ServiceInstanceUpdateData {
+	instanceUpdate := tsuru.ServiceInstanceUpdateData{
+		Description: c.description,
+		Teamowner:   c.teamOwner,
+		Plan:        c.plan,
+		Tags:        c.tags,
+		Parameters:  c.params,
+	}
+	return instanceUpdate
+}
 
 func (c *ServiceInstanceUpdate) Run(ctx *cmd.Context, client *cmd.Client) error {
 	serviceName, instanceName := ctx.Args[0], ctx.Args[1]
-	u, err := cmd.GetURL(fmt.Sprintf("/services/%s/instances/%s", serviceName, instanceName))
+	apiClient, err := tsuruClient.ClientFromEnvironment(&tsuru.Configuration{
+		HTTPClient: client.HTTPClient,
+	})
 	if err != nil {
 		return err
 	}
-	parameters := make(map[string]interface{})
-	for k, v := range c.params {
-		parameters[k] = v
-	}
-	v, err := form.EncodeToValues(map[string]interface{}{"parameters": parameters})
-	if err != nil {
-		return err
-	}
-	v.Set("teamowner", c.teamOwner)
-	v.Set("description", c.description)
-	v.Set("plan", c.plan)
-	for _, tag := range c.tags {
-		v.Add("tag", tag)
-	}
-	request, err := http.NewRequest("PUT", u, strings.NewReader(v.Encode()))
-	if err != nil {
-		return err
-	}
-	request.Header.Set("Content-Type", "application/x-www-form-urlencoded")
-	_, err = client.Do(request)
+	instanceUpdate := c.instanceUpdate()
+	_, err = apiClient.ServiceApi.InstanceUpdate(context.TODO(), serviceName, instanceName, instanceUpdate)
 	if err != nil {
 		return err
 	}

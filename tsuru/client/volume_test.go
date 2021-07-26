@@ -244,17 +244,18 @@ func (s *S) TestVolumeUpdate(c *check.C) {
 	trans := &cmdtest.ConditionalTransport{
 		Transport: cmdtest.Transport{Message: "", Status: http.StatusOK},
 		CondFunc: func(r *http.Request) bool {
-			var vol map[string]interface{}
+			var vol tsuru.VolumeUpdateData
 			err := json.NewDecoder(r.Body).Decode(&vol)
 			c.Assert(err, check.IsNil)
-			c.Assert(vol, check.DeepEquals, tsuru.Volume{
+			c.Assert(vol, check.DeepEquals, tsuru.VolumeUpdateData{
 				Name:      "vol1",
 				Plan:      tsuru.VolumePlan{Name: "plan1"},
 				TeamOwner: "team1",
+				Status:    "",
 				Pool:      "pool1",
 				Opts:      map[string]string{"a": "1", "b": "2"},
 			})
-			return strings.HasSuffix(r.URL.Path, "/volumes/vol1") && r.Method == "POST"
+			return strings.HasSuffix(r.URL.Path, "/volumes/vol1") && r.Method == "PUT"
 		},
 	}
 	client := cmd.NewClient(&http.Client{Transport: trans}, nil, manager)

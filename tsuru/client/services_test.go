@@ -544,18 +544,18 @@ func (s *S) TestServiceInstanceUpdateRun(c *check.C) {
 	trans := cmdtest.ConditionalTransport{
 		Transport: cmdtest.Transport{Message: result, Status: http.StatusOK},
 		CondFunc: func(r *http.Request) bool {
-			r.ParseForm()
-			c.Check(r.FormValue("description"), check.Equals, "desc")
-			c.Check(r.Form["tag"], check.HasLen, 2)
-			c.Check(r.Form["tag"][0], check.Equals, "tag1")
-			c.Check(r.Form["tag"][1], check.Equals, "tag2")
-			c.Check(r.FormValue("plan"), check.Equals, "new-plan")
-			c.Check(r.Method, check.Equals, http.MethodPut)
-			c.Check(r.Header.Get("Content-Type"), check.Equals, "application/x-www-form-urlencoded")
-			c.Check(strings.HasSuffix(r.URL.Path, "/services/service/instances/service-instance"), check.Equals, true)
-			c.Check(r.FormValue("teamowner"), check.Equals, "new-team")
-			c.Check(r.FormValue("parameters.param1"), check.Equals, "value1")
-			c.Check(r.FormValue("parameters.param2"), check.Equals, "value2")
+			var result map[string]interface{}
+			err := json.NewDecoder(r.Body).Decode(&result)
+			c.Assert(err, check.IsNil)
+			c.Assert(result, check.DeepEquals, map[string]interface{}{
+				"description": "desc",
+				"teamowner":   "new-team",
+				"plan":        "new-plan",
+				"tags":        []interface{}{"tag1", "tag2"},
+				"parameters": map[string]interface{}{
+					"param1": "value1",
+					"param2": "value2"},
+			})
 			return true
 		},
 	}
@@ -583,8 +583,13 @@ func (s *S) TestServiceInstanceUpdateRunWithEmptyTag(c *check.C) {
 	trans := cmdtest.ConditionalTransport{
 		Transport: cmdtest.Transport{Message: result, Status: http.StatusOK},
 		CondFunc: func(r *http.Request) bool {
-			r.ParseForm()
-			return len(r.Form["tag"]) == 1 && r.Form["tag"][0] == ""
+			var result map[string]interface{}
+			err := json.NewDecoder(r.Body).Decode(&result)
+			c.Assert(err, check.IsNil)
+			c.Assert(result, check.DeepEquals, map[string]interface{}{
+				"tags": []interface{}{""},
+			})
+			return true
 		},
 	}
 	client := cmd.NewClient(&http.Client{Transport: &trans}, nil, manager)

@@ -118,15 +118,15 @@ func (c *VolumeUpdate) Flags() *gnuflag.FlagSet {
 	}
 	return c.fs
 }
-func (c *VolumeUpdate) volumeUpdate(volumeName, planName string) tsuru.Volume {
-	volumeCreate := tsuru.Volume{
+func (c *VolumeUpdate) volumeUpdate(volumeName, planName string) tsuru.VolumeUpdateData {
+	volumeUpdate := tsuru.VolumeUpdateData{
 		Name:      volumeName,
 		Plan:      tsuru.VolumePlan{Name: planName},
 		Pool:      c.pool,
 		TeamOwner: c.team,
 		Opts:      map[string]string(c.opt),
 	}
-	return volumeCreate
+	return volumeUpdate
 }
 
 func (c *VolumeUpdate) Run(ctx *cmd.Context, client *cmd.Client) error {
