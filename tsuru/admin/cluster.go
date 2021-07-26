@@ -84,7 +84,6 @@ func (c *ClusterAdd) Run(ctx *cmd.Context, cli *cmd.Client) error {
 		CustomData:  c.customData,
 		Default:     c.isDefault,
 		Provisioner: provisioner,
-		CreateData:  c.createData,
 	}
 	var data []byte
 	if c.cacert != "" {
@@ -317,18 +316,6 @@ func (c *ClusterUpdate) updateCustomData(cluster *tsuru.Cluster) error {
 func (c *ClusterUpdate) updateCreateData(cluster *tsuru.Cluster) error {
 	if cluster == nil {
 		return fmt.Errorf("cannot update a nil cluster")
-	}
-	if cluster.CreateData == nil {
-		cluster.CreateData = make(map[string]string)
-	}
-	for key, value := range c.addCreateData {
-		cluster.CreateData[key] = value
-	}
-	for _, key := range c.removeCreateData {
-		if _, hasKey := cluster.CreateData[key]; !hasKey {
-			return fmt.Errorf("cannot unset create data entry: key %q not found", key)
-		}
-		delete(cluster.CreateData, key)
 	}
 	return nil
 }

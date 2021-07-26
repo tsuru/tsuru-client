@@ -49,7 +49,6 @@ func (s *S) TestClusterAddRun(c *check.C) {
 				Pools:       []string{"p1", "p2"},
 				Default:     true,
 				Provisioner: "myprov",
-				CreateData:  map[string]string{"iaas": "dockermachine"},
 			})
 			return true
 		},
@@ -199,7 +198,6 @@ func (s *S) TestClusterUpdateMergeCluster(c *check.C) {
 			Clientkey:   []byte("client key"),
 			Pools:       []string{"pool1", "pool2"},
 			CustomData:  map[string]string{"key": "value"},
-			CreateData:  map[string]string{"key": "value"},
 			Default:     false,
 		}
 	}
@@ -281,7 +279,6 @@ func (s *S) TestClusterUpdateMergeCluster(c *check.C) {
 				Clientkey:   []byte("client key"),
 				Pools:       []string{"pool1", "pool2"},
 				CustomData:  map[string]string{"key": "value"},
-				CreateData:  map[string]string{"key": "value"},
 				Default:     false,
 			},
 		},
@@ -299,7 +296,6 @@ func (s *S) TestClusterUpdateMergeCluster(c *check.C) {
 				Clientkey:   []byte("client key"),
 				Pools:       []string{},
 				CustomData:  map[string]string{"key": "value"},
-				CreateData:  map[string]string{"key": "value"},
 				Default:     true,
 			},
 		},
@@ -319,7 +315,6 @@ func (s *S) TestClusterUpdateMergeCluster(c *check.C) {
 				Clientkey:   nil,
 				Pools:       []string{"pool1", "pool2"},
 				CustomData:  map[string]string{"key": "value"},
-				CreateData:  map[string]string{"key": "value"},
 				Default:     false,
 			},
 		},
@@ -338,7 +333,6 @@ func (s *S) TestClusterUpdateMergeCluster(c *check.C) {
 				Clientkey:   []byte("client key"),
 				Pools:       []string{"pool1", "pool2"},
 				CustomData:  map[string]string{},
-				CreateData:  map[string]string{},
 				Default:     false,
 			},
 		},
@@ -358,7 +352,6 @@ func (s *S) TestClusterUpdateMergeCluster(c *check.C) {
 				Clientkey:   []byte("ANOTHER CLIENT KEY"),
 				Pools:       []string{"pool1", "pool2"},
 				CustomData:  map[string]string{"key": "value"},
-				CreateData:  map[string]string{"key": "value"},
 				Default:     false,
 			},
 		},
