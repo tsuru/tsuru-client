@@ -74,6 +74,14 @@ func (c *UserCreate) Run(ctx *cmd.Context, client *cmd.Client) error {
 	if err != nil {
 		return err
 	}
+
+	if response != nil {
+		if response.StatusCode == http.StatusNotFound ||
+			response.StatusCode == http.StatusMethodNotAllowed {
+			return errors.New("User creation is disabled.")
+		}
+	}
+
 	err = cmd.StreamJSONResponse(ctx.Stdout, response)
 
 	if err != nil {
@@ -491,7 +499,7 @@ Tags: {{.Tags}}
 
 type ChangePassword struct{}
 
-func (c *ChangePassword) ChangePassword(old, new, confirm string) tsuru.ChangePasswordData {
+func (c *ChangePassword) ChangedPassword(old, new, confirm string) tsuru.ChangePasswordData {
 	changePass := tsuru.ChangePasswordData{
 		Old:     old,
 		New:     new,
@@ -518,18 +526,15 @@ func (c *ChangePassword) Run(ctx *cmd.Context, client *cmd.Client) error {
 		return err
 	}
 	fmt.Fprintln(ctx.Stdout)
-	v := url.Values{}
-	v.Set("old", old)
-	v.Set("new", new)
-	v.Set("confirm", confirm)
+
 	apiClient, err := tsuruClient.ClientFromEnvironment(&tsuru.Configuration{
 		HTTPClient: client.HTTPClient,
 	})
 	if err != nil {
 		return err
 	}
-	changePassword := c.ChangePassword(old, new, confirm)
-	_, err = apiClient.UserApi.ChangePassword(context.TODO(), changePassword)
+	changedPassword := c.ChangedPassword(old, new, confirm)
+	_, err = apiClient.UserApi.ChangePassword(context.TODO(), changedPassword)
 	if err != nil {
 		return err
 	}
