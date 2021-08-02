@@ -758,12 +758,17 @@ Quota: {{.Quota.InUse}}/{{.Quota.LimitString}}
 
 func renderUnits(buf *bytes.Buffer, units []unit, metrics []unitMetrics, provisioner string) {
 	type unitsKey struct {
-		process string
-		version int
+		process  string
+		version  int
+		routable bool
 	}
 	groupedUnits := map[unitsKey][]unit{}
 	for _, u := range units {
-		key := unitsKey{process: u.ProcessName, version: u.Version}
+		routable := false
+		if u.Routable != nil {
+			routable = *u.Routable
+		}
+		key := unitsKey{process: u.ProcessName, version: u.Version, routable: routable}
 		groupedUnits[key] = append(groupedUnits[key], u)
 	}
 	keys := make([]unitsKey, 0, len(groupedUnits))
@@ -776,10 +781,6 @@ func renderUnits(buf *bytes.Buffer, units []unit, metrics []unitMetrics, provisi
 		}
 		return keys[i].version < keys[j].version
 	})
-	includeRoutable := false
-	if len(units) > 0 {
-		includeRoutable = units[0].Routable != nil
-	}
 
 	var titles []string
 	if provisioner == "kubernetes" {
@@ -792,9 +793,6 @@ func renderUnits(buf *bytes.Buffer, units []unit, metrics []unitMetrics, provisi
 		mapUnitMetrics[unitMetric.ID] = unitMetric
 	}
 
-	if includeRoutable {
-		titles = append(titles, "Routable")
-	}
 	for _, key := range keys {
 		units := groupedUnits[key]
 		unitsTable := tablecli.NewTable()
@@ -827,9 +825,6 @@ func renderUnits(buf *bytes.Buffer, units []unit, metrics []unitMetrics, provisi
 				}
 			}
 
-			if includeRoutable {
-				row = append(row, checkedChar(unit.Routable))
-			}
 			unitsTable.AddRow(row)
 		}
 		if unitsTable.Rows() > 0 {
@@ -841,6 +836,9 @@ func renderUnits(buf *bytes.Buffer, units []unit, metrics []unitMetrics, provisi
 			}
 			if key.version != 0 {
 				groupLabel = fmt.Sprintf("%s [version %d]", groupLabel, key.version)
+			}
+			if key.routable {
+				groupLabel = fmt.Sprintf("%s [routable]", groupLabel)
 			}
 			buf.WriteString(fmt.Sprintf("Units%s: %d\n", groupLabel, unitsTable.Rows()))
 			buf.WriteString(unitsTable.String())
@@ -874,14 +872,6 @@ func memoryValue(q string) string {
 
 	}
 	return memory
-}
-
-func checkedChar(b *bool) string {
-	if b == nil || !*b {
-		return ""
-	}
-
-	return "✓"
 }
 
 func translateTimestampSince(timestamp *time.Time) string {
