@@ -251,7 +251,7 @@ func (s *S) TestServiceInstanceBind(c *check.C) {
 			method := req.Method == "PUT"
 			path := strings.HasSuffix(req.URL.Path, "/services/mysql/instances/my-mysql/g1")
 			var bindResult map[string]interface{}
-			err := json.NewDecoder(req.Body).Decode(&bindResult)
+			err = json.NewDecoder(req.Body).Decode(&bindResult)
 			c.Assert(err, check.IsNil)
 			c.Assert(bindResult, check.DeepEquals, map[string]interface{}{
 				"noRestart": true,

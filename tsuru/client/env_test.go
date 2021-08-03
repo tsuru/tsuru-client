@@ -7,7 +7,6 @@ package client
 import (
 	"bytes"
 	"encoding/json"
-	"io/ioutil"
 	"net/http"
 	"strings"
 
@@ -148,7 +147,7 @@ func (s *S) TestEnvSetRun(c *check.C) {
 		Transport: cmdtest.Transport{Message: string(result), Status: http.StatusOK},
 		CondFunc: func(req *http.Request) bool {
 			var envResult map[string]interface{}
-			err := json.NewDecoder(req.Body).Decode(&envResult)
+			err = json.NewDecoder(req.Body).Decode(&envResult)
 			c.Assert(err, check.IsNil)
 			c.Assert(envResult, check.DeepEquals, map[string]interface{}{"envs": []interface{}{map[string]interface{}{"name": "DATABASE_HOST",
 				"value": "somehost"}}})
@@ -208,11 +207,8 @@ variable 2`},
 				{Name: "LINE1", Value: "multiline\nvariable 1", Alias: "", Private: private},
 				{Name: "LINE2", Value: "multiline\nvariable 2", Alias: "", Private: private},
 			}
-			err = req.ParseForm()
 			var e tsuru.EnvSetData
-			data, err := ioutil.ReadAll(req.Body)
-			c.Assert(err, check.IsNil)
-			err = json.Unmarshal(data, &e)
+			err = json.NewDecoder(req.Body).Decode(&e)
 			c.Assert(err, check.IsNil)
 			c.Assert(e.Envs, check.DeepEquals, want)
 			private = !e.Private
@@ -263,13 +259,8 @@ func (s *S) TestEnvSetValues(c *check.C) {
 				{Name: "BASE64_STRING", Value: "t5urur0ck5==", Alias: "", Private: private},
 				{Name: "SOME_PASSWORD", Value: "js87$%32??", Alias: "", Private: private},
 			}
-			err = req.ParseForm()
-			c.Assert(err, check.IsNil)
 			var e tsuru.EnvSetData
-			c.Assert(err, check.IsNil)
-			data, err := ioutil.ReadAll(req.Body)
-			c.Assert(err, check.IsNil)
-			err = json.Unmarshal(data, &e)
+			err = json.NewDecoder(req.Body).Decode(&e)
 			c.Assert(err, check.IsNil)
 			c.Assert(e.Envs, check.DeepEquals, want)
 			private = !e.Private
@@ -319,12 +310,8 @@ func (s *S) TestEnvSetValuesAndPrivateAndNoRestart(c *check.C) {
 				{Name: "VALUE_WITH_EQUAL_SIGN", Value: "http://wholikesquerystrings.me/?tsuru=awesome", Private: private},
 				{Name: "BASE64_STRING", Value: "t5urur0ck5==", Alias: "", Private: private},
 			}
-			err = req.ParseForm()
-			c.Assert(err, check.IsNil)
 			var e tsuru.EnvSetData
-			data, err := ioutil.ReadAll(req.Body)
-			c.Assert(err, check.IsNil)
-			err = json.Unmarshal(data, &e)
+			err = json.NewDecoder(req.Body).Decode(&e)
 			c.Assert(err, check.IsNil)
 			c.Assert(e.Envs, check.DeepEquals, want)
 			private = e.Private

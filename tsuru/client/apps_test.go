@@ -2595,7 +2595,7 @@ func (s *S) TestAppRestart(c *check.C) {
 		CondFunc: func(req *http.Request) bool {
 			called = true
 			var restartResult map[string]interface{}
-			err := json.NewDecoder(req.Body).Decode(&restartResult)
+			err = json.NewDecoder(req.Body).Decode(&restartResult)
 			c.Assert(err, check.IsNil)
 			c.Assert(restartResult, check.DeepEquals, map[string]interface{}{
 				"process": "web",
@@ -2766,7 +2766,7 @@ func (s *S) TestAppStart(c *check.C) {
 		CondFunc: func(req *http.Request) bool {
 			called = true
 			var startResult map[string]interface{}
-			err := json.NewDecoder(req.Body).Decode(&startResult)
+			err = json.NewDecoder(req.Body).Decode(&startResult)
 			c.Assert(err, check.IsNil)
 			c.Assert(startResult, check.DeepEquals, map[string]interface{}{
 				"process": "worker",
@@ -2836,7 +2836,7 @@ func (s *S) TestAppStop(c *check.C) {
 		CondFunc: func(req *http.Request) bool {
 			called = true
 			var stopResult map[string]interface{}
-			err := json.NewDecoder(req.Body).Decode(&stopResult)
+			err = json.NewDecoder(req.Body).Decode(&stopResult)
 			c.Assert(err, check.IsNil)
 			c.Assert(stopResult, check.DeepEquals, map[string]interface{}{
 				"process": "worker",
@@ -2874,7 +2874,7 @@ func (s *S) TestUnitAdd(c *check.C) {
 		CondFunc: func(req *http.Request) bool {
 			called = true
 			var result map[string]interface{}
-			err := json.NewDecoder(req.Body).Decode(&result)
+			err = json.NewDecoder(req.Body).Decode(&result)
 			c.Assert(err, check.IsNil)
 			c.Assert(result, check.DeepEquals, map[string]interface{}{
 				"units":   "3",
@@ -2909,7 +2909,7 @@ func (s *S) TestUnitAddWithVersion(c *check.C) {
 		CondFunc: func(req *http.Request) bool {
 			called = true
 			var result map[string]interface{}
-			err := json.NewDecoder(req.Body).Decode(&result)
+			err = json.NewDecoder(req.Body).Decode(&result)
 			c.Assert(err, check.IsNil)
 			c.Assert(result, check.DeepEquals, map[string]interface{}{
 				"units":   "3",
