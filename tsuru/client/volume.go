@@ -79,9 +79,11 @@ func (c *VolumeCreate) Run(ctx *cmd.Context, client *cmd.Client) error {
 	if err != nil {
 		return err
 	}
-
 	err = cmd.StreamJSONResponse(ctx.Stdout, response)
 
+	if err != nil {
+		return err
+	}
 	fmt.Fprint(ctx.Stdout, "Volume successfully created.\n")
 	return nil
 }
