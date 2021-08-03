@@ -75,7 +75,7 @@ func (s *S) TestClusterAddRun(c *check.C) {
 		"--pool", "p2",
 		"--custom", "a=b",
 		"--custom", "c=d",
-		"--create-data", "iaas=dockermachine",
+		"iaas=dockermachine",
 		"--default",
 	})
 	c.Assert(err, check.IsNil)
@@ -241,13 +241,6 @@ func (s *S) TestClusterUpdateMergeCluster(c *check.C) {
 		},
 		{
 			command: ClusterUpdate{
-				removeCreateData: cmd.StringSliceFlag{"some-not-found-key"},
-			},
-			cluster:     getCluster(),
-			errorString: "cannot unset create data entry: key \"some-not-found-key\" not found",
-		},
-		{
-			command: ClusterUpdate{
 				isDefault: "true",
 				addPool:   cmd.StringSliceFlag{"new-pool"},
 			},
@@ -320,7 +313,6 @@ func (s *S) TestClusterUpdateMergeCluster(c *check.C) {
 		},
 		{
 			command: ClusterUpdate{
-				removeCreateData: cmd.StringSliceFlag{"key"},
 				removeCustomData: cmd.StringSliceFlag{"key"},
 			},
 			cluster: getCluster(),
@@ -547,12 +539,5 @@ Custom Data:
 +------+--------+
 | key2 | value2 |
 +------+--------+
-
-Create Data:
-+-------------+---------------+
-| Name        | Usage         |
-+-------------+---------------+
-| create key2 | create value2 |
-+-------------+---------------+
 `)
 }

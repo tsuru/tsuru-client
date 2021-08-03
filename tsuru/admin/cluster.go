@@ -30,7 +30,6 @@ type ClusterAdd struct {
 	addresses  cmd.StringSliceFlag
 	pools      cmd.StringSliceFlag
 	customData cmd.MapFlag
-	createData cmd.MapFlag
 	isDefault  bool
 }
 
@@ -51,8 +50,6 @@ func (c *ClusterAdd) Flags() *gnuflag.FlagSet {
 		c.fs.Var(&c.pools, "pool", desc)
 		desc = "Custom provisioner specific data."
 		c.fs.Var(&c.customData, "custom", desc)
-		desc = "Create data, if set an iaas will be called with this data to create a new machine."
-		c.fs.Var(&c.createData, "create-data", desc)
 	}
 	return c.fs
 }
@@ -60,7 +57,7 @@ func (c *ClusterAdd) Flags() *gnuflag.FlagSet {
 func (c *ClusterAdd) Info() *cmd.Info {
 	return &cmd.Info{
 		Name:    "cluster-add",
-		Usage:   "cluster add <name> <provisioner> [--addr address...] [--pool poolname]... [--cacert cacertfile] [--clientcert clientcertfile] [--clientkey clientkeyfile] [--custom key=value]... [--create-data key=value]... [--default]",
+		Usage:   "cluster add <name> <provisioner> [--addr address...] [--pool poolname]... [--cacert cacertfile] [--clientcert clientcertfile] [--clientkey clientkeyfile] [--custom key=value]...  [--default]",
 		Desc:    `Creates a provisioner cluster definition.`,
 		MinArgs: 2,
 		MaxArgs: 2,
@@ -133,8 +130,6 @@ type ClusterUpdate struct {
 	removePool       cmd.StringSliceFlag
 	addCustomData    cmd.MapFlag
 	removeCustomData cmd.StringSliceFlag
-	addCreateData    cmd.MapFlag
-	removeCreateData cmd.StringSliceFlag
 }
 
 func (c *ClusterUpdate) Flags() *gnuflag.FlagSet {
@@ -164,10 +159,6 @@ func (c *ClusterUpdate) Flags() *gnuflag.FlagSet {
 		c.fs.Var(&c.addCustomData, "add-custom", desc)
 		desc = "Remove custom provisioner specific data."
 		c.fs.Var(&c.removeCustomData, "remove-custom", desc)
-		desc = "Create data, if set an iaas will be called with this data to re-create the machine."
-		c.fs.Var(&c.addCreateData, "add-create-data", desc)
-		desc = "Remove create data"
-		c.fs.Var(&c.removeCreateData, "remove-create-data", desc)
 	}
 	return c.fs
 }
@@ -175,7 +166,7 @@ func (c *ClusterUpdate) Flags() *gnuflag.FlagSet {
 func (c *ClusterUpdate) Info() *cmd.Info {
 	return &cmd.Info{
 		Name:    "cluster-update",
-		Usage:   "cluster update <name> <provisioner> [--addr address]... [--add-pool poolname]... [--remove-pool poolname]... [--cacert cacertfile] [--remove-cacert] [--clientcert clientcertfile] [--remove-clientcert] [--clientkey clientkeyfile] [--remove-clientkey] [--add-custom key=value]... [--remove-custom key]... [--add-create-data key=value]... [--remove-create-data key]... [--default=true|false]",
+		Usage:   "cluster update <name> <provisioner> [--addr address]... [--add-pool poolname]... [--remove-pool poolname]... [--cacert cacertfile] [--remove-cacert] [--clientcert clientcertfile] [--remove-clientcert] [--clientkey clientkeyfile] [--remove-clientkey] [--add-custom key=value]... [--remove-custom key]...  [--default=true|false]",
 		Desc:    `Updates a provisioner cluster definition.`,
 		MinArgs: 2,
 		MaxArgs: 2,
@@ -220,9 +211,6 @@ func (c *ClusterUpdate) mergeCluster(cluster *tsuru.Cluster) error {
 		return err
 	}
 	if err := c.updateClientKey(cluster); err != nil {
-		return err
-	}
-	if err := c.updateCreateData(cluster); err != nil {
 		return err
 	}
 	if err := c.updateCustomData(cluster); err != nil {
@@ -312,14 +300,6 @@ func (c *ClusterUpdate) updateCustomData(cluster *tsuru.Cluster) error {
 	}
 	return nil
 }
-
-func (c *ClusterUpdate) updateCreateData(cluster *tsuru.Cluster) error {
-	if cluster == nil {
-		return fmt.Errorf("cannot update a nil cluster")
-	}
-	return nil
-}
-
 func (c *ClusterUpdate) updatePools(cluster *tsuru.Cluster) error {
 	if cluster == nil {
 		return fmt.Errorf("cannot update a nil cluster")
@@ -521,15 +501,6 @@ func (c *ProvisionerInfo) Run(ctx *cmd.Context, cli *cmd.Client) error {
 	tbl.Sort()
 	fmt.Fprint(ctx.Stdout, tbl.String())
 
-	fmt.Fprintf(ctx.Stdout, "\nCreate Data:\n")
-	tbl = tablecli.NewTable()
-	tbl.LineSeparator = true
-	tbl.Headers = tablecli.Row{"Name", "Usage"}
-	for key, value := range provisioner.ClusterHelp.CreateDataHelp {
-		tbl.AddRow(tablecli.Row{key, value})
-	}
-	tbl.Sort()
-	fmt.Fprint(ctx.Stdout, tbl.String())
 	return nil
 }
 

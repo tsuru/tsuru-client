@@ -189,12 +189,7 @@ func (c *AppCreate) Run(ctx *cmd.Context, client *cmd.Client) error {
 		return err
 	}
 	inputApp := c.InputApp(appName, platform)
-	_, response, err := apiClient.AppApi.AppCreate(context.TODO(), inputApp)
-	if err != nil {
-		return err
-	}
-	err = cmd.StreamJSONResponse(ctx.Stdout, response)
-
+	_, _, err = apiClient.AppApi.AppCreate(context.TODO(), inputApp)
 	if err != nil {
 		return err
 	}
