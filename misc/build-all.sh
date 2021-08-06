@@ -7,7 +7,7 @@ then
     VERSION=$(cat tsuru/main.go | grep "version =" | cut -d '"' -f2)
 fi
 OSSES="darwin linux windows"
-ARCHS="amd64 386"
+ARCHS="amd64 386 arm64"
 
 mkdir dist || true
 
