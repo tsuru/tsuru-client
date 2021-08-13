@@ -5,6 +5,7 @@
 package client
 
 import (
+	"context"
 	"crypto/x509"
 	"crypto/x509/pkix"
 	"encoding/json"
@@ -18,7 +19,10 @@ import (
 	"strings"
 
 	"github.com/tsuru/gnuflag"
+	tsuruClient "github.com/tsuru/go-tsuruclient/pkg/client"
+	"github.com/tsuru/go-tsuruclient/pkg/tsuru"
 	"github.com/tsuru/tablecli"
+
 	"github.com/tsuru/tsuru-client/tsuru/formatter"
 	"github.com/tsuru/tsuru/cmd"
 )
@@ -47,8 +51,15 @@ func (c *CertificateSet) Flags() *gnuflag.FlagSet {
 	}
 	return c.fs
 }
-
-func (c *CertificateSet) Run(context *cmd.Context, client *cmd.Client) error {
+func (c *CertificateSet) CertificateAdd(cert []byte, key []byte) tsuru.CertificateSetData {
+	certificate := tsuru.CertificateSetData{
+		Cname:       c.cname,
+		Certificate: cert,
+		Key:         key,
+	}
+	return certificate
+}
+func (c *CertificateSet) Run(ctx *cmd.Context, client *cmd.Client) error {
 	appName, err := c.AppName()
 	if err != nil {
 		return err
@@ -56,33 +67,27 @@ func (c *CertificateSet) Run(context *cmd.Context, client *cmd.Client) error {
 	if c.cname == "" {
 		return errors.New("You must set cname.")
 	}
-	cert, err := ioutil.ReadFile(context.Args[0])
+	cert, err := ioutil.ReadFile(ctx.Args[0])
 	if err != nil {
 		return err
 	}
-	key, err := ioutil.ReadFile(context.Args[1])
+	key, err := ioutil.ReadFile(ctx.Args[1])
 	if err != nil {
 		return err
 	}
-	v := url.Values{}
-	v.Set("cname", c.cname)
-	v.Set("certificate", string(cert))
-	v.Set("key", string(key))
-	u, err := cmd.GetURLVersion("1.2", fmt.Sprintf("/apps/%s/certificate", appName))
+	certificate := c.CertificateAdd(cert, key)
+	apiClient, err := tsuruClient.ClientFromEnvironment(&tsuru.Configuration{
+		HTTPClient: client.HTTPClient,
+	})
 	if err != nil {
 		return err
 	}
-	request, err := http.NewRequest(http.MethodPut, u, strings.NewReader(v.Encode()))
-	if err != nil {
-		return err
-	}
-	request.Header.Set("Content-Type", "application/x-www-form-urlencoded")
-	response, err := client.Do(request)
+	response, err := apiClient.AppApi.CertificateSet(context.TODO(), appName, certificate)
 	if err != nil {
 		return err
 	}
 	defer response.Body.Close()
-	fmt.Fprintln(context.Stdout, "Successfully created the certificated.")
+	fmt.Fprintln(ctx.Stdout, "Successfully created the certificated.")
 	return nil
 }
 
@@ -110,7 +115,7 @@ func (c *CertificateUnset) Flags() *gnuflag.FlagSet {
 	return c.fs
 }
 
-func (c *CertificateUnset) Run(context *cmd.Context, client *cmd.Client) error {
+func (c *CertificateUnset) Run(ctx *cmd.Context, client *cmd.Client) error {
 	appName, err := c.AppName()
 	if err != nil {
 		return err
@@ -120,21 +125,18 @@ func (c *CertificateUnset) Run(context *cmd.Context, client *cmd.Client) error {
 	}
 	v := url.Values{}
 	v.Set("cname", c.cname)
-	u, err := cmd.GetURLVersion("1.2", fmt.Sprintf("/apps/%s/certificate?%s", appName, v.Encode()))
+	apiClient, err := tsuruClient.ClientFromEnvironment(&tsuru.Configuration{
+		HTTPClient: client.HTTPClient,
+	})
 	if err != nil {
 		return err
 	}
-	request, err := http.NewRequest(http.MethodDelete, u, nil)
-	if err != nil {
-		return err
-	}
-	request.Header.Set("Content-Type", "application/x-www-form-urlencoded")
-	response, err := client.Do(request)
+	response, err := apiClient.AppApi.CertificatUnset(context.TODO(), appName)
 	if err != nil {
 		return err
 	}
 	defer response.Body.Close()
-	fmt.Fprintln(context.Stdout, "Certificate removed.")
+	fmt.Fprintln(ctx.Stdout, "Certificate removed.")
 	return nil
 }
 

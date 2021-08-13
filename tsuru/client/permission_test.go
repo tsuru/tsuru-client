@@ -6,11 +6,13 @@ package client
 
 import (
 	"bytes"
+	"encoding/json"
 	"net/http"
 	"reflect"
 	"sort"
 	"strings"
 
+	"github.com/tsuru/go-tsuruclient/pkg/tsuru"
 	"github.com/tsuru/tsuru/cmd"
 	"github.com/tsuru/tsuru/cmd/cmdtest"
 	"gopkg.in/check.v1"
@@ -69,8 +71,14 @@ func (s *S) TestRoleAddRun(c *check.C) {
 	trans := &cmdtest.ConditionalTransport{
 		Transport: cmdtest.Transport{Message: string(""), Status: http.StatusCreated},
 		CondFunc: func(req *http.Request) bool {
-			return strings.HasSuffix(req.URL.Path, "/roles") && req.Method == http.MethodPost &&
-				req.FormValue("name") == "myrole" && req.FormValue("context") == "app"
+			var rol tsuru.RoleAddData
+			err := json.NewDecoder(req.Body).Decode(&rol)
+			c.Assert(err, check.IsNil)
+			c.Assert(rol, check.DeepEquals, tsuru.RoleAddData{
+				Name:        "myrole",
+				Contexttype: "app",
+			})
+			return strings.HasSuffix(req.URL.Path, "/roles") && req.Method == http.MethodPost
 		},
 	}
 	client := cmd.NewClient(&http.Client{Transport: trans}, nil, manager)
@@ -185,8 +193,17 @@ func (s *S) TestRoleAssignRun(c *check.C) {
 	trans := &cmdtest.ConditionalTransport{
 		Transport: cmdtest.Transport{Message: string(""), Status: http.StatusCreated},
 		CondFunc: func(req *http.Request) bool {
-			return strings.HasSuffix(req.URL.Path, "/roles/myrole/user") && req.Method == http.MethodPost &&
-				req.FormValue("email") == "me@me.com" && req.FormValue("context") == "myapp"
+			var rol tsuru.RoleAssignData
+			err := json.NewDecoder(req.Body).Decode(&rol)
+			c.Assert(err, check.IsNil)
+			c.Assert(rol, check.DeepEquals, tsuru.RoleAssignData{
+				Name:         "myrole",
+				Roletarget:   "me@me.com",
+				Sufix:        "user",
+				Version:      "1.0",
+				Contextvalue: "myapp",
+			})
+			return strings.HasSuffix(req.URL.Path, "/roles/myrole/user") && req.Method == http.MethodPost
 		},
 	}
 	client := cmd.NewClient(&http.Client{Transport: trans}, nil, manager)
@@ -206,10 +223,16 @@ func (s *S) TestRoleAssignRunWithToken(c *check.C) {
 	trans := &cmdtest.ConditionalTransport{
 		Transport: cmdtest.Transport{Message: string(""), Status: http.StatusCreated},
 		CondFunc: func(req *http.Request) bool {
-			c.Assert(req.URL.Path, check.Equals, "/1.6/roles/myrole/token")
-			c.Assert(req.Method, check.Equals, http.MethodPost)
-			c.Assert(req.FormValue("token_id"), check.Equals, "mytoken")
-			c.Assert(req.FormValue("context"), check.Equals, "myapp")
+			var rol tsuru.RoleAssignData
+			err := json.NewDecoder(req.Body).Decode(&rol)
+			c.Assert(err, check.IsNil)
+			c.Assert(rol, check.DeepEquals, tsuru.RoleAssignData{
+				Name:         "myrole",
+				Roletarget:   "mytoken",
+				Sufix:        "token",
+				Version:      "1.6",
+				Contextvalue: "myapp",
+			})
 			return true
 		},
 	}
@@ -230,10 +253,16 @@ func (s *S) TestRoleAssignRunWithGroup(c *check.C) {
 	trans := &cmdtest.ConditionalTransport{
 		Transport: cmdtest.Transport{Message: string(""), Status: http.StatusCreated},
 		CondFunc: func(req *http.Request) bool {
-			c.Assert(req.URL.Path, check.Equals, "/1.9/roles/myrole/group")
-			c.Assert(req.Method, check.Equals, http.MethodPost)
-			c.Assert(req.FormValue("group_name"), check.Equals, "grp1")
-			c.Assert(req.FormValue("context"), check.Equals, "myapp")
+			var rol tsuru.RoleAssignData
+			err := json.NewDecoder(req.Body).Decode(&rol)
+			c.Assert(err, check.IsNil)
+			c.Assert(rol, check.DeepEquals, tsuru.RoleAssignData{
+				Name:         "myrole",
+				Roletarget:   "group:grp1",
+				Sufix:        "group",
+				Version:      "1.9",
+				Contextvalue: "myapp",
+			})
 			return true
 		},
 	}
@@ -306,10 +335,13 @@ func (s *S) TestRolePermissionAddRun(c *check.C) {
 	trans := &cmdtest.ConditionalTransport{
 		Transport: cmdtest.Transport{Message: string(""), Status: http.StatusCreated},
 		CondFunc: func(req *http.Request) bool {
-			req.ParseForm()
-			sort.Strings(req.Form["permission"])
+			//req.ParseForm()
+			//sort.Strings(req.Form["permission"])
+			var perm tsuru.PermissionData
+			err := json.NewDecoder(req.Body).Decode(&perm)
+			c.Assert(err, check.IsNil)
 			return strings.HasSuffix(req.URL.Path, "/roles/myrole/permissions") && req.Method == http.MethodPost &&
-				reflect.DeepEqual(req.Form["permission"], []string{"app.create", "app.deploy"})
+				reflect.DeepEqual(perm.Permission, []string{"app.create", "app.deploy"})
 		},
 	}
 	client := cmd.NewClient(&http.Client{Transport: trans}, nil, manager)
@@ -414,11 +446,14 @@ func (s *S) TestRoleDefaultAdd(c *check.C) {
 	trans := &cmdtest.ConditionalTransport{
 		Transport: cmdtest.Transport{Message: string(""), Status: http.StatusCreated},
 		CondFunc: func(req *http.Request) bool {
-			req.ParseForm()
-			sort.Strings(req.Form["user-create"])
-			return strings.HasSuffix(req.URL.Path, "/role/default") && req.Method == http.MethodPost &&
-				reflect.DeepEqual(req.Form["user-create"], []string{"r1", "r2"}) &&
-				reflect.DeepEqual(req.Form["team-create"], []string{"r3"})
+			var rolDefault tsuru.RoleDefaultData
+			err := json.NewDecoder(req.Body).Decode(&rolDefault)
+			c.Assert(err, check.IsNil)
+			c.Assert(rolDefault, check.DeepEquals, tsuru.RoleDefaultData{
+				Rolesmap: map[string][]string{"team-create": {"r3"},
+					"user-create": {"r1", "r2"}},
+			})
+			return strings.HasSuffix(req.URL.Path, "/role/default") && req.Method == http.MethodPost
 		},
 	}
 	client := cmd.NewClient(&http.Client{Transport: trans}, nil, manager)
@@ -500,10 +535,19 @@ func (s *S) TestRoleUpdate(c *check.C) {
 	trans := &cmdtest.ConditionalTransport{
 		Transport: cmdtest.Transport{Message: "", Status: http.StatusOK},
 		CondFunc: func(req *http.Request) bool {
-			path := req.URL.Path == "/1.4/roles"
+			path := req.URL.Path == "/1.0/roles"
 			method := req.Method == http.MethodPut
-			contentType := req.Header.Get("Content-Type") == "application/x-www-form-urlencoded"
-			return path && method && contentType && req.FormValue("name") == "team-member" && req.FormValue("description") == "a developer"
+			contentType := req.Header.Get("Content-Type") == "application/json"
+			var rol tsuru.RoleUpdateData
+			err := json.NewDecoder(req.Body).Decode(&rol)
+			c.Assert(err, check.IsNil)
+			c.Assert(rol, check.DeepEquals, tsuru.RoleUpdateData{
+				Name:        "team-member",
+				ContextType: "",
+				Description: "a developer",
+				NewName:     "",
+			})
+			return path && method && contentType
 		},
 	}
 	manager := cmd.Manager{}
@@ -528,8 +572,17 @@ func (s *S) TestRoleUpdateWithoutFlags(c *check.C) {
 		CondFunc: func(req *http.Request) bool {
 			path := strings.HasSuffix(req.URL.Path, "/roles")
 			method := req.Method == http.MethodPut
-			contentType := req.Header.Get("Content-Type") == "application/x-www-form-urlencoded"
-			return path && method && contentType && req.FormValue("name") == "team-member" && req.FormValue("description") == "a developer"
+			contentType := req.Header.Get("Content-Type") == "application/json"
+			var rol tsuru.RoleUpdateData
+			err := json.NewDecoder(req.Body).Decode(&rol)
+			c.Assert(err, check.IsNil)
+			c.Assert(rol, check.DeepEquals, tsuru.RoleUpdateData{
+				Name:        "team-member",
+				ContextType: "",
+				Description: "a developer",
+				NewName:     "",
+			})
+			return path && method && contentType
 		},
 	}
 	manager := cmd.Manager{}
@@ -552,8 +605,17 @@ func (s *S) TestRoleUpdateMultipleFlags(c *check.C) {
 		CondFunc: func(req *http.Request) bool {
 			path := strings.HasSuffix(req.URL.Path, "/roles")
 			method := req.Method == http.MethodPut
-			contentType := req.Header.Get("Content-Type") == "application/x-www-form-urlencoded"
-			return path && method && contentType && req.FormValue("name") == "team-member" && req.FormValue("description") == "a developer" && req.FormValue("contextType") == "team" && req.FormValue("newName") == "newName"
+			contentType := req.Header.Get("Content-Type") == "application/json"
+			var rol tsuru.RoleUpdateData
+			err := json.NewDecoder(req.Body).Decode(&rol)
+			c.Assert(err, check.IsNil)
+			c.Assert(rol, check.DeepEquals, tsuru.RoleUpdateData{
+				Name:        "team-member",
+				ContextType: "team",
+				Description: "a developer",
+				NewName:     "newName",
+			})
+			return path && method && contentType
 		},
 	}
 	manager := cmd.Manager{}
@@ -577,8 +639,15 @@ func (s *S) TestRoleUpdateWithInvalidContent(c *check.C) {
 		CondFunc: func(req *http.Request) bool {
 			path := strings.HasSuffix(req.URL.Path, "/roles")
 			method := req.Method == http.MethodPut
-			contentType := req.Header.Get("Content-Type") == "application/x-www-form-urlencoded"
-			return path && method && contentType && req.FormValue("name") == "invalid-role" && req.FormValue("description") == "a developer"
+			contentType := req.Header.Get("Content-Type") == "application/json"
+			var rol tsuru.RoleUpdateData
+			err := json.NewDecoder(req.Body).Decode(&rol)
+			c.Assert(err, check.IsNil)
+			c.Assert(rol, check.DeepEquals, tsuru.RoleUpdateData{
+				Name:        "invalid-role",
+				Description: "a developer",
+			})
+			return path && method && contentType
 		},
 	}
 	manager := cmd.Manager{}

@@ -10,15 +10,24 @@ import (
 	"io/ioutil"
 	"net/http"
 	"os"
+	"strconv"
 	"strings"
 	"time"
 
+	"github.com/tsuru/go-tsuruclient/pkg/tsuru"
 	"github.com/tsuru/tsuru-client/tsuru/formatter"
 	"github.com/tsuru/tsuru/cmd"
 	"github.com/tsuru/tsuru/cmd/cmdtest"
 	check "gopkg.in/check.v1"
 )
 
+func convert(b []byte) string {
+	s := make([]string, len(b))
+	for i := range b {
+		s[i] = strconv.Itoa(int(b[i]))
+	}
+	return strings.Join(s, ",")
+}
 func (s *S) TestCertificateSetRunSuccessfully(c *check.C) {
 	var stdout, stderr bytes.Buffer
 	context := cmd.Context{
@@ -34,10 +43,23 @@ func (s *S) TestCertificateSetRunSuccessfully(c *check.C) {
 		CondFunc: func(req *http.Request) bool {
 			url := strings.HasSuffix(req.URL.Path, "/apps/secret/certificate")
 			method := req.Method == http.MethodPut
-			cname := req.FormValue("cname") == "app.io"
-			certificate := req.FormValue("certificate") == s.mustReadFileString(c, "./testdata/cert/server.crt")
-			key := req.FormValue("key") == s.mustReadFileString(c, "./testdata/cert/server.key")
-			return url && method && cname && certificate && key
+			var cert tsuru.CertificateSetData
+			err := json.NewDecoder(req.Body).Decode(&cert)
+			c.Assert(err, check.IsNil)
+			certifica, err := ioutil.ReadFile("./testdata/cert/server.crt")
+			if err != nil {
+				return false
+			}
+			key, err := ioutil.ReadFile("./testdata/cert/server.key")
+			if err != nil {
+				return false
+			}
+			c.Assert(cert, check.DeepEquals, tsuru.CertificateSetData{
+				Cname:       "app.io",
+				Certificate: certifica,
+				Key:         key,
+			})
+			return url && method
 		},
 	}
 	client := cmd.NewClient(&http.Client{Transport: trans}, nil, manager)
@@ -82,9 +104,9 @@ func (s *S) TestCertificateUnsetRunSuccessfully(c *check.C) {
 			requestCount++
 			url := strings.HasSuffix(req.URL.Path, "/apps/secret/certificate")
 			method := req.Method == http.MethodDelete
-			cname := req.FormValue("cname") == "app.io"
+			//cname := req.FormValue("cname") == "app.io"
 
-			return url && method && cname
+			return url && method
 		},
 	}
 	client := cmd.NewClient(&http.Client{Transport: trans}, nil, manager)

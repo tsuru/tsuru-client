@@ -5,6 +5,7 @@
 package client
 
 import (
+	"context"
 	"encoding/json"
 	"errors"
 	"fmt"
@@ -15,6 +16,8 @@ import (
 	"strings"
 
 	"github.com/tsuru/gnuflag"
+	tsuruClient "github.com/tsuru/go-tsuruclient/pkg/client"
+	"github.com/tsuru/go-tsuruclient/pkg/tsuru"
 	"github.com/tsuru/tablecli"
 	"github.com/tsuru/tsuru/cmd"
 	"github.com/tsuru/tsuru/permission"
@@ -228,28 +231,31 @@ func (c *RoleAdd) Flags() *gnuflag.FlagSet {
 	return c.fs
 }
 
-func (c *RoleAdd) Run(context *cmd.Context, client *cmd.Client) error {
-	roleName := context.Args[0]
-	contextType := context.Args[1]
+func (c *RoleAdd) RoleSet(roleName, contextType, description string) tsuru.RoleAddData {
+	RoleAdd := tsuru.RoleAddData{
+		Name:        roleName,
+		Contexttype: contextType,
+		Description: description,
+	}
+	return RoleAdd
+}
+func (c *RoleAdd) Run(ctx *cmd.Context, client *cmd.Client) error {
+	roleName := ctx.Args[0]
+	contextType := ctx.Args[1]
 	description := c.description
-	params := url.Values{}
-	params.Set("name", roleName)
-	params.Set("context", contextType)
-	params.Set("description", description)
-	addr, err := cmd.GetURL("/roles")
+	apiClient, err := tsuruClient.ClientFromEnvironment(&tsuru.Configuration{
+		HTTPClient: client.HTTPClient,
+	})
 	if err != nil {
 		return err
 	}
-	request, err := http.NewRequest("POST", addr, strings.NewReader(params.Encode()))
+	roleAdd := c.RoleSet(roleName, contextType, description)
+	_, err = apiClient.AuthApi.CreateRole(context.TODO(), roleAdd)
+
 	if err != nil {
 		return err
 	}
-	request.Header.Add("Content-Type", "application/x-www-form-urlencoded")
-	_, err = client.Do(request)
-	if err != nil {
-		return err
-	}
-	fmt.Fprintf(context.Stdout, "Role successfully created!\n")
+	fmt.Fprintf(ctx.Stdout, "Role successfully created!\n")
 	return nil
 }
 
@@ -306,27 +312,31 @@ func (c *RolePermissionAdd) Info() *cmd.Info {
 		MinArgs: 2,
 	}
 }
-
-func (c *RolePermissionAdd) Run(context *cmd.Context, client *cmd.Client) error {
-	roleName := context.Args[0]
+func (c *RolePermissionAdd) RolePermAdd(rolename string, permission []string) tsuru.PermissionData {
+	rolePermAdd := tsuru.PermissionData{
+		Name:       rolename,
+		Permission: permission,
+	}
+	return rolePermAdd
+}
+func (c *RolePermissionAdd) Run(ctx *cmd.Context, client *cmd.Client) error {
+	roleName := ctx.Args[0]
 	params := url.Values{}
-	for _, p := range context.Args[1:] {
+	for _, p := range ctx.Args[1:] {
 		params.Add("permission", p)
 	}
-	addr, err := cmd.GetURL(fmt.Sprintf("/roles/%s/permissions", roleName))
+	rolePermAdd := c.RolePermAdd(roleName, params["permission"])
+	apiClient, err := tsuruClient.ClientFromEnvironment(&tsuru.Configuration{
+		HTTPClient: client.HTTPClient,
+	})
 	if err != nil {
 		return err
 	}
-	request, err := http.NewRequest("POST", addr, strings.NewReader(params.Encode()))
+	_, err = apiClient.AuthApi.PermissionAdd(context.TODO(), roleName, rolePermAdd)
 	if err != nil {
 		return err
 	}
-	request.Header.Add("Content-Type", "application/x-www-form-urlencoded")
-	_, err = client.Do(request)
-	if err != nil {
-		return err
-	}
-	fmt.Fprintf(context.Stdout, "Permission successfully added!\n")
+	fmt.Fprintf(ctx.Stdout, "Permission successfully added!\n")
 	return nil
 }
 
@@ -370,13 +380,22 @@ func (c *RoleAssign) Info() *cmd.Info {
 		MinArgs: 2,
 	}
 }
-
-func (c *RoleAssign) Run(context *cmd.Context, client *cmd.Client) error {
-	roleName := context.Args[0]
-	roleTarget := context.Args[1]
+func (c *RoleAssign) RoleAssignData(roleName, contextValue, roleTarget, suffix, version string) tsuru.RoleAssignData {
+	roleAdd := tsuru.RoleAssignData{
+		Name:         roleName,
+		Contextvalue: contextValue,
+		Roletarget:   roleTarget,
+		Sufix:        suffix,
+		Version:      version,
+	}
+	return roleAdd
+}
+func (c *RoleAssign) Run(ctx *cmd.Context, client *cmd.Client) error {
+	roleName := ctx.Args[0]
+	roleTarget := ctx.Args[1]
 	var contextValue string
-	if len(context.Args) > 2 {
-		contextValue = context.Args[2]
+	if len(ctx.Args) > 2 {
+		contextValue = ctx.Args[2]
 	}
 	params := url.Values{}
 	var suffix, version string
@@ -394,20 +413,19 @@ func (c *RoleAssign) Run(context *cmd.Context, client *cmd.Client) error {
 		params.Set("token_id", roleTarget)
 	}
 	params.Set("context", contextValue)
-	addr, err := cmd.GetURLVersion(version, fmt.Sprintf("/roles/%s/%s", roleName, suffix))
+	roleAssginAdd := c.RoleAssignData(roleName, contextValue, roleTarget, suffix, version)
+	apiClient, err := tsuruClient.ClientFromEnvironment(&tsuru.Configuration{
+		HTTPClient: client.HTTPClient,
+	})
 	if err != nil {
 		return err
 	}
-	request, err := http.NewRequest("POST", addr, strings.NewReader(params.Encode()))
+	_, err = apiClient.AuthApi.RoleAssign(context.TODO(), roleName, roleAssginAdd)
+
 	if err != nil {
 		return err
 	}
-	request.Header.Add("Content-Type", "application/x-www-form-urlencoded")
-	_, err = client.Do(request)
-	if err != nil {
-		return err
-	}
-	fmt.Fprintf(context.Stdout, "Role successfully assigned!\n")
+	fmt.Fprintf(ctx.Stdout, "Role successfully assigned!\n")
 	return nil
 }
 
@@ -422,12 +440,12 @@ func (c *RoleDissociate) Info() *cmd.Info {
 	}
 }
 
-func (c *RoleDissociate) Run(context *cmd.Context, client *cmd.Client) error {
-	roleName := context.Args[0]
-	emailOrToken := context.Args[1]
+func (c *RoleDissociate) Run(ctx *cmd.Context, client *cmd.Client) error {
+	roleName := ctx.Args[0]
+	emailOrToken := ctx.Args[1]
 	var contextValue string
-	if len(context.Args) > 2 {
-		contextValue = context.Args[2]
+	if len(ctx.Args) > 2 {
+		contextValue = ctx.Args[2]
 	}
 	params := url.Values{}
 	var suffix, version string
@@ -439,20 +457,25 @@ func (c *RoleDissociate) Run(context *cmd.Context, client *cmd.Client) error {
 		version = "1.6"
 	}
 	params.Set("context", contextValue)
-	addr, err := cmd.GetURLVersion(version, fmt.Sprintf("/roles/%s/%s?%s", roleName, suffix, params.Encode()))
+	resp, err := cmd.GetURLVersion(version, fmt.Sprintf("/roles/%s/%s?%s", roleName, suffix, params.Encode()))
 	if err != nil {
 		return err
 	}
-	request, err := http.NewRequest(http.MethodDelete, addr, nil)
+	apiClient, err := tsuruClient.ClientFromEnvironment(&tsuru.Configuration{
+		HTTPClient: client.HTTPClient,
+	})
 	if err != nil {
 		return err
 	}
-	request.Header.Add("Content-Type", "application/x-www-form-urlencoded")
-	_, err = client.Do(request)
+	if strings.Contains(emailOrToken, "@") {
+		_, err = apiClient.AuthApi.DissociateRole(context.TODO(), roleName, resp)
+	} else {
+		_, err = apiClient.AuthApi.DissociateRoleFromToken(context.TODO(), roleName, emailOrToken, contextValue)
+	}
 	if err != nil {
 		return err
 	}
-	fmt.Fprintf(context.Stdout, "Role successfully dissociated!\n")
+	fmt.Fprintf(ctx.Stdout, "Role successfully dissociated!\n")
 	return nil
 }
 
@@ -521,32 +544,39 @@ func (c *RoleDefaultAdd) Info() *cmd.Info {
 	info.Usage = fmt.Sprintf("%s %s", info.Usage, strings.Join(usage, " "))
 	return info
 }
-
-func (c *RoleDefaultAdd) Run(context *cmd.Context, client *cmd.Client) error {
+func (c *RoleDefaultAdd) RoleDefAdd(roleMap map[string][]string) tsuru.RoleDefaultData {
+	userData := tsuru.RoleDefaultData{
+		Rolesmap: roleMap,
+	}
+	return userData
+}
+func (c *RoleDefaultAdd) Run(ctx *cmd.Context, client *cmd.Client) error {
 	params := url.Values{}
 	for name, values := range c.roles {
 		for _, val := range []string(*values) {
 			params.Add(name, val)
 		}
 	}
-	encodedParams := params.Encode()
-	if encodedParams == "" {
-		return fmt.Errorf("You must choose which event to add default roles.")
+	rolname := []string{}
+	roleMap := make(map[string][]string)
+	for k := range params {
+		rolname = append(rolname, k)
+		for _, n := range params[k] {
+			roleMap[k] = append(roleMap[k], n)
+		}
 	}
-	addr, err := cmd.GetURL("/role/default")
+	rolDef := c.RoleDefAdd(roleMap)
+	apiClient, err := tsuruClient.ClientFromEnvironment(&tsuru.Configuration{
+		HTTPClient: client.HTTPClient,
+	})
 	if err != nil {
 		return err
 	}
-	request, err := http.NewRequest("POST", addr, strings.NewReader(encodedParams))
+	_, err = apiClient.AuthApi.DefaultRoleAdd(context.TODO(), rolDef)
 	if err != nil {
 		return err
 	}
-	request.Header.Set("Content-Type", "application/x-www-form-urlencoded")
-	_, err = client.Do(request)
-	if err != nil {
-		return err
-	}
-	fmt.Fprintf(context.Stdout, "Roles successfully added as default!\n")
+	fmt.Fprintf(ctx.Stdout, "Roles successfully added as default!\n")
 	return nil
 }
 
@@ -696,30 +726,36 @@ func (c *RoleUpdate) Flags() *gnuflag.FlagSet {
 	}
 	return c.fs
 }
-
-func (c *RoleUpdate) Run(context *cmd.Context, client *cmd.Client) error {
+func (c *RoleUpdate) RoleUpdate(name string) tsuru.RoleUpdateData {
+	userData := tsuru.RoleUpdateData{
+		Name:        name,
+		ContextType: c.contextType,
+		Description: c.description,
+		NewName:     c.newName,
+	}
+	return userData
+}
+func (c *RoleUpdate) Run(ctx *cmd.Context, client *cmd.Client) error {
 	if (c.newName == "") && (c.description == "") && (c.contextType == "") {
 		return errors.New("Neither the description, context or new name were set. You must define at least one.")
 	}
 	params := url.Values{}
-	params.Set("name", context.Args[0])
+	params.Set("name", ctx.Args[0])
 	params.Set("newName", c.newName)
 	params.Set("description", c.description)
 	params.Set("contextType", c.contextType)
-	url, err := cmd.GetURLVersion("1.4", "/roles")
+	apiClient, err := tsuruClient.ClientFromEnvironment(&tsuru.Configuration{
+		HTTPClient: client.HTTPClient,
+	})
 	if err != nil {
 		return err
 	}
-	request, err := http.NewRequest("PUT", url, strings.NewReader(params.Encode()))
+	roleUpdate := c.RoleUpdate(ctx.Args[0])
+	_, err = apiClient.AuthApi.UpdateRole(context.TODO(), roleUpdate)
 	if err != nil {
+		ctx.Stderr.Write([]byte("Failed to update role\n"))
 		return err
 	}
-	request.Header.Set("Content-Type", "application/x-www-form-urlencoded")
-	_, err = client.Do(request)
-	if err != nil {
-		context.Stderr.Write([]byte("Failed to update role\n"))
-		return err
-	}
-	context.Stdout.Write([]byte("Role successfully updated\n"))
+	ctx.Stdout.Write([]byte("Role successfully updated\n"))
 	return nil
 }
