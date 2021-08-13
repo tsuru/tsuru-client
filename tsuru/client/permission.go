@@ -557,14 +557,11 @@ func (c *RoleDefaultAdd) Run(ctx *cmd.Context, client *cmd.Client) error {
 			params.Add(name, val)
 		}
 	}
-	rolname := []string{}
 	roleMap := make(map[string][]string)
 	for k := range params {
-		rolname = append(rolname, k)
-		for _, n := range params[k] {
-			roleMap[k] = append(roleMap[k], n)
-		}
+		roleMap[k] = append(roleMap[k], params[k]...)
 	}
+
 	rolDef := c.RoleDefAdd(roleMap)
 	apiClient, err := tsuruClient.ClientFromEnvironment(&tsuru.Configuration{
 		HTTPClient: client.HTTPClient,

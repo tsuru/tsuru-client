@@ -10,7 +10,6 @@ import (
 	"io/ioutil"
 	"net/http"
 	"os"
-	"strconv"
 	"strings"
 	"time"
 
@@ -21,13 +20,6 @@ import (
 	check "gopkg.in/check.v1"
 )
 
-func convert(b []byte) string {
-	s := make([]string, len(b))
-	for i := range b {
-		s[i] = strconv.Itoa(int(b[i]))
-	}
-	return strings.Join(s, ",")
-}
 func (s *S) TestCertificateSetRunSuccessfully(c *check.C) {
 	var stdout, stderr bytes.Buffer
 	context := cmd.Context{
