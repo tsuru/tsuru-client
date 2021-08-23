@@ -31,6 +31,7 @@ func buildManager(name string) *cmd.Manager {
 		return client.RunPlugin(context)
 	}
 	m := cmd.BuildBaseManager(name, version, header, lookup)
+	m.RegisterTopic("app", `App is a program source code running on Tsuru`)
 	m.Register(&client.AppRun{})
 	m.Register(&client.AppInfo{})
 	m.Register(&client.AppCreate{})
@@ -56,6 +57,9 @@ func buildManager(name string) *cmd.Manager {
 	m.Register(&client.EnvGet{})
 	m.Register(&client.EnvSet{})
 	m.Register(&client.EnvUnset{})
+	m.RegisterTopic("service", `A service is a well-defined API that tsuru communicates with to provide extra functionality for applications.
+Examples of services are MySQL, Redis, MongoDB, etc. tsuru has built-in services, but it is easy to create and add new services to tsuru.
+Services aren’t managed by tsuru, but by their creators.`)
 	m.Register(client.ServiceList{})
 	m.Register(&client.ServiceInstanceAdd{})
 	m.Register(&client.ServiceInstanceUpdate{})
@@ -66,11 +70,14 @@ func buildManager(name string) *cmd.Manager {
 	m.Register(&client.ServiceInstanceRevoke{})
 	m.Register(&client.ServiceInstanceBind{})
 	m.Register(&client.ServiceInstanceUnbind{})
+
+	m.RegisterTopic("platform", `A platform is a well-defined pack with installed dependencies for a language or framework that a group of applications will need. A platform might be a container template (Docker image).`)
 	m.Register(&admin.PlatformList{})
 	m.Register(&admin.PlatformAdd{})
 	m.Register(&admin.PlatformUpdate{})
 	m.Register(&admin.PlatformRemove{})
 	m.Register(&admin.PlatformInfo{})
+
 	m.Register(&client.PluginInstall{})
 	m.Register(&client.PluginRemove{})
 	m.Register(&client.PluginList{})
@@ -161,6 +168,8 @@ func buildManager(name string) *cmd.Manager {
 	m.Register(&admin.ClusterUpdate{})
 	m.Register(&admin.ClusterRemove{})
 	m.Register(&admin.ClusterList{})
+
+	m.RegisterTopic("volume", "Volumes allow applications running on tsuru to use external storage volumes mounted on their filesystem.")
 	m.Register(&client.VolumeCreate{})
 	m.Register(&client.VolumeUpdate{})
 	m.Register(&client.VolumeList{})
