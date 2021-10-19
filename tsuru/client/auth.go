@@ -74,16 +74,13 @@ func (c *UserCreate) Run(ctx *cmd.Context, client *cmd.Client) error {
 	if err != nil {
 		return err
 	}
-
 	if response != nil {
 		if response.StatusCode == http.StatusNotFound ||
 			response.StatusCode == http.StatusMethodNotAllowed {
 			return errors.New("User creation is disabled.")
 		}
 	}
-
 	err = cmd.StreamJSONResponse(ctx.Stdout, response)
-
 	if err != nil {
 		return err
 	}

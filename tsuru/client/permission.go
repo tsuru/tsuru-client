@@ -618,7 +618,7 @@ func (c *RoleDefaultRemove) Run(context *cmd.Context, client *cmd.Client) error 
 	}
 	encodedParams := params.Encode()
 	if encodedParams == "" {
-		return fmt.Errorf("You must choose which event to remove default roles.")
+		return fmt.Errorf("You must choose which event to remove default roles")
 	}
 	addr, err := cmd.GetURL(fmt.Sprintf("/role/default?%s", encodedParams))
 	if err != nil {
