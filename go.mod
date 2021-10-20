@@ -6,7 +6,8 @@ require (
 	github.com/ajg/form v0.0.0-20160822230020-523a5da1a92f
 	github.com/antihax/optional v0.0.0-20180407024304-ca021399b1a6
 	github.com/digitalocean/godo v1.1.1 // indirect
-	github.com/docker/docker v20.10.8+incompatible
+	github.com/docker/distribution v2.7.1+incompatible // indirect
+	github.com/docker/docker v20.10.9+incompatible
 	github.com/docker/go-connections v0.4.0
 	github.com/docker/machine v0.16.1
 	github.com/exoscale/egoscale v0.9.31 // indirect
@@ -18,13 +19,16 @@ require (
 	github.com/sethvargo/go-password v0.1.1
 	github.com/tsuru/config v0.0.0-20201023175036-375aaee8b560
 	github.com/tsuru/gnuflag v0.0.0-20151217162021-86b8c1b864aa
-	github.com/tsuru/go-tsuruclient v0.0.0-20210426181646-b7774d33597a
+	github.com/tsuru/go-tsuruclient v0.0.0-20210820124232-e0cdf446d41d
 	github.com/tsuru/tablecli v0.0.0-20190131152944-7ded8a3383c6
-	github.com/tsuru/tsuru v0.0.0-20210831124236-38cab1d28262
-	golang.org/x/crypto v0.0.0-20210322153248-0c34fe9e7dc2
+	github.com/tsuru/tsuru v0.0.0-20210706143918-b89a484dc93f
+	golang.org/x/crypto v0.0.0-20201012173705-84dcc777aaee
+	google.golang.org/api v0.7.0 // indirect
+	google.golang.org/appengine v1.6.1 // indirect
 	gopkg.in/check.v1 v1.0.0-20200902074654-038fdea0a05b
 	gopkg.in/yaml.v2 v2.4.0
-	k8s.io/apimachinery v0.20.6
+	k8s.io/apimachinery v0.18.9
+	k8s.io/client-go v11.0.1-0.20190805182715-88a2adca7e76+incompatible // indirect
 )
 
 replace (

@@ -21,9 +21,8 @@ import (
 	"text/template"
 	"time"
 
-	"github.com/ajg/form"
 	"github.com/tsuru/gnuflag"
-	"github.com/tsuru/go-tsuruclient/pkg/client"
+	tsuruClient "github.com/tsuru/go-tsuruclient/pkg/client"
 	"github.com/tsuru/go-tsuruclient/pkg/tsuru"
 	"github.com/tsuru/tablecli"
 	"github.com/tsuru/tsuru/cmd"
@@ -162,52 +161,41 @@ func (c *AppCreate) Flags() *gnuflag.FlagSet {
 	return c.fs
 }
 
-func (c *AppCreate) Run(context *cmd.Context, client *cmd.Client) error {
+func (c *AppCreate) InputApp(appName string, platform string) tsuru.InputApp {
+	inputApp := tsuru.InputApp{
+		Name:        appName,
+		Platform:    platform,
+		Pool:        c.pool,
+		Description: c.description,
+		Plan:        c.plan,
+		TeamOwner:   c.teamOwner,
+		Tags:        c.tags,
+		Router:      c.router,
+		Routeropts:  c.routerOpts,
+	}
+	return inputApp
+}
+func (c *AppCreate) Run(ctx *cmd.Context, client *cmd.Client) error {
+	ctx.RawOutput()
 	var platform string
-	appName := context.Args[0]
-	if len(context.Args) > 1 {
-		platform = context.Args[1]
+	appName := ctx.Args[0]
+	if len(ctx.Args) > 1 {
+		platform = ctx.Args[1]
 	}
-	v, err := form.EncodeToValues(map[string]interface{}{"routeropts": c.routerOpts})
+	apiClient, err := tsuruClient.ClientFromEnvironment(&tsuru.Configuration{
+		HTTPClient: client.HTTPClient,
+	})
 	if err != nil {
 		return err
 	}
-	v.Set("name", appName)
-	v.Set("platform", platform)
-	v.Set("plan", c.plan)
-	v.Set("teamOwner", c.teamOwner)
-	v.Set("pool", c.pool)
-	v.Set("description", c.description)
-	for _, tag := range c.tags {
-		v.Add("tag", tag)
-	}
-	v.Set("router", c.router)
-	b := strings.NewReader(v.Encode())
-	u, err := cmd.GetURL("/apps")
+	inputApp := c.InputApp(appName, platform)
+	_, _, err = apiClient.AppApi.AppCreate(context.TODO(), inputApp)
 	if err != nil {
 		return err
 	}
-	request, err := http.NewRequest("POST", u, b)
-	if err != nil {
-		return err
-	}
-	request.Header.Set("Content-Type", "application/x-www-form-urlencoded")
-	response, err := client.Do(request)
-	if err != nil {
-		return err
-	}
-	defer response.Body.Close()
-	result, err := ioutil.ReadAll(response.Body)
-	if err != nil {
-		return err
-	}
-	out := make(map[string]string)
-	err = json.Unmarshal(result, &out)
-	if err != nil {
-		return err
-	}
-	fmt.Fprintf(context.Stdout, "App %q has been created!\n", appName)
-	fmt.Fprintln(context.Stdout, "Use app info to check the status of the app and its units.")
+
+	fmt.Fprintf(ctx.Stdout, "App %q has been created!\n", appName)
+	fmt.Fprintln(ctx.Stdout, "Use app info to check the status of the app and its units.")
 	return nil
 }
 
@@ -267,7 +255,7 @@ func (c *AppUpdate) Flags() *gnuflag.FlagSet {
 func (c *AppUpdate) Run(ctx *cmd.Context, cli *cmd.Client) error {
 	ctx.RawOutput()
 
-	apiClient, err := client.ClientFromEnvironment(&tsuru.Configuration{
+	apiClient, err := tsuruClient.ClientFromEnvironment(&tsuru.Configuration{
 		HTTPClient: cli.HTTPClient,
 	})
 	if err != nil {
@@ -1019,7 +1007,7 @@ func (f *appFilter) queryString(cli *cmd.Client) (url.Values, error) {
 }
 
 func currentUserEmail(cli *cmd.Client) (string, error) {
-	apiClient, err := client.ClientFromEnvironment(&tsuru.Configuration{
+	apiClient, err := tsuruClient.ClientFromEnvironment(&tsuru.Configuration{
 		HTTPClient: cli.HTTPClient,
 	})
 	if err != nil {
@@ -1167,31 +1155,34 @@ func (c *AppStop) Info() *cmd.Info {
 		MinArgs: 0,
 	}
 }
+func (c *AppStop) StoptApp() tsuru.AppStartStop {
+	stopApp := tsuru.AppStartStop{
+		Process: c.process,
+		Version: c.version,
+	}
+	return stopApp
+}
 
-func (c *AppStop) Run(context *cmd.Context, client *cmd.Client) error {
-	context.RawOutput()
+func (c *AppStop) Run(ctx *cmd.Context, client *cmd.Client) error {
+	ctx.RawOutput()
 	appName, err := c.AppName()
 	if err != nil {
 		return err
 	}
-	u, err := cmd.GetURL(fmt.Sprintf("/apps/%s/stop", appName))
+	apiClient, err := tsuruClient.ClientFromEnvironment(&tsuru.Configuration{
+		HTTPClient: client.HTTPClient,
+	})
 	if err != nil {
 		return err
 	}
-	qs := url.Values{}
-	qs.Set("process", c.process)
-	qs.Set("version", c.version)
-	body := strings.NewReader(qs.Encode())
-	request, err := http.NewRequest("POST", u, body)
+	appStop := c.StoptApp()
+
+	response, err := apiClient.AppApi.AppStop(context.TODO(), appName, appStop)
+
 	if err != nil {
 		return err
 	}
-	request.Header.Set("Content-Type", "application/x-www-form-urlencoded")
-	response, err := client.Do(request)
-	if err != nil {
-		return err
-	}
-	return cmd.StreamJSONResponse(context.Stdout, response)
+	return cmd.StreamJSONResponse(ctx.Stdout, response)
 }
 
 func (c *AppStop) Flags() *gnuflag.FlagSet {
@@ -1219,31 +1210,32 @@ func (c *AppStart) Info() *cmd.Info {
 		MinArgs: 0,
 	}
 }
+func (c *AppStart) StartApp() tsuru.AppStartStop {
+	startApp := tsuru.AppStartStop{
+		Process: c.process,
+		Version: c.version,
+	}
+	return startApp
+}
 
-func (c *AppStart) Run(context *cmd.Context, client *cmd.Client) error {
-	context.RawOutput()
+func (c *AppStart) Run(ctx *cmd.Context, client *cmd.Client) error {
+	ctx.RawOutput()
 	appName, err := c.AppName()
 	if err != nil {
 		return err
 	}
-	u, err := cmd.GetURL(fmt.Sprintf("/apps/%s/start", appName))
+	appStart := c.StartApp()
+	apiClient, err := tsuruClient.ClientFromEnvironment(&tsuru.Configuration{
+		HTTPClient: client.HTTPClient,
+	})
 	if err != nil {
 		return err
 	}
-	qs := url.Values{}
-	qs.Set("process", c.process)
-	qs.Set("version", c.version)
-	body := strings.NewReader(qs.Encode())
-	request, err := http.NewRequest("POST", u, body)
+	response, err := apiClient.AppApi.AppStart(context.TODO(), appName, appStart)
 	if err != nil {
 		return err
 	}
-	request.Header.Set("Content-Type", "application/x-www-form-urlencoded")
-	response, err := client.Do(request)
-	if err != nil {
-		return err
-	}
-	return cmd.StreamJSONResponse(context.Stdout, response)
+	return cmd.StreamJSONResponse(ctx.Stdout, response)
 }
 
 func (c *AppStart) Flags() *gnuflag.FlagSet {
@@ -1263,30 +1255,32 @@ type AppRestart struct {
 	fs      *gnuflag.FlagSet
 }
 
-func (c *AppRestart) Run(context *cmd.Context, client *cmd.Client) error {
-	context.RawOutput()
+func (c *AppRestart) RestartApp() tsuru.AppStartStop {
+	restartApp := tsuru.AppStartStop{
+		Process: c.process,
+		Version: c.version,
+	}
+	return restartApp
+}
+func (c *AppRestart) Run(ctx *cmd.Context, client *cmd.Client) error {
+	ctx.RawOutput()
 	appName, err := c.AppName()
 	if err != nil {
 		return err
 	}
-	u, err := cmd.GetURL(fmt.Sprintf("/apps/%s/restart", appName))
+
+	appRestart := c.RestartApp()
+	apiClient, err := tsuruClient.ClientFromEnvironment(&tsuru.Configuration{
+		HTTPClient: client.HTTPClient,
+	})
 	if err != nil {
 		return err
 	}
-	qs := url.Values{}
-	qs.Set("process", c.process)
-	qs.Set("version", c.version)
-	body := strings.NewReader(qs.Encode())
-	request, err := http.NewRequest("POST", u, body)
+	response, err := apiClient.AppApi.AppRestart(context.TODO(), appName, appRestart)
 	if err != nil {
 		return err
 	}
-	request.Header.Set("Content-Type", "application/x-www-form-urlencoded")
-	response, err := client.Do(request)
-	if err != nil {
-		return err
-	}
-	return cmd.StreamJSONResponse(context.Stdout, response)
+	return cmd.StreamJSONResponse(ctx.Stdout, response)
 }
 
 func (c *AppRestart) Info() *cmd.Info {
@@ -1384,21 +1378,19 @@ func addCName(cnames []string, g cmd.AppNameMixIn, client *cmd.Client) error {
 	if err != nil {
 		return err
 	}
-	u, err := cmd.GetURL(fmt.Sprintf("/apps/%s/cname", appName))
+	var appCname tsuru.AppCName
+	appCname.Cname = cnames
+
+	apiClient, err := tsuruClient.ClientFromEnvironment(&tsuru.Configuration{
+		HTTPClient: client.HTTPClient,
+	})
 	if err != nil {
 		return err
 	}
-	v := url.Values{}
-	for _, cname := range cnames {
-		v.Add("cname", cname)
-	}
-	b := strings.NewReader(v.Encode())
-	request, err := http.NewRequest("POST", u, b)
+	_, err = apiClient.AppApi.AppCnameAdd(context.TODO(), appName, appCname)
 	if err != nil {
 		return err
 	}
-	request.Header.Set("Content-Type", "application/x-www-form-urlencoded")
-	_, err = client.Do(request)
 	return err
 }
 
@@ -1428,32 +1420,35 @@ func (c *UnitAdd) Flags() *gnuflag.FlagSet {
 	}
 	return c.fs
 }
-
-func (c *UnitAdd) Run(context *cmd.Context, client *cmd.Client) error {
-	context.RawOutput()
+func (c *UnitAdd) unitDelta(ctx *cmd.Context, AppName string) tsuru.UnitsDelta {
+	unitDelta := tsuru.UnitsDelta{
+		Units:   ctx.Args[0],
+		Process: c.process,
+		Version: c.version,
+	}
+	return unitDelta
+}
+func (c *UnitAdd) Run(ctx *cmd.Context, client *cmd.Client) error {
+	ctx.RawOutput()
 	appName, err := c.AppName()
 	if err != nil {
 		return err
 	}
-	u, err := cmd.GetURL(fmt.Sprintf("/apps/%s/units", appName))
+
+	apiClient, err := tsuruClient.ClientFromEnvironment(&tsuru.Configuration{
+		HTTPClient: client.HTTPClient,
+	})
 	if err != nil {
 		return err
 	}
-	val := url.Values{}
-	val.Add("units", context.Args[0])
-	val.Add("process", c.process)
-	val.Set("version", c.version)
-	request, err := http.NewRequest("PUT", u, bytes.NewBufferString(val.Encode()))
+
+	unitDelta := c.unitDelta(ctx, appName)
+
+	response, err := apiClient.AppApi.UnitsAdd(context.TODO(), appName, unitDelta)
 	if err != nil {
 		return err
 	}
-	request.Header.Add("Content-Type", "application/x-www-form-urlencoded")
-	response, err := client.Do(request)
-	if err != nil {
-		return err
-	}
-	defer response.Body.Close()
-	return cmd.StreamJSONResponse(context.Stdout, response)
+	return cmd.StreamJSONResponse(ctx.Stdout, response)
 }
 
 type UnitRemove struct {
@@ -1535,9 +1530,17 @@ func (c *UnitSet) Flags() *gnuflag.FlagSet {
 	}
 	return c.fs
 }
+func (c *UnitSet) unitDelta(units int) tsuru.UnitsDelta {
+	unitDelta := tsuru.UnitsDelta{
+		Units:   strconv.Itoa(units),
+		Process: c.process,
+		Version: strconv.Itoa(c.version),
+	}
+	return unitDelta
+}
 
-func (c *UnitSet) Run(context *cmd.Context, client *cmd.Client) error {
-	context.RawOutput()
+func (c *UnitSet) Run(ctx *cmd.Context, client *cmd.Client) error {
+	ctx.RawOutput()
 	appName, err := c.AppName()
 	if err != nil {
 		return err
@@ -1600,62 +1603,51 @@ func (c *UnitSet) Run(context *cmd.Context, client *cmd.Client) error {
 		}
 	}
 
-	desiredUnits, err := strconv.Atoi(context.Args[0])
+	desiredUnits, err := strconv.Atoi(ctx.Args[0])
 	if err != nil {
 		return err
 	}
 
 	if existingUnits < desiredUnits {
-		u, err := cmd.GetURL(fmt.Sprintf("/apps/%s/units", appName))
-		if err != nil {
-			return err
-		}
 
 		unitsToAdd := desiredUnits - existingUnits
-		val := url.Values{}
-		val.Add("units", strconv.Itoa(unitsToAdd))
-		val.Add("process", c.process)
-		val.Add("version", strconv.Itoa(c.version))
-		request, err := http.NewRequest(http.MethodPut, u, bytes.NewBufferString(val.Encode()))
+
+		unitsDelta := c.unitDelta(unitsToAdd)
+
+		apiClient, err := tsuruClient.ClientFromEnvironment(&tsuru.Configuration{
+			HTTPClient: client.HTTPClient,
+		})
 		if err != nil {
 			return err
 		}
 
-		request.Header.Add("Content-Type", "application/x-www-form-urlencoded")
-		response, err := client.Do(request)
+		response, err := apiClient.AppApi.UnitsAdd(context.TODO(), appName, unitsDelta)
 		if err != nil {
 			return err
 		}
-
-		defer response.Body.Close()
-		return cmd.StreamJSONResponse(context.Stdout, response)
+		return cmd.StreamJSONResponse(ctx.Stdout, response)
 	}
 
 	if existingUnits > desiredUnits {
 		unitsToRemove := existingUnits - desiredUnits
-		val := url.Values{}
-		val.Add("units", strconv.Itoa(unitsToRemove))
-		val.Add("process", c.process)
-		val.Add("version", strconv.Itoa(c.version))
-		u, err := cmd.GetURL(fmt.Sprintf("/apps/%s/units?%s", appName, val.Encode()))
+
+		unitsDelta := c.unitDelta(unitsToRemove)
+
+		apiClient, err := tsuruClient.ClientFromEnvironment(&tsuru.Configuration{
+			HTTPClient: client.HTTPClient,
+		})
 		if err != nil {
 			return err
 		}
 
-		request, err := http.NewRequest(http.MethodDelete, u, nil)
+		response, err := apiClient.AppApi.UnitsRemove(context.TODO(), appName, unitsDelta)
 		if err != nil {
 			return err
 		}
 
-		response, err := client.Do(request)
-		if err != nil {
-			return err
-		}
-
-		defer response.Body.Close()
-		return cmd.StreamJSONResponse(context.Stdout, response)
+		return cmd.StreamJSONResponse(ctx.Stdout, response)
 	}
 
-	fmt.Fprintf(context.Stdout, "The process %s, version %d already has %d units.\n", c.process, c.version, existingUnits)
+	fmt.Fprintf(ctx.Stdout, "The process %s, version %d already has %d units.\n", c.process, c.version, existingUnits)
 	return nil
 }

@@ -16,7 +16,6 @@ import (
 	"strconv"
 	"strings"
 
-	"github.com/ajg/form"
 	"github.com/antihax/optional"
 	osb "github.com/pmorie/go-open-service-broker-client/v2"
 	"github.com/tsuru/gnuflag"
@@ -129,40 +128,39 @@ This example shows how to add a new instance of **mongodb** service, named
 		MaxArgs: 3,
 	}
 }
-
-func (c *ServiceInstanceAdd) Run(ctx *cmd.Context, client *cmd.Client) error {
+func (c *ServiceInstanceAdd) instanceAdd(instanceName, plan string) tsuru.ServiceInstance {
+	instanceAdd := tsuru.ServiceInstance{
+		Name:        instanceName,
+		PlanName:    plan,
+		Description: c.description,
+		TeamOwner:   c.teamOwner,
+		Pool:        c.pool,
+		Parameters:  c.params,
+		Tags:        c.tags,
+	}
+	return instanceAdd
+}
+func (c *ServiceInstanceAdd) Run(ctx *cmd.Context, cli *cmd.Client) error {
+	ctx.RawOutput()
 	serviceName, instanceName := ctx.Args[0], ctx.Args[1]
 	var plan string
 	if len(ctx.Args) > 2 {
 		plan = ctx.Args[2]
 	}
-	parameters := make(map[string]interface{})
-	for k, v := range c.params {
-		parameters[k] = v
-	}
-	v, err := form.EncodeToValues(map[string]interface{}{"parameters": parameters})
-	if err != nil {
-		return err
-	}
 	// This is kept as this to keep backwards compatibility with older API versions
-	v.Set("name", instanceName)
-	v.Set("plan", plan)
-	v.Set("owner", c.teamOwner)
-	v.Set("description", c.description)
-	v.Set("pool", c.pool)
-	for _, tag := range c.tags {
-		v.Add("tag", tag)
-	}
-	u, err := cmd.GetURL(fmt.Sprintf("/services/%s/instances", serviceName))
+
+	instanceAdd := c.instanceAdd(instanceName, plan)
+
+	apiClient, err := tsuruClient.ClientFromEnvironment(&tsuru.Configuration{
+		HTTPClient: cli.HTTPClient,
+	})
 	if err != nil {
 		return err
 	}
-	request, err := http.NewRequest("POST", u, strings.NewReader(v.Encode()))
+	_, err = apiClient.ServiceApi.InstanceCreate(context.TODO(), serviceName, instanceAdd)
 	if err != nil {
 		return err
 	}
-	request.Header.Set("Content-Type", "application/x-www-form-urlencoded")
-	_, err = client.Do(request)
 	if err != nil {
 		return err
 	}
@@ -218,33 +216,27 @@ parameter may be used multiple times.`,
 		MinArgs: 2,
 	}
 }
+func (c *ServiceInstanceUpdate) instanceUpdate() tsuru.ServiceInstanceUpdateData {
+	instanceUpdate := tsuru.ServiceInstanceUpdateData{
+		Description: c.description,
+		Teamowner:   c.teamOwner,
+		Plan:        c.plan,
+		Tags:        c.tags,
+		Parameters:  c.params,
+	}
+	return instanceUpdate
+}
 
 func (c *ServiceInstanceUpdate) Run(ctx *cmd.Context, client *cmd.Client) error {
 	serviceName, instanceName := ctx.Args[0], ctx.Args[1]
-	u, err := cmd.GetURL(fmt.Sprintf("/services/%s/instances/%s", serviceName, instanceName))
+	apiClient, err := tsuruClient.ClientFromEnvironment(&tsuru.Configuration{
+		HTTPClient: client.HTTPClient,
+	})
 	if err != nil {
 		return err
 	}
-	parameters := make(map[string]interface{})
-	for k, v := range c.params {
-		parameters[k] = v
-	}
-	v, err := form.EncodeToValues(map[string]interface{}{"parameters": parameters})
-	if err != nil {
-		return err
-	}
-	v.Set("teamowner", c.teamOwner)
-	v.Set("description", c.description)
-	v.Set("plan", c.plan)
-	for _, tag := range c.tags {
-		v.Add("tag", tag)
-	}
-	request, err := http.NewRequest("PUT", u, strings.NewReader(v.Encode()))
-	if err != nil {
-		return err
-	}
-	request.Header.Set("Content-Type", "application/x-www-form-urlencoded")
-	_, err = client.Do(request)
+	instanceUpdate := c.instanceUpdate()
+	_, err = apiClient.ServiceApi.InstanceUpdate(context.TODO(), serviceName, instanceName, instanceUpdate)
 	if err != nil {
 		return err
 	}
@@ -286,22 +278,18 @@ func (sb *ServiceInstanceBind) Run(ctx *cmd.Context, client *cmd.Client) error {
 	}
 	serviceName := ctx.Args[0]
 	instanceName := ctx.Args[1]
-	u, err := cmd.GetURL("/services/" + serviceName + "/instances/" + instanceName + "/" + appName)
+
+	apiClient, err := tsuruClient.ClientFromEnvironment(&tsuru.Configuration{
+		HTTPClient: client.HTTPClient,
+	})
 	if err != nil {
 		return err
 	}
-	v := url.Values{}
-	v.Set("noRestart", strconv.FormatBool(sb.noRestart))
-	request, err := http.NewRequest("PUT", u, strings.NewReader(v.Encode()))
+	response, err := apiClient.ServiceApi.ServiceInstanceBind(context.TODO(), serviceName, instanceName, appName, tsuru.ServiceInstanceBind{NoRestart: sb.noRestart})
 	if err != nil {
 		return err
 	}
-	request.Header.Set("Content-Type", "application/x-www-form-urlencoded")
-	resp, err := client.Do(request)
-	if err != nil {
-		return err
-	}
-	return cmd.StreamJSONResponse(ctx.Stdout, resp)
+	return cmd.StreamJSONResponse(ctx.Stdout, response)
 }
 
 func (sb *ServiceInstanceBind) Info() *cmd.Info {
@@ -541,9 +529,7 @@ func (c *ServicePlanList) Run(ctx *cmd.Context, client *cmd.Client) error {
 		return err
 	}
 	serviceName := ctx.Args[0]
-	plans, _, err := apiClient.ServiceApi.ServicePlans(context.Background(), serviceName, &tsuru.ServicePlansOpts{
-		Pool: optional.NewString(c.pool),
-	})
+	plans, _, err := apiClient.ServiceApi.ServicePlans(context.Background(), serviceName, &tsuru.ServicePlansOpts{Pool: optional.NewString(c.pool)})
 	if err != nil {
 		return err
 	}
