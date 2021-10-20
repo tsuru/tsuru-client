@@ -3,15 +3,7 @@
 # license that can be found in the LICENSE file.
 
 _tsuru() {
-    local tasks=`tsuru | egrep "^[  ]" | awk -F ' ' '{print $1}'`
-
-    if [ ${#COMP_WORDS[@]} -eq 2 ]; then
-        local current=${COMP_WORDS[COMP_CWORD]}
-        if [ -n "${current}" ]; then
-            COMPREPLY=( $(compgen -W "$tasks" $current) )
-            return
-        fi
-    fi
+    local tasks=`tsuru | egrep -o "^  [^A-Z]*([A-Z]|$)" | sed -e 's/^[[:space:]]*//' | sed -e 's/[[:space:]A-Z]*$//' | sed 's/ /-/g'`
 
     let last_complete=COMP_CWORD-1
 
