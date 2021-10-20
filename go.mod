@@ -9,7 +9,7 @@ require (
 	github.com/containerd/containerd v1.4.1 // indirect
 	github.com/digitalocean/godo v1.1.1 // indirect
 	github.com/docker/distribution v2.7.1+incompatible // indirect
-	github.com/docker/docker v20.10.2+incompatible
+	github.com/docker/docker v20.10.9+incompatible
 	github.com/docker/go-connections v0.4.0
 	github.com/docker/machine v0.16.1
 	github.com/exoscale/egoscale v0.9.31 // indirect
@@ -21,7 +21,7 @@ require (
 	github.com/sethvargo/go-password v0.1.1
 	github.com/tsuru/config v0.0.0-20201023175036-375aaee8b560
 	github.com/tsuru/gnuflag v0.0.0-20151217162021-86b8c1b864aa
-	github.com/tsuru/go-tsuruclient v0.0.0-20210813191311-aa50779317a0
+	github.com/tsuru/go-tsuruclient v0.0.0-20210820124232-e0cdf446d41d
 	github.com/tsuru/tablecli v0.0.0-20190131152944-7ded8a3383c6
 	github.com/tsuru/tsuru v0.0.0-20210706143918-b89a484dc93f
 	golang.org/x/crypto v0.0.0-20201012173705-84dcc777aaee
