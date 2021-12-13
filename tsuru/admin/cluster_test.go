@@ -49,7 +49,6 @@ func (s *S) TestClusterAddRun(c *check.C) {
 				Pools:       []string{"p1", "p2"},
 				Default:     true,
 				Provisioner: "myprov",
-				CreateData:  map[string]string{"iaas": "dockermachine"},
 			})
 			return true
 		},
@@ -76,7 +75,6 @@ func (s *S) TestClusterAddRun(c *check.C) {
 		"--pool", "p2",
 		"--custom", "a=b",
 		"--custom", "c=d",
-		"--create-data", "iaas=dockermachine",
 		"--default",
 	})
 	c.Assert(err, check.IsNil)
@@ -199,7 +197,6 @@ func (s *S) TestClusterUpdateMergeCluster(c *check.C) {
 			Clientkey:   []byte("client key"),
 			Pools:       []string{"pool1", "pool2"},
 			CustomData:  map[string]string{"key": "value"},
-			CreateData:  map[string]string{"key": "value"},
 			Default:     false,
 		}
 	}
@@ -243,13 +240,6 @@ func (s *S) TestClusterUpdateMergeCluster(c *check.C) {
 		},
 		{
 			command: ClusterUpdate{
-				removeCreateData: cmd.StringSliceFlag{"some-not-found-key"},
-			},
-			cluster:     getCluster(),
-			errorString: "cannot unset create data entry: key \"some-not-found-key\" not found",
-		},
-		{
-			command: ClusterUpdate{
 				isDefault: "true",
 				addPool:   cmd.StringSliceFlag{"new-pool"},
 			},
@@ -281,7 +271,6 @@ func (s *S) TestClusterUpdateMergeCluster(c *check.C) {
 				Clientkey:   []byte("client key"),
 				Pools:       []string{"pool1", "pool2"},
 				CustomData:  map[string]string{"key": "value"},
-				CreateData:  map[string]string{"key": "value"},
 				Default:     false,
 			},
 		},
@@ -299,7 +288,6 @@ func (s *S) TestClusterUpdateMergeCluster(c *check.C) {
 				Clientkey:   []byte("client key"),
 				Pools:       []string{},
 				CustomData:  map[string]string{"key": "value"},
-				CreateData:  map[string]string{"key": "value"},
 				Default:     true,
 			},
 		},
@@ -319,13 +307,11 @@ func (s *S) TestClusterUpdateMergeCluster(c *check.C) {
 				Clientkey:   nil,
 				Pools:       []string{"pool1", "pool2"},
 				CustomData:  map[string]string{"key": "value"},
-				CreateData:  map[string]string{"key": "value"},
 				Default:     false,
 			},
 		},
 		{
 			command: ClusterUpdate{
-				removeCreateData: cmd.StringSliceFlag{"key"},
 				removeCustomData: cmd.StringSliceFlag{"key"},
 			},
 			cluster: getCluster(),
@@ -338,7 +324,6 @@ func (s *S) TestClusterUpdateMergeCluster(c *check.C) {
 				Clientkey:   []byte("client key"),
 				Pools:       []string{"pool1", "pool2"},
 				CustomData:  map[string]string{},
-				CreateData:  map[string]string{},
 				Default:     false,
 			},
 		},
@@ -358,7 +343,6 @@ func (s *S) TestClusterUpdateMergeCluster(c *check.C) {
 				Clientkey:   []byte("ANOTHER CLIENT KEY"),
 				Pools:       []string{"pool1", "pool2"},
 				CustomData:  map[string]string{"key": "value"},
-				CreateData:  map[string]string{"key": "value"},
 				Default:     false,
 			},
 		},
@@ -463,9 +447,6 @@ func (s *S) TestProvisionerListRun(c *check.C) {
 			"provisioner_help": "help",
 			"custom_data_help": {
 				"key1": "value1"
-			},
-			"create_data_help": {
-				"create key1": "create value1"
 			}
 		}
 	},{
@@ -474,9 +455,6 @@ func (s *S) TestProvisionerListRun(c *check.C) {
 			"provisioner_help": "help2",
 			"custom_data_help": {
 				"key2": "value2"
-			},
-			"create_data_help": {
-				"create key2": "create value2"
 			}
 		}
 	}]`
@@ -515,9 +493,6 @@ func (s *S) TestProvisionerInfoRun(c *check.C) {
 			"provisioner_help": "help",
 			"custom_data_help": {
 				"key1": "value1"
-			},
-			"create_data_help": {
-				"create key1": "create value1"
 			}
 		}
 	},{
@@ -526,9 +501,6 @@ func (s *S) TestProvisionerInfoRun(c *check.C) {
 			"provisioner_help": "help2",
 			"custom_data_help": {
 				"key2": "value2"
-			},
-			"create_data_help": {
-				"create key2": "create value2"
 			}
 		}
 	}]`
@@ -554,12 +526,5 @@ Custom Data:
 +------+--------+
 | key2 | value2 |
 +------+--------+
-
-Create Data:
-+-------------+---------------+
-| Name        | Usage         |
-+-------------+---------------+
-| create key2 | create value2 |
-+-------------+---------------+
 `)
 }

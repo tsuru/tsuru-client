@@ -36,7 +36,7 @@ func (s *S) TestAutoScaleSet(c *check.C) {
 			err = json.Unmarshal(data, &ret)
 			c.Assert(err, check.IsNil)
 			c.Assert(ret, check.DeepEquals, tsuru.AutoScaleSpec{
-				AverageCPU: "300m",
+				AverageCPU: "30%",
 				MinUnits:   2,
 				MaxUnits:   5,
 				Process:    "proc1",

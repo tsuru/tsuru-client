@@ -41,6 +41,10 @@ func (s *S) TestNodeContainerInfoRun(c *check.C) {
 |       |     "Entrypoint": null   |
 |       |   },                     |
 |       |   "HostConfig": {        |
+|       |     "ConsoleSize": [     |
+|       |       0,                 |
+|       |       0                  |
+|       |     ],                   |
 |       |     "RestartPolicy": {}, |
 |       |     "LogConfig": {}      |
 |       |   }                      |
@@ -56,6 +60,10 @@ func (s *S) TestNodeContainerInfoRun(c *check.C) {
 |       |     "Entrypoint": null   |
 |       |   },                     |
 |       |   "HostConfig": {        |
+|       |     "ConsoleSize": [     |
+|       |       0,                 |
+|       |       0                  |
+|       |     ],                   |
 |       |     "RestartPolicy": {}, |
 |       |     "LogConfig": {}      |
 |       |   }                      |
@@ -71,6 +79,10 @@ func (s *S) TestNodeContainerInfoRun(c *check.C) {
 |       |     "Entrypoint": null   |
 |       |   },                     |
 |       |   "HostConfig": {        |
+|       |     "ConsoleSize": [     |
+|       |       0,                 |
+|       |       0                  |
+|       |     ],                   |
 |       |     "RestartPolicy": {}, |
 |       |     "LogConfig": {}      |
 |       |   }                      |

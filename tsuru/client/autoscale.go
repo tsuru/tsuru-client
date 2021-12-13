@@ -8,7 +8,6 @@ import (
 	"context"
 	"fmt"
 	"strconv"
-	"strings"
 
 	"github.com/tsuru/gnuflag"
 	"github.com/tsuru/go-tsuruclient/pkg/client"
@@ -49,7 +48,7 @@ func (c *AutoScaleSet) Flags() *gnuflag.FlagSet {
 		c.fs.StringVar(&c.autoscale.Process, "process", "", "Process name")
 		c.fs.StringVar(&c.autoscale.Process, "p", "", "Process name")
 
-		c.fs.StringVar(&c.autoscale.AverageCPU, "cpu", "", "Target CPU value in percent of a single core. Example: 50%")
+		c.fs.StringVar(&c.autoscale.AverageCPU, "cpu", "", "Target CPU value in percent of app cpu plan. Example: 50%")
 
 		c.autoscale.MinUnits = 1
 		c.fs.Var((*int32Value)(&c.autoscale.MinUnits), "min", "Minimum Units")
@@ -69,15 +68,6 @@ func (c *AutoScaleSet) Run(ctx *cmd.Context, cli *cmd.Client) error {
 	appName, err := c.AppName()
 	if err != nil {
 		return err
-	}
-
-	if strings.HasSuffix(c.autoscale.AverageCPU, "%") {
-		rawCPU := strings.TrimSuffix(c.autoscale.AverageCPU, "%")
-		var percentCPU int
-		percentCPU, err = strconv.Atoi(rawCPU)
-		if err == nil {
-			c.autoscale.AverageCPU = fmt.Sprintf("%dm", percentCPU*10)
-		}
 	}
 
 	_, err = apiClient.AppApi.AutoScaleAdd(context.TODO(), appName, c.autoscale)

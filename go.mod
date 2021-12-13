@@ -18,11 +18,11 @@ require (
 	github.com/sethvargo/go-password v0.1.1
 	github.com/tsuru/config v0.0.0-20201023175036-375aaee8b560
 	github.com/tsuru/gnuflag v0.0.0-20151217162021-86b8c1b864aa
-	github.com/tsuru/go-tsuruclient v0.0.0-20210426181646-b7774d33597a
+	github.com/tsuru/go-tsuruclient v0.0.0-20211213213525-0d2868229cfd
 	github.com/tsuru/tablecli v0.0.0-20190131152944-7ded8a3383c6
-	github.com/tsuru/tsuru v0.0.0-20210831124236-38cab1d28262
+	github.com/tsuru/tsuru v0.0.0-20211213152908-6331694da402
 	golang.org/x/crypto v0.0.0-20210322153248-0c34fe9e7dc2
-	gopkg.in/check.v1 v1.0.0-20200902074654-038fdea0a05b
+	gopkg.in/check.v1 v1.0.0-20201130134442-10cb98267c6c
 	gopkg.in/yaml.v2 v2.4.0
 	k8s.io/apimachinery v0.20.6
 )
@@ -30,6 +30,4 @@ require (
 replace (
 	github.com/ajg/form => github.com/cezarsa/form v0.0.0-20210510165411-863b166467b9
 	github.com/samalba/dockerclient => github.com/cezarsa/dockerclient v0.0.0-20190924055524-af5052a88081
-	gopkg.in/ahmetb/go-linq.v3 => github.com/ahmetb/go-linq v3.0.0+incompatible
-	gopkg.in/check.v1 => gopkg.in/check.v1 v1.0.0-20161208181325-20d25e280405
 )
