@@ -24,14 +24,15 @@ import (
 )
 
 type RouterAdd struct {
-	rawConfig string
-	fs        *gnuflag.FlagSet
+	rawConfig      string
+	readinessGates cmd.StringSliceFlag
+	fs             *gnuflag.FlagSet
 }
 
 func (c *RouterAdd) Info() *cmd.Info {
 	return &cmd.Info{
 		Name:    "router-add",
-		Usage:   "router add <name> <type> [--config {json object}]",
+		Usage:   "router add <name> <type> [--config {json object}] [--readiness-gate <name>]...",
 		Desc:    "Adds a new dynamic router to tsuru.",
 		MinArgs: 2,
 		MaxArgs: 2,
@@ -42,6 +43,7 @@ func (c *RouterAdd) Flags() *gnuflag.FlagSet {
 	if c.fs == nil {
 		c.fs = gnuflag.NewFlagSet("router-add", gnuflag.ExitOnError)
 		c.fs.StringVar(&c.rawConfig, "config", "", "JSON object with router configuration")
+		c.fs.Var(&c.readinessGates, "readiness-gate", "Readiness gates added to pods accessed by this router")
 	}
 	return c.fs
 }
@@ -57,8 +59,9 @@ func (c *RouterAdd) Run(ctx *cmd.Context, cli *cmd.Client) error {
 		return errors.New("invalid arguments")
 	}
 	dynRouter := tsuru.DynamicRouter{
-		Name: ctx.Args[0],
-		Type: ctx.Args[1],
+		Name:           ctx.Args[0],
+		Type:           ctx.Args[1],
+		ReadinessGates: c.readinessGates,
 	}
 	if c.rawConfig != "" {
 		err = json.Unmarshal([]byte(c.rawConfig), &dynRouter.Config)
@@ -75,8 +78,9 @@ func (c *RouterAdd) Run(ctx *cmd.Context, cli *cmd.Client) error {
 }
 
 type RouterUpdate struct {
-	rawConfig string
-	fs        *gnuflag.FlagSet
+	rawConfig      string
+	readinessGates cmd.StringSliceFlag
+	fs             *gnuflag.FlagSet
 }
 
 func (c *RouterUpdate) Info() *cmd.Info {
@@ -93,6 +97,7 @@ func (c *RouterUpdate) Flags() *gnuflag.FlagSet {
 	if c.fs == nil {
 		c.fs = gnuflag.NewFlagSet("router-add", gnuflag.ExitOnError)
 		c.fs.StringVar(&c.rawConfig, "config", "", "JSON object with router configuration")
+		c.fs.Var(&c.readinessGates, "readiness-gate", "Readiness gates added to pods accessed by this router")
 	}
 	return c.fs
 }
@@ -108,8 +113,9 @@ func (c *RouterUpdate) Run(ctx *cmd.Context, cli *cmd.Client) error {
 		return errors.New("invalid arguments")
 	}
 	dynRouter := tsuru.DynamicRouter{
-		Name: ctx.Args[0],
-		Type: ctx.Args[1],
+		Name:           ctx.Args[0],
+		Type:           ctx.Args[1],
+		ReadinessGates: c.readinessGates,
 	}
 	if c.rawConfig != "" {
 		err = json.Unmarshal([]byte(c.rawConfig), &dynRouter.Config)
@@ -238,6 +244,12 @@ func (c *RouterInfo) Run(ctx *cmd.Context, cli *cmd.Client) error {
 	fmt.Fprintf(ctx.Stdout, "Info:\n")
 	for key, value := range router.Info {
 		fmt.Fprintf(ctx.Stdout, "  %s: %s\n", key, value)
+	}
+	if len(router.ReadinessGates) > 0 {
+		fmt.Fprintf(ctx.Stdout, "Readiness Gates:\n")
+		for _, rg := range router.ReadinessGates {
+			fmt.Fprintf(ctx.Stdout, "  - %s\n", rg)
+		}
 	}
 	fmt.Fprintf(ctx.Stdout, "Config:\n")
 	data, err := json.MarshalIndent(router.Config, "", "  ")
