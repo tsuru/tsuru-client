@@ -21,7 +21,7 @@ require (
 	github.com/tsuru/go-tsuruclient v0.0.0-20211213213525-0d2868229cfd
 	github.com/tsuru/tablecli v0.0.0-20190131152944-7ded8a3383c6
 	github.com/tsuru/tsuru v0.0.0-20211213152908-6331694da402
-	golang.org/x/crypto v0.0.0-20210322153248-0c34fe9e7dc2
+	golang.org/x/term v0.0.0-20210615171337-6886f2dfbf5b
 	gopkg.in/check.v1 v1.0.0-20201130134442-10cb98267c6c
 	gopkg.in/yaml.v2 v2.4.0
 	k8s.io/apimachinery v0.20.6
