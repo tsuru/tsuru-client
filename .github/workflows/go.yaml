@@ -82,6 +82,7 @@ jobs:
       uses: goreleaser/goreleaser-action@v2
       if: contains(github.ref, '-rc')
       with:
+        version: latest
         args: --config goreleaser-rc.yml
       env:
         GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
@@ -90,6 +91,7 @@ jobs:
       uses: goreleaser/goreleaser-action@v2
       if: "!contains(github.ref, '-rc')"
       with:
+        version: latest
         args: --config goreleaser-stable.yml
       env:
         GITHUB_TOKEN: ${{ secrets.CUSTOM_GITHUB_TOKEN }}
