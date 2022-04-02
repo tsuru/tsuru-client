@@ -10,6 +10,7 @@ import (
 	"encoding/json"
 	"errors"
 	"fmt"
+	"io"
 	"io/ioutil"
 	"net"
 	"net/http"
@@ -28,6 +29,7 @@ import (
 	"github.com/tsuru/tablecli"
 	"github.com/tsuru/tsuru/cmd"
 	apptypes "github.com/tsuru/tsuru/types/app"
+	quotaTypes "github.com/tsuru/tsuru/types/quota"
 	volumeTypes "github.com/tsuru/tsuru/types/volume"
 	"k8s.io/apimachinery/pkg/api/resource"
 	"k8s.io/apimachinery/pkg/util/duration"
@@ -406,46 +408,6 @@ func (c *AppInfo) Run(context *cmd.Context, client *cmd.Client) error {
 	if err != nil {
 		return err
 	}
-	a.Name = appName
-	u, err = cmd.GetURL(fmt.Sprintf("/services/instances?app=%s", appName))
-	if err != nil {
-		return err
-	}
-	request, err = http.NewRequest("GET", u, nil)
-	if err != nil {
-		return err
-	}
-	response, err = client.Do(request)
-	if err == nil && response.StatusCode == http.StatusOK {
-		defer response.Body.Close()
-		json.NewDecoder(response.Body).Decode(&a.services)
-	}
-	u, err = cmd.GetURL("/apps/" + appName + "/quota")
-	if err != nil {
-		return err
-	}
-	request, _ = http.NewRequest("GET", u, nil)
-	response, err = client.Do(request)
-	if err != nil {
-		return err
-	}
-	defer response.Body.Close()
-	json.NewDecoder(response.Body).Decode(&a.Quota)
-
-	if a.VolumeBinds == nil {
-		u, err = cmd.GetURLVersion("1.4", "/volumes")
-		if err != nil {
-			return err
-		}
-		request, _ = http.NewRequest("GET", u, nil)
-		response, err = client.Do(request)
-		if err != nil {
-			return err
-		}
-		defer response.Body.Close()
-		json.NewDecoder(response.Body).Decode(&a.Volumes)
-	}
-
 	return c.Show(&a, context)
 }
 
@@ -541,20 +503,25 @@ type app struct {
 	Pool        string
 	Description string
 	Lock        lock
-	services    []serviceData
-	Quota       quota
+	Quota       quotaTypes.Quota
 	Plan        apptypes.Plan
 	Router      string
 	RouterOpts  map[string]string
 	Tags        []string
 	Error       string
 	Routers     []apptypes.AppRouter
-	Volumes     []volumeTypes.Volume
 	AutoScale   []tsuru.AutoScaleSpec
 
-	InternalAddresses []appInternalAddress
-	UnitsMetrics      []unitMetrics
-	VolumeBinds       []volumeTypes.VolumeBind
+	InternalAddresses    []appInternalAddress
+	UnitsMetrics         []unitMetrics
+	VolumeBinds          []volumeTypes.VolumeBind
+	ServiceInstanceBinds []serviceInstanceBind
+}
+
+type serviceInstanceBind struct {
+	Service  string
+	Instance string
+	Plan     string
 }
 
 type appInternalAddress struct {
@@ -565,23 +532,14 @@ type appInternalAddress struct {
 	Process  string
 }
 
-type serviceData struct {
-	Service   string
-	Instances []string
-	Plans     []string
-}
-
-type quota struct {
-	Limit int
-	InUse int
-}
-
-func (q *quota) LimitString() string {
-	if q.Limit > 0 {
-		return fmt.Sprintf("%d units", q.Limit)
+func (a *app) QuotaString() string {
+	var limit strings.Builder
+	if a.Quota.IsUnlimited() {
+		limit.WriteString("unlimited")
+	} else {
+		fmt.Fprintf(&limit, "%d units", a.Quota.Limit)
 	}
-
-	return "unlimited"
+	return fmt.Sprintf("%d/%s", a.Quota.InUse, limit.String())
 }
 
 func (a *app) Addr() string {
@@ -656,7 +614,7 @@ Cluster: {{ .Cluster }}
 {{ end -}}
 Pool:{{if .Pool}} {{.Pool}}{{end}}{{if .Lock.Locked}}
 {{.Lock.String}}{{end}}
-Quota: {{.Quota.InUse}}/{{.Quota.LimitString}}
+Quota: {{ .QuotaString }}
 `
 	var buf bytes.Buffer
 	tmpl := template.Must(template.New("app").Parse(format))
@@ -671,44 +629,8 @@ Quota: {{.Quota.InUse}}/{{.Quota.LimitString}}
 			internalAddress.Version,
 		})
 	}
-	servicesTable := tablecli.NewTable()
-	servicesTable.Headers = []string{"Service", "Instance (Plan)"}
-	for _, service := range a.services {
-		if len(service.Instances) == 0 {
-			continue
-		}
-		var instancePlan []string
-		for i, instance := range service.Instances {
-			value := instance
-			if i < len(service.Plans) && service.Plans[i] != "" {
-				value = fmt.Sprintf("%s (%s)", instance, service.Plans[i])
-			}
-			instancePlan = append(instancePlan, value)
-		}
-		instancePlanString := strings.Join(instancePlan, "\n")
-		servicesTable.AddRow([]string{service.Service, instancePlanString})
-	}
-	volumeTable := tablecli.NewTable()
-	volumeTable.Headers = tablecli.Row([]string{"Name", "MountPoint", "Mode"})
-	volumeTable.LineSeparator = true
-	binds := []volumeTypes.VolumeBind{}
 
-	// TODO: in the next version of tsuru we could remove a.Volumes
-	for _, v := range a.Volumes {
-		for _, b := range v.Binds {
-			if b.ID.App == a.Name {
-				binds = append(binds, b)
-			}
-		}
-	}
-	binds = append(binds, a.VolumeBinds...)
-	for _, b := range binds {
-		mode := "rw"
-		if b.ReadOnly {
-			mode = "ro"
-		}
-		volumeTable.AddRow(tablecli.Row([]string{b.ID.Volume, b.ID.MountPoint, mode}))
-	}
+	renderServiceInstanceBinds(&buf, a.ServiceInstanceBinds)
 
 	autoScaleTable := tablecli.NewTable()
 	autoScaleTable.Headers = tablecli.Row([]string{"Process", "Min", "Max", "Target CPU"})
@@ -728,11 +650,6 @@ Quota: {{.Quota.InUse}}/{{.Quota.LimitString}}
 		buf.WriteString(autoScaleTable.String())
 	}
 
-	if servicesTable.Rows() > 0 {
-		buf.WriteString("\n")
-		buf.WriteString(fmt.Sprintf("Service instances: %d\n", servicesTable.Rows()))
-		buf.WriteString(servicesTable.String())
-	}
 	if a.Plan.Memory != 0 || a.Plan.Swap != 0 || a.Plan.CpuShare != 0 {
 		buf.WriteString("\n")
 		buf.WriteString("App Plan:\n")
@@ -753,11 +670,9 @@ Quota: {{.Quota.InUse}}/{{.Quota.LimitString}}
 			renderRouters(a.Routers, &buf, "Name")
 		}
 	}
-	if volumeTable.Rows() > 0 {
-		buf.WriteString("\n")
-		buf.WriteString(fmt.Sprintf("Volumes: %d\n", volumeTable.Rows()))
-		buf.WriteString(volumeTable.String())
-	}
+
+	renderVolumeBinds(&buf, a.VolumeBinds)
+
 	var tplBuffer bytes.Buffer
 	tmpl.Execute(&tplBuffer, a)
 	return tplBuffer.String() + buf.String()
@@ -850,6 +765,85 @@ func renderUnits(buf *bytes.Buffer, units []unit, metrics []unitMetrics, provisi
 			buf.WriteString(fmt.Sprintf("Units%s: %d\n", groupLabel, unitsTable.Rows()))
 			buf.WriteString(unitsTable.String())
 		}
+	}
+}
+
+func renderServiceInstanceBinds(w io.Writer, binds []serviceInstanceBind) {
+	sibs := make([]serviceInstanceBind, len(binds))
+	copy(sibs, binds)
+
+	sort.Slice(sibs, func(i, j int) bool {
+		if sibs[i].Service < sibs[j].Service {
+			return true
+		}
+		if sibs[i].Service > sibs[j].Service {
+			return false
+		}
+		return sibs[i].Instance < sibs[j].Instance
+	})
+
+	type instanceAndPlan struct {
+		Instance string
+		Plan     string
+	}
+
+	instancesByService := map[string][]instanceAndPlan{}
+	for _, sib := range sibs {
+		instancesByService[sib.Service] = append(instancesByService[sib.Service], instanceAndPlan{
+			Instance: sib.Instance,
+			Plan:     sib.Plan,
+		})
+	}
+
+	var services []string
+	for _, sib := range sibs {
+		if len(services) > 0 && services[len(services)-1] == sib.Service {
+			continue
+		}
+		services = append(services, sib.Service)
+	}
+
+	table := tablecli.NewTable()
+	table.Headers = []string{"Service", "Instance (Plan)"}
+
+	for _, s := range services {
+		var sb strings.Builder
+		for i, inst := range instancesByService[s] {
+			sb.WriteString(inst.Instance)
+			if inst.Plan != "" {
+				sb.WriteString(fmt.Sprintf(" (%s)", inst.Plan))
+			}
+
+			if i < len(instancesByService[s])-1 {
+				sb.WriteString("\n")
+			}
+		}
+		table.AddRow([]string{s, sb.String()})
+	}
+
+	if table.Rows() > 0 {
+		fmt.Fprintf(w, "\nService instances: %d\n", table.Rows())
+		fmt.Fprint(w, table.String())
+	}
+}
+
+func renderVolumeBinds(w io.Writer, binds []volumeTypes.VolumeBind) {
+	table := tablecli.NewTable()
+	table.Headers = tablecli.Row([]string{"Name", "MountPoint", "Mode"})
+	table.LineSeparator = true
+
+	for _, b := range binds {
+		mode := "rw"
+		if b.ReadOnly {
+			mode = "ro"
+		}
+		table.AddRow(tablecli.Row([]string{b.ID.Volume, b.ID.MountPoint, mode}))
+	}
+
+	if table.Rows() > 0 {
+		fmt.Fprintln(w)
+		fmt.Fprintln(w, "Volumes:", table.Rows())
+		fmt.Fprint(w, table.String())
 	}
 }
 

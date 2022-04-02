@@ -828,7 +828,7 @@ Owner: myapp_owner
 Team owner: myteam
 Deploys: 7
 Pool:
-Quota: 0/unlimited
+Quota: 0/0 units
 
 Units: 3
 +--------+---------+----------+------+
@@ -908,7 +908,7 @@ Team owner: myteam
 Deploys: 7
 Cluster: kube-cluster-dev
 Pool: dev-a
-Quota: 0/unlimited
+Quota: 0/0 units
 
 Units: 3
 +--------+----------+---------+----------+-----+-----+--------+
@@ -946,7 +946,7 @@ Owner: myapp_owner
 Team owner: myteam
 Deploys: 7
 Pool:
-Quota: 0/unlimited
+Quota: 0/0 units
 
 Units: 3
 +--------+---------+----------+------------+
@@ -1029,7 +1029,7 @@ Owner: myapp_owner
 Team owner: myteam
 Deploys: 7
 Pool:
-Quota: 0/unlimited
+Quota: 0/0 units
 
 Units: 3
 +--------+---------+----------+------+
@@ -1080,7 +1080,7 @@ Owner: myapp_owner
 Team owner: myteam
 Deploys: 7
 Pool:
-Quota: 0/unlimited
+Quota: 0/0 units
 
 Units: 3
 +--------+---------+------+------+
@@ -1118,7 +1118,7 @@ Owner: myapp_owner
 Team owner: myteam
 Deploys: 7
 Pool:
-Quota: 0/unlimited
+Quota: 0/0 units
 
 Units: 3
 +--------+---------+------+------+
@@ -1156,7 +1156,7 @@ Owner: myapp_owner
 Team owner: myteam
 Deploys: 7
 Pool:
-Quota: 0/unlimited
+Quota: 0/0 units
 
 Units: 3
 +--------+---------+------+------+
@@ -1216,14 +1216,7 @@ Units: 3
 		Stderr: &stderr,
 	}
 	transport := transportFunc(func(req *http.Request) (resp *http.Response, err error) {
-		var body string
-		if strings.HasSuffix(req.URL.Path, "/services/instances") {
-			body = `[]`
-		} else if strings.HasSuffix(req.URL.Path, "/apps/app1/quota") {
-			body = `{"Limit":40,"InUse":3}`
-		} else if strings.HasSuffix(req.URL.Path, "/apps/app1") {
-			body = `{"name":"app1","teamowner":"myteam","cname":[""],"ip":"myapp.tsuru.io","platform":"php","repository":"git@git.com:php.git","state":"dead", "units":[{"Ip":"10.10.10.10","ID":"app1/0","Status":"started"}, {"Ip":"9.9.9.9","ID":"app1/1","Status":"started"}, {"Ip":"","ID":"app1/2","Status":"pending"}],"teams":["tsuruteam","crane"], "owner": "myapp_owner", "deploys": 7, "router": "planb"}`
-		}
+		body := `{"name":"app1","teamowner":"myteam","cname":[""],"ip":"myapp.tsuru.io","platform":"php","repository":"git@git.com:php.git","state":"dead", "units":[{"Ip":"10.10.10.10","ID":"app1/0","Status":"started"}, {"Ip":"9.9.9.9","ID":"app1/1","Status":"started"}, {"Ip":"","ID":"app1/2","Status":"pending"}],"teams":["tsuruteam","crane"], "owner": "myapp_owner", "deploys": 7, "router": "planb", "quota": {"inUse": 3, "limit": 40}}`
 		return &http.Response{
 			Body:       ioutil.NopCloser(bytes.NewBufferString(body)),
 			StatusCode: http.StatusOK,
@@ -1255,7 +1248,7 @@ Lock:
  Acquired in: %s
  Owner: admin@example.com
  Running: DELETE /apps/rbsample/units
-Quota: 0/unlimited
+Quota: 0/0 units
 
 Units: 3
 +--------+---------+------+------+
@@ -1331,7 +1324,7 @@ Owner: myapp_owner
 Team owner: myteam
 Deploys: 7
 Pool:
-Quota: 0/unlimited
+Quota: 0/0 units
 
 Units [process web]: 1
 +--------+---------+------+------+
@@ -1429,7 +1422,7 @@ Owner: myapp_owner
 Team owner: myteam
 Deploys: 7
 Pool:
-Quota: 0/unlimited
+Quota: 0/0 units
 
 Units [process web] [version 1]: 1
 +--------+---------+------+------+
@@ -1534,7 +1527,7 @@ Owner: myapp_owner
 Team owner: myteam
 Deploys: 7
 Pool:
-Quota: 0/unlimited
+Quota: 0/0 units
 
 Units [process web]: 1
 +--------+---------+------+------+
@@ -1585,7 +1578,7 @@ Owner: myapp_owner
 Team owner: myteam
 Deploys: 7
 Pool:
-Quota: 0/unlimited
+Quota: 0/0 units
 
 `
 	context := cmd.Context{
@@ -1614,7 +1607,7 @@ Owner: myapp_owner
 Team owner: x
 Deploys: 7
 Pool:
-Quota: 0/unlimited
+Quota: 0/0 units
 
 `
 	context := cmd.Context{
@@ -1631,7 +1624,7 @@ Quota: 0/unlimited
 
 func (s *S) TestAppInfoWithoutArgs(c *check.C) {
 	var stdout, stderr bytes.Buffer
-	result := `{"name":"secret","teamowner":"myteam","ip":"secret.tsuru.io","platform":"ruby","repository":"git@git.com:php.git","state":"dead","units":[{"Ip":"10.10.10.10","ID":"secret/0","Status":"started"}, {"Ip":"9.9.9.9","ID":"secret/1","Status":"pending"}],"Teams":["tsuruteam","crane"], "owner": "myapp_owner", "deploys": 7, "router": "planb"}`
+	result := `{"name":"secret","teamowner":"myteam","ip":"secret.tsuru.io","platform":"ruby","repository":"git@git.com:php.git","state":"dead","units":[{"Ip":"10.10.10.10","ID":"secret/0","Status":"started"}, {"Ip":"9.9.9.9","ID":"secret/1","Status":"pending"}],"Teams":["tsuruteam","crane"], "owner": "myapp_owner", "deploys": 7, "router": "planb", "quota": {"inUse": 0, "limit": -1}}`
 	expected := `Application: secret
 Description:
 Tags:
@@ -1661,7 +1654,7 @@ Units: 2
 	trans := &cmdtest.ConditionalTransport{
 		Transport: cmdtest.Transport{Message: result, Status: http.StatusOK},
 		CondFunc: func(req *http.Request) bool {
-			return strings.HasSuffix(req.URL.Path, "/apps/secret") && req.Method == "GET" || strings.HasSuffix(req.URL.Path, "/apps/secret/quota") && req.Method == "GET" || strings.HasSuffix(req.URL.Path, "/volumes") && req.Method == "GET"
+			return strings.HasSuffix(req.URL.Path, "/apps/secret") && req.Method == "GET"
 		},
 	}
 	client := cmd.NewClient(&http.Client{Transport: trans}, nil, manager)
@@ -1686,7 +1679,7 @@ Owner: myapp_owner
 Team owner: myteam
 Deploys: 7
 Pool:
-Quota: 0/unlimited
+Quota: 0/0 units
 
 Units: 3
 +--------+---------+------+------+
@@ -1723,7 +1716,7 @@ Owner: myapp_owner
 Team owner: myteam
 Deploys: 7
 Pool:
-Quota: 0/unlimited
+Quota: 0/0 units
 
 Units: 3
 +--------+---------+------+------+
@@ -1747,13 +1740,7 @@ Service instances: 1
 		Stderr: &stderr,
 	}
 	transport := transportFunc(func(req *http.Request) (resp *http.Response, err error) {
-		var body string
-		if strings.HasSuffix(req.URL.Path, "/apps/app1") {
-			body = `{"name":"app1","teamowner":"myteam","ip":"myapp.tsuru.io","platform":"php","repository":"git@git.com:php.git","state":"dead","units":[{"Ip":"10.10.10.10","ID":"app1/0","Status":"started"}, {"Ip":"9.9.9.9","ID":"app1/1","Status":"started"}, {"Ip":"","ID":"app1/2","Status":"pending"}],"Teams":["tsuruteam","crane"], "owner": "myapp_owner", "deploys": 7, "router": "planb"}`
-		} else if strings.HasSuffix(req.URL.Path, "/services/instances") && req.URL.RawQuery == "app=app1" {
-			body = `[{"service":"redisapi","instances":["myredisapi"], "plans":[""]},
-					 {"service":"mongodb", "instances":[], "plans":[""]}]`
-		}
+		body := `{"name":"app1","teamowner":"myteam","ip":"myapp.tsuru.io","platform":"php","repository":"git@git.com:php.git","state":"dead","units":[{"Ip":"10.10.10.10","ID":"app1/0","Status":"started"}, {"Ip":"9.9.9.9","ID":"app1/1","Status":"started"}, {"Ip":"","ID":"app1/2","Status":"pending"}],"Teams":["tsuruteam","crane"], "owner": "myapp_owner", "deploys": 7, "router": "planb", "serviceInstanceBinds": [{"service": "redisapi", "instance": "myredisapi"}]}`
 		return &http.Response{
 			Body:       ioutil.NopCloser(bytes.NewBufferString(body)),
 			StatusCode: http.StatusOK,
@@ -1780,7 +1767,7 @@ Owner: myapp_owner
 Team owner: myteam
 Deploys: 7
 Pool:
-Quota: 0/unlimited
+Quota: 0/0 units
 
 Units: 3
 +--------+---------+------+------+
@@ -1795,8 +1782,8 @@ Service instances: 2
 +----------+-----------------+
 | Service  | Instance (Plan) |
 +----------+-----------------+
-| redisapi | myredisapi      |
 | mongodb  | mongoapi        |
+| redisapi | myredisapi      |
 +----------+-----------------+
 
 `
@@ -1805,14 +1792,7 @@ Service instances: 2
 		Stderr: &stderr,
 	}
 	transport := transportFunc(func(req *http.Request) (resp *http.Response, err error) {
-		var body string
-		if strings.HasSuffix(req.URL.Path, "/apps/app1") {
-			body = `{"name":"app1","teamowner":"myteam","ip":"myapp.tsuru.io","platform":"php","repository":"git@git.com:php.git","state":"dead","units":[{"Ip":"10.10.10.10","ID":"app1/0","Status":"started"}, {"Ip":"9.9.9.9","ID":"app1/1","Status":"started"}, {"Ip":"","ID":"app1/2","Status":"pending"}],"Teams":["tsuruteam","crane"], "owner": "myapp_owner", "deploys": 7, "router": "planb"}`
-		} else if strings.HasSuffix(req.URL.Path, "/services/instances") && req.URL.RawQuery == "app=app1" {
-			body = `[{"service":"redisapi","instances":["myredisapi"], "plans":[""]},
-					 {"service":"mongodb", "instances":["mongoapi"], "plans":[""]},
-					 {"service":"mysql", "instances":[], "plans":[""]}]`
-		}
+		body := `{"name":"app1","teamowner":"myteam","ip":"myapp.tsuru.io","platform":"php","repository":"git@git.com:php.git","state":"dead","units":[{"Ip":"10.10.10.10","ID":"app1/0","Status":"started"}, {"Ip":"9.9.9.9","ID":"app1/1","Status":"started"}, {"Ip":"","ID":"app1/2","Status":"pending"}],"Teams":["tsuruteam","crane"], "owner": "myapp_owner", "deploys": 7, "router": "planb", "serviceInstanceBinds": [{"service": "redisapi", "instance": "myredisapi"}, {"service": "mongodb", "instance": "mongoapi"}]}`
 		return &http.Response{
 			Body:       ioutil.NopCloser(bytes.NewBufferString(body)),
 			StatusCode: http.StatusOK,
@@ -1840,7 +1820,7 @@ Owner: myapp_owner
 Team owner: myteam
 Deploys: 7
 Pool:
-Quota: 0/unlimited
+Quota: 0/0 units
 
 Units: 3
 +--------+---------+------+------+
@@ -1884,7 +1864,7 @@ Owner: myapp_owner
 Team owner: myteam
 Deploys: 7
 Pool:
-Quota: 0/unlimited
+Quota: 0/0 units
 
 Units: 3
 +--------+---------+------+------+
@@ -1915,13 +1895,7 @@ App Plan:
 		Stderr: &stderr,
 	}
 	transport := transportFunc(func(req *http.Request) (resp *http.Response, err error) {
-		var body string
-		if strings.HasSuffix(req.URL.Path, "/apps/app1") {
-			body = `{"name":"app1","teamowner":"myteam","ip":"myapp.tsuru.io","platform":"php","repository":"git@git.com:php.git","state":"dead","units":[{"Ip":"10.10.10.10","ID":"app1/0","Status":"started"}, {"Ip":"9.9.9.9","ID":"app1/1","Status":"started"}, {"Ip":"","ID":"app1/2","Status":"pending"}],"Teams":["tsuruteam","crane"], "owner": "myapp_owner", "deploys": 7,"plan":{"name": "test",  "memory": 536870912, "swap": 268435456, "cpushare": 100, "default": false}, "router": "planb"}`
-		} else if strings.HasSuffix(req.URL.Path, "/services/instances") && req.URL.RawQuery == "app=app1" {
-			body = `[{"service":"redisapi","instances":["myredisapi"], "plans": [""]},
-					 {"service":"mongodb", "instances":[], "plans": [""]}]`
-		}
+		body := `{"name":"app1","teamowner":"myteam","ip":"myapp.tsuru.io","platform":"php","repository":"git@git.com:php.git","state":"dead","units":[{"Ip":"10.10.10.10","ID":"app1/0","Status":"started"}, {"Ip":"9.9.9.9","ID":"app1/1","Status":"started"}, {"Ip":"","ID":"app1/2","Status":"pending"}],"Teams":["tsuruteam","crane"], "owner": "myapp_owner", "deploys": 7,"plan":{"name": "test",  "memory": 536870912, "swap": 268435456, "cpushare": 100, "default": false}, "router": "planb", "serviceInstanceBinds": [{"service": "redisapi", "instance": "myredisapi"}]}`
 		return &http.Response{
 			Body:       ioutil.NopCloser(bytes.NewBufferString(body)),
 			StatusCode: http.StatusOK,
@@ -1948,7 +1922,7 @@ Owner: myapp_owner
 Team owner: myteam
 Deploys: 7
 Pool:
-Quota: 0/unlimited
+Quota: 0/0 units
 
 Units: 3
 +--------+---------+------+------+
@@ -1979,13 +1953,7 @@ App Plan:
 		Stderr: &stderr,
 	}
 	transport := transportFunc(func(req *http.Request) (resp *http.Response, err error) {
-		var body string
-		if strings.HasSuffix(req.URL.Path, "/apps/app1") {
-			body = `{"name":"app1","teamowner":"myteam","ip":"myapp.tsuru.io","platform":"php","repository":"git@git.com:php.git","state":"dead","units":[{"Ip":"10.10.10.10","ID":"app1/0","Status":"started"}, {"Ip":"9.9.9.9","ID":"app1/1","Status":"started"}, {"Ip":"","ID":"app1/2","Status":"pending"}],"Teams":["tsuruteam","crane"], "owner": "myapp_owner", "deploys": 7,"plan":{"name": "test",  "memory": 536870912, "swap": 268435456, "cpushare": 100, "default": false}, "router": "planb"}`
-		} else if strings.HasSuffix(req.URL.Path, "/services/instances") && req.URL.RawQuery == "app=app1" {
-			body = `[{"service":"redisapi","instances":["myredisapi"], "plans": ["test"]},
-					 {"service":"mongodb", "instances":[], "plans": [""]}]`
-		}
+		body := `{"name":"app1","teamowner":"myteam","ip":"myapp.tsuru.io","platform":"php","repository":"git@git.com:php.git","state":"dead","units":[{"Ip":"10.10.10.10","ID":"app1/0","Status":"started"}, {"Ip":"9.9.9.9","ID":"app1/1","Status":"started"}, {"Ip":"","ID":"app1/2","Status":"pending"}],"Teams":["tsuruteam","crane"], "owner": "myapp_owner", "deploys": 7,"plan":{"name": "test",  "memory": 536870912, "swap": 268435456, "cpushare": 100, "default": false}, "router": "planb", "serviceInstanceBinds": [{"service": "redisapi", "instance": "myredisapi", "plan": "test"}]}`
 		return &http.Response{
 			Body:       ioutil.NopCloser(bytes.NewBufferString(body)),
 			StatusCode: http.StatusOK,
@@ -2012,7 +1980,7 @@ Owner: myapp_owner
 Team owner: myteam
 Deploys: 7
 Pool:
-Quota: 0/unlimited
+Quota: 0/0 units
 
 Units: 3
 +--------------------+---------+------+------+
@@ -2073,7 +2041,7 @@ Units: 3
 func (s *S) TestAppInfoWithInternalAddresses(c *check.C) {
 	var stdout, stderr bytes.Buffer
 	result := `{"name":"powerapp","teamowner":"powerteam","cname":[""],"ip":"monster.tsuru.io","platform":"assembly","repository":"git@git.com:app.git","state":"dead", "units":[{"Ip":"9.9.9.9","ID":"app1/1","Status":"started","Address":{"Host": "10.8.7.6:3323"}}],"teams":["tsuruzers"], "owner": "myapp_owner", "deploys": 7, "router": "", "internalAddresses":[{"domain":"test.cluster.com","port":80,"protocol":"TCP","process": "web","version":"2"}, {"domain":"test.cluster.com","port":443,"protocol":"TCP","process":"jobs","version":"3"}]}`
-	expected := `Application: app1
+	expected := `Application: powerapp
 Description:
 Tags:
 Platform: assembly
@@ -2084,7 +2052,7 @@ Owner: myapp_owner
 Team owner: powerteam
 Deploys: 7
 Pool:
-Quota: 0/unlimited
+Quota: 0/0 units
 
 Units: 1
 +--------+---------+----------+------+
@@ -2158,16 +2126,7 @@ Volumes: 1
 		Stderr: &stderr,
 	}
 	transport := transportFunc(func(req *http.Request) (resp *http.Response, err error) {
-		var body string
-		switch {
-		case strings.HasSuffix(req.URL.Path, "/apps/app1"):
-			body = `{"AppName":"app1","teamowner":"myteam","ip":"myapp.tsuru.io","platform":"php","repository":"git@git.com:php.git","state":"dead","units":[{"Ip":"10.10.10.10","ID":"app1/0","Status":"started"}, {"Ip":"9.9.9.9","ID":"app1/1","Status":"started"}, {"Ip":"","ID":"app1/2","Status":"pending"}],"Teams":["tsuruteam","crane"], "owner": "myapp_owner", "deploys": 7, "router": "planb", "volumeBinds": [{"ID":{"App":"app1","MountPoint":"/vol1","Volume":"vol1"},"ReadOnly":false}]}`
-		case strings.HasSuffix(req.URL.Path, "/services/instances") && req.URL.RawQuery == "app=app1":
-			body = `[{"service":"redisapi","instances":["myredisapi"], "plans": ["test"]},
-					 {"service":"mongodb", "instances":[], "plans": [""]}]`
-		case strings.HasSuffix(req.URL.Path, "/apps/app1/quota") && req.Method == "GET":
-			body = `{"Limit":40,"InUse":3}`
-		}
+		body := `{"name":"app1","teamowner":"myteam","ip":"myapp.tsuru.io","platform":"php","repository":"git@git.com:php.git","state":"dead","units":[{"Ip":"10.10.10.10","ID":"app1/0","Status":"started"}, {"Ip":"9.9.9.9","ID":"app1/1","Status":"started"}, {"Ip":"","ID":"app1/2","Status":"pending"}],"Teams":["tsuruteam","crane"], "owner": "myapp_owner", "deploys": 7, "router": "planb", "quota": {"limit":40, "inUse":3}, "volumeBinds": [{"ID":{"App":"app1","MountPoint":"/vol1","Volume":"vol1"},"ReadOnly":false}], "serviceInstanceBinds": [{"service": "redisapi", "instance": "myredisapi", "plan": "test"}]}`
 		return &http.Response{
 			Body:       ioutil.NopCloser(bytes.NewBufferString(body)),
 			StatusCode: http.StatusOK,
