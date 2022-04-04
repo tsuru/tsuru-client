@@ -190,61 +190,86 @@ func (c *ServiceInstanceAdd) Flags() *gnuflag.FlagSet {
 }
 
 type ServiceInstanceUpdate struct {
-	fs          *gnuflag.FlagSet
-	teamOwner   string
-	description string
-	plan        string
-	tags        cmd.StringSliceFlag
-	params      cmd.MapFlag
+	fs           *gnuflag.FlagSet
+	teamOwner    string
+	description  string
+	plan         string
+	tags         cmd.StringSliceFlag
+	removeTags   cmd.StringSliceFlag
+	params       cmd.MapFlag
+	removeParams cmd.StringSliceFlag
 }
 
 func (c *ServiceInstanceUpdate) Info() *cmd.Info {
 	return &cmd.Info{
 		Name:  "service-instance-update",
-		Usage: "service instance update <service-name> <service-instance-name> [-t/--team-owner team] [-d/--description description] [-p/--plan plan] [-g/--tag tag]... [--plan-param key=value]...",
+		Usage: "service instance update <service-name> <service-instance-name> [-t/--team-owner team] [-d/--description description] [-p/--plan plan] [-g/--tag tag]... [--remove-tag tag]... [--add-param key=value]... [--remove-param key]...",
 		Desc: `Updates a service instance.
 
-The --team-owner parameter updates the team owner of a service instance.
+The --team-owner (or -t) parameter updates the team owner of a service instance.
 
-The --description parameter sets a description for your service instance.
+The --description (or -d) parameter sets a description for your service instance.
 
-The --plan parameter updates the service instance plan.
+The --plan (or -p) parameter updates the service instance plan.
 
-The --tag parameter adds a tag to your service instance. This parameter
-may be used multiple times.
+The --tag (or -g) parameter adds a tag to your service instance. This parameter may be used multiple times.
 
-The --plan-param updates plan's parameter of a service instance. This
-parameter may be used multiple times.`,
+The --remove-tag removes a tag. This parameter may be used multiple times.
+
+The --add-param (or --plan-param) adds a parameter in the service instance. This parameter may be used multiple times.
+
+The --remove-param removes a parameter. This parameter may be used multiple times.
+`,
 		MinArgs: 2,
 	}
 }
 
 func (c *ServiceInstanceUpdate) Run(ctx *cmd.Context, client *cmd.Client) error {
+	apiClient, err := tsuruClient.ClientFromEnvironment(&tsuru.Configuration{
+		HTTPClient: client.HTTPClient,
+	})
+	if err != nil {
+		return err
+	}
 	serviceName, instanceName := ctx.Args[0], ctx.Args[1]
-	u, err := cmd.GetURL(fmt.Sprintf("/services/%s/instances/%s", serviceName, instanceName))
+	si, _, err := apiClient.ServiceApi.InstanceGet(context.Background(), serviceName, instanceName)
 	if err != nil {
 		return err
 	}
-	parameters := make(map[string]interface{})
+	data := tsuru.ServiceInstanceUpdateData{
+		Description: si.Description,
+		Teamowner:   si.Teamowner,
+		Plan:        si.Planname,
+		Tags:        si.Tags,
+		Parameters:  si.Parameters,
+	}
+	if c.description != "" {
+		data.Description = c.description
+	}
+	if c.teamOwner != "" {
+		data.Teamowner = c.teamOwner
+	}
+	if c.plan != "" {
+		data.Plan = c.plan
+	}
+	for _, t := range c.tags {
+		data.Tags = append(data.Tags, t)
+	}
+	for _, t := range c.removeTags {
+		if i, found := findString(data.Tags, t); found {
+			data.Tags = append(data.Tags[:i], data.Tags[i+1:]...)
+		}
+	}
 	for k, v := range c.params {
-		parameters[k] = v
+		if data.Parameters == nil {
+			data.Parameters = make(map[string]string)
+		}
+		data.Parameters[k] = v
 	}
-	v, err := form.EncodeToValues(map[string]interface{}{"parameters": parameters})
-	if err != nil {
-		return err
+	for _, k := range c.removeParams {
+		delete(data.Parameters, k)
 	}
-	v.Set("teamowner", c.teamOwner)
-	v.Set("description", c.description)
-	v.Set("plan", c.plan)
-	for _, tag := range c.tags {
-		v.Add("tag", tag)
-	}
-	request, err := http.NewRequest("PUT", u, strings.NewReader(v.Encode()))
-	if err != nil {
-		return err
-	}
-	request.Header.Set("Content-Type", "application/x-www-form-urlencoded")
-	_, err = client.Do(request)
+	_, err = apiClient.ServiceApi.InstanceUpdate(context.Background(), serviceName, instanceName, data)
 	if err != nil {
 		return err
 	}
@@ -267,7 +292,11 @@ func (c *ServiceInstanceUpdate) Flags() *gnuflag.FlagSet {
 		tagMessage := "service instance tag"
 		c.fs.Var(&c.tags, "tag", tagMessage)
 		c.fs.Var(&c.tags, "g", tagMessage)
-		c.fs.Var(&c.params, "plan-param", "Plan specific parameters")
+		c.fs.Var(&c.removeTags, "remove-tag", "tag to be removed from instance tags")
+		planParamMessage := "parameter to be added/updated in instance parameters"
+		c.fs.Var(&c.params, "plan-param", planParamMessage)
+		c.fs.Var(&c.params, "add-param", planParamMessage)
+		c.fs.Var(&c.removeParams, "remove-param", "parameter key to be removed from instance parameters")
 	}
 	return c.fs
 }
@@ -992,4 +1021,14 @@ func (c *ServiceInstanceRevoke) Run(ctx *cmd.Context, client *cmd.Client) error 
 	}
 	fmt.Fprintf(ctx.Stdout, `Revoked access to team %s in %s service instance.`+"\n", teamName, siName)
 	return nil
+}
+
+func findString(strs []string, s string) (int, bool) {
+	for i, ss := range strs {
+		if ss == s {
+			return i, true
+		}
+	}
+
+	return -1, false
 }

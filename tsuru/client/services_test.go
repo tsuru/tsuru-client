@@ -7,11 +7,13 @@ package client
 import (
 	"bytes"
 	"encoding/json"
+	"errors"
 	"io/ioutil"
 	"net/http"
 	"strings"
 
 	"github.com/ajg/form"
+	"github.com/tsuru/go-tsuruclient/pkg/tsuru"
 	"github.com/tsuru/tsuru/cmd"
 	"github.com/tsuru/tsuru/cmd/cmdtest"
 	"github.com/tsuru/tsuru/io"
@@ -540,70 +542,74 @@ func (s *S) TestServiceInstanceUpdateInfo(c *check.C) {
 }
 
 func (s *S) TestServiceInstanceUpdateRun(c *check.C) {
-	var stdout, stderr bytes.Buffer
-	result := "Service successfully updated.\n"
-	args := []string{
-		"service",
-		"service-instance",
-	}
+	trans := transportFunc(func(r *http.Request) (*http.Response, error) {
+		if r.Method == http.MethodGet && r.URL.Path == "/1.0/services/service/instances/service-instance" {
+			var body bytes.Buffer
+			err := json.NewEncoder(&body).Encode(&tsuru.ServiceInstance{
+				ServiceName: "service",
+				Name:        "service-instance",
+				Description: "Old description",
+				PlanName:    "old-plan",
+				Tags:        []string{"A", "B", "C", "D"},
+				Parameters: map[string]string{
+					"old-param1": "old-value1",
+					"old-param2": "old-value2",
+				},
+			})
+			if err != nil {
+				return nil, err
+			}
+			return &http.Response{
+				StatusCode: http.StatusOK,
+				Body:       ioutil.NopCloser(&body),
+				Header:     http.Header{"Content-Type": []string{"application/json"}},
+			}, nil
+		}
+		if r.Method == http.MethodPut && r.URL.Path == "/1.0/services/service/instances/service-instance" {
+			c.Assert(r.Header.Get("Content-Type"), check.Equals, "application/json")
+			var got tsuru.ServiceInstanceUpdateData
+			err := json.NewDecoder(r.Body).Decode(&got)
+			c.Assert(err, check.IsNil)
+			if err != nil {
+				return nil, err
+			}
+			c.Assert(got, check.DeepEquals, tsuru.ServiceInstanceUpdateData{
+				Description: "New description",
+				Teamowner:   "new-team",
+				Plan:        "new-plan",
+				Tags:        []string{"A", "B", "tag1", "tag2"},
+				Parameters: map[string]string{
+					"old-param1": "old-value1",
+					"param1":     "value1",
+					"param2":     "value2",
+				},
+			})
+			return &http.Response{
+				StatusCode: http.StatusOK,
+				Body:       ioutil.NopCloser(strings.NewReader("")),
+			}, nil
+		}
+		return nil, errors.New("not implemented yet")
+	})
 	context := cmd.Context{
-		Args:   args,
-		Stdout: &stdout,
-		Stderr: &stderr,
+		Args:   []string{"service", "service-instance"},
+		Stdout: &bytes.Buffer{},
+		Stderr: &bytes.Buffer{},
 	}
-	trans := cmdtest.ConditionalTransport{
-		Transport: cmdtest.Transport{Message: result, Status: http.StatusOK},
-		CondFunc: func(r *http.Request) bool {
-			r.ParseForm()
-			c.Check(r.FormValue("description"), check.Equals, "desc")
-			c.Check(r.Form["tag"], check.HasLen, 2)
-			c.Check(r.Form["tag"][0], check.Equals, "tag1")
-			c.Check(r.Form["tag"][1], check.Equals, "tag2")
-			c.Check(r.FormValue("plan"), check.Equals, "new-plan")
-			c.Check(r.Method, check.Equals, http.MethodPut)
-			c.Check(r.Header.Get("Content-Type"), check.Equals, "application/x-www-form-urlencoded")
-			c.Check(strings.HasSuffix(r.URL.Path, "/services/service/instances/service-instance"), check.Equals, true)
-			c.Check(r.FormValue("teamowner"), check.Equals, "new-team")
-			c.Check(r.FormValue("parameters.param1"), check.Equals, "value1")
-			c.Check(r.FormValue("parameters.param2"), check.Equals, "value2")
-			return true
-		},
-	}
-	client := cmd.NewClient(&http.Client{Transport: &trans}, nil, manager)
+	client := cmd.NewClient(&http.Client{Transport: &trans}, &context, manager)
 	command := ServiceInstanceUpdate{}
-	command.Flags().Parse(true, []string{"--description", "desc", "--tag", "tag1", "--tag", "tag2", "--team-owner", "new-team", "--plan", "new-plan", "--plan-param", "param1=value1", "--plan-param", "param2=value2"})
+	command.Flags().Parse(true, []string{
+		"--description", "New description",
+		"--team-owner", "new-team",
+		"--plan", "new-plan",
+		"-g", "tag1", "--tag", "tag2",
+		"--remove-tag", "C", "--remove-tag", "D",
+		"--plan-param", "param1=value1", "--add-param", "param2=value2",
+		"--remove-param", "old-param2",
+	})
 	err := (&command).Run(&context, client)
 	c.Assert(err, check.IsNil)
-	obtained := stdout.String()
-	c.Assert(obtained, check.Equals, result)
-}
-
-func (s *S) TestServiceInstanceUpdateRunWithEmptyTag(c *check.C) {
-	var stdout, stderr bytes.Buffer
-	result := "Service successfully updated.\n"
-	args := []string{
-		"service",
-		"service-instance",
-	}
-	context := cmd.Context{
-		Args:   args,
-		Stdout: &stdout,
-		Stderr: &stderr,
-	}
-	trans := cmdtest.ConditionalTransport{
-		Transport: cmdtest.Transport{Message: result, Status: http.StatusOK},
-		CondFunc: func(r *http.Request) bool {
-			r.ParseForm()
-			return len(r.Form["tag"]) == 1 && r.Form["tag"][0] == ""
-		},
-	}
-	client := cmd.NewClient(&http.Client{Transport: &trans}, nil, manager)
-	command := ServiceInstanceUpdate{}
-	command.Flags().Parse(true, []string{"--tag", ""})
-	err := (&command).Run(&context, client)
-	c.Assert(err, check.IsNil)
-	obtained := stdout.String()
-	c.Assert(obtained, check.Equals, result)
+	c.Assert(context.Stdout.(*bytes.Buffer).String(), check.Equals, "Service successfully updated.\n")
 }
 
 func (s *S) TestServiceInstanceUpdateFlags(c *check.C) {
@@ -660,6 +666,15 @@ func (s *S) TestServiceInstanceUpdateFlags(c *check.C) {
 	c.Check(assume.Value.String(), check.Equals, "[\"my tag\"]")
 	c.Check(assume.DefValue, check.Equals, "[]")
 
+	err = flagset.Parse(true, []string{"--remove-tag", "my tag"})
+	c.Assert(err, check.IsNil)
+	assume = flagset.Lookup("remove-tag")
+	c.Check(assume, check.NotNil)
+	c.Check(assume.Name, check.Equals, "remove-tag")
+	c.Check(assume.Usage, check.Equals, "tag to be removed from instance tags")
+	c.Check(assume.Value.String(), check.Equals, "[\"my tag\"]")
+	c.Check(assume.DefValue, check.Equals, "[]")
+
 	err = flagset.Parse(true, []string{"-p", "my plan"})
 	c.Assert(err, check.IsNil)
 	flagDesc = "service instance plan"
@@ -675,6 +690,33 @@ func (s *S) TestServiceInstanceUpdateFlags(c *check.C) {
 	c.Check(assume.Usage, check.Equals, flagDesc)
 	c.Check(assume.Value.String(), check.Equals, "my plan")
 	c.Check(assume.DefValue, check.Equals, "")
+
+	err = flagset.Parse(true, []string{"--add-param", "foo=bar"})
+	c.Assert(err, check.IsNil)
+	assume = flagset.Lookup("add-param")
+	c.Check(assume, check.NotNil)
+	c.Check(assume.Name, check.Equals, "add-param")
+	c.Check(assume.Usage, check.Equals, "parameter to be added/updated in instance parameters")
+	c.Check(assume.Value.String(), check.Equals, `{"foo":"bar"}`)
+	c.Check(assume.DefValue, check.Equals, "{}")
+
+	err = flagset.Parse(true, []string{"--plan-param", "foo=bar"})
+	c.Assert(err, check.IsNil)
+	assume = flagset.Lookup("plan-param")
+	c.Check(assume, check.NotNil)
+	c.Check(assume.Name, check.Equals, "plan-param")
+	c.Check(assume.Usage, check.Equals, "parameter to be added/updated in instance parameters")
+	c.Check(assume.Value.String(), check.Equals, `{"foo":"bar"}`)
+	c.Check(assume.DefValue, check.Equals, "{}")
+
+	err = flagset.Parse(true, []string{"--remove-param", "foo"})
+	c.Assert(err, check.IsNil)
+	assume = flagset.Lookup("remove-param")
+	c.Check(assume, check.NotNil)
+	c.Check(assume.Name, check.Equals, "remove-param")
+	c.Check(assume.Usage, check.Equals, "parameter key to be removed from instance parameters")
+	c.Check(assume.Value.String(), check.Equals, `["foo"]`)
+	c.Check(assume.DefValue, check.Equals, "[]")
 }
 
 func (s *S) TestServiceInfoInfo(c *check.C) {
