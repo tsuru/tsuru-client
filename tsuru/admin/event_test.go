@@ -48,6 +48,7 @@ func (s *S) TestEventBlockList(c *check.C) {
 		"Value": ""
 	},
 	"Reason": "Maintenance.",
+	"Conditions": {"pool": "pool1", "cluster": "cluster1"},
 	"Active": false
 }]`
 	trans := &cmdtest.ConditionalTransport{
@@ -60,12 +61,12 @@ func (s *S) TestEventBlockList(c *check.C) {
 	command := EventBlockList{}
 	err := command.Run(&context, client)
 	c.Assert(err, check.IsNil)
-	expected := `+--------------------------+-----------------------------+------------+----------------+----------------------+--------------+
-| ID                       | Start (duration)            | Kind       | Owner          | Target (Type: Value) | Reason       |
-+--------------------------+-----------------------------+------------+----------------+----------------------+--------------+
-| 58c6db0b0640fd2fec413cc6 | 13 Mar 17 12:46 CDT (…)     | app.create | user@email.com | all: all             | Problems     |
-| 58c1d29ac47369e95c5520c8 | 13 Mar 17 11:43 CDT (44:15) | app.deploy | all            | all: all             | Maintenance. |
-+--------------------------+-----------------------------+------------+----------------+----------------------+--------------+
+	expected := `+--------------------------+-----------------------------+------------+----------------+----------------------+------------------------------+--------------+
+| ID                       | Start (duration)            | Kind       | Owner          | Target (Type: Value) | Conditions                   | Reason       |
++--------------------------+-----------------------------+------------+----------------+----------------------+------------------------------+--------------+
+| 58c6db0b0640fd2fec413cc6 | 13 Mar 17 12:46 CDT (…)     | app.create | user@email.com | all: all             | all                          | Problems     |
+| 58c1d29ac47369e95c5520c8 | 13 Mar 17 11:43 CDT (44:15) | app.deploy | all            | all: all             | pool=pool1 cluster=cluster1  | Maintenance. |
++--------------------------+-----------------------------+------------+----------------+----------------------+------------------------------+--------------+
 `
 	c.Assert(stdout.String(), check.Equals, expected)
 }
@@ -89,10 +90,10 @@ func (s *S) TestEventBlockListNoEvents(c *check.C) {
 	command := EventBlockList{}
 	err := command.Run(&context, client)
 	c.Assert(err, check.IsNil)
-	expected := `+----+------------------+------+-------+----------------------+--------+
-| ID | Start (duration) | Kind | Owner | Target (Type: Value) | Reason |
-+----+------------------+------+-------+----------------------+--------+
-+----+------------------+------+-------+----------------------+--------+
+	expected := `+----+------------------+------+-------+----------------------+------------+--------+
+| ID | Start (duration) | Kind | Owner | Target (Type: Value) | Conditions | Reason |
++----+------------------+------+-------+----------------------+------------+--------+
++----+------------------+------+-------+----------------------+------------+--------+
 `
 	c.Assert(stdout.String(), check.Equals, expected)
 }

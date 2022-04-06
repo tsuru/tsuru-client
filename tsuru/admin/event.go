@@ -63,7 +63,7 @@ func (c *EventBlockList) Run(context *cmd.Context, client *cmd.Client) error {
 		}
 	}
 	tbl := tablecli.NewTable()
-	tbl.Headers = tablecli.Row{"ID", "Start (duration)", "Kind", "Owner", "Target (Type: Value)", "Reason"}
+	tbl.Headers = tablecli.Row{"ID", "Start (duration)", "Kind", "Owner", "Target (Type: Value)", "Conditions", "Reason"}
 	for _, b := range blocks {
 		var duration *time.Duration
 		if !b.EndTime.IsZero() {
@@ -75,7 +75,8 @@ func (c *EventBlockList) Run(context *cmd.Context, client *cmd.Client) error {
 		owner := valueOrWildcard(b.OwnerName)
 		targetType := valueOrWildcard(string(b.Target.Type))
 		targetValue := valueOrWildcard(b.Target.Value)
-		row := tablecli.Row{b.ID.Hex(), ts, kind, owner, fmt.Sprintf("%s: %s", targetType, targetValue), b.Reason}
+		conditions := mapValueOrWildcard(b.Conditions)
+		row := tablecli.Row{b.ID.Hex(), ts, kind, owner, fmt.Sprintf("%s: %s", targetType, targetValue), conditions, b.Reason}
 		color := "yellow"
 		if !b.Active {
 			color = "white"
@@ -96,18 +97,30 @@ func valueOrWildcard(str string) string {
 	return str
 }
 
+func mapValueOrWildcard(m map[string]string) string {
+	if len(m) == 0 {
+		return "all"
+	}
+	var s string
+	for k, v := range m {
+		s += fmt.Sprintf("%s=%s ", k, v)
+	}
+	return s
+}
+
 type EventBlockAdd struct {
 	fs          *gnuflag.FlagSet
 	kind        string
 	owner       string
 	targetType  string
 	targetValue string
+	conditions  cmd.MapFlag
 }
 
 func (c *EventBlockAdd) Info() *cmd.Info {
 	return &cmd.Info{
 		Name:    "event-block-add",
-		Usage:   "event block add <reason> [-k/--kind kindName] [-o/--owner ownerName] [-t/--target targetType] [-v/--value targetValue]",
+		Usage:   "event block add <reason> [-k/--kind kindName] [-o/--owner ownerName] [-t/--target targetType] [-v/--value targetValue] [-c/--conditions name=value]...",
 		Desc:    "Block events.",
 		MinArgs: 1,
 	}
@@ -124,6 +137,8 @@ func (c *EventBlockAdd) Flags() *gnuflag.FlagSet {
 		c.fs.StringVar(&c.targetType, "t", "", "Block events with this target type.")
 		c.fs.StringVar(&c.targetValue, "value", "", "Block events with this target value.")
 		c.fs.StringVar(&c.targetValue, "v", "", "Block events with this target value.")
+		c.fs.Var(&c.conditions, "conditions", "Conditions to apply on event kind to be blocked.")
+		c.fs.Var(&c.conditions, "c", "Conditions to apply on event kind to be blocked.")
 	}
 	return c.fs
 }
@@ -144,10 +159,11 @@ func (c *EventBlockAdd) Run(context *cmd.Context, client *cmd.Client) error {
 	}
 	target.Value = c.targetValue
 	block := event.Block{
-		Reason:    context.Args[0],
-		KindName:  c.kind,
-		OwnerName: c.owner,
-		Target:    target,
+		Reason:     context.Args[0],
+		KindName:   c.kind,
+		OwnerName:  c.owner,
+		Target:     target,
+		Conditions: c.conditions,
 	}
 
 	body, err := json.Marshal(block)
