@@ -282,7 +282,6 @@ func (s *S) TestAppLogWithNoDateAndNoSource(c *check.C) {
 	}
 	result, err := json.Marshal(logs)
 	c.Assert(err, check.IsNil)
-	t = formatter.Local(t)
 	expected := "GET /\n"
 	expected = expected + "POST /\n"
 	context := cmd.Context{
