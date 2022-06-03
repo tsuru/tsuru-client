@@ -8,6 +8,7 @@ import (
 	"encoding/json"
 	"fmt"
 	"net/http"
+	"sort"
 	"time"
 
 	"github.com/tsuru/gnuflag"
@@ -101,11 +102,19 @@ func mapValueOrWildcard(m map[string]string) string {
 	if len(m) == 0 {
 		return "all"
 	}
-	var s string
-	for k, v := range m {
-		s += fmt.Sprintf("%s=%s ", k, v)
+
+	keys := make([]string, 0, len(m))
+	for k := range m {
+		keys = append(keys, k)
 	}
-	return s
+
+	sort.Strings(keys)
+	var s string
+	for _, k := range keys {
+		s += fmt.Sprintf("%s=%s ", k, m[k])
+	}
+
+	return s[0 : len(s)-1] // trim last space
 }
 
 type EventBlockAdd struct {
