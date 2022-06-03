@@ -303,11 +303,11 @@ func (c *TeamList) Run(ctx *cmd.Context, cli *cmd.Client) error {
 		return err
 	}
 	teams, resp, err := apiClient.TeamApi.TeamsList(context.TODO())
-	if resp.StatusCode == http.StatusNoContent {
-		return nil
-	}
 	if err != nil {
 		return parseErrBody(err)
+	}
+	if resp.StatusCode == http.StatusNoContent {
+		return nil
 	}
 	defer resp.Body.Close()
 	if resp.StatusCode == http.StatusOK {
