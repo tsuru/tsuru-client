@@ -14,7 +14,6 @@ import (
 
 	"github.com/tsuru/tsuru-client/tsuru/admin"
 	"github.com/tsuru/tsuru-client/tsuru/client"
-	"github.com/tsuru/tsuru-client/tsuru/installer"
 	"github.com/tsuru/tsuru/cmd"
 	"github.com/tsuru/tsuru/exec/exectest"
 )
@@ -408,20 +407,6 @@ func (s *S) TestAppUpdateIsRegistered(c *check.C) {
 	change, ok := manager.Commands["app-update"]
 	c.Assert(ok, check.Equals, true)
 	c.Assert(change, check.FitsTypeOf, &client.AppUpdate{})
-}
-
-func (s *S) TestInstallIsRegistered(c *check.C) {
-	manager = buildManager("tsuru")
-	change, ok := manager.Commands["install-create"]
-	c.Assert(ok, check.Equals, true)
-	c.Assert(change, check.FitsTypeOf, &installer.Install{})
-}
-
-func (s *S) TestUninstallIsRegistered(c *check.C) {
-	manager = buildManager("tsuru")
-	change, ok := manager.Commands["install-remove"]
-	c.Assert(ok, check.Equals, true)
-	c.Assert(change, check.FitsTypeOf, &installer.Uninstall{})
 }
 
 func (s *S) TestNodeAddIsRegistered(c *check.C) {

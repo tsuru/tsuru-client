@@ -12,7 +12,6 @@ import (
 	"github.com/docker/machine/libmachine/drivers/plugin/localbinary"
 	"github.com/tsuru/tsuru-client/tsuru/admin"
 	"github.com/tsuru/tsuru-client/tsuru/client"
-	"github.com/tsuru/tsuru-client/tsuru/installer"
 	"github.com/tsuru/tsuru/cmd"
 	"github.com/tsuru/tsuru/iaas/dockermachine"
 	_ "github.com/tsuru/tsuru/provision/docker/cmds"
@@ -116,11 +115,6 @@ Services aren’t managed by tsuru, but by their creators.`)
 	m.Register(&client.RoleDefaultAdd{})
 	m.Register(&client.RoleDefaultList{})
 	m.Register(&client.RoleDefaultRemove{})
-	m.Register(&installer.Install{})
-	m.Register(&installer.Uninstall{})
-	m.Register(&installer.InstallHostList{})
-	m.Register(&installer.InstallSSH{})
-	m.Register(&installer.InstallConfigInit{})
 	m.Register(&admin.AddPoolToSchedulerCmd{})
 	m.Register(&client.EventList{})
 	m.Register(&client.EventInfo{})
