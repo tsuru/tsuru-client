@@ -6,7 +6,6 @@ require (
 	github.com/ajg/form v0.0.0-20160822230020-523a5da1a92f
 	github.com/antihax/optional v0.0.0-20180407024304-ca021399b1a6
 	github.com/digitalocean/godo v1.1.1 // indirect
-	github.com/docker/docker v20.10.8+incompatible
 	github.com/docker/go-connections v0.4.0
 	github.com/docker/machine v0.16.1
 	github.com/exoscale/egoscale v0.9.31 // indirect
@@ -15,8 +14,6 @@ require (
 	github.com/pkg/errors v0.9.1
 	github.com/pmorie/go-open-service-broker-client v0.0.0-20180330214919-dca737037ce6
 	github.com/sabhiram/go-gitignore v0.0.0-20171017070213-362f9845770f
-	github.com/sethvargo/go-password v0.1.1
-	github.com/tsuru/config v0.0.0-20201023175036-375aaee8b560
 	github.com/tsuru/gnuflag v0.0.0-20151217162021-86b8c1b864aa
 	github.com/tsuru/go-tsuruclient v0.0.0-20211213213525-0d2868229cfd
 	github.com/tsuru/tablecli v0.0.0-20190131152944-7ded8a3383c6
