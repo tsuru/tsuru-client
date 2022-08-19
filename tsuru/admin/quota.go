@@ -165,6 +165,73 @@ func (c *AppQuotaChange) Run(context *cmd.Context, client *cmd.Client) error {
 	return nil
 }
 
+type TeamQuotaView struct{}
+
+func (*TeamQuotaView) Info() *cmd.Info {
+	return &cmd.Info{
+		Name:    "team-quota-view",
+		MinArgs: 1,
+		Usage:   "team-quota-view <team-name>",
+		Desc:    "Displays the current usage and limit of the team.",
+	}
+}
+
+func (*TeamQuotaView) Run(context *cmd.Context, client *cmd.Client) error {
+	url, err := cmd.GetURL("teams/" + context.Args[0] + "/quota")
+	if err != nil {
+		return err
+	}
+	request, _ := http.NewRequest("GET", url, nil)
+	resp, err := client.Do(request)
+	if err != nil {
+		return err
+	}
+	defer resp.Body.Close()
+	var quota quota.Quota
+	err = json.NewDecoder(resp.Body).Decode(&quota)
+	if err != nil {
+		return err
+	}
+	fmt.Fprintf(context.Stdout, "Team: %s\n", context.Args[0])
+	fmt.Fprintf(context.Stdout, "Apps usage: %d/%d\n", quota.InUse, quota.Limit)
+	return nil
+}
+
+type TeamChangeQuota struct{}
+
+func (*TeamChangeQuota) Info() *cmd.Info {
+	desc := `Changes the limit of apps that a team can create.
+
+The new limit must be an integer, it may also be "unlimited".`
+	return &cmd.Info{
+		Name:    "team-quota-change",
+		MinArgs: 2,
+		Usage:   "team-quota-change <team-name> <new-limit>",
+		Desc:    desc,
+	}
+}
+
+func (*TeamChangeQuota) Run(context *cmd.Context, client *cmd.Client) error {
+	u, err := cmd.GetURL("/teams/" + context.Args[0] + "/quota")
+	if err != nil {
+		return err
+	}
+	limit, err := parseLimit(context.Args[1])
+	if err != nil {
+		return err
+	}
+	v := url.Values{}
+	v.Set("limit", limit)
+	request, _ := http.NewRequest("PUT", u, bytes.NewBufferString(v.Encode()))
+	request.Header.Set("Content-Type", "application/x-www-form-urlencoded")
+	_, err = client.Do(request)
+	if err != nil {
+		return err
+	}
+	fmt.Fprintln(context.Stdout, "Quota successfully updated.")
+	return nil
+}
+
 func parseLimit(value string) (string, error) {
 	if value == "unlimited" {
 		return "-1", nil
