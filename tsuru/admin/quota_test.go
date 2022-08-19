@@ -264,3 +264,121 @@ func (s *S) TestAppQuotaChangeFailure(c *check.C) {
 	c.Assert(err, check.NotNil)
 	c.Assert(err.Error(), check.Equals, "app not found")
 }
+
+func (s *S) TestTeamQuotaViewRun(c *check.C) {
+	result := `{"inuse":3,"limit":4}`
+	var stdout, stderr bytes.Buffer
+	context := cmd.Context{
+		Args:   []string{"myteam"},
+		Stdout: &stdout,
+		Stderr: &stderr,
+	}
+	manager := cmd.NewManager("tsuru", "0.5", "ad-ver", &stdout, &stderr, nil, nil)
+	trans := cmdtest.ConditionalTransport{
+		Transport: cmdtest.Transport{Message: result, Status: http.StatusOK},
+		CondFunc: func(req *http.Request) bool {
+			return req.Method == "GET" && strings.HasSuffix(req.URL.Path, "/teams/myteam/quota")
+		},
+	}
+	client := cmd.NewClient(&http.Client{Transport: &trans}, nil, manager)
+	command := TeamQuotaView{}
+	err := command.Run(&context, client)
+	c.Assert(err, check.IsNil)
+	expected := `Team: myteam
+Apps usage: 3/4
+`
+	c.Assert(stdout.String(), check.Equals, expected)
+}
+
+func (s *S) TestTeamQuotaViewRunFailure(c *check.C) {
+	context := cmd.Context{Args: []string{"myteam"}}
+	trans := cmdtest.Transport{Message: "team not found", Status: http.StatusNotFound}
+	client := cmd.NewClient(&http.Client{Transport: &trans}, nil, s.manager)
+	command := TeamQuotaView{}
+	err := command.Run(&context, client)
+	c.Assert(err, check.NotNil)
+	c.Assert(err.Error(), check.Equals, "team not found")
+}
+
+func (s *S) TestTeamChangeQuotaRun(c *check.C) {
+	var called bool
+	var stdout, stderr bytes.Buffer
+	context := cmd.Context{
+		Args:   []string{"myteam", "5"},
+		Stdout: &stdout,
+		Stderr: &stderr,
+	}
+	manager := cmd.NewManager("tsuru", "0.5", "ad-ver", &stdout, &stderr, nil, nil)
+	trans := cmdtest.ConditionalTransport{
+		Transport: cmdtest.Transport{Message: "", Status: http.StatusOK},
+		CondFunc: func(req *http.Request) bool {
+			called = true
+			path := strings.HasSuffix(req.URL.Path, "/teams/myteam/quota")
+			method := req.Method == "PUT"
+			limit := req.FormValue("limit") == "5"
+			c.Assert(req.Header.Get("Content-Type"), check.Equals, "application/x-www-form-urlencoded")
+			return path && method && limit
+		},
+	}
+	client := cmd.NewClient(&http.Client{Transport: &trans}, nil, manager)
+	command := TeamChangeQuota{}
+	err := command.Run(&context, client)
+	c.Assert(err, check.IsNil)
+	c.Assert(stdout.String(), check.Equals, "Quota successfully updated.\n")
+	c.Assert(called, check.Equals, true)
+}
+
+func (s *S) TestTeamChangeQuotaRunUnlimited(c *check.C) {
+	var called bool
+	var stdout, stderr bytes.Buffer
+	context := cmd.Context{
+		Args:   []string{"myteam", "unlimited"},
+		Stdout: &stdout,
+		Stderr: &stderr,
+	}
+	manager := cmd.NewManager("tsuru", "0.5", "ad-ver", &stdout, &stderr, nil, nil)
+	trans := cmdtest.ConditionalTransport{
+		Transport: cmdtest.Transport{Message: "", Status: http.StatusOK},
+		CondFunc: func(req *http.Request) bool {
+			called = true
+			path := strings.HasSuffix(req.URL.Path, "/teams/myteam/quota")
+			method := req.Method == "PUT"
+			limit := req.FormValue("limit") == "-1"
+			c.Assert(req.Header.Get("Content-Type"), check.Equals, "application/x-www-form-urlencoded")
+			return path && method && limit
+		},
+	}
+	client := cmd.NewClient(&http.Client{Transport: &trans}, nil, manager)
+	command := TeamChangeQuota{}
+	err := command.Run(&context, client)
+	c.Assert(err, check.IsNil)
+	c.Assert(stdout.String(), check.Equals, "Quota successfully updated.\n")
+	c.Assert(called, check.Equals, true)
+}
+
+func (s *S) TestTeamChangeQuotaRunInvalidLimit(c *check.C) {
+	context := cmd.Context{Args: []string{"myteam", "unlimiteddd"}}
+	command := TeamChangeQuota{}
+	err := command.Run(&context, nil)
+	c.Assert(err, check.NotNil)
+	c.Assert(err.Error(), check.Equals, `invalid limit. It must be either an integer or "unlimited"`)
+}
+
+func (s *S) TestTeamChangeQuotaFailure(c *check.C) {
+	var stdout, stderr bytes.Buffer
+	context := cmd.Context{
+		Args:   []string{"myteam", "5"},
+		Stdout: &stdout,
+		Stderr: &stderr,
+	}
+	manager := cmd.NewManager("tsuru", "0.5", "ad-ver", &stdout, &stderr, nil, nil)
+	trans := &cmdtest.Transport{
+		Message: "team not found",
+		Status:  http.StatusNotFound,
+	}
+	client := cmd.NewClient(&http.Client{Transport: trans}, nil, manager)
+	command := TeamChangeQuota{}
+	err := command.Run(&context, client)
+	c.Assert(err, check.NotNil)
+	c.Assert(err.Error(), check.Equals, "team not found")
+}
