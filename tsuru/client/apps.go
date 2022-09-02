@@ -1502,6 +1502,50 @@ func (c *UnitRemove) Run(context *cmd.Context, client *cmd.Client) error {
 	return cmd.StreamJSONResponse(context.Stdout, response)
 }
 
+type UnitKill struct {
+	cmd.AppNameMixIn
+	fs *gnuflag.FlagSet
+}
+
+func (c *UnitKill) Info() *cmd.Info {
+	return &cmd.Info{
+		Name:  "unit-kill",
+		Usage: "unit kill [-a/--app appname] <unit>",
+		Desc: `Kills units from a process of an application. You need to have access to the
+app to be able to remove unit from it.`,
+		MinArgs: 1,
+	}
+}
+
+func (c *UnitKill) Flags() *gnuflag.FlagSet {
+	if c.fs == nil {
+		c.fs = c.AppNameMixIn.Flags()
+	}
+	return c.fs
+}
+
+func (c *UnitKill) Run(context *cmd.Context, client *cmd.Client) error {
+	context.RawOutput()
+	appName, err := c.AppName()
+	if err != nil {
+		return err
+	}
+	unit := context.Args[0]
+	url, err := cmd.GetURL(fmt.Sprintf("/apps/%s/units/%s", appName, unit))
+	if err != nil {
+		return err
+	}
+	request, err := http.NewRequest(http.MethodDelete, url, nil)
+	if err != nil {
+		return err
+	}
+	response, err := client.Do(request)
+	if err != nil {
+		return err
+	}
+	return cmd.StreamJSONResponse(context.Stdout, response)
+}
+
 type UnitSet struct {
 	cmd.AppNameMixIn
 	fs      *gnuflag.FlagSet
