@@ -35,6 +35,15 @@ func (c *PluginInstall) Run(context *cmd.Context, client *cmd.Client) error {
 	}
 	pluginName := context.Args[0]
 	pluginURL := context.Args[1]
+	if err := installPlugin(pluginName, pluginURL); err != nil {
+		return err
+	}
+
+	fmt.Fprintf(context.Stdout, `Plugin "%s" successfully installed!`+"\n", pluginName)
+	return nil
+}
+
+func installPlugin(pluginName, pluginURL string) error {
 	pluginPath := cmd.JoinWithUserDir(".tsuru", "plugins", pluginName)
 	file, err := filesystem().OpenFile(pluginPath, os.O_WRONLY|os.O_CREATE|os.O_TRUNC, 0755)
 	if err != nil {
@@ -59,7 +68,6 @@ func (c *PluginInstall) Run(context *cmd.Context, client *cmd.Client) error {
 	if n != len(data) {
 		return errors.New("Failed to install plugin.")
 	}
-	fmt.Fprintf(context.Stdout, `Plugin "%s" successfully installed!`+"\n", pluginName)
 	return nil
 }
 
