@@ -52,9 +52,9 @@ func (s *S) TestPluginInstall(c *check.C) {
 	c.Assert(err, check.IsNil)
 	data, err := ioutil.ReadAll(f)
 	c.Assert(err, check.IsNil)
-	c.Assert("fakeplugin\n", check.Equals, string(data))
+	c.Assert(string(data), check.Equals, "fakeplugin\n")
 	expected := `Plugin "myplugin" successfully installed!` + "\n"
-	c.Assert(expected, check.Equals, stdout.String())
+	c.Assert(stdout.String(), check.Equals, expected)
 }
 
 func (s *S) TestPluginInstallError(c *check.C) {
@@ -246,7 +246,7 @@ func (s *S) TestPluginRemove(c *check.C) {
 	hasAction := rfs.HasAction(fmt.Sprintf("remove %s", pluginPath))
 	c.Assert(hasAction, check.Equals, true)
 	expected := `Plugin "myplugin" successfully removed!` + "\n"
-	c.Assert(expected, check.Equals, stdout.String())
+	c.Assert(stdout.String(), check.Equals, expected)
 }
 
 func (s *S) TestPluginRemoveIsACommand(c *check.C) {
@@ -309,13 +309,13 @@ func (s *S) TestPluginBundle(c *check.C) {
 	c.Assert(err, check.IsNil)
 	data, err := ioutil.ReadAll(f)
 	c.Assert(err, check.IsNil)
-	c.Assert("fakeplugin1\n", check.Equals, string(data))
+	c.Assert(string(data), check.Equals, "fakeplugin1\n")
 
 	f, err = rfs.Open(plugin2Path)
 	c.Assert(err, check.IsNil)
 	data, err = ioutil.ReadAll(f)
 	c.Assert(err, check.IsNil)
-	c.Assert("fakeplugin2\n", check.Equals, string(data))
+	c.Assert(string(data), check.Equals, "fakeplugin2\n")
 
 	expected := `Successfully installed 2 plugins: testfake1, testfake2` + "\n"
 	c.Assert(stdout.String(), check.Equals, expected)
