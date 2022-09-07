@@ -280,6 +280,13 @@ func (s *S) TestPluginListIsRegistered(c *check.C) {
 	c.Assert(command, check.FitsTypeOf, &client.PluginList{})
 }
 
+func (s *S) TestPluginBundleIsRegistered(c *check.C) {
+	manager = buildManager("tsuru")
+	command, ok := manager.Commands["plugin-bundle"]
+	c.Assert(ok, check.Equals, true)
+	c.Assert(command, check.FitsTypeOf, &client.PluginBundle{})
+}
+
 func (s *S) TestPluginLookup(c *check.C) {
 	// Kids, do not try this at $HOME
 	defer os.Setenv("HOME", os.Getenv("HOME"))

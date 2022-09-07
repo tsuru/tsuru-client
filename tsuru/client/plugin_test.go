@@ -260,3 +260,89 @@ func (s *S) TestPluginListInfo(c *check.C) {
 func (s *S) TestPluginListIsACommand(c *check.C) {
 	var _ cmd.Command = &PluginList{}
 }
+
+func (s *S) TestPluginBundleInfo(c *check.C) {
+	c.Assert(PluginBundle{}.Info(), check.NotNil)
+}
+
+func (s *S) TestPluginBundle(c *check.C) {
+	tsFake1 := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		fmt.Fprintln(w, "fakeplugin1")
+	}))
+	defer tsFake1.Close()
+	tsFake2 := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		fmt.Fprintln(w, "fakeplugin2")
+	}))
+	defer tsFake2.Close()
+
+	ts := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		fmt.Fprintf(w, `{"plugins":[{"name":"testfake1","url":"%s"},{"name":"testfake2","url":"%s"}]}`, tsFake1.URL, tsFake2.URL)
+	}))
+	defer ts.Close()
+
+	rfs := fstest.RecordingFs{}
+	fsystem = &rfs
+	defer func() {
+		fsystem = nil
+	}()
+	var stdout bytes.Buffer
+	context := cmd.Context{
+		Args:   []string{ts.URL},
+		Stdout: &stdout,
+	}
+	client := cmd.NewClient(&http.Client{}, nil, manager)
+	command := PluginBundle{}
+
+	err := command.Run(&context, client)
+	c.Assert(err, check.IsNil)
+	pluginsPath := cmd.JoinWithUserDir(".tsuru", "plugins")
+	hasAction := rfs.HasAction(fmt.Sprintf("mkdirall %s with mode 0755", pluginsPath))
+	c.Assert(hasAction, check.Equals, true)
+	plugin1Path := cmd.JoinWithUserDir(".tsuru", "plugins", "testfake1")
+	hasAction = rfs.HasAction(fmt.Sprintf("openfile %s with mode 0755", plugin1Path))
+	c.Assert(hasAction, check.Equals, true)
+	plugin2Path := cmd.JoinWithUserDir(".tsuru", "plugins", "testfake2")
+	hasAction = rfs.HasAction(fmt.Sprintf("openfile %s with mode 0755", plugin2Path))
+	c.Assert(hasAction, check.Equals, true)
+
+	f, err := rfs.Open(plugin1Path)
+	c.Assert(err, check.IsNil)
+	data, err := ioutil.ReadAll(f)
+	c.Assert(err, check.IsNil)
+	c.Assert("fakeplugin1\n", check.Equals, string(data))
+
+	f, err = rfs.Open(plugin2Path)
+	c.Assert(err, check.IsNil)
+	data, err = ioutil.ReadAll(f)
+	c.Assert(err, check.IsNil)
+	c.Assert("fakeplugin2\n", check.Equals, string(data))
+
+	expected := `Successfully installed 2 plugins: testfake1, testfake2` + "\n"
+	c.Assert(stdout.String(), check.Equals, expected)
+}
+
+func (s *S) TestPluginBundleError(c *check.C) {
+	ts := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		w.WriteHeader(http.StatusInternalServerError)
+		w.Write([]byte("my err"))
+	}))
+	defer ts.Close()
+	rfs := fstest.RecordingFs{}
+	fsystem = &rfs
+	defer func() {
+		fsystem = nil
+	}()
+	var stdout bytes.Buffer
+	context := cmd.Context{
+		Args:   []string{ts.URL},
+		Stdout: &stdout,
+	}
+	client := cmd.NewClient(&http.Client{}, nil, manager)
+	command := PluginBundle{}
+	err := command.Run(&context, client)
+	c.Assert(err, check.ErrorMatches, `Invalid status code reading plugin bundle: 500 - "my err"`)
+}
+
+func (s *S) TestPluginBundleIsACommand(c *check.C) {
+	var _ cmd.Command = &PluginBundle{}
+}

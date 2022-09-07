@@ -5,16 +5,36 @@
 package client
 
 import (
+	"encoding/json"
 	"errors"
 	"fmt"
 	"io/ioutil"
 	"net/http"
 	"os"
 	"path/filepath"
+	"strings"
 
 	"github.com/tsuru/tsuru/cmd"
 	"github.com/tsuru/tsuru/exec"
 )
+
+type Plugin struct {
+	Name string `json:"name"`
+	URL  string `json:"url"`
+}
+
+func (p *Plugin) Validate() error {
+	if p.Name == "" && p.URL == "" {
+		return fmt.Errorf("Zero value plugin (no Name nor URL)")
+	}
+	if p.Name == "" {
+		return fmt.Errorf("Plugin.Name must not be empty (url: %q)", p.URL)
+	}
+	if p.URL == "" {
+		return fmt.Errorf("Plugin.URL must not be empty (name: %q)", p.Name)
+	}
+	return nil
+}
 
 type PluginInstall struct{}
 
@@ -152,4 +172,73 @@ func RunPlugin(context *cmd.Context) error {
 		Envs:   envs,
 	}
 	return Executor().Execute(opts)
+}
+
+type PluginBundle struct{}
+type BundleManifest struct {
+	Plugins []Plugin
+}
+
+func (PluginBundle) Info() *cmd.Info {
+	return &cmd.Info{
+		Name:    "plugin-bundle",
+		Usage:   "plugin-bundle <bundle-url>",
+		Desc:    `Syncs multiple plugins using a remote manifest containing a list of plugins.`,
+		MinArgs: 1,
+	}
+}
+
+func (c *PluginBundle) Run(context *cmd.Context, client *cmd.Client) error {
+	pluginsDir := cmd.JoinWithUserDir(".tsuru", "plugins")
+	err := filesystem().MkdirAll(pluginsDir, 0755)
+	if err != nil {
+		return err
+	}
+
+	manifestUrl := context.Args[0]
+	resp, err := http.Get(manifestUrl)
+	if err != nil {
+		return err
+	}
+	defer resp.Body.Close()
+
+	data, err := ioutil.ReadAll(resp.Body)
+	if err != nil {
+		return err
+	}
+	if resp.StatusCode < 200 || resp.StatusCode >= 400 {
+		return fmt.Errorf("Invalid status code reading plugin bundle: %d - %q", resp.StatusCode, string(data))
+	}
+
+	bundleManifest := BundleManifest{}
+	if err := json.Unmarshal(data, &bundleManifest); err != nil {
+		return fmt.Errorf("Error reading JSON manifest. Wrong syntax: %w", err)
+	}
+
+	// validate manifest structure
+	for _, plugin := range bundleManifest.Plugins {
+		if err := plugin.Validate(); err != nil {
+			return fmt.Errorf("Error reading JSON manifest. Wrong plugin syntax: %w", err)
+		}
+	}
+
+	var successfulPlugins []string
+	failedPlugins := make(map[string]string)
+	for _, plugin := range bundleManifest.Plugins {
+		if err := installPlugin(plugin.Name, plugin.URL); err != nil {
+			failedPlugins[plugin.Name] = fmt.Sprintf("%v", err)
+		} else {
+			successfulPlugins = append(successfulPlugins, plugin.Name)
+		}
+	}
+
+	fmt.Fprintf(context.Stdout, "Successfully installed %d plugins: %s\n", len(successfulPlugins), strings.Join(successfulPlugins, ", "))
+	if len(failedPlugins) > 0 {
+		fmt.Fprintf(context.Stdout, "Failed to install %d plugins:\n", len(failedPlugins))
+		for name, errStr := range failedPlugins {
+			fmt.Fprintf(context.Stdout, "  %s: %s\n", name, errStr)
+		}
+		return fmt.Errorf("Bundle install has finished with errors.")
+	}
+	return nil
 }
