@@ -5,8 +5,10 @@
 package main
 
 import (
+	"fmt"
 	"log"
 	"os"
+	"time"
 
 	"github.com/ajg/form"
 	"github.com/docker/machine/libmachine/drivers/plugin/localbinary"
@@ -237,6 +239,43 @@ func inDockerMachineDriverMode() bool {
 	return os.Getenv(localbinary.PluginEnvKey) == localbinary.PluginEnvVal
 }
 
+type latestVersionCheckResult struct {
+	isFinished    bool
+	isOutdated    bool
+	latestVersion string
+}
+type latestVersionCheck struct {
+	lastChecked            time.Time
+	currentVersion         string
+	forceCheckBeforeFinish bool
+	result                 chan latestVersionCheckResult
+}
+
+func checkLatestVersionBackground() *latestVersionCheck {
+	// TODO: Implement
+	r := &latestVersionCheck{
+		currentVersion:         version,
+		forceCheckBeforeFinish: false,
+	}
+	r.result = make(chan latestVersionCheckResult)
+	return r
+}
+func verifyLatestVersion(checkVerResult *latestVersionCheck) {
+	checkResult := latestVersionCheckResult{}
+	if checkVerResult.forceCheckBeforeFinish {
+		checkResult = <-checkVerResult.result // blocking
+	} else {
+		select { // non-blocking
+		case checkResult = <-checkVerResult.result:
+		default:
+		}
+	}
+
+	if checkResult.isFinished && checkResult.isOutdated {
+		fmt.Printf("A new version is available. Please update to the newer version %q (current: %q)\n", checkResult.latestVersion, checkVerResult.currentVersion)
+	}
+}
+
 func main() {
 	if inDockerMachineDriverMode() {
 		err := dockermachine.RunDriver(os.Getenv(localbinary.PluginEnvDriverName))
@@ -245,9 +284,13 @@ func main() {
 		}
 	} else {
 		defer config.SaveChanges()
+		checkVerResult := checkLatestVersionBackground()
+
 		localbinary.CurrentBinaryIsDockerMachine = true
 		name := cmd.ExtractProgramName(os.Args[0])
 		m := buildManager(name)
 		m.Run(os.Args[1:])
+
+		verifyLatestVersion(checkVerResult)
 	}
 }
