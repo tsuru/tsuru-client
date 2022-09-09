@@ -244,9 +244,13 @@ func main() {
 		}
 	} else {
 		defer config.SaveChanges()
+		checkVerResult := checkLatestVersionBackground()
+
 		localbinary.CurrentBinaryIsDockerMachine = true
 		name := cmd.ExtractProgramName(os.Args[0])
 		m := buildManager(name)
 		m.Run(os.Args[1:])
+
+		verifyLatestVersion(checkVerResult)
 	}
 }
