@@ -1504,13 +1504,14 @@ func (c *UnitRemove) Run(context *cmd.Context, client *cmd.Client) error {
 
 type UnitKill struct {
 	cmd.AppNameMixIn
-	fs *gnuflag.FlagSet
+	fs    *gnuflag.FlagSet
+	force bool
 }
 
 func (c *UnitKill) Info() *cmd.Info {
 	return &cmd.Info{
 		Name:  "unit-kill",
-		Usage: "unit kill [-a/--app appname] <unit>",
+		Usage: "unit kill [-a/--app appname] [-f/--force] <unit>",
 		Desc: `Kills units from a process of an application. You need to have access to the
 app to be able to remove unit from it.`,
 		MinArgs: 1,
@@ -1520,6 +1521,7 @@ app to be able to remove unit from it.`,
 func (c *UnitKill) Flags() *gnuflag.FlagSet {
 	if c.fs == nil {
 		c.fs = c.AppNameMixIn.Flags()
+		c.fs.BoolVar(&c.force, "f", false, "Forces the termination of unit.")
 	}
 	return c.fs
 }
@@ -1531,7 +1533,13 @@ func (c *UnitKill) Run(context *cmd.Context, client *cmd.Client) error {
 		return err
 	}
 	unit := context.Args[0]
-	url, err := cmd.GetURL(fmt.Sprintf("/apps/%s/units/%s", appName, unit))
+
+	v := url.Values{}
+	if c.force {
+		v.Set("force", "true")
+	}
+
+	url, err := cmd.GetURLVersion("1.12", fmt.Sprintf("/apps/%s/units/%s?%s", appName, unit, v.Encode()))
 	if err != nil {
 		return err
 	}
