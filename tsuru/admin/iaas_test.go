@@ -18,6 +18,9 @@ import (
 	"gopkg.in/check.v1"
 )
 
+func (s *S) TestMachineListInfo(c *check.C) {
+	c.Assert((&MachineList{}).Info(), check.NotNil)
+}
 func (s *S) TestMachineListRun(c *check.C) {
 	var stdout, stderr bytes.Buffer
 	context := cmd.Context{
@@ -221,6 +224,9 @@ func (s *S) TestMachineKeyNotExist(c *check.C) {
 	c.Assert(stdout.String(), check.Equals, expected)
 }
 
+func (s *S) TestMachineDestroyInfo(c *check.C) {
+	c.Assert((&MachineDestroy{}).Info(), check.NotNil)
+}
 func (s *S) TestMachineDestroyRun(c *check.C) {
 	var stdout, stderr bytes.Buffer
 	context := cmd.Context{
@@ -242,6 +248,9 @@ func (s *S) TestMachineDestroyRun(c *check.C) {
 	c.Assert(stdout.String(), check.Equals, "Machine successfully destroyed.\n")
 }
 
+func (s *S) TestTemplateListInfo(c *check.C) {
+	c.Assert((&TemplateList{}).Info(), check.NotNil)
+}
 func (s *S) TestTemplateListRun(c *check.C) {
 	var stdout, stderr bytes.Buffer
 	context := cmd.Context{
@@ -494,6 +503,9 @@ func (s *S) TestTemplateListWithFlags(c *check.C) {
 	c.Assert(stdout.String(), check.Equals, "tpl1\ntpl3\n")
 }
 
+func (s *S) TestTemplateAddInfo(c *check.C) {
+	c.Assert((&TemplateAdd{}).Info(), check.NotNil)
+}
 func (s *S) TestTemplateAddCmdRun(c *check.C) {
 	var buf bytes.Buffer
 	context := cmd.Context{Args: []string{"my-tpl", "ec2", "zone=xyz", "image=ami-something"}, Stdout: &buf}
@@ -530,6 +542,9 @@ func (s *S) TestTemplateAddCmdRun(c *check.C) {
 	c.Assert(buf.String(), check.Equals, "Template successfully added.\n")
 }
 
+func (s *S) TestTemplateRemoveInfo(c *check.C) {
+	c.Assert((&TemplateRemove{}).Info(), check.NotNil)
+}
 func (s *S) TestTemplateRemoveCmdRun(c *check.C) {
 	var buf bytes.Buffer
 	context := cmd.Context{Args: []string{"my-tpl"}, Stdout: &buf, Stderr: &buf}
@@ -548,6 +563,9 @@ func (s *S) TestTemplateRemoveCmdRun(c *check.C) {
 	c.Assert(buf.String(), check.Equals, "Template successfully removed.\n")
 }
 
+func (s *S) TestTemplateUpdateInfo(c *check.C) {
+	c.Assert((&TemplateUpdate{}).Info(), check.NotNil)
+}
 func (s *S) TestTemplateUpdateCmdRun(c *check.C) {
 	var buf bytes.Buffer
 	context := cmd.Context{Args: []string{"my-tpl", "zone=", "image=ami-something"}, Stdout: &buf}
@@ -657,6 +675,9 @@ func (s *S) TestTemplateFailToUpdateIaaS(c *check.C) {
 	c.Assert(stderr.String(), check.Equals, "Failed to update template.\n")
 }
 
+func (s *S) TestTemplateCopyInfo(c *check.C) {
+	c.Assert((&TemplateCopy{}).Info(), check.NotNil)
+}
 func (s *S) TestTemplateCopyCmdRun(c *check.C) {
 	var buf bytes.Buffer
 	tpl1 := iaas.Template{Name: "tpl1", IaaSName: "ec2", Data: iaas.TemplateDataList{

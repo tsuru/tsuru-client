@@ -23,6 +23,10 @@ import (
 	"gopkg.in/check.v1"
 )
 
+func (s *S) TestAddNodeCmdInfo(c *check.C) {
+	c.Assert(AddNodeCmd{}.Info(), check.NotNil)
+}
+
 func (s *S) TestAddNodeCmdRun(c *check.C) {
 	var buf bytes.Buffer
 	context := cmd.Context{Args: []string{"pool=poolTest", "address=http://localhost:8080"}, Stdout: &buf}
@@ -123,6 +127,10 @@ func (s *S) TestAddNodeWithErrorCmdRun(c *check.C) {
 	c.Assert(err.Error(), check.Equals, "some err")
 }
 
+func (s *S) TestRemoveNodeCmdInfo(c *check.C) {
+	c.Assert(RemoveNodeCmd{}.Info(), check.NotNil)
+}
+
 func (s *S) TestRemoveNodeFromTheSchedulerCmdRun(c *check.C) {
 	var buf bytes.Buffer
 	context := cmd.Context{Args: []string{"http://localhost:8080"}, Stdout: &buf}
@@ -199,6 +207,9 @@ func (s *S) TestRemoveNodeFromTheSchedulerWithNoRebalanceCmdRun(c *check.C) {
 	c.Assert(buf.String(), check.Equals, "Node successfully removed.\n")
 }
 
+func (s *S) TestListNodesCmdInfo(c *check.C) {
+	c.Assert((&ListNodesCmd{}).Info(), check.NotNil)
+}
 func (s *S) TestListNodesCmdRun(c *check.C) {
 	var buf bytes.Buffer
 	context := cmd.Context{Args: []string{}, Stdout: &buf}
@@ -358,6 +369,10 @@ func (s *S) TestListNodesCmdRunWithFlagQ(c *check.C) {
 	c.Assert(buf.String(), check.Equals, expected)
 }
 
+func (s *S) TestUpdateNodeCmdInfo(c *check.C) {
+	c.Assert(UpdateNodeCmd{}.Info(), check.NotNil)
+}
+
 func (s *S) TestUpdateNodeCmdRun(c *check.C) {
 	var buf bytes.Buffer
 	context := cmd.Context{Args: []string{"http://localhost:1111", "x=y", "y=z"}, Stdout: &buf}
@@ -463,6 +478,9 @@ func (s *S) TestUpdateNodeToEnabledDisableCmdRun(c *check.C) {
 	c.Assert(err, check.NotNil)
 }
 
+func (s *S) TestGetNodeHealingConfigCmdInfo(c *check.C) {
+	c.Assert((&GetNodeHealingConfigCmd{}).Info(), check.NotNil)
+}
 func (s *S) TestGetNodeHealingConfigCmd(c *check.C) {
 	var buf bytes.Buffer
 	context := cmd.Context{Stdout: &buf}
@@ -537,6 +555,9 @@ func (s *S) TestGetNodeHealingConfigCmdEmpty(c *check.C) {
 	c.Assert(buf.String(), check.Equals, expected)
 }
 
+func (s *S) TestDeleteNodeHealingConfigCmdInfo(c *check.C) {
+	c.Assert((&DeleteNodeHealingConfigCmd{}).Info(), check.NotNil)
+}
 func (s *S) TestDeleteNodeHealingConfigCmd(c *check.C) {
 	var buf bytes.Buffer
 	context := cmd.Context{Stdout: &buf}
@@ -557,6 +578,9 @@ func (s *S) TestDeleteNodeHealingConfigCmd(c *check.C) {
 	c.Assert(buf.String(), check.Equals, "Node healing configuration successfully removed.\n")
 }
 
+func (s *S) TestSetNodeHealingConfigCmdInfo(c *check.C) {
+	c.Assert((&SetNodeHealingConfigCmd{}).Info(), check.NotNil)
+}
 func (s *S) TestSetNodeHealingConfigCmd(c *check.C) {
 	var buf bytes.Buffer
 	context := cmd.Context{Stdout: &buf}
@@ -581,6 +605,9 @@ func (s *S) TestSetNodeHealingConfigCmd(c *check.C) {
 	c.Assert(buf.String(), check.Equals, "Node healing configuration successfully updated.\n")
 }
 
+func (s *S) TestRebalanceNodeCmdInfo(c *check.C) {
+	c.Assert((&RebalanceNodeCmd{}).Info(), check.NotNil)
+}
 func (s *S) TestRebalanceNodeCmdRun(c *check.C) {
 	var stdout, stderr bytes.Buffer
 	context := cmd.Context{
@@ -715,6 +742,10 @@ func (s *S) TestRebalanceNodeCmdRunGivingUp(c *check.C) {
 	err := rebalCmd.Run(&context, nil)
 	c.Assert(err, check.IsNil)
 	c.Assert(stdout.String(), check.Equals, "Are you sure you want to rebalance containers? (y/n) Abort.\n")
+}
+
+func (s *S) TestInfoNodeCmdInfo(c *check.C) {
+	c.Assert(InfoNodeCmd{}.Info(), check.NotNil)
 }
 
 func (s *S) TestInfoNodeCmdRun(c *check.C) {

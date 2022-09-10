@@ -15,6 +15,9 @@ import (
 	check "gopkg.in/check.v1"
 )
 
+func (s *S) TestEventBlockListInfo(c *check.C) {
+	c.Assert((&EventBlockList{}).Info(), check.NotNil)
+}
 func (s *S) TestEventBlockList(c *check.C) {
 	os.Setenv("TSURU_DISABLE_COLORS", "1")
 	defer os.Unsetenv("TSURU_DISABLE_COLORS")
@@ -98,6 +101,9 @@ func (s *S) TestEventBlockListNoEvents(c *check.C) {
 	c.Assert(stdout.String(), check.Equals, expected)
 }
 
+func (s *S) TestEventBlockAddInfo(c *check.C) {
+	c.Assert((&EventBlockAdd{}).Info(), check.NotNil)
+}
 func (s *S) TestEventBlockAdd(c *check.C) {
 	var stdout, stderr bytes.Buffer
 	context := cmd.Context{
@@ -151,6 +157,9 @@ func (s *S) TestEventBlockAddAllFlags(c *check.C) {
 	c.Assert(stdout.String(), check.Equals, "Block successfully added.\n")
 }
 
+func (s *S) TestEventBlockRemoveInfo(c *check.C) {
+	c.Assert((&EventBlockRemove{}).Info(), check.NotNil)
+}
 func (s *S) TestEventBlockRemove(c *check.C) {
 	var stdout, stderr bytes.Buffer
 	context := cmd.Context{

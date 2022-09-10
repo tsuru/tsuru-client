@@ -17,6 +17,13 @@ import (
 	"gopkg.in/check.v1"
 )
 
+func (s *S) TestListAutoScaleHistoryCmdInfo(c *check.C) {
+	c.Assert((&ListAutoScaleHistoryCmd{}).Info(), check.NotNil)
+}
+func (s *S) TestAutoScaleRunCmdInfo(c *check.C) {
+	c.Assert((&AutoScaleRunCmd{}).Info(), check.NotNil)
+}
+
 func (s *S) TestAutoScaleRunCmdRun(c *check.C) {
 	var stdout, stderr bytes.Buffer
 	msg, _ := json.Marshal(tsuruIo.SimpleJsonMessage{Message: "progress msg"})
@@ -38,6 +45,10 @@ func (s *S) TestAutoScaleRunCmdRun(c *check.C) {
 	err := cm.Run(&context, client)
 	c.Assert(err, check.IsNil)
 	c.Assert(stdout.String(), check.Equals, "progress msg")
+}
+
+func (s *S) TestAutoScaleInfoCmdInfo(c *check.C) {
+	c.Assert((&AutoScaleInfoCmd{}).Info(), check.NotNil)
 }
 
 func (s *S) TestAutoScaleInfoCmdRun(c *check.C) {
@@ -130,6 +141,10 @@ func (s *S) TestAutoScaleInfoCmdRunDisabled(c *check.C) {
 	c.Assert(calls, check.Equals, 1)
 }
 
+func (s *S) TestAutoScaleSetRuleCmdInfo(c *check.C) {
+	c.Assert((&AutoScaleSetRuleCmd{}).Info(), check.NotNil)
+}
+
 func (s *S) TestAutoScaleSetRuleCmdRun(c *check.C) {
 	var called bool
 	transport := cmdtest.ConditionalTransport{
@@ -164,6 +179,10 @@ func (s *S) TestAutoScaleSetRuleCmdRun(c *check.C) {
 	c.Assert(err, check.IsNil)
 	c.Assert(called, check.Equals, true)
 	c.Assert(buf.String(), check.Equals, "Rule successfully defined.\n")
+}
+
+func (s *S) TestAutoScaleDeleteRuleCmdInfo(c *check.C) {
+	c.Assert((&AutoScaleDeleteRuleCmd{}).Info(), check.NotNil)
 }
 
 func (s *S) TestAutoScaleDeleteCmdRun(c *check.C) {

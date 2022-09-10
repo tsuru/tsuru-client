@@ -14,6 +14,9 @@ import (
 	"gopkg.in/check.v1"
 )
 
+func (s *S) TestPlanCreateInfo(c *check.C) {
+	c.Assert((&PlanCreate{}).Info(), check.NotNil)
+}
 func (s *S) TestPlanCreate(c *check.C) {
 	var stdout, stderr bytes.Buffer
 	context := cmd.Context{
@@ -184,6 +187,9 @@ func (s *S) TestPlanCreateInvalidCpushare(c *check.C) {
 	c.Assert(stdout.String(), check.Equals, "Failed to create plan!\n")
 }
 
+func (s *S) TestPlanRemoveInfo(c *check.C) {
+	c.Assert((&PlanRemove{}).Info(), check.NotNil)
+}
 func (s *S) TestPlanRemove(c *check.C) {
 	var stdout, stderr bytes.Buffer
 	context := cmd.Context{
