@@ -14,6 +14,10 @@ import (
 	"gopkg.in/check.v1"
 )
 
+func (s *S) TestUserQuotaViewInfo(c *check.C) {
+	c.Assert((&UserQuotaView{}).Info(), check.NotNil)
+}
+
 func (s *S) TestUserQuotaViewRun(c *check.C) {
 	result := `{"inuse":3,"limit":4}`
 	var stdout, stderr bytes.Buffer
@@ -47,6 +51,10 @@ func (s *S) TestUserQuotaViewRunFailure(c *check.C) {
 	err := command.Run(&context, client)
 	c.Assert(err, check.NotNil)
 	c.Assert(err.Error(), check.Equals, "user not found")
+}
+
+func (s *S) TestUserChangeQuotaInfo(c *check.C) {
+	c.Assert((&UserChangeQuota{}).Info(), check.NotNil)
 }
 
 func (s *S) TestUserChangeQuotaRun(c *check.C) {
@@ -132,6 +140,10 @@ func (s *S) TestUserChangeQuotaFailure(c *check.C) {
 	c.Assert(err.Error(), check.Equals, "user not found")
 }
 
+func (s *S) TestAppQuotaViewInfo(c *check.C) {
+	c.Assert((&AppQuotaView{}).Info(), check.NotNil)
+}
+
 func (s *S) TestAppQuotaViewRun(c *check.C) {
 	result := `{"inuse":3,"limit":4}`
 	var stdout, stderr bytes.Buffer
@@ -165,6 +177,10 @@ func (s *S) TestAppQuotaViewRunFailure(c *check.C) {
 	err := command.Run(&context, client)
 	c.Assert(err, check.NotNil)
 	c.Assert(err.Error(), check.Equals, "app not found")
+}
+
+func (s *S) TestAppQuotaChangeInfo(c *check.C) {
+	c.Assert((&AppQuotaChange{}).Info(), check.NotNil)
 }
 
 func (s *S) TestAppQuotaChangeRun(c *check.C) {

@@ -13,6 +13,9 @@ import (
 	"gopkg.in/check.v1"
 )
 
+func (s *S) TestNodeContainerInfoInfo(c *check.C) {
+	c.Assert((&NodeContainerInfo{}).Info(), check.NotNil)
+}
 func (s *S) TestNodeContainerInfoRun(c *check.C) {
 	var buf bytes.Buffer
 	context := cmd.Context{Args: []string{"n1"}, Stdout: &buf}
@@ -91,6 +94,10 @@ func (s *S) TestNodeContainerInfoRun(c *check.C) {
 `)
 }
 
+func (s *S) TestNodeContainerListInfo(c *check.C) {
+	c.Assert((&NodeContainerList{}).Info(), check.NotNil)
+}
+
 func (s *S) TestNodeContainerListRun(c *check.C) {
 	var buf bytes.Buffer
 	context := cmd.Context{Args: []string{}, Stdout: &buf}
@@ -120,6 +127,9 @@ func (s *S) TestNodeContainerListRun(c *check.C) {
 `)
 }
 
+func (s *S) TestNodeContainerAddInfo(c *check.C) {
+	c.Assert((&NodeContainerAdd{}).Info(), check.NotNil)
+}
 func (s *S) TestNodeContainerAddRun(c *check.C) {
 	var buf bytes.Buffer
 	context := cmd.Context{Args: []string{"n1"}, Stdout: &buf}
@@ -148,6 +158,9 @@ func (s *S) TestNodeContainerAddRun(c *check.C) {
 	c.Assert(buf.String(), check.Equals, "Node container successfully added.\n")
 }
 
+func (s *S) TestNodeContainerUpdateInfo(c *check.C) {
+	c.Assert((&NodeContainerUpdate{}).Info(), check.NotNil)
+}
 func (s *S) TestNodeContainerUpdateRun(c *check.C) {
 	var buf bytes.Buffer
 	context := cmd.Context{Args: []string{"n1"}, Stdout: &buf}
@@ -241,6 +254,9 @@ func (s *S) TestNodeContainerUpdateRunEnable(c *check.C) {
 	c.Assert(buf.String(), check.Equals, "Node container successfully updated.\n")
 }
 
+func (s *S) TestNodeContainerDeleteInfo(c *check.C) {
+	c.Assert((&NodeContainerDelete{}).Info(), check.NotNil)
+}
 func (s *S) TestNodeContainerDeleteRun(c *check.C) {
 	var buf bytes.Buffer
 	context := cmd.Context{Args: []string{"n1"}, Stdout: &buf}
@@ -259,6 +275,9 @@ func (s *S) TestNodeContainerDeleteRun(c *check.C) {
 	c.Assert(buf.String(), check.Equals, "Node container successfully deleted.\n")
 }
 
+func (s *S) TestNodeContainerUpgradeInfo(c *check.C) {
+	c.Assert((&NodeContainerUpgrade{}).Info(), check.NotNil)
+}
 func (s *S) TestNodeContainerUpgradeRun(c *check.C) {
 	var buf bytes.Buffer
 	context := cmd.Context{Args: []string{"n1"}, Stdout: &buf}

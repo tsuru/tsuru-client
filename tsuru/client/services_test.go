@@ -733,6 +733,10 @@ func (s *S) TestServiceInfoExtraHeaders(c *check.C) {
 	c.Assert(headers, check.DeepEquals, expected)
 }
 
+func (s *S) TestServiceInstanceInfoInfo(c *check.C) {
+	c.Assert(ServiceInstanceInfo{}.Info(), check.NotNil)
+}
+
 func (s *S) TestServiceInstanceInfoRun(c *check.C) {
 	var stdout, stderr bytes.Buffer
 	expected := `Service: mymongo

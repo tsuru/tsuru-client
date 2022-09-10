@@ -15,6 +15,10 @@ import (
 	check "gopkg.in/check.v1"
 )
 
+func (s *S) TestTokenCreateCmdInfo(c *check.C) {
+	c.Assert((&TokenCreateCmd{}).Info(), check.NotNil)
+}
+
 func (s *S) TestTokenCreate(c *check.C) {
 	var stdout, stderr bytes.Buffer
 	result := `{"token_id": "mytokenid", "token": "mytokenvalue"}`
@@ -85,6 +89,10 @@ func (s *S) TestTokenCreateWithFlags(c *check.C) {
 	err := command.Run(&context, client)
 	c.Assert(err, check.IsNil)
 	c.Assert(stdout.String(), check.Equals, expected)
+}
+
+func (s *S) TestTokenUpdateCmdInfo(c *check.C) {
+	c.Assert((&TokenUpdateCmd{}).Info(), check.NotNil)
 }
 
 func (s *S) TestTokenUpdate(c *check.C) {
@@ -159,6 +167,10 @@ func (s *S) TestTokenUpdateWithFlags(c *check.C) {
 	c.Assert(stdout.String(), check.Equals, expected)
 }
 
+func (s *S) TestTokenListCmdInfo(c *check.C) {
+	c.Assert((&TokenListCmd{}).Info(), check.NotNil)
+}
+
 func (s *S) TestTokenList(c *check.C) {
 	var stdout, stderr bytes.Buffer
 	result := `[
@@ -214,6 +226,10 @@ func (s *S) TestTokenList(c *check.C) {
 	c.Assert(stdout.String(), check.Equals, expected)
 }
 
+func (s *S) TestTokenDeleteCmdInfo(c *check.C) {
+	c.Assert((&TokenDeleteCmd{}).Info(), check.NotNil)
+}
+
 func (s *S) TestTokenDelete(c *check.C) {
 	var stdout, stderr bytes.Buffer
 	expected := "Token successfully deleted.\n"
@@ -235,6 +251,10 @@ func (s *S) TestTokenDelete(c *check.C) {
 	err := command.Run(&context, client)
 	c.Assert(err, check.IsNil)
 	c.Assert(stdout.String(), check.Equals, expected)
+}
+
+func (s *S) TestTokenInfoCmdInfo(c *check.C) {
+	c.Assert((&TokenInfoCmd{}).Info(), check.NotNil)
 }
 
 func (s *S) TestTokenInfo(c *check.C) {

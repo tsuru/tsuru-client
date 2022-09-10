@@ -200,6 +200,10 @@ var errEvt = `
 `
 var evtsData = fmt.Sprintf("[%s, %s, %s, %s]", okEvt, canceledEvt, runningEvt, errEvt)
 
+func (s *S) TestEventListInfo(c *check.C) {
+	c.Assert((&EventList{}).Info(), check.NotNil)
+}
+
 func (s *S) TestEventList(c *check.C) {
 	os.Setenv("TSURU_DISABLE_COLORS", "1")
 	defer os.Unsetenv("TSURU_DISABLE_COLORS")
@@ -264,6 +268,10 @@ func (s *S) TestEventListWithFilters(c *check.C) {
 	c.Assert(err, check.IsNil)
 	err = command.Run(&context, client)
 	c.Assert(err, check.IsNil)
+}
+
+func (s *S) TestEventInfoInfo(c *check.C) {
+	c.Assert((&EventInfo{}).Info(), check.NotNil)
 }
 
 func (s *S) TestEventInfo(c *check.C) {
@@ -542,6 +550,10 @@ Canceled:   true
   At:       19 Jul 16 11:28 -0300
 `
 	c.Assert(stdout.String(), check.Matches, expected)
+}
+
+func (s *S) TestEventCancelInfo(c *check.C) {
+	c.Assert((&EventCancel{}).Info(), check.NotNil)
 }
 
 func (s *S) TestEventCancel(c *check.C) {

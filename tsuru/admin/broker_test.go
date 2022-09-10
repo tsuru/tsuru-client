@@ -12,6 +12,10 @@ import (
 	check "gopkg.in/check.v1"
 )
 
+func (s *S) TestBrokerAddInfo(c *check.C) {
+	c.Assert((&BrokerAdd{}).Info(), check.NotNil)
+}
+
 func (s *S) TestBrokerAdd(c *check.C) {
 	var stdout, stderr bytes.Buffer
 	expected := "Service broker successfully added.\n"
@@ -133,6 +137,9 @@ func (s *S) TestBrokerAddDefaultCacheExpiration(c *check.C) {
 	c.Assert(stdout.String(), check.Equals, expected)
 }
 
+func (s *S) TestBrokerUpdateInfo(c *check.C) {
+	c.Assert((&BrokerUpdate{}).Info(), check.NotNil)
+}
 func (s *S) TestBrokerUpdate(c *check.C) {
 	var stdout, stderr bytes.Buffer
 	expected := "Service broker successfully updated.\n"
@@ -276,6 +283,9 @@ func (s *S) TestBrokerUpdateErrorWithCacheAndNoCache(c *check.C) {
 	c.Assert(err, check.ErrorMatches, "Can't set --cache and --no-cache flags together.")
 }
 
+func (s *S) TestBrokerDeleteInfo(c *check.C) {
+	c.Assert((&BrokerDelete{}).Info(), check.NotNil)
+}
 func (s *S) TestBrokerDelete(c *check.C) {
 	var stdout, stderr bytes.Buffer
 	expected := "Service broker successfully deleted.\n"
@@ -300,6 +310,9 @@ func (s *S) TestBrokerDelete(c *check.C) {
 	c.Assert(stdout.String(), check.Equals, expected)
 }
 
+func (s *S) TestBrokerListInfo(c *check.C) {
+	c.Assert((&BrokerList{}).Info(), check.NotNil)
+}
 func (s *S) TestBrokerList(c *check.C) {
 	var stdout, stderr bytes.Buffer
 	expected := `+-------+-------------------------------------------------+----------+--------+-------------------------------+

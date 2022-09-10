@@ -22,6 +22,10 @@ func decodeJSONBody(c *check.C, req *http.Request, opts interface{}) {
 	c.Assert(err, check.IsNil)
 }
 
+func (s *S) TestAddPoolToSchedulerCmdInfo(c *check.C) {
+	c.Assert(AddPoolToSchedulerCmd{}.Info(), check.NotNil)
+}
+
 func (s *S) TestAddPoolToTheSchedulerCmd(c *check.C) {
 	var buf bytes.Buffer
 	context := cmd.Context{Args: []string{"poolTest"}, Stdout: &buf}
@@ -227,6 +231,10 @@ func (s *S) TestAskOverwriteDefaultPool(c *check.C) {
 	c.Assert(called, check.Equals, 2)
 	expected := "WARNING: Default pool already exist. Do you want change to test pool? (y/n) Pool successfully registered.\n"
 	c.Assert(buf.String(), check.Equals, expected)
+}
+
+func (s *S) TestUpdatePoolToSchedulerCmdInfo(c *check.C) {
+	c.Assert(UpdatePoolToSchedulerCmd{}.Info(), check.NotNil)
 }
 
 func (s *S) TestUpdatePoolToTheSchedulerCmd(c *check.C) {
@@ -553,6 +561,10 @@ func (s *S) TestAskOverwriteDefaultPoolInUpdate(c *check.C) {
 	c.Assert(buf.String(), check.Equals, expected)
 }
 
+func (s *S) TestRemovePoolFromSchedulerCmdInfo(c *check.C) {
+	c.Assert((&RemovePoolFromSchedulerCmd{}).Info(), check.NotNil)
+}
+
 func (s *S) TestRemovePoolFromTheSchedulerCmd(c *check.C) {
 	var buf bytes.Buffer
 	context := cmd.Context{Args: []string{"poolTest"}, Stdout: &buf}
@@ -585,6 +597,10 @@ func (s *S) TestRemovePoolFromTheSchedulerCmdConfirmation(c *check.C) {
 	c.Assert(stdout.String(), check.Equals, "Are you sure you want to remove \"poolX\" pool? (y/n) Abort.\n")
 }
 
+func (s *S) TestAddTeamsToPoolCmdInfo(c *check.C) {
+	c.Assert(AddTeamsToPoolCmd{}.Info(), check.NotNil)
+}
+
 func (s *S) TestAddTeamsToPoolCmdRun(c *check.C) {
 	var buf bytes.Buffer
 	ctx := cmd.Context{Stdout: &buf, Args: []string{"pool1", "team1", "team2"}}
@@ -607,6 +623,10 @@ func (s *S) TestAddTeamsToPoolCmdRun(c *check.C) {
 	c.Assert(err, check.IsNil)
 }
 
+func (s *S) TestRemoveTeamsFromPoolCmdInfo(c *check.C) {
+	c.Assert(RemoveTeamsFromPoolCmd{}.Info(), check.NotNil)
+}
+
 func (s *S) TestRemoveTeamsFromPoolCmdRun(c *check.C) {
 	var buf bytes.Buffer
 	ctx := cmd.Context{Stdout: &buf, Args: []string{"pool1", "team1"}}
@@ -625,6 +645,9 @@ func (s *S) TestRemoveTeamsFromPoolCmdRun(c *check.C) {
 	c.Assert(err, check.IsNil)
 }
 
+func (s *S) TestPoolConstraintListInfo(c *check.C) {
+	c.Assert((&PoolConstraintList{}).Info(), check.NotNil)
+}
 func (s *S) TestPoolConstraintList(c *check.C) {
 	var buf bytes.Buffer
 	context := cmd.Context{Stdout: &buf}
@@ -653,6 +676,10 @@ func (s *S) TestPoolConstraintList(c *check.C) {
 | dev             | team   | *               | true      |
 +-----------------+--------+-----------------+-----------+
 `)
+}
+
+func (s *S) TestPoolConstraintSetInfo(c *check.C) {
+	c.Assert((&PoolConstraintSet{}).Info(), check.NotNil)
 }
 
 func (s *S) TestPoolConstraintSetDefaultFlags(c *check.C) {

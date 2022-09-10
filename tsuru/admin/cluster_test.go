@@ -20,6 +20,9 @@ import (
 	"gopkg.in/check.v1"
 )
 
+func (s *S) TestClusterAddInfo(c *check.C) {
+	c.Assert((&ClusterAdd{}).Info(), check.NotNil)
+}
 func (s *S) TestClusterAddRun(c *check.C) {
 	var stdout, stderr bytes.Buffer
 	context := cmd.Context{
@@ -83,6 +86,9 @@ func (s *S) TestClusterAddRun(c *check.C) {
 	c.Assert(stdout.String(), check.Equals, "Cluster successfully added.\n")
 }
 
+func (s *S) TestClusterUpdateInfo(c *check.C) {
+	c.Assert((&ClusterUpdate{}).Info(), check.NotNil)
+}
 func (s *S) TestClusterUpdateRun(c *check.C) {
 	var stdout, stderr bytes.Buffer
 	context := cmd.Context{
@@ -360,6 +366,9 @@ func (s *S) TestClusterUpdateMergeCluster(c *check.C) {
 	}
 }
 
+func (s *S) TestClusterListInfo(c *check.C) {
+	c.Assert((&ClusterList{}).Info(), check.NotNil)
+}
 func (s *S) TestClusterListRun(c *check.C) {
 	var stdout, stderr bytes.Buffer
 	context := cmd.Context{
@@ -409,6 +418,9 @@ func (s *S) TestClusterListRun(c *check.C) {
 `)
 }
 
+func (s *S) TestClusterRemoveInfo(c *check.C) {
+	c.Assert((&ClusterRemove{}).Info(), check.NotNil)
+}
 func (s *S) TestClusterRemoveRun(c *check.C) {
 	var stdout, stderr bytes.Buffer
 	expected := `Are you sure you want to remove cluster "c1"? (y/n) `
@@ -435,6 +447,9 @@ func (s *S) TestClusterRemoveRun(c *check.C) {
 	c.Assert(stdout.String(), check.Equals, expected+expectedOut)
 }
 
+func (s *S) TestProvisionerListInfo(c *check.C) {
+	c.Assert((&ProvisionerList{}).Info(), check.NotNil)
+}
 func (s *S) TestProvisionerListRun(c *check.C) {
 	var stdout, stderr bytes.Buffer
 	context := cmd.Context{
@@ -480,6 +495,9 @@ func (s *S) TestProvisionerListRun(c *check.C) {
 `)
 }
 
+func (s *S) TestProvisionerInfoInfo(c *check.C) {
+	c.Assert((&ProvisionerInfo{}).Info(), check.NotNil)
+}
 func (s *S) TestProvisionerInfoRun(c *check.C) {
 	var stdout, stderr bytes.Buffer
 	context := cmd.Context{

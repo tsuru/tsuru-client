@@ -20,6 +20,10 @@ import (
 	check "gopkg.in/check.v1"
 )
 
+func (s *S) TestRoutersListInfo(c *check.C) {
+	c.Assert((&RoutersList{}).Info(), check.NotNil)
+}
+
 func (s *S) TestRoutersListRun(c *check.C) {
 	var stdout, stderr bytes.Buffer
 	context := cmd.Context{
@@ -52,6 +56,10 @@ func (s *S) TestRoutersListRun(c *check.C) {
 	err = command.Run(&context, client)
 	c.Assert(err, check.IsNil)
 	c.Assert(stdout.String(), check.Equals, expected)
+}
+
+func (s *S) TestAppRoutersListInfo(c *check.C) {
+	c.Assert((&AppRoutersList{}).Info(), check.NotNil)
 }
 
 func (s *S) TestAppRoutersListRun(c *check.C) {
@@ -116,6 +124,10 @@ func (s *S) TestAppRoutersListRunEmpty(c *check.C) {
 	c.Assert(stdout.String(), check.Equals, expected)
 }
 
+func (s *S) TestAppRoutersAddInfo(c *check.C) {
+	c.Assert((&AppRoutersAdd{}).Info(), check.NotNil)
+}
+
 func (s *S) TestAppRoutersAddRun(c *check.C) {
 	var stdout, stderr bytes.Buffer
 	context := cmd.Context{
@@ -148,6 +160,10 @@ func (s *S) TestAppRoutersAddRun(c *check.C) {
 	err := command.Run(&context, client)
 	c.Assert(err, check.IsNil)
 	c.Assert(stdout.String(), check.Equals, expected)
+}
+
+func (s *S) TestAppRoutersUpdateInfo(c *check.C) {
+	c.Assert((&AppRoutersUpdate{}).Info(), check.NotNil)
 }
 
 func (s *S) TestAppRoutersUpdateRun(c *check.C) {
@@ -184,6 +200,10 @@ func (s *S) TestAppRoutersUpdateRun(c *check.C) {
 	c.Assert(stdout.String(), check.Equals, expected)
 }
 
+func (s *S) TestAppRoutersRemoveInfo(c *check.C) {
+	c.Assert((&AppRoutersRemove{}).Info(), check.NotNil)
+}
+
 func (s *S) TestAppRoutersRemoveRun(c *check.C) {
 	var stdout, stderr bytes.Buffer
 	context := cmd.Context{
@@ -204,6 +224,10 @@ func (s *S) TestAppRoutersRemoveRun(c *check.C) {
 	err := command.Run(&context, client)
 	c.Assert(err, check.IsNil)
 	c.Assert(stdout.String(), check.Equals, expected)
+}
+
+func (s *S) TestRouterAddInfo(c *check.C) {
+	c.Assert((&RouterAdd{}).Info(), check.NotNil)
 }
 
 func (s *S) TestAppVersionRouterAdd(c *check.C) {
@@ -239,6 +263,10 @@ func (s *S) TestAppVersionRouterAdd(c *check.C) {
 	err := command.Run(&context, client)
 	c.Assert(err, check.IsNil)
 	c.Assert(stdout.String(), check.Equals, expected)
+}
+
+func (s *S) TestRouterRemoveInfo(c *check.C) {
+	c.Assert((&RouterRemove{}).Info(), check.NotNil)
 }
 
 func (s *S) TestAppVersionRouterRemove(c *check.C) {

@@ -13,6 +13,10 @@ import (
 	check "gopkg.in/check.v1"
 )
 
+func (s *S) TestTagListInfo(c *check.C) {
+	c.Assert((&TagList{}).Info(), check.NotNil)
+}
+
 func (s *S) TestTagListWithApps(c *check.C) {
 	var stdout, stderr bytes.Buffer
 	appList := `[{"name":"app1","tags":["tag1"]},{"name":"app2","tags":["tag2","tag3"]},{"name":"app3","tags":[]},{"name":"app4","tags":["tag1","tag3"]}]`

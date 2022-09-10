@@ -85,6 +85,9 @@ func (s *S) TestPlatformListIsACommand(c *check.C) {
 	var _ cmd.Command = PlatformList{}
 }
 
+func (s *S) TestPlatformAddInfo(c *check.C) {
+	c.Assert((&PlatformAdd{}).Info(), check.NotNil)
+}
 func (s *S) TestPlatformAddRun(c *check.C) {
 	server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		w.Write([]byte("FROM tsuru/java"))
@@ -256,6 +259,10 @@ func (s *S) TestPlatformAddFlagSet(c *check.C) {
 	c.Check(simage.Name, check.Equals, "i")
 	c.Check(simage.Usage, check.Equals, "Name of the prebuilt Docker image")
 	c.Check(simage.DefValue, check.Equals, "")
+}
+
+func (s *S) TestPlatformUpdateInfo(c *check.C) {
+	c.Assert((&PlatformUpdate{}).Info(), check.NotNil)
 }
 
 func (s *S) TestPlatformUpdateFlagSet(c *check.C) {
@@ -512,6 +519,10 @@ func (s *S) TestPlatformUpdateEnableAndDisable(c *check.C) {
 	c.Assert(err.Error(), check.Equals, expected)
 }
 
+func (s *S) TestPlatformRemoveInfo(c *check.C) {
+	c.Assert((&PlatformRemove{}).Info(), check.NotNil)
+}
+
 func (s *S) TestPlatformRemoveRun(c *check.C) {
 	var stdout, stderr bytes.Buffer
 	name := "teste"
@@ -546,6 +557,10 @@ func (s *S) TestPlatformRemoveConfirmation(c *check.C) {
 	err := command.Run(&context, nil)
 	c.Assert(err, check.IsNil)
 	c.Assert(stdout.String(), check.Equals, "Are you sure you want to remove \"something\" platform? (y/n) Abort.\n")
+}
+
+func (s *S) TestPlatformInfoInfo(c *check.C) {
+	c.Assert((&PlatformInfo{}).Info(), check.NotNil)
 }
 
 func (s *S) TestPlatformInfoRun(c *check.C) {

@@ -404,6 +404,10 @@ func (s *S) TestRoleRemoveWithoutConfirmation(c *check.C) {
 	c.Assert(stdout.String(), check.Equals, expected)
 }
 
+func (s *S) TestRoleDefaultAddInfo(c *check.C) {
+	c.Assert((&RoleDefaultAdd{}).Info(), check.NotNil)
+}
+
 func (s *S) TestRoleDefaultAdd(c *check.C) {
 	var stdout, stderr bytes.Buffer
 	context := cmd.Context{
@@ -429,6 +433,10 @@ func (s *S) TestRoleDefaultAdd(c *check.C) {
 	c.Assert(stdout.String(), check.Equals, "Roles successfully added as default!\n")
 }
 
+func (s *S) TestRoleDefaultRemoveInfo(c *check.C) {
+	c.Assert((&RoleDefaultRemove{}).Info(), check.NotNil)
+}
+
 func (s *S) TestRoleDefaultRemove(c *check.C) {
 	var stdout, stderr bytes.Buffer
 	context := cmd.Context{
@@ -452,6 +460,10 @@ func (s *S) TestRoleDefaultRemove(c *check.C) {
 	err := command.Run(&context, client)
 	c.Assert(err, check.IsNil)
 	c.Assert(stdout.String(), check.Equals, "Roles successfully removed as default!\n")
+}
+
+func (s *S) TestRoleDefaultListInfo(c *check.C) {
+	c.Assert((&RoleDefaultList{}).Info(), check.NotNil)
 }
 
 func (s *S) TestRoleDefaultList(c *check.C) {

@@ -19,6 +19,10 @@ import (
 	check "gopkg.in/check.v1"
 )
 
+func (s *S) TestCertificateSetInfo(c *check.C) {
+	c.Assert((&CertificateSet{}).Info(), check.NotNil)
+}
+
 func (s *S) TestCertificateSetRunSuccessfully(c *check.C) {
 	var stdout, stderr bytes.Buffer
 	context := cmd.Context{
@@ -69,6 +73,10 @@ func (s *S) TestCertificateSetRunCerticateNotFound(c *check.C) {
 	c.Assert(stdout.String(), check.Equals, "")
 }
 
+func (s *S) TestCertificateUnsetInfo(c *check.C) {
+	c.Assert((&CertificateUnset{}).Info(), check.NotNil)
+}
+
 func (s *S) TestCertificateUnsetRunSuccessfully(c *check.C) {
 	var stdout, stderr bytes.Buffer
 	context := cmd.Context{
@@ -104,6 +112,10 @@ func (s *S) mustReadFileString(c *check.C, path string) string {
 		return ""
 	}
 	return string(data)
+}
+
+func (s *S) TestCertificateListInfo(c *check.C) {
+	c.Assert((&CertificateList{}).Info(), check.NotNil)
 }
 
 func (s *S) TestCertificateListRunSuccessfully(c *check.C) {

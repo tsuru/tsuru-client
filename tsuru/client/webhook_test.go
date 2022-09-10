@@ -16,6 +16,10 @@ import (
 	check "gopkg.in/check.v1"
 )
 
+func (s *S) TestWebhookCreateInfo(c *check.C) {
+	c.Assert((&WebhookCreate{}).Info(), check.NotNil)
+}
+
 func (s *S) TestWebhookCreate(c *check.C) {
 	var stdout, stderr bytes.Buffer
 	expected := "Webhook successfully created.\n"
@@ -117,6 +121,10 @@ func (s *S) TestWebhookCreateFlags(c *check.C) {
 	c.Assert(stdout.String(), check.Equals, expected)
 }
 
+func (s *S) TestWebhookListInfo(c *check.C) {
+	c.Assert((&WebhookList{}).Info(), check.NotNil)
+}
+
 func (s *S) TestWebhookList(c *check.C) {
 	var stdout, stderr bytes.Buffer
 	expected := `+------+-------------+------+------------------+---------+---------+----------+--------------------+
@@ -175,6 +183,10 @@ func (s *S) TestWebhookList(c *check.C) {
 	c.Assert(stdout.String(), check.Equals, expected)
 }
 
+func (s *S) TestWebhookDeleteInfo(c *check.C) {
+	c.Assert((&WebhookDelete{}).Info(), check.NotNil)
+}
+
 func (s *S) TestWebhookDelete(c *check.C) {
 	var stdout, stderr bytes.Buffer
 	expected := "Webhook successfully deleted.\n"
@@ -196,6 +208,10 @@ func (s *S) TestWebhookDelete(c *check.C) {
 	err := command.Run(&context, client)
 	c.Assert(err, check.IsNil)
 	c.Assert(stdout.String(), check.Equals, expected)
+}
+
+func (s *S) TestWebhookUpdateInfo(c *check.C) {
+	c.Assert((&WebhookUpdate{}).Info(), check.NotNil)
 }
 
 func (s *S) TestWebhookUpdate(c *check.C) {
