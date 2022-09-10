@@ -16,6 +16,10 @@ import (
 	"gopkg.in/check.v1"
 )
 
+func (s *S) TestVolumeListInfo(c *check.C) {
+	c.Assert((&VolumeList{}).Info(), check.NotNil)
+}
+
 func (s *S) TestVolumeList(c *check.C) {
 	var stdout, stderr bytes.Buffer
 	response := `[
@@ -65,6 +69,10 @@ func (s *S) TestVolumeListEmpty(c *check.C) {
 	c.Assert(err, check.IsNil)
 	result := stdout.String()
 	c.Assert(result, check.Equals, "No volumes available.\n")
+}
+
+func (s *S) TestVolumeInfoInfo(c *check.C) {
+	c.Assert((&VolumeInfo{}).Info(), check.NotNil)
 }
 
 func (s *S) TestVolumeInfo(c *check.C) {
@@ -144,6 +152,10 @@ func (s *S) TestVolumeInfoEmpty(c *check.C) {
 	c.Assert(result, check.Equals, "No volumes available.\n")
 }
 
+func (s *S) TestVolumePlansListInfo(c *check.C) {
+	c.Assert((&VolumePlansList{}).Info(), check.NotNil)
+}
+
 func (s *S) TestVolumePlansList(c *check.C) {
 	var stdout, stderr bytes.Buffer
 	response := `{
@@ -202,6 +214,10 @@ func (s *S) TestVolumePlansListEmpty(c *check.C) {
 `)
 }
 
+func (s *S) TestVolumeCreateInfo(c *check.C) {
+	c.Assert((&VolumeCreate{}).Info(), check.NotNil)
+}
+
 func (s *S) TestVolumeCreate(c *check.C) {
 	var stdout, stderr bytes.Buffer
 	ctx := cmd.Context{
@@ -237,6 +253,10 @@ func (s *S) TestVolumeCreate(c *check.C) {
 	c.Assert(err, check.IsNil)
 	result := stdout.String()
 	c.Assert(result, check.Equals, "Volume successfully created.\n")
+}
+
+func (s *S) TestVolumeUpdateInfo(c *check.C) {
+	c.Assert((&VolumeUpdate{}).Info(), check.NotNil)
 }
 
 func (s *S) TestVolumeUpdate(c *check.C) {
@@ -276,6 +296,10 @@ func (s *S) TestVolumeUpdate(c *check.C) {
 	c.Assert(result, check.Equals, "Volume successfully updated.\n")
 }
 
+func (s *S) TestVolumeDeleteInfo(c *check.C) {
+	c.Assert((&VolumeDelete{}).Info(), check.NotNil)
+}
+
 func (s *S) TestVolumeDelete(c *check.C) {
 	var stdout, stderr bytes.Buffer
 	ctx := cmd.Context{
@@ -295,6 +319,10 @@ func (s *S) TestVolumeDelete(c *check.C) {
 	c.Assert(err, check.IsNil)
 	result := stdout.String()
 	c.Assert(result, check.Equals, "Volume successfully deleted.\n")
+}
+
+func (s *S) TestVolumeBindInfo(c *check.C) {
+	c.Assert((&VolumeBind{}).Info(), check.NotNil)
 }
 
 func (s *S) TestVolumeBind(c *check.C) {
@@ -372,6 +400,10 @@ func (s *S) TestVolumeBindRO(c *check.C) {
 	c.Assert(err, check.IsNil)
 	result := stdout.String()
 	c.Assert(result, check.Equals, "Volume successfully bound.\n")
+}
+
+func (s *S) TestVolumeUnbindInfo(c *check.C) {
+	c.Assert((&VolumeUnbind{}).Info(), check.NotNil)
 }
 
 func (s *S) TestVolumeUnbind(c *check.C) {

@@ -1158,3 +1158,7 @@ func (s *S) TestListUsersFlags(c *check.C) {
 	c.Check(srole.Value.String(), check.Equals, "role1")
 	c.Check(srole.DefValue, check.Equals, "")
 }
+
+func (s *S) TestUserInfoInfo(c *check.C) {
+	c.Assert(UserInfo{}.Info(), check.NotNil)
+}
