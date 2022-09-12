@@ -14,6 +14,7 @@ import (
 	"path/filepath"
 	"strings"
 
+	"github.com/tsuru/gnuflag"
 	"github.com/tsuru/tsuru/cmd"
 	"github.com/tsuru/tsuru/exec"
 )
@@ -174,18 +175,28 @@ func RunPlugin(context *cmd.Context) error {
 	return Executor().Execute(opts)
 }
 
-type PluginBundle struct{}
+type PluginBundle struct {
+	fs  *gnuflag.FlagSet
+	url string
+}
 type BundleManifest struct {
 	Plugins []Plugin
 }
 
 func (PluginBundle) Info() *cmd.Info {
 	return &cmd.Info{
-		Name:    "plugin-bundle",
-		Usage:   "plugin-bundle <bundle-url>",
-		Desc:    `Syncs multiple plugins using a remote manifest containing a list of plugins.`,
-		MinArgs: 1,
+		Name:  "plugin-bundle",
+		Usage: "plugin-bundle --url <bundle-url>",
+		Desc:  `Syncs multiple plugins using a remote manifest containing a list of plugins.`,
 	}
+}
+
+func (c *PluginBundle) Flags() *gnuflag.FlagSet {
+	if c.fs == nil {
+		c.fs = gnuflag.NewFlagSet("plugin-bundle", gnuflag.ExitOnError)
+		c.fs.StringVar(&c.url, "url", "", "URL for the remote plugin-bundle JSON manifest")
+	}
+	return c.fs
 }
 
 func (c *PluginBundle) Run(context *cmd.Context, client *cmd.Client) error {
@@ -195,7 +206,11 @@ func (c *PluginBundle) Run(context *cmd.Context, client *cmd.Client) error {
 		return err
 	}
 
-	manifestUrl := context.Args[0]
+	if c.url == "" {
+		return fmt.Errorf("--url <url> is mandatory. See --help for usage")
+	}
+
+	manifestUrl := c.url
 	resp, err := http.Get(manifestUrl)
 	if err != nil {
 		return err

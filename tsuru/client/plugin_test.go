@@ -286,12 +286,10 @@ func (s *S) TestPluginBundle(c *check.C) {
 		fsystem = nil
 	}()
 	var stdout bytes.Buffer
-	context := cmd.Context{
-		Args:   []string{ts.URL},
-		Stdout: &stdout,
-	}
+	context := cmd.Context{Stdout: &stdout}
 	client := cmd.NewClient(&http.Client{}, nil, manager)
 	command := PluginBundle{}
+	command.Flags().Parse(true, []string{"--url", ts.URL})
 
 	err := command.Run(&context, client)
 	c.Assert(err, check.IsNil)
@@ -333,14 +331,24 @@ func (s *S) TestPluginBundleError(c *check.C) {
 		fsystem = nil
 	}()
 	var stdout bytes.Buffer
-	context := cmd.Context{
-		Args:   []string{ts.URL},
-		Stdout: &stdout,
-	}
+	context := cmd.Context{Stdout: &stdout}
 	client := cmd.NewClient(&http.Client{}, nil, manager)
 	command := PluginBundle{}
+	command.Flags().Parse(true, []string{"--url", ts.URL})
+
 	err := command.Run(&context, client)
 	c.Assert(err, check.ErrorMatches, `Invalid status code reading plugin bundle: 500 - "my err"`)
+}
+
+func (s *S) TestPluginBundleErrorNoFlags(c *check.C) {
+	var stdout bytes.Buffer
+	context := cmd.Context{Stdout: &stdout}
+	client := cmd.NewClient(&http.Client{}, nil, manager)
+
+	command := PluginBundle{}
+	command.Flags().Parse(true, []string{})
+	err := command.Run(&context, client)
+	c.Assert(err, check.ErrorMatches, `--url <url> is mandatory. See --help for usage`)
 }
 
 func (s *S) TestPluginBundleIsACommand(c *check.C) {
