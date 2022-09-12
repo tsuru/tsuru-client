@@ -76,7 +76,8 @@ func (c *ConfigType) hasChanges() bool {
 	return c.LastUpdate.Before(c.lastChanges)
 }
 
-func (c *ConfigType) SaveChanges() error {
+func SaveChanges() error {
+	c := getConfig()
 	if !c.hasChanges() {
 		return nil
 	}

@@ -125,13 +125,13 @@ func (s *S) TestSaveChanges(c *check.C) {
 	fmt.Fprint(f, originalContent)
 	f.Close()
 
-	conf := bootstrapConfig()
-	c.Assert(conf, check.NotNil)
+	config = bootstrapConfig()
+	c.Assert(config, check.NotNil)
 
 	now := time.Now().UTC()
-	conf.SchemaVersion = "6.6.7"
-	conf.LastUpdate = now
-	conf.SaveChanges() // no changes
+	config.SchemaVersion = "6.6.7"
+	config.LastUpdate = now
+	SaveChanges() // no changes
 
 	f, _ = fsystem.Open(configPath)
 	bytesRead, err := io.ReadAll(f)
@@ -139,8 +139,8 @@ func (s *S) TestSaveChanges(c *check.C) {
 	c.Assert(err, check.IsNil)
 	c.Assert(string(bytesRead), check.Equals, originalContent)
 
-	conf.lastChanges = conf.LastUpdate.Add(10 * time.Millisecond)
-	conf.SaveChanges()
+	config.lastChanges = config.LastUpdate.Add(10 * time.Millisecond)
+	SaveChanges()
 	f, _ = fsystem.Open(configPath)
 	bytesRead, err = io.ReadAll(f)
 	f.Close()
@@ -150,4 +150,5 @@ func (s *S) TestSaveChanges(c *check.C) {
   "LastUpdate": "%s"
 }`, now.Format(time.RFC3339Nano)),
 	)
+	config = nil
 }
