@@ -21,26 +21,26 @@ var (
 type ConfigType struct {
 	SchemaVersion string
 	LastUpdate    time.Time
-	hasChanges    bool
+	lastChanges   time.Time // latest unsaved changes time
 }
 
 func newDefaultConf() *ConfigType {
 	return &ConfigType{
 		SchemaVersion: SchemaVersion,
-		LastUpdate:    time.Now().UTC(),
-		hasChanges:    true,
+		lastChanges:   time.Now().UTC(),
 	}
 }
 
 func bootstrapConfig() *ConfigType {
 	file, err := filesystem().Open(configPath)
-	if err != nil {
+	if os.IsNotExist(err) {
 		return newDefaultConf()
 	}
+	if err != nil {
+		fmt.Fprintf(stderr, "Could not read %q: %v\nContinuing without config", configPath, err)
+		return nil
+	}
 	defer file.Close()
-
-	nowTimeStr := time.Now().UTC().Format("2006-01-02_15:04:05")
-	backupFilePath := configPath + "." + nowTimeStr + ".bak"
 
 	rawContent, err := io.ReadAll(file)
 	if err != nil {
@@ -50,30 +50,34 @@ func bootstrapConfig() *ConfigType {
 
 	config := ConfigType{}
 	if err := json.Unmarshal(rawContent, &config); err != nil {
+		nowTimeStr := time.Now().UTC().Format("2006-01-02_15:04:05")
+		backupFilePath := configPath + "." + nowTimeStr + ".bak"
 		fmt.Fprintf(stderr, "Error parsing %q: %v\n", configPath, err)
 		fmt.Fprintf(stderr, "Backing up current file to %q. A new configuration will be saved.\n", backupFilePath)
 		filesystem().Rename(configPath, backupFilePath)
 		return newDefaultConf()
 	}
+
+	config.lastChanges = config.LastUpdate
 	return &config
 }
 
-func Config() *ConfigType {
+func getConfig() *ConfigType {
 	if config == nil {
 		config = bootstrapConfig()
 	}
 	return config
 }
 
-func (c *ConfigType) HasChanges() bool {
-	if c != nil && c.hasChanges {
-		return true
+func (c *ConfigType) hasChanges() bool {
+	if c == nil {
+		return false
 	}
-	return false
+	return c.LastUpdate.Before(c.lastChanges)
 }
 
 func (c *ConfigType) SaveChanges() error {
-	if !c.HasChanges() {
+	if !c.hasChanges() {
 		return nil
 	}
 

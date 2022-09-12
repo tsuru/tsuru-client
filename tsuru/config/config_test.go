@@ -27,7 +27,7 @@ func (s *S) TestBoostrapConfigNoConfig(c *check.C) {
 	conf := bootstrapConfig()
 	c.Assert(conf, check.NotNil)
 	expected := newDefaultConf()
-	expected.LastUpdate = conf.LastUpdate
+	expected.lastChanges = conf.lastChanges
 	c.Assert(conf, check.DeepEquals, expected)
 }
 
@@ -45,7 +45,7 @@ func (s *S) TestBoostrapConfigFromFile(c *check.C) {
 	expected := &ConfigType{
 		SchemaVersion: "6.6.6",
 		LastUpdate:    time.Date(2020, 12, 25, 16, 00, 59, 0, time.UTC),
-		hasChanges:    false,
+		lastChanges:   time.Date(2020, 12, 25, 16, 00, 59, 0, time.UTC),
 	}
 	c.Assert(conf, check.DeepEquals, expected)
 }
@@ -64,7 +64,7 @@ func (s *S) TestBoostrapConfigWrongFormatBackupFile(c *check.C) {
 	conf := bootstrapConfig()
 	c.Assert(conf, check.NotNil)
 	expected := newDefaultConf()
-	expected.LastUpdate = conf.LastUpdate
+	expected.lastChanges = conf.lastChanges
 	c.Assert(conf, check.DeepEquals, expected)
 
 	stdoutBytes, err := io.ReadAll(stdout)
@@ -83,25 +83,36 @@ func (s *S) TestBoostrapConfigWrongFormatBackupFile(c *check.C) {
 
 func (s *S) TestConfig(c *check.C) {
 	config = nil
-	conf1 := Config()
+	conf1 := getConfig()
 	c.Assert(conf1, check.NotNil)
-	conf2 := Config()
+	conf2 := getConfig()
 	c.Assert(conf1, check.Equals, conf2)
 }
 
-func (s *S) TestHasChanges(c *check.C) {
+func (s *S) TesthasChanges(c *check.C) {
 	conf := &ConfigType{
-		hasChanges: false,
+		LastUpdate:  time.Date(2020, 12, 25, 16, 00, 59, 0, time.UTC),
+		lastChanges: time.Date(2020, 12, 25, 16, 00, 59, 0, time.UTC),
 	}
-	c.Assert(conf.HasChanges(), check.Equals, false)
+	c.Assert(conf.hasChanges(), check.Equals, false)
 
 	conf = &ConfigType{
-		hasChanges: true,
+		LastUpdate:  time.Date(2020, 12, 25, 16, 00, 59, 1, time.UTC),
+		lastChanges: time.Date(2020, 12, 25, 16, 00, 59, 0, time.UTC),
 	}
-	c.Assert(conf.HasChanges(), check.Equals, true)
+	c.Assert(conf.hasChanges(), check.Equals, false)
+
+	conf = &ConfigType{
+		LastUpdate:  time.Date(2020, 12, 25, 16, 00, 59, 0, time.UTC),
+		lastChanges: time.Date(2020, 12, 25, 16, 00, 59, 1, time.UTC),
+	}
+	c.Assert(conf.hasChanges(), check.Equals, true)
 
 	conf = nil
-	c.Assert(conf.HasChanges(), check.Equals, false)
+	c.Assert(conf.hasChanges(), check.Equals, false)
+
+	conf = newDefaultConf()
+	c.Assert(conf.hasChanges(), check.Equals, true)
 }
 
 func (s *S) TestSaveChanges(c *check.C) {
@@ -128,7 +139,7 @@ func (s *S) TestSaveChanges(c *check.C) {
 	c.Assert(err, check.IsNil)
 	c.Assert(string(bytesRead), check.Equals, originalContent)
 
-	conf.hasChanges = true
+	conf.lastChanges = conf.LastUpdate.Add(10 * time.Millisecond)
 	conf.SaveChanges()
 	f, _ = fsystem.Open(configPath)
 	bytesRead, err = io.ReadAll(f)
