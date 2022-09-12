@@ -177,7 +177,7 @@ func (*TeamQuotaView) Info() *cmd.Info {
 }
 
 func (*TeamQuotaView) Run(context *cmd.Context, client *cmd.Client) error {
-	url, err := cmd.GetURL("/teams/" + context.Args[0] + "/quota")
+	url, err := cmd.GetURLVersion("1.12", "/teams/"+context.Args[0]+"/quota")
 	if err != nil {
 		return err
 	}
@@ -212,7 +212,7 @@ The new limit must be an integer, it may also be "unlimited".`
 }
 
 func (*TeamChangeQuota) Run(context *cmd.Context, client *cmd.Client) error {
-	u, err := cmd.GetURL("/teams/" + context.Args[0] + "/quota")
+	u, err := cmd.GetURLVersion("1.12", "/teams/"+context.Args[0]+"/quota")
 	if err != nil {
 		return err
 	}

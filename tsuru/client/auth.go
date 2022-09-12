@@ -284,7 +284,10 @@ and "app revoke" commands for details).`,
 	}
 }
 
-type TeamList struct{}
+type TeamList struct {
+	fs         *gnuflag.FlagSet
+	simplified bool
+}
 
 func (c *TeamList) Info() *cmd.Info {
 	return &cmd.Info{
@@ -293,6 +296,14 @@ func (c *TeamList) Info() *cmd.Info {
 		Desc:    "List all teams that you are member.",
 		MinArgs: 0,
 	}
+}
+
+func (c *TeamList) Flags() *gnuflag.FlagSet {
+	if c.fs == nil {
+		c.fs = gnuflag.NewFlagSet("team-list", gnuflag.ExitOnError)
+		c.fs.BoolVar(&c.simplified, "q", false, "Display only team's name")
+	}
+	return c.fs
 }
 
 func (c *TeamList) Run(ctx *cmd.Context, cli *cmd.Client) error {
@@ -310,15 +321,24 @@ func (c *TeamList) Run(ctx *cmd.Context, cli *cmd.Client) error {
 		return parseErrBody(err)
 	}
 	defer resp.Body.Close()
-	if resp.StatusCode == http.StatusOK {
-		table := tablecli.NewTable()
-		table.Headers = tablecli.Row{"Team", "Permissions", "Tags"}
-		table.LineSeparator = true
-		for _, team := range teams {
-			table.AddRow(tablecli.Row{team.Name, strings.Join(team.Permissions, "\n"), strings.Join(team.Tags, "\n")})
-		}
-		fmt.Fprint(ctx.Stdout, table.String())
+	if resp.StatusCode != http.StatusOK {
+		return nil
 	}
+
+	if c.simplified {
+		for _, team := range teams {
+			fmt.Println(team.Name)
+		}
+		return nil
+	}
+
+	table := tablecli.NewTable()
+	table.Headers = tablecli.Row{"Team", "Permissions", "Tags"}
+	table.LineSeparator = true
+	for _, team := range teams {
+		table.AddRow(tablecli.Row{team.Name, strings.Join(team.Permissions, "\n"), strings.Join(team.Tags, "\n")})
+	}
+	fmt.Fprint(ctx.Stdout, table.String())
 	return nil
 }
 
