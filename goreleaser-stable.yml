@@ -31,6 +31,11 @@ archives:
     - misc/bash-completion
     - misc/zsh-completion
 
+release:
+  extra_files:
+    - glob: dist/metadata.json
+    - glob: dist/CHANGELOG.md
+
 # Mac OS Homebrew
 brews:
   # Reporitory to push the tap to.
