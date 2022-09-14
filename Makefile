@@ -7,6 +7,7 @@ PYTHON := $(shell which python)
 
 GHR := $(shell which ghr)
 GITHUB_TOKEN := $(shell git config --global --get github.token || echo $$GITHUB_TOKEN)
+GIT_TAG_VER := $(shell git describe --tags || echo "dev")
 
 release:
 	@if [ ! $(version) ]; then \
@@ -23,9 +24,6 @@ release:
 	fi
 
 	@echo " ==> Releasing tsuru $(version) version."
-
-	@echo " ==> Replacing version string."
-	@sed -i "s/version = \".*\"/version = \"$(version)\"/g" tsuru/main.go
 
 	@echo " ==> Building binaries."
 	@./misc/build-all.sh
@@ -71,7 +69,7 @@ build-all:
 	./misc/build-all.sh
 
 build:
-	go build -o ./bin/tsuru ./tsuru
+	go build -ldflags "-s -w -X 'main.version=$(GIT_TAG_VER)'" -o ./bin/tsuru ./tsuru
 
 check-docs: build
 	./misc/check-all-cmds-docs.sh

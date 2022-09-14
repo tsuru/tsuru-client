@@ -18,9 +18,12 @@ import (
 	_ "github.com/tsuru/tsuru/provision/docker/cmds"
 )
 
+var (
+	version = "dev" // overridden at build time
+)
+
 const (
-	version = "1.12.0"
-	header  = "Supported-Tsuru"
+	header = "Supported-Tsuru"
 )
 
 func buildManager(name string) *cmd.Manager {
