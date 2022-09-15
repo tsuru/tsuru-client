@@ -71,6 +71,8 @@ jobs:
     - name: Get version from tag
       id: gittag
       uses: jimschubert/query-tag-action@v1
+      with:
+        commit-ish: HEAD
 
     - uses: docker/build-push-action@v3
       with:
