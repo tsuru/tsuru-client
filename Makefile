@@ -79,7 +79,7 @@ godownloader:
 	cd /tmp/godownloader && go install .
 	rm -rf /tmp/godownloader
 
-install.sh: goreleaser-stable.yml godownloader
+install.sh: .goreleaser.yml godownloader
 	godownloader --repo tsuru/tsuru-client $< >$@
 
 install-scripts: install.sh
