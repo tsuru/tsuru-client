@@ -10,9 +10,8 @@ RUN apk add --update --no-cache \
 WORKDIR /go/src/github.com/tsuru/tsuru-client
 COPY . /go/src/github.com/tsuru/tsuru-client
 
-RUN ls -al . \
-    && git describe --tags \
-    && make build
+ARG TSURU_BUILD_VERSION
+RUN make build && echo 1
 
 FROM alpine:3.9
 
