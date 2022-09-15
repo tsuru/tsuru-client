@@ -69,8 +69,7 @@ build-all:
 	./misc/build-all.sh
 
 build:
-	echo "$(GIT_TAG_VER)"
-# go build -ldflags "-s -w -X 'main.version=$(GIT_TAG_VER)'" -o ./bin/tsuru ./tsuru
+	go build -ldflags "-s -w -X 'main.version=$(GIT_TAG_VER)'" -o ./bin/tsuru ./tsuru
 
 check-docs: build
 	./misc/check-all-cmds-docs.sh
