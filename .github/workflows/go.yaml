@@ -78,21 +78,10 @@ jobs:
         go-version: 1.16
     - uses: actions/checkout@v1
 
-    - name: rc release
-      uses: goreleaser/goreleaser-action@v2
-      if: contains(github.ref, '-rc')
-      with:
-        version: latest
-        args: --config goreleaser-rc.yml
-      env:
-        GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-
     - name: stable release
       uses: goreleaser/goreleaser-action@v2
-      if: "!contains(github.ref, '-rc')"
       with:
         version: latest
-        args: --config goreleaser-stable.yml
       env:
         GITHUB_TOKEN: ${{ secrets.CUSTOM_GITHUB_TOKEN }}
 
