@@ -139,7 +139,8 @@ func (s *S) TestSaveChanges(c *check.C) {
 	c.Assert(err, check.IsNil)
 	c.Assert(string(bytesRead), check.Equals, originalContent)
 
-	config.lastChanges = config.LastUpdate.Add(10 * time.Millisecond)
+	now = config.LastUpdate.Add(10 * time.Millisecond)
+	config.lastChanges = now
 	SaveChanges()
 	f, _ = fsystem.Open(configPath)
 	bytesRead, err = io.ReadAll(f)
