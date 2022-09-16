@@ -76,13 +76,13 @@ func (c *ConfigType) hasChanges() bool {
 	return c.LastUpdate.Before(c.lastChanges)
 }
 
-func SaveChanges() error {
+func SaveChangesNoPrint() error {
 	c := getConfig()
 	if !c.hasChanges() {
 		return nil
 	}
 
-	file, err := filesystem().OpenFile(configPath, os.O_WRONLY|os.O_CREATE|os.O_TRUNC, 0755)
+	file, err := filesystem().OpenFile(configPath, os.O_WRONLY|os.O_CREATE|os.O_TRUNC, 0644)
 	if err != nil {
 		return fmt.Errorf("Could not open file %q for write: %w", configPath, err)
 	}
@@ -95,4 +95,10 @@ func SaveChanges() error {
 		return fmt.Errorf("Got errors when saving config: %w", err)
 	}
 	return nil
+}
+
+func SaveChanges() {
+	if err := SaveChangesNoPrint(); err != nil {
+		fmt.Println("Warning:", err)
+	}
 }
