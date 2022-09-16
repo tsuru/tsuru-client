@@ -39,7 +39,6 @@ jobs:
 
   docker_deploy:
     name: "publish image on dockerhub"
-    if: github.event_name != 'pull_request'
     needs: [test, lint]
     runs-on: ubuntu-latest
     steps:
