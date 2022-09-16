@@ -81,6 +81,7 @@ func SaveChangesNoPrint() error {
 	if !c.hasChanges() {
 		return nil
 	}
+	c.LastUpdate = c.lastChanges
 
 	file, err := filesystem().OpenFile(configPath, os.O_WRONLY|os.O_CREATE|os.O_TRUNC, 0644)
 	if err != nil {
