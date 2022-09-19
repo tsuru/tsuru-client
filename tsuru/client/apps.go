@@ -369,6 +369,9 @@ func (c *AppRemove) Flags() *gnuflag.FlagSet {
 
 type AppInfo struct {
 	cmd.AppNameMixIn
+
+	simplified   bool
+	flagsApplied bool
 }
 
 func (c *AppInfo) Info() *cmd.Info {
@@ -380,6 +383,17 @@ etc. You need to be a member of a team that has access to the app to be able to
 see information about it.`,
 		MinArgs: 0,
 	}
+}
+
+func (cmd *AppInfo) Flags() *gnuflag.FlagSet {
+	fs := cmd.AppNameMixIn.Flags()
+	if !cmd.flagsApplied {
+		fs.BoolVar(&cmd.simplified, "simplified", false, "Show simplified view of app")
+		fs.BoolVar(&cmd.simplified, "s", false, "Show simplified view of app")
+
+		cmd.flagsApplied = true
+	}
+	return fs
 }
 
 func (c *AppInfo) Run(context *cmd.Context, client *cmd.Client) error {
@@ -408,7 +422,7 @@ func (c *AppInfo) Run(context *cmd.Context, client *cmd.Client) error {
 	if err != nil {
 		return err
 	}
-	return c.Show(&a, context)
+	return c.Show(&a, context, c.simplified)
 }
 
 type unit struct {
@@ -542,11 +556,40 @@ func (a *app) QuotaString() string {
 	return fmt.Sprintf("%d/%s", a.Quota.InUse, limit.String())
 }
 
+func (a *app) TeamList() string {
+	teams := []string{}
+	if a.TeamOwner != "" {
+		teams = append(teams, a.TeamOwner+" (owner)")
+	}
+
+	for _, t := range a.Teams {
+		if t != a.TeamOwner {
+			teams = append(teams, t)
+		}
+	}
+
+	return strings.Join(teams, ", ")
+
+}
+
+func (a *app) InternalAddr() string {
+
+	addrs := []string{}
+	for _, a := range a.InternalAddresses {
+		if a.Protocol == "UDP" {
+			addrs = append(addrs, fmt.Sprintf("%s:%d (UDP)", a.Domain, a.Port))
+		} else {
+			addrs = append(addrs, fmt.Sprintf("%s:%d", a.Domain, a.Port))
+		}
+	}
+
+	return strings.Join(addrs, ", ")
+}
 func (a *app) Addr() string {
 	var allAddrs []string
 	for _, cname := range a.CName {
 		if cname != "" {
-			allAddrs = append(allAddrs, cname)
+			allAddrs = append(allAddrs, cname+" (cname)")
 		}
 	}
 	if len(a.Routers) == 0 {
@@ -570,10 +613,6 @@ func (a *app) TagList() string {
 	return strings.Join(a.Tags, ", ")
 }
 
-func (a *app) GetTeams() string {
-	return strings.Join(a.Teams, ", ")
-}
-
 func (a *app) GetRouterOpts() string {
 	var kv []string
 	for k, v := range a.RouterOpts {
@@ -590,13 +629,45 @@ func ShortID(id string) string {
 	return id
 }
 
-func (a *app) String() string {
-	format := `{{ if .Error -}}
+const simplifiedFormat = `{{ if .Error -}}
 Error: {{ .Error }}
 {{ end -}}
 Application: {{.Name}}
-Description:{{if .Description}} {{.Description}}{{end}}
-Tags:{{if .TagList}} {{.TagList}}{{end}}
+{{- if .Description }}
+Description: {{.Description}}
+{{- end }}
+{{- if .TagList }}
+Tags: {{.TagList}}
+{{- end }}
+Created by: {{.Owner}}
+Platform: {{.Platform}}
+Plan: {{ .Plan.Name }}
+Pool: {{.Pool}} ({{ .Provisioner }}{{ if .Cluster}} | cluster: {{ .Cluster }}{{end}})
+{{if not .Routers -}}
+Router:{{if .Router}} {{.Router}}{{if .RouterOpts}} ({{.GetRouterOpts}}){{end}}{{end}}
+{{end -}}
+Teams: {{.TeamList}}
+{{- if .InternalAddr }}
+Cluster Internal Addresses: {{.InternalAddr}}
+{{- end }}
+{{- if .Addr }}
+Cluster External Addresses: {{.Addr}}
+{{- end }}
+{{- if .SimpleServicesView }}
+Bound Services: {{ .SimpleServicesView }}
+{{- end }}
+`
+
+const fullFormat = `{{ if .Error -}}
+Error: {{ .Error }}
+{{ end -}}
+Application: {{.Name}}
+{{- if .Description }}
+Description: {{.Description}}
+{{- end }}
+{{- if .TagList }}
+Tags: {{.TagList}}
+{{- end }}
 Platform: {{.Platform}}
 {{ if .Provisioner -}}
 Provisioner: {{ .Provisioner }}
@@ -604,10 +675,9 @@ Provisioner: {{ .Provisioner }}
 {{if not .Routers -}}
 Router:{{if .Router}} {{.Router}}{{if .RouterOpts}} ({{.GetRouterOpts}}){{end}}{{end}}
 {{end -}}
-Teams: {{.GetTeams}}
-Address: {{.Addr}}
-Owner: {{.Owner}}
-Team owner: {{.TeamOwner}}
+Teams: {{.TeamList}}
+External Addresses: {{.Addr}}
+Created by: {{.Owner}}
 Deploys: {{.Deploys}}
 {{if .Cluster -}}
 Cluster: {{ .Cluster }}
@@ -616,9 +686,25 @@ Pool:{{if .Pool}} {{.Pool}}{{end}}{{if .Lock.Locked}}
 {{.Lock.String}}{{end}}
 Quota: {{ .QuotaString }}
 `
+
+func (a *app) String(simplified bool) string {
+	var format string
+
+	if simplified {
+		format = simplifiedFormat
+	} else {
+		format = fullFormat
+	}
+
 	var buf bytes.Buffer
 	tmpl := template.Must(template.New("app").Parse(format))
-	renderUnits(&buf, a.Units, a.UnitsMetrics, a.Provisioner)
+
+	if simplified {
+		renderUnitsSummary(&buf, a.Units, a.UnitsMetrics, a.Provisioner)
+	} else {
+		renderUnits(&buf, a.Units, a.UnitsMetrics, a.Provisioner)
+	}
+
 	internalAddressesTable := tablecli.NewTable()
 	internalAddressesTable.Headers = []string{"Domain", "Port", "Process", "Version"}
 	for _, internalAddress := range a.InternalAddresses {
@@ -630,7 +716,9 @@ Quota: {{ .QuotaString }}
 		})
 	}
 
-	renderServiceInstanceBinds(&buf, a.ServiceInstanceBinds)
+	if !simplified {
+		renderServiceInstanceBinds(&buf, a.ServiceInstanceBinds)
+	}
 
 	autoScaleTable := tablecli.NewTable()
 	autoScaleTable.Headers = tablecli.Row([]string{"Process", "Min", "Max", "Target CPU"})
@@ -650,17 +738,17 @@ Quota: {{ .QuotaString }}
 		buf.WriteString(autoScaleTable.String())
 	}
 
-	if a.Plan.Memory != 0 || a.Plan.Swap != 0 || a.Plan.CpuShare != 0 {
+	if !simplified && (a.Plan.Memory != 0 || a.Plan.Swap != 0 || a.Plan.CpuShare != 0) {
 		buf.WriteString("\n")
 		buf.WriteString("App Plan:\n")
 		buf.WriteString(renderPlans([]apptypes.Plan{a.Plan}, false, false))
 	}
-	if internalAddressesTable.Rows() > 0 {
+	if !simplified && internalAddressesTable.Rows() > 0 {
 		buf.WriteString("\n")
 		buf.WriteString("Cluster internal addresses:\n")
 		buf.WriteString(internalAddressesTable.String())
 	}
-	if len(a.Routers) > 0 {
+	if !simplified && len(a.Routers) > 0 {
 		buf.WriteString("\n")
 		if a.Provisioner == "kubernetes" {
 			buf.WriteString("Cluster external addresses:\n")
@@ -676,6 +764,127 @@ Quota: {{ .QuotaString }}
 	var tplBuffer bytes.Buffer
 	tmpl.Execute(&tplBuffer, a)
 	return tplBuffer.String() + buf.String()
+}
+
+func (a *app) SimpleServicesView() string {
+	sibs := make([]serviceInstanceBind, len(a.ServiceInstanceBinds))
+	copy(sibs, a.ServiceInstanceBinds)
+
+	sort.Slice(sibs, func(i, j int) bool {
+		if sibs[i].Service < sibs[j].Service {
+			return true
+		}
+		if sibs[i].Service > sibs[j].Service {
+			return false
+		}
+		return sibs[i].Instance < sibs[j].Instance
+	})
+	pairs := []string{}
+	for _, b := range sibs {
+		pairs = append(pairs, b.Service+"/"+b.Instance)
+	}
+
+	return strings.Join(pairs, ", ")
+}
+
+func renderUnitsSummary(buf *bytes.Buffer, units []unit, metrics []unitMetrics, provisioner string) {
+	type unitsKey struct {
+		process  string
+		version  int
+		routable bool
+	}
+	groupedUnits := map[unitsKey][]unit{}
+	for _, u := range units {
+		routable := false
+		if u.Routable != nil {
+			routable = *u.Routable
+		}
+		key := unitsKey{process: u.ProcessName, version: u.Version, routable: routable}
+		groupedUnits[key] = append(groupedUnits[key], u)
+	}
+	keys := make([]unitsKey, 0, len(groupedUnits))
+	for key := range groupedUnits {
+		keys = append(keys, key)
+	}
+	sort.Slice(keys, func(i, j int) bool {
+		if keys[i].version == keys[j].version {
+			return keys[i].process < keys[j].process
+		}
+		return keys[i].version < keys[j].version
+	})
+	var titles []string
+	if provisioner == "kubernetes" {
+		titles = []string{"Process", "Ready", "Restarts", "Avg CPU (abs)", "Avg Memory"}
+	} else {
+		titles = []string{"Process", "Units"}
+	}
+	unitsTable := tablecli.NewTable()
+	tablecli.TableConfig.ForceWrap = false
+	unitsTable.Headers = tablecli.Row(titles)
+
+	fmt.Fprintf(buf, "Units: %d\n", len(units))
+
+	if len(units) == 0 {
+		return
+	}
+	mapUnitMetrics := map[string]unitMetrics{}
+	for _, unitMetric := range metrics {
+		mapUnitMetrics[unitMetric.ID] = unitMetric
+	}
+
+	for _, key := range keys {
+		summaryTitle := key.process
+		if key.version > 0 {
+			summaryTitle = fmt.Sprintf("%s (v%d)", key.process, key.version)
+		}
+
+		summaryUnits := groupedUnits[key]
+
+		if !key.routable && provisioner == "kubernetes" {
+			summaryTitle = summaryTitle + " (unroutable)"
+		}
+
+		readyUnits := 0
+		restarts := 0
+		cpuTotal := resource.NewQuantity(0, resource.DecimalSI)
+		memoryTotal := resource.NewQuantity(0, resource.BinarySI)
+
+		for _, unit := range summaryUnits {
+			if unit.Ready != nil && *unit.Ready {
+				readyUnits += 1
+			}
+
+			if unit.Restarts != nil {
+				restarts += *unit.Restarts
+			}
+
+			unitMetric := mapUnitMetrics[unit.ID]
+			qt, err := resource.ParseQuantity(unitMetric.CPU)
+			if err == nil {
+				cpuTotal.Add(qt)
+			}
+			qt, err = resource.ParseQuantity(unitMetric.Memory)
+			if err == nil {
+				memoryTotal.Add(qt)
+			}
+		}
+
+		if provisioner == "kubernetes" {
+			unitsTable.AddRow(tablecli.Row{
+				summaryTitle,
+				fmt.Sprintf("%d/%d", readyUnits, len(summaryUnits)),
+				fmt.Sprintf("%d", restarts),
+				fmt.Sprintf("%d%%", cpuTotal.MilliValue()/int64(10)/int64(len(summaryUnits))),
+				fmt.Sprintf("%vMi", memoryTotal.Value()/int64(1024*1024)/int64(len(summaryUnits))),
+			})
+		} else {
+			unitsTable.AddRow(tablecli.Row{
+				summaryTitle,
+				fmt.Sprintf("%d", len(summaryUnits)),
+			})
+		}
+	}
+	buf.WriteString(unitsTable.String())
 }
 
 func renderUnits(buf *bytes.Buffer, units []unit, metrics []unitMetrics, provisioner string) {
@@ -883,8 +1092,8 @@ func translateTimestampSince(timestamp *time.Time) string {
 	return duration.HumanDuration(time.Since(*timestamp))
 }
 
-func (c *AppInfo) Show(a *app, context *cmd.Context) error {
-	fmt.Fprintln(context.Stdout, a)
+func (c *AppInfo) Show(a *app, context *cmd.Context, simplified bool) error {
+	fmt.Fprintln(context.Stdout, a.String(simplified))
 	return nil
 }
 

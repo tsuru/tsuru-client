@@ -818,14 +818,11 @@ func (s *S) TestAppInfo(c *check.C) {
 	var stdout, stderr bytes.Buffer
 	result := `{"name":"app1","teamowner":"myteam","cname":[""],"ip":"myapp.tsuru.io","platform":"php","repository":"git@git.com:php.git","state":"dead", "units":[{"Ip":"10.10.10.10","ID":"app1/0","Status":"started","Address":{"Host": "10.8.7.6:3333"}}, {"Ip":"9.9.9.9","ID":"app1/1","Status":"started","Address":{"Host": "10.8.7.6:3323"}}, {"Ip":"","ID":"app1/2","Status":"pending"}],"teams":["tsuruteam","crane"], "owner": "myapp_owner", "deploys": 7, "router": "planb"}`
 	expected := `Application: app1
-Description:
-Tags:
 Platform: php
 Router: planb
-Teams: tsuruteam, crane
-Address: myapp.tsuru.io
-Owner: myapp_owner
-Team owner: myteam
+Teams: myteam (owner), tsuruteam, crane
+External Addresses: myapp.tsuru.io
+Created by: myapp_owner
 Deploys: 7
 Pool:
 Quota: 0/0 units
@@ -847,6 +844,37 @@ Units: 3
 	client := cmd.NewClient(&http.Client{Transport: &cmdtest.Transport{Message: result, Status: http.StatusOK}}, nil, manager)
 	command := AppInfo{}
 	command.Flags().Parse(true, []string{"--app", "app1"})
+	err := command.Run(&context, client)
+	c.Assert(err, check.IsNil)
+	c.Assert(stdout.String(), check.Equals, expected)
+}
+
+func (s *S) TestAppInfoSimplified(c *check.C) {
+	var stdout, stderr bytes.Buffer
+	result := `{"name":"app1","pool": "dev-a", "provisioner": "kubernetes", "cluster": "mycluster", "teamowner":"myteam","cname":[""],"ip":"myapp.tsuru.io","platform":"php","repository":"git@git.com:php.git","state":"dead", "units":[{"Ip":"10.10.10.10","ID":"app1/0","Status":"started","ProcessName": "web","Address":{"Host": "10.8.7.6:3333"}, "ready": true, "routable": true}, {"Ip":"9.9.9.9","ID":"app1/1","Status":"started","ProcessName": "web","Address":{"Host": "10.8.7.6:3323"}, "ready": true, "routable": true}],"teams":["tsuruteam","crane"], "owner": "myapp_owner", "deploys": 7, "router": "planb", "plan":{"name": "test",  "memory": 536870912, "swap": 268435456, "cpushare": 100, "default": false}}`
+	expected := `Application: app1
+Created by: myapp_owner
+Platform: php
+Plan: test
+Pool: dev-a (kubernetes | cluster: mycluster)
+Router: planb
+Teams: myteam (owner), tsuruteam, crane
+Cluster External Addresses: myapp.tsuru.io
+Units: 2
++---------+-------+----------+---------------+------------+
+| Process | Ready | Restarts | Avg CPU (abs) | Avg Memory |
++---------+-------+----------+---------------+------------+
+| web     | 2/2   | 0        | 0%            | 0Mi        |
++---------+-------+----------+---------------+------------+
+
+`
+	context := cmd.Context{
+		Stdout: &stdout,
+		Stderr: &stderr,
+	}
+	client := cmd.NewClient(&http.Client{Transport: &cmdtest.Transport{Message: result, Status: http.StatusOK}}, nil, manager)
+	command := AppInfo{}
+	command.Flags().Parse(true, []string{"--app", "app1", "-s"})
 	err := command.Run(&context, client)
 	c.Assert(err, check.IsNil)
 	c.Assert(stdout.String(), check.Equals, expected)
@@ -896,15 +924,12 @@ func (s *S) TestAppInfoKubernetes(c *check.C) {
 		"router": "planb"
 	}`, t0, t1, t2)
 	expected := `Application: app1
-Description:
-Tags:
 Platform: php
 Provisioner: kubernetes
 Router: planb
-Teams: tsuruteam, crane
-Address: myapp.tsuru.io
-Owner: myapp_owner
-Team owner: myteam
+Teams: myteam (owner), tsuruteam, crane
+External Addresses: myapp.tsuru.io
+Created by: myapp_owner
 Deploys: 7
 Cluster: kube-cluster-dev
 Pool: dev-a
@@ -936,14 +961,11 @@ func (s *S) TestAppInfoMultipleAddresses(c *check.C) {
 	var stdout, stderr bytes.Buffer
 	result := `{"name":"app1","teamowner":"myteam","cname":[""],"ip":"myapp.tsuru.io","platform":"php","repository":"git@git.com:php.git","state":"dead", "units":[{"Ip":"10.10.10.10","ID":"app1/0","Status":"started","Address":{"Host": "10.8.7.6:3333"},"Addresses":[{"Host": "10.8.7.6:3333"}, {"Host": "10.8.7.6:4444"}]}, {"Ip":"9.9.9.9","ID":"app1/1","Status":"started","Address":{"Host": "10.8.7.6:3323"}}, {"Ip":"","ID":"app1/2","Status":"pending"}],"teams":["tsuruteam","crane"], "owner": "myapp_owner", "deploys": 7, "router": "planb"}`
 	expected := `Application: app1
-Description:
-Tags:
 Platform: php
 Router: planb
-Teams: tsuruteam, crane
-Address: myapp.tsuru.io
-Owner: myapp_owner
-Team owner: myteam
+Teams: myteam (owner), tsuruteam, crane
+External Addresses: myapp.tsuru.io
+Created by: myapp_owner
 Deploys: 7
 Pool:
 Quota: 0/0 units
@@ -1020,13 +1042,10 @@ func (s *S) TestAppInfoMultipleRouters(c *check.C) {
 	]
 }`
 	expected := `Application: app1
-Description:
-Tags:
 Platform: php
-Teams: tsuruteam, crane
-Address: cname1, addr1, addr2, addr9, addr3
-Owner: myapp_owner
-Team owner: myteam
+Teams: myteam (owner), tsuruteam, crane
+External Addresses: cname1 (cname), addr1, addr2, addr9, addr3
+Created by: myapp_owner
 Deploys: 7
 Pool:
 Quota: 0/0 units
@@ -1071,13 +1090,11 @@ func (s *S) TestAppInfoWithDescription(c *check.C) {
 	result := `{"name":"app1","teamowner":"myteam","cname":[""],"ip":"myapp.tsuru.io","platform":"php","repository":"git@git.com:php.git","state":"dead", "units":[{"Ip":"10.10.10.10","ID":"app1/0","Status":"started"}, {"Ip":"9.9.9.9","ID":"app1/1","Status":"started"}, {"Ip":"","ID":"app1/2","Status":"pending"}],"teams":["tsuruteam","crane"], "owner": "myapp_owner", "deploys": 7, "description": "My app", "router": "planb"}`
 	expected := `Application: app1
 Description: My app
-Tags:
 Platform: php
 Router: planb
-Teams: tsuruteam, crane
-Address: myapp.tsuru.io
-Owner: myapp_owner
-Team owner: myteam
+Teams: myteam (owner), tsuruteam, crane
+External Addresses: myapp.tsuru.io
+Created by: myapp_owner
 Deploys: 7
 Pool:
 Quota: 0/0 units
@@ -1108,14 +1125,12 @@ func (s *S) TestAppInfoWithTags(c *check.C) {
 	var stdout, stderr bytes.Buffer
 	result := `{"name":"app1","teamowner":"myteam","cname":[""],"ip":"myapp.tsuru.io","platform":"php","repository":"git@git.com:php.git","state":"dead", "units":[{"Ip":"10.10.10.10","ID":"app1/0","Status":"started"}, {"Ip":"9.9.9.9","ID":"app1/1","Status":"started"}, {"Ip":"","ID":"app1/2","Status":"pending"}],"teams":["tsuruteam","crane"], "owner": "myapp_owner", "deploys": 7, "tags": ["tag 1", "tag 2", "tag 3"], "router": "planb"}`
 	expected := `Application: app1
-Description:
 Tags: tag 1, tag 2, tag 3
 Platform: php
 Router: planb
-Teams: tsuruteam, crane
-Address: myapp.tsuru.io
-Owner: myapp_owner
-Team owner: myteam
+Teams: myteam (owner), tsuruteam, crane
+External Addresses: myapp.tsuru.io
+Created by: myapp_owner
 Deploys: 7
 Pool:
 Quota: 0/0 units
@@ -1146,14 +1161,11 @@ func (s *S) TestAppInfoWithRouterOpts(c *check.C) {
 	var stdout, stderr bytes.Buffer
 	result := `{"name":"app1","teamowner":"myteam","cname":[""],"ip":"myapp.tsuru.io","platform":"php","repository":"git@git.com:php.git","state":"dead", "units":[{"Ip":"10.10.10.10","ID":"app1/0","Status":"started"}, {"Ip":"9.9.9.9","ID":"app1/1","Status":"started"}, {"Ip":"","ID":"app1/2","Status":"pending"}],"teams":["tsuruteam","crane"], "owner": "myapp_owner", "deploys": 7, "routeropts": {"opt1": "val1", "opt2": "val2"}, "router": "planb"}`
 	expected := `Application: app1
-Description:
-Tags:
 Platform: php
 Router: planb (opt1=val1, opt2=val2)
-Teams: tsuruteam, crane
-Address: myapp.tsuru.io
-Owner: myapp_owner
-Team owner: myteam
+Teams: myteam (owner), tsuruteam, crane
+External Addresses: myapp.tsuru.io
+Created by: myapp_owner
 Deploys: 7
 Pool:
 Quota: 0/0 units
@@ -1189,14 +1201,11 @@ func (fn transportFunc) RoundTrip(req *http.Request) (resp *http.Response, err e
 func (s *S) TestAppInfoWithQuota(c *check.C) {
 	var stdout, stderr bytes.Buffer
 	expected := `Application: app1
-Description:
-Tags:
 Platform: php
 Router: planb
-Teams: tsuruteam, crane
-Address: myapp.tsuru.io
-Owner: myapp_owner
-Team owner: myteam
+Teams: myteam (owner), tsuruteam, crane
+External Addresses: myapp.tsuru.io
+Created by: myapp_owner
 Deploys: 7
 Pool:
 Quota: 3/40 units
@@ -1234,14 +1243,11 @@ func (s *S) TestAppInfoLock(c *check.C) {
 	var stdout, stderr bytes.Buffer
 	result := `{"name":"app1","teamowner":"myteam","cname":[""],"ip":"myapp.tsuru.io","platform":"php","repository":"git@git.com:php.git","state":"dead", "units":[{"Ip":"10.10.10.10","ID":"app1/0","Status":"started"}, {"Ip":"9.9.9.9","ID":"app1/1","Status":"started"}, {"Ip":"","ID":"app1/2","Status":"pending"}],"teams":["tsuruteam","crane"], "owner": "myapp_owner", "deploys": 7, "lock": {"locked": true, "owner": "admin@example.com", "reason": "DELETE /apps/rbsample/units", "acquiredate": "2012-04-01T10:32:00Z"}, "router": "planb"}`
 	expected := `Application: app1
-Description:
-Tags:
 Platform: php
 Router: planb
-Teams: tsuruteam, crane
-Address: myapp.tsuru.io
-Owner: myapp_owner
-Team owner: myteam
+Teams: myteam (owner), tsuruteam, crane
+External Addresses: myapp.tsuru.io
+Created by: myapp_owner
 Deploys: 7
 Pool:
 Lock:
@@ -1314,14 +1320,11 @@ func (s *S) TestAppInfoManyProcesses(c *check.C) {
   "router": "planb"
 }`
 	expected := `Application: app1
-Description:
-Tags:
 Platform: php
 Router: planb
-Teams: tsuruteam, crane
-Address: myapp.tsuru.io
-Owner: myapp_owner
-Team owner: myteam
+Teams: myteam (owner), tsuruteam, crane
+External Addresses: myapp.tsuru.io
+Created by: myapp_owner
 Deploys: 7
 Pool:
 Quota: 0/0 units
@@ -1412,14 +1415,11 @@ func (s *S) TestAppInfoManyVersions(c *check.C) {
   "router": "planb"
 }`
 	expected := `Application: app1
-Description:
-Tags:
 Platform: php
 Router: planb
-Teams: tsuruteam, crane
-Address: myapp.tsuru.io
-Owner: myapp_owner
-Team owner: myteam
+Teams: myteam (owner), tsuruteam, crane
+External Addresses: myapp.tsuru.io
+Created by: myapp_owner
 Deploys: 7
 Pool:
 Quota: 0/0 units
@@ -1517,14 +1517,11 @@ func (s *S) TestAppInfoWithAutoScale(c *check.C) {
   ]
 }`
 	expected := `Application: app1
-Description:
-Tags:
 Platform: php
 Router: planb
-Teams: tsuruteam, crane
-Address: myapp.tsuru.io
-Owner: myapp_owner
-Team owner: myteam
+Teams: myteam (owner), tsuruteam, crane
+External Addresses: myapp.tsuru.io
+Created by: myapp_owner
 Deploys: 7
 Pool:
 Quota: 0/0 units
@@ -1568,14 +1565,11 @@ func (s *S) TestAppInfoNoUnits(c *check.C) {
 	var stdout, stderr bytes.Buffer
 	result := `{"name":"app1","ip":"app1.tsuru.io","teamowner":"myteam","platform":"php","repository":"git@git.com:php.git","state":"dead","units":[],"teams":["tsuruteam","crane"], "owner": "myapp_owner", "deploys": 7, "router": "planb"}`
 	expected := `Application: app1
-Description:
-Tags:
 Platform: php
 Router: planb
-Teams: tsuruteam, crane
-Address: app1.tsuru.io
-Owner: myapp_owner
-Team owner: myteam
+Teams: myteam (owner), tsuruteam, crane
+External Addresses: app1.tsuru.io
+Created by: myapp_owner
 Deploys: 7
 Pool:
 Quota: 0/0 units
@@ -1597,14 +1591,11 @@ func (s *S) TestAppInfoEmptyUnit(c *check.C) {
 	var stdout, stderr bytes.Buffer
 	result := `{"name":"app1","teamowner":"x","cname":[""],"ip":"myapp.tsuru.io","platform":"php","repository":"git@git.com:php.git","state":"dead", "units":[{"Name":"","Status":""}],"teams":["tsuruteam","crane"], "owner": "myapp_owner", "deploys": 7, "router": "planb"}`
 	expected := `Application: app1
-Description:
-Tags:
 Platform: php
 Router: planb
-Teams: tsuruteam, crane
-Address: myapp.tsuru.io
-Owner: myapp_owner
-Team owner: x
+Teams: x (owner), tsuruteam, crane
+External Addresses: myapp.tsuru.io
+Created by: myapp_owner
 Deploys: 7
 Pool:
 Quota: 0/0 units
@@ -1626,14 +1617,11 @@ func (s *S) TestAppInfoWithoutArgs(c *check.C) {
 	var stdout, stderr bytes.Buffer
 	result := `{"name":"secret","teamowner":"myteam","ip":"secret.tsuru.io","platform":"ruby","repository":"git@git.com:php.git","state":"dead","units":[{"Ip":"10.10.10.10","ID":"secret/0","Status":"started"}, {"Ip":"9.9.9.9","ID":"secret/1","Status":"pending"}],"Teams":["tsuruteam","crane"], "owner": "myapp_owner", "deploys": 7, "router": "planb", "quota": {"inUse": 0, "limit": -1}}`
 	expected := `Application: secret
-Description:
-Tags:
 Platform: ruby
 Router: planb
-Teams: tsuruteam, crane
-Address: secret.tsuru.io
-Owner: myapp_owner
-Team owner: myteam
+Teams: myteam (owner), tsuruteam, crane
+External Addresses: secret.tsuru.io
+Created by: myapp_owner
 Deploys: 7
 Pool:
 Quota: 0/unlimited
@@ -1669,14 +1657,11 @@ func (s *S) TestAppInfoCName(c *check.C) {
 	var stdout, stderr bytes.Buffer
 	result := `{"name":"app1","teamowner":"myteam","ip":"myapp.tsuru.io","cname":["yourapp.tsuru.io"],"platform":"php","repository":"git@git.com:php.git","state":"dead","units":[{"Ip":"10.10.10.10","ID":"app1/0","Status":"started"}, {"Ip":"9.9.9.9","ID":"app1/1","Status":"started"}, {"Ip":"","ID":"app1/2","Status":"pending"}],"Teams":["tsuruteam","crane"], "owner": "myapp_owner", "deploys": 7, "router": "planb"}`
 	expected := `Application: app1
-Description:
-Tags:
 Platform: php
 Router: planb
-Teams: tsuruteam, crane
-Address: yourapp.tsuru.io, myapp.tsuru.io
-Owner: myapp_owner
-Team owner: myteam
+Teams: myteam (owner), tsuruteam, crane
+External Addresses: yourapp.tsuru.io (cname), myapp.tsuru.io
+Created by: myapp_owner
 Deploys: 7
 Pool:
 Quota: 0/0 units
@@ -1706,14 +1691,11 @@ Units: 3
 func (s *S) TestAppInfoWithServices(c *check.C) {
 	var stdout, stderr bytes.Buffer
 	expected := `Application: app1
-Description:
-Tags:
 Platform: php
 Router: planb
-Teams: tsuruteam, crane
-Address: myapp.tsuru.io
-Owner: myapp_owner
-Team owner: myteam
+Teams: myteam (owner), tsuruteam, crane
+External Addresses: myapp.tsuru.io
+Created by: myapp_owner
 Deploys: 7
 Pool:
 Quota: 0/0 units
@@ -1757,14 +1739,11 @@ Service instances: 1
 func (s *S) TestAppInfoWithServicesTwoService(c *check.C) {
 	var stdout, stderr bytes.Buffer
 	expected := `Application: app1
-Description:
-Tags:
 Platform: php
 Router: planb
-Teams: tsuruteam, crane
-Address: myapp.tsuru.io
-Owner: myapp_owner
-Team owner: myteam
+Teams: myteam (owner), tsuruteam, crane
+External Addresses: myapp.tsuru.io
+Created by: myapp_owner
 Deploys: 7
 Pool:
 Quota: 0/0 units
@@ -1810,14 +1789,11 @@ func (s *S) TestAppInfoWithPlan(c *check.C) {
 	var stdout, stderr bytes.Buffer
 	result := `{"name":"app1","teamowner":"myteam","cname":[""],"ip":"myapp.tsuru.io","platform":"php","repository":"git@git.com:php.git","state":"dead", "units":[{"Ip":"10.10.10.10","ID":"app1/0","Status":"started"}, {"Ip":"9.9.9.9","ID":"app1/1","Status":"started"}, {"Ip":"","ID":"app1/2","Status":"pending"}],"teams":["tsuruteam","crane"], "owner": "myapp_owner", "deploys": 7, "plan":{"name": "test",  "memory": 536870912, "swap": 268435456, "cpushare": 100, "default": false}, "router": "planb"}`
 	expected := `Application: app1
-Description:
-Tags:
 Platform: php
 Router: planb
-Teams: tsuruteam, crane
-Address: myapp.tsuru.io
-Owner: myapp_owner
-Team owner: myteam
+Teams: myteam (owner), tsuruteam, crane
+External Addresses: myapp.tsuru.io
+Created by: myapp_owner
 Deploys: 7
 Pool:
 Quota: 0/0 units
@@ -1854,14 +1830,11 @@ App Plan:
 func (s *S) TestAppInfoWithServicesAndPlan(c *check.C) {
 	var stdout, stderr bytes.Buffer
 	expected := `Application: app1
-Description:
-Tags:
 Platform: php
 Router: planb
-Teams: tsuruteam, crane
-Address: myapp.tsuru.io
-Owner: myapp_owner
-Team owner: myteam
+Teams: myteam (owner), tsuruteam, crane
+External Addresses: myapp.tsuru.io
+Created by: myapp_owner
 Deploys: 7
 Pool:
 Quota: 0/0 units
@@ -1912,14 +1885,11 @@ App Plan:
 func (s *S) TestAppInfoWithServicesAndPlanAssociated(c *check.C) {
 	var stdout, stderr bytes.Buffer
 	expected := `Application: app1
-Description:
-Tags:
 Platform: php
 Router: planb
-Teams: tsuruteam, crane
-Address: myapp.tsuru.io
-Owner: myapp_owner
-Team owner: myteam
+Teams: myteam (owner), tsuruteam, crane
+External Addresses: myapp.tsuru.io
+Created by: myapp_owner
 Deploys: 7
 Pool:
 Quota: 0/0 units
@@ -1970,14 +1940,11 @@ App Plan:
 func (s *S) TestAppInfoShortensHexIDs(c *check.C) {
 	var stdout, stderr bytes.Buffer
 	expected := `Application: app1
-Description:
-Tags:
 Platform: php
 Router: planb
-Teams: tsuruteam, crane
-Address: app1.tsuru.io
-Owner: myapp_owner
-Team owner: myteam
+Teams: myteam (owner), tsuruteam, crane
+External Addresses: app1.tsuru.io
+Created by: myapp_owner
 Deploys: 7
 Pool:
 Quota: 0/0 units
@@ -2042,14 +2009,11 @@ func (s *S) TestAppInfoWithInternalAddresses(c *check.C) {
 	var stdout, stderr bytes.Buffer
 	result := `{"name":"powerapp","teamowner":"powerteam","cname":[""],"ip":"monster.tsuru.io","platform":"assembly","repository":"git@git.com:app.git","state":"dead", "units":[{"Ip":"9.9.9.9","ID":"app1/1","Status":"started","Address":{"Host": "10.8.7.6:3323"}}],"teams":["tsuruzers"], "owner": "myapp_owner", "deploys": 7, "router": "", "internalAddresses":[{"domain":"test.cluster.com","port":80,"protocol":"TCP","process": "web","version":"2"}, {"domain":"test.cluster.com","port":443,"protocol":"TCP","process":"jobs","version":"3"}]}`
 	expected := `Application: powerapp
-Description:
-Tags:
 Platform: assembly
 Router:
-Teams: tsuruzers
-Address: monster.tsuru.io
-Owner: myapp_owner
-Team owner: powerteam
+Teams: powerteam (owner), tsuruzers
+External Addresses: monster.tsuru.io
+Created by: myapp_owner
 Deploys: 7
 Pool:
 Quota: 0/0 units
@@ -2085,14 +2049,11 @@ Cluster internal addresses:
 func (s *S) TestAppInfoWithVolume(c *check.C) {
 	var stdout, stderr bytes.Buffer
 	expected := `Application: app1
-Description:
-Tags:
 Platform: php
 Router: planb
-Teams: tsuruteam, crane
-Address: myapp.tsuru.io
-Owner: myapp_owner
-Team owner: myteam
+Teams: myteam (owner), tsuruteam, crane
+External Addresses: myapp.tsuru.io
+Created by: myapp_owner
 Deploys: 7
 Pool:
 Quota: 3/40 units
@@ -2333,12 +2294,12 @@ func (s *S) TestAppListUnitWithoutID(c *check.C) {
 func (s *S) TestAppListCName(c *check.C) {
 	var stdout, stderr bytes.Buffer
 	result := `[{"ip":"10.10.10.10","cname":["app1.tsuru.io"],"name":"app1","units":[{"ID":"app1/0","Status":"started"}]}]`
-	expected := `+-------------+-----------+---------------+
-| Application | Units     | Address       |
-+-------------+-----------+---------------+
-| app1        | 1 started | app1.tsuru.io |
-|             |           | 10.10.10.10   |
-+-------------+-----------+---------------+
+	expected := `+-------------+-----------+-----------------------+
+| Application | Units     | Address               |
++-------------+-----------+-----------------------+
+| app1        | 1 started | app1.tsuru.io (cname) |
+|             |           | 10.10.10.10           |
++-------------+-----------+-----------------------+
 `
 	context := cmd.Context{
 		Args:   []string{},
@@ -2355,12 +2316,12 @@ func (s *S) TestAppListCName(c *check.C) {
 func (s *S) TestAppListFiltering(c *check.C) {
 	var stdout, stderr bytes.Buffer
 	result := `[{"ip":"10.10.10.10","cname":["app1.tsuru.io"],"name":"app1","units":[{"ID":"app1/0","Status":"started"}]}]`
-	expected := `+-------------+-----------+---------------+
-| Application | Units     | Address       |
-+-------------+-----------+---------------+
-| app1        | 1 started | app1.tsuru.io |
-|             |           | 10.10.10.10   |
-+-------------+-----------+---------------+
+	expected := `+-------------+-----------+-----------------------+
+| Application | Units     | Address               |
++-------------+-----------+-----------------------+
+| app1        | 1 started | app1.tsuru.io (cname) |
+|             |           | 10.10.10.10           |
++-------------+-----------+-----------------------+
 `
 	context := cmd.Context{
 		Args:   []string{},
@@ -2397,12 +2358,12 @@ func (s *S) TestAppListFiltering(c *check.C) {
 func (s *S) TestAppListFilteringMe(c *check.C) {
 	var stdout, stderr bytes.Buffer
 	result := `[{"ip":"10.10.10.10","cname":["app1.tsuru.io"],"name":"app1","units":[{"ID":"app1/0","Status":"started"}]}]`
-	expected := `+-------------+-----------+---------------+
-| Application | Units     | Address       |
-+-------------+-----------+---------------+
-| app1        | 1 started | app1.tsuru.io |
-|             |           | 10.10.10.10   |
-+-------------+-----------+---------------+
+	expected := `+-------------+-----------+-----------------------+
+| Application | Units     | Address               |
++-------------+-----------+-----------------------+
+| app1        | 1 started | app1.tsuru.io (cname) |
+|             |           | 10.10.10.10           |
++-------------+-----------+-----------------------+
 `
 	context := cmd.Context{
 		Args:   []string{},
@@ -2440,14 +2401,14 @@ func (s *S) TestAppListFilteringMe(c *check.C) {
 func (s *S) TestAppListSortByCountAndStatus(c *check.C) {
 	var stdout, stderr bytes.Buffer
 	result := `[{"ip":"10.10.10.10","cname":["app1.tsuru.io"],"name":"app1","units":[{"ID":"app1/0","Status":"starting"},{"ID":"app1/1","Status":"stopped"},{"ID":"app1/2","Status":"asleep"},{"ID":"app1/3","Status":"started"},{"ID":"app1/4","Status":"started"},{"ID":"app1/5","Status":"stopped"}]}]`
-	expected := `+-------------+------------+---------------+
-| Application | Units      | Address       |
-+-------------+------------+---------------+
-| app1        | 2 started  | app1.tsuru.io |
-|             | 2 stopped  | 10.10.10.10   |
-|             | 1 asleep   |               |
-|             | 1 starting |               |
-+-------------+------------+---------------+
+	expected := `+-------------+------------+-----------------------+
+| Application | Units      | Address               |
++-------------+------------+-----------------------+
+| app1        | 2 started  | app1.tsuru.io (cname) |
+|             | 2 stopped  | 10.10.10.10           |
+|             | 1 asleep   |                       |
+|             | 1 starting |                       |
++-------------+------------+-----------------------+
 `
 	context := cmd.Context{
 		Args:   []string{},
