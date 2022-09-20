@@ -93,9 +93,10 @@ func (s *S) TestGetRemoteVersionAndReportsToChan(c *check.C) {
 		{"1.1.1", "1.2.2", "1.2.2", true, ""},              // has newer version
 		{"invalid", "0.0.1", "0.0.1", true, ""},            // current invalid, always gives latest
 		{"1.2.3", "1.2.3", "1.2.3", false, ""},             // is already latest
-		{"1.1.2", "1.1.1", "1.1.1", false, ""},             // somehow, current is greater than latest
-		{"dev", "1.2.3", "", false, ""},                    // dev version is a special case, early return
-		{"1.1.1", "invalid", "invalid", false, eInvalid},   // latest invalid, gives error
+		{"1.1.2", "1.1.1", "1.1.2", false, ""},             // somehow, current is greater than latest
+		{"1.1.1", "1.1.1-rc1", "1.1.1", false, ""},         // release candidate show take lower precedence
+		{"dev", "1.2.3", "dev", false, ""},                 // dev version is a special case, early return
+		{"1.1.1", "invalid", "1.1.1", false, eInvalid},     // latest invalid, gives error
 		{"invalid", "invalid", "invalid", false, eInvalid}, // current and latest invalid, gives error
 	} {
 
@@ -115,7 +116,7 @@ func (s *S) TestGetRemoteVersionAndReportsToChan(c *check.C) {
 
 		r := &latestVersionCheck{currentVersion: testCase.currentVer}
 		r.result = make(chan latestVersionCheckResult)
-		go getRemoteVersionAndReportsToChan(r)
+		go getRemoteVersionAndReportsToChanGoroutine(r)
 
 		result := <-r.result
 
@@ -145,12 +146,12 @@ func (s *S) TestGetRemoteVersionAndReportsToChanInvalidJSON(c *check.C) {
 
 	r := &latestVersionCheck{currentVersion: "1.2.3"}
 	r.result = make(chan latestVersionCheckResult)
-	go getRemoteVersionAndReportsToChan(r)
+	go getRemoteVersionAndReportsToChanGoroutine(r)
 
 	result := <-r.result
 
 	c.Assert(result.isFinished, check.Equals, true)
 	c.Assert(result.isOutdated, check.Equals, false)
-	c.Assert(result.latestVersion, check.Equals, "")
+	c.Assert(result.latestVersion, check.Equals, "1.2.3")
 	c.Assert(result.err, check.ErrorMatches, "Could not parse metadata.json. Unexpected format: invalid character.*")
 }

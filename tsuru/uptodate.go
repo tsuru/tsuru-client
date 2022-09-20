@@ -9,7 +9,7 @@ import (
 	"os"
 	"time"
 
-	"github.com/Masterminds/semver"
+	"github.com/Masterminds/semver/v3"
 )
 
 var (
@@ -19,13 +19,13 @@ var (
 )
 
 type latestVersionCheckResult struct {
-	isFinished    bool
+	isFinished bool
+	err        error
+
 	isOutdated    bool
 	latestVersion string
-	err           error
 }
 type latestVersionCheck struct {
-	lastChecked            time.Time
 	currentVersion         string
 	forceCheckBeforeFinish bool
 	result                 chan latestVersionCheckResult
@@ -37,9 +37,10 @@ type releaseMetadata struct {
 }
 
 // This function "returns" its results over the r.result channel
-func getRemoteVersionAndReportsToChan(r *latestVersionCheck) {
+func getRemoteVersionAndReportsToChanGoroutine(r *latestVersionCheck) {
 	checkResult := latestVersionCheckResult{
-		isFinished: true,
+		isFinished:    true,
+		latestVersion: r.currentVersion,
 	}
 
 	if r.currentVersion == "dev" {
@@ -62,7 +63,7 @@ func getRemoteVersionAndReportsToChan(r *latestVersionCheck) {
 		return
 	}
 
-	metadata := releaseMetadata{}
+	var metadata releaseMetadata
 	err = json.Unmarshal(data, &metadata)
 	if err != nil {
 		checkResult.err = fmt.Errorf("Could not parse metadata.json. Unexpected format: %w", err)
@@ -70,7 +71,6 @@ func getRemoteVersionAndReportsToChan(r *latestVersionCheck) {
 		return
 	}
 
-	checkResult.latestVersion = metadata.Version
 	current, err := semver.NewVersion(r.currentVersion)
 	if err != nil {
 		current, _ = semver.NewVersion("0.0.0")
@@ -83,6 +83,7 @@ func getRemoteVersionAndReportsToChan(r *latestVersionCheck) {
 	}
 
 	if current.Compare(latest) < 0 {
+		checkResult.latestVersion = latest.String()
 		checkResult.isOutdated = true
 	}
 	r.result <- checkResult
@@ -94,21 +95,27 @@ func checkLatestVersionBackground() *latestVersionCheck {
 		forceCheckBeforeFinish: false,
 	}
 	r.result = make(chan latestVersionCheckResult)
-	go getRemoteVersionAndReportsToChan(r)
+	go getRemoteVersionAndReportsToChanGoroutine(r)
 	return r
 }
-func verifyLatestVersion(checkVerResult *latestVersionCheck) {
+
+func verifyLatestVersion(lvCheck *latestVersionCheck) {
 	checkResult := latestVersionCheckResult{}
-	if checkVerResult.forceCheckBeforeFinish {
-		checkResult = <-checkVerResult.result // blocking
+	if lvCheck.forceCheckBeforeFinish {
+		// blocking
+		checkResult = <-lvCheck.result
 	} else {
-		select { // non-blocking
-		case checkResult = <-checkVerResult.result:
+		// non-blocking
+		select {
+		case checkResult = <-lvCheck.result:
 		default:
 		}
 	}
 
+	if checkResult.err != nil {
+		fmt.Fprintf(stderr, "Could not query for latest version: %v\n", checkResult.err)
+	}
 	if checkResult.isFinished && checkResult.isOutdated {
-		fmt.Fprintf(stderr, "A new version is available. Please update to the newer version %q (current: %q)\n", checkResult.latestVersion, checkVerResult.currentVersion)
+		fmt.Fprintf(stderr, "A new version is available. Please update to the newer version %q (current: %q)\n", checkResult.latestVersion, lvCheck.currentVersion)
 	}
 }
