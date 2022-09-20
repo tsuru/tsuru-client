@@ -743,8 +743,7 @@ func (s *S) TestServiceInstanceInfoRun(c *check.C) {
 Instance: mongo
 Pool: my-pool
 Apps: app, app2
-Teams: admin, admin2
-Team Owner: admin
+Teams: admin (owner), admin2
 Description: description
 Tags: tag 1, tag 2
 Plan: small
@@ -753,16 +752,9 @@ Plan parameters:
 	param1 = {"some": "custom-data"}
 	param2 = value2
 	param3 = 3
-
-Custom Info for "mongo"
-key2:
-	value9
-
-key3:
-	value3
-
-key4:
-	value8
+key2: value9
+key3: value3
+key4: value8
 Status: Service instance "mongo" is up
 `
 	args := []string{"mymongo", "mongo"}
@@ -783,12 +775,7 @@ func (s *S) TestServiceInstanceInfoRunWithoutPlansAndCustomInfoAndDescription(c 
 	expected := `Service: mymongo
 Instance: mongo
 Apps: app, app2
-Teams: admin, admin2
-Team Owner: admin
-Description:
-Tags:
-Plan:
-Plan description:
+Teams: admin (owner), admin2
 Status: Service instance "mongo" is up
 `
 	args := []string{"mymongo", "mongo"}

@@ -461,13 +461,27 @@ func (c ServiceInstanceInfo) Run(ctx *cmd.Context, client *cmd.Client) error {
 	if si.Pool != "" {
 		fmt.Fprintf(ctx.Stdout, "Pool: %s\n", si.Pool)
 	}
-	fmt.Fprintf(ctx.Stdout, "Apps: %s\n", strings.Join(si.Apps, ", "))
-	fmt.Fprintf(ctx.Stdout, "Teams: %s\n", strings.Join(si.Teams, ", "))
-	fmt.Fprintf(ctx.Stdout, "Team Owner: %s\n", si.TeamOwner)
-	fmt.Fprintf(ctx.Stdout, "Description: %s\n", si.Description)
-	fmt.Fprintf(ctx.Stdout, "Tags: %s\n", strings.Join(si.Tags, ", "))
-	fmt.Fprintf(ctx.Stdout, "Plan: %s\n", si.PlanName)
-	fmt.Fprintf(ctx.Stdout, "Plan description: %s\n", si.PlanDescription)
+	if len(si.Apps) > 0 {
+		fmt.Fprintf(ctx.Stdout, "Apps: %s\n", strings.Join(si.Apps, ", "))
+	}
+	fmt.Fprintf(ctx.Stdout, "Teams: %s\n", formatTeams(si.TeamOwner, si.Teams))
+
+	if si.Description != "" {
+		fmt.Fprintf(ctx.Stdout, "Description: %s\n", si.Description)
+	}
+
+	if len(si.Tags) > 0 {
+		fmt.Fprintf(ctx.Stdout, "Tags: %s\n", strings.Join(si.Tags, ", "))
+	}
+
+	if si.PlanName != "" {
+		fmt.Fprintf(ctx.Stdout, "Plan: %s\n", si.PlanName)
+	}
+
+	if si.PlanDescription != "" {
+		fmt.Fprintf(ctx.Stdout, "Plan description: %s\n", si.PlanDescription)
+	}
+
 	if len(si.Parameters) != 0 {
 		var keys []string
 		for k := range si.Parameters {
@@ -480,13 +494,17 @@ func (c ServiceInstanceInfo) Run(ctx *cmd.Context, client *cmd.Client) error {
 		}
 	}
 	if len(si.CustomInfo) != 0 {
-		ctx.Stdout.Write([]byte(fmt.Sprintf("\nCustom Info for \"%s\"\n", instanceName)))
 		keyList := make([]string, 0)
 		for key := range si.CustomInfo {
 			keyList = append(keyList, key)
 		}
 		sort.Strings(keyList)
 		for ind, key := range keyList {
+			if !strings.Contains(si.CustomInfo[key], "\n") {
+				fmt.Fprintf(ctx.Stdout, "%s: %s\n", key, si.CustomInfo[key])
+				continue
+			}
+
 			ctx.Stdout.Write([]byte(key + ":" + "\n"))
 			ctx.Stdout.Write([]byte("\t" + si.CustomInfo[key] + "\n"))
 			if ind != len(keyList)-1 {
@@ -521,6 +539,21 @@ func (c ServiceInstanceInfo) Run(ctx *cmd.Context, client *cmd.Client) error {
 		return errors.New("Failed to write to standard output.\n")
 	}
 	return nil
+}
+
+func formatTeams(teamOwner string, teams []string) string {
+	result := []string{}
+	if teamOwner != "" {
+		result = append(result, teamOwner+" (owner)")
+	}
+
+	for _, team := range teams {
+		if team != teamOwner {
+			result = append(result, team)
+		}
+	}
+
+	return strings.Join(result, ", ")
 }
 
 type ServiceInfo struct {
