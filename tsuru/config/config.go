@@ -1,6 +1,7 @@
 package config
 
 import (
+	"bytes"
 	"encoding/json"
 	"fmt"
 	"io"
@@ -11,25 +12,30 @@ import (
 )
 
 var (
-	config              *ConfigType
-	configPath          string        = cmd.JoinWithUserDir(".tsuru", "config.json")
-	SchemaVersion       string        = "0.1"
-	stdout              io.ReadWriter = os.Stdout
-	stderr              io.ReadWriter = os.Stderr
-	defaultLocalTimeout time.Duration = 1 * time.Second
+	privConfig          *ConfigType
+	configPath          string           = cmd.JoinWithUserDir(".tsuru", "config.json")
+	SchemaVersion       string           = "0.1"
+	stdout              io.ReadWriter    = os.Stdout
+	stderr              io.ReadWriter    = os.Stderr
+	defaultLocalTimeout time.Duration    = 1 * time.Second
+	nowUTC              func() time.Time = func() time.Time { return time.Now().UTC() } // so we can test time-dependent sh!t
 )
 
 type ConfigType struct {
-	SchemaVersion string
-	LastUpdate    time.Time
-	lastChanges   time.Time // latest unsaved changes time
+	SchemaVersion   string
+	LastUpdate      time.Time
+	originalContent []byte // used to detect changes
 }
 
 func newDefaultConf() *ConfigType {
 	return &ConfigType{
 		SchemaVersion: SchemaVersion,
-		lastChanges:   time.Now().UTC(),
 	}
+}
+
+func (c *ConfigType) saveOriginalContent() {
+	originalContent, _ := json.Marshal(c)
+	c.originalContent = originalContent
 }
 
 func bootstrapConfig() *ConfigType {
@@ -51,7 +57,7 @@ func bootstrapConfig() *ConfigType {
 
 	config := ConfigType{}
 	if err := json.Unmarshal(rawContent, &config); err != nil {
-		nowTimeStr := time.Now().UTC().Format("2006-01-02_15:04:05")
+		nowTimeStr := nowUTC().Format("2006-01-02_15:04:05")
 		backupFilePath := configPath + "." + nowTimeStr + ".bak"
 		fmt.Fprintf(stderr, "Error parsing %q: %v\n", configPath, err)
 		fmt.Fprintf(stderr, "Backing up current file to %q. A new configuration will be saved.\n", backupFilePath)
@@ -59,22 +65,23 @@ func bootstrapConfig() *ConfigType {
 		return newDefaultConf()
 	}
 
-	config.lastChanges = config.LastUpdate
+	config.saveOriginalContent()
 	return &config
 }
 
 func getConfig() *ConfigType {
-	if config == nil {
-		config = bootstrapConfig()
+	if privConfig == nil {
+		privConfig = bootstrapConfig()
 	}
-	return config
+	return privConfig
 }
 
 func (c *ConfigType) hasChanges() bool {
 	if c == nil {
 		return false
 	}
-	return c.LastUpdate.Before(c.lastChanges)
+	jsonConfig, _ := json.Marshal(c)
+	return bytes.Compare(c.originalContent, jsonConfig) != 0
 }
 
 func SaveChangesNoPrint() error {
@@ -82,7 +89,7 @@ func SaveChangesNoPrint() error {
 	if !c.hasChanges() {
 		return nil
 	}
-	c.LastUpdate = c.lastChanges
+	c.LastUpdate = nowUTC()
 
 	file, err := filesystem().OpenFile(configPath, os.O_WRONLY|os.O_CREATE|os.O_TRUNC, 0644)
 	if err != nil {
