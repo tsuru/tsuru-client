@@ -131,7 +131,7 @@ func (s *S) TestSaveChanges(c *check.C) {
 	now := time.Now().UTC()
 	config.SchemaVersion = "6.6.7"
 	config.LastUpdate = now
-	SaveChanges() // no changes
+	SaveChangesWithTimeout() // no changes
 
 	f, _ = fsystem.Open(configPath)
 	bytesRead, err := io.ReadAll(f)
@@ -141,7 +141,7 @@ func (s *S) TestSaveChanges(c *check.C) {
 
 	now = config.LastUpdate.Add(10 * time.Millisecond)
 	config.lastChanges = now
-	SaveChanges()
+	SaveChangesWithTimeout()
 	f, _ = fsystem.Open(configPath)
 	bytesRead, err = io.ReadAll(f)
 	f.Close()

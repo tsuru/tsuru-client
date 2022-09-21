@@ -11,11 +11,12 @@ import (
 )
 
 var (
-	config        *ConfigType
-	configPath    string        = cmd.JoinWithUserDir(".tsuru", "config.json")
-	SchemaVersion string        = "0.1"
-	stdout        io.ReadWriter = os.Stdout
-	stderr        io.ReadWriter = os.Stderr
+	config              *ConfigType
+	configPath          string        = cmd.JoinWithUserDir(".tsuru", "config.json")
+	SchemaVersion       string        = "0.1"
+	stdout              io.ReadWriter = os.Stdout
+	stderr              io.ReadWriter = os.Stderr
+	defaultLocalTimeout time.Duration = 1 * time.Second
 )
 
 type ConfigType struct {
@@ -98,8 +99,27 @@ func SaveChangesNoPrint() error {
 	return nil
 }
 
-func SaveChanges() {
-	if err := SaveChangesNoPrint(); err != nil {
-		fmt.Println("Warning:", err)
+// SaveChangesWithTimeout will try to save changes on ~/.tsuru/config.json and
+// it will timeout after 1s (default). Timeout is overriden from env TSURU_CLIENT_LOCAL_TIMEOUT
+func SaveChangesWithTimeout() {
+	timeout := defaultLocalTimeout
+	if timeoutStr := os.Getenv("TSURU_CLIENT_LOCAL_TIMEOUT"); timeoutStr != "" {
+		if duration, err := time.ParseDuration(timeoutStr); err == nil {
+			timeout = duration
+		}
+	}
+
+	c := make(chan bool, 1)
+	go func() {
+		if err := SaveChangesNoPrint(); err != nil {
+			fmt.Fprintf(stderr, "Warning: Could not save config file: %v\n", err)
+		}
+		c <- true
+	}()
+
+	select {
+	case <-c:
+	case <-time.After(timeout):
+		fmt.Fprintln(stderr, "Warning: Could not save config within the specified timeout. (check filesystem and/or change TSURU_CLIENT_LOCAL_TIMEOUT env)")
 	}
 }

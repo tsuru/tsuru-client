@@ -239,7 +239,7 @@ func inDockerMachineDriverMode() bool {
 
 func recoverCmdPanicAndCleanup(lvc *latestVersionCheck) {
 	verifyLatestVersion(lvc)
-	config.SaveChanges()
+	config.SaveChangesWithTimeout()
 
 	if r := recover(); r != nil {
 		if e, ok := r.(*cmd.PanicExitError); ok {
