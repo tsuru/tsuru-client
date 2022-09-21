@@ -6,8 +6,21 @@ import (
 	"net/http/httptest"
 	"time"
 
+	"github.com/tsuru/tsuru-client/tsuru/config"
 	"gopkg.in/check.v1"
 )
+
+func githubMockHandler(version string) http.Handler {
+	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		w.WriteHeader(http.StatusOK)
+		w.Header().Add("Content-Type", "application/octet-stream")
+		data := []byte(fmt.Sprintf(
+			`{"project_name":"tsuru","tag":"%s","previous_tag":"1.0.0","version":"%s","commit":"1234567890abcdef","date":"2020-12-25T23:58:00.123456789Z","runtime":{"goos":"linux","goarch":"amd64"}}`,
+			version, version,
+		))
+		w.Write(data)
+	})
+}
 
 func (s *S) TestVerifyLatestVersionSyncTimeout(c *check.C) {
 	timeoutChan := make(chan bool)
@@ -94,21 +107,14 @@ func (s *S) TestGetRemoteVersionAndReportsToChan(c *check.C) {
 		{"invalid", "0.0.1", "0.0.1", true, ""},            // current invalid, always gives latest
 		{"1.2.3", "1.2.3", "1.2.3", false, ""},             // is already latest
 		{"1.1.2", "1.1.1", "1.1.2", false, ""},             // somehow, current is greater than latest
-		{"1.1.1", "1.1.1-rc1", "1.1.1", false, ""},         // release candidate show take lower precedence
+		{"1.1.1", "1.1.1-rc1", "1.1.1", false, ""},         // release candidate should take lower precedence
 		{"dev", "1.2.3", "dev", false, ""},                 // dev version is a special case, early return
 		{"1.1.1", "invalid", "1.1.1", false, eInvalid},     // latest invalid, gives error
 		{"invalid", "invalid", "invalid", false, eInvalid}, // current and latest invalid, gives error
 	} {
+		config.GetConfig().ClientSelfUpdater.SnoozeUntil = time.Unix(0, 0) // unsnooze everytime
 
-		tsMetadata := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-			w.WriteHeader(http.StatusOK)
-			w.Header().Add("Content-Type", "application/octet-stream")
-			data := []byte(fmt.Sprintf(
-				`{"project_name":"tsuru","tag":"%s","previous_tag":"1.0.0","version":"%s","commit":"1234567890abcdef","date":"2020-12-25T23:58:00.123456789Z","runtime":{"goos":"linux","goarch":"amd64"}}`,
-				testCase.latestVer, testCase.latestVer,
-			))
-			w.Write(data)
-		}))
+		tsMetadata := httptest.NewServer(githubMockHandler(testCase.latestVer))
 		ts := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 			http.Redirect(w, r, tsMetadata.URL, 302) // github behavior: /releases/latest -> /releases/1.2.3
 		}))

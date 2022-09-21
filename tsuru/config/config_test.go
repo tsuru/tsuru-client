@@ -2,6 +2,7 @@ package config
 
 import (
 	"bytes"
+	"encoding/json"
 	"fmt"
 	"io"
 	"os"
@@ -14,6 +15,9 @@ import (
 
 func (s *S) TestBoostrapConfigNoConfig(c *check.C) {
 	fsystem = &fstest.RecordingFs{}
+	now := nowUTC()
+	nowUTC = func() time.Time { return now } // mocking nowUTC
+
 	stat, err := fsystem.Stat(configPath)
 	errorMsg := err.Error()
 	c.Assert(stat, check.IsNil)
@@ -42,10 +46,10 @@ func (s *S) TestBoostrapConfigFromFile(c *check.C) {
 	conf := bootstrapConfig()
 	c.Assert(conf, check.NotNil)
 	expected := &ConfigType{
-		SchemaVersion:   "6.6.6",
-		LastUpdate:      time.Date(2020, 12, 25, 16, 00, 59, 0, time.UTC),
-		originalContent: []byte(`{"SchemaVersion":"6.6.6","LastUpdate":"2020-12-25T16:00:59Z"}`),
+		SchemaVersion: "6.6.6",
+		LastUpdate:    time.Date(2020, 12, 25, 16, 00, 59, 0, time.UTC),
 	}
+	expected.saveOriginalContent()
 	c.Assert(conf, check.DeepEquals, expected)
 }
 
@@ -53,12 +57,13 @@ func (s *S) TestBoostrapConfigWrongFormatBackupFile(c *check.C) {
 	stdout = &bytes.Buffer{}
 	stderr = &bytes.Buffer{}
 	fsystem = &fstest.RecordingFs{}
+	now := nowUTC()
+	nowUTC = func() time.Time { return now } // mocking nowUTC
 
 	f, _ := fsystem.OpenFile(configPath, os.O_WRONLY|os.O_CREATE|os.O_TRUNC, 0755)
 	f.WriteString("wrong format")
 	f.Close()
-	nowTimeStr := nowUTC().Format("2006-01-02_15:04:05")
-	backupConfigPath := configPath + "." + nowTimeStr + ".bak"
+	backupConfigPath := configPath + "." + nowUTC().Format("2006-01-02_15:04:05") + ".bak"
 
 	conf := bootstrapConfig()
 	c.Assert(conf, check.NotNil)
@@ -123,9 +128,9 @@ func (s *S) TestSaveChanges(c *check.C) {
 	bytesRead, err := io.ReadAll(f)
 	f.Close()
 	c.Assert(err, check.IsNil)
-	c.Assert(string(bytesRead), check.Equals, fmt.Sprintf(`{
-  "SchemaVersion": "6.6.7",
-  "LastUpdate": "%s"
-}`, now.Format(time.RFC3339Nano)),
-	)
+
+	var newConf ConfigType
+	json.Unmarshal(bytesRead, &newConf)
+	c.Assert(newConf.SchemaVersion, check.Equals, "6.6.7")
+	c.Assert(newConf.LastUpdate, check.Equals, now)
 }
