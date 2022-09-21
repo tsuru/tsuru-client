@@ -3,19 +3,15 @@ package main
 import (
 	"encoding/json"
 	"fmt"
-	"io"
 	"io/ioutil"
 	"net/http"
-	"os"
 	"time"
 
 	"github.com/Masterminds/semver/v3"
 )
 
 var (
-	latestManifestURL string        = "https://github.com/tsuru/tsuru-client/releases/latest/download/metadata.json"
-	stdout            io.ReadWriter = os.Stdout
-	stderr            io.ReadWriter = os.Stderr
+	latestManifestURL string = "https://github.com/tsuru/tsuru-client/releases/latest/download/metadata.json"
 )
 
 type latestVersionCheckResult struct {
