@@ -3,19 +3,15 @@ package main
 import (
 	"encoding/json"
 	"fmt"
-	"io"
 	"io/ioutil"
 	"net/http"
-	"os"
 	"time"
 
 	"github.com/Masterminds/semver/v3"
 )
 
 var (
-	latestManifestURL string        = "https://github.com/tsuru/tsuru-client/releases/latest/download/manifest.json"
-	stdout            io.ReadWriter = os.Stdout
-	stderr            io.ReadWriter = os.Stderr
+	latestManifestURL string = "https://github.com/tsuru/tsuru-client/releases/latest/download/metadata.json"
 )
 
 type latestVersionCheckResult struct {
@@ -50,11 +46,16 @@ func getRemoteVersionAndReportsToChanGoroutine(r *latestVersionCheck) {
 
 	response, err := http.Get(latestManifestURL)
 	if err != nil {
-		checkResult.err = fmt.Errorf("Could not get %q endpoint: %w", latestManifestURL, err)
+		checkResult.err = fmt.Errorf("Could not GET endpoint %q: %w", latestManifestURL, err)
 		r.result <- checkResult
 		return
 	}
 	defer response.Body.Close()
+	if response.StatusCode > 300 {
+		checkResult.err = fmt.Errorf("Could not GET endpoint %q: %v", latestManifestURL, response.Status)
+		r.result <- checkResult
+		return
+	}
 
 	data, err := ioutil.ReadAll(response.Body)
 	if err != nil {
@@ -77,7 +78,7 @@ func getRemoteVersionAndReportsToChanGoroutine(r *latestVersionCheck) {
 	}
 	latest, err := semver.NewVersion(metadata.Version)
 	if err != nil {
-		checkResult.err = fmt.Errorf("metadata.version is not a SemVersion: %w", err)
+		checkResult.err = fmt.Errorf("metadata.version is not a SemVersion: %w\nmetadata: %v (parsed from %q)", err, metadata, string(data))
 		r.result <- checkResult
 		return
 	}

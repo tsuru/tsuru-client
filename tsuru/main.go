@@ -5,6 +5,7 @@
 package main
 
 import (
+	"io"
 	"log"
 	"os"
 
@@ -19,7 +20,9 @@ import (
 )
 
 var (
-	version = "dev" // overridden at build time
+	version               = "dev" // overridden at build time
+	stdout  io.ReadWriter = os.Stdout
+	stderr  io.ReadWriter = os.Stderr
 )
 
 const (
@@ -236,10 +239,7 @@ func inDockerMachineDriverMode() bool {
 	return os.Getenv(localbinary.PluginEnvKey) == localbinary.PluginEnvVal
 }
 
-func recoverCmdPanicAndCleanup(lvc *latestVersionCheck) {
-	verifyLatestVersion(lvc)
-	config.SaveChanges()
-
+func recoverCmdPanicExitError() {
 	if r := recover(); r != nil {
 		if e, ok := r.(*cmd.PanicExitError); ok {
 			os.Exit(e.Code)
@@ -249,14 +249,18 @@ func recoverCmdPanicAndCleanup(lvc *latestVersionCheck) {
 }
 
 func main() {
+	defer recoverCmdPanicExitError()
+
 	if inDockerMachineDriverMode() {
 		err := dockermachine.RunDriver(os.Getenv(localbinary.PluginEnvDriverName))
 		if err != nil {
 			log.Fatalf("Error running driver: %s", err)
 		}
 	} else {
+		defer config.SaveChangesWithTimeout()
+
 		checkVerResult := checkLatestVersionBackground()
-		defer recoverCmdPanicAndCleanup(checkVerResult)
+		defer verifyLatestVersion(checkVerResult)
 
 		localbinary.CurrentBinaryIsDockerMachine = true
 		name := cmd.ExtractProgramName(os.Args[0])
