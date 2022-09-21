@@ -8,10 +8,12 @@ import (
 	"time"
 
 	"github.com/Masterminds/semver/v3"
+	"github.com/tsuru/tsuru-client/tsuru/config"
 )
 
 var (
-	latestManifestURL string = "https://github.com/tsuru/tsuru-client/releases/latest/download/metadata.json"
+	latestManifestURL       string        = "https://github.com/tsuru/tsuru-client/releases/latest/download/metadata.json"
+	defaultSnoozeByDuration time.Duration = 24 * time.Hour
 )
 
 type latestVersionCheckResult struct {
@@ -34,12 +36,13 @@ type releaseMetadata struct {
 
 // This function "returns" its results over the r.result channel
 func getRemoteVersionAndReportsToChanGoroutine(r *latestVersionCheck) {
+	conf := config.GetConfig()
 	checkResult := latestVersionCheckResult{
 		isFinished:    true,
 		latestVersion: r.currentVersion,
 	}
 
-	if r.currentVersion == "dev" {
+	if r.currentVersion == "dev" || nowUTC().Before(conf.ClientSelfUpdater.SnoozeUntil) {
 		r.result <- checkResult
 		return
 	}
@@ -83,6 +86,9 @@ func getRemoteVersionAndReportsToChanGoroutine(r *latestVersionCheck) {
 		return
 	}
 
+	conf.ClientSelfUpdater.LastCheck = nowUTC()
+	conf.ClientSelfUpdater.SnoozeUntil = nowUTC().Add(defaultSnoozeByDuration)
+
 	if current.Compare(latest) < 0 {
 		checkResult.latestVersion = latest.String()
 		checkResult.isOutdated = true
@@ -91,11 +97,12 @@ func getRemoteVersionAndReportsToChanGoroutine(r *latestVersionCheck) {
 }
 
 func checkLatestVersionBackground() *latestVersionCheck {
+	conf := config.GetConfig()
 	r := &latestVersionCheck{
 		currentVersion:         version,
-		forceCheckBeforeFinish: false,
+		forceCheckBeforeFinish: nowUTC().After(conf.ClientSelfUpdater.ForceCheckAfter),
 	}
-	r.result = make(chan latestVersionCheckResult)
+	r.result = make(chan latestVersionCheckResult, 1)
 	go getRemoteVersionAndReportsToChanGoroutine(r)
 	return r
 }

@@ -29,13 +29,13 @@ type ConfigType struct {
 	originalContent []byte // used to detect changes
 
 	// ---- public confs ----
-	ClientSelfUpdater *ClientSelfUpdater
+	ClientSelfUpdater ClientSelfUpdater
 }
 
 func newDefaultConf() *ConfigType {
 	return &ConfigType{
 		SchemaVersion: SchemaVersion,
-		ClientSelfUpdater: &ClientSelfUpdater{
+		ClientSelfUpdater: ClientSelfUpdater{
 			ForceCheckAfter: nowUTC().Add(defaultForceCheckAfterDuration),
 		},
 	}
