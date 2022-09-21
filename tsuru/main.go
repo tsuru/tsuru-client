@@ -33,7 +33,7 @@ func buildManager(name string) *cmd.Manager {
 	lookup := func(context *cmd.Context) error {
 		return client.RunPlugin(context)
 	}
-	m := cmd.BuildBaseManager(name, version, header, lookup)
+	m := cmd.BuildBaseManagerPanicExiter(name, version, header, lookup)
 	m.RegisterTopic("app", `App is a program source code running on Tsuru`)
 	m.Register(&client.AppRun{})
 	m.Register(&client.AppInfo{})
@@ -237,6 +237,18 @@ func inDockerMachineDriverMode() bool {
 	return os.Getenv(localbinary.PluginEnvKey) == localbinary.PluginEnvVal
 }
 
+func recoverCmdPanicAndCleanup(lvc *latestVersionCheck) {
+	verifyLatestVersion(lvc)
+	config.SaveChanges()
+
+	if r := recover(); r != nil {
+		if e, ok := r.(*cmd.PanicExitError); ok {
+			os.Exit(e.Code)
+		}
+		panic(r)
+	}
+}
+
 func main() {
 	if inDockerMachineDriverMode() {
 		err := dockermachine.RunDriver(os.Getenv(localbinary.PluginEnvDriverName))
@@ -244,14 +256,12 @@ func main() {
 			log.Fatalf("Error running driver: %s", err)
 		}
 	} else {
-		defer config.SaveChanges()
 		checkVerResult := checkLatestVersionBackground()
+		defer recoverCmdPanicAndCleanup(checkVerResult)
 
 		localbinary.CurrentBinaryIsDockerMachine = true
 		name := cmd.ExtractProgramName(os.Args[0])
 		m := buildManager(name)
 		m.Run(os.Args[1:])
-
-		verifyLatestVersion(checkVerResult)
 	}
 }

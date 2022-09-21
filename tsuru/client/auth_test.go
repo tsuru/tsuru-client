@@ -927,7 +927,7 @@ func (s *S) TestListUsersRunWithoutFlags(c *check.C) {
 		Stdout: &stdout,
 		Stderr: &stderr,
 	}
-	manager = cmd.NewManager("glb", "0.2", "ad-ver", &stdout, &stderr, nil, nil)
+	manager = cmd.NewManagerPanicExiter("glb", "0.2", "ad-ver", &stdout, &stderr, nil, nil)
 	result := `[{"email": "test@test.com",
 "roles":[
 	{"name": "role1", "contexttype": "team", "contextvalue": "a"},
@@ -960,7 +960,7 @@ func (s *S) TestListUsersRunFilterByUserEmail(c *check.C) {
 		Stdout: &stdout,
 		Stderr: &stderr,
 	}
-	manager = cmd.NewManager("glb", "0.2", "ad-ver", &stdout, &stderr, nil, nil)
+	manager = cmd.NewManagerPanicExiter("glb", "0.2", "ad-ver", &stdout, &stderr, nil, nil)
 	result := `[{"email": "test@test.com",
 "roles":[
 	{"name": "role1", "contexttype": "team", "contextvalue": "a"},
@@ -999,7 +999,7 @@ func (s *S) TestListUsersRunFilterByRole(c *check.C) {
 		Stdout: &stdout,
 		Stderr: &stderr,
 	}
-	manager = cmd.NewManager("glb", "0.2", "ad-ver", &stdout, &stderr, nil, nil)
+	manager = cmd.NewManagerPanicExiter("glb", "0.2", "ad-ver", &stdout, &stderr, nil, nil)
 	result := `[{"email": "test@test.com",
 	"roles":[
 		{"name": "role1", "contexttype": "team", "contextvalue": "a"},
@@ -1038,7 +1038,7 @@ func (s *S) TestListUsersRunFilterByRoleWithContext(c *check.C) {
 		Stdout: &stdout,
 		Stderr: &stderr,
 	}
-	manager = cmd.NewManager("glb", "0.2", "ad-ver", &stdout, &stderr, nil, nil)
+	manager = cmd.NewManagerPanicExiter("glb", "0.2", "ad-ver", &stdout, &stderr, nil, nil)
 	result := `[{"email": "test@test.com",
 	"roles":[
 		{"name": "role1", "contexttype": "team", "contextvalue": "a"},
@@ -1077,7 +1077,7 @@ func (s *S) TestListUsersRunWithMoreThanOneFlagReturnsError(c *check.C) {
 		Stdout: &stdout,
 		Stderr: &stderr,
 	}
-	manager = cmd.NewManager("glb", "0.2", "ad-ver", &stdout, &stderr, nil, nil)
+	manager = cmd.NewManagerPanicExiter("glb", "0.2", "ad-ver", &stdout, &stderr, nil, nil)
 	result := `[{"email": "test@test.com",
 		"roles":[
 			{"name": "role1", "contexttype": "team", "contextvalue": "a"},
@@ -1108,7 +1108,7 @@ func (s *S) TestListUsersRunWithContextFlagAndNotRolaFlagError(c *check.C) {
 		Stdout: &stdout,
 		Stderr: &stderr,
 	}
-	manager = cmd.NewManager("glb", "0.2", "ad-ver", &stdout, &stderr, nil, nil)
+	manager = cmd.NewManagerPanicExiter("glb", "0.2", "ad-ver", &stdout, &stderr, nil, nil)
 	trans := cmdtest.ConditionalTransport{
 		Transport: cmdtest.Transport{Message: "", Status: http.StatusOK},
 		CondFunc: func(req *http.Request) bool {
