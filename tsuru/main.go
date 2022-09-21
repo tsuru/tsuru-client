@@ -8,6 +8,7 @@ import (
 	"io"
 	"log"
 	"os"
+	"time"
 
 	"github.com/ajg/form"
 	"github.com/docker/machine/libmachine/drivers/plugin/localbinary"
@@ -20,9 +21,10 @@ import (
 )
 
 var (
-	version               = "dev" // overridden at build time
-	stdout  io.ReadWriter = os.Stdout
-	stderr  io.ReadWriter = os.Stderr
+	version                  = "dev" // overridden at build time
+	stderr  io.ReadWriter    = os.Stderr
+	nowUTC  func() time.Time = func() time.Time { return time.Now().UTC() } // so we can test time-dependent sh!t
+
 )
 
 const (

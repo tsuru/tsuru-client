@@ -8,19 +8,20 @@ import (
 	"time"
 
 	"github.com/Masterminds/semver/v3"
+	"github.com/tsuru/tsuru-client/tsuru/config"
 )
 
 var (
-	latestManifestURL string = "https://github.com/tsuru/tsuru-client/releases/latest/download/metadata.json"
+	defaultSnoozeByDuration time.Duration = 24 * time.Hour
 )
 
 type latestVersionCheckResult struct {
-	isFinished bool
-	err        error
-
+	isFinished    bool
 	isOutdated    bool
 	latestVersion string
+	err           error
 }
+
 type latestVersionCheck struct {
 	currentVersion         string
 	forceCheckBeforeFinish bool
@@ -34,25 +35,26 @@ type releaseMetadata struct {
 
 // This function "returns" its results over the r.result channel
 func getRemoteVersionAndReportsToChanGoroutine(r *latestVersionCheck) {
+	conf := config.GetConfig()
 	checkResult := latestVersionCheckResult{
 		isFinished:    true,
 		latestVersion: r.currentVersion,
 	}
 
-	if r.currentVersion == "dev" {
+	if r.currentVersion == "dev" || nowUTC().Before(conf.ClientSelfUpdater.SnoozeUntil) {
 		r.result <- checkResult
 		return
 	}
 
-	response, err := http.Get(latestManifestURL)
+	response, err := http.Get(conf.ClientSelfUpdater.LatestManifestURL)
 	if err != nil {
-		checkResult.err = fmt.Errorf("Could not GET endpoint %q: %w", latestManifestURL, err)
+		checkResult.err = fmt.Errorf("Could not GET endpoint %q: %w", conf.ClientSelfUpdater.LatestManifestURL, err)
 		r.result <- checkResult
 		return
 	}
 	defer response.Body.Close()
 	if response.StatusCode > 300 {
-		checkResult.err = fmt.Errorf("Could not GET endpoint %q: %v", latestManifestURL, response.Status)
+		checkResult.err = fmt.Errorf("Could not GET endpoint %q: %v", conf.ClientSelfUpdater.LatestManifestURL, response.Status)
 		r.result <- checkResult
 		return
 	}
@@ -83,6 +85,10 @@ func getRemoteVersionAndReportsToChanGoroutine(r *latestVersionCheck) {
 		return
 	}
 
+	conf.ClientSelfUpdater.LastCheck = nowUTC()
+	conf.ClientSelfUpdater.SnoozeUntil = nowUTC().Add(defaultSnoozeByDuration)
+	conf.ClientSelfUpdater.ForceCheckAfter = nowUTC().Add(config.DefaultForceCheckAfterDuration)
+
 	if current.Compare(latest) < 0 {
 		checkResult.latestVersion = latest.String()
 		checkResult.isOutdated = true
@@ -91,11 +97,12 @@ func getRemoteVersionAndReportsToChanGoroutine(r *latestVersionCheck) {
 }
 
 func checkLatestVersionBackground() *latestVersionCheck {
+	conf := config.GetConfig()
 	r := &latestVersionCheck{
 		currentVersion:         version,
-		forceCheckBeforeFinish: false,
+		forceCheckBeforeFinish: nowUTC().After(conf.ClientSelfUpdater.ForceCheckAfter),
 	}
-	r.result = make(chan latestVersionCheckResult)
+	r.result = make(chan latestVersionCheckResult, 1)
 	go getRemoteVersionAndReportsToChanGoroutine(r)
 	return r
 }
@@ -105,6 +112,7 @@ func verifyLatestVersion(lvCheck *latestVersionCheck) {
 	if lvCheck.forceCheckBeforeFinish {
 		// blocking
 		checkResult = <-lvCheck.result
+
 	} else {
 		// non-blocking
 		select {
@@ -117,6 +125,6 @@ func verifyLatestVersion(lvCheck *latestVersionCheck) {
 		fmt.Fprintf(stderr, "Could not query for latest version: %v\n", checkResult.err)
 	}
 	if checkResult.isFinished && checkResult.isOutdated {
-		fmt.Fprintf(stderr, "A new version is available. Please update to the newer version %q (current: %q)\n", checkResult.latestVersion, lvCheck.currentVersion)
+		fmt.Fprintf(stderr, "INFO: A new version is available. Please update to the newer version %q (current: %q)\n", checkResult.latestVersion, lvCheck.currentVersion)
 	}
 }
