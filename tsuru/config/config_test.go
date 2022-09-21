@@ -80,9 +80,9 @@ func (s *S) TestBoostrapConfigWrongFormatBackupFile(c *check.C) {
 }
 
 func (s *S) TestConfig(c *check.C) {
-	conf1 := getConfig()
+	conf1 := GetConfig()
 	c.Assert(conf1, check.NotNil)
-	conf2 := getConfig()
+	conf2 := GetConfig()
 	c.Assert(conf1, check.Equals, conf2)
 }
 
@@ -110,7 +110,7 @@ func (s *S) TestSaveChanges(c *check.C) {
 	fmt.Fprint(f, originalContent)
 	f.Close()
 
-	conf := getConfig()
+	conf := GetConfig()
 	c.Assert(conf.SchemaVersion, check.Equals, "6.6.6")
 
 	// change something

@@ -12,24 +12,32 @@ import (
 )
 
 var (
-	privConfig          *ConfigType
-	configPath          string           = cmd.JoinWithUserDir(".tsuru", "config.json")
-	SchemaVersion       string           = "0.1"
-	stdout              io.ReadWriter    = os.Stdout
-	stderr              io.ReadWriter    = os.Stderr
-	defaultLocalTimeout time.Duration    = 1 * time.Second
-	nowUTC              func() time.Time = func() time.Time { return time.Now().UTC() } // so we can test time-dependent sh!t
+	privConfig                     *ConfigType
+	configPath                     string           = cmd.JoinWithUserDir(".tsuru", "config.json")
+	SchemaVersion                  string           = "0.1"
+	stdout                         io.ReadWriter    = os.Stdout
+	stderr                         io.ReadWriter    = os.Stderr
+	nowUTC                         func() time.Time = func() time.Time { return time.Now().UTC() } // so we can test time-dependent sh!t
+	defaultLocalTimeout            time.Duration    = 1 * time.Second
+	defaultForceCheckAfterDuration time.Duration    = 72 * time.Hour
 )
 
+// ConfigType is the main config, serialized to ~/.tsuru/config.json
 type ConfigType struct {
 	SchemaVersion   string
 	LastUpdate      time.Time
 	originalContent []byte // used to detect changes
+
+	// ---- public confs ----
+	ClientSelfUpdater *ClientSelfUpdater
 }
 
 func newDefaultConf() *ConfigType {
 	return &ConfigType{
 		SchemaVersion: SchemaVersion,
+		ClientSelfUpdater: &ClientSelfUpdater{
+			ForceCheckAfter: nowUTC().Add(defaultForceCheckAfterDuration),
+		},
 	}
 }
 
@@ -69,7 +77,8 @@ func bootstrapConfig() *ConfigType {
 	return &config
 }
 
-func getConfig() *ConfigType {
+// GetConfig() returns a *ConfigType singleton.
+func GetConfig() *ConfigType {
 	if privConfig == nil {
 		privConfig = bootstrapConfig()
 	}
@@ -85,7 +94,7 @@ func (c *ConfigType) hasChanges() bool {
 }
 
 func SaveChangesNoPrint() error {
-	c := getConfig()
+	c := GetConfig()
 	if !c.hasChanges() {
 		return nil
 	}
@@ -129,4 +138,11 @@ func SaveChangesWithTimeout() {
 	case <-time.After(timeout):
 		fmt.Fprintln(stderr, "Warning: Could not save config within the specified timeout. (check filesystem and/or change TSURU_CLIENT_LOCAL_TIMEOUT env)")
 	}
+}
+
+// ClientSelfUpdater saves configuration regarding self updating the client
+type ClientSelfUpdater struct {
+	LastCheck       time.Time
+	ForceCheckAfter time.Time
+	SnoozeUntil     time.Time
 }
