@@ -17,12 +17,12 @@ var (
 )
 
 type latestVersionCheckResult struct {
-	isFinished bool
-	err        error
-
+	isFinished    bool
 	isOutdated    bool
 	latestVersion string
+	err           error
 }
+
 type latestVersionCheck struct {
 	currentVersion         string
 	forceCheckBeforeFinish bool

@@ -90,7 +90,7 @@ func (c *ConfigType) hasChanges() bool {
 		return false
 	}
 	jsonConfig, _ := json.Marshal(c)
-	return bytes.Compare(c.originalContent, jsonConfig) != 0
+	return !bytes.Equal(c.originalContent, jsonConfig)
 }
 
 func SaveChangesNoPrint() error {
@@ -116,7 +116,7 @@ func SaveChangesNoPrint() error {
 }
 
 // SaveChangesWithTimeout will try to save changes on ~/.tsuru/config.json and
-// it will timeout after 1s (default). Timeout is overriden from env TSURU_CLIENT_LOCAL_TIMEOUT
+// it will timeout after 1s (default). Timeout is overridden from env TSURU_CLIENT_LOCAL_TIMEOUT
 func SaveChangesWithTimeout() {
 	timeout := defaultLocalTimeout
 	if timeoutStr := os.Getenv("TSURU_CLIENT_LOCAL_TIMEOUT"); timeoutStr != "" {
