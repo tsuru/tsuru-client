@@ -56,7 +56,7 @@ func (s *S) TestClusterAddRun(c *check.C) {
 			return true
 		},
 	}
-	manager := cmd.NewManager("admin", "0.1", "admin-ver", &stdout, &stderr, nil, nil)
+	manager := cmd.NewManagerPanicExiter("admin", "0.1", "admin-ver", &stdout, &stderr, nil, nil)
 	client := cmd.NewClient(&http.Client{Transport: trans}, nil, manager)
 	myCmd := ClusterAdd{}
 	dir, err := ioutil.TempDir("", "tsuru")
@@ -146,7 +146,7 @@ func (s *S) TestClusterUpdateRun(c *check.C) {
 			},
 		},
 	}
-	manager := cmd.NewManager("admin", "0.1", "admin-ver", &stdout, &stderr, nil, nil)
+	manager := cmd.NewManagerPanicExiter("admin", "0.1", "admin-ver", &stdout, &stderr, nil, nil)
 	client := cmd.NewClient(&http.Client{Transport: &trans}, nil, manager)
 	myCmd := ClusterUpdate{}
 	dir, err := ioutil.TempDir("", "tsuru")
@@ -401,7 +401,7 @@ func (s *S) TestClusterListRun(c *check.C) {
 			return true
 		},
 	}
-	manager := cmd.NewManager("admin", "0.1", "admin-ver", &stdout, &stderr, nil, nil)
+	manager := cmd.NewManagerPanicExiter("admin", "0.1", "admin-ver", &stdout, &stderr, nil, nil)
 	client := cmd.NewClient(&http.Client{Transport: trans}, nil, manager)
 	myCmd := ClusterList{}
 	err = myCmd.Run(&context, client)
@@ -438,7 +438,7 @@ func (s *S) TestClusterRemoveRun(c *check.C) {
 			return true
 		},
 	}
-	manager := cmd.NewManager("admin", "0.1", "admin-ver", &stdout, &stderr, nil, nil)
+	manager := cmd.NewManagerPanicExiter("admin", "0.1", "admin-ver", &stdout, &stderr, nil, nil)
 	client := cmd.NewClient(&http.Client{Transport: trans}, nil, manager)
 	command := ClusterRemove{}
 	err := command.Run(&context, client)
@@ -481,7 +481,7 @@ func (s *S) TestProvisionerListRun(c *check.C) {
 			return true
 		},
 	}
-	manager := cmd.NewManager("admin", "0.1", "admin-ver", &stdout, &stderr, nil, nil)
+	manager := cmd.NewManagerPanicExiter("admin", "0.1", "admin-ver", &stdout, &stderr, nil, nil)
 	client := cmd.NewClient(&http.Client{Transport: trans}, nil, manager)
 	myCmd := ProvisionerList{}
 	err := myCmd.Run(&context, client)
@@ -530,7 +530,7 @@ func (s *S) TestProvisionerInfoRun(c *check.C) {
 			return true
 		},
 	}
-	manager := cmd.NewManager("admin", "0.1", "admin-ver", &stdout, &stderr, nil, nil)
+	manager := cmd.NewManagerPanicExiter("admin", "0.1", "admin-ver", &stdout, &stderr, nil, nil)
 	client := cmd.NewClient(&http.Client{Transport: trans}, nil, manager)
 	myCmd := ProvisionerInfo{}
 	err := myCmd.Run(&context, client)

@@ -34,7 +34,7 @@ func (s *S) TearDownSuite(c *check.C) {
 
 func (s *S) SetUpTest(c *check.C) {
 	var stdout, stderr bytes.Buffer
-	manager = cmd.NewManager("glb", "1.0.0", "Supported-Tsuru", &stdout, &stderr, os.Stdin, nil)
+	manager = cmd.NewManagerPanicExiter("glb", "1.0.0", "Supported-Tsuru", &stdout, &stderr, os.Stdin, nil)
 
 	s.defaultLocation = *formatter.LocalTZ
 	location, err := time.LoadLocation("US/Central")

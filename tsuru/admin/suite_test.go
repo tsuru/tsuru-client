@@ -23,7 +23,7 @@ type S struct {
 
 func (s *S) SetUpSuite(c *check.C) {
 	var stdout, stderr bytes.Buffer
-	s.manager = cmd.NewManager("glb", "1.0.0", "Supported-Tsuru-Version", &stdout, &stderr, os.Stdin, nil)
+	s.manager = cmd.NewManagerPanicExiter("glb", "1.0.0", "Supported-Tsuru-Version", &stdout, &stderr, os.Stdin, nil)
 	os.Setenv("TSURU_TARGET", "http://localhost")
 	form.DefaultEncoder = form.DefaultEncoder.UseJSONTags(false)
 	form.DefaultDecoder = form.DefaultDecoder.UseJSONTags(false)

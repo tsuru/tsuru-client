@@ -636,7 +636,7 @@ func (s *S) TestRebalanceNodeCmdRun(c *check.C) {
 			return path && method
 		},
 	}
-	manager := cmd.NewManager("admin", "0.1", "admin-ver", &stdout, &stderr, nil, nil)
+	manager := cmd.NewManagerPanicExiter("admin", "0.1", "admin-ver", &stdout, &stderr, nil, nil)
 	client := cmd.NewClient(&http.Client{Transport: trans}, nil, manager)
 	rebalCmd := RebalanceNodeCmd{}
 	err := rebalCmd.Flags().Parse(true, []string{"--dry", "-y"})
@@ -685,7 +685,7 @@ func (s *S) TestRebalanceNodeCmdRunWithFilters(c *check.C) {
 			return path && method
 		},
 	}
-	manager := cmd.NewManager("admin", "0.1", "admin-ver", &stdout, &stderr, nil, nil)
+	manager := cmd.NewManagerPanicExiter("admin", "0.1", "admin-ver", &stdout, &stderr, nil, nil)
 	client := cmd.NewClient(&http.Client{Transport: trans}, nil, manager)
 	rebalCmd := RebalanceNodeCmd{}
 	err := rebalCmd.Flags().Parse(true, []string{"-y", "--metadata", "pool=x", "--metadata", "a=b", "--app", "x", "--app", "y"})
@@ -721,7 +721,7 @@ func (s *S) TestRebalanceNodeCmdRunAskingForConfirmation(c *check.C) {
 			return path && method
 		},
 	}
-	manager := cmd.NewManager("admin", "0.1", "admin-ver", &stdout, &stderr, nil, nil)
+	manager := cmd.NewManagerPanicExiter("admin", "0.1", "admin-ver", &stdout, &stderr, nil, nil)
 	client := cmd.NewClient(&http.Client{Transport: trans}, nil, manager)
 	rebalCmd := RebalanceNodeCmd{}
 	err := rebalCmd.Run(&context, client)

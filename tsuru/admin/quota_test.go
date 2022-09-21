@@ -26,7 +26,7 @@ func (s *S) TestUserQuotaViewRun(c *check.C) {
 		Stdout: &stdout,
 		Stderr: &stderr,
 	}
-	manager := cmd.NewManager("tsuru", "0.5", "ad-ver", &stdout, &stderr, nil, nil)
+	manager := cmd.NewManagerPanicExiter("tsuru", "0.5", "ad-ver", &stdout, &stderr, nil, nil)
 	trans := cmdtest.ConditionalTransport{
 		Transport: cmdtest.Transport{Message: result, Status: http.StatusOK},
 		CondFunc: func(req *http.Request) bool {
@@ -65,7 +65,7 @@ func (s *S) TestUserChangeQuotaRun(c *check.C) {
 		Stdout: &stdout,
 		Stderr: &stderr,
 	}
-	manager := cmd.NewManager("tsuru", "0.5", "ad-ver", &stdout, &stderr, nil, nil)
+	manager := cmd.NewManagerPanicExiter("tsuru", "0.5", "ad-ver", &stdout, &stderr, nil, nil)
 	trans := cmdtest.ConditionalTransport{
 		Transport: cmdtest.Transport{Message: "", Status: http.StatusOK},
 		CondFunc: func(req *http.Request) bool {
@@ -93,7 +93,7 @@ func (s *S) TestUserChangeQuotaRunUnlimited(c *check.C) {
 		Stdout: &stdout,
 		Stderr: &stderr,
 	}
-	manager := cmd.NewManager("tsuru", "0.5", "ad-ver", &stdout, &stderr, nil, nil)
+	manager := cmd.NewManagerPanicExiter("tsuru", "0.5", "ad-ver", &stdout, &stderr, nil, nil)
 	trans := cmdtest.ConditionalTransport{
 		Transport: cmdtest.Transport{Message: "", Status: http.StatusOK},
 		CondFunc: func(req *http.Request) bool {
@@ -123,7 +123,7 @@ func (s *S) TestUserChangeQuotaRunInvalidLimit(c *check.C) {
 
 func (s *S) TestUserChangeQuotaFailure(c *check.C) {
 	var stdout, stderr bytes.Buffer
-	manager := cmd.NewManager("tsuru", "0.5", "ad-ver", &stdout, &stderr, nil, nil)
+	manager := cmd.NewManagerPanicExiter("tsuru", "0.5", "ad-ver", &stdout, &stderr, nil, nil)
 	trans := &cmdtest.Transport{
 		Message: "user not found",
 		Status:  http.StatusNotFound,
@@ -190,7 +190,7 @@ func (s *S) TestAppQuotaChangeRun(c *check.C) {
 		Stdout: &stdout,
 		Stderr: &stderr,
 	}
-	manager := cmd.NewManager("tsuru", "0.5", "ad-ver", &stdout, &stderr, nil, nil)
+	manager := cmd.NewManagerPanicExiter("tsuru", "0.5", "ad-ver", &stdout, &stderr, nil, nil)
 	trans := cmdtest.ConditionalTransport{
 		Transport: cmdtest.Transport{Message: "", Status: http.StatusOK},
 		CondFunc: func(req *http.Request) bool {
@@ -273,7 +273,7 @@ func (s *S) TestTeamQuotaViewRun(c *check.C) {
 		Stdout: &stdout,
 		Stderr: &stderr,
 	}
-	manager := cmd.NewManager("tsuru", "0.5", "ad-ver", &stdout, &stderr, nil, nil)
+	manager := cmd.NewManagerPanicExiter("tsuru", "0.5", "ad-ver", &stdout, &stderr, nil, nil)
 	trans := cmdtest.ConditionalTransport{
 		Transport: cmdtest.Transport{Message: result, Status: http.StatusOK},
 		CondFunc: func(req *http.Request) bool {
@@ -308,7 +308,7 @@ func (s *S) TestTeamChangeQuotaRun(c *check.C) {
 		Stdout: &stdout,
 		Stderr: &stderr,
 	}
-	manager := cmd.NewManager("tsuru", "0.5", "ad-ver", &stdout, &stderr, nil, nil)
+	manager := cmd.NewManagerPanicExiter("tsuru", "0.5", "ad-ver", &stdout, &stderr, nil, nil)
 	trans := cmdtest.ConditionalTransport{
 		Transport: cmdtest.Transport{Message: "", Status: http.StatusOK},
 		CondFunc: func(req *http.Request) bool {
@@ -336,7 +336,7 @@ func (s *S) TestTeamChangeQuotaRunUnlimited(c *check.C) {
 		Stdout: &stdout,
 		Stderr: &stderr,
 	}
-	manager := cmd.NewManager("tsuru", "0.5", "ad-ver", &stdout, &stderr, nil, nil)
+	manager := cmd.NewManagerPanicExiter("tsuru", "0.5", "ad-ver", &stdout, &stderr, nil, nil)
 	trans := cmdtest.ConditionalTransport{
 		Transport: cmdtest.Transport{Message: "", Status: http.StatusOK},
 		CondFunc: func(req *http.Request) bool {
@@ -371,7 +371,7 @@ func (s *S) TestTeamChangeQuotaFailure(c *check.C) {
 		Stdout: &stdout,
 		Stderr: &stderr,
 	}
-	manager := cmd.NewManager("tsuru", "0.5", "ad-ver", &stdout, &stderr, nil, nil)
+	manager := cmd.NewManagerPanicExiter("tsuru", "0.5", "ad-ver", &stdout, &stderr, nil, nil)
 	trans := &cmdtest.Transport{
 		Message: "team not found",
 		Status:  http.StatusNotFound,
