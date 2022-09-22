@@ -19,7 +19,7 @@ var (
 	stderr                         io.ReadWriter    = os.Stderr
 	nowUTC                         func() time.Time = func() time.Time { return time.Now().UTC() } // so we can test time-dependent sh!t
 	defaultLocalTimeout            time.Duration    = 1 * time.Second
-	defaultForceCheckAfterDuration time.Duration    = 72 * time.Hour
+	DefaultForceCheckAfterDuration time.Duration    = 72 * time.Hour
 	defaultLatestManifestURL       string           = "https://github.com/tsuru/tsuru-client/releases/latest/download/metadata.json"
 )
 
@@ -38,7 +38,7 @@ func newDefaultConf() *ConfigType {
 		SchemaVersion: SchemaVersion,
 		ClientSelfUpdater: ClientSelfUpdater{
 			LatestManifestURL: defaultLatestManifestURL,
-			ForceCheckAfter:   nowUTC().Add(defaultForceCheckAfterDuration),
+			ForceCheckAfter:   nowUTC().Add(DefaultForceCheckAfterDuration),
 		},
 	}
 }

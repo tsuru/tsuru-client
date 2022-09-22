@@ -87,6 +87,7 @@ func getRemoteVersionAndReportsToChanGoroutine(r *latestVersionCheck) {
 
 	conf.ClientSelfUpdater.LastCheck = nowUTC()
 	conf.ClientSelfUpdater.SnoozeUntil = nowUTC().Add(defaultSnoozeByDuration)
+	conf.ClientSelfUpdater.ForceCheckAfter = nowUTC().Add(config.DefaultForceCheckAfterDuration)
 
 	if current.Compare(latest) < 0 {
 		checkResult.latestVersion = latest.String()
@@ -111,6 +112,7 @@ func verifyLatestVersion(lvCheck *latestVersionCheck) {
 	if lvCheck.forceCheckBeforeFinish {
 		// blocking
 		checkResult = <-lvCheck.result
+
 	} else {
 		// non-blocking
 		select {
