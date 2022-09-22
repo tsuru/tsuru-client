@@ -12,7 +12,6 @@ import (
 )
 
 var (
-	latestManifestURL       string        = "https://github.com/tsuru/tsuru-client/releases/latest/download/metadata.json"
 	defaultSnoozeByDuration time.Duration = 24 * time.Hour
 )
 
@@ -47,15 +46,15 @@ func getRemoteVersionAndReportsToChanGoroutine(r *latestVersionCheck) {
 		return
 	}
 
-	response, err := http.Get(latestManifestURL)
+	response, err := http.Get(conf.ClientSelfUpdater.LatestManifestURL)
 	if err != nil {
-		checkResult.err = fmt.Errorf("Could not GET endpoint %q: %w", latestManifestURL, err)
+		checkResult.err = fmt.Errorf("Could not GET endpoint %q: %w", conf.ClientSelfUpdater.LatestManifestURL, err)
 		r.result <- checkResult
 		return
 	}
 	defer response.Body.Close()
 	if response.StatusCode > 300 {
-		checkResult.err = fmt.Errorf("Could not GET endpoint %q: %v", latestManifestURL, response.Status)
+		checkResult.err = fmt.Errorf("Could not GET endpoint %q: %v", conf.ClientSelfUpdater.LatestManifestURL, response.Status)
 		r.result <- checkResult
 		return
 	}

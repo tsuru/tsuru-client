@@ -118,7 +118,7 @@ func (s *S) TestGetRemoteVersionAndReportsToChan(c *check.C) {
 		ts := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 			http.Redirect(w, r, tsMetadata.URL, 302) // github behavior: /releases/latest -> /releases/1.2.3
 		}))
-		latestManifestURL = ts.URL
+		config.GetConfig().ClientSelfUpdater.LatestManifestURL = ts.URL
 
 		r := &latestVersionCheck{currentVersion: testCase.currentVer}
 		r.result = make(chan latestVersionCheckResult)
@@ -148,7 +148,7 @@ func (s *S) TestGetRemoteVersionAndReportsToChanGoroutine(c *check.C) {
 	ts := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		http.Redirect(w, r, tsMetadata.URL, 302) // github behavior: /releases/latest -> /releases/1.2.3
 	}))
-	latestManifestURL = ts.URL
+	config.GetConfig().ClientSelfUpdater.LatestManifestURL = ts.URL
 
 	r := &latestVersionCheck{currentVersion: "1.2.3"}
 	r.result = make(chan latestVersionCheckResult)
@@ -170,7 +170,7 @@ func (s *S) TestGetRemoteVersionAndReportsToChanGoroutineSnooze(c *check.C) {
 	ts := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		http.Redirect(w, r, tsMetadata.URL, 302) // github behavior: /releases/latest -> /releases/1.2.3
 	}))
-	latestManifestURL = ts.URL
+	config.GetConfig().ClientSelfUpdater.LatestManifestURL = ts.URL
 
 	// First test, snooze was not set, returns isOutdated=true
 	r := &latestVersionCheck{currentVersion: "1.0.0"}

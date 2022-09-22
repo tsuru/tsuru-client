@@ -20,6 +20,7 @@ var (
 	nowUTC                         func() time.Time = func() time.Time { return time.Now().UTC() } // so we can test time-dependent sh!t
 	defaultLocalTimeout            time.Duration    = 1 * time.Second
 	defaultForceCheckAfterDuration time.Duration    = 72 * time.Hour
+	defaultLatestManifestURL       string           = "https://github.com/tsuru/tsuru-client/releases/latest/download/metadata.json"
 )
 
 // ConfigType is the main config, serialized to ~/.tsuru/config.json
@@ -36,7 +37,8 @@ func newDefaultConf() *ConfigType {
 	return &ConfigType{
 		SchemaVersion: SchemaVersion,
 		ClientSelfUpdater: ClientSelfUpdater{
-			ForceCheckAfter: nowUTC().Add(defaultForceCheckAfterDuration),
+			LatestManifestURL: defaultLatestManifestURL,
+			ForceCheckAfter:   nowUTC().Add(defaultForceCheckAfterDuration),
 		},
 	}
 }
@@ -142,7 +144,8 @@ func SaveChangesWithTimeout() {
 
 // ClientSelfUpdater saves configuration regarding self updating the client
 type ClientSelfUpdater struct {
-	LastCheck       time.Time
-	ForceCheckAfter time.Time
-	SnoozeUntil     time.Time
+	LatestManifestURL string
+	LastCheck         time.Time
+	ForceCheckAfter   time.Time
+	SnoozeUntil       time.Time
 }
