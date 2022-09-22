@@ -2,7 +2,7 @@
 # Build customization
 project_name: tsuru
 builds:
-- main: ./tsuru/main.go
+- main: ./tsuru
   binary: tsuru
   goos:
     - windows
