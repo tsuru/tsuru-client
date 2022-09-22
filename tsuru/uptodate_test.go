@@ -23,12 +23,6 @@ func githubMockHandler(version string) http.Handler {
 }
 
 func (s *S) TestVerifyLatestVersionSyncTimeout(c *check.C) {
-	timeoutChan := make(chan bool)
-	go func(ch chan bool) {
-		time.Sleep(1 * time.Second)
-		ch <- true
-	}(timeoutChan)
-
 	resultChan := make(chan bool)
 	cv := &latestVersionCheck{forceCheckBeforeFinish: true}
 	go func(ch chan bool, cv1 *latestVersionCheck) {
@@ -37,7 +31,7 @@ func (s *S) TestVerifyLatestVersionSyncTimeout(c *check.C) {
 	}(resultChan, cv)
 
 	select {
-	case <-timeoutChan:
+	case <-time.After(1 * time.Second):
 	case <-resultChan:
 		c.Assert("Response was received", check.Equals, "verifyLatestVersion should timeout")
 	}
@@ -51,20 +45,8 @@ func (s *S) TestVerifyLatestVersionSyncFinish(c *check.C) {
 	// timeout   |           *
 
 	resultChan := make(chan bool, 1)
-	timeoutChan := make(chan bool, 1)
-	prematureChan := make(chan bool, 1)
 	cv := &latestVersionCheck{forceCheckBeforeFinish: true}
 	cv.result = make(chan latestVersionCheckResult, 1)
-
-	go func(ch chan bool) {
-		time.Sleep(1000 * time.Millisecond)
-		ch <- true
-	}(timeoutChan)
-
-	go func(ch chan bool) {
-		time.Sleep(200 * time.Millisecond)
-		ch <- true
-	}(prematureChan)
 
 	go func(cv1 *latestVersionCheck) {
 		time.Sleep(500 * time.Millisecond)
@@ -81,13 +63,13 @@ func (s *S) TestVerifyLatestVersionSyncFinish(c *check.C) {
 	}(resultChan, cv)
 
 	select {
-	case <-prematureChan:
+	case <-time.After(200 * time.Millisecond):
 	case <-resultChan:
 		c.Assert("Should have finished after prematureChan", check.Equals, "but ended before")
 	}
 
 	select {
-	case <-timeoutChan:
+	case <-time.After(1 * time.Second):
 		c.Assert("Reached final timeout", check.Equals, "resultChan was expected")
 	case <-resultChan:
 	}

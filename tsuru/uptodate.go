@@ -123,6 +123,6 @@ func verifyLatestVersion(lvCheck *latestVersionCheck) {
 		fmt.Fprintf(stderr, "Could not query for latest version: %v\n", checkResult.err)
 	}
 	if checkResult.isFinished && checkResult.isOutdated {
-		fmt.Fprintf(stderr, "A new version is available. Please update to the newer version %q (current: %q)\n", checkResult.latestVersion, lvCheck.currentVersion)
+		fmt.Fprintf(stderr, "INFO: A new version is available. Please update to the newer version %q (current: %q)\n", checkResult.latestVersion, lvCheck.currentVersion)
 	}
 }
