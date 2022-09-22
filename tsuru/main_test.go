@@ -9,7 +9,6 @@ import (
 	"os"
 	"path/filepath"
 	"testing"
-	"time"
 
 	"gopkg.in/check.v1"
 
@@ -39,7 +38,6 @@ func Test(t *testing.T) { check.TestingT(t) }
 func (s *S) SetUpTest(c *check.C) {
 	var stdout, stderr bytes.Buffer
 	manager = cmd.NewManagerPanicExiter("glb", "1.0.0", "Supported-Tsuru", &stdout, &stderr, os.Stdin, nil)
-	nowUTC = func() time.Time { return time.Now().UTC() } // so we can test time-dependent sh!t
 }
 
 func (s *S) TestCommandsFromBaseManagerAreRegistered(c *check.C) {

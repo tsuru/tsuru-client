@@ -1,7 +1,6 @@
 package config
 
 import (
-	"bytes"
 	"encoding/json"
 	"fmt"
 	"io"
@@ -11,23 +10,35 @@ import (
 	"github.com/tsuru/tsuru/cmd"
 )
 
-var (
-	privConfig                     *ConfigType
-	configPath                     string           = cmd.JoinWithUserDir(".tsuru", "config.json")
-	SchemaVersion                  string           = "0.1"
-	stdout                         io.ReadWriter    = os.Stdout
-	stderr                         io.ReadWriter    = os.Stderr
-	nowUTC                         func() time.Time = func() time.Time { return time.Now().UTC() } // so we can test time-dependent sh!t
-	defaultLocalTimeout            time.Duration    = 1 * time.Second
-	DefaultForceCheckAfterDuration time.Duration    = 72 * time.Hour
-	defaultLatestManifestURL       string           = "https://github.com/tsuru/tsuru-client/releases/latest/download/metadata.json"
+const (
+	defaultLocalTimeout      time.Duration = 1 * time.Second
+	defaultLatestManifestURL string        = "https://github.com/tsuru/tsuru-client/releases/latest/download/metadata.json"
 )
+
+var (
+	privConfig         *ConfigType
+	configPath         string           = cmd.JoinWithUserDir(".tsuru", "config.json")
+	SchemaVersion      string           = "0.1"
+	stdout             io.ReadWriter    = os.Stdout
+	stderr             io.ReadWriter    = os.Stderr
+	nowUTC             func() time.Time = func() time.Time { return time.Now().UTC() } // so we can test time-dependent sh!t
+	clientLocalTimeout time.Duration
+)
+
+func init() {
+	clientLocalTimeout = defaultLocalTimeout
+	if timeoutStr := os.Getenv("TSURU_CLIENT_LOCAL_TIMEOUT"); timeoutStr != "" {
+		if duration, err := time.ParseDuration(timeoutStr); err == nil {
+			clientLocalTimeout = duration
+		}
+	}
+}
 
 // ConfigType is the main config, serialized to ~/.tsuru/config.json
 type ConfigType struct {
 	SchemaVersion   string
 	LastUpdate      time.Time
-	originalContent []byte // used to detect changes
+	originalContent string // used to detect changes
 
 	// ---- public confs ----
 	ClientSelfUpdater ClientSelfUpdater
@@ -38,14 +49,8 @@ func newDefaultConf() *ConfigType {
 		SchemaVersion: SchemaVersion,
 		ClientSelfUpdater: ClientSelfUpdater{
 			LatestManifestURL: defaultLatestManifestURL,
-			ForceCheckAfter:   nowUTC().Add(DefaultForceCheckAfterDuration),
 		},
 	}
-}
-
-func (c *ConfigType) saveOriginalContent() {
-	originalContent, _ := json.Marshal(c)
-	c.originalContent = originalContent
 }
 
 func bootstrapConfig() *ConfigType {
@@ -54,14 +59,14 @@ func bootstrapConfig() *ConfigType {
 		return newDefaultConf()
 	}
 	if err != nil {
-		fmt.Fprintf(stderr, "Could not read %q: %v\nContinuing without config", configPath, err)
+		fmt.Fprintf(stderr, "Could not read %q: %v\nContinuing without config\n", configPath, err)
 		return nil
 	}
 	defer file.Close()
 
 	rawContent, err := io.ReadAll(file)
 	if err != nil {
-		fmt.Fprintf(stderr, "Could not read %q: %v\nContinuing without config", configPath, err)
+		fmt.Fprintf(stderr, "Could not read %q: %v\nContinuing without config\n", configPath, err)
 		return nil
 	}
 
@@ -75,7 +80,16 @@ func bootstrapConfig() *ConfigType {
 		return newDefaultConf()
 	}
 
-	config.saveOriginalContent()
+	config.originalContent = string(rawContent)
+
+	// Convert any older config
+	// ...
+
+	// Mandatory fields
+	if config.ClientSelfUpdater.LatestManifestURL == "" {
+		config.ClientSelfUpdater.LatestManifestURL = defaultLatestManifestURL
+	}
+
 	return &config
 }
 
@@ -84,6 +98,7 @@ func GetConfig() *ConfigType {
 	if privConfig == nil {
 		privConfig = bootstrapConfig()
 	}
+
 	return privConfig
 }
 
@@ -92,7 +107,7 @@ func (c *ConfigType) hasChanges() bool {
 		return false
 	}
 	jsonConfig, _ := json.Marshal(c)
-	return !bytes.Equal(c.originalContent, jsonConfig)
+	return c.originalContent != string(jsonConfig)
 }
 
 func SaveChangesNoPrint() error {
@@ -120,13 +135,6 @@ func SaveChangesNoPrint() error {
 // SaveChangesWithTimeout will try to save changes on ~/.tsuru/config.json and
 // it will timeout after 1s (default). Timeout is overridden from env TSURU_CLIENT_LOCAL_TIMEOUT
 func SaveChangesWithTimeout() {
-	timeout := defaultLocalTimeout
-	if timeoutStr := os.Getenv("TSURU_CLIENT_LOCAL_TIMEOUT"); timeoutStr != "" {
-		if duration, err := time.ParseDuration(timeoutStr); err == nil {
-			timeout = duration
-		}
-	}
-
 	c := make(chan bool, 1)
 	go func() {
 		if err := SaveChangesNoPrint(); err != nil {
@@ -137,7 +145,7 @@ func SaveChangesWithTimeout() {
 
 	select {
 	case <-c:
-	case <-time.After(timeout):
+	case <-time.After(clientLocalTimeout):
 		fmt.Fprintln(stderr, "Warning: Could not save config within the specified timeout. (check filesystem and/or change TSURU_CLIENT_LOCAL_TIMEOUT env)")
 	}
 }
@@ -146,6 +154,4 @@ func SaveChangesWithTimeout() {
 type ClientSelfUpdater struct {
 	LatestManifestURL string
 	LastCheck         time.Time
-	ForceCheckAfter   time.Time
-	SnoozeUntil       time.Time
 }

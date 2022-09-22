@@ -1,19 +1,57 @@
-package main
+package selfupdater
 
 import (
 	"encoding/json"
 	"fmt"
+	"io"
 	"io/ioutil"
 	"net/http"
+	"os"
+	"strconv"
 	"time"
 
 	"github.com/Masterminds/semver/v3"
 	"github.com/tsuru/tsuru-client/tsuru/config"
 )
 
-var (
-	defaultSnoozeByDuration time.Duration = 24 * time.Hour
+const (
+	defaultForceCheckAfterDuration time.Duration = 6 * 30 * 24 * time.Hour // aprox. 6 months
+	defaultSnoozeByDuration        time.Duration = 0 * time.Hour
+	DefaultLatestManifestURL       string        = "https://github.com/tsuru/tsuru-client/releases/latest/download/metadata.json"
 )
+
+var (
+	stderr                  io.ReadWriter    = os.Stderr
+	nowUTC                  func() time.Time = func() time.Time { return time.Now().UTC() } // so we can test time-dependent sh!t
+	snoozeDuration          time.Duration
+	forceCheckAfterDuration time.Duration
+	overrideForceCheck      *bool = nil
+)
+
+func init() {
+	if snoozeDurationStr := os.Getenv("TSURU_CLIENT_SELF_UPDATE_SNOOZE_DURATION"); snoozeDurationStr != "" {
+		if duration, err := time.ParseDuration(snoozeDurationStr); err == nil {
+			snoozeDuration = duration
+		} else {
+			fmt.Fprintln(stderr, "WARN: when setting TSURU_CLIENT_SELF_UPDATE_SNOOZE_DURATION, it must be a parsable duration (eg: 10m, 72h, etc...)")
+		}
+	}
+
+	forceCheckAfterDuration = defaultForceCheckAfterDuration
+	if timeoutStr := os.Getenv("TSURU_CLIENT_FORCE_CHECK_UPDATES_AFTER_DURATION"); timeoutStr != "" {
+		if duration, err := time.ParseDuration(timeoutStr); err == nil {
+			forceCheckAfterDuration = duration
+		}
+	}
+
+	if forceCheckStr := os.Getenv("TSURU_CLIENT_FORCE_CHECK_UPDATES"); forceCheckStr != "" {
+		if isForceCheck, err := strconv.ParseBool(forceCheckStr); err == nil {
+			overrideForceCheck = &isForceCheck
+		} else {
+			fmt.Fprintln(stderr, "WARN: when setting TSURU_CLIENT_FORCE_CHECK_UPDATES, it must be either true or false")
+		}
+	}
+}
 
 type latestVersionCheckResult struct {
 	isFinished    bool
@@ -41,7 +79,7 @@ func getRemoteVersionAndReportsToChanGoroutine(r *latestVersionCheck) {
 		latestVersion: r.currentVersion,
 	}
 
-	if r.currentVersion == "dev" || nowUTC().Before(conf.ClientSelfUpdater.SnoozeUntil) {
+	if r.currentVersion == "dev" || conf.ClientSelfUpdater.LastCheck.Add(snoozeDuration).After(nowUTC()) {
 		r.result <- checkResult
 		return
 	}
@@ -86,9 +124,6 @@ func getRemoteVersionAndReportsToChanGoroutine(r *latestVersionCheck) {
 	}
 
 	conf.ClientSelfUpdater.LastCheck = nowUTC()
-	conf.ClientSelfUpdater.SnoozeUntil = nowUTC().Add(defaultSnoozeByDuration)
-	conf.ClientSelfUpdater.ForceCheckAfter = nowUTC().Add(config.DefaultForceCheckAfterDuration)
-
 	if current.Compare(latest) < 0 {
 		checkResult.latestVersion = latest.String()
 		checkResult.isOutdated = true
@@ -96,22 +131,37 @@ func getRemoteVersionAndReportsToChanGoroutine(r *latestVersionCheck) {
 	r.result <- checkResult
 }
 
-func checkLatestVersionBackground() *latestVersionCheck {
+func CheckLatestVersionBackground(currentVersion string) *latestVersionCheck {
 	conf := config.GetConfig()
+
+	forceCheckBeforeFinish := conf.ClientSelfUpdater.LastCheck.Add(forceCheckAfterDuration).Before(nowUTC())
+	if overrideForceCheck != nil {
+		forceCheckBeforeFinish = *overrideForceCheck
+	}
+
 	r := &latestVersionCheck{
-		currentVersion:         version,
-		forceCheckBeforeFinish: nowUTC().After(conf.ClientSelfUpdater.ForceCheckAfter),
+		currentVersion:         currentVersion,
+		forceCheckBeforeFinish: forceCheckBeforeFinish,
 	}
 	r.result = make(chan latestVersionCheckResult, 1)
 	go getRemoteVersionAndReportsToChanGoroutine(r)
 	return r
 }
 
-func verifyLatestVersion(lvCheck *latestVersionCheck) {
+func VerifyLatestVersion(lvCheck *latestVersionCheck) {
 	checkResult := latestVersionCheckResult{}
 	if lvCheck.forceCheckBeforeFinish {
 		// blocking
-		checkResult = <-lvCheck.result
+		timeout := 2 * time.Second
+		for !checkResult.isFinished {
+			select {
+			case <-time.After(timeout):
+				fmt.Fprintln(stderr, "WARN: Taking too long to check for latest version. CTRL+C to force exit.")
+			case checkResult = <-lvCheck.result:
+				break
+			}
+			timeout += 2 * time.Second
+		}
 
 	} else {
 		// non-blocking
@@ -122,9 +172,9 @@ func verifyLatestVersion(lvCheck *latestVersionCheck) {
 	}
 
 	if checkResult.err != nil {
-		fmt.Fprintf(stderr, "Could not query for latest version: %v\n", checkResult.err)
+		fmt.Fprintf(stderr, "\n\nERROR: Could not query for latest version: %v\n", checkResult.err)
 	}
 	if checkResult.isFinished && checkResult.isOutdated {
-		fmt.Fprintf(stderr, "INFO: A new version is available. Please update to the newer version %q (current: %q)\n", checkResult.latestVersion, lvCheck.currentVersion)
+		fmt.Fprintf(stderr, "\n\nINFO: A new version is available. Please update to the newer version %q (current: %q)\n", checkResult.latestVersion, lvCheck.currentVersion)
 	}
 }

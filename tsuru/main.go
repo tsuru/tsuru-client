@@ -5,26 +5,22 @@
 package main
 
 import (
-	"io"
 	"log"
 	"os"
-	"time"
 
 	"github.com/ajg/form"
 	"github.com/docker/machine/libmachine/drivers/plugin/localbinary"
 	"github.com/tsuru/tsuru-client/tsuru/admin"
 	"github.com/tsuru/tsuru-client/tsuru/client"
 	"github.com/tsuru/tsuru-client/tsuru/config"
+	"github.com/tsuru/tsuru-client/tsuru/config/selfupdater"
 	"github.com/tsuru/tsuru/cmd"
 	"github.com/tsuru/tsuru/iaas/dockermachine"
 	_ "github.com/tsuru/tsuru/provision/docker/cmds"
 )
 
 var (
-	version                  = "dev" // overridden at build time
-	stderr  io.ReadWriter    = os.Stderr
-	nowUTC  func() time.Time = func() time.Time { return time.Now().UTC() } // so we can test time-dependent sh!t
-
+	version = "dev" // overridden at build time
 )
 
 const (
@@ -261,8 +257,8 @@ func main() {
 	} else {
 		defer config.SaveChangesWithTimeout()
 
-		checkVerResult := checkLatestVersionBackground()
-		defer verifyLatestVersion(checkVerResult)
+		checkVerResult := selfupdater.CheckLatestVersionBackground(version)
+		defer selfupdater.VerifyLatestVersion(checkVerResult)
 
 		localbinary.CurrentBinaryIsDockerMachine = true
 		name := cmd.ExtractProgramName(os.Args[0])

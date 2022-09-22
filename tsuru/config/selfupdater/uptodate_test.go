@@ -1,4 +1,4 @@
-package main
+package selfupdater
 
 import (
 	"fmt"
@@ -26,7 +26,7 @@ func (s *S) TestVerifyLatestVersionSyncTimeout(c *check.C) {
 	resultChan := make(chan bool)
 	cv := &latestVersionCheck{forceCheckBeforeFinish: true}
 	go func(ch chan bool, cv1 *latestVersionCheck) {
-		verifyLatestVersion(cv1)
+		VerifyLatestVersion(cv1)
 		ch <- true
 	}(resultChan, cv)
 
@@ -58,7 +58,7 @@ func (s *S) TestVerifyLatestVersionSyncFinish(c *check.C) {
 	}(cv)
 
 	go func(ch chan bool, cv1 *latestVersionCheck) {
-		verifyLatestVersion(cv1)
+		VerifyLatestVersion(cv1)
 		ch <- true
 	}(resultChan, cv)
 
@@ -94,8 +94,6 @@ func (s *S) TestGetRemoteVersionAndReportsToChan(c *check.C) {
 		{"1.1.1", "invalid", "1.1.1", false, eInvalid},     // latest invalid, gives error
 		{"invalid", "invalid", "invalid", false, eInvalid}, // current and latest invalid, gives error
 	} {
-		config.GetConfig().ClientSelfUpdater.SnoozeUntil = time.Unix(0, 0) // unsnooze everytime
-
 		tsMetadata := httptest.NewServer(githubMockHandler(testCase.latestVer))
 		ts := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 			http.Redirect(w, r, tsMetadata.URL, 302) // github behavior: /releases/latest -> /releases/1.2.3
@@ -162,6 +160,7 @@ func (s *S) TestGetRemoteVersionAndReportsToChanGoroutineSnooze(c *check.C) {
 	c.Assert(result.isOutdated, check.Equals, true)
 
 	// Second test, snooze was set, returns isOutdated=false
+	nowUTC = func() time.Time { return now.Add(-1 * time.Millisecond) } // for when snooze=0
 	r = &latestVersionCheck{currentVersion: "1.0.0"}
 	r.result = make(chan latestVersionCheckResult)
 	go getRemoteVersionAndReportsToChanGoroutine(r)
