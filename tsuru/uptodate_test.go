@@ -138,7 +138,7 @@ func (s *S) TestGetRemoteVersionAndReportsToChan(c *check.C) {
 	}
 }
 
-func (s *S) TestGetRemoteVersionAndReportsToChanInvalidJSON(c *check.C) {
+func (s *S) TestGetRemoteVersionAndReportsToChanGoroutine(c *check.C) {
 	tsMetadata := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		w.WriteHeader(http.StatusOK)
 		w.Header().Add("Content-Type", "application/octet-stream")
@@ -160,4 +160,45 @@ func (s *S) TestGetRemoteVersionAndReportsToChanInvalidJSON(c *check.C) {
 	c.Assert(result.isOutdated, check.Equals, false)
 	c.Assert(result.latestVersion, check.Equals, "1.2.3")
 	c.Assert(result.err, check.ErrorMatches, "Could not parse metadata.json. Unexpected format: invalid character.*")
+}
+
+func (s *S) TestGetRemoteVersionAndReportsToChanGoroutineSnooze(c *check.C) {
+	now := time.Now().UTC()
+	nowUTC = func() time.Time { return now }
+
+	tsMetadata := httptest.NewServer(githubMockHandler("2.2.2"))
+	ts := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		http.Redirect(w, r, tsMetadata.URL, 302) // github behavior: /releases/latest -> /releases/1.2.3
+	}))
+	latestManifestURL = ts.URL
+
+	// First test, snooze was not set, returns isOutdated=true
+	r := &latestVersionCheck{currentVersion: "1.0.0"}
+	r.result = make(chan latestVersionCheckResult)
+	go getRemoteVersionAndReportsToChanGoroutine(r)
+	result := <-r.result
+	c.Assert(result.isOutdated, check.Equals, true)
+
+	// Second test, snooze was set, returns isOutdated=false
+	r = &latestVersionCheck{currentVersion: "1.0.0"}
+	r.result = make(chan latestVersionCheckResult)
+	go getRemoteVersionAndReportsToChanGoroutine(r)
+	result = <-r.result
+	c.Assert(result.isOutdated, check.Equals, false)
+
+	// Testing just before snooze is expired, returns isOutdated=false
+	nowUTC = func() time.Time { return now.Add(defaultSnoozeByDuration - 1*time.Second) }
+	r = &latestVersionCheck{currentVersion: "1.0.0"}
+	r.result = make(chan latestVersionCheckResult)
+	go getRemoteVersionAndReportsToChanGoroutine(r)
+	result = <-r.result
+	c.Assert(result.isOutdated, check.Equals, false)
+
+	// Testing just after snooze is expired, returns isOutdated=true
+	nowUTC = func() time.Time { return now.Add(defaultSnoozeByDuration + 1*time.Second) }
+	r = &latestVersionCheck{currentVersion: "1.0.0"}
+	r.result = make(chan latestVersionCheckResult)
+	go getRemoteVersionAndReportsToChanGoroutine(r)
+	result = <-r.result
+	c.Assert(result.isOutdated, check.Equals, true)
 }
