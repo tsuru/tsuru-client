@@ -120,7 +120,16 @@ func verifyLatestVersion(lvCheck *latestVersionCheck) {
 	checkResult := latestVersionCheckResult{}
 	if lvCheck.forceCheckBeforeFinish {
 		// blocking
-		checkResult = <-lvCheck.result
+		timeout := 2 * time.Second
+		for !checkResult.isFinished {
+			select {
+			case <-time.After(timeout):
+				fmt.Fprintln(stderr, "WARN: Taking too long to check for latest version. CTRL+C to force exit.")
+			case checkResult = <-lvCheck.result:
+				break
+			}
+			timeout += 2 * time.Second
+		}
 
 	} else {
 		// non-blocking
