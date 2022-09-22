@@ -5,6 +5,7 @@ import (
 	"fmt"
 	"io/ioutil"
 	"net/http"
+	"os"
 	"time"
 
 	"github.com/Masterminds/semver/v3"
@@ -12,8 +13,16 @@ import (
 )
 
 var (
-	defaultSnoozeByDuration time.Duration = 24 * time.Hour
+	defaultSnoozeByDuration time.Duration = 0 * time.Hour
 )
+
+func init() {
+	if snoozeDurationStr := os.Getenv("TSURU_CLIENT_SELF_UPDATE_SNOOZE_DURATION"); snoozeDurationStr != "" {
+		if duration, err := time.ParseDuration(snoozeDurationStr); err == nil {
+			defaultSnoozeByDuration = duration
+		}
+	}
+}
 
 type latestVersionCheckResult struct {
 	isFinished    bool
@@ -125,6 +134,6 @@ func verifyLatestVersion(lvCheck *latestVersionCheck) {
 		fmt.Fprintf(stderr, "Could not query for latest version: %v\n", checkResult.err)
 	}
 	if checkResult.isFinished && checkResult.isOutdated {
-		fmt.Fprintf(stderr, "INFO: A new version is available. Please update to the newer version %q (current: %q)\n", checkResult.latestVersion, lvCheck.currentVersion)
+		fmt.Fprintf(stderr, "\n\nINFO: A new version is available. Please update to the newer version %q (current: %q)\n", checkResult.latestVersion, lvCheck.currentVersion)
 	}
 }

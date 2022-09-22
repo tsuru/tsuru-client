@@ -162,6 +162,7 @@ func (s *S) TestGetRemoteVersionAndReportsToChanGoroutineSnooze(c *check.C) {
 	c.Assert(result.isOutdated, check.Equals, true)
 
 	// Second test, snooze was set, returns isOutdated=false
+	nowUTC = func() time.Time { return now.Add(-1 * time.Millisecond) } // for when snooze=0
 	r = &latestVersionCheck{currentVersion: "1.0.0"}
 	r.result = make(chan latestVersionCheckResult)
 	go getRemoteVersionAndReportsToChanGoroutine(r)
