@@ -1,7 +1,6 @@
 package config
 
 import (
-	"bytes"
 	"encoding/json"
 	"fmt"
 	"io"
@@ -27,7 +26,7 @@ var (
 type ConfigType struct {
 	SchemaVersion   string
 	LastUpdate      time.Time
-	originalContent []byte // used to detect changes
+	originalContent string // used to detect changes
 
 	// ---- public confs ----
 	ClientSelfUpdater ClientSelfUpdater
@@ -45,7 +44,7 @@ func newDefaultConf() *ConfigType {
 
 func (c *ConfigType) saveOriginalContent() {
 	originalContent, _ := json.Marshal(c)
-	c.originalContent = originalContent
+	c.originalContent = string(originalContent)
 }
 
 func bootstrapConfig() *ConfigType {
@@ -76,6 +75,19 @@ func bootstrapConfig() *ConfigType {
 	}
 
 	config.saveOriginalContent()
+
+	// Convert any older config
+	// ...
+
+	// Mandatory fields
+	if config.ClientSelfUpdater.LatestManifestURL == "" {
+		config.ClientSelfUpdater.LatestManifestURL = defaultLatestManifestURL
+	}
+	var zeroTime time.Time
+	if config.ClientSelfUpdater.ForceCheckAfter == zeroTime {
+		config.ClientSelfUpdater.ForceCheckAfter = nowUTC().Add(DefaultForceCheckAfterDuration)
+	}
+
 	return &config
 }
 
@@ -84,6 +96,7 @@ func GetConfig() *ConfigType {
 	if privConfig == nil {
 		privConfig = bootstrapConfig()
 	}
+
 	return privConfig
 }
 
@@ -92,7 +105,7 @@ func (c *ConfigType) hasChanges() bool {
 		return false
 	}
 	jsonConfig, _ := json.Marshal(c)
-	return !bytes.Equal(c.originalContent, jsonConfig)
+	return c.originalContent != string(jsonConfig)
 }
 
 func SaveChangesNoPrint() error {

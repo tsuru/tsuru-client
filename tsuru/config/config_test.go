@@ -35,6 +35,8 @@ func (s *S) TestBoostrapConfigNoConfig(c *check.C) {
 }
 
 func (s *S) TestBoostrapConfigFromFile(c *check.C) {
+	now := nowUTC()
+	nowUTC = func() time.Time { return now }
 	fsystem = &fstest.RecordingFs{}
 	f, _ := fsystem.OpenFile(configPath, os.O_WRONLY|os.O_CREATE|os.O_TRUNC, 0755)
 	fmt.Fprintf(f, `{
@@ -44,12 +46,13 @@ func (s *S) TestBoostrapConfigFromFile(c *check.C) {
 	f.Close()
 
 	conf := bootstrapConfig()
+	conf.originalContent = ""
 	c.Assert(conf, check.NotNil)
-	expected := &ConfigType{
-		SchemaVersion: "6.6.6",
-		LastUpdate:    time.Date(2020, 12, 25, 16, 00, 59, 0, time.UTC),
-	}
-	expected.saveOriginalContent()
+	expected := newDefaultConf()
+	expected.SchemaVersion = "6.6.6"
+	expected.LastUpdate = time.Date(2020, 12, 25, 16, 00, 59, 0, time.UTC)
+	expected.originalContent = ""
+
 	c.Assert(conf, check.DeepEquals, expected)
 }
 
