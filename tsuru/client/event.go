@@ -253,6 +253,13 @@ func (c *EventInfo) Show(evt *event.Event, context *cmd.Context) error {
 		item{"Kind", fmt.Sprintf("%s(%s)", evt.Kind.Type, evt.Kind.Name)},
 		item{"Owner", fmt.Sprintf("%s(%s)", evt.Owner.Type, evt.Owner.Name)},
 	)
+
+	if evt.SourceIP != "" {
+		items = append(items, item{
+			"Source IP", evt.SourceIP,
+		})
+	}
+
 	successful := evt.Error == ""
 	successfulStr := strconv.FormatBool(successful)
 	if successful {
