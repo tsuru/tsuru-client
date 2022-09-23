@@ -48,8 +48,8 @@ the client used by application developers to communicate with tsuru server."
     --name "${package_name}" \
     --version "${version}" \
     --architecture "${arch}" \
-    --maintainer "tsuru@corp.globo.com" \
-    --vendor "Tsuru team <tsuru@corp.globo.com>" \
+    --maintainer "tsuru@g.globo" \
+    --vendor "Tsuru team <tsuru@g.globo>" \
     --url "https://tsuru.io" \
     --description "${description}" \
     --no-depends \
