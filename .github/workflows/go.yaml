@@ -107,14 +107,13 @@ jobs:
       env:
         GITHUB_TOKEN: ${{ secrets.CUSTOM_GITHUB_TOKEN }}
 
-    - uses: actions/setup-ruby@v1
+    - uses: ruby/setup-ruby@v1
       with:
-        ruby-version: '2.5'
+        ruby-version: '3.0'
 
     - name: packagecloud
       env:
         PACKAGE_NAME: tsuru-client
         PACKAGECLOUD_TOKEN: ${{secrets.PACKAGECLOUD_TOKEN}}
         SKIP_GORELEASER: "true"
-      run: |
-        curl -sL https://raw.githubusercontent.com/tsuru/push-to-packagecloud/master/push.sh | bash
+      run: ./misc/build_publish_to_packagecloud.sh
