@@ -73,12 +73,12 @@ _build_all_packages(){
 }
 
 _publish_all_packages(){
-  # package cloud accepts numbered distros, althouth not documented
+  # package cloud accepts numbers on some distros, althouth not documented
   # DEB_DISTROS="any/any" # this breaks old repos :(
   DEB_DISTROS="
-debian/9
-debian/10
-debian/11
+debian/stretch
+debian/buster
+debian/bullseye
 
 ubuntu/14.04
 ubuntu/16.04
