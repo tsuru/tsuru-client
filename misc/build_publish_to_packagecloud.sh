@@ -11,7 +11,8 @@ PACKAGECLOUD_REPO="tsuru/rc"
 if [[ ${PACKAGE_VERSION} =~ ^[0-9]+\.[0-9]+\.[0-9]+$ ]]; then
   PACKAGECLOUD_REPO="tsuru/stable"
 fi
-
+__soft_errors=0
+__soft_errors_str=""
 
 _install_dependencies() {
   if ! command -v rpm &>/dev/null ; then
@@ -65,10 +66,18 @@ _build_all_packages(){
     PACKAGE_FILE_DEB="${PACKAGE_NAME}_${PACKAGE_VERSION}_${ARCH}.deb"
     PACKAGE_FILE_RPM="${PACKAGE_NAME}_${PACKAGE_VERSION}_${ARCH}.rpm"
 
+    set +e
     echo "Building .deb ${PACKAGE_FILE_DEB}..."
-    _build_package "deb" "${PACKAGE_NAME}" "${PACKAGE_VERSION}" "${INPUT_DIR}" "${ARCH}" "dist/${PACKAGE_FILE_DEB}"
+    if ! _build_package "deb" "${PACKAGE_NAME}" "${PACKAGE_VERSION}" "${INPUT_DIR}" "${ARCH}" "dist/${PACKAGE_FILE_DEB}" ; then
+      _=$(( __soft_errors++ ))
+      __soft_errors_str="${__soft_errors_str}\nFailed to build ${PACKAGE_FILE_DEB}."
+    fi
     echo "Building .rpm ${PACKAGE_FILE_RPM}..."
-    _build_package "rpm" "${PACKAGE_NAME}" "${PACKAGE_VERSION}" "${INPUT_DIR}" "${ARCH}" "dist/${PACKAGE_FILE_RPM}"
+    if ! _build_package "rpm" "${PACKAGE_NAME}" "${PACKAGE_VERSION}" "${INPUT_DIR}" "${ARCH}" "dist/${PACKAGE_FILE_RPM}" ; then
+      _=$(( __soft_errors++ ))
+      __soft_errors_str="${__soft_errors_str}\nFailed to build ${PACKAGE_FILE_DEB}."
+    fi
+    set -e
   done
 }
 
@@ -89,7 +98,6 @@ ubuntu/21.04
 ubuntu/21.10
 ubuntu/22.04
 
-linuxmint/5
 linuxmint/19
 linuxmint/19.1
 linuxmint/19.2
@@ -103,7 +111,12 @@ linuxmint/20.3
     for DEB_DISTRO in $DEB_DISTROS; do
       [ "${DEB_DISTRO}" = "" ] && continue
       echo "Pushing ${PACKAGE_FILE} to packagecloud (${DEB_DISTRO})..."
-      package_cloud push "${PACKAGECLOUD_REPO}/${DEB_DISTRO}" "${PACKAGE_FILE}"
+      set +e
+      if ! package_cloud push "${PACKAGECLOUD_REPO}/${DEB_DISTRO}" "${PACKAGE_FILE}" ; then
+        _=$(( __soft_errors++ ))
+        __soft_errors_str="${__soft_errors_str}\nFailed to publish ${PACKAGE_FILE} (${DEB_DISTRO})."
+      fi
+      set -e
     done
   done < <(find dist -type f -name "*.deb")
 
@@ -125,7 +138,12 @@ fedora/36
     for RPM_DISTRO in $RPM_DISTROS; do
       [ "${RPM_DISTRO}" = "" ] && continue
       echo "Pushing ${PACKAGE_FILE} to packagecloud..."
-      package_cloud push "${PACKAGECLOUD_REPO}/${RPM_DISTRO}" "${PACKAGE_FILE}"
+      set +e
+      if ! package_cloud push "${PACKAGECLOUD_REPO}/${RPM_DISTRO}" "${PACKAGE_FILE}" ; then
+        _=$(( __soft_errors++ ))
+        __soft_errors_str="${__soft_errors_str}\nFailed to publish ${PACKAGE_FILE} (${RPM_DISTRO})."
+      fi
+      set -e
     done
   done < <(find dist -type f -name "*.rpm")
 }
@@ -135,3 +153,9 @@ fedora/36
 _install_dependencies
 _build_all_packages
 _publish_all_packages
+
+if [ "${__soft_errors}" != "0" ] ; then
+  echo "We got ${__soft_errors} (soft) errors."
+  echo -e "${__soft_errors_str}"
+  exit 1
+fi
