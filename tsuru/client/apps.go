@@ -426,17 +426,18 @@ func (c *AppInfo) Run(context *cmd.Context, client *cmd.Client) error {
 }
 
 type unit struct {
-	ID          string
-	IP          string
-	Status      string
-	ProcessName string
-	Address     *url.URL
-	Addresses   []url.URL
-	Version     int
-	Routable    *bool
-	Ready       *bool
-	Restarts    *int
-	CreatedAt   *time.Time
+	ID           string
+	IP           string
+	Status       string
+	StatusReason string
+	ProcessName  string
+	Address      *url.URL
+	Addresses    []url.URL
+	Version      int
+	Routable     *bool
+	Ready        *bool
+	Restarts     *int
+	CreatedAt    *time.Time
 }
 
 func (u *unit) Host() string {
@@ -458,6 +459,10 @@ func (u *unit) Host() string {
 func (u *unit) ReadyAndStatus() string {
 	if u.Ready != nil && *u.Ready {
 		return "ready"
+	}
+
+	if u.StatusReason != "" {
+		return u.Status + " (" + u.StatusReason + ")"
 	}
 
 	return u.Status
