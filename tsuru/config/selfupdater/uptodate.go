@@ -26,6 +26,7 @@ var (
 	snoozeDuration          time.Duration
 	forceCheckAfterDuration time.Duration
 	overrideForceCheck      *bool = nil
+	zeroTime                time.Time
 )
 
 func init() {
@@ -134,9 +135,12 @@ func getRemoteVersionAndReportsToChanGoroutine(r *latestVersionCheck) {
 func CheckLatestVersionBackground(currentVersion string) *latestVersionCheck {
 	conf := config.GetConfig()
 
-	forceCheckBeforeFinish := conf.ClientSelfUpdater.LastCheck.Add(forceCheckAfterDuration).Before(nowUTC())
-	if overrideForceCheck != nil {
-		forceCheckBeforeFinish = *overrideForceCheck
+	forceCheckBeforeFinish := false
+	if conf.ClientSelfUpdater.LastCheck != zeroTime { // do not force on empty config.ClientSelfUpdater
+		forceCheckBeforeFinish = conf.ClientSelfUpdater.LastCheck.Add(forceCheckAfterDuration).Before(nowUTC())
+		if overrideForceCheck != nil {
+			forceCheckBeforeFinish = *overrideForceCheck
+		}
 	}
 
 	r := &latestVersionCheck{
