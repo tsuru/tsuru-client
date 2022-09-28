@@ -52,7 +52,6 @@ func buildManager(name string) *cmd.Manager {
 	m.Register(&client.AppStart{})
 	m.Register(&client.AppStop{})
 	m.Register(&client.Init{})
-	m.Register(&admin.AppLockDelete{})
 	m.Register(&client.CertificateSet{})
 	m.Register(&client.CertificateUnset{})
 	m.Register(&client.CertificateList{})

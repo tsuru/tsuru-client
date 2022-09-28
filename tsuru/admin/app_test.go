@@ -16,45 +16,6 @@ import (
 	"gopkg.in/check.v1"
 )
 
-func (s *S) TestAppLockDeleteInfo(c *check.C) {
-	c.Assert((&AppLockDelete{}).Info(), check.NotNil)
-}
-
-func (s *S) TestAppLockDeleteRun(c *check.C) {
-	var stdout, stderr bytes.Buffer
-	context := cmd.Context{
-		Stdout: &stdout,
-		Stderr: &stderr,
-	}
-	expected := "Lock successfully removed!\n"
-	trans := &cmdtest.ConditionalTransport{
-		Transport: cmdtest.Transport{Message: "", Status: http.StatusOK},
-		CondFunc: func(req *http.Request) bool {
-			return strings.HasSuffix(req.URL.Path, "/apps/app1/lock") && req.Method == http.MethodDelete
-		},
-	}
-	client := cmd.NewClient(&http.Client{Transport: trans}, nil, s.manager)
-	command := AppLockDelete{}
-	command.Flags().Parse(true, []string{"--app", "app1", "-y"})
-	err := command.Run(&context, client)
-	c.Assert(err, check.IsNil)
-	c.Assert(stdout.String(), check.Equals, expected)
-}
-
-func (s *S) TestAppLockDeleteRunAsksConfirmation(c *check.C) {
-	var stdout, stderr bytes.Buffer
-	context := cmd.Context{
-		Stdout: &stdout,
-		Stderr: &stderr,
-		Stdin:  strings.NewReader("n\n"),
-	}
-	command := AppLockDelete{}
-	command.Flags().Parse(true, []string{"--app", "app1"})
-	err := command.Run(&context, nil)
-	c.Assert(err, check.IsNil)
-	c.Assert(stdout.String(), check.Equals, "Are you sure you want to remove the lock from app \"app1\"? (y/n) Abort.\n")
-}
-
 func (s *S) TestAppRoutesRebuildInfo(c *check.C) {
 	c.Assert((&AppRoutesRebuild{}).Info(), check.NotNil)
 }

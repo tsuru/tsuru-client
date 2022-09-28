@@ -11,60 +11,9 @@ import (
 	"net/http"
 	"sort"
 
-	"github.com/tsuru/gnuflag"
 	"github.com/tsuru/tsuru/cmd"
 	"github.com/tsuru/tsuru/router/rebuild"
 )
-
-type AppLockDelete struct {
-	cmd.AppNameMixIn
-	cmd.ConfirmationCommand
-	fs *gnuflag.FlagSet
-}
-
-func (c *AppLockDelete) Info() *cmd.Info {
-	return &cmd.Info{
-		Name:    "app-unlock",
-		MinArgs: 0,
-		Usage:   "app-unlock -a <app-name> [-y]",
-		Desc: `Forces the removal of an application lock.
-Use with caution, removing an active lock may cause inconsistencies.`,
-	}
-}
-
-func (c *AppLockDelete) Run(ctx *cmd.Context, client *cmd.Client) error {
-	appName, err := c.AppName()
-	if err != nil {
-		return err
-	}
-	if !c.Confirm(ctx, fmt.Sprintf(`Are you sure you want to remove the lock from app "%s"?`, appName)) {
-		return nil
-	}
-	url, err := cmd.GetURL("/apps/" + appName + "/lock")
-	if err != nil {
-		return err
-	}
-	request, err := http.NewRequest(http.MethodDelete, url, nil)
-	if err != nil {
-		return err
-	}
-	_, err = client.Do(request)
-	if err != nil {
-		return err
-	}
-	fmt.Fprintf(ctx.Stdout, "Lock successfully removed!\n")
-	return nil
-}
-
-func (c *AppLockDelete) Flags() *gnuflag.FlagSet {
-	if c.fs == nil {
-		c.fs = cmd.MergeFlagSet(
-			c.AppNameMixIn.Flags(),
-			c.ConfirmationCommand.Flags(),
-		)
-	}
-	return c.fs
-}
 
 type AppRoutesRebuild struct {
 	cmd.AppNameMixIn
