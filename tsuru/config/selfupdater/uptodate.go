@@ -22,7 +22,7 @@ const (
 
 var (
 	stderr                  io.ReadWriter    = os.Stderr
-	nowUTC                  func() time.Time = func() time.Time { return time.Now().UTC() } // so we can test time-dependent sh!t
+	nowUTC                  func() time.Time = func() time.Time { return time.Now().UTC() } // so we can test time-dependent features
 	snoozeDuration          time.Duration
 	forceCheckAfterDuration time.Duration
 	overrideForceCheck      *bool = nil

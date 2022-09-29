@@ -38,7 +38,8 @@ func (s *S) TestBoostrapConfigFromFile(c *check.C) {
 	now := nowUTC()
 	nowUTC = func() time.Time { return now }
 	fsystem = &fstest.RecordingFs{}
-	f, _ := fsystem.OpenFile(configPath, os.O_WRONLY|os.O_CREATE|os.O_TRUNC, 0755)
+	f, err := fsystem.OpenFile(configPath, os.O_WRONLY|os.O_CREATE|os.O_TRUNC, 0755)
+	c.Assert(err, check.IsNil)
 	fmt.Fprintf(f, `{
   "SchemaVersion": "6.6.6",
   "LastUpdate": "2020-12-25T16:00:59Z"
@@ -63,7 +64,8 @@ func (s *S) TestBoostrapConfigWrongFormatBackupFile(c *check.C) {
 	now := nowUTC()
 	nowUTC = func() time.Time { return now } // mocking nowUTC
 
-	f, _ := fsystem.OpenFile(configPath, os.O_WRONLY|os.O_CREATE|os.O_TRUNC, 0755)
+	f, err := fsystem.OpenFile(configPath, os.O_WRONLY|os.O_CREATE, 0755)
+	c.Assert(err, check.IsNil)
 	f.WriteString("wrong format")
 	f.Close()
 	backupConfigPath := configPath + "." + nowUTC().Format("2006-01-02_15:04:05") + ".bak"
@@ -96,22 +98,32 @@ func (s *S) TestConfig(c *check.C) {
 
 func (s *S) TesthasChanges(c *check.C) {
 	conf := newDefaultConf()
-	c.Assert(conf.hasChanges(), check.Equals, true)
+	hasChanges, err := conf.hasChanges()
+	c.Assert(err, check.IsNil)
+	c.Assert(hasChanges, check.Equals, true)
 
-	originalContent, _ := json.Marshal(conf)
+	originalContent, err := json.Marshal(conf)
+	c.Assert(err, check.IsNil)
 	conf.originalContent = string(originalContent)
-	c.Assert(conf.hasChanges(), check.Equals, false)
+	hasChanges, err = conf.hasChanges()
+	c.Assert(err, check.IsNil)
+	c.Assert(hasChanges, check.Equals, false)
 
 	conf.LastUpdate = nowUTC()
-	c.Assert(conf.hasChanges(), check.Equals, true)
+	hasChanges, err = conf.hasChanges()
+	c.Assert(err, check.IsNil)
+	c.Assert(hasChanges, check.Equals, true)
 
 	conf = nil
-	c.Assert(conf.hasChanges(), check.Equals, false)
+	hasChanges, err = conf.hasChanges()
+	c.Assert(err, check.IsNil)
+	c.Assert(hasChanges, check.Equals, false)
 }
 
 func (s *S) TestSaveChanges(c *check.C) {
 	fsystem = &fstest.RecordingFs{}
-	f, _ := fsystem.OpenFile(configPath, os.O_WRONLY|os.O_CREATE, 0755)
+	f, err := fsystem.OpenFile(configPath, os.O_WRONLY|os.O_CREATE, 0755)
+	c.Assert(err, check.IsNil)
 	originalContent := `{
   "SchemaVersion": "6.6.6",
   "LastUpdate": "2020-12-25T16:00:59Z"
@@ -128,13 +140,15 @@ func (s *S) TestSaveChanges(c *check.C) {
 	nowUTC = func() time.Time { return now } // stub now
 	SaveChangesWithTimeout()
 
-	f, _ = fsystem.Open(configPath)
+	f, err = fsystem.Open(configPath)
+	c.Assert(err, check.IsNil)
 	bytesRead, err := io.ReadAll(f)
 	f.Close()
 	c.Assert(err, check.IsNil)
 
 	var newConf ConfigType
-	json.Unmarshal(bytesRead, &newConf)
+	err = json.Unmarshal(bytesRead, &newConf)
+	c.Assert(err, check.IsNil)
 	c.Assert(newConf.SchemaVersion, check.Equals, "6.6.7")
 	c.Assert(newConf.LastUpdate, check.Equals, now)
 }

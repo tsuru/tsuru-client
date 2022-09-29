@@ -21,7 +21,7 @@ var (
 	SchemaVersion      string           = "0.1"
 	stdout             io.ReadWriter    = os.Stdout
 	stderr             io.ReadWriter    = os.Stderr
-	nowUTC             func() time.Time = func() time.Time { return time.Now().UTC() } // so we can test time-dependent sh!t
+	nowUTC             func() time.Time = func() time.Time { return time.Now().UTC() } // so we can test time-dependent features
 	clientLocalTimeout time.Duration
 )
 
@@ -30,6 +30,8 @@ func init() {
 	if timeoutStr := os.Getenv("TSURU_CLIENT_LOCAL_TIMEOUT"); timeoutStr != "" {
 		if duration, err := time.ParseDuration(timeoutStr); err == nil {
 			clientLocalTimeout = duration
+		} else {
+			fmt.Fprintf(stderr, "ERROR: TSURU_CLIENT_LOCAL_TIMEOUT could not be parsed. Using default: %q\n", defaultLocalTimeout)
 		}
 	}
 }
@@ -76,7 +78,9 @@ func bootstrapConfig() *ConfigType {
 		backupFilePath := configPath + "." + nowTimeStr + ".bak"
 		fmt.Fprintf(stderr, "Error parsing %q: %v\n", configPath, err)
 		fmt.Fprintf(stderr, "Backing up current file to %q. A new configuration will be saved.\n", backupFilePath)
-		filesystem().Rename(configPath, backupFilePath)
+		if err := filesystem().Rename(configPath, backupFilePath); err != nil {
+			fmt.Fprintf(stderr, "Error renaming the file: %v\n", err)
+		}
 		return newDefaultConf()
 	}
 
@@ -102,17 +106,24 @@ func GetConfig() *ConfigType {
 	return privConfig
 }
 
-func (c *ConfigType) hasChanges() bool {
+func (c *ConfigType) hasChanges() (bool, error) {
 	if c == nil {
-		return false
+		return false, nil
 	}
-	jsonConfig, _ := json.Marshal(c)
-	return c.originalContent != string(jsonConfig)
+	jsonConfig, err := json.Marshal(c)
+	if err != nil {
+		return false, fmt.Errorf("Configuration (ConfigType) could not be marshaled to JSON: %w", err)
+	}
+	return c.originalContent != string(jsonConfig), nil
 }
 
 func SaveChangesNoPrint() error {
 	c := GetConfig()
-	if !c.hasChanges() {
+	hasChanges, err := c.hasChanges()
+	if err != nil {
+		return err
+	}
+	if !hasChanges {
 		return nil
 	}
 	c.LastUpdate = nowUTC()
