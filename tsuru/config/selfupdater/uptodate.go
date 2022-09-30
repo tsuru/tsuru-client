@@ -15,9 +15,8 @@ import (
 )
 
 const (
-	defaultForceCheckAfterDuration time.Duration = 6 * 30 * 24 * time.Hour // aprox. 6 months
-	defaultSnoozeByDuration        time.Duration = 0 * time.Hour
-	DefaultLatestManifestURL       string        = "https://github.com/tsuru/tsuru-client/releases/latest/download/metadata.json"
+	defaultSnoozeByDuration  time.Duration = 0 * time.Hour
+	DefaultLatestManifestURL string        = "https://github.com/tsuru/tsuru-client/releases/latest/download/metadata.json"
 )
 
 var (
@@ -35,13 +34,6 @@ func init() {
 			snoozeDuration = duration
 		} else {
 			fmt.Fprintln(stderr, "WARN: when setting TSURU_CLIENT_SELF_UPDATE_SNOOZE_DURATION, it must be a parsable duration (eg: 10m, 72h, etc...)")
-		}
-	}
-
-	forceCheckAfterDuration = defaultForceCheckAfterDuration
-	if timeoutStr := os.Getenv("TSURU_CLIENT_FORCE_CHECK_UPDATES_AFTER_DURATION"); timeoutStr != "" {
-		if duration, err := time.ParseDuration(timeoutStr); err == nil {
-			forceCheckAfterDuration = duration
 		}
 	}
 
