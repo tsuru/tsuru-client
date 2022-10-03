@@ -1,3 +1,7 @@
+// Copyright 2022 tsuru-client authors. All rights reserved.
+// Use of this source code is governed by a BSD-style
+// license that can be found in the LICENSE file.
+
 package selfupdater
 
 import (
@@ -172,5 +176,8 @@ func VerifyLatestVersion(lvCheck *latestVersionCheck) {
 	}
 	if checkResult.isFinished && checkResult.isOutdated {
 		fmt.Fprintf(stderr, "\n\nINFO: A new version is available. Please update to the newer version %q (current: %q)\n", checkResult.latestVersion, lvCheck.currentVersion)
+		if err := CheckPackageCloudRepo(); err != nil {
+			fmt.Fprintf(stderr, "Got error after detecting an outdated package manager configuration: %v\n", err)
+		}
 	}
 }
