@@ -13,6 +13,7 @@ import (
 	"github.com/tsuru/tsuru-client/tsuru/admin"
 	"github.com/tsuru/tsuru-client/tsuru/client"
 	"github.com/tsuru/tsuru-client/tsuru/config"
+	"github.com/tsuru/tsuru-client/tsuru/config/selfupdater"
 	"github.com/tsuru/tsuru/cmd"
 	"github.com/tsuru/tsuru/iaas/dockermachine"
 	_ "github.com/tsuru/tsuru/provision/docker/cmds"
@@ -33,7 +34,7 @@ func buildManager(name string) *cmd.Manager {
 	lookup := func(context *cmd.Context) error {
 		return client.RunPlugin(context)
 	}
-	m := cmd.BuildBaseManager(name, version, header, lookup)
+	m := cmd.BuildBaseManagerPanicExiter(name, version, header, lookup)
 	m.RegisterTopic("app", `App is a program source code running on Tsuru`)
 	m.Register(&client.AppRun{})
 	m.Register(&client.AppInfo{})
@@ -236,14 +237,29 @@ func inDockerMachineDriverMode() bool {
 	return os.Getenv(localbinary.PluginEnvKey) == localbinary.PluginEnvVal
 }
 
+func recoverCmdPanicExitError() {
+	if r := recover(); r != nil {
+		if e, ok := r.(*cmd.PanicExitError); ok {
+			os.Exit(e.Code)
+		}
+		panic(r)
+	}
+}
+
 func main() {
+	defer recoverCmdPanicExitError()
+
 	if inDockerMachineDriverMode() {
 		err := dockermachine.RunDriver(os.Getenv(localbinary.PluginEnvDriverName))
 		if err != nil {
 			log.Fatalf("Error running driver: %s", err)
 		}
 	} else {
-		defer config.SaveChanges()
+		defer config.SaveChangesWithTimeout()
+
+		checkVerResult := selfupdater.CheckLatestVersionBackground(version)
+		defer selfupdater.VerifyLatestVersion(checkVerResult)
+
 		localbinary.CurrentBinaryIsDockerMachine = true
 		name := cmd.ExtractProgramName(os.Args[0])
 		m := buildManager(name)

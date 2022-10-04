@@ -3,6 +3,7 @@ module github.com/tsuru/tsuru-client
 go 1.12
 
 require (
+	github.com/Masterminds/semver/v3 v3.1.1
 	github.com/ajg/form v0.0.0-20160822230020-523a5da1a92f
 	github.com/antihax/optional v0.0.0-20180407024304-ca021399b1a6
 	github.com/digitalocean/godo v1.1.1 // indirect
