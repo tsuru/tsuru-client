@@ -128,7 +128,7 @@ func CheckLatestVersionBackground(currentVersion string) *latestVersionCheck {
 	conf := config.GetConfig()
 
 	forceCheckBeforeFinish := false
-	if conf.ClientSelfUpdater.LastCheck != zeroTime { // do not force on empty config.ClientSelfUpdater
+	if conf.ClientSelfUpdater.LastCheck != zeroTime || overrideForceCheck != nil { // do not force on empty config.ClientSelfUpdater
 		forceCheckBeforeFinish = conf.ClientSelfUpdater.LastCheck.Add(forceCheckAfterDuration).Before(nowUTC())
 		if overrideForceCheck != nil {
 			forceCheckBeforeFinish = *overrideForceCheck
