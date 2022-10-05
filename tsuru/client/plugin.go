@@ -179,8 +179,26 @@ type PluginBundle struct {
 	fs  *gnuflag.FlagSet
 	url string
 }
+
+type BundleMetadata struct {
+	Name    string `json:"name,omitempty"`
+	Version string `json:"version,omitempty"`
+}
+
+type BundleUrlPlatform struct {
+	Darwin_ARM_64  *string `json:"darwin/arm64,omitempty"`
+	Darwin_x86_64  *string `json:"darwin/x86_64,omitempty"`
+	Linux_i386     *string `json:"linux/i386,omitempty"`
+	Linux_x86_64   *string `json:"linux/x86_64,omitempty"`
+	Windows_i386   *string `json:"windows/i386,omitempty"`
+	Windows_x86_64 *string `json:"windows/x86_64,omitempty"`
+}
+
 type BundleManifest struct {
-	Plugins []Plugin
+	SchemaVersion  string            `json:"schemaVersion,omitempty"`
+	Metadata       BundleMetadata    `json:"metadata,omitempty"`
+	Plugins        []Plugin          `json:"plugins,omitempty"`
+	UrlPerPlatform BundleUrlPlatform `json:"urlPerPlatform,omitempty"`
 }
 
 func (PluginBundle) Info() *cmd.Info {
@@ -247,6 +265,8 @@ func (c *PluginBundle) Run(context *cmd.Context, client *cmd.Client) error {
 		}
 	}
 
+	installPlatformPlugings(bundleManifest.Metadata.Name, bundleManifest.UrlPerPlatform)
+
 	fmt.Fprintf(context.Stdout, "Successfully installed %d plugins: %s\n", len(successfulPlugins), strings.Join(successfulPlugins, ", "))
 	if len(failedPlugins) > 0 {
 		fmt.Fprintf(context.Stdout, "Failed to install %d plugins:\n", len(failedPlugins))
@@ -256,4 +276,25 @@ func (c *PluginBundle) Run(context *cmd.Context, client *cmd.Client) error {
 		return fmt.Errorf("Bundle install has finished with errors.")
 	}
 	return nil
+}
+
+func installPlatformPlugings(name string, platforms BundleUrlPlatform) {
+	if platforms.Darwin_ARM_64 != nil {
+		installPlugin(name, *platforms.Darwin_ARM_64)
+	}
+	if platforms.Darwin_x86_64 != nil {
+		installPlugin(name, *platforms.Darwin_x86_64)
+	}
+	if platforms.Linux_i386 != nil {
+		installPlugin(name, *platforms.Linux_i386)
+	}
+	if platforms.Linux_x86_64 != nil {
+		installPlugin(name, *platforms.Linux_i386)
+	}
+	if platforms.Windows_i386 != nil {
+		installPlugin(name, *platforms.Linux_i386)
+	}
+	if platforms.Windows_x86_64 != nil {
+		installPlugin(name, *platforms.Linux_i386)
+	}
 }
