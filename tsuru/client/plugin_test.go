@@ -354,3 +354,87 @@ func (s *S) TestPluginBundleErrorNoFlags(c *check.C) {
 func (s *S) TestPluginBundleIsACommand(c *check.C) {
 	var _ cmd.Command = &PluginBundle{}
 }
+
+func (s *S) TestBundlePlatforms(c *check.C) {
+	tsPluginDarwin_arm64 := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		fmt.Fprintln(w, "content_Darwin_arm64")
+	}))
+	defer tsPluginDarwin_arm64.Close()
+	tsPluginLinux_x86_64 := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		fmt.Fprintln(w, "content_Linux_x86_64")
+	}))
+	defer tsPluginLinux_x86_64.Close()
+	tsPluginWindows_i386 := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		fmt.Fprintln(w, "content_Windows_i386")
+	}))
+	defer tsPluginWindows_i386.Close()
+
+	jsonPlatform := `
+	{
+		"schemaVersion": "1.0",
+		"metadata": {
+		    "name": "someplugin",
+		    "version": "v1.2.3"
+		},
+		"urlPerPlatform": {
+		    "darwin/arm64": "%s/v1.2.3/someplugin_Darwin_arm64.tar.gz",
+		    "linux/x86_64": "%s/v1.2.3/someplugin_Linux_x86_64.tar.gz",
+		    "windows/i386": "%s/v1.2.3/someplugin_Windows_i386.tar.gz"
+		}
+	}
+	`
+	ts := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		fmt.Fprintf(w, jsonPlatform, tsPluginDarwin_arm64.URL, tsPluginLinux_x86_64.URL, tsPluginWindows_i386.URL)
+	}))
+	defer ts.Close()
+
+	rfs := fstest.RecordingFs{}
+	fsystem = &rfs
+	defer func() {
+		fsystem = nil
+	}()
+	var stdout bytes.Buffer
+	context := cmd.Context{Stdout: &stdout}
+	client := cmd.NewClient(&http.Client{}, nil, manager)
+	command := PluginBundle{}
+	command.Flags().Parse(true, []string{"--url", ts.URL})
+
+	err := command.Run(&context, client)
+	c.Assert(err, check.IsNil)
+	pluginsPath := cmd.JoinWithUserDir(".tsuru", "plugins")
+	hasAction := rfs.HasAction(fmt.Sprintf("mkdirall %s with mode 0755", pluginsPath))
+	c.Assert(hasAction, check.Equals, true)
+
+	pluginDarwin := cmd.JoinWithUserDir(".tsuru", "plugins", "someplugin_darwin-arm64")
+	hasAction = rfs.HasAction(fmt.Sprintf("openfile %s with mode 0755", pluginDarwin))
+	c.Assert(hasAction, check.Equals, true)
+
+	pluginLinux := cmd.JoinWithUserDir(".tsuru", "plugins", "someplugin_linux-x86_64")
+	hasAction = rfs.HasAction(fmt.Sprintf("openfile %s with mode 0755", pluginLinux))
+	c.Assert(hasAction, check.Equals, true)
+
+	pluginWindows := cmd.JoinWithUserDir(".tsuru", "plugins", "someplugin_windows-i386")
+	hasAction = rfs.HasAction(fmt.Sprintf("openfile %s with mode 0755", pluginWindows))
+	c.Assert(hasAction, check.Equals, true)
+
+	f, err := rfs.Open(pluginDarwin)
+	c.Assert(err, check.IsNil)
+	data, err := ioutil.ReadAll(f)
+	c.Assert(err, check.IsNil)
+	c.Assert(string(data), check.Equals, "content_Darwin_arm64\n")
+
+	f, err = rfs.Open(pluginLinux)
+	c.Assert(err, check.IsNil)
+	data, err = ioutil.ReadAll(f)
+	c.Assert(err, check.IsNil)
+	c.Assert(string(data), check.Equals, "content_Linux_x86_64\n")
+
+	f, err = rfs.Open(pluginWindows)
+	c.Assert(err, check.IsNil)
+	data, err = ioutil.ReadAll(f)
+	c.Assert(err, check.IsNil)
+	c.Assert(string(data), check.Equals, "content_Windows_i386\n")
+
+	expected := `Successfully installed 3 plugins: someplugin_darwin-arm64, someplugin_linux-x86_64, someplugin_windows-i386` + "\n"
+	c.Assert(stdout.String(), check.HasLen, len(expected))
+}

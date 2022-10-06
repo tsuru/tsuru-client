@@ -257,7 +257,7 @@ func (c *PluginBundle) Run(context *cmd.Context, client *cmd.Client) error {
 	}
 
 	for platform, url := range bundleManifest.UrlPerPlatform {
-		fullName := fmt.Sprintf("%s_%s", bundleManifest.Metadata.Name, platform)
+		fullName := fmt.Sprintf("%s_%s", bundleManifest.Metadata.Name, strings.ReplaceAll(platform, "/", "-"))
 		if err := installPlugin(fullName, url); err != nil {
 			failedPlugins[fullName] = fmt.Sprintf("%v", err)
 		} else {
