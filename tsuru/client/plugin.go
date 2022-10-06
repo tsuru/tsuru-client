@@ -12,6 +12,7 @@ import (
 	"net/http"
 	"os"
 	"path/filepath"
+	"runtime"
 	"strings"
 
 	"github.com/tsuru/gnuflag"
@@ -256,12 +257,13 @@ func (c *PluginBundle) Run(context *cmd.Context, client *cmd.Client) error {
 		}
 	}
 
-	for platform, url := range bundleManifest.UrlPerPlatform {
-		fullName := fmt.Sprintf("%s_%s", bundleManifest.Metadata.Name, strings.ReplaceAll(platform, "/", "-"))
-		if err := installPlugin(fullName, url); err != nil {
-			failedPlugins[fullName] = fmt.Sprintf("%v", err)
+	platform := fmt.Sprintf("%s/%s", runtime.GOOS, runtime.GOARCH)
+	url, ok := bundleManifest.UrlPerPlatform[platform]
+	if ok {
+		if err := installPlugin(bundleManifest.Metadata.Name, url); err != nil {
+			failedPlugins[bundleManifest.Metadata.Name] = fmt.Sprintf("%v", err)
 		} else {
-			successfulPlugins = append(successfulPlugins, fullName)
+			successfulPlugins = append(successfulPlugins, bundleManifest.Metadata.Name)
 		}
 	}
 
