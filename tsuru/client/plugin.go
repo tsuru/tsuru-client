@@ -5,9 +5,13 @@
 package client
 
 import (
+	"archive/tar"
+	"bytes"
+	"compress/gzip"
 	"encoding/json"
 	"errors"
 	"fmt"
+	"io"
 	"io/ioutil"
 	"net/http"
 	"os"
@@ -82,12 +86,53 @@ func installPlugin(pluginName, pluginURL string) error {
 	if resp.StatusCode < 200 || resp.StatusCode >= 400 {
 		return fmt.Errorf("Invalid status code reading plugin: %d - %q", resp.StatusCode, string(data))
 	}
+	if strings.HasSuffix(pluginURL, "tar.gz") {
+		if err := extractTarGZ(pluginName, bytes.NewReader(data)); err != nil {
+			return fmt.Errorf("ExtractTarGz failed: %s", err.Error())
+		}
+		return nil
+	}
 	n, err := file.Write(data)
 	if err != nil {
 		return err
 	}
 	if n != len(data) {
 		return errors.New("Failed to install plugin.")
+	}
+	return nil
+}
+
+func extractTarGZ(plugingPath string, fileStream io.Reader) error {
+	uncompressedStream, err := gzip.NewReader(fileStream)
+	if err != nil {
+		return err
+	}
+
+	tarReader := tar.NewReader(uncompressedStream)
+	for {
+		header, err := tarReader.Next()
+		if err == io.EOF {
+			break
+		}
+		if err != nil {
+			return err
+		}
+
+		switch header.Typeflag {
+		case tar.TypeDir:
+			return fmt.Errorf("Do not supports directory %s", header.Name)
+		case tar.TypeReg:
+			outFile, err := os.Create(plugingPath)
+			if err != nil {
+				return err
+			}
+			if _, err := io.Copy(outFile, tarReader); err != nil {
+				return err
+			}
+			outFile.Close()
+		default:
+			fmt.Errorf("uknown type: %s in %s", header.Typeflag, header.Name)
+		}
 	}
 	return nil
 }
