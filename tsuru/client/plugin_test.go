@@ -76,7 +76,7 @@ func (s *S) TestPluginInstallError(c *check.C) {
 	client := cmd.NewClient(&http.Client{}, nil, manager)
 	command := PluginInstall{}
 	err := command.Run(&context, client)
-	c.Assert(err, check.ErrorMatches, `Invalid status code reading plugin: 500 - "my err"`)
+	c.Assert(err, check.ErrorMatches, `Error installing plugin "myplugin": Invalid status code reading plugin: 500 - "my err"`)
 }
 
 func (s *S) TestPluginInstallIsACommand(c *check.C) {
