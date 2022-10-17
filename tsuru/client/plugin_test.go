@@ -105,6 +105,27 @@ func (s *S) TestPluginExtractTarGz(c *check.C) {
 	c.Assert(string(resultContent), check.Equals, "It worked")
 }
 
+func (s *S) TestPluginExtractZip(c *check.C) {
+	rfs := fstest.RecordingFs{}
+	fsystem = &rfs
+
+	tmpDir, err := filesystem().MkdirTemp("", "")
+	c.Assert(err, check.IsNil)
+
+	zipFile, err := ioutil.ReadFile("./testdata/archivedplugins/myplugin.zip")
+	c.Assert(err, check.IsNil)
+
+	err = extractZip(tmpDir, bytes.NewReader(zipFile))
+	c.Assert(err, check.IsNil)
+
+	expectedFilepath := filepath.Join(tmpDir, "myplugin", "myplugin.txt")
+	resultFile, err := filesystem().Open(expectedFilepath)
+	c.Assert(err, check.IsNil)
+	resultContent, err := io.ReadAll(resultFile)
+	c.Assert(err, check.IsNil)
+	c.Assert(string(resultContent), check.Equals, "It worked")
+}
+
 func (s *S) TestPlugin(c *check.C) {
 	// Kids, do not try this at $HOME
 	defer os.Setenv("HOME", os.Getenv("HOME"))
