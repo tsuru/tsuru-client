@@ -6,6 +6,7 @@ package client
 
 import (
 	"archive/tar"
+	"archive/zip"
 	"bytes"
 	"compress/gzip"
 	"encoding/json"
@@ -90,9 +91,11 @@ func installPlugin(pluginName, pluginURL string) error {
 		return fmt.Errorf("Invalid status code reading plugin: %d - %q", resp.StatusCode, string(data))
 	}
 
-	// Try to extract tar.gz first, fallbacks to copy the content
+	// Try to extract .tar.gz first, then .zip. Fallbacks to copy the content
 	extractErr := extractTarGz(tmpDir, bytes.NewReader(data))
-	// TODO: try extracting .zip
+	if extractErr != nil {
+		extractErr = extractZip(tmpDir, bytes.NewReader(data))
+	}
 	if extractErr != nil {
 		file, err := filesystem().OpenFile(filepath.Join(tmpDir, pluginName), os.O_WRONLY|os.O_CREATE|os.O_TRUNC, 0755)
 		if err != nil {
@@ -224,6 +227,43 @@ func extractTarGz(basePath string, gzipStream io.Reader) error {
 	}
 	if err != io.EOF {
 		return fmt.Errorf("ExtractTarGz: Next() failed: %w", err)
+	}
+	return nil
+}
+
+func extractZip(basePath string, source io.Reader) error {
+	zipData, err := io.ReadAll(source)
+	if err != nil {
+		return fmt.Errorf("could not read from source: %w", err)
+	}
+	br := bytes.NewReader(zipData)
+	z, err := zip.NewReader(br, int64(len(zipData)))
+	if err != nil {
+		return fmt.Errorf("could not read zip from source: %w", err)
+	}
+
+	for _, f := range z.File {
+		fPath := filepath.Join(basePath, f.Name)
+		if f.FileInfo().IsDir() {
+			filesystem().MkdirAll(fPath, f.Mode().Perm())
+			continue
+		}
+
+		freader, err := f.Open()
+		if err != nil {
+			return fmt.Errorf("failed to open %q from zip: %w", f.Name, err)
+		}
+		defer freader.Close()
+
+		fDest, err := filesystem().OpenFile(fPath, os.O_CREATE|os.O_TRUNC|os.O_WRONLY, f.Mode().Perm())
+		if err != nil {
+			return fmt.Errorf("Could not open %q for writing: %w", fPath, err)
+		}
+		defer fDest.Close()
+
+		if _, err := io.Copy(fDest, freader); err != nil {
+			return fmt.Errorf("Could not write content to %q: %w", fPath, err)
+		}
 	}
 	return nil
 }
