@@ -7,6 +7,7 @@ package client
 import (
 	"bytes"
 	"fmt"
+	"io"
 	"io/ioutil"
 	"net/http"
 	"net/http/httptest"
@@ -76,11 +77,53 @@ func (s *S) TestPluginInstallError(c *check.C) {
 	client := cmd.NewClient(&http.Client{}, nil, manager)
 	command := PluginInstall{}
 	err := command.Run(&context, client)
-	c.Assert(err, check.ErrorMatches, `Invalid status code reading plugin: 500 - "my err"`)
+	c.Assert(err, check.ErrorMatches, `Error installing plugin "myplugin": Invalid status code reading plugin: 500 - "my err"`)
 }
 
 func (s *S) TestPluginInstallIsACommand(c *check.C) {
 	var _ cmd.Command = &PluginInstall{}
+}
+
+func (s *S) TestPluginExtractTarGz(c *check.C) {
+	rfs := fstest.RecordingFs{}
+	fsystem = &rfs
+
+	tmpDir, err := filesystem().MkdirTemp("", "")
+	c.Assert(err, check.IsNil)
+
+	tarGzFile, err := ioutil.ReadFile("./testdata/archivedplugins/myplugin.tar.gz")
+	c.Assert(err, check.IsNil)
+
+	err = extractTarGz(tmpDir, bytes.NewReader(tarGzFile))
+	c.Assert(err, check.IsNil)
+
+	expectedFilepath := filepath.Join(tmpDir, "myplugin", "myplugin.txt")
+	resultFile, err := filesystem().Open(expectedFilepath)
+	c.Assert(err, check.IsNil)
+	resultContent, err := io.ReadAll(resultFile)
+	c.Assert(err, check.IsNil)
+	c.Assert(string(resultContent), check.Equals, "It worked")
+}
+
+func (s *S) TestPluginExtractZip(c *check.C) {
+	rfs := fstest.RecordingFs{}
+	fsystem = &rfs
+
+	tmpDir, err := filesystem().MkdirTemp("", "")
+	c.Assert(err, check.IsNil)
+
+	zipFile, err := ioutil.ReadFile("./testdata/archivedplugins/myplugin.zip")
+	c.Assert(err, check.IsNil)
+
+	err = extractZip(tmpDir, bytes.NewReader(zipFile))
+	c.Assert(err, check.IsNil)
+
+	expectedFilepath := filepath.Join(tmpDir, "myplugin", "myplugin.txt")
+	resultFile, err := filesystem().Open(expectedFilepath)
+	c.Assert(err, check.IsNil)
+	resultContent, err := io.ReadAll(resultFile)
+	c.Assert(err, check.IsNil)
+	c.Assert(string(resultContent), check.Equals, "It worked")
 }
 
 func (s *S) TestPlugin(c *check.C) {
