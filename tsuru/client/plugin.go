@@ -116,15 +116,20 @@ func installPlugin(pluginName, pluginURL string) error {
 		return fmt.Errorf("The downloaded plugin content is invalid.")
 	}
 
+	if fstat, err1 := filesystem().Stat(executablePath); err1 == nil {
+		fmode := fstat.Mode()
+		os.Chmod(executablePath, fmode|0111) // make this file executable
+	}
+
 	pluginPath := cmd.JoinWithUserDir(".tsuru", "plugins", pluginName)
 	if extractErr == nil {
-		os.Chmod(tmpDir, 0755)
 		if _, err := filesystem().Stat(pluginPath); err == nil {
 			filesystem().RemoveAll(pluginPath)
 		}
 		if err := filesystem().Rename(tmpDir, pluginPath); err != nil {
 			return fmt.Errorf("Could not move tmpDir: %w", err)
 		}
+		os.Chmod(pluginPath, 0755) // this is a directory with an executable inside
 	} else {
 		if err := copyFile(executablePath, pluginPath); err != nil {
 			return fmt.Errorf("Could not write plugin file: %w", err)
