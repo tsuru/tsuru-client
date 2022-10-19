@@ -852,8 +852,8 @@ github.com/tsuru/tablecli v0.0.0-20180215113938-82de88f75181/go.mod h1:ztYpOhW+u
 github.com/tsuru/tablecli v0.0.0-20190131152944-7ded8a3383c6 h1:1XDdWFAjIbCSG1OjN9v9KdWhuM8UtYlFcfHe/Ldkchk=
 github.com/tsuru/tablecli v0.0.0-20190131152944-7ded8a3383c6/go.mod h1:ztYpOhW+u1k21FEqp7nZNgpWbr0dUKok5lgGCZi+1AQ=
 github.com/tsuru/tsuru v0.0.0-20180820205921-0e7f7f02eac5/go.mod h1:8EIA5MXZUPRxQR1lf8kQkcJVss0q+lv0L8f2nb23siQ=
-github.com/tsuru/tsuru v0.0.0-20221018184546-5c642c71d6d2 h1:1zvzGHYFjBZw3jkDEL2UW0KJMRNaRWbAnmzhVktjg5A=
-github.com/tsuru/tsuru v0.0.0-20221018184546-5c642c71d6d2/go.mod h1:PnBG5PgupAP693OhFm8eU1N8F6ClVltTmCQqj1mkzms=
+github.com/tsuru/tsuru v0.0.0-20221019183903-abc5e18fa173 h1:8vRtYdBqaZWsQSFcLK/1atS3vOduY+wB/g7VBOxJT48=
+github.com/tsuru/tsuru v0.0.0-20221019183903-abc5e18fa173/go.mod h1:iRh0PKKpgEbotCRHbZVnX9sjPvCxOmBFbcusM6ryIMo=
 github.com/uber/jaeger-client-go v2.25.0+incompatible/go.mod h1:WVhlPFC8FDjOFMMWRy2pZqQJSXxYSwNYOkTr/Z6d3Kk=
 github.com/uber/jaeger-lib v2.2.0+incompatible/go.mod h1:ComeNDZlWwrWnDv8aPp0Ba6+uUTzImX/AauajbLI56U=
 github.com/ugorji/go v1.1.4/go.mod h1:uQMGLiO92mf5W77hV/PUCpI3pbzQx3CRekS0kk+RGrc=
