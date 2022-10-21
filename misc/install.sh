@@ -55,13 +55,13 @@ if [ "${package_type}" != "null" ]; then
   # update repo config for using any/any instead of os/dist
   sedpattern='s@^(deb(-src)?.* https://packagecloud\.io/tsuru/stable)/\w+/?\s+\w+(.*)@\1any/ any\2@g'
   cfile="/etc/apt/sources.list.d/tsuru_stable.list"
-  [ -f "${cfile}" ] && sed -E "${sedpattern}" "${cfile}" | sudo tee "${cfile}"
+  [ -f "${cfile}" ] && { sed -E "${sedpattern}" "${cfile}" | sudo tee "${cfile}" ; } >/dev/null
 
   sedpattern='s@^(baseurl=https://packagecloud\.io/tsuru/stable)/\w+/\w+/(.*)@\1/any/any/\2@g'
   cfile="/etc/zypp/repos.d/tsuru_stable.repo"
-  [ -f "${cfile}" ] && sed -E "${sedpattern}" "${cfile}" | sudo tee "${cfile}"
+  [ -f "${cfile}" ] && { sed -E "${sedpattern}" "${cfile}" | sudo tee "${cfile}" ; } >/dev/null
   cfile="/etc/yum.repos.d/tsuru_stable.repo"
-  [ -f "${cfile}" ] && sed -E "${sedpattern}" "${cfile}" | sudo tee "${cfile}"
+  [ -f "${cfile}" ] && { sed -E "${sedpattern}" "${cfile}" | sudo tee "${cfile}" ; } >/dev/null
 
   # update cache
   if command -v "apt" >/dev/null ; then
@@ -76,7 +76,7 @@ if [ "${package_type}" != "null" ]; then
     zypper --gpg-auto-import-keys refresh tsuru_stable-source
   fi
 
-  sudo "${package_installer}" install tsuru-client
+  sudo "${package_installer}" install tsuru
 else
   echo "Could not install tsuru on your OS, please download the binary from:"
   echo "  https://github.com/tsuru/tsuru-client/releases/latest"
