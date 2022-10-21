@@ -63,18 +63,20 @@ if [ "${package_type}" != "null" ]; then
   [ -f "${cfile}" ] && { sed -E "${sedpattern}" "${cfile}" | sudo tee "${cfile}" ; } &>/dev/null
 
   # update cache
+  echo "Updating package cache..."
   if command -v "apt" >/dev/null ; then
-    apt update &> /dev/null
+    sudo apt -qq update
   elif command -v "apt-get" >/dev/null ; then
-    apt-get update &> /dev/null
+    sudo apt-get -qq update
   elif command -v "yum" >/dev/null ; then
-    yum -q makecache -y --disablerepo='*' --enablerepo='tsuru_stable'
-    yum -q makecache -y --disablerepo='*' --enablerepo='tsuru_stable-source'
+    sudo yum -q makecache -y --disablerepo='*' --enablerepo='tsuru_stable'
+    sudo yum -q makecache -y --disablerepo='*' --enablerepo='tsuru_stable-source'
   elif command -v "zypper" >/dev/null ; then
-    zypper --gpg-auto-import-keys refresh tsuru_stable
-    zypper --gpg-auto-import-keys refresh tsuru_stable-source
+    sudo zypper --gpg-auto-import-keys refresh tsuru_stable
+    sudo zypper --gpg-auto-import-keys refresh tsuru_stable-source
   fi
 
+  echo "Installing tsuru-client"
   sudo "${package_installer}" install tsuru-client
 else
   echo "Could not install tsuru on your OS, please download the binary from:"
