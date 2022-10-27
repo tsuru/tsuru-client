@@ -27,9 +27,8 @@ var (
 	stderr                  io.ReadWriter    = os.Stderr
 	nowUTC                  func() time.Time = func() time.Time { return time.Now().UTC() } // so we can test time-dependent features
 	snoozeDuration          time.Duration
-	forceCheckAfterDuration time.Duration
-	overrideForceCheck      *bool = nil
-	zeroTime                time.Time
+	forceCheckAfterDuration time.Duration = 3 * 30 * 24 * time.Hour
+	overrideForceCheck      *bool
 )
 
 func init() {
@@ -132,7 +131,7 @@ func CheckLatestVersionBackground(currentVersion string) *latestVersionCheck {
 	conf := config.GetConfig()
 
 	forceCheckBeforeFinish := false
-	if conf.ClientSelfUpdater.LastCheck != zeroTime || overrideForceCheck != nil { // do not force on empty config.ClientSelfUpdater
+	if !conf.ClientSelfUpdater.LastCheck.IsZero() || overrideForceCheck != nil { // do not force on empty config.ClientSelfUpdater
 		forceCheckBeforeFinish = conf.ClientSelfUpdater.LastCheck.Add(forceCheckAfterDuration).Before(nowUTC())
 		if overrideForceCheck != nil {
 			forceCheckBeforeFinish = *overrideForceCheck
