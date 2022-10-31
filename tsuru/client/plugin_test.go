@@ -6,6 +6,7 @@ package client
 
 import (
 	"bytes"
+	"encoding/json"
 	"fmt"
 	"io"
 	"io/ioutil"
@@ -22,6 +23,57 @@ import (
 
 func (s *S) TestPluginInstallInfo(c *check.C) {
 	c.Assert(PluginInstall{}.Info(), check.NotNil)
+}
+
+func (s *S) TestPluginInstallWithManifest(c *check.C) {
+	ts := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		fmt.Fprintln(w, "fakeplugin")
+	}))
+	defer ts.Close()
+	ts2 := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		w.Header().Set("Content-Type", "application/json")
+		urls := make(map[string]string)
+		urls["darwin/amd64"] = ts.URL
+		urls["darwin/arm64"] = ts.URL
+		urls["linux/amd64"] = ts.URL
+		urls["linux/arm64"] = ts.URL
+		urls["linux/386"] = ts.URL
+		urls["windows/amd64"] = ts.URL
+		urls["windows/386"] = ts.URL
+		manifest := PluginManifest{SchemaVersion: "1.0", Metadata: PluginManifestMetadata{Name: "rpaasv2", Version: "0.33.1"}, URLPerPlatform: urls}
+		jsonResp, err := json.Marshal(manifest)
+		c.Assert(err, check.IsNil)
+		w.Write(jsonResp)
+	}))
+
+	defer ts2.Close()
+	rfs := fstest.RecordingFs{}
+	fsystem = &rfs
+	defer func() {
+		fsystem = nil
+	}()
+	var stdout bytes.Buffer
+	context := cmd.Context{
+		Args:   []string{"myplugin", ts2.URL},
+		Stdout: &stdout,
+	}
+	client := cmd.NewClient(&http.Client{}, nil, manager)
+	command := PluginInstall{}
+	err := command.Run(&context, client)
+	c.Assert(err, check.IsNil)
+	pluginsPath := cmd.JoinWithUserDir(".tsuru", "plugins")
+	hasAction := rfs.HasAction(fmt.Sprintf("mkdirall %s with mode 0755", pluginsPath))
+	c.Assert(hasAction, check.Equals, true)
+	pluginPath := cmd.JoinWithUserDir(".tsuru", "plugins", "myplugin")
+	hasAction = rfs.HasAction(fmt.Sprintf("openfile %s with mode 0755", pluginPath))
+	c.Assert(hasAction, check.Equals, true)
+	f, err := rfs.Open(pluginPath)
+	c.Assert(err, check.IsNil)
+	data, err := ioutil.ReadAll(f)
+	c.Assert(err, check.IsNil)
+	c.Assert(string(data), check.Equals, "fakeplugin\n")
+	expected := `Plugin "myplugin" successfully installed!` + "\n"
+	c.Assert(stdout.String(), check.Equals, expected)
 }
 
 func (s *S) TestPluginInstall(c *check.C) {
