@@ -17,6 +17,7 @@ import (
 	"net/http"
 	"os"
 	"path/filepath"
+	"runtime"
 	"strings"
 
 	"github.com/tsuru/gnuflag"
@@ -27,6 +28,17 @@ import (
 type Plugin struct {
 	Name string `json:"name"`
 	URL  string `json:"url"`
+}
+
+type PluginManifest struct {
+	SchemaVersion  string                 `json:"SchemaVersion"`
+	Metadata       PluginManifestMetadata `json:"Metadata"`
+	URLPerPlatform map[string]string      `json:"UrlPerPlatform"`
+}
+
+type PluginManifestMetadata struct {
+	Name    string `json:"Name"`
+	Version string `json:"Version"`
 }
 
 func (p *Plugin) Validate() error {
@@ -61,7 +73,7 @@ func (c *PluginInstall) Run(context *cmd.Context, client *cmd.Client) error {
 	}
 	pluginName := context.Args[0]
 	pluginURL := context.Args[1]
-	if err := installPlugin(pluginName, pluginURL); err != nil {
+	if err := installPlugin(pluginName, pluginURL, 0); err != nil {
 		return fmt.Errorf("Error installing plugin %q: %w", pluginName, err)
 	}
 
@@ -69,7 +81,10 @@ func (c *PluginInstall) Run(context *cmd.Context, client *cmd.Client) error {
 	return nil
 }
 
-func installPlugin(pluginName, pluginURL string) error {
+func installPlugin(pluginName, pluginURL string, level int) error {
+	if level > 1 { // Avoid infinite recursion
+		return fmt.Errorf("Infinite Recursion detected, check if manifest.json is correct")
+	}
 	tmpDir, err := filesystem().MkdirTemp("", "")
 	if err != nil {
 		return fmt.Errorf("Could not create a tmpdir: %w", err)
@@ -89,6 +104,16 @@ func installPlugin(pluginName, pluginURL string) error {
 	}
 	if resp.StatusCode < 200 || resp.StatusCode >= 400 {
 		return fmt.Errorf("Invalid status code reading plugin: %d - %q", resp.StatusCode, string(data))
+	}
+
+	// try to unmarshall manifest
+	manifest := PluginManifest{}
+	if err = json.Unmarshal(data, &manifest); err == nil {
+		platform := fmt.Sprintf("%s/%s", runtime.GOOS, runtime.GOARCH) // get platform information
+		if url, ok := manifest.URLPerPlatform[platform]; ok {
+			return installPlugin(pluginName, url, level+1)
+		}
+		return fmt.Errorf("No plugin URL found for platform: %s", platform)
 	}
 
 	// Try to extract .tar.gz first, then .zip. Fallbacks to copy the content
@@ -416,7 +441,7 @@ func (c *PluginBundle) Run(context *cmd.Context, client *cmd.Client) error {
 	var successfulPlugins []string
 	failedPlugins := make(map[string]string)
 	for _, plugin := range bundleManifest.Plugins {
-		if err := installPlugin(plugin.Name, plugin.URL); err != nil {
+		if err := installPlugin(plugin.Name, plugin.URL, 0); err != nil {
 			failedPlugins[plugin.Name] = fmt.Sprintf("%v", err)
 		} else {
 			successfulPlugins = append(successfulPlugins, plugin.Name)
