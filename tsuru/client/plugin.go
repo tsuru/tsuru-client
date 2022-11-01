@@ -102,21 +102,18 @@ func installPlugin(pluginName, pluginURL string, level int) error {
 	if err != nil {
 		return err
 	}
-	if strings.Contains(resp.Header.Get("Content-Type"), "application/json") { // If manifest.json URL
-		manifest := PluginManifest{}
-		if err = json.Unmarshal(data, &manifest); err != nil {
-			return fmt.Errorf("Error unmarshalling manifest %s", err.Error())
-		}
+	if resp.StatusCode < 200 || resp.StatusCode >= 400 {
+		return fmt.Errorf("Invalid status code reading plugin: %d - %q", resp.StatusCode, string(data))
+	}
+
+	// try to unmarshall manifest
+	manifest := PluginManifest{}
+	if err = json.Unmarshal(data, &manifest); err == nil {
 		platform := fmt.Sprintf("%s/%s", runtime.GOOS, runtime.GOARCH) // get platform information
 		if url, ok := manifest.URLPerPlatform[platform]; ok {
 			return installPlugin(pluginName, url, level+1)
-		} else {
-			return fmt.Errorf("No plugin URL found for architecture: %s", platform)
 		}
-
-	}
-	if resp.StatusCode < 200 || resp.StatusCode >= 400 {
-		return fmt.Errorf("Invalid status code reading plugin: %d - %q", resp.StatusCode, string(data))
+		return fmt.Errorf("No plugin URL found for platform: %s", platform)
 	}
 
 	// Try to extract .tar.gz first, then .zip. Fallbacks to copy the content

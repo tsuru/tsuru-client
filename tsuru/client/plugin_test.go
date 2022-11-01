@@ -6,7 +6,6 @@ package client
 
 import (
 	"bytes"
-	"encoding/json"
 	"fmt"
 	"io"
 	"io/ioutil"
@@ -14,6 +13,7 @@ import (
 	"net/http/httptest"
 	"os"
 	"path/filepath"
+	"runtime"
 
 	"github.com/tsuru/tsuru/cmd"
 	"github.com/tsuru/tsuru/exec/exectest"
@@ -31,19 +31,14 @@ func (s *S) TestPluginInstallWithManifest(c *check.C) {
 	}))
 	defer ts.Close()
 	ts2 := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-		w.Header().Set("Content-Type", "application/json")
-		urls := make(map[string]string)
-		urls["darwin/amd64"] = ts.URL
-		urls["darwin/arm64"] = ts.URL
-		urls["linux/amd64"] = ts.URL
-		urls["linux/arm64"] = ts.URL
-		urls["linux/386"] = ts.URL
-		urls["windows/amd64"] = ts.URL
-		urls["windows/386"] = ts.URL
-		manifest := PluginManifest{SchemaVersion: "1.0", Metadata: PluginManifestMetadata{Name: "rpaasv2", Version: "0.33.1"}, URLPerPlatform: urls}
-		jsonResp, err := json.Marshal(manifest)
-		c.Assert(err, check.IsNil)
-		w.Write(jsonResp)
+		jsonResp := fmt.Sprintf(`{
+			"SchemaVersion":"1.0",
+			"Metadata": {"Name": "myplugin", "Version": "0.33.1"},
+			"URLPerPlatform": {
+			  "%s/%s": "%s"
+			}
+		  }`, runtime.GOOS, runtime.GOARCH, ts.URL)
+		fmt.Fprintln(w, jsonResp)
 	}))
 
 	defer ts2.Close()
