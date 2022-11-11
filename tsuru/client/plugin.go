@@ -85,7 +85,7 @@ func installPlugin(pluginName, pluginURL string, level int) error {
 	if level > 1 { // Avoid infinite recursion
 		return fmt.Errorf("Infinite Recursion detected, check if manifest.json is correct")
 	}
-	tmpDir, err := filesystem().MkdirTemp("", "")
+	tmpDir, err := filesystem().MkdirTemp(cmd.JoinWithUserDir(".tsuru", "plugins"), "tmpdir-*")
 	if err != nil {
 		return fmt.Errorf("Could not create a tmpdir: %w", err)
 	}
