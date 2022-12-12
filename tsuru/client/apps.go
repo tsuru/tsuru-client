@@ -1244,6 +1244,7 @@ type AppList struct {
 	fs         *gnuflag.FlagSet
 	filter     appFilter
 	simplified bool
+	json       bool
 }
 
 func (c *AppList) Run(context *cmd.Context, client *cmd.Client) error {
@@ -1288,6 +1289,12 @@ func (c *AppList) Show(result []byte, context *cmd.Context, client *cmd.Client) 
 		for _, app := range apps {
 			fmt.Fprintln(context.Stdout, app.Name)
 		}
+		return nil
+	}
+	if c.json {
+		enc := json.NewEncoder(context.Stdout)
+		enc.SetIndent("  ", "  ")
+		enc.Encode(apps)
 		return nil
 	}
 	table.Headers = tablecli.Row([]string{"Application", "Units", "Address"})
@@ -1342,6 +1349,7 @@ func (c *AppList) Flags() *gnuflag.FlagSet {
 		c.fs.BoolVar(&c.filter.locked, "locked", false, "Filter applications by lock status")
 		c.fs.BoolVar(&c.filter.locked, "l", false, "Filter applications by lock status")
 		c.fs.BoolVar(&c.simplified, "q", false, "Display only applications name")
+		c.fs.BoolVar(&c.json, "json", false, "Display applications in JSON format")
 		tagMessage := "Filter applications by tag. Can be used multiple times"
 		c.fs.Var(&c.filter.tags, "tag", tagMessage)
 		c.fs.Var(&c.filter.tags, "g", tagMessage)
