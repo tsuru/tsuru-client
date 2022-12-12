@@ -268,6 +268,7 @@ type ListNodesCmd struct {
 	fs         *gnuflag.FlagSet
 	filter     cmd.MapFlag
 	simplified bool
+	json       bool
 }
 
 func (c *ListNodesCmd) Info() *cmd.Info {
@@ -291,6 +292,7 @@ func (c *ListNodesCmd) Flags() *gnuflag.FlagSet {
 		c.fs.Var(&c.filter, "filter", filter)
 		c.fs.Var(&c.filter, "f", filter)
 		c.fs.BoolVar(&c.simplified, "q", false, "Display only nodes IP address")
+		c.fs.BoolVar(&c.json, "json", false, "Display node in JSON Format")
 	}
 	return c.fs
 }
@@ -331,10 +333,19 @@ func (c *ListNodesCmd) Run(ctx *cmd.Context, client *cmd.Client) error {
 	if len(result.Nodes) > 0 {
 		nodes = c.filterNodes(result.Nodes)
 	}
+	sort.Slice(nodes, func(i, j int) bool {
+		return nodes[i].Address < nodes[j].Address
+	})
 	if c.simplified {
 		for _, node := range nodes {
 			fmt.Fprintln(ctx.Stdout, node.Address)
 		}
+		return nil
+	}
+	if c.json {
+		enc := json.NewEncoder(ctx.Stdout)
+		enc.SetIndent("  ", "  ")
+		enc.Encode(nodes)
 		return nil
 	}
 	for _, node := range nodes {
@@ -347,7 +358,6 @@ func (c *ListNodesCmd) Run(ctx *cmd.Context, client *cmd.Client) error {
 		sort.Strings(result)
 		t.AddRow(tablecli.Row([]string{addr, status, strings.Join(result, "\n")}))
 	}
-	t.Sort()
 	ctx.Stdout.Write(t.Bytes())
 	return nil
 }
