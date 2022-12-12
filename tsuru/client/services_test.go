@@ -144,13 +144,13 @@ func (s *S) TestServiceList(c *check.C) {
 	c.Assert(err, check.IsNil)
 	table := stdout.String()
 
-	c.Assert(table, check.Equals, `+----------+-----------+
-| Services | Instances |
-+----------+-----------+
-| mysql    | mysql01   |
-| mysql    | mysql02   |
-| oracle   |           |
-+----------+-----------+
+	c.Assert(table, check.Equals, `+---------+----------+
+| Service | Instance |
++---------+----------+
+| mysql   | mysql01  |
+| mysql   | mysql02  |
+| oracle  |          |
++---------+----------+
 `)
 
 }
@@ -194,13 +194,13 @@ func (s *S) TestServiceListWithPool(c *check.C) {
 	c.Assert(err, check.IsNil)
 	table := stdout.String()
 
-	c.Assert(table, check.Equals, `+----------+-----------+-----------------+
-| Services | Instances | Pool            |
-+----------+-----------+-----------------+
-| mysql    | mysql01   | cluster-pool-01 |
-| mysql    | mysql02   | cluster-pool-02 |
-| oracle   |           |                 |
-+----------+-----------+-----------------+
+	c.Assert(table, check.Equals, `+---------+----------+-----------------+
+| Service | Instance | Pool            |
++---------+----------+-----------------+
+| mysql   | mysql01  | cluster-pool-01 |
+| mysql   | mysql02  | cluster-pool-02 |
+| oracle  |          |                 |
++---------+----------+-----------------+
 `)
 }
 

@@ -12,6 +12,7 @@ import (
 	"io/ioutil"
 	"net/http"
 	"net/url"
+	"os"
 	"sort"
 	"strconv"
 	"strings"
@@ -27,9 +28,42 @@ import (
 	"github.com/tsuru/tsuru/service"
 )
 
-type ServiceList struct{}
+type serviceFilter struct {
+	name      string
+	pool      string
+	plan      string
+	service   string
+	teamOwner string
+}
 
-func (s ServiceList) Info() *cmd.Info {
+func (f *serviceFilter) queryString() (url.Values, error) {
+	result := make(url.Values)
+	if f.name != "" {
+		result.Set("name", f.name)
+	}
+	if f.teamOwner != "" {
+		result.Set("teamOwner", f.teamOwner)
+	}
+	if f.pool != "" {
+		result.Set("pool", f.pool)
+	}
+	if f.plan != "" {
+		result.Set("plan", f.plan)
+	}
+	if f.service != "" {
+		result.Set("service", f.service)
+	}
+	return result, nil
+}
+
+type ServiceList struct {
+	fs         *gnuflag.FlagSet
+	filter     serviceFilter
+	simplified bool
+	json       bool
+}
+
+func (s *ServiceList) Info() *cmd.Info {
 	return &cmd.Info{
 		Name:  "service-list",
 		Usage: "service list",
@@ -38,8 +72,32 @@ instances created for any service they will also be shown.`,
 	}
 }
 
+func (c *ServiceList) Flags() *gnuflag.FlagSet {
+	if c.fs == nil {
+		c.fs = gnuflag.NewFlagSet("service-list", gnuflag.ExitOnError)
+		c.fs.StringVar(&c.filter.service, "service", "", "Filter instances by service")
+		c.fs.StringVar(&c.filter.service, "s", "", "Filter instances by service")
+		c.fs.StringVar(&c.filter.name, "name", "", "Filter service instances by name")
+		c.fs.StringVar(&c.filter.name, "n", "", "Filter service instances by name")
+		c.fs.StringVar(&c.filter.pool, "pool", "", "Filter service instances by pool")
+		c.fs.StringVar(&c.filter.pool, "o", "", "Filter service instances by pool")
+		c.fs.StringVar(&c.filter.plan, "plan", "", "Filter service instances by plan")
+		c.fs.StringVar(&c.filter.plan, "p", "", "Filter service instances by plan")
+		c.fs.StringVar(&c.filter.teamOwner, "team", "", "Filter service instances by team owner")
+		c.fs.StringVar(&c.filter.teamOwner, "t", "", "Filter service instances by team owner")
+		c.fs.BoolVar(&c.simplified, "q", false, "Display only service instances name")
+		c.fs.BoolVar(&c.json, "json", false, "Display in JSON format")
+
+	}
+	return c.fs
+}
+
 func (s ServiceList) Run(ctx *cmd.Context, client *cmd.Client) error {
-	url, err := cmd.GetURL("/services/instances")
+	qs, err := s.filter.queryString()
+	if err != nil {
+		return err
+	}
+	url, err := cmd.GetURL(fmt.Sprintf("/services/instances?%s", qs.Encode()))
 	if err != nil {
 		return err
 	}
@@ -61,6 +119,35 @@ func (s ServiceList) Run(ctx *cmd.Context, client *cmd.Client) error {
 	if err != nil {
 		return err
 	}
+
+	services = s.clientSideFilter(services)
+
+	for _, s := range services {
+		sort.Slice(s.ServiceInstances, func(i, j int) bool {
+			return s.ServiceInstances[i].Name < s.ServiceInstances[j].Name
+		})
+	}
+
+	if s.simplified {
+		for _, s := range services {
+			for _, instance := range s.ServiceInstances {
+				fmt.Println(s.Service, instance.Name)
+			}
+		}
+		return nil
+	}
+
+	if s.json {
+		instances := []service.ServiceInstance{}
+		for _, s := range services {
+			instances = append(instances, s.ServiceInstances...)
+		}
+		enc := json.NewEncoder(os.Stdout)
+		enc.SetIndent("  ", "  ")
+		enc.Encode(instances)
+		return nil
+	}
+
 	hasPool := false
 	for _, service := range services {
 		for _, instance := range service.ServiceInstances {
@@ -70,16 +157,12 @@ func (s ServiceList) Run(ctx *cmd.Context, client *cmd.Client) error {
 		}
 	}
 	table := tablecli.NewTable()
-	header := []string{"Services", "Instances"}
+	header := []string{"Service", "Instance"}
 	if hasPool {
 		header = append(header, "Pool")
 	}
 	table.Headers = tablecli.Row(header)
 	for _, s := range services {
-		sort.Slice(s.ServiceInstances, func(i, j int) bool {
-			return s.ServiceInstances[i].Name < s.ServiceInstances[j].Name
-		})
-
 		if len(s.ServiceInstances) == 0 {
 			row := []string{s.Service, ""}
 			if hasPool {
@@ -100,6 +183,49 @@ func (s ServiceList) Run(ctx *cmd.Context, client *cmd.Client) error {
 
 	_, err = ctx.Stdout.Write(table.Bytes())
 	return err
+}
+
+func (s *ServiceList) clientSideFilter(services []service.ServiceModel) []service.ServiceModel {
+	result := make([]service.ServiceModel, 0, len(services))
+
+	for _, service := range services {
+		if (s.filter.service != "" && service.Service == s.filter.service) || s.filter.service == "" {
+			service.ServiceInstances = s.clientSideFilterInstances(service.ServiceInstances)
+			service.Instances = nil
+			result = append(result, service)
+		}
+	}
+
+	return result
+}
+
+func (c *ServiceList) clientSideFilterInstances(serviceInstances []service.ServiceInstance) []service.ServiceInstance {
+	result := make([]service.ServiceInstance, 0, len(serviceInstances))
+
+	for _, s := range serviceInstances {
+		insert := true
+		if c.filter.name != "" && !strings.Contains(s.Name, c.filter.name) {
+			insert = false
+		}
+
+		if c.filter.pool != "" && s.Pool != c.filter.pool {
+			insert = false
+		}
+
+		if c.filter.plan != "" && s.PlanName != c.filter.plan {
+			insert = false
+		}
+
+		if c.filter.teamOwner != "" && s.TeamOwner != c.filter.teamOwner {
+			insert = false
+		}
+
+		if insert {
+			result = append(result, s)
+		}
+	}
+
+	return result
 }
 
 type ServiceInstanceAdd struct {

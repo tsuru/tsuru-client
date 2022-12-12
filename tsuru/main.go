@@ -64,7 +64,7 @@ func buildManager(name string) *cmd.Manager {
 	m.RegisterTopic("service", `A service is a well-defined API that tsuru communicates with to provide extra functionality for applications.
 Examples of services are MySQL, Redis, MongoDB, etc. tsuru has built-in services, but it is easy to create and add new services to tsuru.
 Services aren’t managed by tsuru, but by their creators.`)
-	m.Register(client.ServiceList{})
+	m.Register(&client.ServiceList{})
 	m.Register(&client.ServiceInstanceAdd{})
 	m.Register(&client.ServiceInstanceUpdate{})
 	m.Register(&client.ServiceInstanceRemove{})
