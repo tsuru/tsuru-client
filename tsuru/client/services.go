@@ -12,7 +12,6 @@ import (
 	"io/ioutil"
 	"net/http"
 	"net/url"
-	"os"
 	"sort"
 	"strconv"
 	"strings"
@@ -87,7 +86,6 @@ func (c *ServiceList) Flags() *gnuflag.FlagSet {
 		c.fs.StringVar(&c.filter.teamOwner, "t", "", "Filter service instances by team owner")
 		c.fs.BoolVar(&c.simplified, "q", false, "Display only service instances name")
 		c.fs.BoolVar(&c.json, "json", false, "Display in JSON format")
-
 	}
 	return c.fs
 }
@@ -142,9 +140,11 @@ func (s ServiceList) Run(ctx *cmd.Context, client *cmd.Client) error {
 		for _, s := range services {
 			instances = append(instances, s.ServiceInstances...)
 		}
-		enc := json.NewEncoder(os.Stdout)
+
+		enc := json.NewEncoder(ctx.Stdout)
 		enc.SetIndent("  ", "  ")
 		enc.Encode(instances)
+
 		return nil
 	}
 

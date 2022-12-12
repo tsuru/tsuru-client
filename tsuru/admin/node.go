@@ -15,6 +15,7 @@ import (
 	"sort"
 	"strconv"
 	"strings"
+	"unicode"
 
 	"github.com/ajg/form"
 	"github.com/tsuru/gnuflag"
@@ -23,8 +24,6 @@ import (
 	"github.com/tsuru/tsuru-client/tsuru/formatter"
 	"github.com/tsuru/tsuru/cmd"
 	"github.com/tsuru/tsuru/healer"
-	"github.com/tsuru/tsuru/iaas"
-	"github.com/tsuru/tsuru/net"
 	"github.com/tsuru/tsuru/provision"
 	apiTypes "github.com/tsuru/tsuru/types/api"
 )
@@ -318,7 +317,7 @@ func (c *ListNodesCmd) Run(ctx *cmd.Context, client *cmd.Client) error {
 	if err != nil {
 		return err
 	}
-	t := tablecli.Table{Headers: tablecli.Row([]string{"Address", "IaaS ID", "Status", "Metadata"}), LineSeparator: true}
+	t := tablecli.Table{Headers: tablecli.Row([]string{"Address", "Status", "Metadata"}), LineSeparator: true}
 	if resp.StatusCode == http.StatusNoContent {
 		ctx.Stdout.Write(t.Bytes())
 		return nil
@@ -327,12 +326,6 @@ func (c *ListNodesCmd) Run(ctx *cmd.Context, client *cmd.Client) error {
 	err = json.NewDecoder(resp.Body).Decode(&result)
 	if err != nil {
 		return err
-	}
-	machineMap := map[string]iaas.Machine{}
-	if len(result.Machines) > 0 {
-		for _, m := range result.Machines {
-			machineMap[m.Address] = m
-		}
 	}
 	var nodes []provision.NodeSpec
 	if len(result.Nodes) > 0 {
@@ -346,18 +339,13 @@ func (c *ListNodesCmd) Run(ctx *cmd.Context, client *cmd.Client) error {
 	}
 	for _, node := range nodes {
 		addr := node.Address
-		status := node.Status
+		status := wrapString(node.Status, 20)
 		result := []string{}
 		for key, value := range node.Metadata {
 			result = append(result, fmt.Sprintf("%s=%s", key, value))
 		}
 		sort.Strings(result)
-		m, ok := machineMap[net.URLToHost(addr)]
-		var iaasID string
-		if ok {
-			iaasID = m.Id
-		}
-		t.AddRow(tablecli.Row([]string{addr, iaasID, status, strings.Join(result, "\n")}))
+		t.AddRow(tablecli.Row([]string{addr, status, strings.Join(result, "\n")}))
 	}
 	t.Sort()
 	ctx.Stdout.Write(t.Bytes())
@@ -748,4 +736,75 @@ func (c *InfoNodeCmd) Run(ctx *cmd.Context, client *cmd.Client) error {
 	}
 	ctx.Stdout.Write(buf.Bytes())
 	return nil
+}
+
+const nbsp = 0xA0
+
+func wrapString(s string, lim uint) string {
+	// Initialize a buffer with a slightly larger size to account for breaks
+	init := make([]byte, 0, len(s))
+	buf := bytes.NewBuffer(init)
+
+	var current uint
+	var wordBuf, spaceBuf bytes.Buffer
+	var wordBufLen, spaceBufLen uint
+
+	for _, char := range s {
+		if char == '\n' {
+			if wordBuf.Len() == 0 {
+				if current+spaceBufLen > lim {
+					current = 0
+				} else {
+					current += spaceBufLen
+					spaceBuf.WriteTo(buf)
+				}
+				spaceBuf.Reset()
+				spaceBufLen = 0
+			} else {
+				current += spaceBufLen + wordBufLen
+				spaceBuf.WriteTo(buf)
+				spaceBuf.Reset()
+				spaceBufLen = 0
+				wordBuf.WriteTo(buf)
+				wordBuf.Reset()
+				wordBufLen = 0
+			}
+			buf.WriteRune(char)
+			current = 0
+		} else if unicode.IsSpace(char) && char != nbsp {
+			if spaceBuf.Len() == 0 || wordBuf.Len() > 0 {
+				current += spaceBufLen + wordBufLen
+				spaceBuf.WriteTo(buf)
+				spaceBuf.Reset()
+				spaceBufLen = 0
+				wordBuf.WriteTo(buf)
+				wordBuf.Reset()
+				wordBufLen = 0
+			}
+
+			spaceBuf.WriteRune(char)
+			spaceBufLen++
+		} else {
+			wordBuf.WriteRune(char)
+			wordBufLen++
+
+			if current+wordBufLen+spaceBufLen > lim && wordBufLen < lim {
+				buf.WriteRune('\n')
+				current = 0
+				spaceBuf.Reset()
+				spaceBufLen = 0
+			}
+		}
+	}
+
+	if wordBuf.Len() == 0 {
+		if current+spaceBufLen <= lim {
+			spaceBuf.WriteTo(buf)
+		}
+	} else {
+		spaceBuf.WriteTo(buf)
+		wordBuf.WriteTo(buf)
+	}
+
+	return buf.String()
 }
