@@ -335,7 +335,7 @@ func (c *PluginList) Run(context *cmd.Context, client *cmd.Client) error {
 	pluginsPath := cmd.JoinWithUserDir(".tsuru", "plugins")
 	plugins, _ := ioutil.ReadDir(pluginsPath)
 	for _, p := range plugins {
-		fmt.Println(p.Name())
+		fmt.Fprintln(context.Stdout, p.Name())
 	}
 	return nil
 }

@@ -210,7 +210,7 @@ func (c *RoutersList) Run(ctx *cmd.Context, cli *cmd.Client) error {
 
 	if c.simplified {
 		for _, v := range routers {
-			fmt.Println(v.Name)
+			fmt.Fprintln(ctx.Stdout, v.Name)
 		}
 		return nil
 	}

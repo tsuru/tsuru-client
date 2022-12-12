@@ -276,7 +276,7 @@ func (c *VolumeList) clientSideFilter(volumes []volumeTypes.Volume) []volumeType
 func (c *VolumeList) render(ctx *cmd.Context, volumes []volumeTypes.Volume) error {
 	if c.simplified {
 		for _, v := range volumes {
-			fmt.Println(v.Name)
+			fmt.Fprintln(ctx.Stdout, v.Name)
 		}
 		return nil
 	}

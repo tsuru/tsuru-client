@@ -15,22 +15,28 @@ import (
 	"mime/multipart"
 	"net/http"
 	"net/url"
+	"os"
 	"sort"
 
 	"github.com/tsuru/gnuflag"
 	"github.com/tsuru/go-tsuruclient/pkg/client"
 	"github.com/tsuru/go-tsuruclient/pkg/tsuru"
+	"github.com/tsuru/tablecli"
 	"github.com/tsuru/tsuru/cmd"
 )
 
 type platform struct {
-	Name     string
-	Disabled bool
+	Name     string `json:"name"`
+	Disabled bool   `json:"disabled"`
 }
 
-type PlatformList struct{}
+type PlatformList struct {
+	fs         *gnuflag.FlagSet
+	simplified bool
+	json       bool
+}
 
-func (PlatformList) Run(context *cmd.Context, client *cmd.Client) error {
+func (p *PlatformList) Run(context *cmd.Context, client *cmd.Client) error {
 	url, err := cmd.GetURL("/platforms")
 	if err != nil {
 		return err
@@ -53,21 +59,52 @@ func (PlatformList) Run(context *cmd.Context, client *cmd.Client) error {
 	if err != nil {
 		return err
 	}
-	platformNames := make([]string, len(platforms))
-	for i, p := range platforms {
-		platformNames[i] = p.Name
-		if p.Disabled {
-			platformNames[i] += " (disabled)"
+	sort.Slice(platforms, func(i, j int) bool {
+		return platforms[i].Name < platforms[j].Name
+	})
+
+	if p.simplified {
+		for _, p := range platforms {
+			fmt.Fprintln(context.Stdout, p.Name)
 		}
+		return nil
 	}
-	sort.Strings(platformNames)
-	for _, p := range platformNames {
-		fmt.Fprintf(context.Stdout, "- %s\n", p)
+
+	if p.json {
+		enc := json.NewEncoder(os.Stdout)
+		enc.SetIndent("  ", "  ")
+		enc.Encode(platforms)
+		return nil
 	}
+
+	tbl := tablecli.NewTable()
+	tbl.Headers = tablecli.Row{"Name", "Status"}
+	tbl.LineSeparator = false
+	for _, p := range platforms {
+		status := "enabled"
+		if p.Disabled {
+			status = "disabled"
+		}
+		tbl.AddRow(tablecli.Row{
+			p.Name,
+			status,
+		})
+	}
+	fmt.Fprint(context.Stdout, tbl.String())
+
 	return nil
 }
 
-func (PlatformList) Info() *cmd.Info {
+func (c *PlatformList) Flags() *gnuflag.FlagSet {
+	if c.fs == nil {
+		c.fs = gnuflag.NewFlagSet("volume-list", gnuflag.ExitOnError)
+		c.fs.BoolVar(&c.simplified, "q", false, "Display only platform name")
+		c.fs.BoolVar(&c.json, "json", false, "Display in JSON format")
+
+	}
+	return c.fs
+}
+func (*PlatformList) Info() *cmd.Info {
 	return &cmd.Info{
 		Name:    "platform-list",
 		Usage:   "platform list",

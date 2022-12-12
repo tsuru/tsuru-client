@@ -131,7 +131,7 @@ func (s ServiceList) Run(ctx *cmd.Context, client *cmd.Client) error {
 	if s.simplified {
 		for _, s := range services {
 			for _, instance := range s.ServiceInstances {
-				fmt.Println(s.Service, instance.Name)
+				fmt.Fprintln(ctx.Stdout, s.Service, instance.Name)
 			}
 		}
 		return nil

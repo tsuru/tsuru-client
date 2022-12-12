@@ -33,11 +33,11 @@ func (s *S) TestPlatformList(c *check.C) {
 	}
 	context := cmd.Context{Stdout: &buf}
 	client := cmd.NewClient(&http.Client{Transport: &transport}, nil, s.manager)
-	err := PlatformList{}.Run(&context, client)
+	err := (&PlatformList{simplified: true}).Run(&context, client)
 	c.Assert(err, check.IsNil)
 	c.Assert(called, check.Equals, true)
-	expected := `- python
-- ruby` + "\n"
+	expected := `python
+ruby` + "\n"
 	c.Assert(buf.String(), check.Equals, expected)
 }
 
@@ -56,12 +56,16 @@ func (s *S) TestPlatformListWithDisabledPlatforms(c *check.C) {
 	}
 	context := cmd.Context{Stdout: &buf}
 	client := cmd.NewClient(&http.Client{Transport: &transport}, nil, s.manager)
-	err := PlatformList{}.Run(&context, client)
+	err := (&PlatformList{}).Run(&context, client)
 	c.Assert(err, check.IsNil)
 	c.Assert(called, check.Equals, true)
-	expected := `- python
-- ruby
-- ruby20 (disabled)` + "\n"
+	expected := `+--------+----------+
+| Name   | Status   |
++--------+----------+
+| python | enabled  |
+| ruby   | enabled  |
+| ruby20 | disabled |
++--------+----------+` + "\n"
 	c.Assert(buf.String(), check.Equals, expected)
 }
 
@@ -72,17 +76,17 @@ func (s *S) TestPlatformListEmpty(c *check.C) {
 	}
 	context := cmd.Context{Stdout: &buf}
 	client := cmd.NewClient(&http.Client{Transport: &transport}, nil, s.manager)
-	err := PlatformList{}.Run(&context, client)
+	err := (&PlatformList{}).Run(&context, client)
 	c.Assert(err, check.IsNil)
 	c.Assert(buf.String(), check.Equals, "No platforms available.\n")
 }
 
 func (s *S) TestPlatformListInfo(c *check.C) {
-	c.Assert(PlatformList{}.Info(), check.NotNil)
+	c.Assert((&PlatformList{}).Info(), check.NotNil)
 }
 
 func (s *S) TestPlatformListIsACommand(c *check.C) {
-	var _ cmd.Command = PlatformList{}
+	var _ cmd.Command = &PlatformList{}
 }
 
 func (s *S) TestPlatformAddInfo(c *check.C) {
