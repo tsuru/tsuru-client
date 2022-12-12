@@ -6,6 +6,7 @@ package admin
 
 import (
 	"context"
+	"encoding/json"
 	"fmt"
 	"io"
 	"io/ioutil"
@@ -335,7 +336,17 @@ func (c *ClusterUpdate) updatePools(cluster *tsuru.Cluster) error {
 	return nil
 }
 
-type ClusterList struct{}
+type clusterFilter struct {
+	name string
+	pool string
+}
+
+type ClusterList struct {
+	fs         *gnuflag.FlagSet
+	filter     clusterFilter
+	simplified bool
+	json       bool
+}
 
 func (c *ClusterList) Info() *cmd.Info {
 	return &cmd.Info{
@@ -343,6 +354,20 @@ func (c *ClusterList) Info() *cmd.Info {
 		Usage: "cluster list",
 		Desc:  `List registered provisioner cluster definitions.`,
 	}
+}
+
+func (c *ClusterList) Flags() *gnuflag.FlagSet {
+	if c.fs == nil {
+		c.fs = gnuflag.NewFlagSet("cluster-list", gnuflag.ExitOnError)
+		c.fs.StringVar(&c.filter.name, "name", "", "Filter clusters by name")
+		c.fs.StringVar(&c.filter.name, "n", "", "Filter clusters by name")
+		c.fs.StringVar(&c.filter.pool, "pool", "", "Filter clusters by pool")
+		c.fs.StringVar(&c.filter.pool, "o", "", "Filter clusters by pool")
+		c.fs.BoolVar(&c.simplified, "q", false, "Display only clusters name")
+		c.fs.BoolVar(&c.json, "json", false, "Display in JSON format")
+
+	}
+	return c.fs
 }
 
 func (c *ClusterList) Run(ctx *cmd.Context, cli *cmd.Client) error {
@@ -361,10 +386,28 @@ func (c *ClusterList) Run(ctx *cmd.Context, cli *cmd.Client) error {
 		return err
 	}
 	defer resp.Body.Close()
+
+	sort.Slice(clusters, func(i, j int) bool { return clusters[i].Name < clusters[j].Name })
+
+	clusters = c.clientSideFilter(clusters)
+
+	if c.simplified {
+		for _, c := range clusters {
+			fmt.Fprintln(ctx.Stdout, c.Name)
+		}
+		return nil
+	}
+
+	if c.json {
+		enc := json.NewEncoder(ctx.Stdout)
+		enc.SetIndent("  ", "  ")
+		enc.Encode(clusters)
+		return nil
+	}
+
 	tbl := tablecli.NewTable()
 	tbl.LineSeparator = true
 	tbl.Headers = tablecli.Row{"Name", "Provisioner", "Addresses", "Custom Data", "Default", "Pools"}
-	sort.Slice(clusters, func(i, j int) bool { return clusters[i].Name < clusters[j].Name })
 	for _, c := range clusters {
 		var custom []string
 		for k, v := range c.CustomData {
@@ -374,6 +417,39 @@ func (c *ClusterList) Run(ctx *cmd.Context, cli *cmd.Client) error {
 	}
 	fmt.Fprint(ctx.Stdout, tbl.String())
 	return nil
+}
+
+func (c *ClusterList) clientSideFilter(clusters []tsuru.Cluster) []tsuru.Cluster {
+	result := make([]tsuru.Cluster, 0, len(clusters))
+
+	for _, cluster := range clusters {
+		insert := true
+		if c.filter.name != "" && !strings.Contains(cluster.Name, c.filter.name) {
+			insert = false
+		}
+
+		if c.filter.pool != "" {
+			if !sliceContains(cluster.Pools, c.filter.pool) {
+				insert = false
+			}
+		}
+
+		if insert {
+			result = append(result, cluster)
+		}
+	}
+
+	return result
+}
+
+func sliceContains(s []string, d string) bool {
+	for _, i := range s {
+		if i == d {
+			return true
+		}
+	}
+
+	return false
 }
 
 type ClusterRemove struct {

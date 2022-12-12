@@ -10,7 +10,6 @@ import (
 	"io/ioutil"
 	"net/http"
 	"net/url"
-	"os"
 	"sort"
 	"strings"
 
@@ -282,7 +281,7 @@ func (c *VolumeList) render(ctx *cmd.Context, volumes []volumeTypes.Volume) erro
 	}
 
 	if c.json {
-		enc := json.NewEncoder(os.Stdout)
+		enc := json.NewEncoder(ctx.Stdout)
 		enc.SetIndent("  ", "  ")
 		enc.Encode(volumes)
 		return nil

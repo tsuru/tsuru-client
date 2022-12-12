@@ -15,7 +15,6 @@ import (
 	"mime/multipart"
 	"net/http"
 	"net/url"
-	"os"
 	"sort"
 
 	"github.com/tsuru/gnuflag"
@@ -71,7 +70,7 @@ func (p *PlatformList) Run(context *cmd.Context, client *cmd.Client) error {
 	}
 
 	if p.json {
-		enc := json.NewEncoder(os.Stdout)
+		enc := json.NewEncoder(context.Stdout)
 		enc.SetIndent("  ", "  ")
 		enc.Encode(platforms)
 		return nil

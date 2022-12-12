@@ -10,7 +10,6 @@ import (
 	"fmt"
 	"io"
 	"net/http"
-	"os"
 	"sort"
 	"strings"
 
@@ -216,7 +215,7 @@ func (c *RoutersList) Run(ctx *cmd.Context, cli *cmd.Client) error {
 	}
 
 	if c.json {
-		enc := json.NewEncoder(os.Stdout)
+		enc := json.NewEncoder(ctx.Stdout)
 		enc.SetIndent("  ", "  ")
 		enc.Encode(routers)
 		return nil
