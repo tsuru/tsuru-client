@@ -23,6 +23,7 @@ import (
 	tsuruClient "github.com/tsuru/go-tsuruclient/pkg/client"
 	"github.com/tsuru/go-tsuruclient/pkg/tsuru"
 	"github.com/tsuru/tablecli"
+	"github.com/tsuru/tsuru-client/tsuru/formatter"
 	"github.com/tsuru/tsuru/cmd"
 	"github.com/tsuru/tsuru/service"
 )
@@ -141,11 +142,7 @@ func (s ServiceList) Run(ctx *cmd.Context, client *cmd.Client) error {
 			instances = append(instances, s.ServiceInstances...)
 		}
 
-		enc := json.NewEncoder(ctx.Stdout)
-		enc.SetIndent("  ", "  ")
-		enc.Encode(instances)
-
-		return nil
+		return formatter.JSON(ctx.Stdout, instances)
 	}
 
 	hasPool := false
@@ -163,14 +160,6 @@ func (s ServiceList) Run(ctx *cmd.Context, client *cmd.Client) error {
 	}
 	table.Headers = tablecli.Row(header)
 	for _, s := range services {
-		if len(s.ServiceInstances) == 0 {
-			row := []string{s.Service, ""}
-			if hasPool {
-				row = append(row, "")
-			}
-			table.AddRow(tablecli.Row(row))
-		}
-
 		for _, instance := range s.ServiceInstances {
 			row := []string{s.Service, instance.Name}
 			if hasPool {

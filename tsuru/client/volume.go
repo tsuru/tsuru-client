@@ -16,6 +16,7 @@ import (
 	"github.com/ajg/form"
 	"github.com/tsuru/gnuflag"
 	"github.com/tsuru/tablecli"
+	"github.com/tsuru/tsuru-client/tsuru/formatter"
 	"github.com/tsuru/tsuru/cmd"
 	volumeTypes "github.com/tsuru/tsuru/types/volume"
 )
@@ -281,10 +282,7 @@ func (c *VolumeList) render(ctx *cmd.Context, volumes []volumeTypes.Volume) erro
 	}
 
 	if c.json {
-		enc := json.NewEncoder(ctx.Stdout)
-		enc.SetIndent("  ", "  ")
-		enc.Encode(volumes)
-		return nil
+		return formatter.JSON(ctx.Stdout, volumes)
 	}
 
 	tbl := tablecli.NewTable()

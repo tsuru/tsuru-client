@@ -19,6 +19,7 @@ import (
 	"github.com/tsuru/go-tsuruclient/pkg/client"
 	"github.com/tsuru/go-tsuruclient/pkg/tsuru"
 	"github.com/tsuru/tablecli"
+	"github.com/tsuru/tsuru-client/tsuru/formatter"
 	"github.com/tsuru/tsuru/cmd"
 	appTypes "github.com/tsuru/tsuru/types/app"
 )
@@ -215,10 +216,7 @@ func (c *RoutersList) Run(ctx *cmd.Context, cli *cmd.Client) error {
 	}
 
 	if c.json {
-		enc := json.NewEncoder(ctx.Stdout)
-		enc.SetIndent("  ", "  ")
-		enc.Encode(routers)
-		return nil
+		return formatter.JSON(ctx.Stdout, routers)
 	}
 
 	table := tablecli.NewTable()

@@ -343,10 +343,7 @@ func (c *ListNodesCmd) Run(ctx *cmd.Context, client *cmd.Client) error {
 		return nil
 	}
 	if c.json {
-		enc := json.NewEncoder(ctx.Stdout)
-		enc.SetIndent("  ", "  ")
-		enc.Encode(nodes)
-		return nil
+		return formatter.JSON(ctx.Stdout, nodes)
 	}
 	for _, node := range nodes {
 		addr := node.Address

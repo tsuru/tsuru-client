@@ -27,6 +27,7 @@ import (
 	"github.com/tsuru/go-tsuruclient/pkg/client"
 	"github.com/tsuru/go-tsuruclient/pkg/tsuru"
 	"github.com/tsuru/tablecli"
+	"github.com/tsuru/tsuru-client/tsuru/formatter"
 	"github.com/tsuru/tsuru/cmd"
 	apptypes "github.com/tsuru/tsuru/types/app"
 	quotaTypes "github.com/tsuru/tsuru/types/quota"
@@ -1292,10 +1293,7 @@ func (c *AppList) Show(result []byte, context *cmd.Context, client *cmd.Client) 
 		return nil
 	}
 	if c.json {
-		enc := json.NewEncoder(context.Stdout)
-		enc.SetIndent("  ", "  ")
-		enc.Encode(apps)
-		return nil
+		return formatter.JSON(context.Stdout, apps)
 	}
 	table.Headers = tablecli.Row([]string{"Application", "Units", "Address"})
 	for _, app := range apps {

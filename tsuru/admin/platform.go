@@ -21,6 +21,7 @@ import (
 	"github.com/tsuru/go-tsuruclient/pkg/client"
 	"github.com/tsuru/go-tsuruclient/pkg/tsuru"
 	"github.com/tsuru/tablecli"
+	"github.com/tsuru/tsuru-client/tsuru/formatter"
 	"github.com/tsuru/tsuru/cmd"
 )
 
@@ -70,10 +71,7 @@ func (p *PlatformList) Run(context *cmd.Context, client *cmd.Client) error {
 	}
 
 	if p.json {
-		enc := json.NewEncoder(context.Stdout)
-		enc.SetIndent("  ", "  ")
-		enc.Encode(platforms)
-		return nil
+		return formatter.JSON(context.Stdout, platforms)
 	}
 
 	tbl := tablecli.NewTable()

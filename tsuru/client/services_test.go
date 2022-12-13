@@ -149,7 +149,6 @@ func (s *S) TestServiceList(c *check.C) {
 +---------+----------+
 | mysql   | mysql01  |
 | mysql   | mysql02  |
-| oracle  |          |
 +---------+----------+
 `)
 
@@ -199,7 +198,6 @@ func (s *S) TestServiceListWithPool(c *check.C) {
 +---------+----------+-----------------+
 | mysql   | mysql01  | cluster-pool-01 |
 | mysql   | mysql02  | cluster-pool-02 |
-| oracle  |          |                 |
 +---------+----------+-----------------+
 `)
 }

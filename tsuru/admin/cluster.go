@@ -6,7 +6,6 @@ package admin
 
 import (
 	"context"
-	"encoding/json"
 	"fmt"
 	"io"
 	"io/ioutil"
@@ -20,6 +19,7 @@ import (
 	"github.com/tsuru/go-tsuruclient/pkg/client"
 	"github.com/tsuru/go-tsuruclient/pkg/tsuru"
 	"github.com/tsuru/tablecli"
+	"github.com/tsuru/tsuru-client/tsuru/formatter"
 	"github.com/tsuru/tsuru/cmd"
 )
 
@@ -399,10 +399,7 @@ func (c *ClusterList) Run(ctx *cmd.Context, cli *cmd.Client) error {
 	}
 
 	if c.json {
-		enc := json.NewEncoder(ctx.Stdout)
-		enc.SetIndent("  ", "  ")
-		enc.Encode(clusters)
-		return nil
+		return formatter.JSON(ctx.Stdout, clusters)
 	}
 
 	tbl := tablecli.NewTable()
