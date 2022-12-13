@@ -57,18 +57,18 @@ func (f *serviceFilter) queryString() (url.Values, error) {
 }
 
 type ServiceList struct {
-	fs         *gnuflag.FlagSet
-	filter     serviceFilter
-	simplified bool
-	json       bool
+	fs               *gnuflag.FlagSet
+	filter           serviceFilter
+	simplified       bool
+	json             bool
+	justServiceNames bool
 }
 
 func (s *ServiceList) Info() *cmd.Info {
 	return &cmd.Info{
 		Name:  "service-list",
 		Usage: "service list",
-		Desc: `Retrieves and shows a list of services the user has access. If there are
-instances created for any service they will also be shown.`,
+		Desc:  `Retrieves and shows a list of instances of service the user has access.`,
 	}
 }
 
@@ -87,6 +87,8 @@ func (c *ServiceList) Flags() *gnuflag.FlagSet {
 		c.fs.StringVar(&c.filter.teamOwner, "t", "", "Filter service instances by team owner")
 		c.fs.BoolVar(&c.simplified, "q", false, "Display only service instances name")
 		c.fs.BoolVar(&c.json, "json", false, "Display in JSON format")
+		c.fs.BoolVar(&c.justServiceNames, "j", false, "Display just service names")
+
 	}
 	return c.fs
 }
@@ -143,6 +145,17 @@ func (s ServiceList) Run(ctx *cmd.Context, client *cmd.Client) error {
 		}
 
 		return formatter.JSON(ctx.Stdout, instances)
+	}
+
+	if s.justServiceNames {
+		t := tablecli.NewTable()
+		t.Headers = tablecli.Row([]string{"Service"})
+		for _, s := range services {
+			t.AddRow(tablecli.Row([]string{s.Service}))
+		}
+
+		_, err = ctx.Stdout.Write(t.Bytes())
+		return err
 	}
 
 	hasPool := false
