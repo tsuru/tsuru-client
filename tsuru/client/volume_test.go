@@ -456,3 +456,77 @@ func (s *S) TestVolumeUnbindNoRestart(c *check.C) {
 	result := stdout.String()
 	c.Assert(result, check.Equals, "Volume successfully unbound.\n")
 }
+
+func (s *S) TestVolumeClientSideFilter(c *check.C) {
+	volumes := []volumeTypes.Volume{
+
+		{
+			Name:      "gcp-volume-01",
+			Pool:      "gcp-pool-01",
+			Plan:      volumeTypes.VolumePlan{Name: "big"},
+			TeamOwner: "their-team",
+		},
+		{
+			Name:      "gcp-volume-02",
+			Pool:      "gcp-pool-02",
+			Plan:      volumeTypes.VolumePlan{Name: "small"},
+			TeamOwner: "my-team",
+		},
+		{
+			Name:      "aws-volume-01",
+			Pool:      "aws-pool-01",
+			Plan:      volumeTypes.VolumePlan{Name: "small"},
+			TeamOwner: "their-team",
+		},
+	}
+
+	filters := []volumeFilter{
+		{
+			name: "gcp",
+		},
+		{
+			name: "aws",
+		},
+		{
+			pool: "aws-pool-01",
+		},
+
+		{
+			name: "gcp",
+			pool: "gcp-pool-02",
+		},
+
+		{
+			plan: "small",
+		},
+
+		{
+			teamOwner: "my-team",
+		},
+	}
+
+	expectedResults := [][]string{
+		{"gcp-volume-01", "gcp-volume-02"},
+		{"aws-volume-01"},
+		{"aws-volume-01"},
+		{"gcp-volume-02"},
+		{"gcp-volume-02", "aws-volume-01"},
+		{"gcp-volume-02"},
+	}
+
+	for i := range filters {
+		cl := VolumeList{
+			filter: filters[i],
+		}
+
+		filteredVolumes := cl.clientSideFilter(volumes)
+		result := []string{}
+		for _, volume := range filteredVolumes {
+			result = append(result, volume.Name)
+		}
+
+		if !c.Check(result, check.DeepEquals, expectedResults[i]) {
+			c.Errorf("Failed to test case: %d, %#v", i, filters[i])
+		}
+	}
+}
