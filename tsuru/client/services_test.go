@@ -1145,3 +1145,124 @@ func (s *S) TestServiceInstanceRevokeRun(c *check.C) {
 	err := command.Run(&ctx, client)
 	c.Assert(err, check.IsNil)
 }
+
+func (s *S) TestServiceClientSideFilter(c *check.C) {
+	services := []service.ServiceModel{
+		{
+			Service: "reverse-proxy",
+			ServiceInstances: []service.ServiceInstance{
+				{
+					Name:      "gcp-proxy-01",
+					Pool:      "gcp-pool-01",
+					PlanName:  "big",
+					TeamOwner: "their-team",
+				},
+				{
+					Name:      "gcp-proxy-02",
+					Pool:      "gcp-pool-02",
+					PlanName:  "small",
+					TeamOwner: "my-team",
+				},
+				{
+					Name:      "aws-proxy-01",
+					Pool:      "aws-pool-01",
+					PlanName:  "small",
+					TeamOwner: "their-team",
+				},
+			},
+		},
+		{
+			Service: "mysql",
+			ServiceInstances: []service.ServiceInstance{
+				{
+					Name:      "mysql-01",
+					Pool:      "gcp-pool-01",
+					PlanName:  "compact",
+					TeamOwner: "their-team",
+				},
+			},
+		},
+	}
+
+	filters := []serviceFilter{
+		{
+			name: "gcp",
+		},
+		{
+			name: "aws",
+		},
+		{
+			pool: "aws-pool-01",
+		},
+
+		{
+			name: "gcp",
+			pool: "gcp-pool-02",
+		},
+
+		{
+			plan: "small",
+		},
+
+		{
+			service: "reverse-proxy",
+		},
+
+		{
+			teamOwner: "my-team",
+		},
+	}
+
+	expectedResults := []map[string][]string{
+		{
+			"mysql":         {},
+			"reverse-proxy": {"gcp-proxy-01", "gcp-proxy-02"},
+		},
+		{
+			"mysql":         {},
+			"reverse-proxy": {"aws-proxy-01"},
+		},
+		{
+			"mysql":         {},
+			"reverse-proxy": {"aws-proxy-01"},
+		},
+		{
+			"mysql":         {},
+			"reverse-proxy": {"gcp-proxy-02"},
+		},
+		{
+			"mysql":         {},
+			"reverse-proxy": {"gcp-proxy-02", "aws-proxy-01"},
+		},
+		{
+			"reverse-proxy": {"gcp-proxy-01", "gcp-proxy-02", "aws-proxy-01"},
+		},
+		{
+			"mysql":         {},
+			"reverse-proxy": {"gcp-proxy-02"},
+		},
+	}
+
+	for i := range filters {
+		cl := ServiceList{
+			filter: filters[i],
+		}
+
+		filteredServices := cl.clientSideFilter(services)
+		result := map[string][]string{}
+		for _, service := range filteredServices {
+
+			instances := []string{}
+
+			for _, instance := range service.ServiceInstances {
+				instances = append(instances, instance.Name)
+			}
+
+			result[service.Service] = instances
+		}
+
+		if !c.Check(result, check.DeepEquals, expectedResults[i]) {
+			c.Errorf("Failed to test case: %d, %#v", i, filters[i])
+		}
+	}
+}

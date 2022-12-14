@@ -94,7 +94,7 @@ func (p *PlatformList) Run(context *cmd.Context, client *cmd.Client) error {
 
 func (c *PlatformList) Flags() *gnuflag.FlagSet {
 	if c.fs == nil {
-		c.fs = gnuflag.NewFlagSet("volume-list", gnuflag.ExitOnError)
+		c.fs = gnuflag.NewFlagSet("platform-list", gnuflag.ExitOnError)
 		c.fs.BoolVar(&c.simplified, "q", false, "Display only platform name")
 		c.fs.BoolVar(&c.json, "json", false, "Display in JSON format")
 
