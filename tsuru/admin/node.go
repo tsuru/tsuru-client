@@ -662,7 +662,18 @@ func (c *RebalanceNodeCmd) Flags() *gnuflag.FlagSet {
 	return c.fs
 }
 
-type InfoNodeCmd struct{}
+type InfoNodeCmd struct {
+	fs   *gnuflag.FlagSet
+	json bool
+}
+
+func (c *InfoNodeCmd) Flags() *gnuflag.FlagSet {
+	if c.fs == nil {
+		c.fs = gnuflag.NewFlagSet("node-info", gnuflag.ExitOnError)
+		c.fs.BoolVar(&c.json, "json", false, "Display node in JSON Format")
+	}
+	return c.fs
+}
 
 func (InfoNodeCmd) Info() *cmd.Info {
 	return &cmd.Info{
@@ -688,11 +699,17 @@ func (c *InfoNodeCmd) Run(ctx *cmd.Context, client *cmd.Client) error {
 	if err != nil {
 		return err
 	}
+	defer resp.Body.Close()
 	var result apiTypes.InfoNodeResponse
 	err = json.NewDecoder(resp.Body).Decode(&result)
 	if err != nil {
 		return err
 	}
+
+	if c.json {
+		return formatter.JSON(ctx.Stdout, result)
+	}
+
 	var buf bytes.Buffer
 	buf.WriteString(fmt.Sprintf("Address: %s\n", result.Node.Address))
 	buf.WriteString(fmt.Sprintf("Status: %s\n", result.Node.Status))
