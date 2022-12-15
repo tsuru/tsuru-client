@@ -314,6 +314,9 @@ func (c *RouterInfo) Run(ctx *cmd.Context, cli *cmd.Client) error {
 
 type AppRoutersList struct {
 	cmd.AppNameMixIn
+
+	flagsApplied bool
+	json         bool
 }
 
 func (c *AppRoutersList) Info() *cmd.Info {
@@ -323,6 +326,16 @@ func (c *AppRoutersList) Info() *cmd.Info {
 		Desc:    "List all routers associated to an application.",
 		MinArgs: 0,
 	}
+}
+
+func (c *AppRoutersList) Flags() *gnuflag.FlagSet {
+	fs := c.AppNameMixIn.Flags()
+	if !c.flagsApplied {
+		fs.BoolVar(&c.json, "json", false, "Show JSON")
+
+		c.flagsApplied = true
+	}
+	return fs
 }
 
 func (c *AppRoutersList) Run(context *cmd.Context, client *cmd.Client) error {
@@ -344,6 +357,10 @@ func (c *AppRoutersList) Run(context *cmd.Context, client *cmd.Client) error {
 	}
 	defer response.Body.Close()
 	if response.StatusCode == http.StatusNoContent {
+		if c.json {
+			fmt.Fprintln(context.Stdout, "[]")
+			return nil
+		}
 		fmt.Fprintln(context.Stdout, "No routers available for app.")
 		return nil
 	}
@@ -351,6 +368,10 @@ func (c *AppRoutersList) Run(context *cmd.Context, client *cmd.Client) error {
 	err = json.NewDecoder(response.Body).Decode(&routers)
 	if err != nil {
 		return err
+	}
+
+	if c.json {
+		return formatter.JSON(context.Stdout, routers)
 	}
 	renderRouters(routers, context.Stdout, "Name")
 	return nil

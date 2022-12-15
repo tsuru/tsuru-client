@@ -140,8 +140,9 @@ func (c *CertificateUnset) Run(context *cmd.Context, client *cmd.Client) error {
 
 type CertificateList struct {
 	cmd.AppNameMixIn
-	fs  *gnuflag.FlagSet
-	raw bool
+	fs   *gnuflag.FlagSet
+	raw  bool
+	json bool
 }
 
 func (c *CertificateList) Info() *cmd.Info {
@@ -157,6 +158,8 @@ func (c *CertificateList) Flags() *gnuflag.FlagSet {
 		c.fs = c.AppNameMixIn.Flags()
 		c.fs.BoolVar(&c.raw, "r", false, "Display raw certificates")
 		c.fs.BoolVar(&c.raw, "raw", false, "Display raw certificates")
+		c.fs.BoolVar(&c.json, "json", false, "Display JSON format")
+
 	}
 	return c.fs
 }
@@ -183,6 +186,10 @@ func (c *CertificateList) Run(context *cmd.Context, client *cmd.Client) error {
 	err = json.NewDecoder(response.Body).Decode(&rawCerts)
 	if err != nil {
 		return err
+	}
+
+	if c.json {
+		return c.renderJSON(context, rawCerts)
 	}
 
 	routerNames := []string{}
@@ -221,14 +228,9 @@ func (c *CertificateList) Run(context *cmd.Context, client *cmd.Client) error {
 				tbl.AddRow(tablecli.Row{r, n, "-", "-", "-"})
 				continue
 			}
-			certBlock, _ := pem.Decode([]byte(rawCert))
-			if certBlock == nil {
-				tbl.AddRow(tablecli.Row{r, n, "failed to decode data", "-", "-"})
-				continue
-			}
-			cert, err := x509.ParseCertificate(certBlock.Bytes)
+			cert, err := parseCert([]byte(rawCert))
 			if err != nil {
-				tbl.AddRow(tablecli.Row{r, n, "failed to parse certificate data", "-", "-"})
+				tbl.AddRow(tablecli.Row{r, n, err.Error(), "-", "-"})
 				continue
 			}
 			tbl.AddRow(tablecli.Row{r, n, formatter.Local(cert.NotAfter).Format(dateFormat),
@@ -239,6 +241,58 @@ func (c *CertificateList) Run(context *cmd.Context, client *cmd.Client) error {
 	tbl.Sort()
 	fmt.Fprint(context.Stdout, tbl.String())
 	return nil
+}
+
+func (c *CertificateList) renderJSON(context *cmd.Context, rawCerts map[string]map[string]string) error {
+	type certificateJSONFriendly struct {
+		Router   string     `json:"router"`
+		Domain   string     `json:"domain"`
+		Raw      string     `json:"raw"`
+		Issuer   *pkix.Name `json:"issuer"`
+		Subject  *pkix.Name `json:"subject"`
+		NotAfter string     `json:"notAfter"`
+	}
+
+	data := []certificateJSONFriendly{}
+
+	for router, domainMap := range rawCerts {
+	domainLoop:
+		for domain, raw := range domainMap {
+			if raw == "" {
+				continue domainLoop
+			}
+			item := certificateJSONFriendly{
+				Domain: domain,
+				Router: router,
+				Raw:    raw,
+			}
+
+			parsedCert, err := parseCert([]byte(raw))
+			if err == nil {
+				item.Issuer = &parsedCert.Issuer
+				item.Subject = &parsedCert.Subject
+				item.NotAfter = formatter.Local(parsedCert.NotAfter).Format("2006-01-02 15:04:05")
+			}
+
+			data = append(data, item)
+		}
+	}
+
+	return formatter.JSON(context.Stdout, data)
+}
+
+func parseCert(data []byte) (*x509.Certificate, error) {
+	certBlock, _ := pem.Decode(data)
+	if certBlock == nil {
+		return nil, errors.New("failed to decode data")
+	}
+
+	cert, err := x509.ParseCertificate(certBlock.Bytes)
+	if err != nil {
+		return nil, errors.New("failed to parse certificate data")
+	}
+
+	return cert, nil
 }
 
 func formatName(n *pkix.Name) string {
