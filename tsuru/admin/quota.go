@@ -13,6 +13,8 @@ import (
 	"net/url"
 	"strconv"
 
+	"github.com/tsuru/gnuflag"
+	"github.com/tsuru/tsuru-client/tsuru/formatter"
 	"github.com/tsuru/tsuru/cmd"
 	"github.com/tsuru/tsuru/types/quota"
 )
@@ -86,6 +88,9 @@ func (*UserChangeQuota) Run(context *cmd.Context, client *cmd.Client) error {
 
 type AppQuotaView struct {
 	cmd.AppNameMixIn
+
+	flagsApplied bool
+	json         bool
 }
 
 func (*AppQuotaView) Info() *cmd.Info {
@@ -95,6 +100,16 @@ func (*AppQuotaView) Info() *cmd.Info {
 		Usage:   "app-quota-view [-a/--app appname]",
 		Desc:    "Displays the current usage and limit of the given app.",
 	}
+}
+
+func (c *AppQuotaView) Flags() *gnuflag.FlagSet {
+	fs := c.AppNameMixIn.Flags()
+	if !c.flagsApplied {
+		fs.BoolVar(&c.json, "json", false, "Show JSON")
+
+		c.flagsApplied = true
+	}
+	return fs
 }
 
 func (c *AppQuotaView) Run(context *cmd.Context, client *cmd.Client) error {
@@ -118,6 +133,11 @@ func (c *AppQuotaView) Run(context *cmd.Context, client *cmd.Client) error {
 	if err != nil {
 		return err
 	}
+
+	if c.json {
+		return formatter.JSON(context.Stdout, quota)
+	}
+
 	fmt.Fprintf(context.Stdout, "App: %s\n", appName)
 	fmt.Fprintf(context.Stdout, "Units usage: %d/%d\n", quota.InUse, quota.Limit)
 	return nil
