@@ -5,6 +5,7 @@
 package client
 
 import (
+	"bytes"
 	"encoding/json"
 	"fmt"
 	"io/ioutil"
@@ -17,6 +18,7 @@ import (
 
 	"github.com/ajg/form"
 	"github.com/ghodss/yaml"
+	"github.com/iancoleman/orderedmap"
 	"github.com/tsuru/gnuflag"
 	"github.com/tsuru/tablecli"
 	"github.com/tsuru/tsuru-client/tsuru/formatter"
@@ -27,6 +29,7 @@ import (
 type EventList struct {
 	fs     *gnuflag.FlagSet
 	filter eventFilter
+	json   bool
 }
 
 type eventFilter struct {
@@ -89,6 +92,7 @@ func (c *EventList) Flags() *gnuflag.FlagSet {
 	if c.fs == nil {
 		c.fs = gnuflag.NewFlagSet("", gnuflag.ExitOnError)
 		c.filter.flags(c.fs)
+		c.fs.BoolVar(&c.json, "json", false, "Show JSON")
 	}
 	return c.fs
 }
@@ -123,6 +127,20 @@ func (c *EventList) Run(context *cmd.Context, client *cmd.Client) error {
 	if err != nil {
 		return fmt.Errorf("unable to unmarshal %q: %s", string(result), err)
 	}
+
+	if c.json {
+		result := []*orderedmap.OrderedMap{}
+		for _, evt := range evts {
+			o, err := eventJSONFriendly(evt)
+			if err != nil {
+				return err
+			}
+			result = append(result, o)
+		}
+
+		return formatter.JSON(context.Stdout, result)
+	}
+
 	return c.Show(evts, context)
 }
 
@@ -181,7 +199,18 @@ func (c *EventList) Show(evts []event.Event, context *cmd.Context) error {
 	return nil
 }
 
-type EventInfo struct{}
+type EventInfo struct {
+	fs   *gnuflag.FlagSet
+	json bool
+}
+
+func (c *EventInfo) Flags() *gnuflag.FlagSet {
+	if c.fs == nil {
+		c.fs = gnuflag.NewFlagSet("event-info", gnuflag.ContinueOnError)
+		c.fs.BoolVar(&c.json, "json", false, "Show JSON")
+	}
+	return c.fs
+}
 
 func (c *EventInfo) Info() *cmd.Info {
 	return &cmd.Info{
@@ -216,7 +245,47 @@ func (c *EventInfo) Run(context *cmd.Context, client *cmd.Client) error {
 	if err != nil {
 		return fmt.Errorf("unable to unmarshal %q: %s", string(result), err)
 	}
+
+	if c.json {
+		o, err := eventJSONFriendly(evt)
+		if err != nil {
+			return err
+		}
+		return formatter.JSON(context.Stdout, o)
+	}
 	return c.Show(&evt, context)
+}
+
+func eventJSONFriendly(evt event.Event) (*orderedmap.OrderedMap, error) {
+	var startData interface{}
+	var endData interface{}
+	var otherData interface{}
+
+	evt.StartData(&startData)
+	evt.EndData(&endData)
+	evt.OtherData(&otherData)
+
+	var buf bytes.Buffer
+	err := json.NewEncoder(&buf).Encode(evt)
+	if err != nil {
+		return nil, err
+	}
+
+	o := orderedmap.New()
+	err = json.Unmarshal(buf.Bytes(), &o)
+	if err != nil {
+		return nil, err
+	}
+
+	o.Delete("StartCustomData")
+	o.Delete("EndCustomData")
+	o.Delete("OtherCustomData")
+
+	o.Set("StartData", startData)
+	o.Set("EndData", endData)
+	o.Set("OtherData", otherData)
+
+	return o, nil
 }
 
 func (c *EventInfo) Show(evt *event.Event, context *cmd.Context) error {
