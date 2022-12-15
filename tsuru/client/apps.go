@@ -371,6 +371,7 @@ func (c *AppRemove) Flags() *gnuflag.FlagSet {
 type AppInfo struct {
 	cmd.AppNameMixIn
 
+	json         bool
 	simplified   bool
 	flagsApplied bool
 }
@@ -391,6 +392,7 @@ func (cmd *AppInfo) Flags() *gnuflag.FlagSet {
 	if !cmd.flagsApplied {
 		fs.BoolVar(&cmd.simplified, "simplified", false, "Show simplified view of app")
 		fs.BoolVar(&cmd.simplified, "s", false, "Show simplified view of app")
+		fs.BoolVar(&cmd.json, "json", false, "Show JSON view of app")
 
 		cmd.flagsApplied = true
 	}
@@ -1099,6 +1101,9 @@ func translateTimestampSince(timestamp *time.Time) string {
 }
 
 func (c *AppInfo) Show(a *app, context *cmd.Context, simplified bool) error {
+	if c.json {
+		return formatter.JSON(context.Stdout, a)
+	}
 	fmt.Fprintln(context.Stdout, a.String(simplified))
 	return nil
 }
