@@ -17,6 +17,7 @@ import (
 
 	"github.com/ajg/form"
 	"github.com/tsuru/gnuflag"
+	"github.com/tsuru/tsuru-client/tsuru/formatter"
 	tsuruAPIApp "github.com/tsuru/tsuru/app"
 	"github.com/tsuru/tsuru/cmd"
 	apiTypes "github.com/tsuru/tsuru/types/api"
@@ -36,6 +37,18 @@ Example:
 
 type EnvGet struct {
 	cmd.AppNameMixIn
+
+	fs   *gnuflag.FlagSet
+	json bool
+}
+
+func (c *EnvGet) Flags() *gnuflag.FlagSet {
+	if c.fs == nil {
+		c.fs = c.AppNameMixIn.Flags()
+		c.fs.BoolVar(&c.json, "json", false, "Display JSON format")
+
+	}
+	return c.fs
 }
 
 func (c *EnvGet) Info() *cmd.Info {
@@ -57,6 +70,11 @@ func (c *EnvGet) Run(context *cmd.Context, client *cmd.Client) error {
 	if err != nil {
 		return err
 	}
+
+	if c.json {
+		return c.renderJSON(context, variables)
+	}
+
 	formatted := make([]string, 0, len(variables))
 	for _, v := range variables {
 		value := tsuruAPIApp.SuppressedEnv
@@ -68,6 +86,32 @@ func (c *EnvGet) Run(context *cmd.Context, client *cmd.Client) error {
 	sort.Strings(formatted)
 	fmt.Fprintln(context.Stdout, strings.Join(formatted, "\n"))
 	return nil
+}
+
+func (c *EnvGet) renderJSON(context *cmd.Context, variables []map[string]interface{}) error {
+	type envJSON struct {
+		Name    string `json:"name"`
+		Value   string `json:"value"`
+		Private bool   `json:"private"`
+	}
+
+	data := make([]envJSON, 0, len(variables))
+
+	for _, v := range variables {
+		private := true
+		value := tsuruAPIApp.SuppressedEnv
+		if v["public"].(bool) {
+			value = v["value"].(string)
+			private = false
+		}
+		data = append(data, envJSON{
+			Name:    v["name"].(string),
+			Value:   value,
+			Private: private,
+		})
+	}
+
+	return formatter.JSON(context.Stdout, data)
 }
 
 type EnvSet struct {
