@@ -295,7 +295,18 @@ func (p *PlatformRemove) Run(context *cmd.Context, client *cmd.Client) error {
 	return nil
 }
 
-type PlatformInfo struct{}
+type PlatformInfo struct {
+	fs   *gnuflag.FlagSet
+	json bool
+}
+
+func (c *PlatformInfo) Flags() *gnuflag.FlagSet {
+	if c.fs == nil {
+		c.fs = gnuflag.NewFlagSet("platform-info", gnuflag.ExitOnError)
+		c.fs.BoolVar(&c.json, "json", false, "Display platform in JSON Format")
+	}
+	return c.fs
+}
 
 func (p *PlatformInfo) Info() *cmd.Info {
 	return &cmd.Info{
@@ -306,7 +317,7 @@ func (p *PlatformInfo) Info() *cmd.Info {
 	}
 }
 
-func (PlatformInfo) Run(ctx *cmd.Context, cli *cmd.Client) error {
+func (c PlatformInfo) Run(ctx *cmd.Context, cli *cmd.Client) error {
 	apiClient, err := client.ClientFromEnvironment(&tsuru.Configuration{
 		HTTPClient: cli.HTTPClient,
 	})
@@ -323,6 +334,11 @@ func (PlatformInfo) Run(ctx *cmd.Context, cli *cmd.Client) error {
 		return nil
 	}
 	defer resp.Body.Close()
+
+	if c.json {
+		return formatter.JSON(ctx.Stdout, info)
+	}
+
 	var status string
 	if info.Platform.Disabled {
 		status = "disabled"
