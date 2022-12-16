@@ -301,7 +301,18 @@ func (c *VolumeList) render(ctx *cmd.Context, volumes []volumeTypes.Volume) erro
 	return nil
 }
 
-type VolumeInfo struct{}
+type VolumeInfo struct {
+	fs   *gnuflag.FlagSet
+	json bool
+}
+
+func (c *VolumeInfo) Flags() *gnuflag.FlagSet {
+	if c.fs == nil {
+		c.fs = gnuflag.NewFlagSet("volume-info", gnuflag.ContinueOnError)
+		c.fs.BoolVar(&c.json, "json", false, "Show JSON")
+	}
+	return c.fs
+}
 
 func (c *VolumeInfo) Info() *cmd.Info {
 	return &cmd.Info{
@@ -341,6 +352,11 @@ func (c *VolumeInfo) Run(ctx *cmd.Context, client *cmd.Client) error {
 	if err != nil {
 		return err
 	}
+
+	if c.json {
+		return formatter.JSON(ctx.Stdout, volume)
+	}
+
 	return c.render(ctx, volume)
 }
 
