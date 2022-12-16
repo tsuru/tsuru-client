@@ -1307,7 +1307,13 @@ func (c *AppList) Show(result []byte, context *cmd.Context, client *cmd.Client) 
 			unitsStatus := make(map[string]int)
 			for _, unit := range app.Units {
 				if unit.ID != "" {
-					unitsStatus[unit.Status]++
+					if unit.Ready != nil && *unit.Ready {
+						unitsStatus["ready"]++
+					} else if unit.StatusReason != "" {
+						unitsStatus[unit.Status+" ("+unit.StatusReason+")"]++
+					} else {
+						unitsStatus[unit.Status]++
+					}
 				}
 			}
 			statusText := make([]string, len(unitsStatus))
