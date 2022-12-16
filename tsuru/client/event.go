@@ -131,7 +131,7 @@ func (c *EventList) Run(context *cmd.Context, client *cmd.Client) error {
 	if c.json {
 		result := []*orderedmap.OrderedMap{}
 		for _, evt := range evts {
-			o, err := eventJSONFriendly(evt)
+			o, err := eventJSONFriendly(&evt)
 			if err != nil {
 				return err
 			}
@@ -247,7 +247,7 @@ func (c *EventInfo) Run(context *cmd.Context, client *cmd.Client) error {
 	}
 
 	if c.json {
-		o, err := eventJSONFriendly(evt)
+		o, err := eventJSONFriendly(&evt)
 		if err != nil {
 			return err
 		}
@@ -256,7 +256,7 @@ func (c *EventInfo) Run(context *cmd.Context, client *cmd.Client) error {
 	return c.Show(&evt, context)
 }
 
-func eventJSONFriendly(evt event.Event) (*orderedmap.OrderedMap, error) {
+func eventJSONFriendly(evt *event.Event) (*orderedmap.OrderedMap, error) {
 	var startData interface{}
 	var endData interface{}
 	var otherData interface{}
