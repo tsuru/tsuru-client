@@ -130,8 +130,8 @@ func (c *EventList) Run(context *cmd.Context, client *cmd.Client) error {
 
 	if c.json {
 		result := []*orderedmap.OrderedMap{}
-		for _, evt := range evts {
-			o, err := eventJSONFriendly(&evt)
+		for i := range evts {
+			o, err := eventJSONFriendly(&evts[i])
 			if err != nil {
 				return err
 			}
