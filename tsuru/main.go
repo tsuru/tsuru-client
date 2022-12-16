@@ -222,7 +222,7 @@ Services aren’t managed by tsuru, but by their creators.`)
 	m.Register(&admin.AutoScaleSetRuleCmd{})
 	m.Register(&admin.AutoScaleDeleteRuleCmd{})
 	m.Register(&admin.ListHealingHistoryCmd{})
-	m.Register(client.ServiceInstanceInfo{})
+	m.Register(&client.ServiceInstanceInfo{})
 	registerExtraCommands(m)
 	return m
 }

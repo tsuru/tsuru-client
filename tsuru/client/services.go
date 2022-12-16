@@ -7,7 +7,6 @@ package client
 import (
 	"context"
 	"encoding/json"
-	"errors"
 	"fmt"
 	"io/ioutil"
 	"net/http"
@@ -537,7 +536,18 @@ func (su *ServiceInstanceUnbind) Flags() *gnuflag.FlagSet {
 	return su.fs
 }
 
-type ServiceInstanceInfo struct{}
+type ServiceInstanceInfo struct {
+	fs   *gnuflag.FlagSet
+	json bool
+}
+
+func (c *ServiceInstanceInfo) Flags() *gnuflag.FlagSet {
+	if c.fs == nil {
+		c.fs = gnuflag.NewFlagSet("service-instance-info", gnuflag.ContinueOnError)
+		c.fs.BoolVar(&c.json, "json", false, "Show JSON")
+	}
+	return c.fs
+}
 
 func (c ServiceInstanceInfo) Info() *cmd.Info {
 	return &cmd.Info{
@@ -561,6 +571,7 @@ type ServiceInstanceInfoModel struct {
 	CustomInfo      map[string]string
 	Tags            []string
 	Parameters      map[string]interface{}
+	Status          string
 }
 
 func (c ServiceInstanceInfo) Run(ctx *cmd.Context, client *cmd.Client) error {
@@ -579,11 +590,39 @@ func (c ServiceInstanceInfo) Run(ctx *cmd.Context, client *cmd.Client) error {
 		return err
 	}
 	defer resp.Body.Close()
-	var si ServiceInstanceInfoModel
-	err = json.NewDecoder(resp.Body).Decode(&si)
+	si := &ServiceInstanceInfoModel{
+		ServiceName:  serviceName,
+		InstanceName: instanceName,
+	}
+	err = json.NewDecoder(resp.Body).Decode(si)
 	if err != nil {
 		return err
 	}
+
+	url, err = cmd.GetURL("/services/" + serviceName + "/instances/" + instanceName + "/status")
+	if err != nil {
+		return err
+	}
+	request, err = http.NewRequest("GET", url, nil)
+	if err != nil {
+		return err
+	}
+	resp, err = client.Do(request)
+	if err != nil {
+		return err
+	}
+	defer resp.Body.Close()
+	bMsg, err := ioutil.ReadAll(resp.Body)
+	if err != nil {
+		return err
+	}
+
+	si.Status = string(bMsg)
+
+	if c.json {
+		return formatter.JSON(ctx.Stdout, si)
+	}
+
 	fmt.Fprintf(ctx.Stdout, "Service: %s\n", serviceName)
 	fmt.Fprintf(ctx.Stdout, "Instance: %s\n", instanceName)
 	if si.Pool != "" {
@@ -641,31 +680,7 @@ func (c ServiceInstanceInfo) Run(ctx *cmd.Context, client *cmd.Client) error {
 		}
 	}
 
-	url, err = cmd.GetURL("/services/" + serviceName + "/instances/" + instanceName + "/status")
-	if err != nil {
-		return err
-	}
-	request, err = http.NewRequest("GET", url, nil)
-	if err != nil {
-		return err
-	}
-	resp, err = client.Do(request)
-	if err != nil {
-		return err
-	}
-	defer resp.Body.Close()
-	bMsg, err := ioutil.ReadAll(resp.Body)
-	if err != nil {
-		return err
-	}
-	msg := fmt.Sprintf("Status: %s\n", bMsg)
-	n, err := fmt.Fprint(ctx.Stdout, msg)
-	if err != nil {
-		return err
-	}
-	if n != len(msg) {
-		return errors.New("Failed to write to standard output.\n")
-	}
+	fmt.Fprintf(ctx.Stdout, "Status: %s\n", si.Status)
 	return nil
 }
 

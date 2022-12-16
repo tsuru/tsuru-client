@@ -180,7 +180,7 @@ func (s *S) TestServiceInstanceInfoIsRegistered(c *check.C) {
 	manager = buildManager("tsuru")
 	info, ok := manager.Commands["service-instance-info"]
 	c.Assert(ok, check.Equals, true)
-	c.Assert(info, check.FitsTypeOf, client.ServiceInstanceInfo{})
+	c.Assert(info, check.FitsTypeOf, &client.ServiceInstanceInfo{})
 }
 
 func (s *S) TestServiceInfoIsRegistered(c *check.C) {
