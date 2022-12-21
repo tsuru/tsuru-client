@@ -56,6 +56,9 @@ func (dl deployList) Less(i, j int) bool {
 
 type AppDeployList struct {
 	cmd.AppNameMixIn
+
+	flagsApplied bool
+	json         bool
 }
 
 func (c *AppDeployList) Info() *cmd.Info {
@@ -64,6 +67,16 @@ func (c *AppDeployList) Info() *cmd.Info {
 		Usage: "app deploy list [-a/--app <appname>]",
 		Desc:  "List information about deploys for an application.",
 	}
+}
+
+func (c *AppDeployList) Flags() *gnuflag.FlagSet {
+	fs := c.AppNameMixIn.Flags()
+	if !c.flagsApplied {
+		fs.BoolVar(&c.json, "json", false, "Show JSON")
+
+		c.flagsApplied = true
+	}
+	return fs
 }
 
 func (c *AppDeployList) Run(context *cmd.Context, client *cmd.Client) error {
@@ -98,6 +111,11 @@ func (c *AppDeployList) Run(context *cmd.Context, client *cmd.Client) error {
 		return err
 	}
 	sort.Sort(sort.Reverse(deployList(deploys)))
+
+	if c.json {
+		return formatter.JSON(context.Stdout, deploys)
+	}
+
 	table := tablecli.NewTable()
 	table.Headers = tablecli.Row([]string{"Image (Rollback)", "Origin", "User", "Date (Duration)", "Error"})
 	for _, deploy := range deploys {

@@ -131,7 +131,7 @@ func (s *S) TestServiceListIsRegistered(c *check.C) {
 	manager = buildManager("tsuru")
 	list, ok := manager.Commands["service-list"]
 	c.Assert(ok, check.Equals, true)
-	c.Assert(list, check.FitsTypeOf, client.ServiceList{})
+	c.Assert(list, check.FitsTypeOf, &client.ServiceList{})
 }
 
 func (s *S) TestServiceUpdateIsRegistered(c *check.C) {
@@ -180,7 +180,7 @@ func (s *S) TestServiceInstanceInfoIsRegistered(c *check.C) {
 	manager = buildManager("tsuru")
 	info, ok := manager.Commands["service-instance-info"]
 	c.Assert(ok, check.Equals, true)
-	c.Assert(info, check.FitsTypeOf, client.ServiceInstanceInfo{})
+	c.Assert(info, check.FitsTypeOf, &client.ServiceInstanceInfo{})
 }
 
 func (s *S) TestServiceInfoIsRegistered(c *check.C) {

@@ -9,12 +9,14 @@ import (
 	"fmt"
 	"io/ioutil"
 	"net/http"
+	"net/url"
 	"sort"
 	"strings"
 
 	"github.com/ajg/form"
 	"github.com/tsuru/gnuflag"
 	"github.com/tsuru/tablecli"
+	"github.com/tsuru/tsuru-client/tsuru/formatter"
 	"github.com/tsuru/tsuru/cmd"
 	volumeTypes "github.com/tsuru/tsuru/types/volume"
 )
@@ -147,7 +149,36 @@ func (c *VolumeUpdate) Run(ctx *cmd.Context, client *cmd.Client) error {
 	return nil
 }
 
-type VolumeList struct{}
+type volumeFilter struct {
+	name      string
+	pool      string
+	plan      string
+	teamOwner string
+}
+
+func (f *volumeFilter) queryString() (url.Values, error) {
+	result := make(url.Values)
+	if f.name != "" {
+		result.Set("name", f.name)
+	}
+	if f.teamOwner != "" {
+		result.Set("teamOwner", f.teamOwner)
+	}
+	if f.pool != "" {
+		result.Set("pool", f.pool)
+	}
+	if f.plan != "" {
+		result.Set("plan", f.plan)
+	}
+	return result, nil
+}
+
+type VolumeList struct {
+	fs         *gnuflag.FlagSet
+	filter     volumeFilter
+	simplified bool
+	json       bool
+}
 
 func (c *VolumeList) Info() *cmd.Info {
 	return &cmd.Info{
@@ -159,8 +190,31 @@ func (c *VolumeList) Info() *cmd.Info {
 	}
 }
 
+func (c *VolumeList) Flags() *gnuflag.FlagSet {
+	if c.fs == nil {
+		c.fs = gnuflag.NewFlagSet("volume-list", gnuflag.ExitOnError)
+		c.fs.StringVar(&c.filter.name, "name", "", "Filter volumes by name")
+		c.fs.StringVar(&c.filter.name, "n", "", "Filter volumes by name")
+		c.fs.StringVar(&c.filter.pool, "pool", "", "Filter volumes by pool")
+		c.fs.StringVar(&c.filter.pool, "o", "", "Filter volumes by pool")
+		c.fs.StringVar(&c.filter.plan, "plan", "", "Filter volumes by plan")
+		c.fs.StringVar(&c.filter.plan, "p", "", "Filter volumes by plan")
+		c.fs.StringVar(&c.filter.teamOwner, "team", "", "Filter volumes by team owner")
+		c.fs.StringVar(&c.filter.teamOwner, "t", "", "Filter volumes by team owner")
+		c.fs.BoolVar(&c.simplified, "q", false, "Display only volumes name")
+		c.fs.BoolVar(&c.json, "json", false, "Display in JSON format")
+
+	}
+	return c.fs
+}
+
 func (c *VolumeList) Run(ctx *cmd.Context, client *cmd.Client) error {
-	u, err := cmd.GetURLVersion("1.4", "/volumes")
+	qs, err := c.filter.queryString()
+	if err != nil {
+		return err
+	}
+
+	u, err := cmd.GetURLVersion("1.4", fmt.Sprintf("/volumes?%s", qs.Encode()))
 	if err != nil {
 		return err
 	}
@@ -186,10 +240,51 @@ func (c *VolumeList) Run(ctx *cmd.Context, client *cmd.Client) error {
 	if err != nil {
 		return err
 	}
+	volumes = c.clientSideFilter(volumes)
 	return c.render(ctx, volumes)
 }
 
+func (c *VolumeList) clientSideFilter(volumes []volumeTypes.Volume) []volumeTypes.Volume {
+	result := make([]volumeTypes.Volume, 0, len(volumes))
+
+	for _, v := range volumes {
+		insert := true
+		if c.filter.name != "" && !strings.Contains(v.Name, c.filter.name) {
+			insert = false
+		}
+
+		if c.filter.pool != "" && v.Pool != c.filter.pool {
+			insert = false
+		}
+
+		if c.filter.plan != "" && v.Plan.Name != c.filter.plan {
+			insert = false
+		}
+
+		if c.filter.teamOwner != "" && v.TeamOwner != c.filter.teamOwner {
+			insert = false
+		}
+
+		if insert {
+			result = append(result, v)
+		}
+	}
+
+	return result
+}
+
 func (c *VolumeList) render(ctx *cmd.Context, volumes []volumeTypes.Volume) error {
+	if c.simplified {
+		for _, v := range volumes {
+			fmt.Fprintln(ctx.Stdout, v.Name)
+		}
+		return nil
+	}
+
+	if c.json {
+		return formatter.JSON(ctx.Stdout, volumes)
+	}
+
 	tbl := tablecli.NewTable()
 	tbl.Headers = tablecli.Row{"Name", "Plan", "Pool", "Team"}
 	tbl.LineSeparator = true
@@ -206,7 +301,18 @@ func (c *VolumeList) render(ctx *cmd.Context, volumes []volumeTypes.Volume) erro
 	return nil
 }
 
-type VolumeInfo struct{}
+type VolumeInfo struct {
+	fs   *gnuflag.FlagSet
+	json bool
+}
+
+func (c *VolumeInfo) Flags() *gnuflag.FlagSet {
+	if c.fs == nil {
+		c.fs = gnuflag.NewFlagSet("volume-info", gnuflag.ContinueOnError)
+		c.fs.BoolVar(&c.json, "json", false, "Show JSON")
+	}
+	return c.fs
+}
 
 func (c *VolumeInfo) Info() *cmd.Info {
 	return &cmd.Info{
@@ -246,6 +352,11 @@ func (c *VolumeInfo) Run(ctx *cmd.Context, client *cmd.Client) error {
 	if err != nil {
 		return err
 	}
+
+	if c.json {
+		return formatter.JSON(ctx.Stdout, volume)
+	}
+
 	return c.render(ctx, volume)
 }
 

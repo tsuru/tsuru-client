@@ -19,6 +19,7 @@ import (
 	"github.com/tsuru/go-tsuruclient/pkg/client"
 	"github.com/tsuru/go-tsuruclient/pkg/tsuru"
 	"github.com/tsuru/tablecli"
+	"github.com/tsuru/tsuru-client/tsuru/formatter"
 	"github.com/tsuru/tsuru/cmd"
 	appTypes "github.com/tsuru/tsuru/types/app"
 )
@@ -161,7 +162,28 @@ func (c *RouterRemove) Run(ctx *cmd.Context, cli *cmd.Client) error {
 	return nil
 }
 
-type RoutersList struct{}
+type routerFilter struct {
+	name string
+}
+
+type RoutersList struct {
+	fs         *gnuflag.FlagSet
+	filter     routerFilter
+	simplified bool
+	json       bool
+}
+
+func (c *RoutersList) Flags() *gnuflag.FlagSet {
+	if c.fs == nil {
+		c.fs = gnuflag.NewFlagSet("router-list", gnuflag.ExitOnError)
+		c.fs.StringVar(&c.filter.name, "name", "", "Filter routers by name")
+		c.fs.StringVar(&c.filter.name, "n", "", "Filter routers by name")
+		c.fs.BoolVar(&c.simplified, "q", false, "Display only routers name")
+		c.fs.BoolVar(&c.json, "json", false, "Display in JSON format")
+
+	}
+	return c.fs
+}
 
 func (c *RoutersList) Info() *cmd.Info {
 	return &cmd.Info{
@@ -184,6 +206,19 @@ func (c *RoutersList) Run(ctx *cmd.Context, cli *cmd.Client) error {
 		return err
 	}
 
+	routers = c.clientSideFilter(routers)
+
+	if c.simplified {
+		for _, v := range routers {
+			fmt.Fprintln(ctx.Stdout, v.Name)
+		}
+		return nil
+	}
+
+	if c.json {
+		return formatter.JSON(ctx.Stdout, routers)
+	}
+
 	table := tablecli.NewTable()
 	table.Headers = tablecli.Row([]string{"Name", "Type", "Info"})
 	table.LineSeparator = true
@@ -200,6 +235,23 @@ func (c *RoutersList) Run(ctx *cmd.Context, cli *cmd.Client) error {
 	}
 	ctx.Stdout.Write(table.Bytes())
 	return nil
+}
+
+func (c *RoutersList) clientSideFilter(routers []tsuru.PlanRouter) []tsuru.PlanRouter {
+	result := make([]tsuru.PlanRouter, 0, len(routers))
+
+	for _, v := range routers {
+		insert := true
+		if c.filter.name != "" && !strings.Contains(v.Name, c.filter.name) {
+			insert = false
+		}
+
+		if insert {
+			result = append(result, v)
+		}
+	}
+
+	return result
 }
 
 type RouterInfo struct{}
@@ -262,6 +314,9 @@ func (c *RouterInfo) Run(ctx *cmd.Context, cli *cmd.Client) error {
 
 type AppRoutersList struct {
 	cmd.AppNameMixIn
+
+	flagsApplied bool
+	json         bool
 }
 
 func (c *AppRoutersList) Info() *cmd.Info {
@@ -271,6 +326,16 @@ func (c *AppRoutersList) Info() *cmd.Info {
 		Desc:    "List all routers associated to an application.",
 		MinArgs: 0,
 	}
+}
+
+func (c *AppRoutersList) Flags() *gnuflag.FlagSet {
+	fs := c.AppNameMixIn.Flags()
+	if !c.flagsApplied {
+		fs.BoolVar(&c.json, "json", false, "Show JSON")
+
+		c.flagsApplied = true
+	}
+	return fs
 }
 
 func (c *AppRoutersList) Run(context *cmd.Context, client *cmd.Client) error {
@@ -292,6 +357,10 @@ func (c *AppRoutersList) Run(context *cmd.Context, client *cmd.Client) error {
 	}
 	defer response.Body.Close()
 	if response.StatusCode == http.StatusNoContent {
+		if c.json {
+			fmt.Fprintln(context.Stdout, "[]")
+			return nil
+		}
 		fmt.Fprintln(context.Stdout, "No routers available for app.")
 		return nil
 	}
@@ -299,6 +368,10 @@ func (c *AppRoutersList) Run(context *cmd.Context, client *cmd.Client) error {
 	err = json.NewDecoder(response.Body).Decode(&routers)
 	if err != nil {
 		return err
+	}
+
+	if c.json {
+		return formatter.JSON(context.Stdout, routers)
 	}
 	renderRouters(routers, context.Stdout, "Name")
 	return nil

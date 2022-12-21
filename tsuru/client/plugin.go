@@ -335,13 +335,17 @@ func (c *PluginList) Run(context *cmd.Context, client *cmd.Client) error {
 	pluginsPath := cmd.JoinWithUserDir(".tsuru", "plugins")
 	plugins, _ := ioutil.ReadDir(pluginsPath)
 	for _, p := range plugins {
-		fmt.Println(p.Name())
+		fmt.Fprintln(context.Stdout, p.Name())
 	}
 	return nil
 }
 
 func RunPlugin(context *cmd.Context) error {
 	context.RawOutput()
+
+	if len(context.Args) == 0 {
+		return cmd.ErrLookup
+	}
 	pluginName := context.Args[0]
 	if os.Getenv("TSURU_PLUGIN_NAME") == pluginName {
 		return cmd.ErrLookup

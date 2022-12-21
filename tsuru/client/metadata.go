@@ -12,6 +12,7 @@ import (
 	"github.com/tsuru/gnuflag"
 	"github.com/tsuru/go-tsuruclient/pkg/client"
 	"github.com/tsuru/go-tsuruclient/pkg/tsuru"
+	"github.com/tsuru/tsuru-client/tsuru/formatter"
 	"github.com/tsuru/tsuru/cmd"
 	appTypes "github.com/tsuru/tsuru/types/app"
 )
@@ -29,6 +30,19 @@ var allowedTypes = []string{"label", "annotation"}
 
 type MetadataGet struct {
 	cmd.AppNameMixIn
+
+	flagsApplied bool
+	json         bool
+}
+
+func (c *MetadataGet) Flags() *gnuflag.FlagSet {
+	fs := c.AppNameMixIn.Flags()
+	if !c.flagsApplied {
+		fs.BoolVar(&c.json, "json", false, "Show JSON")
+
+		c.flagsApplied = true
+	}
+	return fs
 }
 
 func (c *MetadataGet) Info() *cmd.Info {
@@ -72,6 +86,11 @@ func (c *MetadataGet) Run(context *cmd.Context, client *cmd.Client) error {
 	if err != nil {
 		return err
 	}
+
+	if c.json {
+		return formatter.JSON(context.Stdout, a.Metadata)
+	}
+
 	formatted := make([]string, 0, len(a.Metadata.Labels))
 	for _, v := range a.Metadata.Labels {
 		formatted = append(formatted, fmt.Sprintf("\t%s: %s", v.Name, v.Value))

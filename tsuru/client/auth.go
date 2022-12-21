@@ -327,7 +327,7 @@ func (c *TeamList) Run(ctx *cmd.Context, cli *cmd.Client) error {
 
 	if c.simplified {
 		for _, team := range teams {
-			fmt.Println(team.Name)
+			fmt.Fprintln(ctx.Stdout, team.Name)
 		}
 		return nil
 	}

@@ -229,14 +229,14 @@ func (s *S) TestListNodesCmdRun(c *check.C) {
 	client := cmd.NewClient(&http.Client{Transport: trans}, nil, &manager)
 	err := (&ListNodesCmd{}).Run(&context, client)
 	c.Assert(err, check.IsNil)
-	expected := `+------------------------+---------+----------+-----------+
-| Address                | IaaS ID | Status   | Metadata  |
-+------------------------+---------+----------+-----------+
-| http://localhost1:8080 |         | disabled | meta1=foo |
-|                        |         |          | meta2=bar |
-+------------------------+---------+----------+-----------+
-| http://localhost2:9090 | m-id-1  | ready    |           |
-+------------------------+---------+----------+-----------+
+	expected := `+------------------------+----------+-----------+
+| Address                | Status   | Metadata  |
++------------------------+----------+-----------+
+| http://localhost1:8080 | disabled | meta1=foo |
+|                        |          | meta2=bar |
++------------------------+----------+-----------+
+| http://localhost2:9090 | ready    |           |
++------------------------+----------+-----------+
 `
 	c.Assert(buf.String(), check.Equals, expected)
 }
@@ -262,12 +262,12 @@ func (s *S) TestListNodesCmdRunWithFilters(c *check.C) {
 	cmd.Flags().Parse(true, []string{"--filter", "meta1=foo", "--filter", "meta2=bar"})
 	err := cmd.Run(&context, client)
 	c.Assert(err, check.IsNil)
-	expected := `+------------------------+---------+----------+-----------+
-| Address                | IaaS ID | Status   | Metadata  |
-+------------------------+---------+----------+-----------+
-| http://localhost1:8080 |         | disabled | meta1=foo |
-|                        |         |          | meta2=bar |
-+------------------------+---------+----------+-----------+
+	expected := `+------------------------+----------+-----------+
+| Address                | Status   | Metadata  |
++------------------------+----------+-----------+
+| http://localhost1:8080 | disabled | meta1=foo |
+|                        |          | meta2=bar |
++------------------------+----------+-----------+
 `
 	c.Assert(buf.String(), check.Equals, expected)
 }
@@ -293,11 +293,11 @@ func (s *S) TestListNodesCmdRunWithPoolFilter(c *check.C) {
 	cmd.Flags().Parse(true, []string{"--filter", "pool=pool1"})
 	err := cmd.Run(&context, client)
 	c.Assert(err, check.IsNil)
-	expected := `+-----------------------+---------+----------+----------+
-| Address               | IaaS ID | Status   | Metadata |
-+-----------------------+---------+----------+----------+
-| http://localhost:8080 |         | disabled |          |
-+-----------------------+---------+----------+----------+
+	expected := `+-----------------------+----------+----------+
+| Address               | Status   | Metadata |
++-----------------------+----------+----------+
+| http://localhost:8080 | disabled |          |
++-----------------------+----------+----------+
 `
 	c.Assert(buf.String(), check.Equals, expected)
 }
@@ -315,9 +315,9 @@ func (s *S) TestListNodesCmdRunEmptyAll(c *check.C) {
 	client := cmd.NewClient(&http.Client{Transport: trans}, nil, &manager)
 	err := (&ListNodesCmd{}).Run(&context, client)
 	c.Assert(err, check.IsNil)
-	expected := `+---------+---------+--------+----------+
-| Address | IaaS ID | Status | Metadata |
-+---------+---------+--------+----------+
+	expected := `+---------+--------+----------+
+| Address | Status | Metadata |
++---------+--------+----------+
 `
 	c.Assert(buf.String(), check.Equals, expected)
 }
@@ -335,9 +335,9 @@ func (s *S) TestListNodesCmdRunNoContent(c *check.C) {
 	client := cmd.NewClient(&http.Client{Transport: trans}, nil, &manager)
 	err := (&ListNodesCmd{}).Run(&context, client)
 	c.Assert(err, check.IsNil)
-	expected := `+---------+---------+--------+----------+
-| Address | IaaS ID | Status | Metadata |
-+---------+---------+--------+----------+
+	expected := `+---------+--------+----------+
+| Address | Status | Metadata |
++---------+--------+----------+
 `
 	c.Assert(buf.String(), check.Equals, expected)
 }

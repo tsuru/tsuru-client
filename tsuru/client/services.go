@@ -7,7 +7,6 @@ package client
 import (
 	"context"
 	"encoding/json"
-	"errors"
 	"fmt"
 	"io/ioutil"
 	"net/http"
@@ -23,23 +22,82 @@ import (
 	tsuruClient "github.com/tsuru/go-tsuruclient/pkg/client"
 	"github.com/tsuru/go-tsuruclient/pkg/tsuru"
 	"github.com/tsuru/tablecli"
+	"github.com/tsuru/tsuru-client/tsuru/formatter"
 	"github.com/tsuru/tsuru/cmd"
 	"github.com/tsuru/tsuru/service"
 )
 
-type ServiceList struct{}
+type serviceFilter struct {
+	name      string
+	pool      string
+	plan      string
+	service   string
+	teamOwner string
+}
 
-func (s ServiceList) Info() *cmd.Info {
+func (f *serviceFilter) queryString() (url.Values, error) {
+	result := make(url.Values)
+	if f.name != "" {
+		result.Set("name", f.name)
+	}
+	if f.teamOwner != "" {
+		result.Set("teamOwner", f.teamOwner)
+	}
+	if f.pool != "" {
+		result.Set("pool", f.pool)
+	}
+	if f.plan != "" {
+		result.Set("plan", f.plan)
+	}
+	if f.service != "" {
+		result.Set("service", f.service)
+	}
+	return result, nil
+}
+
+type ServiceList struct {
+	fs               *gnuflag.FlagSet
+	filter           serviceFilter
+	simplified       bool
+	json             bool
+	justServiceNames bool
+}
+
+func (s *ServiceList) Info() *cmd.Info {
 	return &cmd.Info{
 		Name:  "service-list",
 		Usage: "service list",
-		Desc: `Retrieves and shows a list of services the user has access. If there are
-instances created for any service they will also be shown.`,
+		Desc:  `Retrieves and shows a list of instances of service the user has access.`,
 	}
 }
 
+func (c *ServiceList) Flags() *gnuflag.FlagSet {
+	if c.fs == nil {
+		c.fs = gnuflag.NewFlagSet("service-list", gnuflag.ExitOnError)
+		c.fs.StringVar(&c.filter.service, "service", "", "Filter instances by service")
+		c.fs.StringVar(&c.filter.service, "s", "", "Filter instances by service")
+		c.fs.StringVar(&c.filter.name, "name", "", "Filter service instances by name")
+		c.fs.StringVar(&c.filter.name, "n", "", "Filter service instances by name")
+		c.fs.StringVar(&c.filter.pool, "pool", "", "Filter service instances by pool")
+		c.fs.StringVar(&c.filter.pool, "o", "", "Filter service instances by pool")
+		c.fs.StringVar(&c.filter.plan, "plan", "", "Filter service instances by plan")
+		c.fs.StringVar(&c.filter.plan, "p", "", "Filter service instances by plan")
+		c.fs.StringVar(&c.filter.teamOwner, "team", "", "Filter service instances by team owner")
+		c.fs.StringVar(&c.filter.teamOwner, "t", "", "Filter service instances by team owner")
+		c.fs.BoolVar(&c.simplified, "q", false, "Display only service instances name")
+		c.fs.BoolVar(&c.json, "json", false, "Display in JSON format")
+		c.fs.BoolVar(&c.justServiceNames, "j", false, "Display just service names")
+
+	}
+	return c.fs
+}
+
 func (s ServiceList) Run(ctx *cmd.Context, client *cmd.Client) error {
-	url, err := cmd.GetURL("/services/instances")
+	qs, err := s.filter.queryString()
+	if err != nil {
+		return err
+	}
+	url, err := cmd.GetURL(fmt.Sprintf("/services/instances?%s", qs.Encode()))
 	if err != nil {
 		return err
 	}
@@ -61,6 +119,44 @@ func (s ServiceList) Run(ctx *cmd.Context, client *cmd.Client) error {
 	if err != nil {
 		return err
 	}
+
+	services = s.clientSideFilter(services)
+
+	for _, s := range services {
+		sort.Slice(s.ServiceInstances, func(i, j int) bool {
+			return s.ServiceInstances[i].Name < s.ServiceInstances[j].Name
+		})
+	}
+
+	if s.simplified {
+		for _, s := range services {
+			for _, instance := range s.ServiceInstances {
+				fmt.Fprintln(ctx.Stdout, s.Service, instance.Name)
+			}
+		}
+		return nil
+	}
+
+	if s.json {
+		instances := []service.ServiceInstance{}
+		for _, s := range services {
+			instances = append(instances, s.ServiceInstances...)
+		}
+
+		return formatter.JSON(ctx.Stdout, instances)
+	}
+
+	if s.justServiceNames {
+		t := tablecli.NewTable()
+		t.Headers = tablecli.Row([]string{"Service"})
+		for _, s := range services {
+			t.AddRow(tablecli.Row([]string{s.Service}))
+		}
+
+		_, err = ctx.Stdout.Write(t.Bytes())
+		return err
+	}
+
 	hasPool := false
 	for _, service := range services {
 		for _, instance := range service.ServiceInstances {
@@ -70,24 +166,12 @@ func (s ServiceList) Run(ctx *cmd.Context, client *cmd.Client) error {
 		}
 	}
 	table := tablecli.NewTable()
-	header := []string{"Services", "Instances"}
+	header := []string{"Service", "Instance"}
 	if hasPool {
 		header = append(header, "Pool")
 	}
 	table.Headers = tablecli.Row(header)
 	for _, s := range services {
-		sort.Slice(s.ServiceInstances, func(i, j int) bool {
-			return s.ServiceInstances[i].Name < s.ServiceInstances[j].Name
-		})
-
-		if len(s.ServiceInstances) == 0 {
-			row := []string{s.Service, ""}
-			if hasPool {
-				row = append(row, "")
-			}
-			table.AddRow(tablecli.Row(row))
-		}
-
 		for _, instance := range s.ServiceInstances {
 			row := []string{s.Service, instance.Name}
 			if hasPool {
@@ -100,6 +184,49 @@ func (s ServiceList) Run(ctx *cmd.Context, client *cmd.Client) error {
 
 	_, err = ctx.Stdout.Write(table.Bytes())
 	return err
+}
+
+func (s *ServiceList) clientSideFilter(services []service.ServiceModel) []service.ServiceModel {
+	result := make([]service.ServiceModel, 0, len(services))
+
+	for _, service := range services {
+		if (s.filter.service != "" && service.Service == s.filter.service) || s.filter.service == "" {
+			service.ServiceInstances = s.clientSideFilterInstances(service.ServiceInstances)
+			service.Instances = nil
+			result = append(result, service)
+		}
+	}
+
+	return result
+}
+
+func (c *ServiceList) clientSideFilterInstances(serviceInstances []service.ServiceInstance) []service.ServiceInstance {
+	result := make([]service.ServiceInstance, 0, len(serviceInstances))
+
+	for _, s := range serviceInstances {
+		insert := true
+		if c.filter.name != "" && !strings.Contains(s.Name, c.filter.name) {
+			insert = false
+		}
+
+		if c.filter.pool != "" && s.Pool != c.filter.pool {
+			insert = false
+		}
+
+		if c.filter.plan != "" && s.PlanName != c.filter.plan {
+			insert = false
+		}
+
+		if c.filter.teamOwner != "" && s.TeamOwner != c.filter.teamOwner {
+			insert = false
+		}
+
+		if insert {
+			result = append(result, s)
+		}
+	}
+
+	return result
 }
 
 type ServiceInstanceAdd struct {
@@ -409,7 +536,18 @@ func (su *ServiceInstanceUnbind) Flags() *gnuflag.FlagSet {
 	return su.fs
 }
 
-type ServiceInstanceInfo struct{}
+type ServiceInstanceInfo struct {
+	fs   *gnuflag.FlagSet
+	json bool
+}
+
+func (c *ServiceInstanceInfo) Flags() *gnuflag.FlagSet {
+	if c.fs == nil {
+		c.fs = gnuflag.NewFlagSet("service-instance-info", gnuflag.ContinueOnError)
+		c.fs.BoolVar(&c.json, "json", false, "Show JSON")
+	}
+	return c.fs
+}
 
 func (c ServiceInstanceInfo) Info() *cmd.Info {
 	return &cmd.Info{
@@ -433,6 +571,7 @@ type ServiceInstanceInfoModel struct {
 	CustomInfo      map[string]string
 	Tags            []string
 	Parameters      map[string]interface{}
+	Status          string
 }
 
 func (c ServiceInstanceInfo) Run(ctx *cmd.Context, client *cmd.Client) error {
@@ -451,11 +590,39 @@ func (c ServiceInstanceInfo) Run(ctx *cmd.Context, client *cmd.Client) error {
 		return err
 	}
 	defer resp.Body.Close()
-	var si ServiceInstanceInfoModel
-	err = json.NewDecoder(resp.Body).Decode(&si)
+	si := &ServiceInstanceInfoModel{
+		ServiceName:  serviceName,
+		InstanceName: instanceName,
+	}
+	err = json.NewDecoder(resp.Body).Decode(si)
 	if err != nil {
 		return err
 	}
+
+	url, err = cmd.GetURL("/services/" + serviceName + "/instances/" + instanceName + "/status")
+	if err != nil {
+		return err
+	}
+	request, err = http.NewRequest("GET", url, nil)
+	if err != nil {
+		return err
+	}
+	resp, err = client.Do(request)
+	if err != nil {
+		return err
+	}
+	defer resp.Body.Close()
+	bMsg, err := ioutil.ReadAll(resp.Body)
+	if err != nil {
+		return err
+	}
+
+	si.Status = string(bMsg)
+
+	if c.json {
+		return formatter.JSON(ctx.Stdout, si)
+	}
+
 	fmt.Fprintf(ctx.Stdout, "Service: %s\n", serviceName)
 	fmt.Fprintf(ctx.Stdout, "Instance: %s\n", instanceName)
 	if si.Pool != "" {
@@ -513,31 +680,7 @@ func (c ServiceInstanceInfo) Run(ctx *cmd.Context, client *cmd.Client) error {
 		}
 	}
 
-	url, err = cmd.GetURL("/services/" + serviceName + "/instances/" + instanceName + "/status")
-	if err != nil {
-		return err
-	}
-	request, err = http.NewRequest("GET", url, nil)
-	if err != nil {
-		return err
-	}
-	resp, err = client.Do(request)
-	if err != nil {
-		return err
-	}
-	defer resp.Body.Close()
-	bMsg, err := ioutil.ReadAll(resp.Body)
-	if err != nil {
-		return err
-	}
-	msg := fmt.Sprintf("Status: %s\n", bMsg)
-	n, err := fmt.Fprint(ctx.Stdout, msg)
-	if err != nil {
-		return err
-	}
-	if n != len(msg) {
-		return errors.New("Failed to write to standard output.\n")
-	}
+	fmt.Fprintf(ctx.Stdout, "Status: %s\n", si.Status)
 	return nil
 }
 

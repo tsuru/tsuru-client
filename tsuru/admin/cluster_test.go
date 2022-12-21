@@ -546,3 +546,68 @@ Custom Data:
 +------+--------+
 `)
 }
+
+func (s *S) TestClusterClientSideFilter(c *check.C) {
+	clusters := []tsuru.Cluster{
+		{
+			Name: "gcp-cluster-01",
+			Pools: []string{
+				"gcp-pool-01",
+				"gcp-pool-02",
+			},
+		},
+
+		{
+			Name: "gcp-cluster-02",
+			Pools: []string{
+				"gcp-pool-03",
+				"gcp-pool-04",
+			},
+		},
+
+		{
+			Name: "aws-cluster-01",
+			Pools: []string{
+				"aws-pool-01",
+			},
+		},
+	}
+
+	filters := []clusterFilter{
+		{
+			name: "gcp",
+		},
+		{
+			name: "aws",
+		},
+		{
+			pool: "aws-pool-01",
+		},
+
+		{
+			name: "gcp",
+			pool: "gcp-pool-03",
+		},
+	}
+
+	expectedResults := [][]string{
+		{"gcp-cluster-01", "gcp-cluster-02"},
+		{"aws-cluster-01"},
+		{"aws-cluster-01"},
+		{"gcp-cluster-02"},
+	}
+
+	for i := range filters {
+		cl := ClusterList{
+			filter: filters[i],
+		}
+
+		filteredClusters := cl.clientSideFilter(clusters)
+		clustersNames := []string{}
+		for _, cluster := range filteredClusters {
+			clustersNames = append(clustersNames, cluster.Name)
+		}
+
+		c.Assert(clustersNames, check.DeepEquals, expectedResults[i])
+	}
+}

@@ -17,14 +17,13 @@ import (
 	"strings"
 
 	"github.com/ajg/form"
+	wordwrap "github.com/mitchellh/go-wordwrap"
 	"github.com/tsuru/gnuflag"
 	"github.com/tsuru/tablecli"
 	tsuruClient "github.com/tsuru/tsuru-client/tsuru/client"
 	"github.com/tsuru/tsuru-client/tsuru/formatter"
 	"github.com/tsuru/tsuru/cmd"
 	"github.com/tsuru/tsuru/healer"
-	"github.com/tsuru/tsuru/iaas"
-	"github.com/tsuru/tsuru/net"
 	"github.com/tsuru/tsuru/provision"
 	apiTypes "github.com/tsuru/tsuru/types/api"
 )
@@ -269,6 +268,7 @@ type ListNodesCmd struct {
 	fs         *gnuflag.FlagSet
 	filter     cmd.MapFlag
 	simplified bool
+	json       bool
 }
 
 func (c *ListNodesCmd) Info() *cmd.Info {
@@ -292,6 +292,7 @@ func (c *ListNodesCmd) Flags() *gnuflag.FlagSet {
 		c.fs.Var(&c.filter, "filter", filter)
 		c.fs.Var(&c.filter, "f", filter)
 		c.fs.BoolVar(&c.simplified, "q", false, "Display only nodes IP address")
+		c.fs.BoolVar(&c.json, "json", false, "Display node in JSON Format")
 	}
 	return c.fs
 }
@@ -318,7 +319,7 @@ func (c *ListNodesCmd) Run(ctx *cmd.Context, client *cmd.Client) error {
 	if err != nil {
 		return err
 	}
-	t := tablecli.Table{Headers: tablecli.Row([]string{"Address", "IaaS ID", "Status", "Metadata"}), LineSeparator: true}
+	t := tablecli.Table{Headers: tablecli.Row([]string{"Address", "Status", "Metadata"}), LineSeparator: true}
 	if resp.StatusCode == http.StatusNoContent {
 		ctx.Stdout.Write(t.Bytes())
 		return nil
@@ -328,38 +329,32 @@ func (c *ListNodesCmd) Run(ctx *cmd.Context, client *cmd.Client) error {
 	if err != nil {
 		return err
 	}
-	machineMap := map[string]iaas.Machine{}
-	if len(result.Machines) > 0 {
-		for _, m := range result.Machines {
-			machineMap[m.Address] = m
-		}
-	}
 	var nodes []provision.NodeSpec
 	if len(result.Nodes) > 0 {
 		nodes = c.filterNodes(result.Nodes)
 	}
+	sort.Slice(nodes, func(i, j int) bool {
+		return nodes[i].Address < nodes[j].Address
+	})
 	if c.simplified {
 		for _, node := range nodes {
 			fmt.Fprintln(ctx.Stdout, node.Address)
 		}
 		return nil
 	}
+	if c.json {
+		return formatter.JSON(ctx.Stdout, nodes)
+	}
 	for _, node := range nodes {
 		addr := node.Address
-		status := node.Status
+		status := wordwrap.WrapString(node.Status, 20)
 		result := []string{}
 		for key, value := range node.Metadata {
 			result = append(result, fmt.Sprintf("%s=%s", key, value))
 		}
 		sort.Strings(result)
-		m, ok := machineMap[net.URLToHost(addr)]
-		var iaasID string
-		if ok {
-			iaasID = m.Id
-		}
-		t.AddRow(tablecli.Row([]string{addr, iaasID, status, strings.Join(result, "\n")}))
+		t.AddRow(tablecli.Row([]string{addr, status, strings.Join(result, "\n")}))
 	}
-	t.Sort()
 	ctx.Stdout.Write(t.Bytes())
 	return nil
 }
@@ -667,7 +662,18 @@ func (c *RebalanceNodeCmd) Flags() *gnuflag.FlagSet {
 	return c.fs
 }
 
-type InfoNodeCmd struct{}
+type InfoNodeCmd struct {
+	fs   *gnuflag.FlagSet
+	json bool
+}
+
+func (c *InfoNodeCmd) Flags() *gnuflag.FlagSet {
+	if c.fs == nil {
+		c.fs = gnuflag.NewFlagSet("node-info", gnuflag.ExitOnError)
+		c.fs.BoolVar(&c.json, "json", false, "Display node in JSON Format")
+	}
+	return c.fs
+}
 
 func (InfoNodeCmd) Info() *cmd.Info {
 	return &cmd.Info{
@@ -693,11 +699,17 @@ func (c *InfoNodeCmd) Run(ctx *cmd.Context, client *cmd.Client) error {
 	if err != nil {
 		return err
 	}
+	defer resp.Body.Close()
 	var result apiTypes.InfoNodeResponse
 	err = json.NewDecoder(resp.Body).Decode(&result)
 	if err != nil {
 		return err
 	}
+
+	if c.json {
+		return formatter.JSON(ctx.Stdout, result)
+	}
+
 	var buf bytes.Buffer
 	buf.WriteString(fmt.Sprintf("Address: %s\n", result.Node.Address))
 	buf.WriteString(fmt.Sprintf("Status: %s\n", result.Node.Status))

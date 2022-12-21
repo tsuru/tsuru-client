@@ -27,6 +27,7 @@ import (
 	"github.com/tsuru/go-tsuruclient/pkg/client"
 	"github.com/tsuru/go-tsuruclient/pkg/tsuru"
 	"github.com/tsuru/tablecli"
+	"github.com/tsuru/tsuru-client/tsuru/formatter"
 	"github.com/tsuru/tsuru/cmd"
 	apptypes "github.com/tsuru/tsuru/types/app"
 	quotaTypes "github.com/tsuru/tsuru/types/quota"
@@ -370,6 +371,7 @@ func (c *AppRemove) Flags() *gnuflag.FlagSet {
 type AppInfo struct {
 	cmd.AppNameMixIn
 
+	json         bool
 	simplified   bool
 	flagsApplied bool
 }
@@ -390,6 +392,7 @@ func (cmd *AppInfo) Flags() *gnuflag.FlagSet {
 	if !cmd.flagsApplied {
 		fs.BoolVar(&cmd.simplified, "simplified", false, "Show simplified view of app")
 		fs.BoolVar(&cmd.simplified, "s", false, "Show simplified view of app")
+		fs.BoolVar(&cmd.json, "json", false, "Show JSON view of app")
 
 		cmd.flagsApplied = true
 	}
@@ -1098,6 +1101,9 @@ func translateTimestampSince(timestamp *time.Time) string {
 }
 
 func (c *AppInfo) Show(a *app, context *cmd.Context, simplified bool) error {
+	if c.json {
+		return formatter.JSON(context.Stdout, a)
+	}
 	fmt.Fprintln(context.Stdout, a.String(simplified))
 	return nil
 }
@@ -1244,6 +1250,7 @@ type AppList struct {
 	fs         *gnuflag.FlagSet
 	filter     appFilter
 	simplified bool
+	json       bool
 }
 
 func (c *AppList) Run(context *cmd.Context, client *cmd.Client) error {
@@ -1290,6 +1297,9 @@ func (c *AppList) Show(result []byte, context *cmd.Context, client *cmd.Client) 
 		}
 		return nil
 	}
+	if c.json {
+		return formatter.JSON(context.Stdout, apps)
+	}
 	table.Headers = tablecli.Row([]string{"Application", "Units", "Address"})
 	for _, app := range apps {
 		var summary string
@@ -1297,7 +1307,13 @@ func (c *AppList) Show(result []byte, context *cmd.Context, client *cmd.Client) 
 			unitsStatus := make(map[string]int)
 			for _, unit := range app.Units {
 				if unit.ID != "" {
-					unitsStatus[unit.Status]++
+					if unit.Ready != nil && *unit.Ready {
+						unitsStatus["ready"]++
+					} else if unit.StatusReason != "" {
+						unitsStatus[unit.Status+" ("+unit.StatusReason+")"]++
+					} else {
+						unitsStatus[unit.Status]++
+					}
 				}
 			}
 			statusText := make([]string, len(unitsStatus))
@@ -1342,6 +1358,7 @@ func (c *AppList) Flags() *gnuflag.FlagSet {
 		c.fs.BoolVar(&c.filter.locked, "locked", false, "Filter applications by lock status")
 		c.fs.BoolVar(&c.filter.locked, "l", false, "Filter applications by lock status")
 		c.fs.BoolVar(&c.simplified, "q", false, "Display only applications name")
+		c.fs.BoolVar(&c.json, "json", false, "Display applications in JSON format")
 		tagMessage := "Filter applications by tag. Can be used multiple times"
 		c.fs.Var(&c.filter.tags, "tag", tagMessage)
 		c.fs.Var(&c.filter.tags, "g", tagMessage)
