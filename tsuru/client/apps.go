@@ -340,6 +340,9 @@ func (c *AppRemove) Run(context *cmd.Context, client *cmd.Client) error {
 	if appName == "" {
 		return errors.New("Please use the -a/--app flag to specify which app you want to remove.")
 	}
+	if len(c.fs.Args()) > 0 {
+		return errors.New("Wrong number of parameters, are you using the correct command?")
+	}
 	if !c.Confirm(context, fmt.Sprintf(`Are you sure you want to remove app "%s"?`, appName)) {
 		return nil
 	}
