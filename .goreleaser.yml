@@ -28,10 +28,16 @@ builds:
 
 # Archive customization
 archives:
-- name_template: "{{.ProjectName}}_{{.Version}}_{{.Os}}_{{.Arch}}"
+- name_template: >-
+    {{ .ProjectName }}_
+    {{ .Version }}_
+    {{- if eq .Os "darwin" -}}
+      macOS
+    {{- else -}}
+      {{ .Os }}
+    {{- end }}_
+    {{ .Arch }}
   format: tar.gz
-  replacements:
-    darwin: macOS
   format_overrides:
     - goos: windows
       format: zip
