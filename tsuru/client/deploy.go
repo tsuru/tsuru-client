@@ -148,11 +148,12 @@ var _ cmd.Cancelable = &AppDeploy{}
 
 type AppDeploy struct {
 	cmd.AppNameMixIn
-	image   string
-	message string
-	eventID string
-	fs      *gnuflag.FlagSet
-	m       sync.Mutex
+	image      string
+	message    string
+	dockerfile string
+	eventID    string
+	fs         *gnuflag.FlagSet
+	m          sync.Mutex
 	deployVersionArgs
 	filesOnly bool
 }
@@ -170,26 +171,41 @@ func (c *AppDeploy) Flags() *gnuflag.FlagSet {
 		c.fs.BoolVar(&c.filesOnly, "f", false, filesOnly)
 		c.fs.BoolVar(&c.filesOnly, "files-only", false, filesOnly)
 		c.deployVersionArgs.flags(c.fs)
+		c.fs.StringVar(&c.dockerfile, "dockerfile", "", "Container file")
 	}
 	return c.fs
 }
 
 func (c *AppDeploy) Info() *cmd.Info {
-	desc := `Deploys set of files and/or directories to tsuru server. Some examples of
-calls are:
-
-::
-
-	$ tsuru app deploy .
-	$ tsuru app deploy myfile.jar Procfile
-	$ tsuru app deploy -f directory/main.go directory/Procfile
-	$ tsuru app deploy mysite
-	$ tsuru app deploy -i http://registry.mysite.com:5000/image-name
-`
 	return &cmd.Info{
-		Name:    "app-deploy",
-		Usage:   "app deploy [-a/--app <appname>] [-i/--image <image_url>] [-m/--message <message>] [--new-version] [--override-old-versions] [-f/--files-only] <file-or-dir-1> [file-or-dir-2] ... [file-or-dir-n]",
-		Desc:    desc,
+		Name:  "app-deploy",
+		Usage: "app deploy [--app <appname>] [--image <image_url>] [--message <message>] [--files-only <file>...] [--new-version] [--override-old-versions] <file-or-dir-1> [file-or-dir-2] ... [file-or-dir-n]",
+		Desc: `Deploy the source code and/or configurations to the application on Tsuru.
+
+Examples:
+  To deploy using app's platform build process (just sending source code or configurations):
+    Uploading all files within the current directory - honors patterns declared in .tsuruignore file.
+      $ tsuru app deploy -a <APP> .
+
+    Uploading all files within a specific directory - honors patterns declared in .tsuruignore file.
+      $ tsuru app deploy -a <APP> mysite/
+
+    Uploading specific files - do not respect .tsuruignore text file at all.
+      $ tsuru app deploy -a <APP> ./myfile.jar ./Procfile
+
+    Uploading specific files but ignoring their directory trees - do not respect .tsuruignore text file at all.
+      $ tsuru app deploy -a <APP> -f ./my-code/main.go -f ./tsuru_stuff/Procfile
+
+  To deploy using a container image:
+    $ tsuru app deploy -a <APP> --image registry.example.com/my-company/app:v42
+
+  To deploy using container file ("docker build" mode):
+    Sending the the current directory as container build context - uses Dockerfile file as container image instructions:
+      $ tsuru app deploy -a <APP> --dockerfile .
+
+    Sending a specific container file and specific directory as container build context:
+      $ tsuru app deploy -a <APP> --dockerfile ./Dockerfile.other ./other/
+`,
 		MinArgs: 0,
 	}
 }
@@ -215,11 +231,14 @@ func prepareUploadStreams(context *cmd.Context, buf *safe.Buffer) io.Writer {
 
 func (c *AppDeploy) Run(context *cmd.Context, client *cmd.Client) error {
 	context.RawOutput()
-	if c.image == "" && len(context.Args) == 0 {
-		return errors.New("You should provide at least one file or a docker image to deploy.\n")
+	if c.image == "" && c.dockerfile == "" && len(context.Args) == 0 {
+		return errors.New("You should provide at least one file, Docker image name or Dockerfile to deploy.\n")
 	}
 	if c.image != "" && len(context.Args) > 0 {
 		return errors.New("You can't deploy files and docker image at the same time.\n")
+	}
+	if c.image != "" && c.dockerfile != "" {
+		return errors.New("You can't deploy container image and container file at same time.\n")
 	}
 	appName, err := c.AppName()
 	if err != nil {
@@ -269,6 +288,14 @@ func (c *AppDeploy) Run(context *cmd.Context, client *cmd.Client) error {
 		}
 		fmt.Fprint(context.Stdout, "Deploying image...")
 	} else {
+		if c.dockerfile != "" {
+			dockerfile, err := os.ReadFile(c.dockerfile)
+			if err != nil {
+				return fmt.Errorf("failed to read %s: %w", c.dockerfile, err)
+			}
+			fmt.Fprintln(context.Stdout, "Deploying with Dockerfile...")
+			values.Set("dockerfile", string(dockerfile))
+		}
 		if err = uploadFiles(context, c.filesOnly, request, buf, body, values); err != nil {
 			return err
 		}
