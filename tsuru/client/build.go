@@ -1,12 +1,16 @@
 package client
 
 import (
+	"bytes"
+	"compress/gzip"
 	"errors"
 	"fmt"
 	"io"
 	"mime/multipart"
 	"net/http"
 	"net/url"
+	"os"
+	"path/filepath"
 	"strings"
 	"time"
 
@@ -89,7 +93,17 @@ func (c *AppBuild) Run(context *cmd.Context, client *cmd.Client) error {
 	}
 	buf := safe.NewBuffer(nil)
 	respBody := prepareUploadStreams(context, buf)
-	if err = uploadFiles(context, c.filesOnly, request, buf, body, values); err != nil {
+
+	var archive bytes.Buffer
+	err = Archiver(&archive, c.filesOnly, context.Args, ArchiveOptions{
+		CompressionLevel: func(lvl int) *int { return &lvl }(gzip.BestCompression),
+		IgnoreFiles:      []string{".tsuruignore"},
+	})
+	if err != nil {
+		return err
+	}
+
+	if err = uploadFiles(context, c.filesOnly, request, buf, body, values, &archive); err != nil {
 		return err
 	}
 	resp, err := client.Do(request)
@@ -110,22 +124,31 @@ func (c *AppBuild) Run(context *cmd.Context, client *cmd.Client) error {
 	return cmd.ErrAbortCommand
 }
 
-func uploadFiles(context *cmd.Context, filesOnly bool, request *http.Request, buf *safe.Buffer, body *safe.Buffer, values url.Values) error {
+func uploadFiles(context *cmd.Context, filesOnly bool, request *http.Request, buf *safe.Buffer, body *safe.Buffer, values url.Values, archive io.Reader) error {
 	writer := multipart.NewWriter(body)
 	for k := range values {
 		writer.WriteField(k, values.Get(k))
 	}
-	file, err := writer.CreateFormFile("file", "archive.tar.gz")
-	if err != nil {
-		return err
+
+	if archive != nil {
+		f, err := writer.CreateFormFile("file", "archive.tar.gz")
+		if err != nil {
+			return err
+		}
+
+		if _, err = io.Copy(f, archive); err != nil {
+			return err
+		}
 	}
-	tm := newTarMaker(context)
-	err = tm.targz(file, filesOnly, context.Args...)
-	if err != nil {
-		return err
-	}
+
 	writer.Close()
-	request.Header.Set("Content-Type", "multipart/form-data; boundary="+writer.Boundary())
+
+	request.Header.Set("Content-Type", writer.FormDataContentType())
+
+	if archive == nil { // don't show uploading progress
+		return nil
+	}
+
 	fullSize := float64(body.Len())
 	megabyte := 1024.0 * 1024.0
 	fmt.Fprintf(context.Stdout, "Uploading files (%0.2fMB)... ", fullSize/megabyte)
@@ -152,4 +175,76 @@ func uploadFiles(context *cmd.Context, filesOnly bool, request *http.Request, bu
 		}
 	}()
 	return nil
+}
+
+func buildWithContainerFile(appName, path string, filesOnly bool, files []string) (string, io.Reader, error) {
+	fi, err := os.Stat(path)
+	if err != nil {
+		return "", nil, fmt.Errorf("failed to stat the file %s: %w", path, err)
+	}
+
+	var containerfile []byte
+
+	switch {
+	case fi.IsDir():
+		path, err = guessingContainerFile(appName, path)
+		if err != nil {
+			return "", nil, fmt.Errorf("failed to guess the container file (can you specify the container file passing --dockerfile ./path/to/Dockerfile?): %w", err)
+		}
+
+		fallthrough
+
+	case fi.Mode().IsRegular():
+		containerfile, err = os.ReadFile(path)
+		if err != nil {
+			return "", nil, fmt.Errorf("failed to read %s: %w", path, err)
+		}
+
+	default:
+		return "", nil, fmt.Errorf("invalid file type")
+	}
+
+	if len(files) == 0 { // no additional files set, using the dockerfile dir
+		files = []string{filepath.Dir(path)}
+	}
+
+	var buildContext bytes.Buffer
+	err = Archiver(&buildContext, filesOnly, files, ArchiveOptions{
+		CompressionLevel: func(lvl int) *int { return &lvl }(gzip.BestCompression),
+		IgnoreFiles:      []string{".tsuruignore", ".dockerignore"},
+	})
+	if err != nil {
+		return "", nil, err
+	}
+
+	return string(containerfile), &buildContext, nil
+}
+
+func guessingContainerFile(app, dir string) (string, error) {
+	validNames := []string{
+		fmt.Sprintf("Dockerfile.%s", app),
+		fmt.Sprintf("Containerfile.%s", app),
+		"Dockerfile.tsuru",
+		"Containerfile.tsuru",
+		"Dockerfile",
+		"Containerfile",
+	}
+
+	for _, name := range validNames {
+		path := filepath.Join(dir, name)
+
+		fi, err := os.Stat(path)
+		// check err != nil && err == "file not found"
+		//  continue
+
+		if err != nil {
+			return "", err
+		}
+
+		if fi.Mode().IsRegular() {
+			return path, nil
+		}
+	}
+
+	return "", fmt.Errorf("container file not in %s", dir)
 }

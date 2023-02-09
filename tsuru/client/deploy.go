@@ -5,7 +5,7 @@
 package client
 
 import (
-	"archive/tar"
+	"bytes"
 	"compress/gzip"
 	"context"
 	"encoding/json"
@@ -15,15 +15,11 @@ import (
 	"io/ioutil"
 	"net/http"
 	"net/url"
-	"os"
-	"path"
-	"path/filepath"
 	"sort"
 	"strconv"
 	"strings"
 	"sync"
 
-	ignore "github.com/sabhiram/go-gitignore"
 	"github.com/tsuru/gnuflag"
 	"github.com/tsuru/go-tsuruclient/pkg/client"
 	"github.com/tsuru/go-tsuruclient/pkg/tsuru"
@@ -33,14 +29,9 @@ import (
 	"github.com/tsuru/tsuru/cmd"
 	tsuruIo "github.com/tsuru/tsuru/io"
 	"github.com/tsuru/tsuru/safe"
-	terminal "golang.org/x/term"
 )
 
-const (
-	deployOutputBufferSize = 4096
-
-	clearLineEscape = "\033[2K\r"
-)
+const deployOutputBufferSize = 4096
 
 type deployList []tsuruapp.DeployData
 
@@ -179,22 +170,24 @@ func (c *AppDeploy) Flags() *gnuflag.FlagSet {
 func (c *AppDeploy) Info() *cmd.Info {
 	return &cmd.Info{
 		Name:  "app-deploy",
-		Usage: "app deploy [--app <appname>] [--image <image_url>] [--message <message>] [--files-only <file>...] [--new-version] [--override-old-versions] <file-or-dir-1> [file-or-dir-2] ... [file-or-dir-n]",
+		Usage: "app deploy [--app <app name>] [--image <container image name>] [--dockerfile <container image file>] [--message <message>] [--files-only] [--new-version] [--override-old-versions] [file-or-dir ...]",
 		Desc: `Deploy the source code and/or configurations to the application on Tsuru.
+
+Files specified in the ".tsuruignore" file are skipped - similar to ".gitignore". It also honors ".dockerignore" file if deploying with container file (--dockerfile).
 
 Examples:
   To deploy using app's platform build process (just sending source code or configurations):
-    Uploading all files within the current directory - honors patterns declared in .tsuruignore file.
+    Uploading all files within the current directory
       $ tsuru app deploy -a <APP> .
 
-    Uploading all files within a specific directory - honors patterns declared in .tsuruignore file.
+    Uploading all files within a specific directory
       $ tsuru app deploy -a <APP> mysite/
 
-    Uploading specific files - do not respect .tsuruignore text file at all.
+    Uploading specific files
       $ tsuru app deploy -a <APP> ./myfile.jar ./Procfile
 
     Uploading specific files but ignoring their directory trees - do not respect .tsuruignore text file at all.
-      $ tsuru app deploy -a <APP> -f ./my-code/main.go -f ./tsuru_stuff/Procfile
+      $ tsuru app deploy -a <APP> --files-only ./my-code/main.go ./tsuru_stuff/Procfile
 
   To deploy using a container image:
     $ tsuru app deploy -a <APP> --image registry.example.com/my-company/app:v42
@@ -231,75 +224,93 @@ func prepareUploadStreams(context *cmd.Context, buf *safe.Buffer) io.Writer {
 
 func (c *AppDeploy) Run(context *cmd.Context, client *cmd.Client) error {
 	context.RawOutput()
+
 	if c.image == "" && c.dockerfile == "" && len(context.Args) == 0 {
 		return errors.New("You should provide at least one file, Docker image name or Dockerfile to deploy.\n")
 	}
+
 	if c.image != "" && len(context.Args) > 0 {
 		return errors.New("You can't deploy files and docker image at the same time.\n")
 	}
+
 	if c.image != "" && c.dockerfile != "" {
 		return errors.New("You can't deploy container image and container file at same time.\n")
 	}
+
 	appName, err := c.AppName()
 	if err != nil {
 		return err
 	}
-	u, err := cmd.GetURL("/apps/" + appName)
-	if err != nil {
-		return err
-	}
-	request, err := http.NewRequest("GET", u, nil)
-	if err != nil {
-		return err
-	}
-	_, err = client.Do(request)
-	if err != nil {
-		return err
-	}
+
+	values := url.Values{}
+
 	origin := "app-deploy"
 	if c.image != "" {
 		origin = "image"
 	}
-	values := url.Values{}
 	values.Set("origin", origin)
-	c.deployVersionArgs.values(values)
+
 	if c.message != "" {
 		values.Set("message", c.message)
 	}
-	u, err = cmd.GetURL(fmt.Sprintf("/apps/%s/deploy", appName))
+
+	c.deployVersionArgs.values(values)
+
+	u, err := cmd.GetURL(fmt.Sprintf("/apps/%s/deploy", appName))
 	if err != nil {
 		return err
 	}
+
 	body := safe.NewBuffer(nil)
-	request, err = http.NewRequest("POST", u, body)
+	request, err := http.NewRequest("POST", u, body)
 	if err != nil {
 		return err
 	}
+
 	buf := safe.NewBuffer(nil)
+
 	c.m.Lock()
 	respBody := prepareUploadStreams(context, buf)
 	c.m.Unlock()
+
+	var archive io.Reader
+
 	if c.image != "" {
-		request.Header.Set("Content-Type", "application/x-www-form-urlencoded")
+		fmt.Fprintln(context.Stdout, "Deploying container image...")
 		values.Set("image", c.image)
-		_, err = body.WriteString(values.Encode())
+	}
+
+	if c.dockerfile != "" {
+		fmt.Fprintln(context.Stdout, "Deploying with Dockerfile...")
+
+		var dockerfile string
+		dockerfile, archive, err = buildWithContainerFile(appName, c.dockerfile, c.filesOnly, context.Args)
 		if err != nil {
 			return err
 		}
-		fmt.Fprint(context.Stdout, "Deploying image...")
-	} else {
-		if c.dockerfile != "" {
-			dockerfile, err := os.ReadFile(c.dockerfile)
-			if err != nil {
-				return fmt.Errorf("failed to read %s: %w", c.dockerfile, err)
-			}
-			fmt.Fprintln(context.Stdout, "Deploying with Dockerfile...")
-			values.Set("dockerfile", string(dockerfile))
-		}
-		if err = uploadFiles(context, c.filesOnly, request, buf, body, values); err != nil {
+
+		values.Set("dockerfile", dockerfile)
+	}
+
+	if c.image == "" && c.dockerfile == "" {
+		fmt.Fprintln(context.Stdout, "Deploying using app's platform...")
+
+		var buffer bytes.Buffer
+		err = Archiver(&buffer, c.filesOnly, context.Args, ArchiveOptions{
+			CompressionLevel: func(lvl int) *int { return &lvl }(gzip.BestCompression),
+			IgnoreFiles:      []string{".tsuruignore"},
+		})
+		if err != nil {
 			return err
 		}
+
+		archive = &buffer
 	}
+
+	if err = uploadFiles(context, c.filesOnly, request, buf, body, values, archive); err != nil {
+		return err
+	}
+
 	c.m.Lock()
 	resp, err := client.Do(request)
 	if err != nil {
@@ -309,6 +320,7 @@ func (c *AppDeploy) Run(context *cmd.Context, client *cmd.Client) error {
 	defer resp.Body.Close()
 	c.eventID = resp.Header.Get("X-Tsuru-Eventid")
 	c.m.Unlock()
+
 	var readBuffer [deployOutputBufferSize]byte
 	var readErr error
 	for readErr == nil {
@@ -357,188 +369,6 @@ func (c *AppDeploy) Cancel(ctx cmd.Context, cli *cmd.Client) error {
 	}
 	_, err = apiClient.EventApi.EventCancel(context.Background(), c.eventID, tsuru.EventCancelArgs{Reason: "Canceled on client."})
 	return err
-}
-
-type tarMaker struct {
-	ctx    *cmd.Context
-	isTerm bool
-}
-
-func newTarMaker(ctx *cmd.Context) tarMaker {
-	isTerm := false
-	if desc, ok := ctx.Stdin.(interface {
-		Fd() uintptr
-	}); ok {
-		fd := int(desc.Fd())
-		isTerm = terminal.IsTerminal(fd)
-	}
-	return tarMaker{
-		ctx:    ctx,
-		isTerm: isTerm,
-	}
-}
-
-func (m tarMaker) targz(destination io.Writer, filesOnly bool, filepaths ...string) error {
-	fmt.Fprint(m.ctx.Stdout, "Generating tar.gz...")
-	defer fmt.Fprintf(m.ctx.Stdout, "%sGenerating tar.gz. Done!\n", clearLineEscape)
-	ign, err := ignore.CompileIgnoreFile(".tsuruignore")
-	if err != nil && !os.IsNotExist(err) {
-		return err
-	}
-	gzipWriter := gzip.NewWriter(destination)
-	tarWriter := tar.NewWriter(gzipWriter)
-	for _, path := range filepaths {
-		if path == ".." {
-			fmt.Fprintf(m.ctx.Stderr, "Warning: skipping %q", path)
-			continue
-		}
-		var fi os.FileInfo
-		fi, err = os.Lstat(path)
-		if err != nil {
-			return err
-		}
-		var wd string
-		wd, err = os.Getwd()
-		if err != nil {
-			return err
-		}
-		fiName := filepath.Join(wd, fi.Name())
-		if ign != nil && ign.MatchesPath(fiName) {
-			continue
-		}
-		if fi.IsDir() {
-			dir := wd
-			dirFilesOnly := filesOnly || len(filepaths) == 1
-			if dirFilesOnly {
-				dir = path
-				path = "."
-			}
-			err = inDir(func() error {
-				return m.addDir(tarWriter, path, ign, dirFilesOnly)
-			}, dir)
-		} else {
-			err = m.addFile(tarWriter, path, filesOnly)
-		}
-		if err != nil {
-			return err
-		}
-	}
-	err = tarWriter.Close()
-	if err != nil {
-		return err
-	}
-	return gzipWriter.Close()
-}
-
-func inDir(fn func() error, path string) error {
-	old, err := os.Getwd()
-	if err != nil {
-		return err
-	}
-	err = os.Chdir(path)
-	if err != nil {
-		return err
-	}
-	defer os.Chdir(old)
-	return fn()
-}
-
-func (m tarMaker) addDir(writer *tar.Writer, dirpath string, ign *ignore.GitIgnore, filesOnly bool) error {
-	dir, err := os.Open(dirpath)
-	if err != nil {
-		return err
-	}
-	defer dir.Close()
-	if !filesOnly {
-		var fi os.FileInfo
-		fi, err = dir.Stat()
-		if err != nil {
-			return err
-		}
-		var header *tar.Header
-		header, err = tar.FileInfoHeader(fi, "")
-		if err != nil {
-			return err
-		}
-		header.Name = dirpath
-		err = writer.WriteHeader(header)
-		if err != nil {
-			return err
-		}
-	}
-	fis, err := dir.Readdir(0)
-	if err != nil {
-		return err
-	}
-	wd, err := os.Getwd()
-	if err != nil {
-		return err
-	}
-	for _, fi := range fis {
-		fiName := filepath.Join(wd, fi.Name())
-		if dirpath != "." {
-			fiName = filepath.Join(wd, dirpath, fi.Name())
-		}
-		if ign != nil && ign.MatchesPath(fiName) {
-			continue
-		}
-		if fi.IsDir() {
-			err = m.addDir(writer, path.Join(dirpath, fi.Name()), ign, false)
-		} else {
-			err = m.addFile(writer, path.Join(dirpath, fi.Name()), filesOnly)
-		}
-		if err != nil {
-			return err
-		}
-	}
-	return nil
-}
-
-func (m tarMaker) addFile(writer *tar.Writer, filepath string, filesOnly bool) error {
-	fi, err := os.Lstat(filepath)
-	if err != nil {
-		return err
-	}
-	var linkName string
-	if fi.Mode()&os.ModeSymlink == os.ModeSymlink {
-		var target string
-		target, err = os.Readlink(filepath)
-		if err != nil {
-			return err
-		}
-		linkName = target
-	}
-	header, err := tar.FileInfoHeader(fi, linkName)
-	if err != nil {
-		return err
-	}
-	header.Name = filepath
-	if filesOnly {
-		header.Name = path.Base(filepath)
-	}
-	if m.isTerm {
-		fmt.Fprintf(m.ctx.Stdout, "%sGenerating tar.gz... adding %s", clearLineEscape, header.Name)
-	}
-	err = writer.WriteHeader(header)
-	if err != nil {
-		return err
-	}
-	if linkName != "" {
-		return nil
-	}
-	f, err := os.Open(filepath)
-	if err != nil {
-		return err
-	}
-	defer f.Close()
-	n, err := io.Copy(writer, f)
-	if err != nil {
-		return err
-	}
-	if n != fi.Size() {
-		return io.ErrShortWrite
-	}
-	return nil
 }
 
 type firstWriter struct {
