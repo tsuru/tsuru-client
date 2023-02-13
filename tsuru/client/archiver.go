@@ -18,6 +18,8 @@ import (
 	gitignore "github.com/sabhiram/go-gitignore"
 )
 
+var ErrMissingFilesToArchive = errors.New("missing files to archive")
+
 type ArchiveOptions struct {
 	CompressionLevel *int      // defaults to default compression "-1"
 	IgnoreFiles      []string  // default to none
@@ -74,6 +76,7 @@ func Archiver(dst io.Writer, filesOnly bool, paths []string, opts ArchiveOptions
 	a := &archiver{
 		ignore: *ignore,
 		stderr: opts.Stderr,
+		files:  map[string]struct{}{},
 	}
 
 	return a.archive(tw, filesOnly, paths)
@@ -82,6 +85,7 @@ func Archiver(dst io.Writer, filesOnly bool, paths []string, opts ArchiveOptions
 type archiver struct {
 	ignore gitignore.GitIgnore
 	stderr io.Writer
+	files  map[string]struct{}
 }
 
 func (a *archiver) archive(tw *tar.Writer, filesOnly bool, paths []string) error {
@@ -99,7 +103,7 @@ func (a *archiver) archive(tw *tar.Writer, filesOnly bool, paths []string) error
 		}
 
 		if !strings.HasPrefix(abs, workingDir) {
-			fmt.Fprintf(a.stderr, "WARNING: skipping %q since you cannot add files from outside of the current diretory %q\n", path, workingDir)
+			fmt.Fprintf(a.stderr, "WARNING: skipping file %q since you cannot add files outside the current directory\n", path)
 			continue
 		}
 
@@ -128,7 +132,7 @@ func (a *archiver) archive(tw *tar.Writer, filesOnly bool, paths []string) error
 	}
 
 	if added == 0 {
-		return fmt.Errorf("no files eligible to upload")
+		return ErrMissingFilesToArchive
 	}
 
 	return nil
@@ -170,6 +174,13 @@ func (a *archiver) addFile(tw *tar.Writer, filesOnly bool, filename string, fi o
 		h.Name = filename
 	}
 
+	if _, found := a.files[h.Name]; found {
+		fmt.Fprintf(a.stderr, "Skipping file %q as it already exists in the current directory.\n", filename)
+		return 0, nil
+	}
+
+	a.files[h.Name] = struct{}{}
+
 	if strings.TrimRight(h.Name, string(os.PathSeparator)) == "." { // skipping root dir
 		return 0, nil
 	}
@@ -178,7 +189,7 @@ func (a *archiver) addFile(tw *tar.Writer, filesOnly bool, filename string, fi o
 		return 0, err
 	}
 
-	if isDir || isSymlink { // there's no data to copy in dir or symlink
+	if isDir || isSymlink { // there's no data to copy from dir or symlink
 		return 1, nil
 	}
 
