@@ -29,7 +29,7 @@ type ArchiveOptions struct {
 func DefaultArchiveOptions(w io.Writer) ArchiveOptions {
 	return ArchiveOptions{
 		CompressionLevel: func(lvl int) *int { return &lvl }(gzip.BestCompression),
-		IgnoreFiles:      []string{".gitignore"},
+		IgnoreFiles:      []string{".tsuruignore"},
 		Stderr:           w,
 	}
 }
