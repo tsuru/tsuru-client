@@ -6,7 +6,6 @@ package client
 
 import (
 	"bytes"
-	"compress/gzip"
 	"context"
 	"encoding/json"
 	"errors"
@@ -284,7 +283,7 @@ func (c *AppDeploy) Run(context *cmd.Context, client *cmd.Client) error {
 		fmt.Fprintln(context.Stdout, "Deploying with Dockerfile...")
 
 		var dockerfile string
-		dockerfile, archive, err = buildWithContainerFile(appName, c.dockerfile, c.filesOnly, context.Args)
+		dockerfile, archive, err = buildWithContainerFile(appName, c.dockerfile, c.filesOnly, context.Args, context.Stderr)
 		if err != nil {
 			return err
 		}
@@ -296,10 +295,7 @@ func (c *AppDeploy) Run(context *cmd.Context, client *cmd.Client) error {
 		fmt.Fprintln(context.Stdout, "Deploying using app's platform...")
 
 		var buffer bytes.Buffer
-		err = Archiver(&buffer, c.filesOnly, context.Args, ArchiveOptions{
-			CompressionLevel: func(lvl int) *int { return &lvl }(gzip.BestCompression),
-			IgnoreFiles:      []string{".tsuruignore"},
-		})
+		err = Archive(&buffer, c.filesOnly, context.Args, DefaultArchiveOptions(context.Stderr))
 		if err != nil {
 			return err
 		}

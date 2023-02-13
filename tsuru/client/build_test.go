@@ -6,7 +6,7 @@ package client
 
 import (
 	"bytes"
-	"compress/gzip"
+	"io"
 	"io/ioutil"
 	"net/http"
 	"strings"
@@ -24,10 +24,7 @@ func (s *S) TestBuildInfo(c *check.C) {
 func (s *S) TestBuildRun(c *check.C) {
 	calledTimes := 0
 	var buf bytes.Buffer
-	err := Archiver(&buf, false, []string{"testdata", ".."}, ArchiveOptions{
-		CompressionLevel: func(lvl int) *int { return &lvl }(gzip.BestCompression),
-		IgnoreFiles:      []string{".tsuruignore"},
-	})
+	err := Archive(&buf, false, []string{"testdata", ".."}, DefaultArchiveOptions(io.Discard))
 	c.Assert(err, check.IsNil)
 	trans := cmdtest.ConditionalTransport{
 		Transport: cmdtest.Transport{Message: "\nOK\n", Status: http.StatusOK},
@@ -64,10 +61,7 @@ func (s *S) TestBuildRun(c *check.C) {
 
 func (s *S) TestBuildFail(c *check.C) {
 	var buf bytes.Buffer
-	err := Archiver(&buf, false, []string{"testdata", ".."}, ArchiveOptions{
-		CompressionLevel: func(lvl int) *int { return &lvl }(gzip.BestCompression),
-		IgnoreFiles:      []string{".tsuruignore"},
-	})
+	err := Archive(&buf, false, []string{"testdata", ".."}, DefaultArchiveOptions(io.Discard))
 	c.Assert(err, check.IsNil)
 	trans := cmdtest.ConditionalTransport{
 		Transport: cmdtest.Transport{Message: "Failed", Status: http.StatusOK},

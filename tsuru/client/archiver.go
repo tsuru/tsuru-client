@@ -26,7 +26,15 @@ type ArchiveOptions struct {
 	Stderr           io.Writer // defaults to io.Discard
 }
 
-func Archiver(dst io.Writer, filesOnly bool, paths []string, opts ArchiveOptions) error {
+func DefaultArchiveOptions(w io.Writer) ArchiveOptions {
+	return ArchiveOptions{
+		CompressionLevel: func(lvl int) *int { return &lvl }(gzip.BestCompression),
+		IgnoreFiles:      []string{".gitignore"},
+		Stderr:           w,
+	}
+}
+
+func Archive(dst io.Writer, filesOnly bool, paths []string, opts ArchiveOptions) error {
 	if dst == nil {
 		return fmt.Errorf("destination cannot be nil")
 	}

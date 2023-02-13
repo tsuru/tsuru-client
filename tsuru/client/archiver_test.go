@@ -19,21 +19,21 @@ import (
 )
 
 func (s *S) TestArchive_NoDestination(c *check.C) {
-	err := Archiver(nil, false, nil, ArchiveOptions{})
+	err := Archive(nil, false, nil, ArchiveOptions{})
 	c.Assert(err, check.ErrorMatches, "destination cannot be nil")
 }
 
 func (s *S) TestArchive_NoPaths(c *check.C) {
-	err := Archiver(io.Discard, false, nil, ArchiveOptions{})
+	err := Archive(io.Discard, false, nil, ArchiveOptions{})
 	c.Assert(err, check.ErrorMatches, "paths cannot be empty")
 
-	err = Archiver(io.Discard, false, []string{}, ArchiveOptions{})
+	err = Archive(io.Discard, false, []string{}, ArchiveOptions{})
 	c.Assert(err, check.ErrorMatches, "paths cannot be empty")
 }
 
 func (s *S) TestArchive_FileOutsideOfCurrentDir(c *check.C) {
 	var stderr bytes.Buffer
-	err := Archiver(io.Discard, false, []string{"../../../../var/www/html"}, ArchiveOptions{Stderr: &stderr})
+	err := Archive(io.Discard, false, []string{"../../../../var/www/html"}, ArchiveOptions{Stderr: &stderr})
 	c.Assert(err, check.ErrorMatches, "missing files to archive")
 	c.Assert(stderr.String(), check.Matches, `(?s).*WARNING: skipping file "\.\.\/\.\.\/\.\.\/\.\.\/var\/www\/html" since you cannot add files outside the current directory.*`)
 }
@@ -49,7 +49,7 @@ func (s *S) TestArchive_PassingWholeDir(c *check.C) {
 
 	var b bytes.Buffer
 
-	err = Archiver(&b, false, []string{"."}, ArchiveOptions{})
+	err = Archive(&b, false, []string{"."}, ArchiveOptions{})
 	c.Assert(err, check.IsNil)
 
 	got := extractFiles(s.t, c, &b)
@@ -73,7 +73,7 @@ func (s *S) TestArchive_PassingWholeDir_WithTsuruIgnore(c *check.C) {
 
 	var b, stderr bytes.Buffer
 
-	err = Archiver(&b, false, []string{"."}, ArchiveOptions{IgnoreFiles: []string{".tsuruignore"}, Stderr: &stderr})
+	err = Archive(&b, false, []string{"."}, ArchiveOptions{IgnoreFiles: []string{".tsuruignore"}, Stderr: &stderr})
 	c.Assert(err, check.IsNil)
 
 	got := extractFiles(s.t, c, &b)
@@ -93,7 +93,7 @@ func (s *S) TestArchive_PassingWholeDir_WithTsuruIgnore(c *check.C) {
 
 func (s *S) TestArchive_FilesOnly(c *check.C) {
 	var b bytes.Buffer
-	err := Archiver(&b, true, []string{"./testdata/deploy/directory/file.txt", "./testdata/deploy2/file1.txt"}, ArchiveOptions{})
+	err := Archive(&b, true, []string{"./testdata/deploy/directory/file.txt", "./testdata/deploy2/file1.txt"}, ArchiveOptions{})
 	c.Assert(err, check.IsNil)
 
 	got := extractFiles(s.t, c, &b)
@@ -114,7 +114,7 @@ func (s *S) TestArchive_WithSymlink(c *check.C) {
 	c.Assert(err, check.IsNil)
 
 	var b bytes.Buffer
-	err = Archiver(&b, false, []string{"."}, ArchiveOptions{})
+	err = Archive(&b, false, []string{"."}, ArchiveOptions{})
 	c.Assert(err, check.IsNil)
 
 	got := extractFiles(s.t, c, &b)
@@ -140,14 +140,14 @@ func (s *S) TestArchive_UnsupportedFileType(c *check.C) {
 	defer l.Close()
 
 	var stderr bytes.Buffer
-	err = Archiver(io.Discard, false, []string{"."}, ArchiveOptions{Stderr: &stderr})
+	err = Archive(io.Discard, false, []string{"."}, ArchiveOptions{Stderr: &stderr})
 	c.Assert(err, check.ErrorMatches, "missing files to archive")
 	c.Assert(stderr.String(), check.Matches, `(?s)(.*)WARNING: Skipping file "server.sock" due to unsupported file type.(.*)`)
 }
 
 func (s *S) TestArchive_FilesOnly_MultipleDirs(c *check.C) {
 	var b, stderr bytes.Buffer
-	err := Archiver(&b, true, []string{"./testdata/deploy", "./testdata/deploy2"}, ArchiveOptions{Stderr: &stderr})
+	err := Archive(&b, true, []string{"./testdata/deploy", "./testdata/deploy2"}, ArchiveOptions{Stderr: &stderr})
 	c.Assert(err, check.IsNil)
 
 	got := extractFiles(s.t, c, &b)

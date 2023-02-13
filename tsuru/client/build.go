@@ -2,7 +2,6 @@ package client
 
 import (
 	"bytes"
-	"compress/gzip"
 	"errors"
 	"fmt"
 	"io"
@@ -95,10 +94,7 @@ func (c *AppBuild) Run(context *cmd.Context, client *cmd.Client) error {
 	respBody := prepareUploadStreams(context, buf)
 
 	var archive bytes.Buffer
-	err = Archiver(&archive, c.filesOnly, context.Args, ArchiveOptions{
-		CompressionLevel: func(lvl int) *int { return &lvl }(gzip.BestCompression),
-		IgnoreFiles:      []string{".tsuruignore"},
-	})
+	err = Archive(&archive, c.filesOnly, context.Args, DefaultArchiveOptions(context.Stderr))
 	if err != nil {
 		return err
 	}
@@ -177,7 +173,7 @@ func uploadFiles(context *cmd.Context, filesOnly bool, request *http.Request, bu
 	return nil
 }
 
-func buildWithContainerFile(appName, path string, filesOnly bool, files []string) (string, io.Reader, error) {
+func buildWithContainerFile(appName, path string, filesOnly bool, files []string, stderr io.Writer) (string, io.Reader, error) {
 	fi, err := os.Stat(path)
 	if err != nil {
 		return "", nil, fmt.Errorf("failed to stat the file %s: %w", path, err)
@@ -209,10 +205,7 @@ func buildWithContainerFile(appName, path string, filesOnly bool, files []string
 	}
 
 	var buildContext bytes.Buffer
-	err = Archiver(&buildContext, filesOnly, files, ArchiveOptions{
-		CompressionLevel: func(lvl int) *int { return &lvl }(gzip.BestCompression),
-		IgnoreFiles:      []string{".tsuruignore", ".dockerignore"},
-	})
+	err = Archive(&buildContext, filesOnly, files, DefaultArchiveOptions(stderr))
 	if err != nil {
 		return "", nil, err
 	}

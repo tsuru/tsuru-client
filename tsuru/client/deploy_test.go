@@ -6,7 +6,6 @@ package client
 
 import (
 	"bytes"
-	"compress/gzip"
 	"encoding/json"
 	"io"
 	"io/ioutil"
@@ -28,10 +27,7 @@ func (s *S) TestDeployInfo(c *check.C) {
 
 func (s *S) TestDeployRun(c *check.C) {
 	var buf bytes.Buffer
-	err := Archiver(&buf, false, []string{"testdata", ".."}, ArchiveOptions{
-		CompressionLevel: func(lvl int) *int { return &lvl }(gzip.BestCompression),
-		IgnoreFiles:      []string{".tsuruignore"},
-	})
+	err := Archive(&buf, false, []string{"testdata", ".."}, DefaultArchiveOptions(io.Discard))
 	c.Assert(err, check.IsNil)
 
 	trans := cmdtest.ConditionalTransport{
@@ -80,10 +76,7 @@ func (s *slowReader) Close() error {
 
 func (s *S) TestDeployRunCancel(c *check.C) {
 	var buf bytes.Buffer
-	err := Archiver(&buf, false, []string{"testdata", ".."}, ArchiveOptions{
-		CompressionLevel: func(lvl int) *int { return &lvl }(gzip.BestCompression),
-		IgnoreFiles:      []string{".tsuruignore"},
-	})
+	err := Archive(&buf, false, []string{"testdata", ".."}, DefaultArchiveOptions(io.Discard))
 	c.Assert(err, check.IsNil)
 	deploy := make(chan struct{}, 1)
 	trans := cmdtest.MultiConditionalTransport{
@@ -173,10 +166,7 @@ func (s *S) TestDeployImage(c *check.C) {
 
 func (s *S) TestDeployRunWithMessage(c *check.C) {
 	var buf bytes.Buffer
-	err := Archiver(&buf, false, []string{"testdata", ".."}, ArchiveOptions{
-		CompressionLevel: func(lvl int) *int { return &lvl }(gzip.BestCompression),
-		IgnoreFiles:      []string{".tsuruignore"},
-	})
+	err := Archive(&buf, false, []string{"testdata", ".."}, DefaultArchiveOptions(io.Discard))
 	c.Assert(err, check.IsNil)
 	trans := cmdtest.ConditionalTransport{
 		Transport: cmdtest.Transport{Message: "deploy worked\nOK\n", Status: http.StatusOK},
