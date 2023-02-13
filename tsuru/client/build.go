@@ -39,13 +39,24 @@ func (c *AppBuild) Flags() *gnuflag.FlagSet {
 }
 
 func (c *AppBuild) Info() *cmd.Info {
-	desc := `Builds a tsuru app image respecting .tsuruignore file. Some examples of calls are:
+	desc := `Build a container image following the app deploy's workflow - but do not change anything on the running application on Tsuru.
+You can deploy this container image to the app later.
 
-::
+Files specified in the ".tsuruignore" file are skipped - similar to ".gitignore".
 
-		$ tsuru app build -a myapp -t mytag .
-		$ tsuru app build -a myapp -t latest myfile.jar Procfile
-		$ tsuru app build -a myapp -t mytag -f directory/main.go directory/Procfile
+Examples:
+  To build using app's platform build process (just sending source code or configurations):
+    Uploading all files within the current directory
+      $ tsuru app build -a <APP> .
+
+    Uploading all files within a specific directory
+      $ tsuru app build -a <APP> mysite/
+
+    Uploading specific files
+      $ tsuru app build -a <APP> ./myfile.jar ./Procfile
+
+    Uploading specific files but ignoring their directory trees
+      $ tsuru app build -a <APP> --files-only ./my-code/main.go ./tsuru_stuff/Procfile
 `
 	return &cmd.Info{
 		Name:    "app-build",

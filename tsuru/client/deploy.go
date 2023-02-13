@@ -185,7 +185,7 @@ Examples:
     Uploading specific files
       $ tsuru app deploy -a <APP> ./myfile.jar ./Procfile
 
-    Uploading specific files but ignoring their directory trees - do not respect .tsuruignore text file at all.
+    Uploading specific files but ignoring their directory trees
       $ tsuru app deploy -a <APP> --files-only ./my-code/main.go ./tsuru_stuff/Procfile
 
   To deploy using a container image:
