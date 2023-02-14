@@ -315,8 +315,8 @@ func (s *S) TestDeploy_Run_UsingDockerfile(c *check.C) {
 			c.Assert(req.Header.Get("Content-Type"), check.Matches, "multipart/form-data; boundary=.*")
 			c.Assert(req.FormValue("dockerfile"), check.Equals, "FROM busybox:latest\n\nCOPY ./app.sh /usr/local/bin/\n")
 
-			file, _, err := req.FormFile("file")
-			c.Assert(err, check.IsNil)
+			file, _, nerr := req.FormFile("file")
+			c.Assert(nerr, check.IsNil)
 			defer file.Close()
 			files := extractFiles(s.t, c, file)
 			c.Assert(files, check.DeepEquals, []miniFile{
