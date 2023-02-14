@@ -132,28 +132,30 @@ func (c *AppBuild) Run(context *cmd.Context, client *cmd.Client) error {
 }
 
 func uploadFiles(context *cmd.Context, filesOnly bool, request *http.Request, buf *safe.Buffer, body *safe.Buffer, values url.Values, archive io.Reader) error {
+	if archive == nil {
+		request.Header.Set("Content-Type", "application/x-www-form-urlencoded")
+		_, err := body.WriteString(values.Encode())
+		return err
+	}
+
 	writer := multipart.NewWriter(body)
 	for k := range values {
 		writer.WriteField(k, values.Get(k))
 	}
 
-	if archive != nil {
-		f, err := writer.CreateFormFile("file", "archive.tar.gz")
-		if err != nil {
-			return err
-		}
-
-		if _, err = io.Copy(f, archive); err != nil {
-			return err
-		}
-	}
-
-	writer.Close()
-
 	request.Header.Set("Content-Type", writer.FormDataContentType())
 
-	if archive == nil { // don't show uploading progress
-		return nil
+	f, err := writer.CreateFormFile("file", "archive.tar.gz")
+	if err != nil {
+		return err
+	}
+
+	if _, err = io.Copy(f, archive); err != nil {
+		return err
+	}
+
+	if err = writer.Close(); err != nil {
+		return err
 	}
 
 	fullSize := float64(body.Len())

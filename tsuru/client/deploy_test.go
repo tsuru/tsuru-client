@@ -144,11 +144,9 @@ func (s *S) TestDeployImage(c *check.C) {
 			if req.Body != nil {
 				defer req.Body.Close()
 			}
-			c.Assert(req.Header.Get("Content-Type"), check.Matches, "multipart/form-data; boundary=.*")
+			c.Assert(req.Header.Get("Content-Type"), check.Matches, "application/x-www-form-urlencoded")
 			c.Assert(req.FormValue("image"), check.Equals, "registr.com/image-to-deploy")
 			c.Assert(req.FormValue("origin"), check.Equals, "image")
-			_, _, err := req.FormFile("file")
-			c.Assert(err, check.Equals, http.ErrMissingFile)
 			return req.Method == "POST" && strings.HasSuffix(req.URL.Path, "/apps/secret/deploy")
 		},
 	}
