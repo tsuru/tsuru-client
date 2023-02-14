@@ -139,18 +139,22 @@ func (s *S) TestGuessingContainerFile(c *check.C) {
 			expectedError: "container file not found",
 		},
 		{
+			app:      "my-app",
 			files:    []string{"Containerfile"},
 			expected: func(root string) string { return filepath.Join(root, "Containerfile") },
 		},
 		{
+			app:      "my-app",
 			files:    []string{"Containerfile", "Dockerfile"},
 			expected: func(root string) string { return filepath.Join(root, "Dockerfile") },
 		},
 		{
+			app:      "my-app",
 			files:    []string{"Containerfile", "Dockerfile", "Containerfile.tsuru"},
 			expected: func(root string) string { return filepath.Join(root, "Containerfile.tsuru") },
 		},
 		{
+			app:      "my-app",
 			files:    []string{"Containerfile", "Dockerfile", "Containerfile.tsuru", "Dockerfile.tsuru"},
 			expected: func(root string) string { return filepath.Join(root, "Dockerfile.tsuru") },
 		},
