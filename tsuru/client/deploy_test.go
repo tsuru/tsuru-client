@@ -5,11 +5,13 @@
 package client
 
 import (
+	"archive/tar"
 	"bytes"
 	"encoding/json"
 	"io"
 	"io/ioutil"
 	"net/http"
+	"path/filepath"
 	"strings"
 	"time"
 
@@ -295,6 +297,40 @@ func (s *S) TestDeploy_Run_DockerfileAndDockerImage(c *check.C) {
 	client := cmd.NewClient(&http.Client{Transport: &cmdtest.Transport{Status: http.StatusInternalServerError}}, nil, manager)
 	err = command.Run(ctx, client)
 	c.Assert(err, check.ErrorMatches, "You can't deploy container image and container file at same time.\n")
+}
+
+func (s *S) TestDeploy_Run_UsingDockerfile(c *check.C) {
+	command := AppDeploy{}
+	err := command.Flags().Parse(true, []string{"-a", "my-app", "--dockerfile", "./testdata/deploy4/"})
+	c.Assert(err, check.IsNil)
+
+	ctx := &cmd.Context{Stdout: io.Discard, Stderr: io.Discard, Args: command.Flags().Args()}
+
+	trans := &cmdtest.ConditionalTransport{
+		Transport: cmdtest.Transport{Message: "deployed\nOK\n", Status: http.StatusOK},
+		CondFunc: func(req *http.Request) bool {
+			if req.Body != nil {
+				defer req.Body.Close()
+			}
+			c.Assert(req.Header.Get("Content-Type"), check.Matches, "multipart/form-data; boundary=.*")
+			c.Assert(req.FormValue("dockerfile"), check.Equals, "FROM busybox:latest\n\nCOPY ./app.sh /usr/local/bin/\n")
+
+			file, _, err := req.FormFile("file")
+			c.Assert(err, check.IsNil)
+			defer file.Close()
+			files := extractFiles(s.t, c, file)
+			c.Assert(files, check.DeepEquals, []miniFile{
+				{Name: filepath.Join("testdata", "deploy4"), Type: tar.TypeDir},
+				{Name: filepath.Join("testdata", "deploy4", "Dockerfile"), Type: tar.TypeReg, Data: []byte("FROM busybox:latest\n\nCOPY ./app.sh /usr/local/bin/\n")},
+				{Name: filepath.Join("testdata", "deploy4", "app.sh"), Type: tar.TypeReg, Data: []byte("echo \"Starting my application :P\"\n")},
+			})
+
+			return req.Method == "POST" && strings.HasSuffix(req.URL.Path, "/apps/my-app/deploy")
+		},
+	}
+
+	err = command.Run(ctx, cmd.NewClient(&http.Client{Transport: trans}, nil, manager))
+	c.Assert(err, check.IsNil)
 }
 
 func (s *S) TestDeployListInfo(c *check.C) {

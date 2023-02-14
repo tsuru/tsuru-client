@@ -238,8 +238,9 @@ func guessingContainerFile(app, dir string) (string, error) {
 		path := filepath.Join(dir, name)
 
 		fi, err := os.Stat(path)
-		// check err != nil && err == "file not found"
-		//  continue
+		if errors.Is(err, os.ErrNotExist) {
+			continue
+		}
 
 		if err != nil {
 			return "", err
@@ -250,5 +251,5 @@ func guessingContainerFile(app, dir string) (string, error) {
 		}
 	}
 
-	return "", fmt.Errorf("container file not in %s", dir)
+	return "", errors.New("container file not found")
 }

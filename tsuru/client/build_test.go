@@ -9,6 +9,8 @@ import (
 	"io"
 	"io/ioutil"
 	"net/http"
+	"os"
+	"path/filepath"
 	"strings"
 
 	"github.com/tsuru/tsuru/cmd"
@@ -124,4 +126,61 @@ func (s *S) TestBuildRunWithoutTag(c *check.C) {
 	err := command.Run(&ctx, client)
 	c.Assert(err, check.NotNil)
 	c.Assert(err.Error(), check.Equals, "You should provide one tag to build the image.\n")
+}
+
+func (s *S) TestGuessingContainerFile(c *check.C) {
+	cases := []struct {
+		files         []string
+		app           string
+		expected      func(d string) string
+		expectedError string
+	}{
+		{
+			expectedError: "container file not found",
+		},
+		{
+			files:    []string{"Containerfile"},
+			expected: func(root string) string { return filepath.Join(root, "Containerfile") },
+		},
+		{
+			files:    []string{"Containerfile", "Dockerfile"},
+			expected: func(root string) string { return filepath.Join(root, "Dockerfile") },
+		},
+		{
+			files:    []string{"Containerfile", "Dockerfile", "Containerfile.tsuru"},
+			expected: func(root string) string { return filepath.Join(root, "Containerfile.tsuru") },
+		},
+		{
+			files:    []string{"Containerfile", "Dockerfile", "Containerfile.tsuru", "Dockerfile.tsuru"},
+			expected: func(root string) string { return filepath.Join(root, "Dockerfile.tsuru") },
+		},
+		{
+			app:      "my-app",
+			files:    []string{"Containerfile", "Dockerfile", "Containerfile.tsuru", "Dockerfile.tsuru", "Containerfile.my-app"},
+			expected: func(root string) string { return filepath.Join(root, "Containerfile.my-app") },
+		},
+		{
+			app:      "my-app",
+			files:    []string{"Containerfile", "Dockerfile", "Containerfile.tsuru", "Dockerfile.tsuru", "Containerfile.my-app", "Dockerfile.my-app"},
+			expected: func(root string) string { return filepath.Join(root, "Dockerfile.my-app") },
+		},
+	}
+
+	for _, tt := range cases {
+		dir := c.MkDir()
+
+		for _, name := range tt.files {
+			f, err := os.Create(filepath.Join(dir, name))
+			c.Check(err, check.IsNil)
+			c.Check(f.Close(), check.IsNil)
+		}
+
+		got, err := guessingContainerFile(tt.app, dir)
+		if tt.expectedError != "" {
+			c.Check(err, check.ErrorMatches, tt.expectedError)
+		} else {
+			c.Check(err, check.IsNil)
+			c.Check(got, check.DeepEquals, tt.expected(dir))
+		}
+	}
 }
