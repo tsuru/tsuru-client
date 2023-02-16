@@ -110,7 +110,7 @@ func (a *archiver) archive(tw *tar.Writer, filesOnly bool, paths []string) error
 			return fmt.Errorf("failed to get the absolute filename of %q: %w", path, err)
 		}
 
-		if !strings.HasPrefix(abs, workingDir) {
+		if !strings.HasPrefix((abs + string(os.PathSeparator)), (workingDir + string(os.PathSeparator))) {
 			fmt.Fprintf(a.stderr, "WARNING: skipping file %q since you cannot add files outside the current directory\n", path)
 			continue
 		}
