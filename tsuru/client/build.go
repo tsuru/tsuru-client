@@ -110,7 +110,7 @@ func (c *AppBuild) Run(context *cmd.Context, client *cmd.Client) error {
 		return err
 	}
 
-	if err = uploadFiles(context, c.filesOnly, request, buf, body, values, &archive); err != nil {
+	if err = uploadFiles(context, request, buf, body, values, &archive); err != nil {
 		return err
 	}
 	resp, err := client.Do(request)
@@ -131,7 +131,7 @@ func (c *AppBuild) Run(context *cmd.Context, client *cmd.Client) error {
 	return cmd.ErrAbortCommand
 }
 
-func uploadFiles(context *cmd.Context, filesOnly bool, request *http.Request, buf *safe.Buffer, body *safe.Buffer, values url.Values, archive io.Reader) error {
+func uploadFiles(context *cmd.Context, request *http.Request, buf *safe.Buffer, body *safe.Buffer, values url.Values, archive io.Reader) error {
 	if archive == nil {
 		request.Header.Set("Content-Type", "application/x-www-form-urlencoded")
 		_, err := body.WriteString(values.Encode())

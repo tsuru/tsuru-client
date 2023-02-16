@@ -303,7 +303,7 @@ func (c *AppDeploy) Run(context *cmd.Context, client *cmd.Client) error {
 		archive = &buffer
 	}
 
-	if err = uploadFiles(context, c.filesOnly, request, buf, body, values, archive); err != nil {
+	if err = uploadFiles(context, request, buf, body, values, archive); err != nil {
 		return err
 	}
 
