@@ -72,13 +72,13 @@ run_or_retry_with_sudo() {
 }
 get_binaries() {
   case "$PLATFORM" in
-    darwin/amd64) BINARIES="tsuru" ;;
-    darwin/arm64) BINARIES="tsuru" ;;
-    linux/386) BINARIES="tsuru" ;;
-    linux/amd64) BINARIES="tsuru" ;;
-    linux/arm64) BINARIES="tsuru" ;;
-    windows/386) BINARIES="tsuru" ;;
-    windows/amd64) BINARIES="tsuru" ;;
+    darwin/amd64) BINARIES="${BINARY}" ;;
+    darwin/arm64) BINARIES="${BINARY}" ;;
+    linux/386) BINARIES="${BINARY}" ;;
+    linux/amd64) BINARIES="${BINARY}" ;;
+    linux/arm64) BINARIES="${BINARY}" ;;
+    windows/386) BINARIES="${BINARY}" ;;
+    windows/amd64) BINARIES="${BINARY}" ;;
     *)
       log_crit "platform $PLATFORM is not supported.  Make sure this script is up-to-date and file request at https://github.com/${PREFIX}/issues/new"
       exit 1
@@ -135,9 +135,6 @@ is_command() {
 }
 echoerr() {
   echo "$@" 1>&2
-}
-log_prefix() {
-  echo "$0"
 }
 _logp=6
 log_set_priority() {
@@ -200,7 +197,7 @@ uname_arch() {
     armv6*) arch="armv6" ;;
     armv7*) arch="armv7" ;;
   esac
-  echo ${arch}
+  echo "${arch}"
 }
 uname_os_check() {
   os=$(uname_os)
