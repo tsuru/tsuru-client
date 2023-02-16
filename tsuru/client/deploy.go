@@ -236,6 +236,13 @@ func (c *AppDeploy) Run(context *cmd.Context, client *cmd.Client) error {
 		return errors.New("You can't deploy container image and container file at same time.\n")
 	}
 
+	debugWriter := io.Discard
+
+	debug := client != nil && client.Verbosity > 0 // e.g. --verbosity 2
+	if debug {
+		debugWriter = context.Stderr
+	}
+
 	appName, err := c.AppName()
 	if err != nil {
 		return err
@@ -283,7 +290,7 @@ func (c *AppDeploy) Run(context *cmd.Context, client *cmd.Client) error {
 		fmt.Fprintln(context.Stdout, "Deploying with Dockerfile...")
 
 		var dockerfile string
-		dockerfile, archive, err = buildWithContainerFile(appName, c.dockerfile, c.filesOnly, context.Args, context.Stderr)
+		dockerfile, archive, err = buildWithContainerFile(appName, c.dockerfile, c.filesOnly, context.Args, debugWriter)
 		if err != nil {
 			return err
 		}
@@ -295,7 +302,7 @@ func (c *AppDeploy) Run(context *cmd.Context, client *cmd.Client) error {
 		fmt.Fprintln(context.Stdout, "Deploying using app's platform...")
 
 		var buffer bytes.Buffer
-		err = Archive(&buffer, c.filesOnly, context.Args, DefaultArchiveOptions(context.Stderr))
+		err = Archive(&buffer, c.filesOnly, context.Args, DefaultArchiveOptions(debugWriter))
 		if err != nil {
 			return err
 		}

@@ -74,6 +74,14 @@ func (c *AppBuild) Run(context *cmd.Context, client *cmd.Client) error {
 	if len(context.Args) == 0 {
 		return errors.New("You should provide at least one file to build the image.\n")
 	}
+
+	debugWriter := io.Discard
+
+	debug := client != nil && client.Verbosity > 0 // e.g. --verbosity 2
+	if debug {
+		debugWriter = context.Stderr
+	}
+
 	appName, err := c.AppName()
 	if err != nil {
 		return err
@@ -105,7 +113,7 @@ func (c *AppBuild) Run(context *cmd.Context, client *cmd.Client) error {
 	respBody := prepareUploadStreams(context, buf)
 
 	var archive bytes.Buffer
-	err = Archive(&archive, c.filesOnly, context.Args, DefaultArchiveOptions(context.Stderr))
+	err = Archive(&archive, c.filesOnly, context.Args, DefaultArchiveOptions(debugWriter))
 	if err != nil {
 		return err
 	}
