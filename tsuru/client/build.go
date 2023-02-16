@@ -188,7 +188,7 @@ func uploadFiles(context *cmd.Context, request *http.Request, buf *safe.Buffer, 
 				fmt.Fprintf(context.Stdout, " Processing%s", strings.Repeat(".", count))
 				count++
 			}
-			time.Sleep(2e9)
+			time.Sleep(2 * time.Second)
 		}
 	}()
 	return nil
