@@ -1,12 +1,15 @@
 package client
 
 import (
+	"bytes"
 	"errors"
 	"fmt"
 	"io"
 	"mime/multipart"
 	"net/http"
 	"net/url"
+	"os"
+	"path/filepath"
 	"strings"
 	"time"
 
@@ -36,13 +39,24 @@ func (c *AppBuild) Flags() *gnuflag.FlagSet {
 }
 
 func (c *AppBuild) Info() *cmd.Info {
-	desc := `Builds a tsuru app image respecting .tsuruignore file. Some examples of calls are:
+	desc := `Build a container image following the app deploy's workflow - but do not change anything on the running application on Tsuru.
+You can deploy this container image to the app later.
 
-::
+Files specified in the ".tsuruignore" file are skipped - similar to ".gitignore".
 
-		$ tsuru app build -a myapp -t mytag .
-		$ tsuru app build -a myapp -t latest myfile.jar Procfile
-		$ tsuru app build -a myapp -t mytag -f directory/main.go directory/Procfile
+Examples:
+  To build using app's platform build process (just sending source code or configurations):
+    Uploading all files within the current directory
+      $ tsuru app build -a <APP> .
+
+    Uploading all files within a specific directory
+      $ tsuru app build -a <APP> mysite/
+
+    Uploading specific files
+      $ tsuru app build -a <APP> ./myfile.jar ./Procfile
+
+    Uploading specific files but ignoring their directory trees
+      $ tsuru app build -a <APP> --files-only ./my-code/main.go ./tsuru_stuff/Procfile
 `
 	return &cmd.Info{
 		Name:    "app-build",
@@ -60,6 +74,14 @@ func (c *AppBuild) Run(context *cmd.Context, client *cmd.Client) error {
 	if len(context.Args) == 0 {
 		return errors.New("You should provide at least one file to build the image.\n")
 	}
+
+	debugWriter := io.Discard
+
+	debug := client != nil && client.Verbosity > 0 // e.g. --verbosity 2
+	if debug {
+		debugWriter = context.Stderr
+	}
+
 	appName, err := c.AppName()
 	if err != nil {
 		return err
@@ -89,7 +111,14 @@ func (c *AppBuild) Run(context *cmd.Context, client *cmd.Client) error {
 	}
 	buf := safe.NewBuffer(nil)
 	respBody := prepareUploadStreams(context, buf)
-	if err = uploadFiles(context, c.filesOnly, request, buf, body, values); err != nil {
+
+	var archive bytes.Buffer
+	err = Archive(&archive, c.filesOnly, context.Args, DefaultArchiveOptions(debugWriter))
+	if err != nil {
+		return err
+	}
+
+	if err = uploadFiles(context, request, buf, body, values, &archive); err != nil {
 		return err
 	}
 	resp, err := client.Do(request)
@@ -110,22 +139,33 @@ func (c *AppBuild) Run(context *cmd.Context, client *cmd.Client) error {
 	return cmd.ErrAbortCommand
 }
 
-func uploadFiles(context *cmd.Context, filesOnly bool, request *http.Request, buf *safe.Buffer, body *safe.Buffer, values url.Values) error {
+func uploadFiles(context *cmd.Context, request *http.Request, buf *safe.Buffer, body *safe.Buffer, values url.Values, archive io.Reader) error {
+	if archive == nil {
+		request.Header.Set("Content-Type", "application/x-www-form-urlencoded")
+		_, err := body.WriteString(values.Encode())
+		return err
+	}
+
 	writer := multipart.NewWriter(body)
 	for k := range values {
 		writer.WriteField(k, values.Get(k))
 	}
-	file, err := writer.CreateFormFile("file", "archive.tar.gz")
+
+	request.Header.Set("Content-Type", writer.FormDataContentType())
+
+	f, err := writer.CreateFormFile("file", "archive.tar.gz")
 	if err != nil {
 		return err
 	}
-	tm := newTarMaker(context)
-	err = tm.targz(file, filesOnly, context.Args...)
-	if err != nil {
+
+	if _, err = io.Copy(f, archive); err != nil {
 		return err
 	}
-	writer.Close()
-	request.Header.Set("Content-Type", "multipart/form-data; boundary="+writer.Boundary())
+
+	if err = writer.Close(); err != nil {
+		return err
+	}
+
 	fullSize := float64(body.Len())
 	megabyte := 1024.0 * 1024.0
 	fmt.Fprintf(context.Stdout, "Uploading files (%0.2fMB)... ", fullSize/megabyte)
@@ -148,8 +188,78 @@ func uploadFiles(context *cmd.Context, filesOnly bool, request *http.Request, bu
 				fmt.Fprintf(context.Stdout, " Processing%s", strings.Repeat(".", count))
 				count++
 			}
-			time.Sleep(2e9)
+			time.Sleep(2 * time.Second)
 		}
 	}()
 	return nil
+}
+
+func buildWithContainerFile(appName, path string, filesOnly bool, files []string, stderr io.Writer) (string, io.Reader, error) {
+	fi, err := os.Stat(path)
+	if err != nil {
+		return "", nil, fmt.Errorf("failed to stat the file %s: %w", path, err)
+	}
+
+	var containerfile []byte
+
+	switch {
+	case fi.IsDir():
+		path, err = guessingContainerFile(appName, path)
+		if err != nil {
+			return "", nil, fmt.Errorf("failed to guess the container file (can you specify the container file passing --dockerfile ./path/to/Dockerfile?): %w", err)
+		}
+
+		fallthrough
+
+	case fi.Mode().IsRegular():
+		containerfile, err = os.ReadFile(path)
+		if err != nil {
+			return "", nil, fmt.Errorf("failed to read %s: %w", path, err)
+		}
+
+	default:
+		return "", nil, fmt.Errorf("invalid file type")
+	}
+
+	if len(files) == 0 { // no additional files set, using the dockerfile dir
+		files = []string{filepath.Dir(path)}
+	}
+
+	var buildContext bytes.Buffer
+	err = Archive(&buildContext, filesOnly, files, DefaultArchiveOptions(stderr))
+	if err != nil {
+		return "", nil, err
+	}
+
+	return string(containerfile), &buildContext, nil
+}
+
+func guessingContainerFile(app, dir string) (string, error) {
+	validNames := []string{
+		fmt.Sprintf("Dockerfile.%s", app),
+		fmt.Sprintf("Containerfile.%s", app),
+		"Dockerfile.tsuru",
+		"Containerfile.tsuru",
+		"Dockerfile",
+		"Containerfile",
+	}
+
+	for _, name := range validNames {
+		path := filepath.Join(dir, name)
+
+		fi, err := os.Stat(path)
+		if errors.Is(err, os.ErrNotExist) {
+			continue
+		}
+
+		if err != nil {
+			return "", err
+		}
+
+		if fi.Mode().IsRegular() {
+			return path, nil
+		}
+	}
+
+	return "", errors.New("container file not found")
 }
