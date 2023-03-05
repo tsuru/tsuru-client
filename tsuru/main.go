@@ -248,6 +248,9 @@ func recoverCmdPanicExitError() {
 
 func main() {
 	defer recoverCmdPanicExitError()
+	if handleAutocomplete() {
+		return
+	}
 
 	if inDockerMachineDriverMode() {
 		err := dockermachine.RunDriver(os.Getenv(localbinary.PluginEnvDriverName))
