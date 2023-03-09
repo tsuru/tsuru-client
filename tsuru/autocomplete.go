@@ -18,9 +18,9 @@ func getAllTopics(m *cmd.Manager) []string {
 	return result
 }
 
-func getSuggestions(m *cmd.Manager, compLine []string) []string {
-	compLine = compLine[1:] // remove first "tsuru"
-	spacedCompLine := strings.Join(compLine, " ")
+func getSuggestions(m *cmd.Manager, currLine []string) []string {
+	currLine = currLine[1:] // remove first "tsuru"
+	spacedcurrLine := strings.Join(currLine, " ")
 
 	counter := map[string]int{}
 	for cmdName, comm := range m.Commands {
@@ -30,9 +30,9 @@ func getSuggestions(m *cmd.Manager, compLine []string) []string {
 		spacedCommand := strings.ReplaceAll(cmdName, "-", " ")
 		splitCommand := strings.Split(cmdName, "-")
 
-		if strings.HasPrefix(spacedCommand, spacedCompLine) &&
-			len(splitCommand) >= len(compLine) {
-			counter[splitCommand[len(compLine)-1]] += 1
+		if strings.HasPrefix(spacedCommand, spacedcurrLine) &&
+			len(splitCommand) >= len(currLine) {
+			counter[splitCommand[len(currLine)-1]] += 1
 		}
 	}
 
@@ -45,13 +45,13 @@ func getSuggestions(m *cmd.Manager, compLine []string) []string {
 }
 
 func handleAutocomplete() bool {
-	compLine := os.Getenv("COMP_LINE")
-	if compLine == "" {
+	currLine := os.Getenv("AUTOCOMPLETE_CURRENT_LINE")
+	if currLine == "" {
 		return false
 	}
-	compLineSlice := strings.Split(compLine, " ")
+	currLineSlice := strings.Split(currLine, " ") // TODO: handle quotes
 
 	m := buildManager("tsuru")
-	fmt.Println(strings.Join(getSuggestions(m, compLineSlice), "\n"))
+	fmt.Println(strings.Join(getSuggestions(m, currLineSlice), "\n"))
 	return true
 }
