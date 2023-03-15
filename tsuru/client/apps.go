@@ -434,6 +434,7 @@ func (c *AppInfo) Run(context *cmd.Context, client *cmd.Client) error {
 type unit struct {
 	ID           string
 	IP           string
+	InternalIP   string
 	Status       string
 	StatusReason string
 	ProcessName  string
@@ -452,6 +453,8 @@ func (u *unit) Host() string {
 		address = u.Addresses[0].Host
 	} else if u.Address != nil {
 		address = u.Address.Host
+	} else if u.IP != "" {
+		return u.IP
 	}
 	if address == "" {
 		return address

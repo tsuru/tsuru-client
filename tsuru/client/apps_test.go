@@ -1087,7 +1087,7 @@ Routers:
 
 func (s *S) TestAppInfoWithDescription(c *check.C) {
 	var stdout, stderr bytes.Buffer
-	result := `{"name":"app1","teamowner":"myteam","cname":[""],"ip":"myapp.tsuru.io","platform":"php","repository":"git@git.com:php.git","state":"dead", "units":[{"Ip":"10.10.10.10","ID":"app1/0","Status":"started"}, {"Ip":"9.9.9.9","ID":"app1/1","Status":"started"}, {"Ip":"","ID":"app1/2","Status":"pending"}],"teams":["tsuruteam","crane"], "owner": "myapp_owner", "deploys": 7, "description": "My app", "router": "planb"}`
+	result := `{"name":"app1","teamowner":"myteam","cname":[""],"ip":"myapp.tsuru.io","platform":"php","repository":"git@git.com:php.git","state":"dead", "units":[{"ID":"app1/0","Status":"started"}, {"ID":"app1/1","Status":"started"}, {"ID":"app1/2","Status":"pending"}],"teams":["tsuruteam","crane"], "owner": "myapp_owner", "deploys": 7, "description": "My app", "router": "planb"}`
 	expected := `Application: app1
 Description: My app
 Platform: php
@@ -1136,13 +1136,13 @@ Pool:
 Quota: 0/0 units
 
 Units: 3
-+--------+---------+------+------+
-| Name   | Status  | Host | Port |
-+--------+---------+------+------+
-| app1/0 | started |      |      |
-| app1/1 | started |      |      |
-| app1/2 | pending |      |      |
-+--------+---------+------+------+
++--------+---------+-------------+------+
+| Name   | Status  | Host        | Port |
++--------+---------+-------------+------+
+| app1/2 | pending |             |      |
+| app1/0 | started | 10.10.10.10 |      |
+| app1/1 | started | 9.9.9.9     |      |
++--------+---------+-------------+------+
 
 `
 	context := cmd.Context{
@@ -1159,7 +1159,7 @@ Units: 3
 
 func (s *S) TestAppInfoWithRouterOpts(c *check.C) {
 	var stdout, stderr bytes.Buffer
-	result := `{"name":"app1","teamowner":"myteam","cname":[""],"ip":"myapp.tsuru.io","platform":"php","repository":"git@git.com:php.git","state":"dead", "units":[{"Ip":"10.10.10.10","ID":"app1/0","Status":"started"}, {"Ip":"9.9.9.9","ID":"app1/1","Status":"started"}, {"Ip":"","ID":"app1/2","Status":"pending"}],"teams":["tsuruteam","crane"], "owner": "myapp_owner", "deploys": 7, "routeropts": {"opt1": "val1", "opt2": "val2"}, "router": "planb"}`
+	result := `{"name":"app1","teamowner":"myteam","cname":[""],"ip":"myapp.tsuru.io","platform":"php","repository":"git@git.com:php.git","state":"dead", "units":[{"ID":"app1/0","Status":"started"}, {"ID":"app1/1","Status":"started"}, {"ID":"app1/2","Status":"pending"}],"teams":["tsuruteam","crane"], "owner": "myapp_owner", "deploys": 7, "routeropts": {"opt1": "val1", "opt2": "val2"}, "router": "planb"}`
 	expected := `Application: app1
 Platform: php
 Router: planb (opt1=val1, opt2=val2)
@@ -1225,7 +1225,7 @@ Units: 3
 		Stderr: &stderr,
 	}
 	transport := transportFunc(func(req *http.Request) (resp *http.Response, err error) {
-		body := `{"name":"app1","teamowner":"myteam","cname":[""],"ip":"myapp.tsuru.io","platform":"php","repository":"git@git.com:php.git","state":"dead", "units":[{"Ip":"10.10.10.10","ID":"app1/0","Status":"started"}, {"Ip":"9.9.9.9","ID":"app1/1","Status":"started"}, {"Ip":"","ID":"app1/2","Status":"pending"}],"teams":["tsuruteam","crane"], "owner": "myapp_owner", "deploys": 7, "router": "planb", "quota": {"inUse": 3, "limit": 40}}`
+		body := `{"name":"app1","teamowner":"myteam","cname":[""],"ip":"myapp.tsuru.io","platform":"php","repository":"git@git.com:php.git","state":"dead", "units":[{"ID":"app1/0","Status":"started"}, {"ID":"app1/1","Status":"started"}, {"ID":"app1/2","Status":"pending"}],"teams":["tsuruteam","crane"], "owner": "myapp_owner", "deploys": 7, "router": "planb", "quota": {"inUse": 3, "limit": 40}}`
 		return &http.Response{
 			Body:       ioutil.NopCloser(bytes.NewBufferString(body)),
 			StatusCode: http.StatusOK,
@@ -1241,7 +1241,7 @@ Units: 3
 
 func (s *S) TestAppInfoLock(c *check.C) {
 	var stdout, stderr bytes.Buffer
-	result := `{"name":"app1","teamowner":"myteam","cname":[""],"ip":"myapp.tsuru.io","platform":"php","repository":"git@git.com:php.git","state":"dead", "units":[{"Ip":"10.10.10.10","ID":"app1/0","Status":"started"}, {"Ip":"9.9.9.9","ID":"app1/1","Status":"started"}, {"Ip":"","ID":"app1/2","Status":"pending"}],"teams":["tsuruteam","crane"], "owner": "myapp_owner", "deploys": 7, "lock": {"locked": true, "owner": "admin@example.com", "reason": "DELETE /apps/rbsample/units", "acquiredate": "2012-04-01T10:32:00Z"}, "router": "planb"}`
+	result := `{"name":"app1","teamowner":"myteam","cname":[""],"ip":"myapp.tsuru.io","platform":"php","repository":"git@git.com:php.git","state":"dead", "units":[{"ID":"app1/0","Status":"started"}, {"ID":"app1/1","Status":"started"}, {"Ip":"","ID":"app1/2","Status":"pending"}],"teams":["tsuruteam","crane"], "owner": "myapp_owner", "deploys": 7, "lock": {"locked": true, "owner": "admin@example.com", "reason": "DELETE /apps/rbsample/units", "acquiredate": "2012-04-01T10:32:00Z"}, "router": "planb"}`
 	expected := `Application: app1
 Platform: php
 Router: planb
@@ -1330,19 +1330,19 @@ Pool:
 Quota: 0/0 units
 
 Units [process web]: 1
-+--------+---------+------+------+
-| Name   | Status  | Host | Port |
-+--------+---------+------+------+
-| app1/0 | started |      |      |
-+--------+---------+------+------+
++--------+---------+-------------+------+
+| Name   | Status  | Host        | Port |
++--------+---------+-------------+------+
+| app1/0 | started | 10.10.10.10 |      |
++--------+---------+-------------+------+
 
 Units [process worker]: 2
-+--------+---------+------+------+
-| Name   | Status  | Host | Port |
-+--------+---------+------+------+
-| app1/1 | started |      |      |
-| app1/2 | pending |      |      |
-+--------+---------+------+------+
++--------+---------+---------+------+
+| Name   | Status  | Host    | Port |
++--------+---------+---------+------+
+| app1/2 | pending |         |      |
+| app1/1 | started | 9.9.9.9 |      |
++--------+---------+---------+------+
 
 `
 	context := cmd.Context{
@@ -1480,13 +1480,11 @@ func (s *S) TestAppInfoWithAutoScale(c *check.C) {
   "state": "dead",
   "units": [
     {
-      "Ip": "10.10.10.10",
       "ID": "app1/0",
       "Status": "started",
       "ProcessName": "web"
     },
     {
-      "Ip": "10.10.10.10",
       "ID": "app1/1",
       "Status": "started",
       "ProcessName": "worker"
@@ -1615,7 +1613,7 @@ Quota: 0/0 units
 
 func (s *S) TestAppInfoWithoutArgs(c *check.C) {
 	var stdout, stderr bytes.Buffer
-	result := `{"name":"secret","teamowner":"myteam","ip":"secret.tsuru.io","platform":"ruby","repository":"git@git.com:php.git","state":"dead","units":[{"Ip":"10.10.10.10","ID":"secret/0","Status":"started"}, {"Ip":"9.9.9.9","ID":"secret/1","Status":"pending"}],"Teams":["tsuruteam","crane"], "owner": "myapp_owner", "deploys": 7, "router": "planb", "quota": {"inUse": 0, "limit": -1}}`
+	result := `{"name":"secret","teamowner":"myteam","ip":"secret.tsuru.io","platform":"ruby","repository":"git@git.com:php.git","state":"dead","units":[{"Ip":"","ID":"secret/0","Status":"started"}, {"Ip":"","ID":"secret/1","Status":"pending"}],"Teams":["tsuruteam","crane"], "owner": "myapp_owner", "deploys": 7, "router": "planb", "quota": {"inUse": 0, "limit": -1}}`
 	expected := `Application: secret
 Platform: ruby
 Router: planb
@@ -1655,7 +1653,7 @@ Units: 2
 
 func (s *S) TestAppInfoCName(c *check.C) {
 	var stdout, stderr bytes.Buffer
-	result := `{"name":"app1","teamowner":"myteam","ip":"myapp.tsuru.io","cname":["yourapp.tsuru.io"],"platform":"php","repository":"git@git.com:php.git","state":"dead","units":[{"Ip":"10.10.10.10","ID":"app1/0","Status":"started"}, {"Ip":"9.9.9.9","ID":"app1/1","Status":"started"}, {"Ip":"","ID":"app1/2","Status":"pending"}],"Teams":["tsuruteam","crane"], "owner": "myapp_owner", "deploys": 7, "router": "planb"}`
+	result := `{"name":"app1","teamowner":"myteam","ip":"myapp.tsuru.io","cname":["yourapp.tsuru.io"],"platform":"php","repository":"git@git.com:php.git","state":"dead","units":[{"ID":"app1/0","Status":"started"}, {"ID":"app1/1","Status":"started"}, {"Ip":"","ID":"app1/2","Status":"pending"}],"Teams":["tsuruteam","crane"], "owner": "myapp_owner", "deploys": 7, "router": "planb"}`
 	expected := `Application: app1
 Platform: php
 Router: planb
@@ -1722,7 +1720,7 @@ Service instances: 1
 		Stderr: &stderr,
 	}
 	transport := transportFunc(func(req *http.Request) (resp *http.Response, err error) {
-		body := `{"name":"app1","teamowner":"myteam","ip":"myapp.tsuru.io","platform":"php","repository":"git@git.com:php.git","state":"dead","units":[{"Ip":"10.10.10.10","ID":"app1/0","Status":"started"}, {"Ip":"9.9.9.9","ID":"app1/1","Status":"started"}, {"Ip":"","ID":"app1/2","Status":"pending"}],"Teams":["tsuruteam","crane"], "owner": "myapp_owner", "deploys": 7, "router": "planb", "serviceInstanceBinds": [{"service": "redisapi", "instance": "myredisapi"}]}`
+		body := `{"name":"app1","teamowner":"myteam","ip":"myapp.tsuru.io","platform":"php","repository":"git@git.com:php.git","state":"dead","units":[{"ID":"app1/0","Status":"started"}, {"ID":"app1/1","Status":"started"}, {"Ip":"","ID":"app1/2","Status":"pending"}],"Teams":["tsuruteam","crane"], "owner": "myapp_owner", "deploys": 7, "router": "planb", "serviceInstanceBinds": [{"service": "redisapi", "instance": "myredisapi"}]}`
 		return &http.Response{
 			Body:       ioutil.NopCloser(bytes.NewBufferString(body)),
 			StatusCode: http.StatusOK,
@@ -1749,13 +1747,13 @@ Pool:
 Quota: 0/0 units
 
 Units: 3
-+--------+---------+------+------+
-| Name   | Status  | Host | Port |
-+--------+---------+------+------+
-| app1/0 | started |      |      |
-| app1/1 | started |      |      |
-| app1/2 | pending |      |      |
-+--------+---------+------+------+
++--------+---------+-------------+------+
+| Name   | Status  | Host        | Port |
++--------+---------+-------------+------+
+| app1/2 | pending |             |      |
+| app1/0 | started | 10.10.10.10 |      |
+| app1/1 | started | 9.9.9.9     |      |
++--------+---------+-------------+------+
 
 Service instances: 2
 +----------+-----------------+
@@ -1787,7 +1785,7 @@ Service instances: 2
 
 func (s *S) TestAppInfoWithPlan(c *check.C) {
 	var stdout, stderr bytes.Buffer
-	result := `{"name":"app1","teamowner":"myteam","cname":[""],"ip":"myapp.tsuru.io","platform":"php","repository":"git@git.com:php.git","state":"dead", "units":[{"Ip":"10.10.10.10","ID":"app1/0","Status":"started"}, {"Ip":"9.9.9.9","ID":"app1/1","Status":"started"}, {"Ip":"","ID":"app1/2","Status":"pending"}],"teams":["tsuruteam","crane"], "owner": "myapp_owner", "deploys": 7, "plan":{"name": "test",  "memory": 536870912, "swap": 268435456, "cpushare": 100, "default": false}, "router": "planb"}`
+	result := `{"name":"app1","teamowner":"myteam","cname":[""],"ip":"myapp.tsuru.io","platform":"php","repository":"git@git.com:php.git","state":"dead", "units":[{"ID":"app1/0","Status":"started"}, {"ID":"app1/1","Status":"started"}, {"ID":"app1/2","Status":"pending"}],"teams":["tsuruteam","crane"], "owner": "myapp_owner", "deploys": 7, "plan":{"name": "test",  "memory": 536870912, "swap": 268435456, "cpushare": 100, "default": false}, "router": "planb"}`
 	expected := `Application: app1
 Platform: php
 Router: planb
@@ -1868,7 +1866,7 @@ App Plan:
 		Stderr: &stderr,
 	}
 	transport := transportFunc(func(req *http.Request) (resp *http.Response, err error) {
-		body := `{"name":"app1","teamowner":"myteam","ip":"myapp.tsuru.io","platform":"php","repository":"git@git.com:php.git","state":"dead","units":[{"Ip":"10.10.10.10","ID":"app1/0","Status":"started"}, {"Ip":"9.9.9.9","ID":"app1/1","Status":"started"}, {"Ip":"","ID":"app1/2","Status":"pending"}],"Teams":["tsuruteam","crane"], "owner": "myapp_owner", "deploys": 7,"plan":{"name": "test",  "memory": 536870912, "swap": 268435456, "cpushare": 100, "default": false}, "router": "planb", "serviceInstanceBinds": [{"service": "redisapi", "instance": "myredisapi"}]}`
+		body := `{"name":"app1","teamowner":"myteam","ip":"myapp.tsuru.io","platform":"php","repository":"git@git.com:php.git","state":"dead","units":[{"ID":"app1/0","Status":"started"}, {"ID":"app1/1","Status":"started"}, {"Ip":"","ID":"app1/2","Status":"pending"}],"Teams":["tsuruteam","crane"], "owner": "myapp_owner", "deploys": 7,"plan":{"name": "test",  "memory": 536870912, "swap": 268435456, "cpushare": 100, "default": false}, "router": "planb", "serviceInstanceBinds": [{"service": "redisapi", "instance": "myredisapi"}]}`
 		return &http.Response{
 			Body:       ioutil.NopCloser(bytes.NewBufferString(body)),
 			StatusCode: http.StatusOK,
@@ -1923,7 +1921,7 @@ App Plan:
 		Stderr: &stderr,
 	}
 	transport := transportFunc(func(req *http.Request) (resp *http.Response, err error) {
-		body := `{"name":"app1","teamowner":"myteam","ip":"myapp.tsuru.io","platform":"php","repository":"git@git.com:php.git","state":"dead","units":[{"Ip":"10.10.10.10","ID":"app1/0","Status":"started"}, {"Ip":"9.9.9.9","ID":"app1/1","Status":"started"}, {"Ip":"","ID":"app1/2","Status":"pending"}],"Teams":["tsuruteam","crane"], "owner": "myapp_owner", "deploys": 7,"plan":{"name": "test",  "memory": 536870912, "swap": 268435456, "cpushare": 100, "default": false}, "router": "planb", "serviceInstanceBinds": [{"service": "redisapi", "instance": "myredisapi", "plan": "test"}]}`
+		body := `{"name":"app1","teamowner":"myteam","ip":"myapp.tsuru.io","platform":"php","repository":"git@git.com:php.git","state":"dead","units":[{"ID":"app1/0","Status":"started"}, {"ID":"app1/1","Status":"started"}, {"Ip":"","ID":"app1/2","Status":"pending"}],"Teams":["tsuruteam","crane"], "owner": "myapp_owner", "deploys": 7,"plan":{"name": "test",  "memory": 536870912, "swap": 268435456, "cpushare": 100, "default": false}, "router": "planb", "serviceInstanceBinds": [{"service": "redisapi", "instance": "myredisapi", "plan": "test"}]}`
 		return &http.Response{
 			Body:       ioutil.NopCloser(bytes.NewBufferString(body)),
 			StatusCode: http.StatusOK,
@@ -2059,13 +2057,13 @@ Pool:
 Quota: 3/40 units
 
 Units: 3
-+--------+---------+------+------+
-| Name   | Status  | Host | Port |
-+--------+---------+------+------+
-| app1/0 | started |      |      |
-| app1/1 | started |      |      |
-| app1/2 | pending |      |      |
-+--------+---------+------+------+
++--------+---------+-------------+------+
+| Name   | Status  | Host        | Port |
++--------+---------+-------------+------+
+| app1/2 | pending |             |      |
+| app1/0 | started | 10.10.10.10 |      |
+| app1/1 | started | 9.9.9.9     |      |
++--------+---------+-------------+------+
 
 Service instances: 1
 +----------+-------------------+
