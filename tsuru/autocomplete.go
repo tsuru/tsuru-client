@@ -6,6 +6,7 @@ import (
 	"sort"
 	"strings"
 
+	"github.com/google/shlex"
 	"github.com/tsuru/tsuru/cmd"
 )
 
@@ -49,7 +50,15 @@ func handleAutocomplete() bool {
 	if currLine == "" {
 		return false
 	}
-	currLineSlice := strings.Split(currLine, " ") // TODO: handle quotes
+	currLineSlice, err := shlex.Split(currLine)
+	if err != nil {
+		// incomplete quote, ignore autocomplete
+		return true
+	}
+
+	if currLine[len(currLine)-1] == ' ' {
+		currLineSlice = append(currLineSlice, "") // shlex trims.Split() the last empty space, so we need to add it back
+	}
 
 	m := buildManager("tsuru")
 	fmt.Println(strings.Join(getSuggestions(m, currLineSlice), "\n"))
