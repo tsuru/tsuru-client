@@ -10,15 +10,6 @@ import (
 	"github.com/tsuru/tsuru/cmd"
 )
 
-func getAllTopics(m *cmd.Manager) []string {
-	var result []string
-	for key := range m.Commands {
-		result = append(result, key)
-	}
-	sort.Strings(result)
-	return result
-}
-
 func getSuggestions(m *cmd.Manager, currLine []string) []string {
 	currLine = currLine[1:] // remove first "tsuru"
 	spacedcurrLine := strings.Join(currLine, " ")
