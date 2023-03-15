@@ -10,8 +10,12 @@ import (
 	"github.com/tsuru/tsuru/cmd"
 )
 
-func getSuggestions(m *cmd.Manager, currLine []string) []string {
-	currLine = currLine[1:] // remove first "tsuru"
+func getSuggestions(m *cmd.Manager, fullCurrLine []string) []string {
+	if len(fullCurrLine) <= 1 {
+		return []string{} // first argument is expected to be the binary name
+	}
+
+	currLine := fullCurrLine[1:] // remove first "tsuru"
 	spacedcurrLine := strings.Join(currLine, " ")
 
 	counter := map[string]int{}
@@ -36,19 +40,19 @@ func getSuggestions(m *cmd.Manager, currLine []string) []string {
 	return result
 }
 
+// examples for AUTOCOMPLETE_CURRENT_LINE: "tsuru ", "tsuru app s"
 func handleAutocomplete() bool {
 	currLine := os.Getenv("AUTOCOMPLETE_CURRENT_LINE")
 	if currLine == "" {
 		return false
 	}
 	currLineSlice, err := shlex.Split(currLine)
-	if err != nil {
-		// incomplete quote, ignore autocomplete
+	if err != nil || len(currLineSlice) == 0 {
 		return true
 	}
 
 	if currLine[len(currLine)-1] == ' ' {
-		currLineSlice = append(currLineSlice, "") // shlex trims.Split() the last empty space, so we need to add it back
+		currLineSlice = append(currLineSlice, "") // shlex.Split() trims the last empty space, so we need to add it back
 	}
 
 	m := buildManager("tsuru")
