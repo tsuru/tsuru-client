@@ -125,7 +125,7 @@ func (a *archiver) archive(tw *tar.Writer, filesOnly bool, paths []string) error
 		var changeDir string
 		if fi.IsDir() {
 			// NOTE(nettoclaudio): when user passes a single directory we should
-			// consider it as the root directory for backward-compability.
+			// consider it as the root directory for backward-compatibility.
 			if len(paths) == 1 {
 				changeDir, path = abs, "."
 			}
