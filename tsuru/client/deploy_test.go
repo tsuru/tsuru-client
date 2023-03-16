@@ -318,9 +318,8 @@ func (s *S) TestDeploy_Run_UsingDockerfile(c *check.C) {
 			defer file.Close()
 			files := extractFiles(s.t, c, file)
 			c.Assert(files, check.DeepEquals, []miniFile{
-				{Name: filepath.Join("testdata", "deploy4"), Type: tar.TypeDir},
-				{Name: filepath.Join("testdata", "deploy4", "Dockerfile"), Type: tar.TypeReg, Data: []byte("FROM busybox:latest\n\nCOPY ./app.sh /usr/local/bin/\n")},
-				{Name: filepath.Join("testdata", "deploy4", "app.sh"), Type: tar.TypeReg, Data: []byte("echo \"Starting my application :P\"\n")},
+				{Name: filepath.Join("Dockerfile"), Type: tar.TypeReg, Data: []byte("FROM busybox:latest\n\nCOPY ./app.sh /usr/local/bin/\n")},
+				{Name: filepath.Join("app.sh"), Type: tar.TypeReg, Data: []byte("echo \"Starting my application :P\"\n")},
 			})
 
 			return req.Method == "POST" && strings.HasSuffix(req.URL.Path, "/apps/my-app/deploy")

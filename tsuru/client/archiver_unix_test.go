@@ -164,3 +164,18 @@ func (s *S) TestArchive_FilesOnly_MultipleDirs(c *check.C) {
 	c.Assert(stderr.String(), check.Matches, `(?s)(.*)Skipping file "testdata/deploy2/file1.txt" as it already exists in the current directory.(.*)`)
 	c.Assert(stderr.String(), check.Matches, `(?s)(.*)Skipping file "testdata/deploy2/file2.txt" as it already exists in the current directory.(.*)`)
 }
+
+func (s *S) TestArchive_SingleDirectory_NoFilesOnly(c *check.C) {
+	var b bytes.Buffer
+	err := Archive(&b, false, []string{"./testdata/deploy"}, ArchiveOptions{Stderr: io.Discard})
+	c.Assert(err, check.IsNil)
+
+	got := extractFiles(s.t, c, &b)
+	expected := []miniFile{
+		{Name: "directory", Type: tar.TypeDir},
+		{Name: "directory/file.txt", Type: tar.TypeReg, Data: []byte("wat\n")},
+		{Name: "file1.txt", Type: tar.TypeReg, Data: []byte("something happened\n")},
+		{Name: "file2.txt", Type: tar.TypeReg, Data: []byte("twice\n")},
+	}
+	c.Assert(got, check.DeepEquals, expected)
+}

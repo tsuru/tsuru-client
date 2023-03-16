@@ -121,8 +121,16 @@ func (a *archiver) archive(tw *tar.Writer, filesOnly bool, paths []string) error
 		}
 
 		var n int
+
+		var changeDir string
 		if fi.IsDir() {
-			n, err = a.addDir(tw, filesOnly, path, fi)
+			// NOTE(nettoclaudio): when user passes a single directory we should
+			// consider it as the root directory for backward-compability.
+			if len(paths) == 1 {
+				changeDir, path = abs, "."
+			}
+
+			n, err = a.addDir(tw, filesOnly, path, changeDir)
 			if err != nil {
 				return err
 			}
@@ -219,7 +227,20 @@ func (a *archiver) addFile(tw *tar.Writer, filesOnly bool, filename string, fi o
 	return 1, nil
 }
 
-func (a *archiver) addDir(tw *tar.Writer, filesOnly bool, path string, fi os.FileInfo) (int, error) {
+func (a *archiver) addDir(tw *tar.Writer, filesOnly bool, path, changeDir string) (int, error) {
+	if changeDir != "" {
+		cwd, err := os.Getwd()
+		if err != nil {
+			return 0, err
+		}
+
+		defer os.Chdir(cwd)
+
+		if err = os.Chdir(changeDir); err != nil {
+			return 0, err
+		}
+	}
+
 	var added int
 	return added, filepath.WalkDir(path, fs.WalkDirFunc(func(path string, dentry fs.DirEntry, err error) error {
 		if err != nil { // fail fast
