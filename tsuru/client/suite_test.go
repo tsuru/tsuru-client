@@ -18,7 +18,6 @@ import (
 
 type S struct {
 	defaultLocation time.Location
-	t               *testing.T
 }
 
 func (s *S) SetUpSuite(c *check.C) {
@@ -48,11 +47,7 @@ func (s *S) TearDownTest(c *check.C) {
 	formatter.LocalTZ = &s.defaultLocation
 }
 
-var suite = &S{}
-var _ = check.Suite(suite)
+var _ = check.Suite(&S{})
 var manager *cmd.Manager
 
-func Test(t *testing.T) {
-	suite.t = t
-	check.TestingT(t)
-}
+func Test(t *testing.T) { check.TestingT(t) }
