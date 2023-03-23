@@ -11,26 +11,27 @@ Choose one of this options:
 
   or
 
-- place the file in your location of choice (e.g. `~/.tsuru-completion.sh`)
-  and source that file from .bashrc
+- place the file in your location of choice and source that file from `.bashrc`
   ```
   cp completions/tsuru.bash ~/.tsuru-completion.sh
-  echo '. ~/.tsuru-completion.sh' >> ~/.bashrc
+  grep -qxF '. ~/.tsuru-completion.sh' ~/.bashrc || echo "\n. ~/.tsuru-completion.sh" >> ~/.bashrc
   ```
 
 then, reopen your shell.
 
 ## Install on zsh
 
-If you use oh-my-zsh, place the file at `~/.oh-my-zsh/completions/_tsuru`:
-```
-cp completions/tsuru.zsh ~/.oh-my-zsh/completions/_tsuru
-```
+Choose one of this options:
 
-If you use plain zsh, place the file at `~/.config/zsh/completions/_tsuru`:
-```
-cp completions/tsuru.zsh ~/.config/zsh/completions/_tsuru
-```
+- place the file inside your framework (eg: oh-my-zsh) completions folder
+
+  or
+
+- place the file in your location of choice and source that file from `.zshrc`
+  ```
+  cp completions/tsuru.zsh ~/.tsuru-completion.zsh
+  grep -qxF '. ~/.tsuru-completion.zsh' ~/.zshrc || echo "\n. ~/.tsuru-completion.zsh" >> ~/.zshrc
+  ```
 
 then, reopen your shell.
 
