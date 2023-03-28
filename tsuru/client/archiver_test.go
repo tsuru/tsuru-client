@@ -33,7 +33,7 @@ func extractFiles(t *testing.T, c *check.C, r io.Reader) (m []miniFile) {
 
 		var data []byte
 
-		if h.Typeflag == tar.TypeReg || h.Typeflag == tar.TypeRegA {
+		if h.Typeflag == tar.TypeReg {
 			var b bytes.Buffer
 			written, err := io.CopyN(&b, tr, h.Size)
 			c.Assert(err, check.IsNil)

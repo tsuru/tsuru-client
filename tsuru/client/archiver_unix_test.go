@@ -308,7 +308,7 @@ func (s *S) TestArchive_(c *check.C) {
 		c.Assert(err, check.IsNil)
 
 		for _, file := range tt.files {
-			err := os.MkdirAll(filepath.Join(root, filepath.Dir(file)), 0700)
+			err = os.MkdirAll(filepath.Join(root, filepath.Dir(file)), 0700)
 			c.Assert(err, check.IsNil)
 
 			_, err = os.Create(filepath.Join(root, file))
@@ -316,7 +316,8 @@ func (s *S) TestArchive_(c *check.C) {
 		}
 
 		if len(tt.ignored) > 0 {
-			f, err := os.Create(filepath.Join(root, ".tsuruignore"))
+			var f *os.File
+			f, err = os.Create(filepath.Join(root, ".tsuruignore"))
 			c.Assert(err, check.IsNil)
 
 			for _, l := range tt.ignored {
