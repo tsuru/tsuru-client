@@ -175,7 +175,7 @@ func (c *AppDeploy) Info() *cmd.Info {
 Files specified in the ".tsuruignore" file are skipped - similar to ".gitignore". It also honors ".dockerignore" file if deploying with container file (--dockerfile).
 
 Examples:
-  To deploy using app's platform build process (just sending source code or configurations):
+  To deploy using app's platform build process (just sending source code and/or configurations):
     Uploading all files within the current directory
       $ tsuru app deploy -a <APP> .
 
@@ -185,7 +185,7 @@ Examples:
     Uploading specific files
       $ tsuru app deploy -a <APP> ./myfile.jar ./Procfile
 
-    Uploading specific files but ignoring their directory trees
+    Uploading specific files (ignoring their base directories)
       $ tsuru app deploy -a <APP> --files-only ./my-code/main.go ./tsuru_stuff/Procfile
 
   To deploy using a container image:
