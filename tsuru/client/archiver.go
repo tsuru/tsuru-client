@@ -124,13 +124,16 @@ func (a *archiver) archive(tw *tar.Writer, filesOnly bool, paths []string) error
 
 		var changeDir string
 		if fi.IsDir() {
-			// NOTE(nettoclaudio): when user passes a single directory we should
-			// consider it as the root directory for backward-compatibility.
-			if len(paths) == 1 {
+			// NOTE(nettoclaudio): when either user passes a single directory or files
+			// only flag is turned on, we should consider it as the root directory for
+			// backward-compatibility.
+			subdirFilesOnly := filesOnly
+			if filesOnly || len(paths) == 1 {
 				changeDir, path = abs, "."
+				subdirFilesOnly = false
 			}
 
-			n, err = a.addDir(tw, filesOnly, path, changeDir)
+			n, err = a.addDir(tw, subdirFilesOnly, path, changeDir)
 			if err != nil {
 				return err
 			}

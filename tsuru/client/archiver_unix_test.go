@@ -10,6 +10,7 @@ package client
 import (
 	"archive/tar"
 	"bytes"
+	"fmt"
 	"io"
 	"net"
 	"os"
@@ -152,17 +153,20 @@ func (s *S) TestArchive_FilesOnly_MultipleDirs(c *check.C) {
 
 	got := extractFiles(s.t, c, &b)
 	expected := []miniFile{
-		{Name: "file.txt", Type: tar.TypeReg, Data: []byte("wat\n")},
+		{Name: "directory", Type: tar.TypeDir},
+		{Name: "directory/file.txt", Type: tar.TypeReg, Data: []byte("wat\n")},
 		{Name: "file1.txt", Type: tar.TypeReg, Data: []byte("something happened\n")},
 		{Name: "file2.txt", Type: tar.TypeReg, Data: []byte("twice\n")},
 		{Name: ".tsuruignore", Type: tar.TypeReg, Data: []byte("*.txt")},
+		{Name: "directory/dir2", Type: tar.TypeDir},
+		{Name: "directory/dir2/file.txt", Type: tar.TypeReg, Data: []byte("")},
 	}
 	c.Assert(got, check.DeepEquals, expected)
 
-	c.Assert(stderr.String(), check.Matches, `(?s)(.*)Skipping file "testdata/deploy2/directory/dir2/file.txt" as it already exists in the current directory.(.*)`)
-	c.Assert(stderr.String(), check.Matches, `(?s)(.*)Skipping file "testdata/deploy2/directory/file.txt" as it already exists in the current directory.(.*)`)
-	c.Assert(stderr.String(), check.Matches, `(?s)(.*)Skipping file "testdata/deploy2/file1.txt" as it already exists in the current directory.(.*)`)
-	c.Assert(stderr.String(), check.Matches, `(?s)(.*)Skipping file "testdata/deploy2/file2.txt" as it already exists in the current directory.(.*)`)
+	c.Assert(stderr.String(), check.Matches, `(?s)(.*)Skipping file "directory" as it already exists in the current directory.(.*)`)
+	c.Assert(stderr.String(), check.Matches, `(?s)(.*)Skipping file "directory/file.txt" as it already exists in the current directory.(.*)`)
+	c.Assert(stderr.String(), check.Matches, `(?s)(.*)Skipping file "file1.txt" as it already exists in the current directory.(.*)`)
+	c.Assert(stderr.String(), check.Matches, `(?s)(.*)Skipping file "file2.txt" as it already exists in the current directory.(.*)`)
 }
 
 func (s *S) TestArchive_SingleDirectory_NoFilesOnly(c *check.C) {
@@ -178,4 +182,168 @@ func (s *S) TestArchive_SingleDirectory_NoFilesOnly(c *check.C) {
 		{Name: "file2.txt", Type: tar.TypeReg, Data: []byte("twice\n")},
 	}
 	c.Assert(got, check.DeepEquals, expected)
+}
+
+func (s *S) TestArchive_(c *check.C) {
+	workingDir, err := os.Getwd()
+	c.Assert(err, check.IsNil)
+
+	defer func() { os.Chdir(workingDir) }()
+
+	tests := []struct {
+		files     []string
+		absPath   bool
+		filesOnly bool
+		ignored   []string
+		paths     []string
+		expected  []string
+	}{
+		{
+			files:    []string{"f1", "f2", "d1/f3", "d1/d2/f4"},
+			paths:    []string{"."},
+			expected: []string{"d1", "d1/d2", "d1/d2/f4", "d1/f3", "f1", "f2"},
+		},
+
+		{
+			files:    []string{"testdata/deploy/file1.txt", "testdata/deploy2/file2.txt"},
+			paths:    []string{"testdata/deploy/file1.txt", "testdata/deploy2/file2.txt"},
+			expected: []string{"testdata/deploy/file1.txt", "testdata/deploy2/file2.txt"},
+		},
+
+		{
+			files:     []string{"testdata/deploy/file1.txt", "testdata/deploy2/file2.txt"},
+			filesOnly: true,
+			paths:     []string{"testdata/deploy/file1.txt", "testdata/deploy2/file2.txt"},
+			expected:  []string{"file1.txt", "file2.txt"},
+		},
+
+		{
+			files:    []string{"testdata/deploy/file1.txt", "testdata/deploy/file2.txt", "testdata/deploy2/file3.txt", "testdata/deploy2/directory/file4.txt"},
+			paths:    []string{"testdata/deploy", "testdata/deploy2"},
+			expected: []string{"testdata/deploy", "testdata/deploy/file1.txt", "testdata/deploy/file2.txt", "testdata/deploy2", "testdata/deploy2/directory", "testdata/deploy2/directory/file4.txt", "testdata/deploy2/file3.txt"},
+		},
+
+		{
+			files:     []string{"testdata/deploy/file1.txt", "testdata/deploy/file2.txt", "testdata/deploy2/file3.txt", "testdata/deploy2/directory/file4.txt"},
+			filesOnly: true,
+			paths:     []string{"testdata/deploy", "testdata/deploy2"},
+			expected:  []string{"file1.txt", "file2.txt", "directory", "directory/file4.txt", "file3.txt"},
+		},
+
+		{
+			files:    []string{"testdata/deploy/file1.txt", "testdata/deploy/file2.txt", "testdata/deploy/directory/file.txt"},
+			paths:    []string{"testdata/deploy", ".."},
+			expected: []string{"testdata/deploy", "testdata/deploy/directory", "testdata/deploy/directory/file.txt", "testdata/deploy/file1.txt", "testdata/deploy/file2.txt"},
+		},
+
+		{
+			files:    []string{"testdata/deploy/file1.txt", "testdata/deploy/file2.txt", "testdata/deploy/directory/file.txt"},
+			paths:    []string{"testdata/deploy"},
+			expected: []string{"directory", "directory/file.txt", "file1.txt", "file2.txt"},
+		},
+
+		{
+			files:    []string{"testdata/deploy2/file1.txt", "testdata/deploy2/file2.txt", "testdata/deploy2/directory/file.txt", "testdata/deploy2/directory/dir2/file.txt"},
+			ignored:  []string{"*.txt"},
+			paths:    []string{"testdata/deploy2"},
+			expected: []string{"directory", "directory/dir2"},
+		},
+
+		{
+			files:    []string{"testdata/deploy/file1.txt", "testdata/deploy/file2.txt", "testdata/deploy2/file3.txt", "testdata/deploy2/directory/file4.txt"},
+			ignored:  []string{"*.txt"},
+			paths:    []string{"testdata/deploy", "testdata/deploy2"},
+			expected: []string{"testdata/deploy", "testdata/deploy2", "testdata/deploy2/directory"},
+		},
+
+		{
+			files:     []string{"testdata/deploy/file1.txt", "testdata/deploy/file2.txt", "testdata/deploy2/file3.txt", "testdata/deploy2/directory/file4.txt"},
+			filesOnly: true,
+			ignored:   []string{"*.txt"},
+			paths:     []string{"testdata/deploy", "testdata/deploy2"},
+			expected:  []string{"directory"},
+		},
+
+		{
+			files:    []string{"testdata/deploy2/file1.txt", "testdata/deploy2/file2.txt", "testdata/deploy2/directory/file.txt", "testdata/deploy2/directory/dir2/file.txt"},
+			ignored:  []string{"*.txt"},
+			paths:    []string{"testdata/deploy2"},
+			expected: []string{"directory", "directory/dir2"},
+			absPath:  true,
+		},
+
+		{
+			files:    []string{"file1.txt", "file2.txt", "directory/file.txt", "directory/dir2/file.txt"},
+			ignored:  []string{"*.txt"},
+			paths:    []string{"."},
+			expected: []string{".tsuruignore", "directory", "directory/dir2"},
+		},
+
+		{
+			files:    []string{"testdata/deploy2/file1.txt", "testdata/deploy2/file2.txt", "testdata/deploy2/directory/file.txt", "testdata/deploy2/directory/dir2/file.txt"},
+			ignored:  []string{"directory"},
+			paths:    []string{"testdata/deploy2"},
+			expected: []string{"file1.txt", "file2.txt"},
+		},
+
+		{
+			files:    []string{"testdata/deploy2/file1.txt", "testdata/deploy2/file2.txt", "testdata/deploy2/directory/file.txt", "testdata/deploy2/directory/dir2/file.txt"},
+			ignored:  []string{"*/dir2"},
+			paths:    []string{"testdata/deploy2"},
+			expected: []string{"directory", "directory/file.txt", "file1.txt", "file2.txt"},
+		},
+
+		{
+			files:    []string{"testdata/deploy2/file1.txt", "testdata/deploy2/file2.txt", "testdata/deploy2/directory/file.txt", "testdata/deploy2/directory/dir2/file.txt"},
+			ignored:  []string{"directory/dir2/*"},
+			paths:    []string{"testdata/deploy2"},
+			expected: []string{"directory", "directory/dir2", "directory/file.txt", "file1.txt", "file2.txt"},
+		},
+	}
+
+	for _, tt := range tests {
+		root := c.MkDir()
+
+		err := os.Chdir(root)
+		c.Assert(err, check.IsNil)
+
+		for _, file := range tt.files {
+			err := os.MkdirAll(filepath.Join(root, filepath.Dir(file)), 0700)
+			c.Assert(err, check.IsNil)
+
+			_, err = os.Create(filepath.Join(root, file))
+			c.Assert(err, check.IsNil)
+		}
+
+		if len(tt.ignored) > 0 {
+			f, err := os.Create(filepath.Join(root, ".tsuruignore"))
+			c.Assert(err, check.IsNil)
+
+			for _, l := range tt.ignored {
+				fmt.Fprintln(f, l)
+			}
+
+			err = f.Close()
+			c.Assert(err, check.IsNil)
+		}
+
+		if tt.absPath {
+			for i := range tt.paths {
+				tt.paths[i] = filepath.Join(root, tt.paths[i])
+			}
+		}
+
+		var b bytes.Buffer
+		err = Archive(&b, tt.filesOnly, tt.paths, DefaultArchiveOptions(io.Discard))
+		c.Assert(err, check.IsNil)
+
+		files := extractFiles(s.t, c, &b)
+
+		var got []string
+		for _, f := range files {
+			got = append(got, f.Name)
+		}
+
+		c.Assert(got, check.DeepEquals, tt.expected)
+	}
 }
