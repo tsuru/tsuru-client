@@ -44,38 +44,23 @@ func (c *PlanList) Info() *cmd.Info {
 func renderPlans(plans []apptypes.Plan, isBytes, showDefaultColumn bool) string {
 	table := tablecli.NewTable()
 	table.Headers = []string{"Name", "CPU", "Memory"}
-	hasSwap := false
-
-	for _, p := range plans {
-		if p.Swap > 0 {
-			hasSwap = true
-		}
-	}
-
-	if hasSwap {
-		table.Headers = append(table.Headers, "Swap")
-	}
 
 	if showDefaultColumn {
 		table.Headers = append(table.Headers, "Default")
 	}
 
 	for _, p := range plans {
-		var cpu, memory, swap string
+		var cpu, memory string
 		if isBytes {
 			memory = fmt.Sprintf("%d", p.Memory)
-			swap = fmt.Sprintf("%d", p.Swap)
 		} else {
 			memory = resource.NewQuantity(p.Memory, resource.BinarySI).String()
-			swap = resource.NewQuantity(p.Swap, resource.BinarySI).String()
 		}
 
 		if p.Override.CPUMilli != nil {
 			cpu = fmt.Sprintf("%g", float64(*p.Override.CPUMilli)/10) + "% (override)"
 		} else if p.CPUMilli > 0 {
 			cpu = fmt.Sprintf("%g", float64(p.CPUMilli)/10) + "%"
-		} else {
-			cpu = fmt.Sprintf("%d (CPU share)", p.CpuShare)
 		}
 
 		if p.Override.Memory != nil {
@@ -86,10 +71,6 @@ func renderPlans(plans []apptypes.Plan, isBytes, showDefaultColumn bool) string 
 			p.Name,
 			cpu,
 			memory,
-		}
-
-		if hasSwap {
-			row = append(row, swap)
 		}
 
 		if showDefaultColumn {

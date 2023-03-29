@@ -851,7 +851,7 @@ Units: 3
 
 func (s *S) TestAppInfoSimplified(c *check.C) {
 	var stdout, stderr bytes.Buffer
-	result := `{"name":"app1","pool": "dev-a", "provisioner": "kubernetes", "cluster": "mycluster", "teamowner":"myteam","cname":[""],"ip":"myapp.tsuru.io","platform":"php","repository":"git@git.com:php.git","state":"dead", "units":[{"Ip":"10.10.10.10","ID":"app1/0","Status":"started","ProcessName": "web","Address":{"Host": "10.8.7.6:3333"}, "ready": true, "routable": true}, {"Ip":"9.9.9.9","ID":"app1/1","Status":"started","ProcessName": "web","Address":{"Host": "10.8.7.6:3323"}, "ready": true, "routable": true}],"teams":["tsuruteam","crane"], "owner": "myapp_owner", "deploys": 7, "router": "planb", "plan":{"name": "test",  "memory": 536870912, "swap": 268435456, "cpushare": 100, "default": false}}`
+	result := `{"name":"app1","pool": "dev-a", "provisioner": "kubernetes", "cluster": "mycluster", "teamowner":"myteam","cname":[""],"ip":"myapp.tsuru.io","platform":"php","repository":"git@git.com:php.git","state":"dead", "units":[{"Ip":"10.10.10.10","ID":"app1/0","Status":"started","ProcessName": "web","Address":{"Host": "10.8.7.6:3333"}, "ready": true, "routable": true}, {"Ip":"9.9.9.9","ID":"app1/1","Status":"started","ProcessName": "web","Address":{"Host": "10.8.7.6:3323"}, "ready": true, "routable": true}],"teams":["tsuruteam","crane"], "owner": "myapp_owner", "deploys": 7, "router": "planb", "plan":{"name": "test",  "memory": 536870912, "cpumilli": 100, "default": false}}`
 	expected := `Application: app1
 Created by: myapp_owner
 Platform: php
@@ -1785,7 +1785,7 @@ Service instances: 2
 
 func (s *S) TestAppInfoWithPlan(c *check.C) {
 	var stdout, stderr bytes.Buffer
-	result := `{"name":"app1","teamowner":"myteam","cname":[""],"ip":"myapp.tsuru.io","platform":"php","repository":"git@git.com:php.git","state":"dead", "units":[{"ID":"app1/0","Status":"started"}, {"ID":"app1/1","Status":"started"}, {"ID":"app1/2","Status":"pending"}],"teams":["tsuruteam","crane"], "owner": "myapp_owner", "deploys": 7, "plan":{"name": "test",  "memory": 536870912, "swap": 268435456, "cpushare": 100, "default": false}, "router": "planb"}`
+	result := `{"name":"app1","teamowner":"myteam","cname":[""],"ip":"myapp.tsuru.io","platform":"php","repository":"git@git.com:php.git","state":"dead", "units":[{"ID":"app1/0","Status":"started"}, {"ID":"app1/1","Status":"started"}, {"ID":"app1/2","Status":"pending"}],"teams":["tsuruteam","crane"], "owner": "myapp_owner", "deploys": 7, "plan":{"name": "test",  "memory": 536870912, "cpumilli": 100, "default": false}, "router": "planb"}`
 	expected := `Application: app1
 Platform: php
 Router: planb
@@ -1806,11 +1806,11 @@ Units: 3
 +--------+---------+------+------+
 
 App Plan:
-+------+-----------------+--------+-------+
-| Name | CPU             | Memory | Swap  |
-+------+-----------------+--------+-------+
-| test | 100 (CPU share) | 512Mi  | 256Mi |
-+------+-----------------+--------+-------+
++------+-----+--------+
+| Name | CPU | Memory |
++------+-----+--------+
+| test | 10% | 512Mi  |
++------+-----+--------+
 
 `
 	context := cmd.Context{
@@ -1854,11 +1854,11 @@ Service instances: 1
 +----------+-----------------+
 
 App Plan:
-+------+-----------------+--------+-------+
-| Name | CPU             | Memory | Swap  |
-+------+-----------------+--------+-------+
-| test | 100 (CPU share) | 512Mi  | 256Mi |
-+------+-----------------+--------+-------+
++------+-----+--------+
+| Name | CPU | Memory |
++------+-----+--------+
+| test | 10% | 512Mi  |
++------+-----+--------+
 
 `
 	context := cmd.Context{
@@ -1866,7 +1866,7 @@ App Plan:
 		Stderr: &stderr,
 	}
 	transport := transportFunc(func(req *http.Request) (resp *http.Response, err error) {
-		body := `{"name":"app1","teamowner":"myteam","ip":"myapp.tsuru.io","platform":"php","repository":"git@git.com:php.git","state":"dead","units":[{"ID":"app1/0","Status":"started"}, {"ID":"app1/1","Status":"started"}, {"Ip":"","ID":"app1/2","Status":"pending"}],"Teams":["tsuruteam","crane"], "owner": "myapp_owner", "deploys": 7,"plan":{"name": "test",  "memory": 536870912, "swap": 268435456, "cpushare": 100, "default": false}, "router": "planb", "serviceInstanceBinds": [{"service": "redisapi", "instance": "myredisapi"}]}`
+		body := `{"name":"app1","teamowner":"myteam","ip":"myapp.tsuru.io","platform":"php","repository":"git@git.com:php.git","state":"dead","units":[{"ID":"app1/0","Status":"started"}, {"ID":"app1/1","Status":"started"}, {"Ip":"","ID":"app1/2","Status":"pending"}],"Teams":["tsuruteam","crane"], "owner": "myapp_owner", "deploys": 7,"plan":{"name": "test",  "memory": 536870912, "cpumilli": 100, "default": false}, "router": "planb", "serviceInstanceBinds": [{"service": "redisapi", "instance": "myredisapi"}]}`
 		return &http.Response{
 			Body:       ioutil.NopCloser(bytes.NewBufferString(body)),
 			StatusCode: http.StatusOK,
@@ -1909,11 +1909,11 @@ Service instances: 1
 +----------+-------------------+
 
 App Plan:
-+------+-----------------+--------+-------+
-| Name | CPU             | Memory | Swap  |
-+------+-----------------+--------+-------+
-| test | 100 (CPU share) | 512Mi  | 256Mi |
-+------+-----------------+--------+-------+
++------+-----+--------+
+| Name | CPU | Memory |
++------+-----+--------+
+| test | 10% | 512Mi  |
++------+-----+--------+
 
 `
 	context := cmd.Context{
@@ -1921,7 +1921,7 @@ App Plan:
 		Stderr: &stderr,
 	}
 	transport := transportFunc(func(req *http.Request) (resp *http.Response, err error) {
-		body := `{"name":"app1","teamowner":"myteam","ip":"myapp.tsuru.io","platform":"php","repository":"git@git.com:php.git","state":"dead","units":[{"ID":"app1/0","Status":"started"}, {"ID":"app1/1","Status":"started"}, {"Ip":"","ID":"app1/2","Status":"pending"}],"Teams":["tsuruteam","crane"], "owner": "myapp_owner", "deploys": 7,"plan":{"name": "test",  "memory": 536870912, "swap": 268435456, "cpushare": 100, "default": false}, "router": "planb", "serviceInstanceBinds": [{"service": "redisapi", "instance": "myredisapi", "plan": "test"}]}`
+		body := `{"name":"app1","teamowner":"myteam","ip":"myapp.tsuru.io","platform":"php","repository":"git@git.com:php.git","state":"dead","units":[{"ID":"app1/0","Status":"started"}, {"ID":"app1/1","Status":"started"}, {"Ip":"","ID":"app1/2","Status":"pending"}],"Teams":["tsuruteam","crane"], "owner": "myapp_owner", "deploys": 7,"plan":{"name": "test",  "memory": 536870912, "cpumilli": 100, "default": false}, "router": "planb", "serviceInstanceBinds": [{"service": "redisapi", "instance": "myredisapi", "plan": "test"}]}`
 		return &http.Response{
 			Body:       ioutil.NopCloser(bytes.NewBufferString(body)),
 			StatusCode: http.StatusOK,

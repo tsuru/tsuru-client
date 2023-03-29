@@ -29,18 +29,17 @@ func (s *S) TestPlanCreate(c *check.C) {
 		CondFunc: func(req *http.Request) bool {
 			name := req.FormValue("name") == "myplan"
 			memory := req.FormValue("memory") == "0"
-			swap := req.FormValue("swap") == "0"
-			cpuShare := req.FormValue("cpushare") == "100"
+			cpuMilli := req.FormValue("cpumilli") == "100"
 			deflt := req.FormValue("default") == "false"
 			method := req.Method == "POST"
 			contentType := req.Header.Get("Content-Type") == "application/x-www-form-urlencoded"
 			url := strings.HasSuffix(req.URL.Path, "/plans")
-			return method && url && contentType && name && memory && swap && cpuShare && deflt
+			return method && url && contentType && name && memory && cpuMilli && deflt
 		},
 	}
 	client := cmd.NewClient(&http.Client{Transport: trans}, nil, s.manager)
 	command := PlanCreate{}
-	command.Flags().Parse(true, []string{"-c", "100"})
+	command.Flags().Parse(true, []string{"-c", "100m"})
 	err := command.Run(&context, client)
 	c.Assert(err, check.IsNil)
 	c.Assert(stdout.String(), check.Equals, "Plan successfully created!\n")
@@ -58,24 +57,23 @@ func (s *S) TestPlanCreateFlags(c *check.C) {
 		CondFunc: func(req *http.Request) bool {
 			name := req.FormValue("name") == "myplan"
 			memory := req.FormValue("memory") == "4194304"
-			swap := req.FormValue("swap") == "512"
-			cpuShare := req.FormValue("cpushare") == "100"
+			cpuMilli := req.FormValue("cpumilli") == "100"
 			deflt := req.FormValue("default") == "true"
 			method := req.Method == "POST"
 			contentType := req.Header.Get("Content-Type") == "application/x-www-form-urlencoded"
 			url := strings.HasSuffix(req.URL.Path, "/plans")
-			return method && url && contentType && name && memory && swap && cpuShare && deflt
+			return method && url && contentType && name && memory && cpuMilli && deflt
 		},
 	}
 	client := cmd.NewClient(&http.Client{Transport: trans}, nil, s.manager)
 	command := PlanCreate{}
-	command.Flags().Parse(true, []string{"-c", "100", "-m", "4194304", "-s", "512", "-d"})
+	command.Flags().Parse(true, []string{"-c", "10%", "-m", "4194304", "-d"})
 	err := command.Run(&context, client)
 	c.Assert(err, check.IsNil)
 	c.Assert(stdout.String(), check.Equals, "Plan successfully created!\n")
 }
 
-func (s *S) TestPlanCreateMemoryAndSwapUnits(c *check.C) {
+func (s *S) TestPlanCreateMemoryUnits(c *check.C) {
 	var stdout, stderr bytes.Buffer
 	context := cmd.Context{
 		Args:   []string{"myplan"},
@@ -93,8 +91,7 @@ func (s *S) TestPlanCreateMemoryAndSwapUnits(c *check.C) {
 
 			c.Check(req.FormValue("name"), check.Equals, "myplan")
 			c.Check(req.FormValue("memory"), check.Equals, "104857600")
-			c.Check(req.FormValue("swap"), check.Equals, "524288")
-			c.Check(req.FormValue("cpushare"), check.Equals, "100")
+			c.Check(req.FormValue("cpumilli"), check.Equals, "100")
 			c.Check(req.FormValue("default"), check.Equals, "true")
 
 			return true
@@ -102,7 +99,7 @@ func (s *S) TestPlanCreateMemoryAndSwapUnits(c *check.C) {
 	}
 	client := cmd.NewClient(&http.Client{Transport: trans}, nil, s.manager)
 	command := PlanCreate{}
-	command.Flags().Parse(true, []string{"-c", "100", "-m", "100Mi", "-s", "512Ki", "-d"})
+	command.Flags().Parse(true, []string{"-c", "100m", "-m", "100Mi", "-d"})
 	err := command.Run(&context, client)
 	c.Assert(err, check.IsNil)
 	c.Assert(stdout.String(), check.Equals, "Plan successfully created!\n")
@@ -141,13 +138,12 @@ func (s *S) TestPlanCreateInvalidMemory(c *check.C) {
 		CondFunc: func(req *http.Request) bool {
 			name := req.FormValue("name") == "myplan"
 			memory := req.FormValue("memory") == "4"
-			swap := req.FormValue("swap") == "0"
-			cpuShare := req.FormValue("cpushare") == "100"
+			cpuMilli := req.FormValue("cpumilli") == "100"
 			deflt := req.FormValue("default") == "false"
 			method := req.Method == "POST"
 			contentType := req.Header.Get("Content-Type") == "application/x-www-form-urlencoded"
 			url := strings.HasSuffix(req.URL.Path, "/plans")
-			return method && url && contentType && name && memory && swap && cpuShare && deflt
+			return method && url && contentType && name && memory && cpuMilli && deflt
 		},
 	}
 	client := cmd.NewClient(&http.Client{Transport: trans}, nil, s.manager)
@@ -170,13 +166,12 @@ func (s *S) TestPlanCreateInvalidCpushare(c *check.C) {
 		CondFunc: func(req *http.Request) bool {
 			name := req.FormValue("name") == "myplan"
 			memory := req.FormValue("memory") == "4194304"
-			swap := req.FormValue("swap") == "0"
-			cpuShare := req.FormValue("cpushare") == "1"
+			cpuMilli := req.FormValue("cpumilli") == "1000"
 			deflt := req.FormValue("default") == "false"
 			method := req.Method == "POST"
 			contentType := req.Header.Get("Content-Type") == "application/x-www-form-urlencoded"
 			url := strings.HasSuffix(req.URL.Path, "/plans")
-			return method && url && contentType && name && memory && swap && cpuShare && deflt
+			return method && url && contentType && name && memory && cpuMilli && deflt
 		},
 	}
 	client := cmd.NewClient(&http.Client{Transport: trans}, nil, s.manager)

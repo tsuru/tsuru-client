@@ -18,8 +18,7 @@ import (
 
 type PlanCreate struct {
 	memory     string
-	swap       string
-	cpushare   int
+	cpu        string
 	setDefault bool
 	fs         *gnuflag.FlagSet
 }
@@ -31,15 +30,10 @@ func (c *PlanCreate) Flags() *gnuflag.FlagSet {
 by M, K or G for megabytes, kilobytes or gigabytes respectively.`
 		c.fs.StringVar(&c.memory, "memory", "0", memory)
 		c.fs.StringVar(&c.memory, "m", "0", memory)
-		swap := `Amount of available swap space for units in bytes or an integer value followed
-by Mi, Ki or Gi for megabytes, kilobytes or gigabytes respectively.`
-		c.fs.StringVar(&c.swap, "swap", "0", swap)
-		c.fs.StringVar(&c.swap, "s", "0", swap)
-		cpushare := `Relative cpu share each unit will have available. This value is unitless and
-relative, so specifying the same value for all plans means all units will
-equally share processing power.`
-		c.fs.IntVar(&c.cpushare, "cpushare", 0, cpushare)
-		c.fs.IntVar(&c.cpushare, "c", 0, cpushare)
+
+		cpu := `Relative cpu each unit will have available.`
+		c.fs.StringVar(&c.cpu, "cpu", "0", cpu)
+		c.fs.StringVar(&c.cpu, "c", "0", cpu)
 		setDefault := `Set plan as default, this will remove the default flag from any other plan.
 The default plan will be used when creating an application without explicitly
 setting a plan.`
@@ -52,7 +46,7 @@ setting a plan.`
 func (c *PlanCreate) Info() *cmd.Info {
 	return &cmd.Info{
 		Name:    "plan-create",
-		Usage:   "plan create <name> -c cpushare [-m memory] [-s swap] [--default]",
+		Usage:   "plan create <name> -c cpu [-m memory] [--default]",
 		Desc:    `Creates a new plan for being used when creating apps.`,
 		MinArgs: 1,
 	}
@@ -72,13 +66,12 @@ func (c *PlanCreate) Run(context *cmd.Context, client *cmd.Client) error {
 	}
 	v.Set("memory", fmt.Sprintf("%d", memoryValue))
 
-	swapValue, err := parseMemoryQuantity(c.swap)
+	cpuValue, err := parseCPUQuantity(c.cpu)
 	if err != nil {
 		return err
 	}
-	v.Set("swap", fmt.Sprintf("%d", swapValue))
+	v.Set("cpumilli", fmt.Sprintf("%d", cpuValue))
 
-	v.Set("cpushare", strconv.Itoa(c.cpushare))
 	v.Set("default", strconv.FormatBool(c.setDefault))
 	b := strings.NewReader(v.Encode())
 	request, err := http.NewRequest("POST", u, b)
@@ -138,4 +131,28 @@ func parseMemoryQuantity(userQuantity string) (numBytes int64, err error) {
 
 	numBytes, _ = memoryQuantity.AsInt64()
 	return numBytes, nil
+}
+
+func parseCPUQuantity(userQuantity string) (numMillis int64, err error) {
+	if v, parseErr := strconv.Atoi(userQuantity); parseErr == nil {
+		return int64(v) * 1000, nil
+	}
+
+	if strings.HasSuffix(userQuantity, "%") {
+		v, err := strconv.Atoi(userQuantity[0 : len(userQuantity)-1])
+		if err != nil {
+			return 0, err
+		}
+		return int64(v) * 10, nil
+	}
+
+	cpuQuantity, err := resource.ParseQuantity(userQuantity)
+
+	if err != nil {
+		return 0, err
+	}
+
+	cpu := cpuQuantity.AsApproximateFloat64()
+
+	return int64(cpu * 1000), nil
 }
