@@ -134,19 +134,21 @@ func parseMemoryQuantity(userQuantity string) (numBytes int64, err error) {
 }
 
 func parseCPUQuantity(userQuantity string) (numMillis int64, err error) {
-	if v, parseErr := strconv.Atoi(userQuantity); parseErr == nil {
+	var v int
+	if v, err = strconv.Atoi(userQuantity); err == nil {
 		return int64(v) * 1000, nil
 	}
 
 	if strings.HasSuffix(userQuantity, "%") {
-		v, err := strconv.Atoi(userQuantity[0 : len(userQuantity)-1])
+		v, err = strconv.Atoi(userQuantity[0 : len(userQuantity)-1])
 		if err != nil {
 			return 0, err
 		}
 		return int64(v) * 10, nil
 	}
 
-	cpuQuantity, err := resource.ParseQuantity(userQuantity)
+	var cpuQuantity resource.Quantity
+	cpuQuantity, err = resource.ParseQuantity(userQuantity)
 
 	if err != nil {
 		return 0, err
