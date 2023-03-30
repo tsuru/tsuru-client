@@ -6,6 +6,7 @@ import (
 	"fmt"
 	"strings"
 	"text/template"
+	"time"
 
 	"github.com/tsuru/gnuflag"
 	"github.com/tsuru/go-tsuruclient/pkg/client"
@@ -184,8 +185,52 @@ func (c *JobInfo) Run(ctx *cmd.Context, cli *cmd.Client) error {
 	if err != nil {
 		return err
 	}
+
+	renderJobUnits(&buf, jobInfo.Units)
 	fmt.Println(buf.String())
 	return nil
+}
+
+func renderJobUnits(buf *bytes.Buffer, units []tsuru.Unit) {
+
+	titles := []string{"Name", "Status", "Restarts", "Age"}
+	unitsTable := tablecli.NewTable()
+	tablecli.TableConfig.ForceWrap = false
+	unitsTable.Headers = tablecli.Row(titles)
+
+	for _, unit := range units {
+		row := tablecli.Row{
+			unit.Name,
+			jobUnitReadyAndStatus(unit),
+			countValue(unit.Restarts),
+			jobAge(unit.CreatedAt),
+		}
+
+		unitsTable.AddRow(row)
+	}
+	if unitsTable.Rows() > 0 {
+		unitsTable.SortByColumn(2)
+		buf.WriteString("\n")
+
+		buf.WriteString(fmt.Sprintf("Units: %d\n", unitsTable.Rows()))
+		buf.WriteString(unitsTable.String())
+	}
+}
+
+func jobUnitReadyAndStatus(u tsuru.Unit) string {
+	if u.Ready != nil && *u.Ready {
+		return "ready"
+	}
+
+	return u.Status
+}
+
+func jobAge(createdAt string) string {
+	t, err := time.Parse(time.RFC3339, createdAt)
+	if err != nil {
+		return ""
+	}
+	return translateTimestampSince(&t)
 }
 
 type jobFilter struct {

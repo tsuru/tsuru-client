@@ -18,7 +18,7 @@ require (
 	github.com/pmorie/go-open-service-broker-client v0.0.0-20180330214919-dca737037ce6
 	github.com/sabhiram/go-gitignore v0.0.0-20171017070213-362f9845770f
 	github.com/tsuru/gnuflag v0.0.0-20151217162021-86b8c1b864aa
-	github.com/tsuru/go-tsuruclient v0.0.0-20230330132913-adde0ca5a227
+	github.com/tsuru/go-tsuruclient v0.0.0-20230330182101-2c991cac3a33
 	github.com/tsuru/tablecli v0.0.0-20190131152944-7ded8a3383c6
 	github.com/tsuru/tsuru v0.0.0-20221019183903-abc5e18fa173
 	golang.org/x/term v0.0.0-20210615171337-6886f2dfbf5b
