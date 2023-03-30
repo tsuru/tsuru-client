@@ -856,6 +856,12 @@ github.com/tsuru/go-tsuruclient v0.0.0-20230329141520-f78dd1b726e1 h1:7K+BCT4xeg
 github.com/tsuru/go-tsuruclient v0.0.0-20230329141520-f78dd1b726e1/go.mod h1:P2AL93lzpzJlgOvu37SOhee4pnLWod1GMJ8YYQq2b7o=
 github.com/tsuru/go-tsuruclient v0.0.0-20230329142646-f0bf8927dd0d h1:MWjXAbdVu/z9U+DCPpcHUls8r/o9F6Sjp1seWzaBO4I=
 github.com/tsuru/go-tsuruclient v0.0.0-20230329142646-f0bf8927dd0d/go.mod h1:P2AL93lzpzJlgOvu37SOhee4pnLWod1GMJ8YYQq2b7o=
+github.com/tsuru/go-tsuruclient v0.0.0-20230330125331-00e6d8918dc8 h1:59dAWXJO9wu70AW/B97zJBKeT5ojYbYrdM4n/jG54KQ=
+github.com/tsuru/go-tsuruclient v0.0.0-20230330125331-00e6d8918dc8/go.mod h1:P2AL93lzpzJlgOvu37SOhee4pnLWod1GMJ8YYQq2b7o=
+github.com/tsuru/go-tsuruclient v0.0.0-20230330125719-f479bd449fab h1:SUGJm+PnYwRKxcYiPMew1PQZeL8qrexxcJ5No/O5tu4=
+github.com/tsuru/go-tsuruclient v0.0.0-20230330125719-f479bd449fab/go.mod h1:P2AL93lzpzJlgOvu37SOhee4pnLWod1GMJ8YYQq2b7o=
+github.com/tsuru/go-tsuruclient v0.0.0-20230330132913-adde0ca5a227 h1:7OSK4mONFFZsDLBj9eJVj3Z98UvG0+Ci9gsy0i2AOKc=
+github.com/tsuru/go-tsuruclient v0.0.0-20230330132913-adde0ca5a227/go.mod h1:P2AL93lzpzJlgOvu37SOhee4pnLWod1GMJ8YYQq2b7o=
 github.com/tsuru/monsterqueue v0.0.0-20160909010522-70e946ec66c3 h1:+aJngj5cQjYyx/qSjffQceop25t97hLS0+t8bvx9hg4=
 github.com/tsuru/monsterqueue v0.0.0-20160909010522-70e946ec66c3/go.mod h1:3KR1vkjfm5b7Lhu5OXuO0NMIyZNG0d0d9xh6ufWYVxg=
 github.com/tsuru/tablecli v0.0.0-20180215113938-82de88f75181/go.mod h1:ztYpOhW+u1k21FEqp7nZNgpWbr0dUKok5lgGCZi+1AQ=

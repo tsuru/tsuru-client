@@ -1,12 +1,17 @@
 package client
 
 import (
+	"bytes"
 	"context"
 	"fmt"
+	"strings"
+	"text/template"
 
 	"github.com/tsuru/gnuflag"
 	"github.com/tsuru/go-tsuruclient/pkg/client"
 	"github.com/tsuru/go-tsuruclient/pkg/tsuru"
+	"github.com/tsuru/tablecli"
+	"github.com/tsuru/tsuru-client/tsuru/formatter"
 	"github.com/tsuru/tsuru/cmd"
 )
 
@@ -115,4 +120,183 @@ func (c *JobCreate) Run(ctx *cmd.Context, cli *cmd.Client) error {
 	}
 
 	return err
+}
+
+type JobInfo struct {
+	fs   *gnuflag.FlagSet
+	json bool
+}
+
+func (c *JobInfo) Flags() *gnuflag.FlagSet {
+	if c.fs == nil {
+		c.fs = gnuflag.NewFlagSet("job-info", gnuflag.ContinueOnError)
+		c.fs.BoolVar(&c.json, "json", false, "Show JSON")
+	}
+	return c.fs
+}
+
+func (c *JobInfo) Info() *cmd.Info {
+	return &cmd.Info{
+		Name:    "job-info",
+		Usage:   "job info <job>",
+		Desc:    `Get a job.`,
+		MinArgs: 1,
+		MaxArgs: 1,
+	}
+}
+
+const jobInfoFormat = `Job: {{.Job.Name}}
+{{- if .Job.Description }}
+Description: {{.Job.Description}}
+{{- end }}
+Teams: {{.Job.Teams}}
+Created by: {{.Job.Owner}}
+Pool: {{.Job.Pool}}
+Plan: {{.Job.Plan.Name}}
+{{- if .Job.Spec.Schedule }}
+Schedule: {{.Job.Spec.Schedule}}
+{{- end }}
+Image: {{.Job.Spec.Container.Image}}
+Command: {{.Job.Spec.Container.Command}}`
+
+func (c *JobInfo) Run(ctx *cmd.Context, cli *cmd.Client) error {
+	jobName := ctx.Args[0]
+	apiClient, err := client.ClientFromEnvironment(&tsuru.Configuration{
+		HTTPClient: cli.HTTPClient,
+	})
+	if err != nil {
+		return err
+	}
+
+	jobInfo, _, err := apiClient.JobApi.GetJob(context.Background(), jobName)
+
+	if err != nil {
+		return err
+	}
+	if c.json {
+		return formatter.JSON(ctx.Stdout, jobInfo)
+	}
+
+	var buf bytes.Buffer
+	tmpl := template.Must(template.New("job").Parse(jobInfoFormat))
+
+	err = tmpl.Execute(&buf, jobInfo)
+	if err != nil {
+		return err
+	}
+	fmt.Println(buf.String())
+	return nil
+}
+
+type jobFilter struct {
+	name      string
+	pool      string
+	plan      string
+	teamOwner string
+}
+
+type JobList struct {
+	fs         *gnuflag.FlagSet
+	filter     jobFilter
+	json       bool
+	simplified bool
+}
+
+func (c *JobList) Flags() *gnuflag.FlagSet {
+	if c.fs == nil {
+		c.fs = gnuflag.NewFlagSet("job-list", gnuflag.ContinueOnError)
+		c.fs.StringVar(&c.filter.name, "name", "", "Filter jobs by name")
+		c.fs.StringVar(&c.filter.name, "n", "", "Filter jobs by name")
+		c.fs.StringVar(&c.filter.pool, "pool", "", "Filter jobs by pool")
+		c.fs.StringVar(&c.filter.pool, "o", "", "Filter jobs by pool")
+		c.fs.StringVar(&c.filter.plan, "plan", "", "Filter jobs by plan")
+		c.fs.StringVar(&c.filter.plan, "p", "", "Filter jobs by plan")
+		c.fs.StringVar(&c.filter.teamOwner, "team", "", "Filter jobs by team owner")
+		c.fs.StringVar(&c.filter.teamOwner, "t", "", "Filter jobs by team owner")
+		c.fs.BoolVar(&c.simplified, "q", false, "Display only jobs name")
+		c.fs.BoolVar(&c.json, "json", false, "Show JSON")
+	}
+	return c.fs
+}
+
+func (c *JobList) Info() *cmd.Info {
+	return &cmd.Info{
+		Name:    "job-list",
+		Usage:   "job list",
+		Desc:    `List jobs.`,
+		MinArgs: 0,
+		MaxArgs: 0,
+	}
+}
+
+func (c *JobList) Run(ctx *cmd.Context, cli *cmd.Client) error {
+	apiClient, err := client.ClientFromEnvironment(&tsuru.Configuration{
+		HTTPClient: cli.HTTPClient,
+	})
+	if err != nil {
+		return err
+	}
+
+	jobs, _, err := apiClient.JobApi.ListJob(context.Background())
+
+	if err != nil {
+		return err
+	}
+
+	jobs = c.clientSideFilter(jobs)
+	if c.json {
+		return formatter.JSON(ctx.Stdout, jobs)
+	}
+
+	if c.simplified {
+		for _, j := range jobs {
+			fmt.Fprintln(ctx.Stdout, j.Name)
+		}
+		return nil
+	}
+
+	tbl := tablecli.NewTable()
+	tbl.Headers = tablecli.Row{"Name", "Schedule", "Image", "Command"}
+	tbl.LineSeparator = true
+	for _, j := range jobs {
+		tbl.AddRow(tablecli.Row{
+			j.Name,
+			j.Spec.Schedule,
+			j.Spec.Container.Image,
+			strings.Join(j.Spec.Container.Command, " "),
+		})
+	}
+	tbl.Sort()
+	fmt.Fprint(ctx.Stdout, tbl.String())
+
+	return nil
+}
+
+func (c *JobList) clientSideFilter(jobs []tsuru.Job) []tsuru.Job {
+	result := make([]tsuru.Job, 0, len(jobs))
+
+	for _, j := range jobs {
+		insert := true
+		if c.filter.name != "" && !strings.Contains(j.Name, c.filter.name) {
+			insert = false
+		}
+
+		if c.filter.pool != "" && j.Pool != c.filter.pool {
+			insert = false
+		}
+
+		if c.filter.plan != "" && j.Plan.Name != c.filter.plan {
+			insert = false
+		}
+
+		if c.filter.teamOwner != "" && j.TeamOwner != c.filter.teamOwner {
+			insert = false
+		}
+
+		if insert {
+			result = append(result, j)
+		}
+	}
+
+	return result
 }

@@ -84,6 +84,8 @@ Services aren’t managed by tsuru, but by their creators.`)
 
 	m.RegisterTopic("job", `Job is a program that runs following a schedule`)
 	m.Register(&client.JobCreate{})
+	m.Register(&client.JobInfo{})
+	m.Register(&client.JobList{})
 
 	m.Register(&client.PluginInstall{})
 	m.Register(&client.PluginRemove{})
