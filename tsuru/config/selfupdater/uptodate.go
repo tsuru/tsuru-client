@@ -12,6 +12,7 @@ import (
 	"net/http"
 	"os"
 	"strconv"
+	"strings"
 	"time"
 
 	"github.com/Masterminds/semver/v3"
@@ -75,27 +76,27 @@ func getRemoteVersionAndReportsToChanGoroutine(r *latestVersionCheck) {
 		latestVersion: r.currentVersion,
 	}
 
-	if r.currentVersion == "dev" || conf.ClientSelfUpdater.LastCheck.Add(snoozeDuration).After(nowUTC()) {
+	if strings.HasPrefix(r.currentVersion, "dev") || conf.ClientSelfUpdater.LastCheck.Add(snoozeDuration).After(nowUTC()) {
 		r.result <- checkResult
 		return
 	}
 
 	response, err := http.Get(conf.ClientSelfUpdater.LatestManifestURL)
 	if err != nil {
-		checkResult.err = fmt.Errorf("Could not GET endpoint %q: %w", conf.ClientSelfUpdater.LatestManifestURL, err)
+		checkResult.err = fmt.Errorf("could not GET endpoint %q: %w", conf.ClientSelfUpdater.LatestManifestURL, err)
 		r.result <- checkResult
 		return
 	}
 	defer response.Body.Close()
 	if response.StatusCode > 300 {
-		checkResult.err = fmt.Errorf("Could not GET endpoint %q: %v", conf.ClientSelfUpdater.LatestManifestURL, response.Status)
+		checkResult.err = fmt.Errorf("could not GET endpoint %q: %v", conf.ClientSelfUpdater.LatestManifestURL, response.Status)
 		r.result <- checkResult
 		return
 	}
 
 	data, err := ioutil.ReadAll(response.Body)
 	if err != nil {
-		checkResult.err = fmt.Errorf("Could not read response body: %w", err)
+		checkResult.err = fmt.Errorf("could not read response body: %w", err)
 		r.result <- checkResult
 		return
 	}
@@ -103,7 +104,7 @@ func getRemoteVersionAndReportsToChanGoroutine(r *latestVersionCheck) {
 	var metadata releaseMetadata
 	err = json.Unmarshal(data, &metadata)
 	if err != nil {
-		checkResult.err = fmt.Errorf("Could not parse metadata.json. Unexpected format: %w", err)
+		checkResult.err = fmt.Errorf("could not parse metadata.json. Unexpected format: %w", err)
 		r.result <- checkResult
 		return
 	}

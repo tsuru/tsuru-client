@@ -95,12 +95,13 @@ func (s *S) TestGetRemoteVersionAndReportsToChan(c *check.C) {
 		{"1.1.2", "1.1.1", "1.1.2", false, ""},             // somehow, current is greater than latest
 		{"1.1.1", "1.1.1-rc1", "1.1.1", false, ""},         // release candidate should take lower precedence
 		{"dev", "1.2.3", "dev", false, ""},                 // dev version is a special case, early return
+		{"dev-1.2.3", "1.5.1", "dev-1.2.3", false, ""},     // current is a dev version
 		{"1.1.1", "invalid", "1.1.1", false, eInvalid},     // latest invalid, gives error
 		{"invalid", "invalid", "invalid", false, eInvalid}, // current and latest invalid, gives error
 	} {
 		tsMetadata := httptest.NewServer(githubMockHandler(testCase.latestVer))
 		ts := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-			http.Redirect(w, r, tsMetadata.URL, 302) // github behavior: /releases/latest -> /releases/1.2.3
+			http.Redirect(w, r, tsMetadata.URL, http.StatusFound) // github behavior: /releases/latest -> /releases/1.2.3
 		}))
 		config.GetConfig().ClientSelfUpdater.LatestManifestURL = ts.URL
 
@@ -130,7 +131,7 @@ func (s *S) TestGetRemoteVersionAndReportsToChanGoroutine(c *check.C) {
 		w.Write(data)
 	}))
 	ts := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-		http.Redirect(w, r, tsMetadata.URL, 302) // github behavior: /releases/latest -> /releases/1.2.3
+		http.Redirect(w, r, tsMetadata.URL, http.StatusFound) // github behavior: /releases/latest -> /releases/1.2.3
 	}))
 	config.GetConfig().ClientSelfUpdater.LatestManifestURL = ts.URL
 
@@ -143,7 +144,7 @@ func (s *S) TestGetRemoteVersionAndReportsToChanGoroutine(c *check.C) {
 	c.Assert(result.isFinished, check.Equals, true)
 	c.Assert(result.isOutdated, check.Equals, false)
 	c.Assert(result.latestVersion, check.Equals, "1.2.3")
-	c.Assert(result.err, check.ErrorMatches, "Could not parse metadata.json. Unexpected format: invalid character.*")
+	c.Assert(result.err, check.ErrorMatches, "could not parse metadata.json. Unexpected format: invalid character.*")
 }
 
 func (s *S) TestGetRemoteVersionAndReportsToChanGoroutineSnooze(c *check.C) {
@@ -152,7 +153,7 @@ func (s *S) TestGetRemoteVersionAndReportsToChanGoroutineSnooze(c *check.C) {
 
 	tsMetadata := httptest.NewServer(githubMockHandler("2.2.2"))
 	ts := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-		http.Redirect(w, r, tsMetadata.URL, 302) // github behavior: /releases/latest -> /releases/1.2.3
+		http.Redirect(w, r, tsMetadata.URL, http.StatusFound) // github behavior: /releases/latest -> /releases/1.2.3
 	}))
 	config.GetConfig().ClientSelfUpdater.LatestManifestURL = ts.URL
 
