@@ -264,6 +264,38 @@ func (s *S) TestServiceInstanceBind(c *check.C) {
 	c.Assert(stdout.String(), check.Equals, expectedOut)
 }
 
+func (s *S) TestServiceInstanceBindToJob(c *check.C) {
+	var (
+		called         bool
+		stdout, stderr bytes.Buffer
+	)
+	ctx := cmd.Context{
+		Args:   []string{"mysql", "my-mysql"},
+		Stdout: &stdout,
+		Stderr: &stderr,
+	}
+	expectedOut := `["DATABASE_HOST","DATABASE_USER","DATABASE_PASSWORD"]`
+	msg := io.SimpleJsonMessage{Message: expectedOut}
+	result, err := json.Marshal(msg)
+	c.Assert(err, check.IsNil)
+	trans := &cmdtest.ConditionalTransport{
+		Transport: cmdtest.Transport{Message: string(result), Status: http.StatusOK},
+		CondFunc: func(req *http.Request) bool {
+			called = true
+			method := req.Method == "PUT"
+			path := strings.HasSuffix(req.URL.Path, "/services/mysql/instances/my-mysql/jobs/job1")
+			return method && path
+		},
+	}
+	client := cmd.NewClient(&http.Client{Transport: trans}, nil, manager)
+	command := ServiceInstanceBind{}
+	command.Flags().Parse(true, []string{"-j", "job1"})
+	err = command.Run(&ctx, client)
+	c.Assert(err, check.IsNil)
+	c.Assert(called, check.Equals, true)
+	c.Assert(stdout.String(), check.Equals, expectedOut)
+}
+
 func (s *S) TestServiceInstanceBindWithoutEnvironmentVariables(c *check.C) {
 	var stdout, stderr bytes.Buffer
 	ctx := cmd.Context{

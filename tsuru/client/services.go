@@ -7,6 +7,7 @@ package client
 import (
 	"context"
 	"encoding/json"
+	"errors"
 	"fmt"
 	"io/ioutil"
 	"net/http"
@@ -407,6 +408,7 @@ func (c *ServiceInstanceUpdate) Run(ctx *cmd.Context, client *cmd.Client) error 
 func (c *ServiceInstanceUpdate) Flags() *gnuflag.FlagSet {
 	if c.fs == nil {
 		c.fs = gnuflag.NewFlagSet("service-instance-update", gnuflag.ExitOnError)
+
 		teamOwnerMessage := "service instance team owner"
 		c.fs.StringVar(&c.teamOwner, "team-owner", "", teamOwnerMessage)
 		c.fs.StringVar(&c.teamOwner, "t", "", teamOwnerMessage)
@@ -429,20 +431,33 @@ func (c *ServiceInstanceUpdate) Flags() *gnuflag.FlagSet {
 }
 
 type ServiceInstanceBind struct {
-	cmd.AppNameMixIn
+	appName   string
+	jobName   string
 	fs        *gnuflag.FlagSet
 	noRestart bool
 }
 
 func (sb *ServiceInstanceBind) Run(ctx *cmd.Context, client *cmd.Client) error {
 	ctx.RawOutput()
-	appName, err := sb.AppName()
-	if err != nil {
-		return err
+
+	if sb.appName == "" && sb.jobName == "" {
+		return errors.New("You must pass an application or job")
 	}
+	if sb.appName != "" && sb.jobName != "" {
+		return errors.New("You must pass an application or job, never both")
+	}
+
 	serviceName := ctx.Args[0]
 	instanceName := ctx.Args[1]
-	u, err := cmd.GetURL("/services/" + serviceName + "/instances/" + instanceName + "/" + appName)
+
+	var path string
+	if sb.appName != "" {
+		path = "/services/" + serviceName + "/instances/" + instanceName + "/" + sb.appName
+	} else {
+		path = "/services/" + serviceName + "/instances/" + instanceName + "/jobs/" + sb.jobName
+	}
+
+	u, err := cmd.GetURL(path)
 	if err != nil {
 		return err
 	}
@@ -463,11 +478,11 @@ func (sb *ServiceInstanceBind) Run(ctx *cmd.Context, client *cmd.Client) error {
 func (sb *ServiceInstanceBind) Info() *cmd.Info {
 	return &cmd.Info{
 		Name:  "service-instance-bind",
-		Usage: "service instance bind <service-name> <service-instance-name> [-a/--app appname] [--no-restart]",
-		Desc: `Binds an application to a previously created service instance. See [[tsuru
+		Usage: "service instance bind <service-name> <service-instance-name> [-a/--app appname] [-j/--job jobname] [--no-restart]",
+		Desc: `Binds an application or job to a previously created service instance. See [[tsuru
 service instance add]] for more details on how to create a service instance.
 
-When binding an application to a service instance, tsuru will add new
+When binding an application or job to a service instance, tsuru will add new
 environment variables to the application. All environment variables exported
 by bind will be private (not accessible via [[tsuru env-get]]).`,
 		MinArgs: 2,
@@ -476,7 +491,12 @@ by bind will be private (not accessible via [[tsuru env-get]]).`,
 
 func (sb *ServiceInstanceBind) Flags() *gnuflag.FlagSet {
 	if sb.fs == nil {
-		sb.fs = sb.AppNameMixIn.Flags()
+		sb.fs = gnuflag.NewFlagSet("", gnuflag.ExitOnError)
+
+		sb.fs.StringVar(&sb.appName, "app", "", "The name of the app.")
+		sb.fs.StringVar(&sb.appName, "a", "", "The name of the app.")
+		sb.fs.StringVar(&sb.jobName, "job", "", "The name of the job.")
+		sb.fs.StringVar(&sb.jobName, "j", "", "The name of the job.")
 		sb.fs.BoolVar(&sb.noRestart, "no-restart", false, "Binds an application to a service instance without restart the application")
 	}
 	return sb.fs
