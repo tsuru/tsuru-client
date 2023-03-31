@@ -283,7 +283,7 @@ func (s *S) TestServiceInstanceBindToJob(c *check.C) {
 		CondFunc: func(req *http.Request) bool {
 			called = true
 			method := req.Method == "PUT"
-			path := strings.HasSuffix(req.URL.Path, "/services/mysql/instances/my-mysql/jobs/job1")
+			path := strings.HasSuffix(req.URL.Path, "/1.13/services/mysql/instances/my-mysql/jobs/job1")
 			return method && path
 		},
 	}

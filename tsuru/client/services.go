@@ -451,13 +451,15 @@ func (sb *ServiceInstanceBind) Run(ctx *cmd.Context, client *cmd.Client) error {
 	instanceName := ctx.Args[1]
 
 	var path string
+	apiVersion := "1.0"
 	if sb.appName != "" {
 		path = "/services/" + serviceName + "/instances/" + instanceName + "/" + sb.appName
 	} else {
 		path = "/services/" + serviceName + "/instances/" + instanceName + "/jobs/" + sb.jobName
+		apiVersion = "1.13"
 	}
 
-	u, err := cmd.GetURL(path)
+	u, err := cmd.GetURLVersion(apiVersion, path)
 	if err != nil {
 		return err
 	}
