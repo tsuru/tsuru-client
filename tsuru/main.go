@@ -86,6 +86,7 @@ Services aren’t managed by tsuru, but by their creators.`)
 	m.Register(&client.JobCreate{})
 	m.Register(&client.JobInfo{})
 	m.Register(&client.JobList{})
+	m.Register(&client.JobDelete{})
 
 	m.Register(&client.PluginInstall{})
 	m.Register(&client.PluginRemove{})

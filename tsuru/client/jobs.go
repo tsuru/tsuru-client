@@ -4,6 +4,7 @@ import (
 	"bytes"
 	"context"
 	"fmt"
+	"net/http"
 	"strings"
 	"text/template"
 	"time"
@@ -282,8 +283,12 @@ func (c *JobList) Run(ctx *cmd.Context, cli *cmd.Client) error {
 		return err
 	}
 
-	jobs, _, err := apiClient.JobApi.ListJob(context.Background())
+	jobs, resp, err := apiClient.JobApi.ListJob(context.Background())
 
+	if resp != nil && resp.StatusCode == http.StatusNoContent {
+		fmt.Fprint(ctx.Stdout, "No jobs found.\n")
+		return nil
+	}
 	if err != nil {
 		return err
 	}
@@ -344,4 +349,35 @@ func (c *JobList) clientSideFilter(jobs []tsuru.Job) []tsuru.Job {
 	}
 
 	return result
+}
+
+type JobDelete struct{}
+
+func (c *JobDelete) Info() *cmd.Info {
+	return &cmd.Info{
+		Name:    "job-delete",
+		Usage:   "job delete <job-name>",
+		Desc:    `Delete an existing job volume.`,
+		MinArgs: 1,
+		MaxArgs: 1,
+	}
+}
+
+func (c *JobDelete) Run(ctx *cmd.Context, cli *cmd.Client) error {
+	jobName := ctx.Args[0]
+
+	apiClient, err := client.ClientFromEnvironment(&tsuru.Configuration{
+		HTTPClient: cli.HTTPClient,
+	})
+	if err != nil {
+		return err
+	}
+
+	_, err = apiClient.JobApi.DeleteJob(context.Background(), jobName)
+	if err != nil {
+		return err
+	}
+
+	fmt.Fprint(ctx.Stdout, "Job successfully deleted.\n")
+	return nil
 }
