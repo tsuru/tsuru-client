@@ -3,6 +3,7 @@ package client
 import (
 	"bytes"
 	"context"
+	"errors"
 	"fmt"
 	"net/http"
 	"strings"
@@ -23,6 +24,8 @@ type JobCreate struct {
 	plan        string
 	pool        string
 	description string
+	envs        cmd.StringSliceFlag
+	privateEnvs cmd.StringSliceFlag
 	tags        cmd.StringSliceFlag
 
 	fs *gnuflag.FlagSet
@@ -60,7 +63,11 @@ The [[--description]] parameter sets a description for your job.
 It is an optional parameter, and if its not set the job will only not have a
 description associated.
 
-The [[--tag]] parameter sets a tag to your job. You can set multiple [[--tag]] parameters.`,
+The [[--tag]] parameter sets a tag to your job. You can set multiple [[--tag]] parameters.
+
+The [[--env]] parameter sets a environment variable to your job. You can set multiple [[--env]] parameters.
+
+The [[--private-env]] parameter sets a private environment variable to your job. You can set multiple [[--private-env]] parameters.`,
 		MinArgs: 2,
 	}
 }
@@ -86,6 +93,12 @@ func (c *JobCreate) Flags() *gnuflag.FlagSet {
 		tagMessage := "Job tag"
 		c.fs.Var(&c.tags, "tag", tagMessage)
 		c.fs.Var(&c.tags, "g", tagMessage)
+		envMessage := "Environment variable"
+		c.fs.Var(&c.envs, "env", envMessage)
+		c.fs.Var(&c.envs, "e", envMessage)
+
+		envMessage = "Private environment variable"
+		c.fs.Var(&c.privateEnvs, "private-env", envMessage)
 	}
 	return c.fs
 }
@@ -102,6 +115,23 @@ func (c *JobCreate) Run(ctx *cmd.Context, cli *cmd.Client) error {
 	image := ctx.Args[1]
 	commands := ctx.Args[2:]
 
+	envs := []tsuru.EnvVar{}
+	for _, env := range c.envs {
+		parts := strings.SplitN(env, "=", 2)
+		if len(parts) != 2 {
+			return errors.New(EnvSetValidationMessage)
+		}
+		envs = append(envs, tsuru.EnvVar{Name: parts[0], Value: parts[1], Public: true})
+	}
+
+	for _, env := range c.privateEnvs {
+		parts := strings.SplitN(env, "=", 2)
+		if len(parts) != 2 {
+			return errors.New(EnvSetValidationMessage)
+		}
+		envs = append(envs, tsuru.EnvVar{Name: parts[0], Value: parts[1], Public: false})
+	}
+
 	_, err = apiClient.JobApi.CreateJob(context.Background(), tsuru.InputJob{
 		Name:        jobName,
 		Tags:        c.tags,
@@ -113,6 +143,7 @@ func (c *JobCreate) Run(ctx *cmd.Context, cli *cmd.Client) error {
 		Container: tsuru.InputJobContainer{
 			Image:   image,
 			Command: commands,
+			Envs:    envs,
 		},
 	})
 
@@ -357,7 +388,7 @@ func (c *JobDelete) Info() *cmd.Info {
 	return &cmd.Info{
 		Name:    "job-delete",
 		Usage:   "job delete <job-name>",
-		Desc:    `Delete an existing job volume.`,
+		Desc:    `Delete an existing job.`,
 		MinArgs: 1,
 		MaxArgs: 1,
 	}
@@ -379,5 +410,36 @@ func (c *JobDelete) Run(ctx *cmd.Context, cli *cmd.Client) error {
 	}
 
 	fmt.Fprint(ctx.Stdout, "Job successfully deleted.\n")
+	return nil
+}
+
+type JobTrigger struct{}
+
+func (c *JobTrigger) Info() *cmd.Info {
+	return &cmd.Info{
+		Name:    "job-trigger",
+		Usage:   "job trigger <job-name>",
+		Desc:    `Trigger an existing job.`,
+		MinArgs: 1,
+		MaxArgs: 1,
+	}
+}
+
+func (c *JobTrigger) Run(ctx *cmd.Context, cli *cmd.Client) error {
+	jobName := ctx.Args[0]
+
+	apiClient, err := client.ClientFromEnvironment(&tsuru.Configuration{
+		HTTPClient: cli.HTTPClient,
+	})
+	if err != nil {
+		return err
+	}
+
+	_, err = apiClient.JobApi.TriggerJob(context.Background(), jobName)
+	if err != nil {
+		return err
+	}
+
+	fmt.Fprint(ctx.Stdout, "Job successfully triggered.\n")
 	return nil
 }

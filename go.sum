@@ -848,8 +848,8 @@ github.com/tsuru/docker-cluster v0.0.0-20190325123005-f372d8d4e354 h1:KSHCFvKvCM
 github.com/tsuru/docker-cluster v0.0.0-20190325123005-f372d8d4e354/go.mod h1:Inv1W7alFRlGqinfekVO0/RzmQyyRSlfENxNCVxaoMY=
 github.com/tsuru/gnuflag v0.0.0-20151217162021-86b8c1b864aa h1:JlLQP1xa13a994p/Aau2e3K9xXYaHNoNvTDVIMHSUa4=
 github.com/tsuru/gnuflag v0.0.0-20151217162021-86b8c1b864aa/go.mod h1:UibOSvkMFKRe/eiwktAPAvQG8L+p8nYsECJvu3Dgw7I=
-github.com/tsuru/go-tsuruclient v0.0.0-20230331123328-4b2b672b95da h1:ljIAD0J+FT28VH5ikQmK+0H3PTt+eVd41BMLbUNWjm4=
-github.com/tsuru/go-tsuruclient v0.0.0-20230331123328-4b2b672b95da/go.mod h1:P2AL93lzpzJlgOvu37SOhee4pnLWod1GMJ8YYQq2b7o=
+github.com/tsuru/go-tsuruclient v0.0.0-20230410125939-b9d68773f7b6 h1:6YyC5ZaJgWYu9hMa00jOYXBeTQ9Ease8js/PQJUsQRo=
+github.com/tsuru/go-tsuruclient v0.0.0-20230410125939-b9d68773f7b6/go.mod h1:P2AL93lzpzJlgOvu37SOhee4pnLWod1GMJ8YYQq2b7o=
 github.com/tsuru/monsterqueue v0.0.0-20160909010522-70e946ec66c3 h1:+aJngj5cQjYyx/qSjffQceop25t97hLS0+t8bvx9hg4=
 github.com/tsuru/monsterqueue v0.0.0-20160909010522-70e946ec66c3/go.mod h1:3KR1vkjfm5b7Lhu5OXuO0NMIyZNG0d0d9xh6ufWYVxg=
 github.com/tsuru/tablecli v0.0.0-20180215113938-82de88f75181/go.mod h1:ztYpOhW+u1k21FEqp7nZNgpWbr0dUKok5lgGCZi+1AQ=
