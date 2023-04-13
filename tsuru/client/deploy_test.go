@@ -311,14 +311,14 @@ func (s *S) TestDeploy_Run_UsingDockerfile(c *check.C) {
 				defer req.Body.Close()
 			}
 			c.Assert(req.Header.Get("Content-Type"), check.Matches, "multipart/form-data; boundary=.*")
-			c.Assert(req.FormValue("dockerfile"), check.Equals, "FROM busybox:latest\n\nCOPY ./app.sh /usr/local/bin/\n")
+			c.Assert(req.FormValue("dockerfile"), check.Equals, "FROM busybox:1.36.0-glibc\n\nCOPY ./app.sh /usr/local/bin/\n")
 
 			file, _, nerr := req.FormFile("file")
 			c.Assert(nerr, check.IsNil)
 			defer file.Close()
 			files := extractFiles(s.t, c, file)
 			c.Assert(files, check.DeepEquals, []miniFile{
-				{Name: filepath.Join("Dockerfile"), Type: tar.TypeReg, Data: []byte("FROM busybox:latest\n\nCOPY ./app.sh /usr/local/bin/\n")},
+				{Name: filepath.Join("Dockerfile"), Type: tar.TypeReg, Data: []byte("FROM busybox:1.36.0-glibc\n\nCOPY ./app.sh /usr/local/bin/\n")},
 				{Name: filepath.Join("app.sh"), Type: tar.TypeReg, Data: []byte("echo \"Starting my application :P\"\n")},
 			})
 
