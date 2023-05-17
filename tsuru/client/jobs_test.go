@@ -171,3 +171,24 @@ Units: 1
 	c.Assert(err, check.IsNil)
 	c.Assert(stdout.String(), check.Equals, expected)
 }
+
+func (s *S) TestJobInfoApiError(c *check.C) {
+	var stdout, stderr bytes.Buffer
+	jobName := "garrincha"
+	context := cmd.Context{
+		Args:   []string{jobName},
+		Stdout: &stdout,
+		Stderr: &stderr,
+	}
+	expected := "500 Internal Server Error: some api error"
+	trans := cmdtest.ConditionalTransport{
+		Transport: cmdtest.Transport{ Message: "some api error", Status: http.StatusInternalServerError },
+		CondFunc:  func(r *http.Request) bool { return true },
+	}
+	client := cmd.NewClient(&http.Client{Transport: &trans}, nil, manager)
+	command := JobInfo{}
+	command.Info()
+	err := command.Run(&context, client)
+	c.Assert(err, check.NotNil)
+	c.Assert(err.Error(), check.Equals, expected)
+}
