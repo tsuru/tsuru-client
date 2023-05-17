@@ -88,7 +88,7 @@ Created by: botafogo@glorioso.com
 Pool: kubepool
 Plan: c0.1m0.1
 Schedule: * * * * *
-Image: docker-tsuru.artifactory.globoi.com/tsuru_lab/scratch:v10
+Image: putfire:v10
 Command: [/bin/sh -c sleep 600;]
 Units: 1
 +--------------------------+---------+----------+-----+
@@ -127,7 +127,7 @@ Units: 1
 		"spec": {
 			"schedule": "* * * * *",
 			"container": {
-				"image": "docker-tsuru.artifactory.globoi.com/tsuru_lab/scratch:v10",
+				"image": "putfire:v10",
 				"command": [
 					"/bin/sh",
 					"-c",
