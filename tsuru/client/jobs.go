@@ -202,7 +202,6 @@ func (c *JobInfo) Run(ctx *cmd.Context, cli *cmd.Client) error {
 	}
 
 	jobInfo, _, err := apiClient.JobApi.GetJob(context.Background(), jobName)
-
 	if err != nil {
 		return err
 	}
@@ -219,7 +218,7 @@ func (c *JobInfo) Run(ctx *cmd.Context, cli *cmd.Client) error {
 	}
 
 	renderJobUnits(&buf, jobInfo.Units)
-	fmt.Println(buf.String())
+	fmt.Fprintln(ctx.Stdout, buf.String())
 	return nil
 }
 

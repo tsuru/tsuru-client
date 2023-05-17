@@ -3,7 +3,8 @@ package client
 import (
 	"bytes"
 	"encoding/json"
-	"io/ioutil"
+	"fmt"
+	"io"
 	"net/http"
 
 	"github.com/tsuru/go-tsuruclient/pkg/tsuru"
@@ -26,17 +27,17 @@ func (s *S) TestJobCreate(c *check.C) {
 			c.Assert(r.URL.Path, check.Equals, "/1.13/jobs")
 			c.Assert(r.Method, check.Equals, "POST")
 			c.Assert(r.Header.Get("Content-Type"), check.Equals, "application/json")
-			data, err := ioutil.ReadAll(r.Body)
+			data, err := io.ReadAll(r.Body)
 			c.Assert(err, check.IsNil)
 			var rr tsuru.InputJob
 			err = json.Unmarshal(data, &rr)
 			c.Assert(err, check.IsNil)
 			c.Assert(rr, check.DeepEquals, tsuru.InputJob{
-				Name: "loucoAbreu",
-				Pool: "somepool",
+				Name:      "loucoAbreu",
+				Pool:      "somepool",
 				TeamOwner: "admin",
 				Container: tsuru.InputJobContainer{
-					Image: "ubuntu:latest",
+					Image:   "ubuntu:latest",
 					Command: []string{"echo \"vivo essa paixão\""},
 				},
 				Schedule: "* * * * *",
@@ -63,7 +64,7 @@ func (s *S) TestJobCreateApiError(c *check.C) {
 	expected := "500 Internal Server Error: some error occcured"
 	trans := cmdtest.ConditionalTransport{
 		Transport: cmdtest.Transport{Message: `some error occcured`, Status: http.StatusInternalServerError},
-		CondFunc: func(r *http.Request) bool { return true },
+		CondFunc:  func(r *http.Request) bool { return true },
 	}
 	client := cmd.NewClient(&http.Client{Transport: &trans}, nil, manager)
 	command := JobCreate{}
@@ -71,4 +72,102 @@ func (s *S) TestJobCreateApiError(c *check.C) {
 	command.Flags().Parse(true, []string{"-t", "admin", "-o", "somepool", "-s", "* * * * *"})
 	err := command.Run(&context, client)
 	c.Assert(err.Error(), check.Equals, expected)
+}
+
+func (s *S) TestJobInfo(c *check.C) {
+	var stdout, stderr bytes.Buffer
+	jobName := "garrincha"
+	context := cmd.Context{
+		Args:   []string{jobName},
+		Stdout: &stdout,
+		Stderr: &stderr,
+	}
+	expected := `Job: garrincha
+Teams: [botafogo]
+Created by: botafogo@glorioso.com
+Pool: kubepool
+Plan: c0.1m0.1
+Schedule: * * * * *
+Image: docker-tsuru.artifactory.globoi.com/tsuru_lab/scratch:v10
+Command: [/bin/sh -c sleep 600;]
+Units: 1
++--------------------------+---------+----------+-----+
+| Name                     | Status  | Restarts | Age |
++--------------------------+---------+----------+-----+
+| garrincha-28072468-kp4jv | running | 0        |     |
++--------------------------+---------+----------+-----+
+
+`
+	trans := cmdtest.ConditionalTransport{
+		Transport: cmdtest.Transport{
+			Message: `
+{
+	"job": {
+		"name": "garrincha",
+		"teams": [
+			"botafogo"
+		],
+		"teamOwner": "botafogo",
+		"owner": "botafogo@glorioso.com",
+		"plan": {
+			"name": "c0.1m0.1",
+			"memory": 134217728,
+			"cpumilli": 100,
+			"override": {
+				"memory": null,
+				"cpumilli": null
+			}
+		},
+		"metadata": {
+			"labels": [],
+			"annotations": []
+		},
+		"pool": "kubepool",
+		"description": "",
+		"spec": {
+			"schedule": "* * * * *",
+			"container": {
+				"image": "docker-tsuru.artifactory.globoi.com/tsuru_lab/scratch:v10",
+				"command": [
+					"/bin/sh",
+					"-c",
+					"sleep 600;"
+				]
+			},
+			"envs": []
+		}
+	},
+	"units": [{
+		"ID": "garrincha-28072468-kp4jv",
+		"Name": "garrincha-28072468-kp4jv",
+		"AppName": "",
+		"ProcessName": "",
+		"Type": "",
+		"InternalIP": "",
+		"Status": "running",
+		"StatusReason": "",
+		"Address": null,
+		"Addresses": null,
+		"Version": 0,
+		"Routable": false,
+		"Restarts": 0,
+		"Ready": null,
+		"HostAddr": "",
+		"HostPort": "",
+		"IP": "10.92.15.84"
+	}]
+}
+`, Status: http.StatusOK,
+		}, CondFunc: func(r *http.Request) bool {
+			c.Assert(r.URL.Path, check.Equals, fmt.Sprintf("/1.13/jobs/%s", jobName))
+			c.Assert(r.Method, check.Equals, "GET")
+			return true
+		},
+	}
+	client := cmd.NewClient(&http.Client{Transport: &trans}, nil, manager)
+	command := JobInfo{}
+	command.Info()
+	err := command.Run(&context, client)
+	c.Assert(err, check.IsNil)
+	c.Assert(stdout.String(), check.Equals, expected)
 }
