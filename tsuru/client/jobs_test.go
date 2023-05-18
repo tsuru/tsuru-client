@@ -339,3 +339,51 @@ func (s *S) TestJobDeleteApiError(c *check.C) {
 	c.Assert(err, check.NotNil)
 	c.Assert(err.Error(), check.Equals, expected)
 }
+
+func (s *S) TestJobTrigger(c *check.C) {
+	var stdout, stderr bytes.Buffer
+	jobName := "counter-strike"
+	context := cmd.Context{
+		Args:   []string{jobName},
+		Stdout: &stdout,
+		Stderr: &stderr,
+	}
+	expected := fmt.Sprintf("Job successfully triggered.\n")
+	trans := cmdtest.ConditionalTransport{
+		Transport: cmdtest.Transport{ Message: fmt.Sprintf(`{"status":"success"}`), Status: http.StatusOK },
+		CondFunc:  func(r *http.Request) bool { 
+			c.Assert(r.URL.Path, check.Equals, fmt.Sprintf("/1.13/jobs/%s/trigger", jobName))
+			c.Assert(r.Method, check.Equals, "POST")
+			return true
+		 },
+	}
+	client := cmd.NewClient(&http.Client{Transport: &trans}, nil, manager)
+	command := JobTrigger{}
+	command.Info()
+	err := command.Run(&context, client)
+	c.Assert(err, check.IsNil)
+	c.Assert(stdout.String(), check.Equals, expected)
+}
+
+func (s *S) TestJobTriggerApiError(c *check.C) {
+	var stdout, stderr bytes.Buffer
+	jobName := "counter-strike"
+	context := cmd.Context{
+		Args:   []string{jobName},
+		Stdout: &stdout,
+		Stderr: &stderr,
+	}
+	expected := fmt.Sprintf("500 Internal Server Error: some error")
+	trans := cmdtest.ConditionalTransport{
+		Transport: cmdtest.Transport{ Message: fmt.Sprintf(`some error`), Status: http.StatusInternalServerError },
+		CondFunc:  func(r *http.Request) bool { 
+			return true
+		 },
+	}
+	client := cmd.NewClient(&http.Client{Transport: &trans}, nil, manager)
+	command := JobTrigger{}
+	command.Info()
+	err := command.Run(&context, client)
+	c.Assert(err, check.NotNil)
+	c.Assert(err.Error(), check.Equals, expected)
+}
