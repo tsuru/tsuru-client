@@ -291,3 +291,51 @@ func (s *S) TestJobListApiError(c *check.C) {
 	c.Assert(err, check.NotNil)
 	c.Assert(err.Error(), check.Equals, expected)
 }
+
+func (s *S) TestJobDelete(c *check.C) {
+	var stdout, stderr bytes.Buffer
+	jobName := "all-time-low"
+	context := cmd.Context{
+		Args:   []string{jobName},
+		Stdout: &stdout,
+		Stderr: &stderr,
+	}
+	expected := fmt.Sprintf("Job successfully deleted.\n")
+	trans := cmdtest.ConditionalTransport{
+		Transport: cmdtest.Transport{ Status: http.StatusOK },
+		CondFunc:  func(r *http.Request) bool { 
+			c.Assert(r.URL.Path, check.Equals, fmt.Sprintf("/1.13/jobs/%s", jobName))
+			c.Assert(r.Method, check.Equals, "DELETE")
+			return true
+		 },
+	}
+	client := cmd.NewClient(&http.Client{Transport: &trans}, nil, manager)
+	command := JobDelete{}
+	command.Info()
+	err := command.Run(&context, client)
+	c.Assert(err, check.IsNil)
+	c.Assert(stdout.String(), check.Equals, expected)
+}
+
+func (s *S) TestJobDeleteApiError(c *check.C) {
+	var stdout, stderr bytes.Buffer
+	jobName := "all-time-low"
+	context := cmd.Context{
+		Args:   []string{jobName},
+		Stdout: &stdout,
+		Stderr: &stderr,
+	}
+	expected := fmt.Sprintf("500 Internal Server Error: some api error")
+	trans := cmdtest.ConditionalTransport{
+		Transport: cmdtest.Transport{ Message: "some api error", Status: http.StatusInternalServerError },
+		CondFunc:  func(r *http.Request) bool { 
+			return true
+		 },
+	}
+	client := cmd.NewClient(&http.Client{Transport: &trans}, nil, manager)
+	command := JobDelete{}
+	command.Info()
+	err := command.Run(&context, client)
+	c.Assert(err, check.NotNil)
+	c.Assert(err.Error(), check.Equals, expected)
+}
