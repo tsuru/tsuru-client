@@ -192,3 +192,102 @@ func (s *S) TestJobInfoApiError(c *check.C) {
 	c.Assert(err, check.NotNil)
 	c.Assert(err.Error(), check.Equals, expected)
 }
+
+func (s *S) TestJobList(c *check.C) {
+	var stdout, stderr bytes.Buffer
+	context := cmd.Context{
+		Args:   []string{},
+		Stdout: &stdout,
+		Stderr: &stderr,
+	}
+	expected := fmt.Sprintf(
+`+------------+----------+-----------------+---------------------------------------------------------+
+| Name       | Schedule | Image           | Command                                                 |
++------------+----------+-----------------+---------------------------------------------------------+
+| august     |          | midnights:v10   | /bin/sh -c date; echo Hello from the Kubernetes cluster |
++------------+----------+-----------------+---------------------------------------------------------+
+| tim-mcgraw |          | fearless:latest | sleep 30                                                |
++------------+----------+-----------------+---------------------------------------------------------+
+`,
+	)
+	timMcgrawjob := tsuru.Job{
+		Name: "tim-mcgraw",
+		TeamOwner: "taylor",
+		Pool: "kubepool",
+		Owner: "taylorswift@evermore.com",
+		Plan: tsuru.Plan{
+			Name: "c0.1m0.1",
+			Memory: int64(134217728),
+			Cpumilli: int32(100),
+		},
+		Spec: tsuru.JobSpec{
+			Container: tsuru.InputJobContainer{
+				Image: "fearless:latest",
+				Command: []string{"sleep", "30"},
+			},
+		},
+	}
+	augustJob := tsuru.Job{
+		Name: "august",
+		TeamOwner: "ts",
+		Pool: "kubepool",
+		Owner: "folklore@evermore.com",
+		Plan: tsuru.Plan{
+			Name: "c0.1m0.1",
+			Memory: int64(134217728),
+			Cpumilli: int32(100),
+		},
+		Spec: tsuru.JobSpec{
+			Container: tsuru.InputJobContainer{
+				Image: "midnights:v10",
+				Command: []string{"/bin/sh", "-c", "date; echo Hello from the Kubernetes cluster"},
+			},
+		},
+	}
+
+	jobList := []tsuru.Job{
+		timMcgrawjob,
+		augustJob,
+	}
+
+	messageBytes, err := json.Marshal(jobList)
+	c.Assert(err, check.IsNil)
+
+	trans := cmdtest.ConditionalTransport{
+		Transport: cmdtest.Transport{ Message: string(messageBytes), Status: http.StatusOK },
+		CondFunc:  func(r *http.Request) bool { 
+			c.Assert(r.URL.Path, check.Equals, fmt.Sprintf("/1.13/jobs"))
+			c.Assert(r.Header.Get("Accept"), check.Equals, "application/json")
+			c.Assert(r.Method, check.Equals, "GET")
+			return true
+		 },
+	}
+	client := cmd.NewClient(&http.Client{Transport: &trans}, nil, manager)
+	command := JobList{}
+	command.Info()
+	err = command.Run(&context, client)
+	c.Assert(err, check.IsNil)
+	c.Assert(stdout.String(), check.Equals, expected)
+}
+
+func (s *S) TestJobListApiError(c *check.C) {
+	var stdout, stderr bytes.Buffer
+	context := cmd.Context{
+		Args:   []string{},
+		Stdout: &stdout,
+		Stderr: &stderr,
+	}
+	expected := fmt.Sprintf("500 Internal Server Error: some api error")
+	trans := cmdtest.ConditionalTransport{
+		Transport: cmdtest.Transport{ Message: "some api error", Status: http.StatusInternalServerError },
+		CondFunc:  func(r *http.Request) bool { 
+			return true
+		 },
+	}
+	client := cmd.NewClient(&http.Client{Transport: &trans}, nil, manager)
+	command := JobList{}
+	command.Info()
+	err := command.Run(&context, client)
+	c.Assert(err, check.NotNil)
+	c.Assert(err.Error(), check.Equals, expected)
+}
