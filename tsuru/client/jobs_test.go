@@ -182,7 +182,7 @@ func (s *S) TestJobInfoApiError(c *check.C) {
 	}
 	expected := "500 Internal Server Error: some api error"
 	trans := cmdtest.ConditionalTransport{
-		Transport: cmdtest.Transport{ Message: "some api error", Status: http.StatusInternalServerError },
+		Transport: cmdtest.Transport{Message: "some api error", Status: http.StatusInternalServerError},
 		CondFunc:  func(r *http.Request) bool { return true },
 	}
 	client := cmd.NewClient(&http.Client{Transport: &trans}, nil, manager)
@@ -200,46 +200,45 @@ func (s *S) TestJobList(c *check.C) {
 		Stdout: &stdout,
 		Stderr: &stderr,
 	}
-	expected := fmt.Sprintf(
-`+------------+----------+-----------------+---------------------------------------------------------+
+	expected :=
+		`+------------+----------+-----------------+---------------------------------------------------------+
 | Name       | Schedule | Image           | Command                                                 |
 +------------+----------+-----------------+---------------------------------------------------------+
 | august     |          | midnights:v10   | /bin/sh -c date; echo Hello from the Kubernetes cluster |
 +------------+----------+-----------------+---------------------------------------------------------+
 | tim-mcgraw |          | fearless:latest | sleep 30                                                |
 +------------+----------+-----------------+---------------------------------------------------------+
-`,
-	)
+`
 	timMcgrawjob := tsuru.Job{
-		Name: "tim-mcgraw",
+		Name:      "tim-mcgraw",
 		TeamOwner: "taylor",
-		Pool: "kubepool",
-		Owner: "taylorswift@evermore.com",
+		Pool:      "kubepool",
+		Owner:     "taylorswift@evermore.com",
 		Plan: tsuru.Plan{
-			Name: "c0.1m0.1",
-			Memory: int64(134217728),
+			Name:     "c0.1m0.1",
+			Memory:   int64(134217728),
 			Cpumilli: int32(100),
 		},
 		Spec: tsuru.JobSpec{
 			Container: tsuru.InputJobContainer{
-				Image: "fearless:latest",
+				Image:   "fearless:latest",
 				Command: []string{"sleep", "30"},
 			},
 		},
 	}
 	augustJob := tsuru.Job{
-		Name: "august",
+		Name:      "august",
 		TeamOwner: "ts",
-		Pool: "kubepool",
-		Owner: "folklore@evermore.com",
+		Pool:      "kubepool",
+		Owner:     "folklore@evermore.com",
 		Plan: tsuru.Plan{
-			Name: "c0.1m0.1",
-			Memory: int64(134217728),
+			Name:     "c0.1m0.1",
+			Memory:   int64(134217728),
 			Cpumilli: int32(100),
 		},
 		Spec: tsuru.JobSpec{
 			Container: tsuru.InputJobContainer{
-				Image: "midnights:v10",
+				Image:   "midnights:v10",
 				Command: []string{"/bin/sh", "-c", "date; echo Hello from the Kubernetes cluster"},
 			},
 		},
@@ -254,13 +253,13 @@ func (s *S) TestJobList(c *check.C) {
 	c.Assert(err, check.IsNil)
 
 	trans := cmdtest.ConditionalTransport{
-		Transport: cmdtest.Transport{ Message: string(messageBytes), Status: http.StatusOK },
-		CondFunc:  func(r *http.Request) bool { 
-			c.Assert(r.URL.Path, check.Equals, fmt.Sprintf("/1.13/jobs"))
+		Transport: cmdtest.Transport{Message: string(messageBytes), Status: http.StatusOK},
+		CondFunc: func(r *http.Request) bool {
+			c.Assert(r.URL.Path, check.Equals, "/1.13/jobs")
 			c.Assert(r.Header.Get("Accept"), check.Equals, "application/json")
 			c.Assert(r.Method, check.Equals, "GET")
 			return true
-		 },
+		},
 	}
 	client := cmd.NewClient(&http.Client{Transport: &trans}, nil, manager)
 	command := JobList{}
@@ -277,12 +276,12 @@ func (s *S) TestJobListApiError(c *check.C) {
 		Stdout: &stdout,
 		Stderr: &stderr,
 	}
-	expected := fmt.Sprintf("500 Internal Server Error: some api error")
+	expected := "500 Internal Server Error: some api error"
 	trans := cmdtest.ConditionalTransport{
-		Transport: cmdtest.Transport{ Message: "some api error", Status: http.StatusInternalServerError },
-		CondFunc:  func(r *http.Request) bool { 
+		Transport: cmdtest.Transport{Message: "some api error", Status: http.StatusInternalServerError},
+		CondFunc: func(r *http.Request) bool {
 			return true
-		 },
+		},
 	}
 	client := cmd.NewClient(&http.Client{Transport: &trans}, nil, manager)
 	command := JobList{}
@@ -300,14 +299,14 @@ func (s *S) TestJobDelete(c *check.C) {
 		Stdout: &stdout,
 		Stderr: &stderr,
 	}
-	expected := fmt.Sprintf("Job successfully deleted.\n")
+	expected := "Job successfully deleted.\n"
 	trans := cmdtest.ConditionalTransport{
-		Transport: cmdtest.Transport{ Status: http.StatusOK },
-		CondFunc:  func(r *http.Request) bool { 
+		Transport: cmdtest.Transport{Status: http.StatusOK},
+		CondFunc: func(r *http.Request) bool {
 			c.Assert(r.URL.Path, check.Equals, fmt.Sprintf("/1.13/jobs/%s", jobName))
 			c.Assert(r.Method, check.Equals, "DELETE")
 			return true
-		 },
+		},
 	}
 	client := cmd.NewClient(&http.Client{Transport: &trans}, nil, manager)
 	command := JobDelete{}
@@ -325,12 +324,12 @@ func (s *S) TestJobDeleteApiError(c *check.C) {
 		Stdout: &stdout,
 		Stderr: &stderr,
 	}
-	expected := fmt.Sprintf("500 Internal Server Error: some api error")
+	expected := "500 Internal Server Error: some api error"
 	trans := cmdtest.ConditionalTransport{
-		Transport: cmdtest.Transport{ Message: "some api error", Status: http.StatusInternalServerError },
-		CondFunc:  func(r *http.Request) bool { 
+		Transport: cmdtest.Transport{Message: "some api error", Status: http.StatusInternalServerError},
+		CondFunc: func(r *http.Request) bool {
 			return true
-		 },
+		},
 	}
 	client := cmd.NewClient(&http.Client{Transport: &trans}, nil, manager)
 	command := JobDelete{}
@@ -348,14 +347,14 @@ func (s *S) TestJobTrigger(c *check.C) {
 		Stdout: &stdout,
 		Stderr: &stderr,
 	}
-	expected := fmt.Sprintf("Job successfully triggered.\n")
+	expected := "Job successfully triggered.\n"
 	trans := cmdtest.ConditionalTransport{
-		Transport: cmdtest.Transport{ Message: fmt.Sprintf(`{"status":"success"}`), Status: http.StatusOK },
-		CondFunc:  func(r *http.Request) bool { 
+		Transport: cmdtest.Transport{Message: `{"status":"success"}`, Status: http.StatusOK},
+		CondFunc: func(r *http.Request) bool {
 			c.Assert(r.URL.Path, check.Equals, fmt.Sprintf("/1.13/jobs/%s/trigger", jobName))
 			c.Assert(r.Method, check.Equals, "POST")
 			return true
-		 },
+		},
 	}
 	client := cmd.NewClient(&http.Client{Transport: &trans}, nil, manager)
 	command := JobTrigger{}
@@ -373,12 +372,12 @@ func (s *S) TestJobTriggerApiError(c *check.C) {
 		Stdout: &stdout,
 		Stderr: &stderr,
 	}
-	expected := fmt.Sprintf("500 Internal Server Error: some error")
+	expected := "500 Internal Server Error: some error"
 	trans := cmdtest.ConditionalTransport{
-		Transport: cmdtest.Transport{ Message: fmt.Sprintf(`some error`), Status: http.StatusInternalServerError },
-		CondFunc:  func(r *http.Request) bool { 
+		Transport: cmdtest.Transport{Message: "some error", Status: http.StatusInternalServerError},
+		CondFunc: func(r *http.Request) bool {
 			return true
-		 },
+		},
 	}
 	client := cmd.NewClient(&http.Client{Transport: &trans}, nil, manager)
 	command := JobTrigger{}
