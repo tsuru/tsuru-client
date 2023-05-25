@@ -110,11 +110,9 @@ func (c *JobCreate) Run(ctx *cmd.Context, cli *cmd.Client) error {
 	if err != nil {
 		return err
 	}
-
 	jobName := ctx.Args[0]
 	image := ctx.Args[1]
 	commands := ctx.Args[2:]
-
 	envs := []tsuru.EnvVar{}
 	for _, env := range c.envs {
 		parts := strings.SplitN(env, "=", 2)
@@ -123,7 +121,6 @@ func (c *JobCreate) Run(ctx *cmd.Context, cli *cmd.Client) error {
 		}
 		envs = append(envs, tsuru.EnvVar{Name: parts[0], Value: parts[1], Public: true})
 	}
-
 	for _, env := range c.privateEnvs {
 		parts := strings.SplitN(env, "=", 2)
 		if len(parts) != 2 {
@@ -131,8 +128,7 @@ func (c *JobCreate) Run(ctx *cmd.Context, cli *cmd.Client) error {
 		}
 		envs = append(envs, tsuru.EnvVar{Name: parts[0], Value: parts[1], Public: false})
 	}
-
-	_, err = apiClient.JobApi.CreateJob(context.Background(), tsuru.InputJob{
+	j := tsuru.InputJob{
 		Name:        jobName,
 		Tags:        c.tags,
 		Schedule:    c.schedule,
@@ -145,14 +141,13 @@ func (c *JobCreate) Run(ctx *cmd.Context, cli *cmd.Client) error {
 			Command: commands,
 			Envs:    envs,
 		},
-	})
-
-	if err == nil {
-		fmt.Fprintf(ctx.Stdout, "Job %q has been created!\n", jobName)
-		fmt.Fprintln(ctx.Stdout, "Use job info to check the status of the job.")
 	}
+	if _, err := apiClient.JobApi.CreateJob(context.Background(), j); err != nil {
+		return err
+	}
+	fmt.Fprintf(ctx.Stdout, "Job %s has been created!\nUse job info to check the status of the job", jobName)
+	return nil
 
-	return err
 }
 
 type JobInfo struct {
