@@ -16,11 +16,11 @@ import (
 func (s *S) TestJobCreate(c *check.C) {
 	var stdout, stderr bytes.Buffer
 	context := cmd.Context{
-		Args:   []string{"loucoAbreu", "ubuntu:latest", "echo \"vivo essa paixão\""},
+		Args:   []string{"loucoAbreu", "ubuntu:latest", "echo", "\"Botafogo is in my heart\""},
 		Stdout: &stdout,
 		Stderr: &stderr,
 	}
-	expected := "Job \"loucoAbreu\" has been created!\nUse job info to check the status of the job.\n"
+	expected := "Job created\nUse \"tsuru job info loucoAbreu\" to check the status of the job\n"
 	trans := cmdtest.ConditionalTransport{
 		Transport: cmdtest.Transport{Message: `{"jobName":"loucoAbreu","status":"success"}`, Status: http.StatusCreated},
 		CondFunc: func(r *http.Request) bool {
@@ -38,7 +38,7 @@ func (s *S) TestJobCreate(c *check.C) {
 				TeamOwner: "admin",
 				Container: tsuru.InputJobContainer{
 					Image:   "ubuntu:latest",
-					Command: []string{"echo \"vivo essa paixão\""},
+					Command: []string{"echo", "Botafogo is in my heart"},
 				},
 				Schedule: "* * * * *",
 			})
@@ -54,10 +54,39 @@ func (s *S) TestJobCreate(c *check.C) {
 	c.Assert(stdout.String(), check.Equals, expected)
 }
 
+func (s *S) TestJobCreateParseMultipleCommands(c *check.C) {
+	var stdout, stderr bytes.Buffer
+	context := cmd.Context{
+		Args:   []string{"NiltonSantos", "ubuntu:latest", "echo", "\"I live this passion\"", "sleep", "600"},
+		Stdout: &stdout,
+		Stderr: &stderr,
+	}
+	expected := "Job created\nUse \"tsuru job info NiltonSantos\" to check the status of the job\n"
+	trans := cmdtest.ConditionalTransport{
+		Transport: cmdtest.Transport{Message: `{"jobName":"loucoAbreu","status":"success"}`, Status: http.StatusCreated},
+		CondFunc: func(r *http.Request) bool {
+			data, err := io.ReadAll(r.Body)
+			c.Assert(err, check.IsNil)
+			var rr tsuru.InputJob
+			err = json.Unmarshal(data, &rr)
+			c.Assert(err, check.IsNil)
+			c.Assert(rr.Container.Command, check.DeepEquals, []string{"echo", "I live this passion", "sleep", "600"})
+			return true
+		},
+	}
+	client := cmd.NewClient(&http.Client{Transport: &trans}, nil, manager)
+	command := JobCreate{}
+	command.Info()
+	command.Flags().Parse(true, []string{"-t", "admin", "-o", "somepool", "-s", "* * * * *"})
+	err := command.Run(&context, client)
+	c.Assert(err, check.IsNil)
+	c.Assert(stdout.String(), check.Equals, expected)
+}
+
 func (s *S) TestJobCreateApiError(c *check.C) {
 	var stdout, stderr bytes.Buffer
 	context := cmd.Context{
-		Args:   []string{"loucoAbreu", "ubuntu:latest", "echo \"vivo essa paixão\""},
+		Args:   []string{"loucoAbreu", "ubuntu:latest", "echo \"putfire\""},
 		Stdout: &stdout,
 		Stderr: &stderr,
 	}
@@ -299,7 +328,7 @@ func (s *S) TestJobDelete(c *check.C) {
 		Stdout: &stdout,
 		Stderr: &stderr,
 	}
-	expected := "Job successfully deleted.\n"
+	expected := "Job successfully deleted\n"
 	trans := cmdtest.ConditionalTransport{
 		Transport: cmdtest.Transport{Status: http.StatusOK},
 		CondFunc: func(r *http.Request) bool {
@@ -347,7 +376,7 @@ func (s *S) TestJobTrigger(c *check.C) {
 		Stdout: &stdout,
 		Stderr: &stderr,
 	}
-	expected := "Job successfully triggered.\n"
+	expected := "Job successfully triggered\n"
 	trans := cmdtest.ConditionalTransport{
 		Transport: cmdtest.Transport{Message: `{"status":"success"}`, Status: http.StatusOK},
 		CondFunc: func(r *http.Request) bool {

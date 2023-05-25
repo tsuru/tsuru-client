@@ -103,6 +103,22 @@ func (c *JobCreate) Flags() *gnuflag.FlagSet {
 	return c.fs
 }
 
+func parseCommands(commands []string) []string {
+	parsed := []string{}
+	for _, c := range commands {
+		fmt.Println(c)
+		if strings.HasSuffix(c, "\"") {
+			c = strings.TrimPrefix(c, "\"")
+			c = strings.TrimSuffix(c, "\"")
+			parsed = append(parsed, c)
+		} else {
+			tmp := strings.Split(c, " ")
+			parsed = append(parsed, tmp...)
+		}
+	}
+	return parsed
+}
+
 func (c *JobCreate) Run(ctx *cmd.Context, cli *cmd.Client) error {
 	apiClient, err := client.ClientFromEnvironment(&tsuru.Configuration{
 		HTTPClient: cli.HTTPClient,
@@ -113,6 +129,7 @@ func (c *JobCreate) Run(ctx *cmd.Context, cli *cmd.Client) error {
 	jobName := ctx.Args[0]
 	image := ctx.Args[1]
 	commands := ctx.Args[2:]
+	parsedCommands := parseCommands(commands)
 	envs := []tsuru.EnvVar{}
 	for _, env := range c.envs {
 		parts := strings.SplitN(env, "=", 2)
@@ -138,14 +155,14 @@ func (c *JobCreate) Run(ctx *cmd.Context, cli *cmd.Client) error {
 		TeamOwner:   c.teamOwner,
 		Container: tsuru.InputJobContainer{
 			Image:   image,
-			Command: commands,
+			Command: parsedCommands,
 			Envs:    envs,
 		},
 	}
 	if _, err := apiClient.JobApi.CreateJob(context.Background(), j); err != nil {
 		return err
 	}
-	fmt.Fprintf(ctx.Stdout, "Job %s has been created!\nUse job info to check the status of the job", jobName)
+	fmt.Fprintf(ctx.Stdout, "Job created\nUse \"tsuru job info %s\" to check the status of the job\n", jobName)
 	return nil
 
 }
@@ -311,7 +328,7 @@ func (c *JobList) Run(ctx *cmd.Context, cli *cmd.Client) error {
 	jobs, resp, err := apiClient.JobApi.ListJob(context.Background())
 
 	if resp != nil && resp.StatusCode == http.StatusNoContent {
-		fmt.Fprint(ctx.Stdout, "No jobs found.\n")
+		fmt.Fprint(ctx.Stdout, "No jobs found\n")
 		return nil
 	}
 	if err != nil {
@@ -403,7 +420,7 @@ func (c *JobDelete) Run(ctx *cmd.Context, cli *cmd.Client) error {
 		return err
 	}
 
-	fmt.Fprint(ctx.Stdout, "Job successfully deleted.\n")
+	fmt.Fprint(ctx.Stdout, "Job successfully deleted\n")
 	return nil
 }
 
@@ -434,6 +451,6 @@ func (c *JobTrigger) Run(ctx *cmd.Context, cli *cmd.Client) error {
 		return err
 	}
 
-	fmt.Fprint(ctx.Stdout, "Job successfully triggered.\n")
+	fmt.Fprint(ctx.Stdout, "Job successfully triggered\n")
 	return nil
 }
