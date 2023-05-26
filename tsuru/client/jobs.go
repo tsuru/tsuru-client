@@ -3,6 +3,7 @@ package client
 import (
 	"bytes"
 	"context"
+	"encoding/json"
 	"errors"
 	"fmt"
 	"net/http"
@@ -10,6 +11,7 @@ import (
 	"text/template"
 	"time"
 
+	"github.com/mattn/go-shellwords"
 	"github.com/tsuru/gnuflag"
 	"github.com/tsuru/go-tsuruclient/pkg/client"
 	"github.com/tsuru/go-tsuruclient/pkg/tsuru"
@@ -34,7 +36,7 @@ type JobCreate struct {
 func (c *JobCreate) Info() *cmd.Info {
 	return &cmd.Info{
 		Name:  "job-create",
-		Usage: "job create <jobname> <image> <commands> [--plan/-p plan name] [--schedule/-s schedule name] [--team/-t team owner] [--pool/-o pool name] [--description/-d description] [--tag/-g tag]...",
+		Usage: "job create <jobname> <image> \"<commands>\" [--plan/-p plan name] [--schedule/-s schedule name] [--team/-t team owner] [--pool/-o pool name] [--description/-d description] [--tag/-g tag]...",
 		Desc: `Creates a new job using the given name and platform.
 
 In order to create an job, you need to be member of at least one team. All
@@ -103,20 +105,19 @@ func (c *JobCreate) Flags() *gnuflag.FlagSet {
 	return c.fs
 }
 
-func parseCommands(commands []string) []string {
-	parsed := []string{}
-	for _, c := range commands {
-		fmt.Println(c)
-		if strings.HasSuffix(c, "\"") {
-			c = strings.TrimPrefix(c, "\"")
-			c = strings.TrimSuffix(c, "\"")
-			parsed = append(parsed, c)
-		} else {
-			tmp := strings.Split(c, " ")
-			parsed = append(parsed, tmp...)
-		}
+func parseJsonCommands(commands string) ([]string, error) {
+	jsonCommands := []string{}
+	if err := json.Unmarshal([]byte(commands), &jsonCommands); err == nil {
+		return jsonCommands, nil
 	}
-	return parsed
+	// try to parse as text
+	commands = strings.TrimPrefix(commands, "\"")
+	commands = strings.TrimSuffix(commands, "\"")
+	shellCommands, err := shellwords.Parse(commands)
+	if err != nil {
+		return nil, err
+	}
+	return shellCommands, nil
 }
 
 func (c *JobCreate) Run(ctx *cmd.Context, cli *cmd.Client) error {
@@ -128,8 +129,11 @@ func (c *JobCreate) Run(ctx *cmd.Context, cli *cmd.Client) error {
 	}
 	jobName := ctx.Args[0]
 	image := ctx.Args[1]
-	commands := ctx.Args[2:]
-	parsedCommands := parseCommands(commands)
+	commands := ctx.Args[2]
+	parsedCommands, err := parseJsonCommands(commands)
+	if err != nil {
+		return err
+	}
 	envs := []tsuru.EnvVar{}
 	for _, env := range c.envs {
 		parts := strings.SplitN(env, "=", 2)
@@ -164,7 +168,6 @@ func (c *JobCreate) Run(ctx *cmd.Context, cli *cmd.Client) error {
 	}
 	fmt.Fprintf(ctx.Stdout, "Job created\nUse \"tsuru job info %s\" to check the status of the job\n", jobName)
 	return nil
-
 }
 
 type JobInfo struct {
