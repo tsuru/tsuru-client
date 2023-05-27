@@ -134,21 +134,15 @@ func (c *JobCreate) Run(ctx *cmd.Context, cli *cmd.Client) error {
 	if err != nil {
 		return err
 	}
-	envs := []tsuru.EnvVar{}
-	for _, env := range c.envs {
-		parts := strings.SplitN(env, "=", 2)
-		if len(parts) != 2 {
-			return errors.New(EnvSetValidationMessage)
-		}
-		envs = append(envs, tsuru.EnvVar{Name: parts[0], Value: parts[1], Public: true})
+	envs, err := parseEnvs(c.envs, true)
+	if err != nil {
+		return err
 	}
-	for _, env := range c.privateEnvs {
-		parts := strings.SplitN(env, "=", 2)
-		if len(parts) != 2 {
-			return errors.New(EnvSetValidationMessage)
-		}
-		envs = append(envs, tsuru.EnvVar{Name: parts[0], Value: parts[1], Public: false})
+	privEnvs, err := parseEnvs(c.privateEnvs, false)
+	if err != nil {
+		return err
 	}
+	envs = append(envs, privEnvs...)
 	j := tsuru.InputJob{
 		Name:        jobName,
 		Tags:        c.tags,
@@ -455,5 +449,125 @@ func (c *JobTrigger) Run(ctx *cmd.Context, cli *cmd.Client) error {
 	}
 
 	fmt.Fprint(ctx.Stdout, "Job successfully triggered\n")
+	return nil
+}
+
+type JobUpdate struct{
+	schedule    string
+	teamOwner   string
+	plan        string
+	pool        string
+	description string
+	commands 	string
+	image 		string
+	envs        cmd.StringSliceFlag
+	privateEnvs cmd.StringSliceFlag
+	tags        cmd.StringSliceFlag
+
+	fs *gnuflag.FlagSet
+}
+
+func (c *JobUpdate) Info() *cmd.Info {
+	return &cmd.Info{
+		Name:    "job-update",
+		Usage:   "job update <job-name> [--image/-i <image>] [--commands/-c <commands>] [--plan/-p plan name] [--schedule/-s schedule name] [--team/-t team owner] [--pool/-o pool name] [--description/-d description] [--tag/-g tag]...",
+		Desc:    "Updates a job",
+		MinArgs: 1,
+		MaxArgs: 1,
+	}
+}
+
+func (c *JobUpdate) Flags() *gnuflag.FlagSet {
+	if c.fs == nil {
+		infoMessage := "The plan used to create the job"
+		c.fs = gnuflag.NewFlagSet("", gnuflag.ExitOnError)
+		c.fs.StringVar(&c.plan, "plan", "", infoMessage)
+		c.fs.StringVar(&c.plan, "p", "", infoMessage)
+		schedule := "schedule string"
+		c.fs.StringVar(&c.schedule, "schedule", "", schedule)
+		c.fs.StringVar(&c.schedule, "s", "", schedule)
+		teamMessage := "Team owner job"
+		c.fs.StringVar(&c.teamOwner, "team", "", teamMessage)
+		c.fs.StringVar(&c.teamOwner, "t", "", teamMessage)
+		poolMessage := "Pool to deploy your job"
+		c.fs.StringVar(&c.pool, "pool", "", poolMessage)
+		c.fs.StringVar(&c.pool, "o", "", poolMessage)
+		descriptionMessage := "Job description"
+		c.fs.StringVar(&c.description, "description", "", descriptionMessage)
+		c.fs.StringVar(&c.description, "d", "", descriptionMessage)
+		tagMessage := "Job tag"
+		c.fs.Var(&c.tags, "tag", tagMessage)
+		c.fs.Var(&c.tags, "g", tagMessage)
+		envMessage := "Environment variable"
+		c.fs.Var(&c.envs, "env", envMessage)
+		c.fs.Var(&c.envs, "e", envMessage)
+		envMessage = "Private environment variable"
+		c.fs.Var(&c.privateEnvs, "private-env", envMessage)
+		commandsMessage := "New commands to execute on the job"
+		c.fs.StringVar(&c.commands, "commands", "", commandsMessage)
+		c.fs.StringVar(&c.commands, "c","",  commandsMessage)
+		imageMessage := "New image for the job to run"
+		c.fs.StringVar(&c.image, "image", "", imageMessage)
+		c.fs.StringVar(&c.image, "i","",  imageMessage)
+	}
+	return c.fs
+}
+
+func parseEnvs(cmdEnvs cmd.StringSliceFlag, public bool) ([]tsuru.EnvVar, error) {
+	envs := []tsuru.EnvVar{}
+	for _, env := range cmdEnvs {
+		parts := strings.SplitN(env, "=", 2)
+		if len(parts) != 2 {
+			return envs, errors.New(EnvSetValidationMessage)
+		}
+		envs = append(envs, tsuru.EnvVar{Name: parts[0], Value: parts[1], Public: public})
+	}
+	return envs, nil
+}
+
+func (c *JobUpdate) Run(ctx *cmd.Context, cli *cmd.Client) error {
+	jobName := ctx.Args[0]
+
+	apiClient, err := client.ClientFromEnvironment(&tsuru.Configuration{
+		HTTPClient: cli.HTTPClient,
+	})
+	if err != nil {
+		return err
+	}
+
+	parsedCommands, err := parseJsonCommands(c.commands)
+	if err != nil {
+		return err
+	}
+	envs, err := parseEnvs(c.envs, true)
+	if err != nil {
+		return err
+	}
+	privEnvs, err := parseEnvs(c.privateEnvs, false)
+	if err != nil {
+		return err
+	}
+	envs = append(envs, privEnvs...)
+	j := tsuru.InputJob{
+		Name:        jobName,
+		Tags:        c.tags,
+		Schedule:    c.schedule,
+		Plan:        c.plan,
+		Pool:        c.pool,
+		Description: c.description,
+		TeamOwner:   c.teamOwner,
+		Container: tsuru.InputJobContainer{
+			Image:   c.image,
+			Command: parsedCommands,
+			Envs:    envs,
+		},
+	}
+
+	_, err = apiClient.JobApi.UpdateJob(context.Background(), jobName, j)
+	if err != nil {
+		return err
+	}
+
+	fmt.Fprintf(ctx.Stdout, "Job updated\nUse \"tsuru job info %s\" to check the status of the job\n", jobName)
 	return nil
 }
