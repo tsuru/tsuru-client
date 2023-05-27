@@ -37,39 +37,39 @@ func (c *JobCreate) Info() *cmd.Info {
 	return &cmd.Info{
 		Name:  "job-create",
 		Usage: "job create <jobname> <image> \"<commands>\" [--plan/-p plan name] [--schedule/-s schedule name] [--team/-t team owner] [--pool/-o pool name] [--description/-d description] [--tag/-g tag]...",
-		Desc: `Creates a new job using the given name and platform.
+		Desc: `Creates a new job using the given name and platform
 
 In order to create an job, you need to be member of at least one team. All
 teams that you are member (see [[tsuru team-list]]) will be able to access the
-job.
+job
 
 The [[--plan]] parameter defines the plan to be used. The plan specifies how
 computational resources are allocated to your job execution. Typically this
 means limits for cpu and memory usage is allocated.
-The list of available plans can be found running [[tsuru plan list]].
+The list of available plans can be found running [[tsuru plan list]]
 
 If this parameter is not informed, tsuru will choose the plan with the
-[[default]] flag set to true.
+[[default]] flag set to true
 
 The [[--schedule]] parameter defines how often this job will be executed. This string follows the unix-cron format,
-if you need to test the cron expressions visit the site: https://crontab.guru/.
+if you need to test the cron expressions visit the site: https://crontab.guru/
 
 The [[--team]] parameter describes which team is responsible for the created
 app, this is only needed if the current user belongs to more than one team, in
-which case this parameter will be mandatory.
+which case this parameter will be mandatory
 
 The [[--pool]] parameter defines which pool your app will be deployed.
-This is only needed if you have more than one pool associated with your teams.
+This is only needed if you have more than one pool associated with your teams
 
 The [[--description]] parameter sets a description for your job.
 It is an optional parameter, and if its not set the job will only not have a
-description associated.
+description associated
 
-The [[--tag]] parameter sets a tag to your job. You can set multiple [[--tag]] parameters.
+The [[--tag]] parameter sets a tag to your job. You can set multiple [[--tag]] parameters
 
-The [[--env]] parameter sets a environment variable to your job. You can set multiple [[--env]] parameters.
+The [[--env]] parameter sets a environment variable to your job. You can set multiple [[--env]] parameters
 
-The [[--private-env]] parameter sets a private environment variable to your job. You can set multiple [[--private-env]] parameters.`,
+The [[--private-env]] parameter sets a private environment variable to your job. You can set multiple [[--private-env]] parameters`,
 		MinArgs: 2,
 	}
 }
@@ -187,7 +187,7 @@ func (c *JobInfo) Info() *cmd.Info {
 	return &cmd.Info{
 		Name:    "job-info",
 		Usage:   "job info <job>",
-		Desc:    `Get a job.`,
+		Desc:    "Retrieve useful information from a job",
 		MinArgs: 1,
 		MaxArgs: 1,
 	}
@@ -314,7 +314,7 @@ func (c *JobList) Info() *cmd.Info {
 	return &cmd.Info{
 		Name:    "job-list",
 		Usage:   "job list",
-		Desc:    `List jobs.`,
+		Desc:    "List jobs",
 		MinArgs: 0,
 		MaxArgs: 0,
 	}
@@ -402,7 +402,7 @@ func (c *JobDelete) Info() *cmd.Info {
 	return &cmd.Info{
 		Name:    "job-delete",
 		Usage:   "job delete <job-name>",
-		Desc:    `Delete an existing job.`,
+		Desc:    "Delete an existing job",
 		MinArgs: 1,
 		MaxArgs: 1,
 	}
@@ -433,7 +433,7 @@ func (c *JobTrigger) Info() *cmd.Info {
 	return &cmd.Info{
 		Name:    "job-trigger",
 		Usage:   "job trigger <job-name>",
-		Desc:    `Trigger an existing job.`,
+		Desc:    "Trigger an existing job",
 		MinArgs: 1,
 		MaxArgs: 1,
 	}
