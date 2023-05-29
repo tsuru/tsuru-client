@@ -47,7 +47,6 @@ func (s *S) TestJobCreate(c *check.C) {
 	}
 	client := cmd.NewClient(&http.Client{Transport: &trans}, nil, manager)
 	command := JobCreate{}
-	command.Info()
 	command.Flags().Parse(true, []string{"-t", "admin", "-o", "somepool", "-s", "* * * * *"})
 	err := command.Run(&context, client)
 	c.Assert(err, check.IsNil)
@@ -76,7 +75,6 @@ func (s *S) TestJobCreateParseMultipleCommands(c *check.C) {
 	}
 	client := cmd.NewClient(&http.Client{Transport: &trans}, nil, manager)
 	command := JobCreate{}
-	command.Info()
 	command.Flags().Parse(true, []string{"-t", "admin", "-o", "somepool", "-s", "* * * * *"})
 	err := command.Run(&context, client)
 	c.Assert(err, check.IsNil)
@@ -105,7 +103,6 @@ func (s *S) TestJobCreateParseJSON(c *check.C) {
 	}
 	client := cmd.NewClient(&http.Client{Transport: &trans}, nil, manager)
 	command := JobCreate{}
-	command.Info()
 	command.Flags().Parse(true, []string{"-t", "admin", "-o", "somepool", "-s", "* * * * *"})
 	err := command.Run(&context, client)
 	c.Assert(err, check.IsNil)
@@ -126,7 +123,6 @@ func (s *S) TestJobCreateApiError(c *check.C) {
 	}
 	client := cmd.NewClient(&http.Client{Transport: &trans}, nil, manager)
 	command := JobCreate{}
-	command.Info()
 	command.Flags().Parse(true, []string{"-t", "admin", "-o", "somepool", "-s", "* * * * *"})
 	err := command.Run(&context, client)
 	c.Assert(err.Error(), check.Equals, expected)
@@ -245,7 +241,6 @@ func (s *S) TestJobInfoApiError(c *check.C) {
 	}
 	client := cmd.NewClient(&http.Client{Transport: &trans}, nil, manager)
 	command := JobInfo{}
-	command.Info()
 	err := command.Run(&context, client)
 	c.Assert(err, check.NotNil)
 	c.Assert(err.Error(), check.Equals, expected)
@@ -321,7 +316,6 @@ func (s *S) TestJobList(c *check.C) {
 	}
 	client := cmd.NewClient(&http.Client{Transport: &trans}, nil, manager)
 	command := JobList{}
-	command.Info()
 	err = command.Run(&context, client)
 	c.Assert(err, check.IsNil)
 	c.Assert(stdout.String(), check.Equals, expected)
@@ -343,7 +337,6 @@ func (s *S) TestJobListApiError(c *check.C) {
 	}
 	client := cmd.NewClient(&http.Client{Transport: &trans}, nil, manager)
 	command := JobList{}
-	command.Info()
 	err := command.Run(&context, client)
 	c.Assert(err, check.NotNil)
 	c.Assert(err.Error(), check.Equals, expected)
@@ -368,7 +361,6 @@ func (s *S) TestJobDelete(c *check.C) {
 	}
 	client := cmd.NewClient(&http.Client{Transport: &trans}, nil, manager)
 	command := JobDelete{}
-	command.Info()
 	err := command.Run(&context, client)
 	c.Assert(err, check.IsNil)
 	c.Assert(stdout.String(), check.Equals, expected)
@@ -391,7 +383,6 @@ func (s *S) TestJobDeleteApiError(c *check.C) {
 	}
 	client := cmd.NewClient(&http.Client{Transport: &trans}, nil, manager)
 	command := JobDelete{}
-	command.Info()
 	err := command.Run(&context, client)
 	c.Assert(err, check.NotNil)
 	c.Assert(err.Error(), check.Equals, expected)
@@ -416,7 +407,6 @@ func (s *S) TestJobTrigger(c *check.C) {
 	}
 	client := cmd.NewClient(&http.Client{Transport: &trans}, nil, manager)
 	command := JobTrigger{}
-	command.Info()
 	err := command.Run(&context, client)
 	c.Assert(err, check.IsNil)
 	c.Assert(stdout.String(), check.Equals, expected)
@@ -439,7 +429,101 @@ func (s *S) TestJobTriggerApiError(c *check.C) {
 	}
 	client := cmd.NewClient(&http.Client{Transport: &trans}, nil, manager)
 	command := JobTrigger{}
-	command.Info()
+	err := command.Run(&context, client)
+	c.Assert(err, check.NotNil)
+	c.Assert(err.Error(), check.Equals, expected)
+}
+
+func (s *S) TestJobUpdate(c *check.C) {
+	var stdout, stderr bytes.Buffer
+	context := cmd.Context{
+		Args:   []string{"tulioMaravilha"},
+		Stdout: &stdout,
+		Stderr: &stderr,
+	}
+	expected := "Job updated\nUse \"tsuru job info tulioMaravilha\" to check the status of the job\n"
+	trans := cmdtest.ConditionalTransport{
+		Transport: cmdtest.Transport{Message: "", Status: http.StatusOK},
+		CondFunc: func(r *http.Request) bool {
+			c.Assert(r.URL.Path, check.Equals, "/1.13/jobs/tulioMaravilha")
+			c.Assert(r.Method, check.Equals, "PUT")
+			c.Assert(r.Header.Get("Content-Type"), check.Equals, "application/json")
+			data, err := io.ReadAll(r.Body)
+			c.Assert(err, check.IsNil)
+			var rr tsuru.InputJob
+			err = json.Unmarshal(data, &rr)
+			c.Assert(err, check.IsNil)
+			c.Assert(rr, check.DeepEquals, tsuru.InputJob{
+				Name:      "tulioMaravilha",
+				Container: tsuru.InputJobContainer{
+					Image:   "tsuru/scratch:latest",
+					Command: []string{"/bin/sh", "-c", "echo we like you"},
+				},
+			})
+			return true
+		},
+	}
+	client := cmd.NewClient(&http.Client{Transport: &trans}, nil, manager)
+	command := JobUpdate{}
+	command.Flags().Parse(true, []string{"-i", "tsuru/scratch:latest", "-c", "/bin/sh -c \"echo we like you\""})
+	err := command.Run(&context, client)
+	c.Assert(err, check.IsNil)
+	c.Assert(stdout.String(), check.Equals, expected)
+}
+
+func (s *S) TestJobUpdateJSONCommands(c *check.C) {
+	var stdout, stderr bytes.Buffer
+	context := cmd.Context{
+		Args:   []string{"tulioMaravilha"},
+		Stdout: &stdout,
+		Stderr: &stderr,
+	}
+	expected := "Job updated\nUse \"tsuru job info tulioMaravilha\" to check the status of the job\n"
+	trans := cmdtest.ConditionalTransport{
+		Transport: cmdtest.Transport{Message: "", Status: http.StatusOK},
+		CondFunc: func(r *http.Request) bool {
+			c.Assert(r.URL.Path, check.Equals, "/1.13/jobs/tulioMaravilha")
+			c.Assert(r.Method, check.Equals, "PUT")
+			c.Assert(r.Header.Get("Content-Type"), check.Equals, "application/json")
+			data, err := io.ReadAll(r.Body)
+			c.Assert(err, check.IsNil)
+			var rr tsuru.InputJob
+			err = json.Unmarshal(data, &rr)
+			c.Assert(err, check.IsNil)
+			c.Assert(rr, check.DeepEquals, tsuru.InputJob{
+				Name:      "tulioMaravilha",
+				Container: tsuru.InputJobContainer{
+					Image:   "tsuru/scratch:latest",
+					Command: []string{"/bin/sh", "-c", "echo we like you"},
+				},
+			})
+			return true
+		},
+	}
+	client := cmd.NewClient(&http.Client{Transport: &trans}, nil, manager)
+	command := JobUpdate{}
+	command.Flags().Parse(true, []string{"-i", "tsuru/scratch:latest", "-c", `[ "/bin/sh", "-c", "echo we like you" ]`})
+	err := command.Run(&context, client)
+	c.Assert(err, check.IsNil)
+	c.Assert(stdout.String(), check.Equals, expected)
+}
+
+func (s *S) TestJobUpdateApiError(c *check.C) {
+	var stdout, stderr bytes.Buffer
+	context := cmd.Context{
+		Args:   []string{"tulioMaravilha"},
+		Stdout: &stdout,
+		Stderr: &stderr,
+	}
+	expected := "500 Internal Server Error: some error"
+	trans := cmdtest.ConditionalTransport{
+		Transport: cmdtest.Transport{Message: "some error", Status: http.StatusInternalServerError},
+		CondFunc: func(r *http.Request) bool {
+			return true
+		},
+	}
+	client := cmd.NewClient(&http.Client{Transport: &trans}, nil, manager)
+	command := JobUpdate{}
 	err := command.Run(&context, client)
 	c.Assert(err, check.NotNil)
 	c.Assert(err.Error(), check.Equals, expected)

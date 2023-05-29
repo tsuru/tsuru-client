@@ -105,14 +105,16 @@ func (c *JobCreate) Flags() *gnuflag.FlagSet {
 	return c.fs
 }
 
-func parseJsonCommands(commands string) ([]string, error) {
+func parseJobCommands(commands string, trimQuotes bool) ([]string, error) {
 	jsonCommands := []string{}
 	if err := json.Unmarshal([]byte(commands), &jsonCommands); err == nil {
 		return jsonCommands, nil
 	}
 	// try to parse as text
-	commands = strings.TrimPrefix(commands, "\"")
-	commands = strings.TrimSuffix(commands, "\"")
+	if trimQuotes {
+		commands = strings.TrimPrefix(commands, "\"")
+		commands = strings.TrimSuffix(commands, "\"")
+	}
 	shellCommands, err := shellwords.Parse(commands)
 	if err != nil {
 		return nil, err
@@ -130,7 +132,7 @@ func (c *JobCreate) Run(ctx *cmd.Context, cli *cmd.Client) error {
 	jobName := ctx.Args[0]
 	image := ctx.Args[1]
 	commands := ctx.Args[2]
-	parsedCommands, err := parseJsonCommands(commands)
+	parsedCommands, err := parseJobCommands(commands, true)
 	if err != nil {
 		return err
 	}
@@ -535,7 +537,7 @@ func (c *JobUpdate) Run(ctx *cmd.Context, cli *cmd.Client) error {
 		return err
 	}
 
-	parsedCommands, err := parseJsonCommands(c.commands)
+	parsedCommands, err := parseJobCommands(c.commands, false)
 	if err != nil {
 		return err
 	}
