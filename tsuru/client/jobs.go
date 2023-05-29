@@ -454,14 +454,14 @@ func (c *JobTrigger) Run(ctx *cmd.Context, cli *cmd.Client) error {
 	return nil
 }
 
-type JobUpdate struct{
+type JobUpdate struct {
 	schedule    string
 	teamOwner   string
 	plan        string
 	pool        string
 	description string
-	commands 	string
-	image 		string
+	commands    string
+	image       string
 	envs        cmd.StringSliceFlag
 	privateEnvs cmd.StringSliceFlag
 	tags        cmd.StringSliceFlag
@@ -507,10 +507,10 @@ func (c *JobUpdate) Flags() *gnuflag.FlagSet {
 		c.fs.Var(&c.privateEnvs, "private-env", envMessage)
 		commandsMessage := "New commands to execute on the job"
 		c.fs.StringVar(&c.commands, "commands", "", commandsMessage)
-		c.fs.StringVar(&c.commands, "c","",  commandsMessage)
+		c.fs.StringVar(&c.commands, "c", "", commandsMessage)
 		imageMessage := "New image for the job to run"
 		c.fs.StringVar(&c.image, "image", "", imageMessage)
-		c.fs.StringVar(&c.image, "i","",  imageMessage)
+		c.fs.StringVar(&c.image, "i", "", imageMessage)
 	}
 	return c.fs
 }

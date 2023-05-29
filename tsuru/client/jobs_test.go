@@ -454,7 +454,7 @@ func (s *S) TestJobUpdate(c *check.C) {
 			err = json.Unmarshal(data, &rr)
 			c.Assert(err, check.IsNil)
 			c.Assert(rr, check.DeepEquals, tsuru.InputJob{
-				Name:      "tulioMaravilha",
+				Name: "tulioMaravilha",
 				Container: tsuru.InputJobContainer{
 					Image:   "tsuru/scratch:latest",
 					Command: []string{"/bin/sh", "-c", "echo we like you"},
@@ -491,7 +491,7 @@ func (s *S) TestJobUpdateJSONCommands(c *check.C) {
 			err = json.Unmarshal(data, &rr)
 			c.Assert(err, check.IsNil)
 			c.Assert(rr, check.DeepEquals, tsuru.InputJob{
-				Name:      "tulioMaravilha",
+				Name: "tulioMaravilha",
 				Container: tsuru.InputJobContainer{
 					Image:   "tsuru/scratch:latest",
 					Command: []string{"/bin/sh", "-c", "echo we like you"},
