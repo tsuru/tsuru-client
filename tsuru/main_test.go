@@ -416,62 +416,6 @@ func (s *S) TestAppUpdateIsRegistered(c *check.C) {
 	c.Assert(change, check.FitsTypeOf, &client.AppUpdate{})
 }
 
-func (s *S) TestNodeAddIsRegistered(c *check.C) {
-	manager = buildManager("tsuru")
-	change, ok := manager.Commands["node-add"]
-	c.Assert(ok, check.Equals, true)
-	c.Assert(change, check.FitsTypeOf, &admin.AddNodeCmd{})
-}
-
-func (s *S) TestNodeRemoveIsRegistered(c *check.C) {
-	manager = buildManager("tsuru")
-	change, ok := manager.Commands["node-remove"]
-	c.Assert(ok, check.Equals, true)
-	c.Assert(change, check.FitsTypeOf, &admin.RemoveNodeCmd{})
-}
-
-func (s *S) TestNodeUpdateIsRegistered(c *check.C) {
-	manager = buildManager("tsuru")
-	change, ok := manager.Commands["node-update"]
-	c.Assert(ok, check.Equals, true)
-	c.Assert(change, check.FitsTypeOf, &admin.UpdateNodeCmd{})
-}
-
-func (s *S) TestNodeListIsRegistered(c *check.C) {
-	manager = buildManager("tsuru")
-	change, ok := manager.Commands["node-list"]
-	c.Assert(ok, check.Equals, true)
-	c.Assert(change, check.FitsTypeOf, &admin.ListNodesCmd{})
-}
-
-func (s *S) TestNodeHealingInfoIsRegistered(c *check.C) {
-	manager = buildManager("tsuru")
-	change, ok := manager.Commands["node-healing-info"]
-	c.Assert(ok, check.Equals, true)
-	c.Assert(change, check.FitsTypeOf, &admin.GetNodeHealingConfigCmd{})
-}
-
-func (s *S) TestNodeHealingUpdateIsRegistered(c *check.C) {
-	manager = buildManager("tsuru")
-	change, ok := manager.Commands["node-healing-update"]
-	c.Assert(ok, check.Equals, true)
-	c.Assert(change, check.FitsTypeOf, &admin.SetNodeHealingConfigCmd{})
-}
-
-func (s *S) TestNodeHealingDeleteIsRegistered(c *check.C) {
-	manager = buildManager("tsuru")
-	change, ok := manager.Commands["node-healing-delete"]
-	c.Assert(ok, check.Equals, true)
-	c.Assert(change, check.FitsTypeOf, &admin.DeleteNodeHealingConfigCmd{})
-}
-
-func (s *S) TestNodeRebalanceIsRegistered(c *check.C) {
-	manager = buildManager("tsuru")
-	change, ok := manager.Commands["node-rebalance"]
-	c.Assert(ok, check.Equals, true)
-	c.Assert(change, check.FitsTypeOf, &admin.RebalanceNodeCmd{})
-}
-
 func (s *S) TestServiceCreateIsRegistered(c *check.C) {
 	manager = buildManager("tsuru")
 	list, ok := manager.Commands["service-create"]
