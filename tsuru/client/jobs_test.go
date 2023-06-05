@@ -20,7 +20,7 @@ import (
 func (s *S) TestJobCreate(c *check.C) {
 	var stdout, stderr bytes.Buffer
 	context := cmd.Context{
-		Args:   []string{"loucoAbreu", "ubuntu:latest", "/bin/sh",  "-c", "echo Botafogo is in my heart"},
+		Args:   []string{"loucoAbreu", "ubuntu:latest", "/bin/sh", "-c", "echo Botafogo is in my heart"},
 		Stdout: &stdout,
 		Stderr: &stderr,
 	}
@@ -441,7 +441,7 @@ func (s *S) TestJobTriggerApiError(c *check.C) {
 func (s *S) TestJobUpdate(c *check.C) {
 	var stdout, stderr bytes.Buffer
 	context := cmd.Context{
-		Args:   []string{"tulioMaravilha", "/bin/sh",  "-c", "echo we like you"},
+		Args:   []string{"tulioMaravilha", "/bin/sh", "-c", "echo we like you"},
 		Stdout: &stdout,
 		Stderr: &stderr,
 	}
