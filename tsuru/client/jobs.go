@@ -1,3 +1,7 @@
+// Copyright 2023 tsuru-client authors. All rights reserved.
+// Use of this source code is governed by a BSD-style
+// license that can be found in the LICENSE file.
+
 package client
 
 import (
@@ -105,17 +109,16 @@ func (c *JobCreate) Flags() *gnuflag.FlagSet {
 	return c.fs
 }
 
-func parseJobCommands(commands string, trimQuotes bool) ([]string, error) {
+func parseJobCommands(commands []string) ([]string, error) {
+	if len(commands) > 1 {
+		return commands, nil
+	}
+	quotedCommands := commands[0]
 	jsonCommands := []string{}
-	if err := json.Unmarshal([]byte(commands), &jsonCommands); err == nil {
+	if err := json.Unmarshal([]byte(quotedCommands), &jsonCommands); err == nil {
 		return jsonCommands, nil
 	}
-	// try to parse as text
-	if trimQuotes {
-		commands = strings.TrimPrefix(commands, "\"")
-		commands = strings.TrimSuffix(commands, "\"")
-	}
-	shellCommands, err := shellwords.Parse(commands)
+	shellCommands, err := shellwords.Parse(quotedCommands)
 	if err != nil {
 		return nil, err
 	}
@@ -131,8 +134,8 @@ func (c *JobCreate) Run(ctx *cmd.Context, cli *cmd.Client) error {
 	}
 	jobName := ctx.Args[0]
 	image := ctx.Args[1]
-	commands := ctx.Args[2]
-	parsedCommands, err := parseJobCommands(commands, true)
+	commands := ctx.Args[2:]
+	parsedCommands, err := parseJobCommands(commands)
 	if err != nil {
 		return err
 	}
@@ -529,17 +532,18 @@ func parseEnvs(cmdEnvs cmd.StringSliceFlag, public bool) ([]tsuru.EnvVar, error)
 
 func (c *JobUpdate) Run(ctx *cmd.Context, cli *cmd.Client) error {
 	jobName := ctx.Args[0]
-
 	apiClient, err := client.ClientFromEnvironment(&tsuru.Configuration{
 		HTTPClient: cli.HTTPClient,
 	})
 	if err != nil {
 		return err
 	}
-
-	parsedCommands, err := parseJobCommands(c.commands, false)
-	if err != nil {
-		return err
+	var jobUpdateCommands []string
+	if len(ctx.Args) > 1 {
+		jobUpdateCommands, err = parseJobCommands(ctx.Args[1:])
+		if err != nil {
+			return err
+		}
 	}
 	envs, err := parseEnvs(c.envs, true)
 	if err != nil {
@@ -560,7 +564,7 @@ func (c *JobUpdate) Run(ctx *cmd.Context, cli *cmd.Client) error {
 		TeamOwner:   c.teamOwner,
 		Container: tsuru.InputJobContainer{
 			Image:   c.image,
-			Command: parsedCommands,
+			Command: jobUpdateCommands,
 			Envs:    envs,
 		},
 	}
