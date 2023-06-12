@@ -10,11 +10,13 @@ import (
 	"encoding/json"
 	"errors"
 	"fmt"
+	"io"
 	"net/http"
 	"strings"
 	"text/template"
 	"time"
 
+	"github.com/antihax/optional"
 	"github.com/mattn/go-shellwords"
 	"github.com/tsuru/gnuflag"
 	"github.com/tsuru/go-tsuruclient/pkg/client"
@@ -237,7 +239,6 @@ func (c *JobInfo) Run(ctx *cmd.Context, cli *cmd.Client) error {
 }
 
 func renderJobUnits(buf *bytes.Buffer, units []tsuru.Unit) {
-
 	titles := []string{"Name", "Status", "Restarts", "Age"}
 	unitsTable := tablecli.NewTable()
 	tablecli.TableConfig.ForceWrap = false
@@ -575,5 +576,66 @@ func (c *JobUpdate) Run(ctx *cmd.Context, cli *cmd.Client) error {
 	}
 
 	fmt.Fprintf(ctx.Stdout, "Job updated\nUse \"tsuru job info %s\" to check the status of the job\n", jobName)
+	return nil
+}
+
+
+type JobLog struct{
+	follow 	   bool
+	fs         *gnuflag.FlagSet
+}
+
+func (c *JobLog) Info() *cmd.Info {
+	return &cmd.Info{
+		Name:    "job-log",
+		Usage:   "job log <job-name>",
+		Desc:    "Retrieve logs a job",
+		MinArgs: 1,
+		MaxArgs: 1,
+	}
+}
+
+func (c *JobLog) Flags() *gnuflag.FlagSet {
+	if c.fs == nil {
+		c.fs = gnuflag.NewFlagSet("job-log", gnuflag.ExitOnError)
+		followMsg := "Follow logs"
+		c.fs.BoolVar(&c.follow, "f", false, followMsg)
+		c.fs.BoolVar(&c.follow, "follow", false, followMsg)
+	}
+	return c.fs
+}
+
+func (c *JobLog) Run(ctx *cmd.Context, cli *cmd.Client) error {
+	jobName := ctx.Args[0]
+
+	apiClient, err := client.ClientFromEnvironment(&tsuru.Configuration{
+		HTTPClient: cli.HTTPClient,
+	})
+	if err != nil {
+		return err
+	}
+
+	resp, err := apiClient.JobApi.JobLog(context.Background(), jobName, &tsuru.JobLogOpts{ 
+		Follow: optional.NewBool(c.follow),
+	})
+	if err != nil {
+		return err
+	}
+	defer resp.Body.Close()
+
+	ctx.RawOutput()
+
+	formatter := logFormatter{}
+	dec := json.NewDecoder(resp.Body)
+	for {
+		err = formatter.Format(ctx.Stdout, dec)
+		if err != nil {
+			if err != io.EOF {
+				fmt.Fprintf(ctx.Stdout, "Error: %v", err)
+			}
+			break
+		}
+	}
+
 	return nil
 }
