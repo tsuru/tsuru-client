@@ -558,7 +558,7 @@ func (s *S) TestJobLog(c *check.C) {
 		Transport: cmdtest.Transport{Message: log, Status: http.StatusOK},
 		CondFunc: func(r *http.Request) bool {
 			c.Assert(r.URL.Path, check.Equals, "/1.13/jobs/cerrone/log")
-			c.Assert(r.URL.Query(), check.DeepEquals, url.Values{"follow":[]string{"false"}})
+			c.Assert(r.URL.Query(), check.DeepEquals, url.Values{"follow": []string{"false"}})
 			c.Assert(r.Method, check.Equals, "GET")
 			c.Assert(r.Header.Get("Accept"), check.Equals, "application/x-json-stream")
 			c.Assert(r.Body, check.IsNil)
@@ -569,7 +569,7 @@ func (s *S) TestJobLog(c *check.C) {
 	command := JobLog{}
 	err := command.Run(&context, client)
 	c.Assert(err, check.IsNil)
-	c.Assert(string(stdout.Bytes()), check.DeepEquals, expected)
+	c.Assert(stdout.String(), check.DeepEquals, expected)
 }
 
 func (s *S) TestJobLogFollow(c *check.C) {
@@ -595,7 +595,7 @@ func (s *S) TestJobLogFollow(c *check.C) {
 	trans := cmdtest.ConditionalTransport{
 		Transport: cmdtest.Transport{Message: log, Status: http.StatusOK},
 		CondFunc: func(r *http.Request) bool {
-			c.Assert(r.URL.Query(), check.DeepEquals, url.Values{"follow":[]string{"true"}})
+			c.Assert(r.URL.Query(), check.DeepEquals, url.Values{"follow": []string{"true"}})
 			return true
 		},
 	}
@@ -604,7 +604,7 @@ func (s *S) TestJobLogFollow(c *check.C) {
 	command.Flags().Parse(true, []string{"-f"})
 	err := command.Run(&context, client)
 	c.Assert(err, check.IsNil)
-	c.Assert(string(stdout.Bytes()), check.DeepEquals, expected)
+	c.Assert(stdout.String(), check.DeepEquals, expected)
 }
 
 func (s *S) TestJobLogApiError(c *check.C) {

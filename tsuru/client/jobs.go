@@ -579,10 +579,9 @@ func (c *JobUpdate) Run(ctx *cmd.Context, cli *cmd.Client) error {
 	return nil
 }
 
-
-type JobLog struct{
-	follow 	   bool
-	fs         *gnuflag.FlagSet
+type JobLog struct {
+	follow bool
+	fs     *gnuflag.FlagSet
 }
 
 func (c *JobLog) Info() *cmd.Info {
@@ -613,8 +612,8 @@ func (c *JobLog) Run(ctx *cmd.Context, cli *cmd.Client) error {
 	if err != nil {
 		return err
 	}
-	
-	resp, err := apiClient.JobApi.JobLog(context.Background(), jobName, &tsuru.JobLogOpts{ 
+
+	resp, err := apiClient.JobApi.JobLog(context.Background(), jobName, &tsuru.JobLogOpts{
 		Follow: optional.NewBool(c.follow),
 	})
 	if err != nil {

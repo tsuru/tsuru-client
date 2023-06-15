@@ -93,7 +93,7 @@ func (f logFormatter) prefix(l log) string {
 	if !f.noSource {
 		if l.Unit != "" && l.Source != "" {
 			parts = append(parts, fmt.Sprintf("[%s][%s]", l.Source, l.Unit))
-		} else if l.Unit != ""{
+		} else if l.Unit != "" {
 			parts = append(parts, fmt.Sprintf("[%s]", l.Unit))
 		} else {
 			parts = append(parts, fmt.Sprintf("[%s]", l.Source))
