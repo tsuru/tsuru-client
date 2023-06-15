@@ -607,14 +607,13 @@ func (c *JobLog) Flags() *gnuflag.FlagSet {
 
 func (c *JobLog) Run(ctx *cmd.Context, cli *cmd.Client) error {
 	jobName := ctx.Args[0]
-
 	apiClient, err := client.ClientFromEnvironment(&tsuru.Configuration{
 		HTTPClient: cli.HTTPClient,
 	})
 	if err != nil {
 		return err
 	}
-
+	
 	resp, err := apiClient.JobApi.JobLog(context.Background(), jobName, &tsuru.JobLogOpts{ 
 		Follow: optional.NewBool(c.follow),
 	})
@@ -622,11 +621,9 @@ func (c *JobLog) Run(ctx *cmd.Context, cli *cmd.Client) error {
 		return err
 	}
 	defer resp.Body.Close()
-
-	ctx.RawOutput()
-
 	formatter := logFormatter{}
 	dec := json.NewDecoder(resp.Body)
+	ctx.RawOutput()
 	for {
 		err = formatter.Format(ctx.Stdout, dec)
 		if err != nil {
