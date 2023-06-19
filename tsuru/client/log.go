@@ -91,8 +91,10 @@ func (f logFormatter) prefix(l log) string {
 		parts = append(parts, formatter.Local(l.Date).Format("2006-01-02 15:04:05 -0700"))
 	}
 	if !f.noSource {
-		if l.Unit != "" {
+		if l.Unit != "" && l.Source != "" {
 			parts = append(parts, fmt.Sprintf("[%s][%s]", l.Source, l.Unit))
+		} else if l.Unit != "" {
+			parts = append(parts, fmt.Sprintf("[%s]", l.Unit))
 		} else {
 			parts = append(parts, fmt.Sprintf("[%s]", l.Source))
 		}

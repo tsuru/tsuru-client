@@ -10,6 +10,7 @@ import (
 	"fmt"
 	"io"
 	"net/http"
+	"net/url"
 
 	"github.com/tsuru/go-tsuruclient/pkg/tsuru"
 	"github.com/tsuru/tsuru/cmd"
@@ -528,6 +529,100 @@ func (s *S) TestJobUpdateApiError(c *check.C) {
 	}
 	client := cmd.NewClient(&http.Client{Transport: &trans}, nil, manager)
 	command := JobUpdate{}
+	err := command.Run(&context, client)
+	c.Assert(err, check.NotNil)
+	c.Assert(err.Error(), check.Equals, expected)
+}
+
+func (s *S) TestJobLog(c *check.C) {
+	var stdout, stderr bytes.Buffer
+	context := cmd.Context{
+		Args:   []string{"cerrone"},
+		Stdout: &stdout,
+		Stderr: &stderr,
+	}
+	log := `
+	[{
+		"Date": "2023-06-06T17:45:57.11625803Z",
+		"Message": "Hello World!",
+		"Source": "",
+		"Name": "cerrone",
+		"Type": "job",
+		"Unit": "cerrone-7k2c8"
+	}]
+`
+	expectedPrefix := "2023-06-06 12:45:57 -0500 [cerrone-7k2c8]:"
+	expectedMessage := "Hello World!"
+	expected := fmt.Sprintf("%s %s\n", cmd.Colorfy(expectedPrefix, "blue", "", ""), expectedMessage)
+	trans := cmdtest.ConditionalTransport{
+		Transport: cmdtest.Transport{Message: log, Status: http.StatusOK},
+		CondFunc: func(r *http.Request) bool {
+			c.Assert(r.URL.Path, check.Equals, "/1.13/jobs/cerrone/log")
+			c.Assert(r.URL.Query(), check.DeepEquals, url.Values{"follow": []string{"false"}})
+			c.Assert(r.Method, check.Equals, "GET")
+			c.Assert(r.Header.Get("Accept"), check.Equals, "application/x-json-stream")
+			c.Assert(r.Body, check.IsNil)
+			return true
+		},
+	}
+	client := cmd.NewClient(&http.Client{Transport: &trans}, nil, manager)
+	command := JobLog{}
+	err := command.Run(&context, client)
+	c.Assert(err, check.IsNil)
+	c.Assert(stdout.String(), check.DeepEquals, expected)
+}
+
+func (s *S) TestJobLogFollow(c *check.C) {
+	var stdout, stderr bytes.Buffer
+	context := cmd.Context{
+		Args:   []string{"frank-ocean"},
+		Stdout: &stdout,
+		Stderr: &stderr,
+	}
+	log := `
+	[{
+		"Date": "2023-06-06T17:45:57.11625803Z",
+		"Message": "Hello World!",
+		"Source": "",
+		"Name": "frank-ocean",
+		"Type": "job",
+		"Unit": "frank-ocean-7k2c8"
+	}]
+`
+	expectedPrefix := "2023-06-06 12:45:57 -0500 [frank-ocean-7k2c8]:"
+	expectedMessage := "Hello World!"
+	expected := fmt.Sprintf("%s %s\n", cmd.Colorfy(expectedPrefix, "blue", "", ""), expectedMessage)
+	trans := cmdtest.ConditionalTransport{
+		Transport: cmdtest.Transport{Message: log, Status: http.StatusOK},
+		CondFunc: func(r *http.Request) bool {
+			c.Assert(r.URL.Query(), check.DeepEquals, url.Values{"follow": []string{"true"}})
+			return true
+		},
+	}
+	client := cmd.NewClient(&http.Client{Transport: &trans}, nil, manager)
+	command := JobLog{}
+	command.Flags().Parse(true, []string{"-f"})
+	err := command.Run(&context, client)
+	c.Assert(err, check.IsNil)
+	c.Assert(stdout.String(), check.DeepEquals, expected)
+}
+
+func (s *S) TestJobLogApiError(c *check.C) {
+	var stdout, stderr bytes.Buffer
+	context := cmd.Context{
+		Args:   []string{"gorillaz"},
+		Stdout: &stdout,
+		Stderr: &stderr,
+	}
+	expected := "500 Internal Server Error: some error"
+	trans := cmdtest.ConditionalTransport{
+		Transport: cmdtest.Transport{Message: "some error", Status: http.StatusInternalServerError},
+		CondFunc: func(r *http.Request) bool {
+			return true
+		},
+	}
+	client := cmd.NewClient(&http.Client{Transport: &trans}, nil, manager)
+	command := JobLog{}
 	err := command.Run(&context, client)
 	c.Assert(err, check.NotNil)
 	c.Assert(err.Error(), check.Equals, expected)
