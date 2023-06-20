@@ -7,14 +7,14 @@ package admin
 import (
 	"bytes"
 	"encoding/json"
-	"io/ioutil"
+	"io"
 	"net/http"
 	"net/http/httptest"
 	"strings"
 
 	"github.com/tsuru/tsuru/cmd"
 	"github.com/tsuru/tsuru/cmd/cmdtest"
-	"github.com/tsuru/tsuru/io"
+	tsuruIo "github.com/tsuru/tsuru/io"
 	"gopkg.in/check.v1"
 )
 
@@ -104,7 +104,7 @@ func (s *S) TestPlatformAddRun(c *check.C) {
 		Args:   []string{"teste"},
 	}
 	expectedMsg := "--something--\nPlatform successfully updated!\n"
-	msg := io.SimpleJsonMessage{Message: expectedMsg}
+	msg := tsuruIo.SimpleJsonMessage{Message: expectedMsg}
 	result, err := json.Marshal(msg)
 	c.Assert(err, check.IsNil)
 	trans := &cmdtest.ConditionalTransport{
@@ -114,7 +114,7 @@ func (s *S) TestPlatformAddRun(c *check.C) {
 			c.Assert(transErr, check.IsNil)
 			defer file.Close()
 			c.Assert(header.Filename, check.Equals, "Dockerfile")
-			data, transErr := ioutil.ReadAll(file)
+			data, transErr := io.ReadAll(file)
 			c.Assert(transErr, check.IsNil)
 			c.Assert(string(data), check.Equals, "FROM tsuru/java")
 			return strings.HasSuffix(req.URL.Path, "/platforms") && req.Method == "POST"
@@ -136,7 +136,7 @@ func (s *S) TestPlatformAddRunLocalDockerFile(c *check.C) {
 		Args:   []string{"teste"},
 	}
 	expectedMsg := "--something--\nPlatform successfully updated!\n"
-	msg := io.SimpleJsonMessage{Message: expectedMsg}
+	msg := tsuruIo.SimpleJsonMessage{Message: expectedMsg}
 	result, err := json.Marshal(msg)
 	c.Assert(err, check.IsNil)
 	trans := &cmdtest.ConditionalTransport{
@@ -146,7 +146,7 @@ func (s *S) TestPlatformAddRunLocalDockerFile(c *check.C) {
 			c.Assert(transErr, check.IsNil)
 			defer file.Close()
 			c.Assert(header.Filename, check.Equals, "Dockerfile")
-			data, transErr := ioutil.ReadAll(file)
+			data, transErr := io.ReadAll(file)
 			c.Assert(transErr, check.IsNil)
 			c.Assert(string(data), check.Equals, "FROM\ttsuru/java\nRUN\ttrue\n")
 			return strings.HasSuffix(req.URL.Path, "/platforms") && req.Method == "POST"
@@ -168,7 +168,7 @@ func (s *S) TestPlatformAddPrebuiltImage(c *check.C) {
 		Args:   []string{"teste"},
 	}
 	expectedMsg := "--something--\nPlatform successfully updated!\n"
-	msg := io.SimpleJsonMessage{Message: expectedMsg}
+	msg := tsuruIo.SimpleJsonMessage{Message: expectedMsg}
 	result, err := json.Marshal(msg)
 	c.Assert(err, check.IsNil)
 	trans := &cmdtest.ConditionalTransport{
@@ -178,7 +178,7 @@ func (s *S) TestPlatformAddPrebuiltImage(c *check.C) {
 			c.Assert(transErr, check.IsNil)
 			defer file.Close()
 			c.Assert(header.Filename, check.Equals, "Dockerfile")
-			data, transErr := ioutil.ReadAll(file)
+			data, transErr := io.ReadAll(file)
 			c.Assert(transErr, check.IsNil)
 			c.Assert(string(data), check.Equals, "FROM tsuru/python")
 			return strings.HasSuffix(req.URL.Path, "/platforms") && req.Method == "POST"
@@ -200,7 +200,7 @@ func (s *S) TestPlatformAddRunImplicitDockerfile(c *check.C) {
 		Args:   []string{"teste"},
 	}
 	expectedMsg := "--something--\nPlatform successfully updated!\n"
-	msg := io.SimpleJsonMessage{Message: expectedMsg}
+	msg := tsuruIo.SimpleJsonMessage{Message: expectedMsg}
 	result, err := json.Marshal(msg)
 	c.Assert(err, check.IsNil)
 	trans := &cmdtest.ConditionalTransport{
@@ -210,7 +210,7 @@ func (s *S) TestPlatformAddRunImplicitDockerfile(c *check.C) {
 			c.Assert(transErr, check.IsNil)
 			defer file.Close()
 			c.Assert(header.Filename, check.Equals, "Dockerfile")
-			data, transErr := ioutil.ReadAll(file)
+			data, transErr := io.ReadAll(file)
 			c.Assert(transErr, check.IsNil)
 			c.Assert(string(data), check.Equals, "FROM tsuru/teste")
 			return strings.HasSuffix(req.URL.Path, "/platforms") && req.Method == "POST"
@@ -309,7 +309,7 @@ func (s *S) TestPlatformUpdateRun(c *check.C) {
 		Args:   []string{name},
 	}
 	expectedMsg := "--something--\nPlatform successfully updated!\n"
-	msg := io.SimpleJsonMessage{Message: expectedMsg}
+	msg := tsuruIo.SimpleJsonMessage{Message: expectedMsg}
 	result, err := json.Marshal(msg)
 	c.Assert(err, check.IsNil)
 	trans := &cmdtest.ConditionalTransport{
@@ -319,7 +319,7 @@ func (s *S) TestPlatformUpdateRun(c *check.C) {
 			c.Assert(transErr, check.IsNil)
 			defer file.Close()
 			c.Assert(header.Filename, check.Equals, "Dockerfile")
-			data, transErr := ioutil.ReadAll(file)
+			data, transErr := io.ReadAll(file)
 			c.Assert(transErr, check.IsNil)
 			c.Assert(string(data), check.Equals, "FROM tsuru/java")
 			return strings.HasSuffix(req.URL.Path, "/platforms/"+name) && req.Method == "PUT"
@@ -342,7 +342,7 @@ func (s *S) TestPlatformUpdateRunLocalDockerfile(c *check.C) {
 		Args:   []string{name},
 	}
 	expectedMsg := "--something--\nPlatform successfully updated!\n"
-	msg := io.SimpleJsonMessage{Message: expectedMsg}
+	msg := tsuruIo.SimpleJsonMessage{Message: expectedMsg}
 	result, err := json.Marshal(msg)
 	c.Assert(err, check.IsNil)
 	trans := &cmdtest.ConditionalTransport{
@@ -352,7 +352,7 @@ func (s *S) TestPlatformUpdateRunLocalDockerfile(c *check.C) {
 			c.Assert(transErr, check.IsNil)
 			defer file.Close()
 			c.Assert(header.Filename, check.Equals, "Dockerfile")
-			data, transErr := ioutil.ReadAll(file)
+			data, transErr := io.ReadAll(file)
 			c.Assert(transErr, check.IsNil)
 			c.Assert(string(data), check.Equals, "FROM\ttsuru/java\nRUN\ttrue\n")
 			return strings.HasSuffix(req.URL.Path, "/platforms/"+name) && req.Method == "PUT"
@@ -375,7 +375,7 @@ func (s *S) TestPlatformUpdateRunPrebuiltImage(c *check.C) {
 		Args:   []string{name},
 	}
 	expectedMsg := "--something--\nPlatform successfully updated!\n"
-	msg := io.SimpleJsonMessage{Message: expectedMsg}
+	msg := tsuruIo.SimpleJsonMessage{Message: expectedMsg}
 	result, err := json.Marshal(msg)
 	c.Assert(err, check.IsNil)
 	trans := &cmdtest.ConditionalTransport{
@@ -385,7 +385,7 @@ func (s *S) TestPlatformUpdateRunPrebuiltImage(c *check.C) {
 			c.Assert(transErr, check.IsNil)
 			defer file.Close()
 			c.Assert(header.Filename, check.Equals, "Dockerfile")
-			data, transErr := ioutil.ReadAll(file)
+			data, transErr := io.ReadAll(file)
 			c.Assert(transErr, check.IsNil)
 			c.Assert(string(data), check.Equals, "FROM tsuru/python")
 			return strings.HasSuffix(req.URL.Path, "/platforms/"+name) && req.Method == "PUT"
@@ -408,7 +408,7 @@ func (s *S) TestPlatformUpdateRunImplicitImage(c *check.C) {
 		Args:   []string{name},
 	}
 	expectedMsg := "--something--\nPlatform successfully updated!\n"
-	msg := io.SimpleJsonMessage{Message: expectedMsg}
+	msg := tsuruIo.SimpleJsonMessage{Message: expectedMsg}
 	result, err := json.Marshal(msg)
 	c.Assert(err, check.IsNil)
 	trans := &cmdtest.ConditionalTransport{
@@ -418,7 +418,7 @@ func (s *S) TestPlatformUpdateRunImplicitImage(c *check.C) {
 			c.Assert(transErr, check.IsNil)
 			defer file.Close()
 			c.Assert(header.Filename, check.Equals, "Dockerfile")
-			data, transErr := ioutil.ReadAll(file)
+			data, transErr := io.ReadAll(file)
 			c.Assert(transErr, check.IsNil)
 			c.Assert(string(data), check.Equals, "FROM tsuru/teste")
 			return strings.HasSuffix(req.URL.Path, "/platforms/"+name) && req.Method == "PUT"
@@ -440,7 +440,7 @@ func (s *S) TestPlatformUpdateWithFlagDisableTrue(c *check.C) {
 		Args:   []string{name},
 	}
 	expectedMsg := "Platform successfully updated!\n"
-	msg := io.SimpleJsonMessage{Message: expectedMsg}
+	msg := tsuruIo.SimpleJsonMessage{Message: expectedMsg}
 	result, err := json.Marshal(msg)
 	c.Assert(err, check.IsNil)
 	trans := &cmdtest.ConditionalTransport{
@@ -469,7 +469,7 @@ func (s *S) TestPlatformUpdateWithFlagEnabledTrue(c *check.C) {
 		Args:   []string{name},
 	}
 	expectedMsg := "Platform successfully updated!\n"
-	msg := io.SimpleJsonMessage{Message: expectedMsg}
+	msg := tsuruIo.SimpleJsonMessage{Message: expectedMsg}
 	result, err := json.Marshal(msg)
 	c.Assert(err, check.IsNil)
 	trans := &cmdtest.ConditionalTransport{

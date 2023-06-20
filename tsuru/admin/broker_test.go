@@ -3,7 +3,7 @@ package admin
 import (
 	"bytes"
 	"encoding/json"
-	"io/ioutil"
+	"io"
 	"net/http"
 
 	"github.com/tsuru/go-tsuruclient/pkg/tsuru"
@@ -31,7 +31,7 @@ func (s *S) TestBrokerAdd(c *check.C) {
 			c.Assert(r.Method, check.Equals, "POST")
 			var ret tsuru.ServiceBroker
 			c.Assert(r.Header.Get("Content-Type"), check.Equals, "application/json")
-			data, err := ioutil.ReadAll(r.Body)
+			data, err := io.ReadAll(r.Body)
 			c.Assert(err, check.IsNil)
 			err = json.Unmarshal(data, &ret)
 			c.Assert(err, check.IsNil)
@@ -82,7 +82,7 @@ func (s *S) TestBrokerAddEmptyAuth(c *check.C) {
 			c.Assert(r.Method, check.Equals, "POST")
 			var ret tsuru.ServiceBroker
 			c.Assert(r.Header.Get("Content-Type"), check.Equals, "application/json")
-			data, err := ioutil.ReadAll(r.Body)
+			data, err := io.ReadAll(r.Body)
 			c.Assert(err, check.IsNil)
 			err = json.Unmarshal(data, &ret)
 			c.Assert(err, check.IsNil)
@@ -120,7 +120,7 @@ func (s *S) TestBrokerAddDefaultCacheExpiration(c *check.C) {
 		Transport: cmdtest.Transport{Message: "", Status: http.StatusOK},
 		CondFunc: func(r *http.Request) bool {
 			var ret tsuru.ServiceBroker
-			data, err := ioutil.ReadAll(r.Body)
+			data, err := io.ReadAll(r.Body)
 			c.Assert(err, check.IsNil)
 			err = json.Unmarshal(data, &ret)
 			c.Assert(err, check.IsNil)
@@ -155,7 +155,7 @@ func (s *S) TestBrokerUpdate(c *check.C) {
 			c.Assert(r.Method, check.Equals, "PUT")
 			var ret tsuru.ServiceBroker
 			c.Assert(r.Header.Get("Content-Type"), check.Equals, "application/json")
-			data, err := ioutil.ReadAll(r.Body)
+			data, err := io.ReadAll(r.Body)
 			c.Assert(err, check.IsNil)
 			err = json.Unmarshal(data, &ret)
 			c.Assert(err, check.IsNil)
@@ -206,7 +206,7 @@ func (s *S) TestBrokerUpdateEmptyAuth(c *check.C) {
 			c.Assert(r.Method, check.Equals, "PUT")
 			var ret tsuru.ServiceBroker
 			c.Assert(r.Header.Get("Content-Type"), check.Equals, "application/json")
-			data, err := ioutil.ReadAll(r.Body)
+			data, err := io.ReadAll(r.Body)
 			c.Assert(err, check.IsNil)
 			err = json.Unmarshal(data, &ret)
 			c.Assert(err, check.IsNil)
@@ -244,7 +244,7 @@ func (s *S) TestBrokerUpdateNoCache(c *check.C) {
 		Transport: cmdtest.Transport{Message: "", Status: http.StatusOK},
 		CondFunc: func(r *http.Request) bool {
 			var ret tsuru.ServiceBroker
-			data, err := ioutil.ReadAll(r.Body)
+			data, err := io.ReadAll(r.Body)
 			c.Assert(err, check.IsNil)
 			err = json.Unmarshal(data, &ret)
 			c.Assert(err, check.IsNil)

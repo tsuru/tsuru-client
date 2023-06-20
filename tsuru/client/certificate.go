@@ -11,9 +11,9 @@ import (
 	"encoding/pem"
 	"errors"
 	"fmt"
-	"io/ioutil"
 	"net/http"
 	"net/url"
+	"os"
 	"sort"
 	"strings"
 
@@ -56,11 +56,11 @@ func (c *CertificateSet) Run(context *cmd.Context, client *cmd.Client) error {
 	if c.cname == "" {
 		return errors.New("You must set cname.")
 	}
-	cert, err := ioutil.ReadFile(context.Args[0])
+	cert, err := os.ReadFile(context.Args[0])
 	if err != nil {
 		return err
 	}
-	key, err := ioutil.ReadFile(context.Args[1])
+	key, err := os.ReadFile(context.Args[1])
 	if err != nil {
 		return err
 	}

@@ -7,7 +7,7 @@ package client
 import (
 	"bytes"
 	"encoding/json"
-	"io/ioutil"
+	"io"
 	"net/http"
 
 	"github.com/tsuru/tsuru/cmd"
@@ -34,7 +34,7 @@ func (s *S) TestTokenCreate(c *check.C) {
 			c.Assert(r.Method, check.Equals, "POST")
 			var ret map[string]interface{}
 			c.Assert(r.Header.Get("Content-Type"), check.Equals, "application/json")
-			data, err := ioutil.ReadAll(r.Body)
+			data, err := io.ReadAll(r.Body)
 			c.Assert(err, check.IsNil)
 			err = json.Unmarshal(data, &ret)
 			c.Assert(err, check.IsNil)
@@ -65,7 +65,7 @@ func (s *S) TestTokenCreateWithFlags(c *check.C) {
 			c.Assert(r.Method, check.Equals, "POST")
 			var ret map[string]interface{}
 			c.Assert(r.Header.Get("Content-Type"), check.Equals, "application/json")
-			data, err := ioutil.ReadAll(r.Body)
+			data, err := io.ReadAll(r.Body)
 			c.Assert(err, check.IsNil)
 			err = json.Unmarshal(data, &ret)
 			c.Assert(err, check.IsNil)
@@ -111,7 +111,7 @@ func (s *S) TestTokenUpdate(c *check.C) {
 			c.Assert(r.Method, check.Equals, "PUT")
 			var ret map[string]interface{}
 			c.Assert(r.Header.Get("Content-Type"), check.Equals, "application/json")
-			data, err := ioutil.ReadAll(r.Body)
+			data, err := io.ReadAll(r.Body)
 			c.Assert(err, check.IsNil)
 			err = json.Unmarshal(data, &ret)
 			c.Assert(err, check.IsNil)
@@ -143,7 +143,7 @@ func (s *S) TestTokenUpdateWithFlags(c *check.C) {
 			c.Assert(r.Method, check.Equals, "PUT")
 			var ret map[string]interface{}
 			c.Assert(r.Header.Get("Content-Type"), check.Equals, "application/json")
-			data, err := ioutil.ReadAll(r.Body)
+			data, err := io.ReadAll(r.Body)
 			c.Assert(err, check.IsNil)
 			err = json.Unmarshal(data, &ret)
 			c.Assert(err, check.IsNil)

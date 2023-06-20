@@ -11,10 +11,10 @@ import (
 	"errors"
 	"fmt"
 	"io"
-	"io/ioutil"
 	"mime/multipart"
 	"net/http"
 	"net/url"
+	"os"
 	"sort"
 
 	"github.com/tsuru/gnuflag"
@@ -374,7 +374,7 @@ func serializeDockerfile(name string, w io.Writer, dockerfile, image string, use
 		case "http", "https":
 			dockerfileContent, err = downloadDockerfile(dockerfile)
 		default:
-			dockerfileContent, err = ioutil.ReadFile(dockerfile)
+			dockerfileContent, err = os.ReadFile(dockerfile)
 		}
 		if err != nil {
 			return nil, err
@@ -398,5 +398,5 @@ func downloadDockerfile(dockerfileURL string) ([]byte, error) {
 		return nil, err
 	}
 	defer resp.Body.Close()
-	return ioutil.ReadAll(resp.Body)
+	return io.ReadAll(resp.Body)
 }

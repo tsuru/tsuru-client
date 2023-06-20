@@ -8,7 +8,7 @@ import (
 	"bytes"
 	"encoding/json"
 	"fmt"
-	"io/ioutil"
+	"io"
 	"net/http"
 	"net/url"
 	"regexp"
@@ -118,7 +118,7 @@ func (c *EventList) Run(context *cmd.Context, client *cmd.Client) error {
 	if response.StatusCode == http.StatusNoContent {
 		return nil
 	}
-	result, err := ioutil.ReadAll(response.Body)
+	result, err := io.ReadAll(response.Body)
 	if err != nil {
 		return err
 	}
@@ -236,7 +236,7 @@ func (c *EventInfo) Run(context *cmd.Context, client *cmd.Client) error {
 		return err
 	}
 	defer response.Body.Close()
-	result, err := ioutil.ReadAll(response.Body)
+	result, err := io.ReadAll(response.Body)
 	if err != nil {
 		return err
 	}

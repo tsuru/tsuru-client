@@ -6,7 +6,7 @@ package admin
 
 import (
 	"bytes"
-	"io/ioutil"
+	"io"
 	"net/http"
 	"os"
 	"strings"
@@ -262,7 +262,7 @@ func (s *S) TestServiceTemplateRun(c *check.C) {
 	c.Assert(stdout.String(), check.Equals, expected)
 	f, err := os.Open("./manifest.yaml")
 	c.Assert(err, check.IsNil)
-	fc, err := ioutil.ReadAll(f)
+	fc, err := io.ReadAll(f)
 	c.Assert(err, check.IsNil)
 	manifest := `id: servicename
 username: username_to_auth

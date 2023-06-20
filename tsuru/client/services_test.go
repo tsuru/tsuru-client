@@ -8,7 +8,7 @@ import (
 	"bytes"
 	"encoding/json"
 	"errors"
-	"io/ioutil"
+	"io"
 	"net/http"
 	"strings"
 
@@ -16,7 +16,7 @@ import (
 	"github.com/tsuru/go-tsuruclient/pkg/tsuru"
 	"github.com/tsuru/tsuru/cmd"
 	"github.com/tsuru/tsuru/cmd/cmdtest"
-	"github.com/tsuru/tsuru/io"
+	tsuruIo "github.com/tsuru/tsuru/io"
 	"github.com/tsuru/tsuru/service"
 	"gopkg.in/check.v1"
 )
@@ -102,7 +102,7 @@ Service test is foo bar.
 		message = `Service instance "mongo" is up`
 	}
 	resp = &http.Response{
-		Body:       ioutil.NopCloser(bytes.NewBufferString(message)),
+		Body:       io.NopCloser(bytes.NewBufferString(message)),
 		StatusCode: http.StatusOK,
 	}
 	return resp, nil
@@ -242,7 +242,7 @@ func (s *S) TestServiceInstanceBind(c *check.C) {
 		Stderr: &stderr,
 	}
 	expectedOut := `["DATABASE_HOST","DATABASE_USER","DATABASE_PASSWORD"]`
-	msg := io.SimpleJsonMessage{Message: expectedOut}
+	msg := tsuruIo.SimpleJsonMessage{Message: expectedOut}
 	result, err := json.Marshal(msg)
 	c.Assert(err, check.IsNil)
 	trans := &cmdtest.ConditionalTransport{
@@ -275,7 +275,7 @@ func (s *S) TestServiceInstanceBindToJob(c *check.C) {
 		Stderr: &stderr,
 	}
 	expectedOut := `["DATABASE_HOST","DATABASE_USER","DATABASE_PASSWORD"]`
-	msg := io.SimpleJsonMessage{Message: expectedOut}
+	msg := tsuruIo.SimpleJsonMessage{Message: expectedOut}
 	result, err := json.Marshal(msg)
 	c.Assert(err, check.IsNil)
 	trans := &cmdtest.ConditionalTransport{
@@ -304,7 +304,7 @@ func (s *S) TestServiceInstanceBindWithoutEnvironmentVariables(c *check.C) {
 		Stderr: &stderr,
 	}
 	expectedOut := `something`
-	msg := io.SimpleJsonMessage{Message: expectedOut}
+	msg := tsuruIo.SimpleJsonMessage{Message: expectedOut}
 	result, err := json.Marshal(msg)
 	c.Assert(err, check.IsNil)
 	trans := &cmdtest.ConditionalTransport{
@@ -357,7 +357,7 @@ func (s *S) TestServiceInstanceUnbind(c *check.C) {
 		Stderr: &stderr,
 	}
 	expectedOut := `something`
-	msg := io.SimpleJsonMessage{Message: expectedOut}
+	msg := tsuruIo.SimpleJsonMessage{Message: expectedOut}
 	result, err := json.Marshal(msg)
 	c.Assert(err, check.IsNil)
 	trans := &cmdtest.ConditionalTransport{
@@ -591,7 +591,7 @@ func (s *S) TestServiceInstanceUpdateRun(c *check.C) {
 			}
 			return &http.Response{
 				StatusCode: http.StatusOK,
-				Body:       ioutil.NopCloser(&body),
+				Body:       io.NopCloser(&body),
 				Header:     http.Header{"Content-Type": []string{"application/json"}},
 			}, nil
 		}
@@ -616,7 +616,7 @@ func (s *S) TestServiceInstanceUpdateRun(c *check.C) {
 			})
 			return &http.Response{
 				StatusCode: http.StatusOK,
-				Body:       ioutil.NopCloser(strings.NewReader("")),
+				Body:       io.NopCloser(strings.NewReader("")),
 			}, nil
 		}
 		return nil, errors.New("not implemented yet")

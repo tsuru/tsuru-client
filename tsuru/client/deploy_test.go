@@ -9,7 +9,6 @@ import (
 	"bytes"
 	"encoding/json"
 	"io"
-	"io/ioutil"
 	"net/http"
 	"path/filepath"
 	"strings"
@@ -40,7 +39,7 @@ func (s *S) TestDeployRun(c *check.C) {
 			}
 			file, _, transErr := req.FormFile("file")
 			c.Assert(transErr, check.IsNil)
-			content, transErr := ioutil.ReadAll(file)
+			content, transErr := io.ReadAll(file)
 			c.Assert(transErr, check.IsNil)
 			c.Assert(content, check.DeepEquals, buf.Bytes())
 			c.Assert(req.Header.Get("Content-Type"), check.Matches, "multipart/form-data; boundary=.*")
@@ -87,7 +86,7 @@ func (s *S) TestDeployRunCancel(c *check.C) {
 				Transport: &cmdtest.BodyTransport{
 					Status:  http.StatusOK,
 					Headers: map[string][]string{"X-Tsuru-Eventid": {"5aec54d93195b20001194951"}},
-					Body:    &slowReader{ReadCloser: ioutil.NopCloser(bytes.NewBufferString("deploy worked\nOK\n")), Latency: time.Second * 5},
+					Body:    &slowReader{ReadCloser: io.NopCloser(bytes.NewBufferString("deploy worked\nOK\n")), Latency: time.Second * 5},
 				},
 				CondFunc: func(req *http.Request) bool {
 					deploy <- struct{}{}
@@ -96,7 +95,7 @@ func (s *S) TestDeployRunCancel(c *check.C) {
 					}
 					file, _, transErr := req.FormFile("file")
 					c.Assert(transErr, check.IsNil)
-					content, transErr := ioutil.ReadAll(file)
+					content, transErr := io.ReadAll(file)
 					c.Assert(transErr, check.IsNil)
 					c.Assert(content, check.DeepEquals, buf.Bytes())
 					c.Assert(req.Header.Get("Content-Type"), check.Matches, "multipart/form-data; boundary=.*")
@@ -176,7 +175,7 @@ func (s *S) TestDeployRunWithMessage(c *check.C) {
 			}
 			file, _, transErr := req.FormFile("file")
 			c.Assert(transErr, check.IsNil)
-			content, transErr := ioutil.ReadAll(file)
+			content, transErr := io.ReadAll(file)
 			c.Assert(transErr, check.IsNil)
 			c.Assert(content, check.DeepEquals, buf.Bytes())
 			c.Assert(req.Header.Get("Content-Type"), check.Matches, "multipart/form-data; boundary=.*")

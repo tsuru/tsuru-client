@@ -7,7 +7,7 @@ package client
 import (
 	"bytes"
 	"encoding/json"
-	"io/ioutil"
+	"io"
 	"net/http"
 	"net/url"
 	"strings"
@@ -245,7 +245,7 @@ func (s *S) TestAppVersionRouterAdd(c *check.C) {
 			c.Assert(r.Method, check.Equals, "POST")
 			var ret tsuru.SetRoutableArgs
 			c.Assert(r.Header.Get("Content-Type"), check.Equals, "application/json")
-			data, err := ioutil.ReadAll(r.Body)
+			data, err := io.ReadAll(r.Body)
 			c.Assert(err, check.IsNil)
 			err = json.Unmarshal(data, &ret)
 			c.Assert(err, check.IsNil)
@@ -284,7 +284,7 @@ func (s *S) TestAppVersionRouterRemove(c *check.C) {
 			c.Assert(r.Method, check.Equals, "POST")
 			var ret tsuru.SetRoutableArgs
 			c.Assert(r.Header.Get("Content-Type"), check.Equals, "application/json")
-			data, err := ioutil.ReadAll(r.Body)
+			data, err := io.ReadAll(r.Body)
 			c.Assert(err, check.IsNil)
 			err = json.Unmarshal(data, &ret)
 			c.Assert(err, check.IsNil)

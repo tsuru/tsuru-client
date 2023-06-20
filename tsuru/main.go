@@ -5,17 +5,14 @@
 package main
 
 import (
-	"log"
 	"os"
 
 	"github.com/ajg/form"
-	"github.com/docker/machine/libmachine/drivers/plugin/localbinary"
 	"github.com/tsuru/tsuru-client/tsuru/admin"
 	"github.com/tsuru/tsuru-client/tsuru/client"
 	"github.com/tsuru/tsuru-client/tsuru/config"
 	"github.com/tsuru/tsuru-client/tsuru/config/selfupdater"
 	"github.com/tsuru/tsuru/cmd"
-	"github.com/tsuru/tsuru/iaas/dockermachine"
 )
 
 var (
@@ -213,10 +210,6 @@ func registerExtraCommands(m *cmd.Manager) {
 	}
 }
 
-func inDockerMachineDriverMode() bool {
-	return os.Getenv(localbinary.PluginEnvKey) == localbinary.PluginEnvVal
-}
-
 func recoverCmdPanicExitError() {
 	if r := recover(); r != nil {
 		if e, ok := r.(*cmd.PanicExitError); ok {
@@ -228,21 +221,12 @@ func recoverCmdPanicExitError() {
 
 func main() {
 	defer recoverCmdPanicExitError()
+	defer config.SaveChangesWithTimeout()
 
-	if inDockerMachineDriverMode() {
-		err := dockermachine.RunDriver(os.Getenv(localbinary.PluginEnvDriverName))
-		if err != nil {
-			log.Fatalf("Error running driver: %s", err)
-		}
-	} else {
-		defer config.SaveChangesWithTimeout()
+	checkVerResult := selfupdater.CheckLatestVersionBackground(version)
+	defer selfupdater.VerifyLatestVersion(checkVerResult)
 
-		checkVerResult := selfupdater.CheckLatestVersionBackground(version)
-		defer selfupdater.VerifyLatestVersion(checkVerResult)
-
-		localbinary.CurrentBinaryIsDockerMachine = true
-		name := cmd.ExtractProgramName(os.Args[0])
-		m := buildManager(name)
-		m.Run(os.Args[1:])
-	}
+	name := cmd.ExtractProgramName(os.Args[0])
+	m := buildManager(name)
+	m.Run(os.Args[1:])
 }

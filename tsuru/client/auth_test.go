@@ -8,7 +8,6 @@ import (
 	"bytes"
 	"encoding/json"
 	"io"
-	"io/ioutil"
 	"net/http"
 	"net/url"
 	"strings"
@@ -37,7 +36,7 @@ func (s *S) TestTeamCreate(c *check.C) {
 		},
 		CondFunc: func(r *http.Request) bool {
 			c.Assert(r.Header.Get("Content-Type"), check.Equals, "application/json")
-			data, err := ioutil.ReadAll(r.Body)
+			data, err := io.ReadAll(r.Body)
 			c.Assert(err, check.IsNil)
 			var ret tsuru.TeamCreateArgs
 			err = json.Unmarshal(data, &ret)
@@ -70,7 +69,7 @@ func (s *S) TestTeamUpdate(c *check.C) {
 		Transport: cmdtest.Transport{Message: "", Status: http.StatusOK},
 		CondFunc: func(r *http.Request) bool {
 			c.Assert(r.Header.Get("Content-Type"), check.Equals, "application/json")
-			data, err := ioutil.ReadAll(r.Body)
+			data, err := io.ReadAll(r.Body)
 			c.Assert(err, check.IsNil)
 			var ret tsuru.TeamUpdateArgs
 			err = json.Unmarshal(data, &ret)
@@ -535,7 +534,7 @@ func (s *S) TestUserRemove(c *check.C) {
 			called = true
 		}
 		return &http.Response{
-			Body:       ioutil.NopCloser(bytes.NewBufferString(body)),
+			Body:       io.NopCloser(bytes.NewBufferString(body)),
 			StatusCode: http.StatusOK,
 		}, nil
 	})

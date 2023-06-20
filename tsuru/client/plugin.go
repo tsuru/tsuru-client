@@ -13,7 +13,6 @@ import (
 	"fmt"
 	"io"
 	"io/fs"
-	"io/ioutil"
 	"net/http"
 	"os"
 	"path/filepath"
@@ -333,7 +332,7 @@ func (PluginList) Info() *cmd.Info {
 
 func (c *PluginList) Run(context *cmd.Context, client *cmd.Client) error {
 	pluginsPath := cmd.JoinWithUserDir(".tsuru", "plugins")
-	plugins, _ := ioutil.ReadDir(pluginsPath)
+	plugins, _ := os.ReadDir(pluginsPath)
 	for _, p := range plugins {
 		fmt.Fprintln(context.Stdout, p.Name())
 	}
@@ -422,7 +421,7 @@ func (c *PluginBundle) Run(context *cmd.Context, client *cmd.Client) error {
 	}
 	defer resp.Body.Close()
 
-	data, err := ioutil.ReadAll(resp.Body)
+	data, err := io.ReadAll(resp.Body)
 	if err != nil {
 		return err
 	}

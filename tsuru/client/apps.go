@@ -11,7 +11,6 @@ import (
 	"errors"
 	"fmt"
 	"io"
-	"io/ioutil"
 	"net"
 	"net/http"
 	"net/url"
@@ -200,7 +199,7 @@ func (c *AppCreate) Run(context *cmd.Context, client *cmd.Client) error {
 		return err
 	}
 	defer response.Body.Close()
-	result, err := ioutil.ReadAll(response.Body)
+	result, err := io.ReadAll(response.Body)
 	if err != nil {
 		return err
 	}
@@ -752,7 +751,7 @@ func (a *app) String(simplified bool) string {
 		buf.WriteString(autoScaleTable.String())
 	}
 
-	if !simplified && (a.Plan.Memory != 0 || a.Plan.Swap != 0 || a.Plan.CpuShare != 0) {
+	if !simplified && (a.Plan.Memory != 0 || a.Plan.CPUMilli != 0) {
 		buf.WriteString("\n")
 		buf.WriteString("App Plan:\n")
 		buf.WriteString(renderPlans([]apptypes.Plan{a.Plan}, false, false))
@@ -1283,7 +1282,7 @@ func (c *AppList) Run(context *cmd.Context, client *cmd.Client) error {
 		return nil
 	}
 	defer response.Body.Close()
-	result, err := ioutil.ReadAll(response.Body)
+	result, err := io.ReadAll(response.Body)
 	if err != nil {
 		return err
 	}
@@ -1837,7 +1836,7 @@ func (c *UnitSet) Run(context *cmd.Context, client *cmd.Client) error {
 	if err != nil {
 		return err
 	}
-	result, err := ioutil.ReadAll(response.Body)
+	result, err := io.ReadAll(response.Body)
 	if err != nil {
 		return err
 	}

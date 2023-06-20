@@ -8,7 +8,6 @@ import (
 	"encoding/json"
 	"fmt"
 	"io"
-	"io/ioutil"
 	"net/http"
 	"os"
 	"strconv"
@@ -94,7 +93,7 @@ func getRemoteVersionAndReportsToChanGoroutine(r *latestVersionCheck) {
 		return
 	}
 
-	data, err := ioutil.ReadAll(response.Body)
+	data, err := io.ReadAll(response.Body)
 	if err != nil {
 		checkResult.err = fmt.Errorf("could not read response body: %w", err)
 		r.result <- checkResult

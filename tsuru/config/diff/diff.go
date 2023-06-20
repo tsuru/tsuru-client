@@ -8,7 +8,6 @@ import (
 	"bytes"
 	"fmt"
 	"io"
-	"io/ioutil"
 	"os"
 	"os/exec"
 	"strings"
@@ -70,7 +69,7 @@ func ReplaceWithSudo(originalFile string, newerContent io.Reader) error {
 }
 
 func writeTempFile(data io.Reader) (string, error) {
-	file, err := ioutil.TempFile("", "")
+	file, err := os.CreateTemp("", "")
 	if err != nil {
 		return "", err
 	}

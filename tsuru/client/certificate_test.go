@@ -7,7 +7,6 @@ package client
 import (
 	"bytes"
 	"encoding/json"
-	"io/ioutil"
 	"net/http"
 	"os"
 	"strings"
@@ -106,7 +105,7 @@ func (s *S) TestCertificateUnsetRunSuccessfully(c *check.C) {
 }
 
 func (s *S) mustReadFileString(c *check.C, path string) string {
-	data, err := ioutil.ReadFile(path)
+	data, err := os.ReadFile(path)
 	if err != nil {
 		c.Fatal(err)
 		return ""

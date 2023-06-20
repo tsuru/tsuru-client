@@ -8,7 +8,7 @@ import (
 	"bytes"
 	"encoding/json"
 	"fmt"
-	"io/ioutil"
+	"io"
 	"net/http"
 	"os"
 	"path/filepath"
@@ -38,7 +38,7 @@ func (s *S) TestClusterAddRun(c *check.C) {
 			c.Assert(req.Header.Get("Content-Type"), check.Equals, "application/json")
 
 			var clus tsuru.Cluster
-			data, err := ioutil.ReadAll(req.Body)
+			data, err := io.ReadAll(req.Body)
 			c.Assert(err, check.IsNil)
 			err = json.Unmarshal(data, &clus)
 			c.Assert(err, check.IsNil)
@@ -59,14 +59,14 @@ func (s *S) TestClusterAddRun(c *check.C) {
 	manager := cmd.NewManagerPanicExiter("admin", "0.1", "admin-ver", &stdout, &stderr, nil, nil)
 	client := cmd.NewClient(&http.Client{Transport: trans}, nil, manager)
 	myCmd := ClusterAdd{}
-	dir, err := ioutil.TempDir("", "tsuru")
+	dir, err := os.MkdirTemp("", "tsuru")
 	c.Assert(err, check.IsNil)
 	defer os.RemoveAll(dir)
-	err = ioutil.WriteFile(filepath.Join(dir, "ca"), []byte("cadata"), 0600)
+	err = os.WriteFile(filepath.Join(dir, "ca"), []byte("cadata"), 0600)
 	c.Assert(err, check.IsNil)
-	err = ioutil.WriteFile(filepath.Join(dir, "cert"), []byte("certdata"), 0600)
+	err = os.WriteFile(filepath.Join(dir, "cert"), []byte("certdata"), 0600)
 	c.Assert(err, check.IsNil)
-	err = ioutil.WriteFile(filepath.Join(dir, "key"), []byte("keydata"), 0600)
+	err = os.WriteFile(filepath.Join(dir, "key"), []byte("keydata"), 0600)
 	c.Assert(err, check.IsNil)
 	err = myCmd.Flags().Parse(true, []string{
 		"--cacert", filepath.Join(dir, "ca"),
@@ -127,7 +127,7 @@ func (s *S) TestClusterUpdateRun(c *check.C) {
 					c.Assert(req.Header.Get("Content-Type"), check.Equals, "application/json")
 
 					var clus tsuru.Cluster
-					data, err = ioutil.ReadAll(req.Body)
+					data, err = io.ReadAll(req.Body)
 					c.Assert(err, check.IsNil)
 					err = json.Unmarshal(data, &clus)
 					c.Assert(err, check.IsNil)
@@ -149,10 +149,10 @@ func (s *S) TestClusterUpdateRun(c *check.C) {
 	manager := cmd.NewManagerPanicExiter("admin", "0.1", "admin-ver", &stdout, &stderr, nil, nil)
 	client := cmd.NewClient(&http.Client{Transport: &trans}, nil, manager)
 	myCmd := ClusterUpdate{}
-	dir, err := ioutil.TempDir("", "tsuru")
+	dir, err := os.MkdirTemp("", "tsuru")
 	c.Assert(err, check.IsNil)
 	defer os.RemoveAll(dir)
-	err = ioutil.WriteFile(filepath.Join(dir, "cert"), []byte("clientcert"), 0600)
+	err = os.WriteFile(filepath.Join(dir, "cert"), []byte("clientcert"), 0600)
 	c.Assert(err, check.IsNil)
 	err = myCmd.Flags().Parse(true, []string{
 		"--remove-pool", "p2",

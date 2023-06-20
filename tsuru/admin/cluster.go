@@ -8,8 +8,8 @@ import (
 	"context"
 	"fmt"
 	"io"
-	"io/ioutil"
 	"net/http"
+	"os"
 	"sort"
 	"strconv"
 	"strings"
@@ -85,21 +85,21 @@ func (c *ClusterAdd) Run(ctx *cmd.Context, cli *cmd.Client) error {
 	}
 	var data []byte
 	if c.cacert != "" {
-		data, err = ioutil.ReadFile(c.cacert)
+		data, err = os.ReadFile(c.cacert)
 		if err != nil {
 			return err
 		}
 		clus.Cacert = data
 	}
 	if c.clientcert != "" {
-		data, err = ioutil.ReadFile(c.clientcert)
+		data, err = os.ReadFile(c.clientcert)
 		if err != nil {
 			return err
 		}
 		clus.Clientcert = data
 	}
 	if c.clientkey != "" {
-		data, err = ioutil.ReadFile(c.clientkey)
+		data, err = os.ReadFile(c.clientkey)
 		if err != nil {
 			return err
 		}
@@ -234,7 +234,7 @@ func (c *ClusterUpdate) updateCACertificate(cluster *tsuru.Cluster) error {
 		cluster.Cacert = nil
 	}
 	if c.cacert != "" {
-		data, err := ioutil.ReadFile(c.cacert)
+		data, err := os.ReadFile(c.cacert)
 		if err != nil {
 			return errors.Wrapf(err, "unable to read the CA certificate file")
 		}
@@ -254,7 +254,7 @@ func (c *ClusterUpdate) updateClientCertificate(cluster *tsuru.Cluster) error {
 		cluster.Clientcert = nil
 	}
 	if c.clientcert != "" {
-		data, err := ioutil.ReadFile(c.clientcert)
+		data, err := os.ReadFile(c.clientcert)
 		if err != nil {
 			return errors.Wrapf(err, "unable to read the client certificate file")
 		}
@@ -274,7 +274,7 @@ func (c *ClusterUpdate) updateClientKey(cluster *tsuru.Cluster) error {
 		cluster.Clientkey = nil
 	}
 	if c.clientkey != "" {
-		data, err := ioutil.ReadFile(c.clientkey)
+		data, err := os.ReadFile(c.clientkey)
 		if err != nil {
 			return errors.Wrapf(err, "unable to read the client key file")
 		}

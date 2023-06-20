@@ -7,7 +7,6 @@ package client
 import (
 	"bytes"
 	"io"
-	"io/ioutil"
 	"net/http"
 	"os"
 	"path/filepath"
@@ -40,7 +39,7 @@ func (s *S) TestBuildRun(c *check.C) {
 			}
 			file, _, transErr := req.FormFile("file")
 			c.Assert(transErr, check.IsNil)
-			content, transErr := ioutil.ReadAll(file)
+			content, transErr := io.ReadAll(file)
 			c.Assert(transErr, check.IsNil)
 			c.Assert(content, check.DeepEquals, buf.Bytes())
 			c.Assert(req.Header.Get("Content-Type"), check.Matches, "multipart/form-data; boundary=.*")
@@ -76,7 +75,7 @@ func (s *S) TestBuildFail(c *check.C) {
 			}
 			file, _, transErr := req.FormFile("file")
 			c.Assert(transErr, check.IsNil)
-			content, transErr := ioutil.ReadAll(file)
+			content, transErr := io.ReadAll(file)
 			c.Assert(transErr, check.IsNil)
 			c.Assert(content, check.DeepEquals, buf.Bytes())
 			c.Assert(req.Header.Get("Content-Type"), check.Matches, "multipart/form-data; boundary=.*")
