@@ -770,6 +770,8 @@ github.com/tsuru/gnuflag v0.0.0-20151217162021-86b8c1b864aa h1:JlLQP1xa13a994p/A
 github.com/tsuru/gnuflag v0.0.0-20151217162021-86b8c1b864aa/go.mod h1:UibOSvkMFKRe/eiwktAPAvQG8L+p8nYsECJvu3Dgw7I=
 github.com/tsuru/go-tsuruclient v0.0.0-20230612145111-83c76176241f h1:JOkngwIMzp01ZC2v+srUT7TLI91dC59gYmnYMZTPzYQ=
 github.com/tsuru/go-tsuruclient v0.0.0-20230612145111-83c76176241f/go.mod h1:P2AL93lzpzJlgOvu37SOhee4pnLWod1GMJ8YYQq2b7o=
+github.com/tsuru/go-tsuruclient v0.0.0-20230620200646-77b59f7bb707 h1:QZzduNl14OgHzKylFhUAHN2Jl3xvvCwIEUUsTIw5sNE=
+github.com/tsuru/go-tsuruclient v0.0.0-20230620200646-77b59f7bb707/go.mod h1:P2AL93lzpzJlgOvu37SOhee4pnLWod1GMJ8YYQq2b7o=
 github.com/tsuru/monsterqueue v0.0.0-20160909010522-70e946ec66c3 h1:+aJngj5cQjYyx/qSjffQceop25t97hLS0+t8bvx9hg4=
 github.com/tsuru/tablecli v0.0.0-20180215113938-82de88f75181/go.mod h1:ztYpOhW+u1k21FEqp7nZNgpWbr0dUKok5lgGCZi+1AQ=
 github.com/tsuru/tablecli v0.0.0-20190131152944-7ded8a3383c6 h1:1XDdWFAjIbCSG1OjN9v9KdWhuM8UtYlFcfHe/Ldkchk=

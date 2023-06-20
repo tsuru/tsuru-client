@@ -58,6 +58,47 @@ func (s *S) TestJobCreate(c *check.C) {
 	c.Assert(stdout.String(), check.Equals, expected)
 }
 
+func (s *S) TestJobCreateManual(c *check.C) {
+	var stdout, stderr bytes.Buffer
+	context := cmd.Context{
+		Args:   []string{"daft-punk", "ubuntu:latest", "/bin/sh", "-c", "echo digital love"},
+		Stdout: &stdout,
+		Stderr: &stderr,
+	}
+	expected := "Job created\nUse \"tsuru job info daft-punk\" to check the status of the job\n"
+	trans := cmdtest.ConditionalTransport{
+		Transport: cmdtest.Transport{Message: `{"jobName":"daft-punk","status":"success"}`, Status: http.StatusCreated},
+		CondFunc: func(r *http.Request) bool {
+			c.Assert(r.URL.Path, check.Equals, "/1.13/jobs")
+			c.Assert(r.Method, check.Equals, "POST")
+			c.Assert(r.Header.Get("Content-Type"), check.Equals, "application/json")
+			data, err := io.ReadAll(r.Body)
+			c.Assert(err, check.IsNil)
+			var rr tsuru.InputJob
+			err = json.Unmarshal(data, &rr)
+			c.Assert(err, check.IsNil)
+			c.Assert(rr, check.DeepEquals, tsuru.InputJob{
+				Name:      "daft-punk",
+				Pool:      "somepool",
+				TeamOwner: "admin",
+				Manual:    true,
+				Container: tsuru.InputJobContainer{
+					Image:   "ubuntu:latest",
+					Command: []string{"/bin/sh", "-c", "echo digital love"},
+				},
+				Schedule: "",
+			})
+			return true
+		},
+	}
+	client := cmd.NewClient(&http.Client{Transport: &trans}, nil, manager)
+	command := JobCreate{}
+	command.Flags().Parse(true, []string{"-t", "admin", "-o", "somepool", "--manual"})
+	err := command.Run(&context, client)
+	c.Assert(err, check.IsNil)
+	c.Assert(stdout.String(), check.Equals, expected)
+}
+
 func (s *S) TestJobCreateParseMultipleCommands(c *check.C) {
 	var stdout, stderr bytes.Buffer
 	context := cmd.Context{
