@@ -8,7 +8,6 @@ import (
 	"os"
 
 	"github.com/ajg/form"
-	"github.com/docker/machine/libmachine/drivers/plugin/localbinary"
 	"github.com/tsuru/tsuru-client/tsuru/admin"
 	"github.com/tsuru/tsuru-client/tsuru/client"
 	"github.com/tsuru/tsuru-client/tsuru/config"
@@ -227,9 +226,7 @@ func main() {
 	checkVerResult := selfupdater.CheckLatestVersionBackground(version)
 	defer selfupdater.VerifyLatestVersion(checkVerResult)
 
-	localbinary.CurrentBinaryIsDockerMachine = true
 	name := cmd.ExtractProgramName(os.Args[0])
 	m := buildManager(name)
 	m.Run(os.Args[1:])
-
 }

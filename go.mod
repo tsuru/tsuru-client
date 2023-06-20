@@ -6,7 +6,6 @@ require (
 	github.com/Masterminds/semver/v3 v3.1.1
 	github.com/ajg/form v0.0.0-20160822230020-523a5da1a92f
 	github.com/antihax/optional v1.0.0
-	github.com/docker/machine v0.16.1
 	github.com/ghodss/yaml v1.0.0
 	github.com/iancoleman/orderedmap v0.2.0
 	github.com/mattn/go-shellwords v1.0.12
