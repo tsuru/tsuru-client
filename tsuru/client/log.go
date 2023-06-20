@@ -8,7 +8,6 @@ import (
 	"encoding/json"
 	"fmt"
 	"io"
-	"io/ioutil"
 	"net/http"
 	"strings"
 	"time"
@@ -70,7 +69,7 @@ func (f logFormatter) Format(out io.Writer, dec *json.Decoder) error {
 			return err
 		}
 		buffered := dec.Buffered()
-		bufferedData, _ := ioutil.ReadAll(buffered)
+		bufferedData, _ := io.ReadAll(buffered)
 		return fmt.Errorf("unable to parse json: %v: %q", err, string(bufferedData))
 	}
 	for _, l := range logs {

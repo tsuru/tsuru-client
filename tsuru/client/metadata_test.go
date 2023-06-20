@@ -3,7 +3,7 @@ package client
 import (
 	"bytes"
 	"encoding/json"
-	"io/ioutil"
+	"io"
 	"net/http"
 	"strings"
 
@@ -53,7 +53,7 @@ func (s *S) TestMetadataSetRunWithLabel(c *check.C) {
 		CondFunc: func(req *http.Request) bool {
 			url := strings.HasSuffix(req.URL.Path, "/apps/someapp")
 			method := req.Method == "PUT"
-			data, err := ioutil.ReadAll(req.Body)
+			data, err := io.ReadAll(req.Body)
 			c.Assert(err, check.IsNil)
 
 			var payload map[string]interface{}
@@ -91,7 +91,7 @@ func (s *S) TestMetadataSetRunWithAnnotations(c *check.C) {
 		CondFunc: func(req *http.Request) bool {
 			url := strings.HasSuffix(req.URL.Path, "/apps/someapp")
 			method := req.Method == "PUT"
-			data, err := ioutil.ReadAll(req.Body)
+			data, err := io.ReadAll(req.Body)
 			c.Assert(err, check.IsNil)
 
 			var payload map[string]interface{}
@@ -164,7 +164,7 @@ func (s *S) TestMetadataUnsetRunWithLabel(c *check.C) {
 		CondFunc: func(req *http.Request) bool {
 			url := strings.HasSuffix(req.URL.Path, "/apps/someapp")
 			method := req.Method == "PUT"
-			data, err := ioutil.ReadAll(req.Body)
+			data, err := io.ReadAll(req.Body)
 			c.Assert(err, check.IsNil)
 
 			var payload map[string]interface{}
@@ -202,7 +202,7 @@ func (s *S) TestMetadataUnsetRunWithAnnotations(c *check.C) {
 		CondFunc: func(req *http.Request) bool {
 			url := strings.HasSuffix(req.URL.Path, "/apps/someapp")
 			method := req.Method == "PUT"
-			data, err := ioutil.ReadAll(req.Body)
+			data, err := io.ReadAll(req.Body)
 			c.Assert(err, check.IsNil)
 
 			var payload map[string]interface{}

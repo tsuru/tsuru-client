@@ -7,7 +7,7 @@ package client
 import (
 	"encoding/json"
 	"fmt"
-	"io/ioutil"
+	"io"
 	"net/http"
 	"net/url"
 	"sort"
@@ -231,7 +231,7 @@ func (c *VolumeList) Run(ctx *cmd.Context, client *cmd.Client) error {
 		fmt.Fprintln(ctx.Stdout, "No volumes available.")
 		return nil
 	}
-	data, err := ioutil.ReadAll(rsp.Body)
+	data, err := io.ReadAll(rsp.Body)
 	if err != nil {
 		return err
 	}
@@ -343,7 +343,7 @@ func (c *VolumeInfo) Run(ctx *cmd.Context, client *cmd.Client) error {
 		fmt.Fprintln(ctx.Stdout, "No volumes available.")
 		return nil
 	}
-	data, err := ioutil.ReadAll(rsp.Body)
+	data, err := io.ReadAll(rsp.Body)
 	if err != nil {
 		return err
 	}
@@ -428,7 +428,7 @@ func (c *VolumePlansList) Run(ctx *cmd.Context, client *cmd.Client) error {
 	defer rsp.Body.Close()
 	var plans map[string][]volumeTypes.VolumePlan
 	if rsp.StatusCode != http.StatusNoContent {
-		data, err := ioutil.ReadAll(rsp.Body)
+		data, err := io.ReadAll(rsp.Body)
 		if err != nil {
 			return err
 		}

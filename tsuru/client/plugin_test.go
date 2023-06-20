@@ -8,7 +8,6 @@ import (
 	"bytes"
 	"fmt"
 	"io"
-	"io/ioutil"
 	"net/http"
 	"net/http/httptest"
 	"os"
@@ -64,7 +63,7 @@ func (s *S) TestPluginInstallWithManifest(c *check.C) {
 	c.Assert(hasAction, check.Equals, true)
 	f, err := rfs.Open(pluginPath)
 	c.Assert(err, check.IsNil)
-	data, err := ioutil.ReadAll(f)
+	data, err := io.ReadAll(f)
 	c.Assert(err, check.IsNil)
 	c.Assert(string(data), check.Equals, "fakeplugin\n")
 	expected := `Plugin "myplugin" successfully installed!` + "\n"
@@ -98,7 +97,7 @@ func (s *S) TestPluginInstall(c *check.C) {
 	c.Assert(hasAction, check.Equals, true)
 	f, err := rfs.Open(pluginPath)
 	c.Assert(err, check.IsNil)
-	data, err := ioutil.ReadAll(f)
+	data, err := io.ReadAll(f)
 	c.Assert(err, check.IsNil)
 	c.Assert(string(data), check.Equals, "fakeplugin\n")
 	expected := `Plugin "myplugin" successfully installed!` + "\n"
@@ -138,7 +137,7 @@ func (s *S) TestPluginExtractTarGz(c *check.C) {
 	tmpDir, err := filesystem().MkdirTemp("", "")
 	c.Assert(err, check.IsNil)
 
-	tarGzFile, err := ioutil.ReadFile("./testdata/archivedplugins/myplugin.tar.gz")
+	tarGzFile, err := os.ReadFile("./testdata/archivedplugins/myplugin.tar.gz")
 	c.Assert(err, check.IsNil)
 
 	err = extractTarGz(tmpDir, bytes.NewReader(tarGzFile))
@@ -159,7 +158,7 @@ func (s *S) TestPluginExtractZip(c *check.C) {
 	tmpDir, err := filesystem().MkdirTemp("", "")
 	c.Assert(err, check.IsNil)
 
-	zipFile, err := ioutil.ReadFile("./testdata/archivedplugins/myplugin.zip")
+	zipFile, err := os.ReadFile("./testdata/archivedplugins/myplugin.zip")
 	c.Assert(err, check.IsNil)
 
 	err = extractZip(tmpDir, bytes.NewReader(zipFile))
@@ -395,13 +394,13 @@ func (s *S) TestPluginBundle(c *check.C) {
 
 	f, err := rfs.Open(plugin1Path)
 	c.Assert(err, check.IsNil)
-	data, err := ioutil.ReadAll(f)
+	data, err := io.ReadAll(f)
 	c.Assert(err, check.IsNil)
 	c.Assert(string(data), check.Equals, "fakeplugin1\n")
 
 	f, err = rfs.Open(plugin2Path)
 	c.Assert(err, check.IsNil)
-	data, err = ioutil.ReadAll(f)
+	data, err = io.ReadAll(f)
 	c.Assert(err, check.IsNil)
 	c.Assert(string(data), check.Equals, "fakeplugin2\n")
 

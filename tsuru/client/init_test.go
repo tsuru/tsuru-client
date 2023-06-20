@@ -3,7 +3,6 @@ package client
 import (
 	"bytes"
 	"errors"
-	"io/ioutil"
 	"net/http"
 	"os"
 	"path/filepath"
@@ -58,8 +57,8 @@ func (s *S) TestCopyGitIgnoreWithGitIgnore(c *check.C) {
 	c.Assert(err, check.IsNil)
 	err = copyGitIgnore()
 	c.Assert(err, check.IsNil)
-	defer ioutil.WriteFile(".tsuruignore", []byte(""), 0644)
-	tsuruignore, err := ioutil.ReadFile(".tsuruignore")
+	defer os.WriteFile(".tsuruignore", []byte(""), 0644)
+	tsuruignore, err := os.ReadFile(".tsuruignore")
 	c.Assert(err, check.IsNil)
 	c.Assert(string(tsuruignore), check.Equals, expected)
 }
@@ -75,7 +74,7 @@ func (s *S) TestCopyGitIgnoreWithoutGitIgnore(c *check.C) {
 	err = copyGitIgnore()
 	c.Assert(err, check.IsNil)
 	defer os.Remove(filepath.Join(tmpDir, ".tsuruignore"))
-	tsuruignore, err := ioutil.ReadFile(".tsuruignore")
+	tsuruignore, err := os.ReadFile(".tsuruignore")
 	c.Assert(err, check.IsNil)
 	c.Assert(string(tsuruignore), check.Equals, expected)
 }

@@ -3,7 +3,6 @@ package client
 import (
 	"fmt"
 	"io"
-	"io/ioutil"
 	"os"
 	"path/filepath"
 
@@ -98,7 +97,7 @@ func copyGitIgnore() (err error) {
 	in, err := os.Open(".gitignore")
 	if err != nil {
 		dotGit := []byte(".git\n.gitignore\n")
-		return ioutil.WriteFile(".tsuruignore", dotGit, 0644)
+		return os.WriteFile(".tsuruignore", dotGit, 0644)
 	}
 	defer func() {
 		if errClose := in.Close(); errClose != nil {
@@ -123,7 +122,7 @@ func copyGitIgnore() (err error) {
 }
 
 func writeTsuruYaml() error {
-	return ioutil.WriteFile("tsuru.yaml", nil, 0644)
+	return os.WriteFile("tsuru.yaml", nil, 0644)
 }
 
 func writeProcfile() (err error) {
@@ -133,5 +132,5 @@ func writeProcfile() (err error) {
 	}
 	projectName := filepath.Base(wd)
 	procfile := fmt.Sprintf("web: %s", projectName)
-	return ioutil.WriteFile("Procfile", []byte(procfile), 0644)
+	return os.WriteFile("Procfile", []byte(procfile), 0644)
 }

@@ -7,7 +7,7 @@ package client
 import (
 	"encoding/json"
 	"fmt"
-	"io/ioutil"
+	"io"
 	"net/http"
 	"sort"
 	"strings"
@@ -103,7 +103,7 @@ func getFromURL(path string, client *cmd.Client) ([]byte, error) {
 		return nil, err
 	}
 	defer response.Body.Close()
-	return ioutil.ReadAll(response.Body)
+	return io.ReadAll(response.Body)
 }
 
 func processTags(apps []app, services []service.ServiceModel) map[string]*tag {

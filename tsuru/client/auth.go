@@ -10,7 +10,7 @@ import (
 	"encoding/json"
 	"errors"
 	"fmt"
-	"io/ioutil"
+	"io"
 	"net/http"
 	"net/url"
 	"sort"
@@ -418,7 +418,7 @@ func (c *TeamInfo) Run(ctx *cmd.Context, cli *cmd.Client) error {
 		return nil
 	}
 	defer resp.Body.Close()
-	b, err := ioutil.ReadAll(resp.Body)
+	b, err := io.ReadAll(resp.Body)
 	if err != nil {
 		return err
 	}
@@ -642,7 +642,7 @@ func (c *ShowAPIToken) Run(context *cmd.Context, client *cmd.Client) error {
 	}
 	if resp.StatusCode == http.StatusOK {
 		defer resp.Body.Close()
-		b, err := ioutil.ReadAll(resp.Body)
+		b, err := io.ReadAll(resp.Body)
 		if err != nil {
 			return err
 		}
@@ -700,7 +700,7 @@ func (c *RegenerateAPIToken) Run(context *cmd.Context, client *cmd.Client) error
 	}
 	if resp.StatusCode == http.StatusOK {
 		defer resp.Body.Close()
-		b, err := ioutil.ReadAll(resp.Body)
+		b, err := io.ReadAll(resp.Body)
 		if err != nil {
 			return err
 		}

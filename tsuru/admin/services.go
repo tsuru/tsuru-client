@@ -9,7 +9,7 @@ import (
 	"encoding/base64"
 	"errors"
 	"fmt"
-	"io/ioutil"
+	"io"
 	"net/http"
 	"net/url"
 	"os"
@@ -49,9 +49,9 @@ func (c *ServiceCreate) Run(context *cmd.Context, client *cmd.Client) error {
 	}
 	var data []byte
 	if manifest == "-" {
-		data, err = ioutil.ReadAll(os.Stdin)
+		data, err = io.ReadAll(os.Stdin)
 	} else {
-		data, err = ioutil.ReadFile(manifest)
+		data, err = os.ReadFile(manifest)
 	}
 	if err != nil {
 		return err
@@ -130,7 +130,7 @@ func (c *ServiceUpdate) Info() *cmd.Info {
 
 func (c *ServiceUpdate) Run(ctx *cmd.Context, client *cmd.Client) error {
 	manifest := ctx.Args[0]
-	b, err := ioutil.ReadFile(manifest)
+	b, err := os.ReadFile(manifest)
 	if err != nil {
 		return err
 	}
@@ -182,7 +182,7 @@ func (c *ServiceDocAdd) Run(ctx *cmd.Context, client *cmd.Client) error {
 		return err
 	}
 	docPath := ctx.Args[1]
-	b, err := ioutil.ReadFile(docPath)
+	b, err := os.ReadFile(docPath)
 	if err != nil {
 		return err
 	}
@@ -218,7 +218,7 @@ func (c *ServiceDocGet) Run(ctx *cmd.Context, client *cmd.Client) error {
 		return err
 	}
 
-	b, err := ioutil.ReadAll(resp.Body)
+	b, err := io.ReadAll(resp.Body)
 	defer resp.Body.Close()
 	if err != nil {
 		return err
