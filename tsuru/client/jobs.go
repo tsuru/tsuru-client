@@ -32,6 +32,7 @@ type JobCreate struct {
 	plan        string
 	pool        string
 	description string
+	manual      bool
 	envs        cmd.StringSliceFlag
 	privateEnvs cmd.StringSliceFlag
 	tags        cmd.StringSliceFlag
@@ -42,7 +43,7 @@ type JobCreate struct {
 func (c *JobCreate) Info() *cmd.Info {
 	return &cmd.Info{
 		Name:  "job-create",
-		Usage: "job create <jobname> <image> \"<commands>\" [--plan/-p plan name] [--schedule/-s schedule name] [--team/-t team owner] [--pool/-o pool name] [--description/-d description] [--tag/-g tag]...",
+		Usage: "job create <jobname> <image> \"<commands>\" [--plan/-p plan name] [--schedule/-s schedule name] [--team/-t team owner] [--pool/-o pool name] [--description/-d description] [--tag/-g tag] [--manual bool]...",
 		Desc: `Creates a new job using the given name and platform
 
 In order to create an job, you need to be member of at least one team. All
@@ -70,6 +71,9 @@ This is only needed if you have more than one pool associated with your teams
 The [[--description]] parameter sets a description for your job.
 It is an optional parameter, and if its not set the job will only not have a
 description associated
+
+The [[--manual]] parameter sets your job as a manual job.
+A manual job is only run when explicitly triggered by the user i.e: tsuru job trigger <job-name> 
 
 The [[--tag]] parameter sets a tag to your job. You can set multiple [[--tag]] parameters
 
@@ -104,9 +108,10 @@ func (c *JobCreate) Flags() *gnuflag.FlagSet {
 		envMessage := "Environment variable"
 		c.fs.Var(&c.envs, "env", envMessage)
 		c.fs.Var(&c.envs, "e", envMessage)
-
 		envMessage = "Private environment variable"
 		c.fs.Var(&c.privateEnvs, "private-env", envMessage)
+		manualMessage := "Manual job"
+		c.fs.BoolVar(&c.manual, "manual", false, manualMessage)
 	}
 	return c.fs
 }
@@ -158,6 +163,7 @@ func (c *JobCreate) Run(ctx *cmd.Context, cli *cmd.Client) error {
 		Pool:        c.pool,
 		Description: c.description,
 		TeamOwner:   c.teamOwner,
+		Manual:      c.manual,
 		Container: tsuru.InputJobContainer{
 			Image:   image,
 			Command: parsedCommands,
