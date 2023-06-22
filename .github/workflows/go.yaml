@@ -102,10 +102,11 @@ jobs:
     - name: release
       uses: goreleaser/goreleaser-action@v2
       with:
-        version: "1.12.3"
+        version: "1.18.2"
         args: release --rm-dist
       env:
         GITHUB_TOKEN: ${{ secrets.CUSTOM_GITHUB_TOKEN }}
+        AUR_KEY: ${{ secrets.PRIVATE_SSH_KEY }}
 
     - uses: ruby/setup-ruby@v1
       with:

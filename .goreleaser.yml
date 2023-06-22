@@ -77,3 +77,18 @@ brews:
   # If set to auto, the release will not be uploaded to the homebrew tap
   # in case there is an indicator for prerelease in the tag e.g. v1.0.0-rc1
   skip_upload: auto
+
+aurs:
+- name: tsuru-bin
+  description: "tsuru-client is a tsuru command line tool for application developers."
+  homepage: "https://tsuru.io"
+  license: "BSD-3-Clause"
+
+  maintainers:
+  - "Tsuru <tsuru@g.globo>"
+  - "Claudio Netto <nettinhorama@gmail.com>"
+
+  skip_upload: auto
+
+  git_url: "ssh://aur@aur.archlinux.org/tsuru-bin.git"
+  private_key: "{{ .Env.AUR_KEY }}"
