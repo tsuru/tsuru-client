@@ -114,6 +114,7 @@ jobs:
       env:
         # The automatic GitHub token (namely secrets.GITHUB_TOKEN) doesn't have permission cross-project.
         HOMEBREW_TSURU_REPOSITORY_AUTH_TOKEN: ${{ secrets.CUSTOM_GITHUB_TOKEN }}
+        GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         AUR_KEY: ${{ secrets.PRIVATE_SSH_KEY }}
 
     - uses: ruby/setup-ruby@v1
