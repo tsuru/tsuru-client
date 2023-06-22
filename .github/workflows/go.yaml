@@ -93,19 +93,26 @@ jobs:
     if: github.event_name != 'pull_request' && startsWith(github.ref, 'refs/tags/')
     needs: [test, lint]
     runs-on: ubuntu-latest
+
+    permissions:
+      contents: write
+
     steps:
-    - uses: actions/setup-go@v1
+    - uses: actions/setup-go@v4
       with:
         go-version: 1.19
-    - uses: actions/checkout@v1
+
+    - uses: actions/checkout@v3
+      with:
+        fetch-depth: 0
 
     - name: release
-      uses: goreleaser/goreleaser-action@v2
+      uses: goreleaser/goreleaser-action@v4
       with:
-        version: "1.18.2"
-        args: release --rm-dist
+        version: latest
+        args: release --clean
       env:
-        GITHUB_TOKEN: ${{ secrets.CUSTOM_GITHUB_TOKEN }}
+        GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         AUR_KEY: ${{ secrets.PRIVATE_SSH_KEY }}
 
     - uses: ruby/setup-ruby@v1
@@ -113,8 +120,8 @@ jobs:
         ruby-version: '3.0'
 
     - name: packagecloud
+      run: ./misc/build_publish_to_packagecloud.sh
       env:
         PACKAGE_NAME: tsuru-client
-        PACKAGECLOUD_TOKEN: ${{secrets.PACKAGECLOUD_TOKEN}}
+        PACKAGECLOUD_TOKEN: ${{ secrets.PACKAGECLOUD_TOKEN }}
         SKIP_GORELEASER: "true"
-      run: ./misc/build_publish_to_packagecloud.sh
