@@ -87,6 +87,8 @@ brews:
   # in case there is an indicator for prerelease in the tag e.g. v1.0.0-rc1
   skip_upload: auto
 
+  token: "{{ .Env.HOMEBREW_TSURU_REPOSITORY_AUTH_TOKEN }}"
+
 aurs:
 - name: tsuru-bin
   description: "tsuru-client is a tsuru command line tool for application developers."
