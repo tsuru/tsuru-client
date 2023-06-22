@@ -19,11 +19,20 @@ builds:
       goarch: arm64
   env:
     - CGO_ENABLED=0
+    - META_PROJECT_NAME={{.ProjectName}}
+    - META_VERSION={{.Version}}
+    - META_TAG={{.Tag}}
+    - META_PREVIOUS_TAG={{.PreviousTag}}
+    - META_COMMIT={{.Commit}}
+    - META_DATE={{.Date}}
   mod_timestamp: '{{ .CommitTimestamp }}'
   flags:
     - -trimpath
   ldflags:
     - -s -w -X main.version={{.Version}} -X main.commit={{.Commit}} -X main.date={{ .CommitDate }}
+  hooks:
+    post:
+      - ./misc/generate_metadata.sh dist/metadata.json
 
 
 # Archive customization
