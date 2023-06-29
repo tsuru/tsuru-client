@@ -66,6 +66,15 @@ func newBareRootCmd(tsuruCtx *tsuructx.TsuruContext) *cobra.Command {
 		Short:   "A command-line interface for interacting with tsuru",
 
 		PersistentPreRun: rootPersistentPreRun(tsuruCtx),
+		RunE: func(cmd *cobra.Command, args []string) error {
+			return runRootCmd(tsuruCtx, cmd, args)
+		},
+		Args: cobra.MinimumNArgs(0),
+
+		FParseErrWhitelist: cobra.FParseErrWhitelist{
+			UnknownFlags: true,
+		},
+		DisableFlagParsing: true,
 	}
 
 	rootCmd.SetVersionTemplate(`{{printf "tsuru-client version: %s" .Version}}` + "\n")
@@ -74,6 +83,58 @@ func newBareRootCmd(tsuruCtx *tsuructx.TsuruContext) *cobra.Command {
 	rootCmd.SetErr(tsuruCtx.Stderr)
 
 	return rootCmd
+}
+
+func runRootCmd(tsuruCtx *tsuructx.TsuruContext, cmd *cobra.Command, args []string) error {
+	cmd.SilenceUsage = true
+	parseFirstFlagsOnly(cmd, args)
+
+	versionVal, _ := cmd.Flags().GetBool("version")
+	helpVal, _ := cmd.Flags().GetBool("help")
+	if len(args) == 0 || versionVal || helpVal {
+		cmd.RunE = nil
+		cmd.Run = nil
+		return cmd.Execute()
+	}
+
+	return runTsuruPlugin(tsuruCtx, args)
+}
+
+// parseFirstFlagsOnly handles only the first flags with cmd.ParseFlags()
+// before a non-flag element
+func parseFirstFlagsOnly(cmd *cobra.Command, args []string) []string {
+	if cmd == nil {
+		return args
+	}
+	cmd.DisableFlagParsing = false
+	for len(args) > 0 {
+		s := args[0]
+		if len(s) == 0 || s[0] != '-' || len(s) == 1 {
+			return args // any non-flag means we're done
+		}
+		args = args[1:]
+
+		flagName := s[1:]
+		if s[1] == '-' {
+			if len(s) == 2 { // "--" terminates the flags
+				return args
+			}
+			flagName = s[2:]
+		}
+
+		flag := cmd.Flags().Lookup(flagName)
+		if flag == nil && len(flagName) == 1 {
+			flag = cmd.Flags().ShorthandLookup(flagName)
+		}
+
+		if flag != nil && flag.Value.Type() == "bool" {
+			cmd.ParseFlags([]string{s})
+		} else {
+			cmd.ParseFlags([]string{s, args[0]})
+			args = args[1:]
+		}
+	}
+	return args
 }
 
 func rootPersistentPreRun(tsuruCtx *tsuructx.TsuruContext) func(cmd *cobra.Command, args []string) {
