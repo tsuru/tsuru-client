@@ -1,0 +1,80 @@
+# Copyright © 2023 tsuru-client authors
+# Use of this source code is governed by a BSD-style
+# license that can be found in the LICENSE file.
+
+project_name: tsuru
+
+# https://goreleaser.com/customization/verifiable_builds/
+# TODO: uncomment after first pre-release
+# gomod:
+#   proxy: true
+
+changelog:
+  filters:
+    # Commit messages matching the regexp listed here will be removed from
+    # the changelog
+    exclude:
+    - 'refactor'
+    - typo
+    - Test.*
+    - (wip)
+
+builds:
+- main: ./tsuru
+  binary: tsuru
+  goos:
+  - "windows"
+  - "darwin"
+  - "linux"
+  goarch:
+  - "amd64"
+  - "386"
+  - "arm64"
+  ignore:
+  - goos: "darwin"
+    goarch: "386"
+  - goos: "windows"
+    goarch: "arm64"
+  env:
+  - CGO_ENABLED=0
+  - META_PROJECT_NAME={{.ProjectName}}
+  - META_VERSION={{.Version}}
+  - META_TAG={{.Tag}}
+  - META_PREVIOUS_TAG={{.PreviousTag}}
+  - META_COMMIT={{.Commit}}
+  - META_DATE={{.Date}}
+  mod_timestamp: '{{ .CommitTimestamp }}'
+  flags:
+  - -trimpath
+  ldflags:
+  - -s -w -X main.version={{.Version}} -X main.commit={{.ShortCommit}} -X main.dateStr={{ .CommitDate }}
+  hooks:
+    post:
+    - ./scripts/generate_metadata.sh dist/metadata.json
+
+# Archive customization
+archives:
+- name_template: >-
+    {{ .ProjectName }}_{{- .Version }}_ {{- if eq .Os "darwin" -}}
+      macOS
+    {{- else -}}
+      {{ .Os }}
+    {{- end -}} _{{- .Arch }}
+  format: tar.gz
+  format_overrides:
+  - goos: windows
+    format: zip
+  rlcp: true
+  files:
+  - src: LICENSE
+  - src: README.md
+
+
+release:
+  extra_files:
+  - glob: dist/metadata.json
+  - glob: dist/CHANGELOG.md
+
+  # If set to auto, will mark the release as not ready for production
+  # in case there is an indicator for this in the tag e.g. v1.0.0-rc1
+  prerelease: auto
