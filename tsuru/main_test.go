@@ -14,6 +14,7 @@ import (
 
 	"github.com/tsuru/tsuru-client/tsuru/admin"
 	"github.com/tsuru/tsuru-client/tsuru/client"
+	"github.com/tsuru/tsuru-client/tsuru/config"
 	"github.com/tsuru/tsuru/cmd"
 	"github.com/tsuru/tsuru/exec/exectest"
 )
@@ -41,8 +42,8 @@ func (s *S) SetUpTest(c *check.C) {
 }
 
 func (s *S) TestCommandsFromBaseManagerAreRegistered(c *check.C) {
-	baseManager := cmd.BuildBaseManagerPanicExiter("tsuru", version, header, nil)
-	manager = buildManager("tsuru")
+	baseManager := cmd.BuildBaseManagerPanicExiter("tsuru", version, config.Header, nil)
+	manager = config.BuildManager("tsuru", "dev")
 	for name, instance := range baseManager.Commands {
 		command, ok := manager.Commands[name]
 		c.Assert(ok, check.Equals, true)
@@ -51,237 +52,237 @@ func (s *S) TestCommandsFromBaseManagerAreRegistered(c *check.C) {
 }
 
 func (s *S) TestAppCreateIsRegistered(c *check.C) {
-	manager = buildManager("tsuru")
+	manager = config.BuildManager("tsuru", "dev")
 	create, ok := manager.Commands["app-create"]
 	c.Assert(ok, check.Equals, true)
 	c.Assert(create, check.FitsTypeOf, &client.AppCreate{})
 }
 
 func (s *S) TestAppRemoveIsRegistered(c *check.C) {
-	manager = buildManager("tsuru")
+	manager = config.BuildManager("tsuru", "dev")
 	remove, ok := manager.Commands["app-remove"]
 	c.Assert(ok, check.Equals, true)
 	c.Assert(remove, check.FitsTypeOf, &client.AppRemove{})
 }
 
 func (s *S) TestAppListIsRegistered(c *check.C) {
-	manager = buildManager("tsuru")
+	manager = config.BuildManager("tsuru", "dev")
 	list, ok := manager.Commands["app-list"]
 	c.Assert(ok, check.Equals, true)
 	c.Assert(list, check.FitsTypeOf, &client.AppList{})
 }
 
 func (s *S) TestAppGrantIsRegistered(c *check.C) {
-	manager = buildManager("tsuru")
+	manager = config.BuildManager("tsuru", "dev")
 	grant, ok := manager.Commands["app-grant"]
 	c.Assert(ok, check.Equals, true)
 	c.Assert(grant, check.FitsTypeOf, &client.AppGrant{})
 }
 
 func (s *S) TestAppRevokeIsRegistered(c *check.C) {
-	manager = buildManager("tsuru")
+	manager = config.BuildManager("tsuru", "dev")
 	grant, ok := manager.Commands["app-revoke"]
 	c.Assert(ok, check.Equals, true)
 	c.Assert(grant, check.FitsTypeOf, &client.AppRevoke{})
 }
 
 func (s *S) TestAppLogIsRegistered(c *check.C) {
-	manager = buildManager("tsuru")
+	manager = config.BuildManager("tsuru", "dev")
 	log, ok := manager.Commands["app-log"]
 	c.Assert(ok, check.Equals, true)
 	c.Assert(log, check.FitsTypeOf, &client.AppLog{})
 }
 
 func (s *S) TestAppRunIsRegistered(c *check.C) {
-	manager = buildManager("tsuru")
+	manager = config.BuildManager("tsuru", "dev")
 	run, ok := manager.Commands["app-run"]
 	c.Assert(ok, check.Equals, true)
 	c.Assert(run, check.FitsTypeOf, &client.AppRun{})
 }
 
 func (s *S) TestAppRestartIsRegistered(c *check.C) {
-	manager = buildManager("tsuru")
+	manager = config.BuildManager("tsuru", "dev")
 	restart, ok := manager.Commands["app-restart"]
 	c.Assert(ok, check.Equals, true)
 	c.Assert(restart, check.FitsTypeOf, &client.AppRestart{})
 }
 
 func (s *S) TestEnvGetIsRegistered(c *check.C) {
-	manager = buildManager("tsuru")
+	manager = config.BuildManager("tsuru", "dev")
 	get, ok := manager.Commands["env-get"]
 	c.Assert(ok, check.Equals, true)
 	c.Assert(get, check.FitsTypeOf, &client.EnvGet{})
 }
 
 func (s *S) TestEnvSetIsRegistered(c *check.C) {
-	manager = buildManager("tsuru")
+	manager = config.BuildManager("tsuru", "dev")
 	set, ok := manager.Commands["env-set"]
 	c.Assert(ok, check.Equals, true)
 	c.Assert(set, check.FitsTypeOf, &client.EnvSet{})
 }
 
 func (s *S) TestEnvUnsetIsRegistered(c *check.C) {
-	manager = buildManager("tsuru")
+	manager = config.BuildManager("tsuru", "dev")
 	unset, ok := manager.Commands["env-unset"]
 	c.Assert(ok, check.Equals, true)
 	c.Assert(unset, check.FitsTypeOf, &client.EnvUnset{})
 }
 
 func (s *S) TestServiceListIsRegistered(c *check.C) {
-	manager = buildManager("tsuru")
+	manager = config.BuildManager("tsuru", "dev")
 	list, ok := manager.Commands["service-list"]
 	c.Assert(ok, check.Equals, true)
 	c.Assert(list, check.FitsTypeOf, &client.ServiceList{})
 }
 
 func (s *S) TestServiceUpdateIsRegistered(c *check.C) {
-	manager = buildManager("tsuru")
+	manager = config.BuildManager("tsuru", "dev")
 	add, ok := manager.Commands["service-update"]
 	c.Assert(ok, check.Equals, true)
 	c.Assert(add, check.FitsTypeOf, &admin.ServiceUpdate{})
 }
 
 func (s *S) TestServiceInstanceUpdateIsRegistered(c *check.C) {
-	manager = buildManager("tsuru")
+	manager = config.BuildManager("tsuru", "dev")
 	add, ok := manager.Commands["service-instance-update"]
 	c.Assert(ok, check.Equals, true)
 	c.Assert(add, check.FitsTypeOf, &client.ServiceInstanceUpdate{})
 }
 
 func (s *S) TestServiceInstanceAddIsRegistered(c *check.C) {
-	manager = buildManager("tsuru")
+	manager = config.BuildManager("tsuru", "dev")
 	add, ok := manager.Commands["service-instance-add"]
 	c.Assert(ok, check.Equals, true)
 	c.Assert(add, check.FitsTypeOf, &client.ServiceInstanceAdd{})
 }
 
 func (s *S) TestServiceInstanceRemoveIsRegistered(c *check.C) {
-	manager = buildManager("tsuru")
+	manager = config.BuildManager("tsuru", "dev")
 	remove, ok := manager.Commands["service-instance-remove"]
 	c.Assert(ok, check.Equals, true)
 	c.Assert(remove, check.FitsTypeOf, &client.ServiceInstanceRemove{})
 }
 
 func (s *S) TestServiceInstanceBindIsRegistered(c *check.C) {
-	manager = buildManager("tsuru")
+	manager = config.BuildManager("tsuru", "dev")
 	bind, ok := manager.Commands["service-instance-bind"]
 	c.Assert(ok, check.Equals, true)
 	c.Assert(bind, check.FitsTypeOf, &client.ServiceInstanceBind{})
 }
 
 func (s *S) TestServiceInstanceUnbindIsRegistered(c *check.C) {
-	manager = buildManager("tsuru")
+	manager = config.BuildManager("tsuru", "dev")
 	unbind, ok := manager.Commands["service-instance-unbind"]
 	c.Assert(ok, check.Equals, true)
 	c.Assert(unbind, check.FitsTypeOf, &client.ServiceInstanceUnbind{})
 }
 
 func (s *S) TestServiceInstanceInfoIsRegistered(c *check.C) {
-	manager = buildManager("tsuru")
+	manager = config.BuildManager("tsuru", "dev")
 	info, ok := manager.Commands["service-instance-info"]
 	c.Assert(ok, check.Equals, true)
 	c.Assert(info, check.FitsTypeOf, &client.ServiceInstanceInfo{})
 }
 
 func (s *S) TestServiceInfoIsRegistered(c *check.C) {
-	manager = buildManager("tsuru")
+	manager = config.BuildManager("tsuru", "dev")
 	info, ok := manager.Commands["service-info"]
 	c.Assert(ok, check.Equals, true)
 	c.Assert(info, check.FitsTypeOf, &client.ServiceInfo{})
 }
 
 func (s *S) TestAppInfoIsRegistered(c *check.C) {
-	manager = buildManager("tsuru")
+	manager = config.BuildManager("tsuru", "dev")
 	list, ok := manager.Commands["app-info"]
 	c.Assert(ok, check.Equals, true)
 	c.Assert(list, check.FitsTypeOf, &client.AppInfo{})
 }
 
 func (s *S) TestUnitAddIsRegistered(c *check.C) {
-	manager = buildManager("tsuru")
+	manager = config.BuildManager("tsuru", "dev")
 	addunit, ok := manager.Commands["unit-add"]
 	c.Assert(ok, check.Equals, true)
 	c.Assert(addunit, check.FitsTypeOf, &client.UnitAdd{})
 }
 
 func (s *S) TestUnitRemoveIsRegistered(c *check.C) {
-	manager = buildManager("tsuru")
+	manager = config.BuildManager("tsuru", "dev")
 	rmunit, ok := manager.Commands["unit-remove"]
 	c.Assert(ok, check.Equals, true)
 	c.Assert(rmunit, check.FitsTypeOf, &client.UnitRemove{})
 }
 
 func (s *S) TestUnitSetIsRegistered(c *check.C) {
-	manager = buildManager("tsuru")
+	manager = config.BuildManager("tsuru", "dev")
 	rmunit, ok := manager.Commands["unit-set"]
 	c.Assert(ok, check.Equals, true)
 	c.Assert(rmunit, check.FitsTypeOf, &client.UnitSet{})
 }
 
 func (s *S) TestCNameAddIsRegistered(c *check.C) {
-	manager = buildManager("tsuru")
+	manager = config.BuildManager("tsuru", "dev")
 	cname, ok := manager.Commands["cname-add"]
 	c.Assert(ok, check.Equals, true)
 	c.Assert(cname, check.FitsTypeOf, &client.CnameAdd{})
 }
 
 func (s *S) TestCNameRemoveIsRegistered(c *check.C) {
-	manager = buildManager("tsuru")
+	manager = config.BuildManager("tsuru", "dev")
 	cname, ok := manager.Commands["cname-remove"]
 	c.Assert(ok, check.Equals, true)
 	c.Assert(cname, check.FitsTypeOf, &client.CnameRemove{})
 }
 
 func (s *S) TestPlatformListIsRegistered(c *check.C) {
-	manager = buildManager("tsuru")
+	manager = config.BuildManager("tsuru", "dev")
 	plat, ok := manager.Commands["platform-list"]
 	c.Assert(ok, check.Equals, true)
 	c.Assert(plat, check.FitsTypeOf, &admin.PlatformList{})
 }
 func (s *S) TestPlatformAddIsRegistered(c *check.C) {
-	manager = buildManager("tsuru")
+	manager = config.BuildManager("tsuru", "dev")
 	plat, ok := manager.Commands["platform-add"]
 	c.Assert(ok, check.Equals, true)
 	c.Assert(plat, check.FitsTypeOf, &admin.PlatformAdd{})
 }
 
 func (s *S) TestAppSwapIsRegistered(c *check.C) {
-	manager = buildManager("tsuru")
+	manager = config.BuildManager("tsuru", "dev")
 	cmd, ok := manager.Commands["app-swap"]
 	c.Assert(ok, check.Equals, true)
 	c.Assert(cmd, check.FitsTypeOf, &client.AppSwap{})
 }
 
 func (s *S) TestAppStartIsRegistered(c *check.C) {
-	manager = buildManager("tsuru")
+	manager = config.BuildManager("tsuru", "dev")
 	start, ok := manager.Commands["app-start"]
 	c.Assert(ok, check.Equals, true)
 	c.Assert(start, check.FitsTypeOf, &client.AppStart{})
 }
 
 func (s *S) TestPluginInstallIsRegistered(c *check.C) {
-	manager = buildManager("tsuru")
+	manager = config.BuildManager("tsuru", "dev")
 	command, ok := manager.Commands["plugin-install"]
 	c.Assert(ok, check.Equals, true)
 	c.Assert(command, check.FitsTypeOf, &client.PluginInstall{})
 }
 
 func (s *S) TestPluginRemoveIsRegistered(c *check.C) {
-	manager = buildManager("tsuru")
+	manager = config.BuildManager("tsuru", "dev")
 	command, ok := manager.Commands["plugin-remove"]
 	c.Assert(ok, check.Equals, true)
 	c.Assert(command, check.FitsTypeOf, &client.PluginRemove{})
 }
 
 func (s *S) TestPluginListIsRegistered(c *check.C) {
-	manager = buildManager("tsuru")
+	manager = config.BuildManager("tsuru", "dev")
 	command, ok := manager.Commands["plugin-list"]
 	c.Assert(ok, check.Equals, true)
 	c.Assert(command, check.FitsTypeOf, &client.PluginList{})
 }
 
 func (s *S) TestPluginBundleIsRegistered(c *check.C) {
-	manager = buildManager("tsuru")
+	manager = config.BuildManager("tsuru", "dev")
 	command, ok := manager.Commands["plugin-bundle"]
 	c.Assert(ok, check.Equals, true)
 	c.Assert(command, check.FitsTypeOf, &client.PluginBundle{})
@@ -298,154 +299,154 @@ func (s *S) TestPluginLookup(c *check.C) {
 	defer func() {
 		client.Execut = nil
 	}()
-	manager = buildManager("tsuru")
+	manager = config.BuildManager("tsuru", "dev")
 	manager.Run([]string{"myplugin"})
 	pluginPath := cmd.JoinWithUserDir(".tsuru", "plugins", "myplugin")
 	c.Assert(fexec.ExecutedCmd(pluginPath, []string{}), check.Equals, true)
 }
 
 func (s *S) TestAppStopIsRegistered(c *check.C) {
-	manager = buildManager("tsuru")
+	manager = config.BuildManager("tsuru", "dev")
 	stop, ok := manager.Commands["app-stop"]
 	c.Assert(ok, check.Equals, true)
 	c.Assert(stop, check.FitsTypeOf, &client.AppStop{})
 }
 
 func (s *S) TestAppDeployIsRegistered(c *check.C) {
-	manager = buildManager("tsuru")
+	manager = config.BuildManager("tsuru", "dev")
 	deployCmd, ok := manager.Commands["app-deploy"]
 	c.Assert(ok, check.Equals, true)
 	c.Assert(deployCmd, check.FitsTypeOf, &client.AppDeploy{})
 }
 
 func (s *S) TestAppDeployRollbackIsRegistered(c *check.C) {
-	manager = buildManager("tsuru")
+	manager = config.BuildManager("tsuru", "dev")
 	deployRollbackCmd, ok := manager.Commands["app-deploy-rollback"]
 	c.Assert(ok, check.Equals, true)
 	c.Assert(deployRollbackCmd, check.FitsTypeOf, &client.AppDeployRollback{})
 }
 
 func (s *S) TestAppDeployRollbackUpdateIsRegistered(c *check.C) {
-	manager = buildManager("tsuru")
+	manager = config.BuildManager("tsuru", "dev")
 	deployRollbackUpdateCmd, ok := manager.Commands["app-deploy-rollback-update"]
 	c.Assert(ok, check.Equals, true)
 	c.Assert(deployRollbackUpdateCmd, check.FitsTypeOf, &client.AppDeployRollbackUpdate{})
 }
 
 func (s *S) TestPlanListRegistered(c *check.C) {
-	manager = buildManager("tsuru")
+	manager = config.BuildManager("tsuru", "dev")
 	list, ok := manager.Commands["plan-list"]
 	c.Assert(ok, check.Equals, true)
 	c.Assert(list, check.FitsTypeOf, &client.PlanList{})
 }
 
 func (s *S) TestChangePasswordIsRegistered(c *check.C) {
-	manager = buildManager("tsuru")
+	manager = config.BuildManager("tsuru", "dev")
 	chpass, ok := manager.Commands["change-password"]
 	c.Assert(ok, check.Equals, true)
 	c.Assert(chpass, check.FitsTypeOf, &client.ChangePassword{})
 }
 
 func (s *S) TestResetPasswordIsRegistered(c *check.C) {
-	manager = buildManager("tsuru")
+	manager = config.BuildManager("tsuru", "dev")
 	reset, ok := manager.Commands["reset-password"]
 	c.Assert(ok, check.Equals, true)
 	c.Assert(reset, check.FitsTypeOf, &client.ResetPassword{})
 }
 
 func (s *S) TestUserRemoveIsRegistered(c *check.C) {
-	manager = buildManager("tsuru")
+	manager = config.BuildManager("tsuru", "dev")
 	rmUser, ok := manager.Commands["user-remove"]
 	c.Assert(ok, check.Equals, true)
 	c.Assert(rmUser, check.FitsTypeOf, &client.UserRemove{})
 }
 
 func (s *S) TestUserListIsRegistered(c *check.C) {
-	manager = buildManager("tsuru")
+	manager = config.BuildManager("tsuru", "dev")
 	rmUser, ok := manager.Commands["user-list"]
 	c.Assert(ok, check.Equals, true)
 	c.Assert(rmUser, check.FitsTypeOf, &client.ListUsers{})
 }
 
 func (s *S) TestTeamRemoveIsRegistered(c *check.C) {
-	manager = buildManager("tsuru")
+	manager = config.BuildManager("tsuru", "dev")
 	rmTeam, ok := manager.Commands["team-remove"]
 	c.Assert(ok, check.Equals, true)
 	c.Assert(rmTeam, check.FitsTypeOf, &client.TeamRemove{})
 }
 
 func (s *S) TestUserCreateIsRegistered(c *check.C) {
-	manager = buildManager("tsuru")
+	manager = config.BuildManager("tsuru", "dev")
 	user, ok := manager.Commands["user-create"]
 	c.Assert(ok, check.Equals, true)
 	c.Assert(user, check.FitsTypeOf, &client.UserCreate{})
 }
 
 func (s *S) TestTeamCreateIsRegistered(c *check.C) {
-	manager = buildManager("tsuru")
+	manager = config.BuildManager("tsuru", "dev")
 	create, ok := manager.Commands["team-create"]
 	c.Assert(ok, check.Equals, true)
 	c.Assert(create, check.FitsTypeOf, &client.TeamCreate{})
 }
 
 func (s *S) TestTeamListIsRegistered(c *check.C) {
-	manager = buildManager("tsuru")
+	manager = config.BuildManager("tsuru", "dev")
 	list, ok := manager.Commands["team-list"]
 	c.Assert(ok, check.Equals, true)
 	c.Assert(list, check.FitsTypeOf, &client.TeamList{})
 }
 
 func (s *S) TestTeamInfoIsRegistered(c *check.C) {
-	manager = buildManager("tsuru")
+	manager = config.BuildManager("tsuru", "dev")
 	list, ok := manager.Commands["team-info"]
 	c.Assert(ok, check.Equals, true)
 	c.Assert(list, check.FitsTypeOf, &client.TeamInfo{})
 }
 
 func (s *S) TestPoolListIsRegistered(c *check.C) {
-	manager = buildManager("tsuru")
+	manager = config.BuildManager("tsuru", "dev")
 	list, ok := manager.Commands["pool-list"]
 	c.Assert(ok, check.Equals, true)
 	c.Assert(list, check.FitsTypeOf, &client.PoolList{})
 }
 
 func (s *S) TestAppUpdateIsRegistered(c *check.C) {
-	manager = buildManager("tsuru")
+	manager = config.BuildManager("tsuru", "dev")
 	change, ok := manager.Commands["app-update"]
 	c.Assert(ok, check.Equals, true)
 	c.Assert(change, check.FitsTypeOf, &client.AppUpdate{})
 }
 
 func (s *S) TestServiceCreateIsRegistered(c *check.C) {
-	manager = buildManager("tsuru")
+	manager = config.BuildManager("tsuru", "dev")
 	list, ok := manager.Commands["service-create"]
 	c.Assert(ok, check.Equals, true)
 	c.Assert(list, check.FitsTypeOf, &admin.ServiceCreate{})
 }
 
 func (s *S) TestServiceDestroyIsRegistered(c *check.C) {
-	manager = buildManager("tsuru")
+	manager = config.BuildManager("tsuru", "dev")
 	list, ok := manager.Commands["service-destroy"]
 	c.Assert(ok, check.Equals, true)
 	c.Assert(list, check.FitsTypeOf, &admin.ServiceDestroy{})
 }
 
 func (s *S) TestServiceDocGetIsRegistered(c *check.C) {
-	manager = buildManager("tsuru")
+	manager = config.BuildManager("tsuru", "dev")
 	list, ok := manager.Commands["service-doc-get"]
 	c.Assert(ok, check.Equals, true)
 	c.Assert(list, check.FitsTypeOf, &admin.ServiceDocGet{})
 }
 
 func (s *S) TestServiceDocAddIsRegistered(c *check.C) {
-	manager = buildManager("tsuru")
+	manager = config.BuildManager("tsuru", "dev")
 	list, ok := manager.Commands["service-doc-add"]
 	c.Assert(ok, check.Equals, true)
 	c.Assert(list, check.FitsTypeOf, &admin.ServiceDocAdd{})
 }
 
 func (s *S) TestServiceTemplateIsRegistered(c *check.C) {
-	manager = buildManager("tsuru")
+	manager = config.BuildManager("tsuru", "dev")
 	list, ok := manager.Commands["service-template"]
 	c.Assert(ok, check.Equals, true)
 	c.Assert(list, check.FitsTypeOf, &admin.ServiceTemplate{})
