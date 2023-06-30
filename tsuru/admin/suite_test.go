@@ -10,7 +10,7 @@ import (
 	"testing"
 	"time"
 
-	"github.com/ajg/form"
+	"github.com/cezarsa/form"
 	"github.com/tsuru/tsuru-client/tsuru/formatter"
 	"github.com/tsuru/tsuru/cmd"
 	check "gopkg.in/check.v1"

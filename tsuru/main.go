@@ -7,7 +7,7 @@ package main
 import (
 	"os"
 
-	"github.com/ajg/form"
+	"github.com/cezarsa/form"
 	"github.com/tsuru/tsuru-client/tsuru/admin"
 	"github.com/tsuru/tsuru-client/tsuru/client"
 	"github.com/tsuru/tsuru-client/tsuru/config"

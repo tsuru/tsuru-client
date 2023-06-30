@@ -12,7 +12,7 @@ import (
 	"net/http"
 	"strings"
 
-	"github.com/ajg/form"
+	"github.com/cezarsa/form"
 	"github.com/tsuru/go-tsuruclient/pkg/tsuru"
 	"github.com/tsuru/tsuru/cmd"
 	"github.com/tsuru/tsuru/cmd/cmdtest"

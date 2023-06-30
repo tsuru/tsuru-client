@@ -21,7 +21,7 @@ import (
 	"text/template"
 	"time"
 
-	"github.com/ajg/form"
+	"github.com/cezarsa/form"
 	"github.com/tsuru/gnuflag"
 	"github.com/tsuru/go-tsuruclient/pkg/client"
 	"github.com/tsuru/go-tsuruclient/pkg/tsuru"

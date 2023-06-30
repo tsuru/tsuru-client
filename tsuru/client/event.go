@@ -16,7 +16,7 @@ import (
 	"strings"
 	"time"
 
-	"github.com/ajg/form"
+	"github.com/cezarsa/form"
 	"github.com/ghodss/yaml"
 	"github.com/iancoleman/orderedmap"
 	"github.com/tsuru/gnuflag"

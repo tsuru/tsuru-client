@@ -4,8 +4,8 @@ go 1.19
 
 require (
 	github.com/Masterminds/semver/v3 v3.1.1
-	github.com/ajg/form v0.0.0-20160822230020-523a5da1a92f
 	github.com/antihax/optional v1.0.0
+	github.com/cezarsa/form v0.0.0-20210510165411-863b166467b9
 	github.com/ghodss/yaml v1.0.0
 	github.com/iancoleman/orderedmap v0.2.0
 	github.com/mattn/go-shellwords v1.0.12
@@ -16,7 +16,7 @@ require (
 	github.com/tsuru/gnuflag v0.0.0-20151217162021-86b8c1b864aa
 	github.com/tsuru/go-tsuruclient v0.0.0-20230620200646-77b59f7bb707
 	github.com/tsuru/tablecli v0.0.0-20190131152944-7ded8a3383c6
-	github.com/tsuru/tsuru v0.0.0-20230619203800-4d111c8b1584
+	github.com/tsuru/tsuru v0.0.0-20230630144046-e6cc612195e1
 	gopkg.in/check.v1 v1.0.0-20201130134442-10cb98267c6c
 	gopkg.in/yaml.v2 v2.4.0
 	k8s.io/apimachinery v0.23.4
@@ -91,7 +91,4 @@ require (
 	sigs.k8s.io/structured-merge-diff/v4 v4.2.1 // indirect
 )
 
-replace (
-	github.com/ajg/form => github.com/cezarsa/form v0.0.0-20210510165411-863b166467b9
-	github.com/samalba/dockerclient => github.com/cezarsa/dockerclient v0.0.0-20190924055524-af5052a88081
-)
+replace github.com/samalba/dockerclient => github.com/cezarsa/dockerclient v0.0.0-20190924055524-af5052a88081
