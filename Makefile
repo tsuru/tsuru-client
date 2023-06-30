@@ -9,16 +9,16 @@ GOVET	?= $(GOCMD) vet
 GOFMT	?= gofmt
 BINARY	?= tsuru
 TSURUGO	?= $(shell $(GOCMD) env GOPATH)/bin/$(BINARY)
-VERSION	?= $(shell git describe --tags --dirty --match='v*' 2> /dev/null || echo dev)
+VERSION	?= $(shell git describe --tags --dirty --match='v*' 2> /dev/null || echo "$${DOCKER_BUILD_TSURU_VERSION:-dev}")
 COMMIT	?= $(shell git rev-parse --short HEAD 2> /dev/null || echo "")
 DATEUTC	?= $(shell date -u +"%Y-%m-%dT%H:%M:%SZ")
 FILES	?= $(shell find . -type f -name '*.go')
 
-GREEN  := $(shell tput -Txterm setaf 2)
-YELLOW := $(shell tput -Txterm setaf 3)
-WHITE  := $(shell tput -Txterm setaf 7)
-CYAN   := $(shell tput -Txterm setaf 6)
-RESET  := $(shell tput -Txterm sgr0)
+GREEN  := $(shell tput -Txterm setaf 2 2>/dev/null)
+YELLOW := $(shell tput -Txterm setaf 3 2>/dev/null)
+WHITE  := $(shell tput -Txterm setaf 7 2>/dev/null)
+CYAN   := $(shell tput -Txterm setaf 6 2>/dev/null)
+RESET  := $(shell tput -Txterm sgr0    2>/dev/null)
 
 .PHONY: all test build coverage contributors scripts
 

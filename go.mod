@@ -8,8 +8,8 @@ require (
 	github.com/spf13/viper v1.16.0
 	github.com/stretchr/testify v1.8.3
 	github.com/tsuru/go-tsuruclient v0.0.0-20230620200646-77b59f7bb707
-	github.com/tsuru/tsuru v0.0.0-20230619203800-4d111c8b1584
-	github.com/tsuru/tsuru-client v0.0.0-20230621160229-6fa0fc02352c
+	github.com/tsuru/tsuru v0.0.0-20230630144046-e6cc612195e1
+	github.com/tsuru/tsuru-client v0.0.0-20230630183613-fd0e06cb1b34
 	golang.org/x/sys v0.8.0
 )
 
@@ -17,10 +17,10 @@ require (
 	github.com/Azure/go-ansiterm v0.0.0-20210617225240-d185dfc1b5a1 // indirect
 	github.com/Microsoft/go-winio v0.6.0 // indirect
 	github.com/Microsoft/hcsshim v0.9.2 // indirect
-	github.com/ajg/form v0.0.0-20160822230020-523a5da1a92f // indirect
 	github.com/antihax/optional v1.0.0 // indirect
 	github.com/beorn7/perks v1.0.1 // indirect
 	github.com/cespare/xxhash/v2 v2.1.2 // indirect
+	github.com/cezarsa/form v0.0.0-20210510165411-863b166467b9 // indirect
 	github.com/containerd/cgroups v1.0.3 // indirect
 	github.com/containerd/containerd v1.6.3-0.20220401172941-5ff8fce1fcc6 // indirect
 	github.com/davecgh/go-spew v1.1.1 // indirect
@@ -102,5 +102,3 @@ require (
 	sigs.k8s.io/json v0.0.0-20211020170558-c049b76a60c6 // indirect
 	sigs.k8s.io/structured-merge-diff/v4 v4.2.1 // indirect
 )
-
-replace github.com/ajg/form => github.com/cezarsa/form v0.0.0-20210510165411-863b166467b9

@@ -112,7 +112,7 @@ func addMissingV1LegacyCommand(tree *cmdNode, v1CmdManager *tsuruCmd.Manager, v1
 		if _, found = curr.children[part]; !found {
 			newCmd := &cobra.Command{
 				Use:                part,
-				Short:              "[v1] " + strings.Join(parts[:i+1], " "),
+				Short:              "manage " + strings.Join(parts[:i+1], " ") + "s",
 				DisableFlagParsing: true,
 			}
 			curr.addChild(newCmd)
@@ -121,7 +121,7 @@ func addMissingV1LegacyCommand(tree *cmdNode, v1CmdManager *tsuruCmd.Manager, v1
 		curr = curr.children[part]
 
 		if i == len(parts)-1 && !found {
-			curr.command.Short = "[v1] " + strings.Split(v1Cmd.cmd.Info().Desc, "\n")[0]
+			curr.command.Short = strings.TrimSpace(strings.Split(v1Cmd.cmd.Info().Desc, "\n")[0]) + " ¹"
 			curr.command.Long = v1Cmd.cmd.Info().Usage
 			curr.command.SilenceUsage = true
 			curr.command.Args = cobra.MinimumNArgs(0)
