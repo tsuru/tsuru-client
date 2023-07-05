@@ -35,10 +35,9 @@ install: build  ## Build your project and install the binary in $GOPATH/bin/
 clean: ## Remove build related file
 	rm -fr ./build
 	rm -fr ./coverage
+	rm -fr ./dist
 
-clean-all: ## Remove build related file and installed binary
-	rm -fr ./build
-	rm -fr ./coverage
+clean-all: clean ## Remove build related file and installed binary
 	rm -f $(TSURUGO)
 
 fmt: ## Format your code with gofmt

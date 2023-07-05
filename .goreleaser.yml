@@ -10,12 +10,30 @@ project_name: tsuru
 #   proxy: true
 
 changelog:
+  use: git
+  sort: asc
+  groups:
+  - title: New Features
+    regexp: '^.*?feat(\([[:word:]]+\))??!?:.+$'
+    order: 0
+  - title: "Bug fixes"
+    regexp: '^.*?(bug|fix)(\([[:word:]]+\))??!?:.+$'
+    order: 1
+  - title: "Documentation"
+    regexp: '^.*?docs(\([[:word:]]+\))??!?:.+$'
+    order: 2
+  - title: Others
+    order: 999
   filters:
     # Commit messages matching the regexp listed here will be removed from
     # the changelog
     exclude:
-    - 'refactor'
-    - typo
+    - '^build'
+    - '^ci'
+    - '^refactor'
+    - '^chore'
+    - '^style'
+    - '^test'
     - Test.*
     - (wip)
 
@@ -64,7 +82,6 @@ archives:
   format_overrides:
   - goos: windows
     format: zip
-  rlcp: true
   files:
   - src: LICENSE
   - src: README.md
