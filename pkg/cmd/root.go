@@ -134,6 +134,9 @@ func parseFirstFlagsOnly(cmd *cobra.Command, args []string) []string {
 		if flag != nil && flag.Value.Type() == "bool" {
 			cmd.ParseFlags([]string{s})
 		} else {
+			if len(args) == 0 {
+				return args
+			}
 			cmd.ParseFlags([]string{s, args[0]})
 			args = args[1:]
 		}
