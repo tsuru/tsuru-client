@@ -144,7 +144,9 @@ func parseFirstFlagsOnly(cmd *cobra.Command, args []string) []string {
 func rootPersistentPreRun(tsuruCtx *tsuructx.TsuruContext) func(cmd *cobra.Command, args []string) {
 	return func(cmd *cobra.Command, args []string) {
 		if l := cmd.Flags().Lookup("target"); l != nil && l.Value.String() != "" {
-			tsuruCtx.SetTargetURL(l.Value.String())
+			target, err := config.GetTargetURL(tsuruCtx.Fs, l.Value.String())
+			cobra.CheckErr(err)
+			tsuruCtx.SetTargetURL(target)
 		}
 		if v, err := cmd.Flags().GetInt("verbosity"); err != nil {
 			tsuruCtx.SetVerbosity(v)
