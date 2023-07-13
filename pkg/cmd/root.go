@@ -17,6 +17,7 @@ import (
 	"github.com/tsuru/tsuru-client/v2/internal/exec"
 	"github.com/tsuru/tsuru-client/v2/internal/tsuructx"
 	"github.com/tsuru/tsuru-client/v2/pkg/cmd/auth"
+	"github.com/tsuru/tsuru-client/v2/pkg/printer"
 )
 
 var (
@@ -154,6 +155,11 @@ func rootPersistentPreRun(tsuruCtx *tsuructx.TsuruContext) func(cmd *cobra.Comma
 		if v, err := cmd.Flags().GetInt("verbosity"); err != nil {
 			tsuruCtx.SetVerbosity(v)
 		}
+		if v, err := cmd.Flags().GetBool("json"); err == nil && v {
+			tsuruCtx.SetOutputFormat("json")
+		} else {
+			tsuruCtx.SetOutputFormat(cmd.Flags().Lookup("format").Value.String())
+		}
 	}
 }
 
@@ -176,6 +182,17 @@ func setupPFlagsAndCommands(rootCmd *cobra.Command, tsuruCtx *tsuructx.TsuruCont
 	tsuruCtx.Viper.BindPFlag("target", rootCmd.PersistentFlags().Lookup("target"))
 	rootCmd.PersistentFlags().IntP("verbosity", "v", 0, "Verbosity level: 1 => print HTTP requests; 2 => print HTTP requests/responses")
 	tsuruCtx.Viper.BindPFlag("verbosity", rootCmd.PersistentFlags().Lookup("verbosity"))
+	rootCmd.PersistentFlags().Bool("json", false, "Output format as json")
+	rootCmd.PersistentFlags().MarkHidden("json")
+	tsuruCtx.Viper.BindPFlag("json", rootCmd.PersistentFlags().Lookup("json"))
+	format := printer.OutputFormat("string")
+	rootCmd.PersistentFlags().Var(&format, "format", "Output format. Supports json, compact-json, yaml and table")
+	rootCmd.RegisterFlagCompletionFunc("format",
+		func(cmd *cobra.Command, args []string, toComplete string) ([]string, cobra.ShellCompDirective) {
+			return printer.OutputFormatCompletionHelp(), cobra.ShellCompDirectiveNoFileComp
+		},
+	)
+	tsuruCtx.Viper.BindPFlag("format", rootCmd.PersistentFlags().Lookup("format"))
 
 	// Search config in home directory with name ".tsuru-client" (without extension).
 	tsuruCtx.Viper.AddConfigPath(config.ConfigPath)

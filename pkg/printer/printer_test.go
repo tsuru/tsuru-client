@@ -16,16 +16,24 @@ import (
 func TestFormatAs(t *testing.T) {
 	for _, test := range []struct {
 		s        string
-		expected OutputType
+		expected OutputFormat
+		hasError bool
 	}{
-		{"json", JSON},
-		{"pretty-json", PrettyJSON},
-		{"prettyjson", PrettyJSON},
-		{"yaml", YAML},
-		{"table", Table},
-		{"invalid", Table},
+		{"compactjson", CompactJSON, false},
+		{"compact-json", CompactJSON, false},
+		{"json", PrettyJSON, false},
+		{"pretty-json", PrettyJSON, false},
+		{"prettyjson", PrettyJSON, false},
+		{"yaml", YAML, false},
+		{"table", Table, false},
+		{"invalid", Table, true},
 	} {
-		got := FormatAs(test.s)
+		got, err := FormatAs(test.s)
+		if test.hasError {
+			assert.Error(t, err)
+		} else {
+			assert.NoError(t, err)
+		}
 		assert.Equal(t, test.expected, got)
 	}
 }

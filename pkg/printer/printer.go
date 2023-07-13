@@ -10,37 +10,67 @@ import (
 	"io"
 	"strings"
 
+	"github.com/spf13/pflag"
 	"gopkg.in/yaml.v3"
 )
 
-type OutputType string
+type OutputFormat string
 
 const (
 	// every OutputType should be mapped inside PrintInfo()
-	JSON       OutputType = "JSON"
-	PrettyJSON OutputType = "PrettyJSON"
-	YAML       OutputType = "YAML"
-	Table      OutputType = "Table"
+	CompactJSON OutputFormat = "compatc-json"
+	PrettyJSON  OutputFormat = "json"
+	YAML        OutputFormat = "yaml"
+	Table       OutputFormat = "table"
 )
 
-func FormatAs(s string) OutputType {
-	switch strings.ToLower(s) {
-	case "json":
-		return JSON
-	case "pretty-json", "prettyjson":
-		return PrettyJSON
-	case "yaml":
-		return YAML
-	case "table":
-		return Table
-	default:
-		return Table
+var _ pflag.Value = (*OutputFormat)(nil)
+
+func OutputFormatCompletionHelp() []string {
+	return []string{
+		CompactJSON.ToString() + "\toutput as compact JSON format (no newlines)",
+		PrettyJSON.ToString() + "\toutput as JSON (PrettyJSON)",
+		YAML.ToString() + "\toutput as YAML",
+		Table.ToString() + "\toutput as Human readable table",
 	}
 }
 
-func Print(out io.Writer, data any, format OutputType) error {
+func (o OutputFormat) ToString() string {
+	return string(o)
+}
+func (o *OutputFormat) String() string {
+	return string(*o)
+}
+func (o *OutputFormat) Set(v string) error {
+	var err error
+	*o, err = FormatAs(v)
+	return err
+}
+func (e *OutputFormat) Type() string {
+	return "OutputFormat"
+}
+
+func FormatAs(s string) (OutputFormat, error) {
+	switch strings.ToLower(s) {
+	case "compact-json", "compactjson":
+		return CompactJSON, nil
+	case "json", "pretty-json", "prettyjson":
+		return PrettyJSON, nil
+	case "yaml":
+		return YAML, nil
+	case "table":
+		return Table, nil
+	default:
+		return Table, fmt.Errorf("must be one of: json, compact-json, yaml, table")
+	}
+}
+
+// Print will print the data in the given format.
+// If the format is not supported, it will return an error.
+// If the format is Table, it will try to convert the data to a human readable format. (see pkg/converter)
+func Print(out io.Writer, data any, format OutputFormat) error {
 	switch format {
-	case JSON:
+	case CompactJSON:
 		return PrintJSON(out, data)
 	case PrettyJSON:
 		return PrintPrettyJSON(out, data)

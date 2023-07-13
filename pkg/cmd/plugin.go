@@ -31,6 +31,7 @@ func runTsuruPlugin(tsuruCtx *tsuructx.TsuruContext, args []string) error {
 		"TSURU_TARGET=" + tsuruCtx.TargetURL(),
 		"TSURU_TOKEN=" + tsuruCtx.Token(),
 		"TSURU_VERBOSITY=" + fmt.Sprintf("%d", tsuruCtx.Verbosity()),
+		"TSURU_FORMAT=" + tsuruCtx.OutputFormat().ToString(),
 		"TSURU_PLUGIN_NAME=" + pluginName,
 	}
 	envs = append(envs, tsuruEnvs...)

@@ -14,6 +14,7 @@ import (
 	"github.com/spf13/viper"
 	"github.com/tsuru/go-tsuruclient/pkg/tsuru"
 	"github.com/tsuru/tsuru-client/v2/internal/exec"
+	"github.com/tsuru/tsuru-client/v2/pkg/printer"
 )
 
 type TsuruContext struct {
@@ -52,6 +53,10 @@ func (tc *TsuruContext) TargetURL() string {
 func (tc *TsuruContext) Token() string {
 	return tc.Viper.GetString("token")
 }
+func (tc *TsuruContext) OutputFormat() printer.OutputFormat {
+	o, _ := printer.FormatAs(tc.Viper.GetString("format"))
+	return o
+}
 func (tc *TsuruContext) SetVerbosity(value int) {
 	tc.Viper.Set("verbosity", value)
 }
@@ -60,6 +65,9 @@ func (tc *TsuruContext) SetTargetURL(value string) {
 }
 func (tc *TsuruContext) SetToken(value string) {
 	tc.Viper.Set("token", value)
+}
+func (tc *TsuruContext) SetOutputFormat(value string) {
+	tc.Viper.Set("format", value)
 }
 
 // Config is the tsuru client configuration
