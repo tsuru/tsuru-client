@@ -167,7 +167,7 @@ func TestRunRootCmd(t *testing.T) {
 		cmd.SetArgs([]string{})
 		err := cmd.Execute()
 		assert.NoError(t, err)
-		assert.Contains(t, tsuruCtx.Stdout.(*strings.Builder).String(), "A command-line interface for interacting with tsuru")
+		assert.Contains(t, tsuruCtx.Stderr.(*strings.Builder).String(), "A command-line interface for interacting with tsuru")
 	})
 
 	t.Run("not_found_command", func(t *testing.T) {
@@ -185,7 +185,7 @@ func TestRunRootCmd(t *testing.T) {
 		cmd.SetArgs([]string{"--help", "arg2"})
 		err := cmd.Execute()
 		assert.NoError(t, err)
-		assert.Contains(t, tsuruCtx.Stdout.(*strings.Builder).String(), "A command-line interface for interacting with tsuru")
+		assert.Contains(t, tsuruCtx.Stderr.(*strings.Builder).String(), "A command-line interface for interacting with tsuru")
 	})
 
 	t.Run("version_flag", func(t *testing.T) {
@@ -194,6 +194,6 @@ func TestRunRootCmd(t *testing.T) {
 		cmd.SetArgs([]string{"--version", "arg2"})
 		err := cmd.Execute()
 		assert.NoError(t, err)
-		assert.Equal(t, tsuruCtx.Stdout.(*strings.Builder).String(), "tsuru-client version: dev\n")
+		assert.Equal(t, tsuruCtx.Stderr.(*strings.Builder).String(), "tsuru-client version: dev\n")
 	})
 }
