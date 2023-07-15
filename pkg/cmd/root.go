@@ -152,13 +152,19 @@ func rootPersistentPreRun(tsuruCtx *tsuructx.TsuruContext) func(cmd *cobra.Comma
 			cobra.CheckErr(err)
 			tsuruCtx.SetTargetURL(target)
 		}
+
 		if v, err := cmd.Flags().GetInt("verbosity"); err != nil {
 			tsuruCtx.SetVerbosity(v)
 		}
+
 		if v, err := cmd.Flags().GetBool("json"); err == nil && v {
 			tsuruCtx.SetOutputFormat("json")
 		} else {
 			tsuruCtx.SetOutputFormat(cmd.Flags().Lookup("format").Value.String())
+		}
+
+		if v, err := cmd.Flags().GetBool("api-data"); err == nil && v {
+			tsuruCtx.SetOutputAPIData(true)
 		}
 	}
 }
@@ -193,6 +199,8 @@ func setupPFlagsAndCommands(rootCmd *cobra.Command, tsuruCtx *tsuructx.TsuruCont
 		},
 	)
 	tsuruCtx.Viper.BindPFlag("format", rootCmd.PersistentFlags().Lookup("format"))
+	rootCmd.PersistentFlags().Bool("api-data", false, "Output API response data instead of a parsed data (more useful with --format=json)")
+	tsuruCtx.Viper.BindPFlag("api-data", rootCmd.PersistentFlags().Lookup("api-data"))
 
 	// Search config in home directory with name ".tsuru-client" (without extension).
 	tsuruCtx.Viper.AddConfigPath(config.ConfigPath)

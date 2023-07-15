@@ -57,6 +57,10 @@ func (tc *TsuruContext) OutputFormat() printer.OutputFormat {
 	o, _ := printer.FormatAs(tc.Viper.GetString("format"))
 	return o
 }
+func (tc *TsuruContext) OutputAPIData() bool {
+	return tc.Viper.GetBool("api-data")
+}
+
 func (tc *TsuruContext) SetVerbosity(value int) {
 	tc.Viper.Set("verbosity", value)
 }
@@ -68,6 +72,9 @@ func (tc *TsuruContext) SetToken(value string) {
 }
 func (tc *TsuruContext) SetOutputFormat(value string) {
 	tc.Viper.Set("format", value)
+}
+func (tc *TsuruContext) SetOutputAPIData(value bool) {
+	tc.Viper.Set("api-data", value)
 }
 
 // Config is the tsuru client configuration
