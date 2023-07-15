@@ -78,15 +78,15 @@ func TestTable(t *testing.T) {
 		}{FieldStr: "string"}
 
 		expected := strings.TrimLeft(`
-FieldStr:   string
-FieldBool:  false
-FieldInt:   0
+Field Str:   string
+Field Bool:  false
+Field Int:   0
 
-FieldStruct2:
+Field Struct2:
 C  B  A
 0  0  0
 
-FieldStruct1:
+Field Struct1:
 C  A  B
 0  0  0
 `, "\n")
@@ -99,14 +99,14 @@ C  A  B
 
 	t.Run("ObjectList", func(t *testing.T) {
 		type myStructO struct {
-			FieldStr     string `priority:"1"`
-			FieldInt     int
-			FieldStruct1 struct {
+			Fieldstr     string `priority:"1"`
+			Fieldint     int
+			Fieldstruct1 struct {
 				A int
 				B int
 				C int `priority:"1"`
 			}
-			FieldStruct2 struct {
+			Fieldstruct2 struct {
 				A int `priority:"-1"`
 				B int
 				C int `priority:"1"`
@@ -115,9 +115,9 @@ C  A  B
 		}
 
 		expected := strings.TrimLeft(`
-FIELDSTR  FIELDSTRUCT2  FIELDBOOL  FIELDINT  FIELDSTRUCT1
-string1   {0 0 0}       false      0         {0 0 0}
-string2   {0 0 0}       false      0         {0 0 0}
+FIELDSTR  FIELDSTRUCT2  FIELD BOOL  FIELDINT  FIELDSTRUCT1
+string1   {0 0 0}       false       0         {0 0 0}
+string2   {0 0 0}       false       0         {0 0 0}
 
 `, "\n")
 
@@ -127,8 +127,8 @@ string2   {0 0 0}       false      0         {0 0 0}
 		}{
 			{data: []myStructO{}, expected: ""},
 			{data: []*myStructO{}, expected: ""},
-			{data: []myStructO{{FieldStr: "string1"}, {FieldStr: "string2"}}, expected: expected},
-			{data: []*myStructO{{FieldStr: "string1"}, {FieldStr: "string2"}}, expected: expected},
+			{data: []myStructO{{Fieldstr: "string1"}, {Fieldstr: "string2"}}, expected: expected},
+			{data: []*myStructO{{Fieldstr: "string1"}, {Fieldstr: "string2"}}, expected: expected},
 		} {
 			buf := &bytes.Buffer{}
 			err := PrintTable(buf, tc.data)
@@ -147,14 +147,14 @@ func TestStructuredOutput_String(t *testing.T) {
 		}{
 			{in: &StructuredOutput{
 				simpleData: []OutputField{{"a1", "aaa"}, {"b", "bbb"}},
-			}, expected: "a1:\taaa\nb:\tbbb\n"},
+			}, expected: "A1:\taaa\nB:\tbbb\n"},
 			{in: &StructuredOutput{
 				complexData: []OutputField{{"x", "xxx"}, {"y", "yyy"}},
-			}, expected: "\nx:\nxxx\n\ny:\nyyy\n"},
+			}, expected: "\nX:\nxxx\n\nY:\nyyy\n"},
 			{in: &StructuredOutput{
 				simpleData:  []OutputField{{"a1", "aaa"}, {"b", "bbb"}},
 				complexData: []OutputField{{"x", "xxx"}, {"y", "yyy"}},
-			}, expected: "a1:\taaa\nb:\tbbb\n\nx:\nxxx\n\ny:\nyyy\n"},
+			}, expected: "A1:\taaa\nB:\tbbb\n\nX:\nxxx\n\nY:\nyyy\n"},
 		} {
 			buf := &bytes.Buffer{}
 			tc.in.PrintTo(buf)
@@ -167,7 +167,7 @@ func TestStructuredOutput_ProcessStructField(t *testing.T) {
 	t.Parallel()
 	newS := "onestring"
 	type mystruct struct {
-		FieldStr string
+		Fieldstr string
 	}
 
 	t.Run("simpleData", func(t *testing.T) {
@@ -247,13 +247,13 @@ func TestStructuredOutput_processComplexField(t *testing.T) {
 	t.Parallel()
 
 	type struct1 struct {
-		FieldStr         string
-		FieldInt         int
+		Fieldstr         string
+		Fieldint         int
 		nonExportedField string
 	}
 	type struct2 struct {
-		FieldStr         string `priority:"1"`
-		FieldInt         int
+		Fieldstr         string `priority:"1"`
+		Fieldint         int
 		nonExportedField string
 	}
 
@@ -262,11 +262,11 @@ func TestStructuredOutput_processComplexField(t *testing.T) {
 			data     any
 			expected string
 		}{
-			{data: struct1{FieldStr: "string", FieldInt: 42}, expected: "FIELDINT\tFIELDSTR\n42\tstring\n"},
-			{data: &struct1{FieldStr: "string", FieldInt: 42}, expected: "FIELDINT\tFIELDSTR\n42\tstring\n"},
+			{data: struct1{Fieldstr: "string", Fieldint: 42}, expected: "FIELDINT\tFIELDSTR\n42\tstring\n"},
+			{data: &struct1{Fieldstr: "string", Fieldint: 42}, expected: "FIELDINT\tFIELDSTR\n42\tstring\n"},
 			{data: struct1{nonExportedField: "hidden"}, expected: "FIELDINT\tFIELDSTR\n0\t\n"},
-			{data: struct2{FieldStr: "string", FieldInt: 42}, expected: "FIELDSTR\tFIELDINT\nstring\t42\n"},
-			{data: &struct2{FieldStr: "string", FieldInt: 42}, expected: "FIELDSTR\tFIELDINT\nstring\t42\n"},
+			{data: struct2{Fieldstr: "string", Fieldint: 42}, expected: "FIELDSTR\tFIELDINT\nstring\t42\n"},
+			{data: &struct2{Fieldstr: "string", Fieldint: 42}, expected: "FIELDSTR\tFIELDINT\nstring\t42\n"},
 			{data: struct2{nonExportedField: "hidden"}, expected: "FIELDSTR\tFIELDINT\n\t0\n"},
 		} {
 			v := reflect.ValueOf(tc.data)
@@ -283,47 +283,47 @@ func TestStructuredOutput_processComplexField(t *testing.T) {
 			{data: []struct1{}, expected: ""},
 			{data: &[]struct1{}, expected: ""},
 			{data: []struct1{
-				{FieldStr: "string1", FieldInt: 42},
-				{FieldStr: "string2", FieldInt: 43},
+				{Fieldstr: "string1", Fieldint: 42},
+				{Fieldstr: "string2", Fieldint: 43},
 			}, expected: "FIELDINT\tFIELDSTR\n42\tstring1\n43\tstring2\n"},
 			{data: &[]struct1{
-				{FieldStr: "string1", FieldInt: 42},
-				{FieldStr: "string2", FieldInt: 43},
+				{Fieldstr: "string1", Fieldint: 42},
+				{Fieldstr: "string2", Fieldint: 43},
 			}, expected: "FIELDINT\tFIELDSTR\n42\tstring1\n43\tstring2\n"},
 			{data: []*struct1{
-				{FieldStr: "string1", FieldInt: 42},
-				{FieldStr: "string2", FieldInt: 43},
+				{Fieldstr: "string1", Fieldint: 42},
+				{Fieldstr: "string2", Fieldint: 43},
 			}, expected: "FIELDINT\tFIELDSTR\n42\tstring1\n43\tstring2\n"},
 			{data: &[]*struct1{
-				{FieldStr: "string1", FieldInt: 42},
-				{FieldStr: "string2", FieldInt: 43},
+				{Fieldstr: "string1", Fieldint: 42},
+				{Fieldstr: "string2", Fieldint: 43},
 			}, expected: "FIELDINT\tFIELDSTR\n42\tstring1\n43\tstring2\n"},
 			{data: [][]int{}, expected: ""},
 			{data: [][]int{{1, 2}, {3}}, expected: "[1 2], [3]"},
 			{data: [][]string{{"a1", "a2"}, {"b3"}}, expected: "[a1 a2], [b3]"},
 			{data: [][]struct1{
-				{{}, {FieldStr: "a2"}},
-				{{FieldStr: "b3"}},
+				{{}, {Fieldstr: "a2"}},
+				{{Fieldstr: "b3"}},
 			}, expected: "[][]printer.struct1{...}"},
 			{data: []map[string]struct1{
-				{"key1": {}, "key2": {FieldStr: "a2"}},
-				{"key3": {FieldStr: "b3"}},
+				{"key1": {}, "key2": {Fieldstr: "a2"}},
+				{"key3": {Fieldstr: "b3"}},
 			}, expected: "map{key1, key2}\nmap{key3}"},
 			{data: []map[string]*struct1{
-				{"key1": {}, "key2": {FieldStr: "a2"}},
-				{"key3": {FieldStr: "b3"}},
+				{"key1": {}, "key2": {Fieldstr: "a2"}},
+				{"key3": {Fieldstr: "b3"}},
 			}, expected: "map{key1, key2}\nmap{key3}"},
 			{data: []map[string]*struct1{
-				{"key2": {}, "key1": {FieldStr: "a2"}},
-				{"key3": {FieldStr: "b3"}},
+				{"key2": {}, "key1": {Fieldstr: "a2"}},
+				{"key3": {Fieldstr: "b3"}},
 			}, expected: "map{key1, key2}\nmap{key3}"},
 			{data: []map[int]*struct1{
-				{1: {}, 2: {FieldStr: "a2"}},
-				{3: {FieldStr: "b3"}},
+				{1: {}, 2: {Fieldstr: "a2"}},
+				{3: {Fieldstr: "b3"}},
 			}, expected: "map{1, 2}\nmap{3}"},
 			{data: &[]map[int]*struct1{
-				{1: {}, 2: {FieldStr: "a2"}},
-				{3: {FieldStr: "b3"}},
+				{1: {}, 2: {Fieldstr: "a2"}},
+				{3: {Fieldstr: "b3"}},
 			}, expected: "map{1, 2}\nmap{3}"},
 		} {
 			v := reflect.ValueOf(tc.data)
@@ -355,22 +355,22 @@ func TestStructuredOutput_printTableStruct(t *testing.T) {
 			{
 				data: struct1{FieldStr: "string", FieldInt: 42, SubStruct: subStruct{SubFieldStr: "substring", SubFieldInt: 43}},
 				expected: strings.TrimLeft(`
-FieldInt:	42
-FieldStr:	string
+Field Int:	42
+Field Str:	string
 
-SubStruct:
-SUBFIELDINT	SUBFIELDSTR	SUBSUB
+Sub Struct:
+SUB FIELD INT	SUB FIELD STR	SUB SUB
 43	substring	<nil>
 `, "\n"),
 			},
 			{
 				data: struct1{FieldStr: "string", FieldInt: 42, SubStruct: subStruct{SubFieldStr: "substring", SubFieldInt: 43, SubSub: &subStruct{SubFieldStr: "subsubstring", SubFieldInt: 44}}},
 				expected: strings.TrimLeft(`
-FieldInt:	42
-FieldStr:	string
+Field Int:	42
+Field Str:	string
 
-SubStruct:
-SUBFIELDINT	SUBFIELDSTR	SUBSUB
+Sub Struct:
+SUB FIELD INT	SUB FIELD STR	SUB SUB
 43	substring	&{subsubstring 44 <nil>}
 `, "\n"),
 			},
@@ -432,4 +432,27 @@ func TestGetSortedStructFields(t *testing.T) {
 		}
 		assert.Equal(t, []string{"E", "H", "B", "C", "G", "D", "F", "A"}, got)
 	})
+}
+
+func TestNormalizeName(t *testing.T) {
+	t.Parallel()
+	for _, tc := range []struct {
+		in       string
+		expected string
+	}{
+		{in: "field", expected: "Field"},
+		{in: "Field", expected: "Field"},
+		{in: "fieldName", expected: "Field Name"},
+		{in: "FieldName", expected: "Field Name"},
+		{in: "FieldName1", expected: "Field Name1"},
+		{in: "fieldURL", expected: "Field URL"},
+		{in: "fieldURL2", expected: "Field URL2"},
+		{in: "fieldWithURL", expected: "Field With URL"},
+		{in: "ThisIsSomeField", expected: "This Is Some Field"},
+		{in: "SuchAField", expected: "Such A Field"},
+		{in: "SuchAFieldLikeThisAgain", expected: "Such A Field Like This Again"},
+		{in: "suchAFieldLikeThisAgain", expected: "Such A Field Like This Again"},
+	} {
+		assert.Equal(t, tc.expected, normalizeName(tc.in))
+	}
 }

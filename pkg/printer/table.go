@@ -8,6 +8,7 @@ import (
 	"fmt"
 	"io"
 	"reflect"
+	"regexp"
 	"sort"
 	"strconv"
 	"strings"
@@ -19,6 +20,10 @@ import (
 // If data is a slice/map, it will print a summary table.
 // If data is a struct, it will print simple fields as 'key: value' table and complex fields as sub-tables.
 // Non-printable types will return an error.
+//
+// For structs, some field tags are supported:
+// - if "name" tag exists, that will be used instead of the field name.
+// - if "priority" tag exists, it will be used to sort the fields. Higher priority will be printed first.
 func PrintTable(out io.Writer, data any) (err error) {
 	w := tabwriter.NewWriter(out, 2, 2, 2, ' ', 0)
 	defer w.Flush()
@@ -108,10 +113,10 @@ type StructuredOutput struct {
 // complexValue2...
 func (o *StructuredOutput) PrintTo(output io.Writer) {
 	for _, f := range o.simpleData {
-		fmt.Fprintf(output, "%s:\t%s\n", f.name, f.value)
+		fmt.Fprintf(output, "%s:\t%s\n", normalizeName(f.name), f.value)
 	}
 	for _, f := range o.complexData {
-		fmt.Fprintf(output, "\n%s:\n%s", f.name, f.value)
+		fmt.Fprintf(output, "\n%s:\n%s", normalizeName(f.name), f.value)
 		if !strings.HasSuffix(f.value, "\n") {
 			fmt.Fprintln(output)
 		}
@@ -268,7 +273,7 @@ func parseStructFieldAsSubList(value reflect.Value) string {
 			if i > 0 {
 				fmt.Fprint(buf, "\t")
 			}
-			fmt.Fprintf(buf, "%s", strings.ToUpper(k.printName))
+			fmt.Fprintf(buf, "%s", strings.ToUpper(normalizeName(k.printName)))
 		}
 
 		for i := 0; i < value.Len(); i++ {
@@ -308,7 +313,7 @@ func parseStructFieldAsSubStruct(value reflect.Value) string {
 		if i > 0 {
 			fmt.Fprint(buf, "\t")
 		}
-		fmt.Fprintf(buf, "%s", strings.ToUpper(k.printName))
+		fmt.Fprintf(buf, "%s", strings.ToUpper(normalizeName(k.printName)))
 	}
 	fmt.Fprintln(buf)
 
@@ -437,4 +442,15 @@ func GetSortedStructFields(structType reflect.Type) []structFieldsSortable {
 	})
 
 	return fields
+}
+
+var matchFirstCap = regexp.MustCompile("(.)([A-Z][a-z]+)")
+var matchAllCap = regexp.MustCompile("([a-z0-9])([A-Z])")
+
+// normalizeName will normalize a string to be used as a field name.
+// Meaning, it will convert CamelCase to Title Case.
+func normalizeName(s string) string {
+	ret := matchFirstCap.ReplaceAllString(s, "${1} ${2}")
+	ret = matchAllCap.ReplaceAllString(ret, "${1} ${2}")
+	return strings.Title(ret) //lint:ignore SA1019 // structure fields are safe
 }
