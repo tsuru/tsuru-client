@@ -83,9 +83,6 @@ func newBareRootCmd(tsuruCtx *tsuructx.TsuruContext) *cobra.Command {
 	}
 
 	rootCmd.SetVersionTemplate(`{{printf "tsuru-client version: %s" .Version}}` + "\n")
-	rootCmd.SetIn(tsuruCtx.Stdin)
-	rootCmd.SetOut(tsuruCtx.Stderr)
-	rootCmd.SetErr(tsuruCtx.Stderr)
 
 	return rootCmd
 }

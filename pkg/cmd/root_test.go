@@ -161,39 +161,73 @@ func TestParseEnvVariables(t *testing.T) {
 }
 
 func TestRunRootCmd(t *testing.T) {
+	//cobra stdout/stderr is inconsistent. SetOut()/SetErr() don't work as expected: https://github.com/spf13/cobra/issues/1708
+
 	t.Run("with_no_args", func(t *testing.T) {
 		tsuruCtx := tsuructx.TsuruContextWithConfig(nil)
 		cmd := NewRootCmd(viper.New(), tsuruCtx)
+		cmd.SetOut(tsuruCtx.Stdout)
 		cmd.SetArgs([]string{})
 		err := cmd.Execute()
 		assert.NoError(t, err)
-		assert.Contains(t, tsuruCtx.Stderr.(*strings.Builder).String(), "A command-line interface for interacting with tsuru")
+		assert.Contains(t, tsuruCtx.Stdout.(*strings.Builder).String(), "A command-line interface for interacting with tsuru")
 	})
 
 	t.Run("not_found_command", func(t *testing.T) {
 		tsuruCtx := tsuructx.TsuruContextWithConfig(nil)
 		cmd := NewRootCmd(viper.New(), tsuruCtx)
+		cmd.SetErr(tsuruCtx.Stderr)
 		cmd.SetArgs([]string{"myplugin", "arg2"})
 		err := cmd.Execute()
 		assert.ErrorContains(t, err, "unknown command")
-		assert.Equal(t, "", tsuruCtx.Stdout.(*strings.Builder).String())
+		assert.Contains(t, tsuruCtx.Stderr.(*strings.Builder).String(), `unknown command "myplugin"`)
 	})
 
 	t.Run("help_flag", func(t *testing.T) {
 		tsuruCtx := tsuructx.TsuruContextWithConfig(nil)
 		cmd := NewRootCmd(viper.New(), tsuruCtx)
+		cmd.SetOut(tsuruCtx.Stdout)
 		cmd.SetArgs([]string{"--help", "arg2"})
 		err := cmd.Execute()
 		assert.NoError(t, err)
-		assert.Contains(t, tsuruCtx.Stderr.(*strings.Builder).String(), "A command-line interface for interacting with tsuru")
+		assert.Contains(t, tsuruCtx.Stdout.(*strings.Builder).String(), "A command-line interface for interacting with tsuru")
+	})
+
+	t.Run("help_deprecated_flag", func(t *testing.T) {
+		tsuruCtx := tsuructx.TsuruContextWithConfig(nil)
+		cmd := NewRootCmd(viper.New(), tsuruCtx)
+		cmd.SetOut(tsuruCtx.Stderr) // inconcistent cobra stdout/stderr (see above)
+
+		newCmd := &cobra.Command{
+			Use: "newtestcommand",
+		}
+		newCmd.Flags().Bool("deprecatedflag", false, "deprecated flag")
+		newCmd.Flags().MarkDeprecated("deprecatedflag", "use --superflag")
+		cmd.AddCommand(newCmd)
+
+		cmd.SetArgs([]string{"newtestcommand", "--deprecatedflag"})
+		err := cmd.Execute()
+		assert.NoError(t, err)
+		assert.Equal(t, "Flag --deprecatedflag has been deprecated, use --superflag\n", tsuruCtx.Stderr.(*strings.Builder).String())
 	})
 
 	t.Run("version_flag", func(t *testing.T) {
 		tsuruCtx := tsuructx.TsuruContextWithConfig(nil)
 		cmd := NewRootCmd(viper.New(), tsuruCtx)
+		cmd.SetOut(tsuruCtx.Stdout)
 		cmd.SetArgs([]string{"--version", "arg2"})
 		err := cmd.Execute()
 		assert.NoError(t, err)
-		assert.Equal(t, tsuruCtx.Stderr.(*strings.Builder).String(), "tsuru-client version: dev\n")
+		assert.Equal(t, "tsuru-client version: dev\n", tsuruCtx.Stdout.(*strings.Builder).String())
+	})
+
+	t.Run("completion_output", func(t *testing.T) {
+		tsuruCtx := tsuructx.TsuruContextWithConfig(nil)
+		cmd := NewRootCmd(viper.New(), tsuruCtx)
+		cmd.SetOut(tsuruCtx.Stdout)
+		cmd.SetArgs([]string{"completion", "bash"})
+		err := cmd.Execute()
+		assert.NoError(t, err)
+		assert.Contains(t, tsuruCtx.Stdout.(*strings.Builder).String(), "bash completion")
 	})
 }
