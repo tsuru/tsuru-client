@@ -142,7 +142,7 @@ jobs:
 
     - uses: ruby/setup-ruby@v1
       with:
-        ruby-version: '3.0'
+        ruby-version: "3.0"
     - name: Publish to Packagecloud
       run: ./scripts/build_publish_to_packagecloud.sh
       env:

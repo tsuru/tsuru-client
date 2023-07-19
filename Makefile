@@ -43,6 +43,12 @@ clean-all: clean ## Remove build related file and installed binary
 fmt: ## Format your code with gofmt
 	$(GOFMT) -w .
 
+yamlfmt: ## Format your code with yamlfmt
+ifeq (, $(shell which yamlfmt))
+	go install github.com/google/yamlfmt/cmd/yamlfmt@v0.9.0
+endif
+	yamlfmt .
+
 addlicense: ## Add licence header to all files
 ifeq (, $(shell which addlicense))
 	go install github.com/google/addlicense@latest
@@ -74,19 +80,27 @@ coverage: test-coverage  ## Run test-coverage and open coverage in your browser
 	$(GOCMD) tool cover -html=coverage/coverage.out
 
 ## Lint:
-lint: lint-license-header lint-go check-contributors ## Run all available linters
+lint: lint-license-header lint-go lint-yaml check-contributors ## Run all available linters
 
 lint-go: ## Use gofmt and staticcheck on your project
 ifneq (, $(shell $(GOFMT) -l . ))
 	@echo "This files are not gofmt compliant:"
 	@$(GOFMT) -l .
-	@echo "Please run 'make fmt' to format your code"
+	@echo "Please run '$(CYAN)make fmt$(RESET)' to format your code"
 	@exit 1
 endif
 ifeq (, $(shell which staticcheck))
 	go install honnef.co/go/tools/cmd/staticcheck@latest
 endif
 	staticcheck ./...
+
+lint-yaml: ## Check the yaml is valid and correctly formatted
+ifeq (, $(shell which yamlfmt))
+	go install github.com/google/yamlfmt/cmd/yamlfmt@v0.9.0
+endif
+	@echo "yamlfmt --quiet --lint ."
+	@yamlfmt --quiet --lint . \
+		|| ( echo "Please run '$(CYAN)make yamlfmt$(RESET)' to fix it (if a format error)" && exit 1 )
 
 lint-license-header: ## Check if all files have the license header
 ifeq (, $(shell which addlicense))

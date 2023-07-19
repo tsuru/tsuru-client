@@ -28,12 +28,12 @@ changelog:
     # Commit messages matching the regexp listed here will be removed from
     # the changelog
     exclude:
-    - '^build'
-    - '^ci'
-    - '^refactor'
-    - '^chore'
-    - '^style'
-    - '^test'
+    - ^build
+    - ^ci
+    - ^refactor
+    - ^chore
+    - ^style
+    - ^test
     - Test.*
     - (wip)
 
@@ -61,7 +61,7 @@ builds:
   - META_PREVIOUS_TAG={{.PreviousTag}}
   - META_COMMIT={{.Commit}}
   - META_DATE={{.Date}}
-  mod_timestamp: '{{ .CommitTimestamp }}'
+  mod_timestamp: "{{ .CommitTimestamp }}"
   flags:
   - -trimpath
   ldflags:
@@ -85,7 +85,6 @@ archives:
   files:
   - src: LICENSE
   - src: README.md
-
 
 release:
   extra_files:
