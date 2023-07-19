@@ -124,3 +124,9 @@ env:    ## Print useful environment variables to stdout
 	@echo '$$(COMMIT)  :' $(COMMIT)
 	@echo '$$(DATEUTC) :' $(DATEUTC)
 	@echo '$$(FILES#)  :' $(shell echo $(FILES) | wc -w)
+
+setup: ## Setup some dev dependencies (eg: pre-commit)
+ifeq (, $(shell which pre-commit))
+	@echo "pre-commit is not installed. Check $(CYAN)https://pre-commit.com/#install$(RESET)"
+endif
+	pre-commit install --install-hooks
