@@ -89,7 +89,7 @@ func newBareRootCmd(tsuruCtx *tsuructx.TsuruContext) *cobra.Command {
 
 func runRootCmd(tsuruCtx *tsuructx.TsuruContext, cmd *cobra.Command, args []string) error {
 	cmd.SilenceUsage = true
-	parseFirstFlagsOnly(cmd, args)
+	args = parseFirstFlagsOnly(cmd, args)
 
 	versionVal, _ := cmd.Flags().GetBool("version")
 	helpVal, _ := cmd.Flags().GetBool("help")
@@ -122,6 +122,12 @@ func parseFirstFlagsOnly(cmd *cobra.Command, args []string) []string {
 				return args
 			}
 			flagName = s[2:]
+		}
+
+		if strings.Contains(flagName, "=") {
+			flagArgPair := strings.SplitN(flagName, "=", 2)
+			flagName = flagArgPair[0]
+			args = append([]string{flagArgPair[1]}, args...)
 		}
 
 		flag := cmd.Flags().Lookup(flagName)
