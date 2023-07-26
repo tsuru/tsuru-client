@@ -91,7 +91,8 @@ func (c *TsuruContext) Config() *tsuru.Configuration {
 
 // Client is the tsuru client implementated by go-tsuruclient
 func (c *TsuruContext) Client() *tsuru.APIClient {
-	return tsuru.NewAPIClient(c.Config())
+	conf := c.Config()
+	return tsuru.NewAPIClient(conf)
 }
 
 // RawHTTPClient is the raw http client for REST calls

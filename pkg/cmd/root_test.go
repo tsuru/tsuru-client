@@ -68,8 +68,8 @@ func TestPersistentFlagsGetPassedToSubCommand(t *testing.T) {
 				assert.FailNow(t, "flag target not found from subcommand")
 			}
 			assert.Equal(t, "myNewTarget", cmd.Flag("target").Value.String(), "target from cmd.Flag")
-			assert.Equal(t, "http://myNewTarget", tsuruCtx.Viper.GetString("target"), "target from tsuruCtx.Viper")
-			assert.Equal(t, "http://myNewTarget", tsuruCtx.TargetURL(), "target from tsuruCtx.TargetURL()")
+			assert.Equal(t, "https://myNewTarget", tsuruCtx.Viper.GetString("target"), "target from tsuruCtx.Viper")
+			assert.Equal(t, "https://myNewTarget", tsuruCtx.TargetURL(), "target from tsuruCtx.TargetURL()")
 		},
 	}
 	rootCmd.AddCommand(newCmd)

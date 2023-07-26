@@ -52,7 +52,7 @@ func logoutCmdRun(tsuruCtx *tsuructx.TsuruContext, cmd *cobra.Command, args []st
 		}()
 	}
 
-	if err := config.RemoveCurrentTokensFromFs(tsuruCtx.Fs); err != nil {
+	if err := config.RemoveTokensFromFs(tsuruCtx.Fs, tsuruCtx.TargetURL()); err != nil {
 		errs = append(errs, err)
 		return errors.Join(errs...)
 	}

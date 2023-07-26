@@ -106,11 +106,11 @@ func TestOauthLoginSaveAlias(t *testing.T) {
 	// setup current fs state //////////////////////////////////////////////////
 	f, err := tsuruCtx.Fs.Create(filepath.Join(config.ConfigPath, "target"))
 	assert.NoError(t, err)
-	f.Write([]byte("http://localhost:8080"))
+	fmt.Fprintf(f, "%s", mockServer.URL)
 	f.Close()
 	f, err = tsuruCtx.Fs.Create(filepath.Join(config.ConfigPath, "targets"))
 	assert.NoError(t, err)
-	f.Write([]byte("default http://localhost:8080"))
+	fmt.Fprintf(f, "default %s", mockServer.URL)
 	f.Close()
 	////////////////////////////////////////////////////////////////////////////
 

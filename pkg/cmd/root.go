@@ -154,6 +154,12 @@ func rootPersistentPreRun(tsuruCtx *tsuructx.TsuruContext) func(cmd *cobra.Comma
 			target, err := config.GetTargetURL(tsuruCtx.Fs, l.Value.String())
 			cobra.CheckErr(err)
 			tsuruCtx.SetTargetURL(target)
+
+			if tsuruCtx.TokenSetFromFS { // do not update if set from ENV
+				token, err1 := config.GetTokenFromFs(tsuruCtx.Fs, target)
+				cobra.CheckErr(err1)
+				tsuruCtx.SetToken(token)
+			}
 		}
 
 		if v, err := cmd.Flags().GetInt("verbosity"); err != nil {
@@ -242,7 +248,7 @@ func NewProductionTsuruContext(vip *viper.Viper, fs afero.Fs) *tsuructx.TsuruCon
 	// Get token
 	token := vip.GetString("token")
 	if token == "" {
-		token, err = config.GetTokenFromFs(fs)
+		token, err = config.GetTokenFromFs(fs, target)
 		cobra.CheckErr(err)
 		tokenSetFromFS = true
 		vip.Set("token", token)

@@ -55,8 +55,11 @@ func nativeLogin(tsuruCtx *tsuructx.TsuruContext, cmd *cobra.Command, args []str
 	if err != nil {
 		return err
 	}
+	if _, ok := out["token"]; !ok {
+		return fmt.Errorf("something went wrong. No 'token' in response")
+	}
 	fmt.Fprintln(tsuruCtx.Stdout, "Successfully logged in!")
-	return config.SaveToken(tsuruCtx.Fs, out["token"].(string))
+	return config.SaveTokenToFs(tsuruCtx.Fs, tsuruCtx.TargetURL(), out["token"].(string))
 }
 
 func PasswordFromReader(reader io.Reader) (string, error) {

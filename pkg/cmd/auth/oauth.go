@@ -93,7 +93,7 @@ func callback(tsuruCtx *tsuructx.TsuruContext, redirectURL string, finish chan b
 		var page string
 		token, err := getToken(tsuruCtx, r.URL.Query().Get("code"), redirectURL)
 		if err == nil {
-			config.SaveToken(tsuruCtx.Fs, token)
+			config.SaveTokenToFs(tsuruCtx.Fs, tsuruCtx.TargetURL(), token)
 			page = fmt.Sprintf(callbackPage, successMarkup)
 		} else {
 			msg := fmt.Sprintf(errorMarkup, err.Error())

@@ -10,17 +10,19 @@ import (
 	"io"
 	"os"
 	"path/filepath"
+	"regexp"
 	"strings"
 
 	"github.com/spf13/afero"
 )
 
-// GetTokenFromFs returns the token for the current target.
-func GetTokenFromFs(fsys afero.Fs) (string, error) {
-	tokenPaths := []string{filepath.Join(ConfigPath, "token")}
-	if targetLabel, err := getTargetLabel(fsys); err == nil {
-		tokenPaths = append([]string{filepath.Join(ConfigPath, "token.d", targetLabel)}, tokenPaths...)
+// GetTokenFromFs returns the token for the target.
+func GetTokenFromFs(fsys afero.Fs, target string) (string, error) {
+	tokenPaths := []string{}
+	if targetLabel, err := getTargetLabel(fsys, target); err == nil {
+		tokenPaths = append(tokenPaths, filepath.Join(ConfigPath, "token.d", targetLabel))
 	}
+	tokenPaths = append(tokenPaths, filepath.Join(ConfigPath, "token")) // always defaults to current token
 
 	var err error
 	for _, tokenPath := range tokenPaths {
@@ -41,17 +43,24 @@ func GetTokenFromFs(fsys afero.Fs) (string, error) {
 	return "", err
 }
 
-// SaveToken saves the token on the filesystem for future use.
-func SaveToken(fsys afero.Fs, token string) error {
-	tokenPaths := []string{filepath.Join(ConfigPath, "token")}
-	targetLabel, err := getTargetLabel(fsys)
-	if err == nil {
-		err := fsys.MkdirAll(filepath.Join(ConfigPath, "token.d"), 0700)
-		if err != nil {
-			return err
-		}
-		tokenPaths = append(tokenPaths, filepath.Join(ConfigPath, "token.d", targetLabel))
+// SaveTokenToFs saves the token on the filesystem for future use.
+func SaveTokenToFs(fsys afero.Fs, target, token string) error {
+	err := fsys.MkdirAll(filepath.Join(ConfigPath, "token.d"), 0700)
+	if err != nil {
+		return err
 	}
+
+	tokenPaths := []string{}
+	if IsCurrentTarget(fsys, target) {
+		tokenPaths = append(tokenPaths, filepath.Join(ConfigPath, "token"))
+	} else if _, fErr := fsys.Stat(filepath.Join(ConfigPath, "token")); os.IsNotExist(fErr) {
+		tokenPaths = append(tokenPaths, filepath.Join(ConfigPath, "token"))
+		SaveTargetAsCurrent(fsys, target)
+	}
+
+	targetLabel, _ := getTargetLabel(fsys, target) // ignore err, and consider label=host
+	tokenPaths = append(tokenPaths, filepath.Join(ConfigPath, "token.d", hostFromURL(targetLabel)))
+
 	for _, tokenPath := range tokenPaths {
 		file, err := fsys.Create(tokenPath)
 		if err != nil {
@@ -69,11 +78,14 @@ func SaveToken(fsys afero.Fs, token string) error {
 	return nil
 }
 
-// RemoveCurrentTokensFromFs removes the token for the current target and alias.
-func RemoveCurrentTokensFromFs(fsys afero.Fs) error {
-	tokenPaths := []string{filepath.Join(ConfigPath, "token")}
-	if targetLabel, err := getTargetLabel(fsys); err == nil {
-		tokenPaths = append([]string{filepath.Join(ConfigPath, "token.d", targetLabel)}, tokenPaths...)
+// RemoveTokensFromFs removes the token for target.
+func RemoveTokensFromFs(fsys afero.Fs, target string) error {
+	tokenPaths := []string{}
+	if IsCurrentTarget(fsys, target) {
+		tokenPaths = append(tokenPaths, filepath.Join(ConfigPath, "token"))
+	}
+	if targetLabel, err := getTargetLabel(fsys, target); err == nil {
+		tokenPaths = append(tokenPaths, filepath.Join(ConfigPath, "token.d", targetLabel))
 	}
 
 	errs := []error{}
@@ -83,4 +95,8 @@ func RemoveCurrentTokensFromFs(fsys afero.Fs) error {
 		}
 	}
 	return errors.Join(errs...)
+}
+
+func hostFromURL(url string) string {
+	return regexp.MustCompile("^(https?://)?([0-9a-zA-Z_.-]+).*").ReplaceAllString(url, "$2")
 }
