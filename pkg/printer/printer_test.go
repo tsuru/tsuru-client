@@ -14,6 +14,7 @@ import (
 )
 
 func TestFormatAs(t *testing.T) {
+	t.Parallel()
 	for _, test := range []struct {
 		s        string
 		expected OutputFormat
@@ -39,6 +40,7 @@ func TestFormatAs(t *testing.T) {
 }
 
 func TestPrintJSON(t *testing.T) {
+	t.Parallel()
 	for _, test := range []struct {
 		data     interface{}
 		expected string
@@ -88,6 +90,7 @@ func TestPrintJSON(t *testing.T) {
 }
 
 func TestPrintPrettyJSON(t *testing.T) {
+	t.Parallel()
 	for _, test := range []struct {
 		data     interface{}
 		expected string
@@ -154,6 +157,7 @@ func (yamlMarshalerError) MarshalYAML() (interface{}, error) {
 	return nil, errors.New("error")
 }
 func TestPrintYAML(t *testing.T) {
+	t.Parallel()
 	for _, test := range []struct {
 		data     interface{}
 		expected string

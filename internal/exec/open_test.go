@@ -12,6 +12,7 @@ import (
 )
 
 func TestOpen(t *testing.T) {
+	t.Parallel()
 	fEx := FakeExec{}
 	err := Open(&fEx, "http://localhost?a=1&b=2")
 	assert.NoError(t, err)

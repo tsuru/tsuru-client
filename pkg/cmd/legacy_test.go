@@ -12,6 +12,7 @@ import (
 )
 
 func TestAddMissingV1LegacyCommands(t *testing.T) {
+	t.Parallel()
 	rootCmd := &cobra.Command{}
 	v1CmdManager := newV1LegacyCmdManager()
 

@@ -383,6 +383,7 @@ SUB FIELD INT	SUB FIELD STR	SUB SUB
 }
 
 func TestGetSortedStructFields(t *testing.T) {
+	t.Parallel()
 	type s1 struct {
 		FieldB     int
 		FieldA     int

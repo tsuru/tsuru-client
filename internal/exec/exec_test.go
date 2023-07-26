@@ -16,6 +16,7 @@ import (
 var endLine = "\n"
 
 func TestFakeExecCommand(t *testing.T) {
+	t.Parallel()
 	t.Run("empty fake exec", func(t *testing.T) {
 		fakeE := FakeExec{}
 		err := fakeE.Command(ExecuteOptions{})

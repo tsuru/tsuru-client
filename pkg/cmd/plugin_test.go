@@ -15,6 +15,7 @@ import (
 )
 
 func TestRunTsuruPlugin(t *testing.T) {
+	t.Parallel()
 	t.Run("simple_plugin", func(t *testing.T) {
 		tsuruCtx := tsuructx.TsuruContextWithConfig(nil)
 		pluginPath := filepath.Join(config.ConfigPath, "plugins", "myplugin")
