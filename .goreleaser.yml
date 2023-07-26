@@ -5,9 +5,8 @@
 project_name: tsuru
 
 # https://goreleaser.com/customization/verifiable_builds/
-# TODO: uncomment after first pre-release
-# gomod:
-#   proxy: true
+gomod:
+  proxy: true
 
 changelog:
   use: git
