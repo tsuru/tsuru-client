@@ -29,7 +29,7 @@ type infoTransport struct {
 func (t *infoTransport) RoundTrip(req *http.Request) (resp *http.Response, err error) {
 	var message string
 	if strings.HasSuffix(req.URL.Path, "/services/mongodb") {
-		message = `[{"Name":"mymongo", "Apps":["myapp"], "Id":0, "Info":{"key": "value", "key2": "value2"}, "PlanName":"small", "ServiceName":"mongoservice", "Teams":["mongoteam"]}]`
+		message = `[{"Name":"mymongo", "Apps":["myapp"], "Jobs":["sample-job"], "Id":0, "Info":{"key": "value", "key2": "value2"}, "PlanName":"small", "ServiceName":"mongoservice", "Teams":["mongoteam"]}]`
 	}
 	if strings.HasSuffix(req.URL.Path, "/services/mongodb/plans") {
 		if t.includePlans {
@@ -39,10 +39,10 @@ func (t *infoTransport) RoundTrip(req *http.Request) (resp *http.Response, err e
 		}
 	}
 	if strings.HasSuffix(req.URL.Path, "/services/mongodb-broker") {
-		message = `[{"Name":"mymongo", "Apps":["myapp"], "Id":0, "Info":{"key": "value", "key2": "value2"}, "PlanName":"small", "ServiceName":"mongoservice", "Teams":["mongoteam"]}]`
+		message = `[{"Name":"mymongo", "Apps":["myapp"], "Jobs":["sample-job"], "Id":0, "Info":{"key": "value", "key2": "value2"}, "PlanName":"small", "ServiceName":"mongoservice", "Teams":["mongoteam"]}]`
 	}
 	if strings.HasSuffix(req.URL.Path, "/services/multicluster") {
-		message = `[{"Name":"mymongo", "Apps":["myapp"], "Id":0, "Info":{"key": "value", "key2": "value2"}, "PlanName":"small", "ServiceName":"mongoservice", "Teams":["mongoteam"],"Pool":"my-pool-01"}]`
+		message = `[{"Name":"mymongo", "Apps":["myapp"],  "Jobs":["sample-job"], "Id":0, "Info":{"key": "value", "key2": "value2"}, "PlanName":"small", "ServiceName":"mongoservice", "Teams":["mongoteam"],"Pool":"my-pool-01"}]`
 	}
 	if strings.HasSuffix(req.URL.Path, "/services/mongodb-broker/plans") {
 		if t.includePlans {
@@ -52,7 +52,7 @@ func (t *infoTransport) RoundTrip(req *http.Request) (resp *http.Response, err e
 		}
 	}
 	if strings.HasSuffix(req.URL.Path, "/services/mongodbnoplan") {
-		message = `[{"Name":"mymongo", "Apps":["myapp"], "Id":0, "Info":{"key": "value", "key2": "value2"}, "PlanName":"", "ServiceName":"noplanservice", "Teams":["noplanteam"]}]`
+		message = `[{"Name":"mymongo", "Apps":["myapp"], "Jobs":["sample-job"], "Id":0, "Info":{"key": "value", "key2": "value2"}, "PlanName":"", "ServiceName":"noplanservice", "Teams":["noplanteam"]}]`
 	}
 	if strings.HasSuffix(req.URL.Path, "/services/mongodbnoplan/plans") {
 		if t.includePlans {
@@ -70,7 +70,7 @@ func (t *infoTransport) RoundTrip(req *http.Request) (resp *http.Response, err e
 	}
 
 	if strings.HasSuffix(req.URL.Path, "/services/mongo") {
-		message = `[{"Name":"mymongo", "Apps":["myapp"], "Id":0, "Info":{"key": "value", "key2": "value2"}, "PlanName":"small", "ServiceName":"mongoservice", "Teams":["mongoteam"]}]`
+		message = `[{"Name":"mymongo", "Apps":["myapp"], "Jobs":["sample-job"], "Id":0, "Info":{"key": "value", "key2": "value2"}, "PlanName":"small", "ServiceName":"mongoservice", "Teams":["mongoteam"]}]`
 	}
 	if strings.HasSuffix(req.URL.Path, "/services/mongo/plans") {
 		if t.includePlans {
@@ -264,38 +264,6 @@ func (s *S) TestServiceInstanceBind(c *check.C) {
 	c.Assert(stdout.String(), check.Equals, expectedOut)
 }
 
-func (s *S) TestServiceInstanceBindToJob(c *check.C) {
-	var (
-		called         bool
-		stdout, stderr bytes.Buffer
-	)
-	ctx := cmd.Context{
-		Args:   []string{"mysql", "my-mysql"},
-		Stdout: &stdout,
-		Stderr: &stderr,
-	}
-	expectedOut := `["DATABASE_HOST","DATABASE_USER","DATABASE_PASSWORD"]`
-	msg := tsuruIo.SimpleJsonMessage{Message: expectedOut}
-	result, err := json.Marshal(msg)
-	c.Assert(err, check.IsNil)
-	trans := &cmdtest.ConditionalTransport{
-		Transport: cmdtest.Transport{Message: string(result), Status: http.StatusOK},
-		CondFunc: func(req *http.Request) bool {
-			called = true
-			method := req.Method == "PUT"
-			path := strings.HasSuffix(req.URL.Path, "/1.13/services/mysql/instances/my-mysql/jobs/job1")
-			return method && path
-		},
-	}
-	client := cmd.NewClient(&http.Client{Transport: trans}, nil, manager)
-	command := ServiceInstanceBind{}
-	command.Flags().Parse(true, []string{"-j", "job1"})
-	err = command.Run(&ctx, client)
-	c.Assert(err, check.IsNil)
-	c.Assert(called, check.Equals, true)
-	c.Assert(stdout.String(), check.Equals, expectedOut)
-}
-
 func (s *S) TestServiceInstanceBindWithoutEnvironmentVariables(c *check.C) {
 	var stdout, stderr bytes.Buffer
 	ctx := cmd.Context{
@@ -335,6 +303,81 @@ func (s *S) TestServiceInstanceBindWithRequestFailure(c *check.C) {
 	client := cmd.NewClient(&http.Client{Transport: trans}, nil, manager)
 	command := ServiceInstanceBind{}
 	command.Flags().Parse(true, []string{"-a", "g1"})
+	err := command.Run(&ctx, client)
+	c.Assert(err, check.NotNil)
+	c.Assert(err.Error(), check.Equals, trans.Message)
+}
+
+func (s *S) TestServiceInstanceJobBind(c *check.C) {
+	var (
+		called         bool
+		stdout, stderr bytes.Buffer
+	)
+	ctx := cmd.Context{
+		Args:   []string{"mysql", "my-mysql"},
+		Stdout: &stdout,
+		Stderr: &stderr,
+	}
+	expectedOut := `["DATABASE_HOST","DATABASE_USER","DATABASE_PASSWORD"]`
+	msg := tsuruIo.SimpleJsonMessage{Message: expectedOut}
+	result, err := json.Marshal(msg)
+	c.Assert(err, check.IsNil)
+	trans := &cmdtest.ConditionalTransport{
+		Transport: cmdtest.Transport{Message: string(result), Status: http.StatusOK},
+		CondFunc: func(req *http.Request) bool {
+			called = true
+			method := req.Method == "PUT"
+			path := strings.HasSuffix(req.URL.Path, "/1.13/services/mysql/instances/my-mysql/jobs/job1")
+			return method && path
+		},
+	}
+	client := cmd.NewClient(&http.Client{Transport: trans}, nil, manager)
+	command := ServiceInstanceBind{}
+	command.Flags().Parse(true, []string{"-j", "job1"})
+	err = command.Run(&ctx, client)
+	c.Assert(err, check.IsNil)
+	c.Assert(called, check.Equals, true)
+	c.Assert(stdout.String(), check.Equals, expectedOut)
+}
+
+func (s *S) TestServiceInstanceJobBindWithoutEnvironmentVariables(c *check.C) {
+	var stdout, stderr bytes.Buffer
+	ctx := cmd.Context{
+		Args:   []string{"mysql", "my-mysql"},
+		Stdout: &stdout,
+		Stderr: &stderr,
+	}
+	expectedOut := `something`
+	msg := tsuruIo.SimpleJsonMessage{Message: expectedOut}
+	result, err := json.Marshal(msg)
+	c.Assert(err, check.IsNil)
+	trans := &cmdtest.ConditionalTransport{
+		Transport: cmdtest.Transport{Message: string(result), Status: http.StatusOK},
+		CondFunc: func(req *http.Request) bool {
+			method := req.Method == "PUT"
+			path := strings.HasSuffix(req.URL.Path, "/services/mysql/instances/my-mysql/jobs/sample-job")
+			return method && path
+		},
+	}
+	client := cmd.NewClient(&http.Client{Transport: trans}, nil, manager)
+	command := ServiceInstanceBind{}
+	command.Flags().Parse(true, []string{"-j", "sample-job"})
+	err = command.Run(&ctx, client)
+	c.Assert(err, check.IsNil)
+	c.Assert(stdout.String(), check.Equals, expectedOut)
+}
+
+func (s *S) TestServiceInstanceJobBindWithRequestFailure(c *check.C) {
+	var stdout, stderr bytes.Buffer
+	ctx := cmd.Context{
+		Args:   []string{"mysql", "my-mysql"},
+		Stdout: &stdout,
+		Stderr: &stderr,
+	}
+	trans := &cmdtest.Transport{Message: "This user does not have access to this job.", Status: http.StatusForbidden}
+	client := cmd.NewClient(&http.Client{Transport: trans}, nil, manager)
+	command := ServiceInstanceBind{}
+	command.Flags().Parse(true, []string{"-j", "sample-job"})
 	err := command.Run(&ctx, client)
 	c.Assert(err, check.NotNil)
 	c.Assert(err.Error(), check.Equals, trans.Message)
@@ -392,6 +435,84 @@ func (s *S) TestServiceInstanceUnbindWithRequestFailure(c *check.C) {
 	client := cmd.NewClient(&http.Client{Transport: trans}, nil, manager)
 	command := ServiceInstanceUnbind{}
 	command.Flags().Parse(true, []string{"-a", "pocket"})
+	err := command.Run(&ctx, client)
+	c.Assert(err, check.NotNil)
+	c.Assert(err.Error(), check.Equals, trans.Message)
+}
+
+func (s *S) TestServiceInstanceJobUnbind(c *check.C) {
+	var stdout, stderr bytes.Buffer
+	var called bool
+	ctx := cmd.Context{
+		Args:   []string{"service-name", "instance-name"},
+		Stdout: &stdout,
+		Stderr: &stderr,
+	}
+	expectedOut := `something`
+	msg := tsuruIo.SimpleJsonMessage{Message: expectedOut}
+	result, err := json.Marshal(msg)
+	c.Assert(err, check.IsNil)
+	trans := &cmdtest.ConditionalTransport{
+		Transport: cmdtest.Transport{Message: string(result), Status: http.StatusOK},
+		CondFunc: func(req *http.Request) bool {
+			called = true
+			c.Assert(req.URL.Path, check.Equals, "/1.13/services/service-name/instances/instance-name/jobs/sample-job")
+			c.Assert(req.Method, check.Equals, http.MethodDelete)
+			return true
+		},
+	}
+	client := cmd.NewClient(&http.Client{Transport: trans}, nil, manager)
+	command := ServiceInstanceUnbind{}
+	command.Flags().Parse(true, []string{"-j", "sample-job"})
+	err = command.Run(&ctx, client)
+	c.Assert(err, check.IsNil)
+	c.Assert(called, check.Equals, true)
+	c.Assert(stdout.String(), check.Equals, expectedOut)
+}
+
+func (s *S) TestServiceInstanceJobForceUnbind(c *check.C) {
+	var stdout, stderr bytes.Buffer
+	var called bool
+	ctx := cmd.Context{
+		Args:   []string{"service-name", "instance-name"},
+		Stdout: &stdout,
+		Stderr: &stderr,
+	}
+	expectedOut := `something`
+	msg := tsuruIo.SimpleJsonMessage{Message: expectedOut}
+	result, err := json.Marshal(msg)
+	c.Assert(err, check.IsNil)
+	trans := &cmdtest.ConditionalTransport{
+		Transport: cmdtest.Transport{Message: string(result), Status: http.StatusOK},
+		CondFunc: func(req *http.Request) bool {
+			called = true
+			c.Assert(req.URL.Query().Get("force"), check.Equals, "true")
+			c.Assert(req.URL.Path, check.Equals, "/1.13/services/service-name/instances/instance-name/jobs/sample-job")
+			c.Assert(req.Method, check.Equals, http.MethodDelete)
+			return true
+		},
+	}
+	client := cmd.NewClient(&http.Client{Transport: trans}, nil, manager)
+	command := ServiceInstanceUnbind{}
+	command.Flags().Parse(true, []string{"-j", "sample-job", "--force"})
+	err = command.Run(&ctx, client)
+	c.Assert(err, check.IsNil)
+	c.Assert(called, check.Equals, true)
+	c.Assert(stdout.String(), check.Equals, expectedOut)
+}
+
+func (s *S) TestServiceInstanceJobUnbindWithRequestFailure(c *check.C) {
+	var stdout, stderr bytes.Buffer
+	ctx := cmd.Context{
+		Args:   []string{"service", "hand"},
+		Stdout: &stdout,
+		Stderr: &stderr,
+	}
+	trans := &cmdtest.Transport{Message: "This job is not bound to this service.", Status: http.StatusPreconditionFailed}
+
+	client := cmd.NewClient(&http.Client{Transport: trans}, nil, manager)
+	command := ServiceInstanceUnbind{}
+	command.Flags().Parse(true, []string{"-j", "sample-job"})
 	err := command.Run(&ctx, client)
 	c.Assert(err, check.NotNil)
 	c.Assert(err.Error(), check.Equals, trans.Message)
@@ -826,11 +947,11 @@ func (s *S) TestServiceInfoRun(c *check.C) {
 	expected := `Info for "mongodb"
 
 Instances
-+-----------+-------+-------+-------+--------+
-| Instances | Plan  | Apps  | key   | key2   |
-+-----------+-------+-------+-------+--------+
-| mymongo   | small | myapp | value | value2 |
-+-----------+-------+-------+-------+--------+
++-----------+-------+-------+------------+-------+--------+
+| Instances | Plan  | Apps  | Jobs       | key   | key2   |
++-----------+-------+-------+------------+-------+--------+
+| mymongo   | small | myapp | sample-job | value | value2 |
++-----------+-------+-------+------------+-------+--------+
 
 Plans
 +-------+--------------+-----------------+----------------+
@@ -857,11 +978,11 @@ func (s *S) TestServiceInfoRunWithPools(c *check.C) {
 	expected := `Info for "multicluster"
 
 Instances
-+-----------+-------+------------+-------+-------+--------+
-| Instances | Plan  | Pool       | Apps  | key   | key2   |
-+-----------+-------+------------+-------+-------+--------+
-| mymongo   | small | my-pool-01 | myapp | value | value2 |
-+-----------+-------+------------+-------+-------+--------+
++-----------+-------+------------+-------+------------+-------+--------+
+| Instances | Plan  | Pool       | Apps  | Jobs       | key   | key2   |
++-----------+-------+------------+-------+------------+-------+--------+
+| mymongo   | small | my-pool-01 | myapp | sample-job | value | value2 |
++-----------+-------+------------+-------+------------+-------+--------+
 
 Plans
 +-------+--------------+-----------------+----------------+
@@ -888,11 +1009,11 @@ func (s *S) TestServiceInfoRunWithPoolSelected(c *check.C) {
 	expected := `Info for "multicluster" in pool "my-pool-01"
 
 Instances
-+-----------+-------+-------+-------+--------+
-| Instances | Plan  | Apps  | key   | key2   |
-+-----------+-------+-------+-------+--------+
-| mymongo   | small | myapp | value | value2 |
-+-----------+-------+-------+-------+--------+
++-----------+-------+-------+------------+-------+--------+
+| Instances | Plan  | Apps  | Jobs       | key   | key2   |
++-----------+-------+-------+------------+-------+--------+
+| mymongo   | small | myapp | sample-job | value | value2 |
++-----------+-------+-------+------------+-------+--------+
 
 Plans
 +-------+--------------+-----------------+----------------+
@@ -921,11 +1042,11 @@ func (s *S) TestServiceInfoNoPlans(c *check.C) {
 	expected := `Info for "mongodbnoplan"
 
 Instances
-+-----------+-------+-------+--------+
-| Instances | Apps  | key   | key2   |
-+-----------+-------+-------+--------+
-| mymongo   | myapp | value | value2 |
-+-----------+-------+-------+--------+
++-----------+-------+------------+-------+--------+
+| Instances | Apps  | Jobs       | key   | key2   |
++-----------+-------+------------+-------+--------+
+| mymongo   | myapp | sample-job | value | value2 |
++-----------+-------+------------+-------+--------+
 `
 	args := []string{"mongodbnoplan"}
 	context := cmd.Context{
@@ -945,11 +1066,11 @@ func (s *S) TestServiceInfoWithDoc(c *check.C) {
 	expected := `Info for "mongo"
 
 Instances
-+-----------+-------+-------+-------+--------+
-| Instances | Plan  | Apps  | key   | key2   |
-+-----------+-------+-------+-------+--------+
-| mymongo   | small | myapp | value | value2 |
-+-----------+-------+-------+-------+--------+
++-----------+-------+-------+------------+-------+--------+
+| Instances | Plan  | Apps  | Jobs       | key   | key2   |
++-----------+-------+-------+------------+-------+--------+
+| mymongo   | small | myapp | sample-job | value | value2 |
++-----------+-------+-------+------------+-------+--------+
 
 Plans
 +-------+--------------+-----------------+----------------+
@@ -980,11 +1101,11 @@ func (s *S) TestServiceInfoWithSchemas(c *check.C) {
 	expected := `Info for "mongodb-broker"
 
 Instances
-+-----------+-------+-------+-------+--------+
-| Instances | Plan  | Apps  | key   | key2   |
-+-----------+-------+-------+-------+--------+
-| mymongo   | small | myapp | value | value2 |
-+-----------+-------+-------+-------+--------+
++-----------+-------+-------+------------+-------+--------+
+| Instances | Plan  | Apps  | Jobs       | key   | key2   |
++-----------+-------+-------+------------+-------+--------+
+| mymongo   | small | myapp | sample-job | value | value2 |
++-----------+-------+-------+------------+-------+--------+
 
 Plans
 +---------+------------------------------------------+---------------------------------------+---------------------------------------+
