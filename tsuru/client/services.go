@@ -7,7 +7,6 @@ package client
 import (
 	"context"
 	"encoding/json"
-	"errors"
 	"fmt"
 	"io"
 	"net/http"
@@ -440,11 +439,9 @@ type ServiceInstanceBind struct {
 func (sb *ServiceInstanceBind) Run(ctx *cmd.Context, client *cmd.Client) error {
 	ctx.RawOutput()
 
-	if sb.appName == "" && sb.jobName == "" {
-		return errors.New("You must pass an application or job")
-	}
-	if sb.appName != "" && sb.jobName != "" {
-		return errors.New("You must pass an application or job, never both")
+	err := checkAppAndJobInputs(sb.appName, sb.jobName)
+	if err != nil {
+		return err
 	}
 
 	serviceName := ctx.Args[0]
@@ -499,13 +496,14 @@ func (sb *ServiceInstanceBind) Flags() *gnuflag.FlagSet {
 		sb.fs.StringVar(&sb.appName, "a", "", "The name of the app.")
 		sb.fs.StringVar(&sb.jobName, "job", "", "The name of the job.")
 		sb.fs.StringVar(&sb.jobName, "j", "", "The name of the job.")
-		sb.fs.BoolVar(&sb.noRestart, "no-restart", false, "Binds an application to a service instance without restart the application")
+		sb.fs.BoolVar(&sb.noRestart, "no-restart", false, "Binds an application to a service instance without restarting the application. Does not apply to jobs")
 	}
 	return sb.fs
 }
 
 type ServiceInstanceUnbind struct {
-	cmd.AppNameMixIn
+	appName   string
+	jobName   string
 	fs        *gnuflag.FlagSet
 	noRestart bool
 	force     bool
@@ -513,13 +511,25 @@ type ServiceInstanceUnbind struct {
 
 func (su *ServiceInstanceUnbind) Run(ctx *cmd.Context, client *cmd.Client) error {
 	ctx.RawOutput()
-	appName, err := su.AppName()
+
+	err := checkAppAndJobInputs(su.appName, su.jobName)
 	if err != nil {
 		return err
 	}
+
 	serviceName := ctx.Args[0]
 	instanceName := ctx.Args[1]
-	u, err := cmd.GetURL(fmt.Sprintf("/services/%s/instances/%s/%s", serviceName, instanceName, appName))
+
+	var path string
+	apiVersion := "1.0"
+	if su.appName != "" {
+		path = "/services/" + serviceName + "/instances/" + instanceName + "/" + su.appName
+	} else {
+		path = "/services/" + serviceName + "/instances/" + instanceName + "/jobs/" + su.jobName
+		apiVersion = "1.13"
+	}
+
+	u, err := cmd.GetURLVersion(apiVersion, path)
 	if err != nil {
 		return err
 	}
@@ -541,8 +551,8 @@ func (su *ServiceInstanceUnbind) Run(ctx *cmd.Context, client *cmd.Client) error
 func (su *ServiceInstanceUnbind) Info() *cmd.Info {
 	return &cmd.Info{
 		Name:  "service-instance-unbind",
-		Usage: "service instance unbind <service-name> <service-instance-name> [-a/--app appname] [--no-restart] [--force]",
-		Desc: `Unbinds an application from a service instance. After unbinding, the instance
+		Usage: "service instance unbind <service-name> <service-instance-name> [-a/--app appname] [-j/--job jobname] [--no-restart] [--force]",
+		Desc: `Unbinds an application or job from a service instance. After unbinding, the instance
 will not be available anymore. For example, when unbinding an application from
 a MySQL service, the application would lose access to the database.`,
 		MinArgs: 2,
@@ -551,8 +561,13 @@ a MySQL service, the application would lose access to the database.`,
 
 func (su *ServiceInstanceUnbind) Flags() *gnuflag.FlagSet {
 	if su.fs == nil {
-		su.fs = su.AppNameMixIn.Flags()
-		su.fs.BoolVar(&su.noRestart, "no-restart", false, "Unbinds an application from a service instance without restart the application")
+		su.fs = gnuflag.NewFlagSet("", gnuflag.ExitOnError)
+
+		su.fs.StringVar(&su.appName, "app", "", "The name of the app.")
+		su.fs.StringVar(&su.appName, "a", "", "The name of the app.")
+		su.fs.StringVar(&su.jobName, "job", "", "The name of the job.")
+		su.fs.StringVar(&su.jobName, "j", "", "The name of the job.")
+		su.fs.BoolVar(&su.noRestart, "no-restart", false, "Unbinds an application from a service instance without restarting the application. Does not apply to jobs")
 		su.fs.BoolVar(&su.force, "force", false, "Forces the unbind even if the unbind API call to the service fails")
 	}
 	return su.fs
@@ -585,6 +600,7 @@ type ServiceInstanceInfoModel struct {
 	InstanceName    string
 	Pool            string
 	Apps            []string
+	Jobs            []string
 	Teams           []string
 	TeamOwner       string
 	Description     string
@@ -653,6 +669,11 @@ func (c ServiceInstanceInfo) Run(ctx *cmd.Context, client *cmd.Client) error {
 	if len(si.Apps) > 0 {
 		fmt.Fprintf(ctx.Stdout, "Apps: %s\n", strings.Join(si.Apps, ", "))
 	}
+
+	if len(si.Jobs) > 0 {
+		fmt.Fprintf(ctx.Stdout, "Jobs: %s\n", strings.Join(si.Jobs, ", "))
+	}
+
 	fmt.Fprintf(ctx.Stdout, "Teams: %s\n", formatTeams(si.TeamOwner, si.Teams))
 
 	if si.Description != "" {
@@ -797,6 +818,7 @@ type ServiceInstanceModel struct {
 	PlanName string
 	Pool     string
 	Apps     []string
+	Jobs     []string
 	Info     map[string]string
 }
 
@@ -852,6 +874,7 @@ func (c *ServiceInfo) BuildInstancesTable(ctx *cmd.Context, serviceName string, 
 		}
 		for _, instance := range instances {
 			apps := strings.Join(instance.Apps, ", ")
+			jobs := strings.Join(instance.Jobs, ", ")
 			row := []string{instance.Name}
 			if hasPlan {
 				row = append(row, instance.PlanName)
@@ -860,6 +883,7 @@ func (c *ServiceInfo) BuildInstancesTable(ctx *cmd.Context, serviceName string, 
 				row = append(row, instance.Pool)
 			}
 			row = append(row, apps)
+			row = append(row, jobs)
 
 			for _, h := range extraHeaders {
 				row = append(row, instance.Info[h])
@@ -875,6 +899,7 @@ func (c *ServiceInfo) BuildInstancesTable(ctx *cmd.Context, serviceName string, 
 		}
 
 		headers = append(headers, "Apps")
+		headers = append(headers, "Jobs")
 		headers = append(headers, extraHeaders...)
 
 		table.Headers = tablecli.Row(headers)
