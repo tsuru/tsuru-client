@@ -250,7 +250,7 @@ func (s *S) TestServiceInstanceBind(c *check.C) {
 		CondFunc: func(req *http.Request) bool {
 			called = true
 			method := req.Method == "PUT"
-			path := strings.HasSuffix(req.URL.Path, "/services/mysql/instances/my-mysql/g1")
+			path := strings.HasSuffix(req.URL.Path, "/services/mysql/instances/my-mysql/apps/g1")
 			noRestart := req.FormValue("noRestart") == "true"
 			return method && path && noRestart
 		},
@@ -279,7 +279,7 @@ func (s *S) TestServiceInstanceBindWithoutEnvironmentVariables(c *check.C) {
 		Transport: cmdtest.Transport{Message: string(result), Status: http.StatusOK},
 		CondFunc: func(req *http.Request) bool {
 			method := req.Method == "PUT"
-			path := strings.HasSuffix(req.URL.Path, "/services/mysql/instances/my-mysql/g1")
+			path := strings.HasSuffix(req.URL.Path, "/services/mysql/instances/my-mysql/apps/g1")
 			noRestart := req.FormValue("noRestart") == "false"
 			return method && path && noRestart
 		},
@@ -409,7 +409,7 @@ func (s *S) TestServiceInstanceUnbind(c *check.C) {
 			called = true
 			c.Assert(req.URL.Query().Get("noRestart"), check.Equals, "true")
 			c.Assert(req.URL.Query().Get("force"), check.Equals, "true")
-			c.Assert(req.URL.Path, check.Equals, "/1.0/services/service/instances/hand/pocket")
+			c.Assert(req.URL.Path, check.Equals, "/1.13/services/service/instances/hand/apps/pocket")
 			c.Assert(req.Method, check.Equals, http.MethodDelete)
 			return true
 		},

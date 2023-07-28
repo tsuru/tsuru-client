@@ -448,12 +448,11 @@ func (sb *ServiceInstanceBind) Run(ctx *cmd.Context, client *cmd.Client) error {
 	instanceName := ctx.Args[1]
 
 	var path string
-	apiVersion := "1.0"
+	apiVersion := "1.13"
 	if sb.appName != "" {
-		path = "/services/" + serviceName + "/instances/" + instanceName + "/" + sb.appName
+		path = "/services/" + serviceName + "/instances/" + instanceName + "/apps/" + sb.appName
 	} else {
 		path = "/services/" + serviceName + "/instances/" + instanceName + "/jobs/" + sb.jobName
-		apiVersion = "1.13"
 	}
 
 	u, err := cmd.GetURLVersion(apiVersion, path)
@@ -521,12 +520,11 @@ func (su *ServiceInstanceUnbind) Run(ctx *cmd.Context, client *cmd.Client) error
 	instanceName := ctx.Args[1]
 
 	var path string
-	apiVersion := "1.0"
+	apiVersion := "1.13"
 	if su.appName != "" {
-		path = "/services/" + serviceName + "/instances/" + instanceName + "/" + su.appName
+		path = "/services/" + serviceName + "/instances/" + instanceName + "/apps/" + su.appName
 	} else {
 		path = "/services/" + serviceName + "/instances/" + instanceName + "/jobs/" + su.jobName
-		apiVersion = "1.13"
 	}
 
 	u, err := cmd.GetURLVersion(apiVersion, path)
