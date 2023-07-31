@@ -16,6 +16,7 @@ import (
 	"github.com/tsuru/tsuru-client/v2/internal/config"
 	"github.com/tsuru/tsuru-client/v2/internal/exec"
 	"github.com/tsuru/tsuru-client/v2/internal/tsuructx"
+	"github.com/tsuru/tsuru-client/v2/pkg/cmd/app"
 	"github.com/tsuru/tsuru-client/v2/pkg/cmd/auth"
 	"github.com/tsuru/tsuru-client/v2/pkg/printer"
 )
@@ -25,6 +26,7 @@ var (
 	commands = []func(*tsuructx.TsuruContext) *cobra.Command{
 		auth.NewLoginCmd,
 		auth.NewLogoutCmd,
+		app.NewAppCmd,
 	}
 )
 

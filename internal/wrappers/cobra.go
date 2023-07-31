@@ -4,36 +4,37 @@
 
 package wrappers
 
-import "github.com/spf13/cobra"
+import (
+	"github.com/spf13/cobra"
+)
 
 // ForceCallPreRun climbs the parent tree until it finds and runs one of:
 //   - PreRun()
 //   - PreRunE()
 //   - PersistentPreRun()
 //   - PersistentPreRunE()
-func ForceCallPreRun(cmd *cobra.Command, args []string) {
+func ForceCallPreRun(cmd *cobra.Command, args []string) error {
 	curr := cmd
 	for curr != nil {
 		if curr.PreRun != nil {
 			curr.PreRun(cmd, args)
-			return
+			return nil
 		}
 		if curr.PreRunE != nil {
-			_ = curr.PreRunE(cmd, args)
-			return
+			return curr.PreRunE(cmd, args)
 		}
 		if curr.PersistentPreRun != nil {
 			curr.PersistentPreRun(cmd, args)
-			return
+			return nil
 		}
 		if curr.PersistentPreRunE != nil {
-			_ = curr.PersistentPreRunE(cmd, args)
-			return
+			return curr.PersistentPreRunE(cmd, args)
 		}
 
 		if curr == curr.Parent() {
-			return
+			return nil
 		}
 		curr = curr.Parent()
 	}
+	return nil
 }

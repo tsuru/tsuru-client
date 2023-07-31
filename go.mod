@@ -3,25 +3,26 @@ module github.com/tsuru/tsuru-client/v2
 go 1.20
 
 require (
+	github.com/antihax/optional v1.0.0
 	github.com/pkg/errors v0.9.1
 	github.com/spf13/afero v1.9.5
 	github.com/spf13/cobra v1.7.0
 	github.com/spf13/pflag v1.0.5
 	github.com/spf13/viper v1.16.0
 	github.com/stretchr/testify v1.8.3
-	github.com/tsuru/go-tsuruclient v0.0.0-20230620200646-77b59f7bb707
+	github.com/tsuru/go-tsuruclient v0.0.0-20230719135712-bdafe136277d
 	github.com/tsuru/tsuru v0.0.0-20230630144046-e6cc612195e1
 	github.com/tsuru/tsuru-client v0.0.0-20230630183613-fd0e06cb1b34
 	golang.org/x/sys v0.8.0
 	golang.org/x/term v0.8.0
 	gopkg.in/yaml.v3 v3.0.1
+	k8s.io/apimachinery v0.23.4
 )
 
 require (
 	github.com/Azure/go-ansiterm v0.0.0-20210617225240-d185dfc1b5a1 // indirect
 	github.com/Microsoft/go-winio v0.6.0 // indirect
 	github.com/Microsoft/hcsshim v0.9.2 // indirect
-	github.com/antihax/optional v1.0.0 // indirect
 	github.com/beorn7/perks v1.0.1 // indirect
 	github.com/cespare/xxhash/v2 v2.1.2 // indirect
 	github.com/cezarsa/form v0.0.0-20210510165411-863b166467b9 // indirect
@@ -95,7 +96,6 @@ require (
 	gopkg.in/ini.v1 v1.67.0 // indirect
 	gopkg.in/yaml.v2 v2.4.0 // indirect
 	k8s.io/api v0.23.4 // indirect
-	k8s.io/apimachinery v0.23.4 // indirect
 	k8s.io/client-go v0.23.4 // indirect
 	k8s.io/klog/v2 v2.50.2 // indirect
 	k8s.io/utils v0.0.0-20220210201930-3a6ce19ff2f9 // indirect
