@@ -12,6 +12,51 @@ import (
 	"github.com/tsuru/go-tsuruclient/pkg/tsuru"
 	"k8s.io/apimachinery/pkg/api/resource"
 )
+
+type MiniApp struct {
+	Application string `priority:"99"`
+	Units       int
+	Owner       string
+	Errors      string `priority:"-2"`
+}
+
+func AppList(apps []tsuru.MiniApp) []MiniApp {
+	appsForPrint := make([]MiniApp, len(apps))
+	for i, app := range apps {
+		appsForPrint[i] = MiniApp{
+			Application: app.Name,
+			Units:       len(app.Units),
+			Owner:       app.TeamOwner,
+			Errors: func() string {
+				if app.Error == "" {
+					unitMap := make(map[string]int)
+					unitsWithError := 0
+					for _, unit := range app.Units {
+						if unit.Id == "" {
+							continue
+						}
+						if unit.Ready != nil && *unit.Ready {
+							unitMap["ready"]++
+						} else {
+							unitsWithError++
+							unitMap[unit.Status]++
+						}
+					}
+					var units []string
+					for status, count := range unitMap {
+						units = append(units, fmt.Sprintf("%d %s", count, status))
+					}
+					if unitsWithError > 0 {
+						return "units: " + strings.Join(units, ", ")
+					}
+				}
+				return app.Error
+			}(),
+		}
+	}
+	return appsForPrint
+}
+
 type SimpleApp struct {
 	Application string `priority:"99"`
 	Cluster     string

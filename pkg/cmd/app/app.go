@@ -18,6 +18,7 @@ func NewAppCmd(tsuruCtx *tsuructx.TsuruContext) *cobra.Command {
 		Short: "app is a runnable application running on Tsuru",
 	}
 	appCmd.AddCommand(newAppInfoCmd(tsuruCtx))
+	appCmd.AddCommand(newAppListCmd(tsuruCtx))
 	return appCmd
 }
 
