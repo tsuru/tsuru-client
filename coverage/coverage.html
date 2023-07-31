@@ -1,0 +1,2035 @@
+
+<!DOCTYPE html>
+<html>
+	<head>
+		<meta http-equiv="Content-Type" content="text/html; charset=utf-8">
+		<title>config: Go Coverage Report</title>
+		<style>
+			body {
+				background: black;
+				color: rgb(80, 80, 80);
+			}
+			body, pre, #legend span {
+				font-family: Menlo, monospace;
+				font-weight: bold;
+			}
+			#topbar {
+				background: black;
+				position: fixed;
+				top: 0; left: 0; right: 0;
+				height: 42px;
+				border-bottom: 1px solid rgb(80, 80, 80);
+			}
+			#content {
+				margin-top: 50px;
+			}
+			#nav, #legend {
+				float: left;
+				margin-left: 10px;
+			}
+			#legend {
+				margin-top: 12px;
+			}
+			#nav {
+				margin-top: 10px;
+			}
+			#legend span {
+				margin: 0 5px;
+			}
+			.cov0 { color: rgb(192, 0, 0) }
+.cov1 { color: rgb(128, 128, 128) }
+.cov2 { color: rgb(116, 140, 131) }
+.cov3 { color: rgb(104, 152, 134) }
+.cov4 { color: rgb(92, 164, 137) }
+.cov5 { color: rgb(80, 176, 140) }
+.cov6 { color: rgb(68, 188, 143) }
+.cov7 { color: rgb(56, 200, 146) }
+.cov8 { color: rgb(44, 212, 149) }
+.cov9 { color: rgb(32, 224, 152) }
+.cov10 { color: rgb(20, 236, 155) }
+
+		</style>
+	</head>
+	<body>
+		<div id="topbar">
+			<div id="nav">
+				<select id="files">
+				
+				<option value="file0">github.com/tsuru/tsuru-client/v2/internal/config/config.go (100.0%)</option>
+				
+				<option value="file1">github.com/tsuru/tsuru-client/v2/internal/config/target.go (89.9%)</option>
+				
+				<option value="file2">github.com/tsuru/tsuru-client/v2/internal/config/token.go (86.0%)</option>
+				
+				<option value="file3">github.com/tsuru/tsuru-client/v2/internal/exec/exec.go (100.0%)</option>
+				
+				<option value="file4">github.com/tsuru/tsuru-client/v2/internal/exec/open.go (71.4%)</option>
+				
+				<option value="file5">github.com/tsuru/tsuru-client/v2/pkg/cmd/auth/login.go (67.9%)</option>
+				
+				<option value="file6">github.com/tsuru/tsuru-client/v2/pkg/cmd/auth/logout.go (72.0%)</option>
+				
+				<option value="file7">github.com/tsuru/tsuru-client/v2/pkg/cmd/auth/native.go (80.5%)</option>
+				
+				<option value="file8">github.com/tsuru/tsuru-client/v2/pkg/cmd/auth/oauth.go (82.3%)</option>
+				
+				<option value="file9">github.com/tsuru/tsuru-client/v2/pkg/cmd/legacy.go (75.0%)</option>
+				
+				<option value="file10">github.com/tsuru/tsuru-client/v2/pkg/cmd/plugin.go (85.2%)</option>
+				
+				<option value="file11">github.com/tsuru/tsuru-client/v2/pkg/cmd/root.go (63.6%)</option>
+				
+				<option value="file12">github.com/tsuru/tsuru-client/v2/pkg/printer/printer.go (69.8%)</option>
+				
+				<option value="file13">github.com/tsuru/tsuru-client/v2/pkg/printer/table.go (92.2%)</option>
+				
+				</select>
+			</div>
+			<div id="legend">
+				<span>not tracked</span>
+			
+				<span class="cov0">no coverage</span>
+				<span class="cov1">low coverage</span>
+				<span class="cov2">*</span>
+				<span class="cov3">*</span>
+				<span class="cov4">*</span>
+				<span class="cov5">*</span>
+				<span class="cov6">*</span>
+				<span class="cov7">*</span>
+				<span class="cov8">*</span>
+				<span class="cov9">*</span>
+				<span class="cov10">high coverage</span>
+			
+			</div>
+		</div>
+		<div id="content">
+		
+		<pre class="file" id="file0" style="display: none">// Copyright © 2023 tsuru-client authors
+// Use of this source code is governed by a BSD-style
+// license that can be found in the LICENSE file.
+
+package config
+
+import (
+        "os"
+        "path/filepath"
+
+        "github.com/spf13/cobra"
+)
+
+var ConfigPath string
+
+func init() <span class="cov8" title="1">{
+        // Find home directory.
+        home, err := os.UserHomeDir()
+        cobra.CheckErr(err)
+        ConfigPath = filepath.Join(home, ".tsuru")
+}</span>
+</pre>
+		
+		<pre class="file" id="file1" style="display: none">// Copyright © 2023 tsuru-client authors
+// Use of this source code is governed by a BSD-style
+// license that can be found in the LICENSE file.
+
+package config
+
+import (
+        "fmt"
+        "io"
+        "os"
+        "path/filepath"
+        "regexp"
+        "sort"
+        "strings"
+
+        "github.com/spf13/afero"
+)
+
+var (
+        errUndefinedTarget = fmt.Errorf(`no target defined. Please use target-add/target-set to define a target.
+
+For more details, please run "tsuru help target"`)
+)
+
+// getSavedTargets returns a map of label-&gt;target
+func getSavedTargets(fsys afero.Fs) (map[string]string, error) <span class="cov10" title="40">{
+        var targets = map[string]string{} // label-&gt;target
+
+        // legacyTargetsPath := JoinWithUserDir(".tsuru_targets") // XXX: remove legacy file
+        targetsPath := filepath.Join(ConfigPath, "targets")
+        f, err := fsys.Open(targetsPath)
+        if os.IsNotExist(err) </span><span class="cov8" title="20">{
+                return targets, nil
+        }</span>
+        <span class="cov8" title="20">if err != nil </span><span class="cov0" title="0">{
+                return nil, err
+        }</span>
+
+        <span class="cov8" title="20">defer f.Close()
+        if b, err := io.ReadAll(f); err == nil </span><span class="cov8" title="20">{
+                var targetLines = strings.Split(strings.TrimSpace(string(b)), "\n")
+                for i := range targetLines </span><span class="cov9" title="35">{
+                        var targetSplit = strings.Fields(targetLines[i])
+
+                        if len(targetSplit) == 2 </span><span class="cov9" title="35">{
+                                targets[targetSplit[0]] = targetSplit[1]
+                        }</span>
+                }
+        }
+        <span class="cov8" title="20">return targets, nil</span>
+}
+
+// getTargetLabel finds the saved label of a target (os self if already a label).
+// If target is unknown, the original target is returned with an error.
+func getTargetLabel(fsys afero.Fs, target string) (string, error) <span class="cov6" title="11">{
+        targets, err := getSavedTargets(fsys)
+        if err != nil </span><span class="cov0" title="0">{
+                return "", err
+        }</span>
+        <span class="cov6" title="11">targetKeys := make([]string, len(targets))
+        for k := range targets </span><span class="cov6" title="10">{
+                if k == target </span><span class="cov4" title="4">{
+                        return k, nil
+                }</span>
+                <span class="cov5" title="6">targetKeys = append(targetKeys, k)</span>
+        }
+        <span class="cov5" title="7">sort.Strings(targetKeys)
+        for _, k := range targetKeys </span><span class="cov6" title="10">{
+                if targets[k] == target </span><span class="cov3" title="3">{
+                        return k, nil
+                }</span>
+        }
+        <span class="cov4" title="4">return target, fmt.Errorf("label for target %q not found ", target)</span>
+
+}
+
+// GetCurrentTargetFromFs returns the current target (from filesystem .tsuru/target)
+func GetCurrentTargetFromFs(fsys afero.Fs) (target string, err error) <span class="cov2" title="2">{
+        targetPath := filepath.Join(ConfigPath, "target")
+        if f, err := fsys.Open(targetPath); err == nil </span><span class="cov1" title="1">{
+                defer f.Close()
+                if b, err := io.ReadAll(f); err == nil </span><span class="cov1" title="1">{
+                        target = strings.TrimSpace(string(b))
+                }</span>
+        }
+
+        <span class="cov2" title="2">if target == "" </span><span class="cov1" title="1">{
+                return "", errUndefinedTarget
+        }</span>
+
+        <span class="cov1" title="1">return target, nil</span>
+}
+
+// GetTargetURL returns the target URL from a given alias. If the alias is not
+// found, it returns the alias itself as a  NormalizedTargetURL.
+func GetTargetURL(fsys afero.Fs, alias string) (string, error) <span class="cov8" title="21">{
+        targets, err := getSavedTargets(fsys)
+        if err != nil </span><span class="cov0" title="0">{
+                return "", err
+        }</span>
+
+        <span class="cov8" title="21">targetURL := NormalizeTargetURL(alias)
+        if val, ok := targets[alias]; ok </span><span class="cov3" title="3">{
+                targetURL = val
+        }</span>
+
+        <span class="cov8" title="21">return targetURL, nil</span>
+}
+
+// IsCurrentTarget checks if the target in the same from ~/.tsuru/target
+func IsCurrentTarget(fsys afero.Fs, target string) bool <span class="cov8" title="18">{
+        target, _ = GetTargetURL(fsys, target)
+        if file, err := fsys.Open(filepath.Join(ConfigPath, "target")); err == nil </span><span class="cov7" title="13">{
+                defer file.Close()
+                defaultTarget, _ := io.ReadAll(file)
+                if target == string(defaultTarget) </span><span class="cov5" title="7">{
+                        return true
+                }</span>
+        }
+        <span class="cov6" title="11">return false</span>
+}
+
+// SaveTarget saves the label-&gt;target in ~/.tsuru/targets list
+func SaveTarget(fsys afero.Fs, label, target string) error <span class="cov5" title="6">{
+        allTargets, err := getSavedTargets(fsys)
+        if err != nil </span><span class="cov0" title="0">{
+                return err
+        }</span>
+        <span class="cov5" title="6">allTargets[label] = NormalizeTargetURL(target)
+
+        // sorting by label
+        labels := make([]string, 0, len(allTargets))
+        for l := range allTargets </span><span class="cov7" title="16">{
+                labels = append(labels, l)
+        }</span>
+        <span class="cov5" title="6">sort.Slice(labels, func(i, j int) bool </span><span class="cov7" title="15">{ return labels[i] &lt; labels[j] }</span>)
+
+        // writing all targets to temp file for atomicy
+        <span class="cov5" title="6">file, err := fsys.Create(filepath.Join(ConfigPath, "targets.tmp"))
+        if err != nil </span><span class="cov0" title="0">{
+                return err
+        }</span>
+        <span class="cov5" title="6">for _, l := range labels </span><span class="cov7" title="16">{
+                _, err1 := fmt.Fprintf(file, "%s\t%s\n", l, allTargets[l])
+                if err1 != nil </span><span class="cov0" title="0">{
+                        return fmt.Errorf("something went wrong when writing to targets.tmp: %w", err1)
+                }</span>
+        }
+
+        // replace targets file
+        <span class="cov5" title="6">return fsys.Rename(filepath.Join(ConfigPath, "targets.tmp"), filepath.Join(ConfigPath, "targets"))</span>
+}
+
+// SaveTargetAsCurrent saves the target in ~/.tsuru/target
+func SaveTargetAsCurrent(fsys afero.Fs, target string) error <span class="cov4" title="5">{
+        target = NormalizeTargetURL(target)
+        file, err := fsys.Create(filepath.Join(ConfigPath, "target"))
+        if err != nil </span><span class="cov0" title="0">{
+                return err
+        }</span>
+        <span class="cov4" title="5">defer file.Close()
+        _, err = fmt.Fprintf(file, "%s\n", target)
+        if err != nil </span><span class="cov0" title="0">{
+                return err
+        }</span>
+
+        <span class="cov4" title="5">return nil</span>
+}
+
+// NormalizeTargetURL adds an https:// if it has no protocol
+func NormalizeTargetURL(target string) string <span class="cov9" title="32">{
+        if m, _ := regexp.MatchString("^https?://", target); !m </span><span class="cov7" title="15">{
+                target = "https://" + target
+        }</span>
+        <span class="cov9" title="32">return target</span>
+}
+</pre>
+		
+		<pre class="file" id="file2" style="display: none">// Copyright © 2023 tsuru-client authors
+// Use of this source code is governed by a BSD-style
+// license that can be found in the LICENSE file.
+
+package config
+
+import (
+        "errors"
+        "fmt"
+        "io"
+        "os"
+        "path/filepath"
+        "regexp"
+        "strings"
+
+        "github.com/spf13/afero"
+)
+
+// GetTokenFromFs returns the token for the target.
+func GetTokenFromFs(fsys afero.Fs, target string) (string, error) <span class="cov6" title="4">{
+        tokenPaths := []string{}
+        if targetLabel, err := getTargetLabel(fsys, target); err == nil </span><span class="cov3" title="2">{
+                tokenPaths = append(tokenPaths, filepath.Join(ConfigPath, "token.d", targetLabel))
+        }</span>
+        <span class="cov6" title="4">tokenPaths = append(tokenPaths, filepath.Join(ConfigPath, "token")) // always defaults to current token
+
+        var err error
+        for _, tokenPath := range tokenPaths </span><span class="cov7" title="5">{
+                var tkFile afero.File
+                if tkFile, err = fsys.Open(tokenPath); err == nil </span><span class="cov5" title="3">{
+                        defer tkFile.Close()
+                        token, err1 := io.ReadAll(tkFile)
+                        if err1 != nil </span><span class="cov0" title="0">{
+                                return "", err1
+                        }</span>
+                        <span class="cov5" title="3">tokenStr := strings.TrimSpace(string(token))
+                        return tokenStr, nil</span>
+                }
+        }
+        <span class="cov1" title="1">if os.IsNotExist(err) </span><span class="cov1" title="1">{
+                return "", nil
+        }</span>
+        <span class="cov0" title="0">return "", err</span>
+}
+
+// SaveTokenToFs saves the token on the filesystem for future use.
+func SaveTokenToFs(fsys afero.Fs, target, token string) error <span class="cov6" title="4">{
+        err := fsys.MkdirAll(filepath.Join(ConfigPath, "token.d"), 0700)
+        if err != nil </span><span class="cov0" title="0">{
+                return err
+        }</span>
+
+        <span class="cov6" title="4">tokenPaths := []string{}
+        if IsCurrentTarget(fsys, target) </span><span class="cov3" title="2">{
+                tokenPaths = append(tokenPaths, filepath.Join(ConfigPath, "token"))
+        }</span> else<span class="cov3" title="2"> if _, fErr := fsys.Stat(filepath.Join(ConfigPath, "token")); os.IsNotExist(fErr) </span><span class="cov3" title="2">{
+                tokenPaths = append(tokenPaths, filepath.Join(ConfigPath, "token"))
+                SaveTargetAsCurrent(fsys, target)
+        }</span>
+
+        <span class="cov6" title="4">targetLabel, _ := getTargetLabel(fsys, target) // ignore err, and consider label=host
+        tokenPaths = append(tokenPaths, filepath.Join(ConfigPath, "token.d", hostFromURL(targetLabel)))
+
+        for _, tokenPath := range tokenPaths </span><span class="cov8" title="8">{
+                file, err := fsys.Create(tokenPath)
+                if err != nil </span><span class="cov0" title="0">{
+                        return err
+                }</span>
+                <span class="cov8" title="8">defer file.Close()
+                n, err := file.WriteString(token)
+                if err != nil </span><span class="cov0" title="0">{
+                        return err
+                }</span>
+                <span class="cov8" title="8">if n != len(token) </span><span class="cov0" title="0">{
+                        return fmt.Errorf("failed to write token file")
+                }</span>
+        }
+        <span class="cov6" title="4">return nil</span>
+}
+
+// RemoveTokensFromFs removes the token for target.
+func RemoveTokensFromFs(fsys afero.Fs, target string) error <span class="cov5" title="3">{
+        tokenPaths := []string{}
+        if IsCurrentTarget(fsys, target) </span><span class="cov1" title="1">{
+                tokenPaths = append(tokenPaths, filepath.Join(ConfigPath, "token"))
+        }</span>
+        <span class="cov5" title="3">if targetLabel, err := getTargetLabel(fsys, target); err == nil </span><span class="cov5" title="3">{
+                tokenPaths = append(tokenPaths, filepath.Join(ConfigPath, "token.d", targetLabel))
+        }</span>
+
+        <span class="cov5" title="3">errs := []error{}
+        for _, tokenPath := range tokenPaths </span><span class="cov6" title="4">{
+                if err := fsys.Remove(tokenPath); err != nil &amp;&amp; !os.IsNotExist(err) </span><span class="cov0" title="0">{
+                        errs = append(errs, err)
+                }</span>
+        }
+        <span class="cov5" title="3">return errors.Join(errs...)</span>
+}
+
+func hostFromURL(url string) string <span class="cov10" title="11">{
+        return regexp.MustCompile("^(https?://)?([0-9a-zA-Z_.-]+).*").ReplaceAllString(url, "$2")
+}</span>
+</pre>
+		
+		<pre class="file" id="file3" style="display: none">// Copyright 2013 tsuru authors. All rights reserved.
+// Use of this source code is governed by a BSD-style
+// license that can be found in the LICENSE file.
+
+// Package exec provides a interface to run external commands as an
+// abstraction layer.
+package exec
+
+import (
+        "fmt"
+        "io"
+        "os/exec"
+)
+
+// ExecuteOptions specify parameters to the Execute method.
+type ExecuteOptions struct {
+        Cmd    string
+        Args   []string
+        Envs   []string
+        Dir    string
+        Stdin  io.Reader
+        Stdout io.Writer
+        Stderr io.Writer
+}
+
+var _ Executor = &amp;OsExec{}
+
+type Executor interface {
+        // Command executes the specified command.
+        Command(opts ExecuteOptions) error
+}
+
+type OsExec struct{}
+
+func (*OsExec) Command(opts ExecuteOptions) error <span class="cov10" title="4">{
+        c := exec.Command(opts.Cmd, opts.Args...)
+        c.Stdin = opts.Stdin
+        c.Stdout = opts.Stdout
+        c.Stderr = opts.Stderr
+        c.Env = opts.Envs
+        c.Dir = opts.Dir
+        return c.Run()
+}</span>
+
+var _ Executor = &amp;FakeExec{}
+
+type FakeExec struct {
+        OutStderr  string
+        OutStdout  string
+        OutErr     error
+        CalledOpts ExecuteOptions
+}
+
+func (e *FakeExec) Command(opts ExecuteOptions) error <span class="cov8" title="3">{
+        if opts.Stdout != nil </span><span class="cov1" title="1">{
+                fmt.Fprint(opts.Stdout, e.OutStdout)
+        }</span>
+        <span class="cov8" title="3">if opts.Stderr != nil </span><span class="cov1" title="1">{
+                fmt.Fprint(opts.Stderr, e.OutStderr)
+        }</span>
+        <span class="cov8" title="3">e.CalledOpts = opts
+        return e.OutErr</span>
+}
+</pre>
+		
+		<pre class="file" id="file4" style="display: none">// Copyright © 2023 tsuru-client authors
+// Use of this source code is governed by a BSD-style
+// license that can be found in the LICENSE file.
+
+//go:build !windows &amp;&amp; !darwin
+// +build !windows,!darwin
+
+package exec
+
+import (
+        "fmt"
+        "strings"
+
+        "golang.org/x/sys/unix"
+)
+
+func isWSL() bool <span class="cov8" title="1">{
+        var u unix.Utsname
+        err := unix.Uname(&amp;u)
+        if err != nil </span><span class="cov0" title="0">{
+                fmt.Println(err)
+                return false
+        }</span>
+        <span class="cov8" title="1">release := strings.ToLower(string(u.Release[:]))
+        return strings.Contains(release, "microsoft")</span>
+}
+
+func Open(ex Executor, url string) error <span class="cov8" title="1">{
+        cmd := "xdg-open"
+        args := []string{url}
+
+        if isWSL() </span><span class="cov0" title="0">{
+                cmd = "cmd"
+                args = []string{"-c", "start", "'" + url + "'"}
+        }</span>
+
+        <span class="cov8" title="1">opts := ExecuteOptions{
+                Cmd:  cmd,
+                Args: args,
+        }
+        return ex.Command(opts)</span>
+}
+</pre>
+		
+		<pre class="file" id="file5" style="display: none">// Copyright © 2023 tsuru-client authors
+// Use of this source code is governed by a BSD-style
+// license that can be found in the LICENSE file.
+
+package auth
+
+import (
+        "encoding/json"
+        "fmt"
+        "strings"
+
+        "github.com/spf13/cobra"
+        "github.com/tsuru/tsuru-client/v2/internal/tsuructx"
+)
+
+type loginScheme struct {
+        Name string
+        Data map[string]string
+}
+
+func NewLoginCmd(tsuruCtx *tsuructx.TsuruContext) *cobra.Command <span class="cov10" title="5">{
+        loginCmd := &amp;cobra.Command{
+                Use:   "login [EMAIL]",
+                Short: "initiates a new tsuru session for a user",
+                Long: `Initiates a new tsuru session for a user. If using tsuru native authentication
+scheme, it will ask for the email and the password and check if the user is
+successfully authenticated. If using OAuth, it will open a web browser for the
+user to complete the login.
+
+After that, the token generated by the tsuru server will be stored in
+[[${HOME}/.tsuru/token]].
+
+All tsuru actions require the user to be authenticated (except [[tsuru login]]
+and [[tsuru version]]).
+`,
+                Example: `$ tsuru login
+$ tsuru login example@tsuru.local`,
+                RunE: func(cmd *cobra.Command, args []string) error </span><span class="cov0" title="0">{
+                        return loginCmdRun(tsuruCtx, cmd, args)
+                }</span>,
+                Args: cobra.RangeArgs(0, 1),
+        }
+
+        <span class="cov10" title="5">return loginCmd</span>
+}
+
+func loginCmdRun(tsuruCtx *tsuructx.TsuruContext, cmd *cobra.Command, args []string) error <span class="cov10" title="5">{
+        if tsuruCtx.Token() != "" &amp;&amp; !tsuruCtx.TokenSetFromFS </span><span class="cov1" title="1">{
+                return fmt.Errorf("this command can't run with $TSURU_TOKEN environment variable set. Did you forget to unset?")
+        }</span>
+        <span class="cov8" title="4">cmd.SilenceUsage = true
+
+        authScheme := &amp;loginScheme{Name: tsuruCtx.AuthScheme}
+        if authScheme.Name == "" </span><span class="cov0" title="0">{
+                var err error
+                authScheme, err = getAuthScheme(tsuruCtx)
+                if err != nil </span><span class="cov0" title="0">{
+                        return err
+                }</span>
+        }
+
+        <span class="cov8" title="4">switch strings.ToLower(authScheme.Name) </span>{
+        case "oauth":<span class="cov0" title="0">
+                return oauthLogin(tsuruCtx, authScheme)</span>
+        case "saml":<span class="cov0" title="0">
+                return fmt.Errorf("login is not implemented for saml auth. Please contact the tsuru team")</span>
+        default:<span class="cov8" title="4">
+                return nativeLogin(tsuruCtx, cmd, args)</span>
+        }
+}
+
+func getAuthScheme(tsuruCtx *tsuructx.TsuruContext) (*loginScheme, error) <span class="cov4" title="2">{
+        request, err := tsuruCtx.NewRequest("GET", "/auth/scheme", nil)
+        if err != nil </span><span class="cov0" title="0">{
+                return nil, err
+        }</span>
+        <span class="cov4" title="2">httpResponse, err := tsuruCtx.RawHTTPClient().Do(request)
+        if err != nil </span><span class="cov0" title="0">{
+                return nil, err
+        }</span>
+        <span class="cov4" title="2">defer httpResponse.Body.Close()
+
+        info := loginScheme{}
+        err = json.NewDecoder(httpResponse.Body).Decode(&amp;info)
+        if err != nil </span><span class="cov1" title="1">{
+                return nil, err
+        }</span>
+        <span class="cov1" title="1">return &amp;info, nil</span>
+}
+</pre>
+		
+		<pre class="file" id="file6" style="display: none">// Copyright © 2023 tsuru-client authors
+// Use of this source code is governed by a BSD-style
+// license that can be found in the LICENSE file.
+
+package auth
+
+import (
+        "errors"
+        "fmt"
+
+        "github.com/spf13/cobra"
+        "github.com/tsuru/tsuru-client/v2/internal/config"
+        "github.com/tsuru/tsuru-client/v2/internal/tsuructx"
+)
+
+func NewLogoutCmd(tsuruCtx *tsuructx.TsuruContext) *cobra.Command <span class="cov10" title="3">{
+        loginCmd := &amp;cobra.Command{
+                Use:   "logout",
+                Short: "logout will terminate the session with the tsuru server",
+                Long: `logout will terminate the session with the tsuru server
+and cleanup the token from the local machine.
+`,
+                Example: `$ tsuru logout`,
+                RunE: func(cmd *cobra.Command, args []string) error </span><span class="cov0" title="0">{
+                        return logoutCmdRun(tsuruCtx, cmd, args)
+                }</span>,
+                Args: cobra.ExactArgs(0),
+        }
+
+        <span class="cov10" title="3">return loginCmd</span>
+}
+
+func logoutCmdRun(tsuruCtx *tsuructx.TsuruContext, cmd *cobra.Command, args []string) error <span class="cov6" title="2">{
+        cmd.SilenceUsage = true
+        errs := []error{}
+        if tsuruCtx.Token() != "" </span><span class="cov6" title="2">{
+                func() </span><span class="cov6" title="2">{
+                        request, err := tsuruCtx.NewRequest("DELETE", "/users/tokens", nil)
+                        if err != nil </span><span class="cov0" title="0">{
+                                errs = append(errs, err)
+                                return
+                        }</span>
+                        <span class="cov6" title="2">httpResponse, err := tsuruCtx.RawHTTPClient().Do(request)
+                        if err != nil </span><span class="cov0" title="0">{
+                                errs = append(errs, err)
+                                return
+                        }</span>
+                        <span class="cov6" title="2">if httpResponse.StatusCode != 200 </span><span class="cov1" title="1">{
+                                errs = append(errs, fmt.Errorf("unexpected response from server: %d: %s", httpResponse.StatusCode, httpResponse.Status))
+                        }</span>
+                        <span class="cov6" title="2">defer httpResponse.Body.Close()</span>
+                }()
+        }
+
+        <span class="cov6" title="2">if err := config.RemoveTokensFromFs(tsuruCtx.Fs, tsuruCtx.TargetURL()); err != nil </span><span class="cov0" title="0">{
+                errs = append(errs, err)
+                return errors.Join(errs...)
+        }</span>
+
+        <span class="cov6" title="2">if len(errs) == 0 </span><span class="cov1" title="1">{
+                fmt.Fprintln(tsuruCtx.Stdout, "Successfully logged out!")
+        }</span> else<span class="cov1" title="1"> {
+                fmt.Fprintln(tsuruCtx.Stdout, "Logged out, but some errors occurred:")
+        }</span>
+        <span class="cov6" title="2">return errors.Join(errs...)</span>
+
+}
+</pre>
+		
+		<pre class="file" id="file7" style="display: none">// Copyright © 2023 tsuru-client authors
+// Use of this source code is governed by a BSD-style
+// license that can be found in the LICENSE file.
+
+package auth
+
+import (
+        "encoding/json"
+        "fmt"
+        "io"
+        "net/url"
+        "strings"
+
+        "github.com/spf13/cobra"
+        "github.com/tsuru/tsuru-client/v2/internal/config"
+        "github.com/tsuru/tsuru-client/v2/internal/tsuructx"
+        "golang.org/x/term"
+)
+
+func nativeLogin(tsuruCtx *tsuructx.TsuruContext, cmd *cobra.Command, args []string) error <span class="cov10" title="4">{
+        var email string
+        if len(args) &gt; 0 </span><span class="cov8" title="3">{
+                email = args[0]
+        }</span> else<span class="cov1" title="1"> {
+                fmt.Fprint(tsuruCtx.Stdout, "Email: ")
+                fmt.Fscanf(tsuruCtx.Stdin, "%s\n", &amp;email)
+        }</span>
+        <span class="cov10" title="4">fmt.Fprint(tsuruCtx.Stdout, "Password: ")
+        password, err := PasswordFromReader(tsuruCtx.Stdin)
+        if err != nil </span><span class="cov1" title="1">{
+                return err
+        }</span>
+        <span class="cov8" title="3">fmt.Fprintln(tsuruCtx.Stdout)
+
+        v := url.Values{}
+        v.Set("password", password)
+        b := strings.NewReader(v.Encode())
+        request, err := tsuruCtx.NewRequest("POST", "/users/"+email+"/tokens", b)
+        if err != nil </span><span class="cov0" title="0">{
+                return err
+        }</span>
+        <span class="cov8" title="3">request.Header.Set("Content-Type", "application/x-www-form-urlencoded")
+
+        httpResponse, err := tsuruCtx.RawHTTPClient().Do(request)
+        if err != nil </span><span class="cov0" title="0">{
+                return err
+        }</span>
+        <span class="cov8" title="3">defer httpResponse.Body.Close()
+        result, err := io.ReadAll(httpResponse.Body)
+        if err != nil </span><span class="cov0" title="0">{
+                return err
+        }</span>
+        <span class="cov8" title="3">out := make(map[string]interface{})
+        err = json.Unmarshal(result, &amp;out)
+        if err != nil </span><span class="cov0" title="0">{
+                return err
+        }</span>
+        <span class="cov8" title="3">if _, ok := out["token"]; !ok </span><span class="cov0" title="0">{
+                return fmt.Errorf("something went wrong. No 'token' in response")
+        }</span>
+        <span class="cov8" title="3">fmt.Fprintln(tsuruCtx.Stdout, "Successfully logged in!")
+        return config.SaveTokenToFs(tsuruCtx.Fs, tsuruCtx.TargetURL(), out["token"].(string))</span>
+}
+
+func PasswordFromReader(reader io.Reader) (string, error) <span class="cov10" title="4">{
+        var (
+                password []byte
+                err      error
+        )
+        if desc, ok := reader.(tsuructx.DescriptorReader); ok &amp;&amp; term.IsTerminal(int(desc.Fd())) </span><span class="cov0" title="0">{
+                password, err = term.ReadPassword(int(desc.Fd()))
+                if err != nil </span><span class="cov0" title="0">{
+                        return "", err
+                }</span>
+        } else<span class="cov10" title="4"> {
+                fmt.Fscanf(reader, "%s\n", &amp;password)
+        }</span>
+        <span class="cov10" title="4">if len(password) == 0 </span><span class="cov1" title="1">{
+                return "", fmt.Errorf("empty password. You must provide the password")
+        }</span>
+        <span class="cov8" title="3">return string(password), err</span>
+}
+</pre>
+		
+		<pre class="file" id="file8" style="display: none">// Copyright © 2023 tsuru-client authors
+// Use of this source code is governed by a BSD-style
+// license that can be found in the LICENSE file.
+
+package auth
+
+import (
+        "context"
+        "encoding/json"
+        "fmt"
+        "io"
+        "net"
+        "net/http"
+        "net/url"
+        "strings"
+        "time"
+
+        "github.com/pkg/errors"
+        "github.com/tsuru/tsuru-client/v2/internal/config"
+        "github.com/tsuru/tsuru-client/v2/internal/exec"
+        "github.com/tsuru/tsuru-client/v2/internal/tsuructx"
+)
+
+const callbackPage = `&lt;!DOCTYPE html&gt;
+&lt;html&gt;
+&lt;head&gt;
+        &lt;style&gt;
+        body {
+                text-align: center;
+        }
+        &lt;/style&gt;
+&lt;/head&gt;
+&lt;body&gt;
+        %s
+&lt;/body&gt;
+&lt;/html&gt;
+`
+
+const successMarkup = `
+        &lt;script&gt;window.close();&lt;/script&gt;
+        &lt;h1&gt;Login Successful!&lt;/h1&gt;
+        &lt;p&gt;You can close this window now.&lt;/p&gt;
+`
+
+const errorMarkup = `
+        &lt;h1&gt;Login Failed!&lt;/h1&gt;
+        &lt;p&gt;%s&lt;/p&gt;
+`
+
+func port(schemeData map[string]string) string <span class="cov10" title="4">{
+        p := schemeData["port"]
+        if p != "" </span><span class="cov1" title="1">{
+                return fmt.Sprintf(":%s", p)
+        }</span>
+        <span class="cov8" title="3">return ":0"</span>
+}
+
+func getToken(tsuruCtx *tsuructx.TsuruContext, code, redirectURL string) (token string, err error) <span class="cov8" title="3">{
+        v := url.Values{}
+        v.Set("code", code)
+        v.Set("redirectUrl", redirectURL)
+        b := strings.NewReader(v.Encode())
+        request, err := tsuruCtx.NewRequest("POST", "/auth/login", b)
+        if err != nil </span><span class="cov0" title="0">{
+                return
+        }</span>
+        <span class="cov8" title="3">request.Header.Set("Content-Type", "application/x-www-form-urlencoded")
+
+        httpResponse, err := tsuruCtx.RawHTTPClient().Do(request)
+        if err != nil </span><span class="cov0" title="0">{
+                return token, errors.Wrap(err, "error during login post")
+        }</span>
+        <span class="cov8" title="3">defer httpResponse.Body.Close()
+
+        result, err := io.ReadAll(httpResponse.Body)
+        if err != nil </span><span class="cov0" title="0">{
+                return token, errors.Wrap(err, "error reading body")
+        }</span>
+
+        <span class="cov8" title="3">data := make(map[string]interface{})
+        err = json.Unmarshal(result, &amp;data)
+        if err != nil </span><span class="cov0" title="0">{
+                return token, errors.Wrapf(err, "error parsing response: %s", result)
+        }</span>
+        <span class="cov8" title="3">return data["token"].(string), nil</span>
+}
+
+func callback(tsuruCtx *tsuructx.TsuruContext, redirectURL string, finish chan bool) http.HandlerFunc <span class="cov8" title="3">{
+        return func(w http.ResponseWriter, r *http.Request) </span><span class="cov8" title="3">{
+                defer func() </span><span class="cov8" title="3">{
+                        finish &lt;- true
+                }</span>()
+                <span class="cov8" title="3">var page string
+                token, err := getToken(tsuruCtx, r.URL.Query().Get("code"), redirectURL)
+                if err == nil </span><span class="cov8" title="3">{
+                        config.SaveTokenToFs(tsuruCtx.Fs, tsuruCtx.TargetURL(), token)
+                        page = fmt.Sprintf(callbackPage, successMarkup)
+                }</span> else<span class="cov0" title="0"> {
+                        msg := fmt.Sprintf(errorMarkup, err.Error())
+                        page = fmt.Sprintf(callbackPage, msg)
+                }</span>
+                <span class="cov8" title="3">w.Header().Add("Content-Type", "text/html")
+                w.Write([]byte(page))</span>
+        }
+}
+
+func oauthLogin(tsuruCtx *tsuructx.TsuruContext, scheme *loginScheme) error <span class="cov5" title="2">{
+        if _, ok := scheme.Data["authorizeUrl"]; !ok </span><span class="cov0" title="0">{
+                return fmt.Errorf("missing authorizeUrl in scheme data")
+        }</span>
+
+        <span class="cov5" title="2">l, err := net.Listen("tcp", port(scheme.Data)) // use low level net.Listen for random port with :0
+        if err != nil </span><span class="cov0" title="0">{
+                return err
+        }</span>
+        <span class="cov5" title="2">_, port, err := net.SplitHostPort(l.Addr().String())
+        if err != nil </span><span class="cov0" title="0">{
+                return err
+        }</span>
+        <span class="cov5" title="2">redirectURL := fmt.Sprintf("http://localhost:%s", port)
+        authURL := strings.Replace(scheme.Data["authorizeUrl"], "__redirect_url__", redirectURL, 1)
+        finish := make(chan bool, 1)
+
+        mux := http.NewServeMux()
+        mux.HandleFunc("/", callback(tsuruCtx, redirectURL, finish))
+        server := &amp;http.Server{}
+        server.Handler = mux
+        go server.Serve(l)
+
+        err = exec.Open(tsuruCtx.Executor, authURL)
+        if err != nil </span><span class="cov0" title="0">{
+                fmt.Fprintln(tsuruCtx.Stdout, "Failed to start your browser.")
+                fmt.Fprintf(tsuruCtx.Stdout, "Please open the following URL in your browser: %s\n", authURL)
+        }</span>
+        <span class="cov5" title="2">&lt;-finish
+
+        ctx, cancel := context.WithTimeout(context.Background(), 15*time.Second)
+        defer cancel()
+        server.Shutdown(ctx)
+        fmt.Fprintln(tsuruCtx.Stdout, "Successfully logged in!")
+        return nil</span>
+}
+</pre>
+		
+		<pre class="file" id="file9" style="display: none">// Copyright © 2023 tsuru-client authors
+// Use of this source code is governed by a BSD-style
+// license that can be found in the LICENSE file.
+
+package cmd
+
+import (
+        "sort"
+        "strings"
+
+        "github.com/spf13/cobra"
+
+        tsuruV1Config "github.com/tsuru/tsuru-client/tsuru/config"
+        tsuruCmd "github.com/tsuru/tsuru/cmd"
+)
+
+var ignoredLegacyCommands = map[string]bool{
+        "change-password": true,
+        "cluster-add":     true,
+        "cluster-list":    true,
+        "cluster-remove":  true,
+        "cluster-update":  true,
+        "help":            true,
+        "reset-password":  true,
+}
+
+func newV1LegacyCmdManager() *tsuruCmd.Manager <span class="cov3" title="9">{
+        versionForLegacy := strings.TrimLeft(version.Version, "v") + "-legacy-plugin"
+        if version.Version == "dev" </span><span class="cov3" title="9">{
+                versionForLegacy = "dev"
+        }</span>
+        <span class="cov3" title="9">return tsuruV1Config.BuildManager("tsuru", versionForLegacy)</span>
+}
+
+func newLegacyCommand(v1CmdManager *tsuruCmd.Manager) *cobra.Command <span class="cov3" title="8">{
+        legacyCmd := &amp;cobra.Command{
+                Use:   "legacy",
+                Short: "legacy is the previous version of tsuru cli",
+                RunE: func(cmd *cobra.Command, args []string) error </span><span class="cov0" title="0">{
+                        return runLegacyCommand(v1CmdManager, args)
+                }</span>,
+                Args:               cobra.MinimumNArgs(0),
+                DisableFlagParsing: true,
+        }
+        <span class="cov3" title="8">return legacyCmd</span>
+}
+
+func runLegacyCommand(v1CmdManager *tsuruCmd.Manager, args []string) error <span class="cov0" title="0">{
+        var err error
+        defer recoverCmdPanicExitError(&amp;err)
+
+        v1CmdManager.Run(args)
+        return err
+}</span>
+
+func recoverCmdPanicExitError(err *error) <span class="cov0" title="0">{
+        if r := recover(); r != nil </span><span class="cov0" title="0">{
+                if e, ok := r.(*tsuruCmd.PanicExitError); ok </span><span class="cov0" title="0">{
+                        if e.Code &gt; 0 </span><span class="cov0" title="0">{
+                                *err = e
+                        }</span>
+                        <span class="cov0" title="0">return</span>
+                }
+                <span class="cov0" title="0">panic(r)</span>
+        }
+}
+
+type cmdNode struct {
+        command  *cobra.Command
+        children map[string]*cmdNode
+}
+
+func (n *cmdNode) addChild(c *cobra.Command) <span class="cov8" title="1791">{
+        if n.children == nil </span><span class="cov6" title="387">{
+                n.children = make(map[string]*cmdNode)
+        }</span>
+        <span class="cov8" title="1791">n.children[c.Name()] = &amp;cmdNode{command: c}
+        for _, sub := range c.Commands() </span><span class="cov0" title="0">{
+                n.children[c.Name()].addChild(sub)
+        }</span>
+}
+
+func addMissingV1LegacyCommands(rootCmd *cobra.Command, v1CmdManager *tsuruCmd.Manager) <span class="cov3" title="9">{
+        // build current commands tree (without legacy commands)
+        tree := &amp;cmdNode{command: rootCmd}
+        for _, c := range rootCmd.Commands() </span><span class="cov3" title="16">{
+                tree.addChild(c)
+        }</span>
+
+        // sort legacy commands by less specific ones first (create "deploy" before "deploy list" )
+        <span class="cov3" title="9">v1Commands := make([]v1Command, 0, len(v1CmdManager.Commands))
+        for cmdName, v1Cmd := range v1CmdManager.Commands </span><span class="cov8" title="1494">{
+                v1Commands = append(v1Commands, v1Command{cmdName, v1Cmd})
+        }</span>
+        <span class="cov3" title="9">sort.Sort(ByPriority(v1Commands))
+
+        // add missing legacy commands
+        for _, v1Cmd := range v1Commands </span><span class="cov8" title="1494">{
+                // ignore this legacy commands
+                if ignoredLegacyCommands[v1Cmd.name] </span><span class="cov5" title="63">{
+                        continue</span>
+                }
+                <span class="cov8" title="1431">addMissingV1LegacyCommand(tree, v1CmdManager, v1Cmd)</span>
+        }
+}
+
+func addMissingV1LegacyCommand(tree *cmdNode, v1CmdManager *tsuruCmd.Manager, v1Cmd v1Command) <span class="cov8" title="1431">{
+        curr := tree
+        parts := strings.Split(strings.ReplaceAll(v1Cmd.name, "-", " "), " ")
+        for i, part := range parts </span><span class="cov8" title="3321">{
+                found := false
+                if _, found = curr.children[part]; !found </span><span class="cov8" title="1775">{
+                        newCmd := &amp;cobra.Command{
+                                Use:                part,
+                                Short:              "manage " + strings.Join(parts[:i+1], " ") + "s",
+                                DisableFlagParsing: true,
+                        }
+                        curr.addChild(newCmd)
+                        curr.command.AddCommand(newCmd)
+                }</span>
+                <span class="cov8" title="3321">curr = curr.children[part]
+
+                if i == len(parts)-1 &amp;&amp; !found </span><span class="cov8" title="1415">{
+                        curr.command.Short = strings.TrimSpace(strings.Split(v1Cmd.cmd.Info().Desc, "\n")[0]) + " ¹"
+                        curr.command.Long = v1Cmd.cmd.Info().Usage
+                        curr.command.SilenceUsage = true
+                        curr.command.Args = cobra.MinimumNArgs(0)
+                        curr.command.RunE = func(cmd *cobra.Command, args []string) error </span><span class="cov0" title="0">{
+                                return runLegacyCommand(v1CmdManager, append(parts, args...))
+                        }</span>
+                }
+        }
+}
+
+type v1Command struct {
+        name string
+        cmd  tsuruCmd.Command
+}
+
+type ByPriority []v1Command
+
+func (a ByPriority) Len() int      <span class="cov3" title="9">{ return len(a) }</span>
+func (a ByPriority) Swap(i, j int) <span class="cov9" title="4155">{ a[i], a[j] = a[j], a[i] }</span>
+func (a ByPriority) Less(i, j int) bool <span class="cov10" title="11129">{
+        Li := len(strings.Split(a[i].name, " "))
+        Lj := len(strings.Split(a[j].name, " "))
+        if Li == Lj </span><span class="cov10" title="11129">{
+                return a[i].name &lt; a[j].name
+        }</span>
+        <span class="cov0" title="0">return Li &lt; Lj</span>
+}
+</pre>
+		
+		<pre class="file" id="file10" style="display: none">// Copyright © 2023 tsuru-client authors
+// Use of this source code is governed by a BSD-style
+// license that can be found in the LICENSE file.
+
+package cmd
+
+import (
+        "fmt"
+        "io/fs"
+        "os"
+        "path/filepath"
+
+        "github.com/tsuru/tsuru-client/v2/internal/config"
+        "github.com/tsuru/tsuru-client/v2/internal/exec"
+        "github.com/tsuru/tsuru-client/v2/internal/tsuructx"
+)
+
+func runTsuruPlugin(tsuruCtx *tsuructx.TsuruContext, args []string) error <span class="cov4" title="2">{
+        pluginName := args[0]
+        if tsuruCtx.Viper.GetString("plugin-name") == pluginName </span><span class="cov0" title="0">{
+                return fmt.Errorf("failing trying to run recursive plugin")
+        }</span>
+
+        <span class="cov4" title="2">pluginPath := findExecutablePlugin(tsuruCtx, pluginName)
+        if pluginPath == "" </span><span class="cov1" title="1">{
+                return fmt.Errorf("unknown command %q", pluginName)
+        }</span>
+
+        <span class="cov1" title="1">envs := os.Environ()
+        tsuruEnvs := []string{
+                "TSURU_TARGET=" + tsuruCtx.TargetURL(),
+                "TSURU_TOKEN=" + tsuruCtx.Token(),
+                "TSURU_VERBOSITY=" + fmt.Sprintf("%d", tsuruCtx.Verbosity()),
+                "TSURU_FORMAT=" + tsuruCtx.OutputFormat().ToString(),
+                "TSURU_PLUGIN_NAME=" + pluginName,
+        }
+        envs = append(envs, tsuruEnvs...)
+
+        opts := exec.ExecuteOptions{
+                Cmd:    pluginPath,
+                Args:   args[1:],
+                Stdout: tsuruCtx.Stdout,
+                Stderr: tsuruCtx.Stderr,
+                Stdin:  tsuruCtx.Stdin,
+                Envs:   envs,
+        }
+        return tsuruCtx.Executor.Command(opts)</span>
+}
+
+func findExecutablePlugin(tsuruCtx *tsuructx.TsuruContext, pluginName string) (execPath string) <span class="cov4" title="2">{
+        basePath := filepath.Join(config.ConfigPath, "plugins")
+        testPathGlobs := []string{
+                filepath.Join(basePath, pluginName),
+                filepath.Join(basePath, pluginName, pluginName),
+                filepath.Join(basePath, pluginName, pluginName+".*"),
+                filepath.Join(basePath, pluginName+".*"),
+        }
+        for _, pathGlob := range testPathGlobs </span><span class="cov10" title="5">{
+                var fStat fs.FileInfo
+                var err error
+                execPath = pathGlob
+                if fStat, err = tsuruCtx.Fs.Stat(pathGlob); err != nil </span><span class="cov8" title="4">{
+                        files, _ := filepath.Glob(pathGlob)
+                        if len(files) != 1 </span><span class="cov8" title="4">{
+                                continue</span>
+                        }
+                        <span class="cov0" title="0">execPath = files[0]
+                        fStat, err = tsuruCtx.Fs.Stat(execPath)</span>
+                }
+                <span class="cov1" title="1">if err != nil || fStat.IsDir() || !fStat.Mode().IsRegular() </span><span class="cov0" title="0">{
+                        continue</span>
+                }
+                <span class="cov1" title="1">return execPath</span>
+        }
+        <span class="cov1" title="1">return ""</span>
+}
+</pre>
+		
+		<pre class="file" id="file11" style="display: none">// Copyright © 2023 tsuru-client authors
+// Use of this source code is governed by a BSD-style
+// license that can be found in the LICENSE file.
+
+package cmd
+
+import (
+        "fmt"
+        "os"
+        "strings"
+        "time"
+
+        "github.com/spf13/afero"
+        "github.com/spf13/cobra"
+        "github.com/spf13/viper"
+        "github.com/tsuru/tsuru-client/v2/internal/config"
+        "github.com/tsuru/tsuru-client/v2/internal/exec"
+        "github.com/tsuru/tsuru-client/v2/internal/tsuructx"
+        "github.com/tsuru/tsuru-client/v2/pkg/cmd/auth"
+        "github.com/tsuru/tsuru-client/v2/pkg/printer"
+)
+
+var (
+        version  cmdVersion
+        commands = []func(*tsuructx.TsuruContext) *cobra.Command{
+                auth.NewLoginCmd,
+                auth.NewLogoutCmd,
+        }
+)
+
+type cmdVersion struct {
+        Version string
+        Commit  string
+        Date    string
+}
+
+func (v *cmdVersion) String() string <span class="cov7" title="8">{
+        if v.Version == "" </span><span class="cov1" title="1">{
+                v.Version = "dev"
+        }</span>
+        <span class="cov7" title="8">if v.Commit == "" &amp;&amp; v.Date == "" </span><span class="cov7" title="8">{
+                return v.Version
+        }</span>
+        <span class="cov0" title="0">return fmt.Sprintf("%s (%s - %s)", v.Version, v.Commit, v.Date)</span>
+}
+
+// Execute will create the cli with all subcommands and run it
+func Execute(_version, _commit, _dateStr string) <span class="cov0" title="0">{
+        version = cmdVersion{_version, _commit, _dateStr}
+        rootCmd := NewRootCmd(viper.GetViper(), nil)
+        err := rootCmd.Execute()
+        if err != nil </span><span class="cov0" title="0">{
+                os.Exit(1)
+        }</span>
+}
+
+func NewRootCmd(vip *viper.Viper, tsuruCtx *tsuructx.TsuruContext) *cobra.Command <span class="cov7" title="8">{
+        vip = preSetupViper(vip)
+        if tsuruCtx == nil </span><span class="cov0" title="0">{
+                tsuruCtx = NewProductionTsuruContext(vip, afero.NewOsFs())
+        }</span>
+        <span class="cov7" title="8">rootCmd := newBareRootCmd(tsuruCtx)
+        setupPFlagsAndCommands(rootCmd, tsuruCtx)
+        return rootCmd</span>
+}
+
+func newBareRootCmd(tsuruCtx *tsuructx.TsuruContext) *cobra.Command <span class="cov7" title="8">{
+        rootCmd := &amp;cobra.Command{
+                Version: version.String(),
+                Use:     "tsuru",
+                Short:   "A command-line interface for interacting with tsuru",
+
+                PersistentPreRun: rootPersistentPreRun(tsuruCtx),
+                RunE: func(cmd *cobra.Command, args []string) error </span><span class="cov5" title="4">{
+                        return runRootCmd(tsuruCtx, cmd, args)
+                }</span>,
+                Args: cobra.MinimumNArgs(0),
+
+                FParseErrWhitelist: cobra.FParseErrWhitelist{
+                        UnknownFlags: true,
+                },
+                DisableFlagParsing: true,
+        }
+
+        <span class="cov7" title="8">rootCmd.SetVersionTemplate(`{{printf "tsuru-client version: %s" .Version}}` + "\n")
+
+        return rootCmd</span>
+}
+
+func runRootCmd(tsuruCtx *tsuructx.TsuruContext, cmd *cobra.Command, args []string) error <span class="cov5" title="4">{
+        cmd.SilenceUsage = true
+        args = parseFirstFlagsOnly(cmd, args)
+
+        versionVal, _ := cmd.Flags().GetBool("version")
+        helpVal, _ := cmd.Flags().GetBool("help")
+        if len(args) == 0 || versionVal || helpVal </span><span class="cov4" title="3">{
+                cmd.RunE = nil
+                cmd.Run = nil
+                return cmd.Execute()
+        }</span>
+
+        <span class="cov1" title="1">return runTsuruPlugin(tsuruCtx, args)</span>
+}
+
+// parseFirstFlagsOnly handles only the first flags with cmd.ParseFlags()
+// before a non-flag element
+func parseFirstFlagsOnly(cmd *cobra.Command, args []string) []string <span class="cov5" title="4">{
+        if cmd == nil </span><span class="cov0" title="0">{
+                return args
+        }</span>
+        <span class="cov5" title="4">cmd.DisableFlagParsing = false
+        for len(args) &gt; 0 </span><span class="cov6" title="5">{
+                s := args[0]
+                if len(s) == 0 || s[0] != '-' || len(s) == 1 </span><span class="cov4" title="3">{
+                        return args // any non-flag means we're done
+                }</span>
+                <span class="cov3" title="2">args = args[1:]
+
+                flagName := s[1:]
+                if s[1] == '-' </span><span class="cov3" title="2">{
+                        if len(s) == 2 </span><span class="cov0" title="0">{ // "--" terminates the flags
+                                return args
+                        }</span>
+                        <span class="cov3" title="2">flagName = s[2:]</span>
+                }
+
+                <span class="cov3" title="2">if strings.Contains(flagName, "=") </span><span class="cov0" title="0">{
+                        flagArgPair := strings.SplitN(flagName, "=", 2)
+                        flagName = flagArgPair[0]
+                        args = append([]string{flagArgPair[1]}, args...)
+                }</span>
+
+                <span class="cov3" title="2">flag := cmd.Flags().Lookup(flagName)
+                if flag == nil &amp;&amp; len(flagName) == 1 </span><span class="cov0" title="0">{
+                        flag = cmd.Flags().ShorthandLookup(flagName)
+                }</span>
+
+                <span class="cov3" title="2">if flag != nil &amp;&amp; flag.Value.Type() == "bool" </span><span class="cov3" title="2">{
+                        cmd.ParseFlags([]string{s})
+                }</span> else<span class="cov0" title="0"> {
+                        if len(args) == 0 </span><span class="cov0" title="0">{
+                                return args
+                        }</span>
+                        <span class="cov0" title="0">cmd.ParseFlags([]string{s, args[0]})
+                        args = args[1:]</span>
+                }
+        }
+        <span class="cov1" title="1">return args</span>
+}
+
+func rootPersistentPreRun(tsuruCtx *tsuructx.TsuruContext) func(cmd *cobra.Command, args []string) <span class="cov7" title="8">{
+        return func(cmd *cobra.Command, args []string) </span><span class="cov6" title="6">{
+                if l := cmd.Flags().Lookup("target"); l != nil &amp;&amp; l.Value.String() != "" </span><span class="cov1" title="1">{
+                        target, err := config.GetTargetURL(tsuruCtx.Fs, l.Value.String())
+                        cobra.CheckErr(err)
+                        tsuruCtx.SetTargetURL(target)
+
+                        if tsuruCtx.TokenSetFromFS </span><span class="cov0" title="0">{ // do not update if set from ENV
+                                token, err1 := config.GetTokenFromFs(tsuruCtx.Fs, target)
+                                cobra.CheckErr(err1)
+                                tsuruCtx.SetToken(token)
+                        }</span>
+                }
+
+                <span class="cov6" title="6">if v, err := cmd.Flags().GetInt("verbosity"); err != nil </span><span class="cov0" title="0">{
+                        tsuruCtx.SetVerbosity(v)
+                }</span>
+
+                <span class="cov6" title="6">if v, err := cmd.Flags().GetBool("json"); err == nil &amp;&amp; v </span><span class="cov0" title="0">{
+                        tsuruCtx.SetOutputFormat("json")
+                }</span> else<span class="cov6" title="6"> {
+                        tsuruCtx.SetOutputFormat(cmd.Flags().Lookup("format").Value.String())
+                }</span>
+
+                <span class="cov6" title="6">if v, err := cmd.Flags().GetBool("api-data"); err == nil &amp;&amp; v </span><span class="cov0" title="0">{
+                        tsuruCtx.SetOutputAPIData(true)
+                }</span>
+        }
+}
+
+// preSetupViper prepares viper for being used by NewProductionTsuruContext()
+func preSetupViper(vip *viper.Viper) *viper.Viper <span class="cov8" title="9">{
+        if vip == nil </span><span class="cov0" title="0">{
+                vip = viper.New()
+        }</span>
+        <span class="cov8" title="9">vip.SetEnvPrefix("tsuru")
+        vip.SetEnvKeyReplacer(strings.NewReplacer("-", "_"))
+        vip.AutomaticEnv() // read in environment variables that match
+        return vip</span>
+}
+
+// setupPFlagsAndCommands reads in config file and ENV variables if set.
+func setupPFlagsAndCommands(rootCmd *cobra.Command, tsuruCtx *tsuructx.TsuruContext) <span class="cov7" title="8">{
+        // Persistent Flags.
+        // !!! Double bind them inside PersistentPreRun() !!!
+        rootCmd.PersistentFlags().String("target", "", "Tsuru server endpoint")
+        tsuruCtx.Viper.BindPFlag("target", rootCmd.PersistentFlags().Lookup("target"))
+        rootCmd.PersistentFlags().IntP("verbosity", "v", 0, "Verbosity level: 1 =&gt; print HTTP requests; 2 =&gt; print HTTP requests/responses")
+        tsuruCtx.Viper.BindPFlag("verbosity", rootCmd.PersistentFlags().Lookup("verbosity"))
+        rootCmd.PersistentFlags().Bool("json", false, "Output format as json")
+        rootCmd.PersistentFlags().MarkHidden("json")
+        tsuruCtx.Viper.BindPFlag("json", rootCmd.PersistentFlags().Lookup("json"))
+        format := printer.OutputFormat("string")
+        rootCmd.PersistentFlags().Var(&amp;format, "format", "Output format. Supports json, compact-json, yaml and table")
+        rootCmd.RegisterFlagCompletionFunc("format",
+                func(cmd *cobra.Command, args []string, toComplete string) ([]string, cobra.ShellCompDirective) </span><span class="cov0" title="0">{
+                        return printer.OutputFormatCompletionHelp(), cobra.ShellCompDirectiveNoFileComp
+                }</span>,
+        )
+        <span class="cov7" title="8">tsuruCtx.Viper.BindPFlag("format", rootCmd.PersistentFlags().Lookup("format"))
+        rootCmd.PersistentFlags().Bool("api-data", false, "Output API response data instead of a parsed data (more useful with --format=json)")
+        tsuruCtx.Viper.BindPFlag("api-data", rootCmd.PersistentFlags().Lookup("api-data"))
+
+        // Search config in home directory with name ".tsuru-client" (without extension).
+        tsuruCtx.Viper.AddConfigPath(config.ConfigPath)
+        tsuruCtx.Viper.SetConfigType("yaml")
+        tsuruCtx.Viper.SetConfigName(".tsuru-client")
+
+        // If a config file is found, read it in.
+        if err := tsuruCtx.Viper.ReadInConfig(); err == nil </span><span class="cov0" title="0">{
+                fmt.Fprintln(os.Stderr, "Using config file:", tsuruCtx.Viper.ConfigFileUsed()) // TODO: handle this better
+        }</span>
+
+        // Add subcommands
+        <span class="cov7" title="8">for _, cmd := range commands </span><span class="cov10" title="16">{
+                rootCmd.AddCommand(cmd(tsuruCtx))
+        }</span>
+
+        <span class="cov7" title="8">v1LegacyCmdManager := newV1LegacyCmdManager()
+        addMissingV1LegacyCommands(rootCmd, v1LegacyCmdManager)
+        rootCmd.AddCommand(newLegacyCommand(v1LegacyCmdManager))</span>
+}
+
+func NewProductionTsuruContext(vip *viper.Viper, fs afero.Fs) *tsuructx.TsuruContext <span class="cov0" title="0">{
+        var err error
+        var tokenSetFromFS bool
+
+        // Get target
+        target := vip.GetString("target")
+        if target == "" </span><span class="cov0" title="0">{
+                target, err = config.GetCurrentTargetFromFs(fs)
+                cobra.CheckErr(err)
+        }</span>
+        <span class="cov0" title="0">target, err = config.GetTargetURL(fs, target)
+        cobra.CheckErr(err)
+        vip.Set("target", target)
+
+        // Get token
+        token := vip.GetString("token")
+        if token == "" </span><span class="cov0" title="0">{
+                token, err = config.GetTokenFromFs(fs, target)
+                cobra.CheckErr(err)
+                tokenSetFromFS = true
+                vip.Set("token", token)
+        }</span>
+
+        <span class="cov0" title="0">tsuruCtx := tsuructx.TsuruContextWithConfig(productionOpts(fs, vip))
+        tsuruCtx.TokenSetFromFS = tokenSetFromFS
+        return tsuruCtx</span>
+}
+
+func productionOpts(fs afero.Fs, vip *viper.Viper) *tsuructx.TsuruContextOpts <span class="cov1" title="1">{
+        return &amp;tsuructx.TsuruContextOpts{
+                InsecureSkipVerify: vip.GetBool("insecure-skip-verify"),
+                LocalTZ:            time.Local,
+                AuthScheme:         vip.GetString("auth-scheme"),
+                Executor:           &amp;exec.OsExec{},
+                Fs:                 fs,
+                Viper:              vip,
+
+                UserAgent: "tsuru-client:" + version.Version,
+
+                Stdout: os.Stdout,
+                Stderr: os.Stderr,
+                Stdin:  os.Stdin,
+        }
+}</span>
+</pre>
+		
+		<pre class="file" id="file12" style="display: none">// Copyright © 2023 tsuru-client authors
+// Use of this source code is governed by a BSD-style
+// license that can be found in the LICENSE file.
+
+package printer
+
+import (
+        "encoding/json"
+        "fmt"
+        "io"
+        "strings"
+
+        "github.com/spf13/pflag"
+        "gopkg.in/yaml.v3"
+)
+
+type OutputFormat string
+
+const (
+        // every OutputType should be mapped inside PrintInfo()
+        CompactJSON OutputFormat = "compatc-json"
+        PrettyJSON  OutputFormat = "json"
+        YAML        OutputFormat = "yaml"
+        Table       OutputFormat = "table"
+)
+
+var _ pflag.Value = (*OutputFormat)(nil)
+
+func OutputFormatCompletionHelp() []string <span class="cov0" title="0">{
+        return []string{
+                CompactJSON.ToString() + "\toutput as compact JSON format (no newlines)",
+                PrettyJSON.ToString() + "\toutput as JSON (PrettyJSON)",
+                YAML.ToString() + "\toutput as YAML",
+                Table.ToString() + "\toutput as Human readable table",
+        }
+}</span>
+
+func (o OutputFormat) ToString() string <span class="cov0" title="0">{
+        return string(o)
+}</span>
+func (o *OutputFormat) String() string <span class="cov0" title="0">{
+        return string(*o)
+}</span>
+func (o *OutputFormat) Set(v string) error <span class="cov0" title="0">{
+        var err error
+        *o, err = FormatAs(v)
+        return err
+}</span>
+func (e *OutputFormat) Type() string <span class="cov0" title="0">{
+        return "OutputFormat"
+}</span>
+
+func FormatAs(s string) (OutputFormat, error) <span class="cov8" title="8">{
+        switch strings.ToLower(s) </span>{
+        case "compact-json", "compactjson":<span class="cov3" title="2">
+                return CompactJSON, nil</span>
+        case "json", "pretty-json", "prettyjson":<span class="cov4" title="3">
+                return PrettyJSON, nil</span>
+        case "yaml":<span class="cov1" title="1">
+                return YAML, nil</span>
+        case "table":<span class="cov1" title="1">
+                return Table, nil</span>
+        default:<span class="cov1" title="1">
+                return Table, fmt.Errorf("must be one of: json, compact-json, yaml, table")</span>
+        }
+}
+
+// Print will print the data in the given format.
+// If the format is not supported, it will return an error.
+// If the format is Table, it will try to convert the data to a human readable format. (see pkg/converter)
+func Print(out io.Writer, data any, format OutputFormat) error <span class="cov0" title="0">{
+        switch format </span>{
+        case CompactJSON:<span class="cov0" title="0">
+                return PrintJSON(out, data)</span>
+        case PrettyJSON:<span class="cov0" title="0">
+                return PrintPrettyJSON(out, data)</span>
+        case YAML:<span class="cov0" title="0">
+                return PrintYAML(out, data)</span>
+        case Table:<span class="cov0" title="0">
+                return PrintTable(out, data)</span>
+        default:<span class="cov0" title="0">
+                return fmt.Errorf("unknown format: %q", format)</span>
+        }
+}
+
+func PrintJSON(out io.Writer, data any) error <span class="cov9" title="11">{
+        if data == nil </span><span class="cov1" title="1">{
+                return nil
+        }</span>
+        <span class="cov9" title="10">dataByte, err := json.Marshal(data)
+        if err != nil </span><span class="cov3" title="2">{
+                return fmt.Errorf("error converting to json: %w", err)
+        }</span>
+        <span class="cov8" title="8">fmt.Fprintln(out, string(dataByte))
+        return nil</span>
+}
+
+func PrintPrettyJSON(out io.Writer, data any) error <span class="cov9" title="11">{
+        if data == nil </span><span class="cov1" title="1">{
+                return nil
+        }</span>
+        <span class="cov9" title="10">dataByte, err := json.MarshalIndent(data, "", "  ")
+        if err != nil </span><span class="cov3" title="2">{
+                return fmt.Errorf("error converting to json: %w", err)
+        }</span>
+        <span class="cov8" title="8">fmt.Fprintln(out, string(dataByte))
+        return nil</span>
+}
+
+func PrintYAML(out io.Writer, data any) (err error) <span class="cov10" title="12">{
+        defer func() </span><span class="cov10" title="12">{
+                if r := recover(); r != nil </span><span class="cov3" title="2">{
+                        // yaml.v3 panics a lot: https://github.com/go-yaml/yaml/issues/954
+                        err = fmt.Errorf("error converting to yaml (panic): %v", r)
+                }</span>
+        }()
+
+        <span class="cov10" title="12">if data == nil </span><span class="cov1" title="1">{
+                return nil
+        }</span>
+        <span class="cov9" title="11">dataByte, err := yaml.Marshal(data)
+        if err != nil </span><span class="cov1" title="1">{
+                return fmt.Errorf("error converting to yaml: %w", err)
+        }</span>
+        <span class="cov8" title="8">_, err = out.Write(dataByte)
+        return err</span>
+}
+</pre>
+		
+		<pre class="file" id="file13" style="display: none">// Copyright © 2023 tsuru-client authors
+// Use of this source code is governed by a BSD-style
+// license that can be found in the LICENSE file.
+
+package printer
+
+import (
+        "fmt"
+        "io"
+        "reflect"
+        "regexp"
+        "sort"
+        "strconv"
+        "strings"
+        "text/tabwriter"
+)
+
+// PrintTable prints the data to out in a table format.
+// If data is a simple type (bool, int, string, etc), it will print it as-is.
+// If data is a slice/map, it will print a summary table.
+// If data is a struct, it will print simple fields as 'key: value' table and complex fields as sub-tables.
+// Non-printable types will return an error.
+//
+// For structs, some field tags are supported:
+// - if "name" tag exists, that will be used instead of the field name.
+// - if "priority" tag exists, it will be used to sort the fields. Higher priority will be printed first.
+func PrintTable(out io.Writer, data any) (err error) <span class="cov6" title="18">{
+        w := tabwriter.NewWriter(out, 2, 2, 2, ' ', 0)
+        defer w.Flush()
+        return printTable(w, data)
+}</span>
+
+func printTable(out io.Writer, data any) (err error) <span class="cov6" title="18">{
+        if data == nil </span><span class="cov1" title="1">{
+                return nil
+        }</span>
+
+        <span class="cov6" title="17">kind := reflect.TypeOf(data).Kind()
+        switch kind </span>{
+        case reflect.Pointer:<span class="cov0" title="0"> // just dereference it:
+                return printTable(out, reflect.ValueOf(data).Elem().Interface())</span>
+        case reflect.Bool,
+                reflect.Int, reflect.Int8, reflect.Int16, reflect.Int32, reflect.Int64,
+                reflect.Uint, reflect.Uint8, reflect.Uint16, reflect.Uint32, reflect.Uint64, reflect.Uintptr,
+                reflect.Float32, reflect.Float64, reflect.Complex64, reflect.Complex128,
+                reflect.String:<span class="cov4" title="5">
+                _, err = fmt.Fprintln(out, data)</span>
+        case reflect.Array, reflect.Slice,
+                reflect.Map:<span class="cov5" title="9">
+                err = printTableList(out, data)</span>
+        case reflect.Struct:<span class="cov1" title="1">
+                printTableStruct(out, data)</span>
+        case reflect.Invalid, reflect.Chan, reflect.Func, reflect.UnsafePointer:<span class="cov2" title="2">
+                err = fmt.Errorf("cannot print type %T (kind: %s)", data, kind.String())</span>
+        default:<span class="cov0" title="0">
+                err = fmt.Errorf("unknown type for printing: %T (kind: %s)", data, kind.String())</span>
+        }
+
+        <span class="cov6" title="17">return err</span>
+}
+
+func printTableStruct(out io.Writer, data any) <span class="cov3" title="3">{
+        o := &amp;StructuredOutput{}
+        keys := GetSortedStructFields(reflect.TypeOf(data))
+        for _, key := range keys </span><span class="cov5" title="11">{
+                o.ProcessStructField(key.printName, reflect.ValueOf(data).FieldByName(key.fieldName))
+        }</span>
+        <span class="cov3" title="3">o.PrintTo(out)</span>
+}
+
+func printTableList(out io.Writer, data any) (err error) <span class="cov5" title="9">{
+        value := reflect.ValueOf(data)
+        switch value.Kind() </span>{
+        case reflect.Slice, reflect.Array:<span class="cov4" title="6">
+                return printTableListOfSlice(out, data)</span>
+        case reflect.Map:<span class="cov3" title="3">
+                if isMapOfSimple(data) </span><span class="cov3" title="3">{
+                        mapKeys := reflect.ValueOf(data).MapKeys()
+                        sort.Slice(mapKeys, func(i, j int) bool </span><span class="cov3" title="3">{ return fmt.Sprint(mapKeys[i].Interface()) &lt; fmt.Sprint(mapKeys[j].Interface()) }</span>)
+                        <span class="cov3" title="3">for i, k := range mapKeys </span><span class="cov4" title="6">{
+                                if i &gt; 0 </span><span class="cov3" title="3">{
+                                        fmt.Fprint(out, ", ")
+                                }</span>
+                                <span class="cov4" title="6">fmt.Fprintf(out, "%v: %v", k.Interface(), reflect.ValueOf(data).MapIndex(k).Interface())</span>
+                        }
+                        <span class="cov3" title="3">fmt.Fprintln(out, "")
+                        return nil</span>
+                }
+                <span class="cov0" title="0">return printTableListOfMap(out, data)</span>
+        default:<span class="cov0" title="0">
+                return fmt.Errorf("cannot print type as list: %T (%s)", data, value.Kind().String())</span>
+        }
+}
+
+type OutputField struct {
+        name  string
+        value string
+}
+type StructuredOutput struct {
+        simpleData  []OutputField
+        complexData []OutputField
+}
+
+// PrintTo will output the structured output to the given io.Writer.
+// eg: PrintTo(os.Stdout) will output:
+// simpleField1:\tvalue1
+// simpleField2:\tvalue2
+//
+// complexField1:
+// complexValue1...
+//
+// complexField2:
+// complexValue2...
+func (o *StructuredOutput) PrintTo(output io.Writer) <span class="cov4" title="6">{
+        for _, f := range o.simpleData </span><span class="cov5" title="11">{
+                fmt.Fprintf(output, "%s:\t%s\n", normalizeName(f.name), f.value)
+        }</span>
+        <span class="cov4" title="6">for _, f := range o.complexData </span><span class="cov5" title="8">{
+                fmt.Fprintf(output, "\n%s:\n%s", normalizeName(f.name), f.value)
+                if !strings.HasSuffix(f.value, "\n") </span><span class="cov3" title="4">{
+                        fmt.Fprintln(output)
+                }</span>
+        }
+}
+
+// ProcessStructField will process a single field of a struct.
+// It will differentiate between simple and complex fields and process them accordingly.
+// Use PrintTo() to output the processed data.
+func (o *StructuredOutput) ProcessStructField(name string, value reflect.Value) error <span class="cov8" title="36">{
+        if o.simpleData == nil </span><span class="cov7" title="26">{
+                o.simpleData = []OutputField{}
+        }</span>
+        <span class="cov8" title="36">if o.complexData == nil </span><span class="cov7" title="26">{
+                o.complexData = []OutputField{}
+        }</span>
+
+        <span class="cov8" title="36">kind := value.Kind()
+        switch kind </span>{
+        case reflect.Pointer:<span class="cov3" title="3">
+                if value.IsNil() </span><span class="cov1" title="1">{
+                        return nil
+                }</span>
+                <span class="cov2" title="2">return o.ProcessStructField(name, value.Elem())</span>
+        case reflect.Bool,
+                reflect.Int, reflect.Int8, reflect.Int16, reflect.Int32, reflect.Int64,
+                reflect.Uint, reflect.Uint8, reflect.Uint16, reflect.Uint32, reflect.Uint64, reflect.Uintptr,
+                reflect.Float32, reflect.Float64, reflect.Complex64, reflect.Complex128,
+                reflect.String:<span class="cov5" title="11">
+                o.simpleData = append(o.simpleData, OutputField{name: name, value: ParseField(value)})</span>
+        case reflect.Array, reflect.Slice,
+                reflect.Map:<span class="cov6" title="17">
+                if value.Len() == 0 </span><span class="cov5" title="9">{
+                        return nil
+                }</span>
+                <span class="cov5" title="8">if isCollectionOfSimple(value.Interface()) </span><span class="cov5" title="8">{
+                        o.simpleData = append(o.simpleData, OutputField{name: name, value: ParseField(value)})
+                }</span> else<span class="cov0" title="0"> {
+                        o.complexData = append(o.complexData, OutputField{name: name, value: ParseField(value)})
+                }</span>
+        case reflect.Struct:<span class="cov4" title="5">
+                o.complexData = append(o.complexData, OutputField{name: name, value: ParseField(value)})</span>
+        default:<span class="cov0" title="0">
+                return fmt.Errorf("cannot process field %q of type %T (kind: %s)", name, value.Interface(), kind.String())</span>
+        }
+        <span class="cov7" title="24">return nil</span>
+}
+
+// ParseField will parse a single value into a string.
+// If value is a simple type (bool, int, string, etc), it will return it as-is.
+// If value is a slice/map of simple types, it will return a comma-separated list.
+// If value is a slice/map of complex types, it will return a summary table.
+// If value is a struct, it will return a summary table.
+func ParseField(value reflect.Value) string <span class="cov9" title="57">{
+        kind := value.Kind()
+        switch kind </span>{
+        case reflect.Pointer:<span class="cov4" title="6">
+                return ParseField(value.Elem())</span>
+        case reflect.Bool,
+                reflect.Int, reflect.Int8, reflect.Int16, reflect.Int32, reflect.Int64,
+                reflect.Uint, reflect.Uint8, reflect.Uint16, reflect.Uint32, reflect.Uint64, reflect.Uintptr,
+                reflect.Float32, reflect.Float64, reflect.Complex64, reflect.Complex128,
+                reflect.String:<span class="cov6" title="15">
+                return fmt.Sprint(value.Interface())</span>
+        case reflect.Array, reflect.Slice:<span class="cov7" title="21">
+                return parseStructFieldAsSubList(value)</span>
+        case reflect.Map:<span class="cov3" title="4">
+                if isCollectionOfSimple(value.Interface()) </span><span class="cov3" title="4">{
+                        mapKeys := value.MapKeys()
+                        sort.Slice(mapKeys, func(i, j int) bool </span><span class="cov3" title="4">{ return fmt.Sprint(mapKeys[i].Interface()) &lt; fmt.Sprint(mapKeys[j].Interface()) }</span>)
+                        <span class="cov3" title="4">buf := &amp;strings.Builder{}
+                        for i, k := range mapKeys </span><span class="cov5" title="8">{
+                                if i &gt; 0 </span><span class="cov3" title="4">{
+                                        fmt.Fprint(buf, ", ")
+                                }</span>
+                                <span class="cov5" title="8">fmt.Fprintf(buf, "%v: %v", k.Interface(), value.MapIndex(k).Interface())</span>
+                        }
+                        <span class="cov3" title="4">return buf.String()</span>
+                }
+                <span class="cov0" title="0">return parseStructFieldAsSubList(value)</span>
+        case reflect.Struct:<span class="cov5" title="11">
+                return parseStructFieldAsSubStruct(value)</span>
+
+        default:<span class="cov0" title="0">
+                return fmt.Sprintf("&lt;not parseable (kind: %s)&gt;", kind.String())</span>
+        }
+}
+
+func parseStructFieldAsSubList(value reflect.Value) string <span class="cov7" title="21">{
+        if value.Kind() != reflect.Slice &amp;&amp; value.Kind() != reflect.Array </span><span class="cov0" title="0">{
+                return ""
+        }</span>
+        <span class="cov7" title="21">if value.Len() == 0 </span><span class="cov3" title="3">{
+                return ""
+        }</span>
+
+        <span class="cov6" title="18">if isCollectionOfSimple(value.Interface()) </span><span class="cov3" title="4">{
+                buf := &amp;strings.Builder{}
+                for i := 0; i &lt; value.Len(); i++ </span><span class="cov6" title="12">{
+                        if i &gt; 0 </span><span class="cov5" title="8">{
+                                fmt.Fprint(buf, ", ")
+                        }</span>
+                        <span class="cov6" title="12">fmt.Fprintf(buf, "%v", value.Index(i).Interface())</span>
+                }
+                <span class="cov3" title="4">return buf.String()</span>
+        }
+
+        <span class="cov6" title="14">sliceElement := value.Type().Elem()
+        if sliceElement.Kind() == reflect.Pointer </span><span class="cov3" title="3">{
+                sliceElement = sliceElement.Elem()
+        }</span>
+
+        <span class="cov6" title="14">switch sliceElement.Kind() </span>{
+        case reflect.Array, reflect.Slice:<span class="cov3" title="3">
+                if isCollectionOfSimple(value.Index(0).Interface()) </span><span class="cov2" title="2">{
+                        buf := &amp;strings.Builder{}
+                        for i := 0; i &lt; value.Len(); i++ </span><span class="cov3" title="4">{
+                                if i &gt; 0 </span><span class="cov2" title="2">{
+                                        fmt.Fprint(buf, ", ")
+                                }</span>
+                                <span class="cov3" title="4">fmt.Fprintf(buf, "%v", value.Index(i).Interface())</span>
+                        }
+                        <span class="cov2" title="2">return buf.String()</span>
+                }
+                <span class="cov1" title="1">return fmt.Sprintf("[]%s{...}", sliceElement.String())</span>
+        case reflect.Map:<span class="cov4" title="5">
+                buf := &amp;strings.Builder{}
+                for i := 0; i &lt; value.Len(); i++ </span><span class="cov5" title="10">{
+                        if i &gt; 0 </span><span class="cov4" title="5">{
+                                fmt.Fprint(buf, "\n")
+                        }</span>
+                        <span class="cov5" title="10">item := value.Index(i)
+                        if item.Kind() == reflect.Pointer </span><span class="cov0" title="0">{
+                                item = item.Elem()
+                        }</span>
+                        <span class="cov5" title="10">keys := item.MapKeys()
+                        sort.Slice(keys, func(i, j int) bool </span><span class="cov4" title="5">{ return fmt.Sprint(keys[i].Interface()) &lt; fmt.Sprint(keys[j].Interface()) }</span>)
+                        <span class="cov5" title="10">for j, k := range keys </span><span class="cov6" title="15">{
+                                if j == 0 </span><span class="cov5" title="10">{
+                                        fmt.Fprintf(buf, "map{")
+                                }</span> else<span class="cov4" title="5"> {
+                                        fmt.Fprint(buf, ", ")
+                                }</span>
+                                <span class="cov6" title="15">fmt.Fprintf(buf, "%v", k.Interface())</span>
+                        }
+                        <span class="cov5" title="10">fmt.Fprint(buf, "}")</span>
+                }
+                <span class="cov4" title="5">return buf.String()</span>
+        case reflect.Struct:<span class="cov4" title="6">
+                keys := GetSortedStructFields(sliceElement)
+
+                buf := &amp;strings.Builder{}
+                for i, k := range keys </span><span class="cov6" title="18">{
+                        if i &gt; 0 </span><span class="cov6" title="12">{
+                                fmt.Fprint(buf, "\t")
+                        }</span>
+                        <span class="cov6" title="18">fmt.Fprintf(buf, "%s", strings.ToUpper(normalizeName(k.printName)))</span>
+                }
+
+                <span class="cov4" title="6">for i := 0; i &lt; value.Len(); i++ </span><span class="cov6" title="12">{
+                        fmt.Fprint(buf, "\n")
+                        for j, k := range keys </span><span class="cov8" title="36">{
+                                if j &gt; 0 </span><span class="cov7" title="24">{
+                                        fmt.Fprint(buf, "\t")
+                                }</span>
+                                <span class="cov8" title="36">item := value.Index(i)
+                                if item.Kind() == reflect.Pointer </span><span class="cov6" title="18">{
+                                        item = item.Elem()
+                                }</span>
+
+                                <span class="cov8" title="36">field := item.FieldByName(k.fieldName)
+                                if field.Kind() == reflect.Pointer </span><span class="cov0" title="0">{
+                                        field = field.Elem()
+                                }</span>
+                                <span class="cov8" title="36">fmt.Fprintf(buf, "%v", field.Interface())</span>
+                        }
+                }
+                <span class="cov4" title="6">fmt.Fprintln(buf)
+                return buf.String()</span>
+        default:<span class="cov0" title="0">
+                return fmt.Sprintf("[]%s{...}", sliceElement.String())</span>
+        }
+}
+
+func parseStructFieldAsSubStruct(value reflect.Value) string <span class="cov5" title="11">{
+        if value.Kind() != reflect.Struct </span><span class="cov0" title="0">{
+                return ""
+        }</span>
+
+        <span class="cov5" title="11">keys := GetSortedStructFields(value.Type())
+
+        buf := &amp;strings.Builder{}
+        for i, k := range keys </span><span class="cov7" title="25">{
+                if i &gt; 0 </span><span class="cov6" title="14">{
+                        fmt.Fprint(buf, "\t")
+                }</span>
+                <span class="cov7" title="25">fmt.Fprintf(buf, "%s", strings.ToUpper(normalizeName(k.printName)))</span>
+        }
+        <span class="cov5" title="11">fmt.Fprintln(buf)
+
+        for i, k := range keys </span><span class="cov7" title="25">{
+                if i &gt; 0 </span><span class="cov6" title="14">{
+                        fmt.Fprint(buf, "\t")
+                }</span>
+                <span class="cov7" title="25">item := value.FieldByName(k.fieldName).Interface()
+                fmt.Fprintf(buf, "%v", item)</span>
+        }
+        <span class="cov5" title="11">fmt.Fprintln(buf)
+
+        return buf.String()</span>
+}
+
+func printTableListOfSlice(out io.Writer, data any) (err error) <span class="cov4" title="6">{
+        value := reflect.ValueOf(data)
+        if value.Len() == 0 </span><span class="cov2" title="2">{
+                return nil
+        }</span>
+
+        <span class="cov3" title="4">subKind := value.Type().Elem().Kind()
+        if subKind == reflect.Pointer </span><span class="cov1" title="1">{
+                subKind = value.Type().Elem().Elem().Kind()
+        }</span>
+
+        <span class="cov3" title="4">if subKind == reflect.Struct </span><span class="cov2" title="2">{
+                fmt.Fprintln(out, ParseField(value))
+                return nil
+        }</span>
+
+        <span class="cov2" title="2">for i := 0; i &lt; value.Len(); i++ </span><span class="cov3" title="4">{
+                fmt.Fprintln(out, ParseField(value.Index(i)))
+        }</span>
+
+        <span class="cov2" title="2">return nil</span>
+}
+func printTableListOfMap(out io.Writer, data any) (err error) <span class="cov0" title="0">{
+        return fmt.Errorf("printTableListOfMap not implemented")
+}</span>
+
+func isCollectionOfSimple(data any) bool <span class="cov8" title="33">{
+        return isSliceOfSimple(data) || isMapOfSimple(data)
+}</span>
+
+func isSliceOfSimple(data any) bool <span class="cov8" title="33">{
+        kind := reflect.TypeOf(data).Kind()
+        if kind != reflect.Slice &amp;&amp; kind != reflect.Array </span><span class="cov5" title="8">{
+                return false
+        }</span>
+
+        <span class="cov7" title="25">sliceKind := reflect.TypeOf(data).Elem().Kind()
+
+        switch sliceKind </span>{
+        case reflect.Bool,
+                reflect.Int, reflect.Int8, reflect.Int16, reflect.Int32, reflect.Int64,
+                reflect.Uint, reflect.Uint8, reflect.Uint16, reflect.Uint32, reflect.Uint64, reflect.Uintptr,
+                reflect.Float32, reflect.Float64, reflect.Complex64, reflect.Complex128,
+                reflect.String:<span class="cov5" title="10">
+                return true</span>
+        default:<span class="cov6" title="15">
+                return false</span>
+        }
+}
+
+func isMapOfSimple(data any) bool <span class="cov7" title="26">{
+        if reflect.TypeOf(data).Kind() != reflect.Map </span><span class="cov6" title="15">{
+                return false
+        }</span>
+
+        <span class="cov5" title="11">valueKind := reflect.TypeOf(data).Elem().Kind()
+        keyKind := reflect.TypeOf(data).Key().Kind()
+        isKeyKindSimple, isValueKindSimple := false, false
+
+        switch keyKind </span>{
+        case reflect.Bool,
+                reflect.Int, reflect.Int8, reflect.Int16, reflect.Int32, reflect.Int64,
+                reflect.Uint, reflect.Uint8, reflect.Uint16, reflect.Uint32, reflect.Uint64, reflect.Uintptr,
+                reflect.Float32, reflect.Float64, reflect.Complex64, reflect.Complex128,
+                reflect.String:<span class="cov5" title="11">
+                isKeyKindSimple = true</span>
+        }
+        <span class="cov5" title="11">switch valueKind </span>{
+        case reflect.Bool,
+                reflect.Int, reflect.Int8, reflect.Int16, reflect.Int32, reflect.Int64,
+                reflect.Uint, reflect.Uint8, reflect.Uint16, reflect.Uint32, reflect.Uint64, reflect.Uintptr,
+                reflect.Float32, reflect.Float64, reflect.Complex64, reflect.Complex128,
+                reflect.String:<span class="cov5" title="11">
+                isValueKindSimple = true</span>
+        }
+
+        <span class="cov5" title="11">return isKeyKindSimple &amp;&amp; isValueKindSimple</span>
+}
+
+type structFieldsSortable struct {
+        fieldName string
+        printName string
+        priority  int
+}
+
+func GetSortedStructFields(structType reflect.Type) []structFieldsSortable <span class="cov7" title="24">{
+        if structType.Kind() != reflect.Struct </span><span class="cov0" title="0">{
+                return nil
+        }</span>
+
+        <span class="cov7" title="24">fields := []structFieldsSortable{}
+        for _, field := range reflect.VisibleFields(structType) </span><span class="cov10" title="80">{
+                if !field.IsExported() </span><span class="cov5" title="11">{
+                        continue</span>
+                }
+
+                <span class="cov9" title="69">priorityStr := field.Tag.Get("priority")
+                priority, _ := strconv.Atoi(priorityStr)
+
+                printName := field.Name
+                if tag := field.Tag.Get("name"); tag != "" </span><span class="cov0" title="0">{
+                        printName = tag
+                }</span>
+                <span class="cov9" title="69">fields = append(fields, structFieldsSortable{priority: priority, fieldName: field.Name, printName: printName})</span>
+        }
+        <span class="cov7" title="24">sort.Slice(fields, func(i, j int) bool </span><span class="cov9" title="75">{
+                if fields[i].priority == fields[j].priority </span><span class="cov8" title="32">{
+                        return fields[i].printName &lt; fields[j].printName
+                }</span>
+                <span class="cov8" title="43">return fields[i].priority &gt; fields[j].priority</span>
+        })
+
+        <span class="cov7" title="24">return fields</span>
+}
+
+var matchFirstCap = regexp.MustCompile("(.)([A-Z][a-z]+)")
+var matchAllCap = regexp.MustCompile("([a-z0-9])([A-Z])")
+
+// normalizeName will normalize a string to be used as a field name.
+// Meaning, it will convert CamelCase to Title Case.
+func normalizeName(s string) string <span class="cov9" title="74">{
+        ret := matchFirstCap.ReplaceAllString(s, "${1} ${2}")
+        ret = matchAllCap.ReplaceAllString(ret, "${1} ${2}")
+        return strings.Title(ret) //lint:ignore SA1019 // structure fields are safe
+}</span>
+</pre>
+		
+		</div>
+	</body>
+	<script>
+	(function() {
+		var files = document.getElementById('files');
+		var visible;
+		files.addEventListener('change', onChange, false);
+		function select(part) {
+			if (visible)
+				visible.style.display = 'none';
+			visible = document.getElementById(part);
+			if (!visible)
+				return;
+			files.value = part;
+			visible.style.display = 'block';
+			location.hash = part;
+		}
+		function onChange() {
+			select(files.value);
+			window.scrollTo(0, 0);
+		}
+		if (location.hash != "") {
+			select(location.hash.substr(1));
+		}
+		if (!visible) {
+			select("file0");
+		}
+	})();
+	</script>
+</html>
