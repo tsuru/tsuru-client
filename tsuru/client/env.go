@@ -35,8 +35,8 @@ Example:
 
   tsuru env-set NAME=value OTHER_NAME="value with spaces" ANOTHER_NAME='using single quotes' -p`
 
-const MissingAppOrJob = "You must pass an application or job"
-const AppAndJobNotAllowedTogether = "You must pass an application or job, not both"
+const ErrMissingAppOrJob = "You must pass an application or job"
+const ErrAppAndJobNotAllowedTogether = "You must pass an application or job, not both"
 
 type EnvGet struct {
 	appName string
@@ -175,13 +175,14 @@ func (c *EnvSet) Run(context *cmd.Context, client *cmd.Client) error {
 		Private:   c.private,
 	}
 
-	var path string
-	apiVersion := "1.0"
-	if c.appName != "" {
-		path = fmt.Sprintf("/apps/%s/env", c.appName)
-	} else {
+	var path, apiVersion string
+	switch c.appName {
+	case "":
 		path = fmt.Sprintf("/jobs/%s/env", c.jobName)
 		apiVersion = "1.13"
+	default:
+		path = fmt.Sprintf("/apps/%s/env", c.appName)
+		apiVersion = "1.0"
 	}
 
 	url, err := cmd.GetURLVersion(apiVersion, path)
@@ -263,13 +264,14 @@ func (c *EnvUnset) Run(context *cmd.Context, client *cmd.Client) error {
 	}
 	v.Set("noRestart", strconv.FormatBool(c.noRestart))
 
-	var path string
-	apiVersion := "1.0"
-	if c.appName != "" {
-		path = fmt.Sprintf("/apps/%s/env?%s", c.appName, v.Encode())
-	} else {
+	var path, apiVersion string
+	switch c.appName {
+	case "":
 		path = fmt.Sprintf("/jobs/%s/env?%s", c.jobName, v.Encode())
 		apiVersion = "1.13"
+	default:
+		path = fmt.Sprintf("/apps/%s/env?%s", c.appName, v.Encode())
+		apiVersion = "1.0"
 	}
 
 	url, err := cmd.GetURLVersion(apiVersion, path)
@@ -294,13 +296,14 @@ func requestEnvGetURL(c *EnvGet, args []string, client *cmd.Client) ([]byte, err
 		v.Add("env", e)
 	}
 
-	var path string
-	apiVersion := "1.0"
-	if c.appName != "" {
-		path = fmt.Sprintf("/apps/%s/env?%s", c.appName, v.Encode())
-	} else {
+	var path, apiVersion string
+	switch c.appName {
+	case "":
 		path = fmt.Sprintf("/jobs/%s/env?%s", c.jobName, v.Encode())
 		apiVersion = "1.16"
+	default:
+		path = fmt.Sprintf("/apps/%s/env?%s", c.appName, v.Encode())
+		apiVersion = "1.0"
 	}
 
 	url, err := cmd.GetURLVersion(apiVersion, path)
@@ -325,11 +328,11 @@ func requestEnvGetURL(c *EnvGet, args []string, client *cmd.Client) ([]byte, err
 
 func checkAppAndJobInputs(appName string, jobName string) error {
 	if appName == "" && jobName == "" {
-		return errors.New(MissingAppOrJob)
+		return errors.New(ErrMissingAppOrJob)
 	}
 
 	if appName != "" && jobName != "" {
-		return errors.New(AppAndJobNotAllowedTogether)
+		return errors.New(ErrAppAndJobNotAllowedTogether)
 	}
 
 	return nil
