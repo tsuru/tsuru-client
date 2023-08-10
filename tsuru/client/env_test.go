@@ -433,9 +433,414 @@ func (s *S) TestRequestEnvURL(c *check.C) {
 	result := "DATABASE_HOST=somehost"
 	client := cmd.NewClient(&http.Client{Transport: &cmdtest.Transport{Message: result, Status: http.StatusOK}}, nil, manager)
 	args := []string{"DATABASE_HOST"}
-	g := cmd.AppNameMixIn{}
+	g := &EnvGet{}
 	g.Flags().Parse(true, []string{"-a", "someapp"})
 	b, err := requestEnvGetURL(g, args, client)
 	c.Assert(err, check.IsNil)
 	c.Assert(b, check.DeepEquals, []byte(result))
+}
+
+func (s *S) TestJobEnvGetRun(c *check.C) {
+	var stdout, stderr bytes.Buffer
+	jsonResult := `[{"name": "DATABASE_HOST", "value": "somehost", "public": true}]`
+	result := "DATABASE_HOST=somehost\n"
+	context := cmd.Context{
+		Args:   []string{"DATABASE_HOST"},
+		Stdout: &stdout,
+		Stderr: &stderr,
+	}
+	client := cmd.NewClient(&http.Client{Transport: &cmdtest.Transport{Message: jsonResult, Status: http.StatusOK}}, nil, manager)
+	command := EnvGet{}
+	command.Flags().Parse(true, []string{"-j", "sample-job"})
+	err := command.Run(&context, client)
+	c.Assert(err, check.IsNil)
+	c.Assert(stdout.String(), check.Equals, result)
+}
+
+func (s *S) TestJobEnvGetRunWithMultipleParams(c *check.C) {
+	var stdout, stderr bytes.Buffer
+	jsonResult := `[{"name": "DATABASE_HOST", "value": "somehost", "public": true}, {"name": "DATABASE_USER", "value": "someuser", "public": true}]`
+	result := "DATABASE_HOST=somehost\nDATABASE_USER=someuser\n"
+	params := []string{"DATABASE_HOST", "DATABASE_USER"}
+	context := cmd.Context{
+		Args:   params,
+		Stdout: &stdout,
+		Stderr: &stderr,
+	}
+	trans := &cmdtest.ConditionalTransport{
+		Transport: cmdtest.Transport{Message: jsonResult, Status: http.StatusOK},
+		CondFunc: func(req *http.Request) bool {
+			path := strings.HasSuffix(req.URL.Path, "/jobs/sample-job/env")
+			method := req.Method == "GET"
+			envs := req.URL.Query()["env"]
+			c.Assert(envs, check.DeepEquals, []string{"DATABASE_HOST", "DATABASE_USER"})
+			return path && method
+		},
+	}
+	client := cmd.NewClient(&http.Client{Transport: trans}, nil, manager)
+	command := EnvGet{}
+	command.Flags().Parse(true, []string{"-j", "sample-job"})
+	err := command.Run(&context, client)
+	c.Assert(err, check.IsNil)
+	c.Assert(stdout.String(), check.Equals, result)
+}
+
+func (s *S) TestJobEnvGetAlwaysPrintInAlphabeticalOrder(c *check.C) {
+	var stdout, stderr bytes.Buffer
+	jsonResult := `[{"name": "DATABASE_USER", "value": "someuser", "public": true}, {"name": "DATABASE_HOST", "value": "somehost", "public": true}]`
+	result := "DATABASE_HOST=somehost\nDATABASE_USER=someuser\n"
+	params := []string{"DATABASE_HOST", "DATABASE_USER"}
+	context := cmd.Context{
+		Args:   params,
+		Stdout: &stdout,
+		Stderr: &stderr,
+	}
+	client := cmd.NewClient(&http.Client{Transport: &cmdtest.Transport{Message: jsonResult, Status: http.StatusOK}}, nil, manager)
+	command := EnvGet{}
+	command.Flags().Parse(true, []string{"-j", "sample-job"})
+	err := command.Run(&context, client)
+	c.Assert(err, check.IsNil)
+	c.Assert(stdout.String(), check.Equals, result)
+}
+
+func (s *S) TestJobEnvGetPrivateVariables(c *check.C) {
+	var stdout, stderr bytes.Buffer
+	jsonResult := `[{"name": "DATABASE_USER", "value": "someuser", "public": true}, {"name": "DATABASE_HOST", "value": "somehost", "public": false}]`
+	result := "DATABASE_HOST=*** (private variable)\nDATABASE_USER=someuser\n"
+	params := []string{"DATABASE_HOST", "DATABASE_USER"}
+	context := cmd.Context{
+		Args:   params,
+		Stdout: &stdout,
+		Stderr: &stderr,
+	}
+	client := cmd.NewClient(&http.Client{Transport: &cmdtest.Transport{Message: jsonResult, Status: http.StatusOK}}, nil, manager)
+	command := EnvGet{}
+	command.Flags().Parse(true, []string{"-j", "sample-job"})
+	err := command.Run(&context, client)
+	c.Assert(err, check.IsNil)
+	c.Assert(stdout.String(), check.Equals, result)
+}
+
+func (s *S) TestJobEnvGetWithoutTheFlag(c *check.C) {
+	var stdout, stderr bytes.Buffer
+	jsonResult := `[{"name": "DATABASE_HOST", "value": "somehost", "public": true}, {"name": "DATABASE_USER", "value": "someuser", "public": true}]`
+	result := "DATABASE_HOST=somehost\nDATABASE_USER=someuser\n"
+	params := []string{"DATABASE_HOST", "DATABASE_USER"}
+	context := cmd.Context{
+		Args:   params,
+		Stdout: &stdout,
+		Stderr: &stderr,
+	}
+	trans := &cmdtest.ConditionalTransport{
+		Transport: cmdtest.Transport{Message: jsonResult, Status: http.StatusOK},
+		CondFunc: func(req *http.Request) bool {
+			return strings.HasSuffix(req.URL.Path, "/jobs/sample-job/env") && req.Method == "GET"
+		},
+	}
+	client := cmd.NewClient(&http.Client{Transport: trans}, nil, manager)
+	cmd := &EnvGet{}
+	err := cmd.Flags().Parse(true, []string{"-j", "sample-job"})
+	c.Assert(err, check.IsNil)
+
+	err = cmd.Run(&context, client)
+	c.Assert(err, check.IsNil)
+	c.Assert(stdout.String(), check.Equals, result)
+}
+
+func (s *S) TestJobEnvSetRun(c *check.C) {
+	var stdout, stderr bytes.Buffer
+	context := cmd.Context{
+		Args:   []string{"DATABASE_HOST=somehost"},
+		Stdout: &stdout,
+		Stderr: &stderr,
+	}
+	expectedOut := "variable(s) successfully exported\n"
+	msg := io.SimpleJsonMessage{Message: expectedOut}
+	result, err := json.Marshal(msg)
+	c.Assert(err, check.IsNil)
+	trans := &cmdtest.ConditionalTransport{
+		Transport: cmdtest.Transport{Message: string(result), Status: http.StatusOK},
+		CondFunc: func(req *http.Request) bool {
+			err = req.ParseForm()
+			c.Assert(err, check.IsNil)
+			var e apiTypes.Envs
+			dec := form.NewDecoder(nil)
+			dec.IgnoreUnknownKeys(true)
+			dec.UseJSONTags(false)
+			err = dec.DecodeValues(&e, req.Form)
+			c.Assert(err, check.IsNil)
+			path := strings.HasSuffix(req.URL.Path, "/jobs/sample-job/env")
+			method := req.Method == "POST"
+			contentType := req.Header.Get("Content-Type") == "application/x-www-form-urlencoded"
+			name := e.Envs[0].Name == "DATABASE_HOST"
+			value := e.Envs[0].Value == "somehost"
+			return path && method && contentType && name && value
+		},
+	}
+	client := cmd.NewClient(&http.Client{Transport: trans}, nil, manager)
+	command := EnvSet{}
+	command.Flags().Parse(true, []string{"-j", "sample-job"})
+	err = command.Run(&context, client)
+	c.Assert(err, check.IsNil)
+	c.Assert(stdout.String(), check.Equals, expectedOut)
+}
+
+func (s *S) TestJobEnvSetRunWithMultipleParams(c *check.C) {
+	var stdout, stderr bytes.Buffer
+	context := cmd.Context{
+		Args:   []string{"DATABASE_HOST=somehost", "DATABASE_USER=user"},
+		Stdout: &stdout,
+		Stderr: &stderr,
+	}
+	expectedOut := "variable(s) successfully exported\n"
+	msg := io.SimpleJsonMessage{Message: expectedOut}
+	result, err := json.Marshal(msg)
+	c.Assert(err, check.IsNil)
+	client := cmd.NewClient(&http.Client{Transport: &cmdtest.Transport{Message: string(result), Status: http.StatusOK}}, nil, manager)
+	command := EnvSet{}
+	command.Flags().Parse(true, []string{"-j", "sample-job"})
+	err = command.Run(&context, client)
+	c.Assert(err, check.IsNil)
+	c.Assert(stdout.String(), check.Equals, expectedOut)
+}
+
+func (s *S) TestJobEnvSetMultilineVariables(c *check.C) {
+	var stdout, stderr bytes.Buffer
+	context := cmd.Context{
+		Args: []string{
+			`LINE1=multiline
+variable 1`,
+			`LINE2=multiline
+variable 2`},
+		Stdout: &stdout,
+		Stderr: &stderr,
+	}
+	expectedOut := "variable(s) successfully exported\n"
+	msg := io.SimpleJsonMessage{Message: expectedOut}
+	result, err := json.Marshal(msg)
+	c.Assert(err, check.IsNil)
+	trans := &cmdtest.ConditionalTransport{
+		Transport: cmdtest.Transport{Message: string(result), Status: http.StatusOK},
+		CondFunc: func(req *http.Request) bool {
+			private := false
+			want := []apiTypes.Env{
+				{Name: "LINE1", Value: `multiline
+variable 1`, Alias: "", Private: &private},
+				{Name: "LINE2", Value: `multiline
+variable 2`, Alias: "", Private: &private},
+			}
+			err = req.ParseForm()
+			c.Assert(err, check.IsNil)
+			var e apiTypes.Envs
+			dec := form.NewDecoder(nil)
+			dec.IgnoreUnknownKeys(true)
+			dec.UseJSONTags(false)
+			err = dec.DecodeValues(&e, req.Form)
+			c.Assert(err, check.IsNil)
+			c.Assert(e.Envs, check.DeepEquals, want)
+			private = !e.Private
+			path := strings.HasSuffix(req.URL.Path, "/jobs/sample-job/env")
+			method := req.Method == "POST"
+			contentType := req.Header.Get("Content-Type") == "application/x-www-form-urlencoded"
+			return path && contentType && method && private
+		},
+	}
+	client := cmd.NewClient(&http.Client{Transport: trans}, nil, manager)
+	command := EnvSet{}
+	command.Flags().Parse(true, []string{"-j", "sample-job"})
+	err = command.Run(&context, client)
+	c.Assert(err, check.IsNil)
+	c.Assert(stdout.String(), check.Equals, expectedOut)
+}
+
+func (s *S) TestJobEnvSetValues(c *check.C) {
+	var stdout, stderr bytes.Buffer
+	context := cmd.Context{
+		Args: []string{
+			"DATABASE_HOST=some host",
+			"DATABASE_USER=root",
+			"DATABASE_PASSWORD=.1234..abc",
+			"http_proxy=http://myproxy.com:3128/",
+			"VALUE_WITH_EQUAL_SIGN=http://wholikesquerystrings.me/?tsuru=awesome",
+			"BASE64_STRING=t5urur0ck5==",
+			"SOME_PASSWORD=js87$%32??",
+		},
+		Stdout: &stdout,
+		Stderr: &stderr,
+	}
+	expectedOut := "variable(s) successfully exported\n"
+	msg := io.SimpleJsonMessage{Message: expectedOut}
+	result, err := json.Marshal(msg)
+	c.Assert(err, check.IsNil)
+	trans := &cmdtest.ConditionalTransport{
+		Transport: cmdtest.Transport{Message: string(result), Status: http.StatusOK},
+		CondFunc: func(req *http.Request) bool {
+			private := false
+			want := []apiTypes.Env{
+				{Name: "DATABASE_HOST", Value: "some host", Alias: "", Private: &private},
+				{Name: "DATABASE_USER", Value: "root", Alias: "", Private: &private},
+				{Name: "DATABASE_PASSWORD", Value: ".1234..abc", Alias: "", Private: &private},
+				{Name: "http_proxy", Value: "http://myproxy.com:3128/", Alias: "", Private: &private},
+				{Name: "VALUE_WITH_EQUAL_SIGN", Value: "http://wholikesquerystrings.me/?tsuru=awesome", Alias: "", Private: &private},
+				{Name: "BASE64_STRING", Value: "t5urur0ck5==", Alias: "", Private: &private},
+				{Name: "SOME_PASSWORD", Value: "js87$%32??", Alias: "", Private: &private},
+			}
+			err = req.ParseForm()
+			c.Assert(err, check.IsNil)
+			var e apiTypes.Envs
+			dec := form.NewDecoder(nil)
+			dec.IgnoreUnknownKeys(true)
+			dec.UseJSONTags(false)
+			err = dec.DecodeValues(&e, req.Form)
+			c.Assert(err, check.IsNil)
+			c.Assert(e.Envs, check.DeepEquals, want)
+			private = !e.Private
+			path := strings.HasSuffix(req.URL.Path, "/jobs/sample-job/env")
+			method := req.Method == "POST"
+			contentType := req.Header.Get("Content-Type") == "application/x-www-form-urlencoded"
+			return path && contentType && method && private
+		},
+	}
+	client := cmd.NewClient(&http.Client{Transport: trans}, nil, manager)
+	command := EnvSet{}
+	command.Flags().Parse(true, []string{"-j", "sample-job"})
+	err = command.Run(&context, client)
+	c.Assert(err, check.IsNil)
+	c.Assert(stdout.String(), check.Equals, expectedOut)
+}
+
+func (s *S) TestJobEnvSetValuesAndPrivate(c *check.C) {
+	var stdout, stderr bytes.Buffer
+	context := cmd.Context{
+		Args: []string{
+			"DATABASE_HOST=some host",
+			"DATABASE_USER=root",
+			"DATABASE_PASSWORD=.1234..abc",
+			"http_proxy=http://myproxy.com:3128/",
+			"VALUE_WITH_EQUAL_SIGN=http://wholikesquerystrings.me/?tsuru=awesome",
+			"BASE64_STRING=t5urur0ck5==",
+		},
+
+		Stdout: &stdout,
+		Stderr: &stderr,
+	}
+	expectedOut := "variable(s) successfully exported\n"
+	msg := io.SimpleJsonMessage{Message: expectedOut}
+	result, err := json.Marshal(msg)
+	c.Assert(err, check.IsNil)
+	trans := &cmdtest.ConditionalTransport{
+		Transport: cmdtest.Transport{Message: string(result), Status: http.StatusOK},
+		CondFunc: func(req *http.Request) bool {
+			private := false
+			want := []apiTypes.Env{
+				{Name: "DATABASE_HOST", Value: "some host", Alias: "", Private: &private},
+				{Name: "DATABASE_USER", Value: "root", Alias: "", Private: &private},
+				{Name: "DATABASE_PASSWORD", Value: ".1234..abc", Alias: "", Private: &private},
+				{Name: "http_proxy", Value: "http://myproxy.com:3128/", Alias: "", Private: &private},
+				{Name: "VALUE_WITH_EQUAL_SIGN", Value: "http://wholikesquerystrings.me/?tsuru=awesome", Private: &private},
+				{Name: "BASE64_STRING", Value: "t5urur0ck5==", Alias: "", Private: &private},
+			}
+			err = req.ParseForm()
+			c.Assert(err, check.IsNil)
+			var e apiTypes.Envs
+			dec := form.NewDecoder(nil)
+			dec.IgnoreUnknownKeys(true)
+			dec.UseJSONTags(false)
+			err = dec.DecodeValues(&e, req.Form)
+			c.Assert(err, check.IsNil)
+			c.Assert(e.Envs, check.DeepEquals, want)
+			private = e.Private
+			path := strings.HasSuffix(req.URL.Path, "/jobs/sample-job/env")
+			method := req.Method == "POST"
+			contentType := req.Header.Get("Content-Type") == "application/x-www-form-urlencoded"
+			return path && contentType && method && private
+		},
+	}
+	client := cmd.NewClient(&http.Client{Transport: trans}, nil, manager)
+	command := EnvSet{}
+	command.Flags().Parse(true, []string{"-j", "sample-job", "-p"})
+	err = command.Run(&context, client)
+	c.Assert(err, check.IsNil)
+	c.Assert(stdout.String(), check.Equals, expectedOut)
+}
+
+func (s *S) TestJobEnvSetInvalidParameters(c *check.C) {
+	var stdout, stderr bytes.Buffer
+	context := cmd.Context{
+		Args:   []string{"DATABASE_HOST", "somehost"},
+		Stdout: &stdout,
+		Stderr: &stderr,
+	}
+	command := EnvSet{}
+	command.Flags().Parse(true, []string{"-j", "sample-job"})
+	err := command.Run(&context, nil)
+	c.Assert(err, check.NotNil)
+	c.Assert(err.Error(), check.Equals, EnvSetValidationMessage)
+}
+
+func (s *S) TestJobEnvUnsetRun(c *check.C) {
+	var stdout, stderr bytes.Buffer
+	context := cmd.Context{
+		Args:   []string{"DATABASE_HOST"},
+		Stdout: &stdout,
+		Stderr: &stderr,
+	}
+	expectedOut := "variable(s) successfully unset\n"
+	msg := io.SimpleJsonMessage{Message: expectedOut}
+	result, err := json.Marshal(msg)
+	c.Assert(err, check.IsNil)
+	trans := &cmdtest.ConditionalTransport{
+		Transport: cmdtest.Transport{Message: string(result), Status: http.StatusOK},
+		CondFunc: func(req *http.Request) bool {
+			path := strings.HasSuffix(req.URL.Path, "/jobs/sample-job/env")
+			method := req.Method == http.MethodDelete
+			env := req.URL.Query().Get("env") == "DATABASE_HOST"
+			return path && method && env
+		},
+	}
+	client := cmd.NewClient(&http.Client{Transport: trans}, nil, manager)
+	command := EnvUnset{}
+	command.Flags().Parse(true, []string{"-j", "sample-job"})
+	err = command.Run(&context, client)
+	c.Assert(err, check.IsNil)
+	c.Assert(stdout.String(), check.Equals, expectedOut)
+}
+
+func (s *S) TestJobRequestEnvURL(c *check.C) {
+	result := "DATABASE_HOST=somehost"
+	client := cmd.NewClient(&http.Client{Transport: &cmdtest.Transport{Message: result, Status: http.StatusOK}}, nil, manager)
+	args := []string{"DATABASE_HOST"}
+	g := &EnvGet{}
+	g.Flags().Parse(true, []string{"-j", "sample-job"})
+	b, err := requestEnvGetURL(g, args, client)
+	c.Assert(err, check.IsNil)
+	c.Assert(b, check.DeepEquals, []byte(result))
+}
+
+func (s *S) TestCheckAppAndJobInputsMissingAppOrJob(c *check.C) {
+	var stdout, stderr bytes.Buffer
+	ctx := cmd.Context{
+		Args:   []string{"mysql", "my-mysql"},
+		Stdout: &stdout,
+		Stderr: &stderr,
+	}
+	client := cmd.NewClient(&http.Client{Transport: &cmdtest.Transport{}}, nil, manager)
+	err := (&EnvGet{}).Run(&ctx, client)
+	c.Assert(err, check.NotNil)
+	c.Assert(err.Error(), check.Equals, "You must pass an application or job")
+}
+
+func (s *S) TestCheckAppAndJobInputsPassingBothAppAndJob(c *check.C) {
+	var stdout, stderr bytes.Buffer
+	ctx := cmd.Context{
+		Args:   []string{"mysql", "my-mysql"},
+		Stdout: &stdout,
+		Stderr: &stderr,
+	}
+	client := cmd.NewClient(&http.Client{Transport: &cmdtest.Transport{}}, nil, manager)
+	command := &EnvGet{}
+	command.Flags().Parse(true, []string{"-j", "sample-job", "-a", "sample-app"})
+	err := command.Run(&ctx, client)
+	c.Assert(err, check.NotNil)
+	c.Assert(err.Error(), check.Equals, "You must pass an application or job, not both")
 }

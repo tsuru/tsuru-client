@@ -35,8 +35,12 @@ Example:
 
   tsuru env-set NAME=value OTHER_NAME="value with spaces" ANOTHER_NAME='using single quotes' -p`
 
+const ErrMissingAppOrJob = "You must pass an application or job"
+const ErrAppAndJobNotAllowedTogether = "You must pass an application or job, not both"
+
 type EnvGet struct {
-	cmd.AppNameMixIn
+	appName string
+	jobName string
 
 	fs   *gnuflag.FlagSet
 	json bool
@@ -44,7 +48,12 @@ type EnvGet struct {
 
 func (c *EnvGet) Flags() *gnuflag.FlagSet {
 	if c.fs == nil {
-		c.fs = c.AppNameMixIn.Flags()
+		c.fs = gnuflag.NewFlagSet("", gnuflag.ExitOnError)
+
+		c.fs.StringVar(&c.appName, "app", "", "The name of the app.")
+		c.fs.StringVar(&c.appName, "a", "", "The name of the app.")
+		c.fs.StringVar(&c.jobName, "job", "", "The name of the job.")
+		c.fs.StringVar(&c.jobName, "j", "", "The name of the job.")
 		c.fs.BoolVar(&c.json, "json", false, "Display JSON format")
 
 	}
@@ -54,17 +63,25 @@ func (c *EnvGet) Flags() *gnuflag.FlagSet {
 func (c *EnvGet) Info() *cmd.Info {
 	return &cmd.Info{
 		Name:    "env-get",
-		Usage:   "env get [-a/--app appname] [ENVIRONMENT_VARIABLE1] [ENVIRONMENT_VARIABLE2] ...",
-		Desc:    `Retrieves environment variables for an application.`,
+		Usage:   "env get [-a/--app appname] [-j/--job jobname] [ENVIRONMENT_VARIABLE1] [ENVIRONMENT_VARIABLE2] ...",
+		Desc:    `Retrieves environment variables for an application or job.`,
 		MinArgs: 0,
 	}
 }
 
 func (c *EnvGet) Run(context *cmd.Context, client *cmd.Client) error {
-	b, err := requestEnvGetURL(c.AppNameMixIn, context.Args, client)
+	context.RawOutput()
+
+	err := checkAppAndJobInputs(c.appName, c.jobName)
 	if err != nil {
 		return err
 	}
+
+	b, err := requestEnvGetURL(c, context.Args, client)
+	if err != nil {
+		return err
+	}
+
 	var variables []map[string]interface{}
 	err = json.Unmarshal(b, &variables)
 	if err != nil {
@@ -115,7 +132,8 @@ func (c *EnvGet) renderJSON(context *cmd.Context, variables []map[string]interfa
 }
 
 type EnvSet struct {
-	cmd.AppNameMixIn
+	appName   string
+	jobName   string
 	fs        *gnuflag.FlagSet
 	private   bool
 	noRestart bool
@@ -124,21 +142,24 @@ type EnvSet struct {
 func (c *EnvSet) Info() *cmd.Info {
 	return &cmd.Info{
 		Name:    "env-set",
-		Usage:   "env set <NAME=value> [NAME=value] ... [-a/--app appname] [-p/--private] [--no-restart]",
-		Desc:    `Sets environment variables for an application.`,
+		Usage:   "env set <NAME=value> [NAME=value] ... [-a/--app appname] [-j/--job jobname] [-p/--private] [--no-restart]",
+		Desc:    `Sets environment variables for an application or job.`,
 		MinArgs: 1,
 	}
 }
 
 func (c *EnvSet) Run(context *cmd.Context, client *cmd.Client) error {
 	context.RawOutput()
-	appName, err := c.AppName()
+
+	err := checkAppAndJobInputs(c.appName, c.jobName)
 	if err != nil {
 		return err
 	}
+
 	if len(context.Args) < 1 {
 		return errors.New(EnvSetValidationMessage)
 	}
+
 	envs := make([]apiTypes.Env, len(context.Args))
 	for i := range context.Args {
 		parts := strings.SplitN(context.Args[i], "=", 2)
@@ -153,10 +174,22 @@ func (c *EnvSet) Run(context *cmd.Context, client *cmd.Client) error {
 		NoRestart: c.noRestart,
 		Private:   c.private,
 	}
-	url, err := cmd.GetURL(fmt.Sprintf("/apps/%s/env", appName))
+
+	var path, apiVersion string
+	switch c.appName {
+	case "":
+		path = fmt.Sprintf("/jobs/%s/env", c.jobName)
+		apiVersion = "1.13"
+	default:
+		path = fmt.Sprintf("/apps/%s/env", c.appName)
+		apiVersion = "1.0"
+	}
+
+	url, err := cmd.GetURLVersion(apiVersion, path)
 	if err != nil {
 		return err
 	}
+
 	v, err := form.EncodeToValues(&e)
 	if err != nil {
 		return err
@@ -175,7 +208,12 @@ func (c *EnvSet) Run(context *cmd.Context, client *cmd.Client) error {
 
 func (c *EnvSet) Flags() *gnuflag.FlagSet {
 	if c.fs == nil {
-		c.fs = c.AppNameMixIn.Flags()
+		c.fs = gnuflag.NewFlagSet("", gnuflag.ExitOnError)
+
+		c.fs.StringVar(&c.appName, "app", "", "The name of the app.")
+		c.fs.StringVar(&c.appName, "a", "", "The name of the app.")
+		c.fs.StringVar(&c.jobName, "job", "", "The name of the job.")
+		c.fs.StringVar(&c.jobName, "j", "", "The name of the job.")
 		c.fs.BoolVar(&c.private, "private", false, "Private environment variables")
 		c.fs.BoolVar(&c.private, "p", false, "Private environment variables")
 		c.fs.BoolVar(&c.noRestart, "no-restart", false, "Sets environment varibles without restart the application")
@@ -184,14 +222,20 @@ func (c *EnvSet) Flags() *gnuflag.FlagSet {
 }
 
 type EnvUnset struct {
-	cmd.AppNameMixIn
+	appName   string
+	jobName   string
 	fs        *gnuflag.FlagSet
 	noRestart bool
 }
 
 func (c *EnvUnset) Flags() *gnuflag.FlagSet {
 	if c.fs == nil {
-		c.fs = c.AppNameMixIn.Flags()
+		c.fs = gnuflag.NewFlagSet("", gnuflag.ExitOnError)
+
+		c.fs.StringVar(&c.appName, "app", "", "The name of the app.")
+		c.fs.StringVar(&c.appName, "a", "", "The name of the app.")
+		c.fs.StringVar(&c.jobName, "job", "", "The name of the job.")
+		c.fs.StringVar(&c.jobName, "j", "", "The name of the job.")
 		c.fs.BoolVar(&c.noRestart, "no-restart", false, "Unset environment variables without restart the application")
 	}
 	return c.fs
@@ -200,28 +244,42 @@ func (c *EnvUnset) Flags() *gnuflag.FlagSet {
 func (c *EnvUnset) Info() *cmd.Info {
 	return &cmd.Info{
 		Name:    "env-unset",
-		Usage:   "env unset <ENVIRONMENT_VARIABLE1> [ENVIRONMENT_VARIABLE2] ... [ENVIRONMENT_VARIABLEN] [-a/--app appname] [--no-restart]",
-		Desc:    `Unset environment variables for an application.`,
+		Usage:   "env unset <ENVIRONMENT_VARIABLE1> [ENVIRONMENT_VARIABLE2] ... [ENVIRONMENT_VARIABLEN] [-a/--app appname] [-j/--job jobname] [--no-restart]",
+		Desc:    `Unset environment variables for an application or job.`,
 		MinArgs: 1,
 	}
 }
 
 func (c *EnvUnset) Run(context *cmd.Context, client *cmd.Client) error {
 	context.RawOutput()
-	appName, err := c.AppName()
+
+	err := checkAppAndJobInputs(c.appName, c.jobName)
 	if err != nil {
 		return err
 	}
+
 	v := url.Values{}
 	for _, e := range context.Args {
 		v.Add("env", e)
 	}
 	v.Set("noRestart", strconv.FormatBool(c.noRestart))
-	u, err := cmd.GetURL(fmt.Sprintf("/apps/%s/env?%s", appName, v.Encode()))
+
+	var path, apiVersion string
+	switch c.appName {
+	case "":
+		path = fmt.Sprintf("/jobs/%s/env?%s", c.jobName, v.Encode())
+		apiVersion = "1.13"
+	default:
+		path = fmt.Sprintf("/apps/%s/env?%s", c.appName, v.Encode())
+		apiVersion = "1.0"
+	}
+
+	url, err := cmd.GetURLVersion(apiVersion, path)
 	if err != nil {
 		return err
 	}
-	request, err := http.NewRequest(http.MethodDelete, u, nil)
+
+	request, err := http.NewRequest(http.MethodDelete, url, nil)
 	if err != nil {
 		return err
 	}
@@ -232,16 +290,23 @@ func (c *EnvUnset) Run(context *cmd.Context, client *cmd.Client) error {
 	return cmd.StreamJSONResponse(context.Stdout, response)
 }
 
-func requestEnvGetURL(g cmd.AppNameMixIn, args []string, client *cmd.Client) ([]byte, error) {
-	appName, err := g.AppName()
-	if err != nil {
-		return nil, err
-	}
+func requestEnvGetURL(c *EnvGet, args []string, client *cmd.Client) ([]byte, error) {
 	v := url.Values{}
 	for _, e := range args {
 		v.Add("env", e)
 	}
-	url, err := cmd.GetURL(fmt.Sprintf("/apps/%s/env?%s", appName, v.Encode()))
+
+	var path, apiVersion string
+	switch c.appName {
+	case "":
+		path = fmt.Sprintf("/jobs/%s/env?%s", c.jobName, v.Encode())
+		apiVersion = "1.16"
+	default:
+		path = fmt.Sprintf("/apps/%s/env?%s", c.appName, v.Encode())
+		apiVersion = "1.0"
+	}
+
+	url, err := cmd.GetURLVersion(apiVersion, path)
 	if err != nil {
 		return nil, err
 	}
@@ -259,4 +324,16 @@ func requestEnvGetURL(g cmd.AppNameMixIn, args []string, client *cmd.Client) ([]
 		return nil, err
 	}
 	return b, nil
+}
+
+func checkAppAndJobInputs(appName string, jobName string) error {
+	if appName == "" && jobName == "" {
+		return errors.New(ErrMissingAppOrJob)
+	}
+
+	if appName != "" && jobName != "" {
+		return errors.New(ErrAppAndJobNotAllowedTogether)
+	}
+
+	return nil
 }
