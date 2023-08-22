@@ -190,7 +190,7 @@ func (c *MetadataSet) Run(ctx *cmd.Context, cli *cmd.Client) error {
 		return errors.New(metadataSetValidationMessage)
 	}
 
-	if err := validateType(c.metadataType); err != nil {
+	if err = validateType(c.metadataType); err != nil {
 		return err
 	}
 
@@ -281,7 +281,7 @@ func (c *MetadataUnset) Run(ctx *cmd.Context, cli *cmd.Client) error {
 		return errors.New(metadataSetValidationMessage)
 	}
 
-	if err := validateType(c.metadataType); err != nil {
+	if err = validateType(c.metadataType); err != nil {
 		return err
 	}
 
