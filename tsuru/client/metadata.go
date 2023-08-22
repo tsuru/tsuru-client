@@ -2,7 +2,6 @@ package client
 
 import (
 	"context"
-	"encoding/json"
 	"errors"
 	"fmt"
 	"net/http"
@@ -14,93 +13,135 @@ import (
 	"github.com/tsuru/go-tsuruclient/pkg/tsuru"
 	"github.com/tsuru/tsuru-client/tsuru/formatter"
 	"github.com/tsuru/tsuru/cmd"
-	appTypes "github.com/tsuru/tsuru/types/app"
 )
 
 const metadataSetValidationMessage = `You must specify metadata in the form "NAME=value" with the specified type.
 
 Example:
 
-  tsuru app-metadata-set -a APPNAME -t label NAME=value OTHER_NAME="value with spaces" ANOTHER_NAME='using single quotes'
-  tsuru app-metadata-set -a APPNAME -t annotation NAME=value OTHER_NAME="value with spaces" ANOTHER_NAME='using single quotes'
+  tsuru metadata-set <-a APPNAME | -j JOBNAME> -t label NAME=value OTHER_NAME="value with spaces" ANOTHER_NAME='using single quotes'
+  tsuru metadata-set <-a APPNAME | -j JOBNAME> -t annotation NAME=value OTHER_NAME="value with spaces" ANOTHER_NAME='using single quotes'
 
 `
 
 var allowedTypes = []string{"label", "annotation"}
 
+type JobOrApp struct {
+	Type string
+	val  string
+	fs   *gnuflag.FlagSet
+}
+
+func (c *JobOrApp) validate() error {
+	appName := c.fs.Lookup("app").Value.String()
+	jobName := c.fs.Lookup("job").Value.String()
+	if appName == "" && jobName == "" {
+		return errors.New("job name or app name is required")
+	}
+	if appName != "" && jobName != "" {
+		return errors.New("please use only one of the -a/--app and -j/--job flags")
+	}
+	if appName != "" {
+		c.Type = "app"
+		c.val = appName
+		return nil
+	}
+	c.Type = "job"
+	c.val = jobName
+	return nil
+}
+
+func (c *JobOrApp) get(apiClient *tsuru.APIClient) (tsuru.Metadata, error) {
+	if c.Type == "job" {
+		job, _, err := apiClient.JobApi.GetJob(context.Background(), c.val)
+		if err != nil {
+			return tsuru.Metadata{}, err
+		}
+		return job.Job.Metadata, nil
+	}
+	app, _, err := apiClient.AppApi.AppGet(context.Background(), c.val)
+	if err != nil {
+		return tsuru.Metadata{}, err
+	}
+	return app.Metadata, nil
+}
+
+func (c *JobOrApp) set(apiClient *tsuru.APIClient, metadata tsuru.Metadata, noRestart bool) (*http.Response, error) {
+	if c.Type == "job" {
+		j := tsuru.InputJob{
+			Name:     c.val,
+			Metadata: metadata,
+		}
+		return apiClient.JobApi.UpdateJob(context.Background(), c.val, j)
+	}
+	a := tsuru.UpdateApp{
+		Metadata:  metadata,
+		NoRestart: noRestart,
+	}
+	return apiClient.AppApi.AppUpdate(context.Background(), c.val, a)
+}
+
 type MetadataGet struct {
 	cmd.AppNameMixIn
-
+	jobName      string
 	flagsApplied bool
 	json         bool
+	fs           *gnuflag.FlagSet
 }
 
 func (c *MetadataGet) Flags() *gnuflag.FlagSet {
-	fs := c.AppNameMixIn.Flags()
-	if !c.flagsApplied {
-		fs.BoolVar(&c.json, "json", false, "Show JSON")
-
-		c.flagsApplied = true
+	if c.fs == nil {
+		c.fs = c.AppNameMixIn.Flags()
+		c.fs.StringVar(&c.jobName, "job", "", "The name of the job.")
+		c.fs.StringVar(&c.jobName, "j", "", "The name of the job.")
+		if !c.flagsApplied {
+			c.fs.BoolVar(&c.json, "json", false, "Show JSON")
+			c.flagsApplied = true
+		}
 	}
-	return fs
+	return c.fs
 }
 
 func (c *MetadataGet) Info() *cmd.Info {
 	return &cmd.Info{
-		Name:    "app-metadata-get",
-		Usage:   "app metadata get [-a/--app appname]",
-		Desc:    `Retrieves metadata for an application.`,
+		Name:    "metadata-get",
+		Usage:   "metadata get <-a/--app appname | -j/--job jobname>",
+		Desc:    `Retrieves metadata for an application or job.`,
 		MinArgs: 0,
 	}
 }
 
-func (c *MetadataGet) Run(context *cmd.Context, client *cmd.Client) error {
-	appName, err := c.AppName()
+func (c *MetadataGet) Run(context *cmd.Context, cli *cmd.Client) error {
+	joa := JobOrApp{fs: c.fs}
+	err := joa.validate()
 	if err != nil {
 		return err
 	}
-
-	u, err := cmd.GetURL(fmt.Sprintf("/apps/%s", appName))
+	apiClient, err := client.ClientFromEnvironment(&tsuru.Configuration{
+		HTTPClient: cli.HTTPClient,
+	})
 	if err != nil {
 		return err
 	}
-
-	request, err := http.NewRequest("GET", u, nil)
-	if err != nil {
-		return err
-	}
-
-	response, err := client.Do(request)
-	if err != nil {
-		return err
-	}
-	if response.StatusCode == http.StatusNoContent {
-		return nil
-	}
-	defer response.Body.Close()
-
-	var a struct {
-		Metadata appTypes.Metadata
-	}
-	err = json.NewDecoder(response.Body).Decode(&a)
+	metadata, err := joa.get(apiClient)
 	if err != nil {
 		return err
 	}
 
 	if c.json {
-		return formatter.JSON(context.Stdout, a.Metadata)
+		return formatter.JSON(context.Stdout, metadata)
 	}
 
-	formatted := make([]string, 0, len(a.Metadata.Labels))
-	for _, v := range a.Metadata.Labels {
+	formatted := make([]string, 0, len(metadata.Labels))
+	for _, v := range metadata.Labels {
 		formatted = append(formatted, fmt.Sprintf("\t%s: %s", v.Name, v.Value))
 	}
 	sort.Strings(formatted)
 	fmt.Fprintln(context.Stdout, "Labels:")
 	fmt.Fprintln(context.Stdout, strings.Join(formatted, "\n"))
 
-	formatted = make([]string, 0, len(a.Metadata.Annotations))
-	for _, v := range a.Metadata.Annotations {
+	formatted = make([]string, 0, len(metadata.Annotations))
+	for _, v := range metadata.Annotations {
 		formatted = append(formatted, fmt.Sprintf("\t%s: %s", v.Name, v.Value))
 	}
 	sort.Strings(formatted)
@@ -111,6 +152,7 @@ func (c *MetadataGet) Run(context *cmd.Context, client *cmd.Client) error {
 
 type MetadataSet struct {
 	cmd.AppNameMixIn
+	job          string
 	fs           *gnuflag.FlagSet
 	metadataType string
 	noRestart    bool
@@ -118,9 +160,9 @@ type MetadataSet struct {
 
 func (c *MetadataSet) Info() *cmd.Info {
 	return &cmd.Info{
-		Name:    "app-metadata-set",
-		Usage:   "app metadata set <NAME=value> [NAME=value] ... [-a/--app appname] [-t/--type type]",
-		Desc:    `Sets metadata such as labels and annotations for an application.`,
+		Name:    "metadata-set",
+		Usage:   "metadata set <NAME=value> [NAME=value] ... <-a/--app appname | -j/--job jobname> [-t/--type type]",
+		Desc:    `Sets metadata such as labels and annotations for an application or job.`,
 		MinArgs: 1,
 	}
 }
@@ -128,6 +170,8 @@ func (c *MetadataSet) Info() *cmd.Info {
 func (c *MetadataSet) Flags() *gnuflag.FlagSet {
 	if c.fs == nil {
 		c.fs = c.AppNameMixIn.Flags()
+		c.fs.StringVar(&c.job, "job", "", "The name of the job.")
+		c.fs.StringVar(&c.job, "j", "", "The name of the job.")
 		c.fs.StringVar(&c.metadataType, "type", "", "Metadata type: annotation or label")
 		c.fs.StringVar(&c.metadataType, "t", "", "Metadata type: annotation or label")
 		c.fs.BoolVar(&c.noRestart, "no-restart", false, "Sets metadata without restarting the application")
@@ -137,11 +181,11 @@ func (c *MetadataSet) Flags() *gnuflag.FlagSet {
 
 func (c *MetadataSet) Run(ctx *cmd.Context, cli *cmd.Client) error {
 	ctx.RawOutput()
-	appName := c.Flags().Lookup("app").Value.String()
-	if appName == "" {
-		return errors.New("Please use the -a/--app flag to specify which app you want to update.")
+	joa := JobOrApp{fs: c.fs}
+	err := joa.validate()
+	if err != nil {
+		return err
 	}
-
 	if len(ctx.Args) < 1 {
 		return errors.New(metadataSetValidationMessage)
 	}
@@ -174,12 +218,7 @@ func (c *MetadataSet) Run(ctx *cmd.Context, cli *cmd.Client) error {
 		return err
 	}
 
-	updateApp := tsuru.UpdateApp{
-		Metadata:  metadata,
-		NoRestart: c.noRestart,
-	}
-
-	response, err := apiClient.AppApi.AppUpdate(context.TODO(), appName, updateApp)
+	response, err := joa.set(apiClient, metadata, c.noRestart)
 	if err != nil {
 		return err
 	}
@@ -188,7 +227,7 @@ func (c *MetadataSet) Run(ctx *cmd.Context, cli *cmd.Client) error {
 	if err != nil {
 		return err
 	}
-	fmt.Fprintf(ctx.Stdout, "App %q has been updated!\n", appName)
+	fmt.Fprintf(ctx.Stdout, "%s %q has been updated!\n", joa.Type, joa.val)
 	return nil
 }
 
@@ -204,6 +243,7 @@ func validateType(t string) error {
 
 type MetadataUnset struct {
 	cmd.AppNameMixIn
+	job          string
 	fs           *gnuflag.FlagSet
 	metadataType string
 	noRestart    bool
@@ -211,9 +251,9 @@ type MetadataUnset struct {
 
 func (c *MetadataUnset) Info() *cmd.Info {
 	return &cmd.Info{
-		Name:    "app-metadata-unset",
-		Usage:   "app metadata unset <NAME> [NAME] ... [-a/--app appname] [-t/--type type]",
-		Desc:    `Unsets metadata such as labels and annotations for an application.`,
+		Name:    "metadata-unset",
+		Usage:   "metadata unset <NAME> [NAME] ... <-a/--app appname | -j--job jobname> [-t/--type type]",
+		Desc:    `Unsets metadata such as labels and annotations for an application or job.`,
 		MinArgs: 1,
 	}
 }
@@ -221,6 +261,8 @@ func (c *MetadataUnset) Info() *cmd.Info {
 func (c *MetadataUnset) Flags() *gnuflag.FlagSet {
 	if c.fs == nil {
 		c.fs = c.AppNameMixIn.Flags()
+		c.fs.StringVar(&c.job, "job", "", "The name of the job.")
+		c.fs.StringVar(&c.job, "j", "", "The name of the job.")
 		c.fs.StringVar(&c.metadataType, "type", "", "Metadata type: annotation or label")
 		c.fs.StringVar(&c.metadataType, "t", "", "Metadata type: annotation or label")
 		c.fs.BoolVar(&c.noRestart, "no-restart", false, "Sets metadata without restarting the application")
@@ -230,11 +272,11 @@ func (c *MetadataUnset) Flags() *gnuflag.FlagSet {
 
 func (c *MetadataUnset) Run(ctx *cmd.Context, cli *cmd.Client) error {
 	ctx.RawOutput()
-	appName := c.Flags().Lookup("app").Value.String()
-	if appName == "" {
-		return errors.New("Please use the -a/--app flag to specify which app you want to update.")
+	joa := JobOrApp{fs: c.fs}
+	err := joa.validate()
+	if err != nil {
+		return err
 	}
-
 	if len(ctx.Args) < 1 {
 		return errors.New(metadataSetValidationMessage)
 	}
@@ -263,12 +305,7 @@ func (c *MetadataUnset) Run(ctx *cmd.Context, cli *cmd.Client) error {
 		return err
 	}
 
-	updateApp := tsuru.UpdateApp{
-		Metadata:  metadata,
-		NoRestart: c.noRestart,
-	}
-
-	response, err := apiClient.AppApi.AppUpdate(context.TODO(), appName, updateApp)
+	response, err := joa.set(apiClient, metadata, c.noRestart)
 	if err != nil {
 		return err
 	}
@@ -277,6 +314,6 @@ func (c *MetadataUnset) Run(ctx *cmd.Context, cli *cmd.Client) error {
 	if err != nil {
 		return err
 	}
-	fmt.Fprintf(ctx.Stdout, "App %q has been updated!\n", appName)
+	fmt.Fprintf(ctx.Stdout, "%s %q has been updated!\n", joa.Type, joa.val)
 	return nil
 }
