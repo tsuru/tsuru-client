@@ -51,7 +51,7 @@ func (c *JobOrApp) validate() error {
 	return nil
 }
 
-func (c *JobOrApp) get(apiClient *tsuru.APIClient) (tsuru.Metadata, error) {
+func (c *JobOrApp) getMetdata(apiClient *tsuru.APIClient) (tsuru.Metadata, error) {
 	if c.Type == "job" {
 		job, _, err := apiClient.JobApi.GetJob(context.Background(), c.val)
 		if err != nil {
@@ -66,7 +66,7 @@ func (c *JobOrApp) get(apiClient *tsuru.APIClient) (tsuru.Metadata, error) {
 	return app.Metadata, nil
 }
 
-func (c *JobOrApp) set(apiClient *tsuru.APIClient, metadata tsuru.Metadata, noRestart bool) (*http.Response, error) {
+func (c *JobOrApp) setMetdata(apiClient *tsuru.APIClient, metadata tsuru.Metadata, noRestart bool) (*http.Response, error) {
 	if c.Type == "job" {
 		j := tsuru.InputJob{
 			Name:     c.val,
@@ -123,7 +123,7 @@ func (c *MetadataGet) Run(context *cmd.Context, cli *cmd.Client) error {
 	if err != nil {
 		return err
 	}
-	metadata, err := joa.get(apiClient)
+	metadata, err := joa.getMetdata(apiClient)
 	if err != nil {
 		return err
 	}
@@ -218,7 +218,7 @@ func (c *MetadataSet) Run(ctx *cmd.Context, cli *cmd.Client) error {
 		return err
 	}
 
-	response, err := joa.set(apiClient, metadata, c.noRestart)
+	response, err := joa.setMetdata(apiClient, metadata, c.noRestart)
 	if err != nil {
 		return err
 	}
@@ -305,7 +305,7 @@ func (c *MetadataUnset) Run(ctx *cmd.Context, cli *cmd.Client) error {
 		return err
 	}
 
-	response, err := joa.set(apiClient, metadata, c.noRestart)
+	response, err := joa.setMetdata(apiClient, metadata, c.noRestart)
 	if err != nil {
 		return err
 	}
