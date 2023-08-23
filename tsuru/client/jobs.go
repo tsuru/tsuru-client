@@ -139,6 +139,12 @@ func (c *JobCreate) Run(ctx *cmd.Context, cli *cmd.Client) error {
 	if err != nil {
 		return err
 	}
+	if !c.manual && c.schedule == "" {
+		return errors.New("schedule or manual option must be set")
+	}
+	if c.manual && c.schedule != "" {
+		return errors.New("cannot set both manual job and schedule options")
+	}
 	jobName := ctx.Args[0]
 	image := ctx.Args[1]
 	commands := ctx.Args[2:]
