@@ -300,6 +300,78 @@ Units: 1
 	c.Assert(stdout.String(), check.Equals, expected)
 }
 
+func (s *S) TestJobInfoManual(c *check.C) {
+	var stdout, stderr bytes.Buffer
+	jobName := "manualJob"
+	context := cmd.Context{
+		Args:   []string{jobName},
+		Stdout: &stdout,
+		Stderr: &stderr,
+	}
+	expected := `Job: manualjob
+Teams: [tsuru]
+Created by: tsuru@tsuru.io
+Pool: kubepool
+Plan: c0.1m0.1
+Image: manualjob:v0
+Command: [/bin/sh -c sleep 600;]
+`
+	trans := cmdtest.ConditionalTransport{
+		Transport: cmdtest.Transport{
+			Message: `
+{
+	"job": {
+		"name": "manualjob",
+		"teams": [
+			"tsuru"
+		],
+		"teamOwner": "tsuru",
+		"owner": "tsuru@tsuru.io",
+		"plan": {
+			"name": "c0.1m0.1",
+			"memory": 134217728,
+			"cpumilli": 100,
+			"override": {
+				"memory": null,
+				"cpumilli": null
+			}
+		},
+		"metadata": {
+			"labels": [],
+			"annotations": []
+		},
+		"pool": "kubepool",
+		"description": "",
+		"spec": {
+			"schedule": "* * 31 2 *",
+			"manual": true,
+			"container": {
+				"image": "manualjob:v0",
+				"command": [
+					"/bin/sh",
+					"-c",
+					"sleep 600;"
+				]
+			},
+			"envs": []
+		}
+	}
+}
+`, Status: http.StatusOK,
+		}, CondFunc: func(r *http.Request) bool {
+			c.Assert(r.URL.Path, check.Equals, fmt.Sprintf("/1.13/jobs/%s", jobName))
+			c.Assert(r.Method, check.Equals, "GET")
+			return true
+		},
+	}
+	client := cmd.NewClient(&http.Client{Transport: &trans}, nil, manager)
+	command := JobInfo{}
+	command.Info()
+	err := command.Run(&context, client)
+	c.Assert(err, check.IsNil)
+	c.Assert(stdout.String(), check.Equals, expected)
+}
+
 func (s *S) TestJobInfoApiError(c *check.C) {
 	var stdout, stderr bytes.Buffer
 	jobName := "garrincha"
@@ -328,13 +400,13 @@ func (s *S) TestJobList(c *check.C) {
 		Stderr: &stderr,
 	}
 	expected :=
-		`+------------+----------+-----------------+---------------------------------------------------------+
-| Name       | Schedule | Image           | Command                                                 |
-+------------+----------+-----------------+---------------------------------------------------------+
-| august     |          | midnights:v10   | /bin/sh -c date; echo Hello from the Kubernetes cluster |
-+------------+----------+-----------------+---------------------------------------------------------+
-| tim-mcgraw |          | fearless:latest | sleep 30                                                |
-+------------+----------+-----------------+---------------------------------------------------------+
+		`+------------+-----------+-----------------+---------------------------------------------------------+
+| Name       | Schedule  | Image           | Command                                                 |
++------------+-----------+-----------------+---------------------------------------------------------+
+| august     | manual    | midnights:v10   | /bin/sh -c date; echo Hello from the Kubernetes cluster |
++------------+-----------+-----------------+---------------------------------------------------------+
+| tim-mcgraw | * * * * * | fearless:latest | sleep 30                                                |
++------------+-----------+-----------------+---------------------------------------------------------+
 `
 	timMcgrawjob := tsuru.Job{
 		Name:      "tim-mcgraw",
@@ -347,6 +419,8 @@ func (s *S) TestJobList(c *check.C) {
 			Cpumilli: int32(100),
 		},
 		Spec: tsuru.JobSpec{
+			Schedule: "* * * * *",
+			Manual:   false,
 			Container: tsuru.InputJobContainer{
 				Image:   "fearless:latest",
 				Command: []string{"sleep", "30"},
@@ -364,6 +438,8 @@ func (s *S) TestJobList(c *check.C) {
 			Cpumilli: int32(100),
 		},
 		Spec: tsuru.JobSpec{
+			Schedule: "* * 31 2 *",
+			Manual:   true,
 			Container: tsuru.InputJobContainer{
 				Image:   "midnights:v10",
 				Command: []string{"/bin/sh", "-c", "date; echo Hello from the Kubernetes cluster"},

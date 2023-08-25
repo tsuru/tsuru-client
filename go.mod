@@ -14,9 +14,9 @@ require (
 	github.com/pmorie/go-open-service-broker-client v0.0.0-20180330214919-dca737037ce6
 	github.com/sabhiram/go-gitignore v0.0.0-20171017070213-362f9845770f
 	github.com/tsuru/gnuflag v0.0.0-20151217162021-86b8c1b864aa
-	github.com/tsuru/go-tsuruclient v0.0.0-20230620200646-77b59f7bb707
+	github.com/tsuru/go-tsuruclient v0.0.0-20230825175856-bf0be3711ce8
 	github.com/tsuru/tablecli v0.0.0-20190131152944-7ded8a3383c6
-	github.com/tsuru/tsuru v0.0.0-20230619203800-4d111c8b1584
+	github.com/tsuru/tsuru v0.0.0-20230721211340-f41fb455f8c3
 	gopkg.in/check.v1 v1.0.0-20201130134442-10cb98267c6c
 	gopkg.in/yaml.v2 v2.4.0
 	k8s.io/apimachinery v0.23.4
@@ -41,7 +41,7 @@ require (
 	github.com/gogo/protobuf v1.3.2 // indirect
 	github.com/golang/glog v0.0.0-20160126235308-23def4e6c14b // indirect
 	github.com/golang/groupcache v0.0.0-20210331224755-41bb18bfe9da // indirect
-	github.com/golang/protobuf v1.5.2 // indirect
+	github.com/golang/protobuf v1.5.3 // indirect
 	github.com/google/go-cmp v0.5.9 // indirect
 	github.com/google/gofuzz v1.2.0 // indirect
 	github.com/hashicorp/go-version v1.2.0 // indirect
@@ -71,17 +71,17 @@ require (
 	github.com/sirupsen/logrus v1.9.0 // indirect
 	github.com/tsuru/config v0.0.0-20201023175036-375aaee8b560 // indirect
 	go.opencensus.io v0.23.0 // indirect
-	golang.org/x/crypto v0.1.0 // indirect
-	golang.org/x/mod v0.6.0 // indirect
-	golang.org/x/net v0.1.0 // indirect
-	golang.org/x/oauth2 v0.1.0 // indirect
-	golang.org/x/sys v0.1.0 // indirect
-	golang.org/x/term v0.1.0 // indirect
-	golang.org/x/text v0.4.0 // indirect
+	golang.org/x/crypto v0.11.0 // indirect
+	golang.org/x/mod v0.8.0 // indirect
+	golang.org/x/net v0.12.0 // indirect
+	golang.org/x/oauth2 v0.10.0 // indirect
+	golang.org/x/sys v0.10.0 // indirect
+	golang.org/x/term v0.10.0 // indirect
+	golang.org/x/text v0.11.0 // indirect
 	golang.org/x/time v0.0.0-20210723032227-1f47c861a9ac // indirect
-	golang.org/x/tools v0.1.12 // indirect
+	golang.org/x/tools v0.6.0 // indirect
 	google.golang.org/appengine v1.6.7 // indirect
-	google.golang.org/protobuf v1.28.1 // indirect
+	google.golang.org/protobuf v1.31.0 // indirect
 	gopkg.in/inf.v0 v0.9.1 // indirect
 	k8s.io/api v0.23.4 // indirect
 	k8s.io/client-go v0.23.4 // indirect

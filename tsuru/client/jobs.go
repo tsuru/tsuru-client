@@ -214,7 +214,7 @@ Teams: {{.Job.Teams}}
 Created by: {{.Job.Owner}}
 Pool: {{.Job.Pool}}
 Plan: {{.Job.Plan.Name}}
-{{- if .Job.Spec.Schedule }}
+{{- if and .Job.Spec.Schedule (not .Job.Spec.Manual) }}
 Schedule: {{.Job.Spec.Schedule}}
 {{- end }}
 Image: {{.Job.Spec.Container.Image}}
@@ -366,9 +366,13 @@ func (c *JobList) Run(ctx *cmd.Context, cli *cmd.Client) error {
 	tbl.Headers = tablecli.Row{"Name", "Schedule", "Image", "Command"}
 	tbl.LineSeparator = true
 	for _, j := range jobs {
+		schedule := j.Spec.Schedule
+		if j.Spec.Manual {
+			schedule = "manual"
+		}
 		tbl.AddRow(tablecli.Row{
 			j.Name,
-			j.Spec.Schedule,
+			schedule,
 			j.Spec.Container.Image,
 			strings.Join(j.Spec.Container.Command, " "),
 		})
