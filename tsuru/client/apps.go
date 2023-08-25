@@ -542,7 +542,7 @@ type app struct {
 	InternalAddresses    []appInternalAddress
 	UnitsMetrics         []unitMetrics
 	VolumeBinds          []volumeTypes.VolumeBind
-	ServiceInstanceBinds []serviceInstanceBind
+	ServiceInstanceBinds []tsuru.AppServiceInstanceBinds
 }
 
 type serviceInstanceBind struct {
@@ -780,7 +780,7 @@ func (a *app) String(simplified bool) string {
 }
 
 func (a *app) SimpleServicesView() string {
-	sibs := make([]serviceInstanceBind, len(a.ServiceInstanceBinds))
+	sibs := make([]tsuru.AppServiceInstanceBinds, len(a.ServiceInstanceBinds))
 	copy(sibs, a.ServiceInstanceBinds)
 
 	sort.Slice(sibs, func(i, j int) bool {
@@ -990,8 +990,8 @@ func renderUnits(buf *bytes.Buffer, units []unit, metrics []unitMetrics, provisi
 	}
 }
 
-func renderServiceInstanceBinds(w io.Writer, binds []serviceInstanceBind) {
-	sibs := make([]serviceInstanceBind, len(binds))
+func renderServiceInstanceBinds(w io.Writer, binds []tsuru.AppServiceInstanceBinds) {
+	sibs := make([]tsuru.AppServiceInstanceBinds, len(binds))
 	copy(sibs, binds)
 
 	sort.Slice(sibs, func(i, j int) bool {

@@ -246,6 +246,7 @@ func (c *JobInfo) Run(ctx *cmd.Context, cli *cmd.Client) error {
 	}
 
 	renderJobUnits(&buf, jobInfo.Units)
+	renderServiceInstanceBinds(&buf, jobInfo.ServiceInstanceBinds)
 	fmt.Fprintln(ctx.Stdout, buf.String())
 	return nil
 }

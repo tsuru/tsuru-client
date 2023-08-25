@@ -225,6 +225,14 @@ Units: 1
 | garrincha-28072468-kp4jv | running | 0        |     |
 +--------------------------+---------+----------+-----+
 
+Service instances: 2
++----------+-----------------+
+| Service  | Instance (Plan) |
++----------+-----------------+
+| mongodb  | mongoapi        |
+| redisapi | myredisapi      |
++----------+-----------------+
+
 `
 	trans := cmdtest.ConditionalTransport{
 		Transport: cmdtest.Transport{
@@ -283,7 +291,8 @@ Units: 1
 		"HostAddr": "",
 		"HostPort": "",
 		"IP": "10.92.15.84"
-	}]
+	}],
+	"serviceInstanceBinds": [{"service": "redisapi", "instance": "myredisapi"}, {"service": "mongodb", "instance": "mongoapi"}]
 }
 `, Status: http.StatusOK,
 		}, CondFunc: func(r *http.Request) bool {

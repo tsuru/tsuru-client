@@ -14,7 +14,7 @@ require (
 	github.com/pmorie/go-open-service-broker-client v0.0.0-20180330214919-dca737037ce6
 	github.com/sabhiram/go-gitignore v0.0.0-20171017070213-362f9845770f
 	github.com/tsuru/gnuflag v0.0.0-20151217162021-86b8c1b864aa
-	github.com/tsuru/go-tsuruclient v0.0.0-20230825175856-bf0be3711ce8
+	github.com/tsuru/go-tsuruclient v0.0.0-20230825190329-707cd132390e
 	github.com/tsuru/tablecli v0.0.0-20190131152944-7ded8a3383c6
 	github.com/tsuru/tsuru v0.0.0-20230721211340-f41fb455f8c3
 	gopkg.in/check.v1 v1.0.0-20201130134442-10cb98267c6c
