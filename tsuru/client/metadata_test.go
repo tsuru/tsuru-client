@@ -16,7 +16,22 @@ func (s *S) TestMetadataGetInfo(c *check.C) {
 	c.Assert((&MetadataGet{}).Info(), check.NotNil)
 }
 
-func (s *S) TestMetadataGetRun(c *check.C) {
+func (s *S) TestMetadataSetBothJobAndAppFlags(c *check.C) {
+	var stdout, stderr bytes.Buffer
+	context := cmd.Context{
+		Args:   []string{"test.tsuru.io/label=some-value"},
+		Stdout: &stdout,
+		Stderr: &stderr,
+	}
+
+	command := MetadataSet{}
+	command.Flags().Parse(true, []string{"-a", "someapp", "-j", "somejob"})
+	err := command.Run(&context, nil)
+	c.Assert(err, check.NotNil)
+	c.Assert(err.Error(), check.Equals, "please use only one of the -a/--app and -j/--job flags")
+}
+
+func (s *S) TestMetadataGetAppRun(c *check.C) {
 	var stdout, stderr bytes.Buffer
 	jsonResult := `{"metadata":{"annotations":[{"name":"my-annotation","value":"some long value"}],"labels":[{"name":"logging.globoi.com/backup","value":"true"}]}}`
 	result := "Labels:\n" +
@@ -35,18 +50,86 @@ func (s *S) TestMetadataGetRun(c *check.C) {
 	c.Assert(stdout.String(), check.Equals, result)
 }
 
+func (s *S) TestMetadataGetJobRun(c *check.C) {
+	var stdout, stderr bytes.Buffer
+	jsonResult := `{
+		"job": {
+			"name": "somejob",
+			"metadata": {
+				"annotations": [{
+					"name": "my-annotation",
+					"value": "some long value"
+				}],
+				"labels": [{
+					"name": "logging.globoi.com/backup",
+					"value": "true"
+				}]
+			}
+		}
+	}`
+	result := "Labels:\n" +
+		"\tlogging.globoi.com/backup: true\n" +
+		"Annotations:\n" +
+		"\tmy-annotation: some long value\n"
+	context := cmd.Context{
+		Stdout: &stdout,
+		Stderr: &stderr,
+	}
+	client := cmd.NewClient(&http.Client{Transport: &cmdtest.Transport{Message: jsonResult, Status: http.StatusOK}}, nil, manager)
+	command := MetadataGet{}
+	command.Flags().Parse(true, []string{"-j", "somejob"})
+	err := command.Run(&context, client)
+	c.Assert(err, check.IsNil)
+	c.Assert(stdout.String(), check.Equals, result)
+}
+
 func (s *S) TestMetadataSetInfo(c *check.C) {
 	c.Assert((&MetadataSet{}).Info(), check.NotNil)
 }
 
-func (s *S) TestMetadataSetRunWithLabel(c *check.C) {
+func (s *S) TestMetadataSetRunJobWithLabel(c *check.C) {
 	var stdout, stderr bytes.Buffer
 	context := cmd.Context{
 		Args:   []string{"test.tsuru.io/label=some-value"},
 		Stdout: &stdout,
 		Stderr: &stderr,
 	}
-	expectedOut := "App \"someapp\" has been updated!\n"
+	expectedOut := "job \"somejob\" has been updated!\n"
+
+	trans := &cmdtest.ConditionalTransport{
+		Transport: cmdtest.Transport{Status: http.StatusOK},
+		CondFunc: func(req *http.Request) bool {
+			url := strings.HasSuffix(req.URL.Path, "/jobs/somejob")
+			method := req.Method == "PUT"
+			data, err := io.ReadAll(req.Body)
+			c.Assert(err, check.IsNil)
+			var payload map[string]interface{}
+			err = json.Unmarshal(data, &payload)
+			c.Assert(err, check.IsNil)
+			c.Assert(payload, check.DeepEquals, map[string]interface{}{
+				"container": map[string]interface{}{},
+				"metadata":  map[string]interface{}{"labels": []interface{}{map[string]interface{}{"name": "test.tsuru.io/label", "value": "some-value"}}},
+				"name":      "somejob"})
+			return url && method
+		},
+	}
+	client := cmd.NewClient(&http.Client{Transport: trans}, nil, manager)
+
+	command := MetadataSet{}
+	command.Flags().Parse(true, []string{"-j", "somejob", "-t", "label"})
+	err := command.Run(&context, client)
+	c.Assert(err, check.IsNil)
+	c.Assert(stdout.String(), check.Equals, expectedOut)
+}
+
+func (s *S) TestMetadataSetRunAppWithLabel(c *check.C) {
+	var stdout, stderr bytes.Buffer
+	context := cmd.Context{
+		Args:   []string{"test.tsuru.io/label=some-value"},
+		Stdout: &stdout,
+		Stderr: &stderr,
+	}
+	expectedOut := "app \"someapp\" has been updated!\n"
 
 	trans := &cmdtest.ConditionalTransport{
 		Transport: cmdtest.Transport{Status: http.StatusOK},
@@ -55,7 +138,6 @@ func (s *S) TestMetadataSetRunWithLabel(c *check.C) {
 			method := req.Method == "PUT"
 			data, err := io.ReadAll(req.Body)
 			c.Assert(err, check.IsNil)
-
 			var payload map[string]interface{}
 			err = json.Unmarshal(data, &payload)
 			c.Assert(err, check.IsNil)
@@ -77,14 +159,50 @@ func (s *S) TestMetadataSetRunWithLabel(c *check.C) {
 	c.Assert(stdout.String(), check.Equals, expectedOut)
 }
 
-func (s *S) TestMetadataSetRunWithAnnotations(c *check.C) {
+func (s *S) TestMetadataSetRunJobWithAnnotations(c *check.C) {
 	var stdout, stderr bytes.Buffer
 	context := cmd.Context{
 		Args:   []string{"test.tsuru.io/label=some-value, that is really long"},
 		Stdout: &stdout,
 		Stderr: &stderr,
 	}
-	expectedOut := "App \"someapp\" has been updated!\n"
+	expectedOut := "job \"somejob\" has been updated!\n"
+
+	trans := &cmdtest.ConditionalTransport{
+		Transport: cmdtest.Transport{Status: http.StatusOK},
+		CondFunc: func(req *http.Request) bool {
+			url := strings.HasSuffix(req.URL.Path, "/jobs/somejob")
+			method := req.Method == "PUT"
+			data, err := io.ReadAll(req.Body)
+			c.Assert(err, check.IsNil)
+
+			var payload map[string]interface{}
+			err = json.Unmarshal(data, &payload)
+			c.Assert(err, check.IsNil)
+			c.Assert(payload, check.DeepEquals, map[string]interface{}{
+				"container": map[string]interface{}{},
+				"metadata":  map[string]interface{}{"annotations": []interface{}{map[string]interface{}{"name": "test.tsuru.io/label", "value": "some-value, that is really long"}}},
+				"name":      "somejob"})
+			return url && method
+		},
+	}
+	client := cmd.NewClient(&http.Client{Transport: trans}, nil, manager)
+
+	command := MetadataSet{}
+	command.Flags().Parse(true, []string{"-j", "somejob", "-t", "annotation"})
+	err := command.Run(&context, client)
+	c.Assert(err, check.IsNil)
+	c.Assert(stdout.String(), check.Equals, expectedOut)
+}
+
+func (s *S) TestMetadataSetRunAppWithAnnotations(c *check.C) {
+	var stdout, stderr bytes.Buffer
+	context := cmd.Context{
+		Args:   []string{"test.tsuru.io/label=some-value, that is really long"},
+		Stdout: &stdout,
+		Stderr: &stderr,
+	}
+	expectedOut := "app \"someapp\" has been updated!\n"
 
 	trans := &cmdtest.ConditionalTransport{
 		Transport: cmdtest.Transport{Status: http.StatusOK},
@@ -135,7 +253,7 @@ func (s *S) TestMetadataSetFailsWithoutType(c *check.C) {
 	c.Assert(err.Error(), check.Equals, "A type is required: label or annotation")
 }
 
-func (s *S) TestMetadateSetSupportsNoRestart(c *check.C) {
+func (s *S) TestMetadataSetAppSupportsNoRestart(c *check.C) {
 	command := MetadataSet{}
 	flagset := command.Flags()
 	flagset.Parse(true, []string{"--no-restart"})
@@ -150,14 +268,50 @@ func (s *S) TestMetadataUnsetInfo(c *check.C) {
 	c.Assert((&MetadataUnset{}).Info(), check.NotNil)
 }
 
-func (s *S) TestMetadataUnsetRunWithLabel(c *check.C) {
+func (s *S) TestMetadataUnsetRunJobWithLabel(c *check.C) {
 	var stdout, stderr bytes.Buffer
 	context := cmd.Context{
 		Args:   []string{"test.tsuru.io/label"},
 		Stdout: &stdout,
 		Stderr: &stderr,
 	}
-	expectedOut := "App \"someapp\" has been updated!\n"
+	expectedOut := "job \"somejob\" has been updated!\n"
+
+	trans := &cmdtest.ConditionalTransport{
+		Transport: cmdtest.Transport{Status: http.StatusOK},
+		CondFunc: func(req *http.Request) bool {
+			url := strings.HasSuffix(req.URL.Path, "/jobs/somejob")
+			method := req.Method == "PUT"
+			data, err := io.ReadAll(req.Body)
+			c.Assert(err, check.IsNil)
+
+			var payload map[string]interface{}
+			err = json.Unmarshal(data, &payload)
+			c.Assert(err, check.IsNil)
+			c.Assert(payload, check.DeepEquals, map[string]interface{}{
+				"container": map[string]interface{}{},
+				"metadata":  map[string]interface{}{"labels": []interface{}{map[string]interface{}{"name": "test.tsuru.io/label", "delete": true}}},
+				"name":      "somejob"})
+			return url && method
+		},
+	}
+	client := cmd.NewClient(&http.Client{Transport: trans}, nil, manager)
+
+	command := MetadataUnset{}
+	command.Flags().Parse(true, []string{"-j", "somejob", "-t", "label"})
+	err := command.Run(&context, client)
+	c.Assert(err, check.IsNil)
+	c.Assert(stdout.String(), check.Equals, expectedOut)
+}
+
+func (s *S) TestMetadataUnsetRunAppWithLabel(c *check.C) {
+	var stdout, stderr bytes.Buffer
+	context := cmd.Context{
+		Args:   []string{"test.tsuru.io/label"},
+		Stdout: &stdout,
+		Stderr: &stderr,
+	}
+	expectedOut := "app \"someapp\" has been updated!\n"
 
 	trans := &cmdtest.ConditionalTransport{
 		Transport: cmdtest.Transport{Status: http.StatusOK},
@@ -188,14 +342,50 @@ func (s *S) TestMetadataUnsetRunWithLabel(c *check.C) {
 	c.Assert(stdout.String(), check.Equals, expectedOut)
 }
 
-func (s *S) TestMetadataUnsetRunWithAnnotations(c *check.C) {
+func (s *S) TestMetadataUnsetRunJobWithAnnotations(c *check.C) {
 	var stdout, stderr bytes.Buffer
 	context := cmd.Context{
 		Args:   []string{"test.tsuru.io/label"},
 		Stdout: &stdout,
 		Stderr: &stderr,
 	}
-	expectedOut := "App \"someapp\" has been updated!\n"
+	expectedOut := "job \"somejob\" has been updated!\n"
+
+	trans := &cmdtest.ConditionalTransport{
+		Transport: cmdtest.Transport{Status: http.StatusOK},
+		CondFunc: func(req *http.Request) bool {
+			url := strings.HasSuffix(req.URL.Path, "/jobs/somejob")
+			method := req.Method == "PUT"
+			data, err := io.ReadAll(req.Body)
+			c.Assert(err, check.IsNil)
+
+			var payload map[string]interface{}
+			err = json.Unmarshal(data, &payload)
+			c.Assert(err, check.IsNil)
+			c.Assert(payload, check.DeepEquals, map[string]interface{}{
+				"container": map[string]interface{}{},
+				"metadata":  map[string]interface{}{"annotations": []interface{}{map[string]interface{}{"name": "test.tsuru.io/label", "delete": true}}},
+				"name":      "somejob"})
+			return url && method
+		},
+	}
+	client := cmd.NewClient(&http.Client{Transport: trans}, nil, manager)
+
+	command := MetadataUnset{}
+	command.Flags().Parse(true, []string{"-j", "somejob", "-t", "annotation"})
+	err := command.Run(&context, client)
+	c.Assert(err, check.IsNil)
+	c.Assert(stdout.String(), check.Equals, expectedOut)
+}
+
+func (s *S) TestMetadataUnsetRunAppWithAnnotations(c *check.C) {
+	var stdout, stderr bytes.Buffer
+	context := cmd.Context{
+		Args:   []string{"test.tsuru.io/label"},
+		Stdout: &stdout,
+		Stderr: &stderr,
+	}
+	expectedOut := "app \"someapp\" has been updated!\n"
 
 	trans := &cmdtest.ConditionalTransport{
 		Transport: cmdtest.Transport{Status: http.StatusOK},
@@ -240,13 +430,13 @@ func (s *S) TestMetadataUnsetFailsWithoutType(c *check.C) {
 	client := cmd.NewClient(&http.Client{Transport: trans}, nil, manager)
 
 	command := MetadataUnset{}
-	command.Flags().Parse(true, []string{"-a", "someapp"})
+	command.Flags().Parse(true, []string{"-j", "somejob"})
 	err := command.Run(&context, client)
 	c.Assert(err, check.NotNil)
 	c.Assert(err.Error(), check.Equals, "A type is required: label or annotation")
 }
 
-func (s *S) TestMetadateUnsetSupportsNoRestart(c *check.C) {
+func (s *S) TestMetadateUnsetAppSupportsNoRestart(c *check.C) {
 	command := MetadataUnset{}
 	flagset := command.Flags()
 	flagset.Parse(true, []string{"--no-restart"})
