@@ -545,12 +545,6 @@ type app struct {
 	ServiceInstanceBinds []tsuru.AppServiceInstanceBinds
 }
 
-type serviceInstanceBind struct {
-	Service  string
-	Instance string
-	Plan     string
-}
-
 type appInternalAddress struct {
 	Domain   string
 	Protocol string
