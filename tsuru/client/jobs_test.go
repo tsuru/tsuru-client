@@ -624,6 +624,9 @@ func (s *S) TestJobUpdate(c *check.C) {
 	}
 	client := cmd.NewClient(&http.Client{Transport: &trans}, nil, manager)
 	command := JobUpdate{}
+	c.Assert(command.Info().MinArgs, check.Equals, 1)
+	unlimitedMaxArgs := 0
+	c.Assert(command.Info().MaxArgs, check.Equals, unlimitedMaxArgs)
 	command.Flags().Parse(true, []string{"-i", "tsuru/scratch:latest"})
 	err := command.Run(&context, client)
 	c.Assert(err, check.IsNil)

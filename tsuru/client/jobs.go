@@ -481,7 +481,6 @@ type JobUpdate struct {
 	plan        string
 	pool        string
 	description string
-	commands    string
 	image       string
 	envs        cmd.StringSliceFlag
 	privateEnvs cmd.StringSliceFlag
@@ -493,10 +492,9 @@ type JobUpdate struct {
 func (c *JobUpdate) Info() *cmd.Info {
 	return &cmd.Info{
 		Name:    "job-update",
-		Usage:   "job update <job-name> [--image/-i <image>] [--commands/-c <commands>] [--plan/-p plan name] [--schedule/-s schedule name] [--team/-t team owner] [--pool/-o pool name] [--description/-d description] [--tag/-g tag]...",
+		Usage:   "job update <job-name> [--image/-i <image>] [--plan/-p plan name] [--schedule/-s schedule name] [--team/-t team owner] [--pool/-o pool name] [--description/-d description] [--tag/-g tag]... -- [commands]",
 		Desc:    "Updates a job",
 		MinArgs: 1,
-		MaxArgs: 1,
 	}
 }
 
@@ -526,9 +524,6 @@ func (c *JobUpdate) Flags() *gnuflag.FlagSet {
 		c.fs.Var(&c.envs, "e", envMessage)
 		envMessage = "Private environment variable"
 		c.fs.Var(&c.privateEnvs, "private-env", envMessage)
-		commandsMessage := "New commands to execute on the job"
-		c.fs.StringVar(&c.commands, "commands", "", commandsMessage)
-		c.fs.StringVar(&c.commands, "c", "", commandsMessage)
 		imageMessage := "New image for the job to run"
 		c.fs.StringVar(&c.image, "image", "", imageMessage)
 		c.fs.StringVar(&c.image, "i", "", imageMessage)
