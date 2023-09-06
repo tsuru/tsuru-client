@@ -33,8 +33,6 @@ type JobCreate struct {
 	pool        string
 	description string
 	manual      bool
-	envs        cmd.StringSliceFlag
-	privateEnvs cmd.StringSliceFlag
 	tags        cmd.StringSliceFlag
 
 	fs *gnuflag.FlagSet
@@ -75,11 +73,7 @@ description associated
 The [[--manual]] parameter sets your job as a manual job.
 A manual job is only run when explicitly triggered by the user i.e: tsuru job trigger <job-name> 
 
-The [[--tag]] parameter sets a tag to your job. You can set multiple [[--tag]] parameters
-
-The [[--env]] parameter sets a environment variable to your job. You can set multiple [[--env]] parameters
-
-The [[--private-env]] parameter sets a private environment variable to your job. You can set multiple [[--private-env]] parameters`,
+The [[--tag]] parameter sets a tag to your job. You can set multiple [[--tag]] parameters`,
 		MinArgs: 2,
 	}
 }
@@ -105,11 +99,6 @@ func (c *JobCreate) Flags() *gnuflag.FlagSet {
 		tagMessage := "Job tag"
 		c.fs.Var(&c.tags, "tag", tagMessage)
 		c.fs.Var(&c.tags, "g", tagMessage)
-		envMessage := "Environment variable"
-		c.fs.Var(&c.envs, "env", envMessage)
-		c.fs.Var(&c.envs, "e", envMessage)
-		envMessage = "Private environment variable"
-		c.fs.Var(&c.privateEnvs, "private-env", envMessage)
 		manualMessage := "Manual job"
 		c.fs.BoolVar(&c.manual, "manual", false, manualMessage)
 	}
@@ -152,15 +141,6 @@ func (c *JobCreate) Run(ctx *cmd.Context, cli *cmd.Client) error {
 	if err != nil {
 		return err
 	}
-	envs, err := parseEnvs(c.envs, true)
-	if err != nil {
-		return err
-	}
-	privEnvs, err := parseEnvs(c.privateEnvs, false)
-	if err != nil {
-		return err
-	}
-	envs = append(envs, privEnvs...)
 	j := tsuru.InputJob{
 		Name:        jobName,
 		Tags:        c.tags,
@@ -173,7 +153,6 @@ func (c *JobCreate) Run(ctx *cmd.Context, cli *cmd.Client) error {
 		Container: tsuru.InputJobContainer{
 			Image:   image,
 			Command: parsedCommands,
-			Envs:    envs,
 		},
 	}
 	if _, err := apiClient.JobApi.CreateJob(context.Background(), j); err != nil {
@@ -482,8 +461,6 @@ type JobUpdate struct {
 	pool        string
 	description string
 	image       string
-	envs        cmd.StringSliceFlag
-	privateEnvs cmd.StringSliceFlag
 	tags        cmd.StringSliceFlag
 
 	fs *gnuflag.FlagSet
@@ -519,28 +496,11 @@ func (c *JobUpdate) Flags() *gnuflag.FlagSet {
 		tagMessage := "Job tag"
 		c.fs.Var(&c.tags, "tag", tagMessage)
 		c.fs.Var(&c.tags, "g", tagMessage)
-		envMessage := "Environment variable"
-		c.fs.Var(&c.envs, "env", envMessage)
-		c.fs.Var(&c.envs, "e", envMessage)
-		envMessage = "Private environment variable"
-		c.fs.Var(&c.privateEnvs, "private-env", envMessage)
 		imageMessage := "New image for the job to run"
 		c.fs.StringVar(&c.image, "image", "", imageMessage)
 		c.fs.StringVar(&c.image, "i", "", imageMessage)
 	}
 	return c.fs
-}
-
-func parseEnvs(cmdEnvs cmd.StringSliceFlag, public bool) ([]tsuru.EnvVar, error) {
-	envs := []tsuru.EnvVar{}
-	for _, env := range cmdEnvs {
-		parts := strings.SplitN(env, "=", 2)
-		if len(parts) != 2 {
-			return envs, errors.New(EnvSetValidationMessage)
-		}
-		envs = append(envs, tsuru.EnvVar{Name: parts[0], Value: parts[1], Public: public})
-	}
-	return envs, nil
 }
 
 func (c *JobUpdate) Run(ctx *cmd.Context, cli *cmd.Client) error {
@@ -558,15 +518,6 @@ func (c *JobUpdate) Run(ctx *cmd.Context, cli *cmd.Client) error {
 			return err
 		}
 	}
-	envs, err := parseEnvs(c.envs, true)
-	if err != nil {
-		return err
-	}
-	privEnvs, err := parseEnvs(c.privateEnvs, false)
-	if err != nil {
-		return err
-	}
-	envs = append(envs, privEnvs...)
 	j := tsuru.InputJob{
 		Name:        jobName,
 		Tags:        c.tags,
@@ -578,7 +529,6 @@ func (c *JobUpdate) Run(ctx *cmd.Context, cli *cmd.Client) error {
 		Container: tsuru.InputJobContainer{
 			Image:   c.image,
 			Command: jobUpdateCommands,
-			Envs:    envs,
 		},
 	}
 
