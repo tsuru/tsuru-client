@@ -27,13 +27,14 @@ import (
 )
 
 type JobCreate struct {
-	schedule    string
-	teamOwner   string
-	plan        string
-	pool        string
-	description string
-	manual      bool
-	tags        cmd.StringSliceFlag
+	schedule       string
+	teamOwner      string
+	plan           string
+	pool           string
+	description    string
+	manual         bool
+	tags           cmd.StringSliceFlag
+	activeDeadline int64
 
 	fs *gnuflag.FlagSet
 }
@@ -73,6 +74,8 @@ description associated
 The [[--manual]] parameter sets your job as a manual job.
 A manual job is only run when explicitly triggered by the user i.e: tsuru job trigger <job-name> 
 
+The [[--active-deadline]] parameter determines the limit of time, in seconds, that the job is allowed to run (default = 1h). After the determined time, the Job will be terminated and marked as failed.
+
 The [[--tag]] parameter sets a tag to your job. You can set multiple [[--tag]] parameters`,
 		MinArgs: 2,
 	}
@@ -101,6 +104,7 @@ func (c *JobCreate) Flags() *gnuflag.FlagSet {
 		c.fs.Var(&c.tags, "g", tagMessage)
 		manualMessage := "Manual job"
 		c.fs.BoolVar(&c.manual, "manual", false, manualMessage)
+		c.fs.Int64Var(&c.activeDeadline, "active-deadline", 0, "active deadline seconds")
 	}
 	return c.fs
 }
@@ -121,6 +125,16 @@ func parseJobCommands(commands []string) ([]string, error) {
 	return shellCommands, nil
 }
 
+func validateFlags(c *JobCreate) error {
+	if !c.manual && c.schedule == "" {
+		return errors.New("schedule or manual option must be set")
+	}
+	if c.manual && c.schedule != "" {
+		return errors.New("cannot set both manual job and schedule options")
+	}
+	return nil
+}
+
 func (c *JobCreate) Run(ctx *cmd.Context, cli *cmd.Client) error {
 	apiClient, err := client.ClientFromEnvironment(&tsuru.Configuration{
 		HTTPClient: cli.HTTPClient,
@@ -128,11 +142,8 @@ func (c *JobCreate) Run(ctx *cmd.Context, cli *cmd.Client) error {
 	if err != nil {
 		return err
 	}
-	if !c.manual && c.schedule == "" {
-		return errors.New("schedule or manual option must be set")
-	}
-	if c.manual && c.schedule != "" {
-		return errors.New("cannot set both manual job and schedule options")
+	if err := validateFlags(c); err != nil {
+		return err
 	}
 	jobName := ctx.Args[0]
 	image := ctx.Args[1]
@@ -154,6 +165,7 @@ func (c *JobCreate) Run(ctx *cmd.Context, cli *cmd.Client) error {
 			Image:   image,
 			Command: parsedCommands,
 		},
+		ActiveDeadlineSeconds: c.activeDeadline,
 	}
 	if _, err := apiClient.JobApi.CreateJob(context.Background(), j); err != nil {
 		return err
@@ -455,13 +467,14 @@ func (c *JobTrigger) Run(ctx *cmd.Context, cli *cmd.Client) error {
 }
 
 type JobUpdate struct {
-	schedule    string
-	teamOwner   string
-	plan        string
-	pool        string
-	description string
-	image       string
-	tags        cmd.StringSliceFlag
+	schedule       string
+	teamOwner      string
+	plan           string
+	pool           string
+	description    string
+	image          string
+	tags           cmd.StringSliceFlag
+	activeDeadline int64
 
 	fs *gnuflag.FlagSet
 }
@@ -469,7 +482,7 @@ type JobUpdate struct {
 func (c *JobUpdate) Info() *cmd.Info {
 	return &cmd.Info{
 		Name:    "job-update",
-		Usage:   "job update <job-name> [--image/-i <image>] [--plan/-p plan name] [--schedule/-s schedule name] [--team/-t team owner] [--pool/-o pool name] [--description/-d description] [--tag/-g tag]... -- [commands]",
+		Usage:   "job update <job-name> [--image/-i <image>] [--plan/-p plan name] [--schedule/-s schedule name] [--team/-t team owner] [--pool/-o pool name] [--description/-d description] [--tag/-g tag] [[--active-deadline deadline]]... -- [commands] ",
 		Desc:    "Updates a job",
 		MinArgs: 1,
 	}
@@ -499,6 +512,7 @@ func (c *JobUpdate) Flags() *gnuflag.FlagSet {
 		imageMessage := "New image for the job to run"
 		c.fs.StringVar(&c.image, "image", "", imageMessage)
 		c.fs.StringVar(&c.image, "i", "", imageMessage)
+		c.fs.Int64Var(&c.activeDeadline, "active-deadline", 0, "active deadline seconds")
 	}
 	return c.fs
 }
@@ -530,6 +544,7 @@ func (c *JobUpdate) Run(ctx *cmd.Context, cli *cmd.Client) error {
 			Image:   c.image,
 			Command: jobUpdateCommands,
 		},
+		ActiveDeadlineSeconds: c.activeDeadline,
 	}
 
 	_, err = apiClient.JobApi.UpdateJob(context.Background(), jobName, j)
