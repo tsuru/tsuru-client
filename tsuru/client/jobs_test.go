@@ -691,6 +691,20 @@ func (s *S) TestJobUpdateApiError(c *check.C) {
 	c.Assert(err.Error(), check.Equals, expected)
 }
 
+func (s *S) TestJobUpdateMutualScheduleAndManualError(c *check.C) {
+	var stdout, stderr bytes.Buffer
+	context := cmd.Context{
+		Args:   []string{"failjob", "ubuntu:latest", "\"echo \"fail\"\""},
+		Stdout: &stdout,
+		Stderr: &stderr,
+	}
+	client := cmd.NewClient(&http.Client{Transport: &cmdtest.Transport{Status: 200}}, nil, manager)
+	command := JobUpdate{}
+	command.Flags().Parse(true, []string{"-t", "admin", "-o", "somepool", "-s", "* * * * *", "--manual"})
+	err := command.Run(&context, client)
+	c.Assert(err.Error(), check.Equals, "cannot set both manual job and schedule options")
+}
+
 func (s *S) TestJobLog(c *check.C) {
 	var stdout, stderr bytes.Buffer
 	context := cmd.Context{

@@ -84,7 +84,7 @@ func (c *JobCreate) Flags() *gnuflag.FlagSet {
 		c.fs = gnuflag.NewFlagSet("", gnuflag.ExitOnError)
 		c.fs.StringVar(&c.plan, "plan", "", infoMessage)
 		c.fs.StringVar(&c.plan, "p", "", infoMessage)
-		schedule := "schedule string"
+		schedule := "Schedule string"
 		c.fs.StringVar(&c.schedule, "schedule", "", schedule)
 		c.fs.StringVar(&c.schedule, "s", "", schedule)
 		teamMessage := "Team owner job"
@@ -461,6 +461,7 @@ type JobUpdate struct {
 	pool        string
 	description string
 	image       string
+	manual      bool
 	tags        cmd.StringSliceFlag
 
 	fs *gnuflag.FlagSet
@@ -469,7 +470,7 @@ type JobUpdate struct {
 func (c *JobUpdate) Info() *cmd.Info {
 	return &cmd.Info{
 		Name:    "job-update",
-		Usage:   "job update <job-name> [--image/-i <image>] [--plan/-p plan name] [--schedule/-s schedule name] [--team/-t team owner] [--pool/-o pool name] [--description/-d description] [--tag/-g tag]... -- [commands]",
+		Usage:   "job update <job-name> [--image/-i <image>] [--plan/-p plan name] [--schedule/-s schedule name] [--manual] [--team/-t team owner] [--pool/-o pool name] [--description/-d description] [--tag/-g tag]... -- [commands]",
 		Desc:    "Updates a job",
 		MinArgs: 1,
 	}
@@ -481,9 +482,11 @@ func (c *JobUpdate) Flags() *gnuflag.FlagSet {
 		c.fs = gnuflag.NewFlagSet("", gnuflag.ExitOnError)
 		c.fs.StringVar(&c.plan, "plan", "", infoMessage)
 		c.fs.StringVar(&c.plan, "p", "", infoMessage)
-		schedule := "schedule string"
+		schedule := "Schedule string"
 		c.fs.StringVar(&c.schedule, "schedule", "", schedule)
 		c.fs.StringVar(&c.schedule, "s", "", schedule)
+		manualMessage := "Manual job"
+		c.fs.BoolVar(&c.manual, "manual", false, manualMessage)
 		teamMessage := "Team owner job"
 		c.fs.StringVar(&c.teamOwner, "team", "", teamMessage)
 		c.fs.StringVar(&c.teamOwner, "t", "", teamMessage)
@@ -511,6 +514,9 @@ func (c *JobUpdate) Run(ctx *cmd.Context, cli *cmd.Client) error {
 	if err != nil {
 		return err
 	}
+	if c.manual && c.schedule != "" {
+		return errors.New("cannot set both manual job and schedule options")
+	}
 	var jobUpdateCommands []string
 	if len(ctx.Args) > 1 {
 		jobUpdateCommands, err = parseJobCommands(ctx.Args[1:])
@@ -522,6 +528,7 @@ func (c *JobUpdate) Run(ctx *cmd.Context, cli *cmd.Client) error {
 		Name:        jobName,
 		Tags:        c.tags,
 		Schedule:    c.schedule,
+		Manual:      c.manual,
 		Plan:        c.plan,
 		Pool:        c.pool,
 		Description: c.description,
