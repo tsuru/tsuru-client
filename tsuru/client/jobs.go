@@ -27,13 +27,14 @@ import (
 )
 
 type JobCreate struct {
-	schedule    string
-	teamOwner   string
-	plan        string
-	pool        string
-	description string
-	manual      bool
-	tags        cmd.StringSliceFlag
+	schedule       string
+	teamOwner      string
+	plan           string
+	pool           string
+	description    string
+	manual         bool
+	maxRunningTime int64
+	tags           cmd.StringSliceFlag
 
 	fs *gnuflag.FlagSet
 }
@@ -41,7 +42,7 @@ type JobCreate struct {
 func (c *JobCreate) Info() *cmd.Info {
 	return &cmd.Info{
 		Name:  "job-create",
-		Usage: "job create <jobname> <image> \"<commands>\" [--plan/-p plan name] [--schedule/-s schedule name] [--team/-t team owner] [--pool/-o pool name] [--description/-d description] [--tag/-g tag] [--manual bool]...",
+		Usage: "job create <jobname> <image> \"<commands>\" [--plan/-p plan name] [--schedule/-s schedule name] [--team/-t team owner] [--pool/-o pool name] [--description/-d description] [--tag/-g tag] [--max-running-time/-m seconds] [--manual bool]...",
 		Desc: `Creates a new job using the given name and platform
 
 In order to create an job, you need to be member of at least one team. All
@@ -73,7 +74,11 @@ description associated
 The [[--manual]] parameter sets your job as a manual job.
 A manual job is only run when explicitly triggered by the user i.e: tsuru job trigger <job-name> 
 
-The [[--tag]] parameter sets a tag to your job. You can set multiple [[--tag]] parameters`,
+The [[--tag]] parameter sets a tag to your job. You can set multiple [[--tag]] parameters
+
+The [[--max-running-time]] sets maximum amount of time (in seconds) that the job
+can run. If the job exceeds this limit, it will be automatically stopped. If
+this parameter is not informed, default value is 3600s`,
 		MinArgs: 2,
 	}
 }
@@ -101,6 +106,9 @@ func (c *JobCreate) Flags() *gnuflag.FlagSet {
 		c.fs.Var(&c.tags, "g", tagMessage)
 		manualMessage := "Manual job"
 		c.fs.BoolVar(&c.manual, "manual", false, manualMessage)
+		maxRunningTime := "Maximum running time in seconds for the job"
+		c.fs.Int64Var(&c.maxRunningTime, "max-running-time", 0, maxRunningTime)
+		c.fs.Int64Var(&c.maxRunningTime, "m", 0, maxRunningTime)
 	}
 	return c.fs
 }
@@ -142,14 +150,15 @@ func (c *JobCreate) Run(ctx *cmd.Context, cli *cmd.Client) error {
 		return err
 	}
 	j := tsuru.InputJob{
-		Name:        jobName,
-		Tags:        c.tags,
-		Schedule:    c.schedule,
-		Plan:        c.plan,
-		Pool:        c.pool,
-		Description: c.description,
-		TeamOwner:   c.teamOwner,
-		Manual:      c.manual,
+		Name:                  jobName,
+		Tags:                  c.tags,
+		Schedule:              c.schedule,
+		Plan:                  c.plan,
+		Pool:                  c.pool,
+		Description:           c.description,
+		TeamOwner:             c.teamOwner,
+		Manual:                c.manual,
+		ActiveDeadlineSeconds: c.maxRunningTime,
 		Container: tsuru.InputJobContainer{
 			Image:   image,
 			Command: parsedCommands,
@@ -186,10 +195,10 @@ func (c *JobInfo) Info() *cmd.Info {
 }
 
 const jobInfoFormat = `Job: {{.Job.Name}}
-{{- if .Job.Description }}
-Description: {{.Job.Description}}
+{{- with .Job.Description }}
+Description: {{.}}
 {{- end }}
-Teams: {{.Job.Teams}}
+Teams: {{.Teams}}
 Created by: {{.Job.Owner}}
 Pool: {{.Job.Pool}}
 Plan: {{.Job.Plan.Name}}
@@ -197,7 +206,10 @@ Plan: {{.Job.Plan.Name}}
 Schedule: {{.Job.Spec.Schedule}}
 {{- end }}
 Image: {{.Job.Spec.Container.Image}}
-Command: {{.Job.Spec.Container.Command}}`
+Command: {{.Job.Spec.Container.Command}}
+{{- if .Job.Spec.ActiveDeadlineSeconds }}
+Max Running Time: {{.Job.Spec.ActiveDeadlineSeconds}}s
+{{- end }}`
 
 func (c *JobInfo) Run(ctx *cmd.Context, cli *cmd.Client) error {
 	jobName := ctx.Args[0]
@@ -219,7 +231,11 @@ func (c *JobInfo) Run(ctx *cmd.Context, cli *cmd.Client) error {
 	var buf bytes.Buffer
 	tmpl := template.Must(template.New("job").Parse(jobInfoFormat))
 
-	err = tmpl.Execute(&buf, jobInfo)
+	teams := renderTeams(jobInfo.Job)
+	err = tmpl.Execute(&buf, struct {
+		Job   tsuru.Job
+		Teams string
+	}{jobInfo.Job, teams})
 	if err != nil {
 		return err
 	}
@@ -228,6 +244,21 @@ func (c *JobInfo) Run(ctx *cmd.Context, cli *cmd.Client) error {
 	renderServiceInstanceBinds(&buf, jobInfo.ServiceInstanceBinds)
 	fmt.Fprintln(ctx.Stdout, buf.String())
 	return nil
+}
+
+func renderTeams(job tsuru.Job) string {
+	teams := []string{}
+	if job.TeamOwner != "" {
+		teams = append(teams, job.TeamOwner+" (owner)")
+	}
+
+	for _, t := range job.Teams {
+		if t != job.TeamOwner {
+			teams = append(teams, t)
+		}
+	}
+
+	return strings.Join(teams, ", ")
 }
 
 func renderJobUnits(buf *bytes.Buffer, units []tsuru.Unit) {
@@ -455,14 +486,15 @@ func (c *JobTrigger) Run(ctx *cmd.Context, cli *cmd.Client) error {
 }
 
 type JobUpdate struct {
-	schedule    string
-	teamOwner   string
-	plan        string
-	pool        string
-	description string
-	image       string
-	manual      bool
-	tags        cmd.StringSliceFlag
+	schedule       string
+	teamOwner      string
+	plan           string
+	pool           string
+	description    string
+	image          string
+	manual         bool
+	maxRunningTime int64
+	tags           cmd.StringSliceFlag
 
 	fs *gnuflag.FlagSet
 }
@@ -470,7 +502,7 @@ type JobUpdate struct {
 func (c *JobUpdate) Info() *cmd.Info {
 	return &cmd.Info{
 		Name:    "job-update",
-		Usage:   "job update <job-name> [--image/-i <image>] [--plan/-p plan name] [--schedule/-s schedule name] [--manual] [--team/-t team owner] [--pool/-o pool name] [--description/-d description] [--tag/-g tag]... -- [commands]",
+		Usage:   "job update <job-name> [--image/-i <image>] [--plan/-p plan name] [--schedule/-s schedule name] [--manual] [--team/-t team owner] [--pool/-o pool name] [--description/-d description] [--max-running-time/-m seconds] [--tag/-g tag]... -- [commands]",
 		Desc:    "Updates a job",
 		MinArgs: 1,
 	}
@@ -502,6 +534,9 @@ func (c *JobUpdate) Flags() *gnuflag.FlagSet {
 		imageMessage := "New image for the job to run"
 		c.fs.StringVar(&c.image, "image", "", imageMessage)
 		c.fs.StringVar(&c.image, "i", "", imageMessage)
+		maxRunningTime := "Maximum running time in seconds for the job"
+		c.fs.Int64Var(&c.maxRunningTime, "max-running-time", 0, maxRunningTime)
+		c.fs.Int64Var(&c.maxRunningTime, "m", 0, maxRunningTime)
 	}
 	return c.fs
 }
@@ -525,14 +560,15 @@ func (c *JobUpdate) Run(ctx *cmd.Context, cli *cmd.Client) error {
 		}
 	}
 	j := tsuru.InputJob{
-		Name:        jobName,
-		Tags:        c.tags,
-		Schedule:    c.schedule,
-		Manual:      c.manual,
-		Plan:        c.plan,
-		Pool:        c.pool,
-		Description: c.description,
-		TeamOwner:   c.teamOwner,
+		Name:                  jobName,
+		Tags:                  c.tags,
+		Schedule:              c.schedule,
+		Manual:                c.manual,
+		Plan:                  c.plan,
+		Pool:                  c.pool,
+		Description:           c.description,
+		TeamOwner:             c.teamOwner,
+		ActiveDeadlineSeconds: c.maxRunningTime,
 		Container: tsuru.InputJobContainer{
 			Image:   c.image,
 			Command: jobUpdateCommands,

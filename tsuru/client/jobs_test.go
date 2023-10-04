@@ -45,14 +45,15 @@ func (s *S) TestJobCreate(c *check.C) {
 					Image:   "ubuntu:latest",
 					Command: []string{"/bin/sh", "-c", "echo Botafogo is in my heart"},
 				},
-				Schedule: "* * * * *",
+				Schedule:              "* * * * *",
+				ActiveDeadlineSeconds: 300,
 			})
 			return true
 		},
 	}
 	client := cmd.NewClient(&http.Client{Transport: &trans}, nil, manager)
 	command := JobCreate{}
-	command.Flags().Parse(true, []string{"-t", "admin", "-o", "somepool", "-s", "* * * * *"})
+	command.Flags().Parse(true, []string{"-t", "admin", "-o", "somepool", "-s", "* * * * *", "-m", "300"})
 	err := command.Run(&context, client)
 	c.Assert(err, check.IsNil)
 	c.Assert(stdout.String(), check.Equals, expected)
@@ -211,7 +212,7 @@ func (s *S) TestJobInfo(c *check.C) {
 		Stderr: &stderr,
 	}
 	expected := `Job: garrincha
-Teams: [botafogo]
+Teams: botafogo (owner)
 Created by: botafogo@glorioso.com
 Pool: kubepool
 Plan: c0.1m0.1
@@ -318,7 +319,7 @@ func (s *S) TestJobInfoManual(c *check.C) {
 		Stderr: &stderr,
 	}
 	expected := `Job: manualjob
-Teams: [tsuru]
+Teams: tsuru (owner)
 Created by: tsuru@tsuru.io
 Pool: kubepool
 Plan: c0.1m0.1
@@ -354,6 +355,82 @@ Command: [/bin/sh -c sleep 600;]
 		"spec": {
 			"schedule": "* * 31 2 *",
 			"manual": true,
+			"container": {
+				"image": "manualjob:v0",
+				"command": [
+					"/bin/sh",
+					"-c",
+					"sleep 600;"
+				]
+			},
+			"envs": []
+		}
+	}
+}
+`, Status: http.StatusOK,
+		}, CondFunc: func(r *http.Request) bool {
+			c.Assert(r.URL.Path, check.Equals, fmt.Sprintf("/1.13/jobs/%s", jobName))
+			c.Assert(r.Method, check.Equals, "GET")
+			return true
+		},
+	}
+	client := cmd.NewClient(&http.Client{Transport: &trans}, nil, manager)
+	command := JobInfo{}
+	command.Info()
+	err := command.Run(&context, client)
+	c.Assert(err, check.IsNil)
+	c.Assert(stdout.String(), check.Equals, expected)
+}
+
+func (s *S) TestJobInfoOptionalFieldsSet(c *check.C) {
+	var stdout, stderr bytes.Buffer
+	jobName := "manualJob"
+	context := cmd.Context{
+		Args:   []string{jobName},
+		Stdout: &stdout,
+		Stderr: &stderr,
+	}
+	expected := `Job: manualjob
+Description: my manualjob
+Teams: tsuru (owner), anotherTeam
+Created by: tsuru@tsuru.io
+Pool: kubepool
+Plan: c0.1m0.1
+Image: manualjob:v0
+Command: [/bin/sh -c sleep 600;]
+Max Running Time: 300s
+`
+	trans := cmdtest.ConditionalTransport{
+		Transport: cmdtest.Transport{
+			Message: `
+{
+	"job": {
+		"name": "manualjob",
+		"description": "my manualjob",
+		"teams": [
+			"tsuru"
+		],
+		"teamOwner": "tsuru",
+		"teams": ["anotherTeam"],
+		"owner": "tsuru@tsuru.io",
+		"plan": {
+			"name": "c0.1m0.1",
+			"memory": 134217728,
+			"cpumilli": 100,
+			"override": {
+				"memory": null,
+				"cpumilli": null
+			}
+		},
+		"metadata": {
+			"labels": [],
+			"annotations": []
+		},
+		"pool": "kubepool",
+		"spec": {
+			"schedule": "* * 31 2 *",
+			"manual": true,
+			"activeDeadlineSeconds": 300,
 			"container": {
 				"image": "manualjob:v0",
 				"command": [
