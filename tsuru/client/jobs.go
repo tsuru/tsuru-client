@@ -149,6 +149,17 @@ func (c *JobCreate) Run(ctx *cmd.Context, cli *cmd.Client) error {
 	if err != nil {
 		return err
 	}
+	var activeDeadlineSecondsResult *int64
+	if c.fs != nil {
+		c.fs.Visit(func(f *gnuflag.Flag) {
+			if (f.Name == "max-running-time" || f.Name == "m") && c.maxRunningTime == 0 {
+				activeDeadlineSecondsResult = &c.maxRunningTime
+			}
+		})
+	}
+	if c.maxRunningTime > 0 {
+		activeDeadlineSecondsResult = &c.maxRunningTime
+	}
 	j := tsuru.InputJob{
 		Name:                  jobName,
 		Tags:                  c.tags,
@@ -158,7 +169,7 @@ func (c *JobCreate) Run(ctx *cmd.Context, cli *cmd.Client) error {
 		Description:           c.description,
 		TeamOwner:             c.teamOwner,
 		Manual:                c.manual,
-		ActiveDeadlineSeconds: c.maxRunningTime,
+		ActiveDeadlineSeconds: activeDeadlineSecondsResult,
 		Container: tsuru.InputJobContainer{
 			Image:   image,
 			Command: parsedCommands,
@@ -559,6 +570,17 @@ func (c *JobUpdate) Run(ctx *cmd.Context, cli *cmd.Client) error {
 			return err
 		}
 	}
+	var activeDeadlineSecondsResult *int64
+	if c.fs != nil {
+		c.fs.Visit(func(f *gnuflag.Flag) {
+			if (f.Name == "max-running-time" || f.Name == "m") && c.maxRunningTime == 0 {
+				activeDeadlineSecondsResult = &c.maxRunningTime
+			}
+		})
+	}
+	if c.maxRunningTime > 0 {
+		activeDeadlineSecondsResult = &c.maxRunningTime
+	}
 	j := tsuru.InputJob{
 		Name:                  jobName,
 		Tags:                  c.tags,
@@ -568,7 +590,7 @@ func (c *JobUpdate) Run(ctx *cmd.Context, cli *cmd.Client) error {
 		Pool:                  c.pool,
 		Description:           c.description,
 		TeamOwner:             c.teamOwner,
-		ActiveDeadlineSeconds: c.maxRunningTime,
+		ActiveDeadlineSeconds: activeDeadlineSecondsResult,
 		Container: tsuru.InputJobContainer{
 			Image:   c.image,
 			Command: jobUpdateCommands,

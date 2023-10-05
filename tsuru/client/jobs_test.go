@@ -46,7 +46,7 @@ func (s *S) TestJobCreate(c *check.C) {
 					Command: []string{"/bin/sh", "-c", "echo Botafogo is in my heart"},
 				},
 				Schedule:              "* * * * *",
-				ActiveDeadlineSeconds: 300,
+				ActiveDeadlineSeconds: func() *int64 { r := int64(300); return &r }(),
 			})
 			return true
 		},
@@ -87,14 +87,15 @@ func (s *S) TestJobCreateManual(c *check.C) {
 					Image:   "ubuntu:latest",
 					Command: []string{"/bin/sh", "-c", "echo digital love"},
 				},
-				Schedule: "",
+				Schedule:              "",
+				ActiveDeadlineSeconds: func() *int64 { r := int64(0); return &r }(),
 			})
 			return true
 		},
 	}
 	client := cmd.NewClient(&http.Client{Transport: &trans}, nil, manager)
 	command := JobCreate{}
-	command.Flags().Parse(true, []string{"-t", "admin", "-o", "somepool", "--manual"})
+	command.Flags().Parse(true, []string{"-t", "admin", "-o", "somepool", "--manual", "-m", "0"})
 	err := command.Run(&context, client)
 	c.Assert(err, check.IsNil)
 	c.Assert(stdout.String(), check.Equals, expected)
@@ -117,12 +118,13 @@ func (s *S) TestJobCreateParseMultipleCommands(c *check.C) {
 			err = json.Unmarshal(data, &rr)
 			c.Assert(err, check.IsNil)
 			c.Assert(rr.Container.Command, check.DeepEquals, []string{"/bin/sh", "-c", "echo Botafogo is in my heart; sleep 600"})
+			c.Assert(*rr.ActiveDeadlineSeconds, check.Equals, int64(0))
 			return true
 		},
 	}
 	client := cmd.NewClient(&http.Client{Transport: &trans}, nil, manager)
 	command := JobCreate{}
-	command.Flags().Parse(true, []string{"-t", "admin", "-o", "somepool", "-s", "* * * * *"})
+	command.Flags().Parse(true, []string{"-t", "admin", "-o", "somepool", "-s", "* * * * *", "--max-running-time", "0"})
 	err := command.Run(&context, client)
 	c.Assert(err, check.IsNil)
 	c.Assert(stdout.String(), check.Equals, expected)
@@ -696,6 +698,7 @@ func (s *S) TestJobUpdate(c *check.C) {
 					Command: []string{"/bin/sh", "-c", "echo we like you"},
 				},
 			})
+			c.Assert(rr.ActiveDeadlineSeconds, check.IsNil)
 			return true
 		},
 	}
@@ -704,7 +707,7 @@ func (s *S) TestJobUpdate(c *check.C) {
 	c.Assert(command.Info().MinArgs, check.Equals, 1)
 	unlimitedMaxArgs := 0
 	c.Assert(command.Info().MaxArgs, check.Equals, unlimitedMaxArgs)
-	command.Flags().Parse(true, []string{"-i", "tsuru/scratch:latest"})
+	command.Flags().Parse(true, []string{"-i", "tsuru/scratch:latest", "-m", "-200"})
 	err := command.Run(&context, client)
 	c.Assert(err, check.IsNil)
 	c.Assert(stdout.String(), check.Equals, expected)
