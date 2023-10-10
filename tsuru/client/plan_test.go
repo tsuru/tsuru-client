@@ -112,6 +112,98 @@ func (s *S) TestPlanListOverride(c *check.C) {
 	c.Assert(stdout.String(), check.Equals, expected)
 }
 
+func (s *S) TestPlanListWithBurst(c *check.C) {
+	var stdout, stderr bytes.Buffer
+	result := `[
+	{"name": "test", "cpumilli": 300, "memory": 536870912, "default": false, "cpuBurst": {"default": 1.1}}
+]`
+	expected := `+------+-----+--------+---------------------+---------+
+| Name | CPU | Memory | CPU Burst (default) | Default |
++------+-----+--------+---------------------+---------+
+| test | 30% | 512Mi  | up to 33%           | false   |
++------+-----+--------+---------------------+---------+
+`
+	context := cmd.Context{
+		Args:   []string{},
+		Stdout: &stdout,
+		Stderr: &stderr,
+	}
+	trans := &cmdtest.ConditionalTransport{
+		Transport: cmdtest.Transport{Message: string(result), Status: http.StatusOK},
+		CondFunc: func(req *http.Request) bool {
+			return strings.HasSuffix(req.URL.Path, "/plans") && req.Method == "GET"
+		},
+	}
+	client := cmd.NewClient(&http.Client{Transport: trans}, nil, manager)
+	command := PlanList{}
+	// command.Flags().Parse(true, []string{"-h"})
+	err := command.Run(&context, client)
+	c.Assert(err, check.IsNil)
+	c.Assert(stdout.String(), check.Equals, expected)
+}
+
+func (s *S) TestPlanListWithBurstAndMaxAllowed(c *check.C) {
+	var stdout, stderr bytes.Buffer
+	result := `[
+	{"name": "test", "cpumilli": 300, "memory": 536870912, "default": false, "cpuBurst": {"default": 1.1, "maxAllowed": 2}}
+]`
+	expected := `+------+-----+--------+---------------------+------------------------------+---------+
+| Name | CPU | Memory | CPU Burst (default) | CPU Burst (max customizable) | Default |
++------+-----+--------+---------------------+------------------------------+---------+
+| test | 30% | 512Mi  | up to 33%           | up to 60%                    | false   |
++------+-----+--------+---------------------+------------------------------+---------+
+`
+	context := cmd.Context{
+		Args:   []string{},
+		Stdout: &stdout,
+		Stderr: &stderr,
+	}
+	trans := &cmdtest.ConditionalTransport{
+		Transport: cmdtest.Transport{Message: string(result), Status: http.StatusOK},
+		CondFunc: func(req *http.Request) bool {
+			return strings.HasSuffix(req.URL.Path, "/plans") && req.Method == "GET"
+		},
+	}
+	client := cmd.NewClient(&http.Client{Transport: trans}, nil, manager)
+	command := PlanList{
+		showMaxBurstAllowed: true,
+	}
+	// command.Flags().Parse(true, []string{"-h"})
+	err := command.Run(&context, client)
+	c.Assert(err, check.IsNil)
+	c.Assert(stdout.String(), check.Equals, expected)
+}
+
+func (s *S) TestPlanListWithBurstOverride(c *check.C) {
+	var stdout, stderr bytes.Buffer
+	result := `[
+	{"name": "test", "cpumilli": 300, "memory": 536870912, "default": false, "cpuBurst": {"default": 1.1}, "override": {"cpuBurst": 1.2}}
+]`
+	expected := `+------+-----+--------+----------------------+---------+
+| Name | CPU | Memory | CPU Burst (default)  | Default |
++------+-----+--------+----------------------+---------+
+| test | 30% | 512Mi  | up to 36% (override) | false   |
++------+-----+--------+----------------------+---------+
+`
+	context := cmd.Context{
+		Args:   []string{},
+		Stdout: &stdout,
+		Stderr: &stderr,
+	}
+	trans := &cmdtest.ConditionalTransport{
+		Transport: cmdtest.Transport{Message: string(result), Status: http.StatusOK},
+		CondFunc: func(req *http.Request) bool {
+			return strings.HasSuffix(req.URL.Path, "/plans") && req.Method == "GET"
+		},
+	}
+	client := cmd.NewClient(&http.Client{Transport: trans}, nil, manager)
+	command := PlanList{}
+	// command.Flags().Parse(true, []string{"-h"})
+	err := command.Run(&context, client)
+	c.Assert(err, check.IsNil)
+	c.Assert(stdout.String(), check.Equals, expected)
+}
+
 func (s *S) TestPlanListCPUMilli(c *check.C) {
 	var stdout, stderr bytes.Buffer
 	result := `[
