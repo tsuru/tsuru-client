@@ -219,7 +219,7 @@ type AppUpdate struct {
 	cmd.AppNameMixIn
 	cmd.ConfirmationCommand
 
-	memory, cpu string
+	memory, cpu, cpuBurst string
 }
 
 func (c *AppUpdate) Info() *cmd.Info {
@@ -257,6 +257,8 @@ func (c *AppUpdate) Flags() *gnuflag.FlagSet {
 		flagSet.Var((*cmd.StringSliceFlag)(&c.args.Tags), "g", tagMessage)
 		flagSet.Var((*cmd.StringSliceFlag)(&c.args.Tags), "tag", tagMessage)
 		flagSet.StringVar(&c.cpu, "cpu", "", "CPU limit for app, this will override the plan cpu value. One cpu is equivalent to 1 vCPU/Core, fractional requests are allowed and the expression 0.1 is equivalent to the expression 100m")
+		flagSet.StringVar(&c.cpuBurst, "cpu-burst-factor", "", "The multiplier to determine the limits of CPU burst, when value is 1 not set burst")
+
 		flagSet.StringVar(&c.memory, "memory", "", "Memory limit for app, this will override the plan memory value. You can express memory as a bytes integer or using one of these suffixes: E, P, T, G, M, K, Ei, Pi, Ti, Gi, Mi, Ki")
 		c.fs = cmd.MergeFlagSet(
 			c.AppNameMixIn.Flags(),
@@ -294,6 +296,20 @@ func (c *AppUpdate) Run(ctx *cmd.Context, cli *cmd.Client) error {
 		}
 		val := memoryQuantity.Value()
 		c.args.Planoverride.Memory = &val
+	}
+
+	if c.cpuBurst != "" {
+		var cpuBurst float64
+		cpuBurst, err = strconv.ParseFloat(c.cpuBurst, 64)
+		if err != nil {
+			return err
+		}
+
+		if cpuBurst < 1 {
+			return errors.New("Invalid factor, please use value greater equal 1")
+		}
+
+		c.args.Planoverride.CpuBurst = &cpuBurst
 	}
 
 	appName := c.Flags().Lookup("app").Value.String()
@@ -748,7 +764,7 @@ func (a *app) String(simplified bool) string {
 	if !simplified && (a.Plan.Memory != 0 || a.Plan.CPUMilli != 0) {
 		buf.WriteString("\n")
 		buf.WriteString("App Plan:\n")
-		buf.WriteString(renderPlans([]apptypes.Plan{a.Plan}, false, false))
+		buf.WriteString(renderPlans([]apptypes.Plan{a.Plan}, false, false, false))
 	}
 	if !simplified && internalAddressesTable.Rows() > 0 {
 		buf.WriteString("\n")
