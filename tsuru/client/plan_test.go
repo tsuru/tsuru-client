@@ -76,7 +76,6 @@ func (s *S) TestPlanListHuman(c *check.C) {
 	}
 	client := cmd.NewClient(&http.Client{Transport: trans}, nil, manager)
 	command := PlanList{}
-	// command.Flags().Parse(true, []string{"-h"})
 	err := command.Run(&context, client)
 	c.Assert(err, check.IsNil)
 	c.Assert(stdout.String(), check.Equals, expected)
@@ -106,7 +105,6 @@ func (s *S) TestPlanListKubernetesFriendly(c *check.C) {
 	}
 	client := cmd.NewClient(&http.Client{Transport: trans}, nil, manager)
 	command := PlanList{k8sFriendly: true}
-	// command.Flags().Parse(true, []string{"-h"})
 	err := command.Run(&context, client)
 	c.Assert(err, check.IsNil)
 	c.Assert(stdout.String(), check.Equals, expected)
@@ -136,7 +134,6 @@ func (s *S) TestPlanListOverride(c *check.C) {
 	}
 	client := cmd.NewClient(&http.Client{Transport: trans}, nil, manager)
 	command := PlanList{}
-	// command.Flags().Parse(true, []string{"-h"})
 	err := command.Run(&context, client)
 	c.Assert(err, check.IsNil)
 	c.Assert(stdout.String(), check.Equals, expected)
@@ -166,7 +163,6 @@ func (s *S) TestPlanListWithBurst(c *check.C) {
 	}
 	client := cmd.NewClient(&http.Client{Transport: trans}, nil, manager)
 	command := PlanList{}
-	// command.Flags().Parse(true, []string{"-h"})
 	err := command.Run(&context, client)
 	c.Assert(err, check.IsNil)
 	c.Assert(stdout.String(), check.Equals, expected)
@@ -196,7 +192,6 @@ func (s *S) TestPlanListWithBurstKubernetesFriendly(c *check.C) {
 	}
 	client := cmd.NewClient(&http.Client{Transport: trans}, nil, manager)
 	command := PlanList{k8sFriendly: true}
-	// command.Flags().Parse(true, []string{"-h"})
 	err := command.Run(&context, client)
 	c.Assert(err, check.IsNil)
 	c.Assert(stdout.String(), check.Equals, expected)
@@ -228,7 +223,6 @@ func (s *S) TestPlanListWithBurstAndMaxAllowed(c *check.C) {
 	command := PlanList{
 		showMaxBurstAllowed: true,
 	}
-	// command.Flags().Parse(true, []string{"-h"})
 	err := command.Run(&context, client)
 	c.Assert(err, check.IsNil)
 	c.Assert(stdout.String(), check.Equals, expected)
@@ -258,7 +252,6 @@ func (s *S) TestPlanListWithBurstOverride(c *check.C) {
 	}
 	client := cmd.NewClient(&http.Client{Transport: trans}, nil, manager)
 	command := PlanList{}
-	// command.Flags().Parse(true, []string{"-h"})
 	err := command.Run(&context, client)
 	c.Assert(err, check.IsNil)
 	c.Assert(stdout.String(), check.Equals, expected)
@@ -288,7 +281,6 @@ func (s *S) TestPlanListCPUMilli(c *check.C) {
 	}
 	client := cmd.NewClient(&http.Client{Transport: trans}, nil, manager)
 	command := PlanList{}
-	// command.Flags().Parse(true, []string{"-h"})
 	err := command.Run(&context, client)
 	c.Assert(err, check.IsNil)
 	c.Assert(stdout.String(), check.Equals, expected)

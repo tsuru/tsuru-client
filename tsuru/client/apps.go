@@ -257,7 +257,7 @@ func (c *AppUpdate) Flags() *gnuflag.FlagSet {
 		flagSet.Var((*cmd.StringSliceFlag)(&c.args.Tags), "g", tagMessage)
 		flagSet.Var((*cmd.StringSliceFlag)(&c.args.Tags), "tag", tagMessage)
 		flagSet.StringVar(&c.cpu, "cpu", "", "CPU limit for app, this will override the plan cpu value. One cpu is equivalent to 1 vCPU/Core, fractional requests are allowed and the expression 0.1 is equivalent to the expression 100m")
-		flagSet.StringVar(&c.cpuBurst, "cpu-burst-factor", "", "The multiplier to determine the limits of CPU burst, when value is 1 not set burst")
+		flagSet.StringVar(&c.cpuBurst, "cpu-burst-factor", "", "The multiplier to determine the limits of CPU burst, when the value is 1 not set burst")
 
 		flagSet.StringVar(&c.memory, "memory", "", "Memory limit for app, this will override the plan memory value. You can express memory as a bytes integer or using one of these suffixes: E, P, T, G, M, K, Ei, Pi, Ti, Gi, Mi, Ki")
 		c.fs = cmd.MergeFlagSet(
@@ -306,7 +306,7 @@ func (c *AppUpdate) Run(ctx *cmd.Context, cli *cmd.Client) error {
 		}
 
 		if cpuBurst < 1 {
-			return errors.New("Invalid factor, please use value greater equal 1")
+			return errors.New("Invalid factor, please use a value greater equal 1")
 		}
 
 		c.args.Planoverride.CpuBurst = &cpuBurst
