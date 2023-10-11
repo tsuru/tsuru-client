@@ -764,7 +764,7 @@ func (a *app) String(simplified bool) string {
 	if !simplified && (a.Plan.Memory != 0 || a.Plan.CPUMilli != 0) {
 		buf.WriteString("\n")
 		buf.WriteString("App Plan:\n")
-		buf.WriteString(renderPlans([]apptypes.Plan{a.Plan}, false, false, false))
+		buf.WriteString(renderPlans([]apptypes.Plan{a.Plan}, renderPlansOpts{}))
 	}
 	if !simplified && internalAddressesTable.Rows() > 0 {
 		buf.WriteString("\n")
