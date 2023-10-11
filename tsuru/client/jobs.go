@@ -114,7 +114,7 @@ func (c *JobCreate) Flags() *gnuflag.FlagSet {
 }
 
 func parseJobCommands(commands []string) ([]string, error) {
-	if len(commands) > 1 {
+	if len(commands) != 1 {
 		return commands, nil
 	}
 	quotedCommands := commands[0]
