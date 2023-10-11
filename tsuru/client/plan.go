@@ -54,15 +54,7 @@ func renderPlans(plans []apptypes.Plan, isBytes, showDefaultColumn bool, showMax
 	showBurstColumn := false
 
 	for _, p := range plans {
-		if p.CPUMilli == 0 {
-			continue
-		}
-		if p.CPUBurst.Default != 0 {
-			showBurstColumn = true
-			break
-		}
-
-		if p.Override.CPUBurst != nil {
+		if hasBurst(p) {
 			showBurstColumn = true
 			break
 		}
@@ -129,7 +121,21 @@ func renderPlans(plans []apptypes.Plan, isBytes, showDefaultColumn bool, showMax
 
 func renderPlansK8SFriendly(plans []apptypes.Plan, showMaxBurstAllowed bool) string {
 	table := tablecli.NewTable()
-	table.Headers = []string{"Name", "CPU requests", "CPU limits"}
+	table.Headers = []string{"Name"}
+
+	showCPULimitsColumn := false
+	for _, p := range plans {
+		if hasBurst(p) {
+			showCPULimitsColumn = true
+			break
+		}
+	}
+
+	if showCPULimitsColumn {
+		table.Headers = append(table.Headers, "CPU requests", "CPU limits")
+	} else {
+		table.Headers = append(table.Headers, "CPU requests/limits")
+	}
 
 	if showMaxBurstAllowed {
 		table.Headers = append(table.Headers, "CPU limits (max customizable)")
@@ -140,13 +146,21 @@ func renderPlansK8SFriendly(plans []apptypes.Plan, showMaxBurstAllowed bool) str
 	for _, p := range plans {
 		memory := resource.NewQuantity(p.Memory, resource.BinarySI).String()
 		cpuRequest := resource.NewMilliQuantity(int64(p.CPUMilli), resource.DecimalSI).String()
-		defaultCPULimit := resource.NewMilliQuantity(int64(float64(p.CPUMilli)*p.CPUBurst.Default), resource.DecimalSI).String()
 		maxCPULimit := resource.NewMilliQuantity(int64(float64(p.CPUMilli)*p.CPUBurst.MaxAllowed), resource.DecimalSI).String()
 
 		row := []string{
 			p.Name,
-			cpuRequest,
-			defaultCPULimit,
+		}
+
+		if showCPULimitsColumn {
+			cpuBurst := p.CPUBurst.Default
+			if cpuBurst < 1 {
+				cpuBurst = 1
+			}
+			defaultCPULimit := resource.NewMilliQuantity(int64(float64(p.CPUMilli)*cpuBurst), resource.DecimalSI).String()
+			row = append(row, cpuRequest, defaultCPULimit)
+		} else {
+			row = append(row, cpuRequest)
 		}
 
 		if showMaxBurstAllowed {
@@ -158,6 +172,20 @@ func renderPlansK8SFriendly(plans []apptypes.Plan, showMaxBurstAllowed bool) str
 		table.AddRow(row)
 	}
 	return table.String()
+}
+
+func hasBurst(p apptypes.Plan) bool {
+	if p.CPUMilli == 0 {
+		return false
+	}
+	if p.CPUBurst.Default != 0 {
+		return true
+	}
+
+	if p.Override.CPUBurst != nil {
+		return true
+	}
+	return false
 }
 
 func displayCPUBurst(currentCPU int, burst float64) string {

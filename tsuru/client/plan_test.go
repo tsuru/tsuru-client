@@ -82,6 +82,36 @@ func (s *S) TestPlanListHuman(c *check.C) {
 	c.Assert(stdout.String(), check.Equals, expected)
 }
 
+func (s *S) TestPlanListKubernetesFriendly(c *check.C) {
+	var stdout, stderr bytes.Buffer
+	result := `[
+	{"name": "test", "cpumilli": 300, "memory": 536870912, "default": false}
+]`
+	expected := `+------+---------------------+------------------------+---------+
+| Name | CPU requests/limits | Memory requests/limits | Default |
++------+---------------------+------------------------+---------+
+| test | 300m                | 512Mi                  | false   |
++------+---------------------+------------------------+---------+
+`
+	context := cmd.Context{
+		Args:   []string{},
+		Stdout: &stdout,
+		Stderr: &stderr,
+	}
+	trans := &cmdtest.ConditionalTransport{
+		Transport: cmdtest.Transport{Message: string(result), Status: http.StatusOK},
+		CondFunc: func(req *http.Request) bool {
+			return strings.HasSuffix(req.URL.Path, "/plans") && req.Method == "GET"
+		},
+	}
+	client := cmd.NewClient(&http.Client{Transport: trans}, nil, manager)
+	command := PlanList{k8sFriendly: true}
+	// command.Flags().Parse(true, []string{"-h"})
+	err := command.Run(&context, client)
+	c.Assert(err, check.IsNil)
+	c.Assert(stdout.String(), check.Equals, expected)
+}
+
 func (s *S) TestPlanListOverride(c *check.C) {
 	var stdout, stderr bytes.Buffer
 	result := `[
@@ -136,6 +166,36 @@ func (s *S) TestPlanListWithBurst(c *check.C) {
 	}
 	client := cmd.NewClient(&http.Client{Transport: trans}, nil, manager)
 	command := PlanList{}
+	// command.Flags().Parse(true, []string{"-h"})
+	err := command.Run(&context, client)
+	c.Assert(err, check.IsNil)
+	c.Assert(stdout.String(), check.Equals, expected)
+}
+
+func (s *S) TestPlanListWithBurstKubernetesFriendly(c *check.C) {
+	var stdout, stderr bytes.Buffer
+	result := `[
+	{"name": "test", "cpumilli": 300, "memory": 536870912, "default": false, "cpuBurst": {"default": 1.1}}
+]`
+	expected := `+------+--------------+------------+------------------------+---------+
+| Name | CPU requests | CPU limits | Memory requests/limits | Default |
++------+--------------+------------+------------------------+---------+
+| test | 300m         | 330m       | 512Mi                  | false   |
++------+--------------+------------+------------------------+---------+
+`
+	context := cmd.Context{
+		Args:   []string{},
+		Stdout: &stdout,
+		Stderr: &stderr,
+	}
+	trans := &cmdtest.ConditionalTransport{
+		Transport: cmdtest.Transport{Message: string(result), Status: http.StatusOK},
+		CondFunc: func(req *http.Request) bool {
+			return strings.HasSuffix(req.URL.Path, "/plans") && req.Method == "GET"
+		},
+	}
+	client := cmd.NewClient(&http.Client{Transport: trans}, nil, manager)
+	command := PlanList{k8sFriendly: true}
 	// command.Flags().Parse(true, []string{"-h"})
 	err := command.Run(&context, client)
 	c.Assert(err, check.IsNil)
