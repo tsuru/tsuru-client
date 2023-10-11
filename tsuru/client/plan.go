@@ -47,7 +47,11 @@ func (c *PlanList) Info() *cmd.Info {
 	}
 }
 
-func renderPlans(plans []apptypes.Plan, isBytes, showDefaultColumn bool, showMaxBurstAllowed bool) string {
+type renderPlansOpts struct {
+	isBytes, showDefaultColumn, showMaxBurstAllowed bool
+}
+
+func renderPlans(plans []apptypes.Plan, opts renderPlansOpts) string {
 	table := tablecli.NewTable()
 	table.Headers = []string{"Name", "CPU", "Memory"}
 
@@ -64,17 +68,17 @@ func renderPlans(plans []apptypes.Plan, isBytes, showDefaultColumn bool, showMax
 		table.Headers = append(table.Headers, "CPU Burst (default)")
 	}
 
-	if showBurstColumn && showMaxBurstAllowed {
+	if showBurstColumn && opts.showMaxBurstAllowed {
 		table.Headers = append(table.Headers, "CPU Burst (max customizable)")
 	}
 
-	if showDefaultColumn {
+	if opts.showDefaultColumn {
 		table.Headers = append(table.Headers, "Default")
 	}
 
 	for _, p := range plans {
 		var cpu, memory string
-		if isBytes {
+		if opts.isBytes {
 			memory = fmt.Sprintf("%d", p.Memory)
 		} else {
 			memory = resource.NewQuantity(p.Memory, resource.BinarySI).String()
@@ -107,11 +111,11 @@ func renderPlans(plans []apptypes.Plan, isBytes, showDefaultColumn bool, showMax
 			row = append(row, displayCPUBurst(p.CPUMilli, cpuBurst)+cpuBurstObservation)
 		}
 
-		if showBurstColumn && showMaxBurstAllowed {
+		if showBurstColumn && opts.showMaxBurstAllowed {
 			row = append(row, displayCPUBurst(p.CPUMilli, p.CPUBurst.MaxAllowed))
 		}
 
-		if showDefaultColumn {
+		if opts.showDefaultColumn {
 			row = append(row, strconv.FormatBool(p.Default))
 		}
 		table.AddRow(row)
@@ -224,7 +228,7 @@ func (c *PlanList) Run(context *cmd.Context, client *cmd.Client) error {
 	if c.k8sFriendly {
 		fmt.Fprintf(context.Stdout, "%s", renderPlansK8SFriendly(plans, c.showMaxBurstAllowed))
 	} else {
-		fmt.Fprintf(context.Stdout, "%s", renderPlans(plans, c.bytes, true, c.showMaxBurstAllowed))
+		fmt.Fprintf(context.Stdout, "%s", renderPlans(plans, renderPlansOpts{isBytes: c.bytes, showDefaultColumn: true, showMaxBurstAllowed: c.showMaxBurstAllowed}))
 	}
 
 	return nil
