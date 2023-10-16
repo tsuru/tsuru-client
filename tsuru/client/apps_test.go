@@ -647,6 +647,39 @@ func (s *S) TestAppUpdateWithCPUBurst(c *check.C) {
 	c.Assert(stdout.String(), check.Equals, expected)
 }
 
+func (s *S) TestAppUpdateWithInvalidCPUBurst(c *check.C) {
+	var stdout, stderr bytes.Buffer
+	context := cmd.Context{
+		Stdout: &stdout,
+		Stderr: &stderr,
+	}
+	trans := &cmdtest.ConditionalTransport{
+		Transport: cmdtest.Transport{Status: http.StatusOK},
+		CondFunc: func(req *http.Request) bool {
+			url := strings.HasSuffix(req.URL.Path, "/apps/ble")
+			method := req.Method == "PUT"
+			data, err := io.ReadAll(req.Body)
+			c.Assert(err, check.IsNil)
+			var result map[string]interface{}
+			err = json.Unmarshal(data, &result)
+			c.Assert(err, check.IsNil)
+			c.Assert(result, check.DeepEquals, map[string]interface{}{
+				"planoverride": map[string]interface{}{
+					"cpuBurst": float64(1.3),
+				},
+				"metadata": map[string]interface{}{},
+			})
+			return url && method
+		},
+	}
+	client := cmd.NewClient(&http.Client{Transport: trans}, nil, manager)
+	command := AppUpdate{}
+	command.Flags().Parse(true, []string{"-a", "ble", "--cpu-burst-factor", "0.5"})
+	err := command.Run(&context, client)
+	c.Assert(err, check.NotNil)
+	c.Assert(err.Error(), check.Equals, "Invalid factor, please use a value greater equal 1")
+}
+
 func (s *S) TestAppUpdateWithoutArgs(c *check.C) {
 	var stdout, stderr bytes.Buffer
 	expected := "Please use the -a/--app flag to specify which app you want to update."

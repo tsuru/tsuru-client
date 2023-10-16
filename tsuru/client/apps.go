@@ -225,7 +225,7 @@ type AppUpdate struct {
 func (c *AppUpdate) Info() *cmd.Info {
 	return &cmd.Info{
 		Name:  "app-update",
-		Usage: "app update [-a/--app appname] [--description/-d description] [--plan/-p plan name] [--pool/-o pool] [--team-owner/-t team owner] [--platform/-l platform] [-i/--image-reset] [--cpu cpu] [--memory memory] [--tag/-g tag]...",
+		Usage: "app update [-a/--app appname] [--description/-d description] [--plan/-p plan name] [--pool/-o pool] [--team-owner/-t team owner] [--platform/-l platform] [-i/--image-reset] [--cpu cpu] [--memory memory] [--cpu-burst-factor cpu-burst-factor] [--tag/-g tag]...",
 		Desc:  `Updates an app, changing its description, tags, plan or pool information.`,
 	}
 }
@@ -257,7 +257,7 @@ func (c *AppUpdate) Flags() *gnuflag.FlagSet {
 		flagSet.Var((*cmd.StringSliceFlag)(&c.args.Tags), "g", tagMessage)
 		flagSet.Var((*cmd.StringSliceFlag)(&c.args.Tags), "tag", tagMessage)
 		flagSet.StringVar(&c.cpu, "cpu", "", "CPU limit for app, this will override the plan cpu value. One cpu is equivalent to 1 vCPU/Core, fractional requests are allowed and the expression 0.1 is equivalent to the expression 100m")
-		flagSet.StringVar(&c.cpuBurst, "cpu-burst-factor", "", "The multiplier to determine the limits of CPU burst, when the value is 1 not set burst")
+		flagSet.StringVar(&c.cpuBurst, "cpu-burst-factor", "", "The multiplier to determine the limits of the CPU burst. Setting 1 disables burst")
 
 		flagSet.StringVar(&c.memory, "memory", "", "Memory limit for app, this will override the plan memory value. You can express memory as a bytes integer or using one of these suffixes: E, P, T, G, M, K, Ei, Pi, Ti, Gi, Mi, Ki")
 		c.fs = cmd.MergeFlagSet(
