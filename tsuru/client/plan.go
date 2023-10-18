@@ -84,7 +84,9 @@ func renderPlans(plans []apptypes.Plan, opts renderPlansOpts) string {
 			memory = resource.NewQuantity(p.Memory, resource.BinarySI).String()
 		}
 
+		cpuMilli := p.CPUMilli
 		if p.Override.CPUMilli != nil {
+			cpuMilli = *p.Override.CPUMilli
 			cpu = fmt.Sprintf("%g", float64(*p.Override.CPUMilli)/10) + "% (override)"
 		} else if p.CPUMilli > 0 {
 			cpu = fmt.Sprintf("%g", float64(p.CPUMilli)/10) + "%"
@@ -108,11 +110,11 @@ func renderPlans(plans []apptypes.Plan, opts renderPlansOpts) string {
 				cpuBurstObservation = " (override)"
 			}
 
-			row = append(row, displayCPUBurst(p.CPUMilli, cpuBurst)+cpuBurstObservation)
+			row = append(row, displayCPUBurst(cpuMilli, cpuBurst)+cpuBurstObservation)
 		}
 
 		if showBurstColumn && opts.showMaxBurstAllowed {
-			row = append(row, displayCPUBurst(p.CPUMilli, p.CPUBurst.MaxAllowed))
+			row = append(row, displayCPUBurst(cpuMilli, p.CPUBurst.MaxAllowed))
 		}
 
 		if opts.showDefaultColumn {

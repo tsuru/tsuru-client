@@ -168,6 +168,35 @@ func (s *S) TestPlanListWithBurst(c *check.C) {
 	c.Assert(stdout.String(), check.Equals, expected)
 }
 
+func (s *S) TestPlanListWithBurstAndCPUOverrided(c *check.C) {
+	var stdout, stderr bytes.Buffer
+	result := `[
+	{"name": "test", "cpumilli": 300, "memory": 536870912, "default": false, "cpuBurst": {"default": 1.1}, "override": {"cpumilli": 1000}}
+]`
+	expected := `+------+-----------------+--------+---------------------+---------+
+| Name | CPU             | Memory | CPU Burst (default) | Default |
++------+-----------------+--------+---------------------+---------+
+| test | 100% (override) | 512Mi  | up to 110%          | false   |
++------+-----------------+--------+---------------------+---------+
+`
+	context := cmd.Context{
+		Args:   []string{},
+		Stdout: &stdout,
+		Stderr: &stderr,
+	}
+	trans := &cmdtest.ConditionalTransport{
+		Transport: cmdtest.Transport{Message: string(result), Status: http.StatusOK},
+		CondFunc: func(req *http.Request) bool {
+			return strings.HasSuffix(req.URL.Path, "/plans") && req.Method == "GET"
+		},
+	}
+	client := cmd.NewClient(&http.Client{Transport: trans}, nil, manager)
+	command := PlanList{}
+	err := command.Run(&context, client)
+	c.Assert(err, check.IsNil)
+	c.Assert(stdout.String(), check.Equals, expected)
+}
+
 func (s *S) TestPlanListWithBurstKubernetesFriendly(c *check.C) {
 	var stdout, stderr bytes.Buffer
 	result := `[
