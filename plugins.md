@@ -22,6 +22,9 @@ tsuru myplugin subcommands -flags
 #   called with args: subcommands -flags
 ```
 
+You may find available tsuru plugins on github, by searching for the topic [`tsuru-plugin`](https://github.com/topics/tsuru-plugin).
+(If you are developing a plugin, please tag your github repo).
+
 ## Distributing a tsuru plugin
 
 The best way to distribute a tsuru plugin is making it compatible with `tsuru plugin install`.
