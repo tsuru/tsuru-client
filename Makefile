@@ -44,13 +44,13 @@ fmt: ## Format your code with gofmt
 	$(GOFMT) -w .
 
 yamlfmt: ## Format your code with yamlfmt
-ifeq (, $(shell which yamlfmt))
+ifeq (, $(shell which yamlfmt 2>/dev/null ))
 	go install github.com/google/yamlfmt/cmd/yamlfmt@v0.9.0
 endif
 	yamlfmt .
 
 addlicense: ## Add licence header to all files
-ifeq (, $(shell which addlicense))
+ifeq (, $(shell which addlicense 2>/dev/null ))
 	go install github.com/google/addlicense@latest
 endif
 	addlicense -f LICENSE-HEADER .
@@ -89,13 +89,13 @@ ifneq (, $(shell $(GOFMT) -l . ))
 	@echo "Please run '$(CYAN)make fmt$(RESET)' to format your code"
 	@exit 1
 endif
-ifeq (, $(shell which staticcheck))
+ifeq (, $(shell which staticcheck 2>/dev/null ))
 	go install honnef.co/go/tools/cmd/staticcheck@latest
 endif
 	staticcheck ./...
 
 lint-yaml: ## Check the yaml is valid and correctly formatted
-ifeq (, $(shell which yamlfmt))
+ifeq (, $(shell which yamlfmt 2>/dev/null ))
 	go install github.com/google/yamlfmt/cmd/yamlfmt@v0.9.0
 endif
 	@echo "yamlfmt --quiet --lint ."
@@ -103,7 +103,7 @@ endif
 		|| ( echo "Please run '$(CYAN)make yamlfmt$(RESET)' to fix it (if a format error)" && exit 1 )
 
 lint-license-header: ## Check if all files have the license header
-ifeq (, $(shell which addlicense))
+ifeq (, $(shell which addlicense 2>/dev/null ))
 	go install github.com/google/addlicense@latest
 endif
 	@echo "addlicense -check -f LICENSE-HEADER -ignore coverage/** ."
@@ -140,7 +140,7 @@ env:    ## Print useful environment variables to stdout
 	@echo '$$(FILES#)  :' $(shell echo $(FILES) | wc -w)
 
 setup: ## Setup some dev dependencies (eg: pre-commit)
-ifeq (, $(shell which pre-commit))
+ifeq (, $(shell which pre-commit 2>/dev/null ))
 	@echo "pre-commit is not installed. Check $(CYAN)https://pre-commit.com/#install$(RESET)"
 endif
 	pre-commit install --install-hooks
