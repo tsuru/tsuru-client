@@ -29,3 +29,14 @@ The following environment variables can be used to configure the client:
   (eg: writing preferences to `~/.tsuru/config.json`). (default: 1s)
 * `TSURU_CLIENT_SELF_UPDATE_SNOOZE_DURATION`: snooze the self-updating process for
   the given duration. (default: 0s)
+
+## Tsuru plugins
+
+Tsuru plugins are the standard way to extend tsuru-client functionality transparently.
+Installing and using a plugin is done with:
+```
+tsuru plugin install <plugin-name> <plugin-url>
+tsuru <plugin-name> <any_sub_commands_or_flags...>
+```
+
+For developing a custom plugin, read about [Developing Tsuru Plugins](./plugins.md).
