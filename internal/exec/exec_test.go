@@ -92,6 +92,8 @@ func TestOsExec(t *testing.T) {
 
 func init() {
 	if runtime.GOOS == "windows" {
-		endLine = "\r\n"
+		// windows ends echo with \n or \r\n ?!?
+		endLine = "\n"
+		// endLine = "\r\n"
 	}
 }
