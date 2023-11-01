@@ -4,6 +4,7 @@ import (
 	"context"
 	"errors"
 	"fmt"
+	"io"
 	"net/http"
 	"sort"
 	"strings"
@@ -26,19 +27,26 @@ Example:
 
 var allowedTypes = []string{"label", "annotation"}
 
-func (c *JobOrApp) getMetadata(apiClient *tsuru.APIClient) (tsuru.Metadata, error) {
+func (c *JobOrApp) getMetadata(apiClient *tsuru.APIClient) (*tsuru.Metadata, map[string]tsuru.Metadata, error) {
 	if c.Type == "job" {
 		job, _, err := apiClient.JobApi.GetJob(context.Background(), c.val)
 		if err != nil {
-			return tsuru.Metadata{}, err
+			return nil, nil, err
 		}
-		return job.Job.Metadata, nil
+		return &job.Job.Metadata, nil, nil
 	}
 	app, _, err := apiClient.AppApi.AppGet(context.Background(), c.val)
 	if err != nil {
-		return tsuru.Metadata{}, err
+		return nil, nil, err
 	}
-	return app.Metadata, nil
+
+	processMetadata := map[string]tsuru.Metadata{}
+
+	for _, p := range app.Processes {
+		processMetadata[p.Name] = p.Metadata
+	}
+
+	return &app.Metadata, processMetadata, nil
 }
 
 func (c *JobOrApp) setMetadata(apiClient *tsuru.APIClient, metadata tsuru.Metadata, noRestart bool) (*http.Response, error) {
@@ -49,9 +57,18 @@ func (c *JobOrApp) setMetadata(apiClient *tsuru.APIClient, metadata tsuru.Metada
 		}
 		return apiClient.JobApi.UpdateJob(context.Background(), c.val, j)
 	}
+
 	a := tsuru.UpdateApp{
-		Metadata:  metadata,
 		NoRestart: noRestart,
+	}
+
+	if c.appProcess == "" {
+		a.Metadata = metadata
+	} else {
+		a.Processes = append(a.Processes, tsuru.AppProcess{
+			Name:     c.appProcess,
+			Metadata: metadata,
+		})
 	}
 	return apiClient.AppApi.AppUpdate(context.Background(), c.val, a)
 }
@@ -59,6 +76,7 @@ func (c *JobOrApp) setMetadata(apiClient *tsuru.APIClient, metadata tsuru.Metada
 type MetadataGet struct {
 	cmd.AppNameMixIn
 	jobName      string
+	appProcess   string
 	flagsApplied bool
 	json         bool
 	fs           *gnuflag.FlagSet
@@ -98,7 +116,7 @@ func (c *MetadataGet) Run(context *cmd.Context, cli *cmd.Client) error {
 	if err != nil {
 		return err
 	}
-	metadata, err := joa.getMetadata(apiClient)
+	metadata, metadataByProcess, err := joa.getMetadata(apiClient)
 	if err != nil {
 		return err
 	}
@@ -107,27 +125,47 @@ func (c *MetadataGet) Run(context *cmd.Context, cli *cmd.Client) error {
 		return formatter.JSON(context.Stdout, metadata)
 	}
 
-	formatted := make([]string, 0, len(metadata.Labels))
-	for _, v := range metadata.Labels {
-		formatted = append(formatted, fmt.Sprintf("\t%s: %s", v.Name, v.Value))
+	if len(metadataByProcess) > 0 {
+		fmt.Fprintln(context.Stdout, "Metadata for app:")
 	}
-	sort.Strings(formatted)
-	fmt.Fprintln(context.Stdout, "Labels:")
-	fmt.Fprintln(context.Stdout, strings.Join(formatted, "\n"))
+	outputMetadata(context.Stdout, metadata)
 
-	formatted = make([]string, 0, len(metadata.Annotations))
-	for _, v := range metadata.Annotations {
-		formatted = append(formatted, fmt.Sprintf("\t%s: %s", v.Name, v.Value))
+	for process, processMetadata := range metadataByProcess {
+		if len(metadataByProcess) > 0 {
+			fmt.Fprintf(context.Stdout, "\nMetadata for process: %q\n", process)
+		}
+		outputMetadata(context.Stdout, &processMetadata)
 	}
-	sort.Strings(formatted)
-	fmt.Fprintln(context.Stdout, "Annotations:")
-	fmt.Fprintln(context.Stdout, strings.Join(formatted, "\n"))
+
 	return nil
+}
+
+func outputMetadata(w io.Writer, metadata *tsuru.Metadata) {
+	if len(metadata.Labels) > 0 {
+		formatted := make([]string, 0, len(metadata.Labels))
+		for _, v := range metadata.Labels {
+			formatted = append(formatted, fmt.Sprintf("\t%s: %s", v.Name, v.Value))
+		}
+		sort.Strings(formatted)
+		fmt.Fprintln(w, "Labels:")
+		fmt.Fprintln(w, strings.Join(formatted, "\n"))
+	}
+
+	if len(metadata.Annotations) > 0 {
+		formatted := make([]string, 0, len(metadata.Annotations))
+		for _, v := range metadata.Annotations {
+			formatted = append(formatted, fmt.Sprintf("\t%s: %s", v.Name, v.Value))
+		}
+		sort.Strings(formatted)
+		fmt.Fprintln(w, "Annotations:")
+		fmt.Fprintln(w, strings.Join(formatted, "\n"))
+	}
 }
 
 type MetadataSet struct {
 	cmd.AppNameMixIn
 	job          string
+	processName  string
 	fs           *gnuflag.FlagSet
 	metadataType string
 	noRestart    bool
@@ -136,7 +174,7 @@ type MetadataSet struct {
 func (c *MetadataSet) Info() *cmd.Info {
 	return &cmd.Info{
 		Name:    "metadata-set",
-		Usage:   "metadata set <NAME=value> [NAME=value] ... <-a/--app appname | -j/--job jobname> [-t/--type type]",
+		Usage:   "metadata set <NAME=value> [NAME=value] ... <-a/--app appname | -j/--job jobname> <-p process> [-t/--type type]",
 		Desc:    `Sets metadata such as labels and annotations for an application or job.`,
 		MinArgs: 1,
 	}
@@ -147,6 +185,8 @@ func (c *MetadataSet) Flags() *gnuflag.FlagSet {
 		c.fs = c.AppNameMixIn.Flags()
 		c.fs.StringVar(&c.job, "job", "", "The name of the job.")
 		c.fs.StringVar(&c.job, "j", "", "The name of the job.")
+		c.fs.StringVar(&c.processName, "process", "", "The name of process of app (optional).")
+		c.fs.StringVar(&c.processName, "p", "", "The name of process of app (optional).")
 		c.fs.StringVar(&c.metadataType, "type", "", "Metadata type: annotation or label")
 		c.fs.StringVar(&c.metadataType, "t", "", "Metadata type: annotation or label")
 		c.fs.BoolVar(&c.noRestart, "no-restart", false, "Sets metadata without restarting the application")
@@ -219,6 +259,7 @@ func validateType(t string) error {
 type MetadataUnset struct {
 	cmd.AppNameMixIn
 	job          string
+	processName  string
 	fs           *gnuflag.FlagSet
 	metadataType string
 	noRestart    bool
@@ -238,6 +279,8 @@ func (c *MetadataUnset) Flags() *gnuflag.FlagSet {
 		c.fs = c.AppNameMixIn.Flags()
 		c.fs.StringVar(&c.job, "job", "", "The name of the job.")
 		c.fs.StringVar(&c.job, "j", "", "The name of the job.")
+		c.fs.StringVar(&c.processName, "process", "", "The name of process of app (optional).")
+		c.fs.StringVar(&c.processName, "p", "", "The name of process of app (optional).")
 		c.fs.StringVar(&c.metadataType, "type", "", "Metadata type: annotation or label")
 		c.fs.StringVar(&c.metadataType, "t", "", "Metadata type: annotation or label")
 		c.fs.BoolVar(&c.noRestart, "no-restart", false, "Sets metadata without restarting the application")
@@ -262,7 +305,8 @@ func (c *MetadataUnset) Run(ctx *cmd.Context, cli *cmd.Client) error {
 
 	items := make([]tsuru.MetadataItem, len(ctx.Args))
 	for i := range ctx.Args {
-		items[i] = tsuru.MetadataItem{Name: ctx.Args[i], Delete: true}
+		parts := strings.SplitN(ctx.Args[i], "=", 2)
+		items[i] = tsuru.MetadataItem{Name: parts[0], Delete: true}
 	}
 
 	var metadata tsuru.Metadata

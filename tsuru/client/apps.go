@@ -559,6 +559,7 @@ type app struct {
 	UnitsMetrics         []unitMetrics
 	VolumeBinds          []volumeTypes.VolumeBind
 	ServiceInstanceBinds []tsuru.AppServiceInstanceBinds
+	Processes            []tsuru.AppProcess
 }
 
 type appInternalAddress struct {
