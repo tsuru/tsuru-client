@@ -76,7 +76,6 @@ func (c *JobOrApp) setMetadata(apiClient *tsuru.APIClient, metadata tsuru.Metada
 type MetadataGet struct {
 	cmd.AppNameMixIn
 	jobName      string
-	appProcess   string
 	flagsApplied bool
 	json         bool
 	fs           *gnuflag.FlagSet

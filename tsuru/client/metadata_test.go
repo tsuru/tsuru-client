@@ -83,6 +83,52 @@ func (s *S) TestMetadataGetJobRun(c *check.C) {
 	c.Assert(stdout.String(), check.Equals, result)
 }
 
+func (s *S) TestMetadataGetAppRunWithProcesses(c *check.C) {
+	var stdout, stderr bytes.Buffer
+	jsonResult := `{
+			"name": "somejob",
+			"metadata": {
+				"annotations": [{
+					"name": "my-annotation",
+					"value": "some long value"
+				}],
+				"labels": [{
+					"name": "logging.globoi.com/backup",
+					"value": "true"
+				}]
+			},
+			"processes": [
+				{
+					"name": "web",
+					"metadata": {
+						"labels": [{
+							"name": "logging.globoi.com/sampling",
+							"value": "0.1"
+						}]
+					}
+				}
+			]
+	}`
+	result := "Metadata for app:\n" +
+		"Labels:\n" +
+		"\tlogging.globoi.com/backup: true\n" +
+		"Annotations:\n" +
+		"\tmy-annotation: some long value\n\n" +
+		"Metadata for process: \"web\"\n" +
+		"Labels:\n" +
+		"\tlogging.globoi.com/sampling: 0.1\n"
+	context := cmd.Context{
+		Stdout: &stdout,
+		Stderr: &stderr,
+	}
+	client := cmd.NewClient(&http.Client{Transport: &cmdtest.Transport{Message: jsonResult, Status: http.StatusOK}}, nil, manager)
+	command := MetadataGet{}
+	command.Flags().Parse(true, []string{"-a", "someapp"})
+	err := command.Run(&context, client)
+	c.Assert(err, check.IsNil)
+	c.Assert(stdout.String(), check.Equals, result)
+}
+
 func (s *S) TestMetadataSetInfo(c *check.C) {
 	c.Assert((&MetadataSet{}).Info(), check.NotNil)
 }
@@ -154,6 +200,49 @@ func (s *S) TestMetadataSetRunAppWithLabel(c *check.C) {
 
 	command := MetadataSet{}
 	command.Flags().Parse(true, []string{"-a", "someapp", "-t", "label"})
+	err := command.Run(&context, client)
+	c.Assert(err, check.IsNil)
+	c.Assert(stdout.String(), check.Equals, expectedOut)
+}
+
+func (s *S) TestMetadataSetRunAppWithProcess(c *check.C) {
+	var stdout, stderr bytes.Buffer
+	context := cmd.Context{
+		Args:   []string{"test.tsuru.io/label=some-value"},
+		Stdout: &stdout,
+		Stderr: &stderr,
+	}
+	expectedOut := "app \"someapp\" has been updated!\n"
+
+	trans := &cmdtest.ConditionalTransport{
+		Transport: cmdtest.Transport{Status: http.StatusOK},
+		CondFunc: func(req *http.Request) bool {
+			url := strings.HasSuffix(req.URL.Path, "/apps/someapp")
+			method := req.Method == "PUT"
+			data, err := io.ReadAll(req.Body)
+			c.Assert(err, check.IsNil)
+			var payload map[string]interface{}
+			err = json.Unmarshal(data, &payload)
+			c.Assert(err, check.IsNil)
+			c.Assert(payload, check.DeepEquals, map[string]interface{}{
+				"planoverride": map[string]interface{}{},
+				"metadata":     map[string]interface{}{},
+				"processes": []interface{}{
+					map[string]interface{}{
+						"name": "web",
+						"metadata": map[string]interface{}{
+							"labels": []interface{}{map[string]interface{}{"name": "test.tsuru.io/label", "value": "some-value"}},
+						},
+					},
+				},
+			})
+			return url && method
+		},
+	}
+	client := cmd.NewClient(&http.Client{Transport: trans}, nil, manager)
+
+	command := MetadataSet{}
+	command.Flags().Parse(true, []string{"-a", "someapp", "-t", "label", "-p", "web"})
 	err := command.Run(&context, client)
 	c.Assert(err, check.IsNil)
 	c.Assert(stdout.String(), check.Equals, expectedOut)
@@ -337,6 +426,50 @@ func (s *S) TestMetadataUnsetRunAppWithLabel(c *check.C) {
 
 	command := MetadataUnset{}
 	command.Flags().Parse(true, []string{"-a", "someapp", "-t", "label"})
+	err := command.Run(&context, client)
+	c.Assert(err, check.IsNil)
+	c.Assert(stdout.String(), check.Equals, expectedOut)
+}
+
+func (s *S) TestMetadataUnsetRunAppWithProcess(c *check.C) {
+	var stdout, stderr bytes.Buffer
+	context := cmd.Context{
+		Args:   []string{"test.tsuru.io/label"},
+		Stdout: &stdout,
+		Stderr: &stderr,
+	}
+	expectedOut := "app \"someapp\" has been updated!\n"
+
+	trans := &cmdtest.ConditionalTransport{
+		Transport: cmdtest.Transport{Status: http.StatusOK},
+		CondFunc: func(req *http.Request) bool {
+			url := strings.HasSuffix(req.URL.Path, "/apps/someapp")
+			method := req.Method == "PUT"
+			data, err := io.ReadAll(req.Body)
+			c.Assert(err, check.IsNil)
+
+			var payload map[string]interface{}
+			err = json.Unmarshal(data, &payload)
+			c.Assert(err, check.IsNil)
+			c.Assert(payload, check.DeepEquals, map[string]interface{}{
+				"planoverride": map[string]interface{}{},
+				"metadata":     map[string]interface{}{},
+				"processes": []interface{}{
+					map[string]interface{}{
+						"name": "worker",
+						"metadata": map[string]interface{}{
+							"labels": []interface{}{map[string]interface{}{"name": "test.tsuru.io/label", "delete": true}},
+						},
+					},
+				},
+			})
+			return url && method
+		},
+	}
+	client := cmd.NewClient(&http.Client{Transport: trans}, nil, manager)
+
+	command := MetadataUnset{}
+	command.Flags().Parse(true, []string{"-a", "someapp", "-t", "label", "-p", "worker"})
 	err := command.Run(&context, client)
 	c.Assert(err, check.IsNil)
 	c.Assert(stdout.String(), check.Equals, expectedOut)
