@@ -763,10 +763,13 @@ func (a *app) String(simplified bool) string {
 			"Trigger details",
 		})
 
-		autoScaleTable.AddRow(tablecli.Row([]string{
-			"CPU",
-			"Target: 20%",
-		}))
+		if as.AverageCPU != "" {
+			cpu := cpuValue(as.AverageCPU)
+			autoScaleTable.AddRow(tablecli.Row([]string{
+				"CPU",
+				fmt.Sprintf("Target: %s", cpu),
+			}))
+		}
 
 		for _, schedule := range as.Schedules {
 			scheduleInfo := buildScheduleInfo(schedule)
