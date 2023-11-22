@@ -26,31 +26,6 @@ Example:
 
 var allowedTypes = []string{"label", "annotation"}
 
-type JobOrApp struct {
-	Type string
-	val  string
-	fs   *gnuflag.FlagSet
-}
-
-func (c *JobOrApp) validate() error {
-	appName := c.fs.Lookup("app").Value.String()
-	jobName := c.fs.Lookup("job").Value.String()
-	if appName == "" && jobName == "" {
-		return errors.New("job name or app name is required")
-	}
-	if appName != "" && jobName != "" {
-		return errors.New("please use only one of the -a/--app and -j/--job flags")
-	}
-	if appName != "" {
-		c.Type = "app"
-		c.val = appName
-		return nil
-	}
-	c.Type = "job"
-	c.val = jobName
-	return nil
-}
-
 func (c *JobOrApp) getMetadata(apiClient *tsuru.APIClient) (tsuru.Metadata, error) {
 	if c.Type == "job" {
 		job, _, err := apiClient.JobApi.GetJob(context.Background(), c.val)
