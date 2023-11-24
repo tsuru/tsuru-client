@@ -1611,14 +1611,14 @@ Process: web (v10), Min Units: 1, Max Units: 10
 +----------+-----------------+
 | Triggers | Trigger details |
 +----------+-----------------+
-| CPU      | Target: 20%     |
+| CPU      | Target: 50%     |
 +----------+-----------------+
 
 Process: worker (v10), Min Units: 2, Max Units: 5
 +----------+-----------------+
 | Triggers | Trigger details |
 +----------+-----------------+
-| CPU      | Target: 20%     |
+| CPU      | Target: 200%    |
 +----------+-----------------+
 
 `
@@ -1697,7 +1697,7 @@ func (s *S) TestAppInfoWithKEDAAutoScale(c *check.C) {
 		  "minReplicas":1,
 		  "start":"0 0 * * *",
 		  "end":"0 6 * * *",
-		  "timezone":"UTC"
+		  "timezone":"America/Sao_Paulo"
 		}
 	  ]
     }
@@ -1733,26 +1733,29 @@ Process: web (v10), Min Units: 1, Max Units: 10
 +----------+---------------------------------+
 | Triggers | Trigger details                 |
 +----------+---------------------------------+
-| CPU      | Target: 20%                     |
+| CPU      | Target: 50%                     |
 +----------+---------------------------------+
 | Schedule | Start: At 06:00 AM (0 6 * * *)  |
 |          | End: At 06:00 PM (0 18 * * *)   |
 |          | Units: 2                        |
+|          | Timezone: UTC                   |
 +----------+---------------------------------+
 | Schedule | Start: At 12:00 PM (0 12 * * *) |
 |          | End: At 03:00 PM (0 15 * * *)   |
 |          | Units: 3                        |
+|          | Timezone: UTC                   |
 +----------+---------------------------------+
 
 Process: worker (v10), Min Units: 2, Max Units: 5
 +----------+--------------------------------+
 | Triggers | Trigger details                |
 +----------+--------------------------------+
-| CPU      | Target: 20%                    |
+| CPU      | Target: 200%                   |
 +----------+--------------------------------+
 | Schedule | Start: At 12:00 AM (0 0 * * *) |
 |          | End: At 06:00 AM (0 6 * * *)   |
 |          | Units: 1                       |
+|          | Timezone: America/Sao_Paulo    |
 +----------+--------------------------------+
 
 `

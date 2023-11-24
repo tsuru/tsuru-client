@@ -828,8 +828,8 @@ func buildScheduleInfo(schedule tsuru.AutoScaleSchedule) string {
 	startTimeHuman, _ := exprDesc.ToDescription(schedule.Start, cron.Locale_en)
 	endTimeHuman, _ := exprDesc.ToDescription(schedule.End, cron.Locale_en)
 
-	return fmt.Sprintf("Start: %s (%s)\nEnd: %s (%s)\nUnits: %d",
-		startTimeHuman, schedule.Start, endTimeHuman, schedule.End, schedule.MinReplicas,
+	return fmt.Sprintf("Start: %s (%s)\nEnd: %s (%s)\nUnits: %d\nTimezone: %s",
+		startTimeHuman, schedule.Start, endTimeHuman, schedule.End, schedule.MinReplicas, schedule.Timezone,
 	)
 }
 
