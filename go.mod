@@ -8,13 +8,14 @@ require (
 	github.com/antihax/optional v1.0.0
 	github.com/ghodss/yaml v1.0.0
 	github.com/iancoleman/orderedmap v0.2.0
+	github.com/lnquy/cron v1.1.1
 	github.com/mattn/go-shellwords v1.0.12
 	github.com/mitchellh/go-wordwrap v1.0.1
 	github.com/pkg/errors v0.9.1
 	github.com/pmorie/go-open-service-broker-client v0.0.0-20180330214919-dca737037ce6
 	github.com/sabhiram/go-gitignore v0.0.0-20171017070213-362f9845770f
 	github.com/tsuru/gnuflag v0.0.0-20151217162021-86b8c1b864aa
-	github.com/tsuru/go-tsuruclient v0.0.0-20231031185823-b0abac462f59
+	github.com/tsuru/go-tsuruclient v0.0.0-20231124151049-7b8d8ea2ee30
 	github.com/tsuru/tablecli v0.0.0-20190131152944-7ded8a3383c6
 	github.com/tsuru/tsuru v0.0.0-20231009130140-65592312e508
 	gopkg.in/check.v1 v1.0.0-20201130134442-10cb98267c6c
@@ -49,7 +50,6 @@ require (
 	github.com/json-iterator/go v1.1.12 // indirect
 	github.com/kr/pretty v0.3.0 // indirect
 	github.com/kr/text v0.2.0 // indirect
-	github.com/lnquy/cron v1.1.1 // indirect
 	github.com/matttproud/golang_protobuf_extensions v1.0.2-0.20181231171920-c182affec369 // indirect
 	github.com/moby/sys/mount v0.3.0 // indirect
 	github.com/moby/sys/mountinfo v0.6.0 // indirect
