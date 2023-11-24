@@ -48,7 +48,7 @@ unit autoscale set -a my-app --min 1 --max 3 --schedule '{"minReplicas": 2, "sta
 # Combining both
 unit autoscale set -a my-app --cpu 50% --min 1 --max 3 --schedule '{"minReplicas": 2, "start": "0 6 * * *", "end": "0 18 * * *"}'
 
-# When using more than one trigger (CPU + Schedule as an exemple), the number of units will be determined by the highest value
+# When using more than one trigger (CPU + Schedule as an example), the number of units will be determined by the highest value
 `,
 		MinArgs: 0,
 		MaxArgs: 0,
@@ -89,7 +89,7 @@ func (c *AutoScaleSet) Run(ctx *cmd.Context, cli *cmd.Client) error {
 	schedules := []tsuru.AutoScaleSchedule{}
 	for _, scheduleString := range c.schedules {
 		var autoScaleSchedule tsuru.AutoScaleSchedule
-		if err := json.Unmarshal([]byte(scheduleString), &autoScaleSchedule); err != nil {
+		if err = json.Unmarshal([]byte(scheduleString), &autoScaleSchedule); err != nil {
 			return err
 		}
 
