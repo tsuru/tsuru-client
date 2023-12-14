@@ -37,6 +37,7 @@ func buildManager(name string) *cmd.Manager {
 	m.Register(&client.AppCreate{})
 	m.Register(&client.AppRemove{})
 	m.Register(&client.AppUpdate{})
+	m.Register(&client.AppProcessUpdate{})
 	m.Register(&client.UnitAdd{})
 	m.Register(&client.UnitRemove{})
 	m.Register(&client.UnitKill{})
