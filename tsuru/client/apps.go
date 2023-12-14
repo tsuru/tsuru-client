@@ -766,7 +766,21 @@ func (a *app) String(simplified bool) string {
 		buf.WriteString("\n")
 		buf.WriteString("App Plan:\n")
 		buf.WriteString(renderPlans([]apptypes.Plan{a.Plan}, renderPlansOpts{}))
+
+		overrides := map[string]string{}
+		for _, p := range a.Processes {
+			if p.Plan != "" {
+				overrides[p.Name] = p.Plan
+			}
+		}
+
+		if len(overrides) > 0 {
+			buf.WriteString("\n")
+			buf.WriteString("Override plan per process:\n")
+			buf.WriteString(renderPlanOverride(overrides))
+		}
 	}
+
 	if !simplified && internalAddressesTable.Rows() > 0 {
 		buf.WriteString("\n")
 		buf.WriteString("Cluster internal addresses:\n")
@@ -1641,4 +1655,72 @@ func addCName(cnames []string, g cmd.AppNameMixIn, client *cmd.Client) error {
 	request.Header.Set("Content-Type", "application/x-www-form-urlencoded")
 	_, err = client.Do(request)
 	return err
+}
+
+type AppProcessUpdate struct {
+	plan             string
+	resetDefaultPlan bool
+	noRestart        bool
+	fs               *gnuflag.FlagSet
+}
+
+func (c *AppProcessUpdate) Info() *cmd.Info {
+	return &cmd.Info{
+		Name:    "app-process-update",
+		Usage:   "app process update [app] [process] [--plan/-p plan name] [--default-plan]",
+		Desc:    `Updates a plan of app process`,
+		MinArgs: 2,
+	}
+}
+
+func (c *AppProcessUpdate) Flags() *gnuflag.FlagSet {
+	if c.fs == nil {
+		flagSet := gnuflag.NewFlagSet("", gnuflag.ExitOnError)
+		planMessage := "Changes plan for the app"
+		planReset := "Reset process to default of app"
+		noRestartMessage := "Prevent tsuru from restarting the application"
+		flagSet.StringVar(&c.plan, "plan", "", planMessage)
+		flagSet.StringVar(&c.plan, "p", "", planMessage)
+		flagSet.BoolVar(&c.resetDefaultPlan, "default-plan", false, planReset)
+		flagSet.BoolVar(&c.noRestart, "no-restart", false, noRestartMessage)
+		c.fs = flagSet
+	}
+	return c.fs
+}
+
+func (c *AppProcessUpdate) Run(ctx *cmd.Context, cli *cmd.Client) error {
+	ctx.RawOutput()
+
+	if c.resetDefaultPlan {
+		c.plan = "$default"
+	}
+
+	a := tsuru.UpdateApp{
+		NoRestart: c.noRestart,
+		Processes: []tsuru.AppProcess{
+			{
+				Name: ctx.Args[1],
+				Plan: c.plan,
+			},
+		},
+	}
+
+	apiClient, err := client.ClientFromEnvironment(&tsuru.Configuration{
+		HTTPClient: cli.HTTPClient,
+	})
+	if err != nil {
+		return err
+	}
+
+	resp, err := apiClient.AppApi.AppUpdate(context.Background(), ctx.Args[0], a)
+	if err != nil {
+		return err
+	}
+	err = cmd.StreamJSONResponse(ctx.Stdout, resp)
+	if err != nil {
+		return err
+	}
+	fmt.Fprintf(ctx.Stdout, "Process %q of app %q has been updated!\n", ctx.Args[1], ctx.Args[0])
+
+	return nil
 }

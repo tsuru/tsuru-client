@@ -8,6 +8,7 @@ import (
 	"encoding/json"
 	"fmt"
 	"net/http"
+	"sort"
 	"strconv"
 
 	"github.com/tsuru/gnuflag"
@@ -119,6 +120,27 @@ func renderPlans(plans []apptypes.Plan, opts renderPlansOpts) string {
 
 		if opts.showDefaultColumn {
 			row = append(row, strconv.FormatBool(p.Default))
+		}
+		table.AddRow(row)
+	}
+	return table.String()
+}
+
+func renderPlanOverride(overrides map[string]string) string {
+	table := tablecli.NewTable()
+	table.Headers = []string{"Process", "Plan"}
+
+	processes := []string{}
+	for process := range overrides {
+		processes = append(processes, process)
+	}
+
+	sort.Strings(processes)
+
+	for _, process := range processes {
+		row := []string{
+			process,
+			overrides[process],
 		}
 		table.AddRow(row)
 	}
