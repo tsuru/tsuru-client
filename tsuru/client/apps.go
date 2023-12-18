@@ -794,21 +794,21 @@ func (a *app) String(simplified bool) string {
 	}
 
 	if !simplified && (a.Plan.Memory != 0 || a.Plan.CPUMilli != 0) {
-		buf.WriteString("\n")
-		buf.WriteString("App Plan:\n")
-		buf.WriteString(renderPlans([]apptypes.Plan{a.Plan}, renderPlansOpts{}))
-
-		overrides := map[string]string{}
+		planByProcess := map[string]string{}
 		for _, p := range a.Processes {
 			if p.Plan != "" {
-				overrides[p.Name] = p.Plan
+				planByProcess[p.Name] = p.Plan
 			}
 		}
 
-		if len(overrides) > 0 {
+		if len(planByProcess) == 0 {
 			buf.WriteString("\n")
-			buf.WriteString("Override plan per process:\n")
-			buf.WriteString(renderPlanOverride(overrides))
+			buf.WriteString("App Plan:\n")
+			buf.WriteString(renderPlans([]apptypes.Plan{a.Plan}, renderPlansOpts{}))
+		} else {
+			buf.WriteString("\n")
+			buf.WriteString("Process plans:\n")
+			buf.WriteString(renderProcessPlan(a.Plan, planByProcess))
 		}
 	}
 
