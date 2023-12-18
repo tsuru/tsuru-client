@@ -10,6 +10,7 @@ import (
 	"net/http"
 	"sort"
 	"strconv"
+	"strings"
 
 	"github.com/tsuru/gnuflag"
 	"github.com/tsuru/tablecli"
@@ -126,12 +127,33 @@ func renderPlans(plans []apptypes.Plan, opts renderPlansOpts) string {
 	return table.String()
 }
 
-func renderPlanOverride(overrides map[string]string) string {
+func renderProcessPlan(appPlan apptypes.Plan, planByProcess map[string]string) string {
 	table := tablecli.NewTable()
 	table.Headers = []string{"Process", "Plan"}
 
+	appProcessOverrides := []string{}
+	if appPlan.Override.CPUMilli != nil {
+		appProcessOverrides = append(appProcessOverrides, fmt.Sprintf("CPU: %g%%", float64(*appPlan.Override.CPUMilli)/10))
+	}
+
+	if appPlan.Override.Memory != nil {
+		memory := resource.NewQuantity(*appPlan.Override.Memory, resource.BinarySI).String()
+		appProcessOverrides = append(appProcessOverrides, fmt.Sprintf("Memory: %s", memory))
+	}
+
+	appRow := []string{
+		"(default)",
+		appPlan.Name,
+	}
+
+	if len(appProcessOverrides) > 0 {
+		table.Headers = append(table.Headers, "Overrides")
+		appRow = append(appRow, strings.Join(appProcessOverrides, ", "))
+	}
+	table.AddRow(appRow)
+
 	processes := []string{}
-	for process := range overrides {
+	for process := range planByProcess {
 		processes = append(processes, process)
 	}
 
@@ -140,7 +162,10 @@ func renderPlanOverride(overrides map[string]string) string {
 	for _, process := range processes {
 		row := []string{
 			process,
-			overrides[process],
+			planByProcess[process],
+		}
+		if len(appProcessOverrides) > 0 {
+			row = append(row, "")
 		}
 		table.AddRow(row)
 	}
