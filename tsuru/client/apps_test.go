@@ -2834,3 +2834,77 @@ func (s *S) TestAppStop(c *check.C) {
 func (s *S) TestAppStopIsAFlaggedCommand(c *check.C) {
 	var _ cmd.FlaggedCommand = &AppStop{}
 }
+
+func (s *S) TestAppProcessUpdate(c *check.C) {
+	var stdout, stderr bytes.Buffer
+	expectedOut := "Process \"process02\" of app \"app01\" has been updated!\n"
+	msg := tsuruIo.SimpleJsonMessage{Message: "stream\n"}
+	result, err := json.Marshal(msg)
+	c.Assert(err, check.IsNil)
+	context := cmd.Context{
+		Args:   []string{"app01", "process02"},
+		Stdout: &stdout,
+		Stderr: &stderr,
+		Stdin:  nil,
+	}
+	client := cmd.NewClient(&http.Client{
+		Transport: &cmdtest.ConditionalTransport{
+			Transport: cmdtest.Transport{Message: string(result), Status: http.StatusOK},
+			CondFunc: func(r *http.Request) bool {
+				m := map[string]any{}
+				err = json.NewDecoder(r.Body).Decode(&m)
+				c.Assert(err, check.IsNil)
+				c.Assert(m["processes"], check.DeepEquals, []any{
+					map[string]any{
+						"name":     "process02",
+						"plan":     "c2m2",
+						"metadata": map[string]any{},
+					},
+				})
+				return true
+			},
+		},
+	}, nil, manager)
+	command := AppProcessUpdate{}
+	command.Flags().Parse(true, []string{"--plan", "c2m2"})
+	err = command.Run(&context, client)
+	c.Assert(err, check.IsNil)
+	c.Assert(stdout.String(), check.Equals, "stream\n"+expectedOut)
+}
+
+func (s *S) TestAppProcessUpdateReset(c *check.C) {
+	var stdout, stderr bytes.Buffer
+	expectedOut := "Process \"process02\" of app \"app01\" has been updated!\n"
+	msg := tsuruIo.SimpleJsonMessage{Message: "stream\n"}
+	result, err := json.Marshal(msg)
+	c.Assert(err, check.IsNil)
+	context := cmd.Context{
+		Args:   []string{"app01", "process02"},
+		Stdout: &stdout,
+		Stderr: &stderr,
+		Stdin:  nil,
+	}
+	client := cmd.NewClient(&http.Client{
+		Transport: &cmdtest.ConditionalTransport{
+			Transport: cmdtest.Transport{Message: string(result), Status: http.StatusOK},
+			CondFunc: func(r *http.Request) bool {
+				m := map[string]any{}
+				err = json.NewDecoder(r.Body).Decode(&m)
+				c.Assert(err, check.IsNil)
+				c.Assert(m["processes"], check.DeepEquals, []any{
+					map[string]any{
+						"name":     "process02",
+						"plan":     "$default",
+						"metadata": map[string]any{},
+					},
+				})
+				return true
+			},
+		},
+	}, nil, manager)
+	command := AppProcessUpdate{}
+	command.Flags().Parse(true, []string{"--default-plan"})
+	err = command.Run(&context, client)
+	c.Assert(err, check.IsNil)
+	c.Assert(stdout.String(), check.Equals, "stream\n"+expectedOut)
+}
