@@ -1720,7 +1720,7 @@ func (c *AppProcessUpdate) Flags() *gnuflag.FlagSet {
 	if c.fs == nil {
 		flagSet := gnuflag.NewFlagSet("", gnuflag.ExitOnError)
 		planMessage := "Changes plan for the app"
-		planReset := "Reset process to default of app"
+		planReset := "Reset process to default plan of app"
 		noRestartMessage := "Prevent tsuru from restarting the application"
 		flagSet.StringVar(&c.plan, "plan", "", planMessage)
 		flagSet.StringVar(&c.plan, "p", "", planMessage)
