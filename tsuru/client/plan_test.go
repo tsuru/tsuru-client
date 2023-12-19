@@ -11,6 +11,7 @@ import (
 
 	"github.com/tsuru/tsuru/cmd"
 	"github.com/tsuru/tsuru/cmd/cmdtest"
+	appTypes "github.com/tsuru/tsuru/types/app"
 	"gopkg.in/check.v1"
 )
 
@@ -333,4 +334,56 @@ func (s *S) TestPlanListEmpty(c *check.C) {
 	err := command.Run(&context, client)
 	c.Assert(err, check.IsNil)
 	c.Assert(stdout.String(), check.Equals, "No plans available.\n")
+}
+
+func (s *S) TestRenderProcessPlan(c *check.C) {
+	cases := []struct {
+		appPlan        appTypes.Plan
+		planByProcess  map[string]string
+		expectedResult string
+	}{
+		{
+			appPlan: appTypes.Plan{
+				Name: "c1m2",
+			},
+			planByProcess: map[string]string{
+				"worker": "c1m8",
+				"web":    "c1m4",
+			},
+			expectedResult: "" +
+				"+-----------+------+\n" +
+				"| Process   | Plan |\n" +
+				"+-----------+------+\n" +
+				"| (default) | c1m2 |\n" +
+				"| web       | c1m4 |\n" +
+				"| worker    | c1m8 |\n" +
+				"+-----------+------+\n",
+		},
+		{
+			appPlan: appTypes.Plan{
+				Name: "c1m2",
+				Override: appTypes.PlanOverride{
+					CPUMilli: func(d int) *int { return &d }(1000),
+					Memory:   func(d int64) *int64 { return &d }(1024 * 1024 * 1024),
+				},
+			},
+			planByProcess: map[string]string{
+				"worker": "c1m8",
+				"web":    "c1m4",
+			},
+			expectedResult: "" +
+				"+-----------+------+------------------------+\n" +
+				"| Process   | Plan | Overrides              |\n" +
+				"+-----------+------+------------------------+\n" +
+				"| (default) | c1m2 | CPU: 100%, Memory: 1Gi |\n" +
+				"| web       | c1m4 |                        |\n" +
+				"| worker    | c1m8 |                        |\n" +
+				"+-----------+------+------------------------+\n",
+		},
+	}
+
+	for _, cc := range cases {
+		output := renderProcessPlan(cc.appPlan, cc.planByProcess)
+		c.Assert(cc.expectedResult, check.Equals, output)
+	}
 }
