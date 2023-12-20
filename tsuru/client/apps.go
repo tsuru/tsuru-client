@@ -22,6 +22,7 @@ import (
 	"time"
 
 	"github.com/ajg/form"
+	"github.com/lnquy/cron"
 	"github.com/tsuru/gnuflag"
 	"github.com/tsuru/go-tsuruclient/pkg/client"
 	"github.com/tsuru/go-tsuruclient/pkg/tsuru"
@@ -744,22 +745,52 @@ func (a *app) String(simplified bool) string {
 		renderServiceInstanceBinds(&buf, a.ServiceInstanceBinds)
 	}
 
-	autoScaleTable := tablecli.NewTable()
-	autoScaleTable.Headers = tablecli.Row([]string{"Process", "Min", "Max", "Target CPU"})
+	var autoScaleTables []*tablecli.Table
+	processes := []string{}
+
 	for _, as := range a.AutoScale {
-		cpu := cpuValue(as.AverageCPU)
-		autoScaleTable.AddRow(tablecli.Row([]string{
-			fmt.Sprintf("%s (v%d)", as.Process, as.Version),
-			strconv.Itoa(int(as.MinUnits)),
-			strconv.Itoa(int(as.MaxUnits)),
-			cpu,
-		}))
+		autoScaleTable := tablecli.NewTable()
+		autoScaleTable.LineSeparator = true
+
+		processString := fmt.Sprintf(
+			"Process: %s (v%d), Min Units: %d, Max Units: %d",
+			as.Process, as.Version, int(as.MinUnits), int(as.MaxUnits),
+		)
+		processes = append(processes, processString)
+
+		autoScaleTable.Headers = tablecli.Row([]string{
+			"Triggers",
+			"Trigger details",
+		})
+
+		if as.AverageCPU != "" {
+			cpu := cpuValue(as.AverageCPU)
+			autoScaleTable.AddRow(tablecli.Row([]string{
+				"CPU",
+				fmt.Sprintf("Target: %s", cpu),
+			}))
+		}
+
+		for _, schedule := range as.Schedules {
+			scheduleInfo := buildScheduleInfo(schedule)
+			autoScaleTable.AddRow(tablecli.Row([]string{
+				"Schedule",
+				scheduleInfo,
+			}))
+		}
+
+		autoScaleTables = append(autoScaleTables, autoScaleTable)
 	}
 
-	if autoScaleTable.Rows() > 0 {
+	if len(processes) > 0 {
 		buf.WriteString("\n")
 		buf.WriteString("Auto Scale:\n")
-		buf.WriteString(autoScaleTable.String())
+		for i, asTable := range autoScaleTables {
+			buf.WriteString("\n")
+			buf.WriteString(processes[i])
+			buf.WriteString("\n")
+			buf.WriteString(asTable.String())
+		}
 	}
 
 	if !simplified && (a.Plan.Memory != 0 || a.Plan.CPUMilli != 0) {
@@ -788,6 +819,18 @@ func (a *app) String(simplified bool) string {
 	var tplBuffer bytes.Buffer
 	tmpl.Execute(&tplBuffer, a)
 	return tplBuffer.String() + buf.String()
+}
+
+func buildScheduleInfo(schedule tsuru.AutoScaleSchedule) string {
+	// Init with default EN locale
+	exprDesc, _ := cron.NewDescriptor()
+
+	startTimeHuman, _ := exprDesc.ToDescription(schedule.Start, cron.Locale_en)
+	endTimeHuman, _ := exprDesc.ToDescription(schedule.End, cron.Locale_en)
+
+	return fmt.Sprintf("Start: %s (%s)\nEnd: %s (%s)\nUnits: %d\nTimezone: %s",
+		startTimeHuman, schedule.Start, endTimeHuman, schedule.End, schedule.MinReplicas, schedule.Timezone,
+	)
 }
 
 func (a *app) SimpleServicesView() string {

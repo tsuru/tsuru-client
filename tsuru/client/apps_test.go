@@ -1606,12 +1606,157 @@ Units [process worker]: 1
 +--------+---------+------+------+
 
 Auto Scale:
-+--------------+-----+-----+------------+
-| Process      | Min | Max | Target CPU |
-+--------------+-----+-----+------------+
-| web (v10)    | 1   | 10  | 50%        |
-| worker (v10) | 2   | 5   | 200%       |
-+--------------+-----+-----+------------+
+
+Process: web (v10), Min Units: 1, Max Units: 10
++----------+-----------------+
+| Triggers | Trigger details |
++----------+-----------------+
+| CPU      | Target: 50%     |
++----------+-----------------+
+
+Process: worker (v10), Min Units: 2, Max Units: 5
++----------+-----------------+
+| Triggers | Trigger details |
++----------+-----------------+
+| CPU      | Target: 200%    |
++----------+-----------------+
+
+`
+	context := cmd.Context{
+		Stdout: &stdout,
+		Stderr: &stderr,
+	}
+	client := cmd.NewClient(&http.Client{Transport: &cmdtest.Transport{Message: result, Status: http.StatusOK}}, nil, manager)
+	command := AppInfo{}
+	command.Flags().Parse(true, []string{"--app", "app1"})
+	err := command.Run(&context, client)
+	c.Assert(err, check.IsNil)
+	c.Assert(stdout.String(), check.Equals, expected)
+}
+
+func (s *S) TestAppInfoWithKEDAAutoScale(c *check.C) {
+	var stdout, stderr bytes.Buffer
+	result := `{
+  "name": "app1",
+  "teamowner": "myteam",
+  "cname": [
+    ""
+  ],
+  "ip": "myapp.tsuru.io",
+  "platform": "php",
+  "repository": "git@git.com:php.git",
+  "state": "dead",
+  "units": [
+    {
+      "ID": "app1/0",
+      "Status": "started",
+      "ProcessName": "web"
+    },
+    {
+      "ID": "app1/1",
+      "Status": "started",
+      "ProcessName": "worker"
+    }
+  ],
+  "teams": [
+    "tsuruteam",
+    "crane"
+  ],
+  "owner": "myapp_owner",
+  "deploys": 7,
+  "router": "planb",
+  "autoscale": [
+    {
+      "process":"web",
+      "minUnits":1,
+      "maxUnits":10,
+      "averageCPU":"500m",
+      "version":10,
+	  "schedules": [
+		{
+		  "minReplicas":2,
+		  "start":"0 6 * * *",
+		  "end":"0 18 * * *",
+		  "timezone":"UTC"
+		},{
+		  "minReplicas":3,
+	      "start":"0 12 * * *",
+		  "end":"0 15 * * *",
+		  "timezone":"UTC"
+		}
+	  ]
+    },
+    {
+      "process":"worker",
+      "minUnits":2,
+      "maxUnits":5,
+      "averageCPU":"2",
+      "version":10,
+	  "schedules": [
+		{
+		  "minReplicas":1,
+		  "start":"0 0 * * *",
+		  "end":"0 6 * * *",
+		  "timezone":"America/Sao_Paulo"
+		}
+	  ]
+    }
+  ]
+}`
+	expected := `Application: app1
+Platform: php
+Router: planb
+Teams: myteam (owner), tsuruteam, crane
+External Addresses: myapp.tsuru.io
+Created by: myapp_owner
+Deploys: 7
+Pool:
+Quota: 0/0 units
+
+Units [process web]: 1
++--------+---------+------+------+
+| Name   | Status  | Host | Port |
++--------+---------+------+------+
+| app1/0 | started |      |      |
++--------+---------+------+------+
+
+Units [process worker]: 1
++--------+---------+------+------+
+| Name   | Status  | Host | Port |
++--------+---------+------+------+
+| app1/1 | started |      |      |
++--------+---------+------+------+
+
+Auto Scale:
+
+Process: web (v10), Min Units: 1, Max Units: 10
++----------+---------------------------------+
+| Triggers | Trigger details                 |
++----------+---------------------------------+
+| CPU      | Target: 50%                     |
++----------+---------------------------------+
+| Schedule | Start: At 06:00 AM (0 6 * * *)  |
+|          | End: At 06:00 PM (0 18 * * *)   |
+|          | Units: 2                        |
+|          | Timezone: UTC                   |
++----------+---------------------------------+
+| Schedule | Start: At 12:00 PM (0 12 * * *) |
+|          | End: At 03:00 PM (0 15 * * *)   |
+|          | Units: 3                        |
+|          | Timezone: UTC                   |
++----------+---------------------------------+
+
+Process: worker (v10), Min Units: 2, Max Units: 5
++----------+--------------------------------+
+| Triggers | Trigger details                |
++----------+--------------------------------+
+| CPU      | Target: 200%                   |
++----------+--------------------------------+
+| Schedule | Start: At 12:00 AM (0 0 * * *) |
+|          | End: At 06:00 AM (0 6 * * *)   |
+|          | Units: 1                       |
+|          | Timezone: America/Sao_Paulo    |
++----------+--------------------------------+
 
 `
 	context := cmd.Context{

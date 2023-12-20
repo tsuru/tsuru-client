@@ -6,6 +6,7 @@ package client
 
 import (
 	"context"
+	"encoding/json"
 	"fmt"
 	"strconv"
 
@@ -29,13 +30,26 @@ type AutoScaleSet struct {
 	cmd.AppNameMixIn
 	fs        *gnuflag.FlagSet
 	autoscale tsuru.AutoScaleSpec
+	schedules cmd.StringSliceFlag
 }
 
 func (c *AutoScaleSet) Info() *cmd.Info {
 	return &cmd.Info{
-		Name:    "unit-autoscale-set",
-		Usage:   "unit autoscale set [-a/--app appname] [-p/--process processname] [--cpu targetCPU] [--min minUnits] [--max maxUnits]",
-		Desc:    `Sets a unit auto scale configuration.`,
+		Name:  "unit-autoscale-set",
+		Usage: "unit autoscale set [-a/--app appname] [-p/--process processname] [--cpu targetCPU] [--min minUnits] [--max maxUnits] [--schedule scheduleWindow]",
+		Desc: `
+# Sets an autoscale configuration:
+# Based on 50% of CPU utilization with min units 1 and max units 3
+unit autoscale set -a my-app --cpu 50% --min 1 --max 3
+
+# Based on a schedule window everyday from 6AM to 6PM UTC
+unit autoscale set -a my-app --min 1 --max 3 --schedule '{"minReplicas": 2, "start": "0 6 * * *", "end": "0 18 * * *"}'
+
+# Combining both
+unit autoscale set -a my-app --cpu 50% --min 1 --max 3 --schedule '{"minReplicas": 2, "start": "0 6 * * *", "end": "0 18 * * *"}'
+
+# When using more than one trigger (CPU + Schedule as an example), the number of units will be determined by the highest value
+`,
 		MinArgs: 0,
 		MaxArgs: 0,
 	}
@@ -54,6 +68,8 @@ func (c *AutoScaleSet) Flags() *gnuflag.FlagSet {
 		c.fs.Var((*int32Value)(&c.autoscale.MinUnits), "min", "Minimum Units")
 
 		c.fs.Var((*int32Value)(&c.autoscale.MaxUnits), "max", "Maximum Units")
+
+		c.fs.Var(&c.schedules, "schedule", "Schedule window to up/down scale. Example: {\"minReplicas\": 2, \"start\": \"0 6 * * *\", \"end\": \"0 18 * * *\"}")
 	}
 	return c.fs
 }
@@ -69,6 +85,18 @@ func (c *AutoScaleSet) Run(ctx *cmd.Context, cli *cmd.Client) error {
 	if err != nil {
 		return err
 	}
+
+	schedules := []tsuru.AutoScaleSchedule{}
+	for _, scheduleString := range c.schedules {
+		var autoScaleSchedule tsuru.AutoScaleSchedule
+		if err = json.Unmarshal([]byte(scheduleString), &autoScaleSchedule); err != nil {
+			return err
+		}
+
+		schedules = append(schedules, autoScaleSchedule)
+	}
+
+	c.autoscale.Schedules = schedules
 
 	_, err = apiClient.AppApi.AutoScaleAdd(context.TODO(), appName, c.autoscale)
 	if err != nil {
