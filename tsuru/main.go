@@ -9,6 +9,7 @@ import (
 
 	"github.com/ajg/form"
 	"github.com/tsuru/tsuru-client/tsuru/admin"
+	"github.com/tsuru/tsuru-client/tsuru/auth"
 	"github.com/tsuru/tsuru-client/tsuru/client"
 	"github.com/tsuru/tsuru-client/tsuru/config"
 	"github.com/tsuru/tsuru-client/tsuru/config/selfupdater"
@@ -30,8 +31,9 @@ func buildManager(name string) *cmd.Manager {
 	lookup := func(context *cmd.Context) error {
 		return client.RunPlugin(context)
 	}
-	m := cmd.BuildBaseManagerPanicExiter(name, version, header, lookup)
+	m := cmd.NewManagerPanicExiter(name, version, header, os.Stdout, os.Stderr, os.Stdin, lookup)
 	m.RegisterTopic("app", `App is a program source code running on Tsuru`)
+	m.Register(&auth.Login{})
 	m.Register(&client.AppRun{})
 	m.Register(&client.AppInfo{})
 	m.Register(&client.AppCreate{})
