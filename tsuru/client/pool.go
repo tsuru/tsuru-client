@@ -14,7 +14,9 @@ import (
 	"github.com/mitchellh/go-wordwrap"
 	"github.com/tsuru/gnuflag"
 	"github.com/tsuru/tablecli"
+	"github.com/tsuru/tsuru-client/tsuru/config"
 	"github.com/tsuru/tsuru-client/tsuru/formatter"
+	tsuruHTTP "github.com/tsuru/tsuru-client/tsuru/http"
 	"github.com/tsuru/tsuru/cmd"
 )
 
@@ -81,8 +83,8 @@ func (c *PoolList) Flags() *gnuflag.FlagSet {
 	return c.fs
 }
 
-func (pl *PoolList) Run(context *cmd.Context, client *cmd.Client) error {
-	url, err := cmd.GetURL("/pools")
+func (pl *PoolList) Run(context *cmd.Context) error {
+	url, err := config.GetURL("/pools")
 	if err != nil {
 		return err
 	}
@@ -90,7 +92,7 @@ func (pl *PoolList) Run(context *cmd.Context, client *cmd.Client) error {
 	if err != nil {
 		return err
 	}
-	resp, err := client.Do(request)
+	resp, err := tsuruHTTP.DefaultClient.Do(request)
 	if err != nil {
 		return err
 	}

@@ -3,7 +3,6 @@ package client
 import (
 	"bytes"
 	"errors"
-	"net/http"
 	"os"
 	"path/filepath"
 
@@ -91,9 +90,8 @@ func (s *S) TestInitRun(c *check.C) {
 	c.Assert(err, check.IsNil)
 	var stdout bytes.Buffer
 	context := cmd.Context{Stdout: &stdout}
-	client := cmd.NewClient(&http.Client{}, nil, manager)
 	cmd := Init{}
-	err = cmd.Run(&context, client)
+	err = cmd.Run(&context)
 	c.Assert(err, check.IsNil)
 	fkRun, err := os.Open(fakeRunDir)
 	c.Assert(err, check.IsNil)

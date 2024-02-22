@@ -11,8 +11,8 @@ import (
 )
 
 func (s *S) TestFileSystem(c *check.C) {
-	fsystem = &fstest.RecordingFs{}
-	c.Assert(filesystem(), check.DeepEquals, fsystem)
-	fsystem = nil
-	c.Assert(filesystem(), check.DeepEquals, fs.OsFs{})
+	SetFileSystem(&fstest.RecordingFs{})
+	c.Assert(Filesystem(), check.DeepEquals, &fstest.RecordingFs{})
+	ResetFileSystem()
+	c.Assert(Filesystem(), check.DeepEquals, &fs.OsFs{})
 }

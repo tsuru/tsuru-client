@@ -24,6 +24,12 @@ const (
 	header = "Supported-Tsuru"
 )
 
+const targetTopic = `Target is used to manage the address of the remote tsuru server.
+
+Each target is identified by a label and a HTTP/HTTPS address. The client
+requires at least one target to connect to, there's no default target. A user
+may have multiple targets, but only one will be used at a time.`
+
 func buildManager(name string) *cmd.Manager {
 	form.DefaultEncoder = form.DefaultEncoder.UseJSONTags(false)
 	form.DefaultDecoder = form.DefaultDecoder.UseJSONTags(false)
@@ -31,9 +37,19 @@ func buildManager(name string) *cmd.Manager {
 	lookup := func(context *cmd.Context) error {
 		return client.RunPlugin(context)
 	}
-	m := cmd.NewManagerPanicExiter(name, version, header, os.Stdout, os.Stderr, os.Stdin, lookup)
+	m := cmd.NewManagerPanicExiter(name, os.Stdout, os.Stderr, os.Stdin, lookup)
 	m.RegisterTopic("app", `App is a program source code running on Tsuru`)
+
 	m.Register(&auth.Login{})
+	//m.Register(&auth.Logout{})
+	//m.Register(&version{manager})
+
+	m.Register(&config.TargetList{})
+	m.Register(&config.TargetAdd{})
+	m.Register(&config.TargetRemove{})
+	m.Register(&config.TargetSet{})
+	m.RegisterTopic("target", targetTopic)
+
 	m.Register(&client.AppRun{})
 	m.Register(&client.AppInfo{})
 	m.Register(&client.AppCreate{})
@@ -116,7 +132,7 @@ Services aren’t managed by tsuru, but by their creators.`)
 	m.Register(&client.AppDeployRollback{})
 	m.Register(&client.AppDeployRollbackUpdate{})
 	m.Register(&client.AppDeployRebuild{})
-	m.Register(&cmd.ShellToContainerCmd{})
+	m.Register(&client.ShellToContainerCmd{})
 	m.Register(&client.PoolList{})
 	m.Register(&client.PermissionList{})
 	m.Register(&client.RoleAdd{})

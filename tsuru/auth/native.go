@@ -8,10 +8,11 @@ import (
 	"net/url"
 	"strings"
 
+	"github.com/tsuru/tsuru-client/tsuru/config"
 	"github.com/tsuru/tsuru/cmd"
 )
 
-func nativeLogin(ctx *cmd.Context, client *cmd.Client) error {
+func nativeLogin(ctx *cmd.Context) error {
 	var email string
 	if len(ctx.Args) > 0 {
 		email = ctx.Args[0]
@@ -25,7 +26,7 @@ func nativeLogin(ctx *cmd.Context, client *cmd.Client) error {
 		return err
 	}
 	fmt.Fprintln(ctx.Stdout)
-	u, err := cmd.GetURL("/users/" + email + "/tokens")
+	u, err := config.GetURL("/users/" + email + "/tokens")
 	if err != nil {
 		return err
 	}
@@ -37,7 +38,7 @@ func nativeLogin(ctx *cmd.Context, client *cmd.Client) error {
 		return err
 	}
 	request.Header.Set("Content-Type", "application/x-www-form-urlencoded")
-	response, err := client.Do(request)
+	response, err := http.DefaultClient.Do(request)
 	if err != nil {
 		return err
 	}
@@ -52,5 +53,5 @@ func nativeLogin(ctx *cmd.Context, client *cmd.Client) error {
 		return err
 	}
 	fmt.Fprintln(ctx.Stdout, "Successfully logged in!")
-	return writeToken(out["token"].(string))
+	return config.WriteToken(out["token"].(string))
 }

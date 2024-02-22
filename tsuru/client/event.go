@@ -21,7 +21,9 @@ import (
 	"github.com/iancoleman/orderedmap"
 	"github.com/tsuru/gnuflag"
 	"github.com/tsuru/tablecli"
+	"github.com/tsuru/tsuru-client/tsuru/config"
 	"github.com/tsuru/tsuru-client/tsuru/formatter"
+	tsuruHTTP "github.com/tsuru/tsuru-client/tsuru/http"
 	"github.com/tsuru/tsuru/cmd"
 	"github.com/tsuru/tsuru/event"
 )
@@ -38,7 +40,7 @@ type eventFilter struct {
 	running   bool
 }
 
-func (f *eventFilter) queryString(client *cmd.Client) (url.Values, error) {
+func (f *eventFilter) queryString() (url.Values, error) {
 	if f.running {
 		f.filter.Running = &f.running
 	}
@@ -97,12 +99,12 @@ func (c *EventList) Flags() *gnuflag.FlagSet {
 	return c.fs
 }
 
-func (c *EventList) Run(context *cmd.Context, client *cmd.Client) error {
-	qs, err := c.filter.queryString(client)
+func (c *EventList) Run(context *cmd.Context) error {
+	qs, err := c.filter.queryString()
 	if err != nil {
 		return err
 	}
-	u, err := cmd.GetURLVersion("1.1", fmt.Sprintf("/events?%s", qs.Encode()))
+	u, err := config.GetURLVersion("1.1", fmt.Sprintf("/events?%s", qs.Encode()))
 	if err != nil {
 		return err
 	}
@@ -110,7 +112,7 @@ func (c *EventList) Run(context *cmd.Context, client *cmd.Client) error {
 	if err != nil {
 		return err
 	}
-	response, err := client.Do(request)
+	response, err := tsuruHTTP.DefaultClient.Do(request)
 	if err != nil {
 		return err
 	}
@@ -222,8 +224,8 @@ func (c *EventInfo) Info() *cmd.Info {
 	}
 }
 
-func (c *EventInfo) Run(context *cmd.Context, client *cmd.Client) error {
-	u, err := cmd.GetURLVersion("1.1", fmt.Sprintf("/events/%s", context.Args[0]))
+func (c *EventInfo) Run(context *cmd.Context) error {
+	u, err := config.GetURLVersion("1.1", fmt.Sprintf("/events/%s", context.Args[0]))
 	if err != nil {
 		return err
 	}
@@ -231,7 +233,7 @@ func (c *EventInfo) Run(context *cmd.Context, client *cmd.Client) error {
 	if err != nil {
 		return err
 	}
-	response, err := client.Do(request)
+	response, err := tsuruHTTP.DefaultClient.Do(request)
 	if err != nil {
 		return err
 	}
@@ -427,11 +429,11 @@ func (c *EventCancel) Info() *cmd.Info {
 	}
 }
 
-func (c *EventCancel) Run(context *cmd.Context, client *cmd.Client) error {
+func (c *EventCancel) Run(context *cmd.Context) error {
 	if !c.Confirm(context, "Are you sure you want to cancel this event?") {
 		return nil
 	}
-	u, err := cmd.GetURLVersion("1.1", fmt.Sprintf("/events/%s/cancel", context.Args[0]))
+	u, err := config.GetURLVersion("1.1", fmt.Sprintf("/events/%s/cancel", context.Args[0]))
 	if err != nil {
 		return err
 	}
@@ -442,7 +444,7 @@ func (c *EventCancel) Run(context *cmd.Context, client *cmd.Client) error {
 		return err
 	}
 	request.Header.Set("Content-Type", "application/x-www-form-urlencoded")
-	_, err = client.Do(request)
+	_, err = tsuruHTTP.DefaultClient.Do(request)
 	if err != nil {
 		return err
 	}

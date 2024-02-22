@@ -38,13 +38,13 @@ func (s *S) TestAppRun(c *check.C) {
 			return path && cmd && contentType
 		},
 	}
-	client := cmd.NewClient(&http.Client{Transport: trans}, nil, manager)
+	s.setupFakeTransport(trans)
 	command := AppRun{}
 	err = command.Flags().Parse(true, []string{"--app", "ble", "ls"})
 	c.Assert(err, check.IsNil)
 
 	context.Args = command.Flags().Args()
-	err = command.Run(&context, client)
+	err = command.Run(&context)
 	c.Assert(err, check.IsNil)
 	c.Assert(stdout.String(), check.Equals, expected)
 }
@@ -71,13 +71,13 @@ func (s *S) TestAppRunFlagIsolated(c *check.C) {
 			return path && cmd && contentType
 		},
 	}
-	client := cmd.NewClient(&http.Client{Transport: trans}, nil, manager)
+	s.setupFakeTransport(trans)
 	command := AppRun{}
 	err = command.Flags().Parse(true, []string{"--app", "ble", "--isolated", "ls"})
 	c.Assert(err, check.IsNil)
 
 	context.Args = command.Flags().Args()
-	err = command.Run(&context, client)
+	err = command.Run(&context)
 	c.Assert(err, check.IsNil)
 	c.Assert(stdout.String(), check.Equals, expected)
 }
@@ -104,7 +104,7 @@ func (s *S) TestAppRunShouldUseAllSubsequentArgumentsAsArgumentsToTheGivenComman
 			return cmd && path && contentType
 		},
 	}
-	client := cmd.NewClient(&http.Client{Transport: trans}, nil, manager)
+	s.setupFakeTransport(trans)
 	command := AppRun{}
 	err = command.Flags().Parse(true, []string{"--app", "ble", "ls -l"})
 
@@ -112,7 +112,7 @@ func (s *S) TestAppRunShouldUseAllSubsequentArgumentsAsArgumentsToTheGivenComman
 
 	context.Args = command.Flags().Args()
 
-	err = command.Run(&context, client)
+	err = command.Run(&context)
 	c.Assert(err, check.IsNil)
 	c.Assert(stdout.String(), check.Equals, expected+expected)
 }
@@ -139,13 +139,13 @@ func (s *S) TestAppRunWithoutTheFlag(c *check.C) {
 			return path && cmd && contentType
 		},
 	}
-	client := cmd.NewClient(&http.Client{Transport: trans}, nil, manager)
+	s.setupFakeTransport(trans)
 	command := AppRun{}
 	err = command.Flags().Parse(true, []string{"-a", "bla", "ls -lh"})
 	c.Assert(err, check.IsNil)
 
 	context.Args = command.Flags().Args()
-	err = command.Run(&context, client)
+	err = command.Run(&context)
 	c.Assert(err, check.IsNil)
 	c.Assert(stdout.String(), check.Equals, expected)
 }
@@ -168,14 +168,14 @@ func (s *S) TestAppRunShouldReturnErrorWhenCommandGoWrong(c *check.C) {
 			return strings.HasSuffix(req.URL.Path, "/apps/bla/run")
 		},
 	}
-	client := cmd.NewClient(&http.Client{Transport: trans}, nil, manager)
+	s.setupFakeTransport(trans)
 	command := AppRun{}
 	err = command.Flags().Parse(true, []string{"-a", "bla", "cmd_error"})
 	c.Assert(err, check.IsNil)
 
 	context.Args = command.Flags().Args()
 
-	err = command.Run(&context, client)
+	err = command.Run(&context)
 	c.Assert(err, check.ErrorMatches, "command doesn't exist.")
 }
 

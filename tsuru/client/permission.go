@@ -15,6 +15,8 @@ import (
 
 	"github.com/tsuru/gnuflag"
 	"github.com/tsuru/tablecli"
+	"github.com/tsuru/tsuru-client/tsuru/config"
+	tsuruHTTP "github.com/tsuru/tsuru-client/tsuru/http"
 	"github.com/tsuru/tsuru/cmd"
 	"github.com/tsuru/tsuru/permission"
 	permTypes "github.com/tsuru/tsuru/types/permission"
@@ -49,8 +51,8 @@ func (c *PermissionList) Flags() *gnuflag.FlagSet {
 	return c.fs
 }
 
-func (c *PermissionList) Run(context *cmd.Context, client *cmd.Client) error {
-	url, err := cmd.GetURL("/permissions")
+func (c *PermissionList) Run(context *cmd.Context) error {
+	url, err := config.GetURL("/permissions")
 	if err != nil {
 		return err
 	}
@@ -58,7 +60,7 @@ func (c *PermissionList) Run(context *cmd.Context, client *cmd.Client) error {
 	if err != nil {
 		return err
 	}
-	response, err := client.Do(request)
+	response, err := tsuruHTTP.DefaultClient.Do(request)
 	if err != nil {
 		return err
 	}
@@ -157,9 +159,9 @@ func (c *RoleInfo) Info() *cmd.Info {
 	}
 }
 
-func (c *RoleInfo) Run(context *cmd.Context, client *cmd.Client) error {
+func (c *RoleInfo) Run(context *cmd.Context) error {
 	roleName := context.Args[0]
-	addr, err := cmd.GetURL(fmt.Sprintf("/roles/%s", roleName))
+	addr, err := config.GetURL(fmt.Sprintf("/roles/%s", roleName))
 	if err != nil {
 		return err
 	}
@@ -167,7 +169,7 @@ func (c *RoleInfo) Run(context *cmd.Context, client *cmd.Client) error {
 	if err != nil {
 		return err
 	}
-	resp, err := client.Do(request)
+	resp, err := tsuruHTTP.DefaultClient.Do(request)
 	if err != nil {
 		return err
 	}
@@ -227,7 +229,7 @@ func (c *RoleAdd) Flags() *gnuflag.FlagSet {
 	return c.fs
 }
 
-func (c *RoleAdd) Run(context *cmd.Context, client *cmd.Client) error {
+func (c *RoleAdd) Run(context *cmd.Context) error {
 	roleName := context.Args[0]
 	contextType := context.Args[1]
 	description := c.description
@@ -235,7 +237,7 @@ func (c *RoleAdd) Run(context *cmd.Context, client *cmd.Client) error {
 	params.Set("name", roleName)
 	params.Set("context", contextType)
 	params.Set("description", description)
-	addr, err := cmd.GetURL("/roles")
+	addr, err := config.GetURL("/roles")
 	if err != nil {
 		return err
 	}
@@ -244,7 +246,7 @@ func (c *RoleAdd) Run(context *cmd.Context, client *cmd.Client) error {
 		return err
 	}
 	request.Header.Add("Content-Type", "application/x-www-form-urlencoded")
-	_, err = client.Do(request)
+	_, err = tsuruHTTP.DefaultClient.Do(request)
 	if err != nil {
 		return err
 	}
@@ -263,8 +265,8 @@ func (c *RoleList) Info() *cmd.Info {
 	}
 }
 
-func (c *RoleList) Run(context *cmd.Context, client *cmd.Client) error {
-	addr, err := cmd.GetURL("/roles")
+func (c *RoleList) Run(context *cmd.Context) error {
+	addr, err := config.GetURL("/roles")
 	if err != nil {
 		return err
 	}
@@ -272,7 +274,7 @@ func (c *RoleList) Run(context *cmd.Context, client *cmd.Client) error {
 	if err != nil {
 		return err
 	}
-	response, err := client.Do(request)
+	response, err := tsuruHTTP.DefaultClient.Do(request)
 	if err != nil {
 		return err
 	}
@@ -306,13 +308,13 @@ func (c *RolePermissionAdd) Info() *cmd.Info {
 	}
 }
 
-func (c *RolePermissionAdd) Run(context *cmd.Context, client *cmd.Client) error {
+func (c *RolePermissionAdd) Run(context *cmd.Context) error {
 	roleName := context.Args[0]
 	params := url.Values{}
 	for _, p := range context.Args[1:] {
 		params.Add("permission", p)
 	}
-	addr, err := cmd.GetURL(fmt.Sprintf("/roles/%s/permissions", roleName))
+	addr, err := config.GetURL(fmt.Sprintf("/roles/%s/permissions", roleName))
 	if err != nil {
 		return err
 	}
@@ -321,7 +323,7 @@ func (c *RolePermissionAdd) Run(context *cmd.Context, client *cmd.Client) error 
 		return err
 	}
 	request.Header.Add("Content-Type", "application/x-www-form-urlencoded")
-	_, err = client.Do(request)
+	_, err = tsuruHTTP.DefaultClient.Do(request)
 	if err != nil {
 		return err
 	}
@@ -340,10 +342,10 @@ func (c *RolePermissionRemove) Info() *cmd.Info {
 	}
 }
 
-func (c *RolePermissionRemove) Run(context *cmd.Context, client *cmd.Client) error {
+func (c *RolePermissionRemove) Run(context *cmd.Context) error {
 	roleName := context.Args[0]
 	permissionName := context.Args[1]
-	addr, err := cmd.GetURL(fmt.Sprintf("/roles/%s/permissions/%s", roleName, permissionName))
+	addr, err := config.GetURL(fmt.Sprintf("/roles/%s/permissions/%s", roleName, permissionName))
 	if err != nil {
 		return err
 	}
@@ -351,7 +353,7 @@ func (c *RolePermissionRemove) Run(context *cmd.Context, client *cmd.Client) err
 	if err != nil {
 		return err
 	}
-	_, err = client.Do(request)
+	_, err = tsuruHTTP.DefaultClient.Do(request)
 	if err != nil {
 		return err
 	}
@@ -370,7 +372,7 @@ func (c *RoleAssign) Info() *cmd.Info {
 	}
 }
 
-func (c *RoleAssign) Run(context *cmd.Context, client *cmd.Client) error {
+func (c *RoleAssign) Run(context *cmd.Context) error {
 	roleName := context.Args[0]
 	roleTarget := context.Args[1]
 	var contextValue string
@@ -393,7 +395,7 @@ func (c *RoleAssign) Run(context *cmd.Context, client *cmd.Client) error {
 		params.Set("token_id", roleTarget)
 	}
 	params.Set("context", contextValue)
-	addr, err := cmd.GetURLVersion(version, fmt.Sprintf("/roles/%s/%s", roleName, suffix))
+	addr, err := config.GetURLVersion(version, fmt.Sprintf("/roles/%s/%s", roleName, suffix))
 	if err != nil {
 		return err
 	}
@@ -402,7 +404,7 @@ func (c *RoleAssign) Run(context *cmd.Context, client *cmd.Client) error {
 		return err
 	}
 	request.Header.Add("Content-Type", "application/x-www-form-urlencoded")
-	_, err = client.Do(request)
+	_, err = tsuruHTTP.DefaultClient.Do(request)
 	if err != nil {
 		return err
 	}
@@ -421,7 +423,7 @@ func (c *RoleDissociate) Info() *cmd.Info {
 	}
 }
 
-func (c *RoleDissociate) Run(context *cmd.Context, client *cmd.Client) error {
+func (c *RoleDissociate) Run(context *cmd.Context) error {
 	roleName := context.Args[0]
 	emailOrToken := context.Args[1]
 	var contextValue string
@@ -438,7 +440,7 @@ func (c *RoleDissociate) Run(context *cmd.Context, client *cmd.Client) error {
 		version = "1.6"
 	}
 	params.Set("context", contextValue)
-	addr, err := cmd.GetURLVersion(version, fmt.Sprintf("/roles/%s/%s?%s", roleName, suffix, params.Encode()))
+	addr, err := config.GetURLVersion(version, fmt.Sprintf("/roles/%s/%s?%s", roleName, suffix, params.Encode()))
 	if err != nil {
 		return err
 	}
@@ -447,7 +449,7 @@ func (c *RoleDissociate) Run(context *cmd.Context, client *cmd.Client) error {
 		return err
 	}
 	request.Header.Add("Content-Type", "application/x-www-form-urlencoded")
-	_, err = client.Do(request)
+	_, err = tsuruHTTP.DefaultClient.Do(request)
 	if err != nil {
 		return err
 	}
@@ -468,12 +470,12 @@ func (c *RoleRemove) Info() *cmd.Info {
 	}
 }
 
-func (c *RoleRemove) Run(context *cmd.Context, client *cmd.Client) error {
+func (c *RoleRemove) Run(context *cmd.Context) error {
 	roleName := context.Args[0]
 	if !c.Confirm(context, fmt.Sprintf(`Are you sure you want to remove role "%s"?`, roleName)) {
 		return nil
 	}
-	addr, err := cmd.GetURL(fmt.Sprintf("/roles/%s", roleName))
+	addr, err := config.GetURL(fmt.Sprintf("/roles/%s", roleName))
 	if err != nil {
 		return err
 	}
@@ -481,7 +483,7 @@ func (c *RoleRemove) Run(context *cmd.Context, client *cmd.Client) error {
 	if err != nil {
 		return err
 	}
-	_, err = client.Do(request)
+	_, err = tsuruHTTP.DefaultClient.Do(request)
 	if err != nil {
 		return err
 	}
@@ -521,7 +523,7 @@ func (c *RoleDefaultAdd) Info() *cmd.Info {
 	return info
 }
 
-func (c *RoleDefaultAdd) Run(context *cmd.Context, client *cmd.Client) error {
+func (c *RoleDefaultAdd) Run(context *cmd.Context) error {
 	params := url.Values{}
 	for name, values := range c.roles {
 		for _, val := range []string(*values) {
@@ -532,7 +534,7 @@ func (c *RoleDefaultAdd) Run(context *cmd.Context, client *cmd.Client) error {
 	if encodedParams == "" {
 		return fmt.Errorf("You must choose which event to add default roles.")
 	}
-	addr, err := cmd.GetURL("/role/default")
+	addr, err := config.GetURL("/role/default")
 	if err != nil {
 		return err
 	}
@@ -541,7 +543,7 @@ func (c *RoleDefaultAdd) Run(context *cmd.Context, client *cmd.Client) error {
 		return err
 	}
 	request.Header.Set("Content-Type", "application/x-www-form-urlencoded")
-	_, err = client.Do(request)
+	_, err = tsuruHTTP.DefaultClient.Do(request)
 	if err != nil {
 		return err
 	}
@@ -581,7 +583,7 @@ func (c *RoleDefaultRemove) Info() *cmd.Info {
 	return info
 }
 
-func (c *RoleDefaultRemove) Run(context *cmd.Context, client *cmd.Client) error {
+func (c *RoleDefaultRemove) Run(context *cmd.Context) error {
 	params := url.Values{}
 	for name, values := range c.roles {
 		for _, val := range []string(*values) {
@@ -592,7 +594,7 @@ func (c *RoleDefaultRemove) Run(context *cmd.Context, client *cmd.Client) error 
 	if encodedParams == "" {
 		return fmt.Errorf("You must choose which event to remove default roles.")
 	}
-	addr, err := cmd.GetURL(fmt.Sprintf("/role/default?%s", encodedParams))
+	addr, err := config.GetURL(fmt.Sprintf("/role/default?%s", encodedParams))
 	if err != nil {
 		return err
 	}
@@ -600,7 +602,7 @@ func (c *RoleDefaultRemove) Run(context *cmd.Context, client *cmd.Client) error 
 	if err != nil {
 		return err
 	}
-	_, err = client.Do(request)
+	_, err = tsuruHTTP.DefaultClient.Do(request)
 	if err != nil {
 		return err
 	}
@@ -618,8 +620,8 @@ func (c *RoleDefaultList) Info() *cmd.Info {
 	}
 }
 
-func (c *RoleDefaultList) Run(context *cmd.Context, client *cmd.Client) error {
-	addr, err := cmd.GetURL("/role/default")
+func (c *RoleDefaultList) Run(context *cmd.Context) error {
+	addr, err := config.GetURL("/role/default")
 	if err != nil {
 		return err
 	}
@@ -627,7 +629,7 @@ func (c *RoleDefaultList) Run(context *cmd.Context, client *cmd.Client) error {
 	if err != nil {
 		return err
 	}
-	response, err := client.Do(request)
+	response, err := tsuruHTTP.DefaultClient.Do(request)
 	if err != nil {
 		return err
 	}
@@ -696,7 +698,7 @@ func (c *RoleUpdate) Flags() *gnuflag.FlagSet {
 	return c.fs
 }
 
-func (c *RoleUpdate) Run(context *cmd.Context, client *cmd.Client) error {
+func (c *RoleUpdate) Run(context *cmd.Context) error {
 	if (c.newName == "") && (c.description == "") && (c.contextType == "") {
 		return errors.New("Neither the description, context or new name were set. You must define at least one.")
 	}
@@ -705,7 +707,7 @@ func (c *RoleUpdate) Run(context *cmd.Context, client *cmd.Client) error {
 	params.Set("newName", c.newName)
 	params.Set("description", c.description)
 	params.Set("contextType", c.contextType)
-	url, err := cmd.GetURLVersion("1.4", "/roles")
+	url, err := config.GetURLVersion("1.4", "/roles")
 	if err != nil {
 		return err
 	}
@@ -714,7 +716,7 @@ func (c *RoleUpdate) Run(context *cmd.Context, client *cmd.Client) error {
 		return err
 	}
 	request.Header.Set("Content-Type", "application/x-www-form-urlencoded")
-	_, err = client.Do(request)
+	_, err = tsuruHTTP.DefaultClient.Do(request)
 	if err != nil {
 		context.Stderr.Write([]byte("Failed to update role\n"))
 		return err

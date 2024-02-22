@@ -16,7 +16,10 @@ import (
 	"github.com/ajg/form"
 	"github.com/tsuru/gnuflag"
 	"github.com/tsuru/tablecli"
+	tsuruClientApp "github.com/tsuru/tsuru-client/tsuru/app"
+	"github.com/tsuru/tsuru-client/tsuru/config"
 	"github.com/tsuru/tsuru-client/tsuru/formatter"
+	tsuruHTTP "github.com/tsuru/tsuru-client/tsuru/http"
 	"github.com/tsuru/tsuru/cmd"
 	volumeTypes "github.com/tsuru/tsuru/types/volume"
 )
@@ -54,7 +57,7 @@ func (c *VolumeCreate) Flags() *gnuflag.FlagSet {
 	return c.fs
 }
 
-func (c *VolumeCreate) Run(ctx *cmd.Context, client *cmd.Client) error {
+func (c *VolumeCreate) Run(ctx *cmd.Context) error {
 	volumeName, planName := ctx.Args[0], ctx.Args[1]
 	vol := volumeTypes.Volume{
 		Name:      volumeName,
@@ -68,7 +71,7 @@ func (c *VolumeCreate) Run(ctx *cmd.Context, client *cmd.Client) error {
 		return err
 	}
 	body := strings.NewReader(val.Encode())
-	u, err := cmd.GetURLVersion("1.4", "/volumes")
+	u, err := config.GetURLVersion("1.4", "/volumes")
 	if err != nil {
 		return err
 	}
@@ -77,7 +80,7 @@ func (c *VolumeCreate) Run(ctx *cmd.Context, client *cmd.Client) error {
 		return err
 	}
 	request.Header.Set("Content-Type", "application/x-www-form-urlencoded")
-	_, err = client.Do(request)
+	_, err = tsuruHTTP.DefaultClient.Do(request)
 	if err != nil {
 		return err
 	}
@@ -118,7 +121,7 @@ func (c *VolumeUpdate) Flags() *gnuflag.FlagSet {
 	return c.fs
 }
 
-func (c *VolumeUpdate) Run(ctx *cmd.Context, client *cmd.Client) error {
+func (c *VolumeUpdate) Run(ctx *cmd.Context) error {
 	volumeName, planName := ctx.Args[0], ctx.Args[1]
 	vol := volumeTypes.Volume{
 		Name:      volumeName,
@@ -132,7 +135,7 @@ func (c *VolumeUpdate) Run(ctx *cmd.Context, client *cmd.Client) error {
 		return err
 	}
 	body := strings.NewReader(val.Encode())
-	u, err := cmd.GetURLVersion("1.4", "/volumes/"+volumeName)
+	u, err := config.GetURLVersion("1.4", "/volumes/"+volumeName)
 	if err != nil {
 		return err
 	}
@@ -141,7 +144,7 @@ func (c *VolumeUpdate) Run(ctx *cmd.Context, client *cmd.Client) error {
 		return err
 	}
 	request.Header.Set("Content-Type", "application/x-www-form-urlencoded")
-	_, err = client.Do(request)
+	_, err = tsuruHTTP.DefaultClient.Do(request)
 	if err != nil {
 		return err
 	}
@@ -208,13 +211,13 @@ func (c *VolumeList) Flags() *gnuflag.FlagSet {
 	return c.fs
 }
 
-func (c *VolumeList) Run(ctx *cmd.Context, client *cmd.Client) error {
+func (c *VolumeList) Run(ctx *cmd.Context) error {
 	qs, err := c.filter.queryString()
 	if err != nil {
 		return err
 	}
 
-	u, err := cmd.GetURLVersion("1.4", fmt.Sprintf("/volumes?%s", qs.Encode()))
+	u, err := config.GetURLVersion("1.4", fmt.Sprintf("/volumes?%s", qs.Encode()))
 	if err != nil {
 		return err
 	}
@@ -222,7 +225,7 @@ func (c *VolumeList) Run(ctx *cmd.Context, client *cmd.Client) error {
 	if err != nil {
 		return err
 	}
-	rsp, err := client.Do(request)
+	rsp, err := tsuruHTTP.DefaultClient.Do(request)
 	if err != nil {
 		return err
 	}
@@ -324,9 +327,9 @@ func (c *VolumeInfo) Info() *cmd.Info {
 	}
 }
 
-func (c *VolumeInfo) Run(ctx *cmd.Context, client *cmd.Client) error {
+func (c *VolumeInfo) Run(ctx *cmd.Context) error {
 	volumeName := ctx.Args[0]
-	u, err := cmd.GetURLVersion("1.4", "/volumes/"+volumeName)
+	u, err := config.GetURLVersion("1.4", "/volumes/"+volumeName)
 	if err != nil {
 		return err
 	}
@@ -334,7 +337,7 @@ func (c *VolumeInfo) Run(ctx *cmd.Context, client *cmd.Client) error {
 	if err != nil {
 		return err
 	}
-	rsp, err := client.Do(request)
+	rsp, err := tsuruHTTP.DefaultClient.Do(request)
 	if err != nil {
 		return err
 	}
@@ -412,8 +415,8 @@ func (c *VolumePlansList) Info() *cmd.Info {
 	}
 }
 
-func (c *VolumePlansList) Run(ctx *cmd.Context, client *cmd.Client) error {
-	u, err := cmd.GetURLVersion("1.4", "/volumeplans")
+func (c *VolumePlansList) Run(ctx *cmd.Context) error {
+	u, err := config.GetURLVersion("1.4", "/volumeplans")
 	if err != nil {
 		return err
 	}
@@ -421,7 +424,7 @@ func (c *VolumePlansList) Run(ctx *cmd.Context, client *cmd.Client) error {
 	if err != nil {
 		return err
 	}
-	rsp, err := client.Do(request)
+	rsp, err := tsuruHTTP.DefaultClient.Do(request)
 	if err != nil {
 		return err
 	}
@@ -475,9 +478,9 @@ func (c *VolumeDelete) Info() *cmd.Info {
 	}
 }
 
-func (c *VolumeDelete) Run(ctx *cmd.Context, client *cmd.Client) error {
+func (c *VolumeDelete) Run(ctx *cmd.Context) error {
 	volumeName := ctx.Args[0]
-	u, err := cmd.GetURLVersion("1.4", "/volumes/"+volumeName)
+	u, err := config.GetURLVersion("1.4", "/volumes/"+volumeName)
 	if err != nil {
 		return err
 	}
@@ -485,7 +488,7 @@ func (c *VolumeDelete) Run(ctx *cmd.Context, client *cmd.Client) error {
 	if err != nil {
 		return err
 	}
-	_, err = client.Do(request)
+	_, err = tsuruHTTP.DefaultClient.Do(request)
 	if err != nil {
 		return err
 	}
@@ -494,7 +497,7 @@ func (c *VolumeDelete) Run(ctx *cmd.Context, client *cmd.Client) error {
 }
 
 type VolumeBind struct {
-	cmd.AppNameMixIn
+	tsuruClientApp.AppNameMixIn
 	fs        *gnuflag.FlagSet
 	readOnly  bool
 	noRestart bool
@@ -521,7 +524,7 @@ func (c *VolumeBind) Flags() *gnuflag.FlagSet {
 	return c.fs
 }
 
-func (c *VolumeBind) Run(ctx *cmd.Context, client *cmd.Client) error {
+func (c *VolumeBind) Run(ctx *cmd.Context) error {
 	ctx.RawOutput()
 	volumeName := ctx.Args[0]
 	appName, err := c.AppName()
@@ -544,7 +547,7 @@ func (c *VolumeBind) Run(ctx *cmd.Context, client *cmd.Client) error {
 		return err
 	}
 	body := strings.NewReader(val.Encode())
-	u, err := cmd.GetURLVersion("1.4", fmt.Sprintf("/volumes/%s/bind", volumeName))
+	u, err := config.GetURLVersion("1.4", fmt.Sprintf("/volumes/%s/bind", volumeName))
 	if err != nil {
 		return err
 	}
@@ -553,7 +556,7 @@ func (c *VolumeBind) Run(ctx *cmd.Context, client *cmd.Client) error {
 		return err
 	}
 	request.Header.Set("Content-Type", "application/x-www-form-urlencoded")
-	resp, err := client.Do(request)
+	resp, err := tsuruHTTP.DefaultClient.Do(request)
 	if err != nil {
 		return err
 	}
@@ -566,7 +569,7 @@ func (c *VolumeBind) Run(ctx *cmd.Context, client *cmd.Client) error {
 }
 
 type VolumeUnbind struct {
-	cmd.AppNameMixIn
+	tsuruClientApp.AppNameMixIn
 	fs        *gnuflag.FlagSet
 	noRestart bool
 }
@@ -589,7 +592,7 @@ func (c *VolumeUnbind) Flags() *gnuflag.FlagSet {
 	return c.fs
 }
 
-func (c *VolumeUnbind) Run(ctx *cmd.Context, client *cmd.Client) error {
+func (c *VolumeUnbind) Run(ctx *cmd.Context) error {
 	ctx.RawOutput()
 	volumeName := ctx.Args[0]
 	appName, err := c.AppName()
@@ -609,7 +612,7 @@ func (c *VolumeUnbind) Run(ctx *cmd.Context, client *cmd.Client) error {
 	if err != nil {
 		return err
 	}
-	u, err := cmd.GetURLVersion("1.4", fmt.Sprintf("/volumes/%s/bind?%s", volumeName, val.Encode()))
+	u, err := config.GetURLVersion("1.4", fmt.Sprintf("/volumes/%s/bind?%s", volumeName, val.Encode()))
 	if err != nil {
 		return err
 	}
@@ -617,7 +620,7 @@ func (c *VolumeUnbind) Run(ctx *cmd.Context, client *cmd.Client) error {
 	if err != nil {
 		return err
 	}
-	resp, err := client.Do(request)
+	resp, err := tsuruHTTP.DefaultClient.Do(request)
 	if err != nil {
 		return err
 	}

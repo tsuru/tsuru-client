@@ -21,7 +21,7 @@ import (
 func (s *S) TestPlatformList(c *check.C) {
 	var buf bytes.Buffer
 	var called bool
-	transport := cmdtest.ConditionalTransport{
+	trans := cmdtest.ConditionalTransport{
 		Transport: cmdtest.Transport{
 			Status:  http.StatusOK,
 			Message: `[{"Name":"ruby"},{"Name":"python"}]`,
@@ -32,8 +32,8 @@ func (s *S) TestPlatformList(c *check.C) {
 		},
 	}
 	context := cmd.Context{Stdout: &buf}
-	client := cmd.NewClient(&http.Client{Transport: &transport}, nil, s.manager)
-	err := (&PlatformList{simplified: true}).Run(&context, client)
+	s.setupFakeTransport(&trans)
+	err := (&PlatformList{simplified: true}).Run(&context)
 	c.Assert(err, check.IsNil)
 	c.Assert(called, check.Equals, true)
 	expected := `python
@@ -44,7 +44,7 @@ ruby` + "\n"
 func (s *S) TestPlatformListWithDisabledPlatforms(c *check.C) {
 	var buf bytes.Buffer
 	var called bool
-	transport := cmdtest.ConditionalTransport{
+	trans := cmdtest.ConditionalTransport{
 		Transport: cmdtest.Transport{
 			Status:  http.StatusOK,
 			Message: `[{"Name":"ruby"},{"Name":"python"},{"Name":"ruby20", "Disabled":true}]`,
@@ -55,8 +55,8 @@ func (s *S) TestPlatformListWithDisabledPlatforms(c *check.C) {
 		},
 	}
 	context := cmd.Context{Stdout: &buf}
-	client := cmd.NewClient(&http.Client{Transport: &transport}, nil, s.manager)
-	err := (&PlatformList{}).Run(&context, client)
+	s.setupFakeTransport(&trans)
+	err := (&PlatformList{}).Run(&context)
 	c.Assert(err, check.IsNil)
 	c.Assert(called, check.Equals, true)
 	expected := `+--------+----------+
@@ -75,8 +75,8 @@ func (s *S) TestPlatformListEmpty(c *check.C) {
 		Status: http.StatusNoContent,
 	}
 	context := cmd.Context{Stdout: &buf}
-	client := cmd.NewClient(&http.Client{Transport: &transport}, nil, s.manager)
-	err := (&PlatformList{}).Run(&context, client)
+	s.setupFakeTransport(&transport)
+	err := (&PlatformList{}).Run(&context)
 	c.Assert(err, check.IsNil)
 	c.Assert(buf.String(), check.Equals, "No platforms available.\n")
 }
@@ -120,10 +120,10 @@ func (s *S) TestPlatformAddRun(c *check.C) {
 			return strings.HasSuffix(req.URL.Path, "/platforms") && req.Method == "POST"
 		},
 	}
-	client := cmd.NewClient(&http.Client{Transport: trans}, nil, s.manager)
+	s.setupFakeTransport(trans)
 	command := PlatformAdd{}
 	command.Flags().Parse(true, []string{"--dockerfile", server.URL})
-	err = command.Run(&context, client)
+	err = command.Run(&context)
 	c.Assert(err, check.IsNil)
 	c.Assert(stdout.String(), check.Equals, expectedMsg)
 }
@@ -152,10 +152,10 @@ func (s *S) TestPlatformAddRunLocalDockerFile(c *check.C) {
 			return strings.HasSuffix(req.URL.Path, "/platforms") && req.Method == "POST"
 		},
 	}
-	client := cmd.NewClient(&http.Client{Transport: trans}, nil, s.manager)
+	s.setupFakeTransport(trans)
 	command := PlatformAdd{}
 	command.Flags().Parse(true, []string{"--dockerfile", "testdata/Dockerfile"})
-	err = command.Run(&context, client)
+	err = command.Run(&context)
 	c.Assert(err, check.IsNil)
 	c.Assert(stdout.String(), check.Equals, expectedMsg)
 }
@@ -184,10 +184,10 @@ func (s *S) TestPlatformAddPrebuiltImage(c *check.C) {
 			return strings.HasSuffix(req.URL.Path, "/platforms") && req.Method == "POST"
 		},
 	}
-	client := cmd.NewClient(&http.Client{Transport: trans}, nil, s.manager)
+	s.setupFakeTransport(trans)
 	command := PlatformAdd{}
 	command.Flags().Parse(true, []string{"--image", "tsuru/python"})
-	err = command.Run(&context, client)
+	err = command.Run(&context)
 	c.Assert(err, check.IsNil)
 	c.Assert(stdout.String(), check.Equals, expectedMsg)
 }
@@ -216,9 +216,9 @@ func (s *S) TestPlatformAddRunImplicitDockerfile(c *check.C) {
 			return strings.HasSuffix(req.URL.Path, "/platforms") && req.Method == "POST"
 		},
 	}
-	client := cmd.NewClient(&http.Client{Transport: trans}, nil, s.manager)
+	s.setupFakeTransport(trans)
 	command := PlatformAdd{}
-	err = command.Run(&context, client)
+	err = command.Run(&context)
 	c.Assert(err, check.IsNil)
 	c.Assert(stdout.String(), check.Equals, expectedMsg)
 }
@@ -230,10 +230,9 @@ func (s *S) TestPlatformAddRunFlagsConflict(c *check.C) {
 		Stderr: &stderr,
 		Args:   []string{"teste"},
 	}
-	client := cmd.NewClient(&http.Client{}, nil, s.manager)
 	command := PlatformAdd{}
 	command.Flags().Parse(true, []string{"--image", "tsuru/python", "--dockerfile", "testdata/Dockerfile"})
-	err := command.Run(&context, client)
+	err := command.Run(&context)
 	c.Assert(err, check.NotNil)
 	c.Assert(err.Error(), check.Equals, "Conflicting options: --image and --dockerfile")
 }
@@ -325,10 +324,10 @@ func (s *S) TestPlatformUpdateRun(c *check.C) {
 			return strings.HasSuffix(req.URL.Path, "/platforms/"+name) && req.Method == "PUT"
 		},
 	}
-	client := cmd.NewClient(&http.Client{Transport: trans}, nil, s.manager)
+	s.setupFakeTransport(trans)
 	command := PlatformUpdate{}
 	command.Flags().Parse(true, []string{"--dockerfile", server.URL})
-	err = command.Run(&context, client)
+	err = command.Run(&context)
 	c.Assert(err, check.IsNil)
 	c.Assert(stdout.String(), check.Equals, expectedMsg)
 }
@@ -358,10 +357,10 @@ func (s *S) TestPlatformUpdateRunLocalDockerfile(c *check.C) {
 			return strings.HasSuffix(req.URL.Path, "/platforms/"+name) && req.Method == "PUT"
 		},
 	}
-	client := cmd.NewClient(&http.Client{Transport: trans}, nil, s.manager)
+	s.setupFakeTransport(trans)
 	command := PlatformUpdate{}
 	command.Flags().Parse(true, []string{"--dockerfile", "testdata/Dockerfile"})
-	err = command.Run(&context, client)
+	err = command.Run(&context)
 	c.Assert(err, check.IsNil)
 	c.Assert(stdout.String(), check.Equals, expectedMsg)
 }
@@ -391,10 +390,10 @@ func (s *S) TestPlatformUpdateRunPrebuiltImage(c *check.C) {
 			return strings.HasSuffix(req.URL.Path, "/platforms/"+name) && req.Method == "PUT"
 		},
 	}
-	client := cmd.NewClient(&http.Client{Transport: trans}, nil, s.manager)
+	s.setupFakeTransport(trans)
 	command := PlatformUpdate{}
 	command.Flags().Parse(true, []string{"--image", "tsuru/python"})
-	err = command.Run(&context, client)
+	err = command.Run(&context)
 	c.Assert(err, check.IsNil)
 	c.Assert(stdout.String(), check.Equals, expectedMsg)
 }
@@ -424,9 +423,9 @@ func (s *S) TestPlatformUpdateRunImplicitImage(c *check.C) {
 			return strings.HasSuffix(req.URL.Path, "/platforms/"+name) && req.Method == "PUT"
 		},
 	}
-	client := cmd.NewClient(&http.Client{Transport: trans}, nil, s.manager)
+	s.setupFakeTransport(trans)
 	command := PlatformUpdate{}
-	err = command.Run(&context, client)
+	err = command.Run(&context)
 	c.Assert(err, check.IsNil)
 	c.Assert(stdout.String(), check.Equals, expectedMsg)
 }
@@ -452,10 +451,10 @@ func (s *S) TestPlatformUpdateWithFlagDisableTrue(c *check.C) {
 			return strings.HasSuffix(req.URL.Path, "/platforms/"+name) && req.Method == "PUT"
 		},
 	}
-	client := cmd.NewClient(&http.Client{Transport: trans}, nil, s.manager)
+	s.setupFakeTransport(trans)
 	command := PlatformUpdate{}
 	command.Flags().Parse(true, []string{"--disable"})
-	err = command.Run(&context, client)
+	err = command.Run(&context)
 	c.Assert(err, check.IsNil)
 	c.Assert(stdout.String(), check.Equals, expectedMsg)
 }
@@ -481,10 +480,10 @@ func (s *S) TestPlatformUpdateWithFlagEnabledTrue(c *check.C) {
 			return strings.HasSuffix(req.URL.Path, "/platforms/"+name) && req.Method == "PUT"
 		},
 	}
-	client := cmd.NewClient(&http.Client{Transport: trans}, nil, s.manager)
+	s.setupFakeTransport(trans)
 	command := PlatformUpdate{}
 	command.Flags().Parse(true, []string{"--enable"})
-	err = command.Run(&context, client)
+	err = command.Run(&context)
 	c.Assert(err, check.IsNil)
 	c.Assert(stdout.String(), check.Equals, expectedMsg)
 }
@@ -498,10 +497,9 @@ func (s *S) TestPlatformUpdateImageAndDockerfile(c *check.C) {
 		Args:   []string{name},
 	}
 	expected := "Conflicting options: --image and --dockerfile"
-	client := cmd.NewClient(&http.Client{}, nil, s.manager)
 	command := PlatformUpdate{}
 	command.Flags().Parse(true, []string{"--image", "tsuru/python", "--dockerfile", "testdata/Dockerfile"})
-	err := command.Run(&context, client)
+	err := command.Run(&context)
 	c.Assert(err, check.NotNil)
 	c.Assert(err.Error(), check.Equals, expected)
 }
@@ -515,10 +513,9 @@ func (s *S) TestPlatformUpdateEnableAndDisable(c *check.C) {
 		Args:   []string{name},
 	}
 	expected := "Conflicting options: --enable and --disable"
-	client := cmd.NewClient(&http.Client{}, nil, s.manager)
 	command := PlatformUpdate{}
 	command.Flags().Parse(true, []string{"--disable", "--enable"})
-	err := command.Run(&context, client)
+	err := command.Run(&context)
 	c.Assert(err, check.NotNil)
 	c.Assert(err.Error(), check.Equals, expected)
 }
@@ -542,10 +539,10 @@ func (s *S) TestPlatformRemoveRun(c *check.C) {
 			return strings.HasSuffix(req.URL.Path, "/platforms/"+name) && req.Method == http.MethodDelete
 		},
 	}
-	client := cmd.NewClient(&http.Client{Transport: trans}, nil, s.manager)
+	s.setupFakeTransport(trans)
 	command := PlatformRemove{}
 	command.Flags().Parse(true, []string{"-y"})
-	err := command.Run(&context, client)
+	err := command.Run(&context)
 	c.Assert(err, check.IsNil)
 	c.Assert(stdout.String(), check.Equals, expected)
 }
@@ -558,7 +555,7 @@ func (s *S) TestPlatformRemoveConfirmation(c *check.C) {
 		Args:   []string{"something"},
 	}
 	command := PlatformRemove{}
-	err := command.Run(&context, nil)
+	err := command.Run(&context)
 	c.Assert(err, check.IsNil)
 	c.Assert(stdout.String(), check.Equals, "Are you sure you want to remove \"something\" platform? (y/n) Abort.\n")
 }
@@ -593,9 +590,9 @@ func (s *S) TestPlatformInfoRun(c *check.C) {
 			return strings.HasSuffix(req.URL.Path, "/platforms/"+name) && req.Method == "GET"
 		},
 	}
-	client := cmd.NewClient(&http.Client{Transport: trans}, nil, s.manager)
+	s.setupFakeTransport(trans)
 	command := PlatformInfo{}
-	err = command.Run(&context, client)
+	err = command.Run(&context)
 	c.Assert(err, check.IsNil)
 	c.Assert(stdout.String(), check.Equals, expectedMsg)
 }

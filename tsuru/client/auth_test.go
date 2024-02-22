@@ -15,6 +15,8 @@ import (
 	"gopkg.in/check.v1"
 
 	"github.com/tsuru/go-tsuruclient/pkg/tsuru"
+	"github.com/tsuru/tsuru-client/tsuru/config"
+	tsuruHTTP "github.com/tsuru/tsuru-client/tsuru/http"
 	"github.com/tsuru/tsuru/cmd"
 	"github.com/tsuru/tsuru/cmd/cmdtest"
 	"github.com/tsuru/tsuru/fs/fstest"
@@ -46,10 +48,10 @@ func (s *S) TestTeamCreate(c *check.C) {
 			return true
 		},
 	}
-	client := cmd.NewClient(&http.Client{Transport: &transport}, nil, manager)
+	s.setupFakeTransport(&transport)
 	command := TeamCreate{}
 	command.Flags().Parse(true, []string{"-t", "tag1", "-t", "tag2"})
-	err := command.Run(&context, client)
+	err := command.Run(&context)
 	c.Assert(err, check.IsNil)
 	c.Assert(stdout.String(), check.Equals, expected)
 }
@@ -80,10 +82,10 @@ func (s *S) TestTeamUpdate(c *check.C) {
 			return true
 		},
 	}
-	client := cmd.NewClient(&http.Client{Transport: trans}, nil, manager)
+	s.setupFakeTransport(trans)
 	command := &TeamUpdate{}
 	command.Flags().Parse(true, []string{"-n", "new-team", "-t", "tag1", "-t", "tag2"})
-	err := command.Run(&ctx, client)
+	err := command.Run(&ctx)
 	c.Assert(err, check.IsNil)
 	result := stdout.String()
 	c.Assert(result, check.Equals, "Team successfully updated!\n")
@@ -98,10 +100,10 @@ func (s *S) TestTeamUpdateError(c *check.C) {
 	}
 	errMsg := "team not found"
 	trans := &cmdtest.Transport{Message: errMsg, Status: http.StatusNotFound}
-	client := cmd.NewClient(&http.Client{Transport: trans}, nil, manager)
+	s.setupFakeTransport(trans)
 	command := &TeamUpdate{}
-	err := command.Run(&ctx, client)
-	c.Assert(err, check.ErrorMatches, `team not found`)
+	err := command.Run(&ctx)
+	c.Assert(err, check.ErrorMatches, `.* team not found`)
 }
 
 func (s *S) TestTeamUpdateInfo(c *check.C) {
@@ -125,9 +127,9 @@ func (s *S) TestTeamRemove(c *check.C) {
 			return strings.HasSuffix(req.URL.Path, "/teams/evergrey") && req.Method == http.MethodDelete
 		},
 	}
-	client := cmd.NewClient(&http.Client{Transport: &trans}, nil, manager)
+	s.setupFakeTransport(&trans)
 	command := TeamRemove{}
-	err := command.Run(&context, client)
+	err := command.Run(&context)
 	c.Assert(err, check.IsNil)
 	c.Assert(called, check.Equals, true)
 	c.Assert(buf.String(), check.Equals, `Are you sure you want to remove team "evergrey"? (y/n) Team "evergrey" successfully removed!`+"\n")
@@ -141,7 +143,7 @@ func (s *S) TestTeamRemoveWithouConfirmation(c *check.C) {
 		Stdin:  strings.NewReader("n\n"),
 	}
 	command := TeamRemove{}
-	err := command.Run(&context, nil)
+	err := command.Run(&context)
 	c.Assert(err, check.IsNil)
 	c.Assert(buf.String(), check.Equals, `Are you sure you want to remove team "dream-theater"? (y/n) Abort.`+"\n")
 }
@@ -152,11 +154,11 @@ func (s *S) TestTeamRemoveFailingRequest(c *check.C) {
 		Stdout: new(bytes.Buffer),
 		Stdin:  strings.NewReader("y\n"),
 	}
-	client := cmd.NewClient(&http.Client{Transport: &cmdtest.Transport{Message: "Team evergrey not found.", Status: http.StatusNotFound}}, nil, manager)
+	s.setupFakeTransport(&cmdtest.Transport{Message: "Team evergrey not found.", Status: http.StatusNotFound})
 	command := TeamRemove{}
-	err := command.Run(&context, client)
+	err := command.Run(&context)
 	c.Assert(err, check.NotNil)
-	c.Assert(err, check.ErrorMatches, "^Team evergrey not found.$")
+	c.Assert(err, check.ErrorMatches, ".* Team evergrey not found.$")
 }
 
 func (s *S) TestTeamRemoveInfo(c *check.C) {
@@ -189,14 +191,14 @@ func (s *S) TestTeamListRun(c *check.C) {
 |             | b           |      |
 +-------------+-------------+------+
 `
-	client := cmd.NewClient(&http.Client{Transport: trans}, nil, manager)
+	s.setupFakeTransport(trans)
 	var stdout, stderr bytes.Buffer
 	err := (&TeamList{}).Run(&cmd.Context{
 		Args:   []string{},
 		Stdout: &stdout,
 		Stderr: &stderr,
 		Stdin:  nil,
-	}, client)
+	})
 	c.Assert(err, check.IsNil)
 	c.Assert(called, check.Equals, true)
 	c.Assert(stdout.String(), check.Equals, expected)
@@ -219,28 +221,28 @@ func (s *S) TestTeamListRunNoPermissions(c *check.C) {
 | cobrateam   |             |      |
 +-------------+-------------+------+
 `
-	client := cmd.NewClient(&http.Client{Transport: trans}, nil, manager)
+	s.setupFakeTransport(trans)
 	var stdout, stderr bytes.Buffer
 	err := (&TeamList{}).Run(&cmd.Context{
 		Args:   []string{},
 		Stdout: &stdout,
 		Stderr: &stderr,
 		Stdin:  nil,
-	}, client)
+	})
 	c.Assert(err, check.IsNil)
 	c.Assert(called, check.Equals, true)
 	c.Assert(stdout.String(), check.Equals, expected)
 }
 
 func (s *S) TestTeamListRunWithNoContent(c *check.C) {
-	client := cmd.NewClient(&http.Client{Transport: &cmdtest.Transport{Message: "", Status: http.StatusNoContent}}, nil, manager)
+	s.setupFakeTransport(&cmdtest.Transport{Message: "", Status: http.StatusNoContent})
 	var stdout, stderr bytes.Buffer
 	err := (&TeamList{}).Run(&cmd.Context{
 		Args:   []string{},
 		Stdout: &stdout,
 		Stderr: &stderr,
 		Stdin:  nil,
-	}, client)
+	})
 	c.Assert(err, check.IsNil)
 	c.Assert(stdout.String(), check.Equals, "")
 }
@@ -355,28 +357,28 @@ Applications: 1
 | hello-test  |       | hello-test.100.17.0.1.nip.io |
 +-------------+-------+------------------------------+
 `
-	client := cmd.NewClient(&http.Client{Transport: trans}, nil, manager)
+	s.setupFakeTransport(trans)
 	var stdout, stderr bytes.Buffer
 	err := (&TeamInfo{}).Run(&cmd.Context{
 		Args:   []string{"team1"},
 		Stdout: &stdout,
 		Stderr: &stderr,
 		Stdin:  nil,
-	}, client)
+	})
 	c.Assert(err, check.IsNil)
 	c.Assert(called, check.Equals, true)
 	c.Assert(stdout.String(), check.Equals, expected)
 }
 
 func (s *S) TestTeamInfoRunWithNoContent(c *check.C) {
-	client := cmd.NewClient(&http.Client{Transport: &cmdtest.Transport{Message: "", Status: http.StatusNoContent}}, nil, manager)
+	s.setupFakeTransport(&cmdtest.Transport{Message: "", Status: http.StatusNoContent})
 	var stdout, stderr bytes.Buffer
 	err := (&TeamInfo{}).Run(&cmd.Context{
 		Args:   []string{"team1"},
 		Stdout: &stdout,
 		Stderr: &stderr,
 		Stdin:  nil,
-	}, client)
+	})
 	c.Assert(err, check.IsNil)
 	c.Assert(stdout.String(), check.Equals, "")
 }
@@ -391,7 +393,7 @@ func (s *S) TestTeamInfoIsACommand(c *check.C) {
 
 func (s *S) TestUserCreateShouldNotDependOnTsuruTokenFile(c *check.C) {
 	rfs := &fstest.RecordingFs{}
-	f, _ := rfs.Create(cmd.JoinWithUserDir(".tsuru_target"))
+	f, _ := rfs.Create(config.JoinWithUserDir(".tsuru_target"))
 	f.Write([]byte("http://localhost"))
 	f.Close()
 	expected := "Password: \nConfirm: \n" + `User "foo@foo.com" successfully created!` + "\n"
@@ -416,9 +418,9 @@ func (s *S) TestUserCreateShouldNotDependOnTsuruTokenFile(c *check.C) {
 			return contentType && password && email && url
 		},
 	}
-	client := cmd.NewClient(&http.Client{Transport: &transport}, nil, manager)
+	s.setupFakeTransport(&transport)
 	command := UserCreate{}
-	err := command.Run(&context, client)
+	err := command.Run(&context)
 	c.Assert(err, check.IsNil)
 	c.Assert(stdout.String(), check.Equals, expected)
 }
@@ -432,9 +434,9 @@ func (s *S) TestUserCreateReturnErrorIfPasswordsDontMatch(c *check.C) {
 		Stderr: &stderr,
 		Stdin:  reader,
 	}
-	client := cmd.NewClient(&http.Client{Transport: &cmdtest.Transport{Message: "", Status: http.StatusCreated}}, nil, manager)
+	s.setupFakeTransport(&cmdtest.Transport{Message: "", Status: http.StatusCreated})
 	command := UserCreate{}
-	err := command.Run(&context, client)
+	err := command.Run(&context)
 	c.Assert(err, check.NotNil)
 	c.Assert(err, check.ErrorMatches, "^Passwords didn't match.$")
 }
@@ -448,9 +450,9 @@ func (s *S) TestUserCreate(c *check.C) {
 		Stderr: &stderr,
 		Stdin:  strings.NewReader("foo123\nfoo123\n"),
 	}
-	client := cmd.NewClient(&http.Client{Transport: &cmdtest.Transport{Message: "", Status: http.StatusCreated}}, nil, manager)
+	s.setupFakeTransport(&cmdtest.Transport{Message: "", Status: http.StatusCreated})
 	command := UserCreate{}
-	err := command.Run(&context, client)
+	err := command.Run(&context)
 	c.Assert(err, check.IsNil)
 	c.Assert(stdout.String(), check.Equals, expected)
 }
@@ -464,7 +466,7 @@ func (s *S) TestUserCreateShouldReturnErrorIfThePasswordIsNotGiven(c *check.C) {
 		Stdin:  strings.NewReader(""),
 	}
 	command := UserCreate{}
-	err := command.Run(&context, nil)
+	err := command.Run(&context)
 	c.Assert(err, check.NotNil)
 	c.Assert(err, check.ErrorMatches, "^You must provide the password!$")
 }
@@ -482,9 +484,9 @@ func (s *S) TestUserCreateNotFound(c *check.C) {
 		Stderr: &stderr,
 		Stdin:  reader,
 	}
-	client := cmd.NewClient(&http.Client{Transport: &transport}, nil, manager)
+	s.setupFakeTransport(transport)
 	command := UserCreate{}
-	err := command.Run(&context, client)
+	err := command.Run(&context)
 	c.Assert(err, check.NotNil)
 	c.Assert(err.Error(), check.Equals, "User creation is disabled.")
 }
@@ -502,11 +504,11 @@ func (s *S) TestUserCreateMethodNotAllowed(c *check.C) {
 		Stderr: &stderr,
 		Stdin:  reader,
 	}
-	client := cmd.NewClient(&http.Client{Transport: &transport}, nil, manager)
+	s.setupFakeTransport(transport)
 	command := UserCreate{}
-	err := command.Run(&context, client)
+	err := command.Run(&context)
 	c.Assert(err, check.NotNil)
-	c.Assert(err.Error(), check.Equals, "User creation is disabled.")
+	c.Assert(tsuruHTTP.UnwrapErr(err).Error(), check.Equals, "User creation is disabled.")
 }
 
 func (s *S) TestUserCreateInfo(c *check.C) {
@@ -515,7 +517,7 @@ func (s *S) TestUserCreateInfo(c *check.C) {
 
 func (s *S) TestUserRemove(c *check.C) {
 	rfs := &fstest.RecordingFs{}
-	f, _ := rfs.Create(cmd.JoinWithUserDir(".tsuru_target"))
+	f, _ := rfs.Create(config.JoinWithUserDir(".tsuru_target"))
 	f.Write([]byte("http://tsuru.io"))
 	f.Close()
 	var (
@@ -538,9 +540,9 @@ func (s *S) TestUserRemove(c *check.C) {
 			StatusCode: http.StatusOK,
 		}, nil
 	})
-	client := cmd.NewClient(&http.Client{Transport: transport}, nil, manager)
+	s.setupFakeTransport(transport)
 	command := UserRemove{}
-	err := command.Run(&context, client)
+	err := command.Run(&context)
 	c.Assert(err, check.IsNil)
 	c.Assert(called, check.Equals, true)
 	c.Assert(buf.String(), check.Equals, "Are you sure you want to remove the user \"myuser@tsuru.io\" from tsuru? (y/n) User \"myuser@tsuru.io\" successfully removed.\n")
@@ -548,7 +550,7 @@ func (s *S) TestUserRemove(c *check.C) {
 
 func (s *S) TestUserRemoveWithArgs(c *check.C) {
 	rfs := &fstest.RecordingFs{}
-	f, _ := rfs.Create(cmd.JoinWithUserDir(".tsuru_target"))
+	f, _ := rfs.Create(config.JoinWithUserDir(".tsuru_target"))
 	f.Write([]byte("http://tsuru.io"))
 	f.Close()
 	var (
@@ -567,9 +569,9 @@ func (s *S) TestUserRemoveWithArgs(c *check.C) {
 			return req.Method == http.MethodDelete && strings.HasSuffix(req.URL.Path, "/users") && req.URL.Query().Get("user") == context.Args[0]
 		},
 	}
-	client := cmd.NewClient(&http.Client{Transport: &trans}, nil, manager)
+	s.setupFakeTransport(&trans)
 	command := UserRemove{}
-	err := command.Run(&context, client)
+	err := command.Run(&context)
 	c.Assert(err, check.IsNil)
 	c.Assert(called, check.Equals, true)
 	c.Assert(buf.String(), check.Equals, "Are you sure you want to remove the user \"test+u@email.com\" from tsuru? (y/n) User \"test+u@email.com\" successfully removed.\n")
@@ -582,19 +584,19 @@ func (s *S) TestUserRemoveWithoutConfirmation(c *check.C) {
 		Stdin:  strings.NewReader("n\n"),
 	}
 	trans := cmdtest.Transport{Message: `{"Email":"myself@email.com","Teams":["team1"]}`, Status: http.StatusOK}
-	client := cmd.NewClient(&http.Client{Transport: &trans}, nil, manager)
+	s.setupFakeTransport(&trans)
 	command := UserRemove{}
-	err := command.Run(&context, client)
+	err := command.Run(&context)
 	c.Assert(err, check.IsNil)
 	c.Assert(buf.String(), check.Equals, "Are you sure you want to remove the user \"myself@email.com\" from tsuru? (y/n) Abort.\n")
 }
 
 func (s *S) TestUserRemoveWithRequestError(c *check.C) {
-	client := cmd.NewClient(&http.Client{Transport: &cmdtest.Transport{Message: "User not found.", Status: http.StatusNotFound}}, nil, manager)
+	s.setupFakeTransport(&cmdtest.Transport{Message: "User not found.", Status: http.StatusNotFound})
 	command := UserRemove{}
-	err := command.Run(&cmd.Context{Stdout: new(bytes.Buffer), Stdin: strings.NewReader("y\n")}, client)
+	err := command.Run(&cmd.Context{Stdout: new(bytes.Buffer), Stdin: strings.NewReader("y\n")})
 	c.Assert(err, check.NotNil)
-	c.Assert(err, check.ErrorMatches, "^User not found.$")
+	c.Assert(tsuruHTTP.UnwrapErr(err), check.ErrorMatches, "^User not found.$")
 }
 
 func (s *S) TestUserRemoveInfo(c *check.C) {
@@ -629,9 +631,9 @@ func (s *S) TestChangePassword(c *check.C) {
 			return method && url && contentType && old && new && confirm
 		},
 	}
-	client := cmd.NewClient(&http.Client{Transport: &trans}, nil, manager)
+	s.setupFakeTransport(&trans)
 	command := ChangePassword{}
-	err := command.Run(&context, client)
+	err := command.Run(&context)
 	c.Assert(err, check.IsNil)
 	c.Assert(called, check.Equals, true)
 	expected := "Current password: \nNew password: \nConfirm: \nPassword successfully updated!\n"
@@ -660,11 +662,11 @@ func (s *S) TestChangePasswordWrongConfirmation(c *check.C) {
 			return method && url && contentType && old && new && confirm
 		},
 	}
-	client := cmd.NewClient(&http.Client{Transport: &trans}, nil, manager)
+	s.setupFakeTransport(&trans)
 	command := ChangePassword{}
-	err := command.Run(&context, client)
+	err := command.Run(&context)
 	c.Assert(err, check.NotNil)
-	c.Assert(err.Error(), check.Equals, "New password and password confirmation didn't match.")
+	c.Assert(err, check.ErrorMatches, ".* New password and password confirmation didn't match.")
 }
 
 func (s *S) TestChangePasswordInfo(c *check.C) {
@@ -694,8 +696,8 @@ func (s *S) TestResetPassword(c *check.C) {
 		},
 	}
 	command := ResetPassword{}
-	client := cmd.NewClient(&http.Client{Transport: &trans}, nil, manager)
-	err := command.Run(&context, client)
+	s.setupFakeTransport(&trans)
+	err := command.Run(&context)
 	c.Assert(err, check.IsNil)
 	expected := `You've successfully started the password reset process.
 
@@ -723,8 +725,8 @@ func (s *S) TestResetPasswordStepTwo(c *check.C) {
 	}
 	command := ResetPassword{}
 	command.Flags().Parse(true, []string{"-t", "secret"})
-	client := cmd.NewClient(&http.Client{Transport: &trans}, nil, manager)
-	err := command.Run(&context, client)
+	s.setupFakeTransport(&trans)
+	err := command.Run(&context)
 	c.Assert(err, check.IsNil)
 	expected := `Your password has been reset and mailed to you.
 
@@ -773,14 +775,14 @@ func (s *S) TestShowAPITokenRun(c *check.C) {
 	}
 	expected := `API key: 23iou32nd3i2udnu23jd
 `
-	client := cmd.NewClient(&http.Client{Transport: trans}, nil, manager)
+	s.setupFakeTransport(trans)
 	var stdout, stderr bytes.Buffer
 	err := (&ShowAPIToken{}).Run(&cmd.Context{
 		Args:   []string{},
 		Stdout: &stdout,
 		Stderr: &stderr,
 		Stdin:  nil,
-	}, client)
+	})
 	c.Assert(err, check.IsNil)
 	c.Assert(called, check.Equals, true)
 	c.Assert(stdout.String(), check.Equals, expected)
@@ -809,22 +811,22 @@ func (s *S) TestShowAPITokenRunWithFlag(c *check.C) {
 	}
 	command := ShowAPIToken{}
 	command.Flags().Parse(true, []string{"-u", "admin@example.com"})
-	client := cmd.NewClient(&http.Client{Transport: trans}, nil, manager)
-	err := command.Run(&context, client)
+	s.setupFakeTransport(trans)
+	err := command.Run(&context)
 	c.Assert(err, check.IsNil)
 	c.Assert(called, check.Equals, true)
 	c.Assert(stdout.String(), check.Equals, expected)
 }
 
 func (s *S) TestShowAPITokenRunWithNoContent(c *check.C) {
-	client := cmd.NewClient(&http.Client{Transport: &cmdtest.Transport{Message: "", Status: http.StatusNoContent}}, nil, manager)
+	s.setupFakeTransport(&cmdtest.Transport{Message: "", Status: http.StatusNoContent})
 	var stdout, stderr bytes.Buffer
 	err := (&ShowAPIToken{}).Run(&cmd.Context{
 		Args:   []string{},
 		Stdout: &stdout,
 		Stderr: &stderr,
 		Stdin:  nil,
-	}, client)
+	})
 	c.Assert(err, check.IsNil)
 	c.Assert(stdout.String(), check.Equals, "")
 }
@@ -848,14 +850,14 @@ func (s *S) TestRegenerateAPITokenRun(c *check.C) {
 	}
 	expected := `Your new API key is: 23iou32nd3i2udnu23jd
 `
-	client := cmd.NewClient(&http.Client{Transport: trans}, nil, manager)
+	s.setupFakeTransport(trans)
 	var stdout, stderr bytes.Buffer
 	err := (&RegenerateAPIToken{}).Run(&cmd.Context{
 		Args:   []string{},
 		Stdout: &stdout,
 		Stderr: &stderr,
 		Stdin:  nil,
-	}, client)
+	})
 	c.Assert(err, check.IsNil)
 	c.Assert(called, check.Equals, true)
 	c.Assert(stdout.String(), check.Equals, expected)
@@ -882,22 +884,22 @@ func (s *S) TestRegenerateAPITokenRunWithFlag(c *check.C) {
 	}
 	command := RegenerateAPIToken{}
 	command.Flags().Parse(true, []string{"-u", "admin@example.com"})
-	client := cmd.NewClient(&http.Client{Transport: trans}, nil, manager)
-	err := command.Run(&context, client)
+	s.setupFakeTransport(trans)
+	err := command.Run(&context)
 	c.Assert(err, check.IsNil)
 	c.Assert(called, check.Equals, true)
 	c.Assert(stdout.String(), check.Equals, expected)
 }
 
 func (s *S) TestRegenerateAPITokenRunWithNoContent(c *check.C) {
-	client := cmd.NewClient(&http.Client{Transport: &cmdtest.Transport{Message: "", Status: http.StatusNoContent}}, nil, manager)
+	s.setupFakeTransport(&cmdtest.Transport{Message: "", Status: http.StatusNoContent})
 	var stdout, stderr bytes.Buffer
 	err := (&RegenerateAPIToken{}).Run(&cmd.Context{
 		Args:   []string{},
 		Stdout: &stdout,
 		Stderr: &stderr,
 		Stdin:  nil,
-	}, client)
+	})
 	c.Assert(err, check.IsNil)
 	c.Assert(stdout.String(), check.Equals, "")
 }
@@ -926,7 +928,6 @@ func (s *S) TestListUsersRunWithoutFlags(c *check.C) {
 		Stdout: &stdout,
 		Stderr: &stderr,
 	}
-	manager = cmd.NewManagerPanicExiter("glb", "0.2", "ad-ver", &stdout, &stderr, nil, nil)
 	result := `[{"email": "test@test.com",
 "roles":[
 	{"name": "role1", "contexttype": "team", "contextvalue": "a"},
@@ -946,9 +947,9 @@ func (s *S) TestListUsersRunWithoutFlags(c *check.C) {
 |               | role2(app x)  |
 +---------------+---------------+
 `
-	client := cmd.NewClient(&http.Client{Transport: &trans}, nil, manager)
+	s.setupFakeTransport(&trans)
 	command := ListUsers{}
-	err := command.Run(&context, client)
+	err := command.Run(&context)
 	c.Assert(err, check.IsNil)
 	c.Assert(stdout.String(), check.Equals, expected)
 }
@@ -959,7 +960,6 @@ func (s *S) TestListUsersRunFilterByUserEmail(c *check.C) {
 		Stdout: &stdout,
 		Stderr: &stderr,
 	}
-	manager = cmd.NewManagerPanicExiter("glb", "0.2", "ad-ver", &stdout, &stderr, nil, nil)
 	result := `[{"email": "test@test.com",
 "roles":[
 	{"name": "role1", "contexttype": "team", "contextvalue": "a"},
@@ -984,10 +984,10 @@ func (s *S) TestListUsersRunFilterByUserEmail(c *check.C) {
 |               | role2(app x)  |
 +---------------+---------------+
 `
-	client := cmd.NewClient(&http.Client{Transport: &trans}, nil, manager)
+	s.setupFakeTransport(&trans)
 	command := ListUsers{}
 	command.Flags().Parse(true, []string{"-u", "test2@test.com"})
-	err := command.Run(&context, client)
+	err := command.Run(&context)
 	c.Assert(err, check.IsNil)
 	c.Assert(stdout.String(), check.Equals, expected)
 }
@@ -998,7 +998,6 @@ func (s *S) TestListUsersRunFilterByRole(c *check.C) {
 		Stdout: &stdout,
 		Stderr: &stderr,
 	}
-	manager = cmd.NewManagerPanicExiter("glb", "0.2", "ad-ver", &stdout, &stderr, nil, nil)
 	result := `[{"email": "test@test.com",
 	"roles":[
 		{"name": "role1", "contexttype": "team", "contextvalue": "a"},
@@ -1023,10 +1022,10 @@ func (s *S) TestListUsersRunFilterByRole(c *check.C) {
 |               | role2(app x)  |
 +---------------+---------------+
 `
-	client := cmd.NewClient(&http.Client{Transport: &trans}, nil, manager)
+	s.setupFakeTransport(&trans)
 	command := ListUsers{}
 	command.Flags().Parse(true, []string{"-r", "role2"})
-	err := command.Run(&context, client)
+	err := command.Run(&context)
 	c.Assert(err, check.IsNil)
 	c.Assert(stdout.String(), check.Equals, expected)
 }
@@ -1037,7 +1036,6 @@ func (s *S) TestListUsersRunFilterByRoleWithContext(c *check.C) {
 		Stdout: &stdout,
 		Stderr: &stderr,
 	}
-	manager = cmd.NewManagerPanicExiter("glb", "0.2", "ad-ver", &stdout, &stderr, nil, nil)
 	result := `[{"email": "test@test.com",
 	"roles":[
 		{"name": "role1", "contexttype": "team", "contextvalue": "a"},
@@ -1062,10 +1060,10 @@ func (s *S) TestListUsersRunFilterByRoleWithContext(c *check.C) {
 |               | role2(app x)  |
 +---------------+---------------+
 `
-	client := cmd.NewClient(&http.Client{Transport: &trans}, nil, manager)
+	s.setupFakeTransport(&trans)
 	command := ListUsers{}
 	command.Flags().Parse(true, []string{"-r", "role2", "-c", "x"})
-	err := command.Run(&context, client)
+	err := command.Run(&context)
 	c.Assert(err, check.IsNil)
 	c.Assert(stdout.String(), check.Equals, expected)
 }
@@ -1076,7 +1074,6 @@ func (s *S) TestListUsersRunWithMoreThanOneFlagReturnsError(c *check.C) {
 		Stdout: &stdout,
 		Stderr: &stderr,
 	}
-	manager = cmd.NewManagerPanicExiter("glb", "0.2", "ad-ver", &stdout, &stderr, nil, nil)
 	result := `[{"email": "test@test.com",
 		"roles":[
 			{"name": "role1", "contexttype": "team", "contextvalue": "a"},
@@ -1094,10 +1091,10 @@ func (s *S) TestListUsersRunWithMoreThanOneFlagReturnsError(c *check.C) {
 				req.URL.RawQuery == "userEmail=test@test.com&role=role2"
 		},
 	}
-	client := cmd.NewClient(&http.Client{Transport: &trans}, nil, manager)
+	s.setupFakeTransport(&trans)
 	command := ListUsers{}
 	command.Flags().Parse(true, []string{"-u", "test@test.com", "-r", "role2"})
-	err := command.Run(&context, client)
+	err := command.Run(&context)
 	c.Assert(err, check.ErrorMatches, "You cannot filter by user email and role at same time. Enter <tsuru user-list --help> for more information.")
 }
 
@@ -1107,7 +1104,6 @@ func (s *S) TestListUsersRunWithContextFlagAndNotRolaFlagError(c *check.C) {
 		Stdout: &stdout,
 		Stderr: &stderr,
 	}
-	manager = cmd.NewManagerPanicExiter("glb", "0.2", "ad-ver", &stdout, &stderr, nil, nil)
 	trans := cmdtest.ConditionalTransport{
 		Transport: cmdtest.Transport{Message: "", Status: http.StatusOK},
 		CondFunc: func(req *http.Request) bool {
@@ -1115,10 +1111,10 @@ func (s *S) TestListUsersRunWithContextFlagAndNotRolaFlagError(c *check.C) {
 				req.URL.RawQuery == "userEmail=test@test.com&role=&context=team"
 		},
 	}
-	client := cmd.NewClient(&http.Client{Transport: &trans}, nil, manager)
+	s.setupFakeTransport(&trans)
 	command := ListUsers{}
 	command.Flags().Parse(true, []string{"-c", "team"})
-	err := command.Run(&context, client)
+	err := command.Run(&context)
 	c.Assert(err, check.ErrorMatches, "You should provide a role to filter by context value.")
 }
 

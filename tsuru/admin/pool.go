@@ -15,9 +15,9 @@ import (
 	"strings"
 
 	"github.com/tsuru/gnuflag"
-	"github.com/tsuru/go-tsuruclient/pkg/client"
-	"github.com/tsuru/go-tsuruclient/pkg/tsuru"
 	"github.com/tsuru/tablecli"
+	"github.com/tsuru/tsuru-client/tsuru/config"
+	tsuruHTTP "github.com/tsuru/tsuru-client/tsuru/http"
 	"github.com/tsuru/tsuru/cmd"
 	"github.com/tsuru/tsuru/errors"
 	"github.com/tsuru/tsuru/provision/pool"
@@ -88,18 +88,19 @@ func (c *AddPoolToSchedulerCmd) marshalAddPoolOpts(poolName string) ([]byte, err
 	return json.Marshal(opts)
 }
 
-func (c *AddPoolToSchedulerCmd) Run(ctx *cmd.Context, client *cmd.Client) error {
+func (c *AddPoolToSchedulerCmd) Run(ctx *cmd.Context) error {
 	poolName := ctx.Args[0]
 	body, err := c.marshalAddPoolOpts(poolName)
 	if err != nil {
 		return err
 	}
-	u, err := cmd.GetURL("/pools")
+	u, err := config.GetURL("/pools")
 	if err != nil {
 		return err
 	}
-	err = doRequest(client, u, "POST", body)
+	err = doRequest(u, "POST", body)
 	if err != nil {
+		err = tsuruHTTP.UnwrapErr(err)
 		if e, ok := err.(*errors.HTTP); ok && e.Code == http.StatusPreconditionFailed {
 			retryMessage := "WARNING: Default pool already exist. Do you want change to %s pool? (y/n) "
 			c.forceDefault = true
@@ -107,10 +108,10 @@ func (c *AddPoolToSchedulerCmd) Run(ctx *cmd.Context, client *cmd.Client) error 
 			if err != nil {
 				return err
 			}
-			url, _ := cmd.GetURL("/pools")
+			url, _ := config.GetURL("/pools")
 			successMessage := "Pool successfully registered.\n"
 			failMessage := "Pool add aborted.\n"
-			return confirmAction(ctx, client, url, "POST", body, retryMessage, failMessage, successMessage)
+			return confirmAction(ctx, url, "POST", body, retryMessage, failMessage, successMessage)
 		}
 		return err
 	}
@@ -170,10 +171,8 @@ func removeKeys(m map[string]string, toRemove []string) (map[string]string, erro
 	return m, nil
 }
 
-func (c *UpdatePoolToSchedulerCmd) checkLabels(poolName string, cli *cmd.Client) (map[string]string, error) {
-	api, err := client.ClientFromEnvironment(&tsuru.Configuration{
-		HTTPClient: cli.HTTPClient,
-	})
+func (c *UpdatePoolToSchedulerCmd) checkLabels(poolName string) (map[string]string, error) {
+	api, err := tsuruHTTP.TsuruClientFromEnvironment()
 	if err != nil {
 		return nil, err
 	}
@@ -197,11 +196,11 @@ func (c *UpdatePoolToSchedulerCmd) checkLabels(poolName string, cli *cmd.Client)
 	return labels, nil
 }
 
-func (c *UpdatePoolToSchedulerCmd) marshalUpdateOpts(poolName string, client *cmd.Client) ([]byte, error) {
+func (c *UpdatePoolToSchedulerCmd) marshalUpdateOpts(poolName string) ([]byte, error) {
 	var labels map[string]string
 	var err error
 	if len(c.labelsAdd) > 0 || len(c.labelsRemove) > 0 {
-		labels, err = c.checkLabels(poolName, client)
+		labels, err = c.checkLabels(poolName)
 		if err != nil {
 			return nil, err
 		}
@@ -215,34 +214,35 @@ func (c *UpdatePoolToSchedulerCmd) marshalUpdateOpts(poolName string, client *cm
 	return json.Marshal(opts)
 }
 
-func (c *UpdatePoolToSchedulerCmd) Run(ctx *cmd.Context, client *cmd.Client) error {
+func (c *UpdatePoolToSchedulerCmd) Run(ctx *cmd.Context) error {
 	poolName := ctx.Args[0]
-	body, err := c.marshalUpdateOpts(poolName, client)
+	body, err := c.marshalUpdateOpts(poolName)
 	if err != nil {
 		return err
 	}
 
-	u, err := cmd.GetURL(fmt.Sprintf("/pools/%s", poolName))
+	u, err := config.GetURL(fmt.Sprintf("/pools/%s", poolName))
 	if err != nil {
 		return err
 	}
-	err = doRequest(client, u, "PUT", body)
+	err = doRequest(u, "PUT", body)
 	if err != nil {
+		err = tsuruHTTP.UnwrapErr(err)
 		if e, ok := err.(*errors.HTTP); ok && e.Code == http.StatusPreconditionFailed {
 			retryMessage := "WARNING: Default pool already exist. Do you want change to %s pool? (y/n) "
 			failMessage := "Pool update aborted.\n"
 			successMessage := "Pool successfully updated.\n"
 			c.forceDefault = true
-			body, err = c.marshalUpdateOpts(poolName, client)
+			body, err = c.marshalUpdateOpts(poolName)
 			if err != nil {
 				return err
 			}
 
-			u, err = cmd.GetURL(fmt.Sprintf("/pools/%s", poolName))
+			u, err = config.GetURL(fmt.Sprintf("/pools/%s", poolName))
 			if err != nil {
 				return err
 			}
-			return confirmAction(ctx, client, u, "PUT", body, retryMessage, failMessage, successMessage)
+			return confirmAction(ctx, u, "PUT", body, retryMessage, failMessage, successMessage)
 		}
 		return err
 	}
@@ -263,11 +263,11 @@ func (c *RemovePoolFromSchedulerCmd) Info() *cmd.Info {
 	}
 }
 
-func (c *RemovePoolFromSchedulerCmd) Run(ctx *cmd.Context, client *cmd.Client) error {
+func (c *RemovePoolFromSchedulerCmd) Run(ctx *cmd.Context) error {
 	if !c.Confirm(ctx, fmt.Sprintf("Are you sure you want to remove \"%s\" pool?", ctx.Args[0])) {
 		return nil
 	}
-	url, err := cmd.GetURL(fmt.Sprintf("/pools/%s", ctx.Args[0]))
+	url, err := config.GetURL(fmt.Sprintf("/pools/%s", ctx.Args[0]))
 	if err != nil {
 		return err
 	}
@@ -275,7 +275,7 @@ func (c *RemovePoolFromSchedulerCmd) Run(ctx *cmd.Context, client *cmd.Client) e
 	if err != nil {
 		return err
 	}
-	_, err = client.Do(req)
+	_, err = tsuruHTTP.DefaultClient.Do(req)
 	if err != nil {
 		return err
 	}
@@ -295,12 +295,12 @@ creating a new application for one of the added teams.`,
 	}
 }
 
-func (AddTeamsToPoolCmd) Run(ctx *cmd.Context, client *cmd.Client) error {
+func (AddTeamsToPoolCmd) Run(ctx *cmd.Context) error {
 	v := url.Values{}
 	for _, team := range ctx.Args[1:] {
 		v.Add("team", team)
 	}
-	u, err := cmd.GetURL(fmt.Sprintf("/pools/%s/team", ctx.Args[0]))
+	u, err := config.GetURL(fmt.Sprintf("/pools/%s/team", ctx.Args[0]))
 	if err != nil {
 		return err
 	}
@@ -309,7 +309,7 @@ func (AddTeamsToPoolCmd) Run(ctx *cmd.Context, client *cmd.Client) error {
 		return err
 	}
 	req.Header.Set("Content-Type", "application/x-www-form-urlencoded")
-	_, err = client.Do(req)
+	_, err = tsuruHTTP.DefaultClient.Do(req)
 	if err != nil {
 		return err
 	}
@@ -329,12 +329,12 @@ pool when creating a new application.`,
 	}
 }
 
-func (RemoveTeamsFromPoolCmd) Run(ctx *cmd.Context, client *cmd.Client) error {
+func (RemoveTeamsFromPoolCmd) Run(ctx *cmd.Context) error {
 	v := url.Values{}
 	for _, team := range ctx.Args[1:] {
 		v.Add("team", team)
 	}
-	u, err := cmd.GetURL(fmt.Sprintf("/pools/%s/team?%s", ctx.Args[0], v.Encode()))
+	u, err := config.GetURL(fmt.Sprintf("/pools/%s/team?%s", ctx.Args[0], v.Encode()))
 	if err != nil {
 		return err
 	}
@@ -342,7 +342,7 @@ func (RemoveTeamsFromPoolCmd) Run(ctx *cmd.Context, client *cmd.Client) error {
 	if err != nil {
 		return err
 	}
-	_, err = client.Do(req)
+	_, err = tsuruHTTP.DefaultClient.Do(req)
 	if err != nil {
 		return err
 	}
@@ -373,22 +373,22 @@ func (p *pointerBoolFlag) Set(value string) error {
 	return nil
 }
 
-func doRequest(client *cmd.Client, url, method string, body []byte) error {
+func doRequest(url, method string, body []byte) error {
 	req, err := http.NewRequest(method, url, bytes.NewBuffer(body))
 	if err != nil {
 		return err
 	}
 	req.Header.Set("Content-Type", "application/json")
-	_, err = client.Do(req)
+	_, err = tsuruHTTP.DefaultClient.Do(req)
 	return err
 }
 
-func confirmAction(ctx *cmd.Context, client *cmd.Client, url, method string, body []byte, retryMessage, failMessage, successMessage string) error {
+func confirmAction(ctx *cmd.Context, url, method string, body []byte, retryMessage, failMessage, successMessage string) error {
 	var answer string
 	fmt.Fprintf(ctx.Stdout, retryMessage, ctx.Args[0])
 	fmt.Fscanf(ctx.Stdin, "%s", &answer)
 	if answer == "y" || answer == "yes" {
-		err := doRequest(client, url, method, body)
+		err := doRequest(url, method, body)
 		if err != nil {
 			return err
 		}
@@ -410,8 +410,8 @@ func (c *PoolConstraintList) Info() *cmd.Info {
 	}
 }
 
-func (c *PoolConstraintList) Run(ctx *cmd.Context, client *cmd.Client) error {
-	url, err := cmd.GetURLVersion("1.3", "/constraints")
+func (c *PoolConstraintList) Run(ctx *cmd.Context) error {
+	url, err := config.GetURLVersion("1.3", "/constraints")
 	if err != nil {
 		return err
 	}
@@ -419,7 +419,7 @@ func (c *PoolConstraintList) Run(ctx *cmd.Context, client *cmd.Client) error {
 	if err != nil {
 		return err
 	}
-	resp, err := client.Do(req)
+	resp, err := tsuruHTTP.DefaultClient.Do(req)
 	if err != nil {
 		return err
 	}
@@ -472,8 +472,8 @@ Examples:
 	}
 }
 
-func (c *PoolConstraintSet) Run(ctx *cmd.Context, client *cmd.Client) error {
-	u, err := cmd.GetURLVersion("1.3", "/constraints")
+func (c *PoolConstraintSet) Run(ctx *cmd.Context) error {
+	u, err := config.GetURLVersion("1.3", "/constraints")
 	if err != nil {
 		return err
 	}
@@ -501,7 +501,7 @@ func (c *PoolConstraintSet) Run(ctx *cmd.Context, client *cmd.Client) error {
 	if c.append {
 		u = fmt.Sprintf("%s?append=true", u)
 	}
-	err = doRequest(client, u, http.MethodPut, body)
+	err = doRequest(u, http.MethodPut, body)
 	if err != nil {
 		return err
 	}

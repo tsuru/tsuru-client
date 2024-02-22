@@ -10,6 +10,7 @@ import (
 	"net/http"
 	"strings"
 
+	tsuruHTTP "github.com/tsuru/tsuru-client/tsuru/http"
 	"github.com/tsuru/tsuru/cmd"
 	"github.com/tsuru/tsuru/cmd/cmdtest"
 	tsuruIo "github.com/tsuru/tsuru/io"
@@ -37,10 +38,10 @@ func (s *S) TestUnitAdd(c *check.C) {
 			return strings.HasSuffix(req.URL.Path, "/apps/radio/units") && req.Method == "PUT"
 		},
 	}
-	client := cmd.NewClient(&http.Client{Transport: trans}, nil, manager)
+	s.setupFakeTransport(trans)
 	command := UnitAdd{}
 	command.Flags().Parse(true, []string{"-a", "radio", "-p", "p1"})
-	err = command.Run(&context, client)
+	err = command.Run(&context)
 	c.Assert(err, check.IsNil)
 	c.Assert(called, check.Equals, true)
 	c.Assert(stdout.String(), check.Equals, expectedOut)
@@ -68,10 +69,10 @@ func (s *S) TestUnitAddWithVersion(c *check.C) {
 			return strings.HasSuffix(req.URL.Path, "/apps/radio/units") && req.Method == "PUT"
 		},
 	}
-	client := cmd.NewClient(&http.Client{Transport: trans}, nil, manager)
+	s.setupFakeTransport(trans)
 	command := UnitAdd{}
 	command.Flags().Parse(true, []string{"-a", "radio", "-p", "p1", "--version", "9"})
-	err = command.Run(&context, client)
+	err = command.Run(&context)
 	c.Assert(err, check.IsNil)
 	c.Assert(called, check.Equals, true)
 	c.Assert(stdout.String(), check.Equals, expectedOut)
@@ -87,10 +88,10 @@ func (s *S) TestUnitAddFailure(c *check.C) {
 	msg := tsuruIo.SimpleJsonMessage{Error: "errored msg"}
 	result, err := json.Marshal(msg)
 	c.Assert(err, check.IsNil)
-	client := cmd.NewClient(&http.Client{Transport: &cmdtest.Transport{Message: string(result), Status: 200}}, nil, manager)
+	s.setupFakeTransport(&cmdtest.Transport{Message: string(result), Status: 200})
 	command := UnitAdd{}
 	command.Flags().Parse(true, []string{"-a", "radio"})
-	err = command.Run(&context, client)
+	err = command.Run(&context)
 	c.Assert(err, check.NotNil)
 	c.Assert(err.Error(), check.Equals, "errored msg")
 }
@@ -124,10 +125,10 @@ func (s *S) TestUnitRemove(c *check.C) {
 			return strings.HasSuffix(req.URL.Path, "/apps/vapor/units") && req.Method == http.MethodDelete
 		},
 	}
-	client := cmd.NewClient(&http.Client{Transport: trans}, nil, manager)
+	s.setupFakeTransport(trans)
 	command := UnitRemove{}
 	command.Flags().Parse(true, []string{"-a", "vapor", "-p", "web1"})
-	err = command.Run(&context, client)
+	err = command.Run(&context)
 	c.Assert(err, check.IsNil)
 	c.Assert(called, check.Equals, true)
 	c.Assert(stdout.String(), check.Equals, "-- removed unit --")
@@ -140,14 +141,12 @@ func (s *S) TestUnitRemoveFailure(c *check.C) {
 		Stdout: &stdout,
 		Stderr: &stderr,
 	}
-	client := cmd.NewClient(&http.Client{
-		Transport: &cmdtest.Transport{Message: "Failed to remove.", Status: 500},
-	}, nil, manager)
+	s.setupFakeTransport(&cmdtest.Transport{Message: "Failed to remove.", Status: 500})
 	command := UnitRemove{}
 	command.Flags().Parse(true, []string{"-a", "vapor"})
-	err := command.Run(&context, client)
+	err := command.Run(&context)
 	c.Assert(err, check.NotNil)
-	c.Assert(err.Error(), check.Equals, "Failed to remove.")
+	c.Assert(tsuruHTTP.UnwrapErr(err).Error(), check.Equals, "Failed to remove.")
 }
 
 func (s *S) TestUnitRemoveInfo(c *check.C) {
@@ -174,7 +173,7 @@ func (s *S) TestUnitSetAddUnits(c *check.C) {
 	msg := tsuruIo.SimpleJsonMessage{Message: expectedOut}
 	resultPut, _ := json.Marshal(msg)
 
-	transport := cmdtest.MultiConditionalTransport{
+	transport := &cmdtest.MultiConditionalTransport{
 		ConditionalTransports: []cmdtest.ConditionalTransport{
 			{
 				CondFunc: func(req *http.Request) bool {
@@ -195,10 +194,10 @@ func (s *S) TestUnitSetAddUnits(c *check.C) {
 		},
 	}
 
-	client := cmd.NewClient(&http.Client{Transport: &transport}, nil, manager)
+	s.setupFakeTransport(transport)
 	command := UnitSet{}
 	command.Flags().Parse(true, []string{"-a", "app1", "-p", "web"})
-	err := command.Run(&context, client)
+	err := command.Run(&context)
 	c.Assert(err, check.IsNil)
 	c.Assert(calledGet, check.Equals, true)
 	c.Assert(calledPut, check.Equals, true)
@@ -217,7 +216,7 @@ func (s *S) TestUnitSetAddUnitsFailure(c *check.C) {
 
 	resultGet := `{"name":"app1","teamowner":"myteam","cname":[""],"ip":"myapp.tsuru.io","platform":"php","repository":"git@git.com:php.git","state":"dead","units":[{"Ip":"10.10.10.10","ID":"app1/0","Status":"started","ProcessName":"web"},{"Ip":"9.9.9.9","ID":"app1/1","Status":"started","ProcessName":"web"},{"Ip":"","ID":"app1/2","Status":"pending","ProcessName":"web"},{"Ip":"8.8.8.8","ID":"app1/3","Status":"started","ProcessName":"worker"}],"teams":["tsuruteam","crane"],"owner":"myapp_owner","deploys":7,"router":"planb"}`
 
-	transport := cmdtest.MultiConditionalTransport{
+	transport := &cmdtest.MultiConditionalTransport{
 		ConditionalTransports: []cmdtest.ConditionalTransport{
 			{
 				CondFunc: func(req *http.Request) bool {
@@ -238,12 +237,12 @@ func (s *S) TestUnitSetAddUnitsFailure(c *check.C) {
 		},
 	}
 
-	client := cmd.NewClient(&http.Client{Transport: &transport}, nil, manager)
+	s.setupFakeTransport(transport)
 	command := UnitSet{}
 	command.Flags().Parse(true, []string{"-a", "app1", "-p", "web"})
-	err := command.Run(&context, client)
+	err := command.Run(&context)
 	c.Assert(err, check.NotNil)
-	c.Assert(err.Error(), check.Equals, "Failed to put.")
+	c.Assert(tsuruHTTP.UnwrapErr(err).Error(), check.Equals, "Failed to put.")
 	c.Assert(calledGet, check.Equals, true)
 	c.Assert(calledPut, check.Equals, true)
 }
@@ -264,7 +263,7 @@ func (s *S) TestUnitSetRemoveUnits(c *check.C) {
 	msg := tsuruIo.SimpleJsonMessage{Message: expectedOut}
 	resultDelete, _ := json.Marshal(msg)
 
-	transport := cmdtest.MultiConditionalTransport{
+	transport := &cmdtest.MultiConditionalTransport{
 		ConditionalTransports: []cmdtest.ConditionalTransport{
 			{
 				CondFunc: func(req *http.Request) bool {
@@ -285,10 +284,10 @@ func (s *S) TestUnitSetRemoveUnits(c *check.C) {
 		},
 	}
 
-	client := cmd.NewClient(&http.Client{Transport: &transport}, nil, manager)
+	s.setupFakeTransport(transport)
 	command := UnitSet{}
 	command.Flags().Parse(true, []string{"-a", "app1", "-p", "web"})
-	err := command.Run(&context, client)
+	err := command.Run(&context)
 	c.Assert(err, check.IsNil)
 	c.Assert(calledGet, check.Equals, true)
 	c.Assert(calledDelete, check.Equals, true)
@@ -307,7 +306,7 @@ func (s *S) TestUnitSetRemoveUnitsFailure(c *check.C) {
 
 	resultGet := `{"name":"app1","teamowner":"myteam","cname":[""],"ip":"myapp.tsuru.io","platform":"php","repository":"git@git.com:php.git","state":"dead","units":[{"Ip":"10.10.10.10","ID":"app1/0","Status":"started","ProcessName":"web"},{"Ip":"9.9.9.9","ID":"app1/1","Status":"started","ProcessName":"web"},{"Ip":"","ID":"app1/2","Status":"pending","ProcessName":"web"},{"Ip":"8.8.8.8","ID":"app1/3","Status":"started","ProcessName":"worker"}],"teams":["tsuruteam","crane"],"owner":"myapp_owner","deploys":7,"router":"planb"}`
 
-	transport := cmdtest.MultiConditionalTransport{
+	transport := &cmdtest.MultiConditionalTransport{
 		ConditionalTransports: []cmdtest.ConditionalTransport{
 			{
 				CondFunc: func(req *http.Request) bool {
@@ -328,12 +327,12 @@ func (s *S) TestUnitSetRemoveUnitsFailure(c *check.C) {
 		},
 	}
 
-	client := cmd.NewClient(&http.Client{Transport: &transport}, nil, manager)
+	s.setupFakeTransport(transport)
 	command := UnitSet{}
 	command.Flags().Parse(true, []string{"-a", "app1", "-p", "web"})
-	err := command.Run(&context, client)
+	err := command.Run(&context)
 	c.Assert(err, check.NotNil)
-	c.Assert(err.Error(), check.Equals, "Failed to delete.")
+	c.Assert(tsuruHTTP.UnwrapErr(err).Error(), check.Equals, "Failed to delete.")
 	c.Assert(calledGet, check.Equals, true)
 	c.Assert(calledDelete, check.Equals, true)
 }
@@ -348,7 +347,7 @@ func (s *S) TestUnitSetNoChanges(c *check.C) {
 	}
 
 	resultGet := `{"name":"app1","teamowner":"myteam","cname":[""],"ip":"myapp.tsuru.io","platform":"php","repository":"git@git.com:php.git","state":"dead","units":[{"Ip":"10.10.10.10","ID":"app1/0","Status":"started","ProcessName":"web"},{"Ip":"9.9.9.9","ID":"app1/1","Status":"started","ProcessName":"web"},{"Ip":"","ID":"app1/2","Status":"pending","ProcessName":"web"},{"Ip":"8.8.8.8","ID":"app1/3","Status":"started","ProcessName":"worker"}],"teams":["tsuruteam","crane"],"owner":"myapp_owner","deploys":7,"router":"planb"}`
-	transport := cmdtest.ConditionalTransport{
+	transport := &cmdtest.ConditionalTransport{
 		CondFunc: func(req *http.Request) bool {
 			calledGet = true
 			return strings.HasSuffix(req.URL.Path, "/apps/app1") && req.Method == http.MethodGet
@@ -356,10 +355,10 @@ func (s *S) TestUnitSetNoChanges(c *check.C) {
 		Transport: cmdtest.Transport{Message: resultGet, Status: http.StatusOK},
 	}
 
-	client := cmd.NewClient(&http.Client{Transport: &transport}, nil, manager)
+	s.setupFakeTransport(transport)
 	command := UnitSet{}
 	command.Flags().Parse(true, []string{"-a", "app1", "-p", "web"})
-	err := command.Run(&context, client)
+	err := command.Run(&context)
 	c.Assert(err, check.IsNil)
 	c.Assert(calledGet, check.Equals, true)
 	c.Assert(stdout.String(), check.Equals, "The process web, version 0 already has 3 units.\n")
@@ -374,7 +373,7 @@ func (s *S) TestUnitSetFailedGet(c *check.C) {
 		Stderr: &stderr,
 	}
 
-	transport := cmdtest.ConditionalTransport{
+	transport := &cmdtest.ConditionalTransport{
 		CondFunc: func(req *http.Request) bool {
 			calledTimes++
 			return strings.HasSuffix(req.URL.Path, "/apps/app1") && req.Method == http.MethodGet
@@ -382,12 +381,12 @@ func (s *S) TestUnitSetFailedGet(c *check.C) {
 		Transport: cmdtest.Transport{Message: "Failed to get.", Status: http.StatusInternalServerError},
 	}
 
-	client := cmd.NewClient(&http.Client{Transport: &transport}, nil, manager)
+	s.setupFakeTransport(transport)
 	command := UnitSet{}
 	command.Flags().Parse(true, []string{"-a", "app1", "-p", "web"})
-	err := command.Run(&context, client)
+	err := command.Run(&context)
 	c.Assert(err, check.NotNil)
-	c.Assert(err.Error(), check.Equals, "Failed to get.")
+	c.Assert(tsuruHTTP.UnwrapErr(err).Error(), check.Equals, "Failed to get.")
 	c.Assert(calledTimes, check.Equals, 1)
 }
 
@@ -401,7 +400,7 @@ func (s *S) TestUnitSetNoProcessSpecifiedAndMultipleExist(c *check.C) {
 	}
 
 	resultGet := `{"name":"app1","teamowner":"myteam","cname":[""],"ip":"myapp.tsuru.io","platform":"php","repository":"git@git.com:php.git","state":"dead","units":[{"Ip":"10.10.10.10","ID":"app1/0","Status":"started","ProcessName":"web"},{"Ip":"9.9.9.9","ID":"app1/1","Status":"started","ProcessName":"web"},{"Ip":"","ID":"app1/2","Status":"pending","ProcessName":"web"},{"Ip":"8.8.8.8","ID":"app1/3","Status":"started","ProcessName":"worker"}],"teams":["tsuruteam","crane"],"owner":"myapp_owner","deploys":7,"router":"planb"}`
-	transport := cmdtest.ConditionalTransport{
+	transport := &cmdtest.ConditionalTransport{
 		CondFunc: func(req *http.Request) bool {
 			calledGet = true
 			return strings.HasSuffix(req.URL.Path, "/apps/app1") && req.Method == http.MethodGet
@@ -409,10 +408,10 @@ func (s *S) TestUnitSetNoProcessSpecifiedAndMultipleExist(c *check.C) {
 		Transport: cmdtest.Transport{Message: resultGet, Status: http.StatusOK},
 	}
 
-	client := cmd.NewClient(&http.Client{Transport: &transport}, nil, manager)
+	s.setupFakeTransport(transport)
 	command := UnitSet{}
 	command.Flags().Parse(true, []string{"-a", "app1"})
-	err := command.Run(&context, client)
+	err := command.Run(&context)
 	c.Assert(err, check.NotNil)
 	c.Assert(err.Error(), check.Equals, "Please use the -p/--process flag to specify which process you want to set units for.")
 	c.Assert(calledGet, check.Equals, true)
@@ -434,7 +433,7 @@ func (s *S) TestUnitSetNoProcessSpecifiedAndSingleExists(c *check.C) {
 	msg := tsuruIo.SimpleJsonMessage{Message: expectedOut}
 	resultPut, _ := json.Marshal(msg)
 
-	transport := cmdtest.MultiConditionalTransport{
+	transport := &cmdtest.MultiConditionalTransport{
 		ConditionalTransports: []cmdtest.ConditionalTransport{
 			{
 				CondFunc: func(req *http.Request) bool {
@@ -455,10 +454,10 @@ func (s *S) TestUnitSetNoProcessSpecifiedAndSingleExists(c *check.C) {
 		},
 	}
 
-	client := cmd.NewClient(&http.Client{Transport: &transport}, nil, manager)
+	s.setupFakeTransport(transport)
 	command := UnitSet{}
 	command.Flags().Parse(true, []string{"-a", "app1"})
-	err := command.Run(&context, client)
+	err := command.Run(&context)
 	c.Assert(err, check.IsNil)
 	c.Assert(calledGet, check.Equals, true)
 	c.Assert(calledPut, check.Equals, true)
@@ -484,10 +483,10 @@ func (s *S) TestUnitKill(c *check.C) {
 		Message: "",
 		Status:  http.StatusOK,
 	}
-	client := cmd.NewClient(&http.Client{Transport: &transport}, nil, manager)
+	s.setupFakeTransport(transport)
 	command := UnitKill{}
 	command.Flags().Parse(true, []string{"-a", "app1", "-f"})
-	err := command.Run(&context, client)
+	err := command.Run(&context)
 	c.Assert(err, check.IsNil)
 
 	stdout.Reset()
@@ -500,7 +499,7 @@ func (s *S) TestUnitKill(c *check.C) {
 	}
 	command = UnitKill{}
 	command.Flags().Parse(true, []string{"-j", "job1", "-f"})
-	err = command.Run(&context, client)
+	err = command.Run(&context)
 	c.Assert(err, check.IsNil)
 }
 
@@ -514,10 +513,10 @@ func (s *S) TestUnitKillMissingUnit(c *check.C) {
 		Message: "",
 		Status:  http.StatusOK,
 	}
-	client := cmd.NewClient(&http.Client{Transport: &transport}, nil, manager)
+	s.setupFakeTransport(transport)
 	command := UnitKill{}
 	command.Flags().Parse(true, []string{"-a", "app1", "-f"})
-	err := command.Run(&context, client)
+	err := command.Run(&context)
 	c.Assert(err, check.NotNil)
 	c.Assert(err.Error(), check.Equals, "you must provide the unit name.")
 }
@@ -534,10 +533,10 @@ func (s *S) TestUnitKillAppAndJobMutuallyExclusive(c *check.C) {
 		Message: "",
 		Status:  http.StatusOK,
 	}
-	client := cmd.NewClient(&http.Client{Transport: &transport}, nil, manager)
+	s.setupFakeTransport(transport)
 	command := UnitKill{}
 	command.Flags().Parse(true, []string{"-a", "app1", "-j", "job1"})
-	err := command.Run(&context, client)
+	err := command.Run(&context)
 	c.Assert(err, check.NotNil)
 	c.Assert(err.Error(), check.Equals, "please use only one of the -a/--app and -j/--job flags")
 }

@@ -60,9 +60,9 @@ func (s *S) TestEventBlockList(c *check.C) {
 			return req.URL.Path == "/1.3/events/blocks"
 		},
 	}
-	client := cmd.NewClient(&http.Client{Transport: trans}, nil, s.manager)
+	s.setupFakeTransport(trans)
 	command := EventBlockList{}
-	err := command.Run(&context, client)
+	err := command.Run(&context)
 	c.Assert(err, check.IsNil)
 	expected := `+--------------------------+-----------------------------+------------+----------------+----------------------+-----------------------------+--------------+
 | ID                       | Start (duration)            | Kind       | Owner          | Target (Type: Value) | Conditions                  | Reason       |
@@ -89,9 +89,9 @@ func (s *S) TestEventBlockListNoEvents(c *check.C) {
 			return req.URL.Path == "/1.3/events/blocks"
 		},
 	}
-	client := cmd.NewClient(&http.Client{Transport: trans}, nil, s.manager)
+	s.setupFakeTransport(trans)
 	command := EventBlockList{}
-	err := command.Run(&context, client)
+	err := command.Run(&context)
 	c.Assert(err, check.IsNil)
 	expected := `+----+------------------+------+-------+----------------------+------------+--------+
 | ID | Start (duration) | Kind | Owner | Target (Type: Value) | Conditions | Reason |
@@ -120,9 +120,9 @@ func (s *S) TestEventBlockAdd(c *check.C) {
 			return req.URL.Path == "/1.3/events/blocks" && req.Method == http.MethodPost
 		},
 	}
-	client := cmd.NewClient(&http.Client{Transport: trans}, nil, s.manager)
+	s.setupFakeTransport(trans)
 	command := EventBlockAdd{}
-	err := command.Run(&context, client)
+	err := command.Run(&context)
 	c.Assert(err, check.IsNil)
 	c.Assert(stdout.String(), check.Equals, "Block successfully added.\n")
 }
@@ -149,10 +149,10 @@ func (s *S) TestEventBlockAddAllFlags(c *check.C) {
 			return req.URL.Path == "/1.3/events/blocks" && req.Method == http.MethodPost
 		},
 	}
-	client := cmd.NewClient(&http.Client{Transport: trans}, nil, s.manager)
+	s.setupFakeTransport(trans)
 	command := EventBlockAdd{}
 	command.Flags().Parse(true, []string{"-k", "app.deploy", "-o", "user@email.com", "-t", "app", "-v", "myapp"})
-	err := command.Run(&context, client)
+	err := command.Run(&context)
 	c.Assert(err, check.IsNil)
 	c.Assert(stdout.String(), check.Equals, "Block successfully added.\n")
 }
@@ -173,9 +173,9 @@ func (s *S) TestEventBlockRemove(c *check.C) {
 			return req.URL.Path == "/1.3/events/blocks/ABC123K12" && req.Method == http.MethodDelete
 		},
 	}
-	client := cmd.NewClient(&http.Client{Transport: trans}, nil, s.manager)
+	s.setupFakeTransport(trans)
 	command := EventBlockRemove{}
-	err := command.Run(&context, client)
+	err := command.Run(&context)
 	c.Assert(err, check.IsNil)
 	c.Assert(stdout.String(), check.Equals, "Block ABC123K12 successfully removed.\n")
 }

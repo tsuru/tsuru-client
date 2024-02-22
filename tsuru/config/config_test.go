@@ -18,11 +18,14 @@ import (
 )
 
 func (s *S) TestBoostrapConfigNoConfig(c *check.C) {
-	fsystem = &fstest.RecordingFs{}
+	SetFileSystem(&fstest.RecordingFs{})
+	defer func() {
+		ResetFileSystem()
+	}()
 	now := nowUTC()
 	nowUTC = func() time.Time { return now } // mocking nowUTC
 
-	stat, err := fsystem.Stat(configPath)
+	stat, err := Filesystem().Stat(configPath)
 	errorMsg := err.Error()
 	c.Assert(stat, check.IsNil)
 	c.Assert(
@@ -41,8 +44,11 @@ func (s *S) TestBoostrapConfigNoConfig(c *check.C) {
 func (s *S) TestBoostrapConfigFromFile(c *check.C) {
 	now := nowUTC()
 	nowUTC = func() time.Time { return now }
-	fsystem = &fstest.RecordingFs{}
-	f, err := fsystem.OpenFile(configPath, os.O_WRONLY|os.O_CREATE|os.O_TRUNC, 0755)
+	SetFileSystem(&fstest.RecordingFs{})
+	defer func() {
+		ResetFileSystem()
+	}()
+	f, err := Filesystem().OpenFile(configPath, os.O_WRONLY|os.O_CREATE|os.O_TRUNC, 0755)
 	c.Assert(err, check.IsNil)
 	fmt.Fprintf(f, `{
   "SchemaVersion": "6.6.6",
@@ -64,11 +70,14 @@ func (s *S) TestBoostrapConfigFromFile(c *check.C) {
 func (s *S) TestBoostrapConfigWrongFormatBackupFile(c *check.C) {
 	stdout = &bytes.Buffer{}
 	stderr = &bytes.Buffer{}
-	fsystem = &fstest.RecordingFs{}
+	SetFileSystem(&fstest.RecordingFs{})
+	defer func() {
+		ResetFileSystem()
+	}()
 	now := nowUTC()
 	nowUTC = func() time.Time { return now } // mocking nowUTC
 
-	f, err := fsystem.OpenFile(configPath, os.O_WRONLY|os.O_CREATE, 0755)
+	f, err := Filesystem().OpenFile(configPath, os.O_WRONLY|os.O_CREATE, 0755)
 	c.Assert(err, check.IsNil)
 	f.WriteString("wrong format")
 	f.Close()
@@ -88,7 +97,7 @@ func (s *S) TestBoostrapConfigWrongFormatBackupFile(c *check.C) {
 	c.Assert(strings.Contains(string(stderrBytes), "Backing up current file to "), check.Equals, true, check.Commentf("Got: %s", string(stderrBytes)))
 	c.Assert(strings.Contains(string(stderrBytes), "A new configuration will be saved"), check.Equals, true, check.Commentf("Got: %s", string(stderrBytes)))
 
-	stat, err := fsystem.Stat(backupConfigPath)
+	stat, err := Filesystem().Stat(backupConfigPath)
 	c.Assert(err, check.IsNil)
 	c.Assert(stat, check.NotNil)
 }
@@ -125,8 +134,11 @@ func (s *S) TesthasChanges(c *check.C) {
 }
 
 func (s *S) TestSaveChanges(c *check.C) {
-	fsystem = &fstest.RecordingFs{}
-	f, err := fsystem.OpenFile(configPath, os.O_WRONLY|os.O_CREATE, 0755)
+	SetFileSystem(&fstest.RecordingFs{})
+	defer func() {
+		ResetFileSystem()
+	}()
+	f, err := Filesystem().OpenFile(configPath, os.O_WRONLY|os.O_CREATE, 0755)
 	c.Assert(err, check.IsNil)
 	originalContent := `{
   "SchemaVersion": "6.6.6",
@@ -143,8 +155,7 @@ func (s *S) TestSaveChanges(c *check.C) {
 	now := nowUTC()
 	nowUTC = func() time.Time { return now } // stub now
 	SaveChangesWithTimeout()
-
-	f, err = fsystem.Open(configPath)
+	f, err = Filesystem().Open(configPath)
 	c.Assert(err, check.IsNil)
 	bytesRead, err := io.ReadAll(f)
 	f.Close()

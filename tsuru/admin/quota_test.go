@@ -9,6 +9,7 @@ import (
 	"net/http"
 	"strings"
 
+	tsuruHTTP "github.com/tsuru/tsuru-client/tsuru/http"
 	"github.com/tsuru/tsuru/cmd"
 	"github.com/tsuru/tsuru/cmd/cmdtest"
 	"gopkg.in/check.v1"
@@ -26,16 +27,15 @@ func (s *S) TestUserQuotaViewRun(c *check.C) {
 		Stdout: &stdout,
 		Stderr: &stderr,
 	}
-	manager := cmd.NewManagerPanicExiter("tsuru", "0.5", "ad-ver", &stdout, &stderr, nil, nil)
 	trans := cmdtest.ConditionalTransport{
 		Transport: cmdtest.Transport{Message: result, Status: http.StatusOK},
 		CondFunc: func(req *http.Request) bool {
 			return req.Method == "GET" && strings.HasSuffix(req.URL.Path, "/users/fss@corp.globo.com/quota")
 		},
 	}
-	client := cmd.NewClient(&http.Client{Transport: &trans}, nil, manager)
+	s.setupFakeTransport(&trans)
 	command := UserQuotaView{}
-	err := command.Run(&context, client)
+	err := command.Run(&context)
 	c.Assert(err, check.IsNil)
 	expected := `User: fss@corp.globo.com
 Apps usage: 3/4
@@ -46,11 +46,11 @@ Apps usage: 3/4
 func (s *S) TestUserQuotaViewRunFailure(c *check.C) {
 	context := cmd.Context{Args: []string{"fss@corp.globo.com"}}
 	trans := cmdtest.Transport{Message: "user not found", Status: http.StatusNotFound}
-	client := cmd.NewClient(&http.Client{Transport: &trans}, nil, s.manager)
+	s.setupFakeTransport(&trans)
 	command := UserQuotaView{}
-	err := command.Run(&context, client)
+	err := command.Run(&context)
 	c.Assert(err, check.NotNil)
-	c.Assert(err.Error(), check.Equals, "user not found")
+	c.Assert(tsuruHTTP.UnwrapErr(err).Error(), check.Equals, "user not found")
 }
 
 func (s *S) TestUserChangeQuotaInfo(c *check.C) {
@@ -65,7 +65,6 @@ func (s *S) TestUserChangeQuotaRun(c *check.C) {
 		Stdout: &stdout,
 		Stderr: &stderr,
 	}
-	manager := cmd.NewManagerPanicExiter("tsuru", "0.5", "ad-ver", &stdout, &stderr, nil, nil)
 	trans := cmdtest.ConditionalTransport{
 		Transport: cmdtest.Transport{Message: "", Status: http.StatusOK},
 		CondFunc: func(req *http.Request) bool {
@@ -77,9 +76,9 @@ func (s *S) TestUserChangeQuotaRun(c *check.C) {
 			return path && method && limit
 		},
 	}
-	client := cmd.NewClient(&http.Client{Transport: &trans}, nil, manager)
+	s.setupFakeTransport(&trans)
 	command := UserChangeQuota{}
-	err := command.Run(&context, client)
+	err := command.Run(&context)
 	c.Assert(err, check.IsNil)
 	c.Assert(stdout.String(), check.Equals, "Quota successfully updated.\n")
 	c.Assert(called, check.Equals, true)
@@ -93,7 +92,6 @@ func (s *S) TestUserChangeQuotaRunUnlimited(c *check.C) {
 		Stdout: &stdout,
 		Stderr: &stderr,
 	}
-	manager := cmd.NewManagerPanicExiter("tsuru", "0.5", "ad-ver", &stdout, &stderr, nil, nil)
 	trans := cmdtest.ConditionalTransport{
 		Transport: cmdtest.Transport{Message: "", Status: http.StatusOK},
 		CondFunc: func(req *http.Request) bool {
@@ -105,9 +103,9 @@ func (s *S) TestUserChangeQuotaRunUnlimited(c *check.C) {
 			return path && method && limit
 		},
 	}
-	client := cmd.NewClient(&http.Client{Transport: &trans}, nil, manager)
+	s.setupFakeTransport(&trans)
 	command := UserChangeQuota{}
-	err := command.Run(&context, client)
+	err := command.Run(&context)
 	c.Assert(err, check.IsNil)
 	c.Assert(stdout.String(), check.Equals, "Quota successfully updated.\n")
 	c.Assert(called, check.Equals, true)
@@ -116,14 +114,13 @@ func (s *S) TestUserChangeQuotaRunUnlimited(c *check.C) {
 func (s *S) TestUserChangeQuotaRunInvalidLimit(c *check.C) {
 	context := cmd.Context{Args: []string{"fss@corp.globo.com", "unlimiteddd"}}
 	command := UserChangeQuota{}
-	err := command.Run(&context, nil)
+	err := command.Run(&context)
 	c.Assert(err, check.NotNil)
 	c.Assert(err.Error(), check.Equals, `invalid limit. It must be either an integer or "unlimited"`)
 }
 
 func (s *S) TestUserChangeQuotaFailure(c *check.C) {
 	var stdout, stderr bytes.Buffer
-	manager := cmd.NewManagerPanicExiter("tsuru", "0.5", "ad-ver", &stdout, &stderr, nil, nil)
 	trans := &cmdtest.Transport{
 		Message: "user not found",
 		Status:  http.StatusNotFound,
@@ -133,11 +130,11 @@ func (s *S) TestUserChangeQuotaFailure(c *check.C) {
 		Stdout: &stdout,
 		Stderr: &stderr,
 	}
-	client := cmd.NewClient(&http.Client{Transport: trans}, nil, manager)
+	s.setupFakeTransport(trans)
 	command := UserChangeQuota{}
-	err := command.Run(&context, client)
+	err := command.Run(&context)
 	c.Assert(err, check.NotNil)
-	c.Assert(err.Error(), check.Equals, "user not found")
+	c.Assert(tsuruHTTP.UnwrapErr(err).Error(), check.Equals, "user not found")
 }
 
 func (s *S) TestAppQuotaViewInfo(c *check.C) {
@@ -157,10 +154,10 @@ func (s *S) TestAppQuotaViewRun(c *check.C) {
 			return req.Method == "GET" && strings.HasSuffix(req.URL.Path, "/apps/hibria/quota")
 		},
 	}
-	client := cmd.NewClient(&http.Client{Transport: &trans}, nil, s.manager)
+	s.setupFakeTransport(&trans)
 	command := AppQuotaView{}
 	command.Flags().Parse(true, []string{"--app", "hibria"})
-	err := command.Run(&context, client)
+	err := command.Run(&context)
 	c.Assert(err, check.IsNil)
 	expected := `App: hibria
 Units usage: 3/4
@@ -171,12 +168,12 @@ Units usage: 3/4
 func (s *S) TestAppQuotaViewRunFailure(c *check.C) {
 	context := cmd.Context{Args: []string{"hybria"}}
 	trans := cmdtest.Transport{Message: "app not found", Status: http.StatusNotFound}
-	client := cmd.NewClient(&http.Client{Transport: &trans}, nil, s.manager)
+	s.setupFakeTransport(&trans)
 	command := AppQuotaView{}
 	command.Flags().Parse(true, []string{"--app", "hibria"})
-	err := command.Run(&context, client)
+	err := command.Run(&context)
 	c.Assert(err, check.NotNil)
-	c.Assert(err.Error(), check.Equals, "app not found")
+	c.Assert(tsuruHTTP.UnwrapErr(err).Error(), check.Equals, "app not found")
 }
 
 func (s *S) TestAppQuotaChangeInfo(c *check.C) {
@@ -190,7 +187,6 @@ func (s *S) TestAppQuotaChangeRun(c *check.C) {
 		Stdout: &stdout,
 		Stderr: &stderr,
 	}
-	manager := cmd.NewManagerPanicExiter("tsuru", "0.5", "ad-ver", &stdout, &stderr, nil, nil)
 	trans := cmdtest.ConditionalTransport{
 		Transport: cmdtest.Transport{Message: "", Status: http.StatusOK},
 		CondFunc: func(req *http.Request) bool {
@@ -202,10 +198,10 @@ func (s *S) TestAppQuotaChangeRun(c *check.C) {
 			return url && method && limit
 		},
 	}
-	client := cmd.NewClient(&http.Client{Transport: &trans}, nil, manager)
+	s.setupFakeTransport(&trans)
 	command := AppQuotaChange{}
 	command.Flags().Parse(true, []string{"--app", "myapp", "5"})
-	err := command.Run(&context, client)
+	err := command.Run(&context)
 	c.Assert(err, check.IsNil)
 	c.Assert(stdout.String(), check.Equals, "Quota successfully updated.\n")
 	c.Assert(called, check.Equals, true)
@@ -229,10 +225,10 @@ func (s *S) TestAppQuotaChangeRunUnlimited(c *check.C) {
 			return url && method && limit
 		},
 	}
-	client := cmd.NewClient(&http.Client{Transport: &trans}, nil, s.manager)
+	s.setupFakeTransport(&trans)
 	command := AppQuotaChange{}
 	command.Flags().Parse(true, []string{"--app", "myapp", "unlimited"})
-	err := command.Run(&context, client)
+	err := command.Run(&context)
 	c.Assert(err, check.IsNil)
 	c.Assert(stdout.String(), check.Equals, "Quota successfully updated.\n")
 	c.Assert(called, check.Equals, true)
@@ -242,7 +238,7 @@ func (s *S) TestAppQuotaChangeRunInvalidLimit(c *check.C) {
 	context := cmd.Context{}
 	command := AppQuotaChange{}
 	command.Flags().Parse(true, []string{"-a", "myapp", "unlimiteddd"})
-	err := command.Run(&context, nil)
+	err := command.Run(&context)
 	c.Assert(err, check.NotNil)
 	c.Assert(err.Error(), check.Equals, `invalid limit. It must be either an integer or "unlimited"`)
 }
@@ -257,12 +253,12 @@ func (s *S) TestAppQuotaChangeFailure(c *check.C) {
 		Stdout: &stdout,
 		Stderr: &stderr,
 	}
-	client := cmd.NewClient(&http.Client{Transport: trans}, nil, s.manager)
+	s.setupFakeTransport(trans)
 	command := AppQuotaChange{}
 	command.Flags().Parse(true, []string{"-a", "myapp", "5"})
-	err := command.Run(&context, client)
+	err := command.Run(&context)
 	c.Assert(err, check.NotNil)
-	c.Assert(err.Error(), check.Equals, "app not found")
+	c.Assert(tsuruHTTP.UnwrapErr(err).Error(), check.Equals, "app not found")
 }
 
 func (s *S) TestTeamQuotaViewRun(c *check.C) {
@@ -273,16 +269,15 @@ func (s *S) TestTeamQuotaViewRun(c *check.C) {
 		Stdout: &stdout,
 		Stderr: &stderr,
 	}
-	manager := cmd.NewManagerPanicExiter("tsuru", "0.5", "ad-ver", &stdout, &stderr, nil, nil)
 	trans := cmdtest.ConditionalTransport{
 		Transport: cmdtest.Transport{Message: result, Status: http.StatusOK},
 		CondFunc: func(req *http.Request) bool {
 			return req.Method == "GET" && strings.HasSuffix(req.URL.Path, "/teams/myteam/quota")
 		},
 	}
-	client := cmd.NewClient(&http.Client{Transport: &trans}, nil, manager)
+	s.setupFakeTransport(&trans)
 	command := TeamQuotaView{}
-	err := command.Run(&context, client)
+	err := command.Run(&context)
 	c.Assert(err, check.IsNil)
 	expected := `Team: myteam
 Apps usage: 3/4
@@ -293,11 +288,11 @@ Apps usage: 3/4
 func (s *S) TestTeamQuotaViewRunFailure(c *check.C) {
 	context := cmd.Context{Args: []string{"myteam"}}
 	trans := cmdtest.Transport{Message: "team not found", Status: http.StatusNotFound}
-	client := cmd.NewClient(&http.Client{Transport: &trans}, nil, s.manager)
+	s.setupFakeTransport(trans)
 	command := TeamQuotaView{}
-	err := command.Run(&context, client)
+	err := command.Run(&context)
 	c.Assert(err, check.NotNil)
-	c.Assert(err.Error(), check.Equals, "team not found")
+	c.Assert(tsuruHTTP.UnwrapErr(err).Error(), check.Equals, "team not found")
 }
 
 func (s *S) TestTeamChangeQuotaRun(c *check.C) {
@@ -308,7 +303,6 @@ func (s *S) TestTeamChangeQuotaRun(c *check.C) {
 		Stdout: &stdout,
 		Stderr: &stderr,
 	}
-	manager := cmd.NewManagerPanicExiter("tsuru", "0.5", "ad-ver", &stdout, &stderr, nil, nil)
 	trans := cmdtest.ConditionalTransport{
 		Transport: cmdtest.Transport{Message: "", Status: http.StatusOK},
 		CondFunc: func(req *http.Request) bool {
@@ -320,9 +314,9 @@ func (s *S) TestTeamChangeQuotaRun(c *check.C) {
 			return path && method && limit
 		},
 	}
-	client := cmd.NewClient(&http.Client{Transport: &trans}, nil, manager)
+	s.setupFakeTransport(&trans)
 	command := TeamChangeQuota{}
-	err := command.Run(&context, client)
+	err := command.Run(&context)
 	c.Assert(err, check.IsNil)
 	c.Assert(stdout.String(), check.Equals, "Quota successfully updated.\n")
 	c.Assert(called, check.Equals, true)
@@ -336,7 +330,6 @@ func (s *S) TestTeamChangeQuotaRunUnlimited(c *check.C) {
 		Stdout: &stdout,
 		Stderr: &stderr,
 	}
-	manager := cmd.NewManagerPanicExiter("tsuru", "0.5", "ad-ver", &stdout, &stderr, nil, nil)
 	trans := cmdtest.ConditionalTransport{
 		Transport: cmdtest.Transport{Message: "", Status: http.StatusOK},
 		CondFunc: func(req *http.Request) bool {
@@ -348,9 +341,9 @@ func (s *S) TestTeamChangeQuotaRunUnlimited(c *check.C) {
 			return path && method && limit
 		},
 	}
-	client := cmd.NewClient(&http.Client{Transport: &trans}, nil, manager)
+	s.setupFakeTransport(&trans)
 	command := TeamChangeQuota{}
-	err := command.Run(&context, client)
+	err := command.Run(&context)
 	c.Assert(err, check.IsNil)
 	c.Assert(stdout.String(), check.Equals, "Quota successfully updated.\n")
 	c.Assert(called, check.Equals, true)
@@ -359,7 +352,7 @@ func (s *S) TestTeamChangeQuotaRunUnlimited(c *check.C) {
 func (s *S) TestTeamChangeQuotaRunInvalidLimit(c *check.C) {
 	context := cmd.Context{Args: []string{"myteam", "unlimiteddd"}}
 	command := TeamChangeQuota{}
-	err := command.Run(&context, nil)
+	err := command.Run(&context)
 	c.Assert(err, check.NotNil)
 	c.Assert(err.Error(), check.Equals, `invalid limit. It must be either an integer or "unlimited"`)
 }
@@ -371,14 +364,13 @@ func (s *S) TestTeamChangeQuotaFailure(c *check.C) {
 		Stdout: &stdout,
 		Stderr: &stderr,
 	}
-	manager := cmd.NewManagerPanicExiter("tsuru", "0.5", "ad-ver", &stdout, &stderr, nil, nil)
 	trans := &cmdtest.Transport{
 		Message: "team not found",
 		Status:  http.StatusNotFound,
 	}
-	client := cmd.NewClient(&http.Client{Transport: trans}, nil, manager)
+	s.setupFakeTransport(trans)
 	command := TeamChangeQuota{}
-	err := command.Run(&context, client)
+	err := command.Run(&context)
 	c.Assert(err, check.NotNil)
-	c.Assert(err.Error(), check.Equals, "team not found")
+	c.Assert(tsuruHTTP.UnwrapErr(err).Error(), check.Equals, "team not found")
 }

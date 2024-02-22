@@ -5,14 +5,44 @@
 package config
 
 import (
+	"os"
+	"path/filepath"
+	"sync/atomic"
+
 	"github.com/tsuru/tsuru/fs"
 )
 
-var fsystem fs.Fs
+var (
+	fsystem atomic.Pointer[fs.Fs]
+)
 
-func filesystem() fs.Fs {
-	if fsystem == nil {
-		fsystem = fs.OsFs{}
+func Filesystem() fs.Fs {
+	f := fsystem.Load()
+	if f == nil {
+		return &fs.OsFs{}
 	}
-	return fsystem
+	return *f
+}
+
+func SetFileSystem(f fs.Fs) {
+	fsystem.Store(&f)
+}
+
+func ResetFileSystem() {
+	fsystem.Store(nil)
+}
+
+func getHome() string {
+	envs := []string{"HOME", "HOMEPATH"}
+	var home string
+	for i := 0; i < len(envs) && home == ""; i++ {
+		home = os.Getenv(envs[i])
+	}
+	return home
+}
+
+func JoinWithUserDir(p ...string) string {
+	paths := []string{getHome()}
+	paths = append(paths, p...)
+	return filepath.Join(paths...)
 }

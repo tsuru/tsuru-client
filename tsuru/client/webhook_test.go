@@ -47,10 +47,10 @@ func (s *S) TestWebhookCreate(c *check.C) {
 			return true
 		},
 	}
-	client := cmd.NewClient(&http.Client{Transport: &trans}, nil, manager)
+	s.setupFakeTransport(&trans)
 	command := WebhookCreate{}
 	command.Flags().Parse(true, []string{})
-	err := command.Run(&context, client)
+	err := command.Run(&context)
 	c.Assert(err, check.IsNil)
 	c.Assert(stdout.String(), check.Equals, expected)
 }
@@ -97,7 +97,7 @@ func (s *S) TestWebhookCreateFlags(c *check.C) {
 			return true
 		},
 	}
-	client := cmd.NewClient(&http.Client{Transport: &trans}, nil, manager)
+	s.setupFakeTransport(&trans)
 	command := WebhookCreate{}
 	command.Flags().Parse(true, []string{
 		"--description", "desc1",
@@ -116,7 +116,7 @@ func (s *S) TestWebhookCreateFlags(c *check.C) {
 		"--success-only",
 		"--insecure",
 	})
-	err := command.Run(&context, client)
+	err := command.Run(&context)
 	c.Assert(err, check.IsNil)
 	c.Assert(stdout.String(), check.Equals, expected)
 }
@@ -176,9 +176,9 @@ func (s *S) TestWebhookList(c *check.C) {
 			return true
 		},
 	}
-	client := cmd.NewClient(&http.Client{Transport: &trans}, nil, manager)
+	s.setupFakeTransport(&trans)
 	command := WebhookList{}
-	err = command.Run(&context, client)
+	err = command.Run(&context)
 	c.Assert(err, check.IsNil)
 	c.Assert(stdout.String(), check.Equals, expected)
 }
@@ -203,9 +203,9 @@ func (s *S) TestWebhookDelete(c *check.C) {
 			return true
 		},
 	}
-	client := cmd.NewClient(&http.Client{Transport: &trans}, nil, manager)
+	s.setupFakeTransport(&trans)
 	command := WebhookDelete{}
-	err := command.Run(&context, client)
+	err := command.Run(&context)
 	c.Assert(err, check.IsNil)
 	c.Assert(stdout.String(), check.Equals, expected)
 }
@@ -258,10 +258,10 @@ func (s *S) TestWebhookUpdate(c *check.C) {
 			return true
 		},
 	}
-	client := cmd.NewClient(&http.Client{Transport: &trans}, nil, manager)
+	s.setupFakeTransport(&trans)
 	command := WebhookUpdate{}
 	command.Flags().Parse(true, []string{})
-	err = command.Run(&context, client)
+	err = command.Run(&context)
 	c.Assert(err, check.IsNil)
 	c.Assert(callCount, check.Equals, 2)
 	c.Assert(stdout.String(), check.Equals, expected)
@@ -313,7 +313,7 @@ func (s *S) TestWebhookUpdateWithFlags(c *check.C) {
 			return true
 		},
 	}
-	client := cmd.NewClient(&http.Client{Transport: &trans}, nil, manager)
+	s.setupFakeTransport(&trans)
 	command := WebhookUpdate{}
 	command.Flags().Parse(true, []string{
 		"--url", "http://y.com",
@@ -321,7 +321,7 @@ func (s *S) TestWebhookUpdateWithFlags(c *check.C) {
 		"--no-body",
 		"--kind-name", "app.deploy",
 	})
-	err = command.Run(&context, client)
+	err = command.Run(&context)
 	c.Assert(err, check.IsNil)
 	c.Assert(callCount, check.Equals, 2)
 	c.Assert(stdout.String(), check.Equals, expected)

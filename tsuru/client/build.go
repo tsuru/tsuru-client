@@ -14,12 +14,15 @@ import (
 	"time"
 
 	"github.com/tsuru/gnuflag"
+	tsuruClientApp "github.com/tsuru/tsuru-client/tsuru/app"
+	"github.com/tsuru/tsuru-client/tsuru/config"
+	tsuruHTTP "github.com/tsuru/tsuru-client/tsuru/http"
 	"github.com/tsuru/tsuru/cmd"
 	"github.com/tsuru/tsuru/safe"
 )
 
 type AppBuild struct {
-	cmd.AppNameMixIn
+	tsuruClientApp.AppNameMixIn
 	tag       string
 	fs        *gnuflag.FlagSet
 	filesOnly bool
@@ -66,7 +69,7 @@ Examples:
 	}
 }
 
-func (c *AppBuild) Run(context *cmd.Context, client *cmd.Client) error {
+func (c *AppBuild) Run(context *cmd.Context) error {
 	context.RawOutput()
 	if c.tag == "" {
 		return errors.New("You should provide one tag to build the image.\n")
@@ -75,18 +78,11 @@ func (c *AppBuild) Run(context *cmd.Context, client *cmd.Client) error {
 		return errors.New("You should provide at least one file to build the image.\n")
 	}
 
-	debugWriter := io.Discard
-
-	debug := client != nil && client.Verbosity > 0 // e.g. --verbosity 2
-	if debug {
-		debugWriter = context.Stderr
-	}
-
 	appName, err := c.AppName()
 	if err != nil {
 		return err
 	}
-	u, err := cmd.GetURL("/apps/" + appName)
+	u, err := config.GetURL("/apps/" + appName)
 	if err != nil {
 		return err
 	}
@@ -94,13 +90,13 @@ func (c *AppBuild) Run(context *cmd.Context, client *cmd.Client) error {
 	if err != nil {
 		return err
 	}
-	_, err = client.Do(request)
+	_, err = tsuruHTTP.DefaultClient.Do(request)
 	if err != nil {
 		return err
 	}
 	values := url.Values{}
 	values.Set("tag", c.tag)
-	u, err = cmd.GetURLVersion("1.5", fmt.Sprintf("/apps/%s/build", appName))
+	u, err = config.GetURLVersion("1.5", fmt.Sprintf("/apps/%s/build", appName))
 	if err != nil {
 		return err
 	}
@@ -113,7 +109,7 @@ func (c *AppBuild) Run(context *cmd.Context, client *cmd.Client) error {
 	respBody := prepareUploadStreams(context, buf)
 
 	var archive bytes.Buffer
-	err = Archive(&archive, c.filesOnly, context.Args, DefaultArchiveOptions(debugWriter))
+	err = Archive(&archive, c.filesOnly, context.Args, DefaultArchiveOptions(nil))
 	if err != nil {
 		return err
 	}
@@ -121,7 +117,7 @@ func (c *AppBuild) Run(context *cmd.Context, client *cmd.Client) error {
 	if err = uploadFiles(context, request, buf, body, values, &archive); err != nil {
 		return err
 	}
-	resp, err := client.Do(request)
+	resp, err := tsuruHTTP.DefaultClient.Do(request)
 	if err != nil {
 		return err
 	}

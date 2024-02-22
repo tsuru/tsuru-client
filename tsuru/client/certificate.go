@@ -19,12 +19,15 @@ import (
 
 	"github.com/tsuru/gnuflag"
 	"github.com/tsuru/tablecli"
+	tsuruClientApp "github.com/tsuru/tsuru-client/tsuru/app"
+	"github.com/tsuru/tsuru-client/tsuru/config"
 	"github.com/tsuru/tsuru-client/tsuru/formatter"
+	tsuruHTTP "github.com/tsuru/tsuru-client/tsuru/http"
 	"github.com/tsuru/tsuru/cmd"
 )
 
 type CertificateSet struct {
-	cmd.AppNameMixIn
+	tsuruClientApp.AppNameMixIn
 	cname string
 	fs    *gnuflag.FlagSet
 }
@@ -48,7 +51,7 @@ func (c *CertificateSet) Flags() *gnuflag.FlagSet {
 	return c.fs
 }
 
-func (c *CertificateSet) Run(context *cmd.Context, client *cmd.Client) error {
+func (c *CertificateSet) Run(context *cmd.Context) error {
 	appName, err := c.AppName()
 	if err != nil {
 		return err
@@ -68,7 +71,7 @@ func (c *CertificateSet) Run(context *cmd.Context, client *cmd.Client) error {
 	v.Set("cname", c.cname)
 	v.Set("certificate", string(cert))
 	v.Set("key", string(key))
-	u, err := cmd.GetURLVersion("1.2", fmt.Sprintf("/apps/%s/certificate", appName))
+	u, err := config.GetURLVersion("1.2", fmt.Sprintf("/apps/%s/certificate", appName))
 	if err != nil {
 		return err
 	}
@@ -77,7 +80,7 @@ func (c *CertificateSet) Run(context *cmd.Context, client *cmd.Client) error {
 		return err
 	}
 	request.Header.Set("Content-Type", "application/x-www-form-urlencoded")
-	response, err := client.Do(request)
+	response, err := tsuruHTTP.DefaultClient.Do(request)
 	if err != nil {
 		return err
 	}
@@ -87,7 +90,7 @@ func (c *CertificateSet) Run(context *cmd.Context, client *cmd.Client) error {
 }
 
 type CertificateUnset struct {
-	cmd.AppNameMixIn
+	tsuruClientApp.AppNameMixIn
 	cname string
 	fs    *gnuflag.FlagSet
 }
@@ -110,7 +113,7 @@ func (c *CertificateUnset) Flags() *gnuflag.FlagSet {
 	return c.fs
 }
 
-func (c *CertificateUnset) Run(context *cmd.Context, client *cmd.Client) error {
+func (c *CertificateUnset) Run(context *cmd.Context) error {
 	appName, err := c.AppName()
 	if err != nil {
 		return err
@@ -120,7 +123,7 @@ func (c *CertificateUnset) Run(context *cmd.Context, client *cmd.Client) error {
 	}
 	v := url.Values{}
 	v.Set("cname", c.cname)
-	u, err := cmd.GetURLVersion("1.2", fmt.Sprintf("/apps/%s/certificate?%s", appName, v.Encode()))
+	u, err := config.GetURLVersion("1.2", fmt.Sprintf("/apps/%s/certificate?%s", appName, v.Encode()))
 	if err != nil {
 		return err
 	}
@@ -129,7 +132,7 @@ func (c *CertificateUnset) Run(context *cmd.Context, client *cmd.Client) error {
 		return err
 	}
 	request.Header.Set("Content-Type", "application/x-www-form-urlencoded")
-	response, err := client.Do(request)
+	response, err := tsuruHTTP.DefaultClient.Do(request)
 	if err != nil {
 		return err
 	}
@@ -139,7 +142,7 @@ func (c *CertificateUnset) Run(context *cmd.Context, client *cmd.Client) error {
 }
 
 type CertificateList struct {
-	cmd.AppNameMixIn
+	tsuruClientApp.AppNameMixIn
 	fs   *gnuflag.FlagSet
 	raw  bool
 	json bool
@@ -164,12 +167,12 @@ func (c *CertificateList) Flags() *gnuflag.FlagSet {
 	return c.fs
 }
 
-func (c *CertificateList) Run(context *cmd.Context, client *cmd.Client) error {
+func (c *CertificateList) Run(context *cmd.Context) error {
 	appName, err := c.AppName()
 	if err != nil {
 		return err
 	}
-	u, err := cmd.GetURLVersion("1.2", fmt.Sprintf("/apps/%s/certificate", appName))
+	u, err := config.GetURLVersion("1.2", fmt.Sprintf("/apps/%s/certificate", appName))
 	if err != nil {
 		return err
 	}
@@ -177,7 +180,7 @@ func (c *CertificateList) Run(context *cmd.Context, client *cmd.Client) error {
 	if err != nil {
 		return err
 	}
-	response, err := client.Do(request)
+	response, err := tsuruHTTP.DefaultClient.Do(request)
 	if err != nil {
 		return err
 	}

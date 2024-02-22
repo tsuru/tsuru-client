@@ -14,6 +14,7 @@ import (
 	"path/filepath"
 	"runtime"
 
+	"github.com/tsuru/tsuru-client/tsuru/config"
 	"github.com/tsuru/tsuru/cmd"
 	"github.com/tsuru/tsuru/exec/exectest"
 	"github.com/tsuru/tsuru/fs/fstest"
@@ -42,23 +43,22 @@ func (s *S) TestPluginInstallWithManifest(c *check.C) {
 
 	defer ts2.Close()
 	rfs := fstest.RecordingFs{}
-	fsystem = &rfs
+	config.SetFileSystem(&rfs)
 	defer func() {
-		fsystem = nil
+		config.ResetFileSystem()
 	}()
 	var stdout bytes.Buffer
 	context := cmd.Context{
 		Args:   []string{"myplugin", ts2.URL},
 		Stdout: &stdout,
 	}
-	client := cmd.NewClient(&http.Client{}, nil, manager)
 	command := PluginInstall{}
-	err := command.Run(&context, client)
+	err := command.Run(&context)
 	c.Assert(err, check.IsNil)
-	pluginsPath := cmd.JoinWithUserDir(".tsuru", "plugins")
+	pluginsPath := config.JoinWithUserDir(".tsuru", "plugins")
 	hasAction := rfs.HasAction(fmt.Sprintf("mkdirall %s with mode 0755", pluginsPath))
 	c.Assert(hasAction, check.Equals, true)
-	pluginPath := cmd.JoinWithUserDir(".tsuru", "plugins", "myplugin")
+	pluginPath := config.JoinWithUserDir(".tsuru", "plugins", "myplugin")
 	hasAction = rfs.HasAction(fmt.Sprintf("openfile %s with mode 0755", pluginPath))
 	c.Assert(hasAction, check.Equals, true)
 	f, err := rfs.Open(pluginPath)
@@ -76,23 +76,22 @@ func (s *S) TestPluginInstall(c *check.C) {
 	}))
 	defer ts.Close()
 	rfs := fstest.RecordingFs{}
-	fsystem = &rfs
+	config.SetFileSystem(&rfs)
 	defer func() {
-		fsystem = nil
+		config.ResetFileSystem()
 	}()
 	var stdout bytes.Buffer
 	context := cmd.Context{
 		Args:   []string{"myplugin", ts.URL},
 		Stdout: &stdout,
 	}
-	client := cmd.NewClient(&http.Client{}, nil, manager)
 	command := PluginInstall{}
-	err := command.Run(&context, client)
+	err := command.Run(&context)
 	c.Assert(err, check.IsNil)
-	pluginsPath := cmd.JoinWithUserDir(".tsuru", "plugins")
+	pluginsPath := config.JoinWithUserDir(".tsuru", "plugins")
 	hasAction := rfs.HasAction(fmt.Sprintf("mkdirall %s with mode 0755", pluginsPath))
 	c.Assert(hasAction, check.Equals, true)
-	pluginPath := cmd.JoinWithUserDir(".tsuru", "plugins", "myplugin")
+	pluginPath := config.JoinWithUserDir(".tsuru", "plugins", "myplugin")
 	hasAction = rfs.HasAction(fmt.Sprintf("openfile %s with mode 0755", pluginPath))
 	c.Assert(hasAction, check.Equals, true)
 	f, err := rfs.Open(pluginPath)
@@ -111,18 +110,17 @@ func (s *S) TestPluginInstallError(c *check.C) {
 	}))
 	defer ts.Close()
 	rfs := fstest.RecordingFs{}
-	fsystem = &rfs
+	config.SetFileSystem(&rfs)
 	defer func() {
-		fsystem = nil
+		config.ResetFileSystem()
 	}()
 	var stdout bytes.Buffer
 	context := cmd.Context{
 		Args:   []string{"myplugin", ts.URL},
 		Stdout: &stdout,
 	}
-	client := cmd.NewClient(&http.Client{}, nil, manager)
 	command := PluginInstall{}
-	err := command.Run(&context, client)
+	err := command.Run(&context)
 	c.Assert(err, check.ErrorMatches, `Error installing plugin "myplugin": Invalid status code reading plugin: 500 - "my err"`)
 }
 
@@ -132,9 +130,11 @@ func (s *S) TestPluginInstallIsACommand(c *check.C) {
 
 func (s *S) TestPluginExtractTarGz(c *check.C) {
 	rfs := fstest.RecordingFs{}
-	fsystem = &rfs
-
-	tmpDir, err := filesystem().MkdirTemp("", "")
+	config.SetFileSystem(&rfs)
+	defer func() {
+		config.ResetFileSystem()
+	}()
+	tmpDir, err := config.Filesystem().MkdirTemp("", "")
 	c.Assert(err, check.IsNil)
 
 	tarGzFile, err := os.ReadFile("./testdata/archivedplugins/myplugin.tar.gz")
@@ -144,7 +144,7 @@ func (s *S) TestPluginExtractTarGz(c *check.C) {
 	c.Assert(err, check.IsNil)
 
 	expectedFilepath := filepath.Join(tmpDir, "myplugin", "myplugin.txt")
-	resultFile, err := filesystem().Open(expectedFilepath)
+	resultFile, err := config.Filesystem().Open(expectedFilepath)
 	c.Assert(err, check.IsNil)
 	resultContent, err := io.ReadAll(resultFile)
 	c.Assert(err, check.IsNil)
@@ -153,9 +153,12 @@ func (s *S) TestPluginExtractTarGz(c *check.C) {
 
 func (s *S) TestPluginExtractZip(c *check.C) {
 	rfs := fstest.RecordingFs{}
-	fsystem = &rfs
+	config.SetFileSystem(&rfs)
+	defer func() {
+		config.ResetFileSystem()
+	}()
 
-	tmpDir, err := filesystem().MkdirTemp("", "")
+	tmpDir, err := config.Filesystem().MkdirTemp("", "")
 	c.Assert(err, check.IsNil)
 
 	zipFile, err := os.ReadFile("./testdata/archivedplugins/myplugin.zip")
@@ -165,7 +168,7 @@ func (s *S) TestPluginExtractZip(c *check.C) {
 	c.Assert(err, check.IsNil)
 
 	expectedFilepath := filepath.Join(tmpDir, "myplugin", "myplugin.txt")
-	resultFile, err := filesystem().Open(expectedFilepath)
+	resultFile, err := config.Filesystem().Open(expectedFilepath)
 	c.Assert(err, check.IsNil)
 	resultContent, err := io.ReadAll(resultFile)
 	c.Assert(err, check.IsNil)
@@ -195,14 +198,14 @@ func (s *S) TestPlugin(c *check.C) {
 	}
 	err := RunPlugin(&context)
 	c.Assert(err, check.IsNil)
-	pluginPath := cmd.JoinWithUserDir(".tsuru", "plugins", "myplugin")
+	pluginPath := config.JoinWithUserDir(".tsuru", "plugins", "myplugin")
 	c.Assert(fexec.ExecutedCmd(pluginPath, []string{"a", "b"}), check.Equals, true)
 	c.Assert(buf.String(), check.Equals, "hello world")
 	commands := fexec.GetCommands(pluginPath)
 	c.Assert(commands, check.HasLen, 1)
-	target, err := cmd.GetTarget()
+	target, err := config.GetTarget()
 	c.Assert(err, check.IsNil)
-	token, err := cmd.ReadToken()
+	token, err := config.ReadToken()
 	c.Assert(err, check.IsNil)
 	envs := os.Environ()
 	tsuruEnvs := []string{
@@ -228,7 +231,7 @@ func (s *S) TestPluginWithArgs(c *check.C) {
 	context := cmd.Context{Args: []string{"myplugin", "ble", "bla"}}
 	err := RunPlugin(&context)
 	c.Assert(err, check.IsNil)
-	pluginPath := cmd.JoinWithUserDir(".tsuru", "plugins", "myplugin")
+	pluginPath := config.JoinWithUserDir(".tsuru", "plugins", "myplugin")
 	c.Assert(fexec.ExecutedCmd(pluginPath, []string{"ble", "bla"}), check.Equals, true)
 }
 
@@ -255,14 +258,14 @@ func (s *S) TestPluginTryNameWithAnyExtension(c *check.C) {
 	}
 	err := RunPlugin(&context)
 	c.Assert(err, check.IsNil)
-	pluginPath := cmd.JoinWithUserDir(".tsuru", "plugins", "otherplugin.exe")
+	pluginPath := config.JoinWithUserDir(".tsuru", "plugins", "otherplugin.exe")
 	c.Assert(fexec.ExecutedCmd(pluginPath, []string{"a", "b"}), check.Equals, true)
 	c.Assert(buf.String(), check.Equals, "hello world")
 	commands := fexec.GetCommands(pluginPath)
 	c.Assert(commands, check.HasLen, 1)
-	target, err := cmd.GetTarget()
+	target, err := config.GetTarget()
 	c.Assert(err, check.IsNil)
-	token, err := cmd.ReadToken()
+	token, err := config.ReadToken()
 	c.Assert(err, check.IsNil)
 	envs := os.Environ()
 	tsuruEnvs := []string{
@@ -318,20 +321,19 @@ func (s *S) TestPluginRemoveInfo(c *check.C) {
 
 func (s *S) TestPluginRemove(c *check.C) {
 	rfs := fstest.RecordingFs{}
-	fsystem = &rfs
+	config.SetFileSystem(&rfs)
 	defer func() {
-		fsystem = nil
+		config.ResetFileSystem()
 	}()
 	var stdout bytes.Buffer
 	context := cmd.Context{
 		Args:   []string{"myplugin"},
 		Stdout: &stdout,
 	}
-	client := cmd.NewClient(&http.Client{}, nil, manager)
 	command := PluginRemove{}
-	err := command.Run(&context, client)
+	err := command.Run(&context)
 	c.Assert(err, check.IsNil)
-	pluginPath := cmd.JoinWithUserDir(".tsuru", "plugins", "myplugin")
+	pluginPath := config.JoinWithUserDir(".tsuru", "plugins", "myplugin")
 	hasAction := rfs.HasAction(fmt.Sprintf("remove %s", pluginPath))
 	c.Assert(hasAction, check.Equals, true)
 	expected := `Plugin "myplugin" successfully removed!` + "\n"
@@ -370,25 +372,24 @@ func (s *S) TestPluginBundle(c *check.C) {
 	defer ts.Close()
 
 	rfs := fstest.RecordingFs{}
-	fsystem = &rfs
+	config.SetFileSystem(&rfs)
 	defer func() {
-		fsystem = nil
+		config.ResetFileSystem()
 	}()
 	var stdout bytes.Buffer
 	context := cmd.Context{Stdout: &stdout}
-	client := cmd.NewClient(&http.Client{}, nil, manager)
 	command := PluginBundle{}
 	command.Flags().Parse(true, []string{"--url", ts.URL})
 
-	err := command.Run(&context, client)
+	err := command.Run(&context)
 	c.Assert(err, check.IsNil)
-	pluginsPath := cmd.JoinWithUserDir(".tsuru", "plugins")
+	pluginsPath := config.JoinWithUserDir(".tsuru", "plugins")
 	hasAction := rfs.HasAction(fmt.Sprintf("mkdirall %s with mode 0755", pluginsPath))
 	c.Assert(hasAction, check.Equals, true)
-	plugin1Path := cmd.JoinWithUserDir(".tsuru", "plugins", "testfake1")
+	plugin1Path := config.JoinWithUserDir(".tsuru", "plugins", "testfake1")
 	hasAction = rfs.HasAction(fmt.Sprintf("openfile %s with mode 0755", plugin1Path))
 	c.Assert(hasAction, check.Equals, true)
-	plugin2Path := cmd.JoinWithUserDir(".tsuru", "plugins", "testfake2")
+	plugin2Path := config.JoinWithUserDir(".tsuru", "plugins", "testfake2")
 	hasAction = rfs.HasAction(fmt.Sprintf("openfile %s with mode 0755", plugin2Path))
 	c.Assert(hasAction, check.Equals, true)
 
@@ -415,28 +416,26 @@ func (s *S) TestPluginBundleError(c *check.C) {
 	}))
 	defer ts.Close()
 	rfs := fstest.RecordingFs{}
-	fsystem = &rfs
+	config.SetFileSystem(&rfs)
 	defer func() {
-		fsystem = nil
+		config.ResetFileSystem()
 	}()
 	var stdout bytes.Buffer
 	context := cmd.Context{Stdout: &stdout}
-	client := cmd.NewClient(&http.Client{}, nil, manager)
 	command := PluginBundle{}
 	command.Flags().Parse(true, []string{"--url", ts.URL})
 
-	err := command.Run(&context, client)
+	err := command.Run(&context)
 	c.Assert(err, check.ErrorMatches, `Invalid status code reading plugin bundle: 500 - "my err"`)
 }
 
 func (s *S) TestPluginBundleErrorNoFlags(c *check.C) {
 	var stdout bytes.Buffer
 	context := cmd.Context{Stdout: &stdout}
-	client := cmd.NewClient(&http.Client{}, nil, manager)
 
 	command := PluginBundle{}
 	command.Flags().Parse(true, []string{})
-	err := command.Run(&context, client)
+	err := command.Run(&context)
 	c.Assert(err, check.ErrorMatches, `--url <url> is mandatory. See --help for usage`)
 }
 

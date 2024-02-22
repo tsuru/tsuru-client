@@ -16,10 +16,12 @@ import (
 	"github.com/ajg/form"
 	"github.com/pkg/errors"
 	"github.com/tsuru/gnuflag"
-	"github.com/tsuru/go-tsuruclient/pkg/client"
 	"github.com/tsuru/go-tsuruclient/pkg/tsuru"
 	"github.com/tsuru/tablecli"
+	tsuruClientApp "github.com/tsuru/tsuru-client/tsuru/app"
+	"github.com/tsuru/tsuru-client/tsuru/config"
 	"github.com/tsuru/tsuru-client/tsuru/formatter"
+	tsuruHTTP "github.com/tsuru/tsuru-client/tsuru/http"
 	"github.com/tsuru/tsuru/cmd"
 	appTypes "github.com/tsuru/tsuru/types/app"
 )
@@ -49,10 +51,8 @@ func (c *RouterAdd) Flags() *gnuflag.FlagSet {
 	return c.fs
 }
 
-func (c *RouterAdd) Run(ctx *cmd.Context, cli *cmd.Client) error {
-	apiClient, err := client.ClientFromEnvironment(&tsuru.Configuration{
-		HTTPClient: cli.HTTPClient,
-	})
+func (c *RouterAdd) Run(ctx *cmd.Context) error {
+	apiClient, err := tsuruHTTP.TsuruClientFromEnvironment()
 	if err != nil {
 		return err
 	}
@@ -103,10 +103,8 @@ func (c *RouterUpdate) Flags() *gnuflag.FlagSet {
 	return c.fs
 }
 
-func (c *RouterUpdate) Run(ctx *cmd.Context, cli *cmd.Client) error {
-	apiClient, err := client.ClientFromEnvironment(&tsuru.Configuration{
-		HTTPClient: cli.HTTPClient,
-	})
+func (c *RouterUpdate) Run(ctx *cmd.Context) error {
+	apiClient, err := tsuruHTTP.TsuruClientFromEnvironment()
 	if err != nil {
 		return err
 	}
@@ -144,10 +142,8 @@ func (c *RouterRemove) Info() *cmd.Info {
 	}
 }
 
-func (c *RouterRemove) Run(ctx *cmd.Context, cli *cmd.Client) error {
-	apiClient, err := client.ClientFromEnvironment(&tsuru.Configuration{
-		HTTPClient: cli.HTTPClient,
-	})
+func (c *RouterRemove) Run(ctx *cmd.Context) error {
+	apiClient, err := tsuruHTTP.TsuruClientFromEnvironment()
 	if err != nil {
 		return err
 	}
@@ -194,10 +190,8 @@ func (c *RoutersList) Info() *cmd.Info {
 	}
 }
 
-func (c *RoutersList) Run(ctx *cmd.Context, cli *cmd.Client) error {
-	apiClient, err := client.ClientFromEnvironment(&tsuru.Configuration{
-		HTTPClient: cli.HTTPClient,
-	})
+func (c *RoutersList) Run(ctx *cmd.Context) error {
+	apiClient, err := tsuruHTTP.TsuruClientFromEnvironment()
 	if err != nil {
 		return err
 	}
@@ -266,10 +260,8 @@ func (c *RouterInfo) Info() *cmd.Info {
 	}
 }
 
-func (c *RouterInfo) Run(ctx *cmd.Context, cli *cmd.Client) error {
-	apiClient, err := client.ClientFromEnvironment(&tsuru.Configuration{
-		HTTPClient: cli.HTTPClient,
-	})
+func (c *RouterInfo) Run(ctx *cmd.Context) error {
+	apiClient, err := tsuruHTTP.TsuruClientFromEnvironment()
 	if err != nil {
 		return err
 	}
@@ -313,7 +305,7 @@ func (c *RouterInfo) Run(ctx *cmd.Context, cli *cmd.Client) error {
 }
 
 type AppRoutersList struct {
-	cmd.AppNameMixIn
+	tsuruClientApp.AppNameMixIn
 
 	flagsApplied bool
 	json         bool
@@ -338,12 +330,12 @@ func (c *AppRoutersList) Flags() *gnuflag.FlagSet {
 	return fs
 }
 
-func (c *AppRoutersList) Run(context *cmd.Context, client *cmd.Client) error {
+func (c *AppRoutersList) Run(context *cmd.Context) error {
 	appName, err := c.AppName()
 	if err != nil {
 		return err
 	}
-	url, err := cmd.GetURLVersion("1.5", fmt.Sprintf("/apps/%s/routers", appName))
+	url, err := config.GetURLVersion("1.5", fmt.Sprintf("/apps/%s/routers", appName))
 	if err != nil {
 		return err
 	}
@@ -351,7 +343,7 @@ func (c *AppRoutersList) Run(context *cmd.Context, client *cmd.Client) error {
 	if err != nil {
 		return err
 	}
-	response, err := client.Do(request)
+	response, err := tsuruHTTP.DefaultClient.Do(request)
 	if err != nil {
 		return err
 	}
@@ -408,7 +400,7 @@ func renderRouters(routers []appTypes.AppRouter, out io.Writer, idColumn string)
 }
 
 type AppRoutersAdd struct {
-	cmd.AppNameMixIn
+	tsuruClientApp.AppNameMixIn
 	opts cmd.MapFlag
 	fs   *gnuflag.FlagSet
 }
@@ -433,12 +425,12 @@ func (c *AppRoutersAdd) Flags() *gnuflag.FlagSet {
 	return c.fs
 }
 
-func (c *AppRoutersAdd) Run(context *cmd.Context, client *cmd.Client) error {
+func (c *AppRoutersAdd) Run(context *cmd.Context) error {
 	appName, err := c.AppName()
 	if err != nil {
 		return err
 	}
-	url, err := cmd.GetURLVersion("1.5", fmt.Sprintf("/apps/%s/routers", appName))
+	url, err := config.GetURLVersion("1.5", fmt.Sprintf("/apps/%s/routers", appName))
 	if err != nil {
 		return err
 	}
@@ -455,7 +447,7 @@ func (c *AppRoutersAdd) Run(context *cmd.Context, client *cmd.Client) error {
 		return err
 	}
 	request.Header.Set("Content-Type", "application/x-www-form-urlencoded")
-	_, err = client.Do(request)
+	_, err = tsuruHTTP.DefaultClient.Do(request)
 	if err != nil {
 		return err
 	}
@@ -464,7 +456,7 @@ func (c *AppRoutersAdd) Run(context *cmd.Context, client *cmd.Client) error {
 }
 
 type AppRoutersUpdate struct {
-	cmd.AppNameMixIn
+	tsuruClientApp.AppNameMixIn
 	opts cmd.MapFlag
 	fs   *gnuflag.FlagSet
 }
@@ -489,13 +481,13 @@ func (c *AppRoutersUpdate) Flags() *gnuflag.FlagSet {
 	return c.fs
 }
 
-func (c *AppRoutersUpdate) Run(context *cmd.Context, client *cmd.Client) error {
+func (c *AppRoutersUpdate) Run(context *cmd.Context) error {
 	appName, err := c.AppName()
 	if err != nil {
 		return err
 	}
 	routerName := context.Args[0]
-	url, err := cmd.GetURLVersion("1.5", fmt.Sprintf("/apps/%s/routers/%s", appName, routerName))
+	url, err := config.GetURLVersion("1.5", fmt.Sprintf("/apps/%s/routers/%s", appName, routerName))
 	if err != nil {
 		return err
 	}
@@ -512,7 +504,7 @@ func (c *AppRoutersUpdate) Run(context *cmd.Context, client *cmd.Client) error {
 		return err
 	}
 	request.Header.Set("Content-Type", "application/x-www-form-urlencoded")
-	_, err = client.Do(request)
+	_, err = tsuruHTTP.DefaultClient.Do(request)
 	if err != nil {
 		return err
 	}
@@ -521,7 +513,7 @@ func (c *AppRoutersUpdate) Run(context *cmd.Context, client *cmd.Client) error {
 }
 
 type AppRoutersRemove struct {
-	cmd.AppNameMixIn
+	tsuruClientApp.AppNameMixIn
 }
 
 func (c *AppRoutersRemove) Info() *cmd.Info {
@@ -534,12 +526,12 @@ func (c *AppRoutersRemove) Info() *cmd.Info {
 	}
 }
 
-func (c *AppRoutersRemove) Run(context *cmd.Context, client *cmd.Client) error {
+func (c *AppRoutersRemove) Run(context *cmd.Context) error {
 	appName, err := c.AppName()
 	if err != nil {
 		return err
 	}
-	url, err := cmd.GetURLVersion("1.5", fmt.Sprintf("/apps/%s/routers/%s", appName, context.Args[0]))
+	url, err := config.GetURLVersion("1.5", fmt.Sprintf("/apps/%s/routers/%s", appName, context.Args[0]))
 	if err != nil {
 		return err
 	}
@@ -547,7 +539,7 @@ func (c *AppRoutersRemove) Run(context *cmd.Context, client *cmd.Client) error {
 	if err != nil {
 		return err
 	}
-	_, err = client.Do(request)
+	_, err = tsuruHTTP.DefaultClient.Do(request)
 	if err != nil {
 		return err
 	}
@@ -556,19 +548,17 @@ func (c *AppRoutersRemove) Run(context *cmd.Context, client *cmd.Client) error {
 }
 
 type appVersionRouterBase struct {
-	cmd.AppNameMixIn
+	tsuruClientApp.AppNameMixIn
 	routable bool
 }
 
-func (c *appVersionRouterBase) Run(ctx *cmd.Context, cli *cmd.Client) error {
+func (c *appVersionRouterBase) Run(ctx *cmd.Context) error {
 	appName, err := c.AppName()
 	if err != nil {
 		return err
 	}
 
-	apiClient, err := client.ClientFromEnvironment(&tsuru.Configuration{
-		HTTPClient: cli.HTTPClient,
-	})
+	apiClient, err := tsuruHTTP.TsuruClientFromEnvironment()
 	if err != nil {
 		return err
 	}

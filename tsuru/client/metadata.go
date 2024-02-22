@@ -10,9 +10,10 @@ import (
 	"strings"
 
 	"github.com/tsuru/gnuflag"
-	"github.com/tsuru/go-tsuruclient/pkg/client"
 	"github.com/tsuru/go-tsuruclient/pkg/tsuru"
+	tsuruClientApp "github.com/tsuru/tsuru-client/tsuru/app"
 	"github.com/tsuru/tsuru-client/tsuru/formatter"
+	tsuruHTTP "github.com/tsuru/tsuru-client/tsuru/http"
 	"github.com/tsuru/tsuru/cmd"
 )
 
@@ -74,7 +75,7 @@ func (c *JobOrApp) setMetadata(apiClient *tsuru.APIClient, metadata tsuru.Metada
 }
 
 type MetadataGet struct {
-	cmd.AppNameMixIn
+	tsuruClientApp.AppNameMixIn
 	jobName      string
 	flagsApplied bool
 	json         bool
@@ -103,15 +104,13 @@ func (c *MetadataGet) Info() *cmd.Info {
 	}
 }
 
-func (c *MetadataGet) Run(context *cmd.Context, cli *cmd.Client) error {
+func (c *MetadataGet) Run(context *cmd.Context) error {
 	joa := JobOrApp{fs: c.fs}
 	err := joa.validate()
 	if err != nil {
 		return err
 	}
-	apiClient, err := client.ClientFromEnvironment(&tsuru.Configuration{
-		HTTPClient: cli.HTTPClient,
-	})
+	apiClient, err := tsuruHTTP.TsuruClientFromEnvironment()
 	if err != nil {
 		return err
 	}
@@ -162,7 +161,7 @@ func outputMetadata(w io.Writer, metadata *tsuru.Metadata) {
 }
 
 type MetadataSet struct {
-	cmd.AppNameMixIn
+	tsuruClientApp.AppNameMixIn
 	job          string
 	processName  string
 	fs           *gnuflag.FlagSet
@@ -193,7 +192,7 @@ func (c *MetadataSet) Flags() *gnuflag.FlagSet {
 	return c.fs
 }
 
-func (c *MetadataSet) Run(ctx *cmd.Context, cli *cmd.Client) error {
+func (c *MetadataSet) Run(ctx *cmd.Context) error {
 	ctx.RawOutput()
 	joa := JobOrApp{fs: c.fs}
 	err := joa.validate()
@@ -225,9 +224,7 @@ func (c *MetadataSet) Run(ctx *cmd.Context, cli *cmd.Client) error {
 		metadata.Annotations = items
 	}
 
-	apiClient, err := client.ClientFromEnvironment(&tsuru.Configuration{
-		HTTPClient: cli.HTTPClient,
-	})
+	apiClient, err := tsuruHTTP.TsuruClientFromEnvironment()
 	if err != nil {
 		return err
 	}
@@ -256,7 +253,7 @@ func validateType(t string) error {
 }
 
 type MetadataUnset struct {
-	cmd.AppNameMixIn
+	tsuruClientApp.AppNameMixIn
 	job          string
 	processName  string
 	fs           *gnuflag.FlagSet
@@ -287,7 +284,7 @@ func (c *MetadataUnset) Flags() *gnuflag.FlagSet {
 	return c.fs
 }
 
-func (c *MetadataUnset) Run(ctx *cmd.Context, cli *cmd.Client) error {
+func (c *MetadataUnset) Run(ctx *cmd.Context) error {
 	ctx.RawOutput()
 	joa := JobOrApp{fs: c.fs}
 	err := joa.validate()
@@ -316,9 +313,7 @@ func (c *MetadataUnset) Run(ctx *cmd.Context, cli *cmd.Client) error {
 		metadata.Annotations = items
 	}
 
-	apiClient, err := client.ClientFromEnvironment(&tsuru.Configuration{
-		HTTPClient: cli.HTTPClient,
-	})
+	apiClient, err := tsuruHTTP.TsuruClientFromEnvironment()
 	if err != nil {
 		return err
 	}

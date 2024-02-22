@@ -14,6 +14,8 @@ import (
 
 	"github.com/tsuru/gnuflag"
 	"github.com/tsuru/tablecli"
+	"github.com/tsuru/tsuru-client/tsuru/config"
+	tsuruHTTP "github.com/tsuru/tsuru-client/tsuru/http"
 	"github.com/tsuru/tsuru/cmd"
 	apptypes "github.com/tsuru/tsuru/types/app"
 	"k8s.io/apimachinery/pkg/api/resource"
@@ -250,8 +252,8 @@ func displayCPUBurst(currentCPU int, burst float64) string {
 	return fmt.Sprintf("up to %g", float64(cpu)) + "%"
 }
 
-func (c *PlanList) Run(context *cmd.Context, client *cmd.Client) error {
-	url, err := cmd.GetURL("/plans")
+func (c *PlanList) Run(context *cmd.Context) error {
+	url, err := config.GetURL("/plans")
 	if err != nil {
 		return err
 	}
@@ -260,7 +262,7 @@ func (c *PlanList) Run(context *cmd.Context, client *cmd.Client) error {
 		return err
 	}
 	var plans []apptypes.Plan
-	resp, err := client.Do(request)
+	resp, err := tsuruHTTP.DefaultClient.Do(request)
 	if err != nil {
 		return err
 	}

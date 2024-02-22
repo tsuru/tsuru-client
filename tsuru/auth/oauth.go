@@ -12,11 +12,13 @@ import (
 	"time"
 
 	"github.com/pkg/errors"
+	"github.com/tsuru/tsuru-client/tsuru/config"
 	"github.com/tsuru/tsuru/cmd"
 	tsuruNet "github.com/tsuru/tsuru/net"
+	authTypes "github.com/tsuru/tsuru/types/auth"
 )
 
-func oauthLogin(ctx *cmd.Context, loginInfo *loginScheme) error {
+func oauthLogin(ctx *cmd.Context, loginInfo *authTypes.SchemeInfo) error {
 	finish := make(chan bool)
 	l, err := net.Listen("tcp", port(loginInfo))
 	if err != nil {
@@ -35,7 +37,7 @@ func oauthLogin(ctx *cmd.Context, loginInfo *loginScheme) error {
 		var page string
 		token, err := convertOAuthToken(r.URL.Query().Get("code"), redirectURL)
 		if err == nil {
-			writeToken(token)
+			config.WriteToken(token)
 			page = fmt.Sprintf(callbackPage, successMarkup)
 		} else {
 			msg := fmt.Sprintf(errorMarkup, err.Error())
@@ -64,7 +66,7 @@ func convertOAuthToken(code, redirectURL string) (string, error) {
 	v := url.Values{}
 	v.Set("code", code)
 	v.Set("redirectUrl", redirectURL)
-	u, err := cmd.GetURL("/auth/login")
+	u, err := config.GetURL("/auth/login")
 	if err != nil {
 		return token, errors.Wrap(err, "Error in GetURL")
 	}

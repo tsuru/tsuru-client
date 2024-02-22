@@ -51,10 +51,10 @@ func (s *S) TestJobCreate(c *check.C) {
 			return true
 		},
 	}
-	client := cmd.NewClient(&http.Client{Transport: &trans}, nil, manager)
+	s.setupFakeTransport(&trans)
 	command := JobCreate{}
 	command.Flags().Parse(true, []string{"-t", "admin", "-o", "somepool", "-s", "* * * * *", "-m", "300"})
-	err := command.Run(&context, client)
+	err := command.Run(&context)
 	c.Assert(err, check.IsNil)
 	c.Assert(stdout.String(), check.Equals, expected)
 }
@@ -90,10 +90,10 @@ func (s *S) TestJobCreateWithEmptyCommand(c *check.C) {
 			return true
 		},
 	}
-	client := cmd.NewClient(&http.Client{Transport: &trans}, nil, manager)
+	s.setupFakeTransport(&trans)
 	command := JobCreate{}
 	command.Flags().Parse(true, []string{"-t", "admin", "-o", "somepool", "-s", "* * * * *"})
-	err := command.Run(&context, client)
+	err := command.Run(&context)
 	c.Assert(err, check.IsNil)
 	c.Assert(stdout.String(), check.Equals, expected)
 }
@@ -132,10 +132,10 @@ func (s *S) TestJobCreateManual(c *check.C) {
 			return true
 		},
 	}
-	client := cmd.NewClient(&http.Client{Transport: &trans}, nil, manager)
+	s.setupFakeTransport(&trans)
 	command := JobCreate{}
 	command.Flags().Parse(true, []string{"-t", "admin", "-o", "somepool", "--manual", "-m", "0"})
-	err := command.Run(&context, client)
+	err := command.Run(&context)
 	c.Assert(err, check.IsNil)
 	c.Assert(stdout.String(), check.Equals, expected)
 }
@@ -161,10 +161,10 @@ func (s *S) TestJobCreateParseMultipleCommands(c *check.C) {
 			return true
 		},
 	}
-	client := cmd.NewClient(&http.Client{Transport: &trans}, nil, manager)
+	s.setupFakeTransport(&trans)
 	command := JobCreate{}
 	command.Flags().Parse(true, []string{"-t", "admin", "-o", "somepool", "-s", "* * * * *", "--max-running-time", "0"})
-	err := command.Run(&context, client)
+	err := command.Run(&context)
 	c.Assert(err, check.IsNil)
 	c.Assert(stdout.String(), check.Equals, expected)
 }
@@ -189,10 +189,10 @@ func (s *S) TestJobCreateParseJSON(c *check.C) {
 			return true
 		},
 	}
-	client := cmd.NewClient(&http.Client{Transport: &trans}, nil, manager)
+	s.setupFakeTransport(&trans)
 	command := JobCreate{}
 	command.Flags().Parse(true, []string{"-t", "admin", "-o", "somepool", "-s", "* * * * *"})
-	err := command.Run(&context, client)
+	err := command.Run(&context)
 	c.Assert(err, check.IsNil)
 	c.Assert(stdout.String(), check.Equals, expected)
 }
@@ -204,16 +204,15 @@ func (s *S) TestJobCreateApiError(c *check.C) {
 		Stdout: &stdout,
 		Stderr: &stderr,
 	}
-	expected := "500 Internal Server Error: some error occcured"
 	trans := cmdtest.ConditionalTransport{
 		Transport: cmdtest.Transport{Message: `some error occcured`, Status: http.StatusInternalServerError},
 		CondFunc:  func(r *http.Request) bool { return true },
 	}
-	client := cmd.NewClient(&http.Client{Transport: &trans}, nil, manager)
+	s.setupFakeTransport(&trans)
 	command := JobCreate{}
 	command.Flags().Parse(true, []string{"-t", "admin", "-o", "somepool", "-s", "* * * * *"})
-	err := command.Run(&context, client)
-	c.Assert(err.Error(), check.Equals, expected)
+	err := command.Run(&context)
+	c.Assert(err, check.ErrorMatches, ".* some error occcured")
 }
 
 func (s *S) TestJobCreateMutualScheduleAndManualError(c *check.C) {
@@ -223,10 +222,10 @@ func (s *S) TestJobCreateMutualScheduleAndManualError(c *check.C) {
 		Stdout: &stdout,
 		Stderr: &stderr,
 	}
-	client := cmd.NewClient(&http.Client{Transport: &cmdtest.Transport{Status: 200}}, nil, manager)
+	s.setupFakeTransport(&cmdtest.Transport{Status: 200})
 	command := JobCreate{}
 	command.Flags().Parse(true, []string{"-t", "admin", "-o", "somepool", "-s", "* * * * *", "--manual"})
-	err := command.Run(&context, client)
+	err := command.Run(&context)
 	c.Assert(err.Error(), check.Equals, "cannot set both manual job and schedule options")
 }
 
@@ -237,10 +236,10 @@ func (s *S) TestJobCreateNoJobTypeError(c *check.C) {
 		Stdout: &stdout,
 		Stderr: &stderr,
 	}
-	client := cmd.NewClient(&http.Client{Transport: &cmdtest.Transport{Status: 200}}, nil, manager)
+	s.setupFakeTransport(&cmdtest.Transport{Status: 200})
 	command := JobCreate{}
 	command.Flags().Parse(true, []string{"-t", "admin", "-o", "somepool"})
-	err := command.Run(&context, client)
+	err := command.Run(&context)
 	c.Assert(err.Error(), check.Equals, "schedule or manual option must be set")
 }
 
@@ -343,10 +342,10 @@ Service instances: 2
 			return true
 		},
 	}
-	client := cmd.NewClient(&http.Client{Transport: &trans}, nil, manager)
+	s.setupFakeTransport(&trans)
 	command := JobInfo{}
 	command.Info()
-	err := command.Run(&context, client)
+	err := command.Run(&context)
 	c.Assert(err, check.IsNil)
 	c.Assert(stdout.String(), check.Equals, expected)
 }
@@ -415,10 +414,10 @@ Command: [/bin/sh -c sleep 600;]
 			return true
 		},
 	}
-	client := cmd.NewClient(&http.Client{Transport: &trans}, nil, manager)
+	s.setupFakeTransport(&trans)
 	command := JobInfo{}
 	command.Info()
-	err := command.Run(&context, client)
+	err := command.Run(&context)
 	c.Assert(err, check.IsNil)
 	c.Assert(stdout.String(), check.Equals, expected)
 }
@@ -491,10 +490,10 @@ Max Running Time: 300s
 			return true
 		},
 	}
-	client := cmd.NewClient(&http.Client{Transport: &trans}, nil, manager)
+	s.setupFakeTransport(&trans)
 	command := JobInfo{}
 	command.Info()
-	err := command.Run(&context, client)
+	err := command.Run(&context)
 	c.Assert(err, check.IsNil)
 	c.Assert(stdout.String(), check.Equals, expected)
 }
@@ -507,16 +506,15 @@ func (s *S) TestJobInfoApiError(c *check.C) {
 		Stdout: &stdout,
 		Stderr: &stderr,
 	}
-	expected := "500 Internal Server Error: some api error"
 	trans := cmdtest.ConditionalTransport{
 		Transport: cmdtest.Transport{Message: "some api error", Status: http.StatusInternalServerError},
 		CondFunc:  func(r *http.Request) bool { return true },
 	}
-	client := cmd.NewClient(&http.Client{Transport: &trans}, nil, manager)
+	s.setupFakeTransport(&trans)
 	command := JobInfo{}
-	err := command.Run(&context, client)
+	err := command.Run(&context)
 	c.Assert(err, check.NotNil)
-	c.Assert(err.Error(), check.Equals, expected)
+	c.Assert(err, check.ErrorMatches, ".* some api error")
 }
 
 func (s *S) TestJobList(c *check.C) {
@@ -591,9 +589,9 @@ func (s *S) TestJobList(c *check.C) {
 			return true
 		},
 	}
-	client := cmd.NewClient(&http.Client{Transport: &trans}, nil, manager)
+	s.setupFakeTransport(&trans)
 	command := JobList{}
-	err = command.Run(&context, client)
+	err = command.Run(&context)
 	c.Assert(err, check.IsNil)
 	c.Assert(stdout.String(), check.Equals, expected)
 }
@@ -605,18 +603,17 @@ func (s *S) TestJobListApiError(c *check.C) {
 		Stdout: &stdout,
 		Stderr: &stderr,
 	}
-	expected := "500 Internal Server Error: some api error"
 	trans := cmdtest.ConditionalTransport{
 		Transport: cmdtest.Transport{Message: "some api error", Status: http.StatusInternalServerError},
 		CondFunc: func(r *http.Request) bool {
 			return true
 		},
 	}
-	client := cmd.NewClient(&http.Client{Transport: &trans}, nil, manager)
+	s.setupFakeTransport(&trans)
 	command := JobList{}
-	err := command.Run(&context, client)
+	err := command.Run(&context)
 	c.Assert(err, check.NotNil)
-	c.Assert(err.Error(), check.Equals, expected)
+	c.Assert(err, check.ErrorMatches, ".* some api error")
 }
 
 func (s *S) TestJobDelete(c *check.C) {
@@ -636,9 +633,9 @@ func (s *S) TestJobDelete(c *check.C) {
 			return true
 		},
 	}
-	client := cmd.NewClient(&http.Client{Transport: &trans}, nil, manager)
+	s.setupFakeTransport(&trans)
 	command := JobDelete{}
-	err := command.Run(&context, client)
+	err := command.Run(&context)
 	c.Assert(err, check.IsNil)
 	c.Assert(stdout.String(), check.Equals, expected)
 }
@@ -651,18 +648,17 @@ func (s *S) TestJobDeleteApiError(c *check.C) {
 		Stdout: &stdout,
 		Stderr: &stderr,
 	}
-	expected := "500 Internal Server Error: some api error"
 	trans := cmdtest.ConditionalTransport{
 		Transport: cmdtest.Transport{Message: "some api error", Status: http.StatusInternalServerError},
 		CondFunc: func(r *http.Request) bool {
 			return true
 		},
 	}
-	client := cmd.NewClient(&http.Client{Transport: &trans}, nil, manager)
+	s.setupFakeTransport(&trans)
 	command := JobDelete{}
-	err := command.Run(&context, client)
+	err := command.Run(&context)
 	c.Assert(err, check.NotNil)
-	c.Assert(err.Error(), check.Equals, expected)
+	c.Assert(err, check.ErrorMatches, ".* some api error")
 }
 
 func (s *S) TestJobTrigger(c *check.C) {
@@ -682,9 +678,9 @@ func (s *S) TestJobTrigger(c *check.C) {
 			return true
 		},
 	}
-	client := cmd.NewClient(&http.Client{Transport: &trans}, nil, manager)
+	s.setupFakeTransport(&trans)
 	command := JobTrigger{}
-	err := command.Run(&context, client)
+	err := command.Run(&context)
 	c.Assert(err, check.IsNil)
 	c.Assert(stdout.String(), check.Equals, expected)
 }
@@ -697,18 +693,17 @@ func (s *S) TestJobTriggerApiError(c *check.C) {
 		Stdout: &stdout,
 		Stderr: &stderr,
 	}
-	expected := "500 Internal Server Error: some error"
 	trans := cmdtest.ConditionalTransport{
 		Transport: cmdtest.Transport{Message: "some error", Status: http.StatusInternalServerError},
 		CondFunc: func(r *http.Request) bool {
 			return true
 		},
 	}
-	client := cmd.NewClient(&http.Client{Transport: &trans}, nil, manager)
+	s.setupFakeTransport(&trans)
 	command := JobTrigger{}
-	err := command.Run(&context, client)
+	err := command.Run(&context)
 	c.Assert(err, check.NotNil)
-	c.Assert(err.Error(), check.Equals, expected)
+	c.Assert(err, check.ErrorMatches, ".* some error")
 }
 
 func (s *S) TestJobUpdate(c *check.C) {
@@ -741,13 +736,13 @@ func (s *S) TestJobUpdate(c *check.C) {
 			return true
 		},
 	}
-	client := cmd.NewClient(&http.Client{Transport: &trans}, nil, manager)
+	s.setupFakeTransport(&trans)
 	command := JobUpdate{}
 	c.Assert(command.Info().MinArgs, check.Equals, 1)
 	unlimitedMaxArgs := 0
 	c.Assert(command.Info().MaxArgs, check.Equals, unlimitedMaxArgs)
 	command.Flags().Parse(true, []string{"-i", "tsuru/scratch:latest", "-m", "-200"})
-	err := command.Run(&context, client)
+	err := command.Run(&context)
 	c.Assert(err, check.IsNil)
 	c.Assert(stdout.String(), check.Equals, expected)
 }
@@ -781,10 +776,10 @@ func (s *S) TestJobUpdateJSONCommands(c *check.C) {
 			return true
 		},
 	}
-	client := cmd.NewClient(&http.Client{Transport: &trans}, nil, manager)
+	s.setupFakeTransport(&trans)
 	command := JobUpdate{}
 	command.Flags().Parse(true, []string{"-i", "tsuru/scratch:latest"})
-	err := command.Run(&context, client)
+	err := command.Run(&context)
 	c.Assert(err, check.IsNil)
 	c.Assert(stdout.String(), check.Equals, expected)
 }
@@ -796,18 +791,17 @@ func (s *S) TestJobUpdateApiError(c *check.C) {
 		Stdout: &stdout,
 		Stderr: &stderr,
 	}
-	expected := "500 Internal Server Error: some error"
 	trans := cmdtest.ConditionalTransport{
 		Transport: cmdtest.Transport{Message: "some error", Status: http.StatusInternalServerError},
 		CondFunc: func(r *http.Request) bool {
 			return true
 		},
 	}
-	client := cmd.NewClient(&http.Client{Transport: &trans}, nil, manager)
+	s.setupFakeTransport(&trans)
 	command := JobUpdate{}
-	err := command.Run(&context, client)
+	err := command.Run(&context)
 	c.Assert(err, check.NotNil)
-	c.Assert(err.Error(), check.Equals, expected)
+	c.Assert(err, check.ErrorMatches, ".* some error")
 }
 
 func (s *S) TestJobUpdateMutualScheduleAndManualError(c *check.C) {
@@ -817,10 +811,10 @@ func (s *S) TestJobUpdateMutualScheduleAndManualError(c *check.C) {
 		Stdout: &stdout,
 		Stderr: &stderr,
 	}
-	client := cmd.NewClient(&http.Client{Transport: &cmdtest.Transport{Status: 200}}, nil, manager)
+	s.setupFakeTransport(&cmdtest.Transport{Status: 200})
 	command := JobUpdate{}
 	command.Flags().Parse(true, []string{"-t", "admin", "-o", "somepool", "-s", "* * * * *", "--manual"})
-	err := command.Run(&context, client)
+	err := command.Run(&context)
 	c.Assert(err.Error(), check.Equals, "cannot set both manual job and schedule options")
 }
 
@@ -855,9 +849,9 @@ func (s *S) TestJobLog(c *check.C) {
 			return true
 		},
 	}
-	client := cmd.NewClient(&http.Client{Transport: &trans}, nil, manager)
+	s.setupFakeTransport(&trans)
 	command := JobLog{}
-	err := command.Run(&context, client)
+	err := command.Run(&context)
 	c.Assert(err, check.IsNil)
 	c.Assert(stdout.String(), check.DeepEquals, expected)
 }
@@ -889,10 +883,10 @@ func (s *S) TestJobLogFollow(c *check.C) {
 			return true
 		},
 	}
-	client := cmd.NewClient(&http.Client{Transport: &trans}, nil, manager)
+	s.setupFakeTransport(&trans)
 	command := JobLog{}
 	command.Flags().Parse(true, []string{"-f"})
-	err := command.Run(&context, client)
+	err := command.Run(&context)
 	c.Assert(err, check.IsNil)
 	c.Assert(stdout.String(), check.DeepEquals, expected)
 }
@@ -904,16 +898,15 @@ func (s *S) TestJobLogApiError(c *check.C) {
 		Stdout: &stdout,
 		Stderr: &stderr,
 	}
-	expected := "500 Internal Server Error: some error"
 	trans := cmdtest.ConditionalTransport{
 		Transport: cmdtest.Transport{Message: "some error", Status: http.StatusInternalServerError},
 		CondFunc: func(r *http.Request) bool {
 			return true
 		},
 	}
-	client := cmd.NewClient(&http.Client{Transport: &trans}, nil, manager)
+	s.setupFakeTransport(&trans)
 	command := JobLog{}
-	err := command.Run(&context, client)
+	err := command.Run(&context)
 	c.Assert(err, check.NotNil)
-	c.Assert(err.Error(), check.Equals, expected)
+	c.Assert(err, check.ErrorMatches, ".* some error")
 }

@@ -43,10 +43,10 @@ func (s *S) TestPlanListBytes(c *check.C) {
 			return strings.HasSuffix(req.URL.Path, "/plans") && req.Method == "GET"
 		},
 	}
-	client := cmd.NewClient(&http.Client{Transport: trans}, nil, manager)
+	s.setupFakeTransport(trans)
 	command := PlanList{}
 	command.Flags().Parse(true, []string{"-b"})
-	err := command.Run(&context, client)
+	err := command.Run(&context)
 	c.Assert(err, check.IsNil)
 	c.Assert(stdout.String(), check.Equals, expected)
 }
@@ -75,9 +75,9 @@ func (s *S) TestPlanListHuman(c *check.C) {
 			return strings.HasSuffix(req.URL.Path, "/plans") && req.Method == "GET"
 		},
 	}
-	client := cmd.NewClient(&http.Client{Transport: trans}, nil, manager)
+	s.setupFakeTransport(trans)
 	command := PlanList{}
-	err := command.Run(&context, client)
+	err := command.Run(&context)
 	c.Assert(err, check.IsNil)
 	c.Assert(stdout.String(), check.Equals, expected)
 }
@@ -104,9 +104,9 @@ func (s *S) TestPlanListKubernetesFriendly(c *check.C) {
 			return strings.HasSuffix(req.URL.Path, "/plans") && req.Method == "GET"
 		},
 	}
-	client := cmd.NewClient(&http.Client{Transport: trans}, nil, manager)
+	s.setupFakeTransport(trans)
 	command := PlanList{k8sFriendly: true}
-	err := command.Run(&context, client)
+	err := command.Run(&context)
 	c.Assert(err, check.IsNil)
 	c.Assert(stdout.String(), check.Equals, expected)
 }
@@ -133,9 +133,9 @@ func (s *S) TestPlanListOverride(c *check.C) {
 			return strings.HasSuffix(req.URL.Path, "/plans") && req.Method == "GET"
 		},
 	}
-	client := cmd.NewClient(&http.Client{Transport: trans}, nil, manager)
+	s.setupFakeTransport(trans)
 	command := PlanList{}
-	err := command.Run(&context, client)
+	err := command.Run(&context)
 	c.Assert(err, check.IsNil)
 	c.Assert(stdout.String(), check.Equals, expected)
 }
@@ -162,9 +162,9 @@ func (s *S) TestPlanListWithBurst(c *check.C) {
 			return strings.HasSuffix(req.URL.Path, "/plans") && req.Method == "GET"
 		},
 	}
-	client := cmd.NewClient(&http.Client{Transport: trans}, nil, manager)
+	s.setupFakeTransport(trans)
 	command := PlanList{}
-	err := command.Run(&context, client)
+	err := command.Run(&context)
 	c.Assert(err, check.IsNil)
 	c.Assert(stdout.String(), check.Equals, expected)
 }
@@ -191,9 +191,9 @@ func (s *S) TestPlanListWithBurstAndCPUOverrided(c *check.C) {
 			return strings.HasSuffix(req.URL.Path, "/plans") && req.Method == "GET"
 		},
 	}
-	client := cmd.NewClient(&http.Client{Transport: trans}, nil, manager)
+	s.setupFakeTransport(trans)
 	command := PlanList{}
-	err := command.Run(&context, client)
+	err := command.Run(&context)
 	c.Assert(err, check.IsNil)
 	c.Assert(stdout.String(), check.Equals, expected)
 }
@@ -220,9 +220,9 @@ func (s *S) TestPlanListWithBurstKubernetesFriendly(c *check.C) {
 			return strings.HasSuffix(req.URL.Path, "/plans") && req.Method == "GET"
 		},
 	}
-	client := cmd.NewClient(&http.Client{Transport: trans}, nil, manager)
+	s.setupFakeTransport(trans)
 	command := PlanList{k8sFriendly: true}
-	err := command.Run(&context, client)
+	err := command.Run(&context)
 	c.Assert(err, check.IsNil)
 	c.Assert(stdout.String(), check.Equals, expected)
 }
@@ -249,11 +249,11 @@ func (s *S) TestPlanListWithBurstAndMaxAllowed(c *check.C) {
 			return strings.HasSuffix(req.URL.Path, "/plans") && req.Method == "GET"
 		},
 	}
-	client := cmd.NewClient(&http.Client{Transport: trans}, nil, manager)
+	s.setupFakeTransport(trans)
 	command := PlanList{
 		showMaxBurstAllowed: true,
 	}
-	err := command.Run(&context, client)
+	err := command.Run(&context)
 	c.Assert(err, check.IsNil)
 	c.Assert(stdout.String(), check.Equals, expected)
 }
@@ -280,9 +280,9 @@ func (s *S) TestPlanListWithBurstOverride(c *check.C) {
 			return strings.HasSuffix(req.URL.Path, "/plans") && req.Method == "GET"
 		},
 	}
-	client := cmd.NewClient(&http.Client{Transport: trans}, nil, manager)
+	s.setupFakeTransport(trans)
 	command := PlanList{}
-	err := command.Run(&context, client)
+	err := command.Run(&context)
 	c.Assert(err, check.IsNil)
 	c.Assert(stdout.String(), check.Equals, expected)
 }
@@ -309,9 +309,9 @@ func (s *S) TestPlanListCPUMilli(c *check.C) {
 			return strings.HasSuffix(req.URL.Path, "/plans") && req.Method == "GET"
 		},
 	}
-	client := cmd.NewClient(&http.Client{Transport: trans}, nil, manager)
+	s.setupFakeTransport(trans)
 	command := PlanList{}
-	err := command.Run(&context, client)
+	err := command.Run(&context)
 	c.Assert(err, check.IsNil)
 	c.Assert(stdout.String(), check.Equals, expected)
 }
@@ -329,9 +329,9 @@ func (s *S) TestPlanListEmpty(c *check.C) {
 			return strings.HasSuffix(req.URL.Path, "/plans") && req.Method == "GET"
 		},
 	}
-	client := cmd.NewClient(&http.Client{Transport: trans}, nil, manager)
+	s.setupFakeTransport(trans)
 	command := PlanList{}
-	err := command.Run(&context, client)
+	err := command.Run(&context)
 	c.Assert(err, check.IsNil)
 	c.Assert(stdout.String(), check.Equals, "No plans available.\n")
 }

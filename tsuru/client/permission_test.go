@@ -48,9 +48,9 @@ func (s *S) TestPermissionListRun(c *check.C) {
 			return strings.HasSuffix(req.URL.Path, "/permissions") && req.Method == http.MethodGet
 		},
 	}
-	client := cmd.NewClient(&http.Client{Transport: trans}, nil, manager)
+	s.setupFakeTransport(trans)
 	command := PermissionList{}
-	err := command.Run(&context, client)
+	err := command.Run(&context)
 	c.Assert(err, check.IsNil)
 	c.Assert(stdout.String(), check.Equals, expected)
 }
@@ -73,9 +73,9 @@ func (s *S) TestRoleAddRun(c *check.C) {
 				req.FormValue("name") == "myrole" && req.FormValue("context") == "app"
 		},
 	}
-	client := cmd.NewClient(&http.Client{Transport: trans}, nil, manager)
+	s.setupFakeTransport(trans)
 	command := RoleAdd{}
-	err := command.Run(&context, client)
+	err := command.Run(&context)
 	c.Assert(err, check.IsNil)
 	c.Assert(stdout.String(), check.Equals, "Role successfully created!\n")
 }
@@ -130,9 +130,9 @@ func (s *S) TestRoleListRun(c *check.C) {
 			return strings.HasSuffix(req.URL.Path, "/roles") && req.Method == http.MethodGet
 		},
 	}
-	client := cmd.NewClient(&http.Client{Transport: trans}, nil, manager)
+	s.setupFakeTransport(trans)
 	command := RoleList{}
-	err := command.Run(&context, client)
+	err := command.Run(&context)
 	c.Assert(err, check.IsNil)
 	c.Assert(stdout.String(), check.Equals, expected)
 }
@@ -164,9 +164,9 @@ func (s *S) TestRoleInfoRun(c *check.C) {
 			return strings.HasSuffix(req.URL.Path, "/roles/role1") && req.Method == http.MethodGet
 		},
 	}
-	client := cmd.NewClient(&http.Client{Transport: trans}, nil, manager)
+	s.setupFakeTransport(trans)
 	command := RoleInfo{}
-	err := command.Run(&context, client)
+	err := command.Run(&context)
 	c.Assert(err, check.IsNil)
 	c.Assert(stdout.String(), check.Equals, expected)
 }
@@ -189,9 +189,9 @@ func (s *S) TestRoleAssignRun(c *check.C) {
 				req.FormValue("email") == "me@me.com" && req.FormValue("context") == "myapp"
 		},
 	}
-	client := cmd.NewClient(&http.Client{Transport: trans}, nil, manager)
+	s.setupFakeTransport(trans)
 	command := RoleAssign{}
-	err := command.Run(&context, client)
+	err := command.Run(&context)
 	c.Assert(err, check.IsNil)
 	c.Assert(stdout.String(), check.Equals, "Role successfully assigned!\n")
 }
@@ -213,9 +213,9 @@ func (s *S) TestRoleAssignRunWithToken(c *check.C) {
 			return true
 		},
 	}
-	client := cmd.NewClient(&http.Client{Transport: trans}, nil, manager)
+	s.setupFakeTransport(trans)
 	command := RoleAssign{}
-	err := command.Run(&context, client)
+	err := command.Run(&context)
 	c.Assert(err, check.IsNil)
 	c.Assert(stdout.String(), check.Equals, "Role successfully assigned!\n")
 }
@@ -237,9 +237,9 @@ func (s *S) TestRoleAssignRunWithGroup(c *check.C) {
 			return true
 		},
 	}
-	client := cmd.NewClient(&http.Client{Transport: trans}, nil, manager)
+	s.setupFakeTransport(trans)
 	command := RoleAssign{}
-	err := command.Run(&context, client)
+	err := command.Run(&context)
 	c.Assert(err, check.IsNil)
 	c.Assert(stdout.String(), check.Equals, "Role successfully assigned!\n")
 }
@@ -262,9 +262,9 @@ func (s *S) TestRoleDissociateRun(c *check.C) {
 				req.URL.Query().Get("context") == "myapp"
 		},
 	}
-	client := cmd.NewClient(&http.Client{Transport: trans}, nil, manager)
+	s.setupFakeTransport(trans)
 	command := RoleDissociate{}
-	err := command.Run(&context, client)
+	err := command.Run(&context)
 	c.Assert(err, check.IsNil)
 	c.Assert(stdout.String(), check.Equals, "Role successfully dissociated!\n")
 }
@@ -285,9 +285,9 @@ func (s *S) TestRoleDissociateRunWithToken(c *check.C) {
 			return true
 		},
 	}
-	client := cmd.NewClient(&http.Client{Transport: trans}, nil, manager)
+	s.setupFakeTransport(trans)
 	command := RoleDissociate{}
-	err := command.Run(&context, client)
+	err := command.Run(&context)
 	c.Assert(err, check.IsNil)
 	c.Assert(stdout.String(), check.Equals, "Role successfully dissociated!\n")
 }
@@ -312,9 +312,9 @@ func (s *S) TestRolePermissionAddRun(c *check.C) {
 				reflect.DeepEqual(req.Form["permission"], []string{"app.create", "app.deploy"})
 		},
 	}
-	client := cmd.NewClient(&http.Client{Transport: trans}, nil, manager)
+	s.setupFakeTransport(trans)
 	command := RolePermissionAdd{}
-	err := command.Run(&context, client)
+	err := command.Run(&context)
 	c.Assert(err, check.IsNil)
 	c.Assert(stdout.String(), check.Equals, "Permission successfully added!\n")
 }
@@ -336,9 +336,9 @@ func (s *S) TestRolePermissionRemoveRun(c *check.C) {
 			return strings.HasSuffix(req.URL.Path, "/roles/myrole/permissions/app.create") && req.Method == http.MethodDelete
 		},
 	}
-	client := cmd.NewClient(&http.Client{Transport: trans}, nil, manager)
+	s.setupFakeTransport(trans)
 	command := RolePermissionRemove{}
-	err := command.Run(&context, client)
+	err := command.Run(&context)
 	c.Assert(err, check.IsNil)
 	c.Assert(stdout.String(), check.Equals, "Permission successfully removed!\n")
 }
@@ -361,9 +361,9 @@ func (s *S) TestRoleRemoveRun(c *check.C) {
 			return strings.HasSuffix(req.URL.Path, "/roles/myrole") && req.Method == http.MethodDelete
 		},
 	}
-	client := cmd.NewClient(&http.Client{Transport: trans}, nil, manager)
+	s.setupFakeTransport(trans)
 	command := RoleRemove{}
-	err := command.Run(&context, client)
+	err := command.Run(&context)
 	c.Assert(err, check.IsNil)
 	c.Assert(stdout.String(), check.Equals, "Are you sure you want to remove role \"myrole\"? (y/n) Role successfully removed!\n")
 }
@@ -381,10 +381,10 @@ func (s *S) TestRoleRemoveWithConfirmation(c *check.C) {
 			return strings.HasSuffix(req.URL.Path, "/roles/myrole") && req.Method == http.MethodDelete
 		},
 	}
-	client := cmd.NewClient(&http.Client{Transport: trans}, nil, manager)
+	s.setupFakeTransport(trans)
 	command := RoleRemove{}
 	command.Flags().Parse(true, []string{"-y"})
-	err := command.Run(&context, client)
+	err := command.Run(&context)
 	c.Assert(err, check.IsNil)
 	c.Assert(stdout.String(), check.Equals, "Role successfully removed!\n")
 }
@@ -399,7 +399,7 @@ func (s *S) TestRoleRemoveWithoutConfirmation(c *check.C) {
 		Stdin:  strings.NewReader("n\n"),
 	}
 	command := RoleRemove{}
-	err := command.Run(&context, nil)
+	err := command.Run(&context)
 	c.Assert(err, check.IsNil)
 	c.Assert(stdout.String(), check.Equals, expected)
 }
@@ -425,10 +425,10 @@ func (s *S) TestRoleDefaultAdd(c *check.C) {
 				reflect.DeepEqual(req.Form["team-create"], []string{"r3"})
 		},
 	}
-	client := cmd.NewClient(&http.Client{Transport: trans}, nil, manager)
+	s.setupFakeTransport(trans)
 	command := RoleDefaultAdd{}
 	command.Flags().Parse(true, []string{"--user-create", "r1", "--user-create", "r2", "--team-create", "r3"})
-	err := command.Run(&context, client)
+	err := command.Run(&context)
 	c.Assert(err, check.IsNil)
 	c.Assert(stdout.String(), check.Equals, "Roles successfully added as default!\n")
 }
@@ -454,10 +454,10 @@ func (s *S) TestRoleDefaultRemove(c *check.C) {
 				reflect.DeepEqual(req.Form["team-create"], []string{"r3"})
 		},
 	}
-	client := cmd.NewClient(&http.Client{Transport: trans}, nil, manager)
+	s.setupFakeTransport(trans)
 	command := RoleDefaultRemove{}
 	command.Flags().Parse(true, []string{"--user-create", "r1", "--user-create", "r2", "--team-create", "r3"})
-	err := command.Run(&context, client)
+	err := command.Run(&context)
 	c.Assert(err, check.IsNil)
 	c.Assert(stdout.String(), check.Equals, "Roles successfully removed as default!\n")
 }
@@ -491,9 +491,9 @@ func (s *S) TestRoleDefaultList(c *check.C) {
 			return strings.HasSuffix(req.URL.Path, "/role/default") && req.Method == http.MethodGet
 		},
 	}
-	client := cmd.NewClient(&http.Client{Transport: trans}, nil, manager)
+	s.setupFakeTransport(trans)
 	command := RoleDefaultList{}
-	err := command.Run(&context, client)
+	err := command.Run(&context)
 	c.Assert(err, check.IsNil)
 	c.Assert(stdout.String(), check.Equals, expected)
 }
@@ -518,11 +518,10 @@ func (s *S) TestRoleUpdate(c *check.C) {
 			return path && method && contentType && req.FormValue("name") == "team-member" && req.FormValue("description") == "a developer"
 		},
 	}
-	manager := cmd.Manager{}
-	client := cmd.NewClient(&http.Client{Transport: trans}, nil, &manager)
+	s.setupFakeTransport(trans)
 	cmd := RoleUpdate{}
 	cmd.Flags().Parse(true, []string{"-d", "a developer"})
-	err := cmd.Run(&context, client)
+	err := cmd.Run(&context)
 	c.Assert(err, check.IsNil)
 	c.Assert(stdout.String(), check.Equals, "Role successfully updated\n")
 }
@@ -544,10 +543,9 @@ func (s *S) TestRoleUpdateWithoutFlags(c *check.C) {
 			return path && method && contentType && req.FormValue("name") == "team-member" && req.FormValue("description") == "a developer"
 		},
 	}
-	manager := cmd.Manager{}
-	client := cmd.NewClient(&http.Client{Transport: trans}, nil, &manager)
+	s.setupFakeTransport(trans)
 	cmd := RoleUpdate{}
-	err := cmd.Run(&context, client)
+	err := cmd.Run(&context)
 	c.Assert(err, check.NotNil)
 	c.Assert(err.Error(), check.Equals, expected)
 }
@@ -568,11 +566,10 @@ func (s *S) TestRoleUpdateMultipleFlags(c *check.C) {
 			return path && method && contentType && req.FormValue("name") == "team-member" && req.FormValue("description") == "a developer" && req.FormValue("contextType") == "team" && req.FormValue("newName") == "newName"
 		},
 	}
-	manager := cmd.Manager{}
-	client := cmd.NewClient(&http.Client{Transport: trans}, nil, &manager)
+	s.setupFakeTransport(trans)
 	cmd := RoleUpdate{}
 	cmd.Flags().Parse(true, []string{"-d", "a developer", "-c", "team", "-n", "newName"})
-	err := cmd.Run(&context, client)
+	err := cmd.Run(&context)
 	c.Assert(err, check.IsNil)
 	c.Assert(stdout.String(), check.Equals, "Role successfully updated\n")
 }
@@ -593,11 +590,10 @@ func (s *S) TestRoleUpdateWithInvalidContent(c *check.C) {
 			return path && method && contentType && req.FormValue("name") == "invalid-role" && req.FormValue("description") == "a developer"
 		},
 	}
-	manager := cmd.Manager{}
-	client := cmd.NewClient(&http.Client{Transport: trans}, nil, &manager)
+	s.setupFakeTransport(trans)
 	cmd := RoleUpdate{}
 	cmd.Flags().Parse(true, []string{"-d", "a developer"})
-	err := cmd.Run(&context, client)
+	err := cmd.Run(&context)
 	c.Assert(err, check.NotNil)
 	c.Assert(stdout.String(), check.Equals, "")
 	c.Assert(stderr.String(), check.Equals, "Failed to update role\n")

@@ -15,11 +15,14 @@ import (
 	"strconv"
 
 	"github.com/tsuru/gnuflag"
+	tsuruClientApp "github.com/tsuru/tsuru-client/tsuru/app"
+	"github.com/tsuru/tsuru-client/tsuru/config"
+	tsuruHTTP "github.com/tsuru/tsuru-client/tsuru/http"
 	"github.com/tsuru/tsuru/cmd"
 )
 
 type UnitAdd struct {
-	cmd.AppNameMixIn
+	tsuruClientApp.AppNameMixIn
 	fs      *gnuflag.FlagSet
 	process string
 	version string
@@ -45,13 +48,13 @@ func (c *UnitAdd) Flags() *gnuflag.FlagSet {
 	return c.fs
 }
 
-func (c *UnitAdd) Run(context *cmd.Context, client *cmd.Client) error {
+func (c *UnitAdd) Run(context *cmd.Context) error {
 	context.RawOutput()
 	appName, err := c.AppName()
 	if err != nil {
 		return err
 	}
-	u, err := cmd.GetURL(fmt.Sprintf("/apps/%s/units", appName))
+	u, err := config.GetURL(fmt.Sprintf("/apps/%s/units", appName))
 	if err != nil {
 		return err
 	}
@@ -64,7 +67,7 @@ func (c *UnitAdd) Run(context *cmd.Context, client *cmd.Client) error {
 		return err
 	}
 	request.Header.Add("Content-Type", "application/x-www-form-urlencoded")
-	response, err := client.Do(request)
+	response, err := tsuruHTTP.DefaultClient.Do(request)
 	if err != nil {
 		return err
 	}
@@ -73,7 +76,7 @@ func (c *UnitAdd) Run(context *cmd.Context, client *cmd.Client) error {
 }
 
 type UnitRemove struct {
-	cmd.AppNameMixIn
+	tsuruClientApp.AppNameMixIn
 	fs      *gnuflag.FlagSet
 	process string
 	version string
@@ -99,7 +102,7 @@ func (c *UnitRemove) Flags() *gnuflag.FlagSet {
 	return c.fs
 }
 
-func (c *UnitRemove) Run(context *cmd.Context, client *cmd.Client) error {
+func (c *UnitRemove) Run(context *cmd.Context) error {
 	context.RawOutput()
 	appName, err := c.AppName()
 	if err != nil {
@@ -109,7 +112,7 @@ func (c *UnitRemove) Run(context *cmd.Context, client *cmd.Client) error {
 	val.Add("units", context.Args[0])
 	val.Add("process", c.process)
 	val.Set("version", c.version)
-	url, err := cmd.GetURL(fmt.Sprintf("/apps/%s/units?%s", appName, val.Encode()))
+	url, err := config.GetURL(fmt.Sprintf("/apps/%s/units?%s", appName, val.Encode()))
 	if err != nil {
 		return err
 	}
@@ -117,7 +120,7 @@ func (c *UnitRemove) Run(context *cmd.Context, client *cmd.Client) error {
 	if err != nil {
 		return err
 	}
-	response, err := client.Do(request)
+	response, err := tsuruHTTP.DefaultClient.Do(request)
 	if err != nil {
 		return err
 	}
@@ -125,7 +128,7 @@ func (c *UnitRemove) Run(context *cmd.Context, client *cmd.Client) error {
 }
 
 type UnitKill struct {
-	cmd.AppNameMixIn
+	tsuruClientApp.AppNameMixIn
 	jobName string
 	fs      *gnuflag.FlagSet
 	force   bool
@@ -151,7 +154,7 @@ func (c *UnitKill) Flags() *gnuflag.FlagSet {
 	return c.fs
 }
 
-func (c *UnitKill) Run(context *cmd.Context, client *cmd.Client) error {
+func (c *UnitKill) Run(context *cmd.Context) error {
 	context.RawOutput()
 	joa := JobOrApp{fs: c.fs}
 	err := joa.validate()
@@ -170,7 +173,7 @@ func (c *UnitKill) Run(context *cmd.Context, client *cmd.Client) error {
 	if joa.Type == "job" {
 		version = "1.13"
 	}
-	url, err := cmd.GetURLVersion(version, fmt.Sprintf("/%ss/%s/units/%s?%s", joa.Type, joa.val, unit, v.Encode()))
+	url, err := config.GetURLVersion(version, fmt.Sprintf("/%ss/%s/units/%s?%s", joa.Type, joa.val, unit, v.Encode()))
 	if err != nil {
 		return err
 	}
@@ -178,7 +181,7 @@ func (c *UnitKill) Run(context *cmd.Context, client *cmd.Client) error {
 	if err != nil {
 		return err
 	}
-	response, err := client.Do(request)
+	response, err := tsuruHTTP.DefaultClient.Do(request)
 	if err != nil {
 		return err
 	}
@@ -186,7 +189,7 @@ func (c *UnitKill) Run(context *cmd.Context, client *cmd.Client) error {
 }
 
 type UnitSet struct {
-	cmd.AppNameMixIn
+	tsuruClientApp.AppNameMixIn
 	fs      *gnuflag.FlagSet
 	process string
 	version int
@@ -213,13 +216,13 @@ func (c *UnitSet) Flags() *gnuflag.FlagSet {
 	return c.fs
 }
 
-func (c *UnitSet) Run(context *cmd.Context, client *cmd.Client) error {
+func (c *UnitSet) Run(context *cmd.Context) error {
 	context.RawOutput()
 	appName, err := c.AppName()
 	if err != nil {
 		return err
 	}
-	u, err := cmd.GetURL(fmt.Sprintf("/apps/%s", appName))
+	u, err := config.GetURL(fmt.Sprintf("/apps/%s", appName))
 	if err != nil {
 		return err
 	}
@@ -227,7 +230,7 @@ func (c *UnitSet) Run(context *cmd.Context, client *cmd.Client) error {
 	if err != nil {
 		return err
 	}
-	response, err := client.Do(request)
+	response, err := tsuruHTTP.DefaultClient.Do(request)
 	if err != nil {
 		return err
 	}
@@ -283,7 +286,7 @@ func (c *UnitSet) Run(context *cmd.Context, client *cmd.Client) error {
 	}
 
 	if existingUnits < desiredUnits {
-		u, err := cmd.GetURL(fmt.Sprintf("/apps/%s/units", appName))
+		u, err := config.GetURL(fmt.Sprintf("/apps/%s/units", appName))
 		if err != nil {
 			return err
 		}
@@ -299,7 +302,7 @@ func (c *UnitSet) Run(context *cmd.Context, client *cmd.Client) error {
 		}
 
 		request.Header.Add("Content-Type", "application/x-www-form-urlencoded")
-		response, err := client.Do(request)
+		response, err := tsuruHTTP.DefaultClient.Do(request)
 		if err != nil {
 			return err
 		}
@@ -314,7 +317,7 @@ func (c *UnitSet) Run(context *cmd.Context, client *cmd.Client) error {
 		val.Add("units", strconv.Itoa(unitsToRemove))
 		val.Add("process", c.process)
 		val.Add("version", strconv.Itoa(c.version))
-		u, err := cmd.GetURL(fmt.Sprintf("/apps/%s/units?%s", appName, val.Encode()))
+		u, err := config.GetURL(fmt.Sprintf("/apps/%s/units?%s", appName, val.Encode()))
 		if err != nil {
 			return err
 		}
@@ -324,7 +327,7 @@ func (c *UnitSet) Run(context *cmd.Context, client *cmd.Client) error {
 			return err
 		}
 
-		response, err := client.Do(request)
+		response, err := tsuruHTTP.DefaultClient.Do(request)
 		if err != nil {
 			return err
 		}

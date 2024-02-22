@@ -37,8 +37,8 @@ func (s *S) TestVolumeList(c *check.C) {
 			return strings.HasSuffix(req.URL.Path, "/volumes") && req.Method == "GET"
 		},
 	}
-	client := cmd.NewClient(&http.Client{Transport: trans}, nil, manager)
-	err := (&VolumeList{}).Run(&ctx, client)
+	s.setupFakeTransport(trans)
+	err := (&VolumeList{}).Run(&ctx)
 	c.Assert(err, check.IsNil)
 	result := stdout.String()
 	c.Assert(result, check.Equals, `+---------+------+-----------+-------+
@@ -64,8 +64,8 @@ func (s *S) TestVolumeListEmpty(c *check.C) {
 			return strings.HasSuffix(req.URL.Path, "/volumes") && req.Method == "GET"
 		},
 	}
-	client := cmd.NewClient(&http.Client{Transport: trans}, nil, manager)
-	err := (&VolumeList{}).Run(&ctx, client)
+	s.setupFakeTransport(trans)
+	err := (&VolumeList{}).Run(&ctx)
 	c.Assert(err, check.IsNil)
 	result := stdout.String()
 	c.Assert(result, check.Equals, "No volumes available.\n")
@@ -90,9 +90,9 @@ func (s *S) TestVolumeInfo(c *check.C) {
 			return strings.HasSuffix(req.URL.Path, "/volumes/vol1") && req.Method == "GET"
 		},
 	}
-	client := cmd.NewClient(&http.Client{Transport: trans}, nil, manager)
+	s.setupFakeTransport(trans)
 	command := &VolumeInfo{}
-	err := command.Run(&ctx, client)
+	err := command.Run(&ctx)
 	c.Assert(err, check.IsNil)
 	result := stdout.String()
 	c.Assert(result, check.Equals, `Name: vol1
@@ -144,9 +144,9 @@ func (s *S) TestVolumeInfoEmpty(c *check.C) {
 			return strings.HasSuffix(req.URL.Path, "/volumes/vol") && req.Method == "GET"
 		},
 	}
-	client := cmd.NewClient(&http.Client{Transport: trans}, nil, manager)
+	s.setupFakeTransport(trans)
 	command := &VolumeInfo{}
-	err := command.Run(&ctx, client)
+	err := command.Run(&ctx)
 	c.Assert(err, check.IsNil)
 	result := stdout.String()
 	c.Assert(result, check.Equals, "No volumes available.\n")
@@ -173,8 +173,8 @@ func (s *S) TestVolumePlansList(c *check.C) {
 			return strings.HasSuffix(req.URL.Path, "/volumeplans") && req.Method == "GET"
 		},
 	}
-	client := cmd.NewClient(&http.Client{Transport: trans}, nil, manager)
-	err := (&VolumePlansList{}).Run(&ctx, client)
+	s.setupFakeTransport(trans)
+	err := (&VolumePlansList{}).Run(&ctx)
 	c.Assert(err, check.IsNil)
 	result := stdout.String()
 	c.Assert(result, check.Equals, `+------+-------------+-----------------------------+
@@ -204,8 +204,8 @@ func (s *S) TestVolumePlansListEmpty(c *check.C) {
 			return strings.HasSuffix(req.URL.Path, "/volumeplans") && req.Method == "GET"
 		},
 	}
-	client := cmd.NewClient(&http.Client{Transport: trans}, nil, manager)
-	err := (&VolumePlansList{}).Run(&ctx, client)
+	s.setupFakeTransport(trans)
+	err := (&VolumePlansList{}).Run(&ctx)
 	c.Assert(err, check.IsNil)
 	result := stdout.String()
 	c.Assert(result, check.Equals, `+------+-------------+------+
@@ -246,10 +246,10 @@ func (s *S) TestVolumeCreate(c *check.C) {
 			return strings.HasSuffix(r.URL.Path, "/volumes") && r.Method == "POST"
 		},
 	}
-	client := cmd.NewClient(&http.Client{Transport: trans}, nil, manager)
+	s.setupFakeTransport(trans)
 	command := &VolumeCreate{}
 	command.Flags().Parse(true, []string{"-t", "team1", "-p", "pool1", "-o", "a=1", "-o", "b=2"})
-	err := command.Run(&ctx, client)
+	err := command.Run(&ctx)
 	c.Assert(err, check.IsNil)
 	result := stdout.String()
 	c.Assert(result, check.Equals, "Volume successfully created.\n")
@@ -287,10 +287,10 @@ func (s *S) TestVolumeUpdate(c *check.C) {
 			return strings.HasSuffix(r.URL.Path, "/volumes/vol1") && r.Method == "POST"
 		},
 	}
-	client := cmd.NewClient(&http.Client{Transport: trans}, nil, manager)
+	s.setupFakeTransport(trans)
 	command := &VolumeUpdate{}
 	command.Flags().Parse(true, []string{"-t", "team1", "-p", "pool1", "-o", "a=1", "-o", "b=2"})
-	err := command.Run(&ctx, client)
+	err := command.Run(&ctx)
 	c.Assert(err, check.IsNil)
 	result := stdout.String()
 	c.Assert(result, check.Equals, "Volume successfully updated.\n")
@@ -313,9 +313,9 @@ func (s *S) TestVolumeDelete(c *check.C) {
 			return strings.HasSuffix(r.URL.Path, "/volumes/vol1") && r.Method == "DELETE"
 		},
 	}
-	client := cmd.NewClient(&http.Client{Transport: trans}, nil, manager)
+	s.setupFakeTransport(trans)
 	command := &VolumeDelete{}
-	err := command.Run(&ctx, client)
+	err := command.Run(&ctx)
 	c.Assert(err, check.IsNil)
 	result := stdout.String()
 	c.Assert(result, check.Equals, "Volume successfully deleted.\n")
@@ -341,10 +341,10 @@ func (s *S) TestVolumeBind(c *check.C) {
 			return strings.HasSuffix(r.URL.Path, "/volumes/vol1/bind") && r.Method == "POST"
 		},
 	}
-	client := cmd.NewClient(&http.Client{Transport: trans}, nil, manager)
+	s.setupFakeTransport(trans)
 	command := &VolumeBind{}
 	command.Flags().Parse(true, []string{"-a", "myapp"})
-	err := command.Run(&ctx, client)
+	err := command.Run(&ctx)
 	c.Assert(err, check.IsNil)
 	result := stdout.String()
 	c.Assert(result, check.Equals, "Volume successfully bound.\n")
@@ -367,10 +367,10 @@ func (s *S) TestVolumeBindNoRestart(c *check.C) {
 			return strings.HasSuffix(r.URL.Path, "/volumes/vol1/bind") && r.Method == "POST"
 		},
 	}
-	client := cmd.NewClient(&http.Client{Transport: trans}, nil, manager)
+	s.setupFakeTransport(trans)
 	command := &VolumeBind{}
 	command.Flags().Parse(true, []string{"-a", "myapp", "--no-restart"})
-	err := command.Run(&ctx, client)
+	err := command.Run(&ctx)
 	c.Assert(err, check.IsNil)
 	result := stdout.String()
 	c.Assert(result, check.Equals, "Volume successfully bound.\n")
@@ -393,10 +393,10 @@ func (s *S) TestVolumeBindRO(c *check.C) {
 			return strings.HasSuffix(r.URL.Path, "/volumes/vol1/bind") && r.Method == "POST"
 		},
 	}
-	client := cmd.NewClient(&http.Client{Transport: trans}, nil, manager)
+	s.setupFakeTransport(trans)
 	command := &VolumeBind{}
 	command.Flags().Parse(true, []string{"-a", "myapp", "--readonly"})
-	err := command.Run(&ctx, client)
+	err := command.Run(&ctx)
 	c.Assert(err, check.IsNil)
 	result := stdout.String()
 	c.Assert(result, check.Equals, "Volume successfully bound.\n")
@@ -422,10 +422,10 @@ func (s *S) TestVolumeUnbind(c *check.C) {
 			return strings.HasSuffix(r.URL.Path, "/volumes/vol1/bind") && r.Method == "DELETE"
 		},
 	}
-	client := cmd.NewClient(&http.Client{Transport: trans}, nil, manager)
+	s.setupFakeTransport(trans)
 	command := &VolumeUnbind{}
 	command.Flags().Parse(true, []string{"-a", "myapp"})
-	err := command.Run(&ctx, client)
+	err := command.Run(&ctx)
 	c.Assert(err, check.IsNil)
 	result := stdout.String()
 	c.Assert(result, check.Equals, "Volume successfully unbound.\n")
@@ -448,10 +448,10 @@ func (s *S) TestVolumeUnbindNoRestart(c *check.C) {
 			return strings.HasSuffix(r.URL.Path, "/volumes/vol1/bind") && r.Method == "DELETE"
 		},
 	}
-	client := cmd.NewClient(&http.Client{Transport: trans}, nil, manager)
+	s.setupFakeTransport(trans)
 	command := &VolumeUnbind{}
 	command.Flags().Parse(true, []string{"-a", "myapp", "--no-restart"})
-	err := command.Run(&ctx, client)
+	err := command.Run(&ctx)
 	c.Assert(err, check.IsNil)
 	result := stdout.String()
 	c.Assert(result, check.Equals, "Volume successfully unbound.\n")

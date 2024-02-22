@@ -14,7 +14,10 @@ import (
 	"strconv"
 
 	"github.com/tsuru/gnuflag"
+	"github.com/tsuru/tsuru-client/tsuru/app"
+	"github.com/tsuru/tsuru-client/tsuru/config"
 	"github.com/tsuru/tsuru-client/tsuru/formatter"
+	tsuruHTTP "github.com/tsuru/tsuru-client/tsuru/http"
 	"github.com/tsuru/tsuru/cmd"
 	"github.com/tsuru/tsuru/types/quota"
 )
@@ -30,13 +33,13 @@ func (*UserQuotaView) Info() *cmd.Info {
 	}
 }
 
-func (*UserQuotaView) Run(context *cmd.Context, client *cmd.Client) error {
-	url, err := cmd.GetURL("/users/" + context.Args[0] + "/quota")
+func (*UserQuotaView) Run(context *cmd.Context) error {
+	url, err := config.GetURL("/users/" + context.Args[0] + "/quota")
 	if err != nil {
 		return err
 	}
 	request, _ := http.NewRequest("GET", url, nil)
-	resp, err := client.Do(request)
+	resp, err := tsuruHTTP.DefaultClient.Do(request)
 	if err != nil {
 		return err
 	}
@@ -65,8 +68,8 @@ The new limit must be an integer, it may also be "unlimited".`
 	}
 }
 
-func (*UserChangeQuota) Run(context *cmd.Context, client *cmd.Client) error {
-	u, err := cmd.GetURL("/users/" + context.Args[0] + "/quota")
+func (*UserChangeQuota) Run(context *cmd.Context) error {
+	u, err := config.GetURL("/users/" + context.Args[0] + "/quota")
 	if err != nil {
 		return err
 	}
@@ -78,7 +81,7 @@ func (*UserChangeQuota) Run(context *cmd.Context, client *cmd.Client) error {
 	v.Set("limit", limit)
 	request, _ := http.NewRequest("PUT", u, bytes.NewBufferString(v.Encode()))
 	request.Header.Set("Content-Type", "application/x-www-form-urlencoded")
-	_, err = client.Do(request)
+	_, err = tsuruHTTP.DefaultClient.Do(request)
 	if err != nil {
 		return err
 	}
@@ -87,7 +90,7 @@ func (*UserChangeQuota) Run(context *cmd.Context, client *cmd.Client) error {
 }
 
 type AppQuotaView struct {
-	cmd.AppNameMixIn
+	app.AppNameMixIn
 
 	flagsApplied bool
 	json         bool
@@ -112,18 +115,18 @@ func (c *AppQuotaView) Flags() *gnuflag.FlagSet {
 	return fs
 }
 
-func (c *AppQuotaView) Run(context *cmd.Context, client *cmd.Client) error {
+func (c *AppQuotaView) Run(context *cmd.Context) error {
 	context.RawOutput()
 	appName, err := c.AppName()
 	if err != nil {
 		return err
 	}
-	url, err := cmd.GetURL(fmt.Sprintf("/apps/%s/quota", appName))
+	url, err := config.GetURL(fmt.Sprintf("/apps/%s/quota", appName))
 	if err != nil {
 		return err
 	}
 	request, _ := http.NewRequest("GET", url, nil)
-	resp, err := client.Do(request)
+	resp, err := tsuruHTTP.DefaultClient.Do(request)
 	if err != nil {
 		return err
 	}
@@ -144,7 +147,7 @@ func (c *AppQuotaView) Run(context *cmd.Context, client *cmd.Client) error {
 }
 
 type AppQuotaChange struct {
-	cmd.AppNameMixIn
+	app.AppNameMixIn
 }
 
 func (*AppQuotaChange) Info() *cmd.Info {
@@ -159,13 +162,13 @@ The new limit must be an integer, it may also be "unlimited".`
 	}
 }
 
-func (c *AppQuotaChange) Run(context *cmd.Context, client *cmd.Client) error {
+func (c *AppQuotaChange) Run(context *cmd.Context) error {
 	context.RawOutput()
 	appName, err := c.AppName()
 	if err != nil {
 		return err
 	}
-	u, err := cmd.GetURL(fmt.Sprintf("/apps/%s/quota", appName))
+	u, err := config.GetURL(fmt.Sprintf("/apps/%s/quota", appName))
 	if err != nil {
 		return err
 	}
@@ -177,7 +180,7 @@ func (c *AppQuotaChange) Run(context *cmd.Context, client *cmd.Client) error {
 	v.Set("limit", limit)
 	request, _ := http.NewRequest("PUT", u, bytes.NewBufferString(v.Encode()))
 	request.Header.Set("Content-Type", "application/x-www-form-urlencoded")
-	_, err = client.Do(request)
+	_, err = tsuruHTTP.DefaultClient.Do(request)
 	if err != nil {
 		return err
 	}
@@ -196,13 +199,13 @@ func (*TeamQuotaView) Info() *cmd.Info {
 	}
 }
 
-func (*TeamQuotaView) Run(context *cmd.Context, client *cmd.Client) error {
-	url, err := cmd.GetURLVersion("1.12", "/teams/"+context.Args[0]+"/quota")
+func (*TeamQuotaView) Run(context *cmd.Context) error {
+	url, err := config.GetURLVersion("1.12", "/teams/"+context.Args[0]+"/quota")
 	if err != nil {
 		return err
 	}
 	request, _ := http.NewRequest("GET", url, nil)
-	resp, err := client.Do(request)
+	resp, err := tsuruHTTP.DefaultClient.Do(request)
 	if err != nil {
 		return err
 	}
@@ -231,8 +234,8 @@ The new limit must be an integer, it may also be "unlimited".`
 	}
 }
 
-func (*TeamChangeQuota) Run(context *cmd.Context, client *cmd.Client) error {
-	u, err := cmd.GetURLVersion("1.12", "/teams/"+context.Args[0]+"/quota")
+func (*TeamChangeQuota) Run(context *cmd.Context) error {
+	u, err := config.GetURLVersion("1.12", "/teams/"+context.Args[0]+"/quota")
 	if err != nil {
 		return err
 	}
@@ -244,7 +247,7 @@ func (*TeamChangeQuota) Run(context *cmd.Context, client *cmd.Client) error {
 	v.Set("limit", limit)
 	request, _ := http.NewRequest("PUT", u, bytes.NewBufferString(v.Encode()))
 	request.Header.Set("Content-Type", "application/x-www-form-urlencoded")
-	_, err = client.Do(request)
+	_, err = tsuruHTTP.DefaultClient.Do(request)
 	if err != nil {
 		return err
 	}

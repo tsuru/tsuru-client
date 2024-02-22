@@ -40,9 +40,9 @@ func (s *S) TestPoolListRun(c *check.C) {
 | theonepool | public  | default     |                             | hipache        |
 +------------+---------+-------------+-----------------------------+----------------+
 `
-	client := cmd.NewClient(&http.Client{Transport: &cmdtest.Transport{Message: result, Status: http.StatusOK}}, nil, manager)
+	s.setupFakeTransport(&cmdtest.Transport{Message: result, Status: http.StatusOK})
 	command := PoolList{}
-	err := command.Run(&context, client)
+	err := command.Run(&context)
 	c.Assert(err, check.IsNil)
 	c.Assert(stdout.String(), check.Equals, expected)
 }
@@ -50,9 +50,9 @@ func (s *S) TestPoolListRun(c *check.C) {
 func (s *S) TestPoolListRunNoContent(c *check.C) {
 	var stdout bytes.Buffer
 	context := cmd.Context{Args: []string{}, Stdout: &stdout}
-	client := cmd.NewClient(&http.Client{Transport: &cmdtest.Transport{Status: http.StatusNoContent}}, nil, manager)
+	s.setupFakeTransport(&cmdtest.Transport{Status: http.StatusNoContent})
 	command := PoolList{}
-	err := command.Run(&context, client)
+	err := command.Run(&context)
 	expected := `+------+------+-------------+-------+---------+
 | Pool | Kind | Provisioner | Teams | Routers |
 +------+------+-------------+-------+---------+
