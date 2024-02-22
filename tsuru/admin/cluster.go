@@ -16,10 +16,10 @@ import (
 
 	"github.com/pkg/errors"
 	"github.com/tsuru/gnuflag"
-	"github.com/tsuru/go-tsuruclient/pkg/client"
 	"github.com/tsuru/go-tsuruclient/pkg/tsuru"
 	"github.com/tsuru/tablecli"
 	"github.com/tsuru/tsuru-client/tsuru/formatter"
+	tsuruHTTP "github.com/tsuru/tsuru-client/tsuru/http"
 	"github.com/tsuru/tsuru/cmd"
 )
 
@@ -65,11 +65,9 @@ func (c *ClusterAdd) Info() *cmd.Info {
 	}
 }
 
-func (c *ClusterAdd) Run(ctx *cmd.Context, cli *cmd.Client) error {
+func (c *ClusterAdd) Run(ctx *cmd.Context) error {
 	ctx.RawOutput()
-	apiClient, err := client.ClientFromEnvironment(&tsuru.Configuration{
-		HTTPClient: cli.HTTPClient,
-	})
+	apiClient, err := tsuruHTTP.TsuruClientFromEnvironment()
 	if err != nil {
 		return err
 	}
@@ -174,11 +172,9 @@ func (c *ClusterUpdate) Info() *cmd.Info {
 	}
 }
 
-func (c *ClusterUpdate) Run(ctx *cmd.Context, cli *cmd.Client) error {
+func (c *ClusterUpdate) Run(ctx *cmd.Context) error {
 	ctx.RawOutput()
-	apiClient, err := client.ClientFromEnvironment(&tsuru.Configuration{
-		HTTPClient: cli.HTTPClient,
-	})
+	apiClient, err := tsuruHTTP.TsuruClientFromEnvironment()
 	if err != nil {
 		return err
 	}
@@ -370,10 +366,8 @@ func (c *ClusterList) Flags() *gnuflag.FlagSet {
 	return c.fs
 }
 
-func (c *ClusterList) Run(ctx *cmd.Context, cli *cmd.Client) error {
-	apiClient, err := client.ClientFromEnvironment(&tsuru.Configuration{
-		HTTPClient: cli.HTTPClient,
-	})
+func (c *ClusterList) Run(ctx *cmd.Context) error {
+	apiClient, err := tsuruHTTP.TsuruClientFromEnvironment()
 	if err != nil {
 		return err
 	}
@@ -463,15 +457,13 @@ func (c *ClusterRemove) Info() *cmd.Info {
 	}
 }
 
-func (c *ClusterRemove) Run(ctx *cmd.Context, cli *cmd.Client) error {
+func (c *ClusterRemove) Run(ctx *cmd.Context) error {
 	ctx.RawOutput()
 	name := ctx.Args[0]
 	if !c.Confirm(ctx, fmt.Sprintf("Are you sure you want to remove cluster \"%s\"?", name)) {
 		return nil
 	}
-	apiClient, err := client.ClientFromEnvironment(&tsuru.Configuration{
-		HTTPClient: cli.HTTPClient,
-	})
+	apiClient, err := tsuruHTTP.TsuruClientFromEnvironment()
 	if err != nil {
 		return err
 	}
@@ -497,10 +489,8 @@ func (c *ProvisionerList) Info() *cmd.Info {
 	}
 }
 
-func (c *ProvisionerList) Run(ctx *cmd.Context, cli *cmd.Client) error {
-	apiClient, err := client.ClientFromEnvironment(&tsuru.Configuration{
-		HTTPClient: cli.HTTPClient,
-	})
+func (c *ProvisionerList) Run(ctx *cmd.Context) error {
+	apiClient, err := tsuruHTTP.TsuruClientFromEnvironment()
 	if err != nil {
 		return err
 	}
@@ -537,11 +527,9 @@ func (c *ProvisionerInfo) Info() *cmd.Info {
 	}
 }
 
-func (c *ProvisionerInfo) Run(ctx *cmd.Context, cli *cmd.Client) error {
+func (c *ProvisionerInfo) Run(ctx *cmd.Context) error {
 	provisionerName := ctx.Args[0]
-	apiClient, err := client.ClientFromEnvironment(&tsuru.Configuration{
-		HTTPClient: cli.HTTPClient,
-	})
+	apiClient, err := tsuruHTTP.TsuruClientFromEnvironment()
 	if err != nil {
 		return err
 	}

@@ -18,10 +18,10 @@ import (
 	"sort"
 
 	"github.com/tsuru/gnuflag"
-	"github.com/tsuru/go-tsuruclient/pkg/client"
-	"github.com/tsuru/go-tsuruclient/pkg/tsuru"
 	"github.com/tsuru/tablecli"
+	"github.com/tsuru/tsuru-client/tsuru/config"
 	"github.com/tsuru/tsuru-client/tsuru/formatter"
+	tsuruHTTP "github.com/tsuru/tsuru-client/tsuru/http"
 	"github.com/tsuru/tsuru/cmd"
 )
 
@@ -36,8 +36,8 @@ type PlatformList struct {
 	json       bool
 }
 
-func (p *PlatformList) Run(context *cmd.Context, client *cmd.Client) error {
-	url, err := cmd.GetURL("/platforms")
+func (p *PlatformList) Run(context *cmd.Context) error {
+	url, err := config.GetURL("/platforms")
 	if err != nil {
 		return err
 	}
@@ -46,7 +46,7 @@ func (p *PlatformList) Run(context *cmd.Context, client *cmd.Client) error {
 		return err
 	}
 	var platforms []platform
-	resp, err := client.Do(request)
+	resp, err := tsuruHTTP.DefaultClient.Do(request)
 	if err != nil {
 		return err
 	}
@@ -136,7 +136,7 @@ Examples:
 	}
 }
 
-func (p *PlatformAdd) Run(context *cmd.Context, client *cmd.Client) error {
+func (p *PlatformAdd) Run(context *cmd.Context) error {
 	context.RawOutput()
 	var body bytes.Buffer
 	writer, err := serializeDockerfile(context.Args[0], &body, p.dockerfile, p.image, true)
@@ -145,7 +145,7 @@ func (p *PlatformAdd) Run(context *cmd.Context, client *cmd.Client) error {
 	}
 	writer.WriteField("name", context.Args[0])
 	writer.Close()
-	url, err := cmd.GetURL("/platforms")
+	url, err := config.GetURL("/platforms")
 	if err != nil {
 		return err
 	}
@@ -154,7 +154,7 @@ func (p *PlatformAdd) Run(context *cmd.Context, client *cmd.Client) error {
 		return err
 	}
 	request.Header.Add("Content-Type", writer.FormDataContentType())
-	response, err := client.Do(request)
+	response, err := tsuruHTTP.DefaultClient.Do(request)
 	if err != nil {
 		return err
 	}
@@ -221,7 +221,7 @@ func (p *PlatformUpdate) Flags() *gnuflag.FlagSet {
 	return p.fs
 }
 
-func (p *PlatformUpdate) Run(context *cmd.Context, client *cmd.Client) error {
+func (p *PlatformUpdate) Run(context *cmd.Context) error {
 	context.RawOutput()
 	name := context.Args[0]
 	if p.disable && p.enable {
@@ -242,7 +242,7 @@ func (p *PlatformUpdate) Run(context *cmd.Context, client *cmd.Client) error {
 	}
 	writer.WriteField("disabled", disable)
 	writer.Close()
-	url, err := cmd.GetURL(fmt.Sprintf("/platforms/%s", name))
+	url, err := config.GetURL(fmt.Sprintf("/platforms/%s", name))
 	if err != nil {
 		return err
 	}
@@ -251,7 +251,7 @@ func (p *PlatformUpdate) Run(context *cmd.Context, client *cmd.Client) error {
 		return err
 	}
 	request.Header.Add("Content-Type", writer.FormDataContentType())
-	response, err := client.Do(request)
+	response, err := tsuruHTTP.DefaultClient.Do(request)
 	if err != nil {
 		return err
 	}
@@ -273,12 +273,12 @@ still using the platform.`,
 	}
 }
 
-func (p *PlatformRemove) Run(context *cmd.Context, client *cmd.Client) error {
+func (p *PlatformRemove) Run(context *cmd.Context) error {
 	name := context.Args[0]
 	if !p.Confirm(context, fmt.Sprintf(`Are you sure you want to remove "%s" platform?`, name)) {
 		return nil
 	}
-	url, err := cmd.GetURL("/platforms/" + name)
+	url, err := config.GetURL("/platforms/" + name)
 	if err != nil {
 		return err
 	}
@@ -286,7 +286,7 @@ func (p *PlatformRemove) Run(context *cmd.Context, client *cmd.Client) error {
 	if err != nil {
 		return err
 	}
-	_, err = client.Do(request)
+	_, err = tsuruHTTP.DefaultClient.Do(request)
 	if err != nil {
 		fmt.Fprintf(context.Stdout, "Failed to remove platform!\n")
 		return err
@@ -317,10 +317,8 @@ func (p *PlatformInfo) Info() *cmd.Info {
 	}
 }
 
-func (c PlatformInfo) Run(ctx *cmd.Context, cli *cmd.Client) error {
-	apiClient, err := client.ClientFromEnvironment(&tsuru.Configuration{
-		HTTPClient: cli.HTTPClient,
-	})
+func (c PlatformInfo) Run(ctx *cmd.Context) error {
+	apiClient, err := tsuruHTTP.TsuruClientFromEnvironment()
 	if err != nil {
 		return err
 	}

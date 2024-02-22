@@ -13,6 +13,8 @@ import (
 	"strings"
 
 	"github.com/tsuru/gnuflag"
+	"github.com/tsuru/tsuru-client/tsuru/config"
+	tsuruHTTP "github.com/tsuru/tsuru-client/tsuru/http"
 	"github.com/tsuru/tsuru/cmd"
 	"github.com/tsuru/tsuru/errors"
 )
@@ -51,18 +53,19 @@ func (s *AppSwap) Flags() *gnuflag.FlagSet {
 	return s.fs
 }
 
-func (s *AppSwap) Run(context *cmd.Context, client *cmd.Client) error {
+func (s *AppSwap) Run(context *cmd.Context) error {
 	v := url.Values{}
 	v.Set("app1", context.Args[0])
 	v.Set("app2", context.Args[1])
 	v.Set("force", strconv.FormatBool(s.force))
 	v.Set("cnameOnly", strconv.FormatBool(s.cnameOnly))
-	u, err := cmd.GetURL("/swap")
+	u, err := config.GetURL("/swap")
 	if err != nil {
 		return err
 	}
-	err = makeSwap(client, u, strings.NewReader(v.Encode()))
+	err = makeSwap(u, strings.NewReader(v.Encode()))
 	if err != nil {
+		err = tsuruHTTP.UnwrapErr(err)
 		if e, ok := err.(*errors.HTTP); ok && e.Code == http.StatusPreconditionFailed {
 			var answer string
 			fmt.Fprintf(context.Stdout, "WARNING: %s.\nSwap anyway? (y/n) ", strings.TrimRight(e.Message, "\n"))
@@ -73,11 +76,11 @@ func (s *AppSwap) Run(context *cmd.Context, client *cmd.Client) error {
 				v.Set("app2", context.Args[1])
 				v.Set("force", "true")
 				v.Set("cnameOnly", strconv.FormatBool(s.cnameOnly))
-				u, err = cmd.GetURL("/swap")
+				u, err = config.GetURL("/swap")
 				if err != nil {
 					return err
 				}
-				return makeSwap(client, u, strings.NewReader(v.Encode()))
+				return makeSwap(u, strings.NewReader(v.Encode()))
 			}
 			fmt.Fprintln(context.Stdout, "swap aborted.")
 			return nil
@@ -88,12 +91,12 @@ func (s *AppSwap) Run(context *cmd.Context, client *cmd.Client) error {
 	return err
 }
 
-func makeSwap(client *cmd.Client, url string, body io.Reader) error {
+func makeSwap(url string, body io.Reader) error {
 	request, err := http.NewRequest("POST", url, body)
 	if err != nil {
 		return err
 	}
 	request.Header.Set("Content-Type", "application/x-www-form-urlencoded")
-	_, err = client.Do(request)
+	_, err = tsuruHTTP.DefaultClient.Do(request)
 	return err
 }

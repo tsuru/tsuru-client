@@ -58,11 +58,12 @@ func (s *S) TestBrokerAdd(c *check.C) {
 			return true
 		},
 	}
-	manager := cmd.NewManagerPanicExiter("admin", "0.1", "admin-ver", &stdout, &stderr, nil, nil)
-	client := cmd.NewClient(&http.Client{Transport: &trans}, nil, manager)
+
+	s.setupFakeTransport(&trans)
+
 	command := BrokerAdd{}
 	command.Flags().Parse(true, []string{"-t", "ABCDE", "-p", "password", "-u", "username", "-c", "p1=v1", "-c", "p2=v2", "--cache", "15m"})
-	err := command.Run(&context, client)
+	err := command.Run(&context)
 	c.Assert(err, check.IsNil)
 	c.Assert(stdout.String(), check.Equals, expected)
 }
@@ -99,11 +100,10 @@ func (s *S) TestBrokerAddEmptyAuth(c *check.C) {
 			return true
 		},
 	}
-	manager := cmd.NewManagerPanicExiter("admin", "0.1", "admin-ver", &stdout, &stderr, nil, nil)
-	client := cmd.NewClient(&http.Client{Transport: &trans}, nil, manager)
+	s.setupFakeTransport(&trans)
 	command := BrokerAdd{}
 	command.Flags().Parse(true, []string{"-c", "p1=v1", "-c", "p2=v2"})
-	err := command.Run(&context, client)
+	err := command.Run(&context)
 	c.Assert(err, check.IsNil)
 	c.Assert(stdout.String(), check.Equals, expected)
 }
@@ -128,11 +128,10 @@ func (s *S) TestBrokerAddDefaultCacheExpiration(c *check.C) {
 			return true
 		},
 	}
-	manager := cmd.NewManagerPanicExiter("admin", "0.1", "admin-ver", &stdout, &stderr, nil, nil)
-	client := cmd.NewClient(&http.Client{Transport: &trans}, nil, manager)
+	s.setupFakeTransport(&trans)
 	command := BrokerAdd{}
 	command.Flags().Parse(true, nil)
-	err := command.Run(&context, client)
+	err := command.Run(&context)
 	c.Assert(err, check.IsNil)
 	c.Assert(stdout.String(), check.Equals, expected)
 }
@@ -182,11 +181,10 @@ func (s *S) TestBrokerUpdate(c *check.C) {
 			return true
 		},
 	}
-	manager := cmd.NewManagerPanicExiter("admin", "0.1", "admin-ver", &stdout, &stderr, nil, nil)
-	client := cmd.NewClient(&http.Client{Transport: &trans}, nil, manager)
+	s.setupFakeTransport(&trans)
 	command := BrokerUpdate{}
 	command.Flags().Parse(true, []string{"-t", "ABCDE", "-p", "password", "-u", "username", "-c", "p1=v1", "-c", "p2=v2", "--cache", "2h"})
-	err := command.Run(&context, client)
+	err := command.Run(&context)
 	c.Assert(err, check.IsNil)
 	c.Assert(stdout.String(), check.Equals, expected)
 }
@@ -223,11 +221,10 @@ func (s *S) TestBrokerUpdateEmptyAuth(c *check.C) {
 			return true
 		},
 	}
-	manager := cmd.NewManagerPanicExiter("admin", "0.1", "admin-ver", &stdout, &stderr, nil, nil)
-	client := cmd.NewClient(&http.Client{Transport: &trans}, nil, manager)
+	s.setupFakeTransport(&trans)
 	command := BrokerUpdate{}
 	command.Flags().Parse(true, []string{"-c", "p1=v1", "-c", "p2=v2"})
-	err := command.Run(&context, client)
+	err := command.Run(&context)
 	c.Assert(err, check.IsNil)
 	c.Assert(stdout.String(), check.Equals, expected)
 }
@@ -252,11 +249,10 @@ func (s *S) TestBrokerUpdateNoCache(c *check.C) {
 			return true
 		},
 	}
-	manager := cmd.NewManagerPanicExiter("admin", "0.1", "admin-ver", &stdout, &stderr, nil, nil)
-	client := cmd.NewClient(&http.Client{Transport: &trans}, nil, manager)
+	s.setupFakeTransport(&trans)
 	command := BrokerUpdate{}
 	command.Flags().Parse(true, []string{"--no-cache"})
-	err := command.Run(&context, client)
+	err := command.Run(&context)
 	c.Assert(err, check.IsNil)
 	c.Assert(stdout.String(), check.Equals, expected)
 }
@@ -275,11 +271,10 @@ func (s *S) TestBrokerUpdateErrorWithCacheAndNoCache(c *check.C) {
 			return false
 		},
 	}
-	manager := cmd.NewManagerPanicExiter("admin", "0.1", "admin-ver", &stdout, &stderr, nil, nil)
-	client := cmd.NewClient(&http.Client{Transport: &trans}, nil, manager)
+	s.setupFakeTransport(&trans)
 	command := BrokerUpdate{}
 	command.Flags().Parse(true, []string{"--cache", "30m", "--no-cache"})
-	err := command.Run(&context, client)
+	err := command.Run(&context)
 	c.Assert(err, check.ErrorMatches, "Can't set --cache and --no-cache flags together.")
 }
 
@@ -302,10 +297,9 @@ func (s *S) TestBrokerDelete(c *check.C) {
 			return true
 		},
 	}
-	manager := cmd.NewManagerPanicExiter("admin", "0.1", "admin-ver", &stdout, &stderr, nil, nil)
-	client := cmd.NewClient(&http.Client{Transport: &trans}, nil, manager)
+	s.setupFakeTransport(&trans)
 	command := BrokerDelete{}
-	err := command.Run(&context, client)
+	err := command.Run(&context)
 	c.Assert(err, check.IsNil)
 	c.Assert(stdout.String(), check.Equals, expected)
 }
@@ -369,10 +363,9 @@ func (s *S) TestBrokerList(c *check.C) {
 			return true
 		},
 	}
-	manager := cmd.NewManagerPanicExiter("admin", "0.1", "admin-ver", &stdout, &stderr, nil, nil)
-	client := cmd.NewClient(&http.Client{Transport: &trans}, nil, manager)
+	s.setupFakeTransport(&trans)
 	command := BrokerList{}
-	err = command.Run(&context, client)
+	err = command.Run(&context)
 	c.Assert(err, check.IsNil)
 	c.Assert(stdout.String(), check.Equals, expected)
 }

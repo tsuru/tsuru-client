@@ -5,14 +5,14 @@
 package client
 
 import (
-	"bytes"
+	"net/http"
 	"os"
 	"testing"
 	"time"
 
 	"github.com/ajg/form"
 	"github.com/tsuru/tsuru-client/tsuru/formatter"
-	"github.com/tsuru/tsuru/cmd"
+	tsuruHTTP "github.com/tsuru/tsuru-client/tsuru/http"
 	"gopkg.in/check.v1"
 )
 
@@ -34,9 +34,6 @@ func (s *S) TearDownSuite(c *check.C) {
 }
 
 func (s *S) SetUpTest(c *check.C) {
-	var stdout, stderr bytes.Buffer
-	manager = cmd.NewManagerPanicExiter("glb", "1.0.0", "Supported-Tsuru", &stdout, &stderr, os.Stdin, nil)
-
 	s.defaultLocation = *formatter.LocalTZ
 	location, err := time.LoadLocation("US/Central")
 	if err == nil {
@@ -50,9 +47,12 @@ func (s *S) TearDownTest(c *check.C) {
 
 var suite = &S{}
 var _ = check.Suite(suite)
-var manager *cmd.Manager
 
 func Test(t *testing.T) {
 	suite.t = t
 	check.TestingT(t)
+}
+
+func (s *S) setupFakeTransport(rt http.RoundTripper) {
+	tsuruHTTP.DefaultClient = tsuruHTTP.NewTerminalClient(rt, nil, "test", "0.1.0", 0)
 }

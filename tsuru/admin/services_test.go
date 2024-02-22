@@ -11,6 +11,7 @@ import (
 	"os"
 	"strings"
 
+	tsuruHTTP "github.com/tsuru/tsuru-client/tsuru/http"
 	"github.com/tsuru/tsuru/cmd"
 	"github.com/tsuru/tsuru/cmd/cmdtest"
 	"gopkg.in/check.v1"
@@ -48,8 +49,8 @@ func (s *S) TestServiceCreateRun(c *check.C) {
 			return method && url && id && endpoint && contentType
 		},
 	}
-	client := cmd.NewClient(&http.Client{Transport: &trans}, nil, s.manager)
-	err := (&ServiceCreate{}).Run(&context, client)
+	s.setupFakeTransport(&trans)
+	err := (&ServiceCreate{}).Run(&context)
 	c.Assert(err, check.IsNil)
 	c.Assert(stdout.String(), check.Equals, "Service successfully created\n")
 }
@@ -76,8 +77,8 @@ func (s *S) TestServiceDestroyRun(c *check.C) {
 			return req.Method == "DELETE" && strings.HasSuffix(req.URL.Path, "/services/my-service")
 		},
 	}
-	client := cmd.NewClient(&http.Client{Transport: &trans}, nil, s.manager)
-	err := (&ServiceDestroy{}).Run(&context, client)
+	s.setupFakeTransport(&trans)
+	err := (&ServiceDestroy{}).Run(&context)
 	c.Assert(err, check.IsNil)
 	c.Assert(called, check.Equals, true)
 	expected := `Are you sure you want to remove the service "my-service"? This will remove the service and NOT a service instance. (y/n) Service successfully removed.`
@@ -96,10 +97,10 @@ func (s *S) TestServiceDestroyRunWithRequestFailure(c *check.C) {
 		Message: "This service cannot be removed because it has instances.\nPlease remove these instances before removing the service.",
 		Status:  http.StatusForbidden,
 	}
-	client := cmd.NewClient(&http.Client{Transport: &trans}, nil, s.manager)
-	err := (&ServiceDestroy{}).Run(&context, client)
+	s.setupFakeTransport(trans)
+	err := (&ServiceDestroy{}).Run(&context)
 	c.Assert(err, check.NotNil)
-	c.Assert(err.Error(), check.Equals, trans.Message)
+	c.Assert(tsuruHTTP.UnwrapErr(err).Error(), check.Equals, trans.Message)
 }
 
 func (s *S) TestServiceDestroyIsACommand(c *check.C) {
@@ -137,13 +138,13 @@ func (s *S) TestServiceUpdate(c *check.C) {
 			return method && url && id && endpoint && contentType
 		},
 	}
-	client := cmd.NewClient(&http.Client{Transport: &trans}, nil, s.manager)
+	s.setupFakeTransport(&trans)
 	context := cmd.Context{
 		Args:   []string{"testdata/manifest.yml"},
 		Stdout: &stdout,
 		Stderr: &stderr,
 	}
-	err := (&ServiceUpdate{}).Run(&context, client)
+	err := (&ServiceUpdate{}).Run(&context)
 	c.Assert(err, check.IsNil)
 	c.Assert(called, check.Equals, true)
 	c.Assert(stdout.String(), check.Equals, "Service successfully updated.\n")
@@ -178,13 +179,13 @@ func (s *S) TestServiceDocAdd(c *check.C) {
 			return method && path && contentType
 		},
 	}
-	client := cmd.NewClient(&http.Client{Transport: &trans}, nil, s.manager)
+	s.setupFakeTransport(&trans)
 	context := cmd.Context{
 		Args:   []string{"serv", "testdata/doc.md"},
 		Stdout: &stdout,
 		Stderr: &stderr,
 	}
-	err := (&ServiceDocAdd{}).Run(&context, client)
+	err := (&ServiceDocAdd{}).Run(&context)
 	c.Assert(err, check.IsNil)
 	c.Assert(called, check.Equals, true)
 	c.Assert(stdout.String(), check.Equals, "Documentation for 'serv' successfully updated.\n")
@@ -212,13 +213,13 @@ func (s *S) TestServiceDocGet(c *check.C) {
 			return req.Method == "GET" && strings.HasSuffix(req.URL.Path, "/services/serv/doc")
 		},
 	}
-	client := cmd.NewClient(&http.Client{Transport: &trans}, nil, s.manager)
+	s.setupFakeTransport(&trans)
 	context := cmd.Context{
 		Args:   []string{"serv"},
 		Stdout: &stdout,
 		Stderr: &stderr,
 	}
-	err := (&ServiceDocGet{}).Run(&context, client)
+	err := (&ServiceDocGet{}).Run(&context)
 	c.Assert(err, check.IsNil)
 	c.Assert(called, check.Equals, true)
 	c.Assert(context.Stdout.(*bytes.Buffer).String(), check.Equals, "some doc")
@@ -249,13 +250,13 @@ e.g.: $ tsuru service template template`
 func (s *S) TestServiceTemplateRun(c *check.C) {
 	var stdout, stderr bytes.Buffer
 	trans := cmdtest.Transport{Message: "", Status: http.StatusOK}
-	client := cmd.NewClient(&http.Client{Transport: &trans}, nil, s.manager)
+	s.setupFakeTransport(trans)
 	ctx := cmd.Context{
 		Args:   []string{},
 		Stdout: &stdout,
 		Stderr: &stderr,
 	}
-	err := (&ServiceTemplate{}).Run(&ctx, client)
+	err := (&ServiceTemplate{}).Run(&ctx)
 	defer os.Remove("./manifest.yaml")
 	c.Assert(err, check.IsNil)
 	expected := "Generated file \"manifest.yaml\" in current directory\n"

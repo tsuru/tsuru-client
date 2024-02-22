@@ -1,7 +1,6 @@
 package auth
 
 import (
-	"context"
 	stdContext "context"
 	"encoding/json"
 	"fmt"
@@ -10,10 +9,11 @@ import (
 	"time"
 
 	"github.com/tsuru/tsuru/cmd"
+	authTypes "github.com/tsuru/tsuru/types/auth"
 	"golang.org/x/oauth2"
 )
 
-func oidcLogin(ctx *cmd.Context, loginInfo *loginScheme) error {
+func oidcLogin(ctx *cmd.Context, loginInfo *authTypes.SchemeInfo) error {
 	pkceVerifier := oauth2.GenerateVerifier()
 
 	fmt.Fprintln(ctx.Stdout, "Starting OIDC login")
@@ -47,7 +47,7 @@ func oidcLogin(ctx *cmd.Context, loginInfo *loginScheme) error {
 			finish <- true
 		}()
 
-		t, err := config.Exchange(context.Background(), r.URL.Query().Get("code"), oauth2.VerifierOption(pkceVerifier))
+		t, err := config.Exchange(stdContext.Background(), r.URL.Query().Get("code"), oauth2.VerifierOption(pkceVerifier))
 
 		w.Header().Add("Content-Type", "text/html")
 

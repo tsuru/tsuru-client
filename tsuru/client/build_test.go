@@ -46,7 +46,7 @@ func (s *S) TestBuildRun(c *check.C) {
 			return req.Method == "POST" && strings.HasSuffix(req.URL.Path, "/apps/myapp/build")
 		},
 	}
-	client := cmd.NewClient(&http.Client{Transport: &trans}, nil, manager)
+	s.setupFakeTransport(&trans)
 	var stdout, stderr bytes.Buffer
 	context := cmd.Context{
 		Stdout: &stdout,
@@ -55,7 +55,7 @@ func (s *S) TestBuildRun(c *check.C) {
 	}
 	command := AppBuild{}
 	command.Flags().Parse(true, []string{"-a", "myapp", "-t", "mytag"})
-	err = command.Run(&context, client)
+	err = command.Run(&context)
 	c.Assert(err, check.IsNil)
 	c.Assert(calledTimes, check.Equals, 2)
 }
@@ -82,7 +82,7 @@ func (s *S) TestBuildFail(c *check.C) {
 			return req.Method == "POST" && strings.HasSuffix(req.URL.Path, "/apps/myapp/build")
 		},
 	}
-	client := cmd.NewClient(&http.Client{Transport: &trans}, nil, manager)
+	s.setupFakeTransport(&trans)
 	var stdout, stderr bytes.Buffer
 	context := cmd.Context{
 		Stdout: &stdout,
@@ -91,7 +91,7 @@ func (s *S) TestBuildFail(c *check.C) {
 	}
 	command := AppBuild{}
 	command.Flags().Parse(true, []string{"-a", "myapp", "-t", "mytag"})
-	err = command.Run(&context, client)
+	err = command.Run(&context)
 	c.Assert(err, check.Equals, cmd.ErrAbortCommand)
 }
 
@@ -103,10 +103,10 @@ func (s *S) TestBuildRunWithoutArgs(c *check.C) {
 		Args:   []string{},
 	}
 	trans := cmdtest.Transport{Message: "OK\n", Status: http.StatusOK}
-	client := cmd.NewClient(&http.Client{Transport: &trans}, nil, manager)
+	s.setupFakeTransport(&trans)
 	command := AppBuild{}
 	command.Flags().Parse(true, []string{"-a", "myapp", "-t", "mytag"})
-	err := command.Run(&ctx, client)
+	err := command.Run(&ctx)
 	c.Assert(err, check.NotNil)
 	c.Assert(err.Error(), check.Equals, "You should provide at least one file to build the image.\n")
 }
@@ -119,10 +119,10 @@ func (s *S) TestBuildRunWithoutTag(c *check.C) {
 		Args:   []string{"testdata", "..", "-a", "myapp"},
 	}
 	trans := cmdtest.Transport{Message: "OK\n", Status: http.StatusOK}
-	client := cmd.NewClient(&http.Client{Transport: &trans}, nil, manager)
+	s.setupFakeTransport(&trans)
 	command := AppBuild{}
 	command.Flags().Parse(true, []string{"-a", "myapp"})
-	err := command.Run(&ctx, client)
+	err := command.Run(&ctx)
 	c.Assert(err, check.NotNil)
 	c.Assert(err.Error(), check.Equals, "You should provide one tag to build the image.\n")
 }

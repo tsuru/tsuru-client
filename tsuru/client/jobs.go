@@ -19,10 +19,10 @@ import (
 	"github.com/antihax/optional"
 	"github.com/mattn/go-shellwords"
 	"github.com/tsuru/gnuflag"
-	"github.com/tsuru/go-tsuruclient/pkg/client"
 	"github.com/tsuru/go-tsuruclient/pkg/tsuru"
 	"github.com/tsuru/tablecli"
 	"github.com/tsuru/tsuru-client/tsuru/formatter"
+	tsuruHTTP "github.com/tsuru/tsuru-client/tsuru/http"
 	"github.com/tsuru/tsuru/cmd"
 )
 
@@ -129,10 +129,8 @@ func parseJobCommands(commands []string) ([]string, error) {
 	return shellCommands, nil
 }
 
-func (c *JobCreate) Run(ctx *cmd.Context, cli *cmd.Client) error {
-	apiClient, err := client.ClientFromEnvironment(&tsuru.Configuration{
-		HTTPClient: cli.HTTPClient,
-	})
+func (c *JobCreate) Run(ctx *cmd.Context) error {
+	apiClient, err := tsuruHTTP.TsuruClientFromEnvironment()
 	if err != nil {
 		return err
 	}
@@ -222,11 +220,9 @@ Command: {{.Job.Spec.Container.Command}}
 Max Running Time: {{.Job.Spec.ActiveDeadlineSeconds}}s
 {{- end }}`
 
-func (c *JobInfo) Run(ctx *cmd.Context, cli *cmd.Client) error {
+func (c *JobInfo) Run(ctx *cmd.Context) error {
 	jobName := ctx.Args[0]
-	apiClient, err := client.ClientFromEnvironment(&tsuru.Configuration{
-		HTTPClient: cli.HTTPClient,
-	})
+	apiClient, err := tsuruHTTP.TsuruClientFromEnvironment()
 	if err != nil {
 		return err
 	}
@@ -354,10 +350,8 @@ func (c *JobList) Info() *cmd.Info {
 	}
 }
 
-func (c *JobList) Run(ctx *cmd.Context, cli *cmd.Client) error {
-	apiClient, err := client.ClientFromEnvironment(&tsuru.Configuration{
-		HTTPClient: cli.HTTPClient,
-	})
+func (c *JobList) Run(ctx *cmd.Context) error {
+	apiClient, err := tsuruHTTP.TsuruClientFromEnvironment()
 	if err != nil {
 		return err
 	}
@@ -446,12 +440,10 @@ func (c *JobDelete) Info() *cmd.Info {
 	}
 }
 
-func (c *JobDelete) Run(ctx *cmd.Context, cli *cmd.Client) error {
+func (c *JobDelete) Run(ctx *cmd.Context) error {
 	jobName := ctx.Args[0]
 
-	apiClient, err := client.ClientFromEnvironment(&tsuru.Configuration{
-		HTTPClient: cli.HTTPClient,
-	})
+	apiClient, err := tsuruHTTP.TsuruClientFromEnvironment()
 	if err != nil {
 		return err
 	}
@@ -477,12 +469,10 @@ func (c *JobTrigger) Info() *cmd.Info {
 	}
 }
 
-func (c *JobTrigger) Run(ctx *cmd.Context, cli *cmd.Client) error {
+func (c *JobTrigger) Run(ctx *cmd.Context) error {
 	jobName := ctx.Args[0]
 
-	apiClient, err := client.ClientFromEnvironment(&tsuru.Configuration{
-		HTTPClient: cli.HTTPClient,
-	})
+	apiClient, err := tsuruHTTP.TsuruClientFromEnvironment()
 	if err != nil {
 		return err
 	}
@@ -552,11 +542,9 @@ func (c *JobUpdate) Flags() *gnuflag.FlagSet {
 	return c.fs
 }
 
-func (c *JobUpdate) Run(ctx *cmd.Context, cli *cmd.Client) error {
+func (c *JobUpdate) Run(ctx *cmd.Context) error {
 	jobName := ctx.Args[0]
-	apiClient, err := client.ClientFromEnvironment(&tsuru.Configuration{
-		HTTPClient: cli.HTTPClient,
-	})
+	apiClient, err := tsuruHTTP.TsuruClientFromEnvironment()
 	if err != nil {
 		return err
 	}
@@ -631,11 +619,9 @@ func (c *JobLog) Flags() *gnuflag.FlagSet {
 	return c.fs
 }
 
-func (c *JobLog) Run(ctx *cmd.Context, cli *cmd.Client) error {
+func (c *JobLog) Run(ctx *cmd.Context) error {
 	jobName := ctx.Args[0]
-	apiClient, err := client.ClientFromEnvironment(&tsuru.Configuration{
-		HTTPClient: cli.HTTPClient,
-	})
+	apiClient, err := tsuruHTTP.TsuruClientFromEnvironment()
 	if err != nil {
 		return err
 	}

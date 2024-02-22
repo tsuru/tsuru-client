@@ -222,9 +222,9 @@ func (s *S) TestEventList(c *check.C) {
 			return req.URL.Path == "/1.1/events"
 		},
 	}
-	client := cmd.NewClient(&http.Client{Transport: trans}, nil, manager)
+	s.setupFakeTransport(trans)
 	command := EventList{}
-	err := command.Run(&context, client)
+	err := command.Run(&context)
 	c.Assert(err, check.IsNil)
 	expected := `+--------------------------+-----------------------------+---------+-----------+------------+-------------------------+
 | ID                       | Start (duration)            | Success | Owner     | Kind       | Target                  |
@@ -262,11 +262,11 @@ func (s *S) TestEventListWithFilters(c *check.C) {
 			return true
 		},
 	}
-	client := cmd.NewClient(&http.Client{Transport: trans}, nil, manager)
+	s.setupFakeTransport(trans)
 	command := EventList{}
 	err := command.Flags().Parse(true, []string{"-k", "app.update", "-k", "app.deploy", "-o", "event-owner", "-t", "app", "-v", "appname", "-r"})
 	c.Assert(err, check.IsNil)
-	err = command.Run(&context, client)
+	err = command.Run(&context)
 	c.Assert(err, check.IsNil)
 }
 
@@ -289,9 +289,9 @@ func (s *S) TestEventInfo(c *check.C) {
 			return req.URL.Path == "/1.1/events/578e3908413daf5fd9891aac"
 		},
 	}
-	client := cmd.NewClient(&http.Client{Transport: trans}, nil, manager)
+	s.setupFakeTransport(trans)
 	command := EventInfo{}
-	err := command.Run(&context, client)
+	err := command.Run(&context)
 	c.Assert(err, check.IsNil)
 	expected := `ID:         578e3908413daf5fd9891aac
 Start:      19 Jul 16 09:28 CDT
@@ -420,9 +420,9 @@ func (s *S) TestEventInfoWithError(c *check.C) {
 			return req.URL.Path == "/1.1/events/5787bcc8413daf2aeb040730"
 		},
 	}
-	client := cmd.NewClient(&http.Client{Transport: trans}, nil, manager)
+	s.setupFakeTransport(trans)
 	command := EventInfo{}
-	err := command.Run(&context, client)
+	err := command.Run(&context)
 	c.Assert(err, check.IsNil)
 	expected := `ID:         5787bcc8413daf2aeb040730
 Start:      14 Jul 16 11:24 CDT
@@ -497,9 +497,9 @@ func (s *S) TestEventInfoRunning(c *check.C) {
 			return req.URL.Path == "/1.1/events/998e3908413daf5fd9891aac"
 		},
 	}
-	client := cmd.NewClient(&http.Client{Transport: trans}, nil, manager)
+	s.setupFakeTransport(trans)
 	command := EventInfo{}
-	err := command.Run(&context, client)
+	err := command.Run(&context)
 	c.Assert(err, check.IsNil)
 	expected := `ID:         998e3908413daf5fd9891aac
 Start:      19 Jul 16 09:27 CDT
@@ -529,9 +529,9 @@ func (s *S) TestEventInfoCanceled(c *check.C) {
 			return req.URL.Path == "/1.1/events/888e3908413daf5fd9891aac"
 		},
 	}
-	client := cmd.NewClient(&http.Client{Transport: trans}, nil, manager)
+	s.setupFakeTransport(trans)
 	command := EventInfo{}
-	err := command.Run(&context, client)
+	err := command.Run(&context)
 	c.Assert(err, check.IsNil)
 	expected := `ID:         888e3908413daf5fd9891aac
 Start:      19 Jul 16 09:28 CDT
@@ -570,10 +570,10 @@ func (s *S) TestEventCancel(c *check.C) {
 			return req.URL.Path == "/1.1/events/998e3908413daf5fd9891aac/cancel" && req.Method == "POST"
 		},
 	}
-	client := cmd.NewClient(&http.Client{Transport: trans}, nil, manager)
+	s.setupFakeTransport(trans)
 	command := EventCancel{}
 	command.Flags().Parse(true, []string{"-y"})
-	err := command.Run(&context, client)
+	err := command.Run(&context)
 	c.Assert(err, check.IsNil)
 	c.Assert(stdout.String(), check.Matches, "Cancellation successfully requested.\n")
 }

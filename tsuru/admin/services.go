@@ -16,6 +16,8 @@ import (
 	"strconv"
 	"strings"
 
+	"github.com/tsuru/tsuru-client/tsuru/config"
+	tsuruHTTP "github.com/tsuru/tsuru-client/tsuru/http"
 	"github.com/tsuru/tsuru/cmd"
 	"gopkg.in/yaml.v2"
 )
@@ -41,9 +43,9 @@ type serviceYaml struct {
 	MultiCluster bool `yaml:"multi-cluster"`
 }
 
-func (c *ServiceCreate) Run(context *cmd.Context, client *cmd.Client) error {
+func (c *ServiceCreate) Run(context *cmd.Context) error {
 	manifest := context.Args[0]
-	u, err := cmd.GetURL("/services")
+	u, err := config.GetURL("/services")
 	if err != nil {
 		return err
 	}
@@ -73,7 +75,7 @@ func (c *ServiceCreate) Run(context *cmd.Context, client *cmd.Client) error {
 		return err
 	}
 	request.Header.Set("Content-Type", "application/x-www-form-urlencoded")
-	_, err = client.Do(request)
+	_, err = tsuruHTTP.DefaultClient.Do(request)
 	if err != nil {
 		return err
 	}
@@ -85,13 +87,13 @@ type ServiceDestroy struct {
 	cmd.ConfirmationCommand
 }
 
-func (c *ServiceDestroy) Run(context *cmd.Context, client *cmd.Client) error {
+func (c *ServiceDestroy) Run(context *cmd.Context) error {
 	serviceName := context.Args[0]
 	question := fmt.Sprintf("Are you sure you want to remove the service %q? This will remove the service and NOT a service instance.", serviceName)
 	if !c.Confirm(context, question) {
 		return nil
 	}
-	url, err := cmd.GetURL("/services/" + serviceName)
+	url, err := config.GetURL("/services/" + serviceName)
 	if err != nil {
 		return err
 	}
@@ -99,7 +101,7 @@ func (c *ServiceDestroy) Run(context *cmd.Context, client *cmd.Client) error {
 	if err != nil {
 		return err
 	}
-	_, err = client.Do(request)
+	_, err = tsuruHTTP.DefaultClient.Do(request)
 	if err != nil {
 		return err
 	}
@@ -128,7 +130,7 @@ func (c *ServiceUpdate) Info() *cmd.Info {
 	}
 }
 
-func (c *ServiceUpdate) Run(ctx *cmd.Context, client *cmd.Client) error {
+func (c *ServiceUpdate) Run(ctx *cmd.Context) error {
 	manifest := ctx.Args[0]
 	b, err := os.ReadFile(manifest)
 	if err != nil {
@@ -145,7 +147,7 @@ func (c *ServiceUpdate) Run(ctx *cmd.Context, client *cmd.Client) error {
 	v.Set("username", y.Username)
 	v.Set("team", y.Team)
 	v.Set("endpoint", y.Endpoint["production"])
-	u, err := cmd.GetURL(fmt.Sprintf("/services/%s", y.Id))
+	u, err := config.GetURL(fmt.Sprintf("/services/%s", y.Id))
 	if err != nil {
 		return err
 	}
@@ -154,7 +156,7 @@ func (c *ServiceUpdate) Run(ctx *cmd.Context, client *cmd.Client) error {
 		return err
 	}
 	request.Header.Set("Content-Type", "application/x-www-form-urlencoded")
-	resp, err := client.Do(request)
+	resp, err := tsuruHTTP.DefaultClient.Do(request)
 	if err != nil {
 		return err
 	}
@@ -175,9 +177,9 @@ func (c *ServiceDocAdd) Info() *cmd.Info {
 	}
 }
 
-func (c *ServiceDocAdd) Run(ctx *cmd.Context, client *cmd.Client) error {
+func (c *ServiceDocAdd) Run(ctx *cmd.Context) error {
 	serviceName := ctx.Args[0]
-	u, err := cmd.GetURL("/services/" + serviceName + "/doc")
+	u, err := config.GetURL("/services/" + serviceName + "/doc")
 	if err != nil {
 		return err
 	}
@@ -193,7 +195,7 @@ func (c *ServiceDocAdd) Run(ctx *cmd.Context, client *cmd.Client) error {
 		return err
 	}
 	request.Header.Set("Content-Type", "application/x-www-form-urlencoded")
-	_, err = client.Do(request)
+	_, err = tsuruHTTP.DefaultClient.Do(request)
 	if err != nil {
 		return err
 	}
@@ -203,9 +205,9 @@ func (c *ServiceDocAdd) Run(ctx *cmd.Context, client *cmd.Client) error {
 
 type ServiceDocGet struct{}
 
-func (c *ServiceDocGet) Run(ctx *cmd.Context, client *cmd.Client) error {
+func (c *ServiceDocGet) Run(ctx *cmd.Context) error {
 	serviceName := ctx.Args[0]
-	url, err := cmd.GetURL("/services/" + serviceName + "/doc")
+	url, err := config.GetURL("/services/" + serviceName + "/doc")
 	if err != nil {
 		return err
 	}
@@ -213,7 +215,7 @@ func (c *ServiceDocGet) Run(ctx *cmd.Context, client *cmd.Client) error {
 	if err != nil {
 		return err
 	}
-	resp, err := client.Do(request)
+	resp, err := tsuruHTTP.DefaultClient.Do(request)
 	if err != nil {
 		return err
 	}
@@ -259,7 +261,7 @@ func generatePassword() (string, error) {
 	return base64.StdEncoding.EncodeToString(b), nil
 }
 
-func (c *ServiceTemplate) Run(ctx *cmd.Context, client *cmd.Client) error {
+func (c *ServiceTemplate) Run(ctx *cmd.Context) error {
 	pass, err := generatePassword()
 	if err != nil {
 		return err

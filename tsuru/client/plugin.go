@@ -20,6 +20,7 @@ import (
 	"strings"
 
 	"github.com/tsuru/gnuflag"
+	"github.com/tsuru/tsuru-client/tsuru/config"
 	"github.com/tsuru/tsuru/cmd"
 	"github.com/tsuru/tsuru/exec"
 )
@@ -64,9 +65,9 @@ func (PluginInstall) Info() *cmd.Info {
 	}
 }
 
-func (c *PluginInstall) Run(context *cmd.Context, client *cmd.Client) error {
-	pluginsDir := cmd.JoinWithUserDir(".tsuru", "plugins")
-	err := filesystem().MkdirAll(pluginsDir, 0755)
+func (c *PluginInstall) Run(context *cmd.Context) error {
+	pluginsDir := config.JoinWithUserDir(".tsuru", "plugins")
+	err := config.Filesystem().MkdirAll(pluginsDir, 0755)
 	if err != nil {
 		return err
 	}
@@ -84,11 +85,11 @@ func installPlugin(pluginName, pluginURL string, level int) error {
 	if level > 1 { // Avoid infinite recursion
 		return fmt.Errorf("Infinite Recursion detected, check if manifest.json is correct")
 	}
-	tmpDir, err := filesystem().MkdirTemp(cmd.JoinWithUserDir(".tsuru", "plugins"), "tmpdir-*")
+	tmpDir, err := config.Filesystem().MkdirTemp(config.JoinWithUserDir(".tsuru", "plugins"), "tmpdir-*")
 	if err != nil {
 		return fmt.Errorf("Could not create a tmpdir: %w", err)
 	}
-	defer filesystem().RemoveAll(tmpDir)
+	defer config.Filesystem().RemoveAll(tmpDir)
 
 	resp, err := http.Get(pluginURL)
 	if err != nil {
@@ -121,7 +122,7 @@ func installPlugin(pluginName, pluginURL string, level int) error {
 		extractErr = extractZip(tmpDir, bytes.NewReader(data))
 	}
 	if extractErr != nil {
-		file, err := filesystem().OpenFile(filepath.Join(tmpDir, pluginName), os.O_WRONLY|os.O_CREATE|os.O_TRUNC, 0755)
+		file, err := config.Filesystem().OpenFile(filepath.Join(tmpDir, pluginName), os.O_WRONLY|os.O_CREATE|os.O_TRUNC, 0755)
 		if err != nil {
 			return fmt.Errorf("Failed to open file: %w", err)
 		}
@@ -140,17 +141,17 @@ func installPlugin(pluginName, pluginURL string, level int) error {
 		return fmt.Errorf("The downloaded plugin content is invalid.")
 	}
 
-	if fstat, err1 := filesystem().Stat(executablePath); err1 == nil {
+	if fstat, err1 := config.Filesystem().Stat(executablePath); err1 == nil {
 		fmode := fstat.Mode()
 		os.Chmod(executablePath, fmode|0111) // make this file executable
 	}
 
-	pluginPath := cmd.JoinWithUserDir(".tsuru", "plugins", pluginName)
+	pluginPath := config.JoinWithUserDir(".tsuru", "plugins", pluginName)
 	if extractErr == nil {
-		if _, err := filesystem().Stat(pluginPath); err == nil {
-			filesystem().RemoveAll(pluginPath)
+		if _, err := config.Filesystem().Stat(pluginPath); err == nil {
+			config.Filesystem().RemoveAll(pluginPath)
 		}
-		if err := filesystem().Rename(tmpDir, pluginPath); err != nil {
+		if err := config.Filesystem().Rename(tmpDir, pluginPath); err != nil {
 			return fmt.Errorf("Could not move tmpDir: %w", err)
 		}
 		os.Chmod(pluginPath, 0755) // this is a directory with an executable inside
@@ -174,13 +175,13 @@ func findExecutablePlugin(basePath, pluginName string) (execPath string) {
 		var fStat fs.FileInfo
 		var err error
 		execPath = pathGlob
-		if fStat, err = filesystem().Stat(pathGlob); err != nil {
+		if fStat, err = config.Filesystem().Stat(pathGlob); err != nil {
 			files, _ := filepath.Glob(pathGlob)
 			if len(files) != 1 {
 				continue
 			}
 			execPath = files[0]
-			fStat, err = filesystem().Stat(execPath)
+			fStat, err = config.Filesystem().Stat(execPath)
 		}
 		if err != nil || fStat.IsDir() || !fStat.Mode().IsRegular() {
 			continue
@@ -191,17 +192,17 @@ func findExecutablePlugin(basePath, pluginName string) (execPath string) {
 }
 
 func copyFile(src, dst string) error {
-	sourceFile, err := filesystem().Open(src)
+	sourceFile, err := config.Filesystem().Open(src)
 	if err != nil {
 		return fmt.Errorf("Failed to open src file: %w", err)
 	}
 	defer sourceFile.Close()
-	sourceStat, err := filesystem().Stat(src)
+	sourceStat, err := config.Filesystem().Stat(src)
 	if err != nil {
 		return fmt.Errorf("Failed to stat file: %w", err)
 	}
 
-	targetFile, err := filesystem().OpenFile(dst, os.O_WRONLY|os.O_CREATE|os.O_TRUNC, 0755)
+	targetFile, err := config.Filesystem().OpenFile(dst, os.O_WRONLY|os.O_CREATE|os.O_TRUNC, 0755)
 	if err != nil {
 		return fmt.Errorf("Failed to open dest file: %w", err)
 	}
@@ -233,11 +234,11 @@ func extractTarGz(basePath string, gzipStream io.Reader) error {
 		}
 		switch header.Typeflag {
 		case tar.TypeDir:
-			if err = filesystem().Mkdir(filepath.Join(basePath, header.Name), fs.FileMode(header.Mode)); err != nil {
+			if err = config.Filesystem().Mkdir(filepath.Join(basePath, header.Name), fs.FileMode(header.Mode)); err != nil {
 				return fmt.Errorf("ExtractTarGz: Mkdir() failed: %w", err)
 			}
 		case tar.TypeReg:
-			outFile, err1 := filesystem().OpenFile(filepath.Join(basePath, header.Name), os.O_CREATE|os.O_TRUNC|os.O_WRONLY, fs.FileMode(header.Mode))
+			outFile, err1 := config.Filesystem().OpenFile(filepath.Join(basePath, header.Name), os.O_CREATE|os.O_TRUNC|os.O_WRONLY, fs.FileMode(header.Mode))
 			if err1 != nil {
 				return fmt.Errorf("ExtractTarGz: Create() failed: %w", err1)
 			}
@@ -274,7 +275,7 @@ func extractZip(basePath string, source io.Reader) error {
 	for _, f := range z.File {
 		fPath := filepath.Join(basePath, f.Name)
 		if f.FileInfo().IsDir() {
-			filesystem().MkdirAll(fPath, f.Mode().Perm())
+			config.Filesystem().MkdirAll(fPath, f.Mode().Perm())
 			continue
 		}
 
@@ -284,7 +285,7 @@ func extractZip(basePath string, source io.Reader) error {
 		}
 		defer freader.Close()
 
-		fDest, err := filesystem().OpenFile(fPath, os.O_CREATE|os.O_TRUNC|os.O_WRONLY, f.Mode().Perm())
+		fDest, err := config.Filesystem().OpenFile(fPath, os.O_CREATE|os.O_TRUNC|os.O_WRONLY, f.Mode().Perm())
 		if err != nil {
 			return fmt.Errorf("Could not open %q for writing: %w", fPath, err)
 		}
@@ -308,10 +309,10 @@ func (PluginRemove) Info() *cmd.Info {
 	}
 }
 
-func (c *PluginRemove) Run(context *cmd.Context, client *cmd.Client) error {
+func (c *PluginRemove) Run(context *cmd.Context) error {
 	pluginName := context.Args[0]
-	pluginPath := cmd.JoinWithUserDir(".tsuru", "plugins", pluginName)
-	err := filesystem().Remove(pluginPath)
+	pluginPath := config.JoinWithUserDir(".tsuru", "plugins", pluginName)
+	err := config.Filesystem().Remove(pluginPath)
 	if err != nil {
 		return err
 	}
@@ -330,8 +331,8 @@ func (PluginList) Info() *cmd.Info {
 	}
 }
 
-func (c *PluginList) Run(context *cmd.Context, client *cmd.Client) error {
-	pluginsPath := cmd.JoinWithUserDir(".tsuru", "plugins")
+func (c *PluginList) Run(context *cmd.Context) error {
+	pluginsPath := config.JoinWithUserDir(".tsuru", "plugins")
 	plugins, _ := os.ReadDir(pluginsPath)
 	for _, p := range plugins {
 		fmt.Fprintln(context.Stdout, p.Name())
@@ -349,15 +350,15 @@ func RunPlugin(context *cmd.Context) error {
 	if os.Getenv("TSURU_PLUGIN_NAME") == pluginName {
 		return cmd.ErrLookup
 	}
-	pluginPath := findExecutablePlugin(cmd.JoinWithUserDir(".tsuru", "plugins"), pluginName)
+	pluginPath := findExecutablePlugin(config.JoinWithUserDir(".tsuru", "plugins"), pluginName)
 	if pluginPath == "" {
 		return cmd.ErrLookup
 	}
-	target, err := cmd.GetTarget()
+	target, err := config.GetTarget()
 	if err != nil {
 		return err
 	}
-	token, err := cmd.ReadToken()
+	token, err := config.ReadToken()
 	if err != nil {
 		return err
 	}
@@ -403,9 +404,9 @@ func (c *PluginBundle) Flags() *gnuflag.FlagSet {
 	return c.fs
 }
 
-func (c *PluginBundle) Run(context *cmd.Context, client *cmd.Client) error {
-	pluginsDir := cmd.JoinWithUserDir(".tsuru", "plugins")
-	err := filesystem().MkdirAll(pluginsDir, 0755)
+func (c *PluginBundle) Run(context *cmd.Context) error {
+	pluginsDir := config.JoinWithUserDir(".tsuru", "plugins")
+	err := config.Filesystem().MkdirAll(pluginsDir, 0755)
 	if err != nil {
 		return err
 	}

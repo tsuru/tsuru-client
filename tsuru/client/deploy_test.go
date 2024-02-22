@@ -47,7 +47,7 @@ func (s *S) TestDeployRun(c *check.C) {
 			return req.Method == "POST" && strings.HasSuffix(req.URL.Path, "/apps/secret/deploy")
 		},
 	}
-	client := cmd.NewClient(&http.Client{Transport: &trans}, nil, manager)
+	s.setupFakeTransport(&trans)
 	var stdout, stderr bytes.Buffer
 	context := cmd.Context{
 		Stdout: &stdout,
@@ -57,7 +57,7 @@ func (s *S) TestDeployRun(c *check.C) {
 	err = cmd.Flags().Parse(true, []string{"testdata", "..", "-a", "secret"})
 	c.Assert(err, check.IsNil)
 	context.Args = cmd.Flags().Args()
-	err = cmd.Run(&context, client)
+	err = cmd.Run(&context)
 	c.Assert(err, check.IsNil)
 }
 
@@ -113,7 +113,7 @@ func (s *S) TestDeployRunCancel(c *check.C) {
 			},
 		},
 	}
-	client := cmd.NewClient(&http.Client{Transport: &trans}, nil, manager)
+	s.setupFakeTransport(&trans)
 	var stdout, stderr bytes.Buffer
 	context := cmd.Context{
 		Stdout: &stdout,
@@ -128,11 +128,11 @@ func (s *S) TestDeployRunCancel(c *check.C) {
 	context.Args = cmd.Flags().Args()
 
 	go func() {
-		err = cmd.Run(&context, client)
+		err = cmd.Run(&context)
 		c.Assert(err, check.IsNil)
 	}()
 	<-deploy
-	err = cmd.Cancel(context, client)
+	err = cmd.Cancel(context)
 	c.Assert(err, check.IsNil)
 }
 
@@ -149,7 +149,7 @@ func (s *S) TestDeployImage(c *check.C) {
 			return req.Method == "POST" && strings.HasSuffix(req.URL.Path, "/apps/secret/deploy")
 		},
 	}
-	client := cmd.NewClient(&http.Client{Transport: &trans}, nil, manager)
+	s.setupFakeTransport(&trans)
 	var stdout, stderr bytes.Buffer
 	context := cmd.Context{
 		Stdout: &stdout,
@@ -159,7 +159,7 @@ func (s *S) TestDeployImage(c *check.C) {
 	err := cmd.Flags().Parse(true, []string{"-a", "secret", "-i", "registr.com/image-to-deploy"})
 	c.Assert(err, check.IsNil)
 	context.Args = cmd.Flags().Args()
-	err = cmd.Run(&context, client)
+	err = cmd.Run(&context)
 	c.Assert(err, check.IsNil)
 }
 
@@ -184,7 +184,7 @@ func (s *S) TestDeployRunWithMessage(c *check.C) {
 			return req.Method == "POST" && strings.HasSuffix(req.URL.Path, "/apps/secret/deploy")
 		},
 	}
-	client := cmd.NewClient(&http.Client{Transport: &trans}, nil, manager)
+	s.setupFakeTransport(&trans)
 	var stdout, stderr bytes.Buffer
 	context := cmd.Context{
 		Stdout: &stdout,
@@ -194,7 +194,7 @@ func (s *S) TestDeployRunWithMessage(c *check.C) {
 	cmd := AppDeploy{}
 	err = cmd.Flags().Parse(true, []string{"-a", "secret", "-m", "my awesome deploy"})
 	c.Assert(err, check.IsNil)
-	err = cmd.Run(&context, client)
+	err = cmd.Run(&context)
 	c.Assert(err, check.IsNil)
 }
 
@@ -205,7 +205,7 @@ func (s *S) TestDeployAuthNotOK(c *check.C) {
 			return req.Method == "POST" && strings.HasSuffix(req.URL.Path, "/apps/secret/deploy")
 		},
 	}
-	client := cmd.NewClient(&http.Client{Transport: &trans}, nil, manager)
+	s.setupFakeTransport(&trans)
 	var stdout, stderr bytes.Buffer
 	context := cmd.Context{
 		Stdout: &stdout,
@@ -216,13 +216,13 @@ func (s *S) TestDeployAuthNotOK(c *check.C) {
 	err := command.Flags().Parse(true, context.Args)
 	c.Assert(err, check.IsNil)
 	context.Args = command.Flags().Args()
-	err = command.Run(&context, client)
-	c.Assert(err, check.ErrorMatches, "Forbidden")
+	err = command.Run(&context)
+	c.Assert(err, check.ErrorMatches, ".* Forbidden")
 }
 
 func (s *S) TestDeployRunNotOK(c *check.C) {
 	trans := cmdtest.Transport{Message: "deploy worked\n", Status: http.StatusOK}
-	client := cmd.NewClient(&http.Client{Transport: &trans}, nil, manager)
+	s.setupFakeTransport(&trans)
 	var stdout, stderr bytes.Buffer
 	context := cmd.Context{
 		Stdout: &stdout,
@@ -233,7 +233,7 @@ func (s *S) TestDeployRunNotOK(c *check.C) {
 	err := command.Flags().Parse(true, context.Args)
 	c.Assert(err, check.IsNil)
 	context.Args = command.Flags().Args()
-	err = command.Run(&context, client)
+	err = command.Run(&context)
 	c.Assert(err, check.Equals, cmd.ErrAbortCommand)
 }
 
@@ -245,12 +245,12 @@ func (s *S) TestDeployRunFileNotFound(c *check.C) {
 		Args:   []string{"/tmp/something/that/doesn't/really/exist/im/sure", "-a", "secret"},
 	}
 	trans := cmdtest.Transport{Message: "OK\n", Status: http.StatusOK}
-	client := cmd.NewClient(&http.Client{Transport: &trans}, nil, manager)
+	s.setupFakeTransport(&trans)
 	command := AppDeploy{}
 	err := command.Flags().Parse(true, context.Args)
 	c.Assert(err, check.IsNil)
 	context.Args = command.Flags().Args()
-	err = command.Run(&context, client)
+	err = command.Run(&context)
 	c.Assert(err, check.NotNil)
 }
 
@@ -259,8 +259,8 @@ func (s *S) TestDeployRunWithoutArgsAndImage(c *check.C) {
 	err := command.Flags().Parse(true, []string{"-a", "secret"})
 	c.Assert(err, check.IsNil)
 	ctx := &cmd.Context{Stdout: io.Discard, Stderr: io.Discard, Args: command.Flags().Args()}
-	client := cmd.NewClient(&http.Client{Transport: &cmdtest.Transport{Status: http.StatusInternalServerError}}, nil, manager)
-	err = command.Run(ctx, client)
+	s.setupFakeTransport(&cmdtest.Transport{Status: http.StatusInternalServerError})
+	err = command.Run(ctx)
 	c.Assert(err, check.NotNil)
 	c.Assert(err.Error(), check.Equals, "You should provide at least one file, Docker image name or Dockerfile to deploy.\n")
 }
@@ -270,20 +270,20 @@ func (s *S) TestDeployRunWithArgsAndImage(c *check.C) {
 	err := command.Flags().Parse(true, []string{"-i", "registr.com/image-to-deploy", "./path/to/dir"})
 	c.Assert(err, check.IsNil)
 	ctx := &cmd.Context{Stdout: io.Discard, Stderr: io.Discard, Args: command.Flags().Args()}
-	client := cmd.NewClient(&http.Client{Transport: &cmdtest.Transport{Status: http.StatusInternalServerError}}, nil, manager)
-	err = command.Run(ctx, client)
+	s.setupFakeTransport(&cmdtest.Transport{Status: http.StatusInternalServerError})
+	err = command.Run(ctx)
 	c.Assert(err, check.ErrorMatches, "You can't deploy files and docker image at the same time.\n")
 }
 
 func (s *S) TestDeployRunRequestFailure(c *check.C) {
 	trans := cmdtest.Transport{Message: "app not found\n", Status: http.StatusNotFound}
-	client := cmd.NewClient(&http.Client{Transport: &trans}, nil, manager)
+	s.setupFakeTransport(&trans)
 	command := AppDeploy{}
 	err := command.Flags().Parse(true, []string{"testdata", "..", "-a", "secret"})
 	c.Assert(err, check.IsNil)
 	ctx := &cmd.Context{Stdout: io.Discard, Stderr: io.Discard, Args: command.Flags().Args()}
-	err = command.Run(ctx, client)
-	c.Assert(err, check.ErrorMatches, "app not found\n")
+	err = command.Run(ctx)
+	c.Assert(err, check.ErrorMatches, ".* app not found\n")
 }
 
 func (s *S) TestDeploy_Run_DockerfileAndDockerImage(c *check.C) {
@@ -291,8 +291,8 @@ func (s *S) TestDeploy_Run_DockerfileAndDockerImage(c *check.C) {
 	err := command.Flags().Parse(true, []string{"-i", "registry.example.com/my-team/my-app:v42", "--dockerfile", "."})
 	c.Assert(err, check.IsNil)
 	ctx := &cmd.Context{Stdout: io.Discard, Stderr: io.Discard, Args: command.Flags().Args()}
-	client := cmd.NewClient(&http.Client{Transport: &cmdtest.Transport{Status: http.StatusInternalServerError}}, nil, manager)
-	err = command.Run(ctx, client)
+	s.setupFakeTransport(&cmdtest.Transport{Status: http.StatusInternalServerError})
+	err = command.Run(ctx)
 	c.Assert(err, check.ErrorMatches, "You can't deploy container image and container file at same time.\n")
 }
 
@@ -325,7 +325,8 @@ func (s *S) TestDeploy_Run_UsingDockerfile(c *check.C) {
 		},
 	}
 
-	err = command.Run(ctx, cmd.NewClient(&http.Client{Transport: trans}, nil, manager))
+	s.setupFakeTransport(trans)
+	err = command.Run(ctx)
 	c.Assert(err, check.IsNil)
 }
 
@@ -402,19 +403,19 @@ func (s *S) TestAppDeployList(c *check.C) {
 		Stdout: &stdout,
 		Stderr: &stderr,
 	}
-	client := cmd.NewClient(&http.Client{Transport: &cmdtest.Transport{Message: result, Status: http.StatusOK}}, nil, manager)
+	s.setupFakeTransport(&cmdtest.Transport{Message: result, Status: http.StatusOK})
 	command := AppDeployList{}
 	err := command.Flags().Parse(true, []string{"--app", "test"})
 	c.Assert(err, check.IsNil)
 	context.Args = command.Flags().Args()
-	err = command.Run(&context, client)
+	err = command.Run(&context)
 	c.Assert(err, check.IsNil)
 	c.Assert(stdout.String(), check.Equals, expected)
 }
 
 func (s *S) TestDeployRunAppWithouDeploy(c *check.C) {
 	trans := cmdtest.Transport{Message: "", Status: http.StatusNoContent}
-	client := cmd.NewClient(&http.Client{Transport: &trans}, nil, manager)
+	s.setupFakeTransport(&trans)
 	var stdout, stderr bytes.Buffer
 	context := cmd.Context{
 		Stdout: &stdout,
@@ -422,7 +423,7 @@ func (s *S) TestDeployRunAppWithouDeploy(c *check.C) {
 	}
 	command := AppDeployList{}
 	command.Flags().Parse(true, []string{"-a", "secret"})
-	err := command.Run(&context, client)
+	err := command.Run(&context)
 	c.Assert(err, check.IsNil)
 	c.Assert(stdout.String(), check.Equals, "App secret has no deploy.\n")
 }
@@ -456,10 +457,10 @@ func (s *S) TestAppDeployRollback(c *check.C) {
 			return method && path && image && rollback
 		},
 	}
-	client := cmd.NewClient(&http.Client{Transport: trans}, nil, manager)
+	s.setupFakeTransport(trans)
 	command := AppDeployRollback{}
 	command.Flags().Parse(true, []string{"--app", "arrakis", "-y"})
-	err = command.Run(&context, client)
+	err = command.Run(&context)
 	c.Assert(err, check.IsNil)
 	c.Assert(called, check.Equals, true)
 	c.Assert(stdout.String(), check.Equals, expectedOut)
@@ -488,10 +489,10 @@ func (s *S) TestAppDeployRollbackUpdate(c *check.C) {
 			return method && path && image && rollback && reason && enable
 		},
 	}
-	client := cmd.NewClient(&http.Client{Transport: trans}, nil, manager)
+	s.setupFakeTransport(trans)
 	command := AppDeployRollbackUpdate{}
 	command.Flags().Parse(true, []string{"--app", "zilean", "-i", "caitlyn", "-r", "DEMACIA", "-d"})
-	err := command.Run(&context, client)
+	err := command.Run(&context)
 	c.Assert(err, check.IsNil)
 	c.Assert(called, check.Equals, true)
 	c.Assert(stdout.String(), check.Equals, "")
@@ -516,10 +517,10 @@ func (s *S) TestAppDeployRollbackUpdateDisabling(c *check.C) {
 			return method && path && image && rollback && reason && enable
 		},
 	}
-	client := cmd.NewClient(&http.Client{Transport: trans}, nil, manager)
+	s.setupFakeTransport(trans)
 	command := AppDeployRollbackUpdate{}
 	command.Flags().Parse(true, []string{"--app", "xayah", "-i", "rakan", "-r", "vastayan"})
-	err := command.Run(&context, client)
+	err := command.Run(&context)
 	c.Assert(err, check.IsNil)
 	c.Assert(called, check.Equals, true)
 	c.Assert(stdout.String(), check.Equals, "")
@@ -552,10 +553,10 @@ func (s *S) TestAppDeployRebuild(c *check.C) {
 			return method && path && rebuild
 		},
 	}
-	client := cmd.NewClient(&http.Client{Transport: trans}, nil, manager)
+	s.setupFakeTransport(trans)
 	command := AppDeployRebuild{}
 	command.Flags().Parse(true, []string{"--app", "myapp"})
-	err = command.Run(&context, client)
+	err = command.Run(&context)
 	c.Assert(err, check.IsNil)
 	c.Assert(called, check.Equals, true)
 	c.Assert(stdout.String(), check.Equals, expectedOut)

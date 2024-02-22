@@ -37,10 +37,10 @@ func (s *S) TestPlanCreate(c *check.C) {
 			return method && url && contentType && name && memory && cpuMilli && deflt
 		},
 	}
-	client := cmd.NewClient(&http.Client{Transport: trans}, nil, s.manager)
+	s.setupFakeTransport(trans)
 	command := PlanCreate{}
 	command.Flags().Parse(true, []string{"-c", "100m"})
-	err := command.Run(&context, client)
+	err := command.Run(&context)
 	c.Assert(err, check.IsNil)
 	c.Assert(stdout.String(), check.Equals, "Plan successfully created!\n")
 }
@@ -65,10 +65,10 @@ func (s *S) TestPlanCreateFlags(c *check.C) {
 			return method && url && contentType && name && memory && cpuMilli && deflt
 		},
 	}
-	client := cmd.NewClient(&http.Client{Transport: trans}, nil, s.manager)
+	s.setupFakeTransport(trans)
 	command := PlanCreate{}
 	command.Flags().Parse(true, []string{"-c", "10%", "-m", "4194304", "-d"})
-	err := command.Run(&context, client)
+	err := command.Run(&context)
 	c.Assert(err, check.IsNil)
 	c.Assert(stdout.String(), check.Equals, "Plan successfully created!\n")
 }
@@ -97,10 +97,10 @@ func (s *S) TestPlanCreateMemoryUnits(c *check.C) {
 			return true
 		},
 	}
-	client := cmd.NewClient(&http.Client{Transport: trans}, nil, s.manager)
+	s.setupFakeTransport(trans)
 	command := PlanCreate{}
 	command.Flags().Parse(true, []string{"-c", "100m", "-m", "100Mi", "-d"})
-	err := command.Run(&context, client)
+	err := command.Run(&context)
 	c.Assert(err, check.IsNil)
 	c.Assert(stdout.String(), check.Equals, "Plan successfully created!\n")
 }
@@ -118,10 +118,10 @@ func (s *S) TestPlanCreateError(c *check.C) {
 			return strings.HasSuffix(req.URL.Path, "/plans") && req.Method == "POST"
 		},
 	}
-	client := cmd.NewClient(&http.Client{Transport: trans}, nil, s.manager)
+	s.setupFakeTransport(trans)
 	command := PlanCreate{}
 	command.Flags().Parse(true, []string{"-c", "5"})
-	err := command.Run(&context, client)
+	err := command.Run(&context)
 	c.Assert(err, check.NotNil)
 	c.Assert(stdout.String(), check.Equals, "Failed to create plan!\n")
 }
@@ -146,10 +146,10 @@ func (s *S) TestPlanCreateInvalidMemory(c *check.C) {
 			return method && url && contentType && name && memory && cpuMilli && deflt
 		},
 	}
-	client := cmd.NewClient(&http.Client{Transport: trans}, nil, s.manager)
+	s.setupFakeTransport(trans)
 	command := PlanCreate{}
 	command.Flags().Parse(true, []string{"-c", "100", "-m", "4"})
-	err := command.Run(&context, client)
+	err := command.Run(&context)
 	c.Assert(err, check.NotNil)
 	c.Assert(stdout.String(), check.Equals, "Failed to create plan!\n")
 }
@@ -174,10 +174,10 @@ func (s *S) TestPlanCreateInvalidCpushare(c *check.C) {
 			return method && url && contentType && name && memory && cpuMilli && deflt
 		},
 	}
-	client := cmd.NewClient(&http.Client{Transport: trans}, nil, s.manager)
+	s.setupFakeTransport(trans)
 	command := PlanCreate{}
 	command.Flags().Parse(true, []string{"-c", "1", "-m", "4194304"})
-	err := command.Run(&context, client)
+	err := command.Run(&context)
 	c.Assert(err, check.NotNil)
 	c.Assert(stdout.String(), check.Equals, "Failed to create plan!\n")
 }
@@ -198,9 +198,9 @@ func (s *S) TestPlanRemove(c *check.C) {
 			return strings.HasSuffix(req.URL.Path, "/plans/myplan") && req.Method == http.MethodDelete
 		},
 	}
-	client := cmd.NewClient(&http.Client{Transport: trans}, nil, s.manager)
+	s.setupFakeTransport(trans)
 	command := PlanRemove{}
-	err := command.Run(&context, client)
+	err := command.Run(&context)
 	c.Assert(err, check.IsNil)
 	c.Assert(stdout.String(), check.Equals, "Plan successfully removed!\n")
 }
@@ -218,9 +218,9 @@ func (s *S) TestPlanRemoveError(c *check.C) {
 			return strings.HasSuffix(req.URL.Path, "/plans/myplan") && req.Method == http.MethodDelete
 		},
 	}
-	client := cmd.NewClient(&http.Client{Transport: trans}, nil, s.manager)
+	s.setupFakeTransport(trans)
 	command := PlanRemove{}
-	err := command.Run(&context, client)
+	err := command.Run(&context)
 	c.Assert(err, check.NotNil)
 	c.Assert(stdout.String(), check.Equals, "Failed to remove plan!\n")
 }

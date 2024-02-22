@@ -13,7 +13,9 @@ import (
 
 	"github.com/tsuru/gnuflag"
 	"github.com/tsuru/tablecli"
+	"github.com/tsuru/tsuru-client/tsuru/config"
 	"github.com/tsuru/tsuru-client/tsuru/formatter"
+	tsuruHTTP "github.com/tsuru/tsuru-client/tsuru/http"
 	"github.com/tsuru/tsuru/cmd"
 	"github.com/tsuru/tsuru/event"
 )
@@ -41,17 +43,17 @@ func (c *EventBlockList) Flags() *gnuflag.FlagSet {
 	return c.fs
 }
 
-func (c *EventBlockList) Run(context *cmd.Context, client *cmd.Client) error {
+func (c *EventBlockList) Run(context *cmd.Context) error {
 	path := "/events/blocks"
 	if c.active {
 		path += "?active=true"
 	}
-	url, err := cmd.GetURLVersion("1.3", path)
+	url, err := config.GetURLVersion("1.3", path)
 	if err != nil {
 		return err
 	}
 	request, _ := http.NewRequest("GET", url, nil)
-	resp, err := client.Do(request)
+	resp, err := tsuruHTTP.DefaultClient.Do(request)
 	if err != nil {
 		return err
 	}
@@ -152,8 +154,8 @@ func (c *EventBlockAdd) Flags() *gnuflag.FlagSet {
 	return c.fs
 }
 
-func (c *EventBlockAdd) Run(context *cmd.Context, client *cmd.Client) error {
-	url, err := cmd.GetURLVersion("1.3", "/events/blocks")
+func (c *EventBlockAdd) Run(context *cmd.Context) error {
+	url, err := config.GetURLVersion("1.3", "/events/blocks")
 	if err != nil {
 		return err
 	}
@@ -179,7 +181,7 @@ func (c *EventBlockAdd) Run(context *cmd.Context, client *cmd.Client) error {
 	if err != nil {
 		return err
 	}
-	err = doRequest(client, url, http.MethodPost, body)
+	err = doRequest(url, http.MethodPost, body)
 	if err != nil {
 		return err
 	}
@@ -199,14 +201,14 @@ func (c *EventBlockRemove) Info() *cmd.Info {
 	}
 }
 
-func (c *EventBlockRemove) Run(context *cmd.Context, client *cmd.Client) error {
+func (c *EventBlockRemove) Run(context *cmd.Context) error {
 	uuid := context.Args[0]
-	url, err := cmd.GetURLVersion("1.3", fmt.Sprintf("/events/blocks/%s", uuid))
+	url, err := config.GetURLVersion("1.3", fmt.Sprintf("/events/blocks/%s", uuid))
 	if err != nil {
 		return err
 	}
 	request, _ := http.NewRequest(http.MethodDelete, url, nil)
-	_, err = client.Do(request)
+	_, err = tsuruHTTP.DefaultClient.Do(request)
 	if err != nil {
 		return err
 	}

@@ -19,10 +19,12 @@ import (
 	"sync"
 
 	"github.com/tsuru/gnuflag"
-	"github.com/tsuru/go-tsuruclient/pkg/client"
 	"github.com/tsuru/go-tsuruclient/pkg/tsuru"
 	"github.com/tsuru/tablecli"
+	tsuruClientApp "github.com/tsuru/tsuru-client/tsuru/app"
+	"github.com/tsuru/tsuru-client/tsuru/config"
 	"github.com/tsuru/tsuru-client/tsuru/formatter"
+	tsuruHTTP "github.com/tsuru/tsuru-client/tsuru/http"
 	tsuruapp "github.com/tsuru/tsuru/app"
 	"github.com/tsuru/tsuru/cmd"
 	tsuruIo "github.com/tsuru/tsuru/io"
@@ -44,7 +46,7 @@ func (dl deployList) Less(i, j int) bool {
 }
 
 type AppDeployList struct {
-	cmd.AppNameMixIn
+	tsuruClientApp.AppNameMixIn
 
 	flagsApplied bool
 	json         bool
@@ -68,12 +70,12 @@ func (c *AppDeployList) Flags() *gnuflag.FlagSet {
 	return fs
 }
 
-func (c *AppDeployList) Run(context *cmd.Context, client *cmd.Client) error {
+func (c *AppDeployList) Run(context *cmd.Context) error {
 	appName, err := c.AppName()
 	if err != nil {
 		return err
 	}
-	url, err := cmd.GetURL(fmt.Sprintf("/deploys?app=%s&limit=10", appName))
+	url, err := config.GetURL(fmt.Sprintf("/deploys?app=%s&limit=10", appName))
 	if err != nil {
 		return err
 	}
@@ -81,7 +83,7 @@ func (c *AppDeployList) Run(context *cmd.Context, client *cmd.Client) error {
 	if err != nil {
 		return err
 	}
-	response, err := client.Do(request)
+	response, err := tsuruHTTP.DefaultClient.Do(request)
 	if err != nil {
 		return err
 	}
@@ -136,7 +138,7 @@ func (c *AppDeployList) Run(context *cmd.Context, client *cmd.Client) error {
 var _ cmd.Cancelable = &AppDeploy{}
 
 type AppDeploy struct {
-	cmd.AppNameMixIn
+	tsuruClientApp.AppNameMixIn
 	image      string
 	message    string
 	dockerfile string
@@ -220,7 +222,7 @@ func prepareUploadStreams(context *cmd.Context, buf *safe.Buffer) io.Writer {
 	return respBody
 }
 
-func (c *AppDeploy) Run(context *cmd.Context, client *cmd.Client) error {
+func (c *AppDeploy) Run(context *cmd.Context) error {
 	context.RawOutput()
 
 	if c.image == "" && c.dockerfile == "" && len(context.Args) == 0 {
@@ -233,13 +235,6 @@ func (c *AppDeploy) Run(context *cmd.Context, client *cmd.Client) error {
 
 	if c.image != "" && c.dockerfile != "" {
 		return errors.New("You can't deploy container image and container file at same time.\n")
-	}
-
-	debugWriter := io.Discard
-
-	debug := client != nil && client.Verbosity > 0 // e.g. --verbosity 2
-	if debug {
-		debugWriter = context.Stderr
 	}
 
 	appName, err := c.AppName()
@@ -261,7 +256,7 @@ func (c *AppDeploy) Run(context *cmd.Context, client *cmd.Client) error {
 
 	c.deployVersionArgs.values(values)
 
-	u, err := cmd.GetURL(fmt.Sprintf("/apps/%s/deploy", appName))
+	u, err := config.GetURL(fmt.Sprintf("/apps/%s/deploy", appName))
 	if err != nil {
 		return err
 	}
@@ -289,7 +284,7 @@ func (c *AppDeploy) Run(context *cmd.Context, client *cmd.Client) error {
 		fmt.Fprintln(context.Stdout, "Deploying with Dockerfile...")
 
 		var dockerfile string
-		dockerfile, archive, err = buildWithContainerFile(appName, c.dockerfile, c.filesOnly, context.Args, debugWriter)
+		dockerfile, archive, err = buildWithContainerFile(appName, c.dockerfile, c.filesOnly, context.Args, nil)
 		if err != nil {
 			return err
 		}
@@ -301,7 +296,7 @@ func (c *AppDeploy) Run(context *cmd.Context, client *cmd.Client) error {
 		fmt.Fprintln(context.Stdout, "Deploying using app's platform...")
 
 		var buffer bytes.Buffer
-		err = Archive(&buffer, c.filesOnly, context.Args, DefaultArchiveOptions(debugWriter))
+		err = Archive(&buffer, c.filesOnly, context.Args, DefaultArchiveOptions(nil))
 		if err != nil {
 			return err
 		}
@@ -314,7 +309,7 @@ func (c *AppDeploy) Run(context *cmd.Context, client *cmd.Client) error {
 	}
 
 	c.m.Lock()
-	resp, err := client.Do(request)
+	resp, err := tsuruHTTP.DefaultClient.Do(request)
 	if err != nil {
 		c.m.Unlock()
 		return err
@@ -350,10 +345,8 @@ func (c *AppDeploy) Run(context *cmd.Context, client *cmd.Client) error {
 	return cmd.ErrAbortCommand
 }
 
-func (c *AppDeploy) Cancel(ctx cmd.Context, cli *cmd.Client) error {
-	apiClient, err := client.ClientFromEnvironment(&tsuru.Configuration{
-		HTTPClient: cli.HTTPClient,
-	})
+func (c *AppDeploy) Cancel(ctx cmd.Context) error {
+	apiClient, err := tsuruHTTP.TsuruClientFromEnvironment()
 	if err != nil {
 		return err
 	}
@@ -386,7 +379,7 @@ func (w *firstWriter) Write(p []byte) (int, error) {
 }
 
 type AppDeployRollback struct {
-	cmd.AppNameMixIn
+	tsuruClientApp.AppNameMixIn
 	cmd.ConfirmationCommand
 	deployVersionArgs
 	fs *gnuflag.FlagSet
@@ -414,7 +407,7 @@ func (c *AppDeployRollback) Info() *cmd.Info {
 	}
 }
 
-func (c *AppDeployRollback) Run(context *cmd.Context, client *cmd.Client) error {
+func (c *AppDeployRollback) Run(context *cmd.Context) error {
 	context.RawOutput()
 	appName, err := c.AppName()
 	if err != nil {
@@ -424,7 +417,7 @@ func (c *AppDeployRollback) Run(context *cmd.Context, client *cmd.Client) error 
 	if !c.Confirm(context, fmt.Sprintf("Are you sure you want to rollback app %q to image %q?", appName, imgName)) {
 		return nil
 	}
-	u, err := cmd.GetURL(fmt.Sprintf("/apps/%s/deploy/rollback", appName))
+	u, err := config.GetURL(fmt.Sprintf("/apps/%s/deploy/rollback", appName))
 	if err != nil {
 		return err
 	}
@@ -437,7 +430,7 @@ func (c *AppDeployRollback) Run(context *cmd.Context, client *cmd.Client) error 
 		return err
 	}
 	request.Header.Add("Content-Type", "application/x-www-form-urlencoded")
-	response, err := client.Do(request)
+	response, err := tsuruHTTP.DefaultClient.Do(request)
 	if err != nil {
 		return err
 	}
@@ -445,7 +438,7 @@ func (c *AppDeployRollback) Run(context *cmd.Context, client *cmd.Client) error 
 }
 
 type AppDeployRebuild struct {
-	cmd.AppNameMixIn
+	tsuruClientApp.AppNameMixIn
 	deployVersionArgs
 	fs *gnuflag.FlagSet
 }
@@ -469,13 +462,13 @@ func (c *AppDeployRebuild) Info() *cmd.Info {
 	}
 }
 
-func (c *AppDeployRebuild) Run(context *cmd.Context, client *cmd.Client) error {
+func (c *AppDeployRebuild) Run(context *cmd.Context) error {
 	context.RawOutput()
 	appName, err := c.AppName()
 	if err != nil {
 		return err
 	}
-	u, err := cmd.GetURLVersion("1.3", fmt.Sprintf("/apps/%s/deploy/rebuild", appName))
+	u, err := config.GetURLVersion("1.3", fmt.Sprintf("/apps/%s/deploy/rebuild", appName))
 	if err != nil {
 		return err
 	}
@@ -487,7 +480,7 @@ func (c *AppDeployRebuild) Run(context *cmd.Context, client *cmd.Client) error {
 		return err
 	}
 	request.Header.Add("Content-Type", "application/x-www-form-urlencoded")
-	response, err := client.Do(request)
+	response, err := tsuruHTTP.DefaultClient.Do(request)
 	if err != nil {
 		return err
 	}
@@ -495,7 +488,7 @@ func (c *AppDeployRebuild) Run(context *cmd.Context, client *cmd.Client) error {
 }
 
 type AppDeployRollbackUpdate struct {
-	cmd.AppNameMixIn
+	tsuruClientApp.AppNameMixIn
 	image   string
 	reason  string
 	disable bool
@@ -538,12 +531,12 @@ func (c *AppDeployRollbackUpdate) Flags() *gnuflag.FlagSet {
 	return c.fs
 }
 
-func (c *AppDeployRollbackUpdate) Run(context *cmd.Context, client *cmd.Client) error {
+func (c *AppDeployRollbackUpdate) Run(context *cmd.Context) error {
 	appName, err := c.AppName()
 	if err != nil {
 		return err
 	}
-	u, err := cmd.GetURL(fmt.Sprintf("/apps/%s/deploy/rollback/update", appName))
+	u, err := config.GetURL(fmt.Sprintf("/apps/%s/deploy/rollback/update", appName))
 	if err != nil {
 		return err
 	}
@@ -557,7 +550,7 @@ func (c *AppDeployRollbackUpdate) Run(context *cmd.Context, client *cmd.Client) 
 		return err
 	}
 	request.Header.Add("Content-Type", "application/x-www-form-urlencoded")
-	_, err = client.Do(request)
+	_, err = tsuruHTTP.DefaultClient.Do(request)
 	return err
 }
 

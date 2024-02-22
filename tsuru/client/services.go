@@ -19,10 +19,11 @@ import (
 	"github.com/antihax/optional"
 	osb "github.com/pmorie/go-open-service-broker-client/v2"
 	"github.com/tsuru/gnuflag"
-	tsuruClient "github.com/tsuru/go-tsuruclient/pkg/client"
 	"github.com/tsuru/go-tsuruclient/pkg/tsuru"
 	"github.com/tsuru/tablecli"
+	"github.com/tsuru/tsuru-client/tsuru/config"
 	"github.com/tsuru/tsuru-client/tsuru/formatter"
+	tsuruHTTP "github.com/tsuru/tsuru-client/tsuru/http"
 	"github.com/tsuru/tsuru/cmd"
 	"github.com/tsuru/tsuru/service"
 )
@@ -92,12 +93,12 @@ func (c *ServiceList) Flags() *gnuflag.FlagSet {
 	return c.fs
 }
 
-func (s ServiceList) Run(ctx *cmd.Context, client *cmd.Client) error {
+func (s ServiceList) Run(ctx *cmd.Context) error {
 	qs, err := s.filter.queryString()
 	if err != nil {
 		return err
 	}
-	url, err := cmd.GetURL(fmt.Sprintf("/services/instances?%s", qs.Encode()))
+	url, err := config.GetURL(fmt.Sprintf("/services/instances?%s", qs.Encode()))
 	if err != nil {
 		return err
 	}
@@ -105,7 +106,7 @@ func (s ServiceList) Run(ctx *cmd.Context, client *cmd.Client) error {
 	if err != nil {
 		return err
 	}
-	resp, err := client.Do(req)
+	resp, err := tsuruHTTP.DefaultClient.Do(req)
 	if err != nil {
 		return err
 	}
@@ -257,7 +258,7 @@ This example shows how to add a new instance of **mongodb** service, named
 	}
 }
 
-func (c *ServiceInstanceAdd) Run(ctx *cmd.Context, client *cmd.Client) error {
+func (c *ServiceInstanceAdd) Run(ctx *cmd.Context) error {
 	serviceName, instanceName := ctx.Args[0], ctx.Args[1]
 	var plan string
 	if len(ctx.Args) > 2 {
@@ -280,7 +281,7 @@ func (c *ServiceInstanceAdd) Run(ctx *cmd.Context, client *cmd.Client) error {
 	for _, tag := range c.tags {
 		v.Add("tag", tag)
 	}
-	u, err := cmd.GetURL(fmt.Sprintf("/services/%s/instances", serviceName))
+	u, err := config.GetURL(fmt.Sprintf("/services/%s/instances", serviceName))
 	if err != nil {
 		return err
 	}
@@ -289,7 +290,7 @@ func (c *ServiceInstanceAdd) Run(ctx *cmd.Context, client *cmd.Client) error {
 		return err
 	}
 	request.Header.Set("Content-Type", "application/x-www-form-urlencoded")
-	_, err = client.Do(request)
+	_, err = tsuruHTTP.DefaultClient.Do(request)
 	if err != nil {
 		return err
 	}
@@ -351,10 +352,8 @@ The --remove-param removes a parameter. This parameter may be used multiple time
 	}
 }
 
-func (c *ServiceInstanceUpdate) Run(ctx *cmd.Context, client *cmd.Client) error {
-	apiClient, err := tsuruClient.ClientFromEnvironment(&tsuru.Configuration{
-		HTTPClient: client.HTTPClient,
-	})
+func (c *ServiceInstanceUpdate) Run(ctx *cmd.Context) error {
+	apiClient, err := tsuruHTTP.TsuruClientFromEnvironment()
 	if err != nil {
 		return err
 	}
@@ -436,7 +435,7 @@ type ServiceInstanceBind struct {
 	noRestart bool
 }
 
-func (sb *ServiceInstanceBind) Run(ctx *cmd.Context, client *cmd.Client) error {
+func (sb *ServiceInstanceBind) Run(ctx *cmd.Context) error {
 	ctx.RawOutput()
 
 	err := checkAppAndJobInputs(sb.appName, sb.jobName)
@@ -455,7 +454,7 @@ func (sb *ServiceInstanceBind) Run(ctx *cmd.Context, client *cmd.Client) error {
 		path = "/services/" + serviceName + "/instances/" + instanceName + "/jobs/" + sb.jobName
 	}
 
-	u, err := cmd.GetURLVersion(apiVersion, path)
+	u, err := config.GetURLVersion(apiVersion, path)
 	if err != nil {
 		return err
 	}
@@ -466,7 +465,7 @@ func (sb *ServiceInstanceBind) Run(ctx *cmd.Context, client *cmd.Client) error {
 		return err
 	}
 	request.Header.Set("Content-Type", "application/x-www-form-urlencoded")
-	resp, err := client.Do(request)
+	resp, err := tsuruHTTP.DefaultClient.Do(request)
 	if err != nil {
 		return err
 	}
@@ -508,7 +507,7 @@ type ServiceInstanceUnbind struct {
 	force     bool
 }
 
-func (su *ServiceInstanceUnbind) Run(ctx *cmd.Context, client *cmd.Client) error {
+func (su *ServiceInstanceUnbind) Run(ctx *cmd.Context) error {
 	ctx.RawOutput()
 
 	err := checkAppAndJobInputs(su.appName, su.jobName)
@@ -527,7 +526,7 @@ func (su *ServiceInstanceUnbind) Run(ctx *cmd.Context, client *cmd.Client) error
 		path = "/services/" + serviceName + "/instances/" + instanceName + "/jobs/" + su.jobName
 	}
 
-	u, err := cmd.GetURLVersion(apiVersion, path)
+	u, err := config.GetURLVersion(apiVersion, path)
 	if err != nil {
 		return err
 	}
@@ -539,7 +538,7 @@ func (su *ServiceInstanceUnbind) Run(ctx *cmd.Context, client *cmd.Client) error
 	query.Set("noRestart", strconv.FormatBool(su.noRestart))
 	query.Set("force", strconv.FormatBool(su.force))
 	request.URL.RawQuery = query.Encode()
-	resp, err := client.Do(request)
+	resp, err := tsuruHTTP.DefaultClient.Do(request)
 	if err != nil {
 		return err
 	}
@@ -610,10 +609,10 @@ type ServiceInstanceInfoModel struct {
 	Status          string
 }
 
-func (c ServiceInstanceInfo) Run(ctx *cmd.Context, client *cmd.Client) error {
+func (c ServiceInstanceInfo) Run(ctx *cmd.Context) error {
 	serviceName := ctx.Args[0]
 	instanceName := ctx.Args[1]
-	url, err := cmd.GetURL("/services/" + serviceName + "/instances/" + instanceName)
+	url, err := config.GetURL("/services/" + serviceName + "/instances/" + instanceName)
 	if err != nil {
 		return err
 	}
@@ -621,7 +620,7 @@ func (c ServiceInstanceInfo) Run(ctx *cmd.Context, client *cmd.Client) error {
 	if err != nil {
 		return err
 	}
-	resp, err := client.Do(request)
+	resp, err := tsuruHTTP.DefaultClient.Do(request)
 	if err != nil {
 		return err
 	}
@@ -635,7 +634,7 @@ func (c ServiceInstanceInfo) Run(ctx *cmd.Context, client *cmd.Client) error {
 		return err
 	}
 
-	url, err = cmd.GetURL("/services/" + serviceName + "/instances/" + instanceName + "/status")
+	url, err = config.GetURL("/services/" + serviceName + "/instances/" + instanceName + "/status")
 	if err != nil {
 		return err
 	}
@@ -643,7 +642,7 @@ func (c ServiceInstanceInfo) Run(ctx *cmd.Context, client *cmd.Client) error {
 	if err != nil {
 		return err
 	}
-	resp, err = client.Do(request)
+	resp, err = tsuruHTTP.DefaultClient.Do(request)
 	if err != nil {
 		return err
 	}
@@ -779,10 +778,8 @@ func (c *ServicePlanList) Flags() *gnuflag.FlagSet {
 	return c.fs
 }
 
-func (c *ServicePlanList) Run(ctx *cmd.Context, client *cmd.Client) error {
-	apiClient, err := tsuruClient.ClientFromEnvironment(&tsuru.Configuration{
-		HTTPClient: client.HTTPClient,
-	})
+func (c *ServicePlanList) Run(ctx *cmd.Context) error {
+	apiClient, err := tsuruHTTP.TsuruClientFromEnvironment()
 	if err != nil {
 		return err
 	}
@@ -1002,10 +999,10 @@ func parseParams(params interface{}) (string, error) {
 	return sb.String(), nil
 }
 
-func (c *ServiceInfo) WriteDoc(ctx *cmd.Context, client *cmd.Client) error {
+func (c *ServiceInfo) WriteDoc(ctx *cmd.Context) error {
 	sName := ctx.Args[0]
 	url := fmt.Sprintf("/services/%s/doc", sName)
-	url, err := cmd.GetURL(url)
+	url, err := config.GetURL(url)
 	if err != nil {
 		return err
 	}
@@ -1013,7 +1010,7 @@ func (c *ServiceInfo) WriteDoc(ctx *cmd.Context, client *cmd.Client) error {
 	if err != nil {
 		return err
 	}
-	resp, err := client.Do(request)
+	resp, err := tsuruHTTP.DefaultClient.Do(request)
 	if err != nil {
 		return err
 	}
@@ -1039,15 +1036,15 @@ func (c *ServiceInfo) Flags() *gnuflag.FlagSet {
 	return c.fs
 }
 
-func (c *ServiceInfo) Run(ctx *cmd.Context, client *cmd.Client) error {
+func (c *ServiceInfo) Run(ctx *cmd.Context) error {
 	serviceName := ctx.Args[0]
 
-	instances, err := c.fetchInstances(serviceName, client)
+	instances, err := c.fetchInstances(serviceName)
 	if err != nil {
 		return err
 	}
 
-	plans, err := c.fetchPlans(serviceName, client)
+	plans, err := c.fetchPlans(serviceName)
 	if err != nil {
 		return err
 	}
@@ -1060,11 +1057,11 @@ func (c *ServiceInfo) Run(ctx *cmd.Context, client *cmd.Client) error {
 	if err != nil {
 		return err
 	}
-	return c.WriteDoc(ctx, client)
+	return c.WriteDoc(ctx)
 }
 
-func (c *ServiceInfo) fetchInstances(serviceName string, client *cmd.Client) ([]ServiceInstanceModel, error) {
-	url, err := cmd.GetURL("/services/" + serviceName)
+func (c *ServiceInfo) fetchInstances(serviceName string) ([]ServiceInstanceModel, error) {
+	url, err := config.GetURL("/services/" + serviceName)
 	if err != nil {
 		return nil, err
 	}
@@ -1072,7 +1069,7 @@ func (c *ServiceInfo) fetchInstances(serviceName string, client *cmd.Client) ([]
 	if err != nil {
 		return nil, err
 	}
-	resp, err := client.Do(request)
+	resp, err := tsuruHTTP.DefaultClient.Do(request)
 	if err != nil {
 		return nil, err
 	}
@@ -1093,12 +1090,12 @@ type plan struct {
 	Schemas     *osb.Schemas
 }
 
-func (c *ServiceInfo) fetchPlans(serviceName string, client *cmd.Client) ([]plan, error) {
+func (c *ServiceInfo) fetchPlans(serviceName string) ([]plan, error) {
 	v := url.Values{}
 	if c.pool != "" {
 		v.Set("pool", c.pool)
 	}
-	url, err := cmd.GetURL(fmt.Sprintf("/services/%s/plans?", serviceName) + v.Encode())
+	url, err := config.GetURL(fmt.Sprintf("/services/%s/plans?", serviceName) + v.Encode())
 	if err != nil {
 		return nil, err
 	}
@@ -1106,7 +1103,7 @@ func (c *ServiceInfo) fetchPlans(serviceName string, client *cmd.Client) ([]plan
 	if err != nil {
 		return nil, err
 	}
-	resp, err := client.Do(request)
+	resp, err := tsuruHTTP.DefaultClient.Do(request)
 	if err != nil {
 		return nil, err
 	}
@@ -1141,7 +1138,7 @@ bound to it (see [[tsuru service-instance-info]] command).`,
 	}
 }
 
-func (c *ServiceInstanceRemove) Run(ctx *cmd.Context, client *cmd.Client) error {
+func (c *ServiceInstanceRemove) Run(ctx *cmd.Context) error {
 	serviceName := ctx.Args[0]
 	instanceName := ctx.Args[1]
 	msg := fmt.Sprintf("Are you sure you want to remove the instance %q", instanceName)
@@ -1155,7 +1152,7 @@ func (c *ServiceInstanceRemove) Run(ctx *cmd.Context, client *cmd.Client) error 
 	qs.Set("unbindall", strconv.FormatBool(c.force))
 	qs.Set("ignoreerrors", strconv.FormatBool(c.ignoreErrors))
 	url := fmt.Sprintf("/services/%s/instances/%s?%s", serviceName, instanceName, qs.Encode())
-	url, err := cmd.GetURL(url)
+	url, err := config.GetURL(url)
 	if err != nil {
 		return err
 	}
@@ -1163,7 +1160,7 @@ func (c *ServiceInstanceRemove) Run(ctx *cmd.Context, client *cmd.Client) error 
 	if err != nil {
 		return err
 	}
-	resp, err := client.Do(request)
+	resp, err := tsuruHTTP.DefaultClient.Do(request)
 	if err != nil {
 		return err
 	}
@@ -1191,12 +1188,12 @@ func (c *ServiceInstanceGrant) Info() *cmd.Info {
 	}
 }
 
-func (c *ServiceInstanceGrant) Run(ctx *cmd.Context, client *cmd.Client) error {
+func (c *ServiceInstanceGrant) Run(ctx *cmd.Context) error {
 	sName := ctx.Args[0]
 	siName := ctx.Args[1]
 	teamName := ctx.Args[2]
 	url := fmt.Sprintf("/services/%s/instances/permission/%s/%s", sName, siName, teamName)
-	url, err := cmd.GetURL(url)
+	url, err := config.GetURL(url)
 	if err != nil {
 		return err
 	}
@@ -1204,7 +1201,7 @@ func (c *ServiceInstanceGrant) Run(ctx *cmd.Context, client *cmd.Client) error {
 	if err != nil {
 		return err
 	}
-	_, err = client.Do(request)
+	_, err = tsuruHTTP.DefaultClient.Do(request)
 	if err != nil {
 		return err
 	}
@@ -1223,12 +1220,12 @@ func (c *ServiceInstanceRevoke) Info() *cmd.Info {
 	}
 }
 
-func (c *ServiceInstanceRevoke) Run(ctx *cmd.Context, client *cmd.Client) error {
+func (c *ServiceInstanceRevoke) Run(ctx *cmd.Context) error {
 	sName := ctx.Args[0]
 	siName := ctx.Args[1]
 	teamName := ctx.Args[2]
 	url := fmt.Sprintf("/services/%s/instances/permission/%s/%s", sName, siName, teamName)
-	url, err := cmd.GetURL(url)
+	url, err := config.GetURL(url)
 	if err != nil {
 		return err
 	}
@@ -1236,7 +1233,7 @@ func (c *ServiceInstanceRevoke) Run(ctx *cmd.Context, client *cmd.Client) error 
 	if err != nil {
 		return err
 	}
-	_, err = client.Do(request)
+	_, err = tsuruHTTP.DefaultClient.Do(request)
 	if err != nil {
 		return err
 	}

@@ -60,9 +60,9 @@ Use app info to check the status of the app and its units.` + "\n"
 			return method && url && name && platform && teamOwner && plan && pool && description && tags && contentType && router
 		},
 	}
-	client := cmd.NewClient(&http.Client{Transport: &trans}, nil, manager)
+	s.setupFakeTransport(&trans)
 	command := AppCreate{}
-	err := command.Run(&context, client)
+	err := command.Run(&context)
 	c.Assert(err, check.IsNil)
 	c.Assert(stdout.String(), check.Equals, expected)
 }
@@ -95,9 +95,9 @@ Use app info to check the status of the app and its units.` + "\n"
 			return method && url && name && platform && teamOwner && plan && pool && description && tags && contentType && router
 		},
 	}
-	client := cmd.NewClient(&http.Client{Transport: &trans}, nil, manager)
+	s.setupFakeTransport(&trans)
 	command := AppCreate{}
-	err := command.Run(&context, client)
+	err := command.Run(&context)
 	c.Assert(err, check.IsNil)
 	c.Assert(stdout.String(), check.Equals, expected)
 }
@@ -130,10 +130,10 @@ Use app info to check the status of the app and its units.` + "\n"
 			return method && url && name && platform && teamOwner && plan && pool && description && tags && contentType && router
 		},
 	}
-	client := cmd.NewClient(&http.Client{Transport: &trans}, nil, manager)
+	s.setupFakeTransport(&trans)
 	command := AppCreate{}
 	command.Flags().Parse(true, []string{"-t", "team"})
-	err := command.Run(&context, client)
+	err := command.Run(&context)
 	c.Assert(err, check.IsNil)
 	c.Assert(stdout.String(), check.Equals, expected)
 }
@@ -166,10 +166,10 @@ Use app info to check the status of the app and its units.` + "\n"
 			return method && url && name && platform && teamOwner && plan && pool && description && tags && contentType && router
 		},
 	}
-	client := cmd.NewClient(&http.Client{Transport: &trans}, nil, manager)
+	s.setupFakeTransport(&trans)
 	command := AppCreate{}
 	command.Flags().Parse(true, []string{"-p", "myplan"})
-	err := command.Run(&context, client)
+	err := command.Run(&context)
 	c.Assert(err, check.IsNil)
 	c.Assert(stdout.String(), check.Equals, expected)
 }
@@ -202,10 +202,10 @@ Use app info to check the status of the app and its units.` + "\n"
 			return method && url && name && platform && teamowner && plan && pool && description && tags && contentType && router
 		},
 	}
-	client := cmd.NewClient(&http.Client{Transport: &trans}, nil, manager)
+	s.setupFakeTransport(&trans)
 	command := AppCreate{}
 	command.Flags().Parse(true, []string{"-o", "mypool"})
-	err := command.Run(&context, client)
+	err := command.Run(&context)
 	c.Assert(err, check.IsNil)
 	c.Assert(stdout.String(), check.Equals, expected)
 }
@@ -240,10 +240,10 @@ Use app info to check the status of the app and its units.` + "\n"
 			return method && url && name && platform && teamowner && plan && pool && description && tags && contentType && router
 		},
 	}
-	client := cmd.NewClient(&http.Client{Transport: &trans}, nil, manager)
+	s.setupFakeTransport(&trans)
 	command := AppCreate{}
 	command.Flags().Parse(true, []string{"--router-opts", "a=1", "--router-opts", "b=2"})
-	err := command.Run(&context, client)
+	err := command.Run(&context)
 	c.Assert(err, check.IsNil)
 	c.Assert(stdout.String(), check.Equals, expected)
 }
@@ -276,9 +276,9 @@ Use app info to check the status of the app and its units.` + "\n"
 			return method && url && name && platform && teamowner && plan && pool && description && tags && contentType && router
 		},
 	}
-	client := cmd.NewClient(&http.Client{Transport: &trans}, nil, manager)
+	s.setupFakeTransport(&trans)
 	command := AppCreate{}
-	err := command.Run(&context, client)
+	err := command.Run(&context)
 	c.Assert(err, check.IsNil)
 	c.Assert(stdout.String(), check.Equals, expected)
 }
@@ -290,9 +290,9 @@ func (s *S) TestAppCreateWithInvalidFramework(c *check.C) {
 		Stdout: &stdout,
 		Stderr: &stderr,
 	}
-	client := cmd.NewClient(&http.Client{Transport: &cmdtest.Transport{Message: "", Status: http.StatusInternalServerError}}, nil, manager)
+	s.setupFakeTransport(&cmdtest.Transport{Message: "", Status: http.StatusInternalServerError})
 	command := AppCreate{}
-	err := command.Run(&context, client)
+	err := command.Run(&context)
 	c.Assert(err, check.NotNil)
 	c.Assert(stdout.String(), check.Equals, "")
 }
@@ -325,10 +325,10 @@ Use app info to check the status of the app and its units.` + "\n"
 			return method && url && name && platform && teamOwner && plan && pool && description && tags && contentType && router
 		},
 	}
-	client := cmd.NewClient(&http.Client{Transport: &trans}, nil, manager)
+	s.setupFakeTransport(&trans)
 	command := AppCreate{}
 	command.Flags().Parse(true, []string{"--tag", "tag1", "--tag", "tag2"})
-	err := command.Run(&context, client)
+	err := command.Run(&context)
 	c.Assert(err, check.IsNil)
 	c.Assert(stdout.String(), check.Equals, expected)
 }
@@ -361,10 +361,10 @@ Use app info to check the status of the app and its units.` + "\n"
 			return method && url && name && platform && teamOwner && plan && pool && description && tags && contentType && router
 		},
 	}
-	client := cmd.NewClient(&http.Client{Transport: &trans}, nil, manager)
+	s.setupFakeTransport(&trans)
 	command := AppCreate{}
 	command.Flags().Parse(true, []string{"--tag", ""})
-	err := command.Run(&context, client)
+	err := command.Run(&context)
 	c.Assert(err, check.IsNil)
 	c.Assert(stdout.String(), check.Equals, expected)
 }
@@ -469,11 +469,11 @@ func (s *S) TestAppUpdate(c *check.C) {
 			return url && method
 		},
 	}
-	client := cmd.NewClient(&http.Client{Transport: trans}, nil, manager)
+	s.setupFakeTransport(trans)
 	command := AppUpdate{}
 	err := command.Flags().Parse(true, []string{"-d", "description of my app", "-a", "ble", "-l", "python", "-g", "tag 1", "-g", "tag 2"})
 	c.Assert(err, check.IsNil)
-	err = command.Run(&context, client)
+	err = command.Run(&context)
 	c.Assert(err, check.IsNil)
 	c.Assert(stdout.String(), check.Equals, expected)
 }
@@ -503,10 +503,10 @@ func (s *S) TestAppUpdateImageReset(c *check.C) {
 			return url && method
 		},
 	}
-	client := cmd.NewClient(&http.Client{Transport: trans}, nil, manager)
+	s.setupFakeTransport(trans)
 	command := AppUpdate{}
 	command.Flags().Parse(true, []string{"-a", "img", "-i"})
-	err := command.Run(&context, client)
+	err := command.Run(&context)
 	c.Assert(err, check.IsNil)
 	c.Assert(stdout.String(), check.Equals, expected)
 }
@@ -536,10 +536,10 @@ func (s *S) TestAppUpdateWithoutTags(c *check.C) {
 			return url && method
 		},
 	}
-	client := cmd.NewClient(&http.Client{Transport: trans}, nil, manager)
+	s.setupFakeTransport(trans)
 	command := AppUpdate{}
 	command.Flags().Parse(true, []string{"-d", "description", "-a", "ble"})
-	err := command.Run(&context, client)
+	err := command.Run(&context)
 	c.Assert(err, check.IsNil)
 	c.Assert(stdout.String(), check.Equals, expected)
 }
@@ -570,10 +570,10 @@ func (s *S) TestAppUpdateWithEmptyTag(c *check.C) {
 			return url && method
 		},
 	}
-	client := cmd.NewClient(&http.Client{Transport: trans}, nil, manager)
+	s.setupFakeTransport(trans)
 	command := AppUpdate{}
 	command.Flags().Parse(true, []string{"-d", "description", "-a", "ble", "-g", ""})
-	err := command.Run(&context, client)
+	err := command.Run(&context)
 	c.Assert(err, check.IsNil)
 	c.Assert(stdout.String(), check.Equals, expected)
 }
@@ -605,10 +605,10 @@ func (s *S) TestAppUpdateWithCPUAndMemory(c *check.C) {
 			return url && method
 		},
 	}
-	client := cmd.NewClient(&http.Client{Transport: trans}, nil, manager)
+	s.setupFakeTransport(trans)
 	command := AppUpdate{}
 	command.Flags().Parse(true, []string{"-a", "ble", "--cpu", "100m", "--memory", "1Gi"})
-	err := command.Run(&context, client)
+	err := command.Run(&context)
 	c.Assert(err, check.IsNil)
 	c.Assert(stdout.String(), check.Equals, expected)
 }
@@ -639,10 +639,10 @@ func (s *S) TestAppUpdateWithCPUBurst(c *check.C) {
 			return url && method
 		},
 	}
-	client := cmd.NewClient(&http.Client{Transport: trans}, nil, manager)
+	s.setupFakeTransport(trans)
 	command := AppUpdate{}
 	command.Flags().Parse(true, []string{"-a", "ble", "--cpu-burst-factor", "1.3"})
-	err := command.Run(&context, client)
+	err := command.Run(&context)
 	c.Assert(err, check.IsNil)
 	c.Assert(stdout.String(), check.Equals, expected)
 }
@@ -672,10 +672,10 @@ func (s *S) TestAppUpdateWithInvalidCPUBurst(c *check.C) {
 			return url && method
 		},
 	}
-	client := cmd.NewClient(&http.Client{Transport: trans}, nil, manager)
+	s.setupFakeTransport(trans)
 	command := AppUpdate{}
 	command.Flags().Parse(true, []string{"-a", "ble", "--cpu-burst-factor", "0.5"})
-	err := command.Run(&context, client)
+	err := command.Run(&context)
 	c.Assert(err, check.NotNil)
 	c.Assert(err.Error(), check.Equals, "Invalid factor, please use a value greater equal 1")
 }
@@ -698,10 +698,10 @@ func (s *S) TestAppUpdateWithoutArgs(c *check.C) {
 			return url && method && description && tags
 		},
 	}
-	client := cmd.NewClient(&http.Client{Transport: trans}, nil, manager)
+	s.setupFakeTransport(trans)
 	command := AppUpdate{}
 	command.Flags().Parse(true, []string{"-d", "description of my app"})
-	err := command.Run(&context, client)
+	err := command.Run(&context)
 	c.Assert(err, check.NotNil)
 	c.Assert(err.Error(), check.Equals, expected)
 }
@@ -787,10 +787,10 @@ func (s *S) TestAppRemove(c *check.C) {
 		Stderr: &stderr,
 		Stdin:  strings.NewReader("y\n"),
 	}
-	client := cmd.NewClient(&http.Client{Transport: &cmdtest.Transport{Message: string(result), Status: http.StatusOK}}, nil, manager)
+	s.setupFakeTransport(&cmdtest.Transport{Message: string(result), Status: http.StatusOK})
 	command := AppRemove{}
 	command.Flags().Parse(true, []string{"-a", "ble"})
-	err = command.Run(&context, client)
+	err = command.Run(&context)
 	c.Assert(err, check.IsNil)
 	c.Assert(stdout.String(), check.Equals, expected+expectedOut)
 }
@@ -807,10 +807,10 @@ func (s *S) TestAppRemoveWithoutAsking(c *check.C) {
 		Stderr: &stderr,
 		Stdin:  strings.NewReader("y\n"),
 	}
-	client := cmd.NewClient(&http.Client{Transport: &cmdtest.Transport{Message: string(result), Status: http.StatusOK}}, nil, manager)
+	s.setupFakeTransport(&cmdtest.Transport{Message: string(result), Status: http.StatusOK})
 	command := AppRemove{}
 	command.Flags().Parse(true, []string{"-a", "ble", "-y"})
-	err = command.Run(&context, client)
+	err = command.Run(&context)
 	c.Assert(err, check.IsNil)
 	c.Assert(stdout.String(), check.Equals, expectedOut)
 }
@@ -855,9 +855,9 @@ func (s *S) TestAppRemoveWithoutArgs(c *check.C) {
 		Stderr: &stderr,
 		Stdin:  strings.NewReader("y\n"),
 	}
-	client := cmd.NewClient(&http.Client{Transport: &cmdtest.Transport{Message: "", Status: http.StatusOK}}, nil, manager)
+	s.setupFakeTransport(&cmdtest.Transport{Message: "", Status: http.StatusOK})
 	command := AppRemove{}
-	err := command.Run(&context, client)
+	err := command.Run(&context)
 	c.Assert(err, check.NotNil)
 	c.Assert(err.Error(), check.Equals, expected)
 }
@@ -872,7 +872,7 @@ func (s *S) TestAppRemoveWithoutConfirmation(c *check.C) {
 	}
 	command := AppRemove{}
 	command.Flags().Parse(true, []string{"--app", "ble"})
-	err := command.Run(&context, nil)
+	err := command.Run(&context)
 	c.Assert(err, check.IsNil)
 	c.Assert(stdout.String(), check.Equals, expected)
 }
@@ -908,10 +908,10 @@ Units: 3
 		Stdout: &stdout,
 		Stderr: &stderr,
 	}
-	client := cmd.NewClient(&http.Client{Transport: &cmdtest.Transport{Message: result, Status: http.StatusOK}}, nil, manager)
+	s.setupFakeTransport(&cmdtest.Transport{Message: result, Status: http.StatusOK})
 	command := AppInfo{}
 	command.Flags().Parse(true, []string{"--app", "app1"})
-	err := command.Run(&context, client)
+	err := command.Run(&context)
 	c.Assert(err, check.IsNil)
 	c.Assert(stdout.String(), check.Equals, expected)
 }
@@ -939,10 +939,10 @@ Units: 2
 		Stdout: &stdout,
 		Stderr: &stderr,
 	}
-	client := cmd.NewClient(&http.Client{Transport: &cmdtest.Transport{Message: result, Status: http.StatusOK}}, nil, manager)
+	s.setupFakeTransport(&cmdtest.Transport{Message: result, Status: http.StatusOK})
 	command := AppInfo{}
 	command.Flags().Parse(true, []string{"--app", "app1", "-s"})
-	err := command.Run(&context, client)
+	err := command.Run(&context)
 	c.Assert(err, check.IsNil)
 	c.Assert(stdout.String(), check.Equals, expected)
 }
@@ -1016,10 +1016,10 @@ Units: 3
 		Stdout: &stdout,
 		Stderr: &stderr,
 	}
-	client := cmd.NewClient(&http.Client{Transport: &cmdtest.Transport{Message: result, Status: http.StatusOK}}, nil, manager)
+	s.setupFakeTransport(&cmdtest.Transport{Message: result, Status: http.StatusOK})
 	command := AppInfo{}
 	command.Flags().Parse(true, []string{"--app", "app1"})
-	err := command.Run(&context, client)
+	err := command.Run(&context)
 	c.Assert(err, check.IsNil)
 	c.Assert(stdout.String(), check.Equals, expected)
 }
@@ -1051,10 +1051,10 @@ Units: 3
 		Stdout: &stdout,
 		Stderr: &stderr,
 	}
-	client := cmd.NewClient(&http.Client{Transport: &cmdtest.Transport{Message: result, Status: http.StatusOK}}, nil, manager)
+	s.setupFakeTransport(&cmdtest.Transport{Message: result, Status: http.StatusOK})
 	command := AppInfo{}
 	command.Flags().Parse(true, []string{"--app", "app1"})
-	err := command.Run(&context, client)
+	err := command.Run(&context)
 	c.Assert(err, check.IsNil)
 	c.Assert(stdout.String(), check.Equals, expected)
 }
@@ -1144,10 +1144,10 @@ Routers:
 		Stdout: &stdout,
 		Stderr: &stderr,
 	}
-	client := cmd.NewClient(&http.Client{Transport: &cmdtest.Transport{Message: result, Status: http.StatusOK}}, nil, manager)
+	s.setupFakeTransport(&cmdtest.Transport{Message: result, Status: http.StatusOK})
 	command := AppInfo{}
 	command.Flags().Parse(true, []string{"--app", "app1"})
-	err := command.Run(&context, client)
+	err := command.Run(&context)
 	c.Assert(err, check.IsNil)
 	c.Assert(stdout.String(), check.Equals, expected)
 }
@@ -1180,10 +1180,10 @@ Units: 3
 		Stdout: &stdout,
 		Stderr: &stderr,
 	}
-	client := cmd.NewClient(&http.Client{Transport: &cmdtest.Transport{Message: result, Status: http.StatusOK}}, nil, manager)
+	s.setupFakeTransport(&cmdtest.Transport{Message: result, Status: http.StatusOK})
 	command := AppInfo{}
 	command.Flags().Parse(true, []string{"--app", "app1"})
-	err := command.Run(&context, client)
+	err := command.Run(&context)
 	c.Assert(err, check.IsNil)
 	c.Assert(stdout.String(), check.Equals, expected)
 }
@@ -1216,10 +1216,10 @@ Units: 3
 		Stdout: &stdout,
 		Stderr: &stderr,
 	}
-	client := cmd.NewClient(&http.Client{Transport: &cmdtest.Transport{Message: result, Status: http.StatusOK}}, nil, manager)
+	s.setupFakeTransport(&cmdtest.Transport{Message: result, Status: http.StatusOK})
 	command := AppInfo{}
 	command.Flags().Parse(true, []string{"--app", "app1"})
-	err := command.Run(&context, client)
+	err := command.Run(&context)
 	c.Assert(err, check.IsNil)
 	c.Assert(stdout.String(), check.Equals, expected)
 }
@@ -1251,10 +1251,10 @@ Units: 3
 		Stdout: &stdout,
 		Stderr: &stderr,
 	}
-	client := cmd.NewClient(&http.Client{Transport: &cmdtest.Transport{Message: result, Status: http.StatusOK}}, nil, manager)
+	s.setupFakeTransport(&cmdtest.Transport{Message: result, Status: http.StatusOK})
 	command := AppInfo{}
 	command.Flags().Parse(true, []string{"--app", "app1"})
-	err := command.Run(&context, client)
+	err := command.Run(&context)
 	c.Assert(err, check.IsNil)
 	c.Assert(stdout.String(), check.Equals, expected)
 }
@@ -1298,10 +1298,10 @@ Units: 3
 			StatusCode: http.StatusOK,
 		}, nil
 	})
-	client := cmd.NewClient(&http.Client{Transport: transport}, nil, manager)
+	s.setupFakeTransport(&transport)
 	command := AppInfo{}
 	command.Flags().Parse(true, []string{"--app", "app1"})
-	err := command.Run(&context, client)
+	err := command.Run(&context)
 	c.Assert(err, check.IsNil)
 	c.Assert(stdout.String(), check.Equals, expected)
 }
@@ -1338,10 +1338,10 @@ Units: 3
 		Stdout: &stdout,
 		Stderr: &stderr,
 	}
-	client := cmd.NewClient(&http.Client{Transport: &cmdtest.Transport{Message: result, Status: http.StatusOK}}, nil, manager)
+	s.setupFakeTransport(&cmdtest.Transport{Message: result, Status: http.StatusOK})
 	command := AppInfo{}
 	command.Flags().Parse(true, []string{"--app", "app1"})
-	err := command.Run(&context, client)
+	err := command.Run(&context)
 	c.Assert(err, check.IsNil)
 	c.Assert(stdout.String(), check.Equals, expected)
 }
@@ -1416,10 +1416,10 @@ Units [process worker]: 2
 		Stdout: &stdout,
 		Stderr: &stderr,
 	}
-	client := cmd.NewClient(&http.Client{Transport: &cmdtest.Transport{Message: result, Status: http.StatusOK}}, nil, manager)
+	s.setupFakeTransport(&cmdtest.Transport{Message: result, Status: http.StatusOK})
 	command := AppInfo{}
 	command.Flags().Parse(true, []string{"--app", "app1"})
-	err := command.Run(&context, client)
+	err := command.Run(&context)
 	c.Assert(err, check.IsNil)
 	c.Assert(stdout.String(), check.Equals, expected)
 }
@@ -1525,10 +1525,10 @@ Units [process worker] [version 2] [routable]: 1
 		Stdout: &stdout,
 		Stderr: &stderr,
 	}
-	client := cmd.NewClient(&http.Client{Transport: &cmdtest.Transport{Message: result, Status: http.StatusOK}}, nil, manager)
+	s.setupFakeTransport(&cmdtest.Transport{Message: result, Status: http.StatusOK})
 	command := AppInfo{}
 	command.Flags().Parse(true, []string{"--app", "app1"})
-	err := command.Run(&context, client)
+	err := command.Run(&context)
 	c.Assert(err, check.IsNil)
 	c.Assert(stdout.String(), check.Equals, expected)
 }
@@ -1626,10 +1626,10 @@ Process: worker (v10), Min Units: 2, Max Units: 5
 		Stdout: &stdout,
 		Stderr: &stderr,
 	}
-	client := cmd.NewClient(&http.Client{Transport: &cmdtest.Transport{Message: result, Status: http.StatusOK}}, nil, manager)
+	s.setupFakeTransport(&cmdtest.Transport{Message: result, Status: http.StatusOK})
 	command := AppInfo{}
 	command.Flags().Parse(true, []string{"--app", "app1"})
-	err := command.Run(&context, client)
+	err := command.Run(&context)
 	c.Assert(err, check.IsNil)
 	c.Assert(stdout.String(), check.Equals, expected)
 }
@@ -1763,10 +1763,10 @@ Process: worker (v10), Min Units: 2, Max Units: 5
 		Stdout: &stdout,
 		Stderr: &stderr,
 	}
-	client := cmd.NewClient(&http.Client{Transport: &cmdtest.Transport{Message: result, Status: http.StatusOK}}, nil, manager)
+	s.setupFakeTransport(&cmdtest.Transport{Message: result, Status: http.StatusOK})
 	command := AppInfo{}
 	command.Flags().Parse(true, []string{"--app", "app1"})
-	err := command.Run(&context, client)
+	err := command.Run(&context)
 	c.Assert(err, check.IsNil)
 	c.Assert(stdout.String(), check.Equals, expected)
 }
@@ -1789,10 +1789,10 @@ Quota: 0/0 units
 		Stdout: &stdout,
 		Stderr: &stderr,
 	}
-	client := cmd.NewClient(&http.Client{Transport: &cmdtest.Transport{Message: result, Status: http.StatusOK}}, nil, manager)
+	s.setupFakeTransport(&cmdtest.Transport{Message: result, Status: http.StatusOK})
 	command := AppInfo{}
 	command.Flags().Parse(true, []string{"--app", "app1"})
-	err := command.Run(&context, client)
+	err := command.Run(&context)
 	c.Assert(err, check.IsNil)
 	c.Assert(stdout.String(), check.Equals, expected)
 }
@@ -1815,10 +1815,10 @@ Quota: 0/0 units
 		Stdout: &stdout,
 		Stderr: &stderr,
 	}
-	client := cmd.NewClient(&http.Client{Transport: &cmdtest.Transport{Message: result, Status: http.StatusOK}}, nil, manager)
+	s.setupFakeTransport(&cmdtest.Transport{Message: result, Status: http.StatusOK})
 	command := AppInfo{}
 	command.Flags().Parse(true, []string{"--app", "app1"})
-	err := command.Run(&context, client)
+	err := command.Run(&context)
 	c.Assert(err, check.IsNil)
 	c.Assert(stdout.String(), check.Equals, expected)
 }
@@ -1855,10 +1855,10 @@ Units: 2
 			return strings.HasSuffix(req.URL.Path, "/apps/secret") && req.Method == "GET"
 		},
 	}
-	client := cmd.NewClient(&http.Client{Transport: trans}, nil, manager)
+	s.setupFakeTransport(trans)
 	command := AppInfo{}
 	command.Flags().Parse(true, []string{"-a", "secret"})
-	err := command.Run(&context, client)
+	err := command.Run(&context)
 	c.Assert(err, check.IsNil)
 	c.Assert(stdout.String(), check.Equals, expected)
 }
@@ -1890,10 +1890,10 @@ Units: 3
 		Stdout: &stdout,
 		Stderr: &stderr,
 	}
-	client := cmd.NewClient(&http.Client{Transport: &cmdtest.Transport{Message: result, Status: http.StatusOK}}, nil, manager)
+	s.setupFakeTransport(&cmdtest.Transport{Message: result, Status: http.StatusOK})
 	command := AppInfo{}
 	command.Flags().Parse(true, []string{"--app", "app1"})
-	err := command.Run(&context, client)
+	err := command.Run(&context)
 	c.Assert(err, check.IsNil)
 	c.Assert(stdout.String(), check.Equals, expected)
 }
@@ -1938,10 +1938,10 @@ Service instances: 1
 			StatusCode: http.StatusOK,
 		}, nil
 	})
-	client := cmd.NewClient(&http.Client{Transport: transport}, nil, manager)
+	s.setupFakeTransport(transport)
 	command := AppInfo{}
 	command.Flags().Parse(true, []string{"--app", "app1"})
-	err := command.Run(&context, client)
+	err := command.Run(&context)
 	c.Assert(err, check.IsNil)
 	c.Assert(stdout.String(), check.Equals, expected)
 }
@@ -1987,10 +1987,10 @@ Service instances: 2
 			StatusCode: http.StatusOK,
 		}, nil
 	})
-	client := cmd.NewClient(&http.Client{Transport: transport}, nil, manager)
+	s.setupFakeTransport(transport)
 	command := AppInfo{}
 	command.Flags().Parse(true, []string{"--app", "app1"})
-	err := command.Run(&context, client)
+	err := command.Run(&context)
 	c.Assert(err, check.IsNil)
 	c.Assert(stdout.String(), check.Equals, expected)
 }
@@ -2029,10 +2029,10 @@ App Plan:
 		Stdout: &stdout,
 		Stderr: &stderr,
 	}
-	client := cmd.NewClient(&http.Client{Transport: &cmdtest.Transport{Message: result, Status: http.StatusOK}}, nil, manager)
+	s.setupFakeTransport(&cmdtest.Transport{Message: result, Status: http.StatusOK})
 	command := AppInfo{}
 	command.Flags().Parse(true, []string{"--app", "app1"})
-	err := command.Run(&context, client)
+	err := command.Run(&context)
 	c.Assert(err, check.IsNil)
 	c.Assert(stdout.String(), check.Equals, expected)
 }
@@ -2084,10 +2084,10 @@ App Plan:
 			StatusCode: http.StatusOK,
 		}, nil
 	})
-	client := cmd.NewClient(&http.Client{Transport: transport}, nil, manager)
+	s.setupFakeTransport(transport)
 	command := AppInfo{}
 	command.Flags().Parse(true, []string{"--app", "app1"})
-	err := command.Run(&context, client)
+	err := command.Run(&context)
 	c.Assert(err, check.IsNil)
 	c.Assert(stdout.String(), check.Equals, expected)
 }
@@ -2139,10 +2139,10 @@ App Plan:
 			StatusCode: http.StatusOK,
 		}, nil
 	})
-	client := cmd.NewClient(&http.Client{Transport: transport}, nil, manager)
+	s.setupFakeTransport(transport)
 	command := AppInfo{}
 	command.Flags().Parse(true, []string{"--app", "app1"})
-	err := command.Run(&context, client)
+	err := command.Run(&context)
 	c.Assert(err, check.IsNil)
 	c.Assert(stdout.String(), check.Equals, expected)
 }
@@ -2207,10 +2207,10 @@ Units: 3
 			StatusCode: http.StatusOK,
 		}, nil
 	})
-	client := cmd.NewClient(&http.Client{Transport: transport}, nil, manager)
+	s.setupFakeTransport(transport)
 	command := AppInfo{}
 	command.Flags().Parse(true, []string{"--app", "app1"})
-	err := command.Run(&context, client)
+	err := command.Run(&context)
 	c.Assert(err, check.IsNil)
 	c.Assert(stdout.String(), check.Equals, expected)
 }
@@ -2248,10 +2248,10 @@ Cluster internal addresses:
 		Stdout: &stdout,
 		Stderr: &stderr,
 	}
-	client := cmd.NewClient(&http.Client{Transport: &cmdtest.Transport{Message: result, Status: http.StatusOK}}, nil, manager)
+	s.setupFakeTransport(&cmdtest.Transport{Message: result, Status: http.StatusOK})
 	command := AppInfo{}
 	command.Flags().Parse(true, []string{"--app", "app1"})
-	err := command.Run(&context, client)
+	err := command.Run(&context)
 	c.Assert(err, check.IsNil)
 	c.Assert(stdout.String(), check.Equals, expected)
 }
@@ -2303,10 +2303,10 @@ Volumes: 1
 			StatusCode: http.StatusOK,
 		}, nil
 	})
-	client := cmd.NewClient(&http.Client{Transport: transport}, nil, manager)
+	s.setupFakeTransport(transport)
 	command := AppInfo{}
 	command.Flags().Parse(true, []string{"--app", "app1"})
-	err := command.Run(&context, client)
+	err := command.Run(&context)
 	c.Assert(err, check.IsNil)
 	c.Assert(stdout.String(), check.Equals, expected)
 }
@@ -2333,8 +2333,8 @@ func (s *S) TestAppGrant(c *check.C) {
 	}
 	command := AppGrant{}
 	command.Flags().Parse(true, []string{"--app", "games"})
-	client := cmd.NewClient(&http.Client{Transport: &cmdtest.Transport{Message: "", Status: http.StatusOK}}, nil, manager)
-	err := command.Run(&context, client)
+	s.setupFakeTransport(&cmdtest.Transport{Message: "", Status: http.StatusOK})
+	err := command.Run(&context)
 	c.Assert(err, check.IsNil)
 	c.Assert(stdout.String(), check.Equals, expected)
 }
@@ -2353,8 +2353,8 @@ func (s *S) TestAppRevoke(c *check.C) {
 	}
 	command := AppRevoke{}
 	command.Flags().Parse(true, []string{"--app", "games"})
-	client := cmd.NewClient(&http.Client{Transport: &cmdtest.Transport{Message: "", Status: http.StatusOK}}, nil, manager)
-	err := command.Run(&context, client)
+	s.setupFakeTransport(&cmdtest.Transport{Message: "", Status: http.StatusOK})
+	err := command.Run(&context)
 	c.Assert(err, check.IsNil)
 	c.Assert(stdout.String(), check.Equals, expected)
 }
@@ -2377,9 +2377,9 @@ func (s *S) TestAppList(c *check.C) {
 		Stdout: &stdout,
 		Stderr: &stderr,
 	}
-	client := cmd.NewClient(&http.Client{Transport: &cmdtest.Transport{Message: result, Status: http.StatusOK}}, nil, manager)
+	s.setupFakeTransport(&cmdtest.Transport{Message: result, Status: http.StatusOK})
 	command := AppList{}
-	err := command.Run(&context, client)
+	err := command.Run(&context)
 	c.Assert(err, check.IsNil)
 	c.Assert(stdout.String(), check.Equals, expected)
 }
@@ -2400,9 +2400,9 @@ func (s *S) TestAppListDisplayAppsInAlphabeticalOrder(c *check.C) {
 		Stdout: &stdout,
 		Stderr: &stderr,
 	}
-	client := cmd.NewClient(&http.Client{Transport: &cmdtest.Transport{Message: result, Status: http.StatusOK}}, nil, manager)
+	s.setupFakeTransport(&cmdtest.Transport{Message: result, Status: http.StatusOK})
 	command := AppList{}
-	err := command.Run(&context, client)
+	err := command.Run(&context)
 	c.Assert(err, check.IsNil)
 	c.Assert(stdout.String(), check.Equals, expected)
 }
@@ -2421,9 +2421,9 @@ func (s *S) TestAppListUnitIsntAvailable(c *check.C) {
 		Stdout: &stdout,
 		Stderr: &stderr,
 	}
-	client := cmd.NewClient(&http.Client{Transport: &cmdtest.Transport{Message: result, Status: http.StatusOK}}, nil, manager)
+	s.setupFakeTransport(&cmdtest.Transport{Message: result, Status: http.StatusOK})
 	command := AppList{}
-	err := command.Run(&context, client)
+	err := command.Run(&context)
 	c.Assert(err, check.IsNil)
 	c.Assert(stdout.String(), check.Equals, expected)
 }
@@ -2431,51 +2431,20 @@ func (s *S) TestAppListUnitIsntAvailable(c *check.C) {
 func (s *S) TestAppListErrorFetchingUnits(c *check.C) {
 	var stdout, stderr bytes.Buffer
 	result := `[{"ip":"10.10.10.10","name":"app1","units":[],"Error": "timeout"}]`
-	expected := `+-------------+----------------------+-------------+
-| Application | Units                | Address     |
-+-------------+----------------------+-------------+
-| app1        | error fetching units | 10.10.10.10 |
-+-------------+----------------------+-------------+
+	expected := `+-------------+-------------------------------+-------------+
+| Application | Units                         | Address     |
++-------------+-------------------------------+-------------+
+| app1        | error fetching units: timeout | 10.10.10.10 |
++-------------+-------------------------------+-------------+
 `
 	context := cmd.Context{
 		Args:   []string{},
 		Stdout: &stdout,
 		Stderr: &stderr,
 	}
-	client := cmd.NewClient(&http.Client{Transport: &cmdtest.Transport{Message: result, Status: http.StatusOK}}, nil, manager)
+	s.setupFakeTransport(&cmdtest.Transport{Message: result, Status: http.StatusOK})
 	command := AppList{}
-	err := command.Run(&context, client)
-	c.Assert(err, check.IsNil)
-	c.Assert(stdout.String(), check.Equals, expected)
-}
-
-func (s *S) TestAppListErrorFetchingUnitsVerbose(c *check.C) {
-	var stdout, stderr bytes.Buffer
-	result := `[{"ip":"10.10.10.10","name":"app1","units":[],"Error": "timeout"}]`
-	expected := "*************************** <Request uri=\"/1.0/apps?\"> **********************************\n" +
-		"GET /1.0/apps? HTTP/1.1\r\n" +
-		"Host: localhost:8080\r\n" +
-		"Connection: close\r\n" +
-		"Authorization: bearer sometoken\r\n" +
-		"X-Tsuru-Verbosity: 1\r\n" +
-		"\r\n" +
-		"*************************** </Request uri=\"/1.0/apps?\"> **********************************\n" +
-		"+-------------+-------------------------------+-------------+\n" +
-		"| Application | Units                         | Address     |\n" +
-		"+-------------+-------------------------------+-------------+\n" +
-		"| app1        | error fetching units: timeout | 10.10.10.10 |\n" +
-		"+-------------+-------------------------------+-------------+\n"
-	context := cmd.Context{
-		Args:   []string{},
-		Stdout: &stdout,
-		Stderr: &stderr,
-	}
-	client := cmd.NewClient(&http.Client{
-		Transport: &cmdtest.Transport{Message: result, Status: http.StatusOK},
-	}, &context, manager)
-	client.Verbosity = 1
-	command := AppList{}
-	err := command.Run(&context, client)
+	err := command.Run(&context)
 	c.Assert(err, check.IsNil)
 	c.Assert(stdout.String(), check.Equals, expected)
 }
@@ -2494,9 +2463,9 @@ func (s *S) TestAppListUnitWithoutID(c *check.C) {
 		Stdout: &stdout,
 		Stderr: &stderr,
 	}
-	client := cmd.NewClient(&http.Client{Transport: &cmdtest.Transport{Message: result, Status: http.StatusOK}}, nil, manager)
+	s.setupFakeTransport(&cmdtest.Transport{Message: result, Status: http.StatusOK})
 	command := AppList{}
-	err := command.Run(&context, client)
+	err := command.Run(&context)
 	c.Assert(err, check.IsNil)
 	c.Assert(stdout.String(), check.Equals, expected)
 }
@@ -2516,9 +2485,9 @@ func (s *S) TestAppListCName(c *check.C) {
 		Stdout: &stdout,
 		Stderr: &stderr,
 	}
-	client := cmd.NewClient(&http.Client{Transport: &cmdtest.Transport{Message: result, Status: http.StatusOK}}, nil, manager)
+	s.setupFakeTransport(&cmdtest.Transport{Message: result, Status: http.StatusOK})
 	command := AppList{}
-	err := command.Run(&context, client)
+	err := command.Run(&context)
 	c.Assert(err, check.IsNil)
 	c.Assert(stdout.String(), check.Equals, expected)
 }
@@ -2546,10 +2515,10 @@ func (s *S) TestAppListFiltering(c *check.C) {
 		},
 		Transport: cmdtest.Transport{Message: result, Status: http.StatusOK},
 	}
-	client := cmd.NewClient(&http.Client{Transport: &transport}, nil, manager)
+	s.setupFakeTransport(&transport)
 	command := AppList{}
 	command.Flags().Parse(true, []string{"-p", "python", "--locked", "--user", "glenda@tsuru.io", "-t", "tsuru", "--name", "myapp", "--pool", "pool", "--status", "started", "--tag", "tag a", "--tag", "tag b"})
-	err := command.Run(&context, client)
+	err := command.Run(&context)
 	c.Assert(err, check.IsNil)
 	c.Assert(stdout.String(), check.Equals, expected)
 	queryString := url.Values(map[string][]string{
@@ -2598,10 +2567,10 @@ func (s *S) TestAppListFilteringMe(c *check.C) {
 			},
 		},
 	}
-	client := cmd.NewClient(&http.Client{Transport: &transport}, nil, manager)
+	s.setupFakeTransport(&transport)
 	command := AppList{}
 	command.Flags().Parse(true, []string{"-u", "me"})
-	err := command.Run(&context, client)
+	err := command.Run(&context)
 	c.Assert(err, check.IsNil)
 	c.Assert(stdout.String(), check.Equals, expected)
 	queryString := url.Values(map[string][]string{"owner": {"gopher@tsuru.io"}})
@@ -2643,10 +2612,10 @@ func (s *S) TestAppListSortByCountAndStatus(c *check.C) {
 			},
 		},
 	}
-	client := cmd.NewClient(&http.Client{Transport: &transport}, nil, manager)
+	s.setupFakeTransport(&transport)
 	command := AppList{}
 	command.Flags().Parse(true, []string{"-u", "me"})
-	err := command.Run(&context, client)
+	err := command.Run(&context)
 	c.Assert(err, check.IsNil)
 	c.Assert(stdout.String(), check.Equals, expected)
 	queryString := url.Values(map[string][]string{"owner": {"gopher@tsuru.io"}})
@@ -2671,10 +2640,10 @@ app3
 		},
 		Transport: cmdtest.Transport{Message: result, Status: http.StatusOK},
 	}
-	client := cmd.NewClient(&http.Client{Transport: &transport}, nil, manager)
+	s.setupFakeTransport(&transport)
 	command := AppList{}
 	command.Flags().Parse(true, []string{"-q"})
-	err := command.Run(&context, client)
+	err := command.Run(&context)
 	c.Assert(err, check.IsNil)
 	c.Assert(stdout.String(), check.Equals, expected)
 }
@@ -2699,10 +2668,10 @@ app3
 		},
 		Transport: cmdtest.Transport{Message: result, Status: http.StatusOK},
 	}
-	client := cmd.NewClient(&http.Client{Transport: &transport}, nil, manager)
+	s.setupFakeTransport(&transport)
 	command := AppList{}
 	command.Flags().Parse(true, []string{"-p", "python", "-q"})
-	err := command.Run(&context, client)
+	err := command.Run(&context)
 	c.Assert(err, check.IsNil)
 	c.Assert(stdout.String(), check.Equals, expected)
 	queryString := url.Values(map[string][]string{
@@ -2741,10 +2710,10 @@ func (s *S) TestAppRestart(c *check.C) {
 			return strings.HasSuffix(req.URL.Path, "/apps/handful_of_nothing/restart") && req.Method == "POST"
 		},
 	}
-	client := cmd.NewClient(&http.Client{Transport: trans}, nil, manager)
+	s.setupFakeTransport(trans)
 	command := AppRestart{}
 	command.Flags().Parse(true, []string{"--app", "handful_of_nothing", "--process", "web"})
-	err = command.Run(&context, client)
+	err = command.Run(&context)
 	c.Assert(err, check.IsNil)
 	c.Assert(called, check.Equals, true)
 	c.Assert(stdout.String(), check.Equals, expectedOut)
@@ -2778,12 +2747,12 @@ func (s *S) TestAddCName(c *check.C) {
 			return method && url && cname && contentType
 		},
 	}
-	client := cmd.NewClient(&http.Client{Transport: trans}, nil, manager)
+	s.setupFakeTransport(trans)
 	command := CnameAdd{}
 	err := command.Flags().Parse(true, []string{"-a", "death", "death.evergrey.mycompany.com"})
 	c.Assert(err, check.IsNil)
 	context.Args = command.Flags().Args()
-	err = command.Run(&context, client)
+	err = command.Run(&context)
 	c.Assert(err, check.IsNil)
 	c.Assert(called, check.Equals, true)
 	c.Assert(stdout.String(), check.Equals, "cname successfully defined.\n")
@@ -2796,15 +2765,15 @@ func (s *S) TestAddCNameFailure(c *check.C) {
 		Stderr: &stderr,
 	}
 	trans := &cmdtest.Transport{Message: "Invalid cname", Status: http.StatusPreconditionFailed}
-	client := cmd.NewClient(&http.Client{Transport: trans}, nil, manager)
+	s.setupFakeTransport(trans)
 	command := CnameAdd{}
 	err := command.Flags().Parse(true, []string{"-a", "masterplan", "masterplan.evergrey.mycompany.com"})
 	c.Assert(err, check.IsNil)
 
 	context.Args = command.Flags().Args()
-	err = command.Run(&context, client)
+	err = command.Run(&context)
 	c.Assert(err, check.NotNil)
-	c.Assert(err.Error(), check.Equals, "Invalid cname")
+	c.Assert(err, check.ErrorMatches, ".* Invalid cname")
 }
 
 func (s *S) TestAddCNameInfo(c *check.C) {
@@ -2833,10 +2802,10 @@ func (s *S) TestRemoveCName(c *check.C) {
 			return method && url
 		},
 	}
-	client := cmd.NewClient(&http.Client{Transport: trans}, nil, manager)
+	s.setupFakeTransport(trans)
 	command := CnameRemove{}
 	command.Flags().Parse(true, []string{"--app", "death"})
-	err := command.Run(&context, client)
+	err := command.Run(&context)
 	c.Assert(err, check.IsNil)
 	c.Assert(called, check.Equals, true)
 	c.Assert(stdout.String(), check.Equals, "cname successfully undefined.\n")
@@ -2860,10 +2829,10 @@ func (s *S) TestRemoveCNameWithoutTheFlag(c *check.C) {
 			return method && url
 		},
 	}
-	client := cmd.NewClient(&http.Client{Transport: trans}, nil, manager)
+	s.setupFakeTransport(trans)
 	cmd := &CnameRemove{}
 	cmd.Flags().Parse(true, []string{"-a", "corey"})
-	err := cmd.Run(&context, client)
+	err := cmd.Run(&context)
 	c.Assert(err, check.IsNil)
 	c.Assert(called, check.Equals, true)
 	c.Assert(stdout.String(), check.Equals, "cname successfully undefined.\n")
@@ -2902,10 +2871,10 @@ func (s *S) TestAppStart(c *check.C) {
 			return strings.HasSuffix(req.URL.Path, "/apps/handful_of_nothing/start") && req.Method == "POST"
 		},
 	}
-	client := cmd.NewClient(&http.Client{Transport: trans}, nil, manager)
+	s.setupFakeTransport(trans)
 	command := AppStart{}
 	command.Flags().Parse(true, []string{"--app", "handful_of_nothing", "--process", "worker"})
-	err = command.Run(&context, client)
+	err = command.Run(&context)
 	c.Assert(err, check.IsNil)
 	c.Assert(called, check.Equals, true)
 	c.Assert(stdout.String(), check.Equals, expectedOut)
@@ -2967,10 +2936,10 @@ func (s *S) TestAppStop(c *check.C) {
 			return strings.HasSuffix(req.URL.Path, "/apps/handful_of_nothing/stop") && req.Method == "POST"
 		},
 	}
-	client := cmd.NewClient(&http.Client{Transport: trans}, nil, manager)
+	s.setupFakeTransport(trans)
 	command := AppStop{}
 	command.Flags().Parse(true, []string{"--app", "handful_of_nothing", "--process", "worker"})
-	err = command.Run(&context, client)
+	err = command.Run(&context)
 	c.Assert(err, check.IsNil)
 	c.Assert(called, check.Equals, true)
 	c.Assert(stdout.String(), check.Equals, expectedOut)
@@ -2992,27 +2961,25 @@ func (s *S) TestAppProcessUpdate(c *check.C) {
 		Stderr: &stderr,
 		Stdin:  nil,
 	}
-	client := cmd.NewClient(&http.Client{
-		Transport: &cmdtest.ConditionalTransport{
-			Transport: cmdtest.Transport{Message: string(result), Status: http.StatusOK},
-			CondFunc: func(r *http.Request) bool {
-				m := map[string]any{}
-				err = json.NewDecoder(r.Body).Decode(&m)
-				c.Assert(err, check.IsNil)
-				c.Assert(m["processes"], check.DeepEquals, []any{
-					map[string]any{
-						"name":     "process02",
-						"plan":     "c2m2",
-						"metadata": map[string]any{},
-					},
-				})
-				return true
-			},
+	s.setupFakeTransport(&cmdtest.ConditionalTransport{
+		Transport: cmdtest.Transport{Message: string(result), Status: http.StatusOK},
+		CondFunc: func(r *http.Request) bool {
+			m := map[string]any{}
+			err = json.NewDecoder(r.Body).Decode(&m)
+			c.Assert(err, check.IsNil)
+			c.Assert(m["processes"], check.DeepEquals, []any{
+				map[string]any{
+					"name":     "process02",
+					"plan":     "c2m2",
+					"metadata": map[string]any{},
+				},
+			})
+			return true
 		},
-	}, nil, manager)
+	})
 	command := AppProcessUpdate{}
 	command.Flags().Parse(true, []string{"--plan", "c2m2"})
-	err = command.Run(&context, client)
+	err = command.Run(&context)
 	c.Assert(err, check.IsNil)
 	c.Assert(stdout.String(), check.Equals, "stream\n"+expectedOut)
 }
@@ -3029,27 +2996,25 @@ func (s *S) TestAppProcessUpdateReset(c *check.C) {
 		Stderr: &stderr,
 		Stdin:  nil,
 	}
-	client := cmd.NewClient(&http.Client{
-		Transport: &cmdtest.ConditionalTransport{
-			Transport: cmdtest.Transport{Message: string(result), Status: http.StatusOK},
-			CondFunc: func(r *http.Request) bool {
-				m := map[string]any{}
-				err = json.NewDecoder(r.Body).Decode(&m)
-				c.Assert(err, check.IsNil)
-				c.Assert(m["processes"], check.DeepEquals, []any{
-					map[string]any{
-						"name":     "process02",
-						"plan":     "$default",
-						"metadata": map[string]any{},
-					},
-				})
-				return true
-			},
+	s.setupFakeTransport(&cmdtest.ConditionalTransport{
+		Transport: cmdtest.Transport{Message: string(result), Status: http.StatusOK},
+		CondFunc: func(r *http.Request) bool {
+			m := map[string]any{}
+			err = json.NewDecoder(r.Body).Decode(&m)
+			c.Assert(err, check.IsNil)
+			c.Assert(m["processes"], check.DeepEquals, []any{
+				map[string]any{
+					"name":     "process02",
+					"plan":     "$default",
+					"metadata": map[string]any{},
+				},
+			})
+			return true
 		},
-	}, nil, manager)
+	})
 	command := AppProcessUpdate{}
 	command.Flags().Parse(true, []string{"--default-plan"})
-	err = command.Run(&context, client)
+	err = command.Run(&context)
 	c.Assert(err, check.IsNil)
 	c.Assert(stdout.String(), check.Equals, "stream\n"+expectedOut)
 }

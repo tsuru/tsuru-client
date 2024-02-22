@@ -39,9 +39,9 @@ func (s *S) TestSwap(c *check.C) {
 		Args:   []string{"app1", "app2"},
 		Stdout: &buf,
 	}
-	client := cmd.NewClient(&http.Client{Transport: &transport}, nil, manager)
+	s.setupFakeTransport(&transport)
 	command := AppSwap{}
-	err := command.Run(&context, client)
+	err := command.Run(&context)
 	c.Assert(err, check.IsNil)
 	c.Assert(called, check.Equals, true)
 	expected := "Apps successfully swapped!\n"
@@ -87,10 +87,10 @@ func (s *S) TestSwapCnameOnlyFlag(c *check.C) {
 		Args:   []string{"app1", "app2"},
 		Stdout: &buf,
 	}
-	client := cmd.NewClient(&http.Client{Transport: &transport}, nil, manager)
+	s.setupFakeTransport(&transport)
 	command := AppSwap{}
 	command.Flags().Parse(true, []string{"-c"})
-	err := command.Run(&context, client)
+	err := command.Run(&context)
 	c.Assert(err, check.IsNil)
 	c.Assert(called, check.Equals, true)
 	expected := "Apps successfully swapped!\n"
@@ -135,9 +135,9 @@ func (s *S) TestSwapWhenAppsAreNotEqual(c *check.C) {
 		Stdout: &buf,
 		Stdin:  stdin,
 	}
-	client := cmd.NewClient(&http.Client{Transport: &multiTransport}, nil, manager)
+	s.setupFakeTransport(&multiTransport)
 	command := AppSwap{}
-	err := command.Run(&context, client)
+	err := command.Run(&context)
 	c.Assert(err, check.IsNil)
 	c.Assert(called, check.Equals, 2)
 }

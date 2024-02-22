@@ -24,10 +24,12 @@ import (
 	"github.com/ajg/form"
 	"github.com/lnquy/cron"
 	"github.com/tsuru/gnuflag"
-	"github.com/tsuru/go-tsuruclient/pkg/client"
 	"github.com/tsuru/go-tsuruclient/pkg/tsuru"
 	"github.com/tsuru/tablecli"
+	tsuruClientApp "github.com/tsuru/tsuru-client/tsuru/app"
+	"github.com/tsuru/tsuru-client/tsuru/config"
 	"github.com/tsuru/tsuru-client/tsuru/formatter"
+	tsuruHTTP "github.com/tsuru/tsuru-client/tsuru/http"
 	"github.com/tsuru/tsuru/cmd"
 	apptypes "github.com/tsuru/tsuru/types/app"
 	quotaTypes "github.com/tsuru/tsuru/types/quota"
@@ -165,7 +167,7 @@ func (c *AppCreate) Flags() *gnuflag.FlagSet {
 	return c.fs
 }
 
-func (c *AppCreate) Run(context *cmd.Context, client *cmd.Client) error {
+func (c *AppCreate) Run(context *cmd.Context) error {
 	var platform string
 	appName := context.Args[0]
 	if len(context.Args) > 1 {
@@ -186,7 +188,7 @@ func (c *AppCreate) Run(context *cmd.Context, client *cmd.Client) error {
 	}
 	v.Set("router", c.router)
 	b := strings.NewReader(v.Encode())
-	u, err := cmd.GetURL("/apps")
+	u, err := config.GetURL("/apps")
 	if err != nil {
 		return err
 	}
@@ -195,7 +197,7 @@ func (c *AppCreate) Run(context *cmd.Context, client *cmd.Client) error {
 		return err
 	}
 	request.Header.Set("Content-Type", "application/x-www-form-urlencoded")
-	response, err := client.Do(request)
+	response, err := tsuruHTTP.DefaultClient.Do(request)
 	if err != nil {
 		return err
 	}
@@ -217,7 +219,7 @@ func (c *AppCreate) Run(context *cmd.Context, client *cmd.Client) error {
 type AppUpdate struct {
 	args tsuru.UpdateApp
 	fs   *gnuflag.FlagSet
-	cmd.AppNameMixIn
+	tsuruClientApp.AppNameMixIn
 	cmd.ConfirmationCommand
 
 	memory, cpu, cpuBurst string
@@ -269,12 +271,10 @@ func (c *AppUpdate) Flags() *gnuflag.FlagSet {
 	return c.fs
 }
 
-func (c *AppUpdate) Run(ctx *cmd.Context, cli *cmd.Client) error {
+func (c *AppUpdate) Run(ctx *cmd.Context) error {
 	ctx.RawOutput()
 
-	apiClient, err := client.ClientFromEnvironment(&tsuru.Configuration{
-		HTTPClient: cli.HTTPClient,
-	})
+	apiClient, err := tsuruHTTP.TsuruClientFromEnvironment()
 	if err != nil {
 		return err
 	}
@@ -332,7 +332,7 @@ func (c *AppUpdate) Run(ctx *cmd.Context, cli *cmd.Client) error {
 }
 
 type AppRemove struct {
-	cmd.AppNameMixIn
+	tsuruClientApp.AppNameMixIn
 	cmd.ConfirmationCommand
 	fs *gnuflag.FlagSet
 }
@@ -350,7 +350,7 @@ remove it (you are able to remove any app that you see in [[tsuru app list]]).`,
 	}
 }
 
-func (c *AppRemove) Run(context *cmd.Context, client *cmd.Client) error {
+func (c *AppRemove) Run(context *cmd.Context) error {
 	context.RawOutput()
 	appName := c.Flags().Lookup("app").Value.String()
 	if appName == "" {
@@ -362,7 +362,7 @@ func (c *AppRemove) Run(context *cmd.Context, client *cmd.Client) error {
 	if !c.Confirm(context, fmt.Sprintf(`Are you sure you want to remove app "%s"?`, appName)) {
 		return nil
 	}
-	u, err := cmd.GetURL(fmt.Sprintf("/apps/%s", appName))
+	u, err := config.GetURL(fmt.Sprintf("/apps/%s", appName))
 	if err != nil {
 		return err
 	}
@@ -370,7 +370,7 @@ func (c *AppRemove) Run(context *cmd.Context, client *cmd.Client) error {
 	if err != nil {
 		return err
 	}
-	response, err := client.Do(request)
+	response, err := tsuruHTTP.DefaultClient.Do(request)
 	if err != nil {
 		return err
 	}
@@ -388,7 +388,7 @@ func (c *AppRemove) Flags() *gnuflag.FlagSet {
 }
 
 type AppInfo struct {
-	cmd.AppNameMixIn
+	tsuruClientApp.AppNameMixIn
 
 	json         bool
 	simplified   bool
@@ -418,12 +418,12 @@ func (cmd *AppInfo) Flags() *gnuflag.FlagSet {
 	return fs
 }
 
-func (c *AppInfo) Run(context *cmd.Context, client *cmd.Client) error {
+func (c *AppInfo) Run(context *cmd.Context) error {
 	appName, err := c.AppName()
 	if err != nil {
 		return err
 	}
-	u, err := cmd.GetURL(fmt.Sprintf("/apps/%s", appName))
+	u, err := config.GetURL(fmt.Sprintf("/apps/%s", appName))
 	if err != nil {
 		return err
 	}
@@ -431,7 +431,7 @@ func (c *AppInfo) Run(context *cmd.Context, client *cmd.Client) error {
 	if err != nil {
 		return err
 	}
-	response, err := client.Do(request)
+	response, err := tsuruHTTP.DefaultClient.Do(request)
 	if err != nil {
 		return err
 	}
@@ -1182,7 +1182,7 @@ func (c *AppInfo) Show(a *app, context *cmd.Context, simplified bool) error {
 }
 
 type AppGrant struct {
-	cmd.AppNameMixIn
+	tsuruClientApp.AppNameMixIn
 }
 
 func (c *AppGrant) Info() *cmd.Info {
@@ -1196,13 +1196,13 @@ app to a team.`,
 	}
 }
 
-func (c *AppGrant) Run(context *cmd.Context, client *cmd.Client) error {
+func (c *AppGrant) Run(context *cmd.Context) error {
 	appName, err := c.AppName()
 	if err != nil {
 		return err
 	}
 	teamName := context.Args[0]
-	u, err := cmd.GetURL(fmt.Sprintf("/apps/%s/teams/%s", appName, teamName))
+	u, err := config.GetURL(fmt.Sprintf("/apps/%s/teams/%s", appName, teamName))
 	if err != nil {
 		return err
 	}
@@ -1210,7 +1210,7 @@ func (c *AppGrant) Run(context *cmd.Context, client *cmd.Client) error {
 	if err != nil {
 		return err
 	}
-	_, err = client.Do(request)
+	_, err = tsuruHTTP.DefaultClient.Do(request)
 	if err != nil {
 		return err
 	}
@@ -1219,7 +1219,7 @@ func (c *AppGrant) Run(context *cmd.Context, client *cmd.Client) error {
 }
 
 type AppRevoke struct {
-	cmd.AppNameMixIn
+	tsuruClientApp.AppNameMixIn
 }
 
 func (c *AppRevoke) Info() *cmd.Info {
@@ -1235,13 +1235,13 @@ authorized team.`,
 	}
 }
 
-func (c *AppRevoke) Run(context *cmd.Context, client *cmd.Client) error {
+func (c *AppRevoke) Run(context *cmd.Context) error {
 	appName, err := c.AppName()
 	if err != nil {
 		return err
 	}
 	teamName := context.Args[0]
-	u, err := cmd.GetURL(fmt.Sprintf("/apps/%s/teams/%s", appName, teamName))
+	u, err := config.GetURL(fmt.Sprintf("/apps/%s/teams/%s", appName, teamName))
 	if err != nil {
 		return err
 	}
@@ -1249,7 +1249,7 @@ func (c *AppRevoke) Run(context *cmd.Context, client *cmd.Client) error {
 	if err != nil {
 		return err
 	}
-	_, err = client.Do(request)
+	_, err = tsuruHTTP.DefaultClient.Do(request)
 	if err != nil {
 		return err
 	}
@@ -1268,7 +1268,7 @@ type appFilter struct {
 	tags      cmd.StringSliceFlag
 }
 
-func (f *appFilter) queryString(cli *cmd.Client) (url.Values, error) {
+func (f *appFilter) queryString() (url.Values, error) {
 	result := make(url.Values)
 	if f.name != "" {
 		result.Set("name", f.name)
@@ -1283,7 +1283,7 @@ func (f *appFilter) queryString(cli *cmd.Client) (url.Values, error) {
 		owner := f.owner
 		if owner == "me" {
 			var err error
-			owner, err = currentUserEmail(cli)
+			owner, err = currentUserEmail()
 			if err != nil {
 				return nil, err
 			}
@@ -1305,10 +1305,8 @@ func (f *appFilter) queryString(cli *cmd.Client) (url.Values, error) {
 	return result, nil
 }
 
-func currentUserEmail(cli *cmd.Client) (string, error) {
-	apiClient, err := client.ClientFromEnvironment(&tsuru.Configuration{
-		HTTPClient: cli.HTTPClient,
-	})
+func currentUserEmail() (string, error) {
+	apiClient, err := tsuruHTTP.TsuruClientFromEnvironment()
 	if err != nil {
 		return "", err
 	}
@@ -1326,15 +1324,15 @@ type AppList struct {
 	json       bool
 }
 
-func (c *AppList) Run(context *cmd.Context, client *cmd.Client) error {
-	qs, err := c.filter.queryString(client)
+func (c *AppList) Run(context *cmd.Context) error {
+	qs, err := c.filter.queryString()
 	if err != nil {
 		return err
 	}
 	if c.simplified {
 		qs.Set("simplified", "true")
 	}
-	u, err := cmd.GetURL(fmt.Sprintf("/apps?%s", qs.Encode()))
+	u, err := config.GetURL(fmt.Sprintf("/apps?%s", qs.Encode()))
 	if err != nil {
 		return err
 	}
@@ -1342,7 +1340,7 @@ func (c *AppList) Run(context *cmd.Context, client *cmd.Client) error {
 	if err != nil {
 		return err
 	}
-	response, err := client.Do(request)
+	response, err := tsuruHTTP.DefaultClient.Do(request)
 	if err != nil {
 		return err
 	}
@@ -1354,10 +1352,10 @@ func (c *AppList) Run(context *cmd.Context, client *cmd.Client) error {
 	if err != nil {
 		return err
 	}
-	return c.Show(result, context, client)
+	return c.Show(result, context)
 }
 
-func (c *AppList) Show(result []byte, context *cmd.Context, client *cmd.Client) error {
+func (c *AppList) Show(result []byte, context *cmd.Context) error {
 	var apps []app
 	err := json.Unmarshal(result, &apps)
 	if err != nil {
@@ -1399,10 +1397,7 @@ func (c *AppList) Show(result []byte, context *cmd.Context, client *cmd.Client) 
 			}
 			summary = strings.Join(statusText, "\n")
 		} else {
-			summary = "error fetching units"
-			if client.Verbosity > 0 {
-				summary += fmt.Sprintf(": %s", app.Error)
-			}
+			summary = "error fetching units: " + app.Error
 		}
 		addrs := strings.Replace(app.Addr(), ", ", "\n", -1)
 		table.AddRow(tablecli.Row([]string{app.Name, summary, addrs}))
@@ -1451,7 +1446,7 @@ Flags can be used to filter the list of applications.`,
 }
 
 type AppStop struct {
-	cmd.AppNameMixIn
+	tsuruClientApp.AppNameMixIn
 	process string
 	version string
 	fs      *gnuflag.FlagSet
@@ -1466,13 +1461,13 @@ func (c *AppStop) Info() *cmd.Info {
 	}
 }
 
-func (c *AppStop) Run(context *cmd.Context, client *cmd.Client) error {
+func (c *AppStop) Run(context *cmd.Context) error {
 	context.RawOutput()
 	appName, err := c.AppName()
 	if err != nil {
 		return err
 	}
-	u, err := cmd.GetURL(fmt.Sprintf("/apps/%s/stop", appName))
+	u, err := config.GetURL(fmt.Sprintf("/apps/%s/stop", appName))
 	if err != nil {
 		return err
 	}
@@ -1485,7 +1480,7 @@ func (c *AppStop) Run(context *cmd.Context, client *cmd.Client) error {
 		return err
 	}
 	request.Header.Set("Content-Type", "application/x-www-form-urlencoded")
-	response, err := client.Do(request)
+	response, err := tsuruHTTP.DefaultClient.Do(request)
 	if err != nil {
 		return err
 	}
@@ -1503,7 +1498,7 @@ func (c *AppStop) Flags() *gnuflag.FlagSet {
 }
 
 type AppStart struct {
-	cmd.AppNameMixIn
+	tsuruClientApp.AppNameMixIn
 	process string
 	version string
 	fs      *gnuflag.FlagSet
@@ -1518,13 +1513,13 @@ func (c *AppStart) Info() *cmd.Info {
 	}
 }
 
-func (c *AppStart) Run(context *cmd.Context, client *cmd.Client) error {
+func (c *AppStart) Run(context *cmd.Context) error {
 	context.RawOutput()
 	appName, err := c.AppName()
 	if err != nil {
 		return err
 	}
-	u, err := cmd.GetURL(fmt.Sprintf("/apps/%s/start", appName))
+	u, err := config.GetURL(fmt.Sprintf("/apps/%s/start", appName))
 	if err != nil {
 		return err
 	}
@@ -1537,7 +1532,7 @@ func (c *AppStart) Run(context *cmd.Context, client *cmd.Client) error {
 		return err
 	}
 	request.Header.Set("Content-Type", "application/x-www-form-urlencoded")
-	response, err := client.Do(request)
+	response, err := tsuruHTTP.DefaultClient.Do(request)
 	if err != nil {
 		return err
 	}
@@ -1555,19 +1550,19 @@ func (c *AppStart) Flags() *gnuflag.FlagSet {
 }
 
 type AppRestart struct {
-	cmd.AppNameMixIn
+	tsuruClientApp.AppNameMixIn
 	process string
 	version string
 	fs      *gnuflag.FlagSet
 }
 
-func (c *AppRestart) Run(context *cmd.Context, client *cmd.Client) error {
+func (c *AppRestart) Run(context *cmd.Context) error {
 	context.RawOutput()
 	appName, err := c.AppName()
 	if err != nil {
 		return err
 	}
-	u, err := cmd.GetURL(fmt.Sprintf("/apps/%s/restart", appName))
+	u, err := config.GetURL(fmt.Sprintf("/apps/%s/restart", appName))
 	if err != nil {
 		return err
 	}
@@ -1580,7 +1575,7 @@ func (c *AppRestart) Run(context *cmd.Context, client *cmd.Client) error {
 		return err
 	}
 	request.Header.Set("Content-Type", "application/x-www-form-urlencoded")
-	response, err := client.Do(request)
+	response, err := tsuruHTTP.DefaultClient.Do(request)
 	if err != nil {
 		return err
 	}
@@ -1607,11 +1602,11 @@ func (c *AppRestart) Flags() *gnuflag.FlagSet {
 }
 
 type CnameAdd struct {
-	cmd.AppNameMixIn
+	tsuruClientApp.AppNameMixIn
 }
 
-func (c *CnameAdd) Run(context *cmd.Context, client *cmd.Client) error {
-	err := addCName(context.Args, c.AppNameMixIn, client)
+func (c *CnameAdd) Run(context *cmd.Context) error {
+	err := addCName(context.Args, c.AppNameMixIn)
 	if err != nil {
 		return err
 	}
@@ -1632,11 +1627,11 @@ register. Once the app contains a custom CNAME, it will be displayed by "app lis
 }
 
 type CnameRemove struct {
-	cmd.AppNameMixIn
+	tsuruClientApp.AppNameMixIn
 }
 
-func (c *CnameRemove) Run(context *cmd.Context, client *cmd.Client) error {
-	err := unsetCName(context.Args, c.AppNameMixIn, client)
+func (c *CnameRemove) Run(context *cmd.Context) error {
+	err := unsetCName(context.Args, c.AppNameMixIn)
 	if err != nil {
 		return err
 	}
@@ -1656,7 +1651,7 @@ After unsetting the CNAME from the app, [[tsuru app list]] and [[tsuru app info]
 	}
 }
 
-func unsetCName(cnames []string, g cmd.AppNameMixIn, client *cmd.Client) error {
+func unsetCName(cnames []string, g tsuruClientApp.AppNameMixIn) error {
 	appName, err := g.AppName()
 	if err != nil {
 		return err
@@ -1665,7 +1660,7 @@ func unsetCName(cnames []string, g cmd.AppNameMixIn, client *cmd.Client) error {
 	for _, cname := range cnames {
 		v.Add("cname", cname)
 	}
-	u, err := cmd.GetURL(fmt.Sprintf("/apps/%s/cname?%s", appName, v.Encode()))
+	u, err := config.GetURL(fmt.Sprintf("/apps/%s/cname?%s", appName, v.Encode()))
 	if err != nil {
 		return err
 	}
@@ -1673,16 +1668,16 @@ func unsetCName(cnames []string, g cmd.AppNameMixIn, client *cmd.Client) error {
 	if err != nil {
 		return err
 	}
-	_, err = client.Do(request)
+	_, err = tsuruHTTP.DefaultClient.Do(request)
 	return err
 }
 
-func addCName(cnames []string, g cmd.AppNameMixIn, client *cmd.Client) error {
+func addCName(cnames []string, g tsuruClientApp.AppNameMixIn) error {
 	appName, err := g.AppName()
 	if err != nil {
 		return err
 	}
-	u, err := cmd.GetURL(fmt.Sprintf("/apps/%s/cname", appName))
+	u, err := config.GetURL(fmt.Sprintf("/apps/%s/cname", appName))
 	if err != nil {
 		return err
 	}
@@ -1696,7 +1691,7 @@ func addCName(cnames []string, g cmd.AppNameMixIn, client *cmd.Client) error {
 		return err
 	}
 	request.Header.Set("Content-Type", "application/x-www-form-urlencoded")
-	_, err = client.Do(request)
+	_, err = tsuruHTTP.DefaultClient.Do(request)
 	return err
 }
 
@@ -1731,7 +1726,7 @@ func (c *AppProcessUpdate) Flags() *gnuflag.FlagSet {
 	return c.fs
 }
 
-func (c *AppProcessUpdate) Run(ctx *cmd.Context, cli *cmd.Client) error {
+func (c *AppProcessUpdate) Run(ctx *cmd.Context) error {
 	ctx.RawOutput()
 
 	if c.resetDefaultPlan {
@@ -1748,9 +1743,7 @@ func (c *AppProcessUpdate) Run(ctx *cmd.Context, cli *cmd.Client) error {
 		},
 	}
 
-	apiClient, err := client.ClientFromEnvironment(&tsuru.Configuration{
-		HTTPClient: cli.HTTPClient,
-	})
+	apiClient, err := tsuruHTTP.TsuruClientFromEnvironment()
 	if err != nil {
 		return err
 	}

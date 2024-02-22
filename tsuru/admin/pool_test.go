@@ -35,10 +35,9 @@ func (s *S) TestAddPoolToTheSchedulerCmd(c *check.C) {
 			return strings.HasSuffix(req.URL.Path, "/pools")
 		},
 	}
-	manager := cmd.Manager{}
-	client := cmd.NewClient(&http.Client{Transport: trans}, nil, &manager)
+	s.setupFakeTransport(trans)
 	cmd := AddPoolToSchedulerCmd{}
-	err := cmd.Run(&context, client)
+	err := cmd.Run(&context)
 	c.Assert(err, check.IsNil)
 }
 
@@ -58,11 +57,10 @@ func (s *S) TestAddPublicPool(c *check.C) {
 			return url && name && public && def
 		},
 	}
-	manager := cmd.Manager{}
-	client := cmd.NewClient(&http.Client{Transport: trans}, nil, &manager)
+	s.setupFakeTransport(trans)
 	cmd := AddPoolToSchedulerCmd{}
 	cmd.Flags().Parse(true, []string{"-p"})
-	err := cmd.Run(&context, client)
+	err := cmd.Run(&context)
 	c.Assert(err, check.IsNil)
 }
 
@@ -81,11 +79,10 @@ func (s *S) TestAddDefaultPool(c *check.C) {
 			return url && name && public && def
 		},
 	}
-	manager := cmd.Manager{}
-	client := cmd.NewClient(&http.Client{Transport: trans}, nil, &manager)
+	s.setupFakeTransport(trans)
 	command := AddPoolToSchedulerCmd{}
 	command.Flags().Parse(true, []string{"-d"})
-	err := command.Run(&context, client)
+	err := command.Run(&context)
 	c.Assert(err, check.IsNil)
 }
 
@@ -105,11 +102,10 @@ func (s *S) TestAddPoolWithProvisioner(c *check.C) {
 			return url && name && public && def && prov
 		},
 	}
-	manager := cmd.Manager{}
-	client := cmd.NewClient(&http.Client{Transport: trans}, nil, &manager)
+	s.setupFakeTransport(trans)
 	command := AddPoolToSchedulerCmd{}
 	command.Flags().Parse(true, []string{"--provisioner", "kub"})
-	err := command.Run(&context, client)
+	err := command.Run(&context)
 	c.Assert(err, check.IsNil)
 }
 
@@ -129,18 +125,17 @@ func (s *S) TestAddPoolWithLabels(c *check.C) {
 			return false
 		},
 	}
-	manager := cmd.Manager{}
-	client := cmd.NewClient(&http.Client{Transport: trans}, nil, &manager)
+	s.setupFakeTransport(trans)
 	cmd := AddPoolToSchedulerCmd{}
 	cmd.Flags().Parse(true, []string{"--labels", "test-key=test-value"})
-	err := cmd.Run(&context, client)
+	err := cmd.Run(&context)
 	c.Assert(err, check.IsNil)
 }
 
 func (s *S) TestFailToAddMoreThanOneDefaultPool(c *check.C) {
 	var buf bytes.Buffer
 	stdin := bytes.NewBufferString("no")
-	transportError := cmdtest.ConditionalTransport{
+	trans := cmdtest.ConditionalTransport{
 		Transport: cmdtest.Transport{Status: http.StatusPreconditionFailed, Message: "Default pool already exist."},
 		CondFunc: func(req *http.Request) bool {
 			opts := new(addOpts)
@@ -152,12 +147,11 @@ func (s *S) TestFailToAddMoreThanOneDefaultPool(c *check.C) {
 			return name && public && def && url
 		},
 	}
-	manager := cmd.Manager{}
 	context := cmd.Context{Args: []string{"test"}, Stdout: &buf, Stdin: stdin}
-	client := cmd.NewClient(&http.Client{Transport: &transportError}, nil, &manager)
+	s.setupFakeTransport(&trans)
 	command := AddPoolToSchedulerCmd{}
 	command.Flags().Parse(true, []string{"-d"})
-	err := command.Run(&context, client)
+	err := command.Run(&context)
 	c.Assert(err, check.IsNil)
 	expected := "WARNING: Default pool already exist. Do you want change to test pool? (y/n) Pool add aborted.\n"
 	c.Assert(buf.String(), check.Equals, expected)
@@ -166,7 +160,7 @@ func (s *S) TestFailToAddMoreThanOneDefaultPool(c *check.C) {
 func (s *S) TestForceToOverwriteDefaultPool(c *check.C) {
 	var buf bytes.Buffer
 	stdin := bytes.NewBufferString("no")
-	transportError := cmdtest.ConditionalTransport{
+	trans := cmdtest.ConditionalTransport{
 		Transport: cmdtest.Transport{Status: http.StatusPreconditionFailed, Message: "Default pool already exist."},
 		CondFunc: func(req *http.Request) bool {
 			opts := new(addOpts)
@@ -178,13 +172,12 @@ func (s *S) TestForceToOverwriteDefaultPool(c *check.C) {
 			return name && public && def && force
 		},
 	}
-	manager := cmd.Manager{}
 	context := cmd.Context{Args: []string{"test"}, Stdout: &buf, Stdin: stdin}
-	client := cmd.NewClient(&http.Client{Transport: &transportError}, nil, &manager)
+	s.setupFakeTransport(&trans)
 	command := AddPoolToSchedulerCmd{}
 	command.Flags().Parse(true, []string{"-d"})
 	command.Flags().Parse(true, []string{"-f"})
-	err := command.Run(&context, client)
+	err := command.Run(&context)
 	c.Assert(err, check.IsNil)
 }
 
@@ -214,7 +207,7 @@ func (s *S) TestAskOverwriteDefaultPool(c *check.C) {
 			return opts.ForceDefault == true
 		},
 	}
-	multiTransport := cmdtest.MultiConditionalTransport{
+	trans := cmdtest.MultiConditionalTransport{
 		ConditionalTransports: []cmdtest.ConditionalTransport{transportError, transportOk},
 	}
 	context := cmd.Context{
@@ -222,11 +215,10 @@ func (s *S) TestAskOverwriteDefaultPool(c *check.C) {
 		Stdout: &buf,
 		Stdin:  stdin,
 	}
-	manager := cmd.Manager{}
-	client := cmd.NewClient(&http.Client{Transport: &multiTransport}, nil, &manager)
+	s.setupFakeTransport(&trans)
 	command := AddPoolToSchedulerCmd{}
 	command.Flags().Parse(true, []string{"-d"})
-	err := command.Run(&context, client)
+	err := command.Run(&context)
 	c.Assert(err, check.IsNil)
 	c.Assert(called, check.Equals, 2)
 	expected := "WARNING: Default pool already exist. Do you want change to test pool? (y/n) Pool successfully registered.\n"
@@ -257,11 +249,10 @@ func (s *S) TestUpdatePoolToTheSchedulerCmd(c *check.C) {
 			return public && method && url && force && def && labels
 		},
 	}
-	manager := cmd.Manager{}
-	client := cmd.NewClient(&http.Client{Transport: trans}, nil, &manager)
+	s.setupFakeTransport(trans)
 	cmd := UpdatePoolToSchedulerCmd{}
 	cmd.Flags().Parse(true, []string{"--public", "true"})
-	err := cmd.Run(&context, client)
+	err := cmd.Run(&context)
 	c.Assert(err, check.IsNil)
 }
 
@@ -297,11 +288,10 @@ func (s *S) TestUpdatePoolAddLabels(c *check.C) {
 			},
 		},
 	}
-	manager := cmd.Manager{}
-	client := cmd.NewClient(&http.Client{Transport: &trans}, nil, &manager)
+	s.setupFakeTransport(&trans)
 	cmd := UpdatePoolToSchedulerCmd{}
 	cmd.Flags().Parse(true, []string{"--add-labels", "test-key=test-value"})
-	err = cmd.Run(&context, client)
+	err = cmd.Run(&context)
 	c.Assert(err, check.IsNil)
 }
 
@@ -321,11 +311,10 @@ func (s *S) TestUpdatePoolFailRemoveUnexistingLabels(c *check.C) {
 			return true
 		},
 	}
-	manager := cmd.Manager{}
-	client := cmd.NewClient(&http.Client{Transport: &trans}, nil, &manager)
+	s.setupFakeTransport(&trans)
 	cmd := UpdatePoolToSchedulerCmd{}
 	cmd.Flags().Parse(true, []string{"--remove-labels", "test-key"})
-	err = cmd.Run(&context, client)
+	err = cmd.Run(&context)
 	c.Assert(err.Error(), check.Equals, "key test-key does not exist in pool labelset, can't delete an unexisting key")
 }
 
@@ -362,11 +351,10 @@ func (s *S) TestUpdatePoolRemoveAllLabels(c *check.C) {
 			},
 		},
 	}
-	manager := cmd.Manager{}
-	client := cmd.NewClient(&http.Client{Transport: &trans}, nil, &manager)
+	s.setupFakeTransport(&trans)
 	cmd := UpdatePoolToSchedulerCmd{}
 	cmd.Flags().Parse(true, []string{"--remove-labels", "k1", "--remove-labels", "k2", "--remove-labels", "k3"})
-	err = cmd.Run(&context, client)
+	err = cmd.Run(&context)
 	c.Assert(err, check.IsNil)
 }
 
@@ -402,11 +390,10 @@ func (s *S) TestUpdatePoolRemoveAllLabelsThenAddNewOnes(c *check.C) {
 			},
 		},
 	}
-	manager := cmd.Manager{}
-	client := cmd.NewClient(&http.Client{Transport: &trans}, nil, &manager)
+	s.setupFakeTransport(&trans)
 	cmd := UpdatePoolToSchedulerCmd{}
 	cmd.Flags().Parse(true, []string{"--remove-labels", "k1", "--remove-labels", "k2", "--remove-labels", "k3", "--add-labels", "new-key=new-value"})
-	err = cmd.Run(&context, client)
+	err = cmd.Run(&context)
 	c.Assert(err, check.IsNil)
 }
 
@@ -443,18 +430,17 @@ func (s *S) TestUpdatePoolWithLabelsAddAndRemoveLabels(c *check.C) {
 			},
 		},
 	}
-	manager := cmd.Manager{}
-	client := cmd.NewClient(&http.Client{Transport: &trans}, nil, &manager)
+	s.setupFakeTransport(&trans)
 	cmd := UpdatePoolToSchedulerCmd{}
 	cmd.Flags().Parse(true, []string{"--add-labels", "k4=v4", "--remove-labels", "k2"})
-	err = cmd.Run(&context, client)
+	err = cmd.Run(&context)
 	c.Assert(err, check.IsNil)
 }
 
 func (s *S) TestFailToUpdateMoreThanOneDefaultPool(c *check.C) {
 	var buf bytes.Buffer
 	stdin := bytes.NewBufferString("no")
-	transportError := cmdtest.ConditionalTransport{
+	trans := cmdtest.ConditionalTransport{
 		Transport: cmdtest.Transport{Status: http.StatusPreconditionFailed, Message: "Default pool already exist."},
 		CondFunc: func(req *http.Request) bool {
 			opts := new(updateOpts)
@@ -470,12 +456,11 @@ func (s *S) TestFailToUpdateMoreThanOneDefaultPool(c *check.C) {
 			return def && url && public && force && labels
 		},
 	}
-	manager := cmd.Manager{}
 	context := cmd.Context{Args: []string{"test"}, Stdout: &buf, Stdin: stdin}
-	client := cmd.NewClient(&http.Client{Transport: &transportError}, nil, &manager)
+	s.setupFakeTransport(&trans)
 	command := UpdatePoolToSchedulerCmd{}
 	command.Flags().Parse(true, []string{"--default=true"})
-	err := command.Run(&context, client)
+	err := command.Run(&context)
 	c.Assert(err, check.IsNil)
 	expected := "WARNING: Default pool already exist. Do you want change to test pool? (y/n) Pool update aborted.\n"
 	c.Assert(buf.String(), check.Equals, expected)
@@ -484,7 +469,7 @@ func (s *S) TestFailToUpdateMoreThanOneDefaultPool(c *check.C) {
 func (s *S) TestForceToOverwriteDefaultPoolInUpdate(c *check.C) {
 	var buf bytes.Buffer
 	stdin := bytes.NewBufferString("no")
-	transportError := cmdtest.ConditionalTransport{
+	trans := cmdtest.ConditionalTransport{
 		Transport: cmdtest.Transport{Status: http.StatusPreconditionFailed, Message: "Default pool already exist."},
 		CondFunc: func(req *http.Request) bool {
 			opts := new(updateOpts)
@@ -501,13 +486,12 @@ func (s *S) TestForceToOverwriteDefaultPoolInUpdate(c *check.C) {
 			return url && force && def && public && method && labels
 		},
 	}
-	manager := cmd.Manager{}
 	context := cmd.Context{Args: []string{"test"}, Stdout: &buf, Stdin: stdin}
-	client := cmd.NewClient(&http.Client{Transport: &transportError}, nil, &manager)
+	s.setupFakeTransport(&trans)
 	command := UpdatePoolToSchedulerCmd{}
 	command.Flags().Parse(true, []string{"--default=true"})
 	command.Flags().Parse(true, []string{"-f"})
-	err := command.Run(&context, client)
+	err := command.Run(&context)
 	c.Assert(err, check.IsNil)
 }
 
@@ -542,7 +526,7 @@ func (s *S) TestAskOverwriteDefaultPoolInUpdate(c *check.C) {
 			return url && force
 		},
 	}
-	multiTransport := cmdtest.MultiConditionalTransport{
+	trans := cmdtest.MultiConditionalTransport{
 		ConditionalTransports: []cmdtest.ConditionalTransport{transportError, transportOk},
 	}
 	context := cmd.Context{
@@ -550,11 +534,10 @@ func (s *S) TestAskOverwriteDefaultPoolInUpdate(c *check.C) {
 		Stdout: &buf,
 		Stdin:  stdin,
 	}
-	manager := cmd.Manager{}
-	client := cmd.NewClient(&http.Client{Transport: &multiTransport}, nil, &manager)
+	s.setupFakeTransport(&trans)
 	command := UpdatePoolToSchedulerCmd{}
 	command.Flags().Parse(true, []string{"--default=true"})
-	err := command.Run(&context, client)
+	err := command.Run(&context)
 	c.Assert(err, check.IsNil)
 	c.Assert(called, check.Equals, 2)
 	expected := "WARNING: Default pool already exist. Do you want change to test pool? (y/n) Pool successfully updated.\n"
@@ -576,11 +559,10 @@ func (s *S) TestRemovePoolFromTheSchedulerCmd(c *check.C) {
 			return method && url
 		},
 	}
-	manager := cmd.Manager{}
-	client := cmd.NewClient(&http.Client{Transport: trans}, nil, &manager)
+	s.setupFakeTransport(trans)
 	cmd := RemovePoolFromSchedulerCmd{}
 	cmd.Flags().Parse(true, []string{"-y"})
-	err := cmd.Run(&context, client)
+	err := cmd.Run(&context)
 	c.Assert(err, check.IsNil)
 }
 
@@ -592,7 +574,7 @@ func (s *S) TestRemovePoolFromTheSchedulerCmdConfirmation(c *check.C) {
 		Stdin:  strings.NewReader("n\n"),
 	}
 	command := RemovePoolFromSchedulerCmd{}
-	err := command.Run(&context, nil)
+	err := command.Run(&context)
 	c.Assert(err, check.IsNil)
 	c.Assert(stdout.String(), check.Equals, "Are you sure you want to remove \"poolX\" pool? (y/n) Abort.\n")
 }
@@ -617,9 +599,8 @@ func (s *S) TestAddTeamsToPoolCmdRun(c *check.C) {
 			return url && method && contentType
 		},
 	}
-	manager := cmd.Manager{}
-	client := cmd.NewClient(&http.Client{Transport: trans}, nil, &manager)
-	err := AddTeamsToPoolCmd{}.Run(&ctx, client)
+	s.setupFakeTransport(trans)
+	err := AddTeamsToPoolCmd{}.Run(&ctx)
 	c.Assert(err, check.IsNil)
 }
 
@@ -639,9 +620,8 @@ func (s *S) TestRemoveTeamsFromPoolCmdRun(c *check.C) {
 			return url && method && rq
 		},
 	}
-	manager := cmd.Manager{}
-	client := cmd.NewClient(&http.Client{Transport: trans}, nil, &manager)
-	err := RemoveTeamsFromPoolCmd{}.Run(&ctx, client)
+	s.setupFakeTransport(trans)
+	err := RemoveTeamsFromPoolCmd{}.Run(&ctx)
 	c.Assert(err, check.IsNil)
 }
 
@@ -665,9 +645,9 @@ func (s *S) TestPoolConstraintList(c *check.C) {
 			return method && url
 		},
 	}
-	client := cmd.NewClient(&http.Client{Transport: trans}, nil, &cmd.Manager{})
+	s.setupFakeTransport(trans)
 	cmd := PoolConstraintList{}
-	err = cmd.Run(&context, client)
+	err = cmd.Run(&context)
 	c.Assert(err, check.IsNil)
 	c.Assert(buf.String(), check.Equals, `+-----------------+--------+-----------------+-----------+
 | Pool Expression | Field  | Values          | Blacklist |
@@ -704,9 +684,9 @@ func (s *S) TestPoolConstraintSetDefaultFlags(c *check.C) {
 			return method && append && url
 		},
 	}
-	client := cmd.NewClient(&http.Client{Transport: trans}, nil, &cmd.Manager{})
+	s.setupFakeTransport(trans)
 	cmd := PoolConstraintSet{}
-	err := cmd.Run(&context, client)
+	err := cmd.Run(&context)
 	c.Assert(err, check.IsNil)
 }
 
@@ -732,10 +712,10 @@ func (s *S) TestPoolConstraintSet(c *check.C) {
 			return method && append && url
 		},
 	}
-	client := cmd.NewClient(&http.Client{Transport: trans}, nil, &cmd.Manager{})
+	s.setupFakeTransport(trans)
 	cmd := PoolConstraintSet{}
 	cmd.Flags().Parse(true, []string{"--blacklist", "--append"})
-	err := cmd.Run(&context, client)
+	err := cmd.Run(&context)
 	c.Assert(err, check.IsNil)
 }
 
@@ -760,8 +740,8 @@ func (s *S) TestPoolConstraintSetEmptyValues(c *check.C) {
 			return method && append && url
 		},
 	}
-	client := cmd.NewClient(&http.Client{Transport: trans}, nil, &cmd.Manager{})
+	s.setupFakeTransport(trans)
 	cmd := PoolConstraintSet{}
-	err := cmd.Run(&context, client)
+	err := cmd.Run(&context)
 	c.Assert(err, check.IsNil)
 }

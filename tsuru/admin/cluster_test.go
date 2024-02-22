@@ -56,8 +56,7 @@ func (s *S) TestClusterAddRun(c *check.C) {
 			return true
 		},
 	}
-	manager := cmd.NewManagerPanicExiter("admin", "0.1", "admin-ver", &stdout, &stderr, nil, nil)
-	client := cmd.NewClient(&http.Client{Transport: trans}, nil, manager)
+	s.setupFakeTransport(trans)
 	myCmd := ClusterAdd{}
 	dir, err := os.MkdirTemp("", "tsuru")
 	c.Assert(err, check.IsNil)
@@ -81,7 +80,7 @@ func (s *S) TestClusterAddRun(c *check.C) {
 		"--default",
 	})
 	c.Assert(err, check.IsNil)
-	err = myCmd.Run(&context, client)
+	err = myCmd.Run(&context)
 	c.Assert(err, check.IsNil)
 	c.Assert(stdout.String(), check.Equals, "Cluster successfully added.\n")
 }
@@ -146,8 +145,7 @@ func (s *S) TestClusterUpdateRun(c *check.C) {
 			},
 		},
 	}
-	manager := cmd.NewManagerPanicExiter("admin", "0.1", "admin-ver", &stdout, &stderr, nil, nil)
-	client := cmd.NewClient(&http.Client{Transport: &trans}, nil, manager)
+	s.setupFakeTransport(&trans)
 	myCmd := ClusterUpdate{}
 	dir, err := os.MkdirTemp("", "tsuru")
 	c.Assert(err, check.IsNil)
@@ -163,7 +161,7 @@ func (s *S) TestClusterUpdateRun(c *check.C) {
 		"--clientcert", filepath.Join(dir, "cert"),
 	})
 	c.Assert(err, check.IsNil)
-	err = myCmd.Run(&context, client)
+	err = myCmd.Run(&context)
 	c.Assert(err, check.IsNil)
 	c.Assert(stdout.String(), check.Equals, "Cluster successfully updated.\n")
 }
@@ -401,10 +399,9 @@ func (s *S) TestClusterListRun(c *check.C) {
 			return true
 		},
 	}
-	manager := cmd.NewManagerPanicExiter("admin", "0.1", "admin-ver", &stdout, &stderr, nil, nil)
-	client := cmd.NewClient(&http.Client{Transport: trans}, nil, manager)
+	s.setupFakeTransport(trans)
 	myCmd := ClusterList{}
-	err = myCmd.Run(&context, client)
+	err = myCmd.Run(&context)
 	c.Assert(err, check.IsNil)
 	c.Assert(stdout.String(), check.Equals, `+------+-------------+-----------+---------------+---------+-------+
 | Name | Provisioner | Addresses | Custom Data   | Default | Pools |
@@ -438,10 +435,9 @@ func (s *S) TestClusterRemoveRun(c *check.C) {
 			return true
 		},
 	}
-	manager := cmd.NewManagerPanicExiter("admin", "0.1", "admin-ver", &stdout, &stderr, nil, nil)
-	client := cmd.NewClient(&http.Client{Transport: trans}, nil, manager)
+	s.setupFakeTransport(trans)
 	command := ClusterRemove{}
-	err := command.Run(&context, client)
+	err := command.Run(&context)
 	c.Assert(err, check.IsNil)
 	expectedOut := "Cluster successfully removed.\n"
 	c.Assert(stdout.String(), check.Equals, expected+expectedOut)
@@ -481,10 +477,9 @@ func (s *S) TestProvisionerListRun(c *check.C) {
 			return true
 		},
 	}
-	manager := cmd.NewManagerPanicExiter("admin", "0.1", "admin-ver", &stdout, &stderr, nil, nil)
-	client := cmd.NewClient(&http.Client{Transport: trans}, nil, manager)
+	s.setupFakeTransport(trans)
 	myCmd := ProvisionerList{}
-	err := myCmd.Run(&context, client)
+	err := myCmd.Run(&context)
 	c.Assert(err, check.IsNil)
 	c.Assert(stdout.String(), check.Equals, `+------+---------------+
 | Name | Cluster Usage |
@@ -530,10 +525,9 @@ func (s *S) TestProvisionerInfoRun(c *check.C) {
 			return true
 		},
 	}
-	manager := cmd.NewManagerPanicExiter("admin", "0.1", "admin-ver", &stdout, &stderr, nil, nil)
-	client := cmd.NewClient(&http.Client{Transport: trans}, nil, manager)
+	s.setupFakeTransport(trans)
 	myCmd := ProvisionerInfo{}
-	err := myCmd.Run(&context, client)
+	err := myCmd.Run(&context)
 	c.Assert(err, check.IsNil)
 	c.Assert(stdout.String(), check.Equals, `Name: p2
 Cluster usage: help2

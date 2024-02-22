@@ -10,8 +10,6 @@ import (
 	"io"
 	"os"
 	"time"
-
-	"github.com/tsuru/tsuru/cmd"
 )
 
 const (
@@ -21,7 +19,7 @@ const (
 
 var (
 	privConfig         *ConfigType
-	configPath         string           = cmd.JoinWithUserDir(".tsuru", "config.json")
+	configPath         string           = JoinWithUserDir(".tsuru", "config.json")
 	SchemaVersion      string           = "0.1"
 	stdout             io.ReadWriter    = os.Stdout
 	stderr             io.ReadWriter    = os.Stderr
@@ -60,7 +58,7 @@ func newDefaultConf() *ConfigType {
 }
 
 func bootstrapConfig() *ConfigType {
-	file, err := filesystem().Open(configPath)
+	file, err := Filesystem().Open(configPath)
 	if os.IsNotExist(err) {
 		return newDefaultConf()
 	}
@@ -82,7 +80,7 @@ func bootstrapConfig() *ConfigType {
 		backupFilePath := configPath + "." + nowTimeStr + ".bak"
 		fmt.Fprintf(stderr, "Error parsing %q: %v\n", configPath, err)
 		fmt.Fprintf(stderr, "Backing up current file to %q. A new configuration will be saved.\n", backupFilePath)
-		if err := filesystem().Rename(configPath, backupFilePath); err != nil {
+		if err := Filesystem().Rename(configPath, backupFilePath); err != nil {
 			fmt.Fprintf(stderr, "Error renaming the file: %v\n", err)
 		}
 		return newDefaultConf()
@@ -132,7 +130,7 @@ func SaveChangesNoPrint() error {
 	}
 	c.LastUpdate = nowUTC()
 
-	file, err := filesystem().OpenFile(configPath, os.O_WRONLY|os.O_CREATE|os.O_TRUNC, 0644)
+	file, err := Filesystem().OpenFile(configPath, os.O_WRONLY|os.O_CREATE|os.O_TRUNC, 0644)
 	if err != nil {
 		return fmt.Errorf("Could not open file %q for write: %w", configPath, err)
 	}

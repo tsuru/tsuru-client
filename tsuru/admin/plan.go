@@ -12,6 +12,8 @@ import (
 	"strings"
 
 	"github.com/tsuru/gnuflag"
+	"github.com/tsuru/tsuru-client/tsuru/config"
+	tsuruHTTP "github.com/tsuru/tsuru-client/tsuru/http"
 	"github.com/tsuru/tsuru/cmd"
 	"k8s.io/apimachinery/pkg/api/resource"
 )
@@ -52,8 +54,8 @@ func (c *PlanCreate) Info() *cmd.Info {
 	}
 }
 
-func (c *PlanCreate) Run(context *cmd.Context, client *cmd.Client) error {
-	u, err := cmd.GetURL("/plans")
+func (c *PlanCreate) Run(context *cmd.Context) error {
+	u, err := config.GetURL("/plans")
 	if err != nil {
 		return err
 	}
@@ -79,7 +81,7 @@ func (c *PlanCreate) Run(context *cmd.Context, client *cmd.Client) error {
 		return err
 	}
 	request.Header.Set("Content-Type", "application/x-www-form-urlencoded")
-	_, err = client.Do(request)
+	_, err = tsuruHTTP.DefaultClient.Do(request)
 	if err != nil {
 		fmt.Fprintf(context.Stdout, "Failed to create plan!\n")
 		return err
@@ -102,8 +104,8 @@ resources described by the plan.`,
 	}
 }
 
-func (c *PlanRemove) Run(context *cmd.Context, client *cmd.Client) error {
-	url, err := cmd.GetURL("/plans/" + context.Args[0])
+func (c *PlanRemove) Run(context *cmd.Context) error {
+	url, err := config.GetURL("/plans/" + context.Args[0])
 	if err != nil {
 		return err
 	}
@@ -111,7 +113,7 @@ func (c *PlanRemove) Run(context *cmd.Context, client *cmd.Client) error {
 	if err != nil {
 		return err
 	}
-	_, err = client.Do(request)
+	_, err = tsuruHTTP.DefaultClient.Do(request)
 	if err != nil {
 		fmt.Fprintf(context.Stdout, "Failed to remove plan!\n")
 		return err

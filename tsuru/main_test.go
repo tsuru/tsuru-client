@@ -14,6 +14,7 @@ import (
 
 	"github.com/tsuru/tsuru-client/tsuru/admin"
 	"github.com/tsuru/tsuru-client/tsuru/client"
+	"github.com/tsuru/tsuru-client/tsuru/config"
 	"github.com/tsuru/tsuru/cmd"
 	"github.com/tsuru/tsuru/exec/exectest"
 )
@@ -37,17 +38,7 @@ func Test(t *testing.T) { check.TestingT(t) }
 
 func (s *S) SetUpTest(c *check.C) {
 	var stdout, stderr bytes.Buffer
-	manager = cmd.NewManagerPanicExiter("glb", "1.0.0", "Supported-Tsuru", &stdout, &stderr, os.Stdin, nil)
-}
-
-func (s *S) TestCommandsFromBaseManagerAreRegistered(c *check.C) {
-	baseManager := cmd.BuildBaseManagerPanicExiter("tsuru", version, header, nil)
-	manager = buildManager("tsuru")
-	for name, instance := range baseManager.Commands {
-		command, ok := manager.Commands[name]
-		c.Assert(ok, check.Equals, true)
-		c.Assert(command, check.FitsTypeOf, instance)
-	}
+	manager = cmd.NewManagerPanicExiter("glb", &stdout, &stderr, os.Stdin, nil)
 }
 
 func (s *S) TestAppCreateIsRegistered(c *check.C) {
@@ -300,7 +291,7 @@ func (s *S) TestPluginLookup(c *check.C) {
 	}()
 	manager = buildManager("tsuru")
 	manager.Run([]string{"myplugin"})
-	pluginPath := cmd.JoinWithUserDir(".tsuru", "plugins", "myplugin")
+	pluginPath := config.JoinWithUserDir(".tsuru", "plugins", "myplugin")
 	c.Assert(fexec.ExecutedCmd(pluginPath, []string{}), check.Equals, true)
 }
 

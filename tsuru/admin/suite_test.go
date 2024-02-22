@@ -5,25 +5,25 @@
 package admin
 
 import (
-	"bytes"
+	"net/http"
 	"os"
 	"testing"
 	"time"
 
 	"github.com/ajg/form"
 	"github.com/tsuru/tsuru-client/tsuru/formatter"
-	"github.com/tsuru/tsuru/cmd"
+	tsuruHTTP "github.com/tsuru/tsuru-client/tsuru/http"
 	check "gopkg.in/check.v1"
 )
 
 type S struct {
-	manager         *cmd.Manager
+	//manager         *cmd.Manager
 	defaultLocation time.Location
 }
 
 func (s *S) SetUpSuite(c *check.C) {
-	var stdout, stderr bytes.Buffer
-	s.manager = cmd.NewManagerPanicExiter("glb", "1.0.0", "Supported-Tsuru-Version", &stdout, &stderr, os.Stdin, nil)
+	//var stdout, stderr bytes.Buffer
+	//s.manager = cmd.NewManagerPanicExiter("glb", "1.0.0", "Supported-Tsuru-Version", &stdout, &stderr, os.Stdin, nil)
 	os.Setenv("TSURU_TARGET", "http://localhost")
 	form.DefaultEncoder = form.DefaultEncoder.UseJSONTags(false)
 	form.DefaultDecoder = form.DefaultDecoder.UseJSONTags(false)
@@ -43,6 +43,11 @@ func (s *S) SetUpTest(c *check.C) {
 
 func (s *S) TearDownTest(c *check.C) {
 	formatter.LocalTZ = &s.defaultLocation
+	tsuruHTTP.DefaultClient = &http.Client{}
+}
+
+func (s *S) setupFakeTransport(rt http.RoundTripper) {
+	tsuruHTTP.DefaultClient = tsuruHTTP.NewTerminalClient(rt, nil, "test", "0.1.0", 0)
 }
 
 var _ = check.Suite(&S{})

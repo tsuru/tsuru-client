@@ -11,12 +11,15 @@ import (
 	"net/http"
 	"sort"
 
+	"github.com/tsuru/tsuru-client/tsuru/app"
+	"github.com/tsuru/tsuru-client/tsuru/config"
+	tsuruHTTP "github.com/tsuru/tsuru-client/tsuru/http"
 	"github.com/tsuru/tsuru/cmd"
 	"github.com/tsuru/tsuru/router/rebuild"
 )
 
 type AppRoutesRebuild struct {
-	cmd.AppNameMixIn
+	app.AppNameMixIn
 }
 
 func (c *AppRoutesRebuild) Info() *cmd.Info {
@@ -35,12 +38,12 @@ type compatibleRebuildResult struct {
 	rebuild.RebuildPrefixResult
 }
 
-func (c *AppRoutesRebuild) Run(ctx *cmd.Context, client *cmd.Client) error {
+func (c *AppRoutesRebuild) Run(ctx *cmd.Context) error {
 	appName, err := c.AppName()
 	if err != nil {
 		return err
 	}
-	url, err := cmd.GetURL("/apps/" + appName + "/routes")
+	url, err := config.GetURL("/apps/" + appName + "/routes")
 	if err != nil {
 		return err
 	}
@@ -48,7 +51,7 @@ func (c *AppRoutesRebuild) Run(ctx *cmd.Context, client *cmd.Client) error {
 	if err != nil {
 		return err
 	}
-	rsp, err := client.Do(request)
+	rsp, err := tsuruHTTP.DefaultClient.Do(request)
 	if err != nil {
 		return err
 	}

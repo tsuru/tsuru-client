@@ -11,8 +11,9 @@ import (
 	"strconv"
 
 	"github.com/tsuru/gnuflag"
-	"github.com/tsuru/go-tsuruclient/pkg/client"
 	"github.com/tsuru/go-tsuruclient/pkg/tsuru"
+	tsuruClientApp "github.com/tsuru/tsuru-client/tsuru/app"
+	tsuruHTTP "github.com/tsuru/tsuru-client/tsuru/http"
 	"github.com/tsuru/tsuru/cmd"
 )
 
@@ -27,7 +28,7 @@ func (i *int32Value) Get() interface{} { return int32(*i) }
 func (i *int32Value) String() string   { return fmt.Sprintf("%v", *i) }
 
 type AutoScaleSet struct {
-	cmd.AppNameMixIn
+	tsuruClientApp.AppNameMixIn
 	fs        *gnuflag.FlagSet
 	autoscale tsuru.AutoScaleSpec
 	schedules cmd.StringSliceFlag
@@ -74,10 +75,8 @@ func (c *AutoScaleSet) Flags() *gnuflag.FlagSet {
 	return c.fs
 }
 
-func (c *AutoScaleSet) Run(ctx *cmd.Context, cli *cmd.Client) error {
-	apiClient, err := client.ClientFromEnvironment(&tsuru.Configuration{
-		HTTPClient: cli.HTTPClient,
-	})
+func (c *AutoScaleSet) Run(ctx *cmd.Context) error {
+	apiClient, err := tsuruHTTP.TsuruClientFromEnvironment()
 	if err != nil {
 		return err
 	}
@@ -107,7 +106,7 @@ func (c *AutoScaleSet) Run(ctx *cmd.Context, cli *cmd.Client) error {
 }
 
 type AutoScaleUnset struct {
-	cmd.AppNameMixIn
+	tsuruClientApp.AppNameMixIn
 	fs      *gnuflag.FlagSet
 	process string
 }
@@ -131,10 +130,8 @@ func (c *AutoScaleUnset) Flags() *gnuflag.FlagSet {
 	return c.fs
 }
 
-func (c *AutoScaleUnset) Run(ctx *cmd.Context, cli *cmd.Client) error {
-	apiClient, err := client.ClientFromEnvironment(&tsuru.Configuration{
-		HTTPClient: cli.HTTPClient,
-	})
+func (c *AutoScaleUnset) Run(ctx *cmd.Context) error {
+	apiClient, err := tsuruHTTP.TsuruClientFromEnvironment()
 	if err != nil {
 		return err
 	}

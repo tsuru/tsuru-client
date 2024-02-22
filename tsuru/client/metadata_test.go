@@ -26,7 +26,7 @@ func (s *S) TestMetadataSetBothJobAndAppFlags(c *check.C) {
 
 	command := MetadataSet{}
 	command.Flags().Parse(true, []string{"-a", "someapp", "-j", "somejob"})
-	err := command.Run(&context, nil)
+	err := command.Run(&context)
 	c.Assert(err, check.NotNil)
 	c.Assert(err.Error(), check.Equals, "please use only one of the -a/--app and -j/--job flags")
 }
@@ -42,10 +42,10 @@ func (s *S) TestMetadataGetAppRun(c *check.C) {
 		Stdout: &stdout,
 		Stderr: &stderr,
 	}
-	client := cmd.NewClient(&http.Client{Transport: &cmdtest.Transport{Message: jsonResult, Status: http.StatusOK}}, nil, manager)
+	s.setupFakeTransport(&cmdtest.Transport{Message: jsonResult, Status: http.StatusOK})
 	command := MetadataGet{}
 	command.Flags().Parse(true, []string{"-a", "someapp"})
-	err := command.Run(&context, client)
+	err := command.Run(&context)
 	c.Assert(err, check.IsNil)
 	c.Assert(stdout.String(), check.Equals, result)
 }
@@ -75,10 +75,10 @@ func (s *S) TestMetadataGetJobRun(c *check.C) {
 		Stdout: &stdout,
 		Stderr: &stderr,
 	}
-	client := cmd.NewClient(&http.Client{Transport: &cmdtest.Transport{Message: jsonResult, Status: http.StatusOK}}, nil, manager)
+	s.setupFakeTransport(&cmdtest.Transport{Message: jsonResult, Status: http.StatusOK})
 	command := MetadataGet{}
 	command.Flags().Parse(true, []string{"-j", "somejob"})
-	err := command.Run(&context, client)
+	err := command.Run(&context)
 	c.Assert(err, check.IsNil)
 	c.Assert(stdout.String(), check.Equals, result)
 }
@@ -121,10 +121,10 @@ func (s *S) TestMetadataGetAppRunWithProcesses(c *check.C) {
 		Stdout: &stdout,
 		Stderr: &stderr,
 	}
-	client := cmd.NewClient(&http.Client{Transport: &cmdtest.Transport{Message: jsonResult, Status: http.StatusOK}}, nil, manager)
+	s.setupFakeTransport(&cmdtest.Transport{Message: jsonResult, Status: http.StatusOK})
 	command := MetadataGet{}
 	command.Flags().Parse(true, []string{"-a", "someapp"})
-	err := command.Run(&context, client)
+	err := command.Run(&context)
 	c.Assert(err, check.IsNil)
 	c.Assert(stdout.String(), check.Equals, result)
 }
@@ -159,11 +159,11 @@ func (s *S) TestMetadataSetRunJobWithLabel(c *check.C) {
 			return url && method
 		},
 	}
-	client := cmd.NewClient(&http.Client{Transport: trans}, nil, manager)
+	s.setupFakeTransport(trans)
 
 	command := MetadataSet{}
 	command.Flags().Parse(true, []string{"-j", "somejob", "-t", "label"})
-	err := command.Run(&context, client)
+	err := command.Run(&context)
 	c.Assert(err, check.IsNil)
 	c.Assert(stdout.String(), check.Equals, expectedOut)
 }
@@ -196,11 +196,11 @@ func (s *S) TestMetadataSetRunAppWithLabel(c *check.C) {
 			return url && method
 		},
 	}
-	client := cmd.NewClient(&http.Client{Transport: trans}, nil, manager)
+	s.setupFakeTransport(trans)
 
 	command := MetadataSet{}
 	command.Flags().Parse(true, []string{"-a", "someapp", "-t", "label"})
-	err := command.Run(&context, client)
+	err := command.Run(&context)
 	c.Assert(err, check.IsNil)
 	c.Assert(stdout.String(), check.Equals, expectedOut)
 }
@@ -239,11 +239,11 @@ func (s *S) TestMetadataSetRunAppWithProcess(c *check.C) {
 			return url && method
 		},
 	}
-	client := cmd.NewClient(&http.Client{Transport: trans}, nil, manager)
+	s.setupFakeTransport(trans)
 
 	command := MetadataSet{}
 	command.Flags().Parse(true, []string{"-a", "someapp", "-t", "label", "-p", "web"})
-	err := command.Run(&context, client)
+	err := command.Run(&context)
 	c.Assert(err, check.IsNil)
 	c.Assert(stdout.String(), check.Equals, expectedOut)
 }
@@ -275,11 +275,11 @@ func (s *S) TestMetadataSetRunJobWithAnnotations(c *check.C) {
 			return url && method
 		},
 	}
-	client := cmd.NewClient(&http.Client{Transport: trans}, nil, manager)
+	s.setupFakeTransport(trans)
 
 	command := MetadataSet{}
 	command.Flags().Parse(true, []string{"-j", "somejob", "-t", "annotation"})
-	err := command.Run(&context, client)
+	err := command.Run(&context)
 	c.Assert(err, check.IsNil)
 	c.Assert(stdout.String(), check.Equals, expectedOut)
 }
@@ -313,11 +313,11 @@ func (s *S) TestMetadataSetRunAppWithAnnotations(c *check.C) {
 			return url && method
 		},
 	}
-	client := cmd.NewClient(&http.Client{Transport: trans}, nil, manager)
+	s.setupFakeTransport(trans)
 
 	command := MetadataSet{}
 	command.Flags().Parse(true, []string{"-a", "someapp", "-t", "annotation"})
-	err := command.Run(&context, client)
+	err := command.Run(&context)
 	c.Assert(err, check.IsNil)
 	c.Assert(stdout.String(), check.Equals, expectedOut)
 }
@@ -333,11 +333,11 @@ func (s *S) TestMetadataSetFailsWithoutType(c *check.C) {
 	trans := &cmdtest.ConditionalTransport{
 		Transport: cmdtest.Transport{Status: http.StatusOK},
 	}
-	client := cmd.NewClient(&http.Client{Transport: trans}, nil, manager)
+	s.setupFakeTransport(trans)
 
 	command := MetadataSet{}
 	command.Flags().Parse(true, []string{"-a", "someapp"})
-	err := command.Run(&context, client)
+	err := command.Run(&context)
 	c.Assert(err, check.NotNil)
 	c.Assert(err.Error(), check.Equals, "A type is required: label or annotation")
 }
@@ -384,11 +384,11 @@ func (s *S) TestMetadataUnsetRunJobWithLabel(c *check.C) {
 			return url && method
 		},
 	}
-	client := cmd.NewClient(&http.Client{Transport: trans}, nil, manager)
+	s.setupFakeTransport(trans)
 
 	command := MetadataUnset{}
 	command.Flags().Parse(true, []string{"-j", "somejob", "-t", "label"})
-	err := command.Run(&context, client)
+	err := command.Run(&context)
 	c.Assert(err, check.IsNil)
 	c.Assert(stdout.String(), check.Equals, expectedOut)
 }
@@ -422,11 +422,11 @@ func (s *S) TestMetadataUnsetRunAppWithLabel(c *check.C) {
 			return url && method
 		},
 	}
-	client := cmd.NewClient(&http.Client{Transport: trans}, nil, manager)
+	s.setupFakeTransport(trans)
 
 	command := MetadataUnset{}
 	command.Flags().Parse(true, []string{"-a", "someapp", "-t", "label"})
-	err := command.Run(&context, client)
+	err := command.Run(&context)
 	c.Assert(err, check.IsNil)
 	c.Assert(stdout.String(), check.Equals, expectedOut)
 }
@@ -466,11 +466,11 @@ func (s *S) TestMetadataUnsetRunAppWithProcess(c *check.C) {
 			return url && method
 		},
 	}
-	client := cmd.NewClient(&http.Client{Transport: trans}, nil, manager)
+	s.setupFakeTransport(trans)
 
 	command := MetadataUnset{}
 	command.Flags().Parse(true, []string{"-a", "someapp", "-t", "label", "-p", "worker"})
-	err := command.Run(&context, client)
+	err := command.Run(&context)
 	c.Assert(err, check.IsNil)
 	c.Assert(stdout.String(), check.Equals, expectedOut)
 }
@@ -502,11 +502,11 @@ func (s *S) TestMetadataUnsetRunJobWithAnnotations(c *check.C) {
 			return url && method
 		},
 	}
-	client := cmd.NewClient(&http.Client{Transport: trans}, nil, manager)
+	s.setupFakeTransport(trans)
 
 	command := MetadataUnset{}
 	command.Flags().Parse(true, []string{"-j", "somejob", "-t", "annotation"})
-	err := command.Run(&context, client)
+	err := command.Run(&context)
 	c.Assert(err, check.IsNil)
 	c.Assert(stdout.String(), check.Equals, expectedOut)
 }
@@ -540,11 +540,11 @@ func (s *S) TestMetadataUnsetRunAppWithAnnotations(c *check.C) {
 			return url && method
 		},
 	}
-	client := cmd.NewClient(&http.Client{Transport: trans}, nil, manager)
+	s.setupFakeTransport(trans)
 
 	command := MetadataUnset{}
 	command.Flags().Parse(true, []string{"-a", "someapp", "-t", "annotation"})
-	err := command.Run(&context, client)
+	err := command.Run(&context)
 	c.Assert(err, check.IsNil)
 	c.Assert(stdout.String(), check.Equals, expectedOut)
 }
@@ -560,11 +560,11 @@ func (s *S) TestMetadataUnsetFailsWithoutType(c *check.C) {
 	trans := &cmdtest.ConditionalTransport{
 		Transport: cmdtest.Transport{Status: http.StatusOK},
 	}
-	client := cmd.NewClient(&http.Client{Transport: trans}, nil, manager)
+	s.setupFakeTransport(trans)
 
 	command := MetadataUnset{}
 	command.Flags().Parse(true, []string{"-j", "somejob"})
-	err := command.Run(&context, client)
+	err := command.Run(&context)
 	c.Assert(err, check.NotNil)
 	c.Assert(err.Error(), check.Equals, "A type is required: label or annotation")
 }

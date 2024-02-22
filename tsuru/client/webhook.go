@@ -15,9 +15,9 @@ import (
 	"strings"
 
 	"github.com/tsuru/gnuflag"
-	"github.com/tsuru/go-tsuruclient/pkg/client"
 	"github.com/tsuru/go-tsuruclient/pkg/tsuru"
 	"github.com/tsuru/tablecli"
+	tsuruHTTP "github.com/tsuru/tsuru-client/tsuru/http"
 	"github.com/tsuru/tsuru/cmd"
 )
 
@@ -110,10 +110,8 @@ func (c *WebhookCreate) Flags() *gnuflag.FlagSet {
 	return c.fs
 }
 
-func (c *WebhookCreate) Run(ctx *cmd.Context, cli *cmd.Client) error {
-	apiClient, err := client.ClientFromEnvironment(&tsuru.Configuration{
-		HTTPClient: cli.HTTPClient,
-	})
+func (c *WebhookCreate) Run(ctx *cmd.Context) error {
+	apiClient, err := tsuruHTTP.TsuruClientFromEnvironment()
 	if err != nil {
 		return err
 	}
@@ -170,10 +168,8 @@ func (c *WebhookUpdate) Flags() *gnuflag.FlagSet {
 	return c.fs
 }
 
-func (c *WebhookUpdate) Run(ctx *cmd.Context, cli *cmd.Client) error {
-	apiClient, err := client.ClientFromEnvironment(&tsuru.Configuration{
-		HTTPClient: cli.HTTPClient,
-	})
+func (c *WebhookUpdate) Run(ctx *cmd.Context) error {
+	apiClient, err := tsuruHTTP.TsuruClientFromEnvironment()
 	if err != nil {
 		return err
 	}
@@ -264,10 +260,8 @@ func (c *WebhookList) Info() *cmd.Info {
 	}
 }
 
-func (c *WebhookList) Run(ctx *cmd.Context, cli *cmd.Client) error {
-	apiClient, err := client.ClientFromEnvironment(&tsuru.Configuration{
-		HTTPClient: cli.HTTPClient,
-	})
+func (c *WebhookList) Run(ctx *cmd.Context) error {
+	apiClient, err := tsuruHTTP.TsuruClientFromEnvironment()
 	if err != nil {
 		return err
 	}
@@ -347,10 +341,8 @@ func (c *WebhookDelete) Info() *cmd.Info {
 	}
 }
 
-func (c *WebhookDelete) Run(ctx *cmd.Context, cli *cmd.Client) error {
-	apiClient, err := client.ClientFromEnvironment(&tsuru.Configuration{
-		HTTPClient: cli.HTTPClient,
-	})
+func (c *WebhookDelete) Run(ctx *cmd.Context) error {
+	apiClient, err := tsuruHTTP.TsuruClientFromEnvironment()
 	if err != nil {
 		return err
 	}

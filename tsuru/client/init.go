@@ -35,7 +35,7 @@ Creates a standard example of .tsuruignore , tsuru.yaml and Procfile
 	}
 }
 
-func (i *Init) Run(context *cmd.Context, client *cmd.Client) (err error) {
+func (i *Init) Run(context *cmd.Context) (err error) {
 	err = createInitFiles()
 	if err != nil {
 		return

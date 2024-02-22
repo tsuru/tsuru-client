@@ -14,6 +14,7 @@ import (
 
 	"github.com/ajg/form"
 	"github.com/tsuru/go-tsuruclient/pkg/tsuru"
+	tsuruHTTP "github.com/tsuru/tsuru-client/tsuru/http"
 	"github.com/tsuru/tsuru/cmd"
 	"github.com/tsuru/tsuru/cmd/cmdtest"
 	tsuruIo "github.com/tsuru/tsuru/io"
@@ -139,8 +140,8 @@ func (s *S) TestServiceList(c *check.C) {
 			return strings.HasSuffix(req.URL.Path, "/services/instances")
 		},
 	}
-	client := cmd.NewClient(&http.Client{Transport: trans}, nil, manager)
-	err = (&ServiceList{}).Run(&ctx, client)
+	s.setupFakeTransport(trans)
+	err = (&ServiceList{}).Run(&ctx)
 	c.Assert(err, check.IsNil)
 	table := stdout.String()
 
@@ -188,8 +189,8 @@ func (s *S) TestServiceListWithPool(c *check.C) {
 			return strings.HasSuffix(req.URL.Path, "/services/instances")
 		},
 	}
-	client := cmd.NewClient(&http.Client{Transport: trans}, nil, manager)
-	err = (&ServiceList{}).Run(&ctx, client)
+	s.setupFakeTransport(trans)
+	err = (&ServiceList{}).Run(&ctx)
 	c.Assert(err, check.IsNil)
 	table := stdout.String()
 
@@ -216,8 +217,8 @@ func (s *S) TestServiceListWithEmptyResponse(c *check.C) {
 			return strings.HasSuffix(req.URL.Path, "/services/instances")
 		},
 	}
-	client := cmd.NewClient(&http.Client{Transport: trans}, nil, manager)
-	err := (&ServiceList{}).Run(&ctx, client)
+	s.setupFakeTransport(trans)
+	err := (&ServiceList{}).Run(&ctx)
 	c.Assert(err, check.IsNil)
 	c.Assert(stdout.String(), check.Equals, expected)
 }
@@ -255,10 +256,10 @@ func (s *S) TestServiceInstanceBind(c *check.C) {
 			return method && path && noRestart
 		},
 	}
-	client := cmd.NewClient(&http.Client{Transport: trans}, nil, manager)
+	s.setupFakeTransport(trans)
 	command := ServiceInstanceBind{}
 	command.Flags().Parse(true, []string{"-a", "g1", "--no-restart"})
-	err = command.Run(&ctx, client)
+	err = command.Run(&ctx)
 	c.Assert(err, check.IsNil)
 	c.Assert(called, check.Equals, true)
 	c.Assert(stdout.String(), check.Equals, expectedOut)
@@ -284,10 +285,10 @@ func (s *S) TestServiceInstanceBindWithoutEnvironmentVariables(c *check.C) {
 			return method && path && noRestart
 		},
 	}
-	client := cmd.NewClient(&http.Client{Transport: trans}, nil, manager)
+	s.setupFakeTransport(trans)
 	command := ServiceInstanceBind{}
 	command.Flags().Parse(true, []string{"-a", "g1"})
-	err = command.Run(&ctx, client)
+	err = command.Run(&ctx)
 	c.Assert(err, check.IsNil)
 	c.Assert(stdout.String(), check.Equals, expectedOut)
 }
@@ -300,12 +301,12 @@ func (s *S) TestServiceInstanceBindWithRequestFailure(c *check.C) {
 		Stderr: &stderr,
 	}
 	trans := &cmdtest.Transport{Message: "This user does not have access to this app.", Status: http.StatusForbidden}
-	client := cmd.NewClient(&http.Client{Transport: trans}, nil, manager)
+	s.setupFakeTransport(trans)
 	command := ServiceInstanceBind{}
 	command.Flags().Parse(true, []string{"-a", "g1"})
-	err := command.Run(&ctx, client)
+	err := command.Run(&ctx)
 	c.Assert(err, check.NotNil)
-	c.Assert(err.Error(), check.Equals, trans.Message)
+	c.Assert(err, check.ErrorMatches, ".*"+trans.Message)
 }
 
 func (s *S) TestServiceInstanceJobBind(c *check.C) {
@@ -331,10 +332,10 @@ func (s *S) TestServiceInstanceJobBind(c *check.C) {
 			return method && path
 		},
 	}
-	client := cmd.NewClient(&http.Client{Transport: trans}, nil, manager)
+	s.setupFakeTransport(trans)
 	command := ServiceInstanceBind{}
 	command.Flags().Parse(true, []string{"-j", "job1"})
-	err = command.Run(&ctx, client)
+	err = command.Run(&ctx)
 	c.Assert(err, check.IsNil)
 	c.Assert(called, check.Equals, true)
 	c.Assert(stdout.String(), check.Equals, expectedOut)
@@ -359,10 +360,10 @@ func (s *S) TestServiceInstanceJobBindWithoutEnvironmentVariables(c *check.C) {
 			return method && path
 		},
 	}
-	client := cmd.NewClient(&http.Client{Transport: trans}, nil, manager)
+	s.setupFakeTransport(trans)
 	command := ServiceInstanceBind{}
 	command.Flags().Parse(true, []string{"-j", "sample-job"})
-	err = command.Run(&ctx, client)
+	err = command.Run(&ctx)
 	c.Assert(err, check.IsNil)
 	c.Assert(stdout.String(), check.Equals, expectedOut)
 }
@@ -375,12 +376,12 @@ func (s *S) TestServiceInstanceJobBindWithRequestFailure(c *check.C) {
 		Stderr: &stderr,
 	}
 	trans := &cmdtest.Transport{Message: "This user does not have access to this job.", Status: http.StatusForbidden}
-	client := cmd.NewClient(&http.Client{Transport: trans}, nil, manager)
+	s.setupFakeTransport(trans)
 	command := ServiceInstanceBind{}
 	command.Flags().Parse(true, []string{"-j", "sample-job"})
-	err := command.Run(&ctx, client)
+	err := command.Run(&ctx)
 	c.Assert(err, check.NotNil)
-	c.Assert(err.Error(), check.Equals, trans.Message)
+	c.Assert(err, check.ErrorMatches, ".*"+trans.Message)
 }
 
 func (s *S) TestServiceInstanceBindInfo(c *check.C) {
@@ -414,10 +415,10 @@ func (s *S) TestServiceInstanceUnbind(c *check.C) {
 			return true
 		},
 	}
-	client := cmd.NewClient(&http.Client{Transport: trans}, nil, manager)
+	s.setupFakeTransport(trans)
 	command := ServiceInstanceUnbind{}
 	command.Flags().Parse(true, []string{"-a", "pocket", "--no-restart", "--force"})
-	err = command.Run(&ctx, client)
+	err = command.Run(&ctx)
 	c.Assert(err, check.IsNil)
 	c.Assert(called, check.Equals, true)
 	c.Assert(stdout.String(), check.Equals, expectedOut)
@@ -432,12 +433,12 @@ func (s *S) TestServiceInstanceUnbindWithRequestFailure(c *check.C) {
 	}
 	trans := &cmdtest.Transport{Message: "This app is not bound to this service.", Status: http.StatusPreconditionFailed}
 
-	client := cmd.NewClient(&http.Client{Transport: trans}, nil, manager)
+	s.setupFakeTransport(trans)
 	command := ServiceInstanceUnbind{}
 	command.Flags().Parse(true, []string{"-a", "pocket"})
-	err := command.Run(&ctx, client)
+	err := command.Run(&ctx)
 	c.Assert(err, check.NotNil)
-	c.Assert(err.Error(), check.Equals, trans.Message)
+	c.Assert(tsuruHTTP.UnwrapErr(err).Error(), check.Equals, trans.Message)
 }
 
 func (s *S) TestServiceInstanceJobUnbind(c *check.C) {
@@ -461,10 +462,10 @@ func (s *S) TestServiceInstanceJobUnbind(c *check.C) {
 			return true
 		},
 	}
-	client := cmd.NewClient(&http.Client{Transport: trans}, nil, manager)
+	s.setupFakeTransport(trans)
 	command := ServiceInstanceUnbind{}
 	command.Flags().Parse(true, []string{"-j", "sample-job"})
-	err = command.Run(&ctx, client)
+	err = command.Run(&ctx)
 	c.Assert(err, check.IsNil)
 	c.Assert(called, check.Equals, true)
 	c.Assert(stdout.String(), check.Equals, expectedOut)
@@ -492,10 +493,10 @@ func (s *S) TestServiceInstanceJobForceUnbind(c *check.C) {
 			return true
 		},
 	}
-	client := cmd.NewClient(&http.Client{Transport: trans}, nil, manager)
+	s.setupFakeTransport(trans)
 	command := ServiceInstanceUnbind{}
 	command.Flags().Parse(true, []string{"-j", "sample-job", "--force"})
-	err = command.Run(&ctx, client)
+	err = command.Run(&ctx)
 	c.Assert(err, check.IsNil)
 	c.Assert(called, check.Equals, true)
 	c.Assert(stdout.String(), check.Equals, expectedOut)
@@ -510,12 +511,12 @@ func (s *S) TestServiceInstanceJobUnbindWithRequestFailure(c *check.C) {
 	}
 	trans := &cmdtest.Transport{Message: "This job is not bound to this service.", Status: http.StatusPreconditionFailed}
 
-	client := cmd.NewClient(&http.Client{Transport: trans}, nil, manager)
+	s.setupFakeTransport(trans)
 	command := ServiceInstanceUnbind{}
 	command.Flags().Parse(true, []string{"-j", "sample-job"})
-	err := command.Run(&ctx, client)
+	err := command.Run(&ctx)
 	c.Assert(err, check.NotNil)
-	c.Assert(err.Error(), check.Equals, trans.Message)
+	c.Assert(tsuruHTTP.UnwrapErr(err).Error(), check.Equals, trans.Message)
 }
 
 func (s *S) TestServiceInstanceUnbindInfo(c *check.C) {
@@ -578,7 +579,7 @@ func (s *S) TestServiceInstanceAddRun(c *check.C) {
 			return strings.HasSuffix(r.URL.Path, "/services/mysql/instances")
 		},
 	}
-	client := cmd.NewClient(&http.Client{Transport: &trans}, nil, manager)
+	s.setupFakeTransport(&trans)
 	command := ServiceInstanceAdd{}
 	command.Flags().Parse(true, []string{
 		"--team-owner", "my team",
@@ -587,7 +588,7 @@ func (s *S) TestServiceInstanceAddRun(c *check.C) {
 		"--plan-param", "param1=value1", "--plan-param", "param2=value2",
 		"--pool", "pool-one",
 	})
-	err := command.Run(&context, client)
+	err := command.Run(&context)
 	c.Assert(err, check.IsNil)
 	obtained := stdout.String()
 	c.Assert(obtained, check.Equals, result)
@@ -628,10 +629,10 @@ func (s *S) TestServiceInstanceAddRunWithEmptyTag(c *check.C) {
 			return true
 		},
 	}
-	client := cmd.NewClient(&http.Client{Transport: &trans}, nil, manager)
+	s.setupFakeTransport(&trans)
 	command := ServiceInstanceAdd{}
 	command.Flags().Parse(true, []string{"--tag", ""})
-	err := command.Run(&context, client)
+	err := command.Run(&context)
 	c.Assert(err, check.IsNil)
 	obtained := stdout.String()
 	c.Assert(obtained, check.Equals, result)
@@ -747,7 +748,7 @@ func (s *S) TestServiceInstanceUpdateRun(c *check.C) {
 		Stdout: &bytes.Buffer{},
 		Stderr: &bytes.Buffer{},
 	}
-	client := cmd.NewClient(&http.Client{Transport: &trans}, &context, manager)
+	s.setupFakeTransport(&trans)
 	command := ServiceInstanceUpdate{}
 	command.Flags().Parse(true, []string{
 		"--description", "New description",
@@ -758,7 +759,7 @@ func (s *S) TestServiceInstanceUpdateRun(c *check.C) {
 		"--plan-param", "param1=value1", "--add-param", "param2=value2",
 		"--remove-param", "old-param2",
 	})
-	err := (&command).Run(&context, client)
+	err := (&command).Run(&context)
 	c.Assert(err, check.IsNil)
 	c.Assert(context.Stdout.(*bytes.Buffer).String(), check.Equals, "Service successfully updated.\n")
 }
@@ -914,8 +915,8 @@ Status: Service instance "mongo" is up
 		Stdout: &stdout,
 		Stderr: &stderr,
 	}
-	client := cmd.NewClient(&http.Client{Transport: &infoTransport{includeAll: true}}, nil, manager)
-	err := (&ServiceInstanceInfo{}).Run(&context, client)
+	s.setupFakeTransport(&infoTransport{includeAll: true})
+	err := (&ServiceInstanceInfo{}).Run(&context)
 	c.Assert(err, check.IsNil)
 	obtained := stdout.String()
 	c.Assert(obtained, check.Equals, expected)
@@ -935,8 +936,8 @@ Status: Service instance "mongo" is up
 		Stdout: &stdout,
 		Stderr: &stderr,
 	}
-	client := cmd.NewClient(&http.Client{Transport: &infoTransport{includeAll: false}}, nil, manager)
-	err := (&ServiceInstanceInfo{}).Run(&context, client)
+	s.setupFakeTransport(&infoTransport{includeAll: false})
+	err := (&ServiceInstanceInfo{}).Run(&context)
 	c.Assert(err, check.IsNil)
 	obtained := strings.Replace(stdout.String(), " \n", "\n", -1)
 	c.Assert(obtained, check.Equals, expected)
@@ -966,8 +967,8 @@ Plans
 		Stdout: &stdout,
 		Stderr: &stderr,
 	}
-	client := cmd.NewClient(&http.Client{Transport: &infoTransport{includePlans: true}}, nil, manager)
-	err := (&ServiceInfo{}).Run(&context, client)
+	s.setupFakeTransport(&infoTransport{includePlans: true})
+	err := (&ServiceInfo{}).Run(&context)
 	c.Assert(err, check.IsNil)
 	obtained := stdout.String()
 	c.Assert(obtained, check.Equals, expected)
@@ -997,8 +998,8 @@ Plans
 		Stdout: &stdout,
 		Stderr: &stderr,
 	}
-	client := cmd.NewClient(&http.Client{Transport: &infoTransport{includePlans: true}}, nil, manager)
-	err := (&ServiceInfo{}).Run(&context, client)
+	s.setupFakeTransport(&infoTransport{includePlans: true})
+	err := (&ServiceInfo{}).Run(&context)
 	c.Assert(err, check.IsNil)
 	obtained := stdout.String()
 	c.Assert(obtained, check.Equals, expected)
@@ -1028,10 +1029,10 @@ Plans
 		Stdout: &stdout,
 		Stderr: &stderr,
 	}
-	client := cmd.NewClient(&http.Client{Transport: &infoTransport{includePlans: true}}, nil, manager)
+	s.setupFakeTransport(&infoTransport{includePlans: true})
 	err := (&ServiceInfo{
 		pool: "my-pool-01",
-	}).Run(&context, client)
+	}).Run(&context)
 	c.Assert(err, check.IsNil)
 	obtained := stdout.String()
 	c.Assert(obtained, check.Equals, expected)
@@ -1054,8 +1055,8 @@ Instances
 		Stdout: &stdout,
 		Stderr: &stderr,
 	}
-	client := cmd.NewClient(&http.Client{Transport: &infoTransport{includePlans: false}}, nil, manager)
-	err := (&ServiceInfo{}).Run(&context, client)
+	s.setupFakeTransport(&infoTransport{includePlans: false})
+	err := (&ServiceInfo{}).Run(&context)
 	c.Assert(err, check.IsNil)
 	obtained := stdout.String()
 	c.Assert(obtained, check.Equals, expected)
@@ -1089,8 +1090,8 @@ Service test is foo bar.
 		Stdout: &stdout,
 		Stderr: &stderr,
 	}
-	client := cmd.NewClient(&http.Client{Transport: &infoTransport{includePlans: true}}, nil, manager)
-	err := (&ServiceInfo{}).Run(&context, client)
+	s.setupFakeTransport(&infoTransport{includePlans: true})
+	err := (&ServiceInfo{}).Run(&context)
 	c.Assert(err, check.IsNil)
 	obtained := stdout.String()
 	c.Assert(obtained, check.Equals, expected)
@@ -1128,8 +1129,8 @@ Plans
 		Stdout: &stdout,
 		Stderr: &stderr,
 	}
-	client := cmd.NewClient(&http.Client{Transport: &infoTransport{includePlans: true}}, nil, manager)
-	err := (&ServiceInfo{}).Run(&context, client)
+	s.setupFakeTransport(&infoTransport{includePlans: true})
+	err := (&ServiceInfo{}).Run(&context)
 	c.Assert(err, check.IsNil)
 	obtained := stdout.String()
 	c.Assert(obtained, check.Equals, expected)
@@ -1154,10 +1155,10 @@ func (s *S) TestServiceInstanceRemoveRunWithForce(c *check.C) {
 				r.Method == http.MethodDelete
 		},
 	}
-	client := cmd.NewClient(&http.Client{Transport: &transport}, nil, manager)
+	s.setupFakeTransport(&transport)
 	cmd := ServiceInstanceRemove{}
 	cmd.Flags().Parse(true, []string{"-f", "-y"})
-	err := cmd.Run(&ctx, client)
+	err := cmd.Run(&ctx)
 	c.Assert(err, check.IsNil)
 }
 
@@ -1191,12 +1192,12 @@ func (s *S) TestServiceInstanceRemoveWithoutForce(c *check.C) {
 				req.URL.Query().Get("ignoreerrors") == "false"
 		},
 	}
-	client := cmd.NewClient(&http.Client{Transport: trans}, nil, manager)
+	s.setupFakeTransport(trans)
 	command := ServiceInstanceRemove{}
 	command.Flags().Parse(true, []string{"-y"})
-	err := command.Run(&ctx, client)
+	err := command.Run(&ctx)
 	c.Assert(err, check.NotNil)
-	c.Assert(err.Error(), check.Equals, trans.Transport.(cmdtest.Transport).Message)
+	c.Assert(tsuruHTTP.UnwrapErr(err).Error(), check.Equals, trans.Transport.(cmdtest.Transport).Message)
 }
 
 func (s *S) TestServiceInstanceRemoveWithAppBindWithFlags(c *check.C) {
@@ -1215,10 +1216,10 @@ func (s *S) TestServiceInstanceRemoveWithAppBindWithFlags(c *check.C) {
 				req.URL.Query().Get("ignoreerrors") == "false"
 		},
 	}
-	client := cmd.NewClient(&http.Client{Transport: trans}, nil, manager)
+	s.setupFakeTransport(trans)
 	command := ServiceInstanceRemove{}
 	command.Flags().Parse(true, []string{"-f", "-y"})
-	err := command.Run(&ctx, client)
+	err := command.Run(&ctx)
 	c.Assert(err, check.IsNil)
 }
 
@@ -1238,10 +1239,10 @@ func (s *S) TestServiceInstanceRemoveWithAppBindWithFlagsIgnoreErros(c *check.C)
 				req.URL.Query().Get("ignoreerrors") == "true"
 		},
 	}
-	client := cmd.NewClient(&http.Client{Transport: trans}, nil, manager)
+	s.setupFakeTransport(trans)
 	command := ServiceInstanceRemove{}
 	command.Flags().Parse(true, []string{"-f", "-y", "--ignore-errors"})
-	err := command.Run(&ctx, client)
+	err := command.Run(&ctx)
 	c.Assert(err, check.IsNil)
 }
 
@@ -1267,8 +1268,8 @@ func (s *S) TestServiceInstanceGrantRun(c *check.C) {
 			return strings.HasSuffix(r.URL.Path, path) && "PUT" == r.Method
 		},
 	}
-	client := cmd.NewClient(&http.Client{Transport: &transp}, nil, manager)
-	err := command.Run(&ctx, client)
+	s.setupFakeTransport(&transp)
+	err := command.Run(&ctx)
 	c.Assert(err, check.IsNil)
 }
 
@@ -1294,8 +1295,8 @@ func (s *S) TestServiceInstanceRevokeRun(c *check.C) {
 			return strings.HasSuffix(r.URL.Path, path) && http.MethodDelete == r.Method
 		},
 	}
-	client := cmd.NewClient(&http.Client{Transport: &transp}, nil, manager)
-	err := command.Run(&ctx, client)
+	s.setupFakeTransport(&transp)
+	err := command.Run(&ctx)
 	c.Assert(err, check.IsNil)
 }
 

@@ -17,7 +17,9 @@ import (
 
 	"github.com/ajg/form"
 	"github.com/tsuru/gnuflag"
+	"github.com/tsuru/tsuru-client/tsuru/config"
 	"github.com/tsuru/tsuru-client/tsuru/formatter"
+	tsuruHTTP "github.com/tsuru/tsuru-client/tsuru/http"
 	tsuruAPIApp "github.com/tsuru/tsuru/app"
 	"github.com/tsuru/tsuru/cmd"
 	apiTypes "github.com/tsuru/tsuru/types/api"
@@ -69,7 +71,7 @@ func (c *EnvGet) Info() *cmd.Info {
 	}
 }
 
-func (c *EnvGet) Run(context *cmd.Context, client *cmd.Client) error {
+func (c *EnvGet) Run(context *cmd.Context) error {
 	context.RawOutput()
 
 	err := checkAppAndJobInputs(c.appName, c.jobName)
@@ -77,7 +79,7 @@ func (c *EnvGet) Run(context *cmd.Context, client *cmd.Client) error {
 		return err
 	}
 
-	b, err := requestEnvGetURL(c, context.Args, client)
+	b, err := requestEnvGetURL(c, context.Args)
 	if err != nil {
 		return err
 	}
@@ -148,7 +150,7 @@ func (c *EnvSet) Info() *cmd.Info {
 	}
 }
 
-func (c *EnvSet) Run(context *cmd.Context, client *cmd.Client) error {
+func (c *EnvSet) Run(context *cmd.Context) error {
 	context.RawOutput()
 
 	err := checkAppAndJobInputs(c.appName, c.jobName)
@@ -185,7 +187,7 @@ func (c *EnvSet) Run(context *cmd.Context, client *cmd.Client) error {
 		apiVersion = "1.0"
 	}
 
-	url, err := cmd.GetURLVersion(apiVersion, path)
+	url, err := config.GetURLVersion(apiVersion, path)
 	if err != nil {
 		return err
 	}
@@ -199,7 +201,7 @@ func (c *EnvSet) Run(context *cmd.Context, client *cmd.Client) error {
 		return err
 	}
 	request.Header.Set("Content-Type", "application/x-www-form-urlencoded")
-	response, err := client.Do(request)
+	response, err := tsuruHTTP.DefaultClient.Do(request)
 	if err != nil {
 		return err
 	}
@@ -250,7 +252,7 @@ func (c *EnvUnset) Info() *cmd.Info {
 	}
 }
 
-func (c *EnvUnset) Run(context *cmd.Context, client *cmd.Client) error {
+func (c *EnvUnset) Run(context *cmd.Context) error {
 	context.RawOutput()
 
 	err := checkAppAndJobInputs(c.appName, c.jobName)
@@ -274,7 +276,7 @@ func (c *EnvUnset) Run(context *cmd.Context, client *cmd.Client) error {
 		apiVersion = "1.0"
 	}
 
-	url, err := cmd.GetURLVersion(apiVersion, path)
+	url, err := config.GetURLVersion(apiVersion, path)
 	if err != nil {
 		return err
 	}
@@ -283,14 +285,14 @@ func (c *EnvUnset) Run(context *cmd.Context, client *cmd.Client) error {
 	if err != nil {
 		return err
 	}
-	response, err := client.Do(request)
+	response, err := tsuruHTTP.DefaultClient.Do(request)
 	if err != nil {
 		return err
 	}
 	return cmd.StreamJSONResponse(context.Stdout, response)
 }
 
-func requestEnvGetURL(c *EnvGet, args []string, client *cmd.Client) ([]byte, error) {
+func requestEnvGetURL(c *EnvGet, args []string) ([]byte, error) {
 	v := url.Values{}
 	for _, e := range args {
 		v.Add("env", e)
@@ -306,7 +308,7 @@ func requestEnvGetURL(c *EnvGet, args []string, client *cmd.Client) ([]byte, err
 		apiVersion = "1.0"
 	}
 
-	url, err := cmd.GetURLVersion(apiVersion, path)
+	url, err := config.GetURLVersion(apiVersion, path)
 	if err != nil {
 		return nil, err
 	}
@@ -314,7 +316,7 @@ func requestEnvGetURL(c *EnvGet, args []string, client *cmd.Client) ([]byte, err
 	if err != nil {
 		return nil, err
 	}
-	r, err := client.Do(request)
+	r, err := tsuruHTTP.DefaultClient.Do(request)
 	if err != nil {
 		return nil, err
 	}

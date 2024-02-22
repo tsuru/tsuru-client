@@ -8,6 +8,7 @@ import (
 	"bytes"
 	"net/http"
 
+	tsuruHTTP "github.com/tsuru/tsuru-client/tsuru/http"
 	"github.com/tsuru/tsuru/cmd"
 	"github.com/tsuru/tsuru/cmd/cmdtest"
 	check "gopkg.in/check.v1"
@@ -39,7 +40,8 @@ func (s *S) TestTagListWithApps(c *check.C) {
 		Stderr: &stderr,
 	}
 	command := TagList{}
-	err := command.Run(&context, makeClient([]string{appList, serviceList}))
+	s.setupFakeTransport(makeTransport([]string{appList, serviceList}))
+	err := command.Run(&context)
 	c.Assert(err, check.IsNil)
 	c.Assert(stdout.String(), check.Equals, expected)
 }
@@ -64,7 +66,8 @@ func (s *S) TestTagListWithServiceInstances(c *check.C) {
 		Stderr: &stderr,
 	}
 	command := TagList{}
-	err := command.Run(&context, makeClient([]string{appList, serviceList}))
+	s.setupFakeTransport(makeTransport([]string{appList, serviceList}))
+	err := command.Run(&context)
 	c.Assert(err, check.IsNil)
 	c.Assert(stdout.String(), check.Equals, expected)
 }
@@ -91,7 +94,8 @@ func (s *S) TestTagListWithAppsAndServiceInstances(c *check.C) {
 		Stderr: &stderr,
 	}
 	command := TagList{}
-	err := command.Run(&context, makeClient([]string{appList, serviceList}))
+	s.setupFakeTransport(makeTransport([]string{appList, serviceList}))
+	err := command.Run(&context)
 	c.Assert(err, check.IsNil)
 	c.Assert(stdout.String(), check.Equals, expected)
 }
@@ -107,7 +111,8 @@ func (s *S) TestTagListWithEmptyResponse(c *check.C) {
 		Stderr: &stderr,
 	}
 	command := TagList{}
-	err := command.Run(&context, makeClient([]string{appList, serviceList}))
+	s.setupFakeTransport(makeTransport([]string{appList, serviceList}))
+	err := command.Run(&context)
 	c.Assert(err, check.IsNil)
 	c.Assert(stdout.String(), check.Equals, expected)
 }
@@ -120,18 +125,17 @@ func (s *S) TestTagListRequestError(c *check.C) {
 		Stderr: &stderr,
 	}
 	command := TagList{}
-	err := command.Run(&context, cmd.NewClient(&http.Client{
-		Transport: &cmdtest.ConditionalTransport{
-			Transport: cmdtest.Transport{Status: http.StatusBadGateway},
-			CondFunc:  func(*http.Request) bool { return true },
-		},
-	}, nil, manager))
+	s.setupFakeTransport(&cmdtest.ConditionalTransport{
+		Transport: cmdtest.Transport{Status: http.StatusBadGateway},
+		CondFunc:  func(*http.Request) bool { return true },
+	})
+	err := command.Run(&context)
 	c.Assert(err, check.NotNil)
-	c.Assert(err.Error(), check.Equals, "502 Bad Gateway")
+	c.Assert(tsuruHTTP.UnwrapErr(err).Error(), check.Equals, "502 Bad Gateway")
 	c.Assert(stdout.String(), check.Equals, "")
 }
 
-func makeClient(messages []string) *cmd.Client {
+func makeTransport(messages []string) http.RoundTripper {
 	trueFunc := func(*http.Request) bool { return true }
 	cts := make([]cmdtest.ConditionalTransport, len(messages))
 	for i, message := range messages {
@@ -140,7 +144,6 @@ func makeClient(messages []string) *cmd.Client {
 			CondFunc:  trueFunc,
 		}
 	}
-	return cmd.NewClient(&http.Client{
-		Transport: &cmdtest.MultiConditionalTransport{ConditionalTransports: cts},
-	}, nil, manager)
+
+	return &cmdtest.MultiConditionalTransport{ConditionalTransports: cts}
 }

@@ -13,12 +13,15 @@ import (
 	"strings"
 
 	"github.com/tsuru/gnuflag"
+	tsuruClientApp "github.com/tsuru/tsuru-client/tsuru/app"
+	"github.com/tsuru/tsuru-client/tsuru/config"
+	tsuruHTTP "github.com/tsuru/tsuru-client/tsuru/http"
 	"github.com/tsuru/tsuru/cmd"
 	tsuruIo "github.com/tsuru/tsuru/io"
 )
 
 type AppRun struct {
-	cmd.AppNameMixIn
+	tsuruClientApp.AppNameMixIn
 	fs       *gnuflag.FlagSet
 	once     bool
 	isolated bool
@@ -38,13 +41,13 @@ Otherwise, it will run the command in all units.`
 	}
 }
 
-func (c *AppRun) Run(context *cmd.Context, client *cmd.Client) error {
+func (c *AppRun) Run(context *cmd.Context) error {
 	context.RawOutput()
 	appName, err := c.AppName()
 	if err != nil {
 		return err
 	}
-	u, err := cmd.GetURL(fmt.Sprintf("/apps/%s/run", appName))
+	u, err := config.GetURL(fmt.Sprintf("/apps/%s/run", appName))
 	if err != nil {
 		return err
 	}
@@ -58,7 +61,7 @@ func (c *AppRun) Run(context *cmd.Context, client *cmd.Client) error {
 		return err
 	}
 	request.Header.Set("Content-Type", "application/x-www-form-urlencoded")
-	r, err := client.Do(request)
+	r, err := tsuruHTTP.DefaultClient.Do(request)
 	if err != nil {
 		return err
 	}

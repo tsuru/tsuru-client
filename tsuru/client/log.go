@@ -13,12 +13,15 @@ import (
 	"time"
 
 	"github.com/tsuru/gnuflag"
+	tsuruClientApp "github.com/tsuru/tsuru-client/tsuru/app"
+	"github.com/tsuru/tsuru-client/tsuru/config"
 	"github.com/tsuru/tsuru-client/tsuru/formatter"
+	tsuruHTTP "github.com/tsuru/tsuru-client/tsuru/http"
 	"github.com/tsuru/tsuru/cmd"
 )
 
 type AppLog struct {
-	cmd.AppNameMixIn
+	tsuruClientApp.AppNameMixIn
 	fs       *gnuflag.FlagSet
 	source   string
 	unit     string
@@ -112,13 +115,13 @@ type log struct {
 	Unit    string
 }
 
-func (c *AppLog) Run(context *cmd.Context, client *cmd.Client) error {
+func (c *AppLog) Run(context *cmd.Context) error {
 	context.RawOutput()
 	appName, err := c.AppName()
 	if err != nil {
 		return err
 	}
-	url, err := cmd.GetURL(fmt.Sprintf("/apps/%s/log?lines=%d", appName, c.lines))
+	url, err := config.GetURL(fmt.Sprintf("/apps/%s/log?lines=%d", appName, c.lines))
 	if err != nil {
 		return err
 	}
@@ -135,7 +138,7 @@ func (c *AppLog) Run(context *cmd.Context, client *cmd.Client) error {
 	if err != nil {
 		return err
 	}
-	response, err := client.Do(request)
+	response, err := tsuruHTTP.DefaultClient.Do(request)
 	if err != nil {
 		return err
 	}

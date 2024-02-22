@@ -44,11 +44,11 @@ func (s *S) TestAutoScaleSet(c *check.C) {
 			return true
 		},
 	}
-	client := cmd.NewClient(&http.Client{Transport: &trans}, nil, manager)
+	s.setupFakeTransport(&trans)
 	command := AutoScaleSet{}
 	command.Info()
 	command.Flags().Parse(true, []string{"-a", "myapp", "-p", "proc1", "--min", "2", "--max", "5", "--cpu", "30%"})
-	err := command.Run(&context, client)
+	err := command.Run(&context)
 	c.Assert(err, check.IsNil)
 	c.Assert(stdout.String(), check.Equals, expected)
 }
@@ -93,7 +93,7 @@ func (s *S) TestKEDAAutoScaleSet(c *check.C) {
 			return true
 		},
 	}
-	client := cmd.NewClient(&http.Client{Transport: &trans}, nil, manager)
+	s.setupFakeTransport(&trans)
 	command := AutoScaleSet{}
 	command.Info()
 	command.Flags().Parse(true, []string{
@@ -101,7 +101,7 @@ func (s *S) TestKEDAAutoScaleSet(c *check.C) {
 		"--schedule", "{\"minReplicas\": 2, \"start\": \"0 6 * * *\", \"end\": \"0 18 * * *\"}",
 		"--schedule", "{\"minReplicas\": 1, \"start\": \"0 18 * * *\", \"end\": \"0 0 * * *\"}",
 	})
-	err := command.Run(&context, client)
+	err := command.Run(&context)
 	c.Assert(err, check.IsNil)
 	c.Assert(stdout.String(), check.Equals, expected)
 }
@@ -123,11 +123,11 @@ func (s *S) TestAutoScaleUnset(c *check.C) {
 			return true
 		},
 	}
-	client := cmd.NewClient(&http.Client{Transport: &trans}, nil, manager)
+	s.setupFakeTransport(&trans)
 	command := AutoScaleUnset{}
 	command.Info()
 	command.Flags().Parse(true, []string{"-a", "myapp", "-p", "proc1"})
-	err := command.Run(&context, client)
+	err := command.Run(&context)
 	c.Assert(err, check.IsNil)
 	c.Assert(stdout.String(), check.Equals, expected)
 }

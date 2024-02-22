@@ -19,10 +19,12 @@ import (
 
 	"github.com/antihax/optional"
 	"github.com/tsuru/gnuflag"
-	"github.com/tsuru/go-tsuruclient/pkg/client"
 	"github.com/tsuru/go-tsuruclient/pkg/tsuru"
 	"github.com/tsuru/tablecli"
+	"github.com/tsuru/tsuru-client/tsuru/config"
+	tsuruHTTP "github.com/tsuru/tsuru-client/tsuru/http"
 	"github.com/tsuru/tsuru/cmd"
+	tsuruErrors "github.com/tsuru/tsuru/errors"
 )
 
 type UserCreate struct{}
@@ -36,9 +38,9 @@ func (c *UserCreate) Info() *cmd.Info {
 	}
 }
 
-func (c *UserCreate) Run(context *cmd.Context, client *cmd.Client) error {
+func (c *UserCreate) Run(context *cmd.Context) error {
 	context.RawOutput()
-	u, err := cmd.GetURL("/users")
+	u, err := config.GetURL("/users")
 	if err != nil {
 		return err
 	}
@@ -66,7 +68,7 @@ func (c *UserCreate) Run(context *cmd.Context, client *cmd.Client) error {
 		return err
 	}
 	request.Header.Set("Content-Type", "application/x-www-form-urlencoded")
-	resp, err := client.Do(request)
+	resp, err := tsuruHTTP.DefaultClient.Do(request)
 	if resp != nil {
 		if resp.StatusCode == http.StatusNotFound ||
 			resp.StatusCode == http.StatusMethodNotAllowed {
@@ -74,6 +76,13 @@ func (c *UserCreate) Run(context *cmd.Context, client *cmd.Client) error {
 		}
 	}
 	if err != nil {
+		err = tsuruHTTP.UnwrapErr(err)
+		if httpErr, ok := err.(*tsuruErrors.HTTP); ok {
+			if httpErr.Code == http.StatusNotFound ||
+				httpErr.Code == http.StatusMethodNotAllowed {
+				return errors.New("User creation is disabled.")
+			}
+		}
 		return err
 	}
 	fmt.Fprintf(context.Stdout, `User "%s" successfully created!`+"\n", email)
@@ -82,13 +91,13 @@ func (c *UserCreate) Run(context *cmd.Context, client *cmd.Client) error {
 
 type UserRemove struct{}
 
-func (c *UserRemove) currentUserEmail(client *cmd.Client) (string, error) {
-	u, err := cmd.GetURL("/users/info")
+func (c *UserRemove) currentUserEmail() (string, error) {
+	u, err := config.GetURL("/users/info")
 	if err != nil {
 		return "", err
 	}
 	request, _ := http.NewRequest("GET", u, nil)
-	resp, err := client.Do(request)
+	resp, err := tsuruHTTP.DefaultClient.Do(request)
 	if err != nil {
 		return "", err
 	}
@@ -101,7 +110,7 @@ func (c *UserRemove) currentUserEmail(client *cmd.Client) (string, error) {
 	return r.Email, nil
 }
 
-func (c *UserRemove) Run(context *cmd.Context, client *cmd.Client) error {
+func (c *UserRemove) Run(context *cmd.Context) error {
 	var (
 		answer string
 		email  string
@@ -110,7 +119,7 @@ func (c *UserRemove) Run(context *cmd.Context, client *cmd.Client) error {
 	if len(context.Args) > 0 {
 		email = context.Args[0]
 	} else {
-		email, err = c.currentUserEmail(client)
+		email, err = c.currentUserEmail()
 		if err != nil {
 			return err
 		}
@@ -121,7 +130,7 @@ func (c *UserRemove) Run(context *cmd.Context, client *cmd.Client) error {
 		fmt.Fprintln(context.Stdout, "Abort.")
 		return nil
 	}
-	u, err := cmd.GetURL("/users")
+	u, err := config.GetURL("/users")
 	if err != nil {
 		return err
 	}
@@ -133,7 +142,7 @@ func (c *UserRemove) Run(context *cmd.Context, client *cmd.Client) error {
 	if err != nil {
 		return err
 	}
-	_, err = client.Do(request)
+	_, err = tsuruHTTP.DefaultClient.Do(request)
 	if err != nil {
 		return err
 	}
@@ -181,10 +190,8 @@ func (c *TeamCreate) Flags() *gnuflag.FlagSet {
 	return c.fs
 }
 
-func (c *TeamCreate) Run(ctx *cmd.Context, cli *cmd.Client) error {
-	apiClient, err := client.ClientFromEnvironment(&tsuru.Configuration{
-		HTTPClient: cli.HTTPClient,
-	})
+func (c *TeamCreate) Run(ctx *cmd.Context) error {
+	apiClient, err := tsuruHTTP.TsuruClientFromEnvironment()
 	if err != nil {
 		return err
 	}
@@ -229,10 +236,8 @@ func (t *TeamUpdate) Info() *cmd.Info {
 	}
 }
 
-func (t *TeamUpdate) Run(ctx *cmd.Context, cli *cmd.Client) error {
-	apiClient, err := client.ClientFromEnvironment(&tsuru.Configuration{
-		HTTPClient: cli.HTTPClient,
-	})
+func (t *TeamUpdate) Run(ctx *cmd.Context) error {
+	apiClient, err := tsuruHTTP.TsuruClientFromEnvironment()
 	if err != nil {
 		return err
 	}
@@ -252,15 +257,13 @@ type TeamRemove struct {
 	cmd.ConfirmationCommand
 }
 
-func (c *TeamRemove) Run(ctx *cmd.Context, cli *cmd.Client) error {
+func (c *TeamRemove) Run(ctx *cmd.Context) error {
 	team := ctx.Args[0]
 	question := fmt.Sprintf("Are you sure you want to remove team %q?", team)
 	if !c.Confirm(ctx, question) {
 		return nil
 	}
-	apiClient, err := client.ClientFromEnvironment(&tsuru.Configuration{
-		HTTPClient: cli.HTTPClient,
-	})
+	apiClient, err := tsuruHTTP.TsuruClientFromEnvironment()
 	if err != nil {
 		return err
 	}
@@ -306,10 +309,8 @@ func (c *TeamList) Flags() *gnuflag.FlagSet {
 	return c.fs
 }
 
-func (c *TeamList) Run(ctx *cmd.Context, cli *cmd.Client) error {
-	apiClient, err := client.ClientFromEnvironment(&tsuru.Configuration{
-		HTTPClient: cli.HTTPClient,
-	})
+func (c *TeamList) Run(ctx *cmd.Context) error {
+	apiClient, err := tsuruHTTP.TsuruClientFromEnvironment()
 	if err != nil {
 		return err
 	}
@@ -400,9 +401,9 @@ func (c *TeamInfo) Info() *cmd.Info {
 	}
 }
 
-func (c *TeamInfo) Run(ctx *cmd.Context, cli *cmd.Client) error {
+func (c *TeamInfo) Run(ctx *cmd.Context) error {
 	team := ctx.Args[0]
-	u, err := cmd.GetURLVersion("1.4", fmt.Sprintf("/teams/%v", team))
+	u, err := config.GetURLVersion("1.4", fmt.Sprintf("/teams/%v", team))
 	if err != nil {
 		return err
 	}
@@ -410,7 +411,7 @@ func (c *TeamInfo) Run(ctx *cmd.Context, cli *cmd.Client) error {
 	if err != nil {
 		return err
 	}
-	resp, err := cli.Do(request)
+	resp, err := tsuruHTTP.DefaultClient.Do(request)
 	if err != nil {
 		return err
 	}
@@ -478,10 +479,7 @@ Tags: {{.Tags}}
 			}
 			summary = strings.Join(statusText, "\n")
 		} else {
-			summary = "error fetching units"
-			if cli.Verbosity > 0 {
-				summary += fmt.Sprintf(": %s", app.Error)
-			}
+			summary = "error fetching units: " + app.Error
 		}
 		addrs := strings.Replace(app.Addr(), ", ", "\n", -1)
 		appsTable.AddRow(tablecli.Row([]string{app.Name, summary, addrs}))
@@ -498,8 +496,8 @@ Tags: {{.Tags}}
 
 type ChangePassword struct{}
 
-func (c *ChangePassword) Run(context *cmd.Context, client *cmd.Client) error {
-	u, err := cmd.GetURL("/users/password")
+func (c *ChangePassword) Run(context *cmd.Context) error {
+	u, err := config.GetURL("/users/password")
 	if err != nil {
 		return err
 	}
@@ -528,7 +526,7 @@ func (c *ChangePassword) Run(context *cmd.Context, client *cmd.Client) error {
 		return err
 	}
 	request.Header.Set("Content-Type", "application/x-www-form-urlencoded")
-	_, err = client.Do(request)
+	_, err = tsuruHTTP.DefaultClient.Do(request)
 	if err != nil {
 		return err
 	}
@@ -580,17 +578,17 @@ Please check your email.`
 Please check your email.`
 }
 
-func (c *ResetPassword) Run(context *cmd.Context, client *cmd.Client) error {
+func (c *ResetPassword) Run(context *cmd.Context) error {
 	url := fmt.Sprintf("/users/%s/password", context.Args[0])
 	if c.token != "" {
 		url += "?token=" + c.token
 	}
-	url, err := cmd.GetURL(url)
+	url, err := config.GetURL(url)
 	if err != nil {
 		return err
 	}
 	request, _ := http.NewRequest("POST", url, nil)
-	_, err = client.Do(request)
+	_, err = tsuruHTTP.DefaultClient.Do(request)
 	if err != nil {
 		return err
 	}
@@ -624,8 +622,8 @@ The token key will be generated the first time this command is called. See
 	}
 }
 
-func (c *ShowAPIToken) Run(context *cmd.Context, client *cmd.Client) error {
-	u, err := cmd.GetURL("/users/api-key")
+func (c *ShowAPIToken) Run(context *cmd.Context) error {
+	u, err := config.GetURL("/users/api-key")
 	if err != nil {
 		return err
 	}
@@ -636,7 +634,7 @@ func (c *ShowAPIToken) Run(context *cmd.Context, client *cmd.Client) error {
 	if err != nil {
 		return err
 	}
-	resp, err := client.Do(request)
+	resp, err := tsuruHTTP.DefaultClient.Do(request)
 	if err != nil {
 		return err
 	}
@@ -682,8 +680,8 @@ instead.`,
 	}
 }
 
-func (c *RegenerateAPIToken) Run(context *cmd.Context, client *cmd.Client) error {
-	url, err := cmd.GetURL("/users/api-key")
+func (c *RegenerateAPIToken) Run(context *cmd.Context) error {
+	url, err := config.GetURL("/users/api-key")
 	if err != nil {
 		return err
 	}
@@ -694,7 +692,7 @@ func (c *RegenerateAPIToken) Run(context *cmd.Context, client *cmd.Client) error
 	if err != nil {
 		return err
 	}
-	resp, err := client.Do(request)
+	resp, err := tsuruHTTP.DefaultClient.Do(request)
 	if err != nil {
 		return err
 	}
@@ -730,7 +728,7 @@ type ListUsers struct {
 	fs        *gnuflag.FlagSet
 }
 
-func (c *ListUsers) Run(ctx *cmd.Context, cli *cmd.Client) error {
+func (c *ListUsers) Run(ctx *cmd.Context) error {
 	if c.userEmail != "" && c.role != "" {
 		return errors.New("You cannot filter by user email and role at same time. Enter <tsuru user-list --help> for more information.")
 	}
@@ -738,9 +736,7 @@ func (c *ListUsers) Run(ctx *cmd.Context, cli *cmd.Client) error {
 		return errors.New("You should provide a role to filter by context value.")
 	}
 
-	apiClient, err := client.ClientFromEnvironment(&tsuru.Configuration{
-		HTTPClient: cli.HTTPClient,
-	})
+	apiClient, err := tsuruHTTP.TsuruClientFromEnvironment()
 	if err != nil {
 		return err
 	}
@@ -798,10 +794,8 @@ func (UserInfo) Info() *cmd.Info {
 	}
 }
 
-func (UserInfo) Run(ctx *cmd.Context, cli *cmd.Client) error {
-	apiClient, err := client.ClientFromEnvironment(&tsuru.Configuration{
-		HTTPClient: cli.HTTPClient,
-	})
+func (UserInfo) Run(ctx *cmd.Context) error {
+	apiClient, err := tsuruHTTP.TsuruClientFromEnvironment()
 	if err != nil {
 		return err
 	}

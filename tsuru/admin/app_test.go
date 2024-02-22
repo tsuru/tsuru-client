@@ -42,10 +42,12 @@ func (s *S) TestAppRoutesRebuildRun(c *check.C) {
 			return strings.HasSuffix(req.URL.Path, "/apps/app1/routes") && req.Method == "POST"
 		},
 	}
-	client := cmd.NewClient(&http.Client{Transport: trans}, nil, s.manager)
+
+	s.setupFakeTransport(trans)
+
 	command := AppRoutesRebuild{}
 	command.Flags().Parse(true, []string{"--app", "app1"})
-	err := command.Run(&context, client)
+	err := command.Run(&context)
 	c.Assert(err, check.IsNil)
 	c.Assert(stdout.String(), check.Equals, `Router r1:
   * Added routes:
@@ -107,10 +109,10 @@ func (s *S) TestAppRoutesRebuildRunWithPrefixes(c *check.C) {
 			return strings.HasSuffix(req.URL.Path, "/apps/app1/routes") && req.Method == "POST"
 		},
 	}
-	client := cmd.NewClient(&http.Client{Transport: trans}, nil, s.manager)
+	s.setupFakeTransport(trans)
 	command := AppRoutesRebuild{}
 	command.Flags().Parse(true, []string{"--app", "app1"})
-	err := command.Run(&context, client)
+	err := command.Run(&context)
 	c.Assert(err, check.IsNil)
 	c.Assert(stdout.String(), check.Equals, `Router r1:
  - Prefix "":
@@ -151,10 +153,11 @@ func (s *S) TestAppRoutesRebuildRunNothingToDo(c *check.C) {
 			return strings.HasSuffix(req.URL.Path, "/apps/app1/routes") && req.Method == "POST"
 		},
 	}
-	client := cmd.NewClient(&http.Client{Transport: trans}, nil, s.manager)
+	s.setupFakeTransport(trans)
+
 	command := AppRoutesRebuild{}
 	command.Flags().Parse(true, []string{"--app", "app1"})
-	err = command.Run(&context, client)
+	err = command.Run(&context)
 	c.Assert(err, check.IsNil)
 	c.Assert(stdout.String(), check.Equals, `Router r1:
   * Nothing to do, routes already correct.
@@ -176,10 +179,11 @@ func (s *S) TestAppRoutesRebuildRunNoRouters(c *check.C) {
 			return strings.HasSuffix(req.URL.Path, "/apps/app1/routes") && req.Method == "POST"
 		},
 	}
-	client := cmd.NewClient(&http.Client{Transport: trans}, nil, s.manager)
+	s.setupFakeTransport(trans)
+
 	command := AppRoutesRebuild{}
 	command.Flags().Parse(true, []string{"--app", "app1"})
-	err = command.Run(&context, client)
+	err = command.Run(&context)
 	c.Assert(err, check.IsNil)
 	c.Assert(stdout.String(), check.Equals, "App has no routers.\n")
 }

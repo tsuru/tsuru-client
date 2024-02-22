@@ -63,9 +63,9 @@ func (s *S) TestAppLog(c *check.C) {
 		Message: string(result),
 		Status:  http.StatusOK,
 	}
-	client := cmd.NewClient(&http.Client{Transport: &transport}, nil, manager)
+	s.setupFakeTransport(transport)
 	command.Flags().Parse(true, []string{"--app", "appName"})
-	err = command.Run(&context, client)
+	err = command.Run(&context)
 	c.Assert(err, check.IsNil)
 	c.Assert(stdout.String(), check.Equals, expected)
 }
@@ -90,9 +90,9 @@ func (s *S) TestAppLogWithUnparsableData(c *check.C) {
 		Message: string(result) + "\nunparseable data",
 		Status:  http.StatusOK,
 	}
-	client := cmd.NewClient(&http.Client{Transport: &transport}, nil, manager)
+	s.setupFakeTransport(&transport)
 	command.Flags().Parse(true, []string{"--app", "appName"})
-	err = command.Run(&context, client)
+	err = command.Run(&context)
 	c.Assert(err, check.IsNil)
 	expected := cmd.Colorfy(t.Format(tfmt)+" [tsuru]:", "blue", "", "") + " creating app lost\n"
 	expected += "Error: unable to parse json: invalid character 'u' looking for beginning of value: \"\\nunparseable data\""
@@ -125,8 +125,8 @@ func (s *S) TestAppLogWithoutTheFlag(c *check.C) {
 				req.URL.Query().Get("lines") == "10"
 		},
 	}
-	client := cmd.NewClient(&http.Client{Transport: trans}, nil, manager)
-	err = command.Run(&context, client)
+	s.setupFakeTransport(trans)
+	err = command.Run(&context)
 	c.Assert(err, check.IsNil)
 	c.Assert(stdout.String(), check.Equals, expected)
 }
@@ -138,9 +138,9 @@ func (s *S) TestAppLogShouldReturnNilIfHasNoContent(c *check.C) {
 		Stderr: &stderr,
 	}
 	command := AppLog{}
-	client := cmd.NewClient(&http.Client{Transport: &cmdtest.Transport{Message: "", Status: http.StatusNoContent}}, nil, manager)
+	s.setupFakeTransport(&cmdtest.Transport{Message: "", Status: http.StatusNoContent})
 	command.Flags().Parse(true, []string{"--app", "appName"})
-	err := command.Run(&context, client)
+	err := command.Run(&context)
 	c.Assert(err, check.IsNil)
 	c.Assert(stdout.String(), check.Equals, "")
 }
@@ -174,8 +174,8 @@ func (s *S) TestAppLogBySource(c *check.C) {
 			return req.URL.Query().Get("source") == "mysource"
 		},
 	}
-	client := cmd.NewClient(&http.Client{Transport: trans}, nil, manager)
-	err = command.Run(&context, client)
+	s.setupFakeTransport(trans)
+	err = command.Run(&context)
 	c.Assert(err, check.IsNil)
 	c.Assert(stdout.String(), check.Equals, expected)
 }
@@ -205,8 +205,8 @@ func (s *S) TestAppLogByUnit(c *check.C) {
 			return req.URL.Query().Get("unit") == "api"
 		},
 	}
-	client := cmd.NewClient(&http.Client{Transport: trans}, nil, manager)
-	err = command.Run(&context, client)
+	s.setupFakeTransport(trans)
+	err = command.Run(&context)
 	c.Assert(err, check.IsNil)
 	c.Assert(stdout.String(), check.Equals, expected)
 }
@@ -236,8 +236,8 @@ func (s *S) TestAppLogWithLines(c *check.C) {
 			return req.URL.Query().Get("lines") == "12"
 		},
 	}
-	client := cmd.NewClient(&http.Client{Transport: trans}, nil, manager)
-	err = command.Run(&context, client)
+	s.setupFakeTransport(trans)
+	err = command.Run(&context)
 	c.Assert(err, check.IsNil)
 	c.Assert(stdout.String(), check.Equals, expected)
 }
@@ -267,8 +267,8 @@ func (s *S) TestAppLogWithFollow(c *check.C) {
 			return req.URL.Query().Get("lines") == "12" && req.URL.Query().Get("follow") == "1"
 		},
 	}
-	client := cmd.NewClient(&http.Client{Transport: trans}, nil, manager)
-	err = command.Run(&context, client)
+	s.setupFakeTransport(trans)
+	err = command.Run(&context)
 	c.Assert(err, check.IsNil)
 	c.Assert(stdout.String(), check.Equals, expected)
 }
@@ -296,8 +296,8 @@ func (s *S) TestAppLogWithNoDateAndNoSource(c *check.C) {
 			return req.URL.Query().Get("lines") == "12" && req.URL.Query().Get("follow") == "1"
 		},
 	}
-	client := cmd.NewClient(&http.Client{Transport: trans}, nil, manager)
-	err = command.Run(&context, client)
+	s.setupFakeTransport(trans)
+	err = command.Run(&context)
 	c.Assert(err, check.IsNil)
 	c.Assert(stdout.String(), check.Equals, expected)
 }
@@ -327,8 +327,8 @@ func (s *S) TestAppLogWithNoSource(c *check.C) {
 			return req.URL.Query().Get("lines") == "12" && req.URL.Query().Get("follow") == "1"
 		},
 	}
-	client := cmd.NewClient(&http.Client{Transport: trans}, nil, manager)
-	err = command.Run(&context, client)
+	s.setupFakeTransport(trans)
+	err = command.Run(&context)
 	c.Assert(err, check.IsNil)
 	c.Assert(stdout.String(), check.Equals, expected)
 }

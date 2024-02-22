@@ -13,6 +13,8 @@ import (
 	"strings"
 
 	"github.com/tsuru/tablecli"
+	"github.com/tsuru/tsuru-client/tsuru/config"
+	tsuruHTTP "github.com/tsuru/tsuru-client/tsuru/http"
 	"github.com/tsuru/tsuru/cmd"
 	"github.com/tsuru/tsuru/service"
 )
@@ -33,12 +35,12 @@ func (t *TagList) Info() *cmd.Info {
 	}
 }
 
-func (t *TagList) Run(context *cmd.Context, client *cmd.Client) error {
-	apps, err := loadApps(client)
+func (t *TagList) Run(context *cmd.Context) error {
+	apps, err := loadApps()
 	if err != nil {
 		return err
 	}
-	services, err := loadServices(client)
+	services, err := loadServices()
 	if err != nil {
 		return err
 	}
@@ -69,8 +71,8 @@ func (t *TagList) Show(apps []app, services []service.ServiceModel, context *cmd
 	return nil
 }
 
-func loadApps(client *cmd.Client) ([]app, error) {
-	result, err := getFromURL("/apps", client)
+func loadApps() ([]app, error) {
+	result, err := getFromURL("/apps")
 	if err != nil {
 		return nil, err
 	}
@@ -79,8 +81,8 @@ func loadApps(client *cmd.Client) ([]app, error) {
 	return apps, err
 }
 
-func loadServices(client *cmd.Client) ([]service.ServiceModel, error) {
-	result, err := getFromURL("/services", client)
+func loadServices() ([]service.ServiceModel, error) {
+	result, err := getFromURL("/services")
 	if err != nil {
 		return nil, err
 	}
@@ -89,8 +91,8 @@ func loadServices(client *cmd.Client) ([]service.ServiceModel, error) {
 	return services, err
 }
 
-func getFromURL(path string, client *cmd.Client) ([]byte, error) {
-	url, err := cmd.GetURL(path)
+func getFromURL(path string) ([]byte, error) {
+	url, err := config.GetURL(path)
 	if err != nil {
 		return nil, err
 	}
@@ -98,7 +100,7 @@ func getFromURL(path string, client *cmd.Client) ([]byte, error) {
 	if err != nil {
 		return nil, err
 	}
-	response, err := client.Do(request)
+	response, err := tsuruHTTP.DefaultClient.Do(request)
 	if err != nil {
 		return nil, err
 	}

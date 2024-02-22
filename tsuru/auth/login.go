@@ -13,7 +13,9 @@ import (
 	"strings"
 
 	"github.com/tsuru/gnuflag"
+	"github.com/tsuru/tsuru-client/tsuru/config"
 	"github.com/tsuru/tsuru/cmd"
+	authTypes "github.com/tsuru/tsuru/types/auth"
 )
 
 var errTsuruTokenDefined = errors.New("this command can't run with $TSURU_TOKEN environment variable set. Did you forget to unset?")
@@ -26,8 +28,8 @@ type Login struct {
 
 func (c *Login) Info() *cmd.Info {
 	return &cmd.Info{
-		Name:  "login-v2",
-		Usage: "login-v2 [email]",
+		Name:  "login",
+		Usage: "login [email]",
 		Desc: `Initiates a new tsuru session for a user. If using tsuru native authentication
 		scheme, it will ask for the email and the password and check if the user is
 		successfully authenticated. If using OAuth, it will open a web browser for the
@@ -52,7 +54,7 @@ func (c *Login) Flags() *gnuflag.FlagSet {
 	return c.fs
 }
 
-func (c *Login) Run(ctx *cmd.Context, client *cmd.Client) error {
+func (c *Login) Run(ctx *cmd.Context) error {
 	if os.Getenv("TSURU_TOKEN") != "" {
 		return errTsuruTokenDefined
 	}
@@ -67,45 +69,34 @@ func (c *Login) Run(ctx *cmd.Context, client *cmd.Client) error {
 	} else if scheme.Name == "oauth" {
 		return oauthLogin(ctx, scheme)
 	} else if scheme.Name == "native" {
-		return nativeLogin(ctx, client)
+		return nativeLogin(ctx)
 	}
 
 	return fmt.Errorf("scheme %q is not implemented", scheme.Name)
 }
 
-func port(loginInfo *loginScheme) string {
+func port(loginInfo *authTypes.SchemeInfo) string {
 	if loginInfo.Data.Port != "" {
 		return fmt.Sprintf(":%s", loginInfo.Data.Port)
 	}
 	return ":0"
 }
 
-type loginScheme struct {
-	Name string `json:"name"`
-	Data struct {
-		// OIDC fields
-		ClientID string   `json:"clientID"`
-		Scopes   []string `json:"scopes"`
-		AuthURL  string   `json:"authURL"`
-		TokenURL string   `json:"tokenURL"`
-		Port     string   `json:"port"`
-
-		// OAuth fields
-		AuthorizeURL string `json:"authorizeUrl"`
-	}
-}
-
-func getScheme(schemeName string) (*loginScheme, error) {
-	if schemeName == "" {
-		return legacySchemeInfo()
-	}
-
+func getScheme(schemeName string) (*authTypes.SchemeInfo, error) {
 	schemes, err := schemesInfo()
 	if err != nil {
 		return nil, err
 	}
 
 	foundSchemes := []string{}
+
+	if schemeName == "" {
+		for _, scheme := range schemes {
+			if scheme.Default {
+				return &scheme, nil
+			}
+		}
+	}
 
 	for _, scheme := range schemes {
 		foundSchemes = append(foundSchemes, scheme.Name)
@@ -121,8 +112,8 @@ func getScheme(schemeName string) (*loginScheme, error) {
 	return nil, fmt.Errorf("scheme %q is not found, valid schemes are: %s", schemeName, strings.Join(foundSchemes, ", "))
 }
 
-func schemesInfo() ([]loginScheme, error) {
-	url, err := cmd.GetURLVersion("1.18", "/auth/schemes")
+func schemesInfo() ([]authTypes.SchemeInfo, error) {
+	url, err := config.GetURLVersion("1.18", "/auth/schemes")
 	if err != nil {
 		return nil, err
 	}
@@ -139,34 +130,12 @@ func schemesInfo() ([]loginScheme, error) {
 		return nil, fmt.Errorf("could not call %q, status code: %d", url, resp.StatusCode)
 	}
 
-	schemes := []loginScheme{}
+	schemes := []authTypes.SchemeInfo{}
 	err = json.NewDecoder(resp.Body).Decode(&schemes)
 	if err != nil {
 		return nil, err
 	}
 	return schemes, nil
-}
-
-func legacySchemeInfo() (*loginScheme, error) {
-	url, err := cmd.GetURLVersion("1.0", "/auth/scheme")
-	if err != nil {
-		return nil, err
-	}
-	resp, err := http.DefaultClient.Get(url)
-	if err != nil {
-		return nil, err
-	}
-	defer resp.Body.Close()
-	if resp.StatusCode != http.StatusOK {
-		return nil, fmt.Errorf("could not call %q, status code: %d", url, resp.StatusCode)
-	}
-
-	scheme := &loginScheme{}
-	err = json.NewDecoder(resp.Body).Decode(&scheme)
-	if err != nil {
-		return nil, err
-	}
-	return scheme, nil
 }
 
 const callbackPage = `<!DOCTYPE html>
