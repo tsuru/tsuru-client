@@ -75,7 +75,7 @@ func (v *TerminalRoundTripper) RoundTrip(req *http.Request) (*http.Response, err
 		req.Header.Set("Authorization", "bearer "+token)
 	}
 
-	if *verbosity >= 1 {
+	if *verbosity >= TerminalClientOnlyRequest {
 		fmt.Fprintf(v.Stdout, "*************************** <Request uri=%q> **********************************\n", req.URL.RequestURI())
 		requestDump, err := httputil.DumpRequest(req, true)
 		if err != nil {
@@ -89,7 +89,7 @@ func (v *TerminalRoundTripper) RoundTrip(req *http.Request) (*http.Response, err
 	}
 
 	response, err := roundTripper.RoundTrip(req)
-	if *verbosity >= 2 && response != nil {
+	if *verbosity >= TerminalClientVerbose && response != nil {
 		fmt.Fprintf(v.Stdout, "*************************** <Response uri=%q> **********************************\n", req.URL.RequestURI())
 		responseDump, errDump := httputil.DumpResponse(response, true)
 		if errDump != nil {

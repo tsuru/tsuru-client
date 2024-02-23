@@ -47,7 +47,11 @@ func (s *S) TearDownTest(c *check.C) {
 }
 
 func (s *S) setupFakeTransport(rt http.RoundTripper) {
-	tsuruHTTP.AuthenticatedClient = tsuruHTTP.NewTerminalClient(rt, nil, "test", "0.1.0", 0)
+	tsuruHTTP.AuthenticatedClient = tsuruHTTP.NewTerminalClient(tsuruHTTP.TerminalClientOptions{
+		RoundTripper:  rt,
+		ClientName:    "test",
+		ClientVersion: "0.1.0",
+	})
 }
 
 var _ = check.Suite(&S{})

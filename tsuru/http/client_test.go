@@ -70,10 +70,13 @@ func (s *S) TestShouldSetCloseToTrue(c *check.C) {
 		Message: "OK",
 	}
 	var buf bytes.Buffer
-	context := cmd.Context{
-		Stdout: &buf,
-	}
-	client := NewTerminalClient(&transport, &context, "test", "0.1.0", 2)
+	client := NewTerminalClient(TerminalClientOptions{
+		RoundTripper:  &transport,
+		Stdout:        &buf,
+		ClientName:    "test",
+		ClientVersion: "0.1.0",
+		Verbosity:     &TerminalClientVerbose,
+	})
 	client.Do(request)
 	c.Assert(request.Close, check.Equals, true)
 	c.Assert(buf.String(), check.Matches,
@@ -89,13 +92,14 @@ func (s *S) TestShouldReturnBodyMessageOnError(c *check.C) {
 	request, err := http.NewRequest("GET", "/", nil)
 	c.Assert(err, check.IsNil)
 	var buf bytes.Buffer
-	context := cmd.Context{
-		Stdout: &buf,
-	}
-	client := NewTerminalClient(
-		&cmdtest.Transport{Message: "You can't do this", Status: http.StatusForbidden},
-		&context,
-		"test", "0.1.0", 2)
+
+	client := NewTerminalClient(TerminalClientOptions{
+		RoundTripper:  &cmdtest.Transport{Message: "You can't do this", Status: http.StatusForbidden},
+		Stdout:        &buf,
+		ClientName:    "test",
+		ClientVersion: "0.1.0",
+		Verbosity:     &TerminalClientVerbose,
+	})
 	response, err := client.Do(request)
 	c.Assert(response, check.IsNil)
 	c.Assert(err, check.NotNil)
@@ -120,16 +124,16 @@ func (s *S) TestShouldReturnStatusMessageOnErrorWhenBodyIsEmpty(c *check.C) {
 	request, err := http.NewRequest("GET", "/", nil)
 	c.Assert(err, check.IsNil)
 	var buf bytes.Buffer
-	context := cmd.Context{
-		Stdout: &buf,
-	}
-	client := NewTerminalClient(
-		&cmdtest.Transport{
+	client := NewTerminalClient(TerminalClientOptions{
+		RoundTripper: &cmdtest.Transport{
 			Message: "",
 			Status:  http.StatusServiceUnavailable,
 		},
-		&context,
-		"test", "0.1.0", 2)
+		Stdout:        &buf,
+		ClientName:    "test",
+		ClientVersion: "0.1.0",
+		Verbosity:     &TerminalClientVerbose,
+	})
 	response, err := client.Do(request)
 	c.Assert(err, check.NotNil)
 	c.Assert(response, check.IsNil)
@@ -155,13 +159,13 @@ func (s *S) TestShouldHandleUnauthorizedErrorSpecially(c *check.C) {
 	request, err := http.NewRequest("GET", "/", nil)
 	c.Assert(err, check.IsNil)
 	var buf bytes.Buffer
-	context := cmd.Context{
-		Stdout: &buf,
-	}
-	client := NewTerminalClient(
-		&cmdtest.Transport{Message: "You can't do this", Status: http.StatusUnauthorized},
-		&context,
-		"test", "0.1.0", 0)
+	client := NewTerminalClient(TerminalClientOptions{
+		RoundTripper: &cmdtest.Transport{Message: "You can't do this", Status: http.StatusUnauthorized},
+
+		Stdout:        &buf,
+		ClientName:    "test",
+		ClientVersion: "0.1.0",
+	})
 	response, err := client.Do(request)
 	c.Assert(response, check.IsNil)
 	c.Assert(err.Error(), check.Equals, "Get \"/\": unauthorized")
@@ -176,10 +180,14 @@ func (s *S) TestShouldReturnErrorWhenServerIsDown(c *check.C) {
 	request, err := http.NewRequest("GET", "/", nil)
 	c.Assert(err, check.IsNil)
 	var buf bytes.Buffer
-	context := cmd.Context{
-		Stdout: &buf,
-	}
-	client := NewTerminalClient(nil, &context, "test", "0.1.0", 2)
+
+	client := NewTerminalClient(TerminalClientOptions{
+		RoundTripper:  nil,
+		Stdout:        &buf,
+		ClientName:    "test",
+		ClientVersion: "0.1.0",
+		Verbosity:     &TerminalClientVerbose,
+	})
 	_, err = client.Do(request)
 	c.Assert(err, check.NotNil)
 	c.Assert(strings.Contains(err.Error(), "Failed to connect to tsuru server (http://tsuru.abc.xyz), it's probably down"), check.Equals, true)
@@ -200,10 +208,13 @@ func (s *S) TestShouldNotIncludeTheHeaderAuthorizationWhenTheTsuruTokenFileIsMis
 	c.Assert(err, check.IsNil)
 	trans := cmdtest.Transport{Message: "", Status: http.StatusOK}
 	var buf bytes.Buffer
-	context := cmd.Context{
-		Stdout: &buf,
-	}
-	client := NewTerminalClient(&trans, &context, "test", "0.1.0", 2)
+	client := NewTerminalClient(TerminalClientOptions{
+		RoundTripper:  &trans,
+		Stdout:        &buf,
+		ClientName:    "test",
+		ClientVersion: "0.1.0",
+		Verbosity:     &TerminalClientVerbose,
+	})
 	_, err = client.Do(request)
 	c.Assert(err, check.IsNil)
 	header := map[string][]string(request.Header)
@@ -226,10 +237,13 @@ func (s *S) TestShouldIncludeTheHeaderAuthorizationWhenTsuruTokenFileExists(c *c
 	c.Assert(err, check.IsNil)
 	trans := cmdtest.Transport{Message: "", Status: http.StatusOK}
 	var buf bytes.Buffer
-	context := cmd.Context{
-		Stdout: &buf,
-	}
-	client := NewTerminalClient(&trans, &context, "test", "0.1.0", 2)
+	client := NewTerminalClient(TerminalClientOptions{
+		RoundTripper:  &trans,
+		Stdout:        &buf,
+		ClientName:    "test",
+		ClientVersion: "0.1.0",
+		Verbosity:     &TerminalClientVerbose,
+	})
 	_, err = client.Do(request)
 	c.Assert(err, check.IsNil)
 	c.Assert(request.Header.Get("Authorization"), check.Equals, "bearer mytoken")
@@ -244,15 +258,17 @@ func (s *S) TestShouldValidateVersion(c *check.C) {
 	var buf bytes.Buffer
 	request, err := http.NewRequest("GET", "/", nil)
 	c.Assert(err, check.IsNil)
-	context := cmd.Context{
-		Stderr: &buf,
-	}
 	trans := cmdtest.Transport{
 		Message: "",
 		Status:  http.StatusOK,
 		Headers: map[string][]string{"Supported-Tsuru": {"0.3"}},
 	}
-	client := NewTerminalClient(&trans, &context, "glb", "0.2.1", 0)
+	client := NewTerminalClient(TerminalClientOptions{
+		RoundTripper:  &trans,
+		Stderr:        &buf,
+		ClientName:    "glb",
+		ClientVersion: "0.2.1",
+	})
 	_, err = client.Do(request)
 	c.Assert(err, check.IsNil)
 	expected := `#####################################################################
@@ -275,11 +291,13 @@ func (s *S) TestShouldSkipValidationIfThereIsNoSupportedHeaderDeclared(c *check.
 	var buf bytes.Buffer
 	request, err := http.NewRequest("GET", "/", nil)
 	c.Assert(err, check.IsNil)
-	context := cmd.Context{
-		Stderr: &buf,
-	}
 	trans := cmdtest.Transport{Message: "", Status: http.StatusOK, Headers: map[string][]string{}}
-	client := NewTerminalClient(&trans, &context, "glb", "0.2.1", 0)
+	client := NewTerminalClient(TerminalClientOptions{
+		RoundTripper:  &trans,
+		Stdout:        &buf,
+		ClientName:    "glb",
+		ClientVersion: "0.2.1",
+	})
 	_, err = client.Do(request)
 	c.Assert(err, check.IsNil)
 	c.Assert(buf.String(), check.Equals, "")
@@ -289,11 +307,13 @@ func (s *S) TestShouldSkupValidationIfServerDoesNotReturnSupportedHeader(c *chec
 	var buf bytes.Buffer
 	request, err := http.NewRequest("GET", "/", nil)
 	c.Assert(err, check.IsNil)
-	context := cmd.Context{
-		Stderr: &buf,
-	}
 	trans := cmdtest.Transport{Message: "", Status: http.StatusOK}
-	client := NewTerminalClient(&trans, &context, "glb", "0.2.1", 0)
+	client := NewTerminalClient(TerminalClientOptions{
+		RoundTripper:  &trans,
+		Stdout:        &buf,
+		ClientName:    "glb",
+		ClientVersion: "0.2.1",
+	})
 	_, err = client.Do(request)
 	c.Assert(err, check.IsNil)
 	c.Assert(buf.String(), check.Equals, "")
@@ -304,10 +324,13 @@ func (s *S) TestShouldIncludeVerbosityHeader(c *check.C) {
 	c.Assert(err, check.IsNil)
 	trans := cmdtest.Transport{Message: "", Status: http.StatusOK}
 	var buf bytes.Buffer
-	context := cmd.Context{
-		Stdout: &buf,
-	}
-	client := NewTerminalClient(&trans, &context, "glb", "0.2.1", 2)
+	client := NewTerminalClient(TerminalClientOptions{
+		RoundTripper:  &trans,
+		Stdout:        &buf,
+		ClientName:    "glb",
+		ClientVersion: "0.2.1",
+		Verbosity:     &TerminalClientVerbose,
+	})
 	_, err = client.Do(request)
 	c.Assert(err, check.IsNil)
 	c.Assert(request.Header.Get(verbosityHeader), check.Equals, "2")
