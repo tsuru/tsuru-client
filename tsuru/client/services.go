@@ -106,7 +106,7 @@ func (s ServiceList) Run(ctx *cmd.Context) error {
 	if err != nil {
 		return err
 	}
-	resp, err := tsuruHTTP.DefaultClient.Do(req)
+	resp, err := tsuruHTTP.AuthenticatedClient.Do(req)
 	if err != nil {
 		return err
 	}
@@ -290,7 +290,7 @@ func (c *ServiceInstanceAdd) Run(ctx *cmd.Context) error {
 		return err
 	}
 	request.Header.Set("Content-Type", "application/x-www-form-urlencoded")
-	_, err = tsuruHTTP.DefaultClient.Do(request)
+	_, err = tsuruHTTP.AuthenticatedClient.Do(request)
 	if err != nil {
 		return err
 	}
@@ -465,7 +465,7 @@ func (sb *ServiceInstanceBind) Run(ctx *cmd.Context) error {
 		return err
 	}
 	request.Header.Set("Content-Type", "application/x-www-form-urlencoded")
-	resp, err := tsuruHTTP.DefaultClient.Do(request)
+	resp, err := tsuruHTTP.AuthenticatedClient.Do(request)
 	if err != nil {
 		return err
 	}
@@ -538,7 +538,7 @@ func (su *ServiceInstanceUnbind) Run(ctx *cmd.Context) error {
 	query.Set("noRestart", strconv.FormatBool(su.noRestart))
 	query.Set("force", strconv.FormatBool(su.force))
 	request.URL.RawQuery = query.Encode()
-	resp, err := tsuruHTTP.DefaultClient.Do(request)
+	resp, err := tsuruHTTP.AuthenticatedClient.Do(request)
 	if err != nil {
 		return err
 	}
@@ -620,7 +620,7 @@ func (c ServiceInstanceInfo) Run(ctx *cmd.Context) error {
 	if err != nil {
 		return err
 	}
-	resp, err := tsuruHTTP.DefaultClient.Do(request)
+	resp, err := tsuruHTTP.AuthenticatedClient.Do(request)
 	if err != nil {
 		return err
 	}
@@ -642,7 +642,7 @@ func (c ServiceInstanceInfo) Run(ctx *cmd.Context) error {
 	if err != nil {
 		return err
 	}
-	resp, err = tsuruHTTP.DefaultClient.Do(request)
+	resp, err = tsuruHTTP.AuthenticatedClient.Do(request)
 	if err != nil {
 		return err
 	}
@@ -1010,7 +1010,7 @@ func (c *ServiceInfo) WriteDoc(ctx *cmd.Context) error {
 	if err != nil {
 		return err
 	}
-	resp, err := tsuruHTTP.DefaultClient.Do(request)
+	resp, err := tsuruHTTP.AuthenticatedClient.Do(request)
 	if err != nil {
 		return err
 	}
@@ -1069,7 +1069,7 @@ func (c *ServiceInfo) fetchInstances(serviceName string) ([]ServiceInstanceModel
 	if err != nil {
 		return nil, err
 	}
-	resp, err := tsuruHTTP.DefaultClient.Do(request)
+	resp, err := tsuruHTTP.AuthenticatedClient.Do(request)
 	if err != nil {
 		return nil, err
 	}
@@ -1103,7 +1103,7 @@ func (c *ServiceInfo) fetchPlans(serviceName string) ([]plan, error) {
 	if err != nil {
 		return nil, err
 	}
-	resp, err := tsuruHTTP.DefaultClient.Do(request)
+	resp, err := tsuruHTTP.AuthenticatedClient.Do(request)
 	if err != nil {
 		return nil, err
 	}
@@ -1160,7 +1160,7 @@ func (c *ServiceInstanceRemove) Run(ctx *cmd.Context) error {
 	if err != nil {
 		return err
 	}
-	resp, err := tsuruHTTP.DefaultClient.Do(request)
+	resp, err := tsuruHTTP.AuthenticatedClient.Do(request)
 	if err != nil {
 		return err
 	}
@@ -1201,7 +1201,7 @@ func (c *ServiceInstanceGrant) Run(ctx *cmd.Context) error {
 	if err != nil {
 		return err
 	}
-	_, err = tsuruHTTP.DefaultClient.Do(request)
+	_, err = tsuruHTTP.AuthenticatedClient.Do(request)
 	if err != nil {
 		return err
 	}
@@ -1233,7 +1233,7 @@ func (c *ServiceInstanceRevoke) Run(ctx *cmd.Context) error {
 	if err != nil {
 		return err
 	}
-	_, err = tsuruHTTP.DefaultClient.Do(request)
+	_, err = tsuruHTTP.AuthenticatedClient.Do(request)
 	if err != nil {
 		return err
 	}

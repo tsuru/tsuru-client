@@ -138,7 +138,7 @@ func (c *AppLog) Run(context *cmd.Context) error {
 	if err != nil {
 		return err
 	}
-	response, err := tsuruHTTP.DefaultClient.Do(request)
+	response, err := tsuruHTTP.AuthenticatedClient.Do(request)
 	if err != nil {
 		return err
 	}

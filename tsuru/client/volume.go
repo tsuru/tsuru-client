@@ -80,7 +80,7 @@ func (c *VolumeCreate) Run(ctx *cmd.Context) error {
 		return err
 	}
 	request.Header.Set("Content-Type", "application/x-www-form-urlencoded")
-	_, err = tsuruHTTP.DefaultClient.Do(request)
+	_, err = tsuruHTTP.AuthenticatedClient.Do(request)
 	if err != nil {
 		return err
 	}
@@ -144,7 +144,7 @@ func (c *VolumeUpdate) Run(ctx *cmd.Context) error {
 		return err
 	}
 	request.Header.Set("Content-Type", "application/x-www-form-urlencoded")
-	_, err = tsuruHTTP.DefaultClient.Do(request)
+	_, err = tsuruHTTP.AuthenticatedClient.Do(request)
 	if err != nil {
 		return err
 	}
@@ -225,7 +225,7 @@ func (c *VolumeList) Run(ctx *cmd.Context) error {
 	if err != nil {
 		return err
 	}
-	rsp, err := tsuruHTTP.DefaultClient.Do(request)
+	rsp, err := tsuruHTTP.AuthenticatedClient.Do(request)
 	if err != nil {
 		return err
 	}
@@ -337,7 +337,7 @@ func (c *VolumeInfo) Run(ctx *cmd.Context) error {
 	if err != nil {
 		return err
 	}
-	rsp, err := tsuruHTTP.DefaultClient.Do(request)
+	rsp, err := tsuruHTTP.AuthenticatedClient.Do(request)
 	if err != nil {
 		return err
 	}
@@ -424,7 +424,7 @@ func (c *VolumePlansList) Run(ctx *cmd.Context) error {
 	if err != nil {
 		return err
 	}
-	rsp, err := tsuruHTTP.DefaultClient.Do(request)
+	rsp, err := tsuruHTTP.AuthenticatedClient.Do(request)
 	if err != nil {
 		return err
 	}
@@ -488,7 +488,7 @@ func (c *VolumeDelete) Run(ctx *cmd.Context) error {
 	if err != nil {
 		return err
 	}
-	_, err = tsuruHTTP.DefaultClient.Do(request)
+	_, err = tsuruHTTP.AuthenticatedClient.Do(request)
 	if err != nil {
 		return err
 	}
@@ -556,7 +556,7 @@ func (c *VolumeBind) Run(ctx *cmd.Context) error {
 		return err
 	}
 	request.Header.Set("Content-Type", "application/x-www-form-urlencoded")
-	resp, err := tsuruHTTP.DefaultClient.Do(request)
+	resp, err := tsuruHTTP.AuthenticatedClient.Do(request)
 	if err != nil {
 		return err
 	}
@@ -620,7 +620,7 @@ func (c *VolumeUnbind) Run(ctx *cmd.Context) error {
 	if err != nil {
 		return err
 	}
-	resp, err := tsuruHTTP.DefaultClient.Do(request)
+	resp, err := tsuruHTTP.AuthenticatedClient.Do(request)
 	if err != nil {
 		return err
 	}

@@ -51,7 +51,7 @@ func (c *AppRoutesRebuild) Run(ctx *cmd.Context) error {
 	if err != nil {
 		return err
 	}
-	rsp, err := tsuruHTTP.DefaultClient.Do(request)
+	rsp, err := tsuruHTTP.AuthenticatedClient.Do(request)
 	if err != nil {
 		return err
 	}

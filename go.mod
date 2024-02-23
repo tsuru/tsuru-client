@@ -19,8 +19,10 @@ require (
 	github.com/tsuru/go-tsuruclient v0.0.0-20231124151049-7b8d8ea2ee30
 	github.com/tsuru/tablecli v0.0.0-20190131152944-7ded8a3383c6
 	github.com/tsuru/tsuru v0.0.0-20240220172434-1ffd178d4e76
+	golang.org/x/net v0.20.0
 	golang.org/x/oauth2 v0.16.0
 	golang.org/x/sys v0.16.0
+	golang.org/x/term v0.16.0
 	gopkg.in/check.v1 v1.0.0-20201130134442-10cb98267c6c
 	gopkg.in/yaml.v2 v2.4.0
 	k8s.io/apimachinery v0.26.2
@@ -71,8 +73,6 @@ require (
 	github.com/tsuru/config v0.0.0-20201023175036-375aaee8b560 // indirect
 	golang.org/x/crypto v0.18.0 // indirect
 	golang.org/x/mod v0.8.0 // indirect
-	golang.org/x/net v0.20.0 // indirect
-	golang.org/x/term v0.16.0 // indirect
 	golang.org/x/text v0.14.0 // indirect
 	golang.org/x/time v0.3.0 // indirect
 	golang.org/x/tools v0.6.0 // indirect

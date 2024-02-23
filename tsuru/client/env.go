@@ -201,7 +201,7 @@ func (c *EnvSet) Run(context *cmd.Context) error {
 		return err
 	}
 	request.Header.Set("Content-Type", "application/x-www-form-urlencoded")
-	response, err := tsuruHTTP.DefaultClient.Do(request)
+	response, err := tsuruHTTP.AuthenticatedClient.Do(request)
 	if err != nil {
 		return err
 	}
@@ -285,7 +285,7 @@ func (c *EnvUnset) Run(context *cmd.Context) error {
 	if err != nil {
 		return err
 	}
-	response, err := tsuruHTTP.DefaultClient.Do(request)
+	response, err := tsuruHTTP.AuthenticatedClient.Do(request)
 	if err != nil {
 		return err
 	}
@@ -316,7 +316,7 @@ func requestEnvGetURL(c *EnvGet, args []string) ([]byte, error) {
 	if err != nil {
 		return nil, err
 	}
-	r, err := tsuruHTTP.DefaultClient.Do(request)
+	r, err := tsuruHTTP.AuthenticatedClient.Do(request)
 	if err != nil {
 		return nil, err
 	}

@@ -42,3 +42,12 @@ func open(url string) error {
 	}
 	return executor().Execute(opts)
 }
+
+var execut exec.Executor
+
+func executor() exec.Executor {
+	if execut == nil {
+		execut = exec.OsExecutor{}
+	}
+	return execut
+}

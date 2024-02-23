@@ -90,7 +90,7 @@ func (c *AppBuild) Run(context *cmd.Context) error {
 	if err != nil {
 		return err
 	}
-	_, err = tsuruHTTP.DefaultClient.Do(request)
+	_, err = tsuruHTTP.AuthenticatedClient.Do(request)
 	if err != nil {
 		return err
 	}
@@ -117,7 +117,7 @@ func (c *AppBuild) Run(context *cmd.Context) error {
 	if err = uploadFiles(context, request, buf, body, values, &archive); err != nil {
 		return err
 	}
-	resp, err := tsuruHTTP.DefaultClient.Do(request)
+	resp, err := tsuruHTTP.AuthenticatedClient.Do(request)
 	if err != nil {
 		return err
 	}

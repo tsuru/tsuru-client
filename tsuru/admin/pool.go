@@ -275,7 +275,7 @@ func (c *RemovePoolFromSchedulerCmd) Run(ctx *cmd.Context) error {
 	if err != nil {
 		return err
 	}
-	_, err = tsuruHTTP.DefaultClient.Do(req)
+	_, err = tsuruHTTP.AuthenticatedClient.Do(req)
 	if err != nil {
 		return err
 	}
@@ -309,7 +309,7 @@ func (AddTeamsToPoolCmd) Run(ctx *cmd.Context) error {
 		return err
 	}
 	req.Header.Set("Content-Type", "application/x-www-form-urlencoded")
-	_, err = tsuruHTTP.DefaultClient.Do(req)
+	_, err = tsuruHTTP.AuthenticatedClient.Do(req)
 	if err != nil {
 		return err
 	}
@@ -342,7 +342,7 @@ func (RemoveTeamsFromPoolCmd) Run(ctx *cmd.Context) error {
 	if err != nil {
 		return err
 	}
-	_, err = tsuruHTTP.DefaultClient.Do(req)
+	_, err = tsuruHTTP.AuthenticatedClient.Do(req)
 	if err != nil {
 		return err
 	}
@@ -379,7 +379,7 @@ func doRequest(url, method string, body []byte) error {
 		return err
 	}
 	req.Header.Set("Content-Type", "application/json")
-	_, err = tsuruHTTP.DefaultClient.Do(req)
+	_, err = tsuruHTTP.AuthenticatedClient.Do(req)
 	return err
 }
 
@@ -419,7 +419,7 @@ func (c *PoolConstraintList) Run(ctx *cmd.Context) error {
 	if err != nil {
 		return err
 	}
-	resp, err := tsuruHTTP.DefaultClient.Do(req)
+	resp, err := tsuruHTTP.AuthenticatedClient.Do(req)
 	if err != nil {
 		return err
 	}

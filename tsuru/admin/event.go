@@ -53,7 +53,7 @@ func (c *EventBlockList) Run(context *cmd.Context) error {
 		return err
 	}
 	request, _ := http.NewRequest("GET", url, nil)
-	resp, err := tsuruHTTP.DefaultClient.Do(request)
+	resp, err := tsuruHTTP.AuthenticatedClient.Do(request)
 	if err != nil {
 		return err
 	}
@@ -208,7 +208,7 @@ func (c *EventBlockRemove) Run(context *cmd.Context) error {
 		return err
 	}
 	request, _ := http.NewRequest(http.MethodDelete, url, nil)
-	_, err = tsuruHTTP.DefaultClient.Do(request)
+	_, err = tsuruHTTP.AuthenticatedClient.Do(request)
 	if err != nil {
 		return err
 	}

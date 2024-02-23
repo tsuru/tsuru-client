@@ -83,7 +83,7 @@ func (c *AppDeployList) Run(context *cmd.Context) error {
 	if err != nil {
 		return err
 	}
-	response, err := tsuruHTTP.DefaultClient.Do(request)
+	response, err := tsuruHTTP.AuthenticatedClient.Do(request)
 	if err != nil {
 		return err
 	}
@@ -309,7 +309,7 @@ func (c *AppDeploy) Run(context *cmd.Context) error {
 	}
 
 	c.m.Lock()
-	resp, err := tsuruHTTP.DefaultClient.Do(request)
+	resp, err := tsuruHTTP.AuthenticatedClient.Do(request)
 	if err != nil {
 		c.m.Unlock()
 		return err
@@ -430,7 +430,7 @@ func (c *AppDeployRollback) Run(context *cmd.Context) error {
 		return err
 	}
 	request.Header.Add("Content-Type", "application/x-www-form-urlencoded")
-	response, err := tsuruHTTP.DefaultClient.Do(request)
+	response, err := tsuruHTTP.AuthenticatedClient.Do(request)
 	if err != nil {
 		return err
 	}
@@ -480,7 +480,7 @@ func (c *AppDeployRebuild) Run(context *cmd.Context) error {
 		return err
 	}
 	request.Header.Add("Content-Type", "application/x-www-form-urlencoded")
-	response, err := tsuruHTTP.DefaultClient.Do(request)
+	response, err := tsuruHTTP.AuthenticatedClient.Do(request)
 	if err != nil {
 		return err
 	}
@@ -550,7 +550,7 @@ func (c *AppDeployRollbackUpdate) Run(context *cmd.Context) error {
 		return err
 	}
 	request.Header.Add("Content-Type", "application/x-www-form-urlencoded")
-	_, err = tsuruHTTP.DefaultClient.Do(request)
+	_, err = tsuruHTTP.AuthenticatedClient.Do(request)
 	return err
 }
 
