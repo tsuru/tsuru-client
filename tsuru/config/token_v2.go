@@ -6,7 +6,9 @@ package config
 
 import (
 	"encoding/json"
+	"os"
 
+	"github.com/tsuru/tsuru/fs"
 	"golang.org/x/oauth2"
 )
 
@@ -15,17 +17,22 @@ type TokenV2 struct {
 	OAuth2Token *oauth2.Token `json:"oauth2_token"`
 }
 
+const (
+	tokenV2Filename  = "token-v2.json"
+	tokenV2Directory = "token-v2.d"
+)
+
 func WriteTokenV2(token TokenV2) error {
 	tokenPaths := []string{
-		JoinWithUserDir(".tsuru", "token-v2.json"),
+		JoinWithUserDir(".tsuru", tokenV2Filename),
 	}
 	targetLabel, err := GetTargetLabel()
 	if err == nil {
-		err := Filesystem().MkdirAll(JoinWithUserDir(".tsuru", "token-v2.d"), 0700)
+		err := Filesystem().MkdirAll(JoinWithUserDir(".tsuru", tokenV2Directory), 0700)
 		if err != nil {
 			return err
 		}
-		tokenPaths = append(tokenPaths, JoinWithUserDir(".tsuru", "token-v2.d", targetLabel+".json"))
+		tokenPaths = append(tokenPaths, JoinWithUserDir(".tsuru", tokenV2Directory, targetLabel+".json"))
 	}
 
 	for _, tokenPath := range tokenPaths {
@@ -45,4 +52,32 @@ func WriteTokenV2(token TokenV2) error {
 
 	}
 	return nil
+}
+
+func ReadTokenV2() (*TokenV2, error) {
+	tokenPaths := []string{
+		JoinWithUserDir(".tsuru", tokenV2Filename),
+	}
+	targetLabel, err := GetTargetLabel()
+	if err == nil {
+		tokenPaths = append([]string{JoinWithUserDir(".tsuru", tokenV2Directory, targetLabel+".json")}, tokenPaths...)
+	}
+	for _, tokenPath := range tokenPaths {
+		var tkFile fs.File
+		tkFile, err = Filesystem().Open(tokenPath)
+		if err == nil {
+			defer tkFile.Close()
+
+			t := TokenV2{}
+			err = json.NewDecoder(tkFile).Decode(&t)
+			if err != nil {
+				return nil, err
+			}
+			return &t, nil
+		}
+	}
+	if os.IsNotExist(err) {
+		return nil, nil
+	}
+	return nil, err
 }

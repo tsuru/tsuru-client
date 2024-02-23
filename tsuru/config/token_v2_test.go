@@ -85,3 +85,68 @@ func (s *S) TestWriteTokenV2WithTarget(c *check.C) {
 	c.Assert(t.OAuth2Token.Expiry, check.Not(check.IsNil))
 	c.Assert(t.OAuth2Token.RefreshToken, check.Equals, "321")
 }
+
+func (s *S) TestReadTokenV2(c *check.C) {
+	rfs := &fstest.RecordingFs{}
+	SetFileSystem(rfs)
+	defer func() {
+		ResetFileSystem()
+	}()
+	initTestTarget()
+
+	f, err := Filesystem().Create(JoinWithUserDir(".tsuru", "token-v2.d", "test.json"))
+	c.Assert(err, check.IsNil)
+	f.WriteString(`{
+		"scheme": "oidc",
+		"oauth2_token": {
+			"access_token": "321",
+			"refresh_token": "123"
+		}
+	}`)
+
+	token, err := ReadTokenV2()
+	c.Assert(err, check.IsNil)
+	c.Assert(token, check.DeepEquals, &TokenV2{
+		Scheme: "oidc",
+		OAuth2Token: &oauth2.Token{
+			AccessToken:  "321",
+			RefreshToken: "123",
+		},
+	})
+	tokenPath := JoinWithUserDir(".tsuru", "token-v2.d", "test.json")
+	c.Assert(rfs.HasAction("open "+tokenPath), check.Equals, true)
+	tokenPath = JoinWithUserDir(".tsuru", "token-v2.json")
+	c.Assert(rfs.HasAction("open "+tokenPath), check.Equals, false)
+}
+
+func (s *S) TestReadTokenV2Fallback(c *check.C) {
+	rfs := &fstest.RecordingFs{}
+	SetFileSystem(rfs)
+	defer func() {
+		ResetFileSystem()
+	}()
+
+	initTestTarget()
+	f, err := Filesystem().Create(JoinWithUserDir(".tsuru", "token-v2.json"))
+	c.Assert(err, check.IsNil)
+	f.WriteString(`{
+		"scheme": "oidc",
+		"oauth2_token": {
+			"access_token": "321",
+			"refresh_token": "123"
+		}
+	}`)
+	token, err := ReadTokenV2()
+	c.Assert(err, check.IsNil)
+	c.Assert(token, check.DeepEquals, &TokenV2{
+		Scheme: "oidc",
+		OAuth2Token: &oauth2.Token{
+			AccessToken:  "321",
+			RefreshToken: "123",
+		},
+	})
+	tokenPath := JoinWithUserDir(".tsuru", "token-v2.d", "test.json")
+	c.Assert(rfs.HasAction("open "+tokenPath), check.Equals, true)
+	tokenPath = JoinWithUserDir(".tsuru", "token-v2.json")
+	c.Assert(rfs.HasAction("open "+tokenPath), check.Equals, true)
+}
