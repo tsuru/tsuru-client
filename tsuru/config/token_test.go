@@ -6,6 +6,7 @@ package config
 
 import (
 	"io"
+	"os"
 
 	"github.com/tsuru/tsuru/fs/fstest"
 	"gopkg.in/check.v1"
@@ -46,6 +47,62 @@ func (s *S) TestWriteTokenWithTarget(c *check.C) {
 	fil, _ = Filesystem().Open(tokenPath2)
 	b, _ = io.ReadAll(fil)
 	c.Assert(string(b), check.Equals, "abc")
+}
+
+func (s *S) TestReadToken(c *check.C) {
+	os.Unsetenv("TSURU_TOKEN")
+	rfs := &fstest.RecordingFs{}
+	SetFileSystem(rfs)
+	initTestTarget()
+	f, err := Filesystem().Create(JoinWithUserDir(".tsuru", "token.d", "test"))
+	c.Assert(err, check.IsNil)
+	f.WriteString("mytoken")
+	defer func() {
+		ResetFileSystem()
+	}()
+	token, err := ReadToken()
+	c.Assert(err, check.IsNil)
+	c.Assert(token, check.Equals, "mytoken")
+	tokenPath := JoinWithUserDir(".tsuru", "token.d", "test")
+	c.Assert(rfs.HasAction("open "+tokenPath), check.Equals, true)
+	tokenPath = JoinWithUserDir(".tsuru", "token")
+	c.Assert(rfs.HasAction("open "+tokenPath), check.Equals, false)
+}
+
+func (s *S) TestReadTokenFallback(c *check.C) {
+	os.Unsetenv("TSURU_TOKEN")
+	rfs := &fstest.RecordingFs{}
+	SetFileSystem(rfs)
+	defer func() {
+		ResetFileSystem()
+	}()
+
+	initTestTarget()
+	f, err := Filesystem().Create(JoinWithUserDir(".tsuru", "token"))
+	c.Assert(err, check.IsNil)
+	f.WriteString("mytoken")
+	token, err := ReadToken()
+	c.Assert(err, check.IsNil)
+	c.Assert(token, check.Equals, "mytoken")
+	tokenPath := JoinWithUserDir(".tsuru", "token.d", "test")
+	c.Assert(rfs.HasAction("open "+tokenPath), check.Equals, true)
+	tokenPath = JoinWithUserDir(".tsuru", "token")
+	c.Assert(rfs.HasAction("open "+tokenPath), check.Equals, true)
+}
+
+func (s *S) TestReadTokenFileNotFound(c *check.C) {
+	os.Unsetenv("TSURU_TOKEN")
+	errFs := &fstest.FileNotFoundFs{}
+	SetFileSystem(errFs)
+	defer func() {
+		ResetFileSystem()
+	}()
+	token, err := ReadToken()
+	c.Assert(err, check.IsNil)
+	tokenPath := JoinWithUserDir(".tsuru", "token")
+	c.Assert(err, check.IsNil)
+	c.Assert(errFs.HasAction("open "+tokenPath), check.Equals, true)
+	c.Assert(token, check.Equals, "")
 }
 
 func initTestTarget() {
