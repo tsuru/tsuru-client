@@ -343,7 +343,7 @@ func (c *AppRoutersList) Run(context *cmd.Context) error {
 	if err != nil {
 		return err
 	}
-	response, err := tsuruHTTP.DefaultClient.Do(request)
+	response, err := tsuruHTTP.AuthenticatedClient.Do(request)
 	if err != nil {
 		return err
 	}
@@ -447,7 +447,7 @@ func (c *AppRoutersAdd) Run(context *cmd.Context) error {
 		return err
 	}
 	request.Header.Set("Content-Type", "application/x-www-form-urlencoded")
-	_, err = tsuruHTTP.DefaultClient.Do(request)
+	_, err = tsuruHTTP.AuthenticatedClient.Do(request)
 	if err != nil {
 		return err
 	}
@@ -504,7 +504,7 @@ func (c *AppRoutersUpdate) Run(context *cmd.Context) error {
 		return err
 	}
 	request.Header.Set("Content-Type", "application/x-www-form-urlencoded")
-	_, err = tsuruHTTP.DefaultClient.Do(request)
+	_, err = tsuruHTTP.AuthenticatedClient.Do(request)
 	if err != nil {
 		return err
 	}
@@ -539,7 +539,7 @@ func (c *AppRoutersRemove) Run(context *cmd.Context) error {
 	if err != nil {
 		return err
 	}
-	_, err = tsuruHTTP.DefaultClient.Do(request)
+	_, err = tsuruHTTP.AuthenticatedClient.Do(request)
 	if err != nil {
 		return err
 	}

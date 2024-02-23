@@ -43,11 +43,11 @@ func (s *S) SetUpTest(c *check.C) {
 
 func (s *S) TearDownTest(c *check.C) {
 	formatter.LocalTZ = &s.defaultLocation
-	tsuruHTTP.DefaultClient = &http.Client{}
+	tsuruHTTP.AuthenticatedClient = &http.Client{}
 }
 
 func (s *S) setupFakeTransport(rt http.RoundTripper) {
-	tsuruHTTP.DefaultClient = tsuruHTTP.NewTerminalClient(rt, nil, "test", "0.1.0", 0)
+	tsuruHTTP.AuthenticatedClient = tsuruHTTP.NewTerminalClient(rt, nil, "test", "0.1.0", 0)
 }
 
 var _ = check.Suite(&S{})

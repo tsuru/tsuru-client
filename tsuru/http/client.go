@@ -14,7 +14,7 @@ import (
 	"github.com/tsuru/tsuru/cmd"
 )
 
-var DefaultClient = &http.Client{}
+var AuthenticatedClient = &http.Client{}
 
 func NewTerminalClient(rt http.RoundTripper, context *cmd.Context, clientName, clientVersion string, verbosity int) *http.Client {
 	stdout := io.Discard
@@ -42,18 +42,14 @@ func NewTerminalClient(rt http.RoundTripper, context *cmd.Context, clientName, c
 
 func TsuruClientFromEnvironment() (*tsuru.APIClient, error) {
 	cfg := &tsuru.Configuration{
-		HTTPClient: DefaultClient,
+		HTTPClient:    AuthenticatedClient,
+		DefaultHeader: map[string]string{},
 	}
 
 	var err error
-	if cfg.BasePath == "" {
-		cfg.BasePath, err = config.GetTarget()
-		if err != nil {
-			return nil, err
-		}
-	}
-	if cfg.DefaultHeader == nil {
-		cfg.DefaultHeader = map[string]string{}
+	cfg.BasePath, err = config.GetTarget()
+	if err != nil {
+		return nil, err
 	}
 
 	if _, authSet := cfg.DefaultHeader["Authorization"]; !authSet {

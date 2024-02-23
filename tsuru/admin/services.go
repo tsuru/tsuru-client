@@ -75,7 +75,7 @@ func (c *ServiceCreate) Run(context *cmd.Context) error {
 		return err
 	}
 	request.Header.Set("Content-Type", "application/x-www-form-urlencoded")
-	_, err = tsuruHTTP.DefaultClient.Do(request)
+	_, err = tsuruHTTP.AuthenticatedClient.Do(request)
 	if err != nil {
 		return err
 	}
@@ -101,7 +101,7 @@ func (c *ServiceDestroy) Run(context *cmd.Context) error {
 	if err != nil {
 		return err
 	}
-	_, err = tsuruHTTP.DefaultClient.Do(request)
+	_, err = tsuruHTTP.AuthenticatedClient.Do(request)
 	if err != nil {
 		return err
 	}
@@ -156,7 +156,7 @@ func (c *ServiceUpdate) Run(ctx *cmd.Context) error {
 		return err
 	}
 	request.Header.Set("Content-Type", "application/x-www-form-urlencoded")
-	resp, err := tsuruHTTP.DefaultClient.Do(request)
+	resp, err := tsuruHTTP.AuthenticatedClient.Do(request)
 	if err != nil {
 		return err
 	}
@@ -195,7 +195,7 @@ func (c *ServiceDocAdd) Run(ctx *cmd.Context) error {
 		return err
 	}
 	request.Header.Set("Content-Type", "application/x-www-form-urlencoded")
-	_, err = tsuruHTTP.DefaultClient.Do(request)
+	_, err = tsuruHTTP.AuthenticatedClient.Do(request)
 	if err != nil {
 		return err
 	}
@@ -215,7 +215,7 @@ func (c *ServiceDocGet) Run(ctx *cmd.Context) error {
 	if err != nil {
 		return err
 	}
-	resp, err := tsuruHTTP.DefaultClient.Do(request)
+	resp, err := tsuruHTTP.AuthenticatedClient.Do(request)
 	if err != nil {
 		return err
 	}

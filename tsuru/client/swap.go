@@ -97,6 +97,6 @@ func makeSwap(url string, body io.Reader) error {
 		return err
 	}
 	request.Header.Set("Content-Type", "application/x-www-form-urlencoded")
-	_, err = tsuruHTTP.DefaultClient.Do(request)
+	_, err = tsuruHTTP.AuthenticatedClient.Do(request)
 	return err
 }

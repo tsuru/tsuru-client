@@ -39,7 +39,7 @@ func (*UserQuotaView) Run(context *cmd.Context) error {
 		return err
 	}
 	request, _ := http.NewRequest("GET", url, nil)
-	resp, err := tsuruHTTP.DefaultClient.Do(request)
+	resp, err := tsuruHTTP.AuthenticatedClient.Do(request)
 	if err != nil {
 		return err
 	}
@@ -81,7 +81,7 @@ func (*UserChangeQuota) Run(context *cmd.Context) error {
 	v.Set("limit", limit)
 	request, _ := http.NewRequest("PUT", u, bytes.NewBufferString(v.Encode()))
 	request.Header.Set("Content-Type", "application/x-www-form-urlencoded")
-	_, err = tsuruHTTP.DefaultClient.Do(request)
+	_, err = tsuruHTTP.AuthenticatedClient.Do(request)
 	if err != nil {
 		return err
 	}
@@ -126,7 +126,7 @@ func (c *AppQuotaView) Run(context *cmd.Context) error {
 		return err
 	}
 	request, _ := http.NewRequest("GET", url, nil)
-	resp, err := tsuruHTTP.DefaultClient.Do(request)
+	resp, err := tsuruHTTP.AuthenticatedClient.Do(request)
 	if err != nil {
 		return err
 	}
@@ -180,7 +180,7 @@ func (c *AppQuotaChange) Run(context *cmd.Context) error {
 	v.Set("limit", limit)
 	request, _ := http.NewRequest("PUT", u, bytes.NewBufferString(v.Encode()))
 	request.Header.Set("Content-Type", "application/x-www-form-urlencoded")
-	_, err = tsuruHTTP.DefaultClient.Do(request)
+	_, err = tsuruHTTP.AuthenticatedClient.Do(request)
 	if err != nil {
 		return err
 	}
@@ -205,7 +205,7 @@ func (*TeamQuotaView) Run(context *cmd.Context) error {
 		return err
 	}
 	request, _ := http.NewRequest("GET", url, nil)
-	resp, err := tsuruHTTP.DefaultClient.Do(request)
+	resp, err := tsuruHTTP.AuthenticatedClient.Do(request)
 	if err != nil {
 		return err
 	}
@@ -247,7 +247,7 @@ func (*TeamChangeQuota) Run(context *cmd.Context) error {
 	v.Set("limit", limit)
 	request, _ := http.NewRequest("PUT", u, bytes.NewBufferString(v.Encode()))
 	request.Header.Set("Content-Type", "application/x-www-form-urlencoded")
-	_, err = tsuruHTTP.DefaultClient.Do(request)
+	_, err = tsuruHTTP.AuthenticatedClient.Do(request)
 	if err != nil {
 		return err
 	}

@@ -262,7 +262,7 @@ func (c *PlanList) Run(context *cmd.Context) error {
 		return err
 	}
 	var plans []apptypes.Plan
-	resp, err := tsuruHTTP.DefaultClient.Do(request)
+	resp, err := tsuruHTTP.AuthenticatedClient.Do(request)
 	if err != nil {
 		return err
 	}

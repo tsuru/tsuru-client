@@ -70,7 +70,7 @@ func (c *ShellToContainerCmd) Run(context *cmd.Context) error {
 	if err != nil {
 		return err
 	}
-	_, err = tsuruHTTP.DefaultClient.Do(request)
+	_, err = tsuruHTTP.AuthenticatedClient.Do(request)
 	if err != nil {
 		return err
 	}

@@ -61,7 +61,7 @@ func (c *AppRun) Run(context *cmd.Context) error {
 		return err
 	}
 	request.Header.Set("Content-Type", "application/x-www-form-urlencoded")
-	r, err := tsuruHTTP.DefaultClient.Do(request)
+	r, err := tsuruHTTP.AuthenticatedClient.Do(request)
 	if err != nil {
 		return err
 	}

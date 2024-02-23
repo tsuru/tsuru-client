@@ -67,7 +67,7 @@ func (c *UnitAdd) Run(context *cmd.Context) error {
 		return err
 	}
 	request.Header.Add("Content-Type", "application/x-www-form-urlencoded")
-	response, err := tsuruHTTP.DefaultClient.Do(request)
+	response, err := tsuruHTTP.AuthenticatedClient.Do(request)
 	if err != nil {
 		return err
 	}
@@ -120,7 +120,7 @@ func (c *UnitRemove) Run(context *cmd.Context) error {
 	if err != nil {
 		return err
 	}
-	response, err := tsuruHTTP.DefaultClient.Do(request)
+	response, err := tsuruHTTP.AuthenticatedClient.Do(request)
 	if err != nil {
 		return err
 	}
@@ -181,7 +181,7 @@ func (c *UnitKill) Run(context *cmd.Context) error {
 	if err != nil {
 		return err
 	}
-	response, err := tsuruHTTP.DefaultClient.Do(request)
+	response, err := tsuruHTTP.AuthenticatedClient.Do(request)
 	if err != nil {
 		return err
 	}
@@ -230,7 +230,7 @@ func (c *UnitSet) Run(context *cmd.Context) error {
 	if err != nil {
 		return err
 	}
-	response, err := tsuruHTTP.DefaultClient.Do(request)
+	response, err := tsuruHTTP.AuthenticatedClient.Do(request)
 	if err != nil {
 		return err
 	}
@@ -302,7 +302,7 @@ func (c *UnitSet) Run(context *cmd.Context) error {
 		}
 
 		request.Header.Add("Content-Type", "application/x-www-form-urlencoded")
-		response, err := tsuruHTTP.DefaultClient.Do(request)
+		response, err := tsuruHTTP.AuthenticatedClient.Do(request)
 		if err != nil {
 			return err
 		}
@@ -327,7 +327,7 @@ func (c *UnitSet) Run(context *cmd.Context) error {
 			return err
 		}
 
-		response, err := tsuruHTTP.DefaultClient.Do(request)
+		response, err := tsuruHTTP.AuthenticatedClient.Do(request)
 		if err != nil {
 			return err
 		}

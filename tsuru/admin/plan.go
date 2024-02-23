@@ -81,7 +81,7 @@ func (c *PlanCreate) Run(context *cmd.Context) error {
 		return err
 	}
 	request.Header.Set("Content-Type", "application/x-www-form-urlencoded")
-	_, err = tsuruHTTP.DefaultClient.Do(request)
+	_, err = tsuruHTTP.AuthenticatedClient.Do(request)
 	if err != nil {
 		fmt.Fprintf(context.Stdout, "Failed to create plan!\n")
 		return err
@@ -113,7 +113,7 @@ func (c *PlanRemove) Run(context *cmd.Context) error {
 	if err != nil {
 		return err
 	}
-	_, err = tsuruHTTP.DefaultClient.Do(request)
+	_, err = tsuruHTTP.AuthenticatedClient.Do(request)
 	if err != nil {
 		fmt.Fprintf(context.Stdout, "Failed to remove plan!\n")
 		return err

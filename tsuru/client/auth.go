@@ -68,7 +68,7 @@ func (c *UserCreate) Run(context *cmd.Context) error {
 		return err
 	}
 	request.Header.Set("Content-Type", "application/x-www-form-urlencoded")
-	resp, err := tsuruHTTP.DefaultClient.Do(request)
+	resp, err := tsuruHTTP.AuthenticatedClient.Do(request)
 	if resp != nil {
 		if resp.StatusCode == http.StatusNotFound ||
 			resp.StatusCode == http.StatusMethodNotAllowed {
@@ -97,7 +97,7 @@ func (c *UserRemove) currentUserEmail() (string, error) {
 		return "", err
 	}
 	request, _ := http.NewRequest("GET", u, nil)
-	resp, err := tsuruHTTP.DefaultClient.Do(request)
+	resp, err := tsuruHTTP.AuthenticatedClient.Do(request)
 	if err != nil {
 		return "", err
 	}
@@ -142,7 +142,7 @@ func (c *UserRemove) Run(context *cmd.Context) error {
 	if err != nil {
 		return err
 	}
-	_, err = tsuruHTTP.DefaultClient.Do(request)
+	_, err = tsuruHTTP.AuthenticatedClient.Do(request)
 	if err != nil {
 		return err
 	}
@@ -411,7 +411,7 @@ func (c *TeamInfo) Run(ctx *cmd.Context) error {
 	if err != nil {
 		return err
 	}
-	resp, err := tsuruHTTP.DefaultClient.Do(request)
+	resp, err := tsuruHTTP.AuthenticatedClient.Do(request)
 	if err != nil {
 		return err
 	}
@@ -526,7 +526,7 @@ func (c *ChangePassword) Run(context *cmd.Context) error {
 		return err
 	}
 	request.Header.Set("Content-Type", "application/x-www-form-urlencoded")
-	_, err = tsuruHTTP.DefaultClient.Do(request)
+	_, err = tsuruHTTP.AuthenticatedClient.Do(request)
 	if err != nil {
 		return err
 	}
@@ -588,7 +588,7 @@ func (c *ResetPassword) Run(context *cmd.Context) error {
 		return err
 	}
 	request, _ := http.NewRequest("POST", url, nil)
-	_, err = tsuruHTTP.DefaultClient.Do(request)
+	_, err = tsuruHTTP.AuthenticatedClient.Do(request)
 	if err != nil {
 		return err
 	}
@@ -634,7 +634,7 @@ func (c *ShowAPIToken) Run(context *cmd.Context) error {
 	if err != nil {
 		return err
 	}
-	resp, err := tsuruHTTP.DefaultClient.Do(request)
+	resp, err := tsuruHTTP.AuthenticatedClient.Do(request)
 	if err != nil {
 		return err
 	}
@@ -692,7 +692,7 @@ func (c *RegenerateAPIToken) Run(context *cmd.Context) error {
 	if err != nil {
 		return err
 	}
-	resp, err := tsuruHTTP.DefaultClient.Do(request)
+	resp, err := tsuruHTTP.AuthenticatedClient.Do(request)
 	if err != nil {
 		return err
 	}

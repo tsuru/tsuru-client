@@ -46,7 +46,7 @@ func (p *PlatformList) Run(context *cmd.Context) error {
 		return err
 	}
 	var platforms []platform
-	resp, err := tsuruHTTP.DefaultClient.Do(request)
+	resp, err := tsuruHTTP.AuthenticatedClient.Do(request)
 	if err != nil {
 		return err
 	}
@@ -154,7 +154,7 @@ func (p *PlatformAdd) Run(context *cmd.Context) error {
 		return err
 	}
 	request.Header.Add("Content-Type", writer.FormDataContentType())
-	response, err := tsuruHTTP.DefaultClient.Do(request)
+	response, err := tsuruHTTP.AuthenticatedClient.Do(request)
 	if err != nil {
 		return err
 	}
@@ -251,7 +251,7 @@ func (p *PlatformUpdate) Run(context *cmd.Context) error {
 		return err
 	}
 	request.Header.Add("Content-Type", writer.FormDataContentType())
-	response, err := tsuruHTTP.DefaultClient.Do(request)
+	response, err := tsuruHTTP.AuthenticatedClient.Do(request)
 	if err != nil {
 		return err
 	}
@@ -286,7 +286,7 @@ func (p *PlatformRemove) Run(context *cmd.Context) error {
 	if err != nil {
 		return err
 	}
-	_, err = tsuruHTTP.DefaultClient.Do(request)
+	_, err = tsuruHTTP.AuthenticatedClient.Do(request)
 	if err != nil {
 		fmt.Fprintf(context.Stdout, "Failed to remove platform!\n")
 		return err

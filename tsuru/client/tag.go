@@ -100,7 +100,7 @@ func getFromURL(path string) ([]byte, error) {
 	if err != nil {
 		return nil, err
 	}
-	response, err := tsuruHTTP.DefaultClient.Do(request)
+	response, err := tsuruHTTP.AuthenticatedClient.Do(request)
 	if err != nil {
 		return nil, err
 	}

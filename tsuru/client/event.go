@@ -112,7 +112,7 @@ func (c *EventList) Run(context *cmd.Context) error {
 	if err != nil {
 		return err
 	}
-	response, err := tsuruHTTP.DefaultClient.Do(request)
+	response, err := tsuruHTTP.AuthenticatedClient.Do(request)
 	if err != nil {
 		return err
 	}
@@ -233,7 +233,7 @@ func (c *EventInfo) Run(context *cmd.Context) error {
 	if err != nil {
 		return err
 	}
-	response, err := tsuruHTTP.DefaultClient.Do(request)
+	response, err := tsuruHTTP.AuthenticatedClient.Do(request)
 	if err != nil {
 		return err
 	}
@@ -444,7 +444,7 @@ func (c *EventCancel) Run(context *cmd.Context) error {
 		return err
 	}
 	request.Header.Set("Content-Type", "application/x-www-form-urlencoded")
-	_, err = tsuruHTTP.DefaultClient.Do(request)
+	_, err = tsuruHTTP.AuthenticatedClient.Do(request)
 	if err != nil {
 		return err
 	}
