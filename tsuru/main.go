@@ -13,6 +13,7 @@ import (
 	"github.com/tsuru/tsuru-client/tsuru/client"
 	"github.com/tsuru/tsuru-client/tsuru/config"
 	"github.com/tsuru/tsuru-client/tsuru/config/selfupdater"
+	tsuruHTTP "github.com/tsuru/tsuru-client/tsuru/http"
 	"github.com/tsuru/tsuru/cmd"
 )
 
@@ -239,6 +240,8 @@ func recoverCmdPanicExitError() {
 }
 
 func main() {
+	verbosity := 0 // TODO: recover verbosity from manager
+
 	defer recoverCmdPanicExitError()
 	defer config.SaveChangesWithTimeout()
 
@@ -246,6 +249,15 @@ func main() {
 	defer selfupdater.VerifyLatestVersion(checkVerResult)
 
 	name := cmd.ExtractProgramName(os.Args[0])
+
+	tsuruHTTP.AuthenticatedClient = tsuruHTTP.NewTerminalClient(tsuruHTTP.TerminalClientOptions{
+		ClientName:    name,
+		ClientVersion: version,
+		Stdout:        os.Stdout,
+		Stderr:        os.Stderr,
+		Verbosity:     &verbosity,
+	})
+
 	m := buildManager(name)
 	m.Run(os.Args[1:])
 }

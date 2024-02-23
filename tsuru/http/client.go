@@ -11,31 +11,43 @@ import (
 
 	"github.com/tsuru/go-tsuruclient/pkg/tsuru"
 	"github.com/tsuru/tsuru-client/tsuru/config"
-	"github.com/tsuru/tsuru/cmd"
 )
 
 var AuthenticatedClient = &http.Client{}
 
-func NewTerminalClient(rt http.RoundTripper, context *cmd.Context, clientName, clientVersion string, verbosity int) *http.Client {
+var (
+	TerminalClientOnlyRequest = 1
+	TerminalClientVerbose     = 2
+)
+
+type TerminalClientOptions struct {
+	RoundTripper  http.RoundTripper
+	ClientName    string
+	ClientVersion string
+	Stdout        io.Writer
+	Stderr        io.Writer
+	Verbosity     *int
+}
+
+func NewTerminalClient(opts TerminalClientOptions) *http.Client {
 	stdout := io.Discard
 	stderr := io.Discard
 
-	if context != nil {
-		if context.Stdout != nil {
-			stdout = context.Stdout
-		}
-
-		if context.Stderr != nil {
-			stderr = context.Stderr
-		}
+	if opts.Stdout != nil {
+		stdout = opts.Stdout
 	}
+
+	if opts.Stderr != nil {
+		stderr = opts.Stderr
+	}
+
 	transport := &TerminalRoundTripper{
-		RoundTripper:   rt,
+		RoundTripper:   opts.RoundTripper,
 		Stdout:         stdout,
 		Stderr:         stderr,
-		Verbosity:      &verbosity,
-		Progname:       clientName,
-		CurrentVersion: clientVersion,
+		Verbosity:      opts.Verbosity,
+		Progname:       opts.ClientName,
+		CurrentVersion: opts.ClientVersion,
 	}
 	return &http.Client{Transport: transport}
 }
