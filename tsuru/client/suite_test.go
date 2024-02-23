@@ -11,6 +11,7 @@ import (
 	"time"
 
 	"github.com/ajg/form"
+	"github.com/tsuru/tsuru-client/tsuru/config"
 	"github.com/tsuru/tsuru-client/tsuru/formatter"
 	tsuruHTTP "github.com/tsuru/tsuru-client/tsuru/http"
 	"gopkg.in/check.v1"
@@ -22,26 +23,24 @@ type S struct {
 }
 
 func (s *S) SetUpSuite(c *check.C) {
-	os.Setenv("TSURU_TARGET", "http://localhost:8080")
-	os.Setenv("TSURU_TOKEN", "sometoken")
 	form.DefaultEncoder = form.DefaultEncoder.UseJSONTags(false)
 	form.DefaultDecoder = form.DefaultDecoder.UseJSONTags(false)
 }
 
-func (s *S) TearDownSuite(c *check.C) {
-	os.Unsetenv("TSURU_TARGET")
-	os.Unsetenv("TSURU_TOKEN")
-}
-
 func (s *S) SetUpTest(c *check.C) {
+	os.Setenv("TSURU_TARGET", "http://localhost:8080")
+	os.Setenv("TSURU_TOKEN", "sometoken")
 	s.defaultLocation = *formatter.LocalTZ
 	location, err := time.LoadLocation("US/Central")
 	if err == nil {
 		formatter.LocalTZ = location
 	}
+	config.ResetFileSystem()
 }
 
 func (s *S) TearDownTest(c *check.C) {
+	os.Unsetenv("TSURU_TARGET")
+	os.Unsetenv("TSURU_TOKEN")
 	formatter.LocalTZ = &s.defaultLocation
 }
 
