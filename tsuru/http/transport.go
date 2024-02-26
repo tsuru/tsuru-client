@@ -71,10 +71,6 @@ func (v *TerminalRoundTripper) RoundTrip(req *http.Request) (*http.Response, err
 	req.Header.Add(verbosityHeader, strconv.Itoa(*verbosity))
 	req.Close = true
 
-	if token, err := config.ReadToken(); err == nil && token != "" {
-		req.Header.Set("Authorization", "bearer "+token)
-	}
-
 	if *verbosity >= TerminalClientOnlyRequest {
 		fmt.Fprintf(v.Stdout, "*************************** <Request uri=%q> **********************************\n", req.URL.RequestURI())
 		requestDump, err := httputil.DumpRequest(req, true)
@@ -106,15 +102,12 @@ func (v *TerminalRoundTripper) RoundTrip(req *http.Request) (*http.Response, err
 		return nil, err
 	}
 
-	if response.StatusCode == http.StatusUnauthorized {
-		return response, errUnauthorized
-	}
-
 	supported := response.Header.Get(versionHeader)
 	if !validateVersion(supported, v.CurrentVersion) {
 		fmt.Fprintf(v.Stderr, invalidVersionFormat, v.Progname, supported, v.CurrentVersion)
 	}
 	if response.StatusCode == http.StatusUnauthorized {
+		fmt.Fprintf(v.Stderr, "Session expired, please run: tsuru login\n")
 		return nil, errUnauthorized
 	}
 	if response.StatusCode > 399 {
@@ -174,4 +167,27 @@ func validateVersion(supported, current string) bool {
 		return false
 	}
 	return vCurrent.Compare(vSupported) >= 0
+}
+
+type TokenV1RoundTripper struct {
+	http.RoundTripper
+}
+
+func (v *TokenV1RoundTripper) RoundTrip(req *http.Request) (*http.Response, error) {
+	roundTripper := v.RoundTripper
+	if roundTripper == nil {
+		roundTripper = defaultRoundTripper
+	}
+
+	if token, err := config.ReadToken(); err == nil && token != "" {
+		req.Header.Set("Authorization", "bearer "+token)
+	}
+
+	return roundTripper.RoundTrip(req)
+}
+
+func NewTokenV1RoundTripper() http.RoundTripper {
+	return &TokenV1RoundTripper{
+		RoundTripper: defaultRoundTripper,
+	}
 }

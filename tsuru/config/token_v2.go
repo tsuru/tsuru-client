@@ -13,8 +13,10 @@ import (
 )
 
 type TokenV2 struct {
-	Scheme      string        `json:"scheme"`
-	OAuth2Token *oauth2.Token `json:"oauth2_token"`
+	Scheme       string         `json:"scheme"`
+	RawToken     string         `json:"raw_token,omitempty"`
+	OAuth2Token  *oauth2.Token  `json:"oauth2_token,omitempty"`
+	OAuth2Config *oauth2.Config `json:"oauth2_config,omitempty"`
 }
 
 const (
@@ -80,4 +82,27 @@ func ReadTokenV2() (*TokenV2, error) {
 		return nil, nil
 	}
 	return nil, err
+}
+
+func RemoveTokenV2() error {
+	tokenPaths := []string{
+		JoinWithUserDir(".tsuru", tokenV2Filename),
+	}
+	targetLabel, err := GetTargetLabel()
+	if err == nil {
+		err := Filesystem().MkdirAll(JoinWithUserDir(".tsuru", tokenV2Directory), 0700)
+		if err != nil {
+			return err
+		}
+		tokenPaths = append(tokenPaths, JoinWithUserDir(".tsuru", tokenV2Directory, targetLabel+".json"))
+	}
+
+	for _, tokenPath := range tokenPaths {
+		err := Filesystem().Remove(tokenPath)
+		if err != nil && !os.IsNotExist(err) {
+			return err
+		}
+
+	}
+	return nil
 }

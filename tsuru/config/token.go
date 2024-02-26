@@ -44,7 +44,7 @@ func WriteToken(token string) error {
 
 func ReadToken() (string, error) {
 	var token []byte
-	if token := os.Getenv("TSURU_TOKEN"); token != "" {
+	if token := ReadTeamToken(); token != "" {
 		return token, nil
 	}
 	tokenPaths := []string{
@@ -70,6 +70,10 @@ func ReadToken() (string, error) {
 		return "", nil
 	}
 	return "", err
+}
+
+func ReadTeamToken() string {
+	return os.Getenv("TSURU_TOKEN")
 }
 
 func MergeFlagSet(fs1, fs2 *gnuflag.FlagSet) *gnuflag.FlagSet {

@@ -83,7 +83,6 @@ func (s *S) TestShouldSetCloseToTrue(c *check.C) {
 		`(?s)`+
 			`.*<Request uri="/">.*`+
 			`GET / HTTP/1.1\r\n.*`+
-			`Authorization: bearer.*`+
 			`<Response uri="/">.*`+
 			`HTTP/0.0 200 OK.*`)
 }
@@ -114,7 +113,6 @@ func (s *S) TestShouldReturnBodyMessageOnError(c *check.C) {
 		`(?s)`+
 			`.*<Request uri="/">.*`+
 			`GET / HTTP/1.1\r\n.*`+
-			`Authorization: bearer.*`+
 			`<Response uri="/">.*`+
 			`HTTP/0.0 403 Forbidden.*`+
 			`You can't do this.*`)
@@ -147,7 +145,6 @@ func (s *S) TestShouldReturnStatusMessageOnErrorWhenBodyIsEmpty(c *check.C) {
 		`(?s)`+
 			`.*<Request uri="/">.*`+
 			`GET / HTTP/1.1\r\n.*`+
-			`Authorization: bearer.*`+
 			`<Response uri="/">.*`+
 			`HTTP/0.0 503 Service Unavailable\r\n`+
 			`Content-Length: 0\r\n`+
@@ -194,8 +191,7 @@ func (s *S) TestShouldReturnErrorWhenServerIsDown(c *check.C) {
 	c.Assert(strings.Replace(buf.String(), "\n", "\\n", -1), check.Matches,
 		``+
 			`.*<Request uri="/">.*`+
-			`GET / HTTP/1.1\r\\n.*`+
-			`Authorization: bearer.*`)
+			`GET / HTTP/1.1\r\\n.*`)
 }
 
 func (s *S) TestShouldNotIncludeTheHeaderAuthorizationWhenTheTsuruTokenFileIsMissing(c *check.C) {
@@ -224,34 +220,6 @@ func (s *S) TestShouldNotIncludeTheHeaderAuthorizationWhenTheTsuruTokenFileIsMis
 		``+
 			`.*<Request uri="/">.*`+
 			`GET / HTTP/1.1\r\\n.*`)
-}
-
-func (s *S) TestShouldIncludeTheHeaderAuthorizationWhenTsuruTokenFileExists(c *check.C) {
-	os.Unsetenv("TSURU_TOKEN")
-	config.SetFileSystem(&fstest.RecordingFs{FileContent: "mytoken"})
-	targetInit()
-	defer func() {
-		config.ResetFileSystem()
-	}()
-	request, err := http.NewRequest("GET", "/", nil)
-	c.Assert(err, check.IsNil)
-	trans := cmdtest.Transport{Message: "", Status: http.StatusOK}
-	var buf bytes.Buffer
-	client := NewTerminalClient(TerminalClientOptions{
-		RoundTripper:  &trans,
-		Stdout:        &buf,
-		ClientName:    "test",
-		ClientVersion: "0.1.0",
-		Verbosity:     &TerminalClientVerbose,
-	})
-	_, err = client.Do(request)
-	c.Assert(err, check.IsNil)
-	c.Assert(request.Header.Get("Authorization"), check.Equals, "bearer mytoken")
-	c.Assert(strings.Replace(buf.String(), "\n", "\\n", -1), check.Matches,
-		``+
-			`.*<Request uri="/">.*`+
-			`GET / HTTP/1.1\r\\n.*`+
-			`Authorization: bearer.*`)
 }
 
 func (s *S) TestShouldValidateVersion(c *check.C) {
