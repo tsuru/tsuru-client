@@ -2,17 +2,10 @@ package auth
 
 import (
 	"runtime"
-	"testing"
 
 	"github.com/tsuru/tsuru/exec/exectest"
 	"gopkg.in/check.v1"
 )
-
-var _ = check.Suite(&S{})
-
-func Test(t *testing.T) { check.TestingT(t) }
-
-type S struct{}
 
 func (s *S) TestOpen(c *check.C) {
 	fexec := exectest.FakeExecutor{}

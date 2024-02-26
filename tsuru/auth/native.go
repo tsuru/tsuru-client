@@ -9,6 +9,7 @@ import (
 	"strings"
 
 	"github.com/tsuru/tsuru-client/tsuru/config"
+	tsuruHTTP "github.com/tsuru/tsuru-client/tsuru/http"
 	"github.com/tsuru/tsuru/cmd"
 )
 
@@ -38,7 +39,7 @@ func nativeLogin(ctx *cmd.Context) error {
 		return err
 	}
 	request.Header.Set("Content-Type", "application/x-www-form-urlencoded")
-	response, err := http.DefaultClient.Do(request)
+	response, err := tsuruHTTP.UnauthenticatedClient.Do(request)
 	if err != nil {
 		return err
 	}

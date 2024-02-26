@@ -15,6 +15,7 @@ import (
 
 	"github.com/tsuru/gnuflag"
 	"github.com/tsuru/tsuru-client/tsuru/config"
+	tsuruHTTP "github.com/tsuru/tsuru-client/tsuru/http"
 	"github.com/tsuru/tsuru/cmd"
 	authTypes "github.com/tsuru/tsuru/types/auth"
 )
@@ -118,15 +119,11 @@ func schemesInfo() ([]authTypes.SchemeInfo, error) {
 	if err != nil {
 		return nil, err
 	}
-	resp, err := http.DefaultClient.Get(url)
+	resp, err := tsuruHTTP.UnauthenticatedClient.Get(url)
 	if err != nil {
 		return nil, err
 	}
 	defer resp.Body.Close()
-	// compability with old API
-	if resp.StatusCode == http.StatusNotFound {
-		return nil, nil
-	}
 	if resp.StatusCode != http.StatusOK {
 		return nil, fmt.Errorf("could not call %q, status code: %d", url, resp.StatusCode)
 	}

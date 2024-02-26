@@ -13,7 +13,10 @@ import (
 	"github.com/tsuru/tsuru-client/tsuru/config"
 )
 
-var AuthenticatedClient = &http.Client{}
+var (
+	AuthenticatedClient   = &http.Client{}
+	UnauthenticatedClient = &http.Client{}
+)
 
 var (
 	TerminalClientOnlyRequest = 1
