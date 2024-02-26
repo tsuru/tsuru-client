@@ -105,6 +105,14 @@ func (s *S) TestReadTokenFileNotFound(c *check.C) {
 	c.Assert(token, check.Equals, "")
 }
 
+func (s *S) TestReadTokenEnvironmentVariable(c *check.C) {
+	os.Setenv("TSURU_TOKEN", "ABCDEFGH")
+	defer os.Setenv("TSURU_TOKEN", "")
+	token, err := ReadToken()
+	c.Assert(err, check.IsNil)
+	c.Assert(token, check.Equals, "ABCDEFGH")
+}
+
 func initTestTarget() {
 	f, _ := Filesystem().Create(JoinWithUserDir(".tsuru", "target"))
 	f.Write([]byte("http://localhost"))
