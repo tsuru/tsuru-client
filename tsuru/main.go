@@ -5,6 +5,8 @@
 package main
 
 import (
+	"fmt"
+	"net/http"
 	"os"
 
 	"github.com/ajg/form"
@@ -19,10 +21,6 @@ import (
 
 var (
 	version = "dev" // overridden at build time
-)
-
-const (
-	header = "Supported-Tsuru"
 )
 
 const targetTopic = `Target is used to manage the address of the remote tsuru server.
@@ -251,6 +249,7 @@ func main() {
 	name := cmd.ExtractProgramName(os.Args[0])
 
 	tsuruHTTP.AuthenticatedClient = tsuruHTTP.NewTerminalClient(tsuruHTTP.TerminalClientOptions{
+		RoundTripper:  roundTripperFromToken(),
 		ClientName:    name,
 		ClientVersion: version,
 		Stdout:        os.Stdout,
@@ -260,4 +259,19 @@ func main() {
 
 	m := buildManager(name)
 	m.Run(os.Args[1:])
+}
+
+func roundTripperFromToken() http.RoundTripper {
+	tokenV2, err := config.ReadTokenV2()
+	if err != nil {
+		fmt.Fprintf(os.Stderr, "Could not read token V2: %q\n", err.Error())
+		os.Exit(1)
+	}
+
+	teamToken := config.ReadTeamToken()
+	if tokenV2 != nil && tokenV2.Scheme == "oidc" && teamToken != "" {
+		return auth.NewOIDCRoundTripper(tokenV2)
+	}
+
+	return tsuruHTTP.NewTokenV1RoundTripper()
 }

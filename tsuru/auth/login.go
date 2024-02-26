@@ -8,6 +8,7 @@ import (
 	"encoding/json"
 	"errors"
 	"fmt"
+	"io"
 	"net/http"
 	"os"
 	"strings"
@@ -163,3 +164,8 @@ const errorMarkup = `
 	<h1>Login Failed!</h1>
 	<p>%s</p>
 `
+
+func writeHTMLError(w io.Writer, err error) {
+	msg := fmt.Sprintf(errorMarkup, err.Error())
+	fmt.Fprintf(w, callbackPage, msg)
+}

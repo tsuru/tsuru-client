@@ -64,11 +64,6 @@ func TsuruClientFromEnvironment() (*tsuru.APIClient, error) {
 		return nil, err
 	}
 
-	if _, authSet := cfg.DefaultHeader["Authorization"]; !authSet {
-		if token, tokenErr := config.ReadToken(); tokenErr == nil && token != "" {
-			cfg.DefaultHeader["Authorization"] = "bearer " + token
-		}
-	}
 	cli := tsuru.NewAPIClient(cfg)
 	return cli, nil
 }

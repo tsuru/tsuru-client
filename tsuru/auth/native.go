@@ -53,5 +53,9 @@ func nativeLogin(ctx *cmd.Context) error {
 		return err
 	}
 	fmt.Fprintln(ctx.Stdout, "Successfully logged in!")
+	err = config.RemoveTokenV2()
+	if err != nil {
+		return err
+	}
 	return config.WriteToken(out["token"].(string))
 }
