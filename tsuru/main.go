@@ -40,7 +40,7 @@ func buildManager(name string) *cmd.Manager {
 	m.RegisterTopic("app", `App is a program source code running on Tsuru`)
 
 	m.Register(&auth.Login{})
-	//m.Register(&auth.Logout{})
+	m.Register(&auth.Logout{})
 	//m.Register(&version{manager})
 
 	m.Register(&config.TargetList{})

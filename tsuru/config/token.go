@@ -72,6 +72,23 @@ func ReadToken() (string, error) {
 	return "", err
 }
 
+func RemoveToken() error {
+	tokenPaths := []string{
+		JoinWithUserDir(".tsuru", "token"),
+	}
+	targetLabel, err := GetTargetLabel()
+	if err == nil {
+		tokenPaths = append([]string{JoinWithUserDir(".tsuru", "token.d", targetLabel)}, tokenPaths...)
+	}
+	for _, tokenPath := range tokenPaths {
+		err := Filesystem().Remove(tokenPath)
+		if err != nil && !os.IsNotExist(err) {
+			return err
+		}
+	}
+	return nil
+}
+
 func ReadTeamToken() string {
 	return os.Getenv("TSURU_TOKEN")
 }
