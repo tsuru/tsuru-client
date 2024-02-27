@@ -12,11 +12,13 @@ import (
 )
 
 func (s *S) TestVerboseRoundTripperDumpRequest(c *check.C) {
-	verbosity := 1
+	os.Setenv("TSURU_VERBOSITY", "1")
+	defer func() {
+		os.Unsetenv("TSURU_VERBOSITY")
+	}()
 	out := new(bytes.Buffer)
 	r := TerminalRoundTripper{
-		Verbosity: &verbosity,
-		Stdout:    out,
+		Stdout: out,
 		RoundTripper: &cmdtest.Transport{
 			Message: "Success!",
 			Status:  http.StatusOK,
@@ -35,11 +37,14 @@ func (s *S) TestVerboseRoundTripperDumpRequest(c *check.C) {
 }
 
 func (s *S) TestVerboseRoundTripperDumpRequestResponse2(c *check.C) {
-	verbosity := 2
+	os.Setenv("TSURU_VERBOSITY", "2")
+	defer func() {
+		os.Unsetenv("TSURU_VERBOSITY")
+	}()
+
 	out := new(bytes.Buffer)
 	r := TerminalRoundTripper{
-		Verbosity: &verbosity,
-		Stdout:    out,
+		Stdout: out,
 		RoundTripper: &cmdtest.Transport{
 			Message: "Success!",
 			Status:  http.StatusOK,
