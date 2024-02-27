@@ -205,7 +205,7 @@ func (s *S) TestPlugin(c *check.C) {
 	c.Assert(commands, check.HasLen, 1)
 	target, err := config.GetTarget()
 	c.Assert(err, check.IsNil)
-	token, err := config.ReadToken()
+	token, err := config.ReadTokenV1()
 	c.Assert(err, check.IsNil)
 	envs := os.Environ()
 	tsuruEnvs := []string{
@@ -265,7 +265,7 @@ func (s *S) TestPluginTryNameWithAnyExtension(c *check.C) {
 	c.Assert(commands, check.HasLen, 1)
 	target, err := config.GetTarget()
 	c.Assert(err, check.IsNil)
-	token, err := config.ReadToken()
+	token, err := config.ReadTokenV1()
 	c.Assert(err, check.IsNil)
 	envs := os.Environ()
 	tsuruEnvs := []string{

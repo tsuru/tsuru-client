@@ -40,7 +40,7 @@ func oauthLogin(ctx *cmd.Context, loginInfo *authTypes.SchemeInfo) error {
 			writeHTMLError(w, err)
 			return
 		}
-		err = config.WriteToken(token)
+		err = config.WriteTokenV1(token)
 		if err != nil {
 			writeHTMLError(w, err)
 			return

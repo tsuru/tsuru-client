@@ -181,7 +181,7 @@ func (v *TokenV1RoundTripper) RoundTrip(req *http.Request) (*http.Response, erro
 		roundTripper = defaultRoundTripper
 	}
 
-	if token, err := config.ReadToken(); err == nil && token != "" {
+	if token, err := config.ReadTokenV1(); err == nil && token != "" {
 		req.Header.Set("Authorization", "bearer "+token)
 	}
 

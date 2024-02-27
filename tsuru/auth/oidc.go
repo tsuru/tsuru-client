@@ -74,7 +74,7 @@ func oidcLogin(ctx *cmd.Context, loginInfo *authTypes.SchemeInfo) error {
 		}
 
 		// legacy token
-		err = config.WriteToken(t.AccessToken)
+		err = config.WriteTokenV1(t.AccessToken)
 
 		if err != nil {
 			writeHTMLError(w, err)
@@ -129,7 +129,7 @@ func (t *TokenSourceFSStorage) Token() (*oauth2.Token, error) {
 			return nil, err
 		}
 
-		err = config.WriteToken(newToken.AccessToken)
+		err = config.WriteTokenV1(newToken.AccessToken)
 		if err != nil {
 			fmt.Fprintf(os.Stderr, "Could not write legacy refreshed token: %s\n", err.Error())
 			return nil, err

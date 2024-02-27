@@ -58,5 +58,5 @@ func nativeLogin(ctx *cmd.Context) error {
 	if err != nil {
 		return err
 	}
-	return config.WriteToken(out["token"].(string))
+	return config.WriteTokenV1(out["token"].(string))
 }

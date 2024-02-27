@@ -19,7 +19,7 @@ func (s *S) TestLogout(c *check.C) {
 	defer func() {
 		config.ResetFileSystem()
 	}()
-	config.WriteToken("mytoken")
+	config.WriteTokenV1("mytoken")
 	os.Setenv("TSURU_TARGET", "localhost:8080")
 	expected := "Successfully logged out!\n"
 	context := cmd.Context{
@@ -52,7 +52,7 @@ func (s *S) TestLogoutNoTarget(c *check.C) {
 	defer func() {
 		config.ResetFileSystem()
 	}()
-	config.WriteToken("mytoken")
+	config.WriteTokenV1("mytoken")
 	expected := "Successfully logged out!\n"
 	context := cmd.Context{
 		Args:   []string{},
