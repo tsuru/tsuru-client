@@ -263,7 +263,7 @@ func (c *AppUpdate) Flags() *gnuflag.FlagSet {
 		flagSet.StringVar(&c.cpuBurst, "cpu-burst-factor", "", "The multiplier to determine the limits of the CPU burst. Setting 1 disables burst")
 
 		flagSet.StringVar(&c.memory, "memory", "", "Memory limit for app, this will override the plan memory value. You can express memory as a bytes integer or using one of these suffixes: E, P, T, G, M, K, Ei, Pi, Ti, Gi, Mi, Ki")
-		c.fs = cmd.MergeFlagSet(
+		c.fs = mergeFlagSet(
 			c.AppNameMixIn.Flags(),
 			flagSet,
 		)
@@ -379,7 +379,7 @@ func (c *AppRemove) Run(context *cmd.Context) error {
 
 func (c *AppRemove) Flags() *gnuflag.FlagSet {
 	if c.fs == nil {
-		c.fs = cmd.MergeFlagSet(
+		c.fs = mergeFlagSet(
 			c.AppNameMixIn.Flags(),
 			c.ConfirmationCommand.Flags(),
 		)

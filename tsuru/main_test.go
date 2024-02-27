@@ -6,8 +6,10 @@ package main
 
 import (
 	"bytes"
+	"fmt"
 	"os"
 	"path/filepath"
+	"strings"
 	"testing"
 
 	"gopkg.in/check.v1"
@@ -440,4 +442,121 @@ func (s *S) TestServiceTemplateIsRegistered(c *check.C) {
 	list, ok := manager.Commands["service-template"]
 	c.Assert(ok, check.Equals, true)
 	c.Assert(list, check.FitsTypeOf, &admin.ServiceTemplate{})
+}
+
+func (s *S) TestInvalidCommandTopicMatch(c *check.C) {
+	var stdout, stderr bytes.Buffer
+	mngr := buildManagerCustom("tsuru", &stdout, &stderr)
+
+	mngr.Run([]string{"target"})
+
+	expectedOutput := fmt.Sprintf(`%s
+	
+The following commands are available in the "target" topic:
+
+  target add           Adds a new entry to the list of available targets
+  target list          Displays the list of targets, marking the current
+  target remove        Remove a target from target-list (tsuru server)
+  target set           Change current target (tsuru server)
+
+Use tsuru help <commandname> to get more information about a command.
+`, targetTopic)
+
+	obtained := strings.Replace(stdout.String(), "\t\n", "\n", -1)
+	expected := strings.Replace(expectedOutput, "\t\n", "\n", -1)
+
+	c.Assert(stderr.String(), check.Equals, "")
+	c.Assert(obtained, check.Equals, expected)
+}
+
+type recordingExiter int
+
+func (e *recordingExiter) Exit(code int) {
+	*e = recordingExiter(code)
+}
+
+func (s *S) TestInvalidCommandFuzzyMatch02(c *check.C) {
+	var exiter recordingExiter
+	var stdout, stderr bytes.Buffer
+	mngr := buildManagerCustom("tsuru", &stdout, &stderr)
+	mngr.SetExiter(&exiter)
+	mngr.Run([]string{"target lisr"})
+	expectedOutput := `.*: "target lisr" is not a tsuru command. See "tsuru help".	
+Did you mean?	
+	target list
+`
+	expectedOutput = strings.Replace(expectedOutput, "\n", "\\W", -1)
+	expectedOutput = strings.Replace(expectedOutput, "\t", "\\W+", -1)
+	c.Assert(stderr.String(), check.Matches, expectedOutput)
+	c.Assert(int(exiter), check.Equals, 1)
+}
+
+func (s *S) TestInvalidCommandFuzzyMatch03(c *check.C) {
+	var exiter recordingExiter
+	var stdout, stderr bytes.Buffer
+	mngr := buildManagerCustom("tsuru", &stdout, &stderr)
+	mngr.SetExiter(&exiter)
+	mngr.Run([]string{"list"})
+
+	output := stderr.String()
+
+	c.Assert(strings.Contains(output, `"list" is not a tsuru command. See "tsuru help"`), check.Equals, true)
+	c.Assert(strings.Contains(output, `Did you mean?`), check.Equals, true)
+	c.Assert(strings.Contains(output, `target list`), check.Equals, true)
+
+	c.Assert(int(exiter), check.Equals, 1)
+}
+
+func (s *S) TestInvalidCommandFuzzyMatch04(c *check.C) {
+	var exiter recordingExiter
+	var stdout, stderr bytes.Buffer
+	mngr := buildManagerCustom("tsuru", &stdout, &stderr)
+	mngr.SetExiter(&exiter)
+	mngr.Run([]string{"not-command"})
+	expectedOutput := `.*: "not-command" is not a tsuru command. See "tsuru help".
+`
+	expectedOutput = strings.Replace(expectedOutput, "\n", "\\W", -1)
+	expectedOutput = strings.Replace(expectedOutput, "\t", "\\W+", -1)
+	c.Assert(stderr.String(), check.Matches, expectedOutput)
+	c.Assert(int(exiter), check.Equals, 1)
+}
+
+func (s *S) TestInvalidCommandFuzzyMatch05(c *check.C) {
+	var exiter recordingExiter
+	var stdout, stderr bytes.Buffer
+	mngr := buildManagerCustom("tsuru", &stdout, &stderr)
+	mngr.SetExiter(&exiter)
+	mngr.Run([]string{"target", "sit"})
+	expectedOutput := `.*: "target sit" is not a tsuru command. See "tsuru help".
+
+Did you mean?
+	target list
+	target set
+`
+
+	expectedOutput = strings.Replace(expectedOutput, "\n", "\\W", -1)
+	expectedOutput = strings.Replace(expectedOutput, "\t", "\\W+", -1)
+	c.Assert(stderr.String(), check.Matches, expectedOutput)
+	c.Assert(int(exiter), check.Equals, 1)
+}
+
+func (s *S) TestVersion(c *check.C) {
+	command := versionCmd{}
+	context := cmd.Context{
+		Args:   []string{},
+		Stdout: &bytes.Buffer{},
+	}
+	err := command.Run(&context)
+	c.Assert(err, check.IsNil)
+	c.Assert(context.Stdout.(*bytes.Buffer).String(), check.Matches, "Client version: dev.\n.*")
+}
+
+func (s *S) TestVersionInfo(c *check.C) {
+	expected := &cmd.Info{
+		Name:    "version",
+		MinArgs: 0,
+		Usage:   "version",
+		Desc:    "display the current version",
+	}
+	c.Assert((&versionCmd{}).Info(), check.DeepEquals, expected)
 }
