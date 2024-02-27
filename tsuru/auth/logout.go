@@ -25,7 +25,7 @@ func (c *Logout) Run(context *cmd.Context) error {
 		tsuruHTTP.AuthenticatedClient.Do(request)
 	}
 
-	err := config.RemoveToken()
+	err := config.RemoveTokenV1()
 	if err != nil {
 		return err
 	}

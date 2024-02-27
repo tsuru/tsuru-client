@@ -358,7 +358,7 @@ func RunPlugin(context *cmd.Context) error {
 	if err != nil {
 		return err
 	}
-	token, err := config.ReadToken()
+	token, err := config.ReadTokenV1()
 	if err != nil {
 		return err
 	}

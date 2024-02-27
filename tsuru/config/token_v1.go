@@ -13,7 +13,7 @@ import (
 	"github.com/tsuru/tsuru/fs"
 )
 
-func WriteToken(token string) error {
+func WriteTokenV1(token string) error {
 	tokenPaths := []string{
 		JoinWithUserDir(".tsuru", "token"),
 	}
@@ -42,7 +42,7 @@ func WriteToken(token string) error {
 	return nil
 }
 
-func ReadToken() (string, error) {
+func ReadTokenV1() (string, error) {
 	var token []byte
 	if token := ReadTeamToken(); token != "" {
 		return token, nil
@@ -72,7 +72,7 @@ func ReadToken() (string, error) {
 	return "", err
 }
 
-func RemoveToken() error {
+func RemoveTokenV1() error {
 	tokenPaths := []string{
 		JoinWithUserDir(".tsuru", "token"),
 	}

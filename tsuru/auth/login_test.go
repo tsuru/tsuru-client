@@ -76,7 +76,7 @@ func (s *S) TestNativeLogin(c *check.C) {
 	err := command.Run(&context)
 	c.Assert(err, check.IsNil)
 	c.Assert(context.Stdout.(*bytes.Buffer).String(), check.Equals, expected)
-	token, err := config.ReadToken()
+	token, err := config.ReadTokenV1()
 	c.Assert(err, check.IsNil)
 	c.Assert(token, check.Equals, "sometoken")
 }
@@ -110,7 +110,7 @@ func (s *S) TestNativeLoginWithoutEmailFromArg(c *check.C) {
 	err := command.Run(&context)
 	c.Assert(err, check.IsNil)
 	c.Assert(context.Stdout.(*bytes.Buffer).String(), check.Equals, expected)
-	token, err := config.ReadToken()
+	token, err := config.ReadTokenV1()
 	c.Assert(err, check.IsNil)
 	c.Assert(token, check.Equals, "sometoken")
 }

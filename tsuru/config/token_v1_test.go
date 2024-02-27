@@ -18,7 +18,7 @@ func (s *S) TestWriteToken(c *check.C) {
 	defer func() {
 		ResetFileSystem()
 	}()
-	err := WriteToken("abc")
+	err := WriteTokenV1("abc")
 	c.Assert(err, check.IsNil)
 	tokenPath := JoinWithUserDir(".tsuru", "token")
 	c.Assert(rfs.HasAction("create "+tokenPath), check.Equals, true)
@@ -35,7 +35,7 @@ func (s *S) TestWriteTokenWithTarget(c *check.C) {
 	defer func() {
 		ResetFileSystem()
 	}()
-	err := WriteToken("abc")
+	err := WriteTokenV1("abc")
 	c.Assert(err, check.IsNil)
 	tokenPath1 := JoinWithUserDir(".tsuru", "token")
 	c.Assert(rfs.HasAction("create "+tokenPath1), check.Equals, true)
@@ -60,7 +60,7 @@ func (s *S) TestReadToken(c *check.C) {
 	defer func() {
 		ResetFileSystem()
 	}()
-	token, err := ReadToken()
+	token, err := ReadTokenV1()
 	c.Assert(err, check.IsNil)
 	c.Assert(token, check.Equals, "mytoken")
 	tokenPath := JoinWithUserDir(".tsuru", "token.d", "test")
@@ -81,7 +81,7 @@ func (s *S) TestReadTokenFallback(c *check.C) {
 	f, err := Filesystem().Create(JoinWithUserDir(".tsuru", "token"))
 	c.Assert(err, check.IsNil)
 	f.WriteString("mytoken")
-	token, err := ReadToken()
+	token, err := ReadTokenV1()
 	c.Assert(err, check.IsNil)
 	c.Assert(token, check.Equals, "mytoken")
 	tokenPath := JoinWithUserDir(".tsuru", "token.d", "test")
@@ -97,7 +97,7 @@ func (s *S) TestReadTokenFileNotFound(c *check.C) {
 	defer func() {
 		ResetFileSystem()
 	}()
-	token, err := ReadToken()
+	token, err := ReadTokenV1()
 	c.Assert(err, check.IsNil)
 	tokenPath := JoinWithUserDir(".tsuru", "token")
 	c.Assert(err, check.IsNil)
@@ -108,7 +108,7 @@ func (s *S) TestReadTokenFileNotFound(c *check.C) {
 func (s *S) TestReadTokenEnvironmentVariable(c *check.C) {
 	os.Setenv("TSURU_TOKEN", "ABCDEFGH")
 	defer os.Setenv("TSURU_TOKEN", "")
-	token, err := ReadToken()
+	token, err := ReadTokenV1()
 	c.Assert(err, check.IsNil)
 	c.Assert(token, check.Equals, "ABCDEFGH")
 }
