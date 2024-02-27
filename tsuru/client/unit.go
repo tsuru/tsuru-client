@@ -17,6 +17,7 @@ import (
 	"github.com/tsuru/gnuflag"
 	tsuruClientApp "github.com/tsuru/tsuru-client/tsuru/app"
 	"github.com/tsuru/tsuru-client/tsuru/config"
+	"github.com/tsuru/tsuru-client/tsuru/formatter"
 	tsuruHTTP "github.com/tsuru/tsuru-client/tsuru/http"
 	"github.com/tsuru/tsuru/cmd"
 )
@@ -72,7 +73,7 @@ func (c *UnitAdd) Run(context *cmd.Context) error {
 		return err
 	}
 	defer response.Body.Close()
-	return cmd.StreamJSONResponse(context.Stdout, response)
+	return formatter.StreamJSONResponse(context.Stdout, response)
 }
 
 type UnitRemove struct {
@@ -124,7 +125,7 @@ func (c *UnitRemove) Run(context *cmd.Context) error {
 	if err != nil {
 		return err
 	}
-	return cmd.StreamJSONResponse(context.Stdout, response)
+	return formatter.StreamJSONResponse(context.Stdout, response)
 }
 
 type UnitKill struct {
@@ -185,7 +186,7 @@ func (c *UnitKill) Run(context *cmd.Context) error {
 	if err != nil {
 		return err
 	}
-	return cmd.StreamJSONResponse(context.Stdout, response)
+	return formatter.StreamJSONResponse(context.Stdout, response)
 }
 
 type UnitSet struct {
@@ -308,7 +309,7 @@ func (c *UnitSet) Run(context *cmd.Context) error {
 		}
 
 		defer response.Body.Close()
-		return cmd.StreamJSONResponse(context.Stdout, response)
+		return formatter.StreamJSONResponse(context.Stdout, response)
 	}
 
 	if existingUnits > desiredUnits {
@@ -333,7 +334,7 @@ func (c *UnitSet) Run(context *cmd.Context) error {
 		}
 
 		defer response.Body.Close()
-		return cmd.StreamJSONResponse(context.Stdout, response)
+		return formatter.StreamJSONResponse(context.Stdout, response)
 	}
 
 	fmt.Fprintf(context.Stdout, "The process %s, version %d already has %d units.\n", c.process, c.version, existingUnits)

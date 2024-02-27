@@ -469,7 +469,7 @@ func (sb *ServiceInstanceBind) Run(ctx *cmd.Context) error {
 	if err != nil {
 		return err
 	}
-	return cmd.StreamJSONResponse(ctx.Stdout, resp)
+	return formatter.StreamJSONResponse(ctx.Stdout, resp)
 }
 
 func (sb *ServiceInstanceBind) Info() *cmd.Info {
@@ -542,7 +542,7 @@ func (su *ServiceInstanceUnbind) Run(ctx *cmd.Context) error {
 	if err != nil {
 		return err
 	}
-	return cmd.StreamJSONResponse(ctx.Stdout, resp)
+	return formatter.StreamJSONResponse(ctx.Stdout, resp)
 }
 
 func (su *ServiceInstanceUnbind) Info() *cmd.Info {
@@ -1164,7 +1164,7 @@ func (c *ServiceInstanceRemove) Run(ctx *cmd.Context) error {
 	if err != nil {
 		return err
 	}
-	return cmd.StreamJSONResponse(ctx.Stdout, resp)
+	return formatter.StreamJSONResponse(ctx.Stdout, resp)
 }
 
 func (c *ServiceInstanceRemove) Flags() *gnuflag.FlagSet {

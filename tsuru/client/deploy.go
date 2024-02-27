@@ -434,7 +434,7 @@ func (c *AppDeployRollback) Run(context *cmd.Context) error {
 	if err != nil {
 		return err
 	}
-	return cmd.StreamJSONResponse(context.Stdout, response)
+	return formatter.StreamJSONResponse(context.Stdout, response)
 }
 
 type AppDeployRebuild struct {
@@ -484,7 +484,7 @@ func (c *AppDeployRebuild) Run(context *cmd.Context) error {
 	if err != nil {
 		return err
 	}
-	return cmd.StreamJSONResponse(context.Stdout, response)
+	return formatter.StreamJSONResponse(context.Stdout, response)
 }
 
 type AppDeployRollbackUpdate struct {
