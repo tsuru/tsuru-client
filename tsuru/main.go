@@ -238,8 +238,6 @@ func recoverCmdPanicExitError() {
 }
 
 func main() {
-	verbosity := 0 // TODO: recover verbosity from manager
-
 	defer recoverCmdPanicExitError()
 	defer config.SaveChangesWithTimeout()
 
@@ -254,7 +252,6 @@ func main() {
 		ClientVersion: version,
 		Stdout:        os.Stdout,
 		Stderr:        os.Stderr,
-		Verbosity:     &verbosity,
 	})
 
 	m := buildManager(name)

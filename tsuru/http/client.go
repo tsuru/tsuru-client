@@ -29,7 +29,6 @@ type TerminalClientOptions struct {
 	ClientVersion string
 	Stdout        io.Writer
 	Stderr        io.Writer
-	Verbosity     *int
 }
 
 func NewTerminalClient(opts TerminalClientOptions) *http.Client {
@@ -48,7 +47,6 @@ func NewTerminalClient(opts TerminalClientOptions) *http.Client {
 		RoundTripper:   opts.RoundTripper,
 		Stdout:         stdout,
 		Stderr:         stderr,
-		Verbosity:      opts.Verbosity,
 		Progname:       opts.ClientName,
 		CurrentVersion: opts.ClientVersion,
 	}

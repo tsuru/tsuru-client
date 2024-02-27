@@ -63,6 +63,11 @@ func targetInit() {
 }
 
 func (s *S) TestShouldSetCloseToTrue(c *check.C) {
+	os.Setenv("TSURU_VERBOSITY", "2")
+	defer func() {
+		os.Unsetenv("TSURU_VERBOSITY")
+	}()
+
 	request, err := http.NewRequest("GET", "/", nil)
 	c.Assert(err, check.IsNil)
 	transport := cmdtest.Transport{
@@ -75,7 +80,6 @@ func (s *S) TestShouldSetCloseToTrue(c *check.C) {
 		Stdout:        &buf,
 		ClientName:    "test",
 		ClientVersion: "0.1.0",
-		Verbosity:     &TerminalClientVerbose,
 	})
 	client.Do(request)
 	c.Assert(request.Close, check.Equals, true)
@@ -88,6 +92,11 @@ func (s *S) TestShouldSetCloseToTrue(c *check.C) {
 }
 
 func (s *S) TestShouldReturnBodyMessageOnError(c *check.C) {
+	os.Setenv("TSURU_VERBOSITY", "2")
+	defer func() {
+		os.Unsetenv("TSURU_VERBOSITY")
+	}()
+
 	request, err := http.NewRequest("GET", "/", nil)
 	c.Assert(err, check.IsNil)
 	var buf bytes.Buffer
@@ -97,7 +106,6 @@ func (s *S) TestShouldReturnBodyMessageOnError(c *check.C) {
 		Stdout:        &buf,
 		ClientName:    "test",
 		ClientVersion: "0.1.0",
-		Verbosity:     &TerminalClientVerbose,
 	})
 	response, err := client.Do(request)
 	c.Assert(response, check.IsNil)
@@ -119,6 +127,11 @@ func (s *S) TestShouldReturnBodyMessageOnError(c *check.C) {
 }
 
 func (s *S) TestShouldReturnStatusMessageOnErrorWhenBodyIsEmpty(c *check.C) {
+	os.Setenv("TSURU_VERBOSITY", "2")
+	defer func() {
+		os.Unsetenv("TSURU_VERBOSITY")
+	}()
+
 	request, err := http.NewRequest("GET", "/", nil)
 	c.Assert(err, check.IsNil)
 	var buf bytes.Buffer
@@ -130,7 +143,6 @@ func (s *S) TestShouldReturnStatusMessageOnErrorWhenBodyIsEmpty(c *check.C) {
 		Stdout:        &buf,
 		ClientName:    "test",
 		ClientVersion: "0.1.0",
-		Verbosity:     &TerminalClientVerbose,
 	})
 	response, err := client.Do(request)
 	c.Assert(err, check.NotNil)
@@ -169,9 +181,11 @@ func (s *S) TestShouldHandleUnauthorizedErrorSpecially(c *check.C) {
 }
 
 func (s *S) TestShouldReturnErrorWhenServerIsDown(c *check.C) {
+	os.Setenv("TSURU_VERBOSITY", "2")
 	os.Unsetenv("TSURU_TARGET")
 	config.SetFileSystem(&fstest.RecordingFs{FileContent: "http://tsuru.abc.xyz"})
 	defer func() {
+		os.Unsetenv("TSURU_VERBOSITY")
 		config.ResetFileSystem()
 	}()
 	request, err := http.NewRequest("GET", "/", nil)
@@ -183,7 +197,6 @@ func (s *S) TestShouldReturnErrorWhenServerIsDown(c *check.C) {
 		Stdout:        &buf,
 		ClientName:    "test",
 		ClientVersion: "0.1.0",
-		Verbosity:     &TerminalClientVerbose,
 	})
 	_, err = client.Do(request)
 	c.Assert(err, check.NotNil)
@@ -196,8 +209,11 @@ func (s *S) TestShouldReturnErrorWhenServerIsDown(c *check.C) {
 
 func (s *S) TestShouldNotIncludeTheHeaderAuthorizationWhenTheTsuruTokenFileIsMissing(c *check.C) {
 	os.Unsetenv("TSURU_TOKEN")
+	os.Setenv("TSURU_VERBOSITY", "2")
+
 	config.SetFileSystem(&fstest.FileNotFoundFs{})
 	defer func() {
+		os.Unsetenv("TSURU_VERBOSITY")
 		config.ResetFileSystem()
 	}()
 	request, err := http.NewRequest("GET", "/", nil)
@@ -209,7 +225,6 @@ func (s *S) TestShouldNotIncludeTheHeaderAuthorizationWhenTheTsuruTokenFileIsMis
 		Stdout:        &buf,
 		ClientName:    "test",
 		ClientVersion: "0.1.0",
-		Verbosity:     &TerminalClientVerbose,
 	})
 	_, err = client.Do(request)
 	c.Assert(err, check.IsNil)
@@ -288,6 +303,10 @@ func (s *S) TestShouldSkupValidationIfServerDoesNotReturnSupportedHeader(c *chec
 }
 
 func (s *S) TestShouldIncludeVerbosityHeader(c *check.C) {
+	os.Setenv("TSURU_VERBOSITY", "2")
+	defer func() {
+		os.Unsetenv("TSURU_VERBOSITY")
+	}()
 	request, err := http.NewRequest("GET", "/", nil)
 	c.Assert(err, check.IsNil)
 	trans := cmdtest.Transport{Message: "", Status: http.StatusOK}
@@ -297,7 +316,6 @@ func (s *S) TestShouldIncludeVerbosityHeader(c *check.C) {
 		Stdout:        &buf,
 		ClientName:    "glb",
 		ClientVersion: "0.2.1",
-		Verbosity:     &TerminalClientVerbose,
 	})
 	_, err = client.Do(request)
 	c.Assert(err, check.IsNil)

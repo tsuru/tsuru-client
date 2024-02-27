@@ -11,6 +11,7 @@ import (
 	"net/http"
 	"net/http/httputil"
 	"net/url"
+	"os"
 	"strconv"
 
 	goVersion "github.com/hashicorp/go-version"
@@ -52,11 +53,15 @@ var errUnauthorized = &tsuruerr.HTTP{Code: http.StatusUnauthorized, Message: "un
 // Verbosity >= 2 --> Dumps response
 type TerminalRoundTripper struct {
 	http.RoundTripper
-	Verbosity      *int
 	Stdout         io.Writer
 	Stderr         io.Writer
 	CurrentVersion string
 	Progname       string
+}
+
+func getVerbosity() int {
+	v, _ := strconv.Atoi(os.Getenv("TSURU_VERBOSITY"))
+	return v
 }
 
 func (v *TerminalRoundTripper) RoundTrip(req *http.Request) (*http.Response, error) {
@@ -64,14 +69,11 @@ func (v *TerminalRoundTripper) RoundTrip(req *http.Request) (*http.Response, err
 	if roundTripper == nil {
 		roundTripper = defaultRoundTripper
 	}
-	verbosity := v.Verbosity
-	if verbosity == nil {
-		verbosity = &zero
-	}
-	req.Header.Add(verbosityHeader, strconv.Itoa(*verbosity))
+	verbosity := getVerbosity()
+	req.Header.Add(verbosityHeader, strconv.Itoa(verbosity))
 	req.Close = true
 
-	if *verbosity >= TerminalClientOnlyRequest {
+	if verbosity >= TerminalClientOnlyRequest {
 		fmt.Fprintf(v.Stdout, "*************************** <Request uri=%q> **********************************\n", req.URL.RequestURI())
 		requestDump, err := httputil.DumpRequest(req, true)
 		if err != nil {
@@ -85,7 +87,7 @@ func (v *TerminalRoundTripper) RoundTrip(req *http.Request) (*http.Response, err
 	}
 
 	response, err := roundTripper.RoundTrip(req)
-	if *verbosity >= TerminalClientVerbose && response != nil {
+	if verbosity >= TerminalClientVerbose && response != nil {
 		fmt.Fprintf(v.Stdout, "*************************** <Response uri=%q> **********************************\n", req.URL.RequestURI())
 		responseDump, errDump := httputil.DumpResponse(response, true)
 		if errDump != nil {

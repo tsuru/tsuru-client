@@ -146,7 +146,9 @@ func (s *S) TestNativeLoginShouldNotDependOnTsuruTokenFile(c *check.C) {
 func (s *S) TestNativeLoginShouldReturnErrorIfThePasswordIsNotGiven(c *check.C) {
 	oldToken := os.Getenv("TSURU_TOKEN")
 	os.Unsetenv("TSURU_TOKEN")
+	config.SetFileSystem(&fstest.RecordingFs{})
 	defer func() {
+		config.ResetFileSystem()
 		os.Setenv("TSURU_TOKEN", oldToken)
 	}()
 	targetInit()
