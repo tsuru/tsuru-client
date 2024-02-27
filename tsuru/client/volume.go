@@ -560,7 +560,7 @@ func (c *VolumeBind) Run(ctx *cmd.Context) error {
 	if err != nil {
 		return err
 	}
-	err = cmd.StreamJSONResponse(ctx.Stdout, resp)
+	err = formatter.StreamJSONResponse(ctx.Stdout, resp)
 	if err != nil {
 		return err
 	}
@@ -624,7 +624,7 @@ func (c *VolumeUnbind) Run(ctx *cmd.Context) error {
 	if err != nil {
 		return err
 	}
-	err = cmd.StreamJSONResponse(ctx.Stdout, resp)
+	err = formatter.StreamJSONResponse(ctx.Stdout, resp)
 	if err != nil {
 		return err
 	}

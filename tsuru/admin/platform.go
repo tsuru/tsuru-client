@@ -159,7 +159,7 @@ func (p *PlatformAdd) Run(context *cmd.Context) error {
 		return err
 	}
 	defer response.Body.Close()
-	return cmd.StreamJSONResponse(context.Stdout, response)
+	return formatter.StreamJSONResponse(context.Stdout, response)
 }
 
 func (p *PlatformAdd) Flags() *gnuflag.FlagSet {
@@ -256,7 +256,7 @@ func (p *PlatformUpdate) Run(context *cmd.Context) error {
 		return err
 	}
 	defer response.Body.Close()
-	return cmd.StreamJSONResponse(context.Stdout, response)
+	return formatter.StreamJSONResponse(context.Stdout, response)
 }
 
 type PlatformRemove struct {

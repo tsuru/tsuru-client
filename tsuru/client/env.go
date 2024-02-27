@@ -205,7 +205,7 @@ func (c *EnvSet) Run(context *cmd.Context) error {
 	if err != nil {
 		return err
 	}
-	return cmd.StreamJSONResponse(context.Stdout, response)
+	return formatter.StreamJSONResponse(context.Stdout, response)
 }
 
 func (c *EnvSet) Flags() *gnuflag.FlagSet {
@@ -289,7 +289,7 @@ func (c *EnvUnset) Run(context *cmd.Context) error {
 	if err != nil {
 		return err
 	}
-	return cmd.StreamJSONResponse(context.Stdout, response)
+	return formatter.StreamJSONResponse(context.Stdout, response)
 }
 
 func requestEnvGetURL(c *EnvGet, args []string) ([]byte, error) {

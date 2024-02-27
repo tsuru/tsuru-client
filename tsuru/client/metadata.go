@@ -234,7 +234,7 @@ func (c *MetadataSet) Run(ctx *cmd.Context) error {
 		return err
 	}
 
-	err = cmd.StreamJSONResponse(ctx.Stdout, response)
+	err = formatter.StreamJSONResponse(ctx.Stdout, response)
 	if err != nil {
 		return err
 	}
@@ -323,7 +323,7 @@ func (c *MetadataUnset) Run(ctx *cmd.Context) error {
 		return err
 	}
 
-	err = cmd.StreamJSONResponse(ctx.Stdout, response)
+	err = formatter.StreamJSONResponse(ctx.Stdout, response)
 	if err != nil {
 		return err
 	}

@@ -567,7 +567,7 @@ func (c *ProvisionerInfo) Run(ctx *cmd.Context) error {
 
 func optionalStreamResponse(w io.Writer, resp *http.Response) error {
 	if resp.Header.Get("Content-Type") == "application/x-json-stream" {
-		return cmd.StreamJSONResponse(w, resp)
+		return formatter.StreamJSONResponse(w, resp)
 	}
 	return nil
 }

@@ -323,7 +323,7 @@ func (c *AppUpdate) Run(ctx *cmd.Context) error {
 		return err
 	}
 
-	err = cmd.StreamJSONResponse(ctx.Stdout, response)
+	err = formatter.StreamJSONResponse(ctx.Stdout, response)
 	if err != nil {
 		return err
 	}
@@ -374,7 +374,7 @@ func (c *AppRemove) Run(context *cmd.Context) error {
 	if err != nil {
 		return err
 	}
-	return cmd.StreamJSONResponse(context.Stdout, response)
+	return formatter.StreamJSONResponse(context.Stdout, response)
 }
 
 func (c *AppRemove) Flags() *gnuflag.FlagSet {
@@ -1484,7 +1484,7 @@ func (c *AppStop) Run(context *cmd.Context) error {
 	if err != nil {
 		return err
 	}
-	return cmd.StreamJSONResponse(context.Stdout, response)
+	return formatter.StreamJSONResponse(context.Stdout, response)
 }
 
 func (c *AppStop) Flags() *gnuflag.FlagSet {
@@ -1536,7 +1536,7 @@ func (c *AppStart) Run(context *cmd.Context) error {
 	if err != nil {
 		return err
 	}
-	return cmd.StreamJSONResponse(context.Stdout, response)
+	return formatter.StreamJSONResponse(context.Stdout, response)
 }
 
 func (c *AppStart) Flags() *gnuflag.FlagSet {
@@ -1579,7 +1579,7 @@ func (c *AppRestart) Run(context *cmd.Context) error {
 	if err != nil {
 		return err
 	}
-	return cmd.StreamJSONResponse(context.Stdout, response)
+	return formatter.StreamJSONResponse(context.Stdout, response)
 }
 
 func (c *AppRestart) Info() *cmd.Info {
@@ -1752,7 +1752,7 @@ func (c *AppProcessUpdate) Run(ctx *cmd.Context) error {
 	if err != nil {
 		return err
 	}
-	err = cmd.StreamJSONResponse(ctx.Stdout, resp)
+	err = formatter.StreamJSONResponse(ctx.Stdout, resp)
 	if err != nil {
 		return err
 	}
