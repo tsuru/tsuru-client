@@ -7,6 +7,8 @@ package main
 import (
 	"bytes"
 	"fmt"
+	"net/http"
+	"net/http/httptest"
 	"os"
 	"path/filepath"
 	"strings"
@@ -559,4 +561,43 @@ func (s *S) TestVersionInfo(c *check.C) {
 		Desc:    "display the current version",
 	}
 	c.Assert((&versionCmd{}).Info(), check.DeepEquals, expected)
+}
+
+func (s *S) TestVersionWithAPI(c *check.C) {
+
+	command := versionCmd{}
+	context := cmd.Context{
+		Args:   []string{},
+		Stdout: &bytes.Buffer{},
+		Stderr: &bytes.Buffer{},
+	}
+
+	ts := httptest.NewServer(http.HandlerFunc(func(rw http.ResponseWriter, req *http.Request) {
+		rw.Write([]byte(`{"version":"1.7.4"}`))
+	}))
+	defer ts.Close()
+
+	os.Setenv("TSURU_TARGET", ts.URL)
+	defer os.Unsetenv("TSURU_TARGET")
+	err := command.Run(&context)
+	c.Assert(err, check.IsNil)
+	c.Assert(context.Stdout.(*bytes.Buffer).String(),
+		check.Equals, "Client version: dev.\nServer version: 1.7.4.\n")
+}
+
+func (s *S) TestVersionAPIInvalidURL(c *check.C) {
+	command := versionCmd{}
+	context := cmd.Context{
+		Args:   []string{},
+		Stdout: &bytes.Buffer{},
+		Stderr: &bytes.Buffer{},
+	}
+
+	URL := "notvalid.test"
+	os.Setenv("TSURU_TARGET", URL)
+	defer os.Unsetenv("TSURU_TARGET")
+	err := command.Run(&context)
+	c.Assert(err, check.IsNil)
+	c.Assert(context.Stdout.(*bytes.Buffer).String(),
+		check.Equals, "Client version: dev.\nUnable to retrieve server version: Get \"http://notvalid.test/1.0/info\": dial tcp: lookup notvalid.test: no such host")
 }
