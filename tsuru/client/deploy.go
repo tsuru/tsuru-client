@@ -387,7 +387,7 @@ type AppDeployRollback struct {
 
 func (c *AppDeployRollback) Flags() *gnuflag.FlagSet {
 	if c.fs == nil {
-		c.fs = cmd.MergeFlagSet(
+		c.fs = mergeFlagSet(
 			c.AppNameMixIn.Flags(),
 			c.ConfirmationCommand.Flags(),
 		)

@@ -5,7 +5,9 @@
 package main
 
 import (
+	"encoding/json"
 	"fmt"
+	"io"
 	"net/http"
 	"os"
 
@@ -34,15 +36,20 @@ func buildManager(name string) *cmd.Manager {
 	form.DefaultEncoder = form.DefaultEncoder.UseJSONTags(false)
 	form.DefaultDecoder = form.DefaultDecoder.UseJSONTags(false)
 
+	return buildManagerCustom(name, os.Stdout, os.Stderr)
+}
+
+func buildManagerCustom(name string, stdout, stderr io.Writer) *cmd.Manager {
 	lookup := func(context *cmd.Context) error {
 		return client.RunPlugin(context)
 	}
-	m := cmd.NewManagerPanicExiter(name, os.Stdout, os.Stderr, os.Stdin, lookup)
+	m := cmd.NewManagerPanicExiter(name, stdout, stderr, os.Stdin, lookup)
+
 	m.RegisterTopic("app", `App is a program source code running on Tsuru`)
 
 	m.Register(&auth.Login{})
 	m.Register(&auth.Logout{})
-	//m.Register(&version{manager})
+	m.Register(&versionCmd{})
 
 	m.Register(&config.TargetList{})
 	m.Register(&config.TargetAdd{})
@@ -283,4 +290,63 @@ func roundTripperAndTokenProvider() (http.RoundTripper, config.TokenProvider) {
 	}
 
 	return tsuruHTTP.NewTokenV1RoundTripper(), config.TokenProviderV1()
+}
+
+type versionCmd struct{}
+
+func (c *versionCmd) Info() *cmd.Info {
+	return &cmd.Info{
+		Name:    "version",
+		MinArgs: 0,
+		Usage:   "version",
+		Desc:    "display the current version",
+	}
+}
+
+func (c *versionCmd) Run(context *cmd.Context) error {
+	fmt.Fprint(context.Stdout, versionString())
+
+	apiVersion, err := apiVersionString()
+	if err != nil {
+		return err
+	}
+	fmt.Fprint(context.Stdout, apiVersion)
+
+	return nil
+}
+
+func versionString() string {
+	return fmt.Sprintf("Client version: %s.\n", version)
+}
+
+func apiVersionString() (string, error) {
+	url, err := config.GetURL("/info")
+	if err != nil {
+		return "", err
+	}
+
+	req, err := http.NewRequest("GET", url, nil)
+	if err != nil {
+		return "", err
+	}
+
+	resp, err := tsuruHTTP.AuthenticatedClient.Do(req)
+	if err != nil {
+		// if we return the error, stdout won't flush until the prompt
+		return fmt.Sprintf("Unable to retrieve server version: %v", err), nil
+	}
+
+	body, err := io.ReadAll(resp.Body)
+	if err != nil {
+		return "", err
+	}
+
+	var version map[string]string
+	err = json.Unmarshal(body, &version)
+	if err != nil {
+		return "", err
+	}
+
+	resp.Body.Close()
+	return fmt.Sprintf("Server version: %s.\n", version["version"]), nil
 }
