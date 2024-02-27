@@ -17,6 +17,7 @@ import (
 	"github.com/tsuru/tsuru-client/tsuru/config/selfupdater"
 	tsuruHTTP "github.com/tsuru/tsuru-client/tsuru/http"
 	"github.com/tsuru/tsuru/cmd"
+	"golang.org/x/oauth2"
 )
 
 var (
@@ -246,19 +247,22 @@ func main() {
 
 	name := cmd.ExtractProgramName(os.Args[0])
 
+	roundTripper, tokenProvider := roundTripperAndTokenProvider()
+
 	tsuruHTTP.AuthenticatedClient = tsuruHTTP.NewTerminalClient(tsuruHTTP.TerminalClientOptions{
-		RoundTripper:  roundTripperFromToken(),
+		RoundTripper:  roundTripper,
 		ClientName:    name,
 		ClientVersion: version,
 		Stdout:        os.Stdout,
 		Stderr:        os.Stderr,
 	})
+	config.DefaultTokenProvider = tokenProvider
 
 	m := buildManager(name)
 	m.Run(os.Args[1:])
 }
 
-func roundTripperFromToken() http.RoundTripper {
+func roundTripperAndTokenProvider() (http.RoundTripper, config.TokenProvider) {
 	tokenV2, err := config.ReadTokenV2()
 	if err != nil {
 		fmt.Fprintf(os.Stderr, "Could not read token V2: %q\n", err.Error())
@@ -267,8 +271,16 @@ func roundTripperFromToken() http.RoundTripper {
 
 	teamToken := config.ReadTeamToken()
 	if tokenV2 != nil && tokenV2.Scheme == "oidc" && teamToken != "" {
-		return auth.NewOIDCRoundTripper(tokenV2)
+		oidcTokenSource := auth.NewOIDCTokenSource(tokenV2)
+		tokenProvider := &auth.OIDCTokenProvider{OAuthTokenSource: oidcTokenSource}
+
+		roundTripper := &oauth2.Transport{
+			Base:   http.DefaultTransport,
+			Source: oidcTokenSource,
+		}
+
+		return roundTripper, tokenProvider
 	}
 
-	return tsuruHTTP.NewTokenV1RoundTripper()
+	return tsuruHTTP.NewTokenV1RoundTripper(), config.TokenProviderV1()
 }
