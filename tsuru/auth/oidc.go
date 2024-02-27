@@ -98,12 +98,9 @@ func oidcLogin(ctx *cmd.Context, loginInfo *authTypes.SchemeInfo) error {
 	return nil
 }
 
-func NewOIDCRoundTripper(tokenV2 *config.TokenV2) http.RoundTripper {
+func NewOIDCTokenSource(tokenV2 *config.TokenV2) oauth2.TokenSource {
 	baseTokenSource := tokenV2.OAuth2Config.TokenSource(context.Background(), tokenV2.OAuth2Token)
-	return &oauth2.Transport{
-		Base:   http.DefaultTransport,
-		Source: newTokenSourceFSStorage(baseTokenSource, tokenV2),
-	}
+	return newTokenSourceFSStorage(baseTokenSource, tokenV2)
 }
 
 type TokenSourceFSStorage struct {
@@ -144,4 +141,16 @@ func newTokenSourceFSStorage(baseTokenSource oauth2.TokenSource, tokenV2 *config
 		BaseTokenSource: baseTokenSource,
 		LastToken:       tokenV2,
 	}
+}
+
+type OIDCTokenProvider struct {
+	OAuthTokenSource oauth2.TokenSource
+}
+
+func (ts *OIDCTokenProvider) Token() (string, error) {
+	t, err := ts.OAuthTokenSource.Token()
+	if err != nil {
+		return "", err
+	}
+	return t.AccessToken, nil
 }

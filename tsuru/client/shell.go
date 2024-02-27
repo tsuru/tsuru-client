@@ -116,7 +116,7 @@ func (c *ShellToContainerCmd) Run(context *cmd.Context) error {
 		return err
 	}
 	var token string
-	if token, err = config.ReadTokenV1(); err == nil {
+	if token, err = config.DefaultTokenProvider.Token(); err == nil {
 		wsConfig.Header.Set("Authorization", "bearer "+token)
 	}
 	conn, err := websocket.DialConfig(wsConfig)
