@@ -11,6 +11,7 @@ import (
 	"github.com/tsuru/tsuru/cmd"
 	"github.com/tsuru/tsuru/cmd/cmdtest"
 	"github.com/tsuru/tsuru/fs/fstest"
+	"github.com/tsuru/tsuru/types/auth"
 	"gopkg.in/check.v1"
 )
 
@@ -181,4 +182,9 @@ func (s *S) TestNativeLoginWithTsuruToken(c *check.C) {
 	err := command.Run(&context)
 	c.Assert(err, check.NotNil)
 	c.Assert(err.Error(), check.Equals, "this command can't run with $TSURU_TOKEN environment variable set. Did you forget to unset?")
+}
+
+func (s *S) TestPort(c *check.C) {
+	c.Assert(":0", check.Equals, port(&auth.SchemeInfo{}))
+	c.Assert(":4242", check.Equals, port(&auth.SchemeInfo{Data: auth.SchemeData{Port: "4242"}}))
 }
