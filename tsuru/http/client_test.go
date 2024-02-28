@@ -45,16 +45,6 @@ func Test(t *testing.T) { check.TestingT(t) }
 
 var globalManager *cmd.Manager
 
-type recordingExiter int
-
-func (e *recordingExiter) Exit(code int) {
-	*e = recordingExiter(code)
-}
-
-func (e recordingExiter) value() int {
-	return int(e)
-}
-
 func targetInit() {
 	f, _ := config.Filesystem().Create(config.JoinWithUserDir(".tsuru", "target"))
 	f.Write([]byte("http://localhost"))

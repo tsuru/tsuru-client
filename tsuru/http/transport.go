@@ -22,7 +22,6 @@ import (
 
 var (
 	_                   http.RoundTripper = &TerminalRoundTripper{}
-	zero                                  = 0
 	defaultRoundTripper                   = http.DefaultTransport
 )
 

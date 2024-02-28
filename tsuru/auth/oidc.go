@@ -50,34 +50,34 @@ func oidcLogin(ctx *cmd.Context, loginInfo *authTypes.SchemeInfo) error {
 			finish <- true
 		}()
 
-		t, err := oauth2Config.Exchange(stdContext.Background(), r.URL.Query().Get("code"), oauth2.VerifierOption(pkceVerifier))
+		t, handlerErr := oauth2Config.Exchange(stdContext.Background(), r.URL.Query().Get("code"), oauth2.VerifierOption(pkceVerifier))
 
 		w.Header().Add("Content-Type", "text/html")
 
-		if err != nil {
-			writeHTMLError(w, err)
+		if handlerErr != nil {
+			writeHTMLError(w, handlerErr)
 			return
 		}
 
 		fmt.Fprintln(ctx.Stderr, "Successfully logged in via OIDC!")
 		fmt.Fprintf(ctx.Stderr, "The OIDC token will expiry in %s\n", time.Since(t.Expiry)*-1)
 
-		err = config.WriteTokenV2(config.TokenV2{
+		handlerErr = config.WriteTokenV2(config.TokenV2{
 			Scheme:       "oidc",
 			OAuth2Token:  t,
 			OAuth2Config: &oauth2Config,
 		})
 
-		if err != nil {
-			writeHTMLError(w, err)
+		if handlerErr != nil {
+			writeHTMLError(w, handlerErr)
 			return
 		}
 
 		// legacy token
-		err = config.WriteTokenV1(t.AccessToken)
+		handlerErr = config.WriteTokenV1(t.AccessToken)
 
-		if err != nil {
-			writeHTMLError(w, err)
+		if handlerErr != nil {
+			writeHTMLError(w, handlerErr)
 			return
 		}
 
