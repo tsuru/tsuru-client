@@ -14,7 +14,6 @@ import (
 
 type TokenV2 struct {
 	Scheme       string         `json:"scheme"`
-	RawToken     string         `json:"raw_token,omitempty"`
 	OAuth2Token  *oauth2.Token  `json:"oauth2_token,omitempty"`
 	OAuth2Config *oauth2.Config `json:"oauth2_config,omitempty"`
 }

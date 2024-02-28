@@ -1,3 +1,7 @@
+// Copyright 2024 tsuru authors. All rights reserved.
+// Use of this source code is governed by a BSD-style
+// license that can be found in the LICENSE file.
+
 package auth
 
 import (
@@ -30,7 +34,8 @@ func oauthLogin(ctx *cmd.Context, loginInfo *authTypes.SchemeInfo) error {
 	}
 	redirectURL := fmt.Sprintf("http://localhost:%s", port)
 	authURL := strings.Replace(loginInfo.Data.AuthorizeURL, "__redirect_url__", redirectURL, 1)
-	http.HandleFunc("/", func(w http.ResponseWriter, r *http.Request) {
+	mux := http.NewServeMux()
+	mux.HandleFunc("/", func(w http.ResponseWriter, r *http.Request) {
 		defer func() {
 			finish <- true
 		}()
@@ -55,7 +60,9 @@ func oauthLogin(ctx *cmd.Context, loginInfo *authTypes.SchemeInfo) error {
 		w.Header().Add("Content-Type", "text/html")
 		w.Write([]byte(page))
 	})
-	server := &http.Server{}
+	server := &http.Server{
+		Handler: mux,
+	}
 	go server.Serve(l)
 	err = open(authURL)
 	if err != nil {

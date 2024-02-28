@@ -1,3 +1,7 @@
+// Copyright 2024 tsuru authors. All rights reserved.
+// Use of this source code is governed by a BSD-style
+// license that can be found in the LICENSE file.
+
 package auth
 
 import (
@@ -44,7 +48,8 @@ func oidcLogin(ctx *cmd.Context, loginInfo *authTypes.SchemeInfo) error {
 
 	finish := make(chan bool)
 
-	http.HandleFunc("/", func(w http.ResponseWriter, r *http.Request) {
+	mux := http.NewServeMux()
+	mux.HandleFunc("/", func(w http.ResponseWriter, r *http.Request) {
 
 		defer func() {
 			finish <- true
@@ -84,7 +89,9 @@ func oidcLogin(ctx *cmd.Context, loginInfo *authTypes.SchemeInfo) error {
 		fmt.Fprintf(w, callbackPage, successMarkup)
 
 	})
-	server := &http.Server{}
+	server := &http.Server{
+		Handler: mux,
+	}
 	go server.Serve(l)
 	err = open(authURL)
 	if err != nil {
