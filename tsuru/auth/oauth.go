@@ -35,19 +35,19 @@ func oauthLogin(ctx *cmd.Context, loginInfo *authTypes.SchemeInfo) error {
 			finish <- true
 		}()
 		var page string
-		token, err := convertOAuthToken(r.URL.Query().Get("code"), redirectURL)
-		if err != nil {
-			writeHTMLError(w, err)
+		token, handlerErr := convertOAuthToken(r.URL.Query().Get("code"), redirectURL)
+		if handlerErr != nil {
+			writeHTMLError(w, handlerErr)
 			return
 		}
-		err = config.WriteTokenV1(token)
-		if err != nil {
-			writeHTMLError(w, err)
+		handlerErr = config.WriteTokenV1(token)
+		if handlerErr != nil {
+			writeHTMLError(w, handlerErr)
 			return
 		}
-		err = config.RemoveTokenV2()
-		if err != nil {
-			writeHTMLError(w, err)
+		handlerErr = config.RemoveTokenV2()
+		if handlerErr != nil {
+			writeHTMLError(w, handlerErr)
 			return
 		}
 		page = fmt.Sprintf(callbackPage, successMarkup)
