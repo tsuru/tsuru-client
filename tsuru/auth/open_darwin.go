@@ -4,7 +4,9 @@
 
 package auth
 
-import "github.com/tsuru/tsuru/exec"
+import (
+	"github.com/tsuru/tsuru/exec"
+)
 
 func open(url string) error {
 	opts := exec.ExecuteOptions{
