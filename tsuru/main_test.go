@@ -598,6 +598,7 @@ func (s *S) TestVersionAPIInvalidURL(c *check.C) {
 	defer os.Unsetenv("TSURU_TARGET")
 	err := command.Run(&context)
 	c.Assert(err, check.IsNil)
-	c.Assert(context.Stdout.(*bytes.Buffer).String(),
-		check.Equals, "Client version: dev.\nUnable to retrieve server version: Get \"http://notvalid.test/1.0/info\": dial tcp: lookup notvalid.test: no such host")
+
+	output := context.Stdout.(*bytes.Buffer).String()
+	c.Assert(output, check.Matches, "Client version: dev.\nUnable to retrieve server version: Get \"http://notvalid.test/1.0/info\": dial tcp: lookup notvalid.test.*")
 }

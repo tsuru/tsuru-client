@@ -8,7 +8,7 @@ import (
 	"bytes"
 	"io"
 	"os"
-	"path"
+	"runtime"
 	"strings"
 
 	"github.com/tsuru/tsuru/cmd"
@@ -17,7 +17,7 @@ import (
 )
 
 func readRecordedTarget(fs *fstest.RecordingFs) string {
-	filePath := path.Join(os.ExpandEnv("${HOME}"), ".tsuru", "target")
+	filePath := JoinWithUserDir(".tsuru", "target")
 	fil, _ := fs.Open(filePath)
 	b, _ := io.ReadAll(fil)
 	return string(b)
@@ -32,8 +32,10 @@ func (s *S) TestWriteTarget(c *check.C) {
 	os.Unsetenv("TSURU_TARGET")
 	err := WriteTarget("http://tsuru.globo.com")
 	c.Assert(err, check.IsNil)
-	filePath := path.Join(os.ExpandEnv("${HOME}"), ".tsuru", "target")
-	c.Assert(rfs.HasAction("openfile "+filePath+" with mode 0600"), check.Equals, true)
+	filePath := JoinWithUserDir(".tsuru", "target")
+	if runtime.GOOS != "windows" {
+		c.Assert(rfs.HasAction("openfile "+filePath+" with mode 0600"), check.Equals, true)
+	}
 	c.Assert(readRecordedTarget(rfs), check.Equals, "http://tsuru.globo.com")
 }
 
