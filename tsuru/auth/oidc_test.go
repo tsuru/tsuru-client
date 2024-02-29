@@ -93,3 +93,45 @@ func (s *S) TestOIDChLogin(c *check.C) {
 		},
 	})
 }
+
+type fakeTokenSource struct{}
+
+func (f *fakeTokenSource) Token() (*oauth2.Token, error) {
+	return &oauth2.Token{
+		AccessToken: "access-token-321",
+		Expiry:      time.Now().Add(time.Hour),
+	}, nil
+}
+
+func (s *S) TestTokenSourceFSStorage(c *check.C) {
+
+	config.SetFileSystem(&fstest.RecordingFs{})
+
+	defer func() {
+		config.ResetFileSystem()
+	}()
+
+	fts := &fakeTokenSource{}
+	tokenSourceFSStorage := &TokenSourceFSStorage{
+		BaseTokenSource: fts,
+		LastToken: &config.TokenV2{
+			OAuth2Token: &oauth2.Token{
+				AccessToken: "access-token-123",
+			},
+		},
+	}
+
+	token, err := tokenSourceFSStorage.Token()
+	c.Assert(err, check.IsNil)
+
+	c.Assert(token.AccessToken, check.Equals, "access-token-321")
+
+	tokenV1fromConfig, err := config.ReadTokenV1()
+	c.Assert(err, check.IsNil)
+	c.Assert(tokenV1fromConfig, check.Equals, "access-token-321")
+
+	tokenV2fromConfig, err := config.ReadTokenV2()
+	c.Assert(err, check.IsNil)
+	c.Assert(tokenV2fromConfig.OAuth2Token.AccessToken, check.Equals, "access-token-321")
+
+}
