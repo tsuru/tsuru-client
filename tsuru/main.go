@@ -19,6 +19,7 @@ import (
 	"github.com/tsuru/tsuru-client/tsuru/config/selfupdater"
 	tsuruHTTP "github.com/tsuru/tsuru-client/tsuru/http"
 	"github.com/tsuru/tsuru/cmd"
+	tsuruErrors "github.com/tsuru/tsuru/errors"
 	"golang.org/x/oauth2"
 )
 
@@ -227,6 +228,22 @@ Services aren’t managed by tsuru, but by their creators.`)
 	m.RegisterDeprecated(&client.MetadataGet{}, "app-metadata-get")
 	m.Register(&client.ServiceInstanceInfo{})
 	registerExtraCommands(m)
+	m.RetryHook = func(err error) (retry bool) {
+		err = tsuruHTTP.UnwrapErr(err)
+		if httpErr, ok := err.(*tsuruErrors.HTTP); ok && httpErr.StatusCode() == http.StatusUnauthorized {
+			c := &auth.Login{}
+			loginErr := c.Run(&cmd.Context{
+				Stderr: stderr,
+				Stdout: stdout,
+			})
+
+			if loginErr == nil {
+				return true
+			}
+		}
+
+		return false
+	}
 	return m
 }
 
