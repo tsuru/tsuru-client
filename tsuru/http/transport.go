@@ -108,7 +108,7 @@ func (v *TerminalRoundTripper) RoundTrip(req *http.Request) (*http.Response, err
 		fmt.Fprintf(v.Stderr, invalidVersionFormat, v.Progname, supported, v.CurrentVersion)
 	}
 	if response.StatusCode == http.StatusUnauthorized {
-		fmt.Fprintf(v.Stderr, "Session expired, please run: tsuru login\n")
+		fmt.Fprintln(v.Stderr, "Session expired")
 		return nil, errUnauthorized
 	}
 	if response.StatusCode > 399 {
