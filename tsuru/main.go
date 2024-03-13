@@ -294,7 +294,7 @@ func roundTripperAndTokenProvider() (http.RoundTripper, config.TokenProvider) {
 	}
 
 	teamToken := config.ReadTeamToken()
-	if tokenV2 != nil && tokenV2.Scheme == "oidc" && teamToken != "" {
+	if tokenV2 != nil && tokenV2.Scheme == "oidc" && teamToken == "" {
 		oidcTokenSource := auth.NewOIDCTokenSource(tokenV2)
 		tokenProvider := &auth.OIDCTokenProvider{OAuthTokenSource: oidcTokenSource}
 
