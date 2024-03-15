@@ -69,12 +69,26 @@ func TsuruClientFromEnvironment() (*tsuru.APIClient, error) {
 	return cli, nil
 }
 
+type errWrapped interface {
+	Unwrap() error
+}
+
+type errCauser interface {
+	Cause() error
+}
+
 func UnwrapErr(err error) error {
-	if err == nil {
-		return nil
+	for err != nil {
+		if cause, ok := err.(errCauser); ok {
+			err = cause.Cause()
+		} else if u, ok := err.(errWrapped); ok {
+			err = u.Unwrap()
+		} else if urlErr, ok := err.(*url.Error); ok {
+			err = urlErr.Err
+		} else {
+			break
+		}
 	}
-	if urlErr, ok := err.(*url.Error); ok {
-		return urlErr.Err
-	}
+
 	return err
 }

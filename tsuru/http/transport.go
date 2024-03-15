@@ -140,7 +140,7 @@ func detectClientError(err error) error {
 		case x509.UnknownAuthorityError:
 			return errors.Wrapf(e, "Failed to connect to tsuru server (%s)", target)
 		}
-		return errors.Errorf("Failed to connect to tsuru server (%s), it's probably down, internal err: %q", target, e.Error())
+		return errors.Wrapf(e, "Failed to connect to tsuru server (%s), it's probably down", target)
 	}
 
 	if urlErr, ok := err.(*url.Error); ok {

@@ -229,8 +229,20 @@ Services aren’t managed by tsuru, but by their creators.`)
 	m.Register(&client.ServiceInstanceInfo{})
 	registerExtraCommands(m)
 	m.RetryHook = func(err error) (retry bool) {
+		mustLogin := false
+
 		err = tsuruHTTP.UnwrapErr(err)
-		if httpErr, ok := err.(*tsuruErrors.HTTP); ok && httpErr.StatusCode() == http.StatusUnauthorized {
+
+		if oauth2Err, ok := err.(*oauth2.RetrieveError); ok {
+			fmt.Fprintf(os.Stderr, "oauth2 error: %s, %s\n", oauth2Err.ErrorCode, oauth2Err.ErrorDescription)
+			mustLogin = true
+		} else if httpErr, ok := err.(*tsuruErrors.HTTP); ok && httpErr.StatusCode() == http.StatusUnauthorized {
+			fmt.Fprintf(os.Stderr, "http error: %d\n", httpErr.StatusCode())
+			mustLogin = true
+		}
+
+		if mustLogin {
+			fmt.Fprintln(os.Stderr, "trying to login again")
 			c := &auth.Login{}
 			loginErr := c.Run(&cmd.Context{
 				Stderr: stderr,
@@ -238,6 +250,7 @@ Services aren’t managed by tsuru, but by their creators.`)
 			})
 
 			if loginErr == nil {
+				initAuthorization() // re-init updated token provider
 				return true
 			}
 		}
@@ -271,6 +284,14 @@ func main() {
 
 	name := cmd.ExtractProgramName(os.Args[0])
 
+	initAuthorization()
+
+	m := buildManager(name)
+	m.Run(os.Args[1:])
+}
+
+func initAuthorization() {
+	name := cmd.ExtractProgramName(os.Args[0])
 	roundTripper, tokenProvider := roundTripperAndTokenProvider()
 
 	tsuruHTTP.AuthenticatedClient = tsuruHTTP.NewTerminalClient(tsuruHTTP.TerminalClientOptions{
@@ -281,9 +302,6 @@ func main() {
 		Stderr:        os.Stderr,
 	})
 	config.DefaultTokenProvider = tokenProvider
-
-	m := buildManager(name)
-	m.Run(os.Args[1:])
 }
 
 func roundTripperAndTokenProvider() (http.RoundTripper, config.TokenProvider) {
