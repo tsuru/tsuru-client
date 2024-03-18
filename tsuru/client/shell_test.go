@@ -150,5 +150,5 @@ func (s *S) TestShellToContainerSessionExpired(c *check.C) {
 	s.setupFakeTransport(&transport)
 	err = command.Run(&context)
 	c.Assert(err, check.NotNil)
-	c.Assert(err, check.ErrorMatches, ".*unauthorized")
+	c.Assert(err, check.ErrorMatches, ".*Unauthorized")
 }

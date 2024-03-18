@@ -229,6 +229,10 @@ Services aren’t managed by tsuru, but by their creators.`)
 	m.Register(&client.ServiceInstanceInfo{})
 	registerExtraCommands(m)
 	m.RetryHook = func(err error) (retry bool) {
+		if teamToken := config.ReadTeamToken(); teamToken != "" {
+			return false
+		}
+
 		mustLogin := false
 
 		err = tsuruHTTP.UnwrapErr(err)
@@ -241,21 +245,25 @@ Services aren’t managed by tsuru, but by their creators.`)
 			mustLogin = true
 		}
 
-		if mustLogin {
-			fmt.Fprintln(os.Stderr, "trying to login again")
-			c := &auth.Login{}
-			loginErr := c.Run(&cmd.Context{
-				Stderr: stderr,
-				Stdout: stdout,
-			})
-
-			if loginErr == nil {
-				initAuthorization() // re-init updated token provider
-				return true
-			}
+		if !mustLogin {
+			return false
 		}
 
-		return false
+		fmt.Fprintln(os.Stderr, "trying to login again")
+		c := &auth.Login{}
+		loginErr := c.Run(&cmd.Context{
+			Stderr: stderr,
+			Stdout: stdout,
+		})
+
+		if loginErr != nil {
+			fmt.Fprintf(os.Stderr, "Could not login: %s\n", loginErr.Error())
+			return false
+		}
+
+		initAuthorization() // re-init updated token provider
+		return true
+
 	}
 	return m
 }

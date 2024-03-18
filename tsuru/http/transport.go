@@ -10,7 +10,6 @@ import (
 	"io"
 	"net/http"
 	"net/http/httputil"
-	"net/url"
 	"os"
 	"strconv"
 
@@ -107,10 +106,7 @@ func (v *TerminalRoundTripper) RoundTrip(req *http.Request) (*http.Response, err
 	if !validateVersion(supported, v.CurrentVersion) {
 		fmt.Fprintf(v.Stderr, invalidVersionFormat, v.Progname, supported, v.CurrentVersion)
 	}
-	if response.StatusCode == http.StatusUnauthorized {
-		fmt.Fprintln(v.Stderr, "Session expired")
-		return nil, errUnauthorized
-	}
+
 	if response.StatusCode > 399 {
 		err := &tsuruerr.HTTP{
 			Code:    response.StatusCode,
@@ -136,18 +132,16 @@ func detectClientError(err error) error {
 	detectErr := func(e error) error {
 		target, _ := config.ReadTarget()
 
-		switch e.(type) {
+		switch e := e.(type) {
+		case *tsuruerr.HTTP:
+			return errors.Wrapf(e, "Error received from tsuru server (%s), %d", target, e.Code)
 		case x509.UnknownAuthorityError:
 			return errors.Wrapf(e, "Failed to connect to tsuru server (%s)", target)
 		}
 		return errors.Wrapf(e, "Failed to connect to tsuru server (%s), it's probably down", target)
 	}
 
-	if urlErr, ok := err.(*url.Error); ok {
-		return detectErr(urlErr.Err)
-	}
-
-	return detectErr(err)
+	return detectErr(UnwrapErr(err))
 }
 
 // validateVersion checks whether current version is greater or equal to
@@ -184,7 +178,23 @@ func (v *TokenV1RoundTripper) RoundTrip(req *http.Request) (*http.Response, erro
 		req.Header.Set("Authorization", "bearer "+token)
 	}
 
-	return roundTripper.RoundTrip(req)
+	response, err := roundTripper.RoundTrip(req)
+
+	if err != nil {
+		return nil, err
+	}
+
+	if response.StatusCode == http.StatusUnauthorized {
+		if teamToken := config.ReadTeamToken(); teamToken != "" {
+			fmt.Fprintln(os.Stderr, "Invalid session - maybe invalid defined token on TSURU_TOKEN envvar")
+		} else {
+			fmt.Fprintln(os.Stderr, "Invalid session")
+		}
+
+		return nil, errUnauthorized
+	}
+
+	return response, nil
 }
 
 func NewTokenV1RoundTripper() http.RoundTripper {

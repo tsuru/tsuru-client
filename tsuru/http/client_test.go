@@ -159,7 +159,7 @@ func (s *S) TestShouldHandleUnauthorizedErrorSpecially(c *check.C) {
 	c.Assert(err, check.IsNil)
 	var buf bytes.Buffer
 	client := NewTerminalClient(TerminalClientOptions{
-		RoundTripper: &cmdtest.Transport{Message: "You can't do this", Status: http.StatusUnauthorized},
+		RoundTripper: &cmdtest.Transport{Message: "unauthorized", Status: http.StatusUnauthorized},
 
 		Stdout:        &buf,
 		ClientName:    "test",
