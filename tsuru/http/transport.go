@@ -69,6 +69,7 @@ func (v *TerminalRoundTripper) RoundTrip(req *http.Request) (*http.Response, err
 	}
 	verbosity := getVerbosity()
 	req.Header.Add(verbosityHeader, strconv.Itoa(verbosity))
+	req.Header.Set("User-Agent", fmt.Sprintf("tsuru-client/%s", v.CurrentVersion))
 	req.Close = true
 
 	if verbosity >= TerminalClientOnlyRequest {

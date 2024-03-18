@@ -18,7 +18,8 @@ func (s *S) TestVerboseRoundTripperDumpRequest(c *check.C) {
 	}()
 	out := new(bytes.Buffer)
 	r := TerminalRoundTripper{
-		Stdout: out,
+		Stdout:         out,
+		CurrentVersion: "1.0.0",
 		RoundTripper: &cmdtest.Transport{
 			Message: "Success!",
 			Status:  http.StatusOK,
@@ -31,6 +32,7 @@ func (s *S) TestVerboseRoundTripperDumpRequest(c *check.C) {
 	c.Assert(out.String(), check.DeepEquals, "*************************** <Request uri=\"/users\"> **********************************\n"+
 		"GET /users HTTP/1.1\r\n"+
 		"Host: localhost\r\n"+
+		"User-Agent: tsuru-client/1.0.0\r\n"+
 		"X-Tsuru-Verbosity: 1\r\n"+
 		"\r\n"+
 		"*************************** </Request uri=\"/users\"> **********************************\n")
@@ -44,7 +46,8 @@ func (s *S) TestVerboseRoundTripperDumpRequestResponse2(c *check.C) {
 
 	out := new(bytes.Buffer)
 	r := TerminalRoundTripper{
-		Stdout: out,
+		Stdout:         out,
+		CurrentVersion: "1.2.0",
 		RoundTripper: &cmdtest.Transport{
 			Message: "Success!",
 			Status:  http.StatusOK,
@@ -57,6 +60,7 @@ func (s *S) TestVerboseRoundTripperDumpRequestResponse2(c *check.C) {
 	c.Assert(out.String(), check.DeepEquals, "*************************** <Request uri=\"/users\"> **********************************\n"+
 		"GET /users HTTP/1.1\r\n"+
 		"Host: localhost\r\n"+
+		"User-Agent: tsuru-client/1.2.0\r\n"+
 		"X-Tsuru-Verbosity: 2\r\n"+
 		"\r\n"+
 		"*************************** </Request uri=\"/users\"> **********************************\n"+
