@@ -12,6 +12,7 @@ import (
 	"os"
 
 	"github.com/ajg/form"
+	"github.com/pkg/errors"
 	"github.com/tsuru/tsuru-client/tsuru/admin"
 	"github.com/tsuru/tsuru-client/tsuru/auth"
 	"github.com/tsuru/tsuru-client/tsuru/client"
@@ -375,8 +376,7 @@ func apiVersionString() (string, error) {
 
 	resp, err := tsuruHTTP.AuthenticatedClient.Do(req)
 	if err != nil {
-		// if we return the error, stdout won't flush until the prompt
-		return fmt.Sprintf("Unable to retrieve server version: %v", err), nil
+		return "", errors.Wrap(err, "Unable to retrieve server version")
 	}
 
 	body, err := io.ReadAll(resp.Body)

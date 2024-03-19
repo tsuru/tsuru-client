@@ -7,6 +7,7 @@ package main
 import (
 	"bytes"
 	"fmt"
+	"net"
 	"net/http"
 	"net/http/httptest"
 	"os"
@@ -19,6 +20,7 @@ import (
 	"github.com/tsuru/tsuru-client/tsuru/admin"
 	"github.com/tsuru/tsuru-client/tsuru/client"
 	"github.com/tsuru/tsuru-client/tsuru/config"
+	tsuruHTTP "github.com/tsuru/tsuru-client/tsuru/http"
 	"github.com/tsuru/tsuru/cmd"
 	"github.com/tsuru/tsuru/exec/exectest"
 )
@@ -548,8 +550,7 @@ func (s *S) TestVersion(c *check.C) {
 		Args:   []string{},
 		Stdout: &bytes.Buffer{},
 	}
-	err := command.Run(&context)
-	c.Assert(err, check.IsNil)
+	command.Run(&context)
 	c.Assert(context.Stdout.(*bytes.Buffer).String(), check.Matches, "Client version: dev.\n.*")
 }
 
@@ -597,8 +598,9 @@ func (s *S) TestVersionAPIInvalidURL(c *check.C) {
 	os.Setenv("TSURU_TARGET", URL)
 	defer os.Unsetenv("TSURU_TARGET")
 	err := command.Run(&context)
-	c.Assert(err, check.IsNil)
+	c.Assert(tsuruHTTP.UnwrapErr(err), check.FitsTypeOf, &net.DNSError{})
 
-	output := context.Stdout.(*bytes.Buffer).String()
-	c.Assert(output, check.Matches, "Client version: dev.\nUnable to retrieve server version: Get \"http://notvalid.test/1.0/info\": dial tcp: lookup notvalid.test.*")
+	stdout := context.Stdout.(*bytes.Buffer).String()
+
+	c.Assert(stdout, check.Matches, "Client version: dev.\n")
 }
