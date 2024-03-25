@@ -259,6 +259,7 @@ Plan: c0.1m0.1
 Schedule: * * * * *
 Image: putfire:v10
 Command: [/bin/sh -c sleep 600;]
+Concurrency Policy: Allow
 Units: 1
 +--------------------------+---------+----------+-----+
 | Name                     | Status  | Restarts | Age |
@@ -303,6 +304,7 @@ Service instances: 2
 		"description": "",
 		"spec": {
 			"schedule": "* * * * *",
+			"concurrencyPolicy": "Allow",
 			"container": {
 				"image": "putfire:v10",
 				"command": [

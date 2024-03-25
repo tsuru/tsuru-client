@@ -218,6 +218,9 @@ Image: {{.Job.Spec.Container.Image}}
 Command: {{.Job.Spec.Container.Command}}
 {{- if .Job.Spec.ActiveDeadlineSeconds }}
 Max Running Time: {{.Job.Spec.ActiveDeadlineSeconds}}s
+{{- end }}
+{{- if .Job.Spec.ConcurrencyPolicy }}
+Concurrency Policy: {{.Job.Spec.ConcurrencyPolicy}}
 {{- end }}`
 
 func (c *JobInfo) Run(ctx *cmd.Context) error {

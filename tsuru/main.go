@@ -42,9 +42,57 @@ func buildManager(name string) *cmd.Manager {
 }
 
 func buildManagerCustom(name string, stdout, stderr io.Writer) *cmd.Manager {
-	lookup := func(context *cmd.Context) error {
-		return client.RunPlugin(context)
+	retryHook := func(err error) (retry bool) {
+		if teamToken := config.ReadTeamToken(); teamToken != "" {
+			return false
+		}
+
+		mustLogin := false
+
+		err = tsuruHTTP.UnwrapErr(err)
+
+		if oauth2Err, ok := err.(*oauth2.RetrieveError); ok {
+			fmt.Fprintf(os.Stderr, "oauth2 error: %s, %s\n", oauth2Err.ErrorCode, oauth2Err.ErrorDescription)
+			mustLogin = true
+		} else if httpErr, ok := err.(*tsuruErrors.HTTP); ok && httpErr.StatusCode() == http.StatusUnauthorized {
+			fmt.Fprintf(os.Stderr, "http error: %d\n", httpErr.StatusCode())
+			mustLogin = true
+		}
+
+		if !mustLogin {
+			return false
+		}
+
+		fmt.Fprintln(os.Stderr, "trying to login again")
+		c := &auth.Login{}
+		loginErr := c.Run(&cmd.Context{
+			Stderr: stderr,
+			Stdout: stdout,
+		})
+
+		if loginErr != nil {
+			fmt.Fprintf(os.Stderr, "Could not login: %s\n", loginErr.Error())
+			return false
+		}
+
+		initAuthorization() // re-init updated token provider
+		return true
+
 	}
+
+	lookup := func(context *cmd.Context) error {
+		err := client.RunPlugin(context)
+		if err != nil {
+			if retryHook(err) {
+				return client.RunPlugin(context)
+			}
+
+			return err
+		}
+
+		return nil
+	}
+
 	m := cmd.NewManagerPanicExiter(name, stdout, stderr, os.Stdin, lookup)
 
 	m.RegisterTopic("app", `App is a program source code running on Tsuru`)
@@ -229,43 +277,7 @@ Services aren’t managed by tsuru, but by their creators.`)
 	m.RegisterDeprecated(&client.MetadataGet{}, "app-metadata-get")
 	m.Register(&client.ServiceInstanceInfo{})
 	registerExtraCommands(m)
-	m.RetryHook = func(err error) (retry bool) {
-		if teamToken := config.ReadTeamToken(); teamToken != "" {
-			return false
-		}
-
-		mustLogin := false
-
-		err = tsuruHTTP.UnwrapErr(err)
-
-		if oauth2Err, ok := err.(*oauth2.RetrieveError); ok {
-			fmt.Fprintf(os.Stderr, "oauth2 error: %s, %s\n", oauth2Err.ErrorCode, oauth2Err.ErrorDescription)
-			mustLogin = true
-		} else if httpErr, ok := err.(*tsuruErrors.HTTP); ok && httpErr.StatusCode() == http.StatusUnauthorized {
-			fmt.Fprintf(os.Stderr, "http error: %d\n", httpErr.StatusCode())
-			mustLogin = true
-		}
-
-		if !mustLogin {
-			return false
-		}
-
-		fmt.Fprintln(os.Stderr, "trying to login again")
-		c := &auth.Login{}
-		loginErr := c.Run(&cmd.Context{
-			Stderr: stderr,
-			Stdout: stdout,
-		})
-
-		if loginErr != nil {
-			fmt.Fprintf(os.Stderr, "Could not login: %s\n", loginErr.Error())
-			return false
-		}
-
-		initAuthorization() // re-init updated token provider
-		return true
-
-	}
+	m.RetryHook = retryHook
 	return m
 }
 
