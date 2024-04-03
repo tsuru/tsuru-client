@@ -45,13 +45,6 @@ func Test(t *testing.T) { check.TestingT(t) }
 
 var globalManager *cmd.Manager
 
-func targetInit() {
-	f, _ := config.Filesystem().Create(config.JoinWithUserDir(".tsuru", "target"))
-	f.Write([]byte("http://localhost"))
-	f.Close()
-	config.WriteOnTargetList("test", "http://localhost")
-}
-
 func (s *S) TestShouldSetCloseToTrue(c *check.C) {
 	os.Setenv("TSURU_VERBOSITY", "2")
 	defer func() {
