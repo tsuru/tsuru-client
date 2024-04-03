@@ -11,7 +11,7 @@ import (
 	"time"
 
 	"github.com/ajg/form"
-	"github.com/tsuru/tsuru-client/tsuru/config"
+	"github.com/tsuru/go-tsuruclient/pkg/config"
 	"github.com/tsuru/tsuru-client/tsuru/formatter"
 	tsuruHTTP "github.com/tsuru/tsuru-client/tsuru/http"
 	"gopkg.in/check.v1"

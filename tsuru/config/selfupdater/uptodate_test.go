@@ -10,7 +10,7 @@ import (
 	"net/http/httptest"
 	"time"
 
-	"github.com/tsuru/tsuru-client/tsuru/config"
+	"github.com/tsuru/go-tsuruclient/pkg/config"
 	"gopkg.in/check.v1"
 )
 

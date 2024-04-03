@@ -15,7 +15,7 @@ import (
 	"time"
 
 	"github.com/Masterminds/semver/v3"
-	"github.com/tsuru/tsuru-client/tsuru/config"
+	"github.com/tsuru/go-tsuruclient/pkg/config"
 )
 
 const (

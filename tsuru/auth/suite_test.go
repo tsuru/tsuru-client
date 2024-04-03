@@ -7,7 +7,7 @@ import (
 	"net/http"
 	"testing"
 
-	"github.com/tsuru/tsuru-client/tsuru/config"
+	"github.com/tsuru/go-tsuruclient/pkg/config"
 	"gopkg.in/check.v1"
 
 	tsuruHTTP "github.com/tsuru/tsuru-client/tsuru/http"

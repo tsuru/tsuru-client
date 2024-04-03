@@ -10,7 +10,7 @@ import (
 	"os"
 	"time"
 
-	"github.com/tsuru/tsuru-client/tsuru/config"
+	"github.com/tsuru/go-tsuruclient/pkg/config"
 	"github.com/tsuru/tsuru/cmd"
 	"github.com/tsuru/tsuru/exec"
 	"github.com/tsuru/tsuru/fs/fstest"

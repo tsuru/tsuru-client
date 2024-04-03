@@ -15,7 +15,7 @@ import (
 
 	goVersion "github.com/hashicorp/go-version"
 	"github.com/pkg/errors"
-	"github.com/tsuru/tsuru-client/tsuru/config"
+	"github.com/tsuru/go-tsuruclient/pkg/config"
 	tsuruerr "github.com/tsuru/tsuru/errors"
 )
 
