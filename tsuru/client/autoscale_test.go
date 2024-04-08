@@ -53,7 +53,7 @@ func (s *S) TestAutoScaleSet(c *check.C) {
 	c.Assert(stdout.String(), check.Equals, expected)
 }
 
-func (s *S) TestKEDAAutoScaleSet(c *check.C) {
+func (s *S) TestKEDAScheduleAutoScaleSet(c *check.C) {
 	var stdout, stderr bytes.Buffer
 	expected := "Unit auto scale successfully set.\n"
 	context := cmd.Context{
@@ -100,6 +100,59 @@ func (s *S) TestKEDAAutoScaleSet(c *check.C) {
 		"-a", "myapp", "-p", "proc1", "--min", "2", "--max", "5", "--cpu", "30%",
 		"--schedule", "{\"minReplicas\": 2, \"start\": \"0 6 * * *\", \"end\": \"0 18 * * *\"}",
 		"--schedule", "{\"minReplicas\": 1, \"start\": \"0 18 * * *\", \"end\": \"0 0 * * *\"}",
+	})
+	err := command.Run(&context)
+	c.Assert(err, check.IsNil)
+	c.Assert(stdout.String(), check.Equals, expected)
+}
+
+func (s *S) TestKEDAPrometheusAutoScaleSet(c *check.C) {
+	var stdout, stderr bytes.Buffer
+	expected := "Unit auto scale successfully set.\n"
+	context := cmd.Context{
+		Stdout: &stdout,
+		Stderr: &stderr,
+		Args:   []string{},
+	}
+	trans := cmdtest.ConditionalTransport{
+		Transport: cmdtest.Transport{Message: "", Status: http.StatusOK},
+		CondFunc: func(r *http.Request) bool {
+			c.Assert(r.URL.Path, check.Equals, "/1.9/apps/myapp/units/autoscale")
+			c.Assert(r.Method, check.Equals, "POST")
+			var ret tsuru.AutoScaleSpec
+			c.Assert(r.Header.Get("Content-Type"), check.Equals, "application/json")
+			data, err := io.ReadAll(r.Body)
+			c.Assert(err, check.IsNil)
+			err = json.Unmarshal(data, &ret)
+			c.Assert(err, check.IsNil)
+			c.Assert(ret, check.DeepEquals, tsuru.AutoScaleSpec{
+				MinUnits: 1,
+				MaxUnits: 5,
+				Process:  "proc1",
+				Prometheus: []tsuru.AutoScalePrometheus{
+					{
+						Name:      "prometheus_metric_1",
+						Threshold: 1,
+						Query:     "my_metric_1(app='my-app')",
+					},
+					{
+						Name:              "prometheus_metric_2",
+						Threshold:         5,
+						Query:             "my_metric_2(app='my-app')",
+						PrometheusAddress: "exemple.prometheus.com",
+					},
+				},
+			})
+			return true
+		},
+	}
+	s.setupFakeTransport(&trans)
+	command := AutoScaleSet{}
+	command.Info()
+	command.Flags().Parse(true, []string{
+		"-a", "myapp", "-p", "proc1", "--min", "1", "--max", "5",
+		"--prometheus", "{\"name\": \"prometheus_metric_1\", \"threshold\": 1, \"query\": \"my_metric_1(app='my-app')\"}",
+		"--prometheus", "{\"name\": \"prometheus_metric_2\", \"threshold\": 5, \"query\": \"my_metric_2(app='my-app')\", \"prometheusAddress\": \"exemple.prometheus.com\"}",
 	})
 	err := command.Run(&context)
 	c.Assert(err, check.IsNil)
