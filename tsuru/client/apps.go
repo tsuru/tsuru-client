@@ -779,6 +779,14 @@ func (a *app) String(simplified bool) string {
 			}))
 		}
 
+		for _, prometheus := range as.Prometheus {
+			prometheusInfo := buildPrometheusInfo(prometheus)
+			autoScaleTable.AddRow(tablecli.Row([]string{
+				"Prometheus",
+				prometheusInfo,
+			}))
+		}
+
 		autoScaleTables = append(autoScaleTables, autoScaleTable)
 	}
 
@@ -844,6 +852,14 @@ func buildScheduleInfo(schedule tsuru.AutoScaleSchedule) string {
 
 	return fmt.Sprintf("Start: %s (%s)\nEnd: %s (%s)\nUnits: %d\nTimezone: %s",
 		startTimeHuman, schedule.Start, endTimeHuman, schedule.End, schedule.MinReplicas, schedule.Timezone,
+	)
+}
+
+func buildPrometheusInfo(prometheus tsuru.AutoScalePrometheus) string {
+	thresholdValue := strconv.FormatFloat(prometheus.Threshold, 'f', -1, 64)
+
+	return fmt.Sprintf("Name: %s\nQuery: %s\nThreshold: %s\nPrometheusAddress: %s",
+		prometheus.Name, prometheus.Query, thresholdValue, prometheus.PrometheusAddress,
 	)
 }
 
