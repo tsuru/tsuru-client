@@ -280,6 +280,7 @@ Services aren’t managed by tsuru, but by their creators.`)
 	m.Register(&client.ServiceInstanceInfo{})
 	registerExtraCommands(m)
 	m.RetryHook = retryHook
+	m.AfterFlagParseHook = initAuthorization
 	return m
 }
 
@@ -306,8 +307,6 @@ func main() {
 	defer selfupdater.VerifyLatestVersion(checkVerResult)
 
 	name := cmd.ExtractProgramName(os.Args[0])
-
-	initAuthorization()
 
 	m := buildManager(name)
 	m.Run(os.Args[1:])

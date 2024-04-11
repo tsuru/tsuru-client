@@ -18,7 +18,7 @@ require (
 	github.com/tsuru/gnuflag v0.0.0-20151217162021-86b8c1b864aa
 	github.com/tsuru/go-tsuruclient v0.0.0-20240409125509-22a1e08326f4
 	github.com/tsuru/tablecli v0.0.0-20190131152944-7ded8a3383c6
-	github.com/tsuru/tsuru v0.0.0-20240325190920-410c71393b77
+	github.com/tsuru/tsuru v0.0.0-20240411165438-543d3861334a
 	golang.org/x/net v0.20.0
 	golang.org/x/oauth2 v0.16.0
 	golang.org/x/sys v0.16.0
