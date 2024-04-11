@@ -29,15 +29,16 @@ func (i *int32Value) String() string   { return fmt.Sprintf("%v", *i) }
 
 type AutoScaleSet struct {
 	tsuruClientApp.AppNameMixIn
-	fs        *gnuflag.FlagSet
-	autoscale tsuru.AutoScaleSpec
-	schedules cmd.StringSliceFlag
+	fs         *gnuflag.FlagSet
+	autoscale  tsuru.AutoScaleSpec
+	schedules  cmd.StringSliceFlag
+	prometheus cmd.StringSliceFlag
 }
 
 func (c *AutoScaleSet) Info() *cmd.Info {
 	return &cmd.Info{
 		Name:  "unit-autoscale-set",
-		Usage: "unit autoscale set [-a/--app appname] [-p/--process processname] [--cpu targetCPU] [--min minUnits] [--max maxUnits] [--schedule scheduleWindow]",
+		Usage: "unit autoscale set [-a/--app appname] [-p/--process processname] [--cpu targetCPU] [--min minUnits] [--max maxUnits] [--schedule scheduleWindow] [--prometheus prometheusSettings]",
 		Desc: `
 # Sets an autoscale configuration:
 # Based on 50% of CPU utilization with min units 1 and max units 3
@@ -46,7 +47,11 @@ unit autoscale set -a my-app --cpu 50% --min 1 --max 3
 # Based on a schedule window everyday from 6AM to 6PM UTC
 unit autoscale set -a my-app --min 1 --max 3 --schedule '{"minReplicas": 2, "start": "0 6 * * *", "end": "0 18 * * *"}'
 
-# Combining both
+# Based on a prometheus metric
+
+unit autoscale set -a my-app --min 1 --max 3 --prometheus '{"name": "my_metric_identification", "threshold": 10, "query":"sum(my_metric{tsuru_app=\"my_app\"})"}'
+
+# Combining
 unit autoscale set -a my-app --cpu 50% --min 1 --max 3 --schedule '{"minReplicas": 2, "start": "0 6 * * *", "end": "0 18 * * *"}'
 
 # When using more than one trigger (CPU + Schedule as an example), the number of units will be determined by the highest value
@@ -71,6 +76,7 @@ func (c *AutoScaleSet) Flags() *gnuflag.FlagSet {
 		c.fs.Var((*int32Value)(&c.autoscale.MaxUnits), "max", "Maximum Units")
 
 		c.fs.Var(&c.schedules, "schedule", "Schedule window to up/down scale. Example: {\"minReplicas\": 2, \"start\": \"0 6 * * *\", \"end\": \"0 18 * * *\"}")
+		c.fs.Var(&c.prometheus, "prometheus", "Prometheus settings to up/down scale. Example: {\"name\": \"my_metric_identification\", \"threshold\": 10, \"query\":\"sum(my_metric{tsuru_app=\\\"my_app\\\"})\"}")
 	}
 	return c.fs
 }
@@ -96,6 +102,18 @@ func (c *AutoScaleSet) Run(ctx *cmd.Context) error {
 	}
 
 	c.autoscale.Schedules = schedules
+
+	prometheus := []tsuru.AutoScalePrometheus{}
+	for _, prometheusString := range c.prometheus {
+		var autoScalePrometheus tsuru.AutoScalePrometheus
+		if err = json.Unmarshal([]byte(prometheusString), &autoScalePrometheus); err != nil {
+			return err
+		}
+
+		prometheus = append(prometheus, autoScalePrometheus)
+	}
+
+	c.autoscale.Prometheus = prometheus
 
 	_, err = apiClient.AppApi.AutoScaleAdd(context.TODO(), appName, c.autoscale)
 	if err != nil {

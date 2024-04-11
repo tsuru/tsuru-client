@@ -1684,6 +1684,19 @@ func (s *S) TestAppInfoWithKEDAAutoScale(c *check.C) {
 		  "end":"0 15 * * *",
 		  "timezone":"UTC"
 		}
+	  ],
+	  "prometheus": [
+		{
+		  "name":"my_metric_id",
+	      "threshold":2,
+		  "query":"my_query{app='my-app'}",
+		  "prometheusAddress":"default.com"
+		},{
+		  "name":"my_metric_id_2",
+		  "threshold":5,
+		  "query":"my_query_2{app='my-app'}",
+		  "prometheusAddress":"exemple.prometheus.com"
+		}
 	  ]
     },
     {
@@ -1730,21 +1743,31 @@ Units [process worker]: 1
 Auto Scale:
 
 Process: web (v10), Min Units: 1, Max Units: 10
-+----------+---------------------------------+
-| Triggers | Trigger details                 |
-+----------+---------------------------------+
-| CPU      | Target: 50%                     |
-+----------+---------------------------------+
-| Schedule | Start: At 06:00 AM (0 6 * * *)  |
-|          | End: At 06:00 PM (0 18 * * *)   |
-|          | Units: 2                        |
-|          | Timezone: UTC                   |
-+----------+---------------------------------+
-| Schedule | Start: At 12:00 PM (0 12 * * *) |
-|          | End: At 03:00 PM (0 15 * * *)   |
-|          | Units: 3                        |
-|          | Timezone: UTC                   |
-+----------+---------------------------------+
++------------+-------------------------------------------+
+| Triggers   | Trigger details                           |
++------------+-------------------------------------------+
+| CPU        | Target: 50%                               |
++------------+-------------------------------------------+
+| Schedule   | Start: At 06:00 AM (0 6 * * *)            |
+|            | End: At 06:00 PM (0 18 * * *)             |
+|            | Units: 2                                  |
+|            | Timezone: UTC                             |
++------------+-------------------------------------------+
+| Schedule   | Start: At 12:00 PM (0 12 * * *)           |
+|            | End: At 03:00 PM (0 15 * * *)             |
+|            | Units: 3                                  |
+|            | Timezone: UTC                             |
++------------+-------------------------------------------+
+| Prometheus | Name: my_metric_id                        |
+|            | Query: my_query{app='my-app'}             |
+|            | Threshold: 2                              |
+|            | PrometheusAddress: default.com            |
++------------+-------------------------------------------+
+| Prometheus | Name: my_metric_id_2                      |
+|            | Query: my_query_2{app='my-app'}           |
+|            | Threshold: 5                              |
+|            | PrometheusAddress: exemple.prometheus.com |
++------------+-------------------------------------------+
 
 Process: worker (v10), Min Units: 2, Max Units: 5
 +----------+--------------------------------+
