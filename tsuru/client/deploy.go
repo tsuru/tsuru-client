@@ -408,7 +408,6 @@ func (c *AppDeployRollback) Info() *cmd.Info {
 }
 
 func (c *AppDeployRollback) Run(context *cmd.Context) error {
-	context.RawOutput()
 	appName, err := c.AppName()
 	if err != nil {
 		return err
