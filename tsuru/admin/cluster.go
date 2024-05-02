@@ -458,7 +458,6 @@ func (c *ClusterRemove) Info() *cmd.Info {
 }
 
 func (c *ClusterRemove) Run(ctx *cmd.Context) error {
-	ctx.RawOutput()
 	name := ctx.Args[0]
 	if !c.Confirm(ctx, fmt.Sprintf("Are you sure you want to remove cluster \"%s\"?", name)) {
 		return nil

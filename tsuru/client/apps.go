@@ -351,7 +351,6 @@ remove it (you are able to remove any app that you see in [[tsuru app list]]).`,
 }
 
 func (c *AppRemove) Run(context *cmd.Context) error {
-	context.RawOutput()
 	appName := c.Flags().Lookup("app").Value.String()
 	if appName == "" {
 		return errors.New("Please use the -a/--app flag to specify which app you want to remove.")
