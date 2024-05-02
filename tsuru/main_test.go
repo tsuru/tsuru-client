@@ -242,13 +242,6 @@ func (s *S) TestPlatformAddIsRegistered(c *check.C) {
 	c.Assert(plat, check.FitsTypeOf, &admin.PlatformAdd{})
 }
 
-func (s *S) TestAppSwapIsRegistered(c *check.C) {
-	manager = buildManager("tsuru")
-	cmd, ok := manager.Commands["app-swap"]
-	c.Assert(ok, check.Equals, true)
-	c.Assert(cmd, check.FitsTypeOf, &client.AppSwap{})
-}
-
 func (s *S) TestAppStartIsRegistered(c *check.C) {
 	manager = buildManager("tsuru")
 	start, ok := manager.Commands["app-start"]
