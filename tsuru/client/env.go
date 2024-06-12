@@ -20,7 +20,6 @@ import (
 	"github.com/tsuru/go-tsuruclient/pkg/config"
 	"github.com/tsuru/tsuru-client/tsuru/formatter"
 	tsuruHTTP "github.com/tsuru/tsuru-client/tsuru/http"
-	tsuruAPIApp "github.com/tsuru/tsuru/app"
 	"github.com/tsuru/tsuru/cmd"
 	apiTypes "github.com/tsuru/tsuru/types/api"
 )
@@ -96,10 +95,18 @@ func (c *EnvGet) Run(context *cmd.Context) error {
 
 	formatted := make([]string, 0, len(variables))
 	for _, v := range variables {
-		value := tsuruAPIApp.SuppressedEnv
-		if v["public"].(bool) {
-			value = v["value"].(string)
+		value := v["value"].(string)
+		public := v["public"].(bool)
+		managedBy, _ := v["managedBy"].(string)
+
+		if public && managedBy != "" {
+			value = fmt.Sprintf("%s (managed by %s)", value, managedBy)
+		} else if !public && managedBy != "" {
+			value = fmt.Sprintf("*** (private variable managed by %s)", managedBy)
+		} else if !public {
+			value = "*** (private variable)"
 		}
+
 		formatted = append(formatted, fmt.Sprintf("%s=%s", v["name"], value))
 	}
 	sort.Strings(formatted)
@@ -109,24 +116,27 @@ func (c *EnvGet) Run(context *cmd.Context) error {
 
 func (c *EnvGet) renderJSON(context *cmd.Context, variables []map[string]interface{}) error {
 	type envJSON struct {
-		Name    string `json:"name"`
-		Value   string `json:"value"`
-		Private bool   `json:"private"`
+		Name      string `json:"name"`
+		Value     string `json:"value"`
+		Private   bool   `json:"private"`
+		ManagedBy string `json:"managedBy,omitempty"`
 	}
 
 	data := make([]envJSON, 0, len(variables))
 
 	for _, v := range variables {
 		private := true
-		value := tsuruAPIApp.SuppressedEnv
+		value := "*** (private variable)"
 		if v["public"].(bool) {
 			value = v["value"].(string)
 			private = false
 		}
+		managedBy, _ := v["managedBy"].(string)
 		data = append(data, envJSON{
-			Name:    v["name"].(string),
-			Value:   value,
-			Private: private,
+			Name:      v["name"].(string),
+			Value:     value,
+			Private:   private,
+			ManagedBy: managedBy,
 		})
 	}
 

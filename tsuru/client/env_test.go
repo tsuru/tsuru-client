@@ -103,6 +103,24 @@ func (s *S) TestEnvGetPrivateVariables(c *check.C) {
 	c.Assert(stdout.String(), check.Equals, result)
 }
 
+func (s *S) TestEnvGetManagedByVariables(c *check.C) {
+	var stdout, stderr bytes.Buffer
+	jsonResult := `[{"name": "DATABASE_USER", "value": "someuser", "public": false, "managedBy": "my-service/instance"}, {"name": "DATABASE_HOST", "value": "somehost", "public": true, "managedBy": "my-service/instance"}]`
+	result := "DATABASE_HOST=somehost (managed by my-service/instance)\nDATABASE_USER=*** (private variable managed by my-service/instance)\n"
+	params := []string{"DATABASE_HOST", "DATABASE_USER"}
+	context := cmd.Context{
+		Args:   params,
+		Stdout: &stdout,
+		Stderr: &stderr,
+	}
+	s.setupFakeTransport(&cmdtest.Transport{Message: jsonResult, Status: http.StatusOK})
+	command := EnvGet{}
+	command.Flags().Parse(true, []string{"-a", "someapp"})
+	err := command.Run(&context)
+	c.Assert(err, check.IsNil)
+	c.Assert(stdout.String(), check.Equals, result)
+}
+
 func (s *S) TestEnvGetWithoutTheFlag(c *check.C) {
 	var stdout, stderr bytes.Buffer
 	jsonResult := `[{"name": "DATABASE_HOST", "value": "somehost", "public": true}, {"name": "DATABASE_USER", "value": "someuser", "public": true}]`
