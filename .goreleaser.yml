@@ -1,6 +1,7 @@
 # goreleaser.yml
 # Build customization
 project_name: tsuru
+version: 2
 builds:
 - main: ./tsuru
   binary: tsuru
@@ -66,7 +67,7 @@ release:
 # Mac OS Homebrew
 brews:
   # Reporitory to push the tap to.
-- tap:
+- repository:
     owner: tsuru
     name: homebrew-tsuru
     token: "{{ .Env.HOMEBREW_TSURU_REPOSITORY_AUTH_TOKEN }}"
@@ -76,7 +77,7 @@ brews:
 
   # Folder inside the repository to put the formula.
   # Default is the root folder.
-  folder: Formula
+  directory: Formula
 
   # Custom install
   install: |
