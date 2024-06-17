@@ -362,7 +362,7 @@ func (s *S) TestRenderProcessPlan(c *check.C) {
 		{
 			appPlan: appTypes.Plan{
 				Name: "c1m2",
-				Override: appTypes.PlanOverride{
+				Override: &appTypes.PlanOverride{
 					CPUMilli: func(d int) *int { return &d }(1000),
 					Memory:   func(d int64) *int64 { return &d }(1024 * 1024 * 1024),
 				},
