@@ -89,14 +89,16 @@ func renderPlans(plans []apptypes.Plan, opts renderPlansOpts) string {
 		}
 
 		cpuMilli := p.CPUMilli
-		if p.Override.CPUMilli != nil {
+
+		override := p.Override
+		if override != nil && override.CPUMilli != nil {
 			cpuMilli = *p.Override.CPUMilli
 			cpu = fmt.Sprintf("%g", float64(*p.Override.CPUMilli)/10) + "% (override)"
 		} else if p.CPUMilli > 0 {
 			cpu = fmt.Sprintf("%g", float64(p.CPUMilli)/10) + "%"
 		}
 
-		if p.Override.Memory != nil {
+		if p.Override != nil && p.Override.Memory != nil {
 			memory = resource.NewQuantity(*p.Override.Memory, resource.BinarySI).String() + " (override)"
 		}
 
@@ -109,7 +111,7 @@ func renderPlans(plans []apptypes.Plan, opts renderPlansOpts) string {
 		if showBurstColumn {
 			cpuBurst := p.CPUBurst.Default
 			cpuBurstObservation := ""
-			if p.Override.CPUBurst != nil {
+			if p.Override != nil && p.Override.CPUBurst != nil {
 				cpuBurst = *p.Override.CPUBurst
 				cpuBurstObservation = " (override)"
 			}
@@ -134,13 +136,16 @@ func renderProcessPlan(appPlan apptypes.Plan, planByProcess map[string]string) s
 	table.Headers = []string{"Process", "Plan"}
 
 	appProcessOverrides := []string{}
-	if appPlan.Override.CPUMilli != nil {
-		appProcessOverrides = append(appProcessOverrides, fmt.Sprintf("CPU: %g%%", float64(*appPlan.Override.CPUMilli)/10))
-	}
+	override := appPlan.Override
+	if override != nil {
+		if override.CPUMilli != nil {
+			appProcessOverrides = append(appProcessOverrides, fmt.Sprintf("CPU: %g%%", float64(*appPlan.Override.CPUMilli)/10))
+		}
 
-	if appPlan.Override.Memory != nil {
-		memory := resource.NewQuantity(*appPlan.Override.Memory, resource.BinarySI).String()
-		appProcessOverrides = append(appProcessOverrides, fmt.Sprintf("Memory: %s", memory))
+		if override.Memory != nil {
+			memory := resource.NewQuantity(*appPlan.Override.Memory, resource.BinarySI).String()
+			appProcessOverrides = append(appProcessOverrides, fmt.Sprintf("Memory: %s", memory))
+		}
 	}
 
 	appRow := []string{
@@ -201,7 +206,11 @@ func renderPlansK8SFriendly(plans []apptypes.Plan, showMaxBurstAllowed bool) str
 	for _, p := range plans {
 		memory := resource.NewQuantity(p.Memory, resource.BinarySI).String()
 		cpuRequest := resource.NewMilliQuantity(int64(p.CPUMilli), resource.DecimalSI).String()
-		maxCPULimit := resource.NewMilliQuantity(int64(float64(p.CPUMilli)*p.CPUBurst.MaxAllowed), resource.DecimalSI).String()
+		maxAllowed := 1.0
+		if p.CPUBurst != nil {
+			maxAllowed = p.CPUBurst.MaxAllowed
+		}
+		maxCPULimit := resource.NewMilliQuantity(int64(float64(p.CPUMilli)*maxAllowed), resource.DecimalSI).String()
 
 		row := []string{
 			p.Name,
@@ -233,11 +242,11 @@ func hasBurst(p apptypes.Plan) bool {
 	if p.CPUMilli == 0 {
 		return false
 	}
-	if p.CPUBurst.Default != 0 {
+	if p.CPUBurst != nil && p.CPUBurst.Default != 0 {
 		return true
 	}
 
-	if p.Override.CPUBurst != nil {
+	if p.Override != nil && p.Override.CPUBurst != nil {
 		return true
 	}
 	return false
