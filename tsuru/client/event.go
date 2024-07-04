@@ -5,7 +5,6 @@
 package client
 
 import (
-	"bytes"
 	"encoding/json"
 	"fmt"
 	"io"
@@ -18,7 +17,6 @@ import (
 
 	"github.com/cezarsa/form"
 	"github.com/ghodss/yaml"
-	"github.com/iancoleman/orderedmap"
 	"github.com/tsuru/gnuflag"
 	"github.com/tsuru/go-tsuruclient/pkg/config"
 	"github.com/tsuru/tablecli"
@@ -26,6 +24,7 @@ import (
 	tsuruHTTP "github.com/tsuru/tsuru-client/tsuru/http"
 	"github.com/tsuru/tsuru/cmd"
 	"github.com/tsuru/tsuru/event"
+	eventTypes "github.com/tsuru/tsuru/types/event"
 )
 
 type EventList struct {
@@ -124,23 +123,15 @@ func (c *EventList) Run(context *cmd.Context) error {
 	if err != nil {
 		return err
 	}
-	var evts []event.Event
+	var evts []eventTypes.EventData
 	err = json.Unmarshal(result, &evts)
 	if err != nil {
 		return fmt.Errorf("unable to unmarshal %q: %s", string(result), err)
 	}
 
 	if c.json {
-		result := []*orderedmap.OrderedMap{}
-		for i := range evts {
-			o, err := eventJSONFriendly(&evts[i])
-			if err != nil {
-				return err
-			}
-			result = append(result, o)
-		}
 
-		return formatter.JSON(context.Stdout, result)
+		return formatter.JSON(context.Stdout, evts)
 	}
 
 	return c.Show(evts, context)
@@ -148,13 +139,13 @@ func (c *EventList) Run(context *cmd.Context) error {
 
 var reEmailShort = regexp.MustCompile(`@.*$`)
 
-func (c *EventList) Show(evts []event.Event, context *cmd.Context) error {
+func (c *EventList) Show(evts []eventTypes.EventData, context *cmd.Context) error {
 	tbl := tablecli.NewTable()
 	tbl.LineSeparator = true
 	tbl.Headers = tablecli.Row{"ID", "Start (duration)", "Success", "Owner", "Kind", "Target"}
 	for i := range evts {
 		evt := &evts[i]
-		targets := []event.Target{evt.Target}
+		targets := []eventTypes.Target{evt.Target}
 		for _, et := range evt.ExtraTargets {
 			targets = append(targets, et.Target)
 		}
@@ -242,55 +233,19 @@ func (c *EventInfo) Run(context *cmd.Context) error {
 	if err != nil {
 		return err
 	}
-	var evt event.Event
+	var evt eventTypes.EventInfo
 	err = json.Unmarshal(result, &evt)
 	if err != nil {
 		return fmt.Errorf("unable to unmarshal %q: %s", string(result), err)
 	}
 
 	if c.json {
-		o, err := eventJSONFriendly(&evt)
-		if err != nil {
-			return err
-		}
-		return formatter.JSON(context.Stdout, o)
+		return formatter.JSON(context.Stdout, evt)
 	}
 	return c.Show(&evt, context)
 }
 
-func eventJSONFriendly(evt *event.Event) (*orderedmap.OrderedMap, error) {
-	var startData interface{}
-	var endData interface{}
-	var otherData interface{}
-
-	evt.StartData(&startData)
-	evt.EndData(&endData)
-	evt.OtherData(&otherData)
-
-	var buf bytes.Buffer
-	err := json.NewEncoder(&buf).Encode(evt)
-	if err != nil {
-		return nil, err
-	}
-
-	o := orderedmap.New()
-	err = json.Unmarshal(buf.Bytes(), &o)
-	if err != nil {
-		return nil, err
-	}
-
-	o.Delete("StartCustomData")
-	o.Delete("EndCustomData")
-	o.Delete("OtherCustomData")
-
-	o.Set("StartData", startData)
-	o.Set("EndData", endData)
-	o.Set("OtherData", otherData)
-
-	return o, nil
-}
-
-func (c *EventInfo) Show(evt *event.Event, context *cmd.Context) error {
+func (c *EventInfo) Show(evt *eventTypes.EventInfo, context *cmd.Context) error {
 	type item struct {
 		label string
 		value string
@@ -304,7 +259,7 @@ func (c *EventInfo) Show(evt *event.Event, context *cmd.Context) error {
 		duration := evt.EndTime.Sub(evt.StartTime)
 		endFmt = formatter.FormatDateAndDuration(evt.EndTime, &duration)
 	}
-	targets := []event.Target{evt.Target}
+	targets := []eventTypes.Target{evt.Target}
 	for _, et := range evt.ExtraTargets {
 		targets = append(targets, et.Target)
 	}
@@ -373,10 +328,8 @@ func (c *EventInfo) Show(evt *event.Event, context *cmd.Context) error {
 		}...)
 	}
 	labels := []string{"Start", "End", "Other"}
-	for i, fn := range []func(interface{}) error{evt.StartData, evt.EndData, evt.OtherData} {
-		var data interface{}
-		err := fn(&data)
-		if err == nil && data != nil {
+	for i, data := range []any{evt.CustomData.Start, evt.CustomData.End, evt.CustomData.Other} {
+		if data != nil {
 			str, err := yaml.Marshal(data)
 			if err == nil {
 				padded := padLines(string(str), "    ")
@@ -384,7 +337,7 @@ func (c *EventInfo) Show(evt *event.Event, context *cmd.Context) error {
 			}
 		}
 	}
-	log := evt.Log()
+	log := eventLog(evt)
 	if log != "" {
 		items = append(items, item{"Log", "\n" + padLines(log, "    ")})
 	}
@@ -408,6 +361,35 @@ func (c *EventInfo) Show(evt *event.Event, context *cmd.Context) error {
 		fmt.Fprintf(context.Stdout, "%s%s%s\n", label, pad, item.value)
 	}
 	return nil
+}
+
+func eventLog(e *eventTypes.EventInfo) string {
+	timeFormat := "2006-01-02 15:04:05 -0700"
+
+	if len(e.StructuredLog) == 0 {
+		return e.EventData.Log
+	}
+
+	msgs := make([]string, len(e.StructuredLog))
+	for i, entry := range e.StructuredLog {
+		if entry.Date.IsZero() {
+			msgs[i] = entry.Message
+			continue
+		}
+		msgs[i] = addLinePrefix(entry.Message, entry.Date.Local().Format(timeFormat)+": ")
+	}
+
+	return strings.Join(msgs, "")
+}
+
+func addLinePrefix(data string, prefix string) string {
+	suffix := ""
+	if data[len(data)-1] == '\n' {
+		data = data[:len(data)-1]
+		suffix = "\n"
+	}
+	replacement := "\n" + prefix
+	return prefix + strings.ReplaceAll(data, "\n", replacement) + suffix
 }
 
 var rePadLines = regexp.MustCompile(`(?m)^(.+)`)

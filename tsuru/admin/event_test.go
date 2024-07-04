@@ -12,6 +12,7 @@ import (
 	"github.com/tsuru/tsuru/cmd"
 	"github.com/tsuru/tsuru/cmd/cmdtest"
 	"github.com/tsuru/tsuru/event"
+	eventTypes "github.com/tsuru/tsuru/types/event"
 	check "gopkg.in/check.v1"
 )
 
@@ -142,7 +143,7 @@ func (s *S) TestEventBlockAddAllFlags(c *check.C) {
 			c.Assert(block, check.DeepEquals, &event.Block{
 				KindName:  "app.deploy",
 				OwnerName: "user@email.com",
-				Target:    event.Target{Type: event.TargetTypeApp, Value: "myapp"},
+				Target:    eventTypes.Target{Type: eventTypes.TargetTypeApp, Value: "myapp"},
 				Reason:    "Reason",
 				Active:    false,
 			})

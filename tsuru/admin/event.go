@@ -18,6 +18,7 @@ import (
 	tsuruHTTP "github.com/tsuru/tsuru-client/tsuru/http"
 	"github.com/tsuru/tsuru/cmd"
 	"github.com/tsuru/tsuru/event"
+	eventTypes "github.com/tsuru/tsuru/types/event"
 )
 
 type EventBlockList struct {
@@ -159,10 +160,10 @@ func (c *EventBlockAdd) Run(context *cmd.Context) error {
 	if err != nil {
 		return err
 	}
-	target := event.Target{}
+	target := eventTypes.Target{}
 	if c.targetType != "" {
-		var targetType event.TargetType
-		targetType, err = event.GetTargetType(c.targetType)
+		var targetType eventTypes.TargetType
+		targetType, err = eventTypes.GetTargetType(c.targetType)
 		if err != nil {
 			return err
 		}
