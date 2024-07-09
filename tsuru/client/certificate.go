@@ -35,9 +35,9 @@ type CertificateSet struct {
 
 func (c *CertificateSet) Info() *cmd.Info {
 	return &cmd.Info{
-		Name:    "certificate-set",
-		Usage:   "certificate set <-a/--app appname> <-c/--cname CNAME> <[certificate] [key] | [--certmanager] [issuer]>",
-		Desc:    `Creates or update a TLS certificate into the specific app.
+		Name:  "certificate-set",
+		Usage: "certificate set <-a/--app appname> <-c/--cname CNAME> <[certificate] [key] | [--certmanager] [issuer]>",
+		Desc: `Creates or update a TLS certificate into the specific app.
 
 The certificate is associated with the CNAME. The CNAME is used to identify the certificate.
 

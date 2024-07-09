@@ -58,7 +58,7 @@ func (s *S) TestCertificateSetRunCertManagerSuccessfully(c *check.C) {
 	context := cmd.Context{
 		Stdout: &stdout,
 		Stderr: &stderr,
-		Args: []string{"letsencrypt-prod"},
+		Args:   []string{"letsencrypt-prod"},
 	}
 
 	trans := &cmdtest.ConditionalTransport{
