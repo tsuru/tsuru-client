@@ -52,6 +52,38 @@ func (s *S) TestCertificateSetRunSuccessfully(c *check.C) {
 	c.Assert(stdout.String(), check.Equals, "Successfully created the certificated.\n")
 }
 
+func (s *S) TestCertificateSetRunCertManagerSuccessfully(c *check.C) {
+	var stdout, stderr bytes.Buffer
+
+	context := cmd.Context{
+		Stdout: &stdout,
+		Stderr: &stderr,
+		Args: []string{"letsencrypt-prod"},
+	}
+
+	trans := &cmdtest.ConditionalTransport{
+		Transport: cmdtest.Transport{Status: http.StatusNoContent},
+		CondFunc: func(req *http.Request) bool {
+			url := strings.HasSuffix(req.URL.Path, "/apps/secret/cert-manager")
+			method := req.Method == http.MethodPut
+			cname := req.FormValue("cname") == "app.io"
+			issuer := req.FormValue("issuer") == "letsencrypt-prod"
+			return url && method && cname && issuer
+		},
+	}
+
+	s.setupFakeTransport(trans)
+
+	command := CertificateSet{}
+	command.Flags().Parse(true, []string{"-a", "secret", "-c", "app.io", "--certmanager"})
+	c.Assert(command.cname, check.Equals, "app.io")
+	c.Assert(command.certmanager, check.Equals, true)
+
+	err := command.Run(&context)
+	c.Assert(err, check.IsNil)
+	c.Assert(stdout.String(), check.Equals, "Successfully created the certificated.\n")
+}
+
 func (s *S) TestCertificateSetRunCerticateNotFound(c *check.C) {
 	var stdout, stderr bytes.Buffer
 	context := cmd.Context{

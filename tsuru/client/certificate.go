@@ -28,25 +28,35 @@ import (
 
 type CertificateSet struct {
 	tsuruClientApp.AppNameMixIn
-	cname string
-	fs    *gnuflag.FlagSet
+	cname       string
+	certmanager bool
+	fs          *gnuflag.FlagSet
 }
 
 func (c *CertificateSet) Info() *cmd.Info {
 	return &cmd.Info{
 		Name:    "certificate-set",
-		Usage:   "certificate set [-a/--app appname] [-c/--cname CNAME] [certificate] [key]",
-		Desc:    `Creates or update a TLS certificate into the specific app.`,
-		MinArgs: 2,
+		Usage:   "certificate set <-a/--app appname> <-c/--cname CNAME> <[certificate] [key] | [--certmanager] [issuer]>",
+		Desc:    `Creates or update a TLS certificate into the specific app.
+
+The certificate is associated with the CNAME. The CNAME is used to identify the certificate.
+
+The certificate can be created automatically by cert-manager using the flag
+[[--certmanager]]. If the flag is specified, an [[issuer]] must be specified.
+
+If you want to use a custom certificate, you should provide the [[certificate]] and [[key]] files.
+`,
+		MinArgs: 1,
 	}
 }
 
 func (c *CertificateSet) Flags() *gnuflag.FlagSet {
 	if c.fs == nil {
 		c.fs = c.AppNameMixIn.Flags()
-		cname := "App CNAME"
+		cname := "App CNAME. The CNAME is also used to identify the certificate."
 		c.fs.StringVar(&c.cname, "cname", "", cname)
 		c.fs.StringVar(&c.cname, "c", "", cname)
+		c.fs.BoolVar(&c.certmanager, "certmanager", false, "Use cert-manager to create the certificate.")
 	}
 	return c.fs
 }
@@ -57,8 +67,57 @@ func (c *CertificateSet) Run(context *cmd.Context) error {
 		return err
 	}
 	if c.cname == "" {
-		return errors.New("You must set cname.")
+		return errors.New("You must set a cname.")
 	}
+
+	var errRun error
+	if c.certmanager {
+		if len(context.Args) != 1 {
+			return errors.New("You must set an issuer.")
+		}
+
+		errRun = c.RunCertManager(appName, context)
+	} else {
+		if len(context.Args) != 2 {
+			return errors.New("You must set certificate and key files.")
+		}
+
+		errRun = c.RunDefault(appName, context)
+	}
+
+	if errRun == nil {
+		fmt.Fprintln(context.Stdout, "Successfully created the certificated.")
+	}
+
+	return errRun
+}
+
+func (c *CertificateSet) RunCertManager(appName string, context *cmd.Context) error {
+	v := url.Values{}
+	v.Set("cname", c.cname)
+	v.Set("issuer", context.Args[0])
+
+	u, err := config.GetURLVersion("1.2", fmt.Sprintf("/apps/%s/cert-manager", appName))
+	if err != nil {
+		return err
+	}
+
+	request, err := http.NewRequest(http.MethodPut, u, strings.NewReader(v.Encode()))
+	if err != nil {
+		return err
+	}
+
+	request.Header.Set("Content-Type", "application/x-www-form-urlencoded")
+	response, err := tsuruHTTP.AuthenticatedClient.Do(request)
+	if err != nil {
+		return err
+	}
+	defer response.Body.Close()
+
+	return nil
+}
+
+func (c *CertificateSet) RunDefault(appName string, context *cmd.Context) error {
 	cert, err := os.ReadFile(context.Args[0])
 	if err != nil {
 		return err
@@ -85,7 +144,6 @@ func (c *CertificateSet) Run(context *cmd.Context) error {
 		return err
 	}
 	defer response.Body.Close()
-	fmt.Fprintln(context.Stdout, "Successfully created the certificated.")
 	return nil
 }
 
