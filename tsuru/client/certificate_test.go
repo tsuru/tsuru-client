@@ -64,7 +64,7 @@ func (s *S) TestCertificateSetRunCertManagerSuccessfully(c *check.C) {
 	trans := &cmdtest.ConditionalTransport{
 		Transport: cmdtest.Transport{Status: http.StatusNoContent},
 		CondFunc: func(req *http.Request) bool {
-			url := strings.HasSuffix(req.URL.Path, "/apps/secret/cert-manager")
+			url := strings.HasSuffix(req.URL.Path, "/apps/secret/certificate")
 			method := req.Method == http.MethodPut
 			cname := req.FormValue("cname") == "app.io"
 			issuer := req.FormValue("issuer") == "letsencrypt-prod"

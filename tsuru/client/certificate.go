@@ -97,7 +97,7 @@ func (c *CertificateSet) RunCertManager(appName string, context *cmd.Context) er
 	v.Set("cname", c.cname)
 	v.Set("issuer", context.Args[0])
 
-	u, err := config.GetURLVersion("1.2", fmt.Sprintf("/apps/%s/cert-manager", appName))
+	u, err := config.GetURLVersion("1.2", fmt.Sprintf("/apps/%s/certificate", appName))
 	if err != nil {
 		return err
 	}
