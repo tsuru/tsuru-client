@@ -19,6 +19,10 @@ import (
 
 func nativeLogin(ctx *cmd.Context) error {
 	var email string
+
+	// Use raw output to avoid missing the input prompt messages
+	ctx.RawOutput()
+
 	if len(ctx.Args) > 0 {
 		email = ctx.Args[0]
 	} else {
