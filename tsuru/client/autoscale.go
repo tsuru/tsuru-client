@@ -86,7 +86,7 @@ func (c *AutoScaleSet) Run(ctx *cmd.Context) error {
 	if err != nil {
 		return err
 	}
-	appName, err := c.AppName()
+	appName, err := c.AppNameByFlag()
 	if err != nil {
 		return err
 	}
@@ -153,7 +153,7 @@ func (c *AutoScaleUnset) Run(ctx *cmd.Context) error {
 	if err != nil {
 		return err
 	}
-	appName, err := c.AppName()
+	appName, err := c.AppNameByFlag()
 	if err != nil {
 		return err
 	}

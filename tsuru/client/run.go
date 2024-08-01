@@ -43,7 +43,7 @@ Otherwise, it will run the command in all units.`
 
 func (c *AppRun) Run(context *cmd.Context) error {
 	context.RawOutput()
-	appName, err := c.AppName()
+	appName, err := c.AppNameByFlag()
 	if err != nil {
 		return err
 	}

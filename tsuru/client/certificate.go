@@ -52,7 +52,7 @@ func (c *CertificateSet) Flags() *gnuflag.FlagSet {
 }
 
 func (c *CertificateSet) Run(context *cmd.Context) error {
-	appName, err := c.AppName()
+	appName, err := c.AppNameByFlag()
 	if err != nil {
 		return err
 	}
@@ -114,7 +114,7 @@ func (c *CertificateUnset) Flags() *gnuflag.FlagSet {
 }
 
 func (c *CertificateUnset) Run(context *cmd.Context) error {
-	appName, err := c.AppName()
+	appName, err := c.AppNameByFlag()
 	if err != nil {
 		return err
 	}
@@ -168,7 +168,7 @@ func (c *CertificateList) Flags() *gnuflag.FlagSet {
 }
 
 func (c *CertificateList) Run(context *cmd.Context) error {
-	appName, err := c.AppName()
+	appName, err := c.AppNameByFlag()
 	if err != nil {
 		return err
 	}

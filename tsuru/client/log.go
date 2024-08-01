@@ -34,7 +34,7 @@ type AppLog struct {
 func (c *AppLog) Info() *cmd.Info {
 	return &cmd.Info{
 		Name:  "app-log",
-		Usage: "app log [-a/--app appname] [-l/--lines numberOfLines] [-s/--source source] [-u/--unit unit] [-f/--follow]",
+		Usage: "app log [appname] [-l/--lines numberOfLines] [-s/--source source] [-u/--unit unit] [-f/--follow]",
 		Desc: `Shows log entries for an application. These logs include everything the
 application send to stdout and stderr, alongside with logs from tsuru server
 (deployments, restarts, etc.)
@@ -117,7 +117,7 @@ type log struct {
 
 func (c *AppLog) Run(context *cmd.Context) error {
 	context.RawOutput()
-	appName, err := c.AppName()
+	appName, err := c.AppNameByArgsAndFlag(context.Args)
 	if err != nil {
 		return err
 	}

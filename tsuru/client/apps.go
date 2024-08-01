@@ -397,7 +397,7 @@ type AppInfo struct {
 func (c *AppInfo) Info() *cmd.Info {
 	return &cmd.Info{
 		Name:  "app-info",
-		Usage: "app info [-a/--app appname]",
+		Usage: "app info [appname]",
 		Desc: `Shows information about a specific app. Its state, platform, git repository,
 etc. You need to be a member of a team that has access to the app to be able to
 see information about it.`,
@@ -418,7 +418,7 @@ func (cmd *AppInfo) Flags() *gnuflag.FlagSet {
 }
 
 func (c *AppInfo) Run(context *cmd.Context) error {
-	appName, err := c.AppName()
+	appName, err := c.AppNameByArgsAndFlag(context.Args)
 	if err != nil {
 		return err
 	}
@@ -1212,7 +1212,7 @@ app to a team.`,
 }
 
 func (c *AppGrant) Run(context *cmd.Context) error {
-	appName, err := c.AppName()
+	appName, err := c.AppNameByFlag()
 	if err != nil {
 		return err
 	}
@@ -1251,7 +1251,7 @@ authorized team.`,
 }
 
 func (c *AppRevoke) Run(context *cmd.Context) error {
-	appName, err := c.AppName()
+	appName, err := c.AppNameByFlag()
 	if err != nil {
 		return err
 	}
@@ -1470,7 +1470,7 @@ type AppStop struct {
 func (c *AppStop) Info() *cmd.Info {
 	return &cmd.Info{
 		Name:    "app-stop",
-		Usage:   "app stop [-a/--app appname] [-p/--process processname] [--version version]",
+		Usage:   "app stop [appname] [-p/--process processname] [--version version]",
 		Desc:    "Stops an application, or one of the processes of the application.",
 		MinArgs: 0,
 	}
@@ -1478,7 +1478,7 @@ func (c *AppStop) Info() *cmd.Info {
 
 func (c *AppStop) Run(context *cmd.Context) error {
 	context.RawOutput()
-	appName, err := c.AppName()
+	appName, err := c.AppNameByArgsAndFlag(context.Args)
 	if err != nil {
 		return err
 	}
@@ -1522,7 +1522,7 @@ type AppStart struct {
 func (c *AppStart) Info() *cmd.Info {
 	return &cmd.Info{
 		Name:    "app-start",
-		Usage:   "app start [-a/--app appname] [-p/--process processname] [--version version]",
+		Usage:   "app start [appname] [-p/--process processname] [--version version]",
 		Desc:    "Starts an application, or one of the processes of the application.",
 		MinArgs: 0,
 	}
@@ -1530,7 +1530,7 @@ func (c *AppStart) Info() *cmd.Info {
 
 func (c *AppStart) Run(context *cmd.Context) error {
 	context.RawOutput()
-	appName, err := c.AppName()
+	appName, err := c.AppNameByArgsAndFlag(context.Args)
 	if err != nil {
 		return err
 	}
@@ -1573,7 +1573,7 @@ type AppRestart struct {
 
 func (c *AppRestart) Run(context *cmd.Context) error {
 	context.RawOutput()
-	appName, err := c.AppName()
+	appName, err := c.AppNameByArgsAndFlag(context.Args)
 	if err != nil {
 		return err
 	}
@@ -1600,7 +1600,7 @@ func (c *AppRestart) Run(context *cmd.Context) error {
 func (c *AppRestart) Info() *cmd.Info {
 	return &cmd.Info{
 		Name:    "app-restart",
-		Usage:   "app restart [-a/--app appname] [-p/--process processname] [--version version]",
+		Usage:   "app restart [appname] [-p/--process processname] [--version version]",
 		Desc:    `Restarts an application, or one of the processes of the application.`,
 		MinArgs: 0,
 	}
@@ -1667,7 +1667,7 @@ After unsetting the CNAME from the app, [[tsuru app list]] and [[tsuru app info]
 }
 
 func unsetCName(cnames []string, g tsuruClientApp.AppNameMixIn) error {
-	appName, err := g.AppName()
+	appName, err := g.AppNameByFlag()
 	if err != nil {
 		return err
 	}
@@ -1688,7 +1688,7 @@ func unsetCName(cnames []string, g tsuruClientApp.AppNameMixIn) error {
 }
 
 func addCName(cnames []string, g tsuruClientApp.AppNameMixIn) error {
-	appName, err := g.AppName()
+	appName, err := g.AppNameByFlag()
 	if err != nil {
 		return err
 	}

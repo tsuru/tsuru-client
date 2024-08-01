@@ -331,7 +331,7 @@ func (c *AppRoutersList) Flags() *gnuflag.FlagSet {
 }
 
 func (c *AppRoutersList) Run(context *cmd.Context) error {
-	appName, err := c.AppName()
+	appName, err := c.AppNameByFlag()
 	if err != nil {
 		return err
 	}
@@ -426,7 +426,7 @@ func (c *AppRoutersAdd) Flags() *gnuflag.FlagSet {
 }
 
 func (c *AppRoutersAdd) Run(context *cmd.Context) error {
-	appName, err := c.AppName()
+	appName, err := c.AppNameByFlag()
 	if err != nil {
 		return err
 	}
@@ -482,7 +482,7 @@ func (c *AppRoutersUpdate) Flags() *gnuflag.FlagSet {
 }
 
 func (c *AppRoutersUpdate) Run(context *cmd.Context) error {
-	appName, err := c.AppName()
+	appName, err := c.AppNameByFlag()
 	if err != nil {
 		return err
 	}
@@ -527,7 +527,7 @@ func (c *AppRoutersRemove) Info() *cmd.Info {
 }
 
 func (c *AppRoutersRemove) Run(context *cmd.Context) error {
-	appName, err := c.AppName()
+	appName, err := c.AppNameByFlag()
 	if err != nil {
 		return err
 	}
@@ -553,7 +553,7 @@ type appVersionRouterBase struct {
 }
 
 func (c *appVersionRouterBase) Run(ctx *cmd.Context) error {
-	appName, err := c.AppName()
+	appName, err := c.AppNameByFlag()
 	if err != nil {
 		return err
 	}

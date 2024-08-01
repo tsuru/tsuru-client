@@ -34,7 +34,7 @@ var _ = check.Suite(&S{})
 func (s *S) TestAppNameMixInWithFlagDefined(c *check.C) {
 	g := AppNameMixIn{}
 	g.Flags().Parse(true, []string{"--app", "myapp"})
-	name, err := g.AppName()
+	name, err := g.AppNameByFlag()
 	c.Assert(err, check.IsNil)
 	c.Assert(name, check.Equals, "myapp")
 }
@@ -42,14 +42,30 @@ func (s *S) TestAppNameMixInWithFlagDefined(c *check.C) {
 func (s *S) TestAppNameMixInWithShortFlagDefined(c *check.C) {
 	g := AppNameMixIn{}
 	g.Flags().Parse(true, []string{"-a", "myapp"})
-	name, err := g.AppName()
+	name, err := g.AppNameByFlag()
 	c.Assert(err, check.IsNil)
 	c.Assert(name, check.Equals, "myapp")
 }
 
+func (s *S) TestAppNameMixInArgs(c *check.C) {
+	g := AppNameMixIn{}
+	g.Flags().Parse(true, []string{})
+	name, err := g.AppNameByArgsAndFlag([]string{"myapp"})
+	c.Assert(err, check.IsNil)
+	c.Assert(name, check.Equals, "myapp")
+}
+
+func (s *S) TestAppNameMixInArgsConflict(c *check.C) {
+	g := AppNameMixIn{}
+	g.Flags().Parse(true, []string{"-a", "myapp"})
+	_, err := g.AppNameByArgsAndFlag([]string{"myapp2"})
+	c.Assert(err, check.Not(check.IsNil))
+	c.Assert(err.Error(), check.Equals, "You can't use the app flag and specify the app name as an argument at the same time.")
+}
+
 func (s *S) TestAppNameMixInWithoutFlagDefinedFails(c *check.C) {
 	g := AppNameMixIn{}
-	name, err := g.AppName()
+	name, err := g.AppNameByFlag()
 	c.Assert(name, check.Equals, "")
 	c.Assert(err, check.NotNil)
 	c.Assert(err.Error(), check.Equals, `The name of the app is required.

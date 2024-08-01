@@ -100,7 +100,7 @@ func (*AppQuotaView) Info() *cmd.Info {
 	return &cmd.Info{
 		Name:    "app-quota-view",
 		MinArgs: 0,
-		Usage:   "app-quota-view [-a/--app appname]",
+		Usage:   "app-quota-view [appname]",
 		Desc:    "Displays the current usage and limit of the given app.",
 	}
 }
@@ -117,7 +117,7 @@ func (c *AppQuotaView) Flags() *gnuflag.FlagSet {
 
 func (c *AppQuotaView) Run(context *cmd.Context) error {
 	context.RawOutput()
-	appName, err := c.AppName()
+	appName, err := c.AppNameByArgsAndFlag(context.Args)
 	if err != nil {
 		return err
 	}
@@ -164,7 +164,7 @@ The new limit must be an integer, it may also be "unlimited".`
 
 func (c *AppQuotaChange) Run(context *cmd.Context) error {
 	context.RawOutput()
-	appName, err := c.AppName()
+	appName, err := c.AppNameByFlag()
 	if err != nil {
 		return err
 	}

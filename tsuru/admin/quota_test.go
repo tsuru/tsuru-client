@@ -170,7 +170,7 @@ func (s *S) TestAppQuotaViewRunFailure(c *check.C) {
 	trans := cmdtest.Transport{Message: "app not found", Status: http.StatusNotFound}
 	s.setupFakeTransport(&trans)
 	command := AppQuotaView{}
-	command.Flags().Parse(true, []string{"--app", "hibria"})
+	command.Flags().Parse(true, []string{})
 	err := command.Run(&context)
 	c.Assert(err, check.NotNil)
 	c.Assert(tsuruHTTP.UnwrapErr(err).Error(), check.Equals, "app not found")

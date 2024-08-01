@@ -527,7 +527,7 @@ func (c *VolumeBind) Flags() *gnuflag.FlagSet {
 func (c *VolumeBind) Run(ctx *cmd.Context) error {
 	ctx.RawOutput()
 	volumeName := ctx.Args[0]
-	appName, err := c.AppName()
+	appName, err := c.AppNameByFlag()
 	if err != nil {
 		return err
 	}
@@ -595,7 +595,7 @@ func (c *VolumeUnbind) Flags() *gnuflag.FlagSet {
 func (c *VolumeUnbind) Run(ctx *cmd.Context) error {
 	ctx.RawOutput()
 	volumeName := ctx.Args[0]
-	appName, err := c.AppName()
+	appName, err := c.AppNameByFlag()
 	if err != nil {
 		return err
 	}
