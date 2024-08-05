@@ -109,7 +109,12 @@ func renderPlans(plans []apptypes.Plan, opts renderPlansOpts) string {
 		}
 
 		if showBurstColumn {
-			cpuBurst := p.CPUBurst.Default
+			var cpuBurst float64 = 1
+
+			if p.CPUBurst != nil {
+				cpuBurst = p.CPUBurst.Default
+			}
+
 			cpuBurstObservation := ""
 			if p.Override != nil && p.Override.CPUBurst != nil {
 				cpuBurst = *p.Override.CPUBurst
@@ -217,7 +222,7 @@ func renderPlansK8SFriendly(plans []apptypes.Plan, showMaxBurstAllowed bool) str
 		}
 
 		if showCPULimitsColumn {
-			cpuBurst := p.CPUBurst.Default
+			cpuBurst := p.GetCPUBurst()
 			if cpuBurst < 1 {
 				cpuBurst = 1
 			}
