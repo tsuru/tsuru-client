@@ -58,7 +58,7 @@ type descriptable interface {
 }
 
 func (c *ShellToContainerCmd) Run(context *cmd.Context) error {
-	appName, err := c.AppName()
+	appName, err := c.AppNameByFlag()
 	if err != nil {
 		return err
 	}

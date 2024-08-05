@@ -78,7 +78,7 @@ func (c *AppBuild) Run(context *cmd.Context) error {
 		return errors.New("You should provide at least one file to build the image.\n")
 	}
 
-	appName, err := c.AppName()
+	appName, err := c.AppNameByFlag()
 	if err != nil {
 		return err
 	}

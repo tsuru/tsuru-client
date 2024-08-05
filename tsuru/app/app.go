@@ -14,7 +14,19 @@ type AppNameMixIn struct {
 	appName string
 }
 
-func (cmd *AppNameMixIn) AppName() (string, error) {
+func (cmd *AppNameMixIn) AppNameByArgsAndFlag(args []string) (string, error) {
+	if len(args) > 0 {
+		if cmd.appName != "" {
+			return "", errors.New("You can't use the app flag and specify the app name as an argument at the same time.")
+		}
+
+		return args[0], nil
+	}
+
+	return cmd.AppNameByFlag()
+}
+
+func (cmd *AppNameMixIn) AppNameByFlag() (string, error) {
 	if cmd.appName == "" {
 		return "", errors.Errorf(`The name of the app is required.
 

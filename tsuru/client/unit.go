@@ -51,7 +51,7 @@ func (c *UnitAdd) Flags() *gnuflag.FlagSet {
 
 func (c *UnitAdd) Run(context *cmd.Context) error {
 	context.RawOutput()
-	appName, err := c.AppName()
+	appName, err := c.AppNameByFlag()
 	if err != nil {
 		return err
 	}
@@ -105,7 +105,7 @@ func (c *UnitRemove) Flags() *gnuflag.FlagSet {
 
 func (c *UnitRemove) Run(context *cmd.Context) error {
 	context.RawOutput()
-	appName, err := c.AppName()
+	appName, err := c.AppNameByFlag()
 	if err != nil {
 		return err
 	}
@@ -219,7 +219,7 @@ func (c *UnitSet) Flags() *gnuflag.FlagSet {
 
 func (c *UnitSet) Run(context *cmd.Context) error {
 	context.RawOutput()
-	appName, err := c.AppName()
+	appName, err := c.AppNameByFlag()
 	if err != nil {
 		return err
 	}

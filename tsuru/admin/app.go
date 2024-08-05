@@ -22,7 +22,7 @@ func (c *AppRoutesRebuild) Info() *cmd.Info {
 	return &cmd.Info{
 		Name:    "app-routes-rebuild",
 		MinArgs: 0,
-		Usage:   "app-routes-rebuild -a <app-name>",
+		Usage:   "app-routes-rebuild <app-name>",
 		Desc: `Rebuild routes for an application.
 This can be used to recover from some failure in the router that caused
 existing routes to be lost.`,
@@ -30,7 +30,7 @@ existing routes to be lost.`,
 }
 
 func (c *AppRoutesRebuild) Run(ctx *cmd.Context) error {
-	appName, err := c.AppName()
+	appName, err := c.AppNameByArgsAndFlag(ctx.Args)
 	if err != nil {
 		return err
 	}

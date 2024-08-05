@@ -55,7 +55,7 @@ type AppDeployList struct {
 func (c *AppDeployList) Info() *cmd.Info {
 	return &cmd.Info{
 		Name:  "app-deploy-list",
-		Usage: "app deploy list [-a/--app <appname>]",
+		Usage: "app deploy list [<appname>]",
 		Desc:  "List information about deploys for an application.",
 	}
 }
@@ -71,7 +71,7 @@ func (c *AppDeployList) Flags() *gnuflag.FlagSet {
 }
 
 func (c *AppDeployList) Run(context *cmd.Context) error {
-	appName, err := c.AppName()
+	appName, err := c.AppNameByArgsAndFlag(context.Args)
 	if err != nil {
 		return err
 	}
@@ -237,7 +237,7 @@ func (c *AppDeploy) Run(context *cmd.Context) error {
 		return errors.New("You can't deploy container image and container file at same time.\n")
 	}
 
-	appName, err := c.AppName()
+	appName, err := c.AppNameByFlag()
 	if err != nil {
 		return err
 	}
@@ -408,7 +408,7 @@ func (c *AppDeployRollback) Info() *cmd.Info {
 }
 
 func (c *AppDeployRollback) Run(context *cmd.Context) error {
-	appName, err := c.AppName()
+	appName, err := c.AppNameByFlag()
 	if err != nil {
 		return err
 	}
@@ -454,16 +454,16 @@ func (c *AppDeployRebuild) Info() *cmd.Info {
 	desc := "Rebuild and deploy the last app image."
 	return &cmd.Info{
 		Name:    "app-deploy-rebuild",
-		Usage:   "app deploy rebuild [-a/--app appname]",
+		Usage:   "app deploy rebuild [appname]",
 		Desc:    desc,
 		MinArgs: 0,
-		MaxArgs: 0,
+		MaxArgs: 1,
 	}
 }
 
 func (c *AppDeployRebuild) Run(context *cmd.Context) error {
 	context.RawOutput()
-	appName, err := c.AppName()
+	appName, err := c.AppNameByArgsAndFlag(context.Args)
 	if err != nil {
 		return err
 	}
@@ -507,10 +507,10 @@ func (c *AppDeployRollbackUpdate) Info() *cmd.Info {
 `
 	return &cmd.Info{
 		Name:    "app-deploy-rollback-update",
-		Usage:   "app deploy rollback update [-a/--app appName] [-i/--image imageName] [-d/--disable] [-r/--reason reason]",
+		Usage:   "app deploy rollback update [appName] [-i/--image imageName] [-d/--disable] [-r/--reason reason]",
 		Desc:    desc,
 		MinArgs: 0,
-		MaxArgs: 0,
+		MaxArgs: 1,
 	}
 }
 
@@ -531,7 +531,7 @@ func (c *AppDeployRollbackUpdate) Flags() *gnuflag.FlagSet {
 }
 
 func (c *AppDeployRollbackUpdate) Run(context *cmd.Context) error {
-	appName, err := c.AppName()
+	appName, err := c.AppNameByArgsAndFlag(context.Args)
 	if err != nil {
 		return err
 	}
