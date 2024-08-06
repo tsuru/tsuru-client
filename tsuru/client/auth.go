@@ -111,6 +111,7 @@ func (c *UserRemove) currentUserEmail() (string, error) {
 }
 
 func (c *UserRemove) Run(context *cmd.Context) error {
+	context.RawOutput()
 	var (
 		answer string
 		email  string
