@@ -65,8 +65,6 @@ github.com/hashicorp/go-version v1.2.0 h1:3vNe/fWF5CBgRIguda1meWhsZHy3m8gCJ5wx+d
 github.com/hashicorp/go-version v1.2.0/go.mod h1:fltr4n8CU8Ke44wwGCBoEymUuxUHl09ZGVZPK5anwXA=
 github.com/howeyc/fsnotify v0.9.0 h1:0gtV5JmOKH4A8SsFxG2BczSeXWWPvcMT0euZt5gDAxY=
 github.com/howeyc/fsnotify v0.9.0/go.mod h1:41HzSPxBGeFRQKEEwgh49TRw/nKBsYZ2cF1OzPjSJsA=
-github.com/iancoleman/orderedmap v0.2.0 h1:sq1N/TFpYH++aViPcaKjys3bDClUEU7s5B+z6jq8pNA=
-github.com/iancoleman/orderedmap v0.2.0/go.mod h1:N0Wam8K1arqPXNWjMo21EXnBPOPp36vB07FNRdD2geA=
 github.com/imdario/mergo v0.3.13 h1:lFzP57bqS/wsqKssCGmtLAb8A0wKjLGrve2q3PPVcBk=
 github.com/imdario/mergo v0.3.13/go.mod h1:4lJ1jqUDcsbIECGy0RUJAXNIhg+6ocWgb1ALK2O4oXg=
 github.com/json-iterator/go v1.1.12 h1:PV8peI4a0ysnczrg+LtxykD8LfKY9ML6u2jnxaEnrnM=
@@ -157,8 +155,8 @@ github.com/tsuru/config v0.0.0-20201023175036-375aaee8b560 h1:fniQ/BmYAHdnNmY333
 github.com/tsuru/config v0.0.0-20201023175036-375aaee8b560/go.mod h1:mj6t8JKWU51GScTT50XRmDj65T5XhTyNvO5FUNV5zS4=
 github.com/tsuru/gnuflag v0.0.0-20151217162021-86b8c1b864aa h1:JlLQP1xa13a994p/Aau2e3K9xXYaHNoNvTDVIMHSUa4=
 github.com/tsuru/gnuflag v0.0.0-20151217162021-86b8c1b864aa/go.mod h1:UibOSvkMFKRe/eiwktAPAvQG8L+p8nYsECJvu3Dgw7I=
-github.com/tsuru/go-tsuruclient v0.0.0-20240409125509-22a1e08326f4 h1:MGmG6AxKP8XRe7nQqIQR+Tsb5tCzHnYpYk0tiuXVgxY=
-github.com/tsuru/go-tsuruclient v0.0.0-20240409125509-22a1e08326f4/go.mod h1:qwh/KJ6ypa2GISRI79XFOHhnSjGOe1cZVPHF3nfrf18=
+github.com/tsuru/go-tsuruclient v0.0.0-20240802204705-a93c2a18a794 h1:3TdjKGfvCOaZIrWrxkMIaxqQ+qNLzmWiZXDkW1kY/xY=
+github.com/tsuru/go-tsuruclient v0.0.0-20240802204705-a93c2a18a794/go.mod h1:qwh/KJ6ypa2GISRI79XFOHhnSjGOe1cZVPHF3nfrf18=
 github.com/tsuru/tablecli v0.0.0-20190131152944-7ded8a3383c6 h1:1XDdWFAjIbCSG1OjN9v9KdWhuM8UtYlFcfHe/Ldkchk=
 github.com/tsuru/tablecli v0.0.0-20190131152944-7ded8a3383c6/go.mod h1:ztYpOhW+u1k21FEqp7nZNgpWbr0dUKok5lgGCZi+1AQ=
 github.com/tsuru/tsuru v0.0.0-20240703132558-bfd1d9c89602 h1:HiF99OFCkd2F0DwyMzBDStxm43rtrK8sBnVA2ZyfIZ4=
