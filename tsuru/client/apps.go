@@ -658,7 +658,7 @@ const simplifiedFormat = `{{ if .Error -}}
 Error: {{ .Error }}
 {{ end -}}
 Application: {{.Name}}
-{{ if .DashboardURL -}}
+{{- if .DashboardURL }}
 Dashboard: {{ .DashboardURL }}
 {{- end }}
 {{- if .Description }}
@@ -690,7 +690,7 @@ const fullFormat = `{{ if .Error -}}
 Error: {{ .Error }}
 {{ end -}}
 Application: {{.Name}}
-{{ if .DashboardURL -}}
+{{- if .DashboardURL }}
 Dashboard: {{ .DashboardURL }}
 {{- end }}
 {{- if .Description }}

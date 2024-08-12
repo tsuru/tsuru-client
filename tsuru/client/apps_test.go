@@ -1921,6 +1921,42 @@ Units: 3
 	c.Assert(stdout.String(), check.Equals, expected)
 }
 
+func (s *S) TestAppInfoDashboardURL(c *check.C) {
+	var stdout, stderr bytes.Buffer
+	result := `{"name":"app1","teamowner":"myteam","ip":"myapp.tsuru.io","cname":["yourapp.tsuru.io"],"platform":"php","repository":"git@git.com:php.git","state":"dead","units":[{"ID":"app1/0","Status":"started"}, {"ID":"app1/1","Status":"started"}, {"Ip":"","ID":"app1/2","Status":"pending"}],"Teams":["tsuruteam","crane"], "owner": "myapp_owner", "deploys": 7, "router": "planb", "dashboardURL": "http://dashboard.tsuru.io/app1"}`
+	expected := `Application: app1
+Dashboard: http://dashboard.tsuru.io/app1
+Platform: php
+Router: planb
+Teams: myteam (owner), tsuruteam, crane
+External Addresses: yourapp.tsuru.io (cname), myapp.tsuru.io
+Created by: myapp_owner
+Deploys: 7
+Pool:
+Quota: 0/0 units
+
+Units: 3
++--------+---------+------+------+
+| Name   | Status  | Host | Port |
++--------+---------+------+------+
+| app1/0 | started |      |      |
+| app1/1 | started |      |      |
+| app1/2 | pending |      |      |
++--------+---------+------+------+
+
+`
+	context := cmd.Context{
+		Stdout: &stdout,
+		Stderr: &stderr,
+	}
+	s.setupFakeTransport(&cmdtest.Transport{Message: result, Status: http.StatusOK})
+	command := AppInfo{}
+	command.Flags().Parse(true, []string{"--app", "app1"})
+	err := command.Run(&context)
+	c.Assert(err, check.IsNil)
+	c.Assert(stdout.String(), check.Equals, expected)
+}
+
 func (s *S) TestAppInfoWithServices(c *check.C) {
 	var stdout, stderr bytes.Buffer
 	expected := `Application: app1
