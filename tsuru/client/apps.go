@@ -555,6 +555,7 @@ type app struct {
 	Routers     []apptypes.AppRouter
 	AutoScale   []tsuru.AutoScaleSpec
 
+	DashboardURL         string
 	InternalAddresses    []appInternalAddress
 	UnitsMetrics         []unitMetrics
 	VolumeBinds          []volumeTypes.VolumeBind
@@ -657,6 +658,9 @@ const simplifiedFormat = `{{ if .Error -}}
 Error: {{ .Error }}
 {{ end -}}
 Application: {{.Name}}
+{{ if .DashboardURL -}}
+Dashboard: {{ .DashboardURL }}
+{{- end }}
 {{- if .Description }}
 Description: {{.Description}}
 {{- end }}
@@ -686,6 +690,9 @@ const fullFormat = `{{ if .Error -}}
 Error: {{ .Error }}
 {{ end -}}
 Application: {{.Name}}
+{{ if .DashboardURL -}}
+Dashboard: {{ .DashboardURL }}
+{{- end }}
 {{- if .Description }}
 Description: {{.Description}}
 {{- end }}

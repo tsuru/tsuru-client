@@ -207,6 +207,9 @@ const jobInfoFormat = `Job: {{.Job.Name}}
 {{- with .Job.Description }}
 Description: {{.}}
 {{- end }}
+{{- with .DashboardURL }}
+Dashboard: {{.}}
+{{- end }}
 Teams: {{.Teams}}
 Created by: {{.Job.Owner}}
 Pool: {{.Job.Pool}}
@@ -243,9 +246,10 @@ func (c *JobInfo) Run(ctx *cmd.Context) error {
 
 	teams := renderTeams(jobInfo.Job)
 	err = tmpl.Execute(&buf, struct {
-		Job   tsuru.Job
-		Teams string
-	}{jobInfo.Job, teams})
+		Job          tsuru.Job
+		DashboardURL string
+		Teams        string
+	}{Job: jobInfo.Job, DashboardURL: jobInfo.DashboardURL, Teams: teams})
 	if err != nil {
 		return err
 	}
