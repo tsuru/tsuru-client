@@ -5,6 +5,8 @@
 package client
 
 import (
+	"crypto/ecdsa"
+	"crypto/rsa"
 	"crypto/x509"
 	"crypto/x509/pkix"
 	"encoding/json"
@@ -14,8 +16,8 @@ import (
 	"net/http"
 	"net/url"
 	"os"
-	"sort"
 	"strings"
+	"time"
 
 	"github.com/tsuru/gnuflag"
 	"github.com/tsuru/go-tsuruclient/pkg/config"
@@ -167,6 +169,19 @@ func (c *CertificateList) Flags() *gnuflag.FlagSet {
 	return c.fs
 }
 
+type cnameCertificate struct {
+	Certificate string `json:"certificate"`
+	Issuer      string `json:"issuer"`
+}
+
+type routerCertificate struct {
+	CNameCertificates map[string]cnameCertificate `json:"cnames"`
+}
+
+type appCertificate struct {
+	RouterCertificates map[string]routerCertificate `json:"routers"`
+}
+
 func (c *CertificateList) Run(context *cmd.Context) error {
 	appName, err := c.AppNameByFlag()
 	if err != nil {
@@ -185,60 +200,38 @@ func (c *CertificateList) Run(context *cmd.Context) error {
 		return err
 	}
 	defer response.Body.Close()
-	rawCerts := make(map[string]map[string]string)
-	err = json.NewDecoder(response.Body).Decode(&rawCerts)
+	appCerts := appCertificate{}
+	err = json.NewDecoder(response.Body).Decode(&appCerts)
 	if err != nil {
 		return err
 	}
 
 	if c.json {
-		return c.renderJSON(context, rawCerts)
-	}
-
-	routerNames := []string{}
-	routerMap := make(map[string][]string)
-	for k := range rawCerts {
-		routerNames = append(routerNames, k)
-		for v := range rawCerts[k] {
-			routerMap[k] = append(routerMap[k], v)
-		}
-	}
-	sort.Strings(routerNames)
-	for k := range routerMap {
-		sort.Strings(routerMap[k])
+		return c.renderJSON(context, appCerts)
 	}
 
 	if c.raw {
-		for _, r := range routerNames {
-			fmt.Fprintf(context.Stdout, "%s:\n", r)
-			for n, rawCert := range rawCerts[r] {
-				if rawCert == "" {
-					rawCert = "No certificate.\n"
-				}
-				fmt.Fprintf(context.Stdout, "%s:\n%s", n, rawCert)
+		for router, routerCerts := range appCerts.RouterCertificates {
+			fmt.Fprintf(context.Stdout, "%s:\n", router)
+			for cname, cnameCert := range routerCerts.CNameCertificates {
+				fmt.Fprintf(context.Stdout, "%s:\n%s", cname, cnameCert.Certificate)
 			}
 		}
+
 		return nil
 	}
+
 	tbl := tablecli.NewTable()
 	tbl.LineSeparator = true
-	tbl.Headers = tablecli.Row{"Router", "CName", "Expires", "Issuer", "Subject"}
-	dateFormat := "2006-01-02 15:04:05"
-	for r, cnames := range routerMap {
-		for _, n := range cnames {
-			rawCert := rawCerts[r][n]
-			if rawCert == "" {
-				tbl.AddRow(tablecli.Row{r, n, "-", "-", "-"})
-				continue
-			}
-			cert, err := parseCert([]byte(rawCert))
+	tbl.Headers = tablecli.Row{"Router", "CName", "Public Key Info", "Certificate Validity"}
+	for router, routerCerts := range appCerts.RouterCertificates {
+		for cname, cnameCert := range routerCerts.CNameCertificates {
+			cert, err := parseCert([]byte(cnameCert.Certificate))
 			if err != nil {
-				tbl.AddRow(tablecli.Row{r, n, err.Error(), "-", "-"})
+				tbl.AddRow(tablecli.Row{router, cname, err.Error(), "-"})
 				continue
 			}
-			tbl.AddRow(tablecli.Row{r, n, formatter.Local(cert.NotAfter).Format(dateFormat),
-				formatName(&cert.Issuer), formatName(&cert.Subject),
-			})
+			tbl.AddRow(tablecli.Row{router, formatCName(cname, cnameCert.Issuer), formatPublicKeyInfo(*cert), formatCertificateValidity(*cert)})
 		}
 	}
 	tbl.Sort()
@@ -246,7 +239,52 @@ func (c *CertificateList) Run(context *cmd.Context) error {
 	return nil
 }
 
-func (c *CertificateList) renderJSON(context *cmd.Context, rawCerts map[string]map[string]string) error {
+func publicKeySize(publicKey interface{}) int {
+	switch pk := publicKey.(type) {
+	case *rsa.PublicKey:
+		return pk.Size() * 8 // convert bytes to bits
+	case *ecdsa.PublicKey:
+		return pk.Params().BitSize
+	}
+	return 0
+}
+
+func formatCName(cname string, issuer string) (cnameStr string) {
+	cnameStr += fmt.Sprintf("%s\n", cname)
+
+	if issuer != "" {
+		cnameStr += fmt.Sprintln("  managed by: cert-manager")
+		cnameStr += fmt.Sprintf("  issuer: %s\n", issuer)
+	}
+
+	return
+}
+
+func formatPublicKeyInfo(cert x509.Certificate) (pkInfo string) {
+	publicKey := cert.PublicKeyAlgorithm.String()
+	if publicKey != "" {
+		pkInfo += fmt.Sprintf("Algorithm\n%s\n\n", publicKey)
+	}
+
+	publicKeySize := publicKeySize(cert.PublicKey)
+	if publicKeySize > 0 {
+		pkInfo += fmt.Sprintf("Key size (in bits)\n%d", publicKeySize)
+	}
+
+	return
+}
+
+func formatCertificateValidity(cert x509.Certificate) string {
+	return fmt.Sprintf("Not before\n%s\n\nNot after\n%s",
+		formatTime(cert.NotBefore),
+		formatTime(cert.NotAfter))
+}
+
+func formatTime(t time.Time) string {
+	return t.UTC().Format(time.RFC3339)
+}
+
+func (c *CertificateList) renderJSON(context *cmd.Context, appCerts appCertificate) error {
 	type certificateJSONFriendly struct {
 		Router   string     `json:"router"`
 		Domain   string     `json:"domain"`
@@ -258,19 +296,15 @@ func (c *CertificateList) renderJSON(context *cmd.Context, rawCerts map[string]m
 
 	data := []certificateJSONFriendly{}
 
-	for router, domainMap := range rawCerts {
-	domainLoop:
-		for domain, raw := range domainMap {
-			if raw == "" {
-				continue domainLoop
-			}
+	for router, routerCerts := range appCerts.RouterCertificates {
+		for cname, cnameCert := range routerCerts.CNameCertificates {
 			item := certificateJSONFriendly{
-				Domain: domain,
+				Domain: cname,
 				Router: router,
-				Raw:    raw,
+				Raw:    cnameCert.Certificate,
 			}
 
-			parsedCert, err := parseCert([]byte(raw))
+			parsedCert, err := parseCert([]byte(cnameCert.Certificate))
 			if err == nil {
 				item.Issuer = &parsedCert.Issuer
 				item.Subject = &parsedCert.Subject
