@@ -130,7 +130,7 @@ func (s *S) TestCertificateListRunSuccessfully(c *check.C) {
 				CNameCertificates: map[string]cnameCertificate{
 					"myapp.io": {
 						Certificate: certData,
-						Issuer: "lets-encrypt",
+						Issuer:      "lets-encrypt",
 					},
 					"myapp.other.io": {
 						Certificate: "",
@@ -148,8 +148,8 @@ func (s *S) TestCertificateListRunSuccessfully(c *check.C) {
 	}
 	data, err := json.Marshal(appCert)
 	c.Assert(err, check.IsNil)
-	expectedNotBefore, err := time.Parse("2006-01-02 15:04:05", "2017-01-12 20:33:11")
-	expectedNotAfter, err := time.Parse("2006-01-02 15:04:05", "2027-01-10 20:33:11")
+	expectedNotBefore, _ := time.Parse("2006-01-02 15:04:05", "2017-01-12 20:33:11")
+	expectedNotAfter, _ := time.Parse("2006-01-02 15:04:05", "2027-01-10 20:33:11")
 	c.Assert(err, check.IsNil)
 	notBeforeStr := expectedNotBefore.UTC().Format(time.RFC3339)
 	notAfterStr := expectedNotAfter.UTC().Format(time.RFC3339)
@@ -166,7 +166,7 @@ func (s *S) TestCertificateListRunSuccessfully(c *check.C) {
 |                |   managed by: cert-manager | RSA                   | ` + notBeforeStr + ` |
 |                |   issuer: lets-encrypt     |                       |                      |
 |                |                            | Key size (in bits)    | Not after            |
-|                |                            | 2048                  | ` + notAfterStr +` |
+|                |                            | 2048                  | ` + notAfterStr + ` |
 +----------------+----------------------------+-----------------------+----------------------+
 | ingress-router | myapp.other.io             | failed to decode data | -                    |
 +----------------+----------------------------+-----------------------+----------------------+
@@ -206,7 +206,7 @@ func (s *S) TestCertificateListRawRunSuccessfully(c *check.C) {
 				CNameCertificates: map[string]cnameCertificate{
 					"myapp.io": {
 						Certificate: certData,
-						Issuer: "lets-encrypt",
+						Issuer:      "lets-encrypt",
 					},
 					"myapp.other.io": {
 						Certificate: "",

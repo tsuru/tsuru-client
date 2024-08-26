@@ -236,9 +236,9 @@ func (c *CertificateList) Run(context *cmd.Context) error {
 				continue
 			}
 			tbl.AddRow(tablecli.Row{
-				router, 
-				formatCName(cname, cnameCert.Issuer), 
-				formatPublicKeyInfo(*cert), 
+				router,
+				formatCName(cname, cnameCert.Issuer),
+				formatPublicKeyInfo(*cert),
 				formatCertificateValidity(*cert),
 			})
 		}
