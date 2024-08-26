@@ -231,7 +231,12 @@ func (c *CertificateList) Run(context *cmd.Context) error {
 				tbl.AddRow(tablecli.Row{router, cname, err.Error(), "-"})
 				continue
 			}
-			tbl.AddRow(tablecli.Row{router, formatCName(cname, cnameCert.Issuer), formatPublicKeyInfo(*cert), formatCertificateValidity(*cert)})
+			tbl.AddRow(tablecli.Row{
+				router, 
+				formatCName(cname, cnameCert.Issuer), 
+				formatPublicKeyInfo(*cert), 
+				formatCertificateValidity(*cert),
+			})
 		}
 	}
 	tbl.Sort()
@@ -275,9 +280,11 @@ func formatPublicKeyInfo(cert x509.Certificate) (pkInfo string) {
 }
 
 func formatCertificateValidity(cert x509.Certificate) string {
-	return fmt.Sprintf("Not before\n%s\n\nNot after\n%s",
+	return fmt.Sprintf(
+		"Not before\n%s\n\nNot after\n%s",
 		formatTime(cert.NotBefore),
-		formatTime(cert.NotAfter))
+		formatTime(cert.NotAfter),
+	)
 }
 
 func formatTime(t time.Time) string {
@@ -332,11 +339,121 @@ func parseCert(data []byte) (*x509.Certificate, error) {
 	return cert, nil
 }
 
-func formatName(n *pkix.Name) string {
-	country := strings.Join(n.Country, ",")
-	state := strings.Join(n.Province, ",")
-	locality := strings.Join(n.Locality, ",")
-	org := strings.Join(n.Organization, ",")
-	cname := n.CommonName
-	return fmt.Sprintf("C=%s; ST=%s; \nL=%s; O=%s;\nCN=%s", country, state, locality, org, cname)
+type CertificateIssuerSet struct {
+	tsuruClientApp.AppNameMixIn
+	cname string
+	fs    *gnuflag.FlagSet
+}
+
+func (c *CertificateIssuerSet) Info() *cmd.Info {
+	return &cmd.Info{
+		Name:    "certificate-issuer-set",
+		Usage:   "certificate issuer set [-a/--app appname] [-c/--cname CNAME] [issuer]",
+		Desc:    `Creates or update a certificate issuer into the specific app.`,
+		MinArgs: 1,
+	}
+}
+
+func (c *CertificateIssuerSet) Flags() *gnuflag.FlagSet {
+	if c.fs == nil {
+		c.fs = c.AppNameMixIn.Flags()
+		cname := "App CNAME"
+		c.fs.StringVar(&c.cname, "cname", "", cname)
+		c.fs.StringVar(&c.cname, "c", "", cname)
+	}
+	return c.fs
+}
+
+func (c *CertificateIssuerSet) Run(context *cmd.Context) error {
+	appName, err := c.AppNameByFlag()
+	if err != nil {
+		return err
+	}
+
+	if c.cname == "" {
+		return errors.New("You must set cname.")
+	}
+
+	issuer := context.Args[0]
+	if issuer == "" {
+		return errors.New("You must set issuer.")
+	}
+
+	v := url.Values{}
+	v.Set("cname", c.cname)
+	v.Set("issuer", issuer)
+	u, err := config.GetURLVersion("1.0", fmt.Sprintf("/apps/%s/certissuer", appName))
+	if err != nil {
+		return err
+	}
+
+	request, err := http.NewRequest(http.MethodPut, u, strings.NewReader(v.Encode()))
+	if err != nil {
+		return err
+	}
+	request.Header.Set("Content-Type", "application/x-www-form-urlencoded")
+	response, err := tsuruHTTP.AuthenticatedClient.Do(request)
+	if err != nil {
+		return err
+	}
+	defer response.Body.Close()
+
+	fmt.Fprintln(context.Stdout, "Successfully created the certificated issuer.")
+	return nil
+}
+
+type CertificateIssuerUnset struct {
+	tsuruClientApp.AppNameMixIn
+	cname string
+	fs    *gnuflag.FlagSet
+}
+
+func (c *CertificateIssuerUnset) Info() *cmd.Info {
+	return &cmd.Info{
+		Name:  "certificate-issuer-unset",
+		Usage: "certificate issuer unset [-a/--app appname] [-c/--cname CNAME]",
+		Desc:  `Unset a certificate issuer from a specific app.`,
+	}
+}
+
+func (c *CertificateIssuerUnset) Flags() *gnuflag.FlagSet {
+	if c.fs == nil {
+		c.fs = c.AppNameMixIn.Flags()
+		cname := "App CNAME"
+		c.fs.StringVar(&c.cname, "cname", "", cname)
+		c.fs.StringVar(&c.cname, "c", "", cname)
+	}
+	return c.fs
+}
+
+func (c *CertificateIssuerUnset) Run(context *cmd.Context) error {
+	appName, err := c.AppNameByFlag()
+	if err != nil {
+		return err
+	}
+
+	if c.cname == "" {
+		return errors.New("You must set cname.")
+	}
+
+	v := url.Values{}
+	v.Set("cname", c.cname)
+	u, err := config.GetURLVersion("1.0", fmt.Sprintf("/apps/%s/certissuer?%s", appName, v.Encode()))
+	if err != nil {
+		return err
+	}
+
+	request, err := http.NewRequest(http.MethodDelete, u, nil)
+	if err != nil {
+		return err
+	}
+	request.Header.Set("Content-Type", "application/x-www-form-urlencoded")
+	response, err := tsuruHTTP.AuthenticatedClient.Do(request)
+	if err != nil {
+		return err
+	}
+	defer response.Body.Close()
+
+	fmt.Fprintln(context.Stdout, "Certificate issuer removed.")
+	return nil
 }
