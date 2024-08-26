@@ -87,7 +87,7 @@ func (c *CertificateSet) Run(context *cmd.Context) error {
 		return err
 	}
 	defer response.Body.Close()
-	fmt.Fprintln(context.Stdout, "Successfully created the certificated.")
+	fmt.Fprintln(context.Stdout, "Successfully created the certificate.")
 	return nil
 }
 
@@ -214,6 +214,10 @@ func (c *CertificateList) Run(context *cmd.Context) error {
 		for router, routerCerts := range appCerts.RouterCertificates {
 			fmt.Fprintf(context.Stdout, "%s:\n", router)
 			for cname, cnameCert := range routerCerts.CNameCertificates {
+				if cnameCert.Certificate == "" {
+					fmt.Fprintf(context.Stdout, "%s:\nNo certificate.", cname)
+					continue
+				}
 				fmt.Fprintf(context.Stdout, "%s:\n%s", cname, cnameCert.Certificate)
 			}
 		}
@@ -398,7 +402,7 @@ func (c *CertificateIssuerSet) Run(context *cmd.Context) error {
 	}
 	defer response.Body.Close()
 
-	fmt.Fprintln(context.Stdout, "Successfully created the certificated issuer.")
+	fmt.Fprintln(context.Stdout, "Successfully created the certificate issuer.")
 	return nil
 }
 
