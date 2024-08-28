@@ -535,7 +535,7 @@ func (c *AppDeployRollbackUpdate) Run(context *cmd.Context) error {
 	if err != nil {
 		return err
 	}
-	u, err := config.GetURL(fmt.Sprintf("/apps/%s/deploy/rollback/update", appName))
+	u, err := config.GetURLVersion("1.4", fmt.Sprintf("/apps/%s/deploy/rollback/update", appName))
 	if err != nil {
 		return err
 	}
