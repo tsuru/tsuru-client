@@ -280,6 +280,7 @@ func (s *S) TestCertificateIssuerUnsetRunSuccessfully(c *check.C) {
 	context := cmd.Context{
 		Stdout: &stdout,
 		Stderr: &stderr,
+		Stdin:  strings.NewReader("y\n"),
 	}
 	requestCount := 0
 	trans := &cmdtest.ConditionalTransport{
@@ -293,12 +294,40 @@ func (s *S) TestCertificateIssuerUnsetRunSuccessfully(c *check.C) {
 			return url && method && cname
 		},
 	}
+	expected := `Are you sure you want to remove certificate issuer for cname: "app.io"? (y/n) `
+	expected += "Certificate issuer removed.\n"
 	s.setupFakeTransport(trans)
 	command := CertificateIssuerUnset{}
 	command.Flags().Parse(true, []string{"-a", "secret", "-c", "app.io"})
 	c.Assert(command.cname, check.Equals, "app.io")
 	err := command.Run(&context)
 	c.Assert(err, check.IsNil)
-	c.Assert(stdout.String(), check.Equals, "Certificate issuer removed.\n")
+	c.Assert(stdout.String(), check.Equals, expected)
 	c.Assert(requestCount, check.Equals, 1)
+}
+
+func (s *S) TestCertificateIssuerUnsetRunWithoutAsking(c *check.C) {
+	var stdout, stderr bytes.Buffer
+	context := cmd.Context{
+		Stdout: &stdout,
+		Stderr: &stderr,
+	}
+	trans := &cmdtest.ConditionalTransport{
+		Transport: cmdtest.Transport{Status: http.StatusNoContent},
+		CondFunc: func(req *http.Request) bool {
+			url := strings.HasSuffix(req.URL.Path, "/apps/secret/certissuer")
+			method := req.Method == http.MethodDelete
+			cname := req.FormValue("cname") == "app.io"
+
+			return url && method && cname
+		},
+	}
+	expected := "Certificate issuer removed.\n"
+	s.setupFakeTransport(trans)
+	command := CertificateIssuerUnset{}
+	command.Flags().Parse(true, []string{"-a", "secret", "-c", "app.io", "-y"})
+	c.Assert(command.cname, check.Equals, "app.io")
+	err := command.Run(&context)
+	c.Assert(err, check.IsNil)
+	c.Assert(stdout.String(), check.Equals, expected)
 }

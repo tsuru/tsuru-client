@@ -408,21 +408,26 @@ func (c *CertificateIssuerSet) Run(context *cmd.Context) error {
 
 type CertificateIssuerUnset struct {
 	tsuruClientApp.AppNameMixIn
-	cname string
+	cmd.ConfirmationCommand
 	fs    *gnuflag.FlagSet
+	cname string
 }
 
 func (c *CertificateIssuerUnset) Info() *cmd.Info {
 	return &cmd.Info{
 		Name:  "certificate-issuer-unset",
-		Usage: "certificate issuer unset [-a/--app appname] [-c/--cname CNAME]",
+		Usage: "certificate issuer unset [-a/--app appname] [-c/--cname CNAME] [-y/--assume-yes]",
 		Desc:  `Unset a certificate issuer from a specific app.`,
 	}
 }
 
 func (c *CertificateIssuerUnset) Flags() *gnuflag.FlagSet {
 	if c.fs == nil {
-		c.fs = c.AppNameMixIn.Flags()
+		c.fs = mergeFlagSet(
+			c.AppNameMixIn.Flags(),
+			c.ConfirmationCommand.Flags(),
+		)
+
 		cname := "App CNAME"
 		c.fs.StringVar(&c.cname, "cname", "", cname)
 		c.fs.StringVar(&c.cname, "c", "", cname)
@@ -438,6 +443,10 @@ func (c *CertificateIssuerUnset) Run(context *cmd.Context) error {
 
 	if c.cname == "" {
 		return errors.New("You must set cname.")
+	}
+
+	if !c.Confirm(context, fmt.Sprintf(`Are you sure you want to remove certificate issuer for cname: "%s"?`, c.cname)) {
+		return nil
 	}
 
 	v := url.Values{}
