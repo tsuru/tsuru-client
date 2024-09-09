@@ -190,7 +190,7 @@ func uploadFiles(context *cmd.Context, request *http.Request, buf *safe.Buffer, 
 	return nil
 }
 
-func buildWithContainerFile(appName, path string, filesOnly bool, files []string, stderr io.Writer) (string, io.Reader, error) {
+func buildWithContainerFile(resourceName, path string, filesOnly bool, files []string, stderr io.Writer) (string, io.Reader, error) {
 	fi, err := os.Stat(path)
 	if err != nil {
 		return "", nil, fmt.Errorf("failed to stat the file %s: %w", path, err)
@@ -200,7 +200,7 @@ func buildWithContainerFile(appName, path string, filesOnly bool, files []string
 
 	switch {
 	case fi.IsDir():
-		path, err = guessingContainerFile(appName, path)
+		path, err = guessingContainerFile(resourceName, path)
 		if err != nil {
 			return "", nil, fmt.Errorf("failed to guess the container file (can you specify the container file passing --dockerfile ./path/to/Dockerfile?): %w", err)
 		}
@@ -230,10 +230,10 @@ func buildWithContainerFile(appName, path string, filesOnly bool, files []string
 	return string(containerfile), &buildContext, nil
 }
 
-func guessingContainerFile(app, dir string) (string, error) {
+func guessingContainerFile(resourceName, dir string) (string, error) {
 	validNames := []string{
-		fmt.Sprintf("Dockerfile.%s", app),
-		fmt.Sprintf("Containerfile.%s", app),
+		fmt.Sprintf("Dockerfile.%s", resourceName),
+		fmt.Sprintf("Containerfile.%s", resourceName),
 		"Dockerfile.tsuru",
 		"Containerfile.tsuru",
 		"Dockerfile",

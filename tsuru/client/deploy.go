@@ -352,6 +352,7 @@ func (c *AppDeploy) Cancel(ctx cmd.Context) error {
 	}
 	c.m.Lock()
 	defer c.m.Unlock()
+	ctx.RawOutput()
 	if c.eventID == "" {
 		return errors.New("event ID not available yet")
 	}
@@ -572,4 +573,203 @@ func (c *deployVersionArgs) values(values url.Values) {
 	if c.overrideVersions {
 		values.Set("override-versions", strconv.FormatBool(c.overrideVersions))
 	}
+}
+
+var _ cmd.Cancelable = &JobDeploy{}
+
+type JobDeploy struct {
+	jobName      string
+	image        string
+	imageCommand string
+	message      string
+	dockerfile   string
+	eventID      string
+	fs           *gnuflag.FlagSet
+	m            sync.Mutex
+}
+
+func (c *JobDeploy) Flags() *gnuflag.FlagSet {
+	if c.fs == nil {
+		c.fs = gnuflag.NewFlagSet("", gnuflag.ExitOnError)
+		c.fs.StringVar(&c.jobName, "job", "", "The name of the job.")
+		c.fs.StringVar(&c.jobName, "j", "", "The name of the job.")
+		image := "The image to deploy in job"
+		c.fs.StringVar(&c.image, "image", "", image)
+		c.fs.StringVar(&c.image, "i", "", image)
+		message := "A message describing this deploy"
+		c.fs.StringVar(&c.message, "message", "", message)
+		c.fs.StringVar(&c.message, "m", "", message)
+		c.fs.StringVar(&c.dockerfile, "dockerfile", "", "Container file")
+	}
+	return c.fs
+}
+
+func (c *JobDeploy) Info() *cmd.Info {
+	return &cmd.Info{
+		Name:  "job-deploy",
+		Usage: "job deploy [--job <job name>] [--image <container image name>] [--dockerfile <container image file>] [--message <message>]",
+		Desc: `Deploy the source code and/or configurations to the application on Tsuru.
+
+Files specified in the ".tsuruignore" file are skipped - similar to ".gitignore". It also honors ".dockerignore" file if deploying with container file (--dockerfile).
+
+Examples:
+  To deploy using app's platform build process (just sending source code and/or configurations):
+    Uploading all files within the current directory
+      $ tsuru app deploy -a <APP> .
+
+    Uploading all files within a specific directory
+      $ tsuru app deploy -a <APP> mysite/
+
+    Uploading specific files
+      $ tsuru app deploy -a <APP> ./myfile.jar ./Procfile
+
+    Uploading specific files (ignoring their base directories)
+      $ tsuru app deploy -a <APP> --files-only ./my-code/main.go ./tsuru_stuff/Procfile
+
+  To deploy using a container image:
+    $ tsuru app deploy -a <APP> --image registry.example.com/my-company/app:v42
+
+  To deploy using container file ("docker build" mode):
+    Sending the the current directory as container build context - uses Dockerfile file as container image instructions:
+      $ tsuru app deploy -a <APP> --dockerfile .
+
+    Sending a specific container file and specific directory as container build context:
+      $ tsuru app deploy -a <APP> --dockerfile ./Dockerfile.other ./other/
+`,
+		MinArgs: 0,
+	}
+}
+
+func (c *JobDeploy) Run(context *cmd.Context) error {
+	context.RawOutput()
+
+	if c.jobName == "" {
+		return errors.New(`The name of the job is required.
+
+Use the --job/-j flag to specify it.
+
+`)
+	}
+
+	if c.image == "" && c.dockerfile == "" {
+		return errors.New("You should provide at least one between Docker image name or Dockerfile to deploy.\n")
+	}
+
+	if c.image != "" && len(context.Args) > 0 {
+		return errors.New("You can't deploy files and docker image at the same time.\n")
+	}
+
+	if c.image != "" && c.dockerfile != "" {
+		return errors.New("You can't deploy container image and container file at same time.\n")
+	}
+
+	values := url.Values{}
+
+	origin := "job-deploy"
+	if c.image != "" {
+		origin = "image"
+	}
+	values.Set("origin", origin)
+
+	if c.message != "" {
+		values.Set("message", c.message)
+	}
+
+	u, err := config.GetURLVersion("1.23", "/jobs/"+c.jobName+"/deploy")
+	if err != nil {
+		return err
+	}
+
+	body := safe.NewBuffer(nil)
+	request, err := http.NewRequest("POST", u, body)
+	if err != nil {
+		return err
+	}
+
+	buf := safe.NewBuffer(nil)
+
+	c.m.Lock()
+	respBody := prepareUploadStreams(context, buf)
+	c.m.Unlock()
+
+	var archive io.Reader
+
+	if c.image != "" {
+		fmt.Fprintln(context.Stdout, "Deploying container image...")
+		values.Set("image", c.image)
+	}
+
+	if c.dockerfile != "" {
+		fmt.Fprintln(context.Stdout, "Deploying with Dockerfile...")
+
+		var dockerfile string
+		dockerfile, archive, err = buildWithContainerFile(c.jobName, c.dockerfile, false, context.Args, nil)
+		if err != nil {
+			return err
+		}
+
+		values.Set("dockerfile", dockerfile)
+	}
+
+	if err = uploadFiles(context, request, buf, body, values, archive); err != nil {
+		return err
+	}
+
+	c.m.Lock()
+	resp, err := tsuruHTTP.AuthenticatedClient.Do(request)
+	if err != nil {
+		c.m.Unlock()
+		return err
+	}
+	defer resp.Body.Close()
+	c.eventID = resp.Header.Get("X-Tsuru-Eventid")
+	c.m.Unlock()
+
+	var readBuffer [deployOutputBufferSize]byte
+	var readErr error
+	for readErr == nil {
+		var read int
+		read, readErr = resp.Body.Read(readBuffer[:])
+		if read == 0 {
+			continue
+		}
+		c.m.Lock()
+		written, writeErr := respBody.Write(readBuffer[:read])
+		c.m.Unlock()
+		if written < read {
+			return fmt.Errorf("short write processing output, read: %d, written: %d", read, written)
+		}
+		if writeErr != nil {
+			return fmt.Errorf("error writing response: %v", writeErr)
+		}
+	}
+	if readErr != io.EOF {
+		return fmt.Errorf("error reading response: %v", readErr)
+	}
+	if strings.HasSuffix(buf.String(), "\nOK\n") {
+		return nil
+	}
+	return cmd.ErrAbortCommand
+}
+
+func (c *JobDeploy) Cancel(ctx cmd.Context) error {
+	apiClient, err := tsuruHTTP.TsuruClientFromEnvironment()
+	if err != nil {
+		return err
+	}
+	c.m.Lock()
+	defer c.m.Unlock()
+	ctx.RawOutput()
+	if c.eventID == "" {
+		return errors.New("event ID not available yet")
+	}
+	fmt.Fprintln(ctx.Stdout, cmd.Colorfy("Warning: the deploy is still RUNNING in the background!", "red", "", "bold"))
+	fmt.Fprint(ctx.Stdout, "Are you sure you want to cancel this deploy? (Y/n) ")
+	var answer string
+	fmt.Fscanf(ctx.Stdin, "%s", &answer)
+	if strings.ToLower(answer) != "y" && answer != "" {
+		return fmt.Errorf("aborted")
+	}
+	_, err = apiClient.EventApi.EventCancel(context.Background(), c.eventID, tsuru.EventCancelArgs{Reason: "Canceled on client."})
+	return err
 }
