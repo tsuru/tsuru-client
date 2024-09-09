@@ -578,14 +578,13 @@ func (c *deployVersionArgs) values(values url.Values) {
 var _ cmd.Cancelable = &JobDeploy{}
 
 type JobDeploy struct {
-	jobName      string
-	image        string
-	imageCommand string
-	message      string
-	dockerfile   string
-	eventID      string
-	fs           *gnuflag.FlagSet
-	m            sync.Mutex
+	jobName    string
+	image      string
+	message    string
+	dockerfile string
+	eventID    string
+	fs         *gnuflag.FlagSet
+	m          sync.Mutex
 }
 
 func (c *JobDeploy) Flags() *gnuflag.FlagSet {
