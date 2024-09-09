@@ -561,3 +561,279 @@ func (s *S) TestAppDeployRebuild(c *check.C) {
 	c.Assert(called, check.Equals, true)
 	c.Assert(stdout.String(), check.Equals, expectedOut)
 }
+
+func (s *S) TestJobDeployRunUsingDockerfile(c *check.C) {
+	command := JobDeploy{}
+	err := command.Flags().Parse(true, []string{"-j", "my-job", "--dockerfile", "./testdata/deploy5/"})
+	c.Assert(err, check.IsNil)
+
+	ctx := &cmd.Context{Stdout: io.Discard, Stderr: io.Discard, Args: command.Flags().Args()}
+
+	trans := &cmdtest.ConditionalTransport{
+		Transport: cmdtest.Transport{Message: "deployed\nOK\n", Status: http.StatusOK},
+		CondFunc: func(req *http.Request) bool {
+			if req.Body != nil {
+				defer req.Body.Close()
+			}
+			c.Assert(req.Header.Get("Content-Type"), check.Matches, "multipart/form-data; boundary=.*")
+			c.Assert(req.FormValue("dockerfile"), check.Equals, "FROM busybox:1.36.0-glibc\n\nCOPY ./job.sh /usr/local/bin/\n")
+
+			file, _, nerr := req.FormFile("file")
+			c.Assert(nerr, check.IsNil)
+			defer file.Close()
+			files := extractFiles(s.t, c, file)
+			c.Assert(files, check.DeepEquals, []miniFile{
+				{Name: filepath.Join("Dockerfile"), Type: tar.TypeReg, Data: []byte("FROM busybox:1.36.0-glibc\n\nCOPY ./job.sh /usr/local/bin/\n")},
+				{Name: filepath.Join("job.sh"), Type: tar.TypeReg, Data: []byte("echo \"My job here is done!\"\n")},
+			})
+
+			return req.Method == "POST" && strings.HasSuffix(req.URL.Path, "/jobs/my-job/deploy")
+		},
+	}
+
+	s.setupFakeTransport(trans)
+	err = command.Run(ctx)
+	c.Assert(err, check.IsNil)
+}
+
+func (s *S) TestJobDeployRunUsingImage(c *check.C) {
+	trans := cmdtest.ConditionalTransport{
+		Transport: cmdtest.Transport{Message: "deploy worked\nOK\n", Status: http.StatusOK},
+		CondFunc: func(req *http.Request) bool {
+			if req.Body != nil {
+				defer req.Body.Close()
+			}
+			c.Assert(req.Header.Get("Content-Type"), check.Matches, "application/x-www-form-urlencoded")
+			c.Assert(req.FormValue("image"), check.Equals, "registr.com/image-to-deploy:latest")
+			c.Assert(req.FormValue("origin"), check.Equals, "image")
+			return req.Method == "POST" && strings.HasSuffix(req.URL.Path, "/jobs/my-job/deploy")
+		},
+	}
+
+	s.setupFakeTransport(&trans)
+	var stdout, stderr bytes.Buffer
+	context := cmd.Context{
+		Stdout: &stdout,
+		Stderr: &stderr,
+	}
+
+	cmd := JobDeploy{}
+	err := cmd.Flags().Parse(true, []string{"-j", "my-job", "-i", "registr.com/image-to-deploy:latest"})
+	c.Assert(err, check.IsNil)
+
+	context.Args = cmd.Flags().Args()
+	err = cmd.Run(&context)
+	c.Assert(err, check.IsNil)
+}
+
+func (s *S) TestJobDeployRunCancel(c *check.C) {
+	command := JobDeploy{}
+	err := command.Flags().Parse(true, []string{"-j", "my-job", "--dockerfile", "./testdata/deploy5/"})
+	c.Assert(err, check.IsNil)
+
+	deploy := make(chan struct{}, 1)
+	trans := cmdtest.MultiConditionalTransport{
+		ConditionalTransports: []cmdtest.ConditionalTransport{
+			{
+				Transport: &cmdtest.BodyTransport{
+					Status:  http.StatusOK,
+					Headers: map[string][]string{"X-Tsuru-Eventid": {"5aec54d93195b20001194952"}},
+					Body:    &slowReader{ReadCloser: io.NopCloser(bytes.NewBufferString("deploy worked\nOK\n")), Latency: time.Second * 5},
+				},
+				CondFunc: func(req *http.Request) bool {
+					deploy <- struct{}{}
+					if req.Body != nil {
+						defer req.Body.Close()
+					}
+					c.Assert(req.Header.Get("Content-Type"), check.Matches, "multipart/form-data; boundary=.*")
+					c.Assert(req.FormValue("dockerfile"), check.Equals, "FROM busybox:1.36.0-glibc\n\nCOPY ./job.sh /usr/local/bin/\n")
+
+					file, _, nerr := req.FormFile("file")
+					c.Assert(nerr, check.IsNil)
+					defer file.Close()
+					files := extractFiles(s.t, c, file)
+					c.Assert(files, check.DeepEquals, []miniFile{
+						{Name: filepath.Join("Dockerfile"), Type: tar.TypeReg, Data: []byte("FROM busybox:1.36.0-glibc\n\nCOPY ./job.sh /usr/local/bin/\n")},
+						{Name: filepath.Join("job.sh"), Type: tar.TypeReg, Data: []byte("echo \"My job here is done!\"\n")},
+					})
+
+					return req.Method == "POST" && strings.HasSuffix(req.URL.Path, "/jobs/my-job/deploy")
+				},
+			},
+			{
+				Transport: cmdtest.Transport{Status: http.StatusOK},
+				CondFunc: func(req *http.Request) bool {
+					c.Assert(req.Method, check.Equals, "POST")
+					c.Assert(req.URL.Path, check.Equals, "/1.1/events/5aec54d93195b20001194952/cancel")
+					return true
+				},
+			},
+		},
+	}
+
+	s.setupFakeTransport(&trans)
+	var stdout, stderr bytes.Buffer
+
+	ctx := cmd.Context{
+		Stdout: &stdout,
+		Stderr: &stderr,
+		Stdin:  bytes.NewReader([]byte("y")),
+		Args:   command.Flags().Args(),
+	}
+
+	go func() {
+		err = command.Run(&ctx)
+		c.Assert(err, check.IsNil)
+	}()
+
+	<-deploy
+
+	err = command.Cancel(ctx)
+	c.Assert(err, check.IsNil)
+}
+
+func (s *S) TestJobDeployRunWithMessage(c *check.C) {
+	command := JobDeploy{}
+	err := command.Flags().Parse(true, []string{"-j", "my-job", "--dockerfile", "./testdata/deploy5/", "-m", "my-job deploy"})
+	c.Assert(err, check.IsNil)
+
+	trans := cmdtest.ConditionalTransport{
+		Transport: cmdtest.Transport{Message: "deploy worked\nOK\n", Status: http.StatusOK},
+		CondFunc: func(req *http.Request) bool {
+			if req.Body != nil {
+				defer req.Body.Close()
+			}
+			c.Assert(req.Header.Get("Content-Type"), check.Matches, "multipart/form-data; boundary=.*")
+			c.Assert(req.FormValue("dockerfile"), check.Equals, "FROM busybox:1.36.0-glibc\n\nCOPY ./job.sh /usr/local/bin/\n")
+			c.Assert(req.FormValue("message"), check.Equals, "my-job deploy")
+
+			file, _, nerr := req.FormFile("file")
+			c.Assert(nerr, check.IsNil)
+			defer file.Close()
+			files := extractFiles(s.t, c, file)
+			c.Assert(files, check.DeepEquals, []miniFile{
+				{Name: filepath.Join("Dockerfile"), Type: tar.TypeReg, Data: []byte("FROM busybox:1.36.0-glibc\n\nCOPY ./job.sh /usr/local/bin/\n")},
+				{Name: filepath.Join("job.sh"), Type: tar.TypeReg, Data: []byte("echo \"My job here is done!\"\n")},
+			})
+
+			return req.Method == "POST" && strings.HasSuffix(req.URL.Path, "/jobs/my-job/deploy")
+		},
+	}
+
+	s.setupFakeTransport(&trans)
+	var stdout, stderr bytes.Buffer
+	ctx := cmd.Context{
+		Stdout: &stdout,
+		Stderr: &stderr,
+		Args:   command.Flags().Args(),
+	}
+
+	err = command.Run(&ctx)
+	c.Assert(err, check.IsNil)
+}
+
+func (s *S) TestJobDeployAuthNotOK(c *check.C) {
+	command := JobDeploy{}
+	err := command.Flags().Parse(true, []string{"-j", "my-job", "--dockerfile", "./testdata/deploy5/"})
+	c.Assert(err, check.IsNil)
+
+	trans := cmdtest.ConditionalTransport{
+		Transport: cmdtest.Transport{Message: "Forbidden", Status: http.StatusForbidden},
+		CondFunc: func(req *http.Request) bool {
+			return req.Method == "POST" && strings.HasSuffix(req.URL.Path, "/jobs/my-job/deploy")
+		},
+	}
+
+	s.setupFakeTransport(&trans)
+	var stdout, stderr bytes.Buffer
+	context := cmd.Context{
+		Stdout: &stdout,
+		Stderr: &stderr,
+		Args:   command.Flags().Args(),
+	}
+	c.Assert(err, check.IsNil)
+
+	context.Args = command.Flags().Args()
+	err = command.Run(&context)
+	c.Assert(err, check.ErrorMatches, ".* Forbidden")
+}
+
+func (s *S) TestJobDeployRunNotOK(c *check.C) {
+	command := JobDeploy{}
+	err := command.Flags().Parse(true, []string{"-j", "my-job", "--dockerfile", "./testdata/deploy5/"})
+	c.Assert(err, check.IsNil)
+
+	trans := cmdtest.Transport{Message: "deploy worked\n", Status: http.StatusOK}
+
+	s.setupFakeTransport(&trans)
+	var stdout, stderr bytes.Buffer
+	context := cmd.Context{
+		Stdout: &stdout,
+		Stderr: &stderr,
+		Args:   command.Flags().Args(),
+	}
+	c.Assert(err, check.IsNil)
+
+	context.Args = command.Flags().Args()
+	err = command.Run(&context)
+	c.Assert(err, check.Equals, cmd.ErrAbortCommand)
+}
+
+func (s *S) TestJobDeployRunFileNotFound(c *check.C) {
+	command := JobDeploy{}
+	err := command.Flags().Parse(true, []string{"-j", "my-job", "--dockerfile", "/tmp/aint/no/way/this/exists"})
+	c.Assert(err, check.IsNil)
+
+	var stdout, stderr bytes.Buffer
+	context := cmd.Context{
+		Stdout: &stdout,
+		Stderr: &stderr,
+		Args:   []string{"/tmp/something/that/doesn't/really/exist/im/sure", "-a", "secret"},
+	}
+	trans := cmdtest.Transport{Message: "OK\n", Status: http.StatusOK}
+
+	s.setupFakeTransport(&trans)
+	c.Assert(err, check.IsNil)
+
+	context.Args = command.Flags().Args()
+	err = command.Run(&context)
+	c.Assert(err, check.NotNil)
+}
+
+func (s *S) TestJobDeployRunWithoutArgsAndImage(c *check.C) {
+	command := JobDeploy{}
+	err := command.Flags().Parse(true, []string{"-j", "my-job"})
+	c.Assert(err, check.IsNil)
+
+	ctx := &cmd.Context{Stdout: io.Discard, Stderr: io.Discard, Args: command.Flags().Args()}
+	s.setupFakeTransport(&cmdtest.Transport{Status: http.StatusInternalServerError})
+
+	err = command.Run(ctx)
+	c.Assert(err, check.NotNil)
+	c.Assert(err.Error(), check.Equals, "You should provide at least one between Docker image name or Dockerfile to deploy.\n")
+}
+
+func (s *S) TestJobDeployRunRequestFailure(c *check.C) {
+	command := JobDeploy{}
+	err := command.Flags().Parse(true, []string{"-j", "my-job", "--dockerfile", "./testdata/deploy5/"})
+	c.Assert(err, check.IsNil)
+
+	trans := cmdtest.Transport{Message: "job not found\n", Status: http.StatusNotFound}
+	s.setupFakeTransport(&trans)
+
+	ctx := &cmd.Context{Stdout: io.Discard, Stderr: io.Discard, Args: command.Flags().Args()}
+	err = command.Run(ctx)
+	c.Assert(err, check.ErrorMatches, ".* job not found\n")
+}
+
+func (s *S) TestDeployRunDockerfileAndDockerImage(c *check.C) {
+	command := JobDeploy{}
+	err := command.Flags().Parse(true, []string{"-j", "my-job", "-i", "registr.com/image-to-deploy:latest", "--dockerfile", "."})
+	c.Assert(err, check.IsNil)
+
+	ctx := &cmd.Context{Stdout: io.Discard, Stderr: io.Discard, Args: command.Flags().Args()}
+	s.setupFakeTransport(&cmdtest.Transport{Status: http.StatusInternalServerError})
+
+	err = command.Run(ctx)
+	c.Assert(err, check.ErrorMatches, "You can't deploy container image and container file at same time.\n")
+}
