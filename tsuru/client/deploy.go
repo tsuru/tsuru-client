@@ -607,33 +607,20 @@ func (c *JobDeploy) Info() *cmd.Info {
 	return &cmd.Info{
 		Name:  "job-deploy",
 		Usage: "job deploy [--job <job name>] [--image <container image name>] [--dockerfile <container image file>] [--message <message>]",
-		Desc: `Deploy the source code and/or configurations to the application on Tsuru.
+		Desc: `Deploy the source code and/or configurations to a Job on Tsuru.
 
 Files specified in the ".tsuruignore" file are skipped - similar to ".gitignore". It also honors ".dockerignore" file if deploying with container file (--dockerfile).
 
 Examples:
-  To deploy using app's platform build process (just sending source code and/or configurations):
-    Uploading all files within the current directory
-      $ tsuru app deploy -a <APP> .
-
-    Uploading all files within a specific directory
-      $ tsuru app deploy -a <APP> mysite/
-
-    Uploading specific files
-      $ tsuru app deploy -a <APP> ./myfile.jar ./Procfile
-
-    Uploading specific files (ignoring their base directories)
-      $ tsuru app deploy -a <APP> --files-only ./my-code/main.go ./tsuru_stuff/Procfile
-
   To deploy using a container image:
-    $ tsuru app deploy -a <APP> --image registry.example.com/my-company/app:v42
+    $ tsuru job deploy -j <JOB> --image registry.example.com/my-company/my-job:v42
 
   To deploy using container file ("docker build" mode):
     Sending the the current directory as container build context - uses Dockerfile file as container image instructions:
-      $ tsuru app deploy -a <APP> --dockerfile .
+      $ tsuru job deploy -j <JOB> --dockerfile .
 
     Sending a specific container file and specific directory as container build context:
-      $ tsuru app deploy -a <APP> --dockerfile ./Dockerfile.other ./other/
+      $ tsuru job deploy -j <JOB> --dockerfile ./Dockerfile.other ./other/
 `,
 		MinArgs: 0,
 	}
