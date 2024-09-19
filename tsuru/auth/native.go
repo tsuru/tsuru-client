@@ -54,7 +54,8 @@ func nativeLogin(ctx *cmd.Context) error {
 	defer response.Body.Close()
 
 	if response.StatusCode != http.StatusOK {
-		body, err := io.ReadAll(response.Body)
+		var body []byte
+		body, err = io.ReadAll(response.Body)
 		if err != nil {
 			return err
 		}

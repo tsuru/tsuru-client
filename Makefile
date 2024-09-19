@@ -43,7 +43,7 @@ release:
 	@echo " ==> Pushing changes to github."
 
 	@git push --tags
-	@git push origin master
+	@git push origin main
 
 doc-requirements: install
 	@pip install -r requirements.txt
