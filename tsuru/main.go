@@ -68,6 +68,7 @@ func buildManagerCustom(name string, stdout, stderr io.Writer) *cmd.Manager {
 		fmt.Fprintln(os.Stderr, "trying to login again")
 		c := &auth.Login{}
 		loginErr := c.Run(&cmd.Context{
+			Stdin:  os.Stdin,
 			Stderr: stderr,
 			Stdout: stdout,
 		})

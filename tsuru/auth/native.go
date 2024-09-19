@@ -52,6 +52,15 @@ func nativeLogin(ctx *cmd.Context) error {
 		return err
 	}
 	defer response.Body.Close()
+
+	if response.StatusCode != http.StatusOK {
+		body, err := io.ReadAll(response.Body)
+		if err != nil {
+			return err
+		}
+		return fmt.Errorf("failed to authenticate user: %s, %s", response.Status, string(body))
+	}
+
 	result, err := io.ReadAll(response.Body)
 	if err != nil {
 		return err
