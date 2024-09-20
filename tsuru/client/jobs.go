@@ -566,6 +566,9 @@ func (c *JobUpdate) Run(ctx *cmd.Context) error {
 	if c.manual && c.schedule != "" {
 		return errors.New("cannot set both manual job and schedule options")
 	}
+	if c.image != "" {
+		fmt.Fprintf(ctx.Stdout, "Job update with image is being deprecated. You should use 'tsuru job deploy' to set a job`s image\n")
+	}
 	var jobUpdateCommands []string
 	if len(ctx.Args) > 1 {
 		jobUpdateCommands, err = parseJobCommands(ctx.Args[1:])
