@@ -155,6 +155,59 @@ func (s *S) TestServiceList(c *check.C) {
 
 }
 
+func (s *S) TestServiceListWithTags(c *check.C) {
+	var stdout, stderr bytes.Buffer
+	output, err := json.Marshal([]service.ServiceModel{
+		{
+			Service: "mysql",
+			ServiceInstances: []service.ServiceInstance{
+				{
+					Name: "mysql01",
+					Tags: []string{"production"},
+				},
+			},
+		},
+	})
+	c.Assert(err, check.IsNil)
+
+	ctx := cmd.Context{
+		Args:   []string{"--tag", "production"},
+		Stdout: &stdout,
+		Stderr: &stderr,
+	}
+
+	trans := cmdtest.ConditionalTransport{
+		Transport: cmdtest.Transport{Message: string(output), Status: http.StatusOK},
+		CondFunc: func(req *http.Request) bool {
+			err := req.ParseForm()
+			c.Assert(err, check.IsNil)
+
+			tags := req.Form["tag"]
+			c.Assert(tags, check.DeepEquals, []string{"production"})
+
+			return strings.HasSuffix(req.URL.Path, "/services/instances")
+		},
+	}
+	serviceList := &ServiceList{
+		filter: serviceFilter{
+			tags: cmd.StringSliceFlag{"production"},
+		},
+	}
+	s.setupFakeTransport(&trans)
+
+	err = serviceList.Run(&ctx)
+	c.Assert(err, check.IsNil)
+
+	table := stdout.String()
+
+	c.Assert(table, check.Equals, `+---------+----------+
+| Service | Instance |
++---------+----------+
+| mysql   | mysql01  |
++---------+----------+
+`)
+}
+
 func (s *S) TestServiceListWithPool(c *check.C) {
 	var stdout, stderr bytes.Buffer
 	output, err := json.Marshal([]service.ServiceModel{
