@@ -131,6 +131,8 @@ func buildManagerCustom(name string, stdout, stderr io.Writer) *cmd.Manager {
 	m.Register(&client.CertificateSet{})
 	m.Register(&client.CertificateUnset{})
 	m.Register(&client.CertificateList{})
+	m.Register(&client.CertificateIssuerSet{})
+	m.Register(&client.CertificateIssuerUnset{})
 	m.Register(&client.CnameAdd{})
 	m.Register(&client.CnameRemove{})
 	m.Register(&client.EnvGet{})
