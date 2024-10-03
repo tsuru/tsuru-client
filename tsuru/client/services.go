@@ -177,9 +177,11 @@ func (s ServiceList) Run(ctx *cmd.Context) error {
 	if hasPool {
 		header = append(header, "Pool")
 	}
+	hasServiceWithInstances := false
 	table.Headers = tablecli.Row(header)
 	for _, s := range services {
 		for _, instance := range s.ServiceInstances {
+			hasServiceWithInstances = true
 			row := []string{s.Service, instance.Name}
 			if hasPool {
 				row = append(row, instance.Pool)
@@ -187,6 +189,9 @@ func (s ServiceList) Run(ctx *cmd.Context) error {
 			r := tablecli.Row(row)
 			table.AddRow(r)
 		}
+	}
+	if !hasServiceWithInstances {
+		return nil
 	}
 
 	_, err = ctx.Stdout.Write(table.Bytes())

@@ -163,7 +163,6 @@ func (s *S) TestServiceListWithTags(c *check.C) {
 			ServiceInstances: []service.ServiceInstance{
 				{
 					Name: "mysql01",
-					Tags: []string{"production"},
 				},
 			},
 		},
@@ -171,7 +170,7 @@ func (s *S) TestServiceListWithTags(c *check.C) {
 	c.Assert(err, check.IsNil)
 
 	ctx := cmd.Context{
-		Args:   []string{"--tag", "production"},
+		Args:   []string{},
 		Stdout: &stdout,
 		Stderr: &stderr,
 	}
@@ -183,19 +182,15 @@ func (s *S) TestServiceListWithTags(c *check.C) {
 			c.Assert(err, check.IsNil)
 
 			tags := req.Form["tag"]
-			c.Assert(tags, check.DeepEquals, []string{"production"})
+			c.Assert(tags, check.DeepEquals, []string{"tag1", "--tag"})
 
 			return strings.HasSuffix(req.URL.Path, "/services/instances")
 		},
 	}
-	serviceList := &ServiceList{
-		filter: serviceFilter{
-			tags: cmd.StringSliceFlag{"production"},
-		},
-	}
 	s.setupFakeTransport(&trans)
-
-	err = serviceList.Run(&ctx)
+	command := ServiceList{}
+	command.Flags().Parse(true, []string{"--tag", "tag1", "--tag", "tag2"})
+	err = command.Run(&ctx)
 	c.Assert(err, check.IsNil)
 
 	table := stdout.String()
