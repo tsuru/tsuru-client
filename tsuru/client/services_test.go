@@ -178,11 +178,11 @@ func (s *S) TestServiceListWithTags(c *check.C) {
 	trans := cmdtest.ConditionalTransport{
 		Transport: cmdtest.Transport{Message: string(output), Status: http.StatusOK},
 		CondFunc: func(req *http.Request) bool {
-			err := req.ParseForm()
+			err = req.ParseForm()
 			c.Assert(err, check.IsNil)
 
 			tags := req.Form["tag"]
-			c.Assert(tags, check.DeepEquals, []string{"tag1", "--tag"})
+			c.Assert(tags, check.DeepEquals, []string{"tag1", "tag2"})
 
 			return strings.HasSuffix(req.URL.Path, "/services/instances")
 		},
