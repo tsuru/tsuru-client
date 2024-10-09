@@ -34,6 +34,7 @@ type serviceFilter struct {
 	plan      string
 	service   string
 	teamOwner string
+	tags      cmd.StringSliceFlag
 }
 
 func (f *serviceFilter) queryString() (url.Values, error) {
@@ -52,6 +53,9 @@ func (f *serviceFilter) queryString() (url.Values, error) {
 	}
 	if f.service != "" {
 		result.Set("service", f.service)
+	}
+	for _, tag := range f.tags {
+		result.Add("tag", tag)
 	}
 	return result, nil
 }
@@ -88,7 +92,9 @@ func (c *ServiceList) Flags() *gnuflag.FlagSet {
 		c.fs.BoolVar(&c.simplified, "q", false, "Display only service instances name")
 		c.fs.BoolVar(&c.json, "json", false, "Display in JSON format")
 		c.fs.BoolVar(&c.justServiceNames, "j", false, "Display just service names")
-
+		tagMessage := "Filter services by tag. Can be used multiple times"
+		c.fs.Var(&c.filter.tags, "tag", tagMessage)
+		c.fs.Var(&c.filter.tags, "g", tagMessage)
 	}
 	return c.fs
 }
@@ -171,9 +177,11 @@ func (s ServiceList) Run(ctx *cmd.Context) error {
 	if hasPool {
 		header = append(header, "Pool")
 	}
+	hasServiceWithInstances := false
 	table.Headers = tablecli.Row(header)
 	for _, s := range services {
 		for _, instance := range s.ServiceInstances {
+			hasServiceWithInstances = true
 			row := []string{s.Service, instance.Name}
 			if hasPool {
 				row = append(row, instance.Pool)
@@ -181,6 +189,9 @@ func (s ServiceList) Run(ctx *cmd.Context) error {
 			r := tablecli.Row(row)
 			table.AddRow(r)
 		}
+	}
+	if !hasServiceWithInstances {
+		return nil
 	}
 
 	_, err = ctx.Stdout.Write(table.Bytes())
