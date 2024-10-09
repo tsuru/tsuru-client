@@ -79,7 +79,7 @@ The [[--tag]] parameter sets a tag to your job. You can set multiple [[--tag]] p
 The [[--max-running-time]] sets maximum amount of time (in seconds) that the job
 can run. If the job exceeds this limit, it will be automatically stopped. If
 this parameter is not informed, default value is 3600s`,
-		MinArgs: 2,
+		MinArgs: 1,
 	}
 }
 
@@ -140,13 +140,21 @@ func (c *JobCreate) Run(ctx *cmd.Context) error {
 	if c.manual && c.schedule != "" {
 		return errors.New("cannot set both manual job and schedule options")
 	}
+
+	var image string
+	var parsedCommands []string
 	jobName := ctx.Args[0]
-	image := ctx.Args[1]
-	commands := ctx.Args[2:]
-	parsedCommands, err := parseJobCommands(commands)
-	if err != nil {
-		return err
+	if len(ctx.Args) > 1 {
+		fmt.Fprintf(ctx.Stdout, "Job creation with image is being deprecated. You should use 'tsuru job deploy' to set a job`s image\n")
+		image = ctx.Args[1]
+		commands := ctx.Args[2:]
+
+		parsedCommands, err = parseJobCommands(commands)
+		if err != nil {
+			return err
+		}
 	}
+
 	var activeDeadlineSecondsResult *int64
 	if c.fs != nil {
 		c.fs.Visit(func(f *gnuflag.Flag) {
@@ -557,6 +565,9 @@ func (c *JobUpdate) Run(ctx *cmd.Context) error {
 	}
 	if c.manual && c.schedule != "" {
 		return errors.New("cannot set both manual job and schedule options")
+	}
+	if c.image != "" {
+		fmt.Fprintf(ctx.Stdout, "Job update with image is being deprecated. You should use 'tsuru job deploy' to set a job`s image\n")
 	}
 	var jobUpdateCommands []string
 	if len(ctx.Args) > 1 {

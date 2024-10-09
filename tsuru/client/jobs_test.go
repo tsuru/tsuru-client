@@ -25,7 +25,8 @@ func (s *S) TestJobCreate(c *check.C) {
 		Stdout: &stdout,
 		Stderr: &stderr,
 	}
-	expected := "Job created\nUse \"tsuru job info loucoAbreu\" to check the status of the job\n"
+	expected := "Job creation with image is being deprecated. You should use 'tsuru job deploy' to set a job`s image\n" +
+		"Job created\nUse \"tsuru job info loucoAbreu\" to check the status of the job\n"
 	trans := cmdtest.ConditionalTransport{
 		Transport: cmdtest.Transport{Message: `{"jobName":"loucoAbreu","status":"success"}`, Status: http.StatusCreated},
 		CondFunc: func(r *http.Request) bool {
@@ -66,7 +67,8 @@ func (s *S) TestJobCreateWithEmptyCommand(c *check.C) {
 		Stdout: &stdout,
 		Stderr: &stderr,
 	}
-	expected := "Job created\nUse \"tsuru job info job-using-entrypoint\" to check the status of the job\n"
+	expected := "Job creation with image is being deprecated. You should use 'tsuru job deploy' to set a job`s image\n" +
+		"Job created\nUse \"tsuru job info job-using-entrypoint\" to check the status of the job\n"
 	trans := cmdtest.ConditionalTransport{
 		Transport: cmdtest.Transport{Message: `{"jobName":"job-using-entrypoint","status":"success"}`, Status: http.StatusCreated},
 		CondFunc: func(r *http.Request) bool {
@@ -105,7 +107,8 @@ func (s *S) TestJobCreateManual(c *check.C) {
 		Stdout: &stdout,
 		Stderr: &stderr,
 	}
-	expected := "Job created\nUse \"tsuru job info daft-punk\" to check the status of the job\n"
+	expected := "Job creation with image is being deprecated. You should use 'tsuru job deploy' to set a job`s image\n" +
+		"Job created\nUse \"tsuru job info daft-punk\" to check the status of the job\n"
 	trans := cmdtest.ConditionalTransport{
 		Transport: cmdtest.Transport{Message: `{"jobName":"daft-punk","status":"success"}`, Status: http.StatusCreated},
 		CondFunc: func(r *http.Request) bool {
@@ -147,7 +150,8 @@ func (s *S) TestJobCreateParseMultipleCommands(c *check.C) {
 		Stdout: &stdout,
 		Stderr: &stderr,
 	}
-	expected := "Job created\nUse \"tsuru job info NiltonSantos\" to check the status of the job\n"
+	expected := "Job creation with image is being deprecated. You should use 'tsuru job deploy' to set a job`s image\n" +
+		"Job created\nUse \"tsuru job info NiltonSantos\" to check the status of the job\n"
 	trans := cmdtest.ConditionalTransport{
 		Transport: cmdtest.Transport{Message: `{"jobName":"loucoAbreu","status":"success"}`, Status: http.StatusCreated},
 		CondFunc: func(r *http.Request) bool {
@@ -176,7 +180,8 @@ func (s *S) TestJobCreateParseJSON(c *check.C) {
 		Stdout: &stdout,
 		Stderr: &stderr,
 	}
-	expected := "Job created\nUse \"tsuru job info NiltonSantos\" to check the status of the job\n"
+	expected := "Job creation with image is being deprecated. You should use 'tsuru job deploy' to set a job`s image\n" +
+		"Job created\nUse \"tsuru job info NiltonSantos\" to check the status of the job\n"
 	trans := cmdtest.ConditionalTransport{
 		Transport: cmdtest.Transport{Message: `{"jobName":"loucoAbreu","status":"success"}`, Status: http.StatusCreated},
 		CondFunc: func(r *http.Request) bool {
@@ -715,7 +720,7 @@ func (s *S) TestJobUpdate(c *check.C) {
 		Stdout: &stdout,
 		Stderr: &stderr,
 	}
-	expected := "Job updated\nUse \"tsuru job info tulioMaravilha\" to check the status of the job\n"
+	expected := "Job update with image is being deprecated. You should use 'tsuru job deploy' to set a job`s image\nJob updated\nUse \"tsuru job info tulioMaravilha\" to check the status of the job\n"
 	trans := cmdtest.ConditionalTransport{
 		Transport: cmdtest.Transport{Message: "", Status: http.StatusOK},
 		CondFunc: func(r *http.Request) bool {
@@ -756,7 +761,7 @@ func (s *S) TestJobUpdateJSONCommands(c *check.C) {
 		Stdout: &stdout,
 		Stderr: &stderr,
 	}
-	expected := "Job updated\nUse \"tsuru job info tulioMaravilha\" to check the status of the job\n"
+	expected := "Job update with image is being deprecated. You should use 'tsuru job deploy' to set a job`s image\nJob updated\nUse \"tsuru job info tulioMaravilha\" to check the status of the job\n"
 	trans := cmdtest.ConditionalTransport{
 		Transport: cmdtest.Transport{Message: "", Status: http.StatusOK},
 		CondFunc: func(r *http.Request) bool {
