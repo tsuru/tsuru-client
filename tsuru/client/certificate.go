@@ -188,7 +188,7 @@ func (c *CertificateList) Run(context *cmd.Context) error {
 	if err != nil {
 		return err
 	}
-	u, err := config.GetURLVersion("1.2", fmt.Sprintf("/apps/%s/certificate", appName))
+	u, err := config.GetURLVersion("1.24", fmt.Sprintf("/apps/%s/certificate", appName))
 	if err != nil {
 		return err
 	}
