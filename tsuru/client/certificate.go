@@ -16,6 +16,7 @@ import (
 	"net/http"
 	"net/url"
 	"os"
+	"sort"
 	"strings"
 	"time"
 
@@ -228,14 +229,17 @@ func (c *CertificateList) Run(context *cmd.Context) error {
 	tbl := tablecli.NewTable()
 	tbl.LineSeparator = true
 	tbl.Headers = tablecli.Row{"Router", "CName", "Public Key Info", "Certificate Validity"}
+
+	rows := []tablecli.Row{}
+
 	for router, routerCerts := range appCerts.RouterCertificates {
 		for cname, cnameCert := range routerCerts.CNameCertificates {
 			cert, err := parseCert([]byte(cnameCert.Certificate))
 			if err != nil {
-				tbl.AddRow(tablecli.Row{router, cname, err.Error(), "-"})
+				rows = append(rows, tablecli.Row{router, cname, err.Error(), "-"})
 				continue
 			}
-			tbl.AddRow(tablecli.Row{
+			rows = append(rows, tablecli.Row{
 				router,
 				formatCName(cname, cnameCert.Issuer),
 				formatPublicKeyInfo(*cert),
@@ -243,6 +247,18 @@ func (c *CertificateList) Run(context *cmd.Context) error {
 			})
 		}
 	}
+
+	sort.Slice(rows, func(i, j int) bool {
+		if rows[i][0] == rows[j][0] {
+			return rows[i][1] < rows[j][1]
+		}
+		return rows[i][0] < rows[j][0]
+	})
+
+	for _, row := range rows {
+		tbl.AddRow(row)
+	}
+
 	tbl.Sort()
 	fmt.Fprint(context.Stdout, tbl.String())
 	return nil
