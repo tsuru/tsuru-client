@@ -386,7 +386,7 @@ func (c *CertificateIssuerSet) Run(context *cmd.Context) error {
 	v := url.Values{}
 	v.Set("cname", c.cname)
 	v.Set("issuer", issuer)
-	u, err := config.GetURLVersion("1.0", fmt.Sprintf("/apps/%s/certissuer", appName))
+	u, err := config.GetURLVersion("1.24", fmt.Sprintf("/apps/%s/certissuer", appName))
 	if err != nil {
 		return err
 	}
@@ -451,7 +451,7 @@ func (c *CertificateIssuerUnset) Run(context *cmd.Context) error {
 
 	v := url.Values{}
 	v.Set("cname", c.cname)
-	u, err := config.GetURLVersion("1.0", fmt.Sprintf("/apps/%s/certissuer?%s", appName, v.Encode()))
+	u, err := config.GetURLVersion("1.24", fmt.Sprintf("/apps/%s/certissuer?%s", appName, v.Encode()))
 	if err != nil {
 		return err
 	}
