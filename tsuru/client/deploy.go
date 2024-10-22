@@ -732,7 +732,7 @@ Use the --job/-j flag to specify it.
 	if readErr != io.EOF {
 		return fmt.Errorf("error reading response: %v", readErr)
 	}
-	if strings.HasSuffix(buf.String(), "\nOK\n") {
+	if strings.HasSuffix(buf.String(), "\nDeploy finished with success!\n") {
 		return nil
 	}
 	return cmd.ErrAbortCommand
