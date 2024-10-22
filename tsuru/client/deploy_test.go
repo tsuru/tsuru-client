@@ -570,7 +570,7 @@ func (s *S) TestJobDeployRunUsingDockerfile(c *check.C) {
 	ctx := &cmd.Context{Stdout: io.Discard, Stderr: io.Discard, Args: command.Flags().Args()}
 
 	trans := &cmdtest.ConditionalTransport{
-		Transport: cmdtest.Transport{Message: "deployed\nOK\n", Status: http.StatusOK},
+		Transport: cmdtest.Transport{Message: "deployed\nDeploy finished with success!\n", Status: http.StatusOK},
 		CondFunc: func(req *http.Request) bool {
 			if req.Body != nil {
 				defer req.Body.Close()
@@ -598,7 +598,7 @@ func (s *S) TestJobDeployRunUsingDockerfile(c *check.C) {
 
 func (s *S) TestJobDeployRunUsingImage(c *check.C) {
 	trans := cmdtest.ConditionalTransport{
-		Transport: cmdtest.Transport{Message: "deploy worked\nOK\n", Status: http.StatusOK},
+		Transport: cmdtest.Transport{Message: "deploy worked\nDeploy finished with success!\n", Status: http.StatusOK},
 		CondFunc: func(req *http.Request) bool {
 			if req.Body != nil {
 				defer req.Body.Close()
@@ -698,7 +698,7 @@ func (s *S) TestJobDeployRunWithMessage(c *check.C) {
 	c.Assert(err, check.IsNil)
 
 	trans := cmdtest.ConditionalTransport{
-		Transport: cmdtest.Transport{Message: "deploy worked\nOK\n", Status: http.StatusOK},
+		Transport: cmdtest.Transport{Message: "deploy worked\nDeploy finished with success!\n", Status: http.StatusOK},
 		CondFunc: func(req *http.Request) bool {
 			if req.Body != nil {
 				defer req.Body.Close()
