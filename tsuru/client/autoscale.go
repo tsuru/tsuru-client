@@ -77,6 +77,15 @@ func (c *AutoScaleSet) Flags() *gnuflag.FlagSet {
 
 		c.fs.Var(&c.schedules, "schedule", "Schedule window to up/down scale. Example: {\"minReplicas\": 2, \"start\": \"0 6 * * *\", \"end\": \"0 18 * * *\"}")
 		c.fs.Var(&c.prometheus, "prometheus", "Prometheus settings to up/down scale. Example: {\"name\": \"my_metric_identification\", \"threshold\": 10, \"query\":\"sum(my_metric{tsuru_app=\\\"my_app\\\"})\"}")
+
+		c.fs.Var((*int32Value)(&c.autoscale.Behavior.ScaleDown.PercentagePolicyValue), "scale-down-percentage", "Percentage of units to downscale when the metric is below the threshold")
+		c.fs.Var((*int32Value)(&c.autoscale.Behavior.ScaleDown.PercentagePolicyValue), "sdp", "Percentage of units to downscale when the metric is below the threshold")
+
+		c.fs.Var((*int32Value)(&c.autoscale.Behavior.ScaleDown.StabilizationWindow), "scale-down-stabilization-window", "Stabilization window in seconds to avoid scale down")
+		c.fs.Var((*int32Value)(&c.autoscale.Behavior.ScaleDown.StabilizationWindow), "sdsw", "Stabilization window in seconds to avoid scale down")
+
+		c.fs.Var((*int32Value)(&c.autoscale.Behavior.ScaleDown.UnitsPolicyValue), "scale-down-units", "Number of units to downscale when the metric is below the threshold")
+		c.fs.Var((*int32Value)(&c.autoscale.Behavior.ScaleDown.UnitsPolicyValue), "sdu", "Number of units to downscale when the metric is below the threshold")
 	}
 	return c.fs
 }
@@ -90,31 +99,24 @@ func (c *AutoScaleSet) Run(ctx *cmd.Context) error {
 	if err != nil {
 		return err
 	}
-
 	schedules := []tsuru.AutoScaleSchedule{}
 	for _, scheduleString := range c.schedules {
 		var autoScaleSchedule tsuru.AutoScaleSchedule
 		if err = json.Unmarshal([]byte(scheduleString), &autoScaleSchedule); err != nil {
 			return err
 		}
-
 		schedules = append(schedules, autoScaleSchedule)
 	}
-
 	c.autoscale.Schedules = schedules
-
 	prometheus := []tsuru.AutoScalePrometheus{}
 	for _, prometheusString := range c.prometheus {
 		var autoScalePrometheus tsuru.AutoScalePrometheus
 		if err = json.Unmarshal([]byte(prometheusString), &autoScalePrometheus); err != nil {
 			return err
 		}
-
 		prometheus = append(prometheus, autoScalePrometheus)
 	}
-
 	c.autoscale.Prometheus = prometheus
-
 	_, err = apiClient.AppApi.AutoScaleAdd(context.TODO(), appName, c.autoscale)
 	if err != nil {
 		return err
