@@ -134,6 +134,7 @@ func (s *S) TestCertificateListRunSuccessfully(c *check.C) {
 					},
 					"myapp.other.io": {
 						Certificate: "",
+						Issuer:      "pki",
 					},
 				},
 			},
@@ -153,23 +154,26 @@ func (s *S) TestCertificateListRunSuccessfully(c *check.C) {
 	c.Assert(err, check.IsNil)
 	notBeforeStr := expectedNotBefore.UTC().Format(time.RFC3339)
 	notAfterStr := expectedNotAfter.UTC().Format(time.RFC3339)
-	expected := `+----------------+----------------------------+-----------------------+----------------------+
-| Router         | CName                      | Public Key Info       | Certificate Validity |
-+----------------+----------------------------+-----------------------+----------------------+
-| a-new-router   | myapp.io                   | Algorithm             | Not before           |
-|                |                            | RSA                   | ` + notBeforeStr + ` |
-|                |                            |                       |                      |
-|                |                            | Key size (in bits)    | Not after            |
-|                |                            | 2048                  | ` + notAfterStr + ` |
-+----------------+----------------------------+-----------------------+----------------------+
-| ingress-router | myapp.io                   | Algorithm             | Not before           |
-|                |   managed by: cert-manager | RSA                   | ` + notBeforeStr + ` |
-|                |   issuer: lets-encrypt     |                       |                      |
-|                |                            | Key size (in bits)    | Not after            |
-|                |                            | 2048                  | ` + notAfterStr + ` |
-+----------------+----------------------------+-----------------------+----------------------+
-| ingress-router | myapp.other.io             | failed to decode data | -                    |
-+----------------+----------------------------+-----------------------+----------------------+
+	expected := `+----------------+----------------------------+--------------------+----------------------+
+| Router         | CName                      | Public Key Info    | Certificate Validity |
++----------------+----------------------------+--------------------+----------------------+
+| a-new-router   | myapp.io                   | Algorithm          | Not before           |
+|                |                            | RSA                | ` + notBeforeStr + ` |
+|                |                            |                    |                      |
+|                |                            | Key size (in bits) | Not after            |
+|                |                            | 2048               | ` + notAfterStr + ` |
++----------------+----------------------------+--------------------+----------------------+
+| ingress-router | myapp.io                   | Algorithm          | Not before           |
+|                |   managed by: cert-manager | RSA                | ` + notBeforeStr + ` |
+|                |   issuer: lets-encrypt     |                    |                      |
+|                |                            | Key size (in bits) | Not after            |
+|                |                            | 2048               | ` + notAfterStr + ` |
++----------------+----------------------------+--------------------+----------------------+
+| ingress-router | myapp.other.io             |                    |                      |
+|                |   managed by: cert-manager |                    |                      |
+|                |   issuer: pki              |                    |                      |
+|                |   status: not ready        |                    |                      |
++----------------+----------------------------+--------------------+----------------------+
 `
 	trans := &cmdtest.ConditionalTransport{
 		Transport: cmdtest.Transport{

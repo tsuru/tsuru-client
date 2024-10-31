@@ -234,16 +234,27 @@ func (c *CertificateList) Run(context *cmd.Context) error {
 
 	for router, routerCerts := range appCerts.RouterCertificates {
 		for cname, cnameCert := range routerCerts.CNameCertificates {
-			cert, err := parseCert([]byte(cnameCert.Certificate))
-			if err != nil {
-				rows = append(rows, tablecli.Row{router, cname, err.Error(), "-"})
-				continue
+			var publicKeyInfo string
+			var certificateValidity string
+			var ready bool
+
+			if cnameCert.Certificate != "" {
+				cert, err := parseCert([]byte(cnameCert.Certificate))
+				if err != nil {
+					rows = append(rows, tablecli.Row{router, cname, err.Error(), "-"})
+					continue
+				}
+
+				ready = true
+				publicKeyInfo = formatPublicKeyInfo(*cert)
+				certificateValidity = formatCertificateValidity(*cert)
 			}
+
 			rows = append(rows, tablecli.Row{
 				router,
-				formatCName(cname, cnameCert.Issuer),
-				formatPublicKeyInfo(*cert),
-				formatCertificateValidity(*cert),
+				formatCName(cname, cnameCert.Issuer, ready),
+				publicKeyInfo,
+				certificateValidity,
 			})
 		}
 	}
@@ -274,15 +285,21 @@ func publicKeySize(publicKey interface{}) int {
 	return 0
 }
 
-func formatCName(cname string, issuer string) (cnameStr string) {
-	cnameStr += fmt.Sprintf("%s\n", cname)
-
-	if issuer != "" {
-		cnameStr += fmt.Sprintln("  managed by: cert-manager")
-		cnameStr += fmt.Sprintf("  issuer: %s\n", issuer)
+func formatCName(cname string, issuer string, ready bool) string {
+	lines := []string{
+		cname,
 	}
 
-	return
+	if issuer != "" {
+		lines = append(lines, "  managed by: cert-manager", fmt.Sprintf("  issuer: %s", issuer))
+
+		if !ready {
+			lines = append(lines, "  status: not ready")
+		}
+
+	}
+
+	return strings.Join(lines, "\n")
 }
 
 func formatPublicKeyInfo(cert x509.Certificate) (pkInfo string) {
