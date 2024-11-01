@@ -792,7 +792,14 @@ func (a *app) String(simplified bool) string {
 				prometheusInfo,
 			}))
 		}
-
+		scaleDown := getParamsScaleDownJson(as.Behavior)
+		autoScaleTable.AddRow([]string{
+			"Scale Down Behavior",
+			fmt.Sprintf("Units: %s\nPercentage: %s%%\nStabilization Window: %ss",
+				scaleDown.UnitsPolicyValue,
+				scaleDown.PercentagePolicyValue,
+				scaleDown.StabilizationWindow),
+		})
 		autoScaleTables = append(autoScaleTables, autoScaleTable)
 	}
 
