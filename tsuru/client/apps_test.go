@@ -1570,14 +1570,28 @@ func (s *S) TestAppInfoWithAutoScale(c *check.C) {
       "minUnits":1,
       "maxUnits":10,
       "averageCPU":"500m",
-      "version":10
+      "version":10,
+	  "behavior": {
+        "scaleDown": {
+          "percentagePolicyValue": 30,
+	      "unitsPolicyValue": 20,
+	      "stabilizationWindow": 100
+	    }  
+	  }
     },
     {
       "process":"worker",
       "minUnits":2,
       "maxUnits":5,
       "averageCPU":"2",
-      "version":10
+      "version":10,
+	  "behavior": {
+        "scaleDown": {
+          "percentagePolicyValue": 10,
+	      "unitsPolicyValue": 10,
+	      "stabilizationWindow": 60
+	    }  
+	  }
     }
   ]
 }`
@@ -1608,18 +1622,26 @@ Units [process worker]: 1
 Auto Scale:
 
 Process: web (v10), Min Units: 1, Max Units: 10
-+----------+-----------------+
-| Triggers | Trigger details |
-+----------+-----------------+
-| CPU      | Target: 50%     |
-+----------+-----------------+
++---------------------+----------------------------+
+| Triggers            | Trigger details            |
++---------------------+----------------------------+
+| CPU                 | Target: 50%                |
++---------------------+----------------------------+
+| Scale Down Behavior | Units: 20                  |
+|                     | Percentage: 30%            |
+|                     | Stabilization Window: 100s |
++---------------------+----------------------------+
 
 Process: worker (v10), Min Units: 2, Max Units: 5
-+----------+-----------------+
-| Triggers | Trigger details |
-+----------+-----------------+
-| CPU      | Target: 200%    |
-+----------+-----------------+
++---------------------+---------------------------+
+| Triggers            | Trigger details           |
++---------------------+---------------------------+
+| CPU                 | Target: 200%              |
++---------------------+---------------------------+
+| Scale Down Behavior | Units: 10                 |
+|                     | Percentage: 10%           |
+|                     | Stabilization Window: 60s |
++---------------------+---------------------------+
 
 `
 	context := cmd.Context{
@@ -1672,6 +1694,13 @@ func (s *S) TestAppInfoWithKEDAAutoScale(c *check.C) {
       "maxUnits":10,
       "averageCPU":"500m",
       "version":10,
+	  "behavior": {
+	  	"scaleDown": {
+		    "percentagePolicyValue": 21,
+	  		"unitsPolicyValue": 25,
+			"stabilizationWindow": 50
+		}
+	  },
 	  "schedules": [
 		{
 		  "minReplicas":2,
@@ -1705,6 +1734,13 @@ func (s *S) TestAppInfoWithKEDAAutoScale(c *check.C) {
       "maxUnits":5,
       "averageCPU":"2",
       "version":10,
+	  "behavior": {
+	  	"scaleDown": {
+		    "percentagePolicyValue": 5,
+	  		"unitsPolicyValue": 7,
+			"stabilizationWindow": 60
+		}
+	  },
 	  "schedules": [
 		{
 		  "minReplicas":1,
@@ -1743,43 +1779,51 @@ Units [process worker]: 1
 Auto Scale:
 
 Process: web (v10), Min Units: 1, Max Units: 10
-+------------+-------------------------------------------+
-| Triggers   | Trigger details                           |
-+------------+-------------------------------------------+
-| CPU        | Target: 50%                               |
-+------------+-------------------------------------------+
-| Schedule   | Start: At 06:00 AM (0 6 * * *)            |
-|            | End: At 06:00 PM (0 18 * * *)             |
-|            | Units: 2                                  |
-|            | Timezone: UTC                             |
-+------------+-------------------------------------------+
-| Schedule   | Start: At 12:00 PM (0 12 * * *)           |
-|            | End: At 03:00 PM (0 15 * * *)             |
-|            | Units: 3                                  |
-|            | Timezone: UTC                             |
-+------------+-------------------------------------------+
-| Prometheus | Name: my_metric_id                        |
-|            | Query: my_query{app='my-app'}             |
-|            | Threshold: 2                              |
-|            | PrometheusAddress: default.com            |
-+------------+-------------------------------------------+
-| Prometheus | Name: my_metric_id_2                      |
-|            | Query: my_query_2{app='my-app'}           |
-|            | Threshold: 5                              |
-|            | PrometheusAddress: exemple.prometheus.com |
-+------------+-------------------------------------------+
++---------------------+-------------------------------------------+
+| Triggers            | Trigger details                           |
++---------------------+-------------------------------------------+
+| CPU                 | Target: 50%                               |
++---------------------+-------------------------------------------+
+| Schedule            | Start: At 06:00 AM (0 6 * * *)            |
+|                     | End: At 06:00 PM (0 18 * * *)             |
+|                     | Units: 2                                  |
+|                     | Timezone: UTC                             |
++---------------------+-------------------------------------------+
+| Schedule            | Start: At 12:00 PM (0 12 * * *)           |
+|                     | End: At 03:00 PM (0 15 * * *)             |
+|                     | Units: 3                                  |
+|                     | Timezone: UTC                             |
++---------------------+-------------------------------------------+
+| Prometheus          | Name: my_metric_id                        |
+|                     | Query: my_query{app='my-app'}             |
+|                     | Threshold: 2                              |
+|                     | PrometheusAddress: default.com            |
++---------------------+-------------------------------------------+
+| Prometheus          | Name: my_metric_id_2                      |
+|                     | Query: my_query_2{app='my-app'}           |
+|                     | Threshold: 5                              |
+|                     | PrometheusAddress: exemple.prometheus.com |
++---------------------+-------------------------------------------+
+| Scale Down Behavior | Units: 25                                 |
+|                     | Percentage: 21%                           |
+|                     | Stabilization Window: 50s                 |
++---------------------+-------------------------------------------+
 
 Process: worker (v10), Min Units: 2, Max Units: 5
-+----------+--------------------------------+
-| Triggers | Trigger details                |
-+----------+--------------------------------+
-| CPU      | Target: 200%                   |
-+----------+--------------------------------+
-| Schedule | Start: At 12:00 AM (0 0 * * *) |
-|          | End: At 06:00 AM (0 6 * * *)   |
-|          | Units: 1                       |
-|          | Timezone: America/Sao_Paulo    |
-+----------+--------------------------------+
++---------------------+--------------------------------+
+| Triggers            | Trigger details                |
++---------------------+--------------------------------+
+| CPU                 | Target: 200%                   |
++---------------------+--------------------------------+
+| Schedule            | Start: At 12:00 AM (0 0 * * *) |
+|                     | End: At 06:00 AM (0 6 * * *)   |
+|                     | Units: 1                       |
+|                     | Timezone: America/Sao_Paulo    |
++---------------------+--------------------------------+
+| Scale Down Behavior | Units: 7                       |
+|                     | Percentage: 5%                 |
+|                     | Stabilization Window: 60s      |
++---------------------+--------------------------------+
 
 `
 	context := cmd.Context{
