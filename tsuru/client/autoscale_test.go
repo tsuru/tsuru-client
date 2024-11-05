@@ -53,6 +53,77 @@ func (s *S) TestAutoScaleSet(c *check.C) {
 	c.Assert(stdout.String(), check.Equals, expected)
 }
 
+func (s *S) TestAutoScaleBehaviorSet(c *check.C) {
+	tests := []struct {
+		param    []string
+		expected tsuru.AutoScaleSpecBehavior
+	}{
+		{
+			param: []string{"-a", "myapp", "-p", "proc1", "--min", "2", "--max", "5", "--sdp", "3", "--sdsw", "22", "--sdu", "9"},
+			expected: tsuru.AutoScaleSpecBehavior{
+				ScaleDown: tsuru.AutoScaleSpecBehaviorScaleDown{
+					StabilizationWindow:   22,
+					PercentagePolicyValue: 3,
+					UnitsPolicyValue:      9,
+				},
+			},
+		},
+		{
+			param: []string{"-a", "myapp", "-p", "proc1", "--min", "2", "--max", "5", "--scale-down-percentage", "5", "--scale-down-stabilization-window", "7", "--scale-down-units", "40"},
+			expected: tsuru.AutoScaleSpecBehavior{
+				ScaleDown: tsuru.AutoScaleSpecBehaviorScaleDown{
+					StabilizationWindow:   7,
+					PercentagePolicyValue: 5,
+					UnitsPolicyValue:      40,
+				},
+			},
+		},
+		{
+			param:    []string{"-a", "myapp", "-p", "proc1", "--min", "2", "--max", "5"},
+			expected: tsuru.AutoScaleSpecBehavior{},
+		},
+	}
+
+	for _, tt := range tests {
+		var stdout, stderr bytes.Buffer
+		expected := "Unit auto scale successfully set.\n"
+		context := cmd.Context{
+			Stdout: &stdout,
+			Stderr: &stderr,
+			Args:   []string{},
+		}
+		trans := cmdtest.ConditionalTransport{
+			Transport: cmdtest.Transport{Message: "", Status: http.StatusOK},
+			CondFunc: func(r *http.Request) bool {
+				c.Assert(r.URL.Path, check.Equals, "/1.9/apps/myapp/units/autoscale")
+				c.Assert(r.Method, check.Equals, "POST")
+				var ret tsuru.AutoScaleSpec
+				c.Assert(r.Header.Get("Content-Type"), check.Equals, "application/json")
+				data, err := io.ReadAll(r.Body)
+				c.Assert(err, check.IsNil)
+				err = json.Unmarshal(data, &ret)
+				c.Assert(err, check.IsNil)
+				c.Assert(ret, check.DeepEquals, tsuru.AutoScaleSpec{
+					MinUnits: 2,
+					MaxUnits: 5,
+					Process:  "proc1",
+					Behavior: tsuru.AutoScaleSpecBehavior{
+						ScaleDown: tt.expected.ScaleDown,
+					},
+				})
+				return true
+			},
+		}
+		s.setupFakeTransport(&trans)
+		command := AutoScaleSet{}
+		command.Info()
+		command.Flags().Parse(true, tt.param)
+		err := command.Run(&context)
+		c.Assert(err, check.IsNil)
+		c.Assert(stdout.String(), check.Equals, expected)
+	}
+}
+
 func (s *S) TestKEDAScheduleAutoScaleSet(c *check.C) {
 	var stdout, stderr bytes.Buffer
 	expected := "Unit auto scale successfully set.\n"
