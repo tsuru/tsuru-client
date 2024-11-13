@@ -21,31 +21,27 @@ type scaleDownJson struct {
 	StabilizationWindow   *int32 `json:"stabilizationWindow,omitempty"`
 }
 
-type scaleDownOutput struct {
-	UnitsPolicyValue      string `json:"unitsPolicyValue,omitempty"`
-	PercentagePolicyValue string `json:"percentagePolicyValue,omitempty"`
-	StabilizationWindow   string `json:"stabilizationWindow,omitempty"`
-}
-
-func getParamsScaleDownJson(behavior tsuru.AutoScaleSpecBehavior) scaleDownOutput {
+func getParamsScaleDownLines(behavior tsuru.AutoScaleSpecBehavior) []string {
 	b, err := json.Marshal(behavior)
 	if err != nil {
-		return scaleDownOutput{}
+		return nil
 	}
 	var behaviorJson behaviorScaleDownJson
 	err = json.Unmarshal(b, &behaviorJson)
 	if err != nil {
-		return scaleDownOutput{}
+		return nil
 	}
-	output := scaleDownOutput{}
+
+	lines := []string{}
+
 	if behaviorJson.ScaleDown.UnitsPolicyValue != nil {
-		output.UnitsPolicyValue = fmt.Sprintf("%d", *behaviorJson.ScaleDown.UnitsPolicyValue)
+		lines = append(lines, fmt.Sprintf("Units: %d", *behaviorJson.ScaleDown.UnitsPolicyValue))
 	}
 	if behaviorJson.ScaleDown.PercentagePolicyValue != nil {
-		output.PercentagePolicyValue = fmt.Sprintf("%d", *behaviorJson.ScaleDown.PercentagePolicyValue)
+		lines = append(lines, fmt.Sprintf("Percentage: %d%%", *behaviorJson.ScaleDown.PercentagePolicyValue))
 	}
 	if behaviorJson.ScaleDown.StabilizationWindow != nil {
-		output.StabilizationWindow = fmt.Sprintf("%d", *behaviorJson.ScaleDown.StabilizationWindow)
+		lines = append(lines, fmt.Sprintf("Stabilization window: %ds", *behaviorJson.ScaleDown.StabilizationWindow))
 	}
-	return output
+	return lines
 }

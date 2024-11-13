@@ -1627,9 +1627,9 @@ Process: web (v10), Min Units: 1, Max Units: 10
 +---------------------+----------------------------+
 | CPU                 | Target: 50%                |
 +---------------------+----------------------------+
-| Scale Down Behavior | Units: 20                  |
+| Scale down behavior | Units: 20                  |
 |                     | Percentage: 30%            |
-|                     | Stabilization Window: 100s |
+|                     | Stabilization window: 100s |
 +---------------------+----------------------------+
 
 Process: worker (v10), Min Units: 2, Max Units: 5
@@ -1638,9 +1638,9 @@ Process: worker (v10), Min Units: 2, Max Units: 5
 +---------------------+---------------------------+
 | CPU                 | Target: 200%              |
 +---------------------+---------------------------+
-| Scale Down Behavior | Units: 10                 |
+| Scale down behavior | Units: 10                 |
 |                     | Percentage: 10%           |
-|                     | Stabilization Window: 60s |
+|                     | Stabilization window: 60s |
 +---------------------+---------------------------+
 
 `
@@ -1804,9 +1804,9 @@ Process: web (v10), Min Units: 1, Max Units: 10
 |                     | Threshold: 5                              |
 |                     | PrometheusAddress: exemple.prometheus.com |
 +---------------------+-------------------------------------------+
-| Scale Down Behavior | Units: 25                                 |
+| Scale down behavior | Units: 25                                 |
 |                     | Percentage: 21%                           |
-|                     | Stabilization Window: 50s                 |
+|                     | Stabilization window: 50s                 |
 +---------------------+-------------------------------------------+
 
 Process: worker (v10), Min Units: 2, Max Units: 5
@@ -1820,9 +1820,9 @@ Process: worker (v10), Min Units: 2, Max Units: 5
 |                     | Units: 1                       |
 |                     | Timezone: America/Sao_Paulo    |
 +---------------------+--------------------------------+
-| Scale Down Behavior | Units: 7                       |
+| Scale down behavior | Units: 7                       |
 |                     | Percentage: 5%                 |
-|                     | Stabilization Window: 60s      |
+|                     | Stabilization window: 60s      |
 +---------------------+--------------------------------+
 
 `
