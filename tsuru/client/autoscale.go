@@ -27,6 +27,29 @@ func (i *int32Value) Set(s string) error {
 func (i *int32Value) Get() interface{} { return int32(*i) }
 func (i *int32Value) String() string   { return fmt.Sprintf("%v", *i) }
 
+type int32PointerValue struct {
+	value **int32
+}
+
+func (i *int32PointerValue) Set(s string) error {
+	if s == "" {
+		*i.value = nil
+		return nil
+	}
+	v, err := strconv.ParseInt(s, 0, 32)
+	var v32 int32 = int32(v)
+
+	*i.value = &v32
+	return err
+}
+func (i *int32PointerValue) Get() interface{} { return *i.value }
+func (i *int32PointerValue) String() string {
+	if *i.value == nil {
+		return ""
+	}
+	return fmt.Sprintf("%v", *i.value)
+}
+
 type AutoScaleSet struct {
 	tsuruClientApp.AppNameMixIn
 	fs         *gnuflag.FlagSet
@@ -78,14 +101,14 @@ func (c *AutoScaleSet) Flags() *gnuflag.FlagSet {
 		c.fs.Var(&c.schedules, "schedule", "Schedule window to up/down scale. Example: {\"minReplicas\": 2, \"start\": \"0 6 * * *\", \"end\": \"0 18 * * *\"}")
 		c.fs.Var(&c.prometheus, "prometheus", "Prometheus settings to up/down scale. Example: {\"name\": \"my_metric_identification\", \"threshold\": 10, \"query\":\"sum(my_metric{tsuru_app=\\\"my_app\\\"})\"}")
 
-		c.fs.Var((*int32Value)(&c.autoscale.Behavior.ScaleDown.PercentagePolicyValue), "scale-down-percentage", "Percentage of units to downscale when the metric is below the threshold")
-		c.fs.Var((*int32Value)(&c.autoscale.Behavior.ScaleDown.PercentagePolicyValue), "sdp", "Percentage of units to downscale when the metric is below the threshold")
+		c.fs.Var(&int32PointerValue{&c.autoscale.Behavior.ScaleDown.PercentagePolicyValue}, "scale-down-percentage", "Percentage of units to downscale when the metric is below the threshold")
+		c.fs.Var(&int32PointerValue{&c.autoscale.Behavior.ScaleDown.PercentagePolicyValue}, "sdp", "Percentage of units to downscale when the metric is below the threshold")
 
-		c.fs.Var((*int32Value)(&c.autoscale.Behavior.ScaleDown.StabilizationWindow), "scale-down-stabilization-window", "Stabilization window in seconds to avoid scale down")
-		c.fs.Var((*int32Value)(&c.autoscale.Behavior.ScaleDown.StabilizationWindow), "sdsw", "Stabilization window in seconds to avoid scale down")
+		c.fs.Var(&int32PointerValue{&c.autoscale.Behavior.ScaleDown.StabilizationWindow}, "scale-down-stabilization-window", "Stabilization window in seconds to avoid scale down")
+		c.fs.Var(&int32PointerValue{&c.autoscale.Behavior.ScaleDown.StabilizationWindow}, "sdsw", "Stabilization window in seconds to avoid scale down")
 
-		c.fs.Var((*int32Value)(&c.autoscale.Behavior.ScaleDown.UnitsPolicyValue), "scale-down-units", "Number of units to downscale when the metric is below the threshold")
-		c.fs.Var((*int32Value)(&c.autoscale.Behavior.ScaleDown.UnitsPolicyValue), "sdu", "Number of units to downscale when the metric is below the threshold")
+		c.fs.Var(&int32PointerValue{&c.autoscale.Behavior.ScaleDown.UnitsPolicyValue}, "scale-down-units", "Number of units to downscale when the metric is below the threshold")
+		c.fs.Var(&int32PointerValue{&c.autoscale.Behavior.ScaleDown.UnitsPolicyValue}, "sdu", "Number of units to downscale when the metric is below the threshold")
 	}
 	return c.fs
 }

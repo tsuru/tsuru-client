@@ -14,6 +14,7 @@ import (
 	"github.com/tsuru/tsuru/cmd"
 	"github.com/tsuru/tsuru/cmd/cmdtest"
 	check "gopkg.in/check.v1"
+	"k8s.io/utils/ptr"
 )
 
 func (s *S) TestAutoScaleSet(c *check.C) {
@@ -62,9 +63,9 @@ func (s *S) TestAutoScaleBehaviorSet(c *check.C) {
 			param: []string{"-a", "myapp", "-p", "proc1", "--min", "2", "--max", "5", "--sdp", "3", "--sdsw", "22", "--sdu", "9"},
 			expected: tsuru.AutoScaleSpecBehavior{
 				ScaleDown: tsuru.AutoScaleSpecBehaviorScaleDown{
-					StabilizationWindow:   22,
-					PercentagePolicyValue: 3,
-					UnitsPolicyValue:      9,
+					StabilizationWindow:   ptr.To(int32(22)),
+					PercentagePolicyValue: ptr.To(int32(3)),
+					UnitsPolicyValue:      ptr.To(int32(9)),
 				},
 			},
 		},
@@ -72,9 +73,9 @@ func (s *S) TestAutoScaleBehaviorSet(c *check.C) {
 			param: []string{"-a", "myapp", "-p", "proc1", "--min", "2", "--max", "5", "--scale-down-percentage", "5", "--scale-down-stabilization-window", "7", "--scale-down-units", "40"},
 			expected: tsuru.AutoScaleSpecBehavior{
 				ScaleDown: tsuru.AutoScaleSpecBehaviorScaleDown{
-					StabilizationWindow:   7,
-					PercentagePolicyValue: 5,
-					UnitsPolicyValue:      40,
+					StabilizationWindow:   ptr.To(int32(7)),
+					PercentagePolicyValue: ptr.To(int32(5)),
+					UnitsPolicyValue:      ptr.To(int32(40)),
 				},
 			},
 		},

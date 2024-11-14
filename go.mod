@@ -15,7 +15,7 @@ require (
 	github.com/pmorie/go-open-service-broker-client v0.0.0-20180330214919-dca737037ce6
 	github.com/sabhiram/go-gitignore v0.0.0-20171017070213-362f9845770f
 	github.com/tsuru/gnuflag v0.0.0-20151217162021-86b8c1b864aa
-	github.com/tsuru/go-tsuruclient v0.0.0-20241029183502-e219a905d873
+	github.com/tsuru/go-tsuruclient v0.0.0-20241114131333-e45b7f4741d8
 	github.com/tsuru/tablecli v0.0.0-20190131152944-7ded8a3383c6
 	github.com/tsuru/tsuru v0.0.0-20240703132558-bfd1d9c89602
 	golang.org/x/net v0.25.0
@@ -25,6 +25,7 @@ require (
 	gopkg.in/check.v1 v1.0.0-20201130134442-10cb98267c6c
 	gopkg.in/yaml.v2 v2.4.0
 	k8s.io/apimachinery v0.26.2
+	k8s.io/utils v0.0.0-20230726121419-3b25d923346b
 )
 
 require (
@@ -90,7 +91,6 @@ require (
 	k8s.io/api v0.26.2 // indirect
 	k8s.io/client-go v0.26.2 // indirect
 	k8s.io/klog/v2 v2.90.1 // indirect
-	k8s.io/utils v0.0.0-20230726121419-3b25d923346b // indirect
 	sigs.k8s.io/json v0.0.0-20221116044647-bc3834ca7abd // indirect
 	sigs.k8s.io/structured-merge-diff/v4 v4.2.3 // indirect
 	sigs.k8s.io/yaml v1.3.0 // indirect
