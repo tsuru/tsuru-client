@@ -62,7 +62,7 @@ the client used by application developers to communicate with tsuru server."
 _build_all_packages(){
   INPUT_DIRS=$(find dist -type d -name "tsuru_linux_*")
   for INPUT_DIR in $INPUT_DIRS; do
-    ARCH=$(echo "${INPUT_DIR}" | sed -e 's/.*tsuru_linux_//' -e 's/_v1//' )
+    ARCH=$(echo "${INPUT_DIR}" | sed -e 's/.*tsuru_linux_//' -e 's/_v[0-9]\+//' )
     PACKAGE_FILE_DEB="${PACKAGE_NAME}_${PACKAGE_VERSION}_${ARCH}.deb"
     PACKAGE_FILE_RPM="${PACKAGE_NAME}_${PACKAGE_VERSION}_${ARCH}.rpm"
 
