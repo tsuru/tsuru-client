@@ -29,6 +29,7 @@ var httpRegexp = regexp.MustCompile(`^http`)
 type ShellToContainerCmd struct {
 	tsuruClientApp.AppNameMixIn
 	isolated bool
+	debug    bool
 	fs       *gnuflag.FlagSet
 }
 
@@ -49,6 +50,8 @@ func (c *ShellToContainerCmd) Flags() *gnuflag.FlagSet {
 		help := "Run shell in a new unit"
 		c.fs.BoolVar(&c.isolated, "isolated", false, help)
 		c.fs.BoolVar(&c.isolated, "i", false, help)
+		c.fs.BoolVar(&c.debug, "debug", false, "Enable debug mode")
+		c.fs.BoolVar(&c.debug, "d", false, "Enable debug mode")
 	}
 	return c.fs
 }
@@ -97,6 +100,7 @@ func (c *ShellToContainerCmd) Run(context *cmd.Context) error {
 	}
 	queryString := make(url.Values)
 	queryString.Set("isolated", strconv.FormatBool(c.isolated))
+	queryString.Set("debug", strconv.FormatBool(c.debug))
 	queryString.Set("width", strconv.Itoa(width))
 	queryString.Set("height", strconv.Itoa(height))
 	if len(context.Args) > 0 {
