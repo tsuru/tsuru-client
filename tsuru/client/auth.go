@@ -467,7 +467,7 @@ Tags: {{.Tags}}
 			unitsStatus := make(map[string]int)
 			for _, unit := range app.Units {
 				if unit.ID != "" {
-					unitsStatus[unit.Status]++
+					unitsStatus[unit.Status.String()]++
 				}
 			}
 			statusText := make([]string, len(unitsStatus))
