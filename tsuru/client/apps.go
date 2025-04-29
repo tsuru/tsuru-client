@@ -32,8 +32,8 @@ import (
 	tsuruHTTP "github.com/tsuru/tsuru-client/tsuru/http"
 	"github.com/tsuru/tsuru/cmd"
 	appTypes "github.com/tsuru/tsuru/types/app"
+	bindTypes "github.com/tsuru/tsuru/types/bind"
 	provTypes "github.com/tsuru/tsuru/types/provision"
-	quotaTypes "github.com/tsuru/tsuru/types/quota"
 	volumeTypes "github.com/tsuru/tsuru/types/volume"
 	"k8s.io/apimachinery/pkg/api/resource"
 	"k8s.io/apimachinery/pkg/util/duration"
@@ -506,38 +506,7 @@ func (l *lock) String() string {
 	return fmt.Sprintf(format, l.AcquireDate, l.Owner, l.Reason)
 }
 
-type app struct {
-	IP          string
-	CName       []string
-	Name        string
-	Provisioner string
-	Cluster     string
-	Platform    string
-	Repository  string
-	Teams       []string
-	Units       []unit
-	Owner       string
-	TeamOwner   string
-	Deploys     uint
-	Pool        string
-	Description string
-	Lock        lock
-	Quota       quotaTypes.Quota
-	Plan        appTypes.Plan
-	Router      string
-	RouterOpts  map[string]string
-	Tags        []string
-	Error       string
-	Routers     []appTypes.AppRouter
-	AutoScale   []tsuru.AutoScaleSpec
-
-	DashboardURL         string
-	InternalAddresses    []appTypes.AppInternalAddress
-	UnitsMetrics         []provTypes.UnitMetric
-	VolumeBinds          []volumeTypes.VolumeBind
-	ServiceInstanceBinds []tsuru.AppServiceInstanceBinds
-	Processes            []tsuru.AppProcess
-}
+type app appTypes.AppInfo
 
 func (a *app) QuotaString() string {
 	var limit strings.Builder
@@ -722,7 +691,7 @@ func (a *app) String(simplified bool) string {
 	var autoScaleTables []*tablecli.Table
 	processes := []string{}
 
-	for _, as := range a.AutoScale {
+	for _, as := range a.Autoscale {
 		autoScaleTable := tablecli.NewTable()
 		autoScaleTable.LineSeparator = true
 
@@ -792,11 +761,11 @@ func (a *app) String(simplified bool) string {
 		if len(planByProcess) == 0 {
 			buf.WriteString("\n")
 			buf.WriteString("App Plan:\n")
-			buf.WriteString(renderPlans([]appTypes.Plan{a.Plan}, renderPlansOpts{}))
+			buf.WriteString(renderPlans([]appTypes.Plan{*a.Plan}, renderPlansOpts{}))
 		} else {
 			buf.WriteString("\n")
 			buf.WriteString("Process plans:\n")
-			buf.WriteString(renderProcessPlan(a.Plan, planByProcess))
+			buf.WriteString(renderProcessPlan(*a.Plan, planByProcess))
 		}
 	}
 
@@ -844,7 +813,7 @@ func buildPrometheusInfo(prometheus tsuru.AutoScalePrometheus) string {
 }
 
 func (a *app) SimpleServicesView() string {
-	sibs := make([]tsuru.AppServiceInstanceBinds, len(a.ServiceInstanceBinds))
+	sibs := make([]bindTypes.ServiceInstanceBind, len(a.ServiceInstanceBinds))
 	copy(sibs, a.ServiceInstanceBinds)
 
 	sort.Slice(sibs, func(i, j int) bool {
@@ -864,7 +833,7 @@ func (a *app) SimpleServicesView() string {
 	return strings.Join(pairs, ", ")
 }
 
-func renderUnitsSummary(buf *bytes.Buffer, units []unit, metrics []provTypes.UnitMetric, provisioner string) {
+func renderUnitsSummary(buf *bytes.Buffer, units []provTypes.Unit, metrics []provTypes.UnitMetric, provisioner string) {
 	type unitsKey struct {
 		process  string
 		version  int
@@ -877,7 +846,7 @@ func renderUnitsSummary(buf *bytes.Buffer, units []unit, metrics []provTypes.Uni
 			routable = u.Routable
 		}
 		key := unitsKey{process: u.ProcessName, version: u.Version, routable: routable}
-		groupedUnits[key] = append(groupedUnits[key], u)
+		groupedUnits[key] = append(groupedUnits[key], unit(u))
 	}
 	keys := make([]unitsKey, 0, len(groupedUnits))
 	for key := range groupedUnits {
@@ -964,7 +933,7 @@ func renderUnitsSummary(buf *bytes.Buffer, units []unit, metrics []provTypes.Uni
 	buf.WriteString(unitsTable.String())
 }
 
-func renderUnits(buf *bytes.Buffer, units []unit, metrics []provTypes.UnitMetric, provisioner string) {
+func renderUnits(buf *bytes.Buffer, units []provTypes.Unit, metrics []provTypes.UnitMetric, provisioner string) {
 	type unitsKey struct {
 		process  string
 		version  int
@@ -977,7 +946,7 @@ func renderUnits(buf *bytes.Buffer, units []unit, metrics []provTypes.UnitMetric
 			routable = u.Routable
 		}
 		key := unitsKey{process: u.ProcessName, version: u.Version, routable: routable}
-		groupedUnits[key] = append(groupedUnits[key], u)
+		groupedUnits[key] = append(groupedUnits[key], unit(u))
 	}
 	keys := make([]unitsKey, 0, len(groupedUnits))
 	for key := range groupedUnits {

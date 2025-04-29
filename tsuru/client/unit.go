@@ -248,8 +248,8 @@ func (c *UnitSet) Run(context *cmd.Context) error {
 	unitsByProcess := map[string][]unit{}
 	unitsByVersion := map[int][]unit{}
 	for _, u := range a.Units {
-		unitsByProcess[u.ProcessName] = append(unitsByProcess[u.ProcessName], u)
-		unitsByVersion[u.Version] = append(unitsByVersion[u.Version], u)
+		unitsByProcess[u.ProcessName] = append(unitsByProcess[u.ProcessName], unit(u))
+		unitsByVersion[u.Version] = append(unitsByVersion[u.Version], unit(u))
 	}
 
 	if len(unitsByProcess) != 1 && c.process == "" {
