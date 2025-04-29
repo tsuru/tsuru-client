@@ -31,7 +31,8 @@ import (
 	"github.com/tsuru/tsuru-client/tsuru/formatter"
 	tsuruHTTP "github.com/tsuru/tsuru-client/tsuru/http"
 	"github.com/tsuru/tsuru/cmd"
-	apptypes "github.com/tsuru/tsuru/types/app"
+	appTypes "github.com/tsuru/tsuru/types/app"
+	provTypes "github.com/tsuru/tsuru/types/provision"
 	quotaTypes "github.com/tsuru/tsuru/types/quota"
 	volumeTypes "github.com/tsuru/tsuru/types/volume"
 	"k8s.io/apimachinery/pkg/api/resource"
@@ -509,18 +510,7 @@ func (u *unit) Port() string {
 	return strings.Join(ports, ", ")
 }
 
-type unitMetrics struct {
-	ID     string
-	CPU    string
-	Memory string
-}
-
-type lock struct {
-	Locked      bool
-	Reason      string
-	Owner       string
-	AcquireDate time.Time
-}
+type lock appTypes.AppLock
 
 func (l *lock) String() string {
 	format := `Lock:
@@ -547,28 +537,20 @@ type app struct {
 	Description string
 	Lock        lock
 	Quota       quotaTypes.Quota
-	Plan        apptypes.Plan
+	Plan        appTypes.Plan
 	Router      string
 	RouterOpts  map[string]string
 	Tags        []string
 	Error       string
-	Routers     []apptypes.AppRouter
+	Routers     []appTypes.AppRouter
 	AutoScale   []tsuru.AutoScaleSpec
 
 	DashboardURL         string
-	InternalAddresses    []appInternalAddress
-	UnitsMetrics         []unitMetrics
+	InternalAddresses    []appTypes.AppInternalAddress
+	UnitsMetrics         []provTypes.UnitMetric
 	VolumeBinds          []volumeTypes.VolumeBind
 	ServiceInstanceBinds []tsuru.AppServiceInstanceBinds
 	Processes            []tsuru.AppProcess
-}
-
-type appInternalAddress struct {
-	Domain   string
-	Protocol string
-	Port     int
-	Version  string
-	Process  string
 }
 
 func (a *app) QuotaString() string {
@@ -741,7 +723,7 @@ func (a *app) String(simplified bool) string {
 	for _, internalAddress := range a.InternalAddresses {
 		internalAddressesTable.AddRow([]string{
 			internalAddress.Domain,
-			strconv.Itoa(internalAddress.Port) + "/" + internalAddress.Protocol,
+			strconv.Itoa(int(internalAddress.Port)) + "/" + internalAddress.Protocol,
 			internalAddress.Process,
 			internalAddress.Version,
 		})
@@ -824,7 +806,7 @@ func (a *app) String(simplified bool) string {
 		if len(planByProcess) == 0 {
 			buf.WriteString("\n")
 			buf.WriteString("App Plan:\n")
-			buf.WriteString(renderPlans([]apptypes.Plan{a.Plan}, renderPlansOpts{}))
+			buf.WriteString(renderPlans([]appTypes.Plan{a.Plan}, renderPlansOpts{}))
 		} else {
 			buf.WriteString("\n")
 			buf.WriteString("Process plans:\n")
@@ -896,7 +878,7 @@ func (a *app) SimpleServicesView() string {
 	return strings.Join(pairs, ", ")
 }
 
-func renderUnitsSummary(buf *bytes.Buffer, units []unit, metrics []unitMetrics, provisioner string) {
+func renderUnitsSummary(buf *bytes.Buffer, units []unit, metrics []provTypes.UnitMetric, provisioner string) {
 	type unitsKey struct {
 		process  string
 		version  int
@@ -936,7 +918,7 @@ func renderUnitsSummary(buf *bytes.Buffer, units []unit, metrics []unitMetrics, 
 	if len(units) == 0 {
 		return
 	}
-	mapUnitMetrics := map[string]unitMetrics{}
+	mapUnitMetrics := map[string]provTypes.UnitMetric{}
 	for _, unitMetric := range metrics {
 		mapUnitMetrics[unitMetric.ID] = unitMetric
 	}
@@ -996,7 +978,7 @@ func renderUnitsSummary(buf *bytes.Buffer, units []unit, metrics []unitMetrics, 
 	buf.WriteString(unitsTable.String())
 }
 
-func renderUnits(buf *bytes.Buffer, units []unit, metrics []unitMetrics, provisioner string) {
+func renderUnits(buf *bytes.Buffer, units []unit, metrics []provTypes.UnitMetric, provisioner string) {
 	type unitsKey struct {
 		process  string
 		version  int
@@ -1028,7 +1010,7 @@ func renderUnits(buf *bytes.Buffer, units []unit, metrics []unitMetrics, provisi
 	} else {
 		titles = []string{"Name", "Status", "Host", "Port"}
 	}
-	mapUnitMetrics := map[string]unitMetrics{}
+	mapUnitMetrics := map[string]provTypes.UnitMetric{}
 	for _, unitMetric := range metrics {
 		mapUnitMetrics[unitMetric.ID] = unitMetric
 	}
