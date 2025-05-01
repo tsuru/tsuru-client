@@ -2,7 +2,7 @@ module github.com/tsuru/tsuru-client
 
 go 1.22
 
-toolchain go1.23.5
+toolchain go1.22.0
 
 require (
 	github.com/Masterminds/semver/v3 v3.1.1
