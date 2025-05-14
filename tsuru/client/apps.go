@@ -447,21 +447,7 @@ func (c *AppInfo) Run(context *cmd.Context) error {
 	return c.Show(&a, context, c.simplified)
 }
 
-type unit struct {
-	ID           string
-	IP           string
-	InternalIP   string
-	Status       string
-	StatusReason string
-	ProcessName  string
-	Address      *url.URL
-	Addresses    []url.URL
-	Version      int
-	Routable     *bool
-	Ready        *bool
-	Restarts     *int
-	CreatedAt    *time.Time
-}
+type unit provTypes.Unit
 
 func (u *unit) Host() string {
 	address := ""
@@ -487,10 +473,10 @@ func (u *unit) ReadyAndStatus() string {
 	}
 
 	if u.StatusReason != "" {
-		return u.Status + " (" + u.StatusReason + ")"
+		return u.Status.String() + " (" + u.StatusReason + ")"
 	}
 
-	return u.Status
+	return u.Status.String()
 }
 
 func (u *unit) Port() string {
@@ -887,8 +873,8 @@ func renderUnitsSummary(buf *bytes.Buffer, units []unit, metrics []provTypes.Uni
 	groupedUnits := map[unitsKey][]unit{}
 	for _, u := range units {
 		routable := false
-		if u.Routable != nil {
-			routable = *u.Routable
+		if u.Routable {
+			routable = u.Routable
 		}
 		key := unitsKey{process: u.ProcessName, version: u.Version, routable: routable}
 		groupedUnits[key] = append(groupedUnits[key], u)
@@ -946,7 +932,7 @@ func renderUnitsSummary(buf *bytes.Buffer, units []unit, metrics []provTypes.Uni
 			}
 
 			if unit.Restarts != nil {
-				restarts += *unit.Restarts
+				restarts += int(*unit.Restarts)
 			}
 
 			unitMetric := mapUnitMetrics[unit.ID]
@@ -987,8 +973,8 @@ func renderUnits(buf *bytes.Buffer, units []unit, metrics []provTypes.UnitMetric
 	groupedUnits := map[unitsKey][]unit{}
 	for _, u := range units {
 		routable := false
-		if u.Routable != nil {
-			routable = *u.Routable
+		if u.Routable {
+			routable = u.Routable
 		}
 		key := unitsKey{process: u.ProcessName, version: u.Version, routable: routable}
 		groupedUnits[key] = append(groupedUnits[key], u)
@@ -1041,7 +1027,7 @@ func renderUnits(buf *bytes.Buffer, units []unit, metrics []provTypes.UnitMetric
 			} else {
 				row = tablecli.Row{
 					ShortID(unit.ID),
-					unit.Status,
+					unit.Status.String(),
 					unit.Host(),
 					unit.Port(),
 				}
@@ -1147,12 +1133,24 @@ func renderVolumeBinds(w io.Writer, binds []volumeTypes.VolumeBind) {
 	}
 }
 
-func countValue(i *int) string {
+func countValue(i interface{}) string {
 	if i == nil {
 		return ""
 	}
-
-	return fmt.Sprintf("%d", *i)
+	switch v := i.(type) {
+	case *int:
+		if v == nil {
+			return ""
+		}
+		return fmt.Sprintf("%d", *v)
+	case *int32:
+		if v == nil {
+			return ""
+		}
+		return fmt.Sprintf("%d", *v)
+	default:
+		return ""
+	}
 }
 
 func cpuValue(q string) string {
@@ -1391,9 +1389,9 @@ func (c *AppList) Show(result []byte, context *cmd.Context) error {
 					if unit.Ready != nil && *unit.Ready {
 						unitsStatus["ready"]++
 					} else if unit.StatusReason != "" {
-						unitsStatus[unit.Status+" ("+unit.StatusReason+")"]++
+						unitsStatus[unit.Status.String()+" ("+unit.StatusReason+")"]++
 					} else {
-						unitsStatus[unit.Status]++
+						unitsStatus[unit.Status.String()]++
 					}
 				}
 			}
