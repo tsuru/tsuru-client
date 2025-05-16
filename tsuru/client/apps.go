@@ -1133,24 +1133,11 @@ func renderVolumeBinds(w io.Writer, binds []volumeTypes.VolumeBind) {
 	}
 }
 
-func countValue(i interface{}) string {
-	if i == nil {
+func countValue[T any](v *T) string {
+	if v == nil {
 		return ""
 	}
-	switch v := i.(type) {
-	case *int:
-		if v == nil {
-			return ""
-		}
-		return fmt.Sprintf("%d", *v)
-	case *int32:
-		if v == nil {
-			return ""
-		}
-		return fmt.Sprintf("%d", *v)
-	default:
-		return ""
-	}
+	return fmt.Sprintf("%v", *v)
 }
 
 func cpuValue(q string) string {
