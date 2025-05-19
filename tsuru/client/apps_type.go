@@ -7,10 +7,10 @@ package client
 import (
 	"fmt"
 
-	"github.com/tsuru/go-tsuruclient/pkg/tsuru"
+	provTypes "github.com/tsuru/tsuru/types/provision"
 )
 
-func getParamsScaleDownLines(behavior tsuru.AutoScaleSpecBehavior) []string {
+func getParamsScaleDownLines(behavior provTypes.BehaviorAutoScaleSpec) []string {
 	lines := []string{}
 
 	if behavior.ScaleDown.UnitsPolicyValue != nil {

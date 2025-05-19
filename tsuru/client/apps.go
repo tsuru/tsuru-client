@@ -32,8 +32,8 @@ import (
 	tsuruHTTP "github.com/tsuru/tsuru-client/tsuru/http"
 	"github.com/tsuru/tsuru/cmd"
 	appTypes "github.com/tsuru/tsuru/types/app"
+	bindTypes "github.com/tsuru/tsuru/types/bind"
 	provTypes "github.com/tsuru/tsuru/types/provision"
-	quotaTypes "github.com/tsuru/tsuru/types/quota"
 	volumeTypes "github.com/tsuru/tsuru/types/volume"
 	"k8s.io/apimachinery/pkg/api/resource"
 	"k8s.io/apimachinery/pkg/util/duration"
@@ -467,7 +467,37 @@ func (u *unit) Host() string {
 
 }
 
+func UnitHost(u provTypes.Unit) string {
+	address := ""
+	if len(u.Addresses) > 0 {
+		address = u.Addresses[0].Host
+	} else if u.Address != nil {
+		address = u.Address.Host
+	} else if u.IP != "" {
+		return u.IP
+	}
+	if address == "" {
+		return address
+	}
+
+	host, _, _ := net.SplitHostPort(address)
+	return host
+
+}
+
 func (u *unit) ReadyAndStatus() string {
+	if u.Ready != nil && *u.Ready {
+		return "ready"
+	}
+
+	if u.StatusReason != "" {
+		return u.Status.String() + " (" + u.StatusReason + ")"
+	}
+
+	return u.Status.String()
+}
+
+func UnitReadyAndStatus(u provTypes.Unit) string {
 	if u.Ready != nil && *u.Ready {
 		return "ready"
 	}
@@ -496,9 +526,27 @@ func (u *unit) Port() string {
 	return strings.Join(ports, ", ")
 }
 
-type lock appTypes.AppLock
+func UnitPort(u provTypes.Unit) string {
+	if len(u.Addresses) == 0 {
+		if u.Address == nil {
+			return ""
+		}
+		_, port, _ := net.SplitHostPort(u.Address.Host)
+		return port
+	}
 
-func (l *lock) String() string {
+	ports := []string{}
+	for _, addr := range u.Addresses {
+		_, port, _ := net.SplitHostPort(addr.Host)
+		ports = append(ports, port)
+	}
+	return strings.Join(ports, ", ")
+}
+
+func LockString(l appTypes.AppLock) string {
+	if !l.Locked {
+		return ""
+	}
 	format := `Lock:
  Acquired in: %s
  Owner: %s
@@ -506,40 +554,12 @@ func (l *lock) String() string {
 	return fmt.Sprintf(format, l.AcquireDate, l.Owner, l.Reason)
 }
 
-type app struct {
-	IP          string
-	CName       []string
-	Name        string
-	Provisioner string
-	Cluster     string
-	Platform    string
-	Repository  string
-	Teams       []string
-	Units       []unit
-	Owner       string
-	TeamOwner   string
-	Deploys     uint
-	Pool        string
-	Description string
-	Lock        lock
-	Quota       quotaTypes.Quota
-	Plan        appTypes.Plan
-	Router      string
-	RouterOpts  map[string]string
-	Tags        []string
-	Error       string
-	Routers     []appTypes.AppRouter
-	AutoScale   []tsuru.AutoScaleSpec
-
-	DashboardURL         string
-	InternalAddresses    []appTypes.AppInternalAddress
-	UnitsMetrics         []provTypes.UnitMetric
-	VolumeBinds          []volumeTypes.VolumeBind
-	ServiceInstanceBinds []tsuru.AppServiceInstanceBinds
-	Processes            []tsuru.AppProcess
-}
+type app appTypes.AppInfo
 
 func (a *app) QuotaString() string {
+	if a.Quota == nil {
+		return "0/0 units"
+	}
 	var limit strings.Builder
 	if a.Quota.IsUnlimited() {
 		limit.WriteString("unlimited")
@@ -682,7 +702,7 @@ Deploys: {{.Deploys}}
 Cluster: {{ .Cluster }}
 {{ end -}}
 Pool:{{if .Pool}} {{.Pool}}{{end}}{{if .Lock.Locked}}
-{{.Lock.String}}{{end}}
+{{LockString .Lock}}{{end}}
 Quota: {{ .QuotaString }}
 `
 
@@ -696,7 +716,9 @@ func (a *app) String(simplified bool) string {
 	}
 
 	var buf bytes.Buffer
-	tmpl := template.Must(template.New("app").Parse(format))
+	tmpl := template.Must(template.New("app").Funcs(template.FuncMap{
+		"LockString": LockString,
+	}).Parse(format))
 
 	if simplified {
 		renderUnitsSummary(&buf, a.Units, a.UnitsMetrics, a.Provisioner)
@@ -716,13 +738,13 @@ func (a *app) String(simplified bool) string {
 	}
 
 	if !simplified {
-		renderServiceInstanceBinds(&buf, a.ServiceInstanceBinds)
+		renderServiceInstanceBindsForApps(&buf, a.ServiceInstanceBinds)
 	}
 
 	var autoScaleTables []*tablecli.Table
 	processes := []string{}
 
-	for _, as := range a.AutoScale {
+	for _, as := range a.Autoscale {
 		autoScaleTable := tablecli.NewTable()
 		autoScaleTable.LineSeparator = true
 
@@ -781,7 +803,7 @@ func (a *app) String(simplified bool) string {
 		}
 	}
 
-	if !simplified && (a.Plan.Memory != 0 || a.Plan.CPUMilli != 0) {
+	if !simplified && a.Plan != nil && (a.Plan.Memory != 0 || a.Plan.CPUMilli != 0) {
 		planByProcess := map[string]string{}
 		for _, p := range a.Processes {
 			if p.Plan != "" {
@@ -792,11 +814,11 @@ func (a *app) String(simplified bool) string {
 		if len(planByProcess) == 0 {
 			buf.WriteString("\n")
 			buf.WriteString("App Plan:\n")
-			buf.WriteString(renderPlans([]appTypes.Plan{a.Plan}, renderPlansOpts{}))
+			buf.WriteString(renderPlans([]appTypes.Plan{*a.Plan}, renderPlansOpts{}))
 		} else {
 			buf.WriteString("\n")
 			buf.WriteString("Process plans:\n")
-			buf.WriteString(renderProcessPlan(a.Plan, planByProcess))
+			buf.WriteString(renderProcessPlan(*a.Plan, planByProcess))
 		}
 	}
 
@@ -823,7 +845,7 @@ func (a *app) String(simplified bool) string {
 	return tplBuffer.String() + buf.String()
 }
 
-func buildScheduleInfo(schedule tsuru.AutoScaleSchedule) string {
+func buildScheduleInfo(schedule provTypes.AutoScaleSchedule) string {
 	// Init with default EN locale
 	exprDesc, _ := cron.NewDescriptor()
 
@@ -835,7 +857,7 @@ func buildScheduleInfo(schedule tsuru.AutoScaleSchedule) string {
 	)
 }
 
-func buildPrometheusInfo(prometheus tsuru.AutoScalePrometheus) string {
+func buildPrometheusInfo(prometheus provTypes.AutoScalePrometheus) string {
 	thresholdValue := strconv.FormatFloat(prometheus.Threshold, 'f', -1, 64)
 
 	return fmt.Sprintf("Name: %s\nQuery: %s\nThreshold: %s\nPrometheusAddress: %s",
@@ -844,7 +866,7 @@ func buildPrometheusInfo(prometheus tsuru.AutoScalePrometheus) string {
 }
 
 func (a *app) SimpleServicesView() string {
-	sibs := make([]tsuru.AppServiceInstanceBinds, len(a.ServiceInstanceBinds))
+	sibs := make([]bindTypes.ServiceInstanceBind, len(a.ServiceInstanceBinds))
 	copy(sibs, a.ServiceInstanceBinds)
 
 	sort.Slice(sibs, func(i, j int) bool {
@@ -864,13 +886,13 @@ func (a *app) SimpleServicesView() string {
 	return strings.Join(pairs, ", ")
 }
 
-func renderUnitsSummary(buf *bytes.Buffer, units []unit, metrics []provTypes.UnitMetric, provisioner string) {
+func renderUnitsSummary(buf *bytes.Buffer, units []provTypes.Unit, metrics []provTypes.UnitMetric, provisioner string) {
 	type unitsKey struct {
 		process  string
 		version  int
 		routable bool
 	}
-	groupedUnits := map[unitsKey][]unit{}
+	groupedUnits := map[unitsKey][]provTypes.Unit{}
 	for _, u := range units {
 		routable := false
 		if u.Routable {
@@ -964,13 +986,13 @@ func renderUnitsSummary(buf *bytes.Buffer, units []unit, metrics []provTypes.Uni
 	buf.WriteString(unitsTable.String())
 }
 
-func renderUnits(buf *bytes.Buffer, units []unit, metrics []provTypes.UnitMetric, provisioner string) {
+func renderUnits(buf *bytes.Buffer, units []provTypes.Unit, metrics []provTypes.UnitMetric, provisioner string) {
 	type unitsKey struct {
 		process  string
 		version  int
 		routable bool
 	}
-	groupedUnits := map[unitsKey][]unit{}
+	groupedUnits := map[unitsKey][]provTypes.Unit{}
 	for _, u := range units {
 		routable := false
 		if u.Routable {
@@ -1017,8 +1039,8 @@ func renderUnits(buf *bytes.Buffer, units []unit, metrics []provTypes.UnitMetric
 			if provisioner == "kubernetes" {
 				row = tablecli.Row{
 					unit.ID,
-					unit.Host(),
-					unit.ReadyAndStatus(),
+					UnitHost(unit),
+					UnitReadyAndStatus(unit),
 					countValue(unit.Restarts),
 					translateTimestampSince(unit.CreatedAt),
 					cpuValue(mapUnitMetrics[unit.ID].CPU),
@@ -1028,8 +1050,8 @@ func renderUnits(buf *bytes.Buffer, units []unit, metrics []provTypes.UnitMetric
 				row = tablecli.Row{
 					ShortID(unit.ID),
 					unit.Status.String(),
-					unit.Host(),
-					unit.Port(),
+					UnitHost(unit),
+					UnitPort(unit),
 				}
 			}
 
@@ -1051,6 +1073,65 @@ func renderUnits(buf *bytes.Buffer, units []unit, metrics []provTypes.UnitMetric
 			buf.WriteString(fmt.Sprintf("Units%s: %d\n", groupLabel, unitsTable.Rows()))
 			buf.WriteString(unitsTable.String())
 		}
+	}
+}
+
+func renderServiceInstanceBindsForApps(w io.Writer, binds []bindTypes.ServiceInstanceBind) {
+	sibs := make([]bindTypes.ServiceInstanceBind, len(binds))
+	copy(sibs, binds)
+
+	sort.Slice(sibs, func(i, j int) bool {
+		if sibs[i].Service < sibs[j].Service {
+			return true
+		}
+		if sibs[i].Service > sibs[j].Service {
+			return false
+		}
+		return sibs[i].Instance < sibs[j].Instance
+	})
+
+	type instanceAndPlan struct {
+		Instance string
+		Plan     string
+	}
+
+	instancesByService := map[string][]instanceAndPlan{}
+	for _, sib := range sibs {
+		instancesByService[sib.Service] = append(instancesByService[sib.Service], instanceAndPlan{
+			Instance: sib.Instance,
+			Plan:     sib.Plan,
+		})
+	}
+
+	var services []string
+	for _, sib := range sibs {
+		if len(services) > 0 && services[len(services)-1] == sib.Service {
+			continue
+		}
+		services = append(services, sib.Service)
+	}
+
+	table := tablecli.NewTable()
+	table.Headers = []string{"Service", "Instance (Plan)"}
+
+	for _, s := range services {
+		var sb strings.Builder
+		for i, inst := range instancesByService[s] {
+			sb.WriteString(inst.Instance)
+			if inst.Plan != "" {
+				sb.WriteString(fmt.Sprintf(" (%s)", inst.Plan))
+			}
+
+			if i < len(instancesByService[s])-1 {
+				sb.WriteString("\n")
+			}
+		}
+		table.AddRow([]string{s, sb.String()})
+	}
+
+	if table.Rows() > 0 {
+		fmt.Fprintf(w, "\nService instances: %d\n", table.Rows())
+		fmt.Fprint(w, table.String())
 	}
 }
 
