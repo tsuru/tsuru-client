@@ -543,7 +543,7 @@ func UnitPort(u provTypes.Unit) string {
 	return strings.Join(ports, ", ")
 }
 
-func LockString(l appTypes.AppLock) string {
+func lockString(l appTypes.AppLock) string {
 	if !l.Locked {
 		return ""
 	}
@@ -702,7 +702,7 @@ Deploys: {{.Deploys}}
 Cluster: {{ .Cluster }}
 {{ end -}}
 Pool:{{if .Pool}} {{.Pool}}{{end}}{{if .Lock.Locked}}
-{{LockString .Lock}}{{end}}
+{{lockString .Lock}}{{end}}
 Quota: {{ .QuotaString }}
 `
 
@@ -717,7 +717,7 @@ func (a *app) String(simplified bool) string {
 
 	var buf bytes.Buffer
 	tmpl := template.Must(template.New("app").Funcs(template.FuncMap{
-		"LockString": LockString,
+		"lockString": lockString,
 	}).Parse(format))
 
 	if simplified {
