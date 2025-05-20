@@ -447,9 +447,7 @@ func (c *AppInfo) Run(context *cmd.Context) error {
 	return c.Show(&a, context, c.simplified)
 }
 
-type unit provTypes.Unit
-
-func (u *unit) Host() string {
+func unitHost(u provTypes.Unit) string {
 	address := ""
 	if len(u.Addresses) > 0 {
 		address = u.Addresses[0].Host
@@ -467,25 +465,7 @@ func (u *unit) Host() string {
 
 }
 
-func UnitHost(u provTypes.Unit) string {
-	address := ""
-	if len(u.Addresses) > 0 {
-		address = u.Addresses[0].Host
-	} else if u.Address != nil {
-		address = u.Address.Host
-	} else if u.IP != "" {
-		return u.IP
-	}
-	if address == "" {
-		return address
-	}
-
-	host, _, _ := net.SplitHostPort(address)
-	return host
-
-}
-
-func (u *unit) ReadyAndStatus() string {
+func unitReadyAndStatus(u provTypes.Unit) string {
 	if u.Ready != nil && *u.Ready {
 		return "ready"
 	}
@@ -497,36 +477,7 @@ func (u *unit) ReadyAndStatus() string {
 	return u.Status.String()
 }
 
-func UnitReadyAndStatus(u provTypes.Unit) string {
-	if u.Ready != nil && *u.Ready {
-		return "ready"
-	}
-
-	if u.StatusReason != "" {
-		return u.Status.String() + " (" + u.StatusReason + ")"
-	}
-
-	return u.Status.String()
-}
-
-func (u *unit) Port() string {
-	if len(u.Addresses) == 0 {
-		if u.Address == nil {
-			return ""
-		}
-		_, port, _ := net.SplitHostPort(u.Address.Host)
-		return port
-	}
-
-	ports := []string{}
-	for _, addr := range u.Addresses {
-		_, port, _ := net.SplitHostPort(addr.Host)
-		ports = append(ports, port)
-	}
-	return strings.Join(ports, ", ")
-}
-
-func UnitPort(u provTypes.Unit) string {
+func unitPort(u provTypes.Unit) string {
 	if len(u.Addresses) == 0 {
 		if u.Address == nil {
 			return ""
@@ -1039,8 +990,8 @@ func renderUnits(buf *bytes.Buffer, units []provTypes.Unit, metrics []provTypes.
 			if provisioner == "kubernetes" {
 				row = tablecli.Row{
 					unit.ID,
-					UnitHost(unit),
-					UnitReadyAndStatus(unit),
+					unitHost(unit),
+					unitReadyAndStatus(unit),
 					countValue(unit.Restarts),
 					translateTimestampSince(unit.CreatedAt),
 					cpuValue(mapUnitMetrics[unit.ID].CPU),
@@ -1050,8 +1001,8 @@ func renderUnits(buf *bytes.Buffer, units []provTypes.Unit, metrics []provTypes.
 				row = tablecli.Row{
 					ShortID(unit.ID),
 					unit.Status.String(),
-					UnitHost(unit),
-					UnitPort(unit),
+					unitHost(unit),
+					unitPort(unit),
 				}
 			}
 

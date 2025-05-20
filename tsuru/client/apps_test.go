@@ -18,6 +18,7 @@ import (
 	"github.com/tsuru/tsuru/cmd"
 	"github.com/tsuru/tsuru/cmd/cmdtest"
 	tsuruIo "github.com/tsuru/tsuru/io"
+	provTypes "github.com/tsuru/tsuru/types/provision"
 	check "gopkg.in/check.v1"
 )
 
@@ -2989,28 +2990,28 @@ func (s *S) TestAppStartIsAFlaggedCommand(c *check.C) {
 
 func (s *S) TestUnitPort(c *check.C) {
 	var tests = []struct {
-		unit *unit
+		unit provTypes.Unit
 		port string
 	}{
-		{&unit{Address: &url.URL{Host: "localhost:4040"}}, "4040"},
-		{&unit{Address: &url.URL{Host: "localhost"}}, ""},
-		{&unit{}, ""},
+		{provTypes.Unit{Address: &url.URL{Host: "localhost:4040"}}, "4040"},
+		{provTypes.Unit{Address: &url.URL{Host: "localhost"}}, ""},
+		{provTypes.Unit{}, ""},
 	}
 	for _, t := range tests {
-		c.Check(t.unit.Port(), check.Equals, t.port)
+		c.Check(unitPort(t.unit), check.Equals, t.port)
 	}
 }
 
 func (s *S) TestUnitHost(c *check.C) {
 	var tests = []struct {
-		unit *unit
+		unit provTypes.Unit
 		host string
 	}{
-		{&unit{Address: &url.URL{Host: "localhost:4040"}}, "localhost"},
-		{&unit{}, ""},
+		{provTypes.Unit{Address: &url.URL{Host: "localhost:4040"}}, "localhost"},
+		{provTypes.Unit{}, ""},
 	}
 	for _, t := range tests {
-		c.Check(t.unit.Host(), check.Equals, t.host)
+		c.Check(unitHost(t.unit), check.Equals, t.host)
 	}
 }
 
