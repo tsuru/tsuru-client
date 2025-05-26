@@ -367,7 +367,7 @@ func eventLog(e *eventTypes.EventInfo) string {
 	timeFormat := "2006-01-02 15:04:05 -0700"
 
 	if len(e.StructuredLog) == 0 {
-		return e.EventData.Log
+		return e.Log
 	}
 
 	msgs := make([]string, len(e.StructuredLog))

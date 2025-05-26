@@ -1313,7 +1313,7 @@ func (s *S) TestServiceInstanceGrantRun(c *check.C) {
 			Status:  http.StatusOK},
 		CondFunc: func(r *http.Request) bool {
 			path := "/services/test-service/instances/permission/test-service-instance/team"
-			return strings.HasSuffix(r.URL.Path, path) && "PUT" == r.Method
+			return strings.HasSuffix(r.URL.Path, path) && r.Method == http.MethodPut
 		},
 	}
 	s.setupFakeTransport(&transp)

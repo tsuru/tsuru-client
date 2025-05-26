@@ -161,7 +161,7 @@ func (c *AppDeploy) Flags() *gnuflag.FlagSet {
 		filesOnly := "Enables single file deployment into the root of the app's tree"
 		c.fs.BoolVar(&c.filesOnly, "f", false, filesOnly)
 		c.fs.BoolVar(&c.filesOnly, "files-only", false, filesOnly)
-		c.deployVersionArgs.flags(c.fs)
+		c.flags(c.fs)
 		c.fs.StringVar(&c.dockerfile, "dockerfile", "", "Container file")
 	}
 	return c.fs
@@ -254,7 +254,7 @@ func (c *AppDeploy) Run(context *cmd.Context) error {
 		values.Set("message", c.message)
 	}
 
-	c.deployVersionArgs.values(values)
+	c.values(values)
 
 	u, err := config.GetURL(fmt.Sprintf("/apps/%s/deploy", appName))
 	if err != nil {
@@ -392,7 +392,7 @@ func (c *AppDeployRollback) Flags() *gnuflag.FlagSet {
 			c.AppNameMixIn.Flags(),
 			c.ConfirmationCommand.Flags(),
 		)
-		c.deployVersionArgs.flags(c.fs)
+		c.flags(c.fs)
 	}
 	return c.fs
 }
@@ -446,7 +446,7 @@ type AppDeployRebuild struct {
 func (c *AppDeployRebuild) Flags() *gnuflag.FlagSet {
 	if c.fs == nil {
 		c.fs = c.AppNameMixIn.Flags()
-		c.deployVersionArgs.flags(c.fs)
+		c.flags(c.fs)
 	}
 	return c.fs
 }

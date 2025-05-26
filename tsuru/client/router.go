@@ -578,7 +578,7 @@ type AppVersionRouterAdd struct {
 }
 
 func (c *AppVersionRouterAdd) Info() *cmd.Info {
-	c.appVersionRouterBase.routable = true
+	c.routable = true
 	return &cmd.Info{
 		Name:    "app-router-version-add",
 		Usage:   "app router version add <version> [-a/--app appname]",
@@ -593,7 +593,7 @@ type AppVersionRouterRemove struct {
 }
 
 func (c *AppVersionRouterRemove) Info() *cmd.Info {
-	c.appVersionRouterBase.routable = false
+	c.routable = false
 	return &cmd.Info{
 		Name:    "app-router-version-remove",
 		Usage:   "app router version remove <version> [-a/--app appname]",

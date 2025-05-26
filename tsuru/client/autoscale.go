@@ -37,7 +37,7 @@ func (i *int32PointerValue) Set(s string) error {
 		return nil
 	}
 	v, err := strconv.ParseInt(s, 0, 32)
-	var v32 int32 = int32(v)
+	v32 := int32(v)
 
 	*i.value = &v32
 	return err

@@ -303,8 +303,8 @@ func renderJobUnits(buf *bytes.Buffer, units []tsuru.Unit) {
 		unitsTable.SortByColumn(2)
 		buf.WriteString("\n")
 
-		buf.WriteString(fmt.Sprintf("Units: %d\n", unitsTable.Rows()))
-		buf.WriteString(unitsTable.String())
+		fmt.Fprintf(buf, "Units: %d\n", unitsTable.Rows())
+		fmt.Fprint(buf, unitsTable.String())
 	}
 }
 
