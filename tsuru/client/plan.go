@@ -17,7 +17,7 @@ import (
 	"github.com/tsuru/tablecli"
 	tsuruHTTP "github.com/tsuru/tsuru-client/tsuru/http"
 	"github.com/tsuru/tsuru/cmd"
-	apptypes "github.com/tsuru/tsuru/types/app"
+	appTypes "github.com/tsuru/tsuru/types/app"
 	"k8s.io/apimachinery/pkg/api/resource"
 )
 
@@ -55,7 +55,7 @@ type renderPlansOpts struct {
 	isBytes, showDefaultColumn, showMaxBurstAllowed bool
 }
 
-func renderPlans(plans []apptypes.Plan, opts renderPlansOpts) string {
+func renderPlans(plans []appTypes.Plan, opts renderPlansOpts) string {
 	table := tablecli.NewTable()
 	table.Headers = []string{"Name", "CPU", "Memory"}
 
@@ -136,7 +136,7 @@ func renderPlans(plans []apptypes.Plan, opts renderPlansOpts) string {
 	return table.String()
 }
 
-func renderProcessPlan(appPlan apptypes.Plan, planByProcess map[string]string) string {
+func renderProcessPlan(appPlan appTypes.Plan, planByProcess map[string]string) string {
 	table := tablecli.NewTable()
 	table.Headers = []string{"Process", "Plan"}
 
@@ -184,7 +184,7 @@ func renderProcessPlan(appPlan apptypes.Plan, planByProcess map[string]string) s
 	return table.String()
 }
 
-func renderPlansK8SFriendly(plans []apptypes.Plan, showMaxBurstAllowed bool) string {
+func renderPlansK8SFriendly(plans []appTypes.Plan, showMaxBurstAllowed bool) string {
 	table := tablecli.NewTable()
 	table.Headers = []string{"Name"}
 
@@ -243,7 +243,7 @@ func renderPlansK8SFriendly(plans []apptypes.Plan, showMaxBurstAllowed bool) str
 	return table.String()
 }
 
-func hasBurst(p apptypes.Plan) bool {
+func hasBurst(p appTypes.Plan) bool {
 	if p.CPUMilli == 0 {
 		return false
 	}
@@ -275,7 +275,7 @@ func (c *PlanList) Run(context *cmd.Context) error {
 	if err != nil {
 		return err
 	}
-	var plans []apptypes.Plan
+	var plans []appTypes.Plan
 	resp, err := tsuruHTTP.AuthenticatedClient.Do(request)
 	if err != nil {
 		return err

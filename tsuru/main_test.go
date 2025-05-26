@@ -7,7 +7,6 @@ package main
 import (
 	"bytes"
 	"fmt"
-	"net"
 	"net/http"
 	"net/http/httptest"
 	"os"
@@ -580,6 +579,7 @@ func (s *S) TestVersionWithAPI(c *check.C) {
 }
 
 func (s *S) TestVersionAPIInvalidURL(c *check.C) {
+	tsuruHTTP.AuthenticatedClient = &http.Client{}
 	command := versionCmd{}
 	context := cmd.Context{
 		Args:   []string{},
@@ -591,7 +591,8 @@ func (s *S) TestVersionAPIInvalidURL(c *check.C) {
 	os.Setenv("TSURU_TARGET", URL)
 	defer os.Unsetenv("TSURU_TARGET")
 	err := command.Run(&context)
-	c.Assert(tsuruHTTP.UnwrapErr(err), check.FitsTypeOf, &net.DNSError{})
+	msgErr := fmt.Sprintf("Unable to retrieve server version: Get \"http://%s/1.0/info\": dial tcp: lookup %s: no such host", URL, URL)
+	c.Assert(msgErr, check.Equals, err.Error())
 
 	stdout := context.Stdout.(*bytes.Buffer).String()
 

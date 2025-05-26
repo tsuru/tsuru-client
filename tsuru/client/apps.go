@@ -31,8 +31,9 @@ import (
 	"github.com/tsuru/tsuru-client/tsuru/formatter"
 	tsuruHTTP "github.com/tsuru/tsuru-client/tsuru/http"
 	"github.com/tsuru/tsuru/cmd"
-	apptypes "github.com/tsuru/tsuru/types/app"
-	quotaTypes "github.com/tsuru/tsuru/types/quota"
+	appTypes "github.com/tsuru/tsuru/types/app"
+	bindTypes "github.com/tsuru/tsuru/types/bind"
+	provTypes "github.com/tsuru/tsuru/types/provision"
 	volumeTypes "github.com/tsuru/tsuru/types/volume"
 	"k8s.io/apimachinery/pkg/api/resource"
 	"k8s.io/apimachinery/pkg/util/duration"
@@ -446,23 +447,7 @@ func (c *AppInfo) Run(context *cmd.Context) error {
 	return c.Show(&a, context, c.simplified)
 }
 
-type unit struct {
-	ID           string
-	IP           string
-	InternalIP   string
-	Status       string
-	StatusReason string
-	ProcessName  string
-	Address      *url.URL
-	Addresses    []url.URL
-	Version      int
-	Routable     *bool
-	Ready        *bool
-	Restarts     *int
-	CreatedAt    *time.Time
-}
-
-func (u *unit) Host() string {
+func unitHost(u provTypes.Unit) string {
 	address := ""
 	if len(u.Addresses) > 0 {
 		address = u.Addresses[0].Host
@@ -480,19 +465,19 @@ func (u *unit) Host() string {
 
 }
 
-func (u *unit) ReadyAndStatus() string {
+func unitReadyAndStatus(u provTypes.Unit) string {
 	if u.Ready != nil && *u.Ready {
 		return "ready"
 	}
 
 	if u.StatusReason != "" {
-		return u.Status + " (" + u.StatusReason + ")"
+		return u.Status.String() + " (" + u.StatusReason + ")"
 	}
 
-	return u.Status
+	return u.Status.String()
 }
 
-func (u *unit) Port() string {
+func unitPort(u provTypes.Unit) string {
 	if len(u.Addresses) == 0 {
 		if u.Address == nil {
 			return ""
@@ -509,20 +494,10 @@ func (u *unit) Port() string {
 	return strings.Join(ports, ", ")
 }
 
-type unitMetrics struct {
-	ID     string
-	CPU    string
-	Memory string
-}
-
-type lock struct {
-	Locked      bool
-	Reason      string
-	Owner       string
-	AcquireDate time.Time
-}
-
-func (l *lock) String() string {
+func lockString(l appTypes.AppLock) string {
+	if !l.Locked {
+		return ""
+	}
 	format := `Lock:
  Acquired in: %s
  Owner: %s
@@ -530,48 +505,12 @@ func (l *lock) String() string {
 	return fmt.Sprintf(format, l.AcquireDate, l.Owner, l.Reason)
 }
 
-type app struct {
-	IP          string
-	CName       []string
-	Name        string
-	Provisioner string
-	Cluster     string
-	Platform    string
-	Repository  string
-	Teams       []string
-	Units       []unit
-	Owner       string
-	TeamOwner   string
-	Deploys     uint
-	Pool        string
-	Description string
-	Lock        lock
-	Quota       quotaTypes.Quota
-	Plan        apptypes.Plan
-	Router      string
-	RouterOpts  map[string]string
-	Tags        []string
-	Error       string
-	Routers     []apptypes.AppRouter
-	AutoScale   []tsuru.AutoScaleSpec
-
-	DashboardURL         string
-	InternalAddresses    []appInternalAddress
-	UnitsMetrics         []unitMetrics
-	VolumeBinds          []volumeTypes.VolumeBind
-	ServiceInstanceBinds []tsuru.AppServiceInstanceBinds
-	Processes            []tsuru.AppProcess
-}
-
-type appInternalAddress struct {
-	Domain   string
-	Protocol string
-	Port     int
-	Version  string
-	Process  string
-}
+type app appTypes.AppInfo
 
 func (a *app) QuotaString() string {
+	if a.Quota == nil {
+		return "0/0 units"
+	}
 	var limit strings.Builder
 	if a.Quota.IsUnlimited() {
 		limit.WriteString("unlimited")
@@ -714,7 +653,7 @@ Deploys: {{.Deploys}}
 Cluster: {{ .Cluster }}
 {{ end -}}
 Pool:{{if .Pool}} {{.Pool}}{{end}}{{if .Lock.Locked}}
-{{.Lock.String}}{{end}}
+{{lockString .Lock}}{{end}}
 Quota: {{ .QuotaString }}
 `
 
@@ -728,7 +667,9 @@ func (a *app) String(simplified bool) string {
 	}
 
 	var buf bytes.Buffer
-	tmpl := template.Must(template.New("app").Parse(format))
+	tmpl := template.Must(template.New("app").Funcs(template.FuncMap{
+		"lockString": lockString,
+	}).Parse(format))
 
 	if simplified {
 		renderUnitsSummary(&buf, a.Units, a.UnitsMetrics, a.Provisioner)
@@ -741,20 +682,20 @@ func (a *app) String(simplified bool) string {
 	for _, internalAddress := range a.InternalAddresses {
 		internalAddressesTable.AddRow([]string{
 			internalAddress.Domain,
-			strconv.Itoa(internalAddress.Port) + "/" + internalAddress.Protocol,
+			strconv.Itoa(int(internalAddress.Port)) + "/" + internalAddress.Protocol,
 			internalAddress.Process,
 			internalAddress.Version,
 		})
 	}
 
 	if !simplified {
-		renderServiceInstanceBinds(&buf, a.ServiceInstanceBinds)
+		renderServiceInstanceBindsForApps(&buf, a.ServiceInstanceBinds)
 	}
 
 	var autoScaleTables []*tablecli.Table
 	processes := []string{}
 
-	for _, as := range a.AutoScale {
+	for _, as := range a.Autoscale {
 		autoScaleTable := tablecli.NewTable()
 		autoScaleTable.LineSeparator = true
 
@@ -813,7 +754,7 @@ func (a *app) String(simplified bool) string {
 		}
 	}
 
-	if !simplified && (a.Plan.Memory != 0 || a.Plan.CPUMilli != 0) {
+	if !simplified && a.Plan != nil && (a.Plan.Memory != 0 || a.Plan.CPUMilli != 0) {
 		planByProcess := map[string]string{}
 		for _, p := range a.Processes {
 			if p.Plan != "" {
@@ -824,11 +765,11 @@ func (a *app) String(simplified bool) string {
 		if len(planByProcess) == 0 {
 			buf.WriteString("\n")
 			buf.WriteString("App Plan:\n")
-			buf.WriteString(renderPlans([]apptypes.Plan{a.Plan}, renderPlansOpts{}))
+			buf.WriteString(renderPlans([]appTypes.Plan{*a.Plan}, renderPlansOpts{}))
 		} else {
 			buf.WriteString("\n")
 			buf.WriteString("Process plans:\n")
-			buf.WriteString(renderProcessPlan(a.Plan, planByProcess))
+			buf.WriteString(renderProcessPlan(*a.Plan, planByProcess))
 		}
 	}
 
@@ -855,7 +796,7 @@ func (a *app) String(simplified bool) string {
 	return tplBuffer.String() + buf.String()
 }
 
-func buildScheduleInfo(schedule tsuru.AutoScaleSchedule) string {
+func buildScheduleInfo(schedule provTypes.AutoScaleSchedule) string {
 	// Init with default EN locale
 	exprDesc, _ := cron.NewDescriptor()
 
@@ -867,7 +808,7 @@ func buildScheduleInfo(schedule tsuru.AutoScaleSchedule) string {
 	)
 }
 
-func buildPrometheusInfo(prometheus tsuru.AutoScalePrometheus) string {
+func buildPrometheusInfo(prometheus provTypes.AutoScalePrometheus) string {
 	thresholdValue := strconv.FormatFloat(prometheus.Threshold, 'f', -1, 64)
 
 	return fmt.Sprintf("Name: %s\nQuery: %s\nThreshold: %s\nPrometheusAddress: %s",
@@ -876,7 +817,7 @@ func buildPrometheusInfo(prometheus tsuru.AutoScalePrometheus) string {
 }
 
 func (a *app) SimpleServicesView() string {
-	sibs := make([]tsuru.AppServiceInstanceBinds, len(a.ServiceInstanceBinds))
+	sibs := make([]bindTypes.ServiceInstanceBind, len(a.ServiceInstanceBinds))
 	copy(sibs, a.ServiceInstanceBinds)
 
 	sort.Slice(sibs, func(i, j int) bool {
@@ -896,17 +837,17 @@ func (a *app) SimpleServicesView() string {
 	return strings.Join(pairs, ", ")
 }
 
-func renderUnitsSummary(buf *bytes.Buffer, units []unit, metrics []unitMetrics, provisioner string) {
+func renderUnitsSummary(buf *bytes.Buffer, units []provTypes.Unit, metrics []provTypes.UnitMetric, provisioner string) {
 	type unitsKey struct {
 		process  string
 		version  int
 		routable bool
 	}
-	groupedUnits := map[unitsKey][]unit{}
+	groupedUnits := map[unitsKey][]provTypes.Unit{}
 	for _, u := range units {
 		routable := false
-		if u.Routable != nil {
-			routable = *u.Routable
+		if u.Routable {
+			routable = u.Routable
 		}
 		key := unitsKey{process: u.ProcessName, version: u.Version, routable: routable}
 		groupedUnits[key] = append(groupedUnits[key], u)
@@ -936,7 +877,7 @@ func renderUnitsSummary(buf *bytes.Buffer, units []unit, metrics []unitMetrics, 
 	if len(units) == 0 {
 		return
 	}
-	mapUnitMetrics := map[string]unitMetrics{}
+	mapUnitMetrics := map[string]provTypes.UnitMetric{}
 	for _, unitMetric := range metrics {
 		mapUnitMetrics[unitMetric.ID] = unitMetric
 	}
@@ -964,7 +905,7 @@ func renderUnitsSummary(buf *bytes.Buffer, units []unit, metrics []unitMetrics, 
 			}
 
 			if unit.Restarts != nil {
-				restarts += *unit.Restarts
+				restarts += int(*unit.Restarts)
 			}
 
 			unitMetric := mapUnitMetrics[unit.ID]
@@ -996,17 +937,17 @@ func renderUnitsSummary(buf *bytes.Buffer, units []unit, metrics []unitMetrics, 
 	buf.WriteString(unitsTable.String())
 }
 
-func renderUnits(buf *bytes.Buffer, units []unit, metrics []unitMetrics, provisioner string) {
+func renderUnits(buf *bytes.Buffer, units []provTypes.Unit, metrics []provTypes.UnitMetric, provisioner string) {
 	type unitsKey struct {
 		process  string
 		version  int
 		routable bool
 	}
-	groupedUnits := map[unitsKey][]unit{}
+	groupedUnits := map[unitsKey][]provTypes.Unit{}
 	for _, u := range units {
 		routable := false
-		if u.Routable != nil {
-			routable = *u.Routable
+		if u.Routable {
+			routable = u.Routable
 		}
 		key := unitsKey{process: u.ProcessName, version: u.Version, routable: routable}
 		groupedUnits[key] = append(groupedUnits[key], u)
@@ -1028,7 +969,7 @@ func renderUnits(buf *bytes.Buffer, units []unit, metrics []unitMetrics, provisi
 	} else {
 		titles = []string{"Name", "Status", "Host", "Port"}
 	}
-	mapUnitMetrics := map[string]unitMetrics{}
+	mapUnitMetrics := map[string]provTypes.UnitMetric{}
 	for _, unitMetric := range metrics {
 		mapUnitMetrics[unitMetric.ID] = unitMetric
 	}
@@ -1049,8 +990,8 @@ func renderUnits(buf *bytes.Buffer, units []unit, metrics []unitMetrics, provisi
 			if provisioner == "kubernetes" {
 				row = tablecli.Row{
 					unit.ID,
-					unit.Host(),
-					unit.ReadyAndStatus(),
+					unitHost(unit),
+					unitReadyAndStatus(unit),
 					countValue(unit.Restarts),
 					translateTimestampSince(unit.CreatedAt),
 					cpuValue(mapUnitMetrics[unit.ID].CPU),
@@ -1059,9 +1000,9 @@ func renderUnits(buf *bytes.Buffer, units []unit, metrics []unitMetrics, provisi
 			} else {
 				row = tablecli.Row{
 					ShortID(unit.ID),
-					unit.Status,
-					unit.Host(),
-					unit.Port(),
+					unit.Status.String(),
+					unitHost(unit),
+					unitPort(unit),
 				}
 			}
 
@@ -1083,6 +1024,65 @@ func renderUnits(buf *bytes.Buffer, units []unit, metrics []unitMetrics, provisi
 			buf.WriteString(fmt.Sprintf("Units%s: %d\n", groupLabel, unitsTable.Rows()))
 			buf.WriteString(unitsTable.String())
 		}
+	}
+}
+
+func renderServiceInstanceBindsForApps(w io.Writer, binds []bindTypes.ServiceInstanceBind) {
+	sibs := make([]bindTypes.ServiceInstanceBind, len(binds))
+	copy(sibs, binds)
+
+	sort.Slice(sibs, func(i, j int) bool {
+		if sibs[i].Service < sibs[j].Service {
+			return true
+		}
+		if sibs[i].Service > sibs[j].Service {
+			return false
+		}
+		return sibs[i].Instance < sibs[j].Instance
+	})
+
+	type instanceAndPlan struct {
+		Instance string
+		Plan     string
+	}
+
+	instancesByService := map[string][]instanceAndPlan{}
+	for _, sib := range sibs {
+		instancesByService[sib.Service] = append(instancesByService[sib.Service], instanceAndPlan{
+			Instance: sib.Instance,
+			Plan:     sib.Plan,
+		})
+	}
+
+	var services []string
+	for _, sib := range sibs {
+		if len(services) > 0 && services[len(services)-1] == sib.Service {
+			continue
+		}
+		services = append(services, sib.Service)
+	}
+
+	table := tablecli.NewTable()
+	table.Headers = []string{"Service", "Instance (Plan)"}
+
+	for _, s := range services {
+		var sb strings.Builder
+		for i, inst := range instancesByService[s] {
+			sb.WriteString(inst.Instance)
+			if inst.Plan != "" {
+				sb.WriteString(fmt.Sprintf(" (%s)", inst.Plan))
+			}
+
+			if i < len(instancesByService[s])-1 {
+				sb.WriteString("\n")
+			}
+		}
+		table.AddRow([]string{s, sb.String()})
+	}
+
+	if table.Rows() > 0 {
+		fmt.Fprintf(w, "\nService instances: %d\n", table.Rows())
+		fmt.Fprint(w, table.String())
 	}
 }
 
@@ -1165,12 +1165,11 @@ func renderVolumeBinds(w io.Writer, binds []volumeTypes.VolumeBind) {
 	}
 }
 
-func countValue(i *int) string {
-	if i == nil {
+func countValue[T any](v *T) string {
+	if v == nil {
 		return ""
 	}
-
-	return fmt.Sprintf("%d", *i)
+	return fmt.Sprintf("%v", *v)
 }
 
 func cpuValue(q string) string {
@@ -1409,9 +1408,9 @@ func (c *AppList) Show(result []byte, context *cmd.Context) error {
 					if unit.Ready != nil && *unit.Ready {
 						unitsStatus["ready"]++
 					} else if unit.StatusReason != "" {
-						unitsStatus[unit.Status+" ("+unit.StatusReason+")"]++
+						unitsStatus[unit.Status.String()+" ("+unit.StatusReason+")"]++
 					} else {
-						unitsStatus[unit.Status]++
+						unitsStatus[unit.Status.String()]++
 					}
 				}
 			}

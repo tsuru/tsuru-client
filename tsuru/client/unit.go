@@ -20,6 +20,7 @@ import (
 	"github.com/tsuru/tsuru-client/tsuru/formatter"
 	tsuruHTTP "github.com/tsuru/tsuru-client/tsuru/http"
 	"github.com/tsuru/tsuru/cmd"
+	provTypes "github.com/tsuru/tsuru/types/provision"
 )
 
 type UnitAdd struct {
@@ -245,8 +246,8 @@ func (c *UnitSet) Run(context *cmd.Context) error {
 		return err
 	}
 
-	unitsByProcess := map[string][]unit{}
-	unitsByVersion := map[int][]unit{}
+	unitsByProcess := map[string][]provTypes.Unit{}
+	unitsByVersion := map[int][]provTypes.Unit{}
 	for _, u := range a.Units {
 		unitsByProcess[u.ProcessName] = append(unitsByProcess[u.ProcessName], u)
 		unitsByVersion[u.Version] = append(unitsByVersion[u.Version], u)
