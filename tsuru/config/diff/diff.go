@@ -59,7 +59,7 @@ func ReplaceWithSudo(originalFile string, newerContent io.Reader) error {
 		if err2 != nil {
 			e, err3 := io.ReadAll(localStderr)
 			return fmt.Errorf(
-				`Could not "cp" the current file, even with sudo: %s (%s) | %s (%s%s)`,
+				`could not "cp" the current file, even with sudo: %s (%s) | %s (%s%s)`,
 				err1, string(output1), err2, strings.TrimSpace(string(e)), errOrEmpty(err3),
 			)
 		}

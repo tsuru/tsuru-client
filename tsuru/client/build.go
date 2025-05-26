@@ -72,10 +72,10 @@ Examples:
 func (c *AppBuild) Run(context *cmd.Context) error {
 	context.RawOutput()
 	if c.tag == "" {
-		return errors.New("You should provide one tag to build the image.\n")
+		return errors.New("you should provide one tag to build the image")
 	}
 	if len(context.Args) == 0 {
-		return errors.New("You should provide at least one file to build the image.\n")
+		return errors.New("you should provide at least one file to build the image")
 	}
 
 	appName, err := c.AppNameByFlag()

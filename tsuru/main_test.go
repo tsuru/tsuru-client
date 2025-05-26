@@ -458,7 +458,7 @@ The following commands are available in the "target" topic:
 Use tsuru help <commandname> to get more information about a command.
 `, targetTopic)
 
-	obtained := strings.Replace(stdout.String(), "\t\n", "\n", -1)
+	obtained := strings.ReplaceAll(stdout.String(), "\t\n", "\n")
 	expected := strings.ReplaceAll(expectedOutput, "\t\n", "\n")
 
 	c.Assert(stderr.String(), check.Equals, "")
@@ -482,7 +482,7 @@ Did you mean?
 	target list
 `
 	expectedOutput = strings.ReplaceAll(expectedOutput, "\n", "\\W")
-	expectedOutput = strings.Replace(expectedOutput, "\t", "\\W+", -1)
+	expectedOutput = strings.ReplaceAll(expectedOutput, "\t", "\\W+")
 	c.Assert(stderr.String(), check.Matches, expectedOutput)
 	c.Assert(int(exiter), check.Equals, 1)
 }
@@ -512,7 +512,7 @@ func (s *S) TestInvalidCommandFuzzyMatch04(c *check.C) {
 	expectedOutput := `.*: "not-command" is not a tsuru command. See "tsuru help".
 `
 	expectedOutput = strings.ReplaceAll(expectedOutput, "\n", "\\W")
-	expectedOutput = strings.Replace(expectedOutput, "\t", "\\W+", -1)
+	expectedOutput = strings.ReplaceAll(expectedOutput, "\t", "\\W+")
 	c.Assert(stderr.String(), check.Matches, expectedOutput)
 	c.Assert(int(exiter), check.Equals, 1)
 }
@@ -531,7 +531,7 @@ Did you mean?
 `
 
 	expectedOutput = strings.ReplaceAll(expectedOutput, "\n", "\\W")
-	expectedOutput = strings.Replace(expectedOutput, "\t", "\\W+", -1)
+	expectedOutput = strings.ReplaceAll(expectedOutput, "\t", "\\W+")
 	c.Assert(stderr.String(), check.Matches, expectedOutput)
 	c.Assert(int(exiter), check.Equals, 1)
 }

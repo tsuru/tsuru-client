@@ -43,13 +43,13 @@ type PluginManifestMetadata struct {
 
 func (p *Plugin) Validate() error {
 	if p.Name == "" && p.URL == "" {
-		return fmt.Errorf("Zero value plugin (no Name nor URL)")
+		return fmt.Errorf("zero value plugin (no Name nor URL)")
 	}
 	if p.Name == "" {
-		return fmt.Errorf("Plugin.Name must not be empty (url: %q)", p.URL)
+		return fmt.Errorf("plugin.Name must not be empty (url: %q)", p.URL)
 	}
 	if p.URL == "" {
-		return fmt.Errorf("Plugin.URL must not be empty (name: %q)", p.Name)
+		return fmt.Errorf("plugin.URL must not be empty (name: %q)", p.Name)
 	}
 	return nil
 }
@@ -74,7 +74,7 @@ func (c *PluginInstall) Run(context *cmd.Context) error {
 	pluginName := context.Args[0]
 	pluginURL := context.Args[1]
 	if err := installPlugin(pluginName, pluginURL, 0); err != nil {
-		return fmt.Errorf("Error installing plugin %q: %w", pluginName, err)
+		return fmt.Errorf("error installing plugin %q: %w", pluginName, err)
 	}
 
 	fmt.Fprintf(context.Stdout, `Plugin "%s" successfully installed!`+"\n", pluginName)
@@ -83,17 +83,17 @@ func (c *PluginInstall) Run(context *cmd.Context) error {
 
 func installPlugin(pluginName, pluginURL string, level int) error {
 	if level > 1 { // Avoid infinite recursion
-		return fmt.Errorf("Infinite Recursion detected, check if manifest.json is correct")
+		return fmt.Errorf("infinite Recursion detected, check if manifest.json is correct")
 	}
 	tmpDir, err := config.Filesystem().MkdirTemp(config.JoinWithUserDir(".tsuru", "plugins"), "tmpdir-*")
 	if err != nil {
-		return fmt.Errorf("Could not create a tmpdir: %w", err)
+		return fmt.Errorf("could not create a tmpdir: %w", err)
 	}
 	defer config.Filesystem().RemoveAll(tmpDir)
 
 	resp, err := http.Get(pluginURL)
 	if err != nil {
-		return fmt.Errorf("Could not GET %q: %w", pluginURL, err)
+		return fmt.Errorf("could not GET %q: %w", pluginURL, err)
 	}
 
 	defer resp.Body.Close()
@@ -103,7 +103,7 @@ func installPlugin(pluginName, pluginURL string, level int) error {
 		return err
 	}
 	if resp.StatusCode < 200 || resp.StatusCode >= 400 {
-		return fmt.Errorf("Invalid status code reading plugin: %d - %q", resp.StatusCode, string(data))
+		return fmt.Errorf("invalid status code reading plugin: %d - %q", resp.StatusCode, string(data))
 	}
 
 	// try to unmarshall manifest
@@ -113,7 +113,7 @@ func installPlugin(pluginName, pluginURL string, level int) error {
 		if url, ok := manifest.URLPerPlatform[platform]; ok {
 			return installPlugin(pluginName, url, level+1)
 		}
-		return fmt.Errorf("No plugin URL found for platform: %s", platform)
+		return fmt.Errorf("no plugin URL found for platform: %s", platform)
 	}
 
 	// Try to extract .tar.gz first, then .zip. Fallbacks to copy the content
@@ -124,21 +124,21 @@ func installPlugin(pluginName, pluginURL string, level int) error {
 	if extractErr != nil {
 		file, err := config.Filesystem().OpenFile(filepath.Join(tmpDir, pluginName), os.O_WRONLY|os.O_CREATE|os.O_TRUNC, 0755)
 		if err != nil {
-			return fmt.Errorf("Failed to open file: %w", err)
+			return fmt.Errorf("failed to open file: %w", err)
 		}
 		defer file.Close()
 		n, err := file.Write(data)
 		if err != nil {
-			return fmt.Errorf("Failed to write file content: %w", err)
+			return fmt.Errorf("failed to write file content: %w", err)
 		}
 		if n != len(data) {
-			return fmt.Errorf("Incomplete write")
+			return fmt.Errorf("incomplete write")
 		}
 	}
 
 	executablePath := findExecutablePlugin(tmpDir, pluginName)
 	if executablePath == "" {
-		return fmt.Errorf("The downloaded plugin content is invalid.")
+		return fmt.Errorf("the downloaded plugin content is invalid")
 	}
 
 	if fstat, err1 := config.Filesystem().Stat(executablePath); err1 == nil {
@@ -152,12 +152,12 @@ func installPlugin(pluginName, pluginURL string, level int) error {
 			config.Filesystem().RemoveAll(pluginPath)
 		}
 		if err := config.Filesystem().Rename(tmpDir, pluginPath); err != nil {
-			return fmt.Errorf("Could not move tmpDir: %w", err)
+			return fmt.Errorf("could not move tmpDir: %w", err)
 		}
 		os.Chmod(pluginPath, 0755) // this is a directory with an executable inside
 	} else {
 		if err := copyFile(executablePath, pluginPath); err != nil {
-			return fmt.Errorf("Could not write plugin file: %w", err)
+			return fmt.Errorf("could not write plugin file: %w", err)
 		}
 	}
 
@@ -194,27 +194,27 @@ func findExecutablePlugin(basePath, pluginName string) (execPath string) {
 func copyFile(src, dst string) error {
 	sourceFile, err := config.Filesystem().Open(src)
 	if err != nil {
-		return fmt.Errorf("Failed to open src file: %w", err)
+		return fmt.Errorf("failed to open src file: %w", err)
 	}
 	defer sourceFile.Close()
 	sourceStat, err := config.Filesystem().Stat(src)
 	if err != nil {
-		return fmt.Errorf("Failed to stat file: %w", err)
+		return fmt.Errorf("failed to stat file: %w", err)
 	}
 
 	targetFile, err := config.Filesystem().OpenFile(dst, os.O_WRONLY|os.O_CREATE|os.O_TRUNC, 0755)
 	if err != nil {
-		return fmt.Errorf("Failed to open dest file: %w", err)
+		return fmt.Errorf("failed to open dest file: %w", err)
 	}
 	defer targetFile.Close()
 
 	n, err := io.Copy(targetFile, sourceFile)
 	if err != nil {
-		return fmt.Errorf("Failed to write file content: %w", err)
+		return fmt.Errorf("failed to write file content: %w", err)
 	}
 
 	if n != sourceStat.Size() {
-		return fmt.Errorf("Incomplete write! This file may be corrupted")
+		return fmt.Errorf("incomplete write! This file may be corrupted")
 	}
 	return nil
 }
@@ -287,12 +287,12 @@ func extractZip(basePath string, source io.Reader) error {
 
 		fDest, err := config.Filesystem().OpenFile(fPath, os.O_CREATE|os.O_TRUNC|os.O_WRONLY, f.Mode().Perm())
 		if err != nil {
-			return fmt.Errorf("Could not open %q for writing: %w", fPath, err)
+			return fmt.Errorf("could not open %q for writing: %w", fPath, err)
 		}
 		defer fDest.Close()
 
 		if _, err := io.Copy(fDest, freader); err != nil {
-			return fmt.Errorf("Could not write content to %q: %w", fPath, err)
+			return fmt.Errorf("could not write content to %q: %w", fPath, err)
 		}
 	}
 	return nil
@@ -427,18 +427,18 @@ func (c *PluginBundle) Run(context *cmd.Context) error {
 		return err
 	}
 	if resp.StatusCode < 200 || resp.StatusCode >= 400 {
-		return fmt.Errorf("Invalid status code reading plugin bundle: %d - %q", resp.StatusCode, string(data))
+		return fmt.Errorf("invalid status code reading plugin bundle: %d - %q", resp.StatusCode, string(data))
 	}
 
 	bundleManifest := BundleManifest{}
 	if err := json.Unmarshal(data, &bundleManifest); err != nil {
-		return fmt.Errorf("Error reading JSON manifest. Wrong syntax: %w", err)
+		return fmt.Errorf("error reading JSON manifest. Wrong syntax: %w", err)
 	}
 
 	// validate manifest structure
 	for _, plugin := range bundleManifest.Plugins {
 		if err := plugin.Validate(); err != nil {
-			return fmt.Errorf("Error reading JSON manifest. Wrong plugin syntax: %w", err)
+			return fmt.Errorf("error reading JSON manifest. Wrong plugin syntax: %w", err)
 		}
 	}
 
@@ -458,7 +458,7 @@ func (c *PluginBundle) Run(context *cmd.Context) error {
 		for name, errStr := range failedPlugins {
 			fmt.Fprintf(context.Stdout, "  %s: %s\n", name, errStr)
 		}
-		return fmt.Errorf("Bundle install has finished with errors.")
+		return fmt.Errorf("bundle install has finished with errors")
 	}
 	return nil
 }

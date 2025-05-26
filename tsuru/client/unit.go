@@ -164,7 +164,7 @@ func (c *UnitKill) Run(context *cmd.Context) error {
 		return err
 	}
 	if len(context.Args) < 1 {
-		return errors.New("you must provide the unit name.")
+		return errors.New("you must provide the unit name")
 	}
 	unit := context.Args[0]
 	v := url.Values{}
@@ -254,11 +254,11 @@ func (c *UnitSet) Run(context *cmd.Context) error {
 	}
 
 	if len(unitsByProcess) != 1 && c.process == "" {
-		return errors.New("Please use the -p/--process flag to specify which process you want to set units for.")
+		return errors.New("please use the -p/--process flag to specify which process you want to set units for")
 	}
 
 	if len(unitsByVersion) != 1 && c.version == 0 {
-		return errors.New("Please use the --version flag to specify which version you want to set units for.")
+		return errors.New("please use the --version flag to specify which version you want to set units for")
 	}
 
 	if c.process == "" {

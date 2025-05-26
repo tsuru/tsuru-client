@@ -24,7 +24,7 @@ import (
 	apiTypes "github.com/tsuru/tsuru/types/api"
 )
 
-const EnvSetValidationMessage = `You must specify environment variables in the form "NAME=value".
+const EnvSetValidationMessage = `you must specify environment variables in the form "NAME=value".
 
 Example:
 
@@ -36,8 +36,8 @@ Example:
 
   tsuru env-set NAME=value OTHER_NAME="value with spaces" ANOTHER_NAME='using single quotes' -p`
 
-const ErrMissingAppOrJob = "You must pass an application or job"
-const ErrAppAndJobNotAllowedTogether = "You must pass an application or job, not both"
+const ErrMissingAppOrJob = "you must pass an application or job"
+const ErrAppAndJobNotAllowedTogether = "you must pass an application or job, not both"
 
 type EnvGet struct {
 	appName string

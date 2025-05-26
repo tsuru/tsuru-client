@@ -213,6 +213,6 @@ func (c *EventBlockRemove) Run(context *cmd.Context) error {
 	if err != nil {
 		return err
 	}
-	context.Stdout.Write([]byte(fmt.Sprintf("Block %s successfully removed.\n", uuid)))
+	fmt.Fprintf(context.Stdout, "Block %s successfully removed.\n", uuid)
 	return nil
 }

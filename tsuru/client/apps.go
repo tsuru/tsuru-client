@@ -308,7 +308,7 @@ func (c *AppUpdate) Run(ctx *cmd.Context) error {
 		}
 
 		if cpuBurst < 1 {
-			return errors.New("Invalid factor, please use a value greater equal 1")
+			return errors.New("invalid factor, please use a value greater equal 1")
 		}
 
 		c.args.Planoverride.CpuBurst = &cpuBurst
@@ -316,7 +316,7 @@ func (c *AppUpdate) Run(ctx *cmd.Context) error {
 
 	appName := c.Flags().Lookup("app").Value.String()
 	if appName == "" {
-		return errors.New("Please use the -a/--app flag to specify which app you want to update.")
+		return errors.New("please use the -a/--app flag to specify which app you want to update")
 	}
 
 	response, err := apiClient.AppApi.AppUpdate(context.TODO(), appName, c.args)
@@ -354,10 +354,10 @@ remove it (you are able to remove any app that you see in [[tsuru app list]]).`,
 func (c *AppRemove) Run(context *cmd.Context) error {
 	appName := c.Flags().Lookup("app").Value.String()
 	if appName == "" {
-		return errors.New("Please use the -a/--app flag to specify which app you want to remove.")
+		return errors.New("please use the -a/--app flag to specify which app you want to remove")
 	}
 	if len(c.fs.Args()) > 0 {
-		return errors.New("Wrong number of parameters, are you using the correct command?")
+		return errors.New("wrong number of parameters, are you using the correct command?")
 	}
 	if !c.Confirm(context, fmt.Sprintf(`Are you sure you want to remove app "%s"?`, appName)) {
 		return nil
@@ -1029,8 +1029,8 @@ func renderUnits(buf *bytes.Buffer, units []provTypes.Unit, metrics []provTypes.
 			if key.routable {
 				groupLabel = fmt.Sprintf("%s [routable]", groupLabel)
 			}
-			buf.WriteString(fmt.Sprintf("Units%s: %d\n", groupLabel, unitsTable.Rows()))
-			buf.WriteString(unitsTable.String())
+			fmt.Fprintf(buf, "Units%s: %d\n", groupLabel, unitsTable.Rows())
+			fmt.Fprint(buf, unitsTable.String())
 		}
 	}
 }
@@ -1434,7 +1434,7 @@ func (c *AppList) Show(result []byte, context *cmd.Context) error {
 		} else {
 			summary = "error fetching units: " + app.Error
 		}
-		addrs := strings.Replace(AppResumeAddr(&app), ", ", "\n", -1)
+		addrs := strings.ReplaceAll(AppResumeAddr(&app), ", ", "\n")
 		table.AddRow(tablecli.Row([]string{app.Name, summary, addrs}))
 	}
 	table.LineSeparator = true

@@ -84,7 +84,7 @@ func (c *BrokerUpdate) Run(ctx *cmd.Context) error {
 		return err
 	}
 	if len(c.cacheExpiration) > 0 && c.noCache {
-		return fmt.Errorf("Can't set --cache and --no-cache flags together.")
+		return fmt.Errorf("can't set --cache and --no-cache flags together")
 	}
 	err = parseServiceBroker(&c.broker, ctx, c.cacheExpiration)
 	if err != nil {

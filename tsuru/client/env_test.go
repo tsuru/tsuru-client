@@ -845,7 +845,7 @@ func (s *S) TestCheckAppAndJobInputsMissingAppOrJob(c *check.C) {
 	s.setupFakeTransport(&cmdtest.Transport{})
 	err := (&EnvGet{}).Run(&ctx)
 	c.Assert(err, check.NotNil)
-	c.Assert(err.Error(), check.Equals, "You must pass an application or job")
+	c.Assert(err.Error(), check.Equals, "you must pass an application or job")
 }
 
 func (s *S) TestCheckAppAndJobInputsPassingBothAppAndJob(c *check.C) {
@@ -860,5 +860,5 @@ func (s *S) TestCheckAppAndJobInputsPassingBothAppAndJob(c *check.C) {
 	command.Flags().Parse(true, []string{"-j", "sample-job", "-a", "sample-app"})
 	err := command.Run(&ctx)
 	c.Assert(err, check.NotNil)
-	c.Assert(err.Error(), check.Equals, "You must pass an application or job, not both")
+	c.Assert(err.Error(), check.Equals, "you must pass an application or job, not both")
 }

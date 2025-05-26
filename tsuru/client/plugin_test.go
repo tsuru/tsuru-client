@@ -121,7 +121,7 @@ func (s *S) TestPluginInstallError(c *check.C) {
 	}
 	command := PluginInstall{}
 	err := command.Run(&context)
-	c.Assert(err, check.ErrorMatches, `Error installing plugin "myplugin": Invalid status code reading plugin: 500 - "my err"`)
+	c.Assert(err, check.ErrorMatches, `error installing plugin "myplugin": invalid status code reading plugin: 500 - "my err"`)
 }
 
 func (s *S) TestPluginInstallIsACommand(c *check.C) {
@@ -426,7 +426,7 @@ func (s *S) TestPluginBundleError(c *check.C) {
 	command.Flags().Parse(true, []string{"--url", ts.URL})
 
 	err := command.Run(&context)
-	c.Assert(err, check.ErrorMatches, `Invalid status code reading plugin bundle: 500 - "my err"`)
+	c.Assert(err, check.ErrorMatches, `invalid status code reading plugin bundle: 500 - "my err"`)
 }
 
 func (s *S) TestPluginBundleErrorNoFlags(c *check.C) {

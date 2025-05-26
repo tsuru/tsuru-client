@@ -108,7 +108,7 @@ func (s *S) TestBuildRunWithoutArgs(c *check.C) {
 	command.Flags().Parse(true, []string{"-a", "myapp", "-t", "mytag"})
 	err := command.Run(&ctx)
 	c.Assert(err, check.NotNil)
-	c.Assert(err.Error(), check.Equals, "You should provide at least one file to build the image.\n")
+	c.Assert(err.Error(), check.Equals, "you should provide at least one file to build the image")
 }
 
 func (s *S) TestBuildRunWithoutTag(c *check.C) {
@@ -124,7 +124,7 @@ func (s *S) TestBuildRunWithoutTag(c *check.C) {
 	command.Flags().Parse(true, []string{"-a", "myapp"})
 	err := command.Run(&ctx)
 	c.Assert(err, check.NotNil)
-	c.Assert(err.Error(), check.Equals, "You should provide one tag to build the image.\n")
+	c.Assert(err.Error(), check.Equals, "you should provide one tag to build the image")
 }
 
 func (s *S) TestGuessingContainerFile(c *check.C) {

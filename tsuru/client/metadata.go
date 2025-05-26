@@ -17,14 +17,12 @@ import (
 	"github.com/tsuru/tsuru/cmd"
 )
 
-const metadataSetValidationMessage = `You must specify metadata in the form "NAME=value" with the specified type.
+const metadataSetValidationMessage = `you must specify metadata in the form "NAME=value" with the specified type.
 
 Example:
 
   tsuru metadata-set <-a APPNAME | -j JOBNAME> -t label NAME=value OTHER_NAME="value with spaces" ANOTHER_NAME='using single quotes'
-  tsuru metadata-set <-a APPNAME | -j JOBNAME> -t annotation NAME=value OTHER_NAME="value with spaces" ANOTHER_NAME='using single quotes'
-
-`
+  tsuru metadata-set <-a APPNAME | -j JOBNAME> -t annotation NAME=value OTHER_NAME="value with spaces" ANOTHER_NAME='using single quotes'`
 
 var allowedTypes = []string{"label", "annotation"}
 
@@ -249,7 +247,7 @@ func validateType(t string) error {
 			return nil
 		}
 	}
-	return errors.New("A type is required: label or annotation")
+	return errors.New("a type is required: label or annotation")
 }
 
 type MetadataUnset struct {

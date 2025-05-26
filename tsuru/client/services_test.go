@@ -987,7 +987,7 @@ Status: Service instance "mongo" is up
 	s.setupFakeTransport(&infoTransport{includeAll: false})
 	err := (&ServiceInstanceInfo{}).Run(&context)
 	c.Assert(err, check.IsNil)
-	obtained := strings.Replace(stdout.String(), " \n", "\n", -1)
+	obtained := strings.ReplaceAll(stdout.String(), " \n", "\n")
 	c.Assert(obtained, check.Equals, expected)
 }
 

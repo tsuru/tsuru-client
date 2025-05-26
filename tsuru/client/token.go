@@ -243,5 +243,5 @@ func (c *TokenInfoCmd) Run(ctx *cmd.Context) error {
 		)
 		return nil
 	}
-	return fmt.Errorf("Token not found")
+	return fmt.Errorf("token not found")
 }

@@ -234,7 +234,7 @@ func (s *S) TestPlatformAddRunFlagsConflict(c *check.C) {
 	command.Flags().Parse(true, []string{"--image", "tsuru/python", "--dockerfile", "testdata/Dockerfile"})
 	err := command.Run(&context)
 	c.Assert(err, check.NotNil)
-	c.Assert(err.Error(), check.Equals, "Conflicting options: --image and --dockerfile")
+	c.Assert(err.Error(), check.Equals, "conflicting options: --image and --dockerfile")
 }
 
 func (s *S) TestPlatformAddFlagSet(c *check.C) {
@@ -496,7 +496,7 @@ func (s *S) TestPlatformUpdateImageAndDockerfile(c *check.C) {
 		Stderr: &stderr,
 		Args:   []string{name},
 	}
-	expected := "Conflicting options: --image and --dockerfile"
+	expected := "conflicting options: --image and --dockerfile"
 	command := PlatformUpdate{}
 	command.Flags().Parse(true, []string{"--image", "tsuru/python", "--dockerfile", "testdata/Dockerfile"})
 	err := command.Run(&context)
@@ -512,7 +512,7 @@ func (s *S) TestPlatformUpdateEnableAndDisable(c *check.C) {
 		Stderr: &stderr,
 		Args:   []string{name},
 	}
-	expected := "Conflicting options: --enable and --disable"
+	expected := "conflicting options: --enable and --disable"
 	command := PlatformUpdate{}
 	command.Flags().Parse(true, []string{"--disable", "--enable"})
 	err := command.Run(&context)

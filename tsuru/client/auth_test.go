@@ -438,7 +438,7 @@ func (s *S) TestUserCreateReturnErrorIfPasswordsDontMatch(c *check.C) {
 	command := UserCreate{}
 	err := command.Run(&context)
 	c.Assert(err, check.NotNil)
-	c.Assert(err, check.ErrorMatches, "^Passwords didn't match.$")
+	c.Assert(err, check.ErrorMatches, "^passwords didn't match$")
 }
 
 func (s *S) TestUserCreate(c *check.C) {
@@ -488,7 +488,7 @@ func (s *S) TestUserCreateNotFound(c *check.C) {
 	command := UserCreate{}
 	err := command.Run(&context)
 	c.Assert(err, check.NotNil)
-	c.Assert(err.Error(), check.Equals, "User creation is disabled.")
+	c.Assert(err.Error(), check.Equals, "user creation is disabled")
 }
 
 func (s *S) TestUserCreateMethodNotAllowed(c *check.C) {
@@ -508,7 +508,7 @@ func (s *S) TestUserCreateMethodNotAllowed(c *check.C) {
 	command := UserCreate{}
 	err := command.Run(&context)
 	c.Assert(err, check.NotNil)
-	c.Assert(tsuruHTTP.UnwrapErr(err).Error(), check.Equals, "User creation is disabled.")
+	c.Assert(tsuruHTTP.UnwrapErr(err).Error(), check.Equals, "user creation is disabled")
 }
 
 func (s *S) TestUserCreateInfo(c *check.C) {
@@ -1095,7 +1095,7 @@ func (s *S) TestListUsersRunWithMoreThanOneFlagReturnsError(c *check.C) {
 	command := ListUsers{}
 	command.Flags().Parse(true, []string{"-u", "test@test.com", "-r", "role2"})
 	err := command.Run(&context)
-	c.Assert(err, check.ErrorMatches, "You cannot filter by user email and role at same time. Enter <tsuru user-list --help> for more information.")
+	c.Assert(err, check.ErrorMatches, "you cannot filter by user email and role at same time. Enter <tsuru user-list --help> for more information")
 }
 
 func (s *S) TestListUsersRunWithContextFlagAndNotRolaFlagError(c *check.C) {
@@ -1115,7 +1115,7 @@ func (s *S) TestListUsersRunWithContextFlagAndNotRolaFlagError(c *check.C) {
 	command := ListUsers{}
 	command.Flags().Parse(true, []string{"-c", "team"})
 	err := command.Run(&context)
-	c.Assert(err, check.ErrorMatches, "You should provide a role to filter by context value.")
+	c.Assert(err, check.ErrorMatches, "you should provide a role to filter by context value")
 }
 
 func (s *S) TestListUsersFlags(c *check.C) {

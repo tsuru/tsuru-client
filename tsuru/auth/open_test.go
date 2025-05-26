@@ -24,7 +24,7 @@ func (s *S) TestOpen(c *check.C) {
 	if runtime.GOOS == "linux" {
 		c.Assert(fexec.ExecutedCmd("xdg-open", []string{url}), check.Equals, true)
 	} else if runtime.GOOS == "windows" {
-		url = strings.Replace(url, "&", "^&", -1)
+		url = strings.ReplaceAll(url, "&", "^&")
 		c.Assert(fexec.ExecutedCmd("cmd", []string{"/c", "start", "", url}), check.Equals, true)
 	} else {
 		c.Assert(fexec.ExecutedCmd("open", []string{url}), check.Equals, true)

@@ -262,7 +262,7 @@ func (s *S) TestDeployRunWithoutArgsAndImage(c *check.C) {
 	s.setupFakeTransport(&cmdtest.Transport{Status: http.StatusInternalServerError})
 	err = command.Run(ctx)
 	c.Assert(err, check.NotNil)
-	c.Assert(err.Error(), check.Equals, "You should provide at least one file, Docker image name or Dockerfile to deploy.\n")
+	c.Assert(err.Error(), check.Equals, "you should provide at least one file, Docker image name or Dockerfile to deploy")
 }
 
 func (s *S) TestDeployRunWithArgsAndImage(c *check.C) {
@@ -272,7 +272,7 @@ func (s *S) TestDeployRunWithArgsAndImage(c *check.C) {
 	ctx := &cmd.Context{Stdout: io.Discard, Stderr: io.Discard, Args: command.Flags().Args()}
 	s.setupFakeTransport(&cmdtest.Transport{Status: http.StatusInternalServerError})
 	err = command.Run(ctx)
-	c.Assert(err, check.ErrorMatches, "You can't deploy files and docker image at the same time.\n")
+	c.Assert(err, check.ErrorMatches, "you can't deploy files and docker image at the same time")
 }
 
 func (s *S) TestDeployRunRequestFailure(c *check.C) {
@@ -293,7 +293,7 @@ func (s *S) TestDeploy_Run_DockerfileAndDockerImage(c *check.C) {
 	ctx := &cmd.Context{Stdout: io.Discard, Stderr: io.Discard, Args: command.Flags().Args()}
 	s.setupFakeTransport(&cmdtest.Transport{Status: http.StatusInternalServerError})
 	err = command.Run(ctx)
-	c.Assert(err, check.ErrorMatches, "You can't deploy container image and container file at same time.\n")
+	c.Assert(err, check.ErrorMatches, "you can't deploy container image and container file at same time")
 }
 
 func (s *S) TestDeploy_Run_UsingDockerfile(c *check.C) {
@@ -810,7 +810,7 @@ func (s *S) TestJobDeployRunWithoutArgsAndImage(c *check.C) {
 
 	err = command.Run(ctx)
 	c.Assert(err, check.NotNil)
-	c.Assert(err.Error(), check.Equals, "You should provide at least one between Docker image name or Dockerfile to deploy.\n")
+	c.Assert(err.Error(), check.Equals, "you should provide at least one between Docker image name or Dockerfile to deploy")
 }
 
 func (s *S) TestJobDeployRunRequestFailure(c *check.C) {
@@ -835,5 +835,5 @@ func (s *S) TestDeployRunDockerfileAndDockerImage(c *check.C) {
 	s.setupFakeTransport(&cmdtest.Transport{Status: http.StatusInternalServerError})
 
 	err = command.Run(ctx)
-	c.Assert(err, check.ErrorMatches, "You can't deploy container image and container file at same time.\n")
+	c.Assert(err, check.ErrorMatches, "you can't deploy container image and container file at same time")
 }

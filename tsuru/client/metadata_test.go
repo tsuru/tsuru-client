@@ -339,7 +339,7 @@ func (s *S) TestMetadataSetFailsWithoutType(c *check.C) {
 	command.Flags().Parse(true, []string{"-a", "someapp"})
 	err := command.Run(&context)
 	c.Assert(err, check.NotNil)
-	c.Assert(err.Error(), check.Equals, "A type is required: label or annotation")
+	c.Assert(err.Error(), check.Equals, "a type is required: label or annotation")
 }
 
 func (s *S) TestMetadataSetAppSupportsNoRestart(c *check.C) {
@@ -566,7 +566,7 @@ func (s *S) TestMetadataUnsetFailsWithoutType(c *check.C) {
 	command.Flags().Parse(true, []string{"-j", "somejob"})
 	err := command.Run(&context)
 	c.Assert(err, check.NotNil)
-	c.Assert(err.Error(), check.Equals, "A type is required: label or annotation")
+	c.Assert(err.Error(), check.Equals, "a type is required: label or annotation")
 }
 
 func (s *S) TestMetadateUnsetAppSupportsNoRestart(c *check.C) {

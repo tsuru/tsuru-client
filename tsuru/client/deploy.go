@@ -226,15 +226,15 @@ func (c *AppDeploy) Run(context *cmd.Context) error {
 	context.RawOutput()
 
 	if c.image == "" && c.dockerfile == "" && len(context.Args) == 0 {
-		return errors.New("You should provide at least one file, Docker image name or Dockerfile to deploy.\n")
+		return errors.New("you should provide at least one file, Docker image name or Dockerfile to deploy")
 	}
 
 	if c.image != "" && len(context.Args) > 0 {
-		return errors.New("You can't deploy files and docker image at the same time.\n")
+		return errors.New("you can't deploy files and docker image at the same time")
 	}
 
 	if c.image != "" && c.dockerfile != "" {
-		return errors.New("You can't deploy container image and container file at same time.\n")
+		return errors.New("you can't deploy container image and container file at same time")
 	}
 
 	appName, err := c.AppNameByFlag()
@@ -424,7 +424,7 @@ func (c *AppDeployRollback) Run(context *cmd.Context) error {
 	v := url.Values{}
 	v.Set("origin", "rollback")
 	v.Set("image", imgName)
-	c.deployVersionArgs.values(v)
+	c.values(v)
 	request, err := http.NewRequest("POST", u, strings.NewReader(v.Encode()))
 	if err != nil {
 		return err
@@ -474,7 +474,7 @@ func (c *AppDeployRebuild) Run(context *cmd.Context) error {
 	}
 	v := url.Values{}
 	v.Set("origin", "rebuild")
-	c.deployVersionArgs.values(v)
+	c.values(v)
 	request, err := http.NewRequest("POST", u, strings.NewReader(v.Encode()))
 	if err != nil {
 		return err
@@ -630,23 +630,21 @@ func (c *JobDeploy) Run(context *cmd.Context) error {
 	context.RawOutput()
 
 	if c.jobName == "" {
-		return errors.New(`The name of the job is required.
+		return errors.New(`the name of the job is required.
 
-Use the --job/-j flag to specify it.
-
-`)
+Use the --job/-j flag to specify it`)
 	}
 
 	if c.image == "" && c.dockerfile == "" {
-		return errors.New("You should provide at least one between Docker image name or Dockerfile to deploy.\n")
+		return errors.New("you should provide at least one between Docker image name or Dockerfile to deploy")
 	}
 
 	if c.image != "" && len(context.Args) > 0 {
-		return errors.New("You can't deploy files and docker image at the same time.\n")
+		return errors.New("you can't deploy files and docker image at the same time")
 	}
 
 	if c.image != "" && c.dockerfile != "" {
-		return errors.New("You can't deploy container image and container file at same time.\n")
+		return errors.New("you can't deploy container image and container file at same time")
 	}
 
 	values := url.Values{}

@@ -413,7 +413,7 @@ func (s *S) TestUnitSetNoProcessSpecifiedAndMultipleExist(c *check.C) {
 	command.Flags().Parse(true, []string{"-a", "app1"})
 	err := command.Run(&context)
 	c.Assert(err, check.NotNil)
-	c.Assert(err.Error(), check.Equals, "Please use the -p/--process flag to specify which process you want to set units for.")
+	c.Assert(err.Error(), check.Equals, "please use the -p/--process flag to specify which process you want to set units for")
 	c.Assert(calledGet, check.Equals, true)
 }
 
@@ -518,7 +518,7 @@ func (s *S) TestUnitKillMissingUnit(c *check.C) {
 	command.Flags().Parse(true, []string{"-a", "app1", "-f"})
 	err := command.Run(&context)
 	c.Assert(err, check.NotNil)
-	c.Assert(err.Error(), check.Equals, "you must provide the unit name.")
+	c.Assert(err.Error(), check.Equals, "you must provide the unit name")
 }
 
 func (s *S) TestUnitKillAppAndJobMutuallyExclusive(c *check.C) {

@@ -225,7 +225,7 @@ func (p *PlatformUpdate) Run(context *cmd.Context) error {
 	context.RawOutput()
 	name := context.Args[0]
 	if p.disable && p.enable {
-		return errors.New("Conflicting options: --enable and --disable")
+		return errors.New("conflicting options: --enable and --disable")
 	}
 	var disable string
 	if p.enable {
@@ -357,7 +357,7 @@ func (c PlatformInfo) Run(ctx *cmd.Context) error {
 
 func serializeDockerfile(name string, w io.Writer, dockerfile, image string, useImplicit bool) (*multipart.Writer, error) {
 	if dockerfile != "" && image != "" {
-		return nil, errors.New("Conflicting options: --image and --dockerfile")
+		return nil, errors.New("conflicting options: --image and --dockerfile")
 	}
 	writer := multipart.NewWriter(w)
 	var dockerfileContent []byte

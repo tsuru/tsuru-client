@@ -678,12 +678,12 @@ func (s *S) TestAppUpdateWithInvalidCPUBurst(c *check.C) {
 	command.Flags().Parse(true, []string{"-a", "ble", "--cpu-burst-factor", "0.5"})
 	err := command.Run(&context)
 	c.Assert(err, check.NotNil)
-	c.Assert(err.Error(), check.Equals, "Invalid factor, please use a value greater equal 1")
+	c.Assert(err.Error(), check.Equals, "invalid factor, please use a value greater equal 1")
 }
 
 func (s *S) TestAppUpdateWithoutArgs(c *check.C) {
 	var stdout, stderr bytes.Buffer
-	expected := "Please use the -a/--app flag to specify which app you want to update."
+	expected := "please use the -a/--app flag to specify which app you want to update"
 	context := cmd.Context{
 		Stdout: &stdout,
 		Stderr: &stderr,
@@ -849,7 +849,7 @@ func (s *S) TestAppRemoveFlags(c *check.C) {
 
 func (s *S) TestAppRemoveWithoutArgs(c *check.C) {
 	var stdout, stderr bytes.Buffer
-	expected := "Please use the -a/--app flag to specify which app you want to remove."
+	expected := "please use the -a/--app flag to specify which app you want to remove"
 	context := cmd.Context{
 		Args:   nil,
 		Stdout: &stdout,

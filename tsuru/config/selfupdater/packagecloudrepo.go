@@ -80,7 +80,7 @@ func replaceConf(r *regexp.Regexp, reader io.Reader) (hasDiff bool, replacedCont
 		writer.WriteString(line + "\n")
 	}
 	if err = scanner.Err(); err != nil {
-		return hasDiff, writer.Bytes(), fmt.Errorf("Got error on scanning repoConfPath lines: %w", err)
+		return hasDiff, writer.Bytes(), fmt.Errorf("got error on scanning repoConfPath lines: %w", err)
 	}
 	return hasDiff, writer.Bytes(), err
 }
@@ -108,17 +108,17 @@ func checkUpToDateConfRepo(repoType, repoConfPath string) error {
 	// Getting original content
 	originalF, err := fsystem.Open(repoConfPath)
 	if err != nil {
-		return fmt.Errorf("Could not open repoConfPath: %w", err)
+		return fmt.Errorf("could not open repoConfPath: %w", err)
 	}
 	originalData, err := io.ReadAll(originalF)
 	if err != nil {
-		return fmt.Errorf("Could not read repoConfPath: %w", err)
+		return fmt.Errorf("could not read repoConfPath: %w", err)
 	}
 
 	// Detecting diff
 	hasDiff, newContent, err := replaceConf(r, bytes.NewReader(originalData))
 	if err != nil {
-		return fmt.Errorf("Could not replaceConf: %w", err)
+		return fmt.Errorf("could not replaceConf: %w", err)
 	}
 	if !hasDiff {
 		return nil
@@ -145,7 +145,7 @@ func checkUpToDateConfRepo(repoType, repoConfPath string) error {
 
 	for try := 0; answ != "yes" && answ != "no"; try++ {
 		if try >= 10 {
-			return fmt.Errorf("Asked too many questions. Modify %q manually", repoConfPath)
+			return fmt.Errorf("asked too many questions. Modify %q manually", repoConfPath)
 		}
 		fmt.Fprintf(stderr, "  Do you want to override the content now (or show the diff)? (will ask sudo password) [yes/no/diff] ")
 		scanner.Scan()

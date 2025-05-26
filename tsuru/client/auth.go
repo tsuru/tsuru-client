@@ -57,7 +57,7 @@ func (c *UserCreate) Run(context *cmd.Context) error {
 	}
 	fmt.Fprintln(context.Stdout)
 	if password != confirm {
-		return errors.New("Passwords didn't match.")
+		return errors.New("passwords didn't match")
 	}
 	v := url.Values{}
 	v.Set("email", email)
@@ -72,7 +72,7 @@ func (c *UserCreate) Run(context *cmd.Context) error {
 	if resp != nil {
 		if resp.StatusCode == http.StatusNotFound ||
 			resp.StatusCode == http.StatusMethodNotAllowed {
-			return errors.New("User creation is disabled.")
+			return errors.New("user creation is disabled")
 		}
 	}
 	if err != nil {
@@ -80,7 +80,7 @@ func (c *UserCreate) Run(context *cmd.Context) error {
 		if httpErr, ok := err.(*tsuruErrors.HTTP); ok {
 			if httpErr.Code == http.StatusNotFound ||
 				httpErr.Code == http.StatusMethodNotAllowed {
-				return errors.New("User creation is disabled.")
+				return errors.New("user creation is disabled")
 			}
 		}
 		return err
@@ -482,7 +482,7 @@ Tags: {{.Tags}}
 		} else {
 			summary = "error fetching units: " + app.Error
 		}
-		addrs := strings.Replace(app.Addr(), ", ", "\n", -1)
+		addrs := strings.ReplaceAll(app.Addr(), ", ", "\n")
 		appsTable.AddRow(tablecli.Row([]string{app.Name, summary, addrs}))
 	}
 	if appsTable.Rows() > 0 {
@@ -731,10 +731,10 @@ type ListUsers struct {
 
 func (c *ListUsers) Run(ctx *cmd.Context) error {
 	if c.userEmail != "" && c.role != "" {
-		return errors.New("You cannot filter by user email and role at same time. Enter <tsuru user-list --help> for more information.")
+		return errors.New("you cannot filter by user email and role at same time. Enter <tsuru user-list --help> for more information")
 	}
 	if c.context != "" && c.role == "" {
-		return errors.New("You should provide a role to filter by context value.")
+		return errors.New("you should provide a role to filter by context value")
 	}
 
 	apiClient, err := tsuruHTTP.TsuruClientFromEnvironment()

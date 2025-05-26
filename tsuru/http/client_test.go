@@ -184,7 +184,7 @@ func (s *S) TestShouldReturnErrorWhenServerIsDown(c *check.C) {
 	_, err = client.Do(request)
 	c.Assert(err, check.NotNil)
 	c.Assert(strings.Contains(err.Error(), "Failed to connect to tsuru server (http://tsuru.abc.xyz), it's probably down"), check.Equals, true)
-	c.Assert(strings.Replace(buf.String(), "\n", "\\n", -1), check.Matches,
+	c.Assert(strings.ReplaceAll(buf.String(), "\n", "\\n"), check.Matches,
 		``+
 			`.*<Request uri="/">.*`+
 			`GET / HTTP/1.1\r\\n.*`)
@@ -214,7 +214,7 @@ func (s *S) TestShouldNotIncludeTheHeaderAuthorizationWhenTheTsuruTokenFileIsMis
 	header := map[string][]string(request.Header)
 	_, ok := header["Authorization"]
 	c.Assert(ok, check.Equals, false)
-	c.Assert(strings.Replace(buf.String(), "\n", "\\n", -1), check.Matches,
+	c.Assert(strings.ReplaceAll(buf.String(), "\n", "\\n"), check.Matches,
 		``+
 			`.*<Request uri="/">.*`+
 			`GET / HTTP/1.1\r\\n.*`)

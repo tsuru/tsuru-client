@@ -532,7 +532,7 @@ func (c *RoleDefaultAdd) Run(context *cmd.Context) error {
 	}
 	encodedParams := params.Encode()
 	if encodedParams == "" {
-		return fmt.Errorf("You must choose which event to add default roles.")
+		return fmt.Errorf("you must choose which event to add default roles")
 	}
 	addr, err := config.GetURL("/role/default")
 	if err != nil {
@@ -592,7 +592,7 @@ func (c *RoleDefaultRemove) Run(context *cmd.Context) error {
 	}
 	encodedParams := params.Encode()
 	if encodedParams == "" {
-		return fmt.Errorf("You must choose which event to remove default roles.")
+		return fmt.Errorf("you must choose which event to remove default roles")
 	}
 	addr, err := config.GetURL(fmt.Sprintf("/role/default?%s", encodedParams))
 	if err != nil {
@@ -700,7 +700,7 @@ func (c *RoleUpdate) Flags() *gnuflag.FlagSet {
 
 func (c *RoleUpdate) Run(context *cmd.Context) error {
 	if (c.newName == "") && (c.description == "") && (c.contextType == "") {
-		return errors.New("Neither the description, context or new name were set. You must define at least one.")
+		return errors.New("neither the description, context or new name were set. You must define at least one")
 	}
 	params := url.Values{}
 	params.Set("name", context.Args[0])

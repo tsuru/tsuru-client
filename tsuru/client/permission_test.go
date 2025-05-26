@@ -528,7 +528,7 @@ func (s *S) TestRoleUpdate(c *check.C) {
 
 func (s *S) TestRoleUpdateWithoutFlags(c *check.C) {
 	var stdout, stderr bytes.Buffer
-	expected := "Neither the description, context or new name were set. You must define at least one."
+	expected := "neither the description, context or new name were set. You must define at least one"
 	context := cmd.Context{
 		Args:   []string{"team-member"},
 		Stdout: &stdout,

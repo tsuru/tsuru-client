@@ -275,7 +275,7 @@ func (s *S) TestBrokerUpdateErrorWithCacheAndNoCache(c *check.C) {
 	command := BrokerUpdate{}
 	command.Flags().Parse(true, []string{"--cache", "30m", "--no-cache"})
 	err := command.Run(&context)
-	c.Assert(err, check.ErrorMatches, "Can't set --cache and --no-cache flags together.")
+	c.Assert(err, check.ErrorMatches, "can't set --cache and --no-cache flags together")
 }
 
 func (s *S) TestBrokerDeleteInfo(c *check.C) {

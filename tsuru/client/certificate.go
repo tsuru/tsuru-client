@@ -60,7 +60,7 @@ func (c *CertificateSet) Run(context *cmd.Context) error {
 		return err
 	}
 	if c.cname == "" {
-		return errors.New("You must set cname.")
+		return errors.New("you must set cname")
 	}
 	cert, err := os.ReadFile(context.Args[0])
 	if err != nil {
@@ -122,7 +122,7 @@ func (c *CertificateUnset) Run(context *cmd.Context) error {
 		return err
 	}
 	if c.cname == "" {
-		return errors.New("You must set cname.")
+		return errors.New("you must set cname")
 	}
 	v := url.Values{}
 	v.Set("cname", c.cname)
@@ -408,12 +408,12 @@ func (c *CertificateIssuerSet) Run(context *cmd.Context) error {
 	}
 
 	if c.cname == "" {
-		return errors.New("You must set cname.")
+		return errors.New("you must set cname")
 	}
 
 	issuer := context.Args[0]
 	if issuer == "" {
-		return errors.New("You must set issuer.")
+		return errors.New("you must set issuer")
 	}
 
 	v := url.Values{}
@@ -475,7 +475,7 @@ func (c *CertificateIssuerUnset) Run(context *cmd.Context) error {
 	}
 
 	if c.cname == "" {
-		return errors.New("You must set cname.")
+		return errors.New("you must set cname")
 	}
 
 	if !c.Confirm(context, fmt.Sprintf(`Are you sure you want to remove certificate issuer for cname: "%s"?`, c.cname)) {
