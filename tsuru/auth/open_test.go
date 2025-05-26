@@ -21,12 +21,14 @@ func (s *S) TestOpen(c *check.C) {
 	url := "http://someurl"
 	err := open(url)
 	c.Assert(err, check.IsNil)
-	if runtime.GOOS == "linux" {
+
+	switch runtime.GOOS {
+	case "linux":
 		c.Assert(fexec.ExecutedCmd("xdg-open", []string{url}), check.Equals, true)
-	} else if runtime.GOOS == "windows" {
+	case "windows":
 		url = strings.ReplaceAll(url, "&", "^&")
 		c.Assert(fexec.ExecutedCmd("cmd", []string{"/c", "start", "", url}), check.Equals, true)
-	} else {
+	default:
 		c.Assert(fexec.ExecutedCmd("open", []string{url}), check.Equals, true)
 	}
 }

@@ -66,11 +66,12 @@ func (c *Login) Run(ctx *cmd.Context) error {
 		return err
 	}
 
-	if scheme.Name == "oidc" {
+	switch scheme.Name {
+	case "oidc":
 		return oidcLogin(ctx, scheme)
-	} else if scheme.Name == "oauth" {
+	case "oauth":
 		return oauthLogin(ctx, scheme)
-	} else if scheme.Name == "native" {
+	case "native":
 		return nativeLogin(ctx)
 	}
 
