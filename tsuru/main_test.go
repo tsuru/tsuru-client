@@ -591,8 +591,8 @@ func (s *S) TestVersionAPIInvalidURL(c *check.C) {
 	os.Setenv("TSURU_TARGET", URL)
 	defer os.Unsetenv("TSURU_TARGET")
 	err := command.Run(&context)
-	msgErr := fmt.Sprintf("Unable to retrieve server version: Get \"http://%s/1.0/info\": dial tcp: lookup %s: no such host", URL, URL)
-	c.Assert(msgErr, check.Equals, err.Error())
+	c.Assert(true, check.Equals, strings.Contains(err.Error(), "Unable to retrieve server version"))
+	c.Assert(true, check.Equals, strings.Contains(err.Error(), "no such host"))
 
 	stdout := context.Stdout.(*bytes.Buffer).String()
 

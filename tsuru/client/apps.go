@@ -550,18 +550,26 @@ func (a *app) InternalAddr() string {
 	return strings.Join(addrs, ", ")
 }
 func (a *app) Addr() string {
+	return appAddrs(a.CName, a.IP, a.Routers)
+}
+
+func AppResumeAddr(a *appTypes.AppResume) string {
+	return appAddrs(a.CName, a.IP, a.Routers)
+}
+
+func appAddrs(cnames []string, ip string, routers []appTypes.AppRouter) string {
 	var allAddrs []string
-	for _, cname := range a.CName {
+	for _, cname := range cnames {
 		if cname != "" {
 			allAddrs = append(allAddrs, cname+" (cname)")
 		}
 	}
-	if len(a.Routers) == 0 {
-		if a.IP != "" {
-			allAddrs = append(allAddrs, a.IP)
+	if len(routers) == 0 {
+		if ip != "" {
+			allAddrs = append(allAddrs, ip)
 		}
 	} else {
-		for _, r := range a.Routers {
+		for _, r := range routers {
 			if len(r.Addresses) > 0 {
 				sort.Strings(r.Addresses)
 				allAddrs = append(allAddrs, r.Addresses...)
@@ -1383,7 +1391,7 @@ func (c *AppList) Run(context *cmd.Context) error {
 }
 
 func (c *AppList) Show(result []byte, context *cmd.Context) error {
-	var apps []app
+	var apps []appTypes.AppResume
 	err := json.Unmarshal(result, &apps)
 	if err != nil {
 		return err
@@ -1426,7 +1434,7 @@ func (c *AppList) Show(result []byte, context *cmd.Context) error {
 		} else {
 			summary = "error fetching units: " + app.Error
 		}
-		addrs := strings.Replace(app.Addr(), ", ", "\n", -1)
+		addrs := strings.Replace(AppResumeAddr(&app), ", ", "\n", -1)
 		table.AddRow(tablecli.Row([]string{app.Name, summary, addrs}))
 	}
 	table.LineSeparator = true
