@@ -8,7 +8,6 @@ import (
 	"bytes"
 	"net/http"
 
-	tsuruHTTP "github.com/tsuru/tsuru-client/tsuru/http"
 	"github.com/tsuru/tsuru/cmd"
 	"github.com/tsuru/tsuru/cmd/cmdtest"
 	check "gopkg.in/check.v1"
@@ -130,9 +129,68 @@ func (s *S) TestTagListRequestError(c *check.C) {
 		CondFunc:  func(*http.Request) bool { return true },
 	})
 	err := command.Run(&context)
-	c.Assert(err, check.NotNil)
-	c.Assert(tsuruHTTP.UnwrapErr(err).Error(), check.Equals, "502 Bad Gateway")
-	c.Assert(stdout.String(), check.Equals, "")
+	c.Assert(err, check.IsNil)
+	c.Assert(stdout.String(), check.Equals, "Unable to access apps and services tags\n")
+}
+
+func (s *S) TestTagListAppsSuccessServiceFail(c *check.C) {
+	var stdout, stderr bytes.Buffer
+	appList := `[{"name":"app1","tags":["tag1"]}]`
+	expected := `+------+------+-------------------+
+| Tag  | Apps | Service Instances |
++------+------+-------------------+
+| tag1 | app1 |                   |
++------+------+-------------------+
+`
+	context := cmd.Context{
+		Args:   []string{},
+		Stdout: &stdout,
+		Stderr: &stderr,
+	}
+	command := TagList{}
+	transport := &cmdtest.MultiConditionalTransport{
+		ConditionalTransports: []cmdtest.ConditionalTransport{
+			{
+				Transport: cmdtest.Transport{Message: appList, Status: http.StatusOK},
+				CondFunc:  func(*http.Request) bool { return true },
+			},
+			{
+				Transport: cmdtest.Transport{Status: http.StatusForbidden},
+				CondFunc:  func(*http.Request) bool { return true },
+			},
+		},
+	}
+	s.setupFakeTransport(transport)
+	err := command.Run(&context)
+	c.Assert(err, check.IsNil)
+	c.Assert(stdout.String(), check.Equals, expected)
+}
+
+func (s *S) TestTagListBothFail(c *check.C) {
+	var stdout, stderr bytes.Buffer
+	expected := "Unable to access apps and services tags\n"
+	context := cmd.Context{
+		Args:   []string{},
+		Stdout: &stdout,
+		Stderr: &stderr,
+	}
+	command := TagList{}
+	transport := &cmdtest.MultiConditionalTransport{
+		ConditionalTransports: []cmdtest.ConditionalTransport{
+			{
+				Transport: cmdtest.Transport{Status: http.StatusForbidden},
+				CondFunc:  func(r *http.Request) bool { return r.URL.String() == "http://localhost/apps" },
+			},
+			{
+				Transport: cmdtest.Transport{Status: http.StatusForbidden},
+				CondFunc:  func(r *http.Request) bool { return r.URL.String() == "http://localhost/services" },
+			},
+		},
+	}
+	s.setupFakeTransport(transport)
+	err := command.Run(&context)
+	c.Assert(err, check.IsNil)
+	c.Assert(stdout.String(), check.Equals, expected)
 }
 
 func makeTransport(messages []string) http.RoundTripper {

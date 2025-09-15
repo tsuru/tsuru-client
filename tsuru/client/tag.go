@@ -36,14 +36,20 @@ func (t *TagList) Info() *cmd.Info {
 }
 
 func (t *TagList) Run(context *cmd.Context) error {
-	apps, err := loadApps()
-	if err != nil {
-		return err
+	apps, appErr := loadApps()
+	if appErr != nil {
+		apps = []app{}
 	}
-	services, err := loadServices()
-	if err != nil {
-		return err
+	services, serviceErr := loadServices()
+	if serviceErr != nil {
+		services = []service.ServiceModel{}
 	}
+
+	if appErr != nil && serviceErr != nil {
+		fmt.Fprintln(context.Stdout, "Unable to access apps and services tags")
+		return nil
+	}
+
 	return t.Show(apps, services, context)
 }
 
@@ -105,7 +111,14 @@ func getFromURL(path string) ([]byte, error) {
 		return nil, err
 	}
 	defer response.Body.Close()
-	return io.ReadAll(response.Body)
+	body, err := io.ReadAll(response.Body)
+	if err != nil {
+		return nil, err
+	}
+	if response.StatusCode != http.StatusOK {
+		return nil, fmt.Errorf("HTTP %d: %s", response.StatusCode, string(body))
+	}
+	return body, nil
 }
 
 func processTags(apps []app, services []service.ServiceModel) map[string]*tag {
