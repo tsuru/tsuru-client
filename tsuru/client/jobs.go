@@ -220,6 +220,7 @@ Dashboard: {{.}}
 {{- end }}
 Teams: {{.Teams}}
 Created by: {{.Job.Owner}}
+Cluster: {{.Cluster}}
 Pool: {{.Job.Pool}}
 Plan: {{.Job.Plan.Name}}
 {{- if and .Job.Spec.Schedule (not .Job.Spec.Manual) }}
@@ -256,8 +257,9 @@ func (c *JobInfo) Run(ctx *cmd.Context) error {
 	err = tmpl.Execute(&buf, struct {
 		Job          tsuru.Job
 		DashboardURL string
+		Cluster      string
 		Teams        string
-	}{Job: jobInfo.Job, DashboardURL: jobInfo.DashboardURL, Teams: teams})
+	}{Job: jobInfo.Job, DashboardURL: jobInfo.DashboardURL, Cluster: jobInfo.Cluster, Teams: teams})
 	if err != nil {
 		return err
 	}
