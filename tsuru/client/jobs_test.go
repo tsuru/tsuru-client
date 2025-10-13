@@ -259,6 +259,7 @@ func (s *S) TestJobInfo(c *check.C) {
 	expected := `Job: garrincha
 Teams: botafogo (owner)
 Created by: botafogo@glorioso.com
+Cluster: my-cluster
 Pool: kubepool
 Plan: c0.1m0.1
 Schedule: * * * * *
@@ -285,6 +286,7 @@ Service instances: 2
 		Transport: cmdtest.Transport{
 			Message: `
 {
+	"cluster": "my-cluster",
 	"job": {
 		"name": "garrincha",
 		"teams": [
@@ -368,6 +370,7 @@ func (s *S) TestJobInfoManual(c *check.C) {
 	expected := `Job: manualjob
 Teams: tsuru (owner)
 Created by: tsuru@tsuru.io
+Cluster: my-cluster
 Pool: kubepool
 Plan: c0.1m0.1
 Image: manualjob:v0
@@ -377,6 +380,7 @@ Command: [/bin/sh -c sleep 600;]
 		Transport: cmdtest.Transport{
 			Message: `
 {
+	"cluster": "my-cluster",
 	"job": {
 		"name": "manualjob",
 		"teams": [
@@ -441,6 +445,7 @@ func (s *S) TestJobInfoOptionalFieldsSet(c *check.C) {
 Description: my manualjob
 Teams: tsuru (owner), anotherTeam
 Created by: tsuru@tsuru.io
+Cluster: my-cluster
 Pool: kubepool
 Plan: c0.1m0.1
 Image: manualjob:v0
@@ -451,6 +456,7 @@ Max Running Time: 300s
 		Transport: cmdtest.Transport{
 			Message: `
 {
+	"cluster": "my-cluster",
 	"job": {
 		"name": "manualjob",
 		"description": "my manualjob",
