@@ -25,7 +25,7 @@ of the project:
 Using homebrew (Mac OS X only)
 ------------------------------
 
-If you use Mac OS X and `homebrew <http://mxcl.github.com/homebrew/>`_, you may
+If you use Mac OS X and `homebrew <https://brew.sh/>`_, you may
 use a custom tap to install ``tsuru``. First you need to add the tap:
 
 .. highlight:: bash
@@ -52,7 +52,7 @@ Whenever a new version of any of tsuru's clients is out, you can just run:
     $ brew upgrade tsuru
 
 For more details on taps, check `homebrew documentation
-<https://github.com/Homebrew/homebrew/wiki/brew-tap>`_.
+<https://docs.brew.sh/Taps>`_.
 
 **NOTE:** tsuru requires Go 1.2 or higher. Make sure you have the last version
 of Go installed in your system.
