@@ -269,7 +269,7 @@ func (s *S) TestShouldSkipValidationIfThereIsNoSupportedHeaderDeclared(c *check.
 	c.Assert(buf.String(), check.Equals, "")
 }
 
-func (s *S) TestShouldSkupValidationIfServerDoesNotReturnSupportedHeader(c *check.C) {
+func (s *S) TestShouldSkipValidationIfServerDoesNotReturnSupportedHeader(c *check.C) {
 	var buf bytes.Buffer
 	request, err := http.NewRequest("GET", "/", nil)
 	c.Assert(err, check.IsNil)
