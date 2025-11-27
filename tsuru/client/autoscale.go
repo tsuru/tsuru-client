@@ -10,6 +10,8 @@ import (
 	"fmt"
 	"strconv"
 
+	"github.com/pkg/errors"
+
 	"github.com/tsuru/gnuflag"
 	"github.com/tsuru/go-tsuruclient/pkg/tsuru"
 	tsuruClientApp "github.com/tsuru/tsuru-client/tsuru/app"
@@ -187,5 +189,58 @@ func (c *AutoScaleUnset) Run(ctx *cmd.Context) error {
 		return err
 	}
 	fmt.Fprintln(ctx.Stdout, "Unit auto scale successfully unset.")
+	return nil
+}
+
+type AutoScaleSwap struct {
+	tsuruClientApp.AppNameMixIn
+	fs      *gnuflag.FlagSet
+	version string
+}
+
+func (c *AutoScaleSwap) Info() *cmd.Info {
+	return &cmd.Info{
+		Name:    "unit-autoscale-swap",
+		Usage:   "unit autoscale swap [-a/--app appname] [--version version]",
+		Desc:    `Swap a unit auto scale configuration to another version.`,
+		MinArgs: 0,
+		MaxArgs: 0,
+	}
+}
+
+func (c *AutoScaleSwap) Flags() *gnuflag.FlagSet {
+	if c.fs == nil {
+		c.fs = c.AppNameMixIn.Flags()
+		c.fs.StringVar(&c.version, "version", "", "Version number")
+	}
+	return c.fs
+}
+
+func (c *AutoScaleSwap) Run(ctx *cmd.Context) error {
+	apiClient, err := tsuruHTTP.TsuruClientFromEnvironment()
+	if err != nil {
+		return err
+	}
+
+	appName, err := c.AppNameByFlag()
+	if err != nil {
+		return err
+	}
+
+	if c.version == "" {
+		return errors.Errorf(`The version is required.
+
+Use the --version flag to specify it.
+
+`)
+	}
+
+	swapAutoScaleSpec := tsuru.SwapAutoScaleSpec{Version: c.version}
+	_, err = apiClient.AppApi.AutoScaleSwap(context.TODO(), appName, swapAutoScaleSpec)
+	if err != nil {
+		return err
+	}
+
+	fmt.Fprintln(ctx.Stdout, "Unit auto scale successfully swapped.")
 	return nil
 }
