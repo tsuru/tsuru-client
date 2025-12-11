@@ -462,7 +462,6 @@ func unitHost(u provTypes.Unit) string {
 
 	host, _, _ := net.SplitHostPort(address)
 	return host
-
 }
 
 func unitReadyAndStatus(u provTypes.Unit) string {
@@ -494,17 +493,6 @@ func unitPort(u provTypes.Unit) string {
 	return strings.Join(ports, ", ")
 }
 
-func lockString(l appTypes.AppLock) string {
-	if !l.Locked {
-		return ""
-	}
-	format := `Lock:
- Acquired in: %s
- Owner: %s
- Running: %s`
-	return fmt.Sprintf(format, l.AcquireDate, l.Owner, l.Reason)
-}
-
 type app appTypes.AppInfo
 
 func (a *app) QuotaString() string {
@@ -533,11 +521,9 @@ func (a *app) TeamList() string {
 	}
 
 	return strings.Join(teams, ", ")
-
 }
 
 func (a *app) InternalAddr() string {
-
 	addrs := []string{}
 	for _, a := range a.InternalAddresses {
 		if a.Protocol == "UDP" {
@@ -549,6 +535,7 @@ func (a *app) InternalAddr() string {
 
 	return strings.Join(addrs, ", ")
 }
+
 func (a *app) Addr() string {
 	return appAddrs(a.CName, a.IP, a.Routers)
 }
@@ -660,8 +647,7 @@ Deploys: {{.Deploys}}
 {{if .Cluster -}}
 Cluster: {{ .Cluster }}
 {{ end -}}
-Pool:{{if .Pool}} {{.Pool}}{{end}}{{if .Lock.Locked}}
-{{lockString .Lock}}{{end}}
+Pool:{{if .Pool}} {{.Pool}}{{end}}
 Quota: {{ .QuotaString }}
 `
 
@@ -675,9 +661,7 @@ func (a *app) String(simplified bool) string {
 	}
 
 	var buf bytes.Buffer
-	tmpl := template.Must(template.New("app").Funcs(template.FuncMap{
-		"lockString": lockString,
-	}).Parse(format))
+	tmpl := template.Must(template.New("app").Parse(format))
 
 	if simplified {
 		renderUnitsSummary(&buf, a.Units, a.UnitsMetrics, a.Provisioner)
@@ -1195,7 +1179,6 @@ func memoryValue(q string) string {
 	qt, err := resource.ParseQuantity(q)
 	if err == nil {
 		memory = fmt.Sprintf("%vMi", qt.Value()/(1024*1024))
-
 	}
 	return memory
 }
@@ -1298,7 +1281,6 @@ type appFilter struct {
 	teamOwner string
 	owner     string
 	pool      string
-	locked    bool
 	status    string
 	tags      cmd.StringSliceFlag
 }
@@ -1324,9 +1306,6 @@ func (f *appFilter) queryString() (url.Values, error) {
 			}
 		}
 		result.Set("owner", owner)
-	}
-	if f.locked {
-		result.Set("locked", "true")
 	}
 	if f.pool != "" {
 		result.Set("pool", f.pool)
@@ -1458,8 +1437,6 @@ func (c *AppList) Flags() *gnuflag.FlagSet {
 		c.fs.StringVar(&c.filter.teamOwner, "t", "", "Filter applications by team owner")
 		c.fs.StringVar(&c.filter.owner, "user", "", "Filter applications by owner")
 		c.fs.StringVar(&c.filter.owner, "u", "", "Filter applications by owner")
-		c.fs.BoolVar(&c.filter.locked, "locked", false, "Filter applications by lock status")
-		c.fs.BoolVar(&c.filter.locked, "l", false, "Filter applications by lock status")
 		c.fs.BoolVar(&c.simplified, "q", false, "Display only applications name")
 		c.fs.BoolVar(&c.json, "json", false, "Display applications in JSON format")
 		tagMessage := "Filter applications by tag. Can be used multiple times"
