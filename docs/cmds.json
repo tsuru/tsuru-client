@@ -616,7 +616,7 @@
   },
   "app-deploy-rollback-update": {
     "usage": "tsuru app-deploy-rollback-update [-a/--app appName] [-i/--image imageName] [-d/--disable] [-r/--reason reason]",
-    "desc": "Locks an existing image of an app. You can list images with \"tsuru app-deploy-list -a <appName>\"\n\n::\n\n    The [-i/--image] flag is the name of an app image.\n\n    The [-d/--disable] flag disables an image rollback. The default behavior (omitting this flag) is to enable it.\n\n    The [-r/--reason] flag lets the user tell why this action was needed.\n\n\nFlags:\n  \n  -a, --app (= \"\")\n      The name of the app.\n  -d, --disable  (= false)\n      Enables or disables the rollback on a specific image version\n  -i, --image (= \"\")\n      The image name for an app version\n  -r, --reason (= \"\")\n      The reason why the rollback has to be disabled\n  \n"
+    "desc": "Disables an existing image of an app. You can list images with \"tsuru app-deploy-list -a <appName>\"\n\n::\n\n    The [-i/--image] flag is the name of an app image.\n\n    The [-d/--disable] flag disables an image rollback. The default behavior (omitting this flag) is to enable it.\n\n    The [-r/--reason] flag lets the user tell why this action was needed.\n\n\nFlags:\n  \n  -a, --app (= \"\")\n      The name of the app.\n  -d, --disable  (= false)\n      Enables or disables the rollback on a specific image version\n  -i, --image (= \"\")\n      The image name for an app version\n  -r, --reason (= \"\")\n      The reason why the rollback has to be disabled\n  \n"
   },
   "cluster-remove": {
     "usage": "tsuru cluster-remove <name> [-y]",
