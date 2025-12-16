@@ -267,12 +267,6 @@ func (s *S) TestTeamInfoRun(c *check.C) {
             "deploys": 0,
             "description": "",
             "ip": "hello-test.100.17.0.1.nip.io",
-            "lock": {
-                "Locked": false,
-                "Reason": "",
-                "Owner": "",
-                "AcquireDate": "0001-01-01T00:00:00Z"
-            },
             "name": "hello-test",
             "owner": "guiferpa@gmail.com",
             "plan": {

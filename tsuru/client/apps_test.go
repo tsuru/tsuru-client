@@ -1307,46 +1307,6 @@ Units: 3
 	c.Assert(stdout.String(), check.Equals, expected)
 }
 
-func (s *S) TestAppInfoLock(c *check.C) {
-	var stdout, stderr bytes.Buffer
-	result := `{"name":"app1","teamowner":"myteam","cname":[""],"ip":"myapp.tsuru.io","platform":"php","repository":"git@git.com:php.git","state":"dead", "units":[{"ID":"app1/0","Status":"started"}, {"ID":"app1/1","Status":"started"}, {"Ip":"","ID":"app1/2","Status":"pending"}],"teams":["tsuruteam","crane"], "owner": "myapp_owner", "deploys": 7, "lock": {"locked": true, "owner": "admin@example.com", "reason": "DELETE /apps/rbsample/units", "acquiredate": "2012-04-01T10:32:00Z"}, "router": "planb"}`
-	expected := `Application: app1
-Platform: php
-Router: planb
-Teams: myteam (owner), tsuruteam, crane
-External Addresses: myapp.tsuru.io
-Created by: myapp_owner
-Deploys: 7
-Pool:
-Lock:
- Acquired in: %s
- Owner: admin@example.com
- Running: DELETE /apps/rbsample/units
-Quota: 0/0 units
-
-Units: 3
-+--------+---------+------+------+
-| Name   | Status  | Host | Port |
-+--------+---------+------+------+
-| app1/0 | started |      |      |
-| app1/1 | started |      |      |
-| app1/2 | pending |      |      |
-+--------+---------+------+------+
-
-`
-	expected = fmt.Sprintf(expected, time.Date(2012, time.April, 1, 10, 32, 0, 0, time.UTC))
-	context := cmd.Context{
-		Stdout: &stdout,
-		Stderr: &stderr,
-	}
-	s.setupFakeTransport(&cmdtest.Transport{Message: result, Status: http.StatusOK})
-	command := AppInfo{}
-	command.Flags().Parse(true, []string{"--app", "app1"})
-	err := command.Run(&context)
-	c.Assert(err, check.IsNil)
-	c.Assert(stdout.String(), check.Equals, expected)
-}
-
 func (s *S) TestAppInfoManyProcesses(c *check.C) {
 	var stdout, stderr bytes.Buffer
 	result := `{
@@ -2621,13 +2581,12 @@ func (s *S) TestAppListFiltering(c *check.C) {
 	}
 	s.setupFakeTransport(&transport)
 	command := AppList{}
-	command.Flags().Parse(true, []string{"-p", "python", "--locked", "--user", "glenda@tsuru.io", "-t", "tsuru", "--name", "myapp", "--pool", "pool", "--status", "started", "--tag", "tag a", "--tag", "tag b"})
+	command.Flags().Parse(true, []string{"-p", "python", "--user", "glenda@tsuru.io", "-t", "tsuru", "--name", "myapp", "--pool", "pool", "--status", "started", "--tag", "tag a", "--tag", "tag b"})
 	err := command.Run(&context)
 	c.Assert(err, check.IsNil)
 	c.Assert(stdout.String(), check.Equals, expected)
 	queryString := url.Values(map[string][]string{
 		"platform":  {"python"},
-		"locked":    {"true"},
 		"owner":     {"glenda@tsuru.io"},
 		"teamOwner": {"tsuru"},
 		"name":      {"myapp"},

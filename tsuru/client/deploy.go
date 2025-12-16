@@ -496,7 +496,7 @@ type AppDeployRollbackUpdate struct {
 }
 
 func (c *AppDeployRollbackUpdate) Info() *cmd.Info {
-	desc := `Locks an existing image of an app. You can list images with "tsuru app deploy list -a <appName>"
+	desc := `Disables an existing image of an app. You can list images with "tsuru app deploy list -a <appName>"
 
 ::
 

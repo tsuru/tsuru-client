@@ -582,9 +582,6 @@ the maximum number of units that an application may have.
 Other commands
 ==============
 
-.. tsuru-command:: app-unlock
-  :title: Unlock an application
-
 .. tsuru-command:: tag-list
   :title: List tags with their associated apps and service instances
 
