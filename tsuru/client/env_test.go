@@ -312,7 +312,10 @@ func (s *S) TestEnvSetValues(c *check.C) {
 	command.Flags().Parse(true, []string{"-a", "someapp"})
 	err = command.Run(&context)
 	c.Assert(err, check.IsNil)
-	c.Assert(stdout.String(), check.Equals, expectedOut)
+	output := stdout.String()
+	c.Assert(strings.Contains(output, "Warning: The environment variable 'DATABASE_PASSWORD' looks like a sensitive variable"), check.Equals, true)
+	c.Assert(strings.Contains(output, "Warning: The environment variable 'SOME_PASSWORD' looks like a sensitive variable"), check.Equals, true)
+	c.Assert(strings.Contains(output, expectedOut), check.Equals, true)
 }
 
 func (s *S) TestEnvSetValuesAndPrivateAndNoRestart(c *check.C) {
@@ -724,7 +727,10 @@ func (s *S) TestJobEnvSetValues(c *check.C) {
 	command.Flags().Parse(true, []string{"-j", "sample-job"})
 	err = command.Run(&context)
 	c.Assert(err, check.IsNil)
-	c.Assert(stdout.String(), check.Equals, expectedOut)
+	output := stdout.String()
+	c.Assert(strings.Contains(output, "Warning: The environment variable 'DATABASE_PASSWORD' looks like a sensitive variable"), check.Equals, true)
+	c.Assert(strings.Contains(output, "Warning: The environment variable 'SOME_PASSWORD' looks like a sensitive variable"), check.Equals, true)
+	c.Assert(strings.Contains(output, expectedOut), check.Equals, true)
 }
 
 func (s *S) TestJobEnvSetValuesAndPrivate(c *check.C) {
@@ -861,4 +867,121 @@ func (s *S) TestCheckAppAndJobInputsPassingBothAppAndJob(c *check.C) {
 	err := command.Run(&ctx)
 	c.Assert(err, check.NotNil)
 	c.Assert(err.Error(), check.Equals, "you must pass an application or job, not both")
+}
+
+func (s *S) TestIsSensitiveName(c *check.C) {
+	tests := []struct {
+		name     string
+		expected bool
+	}{
+		{"DATABASE_PASSWORD", true},
+		{"PASSWORD", true},
+		{"MY_PASSWORD", true},
+		{"PASSWORD_HASH", true},
+		{"API_KEY", true},
+		{"APIKEY", true},
+		{"MY_APIKEY", true},
+		{"SECRET", true},
+		{"MY_SECRET", true},
+		{"SECRET_VALUE", true},
+		{"TOKEN", true},
+		{"ACCESS_TOKEN", true},
+		{"MY_TOKEN", true},
+		{"KEY", true},
+		{"ENCRYPTION_KEY", true},
+		{"PRIVATE_KEY", true},
+		{"CREDENTIAL", true},
+		{"AWS_CREDENTIAL", true},
+		{"MY_CREDENTIAL", true},
+		{"DATABASE_HOST", false},
+		{"DATABASE_USER", false},
+		{"PORT", false},
+		{"ENVIRONMENT", false},
+		{"MY_VARIABLE", false},
+		{"lowercase_password", true},
+		{"MixedCase_Token", true},
+		{"my_api_key", true},
+	}
+
+	for _, tt := range tests {
+		result := isSensitiveName(tt.name)
+		c.Assert(result, check.Equals, tt.expected, check.Commentf("Expected %s to be %v", tt.name, tt.expected))
+	}
+}
+
+func (s *S) TestEnvSetWithSensitiveVariableWarning(c *check.C) {
+	var stdout, stderr bytes.Buffer
+	context := cmd.Context{
+		Args: []string{
+			"DATABASE_HOST=localhost",
+			"API_KEY=my-secret-key",
+			"DATABASE_PASSWORD=secret123",
+		},
+		Stdout: &stdout,
+		Stderr: &stderr,
+	}
+	expectedOut := "variable(s) successfully exported\n"
+	msg := io.SimpleJsonMessage{Message: expectedOut}
+	result, err := json.Marshal(msg)
+	c.Assert(err, check.IsNil)
+	s.setupFakeTransport(&cmdtest.Transport{Message: string(result), Status: http.StatusOK})
+	command := EnvSet{}
+	command.Flags().Parse(true, []string{"-a", "someapp"})
+	err = command.Run(&context)
+	c.Assert(err, check.IsNil)
+	output := stdout.String()
+	c.Assert(strings.Contains(output, "Warning: The environment variable 'API_KEY' looks like a sensitive variable"), check.Equals, true)
+	c.Assert(strings.Contains(output, "Warning: The environment variable 'DATABASE_PASSWORD' looks like a sensitive variable"), check.Equals, true)
+	c.Assert(strings.Contains(output, "DATABASE_HOST"), check.Equals, false)
+}
+
+func (s *S) TestEnvSetWithSensitiveVariableAndPrivateFlag(c *check.C) {
+	var stdout, stderr bytes.Buffer
+	context := cmd.Context{
+		Args: []string{
+			"API_KEY=my-secret-key",
+			"DATABASE_PASSWORD=secret123",
+		},
+		Stdout: &stdout,
+		Stderr: &stderr,
+	}
+	expectedOut := "variable(s) successfully exported\n"
+	msg := io.SimpleJsonMessage{Message: expectedOut}
+	result, err := json.Marshal(msg)
+	c.Assert(err, check.IsNil)
+	s.setupFakeTransport(&cmdtest.Transport{Message: string(result), Status: http.StatusOK})
+	command := EnvSet{}
+	command.Flags().Parse(true, []string{"-a", "someapp", "-p"})
+	err = command.Run(&context)
+	c.Assert(err, check.IsNil)
+	output := stdout.String()
+	// Should not show warning when using -p flag
+	c.Assert(strings.Contains(output, "Warning"), check.Equals, false)
+	c.Assert(strings.Contains(output, expectedOut), check.Equals, true)
+}
+
+func (s *S) TestEnvSetWithNonSensitiveVariables(c *check.C) {
+	var stdout, stderr bytes.Buffer
+	context := cmd.Context{
+		Args: []string{
+			"DATABASE_HOST=localhost",
+			"DATABASE_USER=root",
+			"PORT=3000",
+		},
+		Stdout: &stdout,
+		Stderr: &stderr,
+	}
+	expectedOut := "variable(s) successfully exported\n"
+	msg := io.SimpleJsonMessage{Message: expectedOut}
+	result, err := json.Marshal(msg)
+	c.Assert(err, check.IsNil)
+	s.setupFakeTransport(&cmdtest.Transport{Message: string(result), Status: http.StatusOK})
+	command := EnvSet{}
+	command.Flags().Parse(true, []string{"-a", "someapp"})
+	err = command.Run(&context)
+	c.Assert(err, check.IsNil)
+	output := stdout.String()
+	// Should not show any warnings for non-sensitive variables
+	c.Assert(strings.Contains(output, "Warning"), check.Equals, false)
+	c.Assert(strings.Contains(output, expectedOut), check.Equals, true)
 }
