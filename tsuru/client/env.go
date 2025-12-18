@@ -197,6 +197,12 @@ func (c *EnvSet) Run(context *cmd.Context) error {
 		apiVersion = "1.0"
 	}
 
+	for _, env := range envs {
+		if isSensitiveName(env.Name) && !c.private {
+			fmt.Fprintf(context.Stdout, "Warning: The environment variable '%s' looks like a sensitive variable. It is recommended to set it as private using the -p or --private flag.\n", env.Name)
+		}
+	}
+
 	url, err := config.GetURLVersion(apiVersion, path)
 	if err != nil {
 		return err
@@ -216,6 +222,26 @@ func (c *EnvSet) Run(context *cmd.Context) error {
 		return err
 	}
 	return formatter.StreamJSONResponse(context.Stdout, response)
+}
+
+var SENSITIVE_KEYWORDS = map[string]struct{}{
+	"KEY":        {},
+	"TOKEN":      {},
+	"SECRET":     {},
+	"PASSWORD":   {},
+	"CREDENTIAL": {},
+	"API_KEY":    {},
+	"APIKEY":     {},
+}
+
+func isSensitiveName(name string) bool {
+	upperName := strings.ToUpper(name)
+	for keyword := range SENSITIVE_KEYWORDS {
+		if strings.Contains(upperName, keyword) {
+			return true
+		}
+	}
+	return false
 }
 
 func (c *EnvSet) Flags() *gnuflag.FlagSet {
