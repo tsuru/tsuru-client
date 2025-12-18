@@ -42,7 +42,7 @@ func (s *S) TestJobCreate(c *check.C) {
 				Name:      "loucoAbreu",
 				Pool:      "somepool",
 				TeamOwner: "admin",
-				Container: tsuru.InputJobContainer{
+				Container: tsuru.JobSpecContainer{
 					Image:   "ubuntu:latest",
 					Command: []string{"/bin/sh", "-c", "echo Botafogo is in my heart"},
 				},
@@ -84,7 +84,7 @@ func (s *S) TestJobCreateWithEmptyCommand(c *check.C) {
 				Name:      "job-using-entrypoint",
 				Pool:      "somepool",
 				TeamOwner: "admin",
-				Container: tsuru.InputJobContainer{
+				Container: tsuru.JobSpecContainer{
 					Image: "ubuntu:latest",
 				},
 				Schedule: "* * * * *",
@@ -125,7 +125,7 @@ func (s *S) TestJobCreateManual(c *check.C) {
 				Pool:      "somepool",
 				TeamOwner: "admin",
 				Manual:    true,
-				Container: tsuru.InputJobContainer{
+				Container: tsuru.JobSpecContainer{
 					Image:   "ubuntu:latest",
 					Command: []string{"/bin/sh", "-c", "echo digital love"},
 				},
@@ -559,7 +559,7 @@ func (s *S) TestJobList(c *check.C) {
 		Spec: tsuru.JobSpec{
 			Schedule: "* * * * *",
 			Manual:   false,
-			Container: tsuru.InputJobContainer{
+			Container: tsuru.JobSpecContainer{
 				Image:   "fearless:latest",
 				Command: []string{"sleep", "30"},
 			},
@@ -578,7 +578,7 @@ func (s *S) TestJobList(c *check.C) {
 		Spec: tsuru.JobSpec{
 			Schedule: "* * 31 2 *",
 			Manual:   true,
-			Container: tsuru.InputJobContainer{
+			Container: tsuru.JobSpecContainer{
 				Image:   "midnights:v10",
 				Command: []string{"/bin/sh", "-c", "date; echo Hello from the Kubernetes cluster"},
 			},
@@ -740,7 +740,7 @@ func (s *S) TestJobUpdate(c *check.C) {
 			c.Assert(err, check.IsNil)
 			c.Assert(rr, check.DeepEquals, tsuru.InputJob{
 				Name: "tulioMaravilha",
-				Container: tsuru.InputJobContainer{
+				Container: tsuru.JobSpecContainer{
 					Image:   "tsuru/scratch:latest",
 					Command: []string{"/bin/sh", "-c", "echo we like you"},
 				},
@@ -781,7 +781,7 @@ func (s *S) TestJobUpdateJSONCommands(c *check.C) {
 			c.Assert(err, check.IsNil)
 			c.Assert(rr, check.DeepEquals, tsuru.InputJob{
 				Name: "tulioMaravilha",
-				Container: tsuru.InputJobContainer{
+				Container: tsuru.JobSpecContainer{
 					Image:   "tsuru/scratch:latest",
 					Command: []string{"/bin/sh", "-c", "echo we like you"},
 				},

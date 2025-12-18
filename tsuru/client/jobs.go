@@ -176,7 +176,7 @@ func (c *JobCreate) Run(ctx *cmd.Context) error {
 		TeamOwner:             c.teamOwner,
 		Manual:                c.manual,
 		ActiveDeadlineSeconds: activeDeadlineSecondsResult,
-		Container: tsuru.InputJobContainer{
+		Container: tsuru.JobSpecContainer{
 			Image:   image,
 			Command: parsedCommands,
 		},
@@ -599,7 +599,7 @@ func (c *JobUpdate) Run(ctx *cmd.Context) error {
 		Description:           c.description,
 		TeamOwner:             c.teamOwner,
 		ActiveDeadlineSeconds: activeDeadlineSecondsResult,
-		Container: tsuru.InputJobContainer{
+		Container: tsuru.JobSpecContainer{
 			Image:   c.image,
 			Command: jobUpdateCommands,
 		},
