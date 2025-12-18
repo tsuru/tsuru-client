@@ -2320,6 +2320,105 @@ Cluster internal addresses:
 	c.Assert(stdout.String(), check.Equals, expected)
 }
 
+func (s *S) TestAppInfoWithInternalAddressesNoTargetPort(c *check.C) {
+	var stdout, stderr bytes.Buffer
+	result := `{"name":"app1","teamowner":"myteam","ip":"app1.tsuru.io","platform":"go","repository":"git@git.com:app.git","state":"ready","units":[],"teams":["myteam"],"owner":"myapp_owner","deploys":1,"router":"","internalAddresses":[{"domain":"app1.internal","port":8080,"protocol":"TCP","process":"web","version":"1"}]}`
+	expected := `Application: app1
+Platform: go
+Router:
+Teams: myteam (owner)
+External Addresses: app1.tsuru.io
+Created by: myapp_owner
+Deploys: 1
+Pool:
+Quota: 0/0 units
+
+Cluster internal addresses:
++---------------+----------+---------+---------+
+| Domain        | Port     | Process | Version |
++---------------+----------+---------+---------+
+| app1.internal | 8080/TCP | web     | 1       |
++---------------+----------+---------+---------+
+
+`
+	context := cmd.Context{
+		Stdout: &stdout,
+		Stderr: &stderr,
+	}
+	s.setupFakeTransport(&cmdtest.Transport{Message: result, Status: http.StatusOK})
+	command := AppInfo{}
+	command.Flags().Parse(true, []string{"--app", "app1"})
+	err := command.Run(&context)
+	c.Assert(err, check.IsNil)
+	c.Assert(stdout.String(), check.Equals, expected)
+}
+
+func (s *S) TestAppInfoWithInternalAddressesMatchingTargetPort(c *check.C) {
+	var stdout, stderr bytes.Buffer
+	result := `{"name":"app1","teamowner":"myteam","ip":"app1.tsuru.io","platform":"go","repository":"git@git.com:app.git","state":"ready","units":[],"teams":["myteam"],"owner":"myapp_owner","deploys":1,"router":"","internalAddresses":[{"domain":"app1.internal","port":8080,"targetPort":8080,"protocol":"TCP","process":"web","version":"1"}]}`
+	expected := `Application: app1
+Platform: go
+Router:
+Teams: myteam (owner)
+External Addresses: app1.tsuru.io
+Created by: myapp_owner
+Deploys: 1
+Pool:
+Quota: 0/0 units
+
+Cluster internal addresses:
++---------------+----------+---------+---------+
+| Domain        | Port     | Process | Version |
++---------------+----------+---------+---------+
+| app1.internal | 8080/TCP | web     | 1       |
++---------------+----------+---------+---------+
+
+`
+	context := cmd.Context{
+		Stdout: &stdout,
+		Stderr: &stderr,
+	}
+	s.setupFakeTransport(&cmdtest.Transport{Message: result, Status: http.StatusOK})
+	command := AppInfo{}
+	command.Flags().Parse(true, []string{"--app", "app1"})
+	err := command.Run(&context)
+	c.Assert(err, check.IsNil)
+	c.Assert(stdout.String(), check.Equals, expected)
+}
+
+func (s *S) TestAppInfoWithInternalAddressesDifferentTargetPort(c *check.C) {
+	var stdout, stderr bytes.Buffer
+	result := `{"name":"app1","teamowner":"myteam","ip":"app1.tsuru.io","platform":"go","repository":"git@git.com:app.git","state":"ready","units":[],"teams":["myteam"],"owner":"myapp_owner","deploys":1,"router":"","internalAddresses":[{"domain":"app1.internal","port":80,"targetPort":8080,"protocol":"TCP","process":"web","version":"1"}]}`
+	expected := `Application: app1
+Platform: go
+Router:
+Teams: myteam (owner)
+External Addresses: app1.tsuru.io
+Created by: myapp_owner
+Deploys: 1
+Pool:
+Quota: 0/0 units
+
+Cluster internal addresses:
++---------------+--------------+---------+---------+
+| Domain        | Port         | Process | Version |
++---------------+--------------+---------+---------+
+| app1.internal | 80->8080/TCP | web     | 1       |
++---------------+--------------+---------+---------+
+
+`
+	context := cmd.Context{
+		Stdout: &stdout,
+		Stderr: &stderr,
+	}
+	s.setupFakeTransport(&cmdtest.Transport{Message: result, Status: http.StatusOK})
+	command := AppInfo{}
+	command.Flags().Parse(true, []string{"--app", "app1"})
+	err := command.Run(&context)
+	c.Assert(err, check.IsNil)
+	c.Assert(stdout.String(), check.Equals, expected)
+}
+
 func (s *S) TestAppInfoWithVolume(c *check.C) {
 	var stdout, stderr bytes.Buffer
 	expected := `Application: app1

@@ -672,9 +672,14 @@ func (a *app) String(simplified bool) string {
 	internalAddressesTable := tablecli.NewTable()
 	internalAddressesTable.Headers = []string{"Domain", "Port", "Process", "Version"}
 	for _, internalAddress := range a.InternalAddresses {
+		port := strconv.Itoa(int(internalAddress.Port))
+		if internalAddress.TargetPort > 0 && int(internalAddress.Port) != internalAddress.TargetPort {
+			port = fmt.Sprintf("%d->%d", internalAddress.Port, internalAddress.TargetPort)
+		}
+
 		internalAddressesTable.AddRow([]string{
 			internalAddress.Domain,
-			strconv.Itoa(int(internalAddress.Port)) + "/" + internalAddress.Protocol,
+			port + "/" + internalAddress.Protocol,
 			internalAddress.Process,
 			internalAddress.Version,
 		})
