@@ -39,7 +39,6 @@ func (c *EventBlockList) Flags() *gnuflag.FlagSet {
 	if c.fs == nil {
 		c.fs = gnuflag.NewFlagSet("", gnuflag.ExitOnError)
 		c.fs.BoolVar(&c.active, "active", false, "Display only active blocks.")
-		c.fs.BoolVar(&c.active, "a", false, "Display only active blocks.")
 	}
 	return c.fs
 }

@@ -20,6 +20,7 @@ import (
 	"github.com/tsuru/go-tsuruclient/pkg/config"
 	"github.com/tsuru/tsuru-client/tsuru/formatter"
 	tsuruHTTP "github.com/tsuru/tsuru-client/tsuru/http"
+	"github.com/tsuru/tsuru-client/tsuru/standards"
 	"github.com/tsuru/tsuru/cmd"
 	apiTypes "github.com/tsuru/tsuru/types/api"
 )
@@ -52,9 +53,9 @@ func (c *EnvGet) Flags() *gnuflag.FlagSet {
 		c.fs = gnuflag.NewFlagSet("", gnuflag.ExitOnError)
 
 		c.fs.StringVar(&c.appName, "app", "", "The name of the app.")
-		c.fs.StringVar(&c.appName, "a", "", "The name of the app.")
+		c.fs.StringVar(&c.appName, standards.ShortFlagApp, "", "The name of the app.")
 		c.fs.StringVar(&c.jobName, "job", "", "The name of the job.")
-		c.fs.StringVar(&c.jobName, "j", "", "The name of the job.")
+		c.fs.StringVar(&c.jobName, standards.ShortFlagJob, "", "The name of the job.")
 		c.fs.BoolVar(&c.json, "json", false, "Display JSON format")
 
 	}
@@ -249,9 +250,9 @@ func (c *EnvSet) Flags() *gnuflag.FlagSet {
 		c.fs = gnuflag.NewFlagSet("", gnuflag.ExitOnError)
 
 		c.fs.StringVar(&c.appName, "app", "", "The name of the app.")
-		c.fs.StringVar(&c.appName, "a", "", "The name of the app.")
+		c.fs.StringVar(&c.appName, standards.ShortFlagApp, "", "The name of the app.")
 		c.fs.StringVar(&c.jobName, "job", "", "The name of the job.")
-		c.fs.StringVar(&c.jobName, "j", "", "The name of the job.")
+		c.fs.StringVar(&c.jobName, standards.ShortFlagJob, "", "The name of the job.")
 		c.fs.BoolVar(&c.private, "private", false, "Private environment variables")
 		c.fs.BoolVar(&c.private, "p", false, "Private environment variables")
 		c.fs.BoolVar(&c.noRestart, "no-restart", false, "Sets environment varibles without restart the application")
@@ -271,9 +272,9 @@ func (c *EnvUnset) Flags() *gnuflag.FlagSet {
 		c.fs = gnuflag.NewFlagSet("", gnuflag.ExitOnError)
 
 		c.fs.StringVar(&c.appName, "app", "", "The name of the app.")
-		c.fs.StringVar(&c.appName, "a", "", "The name of the app.")
+		c.fs.StringVar(&c.appName, standards.ShortFlagApp, "", "The name of the app.")
 		c.fs.StringVar(&c.jobName, "job", "", "The name of the job.")
-		c.fs.StringVar(&c.jobName, "j", "", "The name of the job.")
+		c.fs.StringVar(&c.jobName, standards.ShortFlagJob, "", "The name of the job.")
 		c.fs.BoolVar(&c.noRestart, "no-restart", false, "Unset environment variables without restart the application")
 	}
 	return c.fs

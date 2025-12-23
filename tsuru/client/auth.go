@@ -23,6 +23,7 @@ import (
 	"github.com/tsuru/go-tsuruclient/pkg/tsuru"
 	"github.com/tsuru/tablecli"
 	tsuruHTTP "github.com/tsuru/tsuru-client/tsuru/http"
+	"github.com/tsuru/tsuru-client/tsuru/standards"
 	"github.com/tsuru/tsuru/cmd"
 	tsuruErrors "github.com/tsuru/tsuru/errors"
 )
@@ -172,7 +173,7 @@ type TeamCreate struct {
 func (c *TeamCreate) Info() *cmd.Info {
 	return &cmd.Info{
 		Name:  "team-create",
-		Usage: "team create <teamname> [--tag/-t tag]...",
+		Usage: "team create <teamname> [--tag tag]...",
 		Desc: `Create a team for the user. tsuru requires a user to be a member of at least
 one team in order to create an app or a service instance.
 
@@ -186,7 +187,6 @@ func (c *TeamCreate) Flags() *gnuflag.FlagSet {
 	if c.fs == nil {
 		c.fs = gnuflag.NewFlagSet("", gnuflag.ExitOnError)
 		c.fs.Var(&c.tags, "tag", "Sets tags to the team.")
-		c.fs.Var(&c.tags, "t", "Sets tags to the team.")
 	}
 	return c.fs
 }
@@ -219,9 +219,8 @@ func (t *TeamUpdate) Flags() *gnuflag.FlagSet {
 		t.fs = gnuflag.NewFlagSet("team-update", gnuflag.ExitOnError)
 		desc := "New team name."
 		t.fs.StringVar(&t.newName, "name", "", desc)
-		t.fs.StringVar(&t.newName, "n", "", desc)
+		t.fs.StringVar(&t.newName, standards.ShortFlagName, "", desc)
 		t.fs.Var(&t.tags, "tag", "New team tags.")
-		t.fs.Var(&t.tags, "t", "New team tags.")
 	}
 	return t.fs
 }
@@ -305,7 +304,7 @@ func (c *TeamList) Info() *cmd.Info {
 func (c *TeamList) Flags() *gnuflag.FlagSet {
 	if c.fs == nil {
 		c.fs = gnuflag.NewFlagSet("team-list", gnuflag.ExitOnError)
-		c.fs.BoolVar(&c.simplified, "q", false, "Display only team's name")
+		c.fs.BoolVar(&c.simplified, standards.ShortFlagOnlyName, false, "Display only team's name")
 	}
 	return c.fs
 }
@@ -600,7 +599,6 @@ func (c *ResetPassword) Run(context *cmd.Context) error {
 func (c *ResetPassword) Flags() *gnuflag.FlagSet {
 	fs := gnuflag.NewFlagSet("reset-password", gnuflag.ExitOnError)
 	fs.StringVar(&c.token, "token", "", "Token to reset the password")
-	fs.StringVar(&c.token, "t", "", "Token to reset the password")
 	return fs
 }
 
@@ -659,7 +657,7 @@ func (c *ShowAPIToken) Flags() *gnuflag.FlagSet {
 	if c.fs == nil {
 		c.fs = gnuflag.NewFlagSet("", gnuflag.ExitOnError)
 		c.fs.StringVar(&c.user, "user", "", "Shows API token for the given user email")
-		c.fs.StringVar(&c.user, "u", "", "Shows API token for the given user email")
+		c.fs.StringVar(&c.user, standards.ShortFlagUser, "", "Shows API token for the given user email")
 	}
 	return c.fs
 }
@@ -717,7 +715,7 @@ func (c *RegenerateAPIToken) Flags() *gnuflag.FlagSet {
 	if c.fs == nil {
 		c.fs = gnuflag.NewFlagSet("", gnuflag.ExitOnError)
 		c.fs.StringVar(&c.user, "user", "", "Generates a new API token for the given user email")
-		c.fs.StringVar(&c.user, "u", "", "Generates a new API token for the given user email")
+		c.fs.StringVar(&c.user, standards.ShortFlagUser, "", "Generates a new API token for the given user email")
 	}
 	return c.fs
 }
@@ -776,7 +774,7 @@ func (c *ListUsers) Flags() *gnuflag.FlagSet {
 	if c.fs == nil {
 		c.fs = gnuflag.NewFlagSet("", gnuflag.ExitOnError)
 		c.fs.StringVar(&c.userEmail, "user", "", "Filter user by user email")
-		c.fs.StringVar(&c.userEmail, "u", "", "Filter user by user email")
+		c.fs.StringVar(&c.userEmail, standards.ShortFlagUser, "", "Filter user by user email")
 		c.fs.StringVar(&c.role, "r", "", "Filter user by role")
 		c.fs.StringVar(&c.role, "role", "", "Filter user by role")
 		c.fs.StringVar(&c.context, "c", "", "Filter user by role context value")

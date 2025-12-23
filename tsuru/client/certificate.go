@@ -26,6 +26,7 @@ import (
 	tsuruClientApp "github.com/tsuru/tsuru-client/tsuru/app"
 	"github.com/tsuru/tsuru-client/tsuru/formatter"
 	tsuruHTTP "github.com/tsuru/tsuru-client/tsuru/http"
+	"github.com/tsuru/tsuru-client/tsuru/standards"
 	"github.com/tsuru/tsuru/cmd"
 )
 
@@ -49,7 +50,7 @@ func (c *CertificateSet) Flags() *gnuflag.FlagSet {
 		c.fs = c.AppNameMixIn.Flags()
 		cname := "App CNAME"
 		c.fs.StringVar(&c.cname, "cname", "", cname)
-		c.fs.StringVar(&c.cname, "c", "", cname)
+		c.fs.StringVar(&c.cname, standards.ShortFlagCNAME, "", cname)
 	}
 	return c.fs
 }
@@ -111,7 +112,7 @@ func (c *CertificateUnset) Flags() *gnuflag.FlagSet {
 		c.fs = c.AppNameMixIn.Flags()
 		cname := "App CNAME"
 		c.fs.StringVar(&c.cname, "cname", "", cname)
-		c.fs.StringVar(&c.cname, "c", "", cname)
+		c.fs.StringVar(&c.cname, standards.ShortFlagCNAME, "", cname)
 	}
 	return c.fs
 }
@@ -154,7 +155,7 @@ type CertificateList struct {
 func (c *CertificateList) Info() *cmd.Info {
 	return &cmd.Info{
 		Name:  "certificate-list",
-		Usage: "certificate list [-a/--app appname] [-r/--raw]",
+		Usage: "certificate list [-a/--app appname] [--raw]",
 		Desc:  `List App TLS certificates.`,
 	}
 }
@@ -162,9 +163,8 @@ func (c *CertificateList) Info() *cmd.Info {
 func (c *CertificateList) Flags() *gnuflag.FlagSet {
 	if c.fs == nil {
 		c.fs = c.AppNameMixIn.Flags()
-		c.fs.BoolVar(&c.raw, "r", false, "Display raw certificates")
 		c.fs.BoolVar(&c.raw, "raw", false, "Display raw certificates")
-		c.fs.BoolVar(&c.json, "json", false, "Display JSON format")
+		c.fs.BoolVar(&c.json, standards.FlagJSON, false, "Display JSON format")
 
 	}
 	return c.fs
@@ -396,7 +396,7 @@ func (c *CertificateIssuerSet) Flags() *gnuflag.FlagSet {
 		c.fs = c.AppNameMixIn.Flags()
 		cname := "App CNAME"
 		c.fs.StringVar(&c.cname, "cname", "", cname)
-		c.fs.StringVar(&c.cname, "c", "", cname)
+		c.fs.StringVar(&c.cname, standards.ShortFlagCNAME, "", cname)
 	}
 	return c.fs
 }
@@ -463,7 +463,7 @@ func (c *CertificateIssuerUnset) Flags() *gnuflag.FlagSet {
 
 		cname := "App CNAME"
 		c.fs.StringVar(&c.cname, "cname", "", cname)
-		c.fs.StringVar(&c.cname, "c", "", cname)
+		c.fs.StringVar(&c.cname, standards.ShortFlagCNAME, "", cname)
 	}
 	return c.fs
 }
