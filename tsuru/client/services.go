@@ -24,6 +24,7 @@ import (
 	"github.com/tsuru/tablecli"
 	"github.com/tsuru/tsuru-client/tsuru/formatter"
 	tsuruHTTP "github.com/tsuru/tsuru-client/tsuru/http"
+	"github.com/tsuru/tsuru-client/tsuru/standards"
 	"github.com/tsuru/tsuru/cmd"
 	"github.com/tsuru/tsuru/service"
 )
@@ -502,9 +503,9 @@ func (sb *ServiceInstanceBind) Flags() *gnuflag.FlagSet {
 		sb.fs = gnuflag.NewFlagSet("", gnuflag.ExitOnError)
 
 		sb.fs.StringVar(&sb.appName, "app", "", "The name of the app.")
-		sb.fs.StringVar(&sb.appName, "a", "", "The name of the app.")
+		sb.fs.StringVar(&sb.appName, standards.ShortFlagApp, "", "The name of the app.")
 		sb.fs.StringVar(&sb.jobName, "job", "", "The name of the job.")
-		sb.fs.StringVar(&sb.jobName, "j", "", "The name of the job.")
+		sb.fs.StringVar(&sb.jobName, standards.ShortFlagJob, "", "The name of the job.")
 		sb.fs.BoolVar(&sb.noRestart, "no-restart", false, "Binds an application to a service instance without restarting the application. Does not apply to jobs")
 	}
 	return sb.fs
@@ -572,9 +573,9 @@ func (su *ServiceInstanceUnbind) Flags() *gnuflag.FlagSet {
 		su.fs = gnuflag.NewFlagSet("", gnuflag.ExitOnError)
 
 		su.fs.StringVar(&su.appName, "app", "", "The name of the app.")
-		su.fs.StringVar(&su.appName, "a", "", "The name of the app.")
+		su.fs.StringVar(&su.appName, standards.ShortFlagApp, "", "The name of the app.")
 		su.fs.StringVar(&su.jobName, "job", "", "The name of the job.")
-		su.fs.StringVar(&su.jobName, "j", "", "The name of the job.")
+		su.fs.StringVar(&su.jobName, standards.ShortFlagJob, "", "The name of the job.")
 		su.fs.BoolVar(&su.noRestart, "no-restart", false, "Unbinds an application from a service instance without restarting the application. Does not apply to jobs")
 		su.fs.BoolVar(&su.force, "force", false, "Forces the unbind even if the unbind API call to the service fails")
 	}

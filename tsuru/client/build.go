@@ -33,9 +33,9 @@ func (c *AppBuild) Flags() *gnuflag.FlagSet {
 		c.fs = c.AppNameMixIn.Flags()
 		tag := "The image tag"
 		c.fs.StringVar(&c.tag, "tag", "", tag)
-		c.fs.StringVar(&c.tag, "t", "", tag)
+		//c.fs.StringVar(&c.tag, "t", "", tag)
 		filesOnly := "Enables single file build into the root of the app's tree"
-		c.fs.BoolVar(&c.filesOnly, "f", false, filesOnly)
+		//c.fs.BoolVar(&c.filesOnly, "f", false, filesOnly)
 		c.fs.BoolVar(&c.filesOnly, "files-only", false, filesOnly)
 	}
 	return c.fs
@@ -63,7 +63,7 @@ Examples:
 `
 	return &cmd.Info{
 		Name:    "app-build",
-		Usage:   "app build [-a/--app <appname>] [-t/--tag <image_tag>] [-f/--files-only] <file-or-dir-1> [file-or-dir-2] ... [file-or-dir-n]",
+		Usage:   "app build [-a/--app <appname>] [--tag <image_tag>] [--files-only] <file-or-dir-1> [file-or-dir-2] ... [file-or-dir-n]",
 		Desc:    desc,
 		MinArgs: 0,
 	}

@@ -89,7 +89,7 @@ func (c *AutoScaleSet) Flags() *gnuflag.FlagSet {
 		c.fs = c.AppNameMixIn.Flags()
 
 		c.fs.StringVar(&c.autoscale.Process, "process", "", "Process name")
-		c.fs.StringVar(&c.autoscale.Process, "p", "", "Process name")
+		//c.fs.StringVar(&c.autoscale.Process, "p", "", "Process name")
 
 		c.fs.StringVar(&c.autoscale.AverageCPU, "cpu", "", "Target CPU value in percent of app cpu plan. Example: 50%")
 

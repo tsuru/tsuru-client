@@ -30,6 +30,7 @@ import (
 	tsuruClientApp "github.com/tsuru/tsuru-client/tsuru/app"
 	"github.com/tsuru/tsuru-client/tsuru/formatter"
 	tsuruHTTP "github.com/tsuru/tsuru-client/tsuru/http"
+	"github.com/tsuru/tsuru-client/tsuru/standards"
 	"github.com/tsuru/tsuru/cmd"
 	appTypes "github.com/tsuru/tsuru/types/app"
 	bindTypes "github.com/tsuru/tsuru/types/bind"
@@ -94,8 +95,8 @@ func newUnitSorter(m map[string]int) *unitSorter {
 
 func (c *AppCreate) Info() *cmd.Info {
 	return &cmd.Info{
-		Name:  "app-create",
-		Usage: "app create <appname> [platform] [--plan/-p plan name] [--router/-r router name] [--team/-t team owner] [--pool/-o pool name] [--description/-d description] [--tag/-g tag]... [--router-opts key=value]...",
+		Name: "app-create",
+		//Usage: "app create <appname> [platform] [--plan/-p plan name] [--router/-r router name] [--team/-t team owner] [--pool/-o pool name] [--description/-d description] [--tag/-g tag]... [--router-opts key=value]...",
 		Desc: `Creates a new app using the given name and platform. For tsuru,
 a platform is provisioner dependent. To check the available platforms, use the
 command [[tsuru platform list]] and to add a platform use the command [[tsuru platform add]].
@@ -144,25 +145,31 @@ implementation.`,
 
 func (c *AppCreate) Flags() *gnuflag.FlagSet {
 	if c.fs == nil {
-		infoMessage := "The plan used to create the app"
 		c.fs = gnuflag.NewFlagSet("", gnuflag.ExitOnError)
-		c.fs.StringVar(&c.plan, "plan", "", infoMessage)
-		c.fs.StringVar(&c.plan, "p", "", infoMessage)
+
+		planMessage := "The plan used to create the app"
+		c.fs.StringVar(&c.plan, standards.FlagPlan, "", planMessage)
+		c.fs.StringVar(&c.plan, standards.ShortFlagPlan, "", planMessage)
+
 		routerMessage := "The router used by the app"
-		c.fs.StringVar(&c.router, "router", "", routerMessage)
-		c.fs.StringVar(&c.router, "r", "", routerMessage)
+		c.fs.StringVar(&c.router, standards.FlagRouter, "", routerMessage)
+		standards.DeprecatedString(c.fs, &c.router, "r", "", "Please use --router instead.")
+
 		teamMessage := "Team owner app"
-		c.fs.StringVar(&c.teamOwner, "team", "", teamMessage)
-		c.fs.StringVar(&c.teamOwner, "t", "", teamMessage)
+		c.fs.StringVar(&c.teamOwner, standards.FlagTeam, "", teamMessage)
+		c.fs.StringVar(&c.teamOwner, standards.ShortFlagTeam, "", teamMessage)
+
 		poolMessage := "Pool to deploy your app"
-		c.fs.StringVar(&c.pool, "pool", "", poolMessage)
-		c.fs.StringVar(&c.pool, "o", "", poolMessage)
+		c.fs.StringVar(&c.pool, standards.FlagPool, "", poolMessage)
+		standards.DeprecatedString(c.fs, &c.pool, "o", "", "Please use --pool instead.")
+
 		descriptionMessage := "App description"
-		c.fs.StringVar(&c.description, "description", "", descriptionMessage)
-		c.fs.StringVar(&c.description, "d", "", descriptionMessage)
+		c.fs.StringVar(&c.description, standards.FlagDescription, "", descriptionMessage)
+		c.fs.StringVar(&c.description, standards.ShortFlagDescription, "", descriptionMessage)
+
 		tagMessage := "App tag"
-		c.fs.Var(&c.tags, "tag", tagMessage)
-		c.fs.Var(&c.tags, "g", tagMessage)
+		c.fs.Var(&c.tags, standards.FlagTag, tagMessage)
+		standards.DeprecatedVar(c.fs, &c.tags, "g", "Please use --tag instead.")
 		c.fs.Var(&c.routerOpts, "router-opts", "Router options")
 	}
 	return c.fs
@@ -245,21 +252,27 @@ func (c *AppUpdate) Flags() *gnuflag.FlagSet {
 		platformMsg := "Changes platform for the app"
 		imgReset := "Forces next deploy to build app image from scratch"
 		noRestartMessage := "Prevent tsuru from restarting the application"
-		flagSet.StringVar(&c.args.Description, "description", "", descriptionMessage)
-		flagSet.StringVar(&c.args.Description, "d", "", descriptionMessage)
-		flagSet.StringVar(&c.args.Plan, "plan", "", planMessage)
-		flagSet.StringVar(&c.args.Plan, "p", "", planMessage)
-		flagSet.StringVar(&c.args.Platform, "l", "", platformMsg)
-		flagSet.StringVar(&c.args.Platform, "platform", "", platformMsg)
-		flagSet.StringVar(&c.args.Pool, "o", "", poolMessage)
-		flagSet.StringVar(&c.args.Pool, "pool", "", poolMessage)
-		flagSet.BoolVar(&c.args.ImageReset, "i", false, imgReset)
+
+		flagSet.StringVar(&c.args.Description, standards.FlagDescription, "", descriptionMessage)
+		flagSet.StringVar(&c.args.Description, standards.ShortFlagDescription, "", descriptionMessage)
+		flagSet.StringVar(&c.args.Plan, standards.FlagPlan, "", planMessage)
+		flagSet.StringVar(&c.args.Plan, standards.ShortFlagPlan, "", planMessage)
+
+		standards.DeprecatedString(flagSet, &c.args.Platform, "l", "", platformMsg)
+
+		flagSet.StringVar(&c.args.Platform, standards.FlagPlatform, "", platformMsg)
+		standards.DeprecatedString(flagSet, &c.args.Pool, "o", "", poolMessage)
+		flagSet.StringVar(&c.args.Pool, standards.FlagPool, "", poolMessage)
+		standards.DeprecatedBool(flagSet, &c.args.ImageReset, "i", false, imgReset)
 		flagSet.BoolVar(&c.args.ImageReset, "image-reset", false, imgReset)
-		flagSet.BoolVar(&c.args.NoRestart, "no-restart", false, noRestartMessage)
-		flagSet.StringVar(&c.args.TeamOwner, "t", "", teamOwnerMessage)
-		flagSet.StringVar(&c.args.TeamOwner, "team-owner", "", teamOwnerMessage)
-		flagSet.Var((*cmd.StringSliceFlag)(&c.args.Tags), "g", tagMessage)
-		flagSet.Var((*cmd.StringSliceFlag)(&c.args.Tags), "tag", tagMessage)
+		flagSet.BoolVar(&c.args.NoRestart, standards.FlagNoRestart, false, noRestartMessage)
+		flagSet.StringVar(&c.args.TeamOwner, standards.ShortFlagTeam, "", teamOwnerMessage)
+
+		flagSet.StringVar(&c.args.TeamOwner, standards.FlagTeam, "", teamOwnerMessage)
+		standards.DeprecatedString(flagSet, &c.args.TeamOwner, "team-owner", "", teamOwnerMessage)
+
+		standards.DeprecatedVar(flagSet, (*cmd.StringSliceFlag)(&c.args.Tags), "g", tagMessage)
+		flagSet.Var((*cmd.StringSliceFlag)(&c.args.Tags), standards.FlagTag, tagMessage)
 		flagSet.StringVar(&c.cpu, "cpu", "", "CPU limit for app, this will override the plan cpu value. One cpu is equivalent to 1 vCPU/Core, fractional requests are allowed and the expression 0.1 is equivalent to the expression 100m")
 		flagSet.StringVar(&c.cpuBurst, "cpu-burst-factor", "", "The multiplier to determine the limits of the CPU burst. Setting 1 disables burst")
 
@@ -410,8 +423,8 @@ func (cmd *AppInfo) Flags() *gnuflag.FlagSet {
 	fs := cmd.AppNameMixIn.Flags()
 	if !cmd.flagsApplied {
 		fs.BoolVar(&cmd.simplified, "simplified", false, "Show simplified view of app")
-		fs.BoolVar(&cmd.simplified, "s", false, "Show simplified view of app")
-		fs.BoolVar(&cmd.json, "json", false, "Show JSON view of app")
+		standards.DeprecatedBool(fs, &cmd.simplified, "s", false, "Show simplified view of app")
+		fs.BoolVar(&cmd.json, standards.FlagJSON, false, "Show JSON view of app")
 
 		cmd.flagsApplied = true
 	}
@@ -1430,23 +1443,25 @@ func (c *AppList) Show(result []byte, context *cmd.Context) error {
 func (c *AppList) Flags() *gnuflag.FlagSet {
 	if c.fs == nil {
 		c.fs = gnuflag.NewFlagSet("app-list", gnuflag.ExitOnError)
-		c.fs.StringVar(&c.filter.name, "name", "", "Filter applications by name")
-		c.fs.StringVar(&c.filter.name, "n", "", "Filter applications by name")
-		c.fs.StringVar(&c.filter.pool, "pool", "", "Filter applications by pool")
-		c.fs.StringVar(&c.filter.pool, "o", "", "Filter applications by pool")
+		c.fs.StringVar(&c.filter.name, standards.FlagName, "", "Filter applications by name")
+		c.fs.StringVar(&c.filter.name, standards.ShortFlagName, "", "Filter applications by name")
+		c.fs.StringVar(&c.filter.pool, standards.FlagPool, "", "Filter applications by pool")
+
+		standards.DeprecatedString(c.fs, &c.filter.pool, "o", "", "Please use --pool instead.")
+
 		c.fs.StringVar(&c.filter.status, "status", "", "Filter applications by unit status. Accepts multiple values separated by commas. Possible values can be: building, created, starting, error, started, stopped, asleep")
-		c.fs.StringVar(&c.filter.status, "s", "", "Filter applications by unit status. Accepts multiple values separated by commas. Possible values can be: building, created, starting, error, started, stopped, asleep")
+		//c.fs.StringVar(&c.filter.status, "s", "", "Filter applications by unit status. Accepts multiple values separated by commas. Possible values can be: building, created, starting, error, started, stopped, asleep")
 		c.fs.StringVar(&c.filter.platform, "platform", "", "Filter applications by platform")
-		c.fs.StringVar(&c.filter.platform, "p", "", "Filter applications by platform")
+		//c.fs.StringVar(&c.filter.platform, "p", "", "Filter applications by platform")
 		c.fs.StringVar(&c.filter.teamOwner, "team", "", "Filter applications by team owner")
-		c.fs.StringVar(&c.filter.teamOwner, "t", "", "Filter applications by team owner")
-		c.fs.StringVar(&c.filter.owner, "user", "", "Filter applications by owner")
-		c.fs.StringVar(&c.filter.owner, "u", "", "Filter applications by owner")
-		c.fs.BoolVar(&c.simplified, "q", false, "Display only applications name")
-		c.fs.BoolVar(&c.json, "json", false, "Display applications in JSON format")
+		c.fs.StringVar(&c.filter.teamOwner, standards.ShortFlagTeam, "", "Filter applications by team owner")
+		c.fs.StringVar(&c.filter.owner, "user", "", "Filter applications by created by user")
+		c.fs.StringVar(&c.filter.owner, standards.ShortFlagUser, "", "Filter applications by created by user")
+		c.fs.BoolVar(&c.simplified, standards.ShortFlagOnlyName, false, "Display only applications name")
+		c.fs.BoolVar(&c.json, standards.FlagJSON, false, "Display applications in JSON format")
 		tagMessage := "Filter applications by tag. Can be used multiple times"
 		c.fs.Var(&c.filter.tags, "tag", tagMessage)
-		c.fs.Var(&c.filter.tags, "g", tagMessage)
+		//c.fs.Var(&c.filter.tags, "g", tagMessage)
 	}
 	return c.fs
 }
@@ -1508,7 +1523,7 @@ func (c *AppStop) Flags() *gnuflag.FlagSet {
 	if c.fs == nil {
 		c.fs = c.AppNameMixIn.Flags()
 		c.fs.StringVar(&c.process, "process", "", "Process name")
-		c.fs.StringVar(&c.process, "p", "", "Process name")
+		//c.fs.StringVar(&c.process, "p", "", "Process name")
 		c.fs.StringVar(&c.version, "version", "", "Version number")
 	}
 	return c.fs
@@ -1560,7 +1575,7 @@ func (c *AppStart) Flags() *gnuflag.FlagSet {
 	if c.fs == nil {
 		c.fs = c.AppNameMixIn.Flags()
 		c.fs.StringVar(&c.process, "process", "", "Process name")
-		c.fs.StringVar(&c.process, "p", "", "Process name")
+		//c.fs.StringVar(&c.process, "p", "", "Process name")
 		c.fs.StringVar(&c.version, "version", "", "Version number")
 	}
 	return c.fs
@@ -1612,7 +1627,7 @@ func (c *AppRestart) Flags() *gnuflag.FlagSet {
 	if c.fs == nil {
 		c.fs = c.AppNameMixIn.Flags()
 		c.fs.StringVar(&c.process, "process", "", "Process name")
-		c.fs.StringVar(&c.process, "p", "", "Process name")
+		//c.fs.StringVar(&c.process, "p", "", "Process name")
 		c.fs.StringVar(&c.version, "version", "", "Version number")
 	}
 	return c.fs
@@ -1735,7 +1750,7 @@ func (c *AppProcessUpdate) Flags() *gnuflag.FlagSet {
 		planReset := "Reset process to default plan of app"
 		noRestartMessage := "Prevent tsuru from restarting the application"
 		flagSet.StringVar(&c.plan, "plan", "", planMessage)
-		flagSet.StringVar(&c.plan, "p", "", planMessage)
+		flagSet.StringVar(&c.plan, standards.ShortFlagPlan, "", planMessage)
 		flagSet.BoolVar(&c.resetDefaultPlan, "default-plan", false, planReset)
 		flagSet.BoolVar(&c.noRestart, "no-restart", false, noRestartMessage)
 		c.fs = flagSet

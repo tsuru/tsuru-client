@@ -7,6 +7,7 @@ package app
 import (
 	"github.com/pkg/errors"
 	"github.com/tsuru/gnuflag"
+	"github.com/tsuru/tsuru-client/tsuru/standards"
 )
 
 type AppNameMixIn struct {
@@ -41,7 +42,7 @@ func (cmd *AppNameMixIn) Flags() *gnuflag.FlagSet {
 	if cmd.fs == nil {
 		cmd.fs = gnuflag.NewFlagSet("", gnuflag.ExitOnError)
 		cmd.fs.StringVar(&cmd.appName, "app", "", "The name of the app.")
-		cmd.fs.StringVar(&cmd.appName, "a", "", "The name of the app.")
+		cmd.fs.StringVar(&cmd.appName, standards.ShortFlagApp, "", "The name of the app.")
 	}
 	return cmd.fs
 }
