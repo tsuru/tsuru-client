@@ -11,8 +11,8 @@ import (
 	"strings"
 
 	"github.com/tsuru/go-tsuruclient/pkg/config"
-	"github.com/tsuru/tsuru/cmd"
-	"github.com/tsuru/tsuru/cmd/cmdtest"
+	"github.com/tsuru/tsuru-client/tsuru/cmd"
+	"github.com/tsuru/tsuru-client/tsuru/cmd/cmdtest"
 	"github.com/tsuru/tsuru/fs/fstest"
 	"github.com/tsuru/tsuru/types/auth"
 	"gopkg.in/check.v1"

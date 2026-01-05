@@ -5,7 +5,7 @@ import (
 	"net/http"
 	"os"
 
-	"github.com/tsuru/tsuru/cmd/cmdtest"
+	"github.com/tsuru/tsuru-client/tsuru/cmd/cmdtest"
 	check "gopkg.in/check.v1"
 )
 

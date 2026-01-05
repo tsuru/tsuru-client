@@ -19,9 +19,9 @@ import (
 	"github.com/tsuru/tsuru-client/tsuru/admin"
 	"github.com/tsuru/tsuru-client/tsuru/auth"
 	"github.com/tsuru/tsuru-client/tsuru/client"
+	"github.com/tsuru/tsuru-client/tsuru/cmd"
 	"github.com/tsuru/tsuru-client/tsuru/config/selfupdater"
 	tsuruHTTP "github.com/tsuru/tsuru-client/tsuru/http"
-	"github.com/tsuru/tsuru/cmd"
 	tsuruErrors "github.com/tsuru/tsuru/errors"
 	"golang.org/x/oauth2"
 )
@@ -104,10 +104,10 @@ func buildManagerCustom(name string, stdout, stderr io.Writer) *cmd.Manager {
 	m.Register(&auth.Logout{})
 	m.Register(&versionCmd{})
 
-	m.Register(&config.TargetList{})
-	m.Register(&config.TargetAdd{})
-	m.Register(&config.TargetRemove{})
-	m.Register(&config.TargetSet{})
+	m.Register(&client.TargetList{})
+	m.Register(&client.TargetAdd{})
+	m.Register(&client.TargetRemove{})
+	m.Register(&client.TargetSet{})
 	m.RegisterTopic("target", targetTopic)
 
 	m.Register(&client.AppRun{})

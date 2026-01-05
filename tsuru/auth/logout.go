@@ -9,8 +9,8 @@ import (
 	"net/http"
 
 	"github.com/tsuru/go-tsuruclient/pkg/config"
+	"github.com/tsuru/tsuru-client/tsuru/cmd"
 	tsuruHTTP "github.com/tsuru/tsuru-client/tsuru/http"
-	"github.com/tsuru/tsuru/cmd"
 )
 
 type Logout struct{}

@@ -12,8 +12,8 @@ import (
 	"net/http/httptest"
 	"strings"
 
-	"github.com/tsuru/tsuru/cmd"
-	"github.com/tsuru/tsuru/cmd/cmdtest"
+	"github.com/tsuru/tsuru-client/tsuru/cmd"
+	"github.com/tsuru/tsuru-client/tsuru/cmd/cmdtest"
 	tsuruIo "github.com/tsuru/tsuru/io"
 	"gopkg.in/check.v1"
 )

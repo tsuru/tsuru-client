@@ -10,8 +10,8 @@ import (
 	"net/http/httptest"
 	"os"
 
-	"github.com/tsuru/tsuru/cmd"
-	"github.com/tsuru/tsuru/cmd/cmdtest"
+	"github.com/tsuru/tsuru-client/tsuru/cmd"
+	"github.com/tsuru/tsuru-client/tsuru/cmd/cmdtest"
 	"golang.org/x/net/websocket"
 	check "gopkg.in/check.v1"
 )

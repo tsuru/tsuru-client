@@ -8,7 +8,7 @@ import (
 
 	tsuruErrors "github.com/tsuru/tsuru/errors"
 
-	"github.com/tsuru/tsuru/cmd"
+	"github.com/tsuru/tsuru-client/tsuru/cmd"
 )
 
 type Init struct{}

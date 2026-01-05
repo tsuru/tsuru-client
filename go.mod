@@ -16,6 +16,7 @@ require (
 	github.com/pkg/errors v0.9.1
 	github.com/pmorie/go-open-service-broker-client v0.0.0-20180330214919-dca737037ce6
 	github.com/sabhiram/go-gitignore v0.0.0-20171017070213-362f9845770f
+	github.com/sajari/fuzzy v1.0.0
 	github.com/tsuru/gnuflag v0.0.0-20151217162021-86b8c1b864aa
 	github.com/tsuru/go-tsuruclient v0.1.0
 	github.com/tsuru/tablecli v0.0.0-20190131152944-7ded8a3383c6
@@ -68,7 +69,6 @@ require (
 	github.com/prometheus/procfs v0.10.1 // indirect
 	github.com/robfig/cron/v3 v3.0.1 // indirect
 	github.com/rogpeppe/go-internal v1.9.0 // indirect
-	github.com/sajari/fuzzy v1.0.0 // indirect
 	github.com/sirupsen/logrus v1.9.3 // indirect
 	github.com/tsuru/config v0.0.0-20201023175036-375aaee8b560 // indirect
 	github.com/xdg-go/pbkdf2 v1.0.0 // indirect

@@ -6,7 +6,7 @@ import (
 	"os"
 	"path/filepath"
 
-	"github.com/tsuru/tsuru/cmd"
+	"github.com/tsuru/tsuru-client/tsuru/cmd"
 
 	check "gopkg.in/check.v1"
 )

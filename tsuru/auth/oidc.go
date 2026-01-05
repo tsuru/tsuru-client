@@ -12,7 +12,7 @@ import (
 	"time"
 
 	"github.com/tsuru/go-tsuruclient/pkg/config"
-	"github.com/tsuru/tsuru/cmd"
+	"github.com/tsuru/tsuru-client/tsuru/cmd"
 	authTypes "github.com/tsuru/tsuru/types/auth"
 	"golang.org/x/oauth2"
 )
