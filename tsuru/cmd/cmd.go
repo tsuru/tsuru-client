@@ -673,7 +673,7 @@ func (c *help) parseFlags(command Command) string {
 			output = fmt.Sprintf("Flags:\n\n%s", output)
 		}
 	}
-	return strings.Replace(output, "\n", "\n  ", -1)
+	return strings.ReplaceAll(output, "\n", "\n  ")
 }
 
 func ExtractProgramName(path string) string {

@@ -10,6 +10,7 @@ import (
 	"io"
 	"net/http"
 	"os"
+	"runtime"
 	"syscall"
 	"time"
 
@@ -756,6 +757,9 @@ func (s *S) TestValidateVersion(c *check.C) {
 }
 
 func (s *S) TestRunCancel(c *check.C) {
+	if runtime.GOOS == "windows" {
+		c.Skip("skipping cancel test on windows")
+	}
 	cmd := &CancelableCommand{}
 	cmd.running = make(chan struct{})
 	cmd.canceled = make(chan struct{})
