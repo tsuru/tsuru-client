@@ -20,7 +20,9 @@ import (
 	goVersion "github.com/hashicorp/go-version"
 	"github.com/pkg/errors"
 	"github.com/sajari/fuzzy"
+	"github.com/spf13/cobra"
 	"github.com/tsuru/gnuflag"
+	v2 "github.com/tsuru/tsuru-client/tsuru/cmd/v2"
 	"github.com/tsuru/tsuru/fs"
 )
 
@@ -76,6 +78,9 @@ type Manager struct {
 
 	AfterFlagParseHook func()
 	RetryHook          func(err error) (retry bool)
+
+	// V2 fields using cobra commander
+	rootCmd *cobra.Command
 }
 
 // This is discouraged: use NewManagerPanicExiter instead. Handle panic(*PanicExitError) accordingly
@@ -88,6 +93,7 @@ func NewManager(name string, stdout, stderr io.Writer, stdin io.Reader, lookup L
 		lookup:        lookup,
 		topics:        map[string]string{},
 		topicCommands: map[string][]Command{},
+		rootCmd:       v2.NewRootCmd(),
 	}
 	manager.Register(&help{manager})
 	return manager
@@ -103,6 +109,7 @@ func NewManagerPanicExiter(name string, stdout, stderr io.Writer, stdin io.Reade
 		lookup:        lookup,
 		topics:        map[string]string{},
 		topicCommands: map[string][]Command{},
+		rootCmd:       v2.NewRootCmd(),
 	}
 	manager.e = PanicExiter{}
 	manager.Register(&help{manager})
@@ -186,6 +193,14 @@ func (m *Manager) RegisterTopic(name, content string) {
 }
 
 func (m *Manager) Run(args []string) {
+	if v2.Enabled() {
+		err := m.rootCmd.Execute()
+		if err != nil {
+			fmt.Println(err)
+			os.Exit(1)
+		}
+		return
+	}
 	var (
 		status         int
 		verbosity      int
