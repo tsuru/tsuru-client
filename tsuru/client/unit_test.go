@@ -10,9 +10,9 @@ import (
 	"net/http"
 	"strings"
 
+	"github.com/tsuru/tsuru-client/tsuru/cmd"
+	"github.com/tsuru/tsuru-client/tsuru/cmd/cmdtest"
 	tsuruHTTP "github.com/tsuru/tsuru-client/tsuru/http"
-	"github.com/tsuru/tsuru/cmd"
-	"github.com/tsuru/tsuru/cmd/cmdtest"
 	tsuruIo "github.com/tsuru/tsuru/io"
 	check "gopkg.in/check.v1"
 )

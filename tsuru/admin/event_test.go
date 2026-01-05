@@ -9,8 +9,8 @@ import (
 	"net/http"
 	"os"
 
-	"github.com/tsuru/tsuru/cmd"
-	"github.com/tsuru/tsuru/cmd/cmdtest"
+	"github.com/tsuru/tsuru-client/tsuru/cmd"
+	"github.com/tsuru/tsuru-client/tsuru/cmd/cmdtest"
 	"github.com/tsuru/tsuru/event"
 	eventTypes "github.com/tsuru/tsuru/types/event"
 	check "gopkg.in/check.v1"

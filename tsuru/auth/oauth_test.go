@@ -11,7 +11,7 @@ import (
 	"time"
 
 	"github.com/tsuru/go-tsuruclient/pkg/config"
-	"github.com/tsuru/tsuru/cmd"
+	"github.com/tsuru/tsuru-client/tsuru/cmd"
 	"github.com/tsuru/tsuru/exec"
 	"github.com/tsuru/tsuru/fs/fstest"
 

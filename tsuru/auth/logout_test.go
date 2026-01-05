@@ -9,8 +9,8 @@ import (
 	"os"
 
 	"github.com/tsuru/go-tsuruclient/pkg/config"
-	"github.com/tsuru/tsuru/cmd"
-	"github.com/tsuru/tsuru/cmd/cmdtest"
+	"github.com/tsuru/tsuru-client/tsuru/cmd"
+	"github.com/tsuru/tsuru-client/tsuru/cmd/cmdtest"
 	"github.com/tsuru/tsuru/fs/fstest"
 	"gopkg.in/check.v1"
 )

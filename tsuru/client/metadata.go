@@ -12,9 +12,9 @@ import (
 	"github.com/tsuru/gnuflag"
 	"github.com/tsuru/go-tsuruclient/pkg/tsuru"
 	tsuruClientApp "github.com/tsuru/tsuru-client/tsuru/app"
+	"github.com/tsuru/tsuru-client/tsuru/cmd"
 	"github.com/tsuru/tsuru-client/tsuru/formatter"
 	tsuruHTTP "github.com/tsuru/tsuru-client/tsuru/http"
-	"github.com/tsuru/tsuru/cmd"
 )
 
 const metadataSetValidationMessage = `you must specify metadata in the form "NAME=value" with the specified type.

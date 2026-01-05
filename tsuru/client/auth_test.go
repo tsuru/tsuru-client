@@ -16,9 +16,9 @@ import (
 
 	"github.com/tsuru/go-tsuruclient/pkg/config"
 	"github.com/tsuru/go-tsuruclient/pkg/tsuru"
+	"github.com/tsuru/tsuru-client/tsuru/cmd"
+	"github.com/tsuru/tsuru-client/tsuru/cmd/cmdtest"
 	tsuruHTTP "github.com/tsuru/tsuru-client/tsuru/http"
-	"github.com/tsuru/tsuru/cmd"
-	"github.com/tsuru/tsuru/cmd/cmdtest"
 	"github.com/tsuru/tsuru/fs/fstest"
 )
 

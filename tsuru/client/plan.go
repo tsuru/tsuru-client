@@ -15,8 +15,8 @@ import (
 	"github.com/tsuru/gnuflag"
 	"github.com/tsuru/go-tsuruclient/pkg/config"
 	"github.com/tsuru/tablecli"
+	"github.com/tsuru/tsuru-client/tsuru/cmd"
 	tsuruHTTP "github.com/tsuru/tsuru-client/tsuru/http"
-	"github.com/tsuru/tsuru/cmd"
 	appTypes "github.com/tsuru/tsuru/types/app"
 	"k8s.io/apimachinery/pkg/api/resource"
 )

@@ -15,9 +15,9 @@ import (
 	"github.com/tsuru/gnuflag"
 	"github.com/tsuru/go-tsuruclient/pkg/config"
 	tsuruClientApp "github.com/tsuru/tsuru-client/tsuru/app"
+	"github.com/tsuru/tsuru-client/tsuru/cmd"
 	"github.com/tsuru/tsuru-client/tsuru/formatter"
 	tsuruHTTP "github.com/tsuru/tsuru-client/tsuru/http"
-	"github.com/tsuru/tsuru/cmd"
 )
 
 type AppLog struct {

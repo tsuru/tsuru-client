@@ -10,8 +10,8 @@ import (
 	"strings"
 
 	"github.com/cezarsa/form"
-	"github.com/tsuru/tsuru/cmd"
-	"github.com/tsuru/tsuru/cmd/cmdtest"
+	"github.com/tsuru/tsuru-client/tsuru/cmd"
+	"github.com/tsuru/tsuru-client/tsuru/cmd/cmdtest"
 	volumeTypes "github.com/tsuru/tsuru/types/volume"
 	"gopkg.in/check.v1"
 )

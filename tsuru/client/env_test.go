@@ -11,8 +11,8 @@ import (
 	"strings"
 
 	"github.com/cezarsa/form"
-	"github.com/tsuru/tsuru/cmd"
-	"github.com/tsuru/tsuru/cmd/cmdtest"
+	"github.com/tsuru/tsuru-client/tsuru/cmd"
+	"github.com/tsuru/tsuru-client/tsuru/cmd/cmdtest"
 	"github.com/tsuru/tsuru/io"
 	apiTypes "github.com/tsuru/tsuru/types/api"
 	"gopkg.in/check.v1"

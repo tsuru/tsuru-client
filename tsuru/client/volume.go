@@ -18,9 +18,9 @@ import (
 	"github.com/tsuru/go-tsuruclient/pkg/config"
 	"github.com/tsuru/tablecli"
 	tsuruClientApp "github.com/tsuru/tsuru-client/tsuru/app"
+	"github.com/tsuru/tsuru-client/tsuru/cmd"
 	"github.com/tsuru/tsuru-client/tsuru/formatter"
 	tsuruHTTP "github.com/tsuru/tsuru-client/tsuru/http"
-	"github.com/tsuru/tsuru/cmd"
 	volumeTypes "github.com/tsuru/tsuru/types/volume"
 )
 

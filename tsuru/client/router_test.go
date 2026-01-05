@@ -13,8 +13,8 @@ import (
 	"strings"
 
 	"github.com/tsuru/go-tsuruclient/pkg/tsuru"
-	"github.com/tsuru/tsuru/cmd"
-	"github.com/tsuru/tsuru/cmd/cmdtest"
+	"github.com/tsuru/tsuru-client/tsuru/cmd"
+	"github.com/tsuru/tsuru-client/tsuru/cmd/cmdtest"
 	appTypes "github.com/tsuru/tsuru/types/app"
 	"github.com/tsuru/tsuru/types/router"
 	check "gopkg.in/check.v1"

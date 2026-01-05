@@ -15,8 +15,8 @@ import (
 
 	"github.com/tsuru/gnuflag"
 	"github.com/tsuru/go-tsuruclient/pkg/config"
+	"github.com/tsuru/tsuru-client/tsuru/cmd"
 	tsuruHTTP "github.com/tsuru/tsuru-client/tsuru/http"
-	"github.com/tsuru/tsuru/cmd"
 	authTypes "github.com/tsuru/tsuru/types/auth"
 )
 

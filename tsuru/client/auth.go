@@ -22,8 +22,8 @@ import (
 	"github.com/tsuru/go-tsuruclient/pkg/config"
 	"github.com/tsuru/go-tsuruclient/pkg/tsuru"
 	"github.com/tsuru/tablecli"
+	"github.com/tsuru/tsuru-client/tsuru/cmd"
 	tsuruHTTP "github.com/tsuru/tsuru-client/tsuru/http"
-	"github.com/tsuru/tsuru/cmd"
 	tsuruErrors "github.com/tsuru/tsuru/errors"
 )
 

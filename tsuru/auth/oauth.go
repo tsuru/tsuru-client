@@ -17,7 +17,7 @@ import (
 
 	"github.com/pkg/errors"
 	"github.com/tsuru/go-tsuruclient/pkg/config"
-	"github.com/tsuru/tsuru/cmd"
+	"github.com/tsuru/tsuru-client/tsuru/cmd"
 	tsuruNet "github.com/tsuru/tsuru/net"
 	authTypes "github.com/tsuru/tsuru/types/auth"
 )

@@ -14,9 +14,9 @@ import (
 	"github.com/tsuru/gnuflag"
 	"github.com/tsuru/go-tsuruclient/pkg/config"
 	"github.com/tsuru/tablecli"
+	"github.com/tsuru/tsuru-client/tsuru/cmd"
 	"github.com/tsuru/tsuru-client/tsuru/formatter"
 	tsuruHTTP "github.com/tsuru/tsuru-client/tsuru/http"
-	"github.com/tsuru/tsuru/cmd"
 	"github.com/tsuru/tsuru/event"
 	eventTypes "github.com/tsuru/tsuru/types/event"
 )

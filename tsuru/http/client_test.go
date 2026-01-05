@@ -13,8 +13,8 @@ import (
 	"testing"
 
 	"github.com/tsuru/go-tsuruclient/pkg/config"
-	"github.com/tsuru/tsuru/cmd"
-	"github.com/tsuru/tsuru/cmd/cmdtest"
+	"github.com/tsuru/tsuru-client/tsuru/cmd"
+	"github.com/tsuru/tsuru-client/tsuru/cmd/cmdtest"
 	tsuruerr "github.com/tsuru/tsuru/errors"
 	"github.com/tsuru/tsuru/fs/fstest"
 	check "gopkg.in/check.v1"

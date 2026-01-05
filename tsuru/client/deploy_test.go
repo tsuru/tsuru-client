@@ -14,9 +14,9 @@ import (
 	"strings"
 	"time"
 
+	"github.com/tsuru/tsuru-client/tsuru/cmd"
+	"github.com/tsuru/tsuru-client/tsuru/cmd/cmdtest"
 	"github.com/tsuru/tsuru-client/tsuru/formatter"
-	"github.com/tsuru/tsuru/cmd"
-	"github.com/tsuru/tsuru/cmd/cmdtest"
 	tsuruIo "github.com/tsuru/tsuru/io"
 	"gopkg.in/check.v1"
 )
