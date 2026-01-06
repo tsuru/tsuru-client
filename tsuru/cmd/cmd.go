@@ -188,7 +188,7 @@ func (m *Manager) RegisterRemoved(name string, help string) {
 
 func (m *Manager) RegisterTopic(name, content string) {
 	if m.v2 != nil && m.v2.Enabled {
-		m.RegisterTopic(name, content)
+		m.v2.RegisterTopic(name, content)
 	}
 	name = strings.ReplaceAll(name, "-", " ")
 	if m.topics == nil {

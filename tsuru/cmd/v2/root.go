@@ -46,8 +46,6 @@ func NewRootCmd() *cobra.Command {
 		DisableFlagParsing: true,
 	}
 
-	rootCmd.SetVersionTemplate(`{{printf "tsuru-client version: %s" .Version}}` + "\n")
-
 	setupPFlagsAndCommands(rootCmd)
 	rootCmd.AddGroup(&cobra.Group{
 		ID:    "auth",
