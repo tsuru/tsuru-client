@@ -17,7 +17,6 @@ import (
 
 	"github.com/antihax/optional"
 	"github.com/cezarsa/form"
-	osb "github.com/pmorie/go-open-service-broker-client/v2"
 	"github.com/tsuru/gnuflag"
 	"github.com/tsuru/go-tsuruclient/pkg/config"
 	"github.com/tsuru/go-tsuruclient/pkg/tsuru"
@@ -931,83 +930,13 @@ func (c *ServiceInfo) BuildPlansTable(ctx *cmd.Context, plans []plan) error {
 		table := tablecli.NewTable()
 		table.LineSeparator = true
 		for _, plan := range plans {
-			instanceParam, bindParam := parsePlanParams(plan.Schemas)
-			data := []string{plan.Name, plan.Description, instanceParam, bindParam}
+			data := []string{plan.Name, plan.Description}
 			table.AddRow(tablecli.Row(data))
 		}
-		table.Headers = tablecli.Row([]string{"Name", "Description", "Instance Params", "Binding Params"})
+		table.Headers = tablecli.Row([]string{"Name", "Description"})
 		ctx.Stdout.Write(table.Bytes())
 	}
 	return nil
-}
-
-func parsePlanParams(schemas *osb.Schemas) (instanceParams string, bindingParams string) {
-	if schemas == nil {
-		return instanceParams, bindingParams
-	}
-	var err error
-	if schemas.ServiceInstance != nil {
-		instanceParams, err = parseParams(schemas.ServiceInstance.Create.Parameters)
-		if err != nil {
-			instanceParams = fmt.Sprintf("error parsing %+v: %v", schemas.ServiceInstance.Create, err)
-		}
-	}
-	if schemas.ServiceBinding != nil {
-		bindingParams, err = parseParams(schemas.ServiceBinding.Create.Parameters)
-		if err != nil {
-			bindingParams = fmt.Sprintf("error parsing %+v: %v", schemas.ServiceBinding.Create, err)
-		}
-	}
-	return instanceParams, bindingParams
-}
-
-type jsonSchema struct {
-	Properties  map[string]*jsonSchema
-	Default     interface{}
-	Type        string
-	Description string
-	Required    []string
-}
-
-func parseParams(params interface{}) (string, error) {
-	if params == nil {
-		return "", nil
-	}
-	d, err := json.Marshal(params)
-	if err != nil {
-		return "", err
-	}
-	var schema jsonSchema
-	err = json.Unmarshal(d, &schema)
-	if err != nil {
-		return "", err
-	}
-	var sb strings.Builder
-	var props []string
-	for k := range schema.Properties {
-		props = append(props, k)
-	}
-	sort.Strings(props)
-	requireMap := make(map[string]struct{})
-	for _, r := range schema.Required {
-		requireMap[r] = struct{}{}
-	}
-	for _, k := range props {
-		v := schema.Properties[k]
-		if v == nil {
-			continue
-		}
-		sb.WriteString(fmt.Sprintf("%v: \n", k))
-		sb.WriteString(fmt.Sprintf("  description: %v\n", v.Description))
-		sb.WriteString(fmt.Sprintf("  type: %v\n", v.Type))
-		if v.Default != nil {
-			sb.WriteString(fmt.Sprintf("  default: %v\n", v.Default))
-		}
-		if _, ok := requireMap[k]; ok {
-			sb.WriteString("  required: true\n")
-		}
-	}
-	return sb.String(), nil
 }
 
 func (c *ServiceInfo) WriteDoc(ctx *cmd.Context) error {
@@ -1098,7 +1027,6 @@ func (c *ServiceInfo) fetchInstances(serviceName string) ([]ServiceInstanceModel
 type plan struct {
 	Name        string
 	Description string
-	Schemas     *osb.Schemas
 }
 
 func (c *ServiceInfo) fetchPlans(serviceName string) ([]plan, error) {

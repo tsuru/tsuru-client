@@ -14,7 +14,6 @@ require (
 	github.com/mattn/go-shellwords v1.0.12
 	github.com/mitchellh/go-wordwrap v1.0.1
 	github.com/pkg/errors v0.9.1
-	github.com/pmorie/go-open-service-broker-client v0.0.0-20180330214919-dca737037ce6
 	github.com/sabhiram/go-gitignore v0.0.0-20171017070213-362f9845770f
 	github.com/sajari/fuzzy v1.0.0
 	github.com/tsuru/gnuflag v0.0.0-20151217162021-86b8c1b864aa
@@ -45,7 +44,6 @@ require (
 	github.com/globocom/mongo-go-prometheus v0.1.1 // indirect
 	github.com/go-logr/logr v1.4.2 // indirect
 	github.com/gogo/protobuf v1.3.2 // indirect
-	github.com/golang/glog v1.2.4 // indirect
 	github.com/golang/protobuf v1.5.4 // indirect
 	github.com/golang/snappy v0.0.4 // indirect
 	github.com/google/gofuzz v1.2.0 // indirect
