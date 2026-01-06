@@ -20,6 +20,11 @@ func (c *Logout) Info() *cmd.Info {
 		Name:  "logout",
 		Usage: "logout",
 		Desc:  "Logout will terminate the session with the tsuru server.",
+
+		V2: cmd.InfoV2{
+			OnlyAppendOnRoot: true,
+			GroupID:          "auth",
+		},
 	}
 }
 

@@ -20,9 +20,7 @@ import (
 	goVersion "github.com/hashicorp/go-version"
 	"github.com/pkg/errors"
 	"github.com/sajari/fuzzy"
-	"github.com/spf13/cobra"
 	"github.com/tsuru/gnuflag"
-	v2 "github.com/tsuru/tsuru-client/tsuru/cmd/v2"
 	"github.com/tsuru/tsuru/fs"
 )
 
@@ -80,7 +78,7 @@ type Manager struct {
 	RetryHook          func(err error) (retry bool)
 
 	// V2 fields using cobra commander
-	rootCmd *cobra.Command
+	v2 *ManagerV2
 }
 
 // This is discouraged: use NewManagerPanicExiter instead. Handle panic(*PanicExitError) accordingly
@@ -93,7 +91,9 @@ func NewManager(name string, stdout, stderr io.Writer, stdin io.Reader, lookup L
 		lookup:        lookup,
 		topics:        map[string]string{},
 		topicCommands: map[string][]Command{},
-		rootCmd:       v2.NewRootCmd(),
+
+		// v2 will be a replacement for this manager in the future
+		v2: NewManagerV2(),
 	}
 	manager.Register(&help{manager})
 	return manager
@@ -109,7 +109,9 @@ func NewManagerPanicExiter(name string, stdout, stderr io.Writer, stdin io.Reade
 		lookup:        lookup,
 		topics:        map[string]string{},
 		topicCommands: map[string][]Command{},
-		rootCmd:       v2.NewRootCmd(),
+
+		// v2 will be a replacement for this manager in the future
+		v2: NewManagerV2(),
 	}
 	manager.e = PanicExiter{}
 	manager.Register(&help{manager})
@@ -117,6 +119,9 @@ func NewManagerPanicExiter(name string, stdout, stderr io.Writer, stdin io.Reade
 }
 
 func (m *Manager) Register(command Command) {
+	if m.v2.Enabled {
+		m.v2.Register(command)
+	}
 	if m.Commands == nil {
 		m.Commands = make(map[string]Command)
 	}
@@ -182,6 +187,10 @@ func (m *Manager) RegisterRemoved(name string, help string) {
 }
 
 func (m *Manager) RegisterTopic(name, content string) {
+	if m.v2 != nil && m.v2.Enabled {
+		m.RegisterTopic(name, content)
+	}
+	name = strings.ReplaceAll(name, "-", " ")
 	if m.topics == nil {
 		m.topics = make(map[string]string)
 	}
@@ -193,12 +202,8 @@ func (m *Manager) RegisterTopic(name, content string) {
 }
 
 func (m *Manager) Run(args []string) {
-	if v2.Enabled() {
-		err := m.rootCmd.Execute()
-		if err != nil {
-			fmt.Println(err)
-			os.Exit(1)
-		}
+	if m.v2.Enabled {
+		m.v2.Run()
 		return
 	}
 	var (
@@ -615,6 +620,7 @@ type Info struct {
 	MaxArgs int
 	Usage   string
 	Desc    string
+	V2      InfoV2
 	fail    bool
 }
 
@@ -623,7 +629,7 @@ type help struct {
 }
 
 func (c *help) Info() *Info {
-	return &Info{Name: "help", Usage: "command [args]"}
+	return &Info{Name: "help", Usage: "command [args]", V2: InfoV2{Disabled: true}}
 }
 
 func (c *help) Run(context *Context) error {

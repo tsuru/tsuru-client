@@ -17,9 +17,7 @@ func (i *Init) Info() *cmd.Info {
 	return &cmd.Info{
 		Name:  "init",
 		Usage: "init",
-		Desc: `
-Creates a standard example of .tsuruignore , tsuru.yaml and Procfile 
-	on the current project directory.
+		Desc: `Creates a standard example of .tsuruignore, tsuru.yaml and Procfile on the current project directory.
 
 "Procfile" describes the components required to run an application. 
 	It is the way to tell tsuru how to run your applications;

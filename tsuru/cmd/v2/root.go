@@ -49,6 +49,10 @@ func NewRootCmd() *cobra.Command {
 	rootCmd.SetVersionTemplate(`{{printf "tsuru-client version: %s" .Version}}` + "\n")
 
 	setupPFlagsAndCommands(rootCmd)
+	rootCmd.AddGroup(&cobra.Group{
+		ID:    "auth",
+		Title: "Auth commands:",
+	})
 
 	return rootCmd
 }
@@ -67,18 +71,6 @@ func setupPFlagsAndCommands(rootCmd *cobra.Command) {
 	tsuruCtx.Viper.BindPFlag("json", rootCmd.PersistentFlags().Lookup("json"))
 
 	tsuruCtx.Viper.BindPFlag("format", rootCmd.PersistentFlags().Lookup("format"))
-	rootCmd.PersistentFlags().Bool("api-data", false, "Output API response data instead of a parsed data (more useful with --format=json)")
-	tsuruCtx.Viper.BindPFlag("api-data", rootCmd.PersistentFlags().Lookup("api-data"))
-
-	// Search config in home directory with name ".tsuru-client" (without extension).
-	tsuruCtx.Viper.AddConfigPath(config.JoinWithUserDir(".tsuru"))
-	tsuruCtx.Viper.SetConfigType("yaml")
-	tsuruCtx.Viper.SetConfigName("client")
-
-	// If a config file is found, read it in.
-	if err := tsuruCtx.Viper.ReadInConfig(); err == nil {
-		fmt.Fprintln(os.Stderr, "Using config file:", tsuruCtx.Viper.ConfigFileUsed()) // TODO: handle this better
-	}
 }
 
 func rootPersistentPreRun(cmd *cobra.Command, args []string) {
@@ -168,9 +160,19 @@ func preSetupViper(vip *viper.Viper) *viper.Viper {
 	vip.SetEnvPrefix("tsuru")
 	vip.SetEnvKeyReplacer(strings.NewReplacer("-", "_"))
 	vip.AutomaticEnv() // read in environment variables that match
+
+	vip.AddConfigPath(config.JoinWithUserDir(".tsuru"))
+	vip.SetConfigType("yaml")
+	vip.SetConfigName("client")
+
+	// If a config file is found, read it in.
+	if err := vip.ReadInConfig(); err == nil {
+		fmt.Fprintln(os.Stderr, "Using config file:", vip.ConfigFileUsed()) // TODO: handle this better
+	}
+
 	return vip
 }
 
 func runTsuruPlugin(args []string) error {
-	return errors.New("TODO: not implemented yet")
+	return errors.New("TODO: run plugin is not implemented yet")
 }
