@@ -349,9 +349,11 @@ Services aren’t managed by tsuru, but by their creators.`)
 	m.Register(&client.AutoScaleUnset{})
 	m.Register(&client.AutoScaleSwap{})
 
+	m.RegisterTopic("metadata", "Metadata is a modern way to define labels and annotations to apps and jobs.")
 	m.RegisterDeprecated(&client.MetadataSet{}, "app-metadata-set")
 	m.RegisterDeprecated(&client.MetadataUnset{}, "app-metadata-unset")
 	m.RegisterDeprecated(&client.MetadataGet{}, "app-metadata-get")
+
 	m.Register(&client.ServiceInstanceInfo{})
 
 	registerExtraCommands(m)

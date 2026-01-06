@@ -1025,3 +1025,127 @@ func (s *S) TestNewManagerPanicExiter(c *check.C) {
 	mngr.Run([]string{"custom"})
 	c.Assert("This code is never called", check.Equals, "Because Panic occurred")
 }
+
+func (s *S) TestManagerRegisterWithV2Enabled(c *check.C) {
+	var stdout, stderr bytes.Buffer
+	mngr := NewManager("glb", &stdout, &stderr, os.Stdin, nil)
+	// Force enable v2 for this test
+	mngr.v2.Enabled = true
+
+	cmd := &TestCommand{}
+	mngr.Register(cmd)
+
+	// Check command is registered in v1 manager
+	c.Assert(mngr.Commands["foo"], check.Equals, cmd)
+
+	// Check command is registered in v2 manager (root)
+	rootCommands := mngr.v2.rootCmd.Commands()
+	var foundFQDN bool
+	for _, v2cmd := range rootCommands {
+		if v2cmd.Use == "foo" {
+			foundFQDN = true
+			break
+		}
+	}
+	c.Assert(foundFQDN, check.Equals, true)
+}
+
+func (s *S) TestManagerRegisterWithV2Disabled(c *check.C) {
+	var stdout, stderr bytes.Buffer
+	mngr := NewManager("glb", &stdout, &stderr, os.Stdin, nil)
+	// Ensure v2 is disabled
+	mngr.v2.Enabled = false
+
+	initialCommandCount := len(mngr.v2.rootCmd.Commands())
+	cmd := &TestCommand{}
+	mngr.Register(cmd)
+
+	// Check command is registered in v1 manager
+	c.Assert(mngr.Commands["foo"], check.Equals, cmd)
+
+	// Check v2 root commands remain unchanged
+	finalCommandCount := len(mngr.v2.rootCmd.Commands())
+	c.Assert(finalCommandCount, check.Equals, initialCommandCount)
+}
+
+func (s *S) TestManagerRegisterTopicWithV2Enabled(c *check.C) {
+	var stdout, stderr bytes.Buffer
+	mngr := NewManager("glb", &stdout, &stderr, os.Stdin, nil)
+	// Force enable v2 for this test
+	mngr.v2.Enabled = true
+
+	mngr.RegisterTopic("app", "Application management")
+
+	// Check topic is registered in v1 manager (with spaces)
+	c.Assert(mngr.topics["app"], check.Equals, "Application management")
+
+	// Check topic is registered in v2 manager
+	c.Assert(mngr.v2.tree.Children["app"], check.NotNil)
+	c.Assert(mngr.v2.tree.Children["app"].Command.Use, check.Equals, "app")
+	c.Assert(mngr.v2.tree.Children["app"].Command.Short, check.Equals, "Application management")
+}
+
+func (s *S) TestManagerRegisterTopicWithV2Disabled(c *check.C) {
+	var stdout, stderr bytes.Buffer
+	mngr := NewManager("glb", &stdout, &stderr, os.Stdin, nil)
+	// Ensure v2 is disabled
+	mngr.v2.Enabled = false
+
+	mngr.RegisterTopic("app", "Application management")
+
+	// Check topic is registered in v1 manager (with spaces)
+	c.Assert(mngr.topics["app"], check.Equals, "Application management")
+
+	// Check topic is not registered in v2 manager
+	c.Assert(mngr.v2.tree.Children["app"], check.IsNil)
+}
+
+func (s *S) TestManagerRegisterTopicNormalizesName(c *check.C) {
+	var stdout, stderr bytes.Buffer
+	mngr := NewManager("glb", &stdout, &stderr, os.Stdin, nil)
+
+	mngr.RegisterTopic("app-router", "App router management")
+
+	// Check topic is registered in v1 manager with spaces
+	c.Assert(mngr.topics["app router"], check.Equals, "App router management")
+}
+
+func (s *S) TestManagerRunWithV2Disabled(c *check.C) {
+	var stdout, stderr bytes.Buffer
+	mngr := NewManager("glb", &stdout, &stderr, os.Stdin, nil)
+	// Ensure v2 is disabled
+	mngr.v2.Enabled = false
+	var exiter recordingExiter
+	mngr.e = &exiter
+
+	cmd := &TestCommand{}
+	mngr.Register(cmd)
+	mngr.Run([]string{"foo"})
+
+	// Should execute the v1 command
+	c.Assert(stdout.String(), check.Equals, "Running TestCommand")
+	c.Assert(exiter.value(), check.Equals, 0)
+}
+
+func (s *S) TestManagerV2InitializationInNewManager(c *check.C) {
+	var stdout, stderr bytes.Buffer
+	mngr := NewManager("glb", &stdout, &stderr, os.Stdin, nil)
+
+	// Check that v2 is initialized
+	c.Assert(mngr.v2, check.NotNil)
+	c.Assert(mngr.v2.rootCmd, check.NotNil)
+	c.Assert(mngr.v2.tree, check.NotNil)
+}
+
+func (s *S) TestManagerV2InitializationInNewManagerPanicExiter(c *check.C) {
+	var stdout, stderr bytes.Buffer
+	mngr := NewManagerPanicExiter("glb", &stdout, &stderr, os.Stdin, nil)
+
+	// Check that v2 is initialized
+	c.Assert(mngr.v2, check.NotNil)
+	c.Assert(mngr.v2.rootCmd, check.NotNil)
+	c.Assert(mngr.v2.tree, check.NotNil)
+	// Check that panic exiter is set
+	_, ok := mngr.e.(PanicExiter)
+	c.Assert(ok, check.Equals, true)
+}

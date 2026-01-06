@@ -105,6 +105,7 @@ func (m *ManagerV2) registerV2SubCommand(command Command) {
 			curr.Command.Short = strings.TrimSpace(strings.Split(info.Desc, "\n")[0])
 			curr.Command.Long = info.Usage
 			curr.Command.SilenceUsage = true
+			curr.Command.Hidden = info.V2.Hidden
 			curr.Command.Args = cobra.MinimumNArgs(0)
 			curr.Command.RunE = func(cmd *cobra.Command, args []string) error {
 				fmt.Println("TODO: run command", fqdn)
@@ -143,6 +144,7 @@ func (m *ManagerV2) registerV2FQDNOnRoot(command Command) {
 
 type InfoV2 struct {
 	Disabled         bool
+	Hidden           bool
 	OnlyAppendOnRoot bool
 	GroupID          string
 }

@@ -155,6 +155,11 @@ func (m *Manager) RegisterDeprecated(command Command, oldName string) {
 	}
 	m.Commands[name] = command
 	m.Commands[oldName] = &DeprecatedCommand{Command: command, oldName: oldName}
+
+	if m.v2.Enabled {
+		m.v2.Register(command)
+		m.v2.Register(m.Commands[oldName])
+	}
 }
 
 type RemovedCommand struct {
@@ -586,6 +591,13 @@ type DeprecatedCommand struct {
 	oldName string
 }
 
+func (c *DeprecatedCommand) Info() *Info {
+	info := c.Command.Info()
+	info.Name = c.oldName
+	info.V2.Hidden = true
+	return info
+}
+
 func (c *DeprecatedCommand) Run(context *Context) error {
 	fmt.Fprintf(context.Stderr, "WARNING: %q has been deprecated, please use %q instead.\n\n", c.oldName, c.Command.Info().Name)
 	return c.Command.Run(context)
@@ -641,7 +653,7 @@ func (c *help) Run(context *Context) error {
 	if len(context.Args) > 0 {
 		if cmd, ok := c.manager.Commands[context.Args[0]]; ok {
 			if deprecated, ok := cmd.(*DeprecatedCommand); ok {
-				fmt.Fprintf(context.Stderr, deprecatedMsg, deprecated.oldName, cmd.Info().Name)
+				fmt.Fprintf(context.Stderr, deprecatedMsg, deprecated.oldName, deprecated.Command.Info().Name)
 			}
 			info := cmd.Info()
 			output += fmt.Sprintf("Usage: %s %s\n", c.manager.name, info.Usage)
