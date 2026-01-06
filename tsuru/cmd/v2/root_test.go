@@ -46,8 +46,9 @@ func TestNoFlagRedeclarationOnSubCommands(t *testing.T) {
 				}
 			}()
 
-			rootCmd.SetArgs(cmdPath)
-			rootCmd.Execute()
+			innerRootCmd := NewRootCmd()
+			innerRootCmd.SetArgs(cmdPath)
+			innerRootCmd.Execute()
 		})
 	}
 }
@@ -176,7 +177,7 @@ func TestRunRootCmd(t *testing.T) {
 	t.Run("help_deprecated_flag", func(t *testing.T) {
 		cmd := NewRootCmd()
 		stderr := strings.Builder{}
-		cmd.SetOut(&stderr) // inconcistent cobra stdout/stderr (see above)
+		cmd.SetOut(&stderr) // inconsistent cobra stdout/stderr (see above)
 
 		newCmd := &cobra.Command{
 			Use: "newtestcommand",
