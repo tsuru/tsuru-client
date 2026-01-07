@@ -38,8 +38,7 @@ func (c *EventBlockList) Info() *cmd.Info {
 func (c *EventBlockList) Flags() *pflag.FlagSet {
 	if c.fs == nil {
 		c.fs = pflag.NewFlagSet("", pflag.ExitOnError)
-		c.fs.BoolVar(&c.active, "active", false, "Display only active blocks.")
-		c.fs.BoolVar(&c.active, "a", false, "Display only active blocks.")
+		c.fs.BoolVarP(&c.active, "active", "a", false, "Display only active blocks.")
 	}
 	return c.fs
 }
@@ -141,16 +140,13 @@ func (c *EventBlockAdd) Info() *cmd.Info {
 func (c *EventBlockAdd) Flags() *pflag.FlagSet {
 	if c.fs == nil {
 		c.fs = pflag.NewFlagSet("", pflag.ExitOnError)
-		c.fs.StringVar(&c.kind, "kind", "", "Event kind to be blocked.")
-		c.fs.StringVar(&c.kind, "k", "", "Event kind to be blocked.")
-		c.fs.StringVar(&c.owner, "owner", "", "Block this owner's events.")
-		c.fs.StringVar(&c.owner, "o", "", "Block this owner's events.")
-		c.fs.StringVar(&c.targetType, "target", "", "Block events with this target type.")
-		c.fs.StringVar(&c.targetType, "t", "", "Block events with this target type.")
-		c.fs.StringVar(&c.targetValue, "value", "", "Block events with this target value.")
-		c.fs.StringVar(&c.targetValue, "v", "", "Block events with this target value.")
-		c.fs.Var(&c.conditions, "conditions", "Conditions to apply on event kind to be blocked.")
-		c.fs.Var(&c.conditions, "c", "Conditions to apply on event kind to be blocked.")
+
+		c.fs.StringVarP(&c.kind, "kind", "k", "", "Event kind to be blocked.")
+		c.fs.StringVarP(&c.owner, "owner", "o", "", "Block this owner's events.")
+		c.fs.StringVarP(&c.targetType, "target", "t", "", "Block events with this target type.")
+		c.fs.StringVarP(&c.targetValue, "value", "v", "", "Block events with this target value.")
+
+		c.fs.VarP(&c.conditions, "conditions", "c", "Conditions to apply on event kind to be blocked.")
 	}
 	return c.fs
 }

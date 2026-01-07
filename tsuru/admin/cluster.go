@@ -19,6 +19,7 @@ import (
 	"github.com/tsuru/go-tsuruclient/pkg/tsuru"
 	"github.com/tsuru/tablecli"
 	"github.com/tsuru/tsuru-client/tsuru/cmd"
+	"github.com/tsuru/tsuru-client/tsuru/cmd/standards"
 	"github.com/tsuru/tsuru-client/tsuru/formatter"
 	tsuruHTTP "github.com/tsuru/tsuru-client/tsuru/http"
 )
@@ -355,12 +356,11 @@ func (c *ClusterList) Info() *cmd.Info {
 func (c *ClusterList) Flags() *pflag.FlagSet {
 	if c.fs == nil {
 		c.fs = pflag.NewFlagSet("cluster-list", pflag.ExitOnError)
-		c.fs.StringVar(&c.filter.name, "name", "", "Filter clusters by name")
-		c.fs.StringVar(&c.filter.name, "n", "", "Filter clusters by name")
-		c.fs.StringVar(&c.filter.pool, "pool", "", "Filter clusters by pool")
-		c.fs.StringVar(&c.filter.pool, "o", "", "Filter clusters by pool")
-		c.fs.BoolVar(&c.simplified, "q", false, "Display only clusters name")
-		c.fs.BoolVar(&c.json, "json", false, "Display in JSON format")
+		c.fs.StringVarP(&c.filter.name, standards.FlagName, standards.ShortFlagName, "", "Filter clusters by name")
+		c.fs.StringVarP(&c.filter.pool, standards.FlagPool, standards.ShortFlagPool, "", "Filter clusters by pool")
+
+		c.fs.BoolVarP(&c.simplified, standards.FlagOnlyName, standards.ShortFlagOnlyName, false, "Display only clusters name")
+		c.fs.BoolVar(&c.json, standards.FlagJSON, false, "Display in JSON format")
 
 	}
 	return c.fs

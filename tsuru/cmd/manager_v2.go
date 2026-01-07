@@ -127,7 +127,13 @@ func (m *ManagerV2) registerV2SubCommand(command Command) {
 				return m.runCommand(command, cobraCommand, args)
 			}
 
-			_, isFlaggedCommand := command.(FlaggedCommand)
+			flaggedCommand, isFlaggedCommand := command.(FlaggedCommand)
+
+			if isFlaggedCommand {
+				curr.Command.DisableFlagParsing = false
+				curr.Command.SilenceUsage = false
+				curr.Command.Flags().AddFlagSet(flaggedCommand.Flags())
+			}
 
 			if !isFlaggedCommand {
 				curr.Command.DisableFlagParsing = false

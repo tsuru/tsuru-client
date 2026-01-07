@@ -7,6 +7,7 @@ package app
 import (
 	"github.com/pkg/errors"
 	"github.com/spf13/pflag"
+	"github.com/tsuru/tsuru-client/tsuru/cmd/standards"
 )
 
 type AppNameMixIn struct {
@@ -40,8 +41,7 @@ Use the --app flag to specify it.
 func (cmd *AppNameMixIn) Flags() *pflag.FlagSet {
 	if cmd.fs == nil {
 		cmd.fs = pflag.NewFlagSet("", pflag.ExitOnError)
-		cmd.fs.StringVar(&cmd.appName, "app", "", "The name of the app.")
-		cmd.fs.StringVar(&cmd.appName, "a", "", "The name of the app.")
+		cmd.fs.StringVarP(&cmd.appName, standards.FlagApp, standards.ShortFlagApp, "", "The name of the app.")
 	}
 	return cmd.fs
 }

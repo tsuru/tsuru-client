@@ -21,6 +21,7 @@ import (
 	"github.com/tsuru/go-tsuruclient/pkg/config"
 	"github.com/tsuru/tablecli"
 	"github.com/tsuru/tsuru-client/tsuru/cmd"
+	"github.com/tsuru/tsuru-client/tsuru/cmd/standards"
 	"github.com/tsuru/tsuru-client/tsuru/formatter"
 	tsuruHTTP "github.com/tsuru/tsuru-client/tsuru/http"
 )
@@ -95,9 +96,8 @@ func (p *PlatformList) Run(context *cmd.Context) error {
 func (c *PlatformList) Flags() *pflag.FlagSet {
 	if c.fs == nil {
 		c.fs = pflag.NewFlagSet("platform-list", pflag.ExitOnError)
-		c.fs.BoolVar(&c.simplified, "q", false, "Display only platform name")
-		c.fs.BoolVar(&c.json, "json", false, "Display in JSON format")
-
+		c.fs.BoolVarP(&c.simplified, standards.FlagOnlyName, standards.ShortFlagOnlyName, false, "Display only platform name")
+		c.fs.BoolVar(&c.json, standards.FlagJSON, false, "Display in JSON format")
 	}
 	return c.fs
 }
@@ -166,11 +166,10 @@ func (p *PlatformAdd) Flags() *pflag.FlagSet {
 	dockerfileMessage := "URL or path to the Dockerfile used for building the image of the platform"
 	if p.fs == nil {
 		p.fs = pflag.NewFlagSet("", pflag.ExitOnError)
-		p.fs.StringVar(&p.dockerfile, "dockerfile", "", dockerfileMessage)
-		p.fs.StringVar(&p.dockerfile, "d", "", dockerfileMessage)
+		p.fs.StringVarP(&p.dockerfile, "dockerfile", "d", "", dockerfileMessage)
+
 		msg := "Name of the prebuilt Docker image"
-		p.fs.StringVar(&p.image, "image", "", msg)
-		p.fs.StringVar(&p.image, "i", "", msg)
+		p.fs.StringVarP(&p.image, "image", "i", "", msg)
 	}
 	return p.fs
 }
@@ -210,13 +209,13 @@ func (p *PlatformUpdate) Flags() *pflag.FlagSet {
 	dockerfileMessage := "URL or path to the Dockerfile used for building the image of the platform"
 	if p.fs == nil {
 		p.fs = pflag.NewFlagSet("platform-update", pflag.ExitOnError)
-		p.fs.StringVar(&p.dockerfile, "dockerfile", "", dockerfileMessage)
-		p.fs.StringVar(&p.dockerfile, "d", "", dockerfileMessage)
+		p.fs.StringVarP(&p.dockerfile, "dockerfile", "d", "", dockerfileMessage)
+
 		p.fs.BoolVar(&p.disable, "disable", false, "Disable the platform")
 		p.fs.BoolVar(&p.enable, "enable", false, "Enable the platform")
+
 		msg := "Name of the prebuilt Docker image"
-		p.fs.StringVar(&p.image, "image", "", msg)
-		p.fs.StringVar(&p.image, "i", "", msg)
+		p.fs.StringVarP(&p.image, "image", "i", "", msg)
 	}
 	return p.fs
 }
@@ -303,7 +302,7 @@ type PlatformInfo struct {
 func (c *PlatformInfo) Flags() *pflag.FlagSet {
 	if c.fs == nil {
 		c.fs = pflag.NewFlagSet("platform-info", pflag.ExitOnError)
-		c.fs.BoolVar(&c.json, "json", false, "Display platform in JSON Format")
+		c.fs.BoolVar(&c.json, standards.FlagJSON, false, "Display platform in JSON Format")
 	}
 	return c.fs
 }

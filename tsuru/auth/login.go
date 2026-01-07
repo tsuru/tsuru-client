@@ -54,9 +54,9 @@ func (c *Login) Info() *cmd.Info {
 func (c *Login) Flags() *pflag.FlagSet {
 	if c.fs == nil {
 		c.fs = pflag.NewFlagSet("login", pflag.ExitOnError)
+
 		desc := `Login with specific auth scheme`
-		c.fs.StringVar(&c.scheme, "scheme", "", desc)
-		c.fs.StringVar(&c.scheme, "s", "", desc)
+		c.fs.StringVarP(&c.scheme, "scheme", "s", "", desc)
 	}
 	return c.fs
 }

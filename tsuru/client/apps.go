@@ -29,6 +29,7 @@ import (
 	"github.com/tsuru/tablecli"
 	tsuruClientApp "github.com/tsuru/tsuru-client/tsuru/app"
 	"github.com/tsuru/tsuru-client/tsuru/cmd"
+	"github.com/tsuru/tsuru-client/tsuru/cmd/standards"
 	"github.com/tsuru/tsuru-client/tsuru/formatter"
 	tsuruHTTP "github.com/tsuru/tsuru-client/tsuru/http"
 	appTypes "github.com/tsuru/tsuru/types/app"
@@ -144,25 +145,26 @@ implementation.`,
 
 func (c *AppCreate) Flags() *pflag.FlagSet {
 	if c.fs == nil {
-		infoMessage := "The plan used to create the app"
 		c.fs = pflag.NewFlagSet("", pflag.ExitOnError)
-		c.fs.StringVar(&c.plan, "plan", "", infoMessage)
-		c.fs.StringVar(&c.plan, "p", "", infoMessage)
+
+		infoMessage := "The plan used to create the app"
+		c.fs.StringVarP(&c.plan, standards.FlagPlan, standards.ShortFlagPlan, "", infoMessage)
+
 		routerMessage := "The router used by the app"
-		c.fs.StringVar(&c.router, "router", "", routerMessage)
-		c.fs.StringVar(&c.router, "r", "", routerMessage)
+		c.fs.StringVarP(&c.router, standards.FlagRouter, "r", "", routerMessage)
+
 		teamMessage := "Team owner app"
-		c.fs.StringVar(&c.teamOwner, "team", "", teamMessage)
-		c.fs.StringVar(&c.teamOwner, "t", "", teamMessage)
+		c.fs.StringVarP(&c.teamOwner, standards.FlagTeam, standards.ShortFlagTeam, "", teamMessage)
+
 		poolMessage := "Pool to deploy your app"
-		c.fs.StringVar(&c.pool, "pool", "", poolMessage)
-		c.fs.StringVar(&c.pool, "o", "", poolMessage)
+		c.fs.StringVarP(&c.pool, standards.FlagPool, standards.ShortFlagPool, "", poolMessage)
+
 		descriptionMessage := "App description"
-		c.fs.StringVar(&c.description, "description", "", descriptionMessage)
-		c.fs.StringVar(&c.description, "d", "", descriptionMessage)
+		c.fs.StringVarP(&c.description, standards.FlagDescription, standards.ShortFlagDescription, "", descriptionMessage)
+
 		tagMessage := "App tag"
-		c.fs.Var(&c.tags, "tag", tagMessage)
-		c.fs.Var(&c.tags, "g", tagMessage)
+		c.fs.VarP(&c.tags, standards.FlagTag, "g", tagMessage)
+
 		c.fs.Var(&c.routerOpts, "router-opts", "Router options")
 	}
 	return c.fs
@@ -237,32 +239,35 @@ func (c *AppUpdate) Info() *cmd.Info {
 func (c *AppUpdate) Flags() *pflag.FlagSet {
 	if c.fs == nil {
 		flagSet := pflag.NewFlagSet("", pflag.ExitOnError)
+
 		descriptionMessage := "Changes description for the app"
+		flagSet.StringVarP(&c.args.Description, standards.FlagDescription, standards.ShortFlagDescription, "", descriptionMessage)
+
 		planMessage := "Changes plan for the app"
+		flagSet.StringVarP(&c.args.Plan, standards.FlagPlan, standards.ShortFlagPlan, "", planMessage)
+
 		poolMessage := "Changes pool for the app"
+		flagSet.StringVarP(&c.args.Pool, standards.FlagPool, standards.ShortFlagPool, "", poolMessage)
+
 		teamOwnerMessage := "Changes owner team for the app"
-		tagMessage := "Add tags for the app. You can add multiple tags repeating the --tag argument"
-		platformMsg := "Changes platform for the app"
-		imgReset := "Forces next deploy to build app image from scratch"
-		noRestartMessage := "Prevent tsuru from restarting the application"
-		flagSet.StringVar(&c.args.Description, "description", "", descriptionMessage)
-		flagSet.StringVar(&c.args.Description, "d", "", descriptionMessage)
-		flagSet.StringVar(&c.args.Plan, "plan", "", planMessage)
-		flagSet.StringVar(&c.args.Plan, "p", "", planMessage)
-		flagSet.StringVar(&c.args.Platform, "l", "", platformMsg)
-		flagSet.StringVar(&c.args.Platform, "platform", "", platformMsg)
-		flagSet.StringVar(&c.args.Pool, "o", "", poolMessage)
-		flagSet.StringVar(&c.args.Pool, "pool", "", poolMessage)
-		flagSet.BoolVar(&c.args.ImageReset, "i", false, imgReset)
-		flagSet.BoolVar(&c.args.ImageReset, "image-reset", false, imgReset)
-		flagSet.BoolVar(&c.args.NoRestart, "no-restart", false, noRestartMessage)
-		flagSet.StringVar(&c.args.TeamOwner, "t", "", teamOwnerMessage)
+		flagSet.StringVarP(&c.args.TeamOwner, standards.FlagTeam, standards.ShortFlagTeam, "", teamOwnerMessage)
 		flagSet.StringVar(&c.args.TeamOwner, "team-owner", "", teamOwnerMessage)
-		flagSet.Var((*cmd.StringSliceFlag)(&c.args.Tags), "g", tagMessage)
-		flagSet.Var((*cmd.StringSliceFlag)(&c.args.Tags), "tag", tagMessage)
+		flagSet.MarkHidden("team-owner")
+
+		tagMessage := "Add tags for the app. You can add multiple tags repeating the --tag argument"
+		flagSet.VarP((*cmd.StringSliceFlag)(&c.args.Tags), standards.FlagTag, "g", tagMessage)
+
+		platformMsg := "Changes platform for the app"
+		flagSet.StringVarP(&c.args.Platform, standards.FlagPlatform, "l", "", platformMsg)
+
+		imgReset := "Forces next deploy to build app image from scratch"
+		flagSet.BoolVarP(&c.args.ImageReset, "image-reset", "i", false, imgReset)
+
+		noRestartMessage := "Prevent tsuru from restarting the application"
+		flagSet.BoolVar(&c.args.NoRestart, "no-restart", false, noRestartMessage)
+
 		flagSet.StringVar(&c.cpu, "cpu", "", "CPU limit for app, this will override the plan cpu value. One cpu is equivalent to 1 vCPU/Core, fractional requests are allowed and the expression 0.1 is equivalent to the expression 100m")
 		flagSet.StringVar(&c.cpuBurst, "cpu-burst-factor", "", "The multiplier to determine the limits of the CPU burst. Setting 1 disables burst")
-
 		flagSet.StringVar(&c.memory, "memory", "", "Memory limit for app, this will override the plan memory value. You can express memory as a bytes integer or using one of these suffixes: E, P, T, G, M, K, Ei, Pi, Ti, Gi, Mi, Ki")
 		c.fs = mergeFlagSet(
 			c.AppNameMixIn.Flags(),

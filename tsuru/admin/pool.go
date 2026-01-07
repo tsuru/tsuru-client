@@ -50,16 +50,17 @@ func (c *AddPoolToSchedulerCmd) Flags() *pflag.FlagSet {
 	if c.fs == nil {
 		c.fs = pflag.NewFlagSet("", pflag.ExitOnError)
 		msg := "Make pool public (all teams can use it)"
-		c.fs.BoolVar(&c.public, "public", false, msg)
-		c.fs.BoolVar(&c.public, "p", false, msg)
+		c.fs.BoolVarP(&c.public, "public", "p", false, msg)
+
 		msg = "Make pool default (when none is specified during [[app-create]] this pool will be used)"
-		c.fs.BoolVar(&c.defaultPool, "default", false, msg)
-		c.fs.BoolVar(&c.defaultPool, "d", false, msg)
+		c.fs.BoolVarP(&c.defaultPool, "default", "d", false, msg)
+
 		msg = "Force overwrite default pool"
-		c.fs.BoolVar(&c.forceDefault, "force", false, msg)
-		c.fs.BoolVar(&c.forceDefault, "f", false, msg)
+		c.fs.BoolVarP(&c.forceDefault, "force", "f", false, msg)
+
 		msg = "Provisioner associated to the pool (empty for default docker provisioner)"
 		c.fs.StringVar(&c.provisioner, "provisioner", "", msg)
+
 		msg = "LabelSet that integrates with kubernetes, i.e could be used to define a podAffinity rule for the pool"
 		c.fs.Var(&c.labels, "labels", msg)
 	}
@@ -140,12 +141,14 @@ func (UpdatePoolToSchedulerCmd) Info() *cmd.Info {
 func (c *UpdatePoolToSchedulerCmd) Flags() *pflag.FlagSet {
 	if c.fs == nil {
 		c.fs = pflag.NewFlagSet("", pflag.ExitOnError)
+
 		msg := "Make pool public (all teams can use it)"
 		c.fs.Var(&c.public, "public", msg)
+
 		msg = "Make pool default (when none is specified during [[app-create]] this pool will be used)"
 		c.fs.Var(&c.defaultPool, "default", msg)
-		c.fs.BoolVar(&c.forceDefault, "force", false, "Force pool to be default.")
-		c.fs.BoolVar(&c.forceDefault, "f", false, "Force pool to be default.")
+
+		c.fs.BoolVarP(&c.forceDefault, "force", "f", false, "Force pool to be default.")
 		c.fs.Var(&c.labelsAdd, "add-labels", "group of key/value pairs that specify a kubernetes object label, this option adds the specified labels to the pool")
 		c.fs.Var(&c.labelsRemove, "remove-labels", "group of keys from a kubernetes object label, this option removes the specified labels from the pool")
 	}
@@ -452,10 +455,9 @@ type PoolConstraintSet struct {
 func (c *PoolConstraintSet) Flags() *pflag.FlagSet {
 	if c.fs == nil {
 		c.fs = pflag.NewFlagSet("", pflag.ExitOnError)
-		c.fs.BoolVar(&c.append, "append", false, "Append to existing constraint.")
-		c.fs.BoolVar(&c.append, "a", false, "Append to existing constraint.")
-		c.fs.BoolVar(&c.blacklist, "b", false, "Blacklist constraint.")
-		c.fs.BoolVar(&c.blacklist, "blacklist", false, "Blacklist constraint.")
+		c.fs.BoolVarP(&c.append, "append", "a", false, "Append to existing constraint.")
+
+		c.fs.BoolVar(&c.blacklist, "denylist", false, "Denylist constraint.")
 	}
 	return c.fs
 }
