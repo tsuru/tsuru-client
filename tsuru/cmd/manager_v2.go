@@ -17,13 +17,28 @@ type ManagerV2 struct {
 	tree    *v2.CmdNode
 }
 
-func NewManagerV2() *ManagerV2 {
+type ManagerV2Opts struct {
+	AfterFlagParseHook func()
+}
+
+func NewManagerV2(opts ...*ManagerV2Opts) *ManagerV2 {
 	rootCmd := v2.NewRootCmd()
-	return &ManagerV2{
+
+	m := &ManagerV2{
 		Enabled: v2.Enabled(),
 		rootCmd: rootCmd,
 		tree:    v2.NewCmdNode(rootCmd),
 	}
+
+	if len(opts) == 1 && opts[0].AfterFlagParseHook != nil {
+		originalPersistentPreRun := rootCmd.PersistentPreRun
+		rootCmd.PersistentPreRun = func(cmd *cobra.Command, args []string) {
+			originalPersistentPreRun(cmd, args)
+			opts[0].AfterFlagParseHook()
+		}
+	}
+
+	return m
 }
 
 func (m *ManagerV2) RegisterTopic(name, content string) {
@@ -102,17 +117,42 @@ func (m *ManagerV2) registerV2SubCommand(command Command) {
 		curr = curr.Children[part]
 
 		if i == len(parts)-1 && !found {
+			curr.Command.Use = part // TODO: parse info.Usage for better use string
 			curr.Command.Short = strings.TrimSpace(strings.Split(info.Desc, "\n")[0])
-			curr.Command.Long = info.Usage
+			curr.Command.Long = info.Desc
 			curr.Command.SilenceUsage = true
 			curr.Command.Hidden = info.V2.Hidden
 			curr.Command.Args = cobra.MinimumNArgs(0)
-			curr.Command.RunE = func(cmd *cobra.Command, args []string) error {
-				fmt.Println("TODO: run command", fqdn)
-				return nil
+			curr.Command.RunE = func(cobraCommand *cobra.Command, args []string) error {
+				return m.runCommand(command, cobraCommand, args)
+			}
+
+			_, isFlaggedCommand := command.(FlaggedCommand)
+
+			if !isFlaggedCommand {
+				curr.Command.DisableFlagParsing = false
+				curr.Command.SilenceUsage = false
+				curr.Command.Args = cobra.RangeArgs(info.MinArgs, info.MaxArgs)
+
 			}
 		}
 	}
+}
+
+func (m *ManagerV2) runCommand(command Command, cobraCommand *cobra.Command, args []string) error {
+	flaggedCommand, ok := command.(FlaggedCommand)
+	if ok {
+		fmt.Println("TODO: run command with flags", command.Info().Name)
+		fmt.Println("Flags:", flaggedCommand.Flags())
+		return nil
+	}
+
+	return command.Run(&Context{
+		Args:   args,
+		Stdout: cobraCommand.OutOrStdout(),
+		Stderr: cobraCommand.OutOrStderr(),
+		Stdin:  cobraCommand.InOrStdin(),
+	})
 }
 
 func (m *ManagerV2) registerV2FQDNOnRoot(command Command) {
@@ -133,9 +173,8 @@ func (m *ManagerV2) registerV2FQDNOnRoot(command Command) {
 		Args:               cobra.MinimumNArgs(0),
 		DisableFlagParsing: true,
 		Hidden:             !info.V2.OnlyAppendOnRoot,
-		RunE: func(cmd *cobra.Command, args []string) error {
-			fmt.Println("TODO: run command", fqdn)
-			return nil
+		RunE: func(cobraCommand *cobra.Command, args []string) error {
+			return m.runCommand(command, cobraCommand, args)
 		},
 	}
 

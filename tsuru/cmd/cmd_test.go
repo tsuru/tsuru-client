@@ -1183,3 +1183,70 @@ func (s *S) TestManagerRegisterDeprecatedWithV2Enabled(c *check.C) {
 	c.Assert(foundOriginal, check.Equals, true)
 	c.Assert(foundDeprecated, check.Equals, true)
 }
+
+func (s *S) TestNewManagerPanicExiterReusesNewManager(c *check.C) {
+	var stdout, stderr bytes.Buffer
+	mngr := NewManagerPanicExiter("glb", &stdout, &stderr, os.Stdin, nil)
+
+	// Check that manager is properly initialized
+	c.Assert(mngr, check.NotNil)
+	c.Assert(mngr.name, check.Equals, "glb")
+	c.Assert(mngr.stdout, check.Equals, &stdout)
+	c.Assert(mngr.stderr, check.Equals, &stderr)
+	c.Assert(mngr.stdin, check.Equals, os.Stdin)
+
+	// Check that panic exiter is set
+	_, ok := mngr.e.(PanicExiter)
+	c.Assert(ok, check.Equals, true)
+
+	// Check that v2 is initialized
+	c.Assert(mngr.v2, check.NotNil)
+
+	// Check that help command is registered only once (not twice)
+	helpCmd, found := mngr.Commands["help"]
+	c.Assert(found, check.Equals, true)
+	c.Assert(helpCmd, check.NotNil)
+}
+
+func (s *S) TestManagerAfterFlagParseHookForwardedToV2(c *check.C) {
+	var stdout, stderr bytes.Buffer
+	mngr := NewManager("glb", &stdout, &stderr, os.Stdin, nil)
+
+	// Track if hook was called
+	hookCalled := false
+	mngr.AfterFlagParseHook = func() {
+		hookCalled = true
+	}
+
+	// Simulate what happens when v2's PersistentPreRun is called
+	// This is the hook that was set during NewManager
+	rootCmd := mngr.v2.rootCmd
+	if rootCmd.PersistentPreRun != nil {
+		rootCmd.PersistentPreRun(rootCmd, []string{})
+	}
+
+	// Check that the hook was called
+	c.Assert(hookCalled, check.Equals, true)
+}
+
+func (s *S) TestManagerAfterFlagParseHookNilDoesNotPanic(c *check.C) {
+	var stdout, stderr bytes.Buffer
+	mngr := NewManager("glb", &stdout, &stderr, os.Stdin, nil)
+
+	// Don't set AfterFlagParseHook (leave it nil)
+	mngr.AfterFlagParseHook = nil
+
+	// Simulate what happens when v2's PersistentPreRun is called
+	rootCmd := mngr.v2.rootCmd
+
+	// Should not panic - if it panics the test will fail
+	defer func() {
+		if r := recover(); r != nil {
+			c.Errorf("Should not panic, but got: %v", r)
+		}
+	}()
+
+	if rootCmd.PersistentPreRun != nil {
+		rootCmd.PersistentPreRun(rootCmd, []string{})
+	}
+}

@@ -77,7 +77,7 @@ func rootPersistentPreRun(cmd *cobra.Command, args []string) {
 		os.Setenv("TSURU_TARGET", target)
 	}
 
-	if v, err := cmd.Flags().GetInt("verbosity"); err != nil {
+	if v, err := cmd.Flags().GetInt("verbosity"); v > 0 && err == nil {
 		os.Setenv("TSURU_VERBOSITY", strconv.Itoa(v))
 	}
 

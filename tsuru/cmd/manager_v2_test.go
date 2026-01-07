@@ -11,7 +11,8 @@ import (
 )
 
 type mockCommand struct {
-	info *Info
+	info   *Info
+	runFn  func(context *Context) error
 }
 
 func (m *mockCommand) Info() *Info {
@@ -19,6 +20,9 @@ func (m *mockCommand) Info() *Info {
 }
 
 func (m *mockCommand) Run(context *Context) error {
+	if m.runFn != nil {
+		return m.runFn(context)
+	}
 	return nil
 }
 
@@ -198,7 +202,7 @@ func TestManagerV2_Register(t *testing.T) {
 
 		infoNode := manager.tree.Children["service"].Children["instance"].Children["info"]
 		assert.Equal(t, "Show service instance info", infoNode.Command.Short)
-		assert.Equal(t, "tsuru service-instance-info <name>", infoNode.Command.Long)
+		assert.Equal(t, cmd.info.Desc, infoNode.Command.Long)
 	})
 
 	t.Run("register_multiple_commands_same_topic", func(t *testing.T) {
@@ -277,8 +281,8 @@ func TestManagerV2_registerV2SubCommand(t *testing.T) {
 		leafNode := manager.tree.Children["app"].Children["deploy"]
 		assert.NotNil(t, leafNode)
 		assert.Equal(t, "Deploy application", leafNode.Command.Short)
-		assert.Equal(t, "Usage: tsuru app-deploy", leafNode.Command.Long)
-		assert.True(t, leafNode.Command.SilenceUsage)
+		assert.Equal(t, "Deploy application", leafNode.Command.Long)
+		assert.False(t, leafNode.Command.SilenceUsage)
 		assert.NotNil(t, leafNode.Command.Args)
 		assert.NotNil(t, leafNode.Command.RunE)
 	})
@@ -378,6 +382,167 @@ func TestManagerV2_registerV2FQDNOnRoot(t *testing.T) {
 		finalCommandCount := len(manager.rootCmd.Commands())
 
 		assert.Equal(t, initialCommandCount, finalCommandCount)
+	})
+}
+
+func TestManagerV2_NewManagerV2WithOptions(t *testing.T) {
+	t.Run("with_after_flag_parse_hook", func(t *testing.T) {
+		hookCalled := false
+		opts := &ManagerV2Opts{
+			AfterFlagParseHook: func() {
+				hookCalled = true
+			},
+		}
+
+		manager := NewManagerV2(opts)
+
+		assert.NotNil(t, manager)
+		assert.NotNil(t, manager.rootCmd)
+
+		// Simulate PersistentPreRun being called
+		if manager.rootCmd.PersistentPreRun != nil {
+			manager.rootCmd.PersistentPreRun(manager.rootCmd, []string{})
+		}
+
+		assert.True(t, hookCalled)
+	})
+
+	t.Run("without_options", func(t *testing.T) {
+		manager := NewManagerV2()
+
+		assert.NotNil(t, manager)
+		assert.NotNil(t, manager.rootCmd)
+		assert.NotNil(t, manager.tree)
+	})
+
+	t.Run("with_nil_hook", func(t *testing.T) {
+		opts := &ManagerV2Opts{
+			AfterFlagParseHook: nil,
+		}
+
+		manager := NewManagerV2(opts)
+
+		assert.NotNil(t, manager)
+		// Should not panic when PersistentPreRun is called
+		// If it panics, the test will fail
+		if manager.rootCmd.PersistentPreRun != nil {
+			manager.rootCmd.PersistentPreRun(manager.rootCmd, []string{})
+		}
+	})
+}
+
+func TestManagerV2_runCommand(t *testing.T) {
+	t.Run("run_simple_command", func(t *testing.T) {
+		manager := NewManagerV2()
+		executed := false
+
+		cmd := &mockCommand{
+			info: &Info{
+				Name: "test",
+				Desc: "Test command",
+			},
+			runFn: func(ctx *Context) error {
+				executed = true
+				assert.NotNil(t, ctx)
+				assert.NotNil(t, ctx.Stdout)
+				assert.NotNil(t, ctx.Stderr)
+				assert.NotNil(t, ctx.Stdin)
+				return nil
+			},
+		}
+
+		cobraCmd := manager.rootCmd
+		err := manager.runCommand(cmd, cobraCmd, []string{})
+
+		assert.NoError(t, err)
+		assert.True(t, executed)
+	})
+
+	t.Run("run_command_with_args", func(t *testing.T) {
+		manager := NewManagerV2()
+		var capturedArgs []string
+
+		cmd := &mockCommand{
+			info: &Info{
+				Name: "test",
+				Desc: "Test command",
+			},
+			runFn: func(ctx *Context) error {
+				capturedArgs = ctx.Args
+				return nil
+			},
+		}
+
+		cobraCmd := manager.rootCmd
+		expectedArgs := []string{"arg1", "arg2", "arg3"}
+		err := manager.runCommand(cmd, cobraCmd, expectedArgs)
+
+		assert.NoError(t, err)
+		assert.Equal(t, expectedArgs, capturedArgs)
+	})
+
+	t.Run("run_command_returns_error", func(t *testing.T) {
+		manager := NewManagerV2()
+		expectedErr := assert.AnError
+
+		cmd := &mockCommand{
+			info: &Info{
+				Name: "test",
+				Desc: "Test command",
+			},
+			runFn: func(ctx *Context) error {
+				return expectedErr
+			},
+		}
+
+		cobraCmd := manager.rootCmd
+		err := manager.runCommand(cmd, cobraCmd, []string{})
+
+		assert.Error(t, err)
+		assert.Equal(t, expectedErr, err)
+	})
+}
+
+func TestManagerV2_registerV2SubCommand_NonFlaggedCommand(t *testing.T) {
+	t.Run("non_flagged_command_args_validation", func(t *testing.T) {
+		manager := NewManagerV2()
+
+		cmd := &mockCommand{
+			info: &Info{
+				Name:    "app-create",
+				Desc:    "Create an app",
+				MinArgs: 1,
+				MaxArgs: 3,
+			},
+		}
+
+		manager.registerV2SubCommand(cmd)
+
+		leafNode := manager.tree.Children["app"].Children["create"]
+		assert.NotNil(t, leafNode)
+		assert.False(t, leafNode.Command.DisableFlagParsing)
+		assert.False(t, leafNode.Command.SilenceUsage)
+		assert.NotNil(t, leafNode.Command.Args)
+	})
+
+	t.Run("command_use_and_descriptions", func(t *testing.T) {
+		manager := NewManagerV2()
+
+		cmd := &mockCommand{
+			info: &Info{
+				Name:  "service-bind",
+				Desc:  "Bind a service to an app\nDetailed description here",
+				Usage: "service-bind <service> <app>",
+			},
+		}
+
+		manager.registerV2SubCommand(cmd)
+
+		leafNode := manager.tree.Children["service"].Children["bind"]
+		assert.NotNil(t, leafNode)
+		assert.Equal(t, "bind", leafNode.Command.Use)
+		assert.Equal(t, "Bind a service to an app", leafNode.Command.Short)
+		assert.Equal(t, cmd.info.Desc, leafNode.Command.Long)
 	})
 }
 

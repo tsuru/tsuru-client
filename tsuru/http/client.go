@@ -79,15 +79,21 @@ type errCauser interface {
 
 func UnwrapErr(err error) error {
 	for err != nil {
+		var possibleErr error
 		if cause, ok := err.(errCauser); ok {
-			err = cause.Cause()
+			possibleErr = cause.Cause()
 		} else if u, ok := err.(errWrapped); ok {
-			err = u.Unwrap()
+			possibleErr = u.Unwrap()
 		} else if urlErr, ok := err.(*url.Error); ok {
-			err = urlErr.Err
+			possibleErr = urlErr.Err
 		} else {
 			break
 		}
+
+		if possibleErr == nil {
+			break
+		}
+		err = possibleErr
 	}
 
 	return err

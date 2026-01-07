@@ -83,7 +83,8 @@ type Manager struct {
 
 // This is discouraged: use NewManagerPanicExiter instead. Handle panic(*PanicExitError) accordingly
 func NewManager(name string, stdout, stderr io.Writer, stdin io.Reader, lookup Lookup) *Manager {
-	manager := &Manager{
+	var manager *Manager
+	manager = &Manager{
 		name:          name,
 		stdout:        stdout,
 		stderr:        stderr,
@@ -93,28 +94,23 @@ func NewManager(name string, stdout, stderr io.Writer, stdin io.Reader, lookup L
 		topicCommands: map[string][]Command{},
 
 		// v2 will be a replacement for this manager in the future
-		v2: NewManagerV2(),
+		v2: NewManagerV2(&ManagerV2Opts{
+			AfterFlagParseHook: func() {
+				if manager.AfterFlagParseHook != nil {
+					manager.AfterFlagParseHook()
+				}
+			},
+		}),
 	}
+
 	manager.Register(&help{manager})
 	return manager
 }
 
 // When using this, you should handle panic(*PanicExitError) accordingly
 func NewManagerPanicExiter(name string, stdout, stderr io.Writer, stdin io.Reader, lookup Lookup) *Manager {
-	manager := &Manager{
-		name:          name,
-		stdout:        stdout,
-		stderr:        stderr,
-		stdin:         stdin,
-		lookup:        lookup,
-		topics:        map[string]string{},
-		topicCommands: map[string][]Command{},
-
-		// v2 will be a replacement for this manager in the future
-		v2: NewManagerV2(),
-	}
+	manager := NewManager(name, stdout, stderr, stdin, lookup)
 	manager.e = PanicExiter{}
-	manager.Register(&help{manager})
 	return manager
 }
 
