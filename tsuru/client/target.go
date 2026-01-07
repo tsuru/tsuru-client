@@ -227,8 +227,7 @@ func (t *TargetAdd) Run(ctx *cmd.Context) error {
 func (t *TargetAdd) Flags() *pflag.FlagSet {
 	if t.fs == nil {
 		t.fs = pflag.NewFlagSet("target-add", pflag.ExitOnError)
-		t.fs.BoolVar(&t.set, "set-current", false, "Add and define the target as the current target")
-		t.fs.BoolVar(&t.set, "s", false, "Add and define the target as the current target")
+		t.fs.BoolVarP(&t.set, "set-current", "s", false, "Add and define the target as the current target")
 	}
 	return t.fs
 }

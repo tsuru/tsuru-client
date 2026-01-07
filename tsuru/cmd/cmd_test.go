@@ -921,8 +921,7 @@ func (c *CommandWithFlags) Flags() *pflag.FlagSet {
 		if c.multi {
 			desc = "velvet darkness\nthey fear"
 		}
-		c.fs.IntVar(&c.age, "age", 0, desc)
-		c.fs.IntVar(&c.age, "a", 0, desc)
+		c.fs.IntVarP(&c.age, "age", "a", 0, desc)
 	}
 	return c.fs
 }
@@ -948,8 +947,7 @@ func (c *HelpCommandWithFlags) Run(context *Context) error {
 func (c *HelpCommandWithFlags) Flags() *pflag.FlagSet {
 	if c.fs == nil {
 		c.fs = pflag.NewFlagSet("with-flags", pflag.ContinueOnError)
-		c.fs.BoolVar(&c.h, "help", false, "help?")
-		c.fs.BoolVar(&c.h, "h", false, "help?")
+		c.fs.BoolVarP(&c.h, "help", "h", false, "help?")
 	}
 	return c.fs
 }

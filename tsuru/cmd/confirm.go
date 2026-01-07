@@ -18,8 +18,7 @@ type ConfirmationCommand struct {
 func (cmd *ConfirmationCommand) Flags() *pflag.FlagSet {
 	if cmd.fs == nil {
 		cmd.fs = pflag.NewFlagSet("", pflag.ExitOnError)
-		cmd.fs.BoolVar(&cmd.yes, "y", false, "Don't ask for confirmation.")
-		cmd.fs.BoolVar(&cmd.yes, "assume-yes", false, "Don't ask for confirmation.")
+		cmd.fs.BoolVarP(&cmd.yes, "assume-yes", "y", false, "Don't ask for confirmation.")
 	}
 	return cmd.fs
 }

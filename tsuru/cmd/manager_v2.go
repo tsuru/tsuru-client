@@ -118,30 +118,35 @@ func (m *ManagerV2) registerV2SubCommand(command Command) {
 
 		if i == len(parts)-1 && !found {
 			curr.Command.Use = part + stripUsage(fqdn, info.Usage)
-			curr.Command.Short = strings.TrimSpace(strings.Split(info.Desc, "\n")[0])
-			curr.Command.Long = info.Desc
-			curr.Command.SilenceUsage = true
-			curr.Command.Hidden = info.V2.Hidden
-			curr.Command.Args = cobra.MinimumNArgs(0)
-			curr.Command.RunE = func(cobraCommand *cobra.Command, args []string) error {
-				return m.runCommand(command, cobraCommand, args)
-			}
-
-			flaggedCommand, isFlaggedCommand := command.(FlaggedCommand)
-
-			if isFlaggedCommand {
-				curr.Command.DisableFlagParsing = false
-				curr.Command.SilenceUsage = false
-				curr.Command.Flags().AddFlagSet(flaggedCommand.Flags())
-			}
-
-			if !isFlaggedCommand {
-				curr.Command.DisableFlagParsing = false
-				curr.Command.SilenceUsage = false
-				curr.Command.Args = cobra.RangeArgs(info.MinArgs, info.MaxArgs)
-
-			}
+			m.fillCommand(curr.Command, command)
 		}
+	}
+}
+
+func (m *ManagerV2) fillCommand(cobraCommand *cobra.Command, command Command) {
+	info := command.Info()
+
+	cobraCommand.Short = strings.TrimSpace(strings.Split(info.Desc, "\n")[0])
+	cobraCommand.Long = info.Desc
+	cobraCommand.DisableFlagParsing = false
+	cobraCommand.SilenceUsage = false
+	cobraCommand.Hidden = info.V2.Hidden
+
+	if info.MinArgs == info.MaxArgs || info.MinArgs > info.MaxArgs {
+		cobraCommand.Args = cobra.ExactArgs(info.MinArgs)
+	} else {
+		cobraCommand.Args = cobra.RangeArgs(info.MinArgs, info.MaxArgs)
+	}
+
+	cobraCommand.RunE = func(cobraCommand *cobra.Command, args []string) error {
+		return m.runCommand(command, cobraCommand, args)
+	}
+
+	flaggedCommand, isFlaggedCommand := command.(FlaggedCommand)
+
+	if isFlaggedCommand {
+		cobraCommand.Flags().SortFlags = false
+		cobraCommand.Flags().AddFlagSet(flaggedCommand.Flags())
 	}
 }
 
@@ -152,12 +157,6 @@ func stripUsage(fqdn, usage string) string {
 }
 
 func (m *ManagerV2) runCommand(command Command, cobraCommand *cobra.Command, args []string) error {
-	flaggedCommand, ok := command.(FlaggedCommand)
-	if ok {
-		fmt.Println("TODO: run command with flags", command.Info().Name)
-		fmt.Println("Flags:", flaggedCommand.Flags())
-		return nil
-	}
 
 	return command.Run(&Context{
 		Args:   args,
@@ -177,19 +176,12 @@ func (m *ManagerV2) registerV2FQDNOnRoot(command Command) {
 	fqdn := info.Name
 
 	newCmd := &cobra.Command{
-		Use:                fqdn,
-		Short:              strings.TrimSpace(strings.Split(info.Desc, "\n")[0]),
-		Long:               info.Usage,
-		GroupID:            info.V2.GroupID,
-		SilenceUsage:       true,
-		Args:               cobra.MinimumNArgs(0),
-		DisableFlagParsing: true,
-		Hidden:             !info.V2.OnlyAppendOnRoot,
-		RunE: func(cobraCommand *cobra.Command, args []string) error {
-			return m.runCommand(command, cobraCommand, args)
-		},
+		Use:     fqdn + stripUsage(fqdn, info.Usage),
+		GroupID: info.V2.GroupID,
 	}
 
+	m.fillCommand(newCmd, command)
+	newCmd.Hidden = !info.V2.OnlyAppendOnRoot
 	m.rootCmd.AddCommand(newCmd)
 }
 

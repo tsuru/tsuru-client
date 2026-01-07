@@ -17,6 +17,7 @@ import (
 	"github.com/spf13/pflag"
 	"github.com/tsuru/go-tsuruclient/pkg/tsuru"
 	"github.com/tsuru/tsuru-client/tsuru/cmd"
+	"github.com/tsuru/tsuru-client/tsuru/cmd/standards"
 	"github.com/tsuru/tsuru-client/tsuru/formatter"
 	tsuruHTTP "github.com/tsuru/tsuru-client/tsuru/http"
 )
@@ -107,15 +108,13 @@ func (c *TokenUpdateCmd) Flags() *pflag.FlagSet {
 		c.fs = pflag.NewFlagSet("", pflag.ExitOnError)
 
 		description := "A description on how the token will be used."
-		c.fs.StringVar(&c.args.Description, "description", "", description)
-		c.fs.StringVar(&c.args.Description, "d", "", description)
+		c.fs.StringVarP(&c.args.Description, standards.FlagDescription, standards.ShortFlagDescription, "", description)
 
 		regenerate := "Setting regenerate will change de value of the token, invalidating the previous value."
 		c.fs.BoolVar(&c.args.Regenerate, "regenerate", false, regenerate)
 
 		expiration := "The expiration for the token being updated. A duration suffix is mandatory ('s' for seconds, 'm' for minutes, 'h' for hours, ...). Setting to 0 or unset means the previous value will be used. Setting to a negative value will remove any existing expiration."
-		c.fs.DurationVar(&c.expires, "expires", 0, expiration)
-		c.fs.DurationVar(&c.expires, "e", 0, expiration)
+		c.fs.DurationVarP(&c.expires, "expires", "e", 0, expiration)
 	}
 	return c.fs
 }
