@@ -371,19 +371,6 @@ func (s *S) TestUnwrapErrStopsWhenUnwrapReturnsNil(c *check.C) {
 	c.Assert(result, check.Equals, err)
 }
 
-type testSameErrorReturn struct {
-	msg string
-}
-
-func (e *testSameErrorReturn) Error() string {
-	return e.msg
-}
-
-func (e *testSameErrorReturn) Cause() error {
-	// This simulates a bug where Cause returns itself
-	return e
-}
-
 func (s *S) TestUnwrapErrStopsOnSelfReference(c *check.C) {
 	// This test would hang in the old implementation because Cause() returns self
 	// The new implementation checks if possibleErr is nil and breaks
