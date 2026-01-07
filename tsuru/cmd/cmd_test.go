@@ -1149,3 +1149,37 @@ func (s *S) TestManagerV2InitializationInNewManagerPanicExiter(c *check.C) {
 	_, ok := mngr.e.(PanicExiter)
 	c.Assert(ok, check.Equals, true)
 }
+
+func (s *S) TestManagerRegisterDeprecatedWithV2Enabled(c *check.C) {
+	var stdout, stderr bytes.Buffer
+	mngr := NewManager("glb", &stdout, &stderr, os.Stdin, nil)
+	// Force enable v2 for this test
+	mngr.v2.Enabled = true
+
+	originalCmd := &TestCommand{}
+	mngr.RegisterDeprecated(originalCmd, "bar")
+
+	// Check command is registered in v1 manager
+	c.Assert(mngr.Commands["foo"], check.Equals, originalCmd)
+
+	// Check deprecated command is registered in v1 manager
+	deprecatedCmd, ok := mngr.Commands["bar"].(*DeprecatedCommand)
+	c.Assert(ok, check.Equals, true)
+	c.Assert(deprecatedCmd.Command, check.Equals, originalCmd)
+	c.Assert(deprecatedCmd.oldName, check.Equals, "bar")
+
+	// Check both original and deprecated commands are registered in v2 manager (root)
+	rootCommands := mngr.v2.rootCmd.Commands()
+	var foundOriginal, foundDeprecated bool
+	for _, v2cmd := range rootCommands {
+		if v2cmd.Use == "foo" {
+			foundOriginal = true
+		}
+		if v2cmd.Use == "bar" {
+			foundDeprecated = true
+			c.Assert(v2cmd.Hidden, check.Equals, true)
+		}
+	}
+	c.Assert(foundOriginal, check.Equals, true)
+	c.Assert(foundDeprecated, check.Equals, true)
+}

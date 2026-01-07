@@ -145,6 +145,13 @@ func (m *Manager) Register(command Command) {
 }
 
 func (m *Manager) RegisterDeprecated(command Command, oldName string) {
+	deprecatedCmd := &DeprecatedCommand{Command: command, oldName: oldName}
+
+	if m.v2.Enabled {
+		m.v2.Register(command)
+		m.v2.Register(deprecatedCmd)
+	}
+
 	if m.Commands == nil {
 		m.Commands = make(map[string]Command)
 	}
@@ -154,12 +161,7 @@ func (m *Manager) RegisterDeprecated(command Command, oldName string) {
 		panic(fmt.Sprintf("command already registered: %s", name))
 	}
 	m.Commands[name] = command
-	m.Commands[oldName] = &DeprecatedCommand{Command: command, oldName: oldName}
-
-	if m.v2.Enabled {
-		m.v2.Register(command)
-		m.v2.Register(m.Commands[oldName])
-	}
+	m.Commands[oldName] = deprecatedCmd
 }
 
 type RemovedCommand struct {
