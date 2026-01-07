@@ -117,7 +117,7 @@ func (m *ManagerV2) registerV2SubCommand(command Command) {
 		curr = curr.Children[part]
 
 		if i == len(parts)-1 && !found {
-			curr.Command.Use = part // TODO: parse info.Usage for better use string
+			curr.Command.Use = part + stripUsage(fqdn, info.Usage)
 			curr.Command.Short = strings.TrimSpace(strings.Split(info.Desc, "\n")[0])
 			curr.Command.Long = info.Desc
 			curr.Command.SilenceUsage = true
@@ -137,6 +137,12 @@ func (m *ManagerV2) registerV2SubCommand(command Command) {
 			}
 		}
 	}
+}
+
+func stripUsage(fqdn, usage string) string {
+	spacedFQDN := strings.ReplaceAll(fqdn, "-", " ")
+	usage = strings.Replace(usage, fqdn, "", 1)
+	return strings.Replace(usage, spacedFQDN, "", 1)
 }
 
 func (m *ManagerV2) runCommand(command Command, cobraCommand *cobra.Command, args []string) error {

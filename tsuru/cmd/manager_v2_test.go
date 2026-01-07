@@ -11,8 +11,8 @@ import (
 )
 
 type mockCommand struct {
-	info   *Info
-	runFn  func(context *Context) error
+	info  *Info
+	runFn func(context *Context) error
 }
 
 func (m *mockCommand) Info() *Info {
@@ -540,7 +540,7 @@ func TestManagerV2_registerV2SubCommand_NonFlaggedCommand(t *testing.T) {
 
 		leafNode := manager.tree.Children["service"].Children["bind"]
 		assert.NotNil(t, leafNode)
-		assert.Equal(t, "bind", leafNode.Command.Use)
+		assert.Equal(t, "bind <service> <app>", leafNode.Command.Use)
 		assert.Equal(t, "Bind a service to an app", leafNode.Command.Short)
 		assert.Equal(t, cmd.info.Desc, leafNode.Command.Long)
 	})
