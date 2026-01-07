@@ -22,6 +22,7 @@ import (
 	"github.com/tsuru/go-tsuruclient/pkg/tsuru"
 	"github.com/tsuru/tablecli"
 	"github.com/tsuru/tsuru-client/tsuru/cmd"
+	"github.com/tsuru/tsuru-client/tsuru/cmd/standards"
 	"github.com/tsuru/tsuru-client/tsuru/formatter"
 	tsuruHTTP "github.com/tsuru/tsuru-client/tsuru/http"
 	"github.com/tsuru/tsuru/service"
@@ -78,22 +79,21 @@ func (s *ServiceList) Info() *cmd.Info {
 func (c *ServiceList) Flags() *pflag.FlagSet {
 	if c.fs == nil {
 		c.fs = pflag.NewFlagSet("service-list", pflag.ExitOnError)
-		c.fs.StringVar(&c.filter.service, "service", "", "Filter instances by service")
-		c.fs.StringVar(&c.filter.service, "s", "", "Filter instances by service")
-		c.fs.StringVar(&c.filter.name, "name", "", "Filter service instances by name")
-		c.fs.StringVar(&c.filter.name, "n", "", "Filter service instances by name")
-		c.fs.StringVar(&c.filter.pool, "pool", "", "Filter service instances by pool")
-		c.fs.StringVar(&c.filter.pool, "o", "", "Filter service instances by pool")
-		c.fs.StringVar(&c.filter.plan, "plan", "", "Filter service instances by plan")
-		c.fs.StringVar(&c.filter.plan, "p", "", "Filter service instances by plan")
-		c.fs.StringVar(&c.filter.teamOwner, "team", "", "Filter service instances by team owner")
-		c.fs.StringVar(&c.filter.teamOwner, "t", "", "Filter service instances by team owner")
-		c.fs.BoolVar(&c.simplified, "q", false, "Display only service instances name")
-		c.fs.BoolVar(&c.json, "json", false, "Display in JSON format")
-		c.fs.BoolVar(&c.justServiceNames, "j", false, "Display just service names")
+		c.fs.SortFlags = false
+
+		c.fs.StringVarP(&c.filter.service, "service", "s", "", "Filter instances by service")
+		c.fs.StringVarP(&c.filter.name, standards.FlagName, standards.ShortFlagName, "", "Filter service instances by name")
+		c.fs.StringVarP(&c.filter.pool, standards.FlagPool, standards.ShortFlagPool, "", "Filter service instances by pool")
+		c.fs.StringVarP(&c.filter.plan, standards.FlagPlan, standards.ShortFlagPlan, "", "Filter service instances by plan")
+		c.fs.StringVarP(&c.filter.teamOwner, standards.FlagTeam, standards.ShortFlagTeam, "", "Filter service instances by team owner")
+
+		c.fs.BoolVarP(&c.simplified, standards.FlagOnlyName, standards.ShortFlagOnlyName, false, "Display only service instances name")
+
+		c.fs.BoolVar(&c.json, standards.FlagJSON, false, "Display in JSON format")
+		c.fs.BoolVarP(&c.justServiceNames, "just-services", "j", false, "Display just service names")
+
 		tagMessage := "Filter services by tag. Can be used multiple times"
-		c.fs.Var(&c.filter.tags, "tag", tagMessage)
-		c.fs.Var(&c.filter.tags, "g", tagMessage)
+		c.fs.VarP(&c.filter.tags, standards.FlagTag, "g", tagMessage)
 	}
 	return c.fs
 }
@@ -311,16 +311,19 @@ func (c *ServiceInstanceAdd) Run(ctx *cmd.Context) error {
 
 func (c *ServiceInstanceAdd) Flags() *pflag.FlagSet {
 	if c.fs == nil {
-		flagDesc := "the team that owns the service (mandatory if the user is member of more than one team)"
 		c.fs = pflag.NewFlagSet("service-instance-add", pflag.ExitOnError)
+
+		flagDesc := "the team that owns the service (mandatory if the user is member of more than one team)"
 		c.fs.StringVar(&c.teamOwner, "team-owner", "", flagDesc)
-		c.fs.StringVar(&c.teamOwner, "t", "", flagDesc)
+		c.fs.MarkHidden("team-owner")
+		c.fs.StringVarP(&c.teamOwner, standards.FlagTeam, standards.ShortFlagTeam, "", flagDesc)
+
 		descriptionMessage := "service instance description"
-		c.fs.StringVar(&c.description, "description", "", descriptionMessage)
-		c.fs.StringVar(&c.description, "d", "", descriptionMessage)
+		c.fs.StringVarP(&c.description, standards.FlagDescription, standards.ShortFlagDescription, "", descriptionMessage)
+
 		tagMessage := "service instance tag"
-		c.fs.Var(&c.tags, "tag", tagMessage)
-		c.fs.Var(&c.tags, "g", tagMessage)
+		c.fs.VarP(&c.tags, standards.FlagTag, "g", tagMessage)
+
 		c.fs.Var(&c.params, "plan-param", "Plan specific parameters")
 		c.fs.StringVar(&c.pool, "pool", "", "pool name where this service instance is going to run into (valid only for multi-cluster service)")
 	}
@@ -416,23 +419,28 @@ func (c *ServiceInstanceUpdate) Run(ctx *cmd.Context) error {
 func (c *ServiceInstanceUpdate) Flags() *pflag.FlagSet {
 	if c.fs == nil {
 		c.fs = pflag.NewFlagSet("service-instance-update", pflag.ExitOnError)
+		c.fs.SortFlags = false
 
 		teamOwnerMessage := "service instance team owner"
 		c.fs.StringVar(&c.teamOwner, "team-owner", "", teamOwnerMessage)
-		c.fs.StringVar(&c.teamOwner, "t", "", teamOwnerMessage)
+		c.fs.MarkHidden("team-owner")
+		c.fs.StringVarP(&c.teamOwner, standards.FlagTeam, standards.ShortFlagTeam, "", teamOwnerMessage)
+
 		descriptionMessage := "service instance description"
-		c.fs.StringVar(&c.description, "description", "", descriptionMessage)
-		c.fs.StringVar(&c.description, "d", "", descriptionMessage)
+		c.fs.StringVarP(&c.description, standards.FlagDescription, standards.ShortFlagDescription, "", descriptionMessage)
+
 		planMessage := "service instance plan"
-		c.fs.StringVar(&c.plan, "plan", "", planMessage)
-		c.fs.StringVar(&c.plan, "p", "", planMessage)
+		c.fs.StringVarP(&c.plan, standards.FlagPlan, standards.ShortFlagPlan, "", planMessage)
+
 		tagMessage := "service instance tag"
-		c.fs.Var(&c.tags, "tag", tagMessage)
-		c.fs.Var(&c.tags, "g", tagMessage)
+		c.fs.VarP(&c.tags, standards.FlagTag, "g", tagMessage)
+
 		c.fs.Var(&c.removeTags, "remove-tag", "tag to be removed from instance tags")
+
 		planParamMessage := "parameter to be added/updated in instance parameters"
 		c.fs.Var(&c.params, "plan-param", planParamMessage)
 		c.fs.Var(&c.params, "add-param", planParamMessage)
+
 		c.fs.Var(&c.removeParams, "remove-param", "parameter key to be removed from instance parameters")
 	}
 	return c.fs
@@ -500,11 +508,10 @@ func (sb *ServiceInstanceBind) Flags() *pflag.FlagSet {
 	if sb.fs == nil {
 		sb.fs = pflag.NewFlagSet("", pflag.ExitOnError)
 
-		sb.fs.StringVar(&sb.appName, "app", "", "The name of the app.")
-		sb.fs.StringVar(&sb.appName, "a", "", "The name of the app.")
-		sb.fs.StringVar(&sb.jobName, "job", "", "The name of the job.")
-		sb.fs.StringVar(&sb.jobName, "j", "", "The name of the job.")
-		sb.fs.BoolVar(&sb.noRestart, "no-restart", false, "Binds an application to a service instance without restarting the application. Does not apply to jobs")
+		sb.fs.StringVarP(&sb.appName, standards.FlagApp, standards.ShortFlagApp, "", "The name of the app.")
+		sb.fs.StringVarP(&sb.jobName, standards.FlagJob, standards.ShortFlagJob, "", "The name of the job.")
+
+		sb.fs.BoolVar(&sb.noRestart, standards.FlagNoRestart, false, "Binds an application to a service instance without restarting the application. Does not apply to jobs")
 	}
 	return sb.fs
 }
@@ -569,12 +576,10 @@ a MySQL service, the application would lose access to the database.`,
 func (su *ServiceInstanceUnbind) Flags() *pflag.FlagSet {
 	if su.fs == nil {
 		su.fs = pflag.NewFlagSet("", pflag.ExitOnError)
-
-		su.fs.StringVar(&su.appName, "app", "", "The name of the app.")
-		su.fs.StringVar(&su.appName, "a", "", "The name of the app.")
-		su.fs.StringVar(&su.jobName, "job", "", "The name of the job.")
-		su.fs.StringVar(&su.jobName, "j", "", "The name of the job.")
-		su.fs.BoolVar(&su.noRestart, "no-restart", false, "Unbinds an application from a service instance without restarting the application. Does not apply to jobs")
+		su.fs.SortFlags = false
+		su.fs.StringVarP(&su.appName, standards.FlagApp, standards.ShortFlagApp, "", "The name of the app.")
+		su.fs.StringVarP(&su.jobName, standards.FlagJob, standards.ShortFlagJob, "", "The name of the job.")
+		su.fs.BoolVar(&su.noRestart, standards.FlagNoRestart, false, "Unbinds an application from a service instance without restarting the application. Does not apply to jobs")
 		su.fs.BoolVar(&su.force, "force", false, "Forces the unbind even if the unbind API call to the service fails")
 	}
 	return su.fs
@@ -588,7 +593,7 @@ type ServiceInstanceInfo struct {
 func (c *ServiceInstanceInfo) Flags() *pflag.FlagSet {
 	if c.fs == nil {
 		c.fs = pflag.NewFlagSet("service-instance-info", pflag.ContinueOnError)
-		c.fs.BoolVar(&c.json, "json", false, "Show JSON")
+		c.fs.BoolVar(&c.json, standards.FlagJSON, false, "Show JSON")
 	}
 	return c.fs
 }
@@ -782,8 +787,7 @@ func (c *ServicePlanList) Flags() *pflag.FlagSet {
 	if c.fs == nil {
 		flagDesc := "the pool used to fetch details (could be required if the service is a multi-cluster offering)"
 		c.fs = pflag.NewFlagSet("service-plan-list", pflag.ExitOnError)
-		c.fs.StringVar(&c.pool, "pool", "", flagDesc)
-		c.fs.StringVar(&c.pool, "p", "", flagDesc)
+		c.fs.StringVarP(&c.pool, standards.FlagPool, "p", "", flagDesc)
 	}
 	return c.fs
 }
@@ -969,9 +973,8 @@ func (c *ServiceInfo) WriteDoc(ctx *cmd.Context) error {
 func (c *ServiceInfo) Flags() *pflag.FlagSet {
 	if c.fs == nil {
 		flagDesc := "the pool used to fetch details (could be required if the service is a multi-cluster offering)"
-		c.fs = pflag.NewFlagSet("service-instance-add", pflag.ExitOnError)
-		c.fs.StringVar(&c.pool, "pool", "", flagDesc)
-		c.fs.StringVar(&c.pool, "p", "", flagDesc)
+		c.fs = pflag.NewFlagSet("service-info", pflag.ExitOnError)
+		c.fs.StringVarP(&c.pool, standards.FlagPool, "p", "", flagDesc)
 	}
 	return c.fs
 }
@@ -1109,8 +1112,7 @@ func (c *ServiceInstanceRemove) Run(ctx *cmd.Context) error {
 func (c *ServiceInstanceRemove) Flags() *pflag.FlagSet {
 	if c.fs == nil {
 		c.fs = c.ConfirmationCommand.Flags()
-		c.fs.BoolVar(&c.force, "f", false, "Forces the removal of a service instance binded to apps.")
-		c.fs.BoolVar(&c.force, "force", false, "Forces the removal of a service instance binded to apps.")
+		c.fs.BoolVarP(&c.force, "force", "f", false, "Forces the removal of a service instance binded to apps.")
 		c.fs.BoolVar(&c.ignoreErrors, "ignore-errors", false, "Ignore errors returned by service backend.")
 	}
 	return c.fs

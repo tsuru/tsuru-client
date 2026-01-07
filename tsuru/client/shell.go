@@ -48,10 +48,8 @@ func (c *ShellToContainerCmd) Flags() *pflag.FlagSet {
 	if c.fs == nil {
 		c.fs = c.AppNameMixIn.Flags()
 		help := "Run shell in a new unit"
-		c.fs.BoolVar(&c.isolated, "isolated", false, help)
-		c.fs.BoolVar(&c.isolated, "i", false, help)
-		c.fs.BoolVar(&c.debug, "debug", false, "Enable debug mode")
-		c.fs.BoolVar(&c.debug, "d", false, "Enable debug mode")
+		c.fs.BoolVarP(&c.isolated, "isolated", "i", false, help)
+		c.fs.BoolVarP(&c.debug, "debug", "d", false, "Enable debug mode")
 	}
 	return c.fs
 }

@@ -56,20 +56,16 @@ func (c *TokenCreateCmd) Flags() *pflag.FlagSet {
 		c.fs = pflag.NewFlagSet("", pflag.ExitOnError)
 
 		description := "A description on how the token will be used."
-		c.fs.StringVar(&c.args.Description, "description", "", description)
-		c.fs.StringVar(&c.args.Description, "d", "", description)
+		c.fs.StringVarP(&c.args.Description, standards.FlagDescription, standards.ShortFlagDescription, "", description)
 
 		tokenID := "A unique identifier for the token being created."
-		c.fs.StringVar(&c.args.TokenId, "id", "", tokenID)
-		c.fs.StringVar(&c.args.TokenId, "i", "", tokenID)
+		c.fs.StringVarP(&c.args.TokenId, "id", "i", "", tokenID)
 
 		team := "The team name responsible for this token."
-		c.fs.StringVar(&c.args.Team, "team", "", team)
-		c.fs.StringVar(&c.args.Team, "t", "", team)
+		c.fs.StringVarP(&c.args.Team, standards.FlagTeam, standards.ShortFlagTeam, "", team)
 
 		expiration := "The expiration for the token being created. A duration suffix is mandatory (s for seconds, m for minutes, h for hours, ...). 0 or unset means it never expires."
-		c.fs.DurationVar(&c.expires, "expires", 0, expiration)
-		c.fs.DurationVar(&c.expires, "e", 0, expiration)
+		c.fs.DurationVarP(&c.expires, "expires", "e", 0, expiration)
 	}
 	return c.fs
 }
