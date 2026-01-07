@@ -14,7 +14,7 @@ import (
 	"net/url"
 	"strconv"
 
-	"github.com/tsuru/gnuflag"
+	"github.com/spf13/pflag"
 	"github.com/tsuru/go-tsuruclient/pkg/config"
 	tsuruClientApp "github.com/tsuru/tsuru-client/tsuru/app"
 	"github.com/tsuru/tsuru-client/tsuru/cmd"
@@ -25,7 +25,7 @@ import (
 
 type UnitAdd struct {
 	tsuruClientApp.AppNameMixIn
-	fs      *gnuflag.FlagSet
+	fs      *pflag.FlagSet
 	process string
 	version string
 }
@@ -40,7 +40,7 @@ app to be able to add new units to it.`,
 	}
 }
 
-func (c *UnitAdd) Flags() *gnuflag.FlagSet {
+func (c *UnitAdd) Flags() *pflag.FlagSet {
 	if c.fs == nil {
 		c.fs = c.AppNameMixIn.Flags()
 		c.fs.StringVar(&c.process, "process", "", "Process name")
@@ -79,7 +79,7 @@ func (c *UnitAdd) Run(context *cmd.Context) error {
 
 type UnitRemove struct {
 	tsuruClientApp.AppNameMixIn
-	fs      *gnuflag.FlagSet
+	fs      *pflag.FlagSet
 	process string
 	version string
 }
@@ -94,7 +94,7 @@ app to be able to remove units from it.`,
 	}
 }
 
-func (c *UnitRemove) Flags() *gnuflag.FlagSet {
+func (c *UnitRemove) Flags() *pflag.FlagSet {
 	if c.fs == nil {
 		c.fs = c.AppNameMixIn.Flags()
 		c.fs.StringVar(&c.process, "process", "", "Process name")
@@ -132,7 +132,7 @@ func (c *UnitRemove) Run(context *cmd.Context) error {
 type UnitKill struct {
 	tsuruClientApp.AppNameMixIn
 	jobName string
-	fs      *gnuflag.FlagSet
+	fs      *pflag.FlagSet
 	force   bool
 }
 
@@ -146,7 +146,7 @@ app or job to be able to remove unit from it.`,
 	}
 }
 
-func (c *UnitKill) Flags() *gnuflag.FlagSet {
+func (c *UnitKill) Flags() *pflag.FlagSet {
 	if c.fs == nil {
 		c.fs = c.AppNameMixIn.Flags()
 		c.fs.StringVar(&c.jobName, "job", "", "The name of the job.")
@@ -192,7 +192,7 @@ func (c *UnitKill) Run(context *cmd.Context) error {
 
 type UnitSet struct {
 	tsuruClientApp.AppNameMixIn
-	fs      *gnuflag.FlagSet
+	fs      *pflag.FlagSet
 	process string
 	version int
 }
@@ -207,7 +207,7 @@ app to be able to set the number of units for it. The process flag is optional i
 	}
 }
 
-func (c *UnitSet) Flags() *gnuflag.FlagSet {
+func (c *UnitSet) Flags() *pflag.FlagSet {
 	if c.fs == nil {
 		c.fs = c.AppNameMixIn.Flags()
 		processMessage := "Process name"

@@ -12,7 +12,7 @@ import (
 	"strings"
 	"time"
 
-	"github.com/tsuru/gnuflag"
+	"github.com/spf13/pflag"
 	"github.com/tsuru/go-tsuruclient/pkg/config"
 	tsuruClientApp "github.com/tsuru/tsuru-client/tsuru/app"
 	"github.com/tsuru/tsuru-client/tsuru/cmd"
@@ -22,7 +22,7 @@ import (
 
 type AppLog struct {
 	tsuruClientApp.AppNameMixIn
-	fs       *gnuflag.FlagSet
+	fs       *pflag.FlagSet
 	source   string
 	unit     string
 	lines    int
@@ -163,7 +163,7 @@ func (c *AppLog) Run(context *cmd.Context) error {
 	return nil
 }
 
-func (c *AppLog) Flags() *gnuflag.FlagSet {
+func (c *AppLog) Flags() *pflag.FlagSet {
 	if c.fs == nil {
 		c.fs = c.AppNameMixIn.Flags()
 		c.fs.IntVar(&c.lines, "lines", 10, "The number of log lines to display")

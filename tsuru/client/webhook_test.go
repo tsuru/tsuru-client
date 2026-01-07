@@ -49,7 +49,7 @@ func (s *S) TestWebhookCreate(c *check.C) {
 	}
 	s.setupFakeTransport(&trans)
 	command := WebhookCreate{}
-	command.Flags().Parse(true, []string{})
+	command.Flags().Parse([]string{})
 	err := command.Run(&context)
 	c.Assert(err, check.IsNil)
 	c.Assert(stdout.String(), check.Equals, expected)
@@ -99,7 +99,7 @@ func (s *S) TestWebhookCreateFlags(c *check.C) {
 	}
 	s.setupFakeTransport(&trans)
 	command := WebhookCreate{}
-	command.Flags().Parse(true, []string{
+	command.Flags().Parse([]string{
 		"--description", "desc1",
 		"--team", "t1",
 		"--method", "GET",
@@ -260,7 +260,7 @@ func (s *S) TestWebhookUpdate(c *check.C) {
 	}
 	s.setupFakeTransport(&trans)
 	command := WebhookUpdate{}
-	command.Flags().Parse(true, []string{})
+	command.Flags().Parse([]string{})
 	err = command.Run(&context)
 	c.Assert(err, check.IsNil)
 	c.Assert(callCount, check.Equals, 2)
@@ -315,7 +315,7 @@ func (s *S) TestWebhookUpdateWithFlags(c *check.C) {
 	}
 	s.setupFakeTransport(&trans)
 	command := WebhookUpdate{}
-	command.Flags().Parse(true, []string{
+	command.Flags().Parse([]string{
 		"--url", "http://y.com",
 		"--no-header",
 		"--no-body",

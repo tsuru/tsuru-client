@@ -240,7 +240,7 @@ func (s *S) TestEventListWithFilters(c *check.C) {
 	}
 	s.setupFakeTransport(trans)
 	command := EventList{}
-	err := command.Flags().Parse(true, []string{"-k", "app.update", "-k", "app.deploy", "-o", "event-owner", "-t", "app", "-v", "appname", "-r"})
+	err := command.Flags().Parse([]string{"-k", "app.update", "-k", "app.deploy", "-o", "event-owner", "-t", "app", "-v", "appname", "-r"})
 	c.Assert(err, check.IsNil)
 	err = command.Run(&context)
 	c.Assert(err, check.IsNil)
@@ -502,7 +502,7 @@ func (s *S) TestEventCancel(c *check.C) {
 	}
 	s.setupFakeTransport(trans)
 	command := EventCancel{}
-	command.Flags().Parse(true, []string{"-y"})
+	command.Flags().Parse([]string{"-y"})
 	err := command.Run(&context)
 	c.Assert(err, check.IsNil)
 	c.Assert(stdout.String(), check.Matches, "Cancellation successfully requested.\n")

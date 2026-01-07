@@ -54,7 +54,7 @@ func (s *S) TestJobCreate(c *check.C) {
 	}
 	s.setupFakeTransport(&trans)
 	command := JobCreate{}
-	command.Flags().Parse(true, []string{"-t", "admin", "-o", "somepool", "-s", "* * * * *", "-m", "300"})
+	command.Flags().Parse([]string{"-t", "admin", "-o", "somepool", "-s", "* * * * *", "-m", "300"})
 	err := command.Run(&context)
 	c.Assert(err, check.IsNil)
 	c.Assert(stdout.String(), check.Equals, expected)
@@ -94,7 +94,7 @@ func (s *S) TestJobCreateWithEmptyCommand(c *check.C) {
 	}
 	s.setupFakeTransport(&trans)
 	command := JobCreate{}
-	command.Flags().Parse(true, []string{"-t", "admin", "-o", "somepool", "-s", "* * * * *"})
+	command.Flags().Parse([]string{"-t", "admin", "-o", "somepool", "-s", "* * * * *"})
 	err := command.Run(&context)
 	c.Assert(err, check.IsNil)
 	c.Assert(stdout.String(), check.Equals, expected)
@@ -137,7 +137,7 @@ func (s *S) TestJobCreateManual(c *check.C) {
 	}
 	s.setupFakeTransport(&trans)
 	command := JobCreate{}
-	command.Flags().Parse(true, []string{"-t", "admin", "-o", "somepool", "--manual", "-m", "0"})
+	command.Flags().Parse([]string{"-t", "admin", "-o", "somepool", "--manual", "-m", "0"})
 	err := command.Run(&context)
 	c.Assert(err, check.IsNil)
 	c.Assert(stdout.String(), check.Equals, expected)
@@ -167,7 +167,7 @@ func (s *S) TestJobCreateParseMultipleCommands(c *check.C) {
 	}
 	s.setupFakeTransport(&trans)
 	command := JobCreate{}
-	command.Flags().Parse(true, []string{"-t", "admin", "-o", "somepool", "-s", "* * * * *", "--max-running-time", "0"})
+	command.Flags().Parse([]string{"-t", "admin", "-o", "somepool", "-s", "* * * * *", "--max-running-time", "0"})
 	err := command.Run(&context)
 	c.Assert(err, check.IsNil)
 	c.Assert(stdout.String(), check.Equals, expected)
@@ -196,7 +196,7 @@ func (s *S) TestJobCreateParseJSON(c *check.C) {
 	}
 	s.setupFakeTransport(&trans)
 	command := JobCreate{}
-	command.Flags().Parse(true, []string{"-t", "admin", "-o", "somepool", "-s", "* * * * *"})
+	command.Flags().Parse([]string{"-t", "admin", "-o", "somepool", "-s", "* * * * *"})
 	err := command.Run(&context)
 	c.Assert(err, check.IsNil)
 	c.Assert(stdout.String(), check.Equals, expected)
@@ -215,7 +215,7 @@ func (s *S) TestJobCreateApiError(c *check.C) {
 	}
 	s.setupFakeTransport(&trans)
 	command := JobCreate{}
-	command.Flags().Parse(true, []string{"-t", "admin", "-o", "somepool", "-s", "* * * * *"})
+	command.Flags().Parse([]string{"-t", "admin", "-o", "somepool", "-s", "* * * * *"})
 	err := command.Run(&context)
 	c.Assert(err, check.ErrorMatches, ".* some error occcured")
 }
@@ -229,7 +229,7 @@ func (s *S) TestJobCreateMutualScheduleAndManualError(c *check.C) {
 	}
 	s.setupFakeTransport(&cmdtest.Transport{Status: 200})
 	command := JobCreate{}
-	command.Flags().Parse(true, []string{"-t", "admin", "-o", "somepool", "-s", "* * * * *", "--manual"})
+	command.Flags().Parse([]string{"-t", "admin", "-o", "somepool", "-s", "* * * * *", "--manual"})
 	err := command.Run(&context)
 	c.Assert(err.Error(), check.Equals, "cannot set both manual job and schedule options")
 }
@@ -243,7 +243,7 @@ func (s *S) TestJobCreateNoJobTypeError(c *check.C) {
 	}
 	s.setupFakeTransport(&cmdtest.Transport{Status: 200})
 	command := JobCreate{}
-	command.Flags().Parse(true, []string{"-t", "admin", "-o", "somepool"})
+	command.Flags().Parse([]string{"-t", "admin", "-o", "somepool"})
 	err := command.Run(&context)
 	c.Assert(err.Error(), check.Equals, "schedule or manual option must be set")
 }
@@ -754,7 +754,7 @@ func (s *S) TestJobUpdate(c *check.C) {
 	c.Assert(command.Info().MinArgs, check.Equals, 1)
 	unlimitedMaxArgs := 0
 	c.Assert(command.Info().MaxArgs, check.Equals, unlimitedMaxArgs)
-	command.Flags().Parse(true, []string{"-i", "tsuru/scratch:latest", "-m", "-200"})
+	command.Flags().Parse([]string{"-i", "tsuru/scratch:latest", "-m", "-200"})
 	err := command.Run(&context)
 	c.Assert(err, check.IsNil)
 	c.Assert(stdout.String(), check.Equals, expected)
@@ -791,7 +791,7 @@ func (s *S) TestJobUpdateJSONCommands(c *check.C) {
 	}
 	s.setupFakeTransport(&trans)
 	command := JobUpdate{}
-	command.Flags().Parse(true, []string{"-i", "tsuru/scratch:latest"})
+	command.Flags().Parse([]string{"-i", "tsuru/scratch:latest"})
 	err := command.Run(&context)
 	c.Assert(err, check.IsNil)
 	c.Assert(stdout.String(), check.Equals, expected)
@@ -826,7 +826,7 @@ func (s *S) TestJobUpdateMutualScheduleAndManualError(c *check.C) {
 	}
 	s.setupFakeTransport(&cmdtest.Transport{Status: 200})
 	command := JobUpdate{}
-	command.Flags().Parse(true, []string{"-t", "admin", "-o", "somepool", "-s", "* * * * *", "--manual"})
+	command.Flags().Parse([]string{"-t", "admin", "-o", "somepool", "-s", "* * * * *", "--manual"})
 	err := command.Run(&context)
 	c.Assert(err.Error(), check.Equals, "cannot set both manual job and schedule options")
 }
@@ -898,7 +898,7 @@ func (s *S) TestJobLogFollow(c *check.C) {
 	}
 	s.setupFakeTransport(&trans)
 	command := JobLog{}
-	command.Flags().Parse(true, []string{"-f"})
+	command.Flags().Parse([]string{"-f"})
 	err := command.Run(&context)
 	c.Assert(err, check.IsNil)
 	c.Assert(stdout.String(), check.DeepEquals, expected)

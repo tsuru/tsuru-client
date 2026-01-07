@@ -5,11 +5,11 @@
 package client
 
 import (
-	"github.com/tsuru/gnuflag"
+	"github.com/spf13/pflag"
 )
 
-func mergeFlagSet(fs1, fs2 *gnuflag.FlagSet) *gnuflag.FlagSet {
-	fs2.VisitAll(func(flag *gnuflag.Flag) {
+func mergeFlagSet(fs1, fs2 *pflag.FlagSet) *pflag.FlagSet {
+	fs2.VisitAll(func(flag *pflag.Flag) {
 		fs1.Var(flag.Value, flag.Name, flag.Usage)
 	})
 	return fs1

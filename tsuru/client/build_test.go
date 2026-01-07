@@ -54,7 +54,7 @@ func (s *S) TestBuildRun(c *check.C) {
 		Args:   []string{"testdata", ".."},
 	}
 	command := AppBuild{}
-	command.Flags().Parse(true, []string{"-a", "myapp", "-t", "mytag"})
+	command.Flags().Parse([]string{"-a", "myapp", "-t", "mytag"})
 	err = command.Run(&context)
 	c.Assert(err, check.IsNil)
 	c.Assert(calledTimes, check.Equals, 2)
@@ -90,7 +90,7 @@ func (s *S) TestBuildFail(c *check.C) {
 		Args:   []string{"testdata", ".."},
 	}
 	command := AppBuild{}
-	command.Flags().Parse(true, []string{"-a", "myapp", "-t", "mytag"})
+	command.Flags().Parse([]string{"-a", "myapp", "-t", "mytag"})
 	err = command.Run(&context)
 	c.Assert(err, check.Equals, cmd.ErrAbortCommand)
 }
@@ -105,7 +105,7 @@ func (s *S) TestBuildRunWithoutArgs(c *check.C) {
 	trans := cmdtest.Transport{Message: "OK\n", Status: http.StatusOK}
 	s.setupFakeTransport(&trans)
 	command := AppBuild{}
-	command.Flags().Parse(true, []string{"-a", "myapp", "-t", "mytag"})
+	command.Flags().Parse([]string{"-a", "myapp", "-t", "mytag"})
 	err := command.Run(&ctx)
 	c.Assert(err, check.NotNil)
 	c.Assert(err.Error(), check.Equals, "you should provide at least one file to build the image")
@@ -121,7 +121,7 @@ func (s *S) TestBuildRunWithoutTag(c *check.C) {
 	trans := cmdtest.Transport{Message: "OK\n", Status: http.StatusOK}
 	s.setupFakeTransport(&trans)
 	command := AppBuild{}
-	command.Flags().Parse(true, []string{"-a", "myapp"})
+	command.Flags().Parse([]string{"-a", "myapp"})
 	err := command.Run(&ctx)
 	c.Assert(err, check.NotNil)
 	c.Assert(err.Error(), check.Equals, "you should provide one tag to build the image")

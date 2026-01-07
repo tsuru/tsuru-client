@@ -13,7 +13,7 @@ import (
 	"net/url"
 	"strings"
 
-	"github.com/tsuru/gnuflag"
+	"github.com/spf13/pflag"
 	"github.com/tsuru/go-tsuruclient/pkg/config"
 	"github.com/tsuru/tablecli"
 	"github.com/tsuru/tsuru-client/tsuru/cmd"
@@ -23,7 +23,7 @@ import (
 )
 
 type PermissionList struct {
-	fs   *gnuflag.FlagSet
+	fs   *pflag.FlagSet
 	tree bool
 }
 
@@ -41,9 +41,9 @@ func (c *PermissionList) Info() *cmd.Info {
 	}
 }
 
-func (c *PermissionList) Flags() *gnuflag.FlagSet {
+func (c *PermissionList) Flags() *pflag.FlagSet {
 	if c.fs == nil {
-		c.fs = gnuflag.NewFlagSet("permission-list", gnuflag.ExitOnError)
+		c.fs = pflag.NewFlagSet("permission-list", pflag.ExitOnError)
 		tree := "Show permissions in tree format."
 		c.fs.BoolVar(&c.tree, "tree", false, tree)
 		c.fs.BoolVar(&c.tree, "t", false, tree)
@@ -193,7 +193,7 @@ func (c *RoleInfo) Run(context *cmd.Context) error {
 
 type RoleAdd struct {
 	description string
-	fs          *gnuflag.FlagSet
+	fs          *pflag.FlagSet
 }
 
 func (c *RoleAdd) Info() *cmd.Info {
@@ -219,10 +219,10 @@ description associated.
 	return info
 }
 
-func (c *RoleAdd) Flags() *gnuflag.FlagSet {
+func (c *RoleAdd) Flags() *pflag.FlagSet {
 	if c.fs == nil {
 		descriptionMessage := "Role description"
-		c.fs = gnuflag.NewFlagSet("", gnuflag.ExitOnError)
+		c.fs = pflag.NewFlagSet("", pflag.ExitOnError)
 		c.fs.StringVar(&c.description, "description", "", descriptionMessage)
 		c.fs.StringVar(&c.description, "d", "", descriptionMessage)
 	}
@@ -492,13 +492,13 @@ func (c *RoleRemove) Run(context *cmd.Context) error {
 }
 
 type RoleDefaultAdd struct {
-	fs    *gnuflag.FlagSet
+	fs    *pflag.FlagSet
 	roles map[string]*cmd.StringSliceFlag
 }
 
-func (c *RoleDefaultAdd) Flags() *gnuflag.FlagSet {
+func (c *RoleDefaultAdd) Flags() *pflag.FlagSet {
 	if c.fs == nil {
-		c.fs = gnuflag.NewFlagSet("", gnuflag.ExitOnError)
+		c.fs = pflag.NewFlagSet("", pflag.ExitOnError)
 		c.roles = map[string]*cmd.StringSliceFlag{}
 		for eventName, event := range permTypes.RoleEventMap {
 			flag := &cmd.StringSliceFlag{}
@@ -552,13 +552,13 @@ func (c *RoleDefaultAdd) Run(context *cmd.Context) error {
 }
 
 type RoleDefaultRemove struct {
-	fs    *gnuflag.FlagSet
+	fs    *pflag.FlagSet
 	roles map[string]*cmd.StringSliceFlag
 }
 
-func (c *RoleDefaultRemove) Flags() *gnuflag.FlagSet {
+func (c *RoleDefaultRemove) Flags() *pflag.FlagSet {
 	if c.fs == nil {
-		c.fs = gnuflag.NewFlagSet("", gnuflag.ExitOnError)
+		c.fs = pflag.NewFlagSet("", pflag.ExitOnError)
 		c.roles = map[string]*cmd.StringSliceFlag{}
 		for eventName, event := range permTypes.RoleEventMap {
 			flag := &cmd.StringSliceFlag{}
@@ -669,7 +669,7 @@ type RoleUpdate struct {
 	newName     string
 	description string
 	contextType string
-	fs          *gnuflag.FlagSet
+	fs          *pflag.FlagSet
 }
 
 func (c *RoleUpdate) Info() *cmd.Info {
@@ -682,9 +682,9 @@ func (c *RoleUpdate) Info() *cmd.Info {
 	}
 }
 
-func (c *RoleUpdate) Flags() *gnuflag.FlagSet {
+func (c *RoleUpdate) Flags() *pflag.FlagSet {
 	if c.fs == nil {
-		c.fs = gnuflag.NewFlagSet("", gnuflag.ExitOnError)
+		c.fs = pflag.NewFlagSet("", pflag.ExitOnError)
 		roleDescription := "Updates a role description"
 		c.fs.StringVar(&c.description, "d", "", roleDescription)
 		c.fs.StringVar(&c.description, "description", "", roleDescription)

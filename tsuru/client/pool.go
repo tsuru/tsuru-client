@@ -12,7 +12,7 @@ import (
 	"strings"
 
 	"github.com/mitchellh/go-wordwrap"
-	"github.com/tsuru/gnuflag"
+	"github.com/spf13/pflag"
 	"github.com/tsuru/go-tsuruclient/pkg/config"
 	"github.com/tsuru/tablecli"
 	"github.com/tsuru/tsuru-client/tsuru/cmd"
@@ -26,7 +26,7 @@ type poolFilter struct {
 }
 
 type PoolList struct {
-	fs         *gnuflag.FlagSet
+	fs         *pflag.FlagSet
 	filter     poolFilter
 	simplified bool
 	json       bool
@@ -69,9 +69,9 @@ func (l poolEntriesList) Less(i, j int) bool {
 	return cmp < 0
 }
 
-func (c *PoolList) Flags() *gnuflag.FlagSet {
+func (c *PoolList) Flags() *pflag.FlagSet {
 	if c.fs == nil {
-		c.fs = gnuflag.NewFlagSet("volume-list", gnuflag.ExitOnError)
+		c.fs = pflag.NewFlagSet("volume-list", pflag.ExitOnError)
 		c.fs.StringVar(&c.filter.name, "name", "", "Filter pools by name")
 		c.fs.StringVar(&c.filter.name, "n", "", "Filter pools by name")
 		c.fs.StringVar(&c.filter.team, "team", "", "Filter pools by team ")

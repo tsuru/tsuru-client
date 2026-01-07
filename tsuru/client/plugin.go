@@ -19,7 +19,7 @@ import (
 	"runtime"
 	"strings"
 
-	"github.com/tsuru/gnuflag"
+	"github.com/spf13/pflag"
 	"github.com/tsuru/go-tsuruclient/pkg/config"
 	"github.com/tsuru/tsuru-client/tsuru/cmd"
 	"github.com/tsuru/tsuru/exec"
@@ -381,7 +381,7 @@ func RunPlugin(context *cmd.Context) error {
 }
 
 type PluginBundle struct {
-	fs  *gnuflag.FlagSet
+	fs  *pflag.FlagSet
 	url string
 }
 type BundleManifest struct {
@@ -396,9 +396,9 @@ func (PluginBundle) Info() *cmd.Info {
 	}
 }
 
-func (c *PluginBundle) Flags() *gnuflag.FlagSet {
+func (c *PluginBundle) Flags() *pflag.FlagSet {
 	if c.fs == nil {
-		c.fs = gnuflag.NewFlagSet("plugin-bundle", gnuflag.ExitOnError)
+		c.fs = pflag.NewFlagSet("plugin-bundle", pflag.ExitOnError)
 		c.fs.StringVar(&c.url, "url", "", "URL for the remote plugin-bundle JSON manifest")
 	}
 	return c.fs

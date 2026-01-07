@@ -7,14 +7,14 @@ package client
 import (
 	"errors"
 
-	"github.com/tsuru/gnuflag"
+	"github.com/spf13/pflag"
 )
 
 type JobOrApp struct {
 	Type       string
 	val        string
 	appProcess string
-	fs         *gnuflag.FlagSet
+	fs         *pflag.FlagSet
 }
 
 func (c *JobOrApp) validate() error {

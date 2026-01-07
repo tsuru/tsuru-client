@@ -189,7 +189,7 @@ func (s *S) TestServiceListWithTags(c *check.C) {
 	}
 	s.setupFakeTransport(&trans)
 	command := ServiceList{}
-	command.Flags().Parse(true, []string{"--tag", "tag1", "--tag", "tag2"})
+	command.Flags().Parse([]string{"--tag", "tag1", "--tag", "tag2"})
 	err = command.Run(&ctx)
 	c.Assert(err, check.IsNil)
 
@@ -306,7 +306,7 @@ func (s *S) TestServiceInstanceBind(c *check.C) {
 	}
 	s.setupFakeTransport(trans)
 	command := ServiceInstanceBind{}
-	command.Flags().Parse(true, []string{"-a", "g1", "--no-restart"})
+	command.Flags().Parse([]string{"-a", "g1", "--no-restart"})
 	err = command.Run(&ctx)
 	c.Assert(err, check.IsNil)
 	c.Assert(called, check.Equals, true)
@@ -335,7 +335,7 @@ func (s *S) TestServiceInstanceBindWithoutEnvironmentVariables(c *check.C) {
 	}
 	s.setupFakeTransport(trans)
 	command := ServiceInstanceBind{}
-	command.Flags().Parse(true, []string{"-a", "g1"})
+	command.Flags().Parse([]string{"-a", "g1"})
 	err = command.Run(&ctx)
 	c.Assert(err, check.IsNil)
 	c.Assert(stdout.String(), check.Equals, expectedOut)
@@ -351,7 +351,7 @@ func (s *S) TestServiceInstanceBindWithRequestFailure(c *check.C) {
 	trans := &cmdtest.Transport{Message: "This user does not have access to this app.", Status: http.StatusForbidden}
 	s.setupFakeTransport(trans)
 	command := ServiceInstanceBind{}
-	command.Flags().Parse(true, []string{"-a", "g1"})
+	command.Flags().Parse([]string{"-a", "g1"})
 	err := command.Run(&ctx)
 	c.Assert(err, check.NotNil)
 	c.Assert(err, check.ErrorMatches, ".*"+trans.Message)
@@ -382,7 +382,7 @@ func (s *S) TestServiceInstanceJobBind(c *check.C) {
 	}
 	s.setupFakeTransport(trans)
 	command := ServiceInstanceBind{}
-	command.Flags().Parse(true, []string{"-j", "job1"})
+	command.Flags().Parse([]string{"-j", "job1"})
 	err = command.Run(&ctx)
 	c.Assert(err, check.IsNil)
 	c.Assert(called, check.Equals, true)
@@ -410,7 +410,7 @@ func (s *S) TestServiceInstanceJobBindWithoutEnvironmentVariables(c *check.C) {
 	}
 	s.setupFakeTransport(trans)
 	command := ServiceInstanceBind{}
-	command.Flags().Parse(true, []string{"-j", "sample-job"})
+	command.Flags().Parse([]string{"-j", "sample-job"})
 	err = command.Run(&ctx)
 	c.Assert(err, check.IsNil)
 	c.Assert(stdout.String(), check.Equals, expectedOut)
@@ -426,7 +426,7 @@ func (s *S) TestServiceInstanceJobBindWithRequestFailure(c *check.C) {
 	trans := &cmdtest.Transport{Message: "This user does not have access to this job.", Status: http.StatusForbidden}
 	s.setupFakeTransport(trans)
 	command := ServiceInstanceBind{}
-	command.Flags().Parse(true, []string{"-j", "sample-job"})
+	command.Flags().Parse([]string{"-j", "sample-job"})
 	err := command.Run(&ctx)
 	c.Assert(err, check.NotNil)
 	c.Assert(err, check.ErrorMatches, ".*"+trans.Message)
@@ -465,7 +465,7 @@ func (s *S) TestServiceInstanceUnbind(c *check.C) {
 	}
 	s.setupFakeTransport(trans)
 	command := ServiceInstanceUnbind{}
-	command.Flags().Parse(true, []string{"-a", "pocket", "--no-restart", "--force"})
+	command.Flags().Parse([]string{"-a", "pocket", "--no-restart", "--force"})
 	err = command.Run(&ctx)
 	c.Assert(err, check.IsNil)
 	c.Assert(called, check.Equals, true)
@@ -483,7 +483,7 @@ func (s *S) TestServiceInstanceUnbindWithRequestFailure(c *check.C) {
 
 	s.setupFakeTransport(trans)
 	command := ServiceInstanceUnbind{}
-	command.Flags().Parse(true, []string{"-a", "pocket"})
+	command.Flags().Parse([]string{"-a", "pocket"})
 	err := command.Run(&ctx)
 	c.Assert(err, check.NotNil)
 	c.Assert(tsuruHTTP.UnwrapErr(err).Error(), check.Equals, trans.Message)
@@ -512,7 +512,7 @@ func (s *S) TestServiceInstanceJobUnbind(c *check.C) {
 	}
 	s.setupFakeTransport(trans)
 	command := ServiceInstanceUnbind{}
-	command.Flags().Parse(true, []string{"-j", "sample-job"})
+	command.Flags().Parse([]string{"-j", "sample-job"})
 	err = command.Run(&ctx)
 	c.Assert(err, check.IsNil)
 	c.Assert(called, check.Equals, true)
@@ -543,7 +543,7 @@ func (s *S) TestServiceInstanceJobForceUnbind(c *check.C) {
 	}
 	s.setupFakeTransport(trans)
 	command := ServiceInstanceUnbind{}
-	command.Flags().Parse(true, []string{"-j", "sample-job", "--force"})
+	command.Flags().Parse([]string{"-j", "sample-job", "--force"})
 	err = command.Run(&ctx)
 	c.Assert(err, check.IsNil)
 	c.Assert(called, check.Equals, true)
@@ -561,7 +561,7 @@ func (s *S) TestServiceInstanceJobUnbindWithRequestFailure(c *check.C) {
 
 	s.setupFakeTransport(trans)
 	command := ServiceInstanceUnbind{}
-	command.Flags().Parse(true, []string{"-j", "sample-job"})
+	command.Flags().Parse([]string{"-j", "sample-job"})
 	err := command.Run(&ctx)
 	c.Assert(err, check.NotNil)
 	c.Assert(tsuruHTTP.UnwrapErr(err).Error(), check.Equals, trans.Message)
@@ -629,7 +629,7 @@ func (s *S) TestServiceInstanceAddRun(c *check.C) {
 	}
 	s.setupFakeTransport(&trans)
 	command := ServiceInstanceAdd{}
-	command.Flags().Parse(true, []string{
+	command.Flags().Parse([]string{
 		"--team-owner", "my team",
 		"--description", "desc",
 		"--tag", "my tag 1", "--tag", "my tag 2",
@@ -679,7 +679,7 @@ func (s *S) TestServiceInstanceAddRunWithEmptyTag(c *check.C) {
 	}
 	s.setupFakeTransport(&trans)
 	command := ServiceInstanceAdd{}
-	command.Flags().Parse(true, []string{"--tag", ""})
+	command.Flags().Parse([]string{"--tag", ""})
 	err := command.Run(&context)
 	c.Assert(err, check.IsNil)
 	obtained := stdout.String()
@@ -691,7 +691,7 @@ func (s *S) TestServiceInstanceAddFlags(c *check.C) {
 	command := ServiceInstanceAdd{}
 	flagset := command.Flags()
 	c.Assert(flagset, check.NotNil)
-	flagset.Parse(true, []string{"-t", "wat"})
+	flagset.Parse([]string{"-t", "wat"})
 	assume := flagset.Lookup("team-owner")
 	c.Check(assume, check.NotNil)
 	c.Check(assume.Name, check.Equals, "team-owner")
@@ -706,7 +706,7 @@ func (s *S) TestServiceInstanceAddFlags(c *check.C) {
 	c.Check(sassume.DefValue, check.Equals, "")
 	c.Check(command.teamOwner, check.Equals, "wat")
 	flagDesc = "service instance description"
-	flagset.Parse(true, []string{"-d", "description"})
+	flagset.Parse([]string{"-d", "description"})
 	assume = flagset.Lookup("description")
 	c.Check(assume, check.NotNil)
 	c.Check(assume.Name, check.Equals, "description")
@@ -721,7 +721,7 @@ func (s *S) TestServiceInstanceAddFlags(c *check.C) {
 	c.Check(sassume.DefValue, check.Equals, "")
 	c.Check(command.description, check.Equals, "description")
 	flagDesc = "service instance tag"
-	flagset.Parse(true, []string{"-g", "my tag"})
+	flagset.Parse([]string{"-g", "my tag"})
 	assume = flagset.Lookup("tag")
 	c.Check(assume, check.NotNil)
 	c.Check(assume.Name, check.Equals, "tag")
@@ -798,7 +798,7 @@ func (s *S) TestServiceInstanceUpdateRun(c *check.C) {
 	}
 	s.setupFakeTransport(&trans)
 	command := ServiceInstanceUpdate{}
-	command.Flags().Parse(true, []string{
+	command.Flags().Parse([]string{
 		"--description", "New description",
 		"--team-owner", "new-team",
 		"--plan", "new-plan",
@@ -816,7 +816,7 @@ func (s *S) TestServiceInstanceUpdateFlags(c *check.C) {
 	command := ServiceInstanceUpdate{}
 	flagset := command.Flags()
 	c.Assert(flagset, check.NotNil)
-	err := flagset.Parse(true, []string{"-t", "the new owner"})
+	err := flagset.Parse([]string{"-t", "the new owner"})
 	c.Assert(err, check.IsNil)
 	flagDesc := "service instance team owner"
 	assume := flagset.Lookup("team-owner")
@@ -833,7 +833,7 @@ func (s *S) TestServiceInstanceUpdateFlags(c *check.C) {
 	c.Check(assume.DefValue, check.Equals, "")
 	c.Check(command.teamOwner, check.Equals, "the new owner")
 
-	err = flagset.Parse(true, []string{"-d", "description"})
+	err = flagset.Parse([]string{"-d", "description"})
 	c.Assert(err, check.IsNil)
 	flagDesc = "service instance description"
 	assume = flagset.Lookup("description")
@@ -850,7 +850,7 @@ func (s *S) TestServiceInstanceUpdateFlags(c *check.C) {
 	c.Check(assume.DefValue, check.Equals, "")
 	c.Check(command.description, check.Equals, "description")
 
-	err = flagset.Parse(true, []string{"-g", "my tag"})
+	err = flagset.Parse([]string{"-g", "my tag"})
 	c.Assert(err, check.IsNil)
 	flagDesc = "service instance tag"
 	assume = flagset.Lookup("tag")
@@ -866,7 +866,7 @@ func (s *S) TestServiceInstanceUpdateFlags(c *check.C) {
 	c.Check(assume.Value.String(), check.Equals, "[\"my tag\"]")
 	c.Check(assume.DefValue, check.Equals, "[]")
 
-	err = flagset.Parse(true, []string{"--remove-tag", "my tag"})
+	err = flagset.Parse([]string{"--remove-tag", "my tag"})
 	c.Assert(err, check.IsNil)
 	assume = flagset.Lookup("remove-tag")
 	c.Check(assume, check.NotNil)
@@ -875,7 +875,7 @@ func (s *S) TestServiceInstanceUpdateFlags(c *check.C) {
 	c.Check(assume.Value.String(), check.Equals, "[\"my tag\"]")
 	c.Check(assume.DefValue, check.Equals, "[]")
 
-	err = flagset.Parse(true, []string{"-p", "my plan"})
+	err = flagset.Parse([]string{"-p", "my plan"})
 	c.Assert(err, check.IsNil)
 	flagDesc = "service instance plan"
 	assume = flagset.Lookup("plan")
@@ -891,7 +891,7 @@ func (s *S) TestServiceInstanceUpdateFlags(c *check.C) {
 	c.Check(assume.Value.String(), check.Equals, "my plan")
 	c.Check(assume.DefValue, check.Equals, "")
 
-	err = flagset.Parse(true, []string{"--add-param", "foo=bar"})
+	err = flagset.Parse([]string{"--add-param", "foo=bar"})
 	c.Assert(err, check.IsNil)
 	assume = flagset.Lookup("add-param")
 	c.Check(assume, check.NotNil)
@@ -900,7 +900,7 @@ func (s *S) TestServiceInstanceUpdateFlags(c *check.C) {
 	c.Check(assume.Value.String(), check.Equals, `{"foo":"bar"}`)
 	c.Check(assume.DefValue, check.Equals, "{}")
 
-	err = flagset.Parse(true, []string{"--plan-param", "foo=bar"})
+	err = flagset.Parse([]string{"--plan-param", "foo=bar"})
 	c.Assert(err, check.IsNil)
 	assume = flagset.Lookup("plan-param")
 	c.Check(assume, check.NotNil)
@@ -909,7 +909,7 @@ func (s *S) TestServiceInstanceUpdateFlags(c *check.C) {
 	c.Check(assume.Value.String(), check.Equals, `{"foo":"bar"}`)
 	c.Check(assume.DefValue, check.Equals, "{}")
 
-	err = flagset.Parse(true, []string{"--remove-param", "foo"})
+	err = flagset.Parse([]string{"--remove-param", "foo"})
 	c.Assert(err, check.IsNil)
 	assume = flagset.Lookup("remove-param")
 	c.Check(assume, check.NotNil)
@@ -1197,7 +1197,7 @@ func (s *S) TestServiceInstanceRemoveRunWithForce(c *check.C) {
 	}
 	s.setupFakeTransport(&transport)
 	cmd := ServiceInstanceRemove{}
-	cmd.Flags().Parse(true, []string{"-f", "-y"})
+	cmd.Flags().Parse([]string{"-f", "-y"})
 	err := cmd.Run(&ctx)
 	c.Assert(err, check.IsNil)
 }
@@ -1206,7 +1206,7 @@ func (s *S) TestServiceInstanceRemoveFlags(c *check.C) {
 	command := ServiceInstanceRemove{}
 	flagset := command.Flags()
 	c.Assert(flagset, check.NotNil)
-	flagset.Parse(true, []string{"-f"})
+	flagset.Parse([]string{"-f"})
 	c.Check(command.force, check.Equals, true)
 	assume := flagset.Lookup("f")
 	c.Check(assume.Name, check.Equals, "f")
@@ -1234,7 +1234,7 @@ func (s *S) TestServiceInstanceRemoveWithoutForce(c *check.C) {
 	}
 	s.setupFakeTransport(trans)
 	command := ServiceInstanceRemove{}
-	command.Flags().Parse(true, []string{"-y"})
+	command.Flags().Parse([]string{"-y"})
 	err := command.Run(&ctx)
 	c.Assert(err, check.NotNil)
 	c.Assert(tsuruHTTP.UnwrapErr(err).Error(), check.Equals, trans.Transport.(cmdtest.Transport).Message)
@@ -1258,7 +1258,7 @@ func (s *S) TestServiceInstanceRemoveWithAppBindWithFlags(c *check.C) {
 	}
 	s.setupFakeTransport(trans)
 	command := ServiceInstanceRemove{}
-	command.Flags().Parse(true, []string{"-f", "-y"})
+	command.Flags().Parse([]string{"-f", "-y"})
 	err := command.Run(&ctx)
 	c.Assert(err, check.IsNil)
 }
@@ -1281,7 +1281,7 @@ func (s *S) TestServiceInstanceRemoveWithAppBindWithFlagsIgnoreErros(c *check.C)
 	}
 	s.setupFakeTransport(trans)
 	command := ServiceInstanceRemove{}
-	command.Flags().Parse(true, []string{"-f", "-y", "--ignore-errors"})
+	command.Flags().Parse([]string{"-f", "-y", "--ignore-errors"})
 	err := command.Run(&ctx)
 	c.Assert(err, check.IsNil)
 }

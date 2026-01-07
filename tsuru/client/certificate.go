@@ -20,7 +20,7 @@ import (
 	"strings"
 	"time"
 
-	"github.com/tsuru/gnuflag"
+	"github.com/spf13/pflag"
 	"github.com/tsuru/go-tsuruclient/pkg/config"
 	"github.com/tsuru/tablecli"
 	tsuruClientApp "github.com/tsuru/tsuru-client/tsuru/app"
@@ -32,7 +32,7 @@ import (
 type CertificateSet struct {
 	tsuruClientApp.AppNameMixIn
 	cname string
-	fs    *gnuflag.FlagSet
+	fs    *pflag.FlagSet
 }
 
 func (c *CertificateSet) Info() *cmd.Info {
@@ -44,7 +44,7 @@ func (c *CertificateSet) Info() *cmd.Info {
 	}
 }
 
-func (c *CertificateSet) Flags() *gnuflag.FlagSet {
+func (c *CertificateSet) Flags() *pflag.FlagSet {
 	if c.fs == nil {
 		c.fs = c.AppNameMixIn.Flags()
 		cname := "App CNAME"
@@ -95,7 +95,7 @@ func (c *CertificateSet) Run(context *cmd.Context) error {
 type CertificateUnset struct {
 	tsuruClientApp.AppNameMixIn
 	cname string
-	fs    *gnuflag.FlagSet
+	fs    *pflag.FlagSet
 }
 
 func (c *CertificateUnset) Info() *cmd.Info {
@@ -106,7 +106,7 @@ func (c *CertificateUnset) Info() *cmd.Info {
 	}
 }
 
-func (c *CertificateUnset) Flags() *gnuflag.FlagSet {
+func (c *CertificateUnset) Flags() *pflag.FlagSet {
 	if c.fs == nil {
 		c.fs = c.AppNameMixIn.Flags()
 		cname := "App CNAME"
@@ -146,7 +146,7 @@ func (c *CertificateUnset) Run(context *cmd.Context) error {
 
 type CertificateList struct {
 	tsuruClientApp.AppNameMixIn
-	fs   *gnuflag.FlagSet
+	fs   *pflag.FlagSet
 	raw  bool
 	json bool
 }
@@ -159,7 +159,7 @@ func (c *CertificateList) Info() *cmd.Info {
 	}
 }
 
-func (c *CertificateList) Flags() *gnuflag.FlagSet {
+func (c *CertificateList) Flags() *pflag.FlagSet {
 	if c.fs == nil {
 		c.fs = c.AppNameMixIn.Flags()
 		c.fs.BoolVar(&c.raw, "r", false, "Display raw certificates")
@@ -379,7 +379,7 @@ func parseCert(data []byte) (*x509.Certificate, error) {
 type CertificateIssuerSet struct {
 	tsuruClientApp.AppNameMixIn
 	cname string
-	fs    *gnuflag.FlagSet
+	fs    *pflag.FlagSet
 }
 
 func (c *CertificateIssuerSet) Info() *cmd.Info {
@@ -391,7 +391,7 @@ func (c *CertificateIssuerSet) Info() *cmd.Info {
 	}
 }
 
-func (c *CertificateIssuerSet) Flags() *gnuflag.FlagSet {
+func (c *CertificateIssuerSet) Flags() *pflag.FlagSet {
 	if c.fs == nil {
 		c.fs = c.AppNameMixIn.Flags()
 		cname := "App CNAME"
@@ -442,7 +442,7 @@ func (c *CertificateIssuerSet) Run(context *cmd.Context) error {
 type CertificateIssuerUnset struct {
 	tsuruClientApp.AppNameMixIn
 	cmd.ConfirmationCommand
-	fs    *gnuflag.FlagSet
+	fs    *pflag.FlagSet
 	cname string
 }
 
@@ -454,7 +454,7 @@ func (c *CertificateIssuerUnset) Info() *cmd.Info {
 	}
 }
 
-func (c *CertificateIssuerUnset) Flags() *gnuflag.FlagSet {
+func (c *CertificateIssuerUnset) Flags() *pflag.FlagSet {
 	if c.fs == nil {
 		c.fs = mergeFlagSet(
 			c.AppNameMixIn.Flags(),

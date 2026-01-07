@@ -15,7 +15,7 @@ import (
 	"strconv"
 	"syscall"
 
-	"github.com/tsuru/gnuflag"
+	"github.com/spf13/pflag"
 	"github.com/tsuru/go-tsuruclient/pkg/config"
 	tsuruClientApp "github.com/tsuru/tsuru-client/tsuru/app"
 	"github.com/tsuru/tsuru-client/tsuru/cmd"
@@ -30,7 +30,7 @@ type ShellToContainerCmd struct {
 	tsuruClientApp.AppNameMixIn
 	isolated bool
 	debug    bool
-	fs       *gnuflag.FlagSet
+	fs       *pflag.FlagSet
 }
 
 func (c *ShellToContainerCmd) Info() *cmd.Info {
@@ -44,7 +44,7 @@ You can get the ID of the unit using the app-info command.`,
 	}
 }
 
-func (c *ShellToContainerCmd) Flags() *gnuflag.FlagSet {
+func (c *ShellToContainerCmd) Flags() *pflag.FlagSet {
 	if c.fs == nil {
 		c.fs = c.AppNameMixIn.Flags()
 		help := "Run shell in a new unit"

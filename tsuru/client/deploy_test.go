@@ -54,7 +54,7 @@ func (s *S) TestDeployRun(c *check.C) {
 		Stderr: &stderr,
 	}
 	cmd := AppDeploy{}
-	err = cmd.Flags().Parse(true, []string{"testdata", "..", "-a", "secret"})
+	err = cmd.Flags().Parse([]string{"testdata", "..", "-a", "secret"})
 	c.Assert(err, check.IsNil)
 	context.Args = cmd.Flags().Args()
 	err = cmd.Run(&context)
@@ -123,7 +123,7 @@ func (s *S) TestDeployRunCancel(c *check.C) {
 	}
 	cmd := AppDeploy{}
 
-	err = cmd.Flags().Parse(true, context.Args)
+	err = cmd.Flags().Parse(context.Args)
 	c.Assert(err, check.IsNil)
 	context.Args = cmd.Flags().Args()
 
@@ -156,7 +156,7 @@ func (s *S) TestDeployImage(c *check.C) {
 		Stderr: &stderr,
 	}
 	cmd := AppDeploy{}
-	err := cmd.Flags().Parse(true, []string{"-a", "secret", "-i", "registr.com/image-to-deploy"})
+	err := cmd.Flags().Parse([]string{"-a", "secret", "-i", "registr.com/image-to-deploy"})
 	c.Assert(err, check.IsNil)
 	context.Args = cmd.Flags().Args()
 	err = cmd.Run(&context)
@@ -192,7 +192,7 @@ func (s *S) TestDeployRunWithMessage(c *check.C) {
 		Args:   []string{"testdata", ".."},
 	}
 	cmd := AppDeploy{}
-	err = cmd.Flags().Parse(true, []string{"-a", "secret", "-m", "my awesome deploy"})
+	err = cmd.Flags().Parse([]string{"-a", "secret", "-m", "my awesome deploy"})
 	c.Assert(err, check.IsNil)
 	err = cmd.Run(&context)
 	c.Assert(err, check.IsNil)
@@ -213,7 +213,7 @@ func (s *S) TestDeployAuthNotOK(c *check.C) {
 		Args:   []string{"testdata", "..", "-a", "secret"},
 	}
 	command := AppDeploy{}
-	err := command.Flags().Parse(true, context.Args)
+	err := command.Flags().Parse(context.Args)
 	c.Assert(err, check.IsNil)
 	context.Args = command.Flags().Args()
 	err = command.Run(&context)
@@ -230,7 +230,7 @@ func (s *S) TestDeployRunNotOK(c *check.C) {
 		Args:   []string{"testdata", "..", "-a", "secret"},
 	}
 	command := AppDeploy{}
-	err := command.Flags().Parse(true, context.Args)
+	err := command.Flags().Parse(context.Args)
 	c.Assert(err, check.IsNil)
 	context.Args = command.Flags().Args()
 	err = command.Run(&context)
@@ -247,7 +247,7 @@ func (s *S) TestDeployRunFileNotFound(c *check.C) {
 	trans := cmdtest.Transport{Message: "OK\n", Status: http.StatusOK}
 	s.setupFakeTransport(&trans)
 	command := AppDeploy{}
-	err := command.Flags().Parse(true, context.Args)
+	err := command.Flags().Parse(context.Args)
 	c.Assert(err, check.IsNil)
 	context.Args = command.Flags().Args()
 	err = command.Run(&context)
@@ -256,7 +256,7 @@ func (s *S) TestDeployRunFileNotFound(c *check.C) {
 
 func (s *S) TestDeployRunWithoutArgsAndImage(c *check.C) {
 	command := AppDeploy{}
-	err := command.Flags().Parse(true, []string{"-a", "secret"})
+	err := command.Flags().Parse([]string{"-a", "secret"})
 	c.Assert(err, check.IsNil)
 	ctx := &cmd.Context{Stdout: io.Discard, Stderr: io.Discard, Args: command.Flags().Args()}
 	s.setupFakeTransport(&cmdtest.Transport{Status: http.StatusInternalServerError})
@@ -267,7 +267,7 @@ func (s *S) TestDeployRunWithoutArgsAndImage(c *check.C) {
 
 func (s *S) TestDeployRunWithArgsAndImage(c *check.C) {
 	command := AppDeploy{}
-	err := command.Flags().Parse(true, []string{"-i", "registr.com/image-to-deploy", "./path/to/dir"})
+	err := command.Flags().Parse([]string{"-i", "registr.com/image-to-deploy", "./path/to/dir"})
 	c.Assert(err, check.IsNil)
 	ctx := &cmd.Context{Stdout: io.Discard, Stderr: io.Discard, Args: command.Flags().Args()}
 	s.setupFakeTransport(&cmdtest.Transport{Status: http.StatusInternalServerError})
@@ -279,7 +279,7 @@ func (s *S) TestDeployRunRequestFailure(c *check.C) {
 	trans := cmdtest.Transport{Message: "app not found\n", Status: http.StatusNotFound}
 	s.setupFakeTransport(&trans)
 	command := AppDeploy{}
-	err := command.Flags().Parse(true, []string{"testdata", "..", "-a", "secret"})
+	err := command.Flags().Parse([]string{"testdata", "..", "-a", "secret"})
 	c.Assert(err, check.IsNil)
 	ctx := &cmd.Context{Stdout: io.Discard, Stderr: io.Discard, Args: command.Flags().Args()}
 	err = command.Run(ctx)
@@ -288,7 +288,7 @@ func (s *S) TestDeployRunRequestFailure(c *check.C) {
 
 func (s *S) TestDeploy_Run_DockerfileAndDockerImage(c *check.C) {
 	command := AppDeploy{}
-	err := command.Flags().Parse(true, []string{"-i", "registry.example.com/my-team/my-app:v42", "--dockerfile", "."})
+	err := command.Flags().Parse([]string{"-i", "registry.example.com/my-team/my-app:v42", "--dockerfile", "."})
 	c.Assert(err, check.IsNil)
 	ctx := &cmd.Context{Stdout: io.Discard, Stderr: io.Discard, Args: command.Flags().Args()}
 	s.setupFakeTransport(&cmdtest.Transport{Status: http.StatusInternalServerError})
@@ -298,7 +298,7 @@ func (s *S) TestDeploy_Run_DockerfileAndDockerImage(c *check.C) {
 
 func (s *S) TestDeploy_Run_UsingDockerfile(c *check.C) {
 	command := AppDeploy{}
-	err := command.Flags().Parse(true, []string{"-a", "my-app", "--dockerfile", "./testdata/deploy4/"})
+	err := command.Flags().Parse([]string{"-a", "my-app", "--dockerfile", "./testdata/deploy4/"})
 	c.Assert(err, check.IsNil)
 
 	ctx := &cmd.Context{Stdout: io.Discard, Stderr: io.Discard, Args: command.Flags().Args()}
@@ -405,7 +405,7 @@ func (s *S) TestAppDeployList(c *check.C) {
 	}
 	s.setupFakeTransport(&cmdtest.Transport{Message: result, Status: http.StatusOK})
 	command := AppDeployList{}
-	err := command.Flags().Parse(true, []string{"--app", "test"})
+	err := command.Flags().Parse([]string{"--app", "test"})
 	c.Assert(err, check.IsNil)
 	context.Args = command.Flags().Args()
 	err = command.Run(&context)
@@ -422,7 +422,7 @@ func (s *S) TestDeployRunAppWithouDeploy(c *check.C) {
 		Stderr: &stderr,
 	}
 	command := AppDeployList{}
-	command.Flags().Parse(true, []string{"-a", "secret"})
+	command.Flags().Parse([]string{"-a", "secret"})
 	err := command.Run(&context)
 	c.Assert(err, check.IsNil)
 	c.Assert(stdout.String(), check.Equals, "App secret has no deploy.\n")
@@ -459,7 +459,7 @@ func (s *S) TestAppDeployRollback(c *check.C) {
 	}
 	s.setupFakeTransport(trans)
 	command := AppDeployRollback{}
-	command.Flags().Parse(true, []string{"--app", "arrakis", "-y"})
+	command.Flags().Parse([]string{"--app", "arrakis", "-y"})
 	err = command.Run(&context)
 	c.Assert(err, check.IsNil)
 	c.Assert(called, check.Equals, true)
@@ -491,7 +491,7 @@ func (s *S) TestAppDeployRollbackUpdate(c *check.C) {
 	}
 	s.setupFakeTransport(trans)
 	command := AppDeployRollbackUpdate{}
-	command.Flags().Parse(true, []string{"--app", "zilean", "-i", "caitlyn", "-r", "DEMACIA", "-d"})
+	command.Flags().Parse([]string{"--app", "zilean", "-i", "caitlyn", "-r", "DEMACIA", "-d"})
 	err := command.Run(&context)
 	c.Assert(err, check.IsNil)
 	c.Assert(called, check.Equals, true)
@@ -519,7 +519,7 @@ func (s *S) TestAppDeployRollbackUpdateDisabling(c *check.C) {
 	}
 	s.setupFakeTransport(trans)
 	command := AppDeployRollbackUpdate{}
-	command.Flags().Parse(true, []string{"--app", "xayah", "-i", "rakan", "-r", "vastayan"})
+	command.Flags().Parse([]string{"--app", "xayah", "-i", "rakan", "-r", "vastayan"})
 	err := command.Run(&context)
 	c.Assert(err, check.IsNil)
 	c.Assert(called, check.Equals, true)
@@ -555,7 +555,7 @@ func (s *S) TestAppDeployRebuild(c *check.C) {
 	}
 	s.setupFakeTransport(trans)
 	command := AppDeployRebuild{}
-	command.Flags().Parse(true, []string{"--app", "myapp"})
+	command.Flags().Parse([]string{"--app", "myapp"})
 	err = command.Run(&context)
 	c.Assert(err, check.IsNil)
 	c.Assert(called, check.Equals, true)
@@ -564,7 +564,7 @@ func (s *S) TestAppDeployRebuild(c *check.C) {
 
 func (s *S) TestJobDeployRunUsingDockerfile(c *check.C) {
 	command := JobDeploy{}
-	err := command.Flags().Parse(true, []string{"-j", "my-job", "--dockerfile", "./testdata/deploy5/"})
+	err := command.Flags().Parse([]string{"-j", "my-job", "--dockerfile", "./testdata/deploy5/"})
 	c.Assert(err, check.IsNil)
 
 	ctx := &cmd.Context{Stdout: io.Discard, Stderr: io.Discard, Args: command.Flags().Args()}
@@ -618,7 +618,7 @@ func (s *S) TestJobDeployRunUsingImage(c *check.C) {
 	}
 
 	cmd := JobDeploy{}
-	err := cmd.Flags().Parse(true, []string{"-j", "my-job", "-i", "registr.com/image-to-deploy:latest"})
+	err := cmd.Flags().Parse([]string{"-j", "my-job", "-i", "registr.com/image-to-deploy:latest"})
 	c.Assert(err, check.IsNil)
 
 	context.Args = cmd.Flags().Args()
@@ -628,7 +628,7 @@ func (s *S) TestJobDeployRunUsingImage(c *check.C) {
 
 func (s *S) TestJobDeployRunCancel(c *check.C) {
 	command := JobDeploy{}
-	err := command.Flags().Parse(true, []string{"-j", "my-job", "--dockerfile", "./testdata/deploy5/"})
+	err := command.Flags().Parse([]string{"-j", "my-job", "--dockerfile", "./testdata/deploy5/"})
 	c.Assert(err, check.IsNil)
 
 	deploy := make(chan struct{}, 1)
@@ -694,7 +694,7 @@ func (s *S) TestJobDeployRunCancel(c *check.C) {
 
 func (s *S) TestJobDeployRunWithMessage(c *check.C) {
 	command := JobDeploy{}
-	err := command.Flags().Parse(true, []string{"-j", "my-job", "--dockerfile", "./testdata/deploy5/", "-m", "my-job deploy"})
+	err := command.Flags().Parse([]string{"-j", "my-job", "--dockerfile", "./testdata/deploy5/", "-m", "my-job deploy"})
 	c.Assert(err, check.IsNil)
 
 	trans := cmdtest.ConditionalTransport{
@@ -734,7 +734,7 @@ func (s *S) TestJobDeployRunWithMessage(c *check.C) {
 
 func (s *S) TestJobDeployAuthNotOK(c *check.C) {
 	command := JobDeploy{}
-	err := command.Flags().Parse(true, []string{"-j", "my-job", "--dockerfile", "./testdata/deploy5/"})
+	err := command.Flags().Parse([]string{"-j", "my-job", "--dockerfile", "./testdata/deploy5/"})
 	c.Assert(err, check.IsNil)
 
 	trans := cmdtest.ConditionalTransport{
@@ -760,7 +760,7 @@ func (s *S) TestJobDeployAuthNotOK(c *check.C) {
 
 func (s *S) TestJobDeployRunNotOK(c *check.C) {
 	command := JobDeploy{}
-	err := command.Flags().Parse(true, []string{"-j", "my-job", "--dockerfile", "./testdata/deploy5/"})
+	err := command.Flags().Parse([]string{"-j", "my-job", "--dockerfile", "./testdata/deploy5/"})
 	c.Assert(err, check.IsNil)
 
 	trans := cmdtest.Transport{Message: "deploy worked\n", Status: http.StatusOK}
@@ -781,7 +781,7 @@ func (s *S) TestJobDeployRunNotOK(c *check.C) {
 
 func (s *S) TestJobDeployRunFileNotFound(c *check.C) {
 	command := JobDeploy{}
-	err := command.Flags().Parse(true, []string{"-j", "my-job", "--dockerfile", "/tmp/aint/no/way/this/exists"})
+	err := command.Flags().Parse([]string{"-j", "my-job", "--dockerfile", "/tmp/aint/no/way/this/exists"})
 	c.Assert(err, check.IsNil)
 
 	var stdout, stderr bytes.Buffer
@@ -802,7 +802,7 @@ func (s *S) TestJobDeployRunFileNotFound(c *check.C) {
 
 func (s *S) TestJobDeployRunWithoutArgsAndImage(c *check.C) {
 	command := JobDeploy{}
-	err := command.Flags().Parse(true, []string{"-j", "my-job"})
+	err := command.Flags().Parse([]string{"-j", "my-job"})
 	c.Assert(err, check.IsNil)
 
 	ctx := &cmd.Context{Stdout: io.Discard, Stderr: io.Discard, Args: command.Flags().Args()}
@@ -815,7 +815,7 @@ func (s *S) TestJobDeployRunWithoutArgsAndImage(c *check.C) {
 
 func (s *S) TestJobDeployRunRequestFailure(c *check.C) {
 	command := JobDeploy{}
-	err := command.Flags().Parse(true, []string{"-j", "my-job", "--dockerfile", "./testdata/deploy5/"})
+	err := command.Flags().Parse([]string{"-j", "my-job", "--dockerfile", "./testdata/deploy5/"})
 	c.Assert(err, check.IsNil)
 
 	trans := cmdtest.Transport{Message: "job not found\n", Status: http.StatusNotFound}
@@ -828,7 +828,7 @@ func (s *S) TestJobDeployRunRequestFailure(c *check.C) {
 
 func (s *S) TestDeployRunDockerfileAndDockerImage(c *check.C) {
 	command := JobDeploy{}
-	err := command.Flags().Parse(true, []string{"-j", "my-job", "-i", "registr.com/image-to-deploy:latest", "--dockerfile", "."})
+	err := command.Flags().Parse([]string{"-j", "my-job", "-i", "registr.com/image-to-deploy:latest", "--dockerfile", "."})
 	c.Assert(err, check.IsNil)
 
 	ctx := &cmd.Context{Stdout: io.Discard, Stderr: io.Discard, Args: command.Flags().Args()}

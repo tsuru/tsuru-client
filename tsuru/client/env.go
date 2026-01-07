@@ -16,7 +16,7 @@ import (
 	"strings"
 
 	"github.com/cezarsa/form"
-	"github.com/tsuru/gnuflag"
+	"github.com/spf13/pflag"
 	"github.com/tsuru/go-tsuruclient/pkg/config"
 	"github.com/tsuru/tsuru-client/tsuru/cmd"
 	"github.com/tsuru/tsuru-client/tsuru/formatter"
@@ -43,13 +43,13 @@ type EnvGet struct {
 	appName string
 	jobName string
 
-	fs   *gnuflag.FlagSet
+	fs   *pflag.FlagSet
 	json bool
 }
 
-func (c *EnvGet) Flags() *gnuflag.FlagSet {
+func (c *EnvGet) Flags() *pflag.FlagSet {
 	if c.fs == nil {
-		c.fs = gnuflag.NewFlagSet("", gnuflag.ExitOnError)
+		c.fs = pflag.NewFlagSet("", pflag.ExitOnError)
 
 		c.fs.StringVar(&c.appName, "app", "", "The name of the app.")
 		c.fs.StringVar(&c.appName, "a", "", "The name of the app.")
@@ -146,7 +146,7 @@ func (c *EnvGet) renderJSON(context *cmd.Context, variables []map[string]interfa
 type EnvSet struct {
 	appName   string
 	jobName   string
-	fs        *gnuflag.FlagSet
+	fs        *pflag.FlagSet
 	private   bool
 	noRestart bool
 }
@@ -244,9 +244,9 @@ func isSensitiveName(name string) bool {
 	return false
 }
 
-func (c *EnvSet) Flags() *gnuflag.FlagSet {
+func (c *EnvSet) Flags() *pflag.FlagSet {
 	if c.fs == nil {
-		c.fs = gnuflag.NewFlagSet("", gnuflag.ExitOnError)
+		c.fs = pflag.NewFlagSet("", pflag.ExitOnError)
 
 		c.fs.StringVar(&c.appName, "app", "", "The name of the app.")
 		c.fs.StringVar(&c.appName, "a", "", "The name of the app.")
@@ -262,13 +262,13 @@ func (c *EnvSet) Flags() *gnuflag.FlagSet {
 type EnvUnset struct {
 	appName   string
 	jobName   string
-	fs        *gnuflag.FlagSet
+	fs        *pflag.FlagSet
 	noRestart bool
 }
 
-func (c *EnvUnset) Flags() *gnuflag.FlagSet {
+func (c *EnvUnset) Flags() *pflag.FlagSet {
 	if c.fs == nil {
-		c.fs = gnuflag.NewFlagSet("", gnuflag.ExitOnError)
+		c.fs = pflag.NewFlagSet("", pflag.ExitOnError)
 
 		c.fs.StringVar(&c.appName, "app", "", "The name of the app.")
 		c.fs.StringVar(&c.appName, "a", "", "The name of the app.")

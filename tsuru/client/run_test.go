@@ -40,7 +40,7 @@ func (s *S) TestAppRun(c *check.C) {
 	}
 	s.setupFakeTransport(trans)
 	command := AppRun{}
-	err = command.Flags().Parse(true, []string{"--app", "ble", "ls"})
+	err = command.Flags().Parse([]string{"--app", "ble", "ls"})
 	c.Assert(err, check.IsNil)
 
 	context.Args = command.Flags().Args()
@@ -73,7 +73,7 @@ func (s *S) TestAppRunFlagIsolated(c *check.C) {
 	}
 	s.setupFakeTransport(trans)
 	command := AppRun{}
-	err = command.Flags().Parse(true, []string{"--app", "ble", "--isolated", "ls"})
+	err = command.Flags().Parse([]string{"--app", "ble", "--isolated", "ls"})
 	c.Assert(err, check.IsNil)
 
 	context.Args = command.Flags().Args()
@@ -106,7 +106,7 @@ func (s *S) TestAppRunShouldUseAllSubsequentArgumentsAsArgumentsToTheGivenComman
 	}
 	s.setupFakeTransport(trans)
 	command := AppRun{}
-	err = command.Flags().Parse(true, []string{"--app", "ble", "ls -l"})
+	err = command.Flags().Parse([]string{"--app", "ble", "ls -l"})
 
 	c.Assert(err, check.IsNil)
 
@@ -141,7 +141,7 @@ func (s *S) TestAppRunWithoutTheFlag(c *check.C) {
 	}
 	s.setupFakeTransport(trans)
 	command := AppRun{}
-	err = command.Flags().Parse(true, []string{"-a", "bla", "ls -lh"})
+	err = command.Flags().Parse([]string{"-a", "bla", "ls -lh"})
 	c.Assert(err, check.IsNil)
 
 	context.Args = command.Flags().Args()
@@ -170,7 +170,7 @@ func (s *S) TestAppRunShouldReturnErrorWhenCommandGoWrong(c *check.C) {
 	}
 	s.setupFakeTransport(trans)
 	command := AppRun{}
-	err = command.Flags().Parse(true, []string{"-a", "bla", "cmd_error"})
+	err = command.Flags().Parse([]string{"-a", "bla", "cmd_error"})
 	c.Assert(err, check.IsNil)
 
 	context.Args = command.Flags().Args()

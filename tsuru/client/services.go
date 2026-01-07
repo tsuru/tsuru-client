@@ -17,7 +17,7 @@ import (
 
 	"github.com/antihax/optional"
 	"github.com/cezarsa/form"
-	"github.com/tsuru/gnuflag"
+	"github.com/spf13/pflag"
 	"github.com/tsuru/go-tsuruclient/pkg/config"
 	"github.com/tsuru/go-tsuruclient/pkg/tsuru"
 	"github.com/tsuru/tablecli"
@@ -60,7 +60,7 @@ func (f *serviceFilter) queryString() (url.Values, error) {
 }
 
 type ServiceList struct {
-	fs               *gnuflag.FlagSet
+	fs               *pflag.FlagSet
 	filter           serviceFilter
 	simplified       bool
 	json             bool
@@ -75,9 +75,9 @@ func (s *ServiceList) Info() *cmd.Info {
 	}
 }
 
-func (c *ServiceList) Flags() *gnuflag.FlagSet {
+func (c *ServiceList) Flags() *pflag.FlagSet {
 	if c.fs == nil {
-		c.fs = gnuflag.NewFlagSet("service-list", gnuflag.ExitOnError)
+		c.fs = pflag.NewFlagSet("service-list", pflag.ExitOnError)
 		c.fs.StringVar(&c.filter.service, "service", "", "Filter instances by service")
 		c.fs.StringVar(&c.filter.service, "s", "", "Filter instances by service")
 		c.fs.StringVar(&c.filter.name, "name", "", "Filter service instances by name")
@@ -241,7 +241,7 @@ func (c *ServiceList) clientSideFilterInstances(serviceInstances []service.Servi
 }
 
 type ServiceInstanceAdd struct {
-	fs          *gnuflag.FlagSet
+	fs          *pflag.FlagSet
 	teamOwner   string
 	description string
 	tags        cmd.StringSliceFlag
@@ -309,10 +309,10 @@ func (c *ServiceInstanceAdd) Run(ctx *cmd.Context) error {
 	return nil
 }
 
-func (c *ServiceInstanceAdd) Flags() *gnuflag.FlagSet {
+func (c *ServiceInstanceAdd) Flags() *pflag.FlagSet {
 	if c.fs == nil {
 		flagDesc := "the team that owns the service (mandatory if the user is member of more than one team)"
-		c.fs = gnuflag.NewFlagSet("service-instance-add", gnuflag.ExitOnError)
+		c.fs = pflag.NewFlagSet("service-instance-add", pflag.ExitOnError)
 		c.fs.StringVar(&c.teamOwner, "team-owner", "", flagDesc)
 		c.fs.StringVar(&c.teamOwner, "t", "", flagDesc)
 		descriptionMessage := "service instance description"
@@ -328,7 +328,7 @@ func (c *ServiceInstanceAdd) Flags() *gnuflag.FlagSet {
 }
 
 type ServiceInstanceUpdate struct {
-	fs           *gnuflag.FlagSet
+	fs           *pflag.FlagSet
 	teamOwner    string
 	description  string
 	plan         string
@@ -413,9 +413,9 @@ func (c *ServiceInstanceUpdate) Run(ctx *cmd.Context) error {
 	return nil
 }
 
-func (c *ServiceInstanceUpdate) Flags() *gnuflag.FlagSet {
+func (c *ServiceInstanceUpdate) Flags() *pflag.FlagSet {
 	if c.fs == nil {
-		c.fs = gnuflag.NewFlagSet("service-instance-update", gnuflag.ExitOnError)
+		c.fs = pflag.NewFlagSet("service-instance-update", pflag.ExitOnError)
 
 		teamOwnerMessage := "service instance team owner"
 		c.fs.StringVar(&c.teamOwner, "team-owner", "", teamOwnerMessage)
@@ -441,7 +441,7 @@ func (c *ServiceInstanceUpdate) Flags() *gnuflag.FlagSet {
 type ServiceInstanceBind struct {
 	appName   string
 	jobName   string
-	fs        *gnuflag.FlagSet
+	fs        *pflag.FlagSet
 	noRestart bool
 }
 
@@ -496,9 +496,9 @@ by bind will be private (not accessible via [[tsuru env-get]]).`,
 	}
 }
 
-func (sb *ServiceInstanceBind) Flags() *gnuflag.FlagSet {
+func (sb *ServiceInstanceBind) Flags() *pflag.FlagSet {
 	if sb.fs == nil {
-		sb.fs = gnuflag.NewFlagSet("", gnuflag.ExitOnError)
+		sb.fs = pflag.NewFlagSet("", pflag.ExitOnError)
 
 		sb.fs.StringVar(&sb.appName, "app", "", "The name of the app.")
 		sb.fs.StringVar(&sb.appName, "a", "", "The name of the app.")
@@ -512,7 +512,7 @@ func (sb *ServiceInstanceBind) Flags() *gnuflag.FlagSet {
 type ServiceInstanceUnbind struct {
 	appName   string
 	jobName   string
-	fs        *gnuflag.FlagSet
+	fs        *pflag.FlagSet
 	noRestart bool
 	force     bool
 }
@@ -566,9 +566,9 @@ a MySQL service, the application would lose access to the database.`,
 	}
 }
 
-func (su *ServiceInstanceUnbind) Flags() *gnuflag.FlagSet {
+func (su *ServiceInstanceUnbind) Flags() *pflag.FlagSet {
 	if su.fs == nil {
-		su.fs = gnuflag.NewFlagSet("", gnuflag.ExitOnError)
+		su.fs = pflag.NewFlagSet("", pflag.ExitOnError)
 
 		su.fs.StringVar(&su.appName, "app", "", "The name of the app.")
 		su.fs.StringVar(&su.appName, "a", "", "The name of the app.")
@@ -581,13 +581,13 @@ func (su *ServiceInstanceUnbind) Flags() *gnuflag.FlagSet {
 }
 
 type ServiceInstanceInfo struct {
-	fs   *gnuflag.FlagSet
+	fs   *pflag.FlagSet
 	json bool
 }
 
-func (c *ServiceInstanceInfo) Flags() *gnuflag.FlagSet {
+func (c *ServiceInstanceInfo) Flags() *pflag.FlagSet {
 	if c.fs == nil {
-		c.fs = gnuflag.NewFlagSet("service-instance-info", gnuflag.ContinueOnError)
+		c.fs = pflag.NewFlagSet("service-instance-info", pflag.ContinueOnError)
 		c.fs.BoolVar(&c.json, "json", false, "Show JSON")
 	}
 	return c.fs
@@ -750,7 +750,7 @@ func formatTeams(teamOwner string, teams []string) string {
 }
 
 type ServiceInfo struct {
-	fs   *gnuflag.FlagSet
+	fs   *pflag.FlagSet
 	pool string
 }
 
@@ -765,7 +765,7 @@ to), and apps bound to these instances.`,
 }
 
 type ServicePlanList struct {
-	fs   *gnuflag.FlagSet
+	fs   *pflag.FlagSet
 	pool string
 }
 
@@ -778,10 +778,10 @@ func (c *ServicePlanList) Info() *cmd.Info {
 	}
 }
 
-func (c *ServicePlanList) Flags() *gnuflag.FlagSet {
+func (c *ServicePlanList) Flags() *pflag.FlagSet {
 	if c.fs == nil {
 		flagDesc := "the pool used to fetch details (could be required if the service is a multi-cluster offering)"
-		c.fs = gnuflag.NewFlagSet("service-plan-list", gnuflag.ExitOnError)
+		c.fs = pflag.NewFlagSet("service-plan-list", pflag.ExitOnError)
 		c.fs.StringVar(&c.pool, "pool", "", flagDesc)
 		c.fs.StringVar(&c.pool, "p", "", flagDesc)
 	}
@@ -966,10 +966,10 @@ func (c *ServiceInfo) WriteDoc(ctx *cmd.Context) error {
 	return nil
 }
 
-func (c *ServiceInfo) Flags() *gnuflag.FlagSet {
+func (c *ServiceInfo) Flags() *pflag.FlagSet {
 	if c.fs == nil {
 		flagDesc := "the pool used to fetch details (could be required if the service is a multi-cluster offering)"
-		c.fs = gnuflag.NewFlagSet("service-instance-add", gnuflag.ExitOnError)
+		c.fs = pflag.NewFlagSet("service-instance-add", pflag.ExitOnError)
 		c.fs.StringVar(&c.pool, "pool", "", flagDesc)
 		c.fs.StringVar(&c.pool, "p", "", flagDesc)
 	}
@@ -1061,7 +1061,7 @@ func (c *ServiceInfo) fetchPlans(serviceName string) ([]plan, error) {
 
 type ServiceInstanceRemove struct {
 	cmd.ConfirmationCommand
-	fs           *gnuflag.FlagSet
+	fs           *pflag.FlagSet
 	force        bool
 	ignoreErrors bool
 }
@@ -1106,7 +1106,7 @@ func (c *ServiceInstanceRemove) Run(ctx *cmd.Context) error {
 	return formatter.StreamJSONResponse(ctx.Stdout, resp)
 }
 
-func (c *ServiceInstanceRemove) Flags() *gnuflag.FlagSet {
+func (c *ServiceInstanceRemove) Flags() *pflag.FlagSet {
 	if c.fs == nil {
 		c.fs = c.ConfirmationCommand.Flags()
 		c.fs.BoolVar(&c.force, "f", false, "Forces the removal of a service instance binded to apps.")

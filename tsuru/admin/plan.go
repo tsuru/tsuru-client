@@ -11,7 +11,7 @@ import (
 	"strconv"
 	"strings"
 
-	"github.com/tsuru/gnuflag"
+	"github.com/spf13/pflag"
 	"github.com/tsuru/go-tsuruclient/pkg/config"
 	"github.com/tsuru/tsuru-client/tsuru/cmd"
 	tsuruHTTP "github.com/tsuru/tsuru-client/tsuru/http"
@@ -22,12 +22,12 @@ type PlanCreate struct {
 	memory     string
 	cpu        string
 	setDefault bool
-	fs         *gnuflag.FlagSet
+	fs         *pflag.FlagSet
 }
 
-func (c *PlanCreate) Flags() *gnuflag.FlagSet {
+func (c *PlanCreate) Flags() *pflag.FlagSet {
 	if c.fs == nil {
-		c.fs = gnuflag.NewFlagSet("plan-create", gnuflag.ExitOnError)
+		c.fs = pflag.NewFlagSet("plan-create", pflag.ExitOnError)
 		memory := `Amount of available memory for units in bytes or an integer value followed
 by M, K or G for megabytes, kilobytes or gigabytes respectively.`
 		c.fs.StringVar(&c.memory, "memory", "0", memory)

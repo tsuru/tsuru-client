@@ -14,7 +14,7 @@ import (
 	"strconv"
 	"strings"
 
-	"github.com/tsuru/gnuflag"
+	"github.com/spf13/pflag"
 	"github.com/tsuru/go-tsuruclient/pkg/config"
 	"github.com/tsuru/tablecli"
 	"github.com/tsuru/tsuru-client/tsuru/cmd"
@@ -29,7 +29,7 @@ type AddPoolToSchedulerCmd struct {
 	forceDefault bool
 	provisioner  string
 	labels       cmd.MapFlag
-	fs           *gnuflag.FlagSet
+	fs           *pflag.FlagSet
 }
 
 func (AddPoolToSchedulerCmd) Info() *cmd.Info {
@@ -46,9 +46,9 @@ to the chosen pool.`,
 	}
 }
 
-func (c *AddPoolToSchedulerCmd) Flags() *gnuflag.FlagSet {
+func (c *AddPoolToSchedulerCmd) Flags() *pflag.FlagSet {
 	if c.fs == nil {
-		c.fs = gnuflag.NewFlagSet("", gnuflag.ExitOnError)
+		c.fs = pflag.NewFlagSet("", pflag.ExitOnError)
 		msg := "Make pool public (all teams can use it)"
 		c.fs.BoolVar(&c.public, "public", false, msg)
 		c.fs.BoolVar(&c.public, "p", false, msg)
@@ -125,7 +125,7 @@ type UpdatePoolToSchedulerCmd struct {
 	forceDefault bool
 	labelsAdd    cmd.MapFlag
 	labelsRemove cmd.StringSliceFlag
-	fs           *gnuflag.FlagSet
+	fs           *pflag.FlagSet
 }
 
 func (UpdatePoolToSchedulerCmd) Info() *cmd.Info {
@@ -137,9 +137,9 @@ func (UpdatePoolToSchedulerCmd) Info() *cmd.Info {
 	}
 }
 
-func (c *UpdatePoolToSchedulerCmd) Flags() *gnuflag.FlagSet {
+func (c *UpdatePoolToSchedulerCmd) Flags() *pflag.FlagSet {
 	if c.fs == nil {
-		c.fs = gnuflag.NewFlagSet("", gnuflag.ExitOnError)
+		c.fs = pflag.NewFlagSet("", pflag.ExitOnError)
 		msg := "Make pool public (all teams can use it)"
 		c.fs.Var(&c.public, "public", msg)
 		msg = "Make pool default (when none is specified during [[app-create]] this pool will be used)"
@@ -373,6 +373,10 @@ func (p *pointerBoolFlag) Set(value string) error {
 	return nil
 }
 
+func (p *pointerBoolFlag) Type() string {
+	return "bool"
+}
+
 func doRequest(url, method string, body []byte) error {
 	req, err := http.NewRequest(method, url, bytes.NewBuffer(body))
 	if err != nil {
@@ -442,12 +446,12 @@ func (c *PoolConstraintList) Run(ctx *cmd.Context) error {
 type PoolConstraintSet struct {
 	append    bool
 	blacklist bool
-	fs        *gnuflag.FlagSet
+	fs        *pflag.FlagSet
 }
 
-func (c *PoolConstraintSet) Flags() *gnuflag.FlagSet {
+func (c *PoolConstraintSet) Flags() *pflag.FlagSet {
 	if c.fs == nil {
-		c.fs = gnuflag.NewFlagSet("", gnuflag.ExitOnError)
+		c.fs = pflag.NewFlagSet("", pflag.ExitOnError)
 		c.fs.BoolVar(&c.append, "append", false, "Append to existing constraint.")
 		c.fs.BoolVar(&c.append, "a", false, "Append to existing constraint.")
 		c.fs.BoolVar(&c.blacklist, "b", false, "Blacklist constraint.")

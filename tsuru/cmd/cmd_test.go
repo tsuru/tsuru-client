@@ -15,7 +15,7 @@ import (
 	"time"
 
 	"github.com/pkg/errors"
-	"github.com/tsuru/gnuflag"
+	"github.com/spf13/pflag"
 	"github.com/tsuru/tsuru/fs"
 	"github.com/tsuru/tsuru/fs/fstest"
 	check "gopkg.in/check.v1"
@@ -893,7 +893,7 @@ func (c *UnauthorizedLoginErrorCommand) Info() *Info {
 }
 
 type CommandWithFlags struct {
-	fs      *gnuflag.FlagSet
+	fs      *pflag.FlagSet
 	age     int
 	minArgs int
 	args    []string
@@ -914,9 +914,9 @@ func (c *CommandWithFlags) Run(context *Context) error {
 	return nil
 }
 
-func (c *CommandWithFlags) Flags() *gnuflag.FlagSet {
+func (c *CommandWithFlags) Flags() *pflag.FlagSet {
 	if c.fs == nil {
-		c.fs = gnuflag.NewFlagSet("with-flags", gnuflag.ContinueOnError)
+		c.fs = pflag.NewFlagSet("with-flags", pflag.ContinueOnError)
 		desc := "your age"
 		if c.multi {
 			desc = "velvet darkness\nthey fear"
@@ -928,7 +928,7 @@ func (c *CommandWithFlags) Flags() *gnuflag.FlagSet {
 }
 
 type HelpCommandWithFlags struct {
-	fs *gnuflag.FlagSet
+	fs *pflag.FlagSet
 	h  bool
 }
 
@@ -945,9 +945,9 @@ func (c *HelpCommandWithFlags) Run(context *Context) error {
 	return nil
 }
 
-func (c *HelpCommandWithFlags) Flags() *gnuflag.FlagSet {
+func (c *HelpCommandWithFlags) Flags() *pflag.FlagSet {
 	if c.fs == nil {
-		c.fs = gnuflag.NewFlagSet("with-flags", gnuflag.ContinueOnError)
+		c.fs = pflag.NewFlagSet("with-flags", pflag.ContinueOnError)
 		c.fs.BoolVar(&c.h, "help", false, "help?")
 		c.fs.BoolVar(&c.h, "h", false, "help?")
 	}

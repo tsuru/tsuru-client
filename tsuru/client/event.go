@@ -17,7 +17,7 @@ import (
 
 	"github.com/cezarsa/form"
 	"github.com/ghodss/yaml"
-	"github.com/tsuru/gnuflag"
+	"github.com/spf13/pflag"
 	"github.com/tsuru/go-tsuruclient/pkg/config"
 	"github.com/tsuru/tablecli"
 	"github.com/tsuru/tsuru-client/tsuru/cmd"
@@ -28,7 +28,7 @@ import (
 )
 
 type EventList struct {
-	fs     *gnuflag.FlagSet
+	fs     *pflag.FlagSet
 	filter eventFilter
 	json   bool
 }
@@ -60,7 +60,7 @@ func (f *eventFilter) queryString() (url.Values, error) {
 	return values, nil
 }
 
-func (f *eventFilter) flags(fs *gnuflag.FlagSet) {
+func (f *eventFilter) flags(fs *pflag.FlagSet) {
 	name := "Filter events by kind name"
 	fs.Var(&f.kindNames, "kind", name)
 	fs.Var(&f.kindNames, "k", name)
@@ -89,9 +89,9 @@ func (c *EventList) Info() *cmd.Info {
 	}
 }
 
-func (c *EventList) Flags() *gnuflag.FlagSet {
+func (c *EventList) Flags() *pflag.FlagSet {
 	if c.fs == nil {
-		c.fs = gnuflag.NewFlagSet("", gnuflag.ExitOnError)
+		c.fs = pflag.NewFlagSet("", pflag.ExitOnError)
 		c.filter.flags(c.fs)
 		c.fs.BoolVar(&c.json, "json", false, "Show JSON")
 	}
@@ -193,13 +193,13 @@ func (c *EventList) Show(evts []eventTypes.EventData, context *cmd.Context) erro
 }
 
 type EventInfo struct {
-	fs   *gnuflag.FlagSet
+	fs   *pflag.FlagSet
 	json bool
 }
 
-func (c *EventInfo) Flags() *gnuflag.FlagSet {
+func (c *EventInfo) Flags() *pflag.FlagSet {
 	if c.fs == nil {
-		c.fs = gnuflag.NewFlagSet("event-info", gnuflag.ContinueOnError)
+		c.fs = pflag.NewFlagSet("event-info", pflag.ContinueOnError)
 		c.fs.BoolVar(&c.json, "json", false, "Show JSON")
 	}
 	return c.fs

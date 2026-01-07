@@ -343,7 +343,7 @@ func (s *S) TestTargetAddWithSet(c *check.C) {
 		Stdout: bytes.NewBufferString(""),
 	}
 	targetAdd := &TargetAdd{}
-	targetAdd.Flags().Parse(true, []string{"-s"})
+	targetAdd.Flags().Parse([]string{"-s"})
 	err := targetAdd.Run(context)
 	c.Assert(err, check.IsNil)
 	c.Assert(context.Stdout.(*bytes.Buffer).String(), check.Equals, "New target default -> http://tsuru.google.com added to target list and defined as the current target\n")
@@ -356,7 +356,7 @@ func (s *S) TestTargetAddFlags(c *check.C) {
 	command := TargetAdd{}
 	flagset := command.Flags()
 	c.Assert(flagset, check.NotNil)
-	flagset.Parse(true, []string{"--set-current"})
+	flagset.Parse([]string{"--set-current"})
 	set := flagset.Lookup("set-current")
 	c.Assert(set, check.NotNil)
 	c.Check(set.Name, check.Equals, "set-current")

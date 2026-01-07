@@ -14,7 +14,7 @@ import (
 	"strconv"
 	"strings"
 
-	"github.com/tsuru/gnuflag"
+	"github.com/spf13/pflag"
 	"github.com/tsuru/go-tsuruclient/pkg/tsuru"
 	"github.com/tsuru/tablecli"
 	"github.com/tsuru/tsuru-client/tsuru/cmd"
@@ -46,8 +46,12 @@ func (f mapSliceFlagWrapper) Set(val string) error {
 	return nil
 }
 
-func flagsForWebhook(webhook *tsuru.Webhook) *gnuflag.FlagSet {
-	fs := gnuflag.NewFlagSet("", gnuflag.ExitOnError)
+func (f mapSliceFlagWrapper) Type() string {
+	return "mapsliceflag"
+}
+
+func flagsForWebhook(webhook *tsuru.Webhook) *pflag.FlagSet {
+	fs := pflag.NewFlagSet("", pflag.ExitOnError)
 
 	description := "A description on how the webhook will be used."
 	fs.StringVar(&webhook.Description, "description", "", description)
@@ -90,7 +94,7 @@ func flagsForWebhook(webhook *tsuru.Webhook) *gnuflag.FlagSet {
 }
 
 type WebhookCreate struct {
-	fs      *gnuflag.FlagSet
+	fs      *pflag.FlagSet
 	webhook tsuru.Webhook
 }
 
@@ -103,7 +107,7 @@ func (c *WebhookCreate) Info() *cmd.Info {
 	}
 }
 
-func (c *WebhookCreate) Flags() *gnuflag.FlagSet {
+func (c *WebhookCreate) Flags() *pflag.FlagSet {
 	if c.fs == nil {
 		c.fs = flagsForWebhook(&c.webhook)
 	}
@@ -125,7 +129,7 @@ func (c *WebhookCreate) Run(ctx *cmd.Context) error {
 }
 
 type WebhookUpdate struct {
-	fs            *gnuflag.FlagSet
+	fs            *pflag.FlagSet
 	webhook       tsuru.Webhook
 	noBody        bool
 	noHeader      bool
@@ -147,7 +151,7 @@ func (c *WebhookUpdate) Info() *cmd.Info {
 	}
 }
 
-func (c *WebhookUpdate) Flags() *gnuflag.FlagSet {
+func (c *WebhookUpdate) Flags() *pflag.FlagSet {
 	if c.fs == nil {
 		c.fs = flagsForWebhook(&c.webhook)
 

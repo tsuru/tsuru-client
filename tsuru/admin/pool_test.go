@@ -59,7 +59,7 @@ func (s *S) TestAddPublicPool(c *check.C) {
 	}
 	s.setupFakeTransport(trans)
 	cmd := AddPoolToSchedulerCmd{}
-	cmd.Flags().Parse(true, []string{"-p"})
+	cmd.Flags().Parse([]string{"-p"})
 	err := cmd.Run(&context)
 	c.Assert(err, check.IsNil)
 }
@@ -81,7 +81,7 @@ func (s *S) TestAddDefaultPool(c *check.C) {
 	}
 	s.setupFakeTransport(trans)
 	command := AddPoolToSchedulerCmd{}
-	command.Flags().Parse(true, []string{"-d"})
+	command.Flags().Parse([]string{"-d"})
 	err := command.Run(&context)
 	c.Assert(err, check.IsNil)
 }
@@ -104,7 +104,7 @@ func (s *S) TestAddPoolWithProvisioner(c *check.C) {
 	}
 	s.setupFakeTransport(trans)
 	command := AddPoolToSchedulerCmd{}
-	command.Flags().Parse(true, []string{"--provisioner", "kub"})
+	command.Flags().Parse([]string{"--provisioner", "kub"})
 	err := command.Run(&context)
 	c.Assert(err, check.IsNil)
 }
@@ -127,7 +127,7 @@ func (s *S) TestAddPoolWithLabels(c *check.C) {
 	}
 	s.setupFakeTransport(trans)
 	cmd := AddPoolToSchedulerCmd{}
-	cmd.Flags().Parse(true, []string{"--labels", "test-key=test-value"})
+	cmd.Flags().Parse([]string{"--labels", "test-key=test-value"})
 	err := cmd.Run(&context)
 	c.Assert(err, check.IsNil)
 }
@@ -150,7 +150,7 @@ func (s *S) TestFailToAddMoreThanOneDefaultPool(c *check.C) {
 	context := cmd.Context{Args: []string{"test"}, Stdout: &buf, Stdin: stdin}
 	s.setupFakeTransport(&trans)
 	command := AddPoolToSchedulerCmd{}
-	command.Flags().Parse(true, []string{"-d"})
+	command.Flags().Parse([]string{"-d"})
 	err := command.Run(&context)
 	c.Assert(err, check.IsNil)
 	expected := "WARNING: Default pool already exist. Do you want change to test pool? (y/n) Pool add aborted.\n"
@@ -175,8 +175,8 @@ func (s *S) TestForceToOverwriteDefaultPool(c *check.C) {
 	context := cmd.Context{Args: []string{"test"}, Stdout: &buf, Stdin: stdin}
 	s.setupFakeTransport(&trans)
 	command := AddPoolToSchedulerCmd{}
-	command.Flags().Parse(true, []string{"-d"})
-	command.Flags().Parse(true, []string{"-f"})
+	command.Flags().Parse([]string{"-d"})
+	command.Flags().Parse([]string{"-f"})
 	err := command.Run(&context)
 	c.Assert(err, check.IsNil)
 }
@@ -217,7 +217,7 @@ func (s *S) TestAskOverwriteDefaultPool(c *check.C) {
 	}
 	s.setupFakeTransport(&trans)
 	command := AddPoolToSchedulerCmd{}
-	command.Flags().Parse(true, []string{"-d"})
+	command.Flags().Parse([]string{"-d"})
 	err := command.Run(&context)
 	c.Assert(err, check.IsNil)
 	c.Assert(called, check.Equals, 2)
@@ -251,7 +251,7 @@ func (s *S) TestUpdatePoolToTheSchedulerCmd(c *check.C) {
 	}
 	s.setupFakeTransport(trans)
 	cmd := UpdatePoolToSchedulerCmd{}
-	cmd.Flags().Parse(true, []string{"--public", "true"})
+	cmd.Flags().Parse([]string{"--public", "true"})
 	err := cmd.Run(&context)
 	c.Assert(err, check.IsNil)
 }
@@ -290,7 +290,7 @@ func (s *S) TestUpdatePoolAddLabels(c *check.C) {
 	}
 	s.setupFakeTransport(&trans)
 	cmd := UpdatePoolToSchedulerCmd{}
-	cmd.Flags().Parse(true, []string{"--add-labels", "test-key=test-value"})
+	cmd.Flags().Parse([]string{"--add-labels", "test-key=test-value"})
 	err = cmd.Run(&context)
 	c.Assert(err, check.IsNil)
 }
@@ -313,7 +313,7 @@ func (s *S) TestUpdatePoolFailRemoveUnexistingLabels(c *check.C) {
 	}
 	s.setupFakeTransport(&trans)
 	cmd := UpdatePoolToSchedulerCmd{}
-	cmd.Flags().Parse(true, []string{"--remove-labels", "test-key"})
+	cmd.Flags().Parse([]string{"--remove-labels", "test-key"})
 	err = cmd.Run(&context)
 	c.Assert(err.Error(), check.Equals, "key test-key does not exist in pool labelset, can't delete an unexisting key")
 }
@@ -353,7 +353,7 @@ func (s *S) TestUpdatePoolRemoveAllLabels(c *check.C) {
 	}
 	s.setupFakeTransport(&trans)
 	cmd := UpdatePoolToSchedulerCmd{}
-	cmd.Flags().Parse(true, []string{"--remove-labels", "k1", "--remove-labels", "k2", "--remove-labels", "k3"})
+	cmd.Flags().Parse([]string{"--remove-labels", "k1", "--remove-labels", "k2", "--remove-labels", "k3"})
 	err = cmd.Run(&context)
 	c.Assert(err, check.IsNil)
 }
@@ -392,7 +392,7 @@ func (s *S) TestUpdatePoolRemoveAllLabelsThenAddNewOnes(c *check.C) {
 	}
 	s.setupFakeTransport(&trans)
 	cmd := UpdatePoolToSchedulerCmd{}
-	cmd.Flags().Parse(true, []string{"--remove-labels", "k1", "--remove-labels", "k2", "--remove-labels", "k3", "--add-labels", "new-key=new-value"})
+	cmd.Flags().Parse([]string{"--remove-labels", "k1", "--remove-labels", "k2", "--remove-labels", "k3", "--add-labels", "new-key=new-value"})
 	err = cmd.Run(&context)
 	c.Assert(err, check.IsNil)
 }
@@ -432,7 +432,7 @@ func (s *S) TestUpdatePoolWithLabelsAddAndRemoveLabels(c *check.C) {
 	}
 	s.setupFakeTransport(&trans)
 	cmd := UpdatePoolToSchedulerCmd{}
-	cmd.Flags().Parse(true, []string{"--add-labels", "k4=v4", "--remove-labels", "k2"})
+	cmd.Flags().Parse([]string{"--add-labels", "k4=v4", "--remove-labels", "k2"})
 	err = cmd.Run(&context)
 	c.Assert(err, check.IsNil)
 }
@@ -459,7 +459,7 @@ func (s *S) TestFailToUpdateMoreThanOneDefaultPool(c *check.C) {
 	context := cmd.Context{Args: []string{"test"}, Stdout: &buf, Stdin: stdin}
 	s.setupFakeTransport(&trans)
 	command := UpdatePoolToSchedulerCmd{}
-	command.Flags().Parse(true, []string{"--default=true"})
+	command.Flags().Parse([]string{"--default=true"})
 	err := command.Run(&context)
 	c.Assert(err, check.IsNil)
 	expected := "WARNING: Default pool already exist. Do you want change to test pool? (y/n) Pool update aborted.\n"
@@ -489,8 +489,8 @@ func (s *S) TestForceToOverwriteDefaultPoolInUpdate(c *check.C) {
 	context := cmd.Context{Args: []string{"test"}, Stdout: &buf, Stdin: stdin}
 	s.setupFakeTransport(&trans)
 	command := UpdatePoolToSchedulerCmd{}
-	command.Flags().Parse(true, []string{"--default=true"})
-	command.Flags().Parse(true, []string{"-f"})
+	command.Flags().Parse([]string{"--default=true"})
+	command.Flags().Parse([]string{"-f"})
 	err := command.Run(&context)
 	c.Assert(err, check.IsNil)
 }
@@ -536,7 +536,7 @@ func (s *S) TestAskOverwriteDefaultPoolInUpdate(c *check.C) {
 	}
 	s.setupFakeTransport(&trans)
 	command := UpdatePoolToSchedulerCmd{}
-	command.Flags().Parse(true, []string{"--default=true"})
+	command.Flags().Parse([]string{"--default=true"})
 	err := command.Run(&context)
 	c.Assert(err, check.IsNil)
 	c.Assert(called, check.Equals, 2)
@@ -561,7 +561,7 @@ func (s *S) TestRemovePoolFromTheSchedulerCmd(c *check.C) {
 	}
 	s.setupFakeTransport(trans)
 	cmd := RemovePoolFromSchedulerCmd{}
-	cmd.Flags().Parse(true, []string{"-y"})
+	cmd.Flags().Parse([]string{"-y"})
 	err := cmd.Run(&context)
 	c.Assert(err, check.IsNil)
 }
@@ -714,7 +714,7 @@ func (s *S) TestPoolConstraintSet(c *check.C) {
 	}
 	s.setupFakeTransport(trans)
 	cmd := PoolConstraintSet{}
-	cmd.Flags().Parse(true, []string{"--blacklist", "--append"})
+	cmd.Flags().Parse([]string{"--blacklist", "--append"})
 	err := cmd.Run(&context)
 	c.Assert(err, check.IsNil)
 }

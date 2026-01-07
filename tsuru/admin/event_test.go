@@ -152,7 +152,7 @@ func (s *S) TestEventBlockAddAllFlags(c *check.C) {
 	}
 	s.setupFakeTransport(trans)
 	command := EventBlockAdd{}
-	command.Flags().Parse(true, []string{"-k", "app.deploy", "-o", "user@email.com", "-t", "app", "-v", "myapp"})
+	command.Flags().Parse([]string{"-k", "app.deploy", "-o", "user@email.com", "-t", "app", "-v", "myapp"})
 	err := command.Run(&context)
 	c.Assert(err, check.IsNil)
 	c.Assert(stdout.String(), check.Equals, "Block successfully added.\n")

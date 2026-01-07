@@ -8,6 +8,8 @@ import (
 	"encoding/json"
 	"errors"
 	"strings"
+
+	"github.com/spf13/pflag"
 )
 
 type MapFlag map[string]string
@@ -31,6 +33,10 @@ func (f *MapFlag) Set(val string) error {
 	}
 	(*f)[parts[0]] = parts[1]
 	return nil
+}
+
+func (f *MapFlag) Type() string {
+	return "map"
 }
 
 type MapFlagWrapper struct {
@@ -68,7 +74,17 @@ func (f StringSliceFlagWrapper) Set(val string) error {
 	return nil
 }
 
+func (f StringSliceFlagWrapper) Type() string {
+	return "stringslice"
+}
+
 type StringSliceFlag []string
+
+var _ pflag.Value = &StringSliceFlag{}
+
+func (f *StringSliceFlag) Type() string {
+	return "stringslice"
+}
 
 func (f *StringSliceFlag) String() string {
 	repr := *f

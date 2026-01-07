@@ -248,7 +248,7 @@ func (s *S) TestVolumeCreate(c *check.C) {
 	}
 	s.setupFakeTransport(trans)
 	command := &VolumeCreate{}
-	command.Flags().Parse(true, []string{"-t", "team1", "-p", "pool1", "-o", "a=1", "-o", "b=2"})
+	command.Flags().Parse([]string{"-t", "team1", "-p", "pool1", "-o", "a=1", "-o", "b=2"})
 	err := command.Run(&ctx)
 	c.Assert(err, check.IsNil)
 	result := stdout.String()
@@ -289,7 +289,7 @@ func (s *S) TestVolumeUpdate(c *check.C) {
 	}
 	s.setupFakeTransport(trans)
 	command := &VolumeUpdate{}
-	command.Flags().Parse(true, []string{"-t", "team1", "-p", "pool1", "-o", "a=1", "-o", "b=2"})
+	command.Flags().Parse([]string{"-t", "team1", "-p", "pool1", "-o", "a=1", "-o", "b=2"})
 	err := command.Run(&ctx)
 	c.Assert(err, check.IsNil)
 	result := stdout.String()
@@ -343,7 +343,7 @@ func (s *S) TestVolumeBind(c *check.C) {
 	}
 	s.setupFakeTransport(trans)
 	command := &VolumeBind{}
-	command.Flags().Parse(true, []string{"-a", "myapp"})
+	command.Flags().Parse([]string{"-a", "myapp"})
 	err := command.Run(&ctx)
 	c.Assert(err, check.IsNil)
 	result := stdout.String()
@@ -369,7 +369,7 @@ func (s *S) TestVolumeBindNoRestart(c *check.C) {
 	}
 	s.setupFakeTransport(trans)
 	command := &VolumeBind{}
-	command.Flags().Parse(true, []string{"-a", "myapp", "--no-restart"})
+	command.Flags().Parse([]string{"-a", "myapp", "--no-restart"})
 	err := command.Run(&ctx)
 	c.Assert(err, check.IsNil)
 	result := stdout.String()
@@ -395,7 +395,7 @@ func (s *S) TestVolumeBindRO(c *check.C) {
 	}
 	s.setupFakeTransport(trans)
 	command := &VolumeBind{}
-	command.Flags().Parse(true, []string{"-a", "myapp", "--readonly"})
+	command.Flags().Parse([]string{"-a", "myapp", "--readonly"})
 	err := command.Run(&ctx)
 	c.Assert(err, check.IsNil)
 	result := stdout.String()
@@ -424,7 +424,7 @@ func (s *S) TestVolumeUnbind(c *check.C) {
 	}
 	s.setupFakeTransport(trans)
 	command := &VolumeUnbind{}
-	command.Flags().Parse(true, []string{"-a", "myapp"})
+	command.Flags().Parse([]string{"-a", "myapp"})
 	err := command.Run(&ctx)
 	c.Assert(err, check.IsNil)
 	result := stdout.String()
@@ -450,7 +450,7 @@ func (s *S) TestVolumeUnbindNoRestart(c *check.C) {
 	}
 	s.setupFakeTransport(trans)
 	command := &VolumeUnbind{}
-	command.Flags().Parse(true, []string{"-a", "myapp", "--no-restart"})
+	command.Flags().Parse([]string{"-a", "myapp", "--no-restart"})
 	err := command.Run(&ctx)
 	c.Assert(err, check.IsNil)
 	result := stdout.String()

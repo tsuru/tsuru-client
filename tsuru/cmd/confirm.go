@@ -7,17 +7,17 @@ package cmd
 import (
 	"fmt"
 
-	"github.com/tsuru/gnuflag"
+	"github.com/spf13/pflag"
 )
 
 type ConfirmationCommand struct {
 	yes bool
-	fs  *gnuflag.FlagSet
+	fs  *pflag.FlagSet
 }
 
-func (cmd *ConfirmationCommand) Flags() *gnuflag.FlagSet {
+func (cmd *ConfirmationCommand) Flags() *pflag.FlagSet {
 	if cmd.fs == nil {
-		cmd.fs = gnuflag.NewFlagSet("", gnuflag.ExitOnError)
+		cmd.fs = pflag.NewFlagSet("", pflag.ExitOnError)
 		cmd.fs.BoolVar(&cmd.yes, "y", false, "Don't ask for confirmation.")
 		cmd.fs.BoolVar(&cmd.yes, "assume-yes", false, "Don't ask for confirmation.")
 	}

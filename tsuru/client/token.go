@@ -14,7 +14,7 @@ import (
 
 	"github.com/tsuru/tablecli"
 
-	"github.com/tsuru/gnuflag"
+	"github.com/spf13/pflag"
 	"github.com/tsuru/go-tsuruclient/pkg/tsuru"
 	"github.com/tsuru/tsuru-client/tsuru/cmd"
 	"github.com/tsuru/tsuru-client/tsuru/formatter"
@@ -22,7 +22,7 @@ import (
 )
 
 type TokenCreateCmd struct {
-	fs      *gnuflag.FlagSet
+	fs      *pflag.FlagSet
 	args    tsuru.TeamTokenCreateArgs
 	expires time.Duration
 }
@@ -50,9 +50,9 @@ func (c *TokenCreateCmd) Run(ctx *cmd.Context) error {
 	return nil
 }
 
-func (c *TokenCreateCmd) Flags() *gnuflag.FlagSet {
+func (c *TokenCreateCmd) Flags() *pflag.FlagSet {
 	if c.fs == nil {
-		c.fs = gnuflag.NewFlagSet("", gnuflag.ExitOnError)
+		c.fs = pflag.NewFlagSet("", pflag.ExitOnError)
 
 		description := "A description on how the token will be used."
 		c.fs.StringVar(&c.args.Description, "description", "", description)
@@ -74,7 +74,7 @@ func (c *TokenCreateCmd) Flags() *gnuflag.FlagSet {
 }
 
 type TokenUpdateCmd struct {
-	fs      *gnuflag.FlagSet
+	fs      *pflag.FlagSet
 	args    tsuru.TeamTokenUpdateArgs
 	expires time.Duration
 }
@@ -102,9 +102,9 @@ func (c *TokenUpdateCmd) Run(ctx *cmd.Context) error {
 	return nil
 }
 
-func (c *TokenUpdateCmd) Flags() *gnuflag.FlagSet {
+func (c *TokenUpdateCmd) Flags() *pflag.FlagSet {
 	if c.fs == nil {
-		c.fs = gnuflag.NewFlagSet("", gnuflag.ExitOnError)
+		c.fs = pflag.NewFlagSet("", pflag.ExitOnError)
 
 		description := "A description on how the token will be used."
 		c.fs.StringVar(&c.args.Description, "description", "", description)

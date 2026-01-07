@@ -9,7 +9,7 @@ import (
 	"sort"
 	"strings"
 
-	"github.com/tsuru/gnuflag"
+	"github.com/spf13/pflag"
 	"github.com/tsuru/go-tsuruclient/pkg/tsuru"
 	tsuruClientApp "github.com/tsuru/tsuru-client/tsuru/app"
 	"github.com/tsuru/tsuru-client/tsuru/cmd"
@@ -77,10 +77,10 @@ type MetadataGet struct {
 	jobName      string
 	flagsApplied bool
 	json         bool
-	fs           *gnuflag.FlagSet
+	fs           *pflag.FlagSet
 }
 
-func (c *MetadataGet) Flags() *gnuflag.FlagSet {
+func (c *MetadataGet) Flags() *pflag.FlagSet {
 	if c.fs == nil {
 		c.fs = c.AppNameMixIn.Flags()
 		c.fs.StringVar(&c.jobName, "job", "", "The name of the job.")
@@ -162,7 +162,7 @@ type MetadataSet struct {
 	tsuruClientApp.AppNameMixIn
 	job          string
 	processName  string
-	fs           *gnuflag.FlagSet
+	fs           *pflag.FlagSet
 	metadataType string
 	noRestart    bool
 }
@@ -176,7 +176,7 @@ func (c *MetadataSet) Info() *cmd.Info {
 	}
 }
 
-func (c *MetadataSet) Flags() *gnuflag.FlagSet {
+func (c *MetadataSet) Flags() *pflag.FlagSet {
 	if c.fs == nil {
 		c.fs = c.AppNameMixIn.Flags()
 		c.fs.StringVar(&c.job, "job", "", "The name of the job.")
@@ -254,7 +254,7 @@ type MetadataUnset struct {
 	tsuruClientApp.AppNameMixIn
 	job          string
 	processName  string
-	fs           *gnuflag.FlagSet
+	fs           *pflag.FlagSet
 	metadataType string
 	noRestart    bool
 }
@@ -268,7 +268,7 @@ func (c *MetadataUnset) Info() *cmd.Info {
 	}
 }
 
-func (c *MetadataUnset) Flags() *gnuflag.FlagSet {
+func (c *MetadataUnset) Flags() *pflag.FlagSet {
 	if c.fs == nil {
 		c.fs = c.AppNameMixIn.Flags()
 		c.fs.StringVar(&c.job, "job", "", "The name of the job.")

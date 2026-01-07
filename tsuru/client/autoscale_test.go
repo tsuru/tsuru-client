@@ -48,7 +48,7 @@ func (s *S) TestAutoScaleSet(c *check.C) {
 	s.setupFakeTransport(&trans)
 	command := AutoScaleSet{}
 	command.Info()
-	command.Flags().Parse(true, []string{"-a", "myapp", "-p", "proc1", "--min", "2", "--max", "5", "--cpu", "30%"})
+	command.Flags().Parse([]string{"-a", "myapp", "-p", "proc1", "--min", "2", "--max", "5", "--cpu", "30%"})
 	err := command.Run(&context)
 	c.Assert(err, check.IsNil)
 	c.Assert(stdout.String(), check.Equals, expected)
@@ -118,7 +118,7 @@ func (s *S) TestAutoScaleBehaviorSet(c *check.C) {
 		s.setupFakeTransport(&trans)
 		command := AutoScaleSet{}
 		command.Info()
-		command.Flags().Parse(true, tt.param)
+		command.Flags().Parse(tt.param)
 		err := command.Run(&context)
 		c.Assert(err, check.IsNil)
 		c.Assert(stdout.String(), check.Equals, expected)
@@ -168,7 +168,7 @@ func (s *S) TestKEDAScheduleAutoScaleSet(c *check.C) {
 	s.setupFakeTransport(&trans)
 	command := AutoScaleSet{}
 	command.Info()
-	command.Flags().Parse(true, []string{
+	command.Flags().Parse([]string{
 		"-a", "myapp", "-p", "proc1", "--min", "2", "--max", "5", "--cpu", "30%",
 		"--schedule", "{\"minReplicas\": 2, \"start\": \"0 6 * * *\", \"end\": \"0 18 * * *\"}",
 		"--schedule", "{\"minReplicas\": 1, \"start\": \"0 18 * * *\", \"end\": \"0 0 * * *\"}",
@@ -221,7 +221,7 @@ func (s *S) TestKEDAPrometheusAutoScaleSet(c *check.C) {
 	s.setupFakeTransport(&trans)
 	command := AutoScaleSet{}
 	command.Info()
-	command.Flags().Parse(true, []string{
+	command.Flags().Parse([]string{
 		"-a", "myapp", "-p", "proc1", "--min", "1", "--max", "5",
 		"--prometheus", "{\"name\": \"prometheus_metric_1\", \"threshold\": 1, \"query\": \"my_metric_1(app='my-app')\"}",
 		"--prometheus", "{\"name\": \"prometheus_metric_2\", \"threshold\": 5, \"query\": \"my_metric_2(app='my-app')\", \"prometheusAddress\": \"exemple.prometheus.com\"}",
@@ -251,7 +251,7 @@ func (s *S) TestAutoScaleUnset(c *check.C) {
 	s.setupFakeTransport(&trans)
 	command := AutoScaleUnset{}
 	command.Info()
-	command.Flags().Parse(true, []string{"-a", "myapp", "-p", "proc1"})
+	command.Flags().Parse([]string{"-a", "myapp", "-p", "proc1"})
 	err := command.Run(&context)
 	c.Assert(err, check.IsNil)
 	c.Assert(stdout.String(), check.Equals, expected)

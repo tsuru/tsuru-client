@@ -18,7 +18,7 @@ import (
 
 	"github.com/antihax/optional"
 	"github.com/mattn/go-shellwords"
-	"github.com/tsuru/gnuflag"
+	"github.com/spf13/pflag"
 	"github.com/tsuru/go-tsuruclient/pkg/tsuru"
 	"github.com/tsuru/tablecli"
 	"github.com/tsuru/tsuru-client/tsuru/cmd"
@@ -36,7 +36,7 @@ type JobCreate struct {
 	maxRunningTime int64
 	tags           cmd.StringSliceFlag
 
-	fs *gnuflag.FlagSet
+	fs *pflag.FlagSet
 }
 
 func (c *JobCreate) Info() *cmd.Info {
@@ -83,10 +83,10 @@ this parameter is not informed, default value is 3600s`,
 	}
 }
 
-func (c *JobCreate) Flags() *gnuflag.FlagSet {
+func (c *JobCreate) Flags() *pflag.FlagSet {
 	if c.fs == nil {
 		infoMessage := "The plan used to create the job"
-		c.fs = gnuflag.NewFlagSet("", gnuflag.ExitOnError)
+		c.fs = pflag.NewFlagSet("", pflag.ExitOnError)
 		c.fs.StringVar(&c.plan, "plan", "", infoMessage)
 		c.fs.StringVar(&c.plan, "p", "", infoMessage)
 		schedule := "Schedule string"
@@ -157,7 +157,7 @@ func (c *JobCreate) Run(ctx *cmd.Context) error {
 
 	var activeDeadlineSecondsResult *int64
 	if c.fs != nil {
-		c.fs.Visit(func(f *gnuflag.Flag) {
+		c.fs.Visit(func(f *pflag.Flag) {
 			if (f.Name == "max-running-time" || f.Name == "m") && c.maxRunningTime == 0 {
 				activeDeadlineSecondsResult = &c.maxRunningTime
 			}
@@ -189,13 +189,13 @@ func (c *JobCreate) Run(ctx *cmd.Context) error {
 }
 
 type JobInfo struct {
-	fs   *gnuflag.FlagSet
+	fs   *pflag.FlagSet
 	json bool
 }
 
-func (c *JobInfo) Flags() *gnuflag.FlagSet {
+func (c *JobInfo) Flags() *pflag.FlagSet {
 	if c.fs == nil {
-		c.fs = gnuflag.NewFlagSet("job-info", gnuflag.ContinueOnError)
+		c.fs = pflag.NewFlagSet("job-info", pflag.ContinueOnError)
 		c.fs.BoolVar(&c.json, "json", false, "Show JSON")
 	}
 	return c.fs
@@ -334,15 +334,15 @@ type jobFilter struct {
 }
 
 type JobList struct {
-	fs         *gnuflag.FlagSet
+	fs         *pflag.FlagSet
 	filter     jobFilter
 	json       bool
 	simplified bool
 }
 
-func (c *JobList) Flags() *gnuflag.FlagSet {
+func (c *JobList) Flags() *pflag.FlagSet {
 	if c.fs == nil {
-		c.fs = gnuflag.NewFlagSet("job-list", gnuflag.ContinueOnError)
+		c.fs = pflag.NewFlagSet("job-list", pflag.ContinueOnError)
 		c.fs.StringVar(&c.filter.name, "name", "", "Filter jobs by name")
 		c.fs.StringVar(&c.filter.name, "n", "", "Filter jobs by name")
 		c.fs.StringVar(&c.filter.pool, "pool", "", "Filter jobs by pool")
@@ -514,7 +514,7 @@ type JobUpdate struct {
 	maxRunningTime int64
 	tags           cmd.StringSliceFlag
 
-	fs *gnuflag.FlagSet
+	fs *pflag.FlagSet
 }
 
 func (c *JobUpdate) Info() *cmd.Info {
@@ -526,10 +526,10 @@ func (c *JobUpdate) Info() *cmd.Info {
 	}
 }
 
-func (c *JobUpdate) Flags() *gnuflag.FlagSet {
+func (c *JobUpdate) Flags() *pflag.FlagSet {
 	if c.fs == nil {
 		infoMessage := "The plan used to create the job"
-		c.fs = gnuflag.NewFlagSet("", gnuflag.ExitOnError)
+		c.fs = pflag.NewFlagSet("", pflag.ExitOnError)
 		c.fs.StringVar(&c.plan, "plan", "", infoMessage)
 		c.fs.StringVar(&c.plan, "p", "", infoMessage)
 		schedule := "Schedule string"
@@ -580,7 +580,7 @@ func (c *JobUpdate) Run(ctx *cmd.Context) error {
 	}
 	var activeDeadlineSecondsResult *int64
 	if c.fs != nil {
-		c.fs.Visit(func(f *gnuflag.Flag) {
+		c.fs.Visit(func(f *pflag.Flag) {
 			if (f.Name == "max-running-time" || f.Name == "m") && c.maxRunningTime == 0 {
 				activeDeadlineSecondsResult = &c.maxRunningTime
 			}
@@ -616,7 +616,7 @@ func (c *JobUpdate) Run(ctx *cmd.Context) error {
 
 type JobLog struct {
 	follow bool
-	fs     *gnuflag.FlagSet
+	fs     *pflag.FlagSet
 }
 
 func (c *JobLog) Info() *cmd.Info {
@@ -629,9 +629,9 @@ func (c *JobLog) Info() *cmd.Info {
 	}
 }
 
-func (c *JobLog) Flags() *gnuflag.FlagSet {
+func (c *JobLog) Flags() *pflag.FlagSet {
 	if c.fs == nil {
-		c.fs = gnuflag.NewFlagSet("job-log", gnuflag.ExitOnError)
+		c.fs = pflag.NewFlagSet("job-log", pflag.ExitOnError)
 		followMsg := "Follow logs"
 		c.fs.BoolVar(&c.follow, "f", false, followMsg)
 		c.fs.BoolVar(&c.follow, "follow", false, followMsg)

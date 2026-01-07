@@ -17,7 +17,7 @@ import (
 	"os"
 	"sort"
 
-	"github.com/tsuru/gnuflag"
+	"github.com/spf13/pflag"
 	"github.com/tsuru/go-tsuruclient/pkg/config"
 	"github.com/tsuru/tablecli"
 	"github.com/tsuru/tsuru-client/tsuru/cmd"
@@ -31,7 +31,7 @@ type platform struct {
 }
 
 type PlatformList struct {
-	fs         *gnuflag.FlagSet
+	fs         *pflag.FlagSet
 	simplified bool
 	json       bool
 }
@@ -92,9 +92,9 @@ func (p *PlatformList) Run(context *cmd.Context) error {
 	return nil
 }
 
-func (c *PlatformList) Flags() *gnuflag.FlagSet {
+func (c *PlatformList) Flags() *pflag.FlagSet {
 	if c.fs == nil {
-		c.fs = gnuflag.NewFlagSet("platform-list", gnuflag.ExitOnError)
+		c.fs = pflag.NewFlagSet("platform-list", pflag.ExitOnError)
 		c.fs.BoolVar(&c.simplified, "q", false, "Display only platform name")
 		c.fs.BoolVar(&c.json, "json", false, "Display in JSON format")
 
@@ -113,7 +113,7 @@ func (*PlatformList) Info() *cmd.Info {
 type PlatformAdd struct {
 	dockerfile string
 	image      string
-	fs         *gnuflag.FlagSet
+	fs         *pflag.FlagSet
 }
 
 func (p *PlatformAdd) Info() *cmd.Info {
@@ -162,10 +162,10 @@ func (p *PlatformAdd) Run(context *cmd.Context) error {
 	return formatter.StreamJSONResponse(context.Stdout, response)
 }
 
-func (p *PlatformAdd) Flags() *gnuflag.FlagSet {
+func (p *PlatformAdd) Flags() *pflag.FlagSet {
 	dockerfileMessage := "URL or path to the Dockerfile used for building the image of the platform"
 	if p.fs == nil {
-		p.fs = gnuflag.NewFlagSet("", gnuflag.ExitOnError)
+		p.fs = pflag.NewFlagSet("", pflag.ExitOnError)
 		p.fs.StringVar(&p.dockerfile, "dockerfile", "", dockerfileMessage)
 		p.fs.StringVar(&p.dockerfile, "d", "", dockerfileMessage)
 		msg := "Name of the prebuilt Docker image"
@@ -180,7 +180,7 @@ type PlatformUpdate struct {
 	image      string
 	disable    bool
 	enable     bool
-	fs         *gnuflag.FlagSet
+	fs         *pflag.FlagSet
 }
 
 func (p *PlatformUpdate) Info() *cmd.Info {
@@ -206,10 +206,10 @@ Examples:
 	}
 }
 
-func (p *PlatformUpdate) Flags() *gnuflag.FlagSet {
+func (p *PlatformUpdate) Flags() *pflag.FlagSet {
 	dockerfileMessage := "URL or path to the Dockerfile used for building the image of the platform"
 	if p.fs == nil {
-		p.fs = gnuflag.NewFlagSet("platform-update", gnuflag.ExitOnError)
+		p.fs = pflag.NewFlagSet("platform-update", pflag.ExitOnError)
 		p.fs.StringVar(&p.dockerfile, "dockerfile", "", dockerfileMessage)
 		p.fs.StringVar(&p.dockerfile, "d", "", dockerfileMessage)
 		p.fs.BoolVar(&p.disable, "disable", false, "Disable the platform")
@@ -296,13 +296,13 @@ func (p *PlatformRemove) Run(context *cmd.Context) error {
 }
 
 type PlatformInfo struct {
-	fs   *gnuflag.FlagSet
+	fs   *pflag.FlagSet
 	json bool
 }
 
-func (c *PlatformInfo) Flags() *gnuflag.FlagSet {
+func (c *PlatformInfo) Flags() *pflag.FlagSet {
 	if c.fs == nil {
-		c.fs = gnuflag.NewFlagSet("platform-info", gnuflag.ExitOnError)
+		c.fs = pflag.NewFlagSet("platform-info", pflag.ExitOnError)
 		c.fs.BoolVar(&c.json, "json", false, "Display platform in JSON Format")
 	}
 	return c.fs

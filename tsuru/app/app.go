@@ -6,11 +6,11 @@ package app
 
 import (
 	"github.com/pkg/errors"
-	"github.com/tsuru/gnuflag"
+	"github.com/spf13/pflag"
 )
 
 type AppNameMixIn struct {
-	fs      *gnuflag.FlagSet
+	fs      *pflag.FlagSet
 	appName string
 }
 
@@ -37,9 +37,9 @@ Use the --app flag to specify it.
 	return cmd.appName, nil
 }
 
-func (cmd *AppNameMixIn) Flags() *gnuflag.FlagSet {
+func (cmd *AppNameMixIn) Flags() *pflag.FlagSet {
 	if cmd.fs == nil {
-		cmd.fs = gnuflag.NewFlagSet("", gnuflag.ExitOnError)
+		cmd.fs = pflag.NewFlagSet("", pflag.ExitOnError)
 		cmd.fs.StringVar(&cmd.appName, "app", "", "The name of the app.")
 		cmd.fs.StringVar(&cmd.appName, "a", "", "The name of the app.")
 	}

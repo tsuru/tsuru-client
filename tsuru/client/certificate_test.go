@@ -44,7 +44,7 @@ func (s *S) TestCertificateSetRunSuccessfully(c *check.C) {
 	}
 	s.setupFakeTransport(trans)
 	command := CertificateSet{}
-	command.Flags().Parse(true, []string{"-a", "secret", "-c", "app.io"})
+	command.Flags().Parse([]string{"-a", "secret", "-c", "app.io"})
 	c.Assert(command.cname, check.Equals, "app.io")
 	err := command.Run(&context)
 	c.Assert(err, check.IsNil)
@@ -64,7 +64,7 @@ func (s *S) TestCertificateSetRunCerticateNotFound(c *check.C) {
 	trans := &cmdtest.Transport{Status: http.StatusOK}
 	s.setupFakeTransport(trans)
 	command := CertificateSet{}
-	command.Flags().Parse(true, []string{"-a", "secret", "-c", "app.io"})
+	command.Flags().Parse([]string{"-a", "secret", "-c", "app.io"})
 	c.Assert(command.cname, check.Equals, "app.io")
 	err := command.Run(&context)
 	c.Assert(os.IsNotExist(err), check.Equals, true)
@@ -95,7 +95,7 @@ func (s *S) TestCertificateUnsetRunSuccessfully(c *check.C) {
 	}
 	s.setupFakeTransport(trans)
 	command := CertificateUnset{}
-	command.Flags().Parse(true, []string{"-a", "secret", "-c", "app.io"})
+	command.Flags().Parse([]string{"-a", "secret", "-c", "app.io"})
 	c.Assert(command.cname, check.Equals, "app.io")
 	err := command.Run(&context)
 	c.Assert(err, check.IsNil)
@@ -189,7 +189,7 @@ func (s *S) TestCertificateListRunSuccessfully(c *check.C) {
 	}
 	s.setupFakeTransport(trans)
 	command := CertificateList{}
-	command.Flags().Parse(true, []string{"-a", "myapp"})
+	command.Flags().Parse([]string{"-a", "myapp"})
 	err = command.Run(&context)
 	c.Assert(err, check.IsNil)
 	c.Assert(stdout.String(), check.Equals, expected)
@@ -235,7 +235,7 @@ func (s *S) TestCertificateListRawRunSuccessfully(c *check.C) {
 	}
 	s.setupFakeTransport(trans)
 	command := CertificateList{}
-	command.Flags().Parse(true, []string{"-a", "myapp", "-r"})
+	command.Flags().Parse([]string{"-a", "myapp", "-r"})
 	err = command.Run(&context)
 	c.Assert(err, check.IsNil)
 	c.Assert(strings.Contains(stdout.String(), "myapp.other.io:\nNo certificate."), check.Equals, true)
@@ -268,7 +268,7 @@ func (s *S) TestCertificateIssuerSetRunSuccessfully(c *check.C) {
 	}
 	s.setupFakeTransport(trans)
 	command := CertificateIssuerSet{}
-	command.Flags().Parse(true, []string{"-a", "secret", "-c", "app.io"})
+	command.Flags().Parse([]string{"-a", "secret", "-c", "app.io"})
 	c.Assert(command.cname, check.Equals, "app.io")
 	err := command.Run(&context)
 	c.Assert(err, check.IsNil)
@@ -302,7 +302,7 @@ func (s *S) TestCertificateIssuerUnsetRunSuccessfully(c *check.C) {
 	expected += "Certificate issuer removed.\n"
 	s.setupFakeTransport(trans)
 	command := CertificateIssuerUnset{}
-	command.Flags().Parse(true, []string{"-a", "secret", "-c", "app.io"})
+	command.Flags().Parse([]string{"-a", "secret", "-c", "app.io"})
 	c.Assert(command.cname, check.Equals, "app.io")
 	err := command.Run(&context)
 	c.Assert(err, check.IsNil)
@@ -329,7 +329,7 @@ func (s *S) TestCertificateIssuerUnsetRunWithoutAsking(c *check.C) {
 	expected := "Certificate issuer removed.\n"
 	s.setupFakeTransport(trans)
 	command := CertificateIssuerUnset{}
-	command.Flags().Parse(true, []string{"-a", "secret", "-c", "app.io", "-y"})
+	command.Flags().Parse([]string{"-a", "secret", "-c", "app.io", "-y"})
 	c.Assert(command.cname, check.Equals, "app.io")
 	err := command.Run(&context)
 	c.Assert(err, check.IsNil)

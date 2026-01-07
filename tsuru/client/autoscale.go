@@ -12,7 +12,7 @@ import (
 
 	"github.com/pkg/errors"
 
-	"github.com/tsuru/gnuflag"
+	"github.com/spf13/pflag"
 	"github.com/tsuru/go-tsuruclient/pkg/tsuru"
 	tsuruClientApp "github.com/tsuru/tsuru-client/tsuru/app"
 	"github.com/tsuru/tsuru-client/tsuru/cmd"
@@ -28,6 +28,7 @@ func (i *int32Value) Set(s string) error {
 }
 func (i *int32Value) Get() interface{} { return int32(*i) }
 func (i *int32Value) String() string   { return fmt.Sprintf("%v", *i) }
+func (i *int32Value) Type() string     { return "int32" }
 
 type int32PointerValue struct {
 	value **int32
@@ -52,9 +53,11 @@ func (i *int32PointerValue) String() string {
 	return fmt.Sprintf("%v", *i.value)
 }
 
+func (i *int32PointerValue) Type() string { return "int32pointer" }
+
 type AutoScaleSet struct {
 	tsuruClientApp.AppNameMixIn
-	fs         *gnuflag.FlagSet
+	fs         *pflag.FlagSet
 	autoscale  tsuru.AutoScaleSpec
 	schedules  cmd.StringSliceFlag
 	prometheus cmd.StringSliceFlag
@@ -86,7 +89,7 @@ unit autoscale set -a my-app --cpu 50% --min 1 --max 3 --schedule '{"minReplicas
 	}
 }
 
-func (c *AutoScaleSet) Flags() *gnuflag.FlagSet {
+func (c *AutoScaleSet) Flags() *pflag.FlagSet {
 	if c.fs == nil {
 		c.fs = c.AppNameMixIn.Flags()
 
@@ -152,7 +155,7 @@ func (c *AutoScaleSet) Run(ctx *cmd.Context) error {
 
 type AutoScaleUnset struct {
 	tsuruClientApp.AppNameMixIn
-	fs      *gnuflag.FlagSet
+	fs      *pflag.FlagSet
 	process string
 }
 
@@ -166,7 +169,7 @@ func (c *AutoScaleUnset) Info() *cmd.Info {
 	}
 }
 
-func (c *AutoScaleUnset) Flags() *gnuflag.FlagSet {
+func (c *AutoScaleUnset) Flags() *pflag.FlagSet {
 	if c.fs == nil {
 		c.fs = c.AppNameMixIn.Flags()
 		c.fs.StringVar(&c.process, "process", "", "Process name")
@@ -194,7 +197,7 @@ func (c *AutoScaleUnset) Run(ctx *cmd.Context) error {
 
 type AutoScaleSwap struct {
 	tsuruClientApp.AppNameMixIn
-	fs      *gnuflag.FlagSet
+	fs      *pflag.FlagSet
 	version string
 }
 
@@ -208,7 +211,7 @@ func (c *AutoScaleSwap) Info() *cmd.Info {
 	}
 }
 
-func (c *AutoScaleSwap) Flags() *gnuflag.FlagSet {
+func (c *AutoScaleSwap) Flags() *pflag.FlagSet {
 	if c.fs == nil {
 		c.fs = c.AppNameMixIn.Flags()
 		c.fs.StringVar(&c.version, "version", "", "Version number")

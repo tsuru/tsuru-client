@@ -20,7 +20,7 @@ import (
 	goVersion "github.com/hashicorp/go-version"
 	"github.com/pkg/errors"
 	"github.com/sajari/fuzzy"
-	"github.com/tsuru/gnuflag"
+	"github.com/spf13/pflag"
 	"github.com/tsuru/tsuru/fs"
 )
 
@@ -219,7 +219,7 @@ func (m *Manager) Run(args []string) {
 	if len(args) == 0 {
 		args = append(args, "help")
 	}
-	flagset := gnuflag.NewFlagSet("tsuru flags", gnuflag.ContinueOnError)
+	flagset := pflag.NewFlagSet("tsuru flags", pflag.ContinueOnError)
 	flagset.SetOutput(m.stderr)
 	flagset.IntVar(&verbosity, "verbosity", 0, "Verbosity level: 1 => print HTTP requests; 2 => print HTTP requests/responses")
 	flagset.IntVar(&verbosity, "v", 0, "Verbosity level: 1 => print HTTP requests; 2 => print HTTP requests/responses")
@@ -228,7 +228,7 @@ func (m *Manager) Run(args []string) {
 	flagset.BoolVar(&displayVersion, "version", false, "Print version and exit")
 	flagset.StringVar(&target, "t", "", "Define target for running command")
 	flagset.StringVar(&target, "target", "", "Define target for running command")
-	parseErr := flagset.Parse(false, args)
+	parseErr := flagset.Parse(args)
 	if parseErr != nil {
 		fmt.Fprint(m.stderr, parseErr)
 		m.finisher().Exit(2)
@@ -407,11 +407,11 @@ func (m *Manager) newContext(c Context) *Context {
 }
 
 func (m *Manager) handleFlags(command Command, name string, args []string) (Command, []string, error) {
-	var flagset *gnuflag.FlagSet
+	var flagset *pflag.FlagSet
 	if flagged, ok := command.(FlaggedCommand); ok {
 		flagset = flagged.Flags()
 	} else {
-		flagset = gnuflag.NewFlagSet(name, gnuflag.ExitOnError)
+		flagset = pflag.NewFlagSet(name, pflag.ExitOnError)
 	}
 	var helpRequested bool
 	flagset.SetOutput(m.stderr)
@@ -421,7 +421,7 @@ func (m *Manager) handleFlags(command Command, name string, args []string) (Comm
 	if flagset.Lookup("h") == nil {
 		flagset.BoolVar(&helpRequested, "h", false, "Display help and exit")
 	}
-	err := flagset.Parse(true, args)
+	err := flagset.Parse(args)
 	if err != nil {
 		return nil, nil, err
 	}
@@ -581,7 +581,7 @@ type Command interface {
 
 type FlaggedCommand interface {
 	Command
-	Flags() *gnuflag.FlagSet
+	Flags() *pflag.FlagSet
 }
 
 type DeprecatedCommand struct {
@@ -601,11 +601,11 @@ func (c *DeprecatedCommand) Run(context *Context) error {
 	return c.Command.Run(context)
 }
 
-func (c *DeprecatedCommand) Flags() *gnuflag.FlagSet {
+func (c *DeprecatedCommand) Flags() *pflag.FlagSet {
 	if cmd, ok := c.Command.(FlaggedCommand); ok {
 		return cmd.Flags()
 	}
-	return gnuflag.NewFlagSet("", gnuflag.ContinueOnError)
+	return pflag.NewFlagSet("", pflag.ContinueOnError)
 }
 
 type Context struct {

@@ -18,7 +18,7 @@ import (
 	"strings"
 	"sync"
 
-	"github.com/tsuru/gnuflag"
+	"github.com/spf13/pflag"
 	"github.com/tsuru/go-tsuruclient/pkg/config"
 	"github.com/tsuru/go-tsuruclient/pkg/tsuru"
 	"github.com/tsuru/tablecli"
@@ -60,7 +60,7 @@ func (c *AppDeployList) Info() *cmd.Info {
 	}
 }
 
-func (c *AppDeployList) Flags() *gnuflag.FlagSet {
+func (c *AppDeployList) Flags() *pflag.FlagSet {
 	fs := c.AppNameMixIn.Flags()
 	if !c.flagsApplied {
 		fs.BoolVar(&c.json, "json", false, "Show JSON")
@@ -143,13 +143,13 @@ type AppDeploy struct {
 	message    string
 	dockerfile string
 	eventID    string
-	fs         *gnuflag.FlagSet
+	fs         *pflag.FlagSet
 	m          sync.Mutex
 	deployVersionArgs
 	filesOnly bool
 }
 
-func (c *AppDeploy) Flags() *gnuflag.FlagSet {
+func (c *AppDeploy) Flags() *pflag.FlagSet {
 	if c.fs == nil {
 		c.fs = c.AppNameMixIn.Flags()
 		image := "The image to deploy in app"
@@ -383,10 +383,10 @@ type AppDeployRollback struct {
 	tsuruClientApp.AppNameMixIn
 	cmd.ConfirmationCommand
 	deployVersionArgs
-	fs *gnuflag.FlagSet
+	fs *pflag.FlagSet
 }
 
-func (c *AppDeployRollback) Flags() *gnuflag.FlagSet {
+func (c *AppDeployRollback) Flags() *pflag.FlagSet {
 	if c.fs == nil {
 		c.fs = mergeFlagSet(
 			c.AppNameMixIn.Flags(),
@@ -440,10 +440,10 @@ func (c *AppDeployRollback) Run(context *cmd.Context) error {
 type AppDeployRebuild struct {
 	tsuruClientApp.AppNameMixIn
 	deployVersionArgs
-	fs *gnuflag.FlagSet
+	fs *pflag.FlagSet
 }
 
-func (c *AppDeployRebuild) Flags() *gnuflag.FlagSet {
+func (c *AppDeployRebuild) Flags() *pflag.FlagSet {
 	if c.fs == nil {
 		c.fs = c.AppNameMixIn.Flags()
 		c.flags(c.fs)
@@ -492,7 +492,7 @@ type AppDeployRollbackUpdate struct {
 	image   string
 	reason  string
 	disable bool
-	fs      *gnuflag.FlagSet
+	fs      *pflag.FlagSet
 }
 
 func (c *AppDeployRollbackUpdate) Info() *cmd.Info {
@@ -515,7 +515,7 @@ func (c *AppDeployRollbackUpdate) Info() *cmd.Info {
 	}
 }
 
-func (c *AppDeployRollbackUpdate) Flags() *gnuflag.FlagSet {
+func (c *AppDeployRollbackUpdate) Flags() *pflag.FlagSet {
 	if c.fs == nil {
 		c.fs = c.AppNameMixIn.Flags()
 		image := "The image name for an app version"
@@ -559,7 +559,7 @@ type deployVersionArgs struct {
 	overrideVersions bool
 }
 
-func (c *deployVersionArgs) flags(fs *gnuflag.FlagSet) {
+func (c *deployVersionArgs) flags(fs *pflag.FlagSet) {
 	newVersion := "Creates a new version for the current deployment while preserving existing versions"
 	fs.BoolVar(&c.newVersion, "new-version", false, newVersion)
 	overrideVersions := "Force replace all deployed versions by this new deploy"
@@ -583,13 +583,13 @@ type JobDeploy struct {
 	message    string
 	dockerfile string
 	eventID    string
-	fs         *gnuflag.FlagSet
+	fs         *pflag.FlagSet
 	m          sync.Mutex
 }
 
-func (c *JobDeploy) Flags() *gnuflag.FlagSet {
+func (c *JobDeploy) Flags() *pflag.FlagSet {
 	if c.fs == nil {
-		c.fs = gnuflag.NewFlagSet("", gnuflag.ExitOnError)
+		c.fs = pflag.NewFlagSet("", pflag.ExitOnError)
 		c.fs.StringVar(&c.jobName, "job", "", "The name of the job.")
 		c.fs.StringVar(&c.jobName, "j", "", "The name of the job.")
 		image := "The image to deploy in job"

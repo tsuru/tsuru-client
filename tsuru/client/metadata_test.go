@@ -25,7 +25,7 @@ func (s *S) TestMetadataSetBothJobAndAppFlags(c *check.C) {
 	}
 
 	command := MetadataSet{}
-	command.Flags().Parse(true, []string{"-a", "someapp", "-j", "somejob"})
+	command.Flags().Parse([]string{"-a", "someapp", "-j", "somejob"})
 	err := command.Run(&context)
 	c.Assert(err, check.NotNil)
 	c.Assert(err.Error(), check.Equals, "please use only one of the -a/--app and -j/--job flags")
@@ -44,7 +44,7 @@ func (s *S) TestMetadataGetAppRun(c *check.C) {
 	}
 	s.setupFakeTransport(&cmdtest.Transport{Message: jsonResult, Status: http.StatusOK})
 	command := MetadataGet{}
-	command.Flags().Parse(true, []string{"-a", "someapp"})
+	command.Flags().Parse([]string{"-a", "someapp"})
 	err := command.Run(&context)
 	c.Assert(err, check.IsNil)
 	c.Assert(stdout.String(), check.Equals, result)
@@ -77,7 +77,7 @@ func (s *S) TestMetadataGetJobRun(c *check.C) {
 	}
 	s.setupFakeTransport(&cmdtest.Transport{Message: jsonResult, Status: http.StatusOK})
 	command := MetadataGet{}
-	command.Flags().Parse(true, []string{"-j", "somejob"})
+	command.Flags().Parse([]string{"-j", "somejob"})
 	err := command.Run(&context)
 	c.Assert(err, check.IsNil)
 	c.Assert(stdout.String(), check.Equals, result)
@@ -123,7 +123,7 @@ func (s *S) TestMetadataGetAppRunWithProcesses(c *check.C) {
 	}
 	s.setupFakeTransport(&cmdtest.Transport{Message: jsonResult, Status: http.StatusOK})
 	command := MetadataGet{}
-	command.Flags().Parse(true, []string{"-a", "someapp"})
+	command.Flags().Parse([]string{"-a", "someapp"})
 	err := command.Run(&context)
 	c.Assert(err, check.IsNil)
 	c.Assert(stdout.String(), check.Equals, result)
@@ -162,7 +162,7 @@ func (s *S) TestMetadataSetRunJobWithLabel(c *check.C) {
 	s.setupFakeTransport(trans)
 
 	command := MetadataSet{}
-	command.Flags().Parse(true, []string{"-j", "somejob", "-t", "label"})
+	command.Flags().Parse([]string{"-j", "somejob", "-t", "label"})
 	err := command.Run(&context)
 	c.Assert(err, check.IsNil)
 	c.Assert(stdout.String(), check.Equals, expectedOut)
@@ -199,7 +199,7 @@ func (s *S) TestMetadataSetRunAppWithLabel(c *check.C) {
 	s.setupFakeTransport(trans)
 
 	command := MetadataSet{}
-	command.Flags().Parse(true, []string{"-a", "someapp", "-t", "label"})
+	command.Flags().Parse([]string{"-a", "someapp", "-t", "label"})
 	err := command.Run(&context)
 	c.Assert(err, check.IsNil)
 	c.Assert(stdout.String(), check.Equals, expectedOut)
@@ -242,7 +242,7 @@ func (s *S) TestMetadataSetRunAppWithProcess(c *check.C) {
 	s.setupFakeTransport(trans)
 
 	command := MetadataSet{}
-	command.Flags().Parse(true, []string{"-a", "someapp", "-t", "label", "-p", "web"})
+	command.Flags().Parse([]string{"-a", "someapp", "-t", "label", "-p", "web"})
 	err := command.Run(&context)
 	c.Assert(err, check.IsNil)
 	c.Assert(stdout.String(), check.Equals, expectedOut)
@@ -278,7 +278,7 @@ func (s *S) TestMetadataSetRunJobWithAnnotations(c *check.C) {
 	s.setupFakeTransport(trans)
 
 	command := MetadataSet{}
-	command.Flags().Parse(true, []string{"-j", "somejob", "-t", "annotation"})
+	command.Flags().Parse([]string{"-j", "somejob", "-t", "annotation"})
 	err := command.Run(&context)
 	c.Assert(err, check.IsNil)
 	c.Assert(stdout.String(), check.Equals, expectedOut)
@@ -316,7 +316,7 @@ func (s *S) TestMetadataSetRunAppWithAnnotations(c *check.C) {
 	s.setupFakeTransport(trans)
 
 	command := MetadataSet{}
-	command.Flags().Parse(true, []string{"-a", "someapp", "-t", "annotation"})
+	command.Flags().Parse([]string{"-a", "someapp", "-t", "annotation"})
 	err := command.Run(&context)
 	c.Assert(err, check.IsNil)
 	c.Assert(stdout.String(), check.Equals, expectedOut)
@@ -336,7 +336,7 @@ func (s *S) TestMetadataSetFailsWithoutType(c *check.C) {
 	s.setupFakeTransport(trans)
 
 	command := MetadataSet{}
-	command.Flags().Parse(true, []string{"-a", "someapp"})
+	command.Flags().Parse([]string{"-a", "someapp"})
 	err := command.Run(&context)
 	c.Assert(err, check.NotNil)
 	c.Assert(err.Error(), check.Equals, "a type is required: label or annotation")
@@ -345,7 +345,7 @@ func (s *S) TestMetadataSetFailsWithoutType(c *check.C) {
 func (s *S) TestMetadataSetAppSupportsNoRestart(c *check.C) {
 	command := MetadataSet{}
 	flagset := command.Flags()
-	flagset.Parse(true, []string{"--no-restart"})
+	flagset.Parse([]string{"--no-restart"})
 	noRestart := flagset.Lookup("no-restart")
 	c.Check(noRestart, check.NotNil)
 	c.Check(noRestart.Name, check.Equals, "no-restart")
@@ -387,7 +387,7 @@ func (s *S) TestMetadataUnsetRunJobWithLabel(c *check.C) {
 	s.setupFakeTransport(trans)
 
 	command := MetadataUnset{}
-	command.Flags().Parse(true, []string{"-j", "somejob", "-t", "label"})
+	command.Flags().Parse([]string{"-j", "somejob", "-t", "label"})
 	err := command.Run(&context)
 	c.Assert(err, check.IsNil)
 	c.Assert(stdout.String(), check.Equals, expectedOut)
@@ -425,7 +425,7 @@ func (s *S) TestMetadataUnsetRunAppWithLabel(c *check.C) {
 	s.setupFakeTransport(trans)
 
 	command := MetadataUnset{}
-	command.Flags().Parse(true, []string{"-a", "someapp", "-t", "label"})
+	command.Flags().Parse([]string{"-a", "someapp", "-t", "label"})
 	err := command.Run(&context)
 	c.Assert(err, check.IsNil)
 	c.Assert(stdout.String(), check.Equals, expectedOut)
@@ -469,7 +469,7 @@ func (s *S) TestMetadataUnsetRunAppWithProcess(c *check.C) {
 	s.setupFakeTransport(trans)
 
 	command := MetadataUnset{}
-	command.Flags().Parse(true, []string{"-a", "someapp", "-t", "label", "-p", "worker"})
+	command.Flags().Parse([]string{"-a", "someapp", "-t", "label", "-p", "worker"})
 	err := command.Run(&context)
 	c.Assert(err, check.IsNil)
 	c.Assert(stdout.String(), check.Equals, expectedOut)
@@ -505,7 +505,7 @@ func (s *S) TestMetadataUnsetRunJobWithAnnotations(c *check.C) {
 	s.setupFakeTransport(trans)
 
 	command := MetadataUnset{}
-	command.Flags().Parse(true, []string{"-j", "somejob", "-t", "annotation"})
+	command.Flags().Parse([]string{"-j", "somejob", "-t", "annotation"})
 	err := command.Run(&context)
 	c.Assert(err, check.IsNil)
 	c.Assert(stdout.String(), check.Equals, expectedOut)
@@ -543,7 +543,7 @@ func (s *S) TestMetadataUnsetRunAppWithAnnotations(c *check.C) {
 	s.setupFakeTransport(trans)
 
 	command := MetadataUnset{}
-	command.Flags().Parse(true, []string{"-a", "someapp", "-t", "annotation"})
+	command.Flags().Parse([]string{"-a", "someapp", "-t", "annotation"})
 	err := command.Run(&context)
 	c.Assert(err, check.IsNil)
 	c.Assert(stdout.String(), check.Equals, expectedOut)
@@ -563,7 +563,7 @@ func (s *S) TestMetadataUnsetFailsWithoutType(c *check.C) {
 	s.setupFakeTransport(trans)
 
 	command := MetadataUnset{}
-	command.Flags().Parse(true, []string{"-j", "somejob"})
+	command.Flags().Parse([]string{"-j", "somejob"})
 	err := command.Run(&context)
 	c.Assert(err, check.NotNil)
 	c.Assert(err.Error(), check.Equals, "a type is required: label or annotation")
@@ -572,7 +572,7 @@ func (s *S) TestMetadataUnsetFailsWithoutType(c *check.C) {
 func (s *S) TestMetadateUnsetAppSupportsNoRestart(c *check.C) {
 	command := MetadataUnset{}
 	flagset := command.Flags()
-	flagset.Parse(true, []string{"--no-restart"})
+	flagset.Parse([]string{"--no-restart"})
 	noRestart := flagset.Lookup("no-restart")
 	c.Check(noRestart, check.NotNil)
 	c.Check(noRestart.Name, check.Equals, "no-restart")

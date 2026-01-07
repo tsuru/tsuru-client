@@ -14,7 +14,7 @@ import (
 	"strings"
 	"time"
 
-	"github.com/tsuru/gnuflag"
+	"github.com/spf13/pflag"
 	"github.com/tsuru/tsuru-client/tsuru/cmd"
 	"github.com/tsuru/tsuru-client/tsuru/cmd/cmdtest"
 	tsuruIo "github.com/tsuru/tsuru/io"
@@ -22,7 +22,7 @@ import (
 	check "gopkg.in/check.v1"
 )
 
-var appflag = &gnuflag.Flag{
+var appflag = &pflag.Flag{
 	Name:     "app",
 	Usage:    "The name of the app.",
 	Value:    nil,
@@ -133,7 +133,7 @@ Use app info to check the status of the app and its units.` + "\n"
 	}
 	s.setupFakeTransport(&trans)
 	command := AppCreate{}
-	command.Flags().Parse(true, []string{"-t", "team"})
+	command.Flags().Parse([]string{"-t", "team"})
 	err := command.Run(&context)
 	c.Assert(err, check.IsNil)
 	c.Assert(stdout.String(), check.Equals, expected)
@@ -169,7 +169,7 @@ Use app info to check the status of the app and its units.` + "\n"
 	}
 	s.setupFakeTransport(&trans)
 	command := AppCreate{}
-	command.Flags().Parse(true, []string{"-p", "myplan"})
+	command.Flags().Parse([]string{"-p", "myplan"})
 	err := command.Run(&context)
 	c.Assert(err, check.IsNil)
 	c.Assert(stdout.String(), check.Equals, expected)
@@ -205,7 +205,7 @@ Use app info to check the status of the app and its units.` + "\n"
 	}
 	s.setupFakeTransport(&trans)
 	command := AppCreate{}
-	command.Flags().Parse(true, []string{"-o", "mypool"})
+	command.Flags().Parse([]string{"-o", "mypool"})
 	err := command.Run(&context)
 	c.Assert(err, check.IsNil)
 	c.Assert(stdout.String(), check.Equals, expected)
@@ -243,7 +243,7 @@ Use app info to check the status of the app and its units.` + "\n"
 	}
 	s.setupFakeTransport(&trans)
 	command := AppCreate{}
-	command.Flags().Parse(true, []string{"--router-opts", "a=1", "--router-opts", "b=2"})
+	command.Flags().Parse([]string{"--router-opts", "a=1", "--router-opts", "b=2"})
 	err := command.Run(&context)
 	c.Assert(err, check.IsNil)
 	c.Assert(stdout.String(), check.Equals, expected)
@@ -328,7 +328,7 @@ Use app info to check the status of the app and its units.` + "\n"
 	}
 	s.setupFakeTransport(&trans)
 	command := AppCreate{}
-	command.Flags().Parse(true, []string{"--tag", "tag1", "--tag", "tag2"})
+	command.Flags().Parse([]string{"--tag", "tag1", "--tag", "tag2"})
 	err := command.Run(&context)
 	c.Assert(err, check.IsNil)
 	c.Assert(stdout.String(), check.Equals, expected)
@@ -364,7 +364,7 @@ Use app info to check the status of the app and its units.` + "\n"
 	}
 	s.setupFakeTransport(&trans)
 	command := AppCreate{}
-	command.Flags().Parse(true, []string{"--tag", ""})
+	command.Flags().Parse([]string{"--tag", ""})
 	err := command.Run(&context)
 	c.Assert(err, check.IsNil)
 	c.Assert(stdout.String(), check.Equals, expected)
@@ -374,7 +374,7 @@ func (s *S) TestAppCreateFlags(c *check.C) {
 	command := AppCreate{}
 	flagset := command.Flags()
 	c.Assert(flagset, check.NotNil)
-	flagset.Parse(true, []string{"-p", "myplan"})
+	flagset.Parse([]string{"-p", "myplan"})
 	plan := flagset.Lookup("plan")
 	usage := "The plan used to create the app"
 	c.Check(plan, check.NotNil)
@@ -388,7 +388,7 @@ func (s *S) TestAppCreateFlags(c *check.C) {
 	c.Check(splan.Usage, check.Equals, usage)
 	c.Check(splan.Value.String(), check.Equals, "myplan")
 	c.Check(splan.DefValue, check.Equals, "")
-	flagset.Parse(true, []string{"-t", "team"})
+	flagset.Parse([]string{"-t", "team"})
 	usage = "Team owner app"
 	teamOwner := flagset.Lookup("team")
 	c.Check(teamOwner, check.NotNil)
@@ -402,7 +402,7 @@ func (s *S) TestAppCreateFlags(c *check.C) {
 	c.Check(teamOwner.Usage, check.Equals, usage)
 	c.Check(teamOwner.Value.String(), check.Equals, "team")
 	c.Check(teamOwner.DefValue, check.Equals, "")
-	flagset.Parse(true, []string{"-r", "router"})
+	flagset.Parse([]string{"-r", "router"})
 	usage = "The router used by the app"
 	router := flagset.Lookup("router")
 	c.Check(router, check.NotNil)
@@ -416,7 +416,7 @@ func (s *S) TestAppCreateFlags(c *check.C) {
 	c.Check(router.Usage, check.Equals, usage)
 	c.Check(router.Value.String(), check.Equals, "router")
 	c.Check(router.DefValue, check.Equals, "")
-	flagset.Parse(true, []string{"--tag", "tag1", "--tag", "tag2"})
+	flagset.Parse([]string{"--tag", "tag1", "--tag", "tag2"})
 	usage = "App tag"
 	tag := flagset.Lookup("tag")
 	c.Check(tag, check.NotNil)
@@ -430,7 +430,7 @@ func (s *S) TestAppCreateFlags(c *check.C) {
 	c.Check(tag.Usage, check.Equals, usage)
 	c.Check(tag.Value.String(), check.Equals, "[\"tag1\",\"tag2\"]")
 	c.Check(tag.DefValue, check.Equals, "[]")
-	flagset.Parse(true, []string{"--router-opts", "opt1=val1", "--router-opts", "opt2=val2"})
+	flagset.Parse([]string{"--router-opts", "opt1=val1", "--router-opts", "opt2=val2"})
 	routerOpts := flagset.Lookup("router-opts")
 	c.Check(routerOpts, check.NotNil)
 	c.Check(routerOpts.Name, check.Equals, "router-opts")
@@ -472,7 +472,7 @@ func (s *S) TestAppUpdate(c *check.C) {
 	}
 	s.setupFakeTransport(trans)
 	command := AppUpdate{}
-	err := command.Flags().Parse(true, []string{"-d", "description of my app", "-a", "ble", "-l", "python", "-g", "tag 1", "-g", "tag 2"})
+	err := command.Flags().Parse([]string{"-d", "description of my app", "-a", "ble", "-l", "python", "-g", "tag 1", "-g", "tag 2"})
 	c.Assert(err, check.IsNil)
 	err = command.Run(&context)
 	c.Assert(err, check.IsNil)
@@ -506,7 +506,7 @@ func (s *S) TestAppUpdateImageReset(c *check.C) {
 	}
 	s.setupFakeTransport(trans)
 	command := AppUpdate{}
-	command.Flags().Parse(true, []string{"-a", "img", "-i"})
+	command.Flags().Parse([]string{"-a", "img", "-i"})
 	err := command.Run(&context)
 	c.Assert(err, check.IsNil)
 	c.Assert(stdout.String(), check.Equals, expected)
@@ -539,7 +539,7 @@ func (s *S) TestAppUpdateWithoutTags(c *check.C) {
 	}
 	s.setupFakeTransport(trans)
 	command := AppUpdate{}
-	command.Flags().Parse(true, []string{"-d", "description", "-a", "ble"})
+	command.Flags().Parse([]string{"-d", "description", "-a", "ble"})
 	err := command.Run(&context)
 	c.Assert(err, check.IsNil)
 	c.Assert(stdout.String(), check.Equals, expected)
@@ -573,7 +573,7 @@ func (s *S) TestAppUpdateWithEmptyTag(c *check.C) {
 	}
 	s.setupFakeTransport(trans)
 	command := AppUpdate{}
-	command.Flags().Parse(true, []string{"-d", "description", "-a", "ble", "-g", ""})
+	command.Flags().Parse([]string{"-d", "description", "-a", "ble", "-g", ""})
 	err := command.Run(&context)
 	c.Assert(err, check.IsNil)
 	c.Assert(stdout.String(), check.Equals, expected)
@@ -608,7 +608,7 @@ func (s *S) TestAppUpdateWithCPUAndMemory(c *check.C) {
 	}
 	s.setupFakeTransport(trans)
 	command := AppUpdate{}
-	command.Flags().Parse(true, []string{"-a", "ble", "--cpu", "100m", "--memory", "1Gi"})
+	command.Flags().Parse([]string{"-a", "ble", "--cpu", "100m", "--memory", "1Gi"})
 	err := command.Run(&context)
 	c.Assert(err, check.IsNil)
 	c.Assert(stdout.String(), check.Equals, expected)
@@ -642,7 +642,7 @@ func (s *S) TestAppUpdateWithCPUBurst(c *check.C) {
 	}
 	s.setupFakeTransport(trans)
 	command := AppUpdate{}
-	command.Flags().Parse(true, []string{"-a", "ble", "--cpu-burst-factor", "1.3"})
+	command.Flags().Parse([]string{"-a", "ble", "--cpu-burst-factor", "1.3"})
 	err := command.Run(&context)
 	c.Assert(err, check.IsNil)
 	c.Assert(stdout.String(), check.Equals, expected)
@@ -675,7 +675,7 @@ func (s *S) TestAppUpdateWithInvalidCPUBurst(c *check.C) {
 	}
 	s.setupFakeTransport(trans)
 	command := AppUpdate{}
-	command.Flags().Parse(true, []string{"-a", "ble", "--cpu-burst-factor", "0.5"})
+	command.Flags().Parse([]string{"-a", "ble", "--cpu-burst-factor", "0.5"})
 	err := command.Run(&context)
 	c.Assert(err, check.NotNil)
 	c.Assert(err.Error(), check.Equals, "invalid factor, please use a value greater equal 1")
@@ -701,7 +701,7 @@ func (s *S) TestAppUpdateWithoutArgs(c *check.C) {
 	}
 	s.setupFakeTransport(trans)
 	command := AppUpdate{}
-	command.Flags().Parse(true, []string{"-d", "description of my app"})
+	command.Flags().Parse([]string{"-d", "description of my app"})
 	err := command.Run(&context)
 	c.Assert(err, check.NotNil)
 	c.Assert(err.Error(), check.Equals, expected)
@@ -711,7 +711,7 @@ func (s *S) TestAppUpdateFlags(c *check.C) {
 	command := AppUpdate{}
 	flagset := command.Flags()
 	c.Assert(flagset, check.NotNil)
-	flagset.Parse(true, []string{"-d", "description of my app"})
+	flagset.Parse([]string{"-d", "description of my app"})
 	appdescription := flagset.Lookup("description")
 	c.Check(appdescription, check.NotNil)
 	c.Check(appdescription.Name, check.Equals, "description")
@@ -722,7 +722,7 @@ func (s *S) TestAppUpdateFlags(c *check.C) {
 	c.Check(sdescription.Name, check.Equals, "d")
 	c.Check(sdescription.Value.String(), check.Equals, "description of my app")
 	c.Check(sdescription.DefValue, check.Equals, "")
-	flagset.Parse(true, []string{"-p", "my plan"})
+	flagset.Parse([]string{"-p", "my plan"})
 	plan := flagset.Lookup("plan")
 	c.Check(plan, check.NotNil)
 	c.Check(plan.Name, check.Equals, "plan")
@@ -733,7 +733,7 @@ func (s *S) TestAppUpdateFlags(c *check.C) {
 	c.Check(splan.Name, check.Equals, "p")
 	c.Check(splan.Value.String(), check.Equals, "my plan")
 	c.Check(splan.DefValue, check.Equals, "")
-	flagset.Parse(true, []string{"-o", "myPool"})
+	flagset.Parse([]string{"-o", "myPool"})
 	pool := flagset.Lookup("pool")
 	c.Check(pool, check.NotNil)
 	c.Check(pool.Name, check.Equals, "pool")
@@ -744,7 +744,7 @@ func (s *S) TestAppUpdateFlags(c *check.C) {
 	c.Check(spool.Name, check.Equals, "o")
 	c.Check(spool.Value.String(), check.Equals, "myPool")
 	c.Check(spool.DefValue, check.Equals, "")
-	flagset.Parse(true, []string{"-t", "newowner"})
+	flagset.Parse([]string{"-t", "newowner"})
 	teamOwner := flagset.Lookup("team-owner")
 	c.Check(teamOwner, check.NotNil)
 	c.Check(teamOwner.Name, check.Equals, "team-owner")
@@ -755,7 +755,7 @@ func (s *S) TestAppUpdateFlags(c *check.C) {
 	c.Check(steamOwner.Name, check.Equals, "t")
 	c.Check(steamOwner.Value.String(), check.Equals, "newowner")
 	c.Check(steamOwner.DefValue, check.Equals, "")
-	flagset.Parse(true, []string{"-g", "tag"})
+	flagset.Parse([]string{"-g", "tag"})
 	tag := flagset.Lookup("tag")
 	c.Check(tag, check.NotNil)
 	c.Check(tag.Name, check.Equals, "tag")
@@ -767,7 +767,7 @@ func (s *S) TestAppUpdateFlags(c *check.C) {
 	c.Check(tag.Value.String(), check.Equals, "[\"tag\"]")
 	c.Check(tag.DefValue, check.Equals, "[]")
 
-	flagset.Parse(true, []string{"--no-restart"})
+	flagset.Parse([]string{"--no-restart"})
 	noRestart := flagset.Lookup("no-restart")
 	c.Check(noRestart, check.NotNil)
 	c.Check(noRestart.Name, check.Equals, "no-restart")
@@ -790,7 +790,7 @@ func (s *S) TestAppRemove(c *check.C) {
 	}
 	s.setupFakeTransport(&cmdtest.Transport{Message: string(result), Status: http.StatusOK})
 	command := AppRemove{}
-	command.Flags().Parse(true, []string{"-a", "ble"})
+	command.Flags().Parse([]string{"-a", "ble"})
 	err = command.Run(&context)
 	c.Assert(err, check.IsNil)
 	c.Assert(stdout.String(), check.Equals, expected+expectedOut)
@@ -810,7 +810,7 @@ func (s *S) TestAppRemoveWithoutAsking(c *check.C) {
 	}
 	s.setupFakeTransport(&cmdtest.Transport{Message: string(result), Status: http.StatusOK})
 	command := AppRemove{}
-	command.Flags().Parse(true, []string{"-a", "ble", "-y"})
+	command.Flags().Parse([]string{"-a", "ble", "-y"})
 	err = command.Run(&context)
 	c.Assert(err, check.IsNil)
 	c.Assert(stdout.String(), check.Equals, expectedOut)
@@ -820,7 +820,7 @@ func (s *S) TestAppRemoveFlags(c *check.C) {
 	command := AppRemove{}
 	flagset := command.Flags()
 	c.Assert(flagset, check.NotNil)
-	flagset.Parse(true, []string{"-a", "ashamed", "-y"})
+	flagset.Parse([]string{"-a", "ashamed", "-y"})
 	app := flagset.Lookup("app")
 	c.Check(app, check.NotNil)
 	c.Check(app.Name, check.Equals, "app")
@@ -872,7 +872,7 @@ func (s *S) TestAppRemoveWithoutConfirmation(c *check.C) {
 		Stdin:  strings.NewReader("n\n"),
 	}
 	command := AppRemove{}
-	command.Flags().Parse(true, []string{"--app", "ble"})
+	command.Flags().Parse([]string{"--app", "ble"})
 	err := command.Run(&context)
 	c.Assert(err, check.IsNil)
 	c.Assert(stdout.String(), check.Equals, expected)
@@ -911,7 +911,7 @@ Units: 3
 	}
 	s.setupFakeTransport(&cmdtest.Transport{Message: result, Status: http.StatusOK})
 	command := AppInfo{}
-	command.Flags().Parse(true, []string{"--app", "app1"})
+	command.Flags().Parse([]string{"--app", "app1"})
 	err := command.Run(&context)
 	c.Assert(err, check.IsNil)
 	c.Assert(stdout.String(), check.Equals, expected)
@@ -942,7 +942,7 @@ Units: 2
 	}
 	s.setupFakeTransport(&cmdtest.Transport{Message: result, Status: http.StatusOK})
 	command := AppInfo{}
-	command.Flags().Parse(true, []string{"--app", "app1", "-s"})
+	command.Flags().Parse([]string{"--app", "app1", "-s"})
 	err := command.Run(&context)
 	c.Assert(err, check.IsNil)
 	c.Assert(stdout.String(), check.Equals, expected)
@@ -1019,7 +1019,7 @@ Units: 3
 	}
 	s.setupFakeTransport(&cmdtest.Transport{Message: result, Status: http.StatusOK})
 	command := AppInfo{}
-	command.Flags().Parse(true, []string{"--app", "app1"})
+	command.Flags().Parse([]string{"--app", "app1"})
 	err := command.Run(&context)
 	c.Assert(err, check.IsNil)
 	c.Assert(stdout.String(), check.Equals, expected)
@@ -1054,7 +1054,7 @@ Units: 3
 	}
 	s.setupFakeTransport(&cmdtest.Transport{Message: result, Status: http.StatusOK})
 	command := AppInfo{}
-	command.Flags().Parse(true, []string{"--app", "app1"})
+	command.Flags().Parse([]string{"--app", "app1"})
 	err := command.Run(&context)
 	c.Assert(err, check.IsNil)
 	c.Assert(stdout.String(), check.Equals, expected)
@@ -1147,7 +1147,7 @@ Routers:
 	}
 	s.setupFakeTransport(&cmdtest.Transport{Message: result, Status: http.StatusOK})
 	command := AppInfo{}
-	command.Flags().Parse(true, []string{"--app", "app1"})
+	command.Flags().Parse([]string{"--app", "app1"})
 	err := command.Run(&context)
 	c.Assert(err, check.IsNil)
 	c.Assert(stdout.String(), check.Equals, expected)
@@ -1183,7 +1183,7 @@ Units: 3
 	}
 	s.setupFakeTransport(&cmdtest.Transport{Message: result, Status: http.StatusOK})
 	command := AppInfo{}
-	command.Flags().Parse(true, []string{"--app", "app1"})
+	command.Flags().Parse([]string{"--app", "app1"})
 	err := command.Run(&context)
 	c.Assert(err, check.IsNil)
 	c.Assert(stdout.String(), check.Equals, expected)
@@ -1219,7 +1219,7 @@ Units: 3
 	}
 	s.setupFakeTransport(&cmdtest.Transport{Message: result, Status: http.StatusOK})
 	command := AppInfo{}
-	command.Flags().Parse(true, []string{"--app", "app1"})
+	command.Flags().Parse([]string{"--app", "app1"})
 	err := command.Run(&context)
 	c.Assert(err, check.IsNil)
 	c.Assert(stdout.String(), check.Equals, expected)
@@ -1254,7 +1254,7 @@ Units: 3
 	}
 	s.setupFakeTransport(&cmdtest.Transport{Message: result, Status: http.StatusOK})
 	command := AppInfo{}
-	command.Flags().Parse(true, []string{"--app", "app1"})
+	command.Flags().Parse([]string{"--app", "app1"})
 	err := command.Run(&context)
 	c.Assert(err, check.IsNil)
 	c.Assert(stdout.String(), check.Equals, expected)
@@ -1301,7 +1301,7 @@ Units: 3
 	})
 	s.setupFakeTransport(&transport)
 	command := AppInfo{}
-	command.Flags().Parse(true, []string{"--app", "app1"})
+	command.Flags().Parse([]string{"--app", "app1"})
 	err := command.Run(&context)
 	c.Assert(err, check.IsNil)
 	c.Assert(stdout.String(), check.Equals, expected)
@@ -1379,7 +1379,7 @@ Units [process worker]: 2
 	}
 	s.setupFakeTransport(&cmdtest.Transport{Message: result, Status: http.StatusOK})
 	command := AppInfo{}
-	command.Flags().Parse(true, []string{"--app", "app1"})
+	command.Flags().Parse([]string{"--app", "app1"})
 	err := command.Run(&context)
 	c.Assert(err, check.IsNil)
 	c.Assert(stdout.String(), check.Equals, expected)
@@ -1488,7 +1488,7 @@ Units [process worker] [version 2] [routable]: 1
 	}
 	s.setupFakeTransport(&cmdtest.Transport{Message: result, Status: http.StatusOK})
 	command := AppInfo{}
-	command.Flags().Parse(true, []string{"--app", "app1"})
+	command.Flags().Parse([]string{"--app", "app1"})
 	err := command.Run(&context)
 	c.Assert(err, check.IsNil)
 	c.Assert(stdout.String(), check.Equals, expected)
@@ -1611,7 +1611,7 @@ Process: worker (v10), Min Units: 2, Max Units: 5
 	}
 	s.setupFakeTransport(&cmdtest.Transport{Message: result, Status: http.StatusOK})
 	command := AppInfo{}
-	command.Flags().Parse(true, []string{"--app", "app1"})
+	command.Flags().Parse([]string{"--app", "app1"})
 	err := command.Run(&context)
 	c.Assert(err, check.IsNil)
 	c.Assert(stdout.String(), check.Equals, expected)
@@ -1793,7 +1793,7 @@ Process: worker (v10), Min Units: 2, Max Units: 5
 	}
 	s.setupFakeTransport(&cmdtest.Transport{Message: result, Status: http.StatusOK})
 	command := AppInfo{}
-	command.Flags().Parse(true, []string{"--app", "app1"})
+	command.Flags().Parse([]string{"--app", "app1"})
 	err := command.Run(&context)
 	c.Assert(err, check.IsNil)
 	c.Assert(stdout.String(), check.Equals, expected)
@@ -1819,7 +1819,7 @@ Quota: 0/0 units
 	}
 	s.setupFakeTransport(&cmdtest.Transport{Message: result, Status: http.StatusOK})
 	command := AppInfo{}
-	command.Flags().Parse(true, []string{"--app", "app1"})
+	command.Flags().Parse([]string{"--app", "app1"})
 	err := command.Run(&context)
 	c.Assert(err, check.IsNil)
 	c.Assert(stdout.String(), check.Equals, expected)
@@ -1845,7 +1845,7 @@ Quota: 0/0 units
 	}
 	s.setupFakeTransport(&cmdtest.Transport{Message: result, Status: http.StatusOK})
 	command := AppInfo{}
-	command.Flags().Parse(true, []string{"--app", "app1"})
+	command.Flags().Parse([]string{"--app", "app1"})
 	err := command.Run(&context)
 	c.Assert(err, check.IsNil)
 	c.Assert(stdout.String(), check.Equals, expected)
@@ -1885,7 +1885,7 @@ Units: 2
 	}
 	s.setupFakeTransport(trans)
 	command := AppInfo{}
-	command.Flags().Parse(true, []string{"-a", "secret"})
+	command.Flags().Parse([]string{"-a", "secret"})
 	err := command.Run(&context)
 	c.Assert(err, check.IsNil)
 	c.Assert(stdout.String(), check.Equals, expected)
@@ -1920,7 +1920,7 @@ Units: 3
 	}
 	s.setupFakeTransport(&cmdtest.Transport{Message: result, Status: http.StatusOK})
 	command := AppInfo{}
-	command.Flags().Parse(true, []string{"--app", "app1"})
+	command.Flags().Parse([]string{"--app", "app1"})
 	err := command.Run(&context)
 	c.Assert(err, check.IsNil)
 	c.Assert(stdout.String(), check.Equals, expected)
@@ -1956,7 +1956,7 @@ Units: 3
 	}
 	s.setupFakeTransport(&cmdtest.Transport{Message: result, Status: http.StatusOK})
 	command := AppInfo{}
-	command.Flags().Parse(true, []string{"--app", "app1"})
+	command.Flags().Parse([]string{"--app", "app1"})
 	err := command.Run(&context)
 	c.Assert(err, check.IsNil)
 	c.Assert(stdout.String(), check.Equals, expected)
@@ -2004,7 +2004,7 @@ Service instances: 1
 	})
 	s.setupFakeTransport(transport)
 	command := AppInfo{}
-	command.Flags().Parse(true, []string{"--app", "app1"})
+	command.Flags().Parse([]string{"--app", "app1"})
 	err := command.Run(&context)
 	c.Assert(err, check.IsNil)
 	c.Assert(stdout.String(), check.Equals, expected)
@@ -2053,7 +2053,7 @@ Service instances: 2
 	})
 	s.setupFakeTransport(transport)
 	command := AppInfo{}
-	command.Flags().Parse(true, []string{"--app", "app1"})
+	command.Flags().Parse([]string{"--app", "app1"})
 	err := command.Run(&context)
 	c.Assert(err, check.IsNil)
 	c.Assert(stdout.String(), check.Equals, expected)
@@ -2095,7 +2095,7 @@ App Plan:
 	}
 	s.setupFakeTransport(&cmdtest.Transport{Message: result, Status: http.StatusOK})
 	command := AppInfo{}
-	command.Flags().Parse(true, []string{"--app", "app1"})
+	command.Flags().Parse([]string{"--app", "app1"})
 	err := command.Run(&context)
 	c.Assert(err, check.IsNil)
 	c.Assert(stdout.String(), check.Equals, expected)
@@ -2150,7 +2150,7 @@ App Plan:
 	})
 	s.setupFakeTransport(transport)
 	command := AppInfo{}
-	command.Flags().Parse(true, []string{"--app", "app1"})
+	command.Flags().Parse([]string{"--app", "app1"})
 	err := command.Run(&context)
 	c.Assert(err, check.IsNil)
 	c.Assert(stdout.String(), check.Equals, expected)
@@ -2205,7 +2205,7 @@ App Plan:
 	})
 	s.setupFakeTransport(transport)
 	command := AppInfo{}
-	command.Flags().Parse(true, []string{"--app", "app1"})
+	command.Flags().Parse([]string{"--app", "app1"})
 	err := command.Run(&context)
 	c.Assert(err, check.IsNil)
 	c.Assert(stdout.String(), check.Equals, expected)
@@ -2273,7 +2273,7 @@ Units: 3
 	})
 	s.setupFakeTransport(transport)
 	command := AppInfo{}
-	command.Flags().Parse(true, []string{"--app", "app1"})
+	command.Flags().Parse([]string{"--app", "app1"})
 	err := command.Run(&context)
 	c.Assert(err, check.IsNil)
 	c.Assert(stdout.String(), check.Equals, expected)
@@ -2314,7 +2314,7 @@ Cluster internal addresses:
 	}
 	s.setupFakeTransport(&cmdtest.Transport{Message: result, Status: http.StatusOK})
 	command := AppInfo{}
-	command.Flags().Parse(true, []string{"--app", "app1"})
+	command.Flags().Parse([]string{"--app", "app1"})
 	err := command.Run(&context)
 	c.Assert(err, check.IsNil)
 	c.Assert(stdout.String(), check.Equals, expected)
@@ -2347,7 +2347,7 @@ Cluster internal addresses:
 	}
 	s.setupFakeTransport(&cmdtest.Transport{Message: result, Status: http.StatusOK})
 	command := AppInfo{}
-	command.Flags().Parse(true, []string{"--app", "app1"})
+	command.Flags().Parse([]string{"--app", "app1"})
 	err := command.Run(&context)
 	c.Assert(err, check.IsNil)
 	c.Assert(stdout.String(), check.Equals, expected)
@@ -2380,7 +2380,7 @@ Cluster internal addresses:
 	}
 	s.setupFakeTransport(&cmdtest.Transport{Message: result, Status: http.StatusOK})
 	command := AppInfo{}
-	command.Flags().Parse(true, []string{"--app", "app1"})
+	command.Flags().Parse([]string{"--app", "app1"})
 	err := command.Run(&context)
 	c.Assert(err, check.IsNil)
 	c.Assert(stdout.String(), check.Equals, expected)
@@ -2413,7 +2413,7 @@ Cluster internal addresses:
 	}
 	s.setupFakeTransport(&cmdtest.Transport{Message: result, Status: http.StatusOK})
 	command := AppInfo{}
-	command.Flags().Parse(true, []string{"--app", "app1"})
+	command.Flags().Parse([]string{"--app", "app1"})
 	err := command.Run(&context)
 	c.Assert(err, check.IsNil)
 	c.Assert(stdout.String(), check.Equals, expected)
@@ -2468,7 +2468,7 @@ Volumes: 1
 	})
 	s.setupFakeTransport(transport)
 	command := AppInfo{}
-	command.Flags().Parse(true, []string{"--app", "app1"})
+	command.Flags().Parse([]string{"--app", "app1"})
 	err := command.Run(&context)
 	c.Assert(err, check.IsNil)
 	c.Assert(stdout.String(), check.Equals, expected)
@@ -2495,7 +2495,7 @@ func (s *S) TestAppGrant(c *check.C) {
 		Stderr: &stderr,
 	}
 	command := AppGrant{}
-	command.Flags().Parse(true, []string{"--app", "games"})
+	command.Flags().Parse([]string{"--app", "games"})
 	s.setupFakeTransport(&cmdtest.Transport{Message: "", Status: http.StatusOK})
 	err := command.Run(&context)
 	c.Assert(err, check.IsNil)
@@ -2515,7 +2515,7 @@ func (s *S) TestAppRevoke(c *check.C) {
 		Stderr: &stderr,
 	}
 	command := AppRevoke{}
-	command.Flags().Parse(true, []string{"--app", "games"})
+	command.Flags().Parse([]string{"--app", "games"})
 	s.setupFakeTransport(&cmdtest.Transport{Message: "", Status: http.StatusOK})
 	err := command.Run(&context)
 	c.Assert(err, check.IsNil)
@@ -2680,7 +2680,7 @@ func (s *S) TestAppListFiltering(c *check.C) {
 	}
 	s.setupFakeTransport(&transport)
 	command := AppList{}
-	command.Flags().Parse(true, []string{"-p", "python", "--user", "glenda@tsuru.io", "-t", "tsuru", "--name", "myapp", "--pool", "pool", "--status", "started", "--tag", "tag a", "--tag", "tag b"})
+	command.Flags().Parse([]string{"-p", "python", "--user", "glenda@tsuru.io", "-t", "tsuru", "--name", "myapp", "--pool", "pool", "--status", "started", "--tag", "tag a", "--tag", "tag b"})
 	err := command.Run(&context)
 	c.Assert(err, check.IsNil)
 	c.Assert(stdout.String(), check.Equals, expected)
@@ -2731,7 +2731,7 @@ func (s *S) TestAppListFilteringMe(c *check.C) {
 	}
 	s.setupFakeTransport(&transport)
 	command := AppList{}
-	command.Flags().Parse(true, []string{"-u", "me"})
+	command.Flags().Parse([]string{"-u", "me"})
 	err := command.Run(&context)
 	c.Assert(err, check.IsNil)
 	c.Assert(stdout.String(), check.Equals, expected)
@@ -2776,7 +2776,7 @@ func (s *S) TestAppListSortByCountAndStatus(c *check.C) {
 	}
 	s.setupFakeTransport(&transport)
 	command := AppList{}
-	command.Flags().Parse(true, []string{"-u", "me"})
+	command.Flags().Parse([]string{"-u", "me"})
 	err := command.Run(&context)
 	c.Assert(err, check.IsNil)
 	c.Assert(stdout.String(), check.Equals, expected)
@@ -2804,7 +2804,7 @@ app3
 	}
 	s.setupFakeTransport(&transport)
 	command := AppList{}
-	command.Flags().Parse(true, []string{"-q"})
+	command.Flags().Parse([]string{"-q"})
 	err := command.Run(&context)
 	c.Assert(err, check.IsNil)
 	c.Assert(stdout.String(), check.Equals, expected)
@@ -2832,7 +2832,7 @@ app3
 	}
 	s.setupFakeTransport(&transport)
 	command := AppList{}
-	command.Flags().Parse(true, []string{"-p", "python", "-q"})
+	command.Flags().Parse([]string{"-p", "python", "-q"})
 	err := command.Run(&context)
 	c.Assert(err, check.IsNil)
 	c.Assert(stdout.String(), check.Equals, expected)
@@ -2874,7 +2874,7 @@ func (s *S) TestAppRestart(c *check.C) {
 	}
 	s.setupFakeTransport(trans)
 	command := AppRestart{}
-	command.Flags().Parse(true, []string{"--app", "handful_of_nothing", "--process", "web"})
+	command.Flags().Parse([]string{"--app", "handful_of_nothing", "--process", "web"})
 	err = command.Run(&context)
 	c.Assert(err, check.IsNil)
 	c.Assert(called, check.Equals, true)
@@ -2911,7 +2911,7 @@ func (s *S) TestAddCName(c *check.C) {
 	}
 	s.setupFakeTransport(trans)
 	command := CnameAdd{}
-	err := command.Flags().Parse(true, []string{"-a", "death", "death.evergrey.mycompany.com"})
+	err := command.Flags().Parse([]string{"-a", "death", "death.evergrey.mycompany.com"})
 	c.Assert(err, check.IsNil)
 	context.Args = command.Flags().Args()
 	err = command.Run(&context)
@@ -2929,7 +2929,7 @@ func (s *S) TestAddCNameFailure(c *check.C) {
 	trans := &cmdtest.Transport{Message: "Invalid cname", Status: http.StatusPreconditionFailed}
 	s.setupFakeTransport(trans)
 	command := CnameAdd{}
-	err := command.Flags().Parse(true, []string{"-a", "masterplan", "masterplan.evergrey.mycompany.com"})
+	err := command.Flags().Parse([]string{"-a", "masterplan", "masterplan.evergrey.mycompany.com"})
 	c.Assert(err, check.IsNil)
 
 	context.Args = command.Flags().Args()
@@ -2966,7 +2966,7 @@ func (s *S) TestRemoveCName(c *check.C) {
 	}
 	s.setupFakeTransport(trans)
 	command := CnameRemove{}
-	command.Flags().Parse(true, []string{"--app", "death"})
+	command.Flags().Parse([]string{"--app", "death"})
 	err := command.Run(&context)
 	c.Assert(err, check.IsNil)
 	c.Assert(called, check.Equals, true)
@@ -2993,7 +2993,7 @@ func (s *S) TestRemoveCNameWithoutTheFlag(c *check.C) {
 	}
 	s.setupFakeTransport(trans)
 	cmd := &CnameRemove{}
-	cmd.Flags().Parse(true, []string{"-a", "corey"})
+	cmd.Flags().Parse([]string{"-a", "corey"})
 	err := cmd.Run(&context)
 	c.Assert(err, check.IsNil)
 	c.Assert(called, check.Equals, true)
@@ -3035,7 +3035,7 @@ func (s *S) TestAppStart(c *check.C) {
 	}
 	s.setupFakeTransport(trans)
 	command := AppStart{}
-	command.Flags().Parse(true, []string{"--app", "handful_of_nothing", "--process", "worker"})
+	command.Flags().Parse([]string{"--app", "handful_of_nothing", "--process", "worker"})
 	err = command.Run(&context)
 	c.Assert(err, check.IsNil)
 	c.Assert(called, check.Equals, true)
@@ -3100,7 +3100,7 @@ func (s *S) TestAppStop(c *check.C) {
 	}
 	s.setupFakeTransport(trans)
 	command := AppStop{}
-	command.Flags().Parse(true, []string{"--app", "handful_of_nothing", "--process", "worker"})
+	command.Flags().Parse([]string{"--app", "handful_of_nothing", "--process", "worker"})
 	err = command.Run(&context)
 	c.Assert(err, check.IsNil)
 	c.Assert(called, check.Equals, true)
@@ -3140,7 +3140,7 @@ func (s *S) TestAppProcessUpdate(c *check.C) {
 		},
 	})
 	command := AppProcessUpdate{}
-	command.Flags().Parse(true, []string{"--plan", "c2m2"})
+	command.Flags().Parse([]string{"--plan", "c2m2"})
 	err = command.Run(&context)
 	c.Assert(err, check.IsNil)
 	c.Assert(stdout.String(), check.Equals, "stream\n"+expectedOut)
@@ -3175,7 +3175,7 @@ func (s *S) TestAppProcessUpdateReset(c *check.C) {
 		},
 	})
 	command := AppProcessUpdate{}
-	command.Flags().Parse(true, []string{"--default-plan"})
+	command.Flags().Parse([]string{"--default-plan"})
 	err = command.Run(&context)
 	c.Assert(err, check.IsNil)
 	c.Assert(stdout.String(), check.Equals, "stream\n"+expectedOut)

@@ -15,7 +15,7 @@ import (
 	"strings"
 
 	"github.com/pkg/errors"
-	"github.com/tsuru/gnuflag"
+	"github.com/spf13/pflag"
 	"github.com/tsuru/go-tsuruclient/pkg/tsuru"
 	"github.com/tsuru/tablecli"
 	"github.com/tsuru/tsuru-client/tsuru/cmd"
@@ -24,7 +24,7 @@ import (
 )
 
 type ClusterAdd struct {
-	fs         *gnuflag.FlagSet
+	fs         *pflag.FlagSet
 	cacert     string
 	clientcert string
 	clientkey  string
@@ -34,9 +34,9 @@ type ClusterAdd struct {
 	isDefault  bool
 }
 
-func (c *ClusterAdd) Flags() *gnuflag.FlagSet {
+func (c *ClusterAdd) Flags() *pflag.FlagSet {
 	if c.fs == nil {
-		c.fs = gnuflag.NewFlagSet("", gnuflag.ContinueOnError)
+		c.fs = pflag.NewFlagSet("", pflag.ContinueOnError)
 		desc := "Path to CA cert file."
 		c.fs.StringVar(&c.cacert, "cacert", "", desc)
 		desc = "Path to client cert file."
@@ -116,7 +116,7 @@ func (c *ClusterAdd) Run(ctx *cmd.Context) error {
 }
 
 type ClusterUpdate struct {
-	fs               *gnuflag.FlagSet
+	fs               *pflag.FlagSet
 	cacert           string
 	clientcert       string
 	clientkey        string
@@ -131,9 +131,9 @@ type ClusterUpdate struct {
 	removeCustomData cmd.StringSliceFlag
 }
 
-func (c *ClusterUpdate) Flags() *gnuflag.FlagSet {
+func (c *ClusterUpdate) Flags() *pflag.FlagSet {
 	if c.fs == nil {
-		c.fs = gnuflag.NewFlagSet("", gnuflag.ContinueOnError)
+		c.fs = pflag.NewFlagSet("", pflag.ContinueOnError)
 		desc := "Path to CA cert file."
 		c.fs.StringVar(&c.cacert, "cacert", "", desc)
 		desc = "Remove path to CA cert file."
@@ -338,7 +338,7 @@ type clusterFilter struct {
 }
 
 type ClusterList struct {
-	fs         *gnuflag.FlagSet
+	fs         *pflag.FlagSet
 	filter     clusterFilter
 	simplified bool
 	json       bool
@@ -352,9 +352,9 @@ func (c *ClusterList) Info() *cmd.Info {
 	}
 }
 
-func (c *ClusterList) Flags() *gnuflag.FlagSet {
+func (c *ClusterList) Flags() *pflag.FlagSet {
 	if c.fs == nil {
-		c.fs = gnuflag.NewFlagSet("cluster-list", gnuflag.ExitOnError)
+		c.fs = pflag.NewFlagSet("cluster-list", pflag.ExitOnError)
 		c.fs.StringVar(&c.filter.name, "name", "", "Filter clusters by name")
 		c.fs.StringVar(&c.filter.name, "n", "", "Filter clusters by name")
 		c.fs.StringVar(&c.filter.pool, "pool", "", "Filter clusters by pool")

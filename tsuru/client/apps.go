@@ -23,7 +23,7 @@ import (
 
 	"github.com/cezarsa/form"
 	"github.com/lnquy/cron"
-	"github.com/tsuru/gnuflag"
+	"github.com/spf13/pflag"
 	"github.com/tsuru/go-tsuruclient/pkg/config"
 	"github.com/tsuru/go-tsuruclient/pkg/tsuru"
 	"github.com/tsuru/tablecli"
@@ -53,7 +53,7 @@ type AppCreate struct {
 	description string
 	tags        cmd.StringSliceFlag
 	routerOpts  cmd.MapFlag
-	fs          *gnuflag.FlagSet
+	fs          *pflag.FlagSet
 }
 
 type unitSorter struct {
@@ -142,10 +142,10 @@ implementation.`,
 	}
 }
 
-func (c *AppCreate) Flags() *gnuflag.FlagSet {
+func (c *AppCreate) Flags() *pflag.FlagSet {
 	if c.fs == nil {
 		infoMessage := "The plan used to create the app"
-		c.fs = gnuflag.NewFlagSet("", gnuflag.ExitOnError)
+		c.fs = pflag.NewFlagSet("", pflag.ExitOnError)
 		c.fs.StringVar(&c.plan, "plan", "", infoMessage)
 		c.fs.StringVar(&c.plan, "p", "", infoMessage)
 		routerMessage := "The router used by the app"
@@ -219,7 +219,7 @@ func (c *AppCreate) Run(context *cmd.Context) error {
 
 type AppUpdate struct {
 	args tsuru.UpdateApp
-	fs   *gnuflag.FlagSet
+	fs   *pflag.FlagSet
 	tsuruClientApp.AppNameMixIn
 	cmd.ConfirmationCommand
 
@@ -234,9 +234,9 @@ func (c *AppUpdate) Info() *cmd.Info {
 	}
 }
 
-func (c *AppUpdate) Flags() *gnuflag.FlagSet {
+func (c *AppUpdate) Flags() *pflag.FlagSet {
 	if c.fs == nil {
-		flagSet := gnuflag.NewFlagSet("", gnuflag.ExitOnError)
+		flagSet := pflag.NewFlagSet("", pflag.ExitOnError)
 		descriptionMessage := "Changes description for the app"
 		planMessage := "Changes plan for the app"
 		poolMessage := "Changes pool for the app"
@@ -335,7 +335,7 @@ func (c *AppUpdate) Run(ctx *cmd.Context) error {
 type AppRemove struct {
 	tsuruClientApp.AppNameMixIn
 	cmd.ConfirmationCommand
-	fs *gnuflag.FlagSet
+	fs *pflag.FlagSet
 }
 
 func (c *AppRemove) Info() *cmd.Info {
@@ -377,7 +377,7 @@ func (c *AppRemove) Run(context *cmd.Context) error {
 	return formatter.StreamJSONResponse(context.Stdout, response)
 }
 
-func (c *AppRemove) Flags() *gnuflag.FlagSet {
+func (c *AppRemove) Flags() *pflag.FlagSet {
 	if c.fs == nil {
 		c.fs = mergeFlagSet(
 			c.AppNameMixIn.Flags(),
@@ -406,7 +406,7 @@ see information about it.`,
 	}
 }
 
-func (cmd *AppInfo) Flags() *gnuflag.FlagSet {
+func (cmd *AppInfo) Flags() *pflag.FlagSet {
 	fs := cmd.AppNameMixIn.Flags()
 	if !cmd.flagsApplied {
 		fs.BoolVar(&cmd.simplified, "simplified", false, "Show simplified view of app")
@@ -1337,7 +1337,7 @@ func currentUserEmail() (string, error) {
 }
 
 type AppList struct {
-	fs         *gnuflag.FlagSet
+	fs         *pflag.FlagSet
 	filter     appFilter
 	simplified bool
 	json       bool
@@ -1427,9 +1427,9 @@ func (c *AppList) Show(result []byte, context *cmd.Context) error {
 	return nil
 }
 
-func (c *AppList) Flags() *gnuflag.FlagSet {
+func (c *AppList) Flags() *pflag.FlagSet {
 	if c.fs == nil {
-		c.fs = gnuflag.NewFlagSet("app-list", gnuflag.ExitOnError)
+		c.fs = pflag.NewFlagSet("app-list", pflag.ExitOnError)
 		c.fs.StringVar(&c.filter.name, "name", "", "Filter applications by name")
 		c.fs.StringVar(&c.filter.name, "n", "", "Filter applications by name")
 		c.fs.StringVar(&c.filter.pool, "pool", "", "Filter applications by pool")
@@ -1466,7 +1466,7 @@ type AppStop struct {
 	tsuruClientApp.AppNameMixIn
 	process string
 	version string
-	fs      *gnuflag.FlagSet
+	fs      *pflag.FlagSet
 }
 
 func (c *AppStop) Info() *cmd.Info {
@@ -1504,7 +1504,7 @@ func (c *AppStop) Run(context *cmd.Context) error {
 	return formatter.StreamJSONResponse(context.Stdout, response)
 }
 
-func (c *AppStop) Flags() *gnuflag.FlagSet {
+func (c *AppStop) Flags() *pflag.FlagSet {
 	if c.fs == nil {
 		c.fs = c.AppNameMixIn.Flags()
 		c.fs.StringVar(&c.process, "process", "", "Process name")
@@ -1518,7 +1518,7 @@ type AppStart struct {
 	tsuruClientApp.AppNameMixIn
 	process string
 	version string
-	fs      *gnuflag.FlagSet
+	fs      *pflag.FlagSet
 }
 
 func (c *AppStart) Info() *cmd.Info {
@@ -1556,7 +1556,7 @@ func (c *AppStart) Run(context *cmd.Context) error {
 	return formatter.StreamJSONResponse(context.Stdout, response)
 }
 
-func (c *AppStart) Flags() *gnuflag.FlagSet {
+func (c *AppStart) Flags() *pflag.FlagSet {
 	if c.fs == nil {
 		c.fs = c.AppNameMixIn.Flags()
 		c.fs.StringVar(&c.process, "process", "", "Process name")
@@ -1570,7 +1570,7 @@ type AppRestart struct {
 	tsuruClientApp.AppNameMixIn
 	process string
 	version string
-	fs      *gnuflag.FlagSet
+	fs      *pflag.FlagSet
 }
 
 func (c *AppRestart) Run(context *cmd.Context) error {
@@ -1608,7 +1608,7 @@ func (c *AppRestart) Info() *cmd.Info {
 	}
 }
 
-func (c *AppRestart) Flags() *gnuflag.FlagSet {
+func (c *AppRestart) Flags() *pflag.FlagSet {
 	if c.fs == nil {
 		c.fs = c.AppNameMixIn.Flags()
 		c.fs.StringVar(&c.process, "process", "", "Process name")
@@ -1716,7 +1716,7 @@ type AppProcessUpdate struct {
 	plan             string
 	resetDefaultPlan bool
 	noRestart        bool
-	fs               *gnuflag.FlagSet
+	fs               *pflag.FlagSet
 }
 
 func (c *AppProcessUpdate) Info() *cmd.Info {
@@ -1728,9 +1728,9 @@ func (c *AppProcessUpdate) Info() *cmd.Info {
 	}
 }
 
-func (c *AppProcessUpdate) Flags() *gnuflag.FlagSet {
+func (c *AppProcessUpdate) Flags() *pflag.FlagSet {
 	if c.fs == nil {
-		flagSet := gnuflag.NewFlagSet("", gnuflag.ExitOnError)
+		flagSet := pflag.NewFlagSet("", pflag.ExitOnError)
 		planMessage := "Changes plan for the app"
 		planReset := "Reset process to default plan of app"
 		noRestartMessage := "Prevent tsuru from restarting the application"

@@ -35,7 +35,7 @@ func (s *S) TestConfirmationConfirmWithFlagShort(c *check.C) {
 	var stdout, stderr bytes.Buffer
 	context := Context{Stdout: &stdout, Stderr: &stderr}
 	cmd := ConfirmationCommand{}
-	cmd.Flags().Parse(true, []string{"-y"})
+	cmd.Flags().Parse([]string{"-y"})
 	result := cmd.Confirm(&context, "Are you sure you wanna do it?")
 	c.Assert(result, check.Equals, true)
 	c.Assert(stdout.String(), check.Equals, "")
@@ -45,7 +45,7 @@ func (s *S) TestConfirmationConfirmWithFlagLong(c *check.C) {
 	var stdout, stderr bytes.Buffer
 	context := Context{Stdout: &stdout, Stderr: &stderr}
 	cmd := ConfirmationCommand{}
-	cmd.Flags().Parse(true, []string{"--assume-yes"})
+	cmd.Flags().Parse([]string{"--assume-yes"})
 	result := cmd.Confirm(&context, "Are you sure you wanna do it?")
 	c.Assert(result, check.Equals, true)
 	c.Assert(stdout.String(), check.Equals, "")

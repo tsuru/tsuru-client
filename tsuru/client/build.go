@@ -13,7 +13,7 @@ import (
 	"strings"
 	"time"
 
-	"github.com/tsuru/gnuflag"
+	"github.com/spf13/pflag"
 	"github.com/tsuru/go-tsuruclient/pkg/config"
 	tsuruClientApp "github.com/tsuru/tsuru-client/tsuru/app"
 	"github.com/tsuru/tsuru-client/tsuru/cmd"
@@ -24,11 +24,11 @@ import (
 type AppBuild struct {
 	tsuruClientApp.AppNameMixIn
 	tag       string
-	fs        *gnuflag.FlagSet
+	fs        *pflag.FlagSet
 	filesOnly bool
 }
 
-func (c *AppBuild) Flags() *gnuflag.FlagSet {
+func (c *AppBuild) Flags() *pflag.FlagSet {
 	if c.fs == nil {
 		c.fs = c.AppNameMixIn.Flags()
 		tag := "The image tag"

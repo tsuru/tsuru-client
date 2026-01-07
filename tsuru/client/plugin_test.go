@@ -379,7 +379,7 @@ func (s *S) TestPluginBundle(c *check.C) {
 	var stdout bytes.Buffer
 	context := cmd.Context{Stdout: &stdout}
 	command := PluginBundle{}
-	command.Flags().Parse(true, []string{"--url", ts.URL})
+	command.Flags().Parse([]string{"--url", ts.URL})
 
 	err := command.Run(&context)
 	c.Assert(err, check.IsNil)
@@ -423,7 +423,7 @@ func (s *S) TestPluginBundleError(c *check.C) {
 	var stdout bytes.Buffer
 	context := cmd.Context{Stdout: &stdout}
 	command := PluginBundle{}
-	command.Flags().Parse(true, []string{"--url", ts.URL})
+	command.Flags().Parse([]string{"--url", ts.URL})
 
 	err := command.Run(&context)
 	c.Assert(err, check.ErrorMatches, `invalid status code reading plugin bundle: 500 - "my err"`)
@@ -434,7 +434,7 @@ func (s *S) TestPluginBundleErrorNoFlags(c *check.C) {
 	context := cmd.Context{Stdout: &stdout}
 
 	command := PluginBundle{}
-	command.Flags().Parse(true, []string{})
+	command.Flags().Parse([]string{})
 	err := command.Run(&context)
 	c.Assert(err, check.ErrorMatches, `--url <url> is mandatory. See --help for usage`)
 }
