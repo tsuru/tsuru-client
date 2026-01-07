@@ -17,6 +17,7 @@ import (
 	"github.com/tsuru/go-tsuruclient/pkg/config"
 	"github.com/tsuru/tablecli"
 	"github.com/tsuru/tsuru-client/tsuru/cmd"
+	"github.com/tsuru/tsuru-client/tsuru/cmd/standards"
 	tsuruHTTP "github.com/tsuru/tsuru-client/tsuru/http"
 	"github.com/tsuru/tsuru/permission"
 	permTypes "github.com/tsuru/tsuru/types/permission"
@@ -45,8 +46,7 @@ func (c *PermissionList) Flags() *pflag.FlagSet {
 	if c.fs == nil {
 		c.fs = pflag.NewFlagSet("permission-list", pflag.ExitOnError)
 		tree := "Show permissions in tree format."
-		c.fs.BoolVar(&c.tree, "tree", false, tree)
-		c.fs.BoolVar(&c.tree, "t", false, tree)
+		c.fs.BoolVarP(&c.tree, "tree", "t", false, tree)
 	}
 	return c.fs
 }
@@ -221,10 +221,9 @@ description associated.
 
 func (c *RoleAdd) Flags() *pflag.FlagSet {
 	if c.fs == nil {
-		descriptionMessage := "Role description"
 		c.fs = pflag.NewFlagSet("", pflag.ExitOnError)
-		c.fs.StringVar(&c.description, "description", "", descriptionMessage)
-		c.fs.StringVar(&c.description, "d", "", descriptionMessage)
+		descriptionMessage := "Role description"
+		c.fs.StringVarP(&c.description, standards.FlagDescription, standards.ShortFlagDescription, "", descriptionMessage)
 	}
 	return c.fs
 }
@@ -685,15 +684,15 @@ func (c *RoleUpdate) Info() *cmd.Info {
 func (c *RoleUpdate) Flags() *pflag.FlagSet {
 	if c.fs == nil {
 		c.fs = pflag.NewFlagSet("", pflag.ExitOnError)
+		c.fs.SortFlags = false
 		roleDescription := "Updates a role description"
-		c.fs.StringVar(&c.description, "d", "", roleDescription)
-		c.fs.StringVar(&c.description, "description", "", roleDescription)
+		c.fs.StringVarP(&c.description, standards.FlagDescription, standards.ShortFlagDescription, "", roleDescription)
+
 		contextType := "Updates the context type of a role"
-		c.fs.StringVar(&c.contextType, "c", "", contextType)
-		c.fs.StringVar(&c.contextType, "context", "", contextType)
+		c.fs.StringVarP(&c.contextType, "context", "c", "", contextType)
+
 		newName := "Updates the name of a role"
-		c.fs.StringVar(&c.newName, "n", "", newName)
-		c.fs.StringVar(&c.newName, "name", "", newName)
+		c.fs.StringVarP(&c.newName, standards.FlagName, standards.ShortFlagName, "", newName)
 	}
 	return c.fs
 }

@@ -33,11 +33,11 @@ func (c *PlanList) Flags() *pflag.FlagSet {
 	if c.fs == nil {
 		c.fs = pflag.NewFlagSet("plan-list", pflag.ExitOnError)
 		bytes := "bytesized units for memory and swap."
-		c.fs.BoolVar(&c.bytes, "bytes", false, bytes)
+		c.fs.BoolVarP(&c.bytes, "bytes", "b", false, bytes)
+
 		c.fs.BoolVar(&c.showMaxBurstAllowed, "show-max-cpu-burst-allowed", false, "show column about max CPU burst allowed by plan")
 		c.fs.BoolVar(&c.k8sFriendly, "kubernetes-friendly", false, "show values friendly for a kubernetes user")
 
-		c.fs.BoolVar(&c.bytes, "b", false, bytes)
 	}
 	return c.fs
 }

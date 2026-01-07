@@ -82,10 +82,8 @@ func (c *AppRun) Run(context *cmd.Context) error {
 func (c *AppRun) Flags() *pflag.FlagSet {
 	if c.fs == nil {
 		c.fs = c.AppNameMixIn.Flags()
-		c.fs.BoolVar(&c.once, "once", false, "Running only one unit")
-		c.fs.BoolVar(&c.once, "o", false, "Running only one unit")
-		c.fs.BoolVar(&c.isolated, "isolated", false, "Running in ephemeral container")
-		c.fs.BoolVar(&c.isolated, "i", false, "Running in ephemeral container")
+		c.fs.BoolVarP(&c.once, "once", "o", false, "Running only one unit")
+		c.fs.BoolVarP(&c.isolated, "isolated", "i", false, "Running in ephemeral container")
 	}
 	return c.fs
 }

@@ -13,6 +13,7 @@ import (
 	"github.com/tsuru/go-tsuruclient/pkg/tsuru"
 	tsuruClientApp "github.com/tsuru/tsuru-client/tsuru/app"
 	"github.com/tsuru/tsuru-client/tsuru/cmd"
+	"github.com/tsuru/tsuru-client/tsuru/cmd/standards"
 	"github.com/tsuru/tsuru-client/tsuru/formatter"
 	tsuruHTTP "github.com/tsuru/tsuru-client/tsuru/http"
 )
@@ -83,10 +84,10 @@ type MetadataGet struct {
 func (c *MetadataGet) Flags() *pflag.FlagSet {
 	if c.fs == nil {
 		c.fs = c.AppNameMixIn.Flags()
-		c.fs.StringVar(&c.jobName, "job", "", "The name of the job.")
-		c.fs.StringVar(&c.jobName, "j", "", "The name of the job.")
+		c.fs.StringVarP(&c.jobName, standards.FlagJob, standards.ShortFlagJob, "", "The name of the job.")
+
 		if !c.flagsApplied {
-			c.fs.BoolVar(&c.json, "json", false, "Show JSON")
+			c.fs.BoolVar(&c.json, standards.FlagJSON, false, "Show JSON")
 			c.flagsApplied = true
 		}
 	}
@@ -179,13 +180,10 @@ func (c *MetadataSet) Info() *cmd.Info {
 func (c *MetadataSet) Flags() *pflag.FlagSet {
 	if c.fs == nil {
 		c.fs = c.AppNameMixIn.Flags()
-		c.fs.StringVar(&c.job, "job", "", "The name of the job.")
-		c.fs.StringVar(&c.job, "j", "", "The name of the job.")
-		c.fs.StringVar(&c.processName, "process", "", "The name of process of app (optional).")
-		c.fs.StringVar(&c.processName, "p", "", "The name of process of app (optional).")
-		c.fs.StringVar(&c.metadataType, "type", "", "Metadata type: annotation or label")
-		c.fs.StringVar(&c.metadataType, "t", "", "Metadata type: annotation or label")
-		c.fs.BoolVar(&c.noRestart, "no-restart", false, "Sets metadata without restarting the application")
+		c.fs.StringVarP(&c.job, standards.FlagJob, standards.ShortFlagJob, "", "The name of the job.")
+		c.fs.StringVarP(&c.processName, "process", "p", "", "The name of process of app (optional).")
+		c.fs.StringVarP(&c.metadataType, "type", "t", "", "Metadata type: annotation or label")
+		c.fs.BoolVar(&c.noRestart, standards.FlagNoRestart, false, "Sets metadata without restarting the application")
 	}
 	return c.fs
 }
@@ -271,13 +269,10 @@ func (c *MetadataUnset) Info() *cmd.Info {
 func (c *MetadataUnset) Flags() *pflag.FlagSet {
 	if c.fs == nil {
 		c.fs = c.AppNameMixIn.Flags()
-		c.fs.StringVar(&c.job, "job", "", "The name of the job.")
-		c.fs.StringVar(&c.job, "j", "", "The name of the job.")
-		c.fs.StringVar(&c.processName, "process", "", "The name of process of app (optional).")
-		c.fs.StringVar(&c.processName, "p", "", "The name of process of app (optional).")
-		c.fs.StringVar(&c.metadataType, "type", "", "Metadata type: annotation or label")
-		c.fs.StringVar(&c.metadataType, "t", "", "Metadata type: annotation or label")
-		c.fs.BoolVar(&c.noRestart, "no-restart", false, "Sets metadata without restarting the application")
+		c.fs.StringVarP(&c.job, standards.FlagJob, standards.ShortFlagJob, "", "The name of the job.")
+		c.fs.StringVarP(&c.processName, "process", "p", "", "The name of process of app (optional).")
+		c.fs.StringVarP(&c.metadataType, "type", "t", "", "Metadata type: annotation or label")
+		c.fs.BoolVar(&c.noRestart, standards.FlagNoRestart, false, "Sets metadata without restarting the application")
 	}
 	return c.fs
 }

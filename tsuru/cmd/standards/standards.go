@@ -25,6 +25,7 @@ var (
 	FlagTeam     string = "team"
 	FlagPool     string = "pool"
 	FlagPlatform string = "platform"
+	FlagUser     string = "user"
 
 	// Common properties flags
 	FlagName        string = "name"

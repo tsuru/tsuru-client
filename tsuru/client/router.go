@@ -21,6 +21,7 @@ import (
 	"github.com/tsuru/tablecli"
 	tsuruClientApp "github.com/tsuru/tsuru-client/tsuru/app"
 	"github.com/tsuru/tsuru-client/tsuru/cmd"
+	"github.com/tsuru/tsuru-client/tsuru/cmd/standards"
 	"github.com/tsuru/tsuru-client/tsuru/formatter"
 	tsuruHTTP "github.com/tsuru/tsuru-client/tsuru/http"
 	appTypes "github.com/tsuru/tsuru/types/app"
@@ -172,9 +173,9 @@ type RoutersList struct {
 func (c *RoutersList) Flags() *pflag.FlagSet {
 	if c.fs == nil {
 		c.fs = pflag.NewFlagSet("router-list", pflag.ExitOnError)
-		c.fs.StringVar(&c.filter.name, "name", "", "Filter routers by name")
-		c.fs.StringVar(&c.filter.name, "n", "", "Filter routers by name")
-		c.fs.BoolVar(&c.simplified, "q", false, "Display only routers name")
+
+		c.fs.StringVarP(&c.filter.name, standards.FlagName, standards.ShortFlagName, "", "Filter routers by name")
+		c.fs.BoolVarP(&c.simplified, standards.FlagOnlyName, standards.ShortFlagOnlyName, false, "Display only routers name")
 		c.fs.BoolVar(&c.json, "json", false, "Display in JSON format")
 
 	}
@@ -323,7 +324,7 @@ func (c *AppRoutersList) Info() *cmd.Info {
 func (c *AppRoutersList) Flags() *pflag.FlagSet {
 	fs := c.AppNameMixIn.Flags()
 	if !c.flagsApplied {
-		fs.BoolVar(&c.json, "json", false, "Show JSON")
+		fs.BoolVar(&c.json, standards.FlagJSON, false, "Show JSON")
 
 		c.flagsApplied = true
 	}
@@ -419,8 +420,7 @@ func (c *AppRoutersAdd) Flags() *pflag.FlagSet {
 	if c.fs == nil {
 		c.fs = c.AppNameMixIn.Flags()
 		optsMessage := "Custom options sent directly to router implementation."
-		c.fs.Var(&c.opts, "o", optsMessage)
-		c.fs.Var(&c.opts, "opts", optsMessage)
+		c.fs.VarP(&c.opts, "opts", "o", optsMessage)
 	}
 	return c.fs
 }
@@ -475,8 +475,7 @@ func (c *AppRoutersUpdate) Flags() *pflag.FlagSet {
 	if c.fs == nil {
 		c.fs = c.AppNameMixIn.Flags()
 		optsMessage := "Custom options sent directly to router implementation."
-		c.fs.Var(&c.opts, "o", optsMessage)
-		c.fs.Var(&c.opts, "opts", optsMessage)
+		c.fs.VarP(&c.opts, "opts", "o", optsMessage)
 	}
 	return c.fs
 }

@@ -414,9 +414,8 @@ see information about it.`,
 func (cmd *AppInfo) Flags() *pflag.FlagSet {
 	fs := cmd.AppNameMixIn.Flags()
 	if !cmd.flagsApplied {
-		fs.BoolVar(&cmd.simplified, "simplified", false, "Show simplified view of app")
-		fs.BoolVar(&cmd.simplified, "s", false, "Show simplified view of app")
-		fs.BoolVar(&cmd.json, "json", false, "Show JSON view of app")
+		fs.BoolVarP(&cmd.simplified, "simplified", "s", false, "Show simplified view of app")
+		fs.BoolVar(&cmd.json, standards.FlagJSON, false, "Show JSON view of app")
 
 		cmd.flagsApplied = true
 	}
@@ -1435,23 +1434,17 @@ func (c *AppList) Show(result []byte, context *cmd.Context) error {
 func (c *AppList) Flags() *pflag.FlagSet {
 	if c.fs == nil {
 		c.fs = pflag.NewFlagSet("app-list", pflag.ExitOnError)
-		c.fs.StringVar(&c.filter.name, "name", "", "Filter applications by name")
-		c.fs.StringVar(&c.filter.name, "n", "", "Filter applications by name")
-		c.fs.StringVar(&c.filter.pool, "pool", "", "Filter applications by pool")
-		c.fs.StringVar(&c.filter.pool, "o", "", "Filter applications by pool")
-		c.fs.StringVar(&c.filter.status, "status", "", "Filter applications by unit status. Accepts multiple values separated by commas. Possible values can be: building, created, starting, error, started, stopped, asleep")
-		c.fs.StringVar(&c.filter.status, "s", "", "Filter applications by unit status. Accepts multiple values separated by commas. Possible values can be: building, created, starting, error, started, stopped, asleep")
-		c.fs.StringVar(&c.filter.platform, "platform", "", "Filter applications by platform")
-		c.fs.StringVar(&c.filter.platform, "p", "", "Filter applications by platform")
-		c.fs.StringVar(&c.filter.teamOwner, "team", "", "Filter applications by team owner")
-		c.fs.StringVar(&c.filter.teamOwner, "t", "", "Filter applications by team owner")
-		c.fs.StringVar(&c.filter.owner, "user", "", "Filter applications by owner")
-		c.fs.StringVar(&c.filter.owner, "u", "", "Filter applications by owner")
-		c.fs.BoolVar(&c.simplified, "q", false, "Display only applications name")
-		c.fs.BoolVar(&c.json, "json", false, "Display applications in JSON format")
+		c.fs.StringVarP(&c.filter.name, standards.FlagName, standards.ShortFlagName, "", "Filter applications by name")
+
+		c.fs.StringVarP(&c.filter.pool, standards.FlagPool, standards.ShortFlagPool, "", "Filter applications by pool")
+		c.fs.StringVarP(&c.filter.status, "status", "s", "", "Filter applications by unit status. Accepts multiple values separated by commas. Possible values can be: building, created, starting, error, started, stopped, asleep")
+		c.fs.StringVarP(&c.filter.platform, "platform", "p", "", "Filter applications by platform")
+		c.fs.StringVarP(&c.filter.teamOwner, standards.FlagTeam, standards.ShortFlagTeam, "", "Filter applications by team owner")
+		c.fs.StringVarP(&c.filter.owner, standards.FlagUser, standards.ShortFlagUser, "", "Filter applications by owner")
+		c.fs.BoolVarP(&c.simplified, standards.FlagOnlyName, standards.ShortFlagOnlyName, false, "Display only applications name")
+		c.fs.BoolVar(&c.json, standards.FlagJSON, false, "Display applications in JSON format")
 		tagMessage := "Filter applications by tag. Can be used multiple times"
-		c.fs.Var(&c.filter.tags, "tag", tagMessage)
-		c.fs.Var(&c.filter.tags, "g", tagMessage)
+		c.fs.VarP(&c.filter.tags, standards.FlagTag, "g", tagMessage)
 	}
 	return c.fs
 }
@@ -1512,8 +1505,7 @@ func (c *AppStop) Run(context *cmd.Context) error {
 func (c *AppStop) Flags() *pflag.FlagSet {
 	if c.fs == nil {
 		c.fs = c.AppNameMixIn.Flags()
-		c.fs.StringVar(&c.process, "process", "", "Process name")
-		c.fs.StringVar(&c.process, "p", "", "Process name")
+		c.fs.StringVarP(&c.process, "process", "p", "", "Process name")
 		c.fs.StringVar(&c.version, "version", "", "Version number")
 	}
 	return c.fs
@@ -1564,8 +1556,7 @@ func (c *AppStart) Run(context *cmd.Context) error {
 func (c *AppStart) Flags() *pflag.FlagSet {
 	if c.fs == nil {
 		c.fs = c.AppNameMixIn.Flags()
-		c.fs.StringVar(&c.process, "process", "", "Process name")
-		c.fs.StringVar(&c.process, "p", "", "Process name")
+		c.fs.StringVarP(&c.process, "process", "p", "", "Process name")
 		c.fs.StringVar(&c.version, "version", "", "Version number")
 	}
 	return c.fs
@@ -1616,8 +1607,7 @@ func (c *AppRestart) Info() *cmd.Info {
 func (c *AppRestart) Flags() *pflag.FlagSet {
 	if c.fs == nil {
 		c.fs = c.AppNameMixIn.Flags()
-		c.fs.StringVar(&c.process, "process", "", "Process name")
-		c.fs.StringVar(&c.process, "p", "", "Process name")
+		c.fs.StringVarP(&c.process, "process", "p", "", "Process name")
 		c.fs.StringVar(&c.version, "version", "", "Version number")
 	}
 	return c.fs
@@ -1736,13 +1726,17 @@ func (c *AppProcessUpdate) Info() *cmd.Info {
 func (c *AppProcessUpdate) Flags() *pflag.FlagSet {
 	if c.fs == nil {
 		flagSet := pflag.NewFlagSet("", pflag.ExitOnError)
+		flagSet.SortFlags = false
+
 		planMessage := "Changes plan for the app"
+		flagSet.StringVarP(&c.plan, standards.FlagPlan, standards.ShortFlagPlan, "", planMessage)
+
 		planReset := "Reset process to default plan of app"
-		noRestartMessage := "Prevent tsuru from restarting the application"
-		flagSet.StringVar(&c.plan, "plan", "", planMessage)
-		flagSet.StringVar(&c.plan, "p", "", planMessage)
 		flagSet.BoolVar(&c.resetDefaultPlan, "default-plan", false, planReset)
-		flagSet.BoolVar(&c.noRestart, "no-restart", false, noRestartMessage)
+
+		noRestartMessage := "Prevent tsuru from restarting the application"
+		flagSet.BoolVar(&c.noRestart, standards.FlagNoRestart, false, noRestartMessage)
+
 		c.fs = flagSet
 	}
 	return c.fs

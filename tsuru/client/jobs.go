@@ -633,8 +633,7 @@ func (c *JobLog) Flags() *pflag.FlagSet {
 	if c.fs == nil {
 		c.fs = pflag.NewFlagSet("job-log", pflag.ExitOnError)
 		followMsg := "Follow logs"
-		c.fs.BoolVar(&c.follow, "f", false, followMsg)
-		c.fs.BoolVar(&c.follow, "follow", false, followMsg)
+		c.fs.BoolVarP(&c.follow, "follow", "f", false, followMsg)
 	}
 	return c.fs
 }
