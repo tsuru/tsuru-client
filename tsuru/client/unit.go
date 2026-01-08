@@ -149,7 +149,7 @@ func (c *UnitKill) Flags() *pflag.FlagSet {
 	if c.fs == nil {
 		c.fs = c.AppNameMixIn.Flags()
 		c.fs.StringVarP(&c.jobName, standards.FlagJob, standards.ShortFlagJob, "", "The name of the job.")
-		c.fs.BoolVar(&c.force, "f", false, "Forces the termination of unit.")
+		c.fs.BoolVarP(&c.force, "force", "f", false, "Forces the termination of unit.")
 	}
 	return c.fs
 }

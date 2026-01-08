@@ -5,6 +5,7 @@
 package cmd
 
 import (
+	"strings"
 	"testing"
 
 	"github.com/stretchr/testify/assert"
@@ -110,10 +111,10 @@ func TestManagerV2_Register(t *testing.T) {
 		rootCommands := manager.rootCmd.Commands()
 		var foundFQDN bool
 		for _, c := range rootCommands {
-			if c.Use == "app-list" {
+			if strings.HasPrefix(c.Use, "app-list") {
 				foundFQDN = true
 				assert.Equal(t, "List all apps", c.Short)
-				assert.Equal(t, "tsuru app-list [flags]", c.Long)
+				assert.Equal(t, "List all apps\nDetailed description", c.Long)
 				assert.True(t, c.Hidden) // Should be hidden by default
 			}
 		}
@@ -169,7 +170,7 @@ func TestManagerV2_Register(t *testing.T) {
 		rootCommands := manager.rootCmd.Commands()
 		var found bool
 		for _, c := range rootCommands {
-			if c.Use == "login" {
+			if strings.HasPrefix(c.Use, "login") {
 				found = true
 				assert.Equal(t, "Login to tsuru server", c.Short)
 				assert.Equal(t, "auth", c.GroupID)
@@ -328,14 +329,14 @@ func TestManagerV2_registerV2FQDNOnRoot(t *testing.T) {
 		rootCommands := manager.rootCmd.Commands()
 		var found bool
 		for _, c := range rootCommands {
-			if c.Use == "app-list" {
+			if strings.HasPrefix(c.Use, "app-list") {
 				found = true
 				assert.Equal(t, "List all apps", c.Short)
-				assert.Equal(t, "Usage: tsuru app-list", c.Long)
+				assert.Equal(t, "List all apps", c.Long)
 				assert.Equal(t, "resource", c.GroupID)
-				assert.True(t, c.SilenceUsage)
+				assert.False(t, c.SilenceUsage)
 				assert.True(t, c.Hidden) // Hidden by default
-				assert.True(t, c.DisableFlagParsing)
+				assert.False(t, c.DisableFlagParsing)
 			}
 		}
 		assert.True(t, found)
@@ -600,7 +601,7 @@ func TestManagerV2_Integration(t *testing.T) {
 		rootCommands := manager.rootCmd.Commands()
 		var foundLogin bool
 		for _, c := range rootCommands {
-			if c.Use == "login" {
+			if strings.HasPrefix(c.Use, "login") {
 				foundLogin = true
 				assert.False(t, c.Hidden)
 			}

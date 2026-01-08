@@ -1119,33 +1119,26 @@ func (s *S) TestListUsersFlags(c *check.C) {
 	err := flagset.Parse([]string{"-u", "test@test.com"})
 	c.Assert(err, check.IsNil)
 	c.Assert(command.userEmail, check.Equals, "test@test.com")
+
 	user := flagset.Lookup("user")
 	c.Assert(user, check.NotNil)
 	c.Check(user.Name, check.Equals, "user")
 	c.Check(user.Usage, check.Equals, "Filter user by user email")
 	c.Check(user.Value.String(), check.Equals, "test@test.com")
 	c.Check(user.DefValue, check.Equals, "")
-	suser := flagset.Lookup("u")
-	c.Assert(suser, check.NotNil)
-	c.Check(suser.Name, check.Equals, "u")
-	c.Check(suser.Usage, check.Equals, "Filter user by user email")
-	c.Check(suser.Value.String(), check.Equals, "test@test.com")
-	c.Check(suser.DefValue, check.Equals, "")
+	c.Check(user.Shorthand, check.Equals, "u")
+
 	err = flagset.Parse([]string{"-r", "role1"})
 	c.Assert(err, check.IsNil)
 	c.Assert(command.role, check.Equals, "role1")
+
 	role := flagset.Lookup("role")
 	c.Assert(user, check.NotNil)
 	c.Check(role.Name, check.Equals, "role")
 	c.Check(role.Usage, check.Equals, "Filter user by role")
 	c.Check(role.Value.String(), check.Equals, "role1")
 	c.Check(role.DefValue, check.Equals, "")
-	srole := flagset.Lookup("r")
-	c.Assert(srole, check.NotNil)
-	c.Check(srole.Name, check.Equals, "r")
-	c.Check(srole.Usage, check.Equals, "Filter user by role")
-	c.Check(srole.Value.String(), check.Equals, "role1")
-	c.Check(srole.DefValue, check.Equals, "")
+	c.Check(role.Shorthand, check.Equals, "r")
 }
 
 func (s *S) TestUserInfoInfo(c *check.C) {

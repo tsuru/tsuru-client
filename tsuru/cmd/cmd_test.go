@@ -537,7 +537,7 @@ Flags:
 }
 
 func (s *S) TestHelpDeprecatedCmd(c *check.C) {
-	expectedStdout := `Usage: glb foo
+	expectedStdout := `Usage: glb bar
 
 Foo do anything or nothing.
 

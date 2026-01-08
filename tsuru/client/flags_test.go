@@ -12,9 +12,9 @@ import (
 func (s *S) TestMergeFlagSet(c *check.C) {
 	var x, y bool
 	fs1 := pflag.NewFlagSet("x", pflag.ExitOnError)
-	fs1.BoolVar(&x, "x", false, "Something")
+	fs1.BoolVarP(&x, "x", "x", false, "Something")
 	fs2 := pflag.NewFlagSet("y", pflag.ExitOnError)
-	fs2.BoolVar(&y, "y", false, "Something")
+	fs2.BoolVarP(&y, "y", "y", false, "Something")
 	ret := mergeFlagSet(fs1, fs2)
 	c.Assert(ret, check.Equals, fs1)
 	fs1.Parse([]string{"-x", "-y"})
