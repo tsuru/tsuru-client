@@ -537,30 +537,33 @@ Flags:
 }
 
 func (s *S) TestHelpDeprecatedCmd(c *check.C) {
-	expectedStdout := `Usage: glb bar
-
-Foo do anything or nothing.
-
-`
 	expectedStderr := `WARNING: "bar" is deprecated. Showing help for "foo" instead.` + "\n\n"
 	var stdout, stderr bytes.Buffer
 	globalManager.stdout = &stdout
 	globalManager.stderr = &stderr
 	globalManager.RegisterDeprecated(&TestCommand{}, "bar")
 	globalManager.Run([]string{"help", "bar"})
-	c.Assert(stdout.String(), check.Equals, expectedStdout)
+	c.Assert(stdout.String(), check.Equals, `Usage: glb bar
+
+Foo do anything or nothing.
+
+`)
 	c.Assert(stderr.String(), check.Equals, expectedStderr)
 	stdout.Reset()
 	stderr.Reset()
 	globalManager.Run([]string{"help", "foo"})
-	c.Assert(stdout.String(), check.Equals, expectedStdout)
+	c.Assert(stdout.String(), check.Equals, `Usage: glb foo
+
+Foo do anything or nothing.
+
+`)
 	c.Assert(stderr.String(), check.Equals, "")
 }
 
 func (s *S) TestHelpDeprecatedCmdWritesWarningFirst(c *check.C) {
 	expected := `WARNING: "bar" is deprecated. Showing help for "foo" instead.
 
-Usage: glb foo
+Usage: glb bar
 
 Foo do anything or nothing.
 

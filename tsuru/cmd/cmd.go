@@ -589,7 +589,7 @@ type DeprecatedCommand struct {
 
 func (c *DeprecatedCommand) Info() *Info {
 	info := c.Command.Info()
-	info.Usage = strings.Replace(info.Usage, c.oldName, info.Name, 1)
+	info.Usage = strings.Replace(info.Usage, info.Name, c.oldName, 1)
 	info.Name = c.oldName
 	info.V2.Hidden = true
 	return info
