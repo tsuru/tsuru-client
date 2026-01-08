@@ -16,6 +16,7 @@ import (
 	"github.com/tsuru/go-tsuruclient/pkg/tsuru"
 	"github.com/tsuru/tsuru-client/tsuru/cmd"
 	"github.com/tsuru/tsuru-client/tsuru/cmd/cmdtest"
+	"github.com/tsuru/tsuru-client/tsuru/cmd/standards"
 	tsuruHTTP "github.com/tsuru/tsuru-client/tsuru/http"
 	tsuruIo "github.com/tsuru/tsuru/io"
 	"github.com/tsuru/tsuru/service"
@@ -728,9 +729,9 @@ func (s *S) TestServiceInstanceAddFlags(c *check.C) {
 	c.Check(assume.Usage, check.Equals, flagDesc)
 	c.Check(assume.Value.String(), check.Equals, "[\"my tag\"]")
 	c.Check(assume.DefValue, check.Equals, "[]")
-	sassume = flagset.Lookup("g")
+	sassume = flagset.Lookup(standards.ShortFlagTag)
 	c.Check(sassume, check.NotNil)
-	c.Check(sassume.Name, check.Equals, "g")
+	c.Check(sassume.Name, check.Equals, standards.ShortFlagTag)
 	c.Check(sassume.Usage, check.Equals, flagDesc)
 	c.Check(sassume.Value.String(), check.Equals, "[\"my tag\"]")
 	c.Check(sassume.DefValue, check.Equals, "[]")
@@ -859,9 +860,9 @@ func (s *S) TestServiceInstanceUpdateFlags(c *check.C) {
 	c.Check(assume.Usage, check.Equals, flagDesc)
 	c.Check(assume.Value.String(), check.Equals, "[\"my tag\"]")
 	c.Check(assume.DefValue, check.Equals, "[]")
-	assume = flagset.Lookup("g")
+	assume = flagset.Lookup(standards.ShortFlagTag)
 	c.Check(assume, check.NotNil)
-	c.Check(assume.Name, check.Equals, "g")
+	c.Check(assume.Name, check.Equals, standards.ShortFlagTag)
 	c.Check(assume.Usage, check.Equals, flagDesc)
 	c.Check(assume.Value.String(), check.Equals, "[\"my tag\"]")
 	c.Check(assume.DefValue, check.Equals, "[]")

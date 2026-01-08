@@ -12,6 +12,7 @@ var (
 	ShortFlagUser        string = "u"
 	ShortFlagCNAME       string = "c"
 	ShortFlagPool        string = "o"
+	ShortFlagTag         string = "g"
 )
 
 // Flag is used to define common flag names across the tsuru-client commands.

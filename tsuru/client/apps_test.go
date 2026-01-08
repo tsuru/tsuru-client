@@ -17,6 +17,7 @@ import (
 	"github.com/spf13/pflag"
 	"github.com/tsuru/tsuru-client/tsuru/cmd"
 	"github.com/tsuru/tsuru-client/tsuru/cmd/cmdtest"
+	"github.com/tsuru/tsuru-client/tsuru/cmd/standards"
 	tsuruIo "github.com/tsuru/tsuru/io"
 	provTypes "github.com/tsuru/tsuru/types/provision"
 	check "gopkg.in/check.v1"
@@ -424,9 +425,9 @@ func (s *S) TestAppCreateFlags(c *check.C) {
 	c.Check(tag.Usage, check.Equals, usage)
 	c.Check(tag.Value.String(), check.Equals, "[\"tag1\",\"tag2\"]")
 	c.Check(tag.DefValue, check.Equals, "[]")
-	tag = flagset.Lookup("g")
+	tag = flagset.Lookup(standards.ShortFlagTag)
 	c.Check(tag, check.NotNil)
-	c.Check(tag.Name, check.Equals, "g")
+	c.Check(tag.Name, check.Equals, standards.ShortFlagTag)
 	c.Check(tag.Usage, check.Equals, usage)
 	c.Check(tag.Value.String(), check.Equals, "[\"tag1\",\"tag2\"]")
 	c.Check(tag.DefValue, check.Equals, "[]")
@@ -761,9 +762,9 @@ func (s *S) TestAppUpdateFlags(c *check.C) {
 	c.Check(tag.Name, check.Equals, "tag")
 	c.Check(tag.Value.String(), check.Equals, "[\"tag\"]")
 	c.Check(tag.DefValue, check.Equals, "[]")
-	tag = flagset.Lookup("g")
+	tag = flagset.Lookup(standards.ShortFlagTag)
 	c.Check(tag, check.NotNil)
-	c.Check(tag.Name, check.Equals, "g")
+	c.Check(tag.Name, check.Equals, standards.ShortFlagTag)
 	c.Check(tag.Value.String(), check.Equals, "[\"tag\"]")
 	c.Check(tag.DefValue, check.Equals, "[]")
 

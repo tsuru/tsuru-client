@@ -17,6 +17,7 @@ import (
 	"github.com/tsuru/go-tsuruclient/pkg/config"
 	tsuruClientApp "github.com/tsuru/tsuru-client/tsuru/app"
 	"github.com/tsuru/tsuru-client/tsuru/cmd"
+	"github.com/tsuru/tsuru-client/tsuru/cmd/standards"
 	tsuruHTTP "github.com/tsuru/tsuru-client/tsuru/http"
 	"github.com/tsuru/tsuru/safe"
 )
@@ -32,11 +33,10 @@ func (c *AppBuild) Flags() *pflag.FlagSet {
 	if c.fs == nil {
 		c.fs = c.AppNameMixIn.Flags()
 		tag := "The image tag"
-		c.fs.StringVar(&c.tag, "tag", "", tag)
-		c.fs.StringVar(&c.tag, "t", "", tag)
+		c.fs.StringVarP(&c.tag, standards.FlagTag, "t", "", tag)
+
 		filesOnly := "Enables single file build into the root of the app's tree"
-		c.fs.BoolVar(&c.filesOnly, "f", false, filesOnly)
-		c.fs.BoolVar(&c.filesOnly, "files-only", false, filesOnly)
+		c.fs.BoolVarP(&c.filesOnly, "files-only", "f", false, filesOnly)
 	}
 	return c.fs
 }

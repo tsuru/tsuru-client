@@ -19,6 +19,7 @@ import (
 	"github.com/spf13/pflag"
 	"github.com/tsuru/go-tsuruclient/pkg/config"
 	"github.com/tsuru/tsuru-client/tsuru/cmd"
+	"github.com/tsuru/tsuru-client/tsuru/cmd/standards"
 	"github.com/tsuru/tsuru-client/tsuru/formatter"
 	tsuruHTTP "github.com/tsuru/tsuru-client/tsuru/http"
 	apiTypes "github.com/tsuru/tsuru/types/api"
@@ -51,12 +52,9 @@ func (c *EnvGet) Flags() *pflag.FlagSet {
 	if c.fs == nil {
 		c.fs = pflag.NewFlagSet("", pflag.ExitOnError)
 
-		c.fs.StringVar(&c.appName, "app", "", "The name of the app.")
-		c.fs.StringVar(&c.appName, "a", "", "The name of the app.")
-		c.fs.StringVar(&c.jobName, "job", "", "The name of the job.")
-		c.fs.StringVar(&c.jobName, "j", "", "The name of the job.")
-		c.fs.BoolVar(&c.json, "json", false, "Display JSON format")
-
+		c.fs.StringVarP(&c.appName, standards.FlagApp, standards.ShortFlagApp, "", "The name of the app.")
+		c.fs.StringVarP(&c.jobName, standards.FlagJob, standards.ShortFlagJob, "", "The name of the job.")
+		c.fs.BoolVar(&c.json, standards.FlagJSON, false, "Display JSON format")
 	}
 	return c.fs
 }
@@ -248,13 +246,11 @@ func (c *EnvSet) Flags() *pflag.FlagSet {
 	if c.fs == nil {
 		c.fs = pflag.NewFlagSet("", pflag.ExitOnError)
 
-		c.fs.StringVar(&c.appName, "app", "", "The name of the app.")
-		c.fs.StringVar(&c.appName, "a", "", "The name of the app.")
-		c.fs.StringVar(&c.jobName, "job", "", "The name of the job.")
-		c.fs.StringVar(&c.jobName, "j", "", "The name of the job.")
-		c.fs.BoolVar(&c.private, "private", false, "Private environment variables")
-		c.fs.BoolVar(&c.private, "p", false, "Private environment variables")
-		c.fs.BoolVar(&c.noRestart, "no-restart", false, "Sets environment varibles without restart the application")
+		c.fs.StringVarP(&c.appName, standards.FlagApp, standards.ShortFlagApp, "", "The name of the app.")
+		c.fs.StringVarP(&c.jobName, standards.FlagJob, standards.ShortFlagJob, "", "The name of the job.")
+
+		c.fs.BoolVarP(&c.private, "private", "p", false, "Private environment variables")
+		c.fs.BoolVar(&c.noRestart, standards.FlagNoRestart, false, "Sets environment varibles without restart the application")
 	}
 	return c.fs
 }
@@ -270,11 +266,9 @@ func (c *EnvUnset) Flags() *pflag.FlagSet {
 	if c.fs == nil {
 		c.fs = pflag.NewFlagSet("", pflag.ExitOnError)
 
-		c.fs.StringVar(&c.appName, "app", "", "The name of the app.")
-		c.fs.StringVar(&c.appName, "a", "", "The name of the app.")
-		c.fs.StringVar(&c.jobName, "job", "", "The name of the job.")
-		c.fs.StringVar(&c.jobName, "j", "", "The name of the job.")
-		c.fs.BoolVar(&c.noRestart, "no-restart", false, "Unset environment variables without restart the application")
+		c.fs.StringVarP(&c.appName, standards.FlagApp, standards.ShortFlagApp, "", "The name of the app.")
+		c.fs.StringVarP(&c.jobName, standards.FlagJob, standards.ShortFlagJob, "", "The name of the job.")
+		c.fs.BoolVar(&c.noRestart, standards.FlagNoRestart, false, "Unset environment variables without restart the application")
 	}
 	return c.fs
 }

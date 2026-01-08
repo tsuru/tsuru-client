@@ -21,6 +21,7 @@ import (
 	"github.com/tsuru/go-tsuruclient/pkg/config"
 	"github.com/tsuru/tablecli"
 	"github.com/tsuru/tsuru-client/tsuru/cmd"
+	"github.com/tsuru/tsuru-client/tsuru/cmd/standards"
 	"github.com/tsuru/tsuru-client/tsuru/formatter"
 	tsuruHTTP "github.com/tsuru/tsuru-client/tsuru/http"
 	"github.com/tsuru/tsuru/event"
@@ -62,30 +63,26 @@ func (f *eventFilter) queryString() (url.Values, error) {
 
 func (f *eventFilter) flags(fs *pflag.FlagSet) {
 	name := "Filter events by kind name"
-	fs.Var(&f.kindNames, "kind", name)
-	fs.Var(&f.kindNames, "k", name)
+	fs.VarP(&f.kindNames, "kind", "k", name)
+
 	name = "Filter events by target type"
 	ptr := (*string)(&f.filter.Target.Type)
-	fs.StringVar(ptr, "target", "", name)
-	fs.StringVar(ptr, "t", "", name)
+	fs.StringVarP(ptr, "event-target", "t", "", name)
 	name = "Filter events by target value"
 	fs.StringVar(&f.filter.Target.Value, "target-value", "", name)
-	fs.StringVar(&f.filter.Target.Value, "v", "", name)
 	name = "Filter events by owner name"
-	fs.StringVar(&f.filter.OwnerName, "owner", "", name)
-	fs.StringVar(&f.filter.OwnerName, "o", "", name)
+	fs.StringVarP(&f.filter.OwnerName, "owner", "o", "", name)
 	name = "Shows only currently running events"
-	fs.BoolVar(&f.running, "running", false, name)
-	fs.BoolVar(&f.running, "r", false, name)
+	fs.BoolVarP(&f.running, "running", "r", false, name)
 }
 
 func (c *EventList) Info() *cmd.Info {
 	return &cmd.Info{
 		Name:  "event-list",
-		Usage: "event list [--kind/-k kind name]... [--owner/-o owner] [--running/-r] [--include-removed/-i] [--target/-t target type] [--target-value/-v target value]",
+		Usage: "event list [--kind/-k kind name]... [--owner/-o owner] [--running/-r] [--include-removed/-i] [--event-target/-t target type] [--target-value/-v target value]",
 		Desc: `Lists events that you have permission to see.
 
-		Flags can be used to filter the list of events.`,
+Flags can be used to filter the list of events.`,
 	}
 }
 
@@ -93,7 +90,7 @@ func (c *EventList) Flags() *pflag.FlagSet {
 	if c.fs == nil {
 		c.fs = pflag.NewFlagSet("", pflag.ExitOnError)
 		c.filter.flags(c.fs)
-		c.fs.BoolVar(&c.json, "json", false, "Show JSON")
+		c.fs.BoolVar(&c.json, standards.FlagJSON, false, "Show JSON")
 	}
 	return c.fs
 }
@@ -200,7 +197,7 @@ type EventInfo struct {
 func (c *EventInfo) Flags() *pflag.FlagSet {
 	if c.fs == nil {
 		c.fs = pflag.NewFlagSet("event-info", pflag.ContinueOnError)
-		c.fs.BoolVar(&c.json, "json", false, "Show JSON")
+		c.fs.BoolVar(&c.json, standards.FlagJSON, false, "Show JSON")
 	}
 	return c.fs
 }

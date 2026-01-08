@@ -163,7 +163,7 @@ func (c *AppCreate) Flags() *pflag.FlagSet {
 		c.fs.StringVarP(&c.description, standards.FlagDescription, standards.ShortFlagDescription, "", descriptionMessage)
 
 		tagMessage := "App tag"
-		c.fs.VarP(&c.tags, standards.FlagTag, "g", tagMessage)
+		c.fs.VarP(&c.tags, standards.FlagTag, standards.ShortFlagTag, tagMessage)
 
 		c.fs.Var(&c.routerOpts, "router-opts", "Router options")
 	}
@@ -255,7 +255,7 @@ func (c *AppUpdate) Flags() *pflag.FlagSet {
 		flagSet.MarkHidden("team-owner")
 
 		tagMessage := "Add tags for the app. You can add multiple tags repeating the --tag argument"
-		flagSet.VarP((*cmd.StringSliceFlag)(&c.args.Tags), standards.FlagTag, "g", tagMessage)
+		flagSet.VarP((*cmd.StringSliceFlag)(&c.args.Tags), standards.FlagTag, standards.ShortFlagTag, tagMessage)
 
 		platformMsg := "Changes platform for the app"
 		flagSet.StringVarP(&c.args.Platform, standards.FlagPlatform, "l", "", platformMsg)
@@ -1444,7 +1444,7 @@ func (c *AppList) Flags() *pflag.FlagSet {
 		c.fs.BoolVarP(&c.simplified, standards.FlagOnlyName, standards.ShortFlagOnlyName, false, "Display only applications name")
 		c.fs.BoolVar(&c.json, standards.FlagJSON, false, "Display applications in JSON format")
 		tagMessage := "Filter applications by tag. Can be used multiple times"
-		c.fs.VarP(&c.filter.tags, standards.FlagTag, "g", tagMessage)
+		c.fs.VarP(&c.filter.tags, standards.FlagTag, standards.ShortFlagTag, tagMessage)
 	}
 	return c.fs
 }

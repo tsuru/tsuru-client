@@ -12,21 +12,10 @@ import (
 	"github.com/tsuru/go-tsuruclient/pkg/config"
 )
 
-type TsuruContext struct {
-	// Viper is an instance of the viper.Viper configuration
-	Viper *viper.Viper
-}
-
-var tsuruCtx = &TsuruContext{
-	Viper: preSetupViper(nil),
-}
-
-func (tc *TsuruContext) SetOutputFormat(value string) {
-	tc.Viper.Set("format", value)
-}
+var defaultViper = preSetupViper(nil)
 
 func Enabled() bool {
-	return tsuruCtx.Viper.GetString("version") == "v2"
+	return defaultViper.GetString("version") == "v2"
 }
 
 func NewRootCmd() *cobra.Command {
@@ -58,17 +47,10 @@ func setupPFlagsAndCommands(rootCmd *cobra.Command) {
 	// Persistent Flags.
 	// !!! Double bind them inside PersistentPreRun() !!!
 	rootCmd.PersistentFlags().String("target", "", "Tsuru server endpoint")
-	tsuruCtx.Viper.BindPFlag("target", rootCmd.PersistentFlags().Lookup("target"))
+	defaultViper.BindPFlag("target", rootCmd.PersistentFlags().Lookup("target"))
 
 	rootCmd.PersistentFlags().IntP("verbosity", "v", 0, "Verbosity level: 1 => print HTTP requests; 2 => print HTTP requests/responses")
-	tsuruCtx.Viper.BindPFlag("verbosity", rootCmd.PersistentFlags().Lookup("verbosity"))
-
-	rootCmd.PersistentFlags().Bool("json", false, "Output format as json")
-	rootCmd.PersistentFlags().MarkHidden("json")
-
-	tsuruCtx.Viper.BindPFlag("json", rootCmd.PersistentFlags().Lookup("json"))
-
-	tsuruCtx.Viper.BindPFlag("format", rootCmd.PersistentFlags().Lookup("format"))
+	defaultViper.BindPFlag("verbosity", rootCmd.PersistentFlags().Lookup("verbosity"))
 }
 
 func rootPersistentPreRun(cmd *cobra.Command, args []string) {
@@ -80,13 +62,6 @@ func rootPersistentPreRun(cmd *cobra.Command, args []string) {
 	if v, err := cmd.Flags().GetInt("verbosity"); v > 0 && err == nil {
 		os.Setenv("TSURU_VERBOSITY", strconv.Itoa(v))
 	}
-
-	if v, err := cmd.Flags().GetBool("json"); err == nil && v {
-		tsuruCtx.SetOutputFormat("json")
-	} else {
-		tsuruCtx.SetOutputFormat("string")
-	}
-
 }
 
 func runRootCmd(cmd *cobra.Command, args []string) error {

@@ -93,7 +93,7 @@ func (c *ServiceList) Flags() *pflag.FlagSet {
 		c.fs.BoolVarP(&c.justServiceNames, "just-services", "j", false, "Display just service names")
 
 		tagMessage := "Filter services by tag. Can be used multiple times"
-		c.fs.VarP(&c.filter.tags, standards.FlagTag, "g", tagMessage)
+		c.fs.VarP(&c.filter.tags, standards.FlagTag, standards.ShortFlagTag, tagMessage)
 	}
 	return c.fs
 }
@@ -322,7 +322,7 @@ func (c *ServiceInstanceAdd) Flags() *pflag.FlagSet {
 		c.fs.StringVarP(&c.description, standards.FlagDescription, standards.ShortFlagDescription, "", descriptionMessage)
 
 		tagMessage := "service instance tag"
-		c.fs.VarP(&c.tags, standards.FlagTag, "g", tagMessage)
+		c.fs.VarP(&c.tags, standards.FlagTag, standards.ShortFlagTag, tagMessage)
 
 		c.fs.Var(&c.params, "plan-param", "Plan specific parameters")
 		c.fs.StringVar(&c.pool, "pool", "", "pool name where this service instance is going to run into (valid only for multi-cluster service)")
@@ -433,7 +433,7 @@ func (c *ServiceInstanceUpdate) Flags() *pflag.FlagSet {
 		c.fs.StringVarP(&c.plan, standards.FlagPlan, standards.ShortFlagPlan, "", planMessage)
 
 		tagMessage := "service instance tag"
-		c.fs.VarP(&c.tags, standards.FlagTag, "g", tagMessage)
+		c.fs.VarP(&c.tags, standards.FlagTag, standards.ShortFlagTag, tagMessage)
 
 		c.fs.Var(&c.removeTags, "remove-tag", "tag to be removed from instance tags")
 

@@ -24,6 +24,7 @@ import (
 	"github.com/tsuru/tablecli"
 	tsuruClientApp "github.com/tsuru/tsuru-client/tsuru/app"
 	"github.com/tsuru/tsuru-client/tsuru/cmd"
+	"github.com/tsuru/tsuru-client/tsuru/cmd/standards"
 	"github.com/tsuru/tsuru-client/tsuru/formatter"
 	tsuruHTTP "github.com/tsuru/tsuru-client/tsuru/http"
 	tsuruapp "github.com/tsuru/tsuru/app"
@@ -63,7 +64,7 @@ func (c *AppDeployList) Info() *cmd.Info {
 func (c *AppDeployList) Flags() *pflag.FlagSet {
 	fs := c.AppNameMixIn.Flags()
 	if !c.flagsApplied {
-		fs.BoolVar(&c.json, "json", false, "Show JSON")
+		fs.BoolVar(&c.json, standards.FlagJSON, false, "Show JSON")
 
 		c.flagsApplied = true
 	}
@@ -152,15 +153,14 @@ type AppDeploy struct {
 func (c *AppDeploy) Flags() *pflag.FlagSet {
 	if c.fs == nil {
 		c.fs = c.AppNameMixIn.Flags()
+		c.fs.SortFlags = false
 		image := "The image to deploy in app"
-		c.fs.StringVar(&c.image, "image", "", image)
-		c.fs.StringVar(&c.image, "i", "", image)
+		c.fs.StringVarP(&c.image, "image", "i", "", image)
+
 		message := "A message describing this deploy"
-		c.fs.StringVar(&c.message, "message", "", message)
-		c.fs.StringVar(&c.message, "m", "", message)
+		c.fs.StringVarP(&c.message, "message", "m", "", message)
 		filesOnly := "Enables single file deployment into the root of the app's tree"
-		c.fs.BoolVar(&c.filesOnly, "f", false, filesOnly)
-		c.fs.BoolVar(&c.filesOnly, "files-only", false, filesOnly)
+		c.fs.BoolVarP(&c.filesOnly, "files-only", "f", false, filesOnly)
 		c.flags(c.fs)
 		c.fs.StringVar(&c.dockerfile, "dockerfile", "", "Container file")
 	}
@@ -519,14 +519,11 @@ func (c *AppDeployRollbackUpdate) Flags() *pflag.FlagSet {
 	if c.fs == nil {
 		c.fs = c.AppNameMixIn.Flags()
 		image := "The image name for an app version"
-		c.fs.StringVar(&c.image, "image", "", image)
-		c.fs.StringVar(&c.image, "i", "", image)
+		c.fs.StringVarP(&c.image, "image", "i", "", image)
 		reason := "The reason why the rollback has to be disabled"
-		c.fs.StringVar(&c.reason, "reason", "", reason)
-		c.fs.StringVar(&c.reason, "r", "", reason)
+		c.fs.StringVarP(&c.reason, "reason", "r", "", reason)
 		disable := "Enables or disables the rollback on a specific image version"
-		c.fs.BoolVar(&c.disable, "disable", false, disable)
-		c.fs.BoolVar(&c.disable, "d", false, disable)
+		c.fs.BoolVarP(&c.disable, "disable", "d", false, disable)
 	}
 	return c.fs
 }
@@ -590,14 +587,13 @@ type JobDeploy struct {
 func (c *JobDeploy) Flags() *pflag.FlagSet {
 	if c.fs == nil {
 		c.fs = pflag.NewFlagSet("", pflag.ExitOnError)
-		c.fs.StringVar(&c.jobName, "job", "", "The name of the job.")
-		c.fs.StringVar(&c.jobName, "j", "", "The name of the job.")
+		c.fs.StringVarP(&c.jobName, standards.FlagJob, standards.ShortFlagJob, "", "The name of the job.")
+
 		image := "The image to deploy in job"
-		c.fs.StringVar(&c.image, "image", "", image)
-		c.fs.StringVar(&c.image, "i", "", image)
+		c.fs.StringVarP(&c.image, "image", "i", "", image)
+
 		message := "A message describing this deploy"
-		c.fs.StringVar(&c.message, "message", "", message)
-		c.fs.StringVar(&c.message, "m", "", message)
+		c.fs.StringVarP(&c.message, "message", "m", "", message)
 		c.fs.StringVar(&c.dockerfile, "dockerfile", "", "Container file")
 	}
 	return c.fs

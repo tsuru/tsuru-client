@@ -83,16 +83,16 @@ type StringSliceFlag []string
 var _ pflag.Value = &StringSliceFlag{}
 
 func (f *StringSliceFlag) Type() string {
-	return "stringslice"
+	return "string"
 }
 
 func (f *StringSliceFlag) String() string {
+
 	repr := *f
 	if repr == nil {
 		repr = StringSliceFlag{}
 	}
-	data, _ := json.Marshal(repr)
-	return string(data)
+	return strings.Join(repr, ",")
 }
 
 func (f *StringSliceFlag) Set(val string) error {

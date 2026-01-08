@@ -53,7 +53,7 @@ func (i *int32PointerValue) String() string {
 	return fmt.Sprintf("%v", *i.value)
 }
 
-func (i *int32PointerValue) Type() string { return "int32pointer" }
+func (i *int32PointerValue) Type() string { return "int" }
 
 type AutoScaleSet struct {
 	tsuruClientApp.AppNameMixIn
@@ -67,7 +67,8 @@ func (c *AutoScaleSet) Info() *cmd.Info {
 	return &cmd.Info{
 		Name:  "unit-autoscale-set",
 		Usage: "unit autoscale set [-a/--app appname] [-p/--process processname] [--cpu targetCPU] [--min minUnits] [--max maxUnits] [--schedule scheduleWindow] [--prometheus prometheusSettings]",
-		Desc: `
+		Desc: `Sets an auto scale configuration.
+
 # Sets an autoscale configuration:
 # Based on 50% of CPU utilization with min units 1 and max units 3
 unit autoscale set -a my-app --cpu 50% --min 1 --max 3
@@ -92,28 +93,26 @@ unit autoscale set -a my-app --cpu 50% --min 1 --max 3 --schedule '{"minReplicas
 func (c *AutoScaleSet) Flags() *pflag.FlagSet {
 	if c.fs == nil {
 		c.fs = c.AppNameMixIn.Flags()
+		c.fs.SortFlags = false
 
-		c.fs.StringVar(&c.autoscale.Process, "process", "", "Process name")
-		c.fs.StringVar(&c.autoscale.Process, "p", "", "Process name")
-
+		c.fs.StringVarP(&c.autoscale.Process, "process", "p", "", "Process name")
 		c.fs.StringVar(&c.autoscale.AverageCPU, "cpu", "", "Target CPU value in percent of app cpu plan. Example: 50%")
 
 		c.autoscale.MinUnits = 1
 		c.fs.Var((*int32Value)(&c.autoscale.MinUnits), "min", "Minimum Units")
-
 		c.fs.Var((*int32Value)(&c.autoscale.MaxUnits), "max", "Maximum Units")
 
 		c.fs.Var(&c.schedules, "schedule", "Schedule window to up/down scale. Example: {\"minReplicas\": 2, \"start\": \"0 6 * * *\", \"end\": \"0 18 * * *\"}")
 		c.fs.Var(&c.prometheus, "prometheus", "Prometheus settings to up/down scale. Example: {\"name\": \"my_metric_identification\", \"threshold\": 10, \"query\":\"sum(my_metric{tsuru_app=\\\"my_app\\\"})\"}")
 
 		c.fs.Var(&int32PointerValue{&c.autoscale.Behavior.ScaleDown.PercentagePolicyValue}, "scale-down-percentage", "Percentage of units to downscale when the metric is below the threshold")
-		c.fs.Var(&int32PointerValue{&c.autoscale.Behavior.ScaleDown.PercentagePolicyValue}, "sdp", "Percentage of units to downscale when the metric is below the threshold")
-
 		c.fs.Var(&int32PointerValue{&c.autoscale.Behavior.ScaleDown.StabilizationWindow}, "scale-down-stabilization-window", "Stabilization window in seconds to avoid scale down")
-		c.fs.Var(&int32PointerValue{&c.autoscale.Behavior.ScaleDown.StabilizationWindow}, "sdsw", "Stabilization window in seconds to avoid scale down")
-
 		c.fs.Var(&int32PointerValue{&c.autoscale.Behavior.ScaleDown.UnitsPolicyValue}, "scale-down-units", "Number of units to downscale when the metric is below the threshold")
-		c.fs.Var(&int32PointerValue{&c.autoscale.Behavior.ScaleDown.UnitsPolicyValue}, "sdu", "Number of units to downscale when the metric is below the threshold")
+
+		// Shorthands
+		c.fs.Var(&int32PointerValue{&c.autoscale.Behavior.ScaleDown.PercentagePolicyValue}, "sdp", "Shorthand: Percentage of units to downscale when the metric is below the threshold")
+		c.fs.Var(&int32PointerValue{&c.autoscale.Behavior.ScaleDown.StabilizationWindow}, "sdsw", "Shorthand: Stabilization window in seconds to avoid scale down")
+		c.fs.Var(&int32PointerValue{&c.autoscale.Behavior.ScaleDown.UnitsPolicyValue}, "sdu", "Shorthand: Number of units to downscale when the metric is below the threshold")
 	}
 	return c.fs
 }
@@ -172,8 +171,7 @@ func (c *AutoScaleUnset) Info() *cmd.Info {
 func (c *AutoScaleUnset) Flags() *pflag.FlagSet {
 	if c.fs == nil {
 		c.fs = c.AppNameMixIn.Flags()
-		c.fs.StringVar(&c.process, "process", "", "Process name")
-		c.fs.StringVar(&c.process, "p", "", "Process name")
+		c.fs.StringVarP(&c.process, "process", "p", "", "Process name")
 	}
 	return c.fs
 }
