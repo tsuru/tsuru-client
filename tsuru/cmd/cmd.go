@@ -221,13 +221,11 @@ func (m *Manager) Run(args []string) {
 	}
 	flagset := pflag.NewFlagSet("tsuru flags", pflag.ContinueOnError)
 	flagset.SetOutput(m.stderr)
-	flagset.IntVar(&verbosity, "verbosity", 0, "Verbosity level: 1 => print HTTP requests; 2 => print HTTP requests/responses")
-	flagset.IntVar(&verbosity, "v", 0, "Verbosity level: 1 => print HTTP requests; 2 => print HTTP requests/responses")
-	flagset.BoolVar(&displayHelp, "help", false, "Display help and exit")
-	flagset.BoolVar(&displayHelp, "h", false, "Display help and exit")
+	flagset.SetInterspersed(false)
+	flagset.IntVarP(&verbosity, "verbosity", "v", 0, "Verbosity level: 1 => print HTTP requests; 2 => print HTTP requests/responses")
+	flagset.BoolVarP(&displayHelp, "help", "h", false, "Display help and exit")
 	flagset.BoolVar(&displayVersion, "version", false, "Print version and exit")
-	flagset.StringVar(&target, "t", "", "Define target for running command")
-	flagset.StringVar(&target, "target", "", "Define target for running command")
+	flagset.StringVarP(&target, "target", "t", "", "Define target for running command")
 	parseErr := flagset.Parse(args)
 	if parseErr != nil {
 		fmt.Fprint(m.stderr, parseErr)
@@ -415,16 +413,16 @@ func (m *Manager) handleFlags(command Command, name string, args []string) (Comm
 	}
 	var helpRequested bool
 	flagset.SetOutput(m.stderr)
+
 	if flagset.Lookup("help") == nil {
-		flagset.BoolVar(&helpRequested, "help", false, "Display help and exit")
+		flagset.BoolVarP(&helpRequested, "help", "h", false, "Display help and exit")
 	}
-	if flagset.Lookup("h") == nil {
-		flagset.BoolVar(&helpRequested, "h", false, "Display help and exit")
-	}
+
 	err := flagset.Parse(args)
 	if err != nil {
 		return nil, nil, err
 	}
+
 	if helpRequested {
 		command = m.Commands["help"]
 		args = []string{name}
@@ -591,6 +589,7 @@ type DeprecatedCommand struct {
 
 func (c *DeprecatedCommand) Info() *Info {
 	info := c.Command.Info()
+	info.Usage = strings.Replace(info.Usage, c.oldName, info.Name, 1)
 	info.Name = c.oldName
 	info.V2.Hidden = true
 	return info

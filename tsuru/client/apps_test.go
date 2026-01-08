@@ -24,10 +24,11 @@ import (
 )
 
 var appflag = &pflag.Flag{
-	Name:     "app",
-	Usage:    "The name of the app.",
-	Value:    nil,
-	DefValue: "",
+	Name:      "app",
+	Usage:     "The name of the app.",
+	Value:     nil,
+	DefValue:  "",
+	Shorthand: "a",
 }
 
 func (s *S) TestAppCreateInfo(c *check.C) {
@@ -383,12 +384,8 @@ func (s *S) TestAppCreateFlags(c *check.C) {
 	c.Check(plan.Usage, check.Equals, usage)
 	c.Check(plan.Value.String(), check.Equals, "myplan")
 	c.Check(plan.DefValue, check.Equals, "")
-	splan := flagset.Lookup("p")
-	c.Check(splan, check.NotNil)
-	c.Check(splan.Name, check.Equals, "p")
-	c.Check(splan.Usage, check.Equals, usage)
-	c.Check(splan.Value.String(), check.Equals, "myplan")
-	c.Check(splan.DefValue, check.Equals, "")
+	c.Check(plan.Shorthand, check.Equals, "p")
+
 	flagset.Parse([]string{"-t", "team"})
 	usage = "Team owner app"
 	teamOwner := flagset.Lookup("team")
@@ -397,12 +394,8 @@ func (s *S) TestAppCreateFlags(c *check.C) {
 	c.Check(teamOwner.Usage, check.Equals, usage)
 	c.Check(teamOwner.Value.String(), check.Equals, "team")
 	c.Check(teamOwner.DefValue, check.Equals, "")
-	teamOwner = flagset.Lookup("t")
-	c.Check(teamOwner, check.NotNil)
-	c.Check(teamOwner.Name, check.Equals, "t")
-	c.Check(teamOwner.Usage, check.Equals, usage)
-	c.Check(teamOwner.Value.String(), check.Equals, "team")
-	c.Check(teamOwner.DefValue, check.Equals, "")
+	c.Check(teamOwner.Shorthand, check.Equals, "t")
+
 	flagset.Parse([]string{"-r", "router"})
 	usage = "The router used by the app"
 	router := flagset.Lookup("router")
@@ -411,26 +404,18 @@ func (s *S) TestAppCreateFlags(c *check.C) {
 	c.Check(router.Usage, check.Equals, usage)
 	c.Check(router.Value.String(), check.Equals, "router")
 	c.Check(router.DefValue, check.Equals, "")
-	router = flagset.Lookup("r")
-	c.Check(router, check.NotNil)
-	c.Check(router.Name, check.Equals, "r")
-	c.Check(router.Usage, check.Equals, usage)
-	c.Check(router.Value.String(), check.Equals, "router")
-	c.Check(router.DefValue, check.Equals, "")
+	c.Check(router.Shorthand, check.Equals, "r")
+
 	flagset.Parse([]string{"--tag", "tag1", "--tag", "tag2"})
 	usage = "App tag"
 	tag := flagset.Lookup("tag")
 	c.Check(tag, check.NotNil)
 	c.Check(tag.Name, check.Equals, "tag")
 	c.Check(tag.Usage, check.Equals, usage)
-	c.Check(tag.Value.String(), check.Equals, "[\"tag1\",\"tag2\"]")
-	c.Check(tag.DefValue, check.Equals, "[]")
-	tag = flagset.Lookup(standards.ShortFlagTag)
-	c.Check(tag, check.NotNil)
-	c.Check(tag.Name, check.Equals, standards.ShortFlagTag)
-	c.Check(tag.Usage, check.Equals, usage)
-	c.Check(tag.Value.String(), check.Equals, "[\"tag1\",\"tag2\"]")
-	c.Check(tag.DefValue, check.Equals, "[]")
+	c.Check(tag.Value.String(), check.Equals, "tag1,tag2")
+	c.Check(tag.DefValue, check.Equals, "")
+	c.Check(tag.Shorthand, check.Equals, "g")
+
 	flagset.Parse([]string{"--router-opts", "opt1=val1", "--router-opts", "opt2=val2"})
 	routerOpts := flagset.Lookup("router-opts")
 	c.Check(routerOpts, check.NotNil)

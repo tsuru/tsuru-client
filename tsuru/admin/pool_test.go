@@ -714,7 +714,7 @@ func (s *S) TestPoolConstraintSet(c *check.C) {
 	}
 	s.setupFakeTransport(trans)
 	cmd := PoolConstraintSet{}
-	cmd.Flags().Parse([]string{"--blacklist", "--append"})
+	cmd.Flags().Parse([]string{"--denylist", "--append"})
 	err := cmd.Run(&context)
 	c.Assert(err, check.IsNil)
 }

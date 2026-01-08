@@ -447,24 +447,23 @@ func (c *PoolConstraintList) Run(ctx *cmd.Context) error {
 }
 
 type PoolConstraintSet struct {
-	append    bool
-	blacklist bool
-	fs        *pflag.FlagSet
+	append   bool
+	denylist bool
+	fs       *pflag.FlagSet
 }
 
 func (c *PoolConstraintSet) Flags() *pflag.FlagSet {
 	if c.fs == nil {
 		c.fs = pflag.NewFlagSet("", pflag.ExitOnError)
 		c.fs.BoolVarP(&c.append, "append", "a", false, "Append to existing constraint.")
-
-		c.fs.BoolVar(&c.blacklist, "denylist", false, "Denylist constraint.")
+		c.fs.BoolVar(&c.denylist, "denylist", false, "Denylist constraint.")
 	}
 	return c.fs
 }
 func (c *PoolConstraintSet) Info() *cmd.Info {
 	return &cmd.Info{
 		Name:  "pool-constraint-set",
-		Usage: "pool-constraint-set <poolExpression> <field> [<values>]... [-b/--blacklist] [-a/--append]",
+		Usage: "pool-constraint-set <poolExpression> <field> [<values>]... [-b/--denylist] [-a/--append]",
 		Desc: `Set a constraint on a pool expression.
 
 Examples:
@@ -472,19 +471,19 @@ Examples:
   tsuru pool-constraint-set dev_pool team "*" 
 	# Allows every team to use the pool "dev_pool".
 
-  tsuru pool-constraint-set "dev_*" router prod_router --blacklist
+  tsuru pool-constraint-set "dev_*" router prod_router --denylist
 	# Disallows "prod_router" to be used on pools with "dev_" prefix.
 
   tsuru pool-constraint-set dev_pool cert-issuer letsencrypt digicert 
 	# Constraint every app in the the pool "dev_pool" to use certificate issuer from letsencrypt or digicert.
 
-  tsuru pool-constraint-set "dev_*" router prod_router --blacklist
+  tsuru pool-constraint-set "dev_*" router prod_router --denylist
 	# Disallows "prod_router" to be used on pools with "dev_" prefix.
 
   tsuru pool-constraint-set prod_pool service service1 service2 --append
 	# Adds "service1" and "service2" to the list of services allowed to use pool "prod_pool".
 	  
-  tsuru pool-constraint-set prod_pool service service1 service2 --blacklist --append
+  tsuru pool-constraint-set prod_pool service service1 service2 --denylist --append
   	# Adds "service1" and "service2" to the list of services disallowed to use pool "prod_pool".`,
 
 		MinArgs: 2,
@@ -508,7 +507,7 @@ func (c *PoolConstraintSet) Run(ctx *cmd.Context) error {
 	constraint := pool.PoolConstraint{
 		PoolExpr:  ctx.Args[0],
 		Field:     constraintType,
-		Blacklist: c.blacklist,
+		Blacklist: c.denylist,
 		Values:    allValues,
 	}
 

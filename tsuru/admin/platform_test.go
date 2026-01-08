@@ -247,21 +247,13 @@ func (s *S) TestPlatformAddFlagSet(c *check.C) {
 	c.Check(dockerfile.Name, check.Equals, "dockerfile")
 	c.Check(dockerfile.Usage, check.Equals, message)
 	c.Check(dockerfile.DefValue, check.Equals, "")
-
-	sdockerfile := flagset.Lookup("d")
-	c.Check(sdockerfile.Name, check.Equals, "d")
-	c.Check(sdockerfile.Usage, check.Equals, message)
-	c.Check(sdockerfile.DefValue, check.Equals, "")
+	c.Check(dockerfile.Shorthand, check.Equals, "d")
 
 	image := flagset.Lookup("image")
 	c.Check(image.Name, check.Equals, "image")
 	c.Check(image.Usage, check.Equals, "Name of the prebuilt Docker image")
 	c.Check(image.DefValue, check.Equals, "")
-
-	simage := flagset.Lookup("i")
-	c.Check(simage.Name, check.Equals, "i")
-	c.Check(simage.Usage, check.Equals, "Name of the prebuilt Docker image")
-	c.Check(simage.DefValue, check.Equals, "")
+	c.Check(image.Shorthand, check.Equals, "i")
 }
 
 func (s *S) TestPlatformUpdateInfo(c *check.C) {
@@ -278,21 +270,13 @@ func (s *S) TestPlatformUpdateFlagSet(c *check.C) {
 	c.Check(dockerfile.Name, check.Equals, "dockerfile")
 	c.Check(dockerfile.Usage, check.Equals, dockerfileMessage)
 	c.Check(dockerfile.DefValue, check.Equals, "")
-
-	sdockerfile := flagset.Lookup("d")
-	c.Check(sdockerfile.Name, check.Equals, "d")
-	c.Check(sdockerfile.Usage, check.Equals, dockerfileMessage)
-	c.Check(sdockerfile.DefValue, check.Equals, "")
+	c.Check(dockerfile.Shorthand, check.Equals, "d")
 
 	image := flagset.Lookup("image")
 	c.Check(image.Name, check.Equals, "image")
 	c.Check(image.Usage, check.Equals, "Name of the prebuilt Docker image")
 	c.Check(image.DefValue, check.Equals, "")
-
-	simage := flagset.Lookup("i")
-	c.Check(simage.Name, check.Equals, "i")
-	c.Check(simage.Usage, check.Equals, "Name of the prebuilt Docker image")
-	c.Check(simage.DefValue, check.Equals, "")
+	c.Check(image.Shorthand, check.Equals, "i")
 }
 
 func (s *S) TestPlatformUpdateRun(c *check.C) {

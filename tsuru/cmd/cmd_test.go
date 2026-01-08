@@ -207,7 +207,10 @@ func (s *S) TestNormalizedCommandsExec(c *check.C) {
 		for k, v := range cmds {
 			c.Assert(v.executed, check.Equals, k == tt.expected, check.Commentf("test %d, expected %s executed, got %s", i, tt.expected, k))
 			if k == tt.expected {
-				c.Assert(v.args, check.DeepEquals, tt.expectedArgs, check.Commentf("test %d", i))
+				c.Assert(len(v.args), check.Equals, len(tt.expectedArgs), check.Commentf("test %d", i))
+				if len(v.args) > 0 {
+					c.Assert(v.args, check.DeepEquals, tt.expectedArgs, check.Commentf("test %d", i))
+				}
 			}
 			v.executed = false
 			v.args = nil
@@ -304,6 +307,7 @@ func (s *S) TestManagerRunWithFlagsAndArgs(c *check.C) {
 	cmd := &CommandWithFlags{minArgs: 2}
 	globalManager.Register(cmd)
 	globalManager.Run([]string{"with-flags", "something", "--age", "20", "otherthing"})
+	c.Assert(globalManager.e.(*recordingExiter).value(), check.Equals, 0)
 	c.Assert(cmd.args, check.DeepEquals, []string{"something", "otherthing"})
 }
 
@@ -508,8 +512,7 @@ with-flags doesn't do anything, really.
 
 Flags:
   
-  -a, --age  (= 0)
-      your age
+    -a, --age int   your age
   
 `
 	globalManager.Register(&CommandWithFlags{})
@@ -524,9 +527,8 @@ with-flags doesn't do anything, really.
 
 Flags:
   
-  -a, --age  (= 0)
-      velvet darkness
-      they fear
+    -a, --age int   velvet darkness
+                    they fear
   
 `
 	globalManager.Register(&CommandWithFlags{multi: true})

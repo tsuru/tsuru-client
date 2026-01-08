@@ -12,17 +12,11 @@ import (
 )
 
 var appflag = &pflag.Flag{
-	Name:     "app",
-	Usage:    "The name of the app.",
-	Value:    nil,
-	DefValue: "",
-}
-
-var appshortflag = &pflag.Flag{
-	Name:     "a",
-	Usage:    "The name of the app.",
-	Value:    nil,
-	DefValue: "",
+	Name:      "app",
+	Usage:     "The name of the app.",
+	Value:     nil,
+	DefValue:  "",
+	Shorthand: "a",
 }
 
 func Test(t *testing.T) { check.TestingT(t) }
@@ -77,7 +71,7 @@ Use the --app flag to specify it.
 
 func (s *S) TestAppNameMixInFlags(c *check.C) {
 	var flags []pflag.Flag
-	expected := []pflag.Flag{*appshortflag, *appflag}
+	expected := []pflag.Flag{*appflag}
 	command := AppNameMixIn{}
 	flagset := command.Flags()
 	flagset.VisitAll(func(f *pflag.Flag) {

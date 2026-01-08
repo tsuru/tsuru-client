@@ -157,13 +157,21 @@ func stripUsage(fqdn, usage string) string {
 }
 
 func (m *ManagerV2) runCommand(command Command, cobraCommand *cobra.Command, args []string) error {
-
-	return command.Run(&Context{
+	context := m.newContext(Context{
 		Args:   args,
 		Stdout: cobraCommand.OutOrStdout(),
 		Stderr: cobraCommand.OutOrStderr(),
 		Stdin:  cobraCommand.InOrStdin(),
 	})
+
+	return command.Run(context)
+}
+
+func (m *ManagerV2) newContext(c Context) *Context {
+	stdout := newPagerWriter(c.Stdout)
+	stdin := newSyncReader(c.Stdin, c.Stdout)
+	ctx := &Context{Args: c.Args, Stdout: stdout, Stderr: c.Stderr, Stdin: stdin}
+	return ctx
 }
 
 func (m *ManagerV2) registerV2FQDNOnRoot(command Command) {
