@@ -430,6 +430,61 @@ func TestManagerV2_NewManagerV2WithOptions(t *testing.T) {
 			manager.rootCmd.PersistentPreRun(manager.rootCmd, []string{})
 		}
 	})
+
+	t.Run("with_retry_hook", func(t *testing.T) {
+		retryCalled := false
+		opts := &ManagerV2Opts{
+			RetryHook: func(err error) bool {
+				retryCalled = true
+				return true
+			},
+		}
+
+		manager := NewManagerV2(opts)
+
+		assert.NotNil(t, manager)
+		assert.NotNil(t, manager.retryHook)
+
+		// Call the retry hook directly
+		result := manager.retryHook(assert.AnError)
+		assert.True(t, retryCalled)
+		assert.True(t, result)
+	})
+
+	t.Run("with_nil_retry_hook", func(t *testing.T) {
+		manager := NewManagerV2()
+		assert.NotNil(t, manager)
+		assert.Nil(t, manager.retryHook)
+	})
+
+	t.Run("with_both_hooks", func(t *testing.T) {
+		afterFlagParseCalled := false
+		retryCalled := false
+		opts := &ManagerV2Opts{
+			AfterFlagParseHook: func() {
+				afterFlagParseCalled = true
+			},
+			RetryHook: func(err error) bool {
+				retryCalled = true
+				return false
+			},
+		}
+
+		manager := NewManagerV2(opts)
+
+		assert.NotNil(t, manager)
+
+		// Test AfterFlagParseHook
+		if manager.rootCmd.PersistentPreRun != nil {
+			manager.rootCmd.PersistentPreRun(manager.rootCmd, []string{})
+		}
+		assert.True(t, afterFlagParseCalled)
+
+		// Test RetryHook
+		result := manager.retryHook(assert.AnError)
+		assert.True(t, retryCalled)
+		assert.False(t, result)
+	})
 }
 
 func TestManagerV2_runCommand(t *testing.T) {
@@ -714,6 +769,68 @@ func TestManagerV2_fillCommand_SilenceUsage(t *testing.T) {
 		createNode := appNode.Children["create"]
 		assert.NotNil(t, createNode)
 		assert.False(t, createNode.Command.SilenceUsage)
+	})
+}
+
+func TestManagerV2_fillCommand_ParseFirstFlagsOnly(t *testing.T) {
+	t.Run("parse_first_flags_only_processes_flags_before_args", func(t *testing.T) {
+		manager := NewManagerV2()
+		var capturedArgs []string
+
+		cmd := &mockCommand{
+			info: &Info{
+				Name:    "plugin-exec",
+				Desc:    "Execute plugin",
+				MinArgs: ArbitraryArgs,
+				V2: InfoV2{
+					ParseFirstFlagsOnly: true,
+					DisableFlagParsing:  true,
+				},
+			},
+			runFn: func(ctx *Context) error {
+				capturedArgs = ctx.Args
+				return nil
+			},
+		}
+
+		manager.Register(cmd)
+
+		pluginNode := manager.tree.Children["plugin"]
+		assert.NotNil(t, pluginNode)
+
+		execNode := pluginNode.Children["exec"]
+		assert.NotNil(t, execNode)
+
+		// Execute the command via the root command with flags before args
+		manager.rootCmd.SetArgs([]string{"plugin", "exec", "--target", "myserver", "arg1", "--other-flag"})
+		err := manager.rootCmd.Execute()
+		assert.NoError(t, err)
+
+		// The args after parsing should only contain non-flag arguments
+		assert.Equal(t, []string{"arg1", "--other-flag"}, capturedArgs)
+	})
+
+	t.Run("parse_first_flags_only_is_false_by_default", func(t *testing.T) {
+		manager := NewManagerV2()
+
+		cmd := &mockCommand{
+			info: &Info{
+				Name: "app-list",
+				Desc: "List apps",
+			},
+		}
+
+		manager.Register(cmd)
+
+		appNode := manager.tree.Children["app"]
+		assert.NotNil(t, appNode)
+
+		listNode := appNode.Children["list"]
+		assert.NotNil(t, listNode)
+
+		// ParseFirstFlagsOnly is not exposed on cobra.Command, but we can verify
+		// the behavior by checking the InfoV2 struct
+		assert.False(t, cmd.info.V2.ParseFirstFlagsOnly)
 	})
 }
 

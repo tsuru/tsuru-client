@@ -100,6 +100,12 @@ func NewManager(name string, stdout, stderr io.Writer, stdin io.Reader, lookup L
 					manager.AfterFlagParseHook()
 				}
 			},
+			RetryHook: func(err error) bool {
+				if manager.RetryHook != nil {
+					return manager.RetryHook(err)
+				}
+				return false
+			},
 		}),
 	}
 

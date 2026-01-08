@@ -139,6 +139,110 @@ func TestParseEnvVariables(t *testing.T) {
 	})
 }
 
+func TestParseFirstFlagsOnly(t *testing.T) {
+	t.Run("nil_command", func(t *testing.T) {
+		args := []string{"--flag", "value"}
+		result := ParseFirstFlagsOnly(nil, args)
+		assert.Equal(t, args, result)
+	})
+
+	t.Run("empty_args", func(t *testing.T) {
+		cmd := &cobra.Command{Use: "test"}
+		result := ParseFirstFlagsOnly(cmd, []string{})
+		assert.Equal(t, []string{}, result)
+	})
+
+	t.Run("no_flags_in_args", func(t *testing.T) {
+		cmd := &cobra.Command{Use: "test"}
+		args := []string{"arg1", "arg2"}
+		result := ParseFirstFlagsOnly(cmd, args)
+		assert.Equal(t, []string{"arg1", "arg2"}, result)
+	})
+
+	t.Run("boolean_flag", func(t *testing.T) {
+		cmd := &cobra.Command{Use: "test"}
+		cmd.Flags().Bool("verbose", false, "verbose output")
+		args := []string{"--verbose", "arg1", "arg2"}
+		result := ParseFirstFlagsOnly(cmd, args)
+		assert.Equal(t, []string{"arg1", "arg2"}, result)
+		verbose, _ := cmd.Flags().GetBool("verbose")
+		assert.True(t, verbose)
+	})
+
+	t.Run("flag_with_value", func(t *testing.T) {
+		cmd := &cobra.Command{Use: "test"}
+		cmd.Flags().String("target", "", "target server")
+		args := []string{"--target", "myserver", "arg1"}
+		result := ParseFirstFlagsOnly(cmd, args)
+		assert.Equal(t, []string{"arg1"}, result)
+		target, _ := cmd.Flags().GetString("target")
+		assert.Equal(t, "myserver", target)
+	})
+
+	t.Run("flag_with_equals_syntax", func(t *testing.T) {
+		cmd := &cobra.Command{Use: "test"}
+		cmd.Flags().String("target", "", "target server")
+		args := []string{"--target=myserver", "arg1"}
+		result := ParseFirstFlagsOnly(cmd, args)
+		assert.Equal(t, []string{"arg1"}, result)
+		target, _ := cmd.Flags().GetString("target")
+		assert.Equal(t, "myserver", target)
+	})
+
+	t.Run("shorthand_flag", func(t *testing.T) {
+		cmd := &cobra.Command{Use: "test"}
+		cmd.Flags().StringP("target", "t", "", "target server")
+		args := []string{"-t", "myserver", "arg1"}
+		result := ParseFirstFlagsOnly(cmd, args)
+		assert.Equal(t, []string{"arg1"}, result)
+		target, _ := cmd.Flags().GetString("target")
+		assert.Equal(t, "myserver", target)
+	})
+
+	t.Run("double_dash_terminator", func(t *testing.T) {
+		cmd := &cobra.Command{Use: "test"}
+		cmd.Flags().String("target", "", "target server")
+		args := []string{"--", "--target", "myserver"}
+		result := ParseFirstFlagsOnly(cmd, args)
+		assert.Equal(t, []string{"--target", "myserver"}, result)
+	})
+
+	t.Run("mixed_flags_and_args", func(t *testing.T) {
+		cmd := &cobra.Command{Use: "test"}
+		cmd.Flags().String("target", "", "target server")
+		cmd.Flags().Bool("verbose", false, "verbose output")
+		args := []string{"--target", "myserver", "--verbose", "arg1", "--other"}
+		result := ParseFirstFlagsOnly(cmd, args)
+		assert.Equal(t, []string{"arg1", "--other"}, result)
+		target, _ := cmd.Flags().GetString("target")
+		assert.Equal(t, "myserver", target)
+		verbose, _ := cmd.Flags().GetBool("verbose")
+		assert.True(t, verbose)
+	})
+
+	t.Run("single_dash_arg", func(t *testing.T) {
+		cmd := &cobra.Command{Use: "test"}
+		args := []string{"-", "arg1"}
+		result := ParseFirstFlagsOnly(cmd, args)
+		assert.Equal(t, []string{"-", "arg1"}, result)
+	})
+
+	t.Run("unknown_flag_with_value", func(t *testing.T) {
+		cmd := &cobra.Command{Use: "test"}
+		args := []string{"--unknown", "value", "arg1"}
+		result := ParseFirstFlagsOnly(cmd, args)
+		assert.Equal(t, []string{"arg1"}, result)
+	})
+
+	t.Run("flag_at_end_without_value", func(t *testing.T) {
+		cmd := &cobra.Command{Use: "test"}
+		cmd.Flags().String("target", "", "target server")
+		args := []string{"--target"}
+		result := ParseFirstFlagsOnly(cmd, args)
+		assert.Equal(t, []string{}, result)
+	})
+}
+
 func TestRunRootCmd(t *testing.T) {
 	//cobra stdout/stderr is inconsistent. SetOut()/SetErr() don't work as expected: https://github.com/spf13/cobra/issues/1708
 

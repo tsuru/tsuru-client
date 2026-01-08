@@ -1,3 +1,7 @@
+// Copyright 2026 tsuru-client authors. All rights reserved.
+// Use of this source code is governed by a BSD-style
+// license that can be found in the LICENSE file.
+
 package v2
 
 import (
@@ -61,7 +65,7 @@ func rootPersistentPreRun(cmd *cobra.Command, args []string) {
 
 func runRootCmd(cmd *cobra.Command, args []string) error {
 	cmd.SilenceUsage = true
-	args = parseFirstFlagsOnly(cmd, args)
+	args = ParseFirstFlagsOnly(cmd, args)
 
 	versionVal, _ := cmd.Flags().GetBool("version")
 	helpVal, _ := cmd.Flags().GetBool("help")
@@ -76,7 +80,7 @@ func runRootCmd(cmd *cobra.Command, args []string) error {
 
 // parseFirstFlagsOnly handles only the first flags with cmd.ParseFlags()
 // before a non-flag element
-func parseFirstFlagsOnly(cmd *cobra.Command, args []string) []string {
+func ParseFirstFlagsOnly(cmd *cobra.Command, args []string) []string {
 	if cmd == nil {
 		return args
 	}

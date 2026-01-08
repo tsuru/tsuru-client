@@ -424,10 +424,11 @@ func (e ExecutePlugin) Info() *cmd.Info {
 		Desc:    "Executes the " + e.PluginName + " plugin.",
 		MinArgs: cmd.ArbitraryArgs,
 		V2: cmd.InfoV2{
-			GroupID:            "plugin",
-			OnlyAppendOnRoot:   true,
-			DisableFlagParsing: true,
-			SilenceUsage:       true,
+			GroupID:             "plugin",
+			OnlyAppendOnRoot:    true,
+			DisableFlagParsing:  true,
+			SilenceUsage:        true,
+			ParseFirstFlagsOnly: true,
 		},
 	}
 }

@@ -14,14 +14,16 @@ import (
 // ManagerV2 is responsible for managing the commands using cobra for tsuru-client.
 // this intends to replace the old Manager struct in the future.
 type ManagerV2 struct {
-	Enabled  bool
-	rootCmd  *cobra.Command
-	tree     *v2.CmdNode
-	contexts []*Context
+	Enabled   bool
+	rootCmd   *cobra.Command
+	tree      *v2.CmdNode
+	contexts  []*Context
+	retryHook func(err error) bool
 }
 
 type ManagerV2Opts struct {
 	AfterFlagParseHook func()
+	RetryHook          func(err error) bool
 }
 
 func NewManagerV2(opts ...*ManagerV2Opts) *ManagerV2 {
@@ -40,7 +42,9 @@ func NewManagerV2(opts ...*ManagerV2Opts) *ManagerV2 {
 			opts[0].AfterFlagParseHook()
 		}
 	}
-
+	if len(opts) == 1 && opts[0].RetryHook != nil {
+		m.retryHook = opts[0].RetryHook
+	}
 	return m
 }
 
@@ -144,6 +148,14 @@ func (m *ManagerV2) fillCommand(cobraCommand *cobra.Command, command Command) {
 	}
 
 	cobraCommand.RunE = func(cobraCommand *cobra.Command, args []string) error {
+		if info.V2.ParseFirstFlagsOnly {
+			args = v2.ParseFirstFlagsOnly(cobraCommand, args)
+
+			target, _ := cobraCommand.Flags().GetString("target")
+			if target != "" {
+				os.Setenv("TSURU_TARGET", target)
+			}
+		}
 		return m.runCommand(command, cobraCommand, args)
 	}
 
@@ -224,10 +236,11 @@ func (m *ManagerV2) registerV2FQDNOnRoot(command Command) {
 }
 
 type InfoV2 struct {
-	Disabled           bool
-	Hidden             bool
-	OnlyAppendOnRoot   bool
-	GroupID            string
-	DisableFlagParsing bool
-	SilenceUsage       bool
+	Disabled            bool
+	Hidden              bool
+	OnlyAppendOnRoot    bool
+	GroupID             string
+	DisableFlagParsing  bool
+	SilenceUsage        bool
+	ParseFirstFlagsOnly bool
 }
