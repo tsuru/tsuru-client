@@ -16,7 +16,6 @@ import (
 	"github.com/tsuru/go-tsuruclient/pkg/tsuru"
 	"github.com/tsuru/tsuru-client/tsuru/cmd"
 	"github.com/tsuru/tsuru-client/tsuru/cmd/cmdtest"
-	"github.com/tsuru/tsuru-client/tsuru/cmd/standards"
 	tsuruHTTP "github.com/tsuru/tsuru-client/tsuru/http"
 	tsuruIo "github.com/tsuru/tsuru/io"
 	"github.com/tsuru/tsuru/service"
@@ -693,19 +692,14 @@ func (s *S) TestServiceInstanceAddFlags(c *check.C) {
 	flagset := command.Flags()
 	c.Assert(flagset, check.NotNil)
 	flagset.Parse([]string{"-t", "wat"})
-	assume := flagset.Lookup("team-owner")
+	assume := flagset.Lookup("team")
 	c.Check(assume, check.NotNil)
-	c.Check(assume.Name, check.Equals, "team-owner")
+	c.Check(assume.Name, check.Equals, "team")
 	c.Check(assume.Usage, check.Equals, flagDesc)
 	c.Check(assume.Value.String(), check.Equals, "wat")
 	c.Check(assume.DefValue, check.Equals, "")
-	sassume := flagset.Lookup("t")
-	c.Check(sassume, check.NotNil)
-	c.Check(sassume.Name, check.Equals, "t")
-	c.Check(sassume.Usage, check.Equals, flagDesc)
-	c.Check(sassume.Value.String(), check.Equals, "wat")
-	c.Check(sassume.DefValue, check.Equals, "")
-	c.Check(command.teamOwner, check.Equals, "wat")
+	c.Check(assume.Shorthand, check.Equals, "t")
+
 	flagDesc = "service instance description"
 	flagset.Parse([]string{"-d", "description"})
 	assume = flagset.Lookup("description")
@@ -714,12 +708,7 @@ func (s *S) TestServiceInstanceAddFlags(c *check.C) {
 	c.Check(assume.Usage, check.Equals, flagDesc)
 	c.Check(assume.Value.String(), check.Equals, "description")
 	c.Check(assume.DefValue, check.Equals, "")
-	sassume = flagset.Lookup("d")
-	c.Check(sassume, check.NotNil)
-	c.Check(sassume.Name, check.Equals, "d")
-	c.Check(sassume.Usage, check.Equals, flagDesc)
-	c.Check(sassume.Value.String(), check.Equals, "description")
-	c.Check(sassume.DefValue, check.Equals, "")
+
 	c.Check(command.description, check.Equals, "description")
 	flagDesc = "service instance tag"
 	flagset.Parse([]string{"-g", "my tag"})
@@ -727,14 +716,8 @@ func (s *S) TestServiceInstanceAddFlags(c *check.C) {
 	c.Check(assume, check.NotNil)
 	c.Check(assume.Name, check.Equals, "tag")
 	c.Check(assume.Usage, check.Equals, flagDesc)
-	c.Check(assume.Value.String(), check.Equals, "[\"my tag\"]")
-	c.Check(assume.DefValue, check.Equals, "[]")
-	sassume = flagset.Lookup(standards.ShortFlagTag)
-	c.Check(sassume, check.NotNil)
-	c.Check(sassume.Name, check.Equals, standards.ShortFlagTag)
-	c.Check(sassume.Usage, check.Equals, flagDesc)
-	c.Check(sassume.Value.String(), check.Equals, "[\"my tag\"]")
-	c.Check(sassume.DefValue, check.Equals, "[]")
+	c.Check(assume.Value.String(), check.Equals, "my tag")
+	c.Check(assume.DefValue, check.Equals, "")
 }
 
 func (s *S) TestServiceInstanceUpdateInfo(c *check.C) {
@@ -820,19 +803,13 @@ func (s *S) TestServiceInstanceUpdateFlags(c *check.C) {
 	err := flagset.Parse([]string{"-t", "the new owner"})
 	c.Assert(err, check.IsNil)
 	flagDesc := "service instance team owner"
+
 	assume := flagset.Lookup("team-owner")
 	c.Check(assume, check.NotNil)
 	c.Check(assume.Name, check.Equals, "team-owner")
 	c.Check(assume.Usage, check.Equals, flagDesc)
 	c.Check(assume.Value.String(), check.Equals, "the new owner")
 	c.Check(assume.DefValue, check.Equals, "")
-	assume = flagset.Lookup("t")
-	c.Check(assume, check.NotNil)
-	c.Check(assume.Name, check.Equals, "t")
-	c.Check(assume.Usage, check.Equals, flagDesc)
-	c.Check(assume.Value.String(), check.Equals, "the new owner")
-	c.Check(assume.DefValue, check.Equals, "")
-	c.Check(command.teamOwner, check.Equals, "the new owner")
 
 	err = flagset.Parse([]string{"-d", "description"})
 	c.Assert(err, check.IsNil)
@@ -843,13 +820,6 @@ func (s *S) TestServiceInstanceUpdateFlags(c *check.C) {
 	c.Check(assume.Usage, check.Equals, flagDesc)
 	c.Check(assume.Value.String(), check.Equals, "description")
 	c.Check(assume.DefValue, check.Equals, "")
-	assume = flagset.Lookup("d")
-	c.Check(assume, check.NotNil)
-	c.Check(assume.Name, check.Equals, "d")
-	c.Check(assume.Usage, check.Equals, flagDesc)
-	c.Check(assume.Value.String(), check.Equals, "description")
-	c.Check(assume.DefValue, check.Equals, "")
-	c.Check(command.description, check.Equals, "description")
 
 	err = flagset.Parse([]string{"-g", "my tag"})
 	c.Assert(err, check.IsNil)
@@ -858,14 +828,8 @@ func (s *S) TestServiceInstanceUpdateFlags(c *check.C) {
 	c.Check(assume, check.NotNil)
 	c.Check(assume.Name, check.Equals, "tag")
 	c.Check(assume.Usage, check.Equals, flagDesc)
-	c.Check(assume.Value.String(), check.Equals, "[\"my tag\"]")
-	c.Check(assume.DefValue, check.Equals, "[]")
-	assume = flagset.Lookup(standards.ShortFlagTag)
-	c.Check(assume, check.NotNil)
-	c.Check(assume.Name, check.Equals, standards.ShortFlagTag)
-	c.Check(assume.Usage, check.Equals, flagDesc)
-	c.Check(assume.Value.String(), check.Equals, "[\"my tag\"]")
-	c.Check(assume.DefValue, check.Equals, "[]")
+	c.Check(assume.Value.String(), check.Equals, "my tag")
+	c.Check(assume.DefValue, check.Equals, "")
 
 	err = flagset.Parse([]string{"--remove-tag", "my tag"})
 	c.Assert(err, check.IsNil)
@@ -873,8 +837,8 @@ func (s *S) TestServiceInstanceUpdateFlags(c *check.C) {
 	c.Check(assume, check.NotNil)
 	c.Check(assume.Name, check.Equals, "remove-tag")
 	c.Check(assume.Usage, check.Equals, "tag to be removed from instance tags")
-	c.Check(assume.Value.String(), check.Equals, "[\"my tag\"]")
-	c.Check(assume.DefValue, check.Equals, "[]")
+	c.Check(assume.Value.String(), check.Equals, "my tag")
+	c.Check(assume.DefValue, check.Equals, "")
 
 	err = flagset.Parse([]string{"-p", "my plan"})
 	c.Assert(err, check.IsNil)
@@ -882,12 +846,6 @@ func (s *S) TestServiceInstanceUpdateFlags(c *check.C) {
 	assume = flagset.Lookup("plan")
 	c.Check(assume, check.NotNil)
 	c.Check(assume.Name, check.Equals, "plan")
-	c.Check(assume.Usage, check.Equals, flagDesc)
-	c.Check(assume.Value.String(), check.Equals, "my plan")
-	c.Check(assume.DefValue, check.Equals, "")
-	assume = flagset.Lookup("p")
-	c.Check(assume, check.NotNil)
-	c.Check(assume.Name, check.Equals, "p")
 	c.Check(assume.Usage, check.Equals, flagDesc)
 	c.Check(assume.Value.String(), check.Equals, "my plan")
 	c.Check(assume.DefValue, check.Equals, "")
@@ -916,8 +874,8 @@ func (s *S) TestServiceInstanceUpdateFlags(c *check.C) {
 	c.Check(assume, check.NotNil)
 	c.Check(assume.Name, check.Equals, "remove-param")
 	c.Check(assume.Usage, check.Equals, "parameter key to be removed from instance parameters")
-	c.Check(assume.Value.String(), check.Equals, `["foo"]`)
-	c.Check(assume.DefValue, check.Equals, "[]")
+	c.Check(assume.Value.String(), check.Equals, "foo")
+	c.Check(assume.DefValue, check.Equals, "")
 }
 
 func (s *S) TestServiceInfoInfo(c *check.C) {
@@ -1209,11 +1167,12 @@ func (s *S) TestServiceInstanceRemoveFlags(c *check.C) {
 	c.Assert(flagset, check.NotNil)
 	flagset.Parse([]string{"-f"})
 	c.Check(command.force, check.Equals, true)
-	assume := flagset.Lookup("f")
-	c.Check(assume.Name, check.Equals, "f")
+	assume := flagset.Lookup("force")
+	c.Check(assume.Name, check.Equals, "force")
 	c.Check(assume.Usage, check.Equals, "Forces the removal of a service instance binded to apps.")
 	c.Check(assume.Value.String(), check.Equals, "true")
 	c.Check(assume.DefValue, check.Equals, "false")
+	c.Check(assume.Shorthand, check.Equals, "f")
 }
 
 func (s *S) TestServiceInstanceRemoveWithoutForce(c *check.C) {

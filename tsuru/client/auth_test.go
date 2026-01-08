@@ -746,12 +746,7 @@ func (s *S) TestResetPasswordFlags(c *check.C) {
 	c.Check(token.Usage, check.Equals, "Token to reset the password")
 	c.Check(token.Value.String(), check.Equals, "token123")
 	c.Check(token.DefValue, check.Equals, "")
-	stoken := flagset.Lookup("t")
-	c.Assert(stoken, check.NotNil)
-	c.Check(stoken.Name, check.Equals, "t")
-	c.Check(stoken.Usage, check.Equals, "Token to reset the password")
-	c.Check(stoken.Value.String(), check.Equals, "token123")
-	c.Check(stoken.DefValue, check.Equals, "")
+	c.Check(token.Shorthand, check.DeepEquals, "t")
 }
 
 func (s *S) TestResetPasswordIsAFlaggedCommand(c *check.C) {

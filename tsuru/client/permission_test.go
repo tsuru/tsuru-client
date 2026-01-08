@@ -92,12 +92,7 @@ func (s *S) TestRoleAddFlags(c *check.C) {
 	c.Check(description.Usage, check.Equals, usage)
 	c.Check(description.Value.String(), check.Equals, "my description")
 	c.Check(description.DefValue, check.Equals, "")
-	sdescription := flagset.Lookup("d")
-	c.Check(sdescription, check.NotNil)
-	c.Check(sdescription.Name, check.Equals, "d")
-	c.Check(sdescription.Usage, check.Equals, usage)
-	c.Check(sdescription.Value.String(), check.Equals, "my description")
-	c.Check(sdescription.DefValue, check.Equals, "")
+	c.Check(description.Shorthand, check.Equals, "d")
 }
 
 func (s *S) TestRoleListInfo(c *check.C) {
