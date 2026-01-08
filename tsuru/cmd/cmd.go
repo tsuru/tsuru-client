@@ -114,6 +114,14 @@ func NewManagerPanicExiter(name string, stdout, stderr io.Writer, stdin io.Reade
 	return manager
 }
 
+// RegisterPlugin registers a plugin command in the manager
+// only for v2 engine
+func (m *Manager) RegisterPlugin(command Command) {
+	if m.v2.Enabled {
+		m.v2.Register(command)
+	}
+}
+
 func (m *Manager) Register(command Command) {
 	if m.v2.Enabled {
 		m.v2.Register(command)
@@ -206,6 +214,7 @@ func (m *Manager) RegisterTopic(name, content string) {
 
 func (m *Manager) Run(args []string) {
 	if m.v2.Enabled {
+		defer m.finisher()
 		m.v2.Run()
 		return
 	}
@@ -433,6 +442,9 @@ func (m *Manager) handleFlags(command Command, name string, args []string) (Comm
 }
 
 func (m *Manager) finisher() exiter {
+	if m.v2 != nil && m.v2.Enabled {
+		m.v2.Finish()
+	}
 	if pagerWriter, ok := m.stdout.(*pagerWriter); ok {
 		pagerWriter.close()
 	}
@@ -622,6 +634,8 @@ func (c *Context) RawOutput() {
 		c.Stdin = sync.baseReader
 	}
 }
+
+var ArbitraryArgs = -1
 
 type Info struct {
 	Name    string

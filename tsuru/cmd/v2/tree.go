@@ -6,6 +6,7 @@ var groupLabels = map[string]string{
 	"auth":         "Auth commands:",
 	"resource":     "Manage resources:",
 	"sub-resource": "Manage sub-resources:",
+	"plugin":       "Plugins:",
 }
 
 type CmdNode struct {

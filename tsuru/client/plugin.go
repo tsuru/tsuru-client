@@ -191,6 +191,32 @@ func findExecutablePlugin(basePath, pluginName string) (execPath string) {
 	return ""
 }
 
+func FindPlugins() []string {
+	basePath := config.JoinWithUserDir(".tsuru", "plugins")
+
+	entries, err := os.ReadDir(basePath)
+	if err != nil {
+		return nil
+	}
+	var plugins []string
+	for _, entry := range entries {
+		entryPath := filepath.Join(basePath, entry.Name())
+		fStat, err := config.Filesystem().Stat(entryPath)
+		if err != nil {
+			continue
+		}
+		if fStat.IsDir() {
+			execPath := findExecutablePlugin(entryPath, entry.Name())
+			if execPath != "" {
+				plugins = append(plugins, entry.Name())
+			}
+		} else if fStat.Mode().IsRegular() {
+			plugins = append(plugins, entry.Name())
+		}
+	}
+	return plugins
+}
+
 func copyFile(src, dst string) error {
 	sourceFile, err := config.Filesystem().Open(src)
 	if err != nil {
@@ -347,6 +373,11 @@ func RunPlugin(context *cmd.Context) error {
 		return cmd.ErrLookup
 	}
 	pluginName := context.Args[0]
+
+	return runPlugin(context, pluginName, context.Args[1:])
+}
+
+func runPlugin(context *cmd.Context, pluginName string, args []string) error {
 	if os.Getenv("TSURU_PLUGIN_NAME") == pluginName {
 		return cmd.ErrLookup
 	}
@@ -371,13 +402,39 @@ func RunPlugin(context *cmd.Context) error {
 	envs = append(envs, tsuruEnvs...)
 	opts := exec.ExecuteOptions{
 		Cmd:    pluginPath,
-		Args:   context.Args[1:],
+		Args:   args,
 		Stdout: context.Stdout,
 		Stderr: context.Stderr,
 		Stdin:  context.Stdin,
 		Envs:   envs,
 	}
 	return Executor().Execute(opts)
+}
+
+var _ cmd.Command = &ExecutePlugin{}
+
+type ExecutePlugin struct {
+	PluginName string
+}
+
+func (e ExecutePlugin) Info() *cmd.Info {
+	return &cmd.Info{
+		Name:    e.PluginName,
+		Usage:   e.PluginName,
+		Desc:    "Executes the " + e.PluginName + " plugin.",
+		MinArgs: cmd.ArbitraryArgs,
+		V2: cmd.InfoV2{
+			GroupID:            "plugin",
+			OnlyAppendOnRoot:   true,
+			DisableFlagParsing: true,
+			SilenceUsage:       true,
+		},
+	}
+}
+
+func (c *ExecutePlugin) Run(context *cmd.Context) error {
+	context.RawOutput()
+	return runPlugin(context, c.PluginName, context.Args)
 }
 
 type PluginBundle struct {

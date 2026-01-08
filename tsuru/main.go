@@ -356,6 +356,11 @@ Services aren’t managed by tsuru, but by their creators.`)
 
 	m.Register(&client.ServiceInstanceInfo{})
 
+	plugins := client.FindPlugins()
+	for _, plugin := range plugins {
+		m.RegisterPlugin(&client.ExecutePlugin{PluginName: plugin})
+	}
+
 	registerExtraCommands(m)
 	m.RetryHook = retryHook
 	m.AfterFlagParseHook = initAuthorization

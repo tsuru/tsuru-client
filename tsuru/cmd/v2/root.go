@@ -1,7 +1,6 @@
 package v2
 
 import (
-	"errors"
 	"fmt"
 	"os"
 	"strconv"
@@ -36,10 +35,6 @@ func NewRootCmd() *cobra.Command {
 	}
 
 	setupPFlagsAndCommands(rootCmd)
-	rootCmd.AddGroup(&cobra.Group{
-		ID:    "auth",
-		Title: "Auth commands:",
-	})
 
 	return rootCmd
 }
@@ -76,7 +71,7 @@ func runRootCmd(cmd *cobra.Command, args []string) error {
 		return cmd.Execute()
 	}
 
-	return runTsuruPlugin(args)
+	return nil
 }
 
 // parseFirstFlagsOnly handles only the first flags with cmd.ParseFlags()
@@ -139,13 +134,13 @@ func preSetupViper(vip *viper.Viper) *viper.Viper {
 	vip.SetConfigName("client")
 
 	// If a config file is found, read it in.
-	if err := vip.ReadInConfig(); err == nil {
-		fmt.Fprintln(os.Stderr, "Using config file:", vip.ConfigFileUsed()) // TODO: handle this better
+	err := vip.ReadInConfig()
+	if err != nil {
+		_, ok := err.(viper.ConfigFileNotFoundError)
+		if !ok {
+			fmt.Fprintln(os.Stderr, "Error Using config file:", err)
+		}
 	}
 
 	return vip
-}
-
-func runTsuruPlugin(args []string) error {
-	return errors.New("TODO: run plugin is not implemented yet")
 }

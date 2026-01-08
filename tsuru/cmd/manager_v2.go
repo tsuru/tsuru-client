@@ -3,7 +3,9 @@ package cmd
 import (
 	"fmt"
 	"os"
+	"os/signal"
 	"strings"
+	"syscall"
 
 	"github.com/spf13/cobra"
 	v2 "github.com/tsuru/tsuru-client/tsuru/cmd/v2"
@@ -12,9 +14,10 @@ import (
 // ManagerV2 is responsible for managing the commands using cobra for tsuru-client.
 // this intends to replace the old Manager struct in the future.
 type ManagerV2 struct {
-	Enabled bool
-	rootCmd *cobra.Command
-	tree    *v2.CmdNode
+	Enabled  bool
+	rootCmd  *cobra.Command
+	tree     *v2.CmdNode
+	contexts []*Context
 }
 
 type ManagerV2Opts struct {
@@ -128,11 +131,13 @@ func (m *ManagerV2) fillCommand(cobraCommand *cobra.Command, command Command) {
 
 	cobraCommand.Short = strings.TrimSpace(strings.Split(info.Desc, "\n")[0])
 	cobraCommand.Long = info.Desc
-	cobraCommand.DisableFlagParsing = false
-	cobraCommand.SilenceUsage = false
+	cobraCommand.DisableFlagParsing = info.V2.DisableFlagParsing
+	cobraCommand.SilenceUsage = info.V2.SilenceUsage
 	cobraCommand.Hidden = info.V2.Hidden
 
-	if info.MinArgs == info.MaxArgs || info.MinArgs > info.MaxArgs {
+	if info.MinArgs == ArbitraryArgs {
+		cobraCommand.Args = cobra.ArbitraryArgs
+	} else if info.MinArgs >= info.MaxArgs {
 		cobraCommand.Args = cobra.ExactArgs(info.MinArgs)
 	} else {
 		cobraCommand.Args = cobra.RangeArgs(info.MinArgs, info.MaxArgs)
@@ -164,6 +169,21 @@ func (m *ManagerV2) runCommand(command Command, cobraCommand *cobra.Command, arg
 		Stdin:  cobraCommand.InOrStdin(),
 	})
 
+	sigChan := make(chan os.Signal, 1)
+	if cancelable, ok := command.(Cancelable); ok {
+		signal.Notify(sigChan, syscall.SIGINT)
+		go func(context Context) {
+			for range sigChan {
+				fmt.Fprintln(context.Stdout, "Attempting command cancellation...")
+				errCancel := cancelable.Cancel(context)
+				if errCancel == nil {
+					return
+				}
+				fmt.Fprintf(context.Stderr, "Error canceling command: %v. Proceeding.", errCancel)
+			}
+		}(*context)
+	}
+
 	return command.Run(context)
 }
 
@@ -171,7 +191,17 @@ func (m *ManagerV2) newContext(c Context) *Context {
 	stdout := newPagerWriter(c.Stdout)
 	stdin := newSyncReader(c.Stdin, c.Stdout)
 	ctx := &Context{Args: c.Args, Stdout: stdout, Stderr: c.Stderr, Stdin: stdin}
+	m.contexts = append(m.contexts, ctx)
+
 	return ctx
+}
+
+func (m *ManagerV2) Finish() {
+	for _, ctx := range m.contexts {
+		if pagerWriter, ok := ctx.Stdout.(*pagerWriter); ok {
+			pagerWriter.close()
+		}
+	}
 }
 
 func (m *ManagerV2) registerV2FQDNOnRoot(command Command) {
@@ -190,12 +220,14 @@ func (m *ManagerV2) registerV2FQDNOnRoot(command Command) {
 
 	m.fillCommand(newCmd, command)
 	newCmd.Hidden = !info.V2.OnlyAppendOnRoot
-	m.rootCmd.AddCommand(newCmd)
+	m.tree.AddChild(newCmd)
 }
 
 type InfoV2 struct {
-	Disabled         bool
-	Hidden           bool
-	OnlyAppendOnRoot bool
-	GroupID          string
+	Disabled           bool
+	Hidden             bool
+	OnlyAppendOnRoot   bool
+	GroupID            string
+	DisableFlagParsing bool
+	SilenceUsage       bool
 }

@@ -547,6 +547,176 @@ func TestManagerV2_registerV2SubCommand_NonFlaggedCommand(t *testing.T) {
 	})
 }
 
+func TestManagerV2_Finish(t *testing.T) {
+	t.Run("close_pager_writers_on_finish", func(t *testing.T) {
+		manager := NewManagerV2()
+
+		// Create multiple contexts using newContext
+		ctx1 := manager.newContext(Context{
+			Stdout: &strings.Builder{},
+			Stderr: &strings.Builder{},
+			Stdin:  strings.NewReader(""),
+		})
+		ctx2 := manager.newContext(Context{
+			Stdout: &strings.Builder{},
+			Stderr: &strings.Builder{},
+			Stdin:  strings.NewReader(""),
+		})
+
+		assert.NotNil(t, ctx1)
+		assert.NotNil(t, ctx2)
+		assert.Len(t, manager.contexts, 2)
+
+		// Finish should not panic
+		manager.Finish()
+	})
+
+	t.Run("finish_with_no_contexts", func(t *testing.T) {
+		manager := NewManagerV2()
+
+		// Finish should not panic with no contexts
+		manager.Finish()
+	})
+}
+
+func TestManagerV2_newContext(t *testing.T) {
+	t.Run("adds_context_to_list", func(t *testing.T) {
+		manager := NewManagerV2()
+
+		assert.Len(t, manager.contexts, 0)
+
+		ctx := manager.newContext(Context{
+			Stdout: &strings.Builder{},
+			Stderr: &strings.Builder{},
+			Stdin:  strings.NewReader(""),
+		})
+
+		assert.NotNil(t, ctx)
+		assert.Len(t, manager.contexts, 1)
+		assert.Equal(t, ctx, manager.contexts[0])
+	})
+}
+
+func TestManagerV2_fillCommand_ArbitraryArgs(t *testing.T) {
+	t.Run("arbitrary_args_sets_cobra_arbitrary_args", func(t *testing.T) {
+		manager := NewManagerV2()
+
+		cmd := &mockCommand{
+			info: &Info{
+				Name:    "plugin-test",
+				Desc:    "Test plugin command",
+				MinArgs: ArbitraryArgs,
+			},
+		}
+
+		manager.Register(cmd)
+
+		// Find the registered command in the tree
+		pluginNode := manager.tree.Children["plugin"]
+		assert.NotNil(t, pluginNode)
+
+		testNode := pluginNode.Children["test"]
+		assert.NotNil(t, testNode)
+
+		// Verify that the command accepts arbitrary args
+		// Test by checking the Args function allows any number of args
+		err := testNode.Command.Args(testNode.Command, []string{})
+		assert.NoError(t, err)
+		err = testNode.Command.Args(testNode.Command, []string{"a", "b", "c", "d", "e"})
+		assert.NoError(t, err)
+	})
+}
+
+func TestManagerV2_fillCommand_DisableFlagParsing(t *testing.T) {
+	t.Run("disable_flag_parsing_is_set", func(t *testing.T) {
+		manager := NewManagerV2()
+
+		cmd := &mockCommand{
+			info: &Info{
+				Name: "plugin-exec",
+				Desc: "Execute plugin",
+				V2: InfoV2{
+					DisableFlagParsing: true,
+				},
+			},
+		}
+
+		manager.Register(cmd)
+
+		pluginNode := manager.tree.Children["plugin"]
+		assert.NotNil(t, pluginNode)
+
+		execNode := pluginNode.Children["exec"]
+		assert.NotNil(t, execNode)
+		assert.True(t, execNode.Command.DisableFlagParsing)
+	})
+
+	t.Run("disable_flag_parsing_is_false_by_default", func(t *testing.T) {
+		manager := NewManagerV2()
+
+		cmd := &mockCommand{
+			info: &Info{
+				Name: "app-list",
+				Desc: "List apps",
+			},
+		}
+
+		manager.Register(cmd)
+
+		appNode := manager.tree.Children["app"]
+		assert.NotNil(t, appNode)
+
+		listNode := appNode.Children["list"]
+		assert.NotNil(t, listNode)
+		assert.False(t, listNode.Command.DisableFlagParsing)
+	})
+}
+
+func TestManagerV2_fillCommand_SilenceUsage(t *testing.T) {
+	t.Run("silence_usage_is_set", func(t *testing.T) {
+		manager := NewManagerV2()
+
+		cmd := &mockCommand{
+			info: &Info{
+				Name: "plugin-run",
+				Desc: "Run plugin",
+				V2: InfoV2{
+					SilenceUsage: true,
+				},
+			},
+		}
+
+		manager.Register(cmd)
+
+		pluginNode := manager.tree.Children["plugin"]
+		assert.NotNil(t, pluginNode)
+
+		runNode := pluginNode.Children["run"]
+		assert.NotNil(t, runNode)
+		assert.True(t, runNode.Command.SilenceUsage)
+	})
+
+	t.Run("silence_usage_is_false_by_default", func(t *testing.T) {
+		manager := NewManagerV2()
+
+		cmd := &mockCommand{
+			info: &Info{
+				Name: "app-create",
+				Desc: "Create app",
+			},
+		}
+
+		manager.Register(cmd)
+
+		appNode := manager.tree.Children["app"]
+		assert.NotNil(t, appNode)
+
+		createNode := appNode.Children["create"]
+		assert.NotNil(t, createNode)
+		assert.False(t, createNode.Command.SilenceUsage)
+	})
+}
+
 func TestManagerV2_Integration(t *testing.T) {
 	t.Run("complex_registration_scenario", func(t *testing.T) {
 		manager := NewManagerV2()
