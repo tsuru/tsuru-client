@@ -67,7 +67,7 @@ func (f *eventFilter) flags(fs *pflag.FlagSet) {
 
 	name = "Filter events by target type"
 	ptr := (*string)(&f.filter.Target.Type)
-	fs.StringVarP(ptr, "event-target", "t", "", name)
+	fs.StringVarP(ptr, "target-type", "t", "", name)
 	name = "Filter events by target value"
 	fs.StringVar(&f.filter.Target.Value, "target-value", "", name)
 	name = "Filter events by owner name"
