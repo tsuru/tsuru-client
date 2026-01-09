@@ -16,6 +16,41 @@ import (
 	check "gopkg.in/check.v1"
 )
 
+func (s *S) TestMapSliceFlagWrapperType(c *check.C) {
+	var m map[string][]string
+	f := mapSliceFlagWrapper{dst: &m}
+	c.Assert(f.Type(), check.Equals, "key=value")
+}
+
+func (s *S) TestMapSliceFlagWrapperStringEmpty(c *check.C) {
+	var m map[string][]string
+	f := mapSliceFlagWrapper{dst: &m}
+	c.Assert(f.String(), check.Equals, "")
+}
+
+func (s *S) TestMapSliceFlagWrapperStringWithValues(c *check.C) {
+	m := map[string][]string{"key": {"val1", "val2"}}
+	f := mapSliceFlagWrapper{dst: &m}
+	c.Assert(f.String(), check.Equals, `{"key":["val1","val2"]}`)
+}
+
+func (s *S) TestMapSliceFlagWrapperSet(c *check.C) {
+	var m map[string][]string
+	f := mapSliceFlagWrapper{dst: &m}
+	err := f.Set("key=val1")
+	c.Assert(err, check.IsNil)
+	err = f.Set("key=val2")
+	c.Assert(err, check.IsNil)
+	c.Assert(m, check.DeepEquals, map[string][]string{"key": {"val1", "val2"}})
+}
+
+func (s *S) TestMapSliceFlagWrapperSetInvalid(c *check.C) {
+	var m map[string][]string
+	f := mapSliceFlagWrapper{dst: &m}
+	err := f.Set("invalid")
+	c.Assert(err, check.NotNil)
+}
+
 func (s *S) TestWebhookCreateInfo(c *check.C) {
 	c.Assert((&WebhookCreate{}).Info(), check.NotNil)
 }

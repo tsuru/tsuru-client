@@ -231,6 +231,25 @@ func (s *S) TestKEDAPrometheusAutoScaleSet(c *check.C) {
 	c.Assert(stdout.String(), check.Equals, expected)
 }
 
+func (s *S) TestInt32ValueType(c *check.C) {
+	var i int32Value
+	c.Assert(i.Type(), check.Equals, "int")
+}
+
+func (s *S) TestInt32ValueSetAndString(c *check.C) {
+	var i int32Value
+	err := i.Set("42")
+	c.Assert(err, check.IsNil)
+	c.Assert(i.String(), check.Equals, "42")
+	c.Assert(i.Get(), check.Equals, int32(42))
+}
+
+func (s *S) TestInt32PointerValueType(c *check.C) {
+	var val *int32
+	i := int32PointerValue{value: &val}
+	c.Assert(i.Type(), check.Equals, "int")
+}
+
 func (s *S) TestAutoScaleUnset(c *check.C) {
 	var stdout, stderr bytes.Buffer
 	expected := "Unit auto scale successfully unset.\n"

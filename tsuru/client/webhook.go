@@ -31,6 +31,9 @@ func (f mapSliceFlagWrapper) String() string {
 	if repr == nil {
 		repr = map[string][]string{}
 	}
+	if len(repr) == 0 {
+		return ""
+	}
 	data, _ := json.Marshal(repr)
 	return string(data)
 }
@@ -48,7 +51,7 @@ func (f mapSliceFlagWrapper) Set(val string) error {
 }
 
 func (f mapSliceFlagWrapper) Type() string {
-	return "mapsliceflag"
+	return "key=value"
 }
 
 func flagsForWebhook(webhook *tsuru.Webhook) *pflag.FlagSet {

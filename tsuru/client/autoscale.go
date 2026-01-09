@@ -28,7 +28,7 @@ func (i *int32Value) Set(s string) error {
 }
 func (i *int32Value) Get() interface{} { return int32(*i) }
 func (i *int32Value) String() string   { return fmt.Sprintf("%v", *i) }
-func (i *int32Value) Type() string     { return "int32" }
+func (i *int32Value) Type() string     { return "int" }
 
 type int32PointerValue struct {
 	value **int32

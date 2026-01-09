@@ -19,6 +19,9 @@ func (f *MapFlag) String() string {
 	if repr == nil {
 		repr = MapFlag{}
 	}
+	if len(repr) == 0 {
+		return ""
+	}
 	data, _ := json.Marshal(repr)
 	return string(data)
 }
@@ -36,7 +39,7 @@ func (f *MapFlag) Set(val string) error {
 }
 
 func (f *MapFlag) Type() string {
-	return "map"
+	return "key=value"
 }
 
 type MapFlagWrapper struct {
@@ -75,7 +78,7 @@ func (f StringSliceFlagWrapper) Set(val string) error {
 }
 
 func (f StringSliceFlagWrapper) Type() string {
-	return "stringslice"
+	return "string"
 }
 
 type StringSliceFlag []string
@@ -91,6 +94,9 @@ func (f *StringSliceFlag) String() string {
 	repr := *f
 	if repr == nil {
 		repr = StringSliceFlag{}
+	}
+	if len(repr) == 0 {
+		return ""
 	}
 	return strings.Join(repr, ",")
 }

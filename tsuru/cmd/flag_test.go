@@ -31,6 +31,21 @@ func (s *S) TestMapFlagWrapperInvalid(c *check.C) {
 	c.Assert(err, check.NotNil)
 }
 
+func (s *S) TestMapFlagType(c *check.C) {
+	var f MapFlag
+	c.Assert(f.Type(), check.Equals, "key=value")
+}
+
+func (s *S) TestMapFlagStringEmpty(c *check.C) {
+	var f MapFlag
+	c.Assert(f.String(), check.Equals, "")
+}
+
+func (s *S) TestMapFlagStringWithValues(c *check.C) {
+	f := MapFlag{"a": "1"}
+	c.Assert(f.String(), check.Equals, `{"a":"1"}`)
+}
+
 func (s *S) TestStringSliceFlag(c *check.C) {
 	var f StringSliceFlag
 	f.Set("a")
@@ -39,4 +54,39 @@ func (s *S) TestStringSliceFlag(c *check.C) {
 	c.Assert(f, check.DeepEquals, StringSliceFlag{
 		"a", "b", "c",
 	})
+}
+
+func (s *S) TestStringSliceFlagType(c *check.C) {
+	var f StringSliceFlag
+	c.Assert(f.Type(), check.Equals, "string")
+}
+
+func (s *S) TestStringSliceFlagStringEmpty(c *check.C) {
+	var f StringSliceFlag
+	c.Assert(f.String(), check.Equals, "")
+}
+
+func (s *S) TestStringSliceFlagStringWithValues(c *check.C) {
+	f := StringSliceFlag{"a", "b", "c"}
+	c.Assert(f.String(), check.Equals, "a,b,c")
+}
+
+func (s *S) TestStringSliceFlagWrapperType(c *check.C) {
+	var s2 []string
+	f := StringSliceFlagWrapper{Dst: &s2}
+	c.Assert(f.Type(), check.Equals, "string")
+}
+
+func (s *S) TestStringSliceFlagWrapperStringEmpty(c *check.C) {
+	var s2 []string
+	f := StringSliceFlagWrapper{Dst: &s2}
+	c.Assert(f.String(), check.Equals, "")
+}
+
+func (s *S) TestStringSliceFlagWrapperSet(c *check.C) {
+	var s2 []string
+	f := StringSliceFlagWrapper{Dst: &s2}
+	f.Set("a")
+	f.Set("b")
+	c.Assert(s2, check.DeepEquals, []string{"a", "b"})
 }

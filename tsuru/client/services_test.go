@@ -857,7 +857,7 @@ func (s *S) TestServiceInstanceUpdateFlags(c *check.C) {
 	c.Check(assume.Name, check.Equals, "add-param")
 	c.Check(assume.Usage, check.Equals, "parameter to be added/updated in instance parameters")
 	c.Check(assume.Value.String(), check.Equals, `{"foo":"bar"}`)
-	c.Check(assume.DefValue, check.Equals, "{}")
+	c.Check(assume.DefValue, check.Equals, "")
 
 	err = flagset.Parse([]string{"--plan-param", "foo=bar"})
 	c.Assert(err, check.IsNil)
@@ -866,7 +866,7 @@ func (s *S) TestServiceInstanceUpdateFlags(c *check.C) {
 	c.Check(assume.Name, check.Equals, "plan-param")
 	c.Check(assume.Usage, check.Equals, "parameter to be added/updated in instance parameters")
 	c.Check(assume.Value.String(), check.Equals, `{"foo":"bar"}`)
-	c.Check(assume.DefValue, check.Equals, "{}")
+	c.Check(assume.DefValue, check.Equals, "")
 
 	err = flagset.Parse([]string{"--remove-param", "foo"})
 	c.Assert(err, check.IsNil)

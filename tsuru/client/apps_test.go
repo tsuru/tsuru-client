@@ -421,7 +421,7 @@ func (s *S) TestAppCreateFlags(c *check.C) {
 	c.Check(routerOpts.Name, check.Equals, "router-opts")
 	c.Check(routerOpts.Usage, check.Equals, "Router options")
 	c.Check(routerOpts.Value.String(), check.Equals, "{\"opt1\":\"val1\",\"opt2\":\"val2\"}")
-	c.Check(routerOpts.DefValue, check.Equals, "{}")
+	c.Check(routerOpts.DefValue, check.Equals, "")
 }
 
 func (s *S) TestAppUpdateInfo(c *check.C) {
