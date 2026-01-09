@@ -1102,6 +1102,217 @@ func TestManagerV2_fillCommand_ParseFirstFlagsOnly(t *testing.T) {
 	})
 }
 
+func TestManagerV2_mapCommonAliases(t *testing.T) {
+	t.Run("verify_aliases_are_registered", func(t *testing.T) {
+		manager := NewManagerV2()
+
+		cmd := &mockCommand{
+			info: &Info{
+				Name:  "app-remove",
+				Desc:  "Remove an app",
+				Usage: "app-remove <name>",
+			},
+		}
+
+		manager.Register(cmd)
+
+		appNode := manager.tree.Children["app"]
+		assert.NotNil(t, appNode)
+
+		removeNode := appNode.Children["remove"]
+		assert.NotNil(t, removeNode)
+
+		// Check that aliases are set for "remove"
+		assert.Contains(t, removeNode.Command.Aliases, "delete")
+	})
+
+	t.Run("verify_create_aliases", func(t *testing.T) {
+		manager := NewManagerV2()
+
+		cmd := &mockCommand{
+			info: &Info{
+				Name:  "app-create",
+				Desc:  "Create an app",
+				Usage: "app-create <name>",
+			},
+		}
+
+		manager.Register(cmd)
+
+		appNode := manager.tree.Children["app"]
+		assert.NotNil(t, appNode)
+
+		createNode := appNode.Children["create"]
+		assert.NotNil(t, createNode)
+
+		// Check that aliases are set for "create"
+		assert.Contains(t, createNode.Command.Aliases, "add")
+	})
+
+	t.Run("verify_add_aliases", func(t *testing.T) {
+		manager := NewManagerV2()
+
+		cmd := &mockCommand{
+			info: &Info{
+				Name:  "pool-add",
+				Desc:  "Add a pool",
+				Usage: "pool-add <name>",
+			},
+		}
+
+		manager.Register(cmd)
+
+		poolNode := manager.tree.Children["pool"]
+		assert.NotNil(t, poolNode)
+
+		addNode := poolNode.Children["add"]
+		assert.NotNil(t, addNode)
+
+		// Check that aliases are set for "add"
+		assert.Contains(t, addNode.Command.Aliases, "create")
+	})
+
+	t.Run("verify_delete_aliases", func(t *testing.T) {
+		manager := NewManagerV2()
+
+		cmd := &mockCommand{
+			info: &Info{
+				Name:  "node-delete",
+				Desc:  "Delete a node",
+				Usage: "node-delete <name>",
+			},
+		}
+
+		manager.Register(cmd)
+
+		nodeNode := manager.tree.Children["node"]
+		assert.NotNil(t, nodeNode)
+
+		deleteNode := nodeNode.Children["delete"]
+		assert.NotNil(t, deleteNode)
+
+		// Check that aliases are set for "delete"
+		assert.Contains(t, deleteNode.Command.Aliases, "remove")
+	})
+
+	t.Run("verify_info_aliases", func(t *testing.T) {
+		manager := NewManagerV2()
+
+		cmd := &mockCommand{
+			info: &Info{
+				Name:  "app-info",
+				Desc:  "Show app info",
+				Usage: "app-info <name>",
+			},
+		}
+
+		manager.Register(cmd)
+
+		appNode := manager.tree.Children["app"]
+		assert.NotNil(t, appNode)
+
+		infoNode := appNode.Children["info"]
+		assert.NotNil(t, infoNode)
+
+		// Check that aliases are set for "info"
+		assert.Contains(t, infoNode.Command.Aliases, "describe")
+	})
+
+	t.Run("verify_log_aliases", func(t *testing.T) {
+		manager := NewManagerV2()
+
+		cmd := &mockCommand{
+			info: &Info{
+				Name:  "app-log",
+				Desc:  "Show app logs",
+				Usage: "app-log <name>",
+			},
+		}
+
+		manager.Register(cmd)
+
+		appNode := manager.tree.Children["app"]
+		assert.NotNil(t, appNode)
+
+		logNode := appNode.Children["log"]
+		assert.NotNil(t, logNode)
+
+		// Check that aliases are set for "log"
+		assert.Contains(t, logNode.Command.Aliases, "logs")
+	})
+
+	t.Run("verify_change_aliases", func(t *testing.T) {
+		manager := NewManagerV2()
+
+		cmd := &mockCommand{
+			info: &Info{
+				Name:  "plan-change",
+				Desc:  "Change plan",
+				Usage: "plan-change <name>",
+			},
+		}
+
+		manager.Register(cmd)
+
+		planNode := manager.tree.Children["plan"]
+		assert.NotNil(t, planNode)
+
+		changeNode := planNode.Children["change"]
+		assert.NotNil(t, changeNode)
+
+		// Check that aliases are set for "change"
+		assert.Contains(t, changeNode.Command.Aliases, "update")
+		assert.Contains(t, changeNode.Command.Aliases, "set")
+	})
+
+	t.Run("verify_destroy_aliases", func(t *testing.T) {
+		manager := NewManagerV2()
+
+		cmd := &mockCommand{
+			info: &Info{
+				Name:  "cluster-destroy",
+				Desc:  "Destroy cluster",
+				Usage: "cluster-destroy <name>",
+			},
+		}
+
+		manager.Register(cmd)
+
+		clusterNode := manager.tree.Children["cluster"]
+		assert.NotNil(t, clusterNode)
+
+		destroyNode := clusterNode.Children["destroy"]
+		assert.NotNil(t, destroyNode)
+
+		// Check that aliases are set for "destroy"
+		assert.Contains(t, destroyNode.Command.Aliases, "remove")
+		assert.Contains(t, destroyNode.Command.Aliases, "delete")
+	})
+
+	t.Run("no_alias_for_unknown_command", func(t *testing.T) {
+		manager := NewManagerV2()
+
+		cmd := &mockCommand{
+			info: &Info{
+				Name:  "app-deploy",
+				Desc:  "Deploy an app",
+				Usage: "app-deploy <name>",
+			},
+		}
+
+		manager.Register(cmd)
+
+		appNode := manager.tree.Children["app"]
+		assert.NotNil(t, appNode)
+
+		deployNode := appNode.Children["deploy"]
+		assert.NotNil(t, deployNode)
+
+		// "deploy" is not in mapCommonAliases, so aliases should be nil or empty
+		assert.Empty(t, deployNode.Command.Aliases)
+	})
+}
+
 func TestManagerV2_Integration(t *testing.T) {
 	t.Run("complex_registration_scenario", func(t *testing.T) {
 		manager := NewManagerV2()

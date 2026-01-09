@@ -8,6 +8,7 @@ import (
 	"syscall"
 
 	"github.com/spf13/cobra"
+	"github.com/tsuru/tsuru-client/tsuru/cmd/standards"
 	v2 "github.com/tsuru/tsuru-client/tsuru/cmd/v2"
 )
 
@@ -132,6 +133,7 @@ func (m *ManagerV2) registerV2SubCommand(command Command) {
 
 		if i == len(parts)-1 && !found {
 			curr.Command.Use = part + stripUsage(fqdn, info.Usage)
+			curr.Command.Aliases = standards.CommonAliases[part]
 			m.fillCommand(curr.Command, command)
 		}
 	}

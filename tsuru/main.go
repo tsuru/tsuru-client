@@ -354,6 +354,17 @@ Services aren’t managed by tsuru, but by their creators.`)
 	m.RegisterDeprecated(&client.MetadataUnset{}, "app-metadata-unset")
 	m.RegisterDeprecated(&client.MetadataGet{}, "app-metadata-get")
 
+	// Shorthands is a frequent command with a short name for convenience
+	// To decide which commands should have shorthands, consider:
+	// - Frequency of use
+	// - Length of the original command name
+	// May be no more than 5 commands IMHO
+	m.RegisterShorthand(&client.AppDeploy{}, "deploy")
+	m.RegisterShorthand(&client.AppLog{}, "log")
+	m.RegisterShorthand(&client.AppInfo{}, "info")
+	m.RegisterShorthand(&client.ShellToContainerCmd{}, "shell")
+	m.RegisterShorthand(&client.UnitSet{}, "scale")
+
 	m.Register(&client.ServiceInstanceInfo{})
 
 	plugins := client.FindPlugins()

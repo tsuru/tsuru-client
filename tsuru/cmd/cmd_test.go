@@ -1253,3 +1253,117 @@ func (s *S) TestManagerAfterFlagParseHookNilDoesNotPanic(c *check.C) {
 		rootCmd.PersistentPreRun(rootCmd, []string{})
 	}
 }
+
+func (s *S) TestShorthandCommandInfo(c *check.C) {
+	originalCmd := &TestCommand{}
+	shorthandCmd := &ShorthandCommand{Command: originalCmd, shorthand: "f"}
+
+	info := shorthandCmd.Info()
+	c.Assert(info.Name, check.Equals, "f")
+	c.Assert(info.V2.GroupID, check.Equals, "shorthands")
+	c.Assert(info.V2.OnlyAppendOnRoot, check.Equals, true)
+}
+
+func (s *S) TestShorthandCommandInfoWithUsage(c *check.C) {
+	cmd := &commandWithUsage{name: "app-deploy", usage: "app-deploy <file> [options]"}
+	shorthandCmd := &ShorthandCommand{Command: cmd, shorthand: "deploy"}
+
+	info := shorthandCmd.Info()
+	c.Assert(info.Name, check.Equals, "deploy")
+	c.Assert(info.Usage, check.Equals, "deploy <file> [options]")
+	c.Assert(info.V2.GroupID, check.Equals, "shorthands")
+	c.Assert(info.V2.OnlyAppendOnRoot, check.Equals, true)
+}
+
+func (s *S) TestShorthandCommandRun(c *check.C) {
+	originalCmd := &TestCommand{}
+	shorthandCmd := &ShorthandCommand{Command: originalCmd, shorthand: "f"}
+
+	var stdout bytes.Buffer
+	context := &Context{
+		Args:   []string{},
+		Stdout: &stdout,
+		Stderr: &bytes.Buffer{},
+		Stdin:  os.Stdin,
+	}
+	err := shorthandCmd.Run(context)
+	c.Assert(err, check.IsNil)
+	c.Assert(stdout.String(), check.Equals, "Running TestCommand")
+}
+
+func (s *S) TestShorthandCommandFlags(c *check.C) {
+	originalCmd := &CommandWithFlags{}
+	shorthandCmd := &ShorthandCommand{Command: originalCmd, shorthand: "wf"}
+
+	flags := shorthandCmd.Flags()
+	c.Assert(flags, check.NotNil)
+
+	// Verify the flags from the original command are available
+	ageFlag := flags.Lookup("age")
+	c.Assert(ageFlag, check.NotNil)
+	c.Assert(ageFlag.Shorthand, check.Equals, "a")
+}
+
+func (s *S) TestShorthandCommandFlagsWithNonFlaggedCommand(c *check.C) {
+	originalCmd := &TestCommand{}
+	shorthandCmd := &ShorthandCommand{Command: originalCmd, shorthand: "f"}
+
+	flags := shorthandCmd.Flags()
+	c.Assert(flags, check.NotNil)
+	// Should return an empty flagset for non-flagged commands
+	c.Assert(flags.HasFlags(), check.Equals, false)
+}
+
+func (s *S) TestRegisterShorthandWithV2Enabled(c *check.C) {
+	var stdout, stderr bytes.Buffer
+	mngr := NewManager("glb", &stdout, &stderr, os.Stdin, nil)
+	// Force enable v2 for this test
+	mngr.v2.Enabled = true
+
+	originalCmd := &TestCommand{}
+	mngr.RegisterShorthand(originalCmd, "f")
+
+	// Shorthand should be registered in v2 manager (root) with the shorthand name
+	rootCommands := mngr.v2.rootCmd.Commands()
+	var foundShorthand bool
+	for _, v2cmd := range rootCommands {
+		if v2cmd.Use == "f" {
+			foundShorthand = true
+			c.Assert(v2cmd.GroupID, check.Equals, "shorthands")
+			c.Assert(v2cmd.Hidden, check.Equals, false) // OnlyAppendOnRoot makes it visible
+			break
+		}
+	}
+	c.Assert(foundShorthand, check.Equals, true)
+}
+
+func (s *S) TestRegisterShorthandDoesNotAffectV1Commands(c *check.C) {
+	var stdout, stderr bytes.Buffer
+	mngr := NewManager("glb", &stdout, &stderr, os.Stdin, nil)
+	mngr.v2.Enabled = true
+
+	originalCmd := &TestCommand{}
+	mngr.RegisterShorthand(originalCmd, "f")
+
+	// Shorthand should NOT be registered in v1 manager
+	_, found := mngr.Commands["f"]
+	c.Assert(found, check.Equals, false)
+}
+
+type commandWithUsage struct {
+	name  string
+	usage string
+}
+
+func (c *commandWithUsage) Info() *Info {
+	return &Info{
+		Name:  c.name,
+		Desc:  "A command with custom usage.",
+		Usage: c.usage,
+	}
+}
+
+func (c *commandWithUsage) Run(context *Context) error {
+	io.WriteString(context.Stdout, "Running CommandWithUsage")
+	return nil
+}

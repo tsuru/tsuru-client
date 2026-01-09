@@ -174,6 +174,12 @@ func (m *Manager) RegisterDeprecated(command Command, oldName string) {
 	m.Commands[oldName] = deprecatedCmd
 }
 
+func (m *Manager) RegisterShorthand(command Command, shorthand string) {
+	if m.v2.Enabled {
+		m.v2.Register(&ShorthandCommand{Command: command, shorthand: shorthand})
+	}
+}
+
 type RemovedCommand struct {
 	Name string
 	Help string
@@ -619,6 +625,34 @@ func (c *DeprecatedCommand) Run(context *Context) error {
 }
 
 func (c *DeprecatedCommand) Flags() *pflag.FlagSet {
+	if cmd, ok := c.Command.(FlaggedCommand); ok {
+		return cmd.Flags()
+	}
+	return pflag.NewFlagSet("", pflag.ContinueOnError)
+}
+
+type ShorthandCommand struct {
+	Command
+	shorthand string
+}
+
+func (c *ShorthandCommand) Info() *Info {
+	info := c.Command.Info()
+
+	info.Usage = c.shorthand + stripUsage(info.Name, info.Usage)
+	strings.Replace(info.Usage, info.Name, c.shorthand, 1)
+
+	info.Name = c.shorthand
+	info.V2.GroupID = "shorthands"
+	info.V2.OnlyAppendOnRoot = true
+	return info
+}
+
+func (c *ShorthandCommand) Run(context *Context) error {
+	return c.Command.Run(context)
+}
+
+func (c *ShorthandCommand) Flags() *pflag.FlagSet {
 	if cmd, ok := c.Command.(FlaggedCommand); ok {
 		return cmd.Flags()
 	}
