@@ -138,12 +138,11 @@ func (m *ManagerV2) fillCommand(cobraCommand *cobra.Command, command Command) {
 	cobraCommand.DisableFlagParsing = info.V2.DisableFlagParsing
 	cobraCommand.SilenceUsage = info.V2.SilenceUsage
 	cobraCommand.Hidden = info.V2.Hidden
+	cobraCommand.Args = cobra.ArbitraryArgs
 
-	if info.MinArgs == ArbitraryArgs {
-		cobraCommand.Args = cobra.ArbitraryArgs
-	} else if info.MinArgs >= info.MaxArgs {
-		cobraCommand.Args = cobra.ExactArgs(info.MinArgs)
-	} else {
+	if info.MinArgs > 0 && info.MinArgs >= info.MaxArgs {
+		cobraCommand.Args = cobra.MinimumNArgs(info.MinArgs)
+	} else if info.MaxArgs >= 0 && info.MinArgs >= 0 && info.MaxArgs > info.MinArgs {
 		cobraCommand.Args = cobra.RangeArgs(info.MinArgs, info.MaxArgs)
 	}
 

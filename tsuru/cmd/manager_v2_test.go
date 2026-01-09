@@ -652,6 +652,41 @@ func TestManagerV2_newContext(t *testing.T) {
 	})
 }
 
+func TestManagerV2_fillCommand_MinimumArgs(t *testing.T) {
+	t.Run("min_args_greater_or_equal_max_args_allows_more_args", func(t *testing.T) {
+		manager := NewManagerV2()
+
+		cmd := &mockCommand{
+			info: &Info{
+				Name:    "app-deploy",
+				Desc:    "Deploy an app",
+				MinArgs: 2,
+				MaxArgs: 2, // MinArgs >= MaxArgs
+			},
+		}
+
+		manager.Register(cmd)
+
+		appNode := manager.tree.Children["app"]
+		assert.NotNil(t, appNode)
+
+		deployNode := appNode.Children["deploy"]
+		assert.NotNil(t, deployNode)
+
+		// Should accept exactly MinArgs
+		err := deployNode.Command.Args(deployNode.Command, []string{"arg1", "arg2"})
+		assert.NoError(t, err)
+
+		// Should also accept more than MinArgs (MinimumNArgs behavior)
+		err = deployNode.Command.Args(deployNode.Command, []string{"arg1", "arg2", "arg3"})
+		assert.NoError(t, err)
+
+		// Should reject fewer than MinArgs
+		err = deployNode.Command.Args(deployNode.Command, []string{"arg1"})
+		assert.Error(t, err)
+	})
+}
+
 func TestManagerV2_fillCommand_ArbitraryArgs(t *testing.T) {
 	t.Run("arbitrary_args_sets_cobra_arbitrary_args", func(t *testing.T) {
 		manager := NewManagerV2()
