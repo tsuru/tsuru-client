@@ -144,7 +144,7 @@ func (c *EventBlockAdd) Flags() *pflag.FlagSet {
 		c.fs.StringVarP(&c.kind, "kind", "k", "", "Event kind to be blocked.")
 		c.fs.StringVarP(&c.owner, "owner", "o", "", "Block this owner's events.")
 		c.fs.StringVarP(&c.targetType, "target", "t", "", "Block events with this target type.")
-		c.fs.StringVar(&c.targetValue, "value", "", "Block events with this target value.")
+		c.fs.StringVarP(&c.targetValue, "value", "v", "", "Block events with this target value.")
 
 		c.fs.VarP(&c.conditions, "conditions", "c", "Conditions to apply on event kind to be blocked.")
 	}

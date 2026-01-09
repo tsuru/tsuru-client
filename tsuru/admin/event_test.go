@@ -159,6 +159,37 @@ func (s *S) TestEventBlockAddAllFlags(c *check.C) {
 	c.Assert(stdout.String(), check.Equals, "Block successfully added.\n")
 }
 
+func (s *S) TestEventBlockAddAllFlagsShorthand(c *check.C) {
+	var stdout, stderr bytes.Buffer
+	context := cmd.Context{
+		Args:   []string{"Reason"},
+		Stdout: &stdout,
+		Stderr: &stderr,
+	}
+	trans := &cmdtest.ConditionalTransport{
+		Transport: cmdtest.Transport{Message: "", Status: http.StatusOK},
+		CondFunc: func(req *http.Request) bool {
+			block := new(event.Block)
+			decodeJSONBody(c, req, block)
+			c.Assert(block, check.DeepEquals, &event.Block{
+				KindName:  "app.deploy",
+				OwnerName: "user@email.com",
+				Target:    eventTypes.Target{Type: eventTypes.TargetTypeApp, Value: "myapp"},
+				Reason:    "Reason",
+				Active:    false,
+			})
+			return req.URL.Path == "/1.3/events/blocks" && req.Method == http.MethodPost
+		},
+	}
+	s.setupFakeTransport(trans)
+	command := EventBlockAdd{}
+	err := command.Flags().Parse([]string{"-k", "app.deploy", "-o", "user@email.com", "-t", "app", "-v", "myapp"})
+	c.Assert(err, check.IsNil)
+	err = command.Run(&context)
+	c.Assert(err, check.IsNil)
+	c.Assert(stdout.String(), check.Equals, "Block successfully added.\n")
+}
+
 func (s *S) TestEventBlockRemoveInfo(c *check.C) {
 	c.Assert((&EventBlockRemove{}).Info(), check.NotNil)
 }
