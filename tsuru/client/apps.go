@@ -404,9 +404,8 @@ func (c *AppInfo) Info() *cmd.Info {
 	return &cmd.Info{
 		Name:  "app-info",
 		Usage: "app info [appname]",
-		Desc: `Shows information about a specific app. Its state, platform, git repository,
-etc. You need to be a member of a team that has access to the app to be able to
-see information about it.`,
+		Desc: `Shows information about a specific app. Its state, platform, etc.
+You need to be a member of a team that has access to the app to be able to see information about it.`,
 		MinArgs: 0,
 	}
 }
