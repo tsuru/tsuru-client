@@ -48,7 +48,7 @@ func setupPFlagsAndCommands(rootCmd *cobra.Command) {
 	rootCmd.PersistentFlags().String("target", "", "Tsuru server endpoint")
 	defaultViper.BindPFlag("target", rootCmd.PersistentFlags().Lookup("target"))
 
-	rootCmd.PersistentFlags().IntP("verbosity", "v", 0, "Verbosity level: 1 => print HTTP requests; 2 => print HTTP requests/responses")
+	rootCmd.PersistentFlags().Int("verbosity", 0, "Verbosity level: 1 => print HTTP requests; 2 => print HTTP requests/responses")
 	defaultViper.BindPFlag("verbosity", rootCmd.PersistentFlags().Lookup("verbosity"))
 }
 

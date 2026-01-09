@@ -69,7 +69,7 @@ func (f *eventFilter) flags(fs *pflag.FlagSet) {
 	ptr := (*string)(&f.filter.Target.Type)
 	fs.StringVarP(ptr, "target-type", "t", "", name)
 	name = "Filter events by target value"
-	fs.StringVar(&f.filter.Target.Value, "target-value", "", name)
+	fs.StringVarP(&f.filter.Target.Value, "target-value", "v", "", name)
 	name = "Filter events by owner name"
 	fs.StringVarP(&f.filter.OwnerName, "owner", "o", "", name)
 	name = "Shows only currently running events"

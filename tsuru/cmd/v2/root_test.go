@@ -243,6 +243,13 @@ func TestParseFirstFlagsOnly(t *testing.T) {
 	})
 }
 
+func TestVerbosityFlagHasNoShorthand(t *testing.T) {
+	rootCmd := NewRootCmd()
+	verbosityFlag := rootCmd.PersistentFlags().Lookup("verbosity")
+	assert.NotNil(t, verbosityFlag, "verbosity flag should exist")
+	assert.Empty(t, verbosityFlag.Shorthand, "verbosity flag should not have a shorthand")
+}
+
 func TestRunRootCmd(t *testing.T) {
 	//cobra stdout/stderr is inconsistent. SetOut()/SetErr() don't work as expected: https://github.com/spf13/cobra/issues/1708
 
