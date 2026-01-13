@@ -26,9 +26,7 @@ import (
 	"golang.org/x/oauth2"
 )
 
-var (
-	version = "dev" // overridden at build time
-)
+var version = "dev" // overridden at build time
 
 const targetTopic = `Target is used to manage the address of the remote tsuru server.
 
@@ -80,7 +78,6 @@ func buildManagerCustom(name string, stdout, stderr io.Writer) *cmd.Manager {
 
 		initAuthorization() // re-init updated token provider
 		return true
-
 	}
 
 	lookup := func(context *cmd.Context) error {
@@ -273,6 +270,7 @@ Services aren’t managed by tsuru, but by their creators.`)
 	m.Register(client.UserInfo{})
 	m.Register(&client.AutoScaleSet{})
 	m.Register(&client.AutoScaleUnset{})
+	m.Register(&client.AutoScaleSwap{})
 	m.RegisterDeprecated(&client.MetadataSet{}, "app-metadata-set")
 	m.RegisterDeprecated(&client.MetadataUnset{}, "app-metadata-unset")
 	m.RegisterDeprecated(&client.MetadataGet{}, "app-metadata-get")

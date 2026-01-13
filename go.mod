@@ -17,7 +17,7 @@ require (
 	github.com/sabhiram/go-gitignore v0.0.0-20171017070213-362f9845770f
 	github.com/sajari/fuzzy v1.0.0
 	github.com/tsuru/gnuflag v0.0.0-20151217162021-86b8c1b864aa
-	github.com/tsuru/go-tsuruclient v0.1.0
+	github.com/tsuru/go-tsuruclient v0.2.0
 	github.com/tsuru/tablecli v0.0.0-20190131152944-7ded8a3383c6
 	github.com/tsuru/tsuru v0.0.0-20251218122357-747a7ed9da4f
 	golang.org/x/net v0.42.0
