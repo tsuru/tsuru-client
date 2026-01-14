@@ -353,11 +353,9 @@ func (c *JobList) Flags() *pflag.FlagSet {
 
 func (c *JobList) Info() *cmd.Info {
 	return &cmd.Info{
-		Name:    "job-list",
-		Usage:   "job list",
-		Desc:    "List jobs",
-		MinArgs: 0,
-		MaxArgs: 0,
+		Name:  "job-list",
+		Usage: "job list",
+		Desc:  "List jobs",
 	}
 }
 

@@ -85,8 +85,6 @@ unit autoscale set -a my-app --cpu 50% --min 1 --max 3 --schedule '{"minReplicas
 
 # When using more than one trigger (CPU + Schedule as an example), the number of units will be determined by the highest value
 `,
-		MinArgs: 0,
-		MaxArgs: 0,
 	}
 }
 
@@ -160,11 +158,9 @@ type AutoScaleUnset struct {
 
 func (c *AutoScaleUnset) Info() *cmd.Info {
 	return &cmd.Info{
-		Name:    "unit-autoscale-unset",
-		Usage:   "unit autoscale unset [-a/--app appname] [-p/--process processname]",
-		Desc:    `Unsets a unit auto scale configuration.`,
-		MinArgs: 0,
-		MaxArgs: 0,
+		Name:  "unit-autoscale-unset",
+		Usage: "unit autoscale unset [-a/--app appname] [-p/--process processname]",
+		Desc:  `Unsets a unit auto scale configuration.`,
 	}
 }
 
@@ -201,11 +197,9 @@ type AutoScaleSwap struct {
 
 func (c *AutoScaleSwap) Info() *cmd.Info {
 	return &cmd.Info{
-		Name:    "unit-autoscale-swap",
-		Usage:   "unit autoscale swap [-a/--app appname] [--version version]",
-		Desc:    `Swap a unit auto scale configuration to another version.`,
-		MinArgs: 0,
-		MaxArgs: 0,
+		Name:  "unit-autoscale-swap",
+		Usage: "unit autoscale swap [-a/--app appname] [--version version]",
+		Desc:  `Swap a unit auto scale configuration to another version.`,
 	}
 }
 

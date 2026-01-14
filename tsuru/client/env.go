@@ -61,10 +61,9 @@ func (c *EnvGet) Flags() *pflag.FlagSet {
 
 func (c *EnvGet) Info() *cmd.Info {
 	return &cmd.Info{
-		Name:    "env-get",
-		Usage:   "env get [-a/--app appname] [-j/--job jobname] [ENVIRONMENT_VARIABLE1] [ENVIRONMENT_VARIABLE2] ...",
-		Desc:    `Retrieves environment variables for an application or job.`,
-		MinArgs: 0,
+		Name:  "env-get",
+		Usage: "env get [-a/--app appname] [-j/--job jobname] [ENVIRONMENT_VARIABLE1] [ENVIRONMENT_VARIABLE2] ...",
+		Desc:  `Retrieves environment variables for an application or job.`,
 	}
 }
 

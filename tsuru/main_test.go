@@ -548,10 +548,10 @@ func (s *S) TestVersion(c *check.C) {
 
 func (s *S) TestVersionInfo(c *check.C) {
 	expected := &cmd.Info{
-		Name:    "version",
-		MinArgs: 0,
-		Usage:   "version",
-		Desc:    "display the current version",
+		Name: "version",
+
+		Usage: "version",
+		Desc:  "display the current version",
 	}
 	c.Assert((&versionCmd{}).Info(), check.DeepEquals, expected)
 }

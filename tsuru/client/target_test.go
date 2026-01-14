@@ -440,10 +440,9 @@ Other commands related to target:
   - target set: defines one of the targets in the list as the current target
   - target remove: removes one target from the list`
 	expected := &cmd.Info{
-		Name:    "target-list",
-		Usage:   "target list",
-		Desc:    desc,
-		MinArgs: 0,
+		Name:  "target-list",
+		Usage: "target list",
+		Desc:  desc,
 	}
 	target := &TargetList{}
 	c.Assert(target.Info(), check.DeepEquals, expected)

@@ -185,11 +185,9 @@ type VolumeList struct {
 
 func (c *VolumeList) Info() *cmd.Info {
 	return &cmd.Info{
-		Name:    "volume-list",
-		Usage:   "volume list",
-		Desc:    `Lists existing persistent volumes.`,
-		MinArgs: 0,
-		MaxArgs: 0,
+		Name:  "volume-list",
+		Usage: "volume list",
+		Desc:  `Lists existing persistent volumes.`,
 	}
 }
 
@@ -405,11 +403,9 @@ type VolumePlansList struct{}
 
 func (c *VolumePlansList) Info() *cmd.Info {
 	return &cmd.Info{
-		Name:    "volume-plan-list",
-		Usage:   "volume plan list",
-		Desc:    `Lists existing volume plans.`,
-		MinArgs: 0,
-		MaxArgs: 0,
+		Name:  "volume-plan-list",
+		Usage: "volume plan list",
+		Desc:  `Lists existing volume plans.`,
 	}
 }
 

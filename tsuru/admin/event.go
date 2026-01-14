@@ -28,10 +28,9 @@ type EventBlockList struct {
 
 func (c *EventBlockList) Info() *cmd.Info {
 	return &cmd.Info{
-		Name:    "event-block-list",
-		Usage:   "event block list [-a/--active]",
-		Desc:    "Lists all event blocks",
-		MinArgs: 0,
+		Name:  "event-block-list",
+		Usage: "event block list [-a/--active]",
+		Desc:  "Lists all event blocks",
 	}
 }
 

@@ -55,7 +55,6 @@ The [[--no-date]] flag is optional and makes the log output without date.
 The [[--no-source]] flag is optional and makes the log output without source
 information, useful to very dense logs.
 `,
-		MinArgs: 0,
 	}
 }
 

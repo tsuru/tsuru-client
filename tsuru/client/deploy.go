@@ -199,7 +199,6 @@ Examples:
     Sending a specific container file and specific directory as container build context:
       $ tsuru app deploy -a <APP> --dockerfile ./Dockerfile.other ./other/
 `,
-		MinArgs: 0,
 	}
 }
 
@@ -454,10 +453,10 @@ func (c *AppDeployRebuild) Flags() *pflag.FlagSet {
 func (c *AppDeployRebuild) Info() *cmd.Info {
 	desc := "Rebuild and deploy the last app image."
 	return &cmd.Info{
-		Name:    "app-deploy-rebuild",
-		Usage:   "app deploy rebuild [appname]",
-		Desc:    desc,
-		MinArgs: 0,
+		Name:  "app-deploy-rebuild",
+		Usage: "app deploy rebuild [appname]",
+		Desc:  desc,
+
 		MaxArgs: 1,
 	}
 }
@@ -507,10 +506,10 @@ func (c *AppDeployRollbackUpdate) Info() *cmd.Info {
 	The [-r/--reason] flag lets the user tell why this action was needed.
 `
 	return &cmd.Info{
-		Name:    "app-deploy-rollback-update",
-		Usage:   "app deploy rollback update [appName] [-i/--image imageName] [-d/--disable] [-r/--reason reason]",
-		Desc:    desc,
-		MinArgs: 0,
+		Name:  "app-deploy-rollback-update",
+		Usage: "app deploy rollback update [appName] [-i/--image imageName] [-d/--disable] [-r/--reason reason]",
+		Desc:  desc,
+
 		MaxArgs: 1,
 	}
 }
@@ -618,7 +617,6 @@ Examples:
     Sending a specific container file and specific directory as container build context:
       $ tsuru job deploy -j <JOB> --dockerfile ./Dockerfile.other ./other/
 `,
-		MinArgs: 0,
 	}
 }
 

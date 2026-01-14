@@ -352,7 +352,6 @@ will be removed before the app gets deleted (see [[tsuru service-unbind]]).
 
 You need to be a member of a team that has access to the app to be able to
 remove it (you are able to remove any app that you see in [[tsuru app list]]).`,
-		MinArgs: 0,
 	}
 }
 
@@ -406,7 +405,6 @@ func (c *AppInfo) Info() *cmd.Info {
 		Usage: "app info [appname]",
 		Desc: `Shows information about a specific app. Its state, platform, etc.
 You need to be a member of a team that has access to the app to be able to see information about it.`,
-		MinArgs: 0,
 	}
 }
 
@@ -1468,10 +1466,9 @@ type AppStop struct {
 
 func (c *AppStop) Info() *cmd.Info {
 	return &cmd.Info{
-		Name:    "app-stop",
-		Usage:   "app stop [appname] [-p/--process processname] [--version version]",
-		Desc:    "Stops an application, or one of the processes of the application.",
-		MinArgs: 0,
+		Name:  "app-stop",
+		Usage: "app stop [appname] [-p/--process processname] [--version version]",
+		Desc:  "Stops an application, or one of the processes of the application.",
 	}
 }
 
@@ -1519,10 +1516,9 @@ type AppStart struct {
 
 func (c *AppStart) Info() *cmd.Info {
 	return &cmd.Info{
-		Name:    "app-start",
-		Usage:   "app start [appname] [-p/--process processname] [--version version]",
-		Desc:    "Starts an application, or one of the processes of the application.",
-		MinArgs: 0,
+		Name:  "app-start",
+		Usage: "app start [appname] [-p/--process processname] [--version version]",
+		Desc:  "Starts an application, or one of the processes of the application.",
 	}
 }
 
@@ -1596,10 +1592,9 @@ func (c *AppRestart) Run(context *cmd.Context) error {
 
 func (c *AppRestart) Info() *cmd.Info {
 	return &cmd.Info{
-		Name:    "app-restart",
-		Usage:   "app restart [appname] [-p/--process processname] [--version version]",
-		Desc:    `Restarts an application, or one of the processes of the application.`,
-		MinArgs: 0,
+		Name:  "app-restart",
+		Usage: "app restart [appname] [-p/--process processname] [--version version]",
+		Desc:  `Restarts an application, or one of the processes of the application.`,
 	}
 }
 

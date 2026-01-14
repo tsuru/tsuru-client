@@ -350,10 +350,9 @@ type PluginList struct{}
 
 func (PluginList) Info() *cmd.Info {
 	return &cmd.Info{
-		Name:    "plugin-list",
-		Usage:   "plugin-list",
-		Desc:    "List installed tsuru plugins.",
-		MinArgs: 0,
+		Name:  "plugin-list",
+		Usage: "plugin-list",
+		Desc:  "List installed tsuru plugins.",
 	}
 }
 

@@ -173,9 +173,8 @@ func sliceContains(s []string, d string) bool {
 
 func (PoolList) Info() *cmd.Info {
 	return &cmd.Info{
-		Name:    "pool-list",
-		Usage:   "pool-list",
-		Desc:    "List all pools available for deploy.",
-		MinArgs: 0,
+		Name:  "pool-list",
+		Usage: "pool-list",
+		Desc:  "List all pools available for deploy.",
 	}
 }
