@@ -372,16 +372,9 @@ Services aren’t managed by tsuru, but by their creators.`)
 		m.RegisterPlugin(&client.ExecutePlugin{PluginName: plugin})
 	}
 
-	registerExtraCommands(m)
 	m.RetryHook = retryHook
 	m.AfterFlagParseHook = initAuthorization
 	return m
-}
-
-func registerExtraCommands(m *cmd.Manager) {
-	for _, c := range cmd.ExtraCmds() {
-		m.Register(c)
-	}
 }
 
 func recoverCmdPanicExitError() {
