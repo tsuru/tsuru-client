@@ -612,6 +612,11 @@ type FlaggedCommand interface {
 	Flags() *pflag.FlagSet
 }
 
+type AutoCompleteCommand interface {
+	Command
+	Complete(args []string, toComplete string) ([]string, error)
+}
+
 type DeprecatedCommand struct {
 	Command
 	oldName string

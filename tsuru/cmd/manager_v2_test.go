@@ -387,6 +387,64 @@ func TestManagerV2_registerV2FQDNOnRoot(t *testing.T) {
 
 		assert.Equal(t, initialCommandCount, finalCommandCount)
 	})
+
+	t.Run("register_fqdn_with_common_aliases_reads_from_map", func(t *testing.T) {
+		manager := NewManagerV2()
+
+		// This test verifies that registerV2FQDNOnRoot attempts to set aliases
+		// from standards.CommonAliases using the fqdn as key.
+		// Currently, CommonAliases has verb-based keys like "remove", not fqdn-based
+		// keys like "app-remove", so this will result in nil aliases for most commands.
+		// This test documents the current behavior.
+		cmd := &mockCommand{
+			info: &Info{
+				Name:  "app-deploy",
+				Desc:  "Deploy an app",
+				Usage: "app-deploy <name>",
+			},
+		}
+
+		manager.registerV2FQDNOnRoot(cmd)
+
+		rootCommands := manager.rootCmd.Commands()
+		var found bool
+		for _, c := range rootCommands {
+			if strings.HasPrefix(c.Use, "app-deploy") {
+				found = true
+				// Since "app-deploy" is not a key in CommonAliases, aliases should be nil/empty
+				assert.Empty(t, c.Aliases)
+			}
+		}
+		assert.True(t, found)
+	})
+
+	t.Run("register_fqdn_aliases_uses_fqdn_as_key", func(t *testing.T) {
+		manager := NewManagerV2()
+
+		// This test verifies that the code uses the full fqdn as the key
+		// to look up aliases in CommonAliases. If CommonAliases is extended
+		// to include fqdn-based keys in the future, this behavior will work.
+		cmd := &mockCommand{
+			info: &Info{
+				Name:  "remove", // This matches a key in CommonAliases
+				Desc:  "Remove something",
+				Usage: "remove <name>",
+			},
+		}
+
+		manager.registerV2FQDNOnRoot(cmd)
+
+		rootCommands := manager.rootCmd.Commands()
+		var found bool
+		for _, c := range rootCommands {
+			if strings.HasPrefix(c.Use, "remove") {
+				found = true
+				// "remove" is a key in CommonAliases, should have "delete" alias
+				assert.Contains(t, c.Aliases, "delete")
+			}
+		}
+		assert.True(t, found)
+	})
 }
 
 func TestManagerV2_NewManagerV2WithOptions(t *testing.T) {
@@ -1453,6 +1511,134 @@ func TestManagerV2_SetFlagCompletions(t *testing.T) {
 	assert.Len(t, manager.completions, 2)
 	assert.Contains(t, manager.completions, "app")
 	assert.Contains(t, manager.completions, "team")
+}
+
+type mockAutoCompleteCommand struct {
+	info       *Info
+	completeFn func(args []string, toComplete string) ([]string, error)
+	runFn      func(context *Context) error
+}
+
+func (m *mockAutoCompleteCommand) Info() *Info {
+	return m.info
+}
+
+func (m *mockAutoCompleteCommand) Run(context *Context) error {
+	if m.runFn != nil {
+		return m.runFn(context)
+	}
+	return nil
+}
+
+func (m *mockAutoCompleteCommand) Complete(args []string, toComplete string) ([]string, error) {
+	if m.completeFn != nil {
+		return m.completeFn(args, toComplete)
+	}
+	return nil, nil
+}
+
+func TestManagerV2_AutoCompleteCommand(t *testing.T) {
+	t.Run("register_auto_complete_command", func(t *testing.T) {
+		manager := NewManagerV2()
+
+		cmd := &mockAutoCompleteCommand{
+			info: &Info{
+				Name: "app-deploy",
+				Desc: "Deploy an app",
+			},
+			completeFn: func(args []string, toComplete string) ([]string, error) {
+				return []string{"file1.tar.gz", "file2.tar.gz"}, nil
+			},
+		}
+
+		manager.Register(cmd)
+
+		appNode := manager.tree.Children["app"]
+		assert.NotNil(t, appNode)
+
+		deployNode := appNode.Children["deploy"]
+		assert.NotNil(t, deployNode)
+
+		// Test that ValidArgsFunction is set
+		assert.NotNil(t, deployNode.Command.ValidArgsFunction)
+
+		// Test the completion function
+		results, directive := deployNode.Command.ValidArgsFunction(deployNode.Command, []string{}, "")
+		assert.Equal(t, []string{"file1.tar.gz", "file2.tar.gz"}, results)
+		assert.Equal(t, cobra.ShellCompDirectiveNoFileComp, directive)
+	})
+
+	t.Run("auto_complete_command_passes_args", func(t *testing.T) {
+		manager := NewManagerV2()
+
+		var capturedArgs []string
+		var capturedToComplete string
+
+		cmd := &mockAutoCompleteCommand{
+			info: &Info{
+				Name: "service-bind",
+				Desc: "Bind service",
+			},
+			completeFn: func(args []string, toComplete string) ([]string, error) {
+				capturedArgs = args
+				capturedToComplete = toComplete
+				return []string{"myapp1", "myapp2"}, nil
+			},
+		}
+
+		manager.Register(cmd)
+
+		bindNode := manager.tree.Children["service"].Children["bind"]
+		assert.NotNil(t, bindNode)
+
+		// Test passing args and toComplete
+		results, _ := bindNode.Command.ValidArgsFunction(bindNode.Command, []string{"arg1", "arg2"}, "my")
+		assert.Equal(t, []string{"myapp1", "myapp2"}, results)
+		assert.Equal(t, []string{"arg1", "arg2"}, capturedArgs)
+		assert.Equal(t, "my", capturedToComplete)
+	})
+
+	t.Run("auto_complete_command_returns_error", func(t *testing.T) {
+		manager := NewManagerV2()
+
+		cmd := &mockAutoCompleteCommand{
+			info: &Info{
+				Name: "app-info",
+				Desc: "Show app info",
+			},
+			completeFn: func(args []string, toComplete string) ([]string, error) {
+				return nil, assert.AnError
+			},
+		}
+
+		manager.Register(cmd)
+
+		infoNode := manager.tree.Children["app"].Children["info"]
+		assert.NotNil(t, infoNode)
+
+		results, directive := infoNode.Command.ValidArgsFunction(infoNode.Command, []string{}, "")
+		assert.Nil(t, results)
+		assert.Equal(t, cobra.ShellCompDirectiveError, directive)
+	})
+
+	t.Run("non_auto_complete_command_has_no_valid_args_function", func(t *testing.T) {
+		manager := NewManagerV2()
+
+		cmd := &mockCommand{
+			info: &Info{
+				Name: "app-list",
+				Desc: "List apps",
+			},
+		}
+
+		manager.Register(cmd)
+
+		listNode := manager.tree.Children["app"].Children["list"]
+		assert.NotNil(t, listNode)
+
+		// Non-AutoCompleteCommand should not have ValidArgsFunction
+		assert.Nil(t, listNode.Command.ValidArgsFunction)
+	})
 }
 
 func TestManagerV2_registerCompletionsOnCommand(t *testing.T) {

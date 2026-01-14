@@ -183,6 +183,17 @@ func (m *ManagerV2) fillCommand(cobraCommand *cobra.Command, command Command) {
 
 		m.registerCompletionsOnCommand(cobraCommand)
 	}
+	autoCompleteCommand, isAutoCompleteCommand := command.(AutoCompleteCommand)
+	if isAutoCompleteCommand {
+		cobraCommand.ValidArgsFunction = func(cmd *cobra.Command, args []string, toComplete string) ([]string, cobra.ShellCompDirective) {
+			result, err := autoCompleteCommand.Complete(args, toComplete)
+			if err != nil {
+				fmt.Fprintf(os.Stderr, "Error: %v\n", err)
+				return nil, cobra.ShellCompDirectiveError
+			}
+			return result, cobra.ShellCompDirectiveNoFileComp
+		}
+	}
 }
 
 func (m *ManagerV2) registerCompletionsOnCommand(cobraCommand *cobra.Command) {
@@ -263,6 +274,7 @@ func (m *ManagerV2) registerV2FQDNOnRoot(command Command) {
 
 	m.fillCommand(newCmd, command)
 	newCmd.Hidden = !info.V2.OnlyAppendOnRoot
+	newCmd.Aliases = standards.CommonAliases[fqdn]
 	m.tree.AddChild(newCmd)
 }
 

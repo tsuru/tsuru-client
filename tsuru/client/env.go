@@ -95,15 +95,21 @@ func (c *EnvGet) Run(context *cmd.Context) error {
 		value := v["value"].(string)
 		public := v["public"].(bool)
 		managedBy, _ := v["managedBy"].(string)
+		observation := ""
 
 		if public && managedBy != "" {
-			value = fmt.Sprintf("%s (managed by %s)", value, managedBy)
+			observation = fmt.Sprintf("(managed by %s)", managedBy)
 		} else if !public && managedBy != "" {
-			value = fmt.Sprintf("*** (private variable managed by %s)", managedBy)
+			value = "***"
+			observation = fmt.Sprintf("(private variable managed by %s)", managedBy)
 		} else if !public {
-			value = "*** (private variable)"
+			value = "***"
+			observation = "(private variable)"
 		}
 
+		if observation != "" {
+			value = value + " " + cmd.Colorfy(observation, "gray", "", "bold")
+		}
 		formatted = append(formatted, fmt.Sprintf("%s=%s", v["name"], value))
 	}
 	sort.Strings(formatted)
