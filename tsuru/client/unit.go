@@ -14,10 +14,11 @@ import (
 	"net/url"
 	"strconv"
 
-	"github.com/tsuru/gnuflag"
+	"github.com/spf13/pflag"
 	"github.com/tsuru/go-tsuruclient/pkg/config"
 	tsuruClientApp "github.com/tsuru/tsuru-client/tsuru/app"
 	"github.com/tsuru/tsuru-client/tsuru/cmd"
+	"github.com/tsuru/tsuru-client/tsuru/cmd/standards"
 	"github.com/tsuru/tsuru-client/tsuru/formatter"
 	tsuruHTTP "github.com/tsuru/tsuru-client/tsuru/http"
 	provTypes "github.com/tsuru/tsuru/types/provision"
@@ -25,7 +26,7 @@ import (
 
 type UnitAdd struct {
 	tsuruClientApp.AppNameMixIn
-	fs      *gnuflag.FlagSet
+	fs      *pflag.FlagSet
 	process string
 	version string
 }
@@ -40,11 +41,10 @@ app to be able to add new units to it.`,
 	}
 }
 
-func (c *UnitAdd) Flags() *gnuflag.FlagSet {
+func (c *UnitAdd) Flags() *pflag.FlagSet {
 	if c.fs == nil {
 		c.fs = c.AppNameMixIn.Flags()
-		c.fs.StringVar(&c.process, "process", "", "Process name")
-		c.fs.StringVar(&c.process, "p", "", "Process name")
+		c.fs.StringVarP(&c.process, "process", "p", "", "Process name")
 		c.fs.StringVar(&c.version, "version", "", "Version number")
 	}
 	return c.fs
@@ -79,7 +79,7 @@ func (c *UnitAdd) Run(context *cmd.Context) error {
 
 type UnitRemove struct {
 	tsuruClientApp.AppNameMixIn
-	fs      *gnuflag.FlagSet
+	fs      *pflag.FlagSet
 	process string
 	version string
 }
@@ -94,11 +94,10 @@ app to be able to remove units from it.`,
 	}
 }
 
-func (c *UnitRemove) Flags() *gnuflag.FlagSet {
+func (c *UnitRemove) Flags() *pflag.FlagSet {
 	if c.fs == nil {
 		c.fs = c.AppNameMixIn.Flags()
-		c.fs.StringVar(&c.process, "process", "", "Process name")
-		c.fs.StringVar(&c.process, "p", "", "Process name")
+		c.fs.StringVarP(&c.process, "process", "p", "", "Process name")
 		c.fs.StringVar(&c.version, "version", "", "Version number")
 	}
 	return c.fs
@@ -132,7 +131,7 @@ func (c *UnitRemove) Run(context *cmd.Context) error {
 type UnitKill struct {
 	tsuruClientApp.AppNameMixIn
 	jobName string
-	fs      *gnuflag.FlagSet
+	fs      *pflag.FlagSet
 	force   bool
 }
 
@@ -146,12 +145,11 @@ app or job to be able to remove unit from it.`,
 	}
 }
 
-func (c *UnitKill) Flags() *gnuflag.FlagSet {
+func (c *UnitKill) Flags() *pflag.FlagSet {
 	if c.fs == nil {
 		c.fs = c.AppNameMixIn.Flags()
-		c.fs.StringVar(&c.jobName, "job", "", "The name of the job.")
-		c.fs.StringVar(&c.jobName, "j", "", "The name of the job.")
-		c.fs.BoolVar(&c.force, "f", false, "Forces the termination of unit.")
+		c.fs.StringVarP(&c.jobName, standards.FlagJob, standards.ShortFlagJob, "", "The name of the job.")
+		c.fs.BoolVarP(&c.force, "force", "f", false, "Forces the termination of unit.")
 	}
 	return c.fs
 }
@@ -192,7 +190,7 @@ func (c *UnitKill) Run(context *cmd.Context) error {
 
 type UnitSet struct {
 	tsuruClientApp.AppNameMixIn
-	fs      *gnuflag.FlagSet
+	fs      *pflag.FlagSet
 	process string
 	version int
 }
@@ -207,12 +205,11 @@ app to be able to set the number of units for it. The process flag is optional i
 	}
 }
 
-func (c *UnitSet) Flags() *gnuflag.FlagSet {
+func (c *UnitSet) Flags() *pflag.FlagSet {
 	if c.fs == nil {
 		c.fs = c.AppNameMixIn.Flags()
 		processMessage := "Process name"
-		c.fs.StringVar(&c.process, "process", "", processMessage)
-		c.fs.StringVar(&c.process, "p", "", processMessage)
+		c.fs.StringVarP(&c.process, "process", "p", "", processMessage)
 		c.fs.IntVar(&c.version, "version", 0, "Version number")
 	}
 	return c.fs

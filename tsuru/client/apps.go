@@ -23,12 +23,13 @@ import (
 
 	"github.com/cezarsa/form"
 	"github.com/lnquy/cron"
-	"github.com/tsuru/gnuflag"
+	"github.com/spf13/pflag"
 	"github.com/tsuru/go-tsuruclient/pkg/config"
 	"github.com/tsuru/go-tsuruclient/pkg/tsuru"
 	"github.com/tsuru/tablecli"
 	tsuruClientApp "github.com/tsuru/tsuru-client/tsuru/app"
 	"github.com/tsuru/tsuru-client/tsuru/cmd"
+	"github.com/tsuru/tsuru-client/tsuru/cmd/standards"
 	"github.com/tsuru/tsuru-client/tsuru/formatter"
 	tsuruHTTP "github.com/tsuru/tsuru-client/tsuru/http"
 	appTypes "github.com/tsuru/tsuru/types/app"
@@ -53,7 +54,7 @@ type AppCreate struct {
 	description string
 	tags        cmd.StringSliceFlag
 	routerOpts  cmd.MapFlag
-	fs          *gnuflag.FlagSet
+	fs          *pflag.FlagSet
 }
 
 type unitSorter struct {
@@ -142,27 +143,28 @@ implementation.`,
 	}
 }
 
-func (c *AppCreate) Flags() *gnuflag.FlagSet {
+func (c *AppCreate) Flags() *pflag.FlagSet {
 	if c.fs == nil {
+		c.fs = pflag.NewFlagSet("", pflag.ExitOnError)
+
 		infoMessage := "The plan used to create the app"
-		c.fs = gnuflag.NewFlagSet("", gnuflag.ExitOnError)
-		c.fs.StringVar(&c.plan, "plan", "", infoMessage)
-		c.fs.StringVar(&c.plan, "p", "", infoMessage)
+		c.fs.StringVarP(&c.plan, standards.FlagPlan, standards.ShortFlagPlan, "", infoMessage)
+
 		routerMessage := "The router used by the app"
-		c.fs.StringVar(&c.router, "router", "", routerMessage)
-		c.fs.StringVar(&c.router, "r", "", routerMessage)
+		c.fs.StringVarP(&c.router, standards.FlagRouter, "r", "", routerMessage)
+
 		teamMessage := "Team owner app"
-		c.fs.StringVar(&c.teamOwner, "team", "", teamMessage)
-		c.fs.StringVar(&c.teamOwner, "t", "", teamMessage)
+		c.fs.StringVarP(&c.teamOwner, standards.FlagTeam, standards.ShortFlagTeam, "", teamMessage)
+
 		poolMessage := "Pool to deploy your app"
-		c.fs.StringVar(&c.pool, "pool", "", poolMessage)
-		c.fs.StringVar(&c.pool, "o", "", poolMessage)
+		c.fs.StringVarP(&c.pool, standards.FlagPool, standards.ShortFlagPool, "", poolMessage)
+
 		descriptionMessage := "App description"
-		c.fs.StringVar(&c.description, "description", "", descriptionMessage)
-		c.fs.StringVar(&c.description, "d", "", descriptionMessage)
+		c.fs.StringVarP(&c.description, standards.FlagDescription, standards.ShortFlagDescription, "", descriptionMessage)
+
 		tagMessage := "App tag"
-		c.fs.Var(&c.tags, "tag", tagMessage)
-		c.fs.Var(&c.tags, "g", tagMessage)
+		c.fs.VarP(&c.tags, standards.FlagTag, standards.ShortFlagTag, tagMessage)
+
 		c.fs.Var(&c.routerOpts, "router-opts", "Router options")
 	}
 	return c.fs
@@ -219,7 +221,7 @@ func (c *AppCreate) Run(context *cmd.Context) error {
 
 type AppUpdate struct {
 	args tsuru.UpdateApp
-	fs   *gnuflag.FlagSet
+	fs   *pflag.FlagSet
 	tsuruClientApp.AppNameMixIn
 	cmd.ConfirmationCommand
 
@@ -234,35 +236,38 @@ func (c *AppUpdate) Info() *cmd.Info {
 	}
 }
 
-func (c *AppUpdate) Flags() *gnuflag.FlagSet {
+func (c *AppUpdate) Flags() *pflag.FlagSet {
 	if c.fs == nil {
-		flagSet := gnuflag.NewFlagSet("", gnuflag.ExitOnError)
+		flagSet := pflag.NewFlagSet("", pflag.ExitOnError)
+
 		descriptionMessage := "Changes description for the app"
+		flagSet.StringVarP(&c.args.Description, standards.FlagDescription, standards.ShortFlagDescription, "", descriptionMessage)
+
 		planMessage := "Changes plan for the app"
+		flagSet.StringVarP(&c.args.Plan, standards.FlagPlan, standards.ShortFlagPlan, "", planMessage)
+
 		poolMessage := "Changes pool for the app"
+		flagSet.StringVarP(&c.args.Pool, standards.FlagPool, standards.ShortFlagPool, "", poolMessage)
+
 		teamOwnerMessage := "Changes owner team for the app"
-		tagMessage := "Add tags for the app. You can add multiple tags repeating the --tag argument"
-		platformMsg := "Changes platform for the app"
-		imgReset := "Forces next deploy to build app image from scratch"
-		noRestartMessage := "Prevent tsuru from restarting the application"
-		flagSet.StringVar(&c.args.Description, "description", "", descriptionMessage)
-		flagSet.StringVar(&c.args.Description, "d", "", descriptionMessage)
-		flagSet.StringVar(&c.args.Plan, "plan", "", planMessage)
-		flagSet.StringVar(&c.args.Plan, "p", "", planMessage)
-		flagSet.StringVar(&c.args.Platform, "l", "", platformMsg)
-		flagSet.StringVar(&c.args.Platform, "platform", "", platformMsg)
-		flagSet.StringVar(&c.args.Pool, "o", "", poolMessage)
-		flagSet.StringVar(&c.args.Pool, "pool", "", poolMessage)
-		flagSet.BoolVar(&c.args.ImageReset, "i", false, imgReset)
-		flagSet.BoolVar(&c.args.ImageReset, "image-reset", false, imgReset)
-		flagSet.BoolVar(&c.args.NoRestart, "no-restart", false, noRestartMessage)
-		flagSet.StringVar(&c.args.TeamOwner, "t", "", teamOwnerMessage)
+		flagSet.StringVarP(&c.args.TeamOwner, standards.FlagTeam, standards.ShortFlagTeam, "", teamOwnerMessage)
 		flagSet.StringVar(&c.args.TeamOwner, "team-owner", "", teamOwnerMessage)
-		flagSet.Var((*cmd.StringSliceFlag)(&c.args.Tags), "g", tagMessage)
-		flagSet.Var((*cmd.StringSliceFlag)(&c.args.Tags), "tag", tagMessage)
+		flagSet.MarkHidden("team-owner")
+
+		tagMessage := "Add tags for the app. You can add multiple tags repeating the --tag argument"
+		flagSet.VarP((*cmd.StringSliceFlag)(&c.args.Tags), standards.FlagTag, standards.ShortFlagTag, tagMessage)
+
+		platformMsg := "Changes platform for the app"
+		flagSet.StringVarP(&c.args.Platform, standards.FlagPlatform, "l", "", platformMsg)
+
+		imgReset := "Forces next deploy to build app image from scratch"
+		flagSet.BoolVarP(&c.args.ImageReset, "image-reset", "i", false, imgReset)
+
+		noRestartMessage := "Prevent tsuru from restarting the application"
+		flagSet.BoolVar(&c.args.NoRestart, "no-restart", false, noRestartMessage)
+
 		flagSet.StringVar(&c.cpu, "cpu", "", "CPU limit for app, this will override the plan cpu value. One cpu is equivalent to 1 vCPU/Core, fractional requests are allowed and the expression 0.1 is equivalent to the expression 100m")
 		flagSet.StringVar(&c.cpuBurst, "cpu-burst-factor", "", "The multiplier to determine the limits of the CPU burst. Setting 1 disables burst")
-
 		flagSet.StringVar(&c.memory, "memory", "", "Memory limit for app, this will override the plan memory value. You can express memory as a bytes integer or using one of these suffixes: E, P, T, G, M, K, Ei, Pi, Ti, Gi, Mi, Ki")
 		c.fs = mergeFlagSet(
 			c.AppNameMixIn.Flags(),
@@ -335,7 +340,7 @@ func (c *AppUpdate) Run(ctx *cmd.Context) error {
 type AppRemove struct {
 	tsuruClientApp.AppNameMixIn
 	cmd.ConfirmationCommand
-	fs *gnuflag.FlagSet
+	fs *pflag.FlagSet
 }
 
 func (c *AppRemove) Info() *cmd.Info {
@@ -377,7 +382,7 @@ func (c *AppRemove) Run(context *cmd.Context) error {
 	return formatter.StreamJSONResponse(context.Stdout, response)
 }
 
-func (c *AppRemove) Flags() *gnuflag.FlagSet {
+func (c *AppRemove) Flags() *pflag.FlagSet {
 	if c.fs == nil {
 		c.fs = mergeFlagSet(
 			c.AppNameMixIn.Flags(),
@@ -406,12 +411,11 @@ see information about it.`,
 	}
 }
 
-func (cmd *AppInfo) Flags() *gnuflag.FlagSet {
+func (cmd *AppInfo) Flags() *pflag.FlagSet {
 	fs := cmd.AppNameMixIn.Flags()
 	if !cmd.flagsApplied {
-		fs.BoolVar(&cmd.simplified, "simplified", false, "Show simplified view of app")
-		fs.BoolVar(&cmd.simplified, "s", false, "Show simplified view of app")
-		fs.BoolVar(&cmd.json, "json", false, "Show JSON view of app")
+		fs.BoolVarP(&cmd.simplified, "simplified", "s", false, "Show simplified view of app")
+		fs.BoolVar(&cmd.json, standards.FlagJSON, false, "Show JSON view of app")
 
 		cmd.flagsApplied = true
 	}
@@ -1337,7 +1341,7 @@ func currentUserEmail() (string, error) {
 }
 
 type AppList struct {
-	fs         *gnuflag.FlagSet
+	fs         *pflag.FlagSet
 	filter     appFilter
 	simplified bool
 	json       bool
@@ -1427,26 +1431,20 @@ func (c *AppList) Show(result []byte, context *cmd.Context) error {
 	return nil
 }
 
-func (c *AppList) Flags() *gnuflag.FlagSet {
+func (c *AppList) Flags() *pflag.FlagSet {
 	if c.fs == nil {
-		c.fs = gnuflag.NewFlagSet("app-list", gnuflag.ExitOnError)
-		c.fs.StringVar(&c.filter.name, "name", "", "Filter applications by name")
-		c.fs.StringVar(&c.filter.name, "n", "", "Filter applications by name")
-		c.fs.StringVar(&c.filter.pool, "pool", "", "Filter applications by pool")
-		c.fs.StringVar(&c.filter.pool, "o", "", "Filter applications by pool")
-		c.fs.StringVar(&c.filter.status, "status", "", "Filter applications by unit status. Accepts multiple values separated by commas. Possible values can be: building, created, starting, error, started, stopped, asleep")
-		c.fs.StringVar(&c.filter.status, "s", "", "Filter applications by unit status. Accepts multiple values separated by commas. Possible values can be: building, created, starting, error, started, stopped, asleep")
-		c.fs.StringVar(&c.filter.platform, "platform", "", "Filter applications by platform")
-		c.fs.StringVar(&c.filter.platform, "p", "", "Filter applications by platform")
-		c.fs.StringVar(&c.filter.teamOwner, "team", "", "Filter applications by team owner")
-		c.fs.StringVar(&c.filter.teamOwner, "t", "", "Filter applications by team owner")
-		c.fs.StringVar(&c.filter.owner, "user", "", "Filter applications by owner")
-		c.fs.StringVar(&c.filter.owner, "u", "", "Filter applications by owner")
-		c.fs.BoolVar(&c.simplified, "q", false, "Display only applications name")
-		c.fs.BoolVar(&c.json, "json", false, "Display applications in JSON format")
+		c.fs = pflag.NewFlagSet("app-list", pflag.ExitOnError)
+		c.fs.StringVarP(&c.filter.name, standards.FlagName, standards.ShortFlagName, "", "Filter applications by name")
+
+		c.fs.StringVarP(&c.filter.pool, standards.FlagPool, standards.ShortFlagPool, "", "Filter applications by pool")
+		c.fs.StringVarP(&c.filter.status, "status", "s", "", "Filter applications by unit status. Accepts multiple values separated by commas. Possible values can be: building, created, starting, error, started, stopped, asleep")
+		c.fs.StringVarP(&c.filter.platform, "platform", "p", "", "Filter applications by platform")
+		c.fs.StringVarP(&c.filter.teamOwner, standards.FlagTeam, standards.ShortFlagTeam, "", "Filter applications by team owner")
+		c.fs.StringVarP(&c.filter.owner, standards.FlagUser, standards.ShortFlagUser, "", "Filter applications by owner")
+		c.fs.BoolVarP(&c.simplified, standards.FlagOnlyName, standards.ShortFlagOnlyName, false, "Display only applications name")
+		c.fs.BoolVar(&c.json, standards.FlagJSON, false, "Display applications in JSON format")
 		tagMessage := "Filter applications by tag. Can be used multiple times"
-		c.fs.Var(&c.filter.tags, "tag", tagMessage)
-		c.fs.Var(&c.filter.tags, "g", tagMessage)
+		c.fs.VarP(&c.filter.tags, standards.FlagTag, standards.ShortFlagTag, tagMessage)
 	}
 	return c.fs
 }
@@ -1466,7 +1464,7 @@ type AppStop struct {
 	tsuruClientApp.AppNameMixIn
 	process string
 	version string
-	fs      *gnuflag.FlagSet
+	fs      *pflag.FlagSet
 }
 
 func (c *AppStop) Info() *cmd.Info {
@@ -1504,11 +1502,10 @@ func (c *AppStop) Run(context *cmd.Context) error {
 	return formatter.StreamJSONResponse(context.Stdout, response)
 }
 
-func (c *AppStop) Flags() *gnuflag.FlagSet {
+func (c *AppStop) Flags() *pflag.FlagSet {
 	if c.fs == nil {
 		c.fs = c.AppNameMixIn.Flags()
-		c.fs.StringVar(&c.process, "process", "", "Process name")
-		c.fs.StringVar(&c.process, "p", "", "Process name")
+		c.fs.StringVarP(&c.process, "process", "p", "", "Process name")
 		c.fs.StringVar(&c.version, "version", "", "Version number")
 	}
 	return c.fs
@@ -1518,7 +1515,7 @@ type AppStart struct {
 	tsuruClientApp.AppNameMixIn
 	process string
 	version string
-	fs      *gnuflag.FlagSet
+	fs      *pflag.FlagSet
 }
 
 func (c *AppStart) Info() *cmd.Info {
@@ -1556,11 +1553,10 @@ func (c *AppStart) Run(context *cmd.Context) error {
 	return formatter.StreamJSONResponse(context.Stdout, response)
 }
 
-func (c *AppStart) Flags() *gnuflag.FlagSet {
+func (c *AppStart) Flags() *pflag.FlagSet {
 	if c.fs == nil {
 		c.fs = c.AppNameMixIn.Flags()
-		c.fs.StringVar(&c.process, "process", "", "Process name")
-		c.fs.StringVar(&c.process, "p", "", "Process name")
+		c.fs.StringVarP(&c.process, "process", "p", "", "Process name")
 		c.fs.StringVar(&c.version, "version", "", "Version number")
 	}
 	return c.fs
@@ -1570,7 +1566,7 @@ type AppRestart struct {
 	tsuruClientApp.AppNameMixIn
 	process string
 	version string
-	fs      *gnuflag.FlagSet
+	fs      *pflag.FlagSet
 }
 
 func (c *AppRestart) Run(context *cmd.Context) error {
@@ -1608,11 +1604,10 @@ func (c *AppRestart) Info() *cmd.Info {
 	}
 }
 
-func (c *AppRestart) Flags() *gnuflag.FlagSet {
+func (c *AppRestart) Flags() *pflag.FlagSet {
 	if c.fs == nil {
 		c.fs = c.AppNameMixIn.Flags()
-		c.fs.StringVar(&c.process, "process", "", "Process name")
-		c.fs.StringVar(&c.process, "p", "", "Process name")
+		c.fs.StringVarP(&c.process, "process", "p", "", "Process name")
 		c.fs.StringVar(&c.version, "version", "", "Version number")
 	}
 	return c.fs
@@ -1716,7 +1711,7 @@ type AppProcessUpdate struct {
 	plan             string
 	resetDefaultPlan bool
 	noRestart        bool
-	fs               *gnuflag.FlagSet
+	fs               *pflag.FlagSet
 }
 
 func (c *AppProcessUpdate) Info() *cmd.Info {
@@ -1728,16 +1723,20 @@ func (c *AppProcessUpdate) Info() *cmd.Info {
 	}
 }
 
-func (c *AppProcessUpdate) Flags() *gnuflag.FlagSet {
+func (c *AppProcessUpdate) Flags() *pflag.FlagSet {
 	if c.fs == nil {
-		flagSet := gnuflag.NewFlagSet("", gnuflag.ExitOnError)
+		flagSet := pflag.NewFlagSet("", pflag.ExitOnError)
+		flagSet.SortFlags = false
+
 		planMessage := "Changes plan for the app"
+		flagSet.StringVarP(&c.plan, standards.FlagPlan, standards.ShortFlagPlan, "", planMessage)
+
 		planReset := "Reset process to default plan of app"
-		noRestartMessage := "Prevent tsuru from restarting the application"
-		flagSet.StringVar(&c.plan, "plan", "", planMessage)
-		flagSet.StringVar(&c.plan, "p", "", planMessage)
 		flagSet.BoolVar(&c.resetDefaultPlan, "default-plan", false, planReset)
-		flagSet.BoolVar(&c.noRestart, "no-restart", false, noRestartMessage)
+
+		noRestartMessage := "Prevent tsuru from restarting the application"
+		flagSet.BoolVar(&c.noRestart, standards.FlagNoRestart, false, noRestartMessage)
+
 		c.fs = flagSet
 	}
 	return c.fs

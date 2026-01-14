@@ -18,11 +18,12 @@ import (
 	"text/template"
 
 	"github.com/antihax/optional"
-	"github.com/tsuru/gnuflag"
+	"github.com/spf13/pflag"
 	"github.com/tsuru/go-tsuruclient/pkg/config"
 	"github.com/tsuru/go-tsuruclient/pkg/tsuru"
 	"github.com/tsuru/tablecli"
 	"github.com/tsuru/tsuru-client/tsuru/cmd"
+	"github.com/tsuru/tsuru-client/tsuru/cmd/standards"
 	tsuruHTTP "github.com/tsuru/tsuru-client/tsuru/http"
 	tsuruErrors "github.com/tsuru/tsuru/errors"
 )
@@ -166,7 +167,7 @@ you remove the team using ` + "`team-remove`" + ` before removing the user.`,
 
 type TeamCreate struct {
 	tags cmd.StringSliceFlag
-	fs   *gnuflag.FlagSet
+	fs   *pflag.FlagSet
 }
 
 func (c *TeamCreate) Info() *cmd.Info {
@@ -182,11 +183,10 @@ When you create a team, you're automatically member of this team.
 	}
 }
 
-func (c *TeamCreate) Flags() *gnuflag.FlagSet {
+func (c *TeamCreate) Flags() *pflag.FlagSet {
 	if c.fs == nil {
-		c.fs = gnuflag.NewFlagSet("", gnuflag.ExitOnError)
-		c.fs.Var(&c.tags, "tag", "Sets tags to the team.")
-		c.fs.Var(&c.tags, "t", "Sets tags to the team.")
+		c.fs = pflag.NewFlagSet("", pflag.ExitOnError)
+		c.fs.VarP(&c.tags, "tag", "t", "Sets tags to the team.")
 	}
 	return c.fs
 }
@@ -211,17 +211,15 @@ func (c *TeamCreate) Run(ctx *cmd.Context) error {
 type TeamUpdate struct {
 	newName string
 	tags    cmd.StringSliceFlag
-	fs      *gnuflag.FlagSet
+	fs      *pflag.FlagSet
 }
 
-func (t *TeamUpdate) Flags() *gnuflag.FlagSet {
+func (t *TeamUpdate) Flags() *pflag.FlagSet {
 	if t.fs == nil {
-		t.fs = gnuflag.NewFlagSet("team-update", gnuflag.ExitOnError)
+		t.fs = pflag.NewFlagSet("team-update", pflag.ExitOnError)
 		desc := "New team name."
-		t.fs.StringVar(&t.newName, "name", "", desc)
-		t.fs.StringVar(&t.newName, "n", "", desc)
-		t.fs.Var(&t.tags, "tag", "New team tags.")
-		t.fs.Var(&t.tags, "t", "New team tags.")
+		t.fs.StringVarP(&t.newName, standards.FlagName, standards.ShortFlagName, "", desc)
+		t.fs.VarP(&t.tags, standards.FlagTag, "t", "New team tags.")
 	}
 	return t.fs
 }
@@ -289,7 +287,7 @@ and "app revoke" commands for details).`,
 }
 
 type TeamList struct {
-	fs         *gnuflag.FlagSet
+	fs         *pflag.FlagSet
 	simplified bool
 }
 
@@ -302,10 +300,10 @@ func (c *TeamList) Info() *cmd.Info {
 	}
 }
 
-func (c *TeamList) Flags() *gnuflag.FlagSet {
+func (c *TeamList) Flags() *pflag.FlagSet {
 	if c.fs == nil {
-		c.fs = gnuflag.NewFlagSet("team-list", gnuflag.ExitOnError)
-		c.fs.BoolVar(&c.simplified, "q", false, "Display only team's name")
+		c.fs = pflag.NewFlagSet("team-list", pflag.ExitOnError)
+		c.fs.BoolVarP(&c.simplified, standards.FlagOnlyName, standards.ShortFlagOnlyName, false, "Display only team's name")
 	}
 	return c.fs
 }
@@ -541,6 +539,10 @@ func (c *ChangePassword) Info() *cmd.Info {
 		Usage: "change password",
 		Desc: `Changes the password of the logged in user. It will ask for the current
 password, the new and the confirmation.`,
+		V2: cmd.InfoV2{
+			OnlyAppendOnRoot: true,
+			GroupID:          "auth",
+		},
 	}
 }
 
@@ -565,6 +567,11 @@ In order to generate the token, users should run this command without the
 With the token in hand, the user can finally reset the password using the
 --token flag. The new password will also be mailed to the user.`,
 		MinArgs: 1,
+
+		V2: cmd.InfoV2{
+			OnlyAppendOnRoot: true,
+			GroupID:          "auth",
+		},
 	}
 }
 
@@ -597,16 +604,15 @@ func (c *ResetPassword) Run(context *cmd.Context) error {
 	return nil
 }
 
-func (c *ResetPassword) Flags() *gnuflag.FlagSet {
-	fs := gnuflag.NewFlagSet("reset-password", gnuflag.ExitOnError)
-	fs.StringVar(&c.token, "token", "", "Token to reset the password")
-	fs.StringVar(&c.token, "t", "", "Token to reset the password")
+func (c *ResetPassword) Flags() *pflag.FlagSet {
+	fs := pflag.NewFlagSet("reset-password", pflag.ExitOnError)
+	fs.StringVarP(&c.token, "token", "t", "", "Token to reset the password")
 	return fs
 }
 
 type ShowAPIToken struct {
 	user string
-	fs   *gnuflag.FlagSet
+	fs   *pflag.FlagSet
 }
 
 func (c *ShowAPIToken) Info() *cmd.Info {
@@ -655,18 +661,17 @@ func (c *ShowAPIToken) Run(context *cmd.Context) error {
 	return nil
 }
 
-func (c *ShowAPIToken) Flags() *gnuflag.FlagSet {
+func (c *ShowAPIToken) Flags() *pflag.FlagSet {
 	if c.fs == nil {
-		c.fs = gnuflag.NewFlagSet("", gnuflag.ExitOnError)
-		c.fs.StringVar(&c.user, "user", "", "Shows API token for the given user email")
-		c.fs.StringVar(&c.user, "u", "", "Shows API token for the given user email")
+		c.fs = pflag.NewFlagSet("", pflag.ExitOnError)
+		c.fs.StringVarP(&c.user, standards.FlagUser, standards.ShortFlagUser, "", "Shows API token for the given user email")
 	}
 	return c.fs
 }
 
 type RegenerateAPIToken struct {
 	user string
-	fs   *gnuflag.FlagSet
+	fs   *pflag.FlagSet
 }
 
 func (c *RegenerateAPIToken) Info() *cmd.Info {
@@ -713,11 +718,10 @@ func (c *RegenerateAPIToken) Run(context *cmd.Context) error {
 	return nil
 }
 
-func (c *RegenerateAPIToken) Flags() *gnuflag.FlagSet {
+func (c *RegenerateAPIToken) Flags() *pflag.FlagSet {
 	if c.fs == nil {
-		c.fs = gnuflag.NewFlagSet("", gnuflag.ExitOnError)
-		c.fs.StringVar(&c.user, "user", "", "Generates a new API token for the given user email")
-		c.fs.StringVar(&c.user, "u", "", "Generates a new API token for the given user email")
+		c.fs = pflag.NewFlagSet("", pflag.ExitOnError)
+		c.fs.StringVarP(&c.user, standards.FlagUser, standards.ShortFlagUser, "", "Generates a new API token for the given user email")
 	}
 	return c.fs
 }
@@ -726,7 +730,7 @@ type ListUsers struct {
 	userEmail string
 	role      string
 	context   string
-	fs        *gnuflag.FlagSet
+	fs        *pflag.FlagSet
 }
 
 func (c *ListUsers) Run(ctx *cmd.Context) error {
@@ -772,15 +776,13 @@ func (c *ListUsers) Info() *cmd.Info {
 	}
 }
 
-func (c *ListUsers) Flags() *gnuflag.FlagSet {
+func (c *ListUsers) Flags() *pflag.FlagSet {
 	if c.fs == nil {
-		c.fs = gnuflag.NewFlagSet("", gnuflag.ExitOnError)
-		c.fs.StringVar(&c.userEmail, "user", "", "Filter user by user email")
-		c.fs.StringVar(&c.userEmail, "u", "", "Filter user by user email")
-		c.fs.StringVar(&c.role, "r", "", "Filter user by role")
-		c.fs.StringVar(&c.role, "role", "", "Filter user by role")
-		c.fs.StringVar(&c.context, "c", "", "Filter user by role context value")
-		c.fs.StringVar(&c.context, "context-value", "", "Filter user by role context value")
+		c.fs = pflag.NewFlagSet("", pflag.ExitOnError)
+		c.fs.SortFlags = false
+		c.fs.StringVarP(&c.userEmail, standards.FlagUser, standards.ShortFlagUser, "", "Filter user by user email")
+		c.fs.StringVarP(&c.role, "role", "r", "", "Filter user by role")
+		c.fs.StringVarP(&c.context, "context-value", "c", "", "Filter user by role context value")
 	}
 	return c.fs
 }

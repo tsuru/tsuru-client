@@ -14,15 +14,16 @@ import (
 
 	"github.com/tsuru/tablecli"
 
-	"github.com/tsuru/gnuflag"
+	"github.com/spf13/pflag"
 	"github.com/tsuru/go-tsuruclient/pkg/tsuru"
 	"github.com/tsuru/tsuru-client/tsuru/cmd"
+	"github.com/tsuru/tsuru-client/tsuru/cmd/standards"
 	"github.com/tsuru/tsuru-client/tsuru/formatter"
 	tsuruHTTP "github.com/tsuru/tsuru-client/tsuru/http"
 )
 
 type TokenCreateCmd struct {
-	fs      *gnuflag.FlagSet
+	fs      *pflag.FlagSet
 	args    tsuru.TeamTokenCreateArgs
 	expires time.Duration
 }
@@ -50,31 +51,27 @@ func (c *TokenCreateCmd) Run(ctx *cmd.Context) error {
 	return nil
 }
 
-func (c *TokenCreateCmd) Flags() *gnuflag.FlagSet {
+func (c *TokenCreateCmd) Flags() *pflag.FlagSet {
 	if c.fs == nil {
-		c.fs = gnuflag.NewFlagSet("", gnuflag.ExitOnError)
+		c.fs = pflag.NewFlagSet("", pflag.ExitOnError)
 
 		description := "A description on how the token will be used."
-		c.fs.StringVar(&c.args.Description, "description", "", description)
-		c.fs.StringVar(&c.args.Description, "d", "", description)
+		c.fs.StringVarP(&c.args.Description, standards.FlagDescription, standards.ShortFlagDescription, "", description)
 
 		tokenID := "A unique identifier for the token being created."
-		c.fs.StringVar(&c.args.TokenId, "id", "", tokenID)
-		c.fs.StringVar(&c.args.TokenId, "i", "", tokenID)
+		c.fs.StringVarP(&c.args.TokenId, "id", "i", "", tokenID)
 
 		team := "The team name responsible for this token."
-		c.fs.StringVar(&c.args.Team, "team", "", team)
-		c.fs.StringVar(&c.args.Team, "t", "", team)
+		c.fs.StringVarP(&c.args.Team, standards.FlagTeam, standards.ShortFlagTeam, "", team)
 
 		expiration := "The expiration for the token being created. A duration suffix is mandatory (s for seconds, m for minutes, h for hours, ...). 0 or unset means it never expires."
-		c.fs.DurationVar(&c.expires, "expires", 0, expiration)
-		c.fs.DurationVar(&c.expires, "e", 0, expiration)
+		c.fs.DurationVarP(&c.expires, "expires", "e", 0, expiration)
 	}
 	return c.fs
 }
 
 type TokenUpdateCmd struct {
-	fs      *gnuflag.FlagSet
+	fs      *pflag.FlagSet
 	args    tsuru.TeamTokenUpdateArgs
 	expires time.Duration
 }
@@ -102,20 +99,18 @@ func (c *TokenUpdateCmd) Run(ctx *cmd.Context) error {
 	return nil
 }
 
-func (c *TokenUpdateCmd) Flags() *gnuflag.FlagSet {
+func (c *TokenUpdateCmd) Flags() *pflag.FlagSet {
 	if c.fs == nil {
-		c.fs = gnuflag.NewFlagSet("", gnuflag.ExitOnError)
+		c.fs = pflag.NewFlagSet("", pflag.ExitOnError)
 
 		description := "A description on how the token will be used."
-		c.fs.StringVar(&c.args.Description, "description", "", description)
-		c.fs.StringVar(&c.args.Description, "d", "", description)
+		c.fs.StringVarP(&c.args.Description, standards.FlagDescription, standards.ShortFlagDescription, "", description)
 
 		regenerate := "Setting regenerate will change de value of the token, invalidating the previous value."
 		c.fs.BoolVar(&c.args.Regenerate, "regenerate", false, regenerate)
 
 		expiration := "The expiration for the token being updated. A duration suffix is mandatory ('s' for seconds, 'm' for minutes, 'h' for hours, ...). Setting to 0 or unset means the previous value will be used. Setting to a negative value will remove any existing expiration."
-		c.fs.DurationVar(&c.expires, "expires", 0, expiration)
-		c.fs.DurationVar(&c.expires, "e", 0, expiration)
+		c.fs.DurationVarP(&c.expires, "expires", "e", 0, expiration)
 	}
 	return c.fs
 }

@@ -84,7 +84,7 @@ func (s *S) TestRoleAddFlags(c *check.C) {
 	command := RoleAdd{}
 	flagset := command.Flags()
 	c.Assert(flagset, check.NotNil)
-	flagset.Parse(true, []string{"-d", "my description"})
+	flagset.Parse([]string{"-d", "my description"})
 	description := flagset.Lookup("description")
 	usage := "Role description"
 	c.Check(description, check.NotNil)
@@ -92,12 +92,7 @@ func (s *S) TestRoleAddFlags(c *check.C) {
 	c.Check(description.Usage, check.Equals, usage)
 	c.Check(description.Value.String(), check.Equals, "my description")
 	c.Check(description.DefValue, check.Equals, "")
-	sdescription := flagset.Lookup("d")
-	c.Check(sdescription, check.NotNil)
-	c.Check(sdescription.Name, check.Equals, "d")
-	c.Check(sdescription.Usage, check.Equals, usage)
-	c.Check(sdescription.Value.String(), check.Equals, "my description")
-	c.Check(sdescription.DefValue, check.Equals, "")
+	c.Check(description.Shorthand, check.Equals, "d")
 }
 
 func (s *S) TestRoleListInfo(c *check.C) {
@@ -383,7 +378,7 @@ func (s *S) TestRoleRemoveWithConfirmation(c *check.C) {
 	}
 	s.setupFakeTransport(trans)
 	command := RoleRemove{}
-	command.Flags().Parse(true, []string{"-y"})
+	command.Flags().Parse([]string{"-y"})
 	err := command.Run(&context)
 	c.Assert(err, check.IsNil)
 	c.Assert(stdout.String(), check.Equals, "Role successfully removed!\n")
@@ -427,7 +422,7 @@ func (s *S) TestRoleDefaultAdd(c *check.C) {
 	}
 	s.setupFakeTransport(trans)
 	command := RoleDefaultAdd{}
-	command.Flags().Parse(true, []string{"--user-create", "r1", "--user-create", "r2", "--team-create", "r3"})
+	command.Flags().Parse([]string{"--user-create", "r1", "--user-create", "r2", "--team-create", "r3"})
 	err := command.Run(&context)
 	c.Assert(err, check.IsNil)
 	c.Assert(stdout.String(), check.Equals, "Roles successfully added as default!\n")
@@ -456,7 +451,7 @@ func (s *S) TestRoleDefaultRemove(c *check.C) {
 	}
 	s.setupFakeTransport(trans)
 	command := RoleDefaultRemove{}
-	command.Flags().Parse(true, []string{"--user-create", "r1", "--user-create", "r2", "--team-create", "r3"})
+	command.Flags().Parse([]string{"--user-create", "r1", "--user-create", "r2", "--team-create", "r3"})
 	err := command.Run(&context)
 	c.Assert(err, check.IsNil)
 	c.Assert(stdout.String(), check.Equals, "Roles successfully removed as default!\n")
@@ -520,7 +515,7 @@ func (s *S) TestRoleUpdate(c *check.C) {
 	}
 	s.setupFakeTransport(trans)
 	cmd := RoleUpdate{}
-	cmd.Flags().Parse(true, []string{"-d", "a developer"})
+	cmd.Flags().Parse([]string{"-d", "a developer"})
 	err := cmd.Run(&context)
 	c.Assert(err, check.IsNil)
 	c.Assert(stdout.String(), check.Equals, "Role successfully updated\n")
@@ -568,7 +563,7 @@ func (s *S) TestRoleUpdateMultipleFlags(c *check.C) {
 	}
 	s.setupFakeTransport(trans)
 	cmd := RoleUpdate{}
-	cmd.Flags().Parse(true, []string{"-d", "a developer", "-c", "team", "-n", "newName"})
+	cmd.Flags().Parse([]string{"-d", "a developer", "-c", "team", "-n", "newName"})
 	err := cmd.Run(&context)
 	c.Assert(err, check.IsNil)
 	c.Assert(stdout.String(), check.Equals, "Role successfully updated\n")
@@ -592,7 +587,7 @@ func (s *S) TestRoleUpdateWithInvalidContent(c *check.C) {
 	}
 	s.setupFakeTransport(trans)
 	cmd := RoleUpdate{}
-	cmd.Flags().Parse(true, []string{"-d", "a developer"})
+	cmd.Flags().Parse([]string{"-d", "a developer"})
 	err := cmd.Run(&context)
 	c.Assert(err, check.NotNil)
 	c.Assert(stdout.String(), check.Equals, "")

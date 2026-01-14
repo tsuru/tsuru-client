@@ -11,7 +11,7 @@ import (
 	"strconv"
 	"strings"
 
-	"github.com/tsuru/gnuflag"
+	"github.com/spf13/pflag"
 	"github.com/tsuru/go-tsuruclient/pkg/config"
 	"github.com/tsuru/tsuru-client/tsuru/cmd"
 	tsuruHTTP "github.com/tsuru/tsuru-client/tsuru/http"
@@ -22,26 +22,26 @@ type PlanCreate struct {
 	memory     string
 	cpu        string
 	setDefault bool
-	fs         *gnuflag.FlagSet
+	fs         *pflag.FlagSet
 }
 
-func (c *PlanCreate) Flags() *gnuflag.FlagSet {
+func (c *PlanCreate) Flags() *pflag.FlagSet {
 	if c.fs == nil {
-		c.fs = gnuflag.NewFlagSet("plan-create", gnuflag.ExitOnError)
+		c.fs = pflag.NewFlagSet("plan-create", pflag.ExitOnError)
+
 		memory := `Amount of available memory for units in bytes or an integer value followed
 by M, K or G for megabytes, kilobytes or gigabytes respectively.`
-		c.fs.StringVar(&c.memory, "memory", "0", memory)
-		c.fs.StringVar(&c.memory, "m", "0", memory)
+		c.fs.StringVarP(&c.memory, "memory", "m", "0", memory)
 
 		cpu := `Relative cpu each unit will have available.`
-		c.fs.StringVar(&c.cpu, "cpu", "0", cpu)
-		c.fs.StringVar(&c.cpu, "c", "0", cpu)
+		c.fs.StringVarP(&c.cpu, "cpu", "c", "0", cpu)
+
 		setDefault := `Set plan as default, this will remove the default flag from any other plan.
 The default plan will be used when creating an application without explicitly
 setting a plan.`
-		c.fs.BoolVar(&c.setDefault, "default", false, setDefault)
-		c.fs.BoolVar(&c.setDefault, "d", false, setDefault)
+		c.fs.BoolVarP(&c.setDefault, "default", "d", false, setDefault)
 	}
+
 	return c.fs
 }
 

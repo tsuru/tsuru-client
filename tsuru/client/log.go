@@ -12,7 +12,7 @@ import (
 	"strings"
 	"time"
 
-	"github.com/tsuru/gnuflag"
+	"github.com/spf13/pflag"
 	"github.com/tsuru/go-tsuruclient/pkg/config"
 	tsuruClientApp "github.com/tsuru/tsuru-client/tsuru/app"
 	"github.com/tsuru/tsuru-client/tsuru/cmd"
@@ -22,7 +22,7 @@ import (
 
 type AppLog struct {
 	tsuruClientApp.AppNameMixIn
-	fs       *gnuflag.FlagSet
+	fs       *pflag.FlagSet
 	source   string
 	unit     string
 	lines    int
@@ -163,17 +163,13 @@ func (c *AppLog) Run(context *cmd.Context) error {
 	return nil
 }
 
-func (c *AppLog) Flags() *gnuflag.FlagSet {
+func (c *AppLog) Flags() *pflag.FlagSet {
 	if c.fs == nil {
 		c.fs = c.AppNameMixIn.Flags()
-		c.fs.IntVar(&c.lines, "lines", 10, "The number of log lines to display")
-		c.fs.IntVar(&c.lines, "l", 10, "The number of log lines to display")
-		c.fs.StringVar(&c.source, "source", "", "The log from the given source")
-		c.fs.StringVar(&c.source, "s", "", "The log from the given source")
-		c.fs.StringVar(&c.unit, "unit", "", "The log from the given unit")
-		c.fs.StringVar(&c.unit, "u", "", "The log from the given unit")
-		c.fs.BoolVar(&c.follow, "follow", false, "Follow logs")
-		c.fs.BoolVar(&c.follow, "f", false, "Follow logs")
+		c.fs.IntVarP(&c.lines, "lines", "l", 10, "The number of log lines to display")
+		c.fs.StringVarP(&c.source, "source", "s", "", "The log from the given source")
+		c.fs.StringVarP(&c.unit, "unit", "u", "", "The log from the given unit")
+		c.fs.BoolVarP(&c.follow, "follow", "f", false, "Follow logs")
 		c.fs.BoolVar(&c.noDate, "no-date", false, "No date information")
 		c.fs.BoolVar(&c.noSource, "no-source", false, "No source information")
 	}

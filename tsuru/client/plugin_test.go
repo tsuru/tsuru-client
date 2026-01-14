@@ -379,7 +379,7 @@ func (s *S) TestPluginBundle(c *check.C) {
 	var stdout bytes.Buffer
 	context := cmd.Context{Stdout: &stdout}
 	command := PluginBundle{}
-	command.Flags().Parse(true, []string{"--url", ts.URL})
+	command.Flags().Parse([]string{"--url", ts.URL})
 
 	err := command.Run(&context)
 	c.Assert(err, check.IsNil)
@@ -423,7 +423,7 @@ func (s *S) TestPluginBundleError(c *check.C) {
 	var stdout bytes.Buffer
 	context := cmd.Context{Stdout: &stdout}
 	command := PluginBundle{}
-	command.Flags().Parse(true, []string{"--url", ts.URL})
+	command.Flags().Parse([]string{"--url", ts.URL})
 
 	err := command.Run(&context)
 	c.Assert(err, check.ErrorMatches, `invalid status code reading plugin bundle: 500 - "my err"`)
@@ -434,11 +434,138 @@ func (s *S) TestPluginBundleErrorNoFlags(c *check.C) {
 	context := cmd.Context{Stdout: &stdout}
 
 	command := PluginBundle{}
-	command.Flags().Parse(true, []string{})
+	command.Flags().Parse([]string{})
 	err := command.Run(&context)
 	c.Assert(err, check.ErrorMatches, `--url <url> is mandatory. See --help for usage`)
 }
 
 func (s *S) TestPluginBundleIsACommand(c *check.C) {
 	var _ cmd.Command = &PluginBundle{}
+}
+
+func (s *S) TestFindPlugins(c *check.C) {
+	// Kids, do not try this at $HOME
+	defer os.Setenv("HOME", os.Getenv("HOME"))
+	tempHome, _ := filepath.Abs("testdata")
+	os.Setenv("HOME", tempHome)
+
+	plugins := FindPlugins()
+	c.Assert(plugins, check.HasLen, 2)
+	c.Assert(plugins, check.DeepEquals, []string{"myplugin", "otherplugin.exe"})
+}
+
+func (s *S) TestFindPluginsEmptyDir(c *check.C) {
+	defer os.Setenv("HOME", os.Getenv("HOME"))
+	tempDir := c.MkDir()
+	os.Setenv("HOME", tempDir)
+
+	plugins := FindPlugins()
+	c.Assert(plugins, check.IsNil)
+}
+
+func (s *S) TestFindPluginsNonExistentDir(c *check.C) {
+	defer os.Setenv("HOME", os.Getenv("HOME"))
+	os.Setenv("HOME", "/nonexistent/path/that/does/not/exist")
+
+	plugins := FindPlugins()
+	c.Assert(plugins, check.IsNil)
+}
+
+func (s *S) TestFindPluginsWithSubdirectory(c *check.C) {
+	defer os.Setenv("HOME", os.Getenv("HOME"))
+	tempDir := c.MkDir()
+	os.Setenv("HOME", tempDir)
+
+	pluginsDir := filepath.Join(tempDir, ".tsuru", "plugins")
+	err := os.MkdirAll(pluginsDir, 0755)
+	c.Assert(err, check.IsNil)
+
+	// Create a regular plugin file
+	pluginFile := filepath.Join(pluginsDir, "regular-plugin")
+	f, err := os.Create(pluginFile)
+	c.Assert(err, check.IsNil)
+	f.Close()
+
+	// Create a subdirectory with executable plugin
+	subDir := filepath.Join(pluginsDir, "subplugin")
+	err = os.MkdirAll(subDir, 0755)
+	c.Assert(err, check.IsNil)
+
+	// Create executable in subdirectory with same name as directory
+	subPluginExec := filepath.Join(subDir, "subplugin")
+	f, err = os.OpenFile(subPluginExec, os.O_CREATE|os.O_WRONLY, 0755)
+	c.Assert(err, check.IsNil)
+	f.Close()
+
+	plugins := FindPlugins()
+	c.Assert(len(plugins), check.Equals, 2)
+	c.Assert(plugins, check.DeepEquals, []string{"regular-plugin", "subplugin"})
+}
+
+func (s *S) TestExecutePluginInfo(c *check.C) {
+	plugin := ExecutePlugin{PluginName: "myplugin"}
+	info := plugin.Info()
+	c.Assert(info, check.NotNil)
+	c.Assert(info.Name, check.Equals, "myplugin")
+	c.Assert(info.Usage, check.Equals, "myplugin")
+	c.Assert(info.Desc, check.Equals, "Executes the myplugin plugin.")
+	c.Assert(info.MinArgs, check.Equals, cmd.ArbitraryArgs)
+	c.Assert(info.V2.GroupID, check.Equals, "plugin")
+	c.Assert(info.V2.OnlyAppendOnRoot, check.Equals, true)
+	c.Assert(info.V2.DisableFlagParsing, check.Equals, true)
+	c.Assert(info.V2.SilenceUsage, check.Equals, true)
+}
+
+func (s *S) TestExecutePluginRun(c *check.C) {
+	// Kids, do not try this at $HOME
+	defer os.Setenv("HOME", os.Getenv("HOME"))
+	tempHome, _ := filepath.Abs("testdata")
+	os.Setenv("HOME", tempHome)
+
+	fexec := exectest.FakeExecutor{
+		Output: map[string][][]byte{
+			"arg1 arg2": {[]byte("plugin output")},
+		},
+	}
+	Execut = &fexec
+	defer func() {
+		Execut = nil
+	}()
+
+	var buf bytes.Buffer
+	context := cmd.Context{
+		Args:   []string{"arg1", "arg2"},
+		Stdout: &buf,
+		Stderr: &buf,
+	}
+	plugin := ExecutePlugin{PluginName: "myplugin"}
+	err := plugin.Run(&context)
+	c.Assert(err, check.IsNil)
+	pluginPath := config.JoinWithUserDir(".tsuru", "plugins", "myplugin")
+	c.Assert(fexec.ExecutedCmd(pluginPath, []string{"arg1", "arg2"}), check.Equals, true)
+}
+
+func (s *S) TestExecutePluginRunWithNoArgs(c *check.C) {
+	// Kids, do not try this at $HOME
+	defer os.Setenv("HOME", os.Getenv("HOME"))
+	tempHome, _ := filepath.Abs("testdata")
+	os.Setenv("HOME", tempHome)
+
+	fexec := exectest.FakeExecutor{}
+	Execut = &fexec
+	defer func() {
+		Execut = nil
+	}()
+
+	var buf bytes.Buffer
+	context := cmd.Context{
+		Args:   []string{},
+		Stdout: &buf,
+		Stderr: &buf,
+	}
+	plugin := ExecutePlugin{PluginName: "myplugin"}
+	err := plugin.Run(&context)
+	c.Assert(err, check.IsNil)
+	pluginPath := config.JoinWithUserDir(".tsuru", "plugins", "myplugin")
+	c.Assert(fexec.ExecutedCmd(pluginPath, []string{}), check.Equals, true)
 }

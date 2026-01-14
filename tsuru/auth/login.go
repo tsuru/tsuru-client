@@ -13,7 +13,7 @@ import (
 	"os"
 	"strings"
 
-	"github.com/tsuru/gnuflag"
+	"github.com/spf13/pflag"
 	"github.com/tsuru/go-tsuruclient/pkg/config"
 	"github.com/tsuru/tsuru-client/tsuru/cmd"
 	tsuruHTTP "github.com/tsuru/tsuru-client/tsuru/http"
@@ -23,7 +23,7 @@ import (
 var errTsuruTokenDefined = errors.New("this command can't run with $TSURU_TOKEN environment variable set. Did you forget to unset?")
 
 type Login struct {
-	fs *gnuflag.FlagSet
+	fs *pflag.FlagSet
 
 	scheme string
 }
@@ -43,15 +43,20 @@ func (c *Login) Info() *cmd.Info {
 		All tsuru actions require the user to be authenticated (except [[tsuru login]]
 		and [[tsuru version]]).`,
 		MinArgs: 0,
+
+		V2: cmd.InfoV2{
+			OnlyAppendOnRoot: true,
+			GroupID:          "auth",
+		},
 	}
 }
 
-func (c *Login) Flags() *gnuflag.FlagSet {
+func (c *Login) Flags() *pflag.FlagSet {
 	if c.fs == nil {
-		c.fs = gnuflag.NewFlagSet("login", gnuflag.ExitOnError)
+		c.fs = pflag.NewFlagSet("login", pflag.ExitOnError)
+
 		desc := `Login with specific auth scheme`
-		c.fs.StringVar(&c.scheme, "scheme", "", desc)
-		c.fs.StringVar(&c.scheme, "s", "", desc)
+		c.fs.StringVarP(&c.scheme, "scheme", "s", "", desc)
 	}
 	return c.fs
 }

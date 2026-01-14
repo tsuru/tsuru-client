@@ -12,10 +12,11 @@ import (
 	"strings"
 
 	"github.com/mitchellh/go-wordwrap"
-	"github.com/tsuru/gnuflag"
+	"github.com/spf13/pflag"
 	"github.com/tsuru/go-tsuruclient/pkg/config"
 	"github.com/tsuru/tablecli"
 	"github.com/tsuru/tsuru-client/tsuru/cmd"
+	"github.com/tsuru/tsuru-client/tsuru/cmd/standards"
 	"github.com/tsuru/tsuru-client/tsuru/formatter"
 	tsuruHTTP "github.com/tsuru/tsuru-client/tsuru/http"
 )
@@ -26,7 +27,7 @@ type poolFilter struct {
 }
 
 type PoolList struct {
-	fs         *gnuflag.FlagSet
+	fs         *pflag.FlagSet
 	filter     poolFilter
 	simplified bool
 	json       bool
@@ -69,15 +70,14 @@ func (l poolEntriesList) Less(i, j int) bool {
 	return cmp < 0
 }
 
-func (c *PoolList) Flags() *gnuflag.FlagSet {
+func (c *PoolList) Flags() *pflag.FlagSet {
 	if c.fs == nil {
-		c.fs = gnuflag.NewFlagSet("volume-list", gnuflag.ExitOnError)
-		c.fs.StringVar(&c.filter.name, "name", "", "Filter pools by name")
-		c.fs.StringVar(&c.filter.name, "n", "", "Filter pools by name")
-		c.fs.StringVar(&c.filter.team, "team", "", "Filter pools by team ")
-		c.fs.StringVar(&c.filter.team, "t", "", "Filter pools by team")
-		c.fs.BoolVar(&c.simplified, "q", false, "Display only pools name")
-		c.fs.BoolVar(&c.json, "json", false, "Display in JSON format")
+		c.fs = pflag.NewFlagSet("", pflag.ExitOnError)
+		c.fs.StringVarP(&c.filter.name, standards.FlagName, standards.ShortFlagName, "", "Filter pools by name")
+		c.fs.StringVarP(&c.filter.team, standards.FlagTeam, standards.ShortFlagTeam, "", "Filter pools by team ")
+
+		c.fs.BoolVarP(&c.simplified, standards.FlagOnlyName, standards.ShortFlagOnlyName, false, "Display only pools name")
+		c.fs.BoolVar(&c.json, standards.FlagJSON, false, "Display in JSON format")
 
 	}
 	return c.fs

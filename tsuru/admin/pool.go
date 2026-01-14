@@ -14,7 +14,7 @@ import (
 	"strconv"
 	"strings"
 
-	"github.com/tsuru/gnuflag"
+	"github.com/spf13/pflag"
 	"github.com/tsuru/go-tsuruclient/pkg/config"
 	"github.com/tsuru/tablecli"
 	"github.com/tsuru/tsuru-client/tsuru/cmd"
@@ -29,7 +29,7 @@ type AddPoolToSchedulerCmd struct {
 	forceDefault bool
 	provisioner  string
 	labels       cmd.MapFlag
-	fs           *gnuflag.FlagSet
+	fs           *pflag.FlagSet
 }
 
 func (AddPoolToSchedulerCmd) Info() *cmd.Info {
@@ -46,20 +46,21 @@ to the chosen pool.`,
 	}
 }
 
-func (c *AddPoolToSchedulerCmd) Flags() *gnuflag.FlagSet {
+func (c *AddPoolToSchedulerCmd) Flags() *pflag.FlagSet {
 	if c.fs == nil {
-		c.fs = gnuflag.NewFlagSet("", gnuflag.ExitOnError)
+		c.fs = pflag.NewFlagSet("", pflag.ExitOnError)
 		msg := "Make pool public (all teams can use it)"
-		c.fs.BoolVar(&c.public, "public", false, msg)
-		c.fs.BoolVar(&c.public, "p", false, msg)
+		c.fs.BoolVarP(&c.public, "public", "p", false, msg)
+
 		msg = "Make pool default (when none is specified during [[app-create]] this pool will be used)"
-		c.fs.BoolVar(&c.defaultPool, "default", false, msg)
-		c.fs.BoolVar(&c.defaultPool, "d", false, msg)
+		c.fs.BoolVarP(&c.defaultPool, "default", "d", false, msg)
+
 		msg = "Force overwrite default pool"
-		c.fs.BoolVar(&c.forceDefault, "force", false, msg)
-		c.fs.BoolVar(&c.forceDefault, "f", false, msg)
+		c.fs.BoolVarP(&c.forceDefault, "force", "f", false, msg)
+
 		msg = "Provisioner associated to the pool (empty for default docker provisioner)"
 		c.fs.StringVar(&c.provisioner, "provisioner", "", msg)
+
 		msg = "LabelSet that integrates with kubernetes, i.e could be used to define a podAffinity rule for the pool"
 		c.fs.Var(&c.labels, "labels", msg)
 	}
@@ -125,7 +126,7 @@ type UpdatePoolToSchedulerCmd struct {
 	forceDefault bool
 	labelsAdd    cmd.MapFlag
 	labelsRemove cmd.StringSliceFlag
-	fs           *gnuflag.FlagSet
+	fs           *pflag.FlagSet
 }
 
 func (UpdatePoolToSchedulerCmd) Info() *cmd.Info {
@@ -137,15 +138,17 @@ func (UpdatePoolToSchedulerCmd) Info() *cmd.Info {
 	}
 }
 
-func (c *UpdatePoolToSchedulerCmd) Flags() *gnuflag.FlagSet {
+func (c *UpdatePoolToSchedulerCmd) Flags() *pflag.FlagSet {
 	if c.fs == nil {
-		c.fs = gnuflag.NewFlagSet("", gnuflag.ExitOnError)
+		c.fs = pflag.NewFlagSet("", pflag.ExitOnError)
+
 		msg := "Make pool public (all teams can use it)"
 		c.fs.Var(&c.public, "public", msg)
+
 		msg = "Make pool default (when none is specified during [[app-create]] this pool will be used)"
 		c.fs.Var(&c.defaultPool, "default", msg)
-		c.fs.BoolVar(&c.forceDefault, "force", false, "Force pool to be default.")
-		c.fs.BoolVar(&c.forceDefault, "f", false, "Force pool to be default.")
+
+		c.fs.BoolVarP(&c.forceDefault, "force", "f", false, "Force pool to be default.")
 		c.fs.Var(&c.labelsAdd, "add-labels", "group of key/value pairs that specify a kubernetes object label, this option adds the specified labels to the pool")
 		c.fs.Var(&c.labelsRemove, "remove-labels", "group of keys from a kubernetes object label, this option removes the specified labels from the pool")
 	}
@@ -373,6 +376,10 @@ func (p *pointerBoolFlag) Set(value string) error {
 	return nil
 }
 
+func (p *pointerBoolFlag) Type() string {
+	return "bool"
+}
+
 func doRequest(url, method string, body []byte) error {
 	req, err := http.NewRequest(method, url, bytes.NewBuffer(body))
 	if err != nil {
@@ -440,25 +447,23 @@ func (c *PoolConstraintList) Run(ctx *cmd.Context) error {
 }
 
 type PoolConstraintSet struct {
-	append    bool
-	blacklist bool
-	fs        *gnuflag.FlagSet
+	append   bool
+	denylist bool
+	fs       *pflag.FlagSet
 }
 
-func (c *PoolConstraintSet) Flags() *gnuflag.FlagSet {
+func (c *PoolConstraintSet) Flags() *pflag.FlagSet {
 	if c.fs == nil {
-		c.fs = gnuflag.NewFlagSet("", gnuflag.ExitOnError)
-		c.fs.BoolVar(&c.append, "append", false, "Append to existing constraint.")
-		c.fs.BoolVar(&c.append, "a", false, "Append to existing constraint.")
-		c.fs.BoolVar(&c.blacklist, "b", false, "Blacklist constraint.")
-		c.fs.BoolVar(&c.blacklist, "blacklist", false, "Blacklist constraint.")
+		c.fs = pflag.NewFlagSet("", pflag.ExitOnError)
+		c.fs.BoolVarP(&c.append, "append", "a", false, "Append to existing constraint.")
+		c.fs.BoolVar(&c.denylist, "denylist", false, "Denylist constraint.")
 	}
 	return c.fs
 }
 func (c *PoolConstraintSet) Info() *cmd.Info {
 	return &cmd.Info{
 		Name:  "pool-constraint-set",
-		Usage: "pool-constraint-set <poolExpression> <field> [<values>]... [-b/--blacklist] [-a/--append]",
+		Usage: "pool-constraint-set <poolExpression> <field> [<values>]... [-b/--denylist] [-a/--append]",
 		Desc: `Set a constraint on a pool expression.
 
 Examples:
@@ -466,19 +471,19 @@ Examples:
   tsuru pool-constraint-set dev_pool team "*" 
 	# Allows every team to use the pool "dev_pool".
 
-  tsuru pool-constraint-set "dev_*" router prod_router --blacklist
+  tsuru pool-constraint-set "dev_*" router prod_router --denylist
 	# Disallows "prod_router" to be used on pools with "dev_" prefix.
 
   tsuru pool-constraint-set dev_pool cert-issuer letsencrypt digicert 
 	# Constraint every app in the the pool "dev_pool" to use certificate issuer from letsencrypt or digicert.
 
-  tsuru pool-constraint-set "dev_*" router prod_router --blacklist
+  tsuru pool-constraint-set "dev_*" router prod_router --denylist
 	# Disallows "prod_router" to be used on pools with "dev_" prefix.
 
   tsuru pool-constraint-set prod_pool service service1 service2 --append
 	# Adds "service1" and "service2" to the list of services allowed to use pool "prod_pool".
 	  
-  tsuru pool-constraint-set prod_pool service service1 service2 --blacklist --append
+  tsuru pool-constraint-set prod_pool service service1 service2 --denylist --append
   	# Adds "service1" and "service2" to the list of services disallowed to use pool "prod_pool".`,
 
 		MinArgs: 2,
@@ -502,7 +507,7 @@ func (c *PoolConstraintSet) Run(ctx *cmd.Context) error {
 	constraint := pool.PoolConstraint{
 		PoolExpr:  ctx.Args[0],
 		Field:     constraintType,
-		Blacklist: c.blacklist,
+		Blacklist: c.denylist,
 		Values:    allValues,
 	}
 

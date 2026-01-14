@@ -40,7 +40,7 @@ func (s *S) TestUnitAdd(c *check.C) {
 	}
 	s.setupFakeTransport(trans)
 	command := UnitAdd{}
-	command.Flags().Parse(true, []string{"-a", "radio", "-p", "p1"})
+	command.Flags().Parse([]string{"-a", "radio", "-p", "p1"})
 	err = command.Run(&context)
 	c.Assert(err, check.IsNil)
 	c.Assert(called, check.Equals, true)
@@ -71,7 +71,7 @@ func (s *S) TestUnitAddWithVersion(c *check.C) {
 	}
 	s.setupFakeTransport(trans)
 	command := UnitAdd{}
-	command.Flags().Parse(true, []string{"-a", "radio", "-p", "p1", "--version", "9"})
+	command.Flags().Parse([]string{"-a", "radio", "-p", "p1", "--version", "9"})
 	err = command.Run(&context)
 	c.Assert(err, check.IsNil)
 	c.Assert(called, check.Equals, true)
@@ -90,7 +90,7 @@ func (s *S) TestUnitAddFailure(c *check.C) {
 	c.Assert(err, check.IsNil)
 	s.setupFakeTransport(&cmdtest.Transport{Message: string(result), Status: 200})
 	command := UnitAdd{}
-	command.Flags().Parse(true, []string{"-a", "radio"})
+	command.Flags().Parse([]string{"-a", "radio"})
 	err = command.Run(&context)
 	c.Assert(err, check.NotNil)
 	c.Assert(err.Error(), check.Equals, "errored msg")
@@ -127,7 +127,7 @@ func (s *S) TestUnitRemove(c *check.C) {
 	}
 	s.setupFakeTransport(trans)
 	command := UnitRemove{}
-	command.Flags().Parse(true, []string{"-a", "vapor", "-p", "web1"})
+	command.Flags().Parse([]string{"-a", "vapor", "-p", "web1"})
 	err = command.Run(&context)
 	c.Assert(err, check.IsNil)
 	c.Assert(called, check.Equals, true)
@@ -143,7 +143,7 @@ func (s *S) TestUnitRemoveFailure(c *check.C) {
 	}
 	s.setupFakeTransport(&cmdtest.Transport{Message: "Failed to remove.", Status: 500})
 	command := UnitRemove{}
-	command.Flags().Parse(true, []string{"-a", "vapor"})
+	command.Flags().Parse([]string{"-a", "vapor"})
 	err := command.Run(&context)
 	c.Assert(err, check.NotNil)
 	c.Assert(tsuruHTTP.UnwrapErr(err).Error(), check.Equals, "Failed to remove.")
@@ -196,7 +196,7 @@ func (s *S) TestUnitSetAddUnits(c *check.C) {
 
 	s.setupFakeTransport(transport)
 	command := UnitSet{}
-	command.Flags().Parse(true, []string{"-a", "app1", "-p", "web"})
+	command.Flags().Parse([]string{"-a", "app1", "-p", "web"})
 	err := command.Run(&context)
 	c.Assert(err, check.IsNil)
 	c.Assert(calledGet, check.Equals, true)
@@ -239,7 +239,7 @@ func (s *S) TestUnitSetAddUnitsFailure(c *check.C) {
 
 	s.setupFakeTransport(transport)
 	command := UnitSet{}
-	command.Flags().Parse(true, []string{"-a", "app1", "-p", "web"})
+	command.Flags().Parse([]string{"-a", "app1", "-p", "web"})
 	err := command.Run(&context)
 	c.Assert(err, check.NotNil)
 	c.Assert(tsuruHTTP.UnwrapErr(err).Error(), check.Equals, "Failed to put.")
@@ -286,7 +286,7 @@ func (s *S) TestUnitSetRemoveUnits(c *check.C) {
 
 	s.setupFakeTransport(transport)
 	command := UnitSet{}
-	command.Flags().Parse(true, []string{"-a", "app1", "-p", "web"})
+	command.Flags().Parse([]string{"-a", "app1", "-p", "web"})
 	err := command.Run(&context)
 	c.Assert(err, check.IsNil)
 	c.Assert(calledGet, check.Equals, true)
@@ -329,7 +329,7 @@ func (s *S) TestUnitSetRemoveUnitsFailure(c *check.C) {
 
 	s.setupFakeTransport(transport)
 	command := UnitSet{}
-	command.Flags().Parse(true, []string{"-a", "app1", "-p", "web"})
+	command.Flags().Parse([]string{"-a", "app1", "-p", "web"})
 	err := command.Run(&context)
 	c.Assert(err, check.NotNil)
 	c.Assert(tsuruHTTP.UnwrapErr(err).Error(), check.Equals, "Failed to delete.")
@@ -357,7 +357,7 @@ func (s *S) TestUnitSetNoChanges(c *check.C) {
 
 	s.setupFakeTransport(transport)
 	command := UnitSet{}
-	command.Flags().Parse(true, []string{"-a", "app1", "-p", "web"})
+	command.Flags().Parse([]string{"-a", "app1", "-p", "web"})
 	err := command.Run(&context)
 	c.Assert(err, check.IsNil)
 	c.Assert(calledGet, check.Equals, true)
@@ -383,7 +383,7 @@ func (s *S) TestUnitSetFailedGet(c *check.C) {
 
 	s.setupFakeTransport(transport)
 	command := UnitSet{}
-	command.Flags().Parse(true, []string{"-a", "app1", "-p", "web"})
+	command.Flags().Parse([]string{"-a", "app1", "-p", "web"})
 	err := command.Run(&context)
 	c.Assert(err, check.NotNil)
 	c.Assert(tsuruHTTP.UnwrapErr(err).Error(), check.Equals, "Failed to get.")
@@ -410,7 +410,7 @@ func (s *S) TestUnitSetNoProcessSpecifiedAndMultipleExist(c *check.C) {
 
 	s.setupFakeTransport(transport)
 	command := UnitSet{}
-	command.Flags().Parse(true, []string{"-a", "app1"})
+	command.Flags().Parse([]string{"-a", "app1"})
 	err := command.Run(&context)
 	c.Assert(err, check.NotNil)
 	c.Assert(err.Error(), check.Equals, "please use the -p/--process flag to specify which process you want to set units for")
@@ -456,7 +456,7 @@ func (s *S) TestUnitSetNoProcessSpecifiedAndSingleExists(c *check.C) {
 
 	s.setupFakeTransport(transport)
 	command := UnitSet{}
-	command.Flags().Parse(true, []string{"-a", "app1"})
+	command.Flags().Parse([]string{"-a", "app1"})
 	err := command.Run(&context)
 	c.Assert(err, check.IsNil)
 	c.Assert(calledGet, check.Equals, true)
@@ -485,7 +485,7 @@ func (s *S) TestUnitKill(c *check.C) {
 	}
 	s.setupFakeTransport(transport)
 	command := UnitKill{}
-	command.Flags().Parse(true, []string{"-a", "app1", "-f"})
+	command.Flags().Parse([]string{"-a", "app1", "-f"})
 	err := command.Run(&context)
 	c.Assert(err, check.IsNil)
 
@@ -498,7 +498,7 @@ func (s *S) TestUnitKill(c *check.C) {
 		Stderr: &stderr,
 	}
 	command = UnitKill{}
-	command.Flags().Parse(true, []string{"-j", "job1", "-f"})
+	command.Flags().Parse([]string{"-j", "job1", "-f"})
 	err = command.Run(&context)
 	c.Assert(err, check.IsNil)
 }
@@ -515,7 +515,7 @@ func (s *S) TestUnitKillMissingUnit(c *check.C) {
 	}
 	s.setupFakeTransport(transport)
 	command := UnitKill{}
-	command.Flags().Parse(true, []string{"-a", "app1", "-f"})
+	command.Flags().Parse([]string{"-a", "app1", "-f"})
 	err := command.Run(&context)
 	c.Assert(err, check.NotNil)
 	c.Assert(err.Error(), check.Equals, "you must provide the unit name")
@@ -535,7 +535,7 @@ func (s *S) TestUnitKillAppAndJobMutuallyExclusive(c *check.C) {
 	}
 	s.setupFakeTransport(transport)
 	command := UnitKill{}
-	command.Flags().Parse(true, []string{"-a", "app1", "-j", "job1"})
+	command.Flags().Parse([]string{"-a", "app1", "-j", "job1"})
 	err := command.Run(&context)
 	c.Assert(err, check.NotNil)
 	c.Assert(err.Error(), check.Equals, "please use only one of the -a/--app and -j/--job flags")

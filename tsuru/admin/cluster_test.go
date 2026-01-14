@@ -67,7 +67,7 @@ func (s *S) TestClusterAddRun(c *check.C) {
 	c.Assert(err, check.IsNil)
 	err = os.WriteFile(filepath.Join(dir, "key"), []byte("keydata"), 0600)
 	c.Assert(err, check.IsNil)
-	err = myCmd.Flags().Parse(true, []string{
+	err = myCmd.Flags().Parse([]string{
 		"--cacert", filepath.Join(dir, "ca"),
 		"--clientcert", filepath.Join(dir, "cert"),
 		"--clientkey", filepath.Join(dir, "key"),
@@ -152,7 +152,7 @@ func (s *S) TestClusterUpdateRun(c *check.C) {
 	defer os.RemoveAll(dir)
 	err = os.WriteFile(filepath.Join(dir, "cert"), []byte("clientcert"), 0600)
 	c.Assert(err, check.IsNil)
-	err = myCmd.Flags().Parse(true, []string{
+	err = myCmd.Flags().Parse([]string{
 		"--remove-pool", "p2",
 		"--add-pool", "p3",
 		"--remove-custom", "c",

@@ -13,10 +13,11 @@ import (
 	"net/url"
 	"strconv"
 
-	"github.com/tsuru/gnuflag"
+	"github.com/spf13/pflag"
 	"github.com/tsuru/go-tsuruclient/pkg/config"
 	"github.com/tsuru/tsuru-client/tsuru/app"
 	"github.com/tsuru/tsuru-client/tsuru/cmd"
+	"github.com/tsuru/tsuru-client/tsuru/cmd/standards"
 	"github.com/tsuru/tsuru-client/tsuru/formatter"
 	tsuruHTTP "github.com/tsuru/tsuru-client/tsuru/http"
 	"github.com/tsuru/tsuru/types/quota"
@@ -105,10 +106,10 @@ func (*AppQuotaView) Info() *cmd.Info {
 	}
 }
 
-func (c *AppQuotaView) Flags() *gnuflag.FlagSet {
+func (c *AppQuotaView) Flags() *pflag.FlagSet {
 	fs := c.AppNameMixIn.Flags()
 	if !c.flagsApplied {
-		fs.BoolVar(&c.json, "json", false, "Show JSON")
+		fs.BoolVar(&c.json, standards.FlagJSON, false, "Show JSON")
 
 		c.flagsApplied = true
 	}

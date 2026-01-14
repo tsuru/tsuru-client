@@ -122,7 +122,7 @@ func (s *S) TestPlatformAddRun(c *check.C) {
 	}
 	s.setupFakeTransport(trans)
 	command := PlatformAdd{}
-	command.Flags().Parse(true, []string{"--dockerfile", server.URL})
+	command.Flags().Parse([]string{"--dockerfile", server.URL})
 	err = command.Run(&context)
 	c.Assert(err, check.IsNil)
 	c.Assert(stdout.String(), check.Equals, expectedMsg)
@@ -154,7 +154,7 @@ func (s *S) TestPlatformAddRunLocalDockerFile(c *check.C) {
 	}
 	s.setupFakeTransport(trans)
 	command := PlatformAdd{}
-	command.Flags().Parse(true, []string{"--dockerfile", "testdata/Dockerfile"})
+	command.Flags().Parse([]string{"--dockerfile", "testdata/Dockerfile"})
 	err = command.Run(&context)
 	c.Assert(err, check.IsNil)
 	c.Assert(stdout.String(), check.Equals, expectedMsg)
@@ -186,7 +186,7 @@ func (s *S) TestPlatformAddPrebuiltImage(c *check.C) {
 	}
 	s.setupFakeTransport(trans)
 	command := PlatformAdd{}
-	command.Flags().Parse(true, []string{"--image", "tsuru/python"})
+	command.Flags().Parse([]string{"--image", "tsuru/python"})
 	err = command.Run(&context)
 	c.Assert(err, check.IsNil)
 	c.Assert(stdout.String(), check.Equals, expectedMsg)
@@ -231,7 +231,7 @@ func (s *S) TestPlatformAddRunFlagsConflict(c *check.C) {
 		Args:   []string{"teste"},
 	}
 	command := PlatformAdd{}
-	command.Flags().Parse(true, []string{"--image", "tsuru/python", "--dockerfile", "testdata/Dockerfile"})
+	command.Flags().Parse([]string{"--image", "tsuru/python", "--dockerfile", "testdata/Dockerfile"})
 	err := command.Run(&context)
 	c.Assert(err, check.NotNil)
 	c.Assert(err.Error(), check.Equals, "conflicting options: --image and --dockerfile")
@@ -241,27 +241,19 @@ func (s *S) TestPlatformAddFlagSet(c *check.C) {
 	message := "URL or path to the Dockerfile used for building the image of the platform"
 	command := PlatformAdd{}
 	flagset := command.Flags()
-	flagset.Parse(true, []string{"--dockerfile", "dockerfile", "-i", "tsuru/python"})
+	flagset.Parse([]string{"--dockerfile", "dockerfile", "-i", "tsuru/python"})
 
 	dockerfile := flagset.Lookup("dockerfile")
 	c.Check(dockerfile.Name, check.Equals, "dockerfile")
 	c.Check(dockerfile.Usage, check.Equals, message)
 	c.Check(dockerfile.DefValue, check.Equals, "")
-
-	sdockerfile := flagset.Lookup("d")
-	c.Check(sdockerfile.Name, check.Equals, "d")
-	c.Check(sdockerfile.Usage, check.Equals, message)
-	c.Check(sdockerfile.DefValue, check.Equals, "")
+	c.Check(dockerfile.Shorthand, check.Equals, "d")
 
 	image := flagset.Lookup("image")
 	c.Check(image.Name, check.Equals, "image")
 	c.Check(image.Usage, check.Equals, "Name of the prebuilt Docker image")
 	c.Check(image.DefValue, check.Equals, "")
-
-	simage := flagset.Lookup("i")
-	c.Check(simage.Name, check.Equals, "i")
-	c.Check(simage.Usage, check.Equals, "Name of the prebuilt Docker image")
-	c.Check(simage.DefValue, check.Equals, "")
+	c.Check(image.Shorthand, check.Equals, "i")
 }
 
 func (s *S) TestPlatformUpdateInfo(c *check.C) {
@@ -272,27 +264,19 @@ func (s *S) TestPlatformUpdateFlagSet(c *check.C) {
 	dockerfileMessage := "URL or path to the Dockerfile used for building the image of the platform"
 	command := PlatformUpdate{}
 	flagset := command.Flags()
-	flagset.Parse(true, []string{"--dockerfile", "dockerfile"})
+	flagset.Parse([]string{"--dockerfile", "dockerfile"})
 
 	dockerfile := flagset.Lookup("dockerfile")
 	c.Check(dockerfile.Name, check.Equals, "dockerfile")
 	c.Check(dockerfile.Usage, check.Equals, dockerfileMessage)
 	c.Check(dockerfile.DefValue, check.Equals, "")
-
-	sdockerfile := flagset.Lookup("d")
-	c.Check(sdockerfile.Name, check.Equals, "d")
-	c.Check(sdockerfile.Usage, check.Equals, dockerfileMessage)
-	c.Check(sdockerfile.DefValue, check.Equals, "")
+	c.Check(dockerfile.Shorthand, check.Equals, "d")
 
 	image := flagset.Lookup("image")
 	c.Check(image.Name, check.Equals, "image")
 	c.Check(image.Usage, check.Equals, "Name of the prebuilt Docker image")
 	c.Check(image.DefValue, check.Equals, "")
-
-	simage := flagset.Lookup("i")
-	c.Check(simage.Name, check.Equals, "i")
-	c.Check(simage.Usage, check.Equals, "Name of the prebuilt Docker image")
-	c.Check(simage.DefValue, check.Equals, "")
+	c.Check(image.Shorthand, check.Equals, "i")
 }
 
 func (s *S) TestPlatformUpdateRun(c *check.C) {
@@ -326,7 +310,7 @@ func (s *S) TestPlatformUpdateRun(c *check.C) {
 	}
 	s.setupFakeTransport(trans)
 	command := PlatformUpdate{}
-	command.Flags().Parse(true, []string{"--dockerfile", server.URL})
+	command.Flags().Parse([]string{"--dockerfile", server.URL})
 	err = command.Run(&context)
 	c.Assert(err, check.IsNil)
 	c.Assert(stdout.String(), check.Equals, expectedMsg)
@@ -359,7 +343,7 @@ func (s *S) TestPlatformUpdateRunLocalDockerfile(c *check.C) {
 	}
 	s.setupFakeTransport(trans)
 	command := PlatformUpdate{}
-	command.Flags().Parse(true, []string{"--dockerfile", "testdata/Dockerfile"})
+	command.Flags().Parse([]string{"--dockerfile", "testdata/Dockerfile"})
 	err = command.Run(&context)
 	c.Assert(err, check.IsNil)
 	c.Assert(stdout.String(), check.Equals, expectedMsg)
@@ -392,7 +376,7 @@ func (s *S) TestPlatformUpdateRunPrebuiltImage(c *check.C) {
 	}
 	s.setupFakeTransport(trans)
 	command := PlatformUpdate{}
-	command.Flags().Parse(true, []string{"--image", "tsuru/python"})
+	command.Flags().Parse([]string{"--image", "tsuru/python"})
 	err = command.Run(&context)
 	c.Assert(err, check.IsNil)
 	c.Assert(stdout.String(), check.Equals, expectedMsg)
@@ -453,7 +437,7 @@ func (s *S) TestPlatformUpdateWithFlagDisableTrue(c *check.C) {
 	}
 	s.setupFakeTransport(trans)
 	command := PlatformUpdate{}
-	command.Flags().Parse(true, []string{"--disable"})
+	command.Flags().Parse([]string{"--disable"})
 	err = command.Run(&context)
 	c.Assert(err, check.IsNil)
 	c.Assert(stdout.String(), check.Equals, expectedMsg)
@@ -482,7 +466,7 @@ func (s *S) TestPlatformUpdateWithFlagEnabledTrue(c *check.C) {
 	}
 	s.setupFakeTransport(trans)
 	command := PlatformUpdate{}
-	command.Flags().Parse(true, []string{"--enable"})
+	command.Flags().Parse([]string{"--enable"})
 	err = command.Run(&context)
 	c.Assert(err, check.IsNil)
 	c.Assert(stdout.String(), check.Equals, expectedMsg)
@@ -498,7 +482,7 @@ func (s *S) TestPlatformUpdateImageAndDockerfile(c *check.C) {
 	}
 	expected := "conflicting options: --image and --dockerfile"
 	command := PlatformUpdate{}
-	command.Flags().Parse(true, []string{"--image", "tsuru/python", "--dockerfile", "testdata/Dockerfile"})
+	command.Flags().Parse([]string{"--image", "tsuru/python", "--dockerfile", "testdata/Dockerfile"})
 	err := command.Run(&context)
 	c.Assert(err, check.NotNil)
 	c.Assert(err.Error(), check.Equals, expected)
@@ -514,7 +498,7 @@ func (s *S) TestPlatformUpdateEnableAndDisable(c *check.C) {
 	}
 	expected := "conflicting options: --enable and --disable"
 	command := PlatformUpdate{}
-	command.Flags().Parse(true, []string{"--disable", "--enable"})
+	command.Flags().Parse([]string{"--disable", "--enable"})
 	err := command.Run(&context)
 	c.Assert(err, check.NotNil)
 	c.Assert(err.Error(), check.Equals, expected)
@@ -541,7 +525,7 @@ func (s *S) TestPlatformRemoveRun(c *check.C) {
 	}
 	s.setupFakeTransport(trans)
 	command := PlatformRemove{}
-	command.Flags().Parse(true, []string{"-y"})
+	command.Flags().Parse([]string{"-y"})
 	err := command.Run(&context)
 	c.Assert(err, check.IsNil)
 	c.Assert(stdout.String(), check.Equals, expected)

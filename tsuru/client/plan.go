@@ -12,7 +12,7 @@ import (
 	"strconv"
 	"strings"
 
-	"github.com/tsuru/gnuflag"
+	"github.com/spf13/pflag"
 	"github.com/tsuru/go-tsuruclient/pkg/config"
 	"github.com/tsuru/tablecli"
 	"github.com/tsuru/tsuru-client/tsuru/cmd"
@@ -26,18 +26,18 @@ type PlanList struct {
 	k8sFriendly         bool
 	showMaxBurstAllowed bool
 
-	fs *gnuflag.FlagSet
+	fs *pflag.FlagSet
 }
 
-func (c *PlanList) Flags() *gnuflag.FlagSet {
+func (c *PlanList) Flags() *pflag.FlagSet {
 	if c.fs == nil {
-		c.fs = gnuflag.NewFlagSet("plan-list", gnuflag.ExitOnError)
+		c.fs = pflag.NewFlagSet("plan-list", pflag.ExitOnError)
 		bytes := "bytesized units for memory and swap."
-		c.fs.BoolVar(&c.bytes, "bytes", false, bytes)
+		c.fs.BoolVarP(&c.bytes, "bytes", "b", false, bytes)
+
 		c.fs.BoolVar(&c.showMaxBurstAllowed, "show-max-cpu-burst-allowed", false, "show column about max CPU burst allowed by plan")
 		c.fs.BoolVar(&c.k8sFriendly, "kubernetes-friendly", false, "show values friendly for a kubernetes user")
 
-		c.fs.BoolVar(&c.bytes, "b", false, bytes)
 	}
 	return c.fs
 }

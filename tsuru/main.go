@@ -101,18 +101,22 @@ func buildManagerCustom(name string, stdout, stderr io.Writer) *cmd.Manager {
 	m.Register(&auth.Logout{})
 	m.Register(&versionCmd{})
 
+	m.RegisterTopic("target", targetTopic)
 	m.Register(&client.TargetList{})
 	m.Register(&client.TargetAdd{})
 	m.Register(&client.TargetRemove{})
 	m.Register(&client.TargetSet{})
-	m.RegisterTopic("target", targetTopic)
 
 	m.Register(&client.AppRun{})
 	m.Register(&client.AppInfo{})
 	m.Register(&client.AppCreate{})
 	m.Register(&client.AppRemove{})
 	m.Register(&client.AppUpdate{})
+
+	m.RegisterTopic("app-process", `An application process represents a command that runs as part of the application.`)
 	m.Register(&client.AppProcessUpdate{})
+
+	m.RegisterTopic("unit", "A unit is a container.")
 	m.Register(&client.UnitAdd{})
 	m.Register(&client.UnitRemove{})
 	m.Register(&client.UnitKill{})
@@ -125,24 +129,39 @@ func buildManagerCustom(name string, stdout, stderr io.Writer) *cmd.Manager {
 	m.Register(&client.AppStart{})
 	m.Register(&client.AppStop{})
 	m.Register(&client.Init{})
+
+	m.RegisterTopic("certificate", `Certificate is used to manage SSL/TLS certificates for secure communication.`)
+	m.RegisterTopic("certificate-issuer", `Issuer is used to automate the issuance of SSL/TLS certificates.`)
+
 	m.Register(&client.CertificateSet{})
 	m.Register(&client.CertificateUnset{})
 	m.Register(&client.CertificateList{})
+
 	m.Register(&client.CertificateIssuerSet{})
 	m.Register(&client.CertificateIssuerUnset{})
+
+	m.RegisterTopic("cname", `CNAME (Canonical Name) is a custom domain you assign to your application, allowing users to access it via a friendly URL (e.g., myapp.mydomain.com)`)
 	m.Register(&client.CnameAdd{})
 	m.Register(&client.CnameRemove{})
+
+	m.RegisterTopic("env", `Manage environment variables from an app or job`)
 	m.Register(&client.EnvGet{})
 	m.Register(&client.EnvSet{})
 	m.Register(&client.EnvUnset{})
+
 	m.RegisterTopic("service", `A service is a well-defined API that tsuru communicates with to provide extra functionality for applications.
 Examples of services are MySQL, Redis, MongoDB, etc. tsuru has built-in services, but it is easy to create and add new services to tsuru.
 Services aren’t managed by tsuru, but by their creators.`)
 	m.Register(&client.ServiceList{})
+
+	m.RegisterTopic("service-instance", `Manage provisioned resources (like a database or proxy) that can be linked to an application.`)
 	m.Register(&client.ServiceInstanceAdd{})
 	m.Register(&client.ServiceInstanceUpdate{})
 	m.Register(&client.ServiceInstanceRemove{})
+
 	m.Register(&client.ServiceInfo{})
+
+	m.RegisterTopic("service-plan", `Manage service plans of a given service.`)
 	m.Register(&client.ServicePlanList{})
 	m.Register(&client.ServiceInstanceGrant{})
 	m.Register(&client.ServiceInstanceRevoke{})
@@ -166,50 +185,75 @@ Services aren’t managed by tsuru, but by their creators.`)
 	m.Register(&client.JobLog{})
 	m.Register(&client.JobDeploy{})
 
+	m.RegisterTopic("plugin", `Plugins are used to extend tsuru client functionality.`)
 	m.Register(&client.PluginInstall{})
 	m.Register(&client.PluginRemove{})
 	m.Register(&client.PluginList{})
 	m.Register(&client.PluginBundle{})
+
 	m.Register(&client.AppDeploy{})
 	m.Register(&client.AppBuild{})
+
+	m.RegisterTopic("plan", `Plan specifies how computational resources are allocated to your application.`)
 	m.Register(&client.PlanList{})
+
+	m.RegisterTopic("user", `A user is an individual who has access to the tsuru platform.`)
 	m.Register(&client.UserCreate{})
 	m.Register(&client.ResetPassword{})
 	m.Register(&client.UserRemove{})
 	m.Register(&client.ListUsers{})
+
+	m.RegisterTopic("team", "Manage teams.")
 	m.Register(&client.TeamCreate{})
 	m.Register(&client.TeamUpdate{})
 	m.Register(&client.TeamRemove{})
 	m.Register(&client.TeamList{})
 	m.Register(&client.TeamInfo{})
+
+	m.RegisterTopic("team-quota", "Quotas are used to safeguard the cluster against undesired or excessive scaling.")
 	m.Register(&admin.TeamQuotaView{})
 	m.Register(&admin.TeamChangeQuota{})
+
 	m.Register(&client.ChangePassword{})
-	m.Register(&client.ShowAPIToken{})
-	m.Register(&client.RegenerateAPIToken{})
 	m.Register(&client.AppDeployList{})
 	m.Register(&client.AppDeployRollback{})
 	m.Register(&client.AppDeployRollbackUpdate{})
 	m.Register(&client.AppDeployRebuild{})
 	m.Register(&client.ShellToContainerCmd{})
+
+	m.RegisterTopic("pool", "A pool is used by provisioners to allocate space within a cluster for running applications.")
 	m.Register(&client.PoolList{})
+
+	m.RegisterTopic("permission", `Manage permissions.`)
 	m.Register(&client.PermissionList{})
+
+	m.RegisterTopic("role", "Manage Roles")
 	m.Register(&client.RoleAdd{})
 	m.Register(&client.RoleUpdate{})
 	m.Register(&client.RoleRemove{})
 	m.Register(&client.RoleList{})
 	m.Register(&client.RoleInfo{})
+
+	m.RegisterTopic("role-permission", "Manage permissions associated with each role.")
 	m.Register(&client.RolePermissionAdd{})
 	m.Register(&client.RolePermissionRemove{})
+
 	m.Register(&client.RoleAssign{})
 	m.Register(&client.RoleDissociate{})
-	m.Register(&client.RoleDefaultAdd{})
+
+	m.RegisterTopic("role-default", "Manage default roles assigned to users upon creation.")
 	m.Register(&client.RoleDefaultList{})
+	m.Register(&client.RoleDefaultAdd{})
 	m.Register(&client.RoleDefaultRemove{})
+
 	m.Register(&admin.AddPoolToSchedulerCmd{})
+
+	m.RegisterTopic("event", `Events are used to audit all actions performed on Tsuru resources.`)
 	m.Register(&client.EventList{})
 	m.Register(&client.EventInfo{})
 	m.Register(&client.EventCancel{})
+
+	m.RegisterTopic("router", `A router is a component responsible for routing user traffic to applications.`)
 	m.Register(&client.RoutersList{})
 	m.Register(&client.RouterAdd{})
 	m.Register(&client.RouterUpdate{})
@@ -222,20 +266,36 @@ Services aren’t managed by tsuru, but by their creators.`)
 	m.Register(&admin.ServiceCreate{})
 	m.Register(&admin.ServiceDestroy{})
 	m.Register(&admin.ServiceUpdate{})
+	m.Register(&admin.ServiceTemplate{})
+
+	m.RegisterTopic("service-doc", "Manage Service Docs")
 	m.Register(&admin.ServiceDocGet{})
 	m.Register(&admin.ServiceDocAdd{})
-	m.Register(&admin.ServiceTemplate{})
+
+	m.RegisterTopic("user-quota", `Quotas are used to safeguard the cluster against undesired or excessive scaling.`)
 	m.Register(&admin.UserQuotaView{})
 	m.Register(&admin.UserChangeQuota{})
+
+	m.RegisterTopic("app-quota", `Quotas are used to safeguard the cluster against undesired or excessive scaling.`)
 	m.Register(&admin.AppQuotaView{})
 	m.Register(&admin.AppQuotaChange{})
+
+	m.RegisterTopic("app-routes", `Manage routes within the application router.`)
 	m.Register(&admin.AppRoutesRebuild{})
+
+	m.RegisterTopic("pool-constraint", "Pool constraints are rules that define which kind of resources can be associated with a pool.")
 	m.Register(&admin.PoolConstraintList{})
 	m.Register(&admin.PoolConstraintSet{})
+
+	m.RegisterTopic("event-block", "Event blocks prevent specific system actions during maintenance.")
 	m.Register(&admin.EventBlockList{})
 	m.Register(&admin.EventBlockAdd{})
 	m.Register(&admin.EventBlockRemove{})
+
+	m.RegisterTopic("tag", `Tags are labels that can be assigned to applications and service instances to help organize and manage them effectively.`)
 	m.Register(&client.TagList{})
+
+	m.RegisterTopic("cluster", "Manage kubernetes clusters.")
 	m.Register(&admin.ClusterAdd{})
 	m.Register(&admin.ClusterUpdate{})
 	m.Register(&admin.ClusterRemove{})
@@ -245,36 +305,62 @@ Services aren’t managed by tsuru, but by their creators.`)
 	m.Register(&client.VolumeCreate{})
 	m.Register(&client.VolumeUpdate{})
 	m.Register(&client.VolumeList{})
-	m.Register(&client.VolumePlansList{})
 	m.Register(&client.VolumeDelete{})
 	m.Register(&client.VolumeInfo{})
 	m.Register(&client.VolumeBind{})
 	m.Register(&client.VolumeUnbind{})
+
+	m.RegisterTopic("volume-plan", `Manage volume plans`)
+	m.Register(&client.VolumePlansList{})
+
+	m.RegisterTopic("app-router", "Router is a component responsible for routing user traffic to applications.")
 	m.Register(&client.AppRoutersList{})
 	m.Register(&client.AppRoutersAdd{})
 	m.Register(&client.AppRoutersRemove{})
 	m.Register(&client.AppRoutersUpdate{})
+
+	m.RegisterTopic("token", "Manage team tokens used to authenticate automations through Tsuru.")
 	m.Register(&client.TokenCreateCmd{})
 	m.Register(&client.TokenUpdateCmd{})
 	m.Register(&client.TokenListCmd{})
 	m.Register(&client.TokenDeleteCmd{})
 	m.Register(&client.TokenInfoCmd{})
+	m.Register(&client.RegenerateAPIToken{})
+
+	m.RegisterTopic("event-webhook", "Event webhooks allow integrating tsuru events with external systems.")
+	m.Register(&client.ShowAPIToken{})
 	m.Register(&client.WebhookList{})
 	m.Register(&client.WebhookCreate{})
 	m.Register(&client.WebhookUpdate{})
 	m.Register(&client.WebhookDelete{})
+
+	m.RegisterTopic("provisioner", "Manage Provisioners.")
 	m.Register(&admin.ProvisionerList{})
 	m.Register(&admin.ProvisionerInfo{})
+
+	m.RegisterTopic("app-router-version", "Manage multiple application versions behind the application router.")
 	m.Register(&client.AppVersionRouterAdd{})
 	m.Register(&client.AppVersionRouterRemove{})
+
 	m.Register(client.UserInfo{})
+
+	m.RegisterTopic("unit-autoscale", "Manage autoscaling of units.")
 	m.Register(&client.AutoScaleSet{})
 	m.Register(&client.AutoScaleUnset{})
 	m.Register(&client.AutoScaleSwap{})
+
+	m.RegisterTopic("metadata", "Metadata is a modern way to define labels and annotations to apps and jobs.")
 	m.RegisterDeprecated(&client.MetadataSet{}, "app-metadata-set")
 	m.RegisterDeprecated(&client.MetadataUnset{}, "app-metadata-unset")
 	m.RegisterDeprecated(&client.MetadataGet{}, "app-metadata-get")
+
 	m.Register(&client.ServiceInstanceInfo{})
+
+	plugins := client.FindPlugins()
+	for _, plugin := range plugins {
+		m.RegisterPlugin(&client.ExecutePlugin{PluginName: plugin})
+	}
+
 	registerExtraCommands(m)
 	m.RetryHook = retryHook
 	m.AfterFlagParseHook = initAuthorization

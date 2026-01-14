@@ -152,10 +152,74 @@ func (s *S) TestEventBlockAddAllFlags(c *check.C) {
 	}
 	s.setupFakeTransport(trans)
 	command := EventBlockAdd{}
-	command.Flags().Parse(true, []string{"-k", "app.deploy", "-o", "user@email.com", "-t", "app", "-v", "myapp"})
-	err := command.Run(&context)
+	err := command.Flags().Parse([]string{"-k", "app.deploy", "-o", "user@email.com", "-t", "app", "--value", "myapp"})
+	c.Assert(err, check.IsNil)
+	err = command.Run(&context)
 	c.Assert(err, check.IsNil)
 	c.Assert(stdout.String(), check.Equals, "Block successfully added.\n")
+}
+
+func (s *S) TestEventBlockAddAllFlagsShorthand(c *check.C) {
+	var stdout, stderr bytes.Buffer
+	context := cmd.Context{
+		Args:   []string{"Reason"},
+		Stdout: &stdout,
+		Stderr: &stderr,
+	}
+	trans := &cmdtest.ConditionalTransport{
+		Transport: cmdtest.Transport{Message: "", Status: http.StatusOK},
+		CondFunc: func(req *http.Request) bool {
+			block := new(event.Block)
+			decodeJSONBody(c, req, block)
+			c.Assert(block, check.DeepEquals, &event.Block{
+				KindName:  "app.deploy",
+				OwnerName: "user@email.com",
+				Target:    eventTypes.Target{Type: eventTypes.TargetTypeApp, Value: "myapp"},
+				Reason:    "Reason",
+				Active:    false,
+			})
+			return req.URL.Path == "/1.3/events/blocks" && req.Method == http.MethodPost
+		},
+	}
+	s.setupFakeTransport(trans)
+	command := EventBlockAdd{}
+	err := command.Flags().Parse([]string{"-k", "app.deploy", "-o", "user@email.com", "-t", "app", "-v", "myapp"})
+	c.Assert(err, check.IsNil)
+	err = command.Run(&context)
+	c.Assert(err, check.IsNil)
+	c.Assert(stdout.String(), check.Equals, "Block successfully added.\n")
+}
+
+func (s *S) TestEventBlockAddFlags(c *check.C) {
+	command := EventBlockAdd{}
+	fs := command.Flags()
+
+	typeFlag := fs.Lookup("type")
+	c.Check(typeFlag, check.NotNil)
+	c.Check(typeFlag.Name, check.Equals, "type")
+	c.Check(typeFlag.Shorthand, check.Equals, "t")
+	c.Check(typeFlag.Usage, check.Equals, "Block events with this target type.")
+
+	valueFlag := fs.Lookup("value")
+	c.Check(valueFlag, check.NotNil)
+	c.Check(valueFlag.Name, check.Equals, "value")
+	c.Check(valueFlag.Shorthand, check.Equals, "v")
+	c.Check(valueFlag.Usage, check.Equals, "Block events with this target value.")
+
+	kindFlag := fs.Lookup("kind")
+	c.Check(kindFlag, check.NotNil)
+	c.Check(kindFlag.Name, check.Equals, "kind")
+	c.Check(kindFlag.Shorthand, check.Equals, "k")
+
+	ownerFlag := fs.Lookup("owner")
+	c.Check(ownerFlag, check.NotNil)
+	c.Check(ownerFlag.Name, check.Equals, "owner")
+	c.Check(ownerFlag.Shorthand, check.Equals, "o")
+
+	conditionsFlag := fs.Lookup("conditions")
+	c.Check(conditionsFlag, check.NotNil)
+	c.Check(conditionsFlag.Name, check.Equals, "conditions")
+	c.Check(conditionsFlag.Shorthand, check.Equals, "c")
 }
 
 func (s *S) TestEventBlockRemoveInfo(c *check.C) {

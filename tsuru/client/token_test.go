@@ -44,7 +44,7 @@ func (s *S) TestTokenCreate(c *check.C) {
 	}
 	s.setupFakeTransport(&trans)
 	command := TokenCreateCmd{}
-	command.Flags().Parse(true, []string{})
+	command.Flags().Parse([]string{})
 	err := command.Run(&context)
 	c.Assert(err, check.IsNil)
 	c.Assert(stdout.String(), check.Equals, expected)
@@ -80,7 +80,7 @@ func (s *S) TestTokenCreateWithFlags(c *check.C) {
 	}
 	s.setupFakeTransport(&trans)
 	command := TokenCreateCmd{}
-	command.Flags().Parse(true, []string{
+	command.Flags().Parse([]string{
 		"--id", "myid",
 		"--team", "myteam",
 		"--description", "mydesc",
@@ -121,7 +121,7 @@ func (s *S) TestTokenUpdate(c *check.C) {
 	}
 	s.setupFakeTransport(&trans)
 	command := TokenUpdateCmd{}
-	command.Flags().Parse(true, []string{})
+	command.Flags().Parse([]string{})
 	err := command.Run(&context)
 	c.Assert(err, check.IsNil)
 	c.Assert(stdout.String(), check.Equals, expected)
@@ -157,7 +157,7 @@ func (s *S) TestTokenUpdateWithFlags(c *check.C) {
 	}
 	s.setupFakeTransport(&trans)
 	command := TokenUpdateCmd{}
-	command.Flags().Parse(true, []string{
+	command.Flags().Parse([]string{
 		"--description", "mydesc",
 		"--expires", "3m",
 		"--regenerate",

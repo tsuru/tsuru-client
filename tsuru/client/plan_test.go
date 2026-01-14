@@ -45,7 +45,7 @@ func (s *S) TestPlanListBytes(c *check.C) {
 	}
 	s.setupFakeTransport(trans)
 	command := PlanList{}
-	command.Flags().Parse(true, []string{"-b"})
+	command.Flags().Parse([]string{"-b"})
 	err := command.Run(&context)
 	c.Assert(err, check.IsNil)
 	c.Assert(stdout.String(), check.Equals, expected)

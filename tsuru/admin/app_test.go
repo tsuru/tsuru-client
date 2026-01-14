@@ -35,7 +35,7 @@ func (s *S) TestAppRoutesRebuildRun(c *check.C) {
 	s.setupFakeTransport(trans)
 
 	command := AppRoutesRebuild{}
-	command.Flags().Parse(true, []string{"--app", "app1"})
+	command.Flags().Parse([]string{"--app", "app1"})
 	err := command.Run(&context)
 	c.Assert(err, check.IsNil)
 	c.Assert(stdout.String(), check.Equals, `routes was rebuilt successfully
@@ -57,7 +57,7 @@ func (s *S) TestAppRoutesRebuildFailed(c *check.C) {
 	s.setupFakeTransport(trans)
 
 	command := AppRoutesRebuild{}
-	command.Flags().Parse(true, []string{"--app", "app1"})
+	command.Flags().Parse([]string{"--app", "app1"})
 	err := command.Run(&context)
 	c.Assert(err, check.Not(check.IsNil))
 	c.Assert(err.Error(), check.Matches, ".*: Some error")

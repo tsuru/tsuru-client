@@ -14,10 +14,11 @@ import (
 	"strconv"
 	"strings"
 
-	"github.com/tsuru/gnuflag"
+	"github.com/spf13/pflag"
 	"github.com/tsuru/go-tsuruclient/pkg/tsuru"
 	"github.com/tsuru/tablecli"
 	"github.com/tsuru/tsuru-client/tsuru/cmd"
+	"github.com/tsuru/tsuru-client/tsuru/cmd/standards"
 	tsuruHTTP "github.com/tsuru/tsuru-client/tsuru/http"
 )
 
@@ -29,6 +30,9 @@ func (f mapSliceFlagWrapper) String() string {
 	repr := *f.dst
 	if repr == nil {
 		repr = map[string][]string{}
+	}
+	if len(repr) == 0 {
+		return ""
 	}
 	data, _ := json.Marshal(repr)
 	return string(data)
@@ -46,32 +50,31 @@ func (f mapSliceFlagWrapper) Set(val string) error {
 	return nil
 }
 
-func flagsForWebhook(webhook *tsuru.Webhook) *gnuflag.FlagSet {
-	fs := gnuflag.NewFlagSet("", gnuflag.ExitOnError)
+func (f mapSliceFlagWrapper) Type() string {
+	return "key=value"
+}
+
+func flagsForWebhook(webhook *tsuru.Webhook) *pflag.FlagSet {
+	fs := pflag.NewFlagSet("", pflag.ExitOnError)
 
 	description := "A description on how the webhook will be used."
-	fs.StringVar(&webhook.Description, "description", "", description)
-	fs.StringVar(&webhook.Description, "d", "", description)
+	fs.StringVarP(&webhook.Description, standards.FlagDescription, standards.ShortFlagDescription, "", description)
 
 	team := "The team name responsible for this webhook."
-	fs.StringVar(&webhook.TeamOwner, "team", "", team)
-	fs.StringVar(&webhook.TeamOwner, "t", "", team)
+	fs.StringVarP(&webhook.TeamOwner, standards.FlagTeam, standards.ShortFlagTeam, "", team)
 
 	method := "The HTTP Method used in the request, if unset defaults to POST."
-	fs.StringVar(&webhook.Method, "method", "", method)
-	fs.StringVar(&webhook.Method, "m", "", method)
+	fs.StringVarP(&webhook.Method, "method", "m", "", method)
 
 	body := "The HTTP body sent in the request if method is either POST, PUT or PATCH, if unset defaults to the Event that triggered the webhook serialized as JSON. The API will try to parse the body as a Go template string with the event available as context."
-	fs.StringVar(&webhook.Body, "body", "", body)
-	fs.StringVar(&webhook.Body, "b", "", body)
+	fs.StringVarP(&webhook.Body, "body", "b", "", body)
 
 	proxy := "The proxy server URL used in the request. Supported schemes are http(s) and socks5."
 	fs.StringVar(&webhook.ProxyUrl, "proxy", "", proxy)
 
 	header := "The HTTP headers sent in the request."
 	wrapper := mapSliceFlagWrapper{dst: &webhook.Headers}
-	fs.Var(wrapper, "H", header)
-	fs.Var(wrapper, "header", header)
+	fs.VarP(wrapper, "header", "H", header)
 
 	fs.BoolVar(&webhook.Insecure, "insecure", false, "Ignore TLS errors in the webhook request.")
 
@@ -90,7 +93,7 @@ func flagsForWebhook(webhook *tsuru.Webhook) *gnuflag.FlagSet {
 }
 
 type WebhookCreate struct {
-	fs      *gnuflag.FlagSet
+	fs      *pflag.FlagSet
 	webhook tsuru.Webhook
 }
 
@@ -103,7 +106,7 @@ func (c *WebhookCreate) Info() *cmd.Info {
 	}
 }
 
-func (c *WebhookCreate) Flags() *gnuflag.FlagSet {
+func (c *WebhookCreate) Flags() *pflag.FlagSet {
 	if c.fs == nil {
 		c.fs = flagsForWebhook(&c.webhook)
 	}
@@ -125,7 +128,7 @@ func (c *WebhookCreate) Run(ctx *cmd.Context) error {
 }
 
 type WebhookUpdate struct {
-	fs            *gnuflag.FlagSet
+	fs            *pflag.FlagSet
 	webhook       tsuru.Webhook
 	noBody        bool
 	noHeader      bool
@@ -147,13 +150,12 @@ func (c *WebhookUpdate) Info() *cmd.Info {
 	}
 }
 
-func (c *WebhookUpdate) Flags() *gnuflag.FlagSet {
+func (c *WebhookUpdate) Flags() *pflag.FlagSet {
 	if c.fs == nil {
 		c.fs = flagsForWebhook(&c.webhook)
 
 		url := "The HTTP URL used in the request."
-		c.fs.StringVar(&c.webhook.Url, "url", "", url)
-		c.fs.StringVar(&c.webhook.Url, "u", "", url)
+		c.fs.StringVarP(&c.webhook.Url, "url", "u", "", url)
 
 		c.fs.BoolVar(&c.noBody, "no-body", false, "Unset body value.")
 		c.fs.BoolVar(&c.noHeader, "no-header", false, "Unset header value.")

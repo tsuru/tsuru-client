@@ -343,7 +343,7 @@ func (s *S) TestTargetAddWithSet(c *check.C) {
 		Stdout: bytes.NewBufferString(""),
 	}
 	targetAdd := &TargetAdd{}
-	targetAdd.Flags().Parse(true, []string{"-s"})
+	targetAdd.Flags().Parse([]string{"-s"})
 	err := targetAdd.Run(context)
 	c.Assert(err, check.IsNil)
 	c.Assert(context.Stdout.(*bytes.Buffer).String(), check.Equals, "New target default -> http://tsuru.google.com added to target list and defined as the current target\n")
@@ -356,20 +356,14 @@ func (s *S) TestTargetAddFlags(c *check.C) {
 	command := TargetAdd{}
 	flagset := command.Flags()
 	c.Assert(flagset, check.NotNil)
-	flagset.Parse(true, []string{"--set-current"})
+	flagset.Parse([]string{"--set-current"})
 	set := flagset.Lookup("set-current")
 	c.Assert(set, check.NotNil)
 	c.Check(set.Name, check.Equals, "set-current")
 	c.Check(set.Usage, check.Equals, "Add and define the target as the current target")
 	c.Check(set.Value.String(), check.Equals, "true")
 	c.Check(set.DefValue, check.Equals, "false")
-	sset := flagset.Lookup("s")
-	c.Assert(sset, check.NotNil)
-	c.Check(sset.Name, check.Equals, "s")
-	c.Check(sset.Usage, check.Equals, "Add and define the target as the current target")
-	c.Check(sset.Value.String(), check.Equals, "true")
-	c.Check(sset.DefValue, check.Equals, "false")
-	c.Check(command.set, check.Equals, true)
+	c.Check(set.Shorthand, check.Equals, "s")
 }
 
 func (s *S) TestIfTargetLabelExists(c *check.C) {

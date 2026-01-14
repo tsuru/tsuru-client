@@ -20,7 +20,7 @@ import (
 	goVersion "github.com/hashicorp/go-version"
 	"github.com/pkg/errors"
 	"github.com/sajari/fuzzy"
-	"github.com/tsuru/gnuflag"
+	"github.com/spf13/pflag"
 	"github.com/tsuru/tsuru/fs"
 )
 
@@ -76,11 +76,15 @@ type Manager struct {
 
 	AfterFlagParseHook func()
 	RetryHook          func(err error) (retry bool)
+
+	// V2 fields using cobra commander
+	v2 *ManagerV2
 }
 
 // This is discouraged: use NewManagerPanicExiter instead. Handle panic(*PanicExitError) accordingly
 func NewManager(name string, stdout, stderr io.Writer, stdin io.Reader, lookup Lookup) *Manager {
-	manager := &Manager{
+	var manager *Manager
+	manager = &Manager{
 		name:          name,
 		stdout:        stdout,
 		stderr:        stderr,
@@ -88,28 +92,46 @@ func NewManager(name string, stdout, stderr io.Writer, stdin io.Reader, lookup L
 		lookup:        lookup,
 		topics:        map[string]string{},
 		topicCommands: map[string][]Command{},
+
+		// v2 will be a replacement for this manager in the future
+		v2: NewManagerV2(&ManagerV2Opts{
+			AfterFlagParseHook: func() {
+				if manager.AfterFlagParseHook != nil {
+					manager.AfterFlagParseHook()
+				}
+			},
+			RetryHook: func(err error) bool {
+				if manager.RetryHook != nil {
+					return manager.RetryHook(err)
+				}
+				return false
+			},
+		}),
 	}
+
 	manager.Register(&help{manager})
 	return manager
 }
 
 // When using this, you should handle panic(*PanicExitError) accordingly
 func NewManagerPanicExiter(name string, stdout, stderr io.Writer, stdin io.Reader, lookup Lookup) *Manager {
-	manager := &Manager{
-		name:          name,
-		stdout:        stdout,
-		stderr:        stderr,
-		stdin:         stdin,
-		lookup:        lookup,
-		topics:        map[string]string{},
-		topicCommands: map[string][]Command{},
-	}
+	manager := NewManager(name, stdout, stderr, stdin, lookup)
 	manager.e = PanicExiter{}
-	manager.Register(&help{manager})
 	return manager
 }
 
+// RegisterPlugin registers a plugin command in the manager
+// only for v2 engine
+func (m *Manager) RegisterPlugin(command Command) {
+	if m.v2.Enabled {
+		m.v2.Register(command)
+	}
+}
+
 func (m *Manager) Register(command Command) {
+	if m.v2.Enabled {
+		m.v2.Register(command)
+	}
 	if m.Commands == nil {
 		m.Commands = make(map[string]Command)
 	}
@@ -133,6 +155,13 @@ func (m *Manager) Register(command Command) {
 }
 
 func (m *Manager) RegisterDeprecated(command Command, oldName string) {
+	deprecatedCmd := &DeprecatedCommand{Command: command, oldName: oldName}
+
+	if m.v2.Enabled {
+		m.v2.Register(command)
+		m.v2.Register(deprecatedCmd)
+	}
+
 	if m.Commands == nil {
 		m.Commands = make(map[string]Command)
 	}
@@ -142,7 +171,7 @@ func (m *Manager) RegisterDeprecated(command Command, oldName string) {
 		panic(fmt.Sprintf("command already registered: %s", name))
 	}
 	m.Commands[name] = command
-	m.Commands[oldName] = &DeprecatedCommand{Command: command, oldName: oldName}
+	m.Commands[oldName] = deprecatedCmd
 }
 
 type RemovedCommand struct {
@@ -175,6 +204,10 @@ func (m *Manager) RegisterRemoved(name string, help string) {
 }
 
 func (m *Manager) RegisterTopic(name, content string) {
+	if m.v2 != nil && m.v2.Enabled {
+		m.v2.RegisterTopic(name, content)
+	}
+	name = strings.ReplaceAll(name, "-", " ")
 	if m.topics == nil {
 		m.topics = make(map[string]string)
 	}
@@ -186,6 +219,11 @@ func (m *Manager) RegisterTopic(name, content string) {
 }
 
 func (m *Manager) Run(args []string) {
+	if m.v2.Enabled {
+		defer m.finisher()
+		m.v2.Run()
+		return
+	}
 	var (
 		status         int
 		verbosity      int
@@ -196,16 +234,14 @@ func (m *Manager) Run(args []string) {
 	if len(args) == 0 {
 		args = append(args, "help")
 	}
-	flagset := gnuflag.NewFlagSet("tsuru flags", gnuflag.ContinueOnError)
+	flagset := pflag.NewFlagSet("tsuru flags", pflag.ContinueOnError)
 	flagset.SetOutput(m.stderr)
-	flagset.IntVar(&verbosity, "verbosity", 0, "Verbosity level: 1 => print HTTP requests; 2 => print HTTP requests/responses")
-	flagset.IntVar(&verbosity, "v", 0, "Verbosity level: 1 => print HTTP requests; 2 => print HTTP requests/responses")
-	flagset.BoolVar(&displayHelp, "help", false, "Display help and exit")
-	flagset.BoolVar(&displayHelp, "h", false, "Display help and exit")
+	flagset.SetInterspersed(false)
+	flagset.IntVarP(&verbosity, "verbosity", "v", 0, "Verbosity level: 1 => print HTTP requests; 2 => print HTTP requests/responses")
+	flagset.BoolVarP(&displayHelp, "help", "h", false, "Display help and exit")
 	flagset.BoolVar(&displayVersion, "version", false, "Print version and exit")
-	flagset.StringVar(&target, "t", "", "Define target for running command")
-	flagset.StringVar(&target, "target", "", "Define target for running command")
-	parseErr := flagset.Parse(false, args)
+	flagset.StringVarP(&target, "target", "t", "", "Define target for running command")
+	parseErr := flagset.Parse(args)
 	if parseErr != nil {
 		fmt.Fprint(m.stderr, parseErr)
 		m.finisher().Exit(2)
@@ -384,24 +420,24 @@ func (m *Manager) newContext(c Context) *Context {
 }
 
 func (m *Manager) handleFlags(command Command, name string, args []string) (Command, []string, error) {
-	var flagset *gnuflag.FlagSet
+	var flagset *pflag.FlagSet
 	if flagged, ok := command.(FlaggedCommand); ok {
 		flagset = flagged.Flags()
 	} else {
-		flagset = gnuflag.NewFlagSet(name, gnuflag.ExitOnError)
+		flagset = pflag.NewFlagSet(name, pflag.ExitOnError)
 	}
 	var helpRequested bool
 	flagset.SetOutput(m.stderr)
+
 	if flagset.Lookup("help") == nil {
-		flagset.BoolVar(&helpRequested, "help", false, "Display help and exit")
+		flagset.BoolVarP(&helpRequested, "help", "h", false, "Display help and exit")
 	}
-	if flagset.Lookup("h") == nil {
-		flagset.BoolVar(&helpRequested, "h", false, "Display help and exit")
-	}
-	err := flagset.Parse(true, args)
+
+	err := flagset.Parse(args)
 	if err != nil {
 		return nil, nil, err
 	}
+
 	if helpRequested {
 		command = m.Commands["help"]
 		args = []string{name}
@@ -412,6 +448,9 @@ func (m *Manager) handleFlags(command Command, name string, args []string) (Comm
 }
 
 func (m *Manager) finisher() exiter {
+	if m.v2 != nil && m.v2.Enabled {
+		m.v2.Finish()
+	}
 	if pagerWriter, ok := m.stdout.(*pagerWriter); ok {
 		pagerWriter.close()
 	}
@@ -558,7 +597,7 @@ type Command interface {
 
 type FlaggedCommand interface {
 	Command
-	Flags() *gnuflag.FlagSet
+	Flags() *pflag.FlagSet
 }
 
 type DeprecatedCommand struct {
@@ -566,16 +605,24 @@ type DeprecatedCommand struct {
 	oldName string
 }
 
+func (c *DeprecatedCommand) Info() *Info {
+	info := c.Command.Info()
+	info.Usage = strings.Replace(info.Usage, info.Name, c.oldName, 1)
+	info.Name = c.oldName
+	info.V2.Hidden = true
+	return info
+}
+
 func (c *DeprecatedCommand) Run(context *Context) error {
 	fmt.Fprintf(context.Stderr, "WARNING: %q has been deprecated, please use %q instead.\n\n", c.oldName, c.Command.Info().Name)
 	return c.Command.Run(context)
 }
 
-func (c *DeprecatedCommand) Flags() *gnuflag.FlagSet {
+func (c *DeprecatedCommand) Flags() *pflag.FlagSet {
 	if cmd, ok := c.Command.(FlaggedCommand); ok {
 		return cmd.Flags()
 	}
-	return gnuflag.NewFlagSet("", gnuflag.ContinueOnError)
+	return pflag.NewFlagSet("", pflag.ContinueOnError)
 }
 
 type Context struct {
@@ -594,12 +641,15 @@ func (c *Context) RawOutput() {
 	}
 }
 
+var ArbitraryArgs = -1
+
 type Info struct {
 	Name    string
 	MinArgs int
 	MaxArgs int
 	Usage   string
 	Desc    string
+	V2      InfoV2
 	fail    bool
 }
 
@@ -608,7 +658,7 @@ type help struct {
 }
 
 func (c *help) Info() *Info {
-	return &Info{Name: "help", Usage: "command [args]"}
+	return &Info{Name: "help", Usage: "command [args]", V2: InfoV2{Disabled: true}}
 }
 
 func (c *help) Run(context *Context) error {
@@ -620,7 +670,7 @@ func (c *help) Run(context *Context) error {
 	if len(context.Args) > 0 {
 		if cmd, ok := c.manager.Commands[context.Args[0]]; ok {
 			if deprecated, ok := cmd.(*DeprecatedCommand); ok {
-				fmt.Fprintf(context.Stderr, deprecatedMsg, deprecated.oldName, cmd.Info().Name)
+				fmt.Fprintf(context.Stderr, deprecatedMsg, deprecated.oldName, deprecated.Command.Info().Name)
 			}
 			info := cmd.Info()
 			output += fmt.Sprintf("Usage: %s %s\n", c.manager.name, info.Usage)

@@ -33,7 +33,7 @@ func (s *S) TestEnvGetRun(c *check.C) {
 	}
 	s.setupFakeTransport(&cmdtest.Transport{Message: jsonResult, Status: http.StatusOK})
 	command := EnvGet{}
-	command.Flags().Parse(true, []string{"-a", "someapp"})
+	command.Flags().Parse([]string{"-a", "someapp"})
 	err := command.Run(&context)
 	c.Assert(err, check.IsNil)
 	c.Assert(stdout.String(), check.Equals, result)
@@ -61,7 +61,7 @@ func (s *S) TestEnvGetRunWithMultipleParams(c *check.C) {
 	}
 	s.setupFakeTransport(trans)
 	command := EnvGet{}
-	command.Flags().Parse(true, []string{"-a", "someapp"})
+	command.Flags().Parse([]string{"-a", "someapp"})
 	err := command.Run(&context)
 	c.Assert(err, check.IsNil)
 	c.Assert(stdout.String(), check.Equals, result)
@@ -79,7 +79,7 @@ func (s *S) TestEnvGetAlwaysPrintInAlphabeticalOrder(c *check.C) {
 	}
 	s.setupFakeTransport(&cmdtest.Transport{Message: jsonResult, Status: http.StatusOK})
 	command := EnvGet{}
-	command.Flags().Parse(true, []string{"-a", "someapp"})
+	command.Flags().Parse([]string{"-a", "someapp"})
 	err := command.Run(&context)
 	c.Assert(err, check.IsNil)
 	c.Assert(stdout.String(), check.Equals, result)
@@ -97,7 +97,7 @@ func (s *S) TestEnvGetPrivateVariables(c *check.C) {
 	}
 	s.setupFakeTransport(&cmdtest.Transport{Message: jsonResult, Status: http.StatusOK})
 	command := EnvGet{}
-	command.Flags().Parse(true, []string{"-a", "someapp"})
+	command.Flags().Parse([]string{"-a", "someapp"})
 	err := command.Run(&context)
 	c.Assert(err, check.IsNil)
 	c.Assert(stdout.String(), check.Equals, result)
@@ -115,7 +115,7 @@ func (s *S) TestEnvGetManagedByVariables(c *check.C) {
 	}
 	s.setupFakeTransport(&cmdtest.Transport{Message: jsonResult, Status: http.StatusOK})
 	command := EnvGet{}
-	command.Flags().Parse(true, []string{"-a", "someapp"})
+	command.Flags().Parse([]string{"-a", "someapp"})
 	err := command.Run(&context)
 	c.Assert(err, check.IsNil)
 	c.Assert(stdout.String(), check.Equals, result)
@@ -139,7 +139,7 @@ func (s *S) TestEnvGetWithoutTheFlag(c *check.C) {
 	}
 	s.setupFakeTransport(trans)
 	cmd := &EnvGet{}
-	err := cmd.Flags().Parse(true, []string{"-a", "seek"})
+	err := cmd.Flags().Parse([]string{"-a", "seek"})
 	c.Assert(err, check.IsNil)
 
 	err = cmd.Run(&context)
@@ -183,7 +183,7 @@ func (s *S) TestEnvSetRun(c *check.C) {
 	}
 	s.setupFakeTransport(trans)
 	command := EnvSet{}
-	command.Flags().Parse(true, []string{"-a", "someapp"})
+	command.Flags().Parse([]string{"-a", "someapp"})
 	err = command.Run(&context)
 	c.Assert(err, check.IsNil)
 	c.Assert(stdout.String(), check.Equals, expectedOut)
@@ -202,7 +202,7 @@ func (s *S) TestEnvSetRunWithMultipleParams(c *check.C) {
 	c.Assert(err, check.IsNil)
 	s.setupFakeTransport(&cmdtest.Transport{Message: string(result), Status: http.StatusOK})
 	command := EnvSet{}
-	command.Flags().Parse(true, []string{"-a", "someapp"})
+	command.Flags().Parse([]string{"-a", "someapp"})
 	err = command.Run(&context)
 	c.Assert(err, check.IsNil)
 	c.Assert(stdout.String(), check.Equals, expectedOut)
@@ -252,7 +252,7 @@ variable 2`, Alias: "", Private: &private},
 	}
 	s.setupFakeTransport(trans)
 	command := EnvSet{}
-	command.Flags().Parse(true, []string{"-a", "someapp"})
+	command.Flags().Parse([]string{"-a", "someapp"})
 	err = command.Run(&context)
 	c.Assert(err, check.IsNil)
 	c.Assert(stdout.String(), check.Equals, expectedOut)
@@ -309,7 +309,7 @@ func (s *S) TestEnvSetValues(c *check.C) {
 	}
 	s.setupFakeTransport(trans)
 	command := EnvSet{}
-	command.Flags().Parse(true, []string{"-a", "someapp"})
+	command.Flags().Parse([]string{"-a", "someapp"})
 	err = command.Run(&context)
 	c.Assert(err, check.IsNil)
 	output := stdout.String()
@@ -368,7 +368,7 @@ func (s *S) TestEnvSetValuesAndPrivateAndNoRestart(c *check.C) {
 	}
 	s.setupFakeTransport(trans)
 	command := EnvSet{}
-	command.Flags().Parse(true, []string{"-a", "someapp", "-p", "1", "--no-restart"})
+	command.Flags().Parse([]string{"-a", "someapp", "-p", "1", "--no-restart"})
 	err = command.Run(&context)
 	c.Assert(err, check.IsNil)
 	c.Assert(stdout.String(), check.Equals, expectedOut)
@@ -382,7 +382,7 @@ func (s *S) TestEnvSetInvalidParameters(c *check.C) {
 		Stderr: &stderr,
 	}
 	command := EnvSet{}
-	command.Flags().Parse(true, []string{"-a", "someapp"})
+	command.Flags().Parse([]string{"-a", "someapp"})
 	err := command.Run(&context)
 	c.Assert(err, check.NotNil)
 	c.Assert(err.Error(), check.Equals, EnvSetValidationMessage)
@@ -415,7 +415,7 @@ func (s *S) TestEnvUnsetRun(c *check.C) {
 	}
 	s.setupFakeTransport(trans)
 	command := EnvUnset{}
-	command.Flags().Parse(true, []string{"-a", "someapp"})
+	command.Flags().Parse([]string{"-a", "someapp"})
 	err = command.Run(&context)
 	c.Assert(err, check.IsNil)
 	c.Assert(stdout.String(), check.Equals, expectedOut)
@@ -444,7 +444,7 @@ func (s *S) TestEnvUnsetWithNoRestartFlag(c *check.C) {
 	}
 	s.setupFakeTransport(trans)
 	command := EnvUnset{}
-	command.Flags().Parse(true, []string{"-a", "someapp", "--no-restart"})
+	command.Flags().Parse([]string{"-a", "someapp", "--no-restart"})
 	err = command.Run(&context)
 	c.Assert(err, check.IsNil)
 	c.Assert(stdout.String(), check.Equals, expectedOut)
@@ -455,7 +455,7 @@ func (s *S) TestRequestEnvURL(c *check.C) {
 	s.setupFakeTransport(&cmdtest.Transport{Message: result, Status: http.StatusOK})
 	args := []string{"DATABASE_HOST"}
 	g := &EnvGet{}
-	g.Flags().Parse(true, []string{"-a", "someapp"})
+	g.Flags().Parse([]string{"-a", "someapp"})
 	b, err := requestEnvGetURL(g, args)
 	c.Assert(err, check.IsNil)
 	c.Assert(b, check.DeepEquals, []byte(result))
@@ -472,7 +472,7 @@ func (s *S) TestJobEnvGetRun(c *check.C) {
 	}
 	s.setupFakeTransport(&cmdtest.Transport{Message: jsonResult, Status: http.StatusOK})
 	command := EnvGet{}
-	command.Flags().Parse(true, []string{"-j", "sample-job"})
+	command.Flags().Parse([]string{"-j", "sample-job"})
 	err := command.Run(&context)
 	c.Assert(err, check.IsNil)
 	c.Assert(stdout.String(), check.Equals, result)
@@ -500,7 +500,7 @@ func (s *S) TestJobEnvGetRunWithMultipleParams(c *check.C) {
 	}
 	s.setupFakeTransport(trans)
 	command := EnvGet{}
-	command.Flags().Parse(true, []string{"-j", "sample-job"})
+	command.Flags().Parse([]string{"-j", "sample-job"})
 	err := command.Run(&context)
 	c.Assert(err, check.IsNil)
 	c.Assert(stdout.String(), check.Equals, result)
@@ -518,7 +518,7 @@ func (s *S) TestJobEnvGetAlwaysPrintInAlphabeticalOrder(c *check.C) {
 	}
 	s.setupFakeTransport(&cmdtest.Transport{Message: jsonResult, Status: http.StatusOK})
 	command := EnvGet{}
-	command.Flags().Parse(true, []string{"-j", "sample-job"})
+	command.Flags().Parse([]string{"-j", "sample-job"})
 	err := command.Run(&context)
 	c.Assert(err, check.IsNil)
 	c.Assert(stdout.String(), check.Equals, result)
@@ -536,7 +536,7 @@ func (s *S) TestJobEnvGetPrivateVariables(c *check.C) {
 	}
 	s.setupFakeTransport(&cmdtest.Transport{Message: jsonResult, Status: http.StatusOK})
 	command := EnvGet{}
-	command.Flags().Parse(true, []string{"-j", "sample-job"})
+	command.Flags().Parse([]string{"-j", "sample-job"})
 	err := command.Run(&context)
 	c.Assert(err, check.IsNil)
 	c.Assert(stdout.String(), check.Equals, result)
@@ -560,7 +560,7 @@ func (s *S) TestJobEnvGetWithoutTheFlag(c *check.C) {
 	}
 	s.setupFakeTransport(trans)
 	cmd := &EnvGet{}
-	err := cmd.Flags().Parse(true, []string{"-j", "sample-job"})
+	err := cmd.Flags().Parse([]string{"-j", "sample-job"})
 	c.Assert(err, check.IsNil)
 
 	err = cmd.Run(&context)
@@ -600,7 +600,7 @@ func (s *S) TestJobEnvSetRun(c *check.C) {
 	}
 	s.setupFakeTransport(trans)
 	command := EnvSet{}
-	command.Flags().Parse(true, []string{"-j", "sample-job"})
+	command.Flags().Parse([]string{"-j", "sample-job"})
 	err = command.Run(&context)
 	c.Assert(err, check.IsNil)
 	c.Assert(stdout.String(), check.Equals, expectedOut)
@@ -619,7 +619,7 @@ func (s *S) TestJobEnvSetRunWithMultipleParams(c *check.C) {
 	c.Assert(err, check.IsNil)
 	s.setupFakeTransport(&cmdtest.Transport{Message: string(result), Status: http.StatusOK})
 	command := EnvSet{}
-	command.Flags().Parse(true, []string{"-j", "sample-job"})
+	command.Flags().Parse([]string{"-j", "sample-job"})
 	err = command.Run(&context)
 	c.Assert(err, check.IsNil)
 	c.Assert(stdout.String(), check.Equals, expectedOut)
@@ -668,7 +668,7 @@ variable 2`, Alias: "", Private: &private},
 	}
 	s.setupFakeTransport(trans)
 	command := EnvSet{}
-	command.Flags().Parse(true, []string{"-j", "sample-job"})
+	command.Flags().Parse([]string{"-j", "sample-job"})
 	err = command.Run(&context)
 	c.Assert(err, check.IsNil)
 	c.Assert(stdout.String(), check.Equals, expectedOut)
@@ -724,7 +724,7 @@ func (s *S) TestJobEnvSetValues(c *check.C) {
 	}
 	s.setupFakeTransport(trans)
 	command := EnvSet{}
-	command.Flags().Parse(true, []string{"-j", "sample-job"})
+	command.Flags().Parse([]string{"-j", "sample-job"})
 	err = command.Run(&context)
 	c.Assert(err, check.IsNil)
 	output := stdout.String()
@@ -782,7 +782,7 @@ func (s *S) TestJobEnvSetValuesAndPrivate(c *check.C) {
 	}
 	s.setupFakeTransport(trans)
 	command := EnvSet{}
-	command.Flags().Parse(true, []string{"-j", "sample-job", "-p"})
+	command.Flags().Parse([]string{"-j", "sample-job", "-p"})
 	err = command.Run(&context)
 	c.Assert(err, check.IsNil)
 	c.Assert(stdout.String(), check.Equals, expectedOut)
@@ -796,7 +796,7 @@ func (s *S) TestJobEnvSetInvalidParameters(c *check.C) {
 		Stderr: &stderr,
 	}
 	command := EnvSet{}
-	command.Flags().Parse(true, []string{"-j", "sample-job"})
+	command.Flags().Parse([]string{"-j", "sample-job"})
 	err := command.Run(&context)
 	c.Assert(err, check.NotNil)
 	c.Assert(err.Error(), check.Equals, EnvSetValidationMessage)
@@ -824,7 +824,7 @@ func (s *S) TestJobEnvUnsetRun(c *check.C) {
 	}
 	s.setupFakeTransport(trans)
 	command := EnvUnset{}
-	command.Flags().Parse(true, []string{"-j", "sample-job"})
+	command.Flags().Parse([]string{"-j", "sample-job"})
 	err = command.Run(&context)
 	c.Assert(err, check.IsNil)
 	c.Assert(stdout.String(), check.Equals, expectedOut)
@@ -835,7 +835,7 @@ func (s *S) TestJobRequestEnvURL(c *check.C) {
 	s.setupFakeTransport(&cmdtest.Transport{Message: result, Status: http.StatusOK})
 	args := []string{"DATABASE_HOST"}
 	g := &EnvGet{}
-	g.Flags().Parse(true, []string{"-j", "sample-job"})
+	g.Flags().Parse([]string{"-j", "sample-job"})
 	b, err := requestEnvGetURL(g, args)
 	c.Assert(err, check.IsNil)
 	c.Assert(b, check.DeepEquals, []byte(result))
@@ -863,7 +863,7 @@ func (s *S) TestCheckAppAndJobInputsPassingBothAppAndJob(c *check.C) {
 	}
 	s.setupFakeTransport(&cmdtest.Transport{})
 	command := &EnvGet{}
-	command.Flags().Parse(true, []string{"-j", "sample-job", "-a", "sample-app"})
+	command.Flags().Parse([]string{"-j", "sample-job", "-a", "sample-app"})
 	err := command.Run(&ctx)
 	c.Assert(err, check.NotNil)
 	c.Assert(err.Error(), check.Equals, "you must pass an application or job, not both")
@@ -926,7 +926,7 @@ func (s *S) TestEnvSetWithSensitiveVariableWarning(c *check.C) {
 	c.Assert(err, check.IsNil)
 	s.setupFakeTransport(&cmdtest.Transport{Message: string(result), Status: http.StatusOK})
 	command := EnvSet{}
-	command.Flags().Parse(true, []string{"-a", "someapp"})
+	command.Flags().Parse([]string{"-a", "someapp"})
 	err = command.Run(&context)
 	c.Assert(err, check.IsNil)
 	output := stdout.String()
@@ -951,7 +951,7 @@ func (s *S) TestEnvSetWithSensitiveVariableAndPrivateFlag(c *check.C) {
 	c.Assert(err, check.IsNil)
 	s.setupFakeTransport(&cmdtest.Transport{Message: string(result), Status: http.StatusOK})
 	command := EnvSet{}
-	command.Flags().Parse(true, []string{"-a", "someapp", "-p"})
+	command.Flags().Parse([]string{"-a", "someapp", "-p"})
 	err = command.Run(&context)
 	c.Assert(err, check.IsNil)
 	output := stdout.String()
@@ -977,7 +977,7 @@ func (s *S) TestEnvSetWithNonSensitiveVariables(c *check.C) {
 	c.Assert(err, check.IsNil)
 	s.setupFakeTransport(&cmdtest.Transport{Message: string(result), Status: http.StatusOK})
 	command := EnvSet{}
-	command.Flags().Parse(true, []string{"-a", "someapp"})
+	command.Flags().Parse([]string{"-a", "someapp"})
 	err = command.Run(&context)
 	c.Assert(err, check.IsNil)
 	output := stdout.String()

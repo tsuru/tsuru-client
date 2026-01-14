@@ -15,7 +15,7 @@ import (
 	"time"
 
 	"github.com/pkg/errors"
-	"github.com/tsuru/gnuflag"
+	"github.com/spf13/pflag"
 	"github.com/tsuru/tsuru/fs"
 	"github.com/tsuru/tsuru/fs/fstest"
 	check "gopkg.in/check.v1"
@@ -207,7 +207,10 @@ func (s *S) TestNormalizedCommandsExec(c *check.C) {
 		for k, v := range cmds {
 			c.Assert(v.executed, check.Equals, k == tt.expected, check.Commentf("test %d, expected %s executed, got %s", i, tt.expected, k))
 			if k == tt.expected {
-				c.Assert(v.args, check.DeepEquals, tt.expectedArgs, check.Commentf("test %d", i))
+				c.Assert(len(v.args), check.Equals, len(tt.expectedArgs), check.Commentf("test %d", i))
+				if len(v.args) > 0 {
+					c.Assert(v.args, check.DeepEquals, tt.expectedArgs, check.Commentf("test %d", i))
+				}
 			}
 			v.executed = false
 			v.args = nil
@@ -304,6 +307,7 @@ func (s *S) TestManagerRunWithFlagsAndArgs(c *check.C) {
 	cmd := &CommandWithFlags{minArgs: 2}
 	globalManager.Register(cmd)
 	globalManager.Run([]string{"with-flags", "something", "--age", "20", "otherthing"})
+	c.Assert(globalManager.e.(*recordingExiter).value(), check.Equals, 0)
 	c.Assert(cmd.args, check.DeepEquals, []string{"something", "otherthing"})
 }
 
@@ -508,8 +512,7 @@ with-flags doesn't do anything, really.
 
 Flags:
   
-  -a, --age  (= 0)
-      your age
+    -a, --age int   your age
   
 `
 	globalManager.Register(&CommandWithFlags{})
@@ -524,9 +527,8 @@ with-flags doesn't do anything, really.
 
 Flags:
   
-  -a, --age  (= 0)
-      velvet darkness
-      they fear
+    -a, --age int   velvet darkness
+                    they fear
   
 `
 	globalManager.Register(&CommandWithFlags{multi: true})
@@ -535,30 +537,33 @@ Flags:
 }
 
 func (s *S) TestHelpDeprecatedCmd(c *check.C) {
-	expectedStdout := `Usage: glb foo
-
-Foo do anything or nothing.
-
-`
 	expectedStderr := `WARNING: "bar" is deprecated. Showing help for "foo" instead.` + "\n\n"
 	var stdout, stderr bytes.Buffer
 	globalManager.stdout = &stdout
 	globalManager.stderr = &stderr
 	globalManager.RegisterDeprecated(&TestCommand{}, "bar")
 	globalManager.Run([]string{"help", "bar"})
-	c.Assert(stdout.String(), check.Equals, expectedStdout)
+	c.Assert(stdout.String(), check.Equals, `Usage: glb bar
+
+Foo do anything or nothing.
+
+`)
 	c.Assert(stderr.String(), check.Equals, expectedStderr)
 	stdout.Reset()
 	stderr.Reset()
 	globalManager.Run([]string{"help", "foo"})
-	c.Assert(stdout.String(), check.Equals, expectedStdout)
+	c.Assert(stdout.String(), check.Equals, `Usage: glb foo
+
+Foo do anything or nothing.
+
+`)
 	c.Assert(stderr.String(), check.Equals, "")
 }
 
 func (s *S) TestHelpDeprecatedCmdWritesWarningFirst(c *check.C) {
 	expected := `WARNING: "bar" is deprecated. Showing help for "foo" instead.
 
-Usage: glb foo
+Usage: glb bar
 
 Foo do anything or nothing.
 
@@ -893,7 +898,7 @@ func (c *UnauthorizedLoginErrorCommand) Info() *Info {
 }
 
 type CommandWithFlags struct {
-	fs      *gnuflag.FlagSet
+	fs      *pflag.FlagSet
 	age     int
 	minArgs int
 	args    []string
@@ -914,21 +919,20 @@ func (c *CommandWithFlags) Run(context *Context) error {
 	return nil
 }
 
-func (c *CommandWithFlags) Flags() *gnuflag.FlagSet {
+func (c *CommandWithFlags) Flags() *pflag.FlagSet {
 	if c.fs == nil {
-		c.fs = gnuflag.NewFlagSet("with-flags", gnuflag.ContinueOnError)
+		c.fs = pflag.NewFlagSet("with-flags", pflag.ContinueOnError)
 		desc := "your age"
 		if c.multi {
 			desc = "velvet darkness\nthey fear"
 		}
-		c.fs.IntVar(&c.age, "age", 0, desc)
-		c.fs.IntVar(&c.age, "a", 0, desc)
+		c.fs.IntVarP(&c.age, "age", "a", 0, desc)
 	}
 	return c.fs
 }
 
 type HelpCommandWithFlags struct {
-	fs *gnuflag.FlagSet
+	fs *pflag.FlagSet
 	h  bool
 }
 
@@ -945,11 +949,10 @@ func (c *HelpCommandWithFlags) Run(context *Context) error {
 	return nil
 }
 
-func (c *HelpCommandWithFlags) Flags() *gnuflag.FlagSet {
+func (c *HelpCommandWithFlags) Flags() *pflag.FlagSet {
 	if c.fs == nil {
-		c.fs = gnuflag.NewFlagSet("with-flags", gnuflag.ContinueOnError)
-		c.fs.BoolVar(&c.h, "help", false, "help?")
-		c.fs.BoolVar(&c.h, "h", false, "help?")
+		c.fs = pflag.NewFlagSet("with-flags", pflag.ContinueOnError)
+		c.fs.BoolVarP(&c.h, "help", "h", false, "help?")
 	}
 	return c.fs
 }
@@ -1024,4 +1027,229 @@ func (s *S) TestNewManagerPanicExiter(c *check.C) {
 	mngr := NewManagerPanicExiter("glb", &stdout, &stderr, os.Stdin, lookup)
 	mngr.Run([]string{"custom"})
 	c.Assert("This code is never called", check.Equals, "Because Panic occurred")
+}
+
+func (s *S) TestManagerRegisterWithV2Enabled(c *check.C) {
+	var stdout, stderr bytes.Buffer
+	mngr := NewManager("glb", &stdout, &stderr, os.Stdin, nil)
+	// Force enable v2 for this test
+	mngr.v2.Enabled = true
+
+	cmd := &TestCommand{}
+	mngr.Register(cmd)
+
+	// Check command is registered in v1 manager
+	c.Assert(mngr.Commands["foo"], check.Equals, cmd)
+
+	// Check command is registered in v2 manager (root)
+	rootCommands := mngr.v2.rootCmd.Commands()
+	var foundFQDN bool
+	for _, v2cmd := range rootCommands {
+		if v2cmd.Use == "foo" {
+			foundFQDN = true
+			break
+		}
+	}
+	c.Assert(foundFQDN, check.Equals, true)
+}
+
+func (s *S) TestManagerRegisterWithV2Disabled(c *check.C) {
+	var stdout, stderr bytes.Buffer
+	mngr := NewManager("glb", &stdout, &stderr, os.Stdin, nil)
+	// Ensure v2 is disabled
+	mngr.v2.Enabled = false
+
+	initialCommandCount := len(mngr.v2.rootCmd.Commands())
+	cmd := &TestCommand{}
+	mngr.Register(cmd)
+
+	// Check command is registered in v1 manager
+	c.Assert(mngr.Commands["foo"], check.Equals, cmd)
+
+	// Check v2 root commands remain unchanged
+	finalCommandCount := len(mngr.v2.rootCmd.Commands())
+	c.Assert(finalCommandCount, check.Equals, initialCommandCount)
+}
+
+func (s *S) TestManagerRegisterTopicWithV2Enabled(c *check.C) {
+	var stdout, stderr bytes.Buffer
+	mngr := NewManager("glb", &stdout, &stderr, os.Stdin, nil)
+	// Force enable v2 for this test
+	mngr.v2.Enabled = true
+
+	mngr.RegisterTopic("app", "Application management")
+
+	// Check topic is registered in v1 manager (with spaces)
+	c.Assert(mngr.topics["app"], check.Equals, "Application management")
+
+	// Check topic is registered in v2 manager
+	c.Assert(mngr.v2.tree.Children["app"], check.NotNil)
+	c.Assert(mngr.v2.tree.Children["app"].Command.Use, check.Equals, "app")
+	c.Assert(mngr.v2.tree.Children["app"].Command.Short, check.Equals, "Application management")
+}
+
+func (s *S) TestManagerRegisterTopicWithV2Disabled(c *check.C) {
+	var stdout, stderr bytes.Buffer
+	mngr := NewManager("glb", &stdout, &stderr, os.Stdin, nil)
+	// Ensure v2 is disabled
+	mngr.v2.Enabled = false
+
+	mngr.RegisterTopic("app", "Application management")
+
+	// Check topic is registered in v1 manager (with spaces)
+	c.Assert(mngr.topics["app"], check.Equals, "Application management")
+
+	// Check topic is not registered in v2 manager
+	c.Assert(mngr.v2.tree.Children["app"], check.IsNil)
+}
+
+func (s *S) TestManagerRegisterTopicNormalizesName(c *check.C) {
+	var stdout, stderr bytes.Buffer
+	mngr := NewManager("glb", &stdout, &stderr, os.Stdin, nil)
+
+	mngr.RegisterTopic("app-router", "App router management")
+
+	// Check topic is registered in v1 manager with spaces
+	c.Assert(mngr.topics["app router"], check.Equals, "App router management")
+}
+
+func (s *S) TestManagerRunWithV2Disabled(c *check.C) {
+	var stdout, stderr bytes.Buffer
+	mngr := NewManager("glb", &stdout, &stderr, os.Stdin, nil)
+	// Ensure v2 is disabled
+	mngr.v2.Enabled = false
+	var exiter recordingExiter
+	mngr.e = &exiter
+
+	cmd := &TestCommand{}
+	mngr.Register(cmd)
+	mngr.Run([]string{"foo"})
+
+	// Should execute the v1 command
+	c.Assert(stdout.String(), check.Equals, "Running TestCommand")
+	c.Assert(exiter.value(), check.Equals, 0)
+}
+
+func (s *S) TestManagerV2InitializationInNewManager(c *check.C) {
+	var stdout, stderr bytes.Buffer
+	mngr := NewManager("glb", &stdout, &stderr, os.Stdin, nil)
+
+	// Check that v2 is initialized
+	c.Assert(mngr.v2, check.NotNil)
+	c.Assert(mngr.v2.rootCmd, check.NotNil)
+	c.Assert(mngr.v2.tree, check.NotNil)
+}
+
+func (s *S) TestManagerV2InitializationInNewManagerPanicExiter(c *check.C) {
+	var stdout, stderr bytes.Buffer
+	mngr := NewManagerPanicExiter("glb", &stdout, &stderr, os.Stdin, nil)
+
+	// Check that v2 is initialized
+	c.Assert(mngr.v2, check.NotNil)
+	c.Assert(mngr.v2.rootCmd, check.NotNil)
+	c.Assert(mngr.v2.tree, check.NotNil)
+	// Check that panic exiter is set
+	_, ok := mngr.e.(PanicExiter)
+	c.Assert(ok, check.Equals, true)
+}
+
+func (s *S) TestManagerRegisterDeprecatedWithV2Enabled(c *check.C) {
+	var stdout, stderr bytes.Buffer
+	mngr := NewManager("glb", &stdout, &stderr, os.Stdin, nil)
+	// Force enable v2 for this test
+	mngr.v2.Enabled = true
+
+	originalCmd := &TestCommand{}
+	mngr.RegisterDeprecated(originalCmd, "bar")
+
+	// Check command is registered in v1 manager
+	c.Assert(mngr.Commands["foo"], check.Equals, originalCmd)
+
+	// Check deprecated command is registered in v1 manager
+	deprecatedCmd, ok := mngr.Commands["bar"].(*DeprecatedCommand)
+	c.Assert(ok, check.Equals, true)
+	c.Assert(deprecatedCmd.Command, check.Equals, originalCmd)
+	c.Assert(deprecatedCmd.oldName, check.Equals, "bar")
+
+	// Check both original and deprecated commands are registered in v2 manager (root)
+	rootCommands := mngr.v2.rootCmd.Commands()
+	var foundOriginal, foundDeprecated bool
+	for _, v2cmd := range rootCommands {
+		if v2cmd.Use == "foo" {
+			foundOriginal = true
+		}
+		if v2cmd.Use == "bar" {
+			foundDeprecated = true
+			c.Assert(v2cmd.Hidden, check.Equals, true)
+		}
+	}
+	c.Assert(foundOriginal, check.Equals, true)
+	c.Assert(foundDeprecated, check.Equals, true)
+}
+
+func (s *S) TestNewManagerPanicExiterReusesNewManager(c *check.C) {
+	var stdout, stderr bytes.Buffer
+	mngr := NewManagerPanicExiter("glb", &stdout, &stderr, os.Stdin, nil)
+
+	// Check that manager is properly initialized
+	c.Assert(mngr, check.NotNil)
+	c.Assert(mngr.name, check.Equals, "glb")
+	c.Assert(mngr.stdout, check.Equals, &stdout)
+	c.Assert(mngr.stderr, check.Equals, &stderr)
+	c.Assert(mngr.stdin, check.Equals, os.Stdin)
+
+	// Check that panic exiter is set
+	_, ok := mngr.e.(PanicExiter)
+	c.Assert(ok, check.Equals, true)
+
+	// Check that v2 is initialized
+	c.Assert(mngr.v2, check.NotNil)
+
+	// Check that help command is registered only once (not twice)
+	helpCmd, found := mngr.Commands["help"]
+	c.Assert(found, check.Equals, true)
+	c.Assert(helpCmd, check.NotNil)
+}
+
+func (s *S) TestManagerAfterFlagParseHookForwardedToV2(c *check.C) {
+	var stdout, stderr bytes.Buffer
+	mngr := NewManager("glb", &stdout, &stderr, os.Stdin, nil)
+
+	// Track if hook was called
+	hookCalled := false
+	mngr.AfterFlagParseHook = func() {
+		hookCalled = true
+	}
+
+	// Simulate what happens when v2's PersistentPreRun is called
+	// This is the hook that was set during NewManager
+	rootCmd := mngr.v2.rootCmd
+	if rootCmd.PersistentPreRun != nil {
+		rootCmd.PersistentPreRun(rootCmd, []string{})
+	}
+
+	// Check that the hook was called
+	c.Assert(hookCalled, check.Equals, true)
+}
+
+func (s *S) TestManagerAfterFlagParseHookNilDoesNotPanic(c *check.C) {
+	var stdout, stderr bytes.Buffer
+	mngr := NewManager("glb", &stdout, &stderr, os.Stdin, nil)
+
+	// Don't set AfterFlagParseHook (leave it nil)
+	mngr.AfterFlagParseHook = nil
+
+	// Simulate what happens when v2's PersistentPreRun is called
+	rootCmd := mngr.v2.rootCmd
+
+	// Should not panic - if it panics the test will fail
+	defer func() {
+		if r := recover(); r != nil {
+			c.Errorf("Should not panic, but got: %v", r)
+		}
+	}()
+
+	if rootCmd.PersistentPreRun != nil {
+		rootCmd.PersistentPreRun(rootCmd, []string{})
+	}
 }

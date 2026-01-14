@@ -14,7 +14,7 @@ import (
 	"syscall"
 
 	"github.com/pkg/errors"
-	"github.com/tsuru/gnuflag"
+	"github.com/spf13/pflag"
 	"github.com/tsuru/go-tsuruclient/pkg/config"
 	"github.com/tsuru/tsuru-client/tsuru/cmd"
 )
@@ -190,7 +190,7 @@ func WriteTarget(t string) error {
 }
 
 type TargetAdd struct {
-	fs  *gnuflag.FlagSet
+	fs  *pflag.FlagSet
 	set bool
 }
 
@@ -224,11 +224,10 @@ func (t *TargetAdd) Run(ctx *cmd.Context) error {
 	return nil
 }
 
-func (t *TargetAdd) Flags() *gnuflag.FlagSet {
+func (t *TargetAdd) Flags() *pflag.FlagSet {
 	if t.fs == nil {
-		t.fs = gnuflag.NewFlagSet("target-add", gnuflag.ExitOnError)
-		t.fs.BoolVar(&t.set, "set-current", false, "Add and define the target as the current target")
-		t.fs.BoolVar(&t.set, "s", false, "Add and define the target as the current target")
+		t.fs = pflag.NewFlagSet("target-add", pflag.ExitOnError)
+		t.fs.BoolVarP(&t.set, "set-current", "s", false, "Add and define the target as the current target")
 	}
 	return t.fs
 }

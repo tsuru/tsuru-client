@@ -7,22 +7,16 @@ package app
 import (
 	"testing"
 
-	"github.com/tsuru/gnuflag"
+	"github.com/spf13/pflag"
 	check "gopkg.in/check.v1"
 )
 
-var appflag = &gnuflag.Flag{
-	Name:     "app",
-	Usage:    "The name of the app.",
-	Value:    nil,
-	DefValue: "",
-}
-
-var appshortflag = &gnuflag.Flag{
-	Name:     "a",
-	Usage:    "The name of the app.",
-	Value:    nil,
-	DefValue: "",
+var appflag = &pflag.Flag{
+	Name:      "app",
+	Usage:     "The name of the app.",
+	Value:     nil,
+	DefValue:  "",
+	Shorthand: "a",
 }
 
 func Test(t *testing.T) { check.TestingT(t) }
@@ -33,7 +27,7 @@ var _ = check.Suite(&S{})
 
 func (s *S) TestAppNameMixInWithFlagDefined(c *check.C) {
 	g := AppNameMixIn{}
-	g.Flags().Parse(true, []string{"--app", "myapp"})
+	g.Flags().Parse([]string{"--app", "myapp"})
 	name, err := g.AppNameByFlag()
 	c.Assert(err, check.IsNil)
 	c.Assert(name, check.Equals, "myapp")
@@ -41,7 +35,7 @@ func (s *S) TestAppNameMixInWithFlagDefined(c *check.C) {
 
 func (s *S) TestAppNameMixInWithShortFlagDefined(c *check.C) {
 	g := AppNameMixIn{}
-	g.Flags().Parse(true, []string{"-a", "myapp"})
+	g.Flags().Parse([]string{"-a", "myapp"})
 	name, err := g.AppNameByFlag()
 	c.Assert(err, check.IsNil)
 	c.Assert(name, check.Equals, "myapp")
@@ -49,7 +43,7 @@ func (s *S) TestAppNameMixInWithShortFlagDefined(c *check.C) {
 
 func (s *S) TestAppNameMixInArgs(c *check.C) {
 	g := AppNameMixIn{}
-	g.Flags().Parse(true, []string{})
+	g.Flags().Parse([]string{})
 	name, err := g.AppNameByArgsAndFlag([]string{"myapp"})
 	c.Assert(err, check.IsNil)
 	c.Assert(name, check.Equals, "myapp")
@@ -57,7 +51,7 @@ func (s *S) TestAppNameMixInArgs(c *check.C) {
 
 func (s *S) TestAppNameMixInArgsConflict(c *check.C) {
 	g := AppNameMixIn{}
-	g.Flags().Parse(true, []string{"-a", "myapp"})
+	g.Flags().Parse([]string{"-a", "myapp"})
 	_, err := g.AppNameByArgsAndFlag([]string{"myapp2"})
 	c.Assert(err, check.Not(check.IsNil))
 	c.Assert(err.Error(), check.Equals, "You can't use the app flag and specify the app name as an argument at the same time.")
@@ -76,11 +70,11 @@ Use the --app flag to specify it.
 }
 
 func (s *S) TestAppNameMixInFlags(c *check.C) {
-	var flags []gnuflag.Flag
-	expected := []gnuflag.Flag{*appshortflag, *appflag}
+	var flags []pflag.Flag
+	expected := []pflag.Flag{*appflag}
 	command := AppNameMixIn{}
 	flagset := command.Flags()
-	flagset.VisitAll(func(f *gnuflag.Flag) {
+	flagset.VisitAll(func(f *pflag.Flag) {
 		f.Value = nil
 		flags = append(flags, *f)
 	})

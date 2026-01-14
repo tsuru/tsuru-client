@@ -50,7 +50,7 @@ func (s *S) TestTeamCreate(c *check.C) {
 	}
 	s.setupFakeTransport(&transport)
 	command := TeamCreate{}
-	command.Flags().Parse(true, []string{"-t", "tag1", "-t", "tag2"})
+	command.Flags().Parse([]string{"-t", "tag1", "-t", "tag2"})
 	err := command.Run(&context)
 	c.Assert(err, check.IsNil)
 	c.Assert(stdout.String(), check.Equals, expected)
@@ -84,7 +84,7 @@ func (s *S) TestTeamUpdate(c *check.C) {
 	}
 	s.setupFakeTransport(trans)
 	command := &TeamUpdate{}
-	command.Flags().Parse(true, []string{"-n", "new-team", "-t", "tag1", "-t", "tag2"})
+	command.Flags().Parse([]string{"-n", "new-team", "-t", "tag1", "-t", "tag2"})
 	err := command.Run(&ctx)
 	c.Assert(err, check.IsNil)
 	result := stdout.String()
@@ -718,7 +718,7 @@ func (s *S) TestResetPasswordStepTwo(c *check.C) {
 		},
 	}
 	command := ResetPassword{}
-	command.Flags().Parse(true, []string{"-t", "secret"})
+	command.Flags().Parse([]string{"-t", "secret"})
 	s.setupFakeTransport(&trans)
 	err := command.Run(&context)
 	c.Assert(err, check.IsNil)
@@ -737,7 +737,7 @@ func (s *S) TestResetPasswordFlags(c *check.C) {
 	command := ResetPassword{}
 	flagset := command.Flags()
 	c.Assert(flagset, check.NotNil)
-	err := flagset.Parse(false, []string{"-t", "token123"})
+	err := flagset.Parse([]string{"-t", "token123"})
 	c.Assert(err, check.IsNil)
 	c.Assert(command.token, check.Equals, "token123")
 	token := flagset.Lookup("token")
@@ -746,12 +746,7 @@ func (s *S) TestResetPasswordFlags(c *check.C) {
 	c.Check(token.Usage, check.Equals, "Token to reset the password")
 	c.Check(token.Value.String(), check.Equals, "token123")
 	c.Check(token.DefValue, check.Equals, "")
-	stoken := flagset.Lookup("t")
-	c.Assert(stoken, check.NotNil)
-	c.Check(stoken.Name, check.Equals, "t")
-	c.Check(stoken.Usage, check.Equals, "Token to reset the password")
-	c.Check(stoken.Value.String(), check.Equals, "token123")
-	c.Check(stoken.DefValue, check.Equals, "")
+	c.Check(token.Shorthand, check.DeepEquals, "t")
 }
 
 func (s *S) TestResetPasswordIsAFlaggedCommand(c *check.C) {
@@ -804,7 +799,7 @@ func (s *S) TestShowAPITokenRunWithFlag(c *check.C) {
 		Stdin:  nil,
 	}
 	command := ShowAPIToken{}
-	command.Flags().Parse(true, []string{"-u", "admin@example.com"})
+	command.Flags().Parse([]string{"-u", "admin@example.com"})
 	s.setupFakeTransport(trans)
 	err := command.Run(&context)
 	c.Assert(err, check.IsNil)
@@ -877,7 +872,7 @@ func (s *S) TestRegenerateAPITokenRunWithFlag(c *check.C) {
 		Stdin:  nil,
 	}
 	command := RegenerateAPIToken{}
-	command.Flags().Parse(true, []string{"-u", "admin@example.com"})
+	command.Flags().Parse([]string{"-u", "admin@example.com"})
 	s.setupFakeTransport(trans)
 	err := command.Run(&context)
 	c.Assert(err, check.IsNil)
@@ -980,7 +975,7 @@ func (s *S) TestListUsersRunFilterByUserEmail(c *check.C) {
 `
 	s.setupFakeTransport(&trans)
 	command := ListUsers{}
-	command.Flags().Parse(true, []string{"-u", "test2@test.com"})
+	command.Flags().Parse([]string{"-u", "test2@test.com"})
 	err := command.Run(&context)
 	c.Assert(err, check.IsNil)
 	c.Assert(stdout.String(), check.Equals, expected)
@@ -1018,7 +1013,7 @@ func (s *S) TestListUsersRunFilterByRole(c *check.C) {
 `
 	s.setupFakeTransport(&trans)
 	command := ListUsers{}
-	command.Flags().Parse(true, []string{"-r", "role2"})
+	command.Flags().Parse([]string{"-r", "role2"})
 	err := command.Run(&context)
 	c.Assert(err, check.IsNil)
 	c.Assert(stdout.String(), check.Equals, expected)
@@ -1056,7 +1051,7 @@ func (s *S) TestListUsersRunFilterByRoleWithContext(c *check.C) {
 `
 	s.setupFakeTransport(&trans)
 	command := ListUsers{}
-	command.Flags().Parse(true, []string{"-r", "role2", "-c", "x"})
+	command.Flags().Parse([]string{"-r", "role2", "-c", "x"})
 	err := command.Run(&context)
 	c.Assert(err, check.IsNil)
 	c.Assert(stdout.String(), check.Equals, expected)
@@ -1087,7 +1082,7 @@ func (s *S) TestListUsersRunWithMoreThanOneFlagReturnsError(c *check.C) {
 	}
 	s.setupFakeTransport(&trans)
 	command := ListUsers{}
-	command.Flags().Parse(true, []string{"-u", "test@test.com", "-r", "role2"})
+	command.Flags().Parse([]string{"-u", "test@test.com", "-r", "role2"})
 	err := command.Run(&context)
 	c.Assert(err, check.ErrorMatches, "you cannot filter by user email and role at same time. Enter <tsuru user-list --help> for more information")
 }
@@ -1107,7 +1102,7 @@ func (s *S) TestListUsersRunWithContextFlagAndNotRolaFlagError(c *check.C) {
 	}
 	s.setupFakeTransport(&trans)
 	command := ListUsers{}
-	command.Flags().Parse(true, []string{"-c", "team"})
+	command.Flags().Parse([]string{"-c", "team"})
 	err := command.Run(&context)
 	c.Assert(err, check.ErrorMatches, "you should provide a role to filter by context value")
 }
@@ -1116,36 +1111,29 @@ func (s *S) TestListUsersFlags(c *check.C) {
 	command := ListUsers{}
 	flagset := command.Flags()
 	c.Assert(flagset, check.NotNil)
-	err := flagset.Parse(false, []string{"-u", "test@test.com"})
+	err := flagset.Parse([]string{"-u", "test@test.com"})
 	c.Assert(err, check.IsNil)
 	c.Assert(command.userEmail, check.Equals, "test@test.com")
+
 	user := flagset.Lookup("user")
 	c.Assert(user, check.NotNil)
 	c.Check(user.Name, check.Equals, "user")
 	c.Check(user.Usage, check.Equals, "Filter user by user email")
 	c.Check(user.Value.String(), check.Equals, "test@test.com")
 	c.Check(user.DefValue, check.Equals, "")
-	suser := flagset.Lookup("u")
-	c.Assert(suser, check.NotNil)
-	c.Check(suser.Name, check.Equals, "u")
-	c.Check(suser.Usage, check.Equals, "Filter user by user email")
-	c.Check(suser.Value.String(), check.Equals, "test@test.com")
-	c.Check(suser.DefValue, check.Equals, "")
-	err = flagset.Parse(false, []string{"-r", "role1"})
+	c.Check(user.Shorthand, check.Equals, "u")
+
+	err = flagset.Parse([]string{"-r", "role1"})
 	c.Assert(err, check.IsNil)
 	c.Assert(command.role, check.Equals, "role1")
+
 	role := flagset.Lookup("role")
 	c.Assert(user, check.NotNil)
 	c.Check(role.Name, check.Equals, "role")
 	c.Check(role.Usage, check.Equals, "Filter user by role")
 	c.Check(role.Value.String(), check.Equals, "role1")
 	c.Check(role.DefValue, check.Equals, "")
-	srole := flagset.Lookup("r")
-	c.Assert(srole, check.NotNil)
-	c.Check(srole.Name, check.Equals, "r")
-	c.Check(srole.Usage, check.Equals, "Filter user by role")
-	c.Check(srole.Value.String(), check.Equals, "role1")
-	c.Check(srole.DefValue, check.Equals, "")
+	c.Check(role.Shorthand, check.Equals, "r")
 }
 
 func (s *S) TestUserInfoInfo(c *check.C) {

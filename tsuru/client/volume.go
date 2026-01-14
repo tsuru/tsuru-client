@@ -14,18 +14,19 @@ import (
 	"strings"
 
 	"github.com/cezarsa/form"
-	"github.com/tsuru/gnuflag"
+	"github.com/spf13/pflag"
 	"github.com/tsuru/go-tsuruclient/pkg/config"
 	"github.com/tsuru/tablecli"
 	tsuruClientApp "github.com/tsuru/tsuru-client/tsuru/app"
 	"github.com/tsuru/tsuru-client/tsuru/cmd"
+	"github.com/tsuru/tsuru-client/tsuru/cmd/standards"
 	"github.com/tsuru/tsuru-client/tsuru/formatter"
 	tsuruHTTP "github.com/tsuru/tsuru-client/tsuru/http"
 	volumeTypes "github.com/tsuru/tsuru/types/volume"
 )
 
 type VolumeCreate struct {
-	fs   *gnuflag.FlagSet
+	fs   *pflag.FlagSet
 	pool string
 	team string
 	opt  cmd.MapFlag
@@ -41,18 +42,17 @@ func (c *VolumeCreate) Info() *cmd.Info {
 	}
 }
 
-func (c *VolumeCreate) Flags() *gnuflag.FlagSet {
+func (c *VolumeCreate) Flags() *pflag.FlagSet {
 	if c.fs == nil {
-		c.fs = gnuflag.NewFlagSet("volume-create", gnuflag.ExitOnError)
+		c.fs = pflag.NewFlagSet("volume-create", pflag.ExitOnError)
 		desc := "the pool that owns the service (mandatory if the user has access to more than one pool)"
-		c.fs.StringVar(&c.pool, "pool", "", desc)
-		c.fs.StringVar(&c.pool, "p", "", desc)
+		c.fs.StringVarP(&c.pool, standards.FlagPool, "p", "", desc)
+
 		desc = "the team that owns the service (mandatory if the user has access to more than one team)"
-		c.fs.StringVar(&c.team, "team", "", desc)
-		c.fs.StringVar(&c.team, "t", "", desc)
+		c.fs.StringVarP(&c.team, standards.FlagTeam, standards.ShortFlagTeam, "", desc)
+
 		desc = "backend specific volume options"
-		c.fs.Var(&c.opt, "opt", desc)
-		c.fs.Var(&c.opt, "o", desc)
+		c.fs.VarP(&c.opt, "opt", "o", desc)
 	}
 	return c.fs
 }
@@ -89,7 +89,7 @@ func (c *VolumeCreate) Run(ctx *cmd.Context) error {
 }
 
 type VolumeUpdate struct {
-	fs   *gnuflag.FlagSet
+	fs   *pflag.FlagSet
 	pool string
 	team string
 	opt  cmd.MapFlag
@@ -105,18 +105,18 @@ func (c *VolumeUpdate) Info() *cmd.Info {
 	}
 }
 
-func (c *VolumeUpdate) Flags() *gnuflag.FlagSet {
+func (c *VolumeUpdate) Flags() *pflag.FlagSet {
 	if c.fs == nil {
-		c.fs = gnuflag.NewFlagSet("volume-update", gnuflag.ExitOnError)
+		c.fs = pflag.NewFlagSet("volume-update", pflag.ExitOnError)
+
 		desc := "the pool that owns the service (mandatory if the user has access to more than one pool)"
-		c.fs.StringVar(&c.pool, "pool", "", desc)
-		c.fs.StringVar(&c.pool, "p", "", desc)
+		c.fs.StringVarP(&c.pool, standards.FlagPool, "p", "", desc)
+
 		desc = "the team that owns the service (mandatory if the user has access to more than one team)"
-		c.fs.StringVar(&c.team, "team", "", desc)
-		c.fs.StringVar(&c.team, "t", "", desc)
+		c.fs.StringVarP(&c.team, standards.FlagTeam, standards.ShortFlagTeam, "", desc)
+
 		desc = "backend specific volume options"
-		c.fs.Var(&c.opt, "opt", desc)
-		c.fs.Var(&c.opt, "o", desc)
+		c.fs.VarP(&c.opt, "opt", "o", desc)
 	}
 	return c.fs
 }
@@ -177,7 +177,7 @@ func (f *volumeFilter) queryString() (url.Values, error) {
 }
 
 type VolumeList struct {
-	fs         *gnuflag.FlagSet
+	fs         *pflag.FlagSet
 	filter     volumeFilter
 	simplified bool
 	json       bool
@@ -193,19 +193,17 @@ func (c *VolumeList) Info() *cmd.Info {
 	}
 }
 
-func (c *VolumeList) Flags() *gnuflag.FlagSet {
+func (c *VolumeList) Flags() *pflag.FlagSet {
 	if c.fs == nil {
-		c.fs = gnuflag.NewFlagSet("volume-list", gnuflag.ExitOnError)
-		c.fs.StringVar(&c.filter.name, "name", "", "Filter volumes by name")
-		c.fs.StringVar(&c.filter.name, "n", "", "Filter volumes by name")
-		c.fs.StringVar(&c.filter.pool, "pool", "", "Filter volumes by pool")
-		c.fs.StringVar(&c.filter.pool, "o", "", "Filter volumes by pool")
-		c.fs.StringVar(&c.filter.plan, "plan", "", "Filter volumes by plan")
-		c.fs.StringVar(&c.filter.plan, "p", "", "Filter volumes by plan")
-		c.fs.StringVar(&c.filter.teamOwner, "team", "", "Filter volumes by team owner")
-		c.fs.StringVar(&c.filter.teamOwner, "t", "", "Filter volumes by team owner")
-		c.fs.BoolVar(&c.simplified, "q", false, "Display only volumes name")
-		c.fs.BoolVar(&c.json, "json", false, "Display in JSON format")
+		c.fs = pflag.NewFlagSet("volume-list", pflag.ExitOnError)
+
+		c.fs.StringVarP(&c.filter.name, standards.FlagName, standards.ShortFlagName, "", "Filter volumes by name")
+		c.fs.StringVarP(&c.filter.pool, standards.FlagPool, standards.ShortFlagPool, "", "Filter volumes by pool")
+		c.fs.StringVarP(&c.filter.plan, standards.FlagPlan, standards.ShortFlagPlan, "", "Filter volumes by plan")
+		c.fs.StringVarP(&c.filter.teamOwner, standards.FlagTeam, standards.ShortFlagTeam, "", "Filter volumes by team owner")
+		c.fs.BoolVarP(&c.simplified, standards.FlagOnlyName, standards.ShortFlagOnlyName, false, "Display only volumes name")
+
+		c.fs.BoolVar(&c.json, standards.FlagJSON, false, "Display in JSON format")
 
 	}
 	return c.fs
@@ -305,14 +303,14 @@ func (c *VolumeList) render(ctx *cmd.Context, volumes []volumeTypes.Volume) erro
 }
 
 type VolumeInfo struct {
-	fs   *gnuflag.FlagSet
+	fs   *pflag.FlagSet
 	json bool
 }
 
-func (c *VolumeInfo) Flags() *gnuflag.FlagSet {
+func (c *VolumeInfo) Flags() *pflag.FlagSet {
 	if c.fs == nil {
-		c.fs = gnuflag.NewFlagSet("volume-info", gnuflag.ContinueOnError)
-		c.fs.BoolVar(&c.json, "json", false, "Show JSON")
+		c.fs = pflag.NewFlagSet("volume-info", pflag.ContinueOnError)
+		c.fs.BoolVar(&c.json, standards.FlagJSON, false, "Show JSON")
 	}
 	return c.fs
 }
@@ -498,7 +496,7 @@ func (c *VolumeDelete) Run(ctx *cmd.Context) error {
 
 type VolumeBind struct {
 	tsuruClientApp.AppNameMixIn
-	fs        *gnuflag.FlagSet
+	fs        *pflag.FlagSet
 	readOnly  bool
 	noRestart bool
 }
@@ -513,13 +511,14 @@ func (c *VolumeBind) Info() *cmd.Info {
 	}
 }
 
-func (c *VolumeBind) Flags() *gnuflag.FlagSet {
+func (c *VolumeBind) Flags() *pflag.FlagSet {
 	if c.fs == nil {
 		c.fs = c.AppNameMixIn.Flags()
+
 		desc := "the volume will be available only for reading"
-		c.fs.BoolVar(&c.readOnly, "readonly", false, desc)
-		c.fs.BoolVar(&c.readOnly, "r", false, desc)
-		c.fs.BoolVar(&c.noRestart, "no-restart", false, "prevents restarting the application")
+		c.fs.BoolVarP(&c.readOnly, "readonly", "r", false, desc)
+
+		c.fs.BoolVar(&c.noRestart, standards.FlagNoRestart, false, "prevents restarting the application")
 	}
 	return c.fs
 }
@@ -570,7 +569,7 @@ func (c *VolumeBind) Run(ctx *cmd.Context) error {
 
 type VolumeUnbind struct {
 	tsuruClientApp.AppNameMixIn
-	fs        *gnuflag.FlagSet
+	fs        *pflag.FlagSet
 	noRestart bool
 }
 
@@ -584,10 +583,10 @@ func (c *VolumeUnbind) Info() *cmd.Info {
 	}
 }
 
-func (c *VolumeUnbind) Flags() *gnuflag.FlagSet {
+func (c *VolumeUnbind) Flags() *pflag.FlagSet {
 	if c.fs == nil {
 		c.fs = c.AppNameMixIn.Flags()
-		c.fs.BoolVar(&c.noRestart, "no-restart", false, "prevents restarting the application")
+		c.fs.BoolVar(&c.noRestart, standards.FlagNoRestart, false, "prevents restarting the application")
 	}
 	return c.fs
 }

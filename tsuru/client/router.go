@@ -15,12 +15,13 @@ import (
 
 	"github.com/cezarsa/form"
 	"github.com/pkg/errors"
-	"github.com/tsuru/gnuflag"
+	"github.com/spf13/pflag"
 	"github.com/tsuru/go-tsuruclient/pkg/config"
 	"github.com/tsuru/go-tsuruclient/pkg/tsuru"
 	"github.com/tsuru/tablecli"
 	tsuruClientApp "github.com/tsuru/tsuru-client/tsuru/app"
 	"github.com/tsuru/tsuru-client/tsuru/cmd"
+	"github.com/tsuru/tsuru-client/tsuru/cmd/standards"
 	"github.com/tsuru/tsuru-client/tsuru/formatter"
 	tsuruHTTP "github.com/tsuru/tsuru-client/tsuru/http"
 	appTypes "github.com/tsuru/tsuru/types/app"
@@ -29,7 +30,7 @@ import (
 type RouterAdd struct {
 	rawConfig      string
 	readinessGates cmd.StringSliceFlag
-	fs             *gnuflag.FlagSet
+	fs             *pflag.FlagSet
 }
 
 func (c *RouterAdd) Info() *cmd.Info {
@@ -42,9 +43,9 @@ func (c *RouterAdd) Info() *cmd.Info {
 	}
 }
 
-func (c *RouterAdd) Flags() *gnuflag.FlagSet {
+func (c *RouterAdd) Flags() *pflag.FlagSet {
 	if c.fs == nil {
-		c.fs = gnuflag.NewFlagSet("router-add", gnuflag.ExitOnError)
+		c.fs = pflag.NewFlagSet("router-add", pflag.ExitOnError)
 		c.fs.StringVar(&c.rawConfig, "config", "", "JSON object with router configuration")
 		c.fs.Var(&c.readinessGates, "readiness-gate", "Readiness gates added to pods accessed by this router")
 	}
@@ -81,7 +82,7 @@ func (c *RouterAdd) Run(ctx *cmd.Context) error {
 type RouterUpdate struct {
 	rawConfig      string
 	readinessGates cmd.StringSliceFlag
-	fs             *gnuflag.FlagSet
+	fs             *pflag.FlagSet
 }
 
 func (c *RouterUpdate) Info() *cmd.Info {
@@ -94,9 +95,9 @@ func (c *RouterUpdate) Info() *cmd.Info {
 	}
 }
 
-func (c *RouterUpdate) Flags() *gnuflag.FlagSet {
+func (c *RouterUpdate) Flags() *pflag.FlagSet {
 	if c.fs == nil {
-		c.fs = gnuflag.NewFlagSet("router-add", gnuflag.ExitOnError)
+		c.fs = pflag.NewFlagSet("router-add", pflag.ExitOnError)
 		c.fs.StringVar(&c.rawConfig, "config", "", "JSON object with router configuration")
 		c.fs.Var(&c.readinessGates, "readiness-gate", "Readiness gates added to pods accessed by this router")
 	}
@@ -163,18 +164,18 @@ type routerFilter struct {
 }
 
 type RoutersList struct {
-	fs         *gnuflag.FlagSet
+	fs         *pflag.FlagSet
 	filter     routerFilter
 	simplified bool
 	json       bool
 }
 
-func (c *RoutersList) Flags() *gnuflag.FlagSet {
+func (c *RoutersList) Flags() *pflag.FlagSet {
 	if c.fs == nil {
-		c.fs = gnuflag.NewFlagSet("router-list", gnuflag.ExitOnError)
-		c.fs.StringVar(&c.filter.name, "name", "", "Filter routers by name")
-		c.fs.StringVar(&c.filter.name, "n", "", "Filter routers by name")
-		c.fs.BoolVar(&c.simplified, "q", false, "Display only routers name")
+		c.fs = pflag.NewFlagSet("router-list", pflag.ExitOnError)
+
+		c.fs.StringVarP(&c.filter.name, standards.FlagName, standards.ShortFlagName, "", "Filter routers by name")
+		c.fs.BoolVarP(&c.simplified, standards.FlagOnlyName, standards.ShortFlagOnlyName, false, "Display only routers name")
 		c.fs.BoolVar(&c.json, "json", false, "Display in JSON format")
 
 	}
@@ -320,10 +321,10 @@ func (c *AppRoutersList) Info() *cmd.Info {
 	}
 }
 
-func (c *AppRoutersList) Flags() *gnuflag.FlagSet {
+func (c *AppRoutersList) Flags() *pflag.FlagSet {
 	fs := c.AppNameMixIn.Flags()
 	if !c.flagsApplied {
-		fs.BoolVar(&c.json, "json", false, "Show JSON")
+		fs.BoolVar(&c.json, standards.FlagJSON, false, "Show JSON")
 
 		c.flagsApplied = true
 	}
@@ -402,7 +403,7 @@ func renderRouters(routers []appTypes.AppRouter, out io.Writer, idColumn string)
 type AppRoutersAdd struct {
 	tsuruClientApp.AppNameMixIn
 	opts cmd.MapFlag
-	fs   *gnuflag.FlagSet
+	fs   *pflag.FlagSet
 }
 
 func (c *AppRoutersAdd) Info() *cmd.Info {
@@ -415,12 +416,11 @@ func (c *AppRoutersAdd) Info() *cmd.Info {
 	}
 }
 
-func (c *AppRoutersAdd) Flags() *gnuflag.FlagSet {
+func (c *AppRoutersAdd) Flags() *pflag.FlagSet {
 	if c.fs == nil {
 		c.fs = c.AppNameMixIn.Flags()
 		optsMessage := "Custom options sent directly to router implementation."
-		c.fs.Var(&c.opts, "o", optsMessage)
-		c.fs.Var(&c.opts, "opts", optsMessage)
+		c.fs.VarP(&c.opts, "opts", "o", optsMessage)
 	}
 	return c.fs
 }
@@ -458,7 +458,7 @@ func (c *AppRoutersAdd) Run(context *cmd.Context) error {
 type AppRoutersUpdate struct {
 	tsuruClientApp.AppNameMixIn
 	opts cmd.MapFlag
-	fs   *gnuflag.FlagSet
+	fs   *pflag.FlagSet
 }
 
 func (c *AppRoutersUpdate) Info() *cmd.Info {
@@ -471,12 +471,11 @@ func (c *AppRoutersUpdate) Info() *cmd.Info {
 	}
 }
 
-func (c *AppRoutersUpdate) Flags() *gnuflag.FlagSet {
+func (c *AppRoutersUpdate) Flags() *pflag.FlagSet {
 	if c.fs == nil {
 		c.fs = c.AppNameMixIn.Flags()
 		optsMessage := "Custom options sent directly to router implementation."
-		c.fs.Var(&c.opts, "o", optsMessage)
-		c.fs.Var(&c.opts, "opts", optsMessage)
+		c.fs.VarP(&c.opts, "opts", "o", optsMessage)
 	}
 	return c.fs
 }

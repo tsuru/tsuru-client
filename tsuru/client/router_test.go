@@ -96,7 +96,7 @@ func (s *S) TestAppRoutersListRun(c *check.C) {
 	}
 	s.setupFakeTransport(trans)
 	command := AppRoutersList{}
-	command.Flags().Parse(true, []string{"-a", "myapp"})
+	command.Flags().Parse([]string{"-a", "myapp"})
 	err = command.Run(&context)
 	c.Assert(err, check.IsNil)
 	c.Assert(stdout.String(), check.Equals, expected)
@@ -118,7 +118,7 @@ func (s *S) TestAppRoutersListRunEmpty(c *check.C) {
 	}
 	s.setupFakeTransport(trans)
 	command := AppRoutersList{}
-	command.Flags().Parse(true, []string{"-a", "myapp"})
+	command.Flags().Parse([]string{"-a", "myapp"})
 	err := command.Run(&context)
 	c.Assert(err, check.IsNil)
 	c.Assert(stdout.String(), check.Equals, expected)
@@ -156,7 +156,7 @@ func (s *S) TestAppRoutersAddRun(c *check.C) {
 	}
 	s.setupFakeTransport(trans)
 	command := AppRoutersAdd{}
-	command.Flags().Parse(true, []string{"-a", "myapp", "-o", "a=b", "-o", "x=y"})
+	command.Flags().Parse([]string{"-a", "myapp", "-o", "a=b", "-o", "x=y"})
 	err := command.Run(&context)
 	c.Assert(err, check.IsNil)
 	c.Assert(stdout.String(), check.Equals, expected)
@@ -194,7 +194,7 @@ func (s *S) TestAppRoutersUpdateRun(c *check.C) {
 	}
 	s.setupFakeTransport(trans)
 	command := AppRoutersUpdate{}
-	command.Flags().Parse(true, []string{"-a", "myapp", "-o", "a=b", "-o", "x=y"})
+	command.Flags().Parse([]string{"-a", "myapp", "-o", "a=b", "-o", "x=y"})
 	err := command.Run(&context)
 	c.Assert(err, check.IsNil)
 	c.Assert(stdout.String(), check.Equals, expected)
@@ -220,7 +220,7 @@ func (s *S) TestAppRoutersRemoveRun(c *check.C) {
 	}
 	s.setupFakeTransport(trans)
 	command := AppRoutersRemove{}
-	command.Flags().Parse(true, []string{"-a", "myapp"})
+	command.Flags().Parse([]string{"-a", "myapp"})
 	err := command.Run(&context)
 	c.Assert(err, check.IsNil)
 	c.Assert(stdout.String(), check.Equals, expected)
@@ -259,7 +259,7 @@ func (s *S) TestAppVersionRouterAdd(c *check.C) {
 	s.setupFakeTransport(&trans)
 	command := AppVersionRouterAdd{}
 	command.Info()
-	command.Flags().Parse(true, []string{"-a", "myapp"})
+	command.Flags().Parse([]string{"-a", "myapp"})
 	err := command.Run(&context)
 	c.Assert(err, check.IsNil)
 	c.Assert(stdout.String(), check.Equals, expected)
@@ -298,7 +298,7 @@ func (s *S) TestAppVersionRouterRemove(c *check.C) {
 	s.setupFakeTransport(&trans)
 	command := AppVersionRouterRemove{}
 	command.Info()
-	command.Flags().Parse(true, []string{"-a", "myapp"})
+	command.Flags().Parse([]string{"-a", "myapp"})
 	err := command.Run(&context)
 	c.Assert(err, check.IsNil)
 	c.Assert(stdout.String(), check.Equals, expected)

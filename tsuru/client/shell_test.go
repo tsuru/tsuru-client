@@ -53,7 +53,7 @@ func (s *S) TestShellToContainerCmdRunWithApp(c *check.C) {
 		Stdin:  &stdin,
 	}
 	var command ShellToContainerCmd
-	err := command.Flags().Parse(true, []string{"-a", "myapp"})
+	err := command.Flags().Parse([]string{"-a", "myapp"})
 	c.Assert(err, check.IsNil)
 	s.setupFakeTransport(&transport)
 	err = command.Run(&context)
@@ -86,7 +86,7 @@ func (s *S) TestShellToContainerWithUnit(c *check.C) {
 		Stdin:  &stdin,
 	}
 	var command ShellToContainerCmd
-	err := command.Flags().Parse(true, []string{"-a", "myapp"})
+	err := command.Flags().Parse([]string{"-a", "myapp"})
 	c.Assert(err, check.IsNil)
 
 	s.setupFakeTransport(&transport)
@@ -144,7 +144,7 @@ func (s *S) TestShellToContainerSessionExpired(c *check.C) {
 		},
 	}
 	var command ShellToContainerCmd
-	err := command.Flags().Parse(true, []string{"-a", "myapp"})
+	err := command.Flags().Parse([]string{"-a", "myapp"})
 	c.Assert(err, check.IsNil)
 
 	s.setupFakeTransport(&transport)

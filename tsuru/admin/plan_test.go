@@ -39,7 +39,7 @@ func (s *S) TestPlanCreate(c *check.C) {
 	}
 	s.setupFakeTransport(trans)
 	command := PlanCreate{}
-	command.Flags().Parse(true, []string{"-c", "100m"})
+	command.Flags().Parse([]string{"-c", "100m"})
 	err := command.Run(&context)
 	c.Assert(err, check.IsNil)
 	c.Assert(stdout.String(), check.Equals, "Plan successfully created!\n")
@@ -67,7 +67,7 @@ func (s *S) TestPlanCreateFlags(c *check.C) {
 	}
 	s.setupFakeTransport(trans)
 	command := PlanCreate{}
-	command.Flags().Parse(true, []string{"-c", "10%", "-m", "4194304", "-d"})
+	command.Flags().Parse([]string{"-c", "10%", "-m", "4194304", "-d"})
 	err := command.Run(&context)
 	c.Assert(err, check.IsNil)
 	c.Assert(stdout.String(), check.Equals, "Plan successfully created!\n")
@@ -99,7 +99,7 @@ func (s *S) TestPlanCreateMemoryUnits(c *check.C) {
 	}
 	s.setupFakeTransport(trans)
 	command := PlanCreate{}
-	command.Flags().Parse(true, []string{"-c", "100m", "-m", "100Mi", "-d"})
+	command.Flags().Parse([]string{"-c", "100m", "-m", "100Mi", "-d"})
 	err := command.Run(&context)
 	c.Assert(err, check.IsNil)
 	c.Assert(stdout.String(), check.Equals, "Plan successfully created!\n")
@@ -120,7 +120,7 @@ func (s *S) TestPlanCreateError(c *check.C) {
 	}
 	s.setupFakeTransport(trans)
 	command := PlanCreate{}
-	command.Flags().Parse(true, []string{"-c", "5"})
+	command.Flags().Parse([]string{"-c", "5"})
 	err := command.Run(&context)
 	c.Assert(err, check.NotNil)
 	c.Assert(stdout.String(), check.Equals, "Failed to create plan!\n")
@@ -148,7 +148,7 @@ func (s *S) TestPlanCreateInvalidMemory(c *check.C) {
 	}
 	s.setupFakeTransport(trans)
 	command := PlanCreate{}
-	command.Flags().Parse(true, []string{"-c", "100", "-m", "4"})
+	command.Flags().Parse([]string{"-c", "100", "-m", "4"})
 	err := command.Run(&context)
 	c.Assert(err, check.NotNil)
 	c.Assert(stdout.String(), check.Equals, "Failed to create plan!\n")
@@ -176,7 +176,7 @@ func (s *S) TestPlanCreateInvalidCpushare(c *check.C) {
 	}
 	s.setupFakeTransport(trans)
 	command := PlanCreate{}
-	command.Flags().Parse(true, []string{"-c", "1", "-m", "4194304"})
+	command.Flags().Parse([]string{"-c", "1", "-m", "4194304"})
 	err := command.Run(&context)
 	c.Assert(err, check.NotNil)
 	c.Assert(stdout.String(), check.Equals, "Failed to create plan!\n")

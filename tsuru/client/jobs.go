@@ -18,10 +18,11 @@ import (
 
 	"github.com/antihax/optional"
 	"github.com/mattn/go-shellwords"
-	"github.com/tsuru/gnuflag"
+	"github.com/spf13/pflag"
 	"github.com/tsuru/go-tsuruclient/pkg/tsuru"
 	"github.com/tsuru/tablecli"
 	"github.com/tsuru/tsuru-client/tsuru/cmd"
+	"github.com/tsuru/tsuru-client/tsuru/cmd/standards"
 	"github.com/tsuru/tsuru-client/tsuru/formatter"
 	tsuruHTTP "github.com/tsuru/tsuru-client/tsuru/http"
 )
@@ -36,7 +37,7 @@ type JobCreate struct {
 	maxRunningTime int64
 	tags           cmd.StringSliceFlag
 
-	fs *gnuflag.FlagSet
+	fs *pflag.FlagSet
 }
 
 func (c *JobCreate) Info() *cmd.Info {
@@ -83,32 +84,27 @@ this parameter is not informed, default value is 3600s`,
 	}
 }
 
-func (c *JobCreate) Flags() *gnuflag.FlagSet {
+func (c *JobCreate) Flags() *pflag.FlagSet {
 	if c.fs == nil {
+		c.fs = pflag.NewFlagSet("", pflag.ExitOnError)
+		c.fs.SortFlags = false
 		infoMessage := "The plan used to create the job"
-		c.fs = gnuflag.NewFlagSet("", gnuflag.ExitOnError)
-		c.fs.StringVar(&c.plan, "plan", "", infoMessage)
-		c.fs.StringVar(&c.plan, "p", "", infoMessage)
+		c.fs.StringVarP(&c.plan, standards.FlagPlan, standards.ShortFlagPlan, "", infoMessage)
+
 		schedule := "Schedule string"
-		c.fs.StringVar(&c.schedule, "schedule", "", schedule)
-		c.fs.StringVar(&c.schedule, "s", "", schedule)
+		c.fs.StringVarP(&c.schedule, "schedule", "s", "", schedule)
 		teamMessage := "Team owner job"
-		c.fs.StringVar(&c.teamOwner, "team", "", teamMessage)
-		c.fs.StringVar(&c.teamOwner, "t", "", teamMessage)
+		c.fs.StringVarP(&c.teamOwner, standards.FlagTeam, standards.ShortFlagTeam, "", teamMessage)
 		poolMessage := "Pool to deploy your job"
-		c.fs.StringVar(&c.pool, "pool", "", poolMessage)
-		c.fs.StringVar(&c.pool, "o", "", poolMessage)
+		c.fs.StringVarP(&c.pool, standards.FlagPool, standards.ShortFlagPool, "", poolMessage)
 		descriptionMessage := "Job description"
-		c.fs.StringVar(&c.description, "description", "", descriptionMessage)
-		c.fs.StringVar(&c.description, "d", "", descriptionMessage)
+		c.fs.StringVarP(&c.description, standards.FlagDescription, standards.ShortFlagDescription, "", descriptionMessage)
 		tagMessage := "Job tag"
-		c.fs.Var(&c.tags, "tag", tagMessage)
-		c.fs.Var(&c.tags, "g", tagMessage)
+		c.fs.VarP(&c.tags, standards.FlagTag, standards.ShortFlagTag, tagMessage)
 		manualMessage := "Manual job"
 		c.fs.BoolVar(&c.manual, "manual", false, manualMessage)
 		maxRunningTime := "Maximum running time in seconds for the job"
-		c.fs.Int64Var(&c.maxRunningTime, "max-running-time", 0, maxRunningTime)
-		c.fs.Int64Var(&c.maxRunningTime, "m", 0, maxRunningTime)
+		c.fs.Int64VarP(&c.maxRunningTime, "max-running-time", "m", 0, maxRunningTime)
 	}
 	return c.fs
 }
@@ -157,7 +153,7 @@ func (c *JobCreate) Run(ctx *cmd.Context) error {
 
 	var activeDeadlineSecondsResult *int64
 	if c.fs != nil {
-		c.fs.Visit(func(f *gnuflag.Flag) {
+		c.fs.Visit(func(f *pflag.Flag) {
 			if (f.Name == "max-running-time" || f.Name == "m") && c.maxRunningTime == 0 {
 				activeDeadlineSecondsResult = &c.maxRunningTime
 			}
@@ -189,14 +185,14 @@ func (c *JobCreate) Run(ctx *cmd.Context) error {
 }
 
 type JobInfo struct {
-	fs   *gnuflag.FlagSet
+	fs   *pflag.FlagSet
 	json bool
 }
 
-func (c *JobInfo) Flags() *gnuflag.FlagSet {
+func (c *JobInfo) Flags() *pflag.FlagSet {
 	if c.fs == nil {
-		c.fs = gnuflag.NewFlagSet("job-info", gnuflag.ContinueOnError)
-		c.fs.BoolVar(&c.json, "json", false, "Show JSON")
+		c.fs = pflag.NewFlagSet("job-info", pflag.ContinueOnError)
+		c.fs.BoolVar(&c.json, standards.FlagJSON, false, "Show JSON")
 	}
 	return c.fs
 }
@@ -334,25 +330,23 @@ type jobFilter struct {
 }
 
 type JobList struct {
-	fs         *gnuflag.FlagSet
+	fs         *pflag.FlagSet
 	filter     jobFilter
 	json       bool
 	simplified bool
 }
 
-func (c *JobList) Flags() *gnuflag.FlagSet {
+func (c *JobList) Flags() *pflag.FlagSet {
 	if c.fs == nil {
-		c.fs = gnuflag.NewFlagSet("job-list", gnuflag.ContinueOnError)
-		c.fs.StringVar(&c.filter.name, "name", "", "Filter jobs by name")
-		c.fs.StringVar(&c.filter.name, "n", "", "Filter jobs by name")
-		c.fs.StringVar(&c.filter.pool, "pool", "", "Filter jobs by pool")
-		c.fs.StringVar(&c.filter.pool, "o", "", "Filter jobs by pool")
-		c.fs.StringVar(&c.filter.plan, "plan", "", "Filter jobs by plan")
-		c.fs.StringVar(&c.filter.plan, "p", "", "Filter jobs by plan")
-		c.fs.StringVar(&c.filter.teamOwner, "team", "", "Filter jobs by team owner")
-		c.fs.StringVar(&c.filter.teamOwner, "t", "", "Filter jobs by team owner")
-		c.fs.BoolVar(&c.simplified, "q", false, "Display only jobs name")
-		c.fs.BoolVar(&c.json, "json", false, "Show JSON")
+		c.fs = pflag.NewFlagSet("job-list", pflag.ContinueOnError)
+		c.fs.SortFlags = false
+
+		c.fs.StringVarP(&c.filter.name, standards.FlagName, standards.ShortFlagName, "", "Filter jobs by name")
+		c.fs.StringVarP(&c.filter.pool, standards.FlagPool, standards.ShortFlagPool, "", "Filter jobs by pool")
+		c.fs.StringVarP(&c.filter.plan, standards.FlagPlan, standards.ShortFlagPlan, "", "Filter jobs by plan")
+		c.fs.StringVarP(&c.filter.teamOwner, standards.FlagTeam, standards.ShortFlagTeam, "", "Filter jobs by team owner")
+		c.fs.BoolVarP(&c.simplified, standards.FlagOnlyName, standards.ShortFlagOnlyName, false, "Display only jobs name")
+		c.fs.BoolVar(&c.json, standards.FlagJSON, false, "Show JSON")
 	}
 	return c.fs
 }
@@ -514,7 +508,7 @@ type JobUpdate struct {
 	maxRunningTime int64
 	tags           cmd.StringSliceFlag
 
-	fs *gnuflag.FlagSet
+	fs *pflag.FlagSet
 }
 
 func (c *JobUpdate) Info() *cmd.Info {
@@ -526,35 +520,37 @@ func (c *JobUpdate) Info() *cmd.Info {
 	}
 }
 
-func (c *JobUpdate) Flags() *gnuflag.FlagSet {
+func (c *JobUpdate) Flags() *pflag.FlagSet {
 	if c.fs == nil {
+		c.fs = pflag.NewFlagSet("", pflag.ExitOnError)
+		c.fs.SortFlags = false
+
 		infoMessage := "The plan used to create the job"
-		c.fs = gnuflag.NewFlagSet("", gnuflag.ExitOnError)
-		c.fs.StringVar(&c.plan, "plan", "", infoMessage)
-		c.fs.StringVar(&c.plan, "p", "", infoMessage)
+		c.fs.StringVarP(&c.plan, standards.FlagPlan, standards.ShortFlagPlan, "", infoMessage)
+
 		schedule := "Schedule string"
-		c.fs.StringVar(&c.schedule, "schedule", "", schedule)
-		c.fs.StringVar(&c.schedule, "s", "", schedule)
+		c.fs.StringVarP(&c.schedule, "schedule", "s", "", schedule)
+
 		manualMessage := "Manual job"
 		c.fs.BoolVar(&c.manual, "manual", false, manualMessage)
+
 		teamMessage := "Team owner job"
-		c.fs.StringVar(&c.teamOwner, "team", "", teamMessage)
-		c.fs.StringVar(&c.teamOwner, "t", "", teamMessage)
+		c.fs.StringVarP(&c.teamOwner, standards.FlagTeam, standards.ShortFlagTeam, "", teamMessage)
+
 		poolMessage := "Pool to deploy your job"
-		c.fs.StringVar(&c.pool, "pool", "", poolMessage)
-		c.fs.StringVar(&c.pool, "o", "", poolMessage)
+		c.fs.StringVarP(&c.pool, standards.FlagPool, standards.ShortFlagPool, "", poolMessage)
+
 		descriptionMessage := "Job description"
-		c.fs.StringVar(&c.description, "description", "", descriptionMessage)
-		c.fs.StringVar(&c.description, "d", "", descriptionMessage)
+		c.fs.StringVarP(&c.description, standards.FlagDescription, standards.ShortFlagDescription, "", descriptionMessage)
+
 		tagMessage := "Job tag"
-		c.fs.Var(&c.tags, "tag", tagMessage)
-		c.fs.Var(&c.tags, "g", tagMessage)
+		c.fs.VarP(&c.tags, standards.FlagTag, standards.ShortFlagTag, tagMessage)
+
 		imageMessage := "New image for the job to run"
-		c.fs.StringVar(&c.image, "image", "", imageMessage)
-		c.fs.StringVar(&c.image, "i", "", imageMessage)
+		c.fs.StringVarP(&c.image, "image", "i", "", imageMessage)
+
 		maxRunningTime := "Maximum running time in seconds for the job"
-		c.fs.Int64Var(&c.maxRunningTime, "max-running-time", 0, maxRunningTime)
-		c.fs.Int64Var(&c.maxRunningTime, "m", 0, maxRunningTime)
+		c.fs.Int64VarP(&c.maxRunningTime, "max-running-time", "m", 0, maxRunningTime)
 	}
 	return c.fs
 }
@@ -580,7 +576,7 @@ func (c *JobUpdate) Run(ctx *cmd.Context) error {
 	}
 	var activeDeadlineSecondsResult *int64
 	if c.fs != nil {
-		c.fs.Visit(func(f *gnuflag.Flag) {
+		c.fs.Visit(func(f *pflag.Flag) {
 			if (f.Name == "max-running-time" || f.Name == "m") && c.maxRunningTime == 0 {
 				activeDeadlineSecondsResult = &c.maxRunningTime
 			}
@@ -616,7 +612,7 @@ func (c *JobUpdate) Run(ctx *cmd.Context) error {
 
 type JobLog struct {
 	follow bool
-	fs     *gnuflag.FlagSet
+	fs     *pflag.FlagSet
 }
 
 func (c *JobLog) Info() *cmd.Info {
@@ -629,12 +625,11 @@ func (c *JobLog) Info() *cmd.Info {
 	}
 }
 
-func (c *JobLog) Flags() *gnuflag.FlagSet {
+func (c *JobLog) Flags() *pflag.FlagSet {
 	if c.fs == nil {
-		c.fs = gnuflag.NewFlagSet("job-log", gnuflag.ExitOnError)
+		c.fs = pflag.NewFlagSet("job-log", pflag.ExitOnError)
 		followMsg := "Follow logs"
-		c.fs.BoolVar(&c.follow, "f", false, followMsg)
-		c.fs.BoolVar(&c.follow, "follow", false, followMsg)
+		c.fs.BoolVarP(&c.follow, "follow", "f", false, followMsg)
 	}
 	return c.fs
 }
