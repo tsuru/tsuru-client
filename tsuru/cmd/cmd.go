@@ -646,7 +646,6 @@ func (c *ShorthandCommand) Info() *Info {
 	info := c.Command.Info()
 
 	info.Usage = c.shorthand + stripUsage(info.Name, info.Usage)
-	strings.Replace(info.Usage, info.Name, c.shorthand, 1)
 
 	info.Name = c.shorthand
 	info.V2.GroupID = "shorthands"
@@ -663,6 +662,13 @@ func (c *ShorthandCommand) Flags() *pflag.FlagSet {
 		return cmd.Flags()
 	}
 	return pflag.NewFlagSet("", pflag.ContinueOnError)
+}
+
+func (c *ShorthandCommand) Complete(args []string, toComplete string) ([]string, error) {
+	if autoCompleteCmd, ok := c.Command.(AutoCompleteCommand); ok {
+		return autoCompleteCmd.Complete(args, toComplete)
+	}
+	return nil, nil
 }
 
 type Context struct {

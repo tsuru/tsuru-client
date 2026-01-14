@@ -16,6 +16,7 @@ import (
 	"github.com/tsuru/go-tsuruclient/pkg/config"
 	tsuruClientApp "github.com/tsuru/tsuru-client/tsuru/app"
 	"github.com/tsuru/tsuru-client/tsuru/cmd"
+	"github.com/tsuru/tsuru-client/tsuru/cmd/completions"
 	"github.com/tsuru/tsuru-client/tsuru/formatter"
 	tsuruHTTP "github.com/tsuru/tsuru-client/tsuru/http"
 )
@@ -160,6 +161,12 @@ func (c *AppLog) Run(context *cmd.Context) error {
 		}
 	}
 	return nil
+}
+
+var _ cmd.AutoCompleteCommand = &AppLog{}
+
+func (c *AppLog) Complete(args []string, toComplete string) ([]string, error) {
+	return completions.AppNameCompletionFunc(toComplete)
 }
 
 func (c *AppLog) Flags() *pflag.FlagSet {

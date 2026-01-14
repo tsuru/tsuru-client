@@ -29,6 +29,7 @@ import (
 	"github.com/tsuru/tablecli"
 	tsuruClientApp "github.com/tsuru/tsuru-client/tsuru/app"
 	"github.com/tsuru/tsuru-client/tsuru/cmd"
+	"github.com/tsuru/tsuru-client/tsuru/cmd/completions"
 	"github.com/tsuru/tsuru-client/tsuru/cmd/standards"
 	"github.com/tsuru/tsuru-client/tsuru/formatter"
 	tsuruHTTP "github.com/tsuru/tsuru-client/tsuru/http"
@@ -45,6 +46,8 @@ const (
 )
 
 var hexRegex = regexp.MustCompile(`(?i)^[a-f0-9]+$`)
+
+var _ cmd.AutoCompleteCommand = &AppCreate{}
 
 type AppCreate struct {
 	teamOwner   string
@@ -168,6 +171,13 @@ func (c *AppCreate) Flags() *pflag.FlagSet {
 		c.fs.Var(&c.routerOpts, "router-opts", "Router options")
 	}
 	return c.fs
+}
+
+func (cmd *AppCreate) Complete(args []string, toComplete string) ([]string, error) {
+	if len(args) > 0 {
+		return completions.PlatformNameCompletionFunc(toComplete)
+	}
+	return nil, nil
 }
 
 func (c *AppCreate) Run(context *cmd.Context) error {
@@ -391,6 +401,8 @@ func (c *AppRemove) Flags() *pflag.FlagSet {
 	return c.fs
 }
 
+var _ cmd.AutoCompleteCommand = &AppInfo{}
+
 type AppInfo struct {
 	tsuruClientApp.AppNameMixIn
 
@@ -417,6 +429,10 @@ func (cmd *AppInfo) Flags() *pflag.FlagSet {
 		cmd.flagsApplied = true
 	}
 	return fs
+}
+
+func (cmd *AppInfo) Complete(args []string, toComplete string) ([]string, error) {
+	return completions.AppNameCompletionFunc(toComplete)
 }
 
 func (c *AppInfo) Run(context *cmd.Context) error {
@@ -1205,6 +1221,8 @@ func (c *AppInfo) Show(a *app, context *cmd.Context, simplified bool) error {
 	return nil
 }
 
+var _ cmd.AutoCompleteCommand = &AppGrant{}
+
 type AppGrant struct {
 	tsuruClientApp.AppNameMixIn
 }
@@ -1242,6 +1260,10 @@ func (c *AppGrant) Run(context *cmd.Context) error {
 	return nil
 }
 
+func (c *AppGrant) Complete(args []string, toComplete string) ([]string, error) {
+	return completions.TeamNameCompletionFunc(toComplete)
+}
+
 type AppRevoke struct {
 	tsuruClientApp.AppNameMixIn
 }
@@ -1257,6 +1279,12 @@ An application cannot be orphaned, so it will always have at least one
 authorized team.`,
 		MinArgs: 1,
 	}
+}
+
+var _ cmd.AutoCompleteCommand = &AppRevoke{}
+
+func (c *AppRevoke) Complete(args []string, toComplete string) ([]string, error) {
+	return completions.TeamNameCompletionFunc(toComplete)
 }
 
 func (c *AppRevoke) Run(context *cmd.Context) error {
@@ -1507,6 +1535,12 @@ func (c *AppStop) Flags() *pflag.FlagSet {
 	return c.fs
 }
 
+var _ cmd.AutoCompleteCommand = &AppStop{}
+
+func (c *AppStop) Complete(args []string, toComplete string) ([]string, error) {
+	return completions.AppNameCompletionFunc(toComplete)
+}
+
 type AppStart struct {
 	tsuruClientApp.AppNameMixIn
 	process string
@@ -1557,6 +1591,12 @@ func (c *AppStart) Flags() *pflag.FlagSet {
 	return c.fs
 }
 
+var _ cmd.AutoCompleteCommand = &AppStart{}
+
+func (c *AppStart) Complete(args []string, toComplete string) ([]string, error) {
+	return completions.AppNameCompletionFunc(toComplete)
+}
+
 type AppRestart struct {
 	tsuruClientApp.AppNameMixIn
 	process string
@@ -1588,6 +1628,12 @@ func (c *AppRestart) Run(context *cmd.Context) error {
 		return err
 	}
 	return formatter.StreamJSONResponse(context.Stdout, response)
+}
+
+var _ cmd.AutoCompleteCommand = &AppRestart{}
+
+func (c *AppRestart) Complete(args []string, toComplete string) ([]string, error) {
+	return completions.AppNameCompletionFunc(toComplete)
 }
 
 func (c *AppRestart) Info() *cmd.Info {

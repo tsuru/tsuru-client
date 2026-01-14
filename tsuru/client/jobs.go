@@ -22,6 +22,7 @@ import (
 	"github.com/tsuru/go-tsuruclient/pkg/tsuru"
 	"github.com/tsuru/tablecli"
 	"github.com/tsuru/tsuru-client/tsuru/cmd"
+	"github.com/tsuru/tsuru-client/tsuru/cmd/completions"
 	"github.com/tsuru/tsuru-client/tsuru/cmd/standards"
 	"github.com/tsuru/tsuru-client/tsuru/formatter"
 	tsuruHTTP "github.com/tsuru/tsuru-client/tsuru/http"
@@ -266,6 +267,12 @@ func (c *JobInfo) Run(ctx *cmd.Context) error {
 	return nil
 }
 
+var _ cmd.AutoCompleteCommand = &JobInfo{}
+
+func (c *JobInfo) Complete(args []string, toComplete string) ([]string, error) {
+	return completions.JobNameCompletionFunc(toComplete)
+}
+
 func renderTeams(job tsuru.Job) string {
 	teams := []string{}
 	if job.TeamOwner != "" {
@@ -466,6 +473,12 @@ func (c *JobDelete) Run(ctx *cmd.Context) error {
 	return nil
 }
 
+var _ cmd.AutoCompleteCommand = &JobDelete{}
+
+func (c *JobDelete) Complete(args []string, toComplete string) ([]string, error) {
+	return completions.JobNameCompletionFunc(toComplete)
+}
+
 type JobTrigger struct{}
 
 func (c *JobTrigger) Info() *cmd.Info {
@@ -493,6 +506,12 @@ func (c *JobTrigger) Run(ctx *cmd.Context) error {
 
 	fmt.Fprint(ctx.Stdout, "Job successfully triggered\n")
 	return nil
+}
+
+var _ cmd.AutoCompleteCommand = &JobTrigger{}
+
+func (c *JobTrigger) Complete(args []string, toComplete string) ([]string, error) {
+	return completions.JobNameCompletionFunc(toComplete)
 }
 
 type JobUpdate struct {
@@ -608,6 +627,12 @@ func (c *JobUpdate) Run(ctx *cmd.Context) error {
 	return nil
 }
 
+var _ cmd.AutoCompleteCommand = &JobUpdate{}
+
+func (c *JobUpdate) Complete(args []string, toComplete string) ([]string, error) {
+	return completions.JobNameCompletionFunc(toComplete)
+}
+
 type JobLog struct {
 	follow bool
 	fs     *pflag.FlagSet
@@ -630,6 +655,12 @@ func (c *JobLog) Flags() *pflag.FlagSet {
 		c.fs.BoolVarP(&c.follow, "follow", "f", false, followMsg)
 	}
 	return c.fs
+}
+
+var _ cmd.AutoCompleteCommand = &JobLog{}
+
+func (c *JobLog) Complete(args []string, toComplete string) ([]string, error) {
+	return completions.JobNameCompletionFunc(toComplete)
 }
 
 func (c *JobLog) Run(ctx *cmd.Context) error {
