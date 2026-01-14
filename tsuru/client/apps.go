@@ -174,7 +174,7 @@ func (c *AppCreate) Flags() *pflag.FlagSet {
 }
 
 func (cmd *AppCreate) Complete(args []string, toComplete string) ([]string, error) {
-	if len(args) > 0 {
+	if len(args) == 1 {
 		return completions.PlatformNameCompletionFunc(toComplete)
 	}
 	return nil, nil
