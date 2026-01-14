@@ -224,6 +224,12 @@ func (m *Manager) RegisterTopic(name, content string) {
 	m.topics[name] = content
 }
 
+func (m *Manager) SetFlagCompletions(completions map[string]CompletionFunc) {
+	if m.v2 != nil && m.v2.Enabled {
+		m.v2.SetFlagCompletions(completions)
+	}
+}
+
 func (m *Manager) Run(args []string) {
 	if m.v2.Enabled {
 		defer m.finisher()

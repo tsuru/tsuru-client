@@ -20,6 +20,8 @@ import (
 	"github.com/tsuru/tsuru-client/tsuru/auth"
 	"github.com/tsuru/tsuru-client/tsuru/client"
 	"github.com/tsuru/tsuru-client/tsuru/cmd"
+	"github.com/tsuru/tsuru-client/tsuru/cmd/completions"
+	"github.com/tsuru/tsuru-client/tsuru/cmd/standards"
 	"github.com/tsuru/tsuru-client/tsuru/config/selfupdater"
 	tsuruHTTP "github.com/tsuru/tsuru-client/tsuru/http"
 	tsuruErrors "github.com/tsuru/tsuru/errors"
@@ -94,6 +96,16 @@ func buildManagerCustom(name string, stdout, stderr io.Writer) *cmd.Manager {
 	}
 
 	m := cmd.NewManagerPanicExiter(name, stdout, stderr, os.Stdin, lookup)
+
+	m.SetFlagCompletions(map[string]cmd.CompletionFunc{
+		standards.FlagApp:      completions.AppNameCompletionFunc,
+		standards.FlagTeam:     completions.TeamNameCompletionFunc,
+		standards.FlagJob:      completions.JobNameCompletionFunc,
+		standards.FlagPool:     completions.PoolNameCompletionFunc,
+		standards.FlagPlan:     completions.PlanNameCompletionFunc,
+		standards.FlagPlatform: completions.PlatformNameCompletionFunc,
+		standards.FlagRouter:   completions.RouterNameCompletionFunc,
+	})
 
 	m.RegisterTopic("app", `App is a program source code running on Tsuru`)
 

@@ -15,6 +15,7 @@ import (
 	"github.com/tsuru/tsuru-client/tsuru/cmd"
 	"github.com/tsuru/tsuru-client/tsuru/cmd/cmdtest"
 	tsuruIo "github.com/tsuru/tsuru/io"
+	appTypes "github.com/tsuru/tsuru/types/app"
 	"gopkg.in/check.v1"
 )
 
@@ -558,10 +559,10 @@ func (s *S) TestPlatformInfoRun(c *check.C) {
 	}
 	expectedMsg := "Name: teste\nStatus: enabled\nImages:\n - tsuru/teste:v2\n - tsuru/teste:v1\n"
 	res := struct {
-		Platform platform
+		Platform appTypes.Platform
 		Images   []string
 	}{
-		Platform: platform{Name: name, Disabled: false},
+		Platform: appTypes.Platform{Name: name, Disabled: false},
 		Images:   []string{"tsuru/teste:v1", "tsuru/teste:v2"},
 	}
 	result, err := json.Marshal(res)

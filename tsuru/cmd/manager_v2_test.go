@@ -9,6 +9,8 @@ import (
 	"strings"
 	"testing"
 
+	"github.com/spf13/cobra"
+	"github.com/spf13/pflag"
 	"github.com/stretchr/testify/assert"
 )
 
@@ -1409,5 +1411,192 @@ func TestManagerV2_Integration(t *testing.T) {
 		assert.Equal(t, "Application management", manager.tree.Children["app"].Command.Short)
 		// Command should be added as child
 		assert.NotNil(t, manager.tree.Children["app"].Children["list"])
+	})
+}
+
+type mockFlaggedCommand struct {
+	info  *Info
+	flags *pflag.FlagSet
+	runFn func(context *Context) error
+}
+
+func (m *mockFlaggedCommand) Info() *Info {
+	return m.info
+}
+
+func (m *mockFlaggedCommand) Run(context *Context) error {
+	if m.runFn != nil {
+		return m.runFn(context)
+	}
+	return nil
+}
+
+func (m *mockFlaggedCommand) Flags() *pflag.FlagSet {
+	return m.flags
+}
+
+func TestManagerV2_SetFlagCompletions(t *testing.T) {
+	manager := NewManagerV2()
+
+	completions := map[string]CompletionFunc{
+		"app": func(toComplete string) ([]string, error) {
+			return []string{"app1", "app2"}, nil
+		},
+		"team": func(toComplete string) ([]string, error) {
+			return []string{"team1", "team2"}, nil
+		},
+	}
+
+	manager.SetFlagCompletions(completions)
+
+	assert.NotNil(t, manager.completions)
+	assert.Len(t, manager.completions, 2)
+	assert.Contains(t, manager.completions, "app")
+	assert.Contains(t, manager.completions, "team")
+}
+
+func TestManagerV2_registerCompletionsOnCommand(t *testing.T) {
+	t.Run("register_completions_on_flagged_command", func(t *testing.T) {
+		manager := NewManagerV2()
+
+		completions := map[string]CompletionFunc{
+			"app": func(toComplete string) ([]string, error) {
+				return []string{"app1", "app2", "app3"}, nil
+			},
+		}
+		manager.SetFlagCompletions(completions)
+
+		flags := pflag.NewFlagSet("test", pflag.ContinueOnError)
+		flags.String("app", "", "Application name")
+
+		cmd := &mockFlaggedCommand{
+			info: &Info{
+				Name: "app-info",
+				Desc: "Show app info",
+			},
+			flags: flags,
+		}
+
+		manager.Register(cmd)
+
+		appNode := manager.tree.Children["app"]
+		assert.NotNil(t, appNode)
+
+		infoNode := appNode.Children["info"]
+		assert.NotNil(t, infoNode)
+
+		// Test that the completion function was registered
+		completionFunc, exists := infoNode.Command.GetFlagCompletionFunc("app")
+		assert.True(t, exists)
+		assert.NotNil(t, completionFunc)
+
+		results, directive := completionFunc(infoNode.Command, []string{}, "")
+		assert.Equal(t, []string{"app1", "app2", "app3"}, results)
+		assert.Equal(t, cobra.ShellCompDirectiveNoFileComp, directive)
+	})
+
+	t.Run("completion_function_filters_by_prefix", func(t *testing.T) {
+		manager := NewManagerV2()
+
+		completions := map[string]CompletionFunc{
+			"team": func(toComplete string) ([]string, error) {
+				allTeams := []string{"alpha", "beta", "gamma"}
+				var filtered []string
+				for _, team := range allTeams {
+					if strings.HasPrefix(team, toComplete) {
+						filtered = append(filtered, team)
+					}
+				}
+				return filtered, nil
+			},
+		}
+		manager.SetFlagCompletions(completions)
+
+		flags := pflag.NewFlagSet("test", pflag.ContinueOnError)
+		flags.String("team", "", "Team name")
+
+		cmd := &mockFlaggedCommand{
+			info: &Info{
+				Name: "team-info",
+				Desc: "Show team info",
+			},
+			flags: flags,
+		}
+
+		manager.Register(cmd)
+
+		infoNode := manager.tree.Children["team"].Children["info"]
+		completionFunc, _ := infoNode.Command.GetFlagCompletionFunc("team")
+
+		// Test with prefix "a"
+		results, _ := completionFunc(infoNode.Command, []string{}, "a")
+		assert.Equal(t, []string{"alpha"}, results)
+
+		// Test with prefix "b"
+		results, _ = completionFunc(infoNode.Command, []string{}, "b")
+		assert.Equal(t, []string{"beta"}, results)
+
+		// Test with empty prefix
+		results, _ = completionFunc(infoNode.Command, []string{}, "")
+		assert.Equal(t, []string{"alpha", "beta", "gamma"}, results)
+	})
+
+	t.Run("completion_function_returns_error", func(t *testing.T) {
+		manager := NewManagerV2()
+
+		completions := map[string]CompletionFunc{
+			"pool": func(toComplete string) ([]string, error) {
+				return nil, assert.AnError
+			},
+		}
+		manager.SetFlagCompletions(completions)
+
+		flags := pflag.NewFlagSet("test", pflag.ContinueOnError)
+		flags.String("pool", "", "Pool name")
+
+		cmd := &mockFlaggedCommand{
+			info: &Info{
+				Name: "pool-info",
+				Desc: "Show pool info",
+			},
+			flags: flags,
+		}
+
+		manager.Register(cmd)
+
+		infoNode := manager.tree.Children["pool"].Children["info"]
+		completionFunc, exists := infoNode.Command.GetFlagCompletionFunc("pool")
+		assert.True(t, exists)
+
+		results, directive := completionFunc(infoNode.Command, []string{}, "")
+		assert.Nil(t, results)
+		assert.Equal(t, cobra.ShellCompDirectiveError, directive)
+	})
+
+	t.Run("non_flagged_command_does_not_register_completions", func(t *testing.T) {
+		manager := NewManagerV2()
+
+		completions := map[string]CompletionFunc{
+			"app": func(toComplete string) ([]string, error) {
+				return []string{"app1"}, nil
+			},
+		}
+		manager.SetFlagCompletions(completions)
+
+		// Use regular mockCommand (not FlaggedCommand)
+		cmd := &mockCommand{
+			info: &Info{
+				Name: "simple-cmd",
+				Desc: "Simple command without flags",
+			},
+		}
+
+		manager.Register(cmd)
+
+		simpleNode := manager.tree.Children["simple"].Children["cmd"]
+		assert.NotNil(t, simpleNode)
+
+		// Should not panic and command should work normally
+		assert.NotNil(t, simpleNode.Command)
 	})
 }

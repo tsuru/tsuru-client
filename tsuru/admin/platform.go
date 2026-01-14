@@ -24,12 +24,8 @@ import (
 	"github.com/tsuru/tsuru-client/tsuru/cmd/standards"
 	"github.com/tsuru/tsuru-client/tsuru/formatter"
 	tsuruHTTP "github.com/tsuru/tsuru-client/tsuru/http"
+	appTypes "github.com/tsuru/tsuru/types/app"
 )
-
-type platform struct {
-	Name     string `json:"name"`
-	Disabled bool   `json:"disabled"`
-}
 
 type PlatformList struct {
 	fs         *pflag.FlagSet
@@ -46,7 +42,7 @@ func (p *PlatformList) Run(context *cmd.Context) error {
 	if err != nil {
 		return err
 	}
-	var platforms []platform
+	var platforms []appTypes.Platform
 	resp, err := tsuruHTTP.AuthenticatedClient.Do(request)
 	if err != nil {
 		return err
