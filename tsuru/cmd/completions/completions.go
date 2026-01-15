@@ -15,6 +15,7 @@ import (
 
 	"github.com/tsuru/go-tsuruclient/pkg/config"
 	tsuruHTTP "github.com/tsuru/tsuru-client/tsuru/http"
+	"github.com/tsuru/tsuru/service"
 	appTypes "github.com/tsuru/tsuru/types/app"
 	provisionTypes "github.com/tsuru/tsuru/types/provision"
 )
@@ -235,6 +236,89 @@ func RouterNameCompletionFunc(toComplete string) ([]string, error) {
 			continue
 		}
 		result = append(result, router.Name)
+	}
+
+	return result, nil
+}
+
+func ServiceNameCompletionFunc(toComplete string) ([]string, error) {
+	// unfortunately we can't use the /services endpoint here because it not optimized to list only service names
+	url, err := config.GetURL("/services/instances")
+	if err != nil {
+		return nil, err
+	}
+	req, err := http.NewRequest("GET", url, nil)
+	if err != nil {
+		return nil, err
+	}
+	resp, err := tsuruHTTP.AuthenticatedClient.Do(req)
+	if err != nil {
+		return nil, err
+	}
+	if resp.StatusCode != http.StatusOK {
+		return nil, nil
+	}
+	defer resp.Body.Close()
+
+	services := []service.ServiceModel{}
+	err = json.NewDecoder(resp.Body).Decode(&services)
+	if err != nil {
+		return nil, err
+	}
+
+	result := make([]string, 0, len(services))
+
+	for _, svc := range services {
+		if !strings.HasPrefix(svc.Service, toComplete) {
+			continue
+		}
+		result = append(result, svc.Service)
+	}
+
+	return result, nil
+}
+
+func ServiceInstanceCompletionFunc(serviceName string, toComplete string) ([]string, error) {
+	qs := make(url.Values)
+	qs.Set("service", serviceName)
+
+	url, err := config.GetURL("/services/instances?" + qs.Encode())
+	if err != nil {
+		return nil, err
+	}
+	req, err := http.NewRequest("GET", url, nil)
+	if err != nil {
+		return nil, err
+	}
+	resp, err := tsuruHTTP.AuthenticatedClient.Do(req)
+	if err != nil {
+		return nil, err
+	}
+	if resp.StatusCode != http.StatusOK {
+		return nil, nil
+	}
+	defer resp.Body.Close()
+
+	services := []service.ServiceModel{}
+	err = json.NewDecoder(resp.Body).Decode(&services)
+	if err != nil {
+		return nil, err
+	}
+
+	result := make([]string, 0, len(services))
+
+	for _, svc := range services {
+		if svc.Service != serviceName {
+			continue
+		}
+
+		for _, instance := range svc.ServiceInstances {
+			if !strings.HasPrefix(instance.Name, toComplete) {
+				continue
+			}
+
+			result = append(result, instance.Name)
+		}
 	}
 
 	return result, nil

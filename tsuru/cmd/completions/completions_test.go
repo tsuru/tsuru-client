@@ -216,3 +216,91 @@ func TestRouterNameCompletionFuncEmptyPrefix(t *testing.T) {
 	require.NoError(t, err)
 	assert.Equal(t, []string{"router1", "router2", "myrouter"}, completions)
 }
+
+func TestServiceNameCompletionFunc(t *testing.T) {
+	setupTest(t)
+	result := `[{"service":"mysql","service_instances":[{"name":"mysql01"}]},{"service":"mongodb","service_instances":[{"name":"mongo01"}]},{"service":"redis","service_instances":[]}]`
+	setupFakeTransport(&cmdtest.Transport{Message: result, Status: http.StatusOK})
+
+	completions, err := ServiceNameCompletionFunc("m")
+	require.NoError(t, err)
+	assert.Equal(t, []string{"mysql", "mongodb"}, completions)
+}
+
+func TestServiceNameCompletionFuncEmptyPrefix(t *testing.T) {
+	setupTest(t)
+	result := `[{"service":"mysql","service_instances":[{"name":"mysql01"}]},{"service":"mongodb","service_instances":[{"name":"mongo01"}]},{"service":"redis","service_instances":[]}]`
+	setupFakeTransport(&cmdtest.Transport{Message: result, Status: http.StatusOK})
+
+	completions, err := ServiceNameCompletionFunc("")
+	require.NoError(t, err)
+	assert.Equal(t, []string{"mysql", "mongodb", "redis"}, completions)
+}
+
+func TestServiceNameCompletionFuncNotOK(t *testing.T) {
+	setupTest(t)
+	setupFakeTransport(&cmdtest.Transport{Status: http.StatusNoContent})
+
+	completions, err := ServiceNameCompletionFunc("mysql")
+	require.NoError(t, err)
+	assert.Empty(t, completions)
+}
+
+func TestServiceNameCompletionFuncNoMatch(t *testing.T) {
+	setupTest(t)
+	result := `[{"service":"mysql","service_instances":[{"name":"mysql01"}]}]`
+	setupFakeTransport(&cmdtest.Transport{Message: result, Status: http.StatusOK})
+
+	completions, err := ServiceNameCompletionFunc("xyz")
+	require.NoError(t, err)
+	assert.Empty(t, completions)
+}
+
+func TestServiceInstanceCompletionFunc(t *testing.T) {
+	setupTest(t)
+	result := `[{"service":"mysql","service_instances":[{"name":"mysql01"},{"name":"mysql02"},{"name":"mydb"}]},{"service":"mongodb","service_instances":[{"name":"mongo01"}]}]`
+	setupFakeTransport(&cmdtest.Transport{Message: result, Status: http.StatusOK})
+
+	completions, err := ServiceInstanceCompletionFunc("mysql", "mysql")
+	require.NoError(t, err)
+	assert.Equal(t, []string{"mysql01", "mysql02"}, completions)
+}
+
+func TestServiceInstanceCompletionFuncEmptyPrefix(t *testing.T) {
+	setupTest(t)
+	result := `[{"service":"mysql","service_instances":[{"name":"mysql01"},{"name":"mysql02"},{"name":"mydb"}]}]`
+	setupFakeTransport(&cmdtest.Transport{Message: result, Status: http.StatusOK})
+
+	completions, err := ServiceInstanceCompletionFunc("mysql", "")
+	require.NoError(t, err)
+	assert.Equal(t, []string{"mysql01", "mysql02", "mydb"}, completions)
+}
+
+func TestServiceInstanceCompletionFuncNotOK(t *testing.T) {
+	setupTest(t)
+	setupFakeTransport(&cmdtest.Transport{Status: http.StatusNoContent})
+
+	completions, err := ServiceInstanceCompletionFunc("mysql", "mysql")
+	require.NoError(t, err)
+	assert.Empty(t, completions)
+}
+
+func TestServiceInstanceCompletionFuncNoMatch(t *testing.T) {
+	setupTest(t)
+	result := `[{"service":"mysql","service_instances":[{"name":"mysql01"}]}]`
+	setupFakeTransport(&cmdtest.Transport{Message: result, Status: http.StatusOK})
+
+	completions, err := ServiceInstanceCompletionFunc("mysql", "xyz")
+	require.NoError(t, err)
+	assert.Empty(t, completions)
+}
+
+func TestServiceInstanceCompletionFuncWrongService(t *testing.T) {
+	setupTest(t)
+	result := `[{"service":"mysql","service_instances":[{"name":"mysql01"}]}]`
+	setupFakeTransport(&cmdtest.Transport{Message: result, Status: http.StatusOK})
+
+	completions, err := ServiceInstanceCompletionFunc("mongodb", "")
+	require.NoError(t, err)
+	assert.Empty(t, completions)
+}
