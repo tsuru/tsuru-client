@@ -101,6 +101,13 @@ func (m *ManagerV2) Register(command Command) {
 
 func (m *ManagerV2) Run() {
 	err := m.rootCmd.Execute()
+
+	if m.retryHook != nil && err != nil {
+		if retry := m.retryHook(err); retry {
+			err = m.rootCmd.Execute()
+		}
+	}
+
 	if err != nil {
 		os.Exit(1)
 	}
