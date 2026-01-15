@@ -1356,7 +1356,7 @@ func (c *commandWithUsage) Run(context *Context) error {
 }
 
 func (s *S) TestHumanizeCommand(c *check.C) {
-	program := os.Args[0]
+	program := ExtractProgramName(os.Args[0])
 	tests := []struct {
 		input    string
 		expected string
@@ -1405,7 +1405,7 @@ func (s *S) TestDeprecatedCommandInfoPreservesOriginalDesc(c *check.C) {
 }
 
 func (s *S) TestDeprecatedCommandRunOutputsColoredWarning(c *check.C) {
-	program := os.Args[0]
+	program := ExtractProgramName(os.Args[0])
 	var stdout, stderr bytes.Buffer
 	originalCmd := &commandWithUsage{
 		name:  "app-info",
