@@ -40,6 +40,8 @@ func NewRootCmd() *cobra.Command {
 
 	setupPFlagsAndCommands(rootCmd)
 
+	rootCmd.AddCommand(generateDocCmd())
+
 	return rootCmd
 }
 func setupPFlagsAndCommands(rootCmd *cobra.Command) {
