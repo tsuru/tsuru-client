@@ -624,14 +624,28 @@ type DeprecatedCommand struct {
 
 func (c *DeprecatedCommand) Info() *Info {
 	info := c.Command.Info()
-	info.Usage = strings.Replace(info.Usage, info.Name, c.oldName, 1)
+	newCommand := humanizeCommand(info.Name)
+
+	info.Desc = fmt.Sprintf("DEPRECATED: For better usability, this command has been replaced by %q.\n\n%s", newCommand, info.Desc)
+
+	info.Usage = c.oldName + stripUsage(info.Name, info.Usage)
 	info.Name = c.oldName
-	info.V2.Hidden = true
 	return info
 }
 
+func humanizeCommand(s string) string {
+	program := os.Args[0]
+	return program + " " + strings.ReplaceAll(s, "-", " ")
+}
+
 func (c *DeprecatedCommand) Run(context *Context) error {
-	fmt.Fprintf(context.Stderr, "WARNING: %q has been deprecated, please use %q instead.\n\n", c.oldName, c.Command.Info().Name)
+	oldCommand := humanizeCommand(c.oldName)
+	newCommand := humanizeCommand(c.Command.Info().Name)
+
+	warningText := fmt.Sprintf("WARNING: %q has been deprecated, please use %q instead.\n\n", oldCommand, newCommand)
+
+	fmt.Fprint(context.Stderr, Colorfy(warningText, "yellow", "", "bold"))
+
 	return c.Command.Run(context)
 }
 

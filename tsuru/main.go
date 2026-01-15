@@ -107,7 +107,7 @@ func buildManagerCustom(name string, stdout, stderr io.Writer) *cmd.Manager {
 		standards.FlagRouter:   completions.RouterNameCompletionFunc,
 	})
 
-	m.RegisterTopic("app", `App is a program source code running on Tsuru`)
+	m.RegisterTopic("app", `App is a program source code running on Tsuru.`)
 
 	m.Register(&auth.Login{})
 	m.Register(&auth.Logout{})
@@ -156,7 +156,7 @@ func buildManagerCustom(name string, stdout, stderr io.Writer) *cmd.Manager {
 	m.Register(&client.CnameAdd{})
 	m.Register(&client.CnameRemove{})
 
-	m.RegisterTopic("env", `Manage environment variables from an app or job`)
+	m.RegisterTopic("env", `Manage environment variables from an app or job.`)
 	m.Register(&client.EnvGet{})
 	m.Register(&client.EnvSet{})
 	m.Register(&client.EnvUnset{})
@@ -239,7 +239,7 @@ Services aren’t managed by tsuru, but by their creators.`)
 	m.RegisterTopic("permission", `Manage permissions.`)
 	m.Register(&client.PermissionList{})
 
-	m.RegisterTopic("role", "Manage Roles")
+	m.RegisterTopic("role", "Manage roles.")
 	m.Register(&client.RoleAdd{})
 	m.Register(&client.RoleUpdate{})
 	m.Register(&client.RoleRemove{})
@@ -346,7 +346,7 @@ Services aren’t managed by tsuru, but by their creators.`)
 	m.Register(&client.WebhookUpdate{})
 	m.Register(&client.WebhookDelete{})
 
-	m.RegisterTopic("provisioner", "Manage Provisioners.")
+	m.RegisterTopic("provisioner", "Manage provisioners.")
 	m.Register(&admin.ProvisionerList{})
 	m.Register(&admin.ProvisionerInfo{})
 
@@ -356,12 +356,14 @@ Services aren’t managed by tsuru, but by their creators.`)
 
 	m.Register(client.UserInfo{})
 
-	m.RegisterTopic("unit-autoscale", "Manage autoscaling of units.")
-	m.Register(&client.AutoScaleSet{})
-	m.Register(&client.AutoScaleUnset{})
-	m.Register(&client.AutoScaleSwap{})
+	m.RegisterTopic("autoscale", "Manage autoscaling of application units.")
+	m.RegisterTopic("unit-autoscale", "Manage autoscaling of application units.")
+	m.RegisterDeprecated(&client.AutoScaleSet{}, "unit-autoscale-set")
+	m.RegisterDeprecated(&client.AutoScaleUnset{}, "unit-autoscale-unset")
+	m.RegisterDeprecated(&client.AutoScaleSwap{}, "unit-autoscale-swap")
 
 	m.RegisterTopic("metadata", "Metadata is a modern way to define labels and annotations to apps and jobs.")
+	m.RegisterTopic("app-metadata", "Metadata is a modern way to define labels and annotations to apps.")
 	m.RegisterDeprecated(&client.MetadataSet{}, "app-metadata-set")
 	m.RegisterDeprecated(&client.MetadataUnset{}, "app-metadata-unset")
 	m.RegisterDeprecated(&client.MetadataGet{}, "app-metadata-get")

@@ -65,23 +65,23 @@ type AutoScaleSet struct {
 
 func (c *AutoScaleSet) Info() *cmd.Info {
 	return &cmd.Info{
-		Name:  "unit-autoscale-set",
-		Usage: "unit autoscale set [-a/--app appname] [-p/--process processname] [--cpu targetCPU] [--min minUnits] [--max maxUnits] [--schedule scheduleWindow] [--prometheus prometheusSettings]",
+		Name:  "autoscale-set",
+		Usage: "autoscale set [-a/--app appname] [-p/--process processname] [--cpu targetCPU] [--min minUnits] [--max maxUnits] [--schedule scheduleWindow] [--prometheus prometheusSettings]",
 		Desc: `Sets an auto scale configuration.
 
 # Sets an autoscale configuration:
 # Based on 50% of CPU utilization with min units 1 and max units 3
-unit autoscale set -a my-app --cpu 50% --min 1 --max 3
+autoscale set -a my-app --cpu 50% --min 1 --max 3
 
 # Based on a schedule window everyday from 6AM to 6PM UTC
-unit autoscale set -a my-app --min 1 --max 3 --schedule '{"minReplicas": 2, "start": "0 6 * * *", "end": "0 18 * * *"}'
+autoscale set -a my-app --min 1 --max 3 --schedule '{"minReplicas": 2, "start": "0 6 * * *", "end": "0 18 * * *"}'
 
 # Based on a prometheus metric
 
-unit autoscale set -a my-app --min 1 --max 3 --prometheus '{"name": "my_metric_identification", "threshold": 10, "query":"sum(my_metric{tsuru_app=\"my_app\"})"}'
+autoscale set -a my-app --min 1 --max 3 --prometheus '{"name": "my_metric_identification", "threshold": 10, "query":"sum(my_metric{tsuru_app=\"my_app\"})"}'
 
 # Combining
-unit autoscale set -a my-app --cpu 50% --min 1 --max 3 --schedule '{"minReplicas": 2, "start": "0 6 * * *", "end": "0 18 * * *"}'
+autoscale set -a my-app --cpu 50% --min 1 --max 3 --schedule '{"minReplicas": 2, "start": "0 6 * * *", "end": "0 18 * * *"}'
 
 # When using more than one trigger (CPU + Schedule as an example), the number of units will be determined by the highest value
 `,
@@ -158,8 +158,8 @@ type AutoScaleUnset struct {
 
 func (c *AutoScaleUnset) Info() *cmd.Info {
 	return &cmd.Info{
-		Name:  "unit-autoscale-unset",
-		Usage: "unit autoscale unset [-a/--app appname] [-p/--process processname]",
+		Name:  "autoscale-unset",
+		Usage: "autoscale unset [-a/--app appname] [-p/--process processname]",
 		Desc:  `Unsets a unit auto scale configuration.`,
 	}
 }
@@ -197,8 +197,8 @@ type AutoScaleSwap struct {
 
 func (c *AutoScaleSwap) Info() *cmd.Info {
 	return &cmd.Info{
-		Name:  "unit-autoscale-swap",
-		Usage: "unit autoscale swap [-a/--app appname] [--version version]",
+		Name:  "autoscale-swap",
+		Usage: "autoscale swap [-a/--app appname] [--version version]",
 		Desc:  `Swap a unit auto scale configuration to another version.`,
 	}
 }

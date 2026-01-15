@@ -29,8 +29,7 @@ func (s *S) TestDeprecatedCommand(c *check.C) {
 	globalManager.stderr = &stderr
 	globalManager.Run([]string{"bar"})
 	c.Assert(stdout.String(), check.Equals, "Running TestCommand")
-	warnMessage := `WARNING: "bar" has been deprecated, please use "foo" instead.` + "\n\n"
-	c.Assert(stderr.String(), check.Equals, warnMessage)
+	c.Assert(stderr.String(), check.Matches, `(?s).*WARNING:.*bar.*has been deprecated.*foo.*`)
 	stdout.Reset()
 	stderr.Reset()
 	globalManager.Run([]string{"foo"})
@@ -45,8 +44,7 @@ func (s *S) TestDeprecatedCommandFlags(c *check.C) {
 	globalManager.stdout = &stdout
 	globalManager.stderr = &stderr
 	globalManager.Run([]string{"bar", "--age", "10"})
-	warnMessage := `WARNING: "bar" has been deprecated, please use "with-flags" instead.` + "\n\n"
-	c.Assert(stderr.String(), check.Equals, warnMessage)
+	c.Assert(stderr.String(), check.Matches, `(?s).*WARNING:.*bar.*has been deprecated.*with flags.*`)
 	c.Assert(cmd.age, check.Equals, 10)
 }
 
@@ -543,11 +541,7 @@ func (s *S) TestHelpDeprecatedCmd(c *check.C) {
 	globalManager.stderr = &stderr
 	globalManager.RegisterDeprecated(&TestCommand{}, "bar")
 	globalManager.Run([]string{"help", "bar"})
-	c.Assert(stdout.String(), check.Equals, `Usage: glb bar
-
-Foo do anything or nothing.
-
-`)
+	c.Assert(stdout.String(), check.Matches, `(?s)Usage: glb bar.*DEPRECATED:.*foo.*Foo do anything or nothing\..*`)
 	c.Assert(stderr.String(), check.Equals, expectedStderr)
 	stdout.Reset()
 	stderr.Reset()
@@ -561,19 +555,12 @@ Foo do anything or nothing.
 }
 
 func (s *S) TestHelpDeprecatedCmdWritesWarningFirst(c *check.C) {
-	expected := `WARNING: "bar" is deprecated. Showing help for "foo" instead.
-
-Usage: glb bar
-
-Foo do anything or nothing.
-
-`
 	var output bytes.Buffer
 	globalManager.stdout = &output
 	globalManager.stderr = &output
 	globalManager.RegisterDeprecated(&TestCommand{}, "bar")
 	globalManager.Run([]string{"help", "bar"})
-	c.Assert(output.String(), check.Equals, expected)
+	c.Assert(output.String(), check.Matches, `(?s)WARNING: "bar" is deprecated\. Showing help for "foo" instead\..*Usage: glb bar.*DEPRECATED:.*foo.*Foo do anything or nothing\..*`)
 }
 
 type ArgCmd struct{}
@@ -1366,4 +1353,80 @@ func (c *commandWithUsage) Info() *Info {
 func (c *commandWithUsage) Run(context *Context) error {
 	io.WriteString(context.Stdout, "Running CommandWithUsage")
 	return nil
+}
+
+func (s *S) TestHumanizeCommand(c *check.C) {
+	program := os.Args[0]
+	tests := []struct {
+		input    string
+		expected string
+	}{
+		{"foo", program + " foo"},
+		{"app-info", program + " app info"},
+		{"app-log-set", program + " app log set"},
+		{"single", program + " single"},
+	}
+	for _, tt := range tests {
+		result := humanizeCommand(tt.input)
+		c.Assert(result, check.Equals, tt.expected)
+	}
+}
+
+func (s *S) TestDeprecatedCommandInfo(c *check.C) {
+	originalCmd := &commandWithUsage{
+		name:  "app-info",
+		usage: "app-info [flags]",
+	}
+	deprecatedCmd := &DeprecatedCommand{
+		Command: originalCmd,
+		oldName: "app-show",
+	}
+
+	info := deprecatedCmd.Info()
+
+	c.Assert(info.Name, check.Equals, "app-show")
+	c.Assert(info.Usage, check.Equals, "app-show [flags]")
+	c.Assert(info.Desc, check.Matches, `(?s)DEPRECATED: For better usability, this command has been replaced by ".*app info"\..*`)
+}
+
+func (s *S) TestDeprecatedCommandInfoPreservesOriginalDesc(c *check.C) {
+	originalCmd := &commandWithUsage{
+		name:  "new-cmd",
+		usage: "new-cmd",
+	}
+	deprecatedCmd := &DeprecatedCommand{
+		Command: originalCmd,
+		oldName: "old-cmd",
+	}
+
+	info := deprecatedCmd.Info()
+
+	c.Assert(info.Desc, check.Matches, `(?s)DEPRECATED:.*A command with custom usage\.`)
+}
+
+func (s *S) TestDeprecatedCommandRunOutputsColoredWarning(c *check.C) {
+	program := os.Args[0]
+	var stdout, stderr bytes.Buffer
+	originalCmd := &commandWithUsage{
+		name:  "app-info",
+		usage: "app-info",
+	}
+	deprecatedCmd := &DeprecatedCommand{
+		Command: originalCmd,
+		oldName: "app-show",
+	}
+
+	ctx := &Context{
+		Args:   []string{},
+		Stdout: &stdout,
+		Stderr: &stderr,
+	}
+
+	err := deprecatedCmd.Run(ctx)
+	c.Assert(err, check.IsNil)
+
+	expectedOldCmd := program + " app show"
+	expectedNewCmd := program + " app info"
+	c.Assert(stderr.String(), check.Matches, `(?s).*WARNING:.*`+expectedOldCmd+`.*has been deprecated.*`+expectedNewCmd+`.*`)
+	c.Assert(stdout.String(), check.Equals, "Running CommandWithUsage")
 }
