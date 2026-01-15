@@ -5,6 +5,7 @@
 package cmd
 
 import (
+	"fmt"
 	"strings"
 	"testing"
 
@@ -484,6 +485,238 @@ func TestManagerV2_NewManagerV2WithOptions(t *testing.T) {
 		result := manager.retryHook(assert.AnError)
 		assert.True(t, retryCalled)
 		assert.False(t, result)
+	})
+}
+
+func TestManagerV2_Run_RetryHook(t *testing.T) {
+	t.Run("retry_hook_called_on_error", func(t *testing.T) {
+		retryCalled := false
+		var receivedErr error
+
+		opts := &ManagerV2Opts{
+			RetryHook: func(err error) bool {
+				retryCalled = true
+				receivedErr = err
+				return false // Don't retry
+			},
+		}
+
+		manager := NewManagerV2(opts)
+
+		executionCount := 0
+		cmd := &mockCommand{
+			info: &Info{
+				Name: "test-cmd",
+				Desc: "Test command",
+			},
+			runFn: func(ctx *Context) error {
+				executionCount++
+				return assert.AnError
+			},
+		}
+
+		manager.Register(cmd)
+		manager.rootCmd.SetArgs([]string{"test-cmd"})
+
+		// We can't call Run() directly because it calls os.Exit
+		// Instead, test the logic by simulating what Run() does
+		err := manager.rootCmd.Execute()
+		assert.Error(t, err)
+
+		if manager.retryHook != nil && err != nil {
+			manager.retryHook(err)
+		}
+
+		assert.True(t, retryCalled)
+		assert.Equal(t, assert.AnError, receivedErr)
+		assert.Equal(t, 1, executionCount)
+	})
+
+	t.Run("retry_hook_retries_on_true", func(t *testing.T) {
+		retryCount := 0
+
+		opts := &ManagerV2Opts{
+			RetryHook: func(err error) bool {
+				retryCount++
+				return true // Retry once
+			},
+		}
+
+		manager := NewManagerV2(opts)
+
+		executionCount := 0
+		cmd := &mockCommand{
+			info: &Info{
+				Name: "test-cmd",
+				Desc: "Test command",
+			},
+			runFn: func(ctx *Context) error {
+				executionCount++
+				if executionCount == 1 {
+					return assert.AnError // First execution fails
+				}
+				return nil // Second execution succeeds
+			},
+		}
+
+		manager.Register(cmd)
+		manager.rootCmd.SetArgs([]string{"test-cmd"})
+
+		// Simulate Run() logic
+		err := manager.rootCmd.Execute()
+
+		if manager.retryHook != nil && err != nil {
+			if retry := manager.retryHook(err); retry {
+				err = manager.rootCmd.Execute()
+			}
+		}
+
+		assert.NoError(t, err)
+		assert.Equal(t, 1, retryCount)
+		assert.Equal(t, 2, executionCount)
+	})
+
+	t.Run("retry_hook_not_called_on_success", func(t *testing.T) {
+		retryCalled := false
+
+		opts := &ManagerV2Opts{
+			RetryHook: func(err error) bool {
+				retryCalled = true
+				return true
+			},
+		}
+
+		manager := NewManagerV2(opts)
+
+		cmd := &mockCommand{
+			info: &Info{
+				Name: "test-cmd",
+				Desc: "Test command",
+			},
+			runFn: func(ctx *Context) error {
+				return nil // Success
+			},
+		}
+
+		manager.Register(cmd)
+		manager.rootCmd.SetArgs([]string{"test-cmd"})
+
+		// Simulate Run() logic
+		err := manager.rootCmd.Execute()
+
+		if manager.retryHook != nil && err != nil {
+			manager.retryHook(err)
+		}
+
+		assert.NoError(t, err)
+		assert.False(t, retryCalled)
+	})
+
+	t.Run("retry_hook_not_called_when_nil", func(t *testing.T) {
+		manager := NewManagerV2() // No retry hook
+
+		executionCount := 0
+		cmd := &mockCommand{
+			info: &Info{
+				Name: "test-cmd",
+				Desc: "Test command",
+			},
+			runFn: func(ctx *Context) error {
+				executionCount++
+				return assert.AnError
+			},
+		}
+
+		manager.Register(cmd)
+		manager.rootCmd.SetArgs([]string{"test-cmd"})
+
+		// Simulate Run() logic
+		err := manager.rootCmd.Execute()
+
+		if manager.retryHook != nil && err != nil {
+			if retry := manager.retryHook(err); retry {
+				err = manager.rootCmd.Execute()
+			}
+		}
+
+		assert.Error(t, err)
+		assert.Equal(t, 1, executionCount)
+	})
+
+	t.Run("retry_hook_receives_correct_error", func(t *testing.T) {
+		expectedErr := fmt.Errorf("specific error message")
+		var receivedErr error
+
+		opts := &ManagerV2Opts{
+			RetryHook: func(err error) bool {
+				receivedErr = err
+				return false
+			},
+		}
+
+		manager := NewManagerV2(opts)
+
+		cmd := &mockCommand{
+			info: &Info{
+				Name: "test-cmd",
+				Desc: "Test command",
+			},
+			runFn: func(ctx *Context) error {
+				return expectedErr
+			},
+		}
+
+		manager.Register(cmd)
+		manager.rootCmd.SetArgs([]string{"test-cmd"})
+
+		err := manager.rootCmd.Execute()
+
+		if manager.retryHook != nil && err != nil {
+			manager.retryHook(err)
+		}
+
+		assert.Equal(t, expectedErr, receivedErr)
+	})
+
+	t.Run("retry_still_fails_after_retry", func(t *testing.T) {
+		retryCount := 0
+
+		opts := &ManagerV2Opts{
+			RetryHook: func(err error) bool {
+				retryCount++
+				return true
+			},
+		}
+
+		manager := NewManagerV2(opts)
+
+		executionCount := 0
+		cmd := &mockCommand{
+			info: &Info{
+				Name: "test-cmd",
+				Desc: "Test command",
+			},
+			runFn: func(ctx *Context) error {
+				executionCount++
+				return assert.AnError // Always fails
+			},
+		}
+
+		manager.Register(cmd)
+		manager.rootCmd.SetArgs([]string{"test-cmd"})
+
+		// Simulate Run() logic
+		err := manager.rootCmd.Execute()
+
+		if manager.retryHook != nil && err != nil {
+			if retry := manager.retryHook(err); retry {
+				err = manager.rootCmd.Execute()
+			}
+		}
+
+		assert.Error(t, err)
+		assert.Equal(t, 1, retryCount)
+		assert.Equal(t, 2, executionCount)
 	})
 }
 
