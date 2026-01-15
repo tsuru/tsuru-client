@@ -634,7 +634,7 @@ func (c *DeprecatedCommand) Info() *Info {
 }
 
 func humanizeCommand(s string) string {
-	program := os.Args[0]
+	program := ExtractProgramName(os.Args[0])
 	return program + " " + strings.ReplaceAll(s, "-", " ")
 }
 
