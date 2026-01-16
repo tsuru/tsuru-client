@@ -184,10 +184,9 @@ func (c *RoutersList) Flags() *pflag.FlagSet {
 
 func (c *RoutersList) Info() *cmd.Info {
 	return &cmd.Info{
-		Name:    "router-list",
-		Usage:   "router list",
-		Desc:    "List all routers available for app creation.",
-		MinArgs: 0,
+		Name:  "router-list",
+		Usage: "router list",
+		Desc:  "List all routers available for app creation.",
 	}
 }
 
@@ -314,10 +313,9 @@ type AppRoutersList struct {
 
 func (c *AppRoutersList) Info() *cmd.Info {
 	return &cmd.Info{
-		Name:    "app-router-list",
-		Usage:   "app router list [-a/--app appname]",
-		Desc:    "List all routers associated to an application.",
-		MinArgs: 0,
+		Name:  "app-router-list",
+		Usage: "app router list [-a/--app appname]",
+		Desc:  "List all routers associated to an application.",
 	}
 }
 

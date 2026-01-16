@@ -20,9 +20,9 @@ type AppRoutesRebuild struct {
 
 func (c *AppRoutesRebuild) Info() *cmd.Info {
 	return &cmd.Info{
-		Name:    "app-routes-rebuild",
-		MinArgs: 0,
-		Usage:   "app-routes-rebuild <app-name>",
+		Name: "app-routes-rebuild",
+
+		Usage: "app-routes-rebuild <app-name>",
 		Desc: `Rebuild routes for an application.
 This can be used to recover from some failure in the router that caused
 existing routes to be lost.`,

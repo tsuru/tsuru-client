@@ -30,10 +30,9 @@ type TokenCreateCmd struct {
 
 func (c *TokenCreateCmd) Info() *cmd.Info {
 	return &cmd.Info{
-		Name:    "token-create",
-		Usage:   "token create [--id/-i token-id] [--team/-t team] [--description/-d description] [--expires/-e expiration]",
-		Desc:    `Creates a new API token associated to a team.`,
-		MinArgs: 0,
+		Name:  "token-create",
+		Usage: "token create [--id/-i token-id] [--team/-t team] [--description/-d description] [--expires/-e expiration]",
+		Desc:  `Creates a new API token associated to a team.`,
 	}
 }
 
@@ -120,10 +119,9 @@ type TokenListCmd struct {
 
 func (c *TokenListCmd) Info() *cmd.Info {
 	return &cmd.Info{
-		Name:    "token-list",
-		Usage:   "token list",
-		Desc:    `List existing API tokens associated with a team.`,
-		MinArgs: 0,
+		Name:  "token-list",
+		Usage: "token list",
+		Desc:  `List existing API tokens associated with a team.`,
 	}
 }
 

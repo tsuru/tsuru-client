@@ -62,10 +62,9 @@ Examples:
       $ tsuru app build -a <APP> --files-only ./my-code/main.go ./tsuru_stuff/Procfile
 `
 	return &cmd.Info{
-		Name:    "app-build",
-		Usage:   "app build [-a/--app <appname>] [-t/--tag <image_tag>] [-f/--files-only] <file-or-dir-1> [file-or-dir-2] ... [file-or-dir-n]",
-		Desc:    desc,
-		MinArgs: 0,
+		Name:  "app-build",
+		Usage: "app build [-a/--app <appname>] [-t/--tag <image_tag>] [-f/--files-only] <file-or-dir-1> [file-or-dir-2] ... [file-or-dir-n]",
+		Desc:  desc,
 	}
 }
 

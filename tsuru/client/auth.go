@@ -160,7 +160,7 @@ func (c *UserRemove) Info() *cmd.Info {
 server. Since there cannot exist any orphan teams, tsuru will refuse to remove
 a user that is the last member of some team. If this is your case, make sure
 you remove the team using ` + "`team-remove`" + ` before removing the user.`,
-		MinArgs: 0,
+
 		MaxArgs: 1,
 	}
 }
@@ -293,10 +293,9 @@ type TeamList struct {
 
 func (c *TeamList) Info() *cmd.Info {
 	return &cmd.Info{
-		Name:    "team-list",
-		Usage:   "team list",
-		Desc:    "List all teams that you are member.",
-		MinArgs: 0,
+		Name:  "team-list",
+		Usage: "team list",
+		Desc:  "List all teams that you are member.",
 	}
 }
 
@@ -625,7 +624,6 @@ calls to tsuru impersonating the user who created it and will never expire.
 
 The token key will be generated the first time this command is called. See
 [[tsuru token regenerate]] if you need to invalidate an existing token.`,
-		MinArgs: 0,
 	}
 }
 
@@ -682,7 +680,6 @@ func (c *RegenerateAPIToken) Info() *cmd.Info {
 replaces the token previously shown in [[tsuru token-show]]. This command is
 deprecated, [[tsuru token-create]] and [[tsuru token-update]] should be used
 instead.`,
-		MinArgs: 0,
 	}
 }
 
@@ -769,10 +766,10 @@ func (c *ListUsers) Run(ctx *cmd.Context) error {
 
 func (c *ListUsers) Info() *cmd.Info {
 	return &cmd.Info{
-		Name:    "user-list",
-		MinArgs: 0,
-		Usage:   "user list [--user/-u useremail] [--role/-r role [-c/--context-value value]]",
-		Desc:    "List all users in tsuru. It may also filter users by user email or role name with context value.",
+		Name: "user-list",
+
+		Usage: "user list [--user/-u useremail] [--role/-r role [-c/--context-value value]]",
+		Desc:  "List all users in tsuru. It may also filter users by user email or role name with context value.",
 	}
 }
 

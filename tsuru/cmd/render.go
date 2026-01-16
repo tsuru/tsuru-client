@@ -25,6 +25,7 @@ var fontColors = map[string]int{
 	"magenta": 35,
 	"cyan":    36,
 	"white":   37,
+	"gray":    90,
 }
 
 var fontEffects = map[string]int{

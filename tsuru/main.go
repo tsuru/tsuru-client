@@ -20,6 +20,8 @@ import (
 	"github.com/tsuru/tsuru-client/tsuru/auth"
 	"github.com/tsuru/tsuru-client/tsuru/client"
 	"github.com/tsuru/tsuru-client/tsuru/cmd"
+	"github.com/tsuru/tsuru-client/tsuru/cmd/completions"
+	"github.com/tsuru/tsuru-client/tsuru/cmd/standards"
 	"github.com/tsuru/tsuru-client/tsuru/config/selfupdater"
 	tsuruHTTP "github.com/tsuru/tsuru-client/tsuru/http"
 	tsuruErrors "github.com/tsuru/tsuru/errors"
@@ -95,7 +97,17 @@ func buildManagerCustom(name string, stdout, stderr io.Writer) *cmd.Manager {
 
 	m := cmd.NewManagerPanicExiter(name, stdout, stderr, os.Stdin, lookup)
 
-	m.RegisterTopic("app", `App is a program source code running on Tsuru`)
+	m.SetFlagCompletions(map[string]cmd.CompletionFunc{
+		standards.FlagApp:      completions.AppNameCompletionFunc,
+		standards.FlagTeam:     completions.TeamNameCompletionFunc,
+		standards.FlagJob:      completions.JobNameCompletionFunc,
+		standards.FlagPool:     completions.PoolNameCompletionFunc,
+		standards.FlagPlan:     completions.PlanNameCompletionFunc,
+		standards.FlagPlatform: completions.PlatformNameCompletionFunc,
+		standards.FlagRouter:   completions.RouterNameCompletionFunc,
+	})
+
+	m.RegisterTopic("app", `App is a program source code running on Tsuru.`)
 
 	m.Register(&auth.Login{})
 	m.Register(&auth.Logout{})
@@ -144,7 +156,7 @@ func buildManagerCustom(name string, stdout, stderr io.Writer) *cmd.Manager {
 	m.Register(&client.CnameAdd{})
 	m.Register(&client.CnameRemove{})
 
-	m.RegisterTopic("env", `Manage environment variables from an app or job`)
+	m.RegisterTopic("env", `Manage environment variables from an app or job.`)
 	m.Register(&client.EnvGet{})
 	m.Register(&client.EnvSet{})
 	m.Register(&client.EnvUnset{})
@@ -218,7 +230,6 @@ Services aren’t managed by tsuru, but by their creators.`)
 	m.Register(&client.AppDeployList{})
 	m.Register(&client.AppDeployRollback{})
 	m.Register(&client.AppDeployRollbackUpdate{})
-	m.Register(&client.AppDeployRebuild{})
 	m.Register(&client.ShellToContainerCmd{})
 
 	m.RegisterTopic("pool", "A pool is used by provisioners to allocate space within a cluster for running applications.")
@@ -227,7 +238,7 @@ Services aren’t managed by tsuru, but by their creators.`)
 	m.RegisterTopic("permission", `Manage permissions.`)
 	m.Register(&client.PermissionList{})
 
-	m.RegisterTopic("role", "Manage Roles")
+	m.RegisterTopic("role", "Manage roles.")
 	m.Register(&client.RoleAdd{})
 	m.Register(&client.RoleUpdate{})
 	m.Register(&client.RoleRemove{})
@@ -334,7 +345,7 @@ Services aren’t managed by tsuru, but by their creators.`)
 	m.Register(&client.WebhookUpdate{})
 	m.Register(&client.WebhookDelete{})
 
-	m.RegisterTopic("provisioner", "Manage Provisioners.")
+	m.RegisterTopic("provisioner", "Manage provisioners.")
 	m.Register(&admin.ProvisionerList{})
 	m.Register(&admin.ProvisionerInfo{})
 
@@ -344,15 +355,28 @@ Services aren’t managed by tsuru, but by their creators.`)
 
 	m.Register(client.UserInfo{})
 
-	m.RegisterTopic("unit-autoscale", "Manage autoscaling of units.")
-	m.Register(&client.AutoScaleSet{})
-	m.Register(&client.AutoScaleUnset{})
-	m.Register(&client.AutoScaleSwap{})
+	m.RegisterTopic("autoscale", "Manage autoscaling of application units.")
+	m.RegisterTopic("unit-autoscale", "Manage autoscaling of application units.")
+	m.RegisterDeprecated(&client.AutoScaleSet{}, "unit-autoscale-set")
+	m.RegisterDeprecated(&client.AutoScaleUnset{}, "unit-autoscale-unset")
+	m.RegisterDeprecated(&client.AutoScaleSwap{}, "unit-autoscale-swap")
 
 	m.RegisterTopic("metadata", "Metadata is a modern way to define labels and annotations to apps and jobs.")
+	m.RegisterTopic("app-metadata", "Metadata is a modern way to define labels and annotations to apps.")
 	m.RegisterDeprecated(&client.MetadataSet{}, "app-metadata-set")
 	m.RegisterDeprecated(&client.MetadataUnset{}, "app-metadata-unset")
 	m.RegisterDeprecated(&client.MetadataGet{}, "app-metadata-get")
+
+	// Shorthands is a frequent command with a short name for convenience
+	// To decide which commands should have shorthands, consider:
+	// - Frequency of use
+	// - Length of the original command name
+	// May be no more than 5 commands IMHO
+	m.RegisterShorthand(&client.AppDeploy{}, "deploy")
+	m.RegisterShorthand(&client.AppDeployRollback{}, "rollback")
+	m.RegisterShorthand(&client.AppLog{}, "log")
+	m.RegisterShorthand(&client.AppInfo{}, "info")
+	m.RegisterShorthand(&client.ShellToContainerCmd{}, "shell")
 
 	m.Register(&client.ServiceInstanceInfo{})
 
@@ -361,16 +385,9 @@ Services aren’t managed by tsuru, but by their creators.`)
 		m.RegisterPlugin(&client.ExecutePlugin{PluginName: plugin})
 	}
 
-	registerExtraCommands(m)
 	m.RetryHook = retryHook
 	m.AfterFlagParseHook = initAuthorization
 	return m
-}
-
-func registerExtraCommands(m *cmd.Manager) {
-	for _, c := range cmd.ExtraCmds() {
-		m.Register(c)
-	}
 }
 
 func recoverCmdPanicExitError() {
@@ -383,7 +400,13 @@ func recoverCmdPanicExitError() {
 }
 
 func main() {
-	defer recoverCmdPanicExitError()
+	var err error
+	defer func() {
+		if err != nil {
+			os.Exit(1) // this will work only on V2 implementation
+		}
+	}()
+	defer recoverCmdPanicExitError() // TODO: remove on migration completion
 	defer config.SaveChangesWithTimeout()
 
 	checkVerResult := selfupdater.CheckLatestVersionBackground(version)
@@ -392,7 +415,7 @@ func main() {
 	name := cmd.ExtractProgramName(os.Args[0])
 
 	m := buildManager(name)
-	m.Run(os.Args[1:])
+	err = m.Run(os.Args[1:])
 }
 
 func initAuthorization() {
@@ -417,10 +440,10 @@ type versionCmd struct{}
 
 func (c *versionCmd) Info() *cmd.Info {
 	return &cmd.Info{
-		Name:    "version",
-		MinArgs: 0,
-		Usage:   "version",
-		Desc:    "display the current version",
+		Name: "version",
+
+		Usage: "version",
+		Desc:  "display the current version",
 	}
 }
 

@@ -16,6 +16,7 @@ import (
 	"github.com/tsuru/go-tsuruclient/pkg/config"
 	tsuruClientApp "github.com/tsuru/tsuru-client/tsuru/app"
 	"github.com/tsuru/tsuru-client/tsuru/cmd"
+	"github.com/tsuru/tsuru-client/tsuru/cmd/completions"
 	"github.com/tsuru/tsuru-client/tsuru/formatter"
 	tsuruHTTP "github.com/tsuru/tsuru-client/tsuru/http"
 )
@@ -55,7 +56,6 @@ The [[--no-date]] flag is optional and makes the log output without date.
 The [[--no-source]] flag is optional and makes the log output without source
 information, useful to very dense logs.
 `,
-		MinArgs: 0,
 	}
 }
 
@@ -161,6 +161,12 @@ func (c *AppLog) Run(context *cmd.Context) error {
 		}
 	}
 	return nil
+}
+
+var _ cmd.AutoCompleteCommand = &AppLog{}
+
+func (c *AppLog) Complete(args []string, toComplete string) ([]string, error) {
+	return completions.AppNameCompletionFunc(toComplete)
 }
 
 func (c *AppLog) Flags() *pflag.FlagSet {

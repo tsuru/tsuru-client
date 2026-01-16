@@ -1420,3 +1420,303 @@ func (s *S) TestServiceClientSideFilter(c *check.C) {
 		}
 	}
 }
+
+func (s *S) TestServiceInstanceAddComplete(c *check.C) {
+	result := `[{"Service":"mysql","ServiceInstances":[{"Name":"mysql01"}]},{"Service":"mongodb","ServiceInstances":[{"Name":"mongo01"}]}]`
+	trans := &cmdtest.ConditionalTransport{
+		Transport: cmdtest.Transport{Message: result, Status: http.StatusOK},
+		CondFunc: func(req *http.Request) bool {
+			return strings.HasSuffix(req.URL.Path, "/services/instances")
+		},
+	}
+	s.setupFakeTransport(trans)
+	cmd := &ServiceInstanceAdd{}
+	completions, err := cmd.Complete([]string{}, "m")
+	c.Assert(err, check.IsNil)
+	c.Assert(completions, check.DeepEquals, []string{"mysql", "mongodb"})
+}
+
+func (s *S) TestServiceInstanceAddCompleteNoArgs(c *check.C) {
+	result := `[{"Service":"mysql","ServiceInstances":[{"Name":"mysql01"}]}]`
+	trans := &cmdtest.ConditionalTransport{
+		Transport: cmdtest.Transport{Message: result, Status: http.StatusOK},
+		CondFunc: func(req *http.Request) bool {
+			return strings.HasSuffix(req.URL.Path, "/services/instances")
+		},
+	}
+	s.setupFakeTransport(trans)
+	cmd := &ServiceInstanceAdd{}
+	completions, err := cmd.Complete([]string{}, "")
+	c.Assert(err, check.IsNil)
+	c.Assert(completions, check.DeepEquals, []string{"mysql"})
+}
+
+func (s *S) TestServiceInstanceAddCompleteWithArgs(c *check.C) {
+	cmd := &ServiceInstanceAdd{}
+	completions, err := cmd.Complete([]string{"mysql"}, "my")
+	c.Assert(err, check.IsNil)
+	c.Assert(completions, check.IsNil)
+}
+
+func (s *S) TestServiceInstanceCompletionMixInCompleteServiceName(c *check.C) {
+	result := `[{"Service":"mysql","ServiceInstances":[{"Name":"mysql01"}]},{"Service":"mongodb","ServiceInstances":[{"Name":"mongo01"}]}]`
+	trans := &cmdtest.ConditionalTransport{
+		Transport: cmdtest.Transport{Message: result, Status: http.StatusOK},
+		CondFunc: func(req *http.Request) bool {
+			return strings.HasSuffix(req.URL.Path, "/services/instances")
+		},
+	}
+	s.setupFakeTransport(trans)
+	mixin := &ServiceInstanceCompletionMixIn{}
+	completions, err := mixin.Complete([]string{}, "m")
+	c.Assert(err, check.IsNil)
+	c.Assert(completions, check.DeepEquals, []string{"mysql", "mongodb"})
+}
+
+func (s *S) TestServiceInstanceCompletionMixInCompleteInstanceName(c *check.C) {
+	result := `[{"service":"mysql","service_instances":[{"name":"mysql01"},{"name":"mysql02"},{"name":"mydb"}]}]`
+	trans := &cmdtest.ConditionalTransport{
+		Transport: cmdtest.Transport{Message: result, Status: http.StatusOK},
+		CondFunc: func(req *http.Request) bool {
+			return strings.HasSuffix(req.URL.Path, "/services/instances") &&
+				req.URL.Query().Get("service") == "mysql"
+		},
+	}
+	s.setupFakeTransport(trans)
+	mixin := &ServiceInstanceCompletionMixIn{}
+	completions, err := mixin.Complete([]string{"mysql"}, "mysql")
+	c.Assert(err, check.IsNil)
+	c.Assert(completions, check.DeepEquals, []string{"mysql01", "mysql02"})
+}
+
+func (s *S) TestServiceInstanceCompletionMixInCompleteExtraArgs(c *check.C) {
+	mixin := &ServiceInstanceCompletionMixIn{}
+	completions, err := mixin.Complete([]string{"mysql", "mysql01"}, "any")
+	c.Assert(err, check.IsNil)
+	c.Assert(completions, check.IsNil)
+}
+
+func (s *S) TestServiceInfoComplete(c *check.C) {
+	result := `[{"Service":"mysql","ServiceInstances":[{"Name":"mysql01"}]},{"Service":"mongodb","ServiceInstances":[{"Name":"mongo01"}]}]`
+	trans := &cmdtest.ConditionalTransport{
+		Transport: cmdtest.Transport{Message: result, Status: http.StatusOK},
+		CondFunc: func(req *http.Request) bool {
+			return strings.HasSuffix(req.URL.Path, "/services/instances")
+		},
+	}
+	s.setupFakeTransport(trans)
+	cmd := &ServiceInfo{}
+	completions, err := cmd.Complete([]string{}, "m")
+	c.Assert(err, check.IsNil)
+	c.Assert(completions, check.DeepEquals, []string{"mysql", "mongodb"})
+}
+
+func (s *S) TestServiceInfoCompleteWithArgs(c *check.C) {
+	cmd := &ServiceInfo{}
+	completions, err := cmd.Complete([]string{"mysql"}, "any")
+	c.Assert(err, check.IsNil)
+	c.Assert(completions, check.IsNil)
+}
+
+func (s *S) TestServicePlanListComplete(c *check.C) {
+	result := `[{"Service":"mysql","ServiceInstances":[{"Name":"mysql01"}]},{"Service":"mongodb","ServiceInstances":[{"Name":"mongo01"}]}]`
+	trans := &cmdtest.ConditionalTransport{
+		Transport: cmdtest.Transport{Message: result, Status: http.StatusOK},
+		CondFunc: func(req *http.Request) bool {
+			return strings.HasSuffix(req.URL.Path, "/services/instances")
+		},
+	}
+	s.setupFakeTransport(trans)
+	cmd := &ServicePlanList{}
+	completions, err := cmd.Complete([]string{}, "m")
+	c.Assert(err, check.IsNil)
+	c.Assert(completions, check.DeepEquals, []string{"mysql", "mongodb"})
+}
+
+func (s *S) TestServicePlanListCompleteWithArgs(c *check.C) {
+	cmd := &ServicePlanList{}
+	completions, err := cmd.Complete([]string{"mysql"}, "any")
+	c.Assert(err, check.IsNil)
+	c.Assert(completions, check.IsNil)
+}
+
+func (s *S) TestServiceInstanceGrantCompleteServiceName(c *check.C) {
+	result := `[{"Service":"mysql","ServiceInstances":[{"Name":"mysql01"}]},{"Service":"mongodb","ServiceInstances":[{"Name":"mongo01"}]}]`
+	trans := &cmdtest.ConditionalTransport{
+		Transport: cmdtest.Transport{Message: result, Status: http.StatusOK},
+		CondFunc: func(req *http.Request) bool {
+			return strings.HasSuffix(req.URL.Path, "/services/instances")
+		},
+	}
+	s.setupFakeTransport(trans)
+	cmd := &ServiceInstanceGrant{}
+	completions, err := cmd.Complete([]string{}, "m")
+	c.Assert(err, check.IsNil)
+	c.Assert(completions, check.DeepEquals, []string{"mysql", "mongodb"})
+}
+
+func (s *S) TestServiceInstanceGrantCompleteInstanceName(c *check.C) {
+	result := `[{"service":"mysql","service_instances":[{"name":"mysql01"},{"name":"mysql02"}]}]`
+	trans := &cmdtest.ConditionalTransport{
+		Transport: cmdtest.Transport{Message: result, Status: http.StatusOK},
+		CondFunc: func(req *http.Request) bool {
+			return strings.HasSuffix(req.URL.Path, "/services/instances") &&
+				req.URL.Query().Get("service") == "mysql"
+		},
+	}
+	s.setupFakeTransport(trans)
+	cmd := &ServiceInstanceGrant{}
+	completions, err := cmd.Complete([]string{"mysql"}, "mysql")
+	c.Assert(err, check.IsNil)
+	c.Assert(completions, check.DeepEquals, []string{"mysql01", "mysql02"})
+}
+
+func (s *S) TestServiceInstanceGrantCompleteTeamName(c *check.C) {
+	result := `[{"name":"team1"},{"name":"team2"},{"name":"myteam"}]`
+	trans := &cmdtest.ConditionalTransport{
+		Transport: cmdtest.Transport{Message: result, Status: http.StatusOK},
+		CondFunc: func(req *http.Request) bool {
+			return strings.HasSuffix(req.URL.Path, "/teams")
+		},
+	}
+	s.setupFakeTransport(trans)
+	cmd := &ServiceInstanceGrant{}
+	completions, err := cmd.Complete([]string{"mysql", "mysql01"}, "team")
+	c.Assert(err, check.IsNil)
+	c.Assert(completions, check.DeepEquals, []string{"team1", "team2"})
+}
+
+func (s *S) TestServiceInstanceGrantCompleteExtraArgs(c *check.C) {
+	cmd := &ServiceInstanceGrant{}
+	completions, err := cmd.Complete([]string{"mysql", "mysql01", "team1"}, "any")
+	c.Assert(err, check.IsNil)
+	c.Assert(completions, check.IsNil)
+}
+
+func (s *S) TestServiceInstanceRevokeCompleteServiceName(c *check.C) {
+	result := `[{"Service":"mysql","ServiceInstances":[{"Name":"mysql01"}]},{"Service":"mongodb","ServiceInstances":[{"Name":"mongo01"}]}]`
+	trans := &cmdtest.ConditionalTransport{
+		Transport: cmdtest.Transport{Message: result, Status: http.StatusOK},
+		CondFunc: func(req *http.Request) bool {
+			return strings.HasSuffix(req.URL.Path, "/services/instances")
+		},
+	}
+	s.setupFakeTransport(trans)
+	cmd := &ServiceInstanceRevoke{}
+	completions, err := cmd.Complete([]string{}, "m")
+	c.Assert(err, check.IsNil)
+	c.Assert(completions, check.DeepEquals, []string{"mysql", "mongodb"})
+}
+
+func (s *S) TestServiceInstanceRevokeCompleteInstanceName(c *check.C) {
+	result := `[{"service":"mysql","service_instances":[{"name":"mysql01"},{"name":"mysql02"}]}]`
+	trans := &cmdtest.ConditionalTransport{
+		Transport: cmdtest.Transport{Message: result, Status: http.StatusOK},
+		CondFunc: func(req *http.Request) bool {
+			return strings.HasSuffix(req.URL.Path, "/services/instances") &&
+				req.URL.Query().Get("service") == "mysql"
+		},
+	}
+	s.setupFakeTransport(trans)
+	cmd := &ServiceInstanceRevoke{}
+	completions, err := cmd.Complete([]string{"mysql"}, "mysql")
+	c.Assert(err, check.IsNil)
+	c.Assert(completions, check.DeepEquals, []string{"mysql01", "mysql02"})
+}
+
+func (s *S) TestServiceInstanceRevokeCompleteTeamName(c *check.C) {
+	result := `[{"name":"team1"},{"name":"team2"},{"name":"myteam"}]`
+	trans := &cmdtest.ConditionalTransport{
+		Transport: cmdtest.Transport{Message: result, Status: http.StatusOK},
+		CondFunc: func(req *http.Request) bool {
+			return strings.HasSuffix(req.URL.Path, "/teams")
+		},
+	}
+	s.setupFakeTransport(trans)
+	cmd := &ServiceInstanceRevoke{}
+	completions, err := cmd.Complete([]string{"mysql", "mysql01"}, "team")
+	c.Assert(err, check.IsNil)
+	c.Assert(completions, check.DeepEquals, []string{"team1", "team2"})
+}
+
+func (s *S) TestServiceInstanceRevokeCompleteExtraArgs(c *check.C) {
+	cmd := &ServiceInstanceRevoke{}
+	completions, err := cmd.Complete([]string{"mysql", "mysql01", "team1"}, "any")
+	c.Assert(err, check.IsNil)
+	c.Assert(completions, check.IsNil)
+}
+
+func (s *S) TestServiceInstanceUpdateComplete(c *check.C) {
+	result := `[{"Service":"mysql","ServiceInstances":[{"Name":"mysql01"}]},{"Service":"mongodb","ServiceInstances":[{"Name":"mongo01"}]}]`
+	trans := &cmdtest.ConditionalTransport{
+		Transport: cmdtest.Transport{Message: result, Status: http.StatusOK},
+		CondFunc: func(req *http.Request) bool {
+			return strings.HasSuffix(req.URL.Path, "/services/instances")
+		},
+	}
+	s.setupFakeTransport(trans)
+	cmd := &ServiceInstanceUpdate{}
+	completions, err := cmd.Complete([]string{}, "m")
+	c.Assert(err, check.IsNil)
+	c.Assert(completions, check.DeepEquals, []string{"mysql", "mongodb"})
+}
+
+func (s *S) TestServiceInstanceBindComplete(c *check.C) {
+	result := `[{"Service":"mysql","ServiceInstances":[{"Name":"mysql01"}]},{"Service":"mongodb","ServiceInstances":[{"Name":"mongo01"}]}]`
+	trans := &cmdtest.ConditionalTransport{
+		Transport: cmdtest.Transport{Message: result, Status: http.StatusOK},
+		CondFunc: func(req *http.Request) bool {
+			return strings.HasSuffix(req.URL.Path, "/services/instances")
+		},
+	}
+	s.setupFakeTransport(trans)
+	cmd := &ServiceInstanceBind{}
+	completions, err := cmd.Complete([]string{}, "m")
+	c.Assert(err, check.IsNil)
+	c.Assert(completions, check.DeepEquals, []string{"mysql", "mongodb"})
+}
+
+func (s *S) TestServiceInstanceUnbindComplete(c *check.C) {
+	result := `[{"Service":"mysql","ServiceInstances":[{"Name":"mysql01"}]},{"Service":"mongodb","ServiceInstances":[{"Name":"mongo01"}]}]`
+	trans := &cmdtest.ConditionalTransport{
+		Transport: cmdtest.Transport{Message: result, Status: http.StatusOK},
+		CondFunc: func(req *http.Request) bool {
+			return strings.HasSuffix(req.URL.Path, "/services/instances")
+		},
+	}
+	s.setupFakeTransport(trans)
+	cmd := &ServiceInstanceUnbind{}
+	completions, err := cmd.Complete([]string{}, "m")
+	c.Assert(err, check.IsNil)
+	c.Assert(completions, check.DeepEquals, []string{"mysql", "mongodb"})
+}
+
+func (s *S) TestServiceInstanceInfoComplete(c *check.C) {
+	result := `[{"Service":"mysql","ServiceInstances":[{"Name":"mysql01"}]},{"Service":"mongodb","ServiceInstances":[{"Name":"mongo01"}]}]`
+	trans := &cmdtest.ConditionalTransport{
+		Transport: cmdtest.Transport{Message: result, Status: http.StatusOK},
+		CondFunc: func(req *http.Request) bool {
+			return strings.HasSuffix(req.URL.Path, "/services/instances")
+		},
+	}
+	s.setupFakeTransport(trans)
+	cmd := &ServiceInstanceInfo{}
+	completions, err := cmd.Complete([]string{}, "m")
+	c.Assert(err, check.IsNil)
+	c.Assert(completions, check.DeepEquals, []string{"mysql", "mongodb"})
+}
+
+func (s *S) TestServiceInstanceRemoveComplete(c *check.C) {
+	result := `[{"Service":"mysql","ServiceInstances":[{"Name":"mysql01"}]},{"Service":"mongodb","ServiceInstances":[{"Name":"mongo01"}]}]`
+	trans := &cmdtest.ConditionalTransport{
+		Transport: cmdtest.Transport{Message: result, Status: http.StatusOK},
+		CondFunc: func(req *http.Request) bool {
+			return strings.HasSuffix(req.URL.Path, "/services/instances")
+		},
+	}
+	s.setupFakeTransport(trans)
+	cmd := &ServiceInstanceRemove{}
+	completions, err := cmd.Complete([]string{}, "m")
+	c.Assert(err, check.IsNil)
+	c.Assert(completions, check.DeepEquals, []string{"mysql", "mongodb"})
+}

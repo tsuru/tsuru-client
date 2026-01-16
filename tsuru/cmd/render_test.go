@@ -25,3 +25,13 @@ func (s *S) TestColorBoldYellowGreenBG(c *check.C) {
 	output := Colorfy("must return a bold yellow with green background", "yellow", "green", "bold")
 	c.Assert(output, check.Equals, "\033[1;33;42mmust return a bold yellow with green background\033[0m")
 }
+
+func (s *S) TestColorGray(c *check.C) {
+	output := Colorfy("must return a gray font pattern", "gray", "", "")
+	c.Assert(output, check.Equals, "\033[0;90;10mmust return a gray font pattern\033[0m")
+}
+
+func (s *S) TestColorBoldGray(c *check.C) {
+	output := Colorfy("must return a bold gray font pattern", "gray", "", "bold")
+	c.Assert(output, check.Equals, "\033[1;90;10mmust return a bold gray font pattern\033[0m")
+}

@@ -96,10 +96,9 @@ func (c *MetadataGet) Flags() *pflag.FlagSet {
 
 func (c *MetadataGet) Info() *cmd.Info {
 	return &cmd.Info{
-		Name:    "metadata-get",
-		Usage:   "metadata get <-a/--app appname | -j/--job jobname>",
-		Desc:    `Retrieves metadata for an application or job.`,
-		MinArgs: 0,
+		Name:  "metadata-get",
+		Usage: "metadata get <-a/--app appname | -j/--job jobname>",
+		Desc:  `Retrieves metadata for an application or job.`,
 	}
 }
 

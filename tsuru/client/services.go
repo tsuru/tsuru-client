@@ -22,6 +22,7 @@ import (
 	"github.com/tsuru/go-tsuruclient/pkg/tsuru"
 	"github.com/tsuru/tablecli"
 	"github.com/tsuru/tsuru-client/tsuru/cmd"
+	"github.com/tsuru/tsuru-client/tsuru/cmd/completions"
 	"github.com/tsuru/tsuru-client/tsuru/cmd/standards"
 	"github.com/tsuru/tsuru-client/tsuru/formatter"
 	tsuruHTTP "github.com/tsuru/tsuru-client/tsuru/http"
@@ -268,6 +269,15 @@ This example shows how to add a new instance of **mongodb** service, named
 	}
 }
 
+var _ cmd.AutoCompleteCommand = &ServiceInstanceAdd{}
+
+func (c *ServiceInstanceAdd) Complete(args []string, toComplete string) ([]string, error) {
+	if len(args) == 0 {
+		return completions.ServiceNameCompletionFunc(toComplete)
+	}
+	return nil, nil
+}
+
 func (c *ServiceInstanceAdd) Run(ctx *cmd.Context) error {
 	serviceName, instanceName := ctx.Args[0], ctx.Args[1]
 	var plan string
@@ -330,7 +340,23 @@ func (c *ServiceInstanceAdd) Flags() *pflag.FlagSet {
 	return c.fs
 }
 
+type ServiceInstanceCompletionMixIn struct{}
+
+func (c *ServiceInstanceCompletionMixIn) Complete(args []string, toComplete string) ([]string, error) {
+	if len(args) == 0 {
+		return completions.ServiceNameCompletionFunc(toComplete)
+	}
+	if len(args) == 1 {
+		return completions.ServiceInstanceCompletionFunc(args[0], toComplete)
+	}
+	return nil, nil
+}
+
+var _ cmd.AutoCompleteCommand = &ServiceInstanceUpdate{}
+
 type ServiceInstanceUpdate struct {
+	ServiceInstanceCompletionMixIn
+
 	fs           *pflag.FlagSet
 	teamOwner    string
 	description  string
@@ -446,7 +472,11 @@ func (c *ServiceInstanceUpdate) Flags() *pflag.FlagSet {
 	return c.fs
 }
 
+var _ cmd.AutoCompleteCommand = &ServiceInstanceBind{}
+
 type ServiceInstanceBind struct {
+	ServiceInstanceCompletionMixIn
+
 	appName   string
 	jobName   string
 	fs        *pflag.FlagSet
@@ -516,7 +546,11 @@ func (sb *ServiceInstanceBind) Flags() *pflag.FlagSet {
 	return sb.fs
 }
 
+var _ cmd.AutoCompleteCommand = &ServiceInstanceUnbind{}
+
 type ServiceInstanceUnbind struct {
+	ServiceInstanceCompletionMixIn
+
 	appName   string
 	jobName   string
 	fs        *pflag.FlagSet
@@ -585,7 +619,10 @@ func (su *ServiceInstanceUnbind) Flags() *pflag.FlagSet {
 	return su.fs
 }
 
+var _ cmd.AutoCompleteCommand = &ServiceInstanceInfo{}
+
 type ServiceInstanceInfo struct {
+	ServiceInstanceCompletionMixIn
 	fs   *pflag.FlagSet
 	json bool
 }
@@ -769,6 +806,15 @@ to), and apps bound to these instances.`,
 	}
 }
 
+var _ cmd.AutoCompleteCommand = &ServiceInfo{}
+
+func (c *ServiceInfo) Complete(args []string, toComplete string) ([]string, error) {
+	if len(args) == 0 {
+		return completions.ServiceNameCompletionFunc(toComplete)
+	}
+	return nil, nil
+}
+
 type ServicePlanList struct {
 	fs   *pflag.FlagSet
 	pool string
@@ -790,6 +836,15 @@ func (c *ServicePlanList) Flags() *pflag.FlagSet {
 		c.fs.StringVarP(&c.pool, standards.FlagPool, "p", "", flagDesc)
 	}
 	return c.fs
+}
+
+var _ cmd.AutoCompleteCommand = &ServicePlanList{}
+
+func (c *ServicePlanList) Complete(args []string, toComplete string) ([]string, error) {
+	if len(args) == 0 {
+		return completions.ServiceNameCompletionFunc(toComplete)
+	}
+	return nil, nil
 }
 
 func (c *ServicePlanList) Run(ctx *cmd.Context) error {
@@ -1062,8 +1117,11 @@ func (c *ServiceInfo) fetchPlans(serviceName string) ([]plan, error) {
 	return plans, nil
 }
 
+var _ cmd.AutoCompleteCommand = &ServiceInstanceRemove{}
+
 type ServiceInstanceRemove struct {
 	cmd.ConfirmationCommand
+	ServiceInstanceCompletionMixIn
 	fs           *pflag.FlagSet
 	force        bool
 	ignoreErrors bool
@@ -1118,7 +1176,11 @@ func (c *ServiceInstanceRemove) Flags() *pflag.FlagSet {
 	return c.fs
 }
 
-type ServiceInstanceGrant struct{}
+var _ cmd.AutoCompleteCommand = &ServiceInstanceGrant{}
+
+type ServiceInstanceGrant struct {
+	ServiceInstanceCompletionMixIn
+}
 
 func (c *ServiceInstanceGrant) Info() *cmd.Info {
 	return &cmd.Info{
@@ -1127,6 +1189,14 @@ func (c *ServiceInstanceGrant) Info() *cmd.Info {
 		Desc:    `Grant access to team in a service instance.`,
 		MinArgs: 3,
 	}
+}
+
+func (c *ServiceInstanceGrant) Complete(args []string, toComplete string) ([]string, error) {
+	if len(args) == 2 {
+		return completions.TeamNameCompletionFunc(toComplete)
+	}
+
+	return c.ServiceInstanceCompletionMixIn.Complete(args, toComplete)
 }
 
 func (c *ServiceInstanceGrant) Run(ctx *cmd.Context) error {
@@ -1150,7 +1220,19 @@ func (c *ServiceInstanceGrant) Run(ctx *cmd.Context) error {
 	return nil
 }
 
-type ServiceInstanceRevoke struct{}
+var _ cmd.AutoCompleteCommand = &ServiceInstanceRevoke{}
+
+type ServiceInstanceRevoke struct {
+	ServiceInstanceCompletionMixIn
+}
+
+func (c *ServiceInstanceRevoke) Complete(args []string, toComplete string) ([]string, error) {
+	if len(args) == 2 {
+		return completions.TeamNameCompletionFunc(toComplete)
+	}
+
+	return c.ServiceInstanceCompletionMixIn.Complete(args, toComplete)
+}
 
 func (c *ServiceInstanceRevoke) Info() *cmd.Info {
 	return &cmd.Info{

@@ -44,10 +44,9 @@ func (c *PlanList) Flags() *pflag.FlagSet {
 
 func (c *PlanList) Info() *cmd.Info {
 	return &cmd.Info{
-		Name:    "plan-list",
-		Usage:   "plan list [--bytes][--kubernetes-friendly][--show-max-cpu-burst-allowed]",
-		Desc:    "List available plans that can be used when creating an app.",
-		MinArgs: 0,
+		Name:  "plan-list",
+		Usage: "plan list [--bytes][--kubernetes-friendly][--show-max-cpu-burst-allowed]",
+		Desc:  "List available plans that can be used when creating an app.",
 	}
 }
 

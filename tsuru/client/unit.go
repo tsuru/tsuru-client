@@ -199,8 +199,9 @@ func (c *UnitSet) Info() *cmd.Info {
 	return &cmd.Info{
 		Name:  "unit-set",
 		Usage: "unit set <# of units> [-a/--app appname] [-p/--process processname] [--version version]",
-		Desc: `Set the number of units for a process of an application, adding or removing units as needed. You need to have access to the
-app to be able to set the number of units for it. The process flag is optional if the app has only 1 process.`,
+		Desc: `Set the number of units for a process of an application, adding or removing units as needed.
+You need to have access to the app to be able to set the number of units for it.
+The process flag is optional if the app has only 1 process.`,
 		MinArgs: 1,
 	}
 }

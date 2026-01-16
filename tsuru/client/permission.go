@@ -257,10 +257,9 @@ type RoleList struct{}
 
 func (c *RoleList) Info() *cmd.Info {
 	return &cmd.Info{
-		Name:    "role-list",
-		Usage:   "role list",
-		Desc:    `List all existing roles.`,
-		MinArgs: 0,
+		Name:  "role-list",
+		Usage: "role list",
+		Desc:  `List all existing roles.`,
 	}
 }
 
