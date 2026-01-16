@@ -239,7 +239,7 @@ func (s *S) TestServiceTemplateInfo(c *check.C) {
 	got := (&ServiceTemplate{}).Info()
 	expected := &cmd.Info{
 		Name:  "service-template",
-		Usage: "service-template",
+		Usage: "service template",
 		Desc:  "Generates a manifest template file and places it in current directory",
 	}
 	c.Assert(got, check.DeepEquals, expected)
