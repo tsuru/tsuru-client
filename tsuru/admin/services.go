@@ -241,11 +241,9 @@ func (c *ServiceDocGet) Info() *cmd.Info {
 type ServiceTemplate struct{}
 
 func (c *ServiceTemplate) Info() *cmd.Info {
-	usg := `service template
-e.g.: $ tsuru service template template`
 	return &cmd.Info{
 		Name:  "service-template",
-		Usage: usg,
+		Usage: "service template",
 		Desc:  "Generates a manifest template file and places it in current directory",
 	}
 }
