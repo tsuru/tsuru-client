@@ -16,7 +16,6 @@ import (
 // ManagerV2 is responsible for managing the commands using cobra for tsuru-client.
 // this intends to replace the old Manager struct in the future.
 type ManagerV2 struct {
-	Enabled     bool
 	rootCmd     *cobra.Command
 	tree        *v2.CmdNode
 	contexts    []*Context
@@ -35,7 +34,6 @@ func NewManagerV2(opts ...*ManagerV2Opts) *ManagerV2 {
 	rootCmd := v2.NewRootCmd()
 
 	m := &ManagerV2{
-		Enabled: v2.Enabled(),
 		rootCmd: rootCmd,
 		tree:    v2.NewCmdNode(rootCmd),
 	}
@@ -51,6 +49,10 @@ func NewManagerV2(opts ...*ManagerV2Opts) *ManagerV2 {
 		m.retryHook = opts[0].RetryHook
 	}
 	return m
+}
+
+func (m *ManagerV2) Cobra() *cobra.Command {
+	return m.rootCmd
 }
 
 func (m *ManagerV2) RegisterTopic(name, content string) {
@@ -85,12 +87,19 @@ func (m *ManagerV2) RegisterTopic(name, content string) {
 	}
 }
 
+func (m *ManagerV2) RegisterDeprecated(command Command, oldName string) {
+	deprecatedCmd := &DeprecatedCommand{Command: command, oldName: oldName}
+
+	m.Register(command)
+	m.Register(deprecatedCmd)
+}
+
+func (m *ManagerV2) RegisterShorthand(command Command, shorthand string) {
+	m.Register(&ShorthandCommand{Command: command, shorthand: shorthand})
+}
+
 func (m *ManagerV2) Register(command Command) {
 	info := command.Info()
-
-	if info.V2.Disabled {
-		return
-	}
 
 	// 1. Legacy way to interact on tsuru-client
 	// ex: tsuru app-deploy tsuru app-list
@@ -265,10 +274,6 @@ func (m *ManagerV2) Finish() {
 func (m *ManagerV2) registerV2FQDNOnRoot(command Command) {
 	info := command.Info()
 
-	if info.V2.Disabled {
-		return
-	}
-
 	fqdn := info.Name
 
 	newCmd := &cobra.Command{
@@ -283,7 +288,6 @@ func (m *ManagerV2) registerV2FQDNOnRoot(command Command) {
 }
 
 type InfoV2 struct {
-	Disabled            bool
 	Hidden              bool
 	OnlyAppendOnRoot    bool
 	GroupID             string

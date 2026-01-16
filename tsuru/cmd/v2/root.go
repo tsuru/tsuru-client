@@ -17,10 +17,6 @@ import (
 
 var defaultViper = preSetupViper(nil)
 
-func Enabled() bool {
-	return defaultViper.GetString("version") != "v1"
-}
-
 func NewRootCmd() *cobra.Command {
 	rootCmd := &cobra.Command{
 		Use:   "tsuru",
@@ -38,7 +34,6 @@ func NewRootCmd() *cobra.Command {
 	setupPFlagsAndCommands(rootCmd)
 
 	rootCmd.AddCommand(generateDocCmd())
-
 	return rootCmd
 }
 func setupPFlagsAndCommands(rootCmd *cobra.Command) {

@@ -129,29 +129,6 @@ func TestManagerV2_Register(t *testing.T) {
 		assert.Equal(t, "List all apps", manager.tree.Children["app"].Children["list"].Command.Short)
 	})
 
-	t.Run("register_command_disabled", func(t *testing.T) {
-		manager := NewManagerV2()
-
-		cmd := &mockCommand{
-			info: &Info{
-				Name: "disabled-cmd",
-				Desc: "This command is disabled",
-				V2: InfoV2{
-					Disabled: true,
-				},
-			},
-		}
-
-		manager.Register(cmd)
-
-		// Should not register anything
-		rootCommands := manager.rootCmd.Commands()
-		for _, c := range rootCommands {
-			assert.NotEqual(t, "disabled-cmd", c.Use)
-		}
-		assert.Nil(t, manager.tree.Children["disabled"])
-	})
-
 	t.Run("register_command_only_append_on_root", func(t *testing.T) {
 		manager := NewManagerV2()
 
@@ -367,25 +344,6 @@ func TestManagerV2_registerV2FQDNOnRoot(t *testing.T) {
 				assert.False(t, c.Hidden)
 			}
 		}
-	})
-
-	t.Run("skip_if_disabled", func(t *testing.T) {
-		manager := NewManagerV2()
-
-		cmd := &mockCommand{
-			info: &Info{
-				Name: "disabled-cmd",
-				V2: InfoV2{
-					Disabled: true,
-				},
-			},
-		}
-
-		initialCommandCount := len(manager.rootCmd.Commands())
-		manager.registerV2FQDNOnRoot(cmd)
-		finalCommandCount := len(manager.rootCmd.Commands())
-
-		assert.Equal(t, initialCommandCount, finalCommandCount)
 	})
 
 	t.Run("register_fqdn_with_common_aliases_reads_from_map", func(t *testing.T) {
