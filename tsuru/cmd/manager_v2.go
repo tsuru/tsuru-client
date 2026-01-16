@@ -1,6 +1,7 @@
 package cmd
 
 import (
+	"context"
 	"fmt"
 	"os"
 	"os/signal"
@@ -107,18 +108,21 @@ func (m *ManagerV2) SetFlagCompletions(completions map[string]CompletionFunc) {
 	m.completions = completions
 }
 
-func (m *ManagerV2) Run() {
-	err := m.rootCmd.Execute()
+func (m *ManagerV2) Run() error {
+	ctx := context.Background()
+	cmd, err := m.rootCmd.ExecuteContextC(ctx)
 
 	if m.retryHook != nil && err != nil {
 		if retry := m.retryHook(err); retry {
-			err = m.rootCmd.Execute()
+			cmd, err = m.rootCmd.ExecuteContextC(ctx)
 		}
 	}
 
 	if err != nil {
-		os.Exit(1)
+		cmd.Println(cmd.UsageString())
 	}
+
+	return err
 }
 
 func (m *ManagerV2) registerV2SubCommand(command Command) {

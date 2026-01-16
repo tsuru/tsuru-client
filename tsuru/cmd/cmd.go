@@ -230,12 +230,15 @@ func (m *Manager) SetFlagCompletions(completions map[string]CompletionFunc) {
 	}
 }
 
-func (m *Manager) Run(args []string) {
+func (m *Manager) Run(args []string) error {
 	if m.v2.Enabled {
 		defer m.finisher()
-		m.v2.Run()
-		return
+		return m.v2.Run()
 	}
+
+	// Migration Point: on V1
+	// err above always return nil
+
 	var (
 		status         int
 		verbosity      int
@@ -257,7 +260,7 @@ func (m *Manager) Run(args []string) {
 	if parseErr != nil {
 		fmt.Fprint(m.stderr, parseErr)
 		m.finisher().Exit(2)
-		return
+		return nil
 	}
 	args = flagset.Args()
 	args = m.normalizeCommandArgs(args)
@@ -290,9 +293,9 @@ func (m *Manager) Run(args []string) {
 		if err != nil && err != ErrLookup {
 			fmt.Fprint(m.stderr, err)
 			m.finisher().Exit(1)
-			return
+			return nil
 		} else if err == nil {
-			return
+			return nil
 		}
 	}
 	name := args[0]
@@ -300,7 +303,7 @@ func (m *Manager) Run(args []string) {
 	if !ok {
 		if msg, isTopic := m.tryImplicitTopic(args); isTopic {
 			fmt.Fprint(m.stdout, msg)
-			return
+			return nil
 		}
 
 		topicBasedName := m.findTopicBasedCommand(args)
@@ -333,7 +336,7 @@ func (m *Manager) Run(args []string) {
 			}
 		}
 		m.finisher().Exit(1)
-		return
+		return nil
 	}
 	args = args[1:]
 	info := command.Info()
@@ -341,7 +344,7 @@ func (m *Manager) Run(args []string) {
 	if err != nil {
 		fmt.Fprint(m.stderr, err)
 		m.finisher().Exit(1)
-		return
+		return nil
 	}
 	if info.fail {
 		command = m.Commands["help"]
@@ -408,6 +411,7 @@ func (m *Manager) Run(args []string) {
 		status = 1
 	}
 	m.finisher().Exit(status)
+	return nil
 }
 
 func (m *Manager) findTopicBasedCommand(args []string) string {

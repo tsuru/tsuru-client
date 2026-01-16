@@ -401,7 +401,13 @@ func recoverCmdPanicExitError() {
 }
 
 func main() {
-	defer recoverCmdPanicExitError()
+	var err error
+	defer func() {
+		if err != nil {
+			os.Exit(1) // this will works only on V2 implementation
+		}
+	}()
+	defer recoverCmdPanicExitError() // TODO: remove on migration completion
 	defer config.SaveChangesWithTimeout()
 
 	checkVerResult := selfupdater.CheckLatestVersionBackground(version)
@@ -410,7 +416,7 @@ func main() {
 	name := cmd.ExtractProgramName(os.Args[0])
 
 	m := buildManager(name)
-	m.Run(os.Args[1:])
+	err = m.Run(os.Args[1:])
 }
 
 func initAuthorization() {
