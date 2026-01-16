@@ -404,7 +404,7 @@ func main() {
 	var err error
 	defer func() {
 		if err != nil {
-			os.Exit(1) // this will works only on V2 implementation
+			os.Exit(1) // this will work only on V2 implementation
 		}
 	}()
 	defer recoverCmdPanicExitError() // TODO: remove on migration completion

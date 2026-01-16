@@ -242,7 +242,7 @@ func RouterNameCompletionFunc(toComplete string) ([]string, error) {
 }
 
 func ServiceNameCompletionFunc(toComplete string) ([]string, error) {
-	// unfortunately we can't use the /services endpoint here because it not optimized to list only service names
+	// unfortunately we can't use the /services endpoint here because it is not optimized to list only service names
 	url, err := config.GetURL("/services/instances")
 	if err != nil {
 		return nil, err
