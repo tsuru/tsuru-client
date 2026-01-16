@@ -181,35 +181,6 @@ func (m *Manager) RegisterShorthand(command Command, shorthand string) {
 	}
 }
 
-type RemovedCommand struct {
-	Name string
-	Help string
-}
-
-func (c *RemovedCommand) Info() *Info {
-	return &Info{
-		Name:  c.Name,
-		Usage: c.Name,
-		Desc:  fmt.Sprintf("This command was removed. %s", c.Help),
-		fail:  true,
-	}
-}
-
-func (c *RemovedCommand) Run(context *Context) error {
-	return ErrAbortCommand
-}
-
-func (m *Manager) RegisterRemoved(name string, help string) {
-	if m.Commands == nil {
-		m.Commands = make(map[string]Command)
-	}
-	_, found := m.Commands[name]
-	if found {
-		panic(fmt.Sprintf("command already registered: %s", name))
-	}
-	m.Commands[name] = &RemovedCommand{Name: name, Help: help}
-}
-
 func (m *Manager) RegisterTopic(name, content string) {
 	if m.v2 != nil && m.v2.Enabled {
 		m.v2.RegisterTopic(name, content)
@@ -836,4 +807,8 @@ func validateVersion(supported, current string) bool {
 
 func (m *Manager) SetExiter(e exiter) {
 	m.e = e
+}
+
+func (m *Manager) V2() *ManagerV2 {
+	return m.v2
 }

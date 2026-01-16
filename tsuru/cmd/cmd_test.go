@@ -65,17 +65,6 @@ func (s *S) TestRegisterDeprecated(c *check.C) {
 	c.Assert(globalManager.Commands["foo"], check.Equals, originalCmd)
 }
 
-func (s *S) TestRegisterRemoved(c *check.C) {
-	globalManager.RegisterRemoved("spoon", "There is no spoon.")
-	_, ok := globalManager.Commands["spoon"].(*RemovedCommand)
-	c.Assert(ok, check.Equals, true)
-	var stdout, stderr bytes.Buffer
-	globalManager.stdout = &stdout
-	globalManager.stderr = &stderr
-	globalManager.Run([]string{"spoon"})
-	c.Assert(stdout.String(), check.Matches, "(?s).*This command was removed. There is no spoon.*")
-}
-
 func (s *S) TestRegisterTopic(c *check.C) {
 	mngr := Manager{}
 	mngr.RegisterTopic("target", "targeting everything!")
@@ -223,6 +212,7 @@ func (s *S) TestCustomLookup(c *check.C) {
 	}
 	var stdout, stderr bytes.Buffer
 	mngr := NewManager("glb", &stdout, &stderr, os.Stdin, lookup)
+	mngr.v2.Enabled = false // V1-specific test
 	var exiter recordingExiter
 	mngr.e = &exiter
 	mngr.Run([]string{"custom"})
@@ -235,6 +225,7 @@ func (s *S) TestCustomLookupNotFound(c *check.C) {
 	}
 	var stdout, stderr bytes.Buffer
 	mngr := NewManager("glb", &stdout, &stderr, os.Stdin, lookup)
+	mngr.v2.Enabled = false // V1-specific test
 	var exiter recordingExiter
 	mngr.e = &exiter
 	mngr.Register(&TestCommand{})
@@ -1012,6 +1003,7 @@ func (s *S) TestNewManagerPanicExiter(c *check.C) {
 
 	var stdout, stderr bytes.Buffer
 	mngr := NewManagerPanicExiter("glb", &stdout, &stderr, os.Stdin, lookup)
+	mngr.v2.Enabled = false // V1-specific test
 	mngr.Run([]string{"custom"})
 	c.Assert("This code is never called", check.Equals, "Because Panic occurred")
 }

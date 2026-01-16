@@ -18,7 +18,7 @@ import (
 var defaultViper = preSetupViper(nil)
 
 func Enabled() bool {
-	return defaultViper.GetString("version") == "v2"
+	return defaultViper.GetString("version") != "v1"
 }
 
 func NewRootCmd() *cobra.Command {

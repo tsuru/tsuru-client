@@ -288,6 +288,7 @@ func (s *S) TestPluginLookup(c *check.C) {
 		client.Execut = nil
 	}()
 	manager = buildManager("tsuru")
+	manager.V2().Enabled = false // V1-specific test
 	manager.Run([]string{"myplugin"})
 	pluginPath := config.JoinWithUserDir(".tsuru", "plugins", "myplugin")
 	c.Assert(fexec.ExecutedCmd(pluginPath, []string{}), check.Equals, true)
@@ -443,6 +444,7 @@ func (s *S) TestServiceTemplateIsRegistered(c *check.C) {
 func (s *S) TestInvalidCommandTopicMatch(c *check.C) {
 	var stdout, stderr bytes.Buffer
 	mngr := buildManagerCustom("tsuru", &stdout, &stderr)
+	mngr.V2().Enabled = false // V1-specific test
 
 	mngr.Run([]string{"target"})
 
@@ -475,6 +477,7 @@ func (s *S) TestInvalidCommandFuzzyMatch02(c *check.C) {
 	var exiter recordingExiter
 	var stdout, stderr bytes.Buffer
 	mngr := buildManagerCustom("tsuru", &stdout, &stderr)
+	mngr.V2().Enabled = false // V1-specific test
 	mngr.SetExiter(&exiter)
 	mngr.Run([]string{"target lisr"})
 	expectedOutput := `.*: "target lisr" is not a tsuru command. See "tsuru help".	
@@ -491,6 +494,7 @@ func (s *S) TestInvalidCommandFuzzyMatch03(c *check.C) {
 	var exiter recordingExiter
 	var stdout, stderr bytes.Buffer
 	mngr := buildManagerCustom("tsuru", &stdout, &stderr)
+	mngr.V2().Enabled = false // V1-specific test
 	mngr.SetExiter(&exiter)
 	mngr.Run([]string{"list"})
 
@@ -507,6 +511,7 @@ func (s *S) TestInvalidCommandFuzzyMatch04(c *check.C) {
 	var exiter recordingExiter
 	var stdout, stderr bytes.Buffer
 	mngr := buildManagerCustom("tsuru", &stdout, &stderr)
+	mngr.V2().Enabled = false // V1-specific test
 	mngr.SetExiter(&exiter)
 	mngr.Run([]string{"not-command"})
 	expectedOutput := `.*: "not-command" is not a tsuru command. See "tsuru help".
@@ -521,6 +526,7 @@ func (s *S) TestInvalidCommandFuzzyMatch05(c *check.C) {
 	var exiter recordingExiter
 	var stdout, stderr bytes.Buffer
 	mngr := buildManagerCustom("tsuru", &stdout, &stderr)
+	mngr.V2().Enabled = false // V1-specific test
 	mngr.SetExiter(&exiter)
 	mngr.Run([]string{"target", "sit"})
 	expectedOutput := `.*: "target sit" is not a tsuru command. See "tsuru help".
