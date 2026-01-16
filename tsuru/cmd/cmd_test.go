@@ -382,8 +382,8 @@ func (s *S) TestShorthandCommandInfo(c *check.C) {
 
 	info := shorthandCmd.Info()
 	c.Assert(info.Name, check.Equals, "f")
-	c.Assert(info.V2.GroupID, check.Equals, "shorthands")
-	c.Assert(info.V2.OnlyAppendOnRoot, check.Equals, true)
+	c.Assert(info.GroupID, check.Equals, "shorthands")
+	c.Assert(info.OnlyAppendOnRoot, check.Equals, true)
 }
 
 func (s *S) TestShorthandCommandInfoWithUsage(c *check.C) {
@@ -393,8 +393,8 @@ func (s *S) TestShorthandCommandInfoWithUsage(c *check.C) {
 	info := shorthandCmd.Info()
 	c.Assert(info.Name, check.Equals, "deploy")
 	c.Assert(info.Usage, check.Equals, "deploy <file> [options]")
-	c.Assert(info.V2.GroupID, check.Equals, "shorthands")
-	c.Assert(info.V2.OnlyAppendOnRoot, check.Equals, true)
+	c.Assert(info.GroupID, check.Equals, "shorthands")
+	c.Assert(info.OnlyAppendOnRoot, check.Equals, true)
 }
 
 func (s *S) TestShorthandCommandRun(c *check.C) {

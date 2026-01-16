@@ -510,10 +510,10 @@ func (s *S) TestExecutePluginInfo(c *check.C) {
 	c.Assert(info.Usage, check.Equals, "myplugin")
 	c.Assert(info.Desc, check.Equals, "Executes the myplugin plugin.")
 	c.Assert(info.MinArgs, check.Equals, cmd.ArbitraryArgs)
-	c.Assert(info.V2.GroupID, check.Equals, "plugin")
-	c.Assert(info.V2.OnlyAppendOnRoot, check.Equals, true)
-	c.Assert(info.V2.DisableFlagParsing, check.Equals, true)
-	c.Assert(info.V2.SilenceUsage, check.Equals, true)
+	c.Assert(info.GroupID, check.Equals, "plugin")
+	c.Assert(info.OnlyAppendOnRoot, check.Equals, true)
+	c.Assert(info.DisableFlagParsing, check.Equals, true)
+	c.Assert(info.SilenceUsage, check.Equals, true)
 }
 
 func (s *S) TestExecutePluginRun(c *check.C) {

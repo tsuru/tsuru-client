@@ -102,8 +102,8 @@ func (c *ShorthandCommand) Info() *Info {
 	info.Usage = c.shorthand + stripUsage(info.Name, info.Usage)
 
 	info.Name = c.shorthand
-	info.V2.GroupID = "shorthands"
-	info.V2.OnlyAppendOnRoot = true
+	info.GroupID = "shorthands"
+	info.OnlyAppendOnRoot = true
 	return info
 }
 
@@ -149,8 +149,13 @@ type Info struct {
 	MaxArgs int
 	Usage   string
 	Desc    string
-	V2      InfoV2
-	fail    bool
+
+	Hidden              bool
+	OnlyAppendOnRoot    bool
+	GroupID             string
+	DisableFlagParsing  bool
+	SilenceUsage        bool
+	ParseFirstFlagsOnly bool
 }
 
 var flagFormatRegexp = regexp.MustCompile(`(?m)^([^-\s])`)

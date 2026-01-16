@@ -104,7 +104,7 @@ func (m *ManagerV2) Register(command Command) {
 	// 1. Legacy way to interact on tsuru-client
 	// ex: tsuru app-deploy tsuru app-list
 	m.registerV2FQDNOnRoot(command)
-	if info.V2.OnlyAppendOnRoot {
+	if info.OnlyAppendOnRoot {
 		return
 	}
 
@@ -164,9 +164,9 @@ func (m *ManagerV2) fillCommand(cobraCommand *cobra.Command, command Command) {
 
 	cobraCommand.Short = strings.TrimSpace(strings.Split(info.Desc, "\n")[0])
 	cobraCommand.Long = info.Desc
-	cobraCommand.DisableFlagParsing = info.V2.DisableFlagParsing
-	cobraCommand.SilenceUsage = info.V2.SilenceUsage
-	cobraCommand.Hidden = info.V2.Hidden
+	cobraCommand.DisableFlagParsing = info.DisableFlagParsing
+	cobraCommand.SilenceUsage = info.SilenceUsage
+	cobraCommand.Hidden = info.Hidden
 	cobraCommand.Args = cobra.ArbitraryArgs
 
 	if info.MinArgs > 0 && info.MinArgs >= info.MaxArgs {
@@ -176,7 +176,7 @@ func (m *ManagerV2) fillCommand(cobraCommand *cobra.Command, command Command) {
 	}
 
 	cobraCommand.RunE = func(cobraCommand *cobra.Command, args []string) error {
-		if info.V2.ParseFirstFlagsOnly {
+		if info.ParseFirstFlagsOnly {
 			args = v2.ParseFirstFlagsOnly(cobraCommand, args)
 
 			target, _ := cobraCommand.Flags().GetString("target")
@@ -278,20 +278,11 @@ func (m *ManagerV2) registerV2FQDNOnRoot(command Command) {
 
 	newCmd := &cobra.Command{
 		Use:     fqdn + stripUsage(fqdn, info.Usage),
-		GroupID: info.V2.GroupID,
+		GroupID: info.GroupID,
 	}
 
 	m.fillCommand(newCmd, command)
-	newCmd.Hidden = !info.V2.OnlyAppendOnRoot
+	newCmd.Hidden = !info.OnlyAppendOnRoot
 	newCmd.Aliases = standards.CommonAliases[fqdn]
 	m.tree.AddChild(newCmd)
-}
-
-type InfoV2 struct {
-	Hidden              bool
-	OnlyAppendOnRoot    bool
-	GroupID             string
-	DisableFlagParsing  bool
-	SilenceUsage        bool
-	ParseFirstFlagsOnly bool
 }

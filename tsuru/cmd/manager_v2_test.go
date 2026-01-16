@@ -137,10 +137,9 @@ func TestManagerV2_Register(t *testing.T) {
 				Name:  "login",
 				Desc:  "Login to tsuru server",
 				Usage: "tsuru login [server]",
-				V2: InfoV2{
-					OnlyAppendOnRoot: true,
-					GroupID:          "auth",
-				},
+
+				OnlyAppendOnRoot: true,
+				GroupID:          "auth",
 			},
 		}
 
@@ -297,9 +296,8 @@ func TestManagerV2_registerV2FQDNOnRoot(t *testing.T) {
 				Name:  "app-list",
 				Desc:  "List all apps",
 				Usage: "Usage: tsuru app-list",
-				V2: InfoV2{
-					GroupID: "resource",
-				},
+
+				GroupID: "resource",
 			},
 		}
 
@@ -329,10 +327,9 @@ func TestManagerV2_registerV2FQDNOnRoot(t *testing.T) {
 			info: &Info{
 				Name: "login",
 				Desc: "Login to server",
-				V2: InfoV2{
-					OnlyAppendOnRoot: true,
-					GroupID:          "auth",
-				},
+
+				OnlyAppendOnRoot: true,
+				GroupID:          "auth",
 			},
 		}
 
@@ -976,9 +973,8 @@ func TestManagerV2_fillCommand_DisableFlagParsing(t *testing.T) {
 			info: &Info{
 				Name: "plugin-exec",
 				Desc: "Execute plugin",
-				V2: InfoV2{
-					DisableFlagParsing: true,
-				},
+
+				DisableFlagParsing: true,
 			},
 		}
 
@@ -1021,9 +1017,8 @@ func TestManagerV2_fillCommand_SilenceUsage(t *testing.T) {
 			info: &Info{
 				Name: "plugin-run",
 				Desc: "Run plugin",
-				V2: InfoV2{
-					SilenceUsage: true,
-				},
+
+				SilenceUsage: true,
 			},
 		}
 
@@ -1068,10 +1063,9 @@ func TestManagerV2_fillCommand_ParseFirstFlagsOnly(t *testing.T) {
 				Name:    "plugin-exec",
 				Desc:    "Execute plugin",
 				MinArgs: ArbitraryArgs,
-				V2: InfoV2{
-					ParseFirstFlagsOnly: true,
-					DisableFlagParsing:  true,
-				},
+
+				ParseFirstFlagsOnly: true,
+				DisableFlagParsing:  true,
 			},
 			runFn: func(ctx *Context) error {
 				capturedArgs = ctx.Args
@@ -1116,7 +1110,7 @@ func TestManagerV2_fillCommand_ParseFirstFlagsOnly(t *testing.T) {
 
 		// ParseFirstFlagsOnly is not exposed on cobra.Command, but we can verify
 		// the behavior by checking the InfoV2 struct
-		assert.False(t, cmd.info.V2.ParseFirstFlagsOnly)
+		assert.False(t, cmd.info.ParseFirstFlagsOnly)
 	})
 }
 
@@ -1347,10 +1341,9 @@ func TestManagerV2_Integration(t *testing.T) {
 					Name:  "login",
 					Desc:  "Login to server",
 					Usage: "tsuru login",
-					V2: InfoV2{
-						OnlyAppendOnRoot: true,
-						GroupID:          "auth",
-					},
+
+					OnlyAppendOnRoot: true,
+					GroupID:          "auth",
 				},
 			},
 			{

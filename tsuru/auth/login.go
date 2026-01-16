@@ -43,10 +43,8 @@ func (c *Login) Info() *cmd.Info {
 		All tsuru actions require the user to be authenticated (except [[tsuru login]]
 		and [[tsuru version]]).`,
 
-		V2: cmd.InfoV2{
-			OnlyAppendOnRoot: true,
-			GroupID:          "auth",
-		},
+		OnlyAppendOnRoot: true,
+		GroupID:          "auth",
 	}
 }
 
