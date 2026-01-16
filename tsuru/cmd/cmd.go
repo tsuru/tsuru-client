@@ -10,6 +10,7 @@ import (
 	"io"
 	"os"
 	"os/signal"
+	"path/filepath"
 	"regexp"
 	"sort"
 	"strconv"
@@ -796,8 +797,7 @@ func (c *help) parseFlags(command Command) string {
 }
 
 func ExtractProgramName(path string) string {
-	parts := strings.Split(path, string(os.PathSeparator))
-	return parts[len(parts)-1]
+	return filepath.Base(path)
 }
 
 var (
