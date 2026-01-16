@@ -436,56 +436,6 @@ func (c *AppDeployRollback) Run(context *cmd.Context) error {
 	return formatter.StreamJSONResponse(context.Stdout, response)
 }
 
-type AppDeployRebuild struct {
-	tsuruClientApp.AppNameMixIn
-	deployVersionArgs
-	fs *pflag.FlagSet
-}
-
-func (c *AppDeployRebuild) Flags() *pflag.FlagSet {
-	if c.fs == nil {
-		c.fs = c.AppNameMixIn.Flags()
-		c.flags(c.fs)
-	}
-	return c.fs
-}
-
-func (c *AppDeployRebuild) Info() *cmd.Info {
-	desc := "Rebuild and deploy the last app image."
-	return &cmd.Info{
-		Name:  "app-deploy-rebuild",
-		Usage: "app deploy rebuild [appname]",
-		Desc:  desc,
-
-		MaxArgs: 1,
-	}
-}
-
-func (c *AppDeployRebuild) Run(context *cmd.Context) error {
-	context.RawOutput()
-	appName, err := c.AppNameByArgsAndFlag(context.Args)
-	if err != nil {
-		return err
-	}
-	u, err := config.GetURLVersion("1.3", fmt.Sprintf("/apps/%s/deploy/rebuild", appName))
-	if err != nil {
-		return err
-	}
-	v := url.Values{}
-	v.Set("origin", "rebuild")
-	c.values(v)
-	request, err := http.NewRequest("POST", u, strings.NewReader(v.Encode()))
-	if err != nil {
-		return err
-	}
-	request.Header.Add("Content-Type", "application/x-www-form-urlencoded")
-	response, err := tsuruHTTP.AuthenticatedClient.Do(request)
-	if err != nil {
-		return err
-	}
-	return formatter.StreamJSONResponse(context.Stdout, response)
-}
-
 type AppDeployRollbackUpdate struct {
 	tsuruClientApp.AppNameMixIn
 	image   string

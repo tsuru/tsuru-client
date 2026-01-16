@@ -526,42 +526,6 @@ func (s *S) TestAppDeployRollbackUpdateDisabling(c *check.C) {
 	c.Assert(stdout.String(), check.Equals, "")
 }
 
-func (s *S) TestAppDeployRebuildInfo(c *check.C) {
-	c.Assert((&AppDeployRebuild{}).Info(), check.NotNil)
-}
-
-func (s *S) TestAppDeployRebuild(c *check.C) {
-	var (
-		called         bool
-		stdout, stderr bytes.Buffer
-	)
-	context := cmd.Context{
-		Stdout: &stdout,
-		Stderr: &stderr,
-	}
-	expectedOut := "---- rebuild ----"
-	msg := tsuruIo.SimpleJsonMessage{Message: expectedOut}
-	result, err := json.Marshal(msg)
-	c.Assert(err, check.IsNil)
-	trans := &cmdtest.ConditionalTransport{
-		Transport: cmdtest.Transport{Message: string(result), Status: http.StatusOK},
-		CondFunc: func(req *http.Request) bool {
-			called = true
-			method := req.Method == "POST"
-			path := strings.HasSuffix(req.URL.Path, "/apps/myapp/deploy/rebuild")
-			rebuild := req.FormValue("origin") == "rebuild"
-			return method && path && rebuild
-		},
-	}
-	s.setupFakeTransport(trans)
-	command := AppDeployRebuild{}
-	command.Flags().Parse([]string{"--app", "myapp"})
-	err = command.Run(&context)
-	c.Assert(err, check.IsNil)
-	c.Assert(called, check.Equals, true)
-	c.Assert(stdout.String(), check.Equals, expectedOut)
-}
-
 func (s *S) TestJobDeployRunUsingDockerfile(c *check.C) {
 	command := JobDeploy{}
 	err := command.Flags().Parse([]string{"-j", "my-job", "--dockerfile", "./testdata/deploy5/"})

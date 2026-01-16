@@ -230,7 +230,6 @@ Services aren’t managed by tsuru, but by their creators.`)
 	m.Register(&client.AppDeployList{})
 	m.Register(&client.AppDeployRollback{})
 	m.Register(&client.AppDeployRollbackUpdate{})
-	m.Register(&client.AppDeployRebuild{})
 	m.Register(&client.ShellToContainerCmd{})
 
 	m.RegisterTopic("pool", "A pool is used by provisioners to allocate space within a cluster for running applications.")
