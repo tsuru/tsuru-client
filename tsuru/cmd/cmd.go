@@ -792,7 +792,7 @@ func (c *help) parseFlags(command Command) string {
 }
 
 func ExtractProgramName(path string) string {
-	parts := strings.Split(path, "/")
+	parts := strings.Split(path, string(os.PathSeparator))
 	return parts[len(parts)-1]
 }
 
