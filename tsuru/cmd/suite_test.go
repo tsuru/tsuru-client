@@ -22,6 +22,7 @@ var globalManager *Manager
 func (s *S) SetUpTest(c *check.C) {
 	var stdout, stderr bytes.Buffer
 	globalManager = NewManager("glb", &stdout, &stderr, os.Stdin, nil)
+	globalManager.v2.Enabled = false // These tests are for V1 behavior
 	var exiter recordingExiter
 	globalManager.e = &exiter
 	os.Setenv("TSURU_TARGET", "http://localhost")

@@ -1,6 +1,7 @@
 package cmd
 
 import (
+	"context"
 	"fmt"
 	"os"
 	"os/signal"
@@ -8,18 +9,22 @@ import (
 	"syscall"
 
 	"github.com/spf13/cobra"
+	"github.com/tsuru/tsuru-client/tsuru/cmd/standards"
 	v2 "github.com/tsuru/tsuru-client/tsuru/cmd/v2"
 )
 
 // ManagerV2 is responsible for managing the commands using cobra for tsuru-client.
 // this intends to replace the old Manager struct in the future.
 type ManagerV2 struct {
-	Enabled   bool
-	rootCmd   *cobra.Command
-	tree      *v2.CmdNode
-	contexts  []*Context
-	retryHook func(err error) bool
+	Enabled     bool
+	rootCmd     *cobra.Command
+	tree        *v2.CmdNode
+	contexts    []*Context
+	retryHook   func(err error) bool
+	completions map[string]CompletionFunc
 }
+
+type CompletionFunc func(toComplete string) ([]string, error)
 
 type ManagerV2Opts struct {
 	AfterFlagParseHook func()
@@ -99,18 +104,25 @@ func (m *ManagerV2) Register(command Command) {
 	m.registerV2SubCommand(command)
 }
 
-func (m *ManagerV2) Run() {
-	err := m.rootCmd.Execute()
+func (m *ManagerV2) SetFlagCompletions(completions map[string]CompletionFunc) {
+	m.completions = completions
+}
+
+func (m *ManagerV2) Run() error {
+	ctx := context.Background()
+	cmd, err := m.rootCmd.ExecuteContextC(ctx)
 
 	if m.retryHook != nil && err != nil {
 		if retry := m.retryHook(err); retry {
-			err = m.rootCmd.Execute()
+			cmd, err = m.rootCmd.ExecuteContextC(ctx)
 		}
 	}
 
 	if err != nil {
-		os.Exit(1)
+		cmd.Println(cmd.UsageString())
 	}
+
+	return err
 }
 
 func (m *ManagerV2) registerV2SubCommand(command Command) {
@@ -132,6 +144,7 @@ func (m *ManagerV2) registerV2SubCommand(command Command) {
 
 		if i == len(parts)-1 && !found {
 			curr.Command.Use = part + stripUsage(fqdn, info.Usage)
+			curr.Command.Aliases = standards.CommonAliases[part]
 			m.fillCommand(curr.Command, command)
 		}
 	}
@@ -169,7 +182,34 @@ func (m *ManagerV2) fillCommand(cobraCommand *cobra.Command, command Command) {
 
 	if isFlaggedCommand {
 		cobraCommand.Flags().SortFlags = false
-		cobraCommand.Flags().AddFlagSet(flaggedCommand.Flags())
+		flags := flaggedCommand.Flags()
+		cobraCommand.Flags().AddFlagSet(flags)
+
+		m.registerCompletionsOnCommand(cobraCommand)
+	}
+	autoCompleteCommand, isAutoCompleteCommand := command.(AutoCompleteCommand)
+	if isAutoCompleteCommand {
+		cobraCommand.ValidArgsFunction = func(cmd *cobra.Command, args []string, toComplete string) ([]string, cobra.ShellCompDirective) {
+			result, err := autoCompleteCommand.Complete(args, toComplete)
+			if err != nil {
+				fmt.Fprintf(os.Stderr, "Error: %v\n", err)
+				return nil, cobra.ShellCompDirectiveError
+			}
+			return result, cobra.ShellCompDirectiveNoFileComp
+		}
+	}
+}
+
+func (m *ManagerV2) registerCompletionsOnCommand(cobraCommand *cobra.Command) {
+	for name, fn := range m.completions {
+		cobraCommand.RegisterFlagCompletionFunc(name, func(cmd *cobra.Command, args []string, toComplete string) ([]string, cobra.ShellCompDirective) {
+			result, err := fn(toComplete)
+			if err != nil {
+				fmt.Fprintf(os.Stderr, "Error: %v\n", err)
+				return nil, cobra.ShellCompDirectiveError
+			}
+			return result, cobra.ShellCompDirectiveNoFileComp
+		})
 	}
 }
 
@@ -238,6 +278,7 @@ func (m *ManagerV2) registerV2FQDNOnRoot(command Command) {
 
 	m.fillCommand(newCmd, command)
 	newCmd.Hidden = !info.V2.OnlyAppendOnRoot
+	newCmd.Aliases = standards.CommonAliases[fqdn]
 	m.tree.AddChild(newCmd)
 }
 

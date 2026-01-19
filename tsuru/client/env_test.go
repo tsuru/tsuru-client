@@ -88,7 +88,8 @@ func (s *S) TestEnvGetAlwaysPrintInAlphabeticalOrder(c *check.C) {
 func (s *S) TestEnvGetPrivateVariables(c *check.C) {
 	var stdout, stderr bytes.Buffer
 	jsonResult := `[{"name": "DATABASE_USER", "value": "someuser", "public": true}, {"name": "DATABASE_HOST", "value": "somehost", "public": false}]`
-	result := "DATABASE_HOST=*** (private variable)\nDATABASE_USER=someuser\n"
+	coloredObservation := cmd.Colorfy("(private variable)", "gray", "", "bold")
+	result := "DATABASE_HOST=*** " + coloredObservation + "\nDATABASE_USER=someuser\n"
 	params := []string{"DATABASE_HOST", "DATABASE_USER"}
 	context := cmd.Context{
 		Args:   params,
@@ -106,7 +107,9 @@ func (s *S) TestEnvGetPrivateVariables(c *check.C) {
 func (s *S) TestEnvGetManagedByVariables(c *check.C) {
 	var stdout, stderr bytes.Buffer
 	jsonResult := `[{"name": "DATABASE_USER", "value": "someuser", "public": false, "managedBy": "my-service/instance"}, {"name": "DATABASE_HOST", "value": "somehost", "public": true, "managedBy": "my-service/instance"}]`
-	result := "DATABASE_HOST=somehost (managed by my-service/instance)\nDATABASE_USER=*** (private variable managed by my-service/instance)\n"
+	coloredManagedBy := cmd.Colorfy("(managed by my-service/instance)", "gray", "", "bold")
+	coloredPrivateManagedBy := cmd.Colorfy("(private variable managed by my-service/instance)", "gray", "", "bold")
+	result := "DATABASE_HOST=somehost " + coloredManagedBy + "\nDATABASE_USER=*** " + coloredPrivateManagedBy + "\n"
 	params := []string{"DATABASE_HOST", "DATABASE_USER"}
 	context := cmd.Context{
 		Args:   params,
@@ -527,7 +530,8 @@ func (s *S) TestJobEnvGetAlwaysPrintInAlphabeticalOrder(c *check.C) {
 func (s *S) TestJobEnvGetPrivateVariables(c *check.C) {
 	var stdout, stderr bytes.Buffer
 	jsonResult := `[{"name": "DATABASE_USER", "value": "someuser", "public": true}, {"name": "DATABASE_HOST", "value": "somehost", "public": false}]`
-	result := "DATABASE_HOST=*** (private variable)\nDATABASE_USER=someuser\n"
+	coloredObservation := cmd.Colorfy("(private variable)", "gray", "", "bold")
+	result := "DATABASE_HOST=*** " + coloredObservation + "\nDATABASE_USER=someuser\n"
 	params := []string{"DATABASE_HOST", "DATABASE_USER"}
 	context := cmd.Context{
 		Args:   params,

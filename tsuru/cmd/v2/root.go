@@ -18,7 +18,7 @@ import (
 var defaultViper = preSetupViper(nil)
 
 func Enabled() bool {
-	return defaultViper.GetString("version") == "v2"
+	return defaultViper.GetString("version") != "v1"
 }
 
 func NewRootCmd() *cobra.Command {
@@ -27,18 +27,17 @@ func NewRootCmd() *cobra.Command {
 		Short: "A command-line interface for interacting with tsuru",
 
 		PersistentPreRun: rootPersistentPreRun,
-		RunE: func(cmd *cobra.Command, args []string) error {
-			return runRootCmd(cmd, args)
-		},
-		Args: cobra.MinimumNArgs(0),
 
 		FParseErrWhitelist: cobra.FParseErrWhitelist{
 			UnknownFlags: true,
 		},
 		DisableFlagParsing: true,
+		SilenceUsage:       true,
 	}
 
 	setupPFlagsAndCommands(rootCmd)
+
+	rootCmd.AddCommand(generateDocCmd())
 
 	return rootCmd
 }
@@ -61,21 +60,6 @@ func rootPersistentPreRun(cmd *cobra.Command, args []string) {
 	if v, err := cmd.Flags().GetInt("verbosity"); v > 0 && err == nil {
 		os.Setenv("TSURU_VERBOSITY", strconv.Itoa(v))
 	}
-}
-
-func runRootCmd(cmd *cobra.Command, args []string) error {
-	cmd.SilenceUsage = true
-	args = ParseFirstFlagsOnly(cmd, args)
-
-	versionVal, _ := cmd.Flags().GetBool("version")
-	helpVal, _ := cmd.Flags().GetBool("help")
-	if len(args) == 0 || versionVal || helpVal {
-		cmd.RunE = nil
-		cmd.Run = nil
-		return cmd.Execute()
-	}
-
-	return nil
 }
 
 // parseFirstFlagsOnly handles only the first flags with cmd.ParseFlags()

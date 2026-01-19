@@ -99,10 +99,10 @@ type AppQuotaView struct {
 
 func (*AppQuotaView) Info() *cmd.Info {
 	return &cmd.Info{
-		Name:    "app-quota-view",
-		MinArgs: 0,
-		Usage:   "app-quota-view [appname]",
-		Desc:    "Displays the current usage and limit of the given app.",
+		Name: "app-quota-view",
+
+		Usage: "app-quota-view [appname]",
+		Desc:  "Displays the current usage and limit of the given app.",
 	}
 }
 

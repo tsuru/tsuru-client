@@ -44,3 +44,17 @@ var (
 	FlagOnlyName string = "only-name"
 	FlagJSON     string = "json"
 )
+
+// CommonAliases defines common aliases for verbs used in tsuru-client commands.
+var CommonAliases = map[string][]string{
+	"remove":     {"delete"},
+	"create":     {"add"},
+	"add":        {"create"},
+	"delete":     {"remove"},
+	"info":       {"describe"},
+	"log":        {"logs"},
+	"change":     {"update", "set"},
+	"assign":     {"bind", "set"},
+	"dissociate": {"unbind", "unset"},
+	"destroy":    {"remove", "delete"},
+}

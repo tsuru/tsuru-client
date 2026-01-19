@@ -1,0 +1,306 @@
+// Copyright 2026 tsuru-client authors. All rights reserved.
+// Use of this source code is governed by a BSD-style
+// license that can be found in the LICENSE file.
+
+package completions
+
+import (
+	"net/http"
+	"testing"
+
+	"github.com/stretchr/testify/assert"
+	"github.com/stretchr/testify/require"
+	"github.com/tsuru/tsuru-client/tsuru/cmd/cmdtest"
+)
+
+func TestAppNameCompletionFunc(t *testing.T) {
+	setupTest(t)
+	result := `[{"name":"app1","pool":"pool1"},{"name":"app2","pool":"pool2"},{"name":"myapp","pool":"pool1"}]`
+	setupFakeTransport(&cmdtest.Transport{Message: result, Status: http.StatusOK})
+
+	completions, err := AppNameCompletionFunc("app")
+	require.NoError(t, err)
+	assert.Equal(t, []string{"app1", "app2"}, completions)
+}
+
+func TestAppNameCompletionFuncEmptyPrefix(t *testing.T) {
+	setupTest(t)
+	result := `[{"name":"app1","pool":"pool1"},{"name":"app2","pool":"pool2"},{"name":"myapp","pool":"pool1"}]`
+	setupFakeTransport(&cmdtest.Transport{Message: result, Status: http.StatusOK})
+
+	completions, err := AppNameCompletionFunc("")
+	require.NoError(t, err)
+	assert.Equal(t, []string{"app1", "app2", "myapp"}, completions)
+}
+
+func TestAppNameCompletionFuncNoContent(t *testing.T) {
+	setupTest(t)
+	setupFakeTransport(&cmdtest.Transport{Status: http.StatusNoContent})
+
+	completions, err := AppNameCompletionFunc("app")
+	require.NoError(t, err)
+	assert.Empty(t, completions)
+}
+
+func TestAppNameCompletionFuncNoMatch(t *testing.T) {
+	setupTest(t)
+	result := `[{"name":"myapp","pool":"pool1"}]`
+	setupFakeTransport(&cmdtest.Transport{Message: result, Status: http.StatusOK})
+
+	completions, err := AppNameCompletionFunc("xyz")
+	require.NoError(t, err)
+	assert.Empty(t, completions)
+}
+
+func TestTeamNameCompletionFunc(t *testing.T) {
+	setupTest(t)
+	result := `[{"name":"team1"},{"name":"team2"},{"name":"myteam"}]`
+	setupFakeTransport(&cmdtest.Transport{Message: result, Status: http.StatusOK})
+
+	completions, err := TeamNameCompletionFunc("team")
+	require.NoError(t, err)
+	assert.Equal(t, []string{"team1", "team2"}, completions)
+}
+
+func TestTeamNameCompletionFuncEmptyPrefix(t *testing.T) {
+	setupTest(t)
+	result := `[{"name":"team1"},{"name":"team2"},{"name":"myteam"}]`
+	setupFakeTransport(&cmdtest.Transport{Message: result, Status: http.StatusOK})
+
+	completions, err := TeamNameCompletionFunc("")
+	require.NoError(t, err)
+	assert.Equal(t, []string{"team1", "team2", "myteam"}, completions)
+}
+
+func TestTeamNameCompletionFuncNoContent(t *testing.T) {
+	setupTest(t)
+	setupFakeTransport(&cmdtest.Transport{Status: http.StatusNoContent})
+
+	completions, err := TeamNameCompletionFunc("team")
+	require.NoError(t, err)
+	assert.Empty(t, completions)
+}
+
+func TestJobNameCompletionFunc(t *testing.T) {
+	setupTest(t)
+	result := `[{"name":"job1"},{"name":"job2"},{"name":"myjob"}]`
+	setupFakeTransport(&cmdtest.Transport{Message: result, Status: http.StatusOK})
+
+	completions, err := JobNameCompletionFunc("job")
+	require.NoError(t, err)
+	assert.Equal(t, []string{"job1", "job2"}, completions)
+}
+
+func TestJobNameCompletionFuncEmptyPrefix(t *testing.T) {
+	setupTest(t)
+	result := `[{"name":"job1"},{"name":"job2"},{"name":"myjob"}]`
+	setupFakeTransport(&cmdtest.Transport{Message: result, Status: http.StatusOK})
+
+	completions, err := JobNameCompletionFunc("")
+	require.NoError(t, err)
+	assert.Equal(t, []string{"job1", "job2", "myjob"}, completions)
+}
+
+func TestJobNameCompletionFuncNoContent(t *testing.T) {
+	setupTest(t)
+	setupFakeTransport(&cmdtest.Transport{Status: http.StatusNoContent})
+
+	completions, err := JobNameCompletionFunc("job")
+	require.NoError(t, err)
+	assert.Empty(t, completions)
+}
+
+func TestPoolNameCompletionFunc(t *testing.T) {
+	setupTest(t)
+	result := `[{"name":"pool1"},{"name":"pool2"},{"name":"mypool"}]`
+	setupFakeTransport(&cmdtest.Transport{Message: result, Status: http.StatusOK})
+
+	completions, err := PoolNameCompletionFunc("pool")
+	require.NoError(t, err)
+	assert.Equal(t, []string{"pool1", "pool2"}, completions)
+}
+
+func TestPoolNameCompletionFuncEmptyPrefix(t *testing.T) {
+	setupTest(t)
+	result := `[{"name":"pool1"},{"name":"pool2"},{"name":"mypool"}]`
+	setupFakeTransport(&cmdtest.Transport{Message: result, Status: http.StatusOK})
+
+	completions, err := PoolNameCompletionFunc("")
+	require.NoError(t, err)
+	assert.Equal(t, []string{"pool1", "pool2", "mypool"}, completions)
+}
+
+func TestPoolNameCompletionFuncNoContent(t *testing.T) {
+	setupTest(t)
+	setupFakeTransport(&cmdtest.Transport{Status: http.StatusNoContent})
+
+	completions, err := PoolNameCompletionFunc("pool")
+	require.NoError(t, err)
+	assert.Empty(t, completions)
+}
+
+func TestPlanNameCompletionFunc(t *testing.T) {
+	setupTest(t)
+	result := `[{"name":"plan1"},{"name":"plan2"},{"name":"myplan"}]`
+	setupFakeTransport(&cmdtest.Transport{Message: result, Status: http.StatusOK})
+
+	completions, err := PlanNameCompletionFunc("plan")
+	require.NoError(t, err)
+	assert.Equal(t, []string{"plan1", "plan2"}, completions)
+}
+
+func TestPlanNameCompletionFuncEmptyPrefix(t *testing.T) {
+	setupTest(t)
+	result := `[{"name":"plan1"},{"name":"plan2"},{"name":"myplan"}]`
+	setupFakeTransport(&cmdtest.Transport{Message: result, Status: http.StatusOK})
+
+	completions, err := PlanNameCompletionFunc("")
+	require.NoError(t, err)
+	assert.Equal(t, []string{"plan1", "plan2", "myplan"}, completions)
+}
+
+func TestPlanNameCompletionFuncNoContent(t *testing.T) {
+	setupTest(t)
+	setupFakeTransport(&cmdtest.Transport{Status: http.StatusNoContent})
+
+	completions, err := PlanNameCompletionFunc("plan")
+	require.NoError(t, err)
+	assert.Empty(t, completions)
+}
+
+func TestPlatformNameCompletionFunc(t *testing.T) {
+	setupTest(t)
+	result := `[{"Name":"python"},{"Name":"nodejs"},{"Name":"go"}]`
+	setupFakeTransport(&cmdtest.Transport{Message: result, Status: http.StatusOK})
+
+	completions, err := PlatformNameCompletionFunc("py")
+	require.NoError(t, err)
+	assert.Equal(t, []string{"python"}, completions)
+}
+
+func TestPlatformNameCompletionFuncEmptyPrefix(t *testing.T) {
+	setupTest(t)
+	result := `[{"Name":"python"},{"Name":"nodejs"},{"Name":"go"}]`
+	setupFakeTransport(&cmdtest.Transport{Message: result, Status: http.StatusOK})
+
+	completions, err := PlatformNameCompletionFunc("")
+	require.NoError(t, err)
+	assert.Equal(t, []string{"python", "nodejs", "go"}, completions)
+}
+
+func TestPlatformNameCompletionFuncNoContent(t *testing.T) {
+	setupTest(t)
+	setupFakeTransport(&cmdtest.Transport{Status: http.StatusNoContent})
+
+	completions, err := PlatformNameCompletionFunc("python")
+	require.NoError(t, err)
+	assert.Empty(t, completions)
+}
+
+func TestRouterNameCompletionFunc(t *testing.T) {
+	setupTest(t)
+	result := `[{"name":"router1"},{"name":"router2"},{"name":"myrouter"}]`
+	setupFakeTransport(&cmdtest.Transport{Message: result, Status: http.StatusOK})
+
+	completions, err := RouterNameCompletionFunc("router")
+	require.NoError(t, err)
+	assert.Equal(t, []string{"router1", "router2"}, completions)
+}
+
+func TestRouterNameCompletionFuncEmptyPrefix(t *testing.T) {
+	setupTest(t)
+	result := `[{"name":"router1"},{"name":"router2"},{"name":"myrouter"}]`
+	setupFakeTransport(&cmdtest.Transport{Message: result, Status: http.StatusOK})
+
+	completions, err := RouterNameCompletionFunc("")
+	require.NoError(t, err)
+	assert.Equal(t, []string{"router1", "router2", "myrouter"}, completions)
+}
+
+func TestServiceNameCompletionFunc(t *testing.T) {
+	setupTest(t)
+	result := `[{"service":"mysql","service_instances":[{"name":"mysql01"}]},{"service":"mongodb","service_instances":[{"name":"mongo01"}]},{"service":"redis","service_instances":[]}]`
+	setupFakeTransport(&cmdtest.Transport{Message: result, Status: http.StatusOK})
+
+	completions, err := ServiceNameCompletionFunc("m")
+	require.NoError(t, err)
+	assert.Equal(t, []string{"mysql", "mongodb"}, completions)
+}
+
+func TestServiceNameCompletionFuncEmptyPrefix(t *testing.T) {
+	setupTest(t)
+	result := `[{"service":"mysql","service_instances":[{"name":"mysql01"}]},{"service":"mongodb","service_instances":[{"name":"mongo01"}]},{"service":"redis","service_instances":[]}]`
+	setupFakeTransport(&cmdtest.Transport{Message: result, Status: http.StatusOK})
+
+	completions, err := ServiceNameCompletionFunc("")
+	require.NoError(t, err)
+	assert.Equal(t, []string{"mysql", "mongodb", "redis"}, completions)
+}
+
+func TestServiceNameCompletionFuncNotOK(t *testing.T) {
+	setupTest(t)
+	setupFakeTransport(&cmdtest.Transport{Status: http.StatusNoContent})
+
+	completions, err := ServiceNameCompletionFunc("mysql")
+	require.NoError(t, err)
+	assert.Empty(t, completions)
+}
+
+func TestServiceNameCompletionFuncNoMatch(t *testing.T) {
+	setupTest(t)
+	result := `[{"service":"mysql","service_instances":[{"name":"mysql01"}]}]`
+	setupFakeTransport(&cmdtest.Transport{Message: result, Status: http.StatusOK})
+
+	completions, err := ServiceNameCompletionFunc("xyz")
+	require.NoError(t, err)
+	assert.Empty(t, completions)
+}
+
+func TestServiceInstanceCompletionFunc(t *testing.T) {
+	setupTest(t)
+	result := `[{"service":"mysql","service_instances":[{"name":"mysql01"},{"name":"mysql02"},{"name":"mydb"}]},{"service":"mongodb","service_instances":[{"name":"mongo01"}]}]`
+	setupFakeTransport(&cmdtest.Transport{Message: result, Status: http.StatusOK})
+
+	completions, err := ServiceInstanceCompletionFunc("mysql", "mysql")
+	require.NoError(t, err)
+	assert.Equal(t, []string{"mysql01", "mysql02"}, completions)
+}
+
+func TestServiceInstanceCompletionFuncEmptyPrefix(t *testing.T) {
+	setupTest(t)
+	result := `[{"service":"mysql","service_instances":[{"name":"mysql01"},{"name":"mysql02"},{"name":"mydb"}]}]`
+	setupFakeTransport(&cmdtest.Transport{Message: result, Status: http.StatusOK})
+
+	completions, err := ServiceInstanceCompletionFunc("mysql", "")
+	require.NoError(t, err)
+	assert.Equal(t, []string{"mysql01", "mysql02", "mydb"}, completions)
+}
+
+func TestServiceInstanceCompletionFuncNotOK(t *testing.T) {
+	setupTest(t)
+	setupFakeTransport(&cmdtest.Transport{Status: http.StatusNoContent})
+
+	completions, err := ServiceInstanceCompletionFunc("mysql", "mysql")
+	require.NoError(t, err)
+	assert.Empty(t, completions)
+}
+
+func TestServiceInstanceCompletionFuncNoMatch(t *testing.T) {
+	setupTest(t)
+	result := `[{"service":"mysql","service_instances":[{"name":"mysql01"}]}]`
+	setupFakeTransport(&cmdtest.Transport{Message: result, Status: http.StatusOK})
+
+	completions, err := ServiceInstanceCompletionFunc("mysql", "xyz")
+	require.NoError(t, err)
+	assert.Empty(t, completions)
+}
+
+func TestServiceInstanceCompletionFuncWrongService(t *testing.T) {
+	setupTest(t)
+	result := `[{"service":"mysql","service_instances":[{"name":"mysql01"}]}]`
+	setupFakeTransport(&cmdtest.Transport{Message: result, Status: http.StatusOK})
+
+	completions, err := ServiceInstanceCompletionFunc("mongodb", "")
+	require.NoError(t, err)
+	assert.Empty(t, completions)
+}

@@ -29,8 +29,7 @@ func (s *S) TestDeprecatedCommand(c *check.C) {
 	globalManager.stderr = &stderr
 	globalManager.Run([]string{"bar"})
 	c.Assert(stdout.String(), check.Equals, "Running TestCommand")
-	warnMessage := `WARNING: "bar" has been deprecated, please use "foo" instead.` + "\n\n"
-	c.Assert(stderr.String(), check.Equals, warnMessage)
+	c.Assert(stderr.String(), check.Matches, `(?s).*WARNING:.*bar.*has been deprecated.*foo.*`)
 	stdout.Reset()
 	stderr.Reset()
 	globalManager.Run([]string{"foo"})
@@ -45,8 +44,7 @@ func (s *S) TestDeprecatedCommandFlags(c *check.C) {
 	globalManager.stdout = &stdout
 	globalManager.stderr = &stderr
 	globalManager.Run([]string{"bar", "--age", "10"})
-	warnMessage := `WARNING: "bar" has been deprecated, please use "with-flags" instead.` + "\n\n"
-	c.Assert(stderr.String(), check.Equals, warnMessage)
+	c.Assert(stderr.String(), check.Matches, `(?s).*WARNING:.*bar.*has been deprecated.*with flags.*`)
 	c.Assert(cmd.age, check.Equals, 10)
 }
 
@@ -65,17 +63,6 @@ func (s *S) TestRegisterDeprecated(c *check.C) {
 	c.Assert(ok, check.Equals, true)
 	c.Assert(cmd.Command, check.Equals, originalCmd)
 	c.Assert(globalManager.Commands["foo"], check.Equals, originalCmd)
-}
-
-func (s *S) TestRegisterRemoved(c *check.C) {
-	globalManager.RegisterRemoved("spoon", "There is no spoon.")
-	_, ok := globalManager.Commands["spoon"].(*RemovedCommand)
-	c.Assert(ok, check.Equals, true)
-	var stdout, stderr bytes.Buffer
-	globalManager.stdout = &stdout
-	globalManager.stderr = &stderr
-	globalManager.Run([]string{"spoon"})
-	c.Assert(stdout.String(), check.Matches, "(?s).*This command was removed. There is no spoon.*")
 }
 
 func (s *S) TestRegisterTopic(c *check.C) {
@@ -225,6 +212,7 @@ func (s *S) TestCustomLookup(c *check.C) {
 	}
 	var stdout, stderr bytes.Buffer
 	mngr := NewManager("glb", &stdout, &stderr, os.Stdin, lookup)
+	mngr.v2.Enabled = false // V1-specific test
 	var exiter recordingExiter
 	mngr.e = &exiter
 	mngr.Run([]string{"custom"})
@@ -237,6 +225,7 @@ func (s *S) TestCustomLookupNotFound(c *check.C) {
 	}
 	var stdout, stderr bytes.Buffer
 	mngr := NewManager("glb", &stdout, &stderr, os.Stdin, lookup)
+	mngr.v2.Enabled = false // V1-specific test
 	var exiter recordingExiter
 	mngr.e = &exiter
 	mngr.Register(&TestCommand{})
@@ -543,11 +532,7 @@ func (s *S) TestHelpDeprecatedCmd(c *check.C) {
 	globalManager.stderr = &stderr
 	globalManager.RegisterDeprecated(&TestCommand{}, "bar")
 	globalManager.Run([]string{"help", "bar"})
-	c.Assert(stdout.String(), check.Equals, `Usage: glb bar
-
-Foo do anything or nothing.
-
-`)
+	c.Assert(stdout.String(), check.Matches, `(?s)Usage: glb bar.*DEPRECATED:.*foo.*Foo do anything or nothing\..*`)
 	c.Assert(stderr.String(), check.Equals, expectedStderr)
 	stdout.Reset()
 	stderr.Reset()
@@ -561,19 +546,12 @@ Foo do anything or nothing.
 }
 
 func (s *S) TestHelpDeprecatedCmdWritesWarningFirst(c *check.C) {
-	expected := `WARNING: "bar" is deprecated. Showing help for "foo" instead.
-
-Usage: glb bar
-
-Foo do anything or nothing.
-
-`
 	var output bytes.Buffer
 	globalManager.stdout = &output
 	globalManager.stderr = &output
 	globalManager.RegisterDeprecated(&TestCommand{}, "bar")
 	globalManager.Run([]string{"help", "bar"})
-	c.Assert(output.String(), check.Equals, expected)
+	c.Assert(output.String(), check.Matches, `(?s)WARNING: "bar" is deprecated\. Showing help for "foo" instead\..*Usage: glb bar.*DEPRECATED:.*foo.*Foo do anything or nothing\..*`)
 }
 
 type ArgCmd struct{}
@@ -1025,6 +1003,7 @@ func (s *S) TestNewManagerPanicExiter(c *check.C) {
 
 	var stdout, stderr bytes.Buffer
 	mngr := NewManagerPanicExiter("glb", &stdout, &stderr, os.Stdin, lookup)
+	mngr.v2.Enabled = false // V1-specific test
 	mngr.Run([]string{"custom"})
 	c.Assert("This code is never called", check.Equals, "Because Panic occurred")
 }
@@ -1252,4 +1231,194 @@ func (s *S) TestManagerAfterFlagParseHookNilDoesNotPanic(c *check.C) {
 	if rootCmd.PersistentPreRun != nil {
 		rootCmd.PersistentPreRun(rootCmd, []string{})
 	}
+}
+
+func (s *S) TestShorthandCommandInfo(c *check.C) {
+	originalCmd := &TestCommand{}
+	shorthandCmd := &ShorthandCommand{Command: originalCmd, shorthand: "f"}
+
+	info := shorthandCmd.Info()
+	c.Assert(info.Name, check.Equals, "f")
+	c.Assert(info.V2.GroupID, check.Equals, "shorthands")
+	c.Assert(info.V2.OnlyAppendOnRoot, check.Equals, true)
+}
+
+func (s *S) TestShorthandCommandInfoWithUsage(c *check.C) {
+	cmd := &commandWithUsage{name: "app-deploy", usage: "app-deploy <file> [options]"}
+	shorthandCmd := &ShorthandCommand{Command: cmd, shorthand: "deploy"}
+
+	info := shorthandCmd.Info()
+	c.Assert(info.Name, check.Equals, "deploy")
+	c.Assert(info.Usage, check.Equals, "deploy <file> [options]")
+	c.Assert(info.V2.GroupID, check.Equals, "shorthands")
+	c.Assert(info.V2.OnlyAppendOnRoot, check.Equals, true)
+}
+
+func (s *S) TestShorthandCommandRun(c *check.C) {
+	originalCmd := &TestCommand{}
+	shorthandCmd := &ShorthandCommand{Command: originalCmd, shorthand: "f"}
+
+	var stdout bytes.Buffer
+	context := &Context{
+		Args:   []string{},
+		Stdout: &stdout,
+		Stderr: &bytes.Buffer{},
+		Stdin:  os.Stdin,
+	}
+	err := shorthandCmd.Run(context)
+	c.Assert(err, check.IsNil)
+	c.Assert(stdout.String(), check.Equals, "Running TestCommand")
+}
+
+func (s *S) TestShorthandCommandFlags(c *check.C) {
+	originalCmd := &CommandWithFlags{}
+	shorthandCmd := &ShorthandCommand{Command: originalCmd, shorthand: "wf"}
+
+	flags := shorthandCmd.Flags()
+	c.Assert(flags, check.NotNil)
+
+	// Verify the flags from the original command are available
+	ageFlag := flags.Lookup("age")
+	c.Assert(ageFlag, check.NotNil)
+	c.Assert(ageFlag.Shorthand, check.Equals, "a")
+}
+
+func (s *S) TestShorthandCommandFlagsWithNonFlaggedCommand(c *check.C) {
+	originalCmd := &TestCommand{}
+	shorthandCmd := &ShorthandCommand{Command: originalCmd, shorthand: "f"}
+
+	flags := shorthandCmd.Flags()
+	c.Assert(flags, check.NotNil)
+	// Should return an empty flagset for non-flagged commands
+	c.Assert(flags.HasFlags(), check.Equals, false)
+}
+
+func (s *S) TestRegisterShorthandWithV2Enabled(c *check.C) {
+	var stdout, stderr bytes.Buffer
+	mngr := NewManager("glb", &stdout, &stderr, os.Stdin, nil)
+	// Force enable v2 for this test
+	mngr.v2.Enabled = true
+
+	originalCmd := &TestCommand{}
+	mngr.RegisterShorthand(originalCmd, "f")
+
+	// Shorthand should be registered in v2 manager (root) with the shorthand name
+	rootCommands := mngr.v2.rootCmd.Commands()
+	var foundShorthand bool
+	for _, v2cmd := range rootCommands {
+		if v2cmd.Use == "f" {
+			foundShorthand = true
+			c.Assert(v2cmd.GroupID, check.Equals, "shorthands")
+			c.Assert(v2cmd.Hidden, check.Equals, false) // OnlyAppendOnRoot makes it visible
+			break
+		}
+	}
+	c.Assert(foundShorthand, check.Equals, true)
+}
+
+func (s *S) TestRegisterShorthandDoesNotAffectV1Commands(c *check.C) {
+	var stdout, stderr bytes.Buffer
+	mngr := NewManager("glb", &stdout, &stderr, os.Stdin, nil)
+	mngr.v2.Enabled = true
+
+	originalCmd := &TestCommand{}
+	mngr.RegisterShorthand(originalCmd, "f")
+
+	// Shorthand should NOT be registered in v1 manager
+	_, found := mngr.Commands["f"]
+	c.Assert(found, check.Equals, false)
+}
+
+type commandWithUsage struct {
+	name  string
+	usage string
+}
+
+func (c *commandWithUsage) Info() *Info {
+	return &Info{
+		Name:  c.name,
+		Desc:  "A command with custom usage.",
+		Usage: c.usage,
+	}
+}
+
+func (c *commandWithUsage) Run(context *Context) error {
+	io.WriteString(context.Stdout, "Running CommandWithUsage")
+	return nil
+}
+
+func (s *S) TestHumanizeCommand(c *check.C) {
+	program := ExtractProgramName(os.Args[0])
+	tests := []struct {
+		input    string
+		expected string
+	}{
+		{"foo", program + " foo"},
+		{"app-info", program + " app info"},
+		{"app-log-set", program + " app log set"},
+		{"single", program + " single"},
+	}
+	for _, tt := range tests {
+		result := humanizeCommand(tt.input)
+		c.Assert(result, check.Equals, tt.expected)
+	}
+}
+
+func (s *S) TestDeprecatedCommandInfo(c *check.C) {
+	originalCmd := &commandWithUsage{
+		name:  "app-info",
+		usage: "app-info [flags]",
+	}
+	deprecatedCmd := &DeprecatedCommand{
+		Command: originalCmd,
+		oldName: "app-show",
+	}
+
+	info := deprecatedCmd.Info()
+
+	c.Assert(info.Name, check.Equals, "app-show")
+	c.Assert(info.Usage, check.Equals, "app-show [flags]")
+	c.Assert(info.Desc, check.Matches, `(?s)DEPRECATED: For better usability, this command has been replaced by ".*app info"\..*`)
+}
+
+func (s *S) TestDeprecatedCommandInfoPreservesOriginalDesc(c *check.C) {
+	originalCmd := &commandWithUsage{
+		name:  "new-cmd",
+		usage: "new-cmd",
+	}
+	deprecatedCmd := &DeprecatedCommand{
+		Command: originalCmd,
+		oldName: "old-cmd",
+	}
+
+	info := deprecatedCmd.Info()
+
+	c.Assert(info.Desc, check.Matches, `(?s)DEPRECATED:.*A command with custom usage\.`)
+}
+
+func (s *S) TestDeprecatedCommandRunOutputsColoredWarning(c *check.C) {
+	program := ExtractProgramName(os.Args[0])
+	var stdout, stderr bytes.Buffer
+	originalCmd := &commandWithUsage{
+		name:  "app-info",
+		usage: "app-info",
+	}
+	deprecatedCmd := &DeprecatedCommand{
+		Command: originalCmd,
+		oldName: "app-show",
+	}
+
+	ctx := &Context{
+		Args:   []string{},
+		Stdout: &stdout,
+		Stderr: &stderr,
+	}
+
+	err := deprecatedCmd.Run(ctx)
+	c.Assert(err, check.IsNil)
+
+	expectedOldCmd := program + " app show"
+	expectedNewCmd := program + " app info"
+	c.Assert(stderr.String(), check.Matches, `(?s).*WARNING:.*`+expectedOldCmd+`.*has been deprecated.*`+expectedNewCmd+`.*`)
+	c.Assert(stdout.String(), check.Equals, "Running CommandWithUsage")
 }

@@ -10,6 +10,7 @@ import (
 	"io"
 	"os"
 	"os/signal"
+	"path/filepath"
 	"regexp"
 	"sort"
 	"strconv"
@@ -174,33 +175,10 @@ func (m *Manager) RegisterDeprecated(command Command, oldName string) {
 	m.Commands[oldName] = deprecatedCmd
 }
 
-type RemovedCommand struct {
-	Name string
-	Help string
-}
-
-func (c *RemovedCommand) Info() *Info {
-	return &Info{
-		Name:  c.Name,
-		Usage: c.Name,
-		Desc:  fmt.Sprintf("This command was removed. %s", c.Help),
-		fail:  true,
+func (m *Manager) RegisterShorthand(command Command, shorthand string) {
+	if m.v2.Enabled {
+		m.v2.Register(&ShorthandCommand{Command: command, shorthand: shorthand})
 	}
-}
-
-func (c *RemovedCommand) Run(context *Context) error {
-	return ErrAbortCommand
-}
-
-func (m *Manager) RegisterRemoved(name string, help string) {
-	if m.Commands == nil {
-		m.Commands = make(map[string]Command)
-	}
-	_, found := m.Commands[name]
-	if found {
-		panic(fmt.Sprintf("command already registered: %s", name))
-	}
-	m.Commands[name] = &RemovedCommand{Name: name, Help: help}
 }
 
 func (m *Manager) RegisterTopic(name, content string) {
@@ -218,12 +196,21 @@ func (m *Manager) RegisterTopic(name, content string) {
 	m.topics[name] = content
 }
 
-func (m *Manager) Run(args []string) {
+func (m *Manager) SetFlagCompletions(completions map[string]CompletionFunc) {
+	if m.v2 != nil && m.v2.Enabled {
+		m.v2.SetFlagCompletions(completions)
+	}
+}
+
+func (m *Manager) Run(args []string) error {
 	if m.v2.Enabled {
 		defer m.finisher()
-		m.v2.Run()
-		return
+		return m.v2.Run()
 	}
+
+	// Migration Point: on V1
+	// err above always return nil
+
 	var (
 		status         int
 		verbosity      int
@@ -245,7 +232,7 @@ func (m *Manager) Run(args []string) {
 	if parseErr != nil {
 		fmt.Fprint(m.stderr, parseErr)
 		m.finisher().Exit(2)
-		return
+		return nil
 	}
 	args = flagset.Args()
 	args = m.normalizeCommandArgs(args)
@@ -278,9 +265,9 @@ func (m *Manager) Run(args []string) {
 		if err != nil && err != ErrLookup {
 			fmt.Fprint(m.stderr, err)
 			m.finisher().Exit(1)
-			return
+			return nil
 		} else if err == nil {
-			return
+			return nil
 		}
 	}
 	name := args[0]
@@ -288,7 +275,7 @@ func (m *Manager) Run(args []string) {
 	if !ok {
 		if msg, isTopic := m.tryImplicitTopic(args); isTopic {
 			fmt.Fprint(m.stdout, msg)
-			return
+			return nil
 		}
 
 		topicBasedName := m.findTopicBasedCommand(args)
@@ -321,7 +308,7 @@ func (m *Manager) Run(args []string) {
 			}
 		}
 		m.finisher().Exit(1)
-		return
+		return nil
 	}
 	args = args[1:]
 	info := command.Info()
@@ -329,7 +316,7 @@ func (m *Manager) Run(args []string) {
 	if err != nil {
 		fmt.Fprint(m.stderr, err)
 		m.finisher().Exit(1)
-		return
+		return nil
 	}
 	if info.fail {
 		command = m.Commands["help"]
@@ -396,6 +383,7 @@ func (m *Manager) Run(args []string) {
 		status = 1
 	}
 	m.finisher().Exit(status)
+	return nil
 }
 
 func (m *Manager) findTopicBasedCommand(args []string) string {
@@ -600,6 +588,11 @@ type FlaggedCommand interface {
 	Flags() *pflag.FlagSet
 }
 
+type AutoCompleteCommand interface {
+	Command
+	Complete(args []string, toComplete string) ([]string, error)
+}
+
 type DeprecatedCommand struct {
 	Command
 	oldName string
@@ -607,14 +600,28 @@ type DeprecatedCommand struct {
 
 func (c *DeprecatedCommand) Info() *Info {
 	info := c.Command.Info()
-	info.Usage = strings.Replace(info.Usage, info.Name, c.oldName, 1)
+	newCommand := humanizeCommand(info.Name)
+
+	info.Desc = fmt.Sprintf("DEPRECATED: For better usability, this command has been replaced by %q.\n\n%s", newCommand, info.Desc)
+
+	info.Usage = c.oldName + stripUsage(info.Name, info.Usage)
 	info.Name = c.oldName
-	info.V2.Hidden = true
 	return info
 }
 
+func humanizeCommand(s string) string {
+	program := ExtractProgramName(os.Args[0])
+	return program + " " + strings.ReplaceAll(s, "-", " ")
+}
+
 func (c *DeprecatedCommand) Run(context *Context) error {
-	fmt.Fprintf(context.Stderr, "WARNING: %q has been deprecated, please use %q instead.\n\n", c.oldName, c.Command.Info().Name)
+	oldCommand := humanizeCommand(c.oldName)
+	newCommand := humanizeCommand(c.Command.Info().Name)
+
+	warningText := fmt.Sprintf("WARNING: %q has been deprecated, please use %q instead.\n\n", oldCommand, newCommand)
+
+	fmt.Fprint(context.Stderr, Colorfy(warningText, "yellow", "", "bold"))
+
 	return c.Command.Run(context)
 }
 
@@ -623,6 +630,40 @@ func (c *DeprecatedCommand) Flags() *pflag.FlagSet {
 		return cmd.Flags()
 	}
 	return pflag.NewFlagSet("", pflag.ContinueOnError)
+}
+
+type ShorthandCommand struct {
+	Command
+	shorthand string
+}
+
+func (c *ShorthandCommand) Info() *Info {
+	info := c.Command.Info()
+
+	info.Usage = c.shorthand + stripUsage(info.Name, info.Usage)
+
+	info.Name = c.shorthand
+	info.V2.GroupID = "shorthands"
+	info.V2.OnlyAppendOnRoot = true
+	return info
+}
+
+func (c *ShorthandCommand) Run(context *Context) error {
+	return c.Command.Run(context)
+}
+
+func (c *ShorthandCommand) Flags() *pflag.FlagSet {
+	if cmd, ok := c.Command.(FlaggedCommand); ok {
+		return cmd.Flags()
+	}
+	return pflag.NewFlagSet("", pflag.ContinueOnError)
+}
+
+func (c *ShorthandCommand) Complete(args []string, toComplete string) ([]string, error) {
+	if autoCompleteCmd, ok := c.Command.(AutoCompleteCommand); ok {
+		return autoCompleteCmd.Complete(args, toComplete)
+	}
+	return nil, nil
 }
 
 type Context struct {
@@ -727,8 +768,7 @@ func (c *help) parseFlags(command Command) string {
 }
 
 func ExtractProgramName(path string) string {
-	parts := strings.Split(path, "/")
-	return parts[len(parts)-1]
+	return filepath.Base(path)
 }
 
 var (
@@ -767,4 +807,8 @@ func validateVersion(supported, current string) bool {
 
 func (m *Manager) SetExiter(e exiter) {
 	m.e = e
+}
+
+func (m *Manager) V2() *ManagerV2 {
+	return m.v2
 }
