@@ -342,28 +342,6 @@ func (c *FailAndWorkCommandCustom) Run(context *Context) error {
 	return nil
 }
 
-type testStatusErr struct {
-	status int
-}
-
-func (testStatusErr) Error() string {
-	return "my unauth"
-}
-
-func (t testStatusErr) StatusCode() int {
-	return t.status
-}
-
-type errWithBody struct{}
-
-func (e errWithBody) Error() string {
-	return "hey"
-}
-
-func (e errWithBody) Body() []byte {
-	return []byte("my body")
-}
-
 type FailCommandCustom struct {
 	err error
 }

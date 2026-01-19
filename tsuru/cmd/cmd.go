@@ -9,7 +9,6 @@ import (
 	"io"
 	"os"
 	"path/filepath"
-	"regexp"
 	"strings"
 	"sync"
 
@@ -157,8 +156,6 @@ type Info struct {
 	SilenceUsage        bool
 	ParseFirstFlagsOnly bool
 }
-
-var flagFormatRegexp = regexp.MustCompile(`(?m)^([^-\s])`)
 
 func ExtractProgramName(path string) string {
 	return filepath.Base(path)
