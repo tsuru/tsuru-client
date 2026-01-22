@@ -11,6 +11,7 @@ import (
 	"io"
 	"net/http"
 	"net/url"
+	"strings"
 
 	"github.com/tsuru/go-tsuruclient/pkg/tsuru"
 	"github.com/tsuru/tsuru-client/tsuru/cmd"
@@ -636,6 +637,32 @@ func (s *S) TestJobDelete(c *check.C) {
 		Args:   []string{jobName},
 		Stdout: &stdout,
 		Stderr: &stderr,
+		Stdin:  strings.NewReader("y\n"),
+	}
+	expected := `Are you sure you want to remove job "all-time-low"? (y/n) Job successfully deleted
+`
+	trans := cmdtest.ConditionalTransport{
+		Transport: cmdtest.Transport{Status: http.StatusOK},
+		CondFunc: func(r *http.Request) bool {
+			c.Assert(r.URL.Path, check.Equals, fmt.Sprintf("/1.13/jobs/%s", jobName))
+			c.Assert(r.Method, check.Equals, "DELETE")
+			return true
+		},
+	}
+	s.setupFakeTransport(&trans)
+	command := JobDelete{}
+	err := command.Run(&context)
+	c.Assert(err, check.IsNil)
+	c.Assert(stdout.String(), check.Equals, expected)
+}
+
+func (s *S) TestJobDeleteConfirmed(c *check.C) {
+	var stdout, stderr bytes.Buffer
+	jobName := "all-time-low"
+	context := cmd.Context{
+		Args:   []string{jobName},
+		Stdout: &stdout,
+		Stderr: &stderr,
 	}
 	expected := "Job successfully deleted\n"
 	trans := cmdtest.ConditionalTransport{
@@ -643,6 +670,32 @@ func (s *S) TestJobDelete(c *check.C) {
 		CondFunc: func(r *http.Request) bool {
 			c.Assert(r.URL.Path, check.Equals, fmt.Sprintf("/1.13/jobs/%s", jobName))
 			c.Assert(r.Method, check.Equals, "DELETE")
+			return true
+		},
+	}
+	s.setupFakeTransport(&trans)
+	command := JobDelete{}
+	command.Flags().Parse([]string{"-y"})
+	err := command.Run(&context)
+	c.Assert(err, check.IsNil)
+	c.Assert(stdout.String(), check.Equals, expected)
+}
+
+func (s *S) TestJobDeleteAborted(c *check.C) {
+	var stdout, stderr bytes.Buffer
+	jobName := "all-time-low"
+	context := cmd.Context{
+		Args:   []string{jobName},
+		Stdout: &stdout,
+		Stderr: &stderr,
+		Stdin:  strings.NewReader("n\n"),
+	}
+	expected := `Are you sure you want to remove job "all-time-low"? (y/n) Abort.
+`
+	trans := cmdtest.ConditionalTransport{
+		Transport: cmdtest.Transport{Status: http.StatusOK},
+		CondFunc: func(r *http.Request) bool {
+			c.Fail()
 			return true
 		},
 	}
@@ -669,6 +722,7 @@ func (s *S) TestJobDeleteApiError(c *check.C) {
 	}
 	s.setupFakeTransport(&trans)
 	command := JobDelete{}
+	command.Flags().Parse([]string{"-y"})
 	err := command.Run(&context)
 	c.Assert(err, check.NotNil)
 	c.Assert(err, check.ErrorMatches, ".* some api error")
