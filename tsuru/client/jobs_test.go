@@ -637,7 +637,7 @@ func (s *S) TestJobDelete(c *check.C) {
 		Args:   []string{jobName},
 		Stdout: &stdout,
 		Stderr: &stderr,
-		Stdin: strings.NewReader("y\n"),
+		Stdin:  strings.NewReader("y\n"),
 	}
 	expected := `Are you sure you want to remove job "all-time-low"? (y/n) Job successfully deleted
 `
@@ -688,7 +688,7 @@ func (s *S) TestJobDeleteAborted(c *check.C) {
 		Args:   []string{jobName},
 		Stdout: &stdout,
 		Stderr: &stderr,
-		Stdin: strings.NewReader("n\n"),
+		Stdin:  strings.NewReader("n\n"),
 	}
 	expected := `Are you sure you want to remove job "all-time-low"? (y/n) Abort.
 `
