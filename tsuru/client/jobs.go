@@ -444,7 +444,9 @@ func (c *JobList) clientSideFilter(jobs []tsuru.Job) []tsuru.Job {
 	return result
 }
 
-type JobDelete struct{}
+type JobDelete struct {
+	cmd.ConfirmationCommand
+}
 
 func (c *JobDelete) Info() *cmd.Info {
 	return &cmd.Info{
@@ -458,6 +460,10 @@ func (c *JobDelete) Info() *cmd.Info {
 
 func (c *JobDelete) Run(ctx *cmd.Context) error {
 	jobName := ctx.Args[0]
+
+	if !c.Confirm(ctx, fmt.Sprintf(`Are you sure you want to remove job "%s"?`, jobName)) {
+		return nil
+	}
 
 	apiClient, err := tsuruHTTP.TsuruClientFromEnvironment()
 	if err != nil {
