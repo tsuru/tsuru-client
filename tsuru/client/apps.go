@@ -606,66 +606,69 @@ func ShortID(id string) string {
 }
 
 const simplifiedFormat = `{{ if .Error -}}
-Error: {{ .Error }}
+Error:       {{ .Error }}
 {{ end -}}
 Application: {{.Name}}
 {{- if .DashboardURL }}
-Dashboard: {{ .DashboardURL }}
+Dashboard:   {{ .DashboardURL }}
 {{- end }}
 {{- if .Description }}
 Description: {{.Description}}
 {{- end }}
 {{- if .TagList }}
-Tags: {{.TagList}}
+Tags:        {{.TagList}}
 {{- end }}
-Created by: {{.Owner}}
-Platform: {{.Platform}}
-Plan: {{ .Plan.Name }}
-Pool: {{.Pool}} ({{ .Provisioner }}{{ if .Cluster}} | cluster: {{ .Cluster }}{{end}})
+Created by:  {{.Owner}}
+Platform:    {{.Platform}}
+Plan:        {{ .Plan.Name }}
+Pool:        {{.Pool}} ({{ .Provisioner }}{{ if .Cluster}} | cluster: {{ .Cluster }}{{end}})
 {{if not .Routers -}}
-Router:{{if .Router}} {{.Router}}{{if .RouterOpts}} ({{.GetRouterOpts}}){{end}}{{end}}
+Router:      {{if .Router}} {{.Router}}{{if .RouterOpts}} ({{.GetRouterOpts}}){{end}}{{end}}
 {{end -}}
-Teams: {{.TeamList}}
-{{- if .InternalAddr }}
+Teams:       {{.TeamList}}
+{{ if .InternalAddr }}
 Cluster Internal Addresses: {{.InternalAddr}}
 {{- end }}
 {{- if .Addr }}
 Cluster External Addresses: {{.Addr}}
 {{- end }}
 {{- if .SimpleServicesView }}
-Bound Services: {{ .SimpleServicesView }}
-{{- end }}
+Bound Services:             {{ .SimpleServicesView }}
+{{ end }}
 `
 
 const fullFormat = `{{ if .Error -}}
-Error: {{ .Error }}
+Error:        {{ .Error }}
 {{ end -}}
-Application: {{.Name}}
+Application:  {{.Name}}
 {{- if .DashboardURL }}
-Dashboard: {{ .DashboardURL }}
+Dashboard:    {{ .DashboardURL }}
 {{- end }}
 {{- if .Description }}
-Description: {{.Description}}
+Description:  {{.Description}}
 {{- end }}
 {{- if .TagList }}
-Tags: {{.TagList}}
+Tags:         {{.TagList}}
 {{- end }}
-Platform: {{.Platform}}
+Platform:     {{.Platform}}
 {{ if .Provisioner -}}
-Provisioner: {{ .Provisioner }}
+Provisioner:  {{ .Provisioner }}
 {{ end -}}
 {{if not .Routers -}}
-Router:{{if .Router}} {{.Router}}{{if .RouterOpts}} ({{.GetRouterOpts}}){{end}}{{end}}
+Router:       {{if .Router}} {{.Router}}{{if .RouterOpts}} ({{.GetRouterOpts}}){{end}}{{end}}
 {{end -}}
-Teams: {{.TeamList}}
-External Addresses: {{.Addr}}
-Created by: {{.Owner}}
-Deploys: {{.Deploys}}
+Teams:        {{.TeamList}}
+Created by:   {{.Owner}}
+Deploys:      {{.Deploys}}
 {{if .Cluster -}}
-Cluster: {{ .Cluster }}
+Cluster:      {{ .Cluster }}
 {{ end -}}
-Pool:{{if .Pool}} {{.Pool}}{{end}}
-Quota: {{ .QuotaString }}
+{{if .Pool -}}
+Pool:         {{.Pool}}
+{{ end -}}
+Quota:        {{ .QuotaString }}
+
+External Addresses: {{.Addr}}
 `
 
 func (a *app) String(simplified bool) string {
@@ -717,7 +720,7 @@ func (a *app) String(simplified bool) string {
 		autoScaleTable.TableWriterPadding = 2
 
 		processString := fmt.Sprintf(
-			"Process: %s (v%d), Min Units: %d, Max Units: %d",
+			"Autoscale [process %s] [version %d] [min units %d] [max units %d]",
 			as.Process, as.Version, int(as.MinUnits), int(as.MaxUnits),
 		)
 		processes = append(processes, processString)
@@ -775,8 +778,6 @@ func (a *app) String(simplified bool) string {
 	}
 
 	if len(processes) > 0 {
-		buf.WriteString("\n")
-		buf.WriteString("Auto Scale:\n")
 		for i, asTable := range autoScaleTables {
 			buf.WriteString("\n")
 			buf.WriteString(processes[i])
@@ -795,7 +796,7 @@ func (a *app) String(simplified bool) string {
 
 		if len(planByProcess) == 0 {
 			buf.WriteString("\n")
-			buf.WriteString("App Plan:\n")
+			buf.WriteString("Plan:\n")
 			buf.WriteString(renderPlans([]appTypes.Plan{*a.Plan}, renderPlansOpts{
 				tableWriterPadding: 2,
 			}))

@@ -13,6 +13,7 @@ import (
 	"regexp"
 	"strconv"
 	"strings"
+	"text/tabwriter"
 	"time"
 
 	"github.com/cezarsa/form"
@@ -345,18 +346,18 @@ func (c *EventInfo) Show(evt *eventTypes.EventInfo, context *cmd.Context) error 
 			maxSz = sz
 		}
 	}
+
+	tabWriter := tabwriter.NewWriter(context.Stdout, 0, 0, 2, ' ', 0)
+
 	for _, item := range items {
 		if item.label != "" {
 			item.label += ":"
 		}
-		count := (maxSz - len(item.label)) + 2
-		var pad string
-		if count > 0 && len(item.value) > 0 && item.value[0] != '\n' {
-			pad = strings.Repeat(" ", count)
-		}
 		label := cmd.Colorfy(item.label, "cyan", "", "")
-		fmt.Fprintf(context.Stdout, "%s%s%s\n", label, pad, item.value)
+		fmt.Fprintf(tabWriter, "%s\t%s\n", label, item.value)
 	}
+
+	tabWriter.Flush()
 	return nil
 }
 

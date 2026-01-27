@@ -14,6 +14,7 @@ import (
 	"sort"
 	"strconv"
 	"strings"
+	"text/tabwriter"
 
 	"github.com/antihax/optional"
 	"github.com/cezarsa/form"
@@ -709,35 +710,76 @@ func (c ServiceInstanceInfo) Run(ctx *cmd.Context) error {
 		return formatter.JSON(ctx.Stdout, si)
 	}
 
-	fmt.Fprintf(ctx.Stdout, "Service: %s\n", serviceName)
-	fmt.Fprintf(ctx.Stdout, "Instance: %s\n", instanceName)
+	tabWriter := tabwriter.NewWriter(ctx.Stdout, 0, 0, 2, ' ', 0)
+
+	fmt.Fprintf(tabWriter, "Service:\t%s\n", serviceName)
+	fmt.Fprintf(tabWriter, "Instance:\t%s\n", instanceName)
+
 	if si.Pool != "" {
-		fmt.Fprintf(ctx.Stdout, "Pool: %s\n", si.Pool)
+		fmt.Fprintf(tabWriter, "Pool:\t%s\n", si.Pool)
 	}
 	if len(si.Apps) > 0 {
-		fmt.Fprintf(ctx.Stdout, "Apps: %s\n", strings.Join(si.Apps, ", "))
+		fmt.Fprintf(tabWriter, "Apps:\t%s\n", strings.Join(si.Apps, ", "))
 	}
 
 	if len(si.Jobs) > 0 {
-		fmt.Fprintf(ctx.Stdout, "Jobs: %s\n", strings.Join(si.Jobs, ", "))
+		fmt.Fprintf(tabWriter, "Jobs:\t%s\n", strings.Join(si.Jobs, ", "))
 	}
 
-	fmt.Fprintf(ctx.Stdout, "Teams: %s\n", formatTeams(si.TeamOwner, si.Teams))
+	fmt.Fprintf(tabWriter, "Teams:\t%s\n", formatTeams(si.TeamOwner, si.Teams))
 
 	if si.Description != "" {
-		fmt.Fprintf(ctx.Stdout, "Description: %s\n", si.Description)
+		fmt.Fprintf(tabWriter, "Description:\t%s\n", si.Description)
 	}
 
 	if len(si.Tags) > 0 {
-		fmt.Fprintf(ctx.Stdout, "Tags: %s\n", strings.Join(si.Tags, ", "))
+		fmt.Fprintf(tabWriter, "Tags:\t%s\n", strings.Join(si.Tags, ", "))
 	}
 
 	if si.PlanName != "" {
-		fmt.Fprintf(ctx.Stdout, "Plan: %s\n", si.PlanName)
+		fmt.Fprintf(tabWriter, "Plan:\t%s\n", si.PlanName)
+	}
+
+	CustomInfoKeys := make([]string, 0)
+	for key := range si.CustomInfo {
+		CustomInfoKeys = append(CustomInfoKeys, key)
+	}
+
+	sort.Strings(CustomInfoKeys)
+
+	if len(CustomInfoKeys) != 0 {
+		for _, key := range CustomInfoKeys {
+			if strings.Contains(si.CustomInfo[key], "\n") {
+				continue
+			}
+
+			fmt.Fprintf(tabWriter, "%s:\t%s\n", key, si.CustomInfo[key])
+		}
+	}
+
+	fmt.Fprintf(tabWriter, "Status:\t%s\n", si.Status)
+
+	tabWriter.Flush()
+	tabWriter = nil
+
+	if len(CustomInfoKeys) != 0 {
+		for ind, key := range CustomInfoKeys {
+			if !strings.Contains(si.CustomInfo[key], "\n") {
+				continue
+			}
+
+			fmt.Fprintf(ctx.Stdout, "%s:\n", key)
+			fmt.Fprint(ctx.Stdout, indentString(si.CustomInfo[key], "  "))
+			fmt.Fprintln(ctx.Stdout)
+
+			if ind != len(CustomInfoKeys)-1 {
+				fmt.Fprintln(ctx.Stdout)
+			}
+		}
 	}
 
 	if si.PlanDescription != "" {
-		fmt.Fprintf(ctx.Stdout, "Plan description: %s\n", si.PlanDescription)
+		fmt.Fprintf(ctx.Stdout, "\nPlan description:\n%s\n\n", indentString(si.PlanDescription, "  "))
 	}
 
 	if len(si.Parameters) != 0 {
@@ -746,33 +788,29 @@ func (c ServiceInstanceInfo) Run(ctx *cmd.Context) error {
 			keys = append(keys, k)
 		}
 		sort.Strings(keys)
-		fmt.Fprintf(ctx.Stdout, "Plan parameters:\n")
+		fmt.Fprintf(ctx.Stdout, "Parameters:\n")
+
+		tabWriter = tabwriter.NewWriter(ctx.Stdout, 0, 0, 2, ' ', 0)
+
 		for _, k := range keys {
-			fmt.Fprintf(ctx.Stdout, "\t%s = %v\n", k, si.Parameters[k])
+			fmt.Fprintf(tabWriter, "  %s:\t%v\n", k, si.Parameters[k])
 		}
-	}
-	if len(si.CustomInfo) != 0 {
-		keyList := make([]string, 0)
-		for key := range si.CustomInfo {
-			keyList = append(keyList, key)
-		}
-		sort.Strings(keyList)
-		for ind, key := range keyList {
-			if !strings.Contains(si.CustomInfo[key], "\n") {
-				fmt.Fprintf(ctx.Stdout, "%s: %s\n", key, si.CustomInfo[key])
-				continue
-			}
-
-			ctx.Stdout.Write([]byte(key + ":" + "\n"))
-			ctx.Stdout.Write([]byte("\t" + si.CustomInfo[key] + "\n"))
-			if ind != len(keyList)-1 {
-				ctx.Stdout.Write([]byte("\n"))
-			}
-		}
+		tabWriter.Flush()
+		fmt.Fprintln(ctx.Stdout, "")
 	}
 
-	fmt.Fprintf(ctx.Stdout, "Status: %s\n", si.Status)
 	return nil
+}
+
+func indentString(s, indent string) string {
+	lines := strings.Split(s, "\n")
+	for i, line := range lines {
+		// Only indent non-empty lines if desired, or all lines
+		if line != "" || i < len(lines)-1 { // Avoid extra indent on a potentially empty final line
+			lines[i] = indent + line
+		}
+	}
+	return strings.Join(lines, "\n")
 }
 
 func formatTeams(teamOwner string, teams []string) string {
