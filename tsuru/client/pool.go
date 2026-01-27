@@ -97,6 +97,7 @@ func (pl *PoolList) Run(context *cmd.Context) error {
 		return err
 	}
 	t := tablecli.Table{Headers: tablecli.Row([]string{"Pool", "Kind", "Provisioner", "Teams", "Routers"}), LineSeparator: true}
+	t.TableWriterTruncate = true
 	if resp.StatusCode == http.StatusNoContent {
 		context.Stdout.Write(t.Bytes())
 		return nil

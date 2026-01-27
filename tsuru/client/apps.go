@@ -714,7 +714,6 @@ func (a *app) String(simplified bool) string {
 	for _, as := range a.Autoscale {
 		autoScaleTable := tablecli.NewTable()
 		autoScaleTable.LineSeparator = true
-		autoScaleTable.DisableTableWriterTruncate = true
 		autoScaleTable.TableWriterPadding = 2
 
 		processString := fmt.Sprintf(

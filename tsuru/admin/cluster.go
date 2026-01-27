@@ -399,6 +399,7 @@ func (c *ClusterList) Run(ctx *cmd.Context) error {
 	tbl := tablecli.NewTable()
 	tbl.LineSeparator = true
 	tbl.Headers = tablecli.Row{"Name", "Provisioner", "Addresses", "Custom Data", "Default", "Pools"}
+	tbl.TableWriterTruncate = true
 	for _, c := range clusters {
 		var custom []string
 		for k, v := range c.CustomData {
@@ -555,6 +556,7 @@ func (c *ProvisionerInfo) Run(ctx *cmd.Context) error {
 	fmt.Fprintf(ctx.Stdout, "\nCustom Data:\n")
 	tbl := tablecli.NewTable()
 	tbl.LineSeparator = true
+	tbl.TableWriterPadding = 2
 	tbl.Headers = tablecli.Row{"Name", "Usage"}
 	for key, value := range provisioner.ClusterHelp.CustomDataHelp {
 		tbl.AddRow(tablecli.Row{key, value})

@@ -138,7 +138,7 @@ func (c *TokenListCmd) Run(ctx *cmd.Context) error {
 		return err
 	}
 	table := tablecli.Table{
-		Headers:       tablecli.Row{"Token ID", "Team", "Timestamps", "Roles"},
+		Headers:       tablecli.Row{"Token ID", "Team", "Created At", "Expires At", "Last Access", "Roles"},
 		LineSeparator: true,
 	}
 	for _, t := range tokens {
@@ -148,11 +148,9 @@ func (c *TokenListCmd) Run(ctx *cmd.Context) error {
 		table.AddRow(tablecli.Row{
 			t.TokenId,
 			t.Team,
-			fmt.Sprintf(" Created At: %s\n Expires At: %s\nLast Access: %s",
-				formatter.FormatDate(t.CreatedAt),
-				formatter.FormatDate(t.ExpiresAt),
-				formatter.FormatDate(t.LastAccess),
-			),
+			formatter.FormatDate(t.CreatedAt),
+			formatter.FormatDate(t.ExpiresAt),
+			formatter.FormatDate(t.LastAccess),
 			formatRoles(t.Roles),
 		})
 	}

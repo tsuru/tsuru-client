@@ -134,7 +134,7 @@ func preSetupViper(vip *viper.Viper) *viper.Viper {
 	tablecli.TableConfig.UseTabWriter = vip.GetBool("tab-writer")
 	tablecli.TableConfig.BreakOnAny = vip.GetBool("break-any")
 	tablecli.TableConfig.ForceWrap = vip.GetBool("force-wrap")
-	tablecli.TableConfig.TabWriterTruncate = !vip.GetBool("disable-tab-writer-truncate")
+	tablecli.TableConfig.TabWriterTruncate = vip.GetBool("tab-writer-truncate")
 
 	return vip
 }
