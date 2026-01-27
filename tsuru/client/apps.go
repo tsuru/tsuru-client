@@ -735,27 +735,41 @@ func (a *app) String(simplified bool) string {
 			}))
 		}
 
+		useTableWriter := tablecli.TableConfig.UseTabWriter
+
+		addSection := func(title string, lines []string) {
+			if useTableWriter {
+				for i, line := range lines {
+					desc := ""
+					if i == 0 {
+						desc = title
+					}
+
+					autoScaleTable.AddRow(tablecli.Row([]string{
+						desc,
+						line,
+					}))
+				}
+			} else {
+				autoScaleTable.AddRow(tablecli.Row([]string{
+					title,
+					strings.Join(lines, "\n"),
+				}))
+			}
+		}
+
 		for _, schedule := range as.Schedules {
 			scheduleInfo := buildScheduleInfo(schedule)
-			autoScaleTable.AddRow(tablecli.Row([]string{
-				"Schedule",
-				scheduleInfo,
-			}))
+			addSection("Schedule", scheduleInfo)
 		}
 
 		for _, prometheus := range as.Prometheus {
 			prometheusInfo := buildPrometheusInfo(prometheus)
-			autoScaleTable.AddRow(tablecli.Row([]string{
-				"Prometheus",
-				prometheusInfo,
-			}))
+			addSection("Prometheus", prometheusInfo)
 		}
 		scaleDownLines := getParamsScaleDownLines(as.Behavior)
 		if len(scaleDownLines) > 0 {
-			autoScaleTable.AddRow([]string{
-				"Scale down behavior",
-				strings.Join(scaleDownLines, "\n"),
-			})
+			addSection("Scale down behavior", scaleDownLines)
 		}
 		autoScaleTables = append(autoScaleTables, autoScaleTable)
 	}
@@ -815,24 +829,30 @@ func (a *app) String(simplified bool) string {
 	return tplBuffer.String() + buf.String()
 }
 
-func buildScheduleInfo(schedule provTypes.AutoScaleSchedule) string {
+func buildScheduleInfo(schedule provTypes.AutoScaleSchedule) []string {
 	// Init with default EN locale
 	exprDesc, _ := cron.NewDescriptor()
 
 	startTimeHuman, _ := exprDesc.ToDescription(schedule.Start, cron.Locale_en)
 	endTimeHuman, _ := exprDesc.ToDescription(schedule.End, cron.Locale_en)
 
-	return fmt.Sprintf("Start: %s (%s)\nEnd: %s (%s)\nUnits: %d\nTimezone: %s",
-		startTimeHuman, schedule.Start, endTimeHuman, schedule.End, schedule.MinReplicas, schedule.Timezone,
-	)
+	return []string{
+		"Start: " + startTimeHuman + " (" + schedule.Start + ")",
+		"End: " + endTimeHuman + " (" + schedule.End + ")",
+		"Units: " + strconv.Itoa(schedule.MinReplicas),
+		"Timezone: " + schedule.Timezone,
+	}
 }
 
-func buildPrometheusInfo(prometheus provTypes.AutoScalePrometheus) string {
+func buildPrometheusInfo(prometheus provTypes.AutoScalePrometheus) []string {
 	thresholdValue := strconv.FormatFloat(prometheus.Threshold, 'f', -1, 64)
 
-	return fmt.Sprintf("Name: %s\nQuery: %s\nThreshold: %s\nPrometheusAddress: %s",
-		prometheus.Name, prometheus.Query, thresholdValue, prometheus.PrometheusAddress,
-	)
+	return []string{
+		"Name: " + prometheus.Name,
+		"Query: " + prometheus.Query,
+		"Threshold: " + thresholdValue,
+		"PrometheusAddress: " + prometheus.PrometheusAddress,
+	}
 }
 
 func (a *app) SimpleServicesView() string {
@@ -1086,23 +1106,27 @@ func renderServiceInstanceBindsForApps(w io.Writer, binds []bindTypes.ServiceIns
 	table.Headers = []string{"Service", "Instance (Plan)"}
 	table.TableWriterPadding = 2
 
+	count := 0
 	for _, s := range services {
-		var sb strings.Builder
 		for i, inst := range instancesByService[s] {
+			count++
+			desc := ""
+			if i == 0 {
+				desc = s
+			}
+
+			var sb strings.Builder
 			sb.WriteString(inst.Instance)
 			if inst.Plan != "" {
 				sb.WriteString(fmt.Sprintf(" (%s)", inst.Plan))
 			}
 
-			if i < len(instancesByService[s])-1 {
-				sb.WriteString("\n")
-			}
+			table.AddRow([]string{desc, sb.String()})
 		}
-		table.AddRow([]string{s, sb.String()})
 	}
 
-	if table.Rows() > 0 {
-		fmt.Fprintf(w, "\nService instances: %d\n", table.Rows())
+	if count > 0 {
+		fmt.Fprintf(w, "\nService instances: %d\n", count)
 		fmt.Fprint(w, table.String())
 	}
 }
