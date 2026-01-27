@@ -11,6 +11,7 @@ import (
 
 	"github.com/tsuru/go-tsuruclient/pkg/config"
 	tsuruHTTP "github.com/tsuru/tsuru-client/tsuru/http"
+	_ "gopkg.in/check.v1" // register -check.v flag for compatibility with make test
 )
 
 func setupTest(t *testing.T) {

@@ -11,6 +11,7 @@ import (
 	"time"
 
 	"github.com/cezarsa/form"
+	"github.com/tsuru/tsuru-client/tsuru/cmd"
 	"github.com/tsuru/tsuru-client/tsuru/formatter"
 	tsuruHTTP "github.com/tsuru/tsuru-client/tsuru/http"
 	check "gopkg.in/check.v1"
@@ -34,6 +35,7 @@ func (s *S) TearDownSuite(c *check.C) {
 }
 
 func (s *S) SetUpTest(c *check.C) {
+	cmd.DisableColors = true
 	s.defaultLocation = *formatter.LocalTZ
 	location, err := time.LoadLocation("US/Central")
 	if err == nil {

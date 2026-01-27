@@ -6,9 +6,8 @@ package cmd
 
 import (
 	"fmt"
-	"os"
 
-	"github.com/tsuru/tablecli"
+	v2 "github.com/tsuru/tsuru-client/tsuru/cmd/v2"
 )
 
 const (
@@ -34,14 +33,14 @@ var fontEffects = map[string]int{
 	"inverse": 7,
 }
 
+var DisableColors bool
+
 func init() {
-	tablecli.TableConfig.BreakOnAny = os.Getenv("TSURU_BREAK_ANY") != ""
-	tablecli.TableConfig.ForceWrap = os.Getenv("TSURU_FORCE_WRAP") != ""
-	tablecli.TableConfig.UseTabWriter = os.Getenv("TSURU_TAB_WRITER") != ""
+	DisableColors = v2.ColorDisabled()
 }
 
 func Colorfy(msg string, fontcolor string, background string, effect string) string {
-	if os.Getenv("TSURU_DISABLE_COLORS") != "" {
+	if DisableColors {
 		return msg
 	}
 	return fmt.Sprintf(pattern, fontEffects[effect], fontColors[fontcolor], fontColors[background]+bgFactor, msg)

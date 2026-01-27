@@ -13,9 +13,14 @@ import (
 	"github.com/spf13/cobra"
 	"github.com/spf13/viper"
 	"github.com/tsuru/go-tsuruclient/pkg/config"
+	"github.com/tsuru/tablecli"
 )
 
 var defaultViper = preSetupViper(nil)
+
+func ColorDisabled() bool {
+	return defaultViper.GetBool("disable-colors")
+}
 
 func NewRootCmd() *cobra.Command {
 	rootCmd := &cobra.Command{
@@ -124,6 +129,12 @@ func preSetupViper(vip *viper.Viper) *viper.Viper {
 			fmt.Fprintln(os.Stderr, "Error Using config file:", err)
 		}
 	}
+
+	// setup table writer
+	tablecli.TableConfig.UseTabWriter = vip.GetBool("tab-writer")
+	tablecli.TableConfig.BreakOnAny = vip.GetBool("break-any")
+	tablecli.TableConfig.ForceWrap = vip.GetBool("force-wrap")
+	tablecli.TableConfig.TabWriterTruncate = !vip.GetBool("disable-tab-writer-truncate")
 
 	return vip
 }
