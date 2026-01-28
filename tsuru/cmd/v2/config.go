@@ -25,7 +25,7 @@ func Pager() (pager string, found bool) {
 	if !defaultViper.IsSet(key) {
 		return "", false
 	}
-	return defaultViper.GetString("pager"), true
+	return defaultViper.GetString(key), true
 }
 
 // preSetupViper prepares viper for being used by NewProductionTsuruContext()
