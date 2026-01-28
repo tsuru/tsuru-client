@@ -118,6 +118,7 @@ func (m *ManagerV2) SetFlagCompletions(completions map[string]CompletionFunc) {
 }
 
 func (m *ManagerV2) Run() error {
+	defer m.Finish()
 	ctx := context.Background()
 	cmd, err := m.rootCmd.ExecuteContextC(ctx)
 
