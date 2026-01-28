@@ -208,29 +208,29 @@ func (c *JobInfo) Info() *cmd.Info {
 	}
 }
 
-const jobInfoFormat = `Job: {{.Job.Name}}
+const jobInfoFormat = `Job:                 {{.Job.Name}}
 {{- with .Job.Description }}
-Description: {{.}}
+Description:         {{.}}
 {{- end }}
 {{- with .DashboardURL }}
-Dashboard: {{.}}
+Dashboard:           {{.}}
 {{- end }}
-Teams: {{.Teams}}
-Created by: {{.Job.Owner}}
-Cluster: {{.Cluster}}
-Pool: {{.Job.Pool}}
-Plan: {{.Job.Plan.Name}}
+Teams:               {{.Teams}}
+Created by:          {{.Job.Owner}}
+Cluster:             {{.Cluster}}
+Pool:                {{.Job.Pool}}
+Plan:                {{.Job.Plan.Name}}
 {{- if and .Job.Spec.Schedule (not .Job.Spec.Manual) }}
-Schedule: {{.Job.Spec.Schedule}}
+Schedule:            {{.Job.Spec.Schedule}}
 {{- end }}
-Image: {{.Job.Spec.Container.Image}}
-Command: {{.Job.Spec.Container.Command}}
+Image:               {{.Job.Spec.Container.Image}}
+Command:             {{.Job.Spec.Container.Command}}
 {{- if .Job.Spec.ActiveDeadlineSeconds }}
-Max Running Time: {{.Job.Spec.ActiveDeadlineSeconds}}s
+Max Running Time:    {{.Job.Spec.ActiveDeadlineSeconds}}s
 {{- end }}
 {{- if .Job.Spec.ConcurrencyPolicy }}
-Concurrency Policy: {{.Job.Spec.ConcurrencyPolicy}}
-{{- end }}`
+Concurrency Policy:  {{.Job.Spec.ConcurrencyPolicy}}
+{{ end }}`
 
 func (c *JobInfo) Run(ctx *cmd.Context) error {
 	jobName := ctx.Args[0]

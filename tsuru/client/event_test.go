@@ -297,16 +297,16 @@ func (s *S) TestEventInfo(c *check.C) {
 	command := EventInfo{}
 	err := command.Run(&context)
 	c.Assert(err, check.IsNil)
-	expected := `ID:         578e3908413daf5fd9891aac
-Start:      19 Jul 16 09:28 CDT
-End:        19 Jul 16 09:29 CDT \(00:57\)
-Targets:    app\(myapp\)
-            app\(myapp2\)
-Kind:       permission\(app\.deploy\)
-Owner:      user\(someone@removed\.com\)
-Success:    true
-Cancelable: true
-Canceled:   false
+	expected := `ID:          578e3908413daf5fd9891aac
+Start:       19 Jul 16 09:28 CDT
+End:         19 Jul 16 09:29 CDT \(00:57\)
+Targets:     app\(myapp\)
+             app\(myapp2\)
+Kind:        permission\(app\.deploy\)
+Owner:       user\(someone@removed\.com\)
+Success:     true
+Cancelable:  true
+Canceled:    false
 Start Custom Data:
     app:
       cname: \[\]
@@ -423,19 +423,19 @@ func (s *S) TestEventInfoWithError(c *check.C) {
 	command := EventInfo{}
 	err := command.Run(&context)
 	c.Assert(err, check.IsNil)
-	expected := `ID:         5787bcc8413daf2aeb040730
-Start:      14 Jul 16 11:24 CDT
-End:        14 Jul 16 11:25 CDT \(00:19\)
-Targets:    container\(94d3140395a85e4a60b06de26f6a51270d7b762c65cc9478e2c544ae4d7fb82f\)
-Kind:       internal\(healer\)
-Owner:      internal\(\)
-Success:    false
-Error:
+	expected := `ID:       5787bcc8413daf2aeb040730
+Start:    14 Jul 16 11:24 CDT
+End:      14 Jul 16 11:25 CDT \(00:19\)
+Targets:  container\(94d3140395a85e4a60b06de26f6a51270d7b762c65cc9478e2c544ae4d7fb82f\)
+Kind:     internal\(healer\)
+Owner:    internal\(\)
+Success:  false
+Error:    
 Error healing container "94d3140395a85e4a60b06de26f6a51270d7b762c65cc9478e2c544ae4d7fb82f": Error trying to heal containers 94d3140395a85e4a60b06de26f6a51270d7b762c65cc9478e2c544ae4d7fb82f: couldn't move container: Error moving some containers\. - Moving unit 94d3140395a85e4a60b06de26f6a51270d7b762c65cc9478e2c544ae4d7fb82f for "myapp" from 10\.0\.0\.4\.\.\.
 Error moving container: Error moving unit 94d3140395a85e4a60b06de26f6a51270d7b762c65cc9478e2c544ae4d7fb82f Caused by: Post http://10\.0\.0\.5:8000/services/myapp/destinations: dial tcp 10\.0\.0\.5:8000: getsockopt: no route to host
 
-Cancelable: false
-Canceled:   false
+Cancelable:  false
+Canceled:    false
 `
 	c.Assert(stdout.String(), check.Matches, expected)
 }
@@ -459,15 +459,15 @@ func (s *S) TestEventInfoRunning(c *check.C) {
 	command := EventInfo{}
 	err := command.Run(&context)
 	c.Assert(err, check.IsNil)
-	expected := `ID:         998e3908413daf5fd9891aac
-Start:      19 Jul 16 09:27 CDT
-End:        running \(.+\)
-Targets:    app\(myapp\)
-Kind:       permission\(app\.deploy\)
-Owner:      user\(someone@removed\.com\)
-Success:    …
-Cancelable: true
-Canceled:   false
+	expected := `ID:          998e3908413daf5fd9891aac
+Start:       19 Jul 16 09:27 CDT
+End:         running \(.+\)
+Targets:     app\(myapp\)
+Kind:        permission\(app\.deploy\)
+Owner:       user\(someone@removed\.com\)
+Success:     …
+Cancelable:  true
+Canceled:    false
 `
 	c.Assert(stdout.String(), check.Matches, expected)
 }
@@ -491,21 +491,21 @@ func (s *S) TestEventInfoCanceled(c *check.C) {
 	command := EventInfo{}
 	err := command.Run(&context)
 	c.Assert(err, check.IsNil)
-	expected := `ID:         888e3908413daf5fd9891aac
-Start:      19 Jul 16 09:28 CDT
-End:        19 Jul 16 09:29 CDT \(00:57\)
-Targets:    app\(myapp\)
-Kind:       permission\(app\.deploy\)
-Owner:      user\(someone@removed\.com\)
-Success:    false
-Error:
+	expected := `ID:       888e3908413daf5fd9891aac
+Start:    19 Jul 16 09:28 CDT
+End:      19 Jul 16 09:29 CDT \(00:57\)
+Targets:  app\(myapp\)
+Kind:     permission\(app\.deploy\)
+Owner:    user\(someone@removed\.com\)
+Success:  false
+Error:    
 canceled by user action
 
-Cancelable: true
-Canceled:   true
-  Reason:   because yes
-  By:       evil@corp
-  At:       19 Jul 16 11:28 -0300
+Cancelable:  true
+Canceled:    true
+  Reason:    because yes
+  By:        evil@corp
+  At:        19 Jul 16 11:28 -0300
 `
 	c.Assert(stdout.String(), check.Matches, expected)
 }

@@ -13,6 +13,7 @@ import (
 	"regexp"
 	"strconv"
 	"strings"
+	"text/tabwriter"
 	"time"
 
 	"github.com/cezarsa/form"
@@ -324,39 +325,39 @@ func (c *EventInfo) Show(evt *eventTypes.EventInfo, context *cmd.Context) error 
 			{"  At", evt.CancelInfo.AckTime.Format(time.RFC822Z)},
 		}...)
 	}
+
+	tabWriter := tabwriter.NewWriter(context.Stdout, 0, 0, 2, ' ', 0)
+
+	for _, item := range items {
+		if item.label != "" {
+			item.label += ":"
+		}
+		label := cmd.Colorfy(item.label, "cyan", "", "")
+		fmt.Fprintf(tabWriter, "%s\t%s\n", label, item.value)
+	}
+
+	tabWriter.Flush()
+
 	labels := []string{"Start", "End", "Other"}
 	for i, data := range []any{evt.CustomData.Start, evt.CustomData.End, evt.CustomData.Other} {
 		if data != nil {
 			str, err := yaml.Marshal(data)
 			if err == nil {
-				padded := padLines(string(str), "    ")
-				items = append(items, item{fmt.Sprintf("%s Custom Data", labels[i]), "\n" + padded})
+				fmt.Fprintf(context.Stdout, "%s Custom Data:\n", labels[i])
+				padded := padLines(string(strings.TrimSpace(string(str))), "    ")
+				fmt.Fprintln(context.Stdout, padded)
+				fmt.Fprintln(context.Stdout, "")
 			}
 		}
 	}
+
 	log := eventLog(evt)
 	if log != "" {
-		items = append(items, item{"Log", "\n" + padLines(log, "    ")})
+		fmt.Fprintln(context.Stdout, "Log:")
+		fmt.Fprintln(context.Stdout, padLines(strings.TrimSpace(log), "    "))
+		fmt.Fprintln(context.Stdout, "")
 	}
-	var maxSz int
-	for _, item := range items {
-		sz := len(item.label)
-		if len(item.value) > 0 && item.value[0] != '\n' && sz > maxSz {
-			maxSz = sz
-		}
-	}
-	for _, item := range items {
-		if item.label != "" {
-			item.label += ":"
-		}
-		count := (maxSz - len(item.label)) + 2
-		var pad string
-		if count > 0 && len(item.value) > 0 && item.value[0] != '\n' {
-			pad = strings.Repeat(" ", count)
-		}
-		label := cmd.Colorfy(item.label, "cyan", "", "")
-		fmt.Fprintf(context.Stdout, "%s%s%s\n", label, pad, item.value)
-	}
+
 	return nil
 }
 
