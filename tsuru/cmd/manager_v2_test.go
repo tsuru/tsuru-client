@@ -129,29 +129,6 @@ func TestManagerV2_Register(t *testing.T) {
 		assert.Equal(t, "List all apps", manager.tree.Children["app"].Children["list"].Command.Short)
 	})
 
-	t.Run("register_command_disabled", func(t *testing.T) {
-		manager := NewManagerV2()
-
-		cmd := &mockCommand{
-			info: &Info{
-				Name: "disabled-cmd",
-				Desc: "This command is disabled",
-				V2: InfoV2{
-					Disabled: true,
-				},
-			},
-		}
-
-		manager.Register(cmd)
-
-		// Should not register anything
-		rootCommands := manager.rootCmd.Commands()
-		for _, c := range rootCommands {
-			assert.NotEqual(t, "disabled-cmd", c.Use)
-		}
-		assert.Nil(t, manager.tree.Children["disabled"])
-	})
-
 	t.Run("register_command_only_append_on_root", func(t *testing.T) {
 		manager := NewManagerV2()
 
@@ -160,10 +137,9 @@ func TestManagerV2_Register(t *testing.T) {
 				Name:  "login",
 				Desc:  "Login to tsuru server",
 				Usage: "tsuru login [server]",
-				V2: InfoV2{
-					OnlyAppendOnRoot: true,
-					GroupID:          "auth",
-				},
+
+				OnlyAppendOnRoot: true,
+				GroupID:          "auth",
 			},
 		}
 
@@ -320,9 +296,8 @@ func TestManagerV2_registerV2FQDNOnRoot(t *testing.T) {
 				Name:  "app-list",
 				Desc:  "List all apps",
 				Usage: "Usage: tsuru app-list",
-				V2: InfoV2{
-					GroupID: "resource",
-				},
+
+				GroupID: "resource",
 			},
 		}
 
@@ -352,10 +327,9 @@ func TestManagerV2_registerV2FQDNOnRoot(t *testing.T) {
 			info: &Info{
 				Name: "login",
 				Desc: "Login to server",
-				V2: InfoV2{
-					OnlyAppendOnRoot: true,
-					GroupID:          "auth",
-				},
+
+				OnlyAppendOnRoot: true,
+				GroupID:          "auth",
 			},
 		}
 
@@ -367,25 +341,6 @@ func TestManagerV2_registerV2FQDNOnRoot(t *testing.T) {
 				assert.False(t, c.Hidden)
 			}
 		}
-	})
-
-	t.Run("skip_if_disabled", func(t *testing.T) {
-		manager := NewManagerV2()
-
-		cmd := &mockCommand{
-			info: &Info{
-				Name: "disabled-cmd",
-				V2: InfoV2{
-					Disabled: true,
-				},
-			},
-		}
-
-		initialCommandCount := len(manager.rootCmd.Commands())
-		manager.registerV2FQDNOnRoot(cmd)
-		finalCommandCount := len(manager.rootCmd.Commands())
-
-		assert.Equal(t, initialCommandCount, finalCommandCount)
 	})
 
 	t.Run("register_fqdn_with_common_aliases_reads_from_map", func(t *testing.T) {
@@ -1018,9 +973,8 @@ func TestManagerV2_fillCommand_DisableFlagParsing(t *testing.T) {
 			info: &Info{
 				Name: "plugin-exec",
 				Desc: "Execute plugin",
-				V2: InfoV2{
-					DisableFlagParsing: true,
-				},
+
+				DisableFlagParsing: true,
 			},
 		}
 
@@ -1063,9 +1017,8 @@ func TestManagerV2_fillCommand_SilenceUsage(t *testing.T) {
 			info: &Info{
 				Name: "plugin-run",
 				Desc: "Run plugin",
-				V2: InfoV2{
-					SilenceUsage: true,
-				},
+
+				SilenceUsage: true,
 			},
 		}
 
@@ -1110,10 +1063,9 @@ func TestManagerV2_fillCommand_ParseFirstFlagsOnly(t *testing.T) {
 				Name:    "plugin-exec",
 				Desc:    "Execute plugin",
 				MinArgs: ArbitraryArgs,
-				V2: InfoV2{
-					ParseFirstFlagsOnly: true,
-					DisableFlagParsing:  true,
-				},
+
+				ParseFirstFlagsOnly: true,
+				DisableFlagParsing:  true,
 			},
 			runFn: func(ctx *Context) error {
 				capturedArgs = ctx.Args
@@ -1158,7 +1110,7 @@ func TestManagerV2_fillCommand_ParseFirstFlagsOnly(t *testing.T) {
 
 		// ParseFirstFlagsOnly is not exposed on cobra.Command, but we can verify
 		// the behavior by checking the InfoV2 struct
-		assert.False(t, cmd.info.V2.ParseFirstFlagsOnly)
+		assert.False(t, cmd.info.ParseFirstFlagsOnly)
 	})
 }
 
@@ -1389,10 +1341,9 @@ func TestManagerV2_Integration(t *testing.T) {
 					Name:  "login",
 					Desc:  "Login to server",
 					Usage: "tsuru login",
-					V2: InfoV2{
-						OnlyAppendOnRoot: true,
-						GroupID:          "auth",
-					},
+
+					OnlyAppendOnRoot: true,
+					GroupID:          "auth",
 				},
 			},
 			{

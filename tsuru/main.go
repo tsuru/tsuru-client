@@ -36,14 +36,10 @@ Each target is identified by a label and a HTTP/HTTPS address. The client
 requires at least one target to connect to, there's no default target. A user
 may have multiple targets, but only one will be used at a time.`
 
-func buildManager(name string) *cmd.Manager {
+func buildManager(stdout, stderr io.Writer) *cmd.ManagerV2 {
 	form.DefaultEncoder = form.DefaultEncoder.UseJSONTags(false)
 	form.DefaultDecoder = form.DefaultDecoder.UseJSONTags(false)
 
-	return buildManagerCustom(name, os.Stdout, os.Stderr)
-}
-
-func buildManagerCustom(name string, stdout, stderr io.Writer) *cmd.Manager {
 	retryHook := func(err error) (retry bool) {
 		if teamToken := config.ReadTeamToken(); teamToken != "" {
 			return false
@@ -82,20 +78,12 @@ func buildManagerCustom(name string, stdout, stderr io.Writer) *cmd.Manager {
 		return true
 	}
 
-	lookup := func(context *cmd.Context) error {
-		err := client.RunPlugin(context)
-		if err != nil {
-			if retryHook(err) {
-				return client.RunPlugin(context)
-			}
-
-			return err
-		}
-
-		return nil
-	}
-
-	m := cmd.NewManagerPanicExiter(name, stdout, stderr, os.Stdin, lookup)
+	m := cmd.NewManagerV2(&cmd.ManagerV2Opts{
+		AfterFlagParseHook: func() {
+			initAuthorization()
+		},
+		RetryHook: retryHook,
+	})
 
 	m.SetFlagCompletions(map[string]cmd.CompletionFunc{
 		standards.FlagApp:      completions.AppNameCompletionFunc,
@@ -382,40 +370,26 @@ Services aren’t managed by tsuru, but by their creators.`)
 
 	plugins := client.FindPlugins()
 	for _, plugin := range plugins {
-		m.RegisterPlugin(&client.ExecutePlugin{PluginName: plugin})
+		m.Register(&client.ExecutePlugin{PluginName: plugin})
 	}
 
-	m.RetryHook = retryHook
-	m.AfterFlagParseHook = initAuthorization
 	return m
-}
-
-func recoverCmdPanicExitError() {
-	if r := recover(); r != nil {
-		if e, ok := r.(*cmd.PanicExitError); ok {
-			os.Exit(e.Code)
-		}
-		panic(r)
-	}
 }
 
 func main() {
 	var err error
 	defer func() {
 		if err != nil {
-			os.Exit(1) // this will work only on V2 implementation
+			os.Exit(1)
 		}
 	}()
-	defer recoverCmdPanicExitError() // TODO: remove on migration completion
 	defer config.SaveChangesWithTimeout()
 
 	checkVerResult := selfupdater.CheckLatestVersionBackground(version)
 	defer selfupdater.VerifyLatestVersion(checkVerResult)
 
-	name := cmd.ExtractProgramName(os.Args[0])
-
-	m := buildManager(name)
-	err = m.Run(os.Args[1:])
+	m := buildManager(os.Stdout, os.Stderr)
+	err = m.Run()
 }
 
 func initAuthorization() {

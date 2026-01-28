@@ -23,10 +23,8 @@ import (
 type S struct{}
 
 func (s *S) SetUpTest(c *check.C) {
-	var stdout, stderr bytes.Buffer
-	globalManager = cmd.NewManager("glb", &stdout, &stderr, os.Stdin, nil)
-	//var exiter recordingExiter
-	//globalManager.e = &exiter TODO
+	globalManager = cmd.NewManagerV2()
+
 	os.Setenv("TSURU_TARGET", "http://localhost")
 	os.Setenv("TSURU_TOKEN", "abc123")
 	if env := os.Getenv("TERM"); env == "" {
@@ -43,7 +41,7 @@ var _ = check.Suite(&S{})
 
 func Test(t *testing.T) { check.TestingT(t) }
 
-var globalManager *cmd.Manager
+var globalManager *cmd.ManagerV2
 
 func (s *S) TestShouldSetCloseToTrue(c *check.C) {
 	os.Setenv("TSURU_VERBOSITY", "2")

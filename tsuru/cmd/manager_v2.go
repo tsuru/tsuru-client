@@ -16,7 +16,6 @@ import (
 // ManagerV2 is responsible for managing the commands using cobra for tsuru-client.
 // this intends to replace the old Manager struct in the future.
 type ManagerV2 struct {
-	Enabled     bool
 	rootCmd     *cobra.Command
 	tree        *v2.CmdNode
 	contexts    []*Context
@@ -35,7 +34,6 @@ func NewManagerV2(opts ...*ManagerV2Opts) *ManagerV2 {
 	rootCmd := v2.NewRootCmd()
 
 	m := &ManagerV2{
-		Enabled: v2.Enabled(),
 		rootCmd: rootCmd,
 		tree:    v2.NewCmdNode(rootCmd),
 	}
@@ -51,6 +49,10 @@ func NewManagerV2(opts ...*ManagerV2Opts) *ManagerV2 {
 		m.retryHook = opts[0].RetryHook
 	}
 	return m
+}
+
+func (m *ManagerV2) Cobra() *cobra.Command {
+	return m.rootCmd
 }
 
 func (m *ManagerV2) RegisterTopic(name, content string) {
@@ -85,17 +87,24 @@ func (m *ManagerV2) RegisterTopic(name, content string) {
 	}
 }
 
+func (m *ManagerV2) RegisterDeprecated(command Command, oldName string) {
+	deprecatedCmd := &DeprecatedCommand{Command: command, oldName: oldName}
+
+	m.Register(command)
+	m.Register(deprecatedCmd)
+}
+
+func (m *ManagerV2) RegisterShorthand(command Command, shorthand string) {
+	m.Register(&ShorthandCommand{Command: command, shorthand: shorthand})
+}
+
 func (m *ManagerV2) Register(command Command) {
 	info := command.Info()
-
-	if info.V2.Disabled {
-		return
-	}
 
 	// 1. Legacy way to interact on tsuru-client
 	// ex: tsuru app-deploy tsuru app-list
 	m.registerV2FQDNOnRoot(command)
-	if info.V2.OnlyAppendOnRoot {
+	if info.OnlyAppendOnRoot {
 		return
 	}
 
@@ -155,9 +164,9 @@ func (m *ManagerV2) fillCommand(cobraCommand *cobra.Command, command Command) {
 
 	cobraCommand.Short = strings.TrimSpace(strings.Split(info.Desc, "\n")[0])
 	cobraCommand.Long = info.Desc
-	cobraCommand.DisableFlagParsing = info.V2.DisableFlagParsing
-	cobraCommand.SilenceUsage = info.V2.SilenceUsage
-	cobraCommand.Hidden = info.V2.Hidden
+	cobraCommand.DisableFlagParsing = info.DisableFlagParsing
+	cobraCommand.SilenceUsage = info.SilenceUsage
+	cobraCommand.Hidden = info.Hidden
 	cobraCommand.Args = cobra.ArbitraryArgs
 
 	if info.MinArgs > 0 && info.MinArgs >= info.MaxArgs {
@@ -167,7 +176,7 @@ func (m *ManagerV2) fillCommand(cobraCommand *cobra.Command, command Command) {
 	}
 
 	cobraCommand.RunE = func(cobraCommand *cobra.Command, args []string) error {
-		if info.V2.ParseFirstFlagsOnly {
+		if info.ParseFirstFlagsOnly {
 			args = v2.ParseFirstFlagsOnly(cobraCommand, args)
 
 			target, _ := cobraCommand.Flags().GetString("target")
@@ -265,29 +274,15 @@ func (m *ManagerV2) Finish() {
 func (m *ManagerV2) registerV2FQDNOnRoot(command Command) {
 	info := command.Info()
 
-	if info.V2.Disabled {
-		return
-	}
-
 	fqdn := info.Name
 
 	newCmd := &cobra.Command{
 		Use:     fqdn + stripUsage(fqdn, info.Usage),
-		GroupID: info.V2.GroupID,
+		GroupID: info.GroupID,
 	}
 
 	m.fillCommand(newCmd, command)
-	newCmd.Hidden = !info.V2.OnlyAppendOnRoot
+	newCmd.Hidden = !info.OnlyAppendOnRoot
 	newCmd.Aliases = standards.CommonAliases[fqdn]
 	m.tree.AddChild(newCmd)
-}
-
-type InfoV2 struct {
-	Disabled            bool
-	Hidden              bool
-	OnlyAppendOnRoot    bool
-	GroupID             string
-	DisableFlagParsing  bool
-	SilenceUsage        bool
-	ParseFirstFlagsOnly bool
 }

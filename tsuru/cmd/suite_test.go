@@ -5,7 +5,6 @@
 package cmd
 
 import (
-	"bytes"
 	"os"
 	"testing"
 
@@ -17,14 +16,10 @@ func Test(t *testing.T) { check.TestingT(t) }
 type S struct{}
 
 var _ = check.Suite(&S{})
-var globalManager *Manager
+var globalManager *ManagerV2
 
 func (s *S) SetUpTest(c *check.C) {
-	var stdout, stderr bytes.Buffer
-	globalManager = NewManager("glb", &stdout, &stderr, os.Stdin, nil)
-	globalManager.v2.Enabled = false // These tests are for V1 behavior
-	var exiter recordingExiter
-	globalManager.e = &exiter
+	globalManager = NewManagerV2()
 	os.Setenv("TSURU_TARGET", "http://localhost")
 	os.Setenv("TSURU_TOKEN", "abc123")
 	if env := os.Getenv("TERM"); env == "" {

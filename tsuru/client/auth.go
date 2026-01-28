@@ -538,10 +538,9 @@ func (c *ChangePassword) Info() *cmd.Info {
 		Usage: "change password",
 		Desc: `Changes the password of the logged in user. It will ask for the current
 password, the new and the confirmation.`,
-		V2: cmd.InfoV2{
-			OnlyAppendOnRoot: true,
-			GroupID:          "auth",
-		},
+
+		OnlyAppendOnRoot: true,
+		GroupID:          "auth",
 	}
 }
 
@@ -567,10 +566,8 @@ With the token in hand, the user can finally reset the password using the
 --token flag. The new password will also be mailed to the user.`,
 		MinArgs: 1,
 
-		V2: cmd.InfoV2{
-			OnlyAppendOnRoot: true,
-			GroupID:          "auth",
-		},
+		OnlyAppendOnRoot: true,
+		GroupID:          "auth",
 	}
 }
 
