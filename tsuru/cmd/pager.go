@@ -10,8 +10,9 @@ import (
 	"os/exec"
 	"strings"
 
-	"github.com/tsuru/tsuru-client/tsuru/cmd/v2"
 	terminal "golang.org/x/term"
+
+	v2 "github.com/tsuru/tsuru-client/tsuru/cmd/v2"
 )
 
 type descriptable interface {
