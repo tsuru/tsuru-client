@@ -5,22 +5,12 @@
 package v2
 
 import (
-	"fmt"
 	"os"
 	"strconv"
 	"strings"
 
 	"github.com/spf13/cobra"
-	"github.com/spf13/viper"
-	"github.com/tsuru/go-tsuruclient/pkg/config"
-	"github.com/tsuru/tablecli"
 )
-
-var defaultViper = preSetupViper(nil)
-
-func ColorDisabled() bool {
-	return defaultViper.GetBool("disable-colors")
-}
 
 func NewRootCmd() *cobra.Command {
 	rootCmd := &cobra.Command{
@@ -68,6 +58,10 @@ func ParseFirstFlagsOnly(cmd *cobra.Command, args []string) []string {
 	if cmd == nil {
 		return args
 	}
+	originalDisableFlagParsing := cmd.DisableFlagParsing
+	defer func() {
+		cmd.DisableFlagParsing = originalDisableFlagParsing
+	}()
 	cmd.DisableFlagParsing = false
 	for len(args) > 0 {
 		s := args[0]
@@ -106,35 +100,4 @@ func ParseFirstFlagsOnly(cmd *cobra.Command, args []string) []string {
 		}
 	}
 	return args
-}
-
-// preSetupViper prepares viper for being used by NewProductionTsuruContext()
-func preSetupViper(vip *viper.Viper) *viper.Viper {
-	if vip == nil {
-		vip = viper.New()
-	}
-	vip.SetEnvPrefix("tsuru")
-	vip.SetEnvKeyReplacer(strings.NewReplacer("-", "_"))
-	vip.AutomaticEnv() // read in environment variables that match
-
-	vip.AddConfigPath(config.JoinWithUserDir(".tsuru"))
-	vip.SetConfigType("yaml")
-	vip.SetConfigName("client")
-
-	// If a config file is found, read it in.
-	err := vip.ReadInConfig()
-	if err != nil {
-		_, ok := err.(viper.ConfigFileNotFoundError)
-		if !ok {
-			fmt.Fprintln(os.Stderr, "Error Using config file:", err)
-		}
-	}
-
-	// setup table writer
-	tablecli.TableConfig.UseTabWriter = vip.GetBool("tab-writer")
-	tablecli.TableConfig.BreakOnAny = vip.GetBool("break-any")
-	tablecli.TableConfig.ForceWrap = vip.GetBool("force-wrap")
-	tablecli.TableConfig.TabWriterTruncate = vip.GetBool("tab-writer-truncate")
-
-	return vip
 }

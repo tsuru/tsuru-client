@@ -9,7 +9,8 @@ import (
 	"io"
 	"os/exec"
 	"strings"
-	"syscall"
+
+	"github.com/tsuru/tsuru-client/tsuru/cmd/v2"
 
 	terminal "golang.org/x/term"
 )
@@ -105,7 +106,7 @@ func newSyncReader(baseReader io.Reader, writerToSync io.Writer) io.Reader {
 }
 
 func newPagerWriter(baseWriter io.Writer) io.Writer {
-	pager, found := syscall.Getenv("TSURU_PAGER")
+	pager, found := v2.Pager()
 	if found && pager == "" {
 		return baseWriter
 	}
