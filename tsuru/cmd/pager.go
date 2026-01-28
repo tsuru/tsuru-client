@@ -11,7 +11,6 @@ import (
 	"strings"
 
 	"github.com/tsuru/tsuru-client/tsuru/cmd/v2"
-
 	terminal "golang.org/x/term"
 )
 
