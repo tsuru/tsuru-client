@@ -80,7 +80,7 @@ func (s *S) TestVerifyLatestVersionSyncFinish(c *check.C) {
 }
 
 func (s *S) TestGetRemoteVersionAndReportsToChan(c *check.C) {
-	eInvalid := "metadata.version is not a SemVersion: Invalid Semantic Version\n.*"
+	eInvalid := "metadata.version is not a SemVersion: invalid semantic version\n.*"
 
 	for _, testCase := range []struct {
 		currentVer         string

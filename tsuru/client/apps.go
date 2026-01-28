@@ -688,6 +688,8 @@ func (a *app) String(simplified bool) string {
 
 	internalAddressesTable := tablecli.NewTable()
 	internalAddressesTable.Headers = []string{"Domain", "Port", "Process", "Version"}
+	internalAddressesTable.TableWriterPadding = 2
+
 	for _, internalAddress := range a.InternalAddresses {
 		port := strconv.Itoa(int(internalAddress.Port))
 		if internalAddress.TargetPort > 0 && int(internalAddress.Port) != internalAddress.TargetPort {
@@ -712,6 +714,7 @@ func (a *app) String(simplified bool) string {
 	for _, as := range a.Autoscale {
 		autoScaleTable := tablecli.NewTable()
 		autoScaleTable.LineSeparator = true
+		autoScaleTable.TableWriterPadding = 2
 
 		processString := fmt.Sprintf(
 			"Process: %s (v%d), Min Units: %d, Max Units: %d",
@@ -732,27 +735,41 @@ func (a *app) String(simplified bool) string {
 			}))
 		}
 
+		useTableWriter := tablecli.TableConfig.UseTabWriter
+
+		addSection := func(title string, lines []string) {
+			if useTableWriter {
+				for i, line := range lines {
+					desc := ""
+					if i == 0 {
+						desc = title
+					}
+
+					autoScaleTable.AddRow(tablecli.Row([]string{
+						desc,
+						line,
+					}))
+				}
+			} else {
+				autoScaleTable.AddRow(tablecli.Row([]string{
+					title,
+					strings.Join(lines, "\n"),
+				}))
+			}
+		}
+
 		for _, schedule := range as.Schedules {
 			scheduleInfo := buildScheduleInfo(schedule)
-			autoScaleTable.AddRow(tablecli.Row([]string{
-				"Schedule",
-				scheduleInfo,
-			}))
+			addSection("Schedule", scheduleInfo)
 		}
 
 		for _, prometheus := range as.Prometheus {
 			prometheusInfo := buildPrometheusInfo(prometheus)
-			autoScaleTable.AddRow(tablecli.Row([]string{
-				"Prometheus",
-				prometheusInfo,
-			}))
+			addSection("Prometheus", prometheusInfo)
 		}
 		scaleDownLines := getParamsScaleDownLines(as.Behavior)
 		if len(scaleDownLines) > 0 {
-			autoScaleTable.AddRow([]string{
-				"Scale down behavior",
-				strings.Join(scaleDownLines, "\n"),
-			})
+			addSection("Scale down behavior", scaleDownLines)
 		}
 		autoScaleTables = append(autoScaleTables, autoScaleTable)
 	}
@@ -779,7 +796,9 @@ func (a *app) String(simplified bool) string {
 		if len(planByProcess) == 0 {
 			buf.WriteString("\n")
 			buf.WriteString("App Plan:\n")
-			buf.WriteString(renderPlans([]appTypes.Plan{*a.Plan}, renderPlansOpts{}))
+			buf.WriteString(renderPlans([]appTypes.Plan{*a.Plan}, renderPlansOpts{
+				tableWriterPadding: 2,
+			}))
 		} else {
 			buf.WriteString("\n")
 			buf.WriteString("Process plans:\n")
@@ -796,10 +815,10 @@ func (a *app) String(simplified bool) string {
 		buf.WriteString("\n")
 		if a.Provisioner == "kubernetes" {
 			buf.WriteString("Cluster external addresses:\n")
-			renderRouters(a.Routers, &buf, "Router")
+			renderRouters(a.Routers, &buf, "Router", 2)
 		} else {
 			buf.WriteString("Routers:\n")
-			renderRouters(a.Routers, &buf, "Name")
+			renderRouters(a.Routers, &buf, "Name", 2)
 		}
 	}
 
@@ -810,24 +829,30 @@ func (a *app) String(simplified bool) string {
 	return tplBuffer.String() + buf.String()
 }
 
-func buildScheduleInfo(schedule provTypes.AutoScaleSchedule) string {
+func buildScheduleInfo(schedule provTypes.AutoScaleSchedule) []string {
 	// Init with default EN locale
 	exprDesc, _ := cron.NewDescriptor()
 
 	startTimeHuman, _ := exprDesc.ToDescription(schedule.Start, cron.Locale_en)
 	endTimeHuman, _ := exprDesc.ToDescription(schedule.End, cron.Locale_en)
 
-	return fmt.Sprintf("Start: %s (%s)\nEnd: %s (%s)\nUnits: %d\nTimezone: %s",
-		startTimeHuman, schedule.Start, endTimeHuman, schedule.End, schedule.MinReplicas, schedule.Timezone,
-	)
+	return []string{
+		"Start: " + startTimeHuman + " (" + schedule.Start + ")",
+		"End: " + endTimeHuman + " (" + schedule.End + ")",
+		"Units: " + strconv.Itoa(schedule.MinReplicas),
+		"Timezone: " + schedule.Timezone,
+	}
 }
 
-func buildPrometheusInfo(prometheus provTypes.AutoScalePrometheus) string {
+func buildPrometheusInfo(prometheus provTypes.AutoScalePrometheus) []string {
 	thresholdValue := strconv.FormatFloat(prometheus.Threshold, 'f', -1, 64)
 
-	return fmt.Sprintf("Name: %s\nQuery: %s\nThreshold: %s\nPrometheusAddress: %s",
-		prometheus.Name, prometheus.Query, thresholdValue, prometheus.PrometheusAddress,
-	)
+	return []string{
+		"Name: " + prometheus.Name,
+		"Query: " + prometheus.Query,
+		"Threshold: " + thresholdValue,
+		"PrometheusAddress: " + prometheus.PrometheusAddress,
+	}
 }
 
 func (a *app) SimpleServicesView() string {
@@ -885,7 +910,7 @@ func renderUnitsSummary(buf *bytes.Buffer, units []provTypes.Unit, metrics []pro
 	unitsTable := tablecli.NewTable()
 	tablecli.TableConfig.ForceWrap = false
 	unitsTable.Headers = tablecli.Row(titles)
-
+	unitsTable.TableWriterPadding = 2
 	fmt.Fprintf(buf, "Units: %d\n", len(units))
 
 	if len(units) == 0 {
@@ -992,6 +1017,7 @@ func renderUnits(buf *bytes.Buffer, units []provTypes.Unit, metrics []provTypes.
 		units := groupedUnits[key]
 		unitsTable := tablecli.NewTable()
 		tablecli.TableConfig.ForceWrap = false
+		unitsTable.TableWriterPadding = 2
 		unitsTable.Headers = tablecli.Row(titles)
 		sort.Slice(units, func(i, j int) bool {
 			return units[i].ID < units[j].ID
@@ -1078,24 +1104,29 @@ func renderServiceInstanceBindsForApps(w io.Writer, binds []bindTypes.ServiceIns
 
 	table := tablecli.NewTable()
 	table.Headers = []string{"Service", "Instance (Plan)"}
+	table.TableWriterPadding = 2
 
+	count := 0
 	for _, s := range services {
-		var sb strings.Builder
 		for i, inst := range instancesByService[s] {
+			count++
+			desc := ""
+			if i == 0 {
+				desc = s
+			}
+
+			var sb strings.Builder
 			sb.WriteString(inst.Instance)
 			if inst.Plan != "" {
 				sb.WriteString(fmt.Sprintf(" (%s)", inst.Plan))
 			}
 
-			if i < len(instancesByService[s])-1 {
-				sb.WriteString("\n")
-			}
+			table.AddRow([]string{desc, sb.String()})
 		}
-		table.AddRow([]string{s, sb.String()})
 	}
 
-	if table.Rows() > 0 {
-		fmt.Fprintf(w, "\nService instances: %d\n", table.Rows())
+	if count > 0 {
+		fmt.Fprintf(w, "\nService instances: %d\n", count)
 		fmt.Fprint(w, table.String())
 	}
 }
@@ -1137,6 +1168,7 @@ func renderServiceInstanceBinds(w io.Writer, binds []tsuru.AppServiceInstanceBin
 
 	table := tablecli.NewTable()
 	table.Headers = []string{"Service", "Instance (Plan)"}
+	table.TableWriterPadding = 2
 
 	for _, s := range services {
 		var sb strings.Builder
@@ -1163,6 +1195,7 @@ func renderVolumeBinds(w io.Writer, binds []volumeTypes.VolumeBind) {
 	table := tablecli.NewTable()
 	table.Headers = tablecli.Row([]string{"Name", "MountPoint", "Mode"})
 	table.LineSeparator = true
+	table.TableWriterPadding = 2
 
 	for _, b := range binds {
 		mode := "rw"

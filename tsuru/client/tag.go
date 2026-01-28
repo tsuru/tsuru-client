@@ -58,6 +58,12 @@ func (t *TagList) Show(apps []app, services []service.ServiceModel, context *cmd
 	if len(tagList) == 0 {
 		return nil
 	}
+
+	// The output of this Table does not look good with tab writer enabled
+	originalUseTabWriter := tablecli.TableConfig.UseTabWriter
+	tablecli.TableConfig.UseTabWriter = false
+	defer func() { tablecli.TableConfig.UseTabWriter = originalUseTabWriter }()
+
 	table := tablecli.NewTable()
 	table.Headers = tablecli.Row([]string{"Tag", "Apps", "Service Instances"})
 	for _, tagName := range sortedTags(tagList) {

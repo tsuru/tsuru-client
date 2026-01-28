@@ -12,6 +12,7 @@ import (
 
 	"github.com/cezarsa/form"
 	"github.com/tsuru/go-tsuruclient/pkg/config"
+	"github.com/tsuru/tsuru-client/tsuru/cmd"
 	"github.com/tsuru/tsuru-client/tsuru/formatter"
 	tsuruHTTP "github.com/tsuru/tsuru-client/tsuru/http"
 	"gopkg.in/check.v1"
@@ -30,6 +31,7 @@ func (s *S) SetUpSuite(c *check.C) {
 func (s *S) SetUpTest(c *check.C) {
 	os.Setenv("TSURU_TARGET", "http://localhost:8080")
 	os.Setenv("TSURU_TOKEN", "sometoken")
+	cmd.DisableColors = true
 	s.defaultLocation = *formatter.LocalTZ
 	location, err := time.LoadLocation("US/Central")
 	if err == nil {

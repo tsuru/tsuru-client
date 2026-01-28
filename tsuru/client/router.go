@@ -364,14 +364,15 @@ func (c *AppRoutersList) Run(context *cmd.Context) error {
 	if c.json {
 		return formatter.JSON(context.Stdout, routers)
 	}
-	renderRouters(routers, context.Stdout, "Name")
+	renderRouters(routers, context.Stdout, "Name", 0)
 	return nil
 }
 
-func renderRouters(routers []appTypes.AppRouter, out io.Writer, idColumn string) {
+func renderRouters(routers []appTypes.AppRouter, out io.Writer, idColumn string, tableWriterPadding int) {
 	table := tablecli.NewTable()
 	table.Headers = tablecli.Row([]string{idColumn, "Opts", "Addresses", "Status"})
 	table.LineSeparator = true
+	table.TableWriterPadding = tableWriterPadding
 	for _, r := range routers {
 		var optsStr []string
 		for k, v := range r.Opts {

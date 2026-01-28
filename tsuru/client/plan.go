@@ -52,11 +52,13 @@ func (c *PlanList) Info() *cmd.Info {
 
 type renderPlansOpts struct {
 	isBytes, showDefaultColumn, showMaxBurstAllowed bool
+	tableWriterPadding                              int
 }
 
 func renderPlans(plans []appTypes.Plan, opts renderPlansOpts) string {
 	table := tablecli.NewTable()
 	table.Headers = []string{"Name", "CPU", "Memory"}
+	table.TableWriterPadding = opts.tableWriterPadding
 
 	showBurstColumn := false
 
@@ -138,6 +140,7 @@ func renderPlans(plans []appTypes.Plan, opts renderPlansOpts) string {
 func renderProcessPlan(appPlan appTypes.Plan, planByProcess map[string]string) string {
 	table := tablecli.NewTable()
 	table.Headers = []string{"Process", "Plan"}
+	table.TableWriterPadding = 2
 
 	appProcessOverrides := []string{}
 	override := appPlan.Override

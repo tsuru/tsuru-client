@@ -293,6 +293,7 @@ func renderJobUnits(buf *bytes.Buffer, units []tsuru.Unit) {
 	unitsTable := tablecli.NewTable()
 	tablecli.TableConfig.ForceWrap = false
 	unitsTable.Headers = tablecli.Row(titles)
+	unitsTable.TableWriterPadding = 2
 
 	for _, unit := range units {
 		row := tablecli.Row{

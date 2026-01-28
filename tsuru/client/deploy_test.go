@@ -387,12 +387,10 @@ func (s *S) TestAppDeployList(c *check.C) {
 		parsed, _ := time.Parse(time.RFC3339, t)
 		formatted = append(formatted, formatter.Local(parsed).Format(time.RFC822))
 	}
-	red := "\x1b[0;31;10m"
-	reset := "\x1b[0m"
 	expected := `+-----------------------+---------------+-------------------+-----------------------------+----------+
 | Image (Rollback)      | Origin        | User              | Date (Duration)             | Error    |
 +-----------------------+---------------+-------------------+-----------------------------+----------+
-| ` + red + `tsuru/app-test:v1` + reset + `     | ` + red + `rollback` + reset + `      |                   | ` + red + formatted[2] + ` (00:26)` + reset + ` | ` + red + `my-error` + reset + ` |
+| tsuru/app-test:v1     | rollback      |                   | ` + formatted[2] + ` (00:26) | my-error |
 +-----------------------+---------------+-------------------+-----------------------------+----------+
 | tsuru/app-test:v2 (*) | app-deploy    | admin@example.com | ` + formatted[1] + ` (00:18) |          |
 +-----------------------+---------------+-------------------+-----------------------------+----------+
