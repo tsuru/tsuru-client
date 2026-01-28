@@ -325,27 +325,6 @@ func (c *EventInfo) Show(evt *eventTypes.EventInfo, context *cmd.Context) error 
 			{"  At", evt.CancelInfo.AckTime.Format(time.RFC822Z)},
 		}...)
 	}
-	labels := []string{"Start", "End", "Other"}
-	for i, data := range []any{evt.CustomData.Start, evt.CustomData.End, evt.CustomData.Other} {
-		if data != nil {
-			str, err := yaml.Marshal(data)
-			if err == nil {
-				padded := padLines(string(str), "    ")
-				items = append(items, item{fmt.Sprintf("%s Custom Data", labels[i]), "\n" + padded})
-			}
-		}
-	}
-	log := eventLog(evt)
-	if log != "" {
-		items = append(items, item{"Log", "\n" + padLines(log, "    ")})
-	}
-	var maxSz int
-	for _, item := range items {
-		sz := len(item.label)
-		if len(item.value) > 0 && item.value[0] != '\n' && sz > maxSz {
-			maxSz = sz
-		}
-	}
 
 	tabWriter := tabwriter.NewWriter(context.Stdout, 0, 0, 2, ' ', 0)
 
@@ -358,6 +337,25 @@ func (c *EventInfo) Show(evt *eventTypes.EventInfo, context *cmd.Context) error 
 	}
 
 	tabWriter.Flush()
+
+	labels := []string{"Start", "End", "Other"}
+	for i, data := range []any{evt.CustomData.Start, evt.CustomData.End, evt.CustomData.Other} {
+		if data != nil {
+			str, err := yaml.Marshal(data)
+			if err == nil {
+				fmt.Fprintf(context.Stdout, "%s Custom Data:\n", labels[i])
+				padded := padLines(string(strings.TrimSpace(string(str))), "    ")
+				fmt.Fprintln(context.Stdout, padded)
+			}
+		}
+	}
+
+	log := eventLog(evt)
+	if log != "" {
+		fmt.Fprintln(context.Stdout, "Log:")
+		fmt.Fprintln(context.Stdout, padLines(strings.TrimSpace(log), "    "))
+	}
+
 	return nil
 }
 

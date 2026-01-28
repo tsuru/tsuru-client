@@ -898,23 +898,27 @@ func (s *S) TestServiceInstanceInfoInfo(c *check.C) {
 
 func (s *S) TestServiceInstanceInfoRun(c *check.C) {
 	var stdout, stderr bytes.Buffer
-	expected := `Service: mymongo
-Instance: mongo
-Pool: my-pool
-Apps: app, app2
-Teams: admin (owner), admin2
-Description: description
-Tags: tag 1, tag 2
-Plan: small
-Plan description: another plan
-Plan parameters:
-	param1 = {"some": "custom-data"}
-	param2 = value2
-	param3 = 3
-key2: value9
-key3: value3
-key4: value8
-Status: Service instance "mongo" is up
+	expected := `Service:      mymongo
+Instance:     mongo
+Pool:         my-pool
+Apps:         app, app2
+Teams:        admin (owner), admin2
+Description:  description
+Tags:         tag 1, tag 2
+Plan:         small
+key2:         value9
+key3:         value3
+key4:         value8
+Status:       Service instance "mongo" is up
+
+Plan description:
+  another plan
+
+Parameters:
+  param1:  {"some": "custom-data"}
+  param2:  value2
+  param3:  3
+
 `
 	args := []string{"mymongo", "mongo"}
 	context := cmd.Context{
@@ -931,11 +935,11 @@ Status: Service instance "mongo" is up
 
 func (s *S) TestServiceInstanceInfoRunWithoutPlansAndCustomInfoAndDescription(c *check.C) {
 	var stdout, stderr bytes.Buffer
-	expected := `Service: mymongo
-Instance: mongo
-Apps: app, app2
-Teams: admin (owner), admin2
-Status: Service instance "mongo" is up
+	expected := `Service:   mymongo
+Instance:  mongo
+Apps:      app, app2
+Teams:     admin (owner), admin2
+Status:    Service instance "mongo" is up
 `
 	args := []string{"mymongo", "mongo"}
 	context := cmd.Context{

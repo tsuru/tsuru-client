@@ -257,16 +257,17 @@ func (s *S) TestJobInfo(c *check.C) {
 		Stdout: &stdout,
 		Stderr: &stderr,
 	}
-	expected := `Job: garrincha
-Teams: botafogo (owner)
-Created by: botafogo@glorioso.com
-Cluster: my-cluster
-Pool: kubepool
-Plan: c0.1m0.1
-Schedule: * * * * *
-Image: putfire:v10
-Command: [/bin/sh -c sleep 600;]
-Concurrency Policy: Allow
+	expected := `Job:                 garrincha
+Teams:               botafogo (owner)
+Created by:          botafogo@glorioso.com
+Cluster:             my-cluster
+Pool:                kubepool
+Plan:                c0.1m0.1
+Schedule:            * * * * *
+Image:               putfire:v10
+Command:             [/bin/sh -c sleep 600;]
+Concurrency Policy:  Allow
+
 Units: 1
 +--------------------------+---------+----------+-----+
 | Name                     | Status  | Restarts | Age |
@@ -368,14 +369,14 @@ func (s *S) TestJobInfoManual(c *check.C) {
 		Stdout: &stdout,
 		Stderr: &stderr,
 	}
-	expected := `Job: manualjob
-Teams: tsuru (owner)
-Created by: tsuru@tsuru.io
-Cluster: my-cluster
-Pool: kubepool
-Plan: c0.1m0.1
-Image: manualjob:v0
-Command: [/bin/sh -c sleep 600;]
+	expected := `Job:                 manualjob
+Teams:               tsuru (owner)
+Created by:          tsuru@tsuru.io
+Cluster:             my-cluster
+Pool:                kubepool
+Plan:                c0.1m0.1
+Image:               manualjob:v0
+Command:             [/bin/sh -c sleep 600;]
 `
 	trans := cmdtest.ConditionalTransport{
 		Transport: cmdtest.Transport{
@@ -442,16 +443,16 @@ func (s *S) TestJobInfoOptionalFieldsSet(c *check.C) {
 		Stdout: &stdout,
 		Stderr: &stderr,
 	}
-	expected := `Job: manualjob
-Description: my manualjob
-Teams: tsuru (owner), anotherTeam
-Created by: tsuru@tsuru.io
-Cluster: my-cluster
-Pool: kubepool
-Plan: c0.1m0.1
-Image: manualjob:v0
-Command: [/bin/sh -c sleep 600;]
-Max Running Time: 300s
+	expected := `Job:                 manualjob
+Description:         my manualjob
+Teams:               tsuru (owner), anotherTeam
+Created by:          tsuru@tsuru.io
+Cluster:             my-cluster
+Pool:                kubepool
+Plan:                c0.1m0.1
+Image:               manualjob:v0
+Command:             [/bin/sh -c sleep 600;]
+Max Running Time:    300s
 `
 	trans := cmdtest.ConditionalTransport{
 		Transport: cmdtest.Transport{

@@ -623,7 +623,7 @@ Platform:    {{.Platform}}
 Plan:        {{ .Plan.Name }}
 Pool:        {{.Pool}} ({{ .Provisioner }}{{ if .Cluster}} | cluster: {{ .Cluster }}{{end}})
 {{if not .Routers -}}
-Router:      {{if .Router}} {{.Router}}{{if .RouterOpts}} ({{.GetRouterOpts}}){{end}}{{end}}
+Router:      {{if .Router}}{{.Router}}{{if .RouterOpts}} ({{.GetRouterOpts}}){{end}}{{end}}
 {{end -}}
 Teams:       {{.TeamList}}
 {{ if .InternalAddr }}
@@ -655,7 +655,7 @@ Platform:     {{.Platform}}
 Provisioner:  {{ .Provisioner }}
 {{ end -}}
 {{if not .Routers -}}
-Router:       {{if .Router}} {{.Router}}{{if .RouterOpts}} ({{.GetRouterOpts}}){{end}}{{end}}
+Router:       {{if .Router}}{{.Router}}{{if .RouterOpts}} ({{.GetRouterOpts}}){{end}}{{end}}
 {{end -}}
 Teams:        {{.TeamList}}
 Created by:   {{.Owner}}
