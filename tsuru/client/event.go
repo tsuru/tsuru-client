@@ -346,6 +346,7 @@ func (c *EventInfo) Show(evt *eventTypes.EventInfo, context *cmd.Context) error 
 				fmt.Fprintf(context.Stdout, "%s Custom Data:\n", labels[i])
 				padded := padLines(string(strings.TrimSpace(string(str))), "    ")
 				fmt.Fprintln(context.Stdout, padded)
+				fmt.Fprintln(context.Stdout, "")
 			}
 		}
 	}
@@ -354,6 +355,7 @@ func (c *EventInfo) Show(evt *eventTypes.EventInfo, context *cmd.Context) error 
 	if log != "" {
 		fmt.Fprintln(context.Stdout, "Log:")
 		fmt.Fprintln(context.Stdout, padLines(strings.TrimSpace(log), "    "))
+		fmt.Fprintln(context.Stdout, "")
 	}
 
 	return nil

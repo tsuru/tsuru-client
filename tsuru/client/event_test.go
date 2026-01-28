@@ -358,8 +358,10 @@ Start Custom Data:
     origin: ""
     rollback: false
     user: majortom@groundcontrol\.com
+
 End Custom Data:
     image: app-image
+
 Log:
     Obtaining file:///home/application/current \(from -r /home/application/current/requirements\.txt \(line 1\)\)
       appxxxx 0\.1\.0 does not provide the extra 'tests'
@@ -397,6 +399,7 @@ Log:
 
     ---- Unbinding 1 old unit ----
      ---> Removed bind for old unit d535216e4b \[web\]
+
 `
 	c.Assert(stdout.String(), check.Matches, expected)
 }
