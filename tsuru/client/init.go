@@ -15,8 +15,7 @@ type Init struct{}
 
 func (i *Init) Info() *cmd.Info {
 	return &cmd.Info{
-		Name:  "init",
-		Usage: "init",
+		Name: "init",
 		Desc: `Creates a standard example of .tsuruignore, tsuru.yaml and Procfile on the current project directory.
 
 "Procfile" describes the components required to run an application. 

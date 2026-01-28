@@ -292,7 +292,7 @@ func (s *S) TestGetURLUndefinedTarget(c *check.C) {
 func (s *S) TestTargetAddInfo(c *check.C) {
 	expected := &cmd.Info{
 		Name:    "target-add",
-		Usage:   "target add <label> <target> [--set-current|-s]",
+		Usage:   "<label> <target> [--set-current|-s]",
 		Desc:    "Adds a new entry to the list of available targets",
 		MinArgs: 2,
 	}
@@ -440,9 +440,8 @@ Other commands related to target:
   - target set: defines one of the targets in the list as the current target
   - target remove: removes one target from the list`
 	expected := &cmd.Info{
-		Name:  "target-list",
-		Usage: "target list",
-		Desc:  desc,
+		Name: "target-list",
+		Desc: desc,
 	}
 	target := &TargetList{}
 	c.Assert(target.Info(), check.DeepEquals, expected)
@@ -503,7 +502,6 @@ func (s *S) TestTargetRemoveInfo(c *check.C) {
 `
 	expected := &cmd.Info{
 		Name:    "target-remove",
-		Usage:   "target remove",
 		Desc:    desc,
 		MinArgs: 1,
 	}
@@ -574,7 +572,7 @@ func (s *S) TestTargetSetInfo(c *check.C) {
 `
 	expected := &cmd.Info{
 		Name:    "target-set",
-		Usage:   "target set <label>",
+		Usage:   "<label>",
 		Desc:    desc,
 		MinArgs: 1,
 	}

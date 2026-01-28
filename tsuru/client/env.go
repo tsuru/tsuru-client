@@ -62,7 +62,7 @@ func (c *EnvGet) Flags() *pflag.FlagSet {
 func (c *EnvGet) Info() *cmd.Info {
 	return &cmd.Info{
 		Name:  "env-get",
-		Usage: "env get [-a/--app appname] [-j/--job jobname] [ENVIRONMENT_VARIABLE1] [ENVIRONMENT_VARIABLE2] ...",
+		Usage: "[-a/--app appname] [-j/--job jobname] [ENVIRONMENT_VARIABLE1] [ENVIRONMENT_VARIABLE2] ...",
 		Desc:  `Retrieves environment variables for an application or job.`,
 	}
 }
@@ -157,7 +157,7 @@ type EnvSet struct {
 func (c *EnvSet) Info() *cmd.Info {
 	return &cmd.Info{
 		Name:    "env-set",
-		Usage:   "env set <NAME=value> [NAME=value] ... [-a/--app appname] [-j/--job jobname] [-p/--private] [--no-restart]",
+		Usage:   "<NAME=value> [NAME=value] ... [-a/--app appname] [-j/--job jobname] [-p/--private] [--no-restart]",
 		Desc:    `Sets environment variables for an application or job.`,
 		MinArgs: 1,
 	}
@@ -281,7 +281,7 @@ func (c *EnvUnset) Flags() *pflag.FlagSet {
 func (c *EnvUnset) Info() *cmd.Info {
 	return &cmd.Info{
 		Name:    "env-unset",
-		Usage:   "env unset <ENVIRONMENT_VARIABLE1> [ENVIRONMENT_VARIABLE2] ... [ENVIRONMENT_VARIABLEN] [-a/--app appname] [-j/--job jobname] [--no-restart]",
+		Usage:   "<ENVIRONMENT_VARIABLE1> [ENVIRONMENT_VARIABLE2] ... [ENVIRONMENT_VARIABLEN] [-a/--app appname] [-j/--job jobname] [--no-restart]",
 		Desc:    `Unset environment variables for an application or job.`,
 		MinArgs: 1,
 	}

@@ -56,7 +56,7 @@ type AppDeployList struct {
 func (c *AppDeployList) Info() *cmd.Info {
 	return &cmd.Info{
 		Name:  "app-deploy-list",
-		Usage: "app deploy list [<appname>]",
+		Usage: "[<appname>]",
 		Desc:  "List information about deploys for an application.",
 	}
 }
@@ -170,7 +170,7 @@ func (c *AppDeploy) Flags() *pflag.FlagSet {
 func (c *AppDeploy) Info() *cmd.Info {
 	return &cmd.Info{
 		Name:  "app-deploy",
-		Usage: "app deploy [--app <app name>] [--image <container image name>] [--dockerfile <container image file>] [--message <message>] [--files-only] [--new-version] [--override-old-versions] [file-or-dir ...]",
+		Usage: "[--app <app name>] [--image <container image name>] [--dockerfile <container image file>] [--message <message>] [--files-only] [--new-version] [--override-old-versions] [file-or-dir ...]",
 		Desc: `Deploy the source code and/or configurations to the application on Tsuru.
 
 Files specified in the ".tsuruignore" file are skipped - similar to ".gitignore". It also honors ".dockerignore" file if deploying with container file (--dockerfile).
@@ -400,7 +400,7 @@ func (c *AppDeployRollback) Info() *cmd.Info {
 	desc := "Deploys an existing image for an app. You can list available images with `tsuru app deploy list`."
 	return &cmd.Info{
 		Name:    "app-deploy-rollback",
-		Usage:   "app deploy rollback [-a/--app appname] [-y/--assume-yes] <image-name>",
+		Usage:   "[-a/--app appname] [-y/--assume-yes] <image-name>",
 		Desc:    desc,
 		MinArgs: 1,
 		MaxArgs: 1,
@@ -457,7 +457,7 @@ func (c *AppDeployRollbackUpdate) Info() *cmd.Info {
 `
 	return &cmd.Info{
 		Name:  "app-deploy-rollback-update",
-		Usage: "app deploy rollback update [appName] [-i/--image imageName] [-d/--disable] [-r/--reason reason]",
+		Usage: "[appName] [-i/--image imageName] [-d/--disable] [-r/--reason reason]",
 		Desc:  desc,
 
 		MaxArgs: 1,
@@ -551,7 +551,7 @@ func (c *JobDeploy) Flags() *pflag.FlagSet {
 func (c *JobDeploy) Info() *cmd.Info {
 	return &cmd.Info{
 		Name:  "job-deploy",
-		Usage: "job deploy [--job <job name>] [--image <container image name>] [--dockerfile <container image file>] [--message <message>]",
+		Usage: "[--job <job name>] [--image <container image name>] [--dockerfile <container image file>] [--message <message>]",
 		Desc: `Deploy the source code and/or configurations to a Job on Tsuru.
 
 Files specified in the ".tsuruignore" file are skipped - similar to ".gitignore". It also honors ".dockerignore" file if deploying with container file (--dockerfile).

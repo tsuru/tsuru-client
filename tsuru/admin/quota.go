@@ -29,7 +29,7 @@ func (*UserQuotaView) Info() *cmd.Info {
 	return &cmd.Info{
 		Name:    "user-quota-view",
 		MinArgs: 1,
-		Usage:   "user-quota-view <user-email>",
+		Usage:   "<user-email>",
 		Desc:    "Displays the current usage and limit of the user.",
 	}
 }
@@ -64,7 +64,7 @@ The new limit must be an integer, it may also be "unlimited".`
 	return &cmd.Info{
 		Name:    "user-quota-change",
 		MinArgs: 2,
-		Usage:   "user-quota-change <user-email> <new-limit>",
+		Usage:   "<user-email> <new-limit>",
 		Desc:    desc,
 	}
 }
@@ -101,7 +101,7 @@ func (*AppQuotaView) Info() *cmd.Info {
 	return &cmd.Info{
 		Name: "app-quota-view",
 
-		Usage: "app-quota-view [appname]",
+		Usage: "<app-name>",
 		Desc:  "Displays the current usage and limit of the given app.",
 	}
 }
@@ -158,7 +158,7 @@ The new limit must be an integer, it may also be "unlimited".`
 	return &cmd.Info{
 		Name:    "app-quota-change",
 		MinArgs: 1,
-		Usage:   "app-quota-change [-a/--app appname] <new-limit>",
+		Usage:   "[-a/--app appname] <new-limit>",
 		Desc:    desc,
 	}
 }
@@ -195,7 +195,7 @@ func (*TeamQuotaView) Info() *cmd.Info {
 	return &cmd.Info{
 		Name:    "team-quota-view",
 		MinArgs: 1,
-		Usage:   "team-quota-view <team-name>",
+		Usage:   "<team-name>",
 		Desc:    "Displays the current usage and limit of the team.",
 	}
 }
@@ -230,7 +230,7 @@ The new limit must be an integer, it may also be "unlimited".`
 	return &cmd.Info{
 		Name:    "team-quota-change",
 		MinArgs: 2,
-		Usage:   "team-quota-change <team-name> <new-limit>",
+		Usage:   "<team-name> <new-limit>",
 		Desc:    desc,
 	}
 }

@@ -9,6 +9,7 @@ import (
 	"fmt"
 	"io"
 	"os"
+	"strings"
 	"time"
 
 	"github.com/pkg/errors"
@@ -365,12 +366,12 @@ func (s *S) TestShorthandCommandInfo(c *check.C) {
 }
 
 func (s *S) TestShorthandCommandInfoWithUsage(c *check.C) {
-	cmd := &commandWithUsage{name: "app-deploy", usage: "app-deploy <file> [options]"}
+	cmd := &commandWithUsage{name: "app-deploy", usage: "<file> [options]"}
 	shorthandCmd := &ShorthandCommand{Command: cmd, shorthand: "deploy"}
 
 	info := shorthandCmd.Info()
 	c.Assert(info.Name, check.Equals, "deploy")
-	c.Assert(info.Usage, check.Equals, "deploy <file> [options]")
+	c.Assert(info.Usage, check.Equals, "<file> [options]")
 	c.Assert(info.GroupID, check.Equals, "shorthands")
 	c.Assert(info.OnlyAppendOnRoot, check.Equals, true)
 }
@@ -424,7 +425,7 @@ func (s *S) TestRegisterShorthand(c *check.C) {
 	rootCommands := mngr.rootCmd.Commands()
 	var foundShorthand bool
 	for _, v2cmd := range rootCommands {
-		if v2cmd.Use == "f" {
+		if strings.HasPrefix(v2cmd.Use, "f") {
 			foundShorthand = true
 			c.Assert(v2cmd.GroupID, check.Equals, "shorthands")
 			c.Assert(v2cmd.Hidden, check.Equals, false) // OnlyAppendOnRoot makes it visible
@@ -472,7 +473,7 @@ func (s *S) TestHumanizeCommand(c *check.C) {
 func (s *S) TestDeprecatedCommandInfo(c *check.C) {
 	originalCmd := &commandWithUsage{
 		name:  "app-info",
-		usage: "app-info [flags]",
+		usage: "[flags]",
 	}
 	deprecatedCmd := &DeprecatedCommand{
 		Command: originalCmd,
@@ -482,7 +483,7 @@ func (s *S) TestDeprecatedCommandInfo(c *check.C) {
 	info := deprecatedCmd.Info()
 
 	c.Assert(info.Name, check.Equals, "app-show")
-	c.Assert(info.Usage, check.Equals, "app-show [flags]")
+	c.Assert(info.Usage, check.Equals, "[flags]")
 	c.Assert(info.Desc, check.Matches, `(?s)DEPRECATED: For better usability, this command has been replaced by ".*app info"\..*`)
 }
 

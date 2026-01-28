@@ -39,7 +39,7 @@ type CertificateSet struct {
 func (c *CertificateSet) Info() *cmd.Info {
 	return &cmd.Info{
 		Name:    "certificate-set",
-		Usage:   "certificate set [-a/--app appname] [-c/--cname CNAME] [certificate] [key]",
+		Usage:   "[-a/--app appname] [-c/--cname CNAME] [certificate] [key]",
 		Desc:    `Creates or update a TLS certificate into the specific app.`,
 		MinArgs: 2,
 	}
@@ -101,7 +101,7 @@ type CertificateUnset struct {
 func (c *CertificateUnset) Info() *cmd.Info {
 	return &cmd.Info{
 		Name:  "certificate-unset",
-		Usage: "certificate unset [-a/--app appname] [-c/--cname CNAME]",
+		Usage: "[-a/--app appname] [-c/--cname CNAME]",
 		Desc:  `Unset a TLS certificate from a specific app.`,
 	}
 }
@@ -153,7 +153,7 @@ type CertificateList struct {
 func (c *CertificateList) Info() *cmd.Info {
 	return &cmd.Info{
 		Name:  "certificate-list",
-		Usage: "certificate list [-a/--app appname] [-r/--raw]",
+		Usage: "[-a/--app appname] [-r/--raw]",
 		Desc:  `List App TLS certificates.`,
 	}
 }
@@ -383,7 +383,7 @@ type CertificateIssuerSet struct {
 func (c *CertificateIssuerSet) Info() *cmd.Info {
 	return &cmd.Info{
 		Name:    "certificate-issuer-set",
-		Usage:   "certificate issuer set [-a/--app appname] [-c/--cname CNAME] [issuer]",
+		Usage:   "[-a/--app appname] [-c/--cname CNAME] [issuer]",
 		Desc:    `Creates or update a certificate issuer into the specific app.`,
 		MinArgs: 1,
 	}
@@ -446,7 +446,7 @@ type CertificateIssuerUnset struct {
 func (c *CertificateIssuerUnset) Info() *cmd.Info {
 	return &cmd.Info{
 		Name:  "certificate-issuer-unset",
-		Usage: "certificate issuer unset [-a/--app appname] [-c/--cname CNAME] [-y/--assume-yes]",
+		Usage: "[-a/--app appname] [-c/--cname CNAME] [-y/--assume-yes]",
 		Desc:  `Unset a certificate issuer from a specific app.`,
 	}
 }

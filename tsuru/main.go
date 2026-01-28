@@ -415,9 +415,7 @@ type versionCmd struct{}
 func (c *versionCmd) Info() *cmd.Info {
 	return &cmd.Info{
 		Name: "version",
-
-		Usage: "version",
-		Desc:  "display the current version",
+		Desc: "display the current version",
 	}
 }
 

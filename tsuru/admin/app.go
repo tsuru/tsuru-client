@@ -22,7 +22,7 @@ func (c *AppRoutesRebuild) Info() *cmd.Info {
 	return &cmd.Info{
 		Name: "app-routes-rebuild",
 
-		Usage: "app-routes-rebuild <app-name>",
+		Usage: "<app-name>",
 		Desc: `Rebuild routes for an application.
 This can be used to recover from some failure in the router that caused
 existing routes to be lost.`,

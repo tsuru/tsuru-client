@@ -34,7 +34,7 @@ type UnitAdd struct {
 func (c *UnitAdd) Info() *cmd.Info {
 	return &cmd.Info{
 		Name:  "unit-add",
-		Usage: "unit add <# of units> [-a/--app appname] [-p/--process processname] [--version version]",
+		Usage: "<# of units> [-a/--app appname] [-p/--process processname] [--version version]",
 		Desc: `Adds new units to a process of an application. You need to have access to the
 app to be able to add new units to it.`,
 		MinArgs: 1,
@@ -87,7 +87,7 @@ type UnitRemove struct {
 func (c *UnitRemove) Info() *cmd.Info {
 	return &cmd.Info{
 		Name:  "unit-remove",
-		Usage: "unit remove <# of units> [-a/--app appname] [-p/-process processname] [--version version]",
+		Usage: "<# of units> [-a/--app appname] [-p/-process processname] [--version version]",
 		Desc: `Removes units from a process of an application. You need to have access to the
 app to be able to remove units from it.`,
 		MinArgs: 1,
@@ -138,7 +138,7 @@ type UnitKill struct {
 func (c *UnitKill) Info() *cmd.Info {
 	return &cmd.Info{
 		Name:  "unit-kill",
-		Usage: "unit kill <-a/--app appname|-j/--job jobname> [-f/--force] <unit>",
+		Usage: "<-a/--app appname|-j/--job jobname> [-f/--force] <unit>",
 		Desc: `Kills units from a process of an application or job. You need to have access to the
 app or job to be able to remove unit from it.`,
 		MinArgs: 1,
@@ -198,7 +198,7 @@ type UnitSet struct {
 func (c *UnitSet) Info() *cmd.Info {
 	return &cmd.Info{
 		Name:  "unit-set",
-		Usage: "unit set <# of units> [-a/--app appname] [-p/--process processname] [--version version]",
+		Usage: "<# of units> [-a/--app appname] [-p/--process processname] [--version version]",
 		Desc: `Set the number of units for a process of an application, adding or removing units as needed.
 You need to have access to the app to be able to set the number of units for it.
 The process flag is optional if the app has only 1 process.`,

@@ -79,7 +79,7 @@ func (f *eventFilter) flags(fs *pflag.FlagSet) {
 func (c *EventList) Info() *cmd.Info {
 	return &cmd.Info{
 		Name:  "event-list",
-		Usage: "event list [--kind/-k kind name]... [--owner/-o owner] [--running/-r] [--include-removed/-i] [--event-target/-t target type] [--target-value/-v target value]",
+		Usage: "[--kind/-k kind name]... [--owner/-o owner] [--running/-r] [--include-removed/-i] [--event-target/-t target type] [--target-value/-v target value]",
 		Desc: `Lists events that you have permission to see.
 
 Flags can be used to filter the list of events.`,
@@ -205,7 +205,7 @@ func (c *EventInfo) Flags() *pflag.FlagSet {
 func (c *EventInfo) Info() *cmd.Info {
 	return &cmd.Info{
 		Name:    "event-info",
-		Usage:   "event info <event-id>",
+		Usage:   "<event-id>",
 		Desc:    `Show detailed information about one single event.`,
 		MinArgs: 1,
 		MaxArgs: 1,
@@ -402,7 +402,7 @@ type EventCancel struct {
 func (c *EventCancel) Info() *cmd.Info {
 	return &cmd.Info{
 		Name:    "event-cancel",
-		Usage:   "event cancel <event-id> <reason> [-y]",
+		Usage:   "<event-id> <reason> [-y]",
 		Desc:    `Cancel a running event.`,
 		MinArgs: 2,
 	}

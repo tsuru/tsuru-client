@@ -63,7 +63,7 @@ Examples:
 `
 	return &cmd.Info{
 		Name:  "app-build",
-		Usage: "app build [-a/--app <appname>] [-t/--tag <image_tag>] [-f/--files-only] <file-or-dir-1> [file-or-dir-2] ... [file-or-dir-n]",
+		Usage: "[-a/--app <appname>] [-t/--tag <image_tag>] [-f/--files-only] <file-or-dir-1> [file-or-dir-2] ... [file-or-dir-n]",
 		Desc:  desc,
 	}
 }

@@ -36,7 +36,7 @@ type RouterAdd struct {
 func (c *RouterAdd) Info() *cmd.Info {
 	return &cmd.Info{
 		Name:    "router-add",
-		Usage:   "router add <name> <type> [--config {json object}] [--readiness-gate <name>]...",
+		Usage:   "<name> <type> [--config {json object}] [--readiness-gate <name>]...",
 		Desc:    "Adds a new dynamic router to tsuru.",
 		MinArgs: 2,
 		MaxArgs: 2,
@@ -88,7 +88,7 @@ type RouterUpdate struct {
 func (c *RouterUpdate) Info() *cmd.Info {
 	return &cmd.Info{
 		Name:    "router-update",
-		Usage:   "router update <name> <type> [--config {json object}]",
+		Usage:   "<name> <type> [--config {json object}]",
 		Desc:    "Updates an existing dynamic router.",
 		MinArgs: 2,
 		MaxArgs: 2,
@@ -136,7 +136,7 @@ type RouterRemove struct{}
 func (c *RouterRemove) Info() *cmd.Info {
 	return &cmd.Info{
 		Name:    "router-remove",
-		Usage:   "router remove <name>",
+		Usage:   "<name>",
 		Desc:    "Removes an existing dynamic router.",
 		MinArgs: 1,
 		MaxArgs: 1,
@@ -184,9 +184,8 @@ func (c *RoutersList) Flags() *pflag.FlagSet {
 
 func (c *RoutersList) Info() *cmd.Info {
 	return &cmd.Info{
-		Name:  "router-list",
-		Usage: "router list",
-		Desc:  "List all routers available for app creation.",
+		Name: "router-list",
+		Desc: "List all routers available for app creation.",
 	}
 }
 
@@ -253,7 +252,7 @@ type RouterInfo struct{}
 func (c *RouterInfo) Info() *cmd.Info {
 	return &cmd.Info{
 		Name:    "router-info",
-		Usage:   "router info <name>",
+		Usage:   "<name>",
 		Desc:    "Show detailed information for router.",
 		MinArgs: 1,
 		MaxArgs: 1,
@@ -314,7 +313,7 @@ type AppRoutersList struct {
 func (c *AppRoutersList) Info() *cmd.Info {
 	return &cmd.Info{
 		Name:  "app-router-list",
-		Usage: "app router list [-a/--app appname]",
+		Usage: "[-a/--app appname]",
 		Desc:  "List all routers associated to an application.",
 	}
 }
@@ -408,7 +407,7 @@ type AppRoutersAdd struct {
 func (c *AppRoutersAdd) Info() *cmd.Info {
 	return &cmd.Info{
 		Name:    "app-router-add",
-		Usage:   "app router add <router name> [-a/--app appname] [-o/--opts key=value]...",
+		Usage:   "<router name> [-a/--app appname] [-o/--opts key=value]...",
 		Desc:    "Add a new router to an application.",
 		MinArgs: 1,
 		MaxArgs: 1,
@@ -463,7 +462,7 @@ type AppRoutersUpdate struct {
 func (c *AppRoutersUpdate) Info() *cmd.Info {
 	return &cmd.Info{
 		Name:    "app-router-update",
-		Usage:   "app router update <router name> [-a/--app appname] [-o/--opts key=value]...",
+		Usage:   "<router name> [-a/--app appname] [-o/--opts key=value]...",
 		Desc:    "Update router opts in an application.",
 		MinArgs: 1,
 		MaxArgs: 1,
@@ -517,7 +516,7 @@ type AppRoutersRemove struct {
 func (c *AppRoutersRemove) Info() *cmd.Info {
 	return &cmd.Info{
 		Name:    "app-router-remove",
-		Usage:   "app router remove <router name> [-a/--app appname]",
+		Usage:   "<router name> [-a/--app appname]",
 		Desc:    "Remove a router from an application.",
 		MinArgs: 1,
 		MaxArgs: 1,
@@ -579,7 +578,7 @@ func (c *AppVersionRouterAdd) Info() *cmd.Info {
 	c.routable = true
 	return &cmd.Info{
 		Name:    "app-router-version-add",
-		Usage:   "app router version add <version> [-a/--app appname]",
+		Usage:   "<version> [-a/--app appname]",
 		Desc:    "Adds an app version as routable.",
 		MinArgs: 1,
 		MaxArgs: 1,
@@ -594,7 +593,7 @@ func (c *AppVersionRouterRemove) Info() *cmd.Info {
 	c.routable = false
 	return &cmd.Info{
 		Name:    "app-router-version-remove",
-		Usage:   "app router version remove <version> [-a/--app appname]",
+		Usage:   "<version> [-a/--app appname]",
 		Desc:    "Removes an app version from being routable.",
 		MinArgs: 1,
 		MaxArgs: 1,

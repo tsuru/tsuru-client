@@ -136,7 +136,7 @@ func TestManagerV2_Register(t *testing.T) {
 			info: &Info{
 				Name:  "login",
 				Desc:  "Login to tsuru server",
-				Usage: "tsuru login [server]",
+				Usage: "[server]",
 
 				OnlyAppendOnRoot: true,
 				GroupID:          "auth",
@@ -158,8 +158,8 @@ func TestManagerV2_Register(t *testing.T) {
 		}
 		assert.True(t, found)
 
-		// Should NOT register as sub-command
-		assert.Nil(t, manager.tree.Children["login"])
+		// OnlyAppendOnRoot commands are still added to tree.Children via registerV2FQDNOnRoot
+		assert.NotNil(t, manager.tree.Children["login"])
 	})
 
 	t.Run("register_nested_command", func(t *testing.T) {
@@ -836,7 +836,7 @@ func TestManagerV2_registerV2SubCommand_NonFlaggedCommand(t *testing.T) {
 			info: &Info{
 				Name:  "service-bind",
 				Desc:  "Bind a service to an app\nDetailed description here",
-				Usage: "service-bind <service> <app>",
+				Usage: "<service> <app>",
 			},
 		}
 

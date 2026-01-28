@@ -62,7 +62,6 @@ func (c *DeprecatedCommand) Info() *Info {
 
 	info.Desc = fmt.Sprintf("DEPRECATED: For better usability, this command has been replaced by %q.\n\n%s", newCommand, info.Desc)
 
-	info.Usage = c.oldName + stripUsage(info.Name, info.Usage)
 	info.Name = c.oldName
 	return info
 }
@@ -97,8 +96,6 @@ type ShorthandCommand struct {
 
 func (c *ShorthandCommand) Info() *Info {
 	info := c.Command.Info()
-
-	info.Usage = c.shorthand + stripUsage(info.Name, info.Usage)
 
 	info.Name = c.shorthand
 	info.GroupID = "shorthands"

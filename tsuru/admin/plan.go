@@ -48,7 +48,7 @@ setting a plan.`
 func (c *PlanCreate) Info() *cmd.Info {
 	return &cmd.Info{
 		Name:    "plan-create",
-		Usage:   "plan create <name> -c cpu [-m memory] [--default]",
+		Usage:   "<name> -c cpu [-m memory] [--default]",
 		Desc:    `Creates a new plan for being used when creating apps.`,
 		MinArgs: 1,
 	}
@@ -95,7 +95,7 @@ type PlanRemove struct{}
 func (c *PlanRemove) Info() *cmd.Info {
 	return &cmd.Info{
 		Name:  "plan-remove",
-		Usage: "plan remove <name>",
+		Usage: "<name>",
 		Desc: `Removes an existing plan. It will no longer be available for newly created
 apps. However, this won't change anything for existing apps that were created
 using the removed plan. They will keep using the same value amount of

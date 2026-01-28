@@ -31,7 +31,7 @@ type TokenCreateCmd struct {
 func (c *TokenCreateCmd) Info() *cmd.Info {
 	return &cmd.Info{
 		Name:  "token-create",
-		Usage: "token create [--id/-i token-id] [--team/-t team] [--description/-d description] [--expires/-e expiration]",
+		Usage: "[--id/-i token-id] [--team/-t team] [--description/-d description] [--expires/-e expiration]",
 		Desc:  `Creates a new API token associated to a team.`,
 	}
 }
@@ -78,7 +78,7 @@ type TokenUpdateCmd struct {
 func (c *TokenUpdateCmd) Info() *cmd.Info {
 	return &cmd.Info{
 		Name:    "token-update",
-		Usage:   "token update <token-id> [--regenerate] [--description/-d description] [--expires/-e expiration]",
+		Usage:   "<token-id> [--regenerate] [--description/-d description] [--expires/-e expiration]",
 		Desc:    `Creates a new API token associated to a team.`,
 		MinArgs: 1,
 	}
@@ -119,9 +119,8 @@ type TokenListCmd struct {
 
 func (c *TokenListCmd) Info() *cmd.Info {
 	return &cmd.Info{
-		Name:  "token-list",
-		Usage: "token list",
-		Desc:  `List existing API tokens associated with a team.`,
+		Name: "token-list",
+		Desc: `List existing API tokens associated with a team.`,
 	}
 }
 
@@ -174,7 +173,7 @@ type TokenDeleteCmd struct {
 func (c *TokenDeleteCmd) Info() *cmd.Info {
 	return &cmd.Info{
 		Name:    "token-delete",
-		Usage:   "token delete <token id>",
+		Usage:   "<token id>",
 		Desc:    `Delete an existing token.`,
 		MinArgs: 1,
 	}
@@ -199,7 +198,7 @@ type TokenInfoCmd struct {
 func (c *TokenInfoCmd) Info() *cmd.Info {
 	return &cmd.Info{
 		Name:    "token-info",
-		Usage:   "token info <token id>",
+		Usage:   "<token id>",
 		Desc:    `Shows information about a specific token.`,
 		MinArgs: 1,
 	}

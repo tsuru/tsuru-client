@@ -905,7 +905,7 @@ func (s *S) TestListUsersInfo(c *check.C) {
 	expected := &cmd.Info{
 		Name: "user-list",
 
-		Usage: "user list [--user/-u useremail] [--role/-r role [-c/--context-value value]]",
+		Usage: "[--user/-u useremail] [--role/-r role [-c/--context-value value]]",
 		Desc:  "List all users in tsuru. It may also filter users by user email or role name with context value.",
 	}
 	c.Assert((&ListUsers{}).Info(), check.DeepEquals, expected)

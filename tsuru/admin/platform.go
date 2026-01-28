@@ -99,9 +99,8 @@ func (c *PlatformList) Flags() *pflag.FlagSet {
 }
 func (*PlatformList) Info() *cmd.Info {
 	return &cmd.Info{
-		Name:  "platform-list",
-		Usage: "platform list",
-		Desc:  "Lists the available platforms. All platforms displayed in this list may be used to create new apps (see app-create).",
+		Name: "platform-list",
+		Desc: "Lists the available platforms. All platforms displayed in this list may be used to create new apps (see app-create).",
 	}
 }
 
@@ -114,7 +113,7 @@ type PlatformAdd struct {
 func (p *PlatformAdd) Info() *cmd.Info {
 	return &cmd.Info{
 		Name:  "platform-add",
-		Usage: "platform add <platform name> [--dockerfile/-d Dockerfile] [--image/-i image]",
+		Usage: "<platform name> [--dockerfile/-d Dockerfile] [--image/-i image]",
 		Desc: `Adds a new platform to tsuru.
 
 The name of the image can be automatically inferred in case you're using an
@@ -180,7 +179,7 @@ type PlatformUpdate struct {
 func (p *PlatformUpdate) Info() *cmd.Info {
 	return &cmd.Info{
 		Name:  "platform-update",
-		Usage: "platform update <platform name> [--dockerfile/-d Dockerfile] [--disable/--enable] [--image/-i image]",
+		Usage: "<platform name> [--dockerfile/-d Dockerfile] [--disable/--enable] [--image/-i image]",
 		Desc: `Updates a platform in tsuru.
 
 The name of the image can be automatically inferred in case you're using an
@@ -260,7 +259,7 @@ type PlatformRemove struct {
 func (p *PlatformRemove) Info() *cmd.Info {
 	return &cmd.Info{
 		Name:  "platform-remove",
-		Usage: "platform remove <platform name> [-y]",
+		Usage: "<platform name> [-y]",
 		Desc: `Remove a platform from tsuru. This command will fail if there are application
 still using the platform.`,
 		MinArgs: 1,
@@ -305,7 +304,7 @@ func (c *PlatformInfo) Flags() *pflag.FlagSet {
 func (p *PlatformInfo) Info() *cmd.Info {
 	return &cmd.Info{
 		Name:    "platform-info",
-		Usage:   "platform info <platform name>",
+		Usage:   "<platform name>",
 		Desc:    `Shows information about a specific platform.`,
 		MinArgs: 1,
 	}

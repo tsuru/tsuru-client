@@ -36,7 +36,7 @@ type ShellToContainerCmd struct {
 func (c *ShellToContainerCmd) Info() *cmd.Info {
 	return &cmd.Info{
 		Name:  "app-shell",
-		Usage: "app-shell [unit-id] -a/--app <appname> [-i/--isolated]",
+		Usage: "[unit-id] -a/--app <appname> [-i/--isolated]",
 		Desc: `Opens a remote shell inside unit.
 You can access an app unit just giving app name, or specifying the id of the unit.
 You can get the ID of the unit using the app-info command.`,

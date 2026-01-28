@@ -152,7 +152,11 @@ func (m *ManagerV2) registerV2SubCommand(command Command) {
 		curr = curr.Children[part]
 
 		if i == len(parts)-1 && !found {
-			curr.Command.Use = part + stripUsage(fqdn, info.Usage)
+			curr.Command.Use = part
+
+			if info.Usage != "" {
+				curr.Command.Use = part + " " + strings.TrimSpace(info.Usage)
+			}
 			curr.Command.Aliases = standards.CommonAliases[part]
 			m.fillCommand(curr.Command, command)
 		}
@@ -222,12 +226,6 @@ func (m *ManagerV2) registerCompletionsOnCommand(cobraCommand *cobra.Command) {
 	}
 }
 
-func stripUsage(fqdn, usage string) string {
-	spacedFQDN := strings.ReplaceAll(fqdn, "-", " ")
-	usage = strings.Replace(usage, fqdn, "", 1)
-	return strings.Replace(usage, spacedFQDN, "", 1)
-}
-
 func (m *ManagerV2) runCommand(command Command, cobraCommand *cobra.Command, args []string) error {
 	context := m.newContext(Context{
 		Args:   args,
@@ -277,8 +275,12 @@ func (m *ManagerV2) registerV2FQDNOnRoot(command Command) {
 	fqdn := info.Name
 
 	newCmd := &cobra.Command{
-		Use:     fqdn + stripUsage(fqdn, info.Usage),
+		Use:     fqdn,
 		GroupID: info.GroupID,
+	}
+
+	if info.Usage != "" {
+		newCmd.Use = fqdn + " " + strings.TrimSpace(info.Usage)
 	}
 
 	m.fillCommand(newCmd, command)

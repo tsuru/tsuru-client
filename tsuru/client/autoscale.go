@@ -66,7 +66,7 @@ type AutoScaleSet struct {
 func (c *AutoScaleSet) Info() *cmd.Info {
 	return &cmd.Info{
 		Name:  "autoscale-set",
-		Usage: "autoscale set [-a/--app appname] [-p/--process processname] [--cpu targetCPU] [--min minUnits] [--max maxUnits] [--schedule scheduleWindow] [--prometheus prometheusSettings]",
+		Usage: "[-a/--app appname] [-p/--process processname] [--cpu targetCPU] [--min minUnits] [--max maxUnits] [--schedule scheduleWindow] [--prometheus prometheusSettings]",
 		Desc: `Sets an auto scale configuration.
 
 # Sets an autoscale configuration:
@@ -159,7 +159,7 @@ type AutoScaleUnset struct {
 func (c *AutoScaleUnset) Info() *cmd.Info {
 	return &cmd.Info{
 		Name:  "autoscale-unset",
-		Usage: "autoscale unset [-a/--app appname] [-p/--process processname]",
+		Usage: "[-a/--app appname] [-p/--process processname]",
 		Desc:  `Unsets a unit auto scale configuration.`,
 	}
 }
@@ -198,7 +198,7 @@ type AutoScaleSwap struct {
 func (c *AutoScaleSwap) Info() *cmd.Info {
 	return &cmd.Info{
 		Name:  "autoscale-swap",
-		Usage: "autoscale swap [-a/--app appname] [--version version]",
+		Usage: "[-a/--app appname] [--version version]",
 		Desc:  `Swap a unit auto scale configuration to another version.`,
 	}
 }

@@ -17,9 +17,8 @@ type Logout struct{}
 
 func (c *Logout) Info() *cmd.Info {
 	return &cmd.Info{
-		Name:  "logout",
-		Usage: "logout",
-		Desc:  "Logout will terminate the session with the tsuru server.",
+		Name: "logout",
+		Desc: "Logout will terminate the session with the tsuru server.",
 
 		OnlyAppendOnRoot: true,
 		GroupID:          "auth",

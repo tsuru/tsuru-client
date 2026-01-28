@@ -35,7 +35,7 @@ type AddPoolToSchedulerCmd struct {
 func (AddPoolToSchedulerCmd) Info() *cmd.Info {
 	return &cmd.Info{
 		Name:  "pool-add",
-		Usage: "pool-add <pool> [-p/--public] [-d/--default] [--provisioner <name>] [-f/--force] [-l/--labels \"{\"key\":\"value\"}\"]",
+		Usage: "<pool> [-p/--public] [-d/--default] [--provisioner <name>] [-f/--force] [-l/--labels \"{\"key\":\"value\"}\"]",
 		Desc: `Adds a new pool.
 
 Each docker node added using [[node-add]] command belongs to one pool.
@@ -132,7 +132,7 @@ type UpdatePoolToSchedulerCmd struct {
 func (UpdatePoolToSchedulerCmd) Info() *cmd.Info {
 	return &cmd.Info{
 		Name:    "pool-update",
-		Usage:   "pool-update <pool> [--public=true/false] [--default=true/false] [-f/--force] [--add-labels key=value]... [--remove-labels key]...",
+		Usage:   "<pool> [--public=true/false] [--default=true/false] [-f/--force] [--add-labels key=value]... [--remove-labels key]...",
 		Desc:    `Updates attributes for a pool.`,
 		MinArgs: 1,
 	}
@@ -260,7 +260,7 @@ type RemovePoolFromSchedulerCmd struct {
 func (c *RemovePoolFromSchedulerCmd) Info() *cmd.Info {
 	return &cmd.Info{
 		Name:    "pool-remove",
-		Usage:   "pool-remove <pool> [-y]",
+		Usage:   "<pool> [-y]",
 		Desc:    "Remove an existing pool.",
 		MinArgs: 1,
 	}
@@ -291,7 +291,7 @@ type AddTeamsToPoolCmd struct{}
 func (AddTeamsToPoolCmd) Info() *cmd.Info {
 	return &cmd.Info{
 		Name:  "pool-teams-add",
-		Usage: "pool-teams-add <pool> <teams>...",
+		Usage: "<pool> <teams>...",
 		Desc: `Adds teams to a pool. This will make the specified pool available when
 creating a new application for one of the added teams.`,
 		MinArgs: 2,
@@ -325,7 +325,7 @@ type RemoveTeamsFromPoolCmd struct{}
 func (RemoveTeamsFromPoolCmd) Info() *cmd.Info {
 	return &cmd.Info{
 		Name:  "pool-teams-remove",
-		Usage: "pool-teams-remove <pool> <teams>...",
+		Usage: "<pool> <teams>...",
 		Desc: `Removes teams from a pool. Listed teams will be no longer able to use this
 pool when creating a new application.`,
 		MinArgs: 2,
@@ -411,9 +411,8 @@ type PoolConstraintList struct{}
 
 func (c *PoolConstraintList) Info() *cmd.Info {
 	return &cmd.Info{
-		Name:  "pool-constraint-list",
-		Usage: "pool-constraint-list",
-		Desc:  "List pool constraints.",
+		Name: "pool-constraint-list",
+		Desc: "List pool constraints.",
 	}
 }
 
@@ -463,7 +462,7 @@ func (c *PoolConstraintSet) Flags() *pflag.FlagSet {
 func (c *PoolConstraintSet) Info() *cmd.Info {
 	return &cmd.Info{
 		Name:  "pool-constraint-set",
-		Usage: "pool-constraint-set <poolExpression> <field> [<values>]... [-b/--denylist] [-a/--append]",
+		Usage: "<poolExpression> <field> [<values>]... [-b/--denylist] [-a/--append]",
 		Desc: `Set a constraint on a pool expression.
 
 Examples:

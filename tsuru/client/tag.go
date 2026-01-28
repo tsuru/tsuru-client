@@ -29,9 +29,8 @@ type tag struct {
 
 func (t *TagList) Info() *cmd.Info {
 	return &cmd.Info{
-		Name:  "tag-list",
-		Usage: "tag-list",
-		Desc:  `Retrieves and shows a list of tags with the respective apps and service instances.`,
+		Name: "tag-list",
+		Desc: `Retrieves and shows a list of tags with the respective apps and service instances.`,
 	}
 }
 

@@ -28,7 +28,7 @@ func (c *ServiceCreate) Info() *cmd.Info {
 	desc := "Creates a service based on a passed manifest. The manifest format should be a yaml and follow the standard described in the documentation (should link to it here)"
 	return &cmd.Info{
 		Name:    "service-create",
-		Usage:   "service create path/to/manifest [- for stdin]",
+		Usage:   "[path/to/manifest] [- for stdin]",
 		Desc:    desc,
 		MinArgs: 1,
 	}
@@ -112,7 +112,7 @@ func (c *ServiceDestroy) Run(context *cmd.Context) error {
 func (c *ServiceDestroy) Info() *cmd.Info {
 	return &cmd.Info{
 		Name:    "service-destroy",
-		Usage:   "service destroy <servicename>",
+		Usage:   "<servicename>",
 		Desc:    "removes a service from catalog",
 		MinArgs: 1,
 		MaxArgs: 1,
@@ -124,7 +124,7 @@ type ServiceUpdate struct{}
 func (c *ServiceUpdate) Info() *cmd.Info {
 	return &cmd.Info{
 		Name:    "service-update",
-		Usage:   "service update <path/to/manifest>",
+		Usage:   "<path/to/manifest>",
 		Desc:    "Update service data, extracting it from the given manifest file.",
 		MinArgs: 1,
 	}
@@ -171,7 +171,7 @@ type ServiceDocAdd struct{}
 func (c *ServiceDocAdd) Info() *cmd.Info {
 	return &cmd.Info{
 		Name:    "service-doc-add",
-		Usage:   "service doc add <service> <path/to/docfile>",
+		Usage:   "<service> <path/to/docfile>",
 		Desc:    "Update service documentation, extracting it from the given file.",
 		MinArgs: 2,
 	}
@@ -232,7 +232,7 @@ func (c *ServiceDocGet) Run(ctx *cmd.Context) error {
 func (c *ServiceDocGet) Info() *cmd.Info {
 	return &cmd.Info{
 		Name:    "service-doc-get",
-		Usage:   "service doc get <service>",
+		Usage:   "<service>",
 		Desc:    "Shows service documentation.",
 		MinArgs: 1,
 	}
@@ -242,9 +242,8 @@ type ServiceTemplate struct{}
 
 func (c *ServiceTemplate) Info() *cmd.Info {
 	return &cmd.Info{
-		Name:  "service-template",
-		Usage: "service template",
-		Desc:  "Generates a manifest template file and places it in current directory",
+		Name: "service-template",
+		Desc: "Generates a manifest template file and places it in current directory",
 	}
 }
 

@@ -99,7 +99,7 @@ func newUnitSorter(m map[string]int) *unitSorter {
 func (c *AppCreate) Info() *cmd.Info {
 	return &cmd.Info{
 		Name:  "app-create",
-		Usage: "app create <appname> [platform] [--plan/-p plan name] [--router/-r router name] [--team/-t team owner] [--pool/-o pool name] [--description/-d description] [--tag/-g tag]... [--router-opts key=value]...",
+		Usage: "<appname> [platform] [--plan/-p plan name] [--router/-r router name] [--team/-t team owner] [--pool/-o pool name] [--description/-d description] [--tag/-g tag]... [--router-opts key=value]...",
 		Desc: `Creates a new app using the given name and platform. For tsuru,
 a platform is provisioner dependent. To check the available platforms, use the
 command [[tsuru platform list]] and to add a platform use the command [[tsuru platform add]].
@@ -241,7 +241,7 @@ type AppUpdate struct {
 func (c *AppUpdate) Info() *cmd.Info {
 	return &cmd.Info{
 		Name:  "app-update",
-		Usage: "app update [-a/--app appname] [--description/-d description] [--plan/-p plan name] [--pool/-o pool] [--team-owner/-t team owner] [--platform/-l platform] [-i/--image-reset] [--cpu cpu] [--memory memory] [--cpu-burst-factor cpu-burst-factor] [--tag/-g tag]...",
+		Usage: "[-a/--app appname] [--description/-d description] [--plan/-p plan name] [--pool/-o pool] [--team-owner/-t team owner] [--platform/-l platform] [-i/--image-reset] [--cpu cpu] [--memory memory] [--cpu-burst-factor cpu-burst-factor] [--tag/-g tag]...",
 		Desc:  `Updates an app, changing its description, tags, plan or pool information.`,
 	}
 }
@@ -356,7 +356,7 @@ type AppRemove struct {
 func (c *AppRemove) Info() *cmd.Info {
 	return &cmd.Info{
 		Name:  "app-remove",
-		Usage: "app remove [-a/--app appname] [-y/--assume-yes]",
+		Usage: "[-a/--app appname] [-y/--assume-yes]",
 		Desc: `Removes an application. If the app is bound to any service instance, all binds
 will be removed before the app gets deleted (see [[tsuru service-unbind]]).
 
@@ -414,7 +414,7 @@ type AppInfo struct {
 func (c *AppInfo) Info() *cmd.Info {
 	return &cmd.Info{
 		Name:  "app-info",
-		Usage: "app info [appname]",
+		Usage: "[appname]",
 		Desc: `Shows information about a specific app. Its state, platform, etc.
 You need to be a member of a team that has access to the app to be able to see information about it.`,
 	}
@@ -1263,7 +1263,7 @@ type AppGrant struct {
 func (c *AppGrant) Info() *cmd.Info {
 	return &cmd.Info{
 		Name:  "app-grant",
-		Usage: "app grant <teamname> [-a/--app appname]",
+		Usage: "<teamname> [-a/--app appname]",
 		Desc: `Allows a team to access an application. You need to be a member of a team that
 has access to the app to allow another team to access it. grants access to an
 app to a team.`,
@@ -1304,7 +1304,7 @@ type AppRevoke struct {
 func (c *AppRevoke) Info() *cmd.Info {
 	return &cmd.Info{
 		Name:  "app-revoke",
-		Usage: "app revoke <teamname> [-a/--app appname]",
+		Usage: "<teamname> [-a/--app appname]",
 		Desc: `Revokes the permission to access an application from a team. You need to have
 access to the application to revoke access from a team.
 
@@ -1509,8 +1509,7 @@ func (c *AppList) Flags() *pflag.FlagSet {
 
 func (c *AppList) Info() *cmd.Info {
 	return &cmd.Info{
-		Name:  "app-list",
-		Usage: "app list",
+		Name: "app-list",
 		Desc: `Lists all apps that you have access to. App access is controlled by teams. If
 your team has access to an app, then you have access to it.
 
@@ -1528,7 +1527,7 @@ type AppStop struct {
 func (c *AppStop) Info() *cmd.Info {
 	return &cmd.Info{
 		Name:  "app-stop",
-		Usage: "app stop [appname] [-p/--process processname] [--version version]",
+		Usage: "[appname] [-p/--process processname] [--version version]",
 		Desc:  "Stops an application, or one of the processes of the application.",
 	}
 }
@@ -1584,7 +1583,7 @@ type AppStart struct {
 func (c *AppStart) Info() *cmd.Info {
 	return &cmd.Info{
 		Name:  "app-start",
-		Usage: "app start [appname] [-p/--process processname] [--version version]",
+		Usage: "[appname] [-p/--process processname] [--version version]",
 		Desc:  "Starts an application, or one of the processes of the application.",
 	}
 }
@@ -1672,7 +1671,7 @@ func (c *AppRestart) Complete(args []string, toComplete string) ([]string, error
 func (c *AppRestart) Info() *cmd.Info {
 	return &cmd.Info{
 		Name:  "app-restart",
-		Usage: "app restart [appname] [-p/--process processname] [--version version]",
+		Usage: "[appname] [-p/--process processname] [--version version]",
 		Desc:  `Restarts an application, or one of the processes of the application.`,
 	}
 }
@@ -1702,7 +1701,7 @@ func (c *CnameAdd) Run(context *cmd.Context) error {
 func (c *CnameAdd) Info() *cmd.Info {
 	return &cmd.Info{
 		Name:  "cname-add",
-		Usage: "cname add <cname> [<cname> ...] [-a/--app appname]",
+		Usage: "<cname> [<cname> ...] [-a/--app appname]",
 		Desc: `Adds a new CNAME to the application.
 
 It will not manage any DNS register, it's up to the user to create the DNS
@@ -1727,7 +1726,7 @@ func (c *CnameRemove) Run(context *cmd.Context) error {
 func (c *CnameRemove) Info() *cmd.Info {
 	return &cmd.Info{
 		Name:  "cname-remove",
-		Usage: "cname remove <cname> [<cname> ...] [-a/--app appname]",
+		Usage: "<cname> [<cname> ...] [-a/--app appname]",
 		Desc: `Removes a CNAME from the application. This undoes the change that cname-add
 does.
 
@@ -1790,7 +1789,7 @@ type AppProcessUpdate struct {
 func (c *AppProcessUpdate) Info() *cmd.Info {
 	return &cmd.Info{
 		Name:    "app-process-update",
-		Usage:   "app process update [app] [process] [--plan/-p plan name] [--default-plan]",
+		Usage:   "[app] [process] [--plan/-p plan name] [--default-plan]",
 		Desc:    `Updates a plan of app process`,
 		MinArgs: 2,
 	}

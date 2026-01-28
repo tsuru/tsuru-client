@@ -97,7 +97,7 @@ func (c *MetadataGet) Flags() *pflag.FlagSet {
 func (c *MetadataGet) Info() *cmd.Info {
 	return &cmd.Info{
 		Name:  "metadata-get",
-		Usage: "metadata get <-a/--app appname | -j/--job jobname>",
+		Usage: "<-a/--app appname | -j/--job jobname>",
 		Desc:  `Retrieves metadata for an application or job.`,
 	}
 }
@@ -170,7 +170,7 @@ type MetadataSet struct {
 func (c *MetadataSet) Info() *cmd.Info {
 	return &cmd.Info{
 		Name:    "metadata-set",
-		Usage:   "metadata set <NAME=value> [NAME=value] ... <-a/--app appname | -j/--job jobname> <-p process> [-t/--type type]",
+		Usage:   "<NAME=value> [NAME=value] ... <-a/--app appname | -j/--job jobname> <-p process> [-t/--type type]",
 		Desc:    `Sets metadata such as labels and annotations for an application or job.`,
 		MinArgs: 1,
 	}
@@ -259,7 +259,7 @@ type MetadataUnset struct {
 func (c *MetadataUnset) Info() *cmd.Info {
 	return &cmd.Info{
 		Name:    "metadata-unset",
-		Usage:   "metadata unset <NAME> [NAME] ... <-a/--app appname | -j--job jobname> [-t/--type type]",
+		Usage:   "<NAME> [NAME] ... <-a/--app appname | -j--job jobname> [-t/--type type]",
 		Desc:    `Unsets metadata such as labels and annotations for an application or job.`,
 		MinArgs: 1,
 	}

@@ -71,9 +71,8 @@ type ServiceList struct {
 
 func (s *ServiceList) Info() *cmd.Info {
 	return &cmd.Info{
-		Name:  "service-list",
-		Usage: "service list",
-		Desc:  `Retrieves and shows a list of instances of service the user has access.`,
+		Name: "service-list",
+		Desc: `Retrieves and shows a list of instances of service the user has access.`,
 	}
 }
 
@@ -253,7 +252,7 @@ type ServiceInstanceAdd struct {
 func (c *ServiceInstanceAdd) Info() *cmd.Info {
 	return &cmd.Info{
 		Name:  "service-instance-add",
-		Usage: "service instance add <service-name> <service-instance-name> [plan] [-t/--team-owner team] [-d/--description description] [-g/--tag tag]... [--plan-param key=value]... [--pool name]",
+		Usage: "<service-name> <service-instance-name> [plan] [-t/--team-owner team] [-d/--description description] [-g/--tag tag]... [--plan-param key=value]... [--pool name]",
 		Desc: `Creates a service instance of a service. There can later be binded to
 applications with [[tsuru service-bind]].
 
@@ -370,7 +369,7 @@ type ServiceInstanceUpdate struct {
 func (c *ServiceInstanceUpdate) Info() *cmd.Info {
 	return &cmd.Info{
 		Name:  "service-instance-update",
-		Usage: "service instance update <service-name> <service-instance-name> [-t/--team-owner team] [-d/--description description] [-p/--plan plan] [-g/--tag tag]... [--remove-tag tag]... [--add-param key=value]... [--remove-param key]...",
+		Usage: "<service-name> <service-instance-name> [-t/--team-owner team] [-d/--description description] [-p/--plan plan] [-g/--tag tag]... [--remove-tag tag]... [--add-param key=value]... [--remove-param key]...",
 		Desc: `Updates a service instance.
 
 The --team-owner (or -t) parameter updates the team owner of a service instance.
@@ -523,7 +522,7 @@ func (sb *ServiceInstanceBind) Run(ctx *cmd.Context) error {
 func (sb *ServiceInstanceBind) Info() *cmd.Info {
 	return &cmd.Info{
 		Name:  "service-instance-bind",
-		Usage: "service instance bind <service-name> <service-instance-name> [-a/--app appname] [-j/--job jobname] [--no-restart]",
+		Usage: "<service-name> <service-instance-name> [-a/--app appname] [-j/--job jobname] [--no-restart]",
 		Desc: `Binds an application or job to a previously created service instance. See [[tsuru
 service instance add]] for more details on how to create a service instance.
 
@@ -599,7 +598,7 @@ func (su *ServiceInstanceUnbind) Run(ctx *cmd.Context) error {
 func (su *ServiceInstanceUnbind) Info() *cmd.Info {
 	return &cmd.Info{
 		Name:  "service-instance-unbind",
-		Usage: "service instance unbind <service-name> <service-instance-name> [-a/--app appname] [-j/--job jobname] [--no-restart] [--force]",
+		Usage: "<service-name> <service-instance-name> [-a/--app appname] [-j/--job jobname] [--no-restart] [--force]",
 		Desc: `Unbinds an application or job from a service instance. After unbinding, the instance
 will not be available anymore. For example, when unbinding an application from
 a MySQL service, the application would lose access to the database.`,
@@ -638,7 +637,7 @@ func (c *ServiceInstanceInfo) Flags() *pflag.FlagSet {
 func (c ServiceInstanceInfo) Info() *cmd.Info {
 	return &cmd.Info{
 		Name:    "service-instance-info",
-		Usage:   "service instance info <service-name> <instance-name>",
+		Usage:   "<service-name> <instance-name>",
 		Desc:    `Displays the information of the given service instance.`,
 		MinArgs: 2,
 	}
@@ -799,7 +798,7 @@ type ServiceInfo struct {
 func (c *ServiceInfo) Info() *cmd.Info {
 	return &cmd.Info{
 		Name:  "service-info",
-		Usage: "service info <service-name> [-p/--pool pool]",
+		Usage: "<service-name> [-p/--pool pool]",
 		Desc: `Displays a list of all instances of a given service (that the user has access
 to), and apps bound to these instances.`,
 		MinArgs: 1,
@@ -823,7 +822,7 @@ type ServicePlanList struct {
 func (c *ServicePlanList) Info() *cmd.Info {
 	return &cmd.Info{
 		Name:    "service-plan-list",
-		Usage:   "service plan list <service-name> [-p/--pool pool]",
+		Usage:   "<service-name> [-p/--pool pool]",
 		Desc:    `Displays a list of all plans of a given service.`,
 		MinArgs: 1,
 	}
@@ -1130,7 +1129,7 @@ type ServiceInstanceRemove struct {
 func (c *ServiceInstanceRemove) Info() *cmd.Info {
 	return &cmd.Info{
 		Name:  "service-instance-remove",
-		Usage: "service instance remove <service-name> <service-instance-name> [-f/--force] [--ignore-errors] [-y/--assume-yes]",
+		Usage: "<service-name> <service-instance-name> [-f/--force] [--ignore-errors] [-y/--assume-yes]",
 		Desc: `Destroys a service instance. It can't remove a service instance that is bound
 to an app, so before remove a service instance, make sure there is no apps
 bound to it (see [[tsuru service-instance-info]] command).`,
@@ -1185,7 +1184,7 @@ type ServiceInstanceGrant struct {
 func (c *ServiceInstanceGrant) Info() *cmd.Info {
 	return &cmd.Info{
 		Name:    "service-instance-grant",
-		Usage:   "service instance grant <service-name> <service-instance-name> <team-name>",
+		Usage:   "<service-name> <service-instance-name> <team-name>",
 		Desc:    `Grant access to team in a service instance.`,
 		MinArgs: 3,
 	}
@@ -1237,7 +1236,7 @@ func (c *ServiceInstanceRevoke) Complete(args []string, toComplete string) ([]st
 func (c *ServiceInstanceRevoke) Info() *cmd.Info {
 	return &cmd.Info{
 		Name:    "service-instance-revoke",
-		Usage:   "service instance revoke <service-name> <service-instance-name> <team-name>",
+		Usage:   "<service-name> <service-instance-name> <team-name>",
 		Desc:    `Revoke access to team in a service instance.`,
 		MinArgs: 3,
 	}

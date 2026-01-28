@@ -59,7 +59,7 @@ type PluginInstall struct{}
 func (PluginInstall) Info() *cmd.Info {
 	return &cmd.Info{
 		Name:    "plugin-install",
-		Usage:   "plugin-install <plugin-name> <plugin-url>",
+		Usage:   "<plugin-name> <plugin-url>",
 		Desc:    `Downloads the plugin file. It will be copied to [[$HOME/.tsuru/plugins]].`,
 		MinArgs: 2,
 	}
@@ -329,7 +329,7 @@ type PluginRemove struct{}
 func (PluginRemove) Info() *cmd.Info {
 	return &cmd.Info{
 		Name:    "plugin-remove",
-		Usage:   "plugin-remove <plugin-name>",
+		Usage:   "<plugin-name>",
 		Desc:    "Removes a previously installed tsuru plugin.",
 		MinArgs: 1,
 	}
@@ -350,9 +350,8 @@ type PluginList struct{}
 
 func (PluginList) Info() *cmd.Info {
 	return &cmd.Info{
-		Name:  "plugin-list",
-		Usage: "plugin-list",
-		Desc:  "List installed tsuru plugins.",
+		Name: "plugin-list",
+		Desc: "List installed tsuru plugins.",
 	}
 }
 
@@ -447,7 +446,7 @@ type BundleManifest struct {
 func (PluginBundle) Info() *cmd.Info {
 	return &cmd.Info{
 		Name:  "plugin-bundle",
-		Usage: "plugin-bundle --url <bundle-url>",
+		Usage: "--url <bundle-url>",
 		Desc:  `Syncs multiple plugins using a remote manifest containing a list of plugins.`,
 	}
 }

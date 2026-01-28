@@ -44,7 +44,7 @@ type JobCreate struct {
 func (c *JobCreate) Info() *cmd.Info {
 	return &cmd.Info{
 		Name:  "job-create",
-		Usage: "job create <jobname> <image> \"<commands>\" [--plan/-p plan name] [--schedule/-s schedule name] [--team/-t team owner] [--pool/-o pool name] [--description/-d description] [--tag/-g tag] [--max-running-time/-m seconds] [--manual bool]...",
+		Usage: "<jobname> <image> \"<commands>\" [--plan/-p plan name] [--schedule/-s schedule name] [--team/-t team owner] [--pool/-o pool name] [--description/-d description] [--tag/-g tag] [--max-running-time/-m seconds] [--manual bool]...",
 		Desc: `Creates a new job using the given name and platform
 
 In order to create an job, you need to be member of at least one team. All
@@ -201,7 +201,7 @@ func (c *JobInfo) Flags() *pflag.FlagSet {
 func (c *JobInfo) Info() *cmd.Info {
 	return &cmd.Info{
 		Name:    "job-info",
-		Usage:   "job info <job>",
+		Usage:   "<job>",
 		Desc:    "Retrieve useful information from a job",
 		MinArgs: 1,
 		MaxArgs: 1,
@@ -361,9 +361,8 @@ func (c *JobList) Flags() *pflag.FlagSet {
 
 func (c *JobList) Info() *cmd.Info {
 	return &cmd.Info{
-		Name:  "job-list",
-		Usage: "job list",
-		Desc:  "List jobs",
+		Name: "job-list",
+		Desc: "List jobs",
 	}
 }
 
@@ -452,7 +451,7 @@ type JobDelete struct {
 func (c *JobDelete) Info() *cmd.Info {
 	return &cmd.Info{
 		Name:    "job-delete",
-		Usage:   "job delete <job-name>",
+		Usage:   "<job-name>",
 		Desc:    "Delete an existing job",
 		MinArgs: 1,
 		MaxArgs: 1,
@@ -491,7 +490,7 @@ type JobTrigger struct{}
 func (c *JobTrigger) Info() *cmd.Info {
 	return &cmd.Info{
 		Name:    "job-trigger",
-		Usage:   "job trigger <job-name>",
+		Usage:   "<job-name>",
 		Desc:    "Trigger an existing job",
 		MinArgs: 1,
 		MaxArgs: 1,
@@ -538,7 +537,7 @@ type JobUpdate struct {
 func (c *JobUpdate) Info() *cmd.Info {
 	return &cmd.Info{
 		Name:    "job-update",
-		Usage:   "job update <job-name> [--image/-i <image>] [--plan/-p plan name] [--schedule/-s schedule name] [--manual] [--team/-t team owner] [--pool/-o pool name] [--description/-d description] [--max-running-time/-m seconds] [--tag/-g tag]... -- [commands]",
+		Usage:   "<job-name> [--image/-i <image>] [--plan/-p plan name] [--schedule/-s schedule name] [--manual] [--team/-t team owner] [--pool/-o pool name] [--description/-d description] [--max-running-time/-m seconds] [--tag/-g tag]... -- [commands]",
 		Desc:    "Updates a job",
 		MinArgs: 1,
 	}
@@ -648,7 +647,7 @@ type JobLog struct {
 func (c *JobLog) Info() *cmd.Info {
 	return &cmd.Info{
 		Name:    "job-log",
-		Usage:   "job log <job-name>",
+		Usage:   "<job-name>",
 		Desc:    "Retrieve logs a job",
 		MinArgs: 1,
 		MaxArgs: 1,
