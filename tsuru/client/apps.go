@@ -622,19 +622,20 @@ Created by:  {{.Owner}}
 Platform:    {{.Platform}}
 Plan:        {{ .Plan.Name }}
 Pool:        {{.Pool}} ({{ .Provisioner }}{{ if .Cluster}} | cluster: {{ .Cluster }}{{end}})
-{{if not .Routers -}}
-Router:      {{if .Router}}{{.Router}}{{if .RouterOpts}} ({{.GetRouterOpts}}){{end}}{{end}}
+{{if and (not .Routers) (.Router) -}}
+Router:      {{.Router}}{{if .RouterOpts}} ({{.GetRouterOpts}}){{end}}
 {{end -}}
 Teams:       {{.TeamList}}
-{{ if .InternalAddr }}
-Cluster Internal Addresses: {{.InternalAddr}}
-{{- end }}
-{{- if .Addr }}
-Cluster External Addresses: {{.Addr}}
-{{- end }}
-{{- if .SimpleServicesView }}
-Bound Services:             {{ .SimpleServicesView }}
-{{ end }}
+
+{{ with .InternalAddr -}}
+Cluster Internal Addresses: {{.}}
+{{ end -}}
+{{ with .Addr -}}
+Cluster External Addresses: {{.}}
+{{ end -}}
+{{ with .SimpleServicesView -}}
+Bound Services:             {{.}}
+{{ end -}}
 `
 
 const fullFormat = `{{ if .Error -}}
@@ -654,8 +655,8 @@ Platform:     {{.Platform}}
 {{ if .Provisioner -}}
 Provisioner:  {{ .Provisioner }}
 {{ end -}}
-{{if not .Routers -}}
-Router:       {{if .Router}}{{.Router}}{{if .RouterOpts}} ({{.GetRouterOpts}}){{end}}{{end}}
+{{if and (not .Routers) (.Router) -}}
+Router:       {{.Router}}{{if .RouterOpts}} ({{.GetRouterOpts}}){{end}}
 {{end -}}
 Teams:        {{.TeamList}}
 Created by:   {{.Owner}}
@@ -667,8 +668,9 @@ Cluster:      {{ .Cluster }}
 Pool:         {{.Pool}}
 {{ end -}}
 Quota:        {{ .QuotaString }}
-
+{{ if .Addr }}
 External Addresses: {{.Addr}}
+{{ end -}}
 `
 
 func (a *app) String(simplified bool) string {

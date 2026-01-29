@@ -2244,7 +2244,6 @@ func (s *S) TestAppInfoWithInternalAddresses(c *check.C) {
 	result := `{"name":"powerapp","teamowner":"powerteam","cname":[""],"ip":"monster.tsuru.io","platform":"assembly","repository":"git@git.com:app.git","state":"dead", "units":[{"Ip":"9.9.9.9","ID":"app1/1","Status":"started","Address":{"Host": "10.8.7.6:3323"}}],"teams":["tsuruzers"], "owner": "myapp_owner", "deploys": 7, "router": "", "internalAddresses":[{"domain":"test.cluster.com","port":80,"protocol":"TCP","process": "web","version":"2"}, {"domain":"test.cluster.com","port":443,"protocol":"TCP","process":"jobs","version":"3"}]}`
 	expected := `Application:  powerapp
 Platform:     assembly
-Router:       
 Teams:        powerteam (owner), tsuruzers
 Created by:   myapp_owner
 Deploys:      7
@@ -2285,7 +2284,6 @@ func (s *S) TestAppInfoWithInternalAddressesNoTargetPort(c *check.C) {
 	result := `{"name":"app1","teamowner":"myteam","ip":"app1.tsuru.io","platform":"go","repository":"git@git.com:app.git","state":"ready","units":[],"teams":["myteam"],"owner":"myapp_owner","deploys":1,"router":"","internalAddresses":[{"domain":"app1.internal","port":8080,"protocol":"TCP","process":"web","version":"1"}]}`
 	expected := `Application:  app1
 Platform:     go
-Router:       
 Teams:        myteam (owner)
 Created by:   myapp_owner
 Deploys:      1
@@ -2318,7 +2316,6 @@ func (s *S) TestAppInfoWithInternalAddressesMatchingTargetPort(c *check.C) {
 	result := `{"name":"app1","teamowner":"myteam","ip":"app1.tsuru.io","platform":"go","repository":"git@git.com:app.git","state":"ready","units":[],"teams":["myteam"],"owner":"myapp_owner","deploys":1,"router":"","internalAddresses":[{"domain":"app1.internal","port":8080,"targetPort":8080,"protocol":"TCP","process":"web","version":"1"}]}`
 	expected := `Application:  app1
 Platform:     go
-Router:       
 Teams:        myteam (owner)
 Created by:   myapp_owner
 Deploys:      1
@@ -2351,7 +2348,6 @@ func (s *S) TestAppInfoWithInternalAddressesDifferentTargetPort(c *check.C) {
 	result := `{"name":"app1","teamowner":"myteam","ip":"app1.tsuru.io","platform":"go","repository":"git@git.com:app.git","state":"ready","units":[],"teams":["myteam"],"owner":"myapp_owner","deploys":1,"router":"","internalAddresses":[{"domain":"app1.internal","port":80,"targetPort":8080,"protocol":"TCP","process":"web","version":"1"}]}`
 	expected := `Application:  app1
 Platform:     go
-Router:       
 Teams:        myteam (owner)
 Created by:   myapp_owner
 Deploys:      1
