@@ -20,7 +20,7 @@ func StreamJSONResponse(w io.Writer, response *http.Response) error {
 	}
 
 	var writer io.Writer
-	var formatter *tsuruIO.SimpleJsonMessageFormatter
+	var formatter tsuruIO.Formatter
 	if v2.ColorStream() {
 		writer = NewColoredStreamWriter(w)
 		formatter = &tsuruIO.SimpleJsonMessageFormatter{NoTimestamp: true}
