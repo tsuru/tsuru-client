@@ -87,7 +87,7 @@ func (w *coloredEncoderWriter) writeSectionLine(line string) {
 	content := line[len(streamfmt.SectionPrefix) : len(line)-len(streamfmt.SectionSuffix)]
 
 	fmt.Fprint(w.Encoder, cmd.Colorfy(sectionIndicator, "blue", "", ""))
-	fmt.Fprintf(w.Encoder, " %s \n", cmd.Colorfy(content, "white", "", "bold"))
+	fmt.Fprintf(w.Encoder, " %s \n", cmd.Colorfy(content, "", "", "bold"))
 }
 
 // writeActionLine writes an action line with green arrow, preserving indentation.
@@ -98,7 +98,7 @@ func (w *coloredEncoderWriter) writeActionLine(line string) {
 
 	fmt.Fprint(w.Encoder, strings.Repeat(" ", leadingSpaces))
 	fmt.Fprint(w.Encoder, cmd.Colorfy(actionArrow, "green", "", "bold"))
-	fmt.Fprintf(w.Encoder, " %s\n", cmd.Colorfy(content, "white", "", ""))
+	fmt.Fprintf(w.Encoder, " %s\n", cmd.Colorfy(content, "", "", "reset"))
 }
 
 // writeErrorLine writes an error line with red cross indicator.
@@ -106,7 +106,7 @@ func (w *coloredEncoderWriter) writeErrorLine(line string) {
 	content := line[len(streamfmt.ErrorPrefix) : len(line)-len(streamfmt.ErrorSuffix)]
 
 	fmt.Fprint(w.Encoder, cmd.Colorfy(errorCross+errorCross, "red", "", "bold"))
-	fmt.Fprintf(w.Encoder, " %s\n", cmd.Colorfy(content, "red", "", ""))
+	fmt.Fprintf(w.Encoder, " %s\n", cmd.Colorfy(content, "red", "", "reset"))
 }
 
 func NewColoredStreamWriter(encoder io.Writer) io.Writer {

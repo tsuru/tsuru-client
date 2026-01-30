@@ -12,6 +12,7 @@ import (
 	"github.com/spf13/viper"
 	"github.com/tsuru/go-tsuruclient/pkg/config"
 	"github.com/tsuru/tablecli"
+	"golang.org/x/term"
 )
 
 var defaultViper = preSetupViper(nil)
@@ -29,8 +30,17 @@ func Pager() (pager string, found bool) {
 }
 
 func ColorStream() bool {
-	// TODO: detect by current terminal capabilities
-	return !ColorDisabled() && defaultViper.GetBool("color-stream")
+	if ColorDisabled() {
+		return false
+	}
+
+	def := term.IsTerminal(int(os.Stdout.Fd()))
+
+	key := "color-stream"
+	if defaultViper.IsSet(key) {
+		return defaultViper.GetBool(key)
+	}
+	return def
 }
 
 // preSetupViper prepares viper for being used by NewProductionTsuruContext()

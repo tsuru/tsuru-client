@@ -11,8 +11,9 @@ import (
 )
 
 const (
-	pattern  = "\033[%d;%d;%dm%s\033[0m"
-	bgFactor = 10
+	pattern       = "\033[%d;%d;%dm%s\033[0m"
+	effectPattern = "\033[%dm%s\033[0m"
+	bgFactor      = 10
 )
 
 var fontColors = map[string]int{
@@ -42,6 +43,9 @@ func init() {
 func Colorfy(msg string, fontcolor string, background string, effect string) string {
 	if DisableColors {
 		return msg
+	}
+	if fontcolor == "" && background == "" && effect != "" {
+		return fmt.Sprintf(effectPattern, fontEffects[effect], msg)
 	}
 	return fmt.Sprintf(pattern, fontEffects[effect], fontColors[fontcolor], fontColors[background]+bgFactor, msg)
 }
