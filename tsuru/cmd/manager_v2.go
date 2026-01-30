@@ -38,6 +38,10 @@ func NewManagerV2(opts ...*ManagerV2Opts) *ManagerV2 {
 		tree:    v2.NewCmdNode(rootCmd),
 	}
 
+	rootCmd.SetFlagErrorFunc(func(cmd *cobra.Command, err error) error {
+		return &UsageError{Err: err}
+	})
+
 	if len(opts) == 1 && opts[0].AfterFlagParseHook != nil {
 		originalPersistentPreRun := rootCmd.PersistentPreRun
 		rootCmd.PersistentPreRun = func(cmd *cobra.Command, args []string) {
@@ -128,7 +132,7 @@ func (m *ManagerV2) Run() error {
 		}
 	}
 
-	if err != nil {
+	if err != nil && isUsageError(err) {
 		cmd.Println(cmd.UsageString())
 	}
 
@@ -179,6 +183,8 @@ func (m *ManagerV2) fillCommand(cobraCommand *cobra.Command, command Command) {
 	} else if info.MaxArgs >= 0 && info.MinArgs >= 0 && info.MaxArgs > info.MinArgs {
 		cobraCommand.Args = cobra.RangeArgs(info.MinArgs, info.MaxArgs)
 	}
+
+	cobraCommand.Args = catchUsageError(cobraCommand.Args)
 
 	cobraCommand.RunE = func(cobraCommand *cobra.Command, args []string) error {
 		if info.ParseFirstFlagsOnly {
