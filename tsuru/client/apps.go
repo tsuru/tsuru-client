@@ -740,27 +740,13 @@ func (a *app) String(simplified bool) string {
 			}))
 		}
 
-		useTableWriter := tablecli.TableConfig.UseTabWriter
+		autoScaleTable.TableWriterExpandRows = true
 
 		addSection := func(title string, lines []string) {
-			if useTableWriter {
-				for i, line := range lines {
-					desc := ""
-					if i == 0 {
-						desc = title
-					}
-
-					autoScaleTable.AddRow(tablecli.Row([]string{
-						desc,
-						line,
-					}))
-				}
-			} else {
-				autoScaleTable.AddRow(tablecli.Row([]string{
-					title,
-					strings.Join(lines, "\n"),
-				}))
-			}
+			autoScaleTable.AddRow([]string{
+				title,
+				strings.Join(lines, "\n"),
+			})
 		}
 
 		for _, schedule := range as.Schedules {

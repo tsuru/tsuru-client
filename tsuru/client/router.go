@@ -372,6 +372,8 @@ func renderRouters(routers []appTypes.AppRouter, out io.Writer, idColumn string,
 	table.Headers = tablecli.Row([]string{idColumn, "Opts", "Addresses", "Status"})
 	table.LineSeparator = true
 	table.TableWriterPadding = tableWriterPadding
+	table.TableWriterExpandRows = true
+
 	for _, r := range routers {
 		var optsStr []string
 		for k, v := range r.Opts {
@@ -387,13 +389,12 @@ func renderRouters(routers []appTypes.AppRouter, out io.Writer, idColumn string,
 			sort.Strings(r.Addresses)
 			addresses = strings.Join(r.Addresses, "\n")
 		}
-		row := tablecli.Row([]string{
+		table.AddRow([]string{
 			r.Name,
 			strings.Join(optsStr, "\n"),
 			addresses,
 			statusStr,
 		})
-		table.AddRow(row)
 	}
 	out.Write(table.Bytes())
 }
