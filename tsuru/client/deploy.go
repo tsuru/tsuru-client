@@ -25,6 +25,7 @@ import (
 	tsuruClientApp "github.com/tsuru/tsuru-client/tsuru/app"
 	"github.com/tsuru/tsuru-client/tsuru/cmd"
 	"github.com/tsuru/tsuru-client/tsuru/cmd/standards"
+	v2 "github.com/tsuru/tsuru-client/tsuru/cmd/v2"
 	"github.com/tsuru/tsuru-client/tsuru/formatter"
 	tsuruHTTP "github.com/tsuru/tsuru-client/tsuru/http"
 	tsuruapp "github.com/tsuru/tsuru/app"
@@ -215,10 +216,15 @@ func (w *safeWriter) Write(p []byte) (int, error) {
 
 func prepareUploadStreams(context *cmd.Context, buf *safe.Buffer) io.Writer {
 	context.Stdout = &safeWriter{w: context.Stdout}
+
+	if v2.ColorStream() {
+		encoderWriter := &safeWriter{w: formatter.NewColoredStreamWriter(context.Stdout)}
+		return io.MultiWriter(encoderWriter, buf)
+	}
+
 	stream := tsuruIo.NewStreamWriter(&firstWriter{Writer: context.Stdout}, nil)
 	encoderWriter := &safeWriter{w: &tsuruIo.SimpleJsonMessageEncoderWriter{Encoder: json.NewEncoder(stream)}}
-	respBody := io.MultiWriter(encoderWriter, buf)
-	return respBody
+	return io.MultiWriter(encoderWriter, buf)
 }
 
 func (c *AppDeploy) Run(context *cmd.Context) error {

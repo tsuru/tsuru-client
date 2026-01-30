@@ -28,6 +28,11 @@ func Pager() (pager string, found bool) {
 	return defaultViper.GetString(key), true
 }
 
+func ColorStream() bool {
+	// TODO: detect by current terminal capabilities
+	return !ColorDisabled() && defaultViper.GetBool("color-stream")
+}
+
 // preSetupViper prepares viper for being used by NewProductionTsuruContext()
 func preSetupViper(vip *viper.Viper) *viper.Viper {
 	if vip == nil {
