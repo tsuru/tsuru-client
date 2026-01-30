@@ -19,25 +19,19 @@ func StreamJSONResponse(w io.Writer, response *http.Response) error {
 		return errors.New("response cannot be nil")
 	}
 
+	var writer io.Writer
+	var formatter *tsuruIO.SimpleJsonMessageFormatter
 	if v2.ColorStream() {
-		output := tsuruIO.NewStreamWriter(NewColoredStreamWriter(w), &tsuruIO.SimpleJsonMessageFormatter{NoTimestamp: true})
-		defer response.Body.Close()
-		var err error
-		for n := int64(1); n > 0 && err == nil; n, err = io.Copy(output, response.Body) {
-		}
-		if err != nil {
-			return err
-		}
-		unparsed := output.Remaining()
-		if len(unparsed) > 0 {
-			return errors.Errorf("unparsed message error: %s", string(unparsed))
-		}
-		return nil
+		writer = NewColoredStreamWriter(w)
+		formatter = &tsuruIO.SimpleJsonMessageFormatter{NoTimestamp: true}
+	} else {
+		writer = w
+		formatter = nil
 	}
 
 	defer response.Body.Close()
+	output := tsuruIO.NewStreamWriter(writer, formatter)
 	var err error
-	output := tsuruIO.NewStreamWriter(w, nil)
 	for n := int64(1); n > 0 && err == nil; n, err = io.Copy(output, response.Body) {
 	}
 	if err != nil {
