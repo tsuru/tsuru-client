@@ -22,11 +22,13 @@ const (
 )
 
 // coloredEncoderWriter wraps an io.Writer to produce colorized, timestamped output.
+// It buffers incomplete lines across Write calls to handle chunked input correctly.
 type coloredEncoderWriter struct {
 	Started time.Time
 	Encoder io.Writer
 
 	firstPrinted bool
+	pending      []byte // buffer for incomplete line fragments
 }
 
 var trimmedActionPrefix = strings.TrimSpace(streamfmt.ActionPrefix)
@@ -37,17 +39,38 @@ var trimmedActionPrefix = strings.TrimSpace(streamfmt.ActionPrefix)
 //   - Actions: displayed with green arrow
 //   - Errors: displayed with red cross
 //   - Regular lines: displayed as-is
+//
+// Write buffers incomplete lines across calls to handle chunked input correctly.
+// Only complete lines (terminated by '\n') are formatted and written.
 func (w *coloredEncoderWriter) Write(p []byte) (int, error) {
 	if !w.firstPrinted {
 		fmt.Fprintln(w.Encoder)
 		w.firstPrinted = true
 	}
 
-	lines := bytes.Split(p, []byte{'\n'})
+	// Prepend any pending data from previous Write call
+	data := p
+	if len(w.pending) > 0 {
+		data = append(w.pending, p...)
+		w.pending = nil
+	}
+
 	elapsedSeconds := time.Since(w.Started).Seconds()
 
-	for _, lineBytes := range lines {
-		line := string(lineBytes)
+	for {
+		idx := bytes.IndexByte(data, '\n')
+		if idx == -1 {
+			// No newline found; save remainder for next Write call
+			if len(data) > 0 {
+				w.pending = make([]byte, len(data))
+				copy(w.pending, data)
+			}
+			break
+		}
+
+		line := string(data[:idx])
+		data = data[idx+1:]
+
 		if len(line) == 0 {
 			continue
 		}
@@ -84,6 +107,12 @@ func (w *coloredEncoderWriter) writeFormattedLine(line string) {
 
 // writeSectionLine writes a section header with blue indicator.
 func (w *coloredEncoderWriter) writeSectionLine(line string) {
+	// Defense-in-depth: handle malformed lines missing expected suffix
+	if !strings.HasSuffix(line, streamfmt.SectionSuffix) {
+		fmt.Fprintf(w.Encoder, "%s\n", line)
+		return
+	}
+
 	content := line[len(streamfmt.SectionPrefix) : len(line)-len(streamfmt.SectionSuffix)]
 
 	fmt.Fprint(w.Encoder, cmd.Colorfy(sectionIndicator, "blue", "", ""))
@@ -103,6 +132,12 @@ func (w *coloredEncoderWriter) writeActionLine(line string) {
 
 // writeErrorLine writes an error line with red cross indicator.
 func (w *coloredEncoderWriter) writeErrorLine(line string) {
+	// Defense-in-depth: handle malformed lines missing expected suffix
+	if !strings.HasSuffix(line, streamfmt.ErrorSuffix) {
+		fmt.Fprintf(w.Encoder, "%s\n", line)
+		return
+	}
+
 	content := line[len(streamfmt.ErrorPrefix) : len(line)-len(streamfmt.ErrorSuffix)]
 
 	fmt.Fprint(w.Encoder, cmd.Colorfy(errorCross+errorCross, "red", "", "bold"))

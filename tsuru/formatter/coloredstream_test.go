@@ -35,7 +35,7 @@ func TestColoredEncoderWriter_Write_RegularLine(t *testing.T) {
 		firstPrinted: true,
 	}
 
-	_, err := w.Write([]byte("regular line"))
+	_, err := w.Write([]byte("regular line\n"))
 	assert.NoError(t, err)
 
 	output := buf.String()
@@ -53,7 +53,7 @@ func TestColoredEncoderWriter_Write_SectionLine(t *testing.T) {
 	}
 
 	sectionLine := streamfmt.Section("Build phase")
-	_, err := w.Write([]byte(sectionLine))
+	_, err := w.Write([]byte(sectionLine + "\n"))
 	assert.NoError(t, err)
 
 	output := buf.String()
@@ -70,7 +70,7 @@ func TestColoredEncoderWriter_Write_ActionLine(t *testing.T) {
 	}
 
 	actionLine := streamfmt.Action("Running tests")
-	_, err := w.Write([]byte(actionLine))
+	_, err := w.Write([]byte(actionLine + "\n"))
 	assert.NoError(t, err)
 
 	output := buf.String()
@@ -87,7 +87,7 @@ func TestColoredEncoderWriter_Write_ActionLineWithIndentation(t *testing.T) {
 	}
 
 	actionLine := "    " + streamfmt.Action("Nested action")
-	_, err := w.Write([]byte(actionLine))
+	_, err := w.Write([]byte(actionLine + "\n"))
 	assert.NoError(t, err)
 
 	output := buf.String()
@@ -104,7 +104,7 @@ func TestColoredEncoderWriter_Write_ErrorLine(t *testing.T) {
 	}
 
 	errorLine := streamfmt.Error("Something went wrong")
-	_, err := w.Write([]byte(errorLine))
+	_, err := w.Write([]byte(errorLine + "\n"))
 	assert.NoError(t, err)
 
 	output := buf.String()
@@ -121,7 +121,7 @@ func TestColoredEncoderWriter_Write_MultipleLines(t *testing.T) {
 		firstPrinted: true,
 	}
 
-	lines := "line1\nline2\nline3"
+	lines := "line1\nline2\nline3\n"
 	n, err := w.Write([]byte(lines))
 	assert.NoError(t, err)
 	assert.Equal(t, len(lines), n)
@@ -140,7 +140,7 @@ func TestColoredEncoderWriter_Write_EmptyLinesAreSkipped(t *testing.T) {
 		firstPrinted: true,
 	}
 
-	lines := "line1\n\n\nline2"
+	lines := "line1\n\n\nline2\n"
 	_, err := w.Write([]byte(lines))
 	assert.NoError(t, err)
 
@@ -159,7 +159,7 @@ func TestColoredEncoderWriter_Write_TimestampFormat(t *testing.T) {
 		firstPrinted: true,
 	}
 
-	_, err := w.Write([]byte("test"))
+	_, err := w.Write([]byte("test\n"))
 	assert.NoError(t, err)
 
 	output := buf.String()
@@ -190,7 +190,7 @@ func TestColoredEncoderWriter_Write_MixedContent(t *testing.T) {
 	mixedContent := streamfmt.Section("Build") + "\n" +
 		streamfmt.Action("Installing deps") + "\n" +
 		"npm install completed\n" +
-		streamfmt.Error("Build failed")
+		streamfmt.Error("Build failed") + "\n"
 
 	_, err := w.Write([]byte(mixedContent))
 	assert.NoError(t, err)
@@ -281,4 +281,158 @@ func TestColoredEncoderWriter_WriteActionLinePreservesIndentation(t *testing.T) 
 
 	output := buf.String()
 	assert.True(t, strings.HasPrefix(output, "   "))
+}
+
+func TestColoredEncoderWriter_WriteSectionLine_MissingSuffix(t *testing.T) {
+	var buf bytes.Buffer
+	w := &coloredEncoderWriter{
+		Encoder: &buf,
+		Started: time.Now(),
+	}
+
+	// Simulate chunked write: prefix present but suffix missing
+	incompleteLine := streamfmt.SectionPrefix + "Partial section"
+	w.writeSectionLine(incompleteLine)
+
+	output := buf.String()
+	// Should fall back to raw output without panic
+	assert.Contains(t, output, incompleteLine)
+	assert.NotContains(t, output, sectionIndicator)
+}
+
+func TestColoredEncoderWriter_WriteErrorLine_MissingSuffix(t *testing.T) {
+	var buf bytes.Buffer
+	w := &coloredEncoderWriter{
+		Encoder: &buf,
+		Started: time.Now(),
+	}
+
+	// Simulate chunked write: prefix present but suffix missing
+	incompleteLine := streamfmt.ErrorPrefix + "Partial error"
+	w.writeErrorLine(incompleteLine)
+
+	output := buf.String()
+	// Should fall back to raw output without panic
+	assert.Contains(t, output, incompleteLine)
+	assert.NotContains(t, output, errorCross)
+}
+
+func TestColoredEncoderWriter_Write_ChunkedLines(t *testing.T) {
+	var buf bytes.Buffer
+	w := &coloredEncoderWriter{
+		Encoder:      &buf,
+		Started:      time.Now(),
+		firstPrinted: true,
+	}
+
+	// Simulate chunked writes splitting a line across multiple Write calls
+	_, err := w.Write([]byte("hello wo"))
+	assert.NoError(t, err)
+	assert.Empty(t, buf.String()) // No output yet, line incomplete
+
+	_, err = w.Write([]byte("rld\n"))
+	assert.NoError(t, err)
+
+	output := buf.String()
+	assert.Contains(t, output, "hello world")
+}
+
+func TestColoredEncoderWriter_Write_ChunkedSectionLine(t *testing.T) {
+	var buf bytes.Buffer
+	w := &coloredEncoderWriter{
+		Encoder:      &buf,
+		Started:      time.Now(),
+		firstPrinted: true,
+	}
+
+	// Split a section line across multiple Write calls
+	sectionLine := streamfmt.Section("Build phase")
+	midpoint := len(sectionLine) / 2
+
+	_, err := w.Write([]byte(sectionLine[:midpoint]))
+	assert.NoError(t, err)
+	assert.Empty(t, buf.String()) // No output yet
+
+	_, err = w.Write([]byte(sectionLine[midpoint:] + "\n"))
+	assert.NoError(t, err)
+
+	output := buf.String()
+	assert.Contains(t, output, "Build phase")
+	assert.Contains(t, output, sectionIndicator)
+}
+
+func TestColoredEncoderWriter_Write_ChunkedErrorLine(t *testing.T) {
+	var buf bytes.Buffer
+	w := &coloredEncoderWriter{
+		Encoder:      &buf,
+		Started:      time.Now(),
+		firstPrinted: true,
+	}
+
+	// Split an error line across multiple Write calls
+	errorLine := streamfmt.Error("Something failed")
+	midpoint := len(errorLine) / 2
+
+	_, err := w.Write([]byte(errorLine[:midpoint]))
+	assert.NoError(t, err)
+	assert.Empty(t, buf.String()) // No output yet
+
+	_, err = w.Write([]byte(errorLine[midpoint:] + "\n"))
+	assert.NoError(t, err)
+
+	output := buf.String()
+	// streamfmt.Error converts to uppercase
+	assert.Contains(t, output, "SOMETHING FAILED")
+	assert.Contains(t, output, errorCross)
+}
+
+func TestColoredEncoderWriter_Write_MultipleChunkedLines(t *testing.T) {
+	var buf bytes.Buffer
+	w := &coloredEncoderWriter{
+		Encoder:      &buf,
+		Started:      time.Now(),
+		firstPrinted: true,
+	}
+
+	// Write multiple complete lines plus a partial line
+	_, err := w.Write([]byte("line1\nline2\npartial"))
+	assert.NoError(t, err)
+
+	output := buf.String()
+	assert.Contains(t, output, "line1")
+	assert.Contains(t, output, "line2")
+	assert.NotContains(t, output, "partial") // Not yet written
+
+	// Complete the partial line
+	buf.Reset()
+	_, err = w.Write([]byte(" line3\n"))
+	assert.NoError(t, err)
+
+	output = buf.String()
+	assert.Contains(t, output, "partial line3")
+}
+
+func TestColoredEncoderWriter_Write_PendingBufferIsCopied(t *testing.T) {
+	var buf bytes.Buffer
+	w := &coloredEncoderWriter{
+		Encoder:      &buf,
+		Started:      time.Now(),
+		firstPrinted: true,
+	}
+
+	// Write partial data
+	data := []byte("hello")
+	_, err := w.Write(data)
+	assert.NoError(t, err)
+
+	// Modify original slice - should not affect pending buffer
+	data[0] = 'X'
+
+	// Complete the line
+	_, err = w.Write([]byte(" world\n"))
+	assert.NoError(t, err)
+
+	output := buf.String()
+	assert.Contains(t, output, "hello world")
+	assert.NotContains(t, output, "Xello")
 }
