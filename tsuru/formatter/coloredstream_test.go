@@ -14,25 +14,11 @@ import (
 	"github.com/tsuru/tsuru/streamfmt"
 )
 
-func TestColoredEncoderWriter_Write_FirstPrintAddsNewline(t *testing.T) {
+func TestColoredEncoderWriter_Write_RegularLine(t *testing.T) {
 	var buf bytes.Buffer
 	w := &coloredEncoderWriter{
 		Encoder: &buf,
 		Started: time.Now(),
-	}
-
-	n, err := w.Write([]byte("hello"))
-	assert.NoError(t, err)
-	assert.Equal(t, 5, n)
-	assert.True(t, strings.HasPrefix(buf.String(), "\n"))
-}
-
-func TestColoredEncoderWriter_Write_RegularLine(t *testing.T) {
-	var buf bytes.Buffer
-	w := &coloredEncoderWriter{
-		Encoder:      &buf,
-		Started:      time.Now(),
-		firstPrinted: true,
 	}
 
 	_, err := w.Write([]byte("regular line\n"))
@@ -47,9 +33,8 @@ func TestColoredEncoderWriter_Write_RegularLine(t *testing.T) {
 func TestColoredEncoderWriter_Write_SectionLine(t *testing.T) {
 	var buf bytes.Buffer
 	w := &coloredEncoderWriter{
-		Encoder:      &buf,
-		Started:      time.Now(),
-		firstPrinted: true,
+		Encoder: &buf,
+		Started: time.Now(),
 	}
 
 	sectionLine := streamfmt.Section("Build phase")
@@ -64,9 +49,8 @@ func TestColoredEncoderWriter_Write_SectionLine(t *testing.T) {
 func TestColoredEncoderWriter_Write_ActionLine(t *testing.T) {
 	var buf bytes.Buffer
 	w := &coloredEncoderWriter{
-		Encoder:      &buf,
-		Started:      time.Now(),
-		firstPrinted: true,
+		Encoder: &buf,
+		Started: time.Now(),
 	}
 
 	actionLine := streamfmt.Action("Running tests")
@@ -81,9 +65,8 @@ func TestColoredEncoderWriter_Write_ActionLine(t *testing.T) {
 func TestColoredEncoderWriter_Write_ActionLineWithIndentation(t *testing.T) {
 	var buf bytes.Buffer
 	w := &coloredEncoderWriter{
-		Encoder:      &buf,
-		Started:      time.Now(),
-		firstPrinted: true,
+		Encoder: &buf,
+		Started: time.Now(),
 	}
 
 	actionLine := "    " + streamfmt.Action("Nested action")
@@ -98,9 +81,8 @@ func TestColoredEncoderWriter_Write_ActionLineWithIndentation(t *testing.T) {
 func TestColoredEncoderWriter_Write_ErrorLine(t *testing.T) {
 	var buf bytes.Buffer
 	w := &coloredEncoderWriter{
-		Encoder:      &buf,
-		Started:      time.Now(),
-		firstPrinted: true,
+		Encoder: &buf,
+		Started: time.Now(),
 	}
 
 	errorLine := streamfmt.Error("Something went wrong")
@@ -116,9 +98,8 @@ func TestColoredEncoderWriter_Write_ErrorLine(t *testing.T) {
 func TestColoredEncoderWriter_Write_MultipleLines(t *testing.T) {
 	var buf bytes.Buffer
 	w := &coloredEncoderWriter{
-		Encoder:      &buf,
-		Started:      time.Now(),
-		firstPrinted: true,
+		Encoder: &buf,
+		Started: time.Now(),
 	}
 
 	lines := "line1\nline2\nline3\n"
@@ -135,9 +116,8 @@ func TestColoredEncoderWriter_Write_MultipleLines(t *testing.T) {
 func TestColoredEncoderWriter_Write_EmptyLinesAreSkipped(t *testing.T) {
 	var buf bytes.Buffer
 	w := &coloredEncoderWriter{
-		Encoder:      &buf,
-		Started:      time.Now(),
-		firstPrinted: true,
+		Encoder: &buf,
+		Started: time.Now(),
 	}
 
 	lines := "line1\n\n\nline2\n"
@@ -154,9 +134,8 @@ func TestColoredEncoderWriter_Write_TimestampFormat(t *testing.T) {
 	var buf bytes.Buffer
 	started := time.Now().Add(-10 * time.Second)
 	w := &coloredEncoderWriter{
-		Encoder:      &buf,
-		Started:      started,
-		firstPrinted: true,
+		Encoder: &buf,
+		Started: started,
 	}
 
 	_, err := w.Write([]byte("test\n"))
@@ -173,18 +152,17 @@ func TestNewColoredStreamWriter(t *testing.T) {
 	assert.NotNil(t, w)
 
 	// Check it's the right type by writing to it
-	n, err := w.Write([]byte("test"))
+	n, err := w.Write([]byte("test\n"))
 	assert.NoError(t, err)
-	assert.Equal(t, 4, n)
+	assert.Equal(t, 5, n)
 	assert.Greater(t, buf.Len(), 0)
 }
 
 func TestColoredEncoderWriter_Write_MixedContent(t *testing.T) {
 	var buf bytes.Buffer
 	w := &coloredEncoderWriter{
-		Encoder:      &buf,
-		Started:      time.Now(),
-		firstPrinted: true,
+		Encoder: &buf,
+		Started: time.Now(),
 	}
 
 	mixedContent := streamfmt.Section("Build") + "\n" +
@@ -320,9 +298,8 @@ func TestColoredEncoderWriter_WriteErrorLine_MissingSuffix(t *testing.T) {
 func TestColoredEncoderWriter_Write_ChunkedLines(t *testing.T) {
 	var buf bytes.Buffer
 	w := &coloredEncoderWriter{
-		Encoder:      &buf,
-		Started:      time.Now(),
-		firstPrinted: true,
+		Encoder: &buf,
+		Started: time.Now(),
 	}
 
 	// Simulate chunked writes splitting a line across multiple Write calls
@@ -340,9 +317,8 @@ func TestColoredEncoderWriter_Write_ChunkedLines(t *testing.T) {
 func TestColoredEncoderWriter_Write_ChunkedSectionLine(t *testing.T) {
 	var buf bytes.Buffer
 	w := &coloredEncoderWriter{
-		Encoder:      &buf,
-		Started:      time.Now(),
-		firstPrinted: true,
+		Encoder: &buf,
+		Started: time.Now(),
 	}
 
 	// Split a section line across multiple Write calls
@@ -364,9 +340,8 @@ func TestColoredEncoderWriter_Write_ChunkedSectionLine(t *testing.T) {
 func TestColoredEncoderWriter_Write_ChunkedErrorLine(t *testing.T) {
 	var buf bytes.Buffer
 	w := &coloredEncoderWriter{
-		Encoder:      &buf,
-		Started:      time.Now(),
-		firstPrinted: true,
+		Encoder: &buf,
+		Started: time.Now(),
 	}
 
 	// Split an error line across multiple Write calls
@@ -389,9 +364,8 @@ func TestColoredEncoderWriter_Write_ChunkedErrorLine(t *testing.T) {
 func TestColoredEncoderWriter_Write_MultipleChunkedLines(t *testing.T) {
 	var buf bytes.Buffer
 	w := &coloredEncoderWriter{
-		Encoder:      &buf,
-		Started:      time.Now(),
-		firstPrinted: true,
+		Encoder: &buf,
+		Started: time.Now(),
 	}
 
 	// Write multiple complete lines plus a partial line
@@ -415,9 +389,8 @@ func TestColoredEncoderWriter_Write_MultipleChunkedLines(t *testing.T) {
 func TestColoredEncoderWriter_Write_PendingBufferIsCopied(t *testing.T) {
 	var buf bytes.Buffer
 	w := &coloredEncoderWriter{
-		Encoder:      &buf,
-		Started:      time.Now(),
-		firstPrinted: true,
+		Encoder: &buf,
+		Started: time.Now(),
 	}
 
 	// Write partial data
@@ -435,4 +408,76 @@ func TestColoredEncoderWriter_Write_PendingBufferIsCopied(t *testing.T) {
 	output := buf.String()
 	assert.Contains(t, output, "hello world")
 	assert.NotContains(t, output, "Xello")
+}
+
+func TestColoredEncoderWriter_Write_EscapesTerminalControlSequences(t *testing.T) {
+	var buf bytes.Buffer
+	w := &coloredEncoderWriter{
+		Encoder: &buf,
+		Started: time.Now(),
+	}
+
+	// Write line containing ANSI escape sequence (e.g., color codes)
+	_, err := w.Write([]byte("text with \x1b[31mred\x1b[0m color\n"))
+	assert.NoError(t, err)
+
+	output := buf.String()
+	// Escape sequences from input should be replaced with ^[
+	assert.Contains(t, output, "^[[31m")
+	assert.Contains(t, output, "^[[0m")
+	assert.Contains(t, output, "text with ^[[31mred^[[0m color")
+}
+
+func TestColoredEncoderWriter_Write_EscapesCarriageReturn(t *testing.T) {
+	var buf bytes.Buffer
+	w := &coloredEncoderWriter{
+		Encoder: &buf,
+		Started: time.Now(),
+	}
+
+	// Write line containing embedded carriage return (not as line ending)
+	_, err := w.Write([]byte("progress: 50%\roverwritten\n"))
+	assert.NoError(t, err)
+
+	output := buf.String()
+	// First part ends at \r, second part is separate line
+	assert.Contains(t, output, "progress: 50%")
+	assert.Contains(t, output, "overwritten")
+}
+
+func TestColoredEncoderWriter_Write_HandlesCRLFLineEnding(t *testing.T) {
+	var buf bytes.Buffer
+	w := &coloredEncoderWriter{
+		Encoder: &buf,
+		Started: time.Now(),
+	}
+
+	// Write lines with Windows-style CRLF endings
+	_, err := w.Write([]byte("line1\r\nline2\r\n"))
+	assert.NoError(t, err)
+
+	output := buf.String()
+	assert.Contains(t, output, "line1")
+	assert.Contains(t, output, "line2")
+	// Should have exactly 2 timestamps (one per line)
+	timestampCount := strings.Count(output, "s] ")
+	assert.Equal(t, 2, timestampCount)
+}
+
+func TestColoredEncoderWriter_Write_HandlesMixedLineEndings(t *testing.T) {
+	var buf bytes.Buffer
+	w := &coloredEncoderWriter{
+		Encoder: &buf,
+		Started: time.Now(),
+	}
+
+	// Mix of LF, CR, and CRLF endings
+	_, err := w.Write([]byte("unix\nwindows\r\nold-mac\rend\n"))
+	assert.NoError(t, err)
+
+	output := buf.String()
+	assert.Contains(t, output, "unix")
+	assert.Contains(t, output, "windows")
+	assert.Contains(t, output, "old-mac")
+	assert.Contains(t, output, "end")
 }

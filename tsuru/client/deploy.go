@@ -217,12 +217,14 @@ func (w *safeWriter) Write(p []byte) (int, error) {
 func prepareUploadStreams(context *cmd.Context, buf *safe.Buffer) io.Writer {
 	context.Stdout = &safeWriter{w: context.Stdout}
 
+	fw := &firstWriter{Writer: context.Stdout}
+
 	if v2.ColorStream() {
-		encoderWriter := &safeWriter{w: formatter.NewColoredStreamWriter(context.Stdout)}
+		encoderWriter := &safeWriter{w: formatter.NewColoredStreamWriter(fw)}
 		return io.MultiWriter(encoderWriter, buf)
 	}
 
-	stream := tsuruIo.NewStreamWriter(&firstWriter{Writer: context.Stdout}, nil)
+	stream := tsuruIo.NewStreamWriter(fw, nil)
 	encoderWriter := &safeWriter{w: &tsuruIo.SimpleJsonMessageEncoderWriter{Encoder: json.NewEncoder(stream)}}
 	return io.MultiWriter(encoderWriter, buf)
 }

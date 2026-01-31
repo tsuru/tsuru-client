@@ -7,6 +7,7 @@ package v2
 import (
 	"fmt"
 	"os"
+	"runtime"
 	"strings"
 
 	"github.com/spf13/viper"
@@ -18,6 +19,22 @@ import (
 var defaultViper = preSetupViper(nil)
 
 func ColorDisabled() bool {
+	// https://no-color.org/
+	if _, nocolor := os.LookupEnv("NO_COLOR"); nocolor {
+		return true
+	}
+
+	// On Windows WT_SESSION is set by the modern terminal component.
+	// Older terminals have poor support for UTF-8, VT escape codes, etc.
+	if runtime.GOOS == "windows" && os.Getenv("WT_SESSION") == "" {
+		return true
+	}
+
+	// https://en.wikipedia.org/wiki/Computer_terminal#Dumb_terminals
+	if os.Getenv("TERM") == "dumb" {
+		return false
+	}
+
 	return defaultViper.GetBool("disable-colors")
 }
 

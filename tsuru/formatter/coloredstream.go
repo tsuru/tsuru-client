@@ -14,6 +14,9 @@ import (
 	"github.com/tsuru/tsuru/streamfmt"
 )
 
+// Lesson learned from: https://github.com/kubernetes/kubernetes/issues/101695
+var terminalEscaper = strings.NewReplacer("\x1b", "^[", "\r", "\\r")
+
 // Unicode characters used for visual formatting
 const (
 	sectionIndicator = "──" // U+2500 BOX DRAWINGS LIGHT HORIZONTAL
@@ -27,8 +30,7 @@ type coloredEncoderWriter struct {
 	Started time.Time
 	Encoder io.Writer
 
-	firstPrinted bool
-	pending      []byte // buffer for incomplete line fragments
+	pending []byte // buffer for incomplete line fragments
 }
 
 var trimmedActionPrefix = strings.TrimSpace(streamfmt.ActionPrefix)
@@ -41,12 +43,8 @@ var trimmedActionPrefix = strings.TrimSpace(streamfmt.ActionPrefix)
 //   - Regular lines: displayed as-is
 //
 // Write buffers incomplete lines across calls to handle chunked input correctly.
-// Only complete lines (terminated by '\n') are formatted and written.
+// Only complete lines (terminated by '\n', '\r', or '\r\n') are formatted and written.
 func (w *coloredEncoderWriter) Write(p []byte) (int, error) {
-	if !w.firstPrinted {
-		fmt.Fprintln(w.Encoder)
-		w.firstPrinted = true
-	}
 
 	// Prepend any pending data from previous Write call
 	data := p
@@ -58,7 +56,7 @@ func (w *coloredEncoderWriter) Write(p []byte) (int, error) {
 	elapsedSeconds := time.Since(w.Started).Seconds()
 
 	for {
-		idx := bytes.IndexByte(data, '\n')
+		idx := bytes.IndexAny(data, "\r\n")
 		if idx == -1 {
 			// No newline found; save remainder for next Write call
 			if len(data) > 0 {
@@ -69,7 +67,13 @@ func (w *coloredEncoderWriter) Write(p []byte) (int, error) {
 		}
 
 		line := string(data[:idx])
-		data = data[idx+1:]
+		line = terminalEscaper.Replace(line)
+		// Skip past the delimiter, handling \r\n as a single line ending
+		if idx+1 < len(data) && data[idx] == '\r' && data[idx+1] == '\n' {
+			data = data[idx+2:]
+		} else {
+			data = data[idx+1:]
+		}
 
 		if len(line) == 0 {
 			continue
