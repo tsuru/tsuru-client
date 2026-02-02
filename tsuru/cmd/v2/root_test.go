@@ -6,6 +6,7 @@ package v2
 
 import (
 	"os"
+	"runtime"
 	"strings"
 	"testing"
 
@@ -352,6 +353,12 @@ func TestColorStream(t *testing.T) {
 
 		os.Setenv("TSURU_COLOR_STREAM", "true")
 		os.Unsetenv("TSURU_DISABLE_COLORS")
+
+		if runtime.GOOS == "windows" {
+			// On Windows, WT_SESSION must be set to avoid colorDisabled() returning true
+			defer saveEnv("WT_SESSION")()
+			os.Setenv("WT_SESSION", "1")
+		}
 
 		assert.True(t, ColorStream())
 	})
