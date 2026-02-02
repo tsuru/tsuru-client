@@ -854,8 +854,7 @@ Teams:        myteam (owner), tsuruteam, crane
 Created by:   myapp_owner
 Deploys:      7
 Quota:        0/0 units
-
-External Addresses: myapp.tsuru.io
+Addresses:    http://myapp.tsuru.io
 
 Units: 3
 +--------+---------+----------+------+
@@ -882,15 +881,16 @@ Units: 3
 func (s *S) TestAppInfoSimplified(c *check.C) {
 	var stdout, stderr bytes.Buffer
 	result := `{"name":"app1","pool": "dev-a", "provisioner": "kubernetes", "cluster": "mycluster", "teamowner":"myteam","cname":[""],"ip":"myapp.tsuru.io","platform":"php","repository":"git@git.com:php.git","state":"dead", "units":[{"Ip":"10.10.10.10","ID":"app1/0","Status":"started","ProcessName": "web","Address":{"Host": "10.8.7.6:3333"}, "ready": true, "routable": true}, {"Ip":"9.9.9.9","ID":"app1/1","Status":"started","ProcessName": "web","Address":{"Host": "10.8.7.6:3323"}, "ready": true, "routable": true}],"teams":["tsuruteam","crane"], "owner": "myapp_owner", "deploys": 7, "router": "planb", "plan":{"name": "test",  "memory": 536870912, "cpumilli": 100, "default": false}}`
-	expected := `Application: app1
-Created by:  myapp_owner
-Platform:    php
-Plan:        test
-Pool:        dev-a (kubernetes | cluster: mycluster)
-Router:      planb
-Teams:       myteam (owner), tsuruteam, crane
+	expected := `Application:  app1
+Created by:   myapp_owner
+Platform:     php
+Plan:         test
+Pool:         dev-a (kubernetes | cluster: mycluster)
+Router:       planb
+Teams:        myteam (owner), tsuruteam, crane
 
-Cluster External Addresses: myapp.tsuru.io
+Cluster External Addresses:  http://myapp.tsuru.io
+
 Units: 2
 +---------+-------+----------+---------------+------------+
 | Process | Ready | Restarts | Avg CPU (abs) | Avg Memory |
@@ -964,8 +964,7 @@ Deploys:      7
 Cluster:      kube-cluster-dev
 Pool:         dev-a
 Quota:        0/0 units
-
-External Addresses: myapp.tsuru.io
+Addresses:    http://myapp.tsuru.io
 
 Units: 3
 +--------+----------+---------+----------+-----+-----+--------+
@@ -999,8 +998,7 @@ Teams:        myteam (owner), tsuruteam, crane
 Created by:   myapp_owner
 Deploys:      7
 Quota:        0/0 units
-
-External Addresses: myapp.tsuru.io
+Addresses:    http://myapp.tsuru.io
 
 Units: 3
 +--------+---------+----------+------------+
@@ -1079,8 +1077,11 @@ Teams:        myteam (owner), tsuruteam, crane
 Created by:   myapp_owner
 Deploys:      7
 Quota:        0/0 units
-
-External Addresses: cname1 (cname), addr1, addr2, addr9, addr3
+Addresses:    http://cname1 (cname)
+              http://addr1
+              http://addr2
+              http://addr3
+              http://addr9
 
 Units: 3
 +--------+---------+----------+------+
@@ -1092,17 +1093,17 @@ Units: 3
 +--------+---------+----------+------+
 
 Routers:
-+------+------+-----------+--------------------------------+
-| Name | Opts | Addresses | Status                         |
-+------+------+-----------+--------------------------------+
-| r1   | a: b | addr1     |                                |
-|      | x: y |           |                                |
-+------+------+-----------+--------------------------------+
-| r2   |      | addr2     | ready                          |
-|      |      | addr9     |                                |
-+------+------+-----------+--------------------------------+
-| r3   |      | addr3     | not ready: something happening |
-+------+------+-----------+--------------------------------+
++------+------+--------------+--------------------------------+
+| Name | Opts | Addresses    | Status                         |
++------+------+--------------+--------------------------------+
+| r1   | a: b | http://addr1 |                                |
+|      | x: y |              |                                |
++------+------+--------------+--------------------------------+
+| r2   |      | http://addr2 | ready                          |
+|      |      | http://addr9 |                                |
++------+------+--------------+--------------------------------+
+| r3   |      | http://addr3 | not ready: something happening |
++------+------+--------------+--------------------------------+
 
 `
 	context := cmd.Context{
@@ -1128,8 +1129,7 @@ Teams:        myteam (owner), tsuruteam, crane
 Created by:   myapp_owner
 Deploys:      7
 Quota:        0/0 units
-
-External Addresses: myapp.tsuru.io
+Addresses:    http://myapp.tsuru.io
 
 Units: 3
 +--------+---------+------+------+
@@ -1164,8 +1164,7 @@ Teams:        myteam (owner), tsuruteam, crane
 Created by:   myapp_owner
 Deploys:      7
 Quota:        0/0 units
-
-External Addresses: myapp.tsuru.io
+Addresses:    http://myapp.tsuru.io
 
 Units: 3
 +--------+---------+-------------+------+
@@ -1199,8 +1198,7 @@ Teams:        myteam (owner), tsuruteam, crane
 Created by:   myapp_owner
 Deploys:      7
 Quota:        0/0 units
-
-External Addresses: myapp.tsuru.io
+Addresses:    http://myapp.tsuru.io
 
 Units: 3
 +--------+---------+------+------+
@@ -1239,8 +1237,7 @@ Teams:        myteam (owner), tsuruteam, crane
 Created by:   myapp_owner
 Deploys:      7
 Quota:        3/40 units
-
-External Addresses: myapp.tsuru.io
+Addresses:    http://myapp.tsuru.io
 
 Units: 3
 +--------+---------+------+------+
@@ -1318,8 +1315,7 @@ Teams:        myteam (owner), tsuruteam, crane
 Created by:   myapp_owner
 Deploys:      7
 Quota:        0/0 units
-
-External Addresses: myapp.tsuru.io
+Addresses:    http://myapp.tsuru.io
 
 Units [process web]: 1
 +--------+---------+-------------+------+
@@ -1413,8 +1409,7 @@ Teams:        myteam (owner), tsuruteam, crane
 Created by:   myapp_owner
 Deploys:      7
 Quota:        0/0 units
-
-External Addresses: myapp.tsuru.io
+Addresses:    http://myapp.tsuru.io
 
 Units [process web] [version 1]: 1
 +--------+---------+------+------+
@@ -1527,8 +1522,7 @@ Teams:        myteam (owner), tsuruteam, crane
 Created by:   myapp_owner
 Deploys:      7
 Quota:        0/0 units
-
-External Addresses: myapp.tsuru.io
+Addresses:    http://myapp.tsuru.io
 
 Units [process web]: 1
 +--------+---------+------+------+
@@ -1682,8 +1676,7 @@ Teams:        myteam (owner), tsuruteam, crane
 Created by:   myapp_owner
 Deploys:      7
 Quota:        0/0 units
-
-External Addresses: myapp.tsuru.io
+Addresses:    http://myapp.tsuru.io
 
 Units [process web]: 1
 +--------+---------+------+------+
@@ -1769,8 +1762,7 @@ Teams:        myteam (owner), tsuruteam, crane
 Created by:   myapp_owner
 Deploys:      7
 Quota:        0/0 units
-
-External Addresses: app1.tsuru.io
+Addresses:    http://app1.tsuru.io
 
 `
 	context := cmd.Context{
@@ -1795,8 +1787,7 @@ Teams:        x (owner), tsuruteam, crane
 Created by:   myapp_owner
 Deploys:      7
 Quota:        0/0 units
-
-External Addresses: myapp.tsuru.io
+Addresses:    http://myapp.tsuru.io
 
 `
 	context := cmd.Context{
@@ -1821,8 +1812,7 @@ Teams:        myteam (owner), tsuruteam, crane
 Created by:   myapp_owner
 Deploys:      7
 Quota:        0/unlimited
-
-External Addresses: secret.tsuru.io
+Addresses:    http://secret.tsuru.io
 
 Units: 2
 +----------+---------+------+------+
@@ -1861,8 +1851,8 @@ Teams:        myteam (owner), tsuruteam, crane
 Created by:   myapp_owner
 Deploys:      7
 Quota:        0/0 units
-
-External Addresses: yourapp.tsuru.io (cname), myapp.tsuru.io
+Addresses:    http://yourapp.tsuru.io (cname)
+              http://myapp.tsuru.io
 
 Units: 3
 +--------+---------+------+------+
@@ -1897,8 +1887,8 @@ Teams:        myteam (owner), tsuruteam, crane
 Created by:   myapp_owner
 Deploys:      7
 Quota:        0/0 units
-
-External Addresses: yourapp.tsuru.io (cname), myapp.tsuru.io
+Addresses:    http://yourapp.tsuru.io (cname)
+              http://myapp.tsuru.io
 
 Units: 3
 +--------+---------+------+------+
@@ -1931,8 +1921,7 @@ Teams:        myteam (owner), tsuruteam, crane
 Created by:   myapp_owner
 Deploys:      7
 Quota:        0/0 units
-
-External Addresses: myapp.tsuru.io
+Addresses:    http://myapp.tsuru.io
 
 Units: 3
 +--------+---------+------+------+
@@ -1979,8 +1968,7 @@ Teams:        myteam (owner), tsuruteam, crane
 Created by:   myapp_owner
 Deploys:      7
 Quota:        0/0 units
-
-External Addresses: myapp.tsuru.io
+Addresses:    http://myapp.tsuru.io
 
 Units: 3
 +--------+---------+-------------+------+
@@ -2029,8 +2017,7 @@ Teams:        myteam (owner), tsuruteam, crane
 Created by:   myapp_owner
 Deploys:      7
 Quota:        0/0 units
-
-External Addresses: myapp.tsuru.io
+Addresses:    http://myapp.tsuru.io
 
 Units: 3
 +--------+---------+------+------+
@@ -2070,8 +2057,7 @@ Teams:        myteam (owner), tsuruteam, crane
 Created by:   myapp_owner
 Deploys:      7
 Quota:        0/0 units
-
-External Addresses: myapp.tsuru.io
+Addresses:    http://myapp.tsuru.io
 
 Units: 3
 +--------+---------+------+------+
@@ -2125,8 +2111,7 @@ Teams:        myteam (owner), tsuruteam, crane
 Created by:   myapp_owner
 Deploys:      7
 Quota:        0/0 units
-
-External Addresses: myapp.tsuru.io
+Addresses:    http://myapp.tsuru.io
 
 Units: 3
 +--------+---------+------+------+
@@ -2180,8 +2165,7 @@ Teams:        myteam (owner), tsuruteam, crane
 Created by:   myapp_owner
 Deploys:      7
 Quota:        0/0 units
-
-External Addresses: app1.tsuru.io
+Addresses:    http://app1.tsuru.io
 
 Units: 3
 +--------------------+---------+------+------+
@@ -2248,8 +2232,7 @@ Teams:        powerteam (owner), tsuruzers
 Created by:   myapp_owner
 Deploys:      7
 Quota:        0/0 units
-
-External Addresses: monster.tsuru.io
+Addresses:    http://monster.tsuru.io
 
 Units: 1
 +--------+---------+----------+------+
@@ -2288,8 +2271,7 @@ Teams:        myteam (owner)
 Created by:   myapp_owner
 Deploys:      1
 Quota:        0/0 units
-
-External Addresses: app1.tsuru.io
+Addresses:    http://app1.tsuru.io
 
 Cluster internal addresses:
 +---------------+----------+---------+---------+
@@ -2320,8 +2302,7 @@ Teams:        myteam (owner)
 Created by:   myapp_owner
 Deploys:      1
 Quota:        0/0 units
-
-External Addresses: app1.tsuru.io
+Addresses:    http://app1.tsuru.io
 
 Cluster internal addresses:
 +---------------+----------+---------+---------+
@@ -2352,8 +2333,7 @@ Teams:        myteam (owner)
 Created by:   myapp_owner
 Deploys:      1
 Quota:        0/0 units
-
-External Addresses: app1.tsuru.io
+Addresses:    http://app1.tsuru.io
 
 Cluster internal addresses:
 +---------------+--------------+---------+---------+
@@ -2384,8 +2364,7 @@ Teams:        myteam (owner), tsuruteam, crane
 Created by:   myapp_owner
 Deploys:      7
 Quota:        3/40 units
-
-External Addresses: myapp.tsuru.io
+Addresses:    http://myapp.tsuru.io
 
 Units: 3
 +--------+---------+-------------+------+
@@ -2485,11 +2464,11 @@ func (s *S) TestAppRevokeInfo(c *check.C) {
 func (s *S) TestAppList(c *check.C) {
 	var stdout, stderr bytes.Buffer
 	result := `[{"ip":"10.10.10.10","name":"app1","units":[{"ID":"app1/0","Status":"started"}]}]`
-	expected := `+-------------+-----------+-------------+
-| Application | Units     | Address     |
-+-------------+-----------+-------------+
-| app1        | 1 started | 10.10.10.10 |
-+-------------+-----------+-------------+
+	expected := `+-------------+-----------+--------------------+
+| Application | Units     | Address            |
++-------------+-----------+--------------------+
+| app1        | 1 started | http://10.10.10.10 |
++-------------+-----------+--------------------+
 `
 	context := cmd.Context{
 		Args:   []string{},
@@ -2506,13 +2485,13 @@ func (s *S) TestAppList(c *check.C) {
 func (s *S) TestAppListDisplayAppsInAlphabeticalOrder(c *check.C) {
 	var stdout, stderr bytes.Buffer
 	result := `[{"ip":"10.10.10.11","name":"sapp","units":[{"ID":"sapp1/0","Status":"started"}]},{"ip":"10.10.10.10","name":"app1","units":[{"ID":"app1/0","Status":"started"}]}]`
-	expected := `+-------------+-----------+-------------+
-| Application | Units     | Address     |
-+-------------+-----------+-------------+
-| app1        | 1 started | 10.10.10.10 |
-+-------------+-----------+-------------+
-| sapp        | 1 started | 10.10.10.11 |
-+-------------+-----------+-------------+
+	expected := `+-------------+-----------+--------------------+
+| Application | Units     | Address            |
++-------------+-----------+--------------------+
+| app1        | 1 started | http://10.10.10.10 |
++-------------+-----------+--------------------+
+| sapp        | 1 started | http://10.10.10.11 |
++-------------+-----------+--------------------+
 `
 	context := cmd.Context{
 		Args:   []string{},
@@ -2529,11 +2508,11 @@ func (s *S) TestAppListDisplayAppsInAlphabeticalOrder(c *check.C) {
 func (s *S) TestAppListUnitIsntAvailable(c *check.C) {
 	var stdout, stderr bytes.Buffer
 	result := `[{"ip":"10.10.10.10","name":"app1","units":[{"ID":"app1/0","Status":"pending"}]}]`
-	expected := `+-------------+-----------+-------------+
-| Application | Units     | Address     |
-+-------------+-----------+-------------+
-| app1        | 1 pending | 10.10.10.10 |
-+-------------+-----------+-------------+
+	expected := `+-------------+-----------+--------------------+
+| Application | Units     | Address            |
++-------------+-----------+--------------------+
+| app1        | 1 pending | http://10.10.10.10 |
++-------------+-----------+--------------------+
 `
 	context := cmd.Context{
 		Args:   []string{},
@@ -2550,11 +2529,11 @@ func (s *S) TestAppListUnitIsntAvailable(c *check.C) {
 func (s *S) TestAppListErrorFetchingUnits(c *check.C) {
 	var stdout, stderr bytes.Buffer
 	result := `[{"ip":"10.10.10.10","name":"app1","units":[],"Error": "timeout"}]`
-	expected := `+-------------+-------------------------------+-------------+
-| Application | Units                         | Address     |
-+-------------+-------------------------------+-------------+
-| app1        | error fetching units: timeout | 10.10.10.10 |
-+-------------+-------------------------------+-------------+
+	expected := `+-------------+-------------------------------+--------------------+
+| Application | Units                         | Address            |
++-------------+-------------------------------+--------------------+
+| app1        | error fetching units: timeout | http://10.10.10.10 |
++-------------+-------------------------------+--------------------+
 `
 	context := cmd.Context{
 		Args:   []string{},
@@ -2571,11 +2550,11 @@ func (s *S) TestAppListErrorFetchingUnits(c *check.C) {
 func (s *S) TestAppListUnitWithoutID(c *check.C) {
 	var stdout, stderr bytes.Buffer
 	result := `[{"ip":"10.10.10.10","name":"app1","units":[{"ID":"","Status":"pending"}, {"ID":"unit2","Status":"stopped"}]}]`
-	expected := `+-------------+-----------+-------------+
-| Application | Units     | Address     |
-+-------------+-----------+-------------+
-| app1        | 1 stopped | 10.10.10.10 |
-+-------------+-----------+-------------+
+	expected := `+-------------+-----------+--------------------+
+| Application | Units     | Address            |
++-------------+-----------+--------------------+
+| app1        | 1 stopped | http://10.10.10.10 |
++-------------+-----------+--------------------+
 `
 	context := cmd.Context{
 		Args:   []string{},
@@ -2592,12 +2571,12 @@ func (s *S) TestAppListUnitWithoutID(c *check.C) {
 func (s *S) TestAppListCName(c *check.C) {
 	var stdout, stderr bytes.Buffer
 	result := `[{"ip":"10.10.10.10","cname":["app1.tsuru.io"],"name":"app1","units":[{"ID":"app1/0","Status":"started"}]}]`
-	expected := `+-------------+-----------+-----------------------+
-| Application | Units     | Address               |
-+-------------+-----------+-----------------------+
-| app1        | 1 started | app1.tsuru.io (cname) |
-|             |           | 10.10.10.10           |
-+-------------+-----------+-----------------------+
+	expected := `+-------------+-----------+------------------------------+
+| Application | Units     | Address                      |
++-------------+-----------+------------------------------+
+| app1        | 1 started | http://app1.tsuru.io (cname) |
+|             |           | http://10.10.10.10           |
++-------------+-----------+------------------------------+
 `
 	context := cmd.Context{
 		Args:   []string{},
@@ -2614,12 +2593,12 @@ func (s *S) TestAppListCName(c *check.C) {
 func (s *S) TestAppListFiltering(c *check.C) {
 	var stdout, stderr bytes.Buffer
 	result := `[{"ip":"10.10.10.10","cname":["app1.tsuru.io"],"name":"app1","units":[{"ID":"app1/0","Status":"started"}]}]`
-	expected := `+-------------+-----------+-----------------------+
-| Application | Units     | Address               |
-+-------------+-----------+-----------------------+
-| app1        | 1 started | app1.tsuru.io (cname) |
-|             |           | 10.10.10.10           |
-+-------------+-----------+-----------------------+
+	expected := `+-------------+-----------+------------------------------+
+| Application | Units     | Address                      |
++-------------+-----------+------------------------------+
+| app1        | 1 started | http://app1.tsuru.io (cname) |
+|             |           | http://10.10.10.10           |
++-------------+-----------+------------------------------+
 `
 	context := cmd.Context{
 		Args:   []string{},
@@ -2655,12 +2634,12 @@ func (s *S) TestAppListFiltering(c *check.C) {
 func (s *S) TestAppListFilteringMe(c *check.C) {
 	var stdout, stderr bytes.Buffer
 	result := `[{"ip":"10.10.10.10","cname":["app1.tsuru.io"],"name":"app1","units":[{"ID":"app1/0","Status":"started"}]}]`
-	expected := `+-------------+-----------+-----------------------+
-| Application | Units     | Address               |
-+-------------+-----------+-----------------------+
-| app1        | 1 started | app1.tsuru.io (cname) |
-|             |           | 10.10.10.10           |
-+-------------+-----------+-----------------------+
+	expected := `+-------------+-----------+------------------------------+
+| Application | Units     | Address                      |
++-------------+-----------+------------------------------+
+| app1        | 1 started | http://app1.tsuru.io (cname) |
+|             |           | http://10.10.10.10           |
++-------------+-----------+------------------------------+
 `
 	context := cmd.Context{
 		Args:   []string{},
@@ -2698,14 +2677,14 @@ func (s *S) TestAppListFilteringMe(c *check.C) {
 func (s *S) TestAppListSortByCountAndStatus(c *check.C) {
 	var stdout, stderr bytes.Buffer
 	result := `[{"ip":"10.10.10.10","cname":["app1.tsuru.io"],"name":"app1","units":[{"ID":"app1/0","Status":"starting"},{"ID":"app1/1","Status":"stopped"},{"ID":"app1/2","Status":"asleep"},{"ID":"app1/3","Status":"started"},{"ID":"app1/4","Status":"started"},{"ID":"app1/5","Status":"stopped"}]}]`
-	expected := `+-------------+------------+-----------------------+
-| Application | Units      | Address               |
-+-------------+------------+-----------------------+
-| app1        | 2 started  | app1.tsuru.io (cname) |
-|             | 2 stopped  | 10.10.10.10           |
-|             | 1 asleep   |                       |
-|             | 1 starting |                       |
-+-------------+------------+-----------------------+
+	expected := `+-------------+------------+------------------------------+
+| Application | Units      | Address                      |
++-------------+------------+------------------------------+
+| app1        | 2 started  | http://app1.tsuru.io (cname) |
+|             | 2 stopped  | http://10.10.10.10           |
+|             | 1 asleep   |                              |
+|             | 1 starting |                              |
++-------------+------------+------------------------------+
 `
 	context := cmd.Context{
 		Args:   []string{},

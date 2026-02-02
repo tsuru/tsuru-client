@@ -550,7 +550,7 @@ func (a *app) InternalAddr() string {
 		}
 	}
 
-	return strings.Join(addrs, ", ")
+	return strings.Join(addrs, "\n")
 }
 
 func (a *app) Addr() string {
@@ -562,27 +562,44 @@ func AppResumeAddr(a *appTypes.AppResume) string {
 }
 
 func appAddrs(cnames []string, ip string, routers []appTypes.AppRouter) string {
-	var allAddrs []string
+	var cnameAddrs []string
+	var routerAddrs []string
+
 	for _, cname := range cnames {
 		if cname != "" {
-			allAddrs = append(allAddrs, cname+" (cname)")
+			cnameAddrs = append(cnameAddrs, ensureHTTP(cname)+" (cname)")
 		}
 	}
+
 	if len(routers) == 0 {
 		if ip != "" {
-			allAddrs = append(allAddrs, ip)
+			routerAddrs = append(routerAddrs, ensureHTTP(ip))
 		}
 	} else {
 		for _, r := range routers {
 			if len(r.Addresses) > 0 {
-				sort.Strings(r.Addresses)
-				allAddrs = append(allAddrs, r.Addresses...)
+				for _, addr := range r.Addresses {
+					routerAddrs = append(routerAddrs, ensureHTTP(addr))
+				}
 			} else if r.Address != "" {
-				allAddrs = append(allAddrs, r.Address)
+				routerAddrs = append(routerAddrs, ensureHTTP(r.Address))
 			}
 		}
 	}
-	return strings.Join(allAddrs, ", ")
+
+	sort.Strings(cnameAddrs)
+	sort.Strings(routerAddrs)
+
+	allAddrs := append(cnameAddrs, routerAddrs...)
+
+	return strings.Join(allAddrs, "\n")
+}
+
+func ensureHTTP(addr string) string {
+	if strings.HasPrefix(addr, "http://") || strings.HasPrefix(addr, "https://") {
+		return addr
+	}
+	return "http://" + addr
 }
 
 func (a *app) TagList() string {
@@ -606,35 +623,35 @@ func ShortID(id string) string {
 }
 
 const simplifiedFormat = `{{ if .Error -}}
-Error:       {{ .Error }}
+Error:        {{ .Error }}
 {{ end -}}
-Application: {{.Name}}
+Application:  {{.Name}}
 {{- if .DashboardURL }}
-Dashboard:   {{ .DashboardURL }}
+Dashboard:    {{ .DashboardURL }}
 {{- end }}
 {{- if .Description }}
-Description: {{.Description}}
+Description:  {{.Description}}
 {{- end }}
 {{- if .TagList }}
-Tags:        {{.TagList}}
+Tags:         {{.TagList}}
 {{- end }}
-Created by:  {{.Owner}}
-Platform:    {{.Platform}}
-Plan:        {{ .Plan.Name }}
-Pool:        {{.Pool}} ({{ .Provisioner }}{{ if .Cluster}} | cluster: {{ .Cluster }}{{end}})
+Created by:   {{.Owner}}
+Platform:     {{.Platform}}
+Plan:         {{ .Plan.Name }}
+Pool:         {{.Pool}} ({{ .Provisioner }}{{ if .Cluster}} | cluster: {{ .Cluster }}{{end}})
 {{if and (not .Routers) (.Router) -}}
-Router:      {{.Router}}{{if .RouterOpts}} ({{.GetRouterOpts}}){{end}}
+Router:       {{.Router}}{{if .RouterOpts}} ({{.GetRouterOpts}}){{end}}
 {{end -}}
-Teams:       {{.TeamList}}
+Teams:        {{.TeamList}}
 
 {{ with .InternalAddr -}}
-Cluster Internal Addresses: {{.}}
+Cluster Internal Addresses:  {{. | replace "\n" "\n                             "}}
 {{ end -}}
 {{ with .Addr -}}
-Cluster External Addresses: {{.}}
+Cluster External Addresses:  {{. | replace "\n" "\n                             "}}
 {{ end -}}
 {{ with .SimpleServicesView -}}
-Bound Services:             {{.}}
+Bound Services:              {{. | replace "\n" "\n                             "}}
 {{ end -}}
 `
 
@@ -668,8 +685,8 @@ Cluster:      {{ .Cluster }}
 Pool:         {{.Pool}}
 {{ end -}}
 Quota:        {{ .QuotaString }}
-{{ if .Addr }}
-External Addresses: {{.Addr}}
+{{ if .Addr -}}
+Addresses:    {{.Addr | replace "\n" "\n              " }}
 {{ end -}}
 `
 
@@ -683,7 +700,15 @@ func (a *app) String(simplified bool) string {
 	}
 
 	var buf bytes.Buffer
-	tmpl := template.Must(template.New("app").Parse(format))
+	tmpl := template.Must(
+		template.New("app").
+			Funcs(template.FuncMap{
+				"replace": func(old, new, s string) string {
+					return strings.ReplaceAll(s, old, new)
+				},
+			}).
+			Parse(format),
+	)
 
 	if simplified {
 		renderUnitsSummary(&buf, a.Units, a.UnitsMetrics, a.Provisioner)
@@ -862,7 +887,7 @@ func (a *app) SimpleServicesView() string {
 		pairs = append(pairs, b.Service+"/"+b.Instance)
 	}
 
-	return strings.Join(pairs, ", ")
+	return strings.Join(pairs, "\n")
 }
 
 func renderUnitsSummary(buf *bytes.Buffer, units []provTypes.Unit, metrics []provTypes.UnitMetric, provisioner string) {
@@ -900,7 +925,7 @@ func renderUnitsSummary(buf *bytes.Buffer, units []provTypes.Unit, metrics []pro
 	tablecli.TableConfig.ForceWrap = false
 	unitsTable.Headers = tablecli.Row(titles)
 	unitsTable.TableWriterPadding = 2
-	fmt.Fprintf(buf, "Units: %d\n", len(units))
+	fmt.Fprintf(buf, "\nUnits: %d\n", len(units))
 
 	if len(units) == 0 {
 		return

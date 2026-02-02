@@ -384,10 +384,15 @@ func renderRouters(routers []appTypes.AppRouter, out io.Writer, idColumn string,
 		if r.StatusDetail != "" {
 			statusStr = fmt.Sprintf("%s: %s", statusStr, r.StatusDetail)
 		}
-		addresses := r.Address
+		addresses := ensureHTTP(r.Address)
 		if len(r.Addresses) > 0 {
-			sort.Strings(r.Addresses)
-			addresses = strings.Join(r.Addresses, "\n")
+			addrsWithHTTP := make([]string, len(r.Addresses))
+			for i, addr := range r.Addresses {
+				addrsWithHTTP[i] = ensureHTTP(addr)
+			}
+
+			sort.Strings(addrsWithHTTP)
+			addresses = strings.Join(addrsWithHTTP, "\n")
 		}
 		table.AddRow([]string{
 			r.Name,
