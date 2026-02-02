@@ -190,7 +190,9 @@ func (a *archiver) addFile(tw *tar.Writer, filesOnly bool, filename string, fi o
 	}
 
 	if !filesOnly { // should preserve the directory tree
-		h.Name = filename
+		// Use forward slashes for tar entry names (required by tar format).
+		// On Windows, filepath returns backslashes which would break the archive.
+		h.Name = filepath.ToSlash(filename)
 	}
 
 	if _, found := a.files[h.Name]; found {
@@ -200,7 +202,7 @@ func (a *archiver) addFile(tw *tar.Writer, filesOnly bool, filename string, fi o
 
 	a.files[h.Name] = struct{}{}
 
-	if strings.TrimRight(h.Name, string(os.PathSeparator)) == "." { // skipping root dir
+	if strings.TrimRight(h.Name, "/") == "." { // skipping root dir
 		return 0, nil
 	}
 
