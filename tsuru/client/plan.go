@@ -16,6 +16,7 @@ import (
 	"github.com/tsuru/go-tsuruclient/pkg/config"
 	"github.com/tsuru/tablecli"
 	"github.com/tsuru/tsuru-client/tsuru/cmd"
+	"github.com/tsuru/tsuru-client/tsuru/cmd/standards"
 	tsuruHTTP "github.com/tsuru/tsuru-client/tsuru/http"
 	appTypes "github.com/tsuru/tsuru/types/app"
 	"k8s.io/apimachinery/pkg/api/resource"
@@ -140,7 +141,7 @@ func renderPlans(plans []appTypes.Plan, opts renderPlansOpts) string {
 func renderProcessPlan(appPlan appTypes.Plan, planByProcess map[string]string) string {
 	table := tablecli.NewTable()
 	table.Headers = []string{"Process", "Plan"}
-	table.TableWriterPadding = 2
+	table.TableWriterPadding = standards.SubTableWriterPadding
 
 	appProcessOverrides := []string{}
 	override := appPlan.Override

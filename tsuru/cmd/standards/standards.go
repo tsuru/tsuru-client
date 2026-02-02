@@ -58,3 +58,5 @@ var CommonAliases = map[string][]string{
 	"dissociate": {"unbind", "unset"},
 	"destroy":    {"remove", "delete"},
 }
+
+var SubTableWriterPadding = 2

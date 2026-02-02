@@ -14,6 +14,7 @@ import (
 	"github.com/spf13/viper"
 	"github.com/tsuru/go-tsuruclient/pkg/config"
 	"github.com/tsuru/tablecli"
+	"github.com/tsuru/tsuru-client/tsuru/cmd/standards"
 	"golang.org/x/term"
 )
 
@@ -95,6 +96,12 @@ func preSetupViper(vip *viper.Viper) *viper.Viper {
 
 	// setup colors
 	color.NoColor = colorDisabled(vip)
+
+	// padding
+	key := "tab-writer-padding"
+	if vip.IsSet(key) {
+		standards.SubTableWriterPadding = vip.GetInt(key)
+	}
 
 	return vip
 }

@@ -434,7 +434,7 @@ Tags: {{.Tags}}
 	tmpl.Execute(&tplBuffer, contentTeam)
 	usersTable := tablecli.NewTable()
 	usersTable.Headers = tablecli.Row{"User", "Roles"}
-	usersTable.TableWriterPadding = 2
+	usersTable.TableWriterPadding = standards.SubTableWriterPadding
 	usersTable.LineSeparator = true
 	for _, user := range contentTeam.Users {
 		usersTable.AddRow(tablecli.Row{user.Email, strings.Join(formatRoleInstances(user.Roles), "\n")})
@@ -447,7 +447,7 @@ Tags: {{.Tags}}
 	poolsTable := tablecli.NewTable()
 	poolsTable.Headers = tablecli.Row{"Pool", "Kind", "Provisioner", "Routers"}
 	poolsTable.LineSeparator = true
-	poolsTable.TableWriterPadding = 2
+	poolsTable.TableWriterPadding = standards.SubTableWriterPadding
 	for _, pool := range contentTeam.Pools {
 		poolsTable.AddRow(tablecli.Row{pool.Name, pool.Kind(), pool.GetProvisioner(), strings.Join(pool.Allowed["router"], "\n")})
 	}
@@ -459,7 +459,7 @@ Tags: {{.Tags}}
 	appsTable := tablecli.NewTable()
 	appsTable.Headers = tablecli.Row{"Application", "Units", "Address"}
 	appsTable.LineSeparator = true
-	appsTable.TableWriterPadding = 2
+	appsTable.TableWriterPadding = standards.SubTableWriterPadding
 	for _, app := range contentTeam.Apps {
 		var summary string
 		if app.Error == "" {

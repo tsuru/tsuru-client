@@ -554,7 +554,7 @@ func (c *ProvisionerInfo) Run(ctx *cmd.Context) error {
 	fmt.Fprintf(ctx.Stdout, "\nCustom Data:\n")
 	tbl := tablecli.NewTable()
 	tbl.LineSeparator = true
-	tbl.TableWriterPadding = 2
+	tbl.TableWriterPadding = standards.SubTableWriterPadding
 	tbl.Headers = tablecli.Row{"Name", "Usage"}
 	for key, value := range provisioner.ClusterHelp.CustomDataHelp {
 		tbl.AddRow(tablecli.Row{key, value})

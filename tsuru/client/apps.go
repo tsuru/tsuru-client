@@ -718,7 +718,7 @@ func (a *app) String(simplified bool) string {
 
 	internalAddressesTable := tablecli.NewTable()
 	internalAddressesTable.Headers = []string{"Domain", "Port", "Process", "Version"}
-	internalAddressesTable.TableWriterPadding = 2
+	internalAddressesTable.TableWriterPadding = standards.SubTableWriterPadding
 
 	for _, internalAddress := range a.InternalAddresses {
 		port := strconv.Itoa(int(internalAddress.Port))
@@ -744,7 +744,7 @@ func (a *app) String(simplified bool) string {
 	for _, as := range a.Autoscale {
 		autoScaleTable := tablecli.NewTable()
 		autoScaleTable.LineSeparator = true
-		autoScaleTable.TableWriterPadding = 2
+		autoScaleTable.TableWriterPadding = standards.SubTableWriterPadding
 
 		processString := fmt.Sprintf(
 			"Autoscale [process %s] [version %d] [min units %d] [max units %d]",
@@ -811,7 +811,7 @@ func (a *app) String(simplified bool) string {
 			buf.WriteString("\n")
 			buf.WriteString("Plan:\n")
 			buf.WriteString(renderPlans([]appTypes.Plan{*a.Plan}, renderPlansOpts{
-				tableWriterPadding: 2,
+				tableWriterPadding: standards.SubTableWriterPadding,
 			}))
 		} else {
 			buf.WriteString("\n")
@@ -829,10 +829,10 @@ func (a *app) String(simplified bool) string {
 		buf.WriteString("\n")
 		if a.Provisioner == "kubernetes" {
 			buf.WriteString("Cluster external addresses:\n")
-			renderRouters(a.Routers, &buf, "Router", 2)
+			renderRouters(a.Routers, &buf, "Router", standards.SubTableWriterPadding)
 		} else {
 			buf.WriteString("Routers:\n")
-			renderRouters(a.Routers, &buf, "Name", 2)
+			renderRouters(a.Routers, &buf, "Name", standards.SubTableWriterPadding)
 		}
 	}
 
@@ -924,7 +924,7 @@ func renderUnitsSummary(buf *bytes.Buffer, units []provTypes.Unit, metrics []pro
 	unitsTable := tablecli.NewTable()
 	tablecli.TableConfig.ForceWrap = false
 	unitsTable.Headers = tablecli.Row(titles)
-	unitsTable.TableWriterPadding = 2
+	unitsTable.TableWriterPadding = standards.SubTableWriterPadding
 	fmt.Fprintf(buf, "\nUnits: %d\n", len(units))
 
 	if len(units) == 0 {
@@ -1031,7 +1031,7 @@ func renderUnits(buf *bytes.Buffer, units []provTypes.Unit, metrics []provTypes.
 		units := groupedUnits[key]
 		unitsTable := tablecli.NewTable()
 		tablecli.TableConfig.ForceWrap = false
-		unitsTable.TableWriterPadding = 2
+		unitsTable.TableWriterPadding = standards.SubTableWriterPadding
 		unitsTable.Headers = tablecli.Row(titles)
 		sort.Slice(units, func(i, j int) bool {
 			return units[i].ID < units[j].ID
@@ -1118,7 +1118,7 @@ func renderServiceInstanceBindsForApps(w io.Writer, binds []bindTypes.ServiceIns
 
 	table := tablecli.NewTable()
 	table.Headers = []string{"Service", "Instance (Plan)"}
-	table.TableWriterPadding = 2
+	table.TableWriterPadding = standards.SubTableWriterPadding
 
 	count := 0
 	for _, s := range services {
@@ -1182,7 +1182,7 @@ func renderServiceInstanceBinds(w io.Writer, binds []tsuru.AppServiceInstanceBin
 
 	table := tablecli.NewTable()
 	table.Headers = []string{"Service", "Instance (Plan)"}
-	table.TableWriterPadding = 2
+	table.TableWriterPadding = standards.SubTableWriterPadding
 
 	for _, s := range services {
 		var sb strings.Builder
@@ -1209,7 +1209,7 @@ func renderVolumeBinds(w io.Writer, binds []volumeTypes.VolumeBind) {
 	table := tablecli.NewTable()
 	table.Headers = tablecli.Row([]string{"Name", "MountPoint", "Mode"})
 	table.LineSeparator = true
-	table.TableWriterPadding = 2
+	table.TableWriterPadding = standards.SubTableWriterPadding
 
 	for _, b := range binds {
 		mode := "rw"
