@@ -12,6 +12,7 @@ import (
 	"strings"
 	"sync"
 
+	"github.com/fatih/color"
 	goVersion "github.com/hashicorp/go-version"
 	"github.com/pkg/errors"
 	"github.com/spf13/pflag"
@@ -77,7 +78,7 @@ func (c *DeprecatedCommand) Run(context *Context) error {
 
 	warningText := fmt.Sprintf("WARNING: %q has been deprecated, please use %q instead.\n\n", oldCommand, newCommand)
 
-	fmt.Fprint(context.Stderr, Colorfy(warningText, "yellow", "", "bold"))
+	fmt.Fprint(context.Stderr, color.New(color.FgYellow, color.Bold).Sprint(warningText))
 
 	return c.Command.Run(context)
 }

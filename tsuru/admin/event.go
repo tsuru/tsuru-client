@@ -11,6 +11,7 @@ import (
 	"sort"
 	"time"
 
+	"github.com/fatih/color"
 	"github.com/spf13/pflag"
 	"github.com/tsuru/go-tsuruclient/pkg/config"
 	"github.com/tsuru/tablecli"
@@ -79,12 +80,12 @@ func (c *EventBlockList) Run(context *cmd.Context) error {
 		targetValue := valueOrWildcard(b.Target.Value)
 		conditions := mapValueOrWildcard(b.Conditions)
 		row := tablecli.Row{b.ID.Hex(), ts, kind, owner, fmt.Sprintf("%s: %s", targetType, targetValue), conditions, b.Reason}
-		color := "yellow"
+		c := color.New(color.FgYellow)
 		if !b.Active {
-			color = "white"
+			c = color.New(color.FgWhite)
 		}
 		for i, v := range row {
-			row[i] = cmd.Colorfy(v, color, "", "")
+			row[i] = c.Sprint(v)
 		}
 		tbl.AddRow(row)
 	}

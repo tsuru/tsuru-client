@@ -10,6 +10,7 @@ import (
 	"runtime"
 	"strings"
 
+	"github.com/fatih/color"
 	"github.com/spf13/viper"
 	"github.com/tsuru/go-tsuruclient/pkg/config"
 	"github.com/tsuru/tablecli"
@@ -19,6 +20,10 @@ import (
 var defaultViper = preSetupViper(nil)
 
 func ColorDisabled() bool {
+	return colorDisabled(defaultViper)
+}
+
+func colorDisabled(vip *viper.Viper) bool {
 	// https://no-color.org/
 	if _, nocolor := os.LookupEnv("NO_COLOR"); nocolor {
 		return true
@@ -32,10 +37,10 @@ func ColorDisabled() bool {
 
 	// https://en.wikipedia.org/wiki/Computer_terminal#Dumb_terminals
 	if os.Getenv("TERM") == "dumb" {
-		return false
+		return true
 	}
 
-	return defaultViper.GetBool("disable-colors")
+	return vip.GetBool("disable-colors")
 }
 
 func Pager() (pager string, found bool) {
@@ -87,6 +92,9 @@ func preSetupViper(vip *viper.Viper) *viper.Viper {
 	tablecli.TableConfig.BreakOnAny = vip.GetBool("break-any")
 	tablecli.TableConfig.ForceWrap = vip.GetBool("force-wrap")
 	tablecli.TableConfig.TabWriterTruncate = vip.GetBool("tab-writer-truncate")
+
+	// setup colors
+	color.NoColor = colorDisabled(vip)
 
 	return vip
 }

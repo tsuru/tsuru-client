@@ -11,6 +11,7 @@ import (
 	"strings"
 
 	"github.com/cezarsa/form"
+	"github.com/fatih/color"
 	"github.com/tsuru/tsuru-client/tsuru/cmd"
 	"github.com/tsuru/tsuru-client/tsuru/cmd/cmdtest"
 	"github.com/tsuru/tsuru/io"
@@ -88,7 +89,7 @@ func (s *S) TestEnvGetAlwaysPrintInAlphabeticalOrder(c *check.C) {
 func (s *S) TestEnvGetPrivateVariables(c *check.C) {
 	var stdout, stderr bytes.Buffer
 	jsonResult := `[{"name": "DATABASE_USER", "value": "someuser", "public": true}, {"name": "DATABASE_HOST", "value": "somehost", "public": false}]`
-	coloredObservation := cmd.Colorfy("(private variable)", "gray", "", "bold")
+	coloredObservation := color.New(color.FgHiBlack, color.Bold).Sprint("(private variable)")
 	result := "DATABASE_HOST=*** " + coloredObservation + "\nDATABASE_USER=someuser\n"
 	params := []string{"DATABASE_HOST", "DATABASE_USER"}
 	context := cmd.Context{
@@ -107,8 +108,8 @@ func (s *S) TestEnvGetPrivateVariables(c *check.C) {
 func (s *S) TestEnvGetManagedByVariables(c *check.C) {
 	var stdout, stderr bytes.Buffer
 	jsonResult := `[{"name": "DATABASE_USER", "value": "someuser", "public": false, "managedBy": "my-service/instance"}, {"name": "DATABASE_HOST", "value": "somehost", "public": true, "managedBy": "my-service/instance"}]`
-	coloredManagedBy := cmd.Colorfy("(managed by my-service/instance)", "gray", "", "bold")
-	coloredPrivateManagedBy := cmd.Colorfy("(private variable managed by my-service/instance)", "gray", "", "bold")
+	coloredManagedBy := color.New(color.FgHiBlack, color.Bold).Sprint("(managed by my-service/instance)")
+	coloredPrivateManagedBy := color.New(color.FgHiBlack, color.Bold).Sprint("(private variable managed by my-service/instance)")
 	result := "DATABASE_HOST=somehost " + coloredManagedBy + "\nDATABASE_USER=*** " + coloredPrivateManagedBy + "\n"
 	params := []string{"DATABASE_HOST", "DATABASE_USER"}
 	context := cmd.Context{
@@ -530,7 +531,7 @@ func (s *S) TestJobEnvGetAlwaysPrintInAlphabeticalOrder(c *check.C) {
 func (s *S) TestJobEnvGetPrivateVariables(c *check.C) {
 	var stdout, stderr bytes.Buffer
 	jsonResult := `[{"name": "DATABASE_USER", "value": "someuser", "public": true}, {"name": "DATABASE_HOST", "value": "somehost", "public": false}]`
-	coloredObservation := cmd.Colorfy("(private variable)", "gray", "", "bold")
+	coloredObservation := color.New(color.FgHiBlack, color.Bold).Sprint("(private variable)")
 	result := "DATABASE_HOST=*** " + coloredObservation + "\nDATABASE_USER=someuser\n"
 	params := []string{"DATABASE_HOST", "DATABASE_USER"}
 	context := cmd.Context{

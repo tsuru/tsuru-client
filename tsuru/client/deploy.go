@@ -18,6 +18,7 @@ import (
 	"strings"
 	"sync"
 
+	"github.com/fatih/color"
 	"github.com/spf13/pflag"
 	"github.com/tsuru/go-tsuruclient/pkg/config"
 	"github.com/tsuru/go-tsuruclient/pkg/tsuru"
@@ -126,7 +127,7 @@ func (c *AppDeployList) Run(context *cmd.Context) error {
 		if deploy.Error != "" {
 			for i, el := range rowData {
 				if el != "" {
-					rowData[i] = cmd.Colorfy(el, "red", "", "")
+					rowData[i] = color.RedString(el)
 				}
 			}
 		}
@@ -363,7 +364,7 @@ func (c *AppDeploy) Cancel(ctx cmd.Context) error {
 	if c.eventID == "" {
 		return errors.New("event ID not available yet")
 	}
-	fmt.Fprintln(ctx.Stdout, cmd.Colorfy("Warning: the deploy is still RUNNING in the background!", "red", "", "bold"))
+	fmt.Fprintln(ctx.Stdout, color.New(color.FgRed, color.Bold).Sprint("Warning: the deploy is still RUNNING in the background!"))
 	fmt.Fprint(ctx.Stdout, "Are you sure you want to cancel this deploy? (Y/n) ")
 	var answer string
 	fmt.Fscanf(ctx.Stdin, "%s", &answer)
@@ -699,7 +700,7 @@ func (c *JobDeploy) Cancel(ctx cmd.Context) error {
 	if c.eventID == "" {
 		return errors.New("event ID not available yet")
 	}
-	fmt.Fprintln(ctx.Stdout, cmd.Colorfy("Warning: the deploy is still RUNNING in the background!", "red", "", "bold"))
+	fmt.Fprintln(ctx.Stdout, color.New(color.FgRed, color.Bold).Sprint("Warning: the deploy is still RUNNING in the background!"))
 	fmt.Fprint(ctx.Stdout, "Are you sure you want to cancel this deploy? (Y/n) ")
 	var answer string
 	fmt.Fscanf(ctx.Stdin, "%s", &answer)

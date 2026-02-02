@@ -10,7 +10,7 @@ import (
 	"strings"
 	"time"
 
-	"github.com/tsuru/tsuru-client/tsuru/cmd"
+	"github.com/fatih/color"
 	"github.com/tsuru/tsuru/streamfmt"
 )
 
@@ -89,7 +89,7 @@ func (w *coloredEncoderWriter) Write(p []byte) (int, error) {
 // writeTimestamp writes the elapsed time prefix in gray.
 func (w *coloredEncoderWriter) writeTimestamp(seconds float64) {
 	timestamp := fmt.Sprintf("[%4.0fs] ", seconds)
-	fmt.Fprint(w.Encoder, cmd.Colorfy(timestamp, "gray", "", ""))
+	fmt.Fprint(w.Encoder, color.HiBlackString(timestamp))
 }
 
 // writeFormattedLine determines the line type and writes it with appropriate formatting.
@@ -119,8 +119,8 @@ func (w *coloredEncoderWriter) writeSectionLine(line string) {
 
 	content := line[len(streamfmt.SectionPrefix) : len(line)-len(streamfmt.SectionSuffix)]
 
-	fmt.Fprint(w.Encoder, cmd.Colorfy(sectionIndicator, "blue", "", ""))
-	fmt.Fprintf(w.Encoder, " %s \n", cmd.Colorfy(content, "", "", "bold"))
+	fmt.Fprint(w.Encoder, color.BlueString(sectionIndicator))
+	fmt.Fprintf(w.Encoder, " %s \n", color.New(color.Bold).Sprint(content))
 }
 
 // writeActionLine writes an action line with green arrow, preserving indentation.
@@ -130,8 +130,8 @@ func (w *coloredEncoderWriter) writeActionLine(line string) {
 	content := trimmedLine[len(trimmedActionPrefix):]
 
 	fmt.Fprint(w.Encoder, strings.Repeat(" ", leadingSpaces))
-	fmt.Fprint(w.Encoder, cmd.Colorfy(actionArrow, "green", "", "bold"))
-	fmt.Fprintf(w.Encoder, " %s\n", cmd.Colorfy(content, "", "", "reset"))
+	fmt.Fprint(w.Encoder, color.New(color.FgGreen, color.Bold).Sprint(actionArrow))
+	fmt.Fprintf(w.Encoder, " %s\n", content)
 }
 
 // writeErrorLine writes an error line with red cross indicator.
@@ -144,8 +144,8 @@ func (w *coloredEncoderWriter) writeErrorLine(line string) {
 
 	content := line[len(streamfmt.ErrorPrefix) : len(line)-len(streamfmt.ErrorSuffix)]
 
-	fmt.Fprint(w.Encoder, cmd.Colorfy(errorCross+errorCross, "red", "", "bold"))
-	fmt.Fprintf(w.Encoder, " %s\n", cmd.Colorfy(content, "red", "", "reset"))
+	fmt.Fprint(w.Encoder, color.New(color.FgRed, color.Bold).Sprint(errorCross+errorCross))
+	fmt.Fprintf(w.Encoder, " %s\n", color.RedString(content))
 }
 
 func NewColoredStreamWriter(encoder io.Writer) io.Writer {

@@ -13,6 +13,7 @@ import (
 	"net/url"
 	"strings"
 
+	"github.com/fatih/color"
 	"github.com/tsuru/go-tsuruclient/pkg/tsuru"
 	"github.com/tsuru/tsuru-client/tsuru/cmd"
 	"github.com/tsuru/tsuru-client/tsuru/cmd/cmdtest"
@@ -905,7 +906,7 @@ func (s *S) TestJobLog(c *check.C) {
 `
 	expectedPrefix := "2023-06-06 12:45:57 -0500 [cerrone-7k2c8]:"
 	expectedMessage := "Hello World!"
-	expected := fmt.Sprintf("%s %s\n", cmd.Colorfy(expectedPrefix, "blue", "", ""), expectedMessage)
+	expected := fmt.Sprintf("%s %s\n", color.BlueString(expectedPrefix), expectedMessage)
 	trans := cmdtest.ConditionalTransport{
 		Transport: cmdtest.Transport{Message: log, Status: http.StatusOK},
 		CondFunc: func(r *http.Request) bool {
@@ -943,7 +944,7 @@ func (s *S) TestJobLogFollow(c *check.C) {
 `
 	expectedPrefix := "2023-06-06 12:45:57 -0500 [frank-ocean-7k2c8]:"
 	expectedMessage := "Hello World!"
-	expected := fmt.Sprintf("%s %s\n", cmd.Colorfy(expectedPrefix, "blue", "", ""), expectedMessage)
+	expected := fmt.Sprintf("%s %s\n", color.BlueString(expectedPrefix), expectedMessage)
 	trans := cmdtest.ConditionalTransport{
 		Transport: cmdtest.Transport{Message: log, Status: http.StatusOK},
 		CondFunc: func(r *http.Request) bool {
