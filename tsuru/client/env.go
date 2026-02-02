@@ -16,6 +16,7 @@ import (
 	"strings"
 
 	"github.com/cezarsa/form"
+	"github.com/fatih/color"
 	"github.com/spf13/pflag"
 	"github.com/tsuru/go-tsuruclient/pkg/config"
 	"github.com/tsuru/tsuru-client/tsuru/cmd"
@@ -108,7 +109,7 @@ func (c *EnvGet) Run(context *cmd.Context) error {
 		}
 
 		if observation != "" {
-			value = value + " " + cmd.Colorfy(observation, "gray", "", "bold")
+			value = value + " " + color.New(color.FgHiBlack, color.Bold).Sprint(observation)
 		}
 		formatted = append(formatted, fmt.Sprintf("%s=%s", v["name"], value))
 	}

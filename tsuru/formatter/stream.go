@@ -9,6 +9,7 @@ import (
 	"net/http"
 
 	"github.com/pkg/errors"
+	v2 "github.com/tsuru/tsuru-client/tsuru/cmd/v2"
 	tsuruIO "github.com/tsuru/tsuru/io"
 )
 
@@ -17,9 +18,20 @@ func StreamJSONResponse(w io.Writer, response *http.Response) error {
 	if response == nil {
 		return errors.New("response cannot be nil")
 	}
+
+	var writer io.Writer
+	var formatter tsuruIO.Formatter
+	if v2.ColorStream() {
+		writer = NewColoredStreamWriter(w)
+		formatter = &tsuruIO.SimpleJsonMessageFormatter{NoTimestamp: true}
+	} else {
+		writer = w
+		formatter = nil
+	}
+
 	defer response.Body.Close()
+	output := tsuruIO.NewStreamWriter(writer, formatter)
 	var err error
-	output := tsuruIO.NewStreamWriter(w, nil)
 	for n := int64(1); n > 0 && err == nil; n, err = io.Copy(output, response.Body) {
 	}
 	if err != nil {

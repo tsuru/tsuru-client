@@ -12,6 +12,7 @@ import (
 	"strings"
 	"time"
 
+	"github.com/fatih/color"
 	"github.com/spf13/pflag"
 	"github.com/tsuru/go-tsuruclient/pkg/config"
 	tsuruClientApp "github.com/tsuru/tsuru-client/tsuru/app"
@@ -81,7 +82,7 @@ func (f logFormatter) Format(out io.Writer, dec *json.Decoder) error {
 		if prefix == "" {
 			fmt.Fprintf(out, "%s\n", l.Message)
 		} else {
-			fmt.Fprintf(out, "%s %s\n", cmd.Colorfy(prefix, "blue", "", ""), l.Message)
+			fmt.Fprintf(out, "%s %s\n", color.BlueString(prefix), l.Message)
 		}
 	}
 	return nil

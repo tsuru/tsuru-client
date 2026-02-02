@@ -11,6 +11,7 @@ import (
 	"strings"
 	"time"
 
+	"github.com/fatih/color"
 	"github.com/tsuru/tsuru-client/tsuru/cmd"
 	"github.com/tsuru/tsuru-client/tsuru/cmd/cmdtest"
 	"github.com/tsuru/tsuru-client/tsuru/formatter"
@@ -36,8 +37,8 @@ func (s *S) TestFormatterUsesCurrentTimeZone(c *check.C) {
 	c.Assert(err, check.IsNil)
 	tfmt := "2006-01-02 15:04:05 -0700"
 	t = t.In(time.UTC)
-	expected := cmd.Colorfy(t.Format(tfmt)+" [tsuru]:", "blue", "", "") + " Something happened\n"
-	expected = expected + cmd.Colorfy(t.Add(2*time.Hour).Format(tfmt)+" [tsuru]:", "blue", "", "") + " Something happened again\n"
+	expected := color.BlueString(t.Format(tfmt)+" [tsuru]:") + " Something happened\n"
+	expected = expected + color.BlueString(t.Add(2*time.Hour).Format(tfmt)+" [tsuru]:") + " Something happened again\n"
 	c.Assert(writer.String(), check.Equals, expected)
 }
 
@@ -52,8 +53,8 @@ func (s *S) TestAppLog(c *check.C) {
 	c.Assert(err, check.IsNil)
 	t = formatter.Local(t)
 	tfmt := "2006-01-02 15:04:05 -0700"
-	expected := cmd.Colorfy(t.Format(tfmt)+" [tsuru]:", "blue", "", "") + " creating app lost\n"
-	expected = expected + cmd.Colorfy(t.Add(2*time.Hour).Format(tfmt)+" [app][abcdef]:", "blue", "", "") + " app lost successfully created\n"
+	expected := color.BlueString(t.Format(tfmt)+" [tsuru]:") + " creating app lost\n"
+	expected = expected + color.BlueString(t.Add(2*time.Hour).Format(tfmt)+" [app][abcdef]:") + " app lost successfully created\n"
 	context := cmd.Context{
 		Stdout: &stdout,
 		Stderr: &stderr,
@@ -94,7 +95,7 @@ func (s *S) TestAppLogWithUnparsableData(c *check.C) {
 	command.Flags().Parse([]string{"--app", "appName"})
 	err = command.Run(&context)
 	c.Assert(err, check.IsNil)
-	expected := cmd.Colorfy(t.Format(tfmt)+" [tsuru]:", "blue", "", "") + " creating app lost\n"
+	expected := color.BlueString(t.Format(tfmt)+" [tsuru]:") + " creating app lost\n"
 	expected += "Error: unable to parse json: invalid character 'u' looking for beginning of value: \"\\nunparseable data\""
 	c.Assert(stdout.String(), check.Equals, expected)
 }
@@ -110,8 +111,8 @@ func (s *S) TestAppLogWithoutTheFlag(c *check.C) {
 	c.Assert(err, check.IsNil)
 	t = formatter.Local(t)
 	tfmt := "2006-01-02 15:04:05 -0700"
-	expected := cmd.Colorfy(t.Format(tfmt)+" [tsuru]:", "blue", "", "") + " creating app lost\n"
-	expected = expected + cmd.Colorfy(t.Add(2*time.Hour).Format(tfmt)+" [app]:", "blue", "", "") + " app lost successfully created\n"
+	expected := color.BlueString(t.Format(tfmt)+" [tsuru]:") + " creating app lost\n"
+	expected = expected + color.BlueString(t.Add(2*time.Hour).Format(tfmt)+" [app]:") + " app lost successfully created\n"
 	context := cmd.Context{
 		Stdout: &stdout,
 		Stderr: &stderr,
@@ -160,8 +161,8 @@ func (s *S) TestAppLogBySource(c *check.C) {
 	c.Assert(err, check.IsNil)
 	t = formatter.Local(t)
 	tfmt := "2006-01-02 15:04:05 -0700"
-	expected := cmd.Colorfy(t.Format(tfmt)+" [tsuru]:", "blue", "", "") + " creating app lost\n"
-	expected = expected + cmd.Colorfy(t.Add(2*time.Hour).Format(tfmt)+" [tsuru]:", "blue", "", "") + " app lost successfully created\n"
+	expected := color.BlueString(t.Format(tfmt)+" [tsuru]:") + " creating app lost\n"
+	expected = expected + color.BlueString(t.Add(2*time.Hour).Format(tfmt)+" [tsuru]:") + " app lost successfully created\n"
 	context := cmd.Context{
 		Stdout: &stdout,
 		Stderr: &stderr,
@@ -191,8 +192,8 @@ func (s *S) TestAppLogByUnit(c *check.C) {
 	c.Assert(err, check.IsNil)
 	t = formatter.Local(t)
 	tfmt := "2006-01-02 15:04:05 -0700"
-	expected := cmd.Colorfy(t.Format(tfmt)+" [tsuru][api]:", "blue", "", "") + " creating app lost\n"
-	expected = expected + cmd.Colorfy(t.Add(2*time.Hour).Format(tfmt)+" [tsuru][api]:", "blue", "", "") + " app lost successfully created\n"
+	expected := color.BlueString(t.Format(tfmt)+" [tsuru][api]:") + " creating app lost\n"
+	expected = expected + color.BlueString(t.Add(2*time.Hour).Format(tfmt)+" [tsuru][api]:") + " app lost successfully created\n"
 	context := cmd.Context{
 		Stdout: &stdout,
 		Stderr: &stderr,
@@ -222,8 +223,8 @@ func (s *S) TestAppLogWithLines(c *check.C) {
 	c.Assert(err, check.IsNil)
 	t = formatter.Local(t)
 	tfmt := "2006-01-02 15:04:05 -0700"
-	expected := cmd.Colorfy(t.Format(tfmt)+" [tsuru]:", "blue", "", "") + " creating app lost\n"
-	expected = expected + cmd.Colorfy(t.Add(2*time.Hour).Format(tfmt)+" [tsuru]:", "blue", "", "") + " app lost successfully created\n"
+	expected := color.BlueString(t.Format(tfmt)+" [tsuru]:") + " creating app lost\n"
+	expected = expected + color.BlueString(t.Add(2*time.Hour).Format(tfmt)+" [tsuru]:") + " app lost successfully created\n"
 	context := cmd.Context{
 		Stdout: &stdout,
 		Stderr: &stderr,
@@ -253,8 +254,8 @@ func (s *S) TestAppLogWithFollow(c *check.C) {
 	c.Assert(err, check.IsNil)
 	t = formatter.Local(t)
 	tfmt := "2006-01-02 15:04:05 -0700"
-	expected := cmd.Colorfy(t.Format(tfmt)+" [tsuru]:", "blue", "", "") + " creating app lost\n"
-	expected = expected + cmd.Colorfy(t.Add(2*time.Hour).Format(tfmt)+" [tsuru]:", "blue", "", "") + " app lost successfully created\n"
+	expected := color.BlueString(t.Format(tfmt)+" [tsuru]:") + " creating app lost\n"
+	expected = expected + color.BlueString(t.Add(2*time.Hour).Format(tfmt)+" [tsuru]:") + " app lost successfully created\n"
 	context := cmd.Context{
 		Stdout: &stdout,
 		Stderr: &stderr,
@@ -313,8 +314,8 @@ func (s *S) TestAppLogWithNoSource(c *check.C) {
 	c.Assert(err, check.IsNil)
 	t = formatter.Local(t)
 	tfmt := "2006-01-02 15:04:05 -0700"
-	expected := cmd.Colorfy(t.Format(tfmt)+":", "blue", "", "") + " GET /\n"
-	expected = expected + cmd.Colorfy(t.Add(2*time.Hour).Format(tfmt)+":", "blue", "", "") + " POST /\n"
+	expected := color.BlueString(t.Format(tfmt)+":") + " GET /\n"
+	expected = expected + color.BlueString(t.Add(2*time.Hour).Format(tfmt)+":") + " POST /\n"
 	context := cmd.Context{
 		Stdout: &stdout,
 		Stderr: &stderr,

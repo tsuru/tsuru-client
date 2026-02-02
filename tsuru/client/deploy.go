@@ -18,6 +18,7 @@ import (
 	"strings"
 	"sync"
 
+	"github.com/fatih/color"
 	"github.com/spf13/pflag"
 	"github.com/tsuru/go-tsuruclient/pkg/config"
 	"github.com/tsuru/go-tsuruclient/pkg/tsuru"
@@ -25,6 +26,7 @@ import (
 	tsuruClientApp "github.com/tsuru/tsuru-client/tsuru/app"
 	"github.com/tsuru/tsuru-client/tsuru/cmd"
 	"github.com/tsuru/tsuru-client/tsuru/cmd/standards"
+	v2 "github.com/tsuru/tsuru-client/tsuru/cmd/v2"
 	"github.com/tsuru/tsuru-client/tsuru/formatter"
 	tsuruHTTP "github.com/tsuru/tsuru-client/tsuru/http"
 	tsuruapp "github.com/tsuru/tsuru/app"
@@ -125,7 +127,7 @@ func (c *AppDeployList) Run(context *cmd.Context) error {
 		if deploy.Error != "" {
 			for i, el := range rowData {
 				if el != "" {
-					rowData[i] = cmd.Colorfy(el, "red", "", "")
+					rowData[i] = color.RedString(el)
 				}
 			}
 		}
@@ -215,10 +217,17 @@ func (w *safeWriter) Write(p []byte) (int, error) {
 
 func prepareUploadStreams(context *cmd.Context, buf *safe.Buffer) io.Writer {
 	context.Stdout = &safeWriter{w: context.Stdout}
-	stream := tsuruIo.NewStreamWriter(&firstWriter{Writer: context.Stdout}, nil)
+
+	fw := &firstWriter{Writer: context.Stdout}
+
+	if v2.ColorStream() {
+		encoderWriter := &safeWriter{w: formatter.NewColoredStreamWriter(fw)}
+		return io.MultiWriter(encoderWriter, buf)
+	}
+
+	stream := tsuruIo.NewStreamWriter(fw, nil)
 	encoderWriter := &safeWriter{w: &tsuruIo.SimpleJsonMessageEncoderWriter{Encoder: json.NewEncoder(stream)}}
-	respBody := io.MultiWriter(encoderWriter, buf)
-	return respBody
+	return io.MultiWriter(encoderWriter, buf)
 }
 
 func (c *AppDeploy) Run(context *cmd.Context) error {
@@ -355,7 +364,7 @@ func (c *AppDeploy) Cancel(ctx cmd.Context) error {
 	if c.eventID == "" {
 		return errors.New("event ID not available yet")
 	}
-	fmt.Fprintln(ctx.Stdout, cmd.Colorfy("Warning: the deploy is still RUNNING in the background!", "red", "", "bold"))
+	fmt.Fprintln(ctx.Stdout, color.New(color.FgRed, color.Bold).Sprint("Warning: the deploy is still RUNNING in the background!"))
 	fmt.Fprint(ctx.Stdout, "Are you sure you want to cancel this deploy? (Y/n) ")
 	var answer string
 	fmt.Fscanf(ctx.Stdin, "%s", &answer)
@@ -691,7 +700,7 @@ func (c *JobDeploy) Cancel(ctx cmd.Context) error {
 	if c.eventID == "" {
 		return errors.New("event ID not available yet")
 	}
-	fmt.Fprintln(ctx.Stdout, cmd.Colorfy("Warning: the deploy is still RUNNING in the background!", "red", "", "bold"))
+	fmt.Fprintln(ctx.Stdout, color.New(color.FgRed, color.Bold).Sprint("Warning: the deploy is still RUNNING in the background!"))
 	fmt.Fprint(ctx.Stdout, "Are you sure you want to cancel this deploy? (Y/n) ")
 	var answer string
 	fmt.Fscanf(ctx.Stdin, "%s", &answer)

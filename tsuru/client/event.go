@@ -17,6 +17,7 @@ import (
 	"time"
 
 	"github.com/cezarsa/form"
+	"github.com/fatih/color"
 	"github.com/ghodss/yaml"
 	"github.com/spf13/pflag"
 	"github.com/tsuru/go-tsuruclient/pkg/config"
@@ -169,18 +170,18 @@ func (c *EventList) Show(evts []eventTypes.EventData, context *cmd.Context) erro
 		}
 		ts := formatter.FormatDateAndDuration(evt.StartTime, duration)
 		row := tablecli.Row{evt.UniqueID.Hex(), ts, success, owner, evt.Kind.Name, strings.Join(targetsStr, "\n")}
-		var color string
+		var c *color.Color
 		if evt.Running {
-			color = "yellow"
+			c = color.New(color.FgYellow)
 		} else if evt.CancelInfo.Canceled {
-			color = "magenta"
+			c = color.New(color.FgMagenta)
 		} else if evt.Error != "" {
-			color = "red"
+			c = color.New(color.FgRed)
 		}
-		if color != "" {
+		if c != nil {
 			for i, v := range row {
 				if v != "" {
-					row[i] = cmd.Colorfy(v, color, "", "")
+					row[i] = c.Sprint(v)
 				}
 			}
 		}
@@ -302,13 +303,13 @@ func (c *EventInfo) Show(evt *eventTypes.EventInfo, context *cmd.Context) error 
 				redError = append(redError, "")
 				continue
 			}
-			redError = append(redError, cmd.Colorfy(p, "red", "", ""))
+			redError = append(redError, color.RedString(p))
 		}
 		fullError := strings.Join(redError, "\n")
 		if !strings.HasSuffix(fullError, "\n") {
 			fullError += "\n"
 		}
-		redSuccess := cmd.Colorfy(successfulStr, "red", "", "")
+		redSuccess := color.RedString(successfulStr)
 		items = append(items, []item{
 			{"Success", redSuccess},
 			{"Error", fullError},
@@ -332,7 +333,7 @@ func (c *EventInfo) Show(evt *eventTypes.EventInfo, context *cmd.Context) error 
 		if item.label != "" {
 			item.label += ":"
 		}
-		label := cmd.Colorfy(item.label, "cyan", "", "")
+		label := color.CyanString(item.label)
 		fmt.Fprintf(tabWriter, "%s\t%s\n", label, item.value)
 	}
 

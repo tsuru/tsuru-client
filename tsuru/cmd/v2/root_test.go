@@ -326,3 +326,43 @@ func TestRunRootCmd(t *testing.T) {
 		assert.Contains(t, out.String(), "bash completion")
 	})
 }
+
+func TestColorStream(t *testing.T) {
+	// Helper to save and restore env vars
+	saveEnv := func(name string) func() {
+		if oldVal, ok := os.LookupEnv(name); ok {
+			return func() { os.Setenv(name, oldVal) }
+		}
+		return func() { os.Unsetenv(name) }
+	}
+
+	t.Run("returns_false_when_color_stream_not_set", func(t *testing.T) {
+		defer saveEnv("TSURU_COLOR_STREAM")()
+		defer saveEnv("TSURU_DISABLE_COLORS")()
+
+		os.Unsetenv("TSURU_COLOR_STREAM")
+		os.Unsetenv("TSURU_DISABLE_COLORS")
+
+		assert.False(t, ColorStream())
+	})
+
+	t.Run("returns_true_when_color_stream_enabled", func(t *testing.T) {
+		defer saveEnv("TSURU_COLOR_STREAM")()
+		defer saveEnv("TSURU_DISABLE_COLORS")()
+
+		os.Setenv("TSURU_COLOR_STREAM", "true")
+		os.Unsetenv("TSURU_DISABLE_COLORS")
+
+		assert.True(t, ColorStream())
+	})
+
+	t.Run("returns_false_when_colors_disabled", func(t *testing.T) {
+		defer saveEnv("TSURU_COLOR_STREAM")()
+		defer saveEnv("TSURU_DISABLE_COLORS")()
+
+		os.Setenv("TSURU_COLOR_STREAM", "true")
+		os.Setenv("TSURU_DISABLE_COLORS", "true")
+
+		assert.False(t, ColorStream())
+	})
+}
