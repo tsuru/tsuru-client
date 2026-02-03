@@ -13,6 +13,7 @@ import (
 	"sort"
 	"strconv"
 	"strings"
+	"text/tabwriter"
 
 	"github.com/pkg/errors"
 	"github.com/spf13/pflag"
@@ -397,14 +398,22 @@ func (c *ClusterList) Run(ctx *cmd.Context) error {
 
 	tbl := tablecli.NewTable()
 	tbl.LineSeparator = true
-	tbl.Headers = tablecli.Row{"Name", "Provisioner", "Addresses", "Custom Data", "Default", "Pools"}
-	tbl.TableWriterTruncate = true
+	if tablecli.TableConfig.UseTabWriter {
+		tbl.Headers = tablecli.Row{"Name", "Provisioner", "Addresses", "Default"}
+	} else {
+		tbl.Headers = tablecli.Row{"Name", "Provisioner", "Addresses", "Custom Data", "Default", "Pools"}
+	}
 	for _, c := range clusters {
 		var custom []string
 		for k, v := range c.CustomData {
 			custom = append(custom, fmt.Sprintf("%s=%s", k, v))
 		}
-		tbl.AddRow(tablecli.Row{c.Name, c.Provisioner, strings.Join(c.Addresses, "\n"), strings.Join(custom, "\n"), strconv.FormatBool(c.Default), strings.Join(c.Pools, "\n")})
+		addresses := strings.Join(c.Addresses, "\n")
+		if tablecli.TableConfig.UseTabWriter {
+			tbl.AddRow(tablecli.Row{c.Name, c.Provisioner, addresses, strconv.FormatBool(c.Default)})
+			continue
+		}
+		tbl.AddRow(tablecli.Row{c.Name, c.Provisioner, addresses, strings.Join(custom, "\n"), strconv.FormatBool(c.Default), strings.Join(c.Pools, "\n")})
 	}
 	fmt.Fprint(ctx.Stdout, tbl.String())
 	return nil
@@ -578,4 +587,82 @@ func hasPool(pools []string, pool string) (int, bool) {
 		}
 	}
 	return -1, false
+}
+
+type ClusterInfo struct {
+	fs   *pflag.FlagSet
+	json bool
+}
+
+func (c *ClusterInfo) Flags() *pflag.FlagSet {
+	if c.fs == nil {
+		c.fs = pflag.NewFlagSet("cluster-info", pflag.ExitOnError)
+		c.fs.BoolVar(&c.json, standards.FlagJSON, false, "Display in JSON format")
+	}
+	return c.fs
+}
+
+func (c *ClusterInfo) Info() *cmd.Info {
+	return &cmd.Info{
+		Name:    "cluster-info",
+		Usage:   "<name>",
+		Desc:    `Shows information about a specific cluster.`,
+		MinArgs: 1,
+		MaxArgs: 1,
+	}
+}
+
+func (c *ClusterInfo) Run(ctx *cmd.Context) error {
+	clusterName := ctx.Args[0]
+	apiClient, err := tsuruHTTP.TsuruClientFromEnvironment()
+	if err != nil {
+		return err
+	}
+	cluster, resp, err := apiClient.ClusterApi.ClusterInfo(context.TODO(), clusterName)
+	if resp != nil && resp.StatusCode == http.StatusNoContent {
+		return nil
+	}
+	if err != nil {
+		return err
+	}
+	defer resp.Body.Close()
+
+	if c.json {
+		return formatter.JSON(ctx.Stdout, cluster)
+	}
+
+	tabWriter := tabwriter.NewWriter(ctx.Stdout, 0, 0, 2, ' ', 0)
+
+	fmt.Fprintf(tabWriter, "Name:\t%s\n", cluster.Name)
+	fmt.Fprintf(tabWriter, "Provisioner:\t%s\n", cluster.Provisioner)
+	fmt.Fprintf(tabWriter, "Addresses:\t%s\n", strings.Join(cluster.Addresses, ", "))
+	fmt.Fprintf(tabWriter, "Default:\t%v\n", cluster.Default)
+
+	if len(cluster.Pools) > 0 {
+		fmt.Fprint(tabWriter, "Pools:")
+
+		for _, pool := range cluster.Pools {
+			fmt.Fprintf(tabWriter, "\t%s\n", pool)
+		}
+	}
+
+	tabWriter.Flush()
+
+	if len(cluster.CustomData) > 0 {
+		fmt.Fprintf(ctx.Stdout, "\nCustom Data:\n")
+		customTable := tablecli.NewTable()
+		customTable.Headers = tablecli.Row{"Key", "Value"}
+		customTable.TableWriterPadding = standards.SubTableWriterPadding
+		var keys []string
+		for k := range cluster.CustomData {
+			keys = append(keys, k)
+		}
+		sort.Strings(keys)
+		for _, k := range keys {
+			customTable.AddRow(tablecli.Row{k, cluster.CustomData[k]})
+		}
+		fmt.Fprint(ctx.Stdout, customTable.String())
+	}
+
+	return nil
 }
