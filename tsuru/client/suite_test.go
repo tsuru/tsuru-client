@@ -13,6 +13,7 @@ import (
 	"github.com/cezarsa/form"
 	"github.com/fatih/color"
 	"github.com/tsuru/go-tsuruclient/pkg/config"
+	"github.com/tsuru/tablecli"
 	"github.com/tsuru/tsuru-client/tsuru/formatter"
 	tsuruHTTP "github.com/tsuru/tsuru-client/tsuru/http"
 	"gopkg.in/check.v1"
@@ -32,6 +33,7 @@ func (s *S) SetUpTest(c *check.C) {
 	os.Setenv("TSURU_TARGET", "http://localhost:8080")
 	os.Setenv("TSURU_TOKEN", "sometoken")
 	color.NoColor = true
+	tablecli.TableConfig.UseTabWriter = false
 	s.defaultLocation = *formatter.LocalTZ
 	location, err := time.LoadLocation("US/Central")
 	if err == nil {

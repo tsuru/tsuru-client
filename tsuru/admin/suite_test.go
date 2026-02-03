@@ -12,6 +12,7 @@ import (
 
 	"github.com/cezarsa/form"
 	"github.com/fatih/color"
+	"github.com/tsuru/tablecli"
 	"github.com/tsuru/tsuru-client/tsuru/formatter"
 	tsuruHTTP "github.com/tsuru/tsuru-client/tsuru/http"
 	check "gopkg.in/check.v1"
@@ -36,6 +37,7 @@ func (s *S) TearDownSuite(c *check.C) {
 
 func (s *S) SetUpTest(c *check.C) {
 	color.NoColor = true
+	tablecli.TableConfig.UseTabWriter = false
 	s.defaultLocation = *formatter.LocalTZ
 	location, err := time.LoadLocation("US/Central")
 	if err == nil {
