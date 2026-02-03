@@ -3115,3 +3115,20 @@ func (s *S) TestAppProcessUpdateReset(c *check.C) {
 	c.Assert(err, check.IsNil)
 	c.Assert(stdout.String(), check.Equals, "stream\n"+expectedOut)
 }
+
+func (s *S) TestEnsureHTTP(c *check.C) {
+	tests := []struct {
+		input    string
+		expected string
+	}{
+		{"", ""},
+		{"http://example.com", "http://example.com"},
+		{"https://example.com", "https://example.com"},
+		{"example.com", "http://example.com"},
+		{"example.com:8080", "http://example.com:8080"},
+	}
+	for _, t := range tests {
+		result := ensureHTTP(t.input)
+		c.Assert(result, check.Equals, t.expected)
+	}
+}

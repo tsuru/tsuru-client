@@ -596,6 +596,9 @@ func appAddrs(cnames []string, ip string, routers []appTypes.AppRouter) string {
 }
 
 func ensureHTTP(addr string) string {
+	if addr == "" {
+		return addr
+	}
 	if strings.HasPrefix(addr, "http://") || strings.HasPrefix(addr, "https://") {
 		return addr
 	}

@@ -71,7 +71,12 @@ func renderPlans(plans []appTypes.Plan, opts renderPlansOpts) string {
 	}
 
 	if showBurstColumn {
-		table.Headers = append(table.Headers, "CPU Burst (default)")
+		header := "CPU Burst"
+		if opts.showDefaultColumn {
+			header += " (default)"
+		}
+
+		table.Headers = append(table.Headers, header)
 	}
 
 	if showBurstColumn && opts.showMaxBurstAllowed {

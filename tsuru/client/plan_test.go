@@ -387,3 +387,41 @@ func (s *S) TestRenderProcessPlan(c *check.C) {
 		c.Assert(cc.expectedResult, check.Equals, output)
 	}
 }
+
+func (s *S) TestRenderPlansWithoutDefaultColumn(c *check.C) {
+	plans := []appTypes.Plan{
+		{
+			Name:     "test",
+			CPUMilli: 300,
+			Memory:   536870912,
+			CPUBurst: &appTypes.CPUBurst{Default: 1.1},
+		},
+	}
+	expected := `+------+-----+--------+-----------+
+| Name | CPU | Memory | CPU Burst |
++------+-----+--------+-----------+
+| test | 30% | 512Mi  | up to 33% |
++------+-----+--------+-----------+
+`
+	result := renderPlans(plans, renderPlansOpts{showDefaultColumn: false})
+	c.Assert(result, check.Equals, expected)
+}
+
+func (s *S) TestRenderPlansWithDefaultColumn(c *check.C) {
+	plans := []appTypes.Plan{
+		{
+			Name:     "test",
+			CPUMilli: 300,
+			Memory:   536870912,
+			CPUBurst: &appTypes.CPUBurst{Default: 1.1},
+		},
+	}
+	expected := `+------+-----+--------+---------------------+---------+
+| Name | CPU | Memory | CPU Burst (default) | Default |
++------+-----+--------+---------------------+---------+
+| test | 30% | 512Mi  | up to 33%           | false   |
++------+-----+--------+---------------------+---------+
+`
+	result := renderPlans(plans, renderPlansOpts{showDefaultColumn: true})
+	c.Assert(result, check.Equals, expected)
+}
