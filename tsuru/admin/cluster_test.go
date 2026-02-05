@@ -605,3 +605,144 @@ func (s *S) TestClusterClientSideFilter(c *check.C) {
 		c.Assert(clustersNames, check.DeepEquals, expectedResults[i])
 	}
 }
+
+func (s *S) TestClusterInfoInfo(c *check.C) {
+	c.Assert((&ClusterInfo{}).Info(), check.NotNil)
+}
+
+func (s *S) TestClusterInfoRun(c *check.C) {
+	var stdout, stderr bytes.Buffer
+	context := cmd.Context{
+		Stdout: &stdout,
+		Stderr: &stderr,
+		Args:   []string{"c1"},
+	}
+	cluster := tsuru.Cluster{
+		Name:        "c1",
+		Addresses:   []string{"addr1", "addr2"},
+		Cacert:      []byte("cacert"),
+		Clientcert:  []byte("clientcert"),
+		Clientkey:   []byte("clientkey"),
+		CustomData:  map[string]string{"namespace": "ns1", "token": "abc123"},
+		Pools:       []string{"p1", "p2"},
+		Default:     false,
+		Provisioner: "kubernetes",
+	}
+	data, err := json.Marshal(cluster)
+	c.Assert(err, check.IsNil)
+	trans := &cmdtest.ConditionalTransport{
+		Transport: cmdtest.Transport{Message: string(data), Status: http.StatusOK},
+		CondFunc: func(req *http.Request) bool {
+			c.Assert(req.URL.Path, check.Equals, "/1.8/provisioner/clusters/c1")
+			c.Assert(req.Method, check.Equals, http.MethodGet)
+			return true
+		},
+	}
+	s.setupFakeTransport(trans)
+	myCmd := ClusterInfo{}
+	err = myCmd.Run(&context)
+	c.Assert(err, check.IsNil)
+	c.Assert(stdout.String(), check.Equals, `Name:         c1
+Provisioner:  kubernetes
+Addresses:    addr1, addr2
+Default:      false
+Pools:        p1
+              p2
+
+Custom Data:
++-----------+--------+
+| Key       | Value  |
++-----------+--------+
+| namespace | ns1    |
+| token     | abc123 |
++-----------+--------+
+`)
+}
+
+func (s *S) TestClusterInfoRunDefault(c *check.C) {
+	var stdout, stderr bytes.Buffer
+	context := cmd.Context{
+		Stdout: &stdout,
+		Stderr: &stderr,
+		Args:   []string{"c1"},
+	}
+	cluster := tsuru.Cluster{
+		Name:        "c1",
+		Addresses:   []string{"addr1"},
+		Default:     true,
+		Provisioner: "kubernetes",
+	}
+	data, err := json.Marshal(cluster)
+	c.Assert(err, check.IsNil)
+	trans := &cmdtest.ConditionalTransport{
+		Transport: cmdtest.Transport{Message: string(data), Status: http.StatusOK},
+		CondFunc: func(req *http.Request) bool {
+			return true
+		},
+	}
+	s.setupFakeTransport(trans)
+	myCmd := ClusterInfo{}
+	err = myCmd.Run(&context)
+	c.Assert(err, check.IsNil)
+	c.Assert(stdout.String(), check.Equals, `Name:         c1
+Provisioner:  kubernetes
+Addresses:    addr1
+Default:      true
+`)
+}
+
+func (s *S) TestClusterInfoRunNoContent(c *check.C) {
+	var stdout, stderr bytes.Buffer
+	context := cmd.Context{
+		Stdout: &stdout,
+		Stderr: &stderr,
+		Args:   []string{"c1"},
+	}
+	trans := &cmdtest.ConditionalTransport{
+		Transport: cmdtest.Transport{Message: "", Status: http.StatusNoContent},
+		CondFunc: func(req *http.Request) bool {
+			return true
+		},
+	}
+	s.setupFakeTransport(trans)
+	myCmd := ClusterInfo{}
+	err := myCmd.Run(&context)
+	c.Assert(err, check.IsNil)
+	c.Assert(stdout.String(), check.Equals, "")
+}
+
+func (s *S) TestClusterInfoRunJSON(c *check.C) {
+	var stdout, stderr bytes.Buffer
+	context := cmd.Context{
+		Stdout: &stdout,
+		Stderr: &stderr,
+		Args:   []string{"c1"},
+	}
+	cluster := tsuru.Cluster{
+		Name:        "c1",
+		Addresses:   []string{"addr1", "addr2"},
+		CustomData:  map[string]string{"namespace": "ns1"},
+		Pools:       []string{"p1", "p2"},
+		Default:     false,
+		Provisioner: "kubernetes",
+	}
+	data, err := json.Marshal(cluster)
+	c.Assert(err, check.IsNil)
+	trans := &cmdtest.ConditionalTransport{
+		Transport: cmdtest.Transport{Message: string(data), Status: http.StatusOK},
+		CondFunc: func(req *http.Request) bool {
+			return true
+		},
+	}
+	s.setupFakeTransport(trans)
+	myCmd := ClusterInfo{}
+	myCmd.Flags().Parse([]string{"--json"})
+	err = myCmd.Run(&context)
+	c.Assert(err, check.IsNil)
+	var result tsuru.Cluster
+	err = json.Unmarshal(stdout.Bytes(), &result)
+	c.Assert(err, check.IsNil)
+	c.Assert(result.Name, check.Equals, "c1")
+	c.Assert(result.Provisioner, check.Equals, "kubernetes")
+	c.Assert(result.Addresses, check.DeepEquals, []string{"addr1", "addr2"})
+}

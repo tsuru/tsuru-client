@@ -6,8 +6,10 @@ package client
 
 import (
 	"bytes"
+	"encoding/json"
 	"net/http"
 
+	"github.com/tsuru/go-tsuruclient/pkg/tsuru"
 	"github.com/tsuru/tsuru-client/tsuru/cmd"
 	"github.com/tsuru/tsuru-client/tsuru/cmd/cmdtest"
 	"gopkg.in/check.v1"
@@ -59,4 +61,189 @@ func (s *S) TestPoolListRunNoContent(c *check.C) {
 `
 	c.Assert(err, check.IsNil)
 	c.Assert(stdout.String(), check.Equals, expected)
+}
+
+func (s *S) TestPoolInfoInfo(c *check.C) {
+	c.Assert((&PoolInfo{}).Info(), check.NotNil)
+}
+
+func (s *S) TestPoolInfoRun(c *check.C) {
+	var stdout, stderr bytes.Buffer
+	ctx := cmd.Context{
+		Stdout: &stdout,
+		Stderr: &stderr,
+		Args:   []string{"pool1"},
+	}
+	pool := tsuru.Pool{
+		Name:        "pool1",
+		Provisioner: "kubernetes",
+		Public:      false,
+		Default:     false,
+		Teams:       []string{"team1", "team2"},
+		Allowed: map[string][]string{
+			"router":  {"router1", "router2"},
+			"service": {"service1"},
+		},
+		Labels: map[string]string{
+			"env":    "production",
+			"region": "us-east-1",
+		},
+	}
+	data, err := json.Marshal(pool)
+	c.Assert(err, check.IsNil)
+	trans := &cmdtest.ConditionalTransport{
+		Transport: cmdtest.Transport{Message: string(data), Status: http.StatusOK},
+		CondFunc: func(req *http.Request) bool {
+			c.Assert(req.URL.Path, check.Equals, "/pools/pool1")
+			c.Assert(req.Method, check.Equals, http.MethodGet)
+			return true
+		},
+	}
+	s.setupFakeTransport(trans)
+	command := PoolInfo{}
+	err = command.Run(&ctx)
+	c.Assert(err, check.IsNil)
+	c.Assert(stdout.String(), check.Equals, `Name:         pool1
+Provisioner:  kubernetes
+Teams:        team1
+              team2
+
+Allowed:
++---------+----------+
+| Type    | Value    |
++---------+----------+
+| router  | router1  |
+|         | router2  |
++---------+----------+
+| service | service1 |
++---------+----------+
+
+Labels:
++--------+------------+
+| Key    | Value      |
++--------+------------+
+| env    | production |
+| region | us-east-1  |
++--------+------------+
+`)
+}
+
+func (s *S) TestPoolInfoRunPublic(c *check.C) {
+	var stdout, stderr bytes.Buffer
+	ctx := cmd.Context{
+		Stdout: &stdout,
+		Stderr: &stderr,
+		Args:   []string{"pool1"},
+	}
+	pool := tsuru.Pool{
+		Name:        "pool1",
+		Provisioner: "",
+		Public:      true,
+		Default:     false,
+	}
+	data, err := json.Marshal(pool)
+	c.Assert(err, check.IsNil)
+	trans := &cmdtest.ConditionalTransport{
+		Transport: cmdtest.Transport{Message: string(data), Status: http.StatusOK},
+		CondFunc: func(req *http.Request) bool {
+			return true
+		},
+	}
+	s.setupFakeTransport(trans)
+	command := PoolInfo{}
+	err = command.Run(&ctx)
+	c.Assert(err, check.IsNil)
+	c.Assert(stdout.String(), check.Equals, `Name:         pool1
+Kind:         public
+Provisioner:  default
+`)
+}
+
+func (s *S) TestPoolInfoRunDefault(c *check.C) {
+	var stdout, stderr bytes.Buffer
+	ctx := cmd.Context{
+		Stdout: &stdout,
+		Stderr: &stderr,
+		Args:   []string{"pool1"},
+	}
+	pool := tsuru.Pool{
+		Name:        "pool1",
+		Provisioner: "swarm",
+		Public:      false,
+		Default:     true,
+	}
+	data, err := json.Marshal(pool)
+	c.Assert(err, check.IsNil)
+	trans := &cmdtest.ConditionalTransport{
+		Transport: cmdtest.Transport{Message: string(data), Status: http.StatusOK},
+		CondFunc: func(req *http.Request) bool {
+			return true
+		},
+	}
+	s.setupFakeTransport(trans)
+	command := PoolInfo{}
+	err = command.Run(&ctx)
+	c.Assert(err, check.IsNil)
+	c.Assert(stdout.String(), check.Equals, `Name:         pool1
+Kind:         default
+Provisioner:  swarm
+`)
+}
+
+func (s *S) TestPoolInfoRunNoContent(c *check.C) {
+	var stdout, stderr bytes.Buffer
+	ctx := cmd.Context{
+		Stdout: &stdout,
+		Stderr: &stderr,
+		Args:   []string{"pool1"},
+	}
+	trans := &cmdtest.ConditionalTransport{
+		Transport: cmdtest.Transport{Message: "", Status: http.StatusNoContent},
+		CondFunc: func(req *http.Request) bool {
+			return true
+		},
+	}
+	s.setupFakeTransport(trans)
+	command := PoolInfo{}
+	err := command.Run(&ctx)
+	c.Assert(err, check.IsNil)
+	c.Assert(stdout.String(), check.Equals, "")
+}
+
+func (s *S) TestPoolInfoRunJSON(c *check.C) {
+	var stdout, stderr bytes.Buffer
+	ctx := cmd.Context{
+		Stdout: &stdout,
+		Stderr: &stderr,
+		Args:   []string{"pool1"},
+	}
+	pool := tsuru.Pool{
+		Name:        "pool1",
+		Provisioner: "kubernetes",
+		Public:      false,
+		Default:     false,
+		Teams:       []string{"team1", "team2"},
+		Labels: map[string]string{
+			"env": "production",
+		},
+	}
+	data, err := json.Marshal(pool)
+	c.Assert(err, check.IsNil)
+	trans := &cmdtest.ConditionalTransport{
+		Transport: cmdtest.Transport{Message: string(data), Status: http.StatusOK},
+		CondFunc: func(req *http.Request) bool {
+			return true
+		},
+	}
+	s.setupFakeTransport(trans)
+	command := PoolInfo{}
+	command.Flags().Parse([]string{"--json"})
+	err = command.Run(&ctx)
+	c.Assert(err, check.IsNil)
+	var result tsuru.Pool
+	err = json.Unmarshal(stdout.Bytes(), &result)
+	c.Assert(err, check.IsNil)
+	c.Assert(result.Name, check.Equals, "pool1")
+	c.Assert(result.Provisioner, check.Equals, "kubernetes")
+	c.Assert(result.Teams, check.DeepEquals, []string{"team1", "team2"})
 }
