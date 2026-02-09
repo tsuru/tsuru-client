@@ -222,6 +222,7 @@ Services aren’t managed by tsuru, but by their creators.`)
 
 	m.RegisterTopic("pool", "A pool is used by provisioners to allocate space within a cluster for running applications.")
 	m.Register(&client.PoolList{})
+	m.Register(&client.PoolInfo{})
 
 	m.RegisterTopic("permission", `Manage permissions.`)
 	m.Register(&client.PermissionList{})
@@ -299,6 +300,7 @@ Services aren’t managed by tsuru, but by their creators.`)
 	m.Register(&admin.ClusterUpdate{})
 	m.Register(&admin.ClusterRemove{})
 	m.Register(&admin.ClusterList{})
+	m.Register(&admin.ClusterInfo{})
 
 	m.RegisterTopic("volume", "Volumes allow applications running on tsuru to use external storage volumes mounted on their filesystem.")
 	m.Register(&client.VolumeCreate{})

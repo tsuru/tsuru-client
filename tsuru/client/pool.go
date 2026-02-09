@@ -5,11 +5,13 @@
 package client
 
 import (
+	"context"
 	"encoding/json"
 	"fmt"
 	"net/http"
 	"sort"
 	"strings"
+	"text/tabwriter"
 
 	"github.com/mitchellh/go-wordwrap"
 	"github.com/spf13/pflag"
@@ -178,4 +180,113 @@ func (PoolList) Info() *cmd.Info {
 		Usage: "pool-list",
 		Desc:  "List all pools available for deploy.",
 	}
+}
+
+type PoolInfo struct {
+	fs   *pflag.FlagSet
+	json bool
+}
+
+func (c *PoolInfo) Flags() *pflag.FlagSet {
+	if c.fs == nil {
+		c.fs = pflag.NewFlagSet("pool-info", pflag.ExitOnError)
+		c.fs.BoolVar(&c.json, standards.FlagJSON, false, "Display in JSON format")
+	}
+	return c.fs
+}
+
+func (c *PoolInfo) Info() *cmd.Info {
+	return &cmd.Info{
+		Name:    "pool-info",
+		Usage:   "<pool>",
+		Desc:    `Shows information about a specific pool.`,
+		MinArgs: 1,
+		MaxArgs: 1,
+	}
+}
+
+func (c *PoolInfo) Run(ctx *cmd.Context) error {
+	poolName := ctx.Args[0]
+	apiClient, err := tsuruHTTP.TsuruClientFromEnvironment()
+	if err != nil {
+		return err
+	}
+	pool, resp, err := apiClient.PoolApi.PoolGet(context.TODO(), poolName)
+	if resp != nil && resp.StatusCode == http.StatusNoContent {
+		return nil
+	}
+	if err != nil {
+		return err
+	}
+	defer resp.Body.Close()
+
+	if c.json {
+		return formatter.JSON(ctx.Stdout, pool)
+	}
+
+	tabWriter := tabwriter.NewWriter(ctx.Stdout, 0, 0, 2, ' ', 0)
+
+	fmt.Fprintf(tabWriter, "Name:\t%s\n", pool.Name)
+
+	kind := ""
+	if pool.Public {
+		kind = "public"
+	} else if pool.Default {
+		kind = "default"
+	}
+	if kind != "" {
+		fmt.Fprintf(tabWriter, "Kind:\t%s\n", kind)
+	}
+
+	provisioner := pool.Provisioner
+	if provisioner == "" {
+		provisioner = "default"
+	}
+	fmt.Fprintf(tabWriter, "Provisioner:\t%s\n", provisioner)
+
+	if len(pool.Teams) > 0 {
+		fmt.Fprintf(tabWriter, "Teams:")
+
+		for _, team := range pool.Teams {
+			fmt.Fprintf(tabWriter, "\t%s\n", team)
+		}
+	}
+
+	tabWriter.Flush()
+
+	if len(pool.Allowed) > 0 {
+		fmt.Fprintf(ctx.Stdout, "\nAllowed:\n")
+		allowedTable := tablecli.NewTable()
+		allowedTable.Headers = tablecli.Row{"Type", "Value"}
+		allowedTable.LineSeparator = true
+		allowedTable.TableWriterPadding = standards.SubTableWriterPadding
+		var keys []string
+		for k := range pool.Allowed {
+			keys = append(keys, k)
+		}
+		sort.Strings(keys)
+		for _, k := range keys {
+			values := pool.Allowed[k]
+			allowedTable.AddRow(tablecli.Row{k, strings.Join(values, "\n")})
+		}
+		fmt.Fprint(ctx.Stdout, allowedTable.String())
+	}
+
+	if len(pool.Labels) > 0 {
+		fmt.Fprintf(ctx.Stdout, "\nLabels:\n")
+		labelsTable := tablecli.NewTable()
+		labelsTable.Headers = tablecli.Row{"Key", "Value"}
+		labelsTable.TableWriterPadding = standards.SubTableWriterPadding
+		var keys []string
+		for k := range pool.Labels {
+			keys = append(keys, k)
+		}
+		sort.Strings(keys)
+		for _, k := range keys {
+			labelsTable.AddRow(tablecli.Row{k, pool.Labels[k]})
+		}
+		fmt.Fprint(ctx.Stdout, labelsTable.String())
+	}
+
+	return nil
 }
