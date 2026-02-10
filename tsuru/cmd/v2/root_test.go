@@ -10,10 +10,12 @@ import (
 	"strings"
 	"testing"
 
+	"github.com/fatih/color"
 	"github.com/spf13/cobra"
 	"github.com/spf13/viper"
 	"github.com/stretchr/testify/assert"
 	"github.com/tsuru/go-tsuruclient/pkg/config"
+	"github.com/tsuru/tablecli"
 	_ "gopkg.in/check.v1" // register -check.v flag for compatibility with make test
 )
 
@@ -354,6 +356,10 @@ func TestColorStream(t *testing.T) {
 		os.Setenv("TSURU_COLOR_STREAM", "true")
 		os.Unsetenv("TSURU_DISABLE_COLORS")
 
+		originalIsModernTerminal := IsModernTerminal
+		defer func() { IsModernTerminal = originalIsModernTerminal }()
+		IsModernTerminal = true
+
 		if runtime.GOOS == "windows" {
 			// On Windows, WT_SESSION must be set to avoid colorDisabled() returning true
 			defer saveEnv("WT_SESSION")()
@@ -371,5 +377,276 @@ func TestColorStream(t *testing.T) {
 		os.Setenv("TSURU_DISABLE_COLORS", "true")
 
 		assert.False(t, ColorStream())
+	})
+
+	t.Run("returns_false_when_not_modern_terminal", func(t *testing.T) {
+		defer saveEnv("TSURU_COLOR_STREAM")()
+		defer saveEnv("TSURU_DISABLE_COLORS")()
+
+		os.Setenv("TSURU_COLOR_STREAM", "true")
+		os.Unsetenv("TSURU_DISABLE_COLORS")
+
+		originalIsModernTerminal := IsModernTerminal
+		defer func() { IsModernTerminal = originalIsModernTerminal }()
+		IsModernTerminal = false
+
+		assert.False(t, ColorStream())
+	})
+}
+
+func TestIsDarkBackground(t *testing.T) {
+	saveEnv := func(name string) func() {
+		if oldVal, ok := os.LookupEnv(name); ok {
+			return func() { os.Setenv(name, oldVal) }
+		}
+		return func() { os.Unsetenv(name) }
+	}
+
+	t.Run("returns_true_when_COLORFGBG_not_set", func(t *testing.T) {
+		defer saveEnv("COLORFGBG")()
+		os.Unsetenv("COLORFGBG")
+
+		assert.True(t, isDarkBackground())
+	})
+
+	t.Run("returns_true_when_background_is_dark", func(t *testing.T) {
+		defer saveEnv("COLORFGBG")()
+		os.Setenv("COLORFGBG", "15;0")
+
+		assert.True(t, isDarkBackground())
+	})
+
+	t.Run("returns_false_when_background_is_light", func(t *testing.T) {
+		defer saveEnv("COLORFGBG")()
+		os.Setenv("COLORFGBG", "0;15")
+
+		assert.False(t, isDarkBackground())
+	})
+
+	t.Run("returns_true_when_background_value_is_invalid", func(t *testing.T) {
+		defer saveEnv("COLORFGBG")()
+		os.Setenv("COLORFGBG", "invalid")
+
+		assert.True(t, isDarkBackground())
+	})
+
+	t.Run("uses_last_part_as_background", func(t *testing.T) {
+		defer saveEnv("COLORFGBG")()
+		os.Setenv("COLORFGBG", "15;8;12")
+
+		assert.False(t, isDarkBackground())
+	})
+
+	t.Run("boundary_value_7_is_dark", func(t *testing.T) {
+		defer saveEnv("COLORFGBG")()
+		os.Setenv("COLORFGBG", "15;7")
+
+		assert.True(t, isDarkBackground())
+	})
+
+	t.Run("boundary_value_8_is_light", func(t *testing.T) {
+		defer saveEnv("COLORFGBG")()
+		os.Setenv("COLORFGBG", "15;8")
+
+		assert.False(t, isDarkBackground())
+	})
+}
+
+func TestColorDisabled(t *testing.T) {
+	saveEnv := func(name string) func() {
+		if oldVal, ok := os.LookupEnv(name); ok {
+			return func() { os.Setenv(name, oldVal) }
+		}
+		return func() { os.Unsetenv(name) }
+	}
+
+	t.Run("returns_true_when_NO_COLOR_is_set", func(t *testing.T) {
+		defer saveEnv("NO_COLOR")()
+		os.Setenv("NO_COLOR", "")
+
+		vip := viper.New()
+		assert.True(t, colorDisabled(vip))
+	})
+
+	t.Run("returns_true_when_not_modern_terminal", func(t *testing.T) {
+		defer saveEnv("NO_COLOR")()
+		os.Unsetenv("NO_COLOR")
+
+		originalIsModernTerminal := IsModernTerminal
+		defer func() { IsModernTerminal = originalIsModernTerminal }()
+		IsModernTerminal = false
+
+		vip := viper.New()
+		assert.True(t, colorDisabled(vip))
+	})
+
+	t.Run("returns_false_when_modern_terminal_and_no_disable", func(t *testing.T) {
+		defer saveEnv("NO_COLOR")()
+		os.Unsetenv("NO_COLOR")
+
+		originalIsModernTerminal := IsModernTerminal
+		defer func() { IsModernTerminal = originalIsModernTerminal }()
+		IsModernTerminal = true
+
+		vip := viper.New()
+		assert.False(t, colorDisabled(vip))
+	})
+
+	t.Run("returns_true_when_viper_disable_colors_set", func(t *testing.T) {
+		defer saveEnv("NO_COLOR")()
+		os.Unsetenv("NO_COLOR")
+
+		originalIsModernTerminal := IsModernTerminal
+		defer func() { IsModernTerminal = originalIsModernTerminal }()
+		IsModernTerminal = true
+
+		vip := viper.New()
+		vip.Set("disable-colors", true)
+		assert.True(t, colorDisabled(vip))
+	})
+}
+
+func TestPreSetupViperUTF8Borders(t *testing.T) {
+	saveEnv := func(name string) func() {
+		if oldVal, ok := os.LookupEnv(name); ok {
+			return func() { os.Setenv(name, oldVal) }
+		}
+		return func() { os.Unsetenv(name) }
+	}
+
+	saveTableConfig := tablecli.TableConfig
+	defer func() { tablecli.TableConfig = saveTableConfig }()
+
+	t.Run("defaults_to_isModernTerminal_result", func(t *testing.T) {
+		defer saveEnv("NO_COLOR")()
+		os.Setenv("NO_COLOR", "1")
+
+		vip := viper.New()
+		preSetupViper(vip)
+
+		// isModernTerminal() is called at config time, its result determines the default
+		assert.Equal(t, isModernTerminal(), tablecli.TableConfig.UseUTF8Borders)
+	})
+
+	t.Run("overridden_by_utf8_borders_config", func(t *testing.T) {
+		defer saveEnv("NO_COLOR")()
+		os.Setenv("NO_COLOR", "1")
+
+		vip := viper.New()
+		vip.Set("utf8-borders", false)
+		preSetupViper(vip)
+
+		assert.False(t, tablecli.TableConfig.UseUTF8Borders)
+	})
+
+	t.Run("enabled_by_utf8_borders_config", func(t *testing.T) {
+		defer saveEnv("NO_COLOR")()
+		os.Setenv("NO_COLOR", "1")
+
+		vip := viper.New()
+		vip.Set("utf8-borders", true)
+		preSetupViper(vip)
+
+		assert.True(t, tablecli.TableConfig.UseUTF8Borders)
+	})
+}
+
+func TestPreSetupViperTableColor(t *testing.T) {
+	saveEnv := func(name string) func() {
+		if oldVal, ok := os.LookupEnv(name); ok {
+			return func() { os.Setenv(name, oldVal) }
+		}
+		return func() { os.Unsetenv(name) }
+	}
+
+	saveTableConfig := tablecli.TableConfig
+	defer func() { tablecli.TableConfig = saveTableConfig }()
+
+	t.Run("sets_border_color_func_when_colors_enabled", func(t *testing.T) {
+		defer saveEnv("NO_COLOR")()
+		os.Unsetenv("NO_COLOR")
+
+		originalIsModernTerminal := IsModernTerminal
+		defer func() { IsModernTerminal = originalIsModernTerminal }()
+		IsModernTerminal = true
+
+		tablecli.TableConfig.BorderColorFunc = nil
+
+		vip := viper.New()
+		preSetupViper(vip)
+
+		assert.NotNil(t, tablecli.TableConfig.BorderColorFunc)
+	})
+
+	t.Run("no_border_color_func_when_colors_disabled", func(t *testing.T) {
+		defer saveEnv("NO_COLOR")()
+		os.Setenv("NO_COLOR", "1")
+
+		tablecli.TableConfig.BorderColorFunc = nil
+
+		vip := viper.New()
+		preSetupViper(vip)
+
+		assert.Nil(t, tablecli.TableConfig.BorderColorFunc)
+	})
+
+	t.Run("uses_custom_table_color_from_config", func(t *testing.T) {
+		defer saveEnv("NO_COLOR")()
+		os.Unsetenv("NO_COLOR")
+
+		originalIsModernTerminal := IsModernTerminal
+		defer func() { IsModernTerminal = originalIsModernTerminal }()
+		IsModernTerminal = true
+
+		tablecli.TableConfig.BorderColorFunc = nil
+
+		vip := viper.New()
+		vip.Set("table-color", "cyan")
+		preSetupViper(vip)
+
+		assert.NotNil(t, tablecli.TableConfig.BorderColorFunc)
+		// Verify the color func applies the expected color
+		result := tablecli.TableConfig.BorderColorFunc("test")
+		expected := color.New(color.FgCyan).Sprint("test")
+		assert.Equal(t, expected, result)
+	})
+
+	t.Run("uses_hi_black_for_dark_background", func(t *testing.T) {
+		defer saveEnv("NO_COLOR")()
+		defer saveEnv("COLORFGBG")()
+		os.Unsetenv("NO_COLOR")
+		os.Setenv("COLORFGBG", "15;0") // dark background
+
+		originalIsModernTerminal := IsModernTerminal
+		defer func() { IsModernTerminal = originalIsModernTerminal }()
+		IsModernTerminal = true
+
+		tablecli.TableConfig.BorderColorFunc = nil
+
+		vip := viper.New()
+		preSetupViper(vip)
+
+		assert.NotNil(t, tablecli.TableConfig.BorderColorFunc)
+		result := tablecli.TableConfig.BorderColorFunc("test")
+		expected := color.New(color.FgHiBlack).Sprint("test")
+		assert.Equal(t, expected, result)
+	})
+
+	t.Run("uses_hi_white_for_light_background", func(t *testing.T) {
+		defer saveEnv("NO_COLOR")()
+		defer saveEnv("COLORFGBG")()
+		os.Unsetenv("NO_COLOR")
+		os.Setenv("COLORFGBG", "0;15") // light background
+
+		originalIsModernTerminal := IsModernTerminal
+		defer func() { IsModernTerminal = originalIsModernTerminal }()
+		IsModernTerminal = true
+
+		tablecli.TableConfig.BorderColorFunc = nil
+
+		vip := viper.New()
+		preSetupViper(vip)
+
+		assert.Nil(t, tablecli.TableConfig.BorderColorFunc)
 	})
 }
