@@ -173,7 +173,7 @@ func (c *AppQuotaChange) Run(context *cmd.Context) error {
 	if err != nil {
 		return err
 	}
-	limit, err := parseLimit(c.Flags().Arg(0))
+	limit, err := parseLimit(context.Args[0])
 	if err != nil {
 		return err
 	}

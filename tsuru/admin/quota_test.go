@@ -186,6 +186,7 @@ func (s *S) TestAppQuotaChangeRun(c *check.C) {
 	context := cmd.Context{
 		Stdout: &stdout,
 		Stderr: &stderr,
+		Args:   []string{"5"},
 	}
 	trans := cmdtest.ConditionalTransport{
 		Transport: cmdtest.Transport{Message: "", Status: http.StatusOK},
@@ -200,7 +201,7 @@ func (s *S) TestAppQuotaChangeRun(c *check.C) {
 	}
 	s.setupFakeTransport(&trans)
 	command := AppQuotaChange{}
-	command.Flags().Parse([]string{"--app", "myapp", "5"})
+	command.Flags().Parse([]string{"--app", "myapp"})
 	err := command.Run(&context)
 	c.Assert(err, check.IsNil)
 	c.Assert(stdout.String(), check.Equals, "Quota successfully updated.\n")
@@ -213,6 +214,7 @@ func (s *S) TestAppQuotaChangeRunUnlimited(c *check.C) {
 	context := cmd.Context{
 		Stdout: &stdout,
 		Stderr: &stderr,
+		Args:   []string{"unlimited"},
 	}
 	trans := cmdtest.ConditionalTransport{
 		Transport: cmdtest.Transport{Message: "", Status: http.StatusOK},
@@ -227,7 +229,7 @@ func (s *S) TestAppQuotaChangeRunUnlimited(c *check.C) {
 	}
 	s.setupFakeTransport(&trans)
 	command := AppQuotaChange{}
-	command.Flags().Parse([]string{"--app", "myapp", "unlimited"})
+	command.Flags().Parse([]string{"--app", "myapp"})
 	err := command.Run(&context)
 	c.Assert(err, check.IsNil)
 	c.Assert(stdout.String(), check.Equals, "Quota successfully updated.\n")
@@ -235,9 +237,11 @@ func (s *S) TestAppQuotaChangeRunUnlimited(c *check.C) {
 }
 
 func (s *S) TestAppQuotaChangeRunInvalidLimit(c *check.C) {
-	context := cmd.Context{}
+	context := cmd.Context{
+		Args: []string{"unlimiteddd"},
+	}
 	command := AppQuotaChange{}
-	command.Flags().Parse([]string{"-a", "myapp", "unlimiteddd"})
+	command.Flags().Parse([]string{"-a", "myapp"})
 	err := command.Run(&context)
 	c.Assert(err, check.NotNil)
 	c.Assert(err.Error(), check.Equals, `invalid limit. It must be either an integer or "unlimited"`)
@@ -252,10 +256,11 @@ func (s *S) TestAppQuotaChangeFailure(c *check.C) {
 	context := cmd.Context{
 		Stdout: &stdout,
 		Stderr: &stderr,
+		Args:   []string{"5"},
 	}
 	s.setupFakeTransport(trans)
 	command := AppQuotaChange{}
-	command.Flags().Parse([]string{"-a", "myapp", "5"})
+	command.Flags().Parse([]string{"-a", "myapp"})
 	err := command.Run(&context)
 	c.Assert(err, check.NotNil)
 	c.Assert(tsuruHTTP.UnwrapErr(err).Error(), check.Equals, "app not found")

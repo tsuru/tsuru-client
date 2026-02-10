@@ -562,13 +562,16 @@ func TestPreSetupViperTableColor(t *testing.T) {
 	saveTableConfig := tablecli.TableConfig
 	defer func() { tablecli.TableConfig = saveTableConfig }()
 
+	originalIsModernTerminal := IsModernTerminal
+	defer func() { IsModernTerminal = originalIsModernTerminal }()
+	IsModernTerminal = true
+
+	defer saveEnv("COLORFGBG")()
+	os.Unsetenv("COLORFGBG")
+
 	t.Run("sets_border_color_func_when_colors_enabled", func(t *testing.T) {
 		defer saveEnv("NO_COLOR")()
 		os.Unsetenv("NO_COLOR")
-
-		originalIsModernTerminal := IsModernTerminal
-		defer func() { IsModernTerminal = originalIsModernTerminal }()
-		IsModernTerminal = true
 
 		tablecli.TableConfig.BorderColorFunc = nil
 
