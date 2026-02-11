@@ -533,7 +533,7 @@ func TestPreSetupViperUTF8Borders(t *testing.T) {
 		os.Setenv("NO_COLOR", "1")
 
 		vip := viper.New()
-		vip.Set("utf8-borders", false)
+		vip.Set("table-utf8", false)
 		preSetupViper(vip)
 
 		assert.False(t, tablecli.TableConfig.UseUTF8Borders)
@@ -544,7 +544,7 @@ func TestPreSetupViperUTF8Borders(t *testing.T) {
 		os.Setenv("NO_COLOR", "1")
 
 		vip := viper.New()
-		vip.Set("utf8-borders", true)
+		vip.Set("table-utf8", true)
 		preSetupViper(vip)
 
 		assert.True(t, tablecli.TableConfig.UseUTF8Borders)

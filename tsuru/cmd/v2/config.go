@@ -106,7 +106,7 @@ func preSetupViper(vip *viper.Viper) *viper.Viper {
 	tablecli.TableConfig.TabWriterTruncate = vip.GetBool("tab-writer-truncate")
 	tablecli.TableConfig.UseUTF8Borders = isModernTerminal()
 
-	key := "utf8-borders"
+	key := "table-utf8"
 	if vip.IsSet(key) {
 		tablecli.TableConfig.UseUTF8Borders = vip.GetBool(key)
 	}
