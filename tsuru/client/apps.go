@@ -22,6 +22,7 @@ import (
 	"time"
 
 	"github.com/cezarsa/form"
+	"github.com/fatih/color"
 	"github.com/lnquy/cron"
 	"github.com/spf13/pflag"
 	"github.com/tsuru/go-tsuruclient/pkg/config"
@@ -1469,41 +1470,110 @@ func (c *AppList) Show(result []byte, context *cmd.Context) error {
 	if c.json {
 		return formatter.JSON(context.Stdout, apps)
 	}
-	table.Headers = tablecli.Row([]string{"Application", "Units", "Address"})
-	for _, app := range apps {
-		var summary string
-		if app.Error == "" {
-			unitsStatus := make(map[string]int)
-			for _, unit := range app.Units {
-				if unit.ID != "" {
-					if unit.Ready != nil && *unit.Ready {
-						unitsStatus["ready"]++
-					} else if unit.StatusReason != "" {
-						unitsStatus[unit.Status.String()+" ("+unit.StatusReason+")"]++
-					} else {
-						unitsStatus[unit.Status.String()]++
-					}
-				}
-			}
-			statusText := make([]string, len(unitsStatus))
-			i := 0
-			us := newUnitSorter(unitsStatus)
-			sort.Sort(us)
-			for _, status := range us.Statuses {
-				statusText[i] = fmt.Sprintf("%d %s", unitsStatus[status], status)
-				i++
-			}
-			summary = strings.Join(statusText, "\n")
-		} else {
-			summary = "error fetching units: " + app.Error
+
+	if tablecli.TableConfig.UseTabWriter {
+		table.Headers = tablecli.Row([]string{"Application", "Ready", "Reason"})
+		for _, app := range apps {
+			stats := collectUnitStats(&app, false)
+			ready := appListReadyUnitsSummary(stats)
+			summary := appListCompactSummary(&app, stats)
+			table.AddRow([]string{app.Name, ready, summary})
 		}
-		addrs := strings.ReplaceAll(AppResumeAddr(&app), ", ", "\n")
-		table.AddRow(tablecli.Row([]string{app.Name, summary, addrs}))
+	} else {
+		table.Headers = tablecli.Row([]string{"Application", "Units", "Address"})
+		for _, app := range apps {
+			summary := appListSummary(&app)
+			addrs := strings.ReplaceAll(AppResumeAddr(&app), ", ", "\n")
+			row := []string{app.Name, summary, addrs}
+
+			table.AddRow(row)
+		}
 	}
 	table.LineSeparator = true
 	table.Sort()
 	context.Stdout.Write(table.Bytes())
 	return nil
+}
+
+type unitStats struct {
+	totalUnits      int
+	unitsWithErrors int
+	readyUnits      int
+	unitsStatus     map[string]int
+}
+
+func collectUnitStats(app *appTypes.AppResume, includeReady bool) unitStats {
+	stats := unitStats{unitsStatus: make(map[string]int)}
+	for _, unit := range app.Units {
+		if unit.ID == "" {
+			continue
+		}
+		stats.totalUnits++
+		if unit.Status == provTypes.UnitStatusError {
+			stats.unitsWithErrors++
+		}
+		if unit.Ready != nil && *unit.Ready {
+			stats.readyUnits++
+			if includeReady {
+				stats.unitsStatus["ready"]++
+			}
+		} else if unit.StatusReason != "" {
+			stats.unitsStatus[unit.Status.String()+" ("+unit.StatusReason+")"]++
+		} else {
+			stats.unitsStatus[unit.Status.String()]++
+		}
+	}
+	return stats
+}
+
+func (s unitStats) errorColor() color.Attribute {
+	if s.unitsWithErrors == s.totalUnits && s.totalUnits > 0 {
+		return color.FgRed
+	}
+	if s.unitsWithErrors > 0 {
+		return color.FgYellow
+	}
+	return 0
+}
+
+func colorSprint(attr color.Attribute, text string) string {
+	if attr == 0 {
+		return text
+	}
+	return color.New(attr).Sprint(text)
+}
+
+func formatUnitStatuses(unitsStatus map[string]int, c color.Attribute, separator string) string {
+	statusText := make([]string, 0, len(unitsStatus))
+	us := newUnitSorter(unitsStatus)
+	sort.Sort(us)
+	for _, status := range us.Statuses {
+		text := fmt.Sprintf("%d %s", unitsStatus[status], status)
+		if status == "error" || strings.HasPrefix(status, "error (") {
+			text = colorSprint(c, text)
+		}
+		statusText = append(statusText, text)
+	}
+	return strings.Join(statusText, separator)
+}
+
+func appListSummary(app *appTypes.AppResume) string {
+	if app.Error != "" {
+		return color.RedString("error fetching units: " + app.Error)
+	}
+	stats := collectUnitStats(app, true)
+	return formatUnitStatuses(stats.unitsStatus, stats.errorColor(), "\n")
+}
+
+func appListReadyUnitsSummary(stats unitStats) string {
+	return colorSprint(stats.errorColor(), fmt.Sprintf("%d/%d", stats.readyUnits, stats.totalUnits))
+}
+
+func appListCompactSummary(app *appTypes.AppResume, stats unitStats) string {
+	if app.Error != "" {
+		return color.RedString("error fetching units: " + app.Error)
+	}
+	return formatUnitStatuses(stats.unitsStatus, stats.errorColor(), ", ")
 }
 
 func (c *AppList) Flags() *pflag.FlagSet {

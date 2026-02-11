@@ -14,10 +14,12 @@ import (
 	"strings"
 	"time"
 
+	"github.com/fatih/color"
 	"github.com/spf13/pflag"
 	"github.com/tsuru/tsuru-client/tsuru/cmd"
 	"github.com/tsuru/tsuru-client/tsuru/cmd/cmdtest"
 	tsuruIo "github.com/tsuru/tsuru/io"
+	appTypes "github.com/tsuru/tsuru/types/app"
 	provTypes "github.com/tsuru/tsuru/types/provision"
 	check "gopkg.in/check.v1"
 )
@@ -2784,6 +2786,221 @@ func (s *S) TestAppListInfo(c *check.C) {
 
 func (s *S) TestAppListIsACommand(c *check.C) {
 	var _ cmd.Command = &AppList{}
+}
+
+func boolPtr(b bool) *bool {
+	return &b
+}
+
+func (s *S) TestAppListSummaryErrorFetchingUnitsColored(c *check.C) {
+	color.NoColor = false
+	defer func() { color.NoColor = true }()
+	app := &appTypes.AppResume{
+		Name:  "myapp",
+		Error: "timeout",
+	}
+	result := appListSummary(app)
+	c.Assert(result, check.Equals, "\x1b[31merror fetching units: timeout\x1b[0m")
+}
+
+func (s *S) TestAppListSummaryNoUnits(c *check.C) {
+	app := &appTypes.AppResume{
+		Name:  "myapp",
+		Units: []provTypes.Unit{},
+	}
+	result := appListSummary(app)
+	c.Assert(result, check.Equals, "")
+}
+
+func (s *S) TestAppListSummarySkipsUnitsWithoutID(c *check.C) {
+	app := &appTypes.AppResume{
+		Name: "myapp",
+		Units: []provTypes.Unit{
+			{ID: "", Status: provTypes.UnitStatusStarted},
+			{ID: "unit1", Status: provTypes.UnitStatusStarted},
+		},
+	}
+	result := appListSummary(app)
+	c.Assert(result, check.Equals, "1 started")
+}
+
+func (s *S) TestAppListSummaryReadyUnits(c *check.C) {
+	app := &appTypes.AppResume{
+		Name: "myapp",
+		Units: []provTypes.Unit{
+			{ID: "unit1", Status: provTypes.UnitStatusStarted, Ready: boolPtr(true)},
+			{ID: "unit2", Status: provTypes.UnitStatusStarted, Ready: boolPtr(true)},
+		},
+	}
+	result := appListSummary(app)
+	c.Assert(result, check.Equals, "2 ready")
+}
+
+func (s *S) TestAppListSummaryUnitWithStatusReasonColored(c *check.C) {
+	color.NoColor = false
+	defer func() { color.NoColor = true }()
+	app := &appTypes.AppResume{
+		Name: "myapp",
+		Units: []provTypes.Unit{
+			{ID: "unit1", Status: provTypes.UnitStatusError, StatusReason: "CrashLoopBackOff"},
+		},
+	}
+	result := appListSummary(app)
+	c.Assert(result, check.Equals, "\x1b[31m1 error (CrashLoopBackOff)\x1b[0m")
+}
+
+func (s *S) TestAppListSummaryAllUnitsErrorRedColored(c *check.C) {
+	color.NoColor = false
+	defer func() { color.NoColor = true }()
+	app := &appTypes.AppResume{
+		Name: "myapp",
+		Units: []provTypes.Unit{
+			{ID: "unit1", Status: provTypes.UnitStatusError},
+			{ID: "unit2", Status: provTypes.UnitStatusError},
+		},
+	}
+	result := appListSummary(app)
+	c.Assert(result, check.Equals, "\x1b[31m2 error\x1b[0m")
+}
+
+func (s *S) TestAppListSummarySomeUnitsErrorYellowColored(c *check.C) {
+	color.NoColor = false
+	defer func() { color.NoColor = true }()
+	app := &appTypes.AppResume{
+		Name: "myapp",
+		Units: []provTypes.Unit{
+			{ID: "unit1", Status: provTypes.UnitStatusStarted, Ready: boolPtr(true)},
+			{ID: "unit2", Status: provTypes.UnitStatusError},
+		},
+	}
+	result := appListSummary(app)
+	c.Assert(result, check.Equals, "\x1b[33m1 error\x1b[0m\n1 ready")
+}
+
+func (s *S) TestAppListSummaryMixedStatusesSortedByCount(c *check.C) {
+	app := &appTypes.AppResume{
+		Name: "myapp",
+		Units: []provTypes.Unit{
+			{ID: "unit1", Status: provTypes.UnitStatusStarting},
+			{ID: "unit2", Status: provTypes.UnitStatusStopped},
+			{ID: "unit3", Status: provTypes.UnitStatusStarted},
+			{ID: "unit4", Status: provTypes.UnitStatusStarted},
+			{ID: "unit5", Status: provTypes.UnitStatusStopped},
+			{ID: "unit6", Status: provTypes.UnitStatusStarted},
+		},
+	}
+	result := appListSummary(app)
+	c.Assert(result, check.Equals, "3 started\n2 stopped\n1 starting")
+}
+
+func (s *S) TestAppListSummaryReadyNotReady(c *check.C) {
+	app := &appTypes.AppResume{
+		Name: "myapp",
+		Units: []provTypes.Unit{
+			{ID: "unit1", Status: provTypes.UnitStatusStarted, Ready: boolPtr(true)},
+			{ID: "unit2", Status: provTypes.UnitStatusStarted, Ready: boolPtr(false)},
+		},
+	}
+	result := appListSummary(app)
+	c.Assert(result, check.Equals, "1 ready\n1 started")
+}
+
+func (s *S) TestAppListSummaryErrorWithReasonYellowColored(c *check.C) {
+	color.NoColor = false
+	defer func() { color.NoColor = true }()
+	app := &appTypes.AppResume{
+		Name: "myapp",
+		Units: []provTypes.Unit{
+			{ID: "unit1", Status: provTypes.UnitStatusStarted, Ready: boolPtr(true)},
+			{ID: "unit2", Status: provTypes.UnitStatusStarted, Ready: boolPtr(true)},
+			{ID: "unit3", Status: provTypes.UnitStatusError, StatusReason: "CrashLoopBackOff"},
+		},
+	}
+	result := appListSummary(app)
+	c.Assert(result, check.Equals, "2 ready\n\x1b[33m1 error (CrashLoopBackOff)\x1b[0m")
+}
+
+func (s *S) TestAppListSummaryNoErrorsNoColor(c *check.C) {
+	color.NoColor = false
+	defer func() { color.NoColor = true }()
+	app := &appTypes.AppResume{
+		Name: "myapp",
+		Units: []provTypes.Unit{
+			{ID: "unit1", Status: provTypes.UnitStatusStarted, Ready: boolPtr(true)},
+			{ID: "unit2", Status: provTypes.UnitStatusStarted, Ready: boolPtr(true)},
+		},
+	}
+	result := appListSummary(app)
+	c.Assert(result, check.Equals, "2 ready")
+}
+
+func (s *S) TestAppListReadyUnitsSummaryAllReady(c *check.C) {
+	app := &appTypes.AppResume{
+		Name: "myapp",
+		Units: []provTypes.Unit{
+			{ID: "unit1", Status: provTypes.UnitStatusStarted, Ready: boolPtr(true)},
+			{ID: "unit2", Status: provTypes.UnitStatusStarted, Ready: boolPtr(true)},
+		},
+	}
+	stats := collectUnitStats(app, false)
+	result := appListReadyUnitsSummary(stats)
+	c.Assert(result, check.Equals, "2/2")
+}
+
+func (s *S) TestAppListReadyUnitsSummaryWithErrorsColored(c *check.C) {
+	color.NoColor = false
+	defer func() { color.NoColor = true }()
+	app := &appTypes.AppResume{
+		Name: "myapp",
+		Units: []provTypes.Unit{
+			{ID: "unit1", Status: provTypes.UnitStatusStarted, Ready: boolPtr(true)},
+			{ID: "unit2", Status: provTypes.UnitStatusError},
+		},
+	}
+	stats := collectUnitStats(app, false)
+	result := appListReadyUnitsSummary(stats)
+	c.Assert(result, check.Equals, "\x1b[33m1/2\x1b[0m")
+}
+
+func (s *S) TestAppListReadyUnitsSummaryAllErrorsColored(c *check.C) {
+	color.NoColor = false
+	defer func() { color.NoColor = true }()
+	app := &appTypes.AppResume{
+		Name: "myapp",
+		Units: []provTypes.Unit{
+			{ID: "unit1", Status: provTypes.UnitStatusError},
+			{ID: "unit2", Status: provTypes.UnitStatusError},
+		},
+	}
+	stats := collectUnitStats(app, false)
+	result := appListReadyUnitsSummary(stats)
+	c.Assert(result, check.Equals, "\x1b[31m0/2\x1b[0m")
+}
+
+func (s *S) TestAppListCompactSummaryErrorFetchingUnits(c *check.C) {
+	color.NoColor = false
+	defer func() { color.NoColor = true }()
+	app := &appTypes.AppResume{
+		Name:  "myapp",
+		Error: "timeout",
+	}
+	stats := collectUnitStats(app, false)
+	result := appListCompactSummary(app, stats)
+	c.Assert(result, check.Equals, "\x1b[31merror fetching units: timeout\x1b[0m")
+}
+
+func (s *S) TestAppListCompactSummaryMixedStatuses(c *check.C) {
+	app := &appTypes.AppResume{
+		Name: "myapp",
+		Units: []provTypes.Unit{
+			{ID: "unit1", Status: provTypes.UnitStatusStarted},
+			{ID: "unit2", Status: provTypes.UnitStatusStarted},
+			{ID: "unit3", Status: provTypes.UnitStatusStopped},
+		},
+	}
+	stats := collectUnitStats(app, false)
+	result := appListCompactSummary(app, stats)
+	c.Assert(result, check.Equals, "2 started, 1 stopped")
 }
 
 func (s *S) TestAppRestart(c *check.C) {
