@@ -60,7 +60,22 @@ func Pager() (pager string, found bool) {
 	if !defaultViper.IsSet(key) {
 		return "", false
 	}
-	return defaultViper.GetString(key), true
+
+	value := defaultViper.Get(key)
+
+	// assumes the default behavior of using the default pager when the value is "true"
+	if value == true || value == "true" {
+		return "", false
+	}
+
+	if value == false || value == "false" {
+		return "", true
+	}
+
+	if str, ok := value.(string); ok {
+		return str, true
+	}
+	return "", false
 }
 
 func ColorStream() bool {
