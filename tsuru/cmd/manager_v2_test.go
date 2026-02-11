@@ -37,6 +37,8 @@ func TestNewManagerV2(t *testing.T) {
 	assert.NotNil(t, manager.rootCmd)
 	assert.NotNil(t, manager.tree)
 	assert.Equal(t, manager.rootCmd, manager.tree.Command)
+	assert.NotNil(t, manager.registeredCommands)
+	assert.Empty(t, manager.registeredCommands)
 }
 
 func TestManagerV2_RegisterTopic(t *testing.T) {
@@ -224,6 +226,23 @@ func TestManagerV2_Register(t *testing.T) {
 		manager.Register(cmd)
 
 		assert.Equal(t, "Deploy an application", manager.tree.Children["app"].Children["deploy"].Command.Short)
+	})
+
+	t.Run("register_returns_false_on_duplicate_registration", func(t *testing.T) {
+		manager := NewManagerV2()
+
+		cmd := &mockCommand{
+			info: &Info{
+				Name: "app-list",
+				Desc: "List all apps",
+			},
+		}
+
+		firstResult := manager.Register(cmd)
+		secondResult := manager.Register(cmd)
+
+		assert.True(t, firstResult, "First registration should return true")
+		assert.False(t, secondResult, "Duplicate registration should return false")
 	})
 }
 

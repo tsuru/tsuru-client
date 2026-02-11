@@ -158,6 +158,7 @@ Services aren’t managed by tsuru, but by their creators.`)
 	m.Register(&client.ServiceInstanceAdd{})
 	m.Register(&client.ServiceInstanceUpdate{})
 	m.Register(&client.ServiceInstanceRemove{})
+	m.Register(&client.ServiceInstanceInfo{})
 
 	m.Register(&client.ServiceInfo{})
 
@@ -357,6 +358,13 @@ Services aren’t managed by tsuru, but by their creators.`)
 	m.RegisterDeprecated(&client.MetadataUnset{}, "app-metadata-unset")
 	m.RegisterDeprecated(&client.MetadataGet{}, "app-metadata-get")
 
+	// always register plugins before than shorthands
+	// plugins have priority over shorthands when there are name conflicts
+	plugins := client.FindPlugins()
+	for _, plugin := range plugins {
+		m.Register(&client.ExecutePlugin{PluginName: plugin})
+	}
+
 	// Shorthands is a frequent command with a short name for convenience
 	// To decide which commands should have shorthands, consider:
 	// - Frequency of use
@@ -373,13 +381,6 @@ Services aren’t managed by tsuru, but by their creators.`)
 	m.RegisterHiddenShorthand(&client.AppRestart{}, "restart")
 	m.RegisterHiddenShorthand(&client.AppStart{}, "start")
 	m.RegisterHiddenShorthand(&client.AppStop{}, "stop")
-
-	m.Register(&client.ServiceInstanceInfo{})
-
-	plugins := client.FindPlugins()
-	for _, plugin := range plugins {
-		m.Register(&client.ExecutePlugin{PluginName: plugin})
-	}
 
 	return m
 }

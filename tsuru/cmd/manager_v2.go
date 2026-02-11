@@ -21,6 +21,8 @@ type ManagerV2 struct {
 	contexts    []*Context
 	retryHook   func(err error) bool
 	completions map[string]CompletionFunc
+
+	registeredCommands map[string]struct{}
 }
 
 type CompletionFunc func(toComplete string) ([]string, error)
@@ -34,8 +36,9 @@ func NewManagerV2(opts ...*ManagerV2Opts) *ManagerV2 {
 	rootCmd := v2.NewRootCmd()
 
 	m := &ManagerV2{
-		rootCmd: rootCmd,
-		tree:    v2.NewCmdNode(rootCmd),
+		rootCmd:            rootCmd,
+		tree:               v2.NewCmdNode(rootCmd),
+		registeredCommands: make(map[string]struct{}),
 	}
 
 	rootCmd.SetFlagErrorFunc(func(cmd *cobra.Command, err error) error {
@@ -106,19 +109,27 @@ func (m *ManagerV2) RegisterHiddenShorthand(command Command, shorthand string) {
 	m.Register(&ShorthandCommand{Command: command, shorthand: shorthand, hidden: true})
 }
 
-func (m *ManagerV2) Register(command Command) {
+func (m *ManagerV2) Register(command Command) bool {
 	info := command.Info()
+
+	// prevent registering the same command multiple times
+	if _, exists := m.registeredCommands[info.Name]; exists {
+		return false
+	}
+	m.registeredCommands[info.Name] = struct{}{}
 
 	// 1. Legacy way to interact on tsuru-client
 	// ex: tsuru app-deploy tsuru app-list
 	m.registerV2FQDNOnRoot(command)
 	if info.OnlyAppendOnRoot {
-		return
+		return true
 	}
 
 	// 2. New way to interact on tsuru-client
 	// ex: tsuru app deploy, tsuru app list, tsuru service instance info
 	m.registerV2SubCommand(command)
+
+	return true
 }
 
 func (m *ManagerV2) SetFlagCompletions(completions map[string]CompletionFunc) {
