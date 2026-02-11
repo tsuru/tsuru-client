@@ -140,8 +140,8 @@ var reEmailShort = regexp.MustCompile(`@.*$`)
 
 func (c *EventList) Show(evts []eventTypes.EventData, context *cmd.Context) error {
 	tbl := tablecli.NewTable()
-	tbl.LineSeparator = true
 	tbl.Headers = tablecli.Row{"ID", "Start (duration)", "Success", "Owner", "Kind", "Target"}
+	maxTargets := 0
 	for i := range evts {
 		evt := &evts[i]
 		targets := []eventTypes.Target{evt.Target}
@@ -154,6 +154,9 @@ func (c *EventList) Show(evts []eventTypes.EventData, context *cmd.Context) erro
 				t.Value = ShortID(t.Value)
 			}
 			targetsStr[i] = fmt.Sprintf("%s: %s", t.Type, t.Value)
+		}
+		if len(targetsStr) > maxTargets {
+			maxTargets = len(targetsStr)
 		}
 		owner := reEmailShort.ReplaceAllString(evt.Owner.Name, "@…")
 		var success string
@@ -187,6 +190,11 @@ func (c *EventList) Show(evts []eventTypes.EventData, context *cmd.Context) erro
 		}
 		tbl.AddRow(row)
 	}
+
+	if maxTargets > 1 {
+		tbl.LineSeparator = true
+	}
+
 	fmt.Fprintf(context.Stdout, "%s", tbl.String())
 	return nil
 }

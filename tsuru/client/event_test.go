@@ -6,12 +6,15 @@ package client
 
 import (
 	"bytes"
+	"encoding/json"
 	"fmt"
 	"net/http"
 	"os"
+	"strings"
 
 	"github.com/tsuru/tsuru-client/tsuru/cmd"
 	"github.com/tsuru/tsuru-client/tsuru/cmd/cmdtest"
+	eventTypes "github.com/tsuru/tsuru/types/event"
 	"gopkg.in/check.v1"
 )
 
@@ -534,4 +537,56 @@ func (s *S) TestEventCancel(c *check.C) {
 	err := command.Run(&context)
 	c.Assert(err, check.IsNil)
 	c.Assert(stdout.String(), check.Matches, "Cancellation successfully requested.\n")
+}
+
+func countSeparatorLines(output string) int {
+	count := 0
+	for _, line := range strings.Split(output, "\n") {
+		if strings.HasPrefix(line, "+") {
+			count++
+		}
+	}
+	return count
+}
+
+func (s *S) TestEventListShowNoLineSeparatorWhenSingleTargets(c *check.C) {
+	os.Setenv("TSURU_DISABLE_COLORS", "1")
+	defer os.Unsetenv("TSURU_DISABLE_COLORS")
+	var evts []eventTypes.EventData
+	data := fmt.Sprintf("[%s, %s]", canceledEvt, errEvt)
+	err := json.Unmarshal([]byte(data), &evts)
+	c.Assert(err, check.IsNil)
+	var stdout bytes.Buffer
+	ctx := cmd.Context{
+		Args:   []string{},
+		Stdout: &stdout,
+		Stderr: &bytes.Buffer{},
+	}
+	command := EventList{}
+	err = command.Show(evts, &ctx)
+	c.Assert(err, check.IsNil)
+	output := stdout.String()
+	// Without LineSeparator: only top + after-header + bottom = 3 separator lines
+	c.Assert(countSeparatorLines(output), check.Equals, 3)
+}
+
+func (s *S) TestEventListShowLineSeparatorWhenMultipleTargets(c *check.C) {
+	os.Setenv("TSURU_DISABLE_COLORS", "1")
+	defer os.Unsetenv("TSURU_DISABLE_COLORS")
+	var evts []eventTypes.EventData
+	data := fmt.Sprintf("[%s, %s]", okEvt, errEvt)
+	err := json.Unmarshal([]byte(data), &evts)
+	c.Assert(err, check.IsNil)
+	var stdout bytes.Buffer
+	ctx := cmd.Context{
+		Args:   []string{},
+		Stdout: &stdout,
+		Stderr: &bytes.Buffer{},
+	}
+	command := EventList{}
+	err = command.Show(evts, &ctx)
+	c.Assert(err, check.IsNil)
+	output := stdout.String()
+	// With LineSeparator and 2 data rows: top + after-header + after-row1 + after-row2 = 4 separator lines
+	c.Assert(countSeparatorLines(output), check.Equals, 4)
 }
