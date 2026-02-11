@@ -102,6 +102,10 @@ func (m *ManagerV2) RegisterShorthand(command Command, shorthand string) {
 	m.Register(&ShorthandCommand{Command: command, shorthand: shorthand})
 }
 
+func (m *ManagerV2) RegisterHiddenShorthand(command Command, shorthand string) {
+	m.Register(&ShorthandCommand{Command: command, shorthand: shorthand, hidden: true})
+}
+
 func (m *ManagerV2) Register(command Command) {
 	info := command.Info()
 
@@ -291,7 +295,7 @@ func (m *ManagerV2) registerV2FQDNOnRoot(command Command) {
 	}
 
 	m.fillCommand(newCmd, command)
-	newCmd.Hidden = !info.OnlyAppendOnRoot
+	newCmd.Hidden = info.Hidden || !info.OnlyAppendOnRoot
 	newCmd.Aliases = standards.CommonAliases[fqdn]
 	m.tree.AddChild(newCmd)
 }

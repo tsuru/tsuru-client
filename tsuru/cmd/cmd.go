@@ -93,6 +93,7 @@ func (c *DeprecatedCommand) Flags() *pflag.FlagSet {
 type ShorthandCommand struct {
 	Command
 	shorthand string
+	hidden    bool
 }
 
 func (c *ShorthandCommand) Info() *Info {
@@ -101,6 +102,7 @@ func (c *ShorthandCommand) Info() *Info {
 	info.Name = c.shorthand
 	info.GroupID = "shorthands"
 	info.OnlyAppendOnRoot = true
+	info.Hidden = c.hidden
 	return info
 }
 

@@ -368,6 +368,12 @@ Services aren’t managed by tsuru, but by their creators.`)
 	m.RegisterShorthand(&client.AppInfo{}, "info")
 	m.RegisterShorthand(&client.ShellToContainerCmd{}, "shell")
 
+	// Hidden shorthands are used just for convenience, does not included on help for not to pollute it with too many options
+	m.RegisterHiddenShorthand(&client.AppList{}, "list")
+	m.RegisterHiddenShorthand(&client.AppRestart{}, "restart")
+	m.RegisterHiddenShorthand(&client.AppStart{}, "start")
+	m.RegisterHiddenShorthand(&client.AppStop{}, "stop")
+
 	m.Register(&client.ServiceInstanceInfo{})
 
 	plugins := client.FindPlugins()

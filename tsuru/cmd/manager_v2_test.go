@@ -373,6 +373,32 @@ func TestManagerV2_registerV2FQDNOnRoot(t *testing.T) {
 		assert.True(t, found)
 	})
 
+	t.Run("register_with_info_hidden_stays_hidden_even_with_only_append_on_root", func(t *testing.T) {
+		manager := NewManagerV2()
+
+		cmd := &mockCommand{
+			info: &Info{
+				Name:             "list",
+				Desc:             "List apps",
+				OnlyAppendOnRoot: true,
+				Hidden:           true,
+				GroupID:          "shorthands",
+			},
+		}
+
+		manager.registerV2FQDNOnRoot(cmd)
+
+		rootCommands := manager.rootCmd.Commands()
+		var found bool
+		for _, c := range rootCommands {
+			if c.Use == "list" {
+				found = true
+				assert.True(t, c.Hidden) // Hidden should be true even though OnlyAppendOnRoot is true
+			}
+		}
+		assert.True(t, found)
+	})
+
 	t.Run("register_fqdn_aliases_uses_fqdn_as_key", func(t *testing.T) {
 		manager := NewManagerV2()
 

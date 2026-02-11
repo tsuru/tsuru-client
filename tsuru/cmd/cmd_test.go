@@ -363,6 +363,18 @@ func (s *S) TestShorthandCommandInfo(c *check.C) {
 	c.Assert(info.Name, check.Equals, "f")
 	c.Assert(info.GroupID, check.Equals, "shorthands")
 	c.Assert(info.OnlyAppendOnRoot, check.Equals, true)
+	c.Assert(info.Hidden, check.Equals, false)
+}
+
+func (s *S) TestShorthandCommandInfoHidden(c *check.C) {
+	originalCmd := &TestCommand{}
+	shorthandCmd := &ShorthandCommand{Command: originalCmd, shorthand: "f", hidden: true}
+
+	info := shorthandCmd.Info()
+	c.Assert(info.Name, check.Equals, "f")
+	c.Assert(info.GroupID, check.Equals, "shorthands")
+	c.Assert(info.OnlyAppendOnRoot, check.Equals, true)
+	c.Assert(info.Hidden, check.Equals, true)
 }
 
 func (s *S) TestShorthandCommandInfoWithUsage(c *check.C) {
@@ -429,6 +441,26 @@ func (s *S) TestRegisterShorthand(c *check.C) {
 			foundShorthand = true
 			c.Assert(v2cmd.GroupID, check.Equals, "shorthands")
 			c.Assert(v2cmd.Hidden, check.Equals, false) // OnlyAppendOnRoot makes it visible
+			break
+		}
+	}
+	c.Assert(foundShorthand, check.Equals, true)
+}
+
+func (s *S) TestRegisterHiddenShorthand(c *check.C) {
+	mngr := NewManagerV2()
+
+	originalCmd := &TestCommand{}
+	mngr.RegisterHiddenShorthand(originalCmd, "f")
+
+	// Hidden shorthand should be registered in v2 manager (root) with the shorthand name
+	rootCommands := mngr.rootCmd.Commands()
+	var foundShorthand bool
+	for _, v2cmd := range rootCommands {
+		if strings.HasPrefix(v2cmd.Use, "f") {
+			foundShorthand = true
+			c.Assert(v2cmd.GroupID, check.Equals, "shorthands")
+			c.Assert(v2cmd.Hidden, check.Equals, true)
 			break
 		}
 	}
