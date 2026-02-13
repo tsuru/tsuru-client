@@ -13,9 +13,11 @@ import (
 	"os"
 	"path/filepath"
 	"runtime"
+	"strconv"
 
 	"github.com/tsuru/go-tsuruclient/pkg/config"
 	"github.com/tsuru/tsuru-client/tsuru/cmd"
+	v2 "github.com/tsuru/tsuru-client/tsuru/cmd/v2"
 	"github.com/tsuru/tsuru/exec/exectest"
 	"github.com/tsuru/tsuru/fs/fstest"
 	"gopkg.in/check.v1"
@@ -212,6 +214,11 @@ func (s *S) TestPlugin(c *check.C) {
 		fmt.Sprintf("TSURU_TARGET=%s", target),
 		fmt.Sprintf("TSURU_TOKEN=%s", token),
 		"TSURU_PLUGIN_NAME=myplugin",
+		"TSURU_TABLE_COLOR=" + v2.TableColor(),
+		"TSURU_TABLE_UTF8=" + strconv.FormatBool(v2.TableUTF8()),
+	}
+	if v2.ColorDisabled() {
+		tsuruEnvs = append(tsuruEnvs, "NO_COLOR=1")
 	}
 	envs = append(envs, tsuruEnvs...)
 	c.Assert(commands[0].GetEnvs(), check.DeepEquals, envs)
@@ -272,6 +279,11 @@ func (s *S) TestPluginTryNameWithAnyExtension(c *check.C) {
 		fmt.Sprintf("TSURU_TARGET=%s", target),
 		fmt.Sprintf("TSURU_TOKEN=%s", token),
 		"TSURU_PLUGIN_NAME=otherplugin",
+		"TSURU_TABLE_COLOR=" + v2.TableColor(),
+		"TSURU_TABLE_UTF8=" + strconv.FormatBool(v2.TableUTF8()),
+	}
+	if v2.ColorDisabled() {
+		tsuruEnvs = append(tsuruEnvs, "NO_COLOR=1")
 	}
 	envs = append(envs, tsuruEnvs...)
 	c.Assert(commands[0].GetEnvs(), check.DeepEquals, envs)

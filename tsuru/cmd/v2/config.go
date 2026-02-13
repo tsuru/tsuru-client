@@ -92,6 +92,8 @@ func ColorStream() bool {
 	return def
 }
 
+var TsuruConfigDir = config.JoinWithUserDir(".tsuru")
+
 // preSetupViper prepares viper for being used by NewProductionTsuruContext()
 func preSetupViper(vip *viper.Viper) *viper.Viper {
 	if vip == nil {
@@ -101,7 +103,7 @@ func preSetupViper(vip *viper.Viper) *viper.Viper {
 	vip.SetEnvKeyReplacer(strings.NewReplacer("-", "_"))
 	vip.AutomaticEnv() // read in environment variables that match
 
-	vip.AddConfigPath(config.JoinWithUserDir(".tsuru"))
+	vip.AddConfigPath(TsuruConfigDir)
 	vip.SetConfigType("yaml")
 	vip.SetConfigName("client")
 
@@ -119,27 +121,13 @@ func preSetupViper(vip *viper.Viper) *viper.Viper {
 	tablecli.TableConfig.BreakOnAny = vip.GetBool("break-any")
 	tablecli.TableConfig.ForceWrap = vip.GetBool("force-wrap")
 	tablecli.TableConfig.TabWriterTruncate = vip.GetBool("tab-writer-truncate")
-	tablecli.TableConfig.UseUTF8Borders = isModernTerminal()
-
-	key := "table-utf8"
-	if vip.IsSet(key) {
-		tablecli.TableConfig.UseUTF8Borders = vip.GetBool(key)
-	}
+	tablecli.TableConfig.UseUTF8Borders = tableUTF8(vip)
 
 	if !colorDisabled(vip) {
-		var fgColor color.Attribute
-		if isDarkBackground() {
-			fgColor = color.FgHiBlack
-		}
-		key := "table-color"
-		if vip.IsSet(key) {
-			fgColor = colorMap[strings.ToLower(vip.GetString(key))]
-		}
+		tblColorString := tableColor(vip)
 
-		if fgColor != 0 {
-			tablecli.TableConfig.BorderColorFunc = func(s string) string {
-				return color.New(fgColor).Sprint(s)
-			}
+		if tblColorString != "" {
+			tablecli.SetBorderColorByString(tblColorString)
 		}
 	}
 
@@ -147,7 +135,7 @@ func preSetupViper(vip *viper.Viper) *viper.Viper {
 	color.NoColor = colorDisabled(vip)
 
 	// padding
-	key = "tab-writer-padding"
+	key := "tab-writer-padding"
 	if vip.IsSet(key) {
 		standards.SubTableWriterPadding = vip.GetInt(key)
 	}
@@ -155,23 +143,36 @@ func preSetupViper(vip *viper.Viper) *viper.Viper {
 	return vip
 }
 
-var colorMap = map[string]color.Attribute{
-	"black":      color.FgBlack,
-	"red":        color.FgRed,
-	"green":      color.FgGreen,
-	"yellow":     color.FgYellow,
-	"blue":       color.FgBlue,
-	"magenta":    color.FgMagenta,
-	"cyan":       color.FgCyan,
-	"white":      color.FgWhite,
-	"hi-black":   color.FgHiBlack,
-	"hi-red":     color.FgHiRed,
-	"hi-green":   color.FgHiGreen,
-	"hi-yellow":  color.FgHiYellow,
-	"hi-blue":    color.FgHiBlue,
-	"hi-magenta": color.FgHiMagenta,
-	"hi-cyan":    color.FgHiCyan,
-	"hi-white":   color.FgHiWhite,
+func TableUTF8() bool {
+	return tableUTF8(defaultViper)
+}
+
+func TableColor() string {
+	return tableColor(defaultViper)
+}
+
+func tableColor(vip *viper.Viper) string {
+	color := ""
+
+	if isDarkBackground() {
+		color = "hi-black"
+	}
+
+	key := "table-color"
+	if vip.IsSet(key) {
+		color = strings.ToLower(vip.GetString(key))
+	}
+
+	return color
+}
+
+func tableUTF8(vip *viper.Viper) bool {
+	key := "table-utf8"
+	if vip.IsSet(key) {
+		return vip.GetBool(key)
+	}
+
+	return isModernTerminal()
 }
 
 func isDarkBackground() bool {

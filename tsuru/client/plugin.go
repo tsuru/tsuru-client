@@ -17,11 +17,13 @@ import (
 	"os"
 	"path/filepath"
 	"runtime"
+	"strconv"
 	"strings"
 
 	"github.com/spf13/pflag"
 	"github.com/tsuru/go-tsuruclient/pkg/config"
 	"github.com/tsuru/tsuru-client/tsuru/cmd"
+	v2 "github.com/tsuru/tsuru-client/tsuru/cmd/v2"
 	"github.com/tsuru/tsuru/exec"
 )
 
@@ -396,7 +398,14 @@ func runPlugin(context *cmd.Context, pluginName string, args []string) error {
 		"TSURU_TARGET=" + target,
 		"TSURU_TOKEN=" + token,
 		"TSURU_PLUGIN_NAME=" + pluginName,
+		"TSURU_TABLE_COLOR=" + v2.TableColor(),
+		"TSURU_TABLE_UTF8=" + strconv.FormatBool(v2.TableUTF8()),
 	}
+
+	if v2.ColorDisabled() {
+		tsuruEnvs = append(tsuruEnvs, "NO_COLOR=1")
+	}
+
 	envs = append(envs, tsuruEnvs...)
 	opts := exec.ExecuteOptions{
 		Cmd:    pluginPath,

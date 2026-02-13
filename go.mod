@@ -19,7 +19,7 @@ require (
 	github.com/spf13/viper v1.21.0
 	github.com/stretchr/testify v1.11.1
 	github.com/tsuru/go-tsuruclient v0.2.0
-	github.com/tsuru/tablecli v0.5.0
+	github.com/tsuru/tablecli v0.6.0
 	github.com/tsuru/tsuru v0.0.0-20260130133143-90d830519bd3
 	golang.org/x/net v0.48.0
 	golang.org/x/oauth2 v0.30.0

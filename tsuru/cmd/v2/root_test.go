@@ -620,6 +620,10 @@ func TestPreSetupViperTableColor(t *testing.T) {
 		os.Unsetenv("NO_COLOR")
 		os.Setenv("COLORFGBG", "15;0") // dark background
 
+		originalConfigDir := TsuruConfigDir
+		defer func() { TsuruConfigDir = originalConfigDir }()
+		TsuruConfigDir = t.TempDir() // avoid reading existing config files that may interfere with the test
+
 		originalIsModernTerminal := IsModernTerminal
 		defer func() { IsModernTerminal = originalIsModernTerminal }()
 		IsModernTerminal = true
@@ -640,6 +644,10 @@ func TestPreSetupViperTableColor(t *testing.T) {
 		defer saveEnv("COLORFGBG")()
 		os.Unsetenv("NO_COLOR")
 		os.Setenv("COLORFGBG", "0;15") // light background
+
+		originalConfigDir := TsuruConfigDir
+		defer func() { TsuruConfigDir = originalConfigDir }()
+		TsuruConfigDir = t.TempDir() // avoid reading existing config files that may interfere with the test
 
 		originalIsModernTerminal := IsModernTerminal
 		defer func() { IsModernTerminal = originalIsModernTerminal }()
