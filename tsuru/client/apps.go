@@ -715,13 +715,25 @@ func (a *app) String(simplified bool) string {
 	)
 
 	if simplified {
-		renderUnitsSummary(&buf, a.Units, a.UnitsMetrics, a.Provisioner)
+		renderUnitsSummary(&buf, a.Units, a.UnitsMetrics)
 	} else {
-		renderUnits(&buf, a.Units, a.UnitsMetrics, a.Provisioner)
+		renderUnits(&buf, a.Units, a.UnitsMetrics)
 	}
 
 	internalAddressesTable := tablecli.NewTable()
-	internalAddressesTable.Headers = []string{"Domain", "Port", "Process", "Version"}
+	internalAddressesTable.Headers = []string{"Domain", "Port", "Process"}
+
+	containsVersion := false
+	for _, internalAddress := range a.InternalAddresses {
+		if internalAddress.Version != "" {
+			containsVersion = true
+			break
+		}
+	}
+	if containsVersion {
+		internalAddressesTable.Headers = append(internalAddressesTable.Headers, "Version")
+	}
+
 	internalAddressesTable.TableWriterPadding = standards.SubTableWriterPadding
 
 	for _, internalAddress := range a.InternalAddresses {
@@ -730,12 +742,17 @@ func (a *app) String(simplified bool) string {
 			port = fmt.Sprintf("%d->%d", internalAddress.Port, internalAddress.TargetPort)
 		}
 
-		internalAddressesTable.AddRow([]string{
+		row := []string{
 			internalAddress.Domain,
 			port + "/" + internalAddress.Protocol,
 			internalAddress.Process,
-			internalAddress.Version,
-		})
+		}
+
+		if containsVersion {
+			row = append(row, internalAddress.Version)
+		}
+
+		internalAddressesTable.AddRow(row)
 	}
 
 	if !simplified {
@@ -751,7 +768,7 @@ func (a *app) String(simplified bool) string {
 		autoScaleTable.TableWriterPadding = standards.SubTableWriterPadding
 
 		processString := fmt.Sprintf(
-			"Autoscale [process %s] [version %d] [min units %d] [max units %d]",
+			"Autoscale [process %s] [version %d] [min units %d] [max units %d]:",
 			as.Process, as.Version, int(as.MinUnits), int(as.MaxUnits),
 		)
 		processes = append(processes, processString)
@@ -831,13 +848,8 @@ func (a *app) String(simplified bool) string {
 	}
 	if !simplified && len(a.Routers) > 0 {
 		buf.WriteString("\n")
-		if a.Provisioner == "kubernetes" {
-			buf.WriteString("Cluster external addresses:\n")
-			renderRouters(a.Routers, &buf, "Router", standards.SubTableWriterPadding)
-		} else {
-			buf.WriteString("Routers:\n")
-			renderRouters(a.Routers, &buf, "Name", standards.SubTableWriterPadding)
-		}
+		buf.WriteString("Cluster external addresses:\n")
+		renderRouters(a.Routers, &buf, "Router", standards.SubTableWriterPadding)
 	}
 
 	renderVolumeBinds(&buf, a.VolumeBinds)
@@ -894,7 +906,7 @@ func (a *app) SimpleServicesView() string {
 	return strings.Join(pairs, "\n")
 }
 
-func renderUnitsSummary(buf *bytes.Buffer, units []provTypes.Unit, metrics []provTypes.UnitMetric, provisioner string) {
+func renderUnitsSummary(buf *bytes.Buffer, units []provTypes.Unit, metrics []provTypes.UnitMetric) {
 	type unitsKey struct {
 		process  string
 		version  int
@@ -920,11 +932,8 @@ func renderUnitsSummary(buf *bytes.Buffer, units []provTypes.Unit, metrics []pro
 		return keys[i].version < keys[j].version
 	})
 	var titles []string
-	if provisioner == "kubernetes" {
-		titles = []string{"Process", "Ready", "Restarts", "Avg CPU (abs)", "Avg Memory"}
-	} else {
-		titles = []string{"Process", "Units"}
-	}
+	titles = []string{"Process", "Ready", "Restarts", "Avg CPU (abs)", "Avg Memory"}
+
 	unitsTable := tablecli.NewTable()
 	tablecli.TableConfig.ForceWrap = false
 	unitsTable.Headers = tablecli.Row(titles)
@@ -947,7 +956,7 @@ func renderUnitsSummary(buf *bytes.Buffer, units []provTypes.Unit, metrics []pro
 
 		summaryUnits := groupedUnits[key]
 
-		if !key.routable && provisioner == "kubernetes" {
+		if !key.routable {
 			summaryTitle = summaryTitle + " (unroutable)"
 		}
 
@@ -976,25 +985,19 @@ func renderUnitsSummary(buf *bytes.Buffer, units []provTypes.Unit, metrics []pro
 			}
 		}
 
-		if provisioner == "kubernetes" {
-			unitsTable.AddRow(tablecli.Row{
-				summaryTitle,
-				fmt.Sprintf("%d/%d", readyUnits, len(summaryUnits)),
-				fmt.Sprintf("%d", restarts),
-				fmt.Sprintf("%d%%", cpuTotal.MilliValue()/int64(10)/int64(len(summaryUnits))),
-				fmt.Sprintf("%vMi", memoryTotal.Value()/int64(1024*1024)/int64(len(summaryUnits))),
-			})
-		} else {
-			unitsTable.AddRow(tablecli.Row{
-				summaryTitle,
-				fmt.Sprintf("%d", len(summaryUnits)),
-			})
-		}
+		unitsTable.AddRow(tablecli.Row{
+			summaryTitle,
+			fmt.Sprintf("%d/%d", readyUnits, len(summaryUnits)),
+			fmt.Sprintf("%d", restarts),
+			fmt.Sprintf("%d%%", cpuTotal.MilliValue()/int64(10)/int64(len(summaryUnits))),
+			fmt.Sprintf("%vMi", memoryTotal.Value()/int64(1024*1024)/int64(len(summaryUnits))),
+		})
+
 	}
 	buf.WriteString(unitsTable.String())
 }
 
-func renderUnits(buf *bytes.Buffer, units []provTypes.Unit, metrics []provTypes.UnitMetric, provisioner string) {
+func renderUnits(buf *bytes.Buffer, units []provTypes.Unit, metrics []provTypes.UnitMetric) {
 	type unitsKey struct {
 		process  string
 		version  int
@@ -1020,15 +1023,16 @@ func renderUnits(buf *bytes.Buffer, units []provTypes.Unit, metrics []provTypes.
 		return keys[i].version < keys[j].version
 	})
 
-	var titles []string
-	if provisioner == "kubernetes" {
-		titles = []string{"Name", "Host", "Status", "Restarts", "Age", "CPU", "Memory"}
-	} else {
-		titles = []string{"Name", "Status", "Host", "Port"}
-	}
 	mapUnitMetrics := map[string]provTypes.UnitMetric{}
 	for _, unitMetric := range metrics {
 		mapUnitMetrics[unitMetric.ID] = unitMetric
+	}
+
+	titles := []string{"Name", "Host", "Status", "Restarts", "Age"}
+
+	containsMetrics := len(metrics) > 0
+	if containsMetrics {
+		titles = append(titles, "CPU", "Memory")
 	}
 
 	for _, key := range keys {
@@ -1044,24 +1048,19 @@ func renderUnits(buf *bytes.Buffer, units []provTypes.Unit, metrics []provTypes.
 			if unit.ID == "" {
 				continue
 			}
-			var row tablecli.Row
-			if provisioner == "kubernetes" {
-				row = tablecli.Row{
-					unit.ID,
-					unitHost(unit),
-					unitReadyAndStatus(unit),
-					countValue(unit.Restarts),
-					translateTimestampSince(unit.CreatedAt),
+			row := tablecli.Row{
+				unit.ID,
+				unitHost(unit),
+				unitReadyAndStatus(unit),
+				countValue(unit.Restarts),
+				translateTimestampSince(unit.CreatedAt),
+			}
+
+			if containsMetrics {
+				row = append(row,
 					cpuValue(mapUnitMetrics[unit.ID].CPU),
 					memoryValue(mapUnitMetrics[unit.ID].Memory),
-				}
-			} else {
-				row = tablecli.Row{
-					ShortID(unit.ID),
-					unit.Status.String(),
-					unitHost(unit),
-					unitPort(unit),
-				}
+				)
 			}
 
 			unitsTable.AddRow(row)
