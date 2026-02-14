@@ -102,6 +102,43 @@ func (s *S) TestAppRoutersListRun(c *check.C) {
 	c.Assert(stdout.String(), check.Equals, expected)
 }
 
+func (s *S) TestAppRoutersListCompactRun(c *check.C) {
+	var stdout, stderr bytes.Buffer
+	context := cmd.Context{
+		Args:   nil,
+		Stdout: &stdout,
+		Stderr: &stderr,
+	}
+	routers := []appTypes.AppRouter{
+		{Name: "r1", Type: "r", Address: "addr1"},
+		{Name: "r2", Address: "addr2", Status: "ready"},
+		{Name: "r3", Type: "r3", Address: "addr3", Status: "not ready", StatusDetail: "something happening"},
+	}
+	data, err := json.Marshal(routers)
+	c.Assert(err, check.IsNil)
+
+	expected := `+------+--------------+--------------------------------+
+| Name | Addresses    | Status                         |
++------+--------------+--------------------------------+
+| r1   | http://addr1 |                                |
+| r2   | http://addr2 | ready                          |
+| r3   | http://addr3 | not ready: something happening |
++------+--------------+--------------------------------+
+`
+	trans := &cmdtest.ConditionalTransport{
+		Transport: cmdtest.Transport{Message: string(data), Status: http.StatusOK},
+		CondFunc: func(req *http.Request) bool {
+			return strings.HasSuffix(req.URL.Path, "/1.5/apps/myapp/routers") && req.Method == "GET"
+		},
+	}
+	s.setupFakeTransport(trans)
+	command := AppRoutersList{}
+	command.Flags().Parse([]string{"-a", "myapp"})
+	err = command.Run(&context)
+	c.Assert(err, check.IsNil)
+	c.Assert(stdout.String(), check.Equals, expected)
+}
+
 func (s *S) TestAppRoutersListRunEmpty(c *check.C) {
 	var stdout, stderr bytes.Buffer
 	context := cmd.Context{

@@ -369,20 +369,40 @@ func (c *AppRoutersList) Run(context *cmd.Context) error {
 
 func renderRouters(routers []appTypes.AppRouter, out io.Writer, idColumn string, tableWriterPadding int) {
 	table := tablecli.NewTable()
-	table.Headers = tablecli.Row([]string{idColumn, "Opts", "Addresses", "Status"})
 	table.TableWriterPadding = tableWriterPadding
 	table.TableWriterExpandRows = true
 
 	maxLines := 0
+	hasOpts := false
+	for _, r := range routers {
+		if len(r.Opts) > 0 {
+			hasOpts = true
+			break
+		}
+	}
+
+	table.Headers = tablecli.Row([]string{idColumn})
+	if hasOpts {
+		table.Headers = append(table.Headers, "Opts")
+	}
+	table.Headers = append(table.Headers, "Addresses", "Status")
 
 	for _, r := range routers {
-		var optsStr []string
-		for k, v := range r.Opts {
-			optsStr = append(optsStr, fmt.Sprintf("%s: %s", k, v))
+		row := []string{
+			r.Name,
 		}
-		sort.Strings(optsStr)
-		if maxLines < len(optsStr) {
-			maxLines = len(optsStr)
+
+		if hasOpts {
+			var optsStr []string
+			for k, v := range r.Opts {
+				optsStr = append(optsStr, fmt.Sprintf("%s: %s", k, v))
+			}
+			sort.Strings(optsStr)
+			if maxLines < len(optsStr) {
+				maxLines = len(optsStr)
+			}
+
+			row = append(row, strings.Join(optsStr, "\n"))
 		}
 		statusStr := r.Status
 		if r.StatusDetail != "" {
@@ -401,12 +421,9 @@ func renderRouters(routers []appTypes.AppRouter, out io.Writer, idColumn string,
 		if maxLines < len(r.Addresses) {
 			maxLines = len(r.Addresses)
 		}
-		table.AddRow([]string{
-			r.Name,
-			strings.Join(optsStr, "\n"),
-			addresses,
-			statusStr,
-		})
+
+		row = append(row, addresses, statusStr)
+		table.AddRow(row)
 	}
 
 	if maxLines > 1 {
