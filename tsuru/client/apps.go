@@ -931,8 +931,7 @@ func renderUnitsSummary(buf *bytes.Buffer, units []provTypes.Unit, metrics []pro
 		}
 		return keys[i].version < keys[j].version
 	})
-	var titles []string
-	titles = []string{"Process", "Ready", "Restarts", "Avg CPU (abs)", "Avg Memory"}
+	titles := []string{"Process", "Ready", "Restarts", "Avg CPU (abs)", "Avg Memory"}
 
 	unitsTable := tablecli.NewTable()
 	tablecli.TableConfig.ForceWrap = false
