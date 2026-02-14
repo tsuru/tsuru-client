@@ -183,6 +183,9 @@ func (s *S) TestPlugin(c *check.C) {
 	tempHome, _ := filepath.Abs("testdata")
 	os.Setenv("HOME", tempHome)
 
+	os.Setenv("TSURU_PAGER", "less -R")
+	defer os.Unsetenv("TSURU_PAGER")
+
 	fexec := exectest.FakeExecutor{
 		Output: map[string][][]byte{
 			"a b": {[]byte("hello world")},
@@ -219,6 +222,10 @@ func (s *S) TestPlugin(c *check.C) {
 	}
 	if v2.ColorDisabled() {
 		tsuruEnvs = append(tsuruEnvs, "NO_COLOR=1")
+	}
+	pager, pagerFound := v2.Pager()
+	if pagerFound {
+		tsuruEnvs = append(tsuruEnvs, "TSURU_PAGER="+pager)
 	}
 	envs = append(envs, tsuruEnvs...)
 	c.Assert(commands[0].GetEnvs(), check.DeepEquals, envs)

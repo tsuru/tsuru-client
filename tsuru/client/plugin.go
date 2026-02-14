@@ -406,6 +406,11 @@ func runPlugin(context *cmd.Context, pluginName string, args []string) error {
 		tsuruEnvs = append(tsuruEnvs, "NO_COLOR=1")
 	}
 
+	pager, pagerFound := v2.Pager()
+	if pagerFound {
+		tsuruEnvs = append(tsuruEnvs, "TSURU_PAGER="+pager)
+	}
+
 	envs = append(envs, tsuruEnvs...)
 	opts := exec.ExecuteOptions{
 		Cmd:    pluginPath,
