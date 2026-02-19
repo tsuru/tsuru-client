@@ -441,7 +441,7 @@ Tags: {{.Tags}}
 	}
 	if usersTable.Rows() > 0 {
 		buf.WriteString("\n")
-		buf.WriteString(fmt.Sprintf("Users: %d\n", usersTable.Rows()))
+		fmt.Fprintf(&buf, "Users: %d\n", usersTable.Rows())
 		buf.WriteString(usersTable.String())
 	}
 	poolsTable := tablecli.NewTable()
@@ -453,7 +453,7 @@ Tags: {{.Tags}}
 	}
 	if poolsTable.Rows() > 0 {
 		buf.WriteString("\n")
-		buf.WriteString(fmt.Sprintf("Pools: %d\n", poolsTable.Rows()))
+		fmt.Fprintf(&buf, "Pools: %d\n", poolsTable.Rows())
 		buf.WriteString(poolsTable.String())
 	}
 	appsTable := tablecli.NewTable()
@@ -486,7 +486,7 @@ Tags: {{.Tags}}
 	}
 	if appsTable.Rows() > 0 {
 		buf.WriteString("\n")
-		buf.WriteString(fmt.Sprintf("Applications: %d\n", appsTable.Rows()))
+		fmt.Fprintf(&buf, "Applications: %d\n", appsTable.Rows())
 		buf.WriteString(appsTable.String())
 	}
 

@@ -1153,7 +1153,7 @@ func renderServiceInstanceBindsForApps(w io.Writer, binds []bindTypes.ServiceIns
 			var sb strings.Builder
 			sb.WriteString(inst.Instance)
 			if inst.Plan != "" {
-				sb.WriteString(fmt.Sprintf(" (%s)", inst.Plan))
+				fmt.Fprintf(&sb, " (%s)", inst.Plan)
 			}
 
 			table.AddRow([]string{desc, sb.String()})
@@ -1210,7 +1210,7 @@ func renderServiceInstanceBinds(w io.Writer, binds []tsuru.AppServiceInstanceBin
 		for i, inst := range instancesByService[s] {
 			sb.WriteString(inst.Instance)
 			if inst.Plan != "" {
-				sb.WriteString(fmt.Sprintf(" (%s)", inst.Plan))
+				fmt.Fprintf(&sb, " (%s)", inst.Plan)
 			}
 
 			if i < len(instancesByService[s])-1 {

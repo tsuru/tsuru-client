@@ -337,12 +337,12 @@ func (c PlatformInfo) Run(ctx *cmd.Context) error {
 		status = "enabled"
 	}
 	var buf bytes.Buffer
-	buf.WriteString(fmt.Sprintf("Name: %s\n", info.Platform.Name))
-	buf.WriteString(fmt.Sprintf("Status: %s\n", status))
-	buf.WriteString("Images:\n")
+	fmt.Fprintf(&buf, "Name:   %s\n", info.Platform.Name)
+	fmt.Fprintf(&buf, "Status: %s\n", status)
+	fmt.Fprintf(&buf, "Images:\n")
 	sort.Sort(sort.Reverse(sort.StringSlice(info.Images)))
 	for _, img := range info.Images {
-		buf.WriteString(fmt.Sprintf(" - %s\n", img))
+		fmt.Fprintf(&buf, " - %s\n", img)
 	}
 	ctx.Stdout.Write(buf.Bytes())
 	return nil

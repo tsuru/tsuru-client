@@ -557,7 +557,12 @@ func (s *S) TestPlatformInfoRun(c *check.C) {
 		Stderr: &stderr,
 		Args:   []string{name},
 	}
-	expectedMsg := "Name: teste\nStatus: enabled\nImages:\n - tsuru/teste:v2\n - tsuru/teste:v1\n"
+	expectedMsg := `Name:   teste
+Status: enabled
+Images:
+ - tsuru/teste:v2
+ - tsuru/teste:v1
+`
 	res := struct {
 		Platform appTypes.Platform
 		Images   []string
