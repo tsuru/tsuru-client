@@ -12,10 +12,12 @@ import (
 	"net/http"
 	"net/url"
 	"strings"
+	"testing"
 	"time"
 
 	"github.com/fatih/color"
 	"github.com/spf13/pflag"
+	"github.com/stretchr/testify/assert"
 	"github.com/tsuru/tsuru-client/tsuru/cmd"
 	"github.com/tsuru/tsuru-client/tsuru/cmd/cmdtest"
 	tsuruIo "github.com/tsuru/tsuru/io"
@@ -3347,5 +3349,51 @@ func (s *S) TestEnsureHTTP(c *check.C) {
 	for _, t := range tests {
 		result := ensureHTTP(t.input)
 		c.Assert(result, check.Equals, t.expected)
+	}
+}
+
+func TestRenderUnitsColored(t *testing.T) {
+	tests := []struct {
+		name     string
+		units    []provTypes.Unit
+		contains []string
+	}{
+		{
+			name: "Some units are in error state",
+			units: []provTypes.Unit{
+				{ID: "unit1", Status: provTypes.UnitStatusStarted, Ready: boolPtr(true)},
+				{ID: "unit2", Status: provTypes.UnitStatusError},
+				{ID: "unit3", Status: provTypes.UnitStatusError, StatusReason: "CrashLoopBackOff"},
+			},
+			contains: []string{
+				color.YellowString("error"),
+				color.YellowString("error (CrashLoopBackOff)"),
+			},
+		},
+		{
+			name: "Every unit is in error state",
+			units: []provTypes.Unit{
+				{ID: "unit1", Status: provTypes.UnitStatusError},
+				{ID: "unit2", Status: provTypes.UnitStatusError},
+				{ID: "unit3", Status: provTypes.UnitStatusError, StatusReason: "CrashLoopBackOff"},
+			},
+			contains: []string{
+				color.RedString("error"),
+				color.RedString("error (CrashLoopBackOff)"),
+			},
+		},
+	}
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			var buf bytes.Buffer
+
+			color.NoColor = false
+			defer func() { color.NoColor = true }()
+
+			renderUnits(&buf, tt.units, nil)
+			for _, expected := range tt.contains {
+				assert.Contains(t, buf.String(), expected)
+			}
+		})
 	}
 }

@@ -1043,14 +1043,33 @@ func renderUnits(buf *bytes.Buffer, units []provTypes.Unit, metrics []provTypes.
 		sort.Slice(units, func(i, j int) bool {
 			return units[i].ID < units[j].ID
 		})
+
+		everyUnitHasError := true
+		for _, unit := range units {
+			if unit.Status != "error" {
+				everyUnitHasError = false
+				break
+			}
+		}
+
 		for _, unit := range units {
 			if unit.ID == "" {
 				continue
 			}
+
+			status := unitReadyAndStatus(unit)
+			if unit.Status == "error" {
+				if everyUnitHasError {
+					status = color.RedString(status)
+				} else {
+					status = color.YellowString(status)
+				}
+			}
+
 			row := tablecli.Row{
 				unit.ID,
 				unitHost(unit),
-				unitReadyAndStatus(unit),
+				status,
 				countValue(unit.Restarts),
 				translateTimestampSince(unit.CreatedAt),
 			}

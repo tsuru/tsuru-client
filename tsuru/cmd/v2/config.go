@@ -154,7 +154,7 @@ func TableColor() string {
 func tableColor(vip *viper.Viper) string {
 	color := ""
 
-	if isDarkBackground() {
+	if isDarkBackground() && tableUTF8(vip) {
 		color = "hi-black"
 	}
 

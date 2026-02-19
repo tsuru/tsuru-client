@@ -569,18 +569,6 @@ func TestPreSetupViperTableColor(t *testing.T) {
 	defer saveEnv("COLORFGBG")()
 	os.Unsetenv("COLORFGBG")
 
-	t.Run("sets_border_color_func_when_colors_enabled", func(t *testing.T) {
-		defer saveEnv("NO_COLOR")()
-		os.Unsetenv("NO_COLOR")
-
-		tablecli.TableConfig.BorderColorFunc = nil
-
-		vip := viper.New()
-		preSetupViper(vip)
-
-		assert.NotNil(t, tablecli.TableConfig.BorderColorFunc)
-	})
-
 	t.Run("no_border_color_func_when_colors_disabled", func(t *testing.T) {
 		defer saveEnv("NO_COLOR")()
 		os.Setenv("NO_COLOR", "1")
@@ -617,8 +605,11 @@ func TestPreSetupViperTableColor(t *testing.T) {
 	t.Run("uses_hi_black_for_dark_background", func(t *testing.T) {
 		defer saveEnv("NO_COLOR")()
 		defer saveEnv("COLORFGBG")()
+		defer saveEnv("TSURU_TABLE_UTF8")()
+
 		os.Unsetenv("NO_COLOR")
 		os.Setenv("COLORFGBG", "15;0") // dark background
+		os.Setenv("TSURU_TABLE_UTF8", "true")
 
 		originalConfigDir := TsuruConfigDir
 		defer func() { TsuruConfigDir = originalConfigDir }()
