@@ -7,7 +7,18 @@ package app
 import (
 	"github.com/pkg/errors"
 	"github.com/spf13/pflag"
+	"github.com/tsuru/tsuru-client/tsuru/cmd"
 	"github.com/tsuru/tsuru-client/tsuru/cmd/standards"
+)
+
+var (
+	ErrAppNameRequired = &cmd.UsageError{Err: errors.New(`The name of the app is required.
+
+Use the --app flag to specify it.
+
+`)}
+
+	ErrAppNameConflict = &cmd.UsageError{Err: errors.New("You can't use the app flag and specify the app name as an argument at the same time.")}
 )
 
 type AppNameMixIn struct {
@@ -18,7 +29,7 @@ type AppNameMixIn struct {
 func (cmd *AppNameMixIn) AppNameByArgsAndFlag(args []string) (string, error) {
 	if len(args) > 0 {
 		if cmd.appName != "" {
-			return "", errors.New("You can't use the app flag and specify the app name as an argument at the same time.")
+			return "", ErrAppNameConflict
 		}
 
 		return args[0], nil
@@ -29,11 +40,7 @@ func (cmd *AppNameMixIn) AppNameByArgsAndFlag(args []string) (string, error) {
 
 func (cmd *AppNameMixIn) AppNameByFlag() (string, error) {
 	if cmd.appName == "" {
-		return "", errors.Errorf(`The name of the app is required.
-
-Use the --app flag to specify it.
-
-`)
+		return "", ErrAppNameRequired
 	}
 	return cmd.appName, nil
 }
