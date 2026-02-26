@@ -149,11 +149,17 @@ func (s *S) TestBuildRequestBodyWithProgressWithArchive(c *check.C) {
 	buf := safe.NewBuffer(nil)
 	request, _ := http.NewRequest("POST", "/apps/myapp/build", body)
 	values := url.Values{"tag": []string{"mytag"}}
-	var stdout bytes.Buffer
+	stdout := safe.NewBuffer(nil)
 	archive := bytes.NewBufferString("fake-archive-content")
 
-	err := buildRequestBodyWithProgress(context.Background(), &stdout, request, buf, body, values, archive)
+	ctx, cancel := context.WithCancel(context.Background())
+	err := buildRequestBodyWithProgress(ctx, stdout, request, buf, body, values, archive)
 	c.Assert(err, check.IsNil)
+
+	// stop the progress goroutine before reading stdout
+	cancel()
+	time.Sleep(100 * time.Millisecond)
+
 	c.Assert(request.Header.Get("Content-Type"), check.Matches, "multipart/form-data; boundary=.*")
 	c.Assert(body.Len() > 0, check.Equals, true)
 	c.Assert(stdout.String(), check.Matches, `Uploading files \(\d+\.\d+MB\)\.\.\. .*`)
