@@ -2,6 +2,7 @@ package client
 
 import (
 	"bytes"
+	"context"
 	"errors"
 	"fmt"
 	"io"
@@ -68,12 +69,12 @@ Examples:
 	}
 }
 
-func (c *AppBuild) Run(context *cmd.Context) error {
-	context.RawOutput()
+func (c *AppBuild) Run(ctx *cmd.Context) error {
+	ctx.RawOutput()
 	if c.tag == "" {
 		return errors.New("you should provide one tag to build the image")
 	}
-	if len(context.Args) == 0 {
+	if len(ctx.Args) == 0 {
 		return errors.New("you should provide at least one file to build the image")
 	}
 
@@ -105,15 +106,18 @@ func (c *AppBuild) Run(context *cmd.Context) error {
 		return err
 	}
 	buf := safe.NewBuffer(nil)
-	respBody := prepareUploadStreams(context, buf)
+	respBody := prepareUploadStreams(ctx, buf)
 
 	var archive bytes.Buffer
-	err = Archive(&archive, c.filesOnly, context.Args, DefaultArchiveOptions(nil))
+	err = Archive(&archive, c.filesOnly, ctx.Args, DefaultArchiveOptions(nil))
 	if err != nil {
 		return err
 	}
 
-	if err = uploadFiles(context, request, buf, body, values, &archive); err != nil {
+	uploadCtx, cancel := context.WithCancel(context.Background())
+	defer cancel()
+
+	if err = buildRequestBodyWithProgress(uploadCtx, ctx.Stdout, request, buf, body, values, &archive); err != nil {
 		return err
 	}
 	resp, err := tsuruHTTP.AuthenticatedClient.Do(request)
@@ -134,7 +138,7 @@ func (c *AppBuild) Run(context *cmd.Context) error {
 	return cmd.ErrAbortCommand
 }
 
-func uploadFiles(context *cmd.Context, request *http.Request, buf *safe.Buffer, body *safe.Buffer, values url.Values, archive io.Reader) error {
+func buildRequestBodyWithProgress(ctx context.Context, stdout io.Writer, request *http.Request, buf *safe.Buffer, body *safe.Buffer, values url.Values, archive io.Reader) error {
 	if archive == nil {
 		request.Header.Set("Content-Type", "application/x-www-form-urlencoded")
 		_, err := body.WriteString(values.Encode())
@@ -163,7 +167,7 @@ func uploadFiles(context *cmd.Context, request *http.Request, buf *safe.Buffer, 
 
 	fullSize := float64(body.Len())
 	megabyte := 1024.0 * 1024.0
-	fmt.Fprintf(context.Stdout, "Uploading files (%0.2fMB)... ", fullSize/megabyte)
+	fmt.Fprintf(stdout, "Uploading files (%0.2fMB)... ", fullSize/megabyte)
 	count := 0
 	go func() {
 		t0 := time.Now()
@@ -175,15 +179,19 @@ func uploadFiles(context *cmd.Context, request *http.Request, buf *safe.Buffer, 
 			t0 = time.Now()
 			lastTransferred = transferred
 			percent := (transferred / fullSize) * 100.0
-			fmt.Fprintf(context.Stdout, "\rUploading files (%0.2fMB)... %0.2f%%", fullSize/megabyte, percent)
+			fmt.Fprintf(stdout, "\rUploading files (%0.2fMB)... %0.2f%%", fullSize/megabyte, percent)
 			if remaining > 0 {
-				fmt.Fprintf(context.Stdout, " (%0.2fMB/s)", speed)
+				fmt.Fprintf(stdout, " (%0.2fMB/s)", speed)
 			}
 			if remaining == 0 && buf.Len() == 0 {
-				fmt.Fprintf(context.Stdout, " Processing%s", strings.Repeat(".", count))
+				fmt.Fprintf(stdout, " Processing%s", strings.Repeat(".", count))
 				count++
 			}
-			time.Sleep(2 * time.Second)
+			select {
+			case <-ctx.Done():
+				return
+			case <-time.After(2 * time.Second):
+			}
 		}
 	}()
 	return nil

@@ -230,14 +230,14 @@ func prepareUploadStreams(context *cmd.Context, buf *safe.Buffer) io.Writer {
 	return io.MultiWriter(encoderWriter, buf)
 }
 
-func (c *AppDeploy) Run(context *cmd.Context) error {
-	context.RawOutput()
+func (c *AppDeploy) Run(ctx *cmd.Context) error {
+	ctx.RawOutput()
 
-	if c.image == "" && c.dockerfile == "" && len(context.Args) == 0 {
+	if c.image == "" && c.dockerfile == "" && len(ctx.Args) == 0 {
 		return errors.New("you should provide at least one file, Docker image name or Dockerfile to deploy")
 	}
 
-	if c.image != "" && len(context.Args) > 0 {
+	if c.image != "" && len(ctx.Args) > 0 {
 		return errors.New("you can't deploy files and docker image at the same time")
 	}
 
@@ -278,21 +278,21 @@ func (c *AppDeploy) Run(context *cmd.Context) error {
 	buf := safe.NewBuffer(nil)
 
 	c.m.Lock()
-	respBody := prepareUploadStreams(context, buf)
+	respBody := prepareUploadStreams(ctx, buf)
 	c.m.Unlock()
 
 	var archive io.Reader
 
 	if c.image != "" {
-		fmt.Fprintln(context.Stdout, "Deploying container image...")
+		fmt.Fprintln(ctx.Stdout, "Deploying container image...")
 		values.Set("image", c.image)
 	}
 
 	if c.dockerfile != "" {
-		fmt.Fprintln(context.Stdout, "Deploying with Dockerfile...")
+		fmt.Fprintln(ctx.Stdout, "Deploying with Dockerfile...")
 
 		var dockerfile string
-		dockerfile, archive, err = buildWithContainerFile(appName, c.dockerfile, c.filesOnly, context.Args, nil)
+		dockerfile, archive, err = buildWithContainerFile(appName, c.dockerfile, c.filesOnly, ctx.Args, nil)
 		if err != nil {
 			return err
 		}
@@ -301,10 +301,10 @@ func (c *AppDeploy) Run(context *cmd.Context) error {
 	}
 
 	if c.image == "" && c.dockerfile == "" {
-		fmt.Fprintln(context.Stdout, "Deploying using app's platform...")
+		fmt.Fprintln(ctx.Stdout, "Deploying using app's platform...")
 
 		var buffer bytes.Buffer
-		err = Archive(&buffer, c.filesOnly, context.Args, DefaultArchiveOptions(nil))
+		err = Archive(&buffer, c.filesOnly, ctx.Args, DefaultArchiveOptions(nil))
 		if err != nil {
 			return err
 		}
@@ -312,7 +312,10 @@ func (c *AppDeploy) Run(context *cmd.Context) error {
 		archive = &buffer
 	}
 
-	if err = uploadFiles(context, request, buf, body, values, archive); err != nil {
+	uploadCtx, cancel := context.WithCancel(context.Background())
+	defer cancel()
+
+	if err = buildRequestBodyWithProgress(uploadCtx, ctx.Stdout, request, buf, body, values, archive); err != nil {
 		return err
 	}
 
@@ -579,8 +582,8 @@ Examples:
 	}
 }
 
-func (c *JobDeploy) Run(context *cmd.Context) error {
-	context.RawOutput()
+func (c *JobDeploy) Run(ctx *cmd.Context) error {
+	ctx.RawOutput()
 
 	if c.jobName == "" {
 		return errors.New(`the name of the job is required.
@@ -592,7 +595,7 @@ Use the --job/-j flag to specify it`)
 		return errors.New("you should provide at least one between Docker image name or Dockerfile to deploy")
 	}
 
-	if c.image != "" && len(context.Args) > 0 {
+	if c.image != "" && len(ctx.Args) > 0 {
 		return errors.New("you can't deploy files and docker image at the same time")
 	}
 
@@ -626,21 +629,21 @@ Use the --job/-j flag to specify it`)
 	buf := safe.NewBuffer(nil)
 
 	c.m.Lock()
-	respBody := prepareUploadStreams(context, buf)
+	respBody := prepareUploadStreams(ctx, buf)
 	c.m.Unlock()
 
 	var archive io.Reader
 
 	if c.image != "" {
-		fmt.Fprintln(context.Stdout, "Deploying container image...")
+		fmt.Fprintln(ctx.Stdout, "Deploying container image...")
 		values.Set("image", c.image)
 	}
 
 	if c.dockerfile != "" {
-		fmt.Fprintln(context.Stdout, "Deploying with Dockerfile...")
+		fmt.Fprintln(ctx.Stdout, "Deploying with Dockerfile...")
 
 		var dockerfile string
-		dockerfile, archive, err = buildWithContainerFile(c.jobName, c.dockerfile, false, context.Args, nil)
+		dockerfile, archive, err = buildWithContainerFile(c.jobName, c.dockerfile, false, ctx.Args, nil)
 		if err != nil {
 			return err
 		}
@@ -648,7 +651,10 @@ Use the --job/-j flag to specify it`)
 		values.Set("dockerfile", dockerfile)
 	}
 
-	if err = uploadFiles(context, request, buf, body, values, archive); err != nil {
+	uploadCtx, cancel := context.WithCancel(context.Background())
+	defer cancel()
+
+	if err = buildRequestBodyWithProgress(uploadCtx, ctx.Stdout, request, buf, body, values, archive); err != nil {
 		return err
 	}
 

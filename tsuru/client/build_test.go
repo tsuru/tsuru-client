@@ -6,14 +6,18 @@ package client
 
 import (
 	"bytes"
+	"context"
 	"io"
 	"net/http"
+	"net/url"
 	"os"
 	"path/filepath"
 	"strings"
+	"time"
 
 	"github.com/tsuru/tsuru-client/tsuru/cmd"
 	"github.com/tsuru/tsuru-client/tsuru/cmd/cmdtest"
+	"github.com/tsuru/tsuru/safe"
 	"gopkg.in/check.v1"
 )
 
@@ -125,6 +129,86 @@ func (s *S) TestBuildRunWithoutTag(c *check.C) {
 	err := command.Run(&ctx)
 	c.Assert(err, check.NotNil)
 	c.Assert(err.Error(), check.Equals, "you should provide one tag to build the image")
+}
+
+func (s *S) TestBuildRequestBodyWithProgressNilArchive(c *check.C) {
+	body := safe.NewBuffer(nil)
+	buf := safe.NewBuffer(nil)
+	request, _ := http.NewRequest("POST", "/apps/myapp/build", body)
+	values := url.Values{"tag": []string{"mytag"}}
+	var stdout bytes.Buffer
+
+	err := buildRequestBodyWithProgress(context.Background(), &stdout, request, buf, body, values, nil)
+	c.Assert(err, check.IsNil)
+	c.Assert(request.Header.Get("Content-Type"), check.Equals, "application/x-www-form-urlencoded")
+	c.Assert(body.String(), check.Equals, values.Encode())
+}
+
+func (s *S) TestBuildRequestBodyWithProgressWithArchive(c *check.C) {
+	body := safe.NewBuffer(nil)
+	buf := safe.NewBuffer(nil)
+	request, _ := http.NewRequest("POST", "/apps/myapp/build", body)
+	values := url.Values{"tag": []string{"mytag"}}
+	var stdout bytes.Buffer
+	archive := bytes.NewBufferString("fake-archive-content")
+
+	err := buildRequestBodyWithProgress(context.Background(), &stdout, request, buf, body, values, archive)
+	c.Assert(err, check.IsNil)
+	c.Assert(request.Header.Get("Content-Type"), check.Matches, "multipart/form-data; boundary=.*")
+	c.Assert(body.Len() > 0, check.Equals, true)
+	c.Assert(stdout.String(), check.Matches, `Uploading files \(\d+\.\d+MB\)\.\.\. .*`)
+}
+
+func (s *S) TestBuildRequestBodyWithProgressContextCancel(c *check.C) {
+	body := safe.NewBuffer(nil)
+	buf := safe.NewBuffer(nil)
+	request, _ := http.NewRequest("POST", "/apps/myapp/build", body)
+	values := url.Values{"tag": []string{"mytag"}}
+	archive := bytes.NewBufferString("fake-archive-content")
+
+	writerCh := make(chan struct{}, 100)
+	pw := &probeWriter{ch: writerCh}
+
+	ctx, cancel := context.WithCancel(context.Background())
+
+	err := buildRequestBodyWithProgress(ctx, pw, request, buf, body, values, archive)
+	c.Assert(err, check.IsNil)
+
+	// wait for the goroutine to write at least once (proving it started)
+	select {
+	case <-writerCh:
+	case <-time.After(5 * time.Second):
+		c.Fatal("goroutine never started writing progress")
+	}
+
+	// cancel the context
+	cancel()
+
+	// drain any writes that were already in-flight
+	time.Sleep(100 * time.Millisecond)
+	for len(writerCh) > 0 {
+		<-writerCh
+	}
+
+	// no more writes should happen after cancel
+	select {
+	case <-writerCh:
+		c.Fatal("goroutine kept writing after context was cancelled")
+	case <-time.After(5 * time.Second):
+		// success: no writes after cancel
+	}
+}
+
+type probeWriter struct {
+	ch chan struct{}
+}
+
+func (w *probeWriter) Write(p []byte) (int, error) {
+	select {
+	case w.ch <- struct{}{}:
+	default:
+	}
+	return len(p), nil
 }
 
 func (s *S) TestGuessingContainerFile(c *check.C) {
