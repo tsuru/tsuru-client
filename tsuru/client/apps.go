@@ -1952,3 +1952,46 @@ func (c *AppProcessUpdate) Run(ctx *cmd.Context) error {
 
 	return nil
 }
+
+type AppVersionRemove struct {
+	tsuruClientApp.AppNameMixIn
+	version string
+	fs      *pflag.FlagSet
+}
+
+func (c *AppVersionRemove) Info() *cmd.Info {
+	return &cmd.Info{
+		Name:  "app-version-remove",
+		Usage: "[appname] [--version version]",
+		Desc:  "Removes a specific version of an application. This is irreversible and will remove all data related to that version.",
+	}
+}
+
+func (c *AppVersionRemove) Run(context *cmd.Context) error {
+	context.RawOutput()
+	appName, err := c.AppNameByArgsAndFlag(context.Args)
+	if err != nil {
+		return err
+	}
+	u, err := config.GetURLVersion("1.10", fmt.Sprintf("/apps/%s/versions/%s", appName, c.version))
+	if err != nil {
+		return err
+	}
+	request, err := http.NewRequest("DELETE", u, nil)
+	if err != nil {
+		return err
+	}
+	response, err := tsuruHTTP.AuthenticatedClient.Do(request)
+	if err != nil {
+		return err
+	}
+	return formatter.StreamJSONResponse(context.Stdout, response)
+}
+
+func (c *AppVersionRemove) Flags() *pflag.FlagSet {
+	if c.fs == nil {
+		c.fs = c.AppNameMixIn.Flags()
+		c.fs.StringVar(&c.version, "version", "", "Version number")
+	}
+	return c.fs
+}

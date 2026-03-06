@@ -121,6 +121,7 @@ func buildManager(stdout, stderr io.Writer) *cmd.ManagerV2 {
 	m.Register(&client.UnitRemove{})
 	m.Register(&client.UnitKill{})
 	m.Register(&client.UnitSet{})
+	m.Register(&client.AppVersionRemove{})
 	m.Register(&client.AppList{})
 	m.Register(&client.AppLog{})
 	m.Register(&client.AppGrant{})

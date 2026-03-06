@@ -18,6 +18,7 @@ import (
 	"github.com/fatih/color"
 	"github.com/spf13/pflag"
 	"github.com/stretchr/testify/assert"
+	tsuruApp "github.com/tsuru/tsuru-client/tsuru/app"
 	"github.com/tsuru/tsuru-client/tsuru/cmd"
 	"github.com/tsuru/tsuru-client/tsuru/cmd/cmdtest"
 	tsuruIo "github.com/tsuru/tsuru/io"
@@ -3201,7 +3202,7 @@ func (s *S) TestAppStartIsAFlaggedCommand(c *check.C) {
 }
 
 func (s *S) TestUnitPort(c *check.C) {
-	var tests = []struct {
+	tests := []struct {
 		unit provTypes.Unit
 		port string
 	}{
@@ -3215,7 +3216,7 @@ func (s *S) TestUnitPort(c *check.C) {
 }
 
 func (s *S) TestUnitHost(c *check.C) {
-	var tests = []struct {
+	tests := []struct {
 		unit provTypes.Unit
 		host string
 	}{
@@ -3396,4 +3397,104 @@ func TestRenderUnitsColored(t *testing.T) {
 			}
 		})
 	}
+}
+
+func (s *S) TestAppVersionRemoveInfo(c *check.C) {
+	c.Assert((&AppVersionRemove{}).Info(), check.NotNil)
+}
+
+func (s *S) TestAppVersionRemove(c *check.C) {
+	var (
+		called         bool
+		stdout, stderr bytes.Buffer
+	)
+	context := cmd.Context{
+		Stdout: &stdout,
+		Stderr: &stderr,
+	}
+	expectedOut := "-- version removed --"
+	msg := tsuruIo.SimpleJsonMessage{Message: expectedOut}
+	result, err := json.Marshal(msg)
+	c.Assert(err, check.IsNil)
+	trans := &cmdtest.ConditionalTransport{
+		Transport: cmdtest.Transport{Message: string(result), Status: http.StatusOK},
+		CondFunc: func(req *http.Request) bool {
+			called = true
+			method := req.Method == "DELETE"
+			url := strings.HasSuffix(req.URL.Path, "/apps/myapp/versions/3")
+			return method && url
+		},
+	}
+	s.setupFakeTransport(trans)
+	command := AppVersionRemove{}
+	command.Flags().Parse([]string{"--app", "myapp", "--version", "3"})
+	err = command.Run(&context)
+	c.Assert(err, check.IsNil)
+	c.Assert(called, check.Equals, true)
+	c.Assert(stdout.String(), check.Equals, expectedOut)
+}
+
+func (s *S) TestAppVersionRemoveByArg(c *check.C) {
+	var (
+		called         bool
+		stdout, stderr bytes.Buffer
+	)
+	context := cmd.Context{
+		Args:   []string{"myapp"},
+		Stdout: &stdout,
+		Stderr: &stderr,
+	}
+	expectedOut := "-- version removed --"
+	msg := tsuruIo.SimpleJsonMessage{Message: expectedOut}
+	result, err := json.Marshal(msg)
+	c.Assert(err, check.IsNil)
+	trans := &cmdtest.ConditionalTransport{
+		Transport: cmdtest.Transport{Message: string(result), Status: http.StatusOK},
+		CondFunc: func(req *http.Request) bool {
+			called = true
+			method := req.Method == "DELETE"
+			url := strings.HasSuffix(req.URL.Path, "/apps/myapp/versions/5")
+			return method && url
+		},
+	}
+	s.setupFakeTransport(trans)
+	command := AppVersionRemove{}
+	command.Flags().Parse([]string{"--version", "5"})
+	err = command.Run(&context)
+	c.Assert(err, check.IsNil)
+	c.Assert(called, check.Equals, true)
+	c.Assert(stdout.String(), check.Equals, expectedOut)
+}
+
+func (s *S) TestAppVersionRemoveWithoutAppName(c *check.C) {
+	var stdout, stderr bytes.Buffer
+	context := cmd.Context{
+		Stdout: &stdout,
+		Stderr: &stderr,
+	}
+	s.setupFakeTransport(&cmdtest.Transport{Message: "", Status: http.StatusOK})
+	command := AppVersionRemove{}
+	command.Flags().Parse([]string{"--version", "3"})
+	err := command.Run(&context)
+	c.Assert(err, check.NotNil)
+	c.Assert(err, check.Equals, tsuruApp.ErrAppNameRequired)
+}
+
+func (s *S) TestAppVersionRemoveFlags(c *check.C) {
+	command := AppVersionRemove{}
+	flagset := command.Flags()
+	c.Assert(flagset, check.NotNil)
+	flagset.Parse([]string{"--app", "myapp", "--version", "3"})
+
+	app := flagset.Lookup("app")
+	c.Check(app, check.NotNil)
+	c.Check(app.Name, check.Equals, "app")
+	c.Check(app.Value.String(), check.Equals, "myapp")
+	c.Check(app.Shorthand, check.Equals, "a")
+
+	version := flagset.Lookup("version")
+	c.Check(version, check.NotNil)
+	c.Check(version.Name, check.Equals, "version")
+	c.Check(version.Value.String(), check.Equals, "3")
+	c.Check(version.DefValue, check.Equals, "")
 }
