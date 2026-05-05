@@ -230,6 +230,23 @@ func prepareUploadStreams(context *cmd.Context, buf *safe.Buffer) io.Writer {
 	return io.MultiWriter(encoderWriter, buf)
 }
 
+func ensureAppExists(appName string) error {
+	u, err := config.GetURL(fmt.Sprintf("/apps/%s", appName))
+	if err != nil {
+		return err
+	}
+	request, err := http.NewRequest("GET", u, nil)
+	if err != nil {
+		return err
+	}
+	resp, err := tsuruHTTP.AuthenticatedClient.Do(request)
+	if err != nil {
+		return err
+	}
+	defer resp.Body.Close()
+	return nil
+}
+
 func (c *AppDeploy) Run(ctx *cmd.Context) error {
 	ctx.RawOutput()
 
@@ -246,6 +263,10 @@ func (c *AppDeploy) Run(ctx *cmd.Context) error {
 	}
 
 	appName, err := c.AppNameByFlag()
+	if err != nil {
+		return err
+	}
+	err = ensureAppExists(appName)
 	if err != nil {
 		return err
 	}
