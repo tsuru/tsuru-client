@@ -3,30 +3,30 @@ run:
   tests: true
 linters:
   enable:
-    - misspell
+  - misspell
   disable:
-    - errcheck
+  - errcheck
   exclusions:
     generated: lax
     presets:
-      - comments
-      - common-false-positives
-      - legacy
-      - std-error-handling
+    - comments
+    - common-false-positives
+    - legacy
+    - std-error-handling
     paths:
-      - third_party$
-      - builtin$
-      - examples$
+    - third_party$
+    - builtin$
+    - examples$
 formatters:
   enable:
-    - gofmt
-    - goimports
+  - gofmt
+  - goimports
   settings:
     gofmt:
       simplify: true
   exclusions:
     generated: lax
     paths:
-      - third_party$
-      - builtin$
-      - examples$
+    - third_party$
+    - builtin$
+    - examples$

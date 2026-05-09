@@ -84,9 +84,25 @@ install.sh: .goreleaser.yml godownloader
 
 install-scripts: install.sh
 
-metalint:
-	curl -sfL https://raw.githubusercontent.com/golangci/golangci-lint/master/install.sh | sh -s -- -b $$(go env GOPATH)/bin
-	go install ./...
+metalint: install
+ifeq (, $(shell which golangci-lint))
+	curl -sSfL https://golangci-lint.run/install.sh | sh -s -- -b $(go env GOPATH)/bin v2.12.2
+endif
 	$$(go env GOPATH)/bin/golangci-lint run -c ./.golangci.yml ./...
+
+yamlfmt: ## Format your code with yamlfmt
+ifeq (, $(shell which yamlfmt))
+	go install github.com/google/yamlfmt/cmd/yamlfmt@v0.9.0
+endif
+	yamlfmt .
+
+yamllint: ## Check the yaml is valid and correctly formatted
+ifeq (, $(shell which yamlfmt))
+	go install github.com/google/yamlfmt/cmd/yamlfmt@v0.9.0
+endif
+	@echo "yamlfmt --quiet --lint ."
+	@yamlfmt --quiet --lint . \
+		|| ( echo "Please run 'make yamlfmt' to fix it (if a format error)" && exit 1 )
+
 
 .PHONY: doc docs release manpage godownloader install-scripts
