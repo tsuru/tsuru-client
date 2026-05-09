@@ -82,26 +82,18 @@ func (c *AppBuild) Run(ctx *cmd.Context) error {
 	if err != nil {
 		return err
 	}
-	u, err := config.GetURL("/apps/" + appName)
-	if err != nil {
-		return err
-	}
-	request, err := http.NewRequest("GET", u, nil)
-	if err != nil {
-		return err
-	}
-	_, err = tsuruHTTP.AuthenticatedClient.Do(request)
+	err = ensureAppExists(appName)
 	if err != nil {
 		return err
 	}
 	values := url.Values{}
 	values.Set("tag", c.tag)
-	u, err = config.GetURLVersion("1.5", fmt.Sprintf("/apps/%s/build", appName))
+	u, err := config.GetURLVersion("1.5", fmt.Sprintf("/apps/%s/build", appName))
 	if err != nil {
 		return err
 	}
 	body := safe.NewBuffer(nil)
-	request, err = http.NewRequest("POST", u, body)
+	request, err := http.NewRequest("POST", u, body)
 	if err != nil {
 		return err
 	}

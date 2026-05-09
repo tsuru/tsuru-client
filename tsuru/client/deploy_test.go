@@ -26,6 +26,20 @@ func (s *S) TestDeployInfo(c *check.C) {
 	c.Assert(cmd.Info(), check.NotNil)
 }
 
+func deployWithAppInfoTransport(appName string, deployTransport cmdtest.ConditionalTransport, extra ...cmdtest.ConditionalTransport) *cmdtest.MultiConditionalTransport {
+	transports := []cmdtest.ConditionalTransport{
+		{
+			Transport: cmdtest.Transport{Status: http.StatusOK},
+			CondFunc: func(req *http.Request) bool {
+				return req.Method == "GET" && strings.HasSuffix(req.URL.Path, "/apps/"+appName)
+			},
+		},
+		deployTransport,
+	}
+	transports = append(transports, extra...)
+	return &cmdtest.MultiConditionalTransport{ConditionalTransports: transports}
+}
+
 func (s *S) TestDeployRun(c *check.C) {
 	var buf bytes.Buffer
 	err := Archive(&buf, false, []string{"testdata", ".."}, DefaultArchiveOptions(io.Discard))
@@ -47,7 +61,7 @@ func (s *S) TestDeployRun(c *check.C) {
 			return req.Method == "POST" && strings.HasSuffix(req.URL.Path, "/apps/secret/deploy")
 		},
 	}
-	s.setupFakeTransport(&trans)
+	s.setupFakeTransport(deployWithAppInfoTransport("secret", trans))
 	var stdout, stderr bytes.Buffer
 	context := cmd.Context{
 		Stdout: &stdout,
@@ -80,40 +94,36 @@ func (s *S) TestDeployRunCancel(c *check.C) {
 	err := Archive(&buf, false, []string{"testdata", ".."}, DefaultArchiveOptions(io.Discard))
 	c.Assert(err, check.IsNil)
 	deploy := make(chan struct{}, 1)
-	trans := cmdtest.MultiConditionalTransport{
-		ConditionalTransports: []cmdtest.ConditionalTransport{
-			{
-				Transport: &cmdtest.BodyTransport{
-					Status:  http.StatusOK,
-					Headers: map[string][]string{"X-Tsuru-Eventid": {"5aec54d93195b20001194951"}},
-					Body:    &slowReader{ReadCloser: io.NopCloser(bytes.NewBufferString("deploy worked\nOK\n")), Latency: time.Second * 5},
-				},
-				CondFunc: func(req *http.Request) bool {
-					deploy <- struct{}{}
-					if req.Body != nil {
-						defer req.Body.Close()
-					}
-					file, _, transErr := req.FormFile("file")
-					c.Assert(transErr, check.IsNil)
-					content, transErr := io.ReadAll(file)
-					c.Assert(transErr, check.IsNil)
-					c.Assert(content, check.DeepEquals, buf.Bytes())
-					c.Assert(req.Header.Get("Content-Type"), check.Matches, "multipart/form-data; boundary=.*")
-					c.Assert(req.FormValue("origin"), check.Equals, "app-deploy")
-					return req.Method == "POST" && strings.HasSuffix(req.URL.Path, "/apps/secret/deploy")
-				},
-			},
-			{
-				Transport: cmdtest.Transport{Status: http.StatusOK},
-				CondFunc: func(req *http.Request) bool {
-					c.Assert(req.Method, check.Equals, "POST")
-					c.Assert(req.URL.Path, check.Equals, "/1.1/events/5aec54d93195b20001194951/cancel")
-					return true
-				},
-			},
+	deployTransport := cmdtest.ConditionalTransport{
+		Transport: &cmdtest.BodyTransport{
+			Status:  http.StatusOK,
+			Headers: map[string][]string{"X-Tsuru-Eventid": {"5aec54d93195b20001194951"}},
+			Body:    &slowReader{ReadCloser: io.NopCloser(bytes.NewBufferString("deploy worked\nOK\n")), Latency: time.Second * 5},
+		},
+		CondFunc: func(req *http.Request) bool {
+			deploy <- struct{}{}
+			if req.Body != nil {
+				defer req.Body.Close()
+			}
+			file, _, transErr := req.FormFile("file")
+			c.Assert(transErr, check.IsNil)
+			content, transErr := io.ReadAll(file)
+			c.Assert(transErr, check.IsNil)
+			c.Assert(content, check.DeepEquals, buf.Bytes())
+			c.Assert(req.Header.Get("Content-Type"), check.Matches, "multipart/form-data; boundary=.*")
+			c.Assert(req.FormValue("origin"), check.Equals, "app-deploy")
+			return req.Method == "POST" && strings.HasSuffix(req.URL.Path, "/apps/secret/deploy")
 		},
 	}
-	s.setupFakeTransport(&trans)
+	cancelTransport := cmdtest.ConditionalTransport{
+		Transport: cmdtest.Transport{Status: http.StatusOK},
+		CondFunc: func(req *http.Request) bool {
+			c.Assert(req.Method, check.Equals, "POST")
+			c.Assert(req.URL.Path, check.Equals, "/1.1/events/5aec54d93195b20001194951/cancel")
+			return true
+		},
+	}
+	s.setupFakeTransport(deployWithAppInfoTransport("secret", deployTransport, cancelTransport))
 	var stdout, stderr bytes.Buffer
 	context := cmd.Context{
 		Stdout: &stdout,
@@ -149,7 +159,7 @@ func (s *S) TestDeployImage(c *check.C) {
 			return req.Method == "POST" && strings.HasSuffix(req.URL.Path, "/apps/secret/deploy")
 		},
 	}
-	s.setupFakeTransport(&trans)
+	s.setupFakeTransport(deployWithAppInfoTransport("secret", trans))
 	var stdout, stderr bytes.Buffer
 	context := cmd.Context{
 		Stdout: &stdout,
@@ -184,7 +194,7 @@ func (s *S) TestDeployRunWithMessage(c *check.C) {
 			return req.Method == "POST" && strings.HasSuffix(req.URL.Path, "/apps/secret/deploy")
 		},
 	}
-	s.setupFakeTransport(&trans)
+	s.setupFakeTransport(deployWithAppInfoTransport("secret", trans))
 	var stdout, stderr bytes.Buffer
 	context := cmd.Context{
 		Stdout: &stdout,
@@ -205,7 +215,7 @@ func (s *S) TestDeployAuthNotOK(c *check.C) {
 			return req.Method == "POST" && strings.HasSuffix(req.URL.Path, "/apps/secret/deploy")
 		},
 	}
-	s.setupFakeTransport(&trans)
+	s.setupFakeTransport(deployWithAppInfoTransport("secret", trans))
 	var stdout, stderr bytes.Buffer
 	context := cmd.Context{
 		Stdout: &stdout,
@@ -221,8 +231,13 @@ func (s *S) TestDeployAuthNotOK(c *check.C) {
 }
 
 func (s *S) TestDeployRunNotOK(c *check.C) {
-	trans := cmdtest.Transport{Message: "deploy worked\n", Status: http.StatusOK}
-	s.setupFakeTransport(&trans)
+	trans := cmdtest.ConditionalTransport{
+		Transport: cmdtest.Transport{Message: "deploy worked\n", Status: http.StatusOK},
+		CondFunc: func(req *http.Request) bool {
+			return req.Method == "POST" && strings.HasSuffix(req.URL.Path, "/apps/secret/deploy")
+		},
+	}
+	s.setupFakeTransport(deployWithAppInfoTransport("secret", trans))
 	var stdout, stderr bytes.Buffer
 	context := cmd.Context{
 		Stdout: &stdout,
@@ -245,7 +260,12 @@ func (s *S) TestDeployRunFileNotFound(c *check.C) {
 		Args:   []string{"/tmp/something/that/doesn't/really/exist/im/sure", "-a", "secret"},
 	}
 	trans := cmdtest.Transport{Message: "OK\n", Status: http.StatusOK}
-	s.setupFakeTransport(&trans)
+	s.setupFakeTransport(deployWithAppInfoTransport("secret", cmdtest.ConditionalTransport{
+		Transport: trans,
+		CondFunc: func(req *http.Request) bool {
+			return req.Method == "POST" && strings.HasSuffix(req.URL.Path, "/apps/secret/deploy")
+		},
+	}))
 	command := AppDeploy{}
 	err := command.Flags().Parse(context.Args)
 	c.Assert(err, check.IsNil)
@@ -276,8 +296,13 @@ func (s *S) TestDeployRunWithArgsAndImage(c *check.C) {
 }
 
 func (s *S) TestDeployRunRequestFailure(c *check.C) {
-	trans := cmdtest.Transport{Message: "app not found\n", Status: http.StatusNotFound}
-	s.setupFakeTransport(&trans)
+	trans := &cmdtest.ConditionalTransport{
+		Transport: cmdtest.Transport{Message: "app not found\n", Status: http.StatusNotFound},
+		CondFunc: func(req *http.Request) bool {
+			return req.Method == "GET" && strings.HasSuffix(req.URL.Path, "/apps/secret")
+		},
+	}
+	s.setupFakeTransport(trans)
 	command := AppDeploy{}
 	err := command.Flags().Parse([]string{"testdata", "..", "-a", "secret"})
 	c.Assert(err, check.IsNil)
@@ -303,7 +328,7 @@ func (s *S) TestDeploy_Run_UsingDockerfile(c *check.C) {
 
 	ctx := &cmd.Context{Stdout: io.Discard, Stderr: io.Discard, Args: command.Flags().Args()}
 
-	trans := &cmdtest.ConditionalTransport{
+	trans := cmdtest.ConditionalTransport{
 		Transport: cmdtest.Transport{Message: "deployed\nOK\n", Status: http.StatusOK},
 		CondFunc: func(req *http.Request) bool {
 			if req.Body != nil {
@@ -325,7 +350,7 @@ func (s *S) TestDeploy_Run_UsingDockerfile(c *check.C) {
 		},
 	}
 
-	s.setupFakeTransport(trans)
+	s.setupFakeTransport(deployWithAppInfoTransport("my-app", trans))
 	err = command.Run(ctx)
 	c.Assert(err, check.IsNil)
 }

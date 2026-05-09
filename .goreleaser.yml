@@ -6,57 +6,54 @@ builds:
 - main: ./tsuru
   binary: tsuru
   goos:
-    - windows
-    - darwin
-    - linux
+  - windows
+  - darwin
+  - linux
   goarch:
-    - amd64
-    - arm64
+  - amd64
+  - arm64
   ignore:
-    - goos: windows
-      goarch: arm64
+  - goos: windows
+    goarch: arm64
   env:
-    - CGO_ENABLED=0
-    - META_PROJECT_NAME={{.ProjectName}}
-    - META_VERSION={{.Version}}
-    - META_TAG={{.Tag}}
-    - META_PREVIOUS_TAG={{.PreviousTag}}
-    - META_COMMIT={{.Commit}}
-    - META_DATE={{.Date}}
+  - CGO_ENABLED=0
+  - META_PROJECT_NAME={{.ProjectName}}
+  - META_VERSION={{.Version}}
+  - META_TAG={{.Tag}}
+  - META_PREVIOUS_TAG={{.PreviousTag}}
+  - META_COMMIT={{.Commit}}
+  - META_DATE={{.Date}}
   mod_timestamp: '{{ .CommitTimestamp }}'
   flags:
-    - -trimpath
+  - -trimpath
   ldflags:
-    - -s -w -X main.version={{.Version}} -X main.commit={{.Commit}} -X main.date={{ .CommitDate }}
+  - -s -w -X main.version={{.Version}} -X main.commit={{.Commit}} -X main.date={{ .CommitDate }}
   hooks:
     post:
-      - ./misc/generate_metadata.sh dist/metadata.json
+    - ./misc/generate_metadata.sh dist/metadata.json
 
 
 # Archive customization
 archives:
 - name_template: >-
-    {{ .ProjectName }}_
-    {{- .Version }}_
-    {{- if eq .Os "darwin" -}}
+    {{ .ProjectName }}_ {{- .Version }}_ {{- if eq .Os "darwin" -}}
       macOS
     {{- else -}}
       {{ .Os }}
-    {{- end }}_
-    {{- .Arch }}
+    {{- end }}_ {{- .Arch }}
   format: tar.gz
   format_overrides:
-    - goos: windows
-      format: zip
+  - goos: windows
+    format: zip
   files:
-    - misc/bash-completion
-    - misc/zsh-completion
+  - misc/bash-completion
+  - misc/zsh-completion
 
 release:
   replace_existing_artifacts: true
   extra_files:
-    - glob: dist/metadata.json
-    - glob: dist/CHANGELOG.md
+  - glob: dist/metadata.json
+  - glob: dist/CHANGELOG.md
 
   # If set to auto, will mark the release as not ready for production
   # in case there is an indicator for this in the tag e.g. v1.0.0-rc1
@@ -64,7 +61,7 @@ release:
 
 # Mac OS Homebrew
 brews:
-  # Reporitory to push the tap to.
+# Reporitory to push the tap to.
 - repository:
     owner: tsuru
     name: homebrew-tsuru
