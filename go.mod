@@ -36,7 +36,7 @@ require (
 	github.com/beorn7/perks v1.0.1 // indirect
 	github.com/bradfitz/go-smtpd v0.0.0-20170404230938-deb6d6237625 // indirect
 	github.com/cespare/xxhash/v2 v2.3.0 // indirect
-	github.com/containerd/containerd v1.7.29 // indirect
+	github.com/containerd/containerd v1.7.32 // indirect
 	github.com/containerd/log v0.1.0 // indirect
 	github.com/cpuguy83/go-md2man/v2 v2.0.6 // indirect
 	github.com/davecgh/go-spew v1.1.2-0.20180830191138-d8f796af33cc // indirect
