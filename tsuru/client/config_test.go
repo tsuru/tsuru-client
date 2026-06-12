@@ -1,54 +1,65 @@
 package client
 
 import (
+	"bytes"
+	"encoding/json"
 	"os"
 	"path/filepath"
-	"reflect"
-	"testing"
+
+	"github.com/tsuru/tsuru-client/tsuru/cmd"
+	check "gopkg.in/check.v1"
 )
 
-func TestAliases(t *testing.T) {
+func (s *S) TestAliases(c *check.C) {
 	a := Aliases{}
-	src := []string{"app", "deploy"}
-	target := []string{"deploy"}
+	src := []string{"deploy"}
+	target := []string{"app", "deploy"}
 
 	a.Add(src, target)
-	if len(a) != 1 {
-		t.Fatalf("expected 1 alias, got %d", len(a))
-	}
+	c.Assert(a, check.HasLen, 1)
 
 	found, ok := a.Has(src)
-	if !ok {
-		t.Fatal("alias not found")
-	}
-	if !reflect.DeepEqual(found.Target, target) {
-		t.Errorf("expected target %v, got %v", target, found.Target)
-	}
+	c.Assert(ok, check.Equals, true)
+	c.Assert(found.Source, check.DeepEquals, src)
+	c.Assert(found.Target, check.DeepEquals, target)
+
+	found, ok = a.Has([]string{"unexistent"})
+	c.Assert(ok, check.Equals, false)
+	c.Assert(found, check.IsNil)
+
+	override := []string{"app", "shell"}
+	a.Add(src, override)
+	found, ok = a.Has(src)
+	c.Assert(ok, check.Equals, true)
+	c.Assert(found.Source, check.DeepEquals, src)
+	c.Assert(found.Target, check.DeepEquals, override)
 
 	a.Remove(src)
-	if len(a) != 0 {
-		t.Errorf("expected 0 aliases, got %d", len(a))
-	}
+	c.Assert(a, check.HasLen, 0)
 }
 
-func TestConfigFilePath(t *testing.T) {
-	os.Setenv("TSURU_CONFIG_FILE", "/tmp/tsuru/config.json")
-	defer os.Unsetenv("TSURU_CONFIG_FILE")
-
+func (s *S) TestConfigFilePath(c *check.C) {
+	homeDir, err := os.UserHomeDir()
+	c.Assert(err, check.IsNil)
+	expectedPath := filepath.Join(homeDir, ".config", "tsuru", "config.json")
 	path, err := configFilePath()
-	if err != nil {
-		t.Fatalf("unexpected error: %v", err)
-	}
-	if path != "/tmp/tsuru/config.json" {
-		t.Errorf("expected /tmp/tsuru/config.json, got %s", path)
-	}
+	c.Assert(err, check.IsNil)
+	c.Assert(expectedPath, check.Equals, path)
+
+	tmpDir, err := os.MkdirTemp("", "tsuru-test")
+	c.Assert(err, check.IsNil)
+	defer os.RemoveAll(tmpDir)
+	expectedPath = filepath.Join(tmpDir, "config.json")
+	os.Setenv("TSURU_CONFIG_FILE", expectedPath)
+	defer os.Unsetenv("TSURU_CONFIG_FILE")
+	path, err = configFilePath()
+	c.Assert(err, check.IsNil)
+	c.Assert(path, check.Equals, expectedPath)
 }
 
-func TestSaveAndGetConfig(t *testing.T) {
+func (s *S) TestSaveAndGetConfig(c *check.C) {
 	tmpDir, err := os.MkdirTemp("", "tsuru-test")
-	if err != nil {
-		t.Fatal(err)
-	}
+	c.Assert(err, check.IsNil)
 	defer os.RemoveAll(tmpDir)
 
 	configPath := filepath.Join(tmpDir, "config.json")
@@ -62,19 +73,102 @@ func TestSaveAndGetConfig(t *testing.T) {
 	}
 
 	err = config.Save()
-	if err != nil {
-		t.Fatalf("failed to save config: %v", err)
-	}
+	c.Assert(err, check.IsNil)
 
 	loadedConfig, err := GetConfig()
-	if err != nil {
-		t.Fatalf("failed to load config: %v", err)
-	}
+	c.Assert(err, check.IsNil)
+	c.Assert(loadedConfig.Aliases, check.HasLen, 1)
+	c.Assert(loadedConfig.Aliases[0].Target, check.DeepEquals, []string{"cmd"})
+}
 
-	if len(loadedConfig.Aliases) != 1 {
-		t.Errorf("expected 1 alias, got %d", len(loadedConfig.Aliases))
+func (s *S) TestAliasInfo(c *check.C) {
+	var cmd ConfigAlias
+	c.Assert(cmd.Info(), check.NotNil)
+}
+
+func (s *S) TestAliasRun(c *check.C) {
+	tmpDir, err := os.MkdirTemp("", "tsuru-test")
+	c.Assert(err, check.IsNil)
+	defer os.RemoveAll(tmpDir)
+	configPath := filepath.Join(tmpDir, "config.json")
+	os.Setenv("TSURU_CONFIG_FILE", configPath)
+	defer os.Unsetenv("TSURU_CONFIG_FILE")
+
+	var stdout, stderr bytes.Buffer
+	context := cmd.Context{
+		Stdout: &stdout,
+		Stderr: &stderr,
+		Args:   []string{"deploy", "app deploy"},
 	}
-	if !reflect.DeepEqual(loadedConfig.Aliases[0].Target, []string{"cmd"}) {
-		t.Errorf("expected alias cmd, got %v", loadedConfig.Aliases[0].Target)
+	command := ConfigAlias{}
+	command.Flags().Parse([]string{})
+	err = command.Run(&context)
+	c.Assert(err, check.IsNil)
+
+	content, err := os.ReadFile(configPath)
+	c.Assert(err, check.IsNil)
+	var appConfig AppConfig
+	err = json.Unmarshal(content, &appConfig)
+	c.Assert(err, check.IsNil)
+
+	c.Assert(appConfig.Aliases, check.HasLen, 1)
+	c.Assert(appConfig.Aliases[0].Source, check.DeepEquals, []string{"deploy"})
+	c.Assert(appConfig.Aliases[0].Target, check.DeepEquals, []string{"app", "deploy"})
+
+	context.Args = []string{"deploy", "override"}
+	command = ConfigAlias{}
+	command.Flags().Parse([]string{})
+	err = command.Run(&context)
+	c.Assert(err, check.IsNil)
+
+	content, err = os.ReadFile(configPath)
+	c.Assert(err, check.IsNil)
+	err = json.Unmarshal(content, &appConfig)
+	c.Assert(err, check.IsNil)
+
+	c.Assert(appConfig.Aliases, check.HasLen, 1)
+	c.Assert(appConfig.Aliases[0].Source, check.DeepEquals, []string{"deploy"})
+	c.Assert(appConfig.Aliases[0].Target, check.DeepEquals, []string{"override"})
+}
+
+func (s *S) TestAliasRemove(c *check.C) {
+	tmpDir, err := os.MkdirTemp("", "tsuru-test")
+	c.Assert(err, check.IsNil)
+	defer os.RemoveAll(tmpDir)
+	configPath := filepath.Join(tmpDir, "config.json")
+	os.Setenv("TSURU_CONFIG_FILE", configPath)
+	defer os.Unsetenv("TSURU_CONFIG_FILE")
+
+	var stdout, stderr bytes.Buffer
+	context := cmd.Context{
+		Stdout: &stdout,
+		Stderr: &stderr,
+		Args:   []string{"deploy", "app deploy"},
 	}
+	command := ConfigAlias{}
+	command.Flags().Parse([]string{})
+	err = command.Run(&context)
+	c.Assert(err, check.IsNil)
+
+	content, err := os.ReadFile(configPath)
+	c.Assert(err, check.IsNil)
+	var appConfig AppConfig
+	err = json.Unmarshal(content, &appConfig)
+	c.Assert(err, check.IsNil)
+
+	c.Assert(appConfig.Aliases, check.HasLen, 1)
+	c.Assert(appConfig.Aliases[0].Source, check.DeepEquals, []string{"deploy"})
+
+	context.Args = []string{"deploy"}
+	command = ConfigAlias{}
+	command.Flags().Parse([]string{"--delete"})
+	err = command.Run(&context)
+	c.Assert(err, check.IsNil)
+
+	content, err = os.ReadFile(configPath)
+	c.Assert(err, check.IsNil)
+	err = json.Unmarshal(content, &appConfig)
+	c.Assert(err, check.IsNil)
+
+	c.Assert(appConfig.Aliases, check.HasLen, 0)
 }

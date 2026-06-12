@@ -3,6 +3,7 @@ package client
 import (
 	"encoding/json"
 	"os"
+	"path/filepath"
 	"strings"
 
 	"github.com/spf13/pflag"
@@ -13,7 +14,7 @@ type AppConfig struct {
 	Aliases Aliases `json:"aliases"`
 }
 
-type Aliases []Alias
+type Aliases []*Alias
 
 type Alias struct {
 	Source []string `json:"source"`
@@ -34,7 +35,7 @@ func (a *Alias) MatchesSource(source []string) bool {
 func (a *Aliases) Has(source []string) (*Alias, bool) {
 	for _, alias := range *a {
 		if alias.MatchesSource(source) {
-			return &alias, true
+			return alias, true
 		}
 	}
 
@@ -49,14 +50,15 @@ func (a *Aliases) Add(source, target []string) {
 
 	alias, exists := a.Has(source)
 	if exists {
-		alias.Source = source
-	} else {
-		alias = &Alias{
-			Source: source,
-			Target: target,
-		}
+		alias.Target = target
+		return
 	}
-	*a = append(*a, *alias)
+
+	alias = &Alias{
+		Source: source,
+		Target: target,
+	}
+	*a = append(*a, alias)
 }
 
 // Remove will remove an alias to the config, if it exists.
@@ -79,12 +81,12 @@ func configFilePath() (string, error) {
 		return "", err
 	}
 
-	configPath := home + "/.config/tsuru/"
+	configPath := filepath.Join(home, ".config", "tsuru")
 	if err := os.MkdirAll(configPath, 0755); err != nil {
 		return "", err
 	}
 
-	return configPath + "config.json", nil
+	return filepath.Join(configPath, "config.json"), nil
 }
 
 func GetConfig() (*AppConfig, error) {
