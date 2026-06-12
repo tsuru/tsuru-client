@@ -48,7 +48,9 @@ func (a *Aliases) Add(source, target []string) {
 	}
 
 	alias, exists := a.Has(source)
-	if !exists {
+	if exists {
+		alias.Source = source
+	} else {
 		alias = &Alias{
 			Source: source,
 			Target: target,
