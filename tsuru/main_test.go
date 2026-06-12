@@ -93,6 +93,7 @@ func (s *S) TestCommandsRegistered(c *check.C) {
 		"service-create",
 		"service-destroy",
 		"service-doc-get",
+		"config-alias",
 	}
 
 	cobraCmd := manager.Cobra()

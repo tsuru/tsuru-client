@@ -95,6 +95,27 @@ func buildManager(stdout, stderr io.Writer) *cmd.ManagerV2 {
 		standards.FlagRouter:   completions.RouterNameCompletionFunc,
 	})
 
+	config, err := client.GetConfig()
+	if err != nil {
+		message := fmt.Sprintf("Could not read config file: %s\n", err.Error())
+		panic(message)
+	}
+
+	// Check for aliases first. Since aliases are user defined values, they should
+	// be prioritized, even if it means overriding a command that already exists.
+	if len(os.Args) > 1 {
+		args := os.Args[1:] // ignore app name argument
+		alias, exists := config.Aliases.Has(args)
+		if exists {
+			// replace the original arguments with the alias command
+			otherArgsStartIndex := len(alias.Source) + 1
+			newArgs := []string{os.Args[0]}
+			newArgs = append(newArgs, alias.Target...)
+			newArgs = append(newArgs, os.Args[otherArgsStartIndex:]...)
+			os.Args = newArgs
+		}
+	}
+
 	m.RegisterTopic("app", `App is a program source code running on Tsuru.`)
 
 	m.Register(&auth.Login{})
@@ -346,6 +367,12 @@ Services aren’t managed by tsuru, but by their creators.`)
 	m.Register(&client.AppVersionRouterRemove{})
 
 	m.Register(client.UserInfo{})
+
+	m.RegisterTopic("config", `Manage tsuru client configuration. Config file is expected at $HOME/.config/tsuru/config.json
+
+You are allowed to pass a custom path using the --config flag or by setting the "TSURU_CONFIG_PATH" environment variable.
+`)
+	m.Register(&client.ConfigAlias{})
 
 	m.RegisterTopic("autoscale", "Manage autoscaling of application units.")
 	m.RegisterTopic("unit-autoscale", "Manage autoscaling of application units.")
