@@ -177,7 +177,7 @@ func GetURL(path string) (string, error) {
 // WriteTarget writes the given endpoint to the target file.
 func WriteTarget(t string) error {
 	targetPath := config.JoinWithUserDir(".tsuru", "target")
-	targetFile, err := config.Filesystem().OpenFile(targetPath, syscall.O_WRONLY|syscall.O_CREAT|syscall.O_TRUNC, 0600)
+	targetFile, err := config.Filesystem().OpenFile(targetPath, syscall.O_WRONLY|syscall.O_CREAT|syscall.O_TRUNC, 0o600)
 	if err != nil {
 		return err
 	}
@@ -232,9 +232,65 @@ func (t *TargetAdd) Flags() *pflag.FlagSet {
 	return t.fs
 }
 
+type TargetUpdate struct {
+	fs  *pflag.FlagSet
+	set bool
+}
+
+func (t *TargetUpdate) Info() *cmd.Info {
+	return &cmd.Info{
+		Name:    "target-update",
+		MinArgs: 2,
+		MaxArgs: 2,
+		Usage:   "<label> <target> [--set-current|-s]",
+		Desc:    "Updates an existing entry in the list of available targets",
+	}
+}
+
+func (t *TargetUpdate) Run(ctx *cmd.Context) error {
+	if len(ctx.Args) != 2 {
+		return errors.New("Invalid arguments")
+	}
+	targetLabelToUpdate := strings.TrimSpace(ctx.Args[0])
+	newTargetURL := strings.TrimSpace(ctx.Args[1])
+	targets, err := getTargets()
+	if err != nil {
+		return err
+	}
+	if _, ok := targets[targetLabelToUpdate]; !ok {
+		return errors.New("Target label provided does not exist")
+	}
+	targets[targetLabelToUpdate] = newTargetURL
+	if err = resetTargetList(); err != nil {
+		return err
+	}
+	for label, target := range targets {
+		if err := WriteOnTargetList(label, target); err != nil {
+			return err
+		}
+	}
+	fmt.Fprintf(ctx.Stdout, "Target %s -> %s updated on target list", targetLabelToUpdate, newTargetURL)
+	if t.set {
+		if err := WriteTarget(newTargetURL); err != nil {
+			return err
+		}
+		fmt.Fprint(ctx.Stdout, " and defined as the current target")
+	}
+	fmt.Fprintln(ctx.Stdout)
+	return nil
+}
+
+func (t *TargetUpdate) Flags() *pflag.FlagSet {
+	if t.fs == nil {
+		t.fs = pflag.NewFlagSet("target-add", pflag.ExitOnError)
+		t.fs.BoolVarP(&t.set, "set-current", "s", false, "Add and define the target as the current target")
+	}
+	return t.fs
+}
+
 func resetTargetList() error {
 	targetsPath := config.JoinWithUserDir(".tsuru", "targets")
-	targetsFile, err := config.Filesystem().OpenFile(targetsPath, syscall.O_WRONLY|syscall.O_CREAT|syscall.O_TRUNC, 0600)
+	targetsFile, err := config.Filesystem().OpenFile(targetsPath, syscall.O_WRONLY|syscall.O_CREAT|syscall.O_TRUNC, 0o600)
 	if err != nil {
 		return err
 	}
@@ -254,7 +310,7 @@ func WriteOnTargetList(label, target string) error {
 		return errors.New("Target label provided already exists")
 	}
 	targetsPath := config.JoinWithUserDir(".tsuru", "targets")
-	targetsFile, err := config.Filesystem().OpenFile(targetsPath, syscall.O_RDWR|syscall.O_CREAT|syscall.O_APPEND, 0600)
+	targetsFile, err := config.Filesystem().OpenFile(targetsPath, syscall.O_RDWR|syscall.O_CREAT|syscall.O_APPEND, 0o600)
 	if err != nil {
 		return err
 	}
@@ -280,10 +336,10 @@ func CheckIfTargetLabelExists(label string) (bool, error) {
 }
 
 func getTargets() (map[string]string, error) {
-	var targets = map[string]string{}
+	targets := map[string]string{}
 	legacyTargetsPath := config.JoinWithUserDir(".tsuru_targets")
 	targetsPath := config.JoinWithUserDir(".tsuru", "targets")
-	err := config.Filesystem().MkdirAll(config.JoinWithUserDir(".tsuru"), 0700)
+	err := config.Filesystem().MkdirAll(config.JoinWithUserDir(".tsuru"), 0o700)
 	if err != nil {
 		return nil, err
 	}
@@ -296,9 +352,9 @@ func getTargets() (map[string]string, error) {
 	if err == nil {
 		defer f.Close()
 		if b, err := io.ReadAll(f); err == nil {
-			var targetLines = strings.Split(strings.TrimSpace(string(b)), "\n")
+			targetLines := strings.Split(strings.TrimSpace(string(b)), "\n")
 			for i := range targetLines {
-				var targetSplit = strings.Split(targetLines[i], "\t")
+				targetSplit := strings.Split(targetLines[i], "\t")
 
 				if len(targetSplit) == 2 {
 					targets[targetSplit[0]] = targetSplit[1]
@@ -313,10 +369,10 @@ func getTargets() (map[string]string, error) {
 }
 
 func copyTargetFiles() {
-	config.Filesystem().MkdirAll(config.JoinWithUserDir(".tsuru"), 0700)
+	config.Filesystem().MkdirAll(config.JoinWithUserDir(".tsuru"), 0o700)
 	if src, err := config.Filesystem().Open(config.JoinWithUserDir(".tsuru_targets")); err == nil {
 		defer src.Close()
-		if dst, err := config.Filesystem().OpenFile(config.JoinWithUserDir(".tsuru", "targets"), syscall.O_WRONLY|syscall.O_CREAT|syscall.O_TRUNC, 0600); err == nil {
+		if dst, err := config.Filesystem().OpenFile(config.JoinWithUserDir(".tsuru", "targets"), syscall.O_WRONLY|syscall.O_CREAT|syscall.O_TRUNC, 0o600); err == nil {
 			defer dst.Close()
 			io.Copy(dst, src)
 		}

@@ -106,6 +106,7 @@ func buildManager(stdout, stderr io.Writer) *cmd.ManagerV2 {
 	m.Register(&client.TargetAdd{})
 	m.Register(&client.TargetRemove{})
 	m.Register(&client.TargetSet{})
+	m.Register(&client.TargetUpdate{})
 
 	m.Register(&client.AppRun{})
 	m.Register(&client.AppInfo{})
