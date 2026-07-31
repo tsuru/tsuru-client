@@ -73,6 +73,7 @@ func (s *S) TestOIDChLogin(c *check.C) {
 	})
 
 	c.Assert(err, check.IsNil)
+	c.Assert(strings.Contains(context.Stderr.(*bytes.Buffer).String(), "The OIDC token will expire in"), check.Equals, true)
 	tokenV1, err := config.ReadTokenV1()
 	c.Assert(err, check.IsNil)
 	c.Assert(tokenV1, check.Equals, "mytoken")

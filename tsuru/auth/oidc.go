@@ -81,7 +81,7 @@ func oidcLogin(ctx *cmd.Context, loginInfo *authTypes.SchemeInfo) error {
 
 		fmt.Fprintln(ctx.Stderr, "Successfully logged in via OIDC!")
 		tokenExpiry := time.Since(t.Expiry) * -1
-		fmt.Fprintf(ctx.Stderr, "The OIDC token will expiry in %s\n", tokenExpiry.Round(time.Second))
+		fmt.Fprintf(ctx.Stderr, "The OIDC token will expire in %s\n", tokenExpiry.Round(time.Second))
 
 		handlerErr = config.WriteTokenV2(config.TokenV2{
 			Scheme:       "oidc",
