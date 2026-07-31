@@ -2,10 +2,14 @@ package http
 
 import (
 	"bytes"
+	"errors"
 	"net/http"
+	"net/url"
 	"os"
+	"strings"
 
 	"github.com/tsuru/tsuru-client/tsuru/cmd/cmdtest"
+	"golang.org/x/oauth2"
 	check "gopkg.in/check.v1"
 )
 
@@ -68,4 +72,22 @@ func (s *S) TestVerboseRoundTripperDumpRequestResponse2(c *check.C) {
 		"Success!\n"+
 		"*************************** </Response uri=\"/users\"> **********************************\n")
 
+}
+
+func (s *S) TestDetectClientErrorOAuth2RetrieveError(c *check.C) {
+	retrieveErr := &oauth2.RetrieveError{
+		ErrorCode:        "invalid_grant",
+		ErrorDescription: "Token is not active",
+	}
+	err := detectClientError(&url.Error{Op: "Get", URL: "https://tsuru.example.com/1.0/users", Err: retrieveErr})
+	c.Assert(err, check.NotNil)
+	c.Assert(strings.Contains(err.Error(), "session has expired"), check.Equals, true)
+	c.Assert(strings.Contains(err.Error(), "probably down"), check.Equals, false)
+	c.Assert(UnwrapErr(err), check.Equals, retrieveErr)
+}
+
+func (s *S) TestDetectClientErrorGenericStillProbablyDown(c *check.C) {
+	err := detectClientError(&url.Error{Op: "Get", URL: "https://tsuru.example.com/1.0/users", Err: errors.New("connection refused")})
+	c.Assert(err, check.NotNil)
+	c.Assert(strings.Contains(err.Error(), "probably down"), check.Equals, true)
 }
