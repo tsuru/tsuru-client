@@ -9,6 +9,8 @@ import (
 	"net/http"
 	"net/http/httptest"
 	"net/url"
+	"strings"
+	"sync/atomic"
 	"time"
 
 	"github.com/tsuru/go-tsuruclient/pkg/config"
@@ -71,6 +73,7 @@ func (s *S) TestOIDChLogin(c *check.C) {
 	})
 
 	c.Assert(err, check.IsNil)
+	c.Assert(strings.Contains(context.Stderr.(*bytes.Buffer).String(), "The OIDC token will expire in"), check.Equals, true)
 	tokenV1, err := config.ReadTokenV1()
 	c.Assert(err, check.IsNil)
 	c.Assert(tokenV1, check.Equals, "mytoken")
@@ -92,4 +95,118 @@ func (s *S) TestOIDChLogin(c *check.C) {
 			},
 		},
 	})
+}
+
+func (s *S) TestOIDCLoginErrorRedirect(c *check.C) {
+	config.SetFileSystem(&fstest.RecordingFs{})
+
+	bodyCh := make(chan string, 1)
+	execut = &fakeExecutor{
+		DoExecute: func(opts exec.ExecuteOptions) error {
+			go func() {
+				time.Sleep(time.Second)
+				resp, err := http.Get("http://localhost:41001/?error=invalid_request&error_description=Invalid+scopes:+openid")
+				c.Assert(err, check.IsNil)
+				defer resp.Body.Close()
+				b, err := io.ReadAll(resp.Body)
+				c.Assert(err, check.IsNil)
+				bodyCh <- string(b)
+			}()
+			return nil
+		},
+	}
+
+	defer func() {
+		config.ResetFileSystem()
+		execut = nil
+	}()
+
+	var tokenEndpointCalls int32
+	fakeIDP := httptest.NewServer(http.HandlerFunc(func(rw http.ResponseWriter, req *http.Request) {
+		atomic.AddInt32(&tokenEndpointCalls, 1)
+		rw.WriteHeader(http.StatusBadRequest)
+		rw.Write([]byte(`{"error":"invalid_grant","error_description":"Code not valid"}`))
+	}))
+	defer fakeIDP.Close()
+
+	stderr := &bytes.Buffer{}
+	context := &cmd.Context{
+		Stdout: &bytes.Buffer{},
+		Stderr: stderr,
+	}
+
+	err := oidcLogin(context, &auth.SchemeInfo{
+		Data: auth.SchemeData{
+			Port:     "41001",
+			TokenURL: fakeIDP.URL,
+			ClientID: "test-tsuru",
+			Scopes:   []string{"scope1"},
+		},
+	})
+	c.Assert(err, check.IsNil)
+
+	body := <-bodyCh
+	c.Assert(strings.Contains(body, "invalid_request"), check.Equals, true)
+	c.Assert(strings.Contains(body, "Invalid scopes: openid"), check.Equals, true)
+	c.Assert(strings.Contains(body, "invalid_grant"), check.Equals, false)
+	c.Assert(strings.Contains(stderr.String(), "invalid_request"), check.Equals, true)
+	c.Assert(strings.Contains(stderr.String(), "Invalid scopes: openid"), check.Equals, true)
+	c.Assert(atomic.LoadInt32(&tokenEndpointCalls), check.Equals, int32(0))
+
+	tokenV1, _ := config.ReadTokenV1()
+	c.Assert(tokenV1, check.Equals, "")
+}
+
+func (s *S) TestOIDCLoginMissingCode(c *check.C) {
+	config.SetFileSystem(&fstest.RecordingFs{})
+
+	bodyCh := make(chan string, 1)
+	execut = &fakeExecutor{
+		DoExecute: func(opts exec.ExecuteOptions) error {
+			go func() {
+				time.Sleep(time.Second)
+				resp, err := http.Get("http://localhost:41002/")
+				c.Assert(err, check.IsNil)
+				defer resp.Body.Close()
+				b, err := io.ReadAll(resp.Body)
+				c.Assert(err, check.IsNil)
+				bodyCh <- string(b)
+			}()
+			return nil
+		},
+	}
+
+	defer func() {
+		config.ResetFileSystem()
+		execut = nil
+	}()
+
+	var tokenEndpointCalls int32
+	fakeIDP := httptest.NewServer(http.HandlerFunc(func(rw http.ResponseWriter, req *http.Request) {
+		atomic.AddInt32(&tokenEndpointCalls, 1)
+		rw.WriteHeader(http.StatusBadRequest)
+		rw.Write([]byte(`{"error":"invalid_grant","error_description":"Code not valid"}`))
+	}))
+	defer fakeIDP.Close()
+
+	stderr := &bytes.Buffer{}
+	context := &cmd.Context{
+		Stdout: &bytes.Buffer{},
+		Stderr: stderr,
+	}
+
+	err := oidcLogin(context, &auth.SchemeInfo{
+		Data: auth.SchemeData{
+			Port:     "41002",
+			TokenURL: fakeIDP.URL,
+			ClientID: "test-tsuru",
+			Scopes:   []string{"scope1"},
+		},
+	})
+	c.Assert(err, check.IsNil)
+
+	body := <-bodyCh
+	c.Assert(strings.Contains(body, "missing 'code' parameter"), check.Equals, true)
+	c.Assert(strings.Contains(stderr.String(), "missing 'code' parameter"), check.Equals, true)
+	c.Assert(atomic.LoadInt32(&tokenEndpointCalls), check.Equals, int32(0))
 }

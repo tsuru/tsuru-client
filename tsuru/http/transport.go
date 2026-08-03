@@ -17,6 +17,7 @@ import (
 	"github.com/pkg/errors"
 	"github.com/tsuru/go-tsuruclient/pkg/config"
 	tsuruerr "github.com/tsuru/tsuru/errors"
+	"golang.org/x/oauth2"
 )
 
 var (
@@ -138,6 +139,8 @@ func detectClientError(err error) error {
 			return errors.Wrapf(e, "Error received from tsuru server (%s), %d", target, e.Code)
 		case x509.UnknownAuthorityError:
 			return errors.Wrapf(e, "Failed to connect to tsuru server (%s)", target)
+		case *oauth2.RetrieveError:
+			return errors.Wrapf(e, "your session has expired, please run \"tsuru login\" (%s)", target)
 		}
 		return errors.Wrapf(e, "Failed to connect to tsuru server (%s), it's probably down", target)
 	}

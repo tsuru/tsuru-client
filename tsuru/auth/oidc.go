@@ -6,6 +6,7 @@ package auth
 
 import (
 	stdContext "context"
+	"errors"
 	"fmt"
 	"net"
 	"net/http"
@@ -52,9 +53,26 @@ func oidcLogin(ctx *cmd.Context, loginInfo *authTypes.SchemeInfo) error {
 			finish <- true
 		}()
 
-		t, handlerErr := oauth2Config.Exchange(stdContext.Background(), r.URL.Query().Get("code"), oauth2.VerifierOption(pkceVerifier))
-
 		w.Header().Add("Content-Type", "text/html")
+
+		// RFC 6749 section 4.1.2.1: the authorization server may redirect
+		// back with an error instead of a code.
+		query := r.URL.Query()
+		if errCode := query.Get("error"); errCode != "" {
+			handlerErr := fmt.Errorf("authorization server returned an error: %s: %s", errCode, query.Get("error_description"))
+			fmt.Fprintf(ctx.Stderr, "Login failed: %v\n", handlerErr)
+			writeHTMLError(w, handlerErr)
+			return
+		}
+		code := query.Get("code")
+		if code == "" {
+			handlerErr := errors.New("authorization response missing 'code' parameter")
+			fmt.Fprintf(ctx.Stderr, "Login failed: %v\n", handlerErr)
+			writeHTMLError(w, handlerErr)
+			return
+		}
+
+		t, handlerErr := oauth2Config.Exchange(stdContext.Background(), code, oauth2.VerifierOption(pkceVerifier))
 
 		if handlerErr != nil {
 			writeHTMLError(w, handlerErr)
@@ -63,7 +81,7 @@ func oidcLogin(ctx *cmd.Context, loginInfo *authTypes.SchemeInfo) error {
 
 		fmt.Fprintln(ctx.Stderr, "Successfully logged in via OIDC!")
 		tokenExpiry := time.Since(t.Expiry) * -1
-		fmt.Fprintf(ctx.Stderr, "The OIDC token will expiry in %s\n", tokenExpiry.Round(time.Second))
+		fmt.Fprintf(ctx.Stderr, "The OIDC token will expire in %s\n", tokenExpiry.Round(time.Second))
 
 		handlerErr = config.WriteTokenV2(config.TokenV2{
 			Scheme:       "oidc",
