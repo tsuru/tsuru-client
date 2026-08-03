@@ -366,6 +366,109 @@ func (s *S) TestTargetAddFlags(c *check.C) {
 	c.Check(set.Shorthand, check.Equals, "s")
 }
 
+func (s *S) TestTargetUpdateInfo(c *check.C) {
+	expected := &cmd.Info{
+		Name:    "target-update",
+		Usage:   "<label> <target> [--set-current|-s]",
+		Desc:    "Updates an existing entry in the list of available targets",
+		MinArgs: 2,
+		MaxArgs: 2,
+	}
+	targetUpdate := &TargetUpdate{}
+	c.Assert(targetUpdate.Info(), check.DeepEquals, expected)
+}
+
+func (s *S) TestTargetUpdateFlags(c *check.C) {
+	command := TargetUpdate{}
+	flagset := command.Flags()
+	c.Assert(flagset, check.NotNil)
+	flagset.Parse([]string{"--set-current"})
+	set := flagset.Lookup("set-current")
+	c.Assert(set, check.NotNil)
+	c.Check(set.Name, check.Equals, "set-current")
+	c.Check(set.Usage, check.Equals, "Add and define the target as the current target")
+	c.Check(set.Value.String(), check.Equals, "true")
+	c.Check(set.DefValue, check.Equals, "false")
+	c.Check(set.Shorthand, check.Equals, "s")
+}
+
+func (s *S) TestTargetUpdateRun(c *check.C) {
+	rfs := &fstest.RecordingFs{}
+	f, err := rfs.Create(config.JoinWithUserDir(".tsuru", "targets"))
+	c.Assert(err, check.IsNil)
+	_, err = f.Write([]byte("first\thttp://tsuru.io/\ndefault\thttp://tsuru.google.com"))
+	c.Assert(err, check.IsNil)
+	c.Assert(f.Close(), check.IsNil)
+	config.SetFileSystem(rfs)
+	defer config.ResetFileSystem()
+
+	context := &cmd.Context{
+		Args:   []string{"default", "https://tsuru.new.google.com"},
+		Stdout: &bytes.Buffer{},
+	}
+	targetUpdate := &TargetUpdate{}
+	err = targetUpdate.Run(context)
+	c.Assert(err, check.IsNil)
+	c.Assert(context.Stdout.(*bytes.Buffer).String(), check.Equals, "Target default -> https://tsuru.new.google.com updated on target list\n")
+
+	targets, err := getTargets()
+	c.Assert(err, check.IsNil)
+	c.Assert(targets, check.DeepEquals, map[string]string{
+		"first":   "http://tsuru.io/",
+		"default": "https://tsuru.new.google.com",
+	})
+}
+
+func (s *S) TestTargetUpdateWithSetCurrent(c *check.C) {
+	os.Unsetenv("TSURU_TARGET")
+	rfs := &fstest.RecordingFs{}
+	f, err := rfs.Create(config.JoinWithUserDir(".tsuru", "targets"))
+	c.Assert(err, check.IsNil)
+	_, err = f.Write([]byte("default\thttp://tsuru.google.com"))
+	c.Assert(err, check.IsNil)
+	c.Assert(f.Close(), check.IsNil)
+	config.SetFileSystem(rfs)
+	defer func() {
+		config.ResetFileSystem()
+		os.Unsetenv("TSURU_TARGET")
+	}()
+
+	context := &cmd.Context{
+		Args:   []string{"default", "https://tsuru.new.google.com"},
+		Stdout: &bytes.Buffer{},
+	}
+	targetUpdate := &TargetUpdate{}
+	targetUpdate.Flags().Parse([]string{"-s"})
+	err = targetUpdate.Run(context)
+	c.Assert(err, check.IsNil)
+	c.Assert(context.Stdout.(*bytes.Buffer).String(), check.Equals, "Target default -> https://tsuru.new.google.com updated on target list and defined as the current target\n")
+
+	target, err := ReadTarget()
+	c.Assert(err, check.IsNil)
+	c.Assert(target, check.Equals, "https://tsuru.new.google.com")
+}
+
+func (s *S) TestTargetUpdateWithInvalidArguments(c *check.C) {
+	config.SetFileSystem(&fstest.RecordingFs{})
+	defer config.ResetFileSystem()
+
+	targetUpdate := &TargetUpdate{}
+	err := targetUpdate.Run(&cmd.Context{Args: []string{"default"}})
+	c.Assert(err, check.ErrorMatches, "Invalid arguments")
+}
+
+func (s *S) TestTargetUpdateWithUnknownLabel(c *check.C) {
+	rfs := &fstest.RecordingFs{FileContent: "default\thttp://tsuru.google.com"}
+	config.SetFileSystem(rfs)
+	defer config.ResetFileSystem()
+
+	targetUpdate := &TargetUpdate{}
+	err := targetUpdate.Run(&cmd.Context{
+		Args: []string{"unknown", "https://tsuru.new.google.com"},
+	})
+	c.Assert(err, check.ErrorMatches, "Target label provided does not exist")
+}
+
 func (s *S) TestIfTargetLabelExists(c *check.C) {
 	rfs := &fstest.RecordingFs{FileContent: "first\thttp://tsuru.io/\ndefault\thttp://tsuru.google.com"}
 	config.SetFileSystem(rfs)
