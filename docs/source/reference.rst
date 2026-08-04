@@ -354,6 +354,9 @@ Event Webhooks
 .. tsuru-command:: event-webhook-delete
    :title: Deletes a webhook
 
+.. tsuru-command:: event-webhook-info
+   :title: Shows webhook details
+
 Container management
 ====================
 

@@ -439,6 +439,10 @@
     "usage": "tsuru event-webhook-delete <name>",
     "desc": "Deletes an existing webhook.\n\nMinimum # of arguments: 1\n"
   },
+  "event-webhook-info": {
+    "usage": "tsuru event-webhook-info <name>",
+    "desc": "Show detailed information for a webhook.\n\nMinimum # of arguments: 1\nMaximum # of arguments: 1\n"
+  },
   "node-healing-delete": {
     "usage": "tsuru node-healing-delete [-p/--pool pool] [--enabled] [--max-unresponsive] [--max-unsuccessful]",
     "desc": "Delete a node healing configuration entry.\n\nIf [[--pool]] is provided the configuration entries from the specified pool\nwill be removed and the default value will be used.\n\nIf [[--pool]] is not provided the configuration entry will be removed from the\ndefault configuration.\n\nFlags:\n  \n  --enabled  (= false)\n      Remove the 'enabled' configuration option\n  --max-unresponsive  (= false)\n      Remove the 'max-unresponsive' configuration option\n  --max-unsuccessful  (= false)\n      Remove the 'max-unsuccessful' configuration option\n  -p, --pool (= \"\")\n      The pool name from where the configuration will be removed. If unset it'll delete the default healing configuration.\n  -y, --assume-yes  (= false)\n      Don't ask for confirmation.\n  \n"
