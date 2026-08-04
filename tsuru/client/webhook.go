@@ -390,23 +390,10 @@ func (c *WebhookInfo) Run(ctx *cmd.Context) error {
 	filtersTable := tablecli.NewTable()
 	filtersTable.Headers = tablecli.Row{"Filter"}
 	filtersTable.LineSeparator = true
-	for _, v := range w.EventFilter.KindTypes {
-		filtersTable.AddRow(tablecli.Row{fmt.Sprintf("kind-type == %s", v)})
-	}
-	for _, v := range w.EventFilter.KindNames {
-		filtersTable.AddRow(tablecli.Row{fmt.Sprintf("kind-name == %s", v)})
-	}
-	for _, v := range w.EventFilter.TargetTypes {
-		filtersTable.AddRow(tablecli.Row{fmt.Sprintf("target-type == %s", v)})
-	}
-	for _, v := range w.EventFilter.TargetValues {
-		filtersTable.AddRow(tablecli.Row{fmt.Sprintf("target-value == %s", v)})
-	}
-	if w.EventFilter.SuccessOnly {
-		filtersTable.AddRow(tablecli.Row{"success-only"})
-	}
-	if w.EventFilter.ErrorOnly {
-		filtersTable.AddRow(tablecli.Row{"error-only"})
+	for _, f := range strings.Split(filterToStr(w.EventFilter), "\n") {
+		if f != "" {
+			filtersTable.AddRow(tablecli.Row{f})
+		}
 	}
 	fmt.Fprintf(ctx.Stdout, "\nFilters:\n")
 	fmt.Fprint(ctx.Stdout, filtersTable.String())
