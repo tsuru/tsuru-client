@@ -331,6 +331,88 @@ func filterToStr(f tsuru.WebhookEventFilter) string {
 	return strings.Join(strs, "\n")
 }
 
+type WebhookInfo struct{}
+
+func (c *WebhookInfo) Info() *cmd.Info {
+	return &cmd.Info{
+		Name:    "event-webhook-info",
+		Usage:   "<name>",
+		Desc:    `Show detailed information for a webhook.`,
+		MinArgs: 1,
+		MaxArgs: 1,
+	}
+}
+
+func (c *WebhookInfo) Run(ctx *cmd.Context) error {
+	apiClient, err := tsuruHTTP.TsuruClientFromEnvironment()
+	if err != nil {
+		return err
+	}
+	w, _, err := apiClient.EventApi.WebhookGet(context.TODO(), ctx.Args[0])
+	if err != nil {
+		return err
+	}
+	method := w.Method
+	if method == "" {
+		method = "(default POST)"
+	}
+	body := w.Body
+	if body == "" {
+		body = "<event>"
+	}
+	fmt.Fprintf(ctx.Stdout, "Name: %s\n", w.Name)
+	fmt.Fprintf(ctx.Stdout, "Description: %s\n", w.Description)
+	fmt.Fprintf(ctx.Stdout, "Team: %s\n", w.TeamOwner)
+	fmt.Fprintf(ctx.Stdout, "URL: %s\n", w.Url)
+	fmt.Fprintf(ctx.Stdout, "Method: %s\n", method)
+	fmt.Fprintf(ctx.Stdout, "Body: %s\n", body)
+	if w.ProxyUrl != "" {
+		fmt.Fprintf(ctx.Stdout, "Proxy: %s\n", w.ProxyUrl)
+	}
+	fmt.Fprintf(ctx.Stdout, "Insecure: %s\n", strconv.FormatBool(w.Insecure))
+
+	headersTable := tablecli.NewTable()
+	headersTable.Headers = tablecli.Row{"Header", "Value"}
+	headersTable.LineSeparator = true
+	var headerKeys []string
+	for k := range w.Headers {
+		headerKeys = append(headerKeys, k)
+	}
+	sort.Strings(headerKeys)
+	for _, k := range headerKeys {
+		for _, v := range w.Headers[k] {
+			headersTable.AddRow(tablecli.Row{k, v})
+		}
+	}
+	fmt.Fprintf(ctx.Stdout, "\nHeaders:\n")
+	fmt.Fprint(ctx.Stdout, headersTable.String())
+
+	filtersTable := tablecli.NewTable()
+	filtersTable.Headers = tablecli.Row{"Filter"}
+	filtersTable.LineSeparator = true
+	for _, v := range w.EventFilter.KindTypes {
+		filtersTable.AddRow(tablecli.Row{fmt.Sprintf("kind-type == %s", v)})
+	}
+	for _, v := range w.EventFilter.KindNames {
+		filtersTable.AddRow(tablecli.Row{fmt.Sprintf("kind-name == %s", v)})
+	}
+	for _, v := range w.EventFilter.TargetTypes {
+		filtersTable.AddRow(tablecli.Row{fmt.Sprintf("target-type == %s", v)})
+	}
+	for _, v := range w.EventFilter.TargetValues {
+		filtersTable.AddRow(tablecli.Row{fmt.Sprintf("target-value == %s", v)})
+	}
+	if w.EventFilter.SuccessOnly {
+		filtersTable.AddRow(tablecli.Row{"success-only"})
+	}
+	if w.EventFilter.ErrorOnly {
+		filtersTable.AddRow(tablecli.Row{"error-only"})
+	}
+	fmt.Fprintf(ctx.Stdout, "\nFilters:\n")
+	fmt.Fprint(ctx.Stdout, filtersTable.String())
+	return nil
+}
+
 type WebhookDelete struct{}
 
 func (c *WebhookDelete) Info() *cmd.Info {
