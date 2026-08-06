@@ -367,13 +367,13 @@ func (s *S) TestWebhookInfoInfo(c *check.C) {
 
 func (s *S) TestWebhookInfo(c *check.C) {
 	var stdout, stderr bytes.Buffer
-	expected := "Name: wh1\n" +
-		"Description: desc1\n" +
-		"Team: t1\n" +
-		"URL: http://x.com\n" +
-		"Method: GET\n" +
-		"Body: xyz\n" +
-		"Insecure: true\n" +
+	expected := "Name:         wh1\n" +
+		"Description:  desc1\n" +
+		"Team:         t1\n" +
+		"URL:          http://x.com\n" +
+		"Method:       GET\n" +
+		"Body:         xyz\n" +
+		"Insecure:     true\n" +
 		"\nHeaders:\n" +
 		"+--------+-------+\n" +
 		"| Header | Value |\n" +
@@ -446,13 +446,13 @@ func (s *S) TestWebhookInfo(c *check.C) {
 
 func (s *S) TestWebhookInfoDefaults(c *check.C) {
 	var stdout, stderr bytes.Buffer
-	expected := "Name: wh0\n" +
-		"Description: \n" +
-		"Team: \n" +
-		"URL: http://all\n" +
-		"Method: (default POST)\n" +
-		"Body: <event>\n" +
-		"Insecure: false\n" +
+	expected := "Name:         wh0\n" +
+		"Description:  \n" +
+		"Team:         \n" +
+		"URL:          http://all\n" +
+		"Method:       (default POST)\n" +
+		"Body:         <event>\n" +
+		"Insecure:     false\n" +
 		"\nHeaders:\n" +
 		"+--------+-------+\n" +
 		"| Header | Value |\n" +

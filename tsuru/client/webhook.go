@@ -360,16 +360,16 @@ func (c *WebhookInfo) Run(ctx *cmd.Context) error {
 	if body == "" {
 		body = "<event>"
 	}
-	fmt.Fprintf(ctx.Stdout, "Name: %s\n", w.Name)
-	fmt.Fprintf(ctx.Stdout, "Description: %s\n", w.Description)
-	fmt.Fprintf(ctx.Stdout, "Team: %s\n", w.TeamOwner)
-	fmt.Fprintf(ctx.Stdout, "URL: %s\n", w.Url)
-	fmt.Fprintf(ctx.Stdout, "Method: %s\n", method)
-	fmt.Fprintf(ctx.Stdout, "Body: %s\n", body)
+	fmt.Fprintf(ctx.Stdout, "%-14s%s\n", "Name:", w.Name)
+	fmt.Fprintf(ctx.Stdout, "%-14s%s\n", "Description:", w.Description)
+	fmt.Fprintf(ctx.Stdout, "%-14s%s\n", "Team:", w.TeamOwner)
+	fmt.Fprintf(ctx.Stdout, "%-14s%s\n", "URL:", w.Url)
+	fmt.Fprintf(ctx.Stdout, "%-14s%s\n", "Method:", method)
+	fmt.Fprintf(ctx.Stdout, "%-14s%s\n", "Body:", body)
 	if w.ProxyUrl != "" {
-		fmt.Fprintf(ctx.Stdout, "Proxy: %s\n", w.ProxyUrl)
+		fmt.Fprintf(ctx.Stdout, "%-14s%s\n", "Proxy:", w.ProxyUrl)
 	}
-	fmt.Fprintf(ctx.Stdout, "Insecure: %s\n", strconv.FormatBool(w.Insecure))
+	fmt.Fprintf(ctx.Stdout, "%-14s%s\n", "Insecure:", strconv.FormatBool(w.Insecure))
 
 	headersTable := tablecli.NewTable()
 	headersTable.Headers = tablecli.Row{"Header", "Value"}
