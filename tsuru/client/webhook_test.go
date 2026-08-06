@@ -361,3 +361,125 @@ func (s *S) TestWebhookUpdateWithFlags(c *check.C) {
 	c.Assert(callCount, check.Equals, 2)
 	c.Assert(stdout.String(), check.Equals, expected)
 }
+func (s *S) TestWebhookInfoInfo(c *check.C) {
+	c.Assert((&WebhookInfo{}).Info(), check.NotNil)
+}
+
+func (s *S) TestWebhookInfo(c *check.C) {
+	var stdout, stderr bytes.Buffer
+	expected := "Name:         wh1\n" +
+		"Description:  desc1\n" +
+		"Team:         t1\n" +
+		"URL:          http://x.com\n" +
+		"Method:       GET\n" +
+		"Body:         xyz\n" +
+		"Insecure:     true\n" +
+		"\nHeaders:\n" +
+		"+--------+-------+\n" +
+		"| Header | Value |\n" +
+		"+--------+-------+\n" +
+		"| a      | b     |\n" +
+		"+--------+-------+\n" +
+		"| a      | c     |\n" +
+		"+--------+-------+\n" +
+		"| b      | d     |\n" +
+		"+--------+-------+\n" +
+		"\nFilters:\n" +
+		"+--------------------+\n" +
+		"| Filter             |\n" +
+		"+--------------------+\n" +
+		"| kind-type == k1    |\n" +
+		"+--------------------+\n" +
+		"| kind-name == k2    |\n" +
+		"+--------------------+\n" +
+		"| target-type == a1  |\n" +
+		"+--------------------+\n" +
+		"| target-type == b1  |\n" +
+		"+--------------------+\n" +
+		"| target-value == a2 |\n" +
+		"+--------------------+\n" +
+		"| target-value == b2 |\n" +
+		"+--------------------+\n" +
+		"| success-only       |\n" +
+		"+--------------------+\n"
+	wh := tsuru.Webhook{
+		Name:        "wh1",
+		Url:         "http://x.com",
+		Method:      "GET",
+		Body:        "xyz",
+		TeamOwner:   "t1",
+		Description: "desc1",
+		Headers: map[string][]string{
+			"a": {"b", "c"},
+			"b": {"d"},
+		},
+		Insecure: true,
+		EventFilter: tsuru.WebhookEventFilter{
+			TargetTypes:  []string{"a1", "b1"},
+			TargetValues: []string{"a2", "b2"},
+			KindTypes:    []string{"k1"},
+			KindNames:    []string{"k2"},
+			SuccessOnly:  true,
+		},
+	}
+	body, err := json.Marshal(wh)
+	c.Assert(err, check.IsNil)
+	context := cmd.Context{
+		Stdout: &stdout,
+		Stderr: &stderr,
+		Args:   []string{"wh1"},
+	}
+	trans := cmdtest.ConditionalTransport{
+		Transport: cmdtest.Transport{Message: string(body), Status: http.StatusOK},
+		CondFunc: func(r *http.Request) bool {
+			c.Assert(r.URL.Path, check.Equals, "/1.6/events/webhooks/wh1")
+			c.Assert(r.Method, check.Equals, "GET")
+			return true
+		},
+	}
+	s.setupFakeTransport(&trans)
+	command := WebhookInfo{}
+	err = command.Run(&context)
+	c.Assert(err, check.IsNil)
+	c.Assert(stdout.String(), check.Equals, expected)
+}
+
+func (s *S) TestWebhookInfoDefaults(c *check.C) {
+	var stdout, stderr bytes.Buffer
+	expected := "Name:         wh0\n" +
+		"Description:  \n" +
+		"Team:         \n" +
+		"URL:          http://all\n" +
+		"Method:       (default POST)\n" +
+		"Body:         <event>\n" +
+		"Insecure:     false\n" +
+		"\nHeaders:\n" +
+		"+--------+-------+\n" +
+		"| Header | Value |\n" +
+		"+--------+-------+\n" +
+		"\nFilters:\n" +
+		"+--------+\n" +
+		"| Filter |\n" +
+		"+--------+\n"
+	wh := tsuru.Webhook{Name: "wh0", Url: "http://all"}
+	body, err := json.Marshal(wh)
+	c.Assert(err, check.IsNil)
+	context := cmd.Context{
+		Stdout: &stdout,
+		Stderr: &stderr,
+		Args:   []string{"wh0"},
+	}
+	trans := cmdtest.ConditionalTransport{
+		Transport: cmdtest.Transport{Message: string(body), Status: http.StatusOK},
+		CondFunc: func(r *http.Request) bool {
+			c.Assert(r.URL.Path, check.Equals, "/1.6/events/webhooks/wh0")
+			c.Assert(r.Method, check.Equals, "GET")
+			return true
+		},
+	}
+	s.setupFakeTransport(&trans)
+	command := WebhookInfo{}
+	err = command.Run(&context)
+	c.Assert(err, check.IsNil)
+	c.Assert(stdout.String(), check.Equals, expected)
+}

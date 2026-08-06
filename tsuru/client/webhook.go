@@ -331,6 +331,75 @@ func filterToStr(f tsuru.WebhookEventFilter) string {
 	return strings.Join(strs, "\n")
 }
 
+type WebhookInfo struct{}
+
+func (c *WebhookInfo) Info() *cmd.Info {
+	return &cmd.Info{
+		Name:    "event-webhook-info",
+		Usage:   "<name>",
+		Desc:    `Show detailed information for a webhook.`,
+		MinArgs: 1,
+		MaxArgs: 1,
+	}
+}
+
+func (c *WebhookInfo) Run(ctx *cmd.Context) error {
+	apiClient, err := tsuruHTTP.TsuruClientFromEnvironment()
+	if err != nil {
+		return err
+	}
+	w, _, err := apiClient.EventApi.WebhookGet(context.TODO(), ctx.Args[0])
+	if err != nil {
+		return err
+	}
+	method := w.Method
+	if method == "" {
+		method = "(default POST)"
+	}
+	body := w.Body
+	if body == "" {
+		body = "<event>"
+	}
+	fmt.Fprintf(ctx.Stdout, "%-14s%s\n", "Name:", w.Name)
+	fmt.Fprintf(ctx.Stdout, "%-14s%s\n", "Description:", w.Description)
+	fmt.Fprintf(ctx.Stdout, "%-14s%s\n", "Team:", w.TeamOwner)
+	fmt.Fprintf(ctx.Stdout, "%-14s%s\n", "URL:", w.Url)
+	fmt.Fprintf(ctx.Stdout, "%-14s%s\n", "Method:", method)
+	fmt.Fprintf(ctx.Stdout, "%-14s%s\n", "Body:", body)
+	if w.ProxyUrl != "" {
+		fmt.Fprintf(ctx.Stdout, "%-14s%s\n", "Proxy:", w.ProxyUrl)
+	}
+	fmt.Fprintf(ctx.Stdout, "%-14s%s\n", "Insecure:", strconv.FormatBool(w.Insecure))
+
+	headersTable := tablecli.NewTable()
+	headersTable.Headers = tablecli.Row{"Header", "Value"}
+	headersTable.LineSeparator = true
+	var headerKeys []string
+	for k := range w.Headers {
+		headerKeys = append(headerKeys, k)
+	}
+	sort.Strings(headerKeys)
+	for _, k := range headerKeys {
+		for _, v := range w.Headers[k] {
+			headersTable.AddRow(tablecli.Row{k, v})
+		}
+	}
+	fmt.Fprintf(ctx.Stdout, "\nHeaders:\n")
+	fmt.Fprint(ctx.Stdout, headersTable.String())
+
+	filtersTable := tablecli.NewTable()
+	filtersTable.Headers = tablecli.Row{"Filter"}
+	filtersTable.LineSeparator = true
+	for _, f := range strings.Split(filterToStr(w.EventFilter), "\n") {
+		if f != "" {
+			filtersTable.AddRow(tablecli.Row{f})
+		}
+	}
+	fmt.Fprintf(ctx.Stdout, "\nFilters:\n")
+	fmt.Fprint(ctx.Stdout, filtersTable.String())
+	return nil
+}
+
 type WebhookDelete struct{}
 
 func (c *WebhookDelete) Info() *cmd.Info {
