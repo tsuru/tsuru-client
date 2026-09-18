@@ -271,6 +271,10 @@ Services aren’t managed by tsuru, but by their creators.`)
 	m.Register(&admin.ServiceUpdate{})
 	m.Register(&admin.ServiceTemplate{})
 
+	m.RegisterTopic("service-manifest", "Manage service permissions manifests")
+	m.Register(&admin.ServiceManifestGet{})
+	m.Register(&admin.ServiceManifestSet{})
+
 	m.RegisterTopic("service-doc", "Manage Service Docs")
 	m.Register(&admin.ServiceDocGet{})
 	m.Register(&admin.ServiceDocAdd{})

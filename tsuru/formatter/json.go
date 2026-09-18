@@ -5,7 +5,7 @@ import (
 	"io"
 )
 
-func JSON(writer io.Writer, data interface{}) error {
+func JSON(writer io.Writer, data any) error {
 	enc := json.NewEncoder(writer)
 	enc.SetIndent("", "  ")
 	return enc.Encode(data)

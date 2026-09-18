@@ -15,6 +15,7 @@ import (
 	"gopkg.in/check.v1"
 
 	"github.com/tsuru/tsuru-client/tsuru/cmd"
+	"github.com/tsuru/tsuru-client/tsuru/cmd/cmdtest"
 	tsuruHTTP "github.com/tsuru/tsuru-client/tsuru/http"
 )
 
@@ -54,6 +55,8 @@ func (s *S) TestCommandsRegistered(c *check.C) {
 		"env-unset",
 		"service-list",
 		"service-update",
+		"service-manifest-get",
+		"service-manifest-set",
 		"service-instance-update",
 		"service-instance-add",
 		"service-instance-remove",
@@ -107,6 +110,41 @@ func (s *S) TestCommandsRegistered(c *check.C) {
 	for _, name := range commands {
 		_, found := foundCommands[name]
 		c.Assert(found, check.Equals, true, check.Commentf("command %q not found", name))
+	}
+}
+
+func (s *S) TestServiceManifestCommands(c *check.C) {
+	previous := tsuruHTTP.AuthenticatedClient
+	defer func() { tsuruHTTP.AuthenticatedClient = previous }()
+	tsuruHTTP.AuthenticatedClient = &http.Client{Transport: cmdtest.Transport{Status: http.StatusOK, Message: "null"}}
+	filename := c.MkDir() + "/manifest.json"
+	c.Assert(os.WriteFile(filename, []byte(`{"enabled":true,"operations":[]}`), 0600), check.IsNil)
+	for _, test := range []struct {
+		args   []string
+		valid  bool
+		output string
+	}{
+		{[]string{"service", "manifest", "get", "mysql", "--json"}, true, "null\n"},
+		{[]string{"service", "manifest", "set", "mysql", filename}, true, "Manifest for service \"mysql\" successfully updated.\n"},
+		{[]string{"service", "manifest", "get"}, false, ""},
+		{[]string{"service", "manifest", "get", "mysql", "extra"}, false, ""},
+		{[]string{"service", "manifest", "set", "mysql"}, false, ""},
+		{[]string{"service", "manifest", "set", "mysql", filename, "extra"}, false, ""},
+	} {
+		var stdout, stderr bytes.Buffer
+		root := buildManager(&stdout, &stderr).Cobra()
+		root.SetOut(&stdout)
+		root.SetErr(&stderr)
+		// Use the test transport without initializing real authorization.
+		root.PersistentPreRun = nil
+		root.SetArgs(test.args)
+		err := root.Execute()
+		if test.valid {
+			c.Assert(err, check.IsNil)
+			c.Assert(stdout.String(), check.Equals, test.output)
+		} else {
+			c.Assert(err, check.NotNil)
+		}
 	}
 }
 
