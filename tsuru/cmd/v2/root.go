@@ -39,6 +39,9 @@ func setupPFlagsAndCommands(rootCmd *cobra.Command) {
 
 	rootCmd.PersistentFlags().Int("verbosity", 0, "Verbosity level: 1 => print HTTP requests; 2 => print HTTP requests/responses")
 	defaultViper.BindPFlag("verbosity", rootCmd.PersistentFlags().Lookup("verbosity"))
+
+	rootCmd.PersistentFlags().String("config", "", "Tsuru configuration file path to use")
+	defaultViper.BindPFlag("config", rootCmd.PersistentFlags().Lookup("config"))
 }
 
 func rootPersistentPreRun(cmd *cobra.Command, args []string) {
@@ -49,6 +52,11 @@ func rootPersistentPreRun(cmd *cobra.Command, args []string) {
 
 	if v, err := cmd.Flags().GetInt("verbosity"); v > 0 && err == nil {
 		os.Setenv("TSURU_VERBOSITY", strconv.Itoa(v))
+	}
+
+	if c := cmd.Flags().Lookup("config"); c != nil && c.Value.String() != "" {
+		filePath := c.Value.String()
+		os.Setenv("TSURU_CONFIG_FILE", filePath)
 	}
 }
 
