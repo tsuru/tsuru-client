@@ -23,6 +23,17 @@ import (
 	"gopkg.in/check.v1"
 )
 
+func runPluginTest(context *cmd.Context) error {
+	context.RawOutput()
+
+	if len(context.Args) == 0 {
+		return cmd.ErrLookup
+	}
+	pluginName := context.Args[0]
+
+	return runPlugin(context, pluginName, context.Args[1:])
+}
+
 func (s *S) TestPluginInstallInfo(c *check.C) {
 	c.Assert(PluginInstall{}.Info(), check.NotNil)
 }
@@ -201,7 +212,7 @@ func (s *S) TestPlugin(c *check.C) {
 		Stdout: &buf,
 		Stderr: &buf,
 	}
-	err := RunPlugin(&context)
+	err := runPluginTest(&context)
 	c.Assert(err, check.IsNil)
 	pluginPath := config.JoinWithUserDir(".tsuru", "plugins", "myplugin")
 	c.Assert(fexec.ExecutedCmd(pluginPath, []string{"a", "b"}), check.Equals, true)
@@ -231,6 +242,45 @@ func (s *S) TestPlugin(c *check.C) {
 	c.Assert(commands[0].GetEnvs(), check.DeepEquals, envs)
 }
 
+func (s *S) TestPluginPassesVerbosity(c *check.C) {
+	defer os.Setenv("HOME", os.Getenv("HOME"))
+	tempHome, _ := filepath.Abs("testdata")
+	os.Setenv("HOME", tempHome)
+
+	oldVerbosity, hadVerbosity := os.LookupEnv("TSURU_VERBOSITY")
+	defer func() {
+		if hadVerbosity {
+			os.Setenv("TSURU_VERBOSITY", oldVerbosity)
+		} else {
+			os.Unsetenv("TSURU_VERBOSITY")
+		}
+	}()
+	os.Setenv("TSURU_VERBOSITY", "2")
+
+	fexec := exectest.FakeExecutor{}
+	Execut = &fexec
+	defer func() {
+		Execut = nil
+	}()
+
+	context := cmd.Context{Args: []string{"myplugin"}}
+	err := runPluginTest(&context)
+	c.Assert(err, check.IsNil)
+
+	pluginPath := config.JoinWithUserDir(".tsuru", "plugins", "myplugin")
+	commands := fexec.GetCommands(pluginPath)
+	c.Assert(commands, check.HasLen, 1)
+
+	var passedVerbosity bool
+	for _, env := range commands[0].GetEnvs() {
+		if env == "TSURU_VERBOSITY=2" {
+			passedVerbosity = true
+			break
+		}
+	}
+	c.Assert(passedVerbosity, check.Equals, true)
+}
+
 func (s *S) TestPluginWithArgs(c *check.C) {
 	// Kids, do not try this at $HOME
 	defer os.Setenv("HOME", os.Getenv("HOME"))
@@ -243,7 +293,7 @@ func (s *S) TestPluginWithArgs(c *check.C) {
 		Execut = nil
 	}()
 	context := cmd.Context{Args: []string{"myplugin", "ble", "bla"}}
-	err := RunPlugin(&context)
+	err := runPluginTest(&context)
 	c.Assert(err, check.IsNil)
 	pluginPath := config.JoinWithUserDir(".tsuru", "plugins", "myplugin")
 	c.Assert(fexec.ExecutedCmd(pluginPath, []string{"ble", "bla"}), check.Equals, true)
@@ -270,7 +320,7 @@ func (s *S) TestPluginTryNameWithAnyExtension(c *check.C) {
 		Stdout: &buf,
 		Stderr: &buf,
 	}
-	err := RunPlugin(&context)
+	err := runPluginTest(&context)
 	c.Assert(err, check.IsNil)
 	pluginPath := config.JoinWithUserDir(".tsuru", "plugins", "otherplugin.exe")
 	c.Assert(fexec.ExecutedCmd(pluginPath, []string{"a", "b"}), check.Equals, true)
@@ -314,7 +364,7 @@ func (s *S) TestPluginLoop(c *check.C) {
 		Stdout: &buf,
 		Stderr: &buf,
 	}
-	err := RunPlugin(&context)
+	err := runPluginTest(&context)
 	c.Assert(err, check.Equals, cmd.ErrLookup)
 }
 
@@ -330,7 +380,7 @@ func (s *S) TestPluginCommandNotFound(c *check.C) {
 		Stdout: &buf,
 		Stderr: &buf,
 	}
-	err := RunPlugin(&context)
+	err := runPluginTest(&context)
 	c.Assert(err, check.Equals, cmd.ErrLookup)
 }
 
@@ -496,7 +546,7 @@ func (s *S) TestFindPluginsWithSubdirectory(c *check.C) {
 	os.Setenv("HOME", tempDir)
 
 	pluginsDir := filepath.Join(tempDir, ".tsuru", "plugins")
-	err := os.MkdirAll(pluginsDir, 0755)
+	err := os.MkdirAll(pluginsDir, 0o755)
 	c.Assert(err, check.IsNil)
 
 	// Create a regular plugin file
@@ -507,12 +557,12 @@ func (s *S) TestFindPluginsWithSubdirectory(c *check.C) {
 
 	// Create a subdirectory with executable plugin
 	subDir := filepath.Join(pluginsDir, "subplugin")
-	err = os.MkdirAll(subDir, 0755)
+	err = os.MkdirAll(subDir, 0o755)
 	c.Assert(err, check.IsNil)
 
 	// Create executable in subdirectory with same name as directory
 	subPluginExec := filepath.Join(subDir, "subplugin")
-	f, err = os.OpenFile(subPluginExec, os.O_CREATE|os.O_WRONLY, 0755)
+	f, err = os.OpenFile(subPluginExec, os.O_CREATE|os.O_WRONLY, 0o755)
 	c.Assert(err, check.IsNil)
 	f.Close()
 

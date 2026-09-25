@@ -254,6 +254,22 @@ func TestVerbosityFlagHasNoShorthand(t *testing.T) {
 	assert.Empty(t, verbosityFlag.Shorthand, "verbosity flag should not have a shorthand")
 }
 
+func TestRootPersistentPreRunSetsVerbosityForDisableFlagParsingCommand(t *testing.T) {
+	t.Setenv("TSURU_VERBOSITY", "")
+
+	rootCmd := NewRootCmd()
+	rootCmd.AddCommand(&cobra.Command{
+		Use:                "plugin",
+		DisableFlagParsing: true,
+		Run: func(cmd *cobra.Command, args []string) {
+			assert.Equal(t, "2", os.Getenv("TSURU_VERBOSITY"))
+		},
+	})
+	rootCmd.SetArgs([]string{"--verbosity", "2", "plugin"})
+
+	assert.NoError(t, rootCmd.Execute())
+}
+
 func TestRunRootCmd(t *testing.T) {
 	//cobra stdout/stderr is inconsistent. SetOut()/SetErr() don't work as expected: https://github.com/spf13/cobra/issues/1708
 
