@@ -31,6 +31,7 @@ func NewRootCmd() *cobra.Command {
 	rootCmd.AddCommand(generateDocCmd())
 	return rootCmd
 }
+
 func setupPFlagsAndCommands(rootCmd *cobra.Command) {
 	// Persistent Flags.
 	// !!! Double bind them inside PersistentPreRun() !!!
@@ -42,6 +43,11 @@ func setupPFlagsAndCommands(rootCmd *cobra.Command) {
 }
 
 func rootPersistentPreRun(cmd *cobra.Command, args []string) {
+	// Commands such as plugins disable Cobra's flag parsing so their arguments
+	// can be forwarded unchanged. Parse the leading persistent flags here,
+	// before reading them and before the command runs.
+	ParseFirstFlagsOnly(cmd, args)
+
 	if l := cmd.Flags().Lookup("target"); l != nil && l.Value.String() != "" {
 		target := l.Value.String()
 		os.Setenv("TSURU_TARGET", target)

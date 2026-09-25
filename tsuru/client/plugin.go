@@ -69,7 +69,7 @@ func (PluginInstall) Info() *cmd.Info {
 
 func (c *PluginInstall) Run(context *cmd.Context) error {
 	pluginsDir := config.JoinWithUserDir(".tsuru", "plugins")
-	err := config.Filesystem().MkdirAll(pluginsDir, 0755)
+	err := config.Filesystem().MkdirAll(pluginsDir, 0o755)
 	if err != nil {
 		return err
 	}
@@ -124,7 +124,7 @@ func installPlugin(pluginName, pluginURL string, level int) error {
 		extractErr = extractZip(tmpDir, bytes.NewReader(data))
 	}
 	if extractErr != nil {
-		file, err := config.Filesystem().OpenFile(filepath.Join(tmpDir, pluginName), os.O_WRONLY|os.O_CREATE|os.O_TRUNC, 0755)
+		file, err := config.Filesystem().OpenFile(filepath.Join(tmpDir, pluginName), os.O_WRONLY|os.O_CREATE|os.O_TRUNC, 0o755)
 		if err != nil {
 			return fmt.Errorf("failed to open file: %w", err)
 		}
@@ -145,7 +145,7 @@ func installPlugin(pluginName, pluginURL string, level int) error {
 
 	if fstat, err1 := config.Filesystem().Stat(executablePath); err1 == nil {
 		fmode := fstat.Mode()
-		os.Chmod(executablePath, fmode|0111) // make this file executable
+		os.Chmod(executablePath, fmode|0o111) // make this file executable
 	}
 
 	pluginPath := config.JoinWithUserDir(".tsuru", "plugins", pluginName)
@@ -156,7 +156,7 @@ func installPlugin(pluginName, pluginURL string, level int) error {
 		if err := config.Filesystem().Rename(tmpDir, pluginPath); err != nil {
 			return fmt.Errorf("could not move tmpDir: %w", err)
 		}
-		os.Chmod(pluginPath, 0755) // this is a directory with an executable inside
+		os.Chmod(pluginPath, 0o755) // this is a directory with an executable inside
 	} else {
 		if err := copyFile(executablePath, pluginPath); err != nil {
 			return fmt.Errorf("could not write plugin file: %w", err)
@@ -230,7 +230,7 @@ func copyFile(src, dst string) error {
 		return fmt.Errorf("failed to stat file: %w", err)
 	}
 
-	targetFile, err := config.Filesystem().OpenFile(dst, os.O_WRONLY|os.O_CREATE|os.O_TRUNC, 0755)
+	targetFile, err := config.Filesystem().OpenFile(dst, os.O_WRONLY|os.O_CREATE|os.O_TRUNC, 0o755)
 	if err != nil {
 		return fmt.Errorf("failed to open dest file: %w", err)
 	}
@@ -366,17 +366,6 @@ func (c *PluginList) Run(context *cmd.Context) error {
 	return nil
 }
 
-func RunPlugin(context *cmd.Context) error {
-	context.RawOutput()
-
-	if len(context.Args) == 0 {
-		return cmd.ErrLookup
-	}
-	pluginName := context.Args[0]
-
-	return runPlugin(context, pluginName, context.Args[1:])
-}
-
 func runPlugin(context *cmd.Context, pluginName string, args []string) error {
 	if os.Getenv("TSURU_PLUGIN_NAME") == pluginName {
 		return cmd.ErrLookup
@@ -409,6 +398,10 @@ func runPlugin(context *cmd.Context, pluginName string, args []string) error {
 	pager, pagerFound := v2.Pager()
 	if pagerFound {
 		tsuruEnvs = append(tsuruEnvs, "TSURU_PAGER="+pager)
+	}
+
+	if verbosity := os.Getenv("TSURU_VERBOSITY"); verbosity != "" {
+		tsuruEnvs = append(tsuruEnvs, "TSURU_VERBOSITY="+verbosity)
 	}
 
 	envs = append(envs, tsuruEnvs...)
@@ -475,7 +468,7 @@ func (c *PluginBundle) Flags() *pflag.FlagSet {
 
 func (c *PluginBundle) Run(context *cmd.Context) error {
 	pluginsDir := config.JoinWithUserDir(".tsuru", "plugins")
-	err := config.Filesystem().MkdirAll(pluginsDir, 0755)
+	err := config.Filesystem().MkdirAll(pluginsDir, 0o755)
 	if err != nil {
 		return err
 	}
