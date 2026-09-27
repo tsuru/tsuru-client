@@ -15,7 +15,9 @@ import (
 	"net/http"
 	"net/url"
 	"os"
+	"slices"
 	"sort"
+	"strings"
 
 	"github.com/spf13/pflag"
 	"github.com/tsuru/go-tsuruclient/pkg/config"
@@ -33,6 +35,12 @@ type PlatformList struct {
 	json       bool
 }
 
+// platform adds the fields newer API servers return to appTypes.Platform.
+type platform struct {
+	appTypes.Platform
+	Source string `json:",omitempty"`
+}
+
 func (p *PlatformList) Run(context *cmd.Context) error {
 	url, err := config.GetURL("/platforms")
 	if err != nil {
@@ -42,7 +50,7 @@ func (p *PlatformList) Run(context *cmd.Context) error {
 	if err != nil {
 		return err
 	}
-	var platforms []appTypes.Platform
+	var platforms []platform
 	resp, err := tsuruHTTP.AuthenticatedClient.Do(request)
 	if err != nil {
 		return err
@@ -71,22 +79,39 @@ func (p *PlatformList) Run(context *cmd.Context) error {
 		return formatter.JSON(context.Stdout, platforms)
 	}
 
+	// Servers that do not return sources, or callers not allowed to see
+	// them, keep the two-column table.
+	withSource := slices.ContainsFunc(platforms, func(p platform) bool { return p.Source != "" })
 	tbl := tablecli.NewTable()
 	tbl.Headers = tablecli.Row{"Name", "Status"}
+	if withSource {
+		tbl.Headers = append(tbl.Headers, "Source")
+	}
 	tbl.LineSeparator = false
 	for _, p := range platforms {
 		status := "enabled"
 		if p.Disabled {
 			status = "disabled"
 		}
-		tbl.AddRow(tablecli.Row{
-			p.Name,
-			status,
-		})
+		row := tablecli.Row{p.Name, status}
+		if withSource {
+			row = append(row, summarizeSource(p.Source))
+		}
+		tbl.AddRow(row)
 	}
 	fmt.Fprint(context.Stdout, tbl.String())
 
 	return nil
+}
+
+// summarizeSource shows the first line of a platform's Dockerfile and how
+// many more it has.
+func summarizeSource(source string) string {
+	lines := strings.Split(strings.TrimSpace(source), "\n")
+	if len(lines) == 1 {
+		return lines[0]
+	}
+	return fmt.Sprintf("%s (+%d lines)", lines[0], len(lines)-1)
 }
 
 func (c *PlatformList) Flags() *pflag.FlagSet {
@@ -191,7 +216,7 @@ platform.
 
 Examples:
 
-[[tsuru platform update java # uses official tsuru/java image from docker hub]]
+[[tsuru platform update java # rebuilds from the source java was last built from (tsuru/java if the server has none recorded)]]
 [[tsuru platform update java -i registry.company.com/tsuru/java # uses custom Java image]]
 [[tsuru platform update java -d /data/projects/java/Dockerfile # uses local Dockerfile]]
 [[tsuru platform update java -d https://platforms.com/java/Dockerfile # uses remote Dockerfile]]`,
@@ -214,9 +239,12 @@ func (p *PlatformUpdate) Flags() *pflag.FlagSet {
 	return p.fs
 }
 
+// errNoPlatformSource is what servers that keep no build source for the
+// platform answer to an update without a Dockerfile.
+const errNoPlatformSource = "either disabled or dockerfile must be provided"
+
 func (p *PlatformUpdate) Run(context *cmd.Context) error {
 	context.RawOutput()
-	name := context.Args[0]
 	if p.disable && p.enable {
 		return errors.New("conflicting options: --enable and --disable")
 	}
@@ -227,9 +255,20 @@ func (p *PlatformUpdate) Run(context *cmd.Context) error {
 	if p.disable {
 		disable = "true"
 	}
-	var body bytes.Buffer
+	// Without flags the server rebuilds the platform from the source it was
+	// last built from; when it has none, fall back to the official image.
+	err := p.update(context, disable, false)
 	implicitImage := !p.disable && !p.enable && p.dockerfile == "" && p.image == ""
-	writer, err := serializeDockerfile(context.Args[0], &body, p.dockerfile, p.image, implicitImage)
+	if implicitImage && err != nil && strings.Contains(err.Error(), errNoPlatformSource) {
+		err = p.update(context, disable, true)
+	}
+	return err
+}
+
+func (p *PlatformUpdate) update(context *cmd.Context, disable string, useImplicit bool) error {
+	name := context.Args[0]
+	var body bytes.Buffer
+	writer, err := serializeDockerfile(name, &body, p.dockerfile, p.image, useImplicit)
 	if err != nil {
 		return err
 	}
