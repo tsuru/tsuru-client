@@ -70,6 +70,51 @@ func (s *S) TestPlatformListWithDisabledPlatforms(c *check.C) {
 	c.Assert(buf.String(), check.Equals, expected)
 }
 
+func (s *S) TestPlatformListWithSource(c *check.C) {
+	var buf bytes.Buffer
+	trans := cmdtest.ConditionalTransport{
+		Transport: cmdtest.Transport{
+			Status: http.StatusOK,
+			Message: `[{"Name":"python","Source":"FROM tsuru/python:latest"},` +
+				`{"Name":"java","Source":"FROM eclipse-temurin:21\nRUN apt-get update\nCOPY deploy /var/lib/tsuru\n"},` +
+				`{"Name":"ruby"}]`,
+		},
+		CondFunc: func(r *http.Request) bool {
+			return r.Method == "GET" && strings.HasSuffix(r.URL.Path, "/platforms")
+		},
+	}
+	context := cmd.Context{Stdout: &buf}
+	s.setupFakeTransport(&trans)
+	err := (&PlatformList{}).Run(&context)
+	c.Assert(err, check.IsNil)
+	expected := `+--------+---------+------------------------------------+
+| Name   | Status  | Source                             |
++--------+---------+------------------------------------+
+| java   | enabled | FROM eclipse-temurin:21 (+2 lines) |
+| python | enabled | FROM tsuru/python:latest           |
+| ruby   | enabled |                                    |
++--------+---------+------------------------------------+` + "\n"
+	c.Assert(buf.String(), check.Equals, expected)
+}
+
+func (s *S) TestPlatformListJSONWithSource(c *check.C) {
+	var buf bytes.Buffer
+	trans := cmdtest.ConditionalTransport{
+		Transport: cmdtest.Transport{
+			Status:  http.StatusOK,
+			Message: `[{"Name":"python","Source":"FROM tsuru/python:latest"}]`,
+		},
+		CondFunc: func(r *http.Request) bool {
+			return r.Method == "GET" && strings.HasSuffix(r.URL.Path, "/platforms")
+		},
+	}
+	context := cmd.Context{Stdout: &buf}
+	s.setupFakeTransport(&trans)
+	err := (&PlatformList{json: true}).Run(&context)
+	c.Assert(err, check.IsNil)
+	c.Assert(buf.String(), check.Matches, `(?s).*"Source": "FROM tsuru/python:latest".*`)
+}
+
 func (s *S) TestPlatformListEmpty(c *check.C) {
 	var buf bytes.Buffer
 	transport := cmdtest.Transport{

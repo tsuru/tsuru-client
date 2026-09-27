@@ -15,6 +15,7 @@ import (
 	"net/http"
 	"net/url"
 	"os"
+	"slices"
 	"sort"
 	"strings"
 
@@ -34,6 +35,12 @@ type PlatformList struct {
 	json       bool
 }
 
+// platform adds the fields newer API servers return to appTypes.Platform.
+type platform struct {
+	appTypes.Platform
+	Source string `json:",omitempty"`
+}
+
 func (p *PlatformList) Run(context *cmd.Context) error {
 	url, err := config.GetURL("/platforms")
 	if err != nil {
@@ -43,7 +50,7 @@ func (p *PlatformList) Run(context *cmd.Context) error {
 	if err != nil {
 		return err
 	}
-	var platforms []appTypes.Platform
+	var platforms []platform
 	resp, err := tsuruHTTP.AuthenticatedClient.Do(request)
 	if err != nil {
 		return err
@@ -72,22 +79,39 @@ func (p *PlatformList) Run(context *cmd.Context) error {
 		return formatter.JSON(context.Stdout, platforms)
 	}
 
+	// Servers that do not return sources, or callers not allowed to see
+	// them, keep the two-column table.
+	withSource := slices.ContainsFunc(platforms, func(p platform) bool { return p.Source != "" })
 	tbl := tablecli.NewTable()
 	tbl.Headers = tablecli.Row{"Name", "Status"}
+	if withSource {
+		tbl.Headers = append(tbl.Headers, "Source")
+	}
 	tbl.LineSeparator = false
 	for _, p := range platforms {
 		status := "enabled"
 		if p.Disabled {
 			status = "disabled"
 		}
-		tbl.AddRow(tablecli.Row{
-			p.Name,
-			status,
-		})
+		row := tablecli.Row{p.Name, status}
+		if withSource {
+			row = append(row, summarizeSource(p.Source))
+		}
+		tbl.AddRow(row)
 	}
 	fmt.Fprint(context.Stdout, tbl.String())
 
 	return nil
+}
+
+// summarizeSource shows the first line of a platform's Dockerfile and how
+// many more it has.
+func summarizeSource(source string) string {
+	lines := strings.Split(strings.TrimSpace(source), "\n")
+	if len(lines) == 1 {
+		return lines[0]
+	}
+	return fmt.Sprintf("%s (+%d lines)", lines[0], len(lines)-1)
 }
 
 func (c *PlatformList) Flags() *pflag.FlagSet {
