@@ -16,6 +16,7 @@ import (
 	"net/url"
 	"os"
 	"sort"
+	"strings"
 
 	"github.com/spf13/pflag"
 	"github.com/tsuru/go-tsuruclient/pkg/config"
@@ -191,7 +192,7 @@ platform.
 
 Examples:
 
-[[tsuru platform update java # uses official tsuru/java image from docker hub]]
+[[tsuru platform update java # rebuilds from the source java was last built from (tsuru/java if the server has none recorded)]]
 [[tsuru platform update java -i registry.company.com/tsuru/java # uses custom Java image]]
 [[tsuru platform update java -d /data/projects/java/Dockerfile # uses local Dockerfile]]
 [[tsuru platform update java -d https://platforms.com/java/Dockerfile # uses remote Dockerfile]]`,
@@ -214,9 +215,12 @@ func (p *PlatformUpdate) Flags() *pflag.FlagSet {
 	return p.fs
 }
 
+// errNoPlatformSource is what servers that keep no build source for the
+// platform answer to an update without a Dockerfile.
+const errNoPlatformSource = "either disabled or dockerfile must be provided"
+
 func (p *PlatformUpdate) Run(context *cmd.Context) error {
 	context.RawOutput()
-	name := context.Args[0]
 	if p.disable && p.enable {
 		return errors.New("conflicting options: --enable and --disable")
 	}
@@ -227,9 +231,20 @@ func (p *PlatformUpdate) Run(context *cmd.Context) error {
 	if p.disable {
 		disable = "true"
 	}
-	var body bytes.Buffer
+	// Without flags the server rebuilds the platform from the source it was
+	// last built from; when it has none, fall back to the official image.
+	err := p.update(context, disable, false)
 	implicitImage := !p.disable && !p.enable && p.dockerfile == "" && p.image == ""
-	writer, err := serializeDockerfile(context.Args[0], &body, p.dockerfile, p.image, implicitImage)
+	if implicitImage && err != nil && strings.Contains(err.Error(), errNoPlatformSource) {
+		err = p.update(context, disable, true)
+	}
+	return err
+}
+
+func (p *PlatformUpdate) update(context *cmd.Context, disable string, useImplicit bool) error {
+	name := context.Args[0]
+	var body bytes.Buffer
+	writer, err := serializeDockerfile(name, &body, p.dockerfile, p.image, useImplicit)
 	if err != nil {
 		return err
 	}

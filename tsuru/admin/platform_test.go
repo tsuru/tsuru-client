@@ -383,7 +383,7 @@ func (s *S) TestPlatformUpdateRunPrebuiltImage(c *check.C) {
 	c.Assert(stdout.String(), check.Equals, expectedMsg)
 }
 
-func (s *S) TestPlatformUpdateRunImplicitImage(c *check.C) {
+func (s *S) TestPlatformUpdateRunWithoutFlagsUsesStoredSource(c *check.C) {
 	var stdout, stderr bytes.Buffer
 	name := "teste"
 	context := cmd.Context{
@@ -398,14 +398,54 @@ func (s *S) TestPlatformUpdateRunImplicitImage(c *check.C) {
 	trans := &cmdtest.ConditionalTransport{
 		Transport: cmdtest.Transport{Message: string(result), Status: http.StatusOK},
 		CondFunc: func(req *http.Request) bool {
-			file, header, transErr := req.FormFile("dockerfile_content")
-			c.Assert(transErr, check.IsNil)
-			defer file.Close()
-			c.Assert(header.Filename, check.Equals, "Dockerfile")
-			data, transErr := io.ReadAll(file)
-			c.Assert(transErr, check.IsNil)
-			c.Assert(string(data), check.Equals, "FROM tsuru/teste")
+			_, _, transErr := req.FormFile("dockerfile_content")
+			c.Assert(transErr, check.Equals, http.ErrMissingFile)
+			c.Assert(req.FormValue("disabled"), check.Equals, "")
 			return strings.HasSuffix(req.URL.Path, "/platforms/"+name) && req.Method == "PUT"
+		},
+	}
+	s.setupFakeTransport(trans)
+	command := PlatformUpdate{}
+	err = command.Run(&context)
+	c.Assert(err, check.IsNil)
+	c.Assert(stdout.String(), check.Equals, expectedMsg)
+}
+
+func (s *S) TestPlatformUpdateRunWithoutFlagsFallsBackToImplicitImage(c *check.C) {
+	var stdout, stderr bytes.Buffer
+	name := "teste"
+	context := cmd.Context{
+		Stdout: &stdout,
+		Stderr: &stderr,
+		Args:   []string{name},
+	}
+	noSource, err := json.Marshal(tsuruIo.SimpleJsonMessage{Error: "either disabled or dockerfile must be provided"})
+	c.Assert(err, check.IsNil)
+	expectedMsg := "--something--\nPlatform successfully updated!\n"
+	result, err := json.Marshal(tsuruIo.SimpleJsonMessage{Message: expectedMsg})
+	c.Assert(err, check.IsNil)
+	trans := &cmdtest.MultiConditionalTransport{
+		ConditionalTransports: []cmdtest.ConditionalTransport{
+			{
+				Transport: cmdtest.Transport{Message: string(noSource), Status: http.StatusOK},
+				CondFunc: func(req *http.Request) bool {
+					_, _, transErr := req.FormFile("dockerfile_content")
+					c.Assert(transErr, check.Equals, http.ErrMissingFile)
+					return strings.HasSuffix(req.URL.Path, "/platforms/"+name) && req.Method == "PUT"
+				},
+			},
+			{
+				Transport: cmdtest.Transport{Message: string(result), Status: http.StatusOK},
+				CondFunc: func(req *http.Request) bool {
+					file, _, transErr := req.FormFile("dockerfile_content")
+					c.Assert(transErr, check.IsNil)
+					defer file.Close()
+					data, transErr := io.ReadAll(file)
+					c.Assert(transErr, check.IsNil)
+					c.Assert(string(data), check.Equals, "FROM tsuru/teste")
+					return strings.HasSuffix(req.URL.Path, "/platforms/"+name) && req.Method == "PUT"
+				},
+			},
 		},
 	}
 	s.setupFakeTransport(trans)
