@@ -388,6 +388,16 @@ func (s *S) TestClusterListRun(c *check.C) {
 		Default:     false,
 		Pools:       []string{"p1", "p2"},
 		Provisioner: "prov2",
+	}, {
+		Name:        "c3",
+		Addresses:   []string{"addr4"},
+		Default:     false,
+		Provisioner: "prov3",
+		KubeConfig: &tsuru.ClusterKubeConfig{
+			Cluster: tsuru.ClusterKubeConfigCluster{
+				Server: "https://k8s.example.com",
+			},
+		},
 	}}
 	data, err := json.Marshal(clusters)
 	c.Assert(err, check.IsNil)
@@ -403,16 +413,62 @@ func (s *S) TestClusterListRun(c *check.C) {
 	myCmd := ClusterList{}
 	err = myCmd.Run(&context)
 	c.Assert(err, check.IsNil)
-	c.Assert(stdout.String(), check.Equals, `+------+-------------+-----------+---------------+---------+-------+
-| Name | Provisioner | Addresses | Custom Data   | Default | Pools |
-+------+-------------+-----------+---------------+---------+-------+
-| c1   | prov1       | addr1     | namespace=ns1 | true    |       |
-|      |             | addr2     |               |         |       |
-+------+-------------+-----------+---------------+---------+-------+
-| c2   | prov2       | addr3     |               | false   | p1    |
-|      |             |           |               |         | p2    |
-+------+-------------+-----------+---------------+---------+-------+
+	c.Assert(stdout.String(), check.Equals, `+------+-------------+-------------------------+---------------+---------+-------+
+| Name | Provisioner | Addresses               | Custom Data   | Default | Pools |
++------+-------------+-------------------------+---------------+---------+-------+
+| c1   | prov1       | addr1                   | namespace=ns1 | true    |       |
+|      |             | addr2                   |               |         |       |
++------+-------------+-------------------------+---------------+---------+-------+
+| c2   | prov2       | addr3                   |               | false   | p1    |
+|      |             |                         |               |         | p2    |
++------+-------------+-------------------------+---------------+---------+-------+
+| c3   | prov3       | https://k8s.example.com |               | false   |       |
++------+-------------+-------------------------+---------------+---------+-------+
 `)
+}
+
+func (s *S) TestClusterAddresses(c *check.C) {
+	tests := []struct {
+		name    string
+		cluster tsuru.Cluster
+		want    string
+	}{
+		{
+			name: "no kubeconfig falls back to addresses",
+			cluster: tsuru.Cluster{
+				Addresses: []string{"addr1", "addr2"},
+			},
+			want: "addr1\naddr2",
+		},
+		{
+			name: "kubeconfig with server takes precedence over addresses",
+			cluster: tsuru.Cluster{
+				Addresses: []string{"addr1"},
+				KubeConfig: &tsuru.ClusterKubeConfig{
+					Cluster: tsuru.ClusterKubeConfigCluster{
+						Server: "https://k8s.example.com",
+					},
+				},
+			},
+			want: "https://k8s.example.com",
+		},
+		{
+			name: "kubeconfig with empty server falls back to addresses",
+			cluster: tsuru.Cluster{
+				Addresses: []string{"addr1"},
+				KubeConfig: &tsuru.ClusterKubeConfig{
+					Cluster: tsuru.ClusterKubeConfigCluster{
+						Server: "",
+					},
+				},
+			},
+			want: "addr1",
+		},
+	}
+
+	for _, tt := range tests {
+		c.Assert(clusterAddresses(&tt.cluster), check.Equals, tt.want, check.Commentf(tt.name))
+	}
 }
 
 func (s *S) TestClusterRemoveInfo(c *check.C) {
