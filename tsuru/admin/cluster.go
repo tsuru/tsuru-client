@@ -408,15 +408,22 @@ func (c *ClusterList) Run(ctx *cmd.Context) error {
 		for k, v := range c.CustomData {
 			custom = append(custom, fmt.Sprintf("%s=%s", k, v))
 		}
-		addresses := strings.Join(c.Addresses, "\n")
 		if tablecli.TableConfig.UseTabWriter {
-			tbl.AddRow(tablecli.Row{c.Name, c.Provisioner, addresses, strconv.FormatBool(c.Default)})
+			tbl.AddRow(tablecli.Row{c.Name, c.Provisioner, clusterAddresses(&c), strconv.FormatBool(c.Default)})
 			continue
 		}
-		tbl.AddRow(tablecli.Row{c.Name, c.Provisioner, addresses, strings.Join(custom, "\n"), strconv.FormatBool(c.Default), strings.Join(c.Pools, "\n")})
+		tbl.AddRow(tablecli.Row{c.Name, c.Provisioner, clusterAddresses(&c), strings.Join(custom, "\n"), strconv.FormatBool(c.Default), strings.Join(c.Pools, "\n")})
 	}
 	fmt.Fprint(ctx.Stdout, tbl.String())
 	return nil
+}
+
+func clusterAddresses(c *tsuru.Cluster) string {
+	if c.KubeConfig != nil && c.KubeConfig.Cluster.Server != "" {
+		return c.KubeConfig.Cluster.Server
+	}
+
+	return strings.Join(c.Addresses, "\n")
 }
 
 func (c *ClusterList) clientSideFilter(clusters []tsuru.Cluster) []tsuru.Cluster {
