@@ -453,7 +453,7 @@ func (s *S) TestClusterAddresses(c *check.C) {
 			want: "https://k8s.example.com",
 		},
 		{
-			name: "kubeconfig with empty server falls back to addresses",
+			name: "kubeconfig with empty server ignores addresses",
 			cluster: tsuru.Cluster{
 				Addresses: []string{"addr1"},
 				KubeConfig: &tsuru.ClusterKubeConfig{
@@ -462,7 +462,7 @@ func (s *S) TestClusterAddresses(c *check.C) {
 					},
 				},
 			},
-			want: "addr1",
+			want: "",
 		},
 	}
 

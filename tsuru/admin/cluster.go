@@ -419,7 +419,7 @@ func (c *ClusterList) Run(ctx *cmd.Context) error {
 }
 
 func clusterAddresses(c *tsuru.Cluster) string {
-	if c.KubeConfig != nil && c.KubeConfig.Cluster.Server != "" {
+	if c.KubeConfig != nil {
 		return c.KubeConfig.Cluster.Server
 	}
 
