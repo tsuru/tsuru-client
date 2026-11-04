@@ -448,6 +448,57 @@ func (s *S) TestTargetUpdateWithSetCurrent(c *check.C) {
 	c.Assert(target, check.Equals, "https://tsuru.new.google.com")
 }
 
+func (s *S) TestTargetUpdateCurrentTargetKeepsItCurrent(c *check.C) {
+	os.Unsetenv("TSURU_TARGET")
+	rfs := &fstest.RecordingFs{}
+	f, err := rfs.Create(config.JoinWithUserDir(".tsuru", "targets"))
+	c.Assert(err, check.IsNil)
+	_, err = f.Write([]byte("first\thttp://tsuru.io/\ndefault\thttp://tsuru.google.com"))
+	c.Assert(err, check.IsNil)
+	c.Assert(f.Close(), check.IsNil)
+	config.SetFileSystem(rfs)
+	defer config.ResetFileSystem()
+	c.Assert(WriteTarget("http://tsuru.google.com"), check.IsNil)
+
+	context := &cmd.Context{
+		Args:   []string{"default", "https://tsuru.new.google.com"},
+		Stdout: &bytes.Buffer{},
+	}
+	targetUpdate := &TargetUpdate{}
+	err = targetUpdate.Run(context)
+	c.Assert(err, check.IsNil)
+	c.Assert(context.Stdout.(*bytes.Buffer).String(), check.Equals, "Target default -> https://tsuru.new.google.com updated on target list\n")
+
+	target, err := ReadTarget()
+	c.Assert(err, check.IsNil)
+	c.Assert(target, check.Equals, "https://tsuru.new.google.com")
+}
+
+func (s *S) TestTargetUpdateOtherTargetDoesNotChangeCurrent(c *check.C) {
+	os.Unsetenv("TSURU_TARGET")
+	rfs := &fstest.RecordingFs{}
+	f, err := rfs.Create(config.JoinWithUserDir(".tsuru", "targets"))
+	c.Assert(err, check.IsNil)
+	_, err = f.Write([]byte("first\thttp://tsuru.io/\ndefault\thttp://tsuru.google.com"))
+	c.Assert(err, check.IsNil)
+	c.Assert(f.Close(), check.IsNil)
+	config.SetFileSystem(rfs)
+	defer config.ResetFileSystem()
+	c.Assert(WriteTarget("http://tsuru.io/"), check.IsNil)
+
+	context := &cmd.Context{
+		Args:   []string{"default", "https://tsuru.new.google.com"},
+		Stdout: &bytes.Buffer{},
+	}
+	targetUpdate := &TargetUpdate{}
+	err = targetUpdate.Run(context)
+	c.Assert(err, check.IsNil)
+
+	target, err := ReadTarget()
+	c.Assert(err, check.IsNil)
+	c.Assert(target, check.Equals, "http://tsuru.io/")
+}
+
 func (s *S) TestTargetUpdateWithInvalidArguments(c *check.C) {
 	config.SetFileSystem(&fstest.RecordingFs{})
 	defer config.ResetFileSystem()
