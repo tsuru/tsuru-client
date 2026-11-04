@@ -257,9 +257,12 @@ func (t *TargetUpdate) Run(ctx *cmd.Context) error {
 	if err != nil {
 		return err
 	}
-	if _, ok := targets[targetLabelToUpdate]; !ok {
+	oldTargetURL, ok := targets[targetLabelToUpdate]
+	if !ok {
 		return errors.New("Target label provided does not exist")
 	}
+	currentTarget, _ := readTarget(config.JoinWithUserDir(".tsuru", "target"))
+	isCurrent := currentTarget != "" && currentTarget == oldTargetURL
 	targets[targetLabelToUpdate] = newTargetURL
 	if err = resetTargetList(); err != nil {
 		return err
@@ -270,10 +273,12 @@ func (t *TargetUpdate) Run(ctx *cmd.Context) error {
 		}
 	}
 	fmt.Fprintf(ctx.Stdout, "Target %s -> %s updated on target list", targetLabelToUpdate, newTargetURL)
-	if t.set {
+	if t.set || isCurrent {
 		if err := WriteTarget(newTargetURL); err != nil {
 			return err
 		}
+	}
+	if t.set {
 		fmt.Fprint(ctx.Stdout, " and defined as the current target")
 	}
 	fmt.Fprintln(ctx.Stdout)
