@@ -212,7 +212,7 @@ func (c *MetadataSet) Run(ctx *cmd.Context) error {
 	}
 
 	var metadata tsuru.Metadata
-	switch c.metadataType {
+	switch strings.ToLower(c.metadataType) {
 	case "label":
 		metadata.Labels = items
 	case "annotation":
@@ -298,7 +298,7 @@ func (c *MetadataUnset) Run(ctx *cmd.Context) error {
 	}
 
 	var metadata tsuru.Metadata
-	switch c.metadataType {
+	switch strings.ToLower(c.metadataType) {
 	case "label":
 		metadata.Labels = items
 	case "annotation":
