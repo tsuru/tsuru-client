@@ -221,6 +221,18 @@ func (s *S) TestEventList(c *check.C) {
 	c.Assert(stdout.String(), check.Equals, expected)
 }
 
+func (s *S) TestEventListNoContentJSON(c *check.C) {
+	var stdout bytes.Buffer
+	context := cmd.Context{Args: []string{}, Stdout: &stdout}
+	s.setupFakeTransport(&cmdtest.Transport{Status: http.StatusNoContent})
+	command := EventList{}
+	err := command.Flags().Parse([]string{"--json"})
+	c.Assert(err, check.IsNil)
+	err = command.Run(&context)
+	c.Assert(err, check.IsNil)
+	c.Assert(stdout.String(), check.Equals, "[]\n")
+}
+
 func (s *S) TestEventListWithFilters(c *check.C) {
 	var stdout, stderr bytes.Buffer
 	context := cmd.Context{

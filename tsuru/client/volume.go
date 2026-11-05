@@ -226,6 +226,10 @@ func (c *VolumeList) Run(ctx *cmd.Context) error {
 	}
 	defer rsp.Body.Close()
 	if rsp.StatusCode == http.StatusNoContent {
+		if c.json {
+			fmt.Fprintln(ctx.Stdout, "[]")
+			return nil
+		}
 		fmt.Fprintln(ctx.Stdout, "No volumes available.")
 		return nil
 	}

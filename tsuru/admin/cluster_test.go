@@ -364,6 +364,18 @@ func (s *S) TestClusterUpdateMergeCluster(c *check.C) {
 	}
 }
 
+func (s *S) TestClusterListRunNoContentJSON(c *check.C) {
+	var stdout bytes.Buffer
+	context := cmd.Context{Args: []string{}, Stdout: &stdout}
+	s.setupFakeTransport(&cmdtest.Transport{Status: http.StatusNoContent})
+	command := ClusterList{}
+	err := command.Flags().Parse([]string{"--json"})
+	c.Assert(err, check.IsNil)
+	err = command.Run(&context)
+	c.Assert(err, check.IsNil)
+	c.Assert(stdout.String(), check.Equals, "[]\n")
+}
+
 func (s *S) TestClusterListInfo(c *check.C) {
 	c.Assert((&ClusterList{}).Info(), check.NotNil)
 }

@@ -82,6 +82,10 @@ func (pl *PoolList) Run(ctx *cmd.Context) error {
 	t := tablecli.Table{Headers: tablecli.Row([]string{"Pool", "Kind", "Provisioner", "Teams", "Routers"}), LineSeparator: true}
 	t.TableWriterTruncate = true
 	if resp != nil && resp.StatusCode == http.StatusNoContent {
+		if pl.json {
+			fmt.Fprintln(ctx.Stdout, "[]")
+			return nil
+		}
 		ctx.Stdout.Write(t.Bytes())
 		return nil
 	}
