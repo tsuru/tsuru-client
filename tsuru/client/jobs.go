@@ -375,6 +375,10 @@ func (c *JobList) Run(ctx *cmd.Context) error {
 	jobs, resp, err := apiClient.JobApi.ListJob(context.Background())
 
 	if resp != nil && resp.StatusCode == http.StatusNoContent {
+		if c.json {
+			fmt.Fprintln(ctx.Stdout, "[]")
+			return nil
+		}
 		fmt.Fprint(ctx.Stdout, "No jobs found\n")
 		return nil
 	}

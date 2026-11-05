@@ -2750,6 +2750,18 @@ app3
 	c.Assert(stdout.String(), check.Equals, expected)
 }
 
+func (s *S) TestAppListRunNoContentJSON(c *check.C) {
+	var stdout bytes.Buffer
+	context := cmd.Context{Args: []string{}, Stdout: &stdout}
+	s.setupFakeTransport(&cmdtest.Transport{Status: http.StatusNoContent})
+	command := AppList{}
+	err := command.Flags().Parse([]string{"--json"})
+	c.Assert(err, check.IsNil)
+	err = command.Run(&context)
+	c.Assert(err, check.IsNil)
+	c.Assert(stdout.String(), check.Equals, "[]\n")
+}
+
 func (s *S) TestAppListWithFlags(c *check.C) {
 	var stdout, stderr bytes.Buffer
 	result := `[{"name":"app1","platform":"python","pool":"pool2"},{"name":"app2","platform":"python","pool":"pool2"},{"name":"app3","platform":"go","pool":"pool1"}]`
