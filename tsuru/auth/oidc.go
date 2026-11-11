@@ -10,6 +10,7 @@ import (
 	"fmt"
 	"net"
 	"net/http"
+	"os"
 	"time"
 
 	"github.com/tsuru/go-tsuruclient/pkg/config"
@@ -79,6 +80,17 @@ func oidcLogin(ctx *cmd.Context, loginInfo *authTypes.SchemeInfo) error {
 			return
 		}
 
+		if UseIDTokenAsBearer() {
+			idToken, ok := t.Extra("id_token").(string)
+			if !ok || idToken == "" {
+				handlerErr = errors.New("TSURU_OIDC_BEARER=id_token, but the token response has no id_token")
+				fmt.Fprintf(ctx.Stderr, "Login failed: %v\n", handlerErr)
+				writeHTMLError(w, handlerErr)
+				return
+			}
+			t.AccessToken = idToken
+		}
+
 		fmt.Fprintln(ctx.Stderr, "Successfully logged in via OIDC!")
 		tokenExpiry := time.Since(t.Expiry) * -1
 		fmt.Fprintf(ctx.Stderr, "The OIDC token will expire in %s\n", tokenExpiry.Round(time.Second))
@@ -119,4 +131,35 @@ func oidcLogin(ctx *cmd.Context, loginInfo *authTypes.SchemeInfo) error {
 	defer cancel()
 	server.Shutdown(timedCtx)
 	return nil
+}
+
+// UseIDTokenAsBearer reports whether the OIDC ID token, instead of the access
+// token, is sent to the tsuru API. Some providers (e.g. Pocket ID) only put
+// the user's claims, such as email, in the ID token, while the tsuru API
+// identifies users by the email claim of the bearer token.
+func UseIDTokenAsBearer() bool {
+	return os.Getenv("TSURU_OIDC_BEARER") == "id_token"
+}
+
+// IDTokenSource hands out tokens whose AccessToken is the ID token of the
+// underlying token response. Tokens without an id_token (such as one loaded
+// from disk, already swapped at login) are returned unchanged.
+type IDTokenSource struct {
+	Base oauth2.TokenSource
+}
+
+var _ oauth2.TokenSource = IDTokenSource{}
+
+func (s IDTokenSource) Token() (*oauth2.Token, error) {
+	t, err := s.Base.Token()
+	if err != nil {
+		return nil, err
+	}
+	idToken, ok := t.Extra("id_token").(string)
+	if !ok || idToken == "" {
+		return t, nil
+	}
+	swapped := *t
+	swapped.AccessToken = idToken
+	return &swapped, nil
 }

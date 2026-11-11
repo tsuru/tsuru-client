@@ -5,6 +5,7 @@
 package main
 
 import (
+	"context"
 	"encoding/json"
 	"fmt"
 	"io"
@@ -410,7 +411,7 @@ func main() {
 
 func initAuthorization() {
 	name := cmd.ExtractProgramName(os.Args[0])
-	roundTripper, tokenProvider, err := goTsuruClient.RoundTripperAndTokenProvider()
+	roundTripper, tokenProvider, err := roundTripperAndTokenProvider()
 	if err != nil {
 		fmt.Fprintf(os.Stderr, "Could not read token V2: %q\n", err.Error())
 		os.Exit(1)
@@ -424,6 +425,29 @@ func initAuthorization() {
 		Stderr:        os.Stderr,
 	})
 	config.DefaultTokenProvider = tokenProvider
+}
+
+// roundTripperAndTokenProvider is go-tsuruclient's RoundTripperAndTokenProvider,
+// except that with TSURU_OIDC_BEARER=id_token the OIDC ID token is sent as the
+// bearer, including after each refresh.
+func roundTripperAndTokenProvider() (http.RoundTripper, config.TokenProvider, error) {
+	if !auth.UseIDTokenAsBearer() {
+		return goTsuruClient.RoundTripperAndTokenProvider()
+	}
+	tokenV2, err := config.ReadTokenV2()
+	if err != nil {
+		return nil, nil, err
+	}
+	if tokenV2 == nil || tokenV2.Scheme != "oidc" || config.ReadTeamToken() != "" {
+		return goTsuruClient.RoundTripperAndTokenProvider()
+	}
+	base := tokenV2.OAuth2Config.TokenSource(context.Background(), tokenV2.OAuth2Token)
+	source := &goTsuruClient.TokenSourceFSStorage{
+		BaseTokenSource: auth.IDTokenSource{Base: base},
+		LastToken:       tokenV2,
+	}
+	roundTripper := &oauth2.Transport{Base: http.DefaultTransport, Source: source}
+	return roundTripper, &goTsuruClient.OIDCTokenProvider{OAuthTokenSource: source}, nil
 }
 
 type versionCmd struct{}

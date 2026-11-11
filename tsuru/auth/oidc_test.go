@@ -210,3 +210,24 @@ func (s *S) TestOIDCLoginMissingCode(c *check.C) {
 	c.Assert(strings.Contains(stderr.String(), "missing 'code' parameter"), check.Equals, true)
 	c.Assert(atomic.LoadInt32(&tokenEndpointCalls), check.Equals, int32(0))
 }
+
+type staticTokenSource struct{ token *oauth2.Token }
+
+func (s staticTokenSource) Token() (*oauth2.Token, error) { return s.token, nil }
+
+func (s *S) TestIDTokenSourceUsesIDToken(c *check.C) {
+	base := (&oauth2.Token{AccessToken: "access", RefreshToken: "refresh"}).
+		WithExtra(map[string]any{"id_token": "the-id-token"})
+	t, err := IDTokenSource{Base: staticTokenSource{base}}.Token()
+	c.Assert(err, check.IsNil)
+	c.Assert(t.AccessToken, check.Equals, "the-id-token")
+	c.Assert(t.RefreshToken, check.Equals, "refresh")
+	c.Assert(base.AccessToken, check.Equals, "access")
+}
+
+func (s *S) TestIDTokenSourceWithoutIDToken(c *check.C) {
+	base := &oauth2.Token{AccessToken: "already-swapped"}
+	t, err := IDTokenSource{Base: staticTokenSource{base}}.Token()
+	c.Assert(err, check.IsNil)
+	c.Assert(t.AccessToken, check.Equals, "already-swapped")
+}
