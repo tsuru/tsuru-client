@@ -20,6 +20,10 @@ import (
 
 func oidcLogin(ctx *cmd.Context, loginInfo *authTypes.SchemeInfo) error {
 	pkceVerifier := oauth2.GenerateVerifier()
+	// RFC 6749 section 10.12: an unguessable state binds the callback to this
+	// login attempt. Some servers (e.g. fosite-based ones such as Pocket ID)
+	// also reject an empty or short state.
+	state := oauth2.GenerateVerifier()
 
 	fmt.Fprintln(ctx.Stderr, "Starting OIDC login")
 
@@ -42,7 +46,7 @@ func oidcLogin(ctx *cmd.Context, loginInfo *authTypes.SchemeInfo) error {
 		},
 	}
 
-	authURL := oauth2Config.AuthCodeURL("", oauth2.S256ChallengeOption(pkceVerifier))
+	authURL := oauth2Config.AuthCodeURL(state, oauth2.S256ChallengeOption(pkceVerifier))
 
 	finish := make(chan bool)
 
@@ -67,6 +71,13 @@ func oidcLogin(ctx *cmd.Context, loginInfo *authTypes.SchemeInfo) error {
 		code := query.Get("code")
 		if code == "" {
 			handlerErr := errors.New("authorization response missing 'code' parameter")
+			fmt.Fprintf(ctx.Stderr, "Login failed: %v\n", handlerErr)
+			writeHTMLError(w, handlerErr)
+			return
+		}
+
+		if query.Get("state") != state {
+			handlerErr := errors.New("authorization response 'state' does not match this login")
 			fmt.Fprintf(ctx.Stderr, "Login failed: %v\n", handlerErr)
 			writeHTMLError(w, handlerErr)
 			return

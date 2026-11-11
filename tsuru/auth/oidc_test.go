@@ -30,9 +30,13 @@ func (s *S) TestOIDChLogin(c *check.C) {
 	execut = &fakeExecutor{
 		DoExecute: func(opts exec.ExecuteOptions) error {
 
+			authURL, err := url.Parse(opts.Args[0])
+			c.Assert(err, check.IsNil)
+			state := authURL.Query().Get("state")
+			c.Assert(len(state) >= 32, check.Equals, true)
 			go func() {
 				time.Sleep(time.Second)
-				_, err := http.Get("http://localhost:41000/?code=321")
+				_, err := http.Get("http://localhost:41000/?code=321&state=" + url.QueryEscape(state))
 				c.Assert(err, check.IsNil)
 			}()
 
@@ -209,4 +213,61 @@ func (s *S) TestOIDCLoginMissingCode(c *check.C) {
 	c.Assert(strings.Contains(body, "missing 'code' parameter"), check.Equals, true)
 	c.Assert(strings.Contains(stderr.String(), "missing 'code' parameter"), check.Equals, true)
 	c.Assert(atomic.LoadInt32(&tokenEndpointCalls), check.Equals, int32(0))
+}
+
+func (s *S) TestOIDCLoginStateMismatch(c *check.C) {
+	config.SetFileSystem(&fstest.RecordingFs{})
+
+	bodyCh := make(chan string, 1)
+	execut = &fakeExecutor{
+		DoExecute: func(opts exec.ExecuteOptions) error {
+			go func() {
+				time.Sleep(time.Second)
+				resp, err := http.Get("http://localhost:41003/?code=321&state=forged-state")
+				c.Assert(err, check.IsNil)
+				defer resp.Body.Close()
+				b, err := io.ReadAll(resp.Body)
+				c.Assert(err, check.IsNil)
+				bodyCh <- string(b)
+			}()
+			return nil
+		},
+	}
+
+	defer func() {
+		config.ResetFileSystem()
+		execut = nil
+	}()
+
+	var tokenEndpointCalls int32
+	fakeIDP := httptest.NewServer(http.HandlerFunc(func(rw http.ResponseWriter, req *http.Request) {
+		atomic.AddInt32(&tokenEndpointCalls, 1)
+		rw.Header().Set("Content-Type", "application/json")
+		rw.Write([]byte(`{"access_token":"mytoken"}`))
+	}))
+	defer fakeIDP.Close()
+
+	stderr := &bytes.Buffer{}
+	context := &cmd.Context{
+		Stdout: &bytes.Buffer{},
+		Stderr: stderr,
+	}
+
+	err := oidcLogin(context, &auth.SchemeInfo{
+		Data: auth.SchemeData{
+			Port:     "41003",
+			TokenURL: fakeIDP.URL,
+			ClientID: "test-tsuru",
+			Scopes:   []string{"scope1"},
+		},
+	})
+	c.Assert(err, check.IsNil)
+
+	body := <-bodyCh
+	c.Assert(strings.Contains(body, "does not match this login"), check.Equals, true)
+	c.Assert(strings.Contains(stderr.String(), "does not match this login"), check.Equals, true)
+	c.Assert(atomic.LoadInt32(&tokenEndpointCalls), check.Equals, int32(0))
+
+	tokenV1, _ := config.ReadTokenV1()
+	c.Assert(tokenV1, check.Equals, "")
 }
