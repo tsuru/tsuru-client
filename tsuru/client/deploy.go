@@ -91,6 +91,10 @@ func (c *AppDeployList) Run(context *cmd.Context) error {
 		return err
 	}
 	if response.StatusCode == http.StatusNoContent {
+		if c.json {
+			fmt.Fprintln(context.Stdout, "[]")
+			return nil
+		}
 		fmt.Fprintf(context.Stdout, "App %s has no deploy.\n", appName)
 		return nil
 	}

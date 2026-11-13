@@ -116,6 +116,9 @@ func (c *EventList) Run(context *cmd.Context) error {
 	}
 	defer response.Body.Close()
 	if response.StatusCode == http.StatusNoContent {
+		if c.json {
+			fmt.Fprintln(context.Stdout, "[]")
+		}
 		return nil
 	}
 	result, err := io.ReadAll(response.Body)

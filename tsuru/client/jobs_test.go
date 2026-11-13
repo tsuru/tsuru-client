@@ -612,6 +612,18 @@ func (s *S) TestJobList(c *check.C) {
 	c.Assert(stdout.String(), check.Equals, expected)
 }
 
+func (s *S) TestJobListNoContentJSON(c *check.C) {
+	var stdout bytes.Buffer
+	context := cmd.Context{Args: []string{}, Stdout: &stdout}
+	s.setupFakeTransport(&cmdtest.Transport{Status: http.StatusNoContent})
+	command := JobList{}
+	err := command.Flags().Parse([]string{"--json"})
+	c.Assert(err, check.IsNil)
+	err = command.Run(&context)
+	c.Assert(err, check.IsNil)
+	c.Assert(stdout.String(), check.Equals, "[]\n")
+}
+
 func (s *S) TestJobListApiError(c *check.C) {
 	var stdout, stderr bytes.Buffer
 	context := cmd.Context{

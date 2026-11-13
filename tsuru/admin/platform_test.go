@@ -82,6 +82,18 @@ func (s *S) TestPlatformListEmpty(c *check.C) {
 	c.Assert(buf.String(), check.Equals, "No platforms available.\n")
 }
 
+func (s *S) TestPlatformListEmptyJSON(c *check.C) {
+	var stdout bytes.Buffer
+	context := cmd.Context{Args: []string{}, Stdout: &stdout}
+	s.setupFakeTransport(&cmdtest.Transport{Status: http.StatusNoContent})
+	command := PlatformList{}
+	err := command.Flags().Parse([]string{"--json"})
+	c.Assert(err, check.IsNil)
+	err = command.Run(&context)
+	c.Assert(err, check.IsNil)
+	c.Assert(stdout.String(), check.Equals, "[]\n")
+}
+
 func (s *S) TestPlatformListInfo(c *check.C) {
 	c.Assert((&PlatformList{}).Info(), check.NotNil)
 }
