@@ -23,6 +23,13 @@ import (
 	"gopkg.in/check.v1"
 )
 
+// openedURL returns the URL handed to the browser opener: the last argument on
+// every OS (Windows runs `cmd /c start "" <url>`), with Windows' ^& escaping
+// undone.
+func openedURL(args []string) string {
+	return strings.ReplaceAll(args[len(args)-1], "^&", "&")
+}
+
 func (s *S) TestOIDChLogin(c *check.C) {
 
 	config.SetFileSystem(&fstest.RecordingFs{})
@@ -30,7 +37,7 @@ func (s *S) TestOIDChLogin(c *check.C) {
 	execut = &fakeExecutor{
 		DoExecute: func(opts exec.ExecuteOptions) error {
 
-			authURL, err := url.Parse(opts.Args[0])
+			authURL, err := url.Parse(openedURL(opts.Args))
 			c.Assert(err, check.IsNil)
 			state := authURL.Query().Get("state")
 			c.Assert(len(state) >= 32, check.Equals, true)
@@ -270,4 +277,17 @@ func (s *S) TestOIDCLoginStateMismatch(c *check.C) {
 
 	tokenV1, _ := config.ReadTokenV1()
 	c.Assert(tokenV1, check.Equals, "")
+}
+
+func (s *S) TestOpenedURL(c *check.C) {
+	windows := []string{"/c", "start", "", "https://idp/authorize?client_id=tsuru^&state=abc123^&response_type=code"}
+	u, err := url.Parse(openedURL(windows))
+	c.Assert(err, check.IsNil)
+	c.Assert(u.Query().Get("state"), check.Equals, "abc123")
+	c.Assert(u.Query().Get("client_id"), check.Equals, "tsuru")
+
+	darwin := []string{"https://idp/authorize?client_id=tsuru&state=abc123"}
+	u, err = url.Parse(openedURL(darwin))
+	c.Assert(err, check.IsNil)
+	c.Assert(u.Query().Get("state"), check.Equals, "abc123")
 }
