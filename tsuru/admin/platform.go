@@ -35,12 +35,6 @@ type PlatformList struct {
 	json       bool
 }
 
-// platform adds the fields newer API servers return to appTypes.Platform.
-type platform struct {
-	appTypes.Platform
-	Source string `json:",omitempty"`
-}
-
 func (p *PlatformList) Run(context *cmd.Context) error {
 	url, err := config.GetURL("/platforms")
 	if err != nil {
@@ -50,7 +44,7 @@ func (p *PlatformList) Run(context *cmd.Context) error {
 	if err != nil {
 		return err
 	}
-	var platforms []platform
+	var platforms []appTypes.Platform
 	resp, err := tsuruHTTP.AuthenticatedClient.Do(request)
 	if err != nil {
 		return err
@@ -81,7 +75,7 @@ func (p *PlatformList) Run(context *cmd.Context) error {
 
 	// Servers that do not return sources, or callers not allowed to see
 	// them, keep the two-column table.
-	withSource := slices.ContainsFunc(platforms, func(p platform) bool { return p.Source != "" })
+	withSource := slices.ContainsFunc(platforms, func(p appTypes.Platform) bool { return p.Source != "" })
 	tbl := tablecli.NewTable()
 	tbl.Headers = tablecli.Row{"Name", "Status"}
 	if withSource {

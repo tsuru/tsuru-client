@@ -1,4 +1,4 @@
-FROM golang:1.26.6-alpine AS builder
+FROM golang:1.26.11-alpine AS builder
 
 RUN apk add --update --no-cache \
         gcc \
