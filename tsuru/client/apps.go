@@ -1462,7 +1462,7 @@ func (c *AppList) Run(context *cmd.Context) error {
 	}
 	if response.StatusCode == http.StatusNoContent {
 		if c.json {
-			fmt.Fprintln(context.Stdout, "[]")
+			formatter.EmptyJSON(context.Stdout)
 		}
 		return nil
 	}

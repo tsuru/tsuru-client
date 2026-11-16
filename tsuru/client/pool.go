@@ -83,7 +83,7 @@ func (pl *PoolList) Run(ctx *cmd.Context) error {
 	t.TableWriterTruncate = true
 	if resp != nil && resp.StatusCode == http.StatusNoContent {
 		if pl.json {
-			fmt.Fprintln(ctx.Stdout, "[]")
+			formatter.EmptyJSON(ctx.Stdout)
 			return nil
 		}
 		ctx.Stdout.Write(t.Bytes())

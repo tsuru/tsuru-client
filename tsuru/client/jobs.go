@@ -376,7 +376,7 @@ func (c *JobList) Run(ctx *cmd.Context) error {
 
 	if resp != nil && resp.StatusCode == http.StatusNoContent {
 		if c.json {
-			fmt.Fprintln(ctx.Stdout, "[]")
+			formatter.EmptyJSON(ctx.Stdout)
 			return nil
 		}
 		fmt.Fprint(ctx.Stdout, "No jobs found\n")

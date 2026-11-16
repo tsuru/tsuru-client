@@ -348,7 +348,7 @@ func (c *AppRoutersList) Run(context *cmd.Context) error {
 	defer response.Body.Close()
 	if response.StatusCode == http.StatusNoContent {
 		if c.json {
-			fmt.Fprintln(context.Stdout, "[]")
+			formatter.EmptyJSON(context.Stdout)
 			return nil
 		}
 		fmt.Fprintln(context.Stdout, "No routers available for app.")

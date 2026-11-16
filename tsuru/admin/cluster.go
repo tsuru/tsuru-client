@@ -374,7 +374,7 @@ func (c *ClusterList) Run(ctx *cmd.Context) error {
 	clusters, resp, err := apiClient.ClusterApi.ClusterList(context.TODO())
 	if resp != nil && resp.StatusCode == http.StatusNoContent {
 		if c.json {
-			fmt.Fprintln(ctx.Stdout, "[]")
+			formatter.EmptyJSON(ctx.Stdout)
 			return nil
 		}
 		fmt.Fprintln(ctx.Stdout, "No clusters registered.")
