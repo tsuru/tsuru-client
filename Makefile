@@ -5,45 +5,7 @@
 # Python interpreter path
 PYTHON := $(shell which python)
 
-GHR := $(shell which ghr)
-GITHUB_TOKEN := $(shell git config --global --get github.token || echo $$GITHUB_TOKEN)
 GIT_TAG_VER := $(shell git describe --tags 2>/dev/null || echo "$${TSURU_BUILD_VERSION:-dev}")
-
-release:
-	@if [ ! $(version) ]; then \
-		echo "version parameter is required... use: make release version=<value>"; \
-		exit 1; \
-	fi
-	@if [ "$(GHR)" == "" ]; then \
-		echo "ghr is required. Instructions: github.com/tcnksm/ghr"; \
-		exit 1; \
-	fi
-	@if [ ! "$(GITHUB_TOKEN)" ]; then \
-		echo "github token should be configurated. Instructions: github.com/tcnksm/ghr"; \
-		exit 1; \
-	fi
-
-	@echo " ==> Releasing tsuru $(version) version."
-
-	@echo " ==> Building binaries."
-	@./misc/build-all.sh
-
-	@echo " ==> Bumping version."
-	@git add tsuru/main.go
-	@git commit -m "bump to $(version)"
-
-	@echo " ==> Creating tag."
-
-	@git tag $(version)
-
-	@echo " ==> Uploading binaries to github."
-
-	ghr --repository tsuru-client --username tsuru --draft --recreate $(version) dist/
-
-	@echo " ==> Pushing changes to github."
-
-	@git push --tags
-	@git push origin main
 
 doc-requirements: install
 	@pip install -r requirements.txt
@@ -105,4 +67,4 @@ endif
 		|| ( echo "Please run 'make yamlfmt' to fix it (if a format error)" && exit 1 )
 
 
-.PHONY: doc docs release manpage godownloader install-scripts
+.PHONY: doc docs manpage godownloader install-scripts

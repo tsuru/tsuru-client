@@ -50,14 +50,20 @@ archives:
   - misc/zsh-completion
 
 release:
+  # release-please creates the tag with a draft release; publish that one
+  # instead of creating a second release for the same tag.
+  use_existing_draft: true
   replace_existing_artifacts: true
   extra_files:
   - glob: dist/metadata.json
-  - glob: dist/CHANGELOG.md
 
   # If set to auto, will mark the release as not ready for production
   # in case there is an indicator for this in the tag e.g. v1.0.0-rc1
   prerelease: auto
+
+# release notes are written by release-please
+changelog:
+  disable: true
 
 # Mac OS Homebrew
 brews:
