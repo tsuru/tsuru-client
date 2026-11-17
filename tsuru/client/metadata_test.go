@@ -205,6 +205,35 @@ func (s *S) TestMetadataSetRunAppWithLabel(c *check.C) {
 	c.Assert(stdout.String(), check.Equals, expectedOut)
 }
 
+func (s *S) TestMetadataSetRunAppWithCapitalizedType(c *check.C) {
+	var stdout, stderr bytes.Buffer
+	context := cmd.Context{
+		Args:   []string{"test.tsuru.io/label=some-value"},
+		Stdout: &stdout,
+		Stderr: &stderr,
+	}
+	trans := &cmdtest.ConditionalTransport{
+		Transport: cmdtest.Transport{Status: http.StatusOK},
+		CondFunc: func(req *http.Request) bool {
+			data, err := io.ReadAll(req.Body)
+			c.Assert(err, check.IsNil)
+			var payload map[string]interface{}
+			err = json.Unmarshal(data, &payload)
+			c.Assert(err, check.IsNil)
+			c.Assert(payload["metadata"], check.DeepEquals, map[string]interface{}{
+				"labels": []interface{}{map[string]interface{}{"name": "test.tsuru.io/label", "value": "some-value"}},
+			})
+			return strings.HasSuffix(req.URL.Path, "/apps/someapp") && req.Method == "PUT"
+		},
+	}
+	s.setupFakeTransport(trans)
+
+	command := MetadataSet{}
+	command.Flags().Parse([]string{"-a", "someapp", "-t", "Label"})
+	err := command.Run(&context)
+	c.Assert(err, check.IsNil)
+}
+
 func (s *S) TestMetadataSetRunAppWithProcess(c *check.C) {
 	var stdout, stderr bytes.Buffer
 	context := cmd.Context{
@@ -429,6 +458,35 @@ func (s *S) TestMetadataUnsetRunAppWithLabel(c *check.C) {
 	err := command.Run(&context)
 	c.Assert(err, check.IsNil)
 	c.Assert(stdout.String(), check.Equals, expectedOut)
+}
+
+func (s *S) TestMetadataUnsetRunAppWithCapitalizedType(c *check.C) {
+	var stdout, stderr bytes.Buffer
+	context := cmd.Context{
+		Args:   []string{"test.tsuru.io/label"},
+		Stdout: &stdout,
+		Stderr: &stderr,
+	}
+	trans := &cmdtest.ConditionalTransport{
+		Transport: cmdtest.Transport{Status: http.StatusOK},
+		CondFunc: func(req *http.Request) bool {
+			data, err := io.ReadAll(req.Body)
+			c.Assert(err, check.IsNil)
+			var payload map[string]interface{}
+			err = json.Unmarshal(data, &payload)
+			c.Assert(err, check.IsNil)
+			c.Assert(payload["metadata"], check.DeepEquals, map[string]interface{}{
+				"labels": []interface{}{map[string]interface{}{"name": "test.tsuru.io/label", "delete": true}},
+			})
+			return strings.HasSuffix(req.URL.Path, "/apps/someapp") && req.Method == "PUT"
+		},
+	}
+	s.setupFakeTransport(trans)
+
+	command := MetadataUnset{}
+	command.Flags().Parse([]string{"-a", "someapp", "-t", "Label"})
+	err := command.Run(&context)
+	c.Assert(err, check.IsNil)
 }
 
 func (s *S) TestMetadataUnsetRunAppWithProcess(c *check.C) {
