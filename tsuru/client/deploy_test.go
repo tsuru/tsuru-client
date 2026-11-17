@@ -451,6 +451,18 @@ func (s *S) TestDeployRunAppWithouDeploy(c *check.C) {
 	c.Assert(stdout.String(), check.Equals, "App secret has no deploy.\n")
 }
 
+func (s *S) TestAppDeployListNoContentJSON(c *check.C) {
+	var stdout bytes.Buffer
+	context := cmd.Context{Args: []string{}, Stdout: &stdout}
+	s.setupFakeTransport(&cmdtest.Transport{Status: http.StatusNoContent})
+	command := AppDeployList{}
+	err := command.Flags().Parse([]string{"-a", "secret", "--json"})
+	c.Assert(err, check.IsNil)
+	err = command.Run(&context)
+	c.Assert(err, check.IsNil)
+	c.Assert(stdout.String(), check.Equals, "[]\n")
+}
+
 func (s *S) TestAppDeployRollbackInfo(c *check.C) {
 	c.Assert((&AppDeployRollback{}).Info(), check.NotNil)
 }

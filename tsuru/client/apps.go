@@ -1461,6 +1461,9 @@ func (c *AppList) Run(context *cmd.Context) error {
 		return err
 	}
 	if response.StatusCode == http.StatusNoContent {
+		if c.json {
+			formatter.EmptyJSON(context.Stdout)
+		}
 		return nil
 	}
 	defer response.Body.Close()

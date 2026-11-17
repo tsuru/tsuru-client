@@ -51,6 +51,10 @@ func (p *PlatformList) Run(context *cmd.Context) error {
 	}
 	defer resp.Body.Close()
 	if resp.StatusCode == http.StatusNoContent {
+		if p.json {
+			formatter.EmptyJSON(context.Stdout)
+			return nil
+		}
 		fmt.Fprintln(context.Stdout, "No platforms available.")
 		return nil
 	}
