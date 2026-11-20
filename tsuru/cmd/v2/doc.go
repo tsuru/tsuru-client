@@ -13,6 +13,8 @@ func generateDocCmd() *cobra.Command {
 		Use:    "generate-doc",
 		Hidden: true,
 		RunE: func(cmd *cobra.Command, args []string) error {
+			// the dated footer would change every page on each regeneration
+			cmd.Root().DisableAutoGenTag = true
 			return doc.GenMarkdownTree(cmd.Root(), "./")
 		},
 	}
